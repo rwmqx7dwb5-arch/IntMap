@@ -1400,6 +1400,10 @@ polity-arc.js                     **政体の盛衰**——1 つの政体を全�
                                   形が変わる年だけをタイムラプスで。索引は data/polity-arcs.json。入口は Chronos パネル・この場所の歴史の各行・
                                   Atlas `time.polityArc`（docs/architecture/07-map.md §7.4c）。同じ読み手（describe・valueAt・related・chartSvg・largest）で
                                   政体の盛衰の静的な入口ページ（scripts/polity-pages.mjs、§8.6.4）も書かれる
+population-grid.js                **値を持つ人口の格子**——WorldPop 1 km（2000〜2020・CC BY 4.0）を WorldPop の ArcGIS 画像サービスから
+                                  窓ごとに GeoTIFF で読み、各セルの人数をその 30″ セルの地面の面積（`js/gis-raster.js` pixelAreaKm2）で割って
+                                  **人/km²** にする（区域集計の areaIntegral がそのまま「範囲の人口」になる）。年・セル寸法・最大画像寸法は
+                                  サービス自身の記述から読む。登録は `js/map-ui.js` の `population` 行（描画は持たず、取得だけ）。
 family-history.js                 **家族史と国境**——読者の家族（手入力、または GEDCOM の読み込み）の各出来事を、その日・その場所で
                                   歴史の記録が描く政体と第 1 級区分で読み（日付が年・月だけなら幅の中の変化も）、各人物の生涯のあいだの
                                   政体の変化を数える（記録の切り替わり・同じ政体の別の行・重なり・継ぎ目は数えない）。地名は端末の地名辞典と

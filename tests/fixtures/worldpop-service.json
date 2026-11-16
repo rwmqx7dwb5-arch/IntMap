@@ -1,0 +1,17 @@
+{
+ "timeInfo": {
+  "startTimeField": "StdTime",
+  "endTimeField": "StdTime",
+  "timeExtent": [
+   946684800000,
+   1577836800000
+  ],
+  "timeReference": null,
+  "defaultTimeInterval": 1,
+  "defaultTimeIntervalUnits": "esriTimeUnitsYears"
+ },
+ "pixelSizeX": 0.0083333333,
+ "pixelSizeY": 0.0083333333,
+ "maxImageWidth": 4100,
+ "maxImageHeight": 4100
+}

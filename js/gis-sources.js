@@ -1184,6 +1184,9 @@ export function makeGisSources() {
           /* the caller's declaration, then the supplier's; `nodata` is a statement about what the
              numbers MEAN, so it is never invented when neither of them made one */
           nodata: (bandSpec.nodata !== undefined) ? bandSpec.nodata : ((supBand.nodata !== undefined) ? supBand.nodata : ans.nodata),
+          /* the supplier's statement of what a cell MEANS (a density, a count …) travels with the band,
+             so zonal / profile judge the arithmetic by it instead of by silence */
+          quantity: (bandSpec.quantity != null) ? bandSpec.quantity : ((supBand.quantity != null) ? supBand.quantity : null),
         },
         sample: () => null,
       });

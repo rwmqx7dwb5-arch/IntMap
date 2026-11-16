@@ -79,3 +79,56 @@ test('the four GIS chains reach their end through the shipped doors', async ({ a
     await page.unroute(/https:\/\/api\.open-meteo\.com\/v1\/forecast\?.*/);
   }
 });
+
+/* ── the population of an area (js/population-grid.js) ─────────────────────────────────────────
+   Measured 2026-11-16: `layer:` held no population grid with values, while Atlas's own guide promised
+   「…その範囲の人口を集計」. The fixture is a REAL 8×8 answer of WorldPop's image service (central
+   Tokyo, 2020) and its own service description, so what is checked is this app reading WorldPop's
+   bytes — the stub only removes the network. */
+test('the population of an area: WorldPop counts become a density and integrate back to people', async ({ app }) => {
+  const page = app.page;
+  const fs = await import('node:fs');
+  const tif = fs.readFileSync(new URL('./fixtures/worldpop-8x8-tokyo-2020.tif', import.meta.url));
+  const svc = fs.readFileSync(new URL('./fixtures/worldpop-service.json', import.meta.url), 'utf8');
+  const asked = [];
+  const RE = /https:\/\/worldpop\.arcgis\.com\/.*/;
+  await page.route(RE, (route) => {
+    const u = new URL(route.request().url());
+    asked.push(u.pathname.endsWith('/exportImage') ? (u.searchParams.get('size') + '@' + u.searchParams.get('time')) : 'meta');
+    if (u.searchParams.get('f') === 'json') return route.fulfill({ status: 200, contentType: 'application/json', body: svc });
+    return route.fulfill({ status: 200, contentType: 'image/tiff', body: tif });
+  });
+  try {
+    const r = await page.evaluate(async () => {
+      await window.IntMapLazy.need('gisCore');
+      const A = window.IntMapGis.atlas;
+      const cat = await A.catalogue();
+      const row = cat.layers.find((x) => x.ref === 'layer:population');
+      const zones = window.IntMapGis.data.add({ title: 'box', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon',
+        coordinates: [[[139.56, 35.52], [139.92, 35.52], [139.92, 35.82], [139.56, 35.82], [139.56, 35.52]]] } }] });
+      const zid = zones.id || (zones.dataset && zones.dataset.id);
+      const win = { bounds: [139.56, 35.52, 139.92, 35.82], width: 8, height: 8, time: '2020' };
+      const z = await A.run({ op: 'zonal', inputs: [zid, 'layer:population'], params: { stat: 'sum', total: 'areaIntegral', outName: 'pop' }, acquire: win });
+      const props = z.ok ? window.IntMapGis.data.get(z.dataset.id).features()[0].properties : null;
+      const plain = await A.run({ op: 'zonal', inputs: [zid, 'layer:population'], params: { stat: 'sum', outName: 'p2' }, acquire: win });
+      const early = await A.run({ inputs: ['layer:population'], acquire: Object.assign({}, win, { time: '1990' }) });
+      return { row: row && { payload: row.quantity.payload, licence: row.rights && row.rights.licence },
+        zonal: { ok: z.ok, why: z.why || null, pop: props && props.pop, rule: props && props._totalRule, from: props && props._quantityFrom },
+        plain: { ok: plain.ok, why: plain.detail && plain.detail.why }, early: { ok: early.ok, why: early.why } };
+    });
+    expect(r.row).toEqual({ payload: 'grid', licence: 'CC BY 4.0' });
+    expect(r.zonal, 'the zones get a population').toMatchObject({ ok: true, rule: 'areaIntegral', from: 'band' });
+    /* MEASURED 2026-11-16 against the live service at 240×168 (≈0.6 km pixels) over the same box:
+       12,947,591 people, and 12,925,966 at 60×42 — the density integrates to one answer at any pixel
+       size. This 8×8 window (≈4 km pixels, one native cell sampled per pixel) has to land within 10 %
+       of it. Summing the raw counts of the 64 sampled cells instead gives 522,902 (25× too few), and a
+       wrong cell area would be off by the same factor — so the band is what is being tested. */
+    expect(r.zonal.pop).toBeGreaterThan(12947591 * 0.9);
+    expect(r.zonal.pop).toBeLessThan(12947591 * 1.1);
+    expect(r.plain, 'a density is never summed as if it were people').toEqual({ ok: false, why: 'summing-a-density' });
+    expect(r.early, 'a year the service does not cover is refused by name').toEqual({ ok: false, why: 'time-not-covered' });
+    expect(asked.filter((a) => a !== 'meta').every((a) => /^8,8@\d+$/.test(a))).toBe(true);
+  } finally {
+    await page.unroute(RE);
+  }
+});

@@ -483,6 +483,18 @@ export function layerRegistry(HOST){
       /* the two roads credit two different sets of publishers, so the values follow the road the
          same way the sentence above does */
       rights:()=>(_tempSrc()==='merra2')?{publisher:'NASA GIBS'}:{upstreams:[{publisher:'ECMWF'},{publisher:'Open-Meteo'}]} });
+    /* ⚠⚠ POPULATION AS VALUES (js/population-grid.js). The 「人口密度（グリッド）」 checkbox is GPW
+       IMAGERY from NASA GIBS — colours — so nothing could read a population out of it. This row is the
+       NUMBERS, from a different publisher (WorldPop 1 km, 2000–2020), and it says so: it draws nothing
+       (`on` is false — there is no picture of it to switch), it is reached only through acquisition, and
+       its credit names WorldPop, never GPW. The module is imported when a window is asked for. */
+    let _popGrid=null;
+    register('population',{ label:()=>IntMapLang.t(HOST.lang,'Population (WorldPop 1 km, values)','人口（WorldPop 1 km・数値）'),
+      on:()=>false,
+      region:async(req)=>{ if(!_popGrid) _popGrid=(await import('./population-grid.js')).makePopulationGrid(); return _popGrid.region(req); },
+      /* no `time`: the year is the request's (acquire.time, 2000–2020); the answer's coverage names it */
+      source:()=>'WorldPop (University of Southampton) · CC BY 4.0',
+      rights:()=>({publisher:'WorldPop (University of Southampton) & CIESIN, Columbia University',licence:'CC BY 4.0',licenceUrl:'https://creativecommons.org/licenses/by/4.0/'}) });
     register('sst',    { label:()=>L5('Sea surface temp','海面水温','Meerestemperatur','Темп. моря','Temp. del mar'), measure:(x,y)=>_om('sst',x,y), region:_omRegion('sst'), time:()=>_ld('sst'), source:()=>'NASA GIBS / Open-Meteo marine', rights:()=>_RGT_GIBS_OM });
     /* ⚠ (#R302) THE WIND ANSWERS FROM THE FIELD THAT IS ON SCREEN, THE WAY `temp` ABOVE DOES.
        This row asked api.open-meteo.com for a point value while the ECMWF field the particles and the

@@ -36,11 +36,26 @@ date: 2026-11-16
 検査: `tests/gis-chain-audit.spec.js`（Open-Meteo を「複数位置の形だけ答える」スタブにし、依頼数そのものを主張にする。
 4 課題を出荷済みの扉で通す）。`tests/geo-gis-sources-checks.test.mjs` の #R763 ① は、行を作る `_omRead` を読むよう向け直した。
 
-**未解決（判断が要るもの）:**
+**人口の格子（利用者承認のうえで追加）。** `dl-popgrid` は GIBS の GPW 画像で値を持たず、Atlas の手引きが例に挙げる
+「施設から5km圏を作り、統合し、その範囲の人口を集計」は実行できなかった。候補を比べた（2026-11-16）:
 
-- **人口の格子がどこにも無い。** `dl-popgrid` は GIBS の GPW 画像タイルで値を持たず、`layer:` の供給元にならない。一方で Atlas の
-  手引き（`map.drawDataset` の doc）は「施設から5km圏を作り、統合し、その範囲の人口を集計」を例に挙げている——**約束しているのに
-  実行できない**。値を持つ人口格子（GHSL・WorldPop・GPW の値版など）の追加はデータソースの変更（出典・利用規約・営利利用の条件）
-  なので、着手前に確認する。`js/layer-time-decl.js` は WorldPop と書くが実装は GPW で、これも同じ判断で揃える。
+| 候補 | 条件 | 配信 | 採否 |
+|---|---|---|---|
+| **WorldPop 1 km（2000〜2020）** | CC BY 4.0（hub.worldpop.org） | WorldPop 自身の ArcGIS ImageServer が任意の窓を Float32 GeoTIFF で返し、本番の origin に CORS を返す（実測） | **採用**——同梱も前処理も要らず、既存の GeoTIFF 読み手でそのまま読める |
+| GHSL GHS-POP（1975〜2030） | 欧州委員会の再利用条件（CC BY 4.0 相当。表記が資料間で揺れる） | zip の GeoTIFF。ブラウザから窓で読める配信を確認できなかった | 年代は広いが、配信を自前で用意する必要がある。将来の拡張候補 |
+| GPW v4 の値 | CC BY 4.0 | 取得に Earthdata のログインが要る | 不採用 |
+
+`js/population-grid.js`: セルは「その 30″ セルの人数」なので、呼び手が決めた画素寸法で数を返すと粗い窓で合計が狂う。
+セルの地面の面積（`js/gis-raster.js` pixelAreaKm2）で割って **人/km²** にし、帯に `quantity`（density）を述べる——区域集計の
+`areaIntegral` がそのまま人数になり、素の `sum` は断られる。実測（東京中心部 1,085 km²・2020）: 60×42 で 12,925,966 人、
+240×168 で 12,947,591 人（画素寸法によらず 0.2% 以内）。年・セル寸法・最大画像寸法はサービス自身の記述から読む（2000 より前は
+`time-not-covered`）。登録は `js/map-ui.js` の `population` 行（描画を持たない）。帯の `quantity` を運ぶため `js/gis-raster.js`
+samplerGrid と `js/gis-sources.js` fromSupplierRegion に 1 欄足した（述べない帯は従来どおり。版は据え置きでハッシュだけ記録）。
+出典表（`js/reference-data.js` に CC BY 4.0）・プライバシー §4（worldpop.arcgis.com に窓の四隅と年が送られる、en/jp）・外部ホスト台帳・
+接続台帳・生成ページを更新した。あわせて `js/layer-time-decl.js` の画像レイヤーの説明を実装どおり GPW に直した（WorldPop と書いていた）。
+Atlas の手引き（spatial-analysis）に `layer:population` の使い方を足した。
+
+**未解決:**
+
 - **Atlas 夜間評価は 2026-10-17 以降 1 回も測っていない**（secret `ATLAS_EVAL_REFRESH_TOKEN`・`ATLAS_EVAL_SECRET_WRITER` が無い）。
   どちらも本人のログインと本人の PAT が要る（`docs/TESTING.md`「Atlas evaluation」手順 3・4）。
