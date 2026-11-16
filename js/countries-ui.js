@@ -492,6 +492,9 @@ export function countriesUi(HOST){
                  so this costs a function call on a normal session. */
               if(added){ try{ const TC=window.IntMapTimeCountries; if(TC&&TC.reapply) TC.reapply(); }catch(_){} }
               HOST.countryGeo=hi; window.countryGeo=hi;
+              /* (feature-consolidation) said once, for every reader that built its OWN copy of the outlines from countryGeo
+                 (js/wb-layers.js — the World Bank rows): the fine collection replaced the coarse one (#R254) */
+              try{ window.dispatchEvent(new Event('intmap-country-geo')); }catch(_){}
               /* ⚠ (#R195) DO NOT PUSH IT AT THE RENDERER UNLESS SOMETHING WILL DRAW IT. The 10 m
                  collection is 258 features and ~548,000 vertices; handing that to the engine rebuilds
                  every feature on the main thread. `country-fill`/`country-line` are created hidden and

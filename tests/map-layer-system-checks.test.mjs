@@ -5,6 +5,8 @@
  * (`beta-dl-unemp` + `bx-wbunemp`), internet users IT.NET.USER.ZS (`beta-dl-internet` + `bx-wbnet`) — and the
  * halves disagreed about time: the js/wb-layers.js row painted the clock's year, the js/layer-packs.js row its own,
  * and js/layer-time-decl.js called one of them a 2022 snapshot. Nothing in the tree said they were pairs.
+ * (feature-consolidation, 2026-11-16) the pairs are gone: the js/layer-packs.js family was a second implementation of
+ * js/wb-layers.js and was folded into it — every World Bank row is a row of that table, the old ids are `formerly`.
  * The record is dev-notes/2026-10-03-map-layer-system.md.
  *
  *   ① THE CLAIM — every declaration's `measures` is a series the code that paints the row fetches, and every
@@ -24,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { discoverSeries, seriesProblems, sameSeries, rowFor } from '../scripts/lib/indicator-series.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import '../js/safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper the browser writes through */
-import { LAYERS, layerDeclaration } from '../js/layer-manifest.js';
+import { LAYERS, layerDeclaration, currentIds } from '../js/layer-manifest.js';
 import { TIME } from '../js/layer-time-decl.js';
 import { wbRows } from './helpers/wb-rows.mjs';   /* (country-analysis-unify) the World Bank rows as js/wb-layers.js builds them */
 
@@ -38,8 +40,8 @@ test('① every `measures` claim is what the code paints, and every painted seri
   assert.ok(found.size >= 60, 'the World Bank family and the country-table rows are discovered (' + found.size + ')');
   assert.deepEqual(seriesProblems(decls(), found), []);
   /* the IMERG raster and the World Bank precipitation row share the short word `precip` and are two layers */
-  const pr = found.get('precip');
-  assert.equal(rowFor(decls(), 'precip', pr).id, 'beta-dl-precip');
+  const pr = found.get('wbprecip');
+  assert.equal(rowFor(decls(), 'wbprecip', pr).id, 'bx-wbprecip');
   assert.equal((layerDeclaration('dl-precip') || {}).measures, undefined);
 });
 
@@ -48,11 +50,11 @@ test('② the rows that share a series are discovered, and each pair makes one c
   /* the report — what the gate found today (printed, not pinned: a new pair is reported, not a failure) */
   console.log('same series: ' + groups.map((g) => g.series + ' = ' + g.ids.join(' + ')).join(' · '));
   const byS = new Map(groups.map((g) => [g.series, g.ids]));
-  for (const [s, ids] of [['worldbank:SP.DYN.LE00.IN', ['beta-dl-lifeexp', 'bx-wblife']], ['worldbank:SL.UEM.TOTL.ZS', ['beta-dl-unemp', 'bx-wbunemp']], ['worldbank:IT.NET.USER.ZS', ['beta-dl-internet', 'bx-wbnet']]]) {
-    assert.deepEqual(byS.get(s), ids, s + ' is measured by both rows');
+  /* (feature-consolidation) the three pairs this test was written for are one row each now */
+  for (const s of ['worldbank:SP.DYN.LE00.IN', 'worldbank:SL.UEM.TOTL.ZS', 'worldbank:IT.NET.USER.ZS', 'worldbank:GOV_WGI_CC.SC', 'worldbank:AG.LND.PRCP.MM']) {
+    assert.equal(byS.get(s), undefined, s + ' is painted by one row (' + (byS.get(s) || []).join(', ') + ')');
   }
   /* «precip / wbagri» was a suspected pair: they are two series (AG.LND.PRCP.MM, AG.LND.AGRI.ZS) */
-  assert.ok(!groups.some((g) => g.ids.includes('beta-dl-precip') && g.ids.includes('bx-wbagri')));
   for (const g of groups) {
     const kinds = new Set(g.ids.map((id) => TIME[id] && TIME[id].kind));
     assert.deepEqual([...kinds], ['series'], g.series + ': every row painting it is a series on the clock (' + g.ids.join(', ') + ')');
@@ -60,16 +62,16 @@ test('② the rows that share a series are discovered, and each pair makes one c
   }
 });
 
-test('② the js/layer-packs.js World Bank rows paint the clock\'s year and report the years they hold', () => {
-  const src = codeOnly(read('js/layer-packs.js'));
-  assert.match(src, /function wbClockYear\(S\)/);
-  assert.match(src, /const cy=wbClockYear\(S\);\s*const year=\(cy!=null\)\?cy:/);
-  assert.match(src, /LT\.range\('beta-dl-'\+key,/);
-  assert.match(src, /IntMapTime\.on\(\(\)=>\{ Object\.keys\(WB\)\.forEach\(k=>\{ if\(state\[k\]\) wbToggle\(k,true\);/);
-  /* a year picked in the legend is the map's year — it moves the one clock */
-  assert.match(src, /IntMapTime\.setYear\(\+v,\{source:'ui'\}\)/);
-  /* the stated 2022 is gone from the note: the legend names the year it paints */
-  assert.doesNotMatch(read('js/layer-packs.js'), /Life expectancy at birth \(World Bank, 2022\)/);
+test('② one World Bank family: js/layer-packs.js paints none, js/wb-layers.js paints the rows it used to', () => {
+  /* (feature-consolidation) the second family is gone, so there is one statement about time for every World Bank row */
+  const packs = codeOnly(read('js/layer-packs.js'));
+  assert.ok(!/function wbToggle\(|function wbClockYear\(/.test(packs), 'js/layer-packs.js paints World Bank series again');
+  const ids = wbRows().map((r) => r.id);
+  for (const id of ['wbcpi', 'wbprecip', 'wblife', 'wbunemp', 'wbnet']) assert.ok(ids.includes(id), id + ' is a row of js/wb-layers.js');
+  for (const [old, now] of [['beta-dl-cpi', 'bx-wbcpi'], ['beta-dl-lifeexp', 'bx-wblife'], ['beta-dl-unemp', 'bx-wbunemp'], ['beta-dl-internet', 'bx-wbnet'], ['beta-dl-precip', 'bx-wbprecip']]) {
+    assert.deepEqual(currentIds(old), [now], old + ' (a link, a session, a favourite) opens ' + now);
+    assert.equal(TIME[now] && TIME[now].kind, 'series', now + ' follows the clock');
+  }
 });
 
 test('③ a second row painting a series, undeclared, is a problem — the gate finds it, no list does', () => {
@@ -117,13 +119,13 @@ test('④ one entry per series; the other row named; the country table offered b
   const cat = b.catalogue();
   const life = cat.filter((e) => e.series === 'worldbank:SP.DYN.LE00.IN');
   assert.equal(life.length, 1, 'life expectancy is offered once');
-  assert.deepEqual(life[0].also, ['beta-dl-lifeexp']);
+  assert.deepEqual(life[0].also, [], 'no second row paints it');
   assert.equal(life[0].kind, 'series');
-  /* the rows this reader does not paint — each once, by its row: the country table, and the two World Bank rows
-     no js/wb-layers.js entry measures (corruption on source 3, long-run precipitation) */
+  /* the rows this reader does not paint — each once, by its row: the country table */
   const rows = cat.filter((e) => e.kind === 'row').map((e) => e.row).sort();
-  for (const id of ['dl-gdppc', 'dl-hdi', 'dl-pop', 'dl-dem', 'dl-tfr', 'dl-milSpend', 'beta-dl-cpi', 'beta-dl-precip']) assert.ok(rows.includes(id), id + ' is offered');
-  assert.ok(!rows.includes('beta-dl-lifeexp') && !rows.includes('beta-dl-unemp') && !rows.includes('beta-dl-internet'), 'a series painted here is not offered twice');
+  for (const id of ['dl-gdppc', 'dl-hdi', 'dl-pop', 'dl-dem', 'dl-tfr', 'dl-milSpend']) assert.ok(rows.includes(id), id + ' is offered');
+  /* (feature-consolidation) corruption and the national precipitation mean are series of this table now, offered once */
+  for (const sr of ['worldbank:GOV_WGI_CC.SC', 'worldbank:AG.LND.PRCP.MM']) assert.equal(cat.filter((e) => e.series === sr).length, 1, sr + ' is offered once');
   /* every entry has a subject — the shelf its own row stands on */
   assert.deepEqual(cat.filter((e) => !e.subject).map((e) => e.id), []);
 });
@@ -148,7 +150,7 @@ test('④ choosing paints one at a time; a country-table row is switched on and 
   b.select('wblife');
   assert.equal(boxes.get('dl-gdppc').checked, false, 'the row it switched on is switched off again');
   assert.equal(b.current().id, 'wblife');
-  /* a row id names its indicator too — 'beta-dl-lifeexp' is the same series as wblife */
+  /* a row id names its indicator too */
   assert.equal(b.select('bx-wbnet').id, 'wbnet');
   b.closed();
 });
@@ -160,7 +162,7 @@ test('④ the facts are read off the series: the year, how many reported, the to
   assert.equal(f.reporting, 5, 'a code that is not a country (two letters) is not counted');
   assert.deepEqual(f.top.map((x) => x.name), ['Japan', 'Switzerland']);
   assert.deepEqual(f.bottom.map((x) => x.name), ['Chad', 'Nigeria']);
-  assert.deepEqual(f.also.map((x) => x.id), ['beta-dl-lifeexp']);
+  assert.deepEqual(f.also.map((x) => x.id), []);
 });
 
 test('⑤ the row, its share state, its Atlas door and its time declaration', () => {

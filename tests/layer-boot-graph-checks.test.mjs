@@ -587,7 +587,7 @@ test('R304 ③ publishedGlobals() tracks js/, in both directions', () => {
     assert.ok(!all.has(g), `${g} was deleted, so nothing derives it any more`);
   /* still there, and each is a different SHAPE of publication the walk has to handle:
      a bare statement, an assignment from an IIFE, and one made inside an IIFE two levels down */
-  for (const g of ['IntMapLayers', 'IntMapSun', 'IntMapLOS', 'IntMapBeta2', '_imPlacePopup', 'IntMapOverlays'])
+  for (const g of ['IntMapLayers', 'IntMapSun', 'IntMapLOS', 'IntMapBeta2', '_imPlacePopup', 'IntMapCache'])
     assert.ok(all.has(g), `${g} is still published by a factory, and the walk sees it`);
   assert.ok(all.size > 40, `the derived list is ${all.size} globals — it has not collapsed`);
 });

@@ -82,6 +82,7 @@ const DERIVED = [
     { id: "dl-ec-cape", key: "ec-cape", rest: true, share: true },
     { id: "bx-wbpm25", key: "wbpm25", rest: true },
     { id: "bx-wbco2", key: "wbco2", rest: true },
+    { id: "bx-wbprecip", key: "wbprecip", rest: true, share: true },
   ] },
   { key: "lyrGrpOrbit", layers: [
     { id: "dl-sats", key: "sats", label: "lyrSats", share: true, lazy: ["satellitesLive"] },
@@ -135,7 +136,7 @@ const DERIVED = [
   ] },
   { key: "lyrGrpPolitics", layers: [
     { id: "dl-dem", key: "dem", label: "lyrDem", share: true },
-    { id: "beta-dl-cpi", key: "cpi", share: true },
+    { id: "bx-wbcpi", key: "wbcpi", share: true },
     { id: "dl-eez", key: "eez", label: "lyrEEZ", share: true },
     { id: "dl-uselect", key: "uselect", share: true },
     { id: "dl-eu", key: "eu", label: "lyrEU", share: true },
@@ -160,7 +161,7 @@ const DERIVED = [
     { id: "fac-dl-osmmil", key: "osmmil", rest: true },
   ] },
   { key: "lyrGrpHealth", layers: [
-    { id: "beta-dl-lifeexp", key: "lifeexp", share: true },
+    { id: "bx-wblife", key: "wblife", share: true },
     { id: "bx-wbinfmort", key: "wbinfmort" },
     { id: "bx-wbsuicide", key: "wbsuicide" },
     { id: "bx-wbsmoke", key: "wbsmoke" },
@@ -170,7 +171,6 @@ const DERIVED = [
     { id: "bx-wbphys", key: "wbphys", rest: true },
     { id: "bx-wbbeds", key: "wbbeds", rest: true },
     { id: "bx-wbu5mort", key: "wbu5mort", rest: true },
-    { id: "bx-wblife", key: "wblife", rest: true },
     { id: "bx-wbsan", key: "wbsan", rest: true },
     { id: "bx-wboverwt", key: "wboverwt", rest: true },
     { id: "fac-dl-osmhealth", key: "osmhealth", rest: true },
@@ -181,7 +181,7 @@ const DERIVED = [
     { id: "beta-dl-dc", key: "dc", rest: true, share: true, lazy: ["dataCenters"] },
     { id: "dl-nethlth", key: "nethlth", rest: true, share: true, lazy: ["netHealthLive"] },
     { id: "dl-netreach", key: "netreach", rest: true, share: true, lazy: ["netHealthLive"] },
-    { id: "bx-wbnet", key: "wbnet", rest: true },
+    { id: "bx-wbnet", key: "wbnet", rest: true, share: true },
     { id: "bx-wbmobile", key: "wbmobile", rest: true },
     { id: "bx-wbbbnd", key: "wbbbnd", rest: true },
     { id: "bx-wbrnd", key: "wbrnd", rest: true },
@@ -202,7 +202,7 @@ const DERIVED = [
     { id: "bx-wbmanuf", key: "wbmanuf", rest: true },
     { id: "bx-wbhitech", key: "wbhitech", rest: true },
     { id: "bx-wbfdi", key: "wbfdi", rest: true },
-    { id: "bx-wbunemp", key: "wbunemp", rest: true },
+    { id: "bx-wbunemp", key: "wbunemp", rest: true, share: true },
     { id: "bx-wbgni", key: "wbgni", rest: true },
     { id: "bx-wbpov", key: "wbpov", rest: true },
     { id: "bx-wbflfp", key: "wbflfp", rest: true },
@@ -259,9 +259,6 @@ const DERIVED = [
     { id: "beta-dl-volcash", share: true, lazy: ["volcanoLayers"] },
     { id: "beta-dl-volchaz", share: true, lazy: ["volcanoLayers"] },
     { id: "beta-dl-volcso2", share: true, lazy: ["volcanoLayers"] },
-    { id: "beta-dl-unemp", share: true },
-    { id: "beta-dl-internet", share: true },
-    { id: "beta-dl-precip", share: true },
     { id: "beta-dl-spin", share: true },
     { id: "wp-dl-outbreaks", share: true },
     { id: "bx-heat" },
@@ -282,12 +279,12 @@ const DECLARATIONS = [
   { id: "cb-roads", kind: "display", shelf: "base", order: 70, label: "roadsLayer", on: true, html: true },   // cb-roads.js
   { id: "cb-rail2", kind: "display", shelf: "base", order: 80, label: "railLayer", on: true, html: true },   // cb-rail2.js
   { id: "cb-grid", kind: "display", shelf: "base", order: 90, label: "gridLayer", html: true, atlas: ["view.grid"] },   // cb-grid.js
-  { id: "dl-nightside", kind: "display", shelf: "base", order: 100, key: "nightside", label: "lyrNightSide", share: true, atlas: ["layers.nightSide"] },   // dl-nightside.js
+  { id: "dl-nightside", kind: "display", shelf: "base", order: 100, key: "nightside", label: "lyrNightSide", share: true, atlas: ["layers.nightSide"], formerly: ["dl-night"] },   // dl-nightside.js
   { id: "beta-dl-bldg3d", kind: "display", shelf: "base", order: 110, key: "bldg3d", share: true },   // beta-dl-bldg3d.js
   { id: "dl-climate", shelf: "lyrGrpClimate", order: 10, key: "climate", label: "lyrClimate", share: true, registry: ["climate"] },   // dl-climate.js
   { id: "dl-wind", shelf: "lyrGrpClimate", order: 20, key: "wind", label: "lyrWind", share: true, registry: ["wind"], atlas: ["layers.windParticles"] },   // dl-wind.js
   { id: "dl-annprecip", shelf: "lyrGrpClimate", order: 30, key: "annprecip", share: true, registry: ["annprecip"] },   // dl-annprecip.js
-  { id: "dl-ec-temp", shelf: "lyrGrpClimate", order: 40, key: "ec-temp", share: true, registry: ["temp"] },   // dl-ec-temp.js
+  { id: "dl-ec-temp", shelf: "lyrGrpClimate", order: 40, key: "ec-temp", share: true, registry: ["temp"], formerly: ["dl-temp"] },   // dl-ec-temp.js
   { id: "dl-ec-precip", shelf: "lyrGrpClimate", order: 50, key: "ec-precip", share: true },   // dl-ec-precip.js
   { id: "dl-radar", shelf: "lyrGrpClimate", order: 60, key: "radar", label: "lyrRadar", share: true, pkg: "radar" },   // dl-radar.js
   { id: "dl-ec-slp", shelf: "lyrGrpClimate", order: 70, key: "ec-slp", share: true, atlas: ["layers.isobars"] },   // dl-ec-slp.js
@@ -298,13 +295,14 @@ const DECLARATIONS = [
   { id: "dl-aod", shelf: "lyrGrpClimate", order: 120, key: "aod", label: "lyrAOD", rest: true, share: true, registry: ["aod"] },   // dl-aod.js
   { id: "dl-ec-cape", shelf: "lyrGrpClimate", order: 130, key: "ec-cape", rest: true, share: true },   // dl-ec-cape.js
   { id: "bx-wbpm25", shelf: "lyrGrpClimate", order: 140, key: "wbpm25", rest: true, measures: ["worldbank:EN.ATM.PM25.MC.M3"] },   // bx-wbpm25.js
-  { id: "bx-wbco2", shelf: "lyrGrpClimate", order: 150, key: "wbco2", rest: true, measures: ["worldbank:EN.GHG.CO2.MT.CE.AR5", "worldbank:EN.GHG.CO2.PC.CE.AR5"] },   // bx-wbco2.js
+  { id: "bx-wbco2", shelf: "lyrGrpClimate", order: 150, key: "wbco2", rest: true, measures: ["worldbank:EN.GHG.CO2.MT.CE.AR5", "worldbank:EN.GHG.CO2.PC.CE.AR5"], formerly: ["bx-wbco2t"] },   // bx-wbco2.js
+  { id: "bx-wbprecip", shelf: "lyrGrpClimate", order: 160, key: "wbprecip", rest: true, share: true, measures: ["worldbank:AG.LND.PRCP.MM"], formerly: ["beta-dl-precip"] },   // bx-wbprecip.js
   { id: "dl-sats", shelf: "lyrGrpOrbit", order: 10, key: "sats", label: "lyrSats", share: true, lazy: ["satellitesLive"], registry: ["satellites"], atlas: ["layers.satellites"], time: { kind: "elements", bands: [[11, 5], [1.5, 60], [-Infinity, 14]] } },   // dl-sats.js
   { id: "l9-dl-aurora", shelf: "lyrGrpOrbit", order: 20, key: "aurora", share: true },   // l9-dl-aurora.js
   { id: "fac-dl-osmspace", shelf: "lyrGrpOrbit", order: 30, key: "osmspace", rest: true },   // fac-dl-osmspace.js
   { id: "dl-sst", shelf: "lyrGrpMaritime", order: 10, key: "sst", label: "lyrSST", share: true, registry: ["sst"] },   // dl-sst.js
   { id: "dl-waves", shelf: "lyrGrpMaritime", order: 20, key: "waves", share: true, lazy: ["waves"] },   // dl-waves.js
-  { id: "wp-dl-currents", shelf: "lyrGrpMaritime", order: 30, key: "currents", share: true },   // wp-dl-currents.js
+  { id: "wp-dl-currents", shelf: "lyrGrpMaritime", order: 30, key: "currents", share: true, formerly: ["dl-oceancur"] },   // wp-dl-currents.js
   { id: "gx-gxsstanom", shelf: "lyrGrpMaritime", order: 40, key: "gxsstanom", rest: true, share: true },   // gx-gxsstanom.js
   { id: "wp-dl-tides", shelf: "lyrGrpMaritime", order: 50, key: "tides", rest: true, share: true, lazy: ["worldPacksBody"] },   // wp-dl-tides.js
   { id: "gx-gxseaice", shelf: "lyrGrpMaritime", order: 60, key: "gxseaice", rest: true, share: true },   // gx-gxseaice.js
@@ -338,14 +336,14 @@ const DECLARATIONS = [
   { id: "fac-dl-osmemg", shelf: "lyrGrpHazard", order: 50, key: "osmemg", rest: true },   // fac-dl-osmemg.js
   { id: "beta-dl-radobs", shelf: "lyrGrpHazard", order: 60, key: "radobs", rest: true, share: true, lazy: ["radiationLayer"], registry: ["radiation"], commands: ["radiation.observed", "radiation.near"], atlas: ["map.radiation"] },   // beta-dl-radobs.js
   { id: "dl-dem", shelf: "lyrGrpPolitics", order: 10, key: "dem", label: "lyrDem", share: true, measures: ["countrystats:dem"] },   // dl-dem.js
-  { id: "beta-dl-cpi", shelf: "lyrGrpPolitics", order: 20, key: "cpi", share: true, measures: ["worldbank:GOV_WGI_CC.SC"] },   // beta-dl-cpi.js
+  { id: "bx-wbcpi", shelf: "lyrGrpPolitics", order: 20, key: "wbcpi", share: true, measures: ["worldbank:GOV_WGI_CC.SC"], formerly: ["beta-dl-cpi"] },   // bx-wbcpi.js
   { id: "dl-eez", shelf: "lyrGrpPolitics", order: 30, key: "eez", label: "lyrEEZ", share: true },   // dl-eez.js
   { id: "dl-uselect", shelf: "lyrGrpPolitics", order: 40, key: "uselect", share: true },   // dl-uselect.js
   { id: "dl-eu", shelf: "lyrGrpPolitics", order: 50, key: "eu", label: "lyrEU", share: true, pkg: "alliances" },   // dl-eu.js
-  { id: "dl-ww2", shelf: "lyrGrpPolitics", order: 60, key: "ww2", share: true, lazy: ["warLayer"] },   // dl-ww2.js
+  { id: "dl-ww2", shelf: "lyrGrpPolitics", order: 60, key: "ww2", share: true, lazy: ["warLayer"], formerly: ["dl-wars"] },   // dl-ww2.js
   { id: "dl-elect", shelf: "lyrGrpPolitics", order: 70, key: "elect", rest: true, share: true },   // dl-elect.js
   { id: "dl-newspulse", shelf: "lyrGrpPolitics", order: 75, key: "newspulse", rest: true, share: true, lazy: ["newsIntel"], commands: ["newspulse.toggle", "newspulse.rank", "newspulse.brief"] },   // dl-newspulse.js
-  { id: "dl-ww1", shelf: "lyrGrpPolitics", order: 80, key: "ww1", rest: true, share: true, lazy: ["warLayer"] },   // dl-ww1.js
+  { id: "dl-ww1", shelf: "lyrGrpPolitics", order: 80, key: "ww1", rest: true, share: true, lazy: ["warLayer"], formerly: ["dl-wars"] },   // dl-ww1.js
   { id: "dl-korea", shelf: "lyrGrpPolitics", order: 90, key: "korea", rest: true, share: true, lazy: ["warLayer"] },   // dl-korea.js
   { id: "dl-vietnam", shelf: "lyrGrpPolitics", order: 100, key: "vietnam", rest: true, share: true, lazy: ["warLayer"] },   // dl-vietnam.js
   { id: "dl-mideast", shelf: "lyrGrpPolitics", order: 110, key: "mideast", rest: true, share: true, lazy: ["warLayer"] },   // dl-mideast.js
@@ -353,13 +351,13 @@ const DECLARATIONS = [
   { id: "dl-tz", shelf: "lyrGrpPolitics", order: 130, key: "tz", rest: true, share: true },   // dl-tz.js
   { id: "bx-wbwomparl", shelf: "lyrGrpPolitics", order: 140, key: "wbwomparl", rest: true, measures: ["worldbank:SG.GEN.PARL.ZS"] },   // bx-wbwomparl.js
   { id: "fac-dl-osmdiplo", shelf: "lyrGrpPolitics", order: 150, key: "osmdiplo", rest: true },   // fac-dl-osmdiplo.js
-  { id: "dl-milSpend", shelf: "lyrGrpSecurity", order: 10, key: "milSpend", label: "lyrMilSpend", share: true, pkg: "alliances", measures: ["countrystats:milSpend"] },   // dl-milSpend.js
+  { id: "dl-milSpend", shelf: "lyrGrpSecurity", order: 10, key: "milSpend", label: "lyrMilSpend", share: true, pkg: "alliances", measures: ["countrystats:milSpend"], formerly: ["dl-milSpendGDP"] },   // dl-milSpend.js
   { id: "dl-nato", shelf: "lyrGrpSecurity", order: 20, key: "nato", label: "lyrNATO", share: true, pkg: "alliances" },   // dl-nato.js
   { id: "beta-dl-ukrfront", shelf: "lyrGrpSecurity", order: 30, key: "ukrfront", share: true },   // beta-dl-ukrfront.js
   { id: "bx-wbmilgdp", shelf: "lyrGrpSecurity", order: 40, key: "wbmilgdp", rest: true, measures: ["worldbank:MS.MIL.XPND.GD.ZS"] },   // bx-wbmilgdp.js
   { id: "bx-wbmilppl", shelf: "lyrGrpSecurity", order: 50, key: "wbmilppl", rest: true, measures: ["worldbank:MS.MIL.TOTL.P1"] },   // bx-wbmilppl.js
   { id: "fac-dl-osmmil", shelf: "lyrGrpSecurity", order: 60, key: "osmmil", rest: true },   // fac-dl-osmmil.js
-  { id: "beta-dl-lifeexp", shelf: "lyrGrpHealth", order: 10, key: "lifeexp", share: true, measures: ["worldbank:SP.DYN.LE00.IN"] },   // beta-dl-lifeexp.js
+  { id: "bx-wblife", shelf: "lyrGrpHealth", order: 10, key: "wblife", share: true, measures: ["worldbank:SP.DYN.LE00.IN"], formerly: ["beta-dl-lifeexp"] },   // bx-wblife.js
   { id: "bx-wbinfmort", shelf: "lyrGrpHealth", order: 20, key: "wbinfmort", measures: ["worldbank:SP.DYN.IMRT.IN"] },   // bx-wbinfmort.js
   { id: "bx-wbsuicide", shelf: "lyrGrpHealth", order: 30, key: "wbsuicide", measures: ["worldbank:SH.STA.SUIC.P5"] },   // bx-wbsuicide.js
   { id: "bx-wbsmoke", shelf: "lyrGrpHealth", order: 40, key: "wbsmoke", measures: ["worldbank:SH.PRV.SMOK"] },   // bx-wbsmoke.js
@@ -369,7 +367,6 @@ const DECLARATIONS = [
   { id: "bx-wbphys", shelf: "lyrGrpHealth", order: 80, key: "wbphys", rest: true, measures: ["worldbank:SH.MED.PHYS.ZS"] },   // bx-wbphys.js
   { id: "bx-wbbeds", shelf: "lyrGrpHealth", order: 90, key: "wbbeds", rest: true, measures: ["worldbank:SH.MED.BEDS.ZS"] },   // bx-wbbeds.js
   { id: "bx-wbu5mort", shelf: "lyrGrpHealth", order: 100, key: "wbu5mort", rest: true, measures: ["worldbank:SH.DYN.MORT"] },   // bx-wbu5mort.js
-  { id: "bx-wblife", shelf: "lyrGrpHealth", order: 110, key: "wblife", rest: true, measures: ["worldbank:SP.DYN.LE00.IN"] },   // bx-wblife.js
   { id: "bx-wbsan", shelf: "lyrGrpHealth", order: 120, key: "wbsan", rest: true, measures: ["worldbank:SH.STA.SMSS.ZS"] },   // bx-wbsan.js
   { id: "bx-wboverwt", shelf: "lyrGrpHealth", order: 130, key: "wboverwt", rest: true, measures: ["worldbank:HF.STA.OW18.ZS"] },   // bx-wboverwt.js
   { id: "fac-dl-osmhealth", shelf: "lyrGrpHealth", order: 140, key: "osmhealth", rest: true },   // fac-dl-osmhealth.js
@@ -378,7 +375,7 @@ const DECLARATIONS = [
   { id: "beta-dl-dc", shelf: "lyrGrpTech", order: 20, key: "dc", rest: true, share: true, lazy: ["dataCenters"], registry: ["datacenters"] },   // beta-dl-dc.js
   { id: "dl-nethlth", shelf: "lyrGrpTech", order: 30, key: "nethlth", rest: true, share: true, lazy: ["netHealthLive"], commands: ["nethlth.report", "nethlth.signals"] },   // dl-nethlth.js
   { id: "dl-netreach", shelf: "lyrGrpTech", order: 40, key: "netreach", rest: true, share: true, lazy: ["netHealthLive"] },   // dl-netreach.js
-  { id: "bx-wbnet", shelf: "lyrGrpTech", order: 50, key: "wbnet", rest: true, measures: ["worldbank:IT.NET.USER.ZS"] },   // bx-wbnet.js
+  { id: "bx-wbnet", shelf: "lyrGrpTech", order: 50, key: "wbnet", rest: true, share: true, measures: ["worldbank:IT.NET.USER.ZS"], formerly: ["beta-dl-internet"] },   // bx-wbnet.js
   { id: "bx-wbmobile", shelf: "lyrGrpTech", order: 60, key: "wbmobile", rest: true, measures: ["worldbank:IT.CEL.SETS.P2"] },   // bx-wbmobile.js
   { id: "bx-wbbbnd", shelf: "lyrGrpTech", order: 70, key: "wbbbnd", rest: true, measures: ["worldbank:IT.NET.BBND.P2"] },   // bx-wbbbnd.js
   { id: "bx-wbrnd", shelf: "lyrGrpTech", order: 80, key: "wbrnd", rest: true, measures: ["worldbank:GB.XPD.RSDV.GD.ZS"] },   // bx-wbrnd.js
@@ -397,7 +394,7 @@ const DECLARATIONS = [
   { id: "bx-wbmanuf", shelf: "lyrGrpEconomy", order: 100, key: "wbmanuf", rest: true, measures: ["worldbank:NV.IND.MANF.ZS"] },   // bx-wbmanuf.js
   { id: "bx-wbhitech", shelf: "lyrGrpEconomy", order: 110, key: "wbhitech", rest: true, measures: ["worldbank:TX.VAL.TECH.MF.ZS"] },   // bx-wbhitech.js
   { id: "bx-wbfdi", shelf: "lyrGrpEconomy", order: 120, key: "wbfdi", rest: true, measures: ["worldbank:BX.KLT.DINV.WD.GD.ZS"] },   // bx-wbfdi.js
-  { id: "bx-wbunemp", shelf: "lyrGrpEconomy", order: 130, key: "wbunemp", rest: true, measures: ["worldbank:SL.UEM.TOTL.ZS"] },   // bx-wbunemp.js
+  { id: "bx-wbunemp", shelf: "lyrGrpEconomy", order: 130, key: "wbunemp", rest: true, share: true, measures: ["worldbank:SL.UEM.TOTL.ZS"], formerly: ["beta-dl-unemp"] },   // bx-wbunemp.js
   { id: "bx-wbgni", shelf: "lyrGrpEconomy", order: 140, key: "wbgni", rest: true, measures: ["worldbank:NY.GNP.PCAP.CD"] },   // bx-wbgni.js
   { id: "bx-wbpov", shelf: "lyrGrpEconomy", order: 150, key: "wbpov", rest: true, measures: ["worldbank:SI.POV.DDAY"] },   // bx-wbpov.js
   { id: "bx-wbflfp", shelf: "lyrGrpEconomy", order: 160, key: "wbflfp", rest: true, measures: ["worldbank:SL.TLF.CACT.FE.ZS"] },   // bx-wbflfp.js
@@ -442,9 +439,6 @@ const DECLARATIONS = [
   { id: "beta-dl-volcash", shelf: "lyrGrpOthers", order: 30, share: true, lazy: ["volcanoLayers"] },   // beta-dl-volcash.js
   { id: "beta-dl-volchaz", shelf: "lyrGrpOthers", order: 40, share: true, lazy: ["volcanoLayers"] },   // beta-dl-volchaz.js
   { id: "beta-dl-volcso2", shelf: "lyrGrpOthers", order: 50, share: true, lazy: ["volcanoLayers"] },   // beta-dl-volcso2.js
-  { id: "beta-dl-unemp", shelf: "lyrGrpOthers", order: 60, share: true, measures: ["worldbank:SL.UEM.TOTL.ZS"] },   // beta-dl-unemp.js
-  { id: "beta-dl-internet", shelf: "lyrGrpOthers", order: 70, share: true, measures: ["worldbank:IT.NET.USER.ZS"] },   // beta-dl-internet.js
-  { id: "beta-dl-precip", shelf: "lyrGrpOthers", order: 80, share: true, measures: ["worldbank:AG.LND.PRCP.MM"] },   // beta-dl-precip.js
   { id: "beta-dl-spin", shelf: "lyrGrpOthers", order: 90, share: true },   // beta-dl-spin.js
   { id: "wp-dl-outbreaks", shelf: "lyrGrpOthers", order: 100, share: true, registry: ["outbreaks"], state: "outbreaks", commands: ["outbreaks.open", "outbreaks.close"], atlas: ["map.outbreaks"], sources: ["WHO Disease Outbreak News"] },   // wp-dl-outbreaks.js
   { id: "bx-heat", shelf: "lyrGrpOthers", order: 110 },   // bx-heat.js
@@ -485,6 +479,16 @@ export const HIDDEN = 'hidden';
 export const LAYERS = Object.freeze(SHELVES.flatMap((s) => s.layers.map((l) => Object.freeze(Object.assign({ shelf: s.key }, l)))));
 const BY_ID = new Map(LAYERS.map((l) => [l.id, l]));
 const BY_KEY = new Map(LAYERS.filter((l) => l.key).map((l) => [l.key, l]));
+
+/* (feature-consolidation) A RETIRED ID OPENS WHAT REPLACED IT. Rows that were merged or renamed say so in their own
+   declaration (`formerly`); this is the one place that turns an old id into the current one(s), and the share link
+   (js/map-ui.js), the saved session (js/session-tabs.js) and the favourites (js/layer-favs.js) all ask it. */
+const FORMER = new Map();
+for (const d of DECLARATIONS) for (const old of d.formerly || []) { if (!FORMER.has(old)) FORMER.set(old, []); FORMER.get(old).push(d.id); }
+/** the id(s) a checkbox id means today: itself when it exists or is unknown, the replacement(s) when it was retired */
+export const currentIds = (id) => (BY_ID.has(id) ? [id] : (FORMER.get(id) || [id]).slice());
+/** a list of ids with every retired one replaced, in order, each id once */
+export const translateRetired = (list) => { const out = []; for (const id of list || []) for (const k of currentIds(id)) if (out.indexOf(k) < 0) out.push(k); return out; };
 
 /** the entry for a short name (`climate`) or, failing that, a checkbox id — reorganizeLayerPanel's `rowFor` */
 export const layerFor = (k) => BY_KEY.get(k) || BY_ID.get(k) || null;

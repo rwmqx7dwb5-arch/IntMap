@@ -177,7 +177,7 @@ test('R270 ⑥ the three moved rows are on exactly one shelf each, and it is the
      names. オーロラ予測 went to 宇宙・軌道 and 夜間光 to 人口・経済, and with both gone the heading
      no longer says 「夜空」 — it is 「災害・緊急」 in all nine locale files now. What survives is the
      property: none of them fell back into Beta / Others, and none is on two shelves. */
-  for (const id of ['popgrid', 'gdppc', 'tfr', 'hdi', 'dem', 'cpi', 'lifeexp', 'energy', 'aurora', 'nightsat']) {
+  for (const id of ['popgrid', 'gdppc', 'tfr', 'hdi', 'dem', 'wbcpi', 'wblife', 'energy', 'aurora', 'nightsat']) {
     const w = where(id);
     assert.equal(w.length, 1, id + ' must be on exactly one shelf');
     assert.ok(!/Others|Beta/i.test(w[0]), id + ' fell back into ' + w[0]);

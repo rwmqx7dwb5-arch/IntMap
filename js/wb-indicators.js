@@ -119,11 +119,10 @@ export const WB_INDICATORS = Object.freeze([
   {k:'hiv', code:'SH.DYN.AIDS.ZS', n:LA('HIV prevalence %','HIV有病率','HIV-Prävalenz %','Распр. ВИЧ %','Prevalencia VIH %'), unit:'%'},
   {k:'oop', code:'SH.XPD.OOPC.CH.ZS', n:LA('Out-of-pocket health %','自己負担医療費 %','Selbstzahlerquote %','Личные расходы %','Gasto de bolsillo %'), unit:'%'},
   {k:'arable', code:'AG.LND.ARBL.ZS', n:LA('Arable land %','耕地率','Ackerland %','Пашня %','Tierra cultivable %'), unit:'%'},
-  /* ── series only js/layer-packs.js's rows read.
-     cpi: the WGI moved to GOV_WGI_* ids under SOURCE 3 (the old CC.EST id returns 0 rows; curl-verified, #R22) — the
+  /* ── cpi: the WGI moved to GOV_WGI_* ids under SOURCE 3 (the old CC.EST id returns 0 rows; curl-verified, #R22) — the
      source is part of the series' address, so it is said here and every read of the series carries it. ── */
   {k:'cpi', code:'GOV_WGI_CC.SC', source:3, n:LA('Corruption (control, WGI)','汚職・腐敗指標（世界銀行WGI）','Korruptionskontrolle (WGI)','Контроль коррупции (WGI)','Control de la corrupción (WGI)'), unit:''},
-  {k:'precip', code:'AG.LND.PRCP.MM', n:LA('Annual precipitation (mm)','年降水量（mm）','Jahresniederschlag (mm)','Годовое количество осадков (мм)','Precipitación anual (mm)'), unit:' mm'}
+  {k:'precip', code:'AG.LND.PRCP.MM', n:LA('Annual precipitation (by country)','年降水量（国別平均）','Jahresniederschlag (nach Land)','Годовое количество осадков (по странам)','Precipitación anual (por país)'), unit:' mm'}
 ].map((I) => Object.freeze(I)));
 
 const BY_KEY = new Map(WB_INDICATORS.map((I) => [I.k, I]));
@@ -179,7 +178,11 @@ export function makeWorldBankReader(deps) {
   function read(o) {
     const q = o || {};
     const base = 'https://api.worldbank.org/v2/country/' + encodeURIComponent(q.country || 'all') + '/indicator/' + encodeURIComponent(q.code) + '?';
-    const parts = ['format=json', q.source ? 'source=' + q.source : '', q.date ? 'date=' + q.date : '', q.mrnev ? 'mrnev=' + q.mrnev : '',
+    /* (feature-consolidation) THE SOURCE IS PART OF THE SERIES' ADDRESS (the catalogue says so above), so a read that does
+       not name it takes the catalogue's — a reader asking for GOV_WGI_CC.SC by code alone (js/wb-layers.js wbSeries) used to
+       ask the default source and get nothing. */
+    const source = q.source || ((WB_INDICATORS.find((I) => I.code === q.code) || {}).source) || 0;
+    const parts = ['format=json', source ? 'source=' + source : '', q.date ? 'date=' + q.date : '', q.mrnev ? 'mrnev=' + q.mrnev : '',
       'per_page=' + (q.perPage || 400)].filter(Boolean);
     const u = base + parts.join('&');
     const second = base + parts.slice().reverse().join('&');

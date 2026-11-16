@@ -6,4 +6,5 @@ export default {
   key: 'ec-temp',
   share: true,
   registry: ['temp'],
+  formerly: ['dl-temp'],
 };

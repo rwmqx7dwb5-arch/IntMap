@@ -74,7 +74,7 @@ test('R233 layers: Population & economy is the seven named layers, the rest fell
      matched nothing once each shelf grew a count of the rows the reader named. */
   const shelves = byKey;
   const shelfOf = (id) => Object.keys(shelves).filter((g) => shelves[g].includes(id));
-  const SEVEN = ['cpi', 'dem', 'gdppc', 'hdi', 'lifeexp', 'popgrid', 'tfr'];
+  const SEVEN = ['wbcpi', 'dem', 'gdppc', 'hdi', 'wblife', 'popgrid', 'tfr'];   /* (feature-consolidation) corruption and life expectancy are the World Bank table's rows now */
   SEVEN.concat(['energy']).forEach((id) => {
     const w = shelfOf(id);
     assert.equal(w.length, 1, id + ' must be on exactly one shelf, not ' + w.length);

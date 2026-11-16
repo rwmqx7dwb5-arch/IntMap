@@ -51,7 +51,6 @@ import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
 import { makeLayerFavs } from './layer-favs.js';
 import { makeProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
-import { makePremiumPlan } from './premium-plan.js';
 import { STRIPE_DONATE, installSupporter, renderSupportCosts } from './supporter.js';   /* (supporter-funnel) where support goes, and when to mention it */
 import { readWorldBank, wbIndicator, wbIndicatorFor } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and its catalogue */
 import { installCapabilityKernel } from './atlas-capabilities.js';   /* (#R318) EAGER: the 124 capability descriptors, so a capability is discoverable before its module loads (§3/§10). The executor, the result shape and the state ledger are NOT — installCapabilityKernel installs IntMapOS.execute() as a thin await over an import(), because nothing needs the machinery until something actually runs. #R311's startup budget measured what mounting all of it eagerly costs a reader who never asks a question: +18.9 kB brotli. */
@@ -542,7 +541,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get elevText(){ return elevText; }, get fetchBathymetry(){ return fetchBathymetry; },
     get fetchViaProxy(){ return fetchViaProxy; }, get fmtElevVal(){ return fmtElevVal; },
     get forceHoverLayers(){ return forceHoverLayers; }, get geoLabelsOn(){ return geoLabelsOn; }, get poiOn(){ return poiOn; },
-    get imIsPro(){ return imIsPro; },
     get mapLabelsViaVector(){ return mapLabelsViaVector; }, get newsLangs(){ return newsLangs; },
     get renderCommunity(){ return renderCommunity; }, get renderReaderMode(){ return renderReaderMode; },
     get satKeys(){ return satKeys; }, get showComposeImgPreview(){ return showComposeImgPreview; },
@@ -644,11 +642,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let satPanelDismissed=true;   /* desktop floating panel: open only when the user asks for it */
   let satKeys={}; try{ satKeys=JSON.parse(localStorage.getItem('intmap_sat_keys')||'{}')||{}; }catch(_){ satKeys={}; }
   /* (#R169) moved verbatim to js/satellite.js — see Architecture.md §3.1. */
-  /* Pro entitlement: admins always count; otherwise a profiles.is_pro flag (read in refreshCurrentUser). */
-  /* (#R10) All features are free now — no Pro paywall. imIsPro() always returns true so every
-     previously-gated capability (e.g. satellite BYOK providers) is unlocked. */
-  function imIsPro(){ return true; }
-  window.imIsPro=imIsPro;
   /* (#R169) moved verbatim to js/satellite.js — see Architecture.md §3.1. */
   /* Debug aid (same spirit as window.__imap / window.refreshDatedLayer): inspect the sat engine. */
   try{ window.__sat={ providers:SAT_PROVIDERS, state:satState, keys:()=>satKeys, build:satBuildTiles, hasKey:satHasKey,
@@ -3115,9 +3108,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   dataLayers(IM_HOST);
   /* ================ END GROUP 3 ================ */
 
-  /* (#R200) moved to js/premium-plan.js — a real ES module (see the import at the top of this file), not a
-     window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makePremiumPlan(IM_HOST, { i18n, satRenderController, satRenderKeyInputs });
   /* (#R167) moved to js/news-timeline.js — see Architecture.md §3.1. */
   newsTimeline(IM_HOST);
 
@@ -4249,10 +4239,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     try{ GE().events.once('idle',()=>setTimeout(once,300)); }catch(_){}
     setTimeout(once,5000); })();
   try{ initMobileUI(); }catch(e){ console.warn('initMobileUI failed:',e); }
-  /* (#R104) Start / welcome page REMOVED per request ("スタートページはいらない") — the auto-shown first-run
-     card no longer appears. The builder (`_imWelcome`) is KEPT so nothing is deleted (still reachable if ever
-     wired to a menu), it is simply never auto-invoked on load. */
-  /* try{ setTimeout(_imWelcome,900); }catch(_){} */
   try{ IntMapLang.syncChrome(); const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; }catch(_){}   /* (#R37) the language picker shows the saved language from boot */
 };
   /* (#R180) …and the other half of the barrier. `then(boot, boot)` on purpose: a

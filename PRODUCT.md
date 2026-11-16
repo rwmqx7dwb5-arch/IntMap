@@ -372,9 +372,9 @@ Plus 月 500 円／US$4、Pro 月 1,500 円／US$10（根拠の無い数であ�
   Atlas `data.companyTies`）。
   [`docs/COMPANIES.md`](docs/COMPANIES.md)・[`docs/NEWS-EVENTS.md`](docs/NEWS-EVENTS.md) §16.4。
 - **自分のデータを地図に載せる** — ファイルを地図にドラッグするか、**Tools ▾ ▸ 分析**の「地図データの読み込み」から。
-  **GeoJSON / KML / KMZ / GPX / CSV・TSV / WKT**。拡張子ではなく中身で判定し、CSV は区切り文字・小数点コンマ・Shift_JIS などの
+  **GeoJSON / KML / KMZ / GPX / CSV・TSV / WKT / Shapefile（zip）/ GeoPackage / Excel（.xlsx）**。拡張子ではなく中身で判定し、CSV は区切り文字・小数点コンマ・Shift_JIS などの
   文字コードと緯度経度の列を中身から見つける。⚠ 根拠が無ければ推測せず、検討した列名を挙げて断り、選んだ列は取り込み後に必ず名乗る
-  （「CSV · 1,240 · 列: lat / lon」）。**Shapefile と PMTiles はまだ読めない**（zip に `.shp` があればそう名指して断る）。
+  （「CSV · 1,240 · 列: lat / lon」）。**PMTiles はまだ読めない**（何のファイルであるかを名指して断る）。形式の正本は [`docs/architecture/07-map.md`](docs/architecture/07-map.md)。
 - **データと分析（読み込んだデータを加工し、その結果をまた加工する）** — **Tools ▾ ▸ 分析**の「データと分析」。取り込んだファイルも
   分析の結果も同じ 1 つのデータセットとして並び、属性表を見て処理を重ねられる:
   属性で絞る／点・線・面の半径の圏（負の半径で内側へ削る）／切り取り／重なりの交差・差・合併／同じ値で溶かす／空間的な関係で絞る
@@ -478,8 +478,7 @@ Plus 月 500 円／US$4、Pro 月 1,500 円／US$10（根拠の無い数であ�
 - **案内 (Navigation)** — 引いた経路の上を**実際に連れて行く**。現在地を追い、曲がる場所・残り時間・残り距離・到着時刻を毎秒更新し、音声で
   言い、**道を外れたら自動で引き直し**、到着を検出する。カメラは進行方向が上（手で動かすと一時解除、ボタンで戻る）、専用の画面。
   ⚠ 位置は経路を要求するときしか端末を出ない。Atlas からも「案内開始」「あと何分？」「次の曲がり角は？」（画面と同じ状態を読む）。
-- **Playground (beta)** — Tools ▾ ▸ 分析 から。World Explorer（衛星版 GeoGuessr）／Pandemic Simulator／Statecraft（1900–2026 の国家運営）／
-  World Sandbox／Quiz。
+- **Playground (beta)** — Tools ▾ ▸ 分析 から。Satellite Drop（衛星写真から場所を当てる）／Pandemic Simulator／Quiz／Flight Simulator。
 - **Pandemic Simulator** — Tools ▾ ▸ シミュレーションの行から 1 タップで（ハブ経由でも。走行中は点灯し、もう一度押すと閉じる）。国ごとの
   **確率的 SEIR メタ個体群**で、疾患（インフルエンザ／COVID-19／SARS／エボラ／麻疹）と「未知の病原体」か「現在の世界」かを選び、地図で最初の場所を
   指す。R0・潜伏・感染期・致死率・免疫・季節性・移動量・介入・**乱数の種**まで指定でき、同じ種なら同じ流行になる。ワクチンと治療は病気ごとに実在する

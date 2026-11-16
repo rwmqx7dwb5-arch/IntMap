@@ -2,8 +2,9 @@
 export default {
   id: 'bx-wblife',
   shelf: 'lyrGrpHealth',
-  order: 110,
+  order: 10,
   key: 'wblife',
-  rest: true,
+  share: true,
   measures: ['worldbank:SP.DYN.LE00.IN'],
+  formerly: ['beta-dl-lifeexp'],
 };

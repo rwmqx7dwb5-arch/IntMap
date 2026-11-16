@@ -96,7 +96,8 @@ test('basic-display-not-layers ④ the share link: l= is layers, d= is the map d
   const ui = read('js/map-ui.js');
   assert.ok(/MapState\.own\('display',/.test(ui), 'js/map-ui.js owns the display field');
   assert.ok(/list==null\?\(\(ctx&&ctx\.state&&ctx\.state\.layers\)/.test(ui), 'a link with no `d=` is read from its `l=`');
-  assert.ok(/const want=\(list\|\|\[\]\)\.filter\(k=>!isDisplay\(k\)\)/.test(ui), 'the layers field opens layers only');
+  /* (feature-consolidation) …after a retired id is turned into the row that replaced it (js/layer-manifest.js translateRetired) */
+  assert.ok(/const want=translateRetired\(list\|\|\[\]\)\.filter\(k=>!isDisplay\(k\)\)/.test(ui), 'the layers field opens layers only');
 });
 
 /* ── ⑤ ──────────────────────────────────────────────────────────────────────────────────── */

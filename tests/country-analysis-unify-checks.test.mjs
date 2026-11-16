@@ -102,7 +102,7 @@ test('① the readers name indicators by key — the series they paint is the ca
   const { discoverSeries } = await import('../scripts/lib/indicator-series.mjs');
   const files = jsTree().filter((f) => !f.includes('/locales/')).map((f) => [f, codeOnly(read(f))]);
   const found = discoverSeries(files);
-  for (const [row, k] of [['wburb', 'urban'], ['wbref', 'ref'], ['wbco2', 'co2t'], ['wbco2', 'co2'], ['cpi', 'cpi'], ['lifeexp', 'life']]) {
+  for (const [row, k] of [['wburb', 'urban'], ['wbref', 'ref'], ['wbco2', 'co2t'], ['wbco2', 'co2'], ['wbcpi', 'cpi'], ['wblife', 'life'], ['wbprecip', 'precip']]) {
     const I = wbIndicator(k);
     assert.ok(found.get(row) && found.get(row).series.has('worldbank:' + (I.parts || [I.code]).join('+')), row + ' paints ' + k + "'s series, read through the catalogue");
   }

@@ -285,8 +285,6 @@ IntMapLang.define('jp', { ui: {
       sortAsc:"昇順",
       sortDesc:"降順",
       sortDir:"昇順・降順を切り替え",
-      proArchive:"過去10年のタイムトラベルアーカイブ",
-      proIntel:"露・中ローカル一次情報インテリジェンス",
       lblNavSens:'地図操作の感度',
       lblNavZoom:'ズーム',
       lblNavPan:'移動（パン）',

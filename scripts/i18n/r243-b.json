@@ -327,14 +327,6 @@
     "비교 뷰 열기",
     "開啟比較檢視"
   ],
-  "Language data not found — add data/asher_languages.geojson": [
-    "Sprachdaten nicht gefunden — data/asher_languages.geojson hinzufügen",
-    "Языковые данные не найдены — добавьте data/asher_languages.geojson",
-    "No se encontraron los datos de idiomas: añada data/asher_languages.geojson",
-    "Données linguistiques introuvables — ajoutez data/asher_languages.geojson",
-    "언어 데이터를 찾을 수 없습니다 — data/asher_languages.geojson 을 추가하세요",
-    "找不到語言資料——請加入 data/asher_languages.geojson"
-  ],
   "Family: ": [
     "Sprachfamilie: ",
     "Семья: ",
@@ -342,38 +334,6 @@
     "Famille : ",
     "어족: ",
     "語系："
-  ],
-  "Intelligence (advanced)": [
-    "Aufklärung (erweitert)",
-    "Разведка (расширенно)",
-    "Inteligencia (avanzado)",
-    "Renseignement (avancé)",
-    "인텔리전스 (고급)",
-    "情報分析（進階）"
-  ],
-  "Disputed boundaries": [
-    "Umstrittene Grenzen",
-    "Спорные границы",
-    "Fronteras en disputa",
-    "Frontières contestées",
-    "분쟁 경계선",
-    "爭議邊界"
-  ],
-  "Air-defense coverage": [
-    "Luftverteidigungsabdeckung",
-    "Зоны ПВО",
-    "Cobertura de defensa aérea",
-    "Couverture de défense aérienne",
-    "방공 커버리지",
-    "防空涵蓋範圍"
-  ],
-  "World languages": [
-    "Sprachen der Welt",
-    "Языки мира",
-    "Idiomas del mundo",
-    "Langues du monde",
-    "세계의 언어 분포",
-    "世界語言分布"
   ],
   "Send feedback": [
     "Feedback senden",

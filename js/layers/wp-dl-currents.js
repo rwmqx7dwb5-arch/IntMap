@@ -5,4 +5,5 @@ export default {
   order: 30,
   key: 'currents',
   share: true,
+  formerly: ['dl-oceancur'],
 };

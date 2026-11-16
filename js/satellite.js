@@ -19,8 +19,8 @@ export function satellite(HOST){
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const saveSatKeys=()=>{ try{ localStorage.setItem('intmap_sat_keys',JSON.stringify(HOST.satKeys)); }catch(_){} };
   const satProviderById=(id)=>HOST.SAT_PROVIDERS.find(p=>p.id===id);
-  /* BYOK/paid satellite providers require Pro AND a saved key; free providers are always usable. */
-  const satHasKey=(p)=>p.tier==='free' || (HOST.imIsPro() && !!(HOST.satKeys[p.keyName]&&String(HOST.satKeys[p.keyName]).trim()));
+  /* BYOK satellite providers (tier 'pro') need the reader's own saved key; free providers are always usable. */
+  const satHasKey=(p)=>p.tier==='free' || !!(HOST.satKeys[p.keyName]&&String(HOST.satKeys[p.keyName]).trim());
   const satMaxDay=()=>new Date().toISOString().slice(0,10);
   /* (#R246) the provider names are tuples held as data — see IntMapLang.pickArgs(). ⚠ BUILT ON FIRST
      USE, not at factory level: tests/engine-app-shell-split-checks.test.mjs (#R169) #4 requires a factory body to DECLARE and never to run. */
@@ -158,19 +158,13 @@ export function satellite(HOST){
     const cb=panel.querySelector('#ai-satchange-btn'); if(cb){ cb.classList.toggle('ai-needs-key',!HOST.aiVisionReady()); cb.title=HOST.aiVisionReady()?'':(HOST.aiReady()?HOST.t('aiNoVision'):HOST.t('aiNoKey')); cb.onclick=aiSatChangeDetect; }
     const cl=panel.querySelector('#satc-close'); if(cl) cl.onclick=()=>{ HOST.satPanelDismissed=true; panel.style.display='none'; };
   }
-  /* Settings-modal API-key management (Pro / BYOK providers). */
+  /* Settings-modal API-key management (BYOK providers). */
   function satRenderKeyInputs(){
     const wrap=document.getElementById('sat-keys-list'); if(!wrap) return;
     /* ⚠ (#R466) wired HERE, not at factory level: this file's factory only ever DECLARES
        (tests/engine-app-shell-split-checks.test.mjs (#R169) #4 — that is what makes calling it early safe), and the first paint is also the
        first moment there is anything for a relabel to rewrite. */
     if(!satRenderKeyInputs._lang){ satRenderKeyInputs._lang=1; try{ window.addEventListener('intmap-lang',satRelabelKeyInputs); }catch(_){} }
-    /* Only Pro users may register their own (paid) satellite imagery providers. */
-    if(!HOST.imIsPro()){
-      wrap.innerHTML=`<div style="font-size:12.5px;color:var(--text-muted);line-height:1.55;padding:4px 0;">${(icon('lock')+' '+IntMapLang.t(HOST.lang,'Only <b>Pro</b> users can add their own satellite imagery services (API integrations).','独自の衛星画像サービス（API連携）を追加できるのは <b>Pro</b> ユーザーのみです。','Nur <b>Pro</b>-Nutzer können eigene Satellitenbild-Dienste (API-Integrationen) hinzufügen.','Только пользователи <b>Pro</b> могут добавлять собственные сервисы спутниковых снимков (API).','Solo los usuarios <b>Pro</b> pueden añadir sus propios servicios de imágenes satelitales (API).'))}<br><button type="button" id="sat-keys-upgrade" style="margin-top:8px;background:linear-gradient(135deg,#ffe08a,#e9b949);color:#7a5a00;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">${IntMapLang.t(HOST.lang,'See IntMap Pro','IntMap Pro を見る','IntMap Pro ansehen','Смотреть IntMap Pro','Ver IntMap Pro')}</button></div>`;
-      const up=wrap.querySelector('#sat-keys-upgrade'); if(up) up.onclick=()=>{ try{ if(typeof window.openProModal==='function') window.openProModal(); }catch(_){} };
-      return;
-    }
     wrap.innerHTML=HOST.SAT_PROVIDERS.filter(p=>p.tier==='pro').map(p=>{
       const v=HOST.satKeys[p.keyName]||'', on=!!String(v).trim();
       const nm=(p.keyLabel&&LS().arr(p.keyLabel))||LS().arr(p.name);
@@ -182,12 +176,11 @@ export function satellite(HOST){
   /* ══ (#R466) THE LANGUAGE CAN CHANGE WHILE THIS LIST IS ON SCREEN ═════════════════════════════
      satRenderKeyInputs() runs when Settings opens, and the language <select> is in that same dialog,
      so the provider names and the ●/○ status words kept the language the dialog was opened in.
-     ⚠ RELABEL, DO NOT RE-RENDER, on the Pro path: the rebuild writes `value=` from the SAVED keys
+     ⚠ RELABEL, DO NOT RE-RENDER, on this path: the rebuild writes `value=` from the SAVED keys
      (satSaveKeyInputs is the Apply step), so re-running it would wipe a key that had been typed and
-     not yet applied. The locked (non-Pro) panel has no input in it, so it is simply rebuilt. */
+     not yet applied. */
   function satRelabelKeyInputs(){
     const wrap=document.getElementById('sat-keys-list'); if(!wrap) return;
-    if(!HOST.imIsPro()){ satRenderKeyInputs(); return; }
     wrap.querySelectorAll('.sat-key-row').forEach(row=>{
       const inp=row.querySelector('.sat-key-input'); if(!inp) return;
       const p=HOST.SAT_PROVIDERS.find(x=>x.keyName===inp.getAttribute('data-keyname')); if(!p) return;

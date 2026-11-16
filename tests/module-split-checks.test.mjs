@@ -261,7 +261,7 @@ test('R167 #8 index.html shrank and no moved block came back inline', () => {
     assert.ok(!new RegExp(`window\\.${g}\\s*=\\s*\\(function`).test(html),
       `${g} must not be defined inline in index.html again`);
   }
-  for (const f of ['legalPrivacyHTML', 'legalTermsHTML', '_imDiag', '_imWelcome', '_imStartDemo', 'initMobileUI'])
+  for (const f of ['legalPrivacyHTML', 'legalTermsHTML', '_imDiag', '_imStartDemo', 'initMobileUI'])
     assert.ok(!new RegExp(`\\n  function ${f}\\s*\\(`).test(html),
       `${f} must not be declared inline in index.html again`);
   assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(html), 'the stylesheet stays in css/intmap.css');

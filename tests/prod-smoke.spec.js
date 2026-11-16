@@ -71,7 +71,7 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapCompare', 'IntMapRouting',
   'IntMapTables',         // js/tables.js
   'RunwaySearch',         // js/map-extras.js
   'IntMapCache',          // js/dash-extended.js
-  '_imWelcome',           // js/onboarding.js
+  '_imStartDemo',         // js/onboarding.js
   // (#R171) the two files written straight into js/ as new features rather than split out of
   // index.html. Same rule, same reason: without a global named here, a file that failed to deploy
   // leaves the app working and one feature silently missing.

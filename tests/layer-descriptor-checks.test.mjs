@@ -89,12 +89,33 @@ function withoutAdded(text, photo) {
   out.layerGroups = out.layerGroups.map(([k, keys, n]) => [k, keys, n - added.filter((l) => l.shelf === k && !l.rest).length]);
   return JSON.stringify(out, null, 1) + '\n';
 }
+/* (feature-consolidation, 2026-11-16) THE THIRD DELIBERATE CHANGE: A MERGE. A row whose declaration says it is `formerly` an id
+   the photograph holds took that row in — the retired row is gone, and the row that took it in now says what its declaration
+   says (a fold, an order, `share`). Both are taken out of BOTH sides, discovered from the declarations' `formerly` (no list
+   here), so ① still proves that nothing ELSE moved; tests/map-layer-system-checks.test.mjs holds the merge itself. A
+   `formerly` naming an id the photograph never held (a retirement older than it) takes nothing out. */
+function withoutMerged(text, photoText) {
+  const had = new Set(JSON.parse(photoText).LAYERS.map((l) => l.id));
+  const ids = new Set();
+  for (const l of M.LAYERS) { const old = ((M.layerDeclaration(l.id) || {}).formerly || []).filter((o) => had.has(o)); if (old.length) { ids.add(l.id); old.forEach((o) => ids.add(o)); } }
+  const N = JSON.parse(text);
+  const rows = N.LAYERS.filter((l) => ids.has(l.id));
+  const gone = new Set(rows.flatMap((l) => [l.id, l.key].filter(Boolean)));
+  const names = (e) => gone.has(e) || (Array.isArray(e) && e.length === 2 && (gone.has(e[0]) || gone.has(e[1])))
+    || (e && typeof e === 'object' && !Array.isArray(e) && gone.has(e.id))
+    || (typeof e === 'string' && rows.some((l) => e.indexOf('id="' + l.id + '"') >= 0));
+  const strip = (v) => (Array.isArray(v) ? v.filter((e) => !names(e)).map(strip)
+    : (v && typeof v === 'object') ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, strip(x)])) : v);
+  const out = strip(N);
+  out.layerGroups = out.layerGroups.map(([k, keys, n]) => [k, keys, n - rows.filter((l) => l.shelf === k && !l.rest).length]);
+  return JSON.stringify(out, null, 1) + '\n';
+}
 test('layer-descriptor ① the derived Layers list is byte-for-byte the list the hand-kept manifest handed its readers', () => {
-  const now = withoutAdded(layerDerivedText(M), read('tests/fixtures/layer-descriptor-before.json'));
+  const now = withoutMerged(withoutAdded(layerDerivedText(M), read('tests/fixtures/layer-descriptor-before.json')), read('tests/fixtures/layer-descriptor-before.json'));
   const photo = read('tests/fixtures/layer-descriptor-before.json');
   assert.ok(photo.length > 50000, 'the photograph is there');
   assert.equal(JSON.stringify(JSON.parse(photo), null, 1) + '\n', photo, 'the photograph re-serialises to itself (so the amendment below changes only what it says)');
-  const before = amendPhotograph(photo);
+  const before = withoutMerged(amendPhotograph(photo), photo);
   assert.equal(now, before, 'a reader of js/layer-manifest.js would receive different bytes');
   /* and the file holds no list of its own any more — one source */
   /* …and the manifest writes no row by hand: outside its GENERATED LAYERS region there is none, and the region is

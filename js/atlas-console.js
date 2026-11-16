@@ -1111,7 +1111,7 @@ export function atlasConsole(HOST){
       'population':'dl-pop','population density':'dl-pop','人口':'dl-pop','人口密度':'dl-pop','bevölkerung':'dl-pop','население':'dl-pop','población':'dl-pop',
       'gdp':'dl-gdppc','gdp per capita':'dl-gdppc','一人当たりgdp':'dl-gdppc',
       'hdi':'dl-hdi','human development':'dl-hdi','fertility':'dl-tfr','fertility rate':'dl-tfr','出生率':'dl-tfr','democracy':'dl-dem','democracy index':'dl-dem','民主主義':'dl-dem',
-      'forest':'bx-wbforest','life expectancy':'beta-dl-lifeexp','unemployment':'beta-dl-unemp','internet':'beta-dl-internet',
+      'forest':'bx-wbforest','life expectancy':'bx-wblife','unemployment':'bx-wbunemp','internet':'bx-wbnet','corruption':'bx-wbcpi',
       'earthquake':'bx-eq','earthquakes':'bx-eq','地震':'bx-eq','quakes':'bx-eq','seismic':'bx-eq',
       'thermal':'dl-thermal','fires':'dl-thermal','wildfires':'dl-thermal','fire':'dl-thermal','火災':'dl-thermal','山火事':'dl-thermal',
       'aurora':'l9-dl-aurora','northern lights':'l9-dl-aurora','オーロラ':'l9-dl-aurora',

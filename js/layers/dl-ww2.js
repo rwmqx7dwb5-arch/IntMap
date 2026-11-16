@@ -6,4 +6,5 @@ export default {
   key: 'ww2',
   share: true,
   lazy: ['warLayer'],
+  formerly: ['dl-wars'],
 };
