@@ -9,8 +9,8 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 13826290,
-    "gzip": 4627743,
+    "raw": 13899932,
+    "gzip": 4656661,
     "chunks": {
       "account-data": 7346,
       "aircraft-detail": 17009,
@@ -106,7 +106,7 @@
       "photo-geo": 77742,
       "photo-geo-exif": 4683,
       "place-dossier": 56059,
-      "place-history": 20092,
+      "place-history": 22332,
       "place-watch": 24826,
       "plane-glyph": 867,
       "playground": 99012,
@@ -154,7 +154,7 @@
       "volcano-intel": 109275,
       "volcano-layers": 14776,
       "volume3d": 16337,
-      "war-layer": 34339,
+      "war-layer": 36946,
       "waves": 34761,
       "weekly-earth": 6332,
       "whats-new": 7953,

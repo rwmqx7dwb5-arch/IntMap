@@ -240,7 +240,7 @@ export default [
       const pt = got.pt;
       /* the record and its drawing live in js/place-history.js, fetched on first use (the card fetches the same module) */
       const PH = await import('./place-history.js');
-      try { if (!document.getElementById('im-place-history-css')) { const st = document.createElement('style'); st.id = 'im-place-history-css'; st.textContent = PH.PLACE_HISTORY_CSS; document.head.appendChild(st); } } catch (_) { /* no document */ }
+      PH.ensureHistoryCss();
       let lang = 'en'; try { lang = HOST.lang || 'en'; } catch (_) { lang = 'en'; }
       const rec = await PH.placeHistory(pt);
       const exec = { placeHistory: PH.forAtlas(rec) };

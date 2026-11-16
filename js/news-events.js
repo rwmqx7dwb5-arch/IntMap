@@ -271,6 +271,17 @@ export function newsEvents(HOST) {
     const analysis = {
       subjectLoc, subjectName: row.rep_place_name_en || '',
       subjectType: (rep && rep.subject_type) || '',
+      /* (news-with-history) WHAT KIND OF PLACE THE EVENT'S OWN POINT IS. The point (`rep_*`) is the place the server chose
+         among the members' places (the server's ingest grouping, keyed by the member's `subject_name_en`), and
+         it need not be the representative ARTICLE's subject: measured 2026-11-16 on 200 live events, «Sydney Airport»,
+         «Amman» and «Kyiv» sat on events whose representative article was typed `country`. So the kind is the one the
+         members that name THIS place give it — and when they disagree, or none names it (an operator moved the point),
+         it is not stated (''), never borrowed. */
+      placeKind: (() => {
+        const want = row.rep_place_name_en || '';
+        const kinds = new Set(links.filter((a) => want && a.subject_name_en === want).map((a) => a.subject_type || ''));
+        return kinds.size === 1 ? [...kinds][0] : '';
+      })(),
       /* ⚠ (#R416) `short` (the map band's text) is NOT set here any more. It used to be `''`, and
          because the band layer reads exactly that field, every event pin drew an empty white pill
          (measured: 46 of 46 on screen). The rule now lives in js/map-typography.js `bandText()` and
@@ -792,6 +803,15 @@ export function newsEvents(HOST) {
     }
     html += '</div>';
 
+    /* ── (news-with-history) この土地の過去 ── 出来事の地点を、IntMap の歴史の記録（治めた政体・記録上の戦争・国政選挙）に
+       照らす。中身は js/event-past.js（押されたときに取りに行く）。⚠ ボタンだけを置く——カードを開くだけでは何も読まない
+       （利用者の決定: 起動とカードの重さを増やさない）。地点の無い出来事には土地が無いので節を出さない（下の「組み立て方」が
+       地点が無いことを述べる）。 */
+    if (item.analysis && Array.isArray(item.analysis.subjectLoc)) {
+      html += '<div class="ev-d-sec ev-past" id="ev-past"><h3>' + S(L('This place’s past', 'この土地の過去')) + '</h3>' +
+        '<button type="button" class="ev-story" id="ev-past-go">' + S(L('Show who held this ground, the recorded wars that reached it and its national elections', 'この土地を治めた政体・及んだ記録上の戦争・国政選挙を表示')) + '</button></div>';
+    }
+
     /* ── なぜこの塊なのか ── 自動化が間違った理由を隠さない（§11 の規律を読み手にも）。 */
     html += '<div class="ev-d-sec ev-why"><h3>' +
       S(L('How this event was assembled', 'この出来事の組み立て方', 'Wie dieses Ereignis entstand', 'Как собрано это событие', 'Cómo se construyó este suceso')) + '</h3><ul>';
@@ -844,6 +864,15 @@ export function newsEvents(HOST) {
     if (b) b.onclick = () => { selected = null; try { HOST.closeReaderPane(); } catch (_) { } };
     const sb = document.getElementById('ev-story');
     if (sb) sb.onclick = () => { try { window.IntMapNewsIntel.story({ text: ev.title, from: ev.publicId }); } catch (_) { } };
+    const pg = document.getElementById('ev-past-go');
+    if (pg) pg.onclick = () => {
+      const sec = document.getElementById('ev-past'); if (!sec) return;
+      const body = document.createElement('div'); body.className = 'ev-past-body';
+      pg.replaceWith(body);
+      import('./event-past.js').then((m) => m.mount(body, item, HOST)).catch(() => {
+        body.textContent = L('The history of this place could not be loaded.', 'この土地の過去を読み込めませんでした。');
+      });
+    };
     /* 詳細を開いたら、その出来事の場所へ寄る（カードのクリックと同じ約束）。 */
     try { if (item.analysis && item.analysis.loc) IntMapGeoEngine.camera.flyTo({ center: item.analysis.loc, zoom: 4, speed: 1.0 }); } catch (_) { }
   }
@@ -918,6 +947,19 @@ export function newsEvents(HOST) {
     return true;
   }
 
+  /* (news-with-history) the ITEM of one event by its public id — the loaded list first, else that one row from the
+     store, made by the same `toItem` — what Atlas's news.eventPast reads the event's place from */
+  async function itemByPublicId(pid) {
+    if (!pid) return null;
+    const it = items.find((x) => x && x._event && x._event.publicId === pid);
+    if (it) return it;
+    const { data, error } = await HOST.DB.from('news_events').select(EVENT_COLS + ',' + MEMBER_COLS).eq('public_id', pid).limit(1);
+    if (error) throw error;
+    if (!data || !data[0]) return null;
+    try { await loadSources(); await ensureSourcesFor(data); } catch (_) { /* 古い表のままで組む */ }
+    return toItem(data[0]);
+  }
+
   function openByPublicId(pid) {
     if (!pid) return false;
     const it = items.find((x) => x && x._event && x._event.publicId === pid);
@@ -953,7 +995,7 @@ export function newsEvents(HOST) {
   try { window.addEventListener('intmap-lang', relabelChips); } catch (_) { }
 
   const API = {
-    load, loaded, state, events, passes, renderChips, hideChips, decorate, openDetail, openByPublicId, openRow,
+    load, loaded, state, events, passes, renderChips, hideChips, decorate, openDetail, openByPublicId, openRow, itemByPublicId,
     columns: () => EVENT_COLS + ',' + MEMBER_COLS,
     /* (news-intelligence) the ingest summary and its verdict — Atlas's news.health reads these */
     health: () => askHealth().then(() => Object.assign({ summary: healthErr ? null : health, error: healthErr }, healthVerdict())),

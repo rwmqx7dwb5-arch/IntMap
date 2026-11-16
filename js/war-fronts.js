@@ -182,6 +182,9 @@ export function warFronts(HOST) {
     isPlaying: (id) => !!(body && body.isPlaying(id)),
     wars: () => (body ? body.wars() : []),
     kinds: () => (body ? body.kinds() : {}),
+    /* (news-with-history) which recorded wars reached a point (or a country) — js/war-layer.js `atPoint`, fetched by this
+       call like the layer itself: a news event's «This place's past» and Atlas ask here */
+    atPoint: (lng, lat, opts) => need().then((b) => (b && typeof b.atPoint === 'function' ? b.atPoint(lng, lat, opts) : { status: 'unavailable', reason: 'war-layer-not-loaded' })),
     _build: (id, d) => (body ? body._build(id, d) : null),
   };
   return window.IntMapWarFronts;
