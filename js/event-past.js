@@ -107,7 +107,7 @@ export function pastHtml(rec, lang, opts) {
   else if (Wr.status === 'unavailable') h.push('<div class="hn-why">' + esc(L('The war records could not be read (' + Wr.reason + ').', '戦争の記録を読み込めませんでした（' + Wr.reason + '）。')) + '</div>');
   else if (Wr.status === 'none') h.push('<div class="hn-why">' + esc(P.level === 'point' ? L('No border record names a country at this point, so no war record can be asked.', 'この地点に国を描く国境の記録が無いため、戦争の記録に問えません。') : L('No border record names a country at the event’s representative point, so no war record can be asked.', 'この出来事の代表点に国を描く国境の記録が無いため、戦争の記録に問えません。')) + '</div>');
   else {
-    if (Wr.level === 'country' && Wr.country) h.push('<div class="ep-note">' + esc(L('Country: ' + Wr.country.name + ' (CShapes, Gleditsch–Ward code ' + Wr.country.gw + '). The side is the one the war record gives that code — front lines inside the country are not applied.', '国: ' + Wr.country.name + '（CShapes・Gleditsch–Ward コード ' + Wr.country.gw + '）。陣営は戦争の記録がそのコードに与えるもので、国内の前線による分割は含めていません。')) + '</div>');
+    if (Wr.level === 'country' && Wr.country) h.push('<div class="ep-note">' + esc(L('Country: ' + Wr.country.name + ' (CShapes, Gleditsch–Ward code ' + Wr.country.gw + '). Each war is asked of this country’s present land: every state whose borders held part of it during the war is listed with its share of that land and the side the war record gives it — front lines inside are not applied.', '国: ' + Wr.country.name + '（CShapes・Gleditsch–Ward コード ' + Wr.country.gw + '）。戦争ごとに、この国の今の国土に問います: 戦争中にその一部を国境に含んでいた国を、国土に占める割合と、戦争の記録がその国に与える陣営とともに挙げます。国内の前線による分割は含めていません。')) + '</div>');
     const reached = Wr.wars.filter((w) => w.involved), silent = Wr.wars.filter((w) => !w.involved);
     reached.forEach((w) => {
       const wi = Wr.wars.indexOf(w);
@@ -119,8 +119,14 @@ export function pastHtml(rec, lang, opts) {
         : L('The record does not put this ground’s state on a side; it is here only because of the dated events below.', '記録はこの土地の国をどの陣営にも置いていない。ここに出るのは下の日付つきの出来事があるためだけ。')) + '</div>');
       w.periods.forEach((p) => {
         const side = p.faction === 'NEUTRAL' ? L('on no side in the record', '記録上どの陣営でもない') : pickName(p.side) || p.faction;
-        h.push('<div class="ep-per"><i style="background:' + esc(p.faction === 'NEUTRAL' ? 'rgba(128,128,128,0.45)' : (p.col || '#888')) + '"></i><span class="ep-when">' + esc(p.from + ' – ' + p.to) + '</span> <b>' + esc(side) + '</b> <span class="ep-src">' + esc(p.state + ' · gw ' + p.gw) + '</span></div>');
+        /* (news-past-fixes) a state that is not the one holding this ground now is its predecessor's record, said on the row */
+        const whose = p.state + ' · gw ' + p.gw + (p.share != null && p.share < 100 ? ' · ' + L('about ' + Math.max(1, p.share) + '% of the present land', '今の国土の約 ' + Math.max(1, p.share) + '%') : '');
+        h.push('<div class="ep-per"><i style="background:' + esc(p.faction === 'NEUTRAL' ? 'rgba(128,128,128,0.45)' : (p.col || '#888')) + '"></i><span class="ep-when">' + esc(p.from + ' – ' + p.to) + '</span> <b>' + esc(side) + '</b> <span class="ep-src">' + esc(whose) + '</span>'
+          + (p.predecessor ? ' <span class="ep-pre">' + esc(L('predecessor state’s record', '前身の国の記録')) + '</span>' : '') + '</div>');
       });
+      if (w.periods.some((p) => p.predecessor)) h.push('<div class="ep-note">' + esc(P.level === 'point'
+        ? L('Rows marked «predecessor state’s record» are the war record of a state that held this ground then — not of the state that holds it now.', '「前身の国の記録」の行は、当時この土地を含んでいた国の戦争の記録で、今この土地を持つ国のものではありません。')
+        : L('Rows marked «predecessor state’s record» are the war record of a state that held part of this country’s present land then — not of this country, which did not yet hold it.', '「前身の国の記録」の行は、当時この国の今の国土の一部を含んでいた国の戦争の記録で、この国自身のものではありません（この国は当時その土地を持っていませんでした）。')) + '</div>');
       if (w.events.length) {
         const kinds = Wr.kinds || {};
         const li = w.events.map((e) => '<li><span class="ep-when">' + esc(e.d + (e.d2 && e.d2 !== e.d ? ' – ' + e.d2 : '')) + '</span> ' + esc(pickName(e.name))
@@ -128,7 +134,7 @@ export function pastHtml(rec, lang, opts) {
           + (e.wiki ? ' <a href="https://en.wikipedia.org/wiki/' + esc(encodeURIComponent(e.wiki)) + '" target="_blank" rel="noopener">' + esc(L('article', '記事')) + '</a>' : '') + '</li>').join('');
         h.push('<details class="ep-ev"><summary>' + esc(P.level === 'point'
           ? L(w.events.length + ' dated events of the record in the country this ground lay in', 'この土地が属した国で記録された日付つきの出来事 ' + w.events.length + ' 件')
-          : L(w.events.length + ' dated events of the record in this country', 'この国で記録された日付つきの出来事 ' + w.events.length + ' 件')) + '</summary><ul>' + li + '</ul></details>');
+          : L(w.events.length + ' dated events of the record on this country’s present land', 'この国の今の国土で記録された日付つきの出来事 ' + w.events.length + ' 件')) + '</summary><ul>' + li + '</ul></details>');
       }
       h.push('</div>');
     });
@@ -184,7 +190,8 @@ export function forAtlas(rec) {
   if (Wr && Wr.status === 'ok') {
     out.wars = { level: Wr.level, country: Wr.country, recordHolds: Wr.wars.length, src: Wr.src,
       involved: Wr.wars.filter((w) => w.involved).map((w) => ({ id: w.id, name: (w.name && w.name.en) || w.id, span: w.span,
-        periods: w.periods.map((p) => ({ from: p.from, to: p.to, side: p.faction === 'NEUTRAL' ? 'none in the record' : ((p.side && p.side.en) || p.faction), state: p.state, gw: p.gw })),
+        periods: w.periods.map((p) => ({ from: p.from, to: p.to, side: p.faction === 'NEUTRAL' ? 'none in the record' : ((p.side && p.side.en) || p.faction), state: p.state, gw: p.gw,
+          predecessorRecord: !!p.predecessor, shareOfPresentLandPct: p.share == null ? undefined : p.share })),
         events: w.events.map((e) => ({ d: e.d, d2: e.d2, name: (e.name && e.name.en) || '', kind: e.kind })) })),
       notInvolved: Wr.wars.filter((w) => !w.involved).map((w) => w.id) };
   } else out.wars = Wr ? { [Wr.status]: Wr.reason || true } : null;
@@ -204,6 +211,7 @@ const EVENT_PAST_CSS = [
   '.ep-go{cursor:pointer;} .ep-go:hover{background:var(--input-bg);} .ep-go:active{transform:scale(0.99);}',
   '@media (pointer:coarse){.ep-go{min-height:44px;}}',
   '.ep-when{font-size:11.5px;font-weight:400;color:var(--text-muted);font-variant-numeric:tabular-nums;}',
+  '.ep-pre{font-size:10.5px;font-weight:600;color:var(--text-muted);border:1px solid var(--glass-border);border-radius:6px;padding:0 5px;}',
   '.ep-per{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:12px;margin:2px 0;}',
   '.ep-per i,.ep-seats i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;font-style:normal;}',
   '.ep-seats{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;margin:2px 0;}',

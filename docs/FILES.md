@@ -815,7 +815,7 @@ elections.js                      各国の**国政選挙** IntMapElections（�
 election-cover.js                 境界の版ごとに「その多角形が触れる 1° の格子」——ビルドが書き、`atPoint` が読む 1 つの符号器（1 版 1 箱では日付変更線や海外領土で地球を覆った）
 war-fronts.js                     戦争の**6行**（WW1／WW2／朝鮮／ベトナム／中東／ユーゴ）IntMapWarFronts（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 war-layer.js                      戦争の層そのもの（**on-demand**・`__imWarFronts`・戦争ごとに1インスタンス／凡例に日スライダーと再生）
-                                  `atPoint`: 1 地点（または国）がどの戦争でどの陣営に・いつからいつまで置かれたかと、その国の日付つきの出来事——塗りと同じ規則
+                                  `atPoint`: 1 地点（または国——今の国土に問い、当時その土地を持った国を割合つきで・前身の国の記録と印して）がどの戦争でどの陣営に・いつからいつまで置かれたかと、日付つきの出来事——塗りと同じ規則
 war-geom.js                       戦線の線で国の輪郭を切る幾何 `WarGeom`（ビルドとブラウザが同じ1本を使う）
 industry-web.js                   産業の相関 window.IntMapIndustry
 outbreaks.js                      感染症アウトブレイク window.IntMapOutbreaks（**eager**——行と Atlas 命令が

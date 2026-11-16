@@ -7,6 +7,8 @@
  *      election anywhere (Japan) and fetch it, and the caller's election is the one the layer holds
  *   ④ the war and election headings, and Atlas's election tools, go through the layers' own rows (the box, the share link
  *      and the map agree); the button says «a party to», as the section does
+ *   ⑤ a country-level event's wars are asked of the country's present LAND, not of today's code: Ukraine's Second World War
+ *      is the USSR's record (gw 365, all of the land), marked as a predecessor state's on the card and for Atlas
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -90,4 +92,48 @@ test('④ the headings and Atlas switch the layers through their own rows; the b
   const ne = rd('js/news-events.js');
   assert.ok(!/wars that reached it|及んだ記録上の戦争/.test(ne), 'the button no longer says «reached»');
   assert.match(ne, /the recorded wars its state was a party to/);
+});
+
+/* ── ⑤ a country-level event is asked of its LAND (the user's decision, 2026-11-17: 「土地で問う」) ── */
+import { createRequire } from 'node:module';
+const CS = (() => { const prev = globalThis.window; globalThis.window = {}; try { createRequire(import.meta.url)('../data/cshapes.js'); return globalThis.window.__CSHAPES; } finally { globalThis.window = prev; } })();
+const k0 = (f) => f[2] * 10000 + f[3] * 100 + f[4], k1 = (f) => f[5] * 10000 + f[6] * 100 + f[7];
+const csPolys = (f) => f[8].map((p) => p.map((ri) => CS.rings[ri]));
+const door = { data: CS, during: async (t0, t1) => CS.feats.map((f, i) => (k0(f) <= t1 && k1(f) >= t0 ? i : -1)).filter((i) => i >= 0),
+  contains: async (x, y) => ({ rows: CS.feats.map((f, i) => (WarGeom.pointInPolys([x, y], csPolys(f)) ? [i, Object.assign(f.slice(), { 8: null })] : null)).filter(Boolean), dates: [], sheets: [] }) };
+/* ONE window for both modules: the importer leaves its globals on globalThis, so a second window would replace the first */
+const wwin = Object.assign(win, { IntMapHistBundles: { open: () => Promise.resolve(door) } });
+const wglobals = { window: wwin, document, fetch, location: { href: 'http://intmap.test/' } };
+const { warLayer } = await importModule('js/war-layer.js', { globals: wglobals, mocks: {
+  'js/geo-engine.js': { IntMapGeoEngine: anything }, 'js/chronos.js': { IntMapTime: anything }, 'js/runtime.js': { everyTick: () => 0, stopTick: () => { } } } });
+const WARS = warLayer(HOST);
+const EP = await importModule('js/event-past.js', { globals: wglobals, mocks: { 'js/place-history.js': {
+  placeHistory: async () => ({}), historyHtml: () => '', historyAction: () => null, forAtlas: () => ({}), ensureHistoryCss() { } } } });
+
+test('⑤ Ukraine, asked of its land: the Second World War is the USSR\'s record, marked as a predecessor\'s; Japan has none', async () => {
+  const ua = await WARS.atPoint(31.17, 48.38, { level: 'country' });
+  assert.equal(ua.country.gw, 369, 'the country is today\'s Ukraine');
+  const ww2 = ua.wars.find((w) => w.id === 'ww2');
+  assert.ok(ww2.involved, 'asking only gw 369 (from 1991) dropped the war; asked of the land it is there');
+  const ussr = ww2.periods.filter((p) => p.gw === 365);
+  assert.ok(ussr.length && ussr.every((p) => p.predecessor), 'the USSR\'s periods are a predecessor\'s record');
+  assert.ok(ussr.some((p) => p.faction === 'ALLIED' && p.from === '1941-06-22'), JSON.stringify(ussr));
+  /* the share is the share ON THE PERIOD'S DAY: CShapes gives Lviv to Poland until 1945-05-07, so the USSR holds most of the
+     land in 1939 and all of it from 1945-05-08 — and Poland's periods carry Poland's part */
+  assert.ok(ussr[0].share >= 60 && ussr[0].share < 100, 'most, not all, in 1939: ' + JSON.stringify(ussr.map((p) => [p.from, p.share])));
+  assert.equal(ussr.find((p) => p.from === '1945-05-08').share, 100, 'all of it after Lviv passes');
+  const poland = ww2.periods.filter((p) => p.gw === 290);
+  assert.ok(poland.length && poland.every((p) => p.predecessor && p.share > 0 && p.to <= '1945-05-08'), JSON.stringify(poland));
+  assert.ok(ww2.periods.every((p) => p.gw !== 369), 'Ukraine itself is not given a side it did not have');
+  assert.ok(ww2.events.length > 0, 'the dated events on the present land');
+  const jp = await WARS.atPoint(139.69, 35.69, { level: 'country' });
+  assert.ok(jp.wars.find((w) => w.id === 'ww2').periods.every((p) => p.gw === 740 && !p.predecessor), 'Japan is its own record');
+  /* the card and Atlas say so */
+  wwin.IntMapWarFronts = { label: () => '' };
+  const rec = { place: { level: 'country', why: 'representative-point-of-country', kind: 'country', name: 'Ukraine', at: { lng: 31.17, lat: 48.38 } }, history: { status: 'not-asked', reason: 'representative-point-of-country' }, wars: ua, elections: { status: 'none' } };
+  const html = EP.pastHtml(rec, 'jp');
+  assert.match(html, /前身の国の記録/);
+  assert.match(html, /今の国土の約 \d+%/);
+  const A = EP.forAtlas(rec).wars.involved.find((w) => w.id === 'ww2');
+  assert.ok(A.periods.some((p) => p.gw === 365 && p.predecessorRecord && p.shareOfPresentLandPct === 100));
 });
