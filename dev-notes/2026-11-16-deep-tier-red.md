@@ -47,3 +47,8 @@ newsjp: 夜間テストで見つかった欠陥を直しました。キーボー
 ## 5. 検査
 
 各 spec を `--retries=0` で 3〜5 回ずつ単独実行して緑。`check:static`・`check:engine`・`check:types`・`check:testbudget` 緑。
+
+## 6. PR の CI で落ちた 2 件
+
+- **D①（data-effect）**: 書き込みへの到達を辿る走査が、歩いている関数自身の引数とローカルだけを影として扱い、その中に入れ子になった関数（`csSide` の矢印 `part`）の引数 `load` を js/news-story.js の `load → fetchRows → rpc` に解決していた。6 つのハンドラが書き込みに「届く」と誤判定された。走査は呼び出しを囲む入れ子の関数の束縛も影として扱う（`nestedOf`）。製品は変えていない。
+- **R298 ⑩**: `?flat` の判定が `openingProjection()` の 1 か所へ移ったので、検査をその事実（URL を読むのは 1 か所・切り替えは kernel command を通る・地図はその投影で作られる）に合わせた。
