@@ -118,11 +118,11 @@ function main() {
     const ms = testTimeoutMs(readLedger().seconds);
     if (ms) argv.unshift('--test-timeout=' + ms);
   }
-  /* …AND A FILE WHOSE TESTS HAVE ENDED MUST END. The timeout ends the TEST; a timer or socket it left open keeps the
-     file's child alive, and node waits for every child — measured here with one setInterval: the test was reported
-     at 1508 ms and the run was still alive at 60 s. --test-force-exit ends each file once its tests are reported,
-     so the leaked handle costs nothing and the failure above is the whole story. */
-  if (!argv.includes('--test-force-exit')) argv.unshift('--test-force-exit');
+  /* ⚠ NOT --test-force-exit. It would also end the leaked handle's file, but it ends files on an empty event loop
+     while a test still awaits a promise that holds no handle — measured on tests/maplibre-6-migration-checks.test.mjs:
+     5 tests pass without it, 3 vanish with it («Promise resolution is still pending but the event loop has already
+     resolved»). A file kept alive by a leaked timer still holds its shard; what this changes is that the stuck test is
+     NAMED in the log within its ceiling, so the leak can be found and fixed where it is. */
   const r = spawnSync(process.execPath, ['--test', ...reporters, ...argv, ...targets],
     { stdio: 'inherit', cwd: shardSpec != null ? ROOT : undefined, env: offlineEnv(ROOT) });
   if (r.error) throw r.error;

@@ -21,7 +21,7 @@ test('checks-hang-named ① the ceiling follows the ledger: 3 × its slowest fil
   assert.ok(ms < 60 * 60 * 1000, `the ceiling ${ms} ms is not inside the 60-minute Regression job — the hang would still be cancelled unnamed`);
 });
 
-test('checks-hang-named ① a hanging test is reported by name through the shipped runner', () => {
+test('checks-hang-named ① a hanging test is reported by name through the shipped runner, within its ceiling', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'im-hang-'));
   try {
     fs.writeFileSync(path.join(dir, 'hang.test.mjs'),
@@ -29,9 +29,9 @@ test('checks-hang-named ① a hanging test is reported by name through the shipp
     const env = Object.assign({}, process.env, { IM_CHECKS_GLOB: path.join(dir, '*.test.mjs') });
     delete env.NODE_TEST_CONTEXT;
     const r = spawnSync(process.execPath, [path.join(ROOT, 'scripts/test-checks.mjs'), '--test-timeout=1500'],
-      { cwd: ROOT, encoding: 'utf8', env, timeout: 60000 });
+      { cwd: ROOT, encoding: 'utf8', env, timeout: 20000 });   /* the child may outlive its test (the timer); its log is what is read */
     const out = (r.stdout || '') + (r.stderr || '');
-    assert.notEqual(r.status, 0, 'the run of a hanging test passed');
+    assert.notEqual(r.status, 0, 'the run of a hanging test passed');   /* killed at 20 s, or failed — never 0 */
     assert.match(out, /never-ends/, 'the failure does not name the test that hung');
     const m = /never-ends \((\d+(?:\.\d+)?)ms\)/.exec(out);
     assert.ok(m && Number(m[1]) < 30000, 'the hang was not ended by the per-test timeout (' + (m && m[1]) + ' ms)');
