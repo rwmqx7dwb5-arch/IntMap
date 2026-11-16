@@ -1,6 +1,7 @@
 ---
 title: ニュースの文字の強弱・角丸・地図の吹き出しを整え、国名を 1 行の太字に、地名の縁取りを細く、比較の棒グラフに並び替えを足した
 date: 2026-11-16
+pr: 1154
 newsen: Clearer type hierarchy in news cards and event details, less rounded corners, dark map news labels beside their pins, country names as one bold line, thinner place-name outlines, and a one-button sort for the country comparison bar chart.
 newsjp: ニュースの一覧と詳細の文字に強弱を付け、角丸を弱め、地図のニュースの吹き出しを暗い色にしてピンの横に置き、地図の国名を 1 行の太字に、地名の縁取りを細くし、国の比較の棒グラフを 1 つのボタンで並び替えられるようにした。
 ---
