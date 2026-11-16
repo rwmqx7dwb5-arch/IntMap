@@ -795,6 +795,9 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   動的 import）。`coverage().known` がその日付の割合と、同じ土地の二重主張の
                                   種類別の件数（data/hist-claims.json）を返し、Atlas の `time.coverage` が読む
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
+admin-present.js                  過去の日付の地方区分が**今と同じ所**を決める純関数（`makeRegion`・`clipLines`・
+                                  `ownPieces`・`rowIsToday`・`PRESENT_EPS_KM`）。time-admin1.js（区分）と time-borders.js（国境）がそこを現在の線（と名前）で描き、
+                                  記録の線をその外へ切る（docs/MAP-LAYERS.md §7.7）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
 hist-cities.js                    時計の年の**都市名** IntMapHistCities（6474都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）

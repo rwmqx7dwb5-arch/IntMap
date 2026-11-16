@@ -233,7 +233,6 @@ function settle() {
     }
   } else { for (const id of Array.from(mine)) if (!held.has(id)) unmark(id); }
   for (const id of Array.from(held.keys())) { const cb = /** @type {any} */ (d.getElementById(id)); if (!cb || !cb.checked) { held.delete(id); unmark(id); } }
-  paintLegend(at);
 }
 let settleQueued = false;
 function settleSoon() {
@@ -246,43 +245,12 @@ function settleSoon() {
   Promise.resolve().then(run);
 }
 
-/* ══ ② THE LEGEND — one card for the instant, while something ticked is not drawn or shows another date ══ */
-let legendDismissedAt = null;
-function paintLegend(at) {
-  const d = D(); if (!d) return;
-  let el = d.getElementById('data-legend-worldtime');
-  const rows = [];
-  if (DECL) {
-    d.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach((cb) => {
-      const c = /** @type {any} */ (cb);
-      if (!c.checked || !isLayer(c.id)) return;
-      const v = verdictOf(c.id, at);
-      /* on the live clock «drawn from another date» is every series' ordinary state (Köppen's last period, a
-         survey's last year) and its own legend names the year — the card is for what is NOT drawn */
-      if (v.status === 'unstated' || (v.status === 'carried' && !at.live)) rows.push({ id: c.id, v });
-    });
-  }
-  if (!rows.length || legendDismissedAt === at.when) { if (el) el.style.display = 'none'; return; }
-  if (!el) {
-    el = d.createElement('div'); el.className = 'data-legend generic-legend'; el.id = 'data-legend-worldtime';
-    el.setAttribute('data-prints-map-time', '');   /* it names the instant (js/quest-panel.js hides what says so) */
-    (d.getElementById('map-container') || d.body).appendChild(el);
-    try { W()._wireLegendDrag && W()._wireLegendDrag(el); } catch (_) { /* not draggable */ }
-  }
-  /* built as nodes with textContent — the names and sentences are data, never markup */
-  const day = (IntMapTime && IntMapTime.iso) ? IntMapTime.iso() : '';
-  const not = rows.filter((r) => r.v.status === 'unstated'), other = rows.filter((r) => r.v.status === 'carried');
-  const node = (tag, cls, text) => { const n = d.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
-  const list = (rs) => { const ul = node('ul', 'lt-list'); rs.forEach((r) => { const li = node('li'); li.dataset.lid = r.id; li.appendChild(node('b', '', label(r.id))); li.appendChild(d.createTextNode(' — ' + pickText(r.v.message))); ul.appendChild(li); }); return ul; };
-  const close = node('button', 'layer-popup-x', '×'); close.title = tr('Close', '閉じる');
-  el.replaceChildren(close, node('h4', '', tr('The map at ' + day, day + ' の地図')));
-  if (not.length) el.append(node('div', 'lt-sec', tr('Not drawn — no source states this date', '描いていません——この日時を述べる典拠がありません')), list(not));
-  if (other.length) el.append(node('div', 'lt-sec', tr('Drawn from another date', '別の時点の記録を表示')), list(other));
-  const x = el.querySelector('.layer-popup-x');
-  if (x) /** @type {any} */ (x).onclick = () => { legendDismissedAt = at.when; el.style.display = 'none'; try { W()._tileLegends && W()._tileLegends(); } catch (_) { /* placed next frame */ } };
-  el.style.display = 'block';
-  try { W()._tileLegends && W()._tileLegends(); } catch (_) { /* placed next frame */ }
-}
+/* ══ ② (hist-modern-admin) THERE IS NO CARD ══════════════════════════════════════════════════════════════
+   A card «The map at <day> — Not drawn — no source states this date» used to open on the map at every move of the
+   clock, listing the ticked rows held back. Withdrawn at the reader's word (2026-11-16: 「年代変えたときに出てくる
+   …disclaimer うざい。いらない。」). Nothing it said is lost: each held row still carries the same sentence on its own
+   line in the layer list (`mark`), `coverage()` / `verdict()` still answer Atlas and the panels, and the layer
+   itself is still withheld for a date no source states — only the floating copy of those sentences is gone. */
 
 /* ══ ③ THE READERS' DOOR ══════════════════════════════════════════════════════════════════════ */
 const API = {

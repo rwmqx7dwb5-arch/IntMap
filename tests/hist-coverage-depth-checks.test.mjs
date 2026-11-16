@@ -20,6 +20,7 @@
  *    ⑫ zoomed in, a surveyed row's line is its publisher's outline (data/border-detail/), finer than
  *       the overview and never coarser, and the non-commercial record's detail is fragments of its own.
  * ==========================================================================*/
+import { rowIsToday } from '../js/admin-present.js';
 import { test } from 'node:test';
 import { clockStub } from './helpers/clock-stub.mjs';
 import assert from 'node:assert/strict';
@@ -144,7 +145,7 @@ test('⑤ a surveyed row carries its publisher\'s dates from the splice to the f
   /* fcAt, lifted and run against the spliced record */
   const code = codeOnly(TA);
   const fctx = vm.createContext({ _ymd: (y, m, d) => y * 10000 + m * 100 + d, cfg: { key: 'a1', gaps: HIST_ADMIN_GAPS }, SORT_PROP: '_s', sortKeyOf: () => 0, areaOf: () => 0,
-    geomOf: () => ({ type: 'Polygon', coordinates: [ring] }), nameOf: (f) => f[0] });
+    geomOf: () => ({ type: 'Polygon', coordinates: [ring] }), nameOf: (f) => f[0], rowIsToday /* (hist-modern-admin) the rule, from its owner */ });
   vm.runInContext(liftFunction(code, 'claimKeyOf') + '\nasync ' + liftFunction(code, 'fcAt'), fctx);   /* the lift starts at `function`; fcAt is declared async */
   const d = Object.assign({}, head, { feats: S.__M.d.feats, dates: main.dates });
   fctx._H = { at: async () => [0, 1, 2] };
