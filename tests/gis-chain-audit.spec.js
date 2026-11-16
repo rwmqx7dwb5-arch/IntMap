@@ -88,8 +88,10 @@ test('the four GIS chains reach their end through the shipped doors', async ({ a
 test('the population of an area: WorldPop counts become a density and integrate back to people', async ({ app }) => {
   const page = app.page;
   const fs = await import('node:fs');
-  const tif = fs.readFileSync(new URL('./fixtures/worldpop-8x8-tokyo-2020.tif', import.meta.url));
-  const svc = fs.readFileSync(new URL('./fixtures/worldpop-service.json', import.meta.url), 'utf8');
+  /* one JSON file, because *.tif is ignored repository-wide: the bytes are WorldPop's own, base64 */
+  const rec = JSON.parse(fs.readFileSync(new URL('./fixtures/worldpop-service.json', import.meta.url), 'utf8'));
+  const tif = Buffer.from(rec.exportImage8x8Tokyo2020, 'base64');
+  const svc = JSON.stringify(rec.service);
   const asked = [];
   const RE = /https:\/\/worldpop\.arcgis\.com\/.*/;
   await page.route(RE, (route) => {

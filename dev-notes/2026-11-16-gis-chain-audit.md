@@ -1,6 +1,8 @@
 ---
 title: GIS の連鎖を 4 つの内部課題として実際に通し、止まった 3 か所を構造で直す——表示していない気温は画素ごとに 1 依頼、描かれていない点レイヤーは格子扱い、プロジェクトは Atlas から届かなかった
 date: 2026-11-16
+newsen: Analyses can now count the people living in an area. A 1 km population grid from WorldPop (2000–2020) can be summed over any area you draw or compute. Atlas can also save an analysis, reopen it later, and recompute it after you change one step.
+newsjp: 分析で「その範囲に何人住んでいるか」を数えられるようになりました。WorldPop の 1 km 人口格子（2000〜2020 年）を、描いた範囲や計算で作った範囲で合計できます。Atlas は分析を保存して後から開き直し、1 段の条件を変えて計算し直すこともできます。
 ---
 
 「作れるか」ではなく「いまある実装でどこまで通るか」を測るために、取得 → 加工 → 地図 → 保存 → 条件を変えて再計算、を
