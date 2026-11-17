@@ -20,7 +20,8 @@
  *  ⑥ the compact shapes are still the same controls: the search button opens the field, and the view menu
  *    reaches all five view buttons.
  *  ⑦ AT THE WIDTHS THAT WERE NOT BROKEN NOTHING MOVED: at 1440×900 and 1280×800, right panel closed / open, light and
- *    dark, every part's rect (place AND size) equals tests/map-chrome-layout-baseline.json, measured on the build of
+ *    dark, every part's place and size equals tests/map-chrome-layout-baseline.json (what fonts cannot move: tops,
+ *    heights, right edges, the stylesheet-sized parts whole; labelled rows within a font's difference), measured on the build of
  *    the commit before this change with the same measurer (tests/helpers/map-chrome.js). The narrow shapes are
  *    allowed only where the layout used to break.
  * ==========================================================================*/
@@ -193,11 +194,30 @@ test('⑦ at 1440×900 and 1280×800 every control is exactly where, and as big 
     await page.setViewportSize({ width: w, height: h });
     await setChromeState(page, { left: 'closed', right: right === 'right-open', theme });
     const got = await measureChrome(page);
+    /* ⚠ THE BASELINE WAS MEASURED WITH ONE MACHINE'S FONTS. A row of labelled buttons is as wide as its words, and the
+       words are narrower on the CI runner than on the machine that took the baseline — MEASURED on CI: the tools row
+       368.8 px against 383.4, so the stack's left edge and the lane-centred pill moved with it while nothing in this
+       change did. So what is compared is what the font cannot move: every part's top, height and RIGHT edge (they are
+       anchored to the right), the full rect of the parts whose size is set by the stylesheet, and for the labelled rows
+       a width that stays theirs (within 6 % — a row folded into the compact shapes loses far more). The pill's left edge
+       follows the stack only where it stands in the lane, by half of the stack's shift — the lane's own rule. */
+    const FIXED = new Set(['search', 'compass', 'locate', 'chronos']);
+    const stackShift = got.stack && want.stack ? got.stack.x - want.stack.x : 0;
     for (const [part, r] of Object.entries(want)) {
       const g = got[part];
       if (!g) { off.push(`${key}: ${part} is not drawn (was ${JSON.stringify(r)})`); continue; }
-      /* one pixel: the old watcher rounded the pill's anchors to whole pixels, the grid does not */
-      for (const k of ['x', 'y', 'w', 'h']) if (Math.abs(g[k] - r[k]) > 1) off.push(`${key}: ${part}.${k} ${g[k]} — was ${r[k]}`);
+      const near = (a, b) => Math.abs(a - b) <= 1;   /* the old watcher rounded the pill's anchors to whole pixels, the grid does not */
+      if (!near(g.y, r.y)) off.push(`${key}: ${part}.y ${g.y} — was ${r.y}`);
+      if (!near(g.h, r.h)) off.push(`${key}: ${part}.h ${g.h} — was ${r.h}`);
+      if (FIXED.has(part)) {
+        if (!near(g.w, r.w)) off.push(`${key}: ${part}.w ${g.w} — was ${r.w}`);
+        const inLane = part === 'search' && want.stack && r.y > want.stack.y;
+        const wantX = r.x + (inLane ? stackShift / 2 : 0);
+        if (!near(g.x, wantX)) off.push(`${key}: ${part}.x ${g.x} — was ${r.x}${inLane ? ` (+ half the stack's font shift = ${wantX.toFixed(1)})` : ''}`);
+      } else {
+        if (!near(g.x + g.w, r.x + r.w)) off.push(`${key}: ${part} right edge ${(g.x + g.w).toFixed(1)} — was ${(r.x + r.w).toFixed(1)}`);
+        if (Math.abs(g.w - r.w) > r.w * 0.06) off.push(`${key}: ${part}.w ${g.w} — was ${r.w} (more than a font's difference)`);
+      }
     }
   }
   expect(off, `baseline from ${BASELINE.taken.commit}:\n` + off.join('\n')).toEqual([]);
