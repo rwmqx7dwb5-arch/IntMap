@@ -543,6 +543,7 @@ npm run check:perf       # judge it against tests/perf-baseline.json
 npm run perf:report      # the same measurement, printed, without judging
 node scripts/perf-budget.mjs --update    # RAISE the rows that are over, to the measurement — no other row
 node scripts/perf-budget.mjs --tighten   # LOWER every row the build fell below (what main's CI runs)
+node scripts/perf-budget.mjs --raise-own data/companies   # RAISE the deploy rows by the shipped bytes the working tree adds there (a refresh bot)
 ```
 
 **It weighs the two halves of the bundle separately, and that is the whole point.** The largest
@@ -580,6 +581,19 @@ each against its own ceiling.
   and the loosest row (in bands) with the growth it would let through. ⚠ The bound is one
   push-to-`main` cycle: a commit merged with `GITHUB_TOKEN` (this bot's, or the catalogue's) starts no
   CI run, so when the newest commit on `main` is a bot's, the next human push closes the gap.
+* **A scheduled refresh states its own growth** (companies-perf-own-bytes, 2026-11-16). Because a pull
+  request inside the band raises nothing, `main` sits up to one band above a ceiling, and a bot's next
+  byte fails — measured on the weekly company batch, which added 1.3 MB while `dist.total` was
+  7.0 MB over. A bot cannot say why with `--update`, and `--update` from a build would ratify main's
+  undecided growth too. So the job runs `--raise-own <the paths it rewrites>` before it commits: the
+  deploy rows (`DIST_ROWS`: `dist.total`/`data`/`assets`) go up by exactly the bytes those paths add
+  to what `vite.config.js` copies (`STATIC_ASSETS` less `STATIC_EXCLUDE`), counted from git, no build;
+  a shrink raises nothing. The raise is committed with the data and tabled in the commit and the pull
+  request. The pull request's own `check:perf` still judges the real build, so growth the paths do not
+  explain, and any start-up row, fails as before. `.github/workflows/companies-refresh.yml` is the user
+  (`OWNED`); `tests/companies-perf-own-bytes-checks.test.mjs` holds it. ⚠ If `perf-ceiling.yml` lowers
+  the same row while the batch waits, the branch update conflicts and the lander reports `lost`; the
+  next week's run starts again from `main`.
 
 ⚠ **A local measurement is of the tree CI measures — or it says it is not** (perf-measure-parity,
 2026-10-02). A `pull_request` run builds `refs/pull/N/merge` («Merge <head> into <main as it is now>»,

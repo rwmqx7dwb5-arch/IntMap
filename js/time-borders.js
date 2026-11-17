@@ -1639,7 +1639,7 @@ export function timeBorders(HOST){
          for: `placeFont()` tests `name:ja` ON THE FEATURE, and an era feature carries no name keys at
          all, so it would send every era label to the pan-Han face. The colours below are the literals
          `ofm-country` is born with; `applyLabelLang` now re-applies them per basemap for these two too. */
-      const _ERAFONT=(function(){ try{ return window.IntMapMapTypography.readerFont(); }catch(_){ return ['Noto Sans SC']; } })();
+      const _ERAFONT=(function(){ try{ return window.IntMapMapTypography.readerFont('bold'); }catch(_){ return ['Noto Sans SC Bold']; } })();   /* (news-type-polish) country names are bold, era and present alike */
       /* ⚠ (#R520) ONE CANDIDATE IS ONE CHANCE, AND THAT IS THE COST OF THE POINT SOURCE. Before this
          round a country had one label candidate per outer ring, so when the best one was blocked another
          island's copy was placed instead — the thicket was also, accidentally, the redundancy. MEASURED
@@ -1663,11 +1663,12 @@ export function timeBorders(HOST){
          Collision placement and the existing interior anchors still decide what fits. */
       /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire).
          Filtered to _same!=1 (see tagSame). */
-      if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-lbl-src',filter:['!=',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
+      const _LS=window.IntMapLabelScale;
+      if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-lbl-src',filter:['!=',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':_LS.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':_LS.halo(1.7)}});
       /* (#R101) UNCHANGED countries (same name as today, e.g. Japan, France) keep their normal country label style
          (matching ofm-country) rather than the era style — per request "国名が変わってない国は既存の国名ラベルのまま".
          Filtered to _same==1. Rendered from the era data so no country ever loses its label. */
-      if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-lbl-src',filter:['==',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
+      if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-lbl-src',filter:['==',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':_LS.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':_LS.halo(1.7)}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
       if(!_clickWired){ _clickWired=true;

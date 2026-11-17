@@ -2108,41 +2108,41 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function ensureMapTooltip(){ return IM_TIP.ensureMapTooltip(); }
   function positionTooltip(point){ return IM_TIP.positionTooltip(point); }
   let newsFeatures=[], dashFeatures=[];
-  /* (#R32) Is the current UI/map dark? The news band must FLIP color by theme — a dark pill is invisible on
-     the dark map ("ダークモードでは視認性が悪い"). */
-  function _newsUIDark(){ try{ return document.documentElement.getAttribute('data-theme')==='dark'; }catch(_){ return false; } }   /* (#R115) skin themes retired (R33) — dark = data-theme only */
-  /* iOS-style frosted "pill" behind news labels — generated as a stretchable sprite. Theme-aware (#R32):
-     LIGHT map → near-black pill + white text; DARK map → near-white pill + dark text, so the band is always
-     legible. A subtle 1px border defines it against same-tone backgrounds. */
+  /* (news-type-polish) THE NEWS BAND — 「現在の白い吹き出しは、周囲の黒いUIから浮いて見えます。半透明のチャコール背景、
+     白文字、細い枠、弱い影に変更。角丸を抑え…」 Until now the pill FLIPPED with the theme (#R32: near-white on
+     the dark map), which is the white balloon the reader saw floating off the dark chrome. It is now ONE
+     material in every theme — translucent charcoal, white type, a 1 px light rim, a soft shadow — the
+     same family as the dark map chrome; on a light map a charcoal pill is what #R32 already used there.
+     Radius 6 (cards 12, controls 8: the reduced-rounding scale). The sprite carries a SHADOW MARGIN `m`
+     around the pill; `content` and the stretch zones are given in pill coordinates offset by it, so the
+     renderer fits the PILL (not the shadow) to the text. */
   function ensureLabelPill(force){
     if(!GE().hasRenderer()) return;
     if(force && GE().scene.hasImage('news-pill')){ try{ GE().scene.removeImage('news-pill'); }catch(_){} }
     if(GE().scene.hasImage('news-pill')) return;
     try{
-      const dark=_newsUIDark();
-      const dpr=2, w=40, h=30, r=12;
-      const cv=document.createElement('canvas'); cv.width=w*dpr; cv.height=h*dpr;
+      const dpr=2, w=40, h=30, r=6, m=4, W=w+2*m, H=h+2*m;
+      const cv=document.createElement('canvas'); cv.width=W*dpr; cv.height=H*dpr;
       const ctx=cv.getContext('2d',{willReadFrequently:true}); ctx.scale(dpr,dpr);
       const rr=(x,y,ww,hh,rad)=>{ ctx.beginPath(); ctx.moveTo(x+rad,y); ctx.arcTo(x+ww,y,x+ww,y+hh,rad); ctx.arcTo(x+ww,y+hh,x,y+hh,rad); ctx.arcTo(x,y+hh,x,y,rad); ctx.arcTo(x,y,x+ww,y,rad); ctx.closePath(); };
-      ctx.fillStyle = dark ? 'rgba(244,244,247,0.94)' : 'rgba(18,18,20,0.82)';
-      rr(0.5,0.5,w-1,h-1,r); ctx.fill();
-      ctx.lineWidth=1; ctx.strokeStyle = dark ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.40)';
-      rr(0.5,0.5,w-1,h-1,r); ctx.stroke();
-      const data=ctx.getImageData(0,0,w*dpr,h*dpr).data;
-      GE().scene.addImage('news-pill',{width:w*dpr,height:h*dpr,data},{
-        pixelRatio:dpr, stretchX:[[r*dpr,(w-r)*dpr]], stretchY:[[r*dpr,(h-r)*dpr]], content:[8*dpr,6*dpr,(w-8)*dpr,(h-6)*dpr]
+      ctx.save(); ctx.shadowColor='rgba(0,0,0,0.35)'; ctx.shadowBlur=4; ctx.shadowOffsetY=1;
+      ctx.fillStyle='rgba(28,28,32,0.84)'; rr(m+0.5,m+0.5,w-1,h-1,r); ctx.fill(); ctx.restore();
+      ctx.lineWidth=1; ctx.strokeStyle='rgba(255,255,255,0.16)';
+      rr(m+0.5,m+0.5,w-1,h-1,r); ctx.stroke();
+      const data=ctx.getImageData(0,0,W*dpr,H*dpr).data;
+      GE().scene.addImage('news-pill',{width:W*dpr,height:H*dpr,data},{
+        pixelRatio:dpr, stretchX:[[(m+r)*dpr,(m+w-r)*dpr]], stretchY:[[(m+r)*dpr,(m+h-r)*dpr]], content:[m*dpr,m*dpr,(m+w)*dpr,(m+h)*dpr]   /* the whole pill: BAND.padX/padY (js/map-typography.js) are its only padding */
       });
     }catch(_){}
   }
-  /* (#R32) Re-skin the news band when the theme flips (called from applyTheme). Regenerates the sprite and
-     flips the text + halo colors so the band stays readable in every theme. */
+  /* (#R32) re-skin when the theme flips — the material no longer changes with it, but the sprite is
+     rebuilt (a style reload drops images) and the text colours are re-asserted: white, no halo (the
+     charcoal behind the type IS its contrast; a dark halo on charcoal only thickened the letters). */
   function refreshNewsPill(){ try{ if(!GE().hasRenderer()) return; ensureLabelPill(true);
-      const dark=_newsUIDark();
-      /* (#R161) news band theming through the engine (Phase-3 subsystem migration) */
       const _GEp=IntMapGeoEngine;
       if(_GEp&&_GEp.layers.has('news-labels')){
-        _GEp.layers.setPaint('news-labels','text-color', dark?'#15151a':'#ffffff');
-        _GEp.layers.setPaint('news-labels','text-halo-color', dark?'rgba(255,255,255,0.55)':'rgba(0,0,0,0.55)');
+        _GEp.layers.setPaint('news-labels','text-color','#ffffff');
+        _GEp.layers.setPaint('news-labels','text-halo-width',0);
       }
     }catch(_){} }
   window.refreshNewsPill=refreshNewsPill;
