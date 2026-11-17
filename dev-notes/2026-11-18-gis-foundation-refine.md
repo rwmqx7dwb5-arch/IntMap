@@ -1,6 +1,7 @@
 ---
 title: GIS 基盤を実行して測り直す——極を含むバッファ・境界上の点・日付変更線の格子の欠陥を根本で直し、重心・内点・凸包・簡略化・等面積格子・分布の統計・KML/GPX 書き出しを足す
 date: 2026-11-18
+pr: 1183
 newsen: Analysis gained centroids, convex hulls, simplification, equal-area square and hexagon grids for hexbin maps, and zone medians, percentiles and modes. Results export to KML and GPX, also via Atlas. Buffers near the poles are now correct.
 newsjp: 分析に、重心・凸包・簡略化・面積の等しい正方形と六角形の格子（六角形の集計地図）・区域ごとの中央値・分位・最頻値が加わりました。結果は KML・GPX でも保存でき、Atlas にも頼めます。極の近くのバッファも正しくなりました。
 ---
