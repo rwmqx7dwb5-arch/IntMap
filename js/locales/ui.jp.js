@@ -43,6 +43,7 @@ IntMapLang.define('jp', { ui: {
       ttlMapLayers:"地図とレイヤー",
       ttlMapOptions:"地図の設定",
       ttlMapTools:"地図ツール",
+      ttlMapView:"地図の表示",
       ttlMeasureDA:"距離・面積を測る",
       ttlMyLocation:"現在地",
       ttlObjects:"オブジェクト",

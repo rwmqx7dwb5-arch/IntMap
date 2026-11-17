@@ -693,7 +693,9 @@ export function newsTimeline(HOST){
         if(r.left<prev.right||r.right>last.left){ ms[i].classList.add('thin'); continue; }
         prev=r; }
     }catch(_){} }); }
-    window.addEventListener('resize',()=>thinPeek());
+    /* (map-chrome-layout) the rail's width is the map frame's now (css `.map-frame`), and a side panel opening changes it
+       without resizing the window — so the signal is the rail's own box, not the window's */
+    try{ if(peek && typeof ResizeObserver==='function') new ResizeObserver(()=>thinPeek()).observe(peek); else window.addEventListener('resize',()=>thinPeek()); }catch(_){ window.addEventListener('resize',()=>thinPeek()); }
     /* ══ ⚠⚠⚠ (#R337) THE TIME TAB HAD FIVE NUMBERS, NOT A SCALE ═══════════════════════════════
        「ChronosのTimeのタイムスライダーは、目盛りを付けるように。」 What stood under the Time slider
        was `.ntl-scale` — five labels in a flex row spaced by `justify-content:space-between`, with

@@ -92,16 +92,17 @@ test('R160 (B5) the RIGHT sidebar no longer pushes the map; right HUD slides to 
   gone('body.lsr-open .map-container{margin-right', 'the desktop margin-right push is gone (both desktop + mobile variants)');
   gone("mc.style.marginRight=isMob()?'':'var(--lsr-w)'", 'open() no longer pushes the map via inline margin');
   ok('if(mc&&mc.style.marginRight) mc.style.marginRight=', 'open() clears any stale inline margin instead');
-  // right-anchored HUD slides left by the panel width while the panel is open
-  ok('body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + 10px); }', 'top-right controls clear the open right panel');
-  /* ⚠ (#R504) THE OFFSET IN EACH RULE IS THAT ELEMENT'S OWN CORNER INSET, PLUS THE PANEL. The two
-     numbers below differ because the two elements sit at different distances from the edge —
-     .map-controls-top at 10 px, Chronos at 6 px since the coord readout was tucked in to meet it —
-     and what this test is about is that each one CLEARS the panel, not that they agree. Reading the
-     inset from the element's own rule is what keeps that true when either corner moves again. */
-  ok('body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 6px); }', 'the news timeline clears the open right panel');
+  /* the floating controls clear the open right panel — (map-chrome-layout) not one rule per control any more:
+     they all sit in .map-frame, whose right edge is the panel's while it is open. Whether anything actually ends
+     up under the panel is measured with elementFromPoint by tests/map-chrome-layout.spec.js. */
+  ok('body.lsr-open:not(.ws-mode) .map-frame{ right:var(--lsr-w); }', 'the map frame ends where the open right panel begins');
+  gone('body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(', 'no control dodges the panel on its own');
+  gone('body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(', 'Chronos does not dodge the panel on its own either');
   // the LEFT sidebar is beside the map in solid mode, so its HUD shift stays FROSTED-only (reverted the generalisation)
-  ok('body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 12px); }', 'coord readout shift is frosted-only again');
+  /* (map-chrome-layout) the readout sits in .map-frame's bottom row, so it clears the frosted panel because the FRAME does —
+     and only in frosted mode, because only there does the frame lose the panel's width */
+  ok('body.sidebar-glass:not(.ws-mode) .operation-room:has(> .sidebar:not(.collapsed)) .map-frame{ left:var(--sidebar-w); }', 'the frame clears the frosted left panel only');
+  gone('body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 12px); }', 'the readout does not dodge the panel on its own');
   gone('body:not(.ws-mode) .coord-readout{ left:calc(var(--sidebar-w) + 12px); }', 'left HUD is NOT shifted in solid (beside) mode');
 });
 

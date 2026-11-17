@@ -416,161 +416,175 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
 
   <div class="map-column"><div class="map-container" id="map-container">
     <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Toggle Sidebar" data-i18n-title="ttlToggleSidebar"><span class="chev"></span></button>
-    <div class="map-search" id="map-search">
-      <input id="ms-input" type="text" placeholder="Search any place on Earth..." data-i18n-ph="msPh">
-      <!-- (#R231) 「地名検索ボタンの🔍絵文字は、絵文字ではなく独自のシンプルなアイコンに置換して。」
-           The word is what DESKTOP shows and it stays exactly as it was — `data-i18n` simply moved onto
-           the span that holds it, because a `data-i18n` on the BUTTON writes textContent and would wipe
-           the sibling <svg> on the first language pass. The mark below is the app's own: a 6.6 r ring and
-           one 3.7-long handle at 45°, drawn with the same 2 px round-cap stroke as every other icon in
-           this chrome (the compass, the locate arrow, the map/tools FABs) — so it is OUR line weight and
-           OUR colour (currentColor) instead of a vendor-drawn colour emoji that ignored both. -->
-      <button id="ms-btn" title="Search" data-i18n-title="searchBtn"><span class="ms-btn-t" data-i18n="searchBtn">Search</span><svg class="ms-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m15.7 15.7 4.1 4.1"/></svg></button>
-      <div class="map-search-results" id="ms-results"></div>
-    </div>
-    <div class="map-controls-top">
-      <!-- (#R480) 基図と投影法は同じ行。⚠ ピルは2つのまま（1つにすると選択チップが2つ並ぶ）— 理由は css `.map-view-row` と DEV-NOTES #R480 -->
-      <div class="map-view-row">
-        <div class="map-view-group">
-          <!-- (#R207) Satellite is the default basemap now (js/app-body.js `currentMapType`), so the
-               pressed state starts here — otherwise the segmented control reads "Map" over a satellite
-               picture for as long as the style takes to load. -->
-          <button class="view-btn" id="btn-view-map" data-i18n="viewMap">Map</button>
-          <button class="view-btn active" id="btn-view-sat" data-i18n="viewSat">Satellite</button>
-        </div>
-        <div class="map-view-group">
-          <button class="view-btn" id="btn-view-flat" data-i18n="flat">Flat</button>
-          <button class="view-btn active" id="btn-view-globe" data-i18n="globe">Globe</button>
-          <button class="view-btn" id="btn-view-3d" title="3D terrain" data-i18n-title="ttl3dTerrain"><span data-icon="mountain"></span> <span data-i18n="threeD">3D</span></button>
-        </div>
-      </div>
-      <div class="map-view-group" id="map-tools-group">
-        <button class="view-btn" id="btn-tool-grid" title="Grid + Labels" data-i18n-title="ttlGridLabels" style="display:none;"><span data-icon="world"></span> <span data-i18n="gridBtn">Grid</span></button>
-        <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
-             toolbar. Shown only when >=1 map object exists (same visibility as the old FAB); wired + counted by
-             IntMapObjects.tickFab. On mobile the toolbar is hidden, so the FAB stays.
-             (#R217) 「オブジェクト一覧は、MeasureとShareの間ではなく、Measureの左に出るように。（デスクトップ版）」 —
-             it sat between the Measure menu and the Share menu; it belongs to the LEFT of Measure. Markup order is
-             the whole change: .map-view-group is a plain flex row with no first/last-child styling, and the panel
-             follows the button on its own (IntMapObjects._placePanel anchors under #btn-tool-objects' own rect). -->
-        <button class="view-btn" id="btn-tool-objects" title="Objects" data-i18n-title="ttlObjects" style="display:none;"><span data-icon="folder"></span> <span data-i18n="objectsBtn">Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
-        <!-- (tools-out-of-layers) 「Measure ▾」 became 「Tools ▾」: ONE panel for what the reader can DO — 測る・描く (the four
-             buttons below, unchanged ids and handlers), 道具, シミュレーション and 分析. js/map-ui.js `mountTools` builds the
-             other three sections into this dropdown from SIM_TOOLS and carries #layer-tools into 分析; the Layers panel
-             no longer holds any of them. The ids stay so every existing caller (Atlas clickId, shortcuts, the phone's
-             data-proxy tiles, tests) still reaches the same controls. -->
-        <div class="measure-menu-container">
-          <button class="view-btn" id="btn-measure-menu" title="Map tools" data-i18n-title="ttlMapTools" aria-haspopup="true"><span data-icon="set-square"></span> <span data-i18n="ttlTools">Tools</span> <span class="caret-sm">▾</span></button>
-          <div class="measure-dropdown" id="measure-dropdown">
-            <div class="tlp-measure">
-            <button class="view-btn" id="btn-tool-measure" title="Measure distance / area" data-i18n-title="ttlMeasureDA"><span data-icon="ruler"></span> <span data-i18n="measureDistBtn">Distance / area</span></button>
-            <button class="view-btn" id="btn-tool-draw" title="Freehand draw & trace" data-i18n-title="ttlDrawTrace"><span data-icon="pencil"></span> <span data-i18n="drawBtn">Draw</span></button>
-            <button class="view-btn" id="btn-tool-radius" title="Radius" data-i18n-title="radius"><span data-icon="radius"></span> <span data-i18n="radiusBtn">Radius</span></button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
-            <button class="view-btn" id="btn-tool-volume" title="Draw a real-scale 3-D volume in the air" data-i18n-title="ttlVol3d"><span data-icon="cube"></span> <span data-i18n="vol3dBtn">3-D volume</span></button><!-- (#R170) 3-D volume: footprint + an altitude band, extruded at true scale -->
-            <!-- (#R176) 「DronesはMeasureに置くな。どこにも置くな。」 — the 🛸 Drone button is gone from this menu
-                 and from the mobile Tools sheet. The planner itself (js/drone-nav.js) is untouched and still
-                 answers the Atlas `drone` action; only its place in the toolbar was wrong. -->
-            </div>
-          </div>
-        </div>
-        <!-- (#R151) Screenshot + link folded INTO one Share menu per request -->
-        <div class="share-menu-container">
-          <button class="view-btn" id="btn-share-menu" title="Share" data-i18n-title="shareMenuBtn"><span data-icon="link"></span> <span data-i18n="shareMenuBtn">Share</span> <span class="caret-sm">▾</span></button>
-          <div class="share-dropdown" id="share-dropdown">
-            <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot"><span data-icon="camera"></span> <span data-i18n="mScreenshot">Screenshot</span></button>
-            <button class="view-btn" id="btn-share" data-i18n-title="shareView" title="Share this view"><span data-icon="link"></span> <span data-i18n="shareLinkBtn">Share / copy link</span></button>
-          </div>
-        </div>
-        <!-- (#R114) top-bar Atlas launch button removed (requested). Atlas stays reachable via the left-sidebar
-             Atlas tab (normal/mobile) and the Window menu (workspace mode); the #btn-atlas wiring below is guarded. -->
-        <div class="layer-menu-container">
-          <button class="view-btn" id="btn-layers" data-i18n="layersBtn" style="background:rgba(0,0,0,0.05); margin-left:4px;">Layers ▾</button>
-          <div class="layer-dropdown" id="layer-dropdown">
-             <div class="layer-fav-section" id="layer-fav-section">
-               <div class="layer-fav-title"><span data-icon="star"></span> <span data-i18n="favLayers">Favorite layers</span></div>
-               <div class="layer-fav-chips" id="layer-fav-chips"></div>
-               <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0 8px;">
-             </div>
-             <!-- ⚠ (layer-manifest) THE ALWAYS-ON SWITCHES (地名・水域地形・施設・国境・海岸線・州県境・道路・鉄道・グリッド) AND
-                  THE HIDDEN 国境・国情報 BOX ARE NOT MARKUP ANY MORE. They are the `html` entries of js/layer-manifest.js,
-                  written here — byte-for-byte the ten <label> lines that stood in this place — by js/layer-rows.js,
-                  which src/main.js imports before any module that reads this registry. Their default tick is
-                  the manifest's `on`, the same field window.IntMapDefaultOn is derived from (#R476 was «ONE edit
-                  in two files»). The notes that stood above the rows (#R186 poi, #R289/#R476 coast) moved with them. -->
-             <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0;">
-             <!-- ⚠⚠ (#R225) THE NINE GEOPOLITICS ROWS WERE HERE AND THEY ARE GONE.
-                  「大昔に捨てたはずの地政学レイヤーが勝手にオンになる。ふざけるな。」 — confirmed as
-                  「レイヤー自体を削除してほしい」. Strategic geography (Sahel / 1st / 2nd Island Chain /
-                  String of Pearls / Northern Sea Route / Global Chokepoints) and Strategic networks
-                  (Belt &amp; Road / Major Pipelines / Nuclear Sites) are deleted: the rows here, their
-                  geometry in js/tables.js (geoLayersDB), their labels, their previews and their
-                  favourites. They were the app’s ONLY `.geo-layer-cb` checkboxes, so that whole
-                  convention retires with them — see the note by `activeLayers()` in js/map-ui.js for
-                  why a retired key must also stop being READ, not merely stop being written. -->
-          </div>
-        </div>
-      </div>
-      <!-- (#R480) 方位磁針は直下の子＝3行目に単独。id/class/title は不変（7つの呼び出し元は行を知らない）— 丸型と glass は css `.compass-btn`
-           (compass-redesign) 「方位磁針ボタン、デザインがダサい。」: 目盛りの輪・八方位の刻み・面取りした二色の針をやめ、
-           細い一本の針（北は赤、南はテーマ色）と北を指す小さな三角と薄い輪だけにした。絵は携帯の #m-fab-compass と同じ 1 つ。 -->
-      <button class="compass-btn" id="btn-compass" title="Reset North" data-i18n-title="ttlResetNorth"><svg class="compass-svg" width="34" height="34" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="15.2" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="1.2"/><path d="M20 3.6l-1.5 2.6h3z" fill="#ff3b30"/><path d="M20 7.6l3.1 12.4h-6.2z" fill="#ff3b30"/><path d="M20 32.4l3.1-12.4h-6.2z" fill="currentColor" fill-opacity="0.38"/><circle cx="20" cy="20" r="1.9" fill="currentColor" fill-opacity="0.85"/></svg></button>
-      <!-- (installable-app) 「現在地へ移動」 on the desktop: the twin of the phone's #m-fab-locate, under the compass
-           as that one is, with the same dart (outline until the map centre is ON the fix, solid when it is —
-           the `.on` class the live-location marker toggles). The reading is js/locate-me.js's. -->
-      <button class="compass-btn locate-btn" id="btn-locate" type="button" aria-label="My location" data-i18n-aria="ttlMyLocation" title="My location" data-i18n-title="ttlMyLocation"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><polygon points="20.6,3.4 3.4,10.2 11.1,12.9 13.8,20.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
-    </div>
     <div id="map"></div>
     <canvas id="wind-canvas"></canvas>
-    <div id="tool-panel" class="tool-panel"></div>
     <div id="country-info" class="country-info"></div>
-    <div id="coord-readout" class="coord-readout"></div>
     <!-- (#R101) "Summarize this view" button removed per request (今の表示エリアを要約ボタンはいらない).
          (#R430) The null-guarded leftovers it left behind — aiSummarizeView(), 9 CSS sites and the
          aiViewSum* strings in all 9 languages — are gone too, so nothing is guarding for it any more. -->
-    <div id="sat-controller" class="sat-controller"></div>
     <div id="measure-tooltip" class="measure-tooltip"></div>
     <div id="ctx-menu" class="ctx-menu"></div>
     <div id="pin-popup" class="pin-popup"></div>
-    <!-- (#R94) Time machine — the master spacetime clock (drives news, countries, borders, climate era, …) -->
-    <!-- (#R101) Time-machine popup redesigned to match the requested layout: title + "viewing past" badge + ×,
-         a Year/Date mode toggle, a big current-value readout + "Back to now", a year (or recent-date) slider with
-         era marks, and a "What's applied" chip row. Closes when the user operates elsewhere on the map. -->
-    <div id="news-timeline" class="news-timeline collapsed" data-prints-map-time>
-      <!-- (#R102/#27) collapsed = the labeled entry point (per the attached mock). ⚠ (#R289) renamed it to 「Chronos / Control the map's time」: it names no year, so nothing here follows the clock's floor. ⚠ (#R504) the glyph is a CLOCK (face, cardinal marks, hour+minute hands, pivot), built like the compass rose — the old rotate-ccw arrow read as 「戻す」 at 23 px; DEV-NOTES #R504 §7. ⚠ no id in it: the compass roses share this document (r504 ⑧). -->
-      <button class="ntl-open" id="ntl-toggle" type="button" title="Chronos" data-i18n-title="tlMachine" data-time-intent>
-          <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M12 3.6v1.6M20.4 12h-1.6M12 20.4v-1.6M3.6 12h1.6" stroke-opacity="0.55"/><path d="M12 6.9V12l3.7 2.2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>
-        <span class="ntl-open-txt"><b id="ntl-open-t">Chronos</b><small id="ntl-open-s">Control the map’s time</small></span>
-      </button>
-      <!-- (first-impression) the year rail on the first screen: marks from the kernel's floor to now, each one a jump. Built by js/news-timeline.js buildPeek(); desktop only (a phone enters Chronos from the sheet head). -->
-      <div class="ntl-peek" id="ntl-peek" role="group"></div>
-      <div class="ntl-body" id="ntl-body">
-        <div class="ntl-title-row">
-          <!-- (#R289) 「Chronos／IntMapの統一時間を操作」 — the name is not translated; the line under it is. -->
-          <div class="ntl-titlebox">
-            <div class="ntl-title" id="ntl-title" data-i18n="tlMachine">Chronos</div>
-            <div class="ntl-sub" id="ntl-sub"></div>
+    <!-- (map-chrome-layout) THE VISIBLE MAP — everything that floats on the map is placed against THIS box and nothing
+         else: its edges are the panels' edges (css/intmap.css `.map-frame`), it is a size container, and a zoom, a
+         window width and a panel opening or closing are all «its width changed». On a phone it is display:contents. -->
+    <div class="map-frame" id="map-frame">
+      <div class="map-search" id="map-search">
+        <input id="ms-input" type="text" placeholder="Search any place on Earth..." data-i18n-ph="msPh">
+        <!-- (#R231) 「地名検索ボタンの🔍絵文字は、絵文字ではなく独自のシンプルなアイコンに置換して。」
+             The word is what DESKTOP shows and it stays exactly as it was — `data-i18n` simply moved onto
+             the span that holds it, because a `data-i18n` on the BUTTON writes textContent and would wipe
+             the sibling <svg> on the first language pass. The mark below is the app's own: a 6.6 r ring and
+             one 3.7-long handle at 45°, drawn with the same 2 px round-cap stroke as every other icon in
+             this chrome (the compass, the locate arrow, the map/tools FABs) — so it is OUR line weight and
+             OUR colour (currentColor) instead of a vendor-drawn colour emoji that ignored both. -->
+        <button id="ms-btn" title="Search" data-i18n-title="searchBtn"><span class="ms-btn-t" data-i18n="searchBtn">Search</span><svg class="ms-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m15.7 15.7 4.1 4.1"/></svg></button>
+        <div class="map-search-results" id="ms-results"></div>
+      </div>
+      <div class="map-controls-top">
+        <!-- (#R480) 基図と投影法は同じ行。⚠ ピルは2つのまま（1つにすると選択チップが2つ並ぶ）— 理由は css `.map-view-row` と DEV-NOTES #R480 -->
+        <div class="map-view-row">
+          <!-- (map-chrome-layout) where the frame is too narrow for both pills they fold behind this one trigger (css
+               `.map-view-menu`, js/mobile-ui.js viewMenu); where there is room it is hidden and .map-view-sets is display:contents -->
+          <div class="map-view-group map-view-menu"><button class="view-btn" id="btn-view-menu" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="map-view-sets" title="Map view" data-i18n-title="ttlMapView" aria-label="Map view" data-i18n-aria="ttlMapView"><span data-icon="map"></span> <span class="caret-sm">▾</span></button></div>
+          <div class="map-view-sets" id="map-view-sets">
+          <div class="map-view-group">
+            <!-- (#R207) Satellite is the default basemap now (js/app-body.js `currentMapType`), so the
+                 pressed state starts here — otherwise the segmented control reads "Map" over a satellite
+                 picture for as long as the style takes to load. -->
+            <button class="view-btn" id="btn-view-map" data-i18n="viewMap">Map</button>
+            <button class="view-btn active" id="btn-view-sat" data-i18n="viewSat">Satellite</button>
           </div>
-          <span class="ntl-badge" id="ntl-badge"></span>
-          <button class="ntl-x" id="ntl-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close">×</button>
+          <div class="map-view-group">
+            <button class="view-btn" id="btn-view-flat" data-i18n="flat">Flat</button>
+            <button class="view-btn active" id="btn-view-globe" data-i18n="globe">Globe</button>
+            <button class="view-btn" id="btn-view-3d" title="3D terrain" data-i18n-title="ttl3dTerrain"><span data-icon="mountain"></span> <span data-i18n="threeD">3D</span></button>
+          </div>
+          </div>
         </div>
-        <div class="ntl-modes" id="ntl-modes">
-          <button class="ntl-mode on" id="ntl-mode-year" type="button" data-mode="year"></button>
-          <button class="ntl-mode" id="ntl-mode-date" type="button" data-mode="date"></button>
-          <button class="ntl-mode" id="ntl-mode-time" type="button" data-mode="time"></button><!-- (#R137) time-of-day · (#R293) 「時刻と予報タブを分けるな」: the model's transport is inside this tab, and both write the master clock -->
+        <div class="map-view-group" id="map-tools-group">
+          <button class="view-btn" id="btn-tool-grid" title="Grid + Labels" data-i18n-title="ttlGridLabels" style="display:none;"><span data-icon="world"></span> <span data-i18n="gridBtn">Grid</span></button>
+          <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
+               toolbar. Shown only when >=1 map object exists (same visibility as the old FAB); wired + counted by
+               IntMapObjects.tickFab. On mobile the toolbar is hidden, so the FAB stays.
+               (#R217) 「オブジェクト一覧は、MeasureとShareの間ではなく、Measureの左に出るように。（デスクトップ版）」 —
+               it sat between the Measure menu and the Share menu; it belongs to the LEFT of Measure. Markup order is
+               the whole change: .map-view-group is a plain flex row with no first/last-child styling, and the panel
+               follows the button on its own (IntMapObjects._placePanel anchors under #btn-tool-objects' own rect). -->
+          <button class="view-btn" id="btn-tool-objects" title="Objects" data-i18n-title="ttlObjects" style="display:none;"><span data-icon="folder"></span> <span data-i18n="objectsBtn">Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
+          <!-- (tools-out-of-layers) 「Measure ▾」 became 「Tools ▾」: ONE panel for what the reader can DO — 測る・描く (the four
+               buttons below, unchanged ids and handlers), 道具, シミュレーション and 分析. js/map-ui.js `mountTools` builds the
+               other three sections into this dropdown from SIM_TOOLS and carries #layer-tools into 分析; the Layers panel
+               no longer holds any of them. The ids stay so every existing caller (Atlas clickId, shortcuts, the phone's
+               data-proxy tiles, tests) still reaches the same controls. -->
+          <div class="measure-menu-container">
+            <button class="view-btn" id="btn-measure-menu" title="Map tools" data-i18n-title="ttlMapTools" aria-haspopup="true"><span data-icon="set-square"></span> <span data-i18n="ttlTools">Tools</span> <span class="caret-sm">▾</span></button>
+            <div class="measure-dropdown" id="measure-dropdown">
+              <div class="tlp-measure">
+              <button class="view-btn" id="btn-tool-measure" title="Measure distance / area" data-i18n-title="ttlMeasureDA"><span data-icon="ruler"></span> <span data-i18n="measureDistBtn">Distance / area</span></button>
+              <button class="view-btn" id="btn-tool-draw" title="Freehand draw & trace" data-i18n-title="ttlDrawTrace"><span data-icon="pencil"></span> <span data-i18n="drawBtn">Draw</span></button>
+              <button class="view-btn" id="btn-tool-radius" title="Radius" data-i18n-title="radius"><span data-icon="radius"></span> <span data-i18n="radiusBtn">Radius</span></button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
+              <button class="view-btn" id="btn-tool-volume" title="Draw a real-scale 3-D volume in the air" data-i18n-title="ttlVol3d"><span data-icon="cube"></span> <span data-i18n="vol3dBtn">3-D volume</span></button><!-- (#R170) 3-D volume: footprint + an altitude band, extruded at true scale -->
+              <!-- (#R176) 「DronesはMeasureに置くな。どこにも置くな。」 — the 🛸 Drone button is gone from this menu
+                   and from the mobile Tools sheet. The planner itself (js/drone-nav.js) is untouched and still
+                   answers the Atlas `drone` action; only its place in the toolbar was wrong. -->
+              </div>
+            </div>
+          </div>
+          <!-- (#R151) Screenshot + link folded INTO one Share menu per request -->
+          <div class="share-menu-container">
+            <button class="view-btn" id="btn-share-menu" title="Share" data-i18n-title="shareMenuBtn"><span data-icon="link"></span> <span data-i18n="shareMenuBtn">Share</span> <span class="caret-sm">▾</span></button>
+            <div class="share-dropdown" id="share-dropdown">
+              <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot"><span data-icon="camera"></span> <span data-i18n="mScreenshot">Screenshot</span></button>
+              <button class="view-btn" id="btn-share" data-i18n-title="shareView" title="Share this view"><span data-icon="link"></span> <span data-i18n="shareLinkBtn">Share / copy link</span></button>
+            </div>
+          </div>
+          <!-- (#R114) top-bar Atlas launch button removed (requested). Atlas stays reachable via the left-sidebar
+               Atlas tab (normal/mobile) and the Window menu (workspace mode); the #btn-atlas wiring below is guarded. -->
+          <div class="layer-menu-container">
+            <button class="view-btn" id="btn-layers" data-i18n="layersBtn" style="background:rgba(0,0,0,0.05); margin-left:4px;">Layers ▾</button>
+            <div class="layer-dropdown" id="layer-dropdown">
+               <div class="layer-fav-section" id="layer-fav-section">
+                 <div class="layer-fav-title"><span data-icon="star"></span> <span data-i18n="favLayers">Favorite layers</span></div>
+                 <div class="layer-fav-chips" id="layer-fav-chips"></div>
+                 <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0 8px;">
+               </div>
+               <!-- ⚠ (layer-manifest) THE ALWAYS-ON SWITCHES (地名・水域地形・施設・国境・海岸線・州県境・道路・鉄道・グリッド) AND
+                    THE HIDDEN 国境・国情報 BOX ARE NOT MARKUP ANY MORE. They are the `html` entries of js/layer-manifest.js,
+                    written here — byte-for-byte the ten <label> lines that stood in this place — by js/layer-rows.js,
+                    which src/main.js imports before any module that reads this registry. Their default tick is
+                    the manifest's `on`, the same field window.IntMapDefaultOn is derived from (#R476 was «ONE edit
+                    in two files»). The notes that stood above the rows (#R186 poi, #R289/#R476 coast) moved with them. -->
+               <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0;">
+               <!-- ⚠⚠ (#R225) THE NINE GEOPOLITICS ROWS WERE HERE AND THEY ARE GONE.
+                    「大昔に捨てたはずの地政学レイヤーが勝手にオンになる。ふざけるな。」 — confirmed as
+                    「レイヤー自体を削除してほしい」. Strategic geography (Sahel / 1st / 2nd Island Chain /
+                    String of Pearls / Northern Sea Route / Global Chokepoints) and Strategic networks
+                    (Belt &amp; Road / Major Pipelines / Nuclear Sites) are deleted: the rows here, their
+                    geometry in js/tables.js (geoLayersDB), their labels, their previews and their
+                    favourites. They were the app’s ONLY `.geo-layer-cb` checkboxes, so that whole
+                    convention retires with them — see the note by `activeLayers()` in js/map-ui.js for
+                    why a retired key must also stop being READ, not merely stop being written. -->
+            </div>
+          </div>
         </div>
-        <!-- (#R289) 「どこの時刻を採用するかのプルダウン」 — the clock Chronos reads and writes wall-clock time in. -->
-        <div class="ntl-zonerow"><span id="ntl-zone-lbl"></span><select class="ntl-zone" id="ntl-zone" aria-labelledby="ntl-zone-lbl"></select></div><label class="ntl-jumprow" for="ntl-jump"><span id="ntl-jump-lbl"></span><input type="datetime-local" id="ntl-jump" class="ntl-jump"></label><!-- (#R378) 「年/日付/時刻の下に置くのではなく外に、直接年月日時選ぶとこ」 — ONE native datetime control for the exact instant, OUTSIDE the Year/Date/Time tabs (it shares this source line with the zone row because the shell is at its line budget — tests/r168 #8). Wired in js/news-timeline.js. -->
-        <div class="ntl-valrow">   <!-- (#R313) the Time tab's date sits UNDER the clock: .ntl-bigval is 26px with `text-overflow:ellipsis` in a fixed-width body, so one line would truncate it silently. DEV-NOTES #R313 §5. -->
-          <div class="ntl-valcol"><div class="ntl-bigval" id="ntl-bigval">—</div><div class="ntl-bigdate" id="ntl-bigdate"></div></div>
-          <button class="ntl-now" id="ntl-today" type="button"></button>
+        <!-- (#R480) 方位磁針は直下の子＝3行目に単独。id/class/title は不変（7つの呼び出し元は行を知らない）— 丸型と glass は css `.compass-btn`
+             (compass-redesign) 「方位磁針ボタン、デザインがダサい。」: 目盛りの輪・八方位の刻み・面取りした二色の針をやめ、
+             細い一本の針（北は赤、南はテーマ色）と北を指す小さな三角と薄い輪だけにした。絵は携帯の #m-fab-compass と同じ 1 つ。 -->
+        <button class="compass-btn" id="btn-compass" title="Reset North" data-i18n-title="ttlResetNorth"><svg class="compass-svg" width="34" height="34" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="15.2" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="1.2"/><path d="M20 3.6l-1.5 2.6h3z" fill="#ff3b30"/><path d="M20 7.6l3.1 12.4h-6.2z" fill="#ff3b30"/><path d="M20 32.4l3.1-12.4h-6.2z" fill="currentColor" fill-opacity="0.38"/><circle cx="20" cy="20" r="1.9" fill="currentColor" fill-opacity="0.85"/></svg></button>
+        <!-- (installable-app) 「現在地へ移動」 on the desktop: the twin of the phone's #m-fab-locate, under the compass
+             as that one is, with the same dart (outline until the map centre is ON the fix, solid when it is —
+             the `.on` class the live-location marker toggles). The reading is js/locate-me.js's. -->
+        <button class="compass-btn locate-btn" id="btn-locate" type="button" aria-label="My location" data-i18n-aria="ttlMyLocation" title="My location" data-i18n-title="ttlMyLocation"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><polygon points="20.6,3.4 3.4,10.2 11.1,12.9 13.8,20.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div id="tool-panel" class="tool-panel"></div>
+      <div id="sat-controller" class="sat-controller"></div>
+      <!-- (#R94) Time machine — the master spacetime clock (drives news, countries, borders, climate era, …) -->
+      <!-- (#R101) Time-machine popup redesigned to match the requested layout: title + "viewing past" badge + ×,
+           a Year/Date mode toggle, a big current-value readout + "Back to now", a year (or recent-date) slider with
+           era marks, and a "What's applied" chip row. Closes when the user operates elsewhere on the map. -->
+      <!-- (map-chrome-layout) the two bottom corners are ONE row of the frame: the readout at the left, Chronos at the
+           right, and where the frame is too narrow for both, Chronos steps up one row instead of covering the readout -->
+      <div class="map-frame-bottom">
+        <div id="coord-readout" class="coord-readout"></div>
+        <div id="news-timeline" class="news-timeline collapsed" data-prints-map-time>
+          <!-- (#R102/#27) collapsed = the labeled entry point (per the attached mock). ⚠ (#R289) renamed it to 「Chronos / Control the map's time」: it names no year, so nothing here follows the clock's floor. ⚠ (#R504) the glyph is a CLOCK (face, cardinal marks, hour+minute hands, pivot), built like the compass rose — the old rotate-ccw arrow read as 「戻す」 at 23 px; DEV-NOTES #R504 §7. ⚠ no id in it: the compass roses share this document (r504 ⑧). -->
+          <button class="ntl-open" id="ntl-toggle" type="button" title="Chronos" data-i18n-title="tlMachine" data-time-intent>
+              <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M12 3.6v1.6M20.4 12h-1.6M12 20.4v-1.6M3.6 12h1.6" stroke-opacity="0.55"/><path d="M12 6.9V12l3.7 2.2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>
+            <span class="ntl-open-txt"><b id="ntl-open-t">Chronos</b><small id="ntl-open-s">Control the map’s time</small></span>
+          </button>
+          <!-- (first-impression) the year rail on the first screen: marks from the kernel's floor to now, each one a jump. Built by js/news-timeline.js buildPeek(); desktop only (a phone enters Chronos from the sheet head). -->
+          <div class="ntl-peek" id="ntl-peek" role="group"></div>
+          <div class="ntl-body" id="ntl-body">
+            <div class="ntl-title-row">
+              <!-- (#R289) 「Chronos／IntMapの統一時間を操作」 — the name is not translated; the line under it is. -->
+              <div class="ntl-titlebox">
+                <div class="ntl-title" id="ntl-title" data-i18n="tlMachine">Chronos</div>
+                <div class="ntl-sub" id="ntl-sub"></div>
+              </div>
+              <span class="ntl-badge" id="ntl-badge"></span>
+              <button class="ntl-x" id="ntl-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close">×</button>
+            </div>
+            <div class="ntl-modes" id="ntl-modes">
+              <button class="ntl-mode on" id="ntl-mode-year" type="button" data-mode="year"></button>
+              <button class="ntl-mode" id="ntl-mode-date" type="button" data-mode="date"></button>
+              <button class="ntl-mode" id="ntl-mode-time" type="button" data-mode="time"></button><!-- (#R137) time-of-day · (#R293) 「時刻と予報タブを分けるな」: the model's transport is inside this tab, and both write the master clock -->
+            </div>
+            <!-- (#R289) 「どこの時刻を採用するかのプルダウン」 — the clock Chronos reads and writes wall-clock time in. -->
+            <div class="ntl-zonerow"><span id="ntl-zone-lbl"></span><select class="ntl-zone" id="ntl-zone" aria-labelledby="ntl-zone-lbl"></select></div><label class="ntl-jumprow" for="ntl-jump"><span id="ntl-jump-lbl"></span><input type="datetime-local" id="ntl-jump" class="ntl-jump"></label><!-- (#R378) 「年/日付/時刻の下に置くのではなく外に、直接年月日時選ぶとこ」 — ONE native datetime control for the exact instant, OUTSIDE the Year/Date/Time tabs (it shares this source line with the zone row because the shell is at its line budget — tests/r168 #8). Wired in js/news-timeline.js. -->
+            <div class="ntl-valrow">   <!-- (#R313) the Time tab's date sits UNDER the clock: .ntl-bigval is 26px with `text-overflow:ellipsis` in a fixed-width body, so one line would truncate it silently. DEV-NOTES #R313 §5. -->
+              <div class="ntl-valcol"><div class="ntl-bigval" id="ntl-bigval">—</div><div class="ntl-bigdate" id="ntl-bigdate"></div></div>
+              <button class="ntl-now" id="ntl-today" type="button"></button>
+            </div>
+            <input type="date" id="ntl-date" class="ntl-date" aria-labelledby="ntl-mode-date" style="display:none;">
+            <input type="time" id="ntl-time" class="ntl-date" aria-labelledby="ntl-mode-time" style="display:none;"><!-- (#R137) time-of-day picker (shown in Time mode) -->
+            <input type="range" id="ntl-slider" class="ntl-slider" aria-labelledby="ntl-mode-year" min="0" max="1000" value="1000" step="1">
+            <!-- (#R337) 「ChronosのTimeのタイムスライダーは、目盛りを付けるように。」 The Time tab's ruler, and it sits HERE — directly under the slider — because .ntl-scale below is on the far side of the forecast player and a graduation detached from its axis is not a graduation. Built by js/news-timeline.js `buildTicks`; empty and hidden in the Year and Date tabs, which keep the label row they have always had. -->
+            <div class="ntl-ticks" id="ntl-ticks" aria-hidden="true" style="display:none;"></div>
+            <div class="ntl-player" id="ntl-player" style="display:none;"></div><div class="ntl-scale" id="ntl-scale"></div><div class="ntl-bstep" id="ntl-bstep" style="display:none;"><button class="ntl-bstep-b" id="ntl-bstep-prev" type="button">‹</button><span class="ntl-bstep-l" id="ntl-bstep-lbl"></span><button class="ntl-bstep-b" id="ntl-bstep-next" type="button">›</button></div><div class="ntl-lapse" id="ntl-lapse" hidden></div><div class="ntl-rec" id="ntl-rec" hidden></div><!-- (timelapse-video-export) the lapse written to a video and the comparison to one picture: js/time-lapse.js mounts the row, js/map-recorder.js the rest --><!-- (time-compare-lapse) the time-lapse player, built by js/time-lapse.js the first time the panel opens --><!-- (#R288) the player is built from window.IntMapWxPlayer, so the two views of the clock cannot disagree about which button is play --><!-- (#R421) 「歴史国境の更新ペースをさらに細かくして。理想は月日単位。」 — the border-change stepper: the year axis above is the COARSE control, and this row steps the clock onto the days the borders actually changed (CShapes' own validity dates, 369 of them 1886-2019), hidden unless the chosen instant is inside that range. Wired in js/news-timeline.js. ⚠ IT SHARES THIS SOURCE LINE for the same reason the zone and jump rows share theirs: the shell is at the line budget tests/r168 #8 sets, and origin/main reached this round with ONE line of headroom. -->
+            <!-- (#R290) 「反映内容を表示する箇所はいらない」 — the 「Applied」 chips stood here; see js/news-timeline.js -->
+          </div>
         </div>
-        <input type="date" id="ntl-date" class="ntl-date" aria-labelledby="ntl-mode-date" style="display:none;">
-        <input type="time" id="ntl-time" class="ntl-date" aria-labelledby="ntl-mode-time" style="display:none;"><!-- (#R137) time-of-day picker (shown in Time mode) -->
-        <input type="range" id="ntl-slider" class="ntl-slider" aria-labelledby="ntl-mode-year" min="0" max="1000" value="1000" step="1">
-        <!-- (#R337) 「ChronosのTimeのタイムスライダーは、目盛りを付けるように。」 The Time tab's ruler, and it sits HERE — directly under the slider — because .ntl-scale below is on the far side of the forecast player and a graduation detached from its axis is not a graduation. Built by js/news-timeline.js `buildTicks`; empty and hidden in the Year and Date tabs, which keep the label row they have always had. -->
-        <div class="ntl-ticks" id="ntl-ticks" aria-hidden="true" style="display:none;"></div>
-        <div class="ntl-player" id="ntl-player" style="display:none;"></div><div class="ntl-scale" id="ntl-scale"></div><div class="ntl-bstep" id="ntl-bstep" style="display:none;"><button class="ntl-bstep-b" id="ntl-bstep-prev" type="button">‹</button><span class="ntl-bstep-l" id="ntl-bstep-lbl"></span><button class="ntl-bstep-b" id="ntl-bstep-next" type="button">›</button></div><div class="ntl-lapse" id="ntl-lapse" hidden></div><div class="ntl-rec" id="ntl-rec" hidden></div><!-- (timelapse-video-export) the lapse written to a video and the comparison to one picture: js/time-lapse.js mounts the row, js/map-recorder.js the rest --><!-- (time-compare-lapse) the time-lapse player, built by js/time-lapse.js the first time the panel opens --><!-- (#R288) the player is built from window.IntMapWxPlayer, so the two views of the clock cannot disagree about which button is play --><!-- (#R421) 「歴史国境の更新ペースをさらに細かくして。理想は月日単位。」 — the border-change stepper: the year axis above is the COARSE control, and this row steps the clock onto the days the borders actually changed (CShapes' own validity dates, 369 of them 1886-2019), hidden unless the chosen instant is inside that range. Wired in js/news-timeline.js. ⚠ IT SHARES THIS SOURCE LINE for the same reason the zone and jump rows share theirs: the shell is at the line budget tests/r168 #8 sets, and origin/main reached this round with ONE line of headroom. -->
-        <!-- (#R290) 「反映内容を表示する箇所はいらない」 — the 「Applied」 chips stood here; see js/news-timeline.js -->
       </div>
     </div>
   </div><div id="map-credit" class="map-credit"></div></div>

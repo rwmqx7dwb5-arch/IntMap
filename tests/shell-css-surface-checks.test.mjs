@@ -583,15 +583,15 @@ test('r309 ④ the search fields are glass in the frosted modes', () => {
 
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('r309 ⑤ the place-search pill keeps its width when both sidebars are open', () => {
-  const centring = RULES.filter((r) => /\.map-search/.test(r.sel) && /:has\(\.sidebar:not\(\.collapsed\)\)/.test(r.sel));
-  assert.ok(centring.length, 'the frosted centring rule is still there');
-  /* ⚠ THE DEFECT: that selector is (0,4,1) and `body.ms-narrow .map-search` is (0,2,1), so it won
-     `left` while the JS-computed `right` survived — and --ms-left / --ms-right only mean anything as
-     a PAIR. Measured at 1440x900 with both sidebars open: left 920px, right 619px, width 18px. */
-  for (const r of centring) assert.ok(/:not\(\.ms-narrow\)/.test(r.sel), 'it stands down when the JS watcher owns the geometry');
-  /* …and when it does apply, it has to know about the RIGHT sidebar too */
-  const withRight = centring.filter((r) => /lsr-open/.test(r.sel));
-  assert.ok(withRight.length, 'the centring accounts for the right sidebar');
-  assert.ok(withRight.every((r) => /--lsr-w/.test(r.body)), 'by subtracting its width from the centre AND from the cap');
+  /* ⚠ THE DEFECT (#R309): two owners of one geometry — a CSS centring rule (0,4,1) won `left` while the JS watcher's
+     `--ms-right` survived, and with both sidebars open at 1440x900 the pill was 18 px wide. (map-chrome-layout) There is
+     now ONE owner: the pill is a grid cell of .map-frame, the frame alone knows both panels, and no rule places the
+     pill against a panel's width. The width it ends up with is measured by tests/map-chrome-layout.spec.js. */
+  const frame = RULES.filter((r) => /\.map-frame\b/.test(r.sel) && /--(sidebar|lsr)-w/.test(r.body));
+  assert.ok(frame.some((r) => /sidebar-glass/.test(r.sel) && /left:var\(--sidebar-w\)/.test(r.body)), 'the frame loses the frosted left panel');
+  assert.ok(frame.some((r) => /lsr-open/.test(r.sel) && /right:var\(--lsr-w\)/.test(r.body)), 'the frame loses the open right panel');
+  const pillAgainstPanel = RULES.filter((r) => /\.map-search\b/.test(r.sel) && /--(sidebar|lsr)-w/.test(r.body));
+  assert.deepEqual(pillAgainstPanel.map((r) => r.sel), [], 'no rule centres or caps the pill against a panel width any more');
+  assert.ok(!RULES.some((r) => /ms-narrow|ms-hide/.test(r.sel)), 'the JS-anchored layout is gone with its watcher');
 });
 }

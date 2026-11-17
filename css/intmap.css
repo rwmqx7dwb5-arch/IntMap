@@ -1922,47 +1922,92 @@
     [data-theme="dark"] .map-view-group, [data-theme="dark"] .compass-btn{ background:rgba(28,28,30,0.62); border:1px solid rgba(255,255,255,0.06); }
     .map-search{ background:rgba(255,255,255,0.62); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); }
     [data-theme="dark"] .map-search{ background:rgba(28,28,30,0.62); }
-    /* (#R20) Keep the search pill clear of BOTH side control zones at every width. 55vw is viewport-
-       relative, so on a narrowed window it could span nearly the whole map and slide under the
-       map/satellite buttons (right) or the frosted sidebar (left). Cap it container-relative instead,
-       and in frosted (overlay-sidebar) mode center it within the VISIBLE map area. */
+    /* ══ ⚠⚠⚠ (map-chrome-layout) THE MAP'S FLOATING CONTROLS HAVE ONE REFERENCE: THE PART OF THE MAP YOU CAN SEE ══════
+       「右サイドバーを開いた状態でブラウザのズームを大きくすると、検索バーと Chronos が崩れる。以前から何度も右サイドバー
+         開閉時のボタン類の問題があった。直すなら根本的に。」
+       Each control used to place itself against the WHOLE map canvas and then dodge the panels standing on it one by one:
+       `body.lsr-open … right:calc(var(--lsr-w) + …)` for four of them, two `left:calc(var(--sidebar-w) + …)` centring
+       rules for the search, and a JS watcher (js/mobile-ui.js) that measured both panels and the right-hand stack and
+       wrote `--ms-left` / `--ms-right` into a `position:fixed` pill. Every new state (a zoom, a resized panel, a language
+       with longer labels) was a case those rules did not know — MEASURED before this change at 1152×720 (= 125 %
+       zoom) with both panels open: the pill spanned 436–1138 px while the right panel began at 852, and
+       `elementFromPoint` at the Search button returned a layer tile; in solid mode Chronos began at 293 px, under the
+       left panel (which ends at 400).
+       ⚠ NOW ONE BOX KNOWS WHERE THE PANELS ARE AND NOTHING ELSE DOES. `.map-frame` (index.html) is the visible map:
+       its left edge is the frosted left panel's width while that panel stands on the canvas, its right edge the layer
+       panel's while it is open — the ONLY two rules in this file that place a floating control against a panel. Inside
+       it the controls know only their own frame, and the frame is a size container, so a zoom, a window width and
+       either panel opening or closing all arrive as the same single fact: «the frame's width changed».
+       ⚠ THE TOP ROW IS A GRID, so the search and the right-hand stack cannot overlap by construction: the stack's
+       column never goes below its own max-content, the search takes up to 380 px of what is left, and the empty
+       first column gives way first — centred while there is room, sliding left (never under the stack) when not.
+       ⚠ NARROW FRAMES CHANGE SHAPE, NOT PLACE (the container queries below). Only the narrowest tier rearranges.
+       ⚠ PHONE (≤768): `display:contents` — the box does not exist, its children keep the sheet layout they had.
+       ⚠ WS-MODE: the frame is the whole map window (no panel stands on it there) and the ws rules in
+       js/workspace.js keep pinning the pill and the stack with their own absolute positions, untouched. */
+    .map-frame, .map-frame-bottom{ display:contents; }
     @media(min-width:769px){
-      .map-search{ max-width:min(380px, calc(100% - 330px)); min-width:170px; }
-      /* (#R309) …but NOT while the JS watcher is anchoring the pill. `body.ms-narrow` below anchors left AND
-         right from the REAL measured edges of both overlays, and the two numbers only mean anything as a PAIR —
-         this selector is (0,4,1) and ms-narrow's is (0,2,1), so it used to win `left` + `max-width` while
-         ms-narrow kept `right`: half of one layout against half of the other. Measured at 1440×900 with both
-         sidebars open, that was left:920px against right:619px = an 18px sliver ("サイドバーを左右両方開けると
-         地名検索バーが潰れる"). Hand the whole layout to the watcher whenever it is in charge. */
-      body.sidebar-glass:not(.ms-narrow):has(.sidebar:not(.collapsed)) .map-search{
-        left:calc(var(--sidebar-w) + (100% - var(--sidebar-w))/2);
-        max-width:min(380px, calc(100% - var(--sidebar-w) - 350px));
-      }
-      /* (#R309) …and when the RIGHT layer sidebar is open the visible map ends --lsr-w short of the container
-         (it OVERLAYS that strip rather than shrinking the map, #R160), and the right-hand controls slide left
-         with it (`body.lsr-open:not(.ws-mode) .map-controls-top`). Both the centre and the 350px control
-         reservation are measured from the container edge, so both have to lose that strip too — otherwise the
-         pill is centred on a point that is behind the panel. Excluded in ws-mode like every other lsr-open
-         rule: there the pill is pinned inside the map window. */
-      body.sidebar-glass:not(.ms-narrow).lsr-open:not(.ws-mode):has(.sidebar:not(.collapsed)) .map-search{
-        left:calc(var(--sidebar-w) + (100% - var(--sidebar-w) - var(--lsr-w))/2);
-        max-width:min(380px, calc(100% - var(--sidebar-w) - var(--lsr-w) - 350px));
-      }
-      /* (#R25) Narrow desktop: the JS watcher computes a left/right that ALWAYS clears the (multi-row)
-         right-hand view buttons and the left sidebar, so the search can never overlap them or get crushed
-         ("つぶれて押せない" / "かぶる"). It anchors left+right (no centering) and stretches between. */
-      body.ms-hide .map-search{ display:none !important; }   /* (#R66) no usable map strip → no pill */
-      body.ms-narrow .map-search{ position:fixed; z-index:calc(var(--z-controls) + 2); top:var(--ms-top,78px); left:var(--ms-left,14px); right:var(--ms-right,290px);
-        width:auto; transform:none; min-width:0;
-        /* (search-results-clipped) clip ACROSS only. The collapse #R65 asks for is horizontal; a plain
-           overflow:hidden also cut off .map-search-results, which hangs BELOW the 35 px pill (top:48px),
-           so in this layout a search answered with nothing visible (measured in production 2026-09-30,
-           1280x800 with both side panels open: 12 results, none on screen). overflow-x:clip does not turn
-           the other axis into a scroller the way hidden does, so the panel below stays visible. */
-        overflow-x:clip; overflow-y:visible;
-        /* (#R65) never wider than the anchors allow — a degenerate layout collapses instead of overflowing
-           across the in-flow right sidebar */
-        max-width:calc(100vw - var(--ms-left,14px) - var(--ms-right,290px)); }
+      .map-frame{ display:grid; position:absolute; top:0; bottom:0; left:0; right:0; box-sizing:border-box; padding:10px;
+        /* the frame IS the controls' layer: one level above the band's base (#R253 — a sidebar drops to
+           --z-controls while a floating panel is in use, and must then be below what is in this frame) */
+        z-index:calc(var(--z-controls) + 1); pointer-events:none;
+        container:map-frame / inline-size;
+        grid-template-columns:minmax(0,1fr) minmax(0,380px) minmax(max-content,1fr); column-gap:12px; row-gap:4px;
+        align-items:start; align-content:start;
+        transition:left .38s cubic-bezier(0.25,1,0.5,1), right .38s cubic-bezier(0.25,1,0.5,1); }
+      body.sidebar-glass:not(.ws-mode) .operation-room:has(> .sidebar:not(.collapsed)) .map-frame{ left:var(--sidebar-w); }
+      body.lsr-open:not(.ws-mode) .map-frame{ right:var(--lsr-w); }
+      .map-frame > :not(.map-controls-top){ pointer-events:auto; }
+      .map-frame > .map-search{ grid-column:2; grid-row:1; position:relative; top:auto; left:auto; transform:none; width:auto; min-width:0; max-width:none; box-sizing:border-box; }
+      .map-frame > .map-controls-top{ grid-column:3; grid-row:1; justify-self:end; position:relative; top:auto; right:auto; }
+      /* the panels that hang from the stack and the bottom corner keep their offsets — now from the frame's edges */
+      .map-frame > :is(.tool-panel,.sat-controller){ max-width:calc(100cqi - 48px); box-sizing:border-box; }
+      /* the two bottom corners are one row: the readout keeps the left, Chronos the right (each 6 px from its corner, the
+         gap the pair shares — #R504), and when both do not fit Chronos wraps to the row ABOVE (wrap-reverse) instead of
+         lying on the readout. The row is the frame's width, so neither can reach under a panel. */
+      .map-frame-bottom{ display:flex; position:absolute; left:6px; right:6px; bottom:6px; flex-wrap:wrap-reverse; justify-content:space-between;
+        align-items:flex-end; gap:6px; pointer-events:none; }
+      .map-frame-bottom > *{ position:relative; top:auto; right:auto; bottom:auto; left:auto; pointer-events:auto; }
+      .map-frame-bottom > .news-timeline{ margin-left:auto; max-width:min(560px, 100%); box-sizing:border-box; }
+      .map-frame-bottom > .news-timeline .ntl-body{ max-width:100%; }
+      /* the year rail takes what the frame leaves it; js/news-timeline.js thinPeek() re-thins it on ITS OWN resize */
+      .map-frame-bottom > .news-timeline.collapsed .ntl-peek{ flex:1 1 auto; width:360px; min-width:96px; }
+      .map-frame .map-view-menu{ display:none; }
+      .map-frame .map-view-sets{ display:contents; }
+    }
+    /* ── COMPACT — the full top row needs the stack (≈315 px in English, measured at 1440×900) + a 200 px search +
+       the frame's padding and gaps (44 px). Below that the search becomes its button, the two view pills fold into
+       one menu, the tool triggers drop their words (the title still names each), and Chronos keeps one line.
+       ⚠ The threshold is a measurement of the English labels; a language whose stack is wider gets a narrower
+       search here, never an overlap — the grid above guarantees that, this tier only keeps it readable.
+       ws-mode keeps its own layout (js/workspace.js), so none of this applies inside a workspace window. */
+    /* ⚠ A size query styles the container's DESCENDANTS, never the container: the grid's columns (on .map-frame itself)
+       are the same in every tier, and the tiers change only what sits in them — the folded pill stands centred in its
+       column instead of stretching across it, and the open one spans the empty column and its own. */
+    @container map-frame (max-width:559px){
+      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text){ padding:3px; justify-self:center; }
+      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text) input{ flex:0 0 0; width:0; padding:0; opacity:0; }
+      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text) #ms-btn{ padding:5px 8px; display:flex; align-items:center; }
+      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text) #ms-btn .ms-btn-t{ display:none; }
+      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text) #ms-btn .ms-ico{ display:block; width:16px; height:16px; }
+      /* open (typing, or holding text): the field takes everything left of the stack */
+      body:not(.ws-mode) .map-frame > .map-search:is(:focus-within,.has-text){ grid-column:1 / 3; }
+      body:not(.ws-mode) .map-frame .map-view-menu{ display:flex; }
+      body:not(.ws-mode) .map-frame .map-view-row{ position:relative; }
+      body:not(.ws-mode) .map-frame .map-view-sets{ display:none; }
+      body:not(.ws-mode) .map-frame .map-view-row.open .map-view-sets{ display:flex; flex-direction:column; align-items:flex-end; gap:4px;
+        position:absolute; top:calc(100% + 6px); right:0; z-index:calc(var(--z-inset) + 2); }
+      body:not(.ws-mode) .map-frame #map-tools-group .view-btn > [data-i18n]{ display:none; }
+      body:not(.ws-mode) .map-frame .news-timeline.collapsed .ntl-open-txt small{ display:none; }
+    }
+    /* ── NARROWEST — the compact stack alone is most of the frame. The tool triggers stand in a column, the search
+       button stays in the top row at the left, and an open search takes the whole row while the stack steps down
+       one row under it. */
+    @container map-frame (max-width:359px){
+      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text){ grid-column:1 / 3; justify-self:start; }
+      body:not(.ws-mode) .map-frame #map-tools-group{ flex-direction:column; align-items:stretch; }
+      body:not(.ws-mode) .map-frame > .map-search:is(:focus-within,.has-text){ grid-column:1 / -1; }
+      body:not(.ws-mode) .map-frame:has(> .map-search:is(:focus-within,.has-text)) > .map-controls-top{ grid-row:2; }
     }
     /* (#R20) Frosted-glass news cards — Apple-style light frost instead of the intimidating solid
        dark-gray slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */
@@ -3230,8 +3275,7 @@
        beside the map (map-container starts to its right), so the HUD is already correctly positioned — no shift. */
     /* (#R488) `:has(> .sidebar.collapsed)`, not `.sidebar.collapsed ~ …` — see the box at .btn-toggle-sidebar */
     @media(min-width:769px){
-      body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 12px); }
-      body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .coord-readout{ left:12px; }
+      /* (map-chrome-layout) the coord readout is in .map-frame's bottom row, so it clears the frosted panel with the frame */
       body.sidebar-glass .data-legend:not([data-dragged]), body.sidebar-glass .koppen-legend:not([data-dragged]){ left:calc(var(--sidebar-w) + 24px); right:auto; }
       body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .data-legend:not([data-dragged]),
       body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .koppen-legend:not([data-dragged]){ left:24px; }
@@ -3239,17 +3283,9 @@
       body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .country-info{ left:24px; }
     }
 
-    /* (#R160) RIGHT layer sidebar now OVERLAYS the map too (it no longer pushes the map-container's margin —
-       that was what shifted "地図領域の位置"). So the right-anchored map HUD must slide left by the panel width
-       while it is open, exactly as it used to when the map shrank. Smoothly, and desktop-only / not ws-mode. */
-    @media(min-width:769px){
-      body:not(.ws-mode) .map-controls-top, body:not(.ws-mode) #tool-panel,
-      body:not(.ws-mode) #sat-controller, body:not(.ws-mode) .news-timeline{ transition:right .38s cubic-bezier(0.25,1,0.5,1); }
-      body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + 10px); }
-      body.lsr-open:not(.ws-mode) #tool-panel, body.lsr-open:not(.ws-mode) #sat-controller{ right:calc(var(--lsr-w) + 24px); }
-      body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 6px); }
-    }
-
+    /* (#R160) the RIGHT layer sidebar OVERLAYS the map (it does not push the map container). The controls that
+       float on the map no longer dodge it one by one — `.map-frame` above loses the panel's width while it is
+       open, and everything floating sits inside that frame (map-chrome-layout). */
     /* ══ ⚠ (#R253) WHO IS IN FRONT — THE SIDEBAR, OR THE THING YOU JUST REACHED INTO ══════════════
        「サイドバーをあけたときに、ポップアップ等がサイドバーの後ろに隠れるように。ポップアップ内で
          なんらかの操作したら、ポップアップが前部に来るように。サイドバー内をクリックした場合はまた
