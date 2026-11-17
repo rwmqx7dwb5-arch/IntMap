@@ -1892,25 +1892,39 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        120 ms after a keystroke, and a press or an Enter inside that window used to be overwritten by the device-only rows a
        moment later — measured on a desktop: the card for 「Tokyo」 lost its second row before it could be picked. */
     let _sugT=0;
+    /* (map-search-reopen) the field is FOLDED when the map frame has shrunk it to its button — its input then has no width.
+       Asked of the field as drawn, not of a class: it is folded whether it was never opened or shut by Escape (.ms-shut). */
+    const folded=()=>{ try{ return inp.getBoundingClientRect().width<1; }catch(_){ return false; } };
     btn.onclick=()=>{
       /* (map-chrome-layout) on a desktop too: where the map frame is narrow the pill is only this button, and an empty
-         press is the reader reaching for the field — it opens (css: :focus-within) instead of searching nothing */
-      if(!inp.value.trim()){ try{ inp.focus(); }catch(_){} return; }
+         press is the reader reaching for the field — it opens (css: :focus-within) instead of searching nothing.
+         (map-search-reopen) …and so is a press on a FOLDED field that still holds words: it reopens the field over them
+         (focus takes .ms-shut off) instead of searching into a list the folded field has no room to show — MEASURED in
+         production: after Escape the button and Enter left the field at 45 px and 12 results in a 44 px list. */
+      if(!inp.value.trim()||folded()){ try{ inp.focus(); }catch(_){} return; }
       clearTimeout(_sugT); doGeocode();
     };
     /* Enter searches AND GOES to the first candidate (search-identity, js/search-geocode.js `go`) — unless a result is
        highlighted with the arrow keys, which Enter then picks (js/search-geocode.js listbox), or the Enter is an IME
        confirming its conversion (`isComposing`; 229 is the keyCode a browser reports for a key the IME consumed) */
     inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')){ clearTimeout(_sugT); doGeocode({go:true}); } });
-    /* (map-chrome-search-expand) Escape shuts the field where the map frame folds it into its button: an open result list
-       is closed first (js/search-geocode.js listbox — the first Escape), then the caret leaves the field for the button,
-       which is what folds it again (css: open = focus inside other than the button, or words not shut away by `.ms-shut`). The tier states that it folds
-       (`--ms-folds` on .map-frame-top), so a wide pill, which never folds, keeps its caret. */
-    inp.addEventListener('keydown',(e)=>{ if(e.key!=='Escape'||e.isComposing) return;
-      const res=document.getElementById('ms-results'); if(res&&res.style.display==='block') return;
+    /* (map-chrome-search-expand → map-search-reopen) ESCAPE INSIDE THE SEARCH IS THE SEARCH'S. One listener on the pill, so
+       it hears the key wherever in the pill it was pressed (the field, the button, a result row): an open result list is
+       closed first, then — where the map frame folds the field into its button — the caret leaves the field for the
+       button, which folds it (css: open = focus inside other than the button, or words not shut away by `.ms-shut`; the
+       tier states that it folds with `--ms-folds` on .map-frame-top, so a wide pill keeps its caret). It always marks the
+       key as answered (pressed inside the search, it is the search's even when there is nothing left to close), so the shell's «Esc toggles the sidebar» (which skips an answered Escape) leaves the
+       left panel alone — MEASURED in production: closing the list with Escape also shut the left panel. */
+    box.addEventListener('keydown',(e)=>{ if(e.key!=='Escape'||e.isComposing) return;
+      /* answered whatever happens below — an Escape on the folded button has nothing to close, and is still not the
+         sidebar's (measured: pressed there, it shut the left panel and the frame grew past the fold) */
+      e.preventDefault();
+      const res=document.getElementById('ms-results');
+      if(res&&res.style.display==='block'){ res.style.display='none'; clearTimeout(_sugT); return; }
+      if(folded()||!box.contains(document.activeElement)) return;
       let folds=''; try{ folds=getComputedStyle(box.parentElement).getPropertyValue('--ms-folds').trim(); }catch(_){}
       /* the words stay in the field: `.ms-shut` folds it over them, and coming back into the field takes the mark off */
-      if(folds==='1'){ e.preventDefault(); box.classList.add('ms-shut'); try{ btn.focus(); }catch(_){} } });
+      if(folds==='1'){ clearTimeout(_sugT); box.classList.add('ms-shut'); try{ btn.focus(); }catch(_){} } },true);   /* capture: the list's state is read before the field's own listbox closes it, so one press does one thing */
     inp.addEventListener('focus',()=>box.classList.remove('ms-shut'));
     /* (mobile-shell) …and the candidates follow the typing — local rows only, no network (js/search-geocode.js), with
        «Ask Atlas» last. (desktop-one-entry) on every device, not only a phone. */
