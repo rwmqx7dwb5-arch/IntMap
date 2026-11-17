@@ -230,17 +230,18 @@ test('R480 ④ .compass-btn is a circle that draws its own glass', () => {
     'and the shared --glass-fill material list');
 });
 
-/* ── ⑤ THE THING THAT MEASURES THE STACK COUNTS ROWS ─────────────────────────────────────────── */
-/* spelling kept: browser script (js/mobile-ui.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
-test('R480 ⑤ the search-pill geometry measures every row, including the new one', () => {
-  const js = read('js/mobile-ui.js');
-  const m = /document\.querySelectorAll\('([^']*)'\)\.forEach\(el=>\{[^}]*stackBottom=Math\.max\(stackBottom,r\.bottom\)/.exec(js);
-  assert.ok(m, 'js/mobile-ui.js still measures the right-hand stack for the search pill');
-  const sel = m[1];
-  assert.ok(/\.map-controls-top\s*>\s*\*/.test(sel),
-    `the rows are the container's direct children; naming pills misses any row that is not one — found "${sel}"`);
-  assert.ok(!/\.map-controls-top \.map-view-group/.test(sel),
-    'the pill-only selector is what went blind to the compass row');
+/* ── ⑤ THE THING THAT KEEPS THE PILL OFF THE STACK SEES EVERY ROW ──────────────────────────────── */
+/* #R480's defect: the pill's collision test named the PILLS of the stack, so the compass row it added was invisible
+   to it and a 42 px circle could sit on the search field. (map-chrome-layout) The test is gone — the pill and the
+   stack are two cells of .map-frame's grid — so the question becomes: is the cell the WHOLE stack? It is, when the
+   cell is .map-controls-top itself (every row is its child by construction) and no row is placed on its own. */
+/* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
+test('R480 ⑤ the search pill is kept off the whole stack, every row included', () => {
+  const css = read('css/intmap.css');
+  assert.match(css, /\.map-frame-top > \.map-controls-top\{ grid-column:stack-start \/ -1; grid-row:1;/, 'the grid cell is the stack container, not a row of it');
+  assert.ok(!/\.map-controls-top > [^{]*\{[^}]*grid-(column|row)/.test(css), 'no row of the stack is placed as a cell of its own');
+  assert.ok(!/(\.compass-btn|\.map-view-row|#map-tools-group)\{[^}]*position:(fixed|absolute)/.test(css),
+    'no row leaves the stack\'s flow, so the cell measures all of them');
 });
 
 /* ── ⑥ EVERY CALLER STILL FINDS IT ───────────────────────────────────────────────────────────── */

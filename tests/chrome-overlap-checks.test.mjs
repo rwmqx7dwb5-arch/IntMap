@@ -1,6 +1,6 @@
 /* ============================================================================
  *  IntMap · the map's chrome must not cover what the reader is trying to read or press
- *  (js/map-typography.js news-band declutter, js/mobile-ui.js search-pill watcher, the layer-search ✕)
+ *  (js/map-typography.js news-band declutter, the search pill in the map frame, the layer-search ✕)
  * ----------------------------------------------------------------------------
  *  Consolidated from tests/r428-checks ①, tests/r484-checks and tests/r270-checks ②.
  *
@@ -48,7 +48,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
@@ -57,6 +57,7 @@ import { liftFunction } from './helpers/lift-function.mjs';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8');
 const typo = read('js/map-typography.js');
+const fs_list = (dir) => readdirSync(path.join(ROOT, dir)).filter((n) => n.endsWith('.js')).map((n) => dir + '/' + n);
 
 /* ── ① 読めない帯は場所を取らない ───────────────────────────────────────── */
 test('R428 ① a band that the chrome covers neither shows nor claims space', () => {
@@ -98,69 +99,36 @@ test('R428 ① a band that the chrome covers neither shows nor claims space', ()
   assert.ok(!/getElementById\('(map-controls|layers-panel|basemap)/.test(s),
     'the occluders must not be named one by one');
 });
-/* the desktop `.map-search` rule — the FIRST one, which is the geometry; the later ones only
-   restate colour/material inside media blocks. */
-function searchPillRule() {
+/* ══ R484 → (map-chrome-layout) THE PILL CANNOT REACH THE STACK, BY CONSTRUCTION ═════════════════════════════
+   R484's defect was a search button under the control stack (elementFromPoint at #ms-btn returned btn-view-map),
+   and its guard was a JS watcher whose collision constant had to match the stylesheet (①–③ here checked that).
+   The watcher is gone (js/mobile-ui.js says what took over each of its duties): the pill and the stack are two
+   cells of one grid inside `.map-frame`, and the stack's column never shrinks below its own content, so there is
+   no constant left to keep in step. The defect itself — «something covers the search button or a control, or a
+   control sits under a side panel» — is MEASURED, with elementFromPoint, at every zoom × panel state by
+   tests/map-chrome-layout.spec.js. What stays here is the structure that makes that true, read from the source. */
+test('R484 the search pill and the control stack are two cells of the map frame\'s one grid', () => {
+  /* ⚠ READ, NOT RUN: parentage in index.html and the grid placement in css/intmap.css are text; the behaviour is the spec's. */
+  const html = codeOnly(read('index.html'), { lang: 'html' });
+  const frameAt = html.indexOf('<div class="map-frame" id="map-frame">');
+  assert.ok(frameAt >= 0, 'index.html has the map frame');
+  for (const marker of ['id="map-search"', 'class="map-controls-top"', 'id="tool-panel"', 'id="sat-controller"', 'id="news-timeline"']) {
+    assert.ok(html.indexOf(marker) > frameAt, `${marker} sits inside the map frame`);
+  }
   const css = read('css/intmap.css');
-  const m = /\n\s*\.map-search\{([^}]*width:min\([^}]*)\}/.exec(css);
-  assert.ok(m, 'css/intmap.css still declares the .map-search geometry rule');
-  return m[1];
-}
-
-/* ── ① THE WATCHER STILL EXISTS AND STILL GUARDS BOTH EDGES ─────────────────────────────────── */
-test('R484 ① the search pill still has a collision test against both control zones', () => {
-  /* ⚠ READ, NOT RUN: the watcher reads live element rects on resize; what is asked is that both control zones are still in its test. */
-  const js = read('js/mobile-ui.js');
-  assert.match(js, /const collide = \(\(mapCX \+ half \+ margin\) > rightLeft\) \|\| \(\(mapCX - half - margin\) < leftRight\)/,
-    'the pill is still tested against the right-hand stack AND the left sidebar');
-  /* the right edge it is tested against must be the whole stack (#R480), not a remembered pill */
-  assert.match(js, /querySelectorAll\('\.map-controls-top > \*, #btn-layers'\)/,
-    'rightLeft comes from every row of the stack');
-});
-
-/* ── ② THE CONSTANT AND THE STYLESHEET AGREE — DERIVED, NOT RETYPED ─────────────────────────── */
-test('R484 ② `half` is the real half-width of .map-search, derived from the CSS', () => {
-  /* ⚠ READ, NOT RUN: the claim is that a literal in js/mobile-ui.js equals a quantity derived from css/intmap.css — both are text, and the derivation is done here. */
-  const rule = searchPillRule();
-
-  const w = /width:min\((\d+)px/.exec(rule);
-  assert.ok(w, '.map-search still caps its width with min(<n>px, …)');
-  const content = Number(w[1]);
-
-  /* padding: `4px 4px 4px 12px` → left+right. Written long-hand in this rule; read all four. */
-  const p = /padding:([^;]+);/.exec(rule);
-  assert.ok(p, '.map-search still declares padding');
-  const pv = p[1].trim().split(/\s+/).map((x) => Number(String(x).replace('px', '')));
-  assert.ok(pv.every((n) => Number.isFinite(n)), `padding must be plain px, found "${p[1]}"`);
-  const padX = pv.length === 4 ? pv[1] + pv[3] : pv.length === 2 ? pv[1] * 2 : pv[0] * 2;
-
-  const b = /border:(\d+)px/.exec(rule);
-  assert.ok(b, '.map-search still declares a border width');
-  const borderX = Number(b[1]) * 2;
-
-  /* ⚠ content-box: the measured pill is 398 for 380+16+2, so `width` does NOT include padding here.
-     If a box-sizing reset ever changes that, this arithmetic is what has to change with it. */
-  const expected = Math.round((content + padX + borderX) / 2);
-
-  const js = read('js/mobile-ui.js');
-  const h = /const half=(\d+), margin=(\d+);/.exec(js);
-  assert.ok(h, 'js/mobile-ui.js still declares the collision half-width as a literal');
-  assert.equal(Number(h[1]), expected,
-    `half must be .map-search's real half-width: (${content} + ${padX} + ${borderX})/2 = ${expected}, found ${h[1]}`);
-
-  /* the defect this round fixed, stated as a number so it cannot come back quietly */
-  assert.ok(Number(h[1]) > 110, 'the pre-#R484 value of 110 described a 220px pill that never existed');
-});
-
-/* ── ③ THE MEASURING VERSION MUST NOT COME BACK ──────────────────────────────────────────────── */
-test('R484 ③ the collision half-width is not re-measured at runtime', () => {
-  /* ⚠ READ, NOT RUN: an absence of a runtime cache; nothing to run. */
-  const js = read('js/mobile-ui.js');
-  /* a cache refreshed only while the watcher is off can never be corrected once it is on — measured,
-     that left 1500x900 permanently anchored. Named so a future reader meets the reason, not the bug. */
-  assert.ok(!/_msHalf/.test(js), 'no latched half-width cache (it cannot self-correct once ms-narrow is on)');
-  assert.ok(!/ms-narrow'\)\)\{ const r=host\.getBoundingClientRect\(\)/.test(js),
-    'the pill does not measure itself to decide whether it collides');
+  assert.match(css, /\.map-frame-top > \.map-search\{ grid-column:pill-start \/ pill-end; grid-row:1;/, 'the pill is a cell of the top row');
+  assert.match(css, /\.map-frame-top > \.map-controls-top\{ grid-column:stack-start \/ -1; grid-row:1;/, 'the stack is the last cell of the same row');
+  /* every template the row can take keeps the stack's column at or above its own content, so the pill gives way and never slides under it */
+  /* the templates as written: inline on .map-frame-top, or the lane held once in --mft-lane and named by var() */
+  const templates = [...css.matchAll(/\.map-frame-top\{[^}]*grid-template-columns:([^;]+);/g), ...css.matchAll(/--mft-lane:([^;]+);/g)]
+    .map((m) => m[1]).filter((t) => !/^var\(/.test(t.trim()));
+  assert.ok(templates.length >= 2, 'the centred and the lane templates are both there');
+  for (const t of templates) assert.match(t, /stack-start\] (minmax\(max-content,1fr\)|max-content)/, `the stack's column cannot shrink below its content: «${t}»`);
+  /* nothing writes the pill's position from script any more — a second owner is how #R309 got half of one layout and half of another */
+  for (const f of fs_list('js')) {
+    const src = codeOnly(read(f));
+    assert.ok(!/--ms-(left|right|top)/.test(src) && !/['"]ms-narrow['"]/.test(src), `${f} does not position the search pill`);
+  }
 });
 
 /* ── ② the clear mark is geometry, and there is exactly one of it ───────────────────────────── */

@@ -66,18 +66,17 @@ test('R231 sheet: the scroll → drag hand-off is delegated, not a list of tab i
 {
 
 /* ── ⑥ THE PILL IS LAID OUT AGAINST A GEOMETRY THAT HAS STOPPED MOVING ───────────────────────── */
+/* #R252's defect: 「右サイドバーを開閉後、地名検索バーが変な位置に行く」 — a JS watcher computed the pill's place once, at
+   t=0 of the panel's slide, and pinned it to the geometry being left. (map-chrome-layout) Nothing computes it now: the
+   pill is a cell of .map-frame's grid and the frame itself slides with the panel, so the layout is re-derived by the
+   browser on every frame of the slide and there is no moment for a stale reading to be taken. */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
-test('#R252 ⑥ the search-pill watcher re-runs when the right panel has finished moving', () => {
+test('#R252 ⑥ the search pill follows the right panel through its slide, with nothing to re-measure', () => {
+  const css = code(read('css/intmap.css'), { lang: 'css' });
+  assert.match(css, /\.map-frame\{[^}]*transition:left \.38s[^;]*, right \.38s/, 'the frame slides with the panels, so everything in it does');
+  assert.match(css, /body\.lsr-open:not\(\.ws-mode\) \.map-frame\{ right:var\(--lsr-w\); \}/, 'its right edge is the open panel\'s');
   const mo = code(read('js/mobile-ui.js'));
-  assert.match(mo, /\['transitionend','transitioncancel'\]\.forEach\(ev=>hud\.addEventListener\(ev,\(e\)=>\{ if\(!e\|\|e\.propertyName==='right'\) upd\(\); \}\)\)/,
-    'the watcher does not re-run on the HUD’s own transition — the one recomputation it gets reads the pre-slide geometry');
-  /* the early recomputation is KEPT: it is what moves the pill at the start of the animation */
-  assert.match(mo, /window\.addEventListener\('intmap-sidebar-resize',upd\)/,
-    'the immediate recomputation was removed — the pill would not move until the animation ended');
-
-  /* the property this hangs on is the one the stylesheet animates */
-  assert.match(code(read('css/intmap.css'), { lang: 'css' }), /\.map-controls-top[^{]*\{ *transition:right \.38s/,
-    'the right-anchored HUD no longer transitions `right` — re-derive which event says «it has landed»');
+  assert.ok(!/--ms-(left|right|top)/.test(mo), 'the pill has no script-written position to go stale');
   /* …and js/map-ui.js still fires the early one from BOTH doors of the right panel (the third
      dispatch in that file belongs to the panel's own drag-resizer, which resizes nothing else) */
   const mu = code(read('js/map-ui.js'));

@@ -11,7 +11,7 @@
  *    probe) and must equal the integer tests/z-layers-baseline.json recorded before the layers were
  *    named — the painting order did not move.
  *  ④ the single-key shortcut switch: off, «l» does not press the Layers button; on, it does.
- *  ⑤ in the narrow desktop layout (body.ms-narrow) the open search results are not clipped by the pill.
+ *  ⑤ in a narrow map frame (the compact search) the open search results are not clipped by anything.
  *  tests/map-a11y-structure-checks.test.mjs carries the halves that need no browser.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
@@ -126,40 +126,45 @@ test.describe('map-a11y-structure', () => {
     await expect.poll(() => page.evaluate(() => window.__layersPressed)).toBe(1);
     });
     await test.step('⑤ the narrow desktop layout does not clip the search results it opens', async () => {
-    /* (search-results-clipped) body.ms-narrow collapses the pill sideways (#R65) and did it with
-       overflow:hidden, which also cut off the results panel hanging below it: measured in production
-       2026-09-30 at this viewport with both side panels open, «Tokyo» returned 12 results and
-       elementFromPoint found none. Checked in this boot rather than a new one — it is the same
-       stacking-and-painting question as ③, at the same viewport. */
-    const r = await page.evaluate(() => {
-      document.body.classList.add('ms-narrow');
+    /* (search-results-clipped) the narrow layout used to collapse the pill sideways with overflow:hidden, which
+       also cut off the results panel hanging below it: measured in production 2026-09-30 at this viewport with
+       both side panels open, «Tokyo» returned 12 results and elementFromPoint found none. (map-chrome-layout)
+       The narrow layout is now the map frame's compact tier — the frame is narrowed here the way an open panel
+       narrows it, and the field is opened the way a reader opens it (focus). Checked in this boot rather than a
+       new one — it is the same stacking-and-painting question as ③, at the same viewport. */
+    const r = await page.evaluate(async () => {
+      const frame = document.getElementById('map-frame');
+      frame.style.transition = 'none'; frame.style.right = (frame.getBoundingClientRect().width - 480) + 'px';
+      document.getElementById('ms-input').focus();
+      await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
       const box = document.getElementById('map-search');
       const res = document.getElementById('ms-results');
       res.innerHTML = '<div>Tokyo</div><div>Tokyo Station</div><div>Tokyo Bay</div>';
       res.style.display = 'block';
       const b = res.getBoundingClientRect(), p = box.getBoundingClientRect();
       const hit = document.elementFromPoint(b.left + b.width / 2, b.top + Math.min(20, b.height / 2));
-      const out = { hit: !!hit && res.contains(hit), resH: b.height, pillW: p.width,
-                    maxW: parseFloat(getComputedStyle(box).maxWidth), ox: getComputedStyle(box).overflowX,
+      const out = { hit: !!hit && res.contains(hit), resH: b.height, pillW: p.width, frameW: frame.getBoundingClientRect().width,
                     /* (ui-layer-owner) the owner's own measurement of the #823 shape agrees */
                     clip: (() => { const c = window.IntMapStack.clipOf(res); return c ? (c.el.id || c.el.className) + ':' + c.axis : null; })() };
-      res.style.display = ''; res.innerHTML = ''; document.body.classList.remove('ms-narrow');
+      res.style.display = ''; res.innerHTML = ''; document.getElementById('ms-input').blur();
+      frame.style.right = ''; frame.style.transition = '';
       return out;
     });
     expect(r.resH, 'the results panel has height').toBeGreaterThan(0);
     expect(r.hit, 'the middle of the open results panel is the results panel, not what is behind it').toBe(true);
-    expect(r.ox, 'the pill still clips sideways').toBe('clip');
-    expect(r.pillW).toBeLessThanOrEqual(r.maxW + 0.5);
+    expect(r.pillW, 'the open field is a field, not a sliver').toBeGreaterThan(150);
+    expect(r.pillW).toBeLessThanOrEqual(r.frameW);
     expect(r.clip, 'IntMapStack.clipOf found an ancestor cutting the results panel').toBe(null);
     });
     await test.step('⑥ pressing a search result keeps it in front until the press is released', async () => {
     /* (front-mark-outer-context) the front-most mark went to the innermost positioned element under
-       the pointer — #ms-results — whose z-index cannot leave the fixed, z-indexed pill it sits in. The
+       the pointer — #ms-results — whose z-index cannot leave the z-indexed pill it sits in. (map-chrome-layout:
+       the map frame that holds the pill has NO z-index, so the mark must stop at the pill, not climb to the frame —
+       a frame carrying the mark rose whole and covered the route panel.) The
        pointerdown set im-float-front, a legend (1100) rose over the pill (1002), and the pointerup
        landed on the legend: measured in production 2026-09-30, a click on a result chose nothing.
        A real pointerdown is dispatched through the capture-phase handler, then the point is asked again. */
     const r = await page.evaluate(() => {
-      document.body.classList.add('ms-narrow');
       const res = document.getElementById('ms-results');
       res.innerHTML = '<div class="ms-item">Tokyo</div><div class="ms-item">Tokyo Bay</div>';
       res.style.display = 'block';
@@ -174,13 +179,15 @@ test.describe('map-a11y-structure', () => {
       it.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, clientX: x, clientY: y }));
       const after = document.elementFromPoint(x, y);
       const out = { beforeIsLegend: before === leg, afterIsItem: !!after && it.contains(after),
-                    marked: document.getElementById('map-search').classList.contains('im-front') };
+                    marked: document.getElementById('map-search').classList.contains('im-front'),
+                    frameMarked: document.getElementById('map-frame').classList.contains('im-front') };
       leg.remove(); res.style.display = ''; res.innerHTML = '';
-      document.body.classList.remove('ms-narrow', 'im-float-front');
+      document.body.classList.remove('im-float-front');
       document.querySelectorAll('.im-front').forEach((n) => n.classList.remove('im-front'));
       return out;
     });
     expect(r.marked, 'the mark is on the pill that stands in the band, not on the list trapped inside it').toBe(true);
+    expect(r.frameMarked, 'and not on the frame — the frame places the controls, it does not layer them').toBe(false);
     expect(r.afterIsItem, 'after the press, the pressed result is what is under the pointer').toBe(true);
     });
     await test.step('⑦ the window order is written as named layers and the browser paints it inside the band', async () => {

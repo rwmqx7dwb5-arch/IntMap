@@ -555,117 +555,30 @@ export function layoutReflow(HOST){
   /* (#R172) the resize below goes through IntMapGeoEngine too — this is a SEPARATE factory closure from
      mobileUI above, so it needs its own handle (the split-scope check catches exactly this). */
   const _GE=()=>IntMapGeoEngine;
-  /* (#R21) Narrow-desktop watcher: body.ms-narrow drops the search pill to a second row whenever
-     the visible map area is too narrow for pill + view buttons side-by-side. */
+  /* ══ (map-chrome-layout) THE VIEW MENU — AND WHY THE NARROW-DESKTOP WATCHER THAT STOOD HERE IS GONE ═════════════
+     The watcher (#R21…#R252) measured the map container, the frosted left panel, the left handle and every row of the
+     right-hand stack, decided whether a centred pill would collide, and then wrote `--ms-left` / `--ms-right` into a
+     `position:fixed` pill (`body.ms-narrow`), hid it (`body.ms-hide`), and re-ran on the stack's `transitionend` because
+     the right panel slid the stack without resizing anything it observed. Its job is now the stylesheet's: the search
+     and the stack are two cells of ONE grid inside `.map-frame` (css/intmap.css), whose edges are the panels' edges, so
+     they cannot overlap and nothing has to be measured, latched or re-measured. What it guaranteed and who keeps it:
+       · never under the controls        → the grid's columns (the stack's column never shrinks below its content)
+       · never under either side panel   → the frame's two insets, the only rules that name a panel
+       · never crushed to a sliver       → the frame's container queries change the pill into its button first
+       · follows a panel's slide         → the frame's own `left`/`right` transition; the container query re-evaluates
+     The placeholder fitter below observes the field itself, so it keeps working whatever shape the pill takes.
+     ⚠ THE MENU: where the frame is too narrow for both view pills they fold behind #btn-view-menu (css `.map-view-menu`).
+     Every view button keeps its id and its handler (Atlas, shortcuts and tests press them directly), so the menu is only
+     a way to SEE them. A press anywhere else closes it — listened for in the capture phase, because the Tools / Share
+     triggers stop their clicks from bubbling — and a choice made inside it closes it as well. */
   (function(){
-    /* No isMobile() early-return — the page can LOAD at a mobile width and later widen (or vice
-       versa), so the check lives inside the handler and the observer runs for the page's life. */
     function wire(){
-      const ms=document.querySelector('.map-search'); if(!ms||!ms.parentElement) return;
-      const host=ms.parentElement;
-      /* (#R22) Trigger the second-row drop sooner (640→760) so the centerd pill can never graze the
-         map/satellite view buttons or the sidebar at in-between widths ("画面幅によってはかぶる"). */
-      /* (#R25) ROOT CAUSE of "still overlaps / can't type at narrow desktop": the old fixed 760px width
-         threshold did NOT fire at e.g. 820px even though the CENTERED pill physically collided with the
-         right-hand view buttons (measured overlap; the input then hit-tested under map-controls-top). Drop
-         to row 2 based on REAL collision geometry instead — would a centered pill cross the right controls'
-         left edge or the left controls' right edge? (The controls don't move when the pill drops, so this
-         is stable — no flicker loop.) */
-      const upd=()=>{ try{ const desk=window.matchMedia(window.IntMapDevice.WIDE).matches;
-        if(document.body.classList.contains('ws-mode')){ document.body.classList.remove('ms-narrow'); document.body.classList.remove('ms-hide'); return; }   /* (#R78d) ws-mode pins the search bar inside the map window itself */
-        if(!desk){ document.body.classList.remove('ms-narrow'); return; }
-        const winW=window.innerWidth;
-        /* (#R65) the pill anchors are VIEWPORT-fixed but the map area is not the viewport anymore: the
-           in-flow RIGHT layer sidebar (and future flex siblings) shrink it. Everything below works against
-           the visible map area's edges, so the pill can never be stretched across the right sidebar (the
-           reported bug: ms-narrow's full-width branch set --ms-right:14px = across the open sidebar). */
-        let mapL=0, mapR=winW, mapCX=winW/2;
-        /* (#R66) use the map rect even when it is squeezed to ~0 — discarding it re-enabled the overlap */
-        try{ const mc=document.querySelector('.map-container'); if(mc){ const r=mc.getBoundingClientRect(); if(r.right>0){ mapL=r.left; mapR=r.right; mapCX=r.left+r.width/2; } } }catch(_){}
-        let rightLeft=mapR, stackBottom=66;
-        /* ⚠ (#R480) THE ROWS OF THE STACK, NOT THE PILLS SOMEONE REMEMBERED. `stackBottom` is where the
-           search pill is dropped to when it cannot fit beside the controls, so it has to be the bottom of
-           the WHOLE right-hand stack. Naming `.map-view-group` made that true only while every row happened
-           to be one of those pills — and #R480 moved the compass OUT of a pill into a row of its own, which
-           under the old selector would have left a 42px circle sitting on top of the search field with the
-           geometry reporting no collision. Every ROW is a direct child of .map-controls-top by construction,
-           so measuring the children measures the stack, including rows added after this line was written.
-           (#btn-layers stays named: it is measured for its dropdown's left edge, not for a row.) */
-        document.querySelectorAll('.map-controls-top > *, #btn-layers').forEach(el=>{ const r=el.getBoundingClientRect(); if(r.width>0){ rightLeft=Math.min(rightLeft,r.left); stackBottom=Math.max(stackBottom,r.bottom); } });
-        let leftRight=mapL;
-        try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')) leftRight=Math.max(leftRight, sb.getBoundingClientRect().right); } }catch(_){}
-        try{ const tg=document.querySelector('.btn-toggle-sidebar'); if(tg){ const r=tg.getBoundingClientRect(); if(r.width>0) leftRight=Math.max(leftRight,r.right); } }catch(_){}
-        /* ⚠⚠⚠ (#R484) THIS PREDICTED A PILL THAT IS NOT THE ONE ON SCREEN. `half=110` said "a comfortable
-           ~220px centered pill"; the element is `width:min(380px,55vw)` plus 16px padding and 2px border
-           = 398px, so its real half is 199. The test therefore cleared a collision the pill was already in,
-           and the gap only stayed hidden because the widest row of the right-hand stack used to be the
-           TOOLS row at y=50 — which barely shares a y-band with the pill at y=10.
-           #R480 put a 317px row at y=10 and the 89px of under-estimate became visible: MEASURED at 1310x900,
-           pill 656–1054 against the row's left edge at 982.56 = 71.44px of overlap, and
-           `elementFromPoint` at the centre of #ms-btn returned `btn-view-map` — the search button could
-           not be clicked at all. The unprotected band was ~1303–1453px, which contains 1366 and 1440.
-           ⚠⚠ MEASURING IT AT RUNTIME IS WORSE, WHICH THIS ROUND FOUND BY DOING IT FIRST. Under `ms-narrow`
-           the width IS the watcher's own output, so it can only be read while the watcher is off — and the
-           moment it latches a wrong early reading (before the stylesheet's max-width applies, the pill is
-           its container's full width) nothing ever re-measures, because the watcher is now on. MEASURED:
-           1500x900 stayed anchored with both collision tests false, since the stale half was ~455 not 199.
-           A stuck layout at a width that was never in trouble is a worse failure than the one being fixed.
-           So the number is written here, and `tests/chrome-overlap-checks.test.mjs (#R484)` ② DERIVES it from the `.map-search` rule
-           in css/intmap.css (380 content + 16 padding + 2 border) and fails if the two ever disagree —
-           which is the thing #R25 had no way to notice. */
-        const half=199, margin=14;
-        const collide = ((mapCX + half + margin) > rightLeft) || ((mapCX - half - margin) < leftRight);
-        const bs=document.body.style;
-        if(collide){
-          /* (#R122) KEEP the pill at the TOP whenever the horizontal gap between the (expanded) sidebar and the
-             right-hand controls is wide enough for it — centered in that gap at a CAPPED width, so expanding the
-             left panel no longer drops the place-search to a second row and stretches it full-width ("下に下がって
-             きて、不用意に長くなる"). Only when the top gap is genuinely too narrow does it fall BELOW the controls. */
-          const gapL=leftRight+14, gapR=rightLeft-14, gapW=gapR-gapL;
-          if(gapW>=180){
-            const pill=Math.min(380,gapW), cx=(gapL+gapR)/2;
-            bs.setProperty('--ms-top','14px');
-            bs.setProperty('--ms-left', Math.round(cx-pill/2)+'px');
-            bs.setProperty('--ms-right', Math.round(winW-(cx+pill/2))+'px');
-            document.body.classList.remove('ms-hide'); document.body.classList.add('ms-narrow');
-          } else {
-            /* not enough room beside the controls at the top → go BELOW the whole stack, map-wide */
-            let mLeft=leftRight+14, mRight=winW - mapR + 14;
-            bs.setProperty('--ms-top', (stackBottom+10)+'px');
-            const maxLeft=(winW - mRight) - 160;
-            if(mLeft>maxLeft) mLeft=Math.max(mapL+14, maxLeft);
-            const usable=(winW - mRight) - mLeft;
-            if(usable<120){ document.body.classList.add('ms-hide'); document.body.classList.remove('ms-narrow'); }
-            else{
-              document.body.classList.remove('ms-hide');
-              bs.setProperty('--ms-left', Math.round(mLeft)+'px');
-              bs.setProperty('--ms-right', Math.round(mRight)+'px');
-              document.body.classList.add('ms-narrow');
-            }
-          }
-        } else { document.body.classList.remove('ms-narrow'); document.body.classList.remove('ms-hide'); }
-      }catch(_){} };
-      try{ const ro=new ResizeObserver(upd); ro.observe(host); const sb=document.querySelector('.sidebar'); if(sb) ro.observe(sb); }catch(_){ window.addEventListener('resize',upd); }
-      window.addEventListener('resize',upd); window.addEventListener('intmap-sidebar-resize',upd); setTimeout(upd,300); upd();
-      /* ══ ⚠⚠⚠ (#R252) …AND AGAIN ONCE THE RIGHT PANEL HAS FINISHED MOVING ═══════════════════════════
-         「右サイドバーを開閉後、地名検索バーが変な位置に行く。」
-
-         Everything `upd()` measures on the right is `.map-controls-top`'s left edge, and since #R160
-         the right layer sidebar OVERLAYS the map: `.map-container` does not resize, so neither the
-         ResizeObserver above nor `resize` ever fires. js/map-ui.js does dispatch
-         `intmap-sidebar-resize` from `open()` and `close()` — but SYNCHRONOUSLY, at t=0 of the HUD's
-         own `transition:right .38s` (css/intmap.css, the #R160 block). So the one recomputation this
-         watcher gets reads the HUD where it was BEFORE the slide, pins `--ms-left`/`--ms-right` to the
-         geometry of the state being left, and nothing ever corrects it: opening leaves the pill
-         stretched under the panel, closing leaves it squeezed into the strip the panel used to fill.
-
-         ⚠ THE SIGNAL IS THE THING THAT MOVES, not a timer matching a duration typed in a stylesheet.
-         `transitionend` fires when the HUD has actually landed (and `transitioncancel` when a second
-         toggle interrupts the first), so the pill is laid out against a geometry that has stopped
-         changing, whatever the duration or `prefers-reduced-motion` make it. The early dispatch is
-         KEPT: it is what moves the pill at the start of the animation instead of after it. */
-      try{ const hud=document.querySelector('.map-controls-top');
-        if(hud) ['transitionend','transitioncancel'].forEach(ev=>hud.addEventListener(ev,(e)=>{ if(!e||e.propertyName==='right') upd(); })); }catch(_){} }
+      const row=document.querySelector('.map-view-row'), trig=document.getElementById('btn-view-menu'); if(!row||!trig) return;
+      const set=(o)=>{ row.classList.toggle('open',o); trig.setAttribute('aria-expanded',o?'true':'false'); };
+      trig.addEventListener('click',()=>set(!row.classList.contains('open')));
+      document.addEventListener('click',(e)=>{ if(row.classList.contains('open') && !trig.contains(e.target)) set(false); },true);
+      document.addEventListener('keydown',(e)=>{ if(e.key==='Escape' && row.classList.contains('open')){ set(false); try{ trig.focus(); }catch(_){} } });
+    }
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
   })();
   /* ══ (ui-a11y-polish) …AND THE PLACEHOLDER IS THE ONE THAT FITS THE PILL THIS WATCHER LEFT ══════════

@@ -1882,7 +1882,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   (function wireMapSearch(){
     const box=document.getElementById('map-search'), btn=document.getElementById('ms-btn'), inp=document.getElementById('ms-input');
     if(!box||!btn||!inp) return;
-    const mob=()=>window.IntMapDevice.compact();
     /* (mobile-shell) on a phone the field is no longer a circle that has to be opened first: it is the head of the
        sheet (js/mobile-ui.js), always a field. An empty press puts the caret in it; a press with text searches. */
     /* ⚠ (desktop-one-entry) a full search ENDS the suggestion that is still waiting: the candidates follow the typing (below)
@@ -1890,7 +1889,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        moment later — measured on a desktop: the card for 「Tokyo」 lost its second row before it could be picked. */
     let _sugT=0;
     btn.onclick=()=>{
-      if(mob() && !inp.value.trim()){ try{ inp.focus(); }catch(_){} return; }
+      /* (map-chrome-layout) on a desktop too: where the map frame is narrow the pill is only this button, and an empty
+         press is the reader reaching for the field — it opens (css: :focus-within) instead of searching nothing */
+      if(!inp.value.trim()){ try{ inp.focus(); }catch(_){} return; }
       clearTimeout(_sugT); doGeocode();
     };
     /* Enter searches AND GOES to the first candidate (search-identity, js/search-geocode.js `go`) — unless a result is

@@ -43,6 +43,7 @@ IntMapLang.define('en', { ui: {
       ttlMapLayers:"Map & layers",
       ttlMapOptions:"Map options",
       ttlMapTools:"Map tools",
+      ttlMapView:"Map view",
       ttlMeasureDA:"Measure distance / area",
       ttlMyLocation:"My location",
       ttlObjects:"Objects",

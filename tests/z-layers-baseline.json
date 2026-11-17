@@ -51,7 +51,7 @@
   ".map-search → 1000",
   ".search-result-card → 1500",
   "#ai-research-panel .tp-header → 6",
-  "body.ms-narrow .map-search → 1002",
+  ".map-frame .map-view-row.open .map-view-sets → 2",
   "#img-lightbox → 10000",
   ".compose-modal → 9999",
   ".map-credit → 900",
