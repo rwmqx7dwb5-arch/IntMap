@@ -5,7 +5,7 @@
 //  class link) were callable by anyone straight through PostgREST with no bound per caller. The two
 //  class doors answer whether a class code exists (`not_found` against anything else), and the directory
 //  is a heavy read. The database now grants all three to service_role only
-//  (supabase/migrations/20261117120000_security_review_nov.sql), and this function is the one way in.
+//  (supabase/migrations/20261117160000_security_review_nov.sql), and this function is the one way in.
 //
 //  WHAT STANDS IN FRONT OF THE DATABASE (verify_jwt = false — students have no account):
 //    · POST only; a body ceiling read with relay-guard's readCapped (content-length AND streamed);
