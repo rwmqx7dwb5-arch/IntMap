@@ -332,7 +332,7 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are twenty-one Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are twenty-two Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
 flag that lives in a comment is not configuration. All twenty-one are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
@@ -1141,6 +1141,33 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    same outside system as the `mgmt_*` tables (item 5) and is left for the same reason. `pg_net` is
    installed in `public` (Supabase advisor `extension_in_public`); moving it means re-creating the
    extension, which drops the HTTP calls every pg_cron job makes.
+25. **Closed 2026-11-17 (security-review-nov), with what is left of each.**
+   · The class-code doors and the directory were callable by `anon` with no bound per caller; `class_set_submit`
+     answered `not_found` / `invalid_name` before its per-set bucket, so it probed codes too. All three are now
+     granted to `service_role` only and reached through the `community-class` Edge Function, which takes a
+     per-caller token (relay_take, HMAC of the network) before a code is looked up — failing closed for the class
+     doors (pgTAP 48 measures every overload by catalogue). Left: the bucket is per network, so a school behind
+     one address shares 300 tries per 10 minutes (`community-class/shape.js` says why and when it moves).
+   · A moderation hold matched a collection NAME — renaming it, or listing «everything», brought held content
+     back. It is the account's now (operator decision). The share LINK itself is not revoked by a hold, as before.
+   · The AI ledger's close doors returned «done» for a resolved `{ error }`, and settle for a turn that matched no
+     row; a first attempt that failed could refund while a continuation of the same turn still ran (the race
+     #R801 recorded). Each attempt now holds its turn (`ai_turns.inflight`) and names its generation; the refund
+     happens only when the last attempt closes without an answer. Left: an attempt whose isolate dies never
+     closes — the turn then keeps its charge until the row's TTL (`consume_ai_turn` p_ttl_seconds), so the
+     failure direction is «one use not given back», never «a use given back twice».
+   · fetch-relay's DNS check read a failed AAAA query as «no AAAA», and its lookups had no deadline. Only
+     `NotFound` is absence now; A and AAAA run together under the request's one time budget. ⚠ Still open: the
+     address checked is not the address the connection uses (DNS rebinding with a short TTL) — closing it needs
+     the connection pinned to the checked address (with TLS name checks kept) or egress control on the platform.
+   · `delete-account` read any body size; it reads at most 1 KiB within 5 s now, before any deletion.
+   **The items above that remain, in order of what to do next** (none was shown exploitable in this review):
+   ① item 16 — carry the outside-content mark through the turn history and summaries, and decide the
+   confirmation for outward / publishing / destructive actions in code rather than from the model's output;
+   ② item 20 — the admin console on its own origin, and admin accounts not kept signed in on the app;
+   ③ item 22 — page `shared_collection`'s answer instead of building one unbounded jsonb;
+   ④ item 15 — a burst / capacity bound on a signed-in reader's own writes, sized from the measured
+   distribution; ⑤ item 14 — a budget and alert on provider tokens (the ceilings count requests, not money).
 
 ---
 
@@ -1208,9 +1235,12 @@ put a real secret value in the repo, a PR, or a log.**
   with the character requirement matching `supabase/config.toml` (`lower_upper_letters_digits`).
   The client mirrors this + runs its own HIBP k-anonymity check, but the dashboard toggle is the
   authoritative server-side guard and is NOT reproducible from the repo.
-  ⚠ MEASURED 2026-10-23: **leaked password protection is OFF in production** (`supabase db advisors
-  --linked` reports `auth_leaked_password_protection`). The operator turns it on in the dashboard;
-  depending on the plan it may be a paid feature.
+  **Leaked password protection is ON** since 2026-11-17 (security-review-nov): set through the Management API
+  (`PATCH /v1/projects/<ref>/config/auth` `password_hibp_enabled: true`, the project is on the Pro plan, which
+  includes it) and read back `true`. It had been OFF (advisor `auth_leaked_password_protection`, measured
+  2026-10-23). ⚠ The same read showed `password_required_characters` EMPTY in production while
+  `supabase/config.toml` says `lower_upper_letters_digits` — left for the operator to decide (changing it
+  refuses passwords that work today).
 - **API keys — the legacy `anon` / `service_role` JWTs can be disabled** once the functions are seen
   working on the new keys in production (they prefer them already — §5, `_shared/supabase-keys.js`;
   Supabase retires the legacy keys by the end of 2026). Disabling is done in the dashboard and can be

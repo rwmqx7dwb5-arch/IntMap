@@ -17,6 +17,8 @@
  *  en + jp (CONSTITUTION.md §7). No emoji.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import { csvText } from './csv-cell.js';
+import { communityClassCall } from './community-class-door.js';   /* (security-review-nov) a class link is opened and handed in through the community-class Edge Function */
 import { QUEST_KIND_IDS, SET_LENGTHS, SEED_RE, QUEST_MAX, questQuery } from './quest-engine.js';
 
 /** the code a class link carries — the database draws it (32 symbols without 0/O/1/I, eight of them) */
@@ -128,15 +130,7 @@ export function questionLabel(q, lang) {
   return (jp ? q.text.jp : q.text.en) + ' (' + q.d + ')';
 }
 
-/* A cell a spreadsheet would read as a formula — a student typed «=HYPERLINK(…)» as their name — is kept as text: a value
-   that begins with = + - @, a tab or a carriage return gets a leading apostrophe (OWASP «CSV injection»). Numbers are ours
-   and are written as numbers; only text is guarded, so a negative longitude in an answer cell is text and is guarded too. */
-function csvText(v) {
-  if (v == null) return '';
-  if (typeof v === 'number') return String(v);
-  const s = String(v);
-  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
-}
+/* csvText — the one CSV text-cell rule (js/csv-cell.js): a name typed as «=HYPERLINK(…)» is kept as text. */
 /** The tally as CSV (RFC 4180: comma-separated, every field quoted, CRLF) — one row per student: the name, when they
  *  handed in, the total, then for each question its points and what they answered (km away / years off / skipped). */
 export function classCsv(qs, T, lang) {
@@ -170,7 +164,8 @@ function errOf(error) {
   if (c === '42501') return 'sign_in';
   if (c === '54000') return 'rate_limited';
   if (c === '23514' || c === '22023' || c === '22P02') return 'invalid';
-  if (c === '42P01' || c === 'PGRST205' || c === 'PGRST202') return 'not_deployed';
+  if (c === '42P01' || c === 'PGRST205' || c === 'PGRST202' || c === 'not_deployed') return 'not_deployed';
+  if (c === 'unavailable') return 'unavailable';
   return 'failed';
 }
 const SET_COLS = 'id,code,kind,seed,n,title,open,created_at';
@@ -243,7 +238,7 @@ export async function openClassSet(DB, code) {
   if (!DB) return { ok: false, error: 'unavailable' };
   if (!CLASS_CODE_RE.test(String(code || ''))) return { ok: false, error: 'not_found' };
   try {
-    const { data, error } = await DB.rpc('class_set_open', { p_code: code });
+    const { data, error } = await communityClassCall(DB, 'class_set_open', { p_code: code });
     if (error) return { ok: false, error: errOf(error) };
     return data && data.ok === true ? data : { ok: false, error: (data && data.error) || 'failed' };
   } catch (_) { return { ok: false, error: 'unavailable' }; }
@@ -254,7 +249,7 @@ export async function submitClassAnswers(DB, code, name, answers) {
   const nm = cleanName(name);
   if (!nm) return { ok: false, error: 'invalid_name' };
   try {
-    const { data, error } = await DB.rpc('class_set_submit', { p_code: code, p_name: nm, p_answers: answers });
+    const { data, error } = await communityClassCall(DB, 'class_set_submit', { p_code: code, p_name: nm, p_answers: answers });
     if (error) return { ok: false, error: errOf(error) };
     return data && data.ok === true ? { ok: true, answered: +data.answered || 0 } : { ok: false, error: (data && data.error) || 'failed' };
   } catch (_) { return { ok: false, error: 'unavailable' }; }

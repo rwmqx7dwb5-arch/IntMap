@@ -131,6 +131,10 @@ export async function ask(req: Request): Promise<Response> {
   // 3) Consume one use for TODAY, once per TURN (the developer is exempt — no consumption).
   let used = 0;
   let charged = false;
+  /* (security-review-nov) the attempt holds its turn (consume_ai_turn inflight + 1) until it closes, and
+     `turnGen` is the generation of the row it opened — every close names it. */
+  let turnGen: string | null = null;
+  let turnOpen = false;
   let glossUsed = 0;
   if (isGloss) {
     /* (#R491) The gloss lane has no turns: one card is one call, and it pays from its own day. */
@@ -152,6 +156,8 @@ export async function ask(req: Request): Promise<Response> {
     const row = await openTurn(db, account, { turn: turnId, maxCalls: TURN_MAX_CALLS, ttlSeconds: TURN_TTL_S });
     used = row.used;
     charged = row.charged;
+    turnGen = row.gen;
+    turnOpen = row.allowed && !!turnId;
     if (!row.allowed) {
       /* Two different 429s, and the client must be able to tell them apart: one means "come back
          tomorrow", the other means "this one request has asked enough times". */
@@ -174,19 +180,33 @@ export async function ask(req: Request): Promise<Response> {
      same turn» sequence. The ledger refuses that on its own now (refund_ai_turn will not touch a
      turn that has settled), and this is the proxy not asking in the first place. The gloss lane has
      no turns: every gloss call charges, so every gloss failure refunds, as before. */
+  /* (security-review-nov) EVERY ATTEMPT OF A TURN CLOSES, and the ledger decides what that gives back:
+     the charge is returned only when the LAST attempt of the turn closes without an answer, so a first
+     call that fails while a continuation of the same turn is still running no longer refunds a turn that
+     then answers (the race #R801 recorded as open). A continuation's failure still never hands back the
+     first call's charge after an answer exists (refund_ai_turn → 'answered'). A turn-less call (no key)
+     asks only when it charged, once. The status is recorded by code, never the database message. */
   const refund = async () => {
-    if (isDev || !charged) return;
-    try {
-      if (isGloss) await db.rpc("refund_ai_gloss", { p_user: user.id });
-      else await refundTurn(db, account, turnId);
-      charged = false;
-    } catch (_) { /* best-effort */ }
+    if (isDev) return;
+    if (isGloss) {
+      if (!charged) return;
+      try { await db.rpc("refund_ai_gloss", { p_user: user.id }); charged = false; } catch (_) { /* best-effort */ }
+      return;
+    }
+    if (turnId ? !turnOpen : !charged) return;
+    turnOpen = false;
+    const status = await refundTurn(db, account, turnId, turnGen);
+    if (status === "error") try { console.error("ai-proxy ledger refund_failed"); } catch (_) { /* ignore */ }
+    if (status === "refunded") charged = false;
   };
   /* (#R801) THE OTHER HALF: the moment an answer exists, the turn is marked as having one, so no
-     later failure under this turn key — from this call or another — can refund it. */
+     later failure under this turn key — from this call or another — can refund it. A settle that fails
+     is recorded (the answer is still served: the reader is not made to lose it for the ledger's sake). */
   const settle = async () => {
     if (isDev || isGloss || !turnId) return;
-    await settleTurn(db, account, turnId);   /* best-effort: the refund guard in the proxy still holds */
+    const status = await settleTurn(db, account, turnId, turnGen);
+    turnOpen = false;
+    if (status !== "settled") try { console.error("ai-proxy ledger settle_" + status); } catch (_) { /* ignore */ }
   };
   /* (ai-one-ledger) WHAT THIS REQUEST COST. Every provider answer read below is added to `meter`; the
      total is written to the same ledger once the request is over, answered or failed — a failure the

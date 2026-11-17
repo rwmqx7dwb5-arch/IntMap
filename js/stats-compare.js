@@ -20,6 +20,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { figure } from './country-figures.js';   /* (countries-companies) a bundled value in its base unit, with the year and source it is for */
 import * as bus from './bus.js';
+import { csvText } from './csv-cell.js';   /* (security-review-nov) the one CSV text-cell rule: a label beginning with = + - @ stays text */
 
 export function statsCompare(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -959,6 +960,8 @@ export function statsCompare(HOST){
       const cLbl=cd=>{ const s2=_cs(cd); return html`${s2.flag?[flagM(s2.flag),' ']:''}<span title="${cName(s2)||cd}">${shortName(cd)}</span>`; };
       const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return html`${i2?LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4]):k2}`; };
       const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLbl(key));
+      /* the header's PLAIN text, from the same sources the markup is built from (a country's name, an indicator's label) — never by stripping tags out of the markup */
+      const hText=(key,isCol)=>{ if(tFlip?isCol:!isCol){ const s2=_cs(key), f=s2.flag&&!/^<img /.test(s2.flag)?s2.flag+' ':''; return f+(cName(s2)||key); } const i2=IND.find(x=>x.k===key); return i2?LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4]):key; };
       const yrs=[]; for(let y2=new Date().getFullYear();y2>=1960;y2--) yrs.push(y2);
       const _selY=(tYear!=null)?tYear:_ttYear();   /* (#R94) the dropdown reflects the master clock while travelling */
       const h=[html`<div class="scp-ttools">`,
@@ -986,10 +989,9 @@ export function statsCompare(HOST){
       const un=wrap.querySelector('#scp-unsort'); if(un) un.onclick=()=>{ tSort=null; renderTable(); };
       wrap.querySelector('#scp-csv').onclick=()=>{ try{
         const esc2=s=>{ s=String(s==null?'':s); return /[",\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s; };
-        const strip=s=>String(s).replace(/<[^>]*>/g,'');
-        let csv=esc2('')+','+cols.map(ck=>esc2(strip(hLbl(ck,true)))).join(',')+'\n';
+        let csv=esc2('')+','+cols.map(ck=>esc2(csvText(hText(ck,true)))).join(',')+'\n';
         rowOrder.forEach(rk=>{ const cells=cols.map(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const p=cellAt(indK,cd); return p?esc2(p.y?(p.v+' ('+p.y+')'):String(p.v)):''; });
-          csv+=esc2(strip(hLbl(rk,false)))+','+cells.join(',')+'\n'; });
+          csv+=esc2(csvText(hText(rk,false)))+','+cells.join(',')+'\n'; });
         const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'})); a.download='intmap-compare.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
       }catch(_){} };
       /* column-header click = sort; drag = reorder the underlying codes[]/indOrder[] */

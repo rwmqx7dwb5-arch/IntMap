@@ -39,6 +39,7 @@
 //        → the article page (the policy file's ARTICLE_RULE: any public https host whose name resolves only
 //          to public addresses, text/html, an article by looksLikeArticle(), its own smaller bucket)
 //        → 400 {"error":"not_allowed"} for a URL or an address the rule refuses; 502 {"error":"not_an_article"}
+//          (and any of the upstream_* failures above — 503 upstream_timeout when the name check outlives the rule's clock)
 //
 //  Deploy:  supabase functions deploy fetch-relay --no-verify-jwt --use-api --project-ref vpekfwdpurzejrrmacac
 //  Secrets: none (SUPABASE_URL and the project secret key are injected by the platform, for the bucket — _shared/supabase-keys.js).
@@ -47,7 +48,7 @@
 //  JavaScript (see the note at the top of alerts-relay).
 // ============================================================================
 
-import { corsFor, fetchGuarded, methodGate, relayFail, resolvesPublic, noData, NO_DATA_HEADER, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { corsFor, fetchGuarded, methodGate, relayFail, resolvesPublic, RelayError, noData, NO_DATA_HEADER, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
 import { fetchRelayRule, ARTICLE_RULE, articleUrlAllowed, looksLikeArticle } from "../_shared/fetch-relay-policy.js";
 
@@ -130,20 +131,30 @@ Deno.serve(async (req) => {
 /* ══ ?u=<article URL>&as=article — the one rule without a host list (_shared/fetch-relay-policy.js) ══
    Every condition the policy file states, in order, and each one BEFORE anything is fetched:
    the URL's shape → the caller's bucket → the name's addresses → then the page, with every redirect
-   hop's addresses checked again → then the answer has to be an article page by the page's own test. */
+   hop's addresses checked again → then the answer has to be an article page by the page's own test.
+   (security-review-nov) ONE CLOCK FOR ALL OF IT: `budget` is minted from ARTICLE_RULE.timeoutMs (the
+   rule's own deadline — fetch-relay-policy.js says where 12 s comes from) the moment the upstream work
+   begins, and the SAME signal bounds the first name check, every redirect hop's name check, the fetch
+   and the body read. Before, the DNS lookups ran unbounded and outside the fetch's deadline. A name
+   check cut off by that clock is a timeout (503), not a refusal of the address (400). */
 async function article(req, u) {
   if (u.length > MAX_QUERY_URL || !articleUrlAllowed(u)) return fail("not_allowed", 400);
   const limited = await callerGate(req, CORS, { scope: "fetch-relay-article", readerPerMin: ARTICLE_READER_PER_MIN, env });
   if (limited) return limited;
   const target = new URL(u);
   target.hash = "";
-  if (!(await resolvesPublic(target.hostname))) return fail("not_allowed", 400);
+  const budget = AbortSignal.timeout(ARTICLE_RULE.timeoutMs);
+  if (!(await resolvesPublic(target.hostname, { signal: budget }))) {
+    if (budget.aborted) return relayFail(new RelayError("upstream_timeout", 503), { ...CORS, "cache-control": "no-store" });
+    return fail("not_allowed", 400);
+  }
   try {
     const r = await fetchGuarded(target.toString(), {
       timeoutMs: ARTICLE_RULE.timeoutMs,
+      signal: budget,
       maxBytes: ARTICLE_RULE.maxBytes,
       contentTypeRe: ARTICLE_RULE.type,
-      allowRedirect: async (next) => articleUrlAllowed(next.toString()) && await resolvesPublic(next.hostname),
+      allowRedirect: async (next) => articleUrlAllowed(next.toString()) && await resolvesPublic(next.hostname, { signal: budget }),
       headers: {
         "user-agent": "IntMap/fetch-relay (+https://github.com/rwmqx7dwb5-arch/IntMap)",
         accept: "text/html,application/xhtml+xml;q=0.9",

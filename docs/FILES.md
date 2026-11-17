@@ -1520,7 +1520,8 @@ shared-collection.js              公開コレクション——publish_collecti
                                   自分のアカウントへの写し copy_shared_collection と、`?collection=<token>` で開いたページのカード（場所をピンで、
                                   地図を一覧で。複数段の地図＝ツアーは授業モードで再生）。auth-ui.js がそのページでだけ読み込む。オンデマンド（collection-workspace）。
                                   掲載中ならカードに作成者・紹介文・保存された数・元にした地図と報告、アプリ内から開く openShared（community-maps）
-community-maps.js                 みんなの地図——読者が掲載した公開コレクションの目録（community_maps を GET で・語／並び／地図の表示範囲・続きは前ページのカーソル `next` で keyset 送り）・
+community-class-door.js           サーバだけが呼べる 3 つの扉（community_maps・class_set_open・class_set_submit）へのブラウザの唯一の道——community-class Edge Function を呼び、supabase-js の { data, error } の形で返す。直の RPC へは戻らない（security-review-nov）
+community-maps.js                 みんなの地図——読者が掲載した公開コレクションの目録（community_maps を community-class Edge Function 経由で・語／並び／地図の表示範囲・続きは前ページのカーソル `next` で keyset 送り）・
                                   地図で開く（shared-collection.js openShared）・ライブラリの掲載の箱（list_community_map / unlist・保存された数）・
                                   公開カードの掲載欄と報告（report_community_map）・管理者の報告一覧と外す／戻す／却下。markup を書かない。オンデマンド
 place-watch.js                    見守る場所——保存した場所の周辺の地震（USGS）・気象警報（警報レイヤー自身の記録）・火山の警戒レベル
@@ -1605,6 +1606,7 @@ quest-panel.js                    **学ぶクエストのパネル**——出題
 quest-daily.js                    **今日のクエストの記録と連続日数**——その日のセット（seed `d<YYYY>-<MM>-<DD>`）の最初の結果を、このブラウザ（localStorage
                                   `intmap_quest_daily`）とログイン中はアカウント（`quest_daily_results`）に残し、両方を合わせて連続日数・最近 7 日を数える。
                                   パネル・アカウントのシート・Atlas の learn.daily が同じ集計を読む（遅延・グローバル無し）（§8.6.4）
+csv-cell.js                       CSV の文字セル 1 規則 csvText——= + - @・タブ・改行で始まる文字に先頭のアポストロフィ（OWASP CSV injection）。クラスの集計と国の比較表が共有
 quest-class.js                    **クラスのセット**（DOM なし）——クラスのリンク `&class=<code>` の読み書き、答えが運ばれる形（場所＝[lng,lat] 小数 3 桁・年・null）、名前が拒まれる文字 `NAME_REFUSED`（DB の display_name() と同じ集合）、
                                   エンジンで全提出を採点する集計（問題ごとの平均・中央値・いちばん苦戦した問題）、CSV、`class_sets`／`class_set_answers` と生徒の 2 つの RPC の扉（§8.6.4）
 quest-class-board.js              **先生のボード**——クラスのセットの一覧・作成・1 セットの結果（リンク・受付の開閉・平均・苦戦した問題・場所の問題のクラスのタップを地図に・
@@ -2006,11 +2008,11 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全21本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（59本）。本番変更は必ずここを通す
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
+  migrations/*.sql                DB の唯一の設計図（60本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列。35本）
-  functions/<name>/index.ts       Edge Functions（21本。一覧と各本の役割は Architecture.md §6.2。
+  functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /

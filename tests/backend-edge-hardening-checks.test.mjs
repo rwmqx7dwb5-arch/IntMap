@@ -114,13 +114,13 @@ test('R801 ② followRedirects: each hop is inspected, bounded, and not followed
 /* ⚠ READ, NOT RUN: ai-proxy is a Deno.serve handler whose settle/refund path needs the Supabase
    client, the provider door and a charged ledger row together — the ORDER of two awaits in one
    function is what is asserted, and the pgTAP suite runs the SQL half against a real database. */
-test('R801 ③ ai-proxy settles the turn before answering and refunds only the call that charged', () => {
+test('R801 ③ ai-proxy settles the turn before answering, and every attempt closes its turn through the ledger', () => {
   const proxy = codeOnly(aiProxySource());
   const settleDef = proxy.indexOf('const settle = async');
   assert.ok(settleDef > 0, 'no settle() in ai-proxy');
   /* (ai-one-ledger) the ledger's doors are _shared/ai-ledger.js's — one door for every caller that charges */
   const ledger = codeOnly(read('supabase/functions/_shared/ai-ledger.js'));
-  assert.match(proxy, /settleTurn\(db, account, turnId\)/, 'settle() does not go through the ledger door');
+  assert.match(proxy, /settleTurn\(db, account, turnId, turnGen\)/, 'settle() does not go through the ledger door with the generation it opened');
   assert.match(ledger, /db\.rpc\("settle_ai_turn"/, 'settle_ai_turn is never called');
   const settleCall = proxy.indexOf('await settle();');
   assert.ok(settleCall > 0, 'settle() is never awaited');
@@ -129,8 +129,10 @@ test('R801 ③ ai-proxy settles the turn before answering and refunds only the c
      checks that `done` is read only after settle_ai_turn was called */
   assert.match(proxy.slice(settleCall, settleCall + 80), /await settle\(\);\s*return (json\(\{|\{ status: 200, body: \{)/, 'settle() must run at the success return, immediately before the answer leaves');
   const refund = proxy.slice(proxy.indexOf('const refund = async'), proxy.indexOf('const settle = async'));
-  assert.match(refund, /if \(isDev \|\| !charged\) return;/, 'a call that did not charge must not ask for a refund');
-  assert.match(refund, /refundTurn\(db, account, turnId\)/, 'the turn is still released with the charge (#R318)');
+  /* (security-review-nov) a keyed attempt closes its turn whether it charged or not — the ledger refunds only when the LAST
+     attempt closes without an answer, and never after one (refund_ai_turn → 'answered'); a turn-less call asks only when it charged */
+  assert.match(refund, /if \(turnId \? !turnOpen : !charged\) return;/, 'only an open attempt, or a turn-less call that charged, closes through refund');
+  assert.match(refund, /refundTurn\(db, account, turnId, turnGen\)/, 'the turn is still released with the charge (#R318), naming its generation');
   assert.match(ledger, /db\.rpc\("refund_ai_turn"/, 'refundTurn does not release the turn');
 });
 
