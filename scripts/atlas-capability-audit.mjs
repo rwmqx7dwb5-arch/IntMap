@@ -91,7 +91,7 @@ export const CATALOGUE_SILENT = capsEntries.filter((e) => e.catalogueSilent).map
 const CATALOGUE_SILENT_DATED = capsEntries.filter((e) => e.catalogueSilent).map((e) => ({ id: e.id, on: String(e.catalogueSilent) }));
 
 /* ── the twenty checks. Each takes DATA and returns {id, title, failures[], note} ───────────── */
-export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger }) {
+export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, uiEntries, pageSrc }) {
   const J = caps.toJSON();
   const byId = Object.create(null);
   J.capabilities.forEach((c) => { byId[c.id] = c; });
@@ -649,7 +649,44 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
       `${silent.length} of ${pop} documented capabilities are silent about themselves`);
   }
 
+  /* ㉔ (feature-inventory) a declared screen entry names a control the page's own source builds. `uiEntries` and
+     `pageSrc` are DATA: the entries' `ui.at`, and index.html plus every js/ file that is not Atlas's own — a control
+     only Atlas builds is not a way around Atlas. It proves the control is BUILT, not that a reader sees it. */
+  if (uiEntries && pageSrc != null) {
+    const { bad, n } = uiEntriesUnbuilt(uiEntries, pageSrc);
+    add('ui-entry-built', 'a declared screen entry is a control the page really builds', bad, `${n} declared entries`);
+  }
+
   return checks;
+}
+
+/** ㉔'s rule on its own: which declared `ui.at` selectors the page source never builds */
+export function uiEntriesUnbuilt(uiEntries, pageSrc) {
+  const bad = [];
+  const quoted = (v) => [`"${v}"`, `'${v}'`, '`' + v + '`'].some((q) => pageSrc.includes(q));
+  let n = 0;
+  /* every handle in the selector must be one the source writes: an id or an attribute VALUE as a whole string
+     literal, an attribute name or a class as a word (a class sits inside a longer class string) */
+  const word = (v) => new RegExp('(^|[^\\w-])' + v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^\\w-])').test(pageSrc);
+  uiEntries.forEach((e) => (e.at || []).forEach((sel) => {
+    n++;
+    const missing = [];
+    for (const m of sel.matchAll(/#([\w-]+)|\.([\w-]+)|\[([\w-]+)(?:="([^"]+)")?\]/g)) {
+      if (m[1] && !quoted(m[1])) missing.push('#' + m[1]);
+      if (m[2] && !word(m[2])) missing.push('.' + m[2]);
+      if (m[3] && !word(m[3])) missing.push('[' + m[3] + ']');
+      if (m[4] && !quoted(m[4])) missing.push('"' + m[4] + '"');
+    }
+    if (missing.length) bad.push(`${e.id}: its screen entry ${sel} names ${missing.join(' ')}, which nothing outside Atlas builds — the control is gone, or was never there`);
+  }));
+  return { bad, n };
+}
+
+/** (feature-inventory) the pages a reader gets without Atlas: every root .html and every js/ file that is not Atlas's own */
+export function pageSource(root = ROOT) {
+  const html = fs.readdirSync(root).filter((f) => f.endsWith('.html'));
+  const js = fs.readdirSync(path.join(root, 'js')).filter((f) => f.endsWith('.js') && !f.startsWith('atlas'));
+  return [...html.map((f) => fs.readFileSync(path.join(root, f), 'utf8')), ...js.map((f) => fs.readFileSync(path.join(root, 'js', f), 'utf8'))].join('\n');
 }
 
 /* `opts.silentLedger` — [{ id, on }] in place of the entries' `catalogueSilent` (a fixture for check ㉓) */
@@ -671,6 +708,8 @@ export async function audit(opts = {}) {
       toolsSrc: read('js/atlas-toolsurface.js'),
       schemas: await loadSchemas(),
       silentLedger: opts.silentLedger || null,
+      uiEntries: capsEntries.filter((e) => e.ui && e.ui.at).map((e) => ({ id: e.id, at: e.ui.at })),
+      pageSrc: pageSource(),
     }),
   };
 }

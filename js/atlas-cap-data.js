@@ -39,6 +39,7 @@ export async function queryEngine(K) {
 export default [
   {
     row: ['data.weather',               'weather',        '',                                                            'data',    'panel',   'panel.weather',          'panel,explanation',   'read',    'none',   'place',    ''],
+    ui: { at: ['#ctx-menu'] },
     doc: [
       { in: 'tools-panels', at: 10, text: '{"type":"weather","place":str} = THE WEATHER AT ONE PLACE, observed AND forecast: it opens the weather card there and the RESULT carries the numbers themselves — the current conditions (sky, temperature, apparent temperature, humidity, wind and gusts, precipitation, and the valid time of the observation) and the DAILY FORECAST for the next five days (max/min temperature, chance of rain, rainfall). It answers for ONE POINT; the ECMWF/GFS/ICON layers above paint the same fields over the whole map, and "layerData" reads a layer at a point. Use for 「東京の天気を教えて」「今日の天気と、今後3日間の予報は？」「明日の天気予報」「今の気温は？」, "what is the weather in Tokyo", "the current conditions and the three-day forecast"; ' },
     ],
@@ -55,6 +56,7 @@ export default [
      measures and pins, it changes no setting the reader has to undo. */
   {
     row: ['data.query',                 'query',          'crossQuery,dataQuery',                                        'data',    'queryRows','map.object',           'map,explanation',     'session','none',   '',         'atlasQuery', 'external'],
+    ui: { none: '2026-11-16' },
     /* (#R495) the cross-dataset query. `from` names a table, `where` a list of {col, op, value}
        over that table's COLUMNS, `near` a spatial join with its own conditions. Deliberately not
        an `enum`: js/atlas-query.js's registry is what decides which tables and columns exist, and
@@ -87,6 +89,7 @@ export default [
      its result; the analysis itself changes no setting the reader has to undo. */
   {
     row: ['data.gis',                   'gis',            'gisRun,spatialOp,runGisOp',                                   'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'gisCore'],
+    ui: { at: ['#btn-gis-panel'] },
     /* (#R743) ⚠ `op` AND `params` ARE DELIBERATELY UNENUMERATED HERE. The vocabulary is
        js/gis-ops.js's DECL, which this file cannot read at planning time — and a copy of it here
        would be a second list to keep in step, which is the defect this round removed from the
@@ -160,6 +163,7 @@ export default [
   },
   {
     row: ['data.rank',                  'rank',           '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
+    ui: { at: ['#countries-feed .stats-sort-sel'] },
     doc: [
       { in: 'country-statistics', at: 10, text: '{"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; ' },
       { in: 'metric-keys', at: undefined },   /* documented by the chunk's own text, not a fragment */
@@ -176,6 +180,7 @@ export default [
   },
   {
     row: ['data.ratio',                 'ratio',          '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'country-statistics', at: 20, text: '{"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; ' },
       { in: 'metric-keys', at: undefined },   /* documented by the chunk's own text, not a fragment */
@@ -189,6 +194,7 @@ export default [
   },
   {
     row: ['data.relate',                'relate',         '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'country-statistics', at: 30, text: '{"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); ' },
       { in: 'metric-keys', at: undefined },   /* documented by the chunk's own text, not a fragment */
@@ -204,6 +210,7 @@ export default [
   },
   {
     row: ['data.countryCard',           'selectCountry',  'country',                                                     'data',    'panel',   'panel.country',          'panel',               'session', 'none',   'country',  ''],
+    ui: { at: ['#countries-feed .stat-row[data-ccn]'] },
     doc: [
       { in: 'country', at: 10, text: '{"type":"selectCountry","country":str} (open its info card — its capital, population, area, GDP, currency, languages, neighbours and time zones, with Isolate / Time-series / Compare / AI brief; 国の情報カード: 首都・人口・面積・GDP・通貨・言語・隣国・時間帯); ' },
     ],
@@ -216,6 +223,7 @@ export default [
   },
   {
     row: ['data.timeSeries',            'timeSeries',     'timeseries',                                                  'data',    'panel',   'panel.timeseries',       'panel',               'session', 'none',   'country',  ''],
+    ui: { at: ['[data-cpact="timeseries"]'] },
     doc: [
       { in: 'country', at: 20, text: '{"type":"timeSeries","country":str} (historical chart); ' },
     ],
@@ -233,6 +241,7 @@ export default [
   },
   {
     row: ['data.populationIn',          'population',     'populationIn,popIn',                                          'data',    'none',    '',                       'explanation',         'read',    'none',   'area',     'popArea'],
+    ui: { at: ['#tp-pop-btn'] },
     doc: [
       { in: 'data.populationIn', text: 'POPULATION IN AN AREA: {"type":"population","target"?:"drawn"|"radius","place"?:str,"radiusKm"?:num} = EXACT population inside a shape, summed from the WorldPop 100m population grid (2020). target:"drawn" = the user\'s measured polygon; target:"radius" = the placed circle(s); place alone = that place\'s real boundary; place+radiusKm = a circle around it. Use for "この範囲の人口", "population within 30km of X".\n' },
     ],
@@ -277,6 +286,7 @@ export default [
      which is what #R406 required of every capability that cannot act on an empty object. */
   {
     row: ['data.coverage',              'admin1Coverage', 'subdivisionsCovered,regionsCovered',                          'data',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     /* (#R760) `admin1Coverage`. TWO ARGUMENT SHAPES, AND THE anyOf IS THE WHOLE GATE: a circle is
        place AND km together (a place with no radius is a flyTo, not a coverage question), or the
        ring itself in `points`, spelled the way map.drawPolygon spells it — [lng,lat] pairs, three
@@ -295,6 +305,7 @@ export default [
   },
   {
     row: ['data.satelliteCompare',      'satelliteCompare','satCompare,satChange',                                       'data',    'panelPaint','panel.satcompare',     'panel,map',           'session', 'none',   'place',    ''],
+    ui: { at: ['#ai-satchange-btn'], login: true },
     /* two dates or nothing — `from`/`to` are DATES here, not endpoints */
     doc: [
       { in: 'data.satelliteCompare', text: 'SATELLITE CHANGE DETECTION: {"type":"satelliteCompare","dateA":"YYYY-MM-DD","dateB":"YYYY-MM-DD","place"?:str} = capture the dated satellite view at two dates and report the visual changes (construction, vessels, disasters, land use) with both frames shown. REQUIRES the satellite base with a dated provider to be active; if it is not, tell the user to switch to Satellite first. Use for "この2日付で衛星画像を比較", "what changed here between X and Y".\n' },
@@ -319,6 +330,7 @@ export default [
   },
   {
     row: ['data.layerValues',           'layerData',      'layerValue,layerQuery',                                       'data',    'none',    '',                       'explanation',         'read',    'none',   'point',    ''],
+    ui: { at: ['#ctx-menu'] },
     doc: [
       { in: 'data.layerValues', text: 'LAYER DATA (read the REAL values of the layers currently displayed): {"type":"layerData","place"?:str,"lng"?:num,"lat"?:num,"layer"?:str} = live value of each active data layer at that point (air temp, SST, wind, precipitation, snow depth, aerosol/NO2/CO, Köppen class, elevation, every NASA GIBS science raster — LST, sea ice, SST anomaly, NDVI, water vapour, clouds, chlorophyll, soil moisture… read from the actual tile pixel via the colormap — every visible country choropleth\'s value — the core stat fills AND all ~50 World-Bank choropleths, on- or off-screen — and active-fire detection: real FIRMS hot-spot pixel counts within ~15 km when the thermal layer is on) + the actual features in view for point layers (cameras, news, volcanoes, live aircraft, live ships, earthquakes with magnitude, data centers, pharma hubs). No place = the pinned point or map center. Use this whenever the user asks WHAT a displayed layer shows ("ここの気温は？", "what does this layer say here?", "画面内のカメラは？", "今見えている飛行機は？", "この辺で山火事ある？").\n' },
     ],
@@ -350,6 +362,7 @@ export default [
   },
   {
     row: ['data.runways',               'runway',         'airports',                                                    'data',    'panel',   'panel.runway',           'panel',               'read',    'none',   'place',    ''],
+    ui: { at: ['#ctx-menu'] },
     doc: [
       { in: 'tools-panels', at: 100, text: '{"type":"runway","place":str} (airport/runway search); ' },
     ],
@@ -362,6 +375,7 @@ export default [
   },
   {
     row: ['data.wxModel',               'wxModel',        'weatherModel,forecastModel',                                  'data',    'wxModel', 'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         ''],
+    ui: { at: ['.ec-model', '.wv-model'] },
     /* the layer id is resolved by `layerFor`, which also accepts the un-prefixed spelling */
     doc: [
       { in: 'layers', at: 70, text: '{"type":"wxModel","layer":"ec-temp"|"ec-precip"|"ec-wind"|"ec-gust"|"ec-cloud"|"ec-dew"|"ec-slp"|"ec-cape","model":"ecmwf_ifs"|"ncep_gfs013"|"dwd_icon"} = change WHICH FORECAST MODEL one weather layer reads. Each layer keeps its own model, so "compare GFS precipitation against the ECMWF pressure" is two calls on two layers. ECMWF IFS HRES is 9 km and 6 days; NOAA GFS is 13 km and 16 days; DWD ICON is 13 km and 5 days — say the horizon when it is why you chose one. NOT EVERY MODEL HAS EVERY FIELD: GFS 0.13 publishes no sea-level pressure, no CAPE and no dew point, and the call is REFUSED with a reason rather than emptying the map — do not promise a field a model does not carry. The map keeps showing the old model until the new one has actually painted, and the reply names the model and valid time that ARE on screen. Use for "気温をGFSで表示して", "switch the precipitation layer to ICON", "この降水量をヨーロッパモデルに". THIS CHOOSES WHICH FORECAST MODEL A LAYER READS — it does not say what the weather IS anywhere. For the observed and forecast weather AT ONE POINT (「その地点の天気」, "the forecast for a place") emit {"type":"weather","place":str}. ' },
@@ -373,6 +387,7 @@ export default [
   },
   {
     row: ['data.value',                 'value',          'stat,lookup',                                                 'data',    'none',    '',                       'explanation',         'read',    'none',   'country',  ''],
+    ui: { at: ['#countries-feed .stat-row[data-ccn]'] },
     doc: [
       { in: 'country-statistics', at: 50, text: '{"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); ' },
       { in: 'metric-keys', at: undefined },   /* documented by the chunk's own text, not a fragment */
@@ -396,6 +411,7 @@ export default [
   },
   {
     row: ['data.compareStats',          'compareStats',   'compareCountries,statsCompare',                               'data',    'panel',   'panel.compare',          'panel',               'session', 'none',   'country',  ''],
+    ui: { at: ['[data-cpact="compare"]'] },
     doc: [
       { in: 'country', at: 60, text: '{"type":"compareStats","countries":[str,… up to 10],"metrics"?:[str,…],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table","order"?:"added"|"desc"|"asc" (bar order; desc = largest first)} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して"). When the user names SPECIFIC indicators (e.g. "compare the USA and China — GDP, defense and population"), pass them in "metrics" using these keys: gdp, gdppc, gdpppp, gdppcppp, growth, infl (inflation), unemp (unemployment), debt, cab (current account), pop (population), life (life expectancy), tfr (fertility), mil (military % GDP), milb (military spending $ — use for "defense"/"military"), co2, net (internet), urban, exp (exports), fdi, health, edu, rnd, renew, forest, hom (homicide), area, hdi, demi (democracy index). Omit "metrics" when no indicators are named (the defaults open).\n' },
     ],
@@ -424,6 +440,7 @@ export default [
   },
   {
     row: ['data.exploreRelated',        'explore',        'findRelated,relatedMetrics',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   'metric',   ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'data.exploreRelated', text: 'RELATED-INDICATOR DISCOVERY: {"type":"explore","metric":KEY,"n"?:int} — computes which other indicators statistically move with the given one across all countries (Spearman + Pearson on the real data, sample sizes, biggest exception country) and presents them WITHOUT causal claims (use for "少子化と関連する指標を探して", "what correlates with democracy?"). Combine with mapMetric/scoreMap freely.\n' },
       { in: 'metric-keys', at: undefined },   /* documented by the chunk's own text, not a fragment */
@@ -470,6 +487,7 @@ export default [
      a row appended after it would never have its lazy module checked. */
   {
     row: ['data.volcano',               'volcano',        'volcanoCard,volcanoInfo',                                     'data',    'panel',   'panel.volcano',          'panel',               'session', 'none',   'text',     'volcanoIntel'],
+    ui: { at: ['.volc-filter[data-vfilter]', '.volc-mode[data-vmode]'] },
     /* ══ (#R395) THE VOLCANO PAIR ══════════════════════════════════════════════════════════════
        One opens the record for a NAMED volcano — the case refuses with «name a volcano» when it
        has none. The other changes WHICH volcanoes are drawn, and refuses when told nothing to
@@ -487,6 +505,7 @@ export default [
      which is eager, so both commands exist from boot rather than after a download. */
   {
     row: ['data.heritage',              'heritage',       'worldHeritage,heritageInfo',                                  'data',    'panel',   'panel.heritage',         'panel',               'session', 'none',   'text',     ''],
+    ui: { at: ['[data-whscat]', '[data-whsdanger]'] },
     /* (#R567) THE WORLD HERITAGE PAIR. One opens the record for a NAMED property — the case
        refuses with «name a World Heritage site» when it has none. The other changes WHICH
        properties are drawn: `categories` NAMES THE ONES TO KEEP (the vocabulary is UNESCO's own
@@ -515,6 +534,7 @@ export default [
      nothing on the map. Both arguments are optional — with neither it answers the whole offer. */
   {
     row: ['data.openData',              'openData',       'dataCatalog,openDataCatalog,downloadData,dataLicence',       'data',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { at: ['#open-data'] },
     doc: [
       { in: 'tools-panels', at: 174, text: '{"type":"openData","dataset"?:str,"country"?:str} = THE OPEN DATA IntMap OFFERS FOR REUSE: the datasets the map is built from that a person may download and reuse, each with its download address, its licence AS ITS SOURCE STATES IT, what that licence requires (credit, share-alike, non-commercial) and the credit line to show — and the datasets IntMap does NOT offer, with the reason (no licence stated, or terms not known to permit redistribution). "dataset" narrows to the datasets whose name, credit or publisher contain the words; "country" (a name or ISO code) answers that country\'s file instead: which datasets say something about it and the terms of each. The answer also gives the developer page (the embed API and these files). Use for 「このデータをダウンロードできる？」「国境データのライセンスは？」「日本のデータを JSON で欲しい」「オープンデータはある？」, "can I download this data", "what licence is the country data under", "is there an API"; ' },
     ],
@@ -526,6 +546,7 @@ export default [
   },
   {
     row: ['data.radiationNear',        'radiationNear',  'measuringStations,doseNear',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'radiationLayer'],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'measured-radiation', at: 20, text: '{"type":"radiationNear","lat":num,"lon":num,"km"?:num} = the monitoring stations around a point and what each of them is reading right now, nearest first — this is the join that makes 「原発 → 実測線量 → 風 → 拡散シミュレーション」 one chain: ask it for the readings around a plant before or after modelling a plume from it. It needs a REAL coordinate; resolve the place name first (highlight/compose already do that) rather than guessing one. THIS IS NOT THE PLUME SIMULATION. {"type":"sim","kind":"radiation",…} MODELS where material would travel under the wind; these two report what was MEASURED. Never answer a question about a real reading with the model, and never present the model’s output as a measurement. 50–200 nSv/h IS ORDINARY NATURAL BACKGROUND almost everywhere on earth — soil composition alone moves it by a factor of two — so do not describe a station in that band as elevated. The steps above it are the levels at which the networks THEMSELVES raise an alert. MOST NETWORKS PUBLISH NON-VALIDATED DATA, AND WEATHER MOVES THESE NUMBERS: BfS states that rain washing radon daughters out of the air and onto the ground raises a station by up to a FACTOR OF THREE for a few hours, and a failing instrument or ongoing calibration does the same. So a single elevated station — or even several nearby, since they share the weather — is not by itself evidence of a release. Say that when you report one, and check whether it is raining there before you call it anything else. VALUES ARE NOT COMPARABLE ACROSS A CALIBRATION CHANGE: BfS recomputed its whole network on 2025-07-01 and its readings rose 14–25% with no change in the radiation, so a German series that straddles that date has a step in it that is an artefact. A COUNTRY WITH NO DOTS IS A GAP IN OPEN-LICENSED COVERAGE, NOT A COUNTRY WITH NO RADIATION AND NOT A COUNTRY WITH NO MONITORING — the layer legend lists which networks answered, and 「no station within N km」 is a fact about the roster, never about safety. Europe in particular is thin here: the EU’s own EURDEP aggregate cannot be carried, because its data stays under each provider’s copyright and its only value-returning public endpoint is down.\n' },
     ],
@@ -535,6 +556,7 @@ export default [
   },
   {
     row: ['data.companySites',          'companySites',   'companyFootprint,whoIsHere,companiesHere,industryMap',       'data',    'companySites', 'map.companySites',  'map,panel,explanation','session', 'none',   '',         'companyFootprint'],
+    ui: { at: ['#btn-co-footprint'] },
     /* (ux-next) the company atlas read from the land: every published site of every company IntMap carries
        (data/companies/footprint.json, js/company-footprint.js). `query` counts without drawing; `show` (the default)
        also draws them and opens the card; `hide` takes them down. Never moves the camera. */
@@ -566,6 +588,7 @@ export default [
   },
   {
     row: ['data.companyTies',           'companyTies',    'companiesBetweenCountries,foreignCompanies,companiesAbroad,corporatePresence,whoseCompanies', 'data', 'paint', 'map.companyTies', 'map,explanation', 'session', 'none', 'country?', 'companyTies'],
+    ui: { at: ['.cfp-ties'] },
     /* (wave4-companies) the company atlas read by country PAIR: the country a company is headquartered in against the
        country each of its published sites stands in (js/company-ties.js over data/companies/footprint.json). With a
        country: «in» = whose companies operate there, «out» = where its companies operate; without one, every pair.
@@ -613,6 +636,7 @@ export default [
   },
   {
     row: ['data.studio',                'dataStudio',     'tableToMap,mapMyTable,tableStudio,spreadsheetMap',            'data',    'dataStudio', 'map.dataStudio',     'map,panel',           'session', 'none',   '',         '',           'external'],
+    ui: { at: ['.lst-toolrow[data-act="tool.dataStudio"]'] },
     /* (data-studio) THE READER'S OWN TABLE ON THE MAP — js/data-studio.js through its published controller. The table is read by the
        map's file door (CSV / TSV / Excel / pasted; an Atlas attachment by name), its place column is recognised by the values
        (js/table-bind.js: ISO codes, country names in every language the platform names regions in, GeoNames city names — an
@@ -637,6 +661,7 @@ export default [
   },
   {
     row: ['data.worldFlows',            'worldFlows',     'countryFlows,countryConnections,migrationFlows,diaspora,migrantStock', 'data', 'panel', 'panel.worldFlows,camera,time', 'panel,explanation', 'session', 'none', 'country', ''],
+    ui: { at: ['.lst-toolrow[data-act="tool.worldFlows"]'] },
     /* (wave4-mobility) WORLD FLOWS — who one country is connected to, each flow read from its own record at the latest year it
        states at or before the clock (js/world-flows.js over js/world-flows-core.js): PEOPLE (UN DESA International Migrant Stock
        2024 — how many born here live in each other country, or how many living here were born in each, mid-year 1990…2024), DATA

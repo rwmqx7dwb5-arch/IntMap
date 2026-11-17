@@ -28,6 +28,7 @@ export const shareApi = () => window.IntMapShare;   /* (atlas-cited-answers) als
 export default [
   {
     row: ['panel.compare',              'compare',        '',                                                            'panel',   'panel',   'panel.compare',          'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-compare'] },
     doc: [
       { in: 'tools-panels', at: 20, text: '{"type":"compare","on":bool}; ' },
     ],
@@ -39,6 +40,7 @@ export default [
   },
   {
     row: ['panel.tab',                  'tab',            '',                                                            'panel',   'panel',   'panel.tab',              'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-news', '#btn-info', '#btn-stats', '#btn-community'] },
     doc: [
       { in: 'tools-panels', at: 210, text: '{"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); ' },
     ],
@@ -52,6 +54,7 @@ export default [
   },
   {
     row: ['panel.streetView',           'streetview',     'streetView,pano',                                             'panel',   'panel',   'panel.streetview',       'panel',               'session', 'none',   'point',    'streetView'],
+    ui: { at: ['#ctx-menu'] },
     /* coverage mode paints the streets with no point at all, so it is its own branch */
     doc: [
       { in: 'tools-panels', at: 80, text: '{"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); ' },
@@ -73,6 +76,7 @@ export default [
   },
   {
     row: ['panel.education',            'edu',            'learn',                                                       'panel',   'panel',   'panel.edu',              'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-edu'] },
     /* ── panels, layers, settings, the clock ────────────────────────────────────────────────── */
     doc: [
       { in: 'tools-panels', at: 200, text: '{"type":"edu"} (learn mode); ' },
@@ -85,6 +89,7 @@ export default [
   },
   {
     row: ['panel.ecmwf',                'ecmwf',          'weatherLayers',                                               'panel',   'panel',   'panel.ecmwf',            'panel',               'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'layers', at: 60, text: '{"type":"ecmwf"} (open the weather-layer suite). ' },
     ],
@@ -96,6 +101,7 @@ export default [
   },
   {
     row: ['panel.widgets',              'widgets',        '',                                                            'panel',   'panel',   'panel.widgets',          'panel',               'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'tools-panels', at: 150, text: '{"type":"widgets"}; ' },
     ],
@@ -107,6 +113,7 @@ export default [
   },
   {
     row: ['panel.screenshot',           'screenshot',     '',                                                            'panel',   'panel',   'panel.screenshot',       'panel,file',          'session', 'none',   '',         ''],
+    ui: { at: ['#btn-screenshot'] },
     doc: [
       { in: 'tools-panels', at: 160, text: '{"type":"screenshot"}; ' },
     ],
@@ -118,6 +125,7 @@ export default [
   },
   {
     row: ['panel.share',                'share',          '',                                                            'panel',   'panel',   'panel.share',            'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-share'] },
     /* ⚠ (share-embed-distribution) IT USED TO OPEN THE PANEL AND SAY 「✓ 共有パネル」 — and nothing else, so
        「共有リンクを作って」 ended with Atlas unable to give the reader the link it had just made, and
        「ブログに貼るコードをちょうだい」 had no capability at all. The result now CARRIES what was made:
@@ -149,6 +157,7 @@ export default [
   },
   {
     row: ['panel.postcard',             'postcard',       'mapPostcard,shareImage,mapImage',                             'panel',   'panel',   'panel.share',            'panel,file',          'session', 'none',   '',         ''],
+    ui: { at: ['#share-panel .sh-tab[data-tab="image"]'] },
     /* (map-postcard) THE MAP AS ONE PICTURE TO POST. The share panel's Image tab (js/map-recorder.js postcard) composes the
        main map with the instant it shows, the link's title and note, the legends on the map, every drawn source's credit,
        the IntMap name and the share link, in one of three shapes. The result carries what was made — the file name, its
@@ -187,6 +196,7 @@ export default [
   },
   {
     row: ['panel.cite',                 'cite',           'citeMap,citation,mapCitation,bordersData',                    'panel',   'panel',   'panel.share',            'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#share-panel .sh-tab[data-tab="cite"]'] },
     /* (sales-pro-audiences) CITE THIS MAP. The share panel's Cite tab (js/map-cite.js) makes, from the map as it is now, the
        credit line to put under a figure, a reference in five styles (the view as a map: the date it shows, the day it was
        read, the link that reopens it) and — while the era borders are drawn — what a GeoJSON of those borders holds:
@@ -224,6 +234,7 @@ export default [
   },
   {
     row: ['panel.search',              'search',         '',                                                            'panel',   'panel',   'panel.search',           'panel',               'session', 'none',   'text',     ''],
+    ui: { at: ['#ms-input', '#ms-btn'] },
     doc: [
       { in: 'navigation-view', at: 100, text: '{"type":"search","query":str} (place-search box). For a REGION (continent, "Central Europe", "Southern Italy", "Middle East", "the Caribbean") just pass its name to flyTo — the engine knows region extents and slices directional names from the real country; never substitute a tiny sub-place. ' },
     ],
@@ -235,6 +246,7 @@ export default [
   },
   {
     row: ['panel.correlate',            'correlate',      '',                                                            'panel',   'panel',   'panel.correlate',        'panel,explanation',   'session', 'none',   '',         ''],
+    ui: { at: ['#btn-correlate'] },
     /* (atlas-reasoning) PRODUCT.md §4 item 10. The row used to open the scatter panel and say «Correlation tool»: the panel's r,
        rho and n were visible to the reader and to nobody else. It now opens the panel — optionally on the two metrics Atlas names —
        and returns THE REPORT THE PANEL ITSELF DRAWS (js/atlas-reasoning.js `correlationReport`): n against the countries that could
@@ -270,6 +282,7 @@ export default [
   },
   {
     row: ['panel.settings',             'settings',       '',                                                            'panel',   'panel',   'panel.settings',         'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-open-settings'] },
     doc: [
       { in: 'tools-panels', at: 180, text: '{"type":"settings"}; ' },
     ],
@@ -281,6 +294,7 @@ export default [
   },
   {
     row: ['panel.workspace',            'workspace',      'windows,windowMode,windowWorkspace',                          'panel',   'panel',   'panel.workspace',        'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-ws-enter'] },
     doc: [
       { in: 'tools-panels', at: 190, text: '{"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); ' },
     ],
@@ -303,6 +317,7 @@ export default [
   },
   {
     row: ['panel.shortcuts',            'shortcuts',      'keyboard,hotkeys',                                            'panel',   'panel',   'panel.shortcuts',        'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-kbd-help'] },
     doc: [
       { in: 'more-features', at: 80, text: '{"type":"shortcuts"} (keyboard-shortcut cheat sheet); ' },
     ],
@@ -314,6 +329,7 @@ export default [
   },
   {
     row: ['panel.playground',           'playground',     'game',                                                        'panel',   'panel',   'panel.playground',       'panel',               'session', 'none',   '',         'playground'],
+    ui: { at: ['#btn-edu'] },
     doc: [
       { in: 'more-features', at: 10, text: '{"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); ' },
     ],
@@ -330,6 +346,7 @@ export default [
   },
   {
     row: ['panel.news',                 'news',           '',                                                            'panel',   'panel',   'panel.news',             'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-news', '#newsfilter-saved', '#newsfilter-all'] },
     doc: [
       { in: 'more-features', at: 20, text: '{"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); ' },
     ],
@@ -347,6 +364,7 @@ export default [
   },
   {
     row: ['panel.account',              'account',        'login',                                                       'panel',   'panel',   'panel.account',          'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-account'] },
     doc: [
       { in: 'more-features', at: 30, text: '{"type":"account"} (open login / account); ' },
     ],
@@ -358,6 +376,7 @@ export default [
   },
   {
     row: ['panel.donate',               'donate',         '',                                                            'panel',   'panel',   'panel.donate',           'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-blueberry'] },
     doc: [
       { in: 'more-features', at: 40, text: '{"type":"donate"} (open the support panel — the Stripe page opens only when the reader clicks it); ' },
     ],
@@ -369,6 +388,7 @@ export default [
   },
   {
     row: ['panel.about',                'about',          'aboutIntMap,forTeachers,teachingGuide,landingPage',          'panel',   'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { at: ['#link-about'] },
     /* (landing-showcase) what IntMap is and how to teach with it — the two static pages scripts/landing.mjs
        writes. `page:'teachers'` names the teacher page; anything else, the landing page. The link is the
        English URL: the page itself moves a reader whose app language is Japanese to its ja/ twin
@@ -386,6 +406,7 @@ export default [
   },
   {
     row: ['panel.showcase',             'showcase',       'example,exampleMap,showcaseMap',                              'panel',   'time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         ''],
+    ui: { at: ['button.sg-card[data-sg-kind="example"]'] },
     /* (landing-showcase) the example maps of js/showcase.js. With `id`, the map is put into that example
        through the share link's own restore (js/map-ui.js IntMapBookmark.restore — the path a reader who
        clicks the example takes), and the result is READ BACK from the clock and the layer boxes before it
@@ -419,6 +440,7 @@ export default [
   },
   {
     row: ['panel.gallery',              'gallery',        'exampleGallery,showcaseGallery,examplesGallery,tourGallery',  'panel',   'panel',   'panel.gallery',          'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['[data-im-gallery]'] },
     /* (showcase-gallery) the in-app gallery of js/showcase-gallery.js — every example map and classroom tour as a
        picture, a title and a line, under their subjects' headings — put on screen for the reader, who opens one
        with a tap. `section:"tours"` scrolls to the tours. It opens nothing on the map by itself: to open one
@@ -437,6 +459,7 @@ export default [
   },
   {
     row: ['panel.palette',              'palette',        'commandPalette,openPalette,findAnything',                     'panel',   'panel',   'panel.palette',          'panel',               'session', 'none',   '',         ''],
+    ui: { key: 'Ctrl+K' },
     /* (ux-next) the command palette of js/command-palette.js (Ctrl/⌘+K) — one field over every action, layer, place,
        company and example map — put on the reader's screen, optionally already holding `query`. It opens nothing by
        itself: the reader chooses. The result names what the palette is showing for that query, so Atlas can say so. */
@@ -455,6 +478,7 @@ export default [
   },
   {
     row: ['panel.tour',                 'tour',           'classroomTour,lessonTour,guidedTour,startTour,nextStep',      'panel',   'time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         ''],
+    ui: { at: ['#btn-tours'] },
     /* (classroom-tours) the classroom tours of js/tours.js, played by js/tour-player.js in its full-screen
        classroom mode. `action`:
          list            the tours (id, title, steps) — and the one assembled in this tab, if any
@@ -506,6 +530,7 @@ export default [
   },
   {
     row: ['panel.tourBuilder',          'tourBuilder',    'buildTour,makeTour,tourEditor,addMapToTour,shareTour',        'panel',   'time',    'camera,map.layer,time,tour.draft', 'map,time',     'persist', 'explicit', '',     ''],
+    ui: { at: ['button[data-imtp-make]'] },
     /* (tour-builder) the TOUR BUILDER (js/tour-builder.js): the tour a reader writes for their own lesson, kept in
        this browser while it is written and shared as a link that carries the whole tour (`?tour=custom&t=…`,
        js/tours.js) — no account, no server. `action`:
@@ -564,6 +589,7 @@ export default [
   },
   {
     row: ['panel.tourWorksheet',        'tourWorksheet',  'worksheet,printWorksheet,lessonWorksheet,handout,printTour',   'panel',   'panel',   'camera,map.layer,time,panel.worksheet', 'panel,file', 'session', 'none', '',        ''],
+    ui: { at: ['[data-imt="sheet"]'] },
     /* (sales-next) THE CLASSROOM WORKSHEET (js/tour-worksheet.js): the tour that is playing — or the tour `id` names,
        which is started first — put on paper. Every step is opened through the player (its own read-back), pictured once
        the map has drawn it (js/time-lapse.js mapDrawn) with the map postcard (legends and every data credit burned in),
@@ -601,6 +627,7 @@ export default [
   },
   {
     row: ['panel.operatingCosts',       'operatingCosts', 'runningCosts,supportCosts,whereSupportGoes',                  'panel',   'panel',   'panel.donate',           'panel,explanation',   'session', 'none',   '',         ''],
+    ui: { at: ['#btn-blueberry'] },
     /* (supporter-funnel) «運営費を見る» / "what does IntMap cost to run" — opens the support panel at «where
        support goes» AND hands Atlas the same facts the panel shows, so it can answer in words without
        inventing a figure: the daily allowance from the plan table and this month's AI requests and
@@ -621,6 +648,7 @@ export default [
   },
   {
     row: ['panel.feedback',             'feedback',       '',                                                            'panel',   'panel',   'panel.feedback',         'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-feedback-hdr'] },
     doc: [
       { in: 'more-features', at: 60, text: '{"type":"feedback"}; ' },
     ],
@@ -632,6 +660,7 @@ export default [
   },
   {
     row: ['panel.bugReport',            'bugReport',      'bug',                                                         'panel',   'panel',   'panel.feedback',         'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-report-bug'] },
     doc: [
       { in: 'more-features', at: 70, text: '{"type":"bugReport"}; ' },
     ],
@@ -643,6 +672,7 @@ export default [
   },
   {
     row: ['panel.ticker',               'ticker',         '',                                                            'panel',   'panel',   'panel.ticker',           'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#setting-ticker'] },
     doc: [
       { in: 'tools-panels', at: 250, text: '{"type":"ticker","on":bool} (the bottom news/markets ticker strip); ' },
     ],

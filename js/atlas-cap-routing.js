@@ -26,6 +26,7 @@ export default [
      or not the count moved. The measurement and the general rule are at the observer below. */
   {
     row: ['routing.isochrone',          'isochrone',      'reach,reachability,reachable,catchment',                      'routing', 'isochrone','map.isochrone',         'map',                 'session', 'none',   'place',    ''],
+    ui: { at: ['.lst-toolrow[data-act="sim.reach"]'] },
     /* ── routing ────────────────────────────────────────────────────────────────────────────── */
     doc: [
       { in: 'more-features', at: 100, text: '{"type":"isochrone","place"?:str,"lng"?:num,"lat"?:num,"mode"?:"auto"|"pedestrian"|"bicycle"|"transit","minutes"?:num|[num,…] (1-120 minutes; up to 4 nested contours; default [15,30])} = paints everywhere that can ACTUALLY BE REACHED inside the time budget, traced over the REAL road network (Valhalla / OpenStreetMap) — a true reachability area, NOT a distance circle. "auto" drives the roads, "pedestrian" walks the footpaths, "bicycle" takes the cycleways; "transit" instead rides the REAL OSM rail network and answers with the stations reachable in the budget. The origin may be a place name, "現在地" / "my location" (the device GPS), "here" (the point the user clicked), or explicit lng/lat. Give several times at once for nested bands ("minutes":[15,30,60]). Use for 「現在地から徒歩一時間で行ける範囲」「車で30分の範囲」「駅から徒歩15分圏内」「到達圏」, "how far can I walk in an hour", "30 minute drive from X", "reachable area / catchment / isochrone".\n' + 'MULTI-STOP ROUTE OPTIMISATION: ' },
@@ -60,6 +61,7 @@ export default [
   },
   {
     row: ['routing.setEndpoints',       'route',          '',                                                            'routing', 'route',   'map.route',              'panel',               'session', 'none',   'place',    ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'tools-panels', at: 70, text: '{"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); ' },
     ],
@@ -71,6 +73,7 @@ export default [
   },
   {
     row: ['routing.optimizeStops',      'optimizeRoute',  'tsp,multiStop,optimize,optimizeStops',                        'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'points',   ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'more-features', at: 110, text: '{"type":"optimizeRoute","places"?:[str,…] (2-12 stops; omit to use the pins already on the map),"mode"?:"driving"|"walking"|"cycling"} = the SHORTEST ORDER to visit several places (nearest-neighbour + 2-opt), then actually routed on the OSM road network (OSRM) with the total distance and time; the first stop is kept as the start. Use for 「A・B・Cを最短で回る順番」, "best order to visit X, Y and Z", "optimize this trip".\n' + 'OBJECT MANAGER: ' },
     ],
@@ -99,6 +102,7 @@ export default [
   },
   {
     row: ['routing.route',              'directions',     'roadRoute,navigate,drivingRoute,walkingRoute,transitRoute',   'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'place',    'routeUi'],
+    ui: { at: ['.lst-toolrow[data-act="tool.directions"]', '#route-panel .rtp-go'] },
     /* `directions` — both endpoints, in any of the spellings the case reads for the destination */
     doc: [
       { in: 'tools-panels', at: 60, text: '{"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling"|"transit","via"?:[str,…],"time"?:"ISO 8601 date-time","arriveBy"?:bool (true = "time" is the ARRIVAL deadline, e.g. "9時までに着きたい" — transit only),"avoid"?:["toll"|"motorway"|"ferry",…] (driving only — e.g. "有料道路を避けて" → ["toll"], "高速を使わずに" → ["motorway"]),"avoidAreas"?:[[[lng,lat],…closed ring…],…] (areas the route MUST NOT enter — road modes only, honoured through Valhalla; each ring is [lng,lat] pairs, first point repeated last),"transitModes"?:["RAIL"|"SUBWAY"|"TRAM"|"BUS"|"FERRY",…] (transit only — the modes the planner MAY use, so excluding ferries means listing the other four: "フェリーを使わずに" / "no ferries" / "電車だけで"),"maxWalkM"?:num (transit only — the furthest the traveler will walk to or from a stop, in meters: "あまり歩きたくない" → 400)} = REAL Google/Apple-Maps-style directions: driving/walking/cycling via OSRM (turn-by-turn on OpenStreetMap) OR — with mode "transit" (train / 電車 / 鉄道 / subway / bus / 公共交通) — REAL public-transit routing via Transitous/MOTIS that actually rides the rails, drawing each leg color-coded (walk dotted, rail blue, subway orange, tram green, bus purple) with a transfer-by-transfer leg list. ALWAYS pass mode:"transit" when the user says train/電車/鉄道/subway/bus/公共交通 — never silently route them on roads. Use for "東京から大阪への経路", "電車で新宿から横浜", "directions from A to B", "how do I get from X to Y by train"; ' },
@@ -234,6 +238,7 @@ export default [
   },
   {
     row: ['routing.drone',              'drone',          '',                                                            'routing', 'route',   'map.drone',              'route,map,panel',     'session', 'none',   '',         ''],
+    ui: { at: ['.lst-toolrow[data-act="sim.drone"]', '#dn-calc'] },
     /* `drone` with nothing opens the planner; `action` is compared lower-cased, so the catalogue's
        own `followTerrain` would fail an enum — it stays a string */
     doc: [

@@ -138,6 +138,7 @@ const norm = (x) => String(x || '').normalize('NFKC').toLowerCase().trim();
 export default [
   {
     row: ['places.save',                'savePlace',      'saveToMyPlaces,bookmarkPlace,rememberPlace,keepPlace', 'places', 'none', 'account.places', 'explanation', 'persist', 'explicit', 'place?', ''],
+    ui: { at: ['#mpl-save-view', '[data-pinact="save"]'], login: true },
     doc: [
       { in: 'more-features', at: 180, text: '{"type":"savePlace","place"?:str,"country"?:str,"lng"?:num,"lat"?:num,"pinId"?:str,"name"?:str,"note"?:str,"collection"?:str} = SAVE A PLACE TO THE READER\'S ACCOUNT — 「マイプレイス」, the reader\'s own saved places, kept across devices (unlike a pin, which lasts only this session). Give the place by name (with its country), by coordinates, or by the id of a pin already on the map; "name" is what it will be called, "note" a line of text, "collection" groups places ("Field trip", 「京都旅行」). Saving the same position again updates it and says it was already saved. Use for 「この場所を保存して」「ブックマークして」「マイプレイスに追加」, "save this place", "remember Kyoto Station for my trip"; ' },
     ],
@@ -172,6 +173,7 @@ export default [
   },
   {
     row: ['places.list',                'myPlaces',       'savedPlaces,listPlaces,placeList', 'places', 'none', '', 'explanation', 'read', 'none', '', ''],
+    ui: { at: ['#mpl-list'], login: true },
     doc: [
       { in: 'more-features', at: 190, text: '{"type":"myPlaces","collection"?:str,"name"?:str} = READ THE READER\'S SAVED PLACES (マイプレイス / saved places in the account): each name, collection, coordinates, note and id — AND the saved maps in the same collections (name, collection, note, id), AND which collections are published as read-only links (with the link). Use to answer 「保存した場所は？」「京都旅行のリストを教えて」, "what places have I saved?", and before showing, comparing or routing between saved places; ' },
     ],
@@ -197,6 +199,7 @@ export default [
   },
   {
     row: ['places.show',                'showPlaces',     'showMyPlaces,mapMyPlaces,openSavedPlaces', 'places', 'object', 'map.object', 'object,map', 'session', 'none', '', ''],
+    ui: { at: ['#mpl-show-all'], login: true },
     doc: [
       { in: 'more-features', at: 200, text: '{"type":"showPlaces","collection"?:str,"name"?:str,"id"?:str} = PUT THE READER\'S SAVED PLACES ON THE MAP as pins (with their names and notes) and frame them — all of them, one collection, or the place(s) named. Use for 「保存した場所を地図に出して」「京都旅行の場所を表示」, "show my saved places", "show my Field trip places"; ' },
     ],
@@ -215,6 +218,7 @@ export default [
   },
   {
     row: ['places.remove',              'removePlace',    'deletePlace,forgetPlace,unsavePlace', 'places', 'none', 'account.places', 'explanation', 'persist', 'explicit', '', ''],
+    ui: { at: ['#mpl-list .mpl-ic'], login: true },
     doc: [
       { in: 'more-features', at: 210, text: '{"type":"removePlace","id"?:str,"name"?:str,"collection"?:str,"all"?:"collection"} = DELETE SAVED PLACES FROM THE READER\'S ACCOUNT (マイプレイスから削除). Name ONE place by id (from myPlaces) or exact name; to delete a whole collection pass "collection" with "all":"collection". When a name matches several places nothing is deleted and the matches are listed. Use for 「保存した場所を削除」「京都駅をマイプレイスから消して」, "remove Kyoto Station from my places"; ' },
     ],
@@ -246,6 +250,7 @@ export default [
      (js/atlas-executor.js 4b asks the reader when outside content has been in front of the model this turn). */
   {
     row: ['places.saveView',            'saveMap',        'saveView,saveThisMap,keepThisMap,bookmarkMap', 'places', 'none', 'account.places', 'explanation', 'persist', 'explicit', '', ''],
+    ui: { at: ['#mpl-save-map'], login: true },
     doc: [
       { in: 'more-features', at: 220, text: '{"type":"saveMap","name"?:str,"note"?:str,"collection"?:str,"what"?:"map"|"myMap"|"tour"|"atlasTour"|"answer","entry"?:str} = SAVE THE MAP AS IT IS NOW TO THE READER\'S ACCOUNT — the layers that are on, the date on the clock, the base map, the camera and the caption, exactly what a share link holds — under a name, in a collection beside the saved places, so it opens again on any device («保存した地図», the Library). With no name it takes the map\'s caption or the date. Saving the same map again updates it and says it was already saved. "what" keeps something else the reader made of a map, as ONE saved document in the same Library: "myMap" the reader\'s own drawn map on show (pins, lines, areas — マイマップ) over the map as it is now; "tour" the tour being written in the tour builder (ツアー作成の下書き); "atlasTour" the tour you assembled in this tab with panel.tour addStep; "answer" a notebook entry (its "entry" id, else the newest) kept as a map with its question and answer. A saved tour (several steps) can be filed in a collection, published read-only and played by whoever opens the link. Use for 「この地図を保存して」「今の表示を『1914年のヨーロッパ』として保存」「京都旅行に入れておいて」「このツアーをアカウントに保存」「マイマップを別の端末でも開けるように」「さっきの回答を地図として保存」, "save this map", "keep this view as Europe 1914 in my Field trip collection", "save my tour to my account"; ' },
     ],
@@ -267,6 +272,7 @@ export default [
   },
   {
     row: ['places.openView',            'openSavedMap',   'openMap,openSavedView,restoreSavedMap,loadSavedMap', 'places', 'time', 'camera,map.layer,time', 'map,time', 'session', 'none', '', ''],   /* observed as notebook.open is: the restore is the share link's own */
+    ui: { at: ['#mpl-list .mpl-txt'], login: true },
     doc: [
       { in: 'more-features', at: 230, text: '{"type":"openSavedMap","name"?:str,"id"?:str,"collection"?:str,"asMap"?:bool,"step"?:num} = OPEN ONE OF THE READER\'S SAVED MAPS — the whole map comes back as it was saved (layers, date, base map, camera, caption, the reader\'s own drawing), the way its share link would open it. A saved TOUR or a saved briefing of several answers (several steps) is PLAYED in the classroom mode from "step" (default 1) — pass "asMap":true to open only its first map instead. Name it (exact or part of its name) or give its id from myPlaces; when several match, nothing is opened and they are listed. Use for 「保存した『1914年のヨーロッパ』を開いて」「京都旅行の地図を出して」「保存したツアーを再生して」, "open my saved map Europe 1914", "play my saved Meiji tour"; ' },
     ],
@@ -296,6 +302,7 @@ export default [
   },
   {
     row: ['places.publish',             'publishCollection', 'sharePlaces,shareCollection,publishPlaces,publishMaps', 'places', 'none', 'account.places', 'explanation', 'external', 'explicit', '', ''],
+    ui: { at: ['.mpl-pub'], login: true },
     doc: [
       { in: 'more-features', at: 240, text: '{"type":"publishCollection","collection"?:str,"all"?:"everything"|"unfiled","title"?:str} = PUBLISH ONE OF THE READER\'S COLLECTIONS AS A READ-ONLY LINK — anyone who opens the link sees that collection as it is now: its places as pins (names, notes, positions) and its saved maps to open, under "title" (default: the collection\'s name); never the reader\'s account or e-mail. Signed-in visitors can copy it into their own My places. Name the collection (it must exist), or pass "all":"everything" for every place and map, "all":"unfiled" for the ones in no collection; with neither, ASK — never publish everything by default. Publishing a published collection returns the SAME link. THE RESULT CARRIES THE LINK — give it to the user verbatim. Use for 「京都旅行を公開して」「このコレクションの共有リンクを作って」「クラスに配れるリンクにして」, "share my Field trip collection", "publish my places as a link"; ' },
     ],
@@ -320,6 +327,7 @@ export default [
   },
   {
     row: ['places.unpublish',           'unpublishCollection', 'stopSharingCollection,unsharePlaces,stopPublishing', 'places', 'none', 'account.places', 'explanation', 'persist', 'none', '', ''],
+    ui: { at: ['.mpl-pub'], login: true },
     doc: [
       { in: 'more-features', at: 250, text: '{"type":"unpublishCollection","collection"?:str,"all"?:"everything"|"unfiled"} = STOP PUBLISHING ONE OF THE READER\'S COLLECTIONS — its read-only link stops working at once (publishing again makes a new link). Name the collection, or "all":"everything" / "all":"unfiled" for those shares. Use for 「京都旅行の公開をやめて」「共有リンクを無効にして」, "stop sharing my Field trip collection"; ' },
     ],
@@ -342,6 +350,7 @@ export default [
   },
   {
     row: ['places.watch',               'watchPlace',     'monitorPlace,watchArea,alertMeNear,keepAnEyeOn', 'places', 'none', 'account.watches', 'explanation', 'persist', 'explicit', 'place?', ''],
+    ui: { at: ['.pw-add'], login: true },
     doc: [
       { in: 'more-features', at: 260, text: '{"type":"watchPlace","id"?:str,"name"?:str,"place"?:str,"country"?:str,"lng"?:num,"lat"?:num,"radiusKm"?:num,"quakeMinMag"?:num|"off","alertMinLevel"?:1-4|"off","volcanoMinRank"?:1-4|"off","newsMinSources"?:num|"off","enabled"?:bool} = WATCH A SAVED PLACE (「見守る場所」): while IntMap is open it checks every 10 minutes for earthquakes (USGS, M≥quakeMinMag within radiusKm), official weather warnings whose area contains the place (alertMinLevel on the agencies\' ladder 1 advisory · 2 warning · 3 danger · 4 emergency; read only while the Weather warnings layer is on), volcano alert levels within radiusKm (volcanoMinRank 2 advisory/yellow · 3 watch/orange · 4 warning/red) and news events reported by ≥newsMinSources independent outlets within radiusKm, and tells the reader what is new. Defaults: 300 km, M4.5, level 2, rank 2, 2 outlets; "off" stops a kind. Name a saved place by id/name (myPlaces), or give a place/coordinates — it is saved to My places first. Watching a watched place again changes only what you pass. Nothing is sent while IntMap is closed. Use for 「自宅の周辺で地震があったら教えて」「この場所を見守って」「警報が出たら知らせて」, "watch my home for earthquakes", "alert me to news near Kyoto"; ' },
     ],
@@ -386,6 +395,7 @@ export default [
   },
   {
     row: ['places.unwatch',             'unwatchPlace',   'stopWatchingPlace,stopMonitoringPlace', 'places', 'none', 'account.watches', 'explanation', 'persist', 'explicit', '', ''],
+    ui: { at: ['.pw-stop'], login: true },
     doc: [
       { in: 'more-features', at: 270, text: '{"type":"unwatchPlace","id"?:str,"name"?:str,"collection"?:str,"all"?:"collection"} = STOP WATCHING saved places (the places stay in My places). Name one by id or name; a whole collection with "all":"collection". When a name matches several, nothing changes and the matches are listed. Use for 「見守りをやめて」「京都の通知を止めて」, "stop watching my home"; ' },
     ],
@@ -407,6 +417,7 @@ export default [
   },
   {
     row: ['places.watchDigest',         'watchDigest',    'watchedPlaces,placeAlerts,whatHappenedNear,watchReport', 'places', 'none', '', 'explanation', 'read', 'none', '', ''],
+    ui: { at: ['#pw-check', '#acct-watch'], login: true },
     doc: [
       { in: 'more-features', at: 280, text: '{"type":"watchDigest","id"?:str,"name"?:str} = READ THE WATCHED PLACES NOW (見守りのダイジェスト): checks the feeds again and returns, per watched place, what is NEW since the reader last looked and what is current — each record with its kind (quake / warning / volcano / news), strength, how far, when, source and link — plus which feeds could not be read and why (a feed that was not read is never "nothing happened"). Use for 「見守りの新着は？」「自宅周辺で新しい出来事はある？」, "anything new near my places?", and before explaining an alert. Does not mark anything as seen; ' },
     ],
@@ -432,6 +443,7 @@ export default [
   },
   {
     row: ['places.watchSeen',           'markWatchSeen',  'watchMarkRead,clearWatchAlerts', 'places', 'none', 'account.watches', 'explanation', 'persist', 'none', '', ''],
+    ui: { at: ['#pw-seen-all'], login: true },
     doc: [
       { in: 'more-features', at: 290, text: '{"type":"markWatchSeen","id"?:str,"name"?:str} = MARK THE NEW RECORDS AT WATCHED PLACES AS SEEN (既読), for every watched place or the one named, on every device of the account. Use for 「既読にして」「見守りの新着を消して」, "mark them as read"; ' },
     ],

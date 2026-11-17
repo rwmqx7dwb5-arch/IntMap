@@ -19,6 +19,7 @@ import { str, int, one } from './atlas-caps.js';
 export default [
   {
     row: ['learn.quest',                'quest',          'learnQuest,geoQuest,questLink,challengeLink,quizSet',         'panel',   'none',    'panel.quest,map.quest,camera,time', 'panel',        'session', 'none',   '',         ''],
+    ui: { at: ['.lst-toolrow[data-act="tool.learnQuest"]', '.qst-kind[data-kind]'] },
     doc: [
       { in: 'learn.quest', text: 'LEARN QUESTS (学ぶクエスト — questions made from the map\'s own data, answered on the map): {"type":"quest","action"?:"start"|"link"|"state"|"close","kind"?:"where"|"when","n"?:int,"seed"?:str}. kind "where" (場所当て) names a city and the reader taps it on the map, scored by the distance; kind "when" (年代当て) puts the map on a day in history with the year hidden and the reader answers the year. start opens a set of n questions (default 5) — give "seed" to reproduce a set exactly; without one a new set is made. link returns the CHALLENGE LINK (挑戦リンク) of the set (or of kind+seed+n): everyone who opens it gets the same questions — for 「クラス全員に同じ問題を」「場所当てクイズを出して」「年代当てを10問」「挑戦リンクをちょうだい」, "quiz me on where cities are", "give my class the same questions". Do not answer the questions for the reader. ' },
     ],
@@ -70,6 +71,7 @@ export default [
      only the reader finishing the set does. */
   {
     row: ['learn.daily',                'dailyQuest',     'todayQuest,dailyChallenge,questStreak,dailyStreak',         'panel',   'none',    'panel.quest,map.quest,camera,time', 'panel',        'session', 'none',   '',         ''],
+    ui: { at: ['.qst-daily[data-daily]'] },
     doc: [
       { in: 'learn.quest', at: 1, text: '{"type":"dailyQuest","action"?:"state"|"start"|"link","kind"?:"when"|"where"} = TODAY\'S QUEST (今日のクエスト — one set of each learn quest per calendar day, the same for everyone that day; the year quest opens on events the map\'s record dates on this day of the year, where it has any). state (default) returns whether today\'s sets are done and their scores, the reader\'s STREAK (連続日数: current and best) and the last 7 days — for 「今日のクエストは？」「連続何日？」「今週何日やった？」, "what\'s my streak?", "did I do today\'s quest?". start opens today\'s set of kind (default "when"); link returns today\'s set\'s challenge link so a friend gets the same questions today. The first finish of a day is the result (kept in the browser, and in the account when signed in); playing again is practice. Use this, not quest, whenever the reader says today / daily / streak. Do not answer the questions for the reader. ' },
     ],
@@ -128,6 +130,7 @@ export default [
      can read them (RLS). Atlas never hands in answers for a student. */
   {
     row: ['learn.class',                'classSet',       'classQuest,classResults,classBoard,classLink,assignQuest,quizResults', 'panel', 'none', 'account.classes,panel.quest,map.quest,camera', 'panel', 'persist', 'explicit', '', ''],
+    ui: { at: ['#qst-classes'], login: true },
     doc: [
       { in: 'learn.quest', at: 720, text: '{"type":"classSet","action"?:"list"|"create"|"results"|"open"|"close"|"board","kind"?:"where"|"when","n"?:5|10,"seed"?:str,"title"?:str,"code"?:str} = CLASS SETS (クラスのセット — a learn quest given to a class so EVERY STUDENT\'S ANSWERS REACH THE TEACHER; students open the class link with no account and type a name). Needs the teacher signed in. create makes a set — of the set on screen when no kind is given, else of kind (n 5 or 10, a new seed unless "seed") with an optional "title" — and returns the CLASS LINK to hand out; list (default) returns the teacher\'s sets with their codes and how many handed in; results (with "code") returns how the class did: how many handed in, the class mean and median, the HARDEST question, each question\'s mean and median distance / years off, and each student\'s total — for 「クラスの結果は？」「どの問題が難しかった？」「誰が提出した？」「生徒の答えを見せて」, "how did my class do?", "which question did they get wrong?"; open / close (with "code") start or stop taking answers; board opens the teacher\'s board (with "code": that set, where each place question\'s taps can be drawn on the map). Use this — not quest — whenever the reader says class, students, assign, hand in or results. Do not hand in answers for a student. ' },
     ],

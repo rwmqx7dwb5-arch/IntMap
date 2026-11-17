@@ -23,6 +23,7 @@ export default [
      text and produces an explanation, which is why its observer is 'none' and its risk 'read'. */
   {
     row: ['reader.gloss',               'gloss',          'explainTerm,defineTerm',                                      'research','none',    '',                       'explanation',         'read',    'none',   'text',     '', 'external'],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'reader.gloss', text: 'EXPLAIN A TERM IN THE ANSWER YOU JUST GAVE: {"type":"gloss","term":str} opens a small dictionary card beside the conversation for that word or phrase \u2014 what it means generally, what it means IN THE PASSAGE the reader is looking at, and a short background. The reader can also raise this card themselves by selecting a phrase in your reply and right-clicking it (long-pressing it on a touch screen), so it is the SAME card either way. Use it when the reader asks what a specific term in your answer means (\u300c\u3053\u306e\u8a00\u8449\u306e\u610f\u5473\u306f\u300d / "what does <phrase> mean here"), and pass the phrase EXACTLY as it appears in the answer. It runs on its own daily allowance, NOT on the reader\'s question quota. It does not touch the map; for a full discussion of a subject answer normally instead.\n' },
     ],

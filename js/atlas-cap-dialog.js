@@ -21,6 +21,7 @@ import { str, bool, list, obj } from './atlas-caps.js';
 export default [
   {
     row: ['dialog.ask',                 'ask',            'choose,clarify,options',                                      'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     /* a clarification with no question is the defect it exists to prevent */
     /* documented by the ALWAYS-SENT rules text (the PRECISION vs AMBIGUITY paragraph says WHEN to clarify) rather than by a catalogue
        fragment — separating the two would be worse prompt. The value is the literal the audit looks for there. (§14) a FALLBACK: reachable, but not a user-facing feature — kept out of the search's front rank so it cannot crowd out a real capability */
@@ -54,6 +55,7 @@ export default [
   },
   {
     row: ['dialog.answer',              'answer',         '',                                                            'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'answer', at: 10, text: (c) => '{"type":"answer","text":str,"contentClass"?:str,"checks"?:object[],"places"?:[{"n":str,"c":str,"k":str}]} — for STABLE, TIMELESS knowledge or conceptual explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in ' + c.lang + ' (up to ~250 words). CONTENT CLASS + MATH: set "contentClass" to one of "math"|"document"|"code"|"language"|"geographic"|"photo"|"conceptual" so IntMap renders + maps correctly — IntMap maps ONLY when it is "geographic", so a maths, code, grammar or general-knowledge answer NEVER produces map pins (do NOT list "places" for those). Write EVERY formula in STANDARD LaTeX — inline \\( … \\), display/matrices \\[ … \\] with \\frac, pmatrix, ^ and _ (never bare V^{-1}U) — and for any independently checkable numeric/matrix identity emit "checks":[{"type":"matmul","label":"…","a":<matrix>,"b":<matrix>,"expect":<matrix>}|{"type":"equal","label":"…","left":<num|"a/b">,"right":<…>}] using exact fraction strings; IntMap recomputes them exactly and shows a verified/failed note. SOURCING ROUTING (the user is angry that answers arrive with NO sources): if the answer will make SPECIFIC, CHECKABLE factual claims a reader might want to verify — statistics, dated events, attributions, quotes, "who/when/how many", recent or contested facts — prefer ' },
     ],
