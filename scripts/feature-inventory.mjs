@@ -63,7 +63,7 @@ if (IS_MAIN) {
   const head = ['能力', '分類', '画面の入口', '入口の要素', '名指す検査', '本番検証'];
   if (md) {
     console.log('| ' + head.join(' | ') + ' |\n|' + head.map(() => '---').join('|') + '|');
-    rows.forEach((r) => console.log('| ' + cells(r).map((c) => c.replace(/\|/g, '\\|')).join(' | ') + ' |'));
+    rows.forEach((r) => console.log('| ' + cells(r).map((c) => c.replace(/[\\|]/g, '\\$&')).join(' | ') + ' |'));
   } else {
     rows.forEach((r) => console.log(cells(r).join('\t')));
   }
