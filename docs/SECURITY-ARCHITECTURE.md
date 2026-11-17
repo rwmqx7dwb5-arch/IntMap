@@ -1192,7 +1192,7 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    **The items above that remain, in order of what to do next** (none was shown exploitable in this review):
    ① item 16 — carry the outside-content mark through the turn history and summaries, and decide the
    confirmation for outward / publishing / destructive actions in code rather than from the model's output;
-   ② item 20 — the admin console on its own origin, and admin accounts not kept signed in on the app;
+   ② item 20 — closed 2026-11-18 (admin-origin: the console on its own origin, admin rights for aal2 sessions only, administrator accounts signed out of the app);
    ③ item 22 — page `shared_collection`'s answer instead of building one unbounded jsonb;
    ④ item 15 — a burst / capacity bound on a signed-in reader's own writes, sized from the measured
    distribution; ⑤ item 14 — a budget and alert on provider tokens (the ceilings count requests, not money).
