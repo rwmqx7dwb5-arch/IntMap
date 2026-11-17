@@ -163,7 +163,7 @@ export function applyLatest(table, field, latest) {
     if (!s || !d || d.v == null || !isFinite(d.v)) return;
     n++;
     const y = +d.y; if (isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
-    setFigure(s, field, (+d.v) * sc, d.y, { source: cite.source, licence: cite.licence, url: cite.url, code: I.code });
+    setFigure(s, field, (+d.v) * sc, d.y, { ...cite, code: I.code });   /* the citation WHOLE (its publisher included), not a copy of the fields it had when this was written */
   });
   return { field, code: I.code, n, years: n && isFinite(lo) ? [lo, hi] : null };
 }

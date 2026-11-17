@@ -19,7 +19,7 @@
 import { readWorldBank, WB_INDICATORS } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read (under the host's clock, stalled-fetch-and-surface-gauge) and the one catalogue */
 import { IntMapTime } from './chronos.js';
 import * as bus from './bus.js';
-import { stampFigure, figure } from './country-figures.js';   /* (countries-companies) the year a value is for travels with it */
+import { stampFigure, stampOf } from './country-figures.js';   /* (countries-companies) the year a value is for travels with it */
 export function makeTimeCountries(HOST, CTX) {
   const countryStats=CTX.countryStats, loadCountryData=CTX.loadCountryData, renderStats=CTX.renderStats, searchVal=CTX.searchVal;
   /* ============================================================================
@@ -87,13 +87,13 @@ export function makeTimeCountries(HOST, CTX) {
        code already snapshotted is never re-snapshotted from its overlaid values. */
     function snapshotBase(){ if(!base) base={}; try{ for(const iso in countryStats){ if(base[iso]) continue; const s=countryStats[iso]; if(!s) continue; const o={density:s.density,hdi:s.hdi}; FIELDS.forEach(F=>o[F.f]=s[F.f]);
       /* the present's years and sources, so the return to Now gives the card back «2023 · World Bank», not the travel year */
-      const m={}; Object.keys(o).forEach(k=>{ const fg=figure(s,k); m[k]=fg?[fg.y,fg.src]:null; }); FIGMETA.set(o,m); base[iso]=o; } }catch(_){} }
+      const m={}; Object.keys(o).forEach(k=>{ m[k]=stampOf(s,k); }); FIGMETA.set(o,m);   /* the stamp whole — year, publisher, citation */ base[iso]=o; } }catch(_){} }
     const FIGMETA=new WeakMap();
     function restore(){ try{ if(window.IntMapHistId) window.IntMapHistId.clear(); }catch(_){}   /* restore modern names/flags */
       try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries */
       window._imHdiYear=null;
       curWhen=null;   /* (#R425) …and the instant, or the next same-year move compares against a stale one */
-      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; const m=FIGMETA.get(o); if(m) for(const k in m){ if(m[k]) stampFigure(s,k,m[k][0],m[k][1]); } } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
+      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; const m=FIGMETA.get(o); if(m) for(const k in m){ if(m[k]) stampFigure(s,k,m[k].y,m[k].src); } } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
     /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
        IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
        A run that returns essentially nothing is NOT cached, so the next travel transparently retries. */
