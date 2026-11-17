@@ -325,8 +325,8 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel.atl-drag .atl-chat{outline:2px dashed var(--primary-color);outline-offset:-6px;border-radius:10px;}'
       /* (#R103) ONE small AI disclaimer under the input (instead of appending it to every message) */
       +'#atlas-panel .atl-ainote{font-size:9.5px;color:var(--text-muted);text-align:center;padding:0 12px 7px;line-height:1.4;opacity:0.8;}'
-      +'#atlas-panel .atl-in{flex:1;min-width:0;height:42px;min-height:42px;max-height:132px;padding:11px 15px;border-radius:21px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-size:13px;line-height:1.45;outline:none;box-sizing:border-box;transition:border-color .15s ease,box-shadow .15s ease;resize:none;overflow-y:auto;font-family:inherit;display:block;}'   /* (#R118) textarea: Shift+Enter improves to multi-line, auto-grows to ~5 lines */
-      +'#atlas-panel .atl-in:focus{border-color:var(--primary-color);box-shadow:0 0 0 3px rgba(10,132,255,0.18);}'
+      +'#atlas-panel .atl-in{flex:1;min-width:0;height:42px;min-height:42px;max-height:132px;padding:11px 15px;border-radius:21px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-size:13px;line-height:1.45;outline:none;box-sizing:border-box;resize:none;overflow-y:auto;font-family:inherit;display:block;}'   /* (#R118) textarea: Shift+Enter improves to multi-line, auto-grows to ~5 lines */
+      /* (ui-compass-atlas-polish) 「入力欄の周りがハイライトされるのもやめて」: focus は枠の色も影も変えない。入力中であることはカーソルが示す。 */
       /* (#R72) send button ("メッセージ送信ボタンがダサい"): clean filled circle + arrow-up SVG (ChatGPT-style),
          disabled-looking when the input is empty. */
       /* (#R156) SEND + STOP = ACCENT COLOUR ("送信ボタン、応答を停止ボタンはアクセントカラーに"), but only ONCE the
