@@ -1894,7 +1894,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは15・全 136,483 リング分／
+                                  **発見された**束すべて・いまは15・全 136,871 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -1957,8 +1957,9 @@ data/hist-admin-surveys.js        **出版元が測って日付を述べた**第
                                   Nejjar（1896 のオスマン／1926 のフランス委任統治）・Pelagios MAGIS（ローマの属州 117 と 303–324 頃）。
                                   行ごとに出版元の日付と精度（`dates`。導出した端は根拠つき）を持つ。derived ではない記録。
                                   生成は scripts/build-hist-admin-surveys.mjs、門は `npm run check:histsurveys`（docs/MAP-LAYERS.md §7.7）
-data/hist-admin-surveys-nc.js     同じ形で、**CC BY-NC-SA 4.0** の出版元だけ（`window.__HISTADMSURVEYNC`・
-                                  HGIS de las Indias＝スペイン領アメリカの provincia mayor 1701–1808）。data/cshapes.js と同じく
+data/hist-admin-surveys-nc.js     同じ形で、**CC BY-NC-SA 4.0** の条件を負う出版元だけ（`window.__HISTADMSURVEYNC`・
+                                  HGIS de las Indias＝スペイン領アメリカの provincia mayor 1701–1808・Müller-Crepon＝サハラ以南の
+                                  植民地の州・セルクル・郡 1895–1962。後者は CC0 だが外枠の一部が CShapes 由来）。data/cshapes.js と同じく
                                   開いた記録から分け、ファイル自身が `licence` を述べる
 data/hist-admin-recon.js          **IntMap 自身が史実から復元した**第1級区分（`window.__HISTADMRECON`）。区分＝部品の和集合、
                                   所属＝出典つきの事実（調書 scripts/histrecon/dossiers/*.json と明治の府県 scripts/histrecon/meiji-*.json）。

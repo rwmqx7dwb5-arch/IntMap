@@ -34,6 +34,7 @@
  *  never fetched: this script makes no network request.
  *
  *    node scripts/build-border-provenance.mjs            write the three indexes
+ *    node scripts/build-border-provenance.mjs --gaps     write only the gap-record index (reads the committed bundles; no cache)
  *    node scripts/build-border-provenance.mjs --check    every index row still keys a shipped row (no cache needed)
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
@@ -284,6 +285,11 @@ if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.meta.
     const bad = check();
     if (bad.length) { console.error('border-provenance: ' + bad.length + ' problem(s)'); for (const b of bad) console.error('  ' + b); process.exitCode = 1; }
     else console.log('border-provenance ok — every index row keys its shipped row');
+  } else if (arg.includes('--gaps')) {
+    /* the gap-record index reads only the committed bundles (no builder cache), so a round that rebuilt only
+       those records re-derives only it — the OHM and Cliopatria indexes stay byte for byte as committed */
+    const gaps = gapsIndex(); writeFileSync(OUT_GAPS, JSON.stringify(gaps) + '\n');
+    console.error(OUT_GAPS + ' ' + readFileSync(OUT_GAPS).length + ' B');
   } else {
     const ohm = await ohmIndex(); writeFileSync(OUT_OHM, JSON.stringify(ohm) + '\n');
     const clio = await clioIndex(); writeFileSync(OUT_CLIO, JSON.stringify(clio) + '\n');

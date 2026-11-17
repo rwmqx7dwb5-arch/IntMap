@@ -1,0 +1,2429 @@
+{
+ "note": "Historical review of every snapshot in Müller-Crepon col_units_full.geojson (doi:10.7910/DVN/9JI06R), read by scripts/histsurveys/mullercrepon.mjs. Per snapshot: which field holds the first-level subdivision of the polity CShapes draws there that year (region | district | exclude), the in-force interval where dated reorganisations establish it (to exclusive; otherwise the snapshot year only), units to drop, clear typo corrections, sovereign where the data has neither colbrit nor colfrnc, and sources. A snapshot missing here fails the harvest.",
+ "reviewed": "2026-11-17",
+ "snapshots": {
+  "AGO 1920": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Angola (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "The six-district set (Loanda, Congo, Mossamedes, Huilla, Benguella, Lunda) is the c.1900–1910 layout (EB1911 still counts five districts with Huilla as the hinterland of Mossamedes); no source places this set in force in 1920, by when further districts (e.g. Malanje, Bié, Moxico, Cuanza) are attested in later layouts. Frame also lies 8.2% outside CShapes Angola. Cannot date the layout.",
+   "sources": [
+    {
+     "url": "https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Angola",
+     "title": "Encyclopædia Britannica 1911, \"Angola\"",
+     "says": "Angola is divided into five districts (Congo, Loanda, Benguella, Mossamedes, Lunda); Huilla described as the hinterland portion of Mossamedes.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "BEN 1906": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Benin/Dahomey (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Units are cercles of Dahomey et dépendances, which sat directly under the lieutenant-governor (first level). No dated reorganisation found bounding this exact set; draw for the snapshot year only.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "BEN 1922": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Benin/Dahomey (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles of Dahomey (first level). Coastal cercles (Ouidah, Cotonou, Mono) are absent — 8.5% of the polity uncovered — so those areas stay blank rather than inferred.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "BEN 1928": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Benin/Dahomey (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles of Dahomey (first level).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "BEN 1948": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Benin/Dahomey (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Athiem": "Athiémé"
+   },
+   "why": "Cercles of Dahomey (first level). Cotonou appears twice (multi-part unit).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "BEN 1960": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Benin/Dahomey (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Dahomey became independent on 1960-08-01, so 1960 is not a colonial-era layout for most of the year; moreover the 13 units are essentially the 1928 cercle set (Moyen-Niger, Atacora, Holli-Ketou…), so the map does not show a 1960 layout.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/",
+     "title": "Statoids — country pages (independence dates)",
+     "says": "Independence dates: Dahomey 1960-08-01, Nigeria 1960-10-01, Congo (Léopoldville) 1960-06-30, Tanganyika 1961-12-09.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "BFA 1922": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Burkina Faso (Upper Volta) (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "The 1919 decree constituted Upper Volta of the cercles Gaoua, Bobo-Dioulasso, Dédougou, Ouagadougou, Dori, Say and Fada N'Gourma. The snapshot has Tenkodogo instead of Say and no Ouahigouya, and 17.4% of its frame lies outside the CShapes polity; the set cannot be matched to any attested 1922 layout.",
+   "sources": [
+    {
+     "url": "https://mjp.univ-perp.fr/constit/bf1919.htm",
+     "title": "Décret du 1er mars 1919 créant la colonie de Haute-Volta (JORF 20 mai 1919) — mjp.univ-perp.fr",
+     "says": "The new colony comprised the cercles of Gaoua, Bobo-Dioulasso, Dédougou, Ouagadougou, Dori, Say and Fada N'Gourma.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/French_Upper_Volta",
+     "title": "French Upper Volta — Wikipedia",
+     "says": "Colony established 1919 from parts of Upper Senegal and Niger and Côte d'Ivoire; dissolved on 5 September 1932, its parts administered by Côte d'Ivoire, French Sudan and Niger.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "BFA 1928": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Burkina Faso (Upper Volta) (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles of Upper Volta (first level, under the lieutenant-governor at Ouagadougou). Colony existed until dissolution on 1932-09-05, so 1928 is within its life; frame matches CShapes within 3–4%.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/French_Upper_Volta",
+     "title": "French Upper Volta — Wikipedia",
+     "says": "Colony established 1919 from parts of Upper Senegal and Niger and Côte d'Ivoire; dissolved on 5 September 1932, its parts administered by Côte d'Ivoire, French Sudan and Niger.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "BWA 1899": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Botswana / Bechuanaland Protectorate (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Units are native reserves defined by Proclamation 9 of 1899 (named after chiefs: Sekgoma, Bathoen, Linchwe, Sebele, Khama), Crown land (\"Protectorate\") and the Tati Concession — land-tenure categories, not administrative divisions. The first-level divisions in 1899 were the Northern and Southern Protectorate (Assistant Commissioners), which are not present.",
+   "sources": [
+    {
+     "url": "https://e-laws.botswanalaws.com/PDF/StatutesActpdf/OIC_1890-1929/1890-1929/PROCLAMATION,%20NO.%209%20OF%201899.pdf",
+     "title": "Bechuanaland Protectorate Proclamation No. 9 of 1899",
+     "says": "Establishes and defines the boundaries of the Native reserves (tribal areas) — land-tenure reserves, not administrative divisions.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://thuto.org/ubh/bw/colad/coloff.htm",
+     "title": "Colonial administrators of the Bechuanaland Protectorate — University of Botswana History Dept",
+     "says": "Assistant Commissioners for the Northern Protectorate (Palapye 1891–1903/4, Francistown 1903/4–1923) and Southern Protectorate (Gaberones 1891–1923); posts lapsed 1923; divisions revived 1950, Divisional Commissioners 1954–1963.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "BWA 1906": {
+   "level": "region",
+   "term": {
+    "en": "division (Assistant Commissioner's division)",
+    "local": "Northern / Southern Protectorate"
+   },
+   "polity": "Botswana / Bechuanaland Protectorate (CShapes)",
+   "inForceFrom": {
+    "date": "1891",
+    "precision": "year"
+   },
+   "inForceTo": {
+    "date": "1923",
+    "precision": "year"
+   },
+   "asOf": "yes",
+   "excludeUnits": [],
+   "names": {},
+   "why": "The Protectorate was administered in two divisions, Northern Protectorate (AC at Palapye, from 1903/4 Francistown) and Southern Protectorate (AC at Gaberones), from 1891 until the AC posts lapsed in 1923. The region field holds exactly these two. Range applies to the two-division set; the internal N/S line itself is only known from this map.",
+   "sources": [
+    {
+     "url": "https://thuto.org/ubh/bw/colad/coloff.htm",
+     "title": "Colonial administrators of the Bechuanaland Protectorate — University of Botswana History Dept",
+     "says": "Assistant Commissioners for the Northern Protectorate (Palapye 1891–1903/4, Francistown 1903/4–1923) and Southern Protectorate (Gaberones 1891–1923); posts lapsed 1923; divisions revived 1950, Divisional Commissioners 1954–1963.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "CAF 1938": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Central African Republic / Oubangui-Chari (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Frame (735,280 km²) extends ~114,000 km² into Chad and includes Chadian units (Gounou[-Gaya], Maro). Southern Chad (Moyen-Chari, Logone, Mayo-Kebbi) was attached to Oubangui-Chari 1925–32 and Nov 1934–Apr 1936, and returned to Chad on 1936-04-29; so the map shows a pre-1936 layout, not 1938. The companion TCD 1938 lacks exactly this southern area.",
+   "sources": [
+    {
+     "url": "https://worldstatesmen.org/Chad.html",
+     "title": "Chad — WorldStatesmen.org",
+     "says": "Moyen-Chari and Moyen-Logone attached to Oubangui-Chari from 31 Dec 1925; Fort-Archambault, Maro, Koumra returned Nov 1932; Nov 1934–Apr 1936 Moyen-Chari, Moyen-Logone and Mayo-Kebbi dependencies of Oubangui-Chari; returned to Chad 29 Apr 1936.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Subdivisions_of_Chad",
+     "title": "Subdivisions of Chad — Wikipedia",
+     "says": "The 1934 centralisation of AEF was reversed with the return to the previous structure of AEF in 1936.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "CAF 1946": {
+   "level": "district",
+   "term": {
+    "en": "région",
+    "local": "région"
+   },
+   "polity": "Central African Republic / Oubangui-Chari (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "The 11 distinct units correspond one-to-one with the chef-lieux of the Oubangui-Chari régions of the late 1940s (Bangui, Mbaïki=Lobaye, Berbérati=Haute-Sangha, Bossangoa=Ouham, Bozoum=Ouham-Pendé, Fort-Sibut=Kémo-Gribingui, Bambari=Ouaka, Mobaye=Basse-Kotto, Bangassou=Mbomou, Ndélé=Dar-el-Kouti, Birao=Vakaga); the publisher labels them by seat, not by the région name — IntMap should not present a seat label as the unit's official name. Frame matches CShapes (1.6% outside). No dated decree found bounding the set.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Subdivisions_of_Chad",
+     "title": "Subdivisions of Chad — Wikipedia",
+     "says": "The 1934 centralisation of AEF was reversed with the return to the previous structure of AEF in 1936.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "CIV 1906": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Côte d'Ivoire (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles of Côte d'Ivoire (first level). Kong appears twice (multi-part).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "CIV 1922": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Côte d'Ivoire (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Logouale": "Logoualé"
+   },
+   "why": "Cercles of Côte d'Ivoire (first level); frame within 1.1% of CShapes.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "CIV 1928": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Côte d'Ivoire (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles of Côte d'Ivoire (first level). Frame comparison failed geometrically (union error), so frame agreement is unmeasured.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "CIV 1937": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Côte d'Ivoire incl. former Upper Volta cercles 1932–1947 (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": {
+    "date": "1937-07-13",
+    "precision": "day"
+   },
+   "asOf": "yes until 13 July 1937",
+   "excludeUnits": [],
+   "names": {
+    "Bassandra": "Sassandra"
+   },
+   "why": "After Upper Volta's dissolution (1932-09-05) Côte d'Ivoire held the southern Voltaic cercles directly; all 26 units were cercles under the lieutenant-governor. The decree of 1937-07-13 (JORF 1937-07-21) created the région administrative de la Haute-Côte-d'Ivoire grouping Ouagadougou, Kaya, Tenkodogo, Koudougou, Gaoua and Bobo-Dioulasso, after which those cercles were no longer first level — so this layout ends at that decree (frame matches CShapes 1 July 1937 to 15 km²). Start of the exact set not established.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Upper_Ivory_Coast",
+     "title": "Upper Ivory Coast — Wikipedia (and fr.wikipedia Haute-Côte d'Ivoire citing décret du 13 juillet 1937, JORF 21 juillet 1937)",
+     "says": "Upper Volta dissolved 5 Sep 1932 and divided among Côte d'Ivoire, Soudan and Niger; a decree of 13 July 1937 created the région administrative de la Haute-Côte-d'Ivoire grouping the cercles of Ouagadougou, Kaya, Tenkodogo, Koudougou, Gaoua and Bobo-Dioulasso.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/French_Upper_Volta",
+     "title": "French Upper Volta — Wikipedia",
+     "says": "Colony established 1919 from parts of Upper Senegal and Niger and Côte d'Ivoire; dissolved on 5 September 1932, its parts administered by Côte d'Ivoire, French Sudan and Niger.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "CMR 1936": {
+   "level": "region",
+   "term": {
+    "en": "circonscription (région)",
+    "local": "circonscription / région"
+   },
+   "polity": "Cameroon / French Cameroun (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Yakadouma": "Yokadouma",
+    "Sangmelma": "Sangmélima",
+    "Merganga": "Meiganga"
+   },
+   "why": "Region field holds the 17 circonscriptions/régions of French Cameroun, each grouping subdivisions (district field). First level. No dated reorganisation bounding this exact set found.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Regions of Cameroon — Statoids",
+     "says": "French mandate from 1922-07-20; fourteen regions after WWII and nineteen by 1960; 1951 table of nineteen régions includes Bamiléké, Bénoué, Adamaoua; British Cameroons administered with Nigeria.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "CMR 1951": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Cameroon / French Cameroun (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Statoids' 1951 table has nineteen régions including Bamiléké; the snapshot has 17 regions and places the Bamiléké subdivisions (Dschang, Bafang, Bafoussam, Bangangté) inside \"Moungo\", so drawing the region unions would claim a Mungo région that did not exist in that form in 1951.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Regions of Cameroon — Statoids",
+     "says": "French mandate from 1922-07-20; fourteen regions after WWII and nineteen by 1960; 1951 table of nineteen régions includes Bamiléké, Bénoué, Adamaoua; British Cameroons administered with Nigeria.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "COD 1895": {
+   "level": "district",
+   "term": {
+    "en": "district",
+    "local": "district"
+   },
+   "polity": "Congo Free State (CShapes DRC)",
+   "inForceFrom": {
+    "date": "1895",
+    "precision": "year"
+   },
+   "inForceTo": null,
+   "asOf": "yes",
+   "excludeUnits": [],
+   "names": {
+    "Kassai": "Kasai"
+   },
+   "why": "In 1895 the Free State's districts were increased to fifteen (Aruwimi-Uele split); the 15 units match. Districts were the first level under the Governor-General. End: by 1907 only 14 districts are listed — exact date of the change not found.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Districts_of_the_Congo_Free_State",
+     "title": "Districts of the Congo Free State — Wikipedia",
+     "says": "11 districts by decree of 1 Aug 1888; Kwango oriental added 1890; in 1895 the number increased to fifteen (Aruwimi-Uele split into Uele and Aruwimi); 14 districts listed in 1907; 15 at annexation in 1908.",
+     "accessed": "2026-11-17"
+    }
+   ],
+   "sovereign": "CONGO-FREE-STATE"
+  },
+  "COD 1910": {
+   "level": "district",
+   "term": {
+    "en": "district (Katanga: vice-government general)",
+    "local": "district / vice-gouvernement général"
+   },
+   "polity": "Belgian Congo (CShapes DRC)",
+   "inForceFrom": {
+    "date": "1910",
+    "precision": "year"
+   },
+   "inForceTo": {
+    "date": "1912-03-28",
+    "precision": "day"
+   },
+   "asOf": "yes",
+   "excludeUnits": [],
+   "names": {
+    "l'Uele": "Uele"
+   },
+   "why": "The 12 units are exactly the 1910 set (Bas-Congo formed from Banana, Boma, Matadi, Cataractes; Katanga a vice-government general). Superseded by the arrêté royal of 1912-03-28 (22 districts). The l'Uele unit still includes the Lado Enclave, transferred to Sudan in June 1910 (~2.3% of the frame lies outside CShapes).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Districts_of_the_Belgian_Congo",
+     "title": "Districts of the Belgian Congo — Wikipedia",
+     "says": "1910: 12 districts (Bas-Congo, Moyen-Congo, Lac Léopold II, Équateur, Bangala, Ubangi, Uele, Aruwimi, Stanleyville, Katanga [a vice-government general], Kasai, Kwango); arrêté royal 28 March 1912: 22 districts; arrêté royal 28 July 1914 grouped them into four provinces (Congo-Kasaï, Équateur, Orientale, Katanga); 1933: six provinces named after capitals.",
+     "accessed": "2026-11-17"
+    }
+   ],
+   "sovereign": "BEL"
+  },
+  "COD 1912": {
+   "level": "district",
+   "term": {
+    "en": "district",
+    "local": "district"
+   },
+   "polity": "Belgian Congo (CShapes DRC)",
+   "inForceFrom": {
+    "date": "1912-03-28",
+    "precision": "day"
+   },
+   "inForceTo": {
+    "date": "1914-07-28",
+    "precision": "day"
+   },
+   "asOf": "yes",
+   "excludeUnits": [
+    {
+     "district": "Boven-Luepula",
+     "why": "Haut-Luapula lay under the vice-government general of Katanga (since 1910), so it was a second-level unit; the Katanga level itself is not in the data."
+    },
+    {
+     "district": "Tanganika-Moero",
+     "why": "Under the Katanga vice-government general (second level)."
+    },
+    {
+     "district": "Lomami",
+     "why": "Under the Katanga vice-government general (second level)."
+    },
+    {
+     "district": "la Lulua",
+     "why": "Under the Katanga vice-government general (second level)."
+    }
+   ],
+   "names": {
+    "Boven-Luepula": "Haut-Luapula"
+   },
+   "why": "The 22 units are exactly the districts of the arrêté royal of 1912-03-28; superseded when the arrêté royal of 1914-07-28 grouped them into four provinces. Outside Katanga the districts were first level; the four Katanga districts were under the vice-government general and are dropped rather than drawn as first level.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Districts_of_the_Belgian_Congo",
+     "title": "Districts of the Belgian Congo — Wikipedia",
+     "says": "1910: 12 districts (Bas-Congo, Moyen-Congo, Lac Léopold II, Équateur, Bangala, Ubangi, Uele, Aruwimi, Stanleyville, Katanga [a vice-government general], Kasai, Kwango); arrêté royal 28 March 1912: 22 districts; arrêté royal 28 July 1914 grouped them into four provinces (Congo-Kasaï, Équateur, Orientale, Katanga); 1933: six provinces named after capitals.",
+     "accessed": "2026-11-17"
+    }
+   ],
+   "sovereign": "BEL"
+  },
+  "COD 1920": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Belgian Congo (CShapes DRC)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Since the arrêté royal of 1914-07-28 the districts were grouped into four provinces (Congo-Kasaï, Équateur, Orientale, Katanga), which are the first level and are absent (region blank). The snapshot also includes Ruanda and Urundi (a separate polity) and a blank unit.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Districts_of_the_Belgian_Congo",
+     "title": "Districts of the Belgian Congo — Wikipedia",
+     "says": "1910: 12 districts (Bas-Congo, Moyen-Congo, Lac Léopold II, Équateur, Bangala, Ubangi, Uele, Aruwimi, Stanleyville, Katanga [a vice-government general], Kasai, Kwango); arrêté royal 28 March 1912: 22 districts; arrêté royal 28 July 1914 grouped them into four provinces (Congo-Kasaï, Équateur, Orientale, Katanga); 1933: six provinces named after capitals.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "COD 1933": {
+   "level": "exclude",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Belgian Congo (CShapes DRC)",
+   "inForceFrom": {
+    "date": "1933",
+    "precision": "year"
+   },
+   "inForceTo": null,
+   "asOf": "yes",
+   "excludeUnits": [],
+   "names": {
+    "Maniena": "Maniema",
+    "Urbain de Leoville": "Urbain de Léopoldville"
+   },
+   "why": "EXCLUDED: IntMap already draws these six provinces from its own dossier scripts/histrecon/dossiers/COD.json, from the reorganisation that created them (1933-10-01, dated with sources) to independence. This sheet states the same units for the year 1933 only — from 1 January, nine months before they existed — and, being a publisher's record, would displace the dated rows (the dossier yields to publishers). Measured 2026-11-17: 2 seam pairs with the dossier rows. (Previously: Region field holds the six provinces of the 1933 reform named after their capitals (Léopoldville, Coquilhatville, Lusambo, Costermansville, Elisabethville, Stanleyville; publisher gives Dutch forms for three). 16 districts match the 1933 district count. End of this exact set not established. Note ~2.3% of the frame (Lado Enclave, Sudanese since 1910) lies outside CShapes.)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Districts_of_the_Belgian_Congo",
+     "title": "Districts of the Belgian Congo — Wikipedia",
+     "says": "1910: 12 districts (Bas-Congo, Moyen-Congo, Lac Léopold II, Équateur, Bangala, Ubangi, Uele, Aruwimi, Stanleyville, Katanga [a vice-government general], Kasai, Kwango); arrêté royal 28 March 1912: 22 districts; arrêté royal 28 July 1914 grouped them into four provinces (Congo-Kasaï, Équateur, Orientale, Katanga); 1933: six provinces named after capitals.",
+     "accessed": "2026-11-17"
+    }
+   ],
+   "sovereign": "BEL"
+  },
+  "COD 1949": {
+   "level": "exclude",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Belgian Congo (CShapes DRC)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "units yes; names outdated",
+   "excludeUnits": [],
+   "names": {
+    "Aut Lomami": "Haut-Lomami"
+   },
+   "why": "EXCLUDED: The same six provinces as COD 1933, drawn by the dossier scripts/histrecon/dossiers/COD.json with dated sources for 1933-10-01 → 1962; this year-only sheet would only replace those rows for 1949. Measured 2026-11-17: 2 contested pairs with the dossier rows. (Previously: Six provinces (first level) with their districts; frame matches CShapes exactly. The publisher labels the provinces by their pre-1947 capital-based names (Léopoldville, Costermansville, Elisabethville, Lusambo, Coquilhatville, Stanleyville); around 1947 they were renamed Léopoldville, Kivu, Katanga, Kasaï, Équateur, Orientale — IntMap should not present the old names as the 1949 names. Range not established.)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Districts_of_the_Belgian_Congo",
+     "title": "Districts of the Belgian Congo — Wikipedia",
+     "says": "1910: 12 districts (Bas-Congo, Moyen-Congo, Lac Léopold II, Équateur, Bangala, Ubangi, Uele, Aruwimi, Stanleyville, Katanga [a vice-government general], Kasai, Kwango); arrêté royal 28 March 1912: 22 districts; arrêté royal 28 July 1914 grouped them into four provinces (Congo-Kasaï, Équateur, Orientale, Katanga); 1933: six provinces named after capitals.",
+     "accessed": "2026-11-17"
+    }
+   ],
+   "sovereign": "BEL"
+  },
+  "COD 1963": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Congo (Léopoldville) (CShapes DRC)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not colonial",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Independent since 1960-06-30; the 1962–63 \"provincettes\" are a post-colonial layout.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/",
+     "title": "Statoids — country pages (independence dates)",
+     "says": "Independence dates: Dahomey 1960-08-01, Nigeria 1960-10-01, Congo (Léopoldville) 1960-06-30, Tanganyika 1961-12-09.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "COG 1923": {
+   "level": "district",
+   "term": {
+    "en": "circonscription",
+    "local": "circonscription"
+   },
+   "polity": "Congo / Moyen-Congo (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [
+    {
+     "district": "Nola",
+     "why": "Lies wholly in CShapes' Central African Republic polity in 1923; drawing it under Moyen-Congo would contradict the polity drawn."
+    },
+    {
+     "district": "Carnot",
+     "why": "Lies wholly in CShapes' Central African Republic polity in 1923."
+    },
+    {
+     "district": "M'Baiki",
+     "why": "Lies wholly in CShapes' Central African Republic polity in 1923."
+    }
+   ],
+   "names": {},
+   "why": "Circonscriptions of Moyen-Congo (first level). Half the frame lies in CShapes' CAR; the three Haute-Sangha/Lobaye units there are dropped.",
+   "sources": [
+    {
+     "url": "https://www.entreprises-coloniales.fr/afrique-equatoriale/AEC_1937-AEF-Cameroun.pdf",
+     "title": "Annuaire des entreprises coloniales 1937 — AEF, Cameroun (entreprises-coloniales.fr)",
+     "says": "Uses \"départements\" for Oubangui-Chari units in 1937 (e.g. départements du Bas-M'Bomou et de l'Oubangui-Ouaka) and \"circonscription\" for Gabonese units (Woleu-N'Tem).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "COG 1937": {
+   "level": "district",
+   "term": {
+    "en": "département",
+    "local": "département"
+   },
+   "polity": "Congo / Moyen-Congo (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Five départements of Moyen-Congo after the 1934 AEF reform (départements were the units below the former colonies). Niari-Ogooué includes the Haut-Ogooué, attached to Moyen-Congo until 1946, which CShapes places in Gabon (10% of frame outside).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Subdivisions_of_Chad",
+     "title": "Subdivisions of Chad — Wikipedia",
+     "says": "The 1934 centralisation of AEF was reversed with the return to the previous structure of AEF in 1936.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.entreprises-coloniales.fr/afrique-equatoriale/AEC_1937-AEF-Cameroun.pdf",
+     "title": "Annuaire des entreprises coloniales 1937 — AEF, Cameroun (entreprises-coloniales.fr)",
+     "says": "Uses \"départements\" for Oubangui-Chari units in 1937 (e.g. départements du Bas-M'Bomou et de l'Oubangui-Ouaka) and \"circonscription\" for Gabonese units (Woleu-N'Tem).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "COG 1946": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Congo / Moyen-Congo (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Only four named units plus a blank one; 20.6% of the 1946 polity is uncovered, and the publisher's GAB 1946 map assigns Kouilou and Niari to Gabon — the pair does not describe the 1946 Moyen-Congo layout.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Subdivisions_of_Chad",
+     "title": "Subdivisions of Chad — Wikipedia",
+     "says": "The 1934 centralisation of AEF was reversed with the return to the previous structure of AEF in 1936.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "GAB 1937": {
+   "level": "district",
+   "term": {
+    "en": "département",
+    "local": "département"
+   },
+   "polity": "Gabon (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Five départements of Gabon after the 1934 AEF reform (first level). Haut-Ogooué was then part of Moyen-Congo, hence 14% of CShapes Gabon uncovered.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Subdivisions_of_Chad",
+     "title": "Subdivisions of Chad — Wikipedia",
+     "says": "The 1934 centralisation of AEF was reversed with the return to the previous structure of AEF in 1936.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.entreprises-coloniales.fr/afrique-equatoriale/AEC_1937-AEF-Cameroun.pdf",
+     "title": "Annuaire des entreprises coloniales 1937 — AEF, Cameroun (entreprises-coloniales.fr)",
+     "says": "Uses \"départements\" for Oubangui-Chari units in 1937 (e.g. départements du Bas-M'Bomou et de l'Oubangui-Ouaka) and \"circonscription\" for Gabonese units (Woleu-N'Tem).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "GAB 1946": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Gabon (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Includes Kouilou and Niari, which in 1946 were part of Moyen-Congo (frame overlaps CShapes Congo); unit names (les Adoumas, Booué, Mouila) mix older circonscriptions with régions. Not the 1946 layout.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Subdivisions_of_Chad",
+     "title": "Subdivisions of Chad — Wikipedia",
+     "says": "The 1934 centralisation of AEF was reversed with the return to the previous structure of AEF in 1936.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "GHA 1913": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Ghana / Gold Coast (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Contains \"Togoland\" and \"Ho\" (British occupation of Togoland began 1914, mandate 1922), a blank unit, and assigns Gonja/Dagomba to a \"Southern Province\" while Kumasi and Obuasi (Ashanti) sit in \"Eastern Province\" — not the 1913 layout of the Colony, Ashanti and Northern Territories.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Gold_Coast_(British_colony)",
+     "title": "Gold Coast (British colony) — Wikipedia",
+     "says": "The Gold Coast comprised the Colony, Ashanti (annexed 1902) and the Northern Territories protectorate; British Togoland was a League of Nations mandate from 1922 (occupied 1914), administered with the Gold Coast.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "GHA 1927": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Ghana / Gold Coast (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level",
+   "excludeUnits": [],
+   "names": {},
+   "why": "The Gold Coast's first level was the Colony, Ashanti, the Northern Territories (and mandated British Togoland). The region field mixes Colony provinces (Central, Western, Eastern), Northern Territories provinces (Northern, Southern), Ashanti as a whole and British Togoland — different levels; the true first level is not present.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Gold_Coast_(British_colony)",
+     "title": "Gold Coast (British colony) — Wikipedia",
+     "says": "The Gold Coast comprised the Colony, Ashanti (annexed 1902) and the Northern Territories protectorate; British Togoland was a League of Nations mandate from 1922 (occupied 1914), administered with the Gold Coast.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "GHA 1946": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Ghana / Gold Coast (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Ashanti and Northern Territories districts have no region; only two Colony provinces are given. First level (Colony / Ashanti / Northern Territories / Togoland) not present.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Gold_Coast_(British_colony)",
+     "title": "Gold Coast (British colony) — Wikipedia",
+     "says": "The Gold Coast comprised the Colony, Ashanti (annexed 1902) and the Northern Territories protectorate; British Togoland was a League of Nations mandate from 1922 (occupied 1914), administered with the Gold Coast.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "GIN 1906": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Guinea (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Mellaooree": "Mellacorée"
+   },
+   "why": "Cercles of Guinée française (first level). Frame 12% outside CShapes.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "GIN 1922": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Guinea (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles (first level).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "GIN 1928": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Guinea (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Sigiuri": "Siguiri"
+   },
+   "why": "Cercles (first level).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "GIN 1937": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Guinea (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles (first level); frame identical to CShapes.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "KEN 1910": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Kenya / East Africa Protectorate (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "yes for the six provinces (attested 1909)",
+   "excludeUnits": [
+    {
+     "region": "Jubaland",
+     "district": "Turkana",
+     "why": "A \"Turkana\" district under Jubaland is impossible (Turkana lay in the north-west, partly still Ugandan until 1926); the polygon's identity is unknown."
+    }
+   ],
+   "names": {
+    "Mambasa": "Mombasa"
+   },
+   "why": "Six provinces Seyidie, Tanaland, Kenya (Kenia), Nyanza, Naivasha, Ukamba — exactly the six attested for 1909; Jubaland/Northern Frontier were added c.1912–13 (Kenia and Naivasha enlarged then). The only Jubaland unit is mislabelled and dropped.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uke.html",
+     "title": "Counties of Kenya — Statoids (change history)",
+     "says": "1909 six provinces Kenia, Naivasha, Nyanza, Seyidie, Tanaland, Ukamba; ~1913 Jubaland and Northern Frontier added; ~1922 Seyidie+Tanaland→Coast, Kenya→Kikuyu, Masai created; ~1955 Southern province formed; 1962–63 regions.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.paukwa.or.ke/?p=12308",
+     "title": "Kenya in 2013 — Paukwa",
+     "says": "1922: Coast formed, Naivasha renamed Kerio, Ukamba split with Masai (later district status); by 1948 Ukamba, Kerio, Kikuyu abolished into Central and Rift Valley; 1955 Southern province formed.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Turkana_District",
+     "title": "Turkana District — Wikipedia",
+     "says": "Turkana area taken from the Uganda Protectorate in two stages, the southern section in 1902 and the northern region (Rudolf Province) in 1926.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "KEN 1925": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Kenya Colony (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Puts Turkana (three parts) and Turkwel in Nyanza, but Rudolf Province (northern Turkana) was transferred from Uganda only in 1926; \"Eldoret\" as a province is unattested (Uasin Gishu appears under Kerio); Nakuru under Nyanza is doubtful. Cannot date the layout.",
+   "sources": [
+    {
+     "url": "https://www.paukwa.or.ke/?p=12308",
+     "title": "Kenya in 2013 — Paukwa",
+     "says": "1922: Coast formed, Naivasha renamed Kerio, Ukamba split with Masai (later district status); by 1948 Ukamba, Kerio, Kikuyu abolished into Central and Rift Valley; 1955 Southern province formed.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Turkana_District",
+     "title": "Turkana District — Wikipedia",
+     "says": "Turkana area taken from the Uganda Protectorate in two stages, the southern section in 1902 and the northern region (Rudolf Province) in 1926.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "KEN 1942": {
+   "level": "region",
+   "term": {
+    "en": "province / extra-provincial district",
+    "local": "province"
+   },
+   "polity": "Kenya Colony (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Coast, Central, Nyanza, Rift Valley provinces plus Masai, Turkana and Northern Frontier (administered as extra-provincial districts directly under the colony) — first level. Matches the post-1929/1930s structure in which Ukamba, Kerio, Kikuyu had been replaced by Central and Rift Valley. Frame matches CShapes.",
+   "sources": [
+    {
+     "url": "https://www.paukwa.or.ke/?p=12308",
+     "title": "Kenya in 2013 — Paukwa",
+     "says": "1922: Coast formed, Naivasha renamed Kerio, Ukamba split with Masai (later district status); by 1948 Ukamba, Kerio, Kikuyu abolished into Central and Rift Valley; 1955 Southern province formed.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.statoids.com/uke.html",
+     "title": "Counties of Kenya — Statoids (change history)",
+     "says": "1909 six provinces Kenia, Naivasha, Nyanza, Seyidie, Tanaland, Ukamba; ~1913 Jubaland and Northern Frontier added; ~1922 Seyidie+Tanaland→Coast, Kenya→Kikuyu, Masai created; ~1955 Southern province formed; 1962–63 regions.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "KEN 1962": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Kenya Colony (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Tranz Nzoia": "Trans Nzoia"
+   },
+   "why": "Provinces Northern, Rift Valley, Nyanza, Central, Southern, Coast — the c.1955–1962 layout (Southern formed ~1955, Northern Frontier renamed Northern), before the regions of the 1962 constitution took effect. Nairobi is shown inside Central.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uke.html",
+     "title": "Counties of Kenya — Statoids (change history)",
+     "says": "1909 six provinces Kenia, Naivasha, Nyanza, Seyidie, Tanaland, Ukamba; ~1913 Jubaland and Northern Frontier added; ~1922 Seyidie+Tanaland→Coast, Kenya→Kikuyu, Masai created; ~1955 Southern province formed; 1962–63 regions.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.paukwa.or.ke/?p=12308",
+     "title": "Kenya in 2013 — Paukwa",
+     "says": "1922: Coast formed, Naivasha renamed Kerio, Ukamba split with Masai (later district status); by 1948 Ukamba, Kerio, Kikuyu abolished into Central and Rift Valley; 1955 Southern province formed.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "LSO 1937": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Lesotho / Basutoland (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "n/a",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Single blank unit — the territory itself, no subdivisions.",
+   "sources": []
+  },
+  "MDG 1937": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Madagascar (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level",
+   "excludeUnits": [],
+   "names": {},
+   "why": "81 district-level units with no upper level; names are post-colonial Malagasy forms (Antsiranana, Mahajanga, Toliara) and include \"Melaky\", a 21st-century region name — the units are not presented as in 1937, and the first level of the colony is not present.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Provinces_of_Madagascar",
+     "title": "Provinces of Madagascar — Wikipedia",
+     "says": "Provinces created in 1946 (five, sixth Diego-Suarez before 1957); Malagasy forms such as Antsiranana, Mahajanga, Toliara are post-colonial names.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MLI 1906": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Haut-Sénégal-Niger (CShapes Mali)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Bobo-Diolasso": "Bobo-Dioulasso"
+   },
+   "why": "Cercles of Haut-Sénégal-et-Niger (first level, incl. the later Voltaic cercles). The Territoire militaire du Niger (part of the colony) is not covered: 57% of the CShapes polity stays blank.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://mjp.univ-perp.fr/constit/bf1919.htm",
+     "title": "Décret du 1er mars 1919 créant la colonie de Haute-Volta (JORF 20 mai 1919) — mjp.univ-perp.fr",
+     "says": "The new colony comprised the cercles of Gaoua, Bobo-Dioulasso, Dédougou, Ouagadougou, Dori, Say and Fada N'Gourma.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MLI 1922": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Soudan français (CShapes Mali)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Tomrouctou": "Tombouctou"
+   },
+   "why": "Cercles of Soudan français (first level). Néma was in Soudan until the 1944 transfer to Mauritania.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MLI 1928": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Soudan français (CShapes Mali)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles (first level).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MLI 1938": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Soudan français (CShapes Mali)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Many units are not cercle names (Kountas — a nomadic confederation; Aglal, Azaouad, Aouana, Tenerkou, Samoros, Tominian — fractions, regions or subdivisions) while known cercles (San, Bandiagara, Gao, Ouahigouya) are missing; the level of these units cannot be established.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MOZ 1903": {
+   "level": "district",
+   "term": {
+    "en": "district / chartered-company territory",
+    "local": "distrito / território da companhia"
+   },
+   "polity": "Mozambique (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Ganza": "Gaza"
+   },
+   "why": "First level: the government districts (Lourenço Marques, Gaza, Inhambane, Quelimane, Tete, Moçambique) and the territories of the chartered Mozambique Company (1891) and Nyasa Company (1893).",
+   "sources": [
+    {
+     "url": "https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Portuguese_East_Africa",
+     "title": "Encyclopædia Britannica 1911, \"Portuguese East Africa\"",
+     "says": "Province divided into districts (Lourenço Marques/Delagoa Bay, Gazaland, Inhambane directly governed; Quelimane–Zambezi; Mozambique) plus territories of the chartered Mozambique Company (1891) and Nyasa Company (1893).",
+     "accessed": "2026-11-17"
+    }
+   ],
+   "sovereign": "PRT"
+  },
+  "MOZ 1918": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Mozambique (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not dated",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Same 8 units with identical frame statistics as MOZ 1903 (area 788,641 km², same outside/uncovered), relabelled in English — the geometry is one map reused for two dates, so 1918 is not independently attested.",
+   "sources": [
+    {
+     "url": "https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Portuguese_East_Africa",
+     "title": "Encyclopædia Britannica 1911, \"Portuguese East Africa\"",
+     "says": "Province divided into districts (Lourenço Marques/Delagoa Bay, Gazaland, Inhambane directly governed; Quelimane–Zambezi; Mozambique) plus territories of the chartered Mozambique Company (1891) and Nyasa Company (1893).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MOZ 1964": {
+   "level": "exclude",
+   "term": {
+    "en": "district",
+    "local": "distrito"
+   },
+   "polity": "Mozambique (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "EXCLUDED: IntMap draws the districts of Portuguese Mozambique from its dossier scripts/histrecon/dossiers/MOZ-distritos-1954.json (1954-10-20 → 1975-06-25, dated); this year-only sheet of the same districts would displace those rows for 1964. Measured 2026-11-17: 10 contested pairs with the dossier rows. (Previously: Nine districts of the Overseas Province (first level), still colonial in 1964. Creation date of this exact set (Cabo Delgado/Niassa split) not established.)",
+   "sources": [
+    {
+     "url": "https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Portuguese_East_Africa",
+     "title": "Encyclopædia Britannica 1911, \"Portuguese East Africa\"",
+     "says": "Province divided into districts (Lourenço Marques/Delagoa Bay, Gazaland, Inhambane directly governed; Quelimane–Zambezi; Mozambique) plus territories of the chartered Mozambique Company (1891) and Nyasa Company (1893).",
+     "accessed": "2026-11-17"
+    }
+   ],
+   "sovereign": "PRT"
+  },
+  "MRT 1906": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Mauritania (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [
+    {
+     "district": "Mauretanie",
+     "why": "Not a unit name — residual area labelled with the territory's own name."
+    }
+   ],
+   "names": {
+    "Tagan": "Tagant"
+   },
+   "why": "Cercles of the civil territory (first level); 65% of the CShapes polity uncovered (unpacified north).",
+   "sources": [
+    {
+     "url": "https://countrystudies.us/mauritania/13.htm",
+     "title": "Mauritania: French Administration Through World War II — Library of Congress Country Studies",
+     "says": "Mauritania organised 1904 as protectorate, then civil territory; part of AOF by 1920 decree; subdivided into cercles headed by (mostly military) commandants.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MRT 1922": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Mauritania (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles (first level).",
+   "sources": [
+    {
+     "url": "https://countrystudies.us/mauritania/13.htm",
+     "title": "Mauritania: French Administration Through World War II — Library of Congress Country Studies",
+     "says": "Mauritania organised 1904 as protectorate, then civil territory; part of AOF by 1920 decree; subdivided into cercles headed by (mostly military) commandants.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MRT 1928": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Mauritania (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles (first level).",
+   "sources": [
+    {
+     "url": "https://countrystudies.us/mauritania/13.htm",
+     "title": "Mauritania: French Administration Through World War II — Library of Congress Country Studies",
+     "says": "Mauritania organised 1904 as protectorate, then civil territory; part of AOF by 1920 decree; subdivided into cercles headed by (mostly military) commandants.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MRT 1937": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Mauritania (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles (first level); frame within 0.2% of CShapes.",
+   "sources": [
+    {
+     "url": "https://countrystudies.us/mauritania/13.htm",
+     "title": "Mauritania: French Administration Through World War II — Library of Congress Country Studies",
+     "says": "Mauritania organised 1904 as protectorate, then civil territory; part of AOF by 1920 decree; subdivided into cercles headed by (mostly military) commandants.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MWI 1903": {
+   "level": "district",
+   "term": {
+    "en": "district",
+    "local": "district"
+   },
+   "polity": "Malawi / British Central Africa Protectorate (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": {
+    "date": "1921",
+    "precision": "year"
+   },
+   "asOf": "plausible",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Before the provincial structure (in force by 1921) districts were the first level of the protectorate. Start of this exact 12-district set not established; the 1921 end bounds only the district-as-first-level claim.",
+   "sources": [
+    {
+     "url": "https://www.cambridge.org/core/books/history-of-malawi-18591966/",
+     "title": "J. McCracken, A History of Malawi 1859–1966 (James Currey/Boydell, 2012)",
+     "says": "Basic administrative structure in force by 1921: Chief Secretary below the Governor, linked with three Provincial Commissioners (reduced to two between 1931 and 1946).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MWI 1924": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Malawi / Nyasaland (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "n/a",
+   "excludeUnits": [],
+   "names": {},
+   "why": "A single district (Central Shire) covering 4% of the polity; provinces existed from 1921, so a lone district is not a first-level layout.",
+   "sources": [
+    {
+     "url": "https://www.cambridge.org/core/books/history-of-malawi-18591966/",
+     "title": "J. McCracken, A History of Malawi 1859–1966 (James Currey/Boydell, 2012)",
+     "says": "Basic administrative structure in force by 1921: Chief Secretary below the Governor, linked with three Provincial Commissioners (reduced to two between 1931 and 1946).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MWI 1925": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Malawi / Nyasaland (CShapes)",
+   "inForceFrom": {
+    "date": "1921",
+    "precision": "year"
+   },
+   "inForceTo": {
+    "date": "1931",
+    "precision": "year"
+   },
+   "asOf": "yes",
+   "excludeUnits": [],
+   "names": {
+    "Chira Uzulu": "Chiradzulu"
+   },
+   "why": "Three provinces (Northern, Central, Southern) under Provincial Commissioners, in force by 1921 and reduced to two between 1931 and 1946.",
+   "sources": [
+    {
+     "url": "https://www.cambridge.org/core/books/history-of-malawi-18591966/",
+     "title": "J. McCracken, A History of Malawi 1859–1966 (James Currey/Boydell, 2012)",
+     "says": "Basic administrative structure in force by 1921: Chief Secretary below the Governor, linked with three Provincial Commissioners (reduced to two between 1931 and 1946).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MWI 1936": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Malawi / Nyasaland (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Shows three provinces, but Nyasaland had only two provincial commissionerships between 1931 and 1946; the district set (Mzimba, Rumpi, Nkata Bay, Salima) also looks later. Not the 1936 layout.",
+   "sources": [
+    {
+     "url": "https://www.cambridge.org/core/books/history-of-malawi-18591966/",
+     "title": "J. McCracken, A History of Malawi 1859–1966 (James Currey/Boydell, 2012)",
+     "says": "Basic administrative structure in force by 1921: Chief Secretary below the Governor, linked with three Provincial Commissioners (reduced to two between 1931 and 1946).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "MWI 1963": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Federation of Rhodesia and Nyasaland (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level of the drawn polity",
+   "excludeUnits": [],
+   "names": {},
+   "why": "In 1963 CShapes draws the Federation (1953-07-14 to 1963-12-31); its first-level units were the three territories, not Nyasaland's provinces.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uzw.html",
+     "title": "Provinces of Zimbabwe — Statoids",
+     "says": "1953-07-14 Federation of Rhodesia and Nyasaland formed; dissolved 1963-12-31.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "NER 1906": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Niger military territory (CShapes: Mali / Niger / Northern Nigeria)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Frame spans three CShapes polities (Mali, Niger, Northern Nigeria) and includes Gao, Tombouctou, Dori; no single polity to attach the units to.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "NER 1922": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Niger (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles of the Colonie du Niger (first level); frame within 3% of CShapes.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "NER 1928": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Niger (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles (first level). 11.7% of the frame lies outside CShapes Niger — those parts will be clipped/flagged.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "NER 1937": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Niger incl. Dori and Fada from Upper Volta (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles (first level); Dori and Fada N'Gourma were attached to Niger after the 1932 dissolution of Upper Volta.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/French_Upper_Volta",
+     "title": "French Upper Volta — Wikipedia",
+     "says": "Colony established 1919 from parts of Upper Senegal and Niger and Côte d'Ivoire; dissolved on 5 September 1932, its parts administered by Côte d'Ivoire, French Sudan and Niger.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "NGA 1901": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Northern Nigeria / Southern Nigeria / Lagos (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Shows Sokoto, Bornu and Bauchi provinces (Sokoto–Kano conquered 1903, Bornu and Bauchi occupied 1902), mixes whole polities (Southern Nigeria, Lagos) with sub-units, and has 12 unassigned units. Not the 1901 layout.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "States of Nigeria — Statoids",
+     "says": "Northern and Southern Nigeria protectorates 1900-01-01; Lagos merged into Southern Nigeria 1906-02; amalgamation 1914-01-01; part of Kamerun mandated to Britain 1922-07-20 and administered with Nigeria; independence 1960-10-01 with three regions as divisions.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "NGA 1911": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Northern Nigeria / Southern Nigeria (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Northern Nigeria had 13 provinces without Borgu by 1913; the snapshot has Borgu and duplicates \"Niger\", and gives Southern Nigeria only \"Lagos\" and \"Calabar\" (it had Western, Central and Eastern provinces 1906–1914). Cannot match to a dated layout.",
+   "sources": [
+    {
+     "url": "https://en.wikisource.org/wiki/Page:Statesman%27s_Year-Book_1913.djvu/347",
+     "title": "The Statesman's Year-Book 1913, Northern Nigeria",
+     "says": "13 provinces: Sokoto, Kano, Bornu, Yola, Muri, Nassarawa, Kabba, Bassa, Ilorin, Niger, Bauchi, Zaria, Kontagora (no Borgu).",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "States of Nigeria — Statoids",
+     "says": "Northern and Southern Nigeria protectorates 1900-01-01; Lagos merged into Southern Nigeria 1906-02; amalgamation 1914-01-01; part of Kamerun mandated to Britain 1922-07-20 and administered with Nigeria; independence 1960-10-01 with three regions as divisions.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "NGA 1932": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Nigeria (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [
+    {
+     "region": "Cameroons",
+     "why": "British Cameroons mandate — a separate polity in CShapes (#472), not a province of Nigeria in the drawn polity."
+    }
+   ],
+   "names": {
+    "Oweri": "Owerri",
+    "Makudri": "Makurdi",
+    "Argundu": "Argungu",
+    "Bernin Kebbi": "Birnin Kebbi",
+    "Hadejla": "Hadejia",
+    "Gombea": "Gombe",
+    "Ublaja": "Ubiaja",
+    "Ugwashi Uku": "Ogwashi-Uku"
+   },
+   "why": "Provinces of the Northern and Southern Provinces plus the Colony (first level). Southern Provinces split into Eastern/Western groups c.1938–39; range of the exact set not established.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "States of Nigeria — Statoids",
+     "says": "Northern and Southern Nigeria protectorates 1900-01-01; Lagos merged into Southern Nigeria 1906-02; amalgamation 1914-01-01; part of Kamerun mandated to Britain 1922-07-20 and administered with Nigeria; independence 1960-10-01 with three regions as divisions.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "NGA 1962": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Nigeria (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not colonial",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Independent since 1960-10-01; first level were the regions, and \"Ikeja\"/\"Sardauna\" provinces are post-colonial.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "States of Nigeria — Statoids",
+     "says": "Northern and Southern Nigeria protectorates 1900-01-01; Lagos merged into Southern Nigeria 1906-02; amalgamation 1914-01-01; part of Kamerun mandated to Britain 1922-07-20 and administered with Nigeria; independence 1960-10-01 with three regions as divisions.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SDN 1914": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Anglo-Egyptian Sudan (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Includes Darfur as a province although the Darfur sultanate was only conquered in 1916, and the geometry is identical to SDN 1921 (one map reused for two dates).",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids",
+     "says": "Condominium from 1899 to 1956-01-01; the mudiriyas were poorly defined at first but well established by WWII; 1948 Bahr el Ghazal split from Equatoria.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://paanluelwel.com/wp-content/uploads/2024/07/Southern-Sudan-International-Boundaries-Background-Paper-.pdf",
+     "title": "Southern Sudan Boundaries: Background Paper, Appendix 1.3 \"Table of recorded boundary changes, 1905–1960\"",
+     "says": "1913 separation of Nuba Mountains Province from Kordofan (Sudan Government Gazette 227); 1928 amalgamation of Nuba Mountains Province and Kordofan Province (SGG 511, Annual Report 1928).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SDN 1921": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Anglo-Egyptian Sudan (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not dated",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Geometry identical to SDN 1914 with relabelled names (Sennar→Fung, Red Sea→Redsea), so the map is not independently dated; it also lists \"Sobat-Pibor\" as a province, which is not attested as a province.",
+   "sources": [
+    {
+     "url": "https://paanluelwel.com/wp-content/uploads/2024/07/Southern-Sudan-International-Boundaries-Background-Paper-.pdf",
+     "title": "Southern Sudan Boundaries: Background Paper, Appendix 1.3 \"Table of recorded boundary changes, 1905–1960\"",
+     "says": "1913 separation of Nuba Mountains Province from Kordofan (Sudan Government Gazette 227); 1928 amalgamation of Nuba Mountains Province and Kordofan Province (SGG 511, Annual Report 1928).",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SDN 1928": {
+   "level": "exclude",
+   "term": {
+    "en": "province",
+    "local": "mudiriya"
+   },
+   "polity": "Anglo-Egyptian Sudan (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": {
+    "date": "1928",
+    "precision": "year"
+   },
+   "asOf": "yes, until the 1928 amalgamation",
+   "excludeUnits": [],
+   "names": {},
+   "why": "EXCLUDED: Fifteen provinces (mudiriyas), first level. The set includes Nuba Mountains Province, which existed from 1913 (separated from Kordofan) until its amalgamation with Kordofan in 1928 (SGG 511) — so this layout ends during 1928; exact day not found. Frame matches CShapes. The layout this sheet shows (Nuba Mountains still a province) ended during 1928 on a day not established, and its start is not established either, so no interval of the year can be said to be this layout.",
+   "sources": [
+    {
+     "url": "https://paanluelwel.com/wp-content/uploads/2024/07/Southern-Sudan-International-Boundaries-Background-Paper-.pdf",
+     "title": "Southern Sudan Boundaries: Background Paper, Appendix 1.3 \"Table of recorded boundary changes, 1905–1960\"",
+     "says": "1913 separation of Nuba Mountains Province from Kordofan (Sudan Government Gazette 227); 1928 amalgamation of Nuba Mountains Province and Kordofan Province (SGG 511, Annual Report 1928).",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids",
+     "says": "Condominium from 1899 to 1956-01-01; the mudiriyas were poorly defined at first but well established by WWII; 1948 Bahr el Ghazal split from Equatoria.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SEN 1906": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Senegal (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles of Senegal's protectorate territory (first level).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SEN 1922": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Senegal (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Mixes cercles with pre-colonial provinces/cantons (Djolof, Diorbivol, Rip, Cayor, \"Région du Ferlo\", Fouladou) and includes Boghé (Mauritania); the units are not one administrative level.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SEN 1928": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Senegal (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Cercles (first level).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SEN 1937": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Senegal (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Saint Louise": "Saint-Louis"
+   },
+   "why": "Cercles (first level); frame within 1% of CShapes.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Cercle_(French_colonial)",
+     "title": "Cercle (French colonial) — Wikipedia",
+     "says": "The cercle was the smallest unit of French colonial administration headed by a European officer (commandant de cercle), under the government of the colony; cercles were divided into subdivisions/cantons.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://courses.lumenlearning.com/suny-fmcc-boundless-worldhistory/chapter/france-in-africa/",
+     "title": "France in Africa — Boundless World History",
+     "says": "Each AOF colony was administered by a lieutenant-governor; the territories were subdivided into cercles, each headed by a commandant de cercle.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SLE 1898": {
+   "level": "district",
+   "term": {
+    "en": "district",
+    "local": "district"
+   },
+   "polity": "Sierra Leone (CShapes)",
+   "inForceFrom": {
+    "date": "1896",
+    "precision": "year"
+   },
+   "inForceTo": {
+    "date": "1907",
+    "precision": "year"
+   },
+   "asOf": "yes",
+   "excludeUnits": [],
+   "names": {
+    "Romietta": "Ronietta",
+    "Koinaducu": "Koinadugu",
+    "Sherbroi": "Sherbro",
+    "Karina": "Karene"
+   },
+   "why": "The five Protectorate districts (Karene, Ronietta, Bandajuma, Panguma, Koinadugu) of the 1896 Protectorate plus the Colony parts (Sierra Leone, Sherbro, Turner's Peninsula); reorganised in 1907 (Bandajuma and Panguma replaced).",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/usl.html",
+     "title": "Districts of Sierra Leone — Statoids",
+     "says": "Protectorate districts Bandajuma, Karene, Koinadugu, Panguma, Ronietta; 1907 districts reorganised; 1920 three provinces (Northern, Central, Southern), Colony separate; 1931 Central merged into Southern; 1945 Eastern split from Southern; Western Area name from 1961.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SLE 1932": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Sierra Leone (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Puts \"Western Area\" (the Colony, a name from 1961) inside the Southern Province and uses the post-1945 district set; although two provinces (Northern, Southern) did exist 1931–1945, the internal line and the Colony assignment cannot be trusted for 1932.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/usl.html",
+     "title": "Districts of Sierra Leone — Statoids",
+     "says": "Protectorate districts Bandajuma, Karene, Koinadugu, Panguma, Ronietta; 1907 districts reorganised; 1920 three provinces (Northern, Central, Southern), Colony separate; 1931 Central merged into Southern; 1945 Eastern split from Southern; Western Area name from 1961.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "SWZ 1914": {
+   "level": "district",
+   "term": {
+    "en": "district",
+    "local": "district"
+   },
+   "polity": "Swaziland (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [
+    {
+     "district": "Game Reserve",
+     "why": "Game reserves are not administrative units (two polygons)."
+    }
+   ],
+   "names": {},
+   "why": "Districts (first level). Frame identical to CShapes. Bremersdorp district (attested in 1946 with the others) is not labelled in this map — its area may lie under the game-reserve polygons, so after dropping them that area stays blank. Ubombo = later Stegi district.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/usz.html",
+     "title": "Regions of Eswatini — Statoids",
+     "says": "British protectorate 1903; 1946 census six districts Bremersdorp, Hlatikulu, Mankaiana, Mbabane, Pigg's Peak, Stegi; reorganised into four in 1963-12.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "TCD 1938": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Chad (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Only 4 units (N'Djamena — a post-1973 name —, Ounianga Kebir, Mangalmé, Moussoro) and the southern départements missing — the pre-April-1936 attachment of southern Chad to Oubangui-Chari; not the 1938 layout or level.",
+   "sources": [
+    {
+     "url": "https://worldstatesmen.org/Chad.html",
+     "title": "Chad — WorldStatesmen.org",
+     "says": "Moyen-Chari and Moyen-Logone attached to Oubangui-Chari from 31 Dec 1925; Fort-Archambault, Maro, Koumra returned Nov 1932; Nov 1934–Apr 1936 Moyen-Chari, Moyen-Logone and Mayo-Kebbi dependencies of Oubangui-Chari; returned to Chad 29 Apr 1936.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Subdivisions_of_Chad",
+     "title": "Subdivisions of Chad — Wikipedia",
+     "says": "The 1934 centralisation of AEF was reversed with the return to the previous structure of AEF in 1936.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "TCD 1946": {
+   "level": "district",
+   "term": {
+    "en": "région",
+    "local": "région"
+   },
+   "polity": "Chad (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Ten polygons labelled by chef-lieu match the régions of Chad (Bongor=Mayo-Kebbi, Ati=Batha, Faya=BET, Am Timan=Salamat, Mao=Kanem, Moundou=Logone, Fort-Archambault=Moyen-Chari, Abéché=Ouaddaï, Massenya twice = Chari-Baguirmi, whose seat was Fort-Lamy). Labels are seats, not région names. Frame matches CShapes.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Subdivisions_of_Chad",
+     "title": "Subdivisions of Chad — Wikipedia",
+     "says": "The 1934 centralisation of AEF was reversed with the return to the previous structure of AEF in 1936.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "TGO 1922": {
+   "level": "exclude",
+   "term": null,
+   "polity": "none (French Togoland not in CShapes 1922)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "n/a",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Frame matches no CShapes polity on 1922-07-01, so there is no polity for IntMap to attach the units to.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utg.html",
+     "title": "Regions of Togo — Statoids",
+     "says": "~1920–1950 French Togo divided into circonscriptions administratives, later cercles: Anécho, Centre (Atakpamé), Klouto, Lomé, Mango, Sokodé (1936 census); ~1955 ten divisions; ~1960 four regions.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "TGO 1948": {
+   "level": "district",
+   "term": {
+    "en": "cercle",
+    "local": "cercle"
+   },
+   "polity": "Togo (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "yes (set attested for 1936; ten divisions by ~1955)",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Six cercles Anécho, Lomé, Atakpamé (Centre), Klouto, Sokodé, Mango — exactly the set Statoids gives for ~1920–1950 (1936 census); replaced by ten divisions ~1955. Precise start/end dates not established.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utg.html",
+     "title": "Regions of Togo — Statoids",
+     "says": "~1920–1950 French Togo divided into circonscriptions administratives, later cercles: Anécho, Centre (Atakpamé), Klouto, Lomé, Mango, Sokodé (1936 census); ~1955 ten divisions; ~1960 four regions.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "TZA 1920": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Tanganyika (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not this year",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Uses the German Bezirk names and set (Bismarckburg, Langenburg, Wilhelmstal, Kondoa-Irangi…) of pre-1916 Deutsch-Ostafrika, and includes Zanzibar (a separate polity).",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utz.html",
+     "title": "Regions of Tanzania — Statoids",
+     "says": "Tanganyika mandated to Britain after WWI; 1922 22 divisions; 1948 eight provinces (Central, Eastern, Lake, Northern, Southern, Southern Highlands, Tanga, Western); independence 1961-12-09.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "TZA 1933": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Tanganyika (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [
+    {
+     "region": "Zanzibar",
+     "why": "Zanzibar Protectorate is a separate polity (CShapes #511)."
+    }
+   ],
+   "names": {
+    "Kasuiu": "Kasulu",
+    "Kilos": "Kilosa",
+    "Mdulu": "Mbulu",
+    "Mbey": "Mbeya",
+    "Dares Salaam": "Dar es Salaam"
+   },
+   "why": "Eight provinces (Lake, Western, Lindi, Eastern, Northern, Central, Iringa, Tanga) — the reduced provincial set of the early 1930s (later Lindi→Southern, Iringa→Southern Highlands, eight provinces in 1948). Exact dates not established.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utz.html",
+     "title": "Regions of Tanzania — Statoids",
+     "says": "Tanganyika mandated to Britain after WWI; 1922 22 divisions; 1948 eight provinces (Central, Eastern, Lake, Northern, Southern, Southern Highlands, Tanga, Western); independence 1961-12-09.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "TZA 1962": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Tanganyika (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not colonial",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Independent since 1961-12-09; includes Zanzibar.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utz.html",
+     "title": "Regions of Tanzania — Statoids",
+     "says": "Tanganyika mandated to Britain after WWI; 1922 22 divisions; 1948 eight provinces (Central, Eastern, Lake, Northern, Southern, Southern Highlands, Tanga, Western); independence 1961-12-09.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "UGA 1920": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Uganda (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [
+    {
+     "district": "Entebee",
+     "why": "No province given."
+    },
+    {
+     "region": "Eastern Province",
+     "district": "Turkana",
+     "why": "Turkana lay in Rudolf Province, a separate province until its transfer to Kenya in 1926; not part of Eastern Province."
+    },
+    {
+     "region": "Eastern Province",
+     "district": "Turkwei",
+     "why": "Turkwel area, Rudolf Province (as above)."
+    }
+   ],
+   "names": {
+    "Bugishi": "Bugishu",
+    "Mubendi": "Mubende"
+   },
+   "why": "Provinces Buganda, Eastern, Northern, Western (first level).",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Turkana_District",
+     "title": "Turkana District — Wikipedia",
+     "says": "Turkana area taken from the Uganda Protectorate in two stages, the southern section in 1902 and the northern region (Rudolf Province) in 1926.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.statoids.com/uug.html",
+     "title": "Districts of Uganda — Statoids",
+     "says": "From 1945 or earlier until after independence Uganda was divided into four provinces (Buganda, Eastern, Northern, Western), subdivided into districts; 1960 provinces lost administrative function.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "UGA 1925": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Uganda (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Bugishi": "Bugishu",
+    "Mubendi": "Mubende"
+   },
+   "why": "Four provinces (first level). Rudolf Province (until 1926) is not drawn.",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Turkana_District",
+     "title": "Turkana District — Wikipedia",
+     "says": "Turkana area taken from the Uganda Protectorate in two stages, the southern section in 1902 and the northern region (Rudolf Province) in 1926.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.statoids.com/uug.html",
+     "title": "Districts of Uganda — Statoids",
+     "says": "From 1945 or earlier until after independence Uganda was divided into four provinces (Buganda, Eastern, Northern, Western), subdivided into districts; 1960 provinces lost administrative function.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "UGA 1942": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Uganda (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Four provinces (first level); frame matches CShapes.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uug.html",
+     "title": "Districts of Uganda — Statoids",
+     "says": "From 1945 or earlier until after independence Uganda was divided into four provinces (Buganda, Eastern, Northern, Western), subdivided into districts; 1960 provinces lost administrative function.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "UGA 1957": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Uganda (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Four provinces (first level); frame matches CShapes.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uug.html",
+     "title": "Districts of Uganda — Statoids",
+     "says": "From 1945 or earlier until after independence Uganda was divided into four provinces (Buganda, Eastern, Northern, Western), subdivided into districts; 1960 provinces lost administrative function.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "ZMB 1914": {
+   "level": "district",
+   "term": {
+    "en": "district (administrative division, later province)",
+    "local": "district"
+   },
+   "polity": "Zambia / Northern Rhodesia (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [
+    {
+     "district": "Game Reserve",
+     "why": "Game reserves are not administrative units (two polygons)."
+    }
+   ],
+   "names": {},
+   "why": "The ten administrative districts of Northern Rhodesia after the 1911-08-17 amalgamation (Awemba, Barotse, Batoka, East Luangwa, Kafue, Kasempa, Luangwa, Mweru-Luapula, Serenje, Tanganyika) — first level.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uzm.html",
+     "title": "Provinces of Zambia — Statoids",
+     "says": "1911-08-17 the two Rhodesias merged to form Northern Rhodesia; ~1953 six divisions Barotse, Central, Eastern, Northern, Southern, Western; 1964 eight provinces incl. Luapula and North-Western.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "ZMB 1925": {
+   "level": "district",
+   "term": {
+    "en": "district (administrative division, later province)",
+    "local": "district"
+   },
+   "polity": "Zambia / Northern Rhodesia (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Western Arotse": "Western Barotse"
+   },
+   "why": "Same ten-division set as 1914 (first level); nine provinces existed before the reduction to five reported in 1935.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uzm.html",
+     "title": "Provinces of Zambia — Statoids",
+     "says": "1911-08-17 the two Rhodesias merged to form Northern Rhodesia; ~1953 six divisions Barotse, Central, Eastern, Northern, Southern, Western; 1964 eight provinces incl. Luapula and North-Western.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://api.parliament.uk/historic-hansard/commons/1935/jun/26/northern-rhodesia",
+     "title": "HC Deb 26 June 1935 vol 303 — Northern Rhodesia",
+     "says": "The Governor reduced the number of administrative provinces of Northern Rhodesia from nine to five.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "ZMB 1948": {
+   "level": "region",
+   "term": {
+    "en": "province",
+    "local": "province"
+   },
+   "polity": "Zambia / Northern Rhodesia (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "plausible, range unknown",
+   "excludeUnits": [],
+   "names": {
+    "Serenjo": "Serenje"
+   },
+   "why": "Six provinces Barotse, Central, Eastern, Northern, Southern, Western — the set Statoids gives for ~1953. District field contains duplicates (multi-part units) but only the region union is drawn.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uzm.html",
+     "title": "Provinces of Zambia — Statoids",
+     "says": "1911-08-17 the two Rhodesias merged to form Northern Rhodesia; ~1953 six divisions Barotse, Central, Eastern, Northern, Southern, Western; 1964 eight provinces incl. Luapula and North-Western.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "ZMB 1963": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Federation of Rhodesia and Nyasaland (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level of the drawn polity",
+   "excludeUnits": [],
+   "names": {},
+   "why": "CShapes draws the Federation in 1963; its first level were the three territories.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uzw.html",
+     "title": "Provinces of Zimbabwe — Statoids",
+     "says": "1953-07-14 Federation of Rhodesia and Nyasaland formed; dissolved 1963-12-31.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "ZWE 1914": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Southern Rhodesia (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level",
+   "excludeUnits": [],
+   "names": {},
+   "why": "Southern Rhodesia's first-level divisions were the provinces Mashonaland and Matabeleland; the snapshot gives only the (native/magisterial) districts with no province, and many names are garbled.",
+   "sources": [
+    {
+     "url": "https://en.wikisource.org/wiki/Page:Statesman%27s_Year-Book_1921.djvu/256",
+     "title": "The Statesman's Year-Book 1921, Southern Rhodesia",
+     "says": "Southern Rhodesia consists of the two provinces of Mashonaland and Matabeleland.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.statoids.com/uzw.html",
+     "title": "Provinces of Zimbabwe — Statoids",
+     "says": "~1947 the divisions of Southern Rhodesia were Mashonaland and Matabeleland, subdivided into 32 districts; 1953-07-14 Federation; 1963-12-31 Federation dissolved.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "ZWE 1925": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Southern Rhodesia (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level",
+   "excludeUnits": [],
+   "names": {},
+   "why": "As 1914: districts without the Mashonaland/Matabeleland provinces; several labels are unreadable (\"Perikan Irans\", \"Imanzi\").",
+   "sources": [
+    {
+     "url": "https://en.wikisource.org/wiki/Page:Statesman%27s_Year-Book_1921.djvu/256",
+     "title": "The Statesman's Year-Book 1921, Southern Rhodesia",
+     "says": "Southern Rhodesia consists of the two provinces of Mashonaland and Matabeleland.",
+     "accessed": "2026-11-17"
+    },
+    {
+     "url": "https://www.statoids.com/uzw.html",
+     "title": "Provinces of Zimbabwe — Statoids",
+     "says": "~1947 the divisions of Southern Rhodesia were Mashonaland and Matabeleland, subdivided into 32 districts; 1953-07-14 Federation; 1963-12-31 Federation dissolved.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  },
+  "ZWE 1963": {
+   "level": "exclude",
+   "term": null,
+   "polity": "Federation of Rhodesia and Nyasaland (CShapes)",
+   "inForceFrom": null,
+   "inForceTo": null,
+   "asOf": "not first level of the drawn polity",
+   "excludeUnits": [],
+   "names": {},
+   "why": "CShapes draws the Federation in 1963; its first level were the three territories.",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uzw.html",
+     "title": "Provinces of Zimbabwe — Statoids",
+     "says": "1953-07-14 Federation of Rhodesia and Nyasaland formed; dissolved 1963-12-31.",
+     "accessed": "2026-11-17"
+    }
+   ]
+  }
+ }
+}
