@@ -89,6 +89,8 @@ test.describe('① desktop, first visit', () => {
         const a = document.activeElement; if (!a || a === document.body) return null;
         const what = (a.id ? '#' + a.id : '') || (a.tagName.toLowerCase() + '.' + String(a.className).split(/\s+/)[0]);
         if (!a.checkVisibility || !a.checkVisibility()) return { what, skip: true };
+        /* (ui-compass-atlas-polish) the Atlas field is ringed by nothing on purpose — the reader asked for no highlight; the caret shows it takes typing */
+        if (a.matches('#atlas-panel .atl-in')) return { what, skip: true };
         const host = a.matches('input,textarea') ? a.closest('.search-bar,.map-search') : null;
         /* the resting state, not a frame of the transition into it (.mode-btn and the pills animate their colours) */
         for (const e of [a, host]) if (e && e.getAnimations) e.getAnimations().forEach((x) => { try { x.finish(); } catch (_) {} });
