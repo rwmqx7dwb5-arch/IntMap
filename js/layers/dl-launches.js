@@ -5,7 +5,7 @@
 export default {
   id: 'dl-launches',
   shelf: 'lyrGrpOrbit',
-  order: 40,
+  order: 22,
   key: 'launches',
   label: 'lyrLaunches',
   share: true,

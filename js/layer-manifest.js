@@ -87,10 +87,10 @@ const DERIVED = [
   { key: "lyrGrpOrbit", layers: [
     { id: "dl-sats", key: "sats", label: "lyrSats", share: true, lazy: ["satellitesLive"] },
     { id: "l9-dl-aurora", key: "aurora", share: true },
-    { id: "fac-dl-osmspace", key: "osmspace", rest: true },
     { id: "dl-launches", key: "launches", label: "lyrLaunches", share: true },
     { id: "dl-fireballs", key: "fireballs", label: "lyrFireballs", share: true },
     { id: "dl-eclipse", key: "eclipse", label: "lyrEclipse", share: true },
+    { id: "fac-dl-osmspace", key: "osmspace", rest: true },
   ] },
   { key: "lyrGrpMaritime", layers: [
     { id: "dl-sst", key: "sst", label: "lyrSST", share: true },
@@ -305,10 +305,10 @@ const DECLARATIONS = [
   { id: "bx-wbprecip", shelf: "lyrGrpClimate", order: 160, key: "wbprecip", rest: true, share: true, measures: ["worldbank:AG.LND.PRCP.MM"], formerly: ["beta-dl-precip"] },   // bx-wbprecip.js
   { id: "dl-sats", shelf: "lyrGrpOrbit", order: 10, key: "sats", label: "lyrSats", share: true, lazy: ["satellitesLive"], registry: ["satellites"], atlas: ["layers.satellites"], time: { kind: "elements", bands: [[11, 5], [1.5, 60], [-Infinity, 14]] } },   // dl-sats.js
   { id: "l9-dl-aurora", shelf: "lyrGrpOrbit", order: 20, key: "aurora", share: true },   // l9-dl-aurora.js
+  { id: "dl-launches", shelf: "lyrGrpOrbit", order: 22, key: "launches", label: "lyrLaunches", share: true, sources: ["Launch Library 2 (The Space Devs)"], pkg: "launches" },   // dl-launches.js
+  { id: "dl-fireballs", shelf: "lyrGrpOrbit", order: 24, key: "fireballs", label: "lyrFireballs", share: true, sources: ["NASA/JPL CNEOS Fireball Data (US Government sensor detections)"], pkg: "fireballs" },   // dl-fireballs.js
+  { id: "dl-eclipse", shelf: "lyrGrpOrbit", order: 26, key: "eclipse", label: "lyrEclipse", share: true, pkg: "eclipse" },   // dl-eclipse.js
   { id: "fac-dl-osmspace", shelf: "lyrGrpOrbit", order: 30, key: "osmspace", rest: true },   // fac-dl-osmspace.js
-  { id: "dl-launches", shelf: "lyrGrpOrbit", order: 40, key: "launches", label: "lyrLaunches", share: true, sources: ["Launch Library 2 (The Space Devs)"], pkg: "launches" },   // dl-launches.js
-  { id: "dl-fireballs", shelf: "lyrGrpOrbit", order: 50, key: "fireballs", label: "lyrFireballs", share: true, sources: ["NASA/JPL CNEOS Fireball Data (US Government sensor detections)"], pkg: "fireballs" },   // dl-fireballs.js
-  { id: "dl-eclipse", shelf: "lyrGrpOrbit", order: 60, key: "eclipse", label: "lyrEclipse", share: true, pkg: "eclipse" },   // dl-eclipse.js
   { id: "dl-sst", shelf: "lyrGrpMaritime", order: 10, key: "sst", label: "lyrSST", share: true, registry: ["sst"] },   // dl-sst.js
   { id: "dl-waves", shelf: "lyrGrpMaritime", order: 20, key: "waves", share: true, lazy: ["waves"] },   // dl-waves.js
   { id: "wp-dl-currents", shelf: "lyrGrpMaritime", order: 30, key: "currents", share: true, formerly: ["dl-oceancur"] },   // wp-dl-currents.js

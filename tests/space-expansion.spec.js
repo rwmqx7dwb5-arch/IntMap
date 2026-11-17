@@ -16,6 +16,7 @@
 import { test, expect } from '@playwright/test';
 import { bootPage } from './helpers/app.js';
 import { installHermeticRouting } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 const TOKYO = { lng: 139.6917, lat: 35.6895 };
 const PERSEIDS_NIGHT = Date.UTC(2026, 7, 12, 12, 0);   /* 21:00 JST on the Perseids' 2026 peak night */
@@ -85,7 +86,7 @@ test('③ the eclipse layer draws 2026-08-12 across northern Spain', async ({ pa
 });
 
 test('④ at phone width the panel stays inside the viewport', async ({ browser }, info) => {
-  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  const ctx = await browser.newContext({ storageState: seededStorageState(), viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   await installHermeticRouting(ctx);
   const page = await ctx.newPage();
   await bootPage(page);

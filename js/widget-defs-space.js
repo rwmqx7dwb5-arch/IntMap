@@ -107,7 +107,7 @@ import { fetchViaProxy } from './proxy-fetch.js';   /* the app's ONE relay ladde
     id: 'space.xray', family: 'space', variant: 'xray', category: 'space', icon: 'sun',
     nm: function () { return L('Solar flares (X-ray)', '太陽フレア（X線）', 'Sonnenflares (Röntgen)', 'Солнечные вспышки (рентген)', 'Fulguraciones solares (rayos X)'); },
     desc: function () { return L('The Sun\'s X-ray class now, the biggest flare in 24 h and the flare odds', '現在のX線等級、24時間の最大フレアとフレア発生確率', 'Aktuelle Röntgenklasse, größter Flare in 24 h und Flare-Wahrscheinlichkeit', 'Текущий класс, крупнейшая вспышка за 24 ч и вероятности', 'Clase actual, mayor fulguración en 24 h y probabilidades'); },
-    keywords: function () { return [L('flare', 'フレア', 'Flare', 'вспышка', 'fulguración'), 'GOES', L('X-ray', 'X線', 'Röntgen', 'рентген', 'rayos X'), L('solar', '太陽', 'Sonne', 'солнце', 'solar'), 'NOAA']; },
+    keywords: function () { return [L('flare', 'フレア', 'Flare', 'вспышка', 'fulguración'), 'GOES', L('X-ray', 'X線', 'Röntgen', 'рентген', 'rayos X'), L('solar', '太陽', 'Sonne', 'солнце', 'sol'), 'NOAA']; },
     supportedSizes: ['s', 'm', 'l'], defaultSize: 'm',
     configSchema: {}, defaultConfig: function () { return {}; },
     /* GOES X-ray flux is a 1-minute record (a flare rises in minutes); the 24-hour file is ~650 KB, so five
@@ -356,7 +356,7 @@ import { fetchViaProxy } from './proxy-fetch.js';   /* the app's ONE relay ladde
     var f = function (km) { return km < 1 ? Math.round(km * 1000) + ' m' : WC.num(km, { maximumFractionDigits: 1 }) + ' km'; };
     if (a.dMeasuredKm != null) return '≈' + f(a.dMeasuredKm);
     if (a.dMinKm == null) return '—';
-    return L('est.', '推定', 'gesch.', 'оц.', 'est.') + ' ' + f(a.dMinKm) + '–' + f(a.dMaxKm);
+    return L('est.', '推定', 'gesch.', 'оц.', 'aprox.') + ' ' + f(a.dMinKm) + '–' + f(a.dMaxKm);
   }
   function neoFacts(a) {
     return R.facts([

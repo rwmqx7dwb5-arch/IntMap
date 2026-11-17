@@ -224,7 +224,7 @@ test('loaders: every widget loads from the upstream shapes, and every renderer a
   assert.ok(urls.every((u) => u.startsWith('https://services.swpc.noaa.gov/')), 'every direct request is to SWPC (CORS *)');
   assert.equal(relayed.length, 1);
   assert.match(relayed[0][0], /^https:\/\/ssd-api\.jpl\.nasa\.gov\/cad\.api\?/, 'the JPL API goes through the relay ladder, never fetch()');
-  assert.ok(!urls.some((u) => u.includes('jpl.nasa.gov')));
+  assert.ok(!urls.some((u) => new URL(u).hostname === 'ssd-api.jpl.nasa.gov'), 'no direct fetch() to the JPL host');
   assert.ok(def('space.kp').legacyIds.includes('kp') && def('space.iss') && def('space.launch'), 'the existing space cards are untouched');
   /* a card cached by the version that stored the observed readings as a bare array still draws */
   const old = defs.find((d) => d.id === 'space.kp');

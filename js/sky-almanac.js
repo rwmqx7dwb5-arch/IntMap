@@ -39,7 +39,6 @@ import './safe-html.js';   /* globalThis.IntMapSafe — moonSvg is also read in 
 import './ephemeris.js';                                      /* window.IntMapEphemeris — the Moon's bright limb */
 import { IntMapAlmanac } from './space-almanac.js';
 import { jdTT } from './space-eclipse-path.js';
-import { showEclipse } from './layer-pkg-eclipse.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI, MIN = 60000, HOUR = 3600000, DAY = 86400000;
 
@@ -489,7 +488,8 @@ export function skyAlmanac(HOST) {
       if (!b) return;
       if (b.classList.contains('ska-more')) { showAllPasses = true; render(); return; }
       if (b.classList.contains('ska-pick')) { askSite(); return; }
-      if (b.hasAttribute('data-path')) { showEclipse(+b.getAttribute('data-path')); return; }
+      if (b.hasAttribute('data-path')) {   /* the layer package is fetched when the reader asks for the path, not with the panel */
+        const at = +b.getAttribute('data-path'); import('./layer-pkg-eclipse.js').then((m) => m.showEclipse(at)).catch((e) => console.warn('eclipse path', e)); return; }
       if (b.hasAttribute('data-sky')) { lookFrom(+b.getAttribute('data-sky')); return; }
       if (b.hasAttribute('data-sat')) selectSatellite(b.getAttribute('data-sat'));
     });

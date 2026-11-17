@@ -5,7 +5,7 @@
 export default {
   id: 'dl-eclipse',
   shelf: 'lyrGrpOrbit',
-  order: 60,
+  order: 26,
   key: 'eclipse',
   label: 'lyrEclipse',
   share: true,

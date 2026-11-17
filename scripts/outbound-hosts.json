@@ -19,6 +19,22 @@
       }
     },
     {
+      "host": "ssd-api.jpl.nasa.gov",
+      "what": "NASA/JPL SSD APIs — CNEOS fireballs and asteroid close approaches (read through IntMap’s own relay, which sends the same request)",
+      "whatJp": "NASA/JPL SSD API — CNEOS の火球と小惑星の地球接近（IntMap 自身の中継を通して読む。中継が同じ要求を送る）",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself (date window and distance limits)"
+      },
+      "disclosure": {
+        "en": "NASA/JPL Solar System Dynamics",
+        "jp": "NASA/JPL Solar System Dynamics"
+      },
+      "probe": {
+        "url": "https://ssd-api.jpl.nasa.gov/fireball.api?req-loc=true&limit=1"
+      }
+    },
+    {
       "host": "*.wikipedia.org",
       "what": "Wikipedia REST summaries and search in the reader’s language",
       "whatJp": "読者の言語の Wikipedia 要約と検索",

@@ -4,7 +4,7 @@
 export default {
   id: 'dl-fireballs',
   shelf: 'lyrGrpOrbit',
-  order: 50,
+  order: 24,
   key: 'fireballs',
   label: 'lyrFireballs',
   share: true,

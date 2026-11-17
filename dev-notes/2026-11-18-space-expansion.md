@@ -69,3 +69,29 @@ newsjp: 宇宙の新機能——任意の地点の「今夜の空」（日の出
 
 `tests/space-almanac-checks.test.mjs`・`tests/space-almanac-panel-checks.test.mjs`・`tests/space-layers-checks.test.mjs`・`tests/space-weather-checks.test.mjs`
 （各 12 件）。既存の `engine-space`・`space-ephemeris`・`layer-space-satellites` も緑。
+
+## 6. CI で見つかり直したもの（PR の 1 周目）
+
+- `ssd-api.jpl.nasa.gov` は中継を通すが、ブラウザのコードに URL の文字列として現れるので「要求するホスト」として申告が要る
+  （`check:datagov` の手元の判定と CI の `outbound-hosts-disclosed` の判定が一度食い違い、CI 側が正しかった）。行を戻した。
+- 出典表の新しい 4 行に en と jp の説明（`js/locales/pages.{en,ja}.js` の `sourceUse`）。
+- 宇宙の棚は `rest`（「その他」に畳む行）が末尾に並ぶ必要がある：宇宙基地（30・rest）より前に新しい 3 行（22・24・26）を置いた。
+- 地点を先に訊くツールの行は 5 → 6（`sim.skyTonight`）。`sim.skyTonight` / `sim.satellitePasses` / `sim.spaceWeather` は what-if のモデルではない
+  理由を `tests/atlas-reasoning-checks.test.mjs` の台帳に書いた。
+- spec の 375px の context は session seed を使う。遅延モジュールの一覧（`tests/r209.spec.js` MEMBER）に `skyAlmanac`。
+- CodeQL：テストの URL 判定を部分文字列からホスト名の一致に。
+- npm audit（picomatch → vite）は main でも赤で、この PR とは別件。
+
+## 7. 起動費用の天井を上げた（判断）
+
+`node scripts/perf-budget.mjs --update`（超えた行だけを上げる）。測った値: eager raw 4,601.4 → 4,660.0 kB、gzip 1,513.5 → 1,526.4 kB、
+requests 9 → 10、modules 895 → 896。
+- **バイトの増分の主因は `js/widget-defs-space.js`（main の中で 36.2 kB）**。ウィジェットの定義は盤が起動時に一覧を作るので起動時に読む
+  （`js/widget-defs-markets.js` と同じ扱い）。残りは能力表の 3 行・レイヤー一覧の 3 行・出典表・ツール欄の 1 行など、入口そのもの。
+- **requests +1 は `geo-engine-*.js`（70 kB、`js/geo-engine.js`・camera-math・geo-command-log・click-ownership）が main から別ファイルに
+  分かれたもの**で、バイトは増えていない（main が同じだけ縮んだ）。パネルが日食レイヤーのパッケージを静的に読むのをやめても（いまは押したときに
+  `import()`）分かれたままで、この回では束ね器がそう分けた理由を特定できなかった。⚠ 次に起動費用を触る人へ: 2026-11-17 の main（#1167）の
+  build では main に含まれていた。宇宙の 3 つの遅延チャンク（space・sky-almanac・layer-pkg-eclipse）が `space-events` を共有チャンクにした
+  ことが最も疑わしい。
+- async の増加は新しい遅延チャンク（sky-almanac 41 kB・space-events 13.7 kB・3 つのレイヤー・パッケージ）と、能力の実行部・衛星の通過予報・
+  プライバシーポリシーの追記。

@@ -168,6 +168,7 @@ const MEMBER = {
   los: ['IntMapLOS', 'open'],
   streetView: ['IntMapStreetView', 'open'],
   nightSky: ['IntMapNightSky', 'open'],
+  skyAlmanac: ['IntMapSkyAlmanac', 'open'],
   atlasConsole: ['IntMapConsole', 'dispatch'],   /* Atlas is the control plane — it must dispatch */
   /* (#R495) the cross-dataset query engine. Its member is `run` — the door the `query` dispatch
      case in js/atlas-console.js reaches through answer(); a module that arrived and published a
