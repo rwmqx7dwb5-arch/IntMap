@@ -285,13 +285,17 @@ test('(#R167) prod deployed the DOM-only modules (legal / news timeline) and the
   await expect(page.locator('#ntl-toggle')).toBeAttached();          // js/news-timeline.js
   const tables = await page.evaluate(() => {
     const T = window.IntMapTables || {};
-    return { n: Object.keys(T).length, gdp: T.GDP && T.GDP.USA, cap: T.CAPITAL && T.CAPITAL.JPN };
+    return { names: Object.keys(T).sort(), gdp: T.GDP && T.GDP.USA, cap: T.CAPITAL && T.CAPITAL.JPN };
   });
-  /* (#R225) 27 → 25: `geoLayersDB` and `GEO_LABEL_JP` left with the nine geopolitics layers they
-     described (「レイヤー自体を削除してほしい」). The count is hard-coded ON PURPOSE — what it catches is a
-     PARTIAL deploy, which a «more than zero» test would not. ⚠ It is only run post-deploy (NEVER tier),
-     so nothing before the deploy can catch it drifting; move it in the same commit as the table. */
-  expect(tables.n, 'js/tables.js deployed with all 25 tables').toBe(25);
+  /* What this catches is a PARTIAL deploy, which a «more than zero» test would not. The expected set
+     is the tables the checked-out js/tables.js builds — this runs post-deploy from the very commit
+     that was deployed. It used to be a hand-written count (27 → 25 → …); being post-deploy only
+     (NEVER tier), nothing before the deploy saw it drift, and the deploy run went red over a table
+     removed on purpose (LIFE and INTERNET left with the country-figures work). */
+  const { IntMapTables: SOURCE } = await import('../js/tables.js');
+  const expected = Object.keys(SOURCE).sort();
+  expect(expected.length, 'js/tables.js builds its tables in Node').toBeGreaterThan(0);
+  expect(tables.names, 'prod serves every table the deployed js/tables.js builds').toEqual(expected);
   expect(tables, 'the tables carry real values').toMatchObject({ gdp: 27361, cap: 'Tokyo' });
 });
 
