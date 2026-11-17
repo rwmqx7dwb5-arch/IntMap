@@ -13,7 +13,7 @@
     "gzip": 4656661,
     "chunks": {
       "account-data": 7346,
-      "aftershock": 43427,
+      "aftershock": 54345,
       "aircraft-detail": 17009,
       "analysis-correlate": 21859,
       "analysis-edu": 13553,
@@ -65,7 +65,7 @@
       "esm": 286281,
       "event-past": 19148,
       "events-near": 9518,
-      "family-history": 58975,
+      "family-history": 68642,
       "flight-sim": 115313,
       "geo-import": 17728,
       "gis-core": 550533,
@@ -126,7 +126,7 @@
       "place-watch": 24826,
       "plane-glyph": 867,
       "playground": 99012,
-      "polity-arc": 24517,
+      "polity-arc": 27553,
       "polygon-clipping.esm": 22543,
       "population-grid": 3477,
       "quake-history": 26156,
@@ -148,7 +148,7 @@
       "service-status": 21611,
       "shakemap": 19432,
       "share-inbox": 8911,
-      "shared-collection": 9366,
+      "shared-collection": 11952,
       "showcase-gallery": 9583,
       "sim-datasets": 923,
       "sims": 78225,
@@ -158,7 +158,7 @@
       "street-view": 15113,
       "subcable-info": 9100,
       "terrain-water": 83098,
-      "territory-change": 22315,
+      "territory-change": 29165,
       "time-index": 2424,
       "time-lapse": 11319,
       "time-thumb": 9027,
@@ -193,7 +193,7 @@
   "dist": {
     "total": 1570310796,
     "data": 1208196998,
-    "assets": 21179682
+    "assets": 21325129
   },
   "phone": {
     "bytes": 342631,
