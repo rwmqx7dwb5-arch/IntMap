@@ -45,10 +45,11 @@ export function stampFigure(row, field, y, src) {
   let m = META.get(row);
   if (!m) { m = {}; META.set(row, m); }
   const yy = (y == null || y === '') ? null : (Number.isFinite(+y) ? +y : null);
-  /* `src` is the publisher's name, or a citation `{ source, licence?, url?, code? }` (js/wb-indicators.js
-     `wbCitation`, js/tables.js `STAT_SOURCES`) — what an answer's source list cites. */
+  /* `src` is the publisher's name, or a citation `{ source, publisher?, licence?, url?, code? }` (js/wb-indicators.js
+     `wbCitation`, js/tables.js `STAT_SOURCES`) — `source` is what an answer's source list cites in full, `publisher`
+     the short name a card prints beside the year («World Bank», not the series code and the vintage note). */
   const cite = (src && typeof src === 'object') ? src : null;
-  m[field] = { y: yy, src: (cite ? cite.source : src) || null, cite };
+  m[field] = { y: yy, src: (cite ? cite.source : src) || null, publisher: (cite ? (cite.publisher || cite.source) : src) || null, cite };
 }
 
 /**
@@ -62,7 +63,7 @@ export function figure(row, field) {
   if (held == null || held === '' || !Number.isFinite(+held)) return null;
   const unit = FIGURE_UNITS[field] || null;
   const m = (META.get(row) || {})[field] || {};
-  return { v: +held * (TO_BASE[unit] || 1), held: +held, unit, y: m.y == null ? null : m.y, src: m.src || null,
+  return { v: +held * (TO_BASE[unit] || 1), held: +held, unit, y: m.y == null ? null : m.y, src: m.src || null, publisher: m.publisher || null,
     licence: (m.cite && m.cite.licence) || '', url: (m.cite && m.cite.url) || '', code: (m.cite && m.cite.code) || '' };
 }
 

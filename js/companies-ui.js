@@ -327,9 +327,14 @@ export function companiesUi(HOST){
                'Instantánea de capitalización reportada, compilada el '+SNAP+' (sin cotización en vivo en EE. UU.).');
     }
     return ''; }catch(_){ return ''; } }
-  /* the stamp as a chip, ready to append after a value */
+  /* the stamp as a chip, ready to append after a value.
+     (companies-live-time-wrap) THE STAMP BREAKS ONLY BETWEEN ITS WORDS. In a narrow value column the browser also breaks
+     after a hyphen, so «2026-11-18 04:53» came out «2026-11-» / «18 04:53» (production, 54 px column, 1440×900 and
+     375×812, 2026-11-18). Each space-separated word — the date, the time, «/», «FY2025», «year-end 2025» — is one
+     unbreakable piece; the line may break only at the spaces between them. */
   function _coAsOfChip(c,key){ const s=_coAsOf(c,key); if(!s) return '';
-    return '<span class="co-asof" title="'+IntMapSafe.html(_coAsOfTitle(c,key))+'">'+IntMapSafe.html(s)+'</span>'; }
+    const words=String(s).split(' ').filter(Boolean).map(w=>'<span class="co-asof-w">'+IntMapSafe.html(w)+'</span>').join(' ');
+    return '<span class="co-asof" title="'+IntMapSafe.html(_coAsOfTitle(c,key))+'">'+words+'</span>'; }
 
   const _coLogoCache=new Map();
 

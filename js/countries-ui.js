@@ -273,9 +273,11 @@ export function countriesUi(HOST){
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* (countries-companies) «(year)» beside a figure is the year THAT value is for — js/country-figures.js; nothing when no writer stated one */
   /* (companies-name-width) the year AND the source a value is for, printed beside it: «GDP (2023 · World Bank)». A writer that
-     stated no source (life expectancy, internet use) gets its year alone — the card does not name a source nobody stated. */
+     stated no source (life expectancy, internet use) gets its year alone — the card does not name a source nobody stated.
+     (companies-live-time-wrap) The card prints the PUBLISHER (figure().publisher); the full citation — series code, vintage
+     note — stays in figure().src for an answer's source list, where a line of it is read rather than squeezed beside a label. */
   const _asof=(y,src)=>{ const p=[y,src].filter(Boolean); return p.length?` (${p.join(' · ')})`:''; };
-  const _yt=(s,k)=>{ const f=figure(s,k); return f?_asof(f.y,f.src):''; };
+  const _yt=(s,k)=>{ const f=figure(s,k); return f?_asof(f.y,f.publisher):''; };
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {GDP,HDI,DEM,MILSPEND,STAT_SOURCES,CAPITAL,CURRENCY,LANGS}=IntMapTables;
@@ -435,7 +437,7 @@ export function countriesUi(HOST){
                (js/country-figures.js, the ONE store). The card, the comparison, an Atlas ranking and its source list all
                read it back with `figure()`; js/wb-indicators.js `applyLatest` replaces the stamp when it replaces the value.
                A field with no stamp has no author IntMap can name, and nothing may cite one for it. */
-            const ne=(what)=>'Natural Earth ('+what+')';
+            const ne=(what)=>({ source:'Natural Earth ('+what+')', publisher:'Natural Earth' });
             stampFigure(_row,'pop',p.POP_YEAR,ne('POP_EST'));
             if(GDP[code]!=null) stampFigure(_row,'gdp',STAT_SOURCES.gdp.year,STAT_SOURCES.gdp); else if(gdp!=null) stampFigure(_row,'gdp',p.GDP_YEAR,ne('GDP_MD'));
             if(_row.gdppc!=null){ const fy=figureYear(_row,'gdp'), py=figureYear(_row,'pop'); stampFigure(_row,'gdppc',(fy!=null&&fy===py)?fy:null,null); }   /* derived: GDP ÷ population — a year only when both are for the same one */
@@ -761,7 +763,7 @@ export function countriesUi(HOST){
     const _ty=(typeof window!=='undefined'&&window._imTimeYear)||null;
     const _milB=(v)=>'$'+(Math.round(v*10)/10)+'B';
     /* (countries-companies) the year THIS value is for (js/country-figures.js); the travel year only when no writer stated one */
-    const yt=(k)=>{ const f=figure(s,k); return escC(_asof((f&&f.y)||_ty,f&&f.src)); };
+    const yt=(k)=>{ const f=figure(s,k); return escC(_asof((f&&f.y)||_ty,f&&f.publisher)); };
     const econ=sec(icon('coin')+' '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
       [((s._real||window._imTimeReal)?('GDP · '+TR('real 2011 int$','実質2011年国際ドル','real, int$ 2011','реальный, межд.$ 2011','real int$ 2011')):HOST.t('statGdp'))+yt('gdp'),HOST.fmtMoney(s.gdp)],
       s.gdpPPP?[HOST.t('statGdpPPP')+yt('gdpPPP'),HOST.fmtMoney(s.gdpPPP)]:null,

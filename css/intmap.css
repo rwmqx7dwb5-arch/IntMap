@@ -2154,6 +2154,7 @@
        · the gap between the six columns is 8 px, not 11 (the 11 was set when the row had four).
        Measured after: 351 px row → name 88 px, value 63 px, nothing spills (tests/companies-name-width.spec.js, also at 390 px). */
     .stat-val .co-asof{ white-space:normal; }
+    .co-asof-w{ white-space:nowrap; }   /* (companies-live-time-wrap) a word of the stamp never splits — js/companies-ui.js _coAsOfChip */
     .stat-pick{ flex:0 0 auto; width:16px; height:16px; border-radius:50%; border:1.5px solid rgba(128,128,128,0.45); box-sizing:border-box; transition:background .15s,border-color .15s; }
     .stat-row.compare-on .stat-pick{ background:var(--primary-fill,var(--primary-color)); border-color:var(--primary-fill,var(--primary-color)); box-shadow:inset 0 0 0 3px var(--card-bg); }
     [data-theme="dark"] .stat-row.compare-on .stat-pick{ box-shadow:inset 0 0 0 3px #2a2a2e; }
