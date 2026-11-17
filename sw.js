@@ -86,6 +86,11 @@ async function withinBudget() {
 const TILE_HOSTS = [
   'server.arcgisonline.com',          // Esri World Imagery + reference labels
   'services.arcgisonline.com',
+  /* ⚠ (sat-arcgis-3d) NOT 'ibasemaps-api.arcgis.com', the keyed World Imagery service (js/esri-imagery.js).
+     The ArcGIS Location Platform agreement allows a client to keep tiles only as long as the HTTP cache
+     headers allow ("Map display" §6), and this cache keeps tiles past them — so the keyed tiles are left
+     to the browser's own HTTP cache, which obeys those headers by construction (and a browser-cache hit
+     is not billed). A refused key also answers HTTP 200 with a JSON body, which must never be stored. */
   'gibs.earthdata.nasa.gov',          // NASA GIBS (MODIS / VIIRS / overlays)
   'tiles.maps.eox.at',                // Sentinel-2 cloudless
   'api.mapbox.com',                   // Mapbox Satellite (BYOK)

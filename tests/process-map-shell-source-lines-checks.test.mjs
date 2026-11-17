@@ -218,7 +218,7 @@ test('R195 ③: the hover triad is dispatched by the engine, in one query', () =
 /* ── ④ the split, and the one value it cannot inherit ────────────────────────────────────────── */
 test('R195 ④: the satellite protocol lives in js/sat-proto.js and nowhere else', () => {
   /* a needle from deep inside the moved body: a leftover copy in the shell would win silently */
-  const needle = "const _satUrl=(z,y,x)=>_SAT_HOSTS[(x+y)&1]";
+  const needle = "const _satUrl=imageryTileUrl;";   /* (sat-arcgis-3d) the URL itself is js/esri-imagery.js's */
   assert.ok(satProto.includes(needle), 'js/sat-proto.js really carries the body');
   assert.ok(!appBody.includes(needle), 'js/app-body.js no longer carries a second copy');
   /* (module-graph) the registry is gone: app-body calls the factory by the name it imports it under, and that

@@ -25,6 +25,7 @@
  *  the time of the move), at its original two-space depth so the diff carries no reindentation.
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
+import { imageryTileUrl, imageryKeyed, imageryRefused, isImageryReply } from './esri-imagery.js';   /* (sat-arcgis-3d) where World Imagery comes from, and what to do when a key is refused */
 
 export function satProto(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract */
@@ -39,8 +40,7 @@ export function satProto(HOST){
      pass straight through (one fetch, decoded in MapLibre's worker as before), results are cached, and ANY error falls back
      to the raw bytes so the map is never worse than before. Also lets the flight sim drop its blue water-fill (#R158). */
   try{ if(typeof fetch!=='undefined' && typeof createImageBitmap!=='undefined'){
-    const _SAT_HOSTS=['https://server.arcgisonline.com','https://services.arcgisonline.com'];
-    const _satUrl=(z,y,x)=>_SAT_HOSTS[(x+y)&1]+'/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x;
+    const _satUrl=imageryTileUrl;   /* (sat-arcgis-3d) keyed or keyless — js/esri-imagery.js is the one URL builder */
     const _SAT_PLACEHOLDER_MAX=3500;   /* grey "no data" tile ≈ 2521 B; real imagery ≥ ~8 KB — a wide, safe gap */
     /* (#R191) 「モバイル版で、衛星画像が圧倒的に重い」 — these two Maps hold JPEG BYTES, and 800 + 1,200
        entries of Esri imagery is 20-60 MB of ArrayBuffers sitting beside MapLibre's own tile cache (whose
@@ -105,10 +105,19 @@ export function satProto(HOST){
        ancestor WALK, where the saving is a request not yet made. This is the fallback path; the
        worker above is what normally runs, and the two are kept byte-for-byte in step. */
     const _satFly=new Map();
+    /* ⚠ (sat-arcgis-3d) a refused key never blanks the map — the same rule, and the same one retry, as
+       src/sat-worker.js `start`: a keyed reply that is not an image (200 + JSON for an expired or
+       over-quota token) switches this page to the keyless hosts and asks for the same tile again. */
+    async function _satGet(z,y,x){ let r=null;
+      for(let tries=0; tries<2; tries++){ const keyed=imageryKeyed();
+        r=await fetch(_satUrl(z,y,x),{mode:'cors',credentials:'omit'});
+        if(!keyed||(r.ok&&isImageryReply(r))) break;
+        imageryRefused(r.ok?String(r.headers.get('content-type')):String(r.status)); }
+      return r; }
     function _satFetch(z,y,x){ const rk=z+'/'+x+'/'+y; const c=_satRaw.get(rk); if(c){ _satRaw.delete(rk); _satRaw.set(rk,c); return Promise.resolve(c); }
       const live=_satFly.get(rk); if(live) return live;
       const p=(async()=>{
-        const r=await fetch(_satUrl(z,y,x),{mode:'cors',credentials:'omit'}); if(!r.ok) throw new Error('sat http '+r.status); const buf=await r.arrayBuffer();
+        const r=await _satGet(z,y,x); if(!r.ok) throw new Error('sat http '+r.status); const buf=await r.arrayBuffer();
         const out={buf, placeholder: buf.byteLength<=_SAT_PLACEHOLDER_MAX}; _satRaw.set(rk,out); if(_satRaw.size>_SAT_RAW_MAX){ const f=_satRaw.keys().next().value; _satRaw.delete(f); }
         return out; })().finally(()=>{ _satFly.delete(rk); });
       _satFly.set(rk,p); return p; }
@@ -242,7 +251,7 @@ export function satProto(HOST){
       const W=window.IntMapSatWorker;
       if(!W||!W.available()) return null;
       if(!_satWReady){ _satWReady=true;
-        W.configure({ rawMax:_SAT_RAW_MAX, depthMax:_SAT_DEPTH_MAX,
+        W.configure({ rawMax:_SAT_RAW_MAX, depthMax:_SAT_DEPTH_MAX, lanes:_satTune.lanes,
           /* the worker learned how deep the imagery goes — keep the MIRROR current, because
              `depth()` and `wouldStitch()` below answer synchronously and the tests ask them that way */
           depth:(rows)=>{ for(const [k,have,stop] of rows){
@@ -255,6 +264,16 @@ export function satProto(HOST){
       const W=_satWorker(); if(!W) return null;
       return W.tile(z,y,x,hi,signal);
     }
+    /* (sat-arcgis-3d) the worker's fetch queue (src/sat-worker.js): how many fetches per host it hands the
+       browser. The number and its observation live there, not here — undefined keeps the worker's own.
+       Changeable on the live binary (`setTuning({lanes})`, 0 = no cap) so it is measured A/B against the
+       same build, as #R193's zoom gate is.
+       ⚠ TRIED AND NOT KEPT (same build, same ABBA): stitching @2x only where a tile's on-screen footprint
+       exceeds its 256² native pixels. Measured with the queue at 6 lanes, it cut Esri requests 9–26 % pitched but was NOT faster to sharp (jump
+       5.3 s vs 3.3 s, pan 4.6 s vs 4.0 s), and a tile fetched single-density far away stays single-density
+       in MapLibre's tile cache when the camera later brings it close — a picture that gets worse is not a
+       speed-up. */
+    const _satTune={ lanes:undefined };
     /* ══ (#R205) THE LEVELS A ZOOM PASSES THROUGH ARE NOT LEVELS ANYONE LOOKS AT ═══════════════════
        「衛星画像の読み込み時の動作を、極限までシームレスにして。（高速・違和感低減・点滅軽減）」
        「地図のホバー、ズームのfpsを劇的に高くしろ」
@@ -378,6 +397,9 @@ export function satProto(HOST){
       _satStat.resolved++;
       const via=_satViaWorker(z,y,x,_satHiDPI,signal);
       if(via){ try{ const r=await via; if(r&&r.data) return {data:r.data}; }catch(_){ /* fall through to the thread */ } }
+      /* (sat-arcgis-3d) …unless the renderer abandoned the tile: the worker answered at once to give the
+         image-request slot back (src/sat-worker-client.js), and walking it again here would refetch it */
+      if(signal&&signal.aborted){ _satStat.dropped++; const e=new Error('aborted'); e.name='AbortError'; throw e; }
       try{ const hi=await _sat2x(z,y,x,signal); if(hi) return {data:hi}; }catch(_){}
       /* (#R191) an ImageBitmap goes straight through; a cached ArrayBuffer is copied, because MapLibre
          transfers the buffer it is handed and a transferred buffer would empty the cache entry. */
@@ -425,7 +447,11 @@ export function satProto(HOST){
          cancelled by MapLibre's own abort rather than inferring it from a network count */
       zoomGate:()=>({ on:_satGateOn, zooming:_satZooming, wired:_satZoomWired, settleMs:_SAT_SETTLE, maxHoldMs:_SAT_MAX_HOLD, minZoom:_SAT_HOLD_MINZ,
         req:_satStat.req, held:_satStat.held, dropped:_satStat.dropped, resolved:_satStat.resolved, ahead:_satStat.ahead, warmed:_satStat.warmed }),
-      resetZoomStats:()=>{ _satStat.req=0; _satStat.held=0; _satStat.dropped=0; _satStat.resolved=0; _satStat.ahead=0; _satStat.warmed=0; return true; },
+      resetZoomStats:()=>{ for(const k in _satStat) _satStat[k]=0; return true; },
+      /* (sat-arcgis-3d) the worker's fetch queue, live: {lanes} per host, 0 = no cap. Returns what is now in force. */
+      setTuning:(o)=>{ o=o||{}; if('lanes' in o) _satTune.lanes=o.lanes;
+        const W=_satWorker(); if(W) W.configure({ lanes:_satTune.lanes }); return Object.assign({},_satTune); },
+      queueStats:()=>{ const W=_satWorker(); return W&&W.stats?W.stats():Promise.resolve(null); },
       /* ⚠ the OFF switch exists so the A/B can be run inside ONE build — #R203 recorded two levers
          that measured WORSE than the shipped setting, and the only reason that is known is that both
          were measured against the same binary rather than against a memory of a number. */

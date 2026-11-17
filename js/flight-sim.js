@@ -17,6 +17,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
+import { imageryTiles, imageryTileUrl, imagerySources } from './esri-imagery.js';   /* (sat-arcgis-3d) the one place World Imagery's URL is built */
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
@@ -818,7 +819,7 @@ export function flightSim(HOST){
     function createMinimap(){ if(minimap||!hud||!GE()) return; const el=hud.querySelector('.fs-mm-map'); if(!el) return;
       try{ minimap=GE().ui.createSubView({ container:el, attributionControl:false, interactive:false, fadeDuration:0, refreshExpiredTiles:false, renderWorldCopies:true,
         center:[st?st.lng:0, st?st.lat:0], zoom:11, bearing:0, pitch:0,
-        style:{ version:8, sources:{ mmsat:{ type:'raster', tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize:256, maxzoom:19, attribution:'© Esri' },
+        style:{ version:8, sources:{ mmsat:{ type:'raster', tiles:imageryTiles(), tileSize:256, maxzoom:19, attribution:'Powered by Esri · Sources: '+imagerySources() },
           /* (#R118) flight TRAIL on the moving-map ("ミニマップには軌跡が表示されるように") — the already-recorded st._path */
           mmtrail:{ type:'geojson', data:{type:'Feature',geometry:{type:'LineString',coordinates:[]},properties:{}} } },
           layers:[{ id:'mmsat', type:'raster', source:'mmsat' },
@@ -985,7 +986,7 @@ export function flightSim(HOST){
           const ts=sc/tp;
           for(let tx=tx0;tx<=tx1;tx++) for(let ty=ty0;ty<=ty1;ty++){ if(ty<0||ty>=tp) continue; const im=new Image();
             im.onload=(function(tx,ty,im){ return function(){ try{ cx.save(); cx.globalCompositeOperation='destination-over'; cx.drawImage(im, ox+(tx/tp-mnx)*sc, oy+(ty/tp-mny)*sc, ts+1, ts+1); cx.restore(); }catch(_){} }; })(tx,((ty%tp)+tp)%tp,im);
-            im.src='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+(((ty%tp)+tp)%tp)+'/'+(((tx%tp)+tp)%tp); }
+            im.src=imageryTileUrl(z,((ty%tp)+tp)%tp,((tx%tp)+tp)%tp); }
         } else { cx.fillStyle='#8fb8e0'; cx.font='12px ui-monospace,monospace'; cx.fillText(LL('(flight too short to map)','(経路が短すぎます)','(zu kurz)','(слишком коротко)','(muy corto)'),18,H/2); }
       }catch(_){}
       /* (#R170) remember where this flight ENDED, and make "Fly again" resume from there instead of teleporting
