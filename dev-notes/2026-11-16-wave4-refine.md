@@ -1,6 +1,8 @@
 ---
 title: 第 4 波の 14 商品を洗い直す——実行して確かめた欠陥 26 件を根本で直す
 date: 2026-11-16
+newsen: Aftershock outlooks, family-history places, polity pages and the change-of-ruler view now give correct answers in 26 cases where they were wrong, and say so when their coverage is only partial.
+newsjp: 余震の見通し・家族史の地名・政体ページ・支配者の移り変わりの表示で、誤った答えを返していた 26 件を直し、被覆が一部だけのときはそう述べるようになりました。
 ---
 
 5 体のレビュー役に、第 4 波の 14 商品を領域ごとに読ませ、主張を実際に実行して確かめさせた。確定した欠陥は 26 件で、どれも根本で直した。各修正には、修正前に赤くなる回帰を付けている（`tests/wave4-refine-*-checks.test.mjs`）。
