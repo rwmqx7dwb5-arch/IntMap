@@ -24,6 +24,7 @@ import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon se
 export default [
   {
     row: ['sim.lineOfSight',            'los',            'lineOfSight',                                                 'sim',     'sim',     'map.los',                'map',                 'session', 'none',   'place',    'los'],
+    ui: { at: ['.lst-toolrow[data-act="sim.los"]', '#los-m-los'] },
     science: 'sun',
     doc: [
       { in: 'tools-panels', at: 90, text: '{"type":"los","place":str} (line-of-sight / radar shadow); ' },
@@ -38,6 +39,7 @@ export default [
   },
   {
     row: ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    'radiation'],
+    ui: { at: ['.lst-toolrow[data-act="sim.radiation"]', '.rad-go'] },
     science: 'radiation',
     /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
        through js/atlas-reasoning.js `scenarioModels`. `subject` is the argument the place goes in, `baselineParam` the one an instant goes in
@@ -158,6 +160,7 @@ export default [
      nearest stranger would put an eruption somewhere that is not a volcano (#R515). */
   {
     row: ['sim.ashPlume',               'ashPlume',       'volcanicAsh,ashFall,ashCloud,eruptionSim,tephraFall',         'sim',     'sim',     'map.ashPlume',           'map,explanation',     'session', 'none',   '',         'ashPlume'],
+    ui: { at: ['.lst-toolrow[data-act="sim.ashPlume"]', '.ash-go'] },
     science: 'ash',
     /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
        through js/atlas-reasoning.js `scenarioModels`. `subject` is the argument the place goes in, `baselineParam` the one an instant goes in
@@ -216,6 +219,7 @@ export default [
      (js/aftershock.js). The earthquake is named by its ComCat id, or found as the largest M5+ of the last 30 days near a place. */
   {
     row: ['sim.aftershocks',            'aftershocks',    'aftershockForecast,aftershockProbability,aftershockOutlook,afterShocks', 'sim', 'panel', 'panel.aftershock,camera', 'panel,explanation', 'session', 'none', 'place?', 'aftershock'],
+    ui: { at: ['.lst-toolrow[data-act="sim.aftershocks"]'] },
     science: 'aftershock',
     scenario: {
       subject: 'place', baselineParam: 'at',
@@ -272,6 +276,7 @@ export default [
   },
   {
     row: ['sim.flightSim',              'flightSim',      'flightsim,flightsimulator,flysim,pilot',                      'sim',     'sim',     'camera,map.flightsim',   'map,camera',          'session', 'none',   'place?',   'flightSim'],
+    ui: { at: ['#btn-edu'] },
     science: 'flight',
     doc: [
       { in: 'sim.flightSim', text: 'FLIGHT SIMULATOR: {"type":"flightSim","place"?:str,"alt"?:meters} = starts a real, flyable arcade flight simulator over the actual world map (the camera becomes the cockpit; keyboard W/S throttle, ↑/↓ pitch, ←/→ bank, A/D rudder, Esc to exit; live HUD with airspeed/altitude/heading/artificial-horizon; coordinated-turn physics, stall and ground collision). Use for "フライトシミュレーターを起動して", "let me fly a plane over the Alps" → pass place. {"type":"flightSim","on":false} exits it.\n' },
@@ -296,6 +301,7 @@ export default [
   },
   {
     row: ['sim.rfCoverage',             'rfCoverage',     'coverage,radioCoverage,signalCoverage,reception,viewshed',    'sim',     'sim',     'map.coverage',           'map',                 'session', 'none',   'point',    'los'],
+    ui: { at: ['#los-m-rf'] },
     science: 'sun',
     doc: [
       { in: 'more-features', at: 140, text: '{"type":"rfCoverage","place"?:str,"lng"?:num,"lat"?:num,"height"?:num (antenna height in m),"power"?:num (dBm),"frequency"?:num (MHz)} = the line-of-sight service area over the REAL terrain, solved by the same viewshed as ' },
@@ -325,6 +331,7 @@ export default [
   },
   {
     row: ['sim.sunPosition',            'sun',            'shadow,shadows,sunlight,sunPosition,daylight,insolation',     'sim',     'sim',     'map.sun',                'map',                 'session', 'none',   'point',    'sun'],
+    ui: { at: ['.lst-toolrow[data-act="sim.sun"]'] },
     science: 'sun',
     doc: [
       { in: 'sunlight', at: 20, text: '{"type":"sun"} instead. BOTH OF THEM NEED A POINT: give "place" or "lng"/"lat", or let the spot the user tapped on the map supply it. Neither falls back to the map centre any more — every number they print is a function of one coordinate — so an action with no point at all is answered with a question rather than with a guess.\n' },
@@ -342,6 +349,7 @@ export default [
   },
   {
     row: ['sim.terrainWater',           'terrainWater',   'waterFlow,terrainEdit,watershedSim,sculpt',                   'sim',     'sim',     'map.terrainWater',       'map',                 'session', 'none',   'point',    'terrainWater'],
+    ui: { at: ['.lst-toolrow[data-act="sim.terrainWater"]'] },
     science: 'water',
     doc: [
       { in: 'terrain-water', at: 10, text: '{"type":"terrainWater","place"?:str,"lng"?:num,"lat"?:num,"rainMm"?:num,"waterM3"?:num,"flowM3s"?:num,"raiseM"?:num,"lowerM"?:num,"radiusM"?:num,"mode"?:"pan"|"raise"|"lower"|"levee"|"source","pour"?:"once"|"cont"|"stop","pourRateM3s"?:num,"timeSpeed"?:num,"resetTerrain"?:bool} = opens the terrain sculptor over the REAL elevation model for the area in view: the user brushes the ground up or down, draws levees and dams as lines, and drops any amount of water on it. The water is routed by priority-flood depression filling plus downslope volume accounting, so the FLOW PATHS, the PONDED AREA and the OVERTOPPING (breach) DIRECTION all change with every edit, in real time. It reports the ponded volume, the flooded area, the maximum depth and every spill point with the volume going over it. "rainMm" applies a uniform rainfall, "waterM3" drops that volume at the point, "flowM3s" sets the downstream channel DISCHARGE in m³/s (the drawn channel width/depth follows it; omit = derive from the placed volume), "raiseM"/"lowerM" sculpt there (with "radiusM"). "pour":"cont" keeps water arriving at the last placed source at "pourRateM3s" cubic meters per SIMULATED second, sped up by "timeSpeed" (the quasi-static filling sequence — the solver is steady-state, so this repeats the same solve as the volume grows); "pour":"stop" halts it and "pour":"once" restores the single fixed volume per click. "resetTerrain":true undoes the sculpting and the levees but LEAVES the placed water, so the same water can be re-run on the original ground. Use for "この谷にダムを作ったらどこまで水没する", "地形を編集して水を流したい", "sculpt the terrain and pour water on it", "what happens if I build a levee here". NOTE this is a where-does-the-water-END-UP model, not a wave-speed model — for tsunami ARRIVAL use ' },
@@ -372,6 +380,7 @@ export default [
   },
   {
     row: ['sim.earthquake',             'earthquake',     'seismic,quakeSim,seismicWaves,earthquakeSim',                 'sim',     'sim',     'map.seismic',            'map',                 'session', 'none',   'point',    'seismic'],
+    ui: { at: ['.lst-toolrow[data-act="sim.seismic"]'] },
     science: 'seismic',
     doc: [
       { in: 'sim.earthquake', text: 'SEISMIC WAVE SIMULATION: {"type":"earthquake","place"?:str,"lng"?:num,"lat"?:num,"depth"?:km,"magnitude"?:Mw,"t"?:seconds,"site"?:"hard"|"rock"|"stiff"|"soft","scale"?:"mmi"|"jma","speed"?:num,"slip"?:m,"opacity"?:0-1,"tsunami"?:bool,"hours"?:1-30,"maximum"?:bool,"play"?:bool,"amplitude"?:m,"contours"?:bool,"real"?:bool} = set an epicentre, depth and magnitude and watch the P wave, the S wave and the surface waves spread over the globe in REAL TIME (playback "speed" ×1 default, user-adjustable). Arrival times are RAY-TRACED through the IASP91 reference Earth model (the same model the USGS locates earthquakes with), so the travel-time curve, its triplications and the core shadow all come out of the physics. The intensity is PAINTED as a terrain-aware field: Vs30 is estimated from real DEM topographic slope (Wald & Allen 2007) cell by cell, so basins amplify and hard ground does not — not concentric circles. "scale" switches between Modified-Mercalli (Worden et al. 2012, the ShakeMap GMICE, on PGV taken over the usable band of a strong-motion record) and the JMA shindo, which is computed by its own definition (the JMA period/10 Hz/0.5 Hz filters and the level exceeded for a total of 0.3 s) rather than converted. In the panel the user can FREE-DRAW a rupture area and set the average "slip" (m): the magnitude then comes from M0=μAD and all distances become distance-to-rupture, so the field follows the fault shape. "site" sets the fallback ground class where no DEM is available; "real":true loads the largest real earthquake of the past month from the USGS feed. The field is computed on demand: the panel has a COMPUTE button with a real progress percentage, and "opacity" (0-1) sets how solidly the intensity is painted over the map (default 0.85). The painted field runs out to where the LOWEST class of the chosen scale ends; past 1,000 km the regional attenuation law is extrapolated and the panel says how many cells that is. Crustal attenuation is frequency-dependent, Q = Q0*f^eta (Raoof, Herrmann & Malagnini 1999), and both numbers are adjustable in the panel. When the event is TSUNAMIGENIC by the operational screening (Mw>=6.5, focal depth <=100 km, and the epicentre under the sea per the real DEM) the panel offers the TSUNAMI PROPAGATION SIMULATOR and "tsunami":true opens it directly: shallow-water long waves (total-depth pressure and Manning bottom friction) solved on a spherical staggered grid over the real sea floor IN A BACKGROUND THREAD, so the page never freezes and the frames stream in as they are computed — the wave is watchable within seconds of pressing the button. It is initialized with the Okada (1985) co-seismic sea-floor displacement summed over a tapered sub-fault grid, ANIMATED (interpolated between frames, so it is smooth at any playback speed) so the wave is seen crossing the ocean, with TRAVEL-TIME CONTOURS every hour, a maximum-wave-height field ("maximum":true), a coastal height by Green law, and a click anywhere on the sea to read the arrival time and wave height there. "hours" (1-30) is how long to simulate, "play":true starts the animation, "amplitude" (m) sets the sea-surface amplitude at which the color ramp saturates and "contours":false hides the hour lines. The domain is the WHOLE PLANET at 0.25° — longitude wraps, so a wave leaves one side of the Pacific and arrives at the other instead of running off the edge of a box. Use for "東京の真下でM7の地震が起きたら", "simulate an M8 off Chile and tell me when it reaches Tokyo", "地震波の伝わり方を見せて", "震度分布を気象庁階級で見せて".\n' },
@@ -414,6 +423,7 @@ export default [
   },
   {
     row: ['sim.sunHours',               'sunHours',       'shadeHours,terrainShadow,solarHours,insolationYear',          'sim',     'sim',     'map.sunhours',           'map',                 'session', 'none',   'point',    'sun'],
+    ui: { at: ['#ctx-menu'] },
     science: 'sun',
     doc: [
       { in: 'sunlight', at: 10, text: '{"type":"sunHours","place"?:str,"lng"?:num,"lat"?:num,"solstice"?:bool,"terrainOnly"?:bool} = the Sun & shadow panel\'s terrain half. Without options it analyses ONE POINT for a whole year: it builds a 360° horizon from the real elevation model (with earth curvature and refraction) and steps a year of sun positions against it, giving the annual sunlight hours, how many hours the terrain costs compared with an open horizon, the hours on the winter solstice / summer solstice / equinox, the days a year with no sun at all, the hours a solar panel could work and the clear-sky direct-beam total in kWh/m². "solstice":true instead paints every cell in view that the sun NEVER reaches on the winter solstice; "terrainOnly":true just switches the live terrain-shadow (mountain shade) overlay on. Use for "この土地の年間日照時間は", "冬至にこの家に日は当たる", "山影がかかるのはどこ", "how many hours of sun does this valley get", "solar potential here". For BUILDING shadows at one moment, use ' },
@@ -441,6 +451,7 @@ export default [
   },
   {
     row: ['sim.nightSky',               'nightSky',       'starsFromHere,skyFromHere,stargazing,standHere,skyStanding',  'sim',     'sim',     'map.nightsky',           'map',                 'session', 'none',   'point',    'nightSky'],
+    ui: { at: ['.lst-toolrow[data-act="sim.nightSky"]'] },
     science: 'space',
     /* `alt` here is how far UP to look, not an altitude; the point is place/at/location or lng+lat */
     doc: [
@@ -463,6 +474,7 @@ export default [
   },
   {
     row: ['sim.space',                  'space',          'solarSystem,planet,planets,explore Space',                    'sim',     'sim',     'map.space',              'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['#map'] },
     science: 'space',
     /* leaving the Earth needs nothing: the default is the solar system, live, at model scale */
     doc: [
@@ -495,6 +507,7 @@ export default [
   },
   {
     row: ['sim.tsunami',                'tsunami',        'tsunamiSim,tsunamiPropagation',                               'sim',     'sim',     'map.tsunami',            'map',                 'session', 'none',   'point',    'tsunami'],
+    ui: { at: ['.sq-tsu'] },
     science: 'tsunami',
     /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
        through js/atlas-reasoning.js `scenarioModels`. `subject` is the argument the place goes in, `baselineParam` the one an instant goes in
@@ -566,6 +579,7 @@ export default [
      declaration() rather than copied into a list here. */
   {
     row: ['sim.pandemicRun',            'pandemicRun',    'simulatePandemic,runPandemic,pandemicSimulate,outbreakSim',   'sim',     'none',    '',                       'explanation',         'read',    'none',   'place',    'pandemicSim'],
+    ui: { at: ['.lst-toolrow[data-act="sim.pandemic"]'] },
     science: 'pandemic',
     /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
        through js/atlas-reasoning.js `scenarioModels`. `subject` is the argument the place goes in, `baselineParam` the one an instant goes in
@@ -607,6 +621,7 @@ export default [
   },
   {
     row: ['sim.ballistic',              'missile',        'ballistic,ballisticMissile,strike,icbm',                      'sim',     'sim',     'map.ballistic',          'map',                 'session', 'none',   'place',    ''],
+    ui: { none: '2026-11-16' },
     science: 'ballistic',
     doc: [
       { in: 'ballistic', at: 10, text: '{"type":"missile","from":str,"to":str,"missile"?:str,"loft"?:"minenergy"|"lofted"|"depressed","marv"?:bool,"yield"?:number_kt,"blast"?:bool,"seconds"?:8-55} = solves the Keplerian trajectory for the great-circle range at a SELECTABLE launch angle (loft: minimum-energy default, "lofted"=steep/high-apogee, "depressed"=flat/low), applies Allen–Eggers atmospheric DRAG for the impact velocity, curves the ground track by the Earth\'s rotation (Coriolis), optionally adds a MaRV terminal weave ("marv":true), and draws a WORLD-SCALE 3-D altitude-colored arc (correct under any zoom). Reports apogee, launch angle, burn-out / re-entry / drag-reduced impact velocity, Coriolis cross-range and flight time. "missile" may name a class ("Minuteman III","DF-41","Sarmat","Trident II"); pass "yield" (kt) or "blast":true for warhead-effect rings. The reply has buttons to re-fly it lofted/depressed/MaRV. Use for "モスクワからワシントンへ弾道ミサイル", "lofted ICBM from X to Y", "depressed trajectory strike on Z". ' },
@@ -665,6 +680,7 @@ export default [
   },
   {
     row: ['sim.flyAnimate',             'fly',            'flight,trajectory',                                           'sim',     'sim',     'camera,map.fly',         'camera,map',          'session', 'none',   'place',    ''],
+    ui: { none: '2026-11-16' },
     science: 'aviation',
     doc: [
       { in: 'animated-flight', at: 10, text: '{"type":"fly","from":str,"to":str,"mode"?:"plane"|"cruise","seconds"?:6-90} = cinematic camera flight along the real great-circle from A to B with a drawn trajectory (plane/cruise stay level; use for "fly me from London to Tokyo"). It reports the real-world flight time honestly. User interaction cancels it. ' },

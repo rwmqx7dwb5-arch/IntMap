@@ -57,7 +57,14 @@
  * ==========================================================================*/
 
 /** what an entry may hold — a field outside this list is a typo nothing would ever read */
-const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalogueSilent', 'schema', 'run', 'science', 'scenario'];
+const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalogueSilent', 'schema', 'run', 'science', 'scenario', 'ui'];
+/* (feature-inventory) `ui` — where a reader does the same act WITHOUT Atlas, as measured by reading the handlers:
+     { at: ['<one CSS selector>', …], login?: true }     the control(s) on the page, or the panel holding a control that has
+                                                         no handle of its own; login = only a signed-in reader has it
+     { key: 'Ctrl+K' }                                   a keyboard shortcut is the only control
+     { none: 'YYYY-MM-DD' }                              searched that day: no control outside Atlas performs this act
+   ABSENT means NOT MEASURED, and scripts/feature-inventory.mjs reports it as unknown — never as reachable. A selector
+   names a control the source really builds (check:capabilities ㉔ looks for it); it is not proof the control shows. */
 /* (science-instruments) `science` — the id of the section of science.html (js/locales/pages.en.js `science.sections`)
    that states what this capability computes, from which data, under which assumptions. A string, the
    anchor itself. Every `sim.*` capability must carry one that resolves (tests/science-instruments-checks.test.mjs):
@@ -114,12 +121,19 @@ export function capabilityEntries(modules) {
         ['data', 'excluded', 'uncertainty'].forEach(function (f) { if (!Array.isArray(S && S[f]) || !S[f].length || !S[f].every(function (t) { return Array.isArray(t) && t.length === 2 && t[0] && t[1]; })) problems.push(where + ': ' + id + ' `scenario.' + f + '` is not a non-empty list of [en, jp] sentences'); });
       }
       if (e.science != null && !(typeof e.science === 'string' && /^[a-z][a-z0-9-]*$/.test(e.science))) problems.push(where + ': ' + id + ' `science` is not a section id of science.html');
+      if (e.ui != null) {
+        const U = e.ui;
+        const sels = U && Array.isArray(U.at) && U.at.length && U.at.every(function (s) { return typeof s === 'string' && /^[#.\[a-z][^,]*$/.test(s) && /[#.\[]/.test(s); });
+        const none = U && typeof U.none === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(U.none);
+        const key = U && typeof U.key === 'string' && U.key.length > 0;
+        if (!U || typeof U !== 'object' || [sels, none, key].filter(Boolean).length !== 1 || (U.login != null && U.login !== true)) problems.push(where + ': ' + id + ' `ui` is neither { at: [selector, …], login?: true }, { key: \'Ctrl+K\' } nor { none: \'YYYY-MM-DD\' } (one selector per string, with an id, a class or an attribute)');
+      }
       if (e.goal != null && typeof e.goal !== 'function') problems.push(where + ': ' + id + ' `goal` is not a function');
       if (e.chips != null && !(typeof e.chips === 'string' || (Array.isArray(e.chips) && e.chips.every(function (k) { return typeof k === 'string'; })))) problems.push(where + ': ' + id + ' `chips` is neither a kind nor a list of kinds');
       if (e.policy != null) Object.keys(e.policy).forEach(function (k) { if (POLICY_KEYS.indexOf(k) < 0) problems.push(where + ': ' + id + ' policy has an unknown field «' + k + '» (' + POLICY_KEYS.join(', ') + ')'); });
       seenId.add(id); if (spelling) seenSpelling.add(spelling);
       out.push({ ns: ns, id: id, row: e.row, schema: e.schema, run: e.run, doc: Array.isArray(e.doc) ? e.doc : [], phrases: e.phrases || null,
-        policy: e.policy || null, goal: e.goal || null, chips: e.chips || null, catalogueSilent: e.catalogueSilent || null, science: e.science || null, scenario: e.scenario || null });
+        policy: e.policy || null, goal: e.goal || null, chips: e.chips || null, catalogueSilent: e.catalogueSilent || null, science: e.science || null, scenario: e.scenario || null, ui: e.ui || null });
     });
   });
   if (problems.length) { const err = new Error('js/atlas-caps: ' + problems.join('; ')); err.problems = problems; throw err; }

@@ -15,7 +15,7 @@
  *  both halves of the hand-off — what this file returns and reads, what the core takes and passes — from
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/
-import { LAYERS } from './layer-manifest.js';   /* (layer-manifest) which layers exist */
+import { LAYERS, currentIds } from './layer-manifest.js';   /* (layer-manifest) which layers exist */
 export function makeLayerFavs(HOST, CTX) {
   const escapeHtml=CTX.escapeHtml, i18n=CTX.i18n, saveSettings=CTX.saveSettings, t=CTX.t;
   /* ---------- Layer favorites (#16) — star any layer, quick-pick chips on top ---------- */
@@ -47,7 +47,13 @@ export function makeLayerFavs(HOST, CTX) {
     document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(!seen.has(cb)) out.push(cb); });
     return out.filter(cb=>cb.id!=='cb-names-x'); }
   function cbForKey(key){
-    return allLayerCbs().find(cb=>{ const i=layerCbInfo(cb); return i&&i.key===key; })||null;
+    const find=(k)=>allLayerCbs().find(cb=>{ const i=layerCbInfo(cb); return i&&i.key===k; })||null;
+    const hit=find(key); if(hit||!/^data:/.test(String(key))) return hit;
+    /* (feature-consolidation) a favourite saved on a row that was merged or renamed: the row's `formerly` names it.
+       A `dl-` row is keyed without its prefix (layerCbInfo), so the old key is tried as written and as `dl-`+key. */
+    const old=String(key).slice(5);
+    for(const id of [old,'dl-'+old]){ for(const now of currentIds(id)){ if(now===id) continue; const cb=document.getElementById(now); if(cb){ const i=layerCbInfo(cb); if(i){ const f=find(i.key); if(f) return f; } } } }
+    return null;
   }
   function renderLayerFavs(){
     const sec=document.getElementById('layer-fav-section'), wrap=document.getElementById('layer-fav-chips'); if(!sec||!wrap) return;

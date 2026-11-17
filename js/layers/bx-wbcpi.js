@@ -1,8 +1,10 @@
 /* (layer-descriptor) one layer, declared once — see scripts/lib/layer-descriptor.mjs for what each field means */
 export default {
-  id: 'beta-dl-internet',
-  shelf: 'lyrGrpOthers',
-  order: 70,
+  id: 'bx-wbcpi',
+  shelf: 'lyrGrpPolitics',
+  order: 20,
+  key: 'wbcpi',
   share: true,
-  measures: ['worldbank:IT.NET.USER.ZS'],
+  measures: ['worldbank:GOV_WGI_CC.SC'],
+  formerly: ['beta-dl-cpi'],
 };

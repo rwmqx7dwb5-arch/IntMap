@@ -47,6 +47,7 @@ function _elecPick(E, a) {
 export default [
   {
     row: ['layers.toggle',              'layer',          '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
+    ui: { at: ['.lst-tile[data-lid]'] },
     doc: [
       { in: 'layers', at: 10, text: '{"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. ' },
     ],
@@ -89,6 +90,7 @@ export default [
   },
   {
     row: ['layers.opacity',             'opacity',        '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
+    ui: { at: ['.dl-op-row'] },
     /* the case needs the layer AND a value: name alone answers «no opacity control» */
     doc: [
       { in: 'layers', at: 20, text: '{"type":"opacity","name":EXACT_NAME,"value":0..1} (or {"delta":±0..1} for "more/less transparent"); ' },
@@ -101,6 +103,7 @@ export default [
   },
   {
     row: ['layers.countryInfo',         'countryInfo',    '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'layers', at: 50, text: '{"type":"countryInfo","on":bool}; ' },
     ],
@@ -112,6 +115,7 @@ export default [
   },
   {
     row: ['layers.railAxis',            'railAxis',       'railwayAxis,gaugeAxis',                                       'data',    'paint',   'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         'railways'],
+    ui: { at: ['.rail-axis-b[data-a]'] },
     doc: [
       { in: 'layers', at: 80, text: '{"type":"railAxis","axis":"gauge"|"electrification"|"speed"|"tracks"|"traffic"|"status"|"kind"} = choose WHICH PROPERTY the World railways layer colours by. Every value it draws is OpenStreetMap\'s own tag on that track, and each axis has an explicit "not stated" bucket — OSM answers these questions at very different rates by country, so a grey line means the tag is absent, never a default. Use for "鉄道を電化方式で塗り分けて", "colour the railways by line speed", "show me which lines are single track", "建設中の路線を見せて" (axis "status"). The layer must be on; turn it on with {"type":"layer","name":"World railways","on":true} first.\n' },
     ],
@@ -126,6 +130,7 @@ export default [
      the map now shows, read off the series itself: the year, how many countries reported it, the top and the bottom. */
   {
     row: ['layers.indicator',           'indicator',      'countryIndicator,showIndicator,worldBankIndicator',            'layers',  'layer',   'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         ''],
+    ui: { at: ['.ind-item[data-id]'] },
     doc: [
       { in: 'layers', at: 15, text: '{"type":"indicator","q":str (the quantity in words — "life expectancy", "医師の数", "CO2 per capita" — or a World Bank code like "SP.DYN.LE00.IN"),"year"?:int,"top"?:int,"list"?:bool} = paint ONE country indicator on the map through the indicator browser (the layer 「国別指標 / Country indicators」): 61 World Bank WDI series and the country-table statistics (GDP per capita, population density, HDI, democracy, fertility, defence spending), ONE AT A TIME, so choosing a new one replaces the last. "year" moves the clock (the map shows that year of the series; every row of the series follows the clock). The result states the indicator, its code, the year painted, how many countries reported that year and the highest and lowest countries with their values — answer from those numbers. Rows that paint the same series (e.g. two life-expectancy rows) are ONE indicator here. {"type":"indicator","list":true,"q"?:str} lists the indicators that match without painting. This is the COUNTRY INDICATORS / 国別指標 browser (country statistics / 国の統計). Use for 「失業率を地図に」「1人当たりGNIで塗って」「2005年の乳児死亡率」「どの国が一番インターネット普及率が高い？」. ' },
     ],
@@ -155,6 +160,7 @@ export default [
   },
   {
     row: ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
+    ui: { at: ['.alc-clear-all'] },
     doc: [
       { in: 'layers', at: 30, text: '{"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); the map display (place names, labels, borders, roads, railways, day/night, 3-D buildings) is not a layer and stays as it is — "all":true clears it too; ' },
     ],
@@ -174,6 +180,7 @@ export default [
      raster and the particles come from one forecast field and are toggled separately. */
   {
     row: ['layers.windParticles',       'windParticles',  'windAnimation',                                               'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['#wind-parts-sw', '.ec-wind-parts'] },
     doc: [
       { in: 'tools-panels', at: 310, text: '{"type":"windParticles","on":bool} = the ANIMATED STREAKS inside the Wind layer, separately from the layer itself. Wind draws two things from one forecast field — a colour raster of speed and thousands of moving particles — and this switches only the particles, so the colours stay. On by default and remembered. Use for "風のパーティクルを消して" (on:false), "風のアニメーションを止めて" (on:false), "turn off the wind particles", "stop the wind animation", "パーティクルを戻して" (on:true). This is NOT the same as switching the Wind LAYER off — for that emit {"type":"layer","name":"wind","on":false}. ADD "over":"temperature" | "gusts" | "pressure" | "precipitation" TO DRAW THE SAME STREAKS OVER THAT LAYER instead — the wind moving across that field, with no wind colour raster and without switching the Wind layer on. EACH of the four is remembered SEPARATELY, and each needs ITS OWN layer ("ec-temp" / "ec-gust" / "ec-slp" / "ec-precip") to be on to show anything, so turn that layer on in the same answer when it is not. Gusts, sea-level pressure and forecast precipitation have the streaks ON by default (the weather system is what a reader is looking at in those fields); temperature is OFF by default. Use for "気温レイヤーの上に風のパーティクルを出して", "気温の上に風の動きを重ねて", "show the wind over the temperature map", "最大瞬間風速の上に風の動きを重ねて" (over:"gusts"), "気圧レイヤーにパーティクルを出して" (over:"pressure"), "降水量予報の上に風の動きを重ねて" (over:"precipitation"), and with on:false for "気温の上の風を消して"; ' },
     ],
@@ -201,6 +208,7 @@ export default [
      legend, so it is its own verb rather than a layer name (js/weather.js `sub`). */
   {
     row: ['layers.isobars',             'isobars',        'pressureContours,isolines',                                   'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['.ec-isobars-box'] },
     /* (#R439) 等圧線 — the contours over the sea-level-pressure field */
     doc: [
       { in: 'tools-panels', at: 320, text: '{"type":"isobars","on":bool} = ISOBARS: 4 hPa contours of sea-level pressure, labelled in hPa, drawn over the sea-level-pressure field. They are a SWITCH INSIDE that layer rather than a layer of their own, so ask for them with this and never with {"type":"layer","name":"Isobars"}; switching them on switches the sea-level-pressure layer on too when it is off, and the reply says so. Use for "等圧線を出して", "show the isobars", "気圧の等圧線を重ねて", "draw pressure contours", and with on:false for "等圧線を消して"; ' },
@@ -216,6 +224,7 @@ export default [
      steps with nothing done (measured on production, 2026-09-15). */
   {
     row: ['layers.baseDisplay',         'baseDisplay',    'baseMode,basemapMode,basicDisplay,basePreset,defaultDisplay,cleanDisplay,displayPreset', 'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'persist', 'none',   '',         ''],
+    ui: { at: ['.lst-mode[data-mode]'] },
     doc: [
       { in: 'layers.baseDisplay', text: 'BASE DISPLAY PRESET: {"type":"baseDisplay","mode":"default"|"clean"|"custom"} = the radio at the top of the layer panel that sets the base-map rows (place names, water & terrain labels, places & facilities, country borders, coastlines, state borders, roads, railways, grid, day/night, 3-D buildings) as a set: "default" restores the standard rows, "clean" turns every base row off (an unlabeled globe for an overlay to sit on), and the panel shows "custom" whenever the rows differ from either — a preset is what the reader means by 「基本表示をデフォルトに戻して」 / "reset the base map" / "clean map". Omit "mode" to REPORT the current preset and which base rows are on. Individual rows are still set_layer (a single row name); this is the whole set at once.\n' },
     ],
@@ -226,6 +235,7 @@ export default [
   },
   {
     row: ['layers.nightSide',           'nightSide',      '',                                                            'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['.lst-tile[data-lid="dl-nightside"]'] },
     doc: [
       { in: 'tools-panels', at: 300, text: '{"type":"nightSide","on":bool} = the DAY/NIGHT SIDE of the planet: as the camera pulls back towards the whole-Earth view, the hemisphere the Sun is not on darkens through a real twilight band and NASA’s VIIRS “Black Marble” city lights appear on it. On by default, and invisible once a continent fills the view. Use for “夜側を消して” / “turn off the night shading” (on:false), “夜間光を見せて” / “show the city lights at night”, “地球の夜側を戻して” (on:true); ' },
     ],
@@ -242,6 +252,7 @@ export default [
   },
   {
     row: ['layers.planeAltitude',       'planeAltitude',  'aircraftAltitude',                                            'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['.gl-alt3d'] },
     doc: [
       { in: 'tools-panels', at: 330, text: '{"type":"planeAltitude","on":bool} = draw the LIVE AIRCRAFT layer at each aircraft\'s REAL reported altitude in 3-D space (a jet at 11 km really floats 11 km above the ground, with a hairline down to the point it is over) instead of flat on the map surface; on by default (use for "航空機を実際の高度で描画して", "飛行機を高度どおりに立体表示", "show aircraft at their real altitude", "put the planes back flat" (on:false)); ' },
     ],
@@ -255,6 +266,7 @@ export default [
   },
   {
     row: ['layers.aircraftTrack',       'aircraftTrack',  'planeTrack',                                                  'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['#map'] },
     doc: [
       { in: 'tools-panels', at: 340, text: '{"type":"aircraftTrack","aircraft":str (callsign, registration or ICAO24 hex; omit for the aircraft already selected),"on"?:bool} = draw the OBSERVED TRACK of one live aircraft — the same thing clicking it on the map does. The track is what this browser has actually received from the ADS-B feed since the Live aircraft layer was switched on (one fix every 20 s), drawn at the reported ALTITUDE of each leg while the 3-D representation is on; there is no historical feed behind it, so an aircraft that has just appeared has only a fix or two. Use for "ANA123の軌跡を出して", "show the track of BAW256", "この機体の飛行経路", and on:false for "軌跡を消して" / "hide the track".\n' },
     ],
@@ -277,6 +289,7 @@ export default [
   },
   {
     row: ['layers.satellites',          'satellites',     'satellite,sats,orbit',                                        'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['.lst-tile[data-lid="dl-sats"]', '.gl-satgrp'] },
     doc: [
       { in: 'layers.satellites', text: 'LIVE SATELLITES: {"type":"satellites","on"?:bool,"group"?:"visual"|"stations"|"weather"|"geo"|"gps-ops"|"galileo"|"science"|"starlink"|"active","name"?:str (a satellite NAME, NORAD catalog number or international designator)} = the LIVE SATELLITE layer: real orbital element sets from CelesTrak, propagated in the browser with SGP4/SDP4, drawn at each object\'s SUB-SATELLITE POINT (the spot on the ground it is directly above) — the altitude is reported as a NUMBER and never faked as a height, because geostationary is 5.6 Earth radii up and there is no honest way to draw that to scale on a map. "group" chooses WHICH catalog is propagated; when no group is passed the layer keeps its default, which is the FULL active catalogue (every active object drawn at once — the layer\'s baseline when the reader wants the sky, and thousands of dots around the one object when they asked about a single satellite). Choose the group that fits the question. Passing "name" singles one object out: it draws that satellite\'s FOOTPRINT (the region from which it is above the horizon) and its GROUND TRACK for one orbit either side of now, opens a detail card, and the RESULT states the sub-satellite point (latitude, longitude it is above right now), altitude, speed, orbital period, sunlight/shadow, the elevation angle and the NEXT PASSES (up to three within 48 h, each with rise time, maximum elevation and duration — or that it does not rise within the horizon) as seen from "place" when one is given, else from the reader\'s pinned point, else the map centre. These are computed here from the live element set: ANSWER "where is X now / when does it pass over Y" FROM THIS RESULT — do not research it, and do not call again with another "mode" hoping for a pass table: there is no track/pass mode, ONE call with name (+place) returns everything this layer knows. Use for "人工衛星を表示して", "show live satellites", "ISSは今どこ？" (name:"ISS"), "when does the ISS next pass over Tokyo" (name:"ISS", place:"Tokyo"), "where is Hubble" (name:"HST"), "GPS衛星を見せて" (group:"gps-ops"), "静止衛星" (group:"geo"), "今この空を通る衛星" , and on:false for "衛星を消して".\n' },
     ],
@@ -342,6 +355,7 @@ export default [
      through its own Layers-panel row so the panel and the map never disagree about whether it is on. */
   {
     row: ['layers.electionPlay',        'electionPlay',   'electionTimelapse,playElections',                             'data',    'layer',   'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         ''],
+    ui: { at: ['#data-legend-elect .elec-play'] },
     doc: [
       { in: 'layers', at: 86, text: '{"type":"electionPlay","polity"?:str (a country/territory id the National elections layer carries: au ca de eu fr hk jp kr ru tw uk us),"election"?:str (an election id to start from),"on"?:bool} = PLAY THE ELECTIONS OF ONE CHAMBER IN ORDER on the National elections (国政選挙) layer — a time-lapse: each election is drawn on its OWN boundary map, and when it was fought on the same map as the previous election of that chamber the districts that CHANGED HANDS are outlined and counted. Across a redistricting nothing is compared and the legend says so. "on":false stops it. Use for 「選挙を順に再生して」「衆院選の推移を再生して」「議席の入れ替わりを見せて」, "play the elections over time", "animate the UK general elections". The layer is switched on if it is off. Report meta.swing (changedHands, since, comparable) rather than describing colours.\n' },
     ],
@@ -359,6 +373,7 @@ export default [
   },
   {
     row: ['layers.electionSwing',       'electionSwing',  'seatsChangedHands',                                           'data',    'none',    'map.layerOption',                        'explanation',         'session', 'none',   '',         ''],
+    ui: { at: ['#data-legend-elect .elec-swing'] },
     doc: [
       { in: 'layers', at: 87, text: '{"type":"electionSwing","election"?:str,"polity"?:str} = HOW MANY DISTRICTS CHANGED HANDS (勝者が変わった選挙区) in one election of the National elections layer since the previous election of the same chamber — read from the layer, which outlines them on the map. comparable:false means the two were fought on DIFFERENT boundary maps, and then no number exists: say that the districts were redrawn instead of giving one. Use for 「前回から何議席入れ替わった？」「2019年から勝者が変わった選挙区」, "how many seats flipped since the last election".\n' },
     ],
@@ -377,6 +392,7 @@ export default [
   },
   {
     row: ['layers.electionFreshness',   'electionFreshness', 'electionDataAge',                                          'data',    'none',    '',                                        'explanation',         'read',    'none',   '',         ''],
+    ui: { at: ['#data-legend-elect .elec-note'] },
     doc: [
       { in: 'layers', at: 88, text: '{"type":"electionFreshness","polity"?:str} = WHEN the National elections layer\u2019s data was taken and FROM WHOM (取得日・上流), and whether the record is KNOWN TO BE BEHIND the world (更新不能): per chamber, the newest election recorded, the day the law required the next one by, and — when a newer election exists but cannot be imported — why, and the day that was last checked. Use for 「この選挙データはいつのもの？」「最新の選挙は入ってる？」「カナダの2025年の選挙は？」, "is the 2026 Russian election in here", "how up to date is this election data". Answer from meta.freshness; never infer that an election did not happen because the layer lacks it.\n' },
     ],

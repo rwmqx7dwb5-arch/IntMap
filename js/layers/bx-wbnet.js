@@ -5,5 +5,7 @@ export default {
   order: 50,
   key: 'wbnet',
   rest: true,
+  share: true,
   measures: ['worldbank:IT.NET.USER.ZS'],
+  formerly: ['beta-dl-internet'],
 };

@@ -710,16 +710,16 @@
     .lyr-sw{ width:12px; height:12px; border-radius:3px; flex-shrink:0; box-shadow:0 0 0 1px rgba(0,0,0,0.15) inset; }
     .layer-group-title{ font-size:15.5px; font-weight:700; text-transform:none; letter-spacing:-0.01em; color:var(--text-main); margin:14px 2px 6px; }   /* (#R122) no ALL-CAPS in normal mode; (#R128) same real-heading size as .lyr-head (was 11px muted, dwarfed by its 13px rows) */
     /* Collapsible layer groups (accordion) — keeps a long layer list tidy */
-    .layer-group-title, .lyr-head, .premium-group-title{ cursor:pointer; user-select:none; display:flex; align-items:center; }
-    .layer-group-title::after, .lyr-head::after, .premium-group-title::after{ content:'▾'; margin-left:auto; font-size:9px; opacity:0.6; }
-    .layer-group-title.lyr-collapsed::after, .lyr-head.lyr-collapsed::after, .premium-group-title.lyr-collapsed::after{ content:'▸'; }
+    .layer-group-title, .lyr-head{ cursor:pointer; user-select:none; display:flex; align-items:center; }
+    .layer-group-title::after, .lyr-head::after{ content:'▾'; margin-left:auto; font-size:9px; opacity:0.6; }
+    .layer-group-title.lyr-collapsed::after, .lyr-head.lyr-collapsed::after{ content:'▸'; }
     /* The "Data layers" section label is not a collapsible group — no arrow, not clickable (#30). */
     .lyr-head.lyr-section-label{ cursor:default; }
     .lyr-head.lyr-section-label::after{ content:none !important; }
     /* (#R29) Mobile: only "Others (beta)" is a pulldown. Hide the (non-functional) carets on every other
        group header so they read as plain section labels, and keep the caret on Others as its affordance. */
     @media(max-width:768px){
-      .layer-group-title::after, .lyr-head::after, .premium-group-title::after{ content:none; }
+      .layer-group-title::after, .lyr-head::after{ content:none; }
       .lyr-head[data-i18n="lyrGrpOthers"]::after{ content:'▾'; margin-left:auto; font-size:9px; opacity:0.6; }
       .lyr-head[data-i18n="lyrGrpOthers"].lyr-collapsed::after{ content:'▸'; }
     }
@@ -2536,7 +2536,6 @@
       body.m-lyr-tiles .m-sheet #layer-dropdown .lyr-row,
       body.m-lyr-tiles .m-sheet #layer-dropdown .lyr-head,
       body.m-lyr-tiles .m-sheet #layer-dropdown .layer-group-title,
-      body.m-lyr-tiles .m-sheet #layer-dropdown .premium-group-title,
       body.m-lyr-tiles .m-sheet #layer-dropdown > label,
       body.m-lyr-tiles .m-sheet #layer-dropdown > hr,
       body.m-lyr-tiles .m-sheet #cmp-mount,
@@ -2708,7 +2707,7 @@
          horizontal PADDING so the text sits exactly under the row text (rows use padding:12px), and the underline now
          spans the same full width as every row hairline. Size bumped 18.5→20px = a clear +4.5px step over the 15.5px
          rows so it unmistakably reads as a section header. */
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:26px 0 0 !important; padding:2px 12px 9px !important; font-size:20px !important; font-weight:700 !important; color:var(--text-main) !important; text-transform:none; letter-spacing:-0.01em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.18) !important; }
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head{ margin:26px 0 0 !important; padding:2px 12px 9px !important; font-size:20px !important; font-weight:700 !important; color:var(--text-main) !important; text-transform:none; letter-spacing:-0.01em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.18) !important; }
       .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:700 !important; font-size:20px !important; letter-spacing:-0.01em !important; color:var(--text-main) !important; }
       #mo-mount-layers #layer-tools button, #mo-mount-layers #layer-tools .btn-settings{ font-size:14.5px !important; padding:12px !important; border-radius:12px !important; min-height:44px !important; box-sizing:border-box !important; }
       /* (#R115) "ACTIVE LAYERS" header too — on mobile it lives OUTSIDE .layer-dropdown (moved to the sheet
@@ -2719,10 +2718,10 @@
       .m-sheet .layer-fav-title{ text-transform:none !important; letter-spacing:0.01em !important; }
       /* Mobile: the Layers list shows every group expanded, so the ▷/▽ collapse carets aren't needed
          (desktop keeps them) (#12). */
-      .m-sheet .layer-dropdown .layer-group-title::after, .m-sheet .layer-dropdown .lyr-head::after, .m-sheet .layer-dropdown .premium-group-title::after{ content:none !important; }
+      .m-sheet .layer-dropdown .layer-group-title::after, .m-sheet .layer-dropdown .lyr-head::after{ content:none !important; }
       /* (#R28) The "Others (beta)" group is NO LONGER a pulldown on mobile ("Others(beta)だけプルダウン…
          元に戻せ"). It now shows fully expanded like every other group — no caret, no collapse. */
-      .m-sheet .layer-dropdown hr, .m-sheet .layer-dropdown .premium-divider{ margin:4px 0 !important; }
+      .m-sheet .layer-dropdown hr{ margin:4px 0 !important; }
       .m-sheet .sat-controller{ position:static !important; inset:auto !important; width:auto !important; margin:12px 0 max(10px,var(--safe-bottom)) !important; box-shadow:none !important; border:1px solid rgba(128,128,128,0.14) !important; max-height:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 
       /* ---------- Floating map panels dock ABOVE the Summarize-button lane ----------
@@ -4085,7 +4084,7 @@
    `data-nodock` on the panel as it is created). Naming its scrollers here made the wrong state look
    catered for; the two selectors are gone with the state that produced them. */
 #docked-feed .im-docked .iol-body, #docked-feed .im-docked .kl-scroll, #docked-feed .im-docked .lsr-body,
-#docked-feed .im-docked .wgt-board, #docked-feed .im-docked .ppm-card,
+#docked-feed .im-docked .wgt-board,
 #docked-feed .im-docked [class$="-scroll"], #docked-feed .im-docked [class$="-body"], #docked-feed .im-docked [class$="-list"]{
   max-height:none !important; overflow:visible !important; flex:0 0 auto !important; }
 #docked-feed .im-docked{ overflow-y:visible !important; }

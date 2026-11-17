@@ -76,14 +76,14 @@ export function makeLayerDropdown(HOST, CTX) {
   });
   /* ---- Collapsible layer groups (accordion): tap a section header to fold its layers ---- */
   function _lyrGroupItems(header){ const out=[]; let el=header.nextElementSibling;
-    while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ out.push(el); el=el.nextElementSibling; } return out; }
+    while(el && !el.matches('.layer-group-title,.lyr-head') && el.tagName!=='HR'){ out.push(el); el=el.nextElementSibling; } return out; }
   function _collapseGroup(header){ if(header.classList.contains('lyr-collapsed')) return; header.classList.add('lyr-collapsed');
     _lyrGroupItems(header).forEach(el=>{ el.style.display='none'; }); }
   /* (#R18) Mobile shows EVERY group expanded. If groups were collapsed on desktop and the layout then
      crossed to mobile (rotation / resize / split-screen), the collapse's display:none rows survived the
      move into the sheet → rows missing / headers stacked ("Toolsの欄がぐちゃっと"). Reset on mobile entry. */
   window._expandAllLayerGroups=function(){ try{
-    layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>h.classList.remove('lyr-collapsed'));
+    layerDropdown.querySelectorAll('.layer-group-title,.lyr-head').forEach(h=>h.classList.remove('lyr-collapsed'));
     layerDropdown.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option, :scope > hr, :scope > .lyr-others-note, :scope > .lyr-head, :scope > .layer-group-title').forEach(el=>{ if(el.style && el.style.display==='none') el.style.display=''; });
     /* (#R29) On mobile, re-collapse ONLY "Others (beta)" so it stays a pulldown ("Others(beta)だけプルダウン")
        — unless the user has explicitly opened it this session. Every other group stays expanded. */

@@ -73,7 +73,7 @@ test('R167 #1 all eight files loaded, all 15 factories ran, and every moved glob
 
   const state = await page.evaluate(() => ({
     globals: ['RunwaySearch', 'IntMapLocate', 'IntMapAnnotations', 'IntMapTerrain', 'IntMapCache',
-      '_imProgCtl', '_imWelcome', '_imStartDemo', 'IntMapTables', 'SEA_LABELS', 'NEWS_COUNTRY_FEEDS']
+      '_imProgCtl', '_imStartDemo', 'IntMapTables', 'SEA_LABELS', 'NEWS_COUNTRY_FEEDS']
       .filter((n) => !window[n]),
     // API SURFACES — the discriminator between "the factory ran" and "an early-return stub"
     runway: Object.keys(window.RunwaySearch || {}).sort(),

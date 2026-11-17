@@ -62,7 +62,7 @@ export const EVENTS = Object.freeze({
     from: ['js/app-body.js'],
     pending: {
       'js/ai-core.js': 'pinned', 'js/app-body.js': 'pinned', 'js/atlas-controls.js': 'pinned', 'js/compare.js': 'pinned',
-      'js/dash-extended.js': 'pinned', 'js/i18n-late.js': 'pinned', 'js/keyboard-shortcuts.js': 'pinned',
+      'js/i18n-late.js': 'pinned', 'js/keyboard-shortcuts.js': 'pinned',
       'js/layer-favs.js': 'pinned', 'js/layer-time-kernel.js': 'injected', 'js/map-ui.js': 'parallel',
       'js/news-events.js': 'pinned', 'js/news-sources.js': 'pinned', 'js/radiation-layer.js': 'scope', 'js/routing-ui.js': 'pinned',
       'js/satellite.js': 'pinned', 'js/seismic.js': 'pinned', 'js/sims.js': 'pinned', 'js/time-admin1.js': 'script', 'js/workspace.js': 'pinned',
@@ -96,6 +96,11 @@ export const EVENTS = Object.freeze({
     detail: null,
     from: ['js/layer-favs.js', 'js/map-ui.js'],
     pending: { 'js/layer-favs.js': 'pinned', 'js/map-ui.js': 'parallel' },
+  },
+  'intmap-country-geo': {
+    means: 'the fine (10 m) country outlines replaced the coarse stand-in in countryGeo; a reader that built its own copy of the outlines rebuilds it',
+    detail: null,
+    from: ['js/countries-ui.js'],
   },
   'intmap-gazetteer-world': {
     means: 'the world gazetteer finished loading; indexes built from the partial one are rebuilt',

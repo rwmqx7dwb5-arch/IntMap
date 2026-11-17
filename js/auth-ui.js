@@ -538,7 +538,6 @@ export function authUi(HOST){
         HOST.user=null; HOST.bookmarks=[];
         try{ HOST.updateAccountButton(); }catch(_){}
         try{ if(typeof HOST.renderUI==='function') HOST.renderUI(); }catch(_){}
-        try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
         try{ HOST.DB.auth.signOut(); }catch(_){}   /* onAuthStateChange will reconcile favorites/community */
         try{ HOST.imToast(IntMapLang.t(HOST.lang,'Logged out','ログアウトしました','Abgemeldet','Вы вышли из аккаунта','Sesión cerrada')); }catch(_){}
       };
@@ -579,7 +578,6 @@ export function authUi(HOST){
         _acctClose(); HOST.user=null; HOST.bookmarks=[];
         try{ HOST.updateAccountButton(); }catch(_){}
         try{ if(typeof HOST.renderUI==='function') HOST.renderUI(); }catch(_){}
-        try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
         try{ await HOST.DB.auth.signOut({scope:'global'}); }catch(_){ try{ await HOST.DB.auth.signOut(); }catch(__){} }
         try{ HOST.imToast(_authL('Logged out on all devices','すべての端末からログアウトしました','Auf allen Geräten abgemeldet','Выход выполнен на всех устройствах','Sesión cerrada en todos los dispositivos')); }catch(_){}
       };
@@ -740,7 +738,6 @@ export function authUi(HOST){
        has always been possible and has never bought an AI call. */
     try{ _markDevIfOwner(HOST.user.email||''); }catch(_){}
     try{ window.aiRenderSettings&&window.aiRenderSettings(); }catch(_){}
-    try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
     try{ window._syncPrefsDown&&window._syncPrefsDown(); }catch(_){}   /* (#R20) pull the account's saved settings/presets/widgets */
   }
 
@@ -826,7 +823,7 @@ export function authUi(HOST){
         try{ if(HOST.mode==='community') HOST.loadCommunity(); }catch(_){}
         try{ const am=document.getElementById('auth-modal'); if(HOST.user && am && am.style.display!=='none') am.style.display='none'; }catch(_){}   /* close the login modal once signed in */
         try{ HOST.renderUI(); }catch(_){}            /* reflect the new auth state in the active tab immediately */
-        /* Pro entitlement may have changed → re-check satellite provider access */
+        /* re-check satellite provider access (a key-backed provider without its key falls back) */
         try{ if(HOST.mapType==='sat'){ const cur=HOST.satProviderById(HOST.satState.providerId); if(cur&&cur.tier==='pro'&&!HOST.satHasKey(cur)) HOST.satRevertToFallback(); else HOST.satRenderController(); } }catch(_){}
         try{ if(HOST.user) HOST.aiFetchUsage(); }catch(_){}   /* (#R27) refresh today's AI-quota for the signed-in user */
         /* (watch-places) the watched places are checked while IntMap is open, for the signed-in reader only:

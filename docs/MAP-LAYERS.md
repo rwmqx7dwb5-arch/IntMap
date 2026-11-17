@@ -733,28 +733,33 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 `vm` でスクリプトとしても評価される）は `window.IntMapLayers.declaration(id)` で同じものを訊く。
 ⚠ Atlas の `layerCatalog()`（`js/atlas-console.js`）はまだ DOM を歩いている——作り替えは Atlas 側の回。
 
-**同じ系列を塗る行——`measures` と国別指標。** 世界銀行の指標を塗る行は 2 つのモジュールの表にある
-（`js/wb-layers.js` の `WB` と `js/layer-packs.js` の `WB`）が、**どちらも指標のキー（`k`）を書くだけで、系列コード・名前・
-単位は `js/wb-indicators.js` の目録 1 つが持つ**（取得も同じファイルの `readWorldBank` 1 本）。どの行がどの系列を塗るかを
+**同じ系列を塗る行——`measures` と国別指標。** 世界銀行の指標を塗る行は **`js/wb-layers.js` の `WB` 表 1 つ**にある。行は
+**指標のキー（`k`）を書くだけで、系列コード・名前・単位・WDI の source は `js/wb-indicators.js` の目録 1 つが持つ**（取得も同じ
+ファイルの `readWorldBank` 1 本。source を名乗らない読みは目録の source を使う——汚職指標 `GOV_WGI_CC.SC` は source 3）。どの行がどの系列を塗るかを
 宣言の `measures` が述べ、**その主張を拒める読み手**は `scripts/lib/indicator-series.mjs` の `discoverSeries`——世界銀行の
 API ホストを含むか目録を import するファイルの行表（`{id:'<key>', k:…}` / `{id:'<key>', code:…}`・`modes` の各 `k` / `code`・
 `<key>:{k:…}` / `<key>:{ind:…}`。`k` は目録の系列に読み替える）と、国の表を塗る `applyChoro('<key>',s=>s.<field>`
 から、**コードが実際に塗る系列**を発見する。行の特定は綴りではなく、同じファイルが組み立てる id（`'bx-'+…`・
-`'beta-dl-'+…`）とリテラルの id の中で宣言が 1 つに決まるときだけ（`precip` は世界銀行の行と IMERG の `dl-precip` の
-2 つの別レイヤーで、短い名前は手がかりにならない）。`scripts/layer-descriptors.mjs --check` は**両方向**を見る:
+リテラルの id）の中で宣言が 1 つに決まるときだけ（`wbprecip` は世界銀行の行、`dl-precip` は IMERG のラスタで、短い名前は
+手がかりにならない）。`scripts/layer-descriptors.mjs --check` は**両方向**を見る:
 コードが塗らない系列の主張と、**コードが塗るのに宣言が述べていない系列**（＝新しい重複は名乗らずには入れない）。
-`--report` が同じ系列を塗る行の組を印字する。いまの組は 3 つ——平均寿命 SP.DYN.LE00.IN（`beta-dl-lifeexp`・`bx-wblife`）、
-失業率 SL.UEM.TOTL.ZS（`beta-dl-unemp`・`bx-wbunemp`）、インターネット利用率 IT.NET.USER.ZS（`beta-dl-internet`・`bx-wbnet`）。
-⚠ 年降水量 `beta-dl-precip`（AG.LND.PRCP.MM）と農地率 `bx-wbagri`（AG.LND.AGRI.ZS）は別の系列。
-⚠ **1 つの系列は時間について 1 つのことを述べる**——組の両方が時計の年を塗り（`js/layer-packs.js` の `wbClockYear` は
-`js/wb-layers.js` の `clockYear` と同じ規則）、読んだ年を時間カーネルへ報告し、`js/layer-time-decl.js` で同じ `series`
-宣言を持つ（`tests/map-layer-system-checks.test.mjs` ②）。どちらの行も消していない（共有リンクの `l=` が名指す）。
-Atlas の語（「平均寿命」）は組の**両方の行**に届く: 点けるときはどちらかが点いていれば済み、消すときは両方を消す
+`--report` が同じ系列を塗る行の組を印字する。**いまの組は 0**——平均寿命・失業率・インターネット利用率は、かつて
+`js/layer-packs.js` の第 2 の世界銀行の表（`beta-dl-*`）と `js/wb-layers.js` の両方が塗っていた。第 2 の表は撤去し、
+汚職指標と年降水量（国別平均）もこの表の行（`bx-wbcpi`・`bx-wbprecip`）になった。旧 id は各行の `formerly` が述べる（下）。
+⚠ 年降水量（国別平均）`bx-wbprecip`（AG.LND.PRCP.MM）と農地率 `bx-wbagri`（AG.LND.AGRI.ZS）は別の系列。
+⚠ **1 つの系列は時間について 1 つのことを述べる**——組ができたら両方が時計の年を塗り、`js/layer-time-decl.js` で同じ
+`series` 宣言を持つ（`tests/map-layer-system-checks.test.mjs` ②）。Atlas の語（「平均寿命」）は組の**両方の行**に届く
 （`js/atlas-console.js` の `_sameSeriesRows`。組は宣言から導き、手で並べない）。
+
+**撤去・統合・改名した行の id——`formerly`。** 行を統合・改名・分割したら、**残った行の宣言**が旧 id を `formerly` に書く
+（`js/layers/<id>.js`。旧 id は今の id であってはならない——`scripts/lib/layer-descriptor.mjs` の `setProblems`）。共有リンク
+（`js/map-ui.js`）・保存したセッション（`js/session-tabs.js`）・お気に入り（`js/layer-favs.js`）は、どれも
+`js/layer-manifest.js` の `translateRetired` / `currentIds` 1 つに訊く。分割は旧 id を書いた行が複数あるだけ
+（`dl-wars` → `dl-ww1`・`dl-ww2`）。
 
 **国別指標（`bx-wbind`）——国の統計を 1 つのレイヤーで。** 人口の棚の先頭の 1 行が、世界銀行の全系列（2 通りの表し方を
 持つ行は表し方ごとに 1 項目）と国の表の統計（1 人当たり GDP・人口密度・HDI・民主主義指数・合計特殊出生率・国防費）、
-それに `js/wb-layers.js` が塗らない世界銀行の 2 行（汚職指標・長期の年降水量）を、**検索と分野で**選ばせる
+を、**検索と分野で**選ばせる
 （`js/indicator-browser.js`。凡例の中の選択欄）。地図に載る塗り分けは常に 1 つ。
 - **一覧は写さない。** 系列は `js/wb-layers.js` の `indicators()`（行表そのもの）、同じ系列の別の行と国の表の行は宣言の
   `measures`、**分野はその指標の行が立つ棚**（`js/layers/<id>.js` の `shelf`・名前は棚の見出し）、名前は行自身のラベル。
@@ -866,7 +871,7 @@ Atlas の語（「平均寿命」）は組の**両方の行**に届く: 点け�
     「The data did not arrive in time — try again」（何も保存しないので次の ON で読み直す）。
   - **箱を持たない読み**も同じ判定を使う: `js/wb-layers.js` の `wbSeries`（沈黙は投げ直して再試行、尽きたら
     reject して cache しない——合算の指標の半分だけを系列として保存していた）、`js/precip-annual.js` の
-    `manifests()`（行が ON のあいだ再試行・呼び手で共有）、`js/layer-packs.js` の単年の World Bank 読みと
+    `manifests()`（行が ON のあいだ再試行・呼び手で共有）と
     `js/countries-ui.js`（`window.IntMapFetchWithin.isUnobserved` で分類し、遅れたと述べる）。
   ⚠ 他の枝が同じ形を持たないことは、下の `tests/stalled-fetch-and-surface-gauge-checks.test.mjs` ④ が
   `toggleLayer` の全枝について何も返さない相手と模擬時計で確かめている（枝の一覧は関数から読む）。
@@ -2518,7 +2523,7 @@ Open-Meteo の spatial アーカイブ（**ECMWF IFS HRES・O1280 縮約ガウ�
   ECMWF IFS の予報**だけ**を答える。
   ⚠ 以前は**2つの行**があった（ここと `js/data-layers.js` の GIBS ラスタ）。ひとつの量に 2 つの
   スイッチ・2 つの凡例・2 つの日付操作・**2 つの配色**があり、`dl-temp` は削除された（保存済み
-  セッションは `js/session-tabs.js` の `RETIRED` 表で `dl-ec-temp` に翻訳される）。
+  セッションと共有リンクは `dl-ec-temp` の宣言の `formerly` で翻訳される）。
   ⚠ **MERRA-2 再解析（第2のデータ源）は撤去した。** 凡例の `Source` プルダウン・月の時計・
   `js/wx-reanalysis.js`（`imwxre://`）は、それだけを養っていたので一緒に消えている。
 - ⚠⚠⚠ **時刻を変えても地図は空にならない。** 新しい時刻は**空いているスロット**に不透明度 0 で組まれ、

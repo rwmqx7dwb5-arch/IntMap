@@ -426,25 +426,17 @@ test('R409 ①: the Layers panel offers ww1 and ww2, and the retired single row 
    link carrying `l=dl-wars` would not merely fail to open the war layer — it would be read as «the
    reader did not want it», an old link looking like a working link showing an empty map. */
 test('R409 ②: a share link that still names dl-wars opens dl-ww1 and dl-ww2', () => {
+  /* (feature-consolidation) the migration is the rows' own `formerly`, read by js/layer-manifest.js translateRetired —
+     EVALUATED here on the wanted list a pasted link produces */
+  assert.deepEqual(LM.translateRetired(['dl-wars', 'dl-eq']).slice().sort(), ['dl-eq', 'dl-ww1', 'dl-ww2'], 'the migration does not name both replacements');
+  assert.deepEqual(LM.translateRetired(['dl-ww1', 'dl-wars']).slice().sort(), ['dl-ww1', 'dl-ww2'], 'a link naming both the old and a new id ticks a row twice');
+  /* and the link's restore asks it BEFORE it builds the wanted set the close-everything-else pass reads.
+     ⚠ SPELLING, ON PURPOSE: their ORDER inside one DOM-bound restore function is the claim, read from the source. */
   const src = codeOnly(raw('js/map-ui.js'));
-  const i = src.indexOf("wantSet.has('dl-wars')");
-  assert.ok(i > 0, 'js/map-ui.js no longer migrates the retired dl-wars id');
-  /* EVALUATED (was: three regexes over the 420 characters after the test). The migration block is
-     lifted by its braces and run on the wanted list/set a pasted link produces. */
-  const block = blockAt(src, "if(wantSet.has('dl-wars'))");
-  const migrate = new Function('want', 'wantSet', block + '\nreturn { want, wantSet };');
-  const a = migrate(['dl-wars', 'dl-eq'], new Set(['dl-wars', 'dl-eq']));
-  assert.ok(a.wantSet.has('dl-ww1') && a.wantSet.has('dl-ww2'), 'the migration does not name both replacements');
-  assert.ok(!a.wantSet.has('dl-wars') && !a.want.includes('dl-wars'),
-    'the retired id is left in the wanted set, so the close-everything-else pass will still see it');
-  assert.deepEqual(a.want.slice().sort(), ['dl-eq', 'dl-ww1', 'dl-ww2']);
-  const b = migrate(['dl-ww1', 'dl-wars'], new Set(['dl-ww1', 'dl-wars']));
-  assert.deepEqual(b.want.slice().sort(), ['dl-ww1', 'dl-ww2'], 'a link naming both the old and a new id ticks a row twice');
-  /* and it must run BEFORE the pass that switches unwanted layers off.
-     ⚠ SPELLING, ON PURPOSE: that pass and this block are two statements of one DOM-bound restore
-     function (it walks live checkboxes); their ORDER is the claim and it is read from the source. */
+  const i = src.indexOf('const want=translateRetired(list||[])');
+  assert.ok(i > 0, 'js/map-ui.js no longer translates retired ids in the share link');
   const off = src.indexOf('cb.checked && !wantSet.has(k)');
-  assert.ok(off > i, 'the migration runs after the pass that closes unwanted layers');
+  assert.ok(off > i, 'the translation runs after the pass that closes unwanted layers');
 });
 
 /* ── ③ the legend's own controls never write the master clock ────────────────────────────────── */
@@ -697,26 +689,15 @@ test('R409 ⑭: the clock handler only follows an instant that lands inside this
    session snapshot restored on the next visit. js/session-tabs.js keeps a RETIRED table precisely so
    a retirement is recorded in ONE place — and this round is its first SPLIT rather than a rename. */
 test('R409 ⑮: the retired dl-wars session id restores both war rows, and the rename entries still work', () => {
-  /* EVALUATED (was: regexes over the table literal and its loop). The table and the loop that applies
-     it are lifted by their braces and RUN on the wanted list a restored session carries. */
-  const src = codeOnly(raw('js/session-tabs.js'));
-  const t = src.indexOf('const RETIRED=');
-  assert.ok(t > 0, 'js/session-tabs.js no longer keeps the retirement table as a literal');
-  const table = blockAt(src, 'const RETIRED=');
-  const loop = blockAt(src, 'for(let i=want.length-1', t);
-  const retire = (want) => new Function('want', table + ';\n' + loop + '\nreturn want;')(want.slice());
-  const RETIRED = new Function(table + ';\nreturn RETIRED;')();
-  assert.deepEqual(retire(['dl-wars']).slice().sort(), ['dl-ww1', 'dl-ww2'], 'the retirement table does not turn dl-wars into both war rows');
-  /* the list form de-duplicates — a session holding dl-wars AND dl-ww1 must not tick one row twice */
-  assert.deepEqual(retire(['dl-ww1', 'dl-wars']).slice().sort(), ['dl-ww1', 'dl-ww2'],
+  /* (feature-consolidation) the session restore asks the same translation as the link (js/layer-manifest.js translateRetired) */
+  assert.match(codeOnly(raw('js/session-tabs.js')), /translateRetired\(want\)/, 'js/session-tabs.js no longer translates retired ids');
+  assert.deepEqual(LM.translateRetired(['dl-wars']).slice().sort(), ['dl-ww1', 'dl-ww2'], 'dl-wars does not turn into both war rows');
+  assert.deepEqual(LM.translateRetired(['dl-ww1', 'dl-wars']).slice().sort(), ['dl-ww1', 'dl-ww2'],
     'the list form does not de-duplicate — a session holding dl-wars AND dl-ww1 would tick one row twice');
-  /* and the five rename entries still behave exactly as they always did: one id to one id, and a
-     session already holding the new id keeps one copy */
-  for (const keep of ['dl-oceancur', 'dl-night', 'dl-temp', 'bx-wbco2t', 'dl-milSpendGDP']) {
-    const to = RETIRED[keep];
-    assert.equal(typeof to, 'string', 'the rename entry for ' + keep + ' was dropped when the table learned to hold a list');
-    assert.deepEqual(retire([keep]), [to], keep + ' no longer renames to ' + to);
-    assert.deepEqual(retire([keep, to]), [to], keep + ': a session already holding ' + to + ' now carries it twice');
+  /* every rename that table held is still one id to one id, and a session already holding the new id keeps one copy */
+  for (const [keep, to] of [['dl-oceancur', 'wp-dl-currents'], ['dl-night', 'dl-nightside'], ['dl-temp', 'dl-ec-temp'], ['bx-wbco2t', 'bx-wbco2'], ['dl-milSpendGDP', 'dl-milSpend']]) {
+    assert.deepEqual(LM.translateRetired([keep]), [to], keep + ' no longer renames to ' + to);
+    assert.deepEqual(LM.translateRetired([keep, to]), [to], keep + ': a session already holding ' + to + ' now carries it twice');
   }
 });
 

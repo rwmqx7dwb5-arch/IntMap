@@ -171,8 +171,6 @@ IntMapLang.define('de', { ui: {
       lyrTFR:"Geburtenrate",
       lyrSeaLevel:"Meeresspiegeländerung",
       lblNavInertia:"Trägheit",
-      proArchive:"10-Jahre-Zeitreise-Archiv",
-      proIntel:"RU·CN lokale Primärquellen-Intel",
       srcModalTitle:"Datenquellen & Namensnennung",
       srcModalSub:"IntMap aggregiert die folgenden Drittanbieter-Daten, -Bilder und -APIs. Alle Marken gehören ihren Eigentümern.",
       measureClickClose:"Klicken Sie auf den ersten Punkt zum Schließen",

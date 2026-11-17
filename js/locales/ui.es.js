@@ -152,8 +152,6 @@ IntMapLang.define('es', { ui: {
       lyrGDPpc:"PIB per cápita",
       lyrTFR:"Tasa de fecundidad total",
       lyrSeaLevel:"Cambio del nivel del mar",
-      proArchive:"Archivo de viaje en el tiempo (10 años)",
-      proIntel:"Fuentes primarias locales RU·CN",
       srcModalTitle:"Fuentes de datos y atribución",
       srcModalSub:"IntMap agrega los siguientes datos, imágenes y API de terceros. Todas las marcas pertenecen a sus propietarios.",
       measureClickClose:"Haz clic en el primer punto para cerrar",

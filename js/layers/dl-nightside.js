@@ -8,4 +8,5 @@ export default {
   label: 'lyrNightSide',
   share: true,
   atlas: ['layers.nightSide'],
+  formerly: ['dl-night'],
 };

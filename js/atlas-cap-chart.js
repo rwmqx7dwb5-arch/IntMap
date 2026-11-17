@@ -28,6 +28,7 @@ export default [
      (nothing on the map moves, so a map observer would call every chart `not_rendered`). */
   {
     row: ['chart.compose',              'chart',          'chartCompose,plot,graph',                                     'data',    'chart',   '',                       'chart,explanation',   'read',    'none',   '',         'atlasChart'],
+    ui: { none: '2026-11-16' },
     /* (#R543) one chart. `source` is REQUIRED and js/atlas-chart.js refuses the call without it —
        a chart is the most credible shape a claim can take, so it is the shape that has to name
        where its numbers came from. `points` carry x/y as numbers and an optional label; a timeline

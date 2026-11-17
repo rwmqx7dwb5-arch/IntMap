@@ -24,6 +24,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 export default [
   {
     row: ['map.clearHighlights',        'reset',          '',                                                            'map',     'paint',   'map.highlight,map.compose',          'map',                 'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     /* ── map, layers, view, panels, country data — the first run of the registry table ──────── */
     doc: [
       { in: 'country-statistics', at: 70, text: '{"type":"reset"} clears highlights & shading.\n' },
@@ -41,6 +42,7 @@ export default [
      and promises nothing about the map; this one draws and promises exactly that. */
   {
     row: ['map.drawDataset',            'gisDraw',        'drawDataset,showDataset',                                     'map',     'paint',   'map.object',             'map',                 'session','none',   '',         'gisCore'],
+    ui: { at: ['button.gis-draw'] },
     /* (#R752) ⚠ `band` AND `spec` ARE HERE BECAUSE js/gis-core.js DRAWS WITH THEM. A grid with
        three bands is three pictures, and until this round the Atlas door could name none of them:
        the schema declared `dataset` alone, so no planner could express 「2 番目のバンドで」 and
@@ -72,6 +74,7 @@ export default [
   },
   {
     row: ['map.isolateCountry',         'isolate',        '',                                                            'map',     'paint',   'map.isolate',            'map',                 'session', 'none',   'country',  ''],
+    ui: { at: ['[data-cpact="isolate"]'] },
     /* `on:false` (or country "off"/"exit"/"clear") leaves isolation — a complete call with no country */
     doc: [
       { in: 'country', at: 30, text: '{"type":"isolate","country":str,"on":bool} (show only it); ' },
@@ -85,6 +88,7 @@ export default [
   },
   {
     row: ['map.object',                 'object',         'mapObject',                                                   'map',     'object',  'map.object',             'object',              'session', 'explicit','',        ''],
+    ui: { at: ['#iol-panel [data-act="del"]', '#iol-panel [data-act="focus"]', '#iol-panel [data-act="rename"]'] },
     /* op defaults to `list`, which needs nothing; the kinds are js/map-tools.js's own */
     doc: [
       { in: 'more-features', at: 130, text: '{"type":"object",…} above.)\n' + 'RADIO / SIGNAL COVERAGE FROM A MAST: ' },
@@ -109,6 +113,7 @@ export default [
   },
   {
     row: ['map.pin',                    'pin',            '',                                                            'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
+    ui: { at: ['#ctx-menu', '#src-pin'] },
     doc: [
       { in: 'tools-panels', at: 30, text: '{"type":"pin","place":str,"country"?:str,"title"?:str,"description"?:str,"date"?:str,"source"?:str,"url"?:str,"confidence"?:"high"|"medium"|"low"} = a MARKER THAT CARRIES ITS OWN EXPLANATION: the popup shows the title, the description, the date/source line and a link. Emit ONE pin per concrete place with its own text — never a bare pin followed by a second research pass to describe it, and never a whole province as a pin when what happened happened in a town. ALWAYS pass "country" (and "countryCode" when you have it) with a settlement or district name: a bare 「オクチャブリスキー」 is ambiguous across dozens of places and will fail; ' },
     ],
@@ -123,6 +128,7 @@ export default [
   },
   {
     row: ['map.tool',                   'tool',           '',                                                            'map',     'panel',   'map.tool',               'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-tool-measure', '#btn-tool-draw', '#btn-tool-radius', '#btn-tool-volume'] },
     doc: [
       { in: 'tools-panels', at: 110, text: '{"type":"tool","name":"measure"|"radius"|"draw"|"volume"} (the drone planner is its own action with arguments — {"type":"drone",…}); ' },
     ],
@@ -144,6 +150,7 @@ export default [
   },
   {
     row: ['map.radius',                 'radius',         '',                                                            'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
+    ui: { at: ['#ctx-menu', '#btn-tool-radius'] },
     doc: [
       { in: 'tools-panels', at: 40, text: '{"type":"radius","place":str,"km":num,"color"?:str} = a STRAIGHT-LINE distance circle and nothing else. A circle is NOT an answer to a travel-TIME question ("現在地から徒歩1時間で行ける範囲", "how far can I get in an hour", "30分で車で行ける範囲", "15 minute walk from the station"): rivers, motorways and dead ends make the real reach nothing like a disc, and the user has explicitly rejected the substitution. For every such request emit "isochrone" (REACHABLE AREA, below) — never a radius circle standing in for it; ' },
     ],
@@ -156,6 +163,7 @@ export default [
   },
   {
     row: ['map.volume3d',               'volume3d',       'volume',                                                      'map',     'object',  'map.object,map.volume',             'object,map',          'session', 'none',   'place',    ''],
+    ui: { at: ['#btn-tool-volume'] },
     /* base and top are ALTITUDES; without both the case refuses, whatever the footprint */
     doc: [
       { in: 'tools-panels', at: 120, text: '{"type":"volume3d","place":str,"km"?:num (footprint size in km, default 5),"base":num,"top":num,"unit"?:"m"|"km"|"ft"|"mi" (the unit "base"/"top" are given in — default "m"),"shape"?:"square"|"circle","color"?:str (hex),"opacity"?:num 0.05-0.95} = draw a REAL-SCALE 3-D VOLUME standing in the air over a place: a square (default) or CIRCULAR footprint centered on it, extruded between the "base" and "top" ALTITUDES ABOVE SEA LEVEL, so a 1000-3000 m band really is 2 km thick against the terrain beside it. There is NO upper limit — a 35,786 km geostationary shell is a valid request (unit:"km"). Use for "東京上空1000mから3000mを立体で描画", "draw the airspace over Paris from 2000 m to 5000 m", "show a 3-D volume above X", "富士山の上に赤い円柱を高度3000-8000mで" (shape:"circle", color:"#ff3b30"), "10kmから14kmの航空路を描いて" (unit:"km", base:10, top:14); ' },
@@ -201,6 +209,7 @@ export default [
      the verifier promise a drawing that correctly is not there yet (§6's panel rule). */
   {
     row: ['map.measure',                'measure',        '',                                                            'map',     'panel',   'map.tool',               'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-tool-measure'] },
     /* ── tools, workspace, the terrain simulations ──────────────────────────────────────────── */
     doc: [
       { in: 'tools-panels', at: 50, text: '{"type":"measure","from":str,"to":str} (distance); ' },
@@ -214,6 +223,7 @@ export default [
   },
   {
     row: ['map.objectList',             'objects',        'objectList,manageObjects,listObjects,myObjects',              'map',     'panel',   'panel.objects',          'panel',               'session', 'none',   '',         ''],
+    ui: { at: ['#btn-tool-objects', '#iol-fab'] },
     doc: [
       { in: 'more-features', at: 120, text: '{"type":"objects"} = open the panel listing EVERY object on the map — pins, drawings, radius circles, polygons, boundary outlines, uploaded layers, routes and reachable areas — each with fly-to / rename / recolour / hide / delete. Use for 「オブジェクト一覧」「地図上のものを管理」, "manage my objects", "show everything I have drawn". (To operate on ONE object by its id use ' },
     ],
@@ -237,6 +247,7 @@ export default [
   },
   {
     row: ['map.outline',                'outline',        'extent,showExtent',                                           'map',     'paint',   'map.highlight,map.outline',          'object,map',          'session', 'none',   'place',    ''],
+    ui: { at: ['#map'] },
     doc: [
       { in: 'navigation-view', at: 110, text: '{"type":"outline","place":str,"color"?:str} draws the real boundary of that place or region as a polygon on the map (and {"type":"outline","place":"clear"} removes it). ' },
     ],
@@ -269,6 +280,7 @@ export default [
   },
   {
     row: ['map.highlight',              'highlight',      '',                                                            'map',     'paint',   'map.highlight',          'map',                 'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'country-statistics', at: 60, text: '{"type":"highlight","interpretation":str,"targets":[{"name":"<English country name>","iso3":"<ISO 3166-1 alpha-3>"},…],"color"?:str} = highlight a SET OF WHOLE COUNTRIES with their REAL national borders (THE MAP\'S YEAR APPLIES: while Chronos shows a past year each country is drawn as THAT year\'s polity from the historical border record, possessions included — «Taiwan (Japan)» joins Japan in 1900 — so for "X\'s territory in YEAR" set the year with timeTravel FIRST, then highlight; at the live date the modern polygon is drawn). THE MEANING IS YOURS TO RESOLVE — IntMap has NO concept dictionary and will NOT expand a phrase for you: YOU enumerate the member countries and give EACH its ISO3 code, and IntMap validates every code against real borders and draws them. This is how you highlight ANY cultural / linguistic / ethnic / religious / political / economic / historical / geographic country grouping — "ゲルマン諸国"/Germanic-speaking countries, "スラブ諸国"/Slavic countries, "英語圏"/the English-speaking world, "旧フランス植民地"/former French colonies, "主要産油国"/major oil producers, OPEC, the G7, ASEAN, landlocked countries, the Nordic countries, the former USSR, Western/Eastern/Southern/Northern Europe, "南米"/South America — NEVER pass the concept phrase itself for the code to resolve, ALWAYS the explicit ISO3 list. Put a SHORT plain-language description of the set (in the user\'s language) in "interpretation" — IntMap displays it so the user sees exactly which definition you used. For SEVERAL sets in ONE command, each in its own color: {"type":"highlight","groups":[{"label":str,"targets":[{"name","iso3"},…]},…]}. If a phrase has TWO+ genuinely different common readings that change the members a lot, emit an "ask" instead of guessing; otherwise take the most standard reading, execute, and let the stated interpretation show it. A GENUINE SINGLE FEATURE that is NOT a set of whole countries — an admin SUBDIVISION ("Stavropol Krai","奈良県","Bavaria" → its real sub-national boundary, NOT the whole country), a NAMED/INFORMAL/NATURAL region ("Blue Banana","肥沃な三日月帯","the Sahel","the Alps"), a RIVER ("信濃川","the Danube" → its real course as a line) or a RIVER BASIN ("アマゾン川の流域","the Nile basin" → main stem + tributaries + faint basin fill) — use {"type":"highlight","query":"<the place name exactly as the user said it, keep 流域/basin words>","color"?:str} and IntMap resolves its real geometry; use "query" ONLY for one concrete named feature, NEVER for a country set. "on":false clears; "color" WITHOUT targets recolors the CURRENT highlights. RANKED/FILTERED form (top/bottom N by a metric): {"type":"highlight","metric":KEY,"n":int,"order":"top"|"bottom","minPop"?:num,"maxPop"?:num,"color"?:str} — IntMap computes the members from the REAL data itself (never guess them) after excluding any below "minPop" / above "maxPop" (people; accept "5M"/"5000000"). e.g. "人口5M未満を除外したGDP per capita上位10ヵ国をハイライト" → {"type":"highlight","metric":"gdppc","n":10,"order":"top","minPop":5000000}; "highlight the 5 least populous countries" → {"type":"highlight","metric":"pop","n":5,"order":"bottom"}. metric KEYs are the same as rank/mapMetric below. "color" accepts ANY color: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a color. ' },
     ],
@@ -545,6 +557,7 @@ export default [
      because a shaded item goes through the highlight path. */
   {
     row: ['map.compose',                'compose',        'mapCompose,composeMap,explainOnMap',                          'map',     'mapCompose', 'map.compose,map.highlight', 'map,explanation', 'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     /* ⚠ THE ONE THIS ROUND IS NAMED AFTER. Four complete forms, and `{}` is none of them:
        a GPT-resolved country set (`targets`/`groups`/`iso3`/`codes`/`countries`), one concrete
        named feature (`query` — a subdivision, a river, a basin), a computed top/bottom N
@@ -571,6 +584,7 @@ export default [
      and no surface, and `state().painted` is how Atlas tells those two apart). Lazy: js/shakemap.js. */
   {
     row: ['map.shakemap',               'shakemap',       'shakeMap,groundShaking,intensityMap,shaking',                  'map',     'paint',   'map.shakemap',           'map,explanation',     'session', 'none',   '',         'shakeMap'],
+    ui: { at: ['[data-shk-open]'] },
     /* (#R546) ShakeMap. `eventId` is a USGS event id and is the exact form; everything else is how
        to FIND one in the USGS catalogue when the reader described the quake instead of naming it.
        `metric` is not an enum: the roster is discovered from the product, so a period USGS adds
@@ -631,6 +645,7 @@ export default [
      it cannot put back (a drawing the turn REPLACED, an object it deleted) the verdict names. */
   {
     row: ['map.undo',                   'undo',           'undoTurn,undoLast,revertTurn',                                'map',     'undo',    'camera,time,map.basemap,map.layer,map.highlight,map.choropleth,map.polygon,map.line,map.poi,map.object,map.isochrone,map.fly,map.ballistic,map.elevation,map.factions,map.compose,map.shakemap', 'map', 'session', 'none', '', ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'map.undo', text: 'UNDO — PUT THE MAP BACK TO HOW IT WAS BEFORE A TURN (元に戻す・取り消し・さっきの変更を戻して・undo that, go back, revert): {"type":"undo","turn"?:int} — 元に戻す／取り消し: 直前の依頼で地図に加えた変更を取り消し、その依頼の前の地図に戻す. With no `turn` it takes back the most recent turn that changed the map (a second undo in a later turn walks one further back; a turn that was itself an undo is skipped, so it never redoes). It restores, as they were when that turn began: the camera and the globe/flat/3-D and map/satellite view, the Chronos date, which layers were switched on and their opacity, the highlights, shading, polygons, lines and markers you drew, and it takes off the objects and drawn surfaces that turn added. Its result names every section it could NOT put back and every operation whose effect no snapshot holds (`unresolved` — e.g. a drawing that turn REPLACED, an object it deleted, a forecast-model switch); say so to the reader rather than claiming the map is as it was. Calling it twice in one turn does not rewind twice — the second answers already_there.' },
     ],
@@ -645,6 +660,7 @@ export default [
   },
   {
     row: ['map.poi',                    'poi',            'mapPois,facilities',                                          'map',     'paint',   'map.poi',                'map',                 'session', 'none',   'place?',   ''],
+    ui: { none: '2026-11-16' },
     /* the place is optional (no place = the current view) but the KIND is not: without it the
        case asks «what kind of facilities?» */
     doc: [
@@ -720,6 +736,7 @@ export default [
   },
   {
     row: ['map.elevationHighlight',     'elevationBelow', 'belowSeaLevel,elevationHighlight,elevationScan',              'map',     'paint',   'map.elevation',          'map',                 'session', 'none',   'place',    ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'elevation-highlight', at: 10, text: '{"type":"elevationBelow","place":str,"threshold"?:meters,"above"?:bool,"km"?:num} = samples the real Copernicus elevation model on a grid over the place/region and shades every cell below (default) or above the threshold, graduated by depth/height. Use for "カスピ海周辺の海抜0m以下地点をハイライトして" → {"type":"elevationBelow","place":"Caspian Sea","threshold":0}, "highlight land below sea level around the Dead Sea", "show areas above 3000 m in the Alps" → add "above":true,"threshold":3000. Omit place to scan the current view. ' },
     ],
@@ -753,6 +770,7 @@ export default [
     /* (landcover-class-highlight) 「land coverレイヤーも、ケッペンの気候区分レイヤーと同じように、選択したものだけハイライト表示されるようにして。」
        The legend's class rows are one door; this is the other — both end in js/layer-packs.js wcApplySel (window.IntMapEco.landCover). */
     row: ['map.landCover',              'landCover',      'landCoverClasses,landCoverHighlight',                         'map',     'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['.wc-cls[data-wc]'] },
     doc: [
       { in: 'layers', at: 22, text: '{"type":"landCover","classes"?:[name|index,...],"only"?:bool,"clear"?:bool,"year"?:"2020"|"2021"} = the ESA WorldCover land cover layer (土地被覆・land cover; 11 classes: tree cover 樹木, shrubland 低木地, grassland 草地, cropland 農地, built-up 市街地, bare / sparse vegetation 裸地, snow and ice 雪氷, permanent water 水域, herbaceous wetland 湿地, mangroves マングローブ, moss and lichen 苔・地衣類) shows ONLY the picked classes in their colours and dims the rest — like the Köppen climate classes. It turns the layer on itself. Use for "land coverで農地だけ表示して" → {"type":"landCover","classes":["cropland"]}, "show only forests and water on the land cover layer" → {"type":"landCover","classes":["tree cover","permanent water"]}, "土地被覆の分類の選択を解除" → {"type":"landCover","clear":true}; "only":false ADDS to the classes already picked; "year" switches the 2020/2021 edition. With no arguments it lists the classes. ' },
     ],
@@ -816,6 +834,7 @@ export default [
   },
   {
     row: ['map.myMap',                  'myMap',          'myMaps,customMap,ownMap,storyMap,mapNotes,annotateMap',       'map',     'myMap',   'map.myMap,mymap.doc',    'map,object',          'persist', 'explicit', '',     'myMap'],
+    ui: { at: ['.lst-toolrow[data-act="tool.myMap"]'] },
     /* (map-next) THE READER'S OWN MAP (js/my-map.js) — pins, lines and areas with names and notes, kept in this browser,
        carried by every share link (js/map-state.js `mymap`), measured with the app's own measure functions, registered
        in the GIS layer for analysis and exported as GeoJSON / GeoPackage. `action`:
@@ -837,6 +856,7 @@ export default [
   },
   {
     row: ['map.scoreMap',               'scoreMap',       'customLayer,evaluate',                                        'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     /* a composed score is its components; fewer than two is refused by the case */
     doc: [
       { in: 'map.scoreMap', text: 'CUSTOM EVALUATION LAYER (build a NEW map view from criteria): {"type":"scoreMap","name":str,"components":[{"metric":KEY,"weight"?:num,"invert"?:bool} | {"wb":"WB_INDICATOR_CODE","label":str,"weight"?:num,"invert"?:bool}, … 2-8],"color"?:str,"n"?:int} — composes a weighted 0-100 score from REAL indicators and shades every country by it, with an honest method/coverage note (use for "評価して/スコア化して/ランキングを作って from criteria X, Y, Z", e.g. 住みやすさ = hdi + gdppc + dem; "invert" = lower is better, e.g. military burden). metric uses the metric KEYs below + lifeExp, internet; "wb" takes a real World Bank indicator code you are confident exists (e.g. SP.DYN.LE00.IN) — a wrong code is skipped and reported, never faked. When the user then says "weight X more" / "drop Y" / "add Z", re-emit scoreMap with the ADJUSTED components (the current components are in the conversation history).\n' },
@@ -889,6 +909,7 @@ export default [
   },
   {
     row: ['map.volcanoFilter',          'volcanoFilter',  'volcanoMode,volcanoTime',                                     'map',     'paint',   'map.volcano',            'map',                 'session', 'none',   '',         'volcanoIntel'],
+    ui: { at: ['.volc-mode[data-vmode]', '[data-vfilter]', '[data-vtime]'] },
     doc: [
       { in: 'volcanoes', at: 20, text: '{"type":"volcanoFilter","mode"?:"recency"|"vei"|"status"|"people","spoken"?:bool,"elevated"?:bool,"big"?:bool,"recent"?:bool,"clear"?:bool,"time"?:bool,"year"?:num} = change WHICH volcanoes are drawn and what their colour answers. "mode" is the colour question: recency = when it last erupted, vei = the largest explosion it has produced, status = what an observatory says today, people = how many live within 30 km. The filters AND together and narrow the catalog: "spoken" = only volcanoes some observatory publishes a current level for, "elevated" = only those above normal, "big" = only those that have produced VEI 4 or more, "recent" = only those that have erupted since 1950, "clear" = drop every filter. "time":true puts the ERUPTION RECORD on the master clock — the map then shows only the volcanoes GVP records as erupting in the year the map is set to, and "year" moves that clock (the clock reaches back to AD 1, and GVP’s record runs back further still — those earlier eruptions stay readable in the volcano’s card). Use for 「今活動している火山だけ表示」「VEI4以上の火山」「1883年に噴火していた火山」, "show only erupting volcanoes", "colour volcanoes by explosivity", "which volcanoes were erupting in 1980". THE GREY DOTS ARE NOT CALM VOLCANOES — in "status" they are volcanoes no observatory publishes a readable level for, and the answer must never call them quiet.\n' },
     ],
@@ -898,6 +919,7 @@ export default [
   },
   {
     row: ['map.heritageFilter',         'heritageFilter', '',                                                            'map',     'paint',   'map.heritage',           'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['[data-whscat]', '[data-whsdanger]'] },
     doc: [
       { in: 'world-heritage', at: 20, text: '{"type":"heritageFilter","categories"?:[str],"danger"?:bool,"clear"?:bool} = change WHICH properties are drawn. "categories" NAMES THE ONES TO KEEP and the rest go off — the vocabulary is UNESCO’s own (Cultural, Natural, Mixed) and travels in the data file, so a name it does not hold is answered with the list of names it does. "danger":true narrows to the List of World Heritage in Danger; "clear" drops every narrowing. Use for 「自然遺産だけ表示」「危機遺産は？」, "show only natural sites", "which World Heritage sites are in danger". WHETHER A PROPERTY IS IN DANGER COMES FROM WIKIDATA, NOT FROM UNESCO’S OWN FEED — that feed’s danger column has not been maintained since 2014 and is empty for Palmyra, Sana’a, Odesa and Kyiv. Say the source when the answer turns on it. THREE INSCRIBED PROPERTIES PUBLISH NO COORDINATE AT ALL and cannot be drawn; the action says so rather than reporting that it could not find them. Never invent a location for one.\n' },
     ],
@@ -914,6 +936,7 @@ export default [
      planner answering a question about a real reading with a model — docs/RADIATION.md. */
   {
     row: ['map.radiation',              'radiationObserved','radiationLayer,doseRate,gammaDoseRate',                     'map',     'paint',   'map.radiation',          'map',                 'session', 'none',   '',         'radiationLayer'],
+    ui: { at: ['#beta-dl-radobs'] },
     /* (#R585) 実測放射線。Switching the layer takes nothing — `on` defaults to true, which is what
        「放射線量を見せて」 means. The reading-around-a-point call REQUIRES a real coordinate and
        takes no place name: a dose rate quoted for the wrong town is worse than no answer, so
@@ -935,6 +958,7 @@ export default [
      that is deferred — nothing is fetched until the layer is switched on. */
   {
     row: ['map.outbreaks',              'outbreaks',      'diseaseOutbreaks,outbreakLayer,epidemics,whoOutbreaks,diseaseMap', 'map', 'paint', 'map.outbreaks',          'map,explanation',     'session', 'none',   '',         ''],
+    ui: { at: ['#wp-dl-outbreaks'] },
     /* (#R650) EVERY ARGUMENT IS OPTIONAL, and that is the shape of the feature rather than a
        relaxation of rule (3): 「感染症のアウトブレイクを見せて」 is a complete request, and the
        layer answers it with WHO's most recent year. The arguments only NARROW it. */
