@@ -170,14 +170,24 @@ test('R568 ⑥: nothing is settled onto the ground because the run ended', () =>
   /* No rain, and the domain wide enough that nothing escapes: what is airborne must STAY airborne,
      and the deposit must be only what dry deposition actually removed. */
   const F = field({ spd10: 1, spd180: 1, halfHint: 15, pbl: 2000 });
-  const short = run(F, { hours: 12, emitHours: 1, particles: 2000 });
-  const long = run(F, { hours: 24, emitHours: 1, particles: 2000 });
+  /* (plume-deterministic) ONE SEED FOR BOTH WINDOWS. Nothing in the solve before hour 12 depends on
+     `hours` (emission follows emitHours, the step loop only runs longer), so with the same seed the
+     24 h run IS the 12 h run continued — same particles, same draws — and «longer deposits more» is a
+     statement about the model, not about two independent Monte-Carlo samples. The CI failure that
+     prompted this (PR #1164, Regression 2/3, attempt 1) printed no numbers; the messages below do. */
+  const short = run(F, { hours: 12, emitHours: 1, particles: 2000, seed: 568 });
+  const long = run(F, { hours: 24, emitHours: 1, particles: 2000, seed: 568 });
   assert.ok(short.airborneFrac > 0.5, `most of a 12 h run is still aloft (got ${(short.airborneFrac * 100).toFixed(0)}%)`);
   assert.ok(long.airborneFrac < short.airborneFrac, 'and the longer run has deposited more of it — by depositing, not by stopping');
   /* ⚠ THE OLD BEHAVIOUR, STATED AS THE THING THAT MUST NOT COME BACK: half of whatever was aloft
      went into the ground at the last step, so the 12 h and the 24 h map disagreed about the past. */
   const rShort = RAD.report(short, 'cs137'), rLong = RAD.report(long, 'cs137');
-  assert.ok(rLong.totBq > rShort.totBq, 'a longer window deposits monotonically more');
+  assert.ok(rLong.totBq > rShort.totBq,
+    `a longer window deposits monotonically more (12 h ${rShort.totBq} Bq, 24 h ${rLong.totBq} Bq; airborne ${short.airborneFrac} → ${long.airborneFrac}; escaped ${short.escapedFrac} → ${long.escapedFrac})`);
+  /* …and, because the 24 h run continues the 12 h one, cell by cell: no cell holds less after 24 h */
+  const longAt = new Map(Array.from(long.keys, (k, i) => [k, long.bq[i]]));
+  const shrunk = Array.from(short.keys).filter((k, i) => !(longAt.get(k) >= short.bq[i]));
+  assert.deepEqual(shrunk, [], 'no deposition cell of the 12 h map loses activity by running on to 24 h');
   const dumped = short.airborneFrac * 0.5 * short.emitted * short.q0;
   assert.ok(rShort.totBq < dumped, 'the deposit is far below what a 50 % end-of-run dump would have added');
   assert.equal(read('js/sims.js').includes('settle the remainder'), false, 'and the line itself is gone');
