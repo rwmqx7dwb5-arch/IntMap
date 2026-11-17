@@ -613,16 +613,39 @@ export function newsEvents(HOST) {
        だから詳細は「一覧の外皮の下に残った帯」に描かれ（＝報告の「デザインが浮いている」）、
        電話ではシートの位置しだいで**画面の下に丸ごと落ちた**（実測 390×780・peek: 戻るボタンが
        y=866）。⇒ 入口は `HOST.enterReaderPane()`、出口は `HOST.closeReaderPane()` の 1 本ずつ。 */
+  /* (news-detail-condense) 詳細で畳んだもの（ほぼ同じ引用・同じ系列の記事・仕組みの説明）の開閉の見た目。
+     この module は遅延読み込みなので、規則は eager の css/intmap.css ではなくここから入る（editionEntryStyle と同じ形）。
+     ⚠ 開閉の行は本文より一段控えめに——「まず速く分かり、要れば根拠へ」の「要れば」側。 */
+  function detailFoldStyle() {
+    if (document.getElementById('news-detail-fold-css')) return;
+    const el = document.createElement('style'); el.id = 'news-detail-fold-css'; el.textContent = [
+      '.ev-fold{ margin:2px 0 14px; }',
+      '.ev-fold > summary{ display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:4px 12px; border-radius:999px; background:rgba(128,128,128,0.10); font-size:12.5px; font-weight:600; color:var(--text-muted); cursor:pointer; list-style:none; -webkit-user-select:none; user-select:none; }',
+      '.ev-fold > summary::-webkit-details-marker{ display:none; }',
+      '.ev-fold > summary::after{ content:""; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg) translateY(-2px); transition:transform .18s ease; }',
+      '.ev-fold[open] > summary::after{ transform:rotate(-135deg) translateY(-1px); }',
+      '.ev-fold > summary:hover{ background:rgba(128,128,128,0.16); }',
+      '.ev-fold > summary:focus-visible{ outline:2px solid var(--primary-color); outline-offset:2px; }',
+      '.ev-fold[open] > summary{ margin-bottom:10px; }',
+      '.ev-cov-more{ margin:0 0 4px; }',
+      '.ev-cov-more .ev-cov{ padding:10px 0 10px 12px; border-left:2px solid rgba(128,128,128,0.18); border-bottom:none; }',
+      '.ev-why.ev-fold > summary{ text-transform:none; }',
+      '.ev-why .ev-ai-how{ margin:0 0 10px; }',
+      '.ev-why .ev-sub{ margin:16px 0 8px; }',
+      '.ev-upd .ev-upd-at{ margin:-6px 0 0; }',
+    ].join('\n');
+    document.head.appendChild(el);
+  }
   function openDetail(item) {
     const ev = item && item._event;
     if (!ev) return;
+    detailFoldStyle();
     selected = ev.publicId;
     const pane = HOST.enterReaderPane();
     if (!pane) return;
 
     const back = L('Back', '戻る', 'Zurück', 'Назад', 'Atrás');
     const rows = ev.members.slice().sort((a, b) => Date.parse(a.publishedAt || 0) - Date.parse(b.publishedAt || 0));
-    const firstFam = rows.length ? rows[0].family : null;
 
     const fmt = (iso) => { try { return new Date(iso).toLocaleString(IntMapLang.locale(HOST.lang), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return iso || ''; } };
 
@@ -689,7 +712,11 @@ export function newsEvents(HOST) {
         for (const l of ev.synthesis.lines) {
           html += '<p class="ev-line">' + S(l.text) + '<span class="ev-src">— ' + S(l.source) + '</span></p>';
         }
-        html += '<p class="ev-d-note ev-ai">' + S(L('The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.', '上の段落は AI が書いたものである。これらの媒体が公表した内容をまとめたもので、各文は保存前にここに示した原文と機械的に照合してある。照合できなかった文は捨てられ、表示されることはない。', 'Der Absatz oben wurde von einer KI geschrieben. Er fasst zusammen, was diese Quellen veröffentlicht haben: Jeder Satz wurde vor dem Speichern maschinell gegen den hier gezeigten Wortlaut geprüft; ungeprüfte Sätze werden verworfen und nie angezeigt.', 'Абзац выше написан ИИ. Он объединяет опубликованное этими источниками: каждое предложение перед сохранением машинно сверено с приведёнными здесь формулировками, а непроверенные предложения отбрасываются и никогда не показываются.', 'El párrafo anterior lo escribió una IA. Combina lo que publicaron estos medios: cada frase se verificó automáticamente con la redacción mostrada aquí antes de guardarse, y las que no se pudieron verificar se descartan y nunca se muestran.')) + '</p>';
+        /* (news-detail-condense) ⚠ 利用者 (2026-11-17):「3 文の要約のすぐ後に生成方法・機械照合・不採用文の扱いが
+           続き、末尾でまた組み立て方の説明——仕組みの説明が目立ちすぎる」。⇒ 前に出すのは **AI が書いたこと**と
+           **各文に出典があること**の 1 行だけ（#R502 の規則——隠さない——はこの 1 行が守る）。照合の詳しい方法は
+           末尾の畳まれた「このページの作り方」に、組み立て方の説明と 1 つにまとめた（消していない）。 */
+        html += '<p class="ev-d-note ev-ai">' + S(L('Written by AI from these outlets’ reports — each sentence names its source.', 'AI がこれらの媒体の報道からまとめた文。各文に出典を付けている。')) + '</p>';
         html += '<details class="ev-syn-ev"><summary>' +
           S(String(L('How this was written — the exact wording each sentence came from ({n})', 'この文が何から書かれたか — 各文の根拠になった原文（{n}件）', 'Woraus dies geschrieben wurde — der genaue Wortlaut je Satz ({n})', 'Из чего это написано — точные формулировки для каждого предложения ({n})', 'De dónde salió esto — la redacción exacta de cada frase ({n})')).replace('{n}', ev.synthesis.lines.length)) + '</summary>';
         for (const l of ev.synthesis.lines) {
@@ -700,14 +727,22 @@ export function newsEvents(HOST) {
       }
 
       if (brief.gist.length) {
-        if (ev.synthesis) {
+        /* (news-detail-condense) ⚠ 利用者 (2026-11-17):「要約・根拠の原文・媒体別の引用が同じことを繰り返す」。
+           ⇒ 各媒体の引用は、既に画面に出た文（統合文・先に出した引用）に**無い中身**を持つものだけを前に出し、
+           なぞるだけの引用は「ほぼ同じ内容」の開閉の下へ畳む。測るのは js/news-brief.js `condenseGist()`
+           （語の重なりと新しい数字——一覧ではなく尺度）。⚠ 畳むのであって消さない: 1 行ごとの出典もそのまま。 */
+        const cg = BRIEF.condenseGist(brief.gist, ev.synthesis ? ev.synthesis.lines.map((l) => l.text) : []);
+        const gLine = (g) => '<p class="ev-line">' + S(g.text) + '<span class="ev-src">— ' + S(g.source) + '</span></p>';
+        if (ev.synthesis && cg.shown.length) {
           html += '<h4 class="ev-sub">' + S(L('In each outlet’s own words', '各媒体の原文', 'In den Worten der jeweiligen Quelle', 'Словами каждого источника', 'En palabras de cada medio')) + '</h4>';
         }
-        for (const g of brief.gist) {
-          html += '<p class="ev-line">' + S(g.text) +
-            '<span class="ev-src">— ' + S(g.source) + '</span></p>';
+        for (const g of cg.shown) html += gLine(g);
+        if (cg.folded.length) {
+          html += '<details class="ev-fold"><summary>' +
+            S(String(L('{n} more quotes saying much the same', 'ほぼ同じ内容の引用 あと {n} 件')).replace('{n}', cg.folded.length)) + '</summary>';
+          for (const g of cg.folded) html += gLine(g);
+          html += '</details>';
         }
-        html += '<p class="ev-d-note">' + S(L('Sentences are quoted from what each outlet published. IntMap does not rewrite or paraphrase them.', '各媒体が実際に公表した文をそのまま引いている。IntMap は書き換えも言い換えもしない。', 'Die Sätze sind wörtlich aus dem übernommen, was jede Quelle veröffentlicht hat. IntMap schreibt sie nicht um.', 'Предложения приведены дословно из публикаций каждого источника. IntMap их не переписывает.', 'Las frases se citan tal como las publicó cada medio. IntMap no las reescribe ni parafrasea.')) + '</p>';
         if (brief.status === 'thin') {
           html += '<p class="ev-short">' + S(L('Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.', 'この出来事について本文を配っているのは1媒体だけなので、IntMap の中で読めるのはここまでである。', 'Nur eine Quelle lieferte Artikeltext, mehr kann IntMap hier nicht zeigen.', 'Текст статьи предоставил только один источник, поэтому это всё, что IntMap может показать.', 'Solo un medio proporcionó texto del artículo, así que esto es todo lo que IntMap puede mostrar.')) + '</p>';
         }
@@ -741,16 +776,19 @@ export function newsEvents(HOST) {
         const u = brief.latest;
         html += '<div class="ev-d-sec ev-upd"><h3>' +
           S(L('What the latest report added', '最新の記事で更新された点', 'Was der neueste Bericht ergänzt', 'Что добавило последнее сообщение', 'Qué añadió el último informe')) + '</h3>';
-        if (u.newFamily) {
-          html += '<p class="ev-line">' + S(String(L('{s} became the newest outlet to report this, {t}.', '{s} が新たにこの出来事を報じた（{t}）。', '{s} berichtete als neueste Quelle darüber, {t}.', '{s} стал новым источником, сообщившим об этом, {t}.', '{s} pasó a ser el medio más reciente en informarlo, {t}.'))
-            .replace('{s}', u.source).replace('{t}', ago(u.at))) + '</p>';
+        /* (news-detail-condense) ⚠ 利用者 (2026-11-17):「"CNBC が最後に報じた" は配信状況で、何が新しく分かったかが
+           伝わらない」。⇒ 先頭は**新しく分かったこと**（最新記事の文から前の記事が既に言ったことを引いた残り——
+           js/news-brief.js `latest().learned`）と初めて出た数量。媒体と時刻は後ろに小さく添える出典。
+           新しいことが何も無ければ `latest` は null で、この節は出ない。 */
+        for (const n of (u.learned || [])) {
+          html += '<p class="ev-line">' + S(n.text) + '<span class="ev-src">— ' + S(u.source) + '</span></p>';
         }
-        if (u.text) html += '<p class="ev-line">' + S(u.text) + '<span class="ev-src">— ' + S(u.source) + '</span></p>';
         for (const f of u.figures) {
           html += '<p class="ev-line ev-new-fig"><b>' + S(f.text) + '</b> ' +
             S(L('first appears in this report', 'この記事で初めて出た数量', 'erscheint hier erstmals', 'впервые появляется в этом сообщении', 'aparece por primera vez en este informe')) +
             '<span class="ev-src">— ' + S(u.source) + '</span></p>';
         }
+        html += '<p class="ev-d-note ev-upd-at">' + S(String(L('From {s}’s report, {t}, compared with the earlier ones.', '{s} の記事（{t}）を、それより前の記事と比べた。')).replace('{s}', u.source).replace('{t}', ago(u.at))) + '</p>';
         html += '</div>';
       }
 
@@ -792,15 +830,18 @@ export function newsEvents(HOST) {
     html += '<div class="ev-d-sec ev-cov-sec"><h3>' +
       S(L('Read it at the source', '発信元で読む', 'An der Quelle lesen', 'Читать в источнике', 'Leerlo en la fuente')) + '</h3>';
     html += '<p class="ev-d-note">' + S(L('Which outlet said what, in the order they published it.', 'どの媒体が何と書いたかを、公表された順に並べている。', 'Welche Quelle was sagte, in der Reihenfolge der Veröffentlichung.', 'Кто и что сказал, в порядке публикации.', 'Qué dijo cada medio, en el orden en que lo publicaron.')) + '</p>';
-    const famSeen = new Set();
-    for (const m of rows) {
-      const dup = famSeen.has(m.family);
-      famSeen.add(m.family);
+    /* (news-detail-condense) ⚠ 利用者 (2026-11-17):「似た見出しが繰り返し並ぶ。"同系列" の札は読む量を減らさない」。
+       ⇒ 資本系列ごとに代表 1 本（その系列の最初の記事）を出し、同じ系列の残りは「+N 本」の開閉の下へ、
+       別系列でも同じ配信原稿の見出しは「ほぼ同じ見出し」の開閉の下へ。並べ方は js/news-brief.js
+       `groupCoverage()`。⚠ 1 本も消さない——畳まれた記事にも媒体名・時刻・発信元へのリンクがそのまま付く
+       （同系列の 2 本目以降は `.dup` の印も保つ: 独立の声として数えないという事実はそこにある）。 */
+    /* `group` … 同じ系列だが媒体名が代表と違う記事（例: 同じ資本の別の局）。名前だけでは同系列と分からないので札を残す。 */
+    const covRow = (m, dup, first, group) => {
       const covHref = U(m.url);
-      html += '<div class="ev-cov' + (dup ? ' dup' : '') + '">' +
+      return '<div class="ev-cov' + (dup ? ' dup' : '') + '">' +
         '<div class="ev-cov-h"><span class="ev-cov-src">' + S(m.sourceName) + '</span>' +
-        (m.family === firstFam && !dup ? '<span class="ev-badge first">' + S(L('First', '初報', 'Zuerst', 'Первым', 'Primero')) + '</span>' : '') +
-        (dup ? '<span class="ev-badge dup">' + S(L('Same group', '同系列', 'Gleiche Gruppe', 'Та же группа', 'Mismo grupo')) + '</span>' : '') +
+        (first ? '<span class="ev-badge first">' + S(L('First', '初報', 'Zuerst', 'Первым', 'Primero')) + '</span>' : '') +
+        (group ? '<span class="ev-badge dup">' + S(L('Same group', '同系列', 'Gleiche Gruppe', 'Та же группа', 'Mismo grupo')) + '</span>' : '') +
         '<span class="ev-cov-at">' + S(fmt(m.publishedAt)) + '</span></div>' +
         (covHref ? '<a class="ev-cov-t" href="' + covHref + '" target="_blank" rel="noopener">' + S(m.title) + '</a>'
            : '<div class="ev-cov-t">' + S(m.title) + '</div>') +
@@ -808,6 +849,22 @@ export function newsEvents(HOST) {
         (covHref ? '<a class="ev-cov-read" href="' + covHref + '" target="_blank" rel="noopener">' +
           S(L('Read at {s} ↗', '{s} で読む ↗', 'Bei {s} lesen ↗', 'Читать на {s} ↗', 'Leer en {s} ↗').replace('{s}', m.sourceName)) + '</a>' : '') +
         '</div>';
+    };
+    for (const g of BRIEF.groupCoverage(rows)) {
+      html += covRow(g.lead, false, g.lead === rows[0]);   /* 初報の印は最初の記事 1 本だけ */
+      if (g.more.length) {
+        const sameName = g.more.every((m) => m.sourceName === g.lead.sourceName);
+        html += '<details class="ev-fold ev-cov-more"><summary>' + S(String(sameName
+          ? L('+{n} more from {s}', '{s} の記事 あと {n} 本')
+          : L('+{n} more from the same group as {s}', '{s} と同じ系列の記事 あと {n} 本')).replace('{n}', g.more.length).replace('{s}', g.lead.sourceName)) + '</summary>';
+        for (const m of g.more) html += covRow(m, true, false, m.sourceName !== g.lead.sourceName);
+        html += '</details>';
+      }
+      if (g.echoes.length) {
+        html += '<details class="ev-fold ev-cov-more"><summary>' + S(String(L('+{n} with nearly the same headline', 'ほぼ同じ見出し あと {n} 本')).replace('{n}', g.echoes.length)) + '</summary>';
+        for (const m of g.echoes) html += covRow(m, false, false);
+        html += '</details>';
+      }
     }
     html += '</div>';
 
@@ -820,16 +877,23 @@ export function newsEvents(HOST) {
         '<button type="button" class="ev-story" id="ev-past-go">' + S(L('Show who held this ground, the recorded wars its state was a party to and its national elections', 'この土地を治めた政体・その国が当事者だった記録上の戦争・国政選挙を表示')) + '</button></div>';
     }
 
-    /* ── なぜこの塊なのか ── 自動化が間違った理由を隠さない（§11 の規律を読み手にも）。 */
-    html += '<div class="ev-d-sec ev-why"><h3>' +
-      S(L('How this event was assembled', 'この出来事の組み立て方', 'Wie dieses Ereignis entstand', 'Как собрано это событие', 'Cómo se construyó este suceso')) + '</h3><ul>';
+    /* ── なぜこの塊なのか ── 自動化が間違った理由を隠さない（§11 の規律を読み手にも）。
+       (news-detail-condense) ⚠ 利用者 (2026-11-17) の指摘で、仕組みの説明は**ここ 1 か所に畳んでまとめた**:
+       AI の統合文の照合方法（以前は要約の直下に全文で出ていた）・引用を書き換えないこと（以前は引用の直下）・
+       出来事の組み立て方（以前は開いたままの節）。要約の直下には AI が書いたことの 1 行だけが残る。 */
+    html += '<details class="ev-d-sec ev-why ev-fold"><summary>' +
+      S(L('How this page was put together', 'このページの作り方')) + '</summary>';
+    if (ev.synthesis) html += '<p class="ev-ai-how ev-d-note">' + S(L('The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.', '上の段落は AI が書いたものである。これらの媒体が公表した内容をまとめたもので、各文は保存前にここに示した原文と機械的に照合してある。照合できなかった文は捨てられ、表示されることはない。', 'Der Absatz oben wurde von einer KI geschrieben. Er fasst zusammen, was diese Quellen veröffentlicht haben: Jeder Satz wurde vor dem Speichern maschinell gegen den hier gezeigten Wortlaut geprüft; ungeprüfte Sätze werden verworfen und nie angezeigt.', 'Абзац выше написан ИИ. Он объединяет опубликованное этими источниками: каждое предложение перед сохранением машинно сверено с приведёнными здесь формулировками, а непроверенные предложения отбрасываются и никогда не показываются.', 'El párrafo anterior lo escribió una IA. Combina lo que publicaron estos medios: cada frase se verificó automáticamente con la redacción mostrada aquí antes de guardarse, y las que no se pudieron verificar se descartan y nunca se muestran.')) + '</p>';
+    if (brief && brief.gist.length) html += '<p class="ev-d-note">' + S(L('Sentences are quoted from what each outlet published. IntMap does not rewrite or paraphrase them.', '各媒体が実際に公表した文をそのまま引いている。IntMap は書き換えも言い換えもしない。', 'Die Sätze sind wörtlich aus dem übernommen, was jede Quelle veröffentlicht hat. IntMap schreibt sie nicht um.', 'Предложения приведены дословно из публикаций каждого источника. IntMap их не переписывает.', 'Las frases se citan tal como las publicó cada medio. IntMap no las reescribe ni parafrasea.')) + '</p>';
+    html += '<h4 class="ev-sub">' +
+      S(L('How this event was assembled', 'この出来事の組み立て方', 'Wie dieses Ereignis entstand', 'Как собрано это событие', 'Cómo se construyó este suceso')) + '</h4><ul>';
     html += '<li>' + S(L('Grouped from published headlines by a deterministic rule (time, place, shared rare words) — not by an AI summary.', '公表された見出しを、時刻・場所・珍しい語の共有という決定論の規則で束ねている（AI の要約ではない）。', 'Aus veröffentlichten Schlagzeilen nach einer deterministischen Regel gruppiert (Zeit, Ort, seltene Wörter) — nicht durch eine KI-Zusammenfassung.', 'Сгруппировано по опубликованным заголовкам детерминированным правилом (время, место, редкие слова), а не сводкой ИИ.', 'Agrupado a partir de titulares publicados mediante una regla determinista (tiempo, lugar, palabras poco frecuentes), no por un resumen de IA.')) + '</li>';
     html += '<li>' + S(String(L('Independent outlets are counted by ownership group, so syndicated copies of one story count once. Here: {a} articles, {b} independent.', '独立媒体は資本系列で数える（同一記事の転載は 1 票）。ここでは記事 {a} 本・独立 {b} 媒体。', 'Unabhängige Quellen werden nach Eigentümergruppe gezählt; syndizierte Kopien zählen einmal. Hier: {a} Artikel, {b} unabhängig.', 'Независимые источники считаются по группе владения, поэтому перепечатки считаются один раз. Здесь: {a} статей, {b} независимых.', 'Los medios independientes se cuentan por grupo propietario, así que las republicaciones cuentan una vez. Aquí: {a} artículos, {b} independientes.')).replace('{a}', ev.articleCount).replace('{b}', ev.sourceCount)) + '</li>';
     html += '<li>' + S(String(L('Category decided by: {by}.', 'カテゴリを決めたもの: {by}。', 'Kategorie bestimmt durch: {by}.', 'Категорию определил: {by}.', 'Categoría decidida por: {by}.'))
       .replace('{by}', ev.categoryBy || '—')) + '</li>';
     if (ev.manualLock) html += '<li>' + S(L('Reviewed and locked by an operator.', '運用者が確認し、固定している。', 'Von einem Betreiber geprüft und gesperrt.', 'Проверено и зафиксировано оператором.', 'Revisado y bloqueado por un operador.')) + '</li>';
     if (!ev.place) html += '<li>' + S(L('No location could be resolved for this event.', 'この出来事の地点は特定できていない。', 'Für dieses Ereignis konnte kein Ort bestimmt werden.', 'Место этого события не определено.', 'No se pudo determinar la ubicación de este suceso.')) + '</li>';
-    html += '</ul></div>';
+    html += '</ul></details>';
     html += '</div>';
 
     pane.innerHTML = html;

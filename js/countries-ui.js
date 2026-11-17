@@ -273,7 +273,7 @@ export function countriesUi(HOST){
   const GDP_YEAR='2023', POP_YEAR='2024';
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS}=IntMapTables;
+  const {GDP,HDI,DEM,MILSPEND,STAT_SOURCES,CAPITAL,CURRENCY,LANGS}=IntMapTables;
 
   function flagFromISO2(a2){ if(!a2||a2.length!==2||a2==='-9')return''; try{return a2.toUpperCase().replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0)));}catch(e){return'';} }   /* (icon-system) no code → no flag: the record says nothing, and each display draws js/icons.js «flag» in its place */
 
@@ -423,7 +423,18 @@ export function countriesUi(HOST){
               a2:a2||'',
               capital:CAPITAL[code]||'', latlng:(p.LABEL_Y!=null&&p.LABEL_X!=null)?[+p.LABEL_Y,+p.LABEL_X]:null, flag:flagFromISO2(a2),
               currency:CURRENCY[code]||'', languages:LANGS[code]||'', gdp, gdppc:(gdp&&pop)?(gdp*1e9/pop):null,
-              hdi:HDI[code]||null, dem:DEM[code]||null, milSpend:MILSPEND[code]||null, lifeExp:LIFE[code]||null, internet:INTERNET[code]||null };
+              hdi:HDI[code]||null, dem:DEM[code]||null, milSpend:MILSPEND[code]||null,
+              /* (atlas-answer-integrity) no bundled figure: js/wb-layers.js `applyStat` fills both from the World Bank, with the year */
+              lifeExp:null, internet:null,
+              /* (atlas-answer-integrity) WHO MEASURED EACH FIGURE ABOVE, AND WHEN — one entry per field that holds a value.
+                 A reader that presents a figure (an Atlas ranking, its source list) reads the year and the author here;
+                 js/wb-layers.js `applyStat` replaces an entry when it replaces the value. A field with no entry has no
+                 author IntMap can name, and nothing may cite one for it. */
+              _prov:(()=>{ const o={}, ne=(what,yr)=>({ source:'Natural Earth ('+what+')', year:yr!=null&&yr!==''?String(yr):'' });
+                if(pop) o.pop=ne('POP_EST',p.POP_YEAR);
+                if(gdp!=null) o.gdp=(GDP[code]!=null)?STAT_SOURCES.gdp:ne('GDP_MD',p.GDP_YEAR);
+                [['hdi',HDI],['dem',DEM],['milSpend',MILSPEND]].forEach(([f,T])=>{ if(T[code]) o[f]=STAT_SOURCES[f]; });
+                return o; })() };
           };
           gj.features.forEach(f=>{
             const p=f.properties||{};

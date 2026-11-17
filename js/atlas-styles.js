@@ -80,7 +80,13 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
          none !important, and there the map really is behind the bubble. What a desktop reader reads as
          frost comes from the translucent tint, the hairline edge and the inset sheen.
          ⚠ The -webkit- twin is required: every declaration in this app that truly blurs carries one. */
-      +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:92%;padding:6px 12px;background:var(--atlas-glass);color:var(--text-main);border:1px solid var(--atlas-glass-edge);border-radius:16px 16px 5px 16px;box-shadow:var(--atlas-glass-shadow),inset 0 1px 0 var(--atlas-glass-sheen);backdrop-filter:saturate(var(--glass-sat,150%)) blur(var(--glass-blur,16px));-webkit-backdrop-filter:saturate(var(--glass-sat,150%)) blur(var(--glass-blur,16px));white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble */
+      /* (ui-feedback-nov17) 「上だけ装飾が強い」: the bubble's edge and sheen are the panel's own tokens taken
+         about halfway to transparent, and its drop shadow is a hairline lift. The tokens are captured on the
+         panel under a second name first, because a custom property cannot be defined in terms of itself on
+         the same element; the shadow is a shorthand, so it is restated per theme rather than mixed. */
+      +'#atlas-panel{--atl-u-edge:var(--atlas-glass-edge);--atl-u-sheen:var(--atlas-glass-sheen);--atl-u-shadow:0 1px 4px rgba(0,0,0,0.06);}'
+      +'[data-theme="dark"] #atlas-panel{--atl-u-shadow:0 1px 6px rgba(0,0,0,0.22);}'
+      +'#atlas-panel .atl-b.u{--atlas-glass-edge:color-mix(in srgb,var(--atl-u-edge) 60%,transparent);--atlas-glass-sheen:color-mix(in srgb,var(--atl-u-sheen) 50%,transparent);--atlas-glass-shadow:var(--atl-u-shadow);align-self:flex-end;max-width:92%;padding:6px 12px;background:var(--atlas-glass);color:var(--text-main);border:1px solid var(--atlas-glass-edge);border-radius:16px 16px 5px 16px;box-shadow:var(--atlas-glass-shadow),inset 0 1px 0 var(--atlas-glass-sheen);backdrop-filter:saturate(var(--glass-sat,150%)) blur(var(--glass-blur,16px));-webkit-backdrop-filter:saturate(var(--glass-sat,150%)) blur(var(--glass-blur,16px));white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble */
       +'#atlas-panel .atl-b.a{align-self:stretch;max-width:100%;background:transparent;color:var(--text-main);border:none;border-radius:0;padding:2px 1px;}'
       /* (#R231) the attached-picture row: the user's own column, without the bubble around it */
       +'#atlas-panel .atl-b.u.atl-imgrow{background:none;box-shadow:none;padding:0;border-radius:0;max-width:92%;white-space:normal;border:none;backdrop-filter:none;-webkit-backdrop-filter:none;}'   /* (#R483) the glass is stripped here too: this row is bare pictures, and a pane of frosted glass around them is a bubble by another name */
@@ -378,7 +384,6 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel .atl-era-yr{height:28px;padding:0 11px;border-radius:14px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--panel-bg,transparent);color:var(--text-main);font-size:11.5px;cursor:pointer;}'
       +'#atlas-panel .atl-era-yr:hover{border-color:var(--primary-color);}'
       +'#atlas-panel .atl-era-yr.inferred{border-style:dashed;}'
-      +'#atlas-panel .atl-eramap{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--primary-color);background:transparent;color:var(--primary-color);font-size:11.5px;font-weight:600;cursor:pointer;}'   /* (text-to-era-map) the composer chip: this text, on the map of its time */
       +'#atlas-panel .atl-cmp-rels{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:5px;}'
       +'#atlas-panel .atl-cmp-rel{display:inline-flex;align-items:center;gap:3px;color:var(--text-muted);}'
       +'#atlas-panel .atl-cmp-rel .atl-geo-n{margin-left:0;}'

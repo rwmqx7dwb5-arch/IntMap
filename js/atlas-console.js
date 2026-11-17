@@ -61,6 +61,7 @@ import { makeAtlasProgress } from './atlas-progress.js';
 import { makeAtlasPlan } from './atlas-plan.js';   /* (atlas-plan-on-map) the conversation's plan ledger — Atlas declares the steps, the executor's verdicts are their states */
 import { makeAtlasBriefing } from './atlas-briefing.js';   /* (atlas-briefing) an investigation as a link — the composer and the recipient's reader */
 import { makeAtlasNotebook } from './atlas-notebook.js';   /* (atlas-os) the investigation notebook — kept, replayable, comparable, shareable Atlas answers */
+import { floatRoute } from './atlas-float.js';   /* (ui-feedback-nov17) the floating card over the map, when Settings chose it */
 import { makeAtlasLive } from './atlas-live.js';   /* (atlas-live-stream) the turn as it streams — the draft answer, the notes on the way, the reasoning headline, the map HUD and the measured wait */   /* (#R723) the work trace — what Atlas is doing, as a list that keeps what already happened. ⚠ ITS OWN LINE, and the room for it came from DELETING the fifteen lines the one-word indicator occupied here: this file is at a shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) and the subject that leaves is the one being replaced. */
 import { CAPABILITY_MODULES } from './atlas-caps-modules.js';   /* (atlas-capability-modules) every capability: its row, its schema and what the dispatch runs for it */
 import { capabilityRunners, unknownAction, capabilityEntries } from './atlas-caps.js';
@@ -70,7 +71,6 @@ import { dataLayers, layerDeclaration } from './layer-manifest.js';   /* (map-la
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
-import { wbIndicatorFor } from './wb-indicators.js';   /* (country-analysis-unify) which World Bank series fills a country-table field — the catalogue's `stat` */
 import { layerRowLabel, registryBoxes } from './layer-row-label.js';   /* (ux-next) the row's name — one reading, shared with the command palette */
 
 const CAP_RUN = capabilityRunners(CAPABILITY_MODULES);   /* dispatch spelling → run, derived once from the entries (js/atlas-caps.js) */
@@ -1226,9 +1226,9 @@ export function atlasConsole(HOST){
       html+='<div style="height:12px;border-radius:6px;background:'+grad+';margin:4px 0;"></div>';
       html+='<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-muted);"><span>'+(bottom?hiTxt:loTxt)+'</span><span>'+(bottom?loTxt:hiTxt)+'</span></div>';
       html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('Max','最高','Höchster','Макс.','Máx.')+': '+esc(nm(countryStats[top.code]))+' ('+esc(fmtVal(metricKey,top.raw))+') · '+L('Min','最低','Niedrigster','Мин.','Mín.')+': '+esc(nm(countryStats[bot.code]))+' ('+esc(fmtVal(metricKey,bot.raw))+')</div>';
-      return R(true, note(html)+cWarn, {meta:{painted:{choro:Object.keys(_choroState)}}}); }   /* (#R760) declared, so a redraw of the same state is `already_there` — tests/atlas-agent-repeat-checks.test.mjs (#R760) */
+      const _cr=R(true, note(html)+cWarn, {meta:{painted:{choro:Object.keys(_choroState)}}}); Object.assign(_cr.meta, metricResult(metricKey, sorted.map(p=>({code:p.code,val:p.raw})), 'map')); return _cr; }   /* (atlas-answer-integrity) …and what the shading is OF, its data year and its source — js/atlas-metrics.js `metricResult` */   /* (#R760) declared, so a redraw of the same state is `already_there` — tests/atlas-agent-repeat-checks.test.mjs (#R760) */
     /* ==== (#R75) vision §10/§13 groundwork — metric series shared by explore & scoreMap ==== */
-    const { METRICS, XMET, VMET, XVMET, metAll, metKeys, metSpec, unknownMetric, isRankableCountry } = makeAtlasMetrics(HOST, { LA, lx, L, esc, warn, R });   /* (#R740) ONE metric set and ONE resolver — js/atlas-metrics.js, where the production measurement behind it is written. ⚠ INSTANTIATED HERE, below `warn`/`R`, because those are `const`s of this closure: a hand-off written where METRICS used to stand (line 94) would read them inside their temporal dead zone. */
+    const { METRICS, XMET, VMET, XVMET, metAll, metKeys, metSpec, unknownMetric, isRankableCountry, metricResult } = makeAtlasMetrics(HOST, { LA, lx, L, esc, warn, R });   /* (#R740) ONE metric set and ONE resolver — js/atlas-metrics.js, where the production measurement behind it is written. ⚠ INSTANTIATED HERE, below `warn`/`R`, because those are `const`s of this closure: a hand-off written where METRICS used to stand (line 94) would read them inside their temporal dead zone. */
     /* one component (bundled metric or a World-Bank indicator code) → {label, vals:{ISO3:num}, log} */
     async function _seriesFor(comp){ try{
       if(comp&&comp.wb){ if(!(window.IntMapWB&&window.IntMapWB.fetch)) return null;
@@ -1251,13 +1251,12 @@ export function atlasConsole(HOST){
     /* some bundled fields are lazy-filled by their layer (tfr — R70); explore/scoreMap fill them from the
        World Bank bulk endpoint on demand so 「少子化と相関する指標」 works without the layer ever having been on */
     /* (country-analysis-unify) the series that fills a field is js/wb-indicators.js's (`stat`) — this was its own three-entry copy */
-    async function _fillMetric(key){ try{ const I=wbIndicatorFor(key); if(!I) return; const spec={c:I.code,f:key,sc:I.statScale||1};
-      let have=0; for(const cd in countryStats){ const s=countryStats[cd]; if(s&&s[spec.f]!=null&&!isNaN(s[spec.f])) have++; }
-      if(have>=25) return;
-      if(!(window.IntMapWB&&window.IntMapWB.fetch)) return;
-      const m=await window.IntMapWB.fetch(spec.c); if(!m) return;
-      for(const cd in m){ const v=m[cd]&&m[cd].v; if(v==null||!isFinite(v)) continue;
-        const s=countryStats[cd]; if(s&&(s[spec.f]==null||isNaN(s[spec.f]))) s[spec.f]=(+v)*spec.sc; } }catch(_){} }
+    /* ⚠⚠ (atlas-answer-integrity) IT WRITES THE SERIES, NOT ONLY THE GAPS. It filled empty cells and stopped reading once
+       25 countries had a value — and life expectancy arrived with 54 bundled, undated values, so a ranking asked for it
+       answered from those (Japan 84.0) and never read the World Bank. js/wb-layers.js `applyStat` is the one writer:
+       every value it has replaces the table's, with its year and publisher (`_prov`), and a country it does not report
+       keeps its own labelled value. The series is cached there, so asking again costs nothing. */
+    async function _fillMetric(key){ try{ if(window.IntMapWB&&window.IntMapWB.applyStat) await window.IntMapWB.applyStat(key); }catch(_){} }
     function _pearson(xs,ys){ const n=xs.length; if(n<3) return null; let sx=0,sy=0; for(let i=0;i<n;i++){ sx+=xs[i]; sy+=ys[i]; }
       const mx=sx/n,my=sy/n; let sxy=0,sxx=0,syy=0;
       for(let i=0;i<n;i++){ const dx=xs[i]-mx,dy=ys[i]-my; sxy+=dx*dy; sxx+=dx*dx; syy+=dy*dy; }
@@ -1956,6 +1955,7 @@ export function atlasConsole(HOST){
       get _seriesFor(){ return _seriesFor; },
       get _normSeries(){ return _normSeries; },
       get isRankableCountry(){ return isRankableCountry; },
+      get metricResult(){ return metricResult; },
       get _choroRamp(){ return _choroRamp; }, set _choroRamp(v){ _choroRamp=v; },
       get rampFrom(){ return rampFrom; },
       get ensureChoroLayer(){ return ensureChoroLayer; },
@@ -2076,7 +2076,9 @@ export function atlasConsole(HOST){
       return personaPrompt('the general intelligence and operating layer of IntMap, an interactive world map')
         +POLICY.all()
         +'REPLY FORMAT: you operate IntMap by calling its tools as FUNCTIONS \u2014 every call in one reply is run, in order, and its result comes back to you as that call\'s output. What you WRITE is one strict JSON object and nothing else \u2014 {"turn":"final"|"continuing","answer_mode":"text"|"map"|"chart"|"mixed","final_text":string}. '
-        +'The fields are in the order the decision is made: what this reply IS, what it DOES, then what it SAYS. turn "final" means final_text is the complete answer and the turn ends here; turn "continuing" means final_text is NOT the answer yet and the work goes on in function calls \u2014 so a reply that says what you are about to do is "continuing", and the calls that do it belong in that SAME reply (a "continuing" reply that issued no call comes back to you like a rejected call, because nothing would have happened). A reply with no function calls ENDS the turn, and final_text is what the reader sees. answer_mode says what KIND of answer this is \u2014 "text": the map is untouched; "map": the map IS the answer and final_text frames it; "mixed": the words and the map each carry part. You decide it; but a "map"/"mixed" final is accepted only after something in this turn actually drew on or moved the map (compose_map draws a whole explanation in one call) \u2014 otherwise it comes back to you like a rejected call, and you either draw or answer as "text". To operate IntMap, '
+        +'The fields are in the order the decision is made: what this reply IS, what it DOES, then what it SAYS. turn "final" means final_text is the complete answer and the turn ends here; turn "continuing" means final_text is NOT the answer yet and the work goes on in function calls \u2014 so a reply that says what you are about to do is "continuing", and the calls that do it belong in that SAME reply (a "continuing" reply that issued no call comes back to you like a rejected call, because nothing would have happened). A reply with no function calls ENDS the turn, and final_text is what the reader sees. '
+        /* (atlas-answer-integrity) THE FINAL TEXT IS AN EDITED ANSWER, NOT A LOG. Measured on production 2026-11-17: one life-expectancy question came back with the same ranking three times, indicator codes and panel names, and 「use this one rather than the old ranking」 — the reader was left to choose between two of Atlas's own results. The composer now keeps one result per subject (js/atlas-turn-results.js `keep`) and folds what the words already present (`present`); this tells the writer the same thing. */
+        +'Write final_text as the finished answer: the conclusion first, then the year the data is for and what it covers; at most one ranking table; when you corrected an earlier result in this turn, present only the corrected one (the reader is shown only the latest result for each subject) and never ask the reader to choose between your own earlier and later results; do not explain how IntMap works inside (tool names, indicator codes, panel or layer names); report what changed on the map in one sentence. answer_mode says what KIND of answer this is \u2014 "text": the map is untouched; "map": the map IS the answer and final_text frames it; "mixed": the words and the map each carry part. You decide it; but a "map"/"mixed" final is accepted only after something in this turn actually drew on or moved the map (compose_map draws a whole explanation in one call) \u2014 otherwise it comes back to you like a rejected call, and you either draw or answer as "text". To operate IntMap, '
         +'to look something up, or to search the web, put one or more calls in function calls: IntMap runs them and returns what '
         +'it OBSERVED, and you then decide whether to call more tools or to answer. Arguments are checked against each '
         +'tool\'s schema before anything runs; a rejected call comes back to you to fix and is never shown to the reader. '
@@ -2093,7 +2095,7 @@ export function atlasConsole(HOST){
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
     let _atlImgs=[];   /* (#R149) pending pasted/attached image data-URLs to send with the next message (vision) */
-    let _atlPasted=false;   /* (text-to-era-map) text arrived by paste and is not sent yet — the composer offers 「当時の地図に置く」 */ let _atlFiles=[];  /* (#R158/#R540) pending NON-image attachments, as ATL_FILE.read returned them: kind:'text' {name,text,size,truncated,encoding,from} or kind:'doc' {name,mime,b64} */
+    let _atlFiles=[];  /* (#R158/#R540) pending NON-image attachments, as ATL_FILE.read returned them: kind:'text' {name,text,size,truncated,encoding,from} or kind:'doc' {name,mime,b64} */
     /* (#R540) WHICH FILES ATLAS ACCEPTS IS NO LONGER A LIST — js/atlas-attach.js asks the BYTES (its header has the whole argument). Images → the vision
        channel. PDFs → the providers' own document block. Anything a text encoding decodes, including what a .docx/.xlsx/.pptx/.odt/.kmz/.zip holds → the attachment channel. Everything else is refused BY REASON. */
     const _atlWhy=(d)=>{ const w=d&&d.why; if(w==='too-big') return L('That file is too large','そのファイルは大きすぎます','Diese Datei ist zu groß','Этот файл слишком велик','Ese archivo es demasiado grande')+' ('+atlFmtBytes((d&&d.limit)||ATL_FILE.LIMITS.docBytes)+')';
@@ -2171,13 +2173,13 @@ export function atlasConsole(HOST){
       /* (#R118) Enter=send, Shift+Enter=NEWLINE (the input is a textarea now); the box auto-grows to 4-5 lines */
       const go=panel.querySelector('.atl-go'); go.onclick=fire; inEl.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); fire(); } });
       const _autoGrow=()=>{ try{ inEl.style.height='auto'; inEl.style.height=Math.min(inEl.scrollHeight,132)+'px'; }catch(_){} };
-      inEl.addEventListener('input',()=>{ try{ if(!go.classList.contains('busy')) go.classList.toggle('idle',!inEl.value.trim()); }catch(_){} _autoGrow(); if(_atlPasted&&!inEl.value.trim()){ _atlPasted=false; _atlRenderImgs(); } });   /* (#R142) don't fight the Stop button's busy state */
+      inEl.addEventListener('input',()=>{ try{ if(!go.classList.contains('busy')) go.classList.toggle('idle',!inEl.value.trim()); }catch(_){} _autoGrow(); });   /* (#R142) don't fight the Stop button's busy state */
       inEl.__autoGrow=_autoGrow;
       /* (#R149) VISION — paste / drag-drop / attach an image into the Atlas input, then send it with your message.
          Uses the SAME client→ai-proxy image path the satellite-compare feature already uses (compressImage → JPEG
          data-URL → images[] the Edge Function forwards as OpenAI input_image). */
       try{
-        inEl.addEventListener('paste',(e)=>{ try{ const items=(e.clipboardData&&e.clipboardData.items)||[]; const files=[]; for(const it of items){ if(it&&it.kind==='file'){ const f=it.getAsFile&&it.getAsFile(); if(f) files.push(f); } } if(files.length){ e.preventDefault(); _atlAddFiles(files); } else if(e.clipboardData&&e.clipboardData.getData('text')){ _atlPasted=true; setTimeout(_atlRenderImgs,0); } }catch(_){} });   /* (#R158) any pasted FILE (image or text), not images only — _atlAddFiles validates; pasted plain TEXT (kind:'string') is untouched */
+        inEl.addEventListener('paste',(e)=>{ try{ const items=(e.clipboardData&&e.clipboardData.items)||[]; const files=[]; for(const it of items){ if(it&&it.kind==='file'){ const f=it.getAsFile&&it.getAsFile(); if(f) files.push(f); } } if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });   /* (#R158) any pasted FILE (image or text), not images only — _atlAddFiles validates; pasted plain TEXT (kind:'string') is untouched */
         const atk=panel.querySelector('.atl-attach'); if(atk) atk.onclick=()=>{ try{ const fi=document.createElement('input'); fi.type='file'; fi.multiple=true; fi.style.display='none'; fi.setAttribute('aria-label',atk.getAttribute('title')||''); fi.onchange=()=>{ try{ _atlAddFiles([...(fi.files||[])]); }catch(_){} try{ fi.remove(); }catch(_){} }; document.body.appendChild(fi); fi.click(); }catch(_){} };   /* (#R158) no accept restriction — images + text files both allowed */
         /* (#R154) VOICE INPUT — Web Speech API dictation. Inserts recognised text into the box (user reviews then sends);
            recognition language follows the UI language. Hidden if the browser has no SpeechRecognition. */
@@ -2321,11 +2323,13 @@ export function atlasConsole(HOST){
       return panel; }
     /* (#R149) VISION helpers — pending pasted/attached image thumbnails in the input bar (cap 4 = ai-proxy MAX_IMAGES). */
     function _atlRenderImgs(){ try{ if(!panel) return; const row=panel.querySelector('.atl-imgrow'); if(!row) return;
-      const eraChip=_atlFiles.some(f=>f&&f.kind==='text')||(_atlPasted&&!!(inEl&&inEl.value.trim()));   /* (text-to-era-map) a passage is here: offer it on the map of its time */ if(!_atlImgs.length&&!_atlFiles.length&&!eraChip){ row.style.display='none'; row.innerHTML=''; return; }
+      /* (ui-feedback) the 「当時の地図に置く」 chip that stood in this row is gone (readers found it intrusive on every paste). What still does its
+         work: time.textMap (js/atlas-cap-time.js) — asking Atlas in words, 「この文章の地名を当時の地図に置いて」, reaches the same capability. */
+      if(!_atlImgs.length&&!_atlFiles.length){ row.style.display='none'; row.innerHTML=''; return; }
       const rm=L('Remove','削除','Entfernen','Удалить','Quitar');
       const imgH=_atlImgs.map((u,i)=>'<div class="atl-thumb"><img src="'+esc(IntMapSafe.url(u,{allowData:true}))+'" alt=""><button class="atl-thumb-x" data-kind="img" data-i="'+i+'" title="'+rm+'">×</button></div>').join('');
       const fileH=_atlFiles.map((f,i)=>'<div class="atl-fchip" data-atlvid="'+esc(ATTACH_STORE.put(f))+'" title="'+esc(f.name)+((f.size)?(' · '+atlFmtBytes(f.size)):'')+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span><button class="atl-thumb-x atl-fchip-x" data-kind="file" data-i="'+i+'" title="'+rm+'">×</button></div>').join('');
-      row.style.display='flex'; row.innerHTML=imgH+fileH+(eraChip?'<button type="button" class="atl-eramap">'+esc(L('Map this text in its time','当時の地図に置く'))+'</button>':''); { const ec=row.querySelector('.atl-eramap'); if(ec) ec.onclick=()=>{ const ask=L('Place the places named in this text on the map of its time.','この文章に出てくる地名を、その時代の地図に置いて。'); const v=inEl.value.trim(); inEl.value=v?ask+'\n\n'+v:ask; fire(); }; }   /* (text-to-era-map) the request goes to Atlas like any other — one turn, one use; Atlas reads the passage and calls time.textMap */
+      row.style.display='flex'; row.innerHTML=imgH+fileH;
       row.querySelectorAll('.atl-thumb-x').forEach(b=>{ b.onclick=()=>{ const k=b.getAttribute('data-kind'), i=+b.getAttribute('data-i');
         if(k==='file'){ if(i>=0&&i<_atlFiles.length){ try{ ATTACH_STORE.drop(_atlFiles[i]); }catch(_){} _atlFiles.splice(i,1); } } else { if(i>=0&&i<_atlImgs.length) _atlImgs.splice(i,1); }   /* (#R773) drop: 送る前に外された添付は、誰も開けないので預かり続けない */
         _atlRenderImgs(); _atlSyncGo(); }; });
@@ -2341,7 +2345,7 @@ export function atlasConsole(HOST){
       if(bad){ try{ aiToast(_atlWhy(bad)); }catch(_){} }
       _atlRenderImgs(); _atlSyncGo(); try{ inEl&&inEl.focus(); }catch(_){}
     }catch(_){} }
-    function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice(); if(v||imgs.length||files.length){ _atlPasted=false; inEl.value=''; _atlImgs=[]; _atlFiles=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs,files); } }   /* (#R149/#R158) send text + any pasted/attached images and files */
+    function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice(); if(v||imgs.length||files.length){ inEl.value=''; _atlImgs=[]; _atlFiles=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs,files); } }   /* (#R149/#R158) send text + any pasted/attached images and files */
     /* (#R43) HONEST reporting loop (unchanged behaviour, factored out so the AI path AND the deterministic
        fast-path/rescue share it): run every action, collect REAL per-step results, surface failures prominently
        instead of trusting the model's optimistic "say". Returns the list of failed actions. */
@@ -2597,7 +2601,8 @@ export function atlasConsole(HOST){
       const _visFailed=keep.some(r=>r&&r.ok===false&&r.act&&_visTypes[r.act.type]) || keep.some(r=>r&&r.meta&&(r.meta.partial||r.meta.unverified));   /* (#R142) suppress a pre-written success `say` a visual failure contradicts */
       /* 3) body from kept results (original order), dropping any exact-duplicate html fragment */
       let body=''; const seen=Object.create(null);
-      keep.forEach(res=>{ const h=(res&&res.html)||''; if(!h||seen[h]) return; seen[h]=1; body+=h; });
+      /* (atlas-answer-integrity) …and a result whose content Atlas's words already carry is FOLDED to its one line — js/atlas-turn-results.js `present` has the measurement. The block opens on a press; its sources stay in the list below (SRCS reads `keep`, not this). */
+      TRES.present(keep,say).forEach(({res,fold})=>{ const h=(res&&res.html)||''; if(!h||seen[h]) return; seen[h]=1; body+=fold?('<details class="atl-fold" style="margin:4px 0;"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-muted);">'+res.meta.brief+'</summary>'+h+'</details>'):h; });
       try{ const ks=ai.__atlMappedKinds?Object.keys(ai.__atlMappedKinds):[]; if(ks.length) body+=mapToggleChip(ks); }catch(_){}   /* single deduped map-toggle chip */
       /* 4) head — the pre-written `say` (suppressed on all-failed / contradicted visual) + an honest, NAME-FREE summary */
       /* 4) head — ATLAS'S ANSWER, written after the results (js/atlas-agent.js) and therefore
@@ -2919,16 +2924,17 @@ export function atlasConsole(HOST){
       }
       /* Normal / mobile — the Atlas sidebar tab, through the real tab button so the shared behaviour (sheet-lift, active state) fires
          as for News/Info/Countries; never toggles OFF. ⚠ (#R214) a tab selected inside a COLLAPSED sidebar puts the answer off-screen — uncollapse first, only ever that way. */
+      if(floatRoute('open')) return;   /* floating mode: Atlas answers over the map, not in the tab */
       try{ const sb=document.getElementById('sidebar'); if(sb&&sb.classList.contains('collapsed')){ const tb=document.getElementById('btn-toggle-sidebar'); if(tb) tb.click(); else sb.classList.remove('collapsed'); }
         if(typeof HOST.mode!=='undefined' && HOST.mode==='atlas'){ mountTab(); }
         else { const b=document.getElementById('btn-community'); if(b) b.click(); else if(typeof setMode==='function') setMode('atlas','btn-community'); else mountTab(); }
       }catch(_){ mountTab(); }
       setTimeout(()=>{ try{ inEl&&inEl.focus(); }catch(_){} },80); }
-    function _atlClose(){ const p=ensure();
+    function _atlClose(){ if(floatRoute('close')) return; const p=ensure();
       if(_atlWs()){ p.style.display='none'; return; }
       /* Normal / mobile — "closing" Atlas = deselecting its tab (blank sidebar), like tapping an active tab again. */
       try{ if(typeof setMode==='function' && typeof HOST.mode!=='undefined' && HOST.mode==='atlas') setMode('atlas','btn-community'); }catch(_){} }
-    function toggle(){ if(_atlWs()){ const p=ensure(); if(p.style.display==='none'||!p.style.display) open(); else _atlClose(); return; }
+    function toggle(){ if(floatRoute('toggle')) return; if(_atlWs()){ const p=ensure(); if(p.style.display==='none'||!p.style.display) open(); else _atlClose(); return; }
       /* Normal / mobile — toggle the Atlas tab (select / deselect), matching a tab-button tap. */
       try{ const b=document.getElementById('btn-community'); if(b){ b.click(); } else if(typeof setMode==='function'){ setMode('atlas','btn-community'); } }catch(_){} }
     /* (#R83) "Ask AI about here" absorbed into Atlas: opens the console, pins the exact clicked coordinate (so
@@ -3054,7 +3060,7 @@ export function atlasConsole(HOST){
       const gen=++_runGen;
       try{ const fails=await runActions(ai,'',acts,gen); if(gen===_runGen) recordTurn(String(label||''),'',acts,fails); }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} }
       try{ PROG.done(ai); }catch(_){} try{ msgTools(ai,String(label||'')); }catch(_){} }
-    return { open, toggle, close:_atlClose, mountTab, run, runDirect, brief:briefEntry, openBriefing:(p)=>{ try{ open(); }catch(_){} return BRIEFING.openPacked(p); }, closeBriefing:()=>BRIEFING.close(), askHere, askReading:()=>READ.askReading(), dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
+    return { open, toggle, close:_atlClose, mountTab, panel:ensure, run, runDirect, brief:briefEntry, openBriefing:(p)=>{ try{ open(); }catch(_){} return BRIEFING.openPacked(p); }, closeBriefing:()=>BRIEFING.close(), askHere, askReading:()=>READ.askReading(), dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
 }
 

@@ -4157,7 +4157,6 @@ IntMapLang.define('zh', {
   "Danger warning": "危險警報",
   "Delayed": "略舊",
   "Diagnostics": "診斷",
-  "Each agency’s own published scale": "各機關公布的等級",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "各國均以該國機關的發布單位繪製。僅供參考，請以官方機關發布為準。",
   "Europe — MeteoAlarm": "歐洲 — MeteoAlarm",
   "every 30 s": "每 30 秒",
@@ -4795,7 +4794,7 @@ IntMapLang.define('zh', {
   "Countries at Danger or above": "危險等級以上的國家",   /* (#R299) */
   "No country is at Danger or above right now.": "目前沒有國家達到危險等級以上。",   /* (#R299) */
   "IntMap’s own conversion — the same step is not the same danger.": "IntMap 自行換算——同一等級不代表危險程度相同。",   /* (#R299) */
-  "Each agency’s own colours. Tap a country for its exact scale.": "顏色為各機關自身的配色。點選國家可查看確切等級。",   /* (#R299) */
+  /* (#R299) */
   "No point placed yet": "尚未設定地點",   /* (#R299) */
   "Place the point on the map": "在地圖上設定地點",   /* (#R299) */
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "已在地圖上開啟路線指引面板——請在面板中填入起點與目的地，或在這裡告訴我地點。",   /* (#R299) */

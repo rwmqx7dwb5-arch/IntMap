@@ -26,6 +26,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { anchorToLngLat } from './popup-anchor.js';
 import * as bus from './bus.js';
 import { IntMapTime } from './chronos.js';
 import { everyTick, stopTick } from './runtime.js';
@@ -296,14 +297,9 @@ export function newsIntel(HOST) {
   function place(at) {
     const e = ensurePop();
     if (e.getAttribute('data-dragged') === '1') return;
-    try {
-      const mc = e.offsetParent || document.getElementById('map-container') || document.documentElement;
-      const mr = mc.getBoundingClientRect(), w = e.offsetWidth || 360;
-      let left = mr.width - w - 24;
-      if (at) { try { const p = GE().coords.project(at); const cr = GE().render.canvas().getBoundingClientRect(); left = cr.left - mr.left + p.x + 18; } catch (_) { } }
-      e.style.left = Math.round(Math.max(12, Math.min(left, mr.width - w - 12))) + 'px';
-      e.style.top = '84px';
-    } catch (_) { e.style.left = '16px'; e.style.top = '84px'; }
+    /* beside the place the brief was opened from, following it as the map moves (js/popup-anchor.js);
+       no place: docked to the right. Skipped once the reader has dragged the card. */
+    try { anchorToLngLat(e, at || null, { dockedTop: 84 }); } catch (_) { e.style.left = '16px'; e.style.top = '84px'; }
   }
 
   /** openBrief(key, { at }) — the brief of one country, for the window the legend has */

@@ -108,6 +108,8 @@ async function browser() {
   const b = makeIndicatorBrowser({
     lang: () => 'en', entries: () => entries, paint: (id) => { cur = id; painted.push(id); return true; }, clear: () => { cur = null; }, current: () => cur,
     series: async () => S, seriesOf: () => S, yearOf: () => '2022', name: (n) => n[0], countryName: (iso) => ({ JPN: 'Japan', CHE: 'Switzerland', NGA: 'Nigeria', TCD: 'Chad', USA: 'United States' })[iso] || iso,
+    /* (ui-feedback-nov17) only a real country is counted or ranked — the host says which codes are countries (WB aggregates are not) */
+    country: (iso) => (['JPN', 'CHE', 'NGA', 'TCD', 'USA'].includes(iso) ? { nameEn: iso, sov: true } : null),
     wanted: () => null, legend: () => null, hideLegend() {}, escape: (s) => s,
   });
   return { b, entries, calls, painted, boxes };

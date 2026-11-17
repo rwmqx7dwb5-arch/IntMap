@@ -3925,7 +3925,6 @@ IntMapLang.define('ko', { ui: {
   "Danger warning": "위험경보",
   "Delayed": "다소 오래됨",
   "Diagnostics": "진단",
-  "Each agency’s own published scale": "각 기관이 공표한 등급",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "각 나라는 그 나라 기관의 발표 단위로 그립니다. 참고용 표시이므로 공식 기관의 발표를 따르십시오.",
   "Europe — MeteoAlarm": "유럽 — MeteoAlarm",
   "every 30 s": "30초마다",
@@ -4562,7 +4561,7 @@ IntMapLang.define('ko', { ui: {
   "Countries at Danger or above": "위험 등급 이상인 국가",   /* (#R299) */
   "No country is at Danger or above right now.": "지금 위험 등급 이상인 국가는 없습니다.",   /* (#R299) */
   "IntMap’s own conversion — the same step is not the same danger.": "IntMap 자체 환산 — 같은 등급이라도 위험도는 같지 않습니다.",   /* (#R299) */
-  "Each agency’s own colours. Tap a country for its exact scale.": "색상은 각 기관 자체의 배색입니다. 국가를 누르면 정확한 등급.",   /* (#R299) */
+  /* (#R299) */
   "No point placed yet": "아직 지점이 설정되지 않았습니다",   /* (#R299) */
   "Place the point on the map": "지도에서 지점 설정",   /* (#R299) */
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "지도에 길찾기 패널을 열었습니다 — 그곳의 두 칸을 채우거나, 여기서 장소를 말씀해 주세요.",   /* (#R299) */

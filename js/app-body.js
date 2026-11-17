@@ -1810,7 +1810,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R311) THE DOOR — mobile's data-proxy tile and Atlas's clickId arrive here too; the tool panel reads the global synchronously, so the fetch is BEFORE setTool. */
   { const bv=document.getElementById('btn-tool-volume'); if(bv) bv.onclick=()=>{ window.IntMapLazy.need('volume3d').then(()=>{ setTool('volume'); if(window._closeMeasureMenu) window._closeMeasureMenu(); }); }; }
   /* (#R313) ONE place knows the pair — both triggers stopPropagation(), so neither reaches the other's click-away. DEV-NOTES #R313 §5. */
-  window._closeMapMenus=function(except){ if(except!=='measure'){ try{ window._closeMeasureMenu&&window._closeMeasureMenu(); }catch(_){} } if(except!=='share'){ try{ window._closeShareMenu&&window._closeShareMenu(); }catch(_){} } };
+  window._closeMapMenus=function(except){ if(except!=='measure'){ try{ window._closeMeasureMenu&&window._closeMeasureMenu(); }catch(_){} } if(except!=='share'){ try{ window._closeShareMenu&&window._closeShareMenu(); }catch(_){} } if(except!=='more'){ try{ window._closeMoreToolsMenu&&window._closeMoreToolsMenu(); }catch(_){} } };
+  /* (tools-split) the menu left of 「ツール ▾」 — 道具・シミュレーション・分析 (js/map-ui.js mountDesktopTools fills it) */
+  (function(){
+    const c=document.querySelector('.more-tools-container'), trig=document.getElementById('btn-more-tools');
+    window._closeMoreToolsMenu=()=>{ if(c) c.classList.remove('open'); };
+    if(trig){ trig.onclick=(e)=>{ e.stopPropagation(); window._closeMapMenus('more'); if(c) c.classList.toggle('open'); }; }
+    document.addEventListener('click',(e)=>{ if(c && !c.contains(e.target)) c.classList.remove('open'); });
+  })();
   /* (#R9) "Measure ▾" groups Measure + Draw under one trigger; click-away closes it. */
   (function(){
     const c=document.querySelector('.measure-menu-container'), trig=document.getElementById('btn-measure-menu');
@@ -2361,10 +2368,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
   /* (#R102) back-fill a lazy World-Bank metric (life-expectancy / fertility) so sorting by it shows REAL values, not "—".
      One indicator = one WB request; re-renders when it lands (only if that metric is still selected). */
-  window._imFillStat=async function(key){ try{ const I=wbIndicatorFor(key); if(!I) return; const c=I.code;   /* (country-analysis-unify) the field's series is the catalogue's `stat` (js/wb-indicators.js) */
-    let have=0; for(const cd in countryStats){ const s=countryStats[cd]; if(s&&s[key]!=null&&isFinite(s[key])) have++; } if(have>=25) return;
-    if(!(window.IntMapWB&&window.IntMapWB.fetch)) return; const m=await window.IntMapWB.fetch(c); if(!m) return;
-    for(const cd in m){ const v=m[cd]&&m[cd].v; if(v==null||!isFinite(v)) continue; const s=countryStats[cd]; if(s&&(s[key]==null||!isFinite(s[key]))) s[key]=(+v)*(I.statScale||1); }
+  /* (ui-feedback-nov17) …through the ONE writer (js/wb-layers.js `applyStat`): it replaces undated bundled values with the
+     latest dated ones and records who published them, where this used to fill only empty cells and stop at 25 countries. */
+  window._imFillStat=async function(key){ try{ if(!(window.IntMapWB&&window.IntMapWB.applyStat)) return; const r=await window.IntMapWB.applyStat(key); if(!r) return;
     try{ if(statsSort===key && window._countriesActive && window._countriesActive()) renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){}
   }catch(_){} };
   /* Toggle a country in the compare set WITHOUT re-rendering the whole list (keeps scroll
@@ -3415,6 +3421,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(P){ P.addEventListener('click',(e)=>{ try{ const b=e.target&&e.target.closest&&e.target.closest('.accent-sw'); if(!b||!P.contains(b)) return; e.preventDefault(); pick(b.getAttribute('data-accent')||'default',true); }catch(_){} });
       ['input','change'].forEach(ev=>P.addEventListener(ev,(e)=>{ try{ const t2=e.target; if(!t2||t2.id!=='setting-accent-custom') return; pick(String(t2.value||''),ev==='change'); }catch(_){} })); }
   })();
+  /* (ui-feedback-nov17) where Atlas's conversation is shown — 'tab' (default) or 'float' over the map. js/atlas-float.js is
+     fetched only when a reader has chosen it (or changes it), so a default session loads none of it. */
+  window.imAtlasDisplay='tab';
+  const _applyAtlasDisplay=()=>import('./atlas-float.js').then(m=>m.applyAtlasDisplay(window.imAtlasDisplay)).catch(()=>{});
   function loadSettings(){
     let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
     window.imAccent=(typeof s.accent==='string'&&s.accent)?s.accent:'default'; try{ applyAccent(); }catch(_){}   /* (#R114) restore accent */
@@ -3430,6 +3440,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        'classic' gets the sidebar, which is now the only layer panel there is. */
     if(s.showRank==='on'||s.showRank==='off') window.imShowRank=s.showRank;   /* (#R137) Countries rank numbers (default off) */
     if(s.ticker==='on'||s.ticker==='off') window.imTicker=s.ticker;   /* (#R63) */
+    if(s.atlasDisplay==='tab'||s.atlasDisplay==='float') window.imAtlasDisplay=s.atlasDisplay; if(window.imAtlasDisplay==='float') _applyAtlasDisplay();   /* (ui-feedback-nov17) */
     if(Array.isArray(s.newsCountries)) window.imNewsCountries=s.newsCountries;
     if(Array.isArray(s.newsSources)) window.imNewsSources=s.newsSources;   /* (#R207) */
     if(Array.isArray(s.layerFavs)) window.imLayerFavs=s.layerFavs;
@@ -3442,7 +3453,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
-      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, mapColor:window.imMapColor, dockPanels:window.imDockPanels, /* (#R296) layerPanel / layerPanelSet are no longer saved — the setting is gone */ ticker:window.imTicker, showRank:window.imShowRank,
+      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, mapColor:window.imMapColor, dockPanels:window.imDockPanels, /* (#R296) layerPanel / layerPanelSet are no longer saved — the setting is gone */ ticker:window.imTicker, showRank:window.imShowRank, atlasDisplay:(window.imAtlasDisplay||'tab'),
       newsCountries:window.imNewsCountries, newsSources:window.imNewsSources, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia), aiModel:(window.imAiModel||null)   /* (#R722) developer model pick — see loadSettings */
     })); }catch(_){}
@@ -3499,6 +3510,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(v('setting-map-color'))     v('setting-map-color').value=window.imMapColor;   if(v('setting-dock-panels')) v('setting-dock-panels').value=(window.imDockPanels||'off');   /* (#R238) */
       if(v('setting-showrank'))      v('setting-showrank').value=(window.imShowRank||'on');   /* (#R139) default ON */
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
+      if(v('setting-atlas-display')) v('setting-atlas-display').value=(window.imAtlasDisplay||'tab');   /* (ui-feedback-nov17) */
       try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){}   /* (#R102) ticker symbol/item picker */
       /* (#R207) the ticker's item picker follows the SELECT (`_populateTickerSyms` reads it — js/i18n-late.js), so
          On/Off shows and hides it the moment it is chosen. */
@@ -3560,6 +3572,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       case 'setting-dock-panels': window.imDockPanels=v; try{ applyDockMode(); }catch(_){} return _reflectSettings(false);   /* (#R238) */
       case 'setting-showrank': window.imShowRank=v; try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} return _reflectSettings(false);   /* (#R137) the rank column appears/disappears now */
       case 'setting-ticker': window.imTicker=v; try{ window.IntMapTicker&&window.IntMapTicker.apply(); }catch(_){} return _reflectSettings(false);
+      case 'setting-atlas-display': window.imAtlasDisplay=(v==='float'?'float':'tab'); _applyAtlasDisplay(); saveSettings(); return;   /* (ui-feedback-nov17) js/atlas-float.js moves the panel itself; nothing else repaints */
       case 'setting-newslang': newsLangMode=v; try{ localStorage.setItem('intmap_news_lang',v); }catch(_){} try{ updateNewsLangLabel(); }catch(_){} return _newsRefetchSoon();
     }
     /* the news-language ticks persist themselves (renderNewsLangChecks); what follows from them is the fetch */

@@ -35,6 +35,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { anchorToLngLat } from './popup-anchor.js';
 import * as bus from './bus.js';
 
 export function facilities(HOST){
@@ -604,18 +605,8 @@ export function facilities(HOST){
              'Registrado en OpenStreetMap. Todos los campos son etiquetas del propio objeto; nada se estima.'))
         +'</div></div>';
       document.body.appendChild(el); card=el;
-      try{
-        const vw=window.innerWidth||1200, vh=window.innerHeight||800, w=el.offsetWidth||380, h=el.offsetHeight||300;
-        const rs=(()=>{ try{ const s2=document.getElementById('layer-sidebar-r');
-          return (s2&&document.body.classList.contains('lsr-open'))?s2.getBoundingClientRect().width:0; }catch(_){ return 0; } })();
-        /* ⚠ `project()` is CANVAS-relative (#R252); the card is placed in PAGE coordinates */
-        const px=(()=>{ try{ const q=GE().coords.project({lng:+lngLat.lng,lat:+lngLat.lat});
-          const r2=GE().render.canvas().getBoundingClientRect(); return r2.left+q.x; }catch(_){ return null; } })();
-        let left=(px!=null)?(px+18):(vw-rs-w-24);
-        left=Math.max(12,Math.min(left,vw-rs-w-12));
-        el.style.left=Math.round(Math.max(12,left))+'px';
-        el.style.top=Math.round(Math.max(12,Math.min(96,vh-h-16)))+'px';
-      }catch(_){ el.style.left='16px'; el.style.top='96px'; }
+      /* beside the place, and it keeps following it (js/popup-anchor.js) */
+      try{ anchorToLngLat(el,[+lngLat.lng,+lngLat.lat]); }catch(_){ el.style.left='16px'; el.style.top='96px'; }
       try{ HOST.makeDraggable&&HOST.makeDraggable(el,el.querySelector('.fac-drag')); }catch(_){}
       try{ el.querySelector('.cp-close').onclick=closeCard; }catch(_){}
     }

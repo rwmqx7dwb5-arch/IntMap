@@ -183,8 +183,13 @@ export function makeAtlasAnswerSources(deps) {
     if (!(items && items.length) && !o.pending) return '';
     let h = '<div class="atl-srcs" data-atl-srcs="' + esc(o.id || '') + '">';
     h += '<div class="atl-srcs-h">' + esc(T('Sources of this answer', 'この回答の出典')) + '</div>';
-    h += '<div class="atl-srcs-note">' + esc(T('Read from the tools this answer ran — not written by Atlas. A number marked [n] equals a value that source returned; a number without a mark was not matched to any of them.',
-      'この回答が実行した道具の結果から IntMap が組み立てたもので、Atlas が書いたものではありません。[n] の付いた数字は、その出典が返した値と一致したものです。印の無い数字は、どの結果とも照合できなかったものです。')) + '</div>';
+    /* (atlas-answer-integrity) ONE LINE, AND IT SAYS WHAT THE MARK MEANS. The note was three sentences about how the list is
+       assembled («not written by Atlas», «only numbered numbers are verified») set at the same weight as the sources, and
+       readers asked what the answer was based on could not find the sources under it (2026-11-17). The whole account is
+       still here — in the line's tooltip, for whoever asks how the list was made. */
+    h += '<div class="atl-srcs-note" title="' + esc(T('Read from the tools this answer ran — not written by Atlas. A number marked [n] equals a value that source returned; a number without a mark was not matched to any of them.',
+      'この回答が実行した道具の結果から IntMap が組み立てたもので、Atlas が書いたものではありません。[n] の付いた数字は、その出典が返した値と一致したものです。印の無い数字は、どの結果とも照合できなかったものです。')) + '">'
+      + esc(T('[n] marks a number that matches that source.', '[n] は、その出典の値と一致した数字です。')) + '</div>';
     if (items && items.length) {
       h += '<ol class="atl-srcs-list">';
       items.forEach((it) => {

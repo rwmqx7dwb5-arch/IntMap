@@ -485,16 +485,17 @@ test('R313 ⑦ opening one menu closes the other, and one function knows the set
   const set = ab.slice(ab.indexOf('window._closeMapMenus'), ab.indexOf('window._closeMapMenus') + 420);
   assert.match(set, /_closeMeasureMenu/, 'and it knows about Measure');
   assert.match(set, /_closeShareMenu/, 'and about Share');
+  assert.match(set, /_closeMoreToolsMenu/, 'and about the menu left of Tools (ui-feedback-nov17)');
 
   /* ⚠ BOTH TRIGGERS MUST GO THROUGH IT. Two private "close the other one" lines would drift the
      moment a third menu is added — which is the shape this repo has paid for before. */
-  const calls = ab.match(/_closeMapMenus\('(measure|share)'\)/g) || [];
-  assert.deepEqual(calls.sort(), ["_closeMapMenus('measure')", "_closeMapMenus('share')"],
+  const calls = ab.match(/_closeMapMenus\('(measure|share|more)'\)/g) || [];
+  assert.deepEqual(calls.sort(), ["_closeMapMenus('measure')", "_closeMapMenus('more')", "_closeMapMenus('share')"],
     'each trigger calls it, naming itself as the one to keep open');
 
   /* the reason it was needed: both triggers stop propagation, so neither reaches the other's
      document-level click-away listener. If that ever stops being true this test should be revisited. */
-  assert.ok((ab.match(/e\.stopPropagation\(\);\s*window\._closeMapMenus/g) || []).length === 2,
+  assert.ok((ab.match(/e\.stopPropagation\(\);\s*window\._closeMapMenus/g) || []).length === 3,
     'and it is called on the same click that stops propagating');
 });
 

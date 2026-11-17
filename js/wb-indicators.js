@@ -130,6 +130,42 @@ const BY_KEY = new Map(WB_INDICATORS.map((I) => [I.k, I]));
 export function wbIndicator(k) { return BY_KEY.get(k); }
 /** the indicator that fills a country-table field (`stat`), or undefined */
 export function wbIndicatorFor(stat) { return WB_INDICATORS.find((I) => I.stat === stat); }
+/* ══ (atlas-answer-integrity) HOW A WORLD BANK FIGURE IS CITED — said once, here, beside the series it cites ══════
+   A ranking Atlas answers with, the indicator it paints and the country-table field it fills are three readers of
+   the same series, and the answer's source list (js/atlas-answer-sources.js) named none of them: measured on a
+   production life-expectancy ranking, the list held only the basemap credits. Each reader now states the series it
+   used through this one citation, so the publisher's name, the licence (WDI is CC BY 4.0 — the same words
+   data/health.json and data/mobility.json carry) and the series page are not spelled a second time anywhere. */
+/** wbCitation(code) → { source, licence, url } for one series code, or for a summed pair (an array) */
+export function wbCitation(code) {
+  const codes = (Array.isArray(code) ? code : [code]).map(String).filter(Boolean);
+  return { source: 'World Bank World Development Indicators (' + codes.join(' + ') + ')', licence: 'CC BY 4.0',
+    url: codes.length === 1 ? 'https://data.worldbank.org/indicator/' + encodeURIComponent(codes[0]) : '' };
+}
+/**
+ * applyLatest(table, field, latest) → { field, code, n, years:[min,max]|null } | null
+ *   table   the country table (js/countries-ui.js `countryStats`: ISO3 → record)
+ *   field   a record field one series fills (`stat` above)
+ *   latest  that series' latest value per country, `{ ISO3: { v, y } }` (js/wb-layers.js `wbFetch`)
+ * Writes every value the World Bank has over the table's — a bundled figure included — and records beside it who
+ * published it and for which year (`record._prov[field]`). A country the series does not report keeps its value and
+ * its own `_prov`. A code that is not a row of the table (the World Bank's aggregates: WLD, EMU, AFW …) is not written.
+ * The one writer js/wb-layers.js `applyStat` uses, kept here so a check runs this code rather than a copy.
+ */
+export function applyLatest(table, field, latest) {
+  const I = wbIndicatorFor(field);
+  if (!I || !table) return null;
+  const cite = wbCitation(I.code), sc = I.statScale || 1;
+  let n = 0, lo = Infinity, hi = -Infinity;
+  Object.keys(latest || {}).forEach((code) => {
+    const s = table[code], d = latest[code];
+    if (!s || !d || d.v == null || !isFinite(d.v)) return;
+    s[field] = (+d.v) * sc; n++;
+    const y = +d.y; if (isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
+    (s._prov = s._prov || {})[field] = { source: cite.source, licence: cite.licence, url: cite.url, year: String(d.y || ''), code: I.code };
+  });
+  return { field, code: I.code, n, years: n && isFinite(lo) ? [lo, hi] : null };
+}
 
 /* ══ THE READ ═══════════════════════════════════════════════════════════════════════════════════
    One answer per address. A read in flight is SHARED (two panels asking for the same series make one request) and at

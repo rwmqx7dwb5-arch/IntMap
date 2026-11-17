@@ -33,6 +33,21 @@ export default [
     },
   },
   {
+    row: ['settings.atlasDisplay',      'atlasDisplay',   'atlasFloat,floatingAtlas',                                    'settings','setting', 'settings.atlasDisplay',  'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#setting-atlas-display'] },
+    /* (ui-feedback-nov17) where Atlas answers: in its sidebar tab, or as a translucent card floating over the left of
+       the map (js/atlas-float.js; desktop only — a phone keeps the tab). The Settings select is the one owner; this
+       presses it, so the saved value and the select can never disagree. */
+    doc: [
+      { in: 'settings', at: 12, text: '{"type":"atlasDisplay","mode":"tab"|"float"} = where Atlas answers: in its sidebar tab, or floating translucently over the left of the map with its own input (use for "Atlasの回答を地図の上に浮かせて", "回答をタブに戻して", "float Atlas over the map", "show Atlas in the tab"); ' },
+    ],
+    schema: () => ({ type: 'object', properties: { mode: one('tab', 'float') }, required: ['mode'] }),
+    async run(a, dctx, K) { const setSel = K.setSel, R = K.R, note = K.note, L = K.L;
+      { const m=(String(a.mode||'').toLowerCase()==='float')?'float':'tab'; const ok=setSel('setting-atlas-display',m);
+        return R(ok, note('✓ '+L('Atlas answers','Atlas の回答')+': '+(m==='float'?L('floating over the map','地図の上に浮かせる'):L('in the Atlas tab','Atlas タブ')))); }
+    },
+  },
+  {
     row: ['settings.accent',            'accent',         'accentColor,accentColour',                                    'settings','setting', 'settings.accent',        'setting',             'persist', 'explicit','',        ''],
     ui: { at: ['#accent-picker .accent-sw[data-accent]'] },
     doc: [

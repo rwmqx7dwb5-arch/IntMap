@@ -172,10 +172,13 @@ export default [
       /* ⚠ (#R740) THE KEY IS RESOLVED BEFORE ANYTHING USES IT. `_fillMetric(a.metric)` was handed
          whatever the planner typed, so 「life expectancy」 fetched nothing and the rank then said
          the metric was unavailable — a real metric reported as missing data. */
-    async run(a, dctx, K) { const ensureData = K.ensureData, metSpec = K.metSpec, unknownMetric = K.unknownMetric, _fillMetric = K._fillMetric, clampN = K.clampN, rank = K.rank, L = K.L, lx = K.lx, R = K.R, listHtml = K.listHtml;
+    async run(a, dctx, K) { const ensureData = K.ensureData, metSpec = K.metSpec, unknownMetric = K.unknownMetric, _fillMetric = K._fillMetric, clampN = K.clampN, rank = K.rank, L = K.L, lx = K.lx, R = K.R, listHtml = K.listHtml, metricResult = K.metricResult;
       { await ensureData(); const _sp=metSpec(a.metric); if(!_sp) return unknownMetric(a.metric);
           try{ await _fillMetric(_sp.key); }catch(_){}   /* (#R105) load lazy WB metrics (lifeExp/internet/tfr) before ranking so it never falsely reports "metric unavailable" */
-          const n=clampN(a.n); const list=rank(_sp.key,a.order==='bottom'?'bottom':'top',n); const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+lx(_sp.m.label); return R(!!(list&&list.length), listHtml(t,list,_sp.key)); }
+          const n=clampN(a.n); const ord=a.order==='bottom'?'bottom':'top'; const list=rank(_sp.key,ord,n); const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+lx(_sp.m.label);
+          /* (atlas-answer-integrity) the subject, the data year and the source of exactly these rows travel with the result — js/atlas-metrics.js `metricResult` */
+          const meta=(list&&list.length)?metricResult(_sp.key,list,'ranking:'+ord):null; const dy=meta&&meta.dataYear?('<div style="font-size:11px;color:var(--text-muted);margin:2px 0;">'+L('Data year: ','データの年: ')+meta.dataYear+'</div>'):'';
+          return R(!!(list&&list.length), listHtml(t,list,_sp.key)+dy, meta?{meta}:null); }
     },
   },
   {

@@ -505,11 +505,18 @@ export function makeAtlasProgress(HOST, deps) {
      what it hears in that row's detail column: the latest headline of the model's reasoning summary,
      then 「次: …」 once it has named the functions it is about to call. A statement about the call in
      flight, so it lives on the row that times that call and goes when the row closes. */
-  function detail(bubble, text) {
+  /* (ui-feedback-nov17) `label` is the repeated word in front of the content (「次:」): it is its own span
+     at weight 400, so the content beside it can be the heavier of the two without either going grey. */
+  function detail(bubble, text, label) {
     const tr = traces.get(bubble); if (!tr || tr.done) return;
     const rec = (tr.live && tr.live.state === 'run') ? tr.live : null;
     if (!rec || !rec.row) return;
-    try { const d = rec.row.querySelector('.atl-trace-det'); if (d) d.textContent = String(text || '').slice(0, 160); } catch (_) { }
+    try {
+      const d = rec.row.querySelector('.atl-trace-det'); if (!d) return;
+      d.textContent = '';
+      if (label) { const l = document.createElement('span'); l.className = 'atl-trace-lbl'; l.textContent = String(label); d.appendChild(l); }
+      d.appendChild(document.createTextNode(String(text || '').slice(0, 160)));
+    } catch (_) { }
   }
   /* say(bubble) → a row for what Atlas wrote ON THE WAY — 「まず〜を確認します」. #R663 keeps such a
      note out of the answer; it is still something Atlas said, in order, between the things it did,
@@ -576,13 +583,13 @@ export function makeAtlasProgress(HOST, deps) {
 /* ⚠ CSS IN QUOTED STRINGS ONLY (CONSTITUTION §2 — a back-tick here would blank the site).
    Concatenated into the panel's sheet by js/atlas-styles.js. */
 export const ATLAS_PROGRESS_CSS =
-  '#atlas-panel .atl-trace{margin:2px 0 4px;padding:0;border-left:2px solid var(--glass-border,rgba(128,128,128,0.22));}'
+  '#atlas-panel .atl-trace{margin:-3px 0 4px;padding:0;border-left:2px solid var(--glass-border,rgba(128,128,128,0.22));}'
   + '#atlas-panel .atl-trace-head{display:flex;align-items:center;gap:6px;width:100%;background:none;border:none;'
-  + 'padding:3px 4px 3px 7px;margin:0;cursor:pointer;color:var(--text-muted);font:inherit;font-size:11.5px;font-weight:600;text-align:left;border-radius:7px;}'
+  + 'padding:3px 4px 3px 7px;margin:0;cursor:pointer;color:var(--text-muted);font:inherit;font-size:12px;font-weight:400;text-align:left;border-radius:7px;}'
   + '#atlas-panel .atl-trace-head:hover{background:var(--input-bg);}'
   + '#atlas-panel .atl-trace-chev{display:inline-flex;transition:transform .16s ease;}'
   + '#atlas-panel .atl-trace.open .atl-trace-chev{transform:rotate(90deg);}'
-  + '#atlas-panel .atl-trace-ms{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:500;opacity:.8;}'
+  + '#atlas-panel .atl-trace-ms{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:400;opacity:.8;}'
   /* ⚠ (#R744) THE HEAD'S WORD IS THE SHIMMER, AT THE HEAD'S OWN SIZE. js/atlas-styles.js gives
      .atl-stage 12.5px and a padding of its own for the place it used to stand in; here it is one
      word inside an 11.5px button, so it inherits the button's type and adds no box.
@@ -590,32 +597,41 @@ export const ATLAS_PROGRESS_CSS =
      word is arbitrarily long, so it is the word that ellipsises when the panel is narrow. */
   + '#atlas-panel .atl-trace-sum{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
   + '#atlas-panel .atl-trace-head .atl-stage{font-size:inherit;font-weight:inherit;padding:0;}'
-  + '#atlas-panel .atl-trace-rows{display:none;padding:1px 4px 4px 9px;}'
+  + '#atlas-panel .atl-trace-rows{display:none;padding:2px 4px 4px 9px;}'
   + '#atlas-panel .atl-trace.open .atl-trace-rows{display:block;}'
-  + '#atlas-panel .atl-trace-row{display:flex;align-items:baseline;gap:6px;padding:2px 0;font-size:11.5px;line-height:1.45;color:var(--text-muted);}'
+  + '#atlas-panel .atl-trace-row{display:flex;align-items:baseline;gap:6px;padding:2px 0;font-size:12px;line-height:1.5;color:var(--text-muted);}'
   + '#atlas-panel .atl-trace-mark{flex:0 0 12px;display:inline-flex;align-items:center;justify-content:center;height:12px;position:relative;top:1px;}'
-  + '#atlas-panel .atl-trace-row.ok .atl-trace-mark{color:#30d158;}'
+    /* (ui-feedback-nov17) 「完了のチェックのほうが、いま動いている行より目を引く」. A finished step is the
+     calm part of the record: its tick is the system green pulled halfway to the theme's muted text, so
+     it reads as green in both themes without out-shouting the one row that is still moving. */
+  + '#atlas-panel .atl-trace-row.ok .atl-trace-mark{color:color-mix(in srgb,#30d158 52%,var(--text-muted));opacity:.85;}'
   + '#atlas-panel .atl-trace-row.warn .atl-trace-mark{color:#ff9f0a;}'
   + '#atlas-panel .atl-trace-row.fail .atl-trace-mark,#atlas-panel .atl-trace-row.skip .atl-trace-mark{color:#ff453a;}'
   /* the in-flight row: a small ring, so 「which of these is happening now」 needs no reading */
-  + '#atlas-panel .atl-trace-row.run .atl-trace-mark::before{content:"";width:8px;height:8px;border-radius:50%;'
-  + 'border:1.6px solid currentColor;border-top-color:transparent;animation:atl-trace-spin .7s linear infinite;}'
+  + '#atlas-panel .atl-trace-row.run .atl-trace-mark::before{content:"";width:9px;height:9px;border-radius:50%;'
+  + 'border:2px solid currentColor;border-top-color:transparent;animation:atl-trace-spin .7s linear infinite;}'
   + '@keyframes atl-trace-spin{to{transform:rotate(360deg);}}'
+    /* (ui-feedback-nov17) THE ROW THAT IS MOVING IS THE BRIGHTEST THING IN THE TRACE: full text colour, its
+     content at 600 and its ring in the accent. Labels (「考え中」「次:」) and the clocks stay at 400 and
+     the work itself at 500 — the three are told apart by WEIGHT, not by a darker grey. */
   + '#atlas-panel .atl-trace-row.run{color:var(--text-main);}'
-  + '#atlas-panel .atl-trace-word{flex:0 1 auto;}'
-  + '#atlas-panel .atl-trace-det{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.72;}'
-  + '#atlas-panel .atl-trace-t{flex:0 0 auto;font-variant-numeric:tabular-nums;opacity:.6;}'
+  + '#atlas-panel .atl-trace-row.run .atl-trace-mark{color:var(--primary-color);}'
+  + '#atlas-panel .atl-trace-word{flex:0 1 auto;font-weight:400;}'
+  + '#atlas-panel .atl-trace-det{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);font-weight:500;opacity:.8;}'
+  + '#atlas-panel .atl-trace-row.run .atl-trace-det{font-weight:600;opacity:1;}'
+  + '#atlas-panel .atl-trace-lbl{font-weight:400;color:var(--text-muted);}'
+  + '#atlas-panel .atl-trace-t{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:400;opacity:.6;}'
   /* (atlas-progress-one) THE PLAN, INSIDE THE TRACE. Its head (goal and N/M) stays when the trace is
      folded — the one line a finished multi-step turn still has to say; its steps open with the rows and
      wear the rows' own marks (the same vocabulary: tick, ring, cross, spinner). */
   + '#atlas-panel .atl-trace-plan:empty{display:none;}'
-  + '#atlas-panel .atl-trace-plan{padding:1px 4px 2px 9px;}'
-  + '#atlas-panel .atl-plan-head{display:flex;align-items:baseline;gap:6px;font-size:11.5px;line-height:1.45;color:var(--text-main);}'
+  + '#atlas-panel .atl-trace-plan{padding:2px 4px 4px 9px;}'
+  + '#atlas-panel .atl-plan-head{display:flex;align-items:baseline;gap:6px;font-size:12px;line-height:1.5;color:var(--text-main);}'
   + '#atlas-panel .atl-plan-goal{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}'
-  + '#atlas-panel .atl-plan-count{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--text-muted);}'
+  + '#atlas-panel .atl-plan-count{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:400;color:var(--text-muted);}'
   + '#atlas-panel .atl-plan.bad .atl-plan-count{color:#ff453a;}'
   + '#atlas-panel .atl-plan.warn .atl-plan-count{color:#ff9f0a;}'
-  + '#atlas-panel .atl-plan-steps{list-style:none;margin:1px 0 3px;padding:0 0 3px;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.18));}'
+  + '#atlas-panel .atl-plan-steps{list-style:none;margin:2px 0 8px;padding:0 0 7px;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.18));}'
   + '#atlas-panel .atl-trace:not(.open) .atl-plan-steps{display:none;}'
   + '#atlas-panel .atl-plan-step{border-radius:6px;}'
   + '#atlas-panel .atl-plan-step.cur{color:var(--text-main);}'

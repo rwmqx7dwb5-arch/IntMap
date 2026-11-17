@@ -218,6 +218,35 @@ export function makeAtlasTurnResults(deps) {
       return s;
     }
 
+    /* ══ (atlas-answer-integrity) A RESULT THAT SAYS WHAT IT IS ABOUT IS SUCCEEDED BY A LATER ONE ABOUT THE SAME THING ══
+       Measured on production 2026-11-17: a life-expectancy ranking was corrected inside its own turn — from bundled
+       undated figures to the World Bank's — and the reply kept BOTH, because `opKey` saw two different calls (another
+       `n`, another argument) and the old ranking had nothing that said it answered the same question. Atlas's prose
+       then told the reader to use the new table rather than the old one: the reader was handed IntMap's job.
+       A result that knows its subject says so — `meta.subject` (the quantity: the World Bank series, or the country
+       table's field — js/atlas-metrics.js `metricResult`, js/indicator-browser.js `atlasMeta`) and `meta.facet` (which
+       statement about it: a top ranking, a bottom ranking, a map). One subject and facet is one slot, and the slot
+       holds the result the app is now showing: the LATER one — unless the later one failed (a failure never displaces
+       an answer), or both state the year their data is for and the later one's is OLDER (a newer measurement is the
+       better answer to the same question, whichever was fetched last). Nothing is refused or capped: every call ran,
+       and the map holds what the last one drew. */
+    function subjectKey(res) {
+      const m = res && res.meta;
+      if (!m || !m.subject) return '';
+      return 'subject:' + String(m.subject) + '#' + String(m.facet || '');
+    }
+    function dataYear(res) {
+      const ys = String((res && res.meta && res.meta.dataYear) || '').match(/\d{3,4}/g);
+      return ys ? Math.max.apply(null, ys.map(Number)) : NaN;
+    }
+    function supersedes(later, earlier) {
+      if (!earlier) return true;
+      if (later && later.ok === false && earlier.ok !== false) return false;
+      const a = dataYear(later), b = dataYear(earlier);
+      if (isFinite(a) && isFinite(b) && a !== b) return a > b;
+      return true;
+    }
+
     /**
      * keep(results) -> [result] — the list the reply is built from, in the order it was produced.
      *
@@ -231,10 +260,12 @@ export function makeAtlasTurnResults(deps) {
       list.forEach((res) => {
         if (!res) return;
         const ak = answerKey(res.act);
-        const key = ak || opKey(res.act, res);
+        const sk = ak ? '' : subjectKey(res);
+        const key = ak || sk || opKey(res.act, res);
         if (!key) { out.push(res); return; }
         if (!(key in slot)) { slot[key] = out.length; out.push(res); return; }
         const i = slot[key];
+        if (sk) { if (supersedes(res, out[i])) out[i] = res; return; }
         /* ANSWER: the best wins and a tie keeps the answer already written (#R159's repair).
            OPERATION: an equal re-run wins, because it is the one the app is still holding — but a
            re-run that FAILED never displaces a run that succeeded. */
@@ -246,7 +277,31 @@ export function makeAtlasTurnResults(deps) {
       return out;
     }
 
-    const API = { ANSWER_TYPES, answerKey, opKey, callKey, revisionOf, score, keep };
+    /**
+     * present(kept, text) -> [{ res, fold }] — the editing step between the results and the reply (atlas-answer-integrity).
+     *
+     * Atlas's words are written after every result, so a result whose content the words already carry is a second copy
+     * of the answer: the reader asked one question and saw the ranking in the prose, again as a block, and again as the
+     * map layer's 「Highest」 line. A result that states its subject and a one-line `meta.brief` is FOLDED — its line
+     * shows, the block opens on a press (nothing is deleted: the data, the map and the sources are all still there) — when
+     *   · it is a RANKING and the words name at least half of the places it ranks (compared in `norm`'s terms), or
+     *   · it is any OTHER statement about a subject (a map shaded by it) and Atlas has written its answer — what the map
+     *     changed to is then one line, and the words carry the conclusion.
+     * A result with no subject, a failure, or a reply with no words yet is shown as it always was.
+     */
+    function present(kept, text) {
+      const words = norm(String(text == null ? '' : text));
+      return (Array.isArray(kept) ? kept : []).map((res) => {
+        const m = res && res.ok !== false && res.meta;
+        if (!m || !m.subject || !m.brief || !words) return { res, fold: false };
+        if (!/^ranking/.test(String(m.facet || ''))) return { res, fold: true };
+        const names = (Array.isArray(m.rows) ? m.rows : []).map((n) => norm(String(n || ''))).filter(Boolean);
+        const named = names.filter((n) => words.indexOf(n) >= 0).length;
+        return { res, fold: names.length > 0 && named * 2 >= names.length };
+      });
+    }
+
+    const API = { ANSWER_TYPES, answerKey, opKey, callKey, revisionOf, score, keep, subjectKey, present };
     try { window.IntMapAtlasTurnResults = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
