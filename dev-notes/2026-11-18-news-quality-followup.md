@@ -54,3 +54,7 @@ glasse・exam。対の候補は「少なくとも 1 つが名前」に限って�
 - 共有窓口の読み取り **`window.IntMapNewsGeo` +1**（7 → 8）: `js/news-story.js` の `placeName`（語が地名を綴るか）。
   `js/newsgeo.js` は classic script（`supabase/functions/_shared/newsgeo.js` と 1 バイト同一の写し）で export を持てず、
   import できない。無いときは何も地名と判定しない（規則の無い順に戻る）。
+- **起動費用の天井 `news-story-core` を上げた**（遅延チャンク・地図を開く経路には載らない）。⚠ 増分の大半はこの変更ではない:
+  main のファイルのまま build すると 7,036 B で、天井 5,051 B（#1177 で測った値）を幅 2.0 kB の内側 1,985 B 超えていた
+  （その後の main の変更で育っていた）。この変更が足したのは **216 B**（中心語の対と、地名だけの選択を最初にしない規則）で、
+  それが幅を越えさせた。`news-story` は +452 B（`placeName`）で幅の内側。
