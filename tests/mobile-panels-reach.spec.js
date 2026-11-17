@@ -112,7 +112,8 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     test.setTimeout(150_000);
     await boot(page);
     const cdp = await page.context().newCDPSession(page);
-    await page.evaluate(async () => { window.IntMapRadiation.openPanel({ lng: 138.73, lat: 35.36 }); });
+    /* (deep-lazy-specs) the simulators are lazy since startup-weight (js/lazy-modules.js `radiation`) — the reader's doors go through need() */
+    await page.evaluate(async () => { await window.IntMapLazy.need('radiation'); window.IntMapRadiation.openPanel({ lng: 138.73, lat: 35.36 }); });
     await page.waitForSelector('#rad-panel', { state: 'visible', timeout: 20_000 });
     await settle(page, ['#rad-panel', '#sidebar']);
     await expectReachable(page, cdp, '#rad-panel');
