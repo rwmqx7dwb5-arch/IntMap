@@ -2039,6 +2039,9 @@
          the button would move before pointerup and the click — which is what puts the caret in the field
          (js/app-body.js wireMapSearch) — would land on the map. MEASURED in the narrowest tier: focus stayed on #ms-btn. */
       .map-frame-top{ --ms-folds:1; }
+      /* a folded field shows no result list: there is no room for one, and a search that answers late (the network geocoders)
+         must not open a 44 px list under a 45 px button (measured in production). The list returns with the field. */
+      .map-frame-top > .map-search:not(.has-text:not(.ms-shut)):not(:has(:focus:not(#ms-btn))) .map-search-results{ display:none !important; }
       .map-frame-top > .map-search:is(.has-text:not(.ms-shut),:has(:focus:not(#ms-btn))){ grid-column:1 / -1; }
       .map-frame-top:has(> .map-search.has-text:not(.ms-shut), > .map-search :focus:not(#ms-btn)) > .map-controls-top{ grid-row:2; }
       .map-frame .map-view-menu{ display:flex; }

@@ -269,3 +269,52 @@ test('⑧ the open search field spans the frame and its list fits; Escape folds 
   }
   expect(problems, problems.join('\n')).toEqual([]);
 });
+
+/* ⑨ (map-search-reopen) THE FOLDED SEARCH, WALKED THROUGH EVERY STATE A READER CAN PUT IT IN.
+   MEASURED in production (1152×720 and 960×640, both panels open): after Escape had folded a field that still held words,
+   neither the button nor Enter opened it again (it stayed 45 px; only Shift+Tab got back in), the search they ran instead
+   put 12 results in a 44 px list, and closing that list with Escape also shut the left panel. Each step below is what a
+   reader does next, and after each one the field, the list, the caret and the left panel are asked where they are. */
+test('⑨ open → type → results → Escape → fold → reopen by click and by Enter, and the left panel never moves', async () => {
+  const problems = [];
+  const look = () => page.evaluate(() => {
+    const inp = document.getElementById('ms-input'), res = document.getElementById('ms-results');
+    const rr = res.getBoundingClientRect(), rs = getComputedStyle(res);
+    return { input: inp.getBoundingClientRect().width, value: inp.value, focused: document.activeElement?.id,
+      listShown: rs.display !== 'none' && rr.width > 0 && rr.height > 0, listW: res.clientWidth, listScroll: res.scrollWidth,
+      leftOpen: !document.getElementById('sidebar').classList.contains('collapsed') };
+  });
+  const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+  for (const [vw, vh] of [[1152, 720], [960, 640]]) {
+    await page.setViewportSize({ width: vw, height: vh });
+    await setChromeState(page, { left: 'frosted', right: true, theme: 'light' });
+    const tag = `${vw}×${vh}`;
+    const step = async (name, want) => {
+      await frames(); const s = await look();
+      if (!s.leftOpen) problems.push(`${tag} · ${name}: the left panel shut`);
+      for (const [k, test] of Object.entries(want)) if (!test(s)) problems.push(`${tag} · ${name}: ${k} (${JSON.stringify(s)})`);
+      return s;
+    };
+    await step('folded at rest', { 'folded': (s) => s.input < 1 });
+    await page.click('#ms-btn');
+    await step('button opens the field', { 'open': (s) => s.input > 150, 'caret in the field': (s) => s.focused === 'ms-input' });
+    await page.keyboard.type('Tokyo');
+    await page.waitForFunction(() => !!document.querySelector('#ms-results .ms-item') && document.getElementById('ms-results').style.display === 'block', null, { timeout: 15_000 }).catch(() => { });
+    await step('typing shows results that fit', { 'list shown': (s) => s.listShown, 'list fits': (s) => s.listScroll <= s.listW + 1 });
+    await page.keyboard.press('Escape');
+    await step('Escape closes the list only', { 'list closed': (s) => !s.listShown, 'still open': (s) => s.input > 150 });
+    await page.keyboard.press('Escape');
+    await step('Escape folds the field, words kept', { 'folded': (s) => s.input < 1, 'caret on the button': (s) => s.focused === 'ms-btn', 'words kept': (s) => s.value === 'Tokyo' });
+    await page.waitForTimeout(700);   /* a search that answers late must not open a list under the folded button */
+    await step('no list under a folded field', { 'no list': (s) => !s.listShown });
+    await page.click('#ms-btn');
+    await step('the button reopens it over the words', { 'open': (s) => s.input > 150, 'caret in the field': (s) => s.focused === 'ms-input', 'words kept': (s) => s.value === 'Tokyo' });
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await step('folded again', { 'folded': (s) => s.input < 1, 'caret on the button': (s) => s.focused === 'ms-btn' });
+    await page.keyboard.press('Enter');
+    await step('Enter on the button reopens it', { 'open': (s) => s.input > 150, 'caret in the field': (s) => s.focused === 'ms-input' });
+    await page.evaluate(() => { const i = document.getElementById('ms-input'); i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('ms-results').style.display = 'none'; document.activeElement?.blur?.(); });
+  }
+  expect(problems, problems.join('\n')).toEqual([]);
+});
