@@ -214,7 +214,12 @@ export function wbLayers(HOST){
       {id:'wbdensity', k:'density', ramp:[5,'#fff7ec',25,'#fdd49e',100,'#fc8d59',300,'#d7301f',1000,'#7f0000']},
       {id:'wbedu', k:'edu', ramp:[2,'#a50026',3,'#f46d43',4.5,'#fee08b',6,'#a6d96a',8,'#1a9850']},
       {id:'wbsmoke', k:'smoke', ramp:[8,'#1a9850',15,'#a6d96a',22,'#fee08b',30,'#f46d43',40,'#a50026']},
-      {id:'wbagremp', k:'agremp', ramp:[2,'#fff7ec',10,'#fdd49e',25,'#fc8d59',45,'#d7301f',70,'#7f0000']}
+      {id:'wbagremp', k:'agremp', ramp:[2,'#fff7ec',10,'#fdd49e',25,'#fc8d59',45,'#d7301f',70,'#7f0000']},
+      /* (feature-consolidation) the two series js/layer-packs.js's second World Bank family painted and this table did not —
+         that family is gone (its life-expectancy / unemployment / internet rows were the same series as wblife / wbunemp /
+         wbnet), so every World Bank row is painted here. A link or session naming the old rows opens these (`formerly`). */
+      {id:'wbcpi', k:'cpi', ramp:[10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850']},
+      {id:'wbprecip', k:'precip', ramp:[100,'#f6e8c3',400,'#c7eae5',800,'#80cdc1',1500,'#35978f',2800,'#01665e']}
     ].map((L)=>(L.modes?Object.assign({},L,{modes:L.modes.map(_wbInd)}):_wbInd(L)));
     /* ══ (#R289) THE ACTIVE MODE OF A MODAL LAYER ═══════════════════════════════════════════════
        An entry with `modes` is ONE row that can be divided two ways (today: CO₂ total vs per capita).
@@ -287,6 +292,11 @@ export function wbLayers(HOST){
         try{ const el=window.ensureMapTooltip(); window.showMapTooltip(el); window.setMapTooltipHTML(el,'<div style="font-weight:600;">'+IntMapSafe.html(p.nm||'')+'</div><div style="color:var(--text-muted);font-size:11px;margin-top:2px;">'+(bxLabel(L()))+'</div><div style="font-weight:700;margin-top:3px;">'+fmt(p.v)+'</div>'); window.positionTooltip(e.point); }catch(_){} });
       /* (security-audit) p.nm is the boundary file's own country name (NAME_EN / ADMIN …, _nmOf below) — text, written as text */
       GE().events.onLayer('mouseleave',fill,()=>{ GE().render.canvas().style.cursor=''; try{ const el=window.ensureMapTooltip(); window.hideMapTooltip(el); }catch(_){} });
+      /* (feature-consolidation) a touch screen has no hover, so a TAP shows the same three lines — what the retired
+         js/layer-packs.js family did for its rows (#R25: on a hover device the tooltip above already says it, so no popup there). */
+      if(!window._imTouchPrimary||window._imTouchPrimary()) GE().events.onLayer('click',fill,(e)=>{ if(!e.features||!e.features.length) return; const p=e.features[0].properties||{};
+        try{ if(_wbHover._pop) _wbHover._pop.remove(); }catch(_){}
+        try{ _wbHover._pop=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+IntMapSafe.html(p.nm||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+IntMapSafe.html(bxLabel(L()))+': <b style="color:var(--text-main);">'+IntMapSafe.html(fmt(p.v))+'</b></div>')); }catch(_){} });
     }
     const _nmOf=(p)=>{ p=p||{}; return p.NAME_EN||p.ADMIN||p.name_en||p.NAME||p.name||p.NAME_LONG||p.ADM0_A3||''; };
     /* (#R37) IMF WEO (Oct 2024) GENERAL government gross debt, % of GDP — a broad, authoritative fallback for the
@@ -323,6 +333,10 @@ export function wbLayers(HOST){
       return (+cy>+last)?last:cy; }
     const wbOn=new Set();
     try{ IntMapTime.on(()=>{ wbOn.forEach(id=>{ const B=wbById[id]; if(B) choroOn(B); }); }); }catch(_){}
+    /* (#R254, feature-consolidation) each row builds its own copy of the outlines from countryGeo, so when the 10 m collection
+       replaces the 110 m stand-in (js/countries-ui.js says so once) every row on screen repaints on it — otherwise the outline
+       current at the moment the row was ticked is kept for the session («国境線が雑い（汚職・腐敗指標）») */
+    try{ bus.on('intmap-country-geo',()=>{ wbOn.forEach(id=>{ const B=wbById[id]; if(B) choroOn(B); }); }); }catch(_){}
     /* (map-layer-system) returns a promise that settles when the paint has been done (or given up) — the row's request */
     function choroOn(L){ let fin; const done=new Promise((r)=>{ fin=r; }); wbOn.add(L.id); L=V(L); ensureGeo(geo=>{ if(!geo){ fin(); return; }
       /* (unobserved-is-not-refused) a host silent through every retry is LATE, not empty: say so and paint nothing,

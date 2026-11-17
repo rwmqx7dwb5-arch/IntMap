@@ -381,7 +381,10 @@ test('R499 ④ the map tooltip is shown and hidden through ONE guarded setter', 
   /* (news-crosshair-shadow) 31 → 27: four more were in js/news-ui.js's mobile crosshair preview, disabled by
      #R107 and unreachable since — removed as dead code (dev-notes/2026-10-23-news-crosshair-shadow.md §1), not
      reverted to a direct write. */
-  assert.ok(sites >= 27, `only ${sites} call sites use the guarded setter; the conversion covered 37, six of them in the removed aircraft renderings and four in the removed news crosshair`);
+  /* (feature-consolidation) 27 → 25: two were the hover tooltip of js/layer-packs.js's second World Bank choropleth
+     implementation, folded into js/wb-layers.js's table (which shows its tooltip through the same setter) — the same
+     rows now reach the reader through one implementation, not a direct write. */
+  assert.ok(sites >= 25, `only ${sites} call sites use the guarded setter; the conversion covered 37, six of them in the removed aircraft renderings, four in the removed news crosshair and two in the World Bank implementation folded into js/wb-layers.js`);
   assert.ok(adopters >= 7, `only ${adopters} files adopted it; the defect was spread over 7`);
 });
 

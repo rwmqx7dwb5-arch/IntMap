@@ -54,6 +54,7 @@ export default [
         「存在しない lazy を名指しした行」を測っている）。`newsEvents` はそこに在る。 */
   {
     row: ['news.category',              'newsCategory',   'newsFilter,eventCategory',                                    'data',    'paint',   'panel.news',             'map,explanation',     'session', 'none',   'text',     'newsEvents', 'external'],
+    ui: { at: ['#news-cat-chips .news-cat-chip[data-cat]'] },
     doc: [
       { in: 'news.category', text: 'NEWS CATEGORY FILTER: {"type":"newsCategory","text":str} \u2014 narrows the News list AND the map pins to ONE event category, or "all" to clear it. The eight categories are world, politics, business, technology, science_health, climate_weather, disasters, society (their localised names work too). Use when the user asks to see only one kind of news \u2014 \u300c\u707d\u5bb3\u306e\u30cb\u30e5\u30fc\u30b9\u3060\u3051\u8868\u793a\u3057\u3066\u300d, "show me just the business events", "clear the news filter". It filters what is ALREADY loaded: it does not fetch a new topic (use mapReport for that) and it does not answer a question (use events or analyze). The reply states how many events and how many pins remain, so an empty category is REPORTED rather than looking like a broken filter.\n' },
     ],
@@ -99,6 +100,7 @@ export default [
      that it counts what IntMap's news sources reported, so a quiet country is not presented as a calm one. */
   {
     row: ['news.pulse',                 'newsPulse',      'countryNews,newsByCountry,newsHeat',                          'data',    'layer',   'map.layer',              'map,explanation',     'session', 'none',   '',         'newsIntel'],
+    ui: { at: ['#dl-newspulse'] },
     doc: [
       { in: 'events', at: 30, text: 'NEWS PULSE BY COUNTRY: {"type":"newsPulse","window"?:"24h"|"3d"|"7d"|"14d","mode"?:"volume"|"rising","category"?:str,"n"?:int,"show"?:bool} — how many news EVENTS were FIRST REPORTED in each country over the window (from IntMap\'s own event table, every event it holds, not only the 200 in the News list), or with "mode":"rising" which countries rose most against the window before it. Shows the Layers row 「国ごとのニュースの脈」 unless "show":false, and REPLIES with the ranking and the totals. It follows the Chronos clock (the window ends at the clock\'s instant), so "what was in the news the week of 20 September" is the same call with the clock moved. Use for 「いま世界でニュースが多い国は？」, 「先週より報道が増えている国」, "where is the news this week", "which countries are rising in the news", "show me disaster news by country". The counts are what IntMap\'s news SOURCES reported, so a country with few events may simply be little covered — say so; never call it calm.\n' },
     ],
@@ -129,6 +131,7 @@ export default [
   },
   {
     row: ['news.brief',                 'newsBrief',      'countryBrief,countryNewsBrief,dailyBrief',                    'data',    'panel',   'panel.newsBrief',        'panel,explanation',   'session', 'none',   'country',  'newsIntel', 'external'],
+    ui: { at: ['[data-nint-k]'] },
     doc: [
       { in: 'events', at: 40, text: 'COUNTRY NEWS BRIEF: {"type":"newsBrief","country":str,"window"?:"24h"|"3d"|"7d"|"14d"} — opens the brief of ONE country and replies with its facts: how many news events were first reported there in the window and in the window before, how many were reported by 2+ independent outlets, the categories, the most-reported events (headline, place, time, number of outlets), and the internet outages IODA measured in that country over the same days, each with the news first reported there around it (reported together — NOT shown to be connected; never say one caused the other). Use for 「イランの今週のニュースをまとめて」, 「ブラジルの日報」, "brief me on the news in Nigeria this week", "what happened in Japan in the last 3 days". It reads IntMap\'s whole event table, not only the loaded News list.\n' },
     ],
@@ -153,6 +156,7 @@ export default [
   },
   {
     row: ['news.outages',               'outageNews',     'internetOutageNews,outagesAndNews',                           'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'newsIntel'],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'events', at: 50, text: 'INTERNET OUTAGES BESIDE THE NEWS: {"type":"outageNews","days"?:1-14,"n"?:int} — the internet outage EVENTS IODA (Georgia Tech) measured in every country over the last days (start, duration, the signal that saw it, its score), each with the number of news events first reported in that country from the day before to the day after. Read live from IODA, never stored. Use for 「最近ネット遥断があった国とそのときのニュース」, "which countries had internet outages this week, and was there news". The count is what was REPORTED TOGETHER, not what was reported ABOUT the outage, and never a cause; for whether a place is offline RIGHT NOW use the internet-health layer (nethlth.report). If IODA cannot be reached say exactly that — it is not an all-clear.\n' },
     ],
@@ -171,6 +175,7 @@ export default [
   },
   {
     row: ['news.health',                'newsHealth',     'newsFreshness,ingestHealth',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'newsEvents'],
+    ui: { at: ['#news-ingest-health'] },
     doc: [
       { in: 'events', at: 60, text: 'IS THE NEWS CURRENT: {"type":"newsHealth"} — when IntMap\'s news collection last ran successfully, its rhythm, and which processing steps are failing (fetch, locate, embed, assign, link, entities, summarise, prune). Use for 「ニュースは最新？」, "is the news up to date", "why are there no new events". It distinguishes 「no update for N hours」 (the collection answered and has stalled) from 「could not check」 (the status could not be read — say exactly that, never that it is down).\n' },
     ],
@@ -194,6 +199,7 @@ export default [
   },
   {
     row: ['news.company',               'companyNews',    'newsAboutCompany,companyEvents',                              'data',    'panel',   'panel.company',          'panel,explanation',   'session', 'none', 'text',     'companyPanel', 'external'],
+    ui: { at: ['[data-cop-tab="news"]'] },
     doc: [
       { in: 'events', at: 70, text: 'A COMPANY IN THE NEWS: {"type":"companyNews","company":str} — the news events whose headline or description names that company (matched against the company atlas\'s own roster by its registered name, its ticker with an exchange, or its common name with its capital letter; every match carries the sentence it rests on), opened on the company panel\'s News tab, with a line on the map from the company\'s nearest published site to each event. Use for 「トヨタの最近のニュース」, 「TSMC が出てくる出来事を地図で」, "news about Boeing", "where is Nike in the news". Only companies in the company atlas can be asked; a company it does not hold is NOT FOUND, not 「no news」.\n' },
     ],
@@ -229,6 +235,7 @@ export default [
      answer. ⚠ A STORY IS A STATED QUERY: the reply says «headlines naming …», never that the events are one story. */
   {
     row: ['news.story',                 'newsStory',      'followStory,storyline,storyTimeline,eventThread,newsThread',  'data',    'panel',   'panel.newsStory,camera', 'panel,explanation',   'session', 'none',   'text?',    'newsStory', 'external'],
+    ui: { at: ['#ev-story'] },
     doc: [
       { in: 'events', at: 45, text: 'FOLLOW A NEWS STORY: {"type":"newsStory","event"?:publicId,"text"?:str,"terms"?:[str],"play"?:bool} — every news EVENT of the last 60 days whose HEADLINE NAMES THE SAME WORDS, in time order, opened as a card with a playable timeline (new events per day) and drawn on the map: each report at its place, coloured by when it was first reported, and each newly reached place joined to the nearest place reported before it (the order of the reports — never a cause). Give "event" (a public id — the event the reader has open is used when none is given), or "text" (a headline, or the words of a topic such as "Sudan ceasefire"), or "terms" (the words themselves, lower case). From a headline the words are SUGGESTED (names in it that other headlines also use); the reply says which words were used and offers the other threads. Replies with the number of events, first and latest report, the busiest day, how many places and countries it reached and in what order, the farthest report from the first, and the events. Use for 「この出来事の続報を追って」, 「スーダン停戦の流れを時系列で」, "follow this story", "how did the AfD story spread", "play the Iran war story on the map", "show the timeline of the Vanuatu ferry sinking". It follows the Chronos clock (the story ends at the clock\'s instant). Say that the story is the events whose headlines name the words — not a judgement that they are one story.\n' },
     ],
@@ -272,6 +279,7 @@ export default [
   },
   {
     row: ['news.edition',               'newsEdition',    'todayOnTheMap,dailyEdition,newsDigest,todaysNews,dayInNews',  'data',    'panel',   'panel.newsEdition,camera', 'panel,explanation', 'session', 'none',   '',         'newsEdition', 'external'],
+    ui: { at: ['#news-edition-entry'] },
     doc: [
       { in: 'events', at: 400, text: 'TODAY ON THE MAP (the day\'s news edition): {"type":"newsEdition","day"?:"YYYY-MM-DD","play"?:bool} — every news EVENT reported during the 24 hours up to the Chronos clock\'s instant (or, with "day", during that UTC day of the ~30-day archive), ranked by the number of INDEPENDENT OUTLETS that have reported it, opened as a card and drawn on the map (the top ten numbered, every other placed event as a dot). Replies with the window, how many events (new in the window / continuing from earlier / by 2+ outlets), HOW MANY WERE FIRST REPORTED SINCE THE READER\'S LAST VISIT (this browser opened the edition then) and which of the top ten they are, the top ten (headline, place, outlets, first report), the topics and the countries reported from, and the edition\'s link. "play":true flies the camera to the top ten in order. Use for 「世界で何が起きた？」, 「前回から何が新しい？」, 「最も多く報じられた出来事」, 「10月5日のニュースまとめ」, "what happened in the world today", "what\'s new since I last looked", "today\'s top news on the map", "news digest for yesterday". It follows the Chronos clock. Say that the rank counts outlets — it is not a judgement of importance — and that for a past day the counts are the events\' counts now.\n' },
     ],

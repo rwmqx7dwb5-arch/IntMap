@@ -31,8 +31,7 @@ import './osm-facilities.js';
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take */
-import { jsonWithin, isUnobserved } from './fetch-deadline.js';
-import { readWorldBank, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and the one catalogue of its series */
+import { jsonWithin } from './fetch-deadline.js';
 import { layerInflight } from './layer-rows.js';   /* (restored-layer-catchup) a row's read is in flight there, and its outcome is kept by js/layer-state.js */
 import { layerState } from './layer-state.js';
 import { IntMapGeoEngine } from './geo-engine.js';
@@ -621,7 +620,7 @@ export function betaPack2(HOST){
     const before=()=>GE().layers.has('tool-poly')?'tool-poly':undefined;
     const state={rail:false,dc:false,pharma:false,cpi:false,lifeexp:false,spin:false};
     /* the style layers each module-owned row draws — ONE list, read by the opacity registration and
-       by the basemap-swap self-heal below (the World Bank rows carry theirs in WB[k].ids) */
+       by the basemap-swap self-heal below */
     const ROW_LAYERS={dc:['dc-pt','dc-lbl'],pharma:['ph-pt','ph-lbl'],rail:['rail-ln','rail-det-ln','rail-cons-ln','rail-st','rail-st-lbl']};
     const cache={};
     let pop2=null;
@@ -883,192 +882,9 @@ export function betaPack2(HOST){
       /* the key follows the language the way every other one does */
       if(!box._langWired){ box._langWired=true; bus.on('intmap-lang',()=>setTimeout(draw,20)); }
     }
-    /* ---------- World-Bank-backed country choropleths (live, keyless, CORS*) ---------- */
-    /* cpi: WGI "Control of Corruption" GOVERNANCE SCORE (0–100, higher = cleaner) — the WGI database
-       moved to GOV_WGI_* ids under source=3 (the old CC.EST id now returns 0 rows; curl-verified). */
-    const WB={cpi:{k:'cpi',date:'2023',ids:['wb-cpi-f','wb-cpi-l'],src:'wb-cpi',
-        ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850'],
-        score:v=>Math.max(0,Math.min(100,v)),
-        nm:wbIndicator('cpi').n,
-        note:()=>IntMapLang.t(HOST.lang,"World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.","世界銀行ガバナンス指標「腐敗の統制」スコア（0–100、高い=クリーン）。TIのCPIに相当する公開API系指標。","Weltbank-WGI-Wert „Korruptionskontrolle“ (0–100, höher = sauberer) — das Open-API-Gegenstück zum CPI von TI.","Показатель Всемирного банка WGI «Контроль коррупции» (0–100, выше = чище) — аналог CPI от TI с открытым API.","Puntuación WGI del Banco Mundial «Control de la corrupción» (0–100, más alto = más limpio): el equivalente con API abierta al IPC de TI.")},
-      lifeexp:{k:'life',date:'2022',ids:['wb-le-f','wb-le-l'],src:'wb-le',
-        ramp:['interpolate',['linear'],['get','s'],52,'#a50026',62,'#f46d43',70,'#fee08b',78,'#74add1',85,'#313695'],
-        score:v=>v,
-        nm:LA('Life expectancy (years)','平均寿命（年）','Lebenserwartung (Jahre)','Ожидаемая продолжительность жизни (лет)','Esperanza de vida (años)'),
-        note:()=>IntMapLang.t(HOST.lang,"Life expectancy at birth (World Bank).","出生時平均余命（世界銀行）。","Lebenserwartung bei Geburt (Weltbank).","Ожидаемая продолжительность жизни при рождении (Всемирный банк).","Esperanza de vida al nacer (Banco Mundial).")},
-      /* (#R22) New beta choropleths — all live World Bank, keyless + CORS, latest value per country. */
-      unemp:{k:'unemp',mrnev:1,ids:['wb-unemp-f','wb-unemp-l'],src:'wb-unemp',
-        ramp:['interpolate',['linear'],['get','s'],2,'#1a9850',5,'#a6d96a',9,'#fee08b',15,'#f46d43',25,'#a50026'],
-        score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
-        nm:LA('Unemployment rate (%)','失業率（%）','Arbeitslosenquote (%)','Уровень безработицы (%)','Tasa de desempleo (%)'),
-        note:()=>IntMapLang.t(HOST.lang,"Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).","失業率（労働力人口比、ILO推計・世界銀行、最新年）。","Arbeitslosenquote insgesamt (% der Erwerbsbevölkerung; ILO-Modellrechnung / Weltbank, letztes Jahr).","Уровень безработицы, всего (% рабочей силы; модель МОТ / Всемирный банк, последний год).","Desempleo total (% de la población activa; estimación modelada OIT / Banco Mundial, último año).")},
-      internet:{k:'net',mrnev:1,ids:['wb-internet-f','wb-internet-l'],src:'wb-internet',
-        ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',55,'#fee08b',75,'#74c476',95,'#1a9850'],
-        score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
-        nm:LA('Internet users (%)','インターネット普及率（%）','Internetnutzer (%)','Пользователи интернета (%)','Usuarios de internet (%)'),
-        note:()=>IntMapLang.t(HOST.lang,"Individuals using the Internet (% of population; World Bank, latest year).","人口に占めるインターネット利用者の割合（世界銀行、最新年）。","Internetnutzer (% der Bevölkerung; Weltbank, letztes Jahr).","Пользователи интернета (% населения; Всемирный банк, последний год).","Personas que usan Internet (% de la población; Banco Mundial, último año).")},
-      precip:{k:'precip',mrnev:1,ids:['wb-precip-f','wb-precip-l'],src:'wb-precip',
-        ramp:['interpolate',['linear'],['get','s'],100,'#f6e8c3',400,'#c7eae5',800,'#80cdc1',1500,'#35978f',2800,'#01665e'],
-        score:v=>v, fmt:v=>Math.round(v)+' mm',
-        nm:wbIndicator('precip').n,
-        note:()=>IntMapLang.t(HOST.lang,"Average annual precipitation (depth in mm, long-term; World Bank).","年間平均降水量（深さmm、長期平均・世界銀行）。","Durchschnittlicher Jahresniederschlag (Höhe in mm, langjährig; Weltbank).","Среднегодовое количество осадков (в мм, многолетнее; Всемирный банк).","Precipitación media anual (altura en mm, a largo plazo; Banco Mundial).")}};
-    /* ══ (#R266) THESE FIVE ALSO PAINT ONE YEAR AT A TIME ══════════════════════════════════════════
-       「その他、年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — and this
-       family is the OTHER World-Bank family in the app (corruption / life expectancy / unemployment /
-       internet / annual precipitation). Two of them had a year HARD-CODED in the table (`date:'2023'`,
-       `date:'2022'`) and the other three asked for `mrnev=1`, so the reader could not move any of
-       them. The series itself comes from js/wb-layers.js's `window.IntMapWB.series` — the same fetch,
-       the same cache, one network path for the whole app — and `date`/`mrnev` stay in the table only as
-       the fallback for a build that somehow runs before that module is up.
-       ⚠ THE SOURCE IS BUILT ONCE AND THEN RE-FED. `build()` used to early-return the moment the
-       source existed, which is correct for «turn it back on» and wrong for «show me 2010»: the year
-       change has to reach `setSourceData`, or the picker moves and the map does not. */
-    /* (country-analysis-unify) a row names its indicator (`k`); the series and the WDI source it lives under are js/wb-indicators.js's.
-       `ind` / `source` are read in here once, so the paths below (the series, the time range, the fallback read) are unchanged. */
-    Object.keys(WB).forEach((k)=>{ const I=wbIndicator(WB[k].k); WB[k].ind=I.code; WB[k].source=I.source||null; });
-    const wbYr={};
-    /* ══ (map-layer-system) THE YEAR IS THE CLOCK'S HERE TOO ══════════════════════════════════════════════
-       MEASURED 2026-10-03: three of these rows paint the SAME World Bank series as a row of js/wb-layers.js
-       (life expectancy SP.DYN.LE00.IN = `wblife`, unemployment = `wbunemp`, internet users = `wbnet`), and
-       the two halves disagreed about time. The js/wb-layers.js row painted the clock's year (world-at-time);
-       this one kept a year of its own (`wbYr`) and painted 2023 values on a 1995 map, while js/layer-time-decl.js
-       called `lifeexp` a 2022 snapshot — a statement the row had stopped making when it began reading the whole
-       series. One series, one rule about which year of it is on the map: off the live clock, the clock's year,
-       and after the last year the series holds, that last year (the legend names it). On the live clock nothing
-       changed — the reader's year, else the series' own default. The years the series holds are reported to
-       the time kernel exactly as js/wb-layers.js reports them, so a year before them holds the row back. */
-    function wbClockYear(S){ try{ const T=IntMapTime; if(!T||T.isLive()) return null; const cy=String(T.year());
-      if(!S||!S.years||!S.years.length) return cy; const last=S.years[S.years.length-1]; return (+cy>+last)?last:cy; }catch(_){ return null; } }
-    try{ IntMapTime.on(()=>{ Object.keys(WB).forEach(k=>{ if(state[k]) wbToggle(k,true); }); }); }catch(_){}
-    function wbToggle(key,on){ state[key]=on; const W=WB[key];
-      const show=()=>setVis(W.ids,on);
-      if(!on){ show(); try{ window._hideGenericLegend&&window._hideGenericLegend('wb-'+key); }catch(_){} return; }
-      const build=async()=>{
-        if(!_imCanDraw()){ GE().events.once('idle',build); return; }
-        /* (unobserved-is-not-refused) `late` = a read ran out of time (the series, or the fallback below) — kept apart from «refused» */
-        let late=null;
-        const S=await (async()=>{ try{ if(window.IntMapWB&&window.IntMapWB.series) return await window.IntMapWB.series(W.ind); }catch(e){ if(isUnobserved(e)) late=e; } return null; })();
-        const cy=wbClockYear(S);
-        const year=(cy!=null)?cy:((wbYr[key]!==undefined)?wbYr[key]:((S&&S.best)||''));
-        try{ const LT=window.IntMapLayerTime; if(LT&&S&&S.years&&S.years.length) LT.range('beta-dl-'+key,{ from:S.years[0], to:S.years[S.years.length-1], by:'World Bank API '+W.ind }); }catch(_){}
-        let vals=null;
-        if(S&&year&&S.by[year]){ vals={}; const row=S.by[year]; Object.keys(row).forEach(k2=>{ if(k2&&k2.length===3) vals[k2]=row[k2]; }); }
-        else if(S){ vals={}; const m=(window.IntMapWB&&window.IntMapWB.get(W.ind))||{}; Object.keys(m).forEach(k2=>{ if(k2&&k2.length===3) vals[k2]=m[k2].v; }); }
-        if(!vals||!Object.keys(vals).length){
-          /* the pre-#R266 single-year read, kept as the fallback for a build that beats wbLayers up */
-          vals=cache['wb_'+key];
-          if(!vals){ vals={};
-            /* (country-analysis-unify) js/wb-indicators.js readWorldBank: `late` is its word for «ran out of time» (isUnobserved) */
-            const r=await readWorldBank({ code:W.ind, date:W.date||'', mrnev:W.mrnev||0, source:W.source||0, perPage:400 });
-            r.rows.forEach(row=>{ if(row.iso3&&row.iso3.length===3) vals[row.iso3]=row.v; });
-            if(r.status==='unavailable'&&r.late) late=r.error;
-            /* (unobserved-is-not-refused) A READ THAT RAN OUT OF TIME IS LATE, NOT «COULD NOT LOAD». An empty result is never
-               cached (the refusal branch below returns before the cache line), so the next switch-on reads again either way;
-               what differs is what the reader is told. Late → say so and draw nothing. */
-            if(!Object.keys(vals).length&&late){ try{ imToast(IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return; }
-            if(!Object.keys(vals).length){ try{ imToast(IntMapLang.t(HOST.lang,"Could not load the data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos")); }catch(_){} return; }
-            cache['wb_'+key]=vals;
-          }
-        }
-        if(cy==null) wbYr[key]=year;   /* (map-layer-system) a year the clock chose is the clock's, not this row's */
-        if(GE().layers.hasSource(W.src)){
-          try{ const g=HOST.countryGeo; if(g&&g.features) GE().layers.setSourceData(W.src,{type:'FeatureCollection',
-            features:g.features.filter(f=>f.id!=null&&vals[f.id]!=null).map(f=>({type:'Feature',geometry:f.geometry,properties:{s:W.score(vals[f.id]),raw:vals[f.id],iso:f.id}}))}); }catch(_){}
-          show(); legend(S,year); return; }
-        try{
-          /* ══ ⚠⚠ (#R254) …AND THIS FAMILY MAKES ITS OWN COPY OF THE BORDERS ═══════════════════════
-             「以下のレイヤーは国境線が雑い（…汚職・腐敗指標…）。勝手に解像度の低い国境線に変えるな。」
-             These five choropleths do not use the shared `countries` source; each builds a GeoJSON of
-             its own out of `HOST.countryGeo.features` and hands it to the renderer ONCE (the
-             `hasSource` early-return above means it is never rebuilt). js/countries-ui.js boots on
-             Natural Earth 110 m and REPLACES `countryGeo` with the 10 m collection 4-15 s later, so
-             whichever of the two happened to be in place at the moment the reader ticked the row is
-             the border this layer keeps for the whole session — measured, Japan at 65 vertices
-             against 6,952.
-             The build takes whatever is current, and then WATCHES for the replacement: `countryGeo`
-             is a new OBJECT when the fine one lands (countries-ui assigns, it does not mutate), so
-             identity is the signal — no new global, no second copy of the timing rules. */
-          const geoOf=()=>HOST.countryGeo;
-          let usedGeo=geoOf();
-          const featsFrom=(g)=>g.features.filter(f=>f.id!=null&&vals[f.id]!=null).map(f=>({type:'Feature',geometry:f.geometry,properties:{s:W.score(vals[f.id]),raw:vals[f.id],iso:f.id}}));
-          const feats=featsFrom(usedGeo);
-          (function watchHiRes(n){ n=n||0;
-            if(geoOf()!==usedGeo){ usedGeo=geoOf();
-              try{ GE().layers.setSourceData(W.src,{type:'FeatureCollection',features:featsFrom(usedGeo)}); }catch(_){}
-              return; }
-            if(n<20) setTimeout(()=>watchHiRes(n+1),1500); })();
-          GE().layers.addSource(W.src,{type:'geojson',data:{type:'FeatureCollection',features:feats},attribution:'World Bank'});
-          GE().layers.add({id:W.ids[0],type:'fill',source:W.src,layout:{visibility:'none'},paint:{'fill-color':W.ramp,'fill-opacity':0.68}},before());
-          GE().layers.add({id:W.ids[1],type:'line',source:W.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
-          const _valOf=(p)=>W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(IntMapLang.t(HOST.lang," yrs"," 年"," J."," лет"," años"))));
-          const _nmOf=(p)=>{ let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){} return nm; };
-          /* (#R25) Only show the TAP popup on touch devices. On a hover device the mousemove tooltip below
-             already shows the exact same value, so a click popup was redundant ("ホバーでポップアップが出る
-             レイヤーは、クリック時に新たなポップアップも出さなくていい"). Touch has no hover → keep it there. */
-          if(!window._imTouchPrimary||window._imTouchPrimary()) GE().events.onLayer('click',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-            try{ if(pop2) pop2.remove(); }catch(_){}
-            try{ pop2=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(_nmOf(p))+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>')); }catch(_){}
-          });
-          /* (#R23) per-country HOVER like HDI ("国別の数値があるレイヤーは…ホバーで表示") — reuses the shared
-             map tooltip (desktop pointer; mobile keeps the tap popup above). */
-          GE().events.onLayer('mousemove',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-            try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(!el) return; window.showMapTooltip(el);
-              window.setMapTooltipHTML(el,'<div style="font-weight:600;font-size:14px;">'+esc(_nmOf(p))+'</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>');
-              window.positionTooltip&&window.positionTooltip(e.point); GE().render.canvas().style.cursor='pointer'; }catch(_){}
-          });
-          GE().events.onLayer('mouseleave',W.ids[0],()=>{ try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(el) window.hideMapTooltip(el); GE().render.canvas().style.cursor=''; }catch(_){} });
-          show(); legend(S,year);
-        }catch(_){}
-      };
-      /* ══ ⚠⚠ (#R254) THE BOX WAS THERE; THE LEGEND WAS NOT ═══════════════════════════════════════════
-         「平均寿命レイヤーに凡例がない。（凡例自体はある）」 — exactly right, and the parenthesis is the
-         whole diagnosis. MEASURED on the shipped build: `#data-legend-wb-lifeexp` exists and is
-         displayed, and it contains a title, an opacity slider and the source sentence — and no colour
-         scale at all (`querySelector('[style*=linear-gradient]')` → null). Every core choropleth beside
-         it has one (`data-legend-hdi` prints 0.45 → 0.95 under its ramp), so a country painted blue
-         answers nothing here: there is no way to read a colour back into a number.
-         ⚠ THE SCALE IS GENERATED FROM THE LAYER'S OWN `ramp`, never typed a second time. `W.ramp` is
-         the renderer expression `['interpolate',['linear'],['get','s'], v,c, v,c …]`; the pairs after
-         index 3 ARE the legend, so the two cannot drift apart. All five layers in this family get it
-         (corruption / life expectancy / unemployment / internet / precipitation) — the reader named
-         one, but they are one mechanism and the other four were equally blind. */
-      function rampKey(){
-        const st=[]; try{ for(let i=3;i+1<W.ramp.length;i+=2) st.push([W.ramp[i],W.ramp[i+1]]); }catch(_){}
-        if(st.length<2) return null;
-        const grad=st.map((s,i)=>s[1]+' '+(i/(st.length-1)*100).toFixed(1)+'%').join(',');
-        const num=(v)=>{ try{ return W.fmt?W.fmt(v):String(Math.round(v*10)/10); }catch(_){ return String(v); } };
-        const d=document.createElement('div'); d.className='wb-key'; d.style.cssText='margin-top:6px;';
-        d.innerHTML='<div style="height:11px;border-radius:4px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:linear-gradient(90deg,'+grad+');"></div>'
-          +'<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:2px;">'
-          +st.map(s=>'<span>'+esc(num(s[0]))+'</span>').join('')+'</div>'
-          +'<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:5px;">'
-          +'<span style="width:9px;height:9px;border-radius:2px;background:#9aa0a6;opacity:.55;flex:none;"></span>'
-          +esc(IntMapLang.t(HOST.lang,'no data','データなし','keine Daten','нет данных','sin datos'))+'</div>';
-        return d; }
-      function legend(S,year){ try{ if(window._registerLayerOpacity){ const el=window._registerLayerOpacity('wb-'+key,[W.nm[0],W.nm[1]],W.ids,'beta-dl-'+key);
-        if(el&&!el.querySelector('.wb-key')){ const k=rampKey(); if(k) el.appendChild(k); }
-        /* (#R266) the year picker — same shape as the one on the js/wb-layers.js choropleths, built
-           once and then only re-VALUED, so an open dropdown is not torn out from under the finger */
-        if(el&&S&&S.years&&S.years.length){ let yr=el.querySelector('.wb-yearrow');
-          if(!yr){ yr=document.createElement('div'); yr.className='wb-yearrow'; yr.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
-            yr.innerHTML='<label style="display:contents;"><span class="wb-yearlbl"></span><select class="wb-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select></label>';
-            el.appendChild(yr);
-            yr.querySelector('.wb-year').addEventListener('change',(e)=>{ const v=e.target.value;
-              /* (map-layer-system) a year chosen here is the MAP's year, as on the js/wb-layers.js rows: it moves the one clock */
-              if(v===''){ wbYr[key]=''; try{ IntMapTime.setNow({source:'ui'}); }catch(_){} wbToggle(key,true); }
-              else { delete wbYr[key]; try{ IntMapTime.setYear(+v,{source:'ui'}); }catch(_){ wbYr[key]=v; wbToggle(key,true); } } }); }
-          yr.querySelector('.wb-yearlbl').textContent=IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
-          const sel=yr.querySelector('.wb-year');
-          const latestTxt=IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');
-          if(sel.getAttribute('data-built')!==String(S.years.length)){
-            sel.innerHTML=S.years.slice().reverse().map(y=>'<option value="'+y+'">'+y+' ('+S.counts[y]+')</option>').join('')
-              +'<option value="">'+esc(latestTxt)+'</option>';
-            sel.setAttribute('data-built',String(S.years.length)); }
-          sel.value=year||''; }
-        let d=el&&el.querySelector('.wb-note'); if(el&&!d){ d=document.createElement('div'); d.className='wb-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.5;'; el.appendChild(d); }
-        if(d) d.textContent=W.note()+((S&&year&&S.counts[year])?(' · '+year+(IntMapLang.t(HOST.lang,' · ','・',' · ',' · ',' · '))+S.counts[year]+(IntMapLang.t(HOST.lang,' countries reporting','か国が報告',' Länder mit Daten',' стран с данными',' países con datos'))):''); } }catch(_){} }
-      build();
-    }
+    /* (feature-consolidation) the World Bank choropleths that stood here (corruption / life expectancy / unemployment /
+       internet / annual precipitation) were a second implementation of js/wb-layers.js — three of them painted the very
+       series a row there already painted. They are rows of that table now (bx-wbcpi … bx-wbprecip, `formerly` the old ids). */
     /* ---------- Globe tour — slow endless rotation with the whole earth in view ---------- */
     let spinRAF=null,lastT=0;
     function spinStep(ts){ if(!state.spin) return;
@@ -1086,10 +902,10 @@ export function betaPack2(HOST){
     }
     /* ---------- rows (swept into Others(beta) by reorganizeLayerPanel) ---------- */
     /* (#R38) [JP, EN, DE, RU] — b2Lbl() picks the active UI language (was JP/EN only → English in DE/RU). */
-    const B2LBL={dc:LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),pharma:LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionszentren','Центры фармпроизводства','Centros de fabricación farmacéutica'),lifeexp:LA('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),cpi:LA('Corruption indicator','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Indicador de corrupción'),rail:LA('World railways','世界の鉄道','Eisenbahnen weltweit','Железные дороги мира','Ferrocarriles del mundo'),unemp:LA('Unemployment rate','失業率','Arbeitslosenquote','Уровень безработицы','Tasa de desempleo'),internet:LA('Internet penetration','インターネット普及率','Internetverbreitung','Проникновение интернета','Penetración de internet'),precip:LA('Annual precipitation (by country)','年降水量（国別平均）','Jahresniederschlag (nach Land)','Годовое количество осадков (по странам)','Precipitación anual (por país)'),spin:LA('Auto-rotate','自動回転','Automatisch drehen','Автовращение','Rotación automática')};
+    const B2LBL={dc:LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),pharma:LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionszentren','Центры фармпроизводства','Centros de fabricación farmacéutica'),rail:LA('World railways','世界の鉄道','Eisenbahnen weltweit','Железные дороги мира','Ferrocarriles del mundo'),spin:LA('Auto-rotate','自動回転','Automatisch drehen','Автовращение','Rotación automática')};
     const b2Lbl=(k)=>LPK.arr(B2LBL[k]);
-    const B2SW={dc:'#5e8bff',pharma:'#2bb3a3',lifeexp:'#74add1',cpi:'#f46d43',rail:'#3a7bd5',unemp:'#f46d43',internet:'#1a9850',precip:'#35978f',spin:'#ffd166'};
-    const B2FN={dc:dcToggle,pharma:phToggle,lifeexp:(on)=>wbToggle('lifeexp',on),cpi:(on)=>wbToggle('cpi',on),rail:railToggle,unemp:(on)=>wbToggle('unemp',on),internet:(on)=>wbToggle('internet',on),precip:(on)=>wbToggle('precip',on),spin:spinToggle};
+    const B2SW={dc:'#5e8bff',pharma:'#2bb3a3',rail:'#3a7bd5',spin:'#ffd166'};
+    const B2FN={dc:dcToggle,pharma:phToggle,rail:railToggle,spin:spinToggle};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-dc')) return;
       Object.keys(B2LBL).forEach(k=>{
         const w=document.createElement('div'); w.className='lyr-row';
@@ -1103,13 +919,12 @@ export function betaPack2(HOST){
     function relabel(){ Object.keys(B2LBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=b2Lbl(k); }); }
     bus.on('intmap-lang',()=>setTimeout(relabel,20));
     /* self-heal across basemap swaps — only for a row whose layers the style lost (healWhenLost, top of file) */
-    healWhenLost(GE,90,()=>Object.keys(ROW_LAYERS).concat(Object.keys(WB)).map(k=>({key:k,on:!!state[k],ids:ROW_LAYERS[k]||WB[k].ids})),(gone)=>{
+    healWhenLost(GE,90,()=>Object.keys(ROW_LAYERS).map(k=>({key:k,on:!!state[k],ids:ROW_LAYERS[k]})),(gone)=>{
       /* (#R254) the data-center layer rebuilds itself — its module owns the source, the OSM half and the card */
       if(gone.includes('dc')){ try{ window.IntMapDataCenters&&window.IntMapDataCenters.toggle(true); }catch(_){} }
       if(gone.includes('pharma')&&ptEnsure('pharma','ph-src',ROW_LAYERS.pharma)){ setVis(ROW_LAYERS.pharma,true); load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); }
       /* (#R388) the railway layer rebuilds itself — its module owns the sources, the cells and the card */
       if(gone.includes('rail')){ try{ window.IntMapRailways&&window.IntMapRailways.toggle(true); }catch(_){} }
-      Object.keys(WB).forEach(k=>{ if(gone.includes(k)) wbToggle(k,true); });   /* (#R22) new WB choropleths self-heal too */
     });
     bus.on('intmap-mem-pressure',()=>{ if(!state.rail){ cache.rail=null; try{ window.IntMapRailways&&window.IntMapRailways.drop(); }catch(_){} } });
     /* ⚠ (#R783) THE ACQUISITION DOORS ARE OPENED HERE, and they cost no request: a registration is a

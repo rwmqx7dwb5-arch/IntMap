@@ -7,4 +7,5 @@ export default {
   rest: true,
   share: true,
   lazy: ['warLayer'],
+  formerly: ['dl-wars'],
 };

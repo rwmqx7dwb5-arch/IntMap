@@ -198,10 +198,10 @@ test('#R469 ④ every category names its rows first and folds the remainder', ()
   assert.deepEqual(named(groupOf('climate')),
     ['climate', 'wind', 'annprecip', 'ec-temp', 'ec-precip', 'radar', 'ec-slp', 'ec-gust', 'snow'],
     '気候・気象: ケッペン→風→年降水量→気温→降水量（予報）→降水レーダー→海面気圧→最大瞬間風速→積雪・海氷');
-  assert.deepEqual(named(groupOf('dem')), ['dem', 'cpi', 'eez', 'uselect', 'eu', 'ww2'],
+  assert.deepEqual(named(groupOf('dem')), ['dem', 'wbcpi', 'eez', 'uselect', 'eu', 'ww2'],
     '政治・統治: 民主主義指数→汚職→領海・EEZ→アメリカ大統領選挙→EU加盟国→第二次世界大戦');
-  assert.deepEqual(named(groupOf('lifeexp')),
-    ['lifeexp', 'wbinfmort', 'wbsuicide', 'wbsmoke', 'wbalcohol', 'wbwater'],
+  assert.deepEqual(named(groupOf('wblife')),
+    ['wblife', 'wbinfmort', 'wbsuicide', 'wbsmoke', 'wbalcohol', 'wbwater'],
     '医療・衛生: 平均寿命→乳幼児死亡率→自殺率→喫煙率→一人当たり飲酒量→安全な水');
   assert.deepEqual(named(groupOf('subcables')), ['subcables'], 'IT・技術インフラ: 海底ケーブルだけ');
   assert.deepEqual(named(groupOf('plates')), ['plates', 'relief', 'sealevel'],
@@ -661,8 +661,8 @@ test('R271 ⑦ every layer id is in exactly one group, and the moved rows are wh
   }
   const where = (id) => seen.get(id);
   assert.equal(where('dem'), 'lyrGrpPolitics', 'the Democracy Index belongs with governance');
-  assert.equal(where('cpi'), 'lyrGrpPolitics', 'so does the corruption index');
-  assert.equal(where('lifeexp'), 'lyrGrpHealth', 'life expectancy belongs with health');
+  assert.equal(where('wbcpi'), 'lyrGrpPolitics', 'so does the corruption index');
+  assert.equal(where('wblife'), 'lyrGrpHealth', 'life expectancy belongs with health');
   assert.equal(where('energy'), 'lyrGrpEnergy', 'the energy mix belongs on the energy shelf');
   assert.equal(where('aurora'), 'lyrGrpOrbit', 'an aurora forecast is space weather');
   assert.equal(where('nightsat'), 'lyrGrpDemo', 'night lights show where people are');

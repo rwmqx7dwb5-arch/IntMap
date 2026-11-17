@@ -25,6 +25,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 export default [
   {
     row: ['view.projection',            'projection',     '',                                                            'view',    'camera',  'camera',                 'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['#btn-view-flat', '#btn-view-globe'] },
     doc: [
       { in: 'navigation-view', at: 50, text: '{"type":"projection","mode":"globe"|"flat"}; ' },
     ],
@@ -36,6 +37,7 @@ export default [
   },
   {
     row: ['view.basemap',               'base',           '',                                                            'view',    'layer',   'map.basemap',            'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['#btn-view-map', '#btn-view-sat'] },
     doc: [
       { in: 'navigation-view', at: 70, text: '{"type":"base","mode":"map"|"satellite"}; ' },
     ],
@@ -47,6 +49,7 @@ export default [
   },
   {
     row: ['view.flyTo',                 'flyTo',          '',                                                            'view',    'camera',  'camera',                 'camera,map',          'session', 'none',   'place',    ''],
+    ui: { at: ['#ms-input'] },
     doc: [
       { in: 'navigation-view', at: 10, text: '{"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) ' },
     ],
@@ -98,6 +101,7 @@ export default [
   },
   {
     row: ['view.terrain3d',             'terrain3d',      '',                                                            'view',    'layer',   'map.terrain',            'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['#btn-view-3d'] },
     doc: [
       { in: 'navigation-view', at: 60, text: '{"type":"terrain3d","on":bool}; ' },
     ],
@@ -109,6 +113,7 @@ export default [
   },
   {
     row: ['view.grid',                  'grid',           '',                                                            'view',    'layer',   'map.grid',               'map',                 'session', 'none',   '',         ''],
+    ui: { at: ['#cb-grid'] },
     doc: [
       { in: 'layers', at: 40, text: '{"type":"grid","on":bool}; ' },
     ],
@@ -120,6 +125,7 @@ export default [
   },
   {
     row: ['view.resetNorth',            'resetNorth',     'resetView',                                                   'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
+    ui: { at: ['#btn-compass'] },
     doc: [
       { in: 'navigation-view', at: 90, text: '{"type":"resetNorth"}; ' },
     ],
@@ -131,6 +137,7 @@ export default [
   },
   {
     row: ['view.zoom',                  'zoom',           '',                                                            'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
+    ui: { at: ['#cnp-zoom'] },
     doc: [
       { in: 'navigation-view', at: 20, text: '{"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; ' },
     ],
@@ -146,6 +153,7 @@ export default [
   },
   {
     row: ['view.bearing',               'bearing',        'rotate',                                                      'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
+    ui: { at: ['#cnp-bear'] },
     /* `deg` is unbounded on purpose: a bearing may be negative, and pitch reaches 180 once
        settings.tiltLimit is on (the standard ceiling is 78) */
     doc: [
@@ -166,6 +174,7 @@ export default [
   },
   {
     row: ['view.pitch',                 'pitch',          'tilt',                                                        'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
+    ui: { at: ['#cnp-pitch'] },
     doc: [
       { in: 'navigation-view', at: 40, text: '{"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); ' },
     ],
@@ -190,6 +199,7 @@ export default [
   },
   {
     row: ['view.pan',                   'pan',            'move',                                                        'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
+    ui: { at: ['#map'] },
     /* `dir` carries compass words in five languages, so it stays a string — but a pan with no
        direction is a no-op the case reports as success */
     doc: [
@@ -203,6 +213,7 @@ export default [
   },
   {
     row: ['view.fullscreen',            'fullscreen',     '',                                                            'view',    'none',    'view.fullscreen',        'view',                'session', 'none',   '',         ''],
+    ui: { key: 'F' },
     doc: [
       { in: 'navigation-view', at: 130, text: '{"type":"fullscreen","on":bool}. "bearing" also takes {"dir":"west"|"northeast"|…}; zoom/pitch/bearing/pan accept exact numbers for precise commands ("zoom to 5" → {"type":"zoom","to":5}; "tilt 30°" → {"type":"pitch","deg":30}).\n' },
     ],
@@ -221,6 +232,7 @@ export default [
      navigation.start above. */
   {
     row: ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera,map.location',                 'camera,map',          'session', 'explicit','',        ''],
+    ui: { at: ['#btn-locate'] },
     doc: [
       { in: 'navigation-view', at: 120, text: '{"type":"locate"} flies to the user\'s real GPS position — where the reader IS, right now, from the device itself (asks browser permission; use for 「現在地を表示して」「今いる場所に移動して」, "where am I", "go to my location"). ' },
     ],
@@ -287,6 +299,7 @@ export default [
      — column 8 'explicit' (js/atlas-executor.js 4b). */
   {
     row: ['view.inspect',               'inspect',        'lookAtMap,seeMap,viewInspect,readScreen',                     'view',    'none',    '',                       'explanation',         'read',    'explicit','',        ''],
+    ui: { none: '2026-11-16' },
     /* (#R493) `include` is a CLOSED, ASCII set the dispatch really compares against (rule 2 above),
        and neither argument is required: an inspect with no arguments takes the whole screen, which
        is the right default for 「今見えているもの」. `reason` is free text — what Atlas is looking

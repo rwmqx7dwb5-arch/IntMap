@@ -86,7 +86,10 @@ test('layer-manifest ① the non-Atlas readers take the list from the manifest, 
      the indicator it paints), which the prefix rule — no `bx-` row — would have refused. */
   const THEN = new Set(JSON.parse(read('tests/fixtures/layer-descriptor-before.json')).LAYERS.map((l) => l.id));
   assert.ok(THEN.size > 100, 'the snapshot of the rows the selector was replaced on is read (' + THEN.size + ')');
-  for (const l of M.LAYERS) if (THEN.has(l.id)) assert.equal(!!l.share, OLD.test(l.id), l.id + ': `share` is the selector it replaced');
+  /* (feature-consolidation) …and a row that took a carried row in (`formerly`) carries what it took in: an old link naming
+     the retired row opens it, so the link has to be able to name it too */
+  const took = (id) => ((M.layerDeclaration(id) || {}).formerly || []).some((o) => OLD.test(o));
+  for (const l of M.LAYERS) if (THEN.has(l.id)) assert.equal(!!l.share, OLD.test(l.id) || took(l.id), l.id + ': `share` is the selector it replaced');
 });
 
 /* ── ② the rows the manifest writes are the rows index.html shipped ───────────────────────── */

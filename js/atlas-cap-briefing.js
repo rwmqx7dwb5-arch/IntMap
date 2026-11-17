@@ -26,6 +26,7 @@ const when = (ms) => { try { return new Date(ms).toISOString().replace('T', ' ')
 export default [
   {
     row: ['briefing.share',             'briefingShare',  'shareInvestigation,investigationLink,makeBriefing,shareBriefing', 'research','none', '',                    'panel,explanation',   'read',    'none',   '',         '', 'external'],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'notebook', at: 40, text: '{"type":"briefingShare","ids"?:[str],"query"?:str,"recent"?:int,"thisTurn"?:bool,"title"?:str} = SHARE AN INVESTIGATION AS A LINK (ブリーフィング・調査を共有・地図付きレポート): packs notebook entries — question, your answer, the map it ended on, the calls that drew it, the query rows and the cited sources — INTO ONE LINK that anyone can open with no account: the map is rebuilt and each answer is shown beside its evidence and the time that evidence was taken. Name entries by "ids" (from notebook), by the reader\'s words ("query": the newest match), or "recent":n (the newest n). "thisTurn":true adds THE ANSWER YOU ARE WRITING NOW as the last section — the link is made the moment this turn ends — so for 「調べて、ブリーフィングにして」/"investigate X and give me a link" do the investigation in this turn, then call briefingShare {"thisTurn":true,"title":…} once and write your answer as usual. The composer opens for the reader with the link ready to copy or share; nothing is sent anywhere by this call. ' },
     ],

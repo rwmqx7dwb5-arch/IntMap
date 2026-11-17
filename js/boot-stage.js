@@ -76,7 +76,6 @@
     /* ── only when a reader asks ── */
     { id: 'country-facts', path: 'data/country-facts.json', phone: 'need', who: 'js/countries-ui.js (a country card)', why: 'one card' },
     { id: 'admin1', path: 'data/admin1-world.json.gz', phone: 'need', who: 'js/world-packs.js, js/atlas-admin1.js', why: 'first-level subdivisions, a layer or an Atlas question' },
-    { id: 'asher-languages', path: 'data/asher_languages.geojson', phone: 'need', shipped: false, who: 'js/dash-extended.js', why: 'a layer that asks for a file this site does not ship — it says so on screen when pressed; nothing is read at start-up' },
     { id: 'bathymetry', path: 'data/bathymetry.png', phone: 'need', who: 'js/bathymetry.js', why: 'the tsunami and sea-level tools' },
     { id: 'cshapes', path: 'data/cshapes.js', phone: 'need', who: 'js/time-borders.js', why: 'the time machine' },
     { id: 'hist-borders', path: 'data/hist-borders.js', phone: 'need', who: 'js/time-borders.js', why: 'the time machine' },

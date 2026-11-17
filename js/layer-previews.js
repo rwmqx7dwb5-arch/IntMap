@@ -185,9 +185,7 @@ export function layerPreviews(countryStats,loadCountryData){
     const STAT={
       'dl-pop':{g:s=>s.density,log:1},'dl-gdppc':{g:s=>s.gdppc,log:1},'dl-hdi':{g:s=>s.hdi},
       'dl-dem':{g:s=>s.dem},'dl-milSpend':{g:s=>s.milSpend,log:1},
-      'dl-milSpendGDP':{g:s=>(s.milSpend&&s.gdp)?(s.milSpend*1e9/s.gdp*100):null},
-      'beta-dl-lifeexp':{g:s=>s.lifeExp,ramp:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850']},
-      'beta-dl-internet':{g:s=>s.internet,ramp:[10,'#a50026',30,'#f46d43',55,'#fee08b',80,'#a6d96a',98,'#1a9850']}
+      'dl-milSpendGDP':{g:s=>(s.milSpend&&s.gdp)?(s.milSpend*1e9/s.gdp*100):null}
     };
     function statChoro(spec){ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx);
       let stats=null; try{ stats=(typeof countryStats!=='undefined'&&countryStats&&Object.keys(countryStats).length)?countryStats:null; }catch(_){} if(!stats) return null;
@@ -234,9 +232,8 @@ export function layerPreviews(countryStats,loadCountryData){
       'bx-wbu5mort':{k:'u5mort',r:[3,'#1a9850',10,'#a6d96a',30,'#fee08b',70,'#f46d43',120,'#a50026']},
       'bx-wbpopgrow':{k:'popgrow',r:[-1,'#2c7fb8',0,'#7fcdbb',1.5,'#ffffb2',3,'#fe9929',5,'#cc4c02']},
       'bx-wbenergy':{k:'energy',r:[200,'#fff7ec',1000,'#fdd49e',3000,'#fc8d59',6000,'#d7301f',12000,'#7f0000']},
-      'beta-dl-unemp':{k:'unemp',r:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026']},
       'dl-tfr':{k:'tfr',r:[1,'#2c7fb8',2.1,'#7fcdbb',3,'#ffffb2',4.5,'#fe9929',6.5,'#cc4c02']},   /* countryStats.tfr is only filled AFTER the layer's own lazy fetch — preview goes to WB directly (same ramp as the layer) */
-      'beta-dl-cpi':{k:'cpi',date:'2023',r:[10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850']}   /* WGI rejects mrnev — the year the layer itself asks for; its source (3) is the catalogue's */
+      'bx-wbcpi':{k:'cpi',date:'2023',r:[10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850']}   /* WGI rejects mrnev — the year the layer itself asks for; its source (3) is the catalogue's */
     };
     /* gentle: ONE request at a time with a 350 ms gap — preview traffic must never trip the WB rate limit
        (the R69 lesson: bursts get the whole IP throttled and then EVERYTHING WB-backed shows "no data") */
@@ -432,7 +429,7 @@ export function layerPreviews(countryStats,loadCountryData){
         for(let i=0;i<26;i++){ belts.push([-70+((i*53)%30), -5-((i*29)%12)]); belts.push([95+((i*47)%25), 12+((i*31)%10)]); belts.push([115+((i*67)%35), -55+((i*23)%20)*0.4+42]); }
         belts.forEach(p=>{ ctx.fillStyle='rgba(255,'+(90+Math.floor(Math.random()*80))+',30,0.85)'; ctx.fillRect(X(p[0]),Y(p[1]),1.6,1.6); });
         return c.toDataURL('image/png'); },
-      'beta-dl-precip':()=>gradField([[0,'#7f5539'],[0.28,'#c2a878'],[0.46,'#1d5f8a'],[0.55,'#0a3d67'],[0.66,'#1d5f8a'],[0.82,'#c2a878'],[1,'#7f5539']]),
+      'bx-wbprecip':()=>gradField([[0,'#7f5539'],[0.28,'#c2a878'],[0.46,'#1d5f8a'],[0.55,'#0a3d67'],[0.66,'#1d5f8a'],[0.82,'#c2a878'],[1,'#7f5539']]),
       'eco-dl-ecoregions':()=>{ const b=base(cd=>null); if(!b) return null; const {c,ctx}=b;
         const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#dfeef7'); g.addColorStop(0.2,'#3f7a4e'); g.addColorStop(0.42,'#8fae5c'); g.addColorStop(0.52,'#2e8b57'); g.addColorStop(0.62,'#c9b25e'); g.addColorStop(0.8,'#7fae7a'); g.addColorStop(1,'#e8f2f8');
         ctx.globalCompositeOperation='source-atop'; /* keep only over land */ const c2=cnv(),x2=c2.getContext('2d'); ocean(x2,'#0e1a2b'); x2.save(); x2.beginPath();

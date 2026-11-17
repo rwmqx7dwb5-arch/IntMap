@@ -23,6 +23,7 @@ import { changesPeriod, diffPolities, diffEconomy, diffLayers, rankChanges, boxe
 export default [
   {
     row: ['time.travel',                'timeTravel',     'setTime,timeSet',                                             'time',    'time',    'time',                   'map,time',            'session', 'none',   '',         ''],
+    ui: { at: ['#ntl-slider', '#ntl-date', '#ntl-today'] },
     /* Chronos: a year, a date, a number of days — or the return to live. With none of them the
        case says «give a year or date», which is what this branch list makes it stop needing to. */
     doc: [
@@ -43,6 +44,7 @@ export default [
   },
   {
     row: ['time.whereWhen',             'whereWhen',      'placeAtTime,goWhereWhen',                                     'time',    'time',    'time,camera',            'map,time',            'session', 'none',   'text',     ''],
+    ui: { at: ['#search-input', '#ms-input'] },
     /* (where-when-search) «WHERE + WHEN» AS ONE LINE — the reading the search field and the palette use (js/where-when.js
        `interpret`), so 「京都 1600」 typed to Atlas is read exactly as it is in the search field: the place by any name it had
        (the device's gazetteer, the historical city names, Pleiades) and the instant by syntax (CLDR era words and month
@@ -78,6 +80,7 @@ export default [
   },
   {
     row: ['time.coverage',             'timeCoverage',   'layerTime,whatCanBeDrawn',                                    'time',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     /* (world-at-time) WHAT A MAP AT ONE INSTANT CAN DRAW — for every layer, from what its source states
        (js/layer-time-decl.js through js/layer-time-kernel.js), without switching anything on or moving
        the clock. `on` limits it to the ticked layers. No instant → the clock's. */
@@ -89,6 +92,7 @@ export default [
   },
   {
     row: ['time.cityPopulation',        'cityPopulation', 'historicalPopulation,largestCities,urbanPopulation',          'time',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { at: ['#map'] },
     /* (hist-urban-population) THE HISTORICAL URBAN-POPULATION RECORD, ASKED BY YEAR OR BY CITY. The rule — which figure a
        city shows at a year, how long a stated figure is carried, which cities are listed — is js/hist-urban.js (the ONE place;
        the map layer reads the same functions), over data/hist-urban.json (Reba, Reitsma & Seto 2016, Chandler + Modelski,
@@ -103,6 +107,7 @@ export default [
   },
   {
     row: ['time.borderSource',          'borderSource',   'borderProvenance,lineSource,whyThisBorder,boundarySource',       'time',    'none',    '',                       'explanation',         'read',    'none',   'place?',   ''],
+    ui: { at: ['#map'] },
     /* (border-provenance) WHERE A DRAWN BORDER COMES FROM — the same facts the card on a pressed line shows
        (js/border-provenance-card.js): for every record drawing a shape at the point (or on either side within
        radiusKm), which record and row, its identifiers, who stated each date, how its outline was made, the
@@ -118,6 +123,7 @@ export default [
   },
   {
     row: ['time.yearbook',              'yearbook',       'readYear,worldInYear,yearBook',                               'time',    'none',    'time',                   'explanation',         'session', 'none',   '',         ''],
+    ui: { at: ['#ntl-yearbook'] },
     /* (map-layer-system) THE YEAR BOOK — the instant read off the records the map draws (js/year-book.js): the polities
        the border record draws (largest by the area of the drawn shape), the days inside the year on which it changes and
        who appears / is gone / gets new borders on each, the wars data/wars.json documents with their dated events, the
@@ -131,6 +137,7 @@ export default [
   },
   {
     row: ['time.polityArc',             'polityArc',      'riseAndFall,polityLife,greatestExtent,polityExtent',          'time',    'time',    'camera,time',            'map,time,explanation', 'session', 'none',   '',         ''],
+    ui: { at: ['#ntl-polityarc'] },
     /* (hist-product) RISE AND FALL — one polity read across the whole of time (js/polity-arc.js over data/polity-arcs.json,
        written by the map's own js/time-borders.js): the first and last year the map draws it and whether each edge is the
        polity's or a record's, the year and size of its largest DRAWN extent and the record that drew it, how many drawn
@@ -146,6 +153,7 @@ export default [
   },
   {
     row: ['time.onThisDay',             'onThisDay',      'thisDayInHistory,todayInHistory,onThisDate',                  'time',    'time',    'camera,map.layer,time',  'map,time,explanation', 'session', 'none',   '',         ''],
+    ui: { at: ['.otd-slot .otd-top', '.otd-slot .otd-all'] },
     /* (marketing-next) ON THIS DAY — the dated events of one CALENDAR day in every year the records cover (js/on-this-day.js over
        data/on-this-day.json): the days the border record (CShapes 2.0) begins drawing, stops drawing or redraws a polity, under
        the names the map writes, and the war record's dated events. Read-only, unless `open` (the n-th event: the map on its
@@ -158,6 +166,7 @@ export default [
   },
   {
     row: ['time.weeklyEarth',           'weeklyEarth',    'thisWeekOnEarth,weeklyDigest,worldThisWeek,earthThisWeek',    'time',    'time',    'camera,map.myMap,time',  'map,time,explanation', 'session', 'none',   '',         ''],
+    ui: { at: ['#btn-whats-new'] },
     /* (weekly-earth) THIS WEEK ON EARTH — one ISO week of the archive scripts/build-weekly-earth.mjs keeps (js/weekly-earth.js
        over data/weekly-earth.json): the earthquakes of M 5.5+ the USGS catalogue lists and the natural events NASA's EONET
        tracks, the week's headline (its largest earthquake — a count), and the address of the week's public page. Read-only,
@@ -171,6 +180,7 @@ export default [
   },
   {
     row: ['time.compare',               'timeCompare',    'compareTime,compareYear',                                     'time',    'timeView', 'panel.compare,time.compare', 'panel,time',         'session', 'none',   '',         ''],
+    ui: { at: ['#btn-compare', '#cmp-year'] },
     /* (time-compare-lapse) THE COMPARISON WINDOW AT AN INSTANT OF ITS OWN — 「1914 年 | 今日」. Opens the window if it is
        closed, and sets ITS clock (js/compare.js `setTime`) without moving the main map's: a year, a date, «now», or
        `follow:true` to move with the main map again. The picked layer is judged at that instant by the main map's
@@ -183,6 +193,7 @@ export default [
   },
   {
     row: ['time.thenNow',               'thenNow',        'thenAndNow,swipeCompare,compareThenNow',                      'time',    'timeView', 'panel.compare,time.compare,time', 'panel,time',         'session', 'none',   '',         ''],
+    ui: { at: ['#ntl-thennow'] },
     /* (then-now-card) 「あの頃といま」 — ONE PLACE AT TWO INSTANTS, A DIVIDER BETWEEN THEM (js/compare.js `thenNow`): the
        comparison window's map is laid over the whole map at the main camera and cut at a divider the reader drags; THEN is
        the window's clock (left), NOW the main map's (right). With no `then`, a main map in the past is the THEN and goes to
@@ -196,6 +207,7 @@ export default [
   },
   {
     row: ['time.lapse',                 'timeLapse',      'playTime,playYears',                                          'time',    'timeView', 'time,time.lapse',        'time',                'session', 'none',   '',         ''],
+    ui: { at: ['#ntl-lapse-play', '#ntl-rec-open'] },
     /* (time-compare-lapse) THE CLOCK PLAYED FORWARD — js/time-lapse.js: from a start to an end (default: the present) by
        a step in years, days or hours, one DRAWN frame at a time (a frame waits for the map to draw it). `play:false`
        stops it where it is. Layers begin and stop being drawn as their sources begin and stop stating the instants.
@@ -211,6 +223,7 @@ export default [
   },
   {
     row: ['time.changes',               'changes',        'periodChanges,whatChanged,timeDiff',                          'time',    'none',    '',                       'explanation',         'session', 'none',   'place?',   '', 'external'],
+    ui: { none: '2026-11-16' },
     /* (atlas-reasoning) PRODUCT.md §4 items 8 and 9 — WHAT CHANGED BETWEEN t0 AND t1, over a region. The same records the map
        draws, asked the same question at two ends: the border record (who appears, who ends, whose area changes), the layers whose
        source states each end, the Maddison statistics where BOTH ends state them, and what happened INSIDE the period — the
@@ -224,6 +237,7 @@ export default [
   },
   {
     row: ['time.placeHistory',          'placeHistory',   'placeThroughTime,whoRuledHere,sovereigntyTimeline,formerPolities', 'time',    'none',    '',                       'explanation',         'read',    'none',   'point',    ''],
+    ui: { at: ['#ctx-menu'] },
     /* (place-through-time) WHO HELD ONE POINT, AND WHEN — the SAME record the place card's «This place through time» section
        draws (js/place-history.js): every polity the historical border records the era layer draws (CShapes 2.0, OpenHistoricalMap,
        Cliopatria, the historical-basemaps sheets) put over the point, oldest first, each with its span, what each edge IS (a date
@@ -251,6 +265,7 @@ export default [
   },
   {
     row: ['time.journey',               'journey',        'journeyThroughTime,bordersThen,crossingsThroughTime,routeThroughTime,historicalCrossings', 'time', 'paint', 'map.line', 'map,explanation', 'session', 'none', 'points', ''],
+    ui: { at: ['button.rtp-op[data-op="histBorders"]'] },
     /* (atlas-product) ONE JOURNEY, ASKED AT SEVERAL INSTANTS — the polities a line runs through at each instant Atlas names, in
        order, how far in each, where it crosses, and which polities it meets at some instants and not at others; one instant
        drawn on the map, coloured by polity. The line is great circles between the places (or a route's coordinates as
@@ -268,6 +283,7 @@ export default [
   },
   {
     row: ['time.territoryChange',       'territoryChange', 'landChangedHands,territorialChanges,borderChangeMap,whoGainedLand,changedHands', 'time', 'paint', 'map.polygon', 'map,explanation', 'session', 'none', 'place?', ''],
+    ui: { none: '2026-11-16' },
     /* (wave4-atlas) WHICH LAND CHANGED HANDS BETWEEN TWO INSTANTS, DRAWN ON THE MAP — over a region, each record is asked
        which polity it draws at the centre of every cell of one lattice, at both instants, and the cells whose answer
        changed are drawn as the land that passed from one polity to another (coloured by the receiver), each transfer in
@@ -286,6 +302,7 @@ export default [
   },
   {
     row: ['time.stepHere',              'stepHere',       'nextChangeHere,previousChangeHere,stepPlaceHistory',          'time',    'time',    'time',                   'map,time',            'session', 'none',   'point',    ''],
+    ui: { at: ['#m-clock'] },
     /* (mobile-product) STEP THE CLOCK TO THE NEXT (OR PREVIOUS) INSTANT THE MAP CHANGES OVER ONE POINT — the instants the
        thumb on the phone's clock stops at (js/time-thumb.js) and its arrow keys step between, read off the same record as
        time.placeHistory (js/place-history.js `changesOf` / `stepFrom`): where an entry begins, ends, is drawn under a new
@@ -301,6 +318,7 @@ export default [
   },
   {
     row: ['time.lifeAtPlace',           'lifeAtPlace',    'livedUnder,lifeThroughBorders,ancestorJurisdiction,familyHistory', 'time', 'time', 'time,camera',       'map,time,explanation', 'session', 'none',   'point',    ''],
+    ui: { at: ['#ntl-family'] },
     /* (wave4-history) A LIFE AT ONE PLACE, READ ACROSS THE BORDER RECORDS — js/family-history.js over the same record as
        time.placeHistory (js/place-history.js): what the map draws over the point on the first day of the life and on the
        last, the dated changes inside it (each classified — a change of polity, a record's handover, another row of the same
@@ -317,6 +335,7 @@ export default [
   },
   {
     row: ['time.quakeHistory',          'quakeHistory',   'earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes', 'time', 'panel',  'panel.quakeHistory,camera', 'panel,explanation', 'session', 'none',   'place?',   'quakeHistory'],
+    ui: { at: ['[data-hn="qrecord"]'] },
     /* (live-news-product) THE EARTHQUAKE RECORD OF A PLACE — js/quake-history.js (the card and the map) over
        js/quake-history-core.js (the facts): every earthquake the USGS ANSS ComCat holds within a radius at or above a
        floor, from the oldest entry to the latest; when opened from a quake, that quake's rank and the last one at least as

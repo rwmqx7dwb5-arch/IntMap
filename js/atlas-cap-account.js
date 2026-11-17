@@ -27,6 +27,7 @@ const SIGN_IN = { code: 'SIGN_IN_REQUIRED', category: 'input', retryable: false,
 export default [
   {
     row: ['account.data',               'myData',         'accountData,dataInventory,whatDoYouKnowAboutMe,privacyInventory', 'account', 'none', '', 'explanation', 'read', 'none', '', ''],
+    ui: { at: ['#acct-your-data'], login: true },
     doc: [
       { in: 'more-features', at: 160, text: '{"type":"myData"} = WHAT INTMAP HOLDS ABOUT THE SIGNED-IN READER — reads the account\'s own data inventory from the database: every kind of personal data the account has rows in (profile, synced settings, saved articles and events, community posts/comments/votes, feedback, AI usage, saved places …), how many records of each, why it is kept and for how long, and whether the reader wrote it or IntMap recorded it. Use for 「私のデータは何が保存されている？」「アカウントに何が残ってる？」「個人データの一覧」, "what data do you have about me?", "what does my account store?". To hand the reader the full copy use myDataExport; ' },
     ],
@@ -49,6 +50,7 @@ export default [
   },
   {
     row: ['account.export',             'myDataExport',   'exportMyData,downloadMyData,dataExport,dataPortability', 'account', 'none', '', 'explanation', 'read', 'none', '', ''],
+    ui: { at: ['#acct-export'], login: true },
     doc: [
       { in: 'more-features', at: 170, text: '{"type":"myDataExport"} = DOWNLOAD A COMPLETE COPY OF THE SIGNED-IN READER\'S ACCOUNT DATA as one JSON file (every record of every kind the account holds, with what each kind is) — data portability. Use for 「自分のデータを書き出して」「アカウントのデータをダウンロード」「個人データのエクスポート」, "export my data", "download everything you have about me". The file is saved on the reader\'s own device; nothing is sent anywhere else; ' },
     ],

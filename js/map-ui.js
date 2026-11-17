@@ -18,7 +18,7 @@
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick, tickKey } from './runtime.js';
-import { sharedIds, sharedDisplayIds, isDisplay, LAYERS, BASE, HIDDEN, BETA, layerDeclaration } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
+import { sharedIds, sharedDisplayIds, isDisplay, LAYERS, BASE, HIDDEN, BETA, layerDeclaration, translateRetired } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
 import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the ticker's second rung; (fetch-deadline-layer) and each rung's clock */
 import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the ticker's reads, under that clock — see fjson */
 import { IntMapTime } from './chronos.js';
@@ -693,24 +693,12 @@ export function layerRegistry(HOST){
       try{ if(!g) return false; if(g.type==='Polygon') return poly(g.coordinates);
         /* the whole shape first, then each part: one box rejects an archipelago's every island at once */
         if(g.type==='MultiPolygon') return _bbOut(x,y,_bbOf(g.coordinates))?false:g.coordinates.some(poly); }catch(_){} return false; };
-    const _WBF={ 'wb-cpi-f':{src:'wb-cpi',lb:()=>L5('Corruption (control, WGI)','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Índice de corrupción'),fmt:p=>Math.round(+p.s)+' / 100'},
-      'wb-le-f':{src:'wb-le',lb:()=>L5('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),fmt:p=>(+p.raw).toFixed(1)+' '+L5('yrs','年','J.','лет','años')},
-      'wb-unemp-f':{src:'wb-unemp',lb:()=>L5('Unemployment','失業率','Arbeitslosenquote','Безработица','Desempleo'),fmt:p=>(+p.raw).toFixed(1)+'%'},
-      'wb-internet-f':{src:'wb-internet',lb:()=>L5('Internet users','インターネット普及率','Internetnutzer','Пользователи интернета','Usuarios de internet'),fmt:p=>(+p.raw).toFixed(1)+'%'},
-      'wb-precip-f':{src:'wb-precip',lb:()=>L5('Annual precipitation','年降水量','Jahresniederschlag','Годовые осадки','Precipitación anual'),fmt:p=>Math.round(+p.raw)+' mm'} };
     const _CHF=['pop','hdi','dem','milSpend','milSpendGDP','gdppc','tfr'].map(id=>id+'-fill');
     const _srcData=sid=>{ try{ const d=GE().layers.sourceData(sid); return (d&&d.features)?d:null; }catch(_){ return null; } };
     register('choropleth',{ label:()=>L5('Country choropleth','国別コロプレス','Länder-Choroplethe','Хороплет по странам','Coropleta por países'),
-      on:()=>_CHF.some(_lyrVis)||Object.keys(_WBF).some(_lyrVis)||!!(window._imBxChoroOn&&window._imBxChoroOn()),
+      on:()=>_CHF.some(_lyrVis)||!!(window._imBxChoroOn&&window._imBxChoroOn()),
       sampleAt:(x,y)=>{ const outs=[];
         try{ const v=window.choroValueAt&&window.choroValueAt(x,y); if(v) outs.push(v); }catch(_){}
-        try{ const ids=Object.keys(_WBF).filter(_lyrVis);
-          if(ids.length){ let hit=null;
-            try{ const pt=GE().coords.project([x,y]); const cv=GE().render.canvas();
-              if(pt&&pt.x>=0&&pt.y>=0&&pt.x<=((cv&&cv.clientWidth)||1e9)&&pt.y<=((cv&&cv.clientHeight)||1e9)){ const h=GE().coords.queryRenderedFeatures(pt,{layers:ids}); if(h&&h.length) hit={id:h[0].layer.id,p:h[0].properties||{}}; } }catch(_){}
-            if(!hit){ for(const id of ids){ const d=_srcData(_WBF[id].src); if(!d) continue;   /* (#R121) off-screen → PIP over the layer's own data */
-              const f=d.features.find(ft=>window._imPipGeo(x,y,ft.geometry)); if(f&&f.properties&&f.properties.raw!=null){ hit={id,p:f.properties}; break; } } }
-            if(hit){ const W=_WBF[hit.id]; if(W) outs.push(W.lb()+': '+W.fmt(hit.p)+(hit.p.iso?(' ('+hit.p.iso+')'):'')); } } }catch(_){}
         try{ const bx=window._imBxChoroValueAt&&window._imBxChoroValueAt(x,y); if(bx&&bx.length) outs.push.apply(outs,bx.slice(0,4)); }catch(_){}
         return outs.length?outs.join(' | '):null; }, source:()=>'World Bank / SIPRI / UNDP',
       rights:()=>({upstreams:[{publisher:'World Bank'},{publisher:'SIPRI'},{publisher:'UNDP'}]}) });
@@ -3995,16 +3983,9 @@ export function viewHash(HOST){
       prepare:(list,ctx)=>{ const later=ctx.later;
         /* (basic-display-not-layers) a link from before the `display` field carried day & night and 3-D buildings
            here; they are the `display` field's now (js/map-state.js), so this field opens layers only */
-        const want=(list||[]).filter(k=>!isDisplay(k)); const wantSet=new Set(want);
-        /* ⚠ (#R409) A LINK THAT NAMES THE ROW THAT NO LONGER EXISTS OPENS THE TWO THAT REPLACED IT.
-           「WW1とWW2でレイヤーを分けろ。」 split `dl-wars` into `dl-ww1` and `dl-ww2`; every link
-           shared, bookmarked or restored from a session tab before that names the old id, and the
-           loop below resolves ids by getElementById — so without this it would silently open
-           nothing and then, one line further down, be treated as «not wanted» and close the rest.
-           Renaming a control is not a reason to break the links people already sent each other. */
-        if(wantSet.has('dl-wars')){ wantSet.delete('dl-wars');
-          for(const k of ['dl-ww1','dl-ww2']){ if(!wantSet.has(k)){ wantSet.add(k); want.push(k); } }
-          const i=want.indexOf('dl-wars'); if(i>=0) want.splice(i,1); }
+        /* (feature-consolidation) a link naming a row that was merged, renamed or split opens what replaced it — the row's
+           own `formerly` (js/layer-manifest.js translateRetired; the saved session and the favourites ask the same) */
+        const want=translateRetired(list||[]).filter(k=>!isDisplay(k)); const wantSet=new Set(want);
         /* ⚠ (#R439) …AND THE SAME FOR THE ISOBARS, WHICH ARE NOT A ROW ANY MORE. 「等圧線レイヤーを
            取り込み」 moved that switch into the sea-level-pressure legend, so a link that names
            `dl-ec-isobars` resolves to nothing. It means 「pressure, with contours」 and it is opened

@@ -22,6 +22,7 @@ import { usage } from './usage-counts.js';   /* (anonymous-usage-counts) the Set
 export default [
   {
     row: ['settings.theme',             'theme',          '',                                                            'settings','setting', 'settings.theme',         'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#setting-theme'] },
     doc: [
       { in: 'settings', at: 10, text: '{"type":"theme","mode":"light"|"dark"|"auto"}; ' },
     ],
@@ -33,6 +34,7 @@ export default [
   },
   {
     row: ['settings.accent',            'accent',         'accentColor,accentColour',                                    'settings','setting', 'settings.accent',        'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#accent-picker .accent-sw[data-accent]'] },
     doc: [
       { in: 'settings', at: 20, text: '{"type":"accent","color":"blue"|"green"|"purple"|"red"|"orange"|"teal"|"#rrggbb"|"default"} (recolours the UI accent); ' },
     ],
@@ -54,6 +56,7 @@ export default [
   },
   {
     row: ['settings.language',          'language',       '',                                                            'settings','setting', 'settings.language',      'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#setting-lang'] },
     /* any code, endonym, English name or alias js/lang-registry.js knows — not a closed set */
     doc: [
       { in: 'settings', at: 30, text: '{"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; ' },
@@ -70,6 +73,7 @@ export default [
   },
   {
     row: ['settings.tempUnit',          'tempUnit',       '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#setting-temp-unit'] },
     doc: [
       { in: 'settings', at: 40, text: '{"type":"tempUnit","unit":"c"|"f"|"both"} = the TEMPERATURE SCALE every reading in the app is written in — Celsius, Fahrenheit, or both at once (use for 「華氏で表示して」, "show temperatures in Fahrenheit", 「摄氏に戻して」); ' },
     ],
@@ -80,6 +84,7 @@ export default [
   },
   {
     row: ['settings.units',             'units',          '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#setting-units'] },
     doc: [
       { in: 'settings', at: 50, text: '{"type":"units","mode":"metric"|"imperial"|"both"} = the same choice for everything else that carries a unit.\n' },
     ],
@@ -91,6 +96,7 @@ export default [
   },
   {
     row: ['settings.engine',            'engine',         '',                                                            'settings','setting', 'settings.engine',        'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#setting-engine'] },
     /* ── settings and the layer switches that carry their own state ─────────────────────────── */
     doc: [
       { in: 'tools-panels', at: 260, text: '{"type":"engine","name":"maplibre"|"cesium"} = choose the MAP RENDERING ENGINE. MapLibre is the default 2-D/3-D map; Cesium is a real 3-D globe (a true ellipsoid at every zoom) drawing the SAME satellite imagery and the SAME elevation data through a second adapter, downloaded only when chosen. Switching RELOADS the page, and contour lines plus the closed 3-D solid tool remain MapLibre-only — say so rather than promising them. Omit "name" to REPORT which engine is running (use for "Cesiumに切り替えて", "3D地球儀モードにして", "switch to Cesium", "use the globe engine", "MapLibreに戻して", "which map engine is running?"); ' },
@@ -125,6 +131,7 @@ export default [
   },
   {
     row: ['settings.tiltLimit',         'tiltLimit',      '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#setting-tilt-limit'] },
     doc: [
       { in: 'tools-panels', at: 270, text: '{"type":"tiltLimit","on":bool} = lift the MAP TILT CEILING from the standard 78° to the renderer\'s whole 0-180° range, so the camera can lean past the horizon until it looks straight up (use for "傾きの制限を外して", "地図をもっと倒したい", "let me tilt the map further", "unlimited tilt"); ' },
     ],
@@ -138,6 +145,7 @@ export default [
   },
   {
     row: ['settings.eyeAltitude',       'eyeAltitude',    '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#setting-eye-alt'] },
     doc: [
       { in: 'tools-panels', at: 280, text: '{"type":"eyeAltitude","on":bool} = show the VIEWPOINT\'s own altitude above sea level in the always-on readout at the bottom-left, next to the coordinates and the ground elevation (use for "視点の高度も表示して", "show the camera altitude", "how high is the viewpoint"); ' },
     ],
@@ -151,6 +159,7 @@ export default [
   },
   {
     row: ['settings.usageCounts',       'usageCounts',    'usageStats,anonymousStats,telemetry',                         'settings','setting', 'settings.usageCounts',   'setting',             'persist', 'explicit','',        ''],
+    ui: { at: ['#setting-usage-counts'] },
     /* (anonymous-usage-counts) the «Anonymous usage statistics» switch in Settings — js/usage-counts.js
        owns it (its `usage` export). No `on` and no mode = REPORT the state, including when nothing is
        sent for a reason the switch does not control (the browser's Do Not Track / Global Privacy
@@ -174,6 +183,7 @@ export default [
   },
   {
     row: ['settings.mapReading',        'mapReading',     'readingMode,screenReaderMode,readAloud,describeMap,describeHere', 'settings','none',    '',                       'explanation',         'persist', 'none',   '',        ''],
+    ui: { at: ['#setting-map-reading'] },
     /* (keyboard-and-offline) the map read in words — js/map-reader.js owns it (Alt+R says what is at the centre, Alt+Shift+R
        turns the reading mode on and off; Settings ▸ Keyboard shortcuts has the same switch). No `on` and no `describe` =
        REPORT the state. `describe` returns the very paragraph the screen reader is given. */
@@ -194,6 +204,7 @@ export default [
   },
   {
     row: ['settings.offlineMaps',       'offlineMaps',    'offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet', 'settings','none',    '',                       'explanation',         'persist', 'explicit','',        ''],
+    ui: { at: ['#btn-offline-maps'] },
     /* (keyboard-and-offline) the offline maps — js/offline-maps.js owns them; the Settings button opens the same dialog. `plan` is what the
        dialog shows BEFORE a save (the size, and what is refused with the terms it rests on); `save` keeps the region the view holds. */
     doc: [

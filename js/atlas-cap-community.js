@@ -46,6 +46,7 @@ function entryLines(items, C, esc, lang) {
 export default [
   {
     row: ['community.browse',           'communityMaps',  'browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory', 'community', 'none', 'panel.community', 'explanation', 'session', 'none', '', '', 'external'],
+    ui: { at: ['#acct-community', '#cmm-q'], login: true },
     doc: [
       { in: 'more-features', at: 680, text: '{"type":"communityMaps","query"?:str,"sort"?:"new"|"reused"|"updated","area"?:bool,"limit"?:num,"show"?:bool} = COMMUNITY MAPS / みんなの地図 — the directory of collections (places, saved maps, tours, Atlas answers) that READERS made and chose to list for everyone. Returns each one\'s title, the name it is listed under, its summary, what it holds, where on the globe it is, how many other readers kept a copy and how many listed collections were built on it, the collection it was built on, and its token (for communityMapOpen). "query" matches titles, summaries and names; "sort" new | reused (most kept) | updated; "area":true only those about the area the map is showing now; "show":true also opens the Community maps sheet with the same search for the reader. Use for 「みんなの地図を見せて」「他の人が作った京都の地図はある？」「授業で使える地図を探して」「この辺りの誰かの地図は？」, "find maps other people made about Rome", "what community maps are popular?"; quote only what it returns; ' },
     ],
@@ -66,6 +67,7 @@ export default [
   },
   {
     row: ['community.open',             'communityMapOpen', 'openCommunityMap,openListedCollection,showCommunityMap', 'community', 'panel', 'map.object,camera', 'panel', 'session', 'none', '', '', 'external'],
+    ui: { at: ['#cmm-list'], login: true },
     doc: [
       { in: 'more-features', at: 690, text: '{"type":"communityMapOpen","token"?:str,"title"?:str} = OPEN ONE COMMUNITY MAP ON THE MAP — the collection\'s places as pins (framed) and its card (title, the name it is listed under, summary, its maps and tours to open, «Add to My places», what it was built on), exactly as its link opens it. Give its "token" from communityMaps, or its "title" (when several listed collections match, nothing is opened and they are listed). Use after communityMaps, for 「その地図を開いて」「『関西の遠足』を見せて」, "open the Kansai field trip map"; ' },
     ],
@@ -92,6 +94,7 @@ export default [
   },
   {
     row: ['community.list',             'listCommunityMap', 'listInCommunityMaps,shareWithEveryone,makeMapPublic', 'community', 'none', 'account.places', 'explanation', 'external', 'explicit', '', '', 'external'],
+    ui: { at: ['#acct-my-places'], login: true },
     doc: [
       { in: 'more-features', at: 700, text: '{"type":"listCommunityMap","collection"?:str,"all"?:"everything"|"unfiled","author":str,"summary"?:str} = LIST ONE OF THE READER\'S COLLECTIONS IN COMMUNITY MAPS (みんなの地図に掲載) so ANYONE can find it — publishing it as a read-only link first if it is not published. It is shown under "author", a name THE READER CHOOSES to show (never their e-mail or account name — if they have not said one, ASK), with "summary". Name the collection (it must exist) or "all"; with neither, ASK. A collection the reader filled from someone else\'s listed one names that one as the collection it was built on. Listing a listed collection updates its name/summary and says it was already listed. THE RESULT CARRIES THE LINK. Use for 「京都旅行をみんなの地図に載せて」「この地図を他の先生にも使ってもらえるように公開して」, "list my Field trip collection for everyone"; ' },
     ],
@@ -124,6 +127,7 @@ export default [
   },
   {
     row: ['community.unlist',           'unlistCommunityMap', 'takeOutOfCommunityMaps,stopListing', 'community', 'none', 'account.places', 'explanation', 'persist', 'none', '', ''],
+    ui: { at: ['#acct-my-places'], login: true },
     doc: [
       { in: 'more-features', at: 710, text: '{"type":"unlistCommunityMap","collection"?:str,"all"?:"everything"|"unfiled"} = TAKE ONE OF THE READER\'S COLLECTIONS OUT OF COMMUNITY MAPS — nobody finds it there any more; its read-only link keeps working (to stop the link too, use unpublishCollection). Name the collection or "all". Use for 「みんなの地図から外して」「掲載をやめて」, "unlist my Field trip collection"; ' },
     ],
@@ -146,6 +150,7 @@ export default [
   },
   {
     row: ['community.mine',             'myCommunityMaps', 'myListedMaps,myPublishedReach,howFarMyMapsTravelled', 'community', 'none', '', 'explanation', 'read', 'none', '', ''],
+    ui: { at: ['#acct-my-places'], login: true },
     doc: [
       { in: 'more-features', at: 715, text: '{"type":"myCommunityMaps"} = THE READER\'S PUBLISHED COLLECTIONS AND HOW FAR EACH HAS TRAVELLED — for every collection they published: its title and link, whether it is listed in Community maps (and under which name) or was taken out by IntMap\'s administrators (and why), how many other readers kept a copy and how many listed collections were built on it (counts only — never who). Use for 「私の地図は使われてる？」「公開した地図の反応は？」「何人が保存した？」, "has anyone used my maps?"; ' },
     ],

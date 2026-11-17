@@ -63,6 +63,10 @@
  *              those rows is switched (packageFile / packageExport below are the names, written once); a row
  *              without `pkg` is still implemented inside js/data-layers.js. Several rows may name one package
  *              (a family that shares its implementation). scripts/layer-packages.mjs holds the rest of the rule.
+ *    formerly  (feature-consolidation) the checkbox ids this row REPLACED — a row that was merged into this one or
+ *              renamed to it. A share link, a saved session and a favourite that still name an old id open this
+ *              row instead (js/layer-manifest.js `currentIds`). Several rows may name one old id: a SPLIT opens them
+ *              all (`dl-wars` → `dl-ww1` + `dl-ww2`). An old id is never a current id.
  *    measures  (map-layer-system) the upstream SERIES the row paints, as `<publisher>:<series>` — `worldbank:SP.DYN.LE00.IN`,
  *              `countrystats:gdppc`. Two rows measuring one series are ONE indicator to the reader (js/indicator-browser.js
  *              offers it once and names both rows); the claim is held against the code that paints the row
@@ -83,7 +87,9 @@ export const KINDS = Object.freeze(['display']);
 const DISPLAY_SHELF = 'base';
 /** the facts that join the layer to the other registries */
 const LINK_FIELDS = Object.freeze(['registry', 'state', 'commands', 'atlas', 'sources', 'time', 'pkg', 'measures']);
-const FIELDS = Object.freeze(['id', 'shelf', 'order'].concat(ROW_FIELDS.slice(1), LINK_FIELDS));
+/** (feature-consolidation) the ids this row replaced — read by js/layer-manifest.js `currentIds` */
+const HISTORY_FIELDS = Object.freeze(['formerly']);
+const FIELDS = Object.freeze(['id', 'shelf', 'order'].concat(ROW_FIELDS.slice(1), LINK_FIELDS, HISTORY_FIELDS));
 
 const isStr = (v) => typeof v === 'string' && v.length > 0;
 const isStrList = (v) => Array.isArray(v) && v.length > 0 && v.every(isStr) && new Set(v).size === v.length;
@@ -113,7 +119,7 @@ export function descriptorProblems(d, file, shelves) {
   for (const k of ['key', 'label', 'state']) if (k in d && !isStr(d[k])) at('`' + k + '` must be a non-empty string');
   if ('pkg' in d && !PKG_NAME.test(String(d.pkg))) at('`pkg` must be a lower-case kebab name (it names js/layer-pkg-<pkg>.js)');
   for (const k of ['rest', 'on', 'share', 'html', 'names']) if (k in d && d[k] !== true) at('`' + k + '` is written only when it is true (absent means false)');
-  for (const k of ['lazy', 'registry', 'commands', 'atlas', 'sources', 'measures']) if (k in d && !isStrList(d[k])) at('`' + k + '` must be a list of distinct names');
+  for (const k of ['lazy', 'registry', 'commands', 'atlas', 'sources', 'measures', 'formerly']) if (k in d && !isStrList(d[k])) at('`' + k + '` must be a list of distinct names');
   if ('kind' in d && !KINDS.includes(d.kind)) at('`kind` is one of ' + KINDS.join(', ') + ' (absent means a layer)');
   if ((d.kind === 'display') !== (d.shelf === DISPLAY_SHELF)) at(d.kind === 'display'
     ? "is a display item (`kind: 'display'`) on the shelf `" + d.shelf + '` — the map display is the shelf `' + DISPLAY_SHELF + '`'
@@ -148,6 +154,9 @@ export function setProblems(list) {
   dup('the position', (d) => d.shelf + ' #' + d.order);
   dup('the IntMapLayers id', (d) => d.registry);
   dup('the kernel command', (d) => d.commands);
+  /* (feature-consolidation) an old id is history: if it is somebody's id today, a link naming it means that row */
+  const ids = new Set(list.map((d) => d.id));
+  for (const d of list) for (const old of d.formerly || []) if (ids.has(old)) out.push('`' + old + '` is in the `formerly` of ' + d.id + ' and is also a current id');
   /* (basic-display-not-layers) a shelf is a shelf of layers or of display items, never both: the panel heads,
      counts and folds a shelf as one thing */
   const kindOf = new Map();

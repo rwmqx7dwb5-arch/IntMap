@@ -1371,7 +1371,7 @@ command-palette.js                **コマンドパレット**（Ctrl/⌘+K）�
                                   ツールバー）・レイヤーの登録簿・端末上の地名・企業・作例とツアーを 1 つの欄で探し、各持ち主の
                                   経路で実行する。最後の行は Atlas。Atlas `panel.palette`。必要になったときに読む
 layer-row-label.js                レイヤー登録簿の 1 行が読者に見せる名前（Atlas とコマンドパレットが同じ読み方をする）
-onboarding.js                     ウェルカムカード・ガイドツアーへの入口（`_imStartDemo`。ツアー本体は tour-player.js）・進捗コントロール
+onboarding.js                     ガイドツアーへの入口（`_imStartDemo`。ツアー本体は tour-player.js）・進捗コントロール
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード・打鍵ごとの候補と最後の行の「Atlas に聞く」（全端末）。`goToLocal`（端末上の 1 行へ同じ飛び方で）
 where-when.js                     **「どこ＋いつ」の読み方**（1 つ）——「京都 1600」「Berlin May 1945」「慶長5年 京都」を場所と時刻に分ける構文解析
@@ -1598,7 +1598,6 @@ quest-class.js                    **クラスのセット**（DOM なし）—�
                                   エンジンで全提出を採点する集計（問題ごとの平均・中央値・いちばん苦戦した問題）、CSV、`class_sets`／`class_set_answers` と生徒の 2 つの RPC の扉（§8.6.4）
 quest-class-board.js              **先生のボード**——クラスのセットの一覧・作成・1 セットの結果（リンク・受付の開閉・平均・苦戦した問題・場所の問題のクラスのタップを地図に・
                                   年の分布・生徒ごとの得点・提出の削除・CSV）。採点は quest-panel.js の questionsOf() のエンジン。Atlas の learn.class も読む（遅延・グローバル無し）（§8.6.4）
-premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 supporter.js                      IntMap を支援する——支援パネルの「支援の使い道」（プラン表の 1 日の上限と
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
                                   （Atlas の 1 日の上限に達したとき・7 日目に一度だけ。閉じたら眠る）。Stripe の 2 リンクの宣言。

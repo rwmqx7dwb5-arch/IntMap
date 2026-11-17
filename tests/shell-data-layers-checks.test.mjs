@@ -835,8 +835,7 @@ test('R289 ④ CO₂ and defence spending are one row each, with both views stil
   assert.match(dl, /addChoro\('milSpendGDP'\); applyChoro\('milSpendGDP',s=>\(s\.milSpend!=null&&s\.gdp\)\?s\.milSpend\/s\.gdp\*100:null\)/,
     'the % of GDP picture is the one that was already there');
   /* a saved session that had either retired row on lands on the row that stayed */
-  const st = read('js/session-tabs.js');
-  assert.match(st, /'bx-wbco2t':'bx-wbco2', 'dl-milSpendGDP':'dl-milSpend'/,
+  assert.deepEqual(LM.translateRetired(['bx-wbco2t', 'dl-milSpendGDP']), ['bx-wbco2', 'dl-milSpend'],
     'both retired ids must be translated on the way in, not silently dropped');
 });
 

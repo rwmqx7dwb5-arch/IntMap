@@ -269,37 +269,8 @@ test('⑥ wb-layers: a silent half of a summed indicator is not cached as the se
   assert.equal(reads, 1, 'a refusal was asked again');
 });
 
-test('⑥ layer-packs: a single-year read that ran out of time is said to be late, not «could not load», and nothing is kept', async (t) => {
-  const real = globalThis.fetch;
-  t.after(() => { globalThis.fetch = real; });
-  const src = CODE('js/layer-packs.js');
-  const toasts = [];
-  const run = (series, fetchImpl) => {
-    globalThis.fetch = fetchImpl;
-    const cache = {};
-    /* (country-analysis-unify) the row's fallback read is js/wb-indicators.js readWorldBank — the real one, on a 30 ms clock */
-    const scope = inertScope({ readWorldBank: makeWorldBankReader({ readWithin, clockFor: () => 30 }).read, isUnobserved, cache, state: {}, wbYr: {},
-      WB: { k: { ind: 'X', ids: ['wb-k-fill'], src: 'src-wb-k', score: (v) => v } },
-      _imCanDraw: () => true, imToast: (m) => toasts.push(m), HOST: { lang: 'en', countryGeo: { features: [] } },
-      IntMapLang: { t: (_l, en) => en },   /* (module-graph) the lifted code reads its imported registry binding */
-      window: { IntMapLang: { t: (_l, en) => en }, IntMapWB: { series, get: () => ({}) } } });
-    const wbToggle = new Function('scope', 'with (scope) { ' + liftFunction(src, 'wbToggle') + '\nreturn wbToggle; }')(scope);
-    wbToggle('k', true);
-    return cache;
-  };
-  const late = () => Promise.reject(Object.assign(new Error('deadline'), { reason: 'timeout' }));
-  let cache = run(late, (u, init) => silent(init));
-  assert.ok(await waitFor(() => toasts.length > 0), 'the late read said nothing');
-  assert.deepEqual(toasts, [LATE]);
-  assert.equal('wb_k' in cache, false, 'the empty answer of a read that ran out of time was cached — the layer would never ask again');
-  /* a refusal is an answer, said as before (「Could not load the data」); an empty answer was never cached — the
-     branch returns before the cache line — so both leave the next switch-on free to read again */
-  toasts.length = 0;
-  cache = run(() => Promise.resolve(null), () => answer(404, { message: 'not found' }));
-  assert.ok(await waitFor(() => toasts.length > 0), 'a refused read said nothing');
-  assert.deepEqual(toasts, ['Could not load the data'], 'a refusal was reported as a late answer');
-  assert.equal('wb_k' in cache, false);
-});
+/* (feature-consolidation) ⑥ asked js/layer-packs.js's single-year World Bank fallback to tell «late» from «refused». That
+   family was folded into js/wb-layers.js, whose one read (wbSeries) is held to the same distinction by ⑤ above. */
 
 test('⑥ precip-annual: a silent manifest is asked again while the row is on, shared by its callers, and nothing is kept', async (t) => {
   const real = globalThis.fetch;

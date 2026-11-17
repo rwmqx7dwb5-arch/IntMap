@@ -67,6 +67,7 @@ async function atlasSelf(K) {
 export default [
   {
     row: ['system.diagnose',            'diagnose',       'health,selfCheck,systemStatus,status',                        'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { at: ['#btn-status-page'] },
     /* ── clearing, outlining, the first-class panels ────────────────────────────────────────── */
     doc: [
       { in: 'more-features', at: 90, text: '{"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, whether the live data APIs are reachable, and ATLAS ITSELF — whether the capability registry this page booted with matches the capability modules (a capability implemented but missing from what you can search is named), whether the AI relay answers, and whether every command that declares a toolbar button still has it on the page; a reading that could not be made is reported as unobservable, never as down; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？"). Its result also carries the page 「IntMap のいま」 (IntMap, now): this device (online; stored for offline use), every layer that could not be drawn and why, LAST NIGHT\'S CHECK of every data source (which are not answering, since when, when each last answered) and when Atlas\'s own answers were last evaluated. To SHOW that page to the reader: {"type":"module","name":"IntMapStatus","method":"open"}.\n' + 'REACHABLE AREA / ISOCHRONE — the ONLY correct answer to a travel-TIME question: ' },
@@ -96,6 +97,7 @@ export default [
   },
   {
     row: ['system.connections',         'connections',    'pageConnections,networkActivity,thirdParties,whoIsThisPageTalkingTo', 'system', 'none', '',                   'explanation',         'read',    'none',   '',         ''],
+    ui: { at: ['#btn-connections'] },
     doc: [
       { in: 'more-features', at: 91, text: '{"type":"connections","show"?:true} = WHICH SITES THIS PAGE HAS ACTUALLY CONTACTED SINCE IT OPENED, as the browser itself reports them (every request of the page, every WebSocket, background workers\' requests while the offline helper is active, and attempts the security policy refused), each held against IntMap\'s published statement of where its code connects and what each place is sent (Privacy Policy §4): grouped by what is sent (nothing / the map area / a chosen point / search words / an article URL / what you write), and naming any host the statement does not name or contradicts. Also says what the list cannot see. This is the connection TRANSPARENCY list of IntMap — 「このページの通信」 (outbound connections, third parties). Use for 「このページはどこと通信している？」「外部に何を送っている？」「第三者に位置情報を送っている？」「通信の透明性」, "who is this page talking to?", "what does IntMap send to third parties?", "network activity". show:true also opens the live list (Settings ▸ Privacy ▸ This page\'s connections) for the reader; ' },
     ],
@@ -129,6 +131,7 @@ export default [
        derived connection ledger's probes), sorted by the same rule readiness.html uses (index.html's preconnect = what the
        map opens with; the backend; the data layers), each host it could not reach joined to last night's check. */
     row: ['system.readiness',           'readiness',      'networkCheck,deploymentCheck,schoolNetwork,allowlist,firewallCheck,readinessCheck', 'system', 'none', '', 'explanation',  'read',    'none',   '',         ''],
+    ui: { at: ['#rd-start'] },
     doc: [
       { in: 'more-features', at: 800, text: '{"type":"readiness","scope"?:"essential"|"all"} = NETWORK AND DEVICE CHECK BEFORE ADOPTING INTMAP — runs, on THIS device and THIS network, the check an organisation (school, newsroom, company, town hall) needs before deciding to use IntMap: whether the browser offers the drawing context the map needs (and whether it is hardware accelerated), background workers, an offline copy; and sends ONE request to each outside service the IntMap page loads, reporting which were reached and which were not — sorted into what the map opens with (base map, imagery, typefaces), IntMap\'s own backend (Atlas, sign-in, forms) and the data layers — and, for each one not reached, whether last night\'s check found that service answering (then it is likely blocked on this network and IT should allow it) or silent too (then it is likely the service). scope:"essential" asks only what the map opens with and the backend (seconds); the default asks all. Not reached is an observed failure; no answer in time is reported apart. Its result links the full page (readiness.html) with the list of addresses to allow and a report to copy or attach to an enquiry. Use for 「学校のネットワークで使える？」「導入前に確認したい」「フィルターで何を許可すればいい？」「接続診断」, "will IntMap work on our network?", "what do we need to allow in our firewall?", "readiness check".\n' },
     ],
@@ -186,6 +189,7 @@ export default [
        every storage write in the code (js/device-storage-panel.js). Read only: deleting is the reader's own two-tap action
        in the list, never a model's — so the row reads and opens, and the capability says where the delete lives. */
     row: ['system.deviceStorage',       'deviceStorage',  'storedOnThisDevice,localData,browserStorage,whatIsStoredHere,cookies', 'system', 'none', '', 'explanation', 'read', 'none', '', ''],
+    ui: { at: ['#btn-device-storage'] },
     doc: [
       { in: 'more-features', at: 840, text: '{"type":"deviceStorage","show"?:true} = WHAT THIS BROWSER KEEPS FOR INTMAP, read from the browser itself (every localStorage and sessionStorage key, every IndexedDB database the browser lists, every Cache Storage store with its number of files, cookies, and the browser\'s own estimate of the space used), each held against IntMap\'s ledger derived from every storage write in its code: grouped by kind — sign-in and keys (e.g. a reader\'s own AIS or satellite keys, the sign-in session) / what the reader made / a record of what they did / preferences / copies and housekeeping — with what each item is and its size, NEVER its contents. Names IntMap\'s code does not write are listed separately (the site address is shared with other pages). Says what it cannot see. Use for 「この端末に何が保存されている？」「ブラウザに残っているデータ」「Cookie は使っている？」「API キーはどこに保存？」, "what does IntMap store on my device?", "local storage", "does IntMap use cookies?". show:true also opens the list (Settings ▸ Privacy ▸ Stored on this device), where the reader can delete one item or «Forget this device»; deleting is done there by the reader, not by Atlas; ' },
     ],
@@ -217,6 +221,7 @@ export default [
     /* (ops-next) 「新着」— what changed in IntMap, from whats-new.json (scripts/whats-new.mjs writes it at build from the
        reader's lines every merge's record carries). Read only: the list is IntMap's own words about itself. */
     row: ['system.whatsNew',            'whatsNew',       'whatsnew,changelog,releaseNotes,updates,newFeatures',          'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { at: ['#btn-whats-new'] },
     doc: [
       { in: 'more-features', at: 92, text: '{"type":"whatsNew","since"?:"YYYY-MM-DD","limit"?:int} = 新着・更新情報 — WHAT\'S NEW IN INTMAP: the changes a reader can see, newest first, each with its date and the change (pull request) it came from — the same list as Settings ▸ 「新着」, the updates page and its Atom feed. Use for "what\'s new", "what changed recently", "any new features?", 「最近何が変わった？」「新機能は？」「更新情報」. Entries this device has not shown yet are marked unread. To SHOW the list to the reader: {"type":"module","name":"IntMapWhatsNew","method":"open"}.\n' },
     ],
@@ -242,6 +247,7 @@ export default [
        carries it), and how long THIS visit took (index.html's launch-screen record). Read only: every number is a
        measurement that already exists, and one that could not be read is said to be unread, never guessed. */
     row: ['system.speed',               'speed',          'fieldSpeed,loadTime,startupTime,performance,howFast',          'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { at: ['#btn-status-page'] },
     doc: [
       { in: 'more-features', at: 880, text: '{"type":"speed"} = 読者の手元での速さ — HOW FAST INTMAP OPENS FOR READERS, measured on real page loads (anonymous counts, by release): for phones and for computers, how long half of readers and 3 in 4 readers waited until the map could be used, for the newest release with enough page loads; whether the newest well-measured release is SLOWER (or faster, or settles the map less often) than the release before it; and how long THIS visit took. Use for "how fast is IntMap?", "did the last update make it slower?", "why is it slow to start?", 「IntMap は速い？」「起動に何秒かかる？」「最近遅くなった？」「今回の起動は何秒？」. The same reading is the 「読者の手元で開く速さ」 section of the status page {"type":"module","name":"IntMapStatus","method":"open"}.\n' },
     ],
