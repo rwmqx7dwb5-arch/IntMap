@@ -93,10 +93,10 @@ test('R160 (B5) the RIGHT sidebar no longer pushes the map; right HUD slides to 
   gone("mc.style.marginRight=isMob()?'':'var(--lsr-w)'", 'open() no longer pushes the map via inline margin');
   ok('if(mc&&mc.style.marginRight) mc.style.marginRight=', 'open() clears any stale inline margin instead');
   // right-anchored HUD slides left by the panel width while the panel is open
-  ok('body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + 10px); }', 'top-right controls clear the open right panel');
+  ok('body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + var(--chrome-edge)); }', 'top-right controls clear the open right panel');
   /* ⚠ (#R504) THE OFFSET IN EACH RULE IS THAT ELEMENT'S OWN CORNER INSET, PLUS THE PANEL. The two
      numbers below differ because the two elements sit at different distances from the edge —
-     .map-controls-top at 10 px, Chronos at 6 px since the coord readout was tucked in to meet it —
+     .map-controls-top at --chrome-edge (6 px), Chronos at 6 px since the coord readout was tucked in to meet it —
      and what this test is about is that each one CLEARS the panel, not that they agree. Reading the
      inset from the element's own rule is what keeps that true when either corner moves again. */
   ok('body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 6px); }', 'the news timeline clears the open right panel');

@@ -2365,12 +2365,16 @@ const toolsPanel = (rootSel) => page.evaluate((sel) => {
 }, rootSel);
 const toolsMenuIsOpen = () => page.evaluate(() => document.querySelector('.measure-menu-container').classList.contains('open'));
 
-test('tools-out-of-layers ① the Tools menu has four sections and every row, and each row is a kernel command', async () => {
+test('tools-out-of-layers ① Tools ▾ holds 測る・描く, the menu to its left the other three sections, and each row is a kernel command', async () => {
   await expect(page.locator('#btn-measure-menu')).toContainText(/Tools|ツール/);
   await toolsMenuOpen();
   try {
-    const secs = await toolsPanel('#measure-dropdown .tlp-root');
-    expect(secs.map((s) => s.sec), 'the four sections, in order').toEqual(['measure', 'tool', 'sim', 'analysis']);
+    /* (tools-split) the four sections are split across two menus: Tools ▾ keeps 測る・描く, 「その他のツール ▾」 the rest */
+    const toolsSecs = await toolsPanel('#measure-dropdown .tlp-root');
+    expect(toolsSecs.map((s) => s.sec), 'Tools ▾ holds only 測る・描く').toEqual(['measure']);
+    const moreSecs = await toolsPanel('#more-tools-dropdown .tlp-root');
+    expect(moreSecs.map((s) => s.sec), 'the menu to its left, in order').toEqual(['tool', 'sim', 'analysis']);
+    const secs = toolsSecs.concat(moreSecs);
     for (const s of secs) {
       expect(s.hidden, s.sec + ' is shown').toBe(false);
       expect(s.heading.length, s.sec + ' has a heading').toBeGreaterThan(1);
@@ -2391,7 +2395,7 @@ test('tools-out-of-layers ① the Tools menu has four sections and every row, an
       'rows whose command the kernel does not hold').toEqual([]);
     /* one door per simulator: the strip carries no twin of a row */
     expect(await page.locator('#btn-seismic-sim, #btn-pandemic-sim').count(), 'the strip buttons that duplicated two rows are gone').toBe(0);
-  } finally { await page.evaluate(() => { try { window._closeMeasureMenu(); } catch { /* courtesy */ } }); }
+  } finally { await page.evaluate(() => { try { window._closeMeasureMenu(); window._closeMoreToolsMenu(); } catch { /* courtesy */ } }); }
 });
 
 test('tools-out-of-layers ② the Layers panel holds no tool row and no analysis strip; a search still finds a tool; the presets stay', async () => {
