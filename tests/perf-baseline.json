@@ -4,7 +4,7 @@
     "gzip": 1553376,
     "brotli": 1177847,
     "requests": 9,
-    "modules": 892,
+    "modules": 894,
     "cssRaw": 386557,
     "cssGzip": 63308
   },
@@ -193,7 +193,7 @@
   "dist": {
     "total": 1570310796,
     "data": 1208196998,
-    "assets": 21179682
+    "assets": 21288373
   },
   "phone": {
     "bytes": 342631,
