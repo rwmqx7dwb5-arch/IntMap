@@ -78,7 +78,9 @@ GitHub のダンプ `isawnyu/pleiades.datasets` の `data/rdf/time-periods.ttl` 
 - 配る資産の天井（`check:perf`）: `dist.total`・`dist.data` が約 8.5 MB 増えた（CI 実測 1,541,988.8 kB／1,187,732.6 kB）。
   内訳は精密な輪郭の 2 記録（非営利側の束 444 行・16.2 MB の断片、復元 3,608 行）と非営利側の束そのもの（2.41→3.15 MB）、
   `data/border-coast.js` の新しい環。どれも読者が拡大したとき・その年を開いたときにだけ取りに行く資産で、起動費用は
-  変わらない。ローカルの build から `node scripts/perf-budget.mjs --update` で超えた行だけを上げた。
+  変わらない。ローカルの build から `node scripts/perf-budget.mjs --update` で超えた行だけを上げた。同じ実行は
+  `eager.gzip` も 1506.0→1513.5 kB に上げたが、この作業が起動の束に足したのは `js/reference-data.js` の 2 行だけで、
+  7.5 kB はこのマシンの build と CI の build の差なので、その行は戻した（起動の天井は main の CI 実測のまま）。
 
 ## 5. 検査
 
