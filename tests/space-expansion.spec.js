@@ -65,12 +65,12 @@ test('③ the eclipse layer draws 2026-08-12 across northern Spain', async ({ pa
     return E.length ? E[0].ms : null;
   });
   expect(msMax).not.toBeNull();
-  await page.evaluate((ms) => {
-    const cb = document.getElementById('dl-eclipse');
-    if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
-    return new Promise((r) => setTimeout(r, 0)).then(() => window.IntMapEclipseLayer && window.IntMapEclipseLayer.show(ms));
-  }, msMax);
-  await page.waitForFunction(() => { const s = window.IntMapEclipseLayer && window.IntMapEclipseLayer.state(); return s && s.on && s.kind; }, null, { timeout: 30_000 });
+  /* switch the row on, wait for its package to arrive (it publishes IntMapEclipseLayer when it loads), THEN pin the eclipse:
+     before the package is there, there is nothing to pin it on — and the row first draws the clock's next eclipse */
+  await page.evaluate(() => { const cb = document.getElementById('dl-eclipse'); if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); } });
+  await page.waitForFunction(() => { const s = window.IntMapEclipseLayer && window.IntMapEclipseLayer.state(); return s && s.on; }, null, { timeout: 30_000 });
+  await page.evaluate((ms) => window.IntMapEclipseLayer.show(ms), msMax);
+  await page.waitForFunction((ms) => { const s = window.IntMapEclipseLayer.state(); return s.on && s.kind && Math.abs(s.ms - ms) < 3600000; }, msMax, { timeout: 30_000 });
   const st = await page.evaluate(() => window.IntMapEclipseLayer.state());
   expect(st.kind).toBe('total');
   const inside = await page.evaluate(async (pt) => {
