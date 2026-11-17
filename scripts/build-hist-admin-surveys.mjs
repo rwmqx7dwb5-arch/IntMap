@@ -123,11 +123,20 @@ export const GOVERNANCE = {
         "attribution": true,
         "creditRequired": true,
         "paidBy": "HGIS de las Indias (Werner Stangl, University of Graz) — Territorial gazetteer for Spanish America, 1701-1808"
+      },
+      {
+        "publisher": "Carl Müller-Crepon (London School of Economics), via Harvard Dataverse",
+        "url": "https://doi.org/10.7910/DVN/9JI06R",
+        "licence": "CC0 1.0 (outer frames follow CShapes 2.0, CC BY-NC-SA 4.0)",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attribution": true,
+        "creditRequired": true,
+        "paidBy": "Carl Müller-Crepon (LSE) — Colonial administrative units of Sub-Saharan Africa, 1895–1964 (CC0 1.0; frames after CShapes 2.0, CC BY-NC-SA 4.0)"
       }
     ],
     licence: 'CC BY-NC-SA 4.0',
     cadence: 'static',
-    cadenceBasis: { observed: 'on 2026-10-05 the HGIS de las Indias gazetteer is at V4 (2023-10-26)', expires: 'when the publisher releases a new version', canon: 'scripts/histsurveys/hgisindias.mjs SOURCE' },
+    cadenceBasis: { observed: 'on 2026-10-05 the HGIS de las Indias gazetteer is at V4 (2023-10-26); on 2026-11-17 the Müller-Crepon replication data is at V1.0', expires: 'when either publisher releases a new version', canon: 'scripts/histsurveys/hgisindias.mjs and scripts/histsurveys/mullercrepon.mjs SOURCE' },
     builtBy: 'scripts/build-hist-admin-surveys.mjs',
   },
 };

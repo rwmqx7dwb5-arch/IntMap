@@ -59,7 +59,7 @@ select is((select v from _cap where k='t6'), '3',       'refund_ai_turn releases
 select is((select v from _cap where k='t7'), '4/true',  '…and the turn with it, so the retry is a new, charged turn');
 
 select ok((select prosecdef from pg_proc where oid='public.consume_ai_turn(uuid,integer,text,integer,integer)'::regprocedure), 'consume_ai_turn is SECURITY DEFINER');
-select ok((select prosecdef from pg_proc where oid='public.refund_ai_turn(uuid,text)'::regprocedure),                          'refund_ai_turn is SECURITY DEFINER');
+select ok((select prosecdef from pg_proc where oid='public.refund_ai_turn(uuid,text,uuid)'::regprocedure),                          'refund_ai_turn is SECURITY DEFINER');
 
 -- ── SECURITY DEFINER surface is hardened (catalog assertions, as superuser) ──
 select ok((select prosecdef from pg_proc where oid='public.is_admin()'::regprocedure),                     'is_admin() is SECURITY DEFINER');

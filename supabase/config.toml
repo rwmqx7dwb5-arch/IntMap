@@ -283,3 +283,12 @@ verify_jwt = false
 # It stores no IP, user id, session, User-Agent or time finer than the day.
 [functions.usage-count]
 verify_jwt = false
+
+# community-class (security-review-nov) is the one way in to three public doors the database now grants
+# to service_role only: the Community maps directory (community_maps) and a student's class link
+# (class_set_open, class_set_submit). verify_jwt is OFF because students have no account. What stands in
+# front of it: POST only, a body ceiling, the Origin allow-list, only the declared arguments of each RPC,
+# and a per-caller token (an HMAC of the address, never the address) taken BEFORE a class code is looked
+# up — failing closed for the class doors. It stores nothing.
+[functions.community-class]
+verify_jwt = false

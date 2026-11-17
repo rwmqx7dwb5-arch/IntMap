@@ -164,8 +164,8 @@ select hasnt_column('public', 'profiles_public', 'is_admin', 'profiles_public do
 select has_function('public','is_admin', 'is_admin() exists');
 select has_function('public','increment_ai_usage', array['uuid','integer'], 'increment_ai_usage(uuid,int) exists');
 select has_function('public','consume_ai_turn', array['uuid','integer','text','integer','integer'], 'consume_ai_turn(...) exists');   -- (#R318)
-select has_function('public','refund_ai_turn', array['uuid','text'], 'refund_ai_turn(uuid,text) exists');
-select has_function('public','settle_ai_turn', array['uuid','text'], 'settle_ai_turn(uuid,text) exists');   -- (#R801)
+select has_function('public','refund_ai_turn', array['uuid','text','uuid'], 'refund_ai_turn(uuid,text,uuid) exists');   -- (security-review-nov: the generation)
+select has_function('public','settle_ai_turn', array['uuid','text','uuid'], 'settle_ai_turn(uuid,text,uuid) exists');   -- (#R801)
 select has_function('public','relay_take', array['text','text','integer','numeric','integer'], 'relay_take(...) exists');   -- (#R801)
 
 reset role;

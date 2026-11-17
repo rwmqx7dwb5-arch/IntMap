@@ -129,7 +129,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger refund_failed"
+    ]
    },
    {
     "status": 400,
@@ -201,7 +203,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger refund_failed"
+    ]
    },
    {
     "status": 400,
@@ -341,7 +345,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger refund_failed"
+    ]
    },
    {
     "status": 400,
@@ -412,7 +418,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger refund_failed"
+    ]
    },
    {
     "status": 400,
@@ -554,7 +562,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger refund_failed"
+    ]
    },
    {
     "status": 413,
@@ -629,7 +639,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger refund_failed"
+    ]
    },
    {
     "status": 429,
@@ -986,7 +998,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger refund_failed"
+    ]
    },
    {
     "status": 400,
@@ -1057,7 +1071,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger refund_failed"
+    ]
    }
   ],
   "answers (openai)": [
@@ -1234,7 +1250,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -1409,7 +1427,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -1643,7 +1663,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 502,
@@ -2061,6 +2083,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"analysis_structured\",\"code\":\"invalid_structured_output\",\"http\":502,\"meta\":{}}"
     ]
    },
@@ -2505,7 +2528,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -2705,7 +2730,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -2879,7 +2906,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -3063,7 +3092,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -3218,7 +3249,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -3587,7 +3620,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -3856,7 +3891,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -4112,7 +4149,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -4286,7 +4325,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    }
   ],
   "failures and ladders (openai)": [
@@ -4416,6 +4457,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_rate_limit\",\"http\":503,\"meta\":{\"providerStatus\":429,\"quotaScope\":\"per-minute\",\"quotaId\":\"\",\"retryAfter\":\"\",\"bodyLen\":66}}"
     ]
    },
@@ -4542,6 +4584,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_quota\",\"http\":502,\"meta\":{\"providerStatus\":429,\"bodyLen\":39}}"
     ]
    },
@@ -4668,6 +4711,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":503,\"meta\":{\"providerStatus\":500,\"bodyLen\":13}}"
     ]
    },
@@ -4883,7 +4927,8 @@
      }
     ],
     "logs": [
-     "ai-proxy model fallback {\"from\":\"gpt-5.6-terra\",\"to\":\"gpt-6.1-terra\",\"status\":404}"
+     "ai-proxy model fallback {\"from\":\"gpt-5.6-terra\",\"to\":\"gpt-6.1-terra\",\"status\":404}",
+     "ai-proxy ledger settle_error"
     ]
    },
    {
@@ -5124,7 +5169,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 502,
@@ -5348,6 +5395,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":502,\"meta\":{\"providerStatus\":400,\"bodyLen\":2}}"
     ]
    },
@@ -5562,7 +5610,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 502,
@@ -5707,6 +5757,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_blocked\",\"http\":502,\"meta\":{\"finishReason\":\"\"}}"
     ]
    },
@@ -5805,6 +5856,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_quota\",\"http\":503,\"meta\":{\"ceiling\":\"project_day\"}}"
     ]
    },
@@ -5903,6 +5955,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_quota\",\"http\":503,\"meta\":{\"ceiling\":\"newcomer_day\"}}"
     ]
    }
@@ -6197,7 +6250,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -6532,7 +6587,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -7042,7 +7099,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -7322,7 +7381,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -7581,7 +7642,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -7774,6 +7837,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"atlas_turn\",\"code\":\"provider_unavailable\",\"http\":503,\"meta\":{\"providerStatus\":503}}"
     ]
    }
@@ -8529,7 +8593,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -8805,7 +8871,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 502,
@@ -8947,6 +9015,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"anthropic\",\"model\":\"claude-haiku-4-5-20251001\",\"task\":\"free_text\",\"code\":\"provider_empty\",\"http\":502,\"meta\":{\"finishReason\":\"end_turn\"}}"
     ]
    },
@@ -9020,7 +9089,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger refund_failed"
+    ]
    }
   ],
   "gemini": [
@@ -9249,7 +9320,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -9465,7 +9538,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -9679,7 +9754,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 200,
@@ -9883,7 +9960,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    },
    {
     "status": 502,
@@ -10009,6 +10088,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"gemini\",\"model\":\"gemini-3.5-flash\",\"task\":\"free_text\",\"code\":\"provider_quota\",\"http\":502,\"meta\":{\"providerStatus\":429,\"quotaScope\":\"per-day\",\"quotaId\":\"GenerateRequestsPerDayPerProject\",\"retryAfter\":\"\"}}"
     ]
    },
@@ -10155,6 +10235,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"gemini\",\"model\":\"gemini-3.5-flash\",\"task\":\"free_text\",\"code\":\"provider_blocked\",\"http\":502,\"meta\":{\"finishReason\":\"NO_CANDIDATE\",\"blockReason\":\"SAFETY\"}}"
     ]
    },
@@ -10427,7 +10508,9 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy ledger settle_error"
+    ]
    }
   ],
   "no provider key": [
@@ -10508,6 +10591,7 @@
      }
     ],
     "logs": [
+     "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-6.1-sol\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":502,\"meta\":{}}"
     ]
    }

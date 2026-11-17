@@ -2028,9 +2028,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 136,483 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 136,871 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 136,483 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 136,871 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -2393,6 +2393,14 @@ span が順序どおりであること／そして**どの行も出版元が述�
 根拠つきで導出であること・穴埋めが `unplaced` 欄を持ちロシア・グリーンランド・オーストラリアを 2020-07-01 に
 答えること・穴埋めの `eraIndex`（評価する）が合成の束を読むこと・一覧の記録が survey のビルダーの統治する
 ファイルとちょうど一致することを測る。束が無い木では理由を述べて飛ばす。
+
+`tests/hist-colonial-units-checks.test.mjs` は、時点ごとに史実審査を要する出版元（Müller-Crepon の植民地アフリカ）と
+復元の国境の辺の導出を測る: ⑴ 審査表 `scripts/histsurveys/mullercrepon-review.json` の各時点が階層・理由を述べ、描く
+時点は出典と順序の正しい期間を持つ ⑵ その記録は非営利側の束にだけ入る ⑶ 出荷した行はどれも審査が描くとした時点の
+もので、審査が除いた単位を含まず、審査の期間の内側にあり、図の年だけの行は終わりが導出であることを述べる
+⑷ 範囲指定でアーカイブの中の 1 ファイルを名前で見つける読み手 ⑸ 復元の `clipTo`／`edge`——国外との線は国境の典拠の
+線になり、部品の国外へのはみ出しは切られ、部品が持たない島は足され、`keep` の隣国へは部品の線が残る ⑹ 宣言の
+誤り（`clipTo` 無し・他国の地物・同時に 2 区間が同じ地物を取る）を `edgeProblems` が拒む。
 
 ⚠ **残余を、隠さずここに書く。** ① 出版元ごとの取得が要るので `--check` は**再生成しない**——「その行が本当に
 出版元の記録にあるか」は確かめない。② OpenHistoricalMap と先の出版元に譲ったかは、`data/hist-admin1.js` との
@@ -3536,7 +3544,7 @@ rule of this shape:
 What it still does not read, written down rather than papered over:
 
 - **A bare English numeral that attaches to nothing.** `docs/SECURITY-ARCHITECTURE.md` §5 opens
-  "There are twenty-one Edge Functions, and this table used to list two." A statement of how many
+  "There are twenty-two Edge Functions, and this table used to list two." A statement of how many
   there are and a sentence of the document's own history sit in **one sentence**, and nothing
   structural separates them. It was tried at section scope and at paragraph scope and measured:
   widening far enough to catch the first turns the second into a failure. The counted Japanese

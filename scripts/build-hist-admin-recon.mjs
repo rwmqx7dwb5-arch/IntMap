@@ -269,6 +269,8 @@ export async function loadDossiers({ fromLock = false } = {}) {
   /* an atom set is asked only for the countries its dossiers name (geoBoundaries has 459 datasets) */
   const countriesOf = new Map();
   for (const { D } of read) { if (!countriesOf.has(D.atomSet)) countriesOf.set(D.atomSet, new Set()); for (const c of atomCountriesOf(D)) countriesOf.get(D.atomSet).add(c); }
+  /* a dossier's edge set (clipTo) is read too — its own country's ids go into the lock, so the gate can judge `edge` */
+  for (const { D } of read) if (D.clipTo && D.clipTo.atomSet) { if (!countriesOf.has(D.clipTo.atomSet)) countriesOf.set(D.clipTo.atomSet, new Set()); countriesOf.get(D.clipTo.atomSet).add(D.clipTo.country); }
   for (const [set, cs] of countriesOf) {
     if (fromLock) {
       const cat = (lock && lock[set]) || {};
@@ -280,6 +282,7 @@ export async function loadDossiers({ fromLock = false } = {}) {
   for (const { f, D } of read) {
     const r = checkDossier(D, mods.get(D.atomSet).cat);
     if (r.err.length) bad.push(path.basename(f) + ': ' + r.err.slice(0, 5).join(' | '));
+    for (const p of edgeProblems(D, (set) => (mods.get(set) || {}).cat)) bad.push(path.basename(f) + ': ' + p);
     out.push({ file: f, D });
   }
   bad.push(...sameLandClaims(out.map(({ file, D }) => ({ file: path.basename(file), D, atoms: catalogueView(D, mods.get(D.atomSet).cat)[D.country] || [] }))));
@@ -350,6 +353,126 @@ function bboxOf(polys) {
   return [a, b, c, d];
 }
 
+/* ══ THE NATIONAL EDGE, DERIVED (`clipTo` + span `edge`) ════════════════════════════════════════════════════════
+   (hist-colonial-units) A precise atom set can carry interior lines exactly and still be wrong on the national
+   border: geoBoundaries' Chinese counties (OpenStreetMap, 2017) draw the PRC's CLAIM — Cona, Mêdog, Zayü and Lhünzê
+   reach ~65,000 km² into Indian-administered Arunachal Pradesh — while the Natural Earth record they replace drew the
+   administered line. MEASURED 2026-11-17: switching China's provinces from Natural Earth to these counties for
+   2008–2019 would have lost Tibet for eleven years, and Guangdong, Guangxi and Yunnan for shorter spells.
+   ⇒ a dossier may declare a second, whole-world atom set as the source of its NATIONAL edge:
+       "clipTo": { "atomSet": "ne-admin1@ca96624", "country": "CHN", "why": "…" }
+     and a span opts in with
+       "edge": { "atoms": [ids of that set — the unit's own features there], "keep": [ISO3 …] }
+   The span's shape is then
+       (union of its atoms − every feature of the edge set that belongs to another country, except `keep`)
+     ∪ (its edge atoms − every atom of this dossier's set), keeping of that remainder only
+         · the pieces that touch another country's feature (share a vertex with it — Natural Earth's admin-1 is
+           topological: neighbouring features share their border vertices), i.e. the strips between the atoms'
+           border and the edge set's border, and
+         · whole polygons of an edge atom that no atom of this set touches (islands the atom set does not carry).
+   So the line toward a foreign country is the edge set's line, every line between the dossier's own units is the
+   atom set's line, and the coast is the atom set's coast (a strip of the edge set's coarser coast that touches no
+   foreign feature is NOT taken). `keep` names the neighbours toward which a dated fact shows the edge set wrong and
+   the atoms right (China 2008-10-14: the new Russia line, which Natural Earth does not draw).
+   ⚠ ONE SET PER INSTANT STILL HOLDS INSIDE THE COUNTRY: no line between two of the dossier's units comes from the
+     edge set. The derivation adds no overlap — the cut parts lie inside the atoms, the taken strips lie outside every
+     atom, and two spans in force together may not name the same edge atom (edgeProblems refuses it) — and it opens
+     no seam that the atom set does not already have between its own units.
+   Expires if a dossier's edge set stops being topological (shared border vertices) — the strips would then be dropped,
+   and the drawn outline would fall back to the atoms' own border inside the edge set's line. */
+const pcSafe = (op, a, rest, label) => {
+  try { return pc[op](a, ...rest); } catch (e0) {
+    const snap = (g) => g.map((poly) => poly.map((ring) => {
+      const out = [];
+      for (const [x, y] of ring) { const p = [Math.round(x * 1e9) / 1e9, Math.round(y * 1e9) / 1e9]; const q = out[out.length - 1]; if (!q || q[0] !== p[0] || q[1] !== p[1]) out.push(p); }
+      if (out.length && (out[0][0] !== out[out.length - 1][0] || out[0][1] !== out[out.length - 1][1])) out.push(out[0].slice());
+      return out;
+    }).filter((r) => r.length >= 4)).filter((p) => p.length);
+    try { const u = pc[op](snap(a), ...rest.map(snap)); console.error('    ' + op + ' for ' + label + ' recomputed on a 1e-9° grid (' + e0.message.slice(0, 60) + ')'); return u; }
+    catch { throw new Error(op + ' for ' + label + ' failed: ' + e0.message); }
+  }
+};
+const meetBox = (p, q) => p[0] <= q[2] && q[0] <= p[2] && p[1] <= q[3] && q[1] <= p[3];
+const planarArea = (polys) => { let s = 0; for (const p of polys) p.forEach((r, i) => { let a = 0; for (let j = 0; j + 1 < r.length; j++) a += r[j][0] * r[j + 1][1] - r[j + 1][0] * r[j][1]; s += (i ? -1 : 1) * Math.abs(a) / 2; }); return s; };
+const vkey = (x, y) => x.toFixed(7) + ',' + y.toFixed(7);
+
+/** the problems of a dossier's edge declaration, judged on catalogues only (the gate runs it from the lock) */
+export function edgeProblems(D, catOf) {
+  const bad = [];
+  const spans = (D.units || []).flatMap((u) => (u.spans || []).map((s, k) => ({ u, s, k })));
+  const withEdge = spans.filter((x) => x.s.edge);
+  if (!D.clipTo) { if (withEdge.length) bad.push(withEdge[0].u.id + ': a span has `edge` but the dossier declares no clipTo'); return bad; }
+  const c = D.clipTo;
+  if (!c.atomSet || !c.country || !c.why) bad.push('clipTo needs atomSet, country and why');
+  if (c.atomSet === D.atomSet) bad.push('clipTo names the dossier\'s own atom set');
+  const cat = catOf(c.atomSet) || {};
+  const own = new Set((cat[c.country] || []).map((a) => a.id));
+  if (!own.size) bad.push('clipTo: no ' + c.atomSet + ' atoms for ' + c.country);
+  const scopeEnd = addDay(norm(D.scope.to));
+  const use = [];
+  for (const { u, s, k } of withEdge) {
+    const tag = u.id + ' span ' + k;
+    if (!Array.isArray(s.edge.atoms) || !s.edge.atoms.length) { bad.push(tag + ': edge.atoms missing'); continue; }
+    for (const id of s.edge.atoms) if (!own.has(id)) bad.push(tag + ': edge atom ' + id + ' is not a ' + c.country + ' atom of ' + c.atomSet);
+    for (const iso of s.edge.keep || []) if (!/^[A-Z]{3}$/.test(iso) || iso === c.country) bad.push(tag + ': edge.keep ' + iso + ' is not another country');
+    use.push({ tag, a: norm(s.from), b: s.to != null ? norm(s.to) : scopeEnd, ids: s.edge.atoms });
+  }
+  for (let i = 0; i < use.length; i++) for (let j = i + 1; j < use.length; j++) {
+    const p = use[i], q = use[j];
+    if (!(p.a < q.b && q.a < p.b)) continue;
+    const dup = p.ids.filter((x) => q.ids.includes(x));
+    if (dup.length) bad.push(p.tag + ' and ' + q.tag + ' both take edge atom ' + dup.join(',') + ' at the same time');
+  }
+  return bad;
+}
+
+/** what the derivation needs, once per dossier: the edge set's features by country, and the dossier's own atoms */
+function edgeContext(D, geomOf, catOf) {
+  const c = D.clipTo;
+  const eg = geomOf.get(c.atomSet), cat = catOf(c.atomSet);
+  /* the foreign side must be there: an edge set read for one country only would cut nothing and take nothing */
+  if (Object.keys(cat || {}).length < 2) throw new Error(D.country + ': clipTo ' + c.atomSet + ' must be a whole-world atom set (its catalogue names ' + Object.keys(cat || {}).length + ' country)');
+  const isoOf = new Map();
+  for (const [iso, rows] of Object.entries(cat)) for (const r of rows) isoOf.set(r.id, iso);
+  const foreign = [];
+  for (const [id, polys] of eg) { const iso = isoOf.get(id); if (iso && iso !== c.country) foreign.push({ id, iso, polys, box: bboxOf(polys) }); }
+  const ag = geomOf.get(D.atomSet);
+  const all = (catalogueView(D, catOf(D.atomSet))[D.country] || []).map((a) => ({ id: a.id, polys: ag.get(a.id) })).filter((a) => a.polys).map((a) => ({ ...a, box: bboxOf(a.polys) }));
+  const verts = new Map();
+  const vertsOf = (f) => { let s = verts.get(f.id); if (!s) { s = new Set(); for (const p of f.polys) for (const r of p) for (const [x, y] of r) s.add(vkey(x, y)); verts.set(f.id, s); } return s; };
+  return { D, eg, foreign, all, vertsOf, memo: new Map() };
+}
+
+/** a span's shape under its dossier's edge declaration (see above); `own` is the union of the span's atoms */
+export function edgePolys(own, s, ctx) {
+  const key = JSON.stringify([s.atoms.slice().sort(), s.edge]);
+  if (ctx.memo.has(key)) return ctx.memo.get(key);
+  const keep = new Set(s.edge.keep || []);
+  const label = s.edge.atoms.join('+');
+  const box = bboxOf(own);
+  const F = ctx.foreign.filter((f) => !keep.has(f.iso) && meetBox(f.box, box));
+  let cut = F.length ? pcSafe('difference', own, F.map((f) => f.polys), label) : own;
+  const taken = [];
+  for (const id of s.edge.atoms) {
+    for (const P of ctx.eg.get(id) || []) {
+      const pb = bboxOf([P]);
+      const near = ctx.all.filter((a) => meetBox(a.box, pb));
+      const rest = near.length ? pcSafe('difference', [P], [cachedUnion(ctx.D.atomSet, near.map((a) => a.id), new Map(near.map((a) => [a.id, a.polys])))], label) : [P];
+      if (!rest.length) continue;
+      if (planarArea(rest) >= 0.999 * planarArea([P])) { taken.push(P); continue; }   // an island no atom carries
+      const Fn = ctx.foreign.filter((f) => !keep.has(f.iso) && meetBox(f.box, pb));
+      for (const q of rest) {
+        const touches = q.some((r) => r.some(([x, y]) => Fn.some((f) => ctx.vertsOf(f).has(vkey(x, y)))));
+        if (touches) taken.push(q);
+      }
+    }
+  }
+  const out = taken.length ? robustUnion([cut, ...taken.map((q) => [q])], 'edge of ' + label) : cut;
+  const res = out.map((p) => p.filter((r) => r.length >= 4)).filter((p) => p.length);
+  ctx.memo.set(key, res);
+  return res;
+}
+
 async function build() {
   const { dossiers, mods, bad } = await loadDossiers();
   if (bad.length) { console.error('✖ dossiers refused:\n  ' + bad.join('\n  ')); process.exit(1); }
@@ -374,11 +497,13 @@ async function build() {
   for (const { file, D } of dossiers) {
     const scopeEnd = addDay(norm(D.scope.to));
     const list = [];
+    let ectx = null;
+    const own = (s) => unionOf(D.atomSet, s.atoms).map((p) => p.filter((r) => r.length >= 4)).filter((p) => p.length);
     for (const u of D.units) for (const [k, s] of u.spans.entries()) {
       list.push({ unit: u, span: s, k, from: ymd(norm(s.from)), to: ymd(s.to != null ? norm(s.to) : scopeEnd),
-        polys: () => unionOf(D.atomSet, s.atoms).map((p) => p.filter((r) => r.length >= 4)).filter((p) => p.length) });
+        polys: () => (s.edge ? edgePolys(own(s), s, ectx ??= edgeContext(D, geomOf, (set) => mods.get(set).cat)) : own(s)) });
     }
-    groups.push({ key: path.basename(file, '.json'), country: D.country, file: path.relative(ROOT, file).split(path.sep).join('/'), units: D.units.length, unresolved: (D.unresolved || []).length, list, parts: gbDatasetsOf(D) });
+    groups.push({ key: path.basename(file, '.json'), country: D.country, file: path.relative(ROOT, file).split(path.sep).join('/'), units: D.units.length, unresolved: (D.unresolved || []).length, list, parts: gbDatasetsOf(D), edge: D.clipTo ? D.clipTo.atomSet : null });
   }
   for (const m of await assemblers()) {
     if (ONLY && m.COUNTRY !== ONLY) continue;
@@ -484,7 +609,7 @@ async function build() {
         });
       }
       for (const [p, q] of alive) {
-        rows.push({ country: grp.country, key: grp.key, unit: u, span: s, k, a: p, b: q, polys, dossier: grp.file, parts: grp.parts || [], dates: c.dates || null, startStated: p === from, endStated: q === to && s.to != null });
+        rows.push({ country: grp.country, key: grp.key, unit: u, span: s, k, a: p, b: q, polys, dossier: grp.file, parts: grp.parts || [], edge: s.edge ? grp.edge : null, dates: c.dates || null, startStated: p === from, endStated: q === to && s.to != null });
         R.drawn++;
       }
     }
@@ -542,7 +667,18 @@ export async function fineUnits(recordKey) {
     if (path.basename(f, '.json') !== recordKey) continue;
     const D = JSON.parse(fs.readFileSync(f, 'utf8'));
     const geom = await (await atomModule(D.atomSet)).geometries(atomCountriesOf(D));
-    for (const u of D.units) for (const s of u.spans) out.push({ id: u.id, coords: cachedUnion(D.atomSet, s.atoms, geom) });
+    /* the same edge derivation as the build, so the detail outline is the shipped row's unsimplified self */
+    let ectx = null;
+    if (D.clipTo) {
+      const em = await atomModule(D.clipTo.atomSet), am = await atomModule(D.atomSet);
+      const geomOf = new Map([[D.atomSet, geom], [D.clipTo.atomSet, await em.geometries([D.clipTo.country])]]);
+      const cats = new Map([[D.atomSet, await am.catalogue(atomCountriesOf(D))], [D.clipTo.atomSet, await em.catalogue([D.clipTo.country])]]);
+      ectx = edgeContext(D, geomOf, (set) => cats.get(set));
+    }
+    for (const u of D.units) for (const s of u.spans) {
+      const own = cachedUnion(D.atomSet, s.atoms, geom);
+      out.push({ id: u.id, coords: s.edge && ectx ? edgePolys(own.map((p) => p.filter((r) => r.length >= 4)).filter((p) => p.length), s, ectx) : own });
+    }
   }
   for (const m of await assemblers()) {
     if (m.KEY !== recordKey) continue;
@@ -585,7 +721,8 @@ function write(rows, file, tol, dec) {
       const parts = (r.parts || []).map((d) => ({ dataset: 'geoBoundaries ' + d.iso + ' ' + d.level, url: d.url, year: d.year, source: d.source, licence: d.licence }));
       const sa = [...new Set(parts.map((p) => p.licence).filter(isShareAlike))];
       sources[key] = { publisher: 'IntMap', title: 'Reconstructed first-level divisions — ' + r.key + ' (one cited fact per membership)', url: REPO + r.dossier,
-        citation: 'IntMap reconstruction from cited facts (' + r.dossier + ')' + (parts.length ? '; parts: ' + parts.map((p) => p.dataset + ' (' + p.source + ', ' + p.licence + ')').join('; ') : '') + '.',
+        citation: 'IntMap reconstruction from cited facts (' + r.dossier + ')' + (parts.length ? '; parts: ' + parts.map((p) => p.dataset + ' (' + p.source + ', ' + p.licence + ')').join('; ') : '') + '.'
+          + (rows.some((x) => x.key === r.key && x.edge) ? ' Where a span declares it, the edge toward other countries is derived from ' + rows.find((x) => x.key === r.key && x.edge).edge + ' (Natural Earth, public domain) — docs/HIST-RECONSTRUCTION.md §1.' : ''),
         ...(parts.length ? { parts } : {}), ...(sa.length ? { offeredUnder: sa } : {}) };
     }
     const [sy, sm, sd] = isoOf(r.a).split('-').map(Number), [ey, em, ed] = isoOf(r.b).split('-').map(Number);

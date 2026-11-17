@@ -81,10 +81,11 @@ select is((select v from _cap where k='a_count'),  '2',        'A holds exactly 
 -- ③ a student, signed out ─────────────────────────────────────────────────────
 create table _codes as
   select kind, code from public.class_sets where user_id = '11111111-1111-1111-1111-111111111111';
-grant select on _codes to anon, authenticated;
+grant select on _codes to anon, authenticated, service_role;
 
-select set_config('request.jwt.claims', '{"role":"anon"}', true);
-set local role anon;
+-- (security-review-nov) the class doors and the directory are server-only: called here as the community-class Edge Function calls them
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
 select _sel('s_open',   'select public.class_set_open((select lower(code) from _codes where kind = ''where'')) ->> ''kind''');
 select _sel('s_open_n', 'select public.class_set_open((select code from _codes where kind = ''where'')) ->> ''n''');
 select _sel('s_noset',  'select public.class_set_open(''ZZZZZZZZ'') ->> ''error''');
@@ -99,6 +100,10 @@ select _sel('s_ben',    'select public.class_set_submit((select code from _codes
 select _sel('s_closed', 'select public.class_set_submit((select code from _codes where kind = ''when''), ''Aiko'', ''[1914,1939,1945,1989,1991,null,null,null,null,null]''::jsonb) ->> ''error''');
 select _sel('s_count',  'select public.class_set_open((select code from _codes where kind = ''where'')) ->> ''answered''');
 select _sel('s_leak',   'select (public.class_set_open((select code from _codes where kind = ''where'')) ? ''user_id'')::text');
+reset role;
+-- the tables themselves stay closed to anon (a student never reads or writes them directly)
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
 select _sel('s_read',   'select count(*)::text from public.class_set_answers');
 select _sel('s_sets',   'select count(*)::text from public.class_sets');
 select _run('s_ins',    'insert into public.class_set_answers (set_id, name, answers) values ((select id from public.class_sets limit 1), ''x'', ''[]'')');
@@ -164,8 +169,9 @@ set local role authenticated;
 select _run('a_pace', 'insert into public.class_sets (kind, seed, n, title) values (''where'', ''pace'', 5, ''pace'')');
 reset role;
 insert into _codes select 'pace', code from public.class_sets where seed = 'pace';
-select set_config('request.jwt.claims', '{"role":"anon"}', true);
-set local role anon;
+-- (security-review-nov) the class doors and the directory are server-only: called here as the community-class Edge Function calls them
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
 select _sel('p_busy', 'select count(*)::text from generate_series(1, 46) g
                         where public.class_set_submit((select code from _codes where kind = ''pace''), ''flood'' || g, ''[null,null,null,null,null]''::jsonb) ->> ''error'' = ''busy''');
 select _sel('p_count', 'select public.class_set_open((select code from _codes where kind = ''pace'')) ->> ''answered''');
@@ -179,8 +185,9 @@ set local role authenticated;
 select _run('p_close', 'update public.class_sets set open = false where seed = ''pace''');
 select _run('p_clear', 'delete from public.class_set_answers where set_id = (select id from public.class_sets where seed = ''pace'')');
 reset role;
-select set_config('request.jwt.claims', '{"role":"anon"}', true);
-set local role anon;
+-- (security-review-nov) the class doors and the directory are server-only: called here as the community-class Edge Function calls them
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
 select _sel('p_after', 'select public.class_set_submit((select code from _codes where kind = ''pace''), ''late'', ''[null,null,null,null,null]''::jsonb) ->> ''error''');
 reset role;
 
@@ -197,8 +204,9 @@ insert into public.class_set_answers (set_id, name, answers)
   select (select id from public.class_sets where user_id = '11111111-1111-1111-1111-111111111111' and seed = 'abc123'),
          's' || g, '[null,null,null,null,null]'::jsonb
     from generate_series(1, 399) g;
-select set_config('request.jwt.claims', '{"role":"anon"}', true);
-set local role anon;
+-- (security-review-nov) the class doors and the directory are server-only: called here as the community-class Edge Function calls them
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
 select _sel('s_full', 'select public.class_set_submit((select code from _codes where kind = ''where''), ''Late'', ''[null,null,null,null,null]''::jsonb) ->> ''error''');
 reset role;
 select is((select v from _cap where k='s_full'), 'full', 'a set with 400 hand-ins takes no more');

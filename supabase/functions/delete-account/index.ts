@@ -33,6 +33,7 @@
 
 import { createClient } from "@supabase/supabase-js";   // pinned in this function's deno.json
 import { bearerToken, recentSignIn } from "./recent-sign-in.js";
+import { readDeleteConfirm, rejectionStatus } from "./body.js";
 import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js";
 
 const cors = {
@@ -93,8 +94,11 @@ Deno.serve(async (req) => {
     }
 
     // 2) Explicit-intent confirmation so a stray POST can't wipe an account.
-    let payload: { confirm?: string } = {};
-    try { payload = await req.json(); } catch (_) { payload = {}; }
+    //    The body is read under a byte cap and a deadline (body.js) and a refusal here is final: the
+    //    admin check, the purge and the auth deletion below are never reached for a rejected body.
+    const body = await readDeleteConfirm(req);
+    if (!body.ok) return json({ error: body.error }, rejectionStatus(body.error));
+    const payload: { confirm?: string } = body.payload;
     if (String(payload.confirm || "") !== "DELETE") {
       return json({ error: "confirm_required", message: 'Send { "confirm": "DELETE" } to delete the account.' }, 400);
     }

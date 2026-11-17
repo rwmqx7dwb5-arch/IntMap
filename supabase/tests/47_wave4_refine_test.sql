@@ -47,10 +47,11 @@ insert into public.class_sets (kind, seed, n) values ('where', 'refine1', 10);
 insert into public.class_sets (kind, seed, n) values ('when', 'refine2', 5);
 reset role;
 create temp table _codes as select kind, code from public.class_sets where seed in ('refine1', 'refine2');
-grant select on _codes to anon;
+grant select on _codes to anon, service_role;
 
-select set_config('request.jwt.claims', '{"role":"anon"}', true);
-set local role anon;
+-- (security-review-nov) the class doors and the directory are server-only: called here as the community-class Edge Function calls them
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
 select _sel('h_first',  $q$select public.class_set_submit((select code from _codes where kind = 'where'), 'Aiko',
   (select jsonb_agg(jsonb_build_array(139.6917123456, 35.6895123456)) from generate_series(1, 10))) ->> 'ok'$q$);
 select _sel('h_wide',   $q$select public.class_set_submit((select code from _codes where kind = 'where'), 'Ａｉｋｏ',
