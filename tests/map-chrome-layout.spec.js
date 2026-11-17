@@ -109,7 +109,6 @@ const fmt = (b) => `[${Math.round(b.l)},${Math.round(b.t)} – ${Math.round(b.r)
 for (const z of ZOOMS) {
   test(`① – ④ the floating controls stay on the visible map at ${z.name} (${z.width}×${z.height})`, async () => {
     await page.setViewportSize({ width: z.width, height: z.height });
-    await page.waitForTimeout(400);
     const problems = [];
     for (const theme of THEMES) for (const left of LEFT) for (const right of [false, true]) {
       await setState(left, right, theme);

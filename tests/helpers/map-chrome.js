@@ -33,7 +33,8 @@ export async function setChromeState(page, { left = 'closed', right = false, the
       .map((s) => document.querySelector(s)).filter(Boolean);
     return !els.some((el) => el.getAnimations().some((a) => a.playState === 'running'));
   }, null, { timeout: 10_000 }).catch(() => { });
-  await page.waitForTimeout(350);
+  /* the animations are over; two frames let the layout that follows them land (no fixed sleep — it was most of the spec's time) */
+  await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 }
 
 /** the rect of every part that is drawn, rounded to 0.1 px */
