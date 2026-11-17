@@ -9,7 +9,7 @@
  *  （方位磁針の絵は tests/shell-compass-controls-checks.test.mjs の R504 ⑥⑦ が幾何で測る。） */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
@@ -45,8 +45,38 @@ test('① the gap between an Atlas reply and its copy/retry row is at most 4px, 
   assert.ok(deskGap >= 8, 'the conversation gap itself was not shrunk');
 });
 
+/* every file that can carry a rule for the field: the stylesheets and the JS files that inject CSS strings.
+   Discovered, not listed — a :focus look added to a frosted-glass mode in css/intmap.css slipped past a
+   check that read js/atlas-styles.js alone (found in production). */
+function styleCarriers() {
+  const out = [];
+  for (const dir of ['css', 'js']) {
+    for (const f of readdirSync(resolve(ROOT, dir), { recursive: true })) {
+      const rel = dir + '/' + String(f).replace(/\\/g, '/');
+      if (!/\.(css|js)$/.test(rel) || rel.startsWith('js/locales/')) continue;
+      /* stripping comments only removes text, so a file whose raw text never names the selector cannot
+         match after stripping either — skip the (slow) stripper for those */
+      if (!read(rel).includes('atl-in:focus')) continue;
+      out.push([rel, rel.endsWith('.css') ? css(rel) : js(rel)]);
+    }
+  }
+  return out;
+}
+
 test('② focusing the Atlas field draws no ring and no border change', () => {
-  assert.ok(!/#atlas-panel \.atl-in:focus\{/.test(js('js/atlas-styles.js')), 'Atlas declares no :focus look for its field');
+  const offenders = [];
+  for (const [rel, body] of styleCarriers()) {
+    /* a rule whose selector list names .atl-in:focus (or :focus-within on it) — :focus-visible is checked below */
+    /* indexOf, then cut the rule out around it (a leading [^{}]* regex backtracks quadratically on long files) */
+    for (let i = body.indexOf('.atl-in:focus'); i >= 0; i = body.indexOf('.atl-in:focus', i + 1)) {
+      if (body.startsWith('-visible', i + '.atl-in:focus'.length)) continue;
+      const open = body.indexOf('{', i), close = body.indexOf('}', open);
+      const start = Math.max(body.lastIndexOf('}', i), body.lastIndexOf('{', i)) + 1;
+      if (open < 0 || close < 0) continue;
+      offenders.push(`${rel}: ${body.slice(start, open).trim().slice(-80)}{${body.slice(open + 1, close).trim()}}`);
+    }
+  }
+  assert.deepEqual(offenders, [], 'no stylesheet gives the Atlas field a :focus look, in any sidebar mode');
   const ring = /#atlas-panel \.atl-in:focus-visible\{([^}]*)\}/.exec(css('css/intmap.css'));
   assert.ok(ring && /outline:none !important/.test(ring[1]),
     'the shared :focus-visible ring (outline !important) is cancelled for this field by name');

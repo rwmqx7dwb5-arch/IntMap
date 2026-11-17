@@ -1921,7 +1921,7 @@
     body.sidebar-translucent #atlas-panel .atl-in, body.sidebar-glass2 #atlas-panel .atl-in{
       background:rgba(140,140,150,0.16); border:1px solid var(--glass-border,rgba(255,255,255,0.18));
       -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); box-shadow:none; }
-    body.sidebar-translucent #atlas-panel .atl-in:focus, body.sidebar-glass2 #atlas-panel .atl-in:focus{ border-color:var(--primary-color); }
+    /* no :focus look in the frosted modes either — the Atlas field does not light up on focus in any sidebar mode */
     /* (#R41) AI follow-up bar polish (applies in ALL sidebar modes + the place-popup AI). The sticky input
        strip painted a HARD --popup-bg RECTANGLE behind the pill + send button ("入力欄と送信ボタンの後ろに
        長方形の背景が見えてダサい") — fade it to transparent upward so it still masks the scrolling chat at the
