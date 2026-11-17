@@ -18,6 +18,7 @@ import { makeAtlasAnswerSources } from '../js/atlas-answer-sources.js';
 import { makeAtlasMetrics, isRankableCountry } from '../js/atlas-metrics.js';
 import { WB_INDICATORS, wbIndicatorFor, applyLatest, wbCitation } from '../js/wb-indicators.js';
 import { IntMapTables } from '../js/tables.js';
+import { stampFigure, figure } from '../js/country-figures.js';   /* the ONE store of a value's year and source */
 import { IntMapLang } from '../js/lang-registry.js';
 import { IntMapTime } from '../js/chronos.js';
 
@@ -30,7 +31,7 @@ const LIFE = wbIndicatorFor('lifeExp').code;
 function table() {
   const row = (nameEn, extra) => Object.assign({ nameEn, sov: true }, extra || {});
   return {
-    JPN: row('Japan', { hdi: 0.92, _prov: { hdi: IntMapTables.STAT_SOURCES.hdi } }),
+    JPN: (() => { const r = row('Japan', { hdi: 0.92 }); stampFigure(r, 'hdi', IntMapTables.STAT_SOURCES.hdi.year, IntMapTables.STAT_SOURCES.hdi); return r; })(),
     CHE: row('Switzerland'), KOR: row('South Korea'), NGA: row('Nigeria'), TCD: row('Chad'),
     ATA: { nameEn: 'Antarctica', sov: false },
   };
@@ -58,14 +59,14 @@ test('① the bundled tables that stay say who measured them and when; the undat
 
 test('① applyLatest: the World Bank value replaces a bundled one, with its year and its publisher', () => {
   const cs = table();
-  cs.JPN.lifeExp = 84.0; cs.JPN._prov.lifeExp = { source: 'a bundled table', year: '' };   /* the shape the report found */
+  cs.JPN.lifeExp = 84.0; stampFigure(cs.JPN, 'lifeExp', '', 'a bundled table');   /* the shape the report found */
   cs.CHE.lifeExp = 83.6;                                                                   /* a value nobody labelled */
   const latest = { JPN: { v: 84.71, y: '2023' }, CHE: { v: 84.06, y: '2022' }, WLD: { v: 73.3, y: '2023' }, EMU: { v: 82.4, y: '2023' } };
   const r = applyLatest(cs, 'lifeExp', latest);
   assert.equal(cs.JPN.lifeExp, 84.71, 'the World Bank value is used — not 84.0');
-  assert.equal(cs.JPN._prov.lifeExp.year, '2023');
-  assert.equal(cs.JPN._prov.lifeExp.source, wbCitation(LIFE).source);
-  assert.equal(cs.CHE._prov.lifeExp.year, '2022', 'each value carries ITS year');
+  assert.equal(figure(cs.JPN, 'lifeExp').y, 2023);
+  assert.equal(figure(cs.JPN, 'lifeExp').src, wbCitation(LIFE).source);
+  assert.equal(figure(cs.CHE, 'lifeExp').y, 2022, 'each value carries ITS year');
   assert.equal(cs.WLD, undefined, 'an aggregate is not a row of the table and gets none');
   assert.deepEqual(r.years, [2022, 2023]);
   assert.equal(r.n, 2);
@@ -73,7 +74,7 @@ test('① applyLatest: the World Bank value replaces a bundled one, with its yea
   const big = {}; for (let i = 0; i < 60; i++) big['C' + i] = { nameEn: 'c' + i, sov: true, lifeExp: 50 };
   const lt = {}; for (let i = 0; i < 60; i++) lt['C' + i] = { v: 70 + i / 10, y: '2023' };
   applyLatest(big, 'lifeExp', lt);
-  assert.ok(Object.values(big).every((s) => s.lifeExp >= 70 && s._prov.lifeExp.year === '2023'), 'all 60 replaced');
+  assert.ok(Object.values(big).every((s) => s.lifeExp >= 70 && figure(s, 'lifeExp').y === 2023), 'all 60 replaced');
   /* a country the series does not report keeps its own value and label */
   const keep = table(); applyLatest(keep, 'hdi', {});
   assert.equal(applyLatest(keep, 'hdi', {}), null, 'hdi has no World Bank series — nothing to apply');
@@ -179,7 +180,7 @@ test('④ metricResult: subject, data year and one source item per publisher, fr
   /* a value nobody labelled is cited by nobody */
   const none = M.metricResult('lifeExp', [{ code: 'KOR', name: 'South Korea', val: 83 }], 'ranking:top');
   assert.deepEqual(none.provenance, []);
-  /* while the clock is in the past the table holds that year's figures, which `_prov` does not describe */
+  /* while the clock is in the past the table holds that year's figures, which the stamp does not describe */
   IntMapTime.setYear(1990, { source: 'test' });
   try { assert.deepEqual(M.metricResult('lifeExp', rows, 'ranking:top').provenance, []); }
   finally { IntMapTime.setNow({ source: 'test' }); }

@@ -568,7 +568,7 @@ export const IntMapTables = (function(){
      author and its year, and js/countries-ui.js stamps that label onto every value it puts in the table, so no
      reader can present one of these numbers without the year it was measured. */
   const STAT_SOURCES={
-    gdp:{ source:'IntMap bundled figures (nominal GDP, US$ billions)', year:'2023' },
+    gdp:{ source:'World Bank (NY.GDP.MKTP.CD, current US$) — the 2023 values, bundled', year:'2023' },   /* (countries-companies) measured: the rows equal the World Bank's 2023 series (USA 27,361 · CHN 17,795 · JPN 4,213 $B) */
     hdi:{ source:'UNDP Human Development Report', year:'2022' },
     dem:{ source:'EIU Democracy Index', year:'2023' },
     milSpend:{ source:'SIPRI Military Expenditure Database; IISS Military Balance estimates where SIPRI has none', year:'2023' }

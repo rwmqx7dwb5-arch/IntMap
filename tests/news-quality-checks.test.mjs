@@ -121,7 +121,7 @@ test('news-quality ② newsgeo’s Title-Case test is the same rule as news-enti
   let agree = 0, n = 0;
   for (const r of WINDOW) {
     /* sentenceCase answers the opposite question; a line too short to call is neither */
-    const words = r.title.split(/\s+/).filter((x) => x.replace(/[^\p{L}]/gu, '').length >= 4);
+    const words = (r.title.match(/\S+/g) || []).filter((x) => x.replace(/[^\p{L}]/gu, '').length >= 4);
     if (words.length < 3) continue;
     n++;
     if (GEO._sentenceCase(r.title) === !isTitleCase(r.title)) agree++;

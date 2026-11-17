@@ -25,6 +25,7 @@
 import { makeNewsClaims } from './news-claims.js';   /* (#R394) 数量の相違の規則 — ブラウザの外からも測れる 1 本 */
 import { makeNewsBrief } from './news-brief.js';     /* (#R405) 出来事の「読める中身」を組み立てる規則 — 同上 */
 import { IntMapTime } from './chronos.js';
+import * as bus from './bus.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { ingestVerdict } from './news-intel-core.js';   /* (news-intelligence) 取り込みの健全性の判定 — node が同じ関数を評価する */
@@ -571,7 +572,7 @@ export function newsEvents(HOST) {
         renderChips();
         try { HOST.startNews(); } catch (_) { }
         ensureCategory(category).then((n) => {
-          if (n) { try { window.dispatchEvent(new CustomEvent('intmap-news-events-grew')); } catch (_) { } }
+          if (n) { try { bus.emit('intmap-news-events-grew'); } catch (_) { } }
         });
       };
     });

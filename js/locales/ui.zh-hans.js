@@ -315,7 +315,7 @@ IntMapLang.define('zh-hans', {
     'first appears in this report': '首次出现于这篇报道',
     'How this was written — the exact wording each sentence came from ({n})': '这段文字从何而来 — 每句话所依据的原文（{n} 则）',
     'In each outlet’s own words': '各家媒体的原文',
-    'The paragraph above was written by AI from what these outlets published. Each sentence names the outlet and the passage it is based on, and before saving a program checked that every such passage really appears in that outlet’s text; a sentence whose passage could not be found is discarded. The program does not check that the sentence states the passage correctly — compare them under “How this was written”.': '上面这段文字是 AI 根据这些媒体发布的内容写成的。每句话都标明所依据的媒体与原文段落；保存前，程序确认了每个段落确实出现在该媒体的文字中（找不到段落的句子会被舍弃）。程序不检查句子是否正确表达了该段落——可在“这段文字从何而来”中对照。',
+    'The paragraph above was written by AI from what these outlets published. Each sentence names the outlet and the passage it is based on, and before saving a program checked that every such passage really appears in that outlet’s text; a sentence whose passage could not be found is discarded. The program does not check that the sentence states the passage correctly — compare them under “How this was written”.': '上面这段文字是 AI 根据这些媒体发布的内容写成的。每句话都标明所依据的媒体与原文段落；保存前，程序确认了每个段落确实出现在该媒体的文字中（找不到段落的句子会被舍弃）。程序不检查句子是否正确表达了该段落——可在「这段文字从何而来」中对照。',
     'Key figures': '关键数字',
     'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': '这则事件只有一家媒体提供内文，因此不离开 IntMap 就能读到的内容仅止于此。',
     'Read at {s} ↗': '在 {s} 阅读 ↗',

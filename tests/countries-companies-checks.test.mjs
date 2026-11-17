@@ -41,9 +41,11 @@ test('every money field the country table holds in billions is declared so', () 
 test('the bundled country tables state their year and source once', async () => {
   const { IntMapTables } = await import('../js/tables.js').catch(() => ({}));
   if (!IntMapTables) return;   /* the table module needs a browser global in some builds; the spec reads the card instead */
-  for (const t of ['GDP', 'HDI', 'DEM', 'MILSPEND', 'LIFE', 'INTERNET']) assert.ok(IntMapTables.ASOF[t] && Number.isFinite(IntMapTables.ASOF[t].y), t);
+  /* (integrate) one statement per table — js/tables.js STAT_SOURCES, stamped on every value by js/countries-ui.js.
+     LIFE and INTERNET are not shipped: the World Bank series replace them, with each value's own year. */
+  for (const f of ['gdp', 'hdi', 'dem', 'milSpend']) assert.ok(IntMapTables.STAT_SOURCES[f] && /^\d{4}$/.test(IntMapTables.STAT_SOURCES[f].year), f);
   /* GDP's year is measured: its rows equal the World Bank's 2023 current-US$ series */
-  assert.equal(IntMapTables.ASOF.GDP.y, 2023);
+  assert.equal(IntMapTables.STAT_SOURCES.gdp.year, '2023');
   assert.equal(IntMapTables.GDP.USA, 27361);
 });
 

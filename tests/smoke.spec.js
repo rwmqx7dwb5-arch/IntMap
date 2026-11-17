@@ -2363,14 +2363,21 @@ const toolsPanel = (rootSel) => page.evaluate((sel) => {
     strip: !!s.querySelector('#layer-tools'),
   }));
 }, rootSel);
-const toolsMenuIsOpen = () => page.evaluate(() => document.querySelector('.measure-menu-container').classList.contains('open'));
+const toolsMenuIsOpen = () => page.evaluate(() => document.querySelector('.more-tools-container').classList.contains('open'));
+const measureMenuIsOpen = () => page.evaluate(() => document.querySelector('.measure-menu-container').classList.contains('open'));
 
-test('tools-out-of-layers ① the Tools menu has four sections and every row, and each row is a kernel command', async () => {
+test('tools-out-of-layers ① Tools holds 測る・描く, the menu left of it the other three sections, and each row is a kernel command', async () => {
   await expect(page.locator('#btn-measure-menu')).toContainText(/Tools|ツール/);
+  /* (tools-split) 「Toolsボタンを押したときに出てくるものが多すぎる。Measure & drawの三つだけ出るように。それ以外はその左に。」 */
+  await page.click('#btn-measure-menu');
+  await page.waitForSelector('#measure-dropdown .tlp-root', { state: 'visible', timeout: 30_000 });
+  const own = await toolsPanel('#measure-dropdown .tlp-root');
+  await page.evaluate(() => { try { window._closeMeasureMenu(); } catch { /* courtesy */ } });
+  expect(own.map((s) => s.sec), 'Tools holds only 測る・描く').toEqual(['measure']);
   await toolsMenuOpen();
   try {
-    const secs = await toolsPanel('#measure-dropdown .tlp-root');
-    expect(secs.map((s) => s.sec), 'the four sections, in order').toEqual(['measure', 'tool', 'sim', 'analysis']);
+    const secs = own.concat(await toolsPanel('#more-tools-dropdown .tlp-root'));
+    expect(secs.map((s) => s.sec), 'the four sections, in order, across the two menus').toEqual(['measure', 'tool', 'sim', 'analysis']);
     for (const s of secs) {
       expect(s.hidden, s.sec + ' is shown').toBe(false);
       expect(s.heading.length, s.sec + ' has a heading').toBeGreaterThan(1);
@@ -2391,7 +2398,7 @@ test('tools-out-of-layers ① the Tools menu has four sections and every row, an
       'rows whose command the kernel does not hold').toEqual([]);
     /* one door per simulator: the strip carries no twin of a row */
     expect(await page.locator('#btn-seismic-sim, #btn-pandemic-sim').count(), 'the strip buttons that duplicated two rows are gone').toBe(0);
-  } finally { await page.evaluate(() => { try { window._closeMeasureMenu(); } catch { /* courtesy */ } }); }
+  } finally { await page.evaluate(() => { try { window._closeMoreToolsMenu(); } catch { /* courtesy */ } }); }
 });
 
 test('tools-out-of-layers ② the Layers panel holds no tool row and no analysis strip; a search still finds a tool; the presets stay', async () => {
@@ -2422,33 +2429,35 @@ test('tools-out-of-layers ② the Layers panel holds no tool row and no analysis
 test('tools-out-of-layers ③ a row opens its tool, and the menu gets out of the way', async () => {
   await page.evaluate(() => { try { if (window.IntMapRouteUI && window.IntMapRouteUI.isOpen()) window.IntMapRouteUI.close(); } catch { /* none open */ } });
   await toolsMenuOpen();
-  await page.locator('#measure-dropdown .lst-toolrow[data-act="tool.directions"]').click();
+  await page.locator('#more-tools-dropdown .lst-toolrow[data-act="tool.directions"]').click();
   await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 30_000 });
   expect(await toolsMenuIsOpen(), 'the menu closed behind the tool').toBe(false);
   await page.evaluate(() => window.IntMapRouteUI.close());
 
   await toolsMenuOpen();
-  await page.locator('#measure-dropdown .lst-toolrow[data-act="sim.seismic"]').click();
+  await page.locator('#more-tools-dropdown .lst-toolrow[data-act="sim.seismic"]').click();
   await page.waitForFunction(() => !!(window.IntMapSeismic && window.IntMapSeismic.state().open), null, { timeout: 45_000 });
   await expect(page.locator('#sq-panel')).toBeVisible();
   /* the row reads the module, so it is lit while the simulator runs, and a second press closes it (#R264) */
   await toolsMenuOpen();
-  const row = page.locator('#measure-dropdown .lst-toolrow[data-act="sim.seismic"]');
+  const row = page.locator('#more-tools-dropdown .lst-toolrow[data-act="sim.seismic"]');
   await expect(row).toHaveClass(/\bon\b/);
   await row.click();
   await page.waitForFunction(() => !window.IntMapSeismic.state().open, null, { timeout: 15_000 });
 
-  await toolsMenuOpen();
+  await page.click('#btn-measure-menu');
   await page.locator('#btn-tool-measure').click();
   await expect(page.locator('#tool-panel')).toBeVisible();
   await expect(page.locator('#btn-measure-menu')).toHaveClass(/tool-on/);
-  expect(await toolsMenuIsOpen(), 'the menu closed behind the measuring tool').toBe(false);
+  expect(await measureMenuIsOpen(), 'the menu closed behind the measuring tool').toBe(false);
   await page.locator('#tool-panel .tp-close').click();
   await expect(page.locator('#tool-panel')).toBeHidden();
 });
 
 test('tools-out-of-layers ④ on a phone the Map tools sheet has the same sections and rows; the Layers sheet has none', async () => {
-  const desk = await toolsPanel('#measure-dropdown .tlp-root');
+  await toolsMenuOpen();   /* (tools-split) the desktop rows are in the menu left of Tools; it builds on first open */
+  const desk = await toolsPanel('#more-tools-dropdown .tlp-root');
+  await page.evaluate(() => { try { window._closeMoreToolsMenu(); } catch { /* courtesy */ } });
   const before = page.viewportSize();
   await page.setViewportSize({ width: 375, height: 812 });
   try {

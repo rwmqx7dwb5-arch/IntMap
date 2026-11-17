@@ -61,6 +61,7 @@
     { "area": "local", "name": "intmap_sat_cat", "kind": "cache", "en": "A copy of the satellite catalogue (refreshed every 2 hours)", "jp": "衛星カタログの写し（2 時間ごとに更新）" },
     { "area": "local", "name": "intmap_sat_keys", "kind": "credential", "en": "Your own satellite-imagery API keys, if you entered any", "jp": "衛星画像の API キー（入力した場合）" },
     { "area": "local", "name": "intmap_saved_articles", "kind": "content", "en": "Copies of articles you saved (title, link and summary)", "jp": "保存した記事の写し（題・リンク・要約）" },
+    { "area": "local", "name": "intmap_saved_event_snaps", "kind": "content", "en": "A copy of what each starred news event showed (headline, summary, its sources) when you starred it, so it stays readable after the articles expire", "jp": "★を付けた時点のニュースの出来事の内容（見出し・要約・出典）の写し。記事が消えた後も読めるようにするため" },
     { "area": "local", "name": "intmap_saved_events", "kind": "content", "en": "News events you starred", "jp": "星をつけたニュースの出来事" },
     { "area": "local", "name": "intmap_saved_places", "kind": "content", "en": "Places you saved", "jp": "保存した場所" },
     { "area": "local", "name": "intmap_science_lang", "kind": "preference", "en": "The language you chose on IntMap's documentation pages", "jp": "IntMap の解説ページで選んだ言語" },

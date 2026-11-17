@@ -113,6 +113,11 @@ export const EVENTS = Object.freeze({
     detail: null,
     from: ['js/news-feed.js'],
   },
+  'intmap-news-events-grew': {
+    means: 'the Event list gained rows from a category the reader chose; the feed lands them through its one writer (land)',
+    detail: null,
+    from: ['js/news-events.js'],
+  },
   'intmap-newsgeo-world-ready': {
     means: 'the last slice of the world place table was registered with the news geocoder',
     detail: '{ rows }',

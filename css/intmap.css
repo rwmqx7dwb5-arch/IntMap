@@ -273,7 +273,7 @@
     }
     .header-actions > button{ margin-right:0 !important; }
     .title-group{ display:flex; align-items:center; gap:12px; min-width:0; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
-    /* the wordmark is the picture of the name (img/intmap-wordmark.png, cut from the master artwork): its CAP height is drawn at the
+    /* the wordmark is the picture of the name (brand/intmap-wordmark.png, cut from the master artwork; outside the statically copied img/ so the build ships it once, hashed): its CAP height is drawn at the
        cap height the 22px h2 text had (cap ≈ 0.70em = 15.4px; the image is 357 px tall with a 277 px cap, so 15.4·357/277 ≈ 20px).
        Re-derive if the h2 size changes or the artwork is re-cut. */
     h2.im-wordmark{ display:flex; align-items:center; line-height:1; min-height:27px; } h2.im-wordmark img{ display:block; height:20px; width:auto; }

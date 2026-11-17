@@ -66,6 +66,6 @@ test('④ Tools ▾ holds 測る・描く; 道具・シミュレーション・�
 
 test('⑤ the sidebar wordmark is the shipped picture of the name', () => {
   const html = read('index.html');
-  assert.match(html, /<h2 class="im-wordmark"><img src="img\/intmap-wordmark\.png" alt="IntMap"/);
-  assert.ok(existsSync(new URL('../img/intmap-wordmark.png', import.meta.url)), 'the picture is in the tree');
+  assert.match(html, /<h2 class="im-wordmark"><img src="brand\/intmap-wordmark\.png" alt="IntMap"/);
+  assert.ok(existsSync(new URL('../brand/intmap-wordmark.png', import.meta.url)), 'the picture is in the tree');
 });

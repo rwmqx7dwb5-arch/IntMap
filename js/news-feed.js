@@ -74,7 +74,7 @@ export function newsFeed(HOST){
     if(card){ const ft=feed.getBoundingClientRect().top, ct=card.getBoundingClientRect().top; feed.scrollTop=feed.scrollTop+(ct-ft)+place.off; }
     else feed.scrollTop=place.scrollTop;
   }
-  function startNews(){
+  function startNews(){ hookEventsGrew();
     const feed=document.getElementById('live-news-feed');
     const place=(HOST.globalData.length&&feed)?_readingPlace(feed):null;
     HOST.clearMarkers(); feed.innerHTML=''; HOST.renderedCount=0;
@@ -245,14 +245,16 @@ export function newsFeed(HOST){
   /* (news-quality) カテゴリを選んだあと、出来事のモジュールが表から足した分を、同じ 1 人の書き手
      （land）で入れ直す。⚠ 出来事のモジュールは一覧を持つだけで globalData には書かない（#R165）。
      ⚠ いま出来事の一覧が出ているときだけ（記事モードの一覧を出来事で上書きしない）。 */
-  try{ window.addEventListener('intmap-news-events-grew', ()=>{
+  let _grewHooked=false;   /* ⚠ (R169 #4) the factory body only DECLARES — the subscription is made on the first startNews() */
+  function hookEventsGrew(){ if(_grewHooked) return; _grewHooked=true;
+    bus.on('intmap-news-events-grew', ()=>{
     try{
       const E=window.IntMapNewsEvents; if(!E) return;
       if(!(HOST.globalData||[]).some((x)=>x&&x._event)) return;
       land(E.loaded()); E.renderChips();
       if(HOST.mode==='news'||HOST.mode==='saved') startNews();
     }catch(_){}
-  }); }catch(_){}
+  }); }
   /* News cache → instant render on load/return, refreshed in the background. */
   function loadNewsCache(){
     try{ const c=JSON.parse(localStorage.getItem('intmap_news_cache')||'null');
