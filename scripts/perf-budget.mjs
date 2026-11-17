@@ -61,6 +61,10 @@
  *    node scripts/perf-budget.mjs --update   RAISE the ceilings the measurement is over, to the
  *                                            measurement — and touch no other row (the decision a
  *                                            pull request states; say why in its dev-notes entry)
+ *    node scripts/perf-budget.mjs --raise-own <path>... [--summary <file>]
+ *                                            RAISE the deploy rows by exactly the shipped bytes the
+ *                                            working tree adds under <path> against HEAD — for a
+ *                                            scheduled job that rewrites data it owns (no build needed)
  *    node scripts/perf-budget.mjs --tighten [--measured <file>] [--summary <file>]
  *                                            LOWER every ceiling the measurement has fallen below,
  *                                            record new chunks, drop gone ones; never raises. What
@@ -250,6 +254,13 @@ export function bootPlanFrom(r, distDir, root = ROOT, BS = BootStage) {
   return { errors, bytes, requests, refs: refs.size };
 }
 
+/* (companies-perf-own-bytes) THE DEPLOY ROWS, AND WHERE EACH ONE IS MEASURED — the one table of it.
+   measureFrom() weighs these directories of dist/, metrics() judges these rows, and ownGrowth() below
+   says which of them a shipped file lands in. A row added here is measured, judged and explained. */
+export const DIST_ROWS = { total: '', data: 'data', assets: 'assets' };
+/** The deploy rows a file at `rel` (a path inside dist/) is counted in. */
+export const distRowsOf = (rel) => Object.keys(DIST_ROWS).filter((k) => !DIST_ROWS[k] || rel === DIST_ROWS[k] || rel.startsWith(DIST_ROWS[k] + '/'));
+
 /** The measurement from a build report and a dist/ directory — exported so a test can hand it a
     synthetic report and a directory it wrote, and judge the numbers the gate would see. */
 export function measureFrom(r, distDir) {
@@ -271,7 +282,7 @@ export function measureFrom(r, distDir) {
       cssRaw: r.eager.css.raw, cssGzip: r.eager.css.gzip,
     },
     async: { raw: r.async.raw, gzip: r.async.gzip, chunks: asyncChunks },
-    dist: { total: dirBytes(distDir), data: dirBytes(join(distDir, 'data')), assets: dirBytes(join(distDir, 'assets')) },
+    dist: Object.fromEntries(Object.entries(DIST_ROWS).map(([k, d]) => [k, dirBytes(d ? join(distDir, d) : distDir)])),
   };
 }
 
@@ -390,7 +401,7 @@ export function metrics(m, b) {
   for (const name of [...new Set([...Object.keys(bc), ...Object.keys(mc)])].sort()) {
     add('chunk', ['async', 'chunks', name], 'bytes', mc[name], bc[name]);
   }
-  for (const k of ['total', 'data', 'assets']) add('dist', ['dist', k], 'bytes', m.dist[k], b.dist[k]);
+  for (const k of Object.keys(DIST_ROWS)) add('dist', ['dist', k], 'bytes', m.dist[k], b.dist[k]);
   /* (mobile-performance) the phone's boot-stage files — only where either side has them, so a synthetic
      report without a plan is not «not measured» */
   if (m.phone || b.phone) for (const k of ['bytes', 'requests']) add('phone', ['phone', k], k, m.phone ? m.phone[k] : null, b.phone ? b.phone[k] : null);
@@ -490,6 +501,71 @@ export function raise(m, b) {
   return { baseline: next, changes };
 }
 
+/* ══ (companies-perf-own-bytes) A SCHEDULED REFRESH STATES ITS OWN GROWTH ══════════════════════════
+   MEASURED 2026-11-15 (run 43744761841, pull request #1101): the weekly company batch failed
+   `dist.total grew: 1398060.0 kB > ceiling 1391034.0 kB (band 6955.2 kB)`, the third week running,
+   while the batch itself added 1,371,136 bytes under data/companies. The overrun was not the batch's:
+   a pull request inside the band is green with the ceiling untouched, so main had grown to the top of
+   its band, and the next byte from anyone failed. A person states that with `--update`; a bot cannot
+   — and `--update` from a build would also ratify every undecided byte main took, which is the
+   growth this gate exists to make someone decide.
+   So a job that rewrites files it owns raises the deploy rows by EXACTLY the bytes its own change
+   adds to the shipped tree — counted from git and the working tree, not from a build — and nothing
+   else. The pull request's own check:perf still judges the real build against the raised ceiling:
+   any byte the paths do not explain still fails, and so does growth of a row this does not raise
+   (the start-up rows, the phone's boot files). A shrink raises nothing; main's CI lowers as before.
+   `shipped` is vite.config.js's own answer to «does this file reach dist/, and where» — passed in,
+   not a second list of what is copied. */
+/** Bytes per deploy row that a change from `before` (path → size) to `after` adds to dist/.
+    `shipped(rel)` returns the file's path inside dist/, or null when it is not deployed. */
+export function ownGrowth(before, after, shipped) {
+  const rows = Object.fromEntries(Object.keys(DIST_ROWS).map((k) => [k, 0]));
+  for (const rel of new Set([...before.keys(), ...after.keys()])) {
+    const at = shipped(rel);
+    if (at == null) continue;
+    const d = (after.get(rel) || 0) - (before.get(rel) || 0);
+    for (const k of distRowsOf(at)) rows[k] += d;
+  }
+  return rows;
+}
+/** The baseline with each deploy row raised by the growth `ownGrowth()` gave it — and no row lowered. */
+export function raiseBy(b, growth) {
+  const next = clone(b), changes = [];
+  for (const [k, d] of Object.entries(growth)) {
+    if (!(d > 0) || b.dist?.[k] == null) continue;
+    setAt(next, ['dist', k], b.dist[k] + d); changes.push({ what: `dist.${k}`, key: 'bytes', from: b.dist[k], to: b.dist[k] + d });
+  }
+  return { baseline: next, changes };
+}
+/** vite.config.js's copy rule as a function: the dist/ path of a repository file, or null. Read from
+    the config itself (STATIC_ASSETS is copied to the same relative path, minus STATIC_EXCLUDE). */
+export async function shippedByConfig() {
+  const { STATIC_ASSETS, STATIC_EXCLUDE } = await import('../vite.config.js');
+  return (rel) => {
+    const segs = rel.split('/');
+    const prefixes = segs.map((_, i) => segs.slice(0, i + 1).join('/'));
+    if (!STATIC_ASSETS.some((a) => rel === a || rel.startsWith(a + '/'))) return null;
+    if (prefixes.some((p) => STATIC_EXCLUDE.some((ex) => p === ex || p.endsWith('/' + ex)))) return null;
+    return rel;
+  };
+}
+/** path → size of the files under `paths`: at a commit (git's blob sizes), or in the working tree
+    (tracked and untracked-but-not-ignored, i.e. what `git add` of those paths would commit). */
+function sizesAt(ref, paths) {
+  const out = new Map();
+  if (ref) {
+    for (const line of (gitIn(ROOT, ['ls-tree', '-r', '-l', ref, '--', ...paths]) || '').split('\n')) {
+      const m = /^\S+ blob \S+\s+(\d+)\t(.+)$/.exec(line);
+      if (m) out.set(m[2], Number(m[1]));
+    }
+    return out;
+  }
+  for (const rel of (gitIn(ROOT, ['ls-files', '-co', '--exclude-standard', '--', ...paths]) || '').split('\n')) {
+    if (rel && existsSync(join(ROOT, rel))) out.set(rel, statSync(join(ROOT, rel)).size);
+  }
+  return out;
+}
+
 const change = (c) => `${c.what}: ${c.from == null ? '(none)' : fmt(c.key, c.from)} → ${c.to == null ? '(dropped)' : fmt(c.key, c.to)}`;
 
 function main() {
@@ -575,6 +651,22 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import
       for (const c of changes) console.log('  · ' + change(c));
       console.log("  Say why in this round's dev-notes entry: a raised ceiling is a decision, and the diff alone does not say what it bought.");
     }
+  } else if (has('--raise-own')) {
+    /* (companies-perf-own-bytes) node scripts/perf-budget.mjs --raise-own <path>... [--summary <file>]
+       the working tree's change under <path>, against HEAD, raises the deploy rows by its shipped bytes */
+    const paths = argv.slice(argv.indexOf('--raise-own') + 1).filter((a, i, all) => !a.startsWith('--') && all[i - 1] !== '--summary');
+    if (!paths.length) { console.error('perf-budget --raise-own: name the paths this job owns'); process.exit(1); }
+    const growth = ownGrowth(sizesAt('HEAD', paths), sizesAt(null, paths), await shippedByConfig());
+    const { baseline, changes } = raiseBy(JSON.parse(readFileSync(BASELINE, 'utf8')), growth);
+    const lines = changes.length
+      ? [`The deploy ceilings were raised by the bytes this change adds under ${paths.join(', ')} (\`node scripts/perf-budget.mjs --raise-own\`) — no more:`, '',
+        '| row | ceiling | raised to | by |', '|---|---:|---:|---:|', ...changes.map((c) => `| ${c.what} | ${kb(c.from)} | ${kb(c.to)} | +${kb(c.to - c.from)} |`), '',
+        "This pull request's check:perf judges the real build against them: growth these paths do not account for still fails."]
+      : [`The change under ${paths.join(', ')} adds no deployed bytes (${Object.entries(growth).map(([k, d]) => `dist.${k} ${d >= 0 ? '+' : ''}${kb(d)}`).join(', ')}) — no ceiling was raised.`];
+    if (changes.length) writeFileSync(BASELINE, JSON.stringify(baseline, null, 2) + '\n');
+    console.log(lines.join('\n'));
+    const summary = argOf('--summary');
+    if (summary) writeFileSync(resolve(summary), lines.join('\n') + '\n');
   } else if (has('--tighten')) {
     const from = argOf('--measured');
     const m = from ? JSON.parse(readFileSync(resolve(from), 'utf8')) : measure();

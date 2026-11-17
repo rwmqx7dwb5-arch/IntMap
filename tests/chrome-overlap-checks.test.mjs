@@ -77,8 +77,10 @@ test('R428 ① a band that the chrome covers neither shows nor claims space', ()
     const doc = { elementFromPoint: (x, y) => (coveredRect && x >= coveredRect.x0 && x <= coveredRect.x1 && y >= coveredRect.y0 && y <= coveredRect.y1) ? chrome : canvas };
     /* (module-graph) the engine is the file's imported binding `IntMapGeoEngine`, handed to the lifted body
        under that name (window stays supplied for whatever is still read off it) */
-    new Function('window', 'document', 'IntMapGeoEngine', 'bandBox', liftFunction(s, 'declutterNewsBands') + '\nreturn declutterNewsBands;')(
-      win, doc, win.IntMapGeoEngine, () => ({ w: 120, h: 19 }))([
+    /* (news-type-polish) the band geometry the declutter reads is the file's own BAND, taken from the source */
+    const BAND = new Function('return ' + /const BAND = (\{[^}]*\})/.exec(s)[1])();
+    new Function('window', 'document', 'IntMapGeoEngine', 'bandBox', 'BAND', liftFunction(s, 'declutterNewsBands') + '\nreturn declutterNewsBands;')(
+      win, doc, win.IntMapGeoEngine, () => ({ w: 120, h: 19 }), BAND)([
       /* A is higher priority (placed) and sits under the chrome; B is 10 px lower and collides with A */
       { type: 'Feature', geometry: { type: 'Point', coordinates: [850, 20] }, properties: { fid: 'A', mapped: 'true', short: 'Reykjavik' } },
       { type: 'Feature', geometry: { type: 'Point', coordinates: [850, 30] }, properties: { fid: 'B', mapped: 'true', short: 'Oslo' } },

@@ -1180,8 +1180,8 @@ Atlas の語（「平均寿命」）は組の**両方の行**に届く: 点け�
   pass をやり直す（言語・テーマ・衛星・トグル・時計は自分の呼び出しを持つ）。正本は
   `Architecture.md` §1.2 の命令の集計の項。
   ⚠ **どの言語で描くかは設定「Place-name labels」の 4 択**（`ui` / `local` / `en` / `ui+local`。**既定は `ui+local`**）。
-  `ui+local` は設定言語の下に現地語を併記する 2 行ラベルで、瓦名を描く全レイヤー
-  （`ofm-country` / `ofm-admin1` / `ofm-city` / `ofm-other` / `ofm-poi` / `ofm-river` / `ofm-water` /
+  `ui+local` は設定言語の下に現地語を併記する 2 行ラベルで、瓦名を描く全レイヤー（**国名 `ofm-country` を除く**——国名は 1 行・太字）
+  （`ofm-admin1` / `ofm-city` / `ofm-other` / `ofm-poi` / `ofm-river` / `ofm-water` /
   `ofm-peak`）に同じ式で効く。理由と制約の正本は `Architecture.md` §10.3。
   ⚠ **市区町村より下の階層は `ofm-other`**：`village` / `suburb` / `hamlet` に加えて
   `borough` / `quarter` / **`neighbourhood`** / `isolated_dwelling` / `farm`。

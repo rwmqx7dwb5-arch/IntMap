@@ -167,12 +167,13 @@ export function newsUi(HOST){
       }});
       /* Title preview "band" to the right of the pin; hidden when hovered (popup takes over).
          (#R15) Shown for publisher-located pins too, not just subject pins. */
+      const MTy=window.IntMapMapTypography;   /* the band's size, place and padding: js/map-typography.js BAND */
       GE().layers.add({id:'news-labels',type:'symbol',source:'news-points',layout:{   /* (#R15c) band on ALL pins incl. not-yet-located */
         'text-field':['get','short'],
-        'text-size':window.IntMapLabelScale.sub(0.92),
+        'text-size':window.IntMapLabelScale.sub(MTy.BAND_W),
         'text-font':['literal',['Noto Sans Regular']],
         'text-anchor':'left',
-        'text-offset':[1.25,0],
+        'text-offset':MTy.bandOffset(),   /* (news-type-polish) clear of the pin: js/map-typography.js BAND */
         /* (#R36) ROOT CAUSE of "ズームインすると帯が見えなくなる / 空間に余裕があるピンにも帯が出ない / 高速点滅":
            GL collision is GLOBAL across every symbol layer, so allow-overlap:false made the news bands compete
            against ALL the base-map place labels (cities/towns/streets). Zooming in spawns more base labels →
@@ -189,14 +190,14 @@ export function newsUi(HOST){
         'text-max-width':14,
         'icon-image':'news-pill',
         'icon-text-fit':'both',
-        'icon-text-fit-padding':[2,9,2,9],
+        'icon-text-fit-padding':(B=>[B.padY,B.padX,B.padY,B.padX])(MTy.BAND),
         'icon-allow-overlap':true,
         'icon-ignore-placement':true,
         'icon-optional':false
       },paint:{
         'text-color':'#ffffff',
-        'text-halo-color':'rgba(0,0,0,0.55)',
-        'text-halo-width':0.8,
+        'text-halo-color':'rgba(0,0,0,0)',
+        'text-halo-width':0,
         'text-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]],
         'icon-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]]
       }});

@@ -77,7 +77,7 @@ const ALLOW = {
     { match: /^(robots\.txt|sitemap\.xml|favicon\.ico|manifest\.webmanifest|\.nojekyll)$/, why: 'served by convention at a fixed URL' },
     { match: /^assets\//, why: 'bundler output — index.html references it by hashed name at build time' },
     { match: /^katex\//, why: 'KaTeX ships its own stylesheet and font tree; dist/katex/katex.min.css names the faces by relative URL and js/page-i18n.js loads the stylesheet, so the individual faces are named inside a file that is itself an asset (#R221)' },
-    { match: /^fonts\/Inter Regular\//, why: 'SDF glyph atlas — the range is computed from the map view (js/app-body.js transformRequest)' },
+    { match: /^fonts\/Inter (Regular|Bold)\//, why: 'SDF glyph atlas — the range is computed from the map view (js/app-body.js transformRequest)' },
     /* (hist-vector-tiles) the historical records cut by time. No string names them: js/hist-bundles.js
        DERIVES each index from its record's own name (`tilesOf`: data/<name>.js → data/hvt/<name>.idx.json)
        and reads the archive the index names — and scripts/build-hist-tiles.mjs asks the door for the same

@@ -198,7 +198,7 @@ test('③ the migrated builders, evaluated: their markup is markup, not text (no
   const IMG = '<img class="hist-flag" alt="" src="data:image/svg+xml,%3Csvg%3E">';
   const stats = { AAA: { name: 'Japan', flag: '🇯🇵' }, BBB: { name: 'Prussia', flag: IMG } };
   const SC = run(lift(TREE['js/stats-compare.js'], ['CW', 'CH', 'mChart', 'secHtml', 'fmtSigned', 'barsHtml', 'barBlockHtml', 'blockHtml', '_tsYearList', '_yoptsAvail', '_tsRangeHtml']), {
-    window: { IntMapSafe: S }, LL: (...a) => a[0], codes: ['AAA', 'BBB'], PAL: ['#0a84ff', '#ff9500'], esc: S.html, html, flagM: (f) => S.trusted(S.flag(f)),
+    window: { IntMapSafe: S }, LL: (...a) => a[0], codes: ['AAA', 'BBB'], barSort: 'desc', PAL: ['#0a84ff', '#ff9500'], esc: S.html, html, flagM: (f) => S.trusted(S.flag(f)),
     tsFrom: 2000, tsTo: null, SIGNED: { g: 1 }, srcSel: {}, _ttYear: () => null, _cs: (cd) => stats[cd] || {}, cName: (s) => s.name, IntMapTime: { min: 1990 }, _tsAvailYears: new Set([2001]),
   }, ['mChart', 'barBlockHtml', 'blockHtml', 'secHtml', '_tsRangeHtml']);
   const ind = { k: 'g', l: ['GDP growth'], fmt: (v) => v.toFixed(1) + '%', imf: true };

@@ -126,7 +126,8 @@ test('news-crosshair-shadow ②: setupIntelLayers binds the dashboard pins, and 
   Object.assign(win, {
     showMapTooltip: () => { tip.shown++; }, hideMapTooltip: () => { tip.hidden++; },
     setMapTooltipHTML: (el, html) => { el.innerHTML = html; return el; }, triggerLayerHover: () => {},
-    IntMapLabelScale: { sub: (k) => 12 * k },   /* the label text size the news band asks for — not what this measures */
+    IntMapLabelScale: { sub: (k) => 12 * k },
+    IntMapMapTypography: { BAND_W: 0.92, BAND: { lead: 13, padX: 9, padY: 4 }, bandOffset: () => [1.8, 0] },   /* where the band sits — not what this measures */   /* the label text size the news band asks for — not what this measures */
   });
   const document = { getElementById: () => null, addEventListener: () => {}, body: { classList: { contains: () => false } } };
   const { newsUi } = await importModule('js/news-ui.js', {

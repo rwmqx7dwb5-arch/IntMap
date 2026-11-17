@@ -600,7 +600,7 @@ test('#R705 Cesium preserves dash ratios and represents zero gaps with solid mat
    a recording engine); placement with real era bundles is measured by r707-chronos-labelplacement. */
 function definitions() {
   const result = [];
-  const ctx = vm.createContext({ GE: () => ({ layers: { has: () => false, add: x => result.push(x) } }), window: { IntMapLabelScale: { place: () => 12 } }, LS: { place: () => 12 }, FONT: ['Arial'], _ERAFONT: ['Arial'], _ERAVAR: { 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'] }, A1_TEXT: () => '#fff', A1_RANK: true, before: undefined });
+  const ctx = vm.createContext({ GE: () => ({ layers: { has: () => false, add: x => result.push(x) } }), window: { IntMapLabelScale: { place: () => 12, halo: (w) => w } }, LS: { place: () => 12, halo: (w) => w }, _LS: { place: () => 12, halo: (w) => w }, MT: () => ({ placeFont: () => ['Arial'] }), FONT: ['Arial'], _ERAFONT: ['Arial'], _ERAVAR: { 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'] }, A1_TEXT: () => '#fff', A1_RANK: true, before: undefined });
   for (const [file, id] of [['js/time-borders.js', 'imtb-lbl'], ['js/time-borders.js', 'imtb-lbl2'], ['js/place-labels.js', 'ofm-country']]) {
     const line = rd(file).split('\n').find(l => l.includes("has('" + id + "')") && l.includes('layers.add('));
     assert.ok(line, 'definition exists: ' + id); vm.runInContext(line, ctx);

@@ -36,6 +36,7 @@ async function bootPlaceLabels(lang) {
   ctx.window = ctx;
   ctx.matchMedia = () => ({ matches: false });
   ctx.IntMapMapTypography = { placeFont: () => ['literal', ['Inter']], readerFont: () => ['literal', ['Inter']], cjkFamily: () => '', glyphRewrite: noop };
+  ctx.IntMapLabelScale = { halo: (w) => w };   /* applyLabelLang asks js/label-scale.js for the halo */
   const engine = {
     hasRenderer: () => true, layers, camera: { getZoom: () => 6 },
     coords: { querySourceFeatures: () => [] }, events: { on: noop }

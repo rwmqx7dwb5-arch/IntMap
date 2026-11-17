@@ -136,5 +136,15 @@ window.IntMapLabelScale=(function(){
   function placeTiered(kind,tierExpr){ const s=PLACE[kind]; if(!s) throw new Error('IntMapLabelScale.placeTiered: unknown kind '+kind);
     return _expr(s.map(([z,px])=>{ const st=['step',tierExpr,_fl(px*TIER_K[0])]; for(let i=1;i<TIER_K.length;i++) st.push(i,_fl(px*TIER_K[i])); return [z,st]; })); }
 
-  return { place, placeAt, placeTiered, placeTierAt, refAt, sub, subAt, subCase, PLACE, REF, SUB_REF, SUB, SUB_RATIO, TIER_K };
+  /* ══ (news-type-polish) HOW THICK THE OUTLINE AROUND A NAME IS ═══════════════════════════════════
+     「地名ラベルの周囲の黒縁取りは幅を細く。」 (2026-11-16). The halo widths were written as literals per
+     layer (1.7 country, 1.6 city, 1.45 others, 1.1 water…), so «thinner» could only be done as thirty
+     edits that would drift apart again. Each layer now keeps its OWN weight — the relation between a
+     country's ring and a river's stays what it was — and this one factor scales them all. 0.6 is the
+     design number of this request (country 1.7 → 1.02 px); it lapses if the reader asks for another
+     thickness. Overlay labels that are not place names (news bands, POIs, tools) do not ask for it. */
+  const HALO_K=0.6;
+  function halo(w){ return Math.round(w*HALO_K*100)/100; }
+
+  return { place, placeAt, placeTiered, placeTierAt, refAt, sub, subAt, subCase, halo, HALO_K, PLACE, REF, SUB_REF, SUB, SUB_RATIO, TIER_K };
 })();
