@@ -60,8 +60,12 @@ export const GEO_IMPORT = (function () {
   function decimal(s, comma) {
     let t = String(s == null ? '' : s).trim();
     if (!t) return null;
-    if (comma) t = t.replace(/\./g, '').replace(',', '.');    /* 1.234,56 → 1234.56 */
-    else t = t.replace(/,/g, '');                             /* 1,234.56 → 1234.56 */
+    /* ⚠ A ';' FILE DOES NOT PROMISE A DECIMAL COMMA. Many write 52.37;5.2 — with no comma in the cell, a single
+       dot is the decimal point (stripping it read 5.2 as 52 and 4.5 as 45, still legal latitudes, so nothing
+       caught it). Dots are thousands separators only beside a decimal comma or when there are several. */
+    if (comma && t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');    /* 1.234,56 → 1234.56 */
+    else if (comma && /^[+-]?\d{1,3}(\.\d{3}){2,}$/.test(t)) t = t.replace(/\./g, ''); /* 1.234.567 → 1234567 */
+    else if (!comma) t = t.replace(/,/g, '');                 /* 1,234.56 → 1234.56 */
     if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(t)) return null;
     const n = Number(t);
     return isFinite(n) ? n : null;
@@ -80,7 +84,8 @@ export const GEO_IMPORT = (function () {
     const se = m[4] == null ? 0 : Number(String(m[4]).replace(',', '.'));
     if (!isFinite(d) || !isFinite(mi) || !isFinite(se) || mi >= 60 || se >= 60) return null;
     let v = Math.abs(d) + mi / 60 + se / 3600;
-    if (d < 0 || hemi === 'S' || hemi === 'W') v = -v;
+    /* the sign is read from the text: Number('-0') is -0 and -0 < 0 is false, so -0°30' lost its minus */
+    if (/^-/.test(String(m[2])) || hemi === 'S' || hemi === 'W') v = -v;
     /* The letter also says WHICH axis, and that is evidence no column name can contradict. */
     return { value: v, axis: (hemi === 'N' || hemi === 'S') ? 'lat' : (hemi === 'E' || hemi === 'W') ? 'lon' : null };
   }

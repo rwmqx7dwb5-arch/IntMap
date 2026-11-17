@@ -168,6 +168,7 @@ export function los(HOST){
       for(let i=1;i<n;i++){
         const s=prof[i], d1=s.d, d2=total-d1;
         if(d1<=0||d2<=0) continue;
+        if(s.gap) continue;                    /* interpolated over a DEM hole: drawn, never a vote (see linkRun) */
         const hTerr=s.h-dropAt(d1,kFac);       /* apparent terrain, curvature + refraction */
         const lineAt=obsElev+(tgtElev-obsElev)*(d1/total);
         const clearance=lineAt-hTerr;          /* >0 = the ray passes above this point */
@@ -400,6 +401,9 @@ export function los(HOST){
          never truncated, so a valley that comes back into view is drawn — the defect that made the old
          star polygon wrong wherever terrain is not monotonic. */
       const VIS=1, FRES=2, DIFF=3, SHADOW=0;
+      /* how good each answer is — the codes are not in that order (a neighbouring ray's Fresnel or diffraction
+         used to overwrite a cell another ray saw clearly, so the clear area was undercounted) */
+      const RANK=[0,3,2,1];
       const cls=new Uint8Array(NX*NY);                                     /* 0 = untouched/shadow */
       const seen=new Uint8Array(NX*NY);
       let visCells=0, testCells=0, maxVisM=0, demMissing=0;
@@ -451,7 +455,7 @@ export function los(HOST){
             for(let oi=-gapCells;oi<=gapCells;oi++){ const ii=ci+oi; if(ii<0||ii>=NX) continue;
               const idx=jj*NX+ii;
               if(!seen[idx]){ seen[idx]=1; testCells++; }
-              if(c>cls[idx]) cls[idx]=c;                                   /* best answer any ray gave */
+              if(RANK[c]>RANK[cls[idx]]) cls[idx]=c;                       /* best answer any ray gave */
             } }
         }
         if((a&127)===127){ setProgress(0.55+0.40*(a/rays), calcLbl); await tick(); if(!live()) return null; }

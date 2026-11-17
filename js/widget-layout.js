@@ -709,6 +709,8 @@ window.IntMapWidgetLayout = (function () {
     var id = host.getAttribute('data-wid');
     if (e.key === ' ' || e.key === 'Enter') {
       if (!editing) return;
+      /* only the card itself picks up: Enter on a control inside it (Remove) is that control's */
+      if (e.target !== host) return;
       e.preventDefault();
       if (picked === id) {
         picked = null; host.classList.remove('picked');

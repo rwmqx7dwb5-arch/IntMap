@@ -313,12 +313,20 @@ export function shakeMap(HOST) {
   }
 
   /* ── open ────────────────────────────────────────────────────────────────*/
+  /* Every open() and close() takes a new number; an open() that finds a newer
+     number after one of its awaits was superseded and leaves the map alone.
+     Without it, opening quake A then B (or closing while A loads) let A's late
+     responses repaint the map with the quake the reader moved away from. */
+  let openSeq = 0;
   async function open(eventId, metricWanted) {
     const id = String(eventId || '').trim();
     if (!id) throw new Error('no event id');
+    const my = ++openSeq;
+    const superseded = () => my !== openSeq;
     let head = (cur && cur.id === id) ? cur : null;
     if (!head) {
       const dj = await getJSON(DETAIL + encodeURIComponent(id) + '.geojson');
+      if (superseded()) return state();
       const pr = (dj.properties || {}), prod = preferred((pr.products || {}).shakemap);
       const mets = prod ? roster(prod) : [];
       if (!mets.length) { const e = new Error('no shakemap for ' + id); e.code = 'NO_SHAKEMAP'; throw e; }
@@ -334,6 +342,7 @@ export function shakeMap(HOST) {
     const met = head.metrics.filter(m => m.key === key)[0];
     /* contours first: the smallest file, and the only one every metric has */
     const cj = await getJSON(met.cont.url);
+    if (superseded()) return state();
     let units = '';
     const lows = [];
     (cj.features || []).forEach(f => {
@@ -355,9 +364,14 @@ export function shakeMap(HOST) {
         const step = sorted.length > 1 ? (sorted[1] - sorted[0]) : (pal.hi - pal.lo) / (pal.cols.length - 1);
         const fadeAt = (lo != null) ? (lo - step) : (pal.whiteTo != null ? pal.whiteTo : pal.lo);
         const r = _render(grid, pal, fadeAt, fadeAt + Math.max(step, 1e-6));
-        if (r) { const u = await pngURL(r.cv); if (u) { _revoke(imgURL); imgURL = u; img = { url: u, coords: r.coords }; } }
+        if (r) {
+          const u = await pngURL(r.cv);
+          if (superseded()) { _revoke(u); return state(); }
+          if (u) { _revoke(imgURL); imgURL = u; img = { url: u, coords: r.coords }; }
+        }
       }
     }
+    if (superseded()) return state();
     clearField();
     head.metric = key; head.grid = grid; head.cont = cj; head.pal = pal; head.img = img; head.units = units;
     head.levels = lows.slice().sort((a, b) => a - b);
@@ -380,7 +394,7 @@ export function shakeMap(HOST) {
   /* (atlas-one-declaration) …and the intensity image under the same key, so the Atlas chip switches all three layers from
      the claim rather than from a copied id list. No remover of its own: the contour source's remover is the whole close. */
   try { GE().render.claim(SRC_IMG, 'map.shakemap'); } catch (_) { }
-  function close() { clearMap(); cur = null; mmiGrid = null; mmiFor = ''; unmountLegend(); fire(); return true; }
+  function close() { openSeq++; clearMap(); cur = null; mmiGrid = null; mmiFor = ''; unmountLegend(); fire(); return true; }
   function setOpacity(v) {
     opacity = clamp(+v, 0, 1) || 0;
     try { if (GE().layers.has(LYR_IMG)) GE().layers.setPaint(LYR_IMG, 'raster-opacity', opacity); } catch (_) { }

@@ -185,7 +185,9 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
       let settled = false;
       const finish = () => { if (settled) return; settled = true; done(); };
       const t = setTimeout(finish, STYLE_WAIT_MS);
-      try { GE().events.on('styledata', () => { clearTimeout(t); finish(); }); } catch (_) { clearTimeout(t); finish(); }
+      /* the handler removes itself: it was left registered, one more per draw for the page's lifetime */
+      const h = () => { clearTimeout(t); try { GE().events.off('styledata', h); } catch (_) { } finish(); };
+      try { GE().events.on('styledata', h); } catch (_) { clearTimeout(t); finish(); }
     });
     const W = last.W;
     /* ⚠⚠ POINTS AT THE LABEL POINT, NOT COUNTRY FILLS — the same decision js/playground.js made for

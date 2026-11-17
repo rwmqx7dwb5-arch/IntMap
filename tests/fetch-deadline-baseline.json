@@ -1,6 +1,6 @@
 {
  "//": "written by scripts/fetch-deadlines.mjs --update — fetch() calls with no signal, per file; ratcheted both ways by check:static",
- "total": 114,
+ "total": 113,
  "files": {
   "js/ai-core.js": 1,
   "js/aircraft-detail.js": 1,
@@ -56,7 +56,6 @@
   "js/world-packs-rows.js": 1,
   "js/world-packs.js": 18,
   "js/wx-ecmwf.js": 2,
-  "src/aviation-worker.js": 1,
   "src/photo-geo-worker.js": 1,
   "src/sat-worker.js": 1
  }
