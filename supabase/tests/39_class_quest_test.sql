@@ -100,6 +100,10 @@ select _sel('s_ben',    'select public.class_set_submit((select code from _codes
 select _sel('s_closed', 'select public.class_set_submit((select code from _codes where kind = ''when''), ''Aiko'', ''[1914,1939,1945,1989,1991,null,null,null,null,null]''::jsonb) ->> ''error''');
 select _sel('s_count',  'select public.class_set_open((select code from _codes where kind = ''where'')) ->> ''answered''');
 select _sel('s_leak',   'select (public.class_set_open((select code from _codes where kind = ''where'')) ? ''user_id'')::text');
+reset role;
+-- the tables themselves stay closed to anon (a student never reads or writes them directly)
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
 select _sel('s_read',   'select count(*)::text from public.class_set_answers');
 select _sel('s_sets',   'select count(*)::text from public.class_sets');
 select _run('s_ins',    'insert into public.class_set_answers (set_id, name, answers) values ((select id from public.class_sets limit 1), ''x'', ''[]'')');

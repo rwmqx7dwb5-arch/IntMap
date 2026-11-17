@@ -398,6 +398,11 @@ export async function openCommunityMaps(HOST, opts) {
     render();
   };
   let typing = null;
+  /* (security-review-nov) the directory is read through the community-class Edge Function (a POST), and a read
+     changes nothing anyone else sees — declared, so scripts/data-effects.mjs does not take the POST for a write */
+  search.setAttribute('data-effect', 'none');
+  areaBox.setAttribute('data-effect', 'none');
+  more.setAttribute('data-effect', 'none');
   search.addEventListener('input', () => { st.query = search.value; clearTimeout(typing); typing = setTimeout(() => load(false), 250); });
   areaBox.onchange = () => { st.area = areaBox.checked; load(false); };
   more.onclick = () => load(true);
