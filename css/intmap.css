@@ -844,6 +844,11 @@
     .plc-popup .maplibregl-popup-content{ background:#fff !important; color:var(--text-main); border-radius:10px; box-shadow:var(--shadow); padding:8px 10px; }   /* (#R210) 一段小さく */   /* (#R122) OPAQUE — place-label popup must not be see-through ("透過するな") */
     :root[data-theme="dark"] .plc-popup .maplibregl-popup-content{ background:#1c1c1e !important; }
     .plc-popup .maplibregl-popup-tip{ display:none; }
+    /* (geopolitics-legends) a card opened at a point always has at least half the map on one side of it, so a card no taller than
+       a little under half the viewport always fits on the side MapLibre's auto-anchor picks; past that it scrolls. Measured
+       2026-11-18: the sanctions card for Iran was 520 px tall and, opened below a point in the middle of a 900 px map, ran off its
+       bottom with its source line. */
+    .gp-popup .maplibregl-popup-content{ max-height:46vh; overflow:auto; overscroll-behavior:contain; }
     /* (#R27) Align the × with the RIGHT EDGE of the action buttons beneath it. The buttons fill the
        content width, so their right edge sits at the content's 12px inner padding → place the × there
        (right:12px) with a tidy square hit-box. The old corner placement + the mobile padding-right:44px
@@ -2289,6 +2294,8 @@
 
     /* Legends made draggable + collapsible */
     .data-legend, .koppen-legend{ cursor:default; }
+    /* (geopolitics-legends) a link inside a legend card is the accent as text — the browser's #0000ee on the dark card measured unreadable (production 2026-11-18) */
+    .data-legend a, .koppen-legend a{ color:var(--primary-color); }
     /* (#R47) the ⋮⋮ drag-mark is hidden — the user finds it unnecessary; legends still move by dragging their TITLE (h4 is a drag handle). */
     .data-legend .dl-drag, .koppen-legend .kl-drag{ display:none !important; }
     .data-legend h4, .koppen-legend h4{ padding-left:18px; }

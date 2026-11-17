@@ -1,5 +1,5 @@
 {
- "tests/geopolitics-layers.spec.js": 10,
+ "tests/geopolitics-layers.spec.js": 14,
  "tests/gis-chain-audit.spec.js": 10,
  "tests/wave4-news.spec.js": 6,
  "tests/wave4-history.spec.js": 8,
@@ -128,7 +128,7 @@
  "tests/r355.spec.js": 8,
  "tests/r379-cesium.spec.js": 7,
  "tests/r379.spec.js": 3,
- "tests/r384-legend.spec.js": 55,
+ "tests/r384-legend.spec.js": 29,
  "tests/r384.spec.js": 3,
  "tests/r386-detail.spec.js": 3,
  "tests/r386.spec.js": 2,
