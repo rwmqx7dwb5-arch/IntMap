@@ -15,7 +15,6 @@
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
  *  tests/atlas-console-kernel-checks.test.mjs (#R199) re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
-import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { makeAtlasAnnotate } from './atlas-annotate.js';   /* (#R492) the in-reply unit / clock / abbreviation notes — js/atlas-annotate.js */
 import './safe-html.js';   /* (safe-output-single-module) the one output encoder — publishes globalThis.IntMapSafe */
 import { makeAtlasMarkdown } from './atlas-markdown.js';   /* (#R494) the block parser — see the header of that file */
@@ -142,14 +141,24 @@ export function makeAtlasReply(HOST, CTX) {
          it, so a sub-item («  - …») and its parent arrived at the renderer at the same indent and
          there was nothing left to nest. Only the NON-list paragraphs are trimmed now (their indent
          carries no meaning); a list line keeps its column. */
-      const paras=raw.split(/\n\s*\n|\n/).filter(s=>s.trim());
+      const isList=p=>/^[ \t　]*(?:[-・*•+][ \t　]|\d{1,9}[.)、][ \t　]|[①-⑳])/.test(p);
+      /* The reflow is for PROSE ONLY. A quote line, and an indented line that continues a list item (its second
+         paragraph, its code), are structure the parser owns: they used to be trimmed and re-spaced here, so a
+         quote fell into one frame per line and an item's second paragraph escaped its item whenever the reply
+         had no heading. Each line is classified first; only 'para' lines are reflowed. */
+      const items=[]; let gap=false;
+      for(const ln of raw.split('\n')){ if(!ln.trim()){ gap=true; continue; }
+        const prev=items[items.length-1];
+        const kind=isList(ln)?'list':/^[ \t]{0,3}>/.test(ln)?'quote':(prev&&(prev.kind==='list'||prev.kind==='cont')&&/^(?:[ \t　]{2,}|\t)/.test(ln))?'cont':'para';
+        items.push({ ln, kind, gap }); gap=false; }
+      const paras=items.map(x=>x.ln);
       if(!paras.length) return raw;
       if((plainAll.length+cjk)<=150 && paras.length<2) return raw;            /* a one-line answer doesn't need reflow */
-      const isList=p=>/^[ \t　]*(?:[-・*•+][ \t　]|\d{1,9}[.)、][ \t　]|[①-⑳])/.test(p);
       const SENT=/[^.!?。！？…]+(?:[.!?。！？…]+["”』）)]*|$)/g;
       const out=[];   /* {text, list} — a run of consecutive list lines is rejoined with ONE newline so it stays one list */
-      for(const p0 of paras){
-        const pl=p0.replace(/[ \t　]+$/,'');
+      for(const it of items){
+        const p0=it.ln, pl=p0.replace(/[ \t　]+$/,'');
+        if(it.kind==='quote'||it.kind==='cont'){ out.push({ text:pl, list:false, kind:it.kind, gap:it.gap }); continue; }
         /* ⚠ (#R494) A NUMBER IS NOT A BULLET. #R154 normalised «1.» and «①» to «- », which is why an
            ordered list arrived at the reader unnumbered. The marker is CANONICALISED now, not
            replaced: 「1、」→「1. 」 keeps the number, ①-⑳ keep their value, and only the genuinely
@@ -158,7 +167,7 @@ export function makeAtlasReply(HOST, CTX) {
         if(isList(pl)){ out.push({ text:pl
             .replace(/^([ \t　]*)(\d{1,9})[.)、][ \t　]+/,(m,ind,n)=>ind.replace(/　/g,'  ')+n+'. ')
             .replace(/^([ \t　]*)([①-⑳])[ \t　]*/,(m,ind,c)=>ind.replace(/　/g,'  ')+c+' ')
-            .replace(/^([ \t　]*)[•・*+][ \t　]+/,(m,ind)=>ind.replace(/　/g,'  ')+'- '), list:true }); continue; }
+            .replace(/^([ \t　]*)[•・*+][ \t　]+/,(m,ind)=>ind.replace(/　/g,'  ')+'- '), list:true, kind:'list', gap:it.gap }); continue; }
         const p=pl.trim();
         const pc=(p.match(/[぀-ヿ㐀-鿿가-힯]/g)||[]).length;
         if((p.length+pc)>230){ const H=_atlHold(p);                            /* (#R463) the gate still measures the REAL paragraph; only the SPLIT sees placeholders */
@@ -167,7 +176,14 @@ export function makeAtlasReply(HOST, CTX) {
         out.push({ text:p, list:false });
       }
       let joined='';
-      for(let i=0;i<out.length;i++){ if(i) joined += (out[i].list && out[i-1].list) ? '\n' : '\n\n'; joined += out[i].text; }
+      for(let i=0;i<out.length;i++){ const c=out[i], p=out[i-1];
+        if(i){
+          joined += (c.list&&p.list) ? '\n'                                                    /* consecutive list lines stay ONE list */
+            : (c.kind==='cont') ? (c.gap?'\n\n':'\n')                                          /* an item's own continuation stays in the item */
+            : (c.kind==='list'&&p.kind==='cont') ? (c.gap?'\n\n':'\n')
+            : (c.kind==='quote'&&p.kind==='quote') ? (c.gap?'\n\n':'\n')                       /* one quote, not one frame per line */
+            : '\n\n'; }
+        joined += c.text; }
       return joined; }
     /* (#R156) ================= UNIFIED MARKDOWN + LaTeX RENDERER =================
        The long-standing "Atlas replies are a monotone wall of text" complaint AND the vision/math work order both
@@ -185,11 +201,22 @@ export function makeAtlasReply(HOST, CTX) {
        raw source (data-tex kept so _atlTypesetMath upgrades it if KaTeX arrives late) — one bad formula never breaks
        the whole reply. Pure/deterministic → unit-tested via IntMapAtlasDebug.mdMini. */
     let _atlCbSeq=0;
+    /* KaTeX is lazy, so the load starts WHERE THE NEED APPEARS: the moment a formula falls back to raw source. It used to
+       start once at construction and only if a raw formula was already on screen — never true at construction — so the
+       first answer with maths stayed raw LaTeX for the session. One shared promise dedupes concurrent answers; a failed
+       load clears itself so the next render retries; arrival typesets the document (idempotent). */
+    let _atlKatexLoad=null;
+    function _atlEnsureKatex(){ try{ if(window.katex&&window.katex.renderToString) return; if(_atlKatexLoad) return;
+      const V=window.IntMapVendor; if(!V||typeof V.katex!=='function') return;
+      _atlKatexLoad=V.katex().then(()=>{ _atlKatexLoad=null; _atlTypesetMath(document);
+        try{ requestAnimationFrame(()=>_atlTypesetMath(document)); }catch(_){} },()=>{ _atlKatexLoad=null; });
+    }catch(_){ _atlKatexLoad=null; } }
     function _atlKatex(tex, display){ tex=String(tex==null?'':tex).trim();
       if(window.katex && typeof window.katex.renderToString==='function'){ try{
         const h=window.katex.renderToString(tex,{displayMode:!!display,throwOnError:false,strict:false,output:'html',trust:false});
         return display?('<div class="atl-math-b">'+h+'</div>'):h;
       }catch(_){} }
+      _atlEnsureKatex();
       const attr=' data-tex="'+esc(tex)+'" data-display="'+(display?'1':'0')+'"';   /* fallback carries the source → upgradeable if KaTeX loads late / returns */
       return display?('<div class="atl-math-b atl-math-raw"'+attr+'><code>'+esc(tex)+'</code></div>')
                     :('<code class="atl-math-raw"'+attr+'>'+esc(tex)+'</code>'); }
@@ -226,7 +253,7 @@ export function makeAtlasReply(HOST, CTX) {
     /* (#R159) table cells: strip **bold** markers to plain — Atlas replies carry no bold (inline code/math placeholders survive esc + restore globally).
        (#R492) …and a cell is prose too: it is annotated here rather than by the pass at the end of mdMini, because by then
        the whole table is a single placeholder token and its cells are out of that walk's reach. */
-    function _atlCellFmt(s,AN){ const t=esc(String(s==null?'':s)).replace(/\*\*([^*]+)\*\*/g,'$1'); if(!AN) return t; try{ return annotateAtlasText(t,AN); }catch(_){ return t; } }
+    function _atlCellFmt(s,AN){ let t; try{ t=_atlMd._inline(String(s==null?'':s)); }catch(_){ t=esc(String(s==null?'':s)).replace(/\*\*([^*]+)\*\*/g,'$1'); } if(!AN) return t; try{ return annotateAtlasText(t,AN); }catch(_){ return t; } }
     /* ⚠ (#R494) A CELL MAY CONTAIN A PIPE. The splitter was `split(/\|/)`, so `\|` — the escape GFM
        defines for exactly this — cut the row at the character it was written to protect, silently
        shifting every later cell one column left. Split on a pipe that is NOT preceded by a
@@ -259,16 +286,18 @@ export function makeAtlasReply(HOST, CTX) {
       const pB=h=>{ B.push(h); return 'B'+(B.length-1)+''; };
       const pI=h=>{ I.push(h); return 'I'+(I.length-1)+''; };
       /* 1) protect fenced code, then display + inline math, then inline code (block-level first; guarded $…$ last) */
-      s=s.replace(/```([\w+#.\-]*)[ \t]*\r?\n?([\s\S]*?)```/g,(m,lang,code)=>pB(_atlCodeBlock(code,lang)));
+      s=s.replace(/(?<!`)(`{3,})([\w+#.\-]*)[ \t]*\r?\n?([\s\S]*?)\1(?!`)/g,(m,fence,lang,code)=>pB(_atlCodeBlock(code,lang)));   /* closes with a run of the SAME length, so a 4-backtick fence may contain a 3-backtick one */
+      /* inline code is protected BEFORE maths: `$$x^2$$` is text about syntax, not a formula (a double-backtick span too) */
+      s=s.replace(/(?<!`)(`+)(?!`)([^\n]*?[^`\n]|[^`\n])\1(?!`)/g,(m,f,c)=>pI('<code class="atl-code-i">'+esc(/^ .*[^ ].* $/.test(c)?c.slice(1,-1):c)+'</code>'));
       s=s.replace(/\$\$([\s\S]+?)\$\$/g,(m,t)=>pB(_atlKatex(t,true)));
       s=s.replace(/\\\[([\s\S]+?)\\\]/g,(m,t)=>pB(_atlKatex(t,true)));
-      s=s.replace(/`([^`\n]+)`/g,(m,c)=>pI('<code class="atl-code-i">'+esc(c)+'</code>'));
       s=s.replace(/\\\(([\s\S]+?)\\\)/g,(m,t)=>pI(_atlKatex(t,false)));
       s=s.replace(/(^|[^\\$\w])\$(?!\s)([^\n$]*?[^\s$])\$(?![\w$])/g,(m,pre,t)=>pre+pI(_atlKatex(t,false)));   /* inline $…$ — guarded so "$5"/"a$b" currency & code don't misfire */
       /* 2) GFM pipe tables → protected block */
       s=(function(src){ const ls=src.split('\n'), out=[]; let i=0;
-        const isRow=l=>/^\s*\|.*\|\s*$/.test(l), isSep=l=>/\|/.test(l)&&/-/.test(l)&&/^\s*\|?[\s:|-]*-[-\s:|]*\|?\s*$/.test(l);
-        while(i<ls.length){ if(isRow(ls[i])&&i+1<ls.length&&isSep(ls[i+1])){ const hdr=ls[i], sp=ls[i+1], bd=[]; let j=i+2; while(j<ls.length&&isRow(ls[j])){ bd.push(ls[j]); j++; } out.push(pB(_atlBuildTable(hdr,sp,bd,AN))); i=j; } else { out.push(ls[i]); i++; } }
+        const isRow=l=>/(?<!\\)\|/.test(l)&&!/^\s*$/.test(l);   /* GFM: the outer pipes are optional — a row is a line with an unescaped pipe */
+        const isSep=l=>{ if(!/\|/.test(l)) return false; const c=_atlCutRow(l); return c.length>0&&c.every(x=>/^:?-+:?$/.test(x)); };
+        while(i<ls.length){ if(isRow(ls[i])&&i+1<ls.length&&isSep(ls[i+1])&&_atlCutRow(ls[i]).length===_atlCutRow(ls[i+1]).length){ const hdr=ls[i], sp=ls[i+1], bd=[]; let j=i+2; while(j<ls.length&&isRow(ls[j])){ bd.push(ls[j]); j++; } out.push(pB(_atlBuildTable(hdr,sp,bd,AN))); i=j; } else { out.push(ls[i]); i++; } }
         return out.join('\n'); })(s);
       /* ══ ⚠⚠⚠ (#R494) 3) THE BLOCK STRUCTURE — PARSED, NOT PATTERN-MATCHED ══════════════════════
          What stood here from #R149 to #R232 was `esc(text)` followed by twelve `.replace()` calls
@@ -325,16 +354,8 @@ export function makeAtlasReply(HOST, CTX) {
         const rest=b.parentNode&&b.parentNode.querySelector?b.parentNode.querySelector('.atl-lc-rest'):null;
         if(rest) rest.hidden=false; b.remove();
       }catch(_){} });
-      /* belt-and-suspenders: re-typeset any raw-LaTeX fallbacks once KaTeX is present (covers a slow-CDN edge) */
-      /* (#R224) …and KaTeX is fetched HERE, the first time an answer carries maths, rather than at
-         boot: 258 kB + its stylesheet on every session for a feature most sessions never reach (see
-         src/vendor.js). The retry loop below is unchanged and still covers a slow arrival. */
-      try{ if(!(window.katex&&window.katex.renderToString)&&window.IntMapVendor
-            &&document.querySelector('.atl-math-raw[data-tex]')) window.IntMapVendor.katex().catch(()=>{}); }catch(_){}
-      /* ⚠ (#R408) ONE key for every reply that is waiting: the wait is for a GLOBAL (window.katex) and the action is
-         document-wide and idempotent, so a second answer's wait SUPERSEDING the first is exactly right — per-reply keys
-         would leave N timers polling one global and typesetting the same document N times. */
-      try{ if(window.katex&&window.katex.renderToString){ _atlTypesetMath(document); } else { let _k=0; const _t=everyTick('atlas-reply:katex-wait',500,()=>{ if((window.katex&&window.katex.renderToString)){ stopTick(_t); _atlTypesetMath(document); } else if(++_k>20){ stopTick(_t); } }); } }catch(_){}
+      /* KaTeX is requested by _atlKatex when a formula first falls back to raw source (see _atlEnsureKatex). */
+      try{ if(window.katex&&window.katex.renderToString) _atlTypesetMath(document); }catch(_){}
     } }catch(_){}
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
        compact rounded cards with the site's favicon, the article title and its domain — used by analyze,
