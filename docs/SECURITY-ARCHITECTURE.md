@@ -84,16 +84,25 @@ flowchart LR
    `explicit`, **or a control whose element declares `data-effect="outward"` / `"destructive"`**
    (a community post, vote, comment or report; feedback and bug reports; an email, password or
    avatar change; logging out everywhere; deleting a post, a comment, a passkey or the
-   account), answers `needs_confirm` when the model asks for it after outside content was in the
-   turn. The reader's answer runs the same call; a UI press, or a request with no outside content
-   in the turn, is unchanged. `system.control` presses any button, so the rule is carried by the
+   account), answers `needs_confirm` when the model asks for it while outside content is in front of
+   it. «In front of it» is measured on the model's input, not on the turn: the mark is set by this
+   turn's own events (a result stamped `ingests:'external'`, the provider's hosted web search, an
+   attachment) **and** by any carrier that still holds words a marked turn wrote — Atlas's history line
+   (`o`, filed from the turn record), the plan it declared (`js/atlas-plan.js` `carriesOutside`) and the
+   working context's topic. `js/atlas-agent.js` `composeInput` answers `outside` for what it actually
+   kept (a line the budget left out does not count) and the loop reads it as `reply.contextOutside`.
+   The reader's approval is a **press**, read by code: the result carries Run / Don't buttons bound to
+   its operation, and `js/atlas-console.js` `_confirmPress` runs the held call with `confirmed:true`
+   (source `atlas-confirm`); nothing on the model's path sets `confirmed`, so making the same call
+   again is not an approval. A UI press, or a request whose input carries no outside content, is
+   unchanged. `system.control` presses any button, so the rule is carried by the
    **button**, not by a list: `tests/atlas-outward-effects-checks.test.mjs` refuses any
    click/change/Enter handler that reaches a Supabase write, an rpc, an auth change or a POSTed Edge
    Function while its element declares nothing. The control catalogue the model reads never names a
    personal-information field (email / password / tel type, or a personal `autocomplete` token) by
    its placeholder — the delete-account field's placeholder is the reader's own address.
-   ⚠ Residual: the «outside content was seen» signal is per turn; a later turn that answers
-   from history that included it starts clean (§8 item 16).
+   `tests/atlas-outside-mark-checks.test.mjs` runs a brief's sentences through Atlas's summary into
+   later turns and requires the confirmation to fire there (§8 item 16).
    A step that arrived from somebody else — a notebook file, or a briefing link's section the reader
    kept — carries `from: 'imported'` for as long as it is kept; its own `replay` flag decides nothing:
    a replay judges it again against the capability registry (`js/atlas-notebook-store.js`
@@ -1092,12 +1101,15 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    only other provider is Google. Bounding these per account (a trigger over `relay_take`, or moving them
    behind a function as the reports were) changes how the community board writes, and is left for a
    decision.
-16. **Atlas's outside-content mark lasts one turn** (§2 rule 4). If the model copies an injected
-   instruction from an outside page into its own summary, a later turn that acts on that summary carries
-   no mark, and an `explicit` capability or an `outward` press would run without the confirmation.
-   Inferred from the design, not demonstrated. Accepted for now because a write still needs the model to
-   choose it from words the reader did not type in that turn; the close is to keep the mark with the
-   history it arrived in, so any turn whose context still carries that content asks.
+16. **Resolved: Atlas's outside-content mark stays with the words it arrived in** (§2 rule 4). It used to
+   last one turn, so an instruction the model copied from an outside page into its own summary reached a
+   later turn unmarked, and the approval was the model making the same call again. Now every carrier of
+   Atlas's words into a later turn (history line, plan, working-context topic) keeps the mark of the turn
+   that wrote it, the composer reports whether anything it kept is marked, and the approval is the
+   reader's press on the result's own buttons. Read-only and confirm-free capabilities are unaffected; a
+   conversation whose marked lines have left the model's input stops asking.
+   `tests/atlas-outside-mark-checks.test.mjs` is the regression. The rolling history, plan and working context
+   live in the page and are not restored after a reload, so no carrier outlives the marks.
 17. **The share target accepts a POST from any site.** `sw.js` answers the manifest's `share_target`
    (`<scope>share-target`) and puts what arrives in the share inbox, whoever sent it — that is the Web
    Share Target design, and a page elsewhere can submit the same form, which takes the reader to IntMap

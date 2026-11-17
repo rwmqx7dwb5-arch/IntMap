@@ -110,6 +110,13 @@ export function makeAtlasResults(HOST) {
       'atlas.input.text':            LA('Tell me the value to use.', '使用する値を教えてください。', 'Nenne mir den zu verwendenden Wert.', 'Укажите значение.', 'Dime el valor a usar.'),
       'atlas.input.number':          LA('Tell me the number to use.', '使用する数値を教えてください。', 'Nenne mir die Zahl.', 'Укажите число.', 'Dime el número a usar.'),
       'atlas.input.confirm':         LA('Reply yes to go ahead, or say what to do instead.', '進めてよければそう答えてください。別のやり方がよければそう言ってください。', 'Antworte mit Ja, um fortzufahren, oder sag, was stattdessen zu tun ist.', 'Ответьте «да», чтобы продолжить, или скажите, что сделать вместо этого.', 'Responde sí para continuar, o di qué hacer en su lugar.'),
+      /* (atlas-outside-mark) the confirmation is the reader's PRESS, read by IntMap — not words Atlas interprets, and not the
+         same call made again (js/atlas-console.js `_confirmPress`). Written by IntMap: en + jp (CONSTITUTION.md §7). */
+      'atlas.input.confirm_press':   LA('Press Run to go ahead. Nothing has been done yet.', '進めてよければ「実行」を押してください。まだ何も実行していません。'),
+      'atlas.confirm.run':           LA('Run', '実行'),
+      'atlas.confirm.cancel':        LA("Don't", 'やめる'),
+      'atlas.confirm.declined':      LA('Not run — you chose not to.', '実行しませんでした（取りやめ）。'),
+      'atlas.confirm.expired':       LA('This confirmation has expired. Ask again to run it.', 'この確認は期限切れです。実行するにはもう一度依頼してください。'),
 
       /* goal validation — the sentence a turn ends on when the goal was not met */
       'atlas.goal.map_missing':      LA('You asked for this on the map, and it is not on the map yet.', '地図上でのご要望ですが、まだ地図に出ていません。', 'Auf der Karte gewünscht — dort ist es noch nicht.', 'Вы просили на карте — там этого ещё нет.', 'Lo pediste en el mapa y aún no está en el mapa.'),
@@ -306,6 +313,13 @@ export function makeAtlasResults(HOST) {
       if (r.status === 'needs_input' && r.inputRequest) {
         var ask = API.text(r.inputRequest.promptKey, r.inputRequest.promptParams, L);
         if (ask) lines.push(note(esc(ask)));
+      }
+      /* (atlas-outside-mark) a confirmation is answered by a press: the two buttons carry the operation they answer, and
+         js/atlas-console.js runs the pending call with confirmed:true only when Run is pressed on THAT operation */
+      if (r.status === 'needs_input' && r.code === 'needs_confirm' && r.operationId) {
+        lines.push('<div class="atl-confirm" role="group" data-atl-confirm="' + esc(r.operationId) + '">'
+          + '<button type="button" class="atl-confirm-btn on" data-confirm="run">' + esc(API.text('atlas.confirm.run', null, L)) + '</button>'
+          + '<button type="button" class="atl-confirm-btn" data-confirm="no">' + esc(API.text('atlas.confirm.cancel', null, L)) + '</button></div>');
       }
       if (r.candidates.length) {
         var names = r.candidates.slice(0, 8).map(function (c) {

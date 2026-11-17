@@ -361,6 +361,11 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel .atl-ctl-op{flex:0 0 120px;accent-color:var(--primary-color);}'
       +'#atlas-panel .atl-ctl-btn{align-self:flex-start;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);border-radius:10px;padding:6px 12px;font-size:11.5px;font-weight:600;cursor:pointer;}'
       +'#atlas-panel .atl-ctl-btn:hover{border-color:var(--primary-color);color:var(--primary-color);}'
+      +'#atlas-panel .atl-confirm{display:flex;gap:8px;margin-top:8px;}'
+      +'#atlas-panel .atl-confirm-btn{border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);border-radius:10px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;}'
+      +'#atlas-panel .atl-confirm-btn.on{background:var(--primary-color);border-color:var(--primary-color);color:#fff;}'
+      +'#atlas-panel .atl-confirm-btn:disabled{opacity:.5;cursor:default;}'
+      +'#atlas-panel .atl-confirm-said{font-size:11.5px;color:var(--text-muted);margin-top:6px;}'
       /* (#R74) ChatGPT-style source link cards */
       /* (#R511) the map explanation's legend and the numbered references in the prose — js/atlas-map-compose.js.
          The badge is a CSS circle, not a glyph, so it is the same in every font and script; its colour is the marker's. */

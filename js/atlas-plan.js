@@ -128,17 +128,26 @@ export function makeAtlasPlan() {
 
   /* declare(args) -> the tool's record. Runs where the loop reads the reply, IN CALL ORDER, so a plan
      call earlier in a reply decides which step the calls after it serve. */
-  function declare(args) {
+  /* `facts.outside` (atlas-outside-mark): outside content was in front of the model when it wrote this call. The plan's
+     words are put in front of the model on every later turn (promptBlock), so the mark stays with them: a plan keeps it
+     while any of its text — the goal, a step title kept from the earlier plan — was written in a marked turn, and
+     carriesOutside() is what js/atlas-console.js hands composeInput as `tailOutside`. */
+  function declare(args, facts) {
     const a = (args && typeof args === 'object') ? args : {};
+    const o = !!(facts && facts.outside === true);
     const steps = Array.isArray(a.steps) ? a.steps.map((s) => String(s == null ? '' : s).trim()).filter(Boolean) : null;
     if (steps && steps.length) {
       /* a revision keeps what was observed for every step it did not rename — the same piece of work */
+      const before = plan;
       const prev = plan ? plan.steps : [];
+      let keptOld = false;
       plan = { id: ++seq, goal: String(a.goal == null ? (plan ? plan.goal : '') : a.goal).trim(), turn: turnNo, current: 0,
         steps: steps.map((t, i) => {
           const old = prev[i] && normTitle(prev[i].title) === normTitle(t) ? prev[i] : null;
+          if (old) keptOld = true;
           return { title: t, ops: old ? old.ops : [], touched: old ? old.touched : false };
         }) };
+      plan.outside = o || !!(before && before.outside && (a.goal == null || keptOld));
     } else if (!plan) {
       return { ok: false, error: 'no_plan',
         message: 'There is no plan to update yet. Declare one with "goal" and "steps" (and "current"), or make the calls without a plan.' };
@@ -154,6 +163,7 @@ export function makeAtlasPlan() {
       plan.current = c - 1;
     }
     plan.turn = turnNo;
+    if (o) plan.outside = true;
     plan.steps[plan.current].touched = true;
     activeThisTurn = true;
     emit({ type: 'plan' });
@@ -235,8 +245,11 @@ export function makeAtlasPlan() {
 
   function subscribe(fn) { if (typeof fn === 'function') subs.push(fn); return () => { const k = subs.indexOf(fn); if (k >= 0) subs.splice(k, 1); }; }
 
+  /* whether the plan promptBlock() puts in front of the model holds words written in a marked turn — see declare() */
+  function carriesOutside() { return !!(plan && plan.outside === true); }
+
   return { TOOL: PLAN_TOOL, beginTurn, declare, attribute, started, settled, noteDrawing, endTurn,
-    snapshot, forModel, promptBlock, subscribe };
+    snapshot, forModel, promptBlock, carriesOutside, subscribe };
 }
 
 /* ══ WHAT A STEP DREW, AND GOING BACK TO IT ══════════════════════════════════════════════════════

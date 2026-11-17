@@ -318,12 +318,27 @@ export function makeAtlasAgent() {
      *
      * PURE: no DOM, no network. tests/r809 evaluates it.
      */
+    /* historyItems(hist) -> [{role, content, outside}] — js/atlas-console.js's rolling history ({t, s, o}: the turn, the
+       line, and whether that turn had outside content in front of the model) as composeInput reads it. The line's own
+       prefix says who wrote it ('User: ' / 'Atlas: '); `o` is set by the console from the turn record, never from the text.
+       (atlas-outside-mark) moved here from the console so the node checks run the same mapping the browser does. */
+    function historyItems(hist) {
+      return (Array.isArray(hist) ? hist : []).map(function (x) {
+        const s = String((x && x.s) || '');
+        if (s.indexOf('User: ') === 0) return { role: 'user', content: s.slice(6), outside: !!(x && x.o) };
+        return { role: 'assistant', content: s.indexOf('Atlas: ') === 0 ? s.slice(7) : s, outside: !!(x && x.o) };
+      });
+    }
+
     function composeInput(o) {
       o = o || {};
       const B = Object.assign({}, INPUT_BUDGET, o.budget || {});
       const wrap = (o.fence && typeof o.fence.wrap === 'function') ? o.fence.wrap : function (s) { return String(s); };
-      const hist = (Array.isArray(o.history) ? o.history : []).filter(function (h) { return h && String(h.content || '').trim(); })
-        .map(function (h) { return { type: 'message', role: h.role === 'user' ? 'user' : 'assistant', content: String(h.content) }; });
+      const histIn = (Array.isArray(o.history) ? o.history : []).filter(function (h) { return h && String(h.content || '').trim(); });
+      const hist = histIn.map(function (h) { return { type: 'message', role: h.role === 'user' ? 'user' : 'assistant', content: String(h.content) }; });
+      /* (atlas-outside-mark) which history items were written while outside content was in front of the model — read below,
+         after the budget, so an item that was left out to fit does not count */
+      const histOutside = histIn.map(function (h) { return h.outside === true; });
       const tr = Array.isArray(o.transcript) ? o.transcript : [];
       const turnMsgs = tr.slice((tr.length && tr[0] && tr[0].role === 'user') ? 1 : 0);
       const turnItems = [];
@@ -412,7 +427,16 @@ export function makeAtlasAgent() {
       turnItems.forEach(function (it) { input.push(it); });
       if (tailItem) input.push(tailItem);
       input.push({ type: 'attachments', channels: ['images'] });
-      return { input: input, requestIndex: requestIndex, trim: trim,
+      /* ══ (atlas-outside-mark) DOES WHAT THE MODEL IS ABOUT TO READ STILL CARRY OUTSIDE CONTENT? ══════════════
+         SECURITY-ARCHITECTURE.md §8 item 16: the mark was a fact about ONE turn, so a later turn that read an
+         injected instruction back out of Atlas's own summary (the history line, the plan it declared, the topic
+         in the working context) carried no mark and an 'explicit' or outward call ran unasked. The question is
+         asked HERE because this is the one place every carrier becomes model input: a history item written in
+         a marked turn (`outside`, kept only if the budget kept it), the request block (`requestOutside` — the
+         working context) and the tail (`tailOutside` — the plan). The answer rides the reply as
+         `contextOutside`, which runTurn reads exactly as it reads `webUsed`. Nothing here reads a word. */
+      const outside = histOutside.slice(trim.droppedHistory).some(Boolean) || o.requestOutside === true || o.tailOutside === true;
+      return { input: input, requestIndex: requestIndex, trim: trim, outside: outside,
         cut: !!(trim.truncated.length || trim.squeezed.length) };
     }
 
@@ -789,6 +813,10 @@ export function makeAtlasAgent() {
 
         /* (#R801) event ② of `turn` above: the provider's own web search put a third party's page in front of the model */
         if (reply && reply.webUsed === true) turn.externalContentSeen = true;
+        /* (atlas-outside-mark) event ④: the input this reply was written from still carried text an earlier marked turn
+           wrote — composeInput's `outside`, set on the reply by the caller's model adapter (js/atlas-console.js). The
+           mark lives as long as that text is in front of the model, not one turn. */
+        if (reply && reply.contextOutside === true) turn.externalContentSeen = true;
         /* (atlas-native-tools) what the input to THIS reply gave up to fit, as the composer and the proxy each
            reported it — a record for the trace, never a reason to act */
         if (reply && (reply.inputTrim || reply.serverTrim)) {
@@ -967,7 +995,7 @@ export function makeAtlasAgent() {
              reply are filed under the step it names — whatever order they then run in. Its answer is the
              ledger's; it has no identity to reuse and no footprint (it touches nothing in the app). */
           if (PLAN && call.name === PLAN.TOOL.name) {
-            try { p.planRec = PLAN.declare(call.arguments || {}); } catch (e) { p.planRec = { ok: false, error: 'plan_failed', message: (e && e.message) || 'the plan could not be recorded' }; }
+            try { p.planRec = PLAN.declare(call.arguments || {}, { outside: turn.externalContentSeen === true }); }   /* (atlas-outside-mark) a plan written with outside content in front of the model carries the mark into later turns */ catch (e) { p.planRec = { ok: false, error: 'plan_failed', message: (e && e.message) || 'the plan could not be recorded' }; }
             p.fp = { pure: true };
             return p;
           }
@@ -1446,7 +1474,7 @@ export function makeAtlasAgent() {
     }
 
     const API = { LIMITS, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL, conflicts, keysOverlap,
-      runTurn, reject, readReply, validateAgainst, composeInput, resultText };
+      runTurn, reject, readReply, validateAgainst, composeInput, historyItems, resultText };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
