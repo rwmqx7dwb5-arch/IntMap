@@ -35,12 +35,24 @@ export function assignSlugs(idx, arcs) {
   const base = new Map(arcs.map((a) => [a, slugBase(a.n)]));
   const count = new Map();
   for (const s of base.values()) count.set(s, (count.get(s) || 0) + 1);
+  /* (wave4-refine) two names of one fold may state the same item («Denmark–Norway» and «Denmark-Norway», both Q62651, once the
+     index carried every record's item): the one the map draws first carries the item, the others their first year — so the
+     address each had before the item was known is the address it keeps */
+  const firstOf = (a) => describe(idx, a).first.y;
+  const itemTag = new Map();
+  for (const a of arcs) {
+    const s = base.get(a), q = a.q && a.q.length ? a.q[0] : null;
+    if (!q) continue;
+    const k = s + '\u0000' + q, o = itemTag.get(k);
+    if (!o || firstOf(a) < firstOf(o) || (firstOf(a) === firstOf(o) && a.n < o.n)) itemTag.set(k, a);
+  }
   const out = new Map(), seen = new Map();
   for (const a of arcs) {
     let s = base.get(a);
     if (!s || count.get(s) > 1) {
       const D = describe(idx, a);
-      const tag = a.q && a.q.length ? a.q[0].toLowerCase() : 'from-' + slugOf(D.first.y);
+      const q = a.q && a.q.length ? a.q[0] : null;
+      const tag = q && itemTag.get(s + '\u0000' + q) === a ? q.toLowerCase() : 'from-' + slugOf(D.first.y);
       s = s ? s + '-' + tag : 'polity-' + tag;   /* a name with no Latin fold is still a polity's address */
     }
     if (seen.has(s)) throw new Error('polity-pages: two polities fold to the address «' + s + '» (' + seen.get(s) + ', ' + a.n + ')');

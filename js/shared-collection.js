@@ -30,6 +30,13 @@ const SHARE_COLS = 'id,collection,title,token,created_at,listed_at,author_name,s
 const SHARE_COLS_BEFORE_LISTING = 'id,collection,title,token,created_at';
 /* the token the database mints: 32 hex characters (gen_random_uuid() without its dashes) */
 const TOKEN_RE = /^[0-9a-f]{32}$/;
+/* (wave4-refine) THE DOOR THAT HANDS BACK WORDS SOMEBODY ELSE WROTE: a published collection's title, its places' names and
+   notes, its maps' names and notes and its listing are its owner's words — whoever opened the link reads them. A capability
+   that puts this result in front of Atlas's model declares it (column 11 `ingests:'external'`); check:capabilities reads
+   this and holds the rows to it (js/community-maps.js WORDS_BY_OTHERS says the same for the directory). */
+const WORDS_BY_OTHERS = Object.freeze({
+  openShared: 'the collection’s title, its places’ names and notes, its maps’ names and notes and its listing — written by its owner',
+});
 /* A visitor who presses «Add to My places» signed out is sent to sign in, and a sign-in comes back to the bare page
    (js/auth-ui.js redirectTo = origin + pathname — the query is gone). The token waits here, in THIS TAB only
    (sessionStorage), and the copy the visitor asked for is made once they are signed in — not asked for a second time
@@ -119,12 +126,36 @@ export async function listShares(DB) {
     /* (community-maps) an administrator's hold is on the COLLECTION, not on its share row (it outlives unpublishing): the
        owner reads their own holds and each share says whether its collection is held, and why. No hold table yet (the
        migration has not reached this database) is no hold. */
+    /* ⚠ THE HOLDS ARE ASKED FOR THIS ACCOUNT'S ROWS (wave4-refine): an administrator reads EVERY hold under RLS
+       (community_map_holds_read: own OR is_admin()), so without the account in the question an administrator's own
+       collection was shown as held whenever anybody's collection of the same name was. */
     let holds = [];
-    try { const h = await DB.from('community_map_holds').select('collection,reason,hidden_at'); if (!h.error && Array.isArray(h.data)) holds = h.data; } catch (_) { holds = []; }
+    const uid = await signedInId(DB);
+    if (uid) {
+      try { const h = await DB.from('community_map_holds').select('collection,reason,hidden_at').eq('user_id', uid); if (!h.error && Array.isArray(h.data)) holds = h.data; } catch (_) { holds = []; }
+    }
     const held = (s) => holds.find((h) => (h.collection == null ? null : String(h.collection)) === (s.collection == null ? null : String(s.collection))) || null;
     return { ok: true, shares: (Array.isArray(data) ? data : []).map((s) => { const h = held(s);
       return Object.assign({}, s, { url: shareUrl(s.token), hidden_at: h ? h.hidden_at : null, hidden_reason: h ? h.reason : null }); }) };
   } catch (_) { return { ok: false, error: 'failed' }; }
+}
+
+/** The signed-in account's id, from the session the client already holds (no request) — or '' when nobody is signed in. */
+async function signedInId(DB) {
+  try { const r = await DB.auth.getSession(); const u = r && r.data && r.data.session && r.data.session.user; return u && u.id ? String(u.id) : ''; } catch (_) { return ''; }
+}
+
+/** (wave4-refine) Did the signed-in reader publish the collection at `token`? Asked of the database, for this account's own
+ *  row (the question names the account, as the holds' does — not left to whoever RLS lets read the table). false signed out
+ *  or on any failure. */
+export async function ownsShare(DB, token) {
+  if (!DB || !TOKEN_RE.test(String(token || ''))) return false;
+  const uid = await signedInId(DB);
+  if (!uid) return false;
+  try {
+    const { data, error } = await DB.from('collection_shares').select('id').eq('token', String(token)).eq('user_id', uid).limit(1);
+    return !error && Array.isArray(data) && data.length > 0;
+  } catch (_) { return false; }
 }
 
 /** Stop publishing: the owner's DELETE on their share. @returns {Promise<{ok, removed?, error?}>} */
@@ -259,8 +290,9 @@ function showShared(HOST, token, col) {
   ].concat(body, [el('div', { cls: 'scol-btns' }, [keep, close]), el('div', { cls: 'scol-btns' }, [more]), msg]));
   if (col.listing) {
     /* the listing's words are the owner's: js/community-maps.js sets every one of them as text */
-    import('./community-maps.js').then((C) => {
-      if (listingSlot.isConnected) listingSlot.appendChild(C.listingSection(HOST, token, col.listing, (t) => { openShared(HOST, t); }));
+    /* the reader's own collection offers no report (there is nothing to report to IntMap about one's own) — asked of the database */
+    Promise.all([import('./community-maps.js'), HOST.user ? ownsShare(HOST.DB, token) : Promise.resolve(false)]).then(([C, mine]) => {
+      if (listingSlot.isConnected) listingSlot.appendChild(C.listingSection(HOST, token, col.listing, (t) => { openShared(HOST, t); }, mine));
     }).catch(() => { });
   }
   const doCopy = async () => {

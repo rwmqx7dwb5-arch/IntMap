@@ -32,7 +32,17 @@
  *      a refused TLS handshake) and «no answer in time» is a clock that ran out. They are reported apart
  *      (.agents/rules/one-pass-or-a-reason.md §5 — 「確認できなかった」 is not 「失敗した」), and neither
  *      is retried: the report is a photograph of this device at this minute, not a judgement of a host.
- *  Nothing is sent to IntMap by the check. The report leaves the device only if the reader copies it or
+ *  ⚠ (wave4-refine) A HOST THE CODE REACHES OVER A WEBSOCKET IS ASKED OVER A WEBSOCKET. Measured 2026-11-16: the reader's
+  own AIS stream (stream.aisstream.io) and the backend's live updates (Supabase Realtime) were asked with the https GET
+  and reported «reached» — a filter that passes https and refuses the WebSocket upgrade (many do) left the check green
+  and the layer dead. The ledger now carries, per row, the protocols the code uses and the socket it opens (read from
+  the code — scripts/outbound-hosts.mjs protocolsOf); a row with a socket is asked by OPENING that socket
+  (`new WebSocket`): «reached» is the socket opening, «blocked» is an error or a close before it opened, and the
+  socket is closed at once (nothing is subscribed, nothing is sent). A server that refuses the handshake itself
+  looks the same as a network that does — the page's words say «not reached here», never whose doing.
+  ⚠ (wave4-refine) A DEVICE THAT SAYS IT IS OFFLINE IS NOT ASKED ANYTHING: 113 «not reached» rows would say the
+  network refused them all, when there is no network. `probeAll` asks nothing and `assess` answers `offline`.
+  Nothing is sent to IntMap by the check. The report leaves the device only if the reader copies it or
  *  attaches it to an enquiry themselves.
  *  No words here: the page's words are in the page (en + jp, scripts/org-pages-text.mjs), Atlas's in its entry.
  * ==========================================================================*/
@@ -84,12 +94,44 @@ function tierOf(host, ctx) {
 export function probeRows(rows, ctx) {
   const out = [];
   for (const r of rows || []) {
-    if (!r || r.form !== 'disclosure' || typeof r.probe !== 'string') continue;
-    let u; try { u = new URL(r.probe); } catch (_) { continue; }
-    if (u.protocol !== 'https:') continue;
-    out.push({ host: r.host, url: r.probe, what: r.what || '', whatJp: r.whatJp || r.what || '', tier: tierOf(r.host, ctx) });
+    if (!r || r.form !== 'disclosure') continue;
+    const what = r.what || '', whatJp = r.whatJp || r.what || '', tier = tierOf(r.host, ctx);
+    /* (wave4-refine) the socket the code opens there, when it opens one; a row the code reaches ONLY over a socket is
+       asked only over it (its https address answers a question the code never asks) */
+    let sock = null;
+    if (typeof r.socket === 'string') { try { const u = new URL(r.socket); if (u.protocol === 'wss:') sock = r.socket; } catch (_) { sock = null; } }
+    const protocols = Array.isArray(r.protocols) ? r.protocols : [];
+    const httpToo = !sock || !protocols.length || protocols.some((p) => p === 'https' || p === 'http');
+    if (httpToo && typeof r.probe === 'string') {
+      let u = null; try { u = new URL(r.probe); } catch (_) { u = null; }
+      if (u && u.protocol === 'https:') out.push({ host: r.host, url: r.probe, what, whatJp, tier, kind: 'https' });
+    }
+    /* a host asked both ways says which row is the socket (the same use, two protocols) */
+    if (sock) out.push({ host: r.host, url: sock, what: httpToo ? what + ' (WebSocket)' : what, whatJp: httpToo ? whatJp + '（WebSocket）' : whatJp, tier, kind: 'socket' });
   }
-  return out.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || (a.host < b.host ? -1 : a.host > b.host ? 1 : 0));
+  return out.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || (a.host < b.host ? -1 : a.host > b.host ? 1 : 0) || (a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0));
+}
+/** the origins the probes open sockets to — what the page's connect-src must allow beyond https (scripts/org-pages.mjs),
+    so the page's own policy never refuses a socket and calls it the network's doing */
+export function socketOrigins(probes) {
+  const out = [];
+  for (const p of probes || []) { if (!/^wss?:/i.test(p.url)) continue; const o = new URL(p.url).origin; if (!out.includes(o)) out.push(o); }
+  return out;
+}
+
+/* one socket: opened → 'reached' (and closed at once); an error or a close before it opened → 'blocked' */
+function socketVerdict(url, o, ctl) {
+  const WS = o.WebSocketImpl || globalThis.WebSocket;
+  return new Promise((res) => {
+    let ws = null, settled = false;
+    const end = (v) => { if (settled) return; settled = true; try { if (ws) ws.close(); } catch (_) { /* already closed */ } res(v); };
+    if (typeof WS !== 'function') { end('blocked'); return; }
+    try { ws = new WS(url); } catch (_) { end('blocked'); return; }
+    ws.onopen = () => end('reached');
+    ws.onerror = () => end('blocked');
+    ws.onclose = () => end('blocked');   /* after an open, end() has already settled — a later close changes nothing */
+    if (ctl) ctl.signal.addEventListener('abort', () => end('timeout'));
+  });
 }
 
 /** One probe: `reached` (an answer came back — any answer), `blocked` (the browser refused to return one) or
@@ -106,7 +148,7 @@ async function probeOne(p, opt) {
   let verdict;
   try {
     verdict = await Promise.race([
-      Promise.resolve().then(() => fetchImpl(p.url, { mode: 'no-cors', cache: 'no-store', credentials: 'omit', redirect: 'follow', referrerPolicy: 'no-referrer', signal: ctl ? ctl.signal : undefined }))
+      /^wss?:/i.test(p.url) ? socketVerdict(p.url, o, ctl) : Promise.resolve().then(() => fetchImpl(p.url, { mode: 'no-cors', cache: 'no-store', credentials: 'omit', redirect: 'follow', referrerPolicy: 'no-referrer', signal: ctl ? ctl.signal : undefined }))
         .then(() => 'reached', () => 'blocked'),
       clock,
     ]);
@@ -114,9 +156,11 @@ async function probeOne(p, opt) {
   return { host: p.host, url: p.url, tier: p.tier, what: p.what, whatJp: p.whatJp, verdict, ms: verdict === 'reached' ? Math.round(now() - t0) : null };
 }
 
-/** Every probe, PROBE_CONCURRENCY at a time; `onResult(result, index, done)` is told as each one finishes. */
+/** Every probe, PROBE_CONCURRENCY at a time; `onResult(result, index, done)` is told as each one finishes.
+    `online: false` (the device says it is offline): nothing is asked, and nothing is returned — not 113 failures. */
 export async function probeAll(probes, opt) {
   const o = opt || {};
+  if (o.online === false) return [];
   const list = probes || [];
   const out = new Array(list.length);
   let next = 0, done = 0;
@@ -166,8 +210,14 @@ export function deviceReport(doc, win) {
     could not be read — then a host this device could not reach is «unknown», never «the supplier's fault».
       ready      the map can draw and every host was reached
       partial    the map can draw, but Atlas/sign-in or some layers' hosts were not reached
-      not-ready  the device cannot draw the map, or a host the first view needs was not reached from here */
+      not-ready  the device cannot draw the map, or a host the first view needs was not reached from here
+      offline    the device says it is offline: no host was asked, and none is listed (probeAll) */
 export function assess(device, results, lastNight) {
+  if (device && device.online === false) {
+    const tiers = {};
+    for (const t of TIERS) tiers[t] = { total: 0, reached: 0, missing: [] };
+    return { overall: 'offline', canDraw: !!(device.map && device.workers), tiers, missing: [], allow: [], supplierDown: [], checked: 0, reached: 0 };
+  }
   const rows = (results || []).map((r) => {
     if (r.verdict === 'reached') return { ...r, supplier: null };
     let n = null; try { n = lastNight ? lastNight(r.host) : null; } catch (_) { n = null; }

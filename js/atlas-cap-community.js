@@ -19,6 +19,9 @@
  *  none given (and none from an earlier listing) the call asks. ⚠ Listing makes a collection findable by anyone — risk
  *  `external`, and Atlas does not list a collection the reader did not name (no «everything» by default).
  *  Reporting a collection is the reader's own word to the administrators: it stays a button on the collection's card.
+ *  ⚠ (wave4-refine) WHAT COMES BACK IS OTHER READERS' WORDS. The directory, an opened collection and the title a listing was
+ *  built on are written by their owners, so those rows declare `ingests:'external'` (column 11) — the doors they call say so
+ *  themselves (js/community-maps.js WORDS_BY_OTHERS) and check:capabilities holds every row that calls one to it.
  * ==========================================================================*/
 import { str, num, one, bool, noArgs } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
@@ -42,7 +45,7 @@ function entryLines(items, C, esc, lang) {
 
 export default [
   {
-    row: ['community.browse',           'communityMaps',  'browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory', 'community', 'none', 'panel.community', 'explanation', 'session', 'none', '', ''],
+    row: ['community.browse',           'communityMaps',  'browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory', 'community', 'none', 'panel.community', 'explanation', 'session', 'none', '', '', 'external'],
     ui: { at: ['#acct-community', '#cmm-q'], login: true },
     doc: [
       { in: 'more-features', at: 680, text: '{"type":"communityMaps","query"?:str,"sort"?:"new"|"reused"|"updated","area"?:bool,"limit"?:num,"show"?:bool} = COMMUNITY MAPS / みんなの地図 — the directory of collections (places, saved maps, tours, Atlas answers) that READERS made and chose to list for everyone. Returns each one\'s title, the name it is listed under, its summary, what it holds, where on the globe it is, how many other readers kept a copy and how many listed collections were built on it, the collection it was built on, and its token (for communityMapOpen). "query" matches titles, summaries and names; "sort" new | reused (most kept) | updated; "area":true only those about the area the map is showing now; "show":true also opens the Community maps sheet with the same search for the reader. Use for 「みんなの地図を見せて」「他の人が作った京都の地図はある？」「授業で使える地図を探して」「この辺りの誰かの地図は？」, "find maps other people made about Rome", "what community maps are popular?"; quote only what it returns; ' },
@@ -63,7 +66,7 @@ export default [
     },
   },
   {
-    row: ['community.open',             'communityMapOpen', 'openCommunityMap,openListedCollection,showCommunityMap', 'community', 'panel', 'map.object,camera', 'panel', 'session', 'none', '', ''],
+    row: ['community.open',             'communityMapOpen', 'openCommunityMap,openListedCollection,showCommunityMap', 'community', 'panel', 'map.object,camera', 'panel', 'session', 'none', '', '', 'external'],
     ui: { at: ['#cmm-list'], login: true },
     doc: [
       { in: 'more-features', at: 690, text: '{"type":"communityMapOpen","token"?:str,"title"?:str} = OPEN ONE COMMUNITY MAP ON THE MAP — the collection\'s places as pins (framed) and its card (title, the name it is listed under, summary, its maps and tours to open, «Add to My places», what it was built on), exactly as its link opens it. Give its "token" from communityMaps, or its "title" (when several listed collections match, nothing is opened and they are listed). Use after communityMaps, for 「その地図を開いて」「『関西の遠足』を見せて」, "open the Kansai field trip map"; ' },
@@ -90,7 +93,7 @@ export default [
     },
   },
   {
-    row: ['community.list',             'listCommunityMap', 'listInCommunityMaps,shareWithEveryone,makeMapPublic', 'community', 'none', 'account.places', 'explanation', 'external', 'explicit', '', ''],
+    row: ['community.list',             'listCommunityMap', 'listInCommunityMaps,shareWithEveryone,makeMapPublic', 'community', 'none', 'account.places', 'explanation', 'external', 'explicit', '', '', 'external'],
     ui: { at: ['#acct-my-places'], login: true },
     doc: [
       { in: 'more-features', at: 700, text: '{"type":"listCommunityMap","collection"?:str,"all"?:"everything"|"unfiled","author":str,"summary"?:str} = LIST ONE OF THE READER\'S COLLECTIONS IN COMMUNITY MAPS (みんなの地図に掲載) so ANYONE can find it — publishing it as a read-only link first if it is not published. It is shown under "author", a name THE READER CHOOSES to show (never their e-mail or account name — if they have not said one, ASK), with "summary". Name the collection (it must exist) or "all"; with neither, ASK. A collection the reader filled from someone else\'s listed one names that one as the collection it was built on. Listing a listed collection updates its name/summary and says it was already listed. THE RESULT CARRIES THE LINK. Use for 「京都旅行をみんなの地図に載せて」「この地図を他の先生にも使ってもらえるように公開して」, "list my Field trip collection for everyone"; ' },

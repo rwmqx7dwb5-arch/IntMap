@@ -82,6 +82,48 @@ export function countriesOf(rows) {
   const m = new Map(); (rows || []).forEach((r) => { [r.home, r.cc].forEach((k) => { if (k) m.set(k, (m.get(k) || 0) + 1); }); });
   return [...m.keys()];
 }
+/**
+ * summaryText(R, t, ccName) — the one sentence a reading says (the card's headline). `t(en, jp)` picks the language.
+ * ⚠ A READING WITH NO SITE SAYS SO. Measured before this: the world reading narrowed to nothing (a kind of site and a sector
+ * no company combines) said «0 of 0 published sites (null%) belong to a company headquartered in another country» — a share
+ * of nothing, printed as a number.
+ */
+export function summaryText(R, t, ccName) {
+  if (R.kind === 'world') {
+    if (!R.sites) return t('No published site in this reading — no company in the atlas combines this kind of site and sector.', 'この条件に当てはまる公表拠点はありません（企業アトラスに、この種類と業種を兼ねる企業がありません）。');
+    return t(R.cross.sites + ' of ' + R.sites + ' published sites (' + R.cross.share + '%) belong to a company headquartered in another country · ' + R.pairs.length + ' country pairs',
+      '公表拠点 ' + R.sites + ' か所のうち ' + R.cross.sites + ' か所（' + R.cross.share + '%）が他国に本社を置く企業のもの · 国の組 ' + R.pairs.length);
+  }
+  const n = ccName(R.cc);
+  if (!R.sites) return R.dir === 'out' ? t('No company headquartered in ' + n + ' publishes a site in this reading.', 'この条件で、' + n + 'に本社を置く企業の公表拠点はありません。')
+    : t('No published site in ' + n + ' in this reading.', 'この条件で、' + n + 'の公表拠点はありません。');
+  return R.dir === 'out'
+    ? t(R.companies + ' companies headquartered in ' + n + ' publish ' + R.sites + ' sites — ' + R.cross.sites + ' (' + R.cross.share + '%) in ' + R.partners.length + ' other countries',
+      n + 'に本社を置く ' + R.companies + ' 社の公表拠点 ' + R.sites + ' か所のうち ' + R.cross.sites + ' か所（' + R.cross.share + '%）が他の ' + R.partners.length + ' か国にあります')
+    : t('Of the ' + R.sites + ' published sites in ' + n + ', ' + R.cross.sites + ' (' + R.cross.share + '%) belong to ' + R.cross.companies + ' companies headquartered in ' + R.partners.length + ' other countries',
+      n + 'にある公表拠点 ' + R.sites + ' か所のうち ' + R.cross.sites + ' か所（' + R.cross.share + '%）は、他の ' + R.partners.length + ' か国に本社を置く ' + R.cross.companies + ' 社のものです');
+}
+/**
+ * shown(R, top) — a reading with its list cut to the first `top` (partners or pairs, already ranked), saying how many there
+ * were: { …R, partners|pairs: first top, listed: { shown, of } }. `top` absent / not a positive number → the whole list.
+ * ⚠ A LENGTH, NOT A LIMIT ON WHAT CAN BE ASKED: the caller decides it per question, and asking without one returns all
+ * (Atlas has full authority over what it reads — .agents/rules/one-pass-or-a-reason.md §1).
+ */
+export function shown(R, top) {
+  const key = R.kind === 'world' ? 'pairs' : 'partners';
+  const all = R[key] || [];
+  const n = (typeof top === 'number' && isFinite(top) && top > 0) ? Math.floor(top) : all.length;
+  return Object.assign({}, R, { [key]: all.slice(0, n), listed: { shown: Math.min(n, all.length), of: all.length } });
+}
+/** shadeCount(R, outlines) — which countries a country reading shades (the focus and every partner) and which of them
+    the outline set cannot draw: { wanted, drawn, missing: [cc], outlines: bool }. No outlines → every one is missing. */
+export function shadeCount(R, outlines) {
+  if (!R || R.kind !== 'country') return { wanted: 0, drawn: 0, missing: [], outlines: !!outlines };
+  const want = new Set([R.cc].concat((R.partners || []).map((p) => p.cc)));
+  const have = new Set();
+  for (const f of (outlines && outlines.features) || []) { const c = f && f.properties && f.properties.__code; if (c && want.has(c)) have.add(c); }
+  return { wanted: want.size, drawn: have.size, missing: [...want].filter((c) => !have.has(c)), outlines: !!(outlines && outlines.features && outlines.features.length) };
+}
 /* the longest piece of a drawn pair line: 200 km keeps a 10,000 km arc smooth at world zoom (50 pieces) and is the
    order of the shortest pair in the file (neighbouring countries' label points). An estimate of «looks like a curve». */
 const ARC_STEP_M = 200000;
@@ -128,7 +170,7 @@ export function companyTies(HOST) {
 
   /* ─── the map: shaded partner countries + one line per pair ─────────────────────────────────────────────────── */
   const FSRC = 'co-ties-fill-src', LSRC = 'co-ties-line-src', FILL = 'co-ties-fill', EDGE = 'co-ties-edge', LINE = 'co-ties-line';
-  let _undrawn = [];
+  let _undrawn = [], _unshaded = { wanted: 0, drawn: 0, missing: [], outlines: true };
   function features(R) {
     const fills = [], lines = []; _undrawn = [];
     const edges = R.kind === 'country'
@@ -140,10 +182,14 @@ export function companyTies(HOST) {
       if (!line) { _undrawn.push(e.from + '>' + e.to); return; }
       lines.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: line }, properties: { from: e.from, to: e.to, n: e.n, sites: e.sites, w: e.n / max } });
     });
+    _unshaded = shadeCount(R, null);   /* a world reading shades nothing — nothing is missing */
     if (R.kind === 'country') {
       const shade = new Map(R.partners.map((p) => [p.cc, p.nCompanies]));
       const maxP = R.partners.reduce((m, p) => Math.max(m, p.nCompanies), 1);
       const geo = countryOutlines();
+      /* ⚠ COUNTED, NOT ASSUMED: with the outlines not loaded (or a code they do not hold) the shading is missing, and the card
+         and state() say how many countries could not be shaded instead of leaving an empty map to speak for it */
+      _unshaded = shadeCount(R, geo);
       (geo && geo.features || []).forEach((f) => {
         const code = f && f.properties && f.properties.__code; if (!code) return;
         if (code === R.cc) fills.push({ type: 'Feature', geometry: f.geometry, properties: { cc: code, focus: 1, w: 1 } });
@@ -236,18 +282,7 @@ export function companyTies(HOST) {
     return panel;
   }
   const bar = (groups) => '<span class="cti-bar">' + GROUPS().filter((g) => groups[g]).map((g) => '<span style="flex:' + H(groups[g]) + ';background:' + H(gColor(g)) + '" title="' + H(gLabel(g) + ' ' + groups[g]) + '"></span>').join('') + '</span>';
-  function summary(R) {
-    if (R.kind === 'world') return t(R.cross.sites + ' of ' + R.sites + ' published sites (' + R.cross.share + '%) belong to a company headquartered in another country · ' + R.pairs.length + ' country pairs',
-      '公表拠点 ' + R.sites + ' か所のうち ' + R.cross.sites + ' か所（' + R.cross.share + '%）が他国に本社を置く企業のもの · 国の組 ' + R.pairs.length);
-    const n = ccName(R.cc);
-    if (!R.sites) return R.dir === 'out' ? t('No company headquartered in ' + n + ' publishes a site in this reading.', 'この条件で、' + n + 'に本社を置く企業の公表拠点はありません。')
-      : t('No published site in ' + n + ' in this reading.', 'この条件で、' + n + 'の公表拠点はありません。');
-    return R.dir === 'out'
-      ? t(R.companies + ' companies headquartered in ' + n + ' publish ' + R.sites + ' sites — ' + R.cross.sites + ' (' + R.cross.share + '%) in ' + R.partners.length + ' other countries',
-        n + 'に本社を置く ' + R.companies + ' 社の公表拠点 ' + R.sites + ' か所のうち ' + R.cross.sites + ' か所（' + R.cross.share + '%）が他の ' + R.partners.length + ' か国にあります')
-      : t('Of the ' + R.sites + ' published sites in ' + n + ', ' + R.cross.sites + ' (' + R.cross.share + '%) belong to ' + R.cross.companies + ' companies headquartered in ' + R.partners.length + ' other countries',
-        n + 'にある公表拠点 ' + R.sites + ' か所のうち ' + R.cross.sites + ' か所（' + R.cross.share + '%）は、他の ' + R.partners.length + ' か国に本社を置く ' + R.cross.companies + ' 社のものです');
-  }
+  const summary = (R) => summaryText(R, t, ccName);
   function paintPanel() {
     if (!panel || !_src) return;
     const R = reading();
@@ -280,7 +315,10 @@ export function companyTies(HOST) {
       list = '<div class="cti-vh">' + H(t('Country pairs, by number of companies', '国の組（企業数の多い順）')) + '</div>' + (R.pairs.length ? '<ol class="cti-list">' + R.pairs.map((p) =>
         '<li><button type="button" data-cti-pair="' + H(p.from + '>' + p.to) + '"><span class="cti-co">' + H(ccName(p.from)) + ' → ' + H(ccName(p.to)) + '</span><span class="cti-n">' + H(t(p.nCompanies + ' co. · ' + p.sites, p.nCompanies + ' 社 · ' + p.sites)) + '</span></button></li>').join('') + '</ol>' : '');
     }
-    const undrawn = _undrawn.length ? '<p class="cti-honest">' + H(t(_undrawn.length + ' pairs are listed but not drawn: a country has no label point on this map.', _undrawn.length + ' 組は一覧にありますが、地図上の代表点を持たない国を含むため線を描いていません。')) + '</p>' : '';
+    const undrawn = (_undrawn.length ? '<p class="cti-honest">' + H(t(_undrawn.length + ' pairs are listed but not drawn: a country has no label point on this map.', _undrawn.length + ' 組は一覧にありますが、地図上の代表点を持たない国を含むため線を描いていません。')) + '</p>' : '')
+      + (_unshaded.missing.length ? '<p class="cti-honest">' + H(_unshaded.outlines
+        ? t(_unshaded.missing.length + ' of ' + _unshaded.wanted + ' countries are listed but not shaded: this map has no outline for them.', _unshaded.wanted + ' か国のうち ' + _unshaded.missing.length + ' か国は一覧にありますが、この地図に輪郭が無いため塗っていません。')
+        : t('The country outlines could not be loaded, so the ' + _unshaded.wanted + ' countries of this reading are listed but not shaded.', '国の輪郭を読み込めなかったため、この読みの ' + _unshaded.wanted + ' か国は一覧にだけあり、塗っていません。')) + '</p>' : '');
     panel.innerHTML = head
       + '<p class="cti-sub">' + H(t(num(_src.rows.length) + ' published sites of ' + _src.companies + ' companies · profiles of ' + (_src.generatedAt || '—'),
         _src.companies + ' 社の公表拠点 ' + num(_src.rows.length) + ' か所 · プロフィール ' + (_src.generatedAt || '—') + ' 時点')) + '</p>'
@@ -320,19 +358,22 @@ export function companyTies(HOST) {
     try { if (panel) panel.remove(); } catch (_) { } panel = null;
     return true;
   }
-  /** query({country?, direction?, groups?, sectors?}) — the reading, without drawing. Countries named by ISO-3. */
+  /** query({country?, direction?, groups?, sectors?, top?}) — the reading, without drawing. Countries named by ISO-3.
+      `top` cuts the ranked list to its first N and says how many there were (`listed: { shown, of }`, see shown()); without
+      it the whole list comes back. */
   async function query(q) {
     await load();
     const o = q || {};
     const rows = between(_src.rows, { groups: o.groups, sectors: o.sectors });
     const of = { sites: _src.rows.length, companies: _src.companies, generatedAt: _src.generatedAt };
-    if (o.country) return Object.assign({ kind: 'country', of }, ties(rows, o.country, o.direction === 'out' ? 'out' : 'in'));
-    return Object.assign({ kind: 'world', of }, network(rows));
+    const R = o.country ? Object.assign({ kind: 'country', of }, ties(rows, o.country, o.direction === 'out' ? 'out' : 'in'))
+      : Object.assign({ kind: 'world', of }, network(rows));
+    return shown(R, o.top);
   }
   function state() {
     if (!_shown || !_src) return { shown: false };
     return { shown: true, country: _cc, direction: _cc ? _dir : null, groups: _groups ? _groups.slice() : GROUPS(), sectors: _sectors ? _sectors.slice() : null,
-      undrawn: _undrawn.slice(), layers: { fill: FILL, line: LINE } };
+      undrawn: _undrawn.slice(), unshaded: _unshaded.missing.slice(), outlines: _unshaded.outlines, layers: { fill: FILL, line: LINE } };
   }
 
   /* ─── the look (the company sites card's: same corner, same glass) ──────────────────────────────────────── */
@@ -369,5 +410,6 @@ export function companyTies(HOST) {
     document.head.appendChild(st);
   }
 
-  return { open, close, query, setView, state, isShown: () => !!_shown };
+  /* summary: the card's headline, for any reader that words a reading (Atlas data.companyTies) — one sentence, one place */
+  return { open, close, query, setView, state, summary: (R, tt, ccn) => summaryText(R, tt, ccn), isShown: () => !!_shown };
 }

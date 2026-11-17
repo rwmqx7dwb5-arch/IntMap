@@ -17,6 +17,10 @@ import { gunzipSync } from 'node:zlib';
 test.describe.configure({ mode: 'serial' });
 
 const FX = JSON.parse(gunzipSync(readFileSync(new URL('./fixtures/news-edition-prod.json.gz', import.meta.url))));
+/* (wave4-refine) «new since your last visit» is what ARRIVED (first_seen_at — js/news-edition-core.js ARRIVAL_COL). The production
+   fixture predates the page asking for that column, so each row is given one here: its latest article's time — a value that is
+   not the first report's, so a page still counting first_published_at would show a different number (tests/wave4-news-checks ④). */
+for (const r of FX.rows) r.first_seen_at = r.last_article_at;
 const ROUTE = '**/rest/v1/news_events*';
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-expose-headers': 'content-range' };
 const SEEN = Date.parse('2026-10-05T12:00:00Z');
@@ -31,17 +35,18 @@ test.beforeAll(async ({ app }) => {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS });
     const url = decodeURIComponent(req.url());
-    /* «N new since your last visit» is ONE server head count (js/news-events.js editionCount: `first_published_at > seen`,
+    /* «N new since your last visit» is ONE server head count (js/news-events.js editionCount: `first_seen_at > seen`,
        count=exact) — answered from the same production day, so the card and the entry are measured against one number */
-    const gt = /first_published_at=gt\.([^&]+)/.exec(url);
-    if (gt && !/last_article_at=gte\./.test(url)) {
-      const seen = Date.parse(gt[1]), n = FX.rows.filter((r) => Date.parse(r.first_published_at) > seen).length;
+    const gt = /first_seen_at=gt\.([^&]+)/.exec(url);
+    if (gt && !/last_article_at\.gte\./.test(url)) {
+      const seen = Date.parse(gt[1]), n = FX.rows.filter((r) => Date.parse(r.first_seen_at) > seen).length;
       return route.fulfill({ status: 200, contentType: 'application/json', headers: { ...CORS, 'content-range': '*/' + n }, body: req.method() === 'HEAD' ? '' : '[]' });
     }
-    if (!/last_article_at=gte\./.test(url)) return route.fallback();
+    if (!/last_article_at\.gte\./.test(url)) return route.fallback();
     asked.push(url);
-    /* the window the page asked for, applied to the production day — the server's half of the rule */
-    const until = Date.parse(/first_published_at=lt\.([^&]+)/.exec(url)[1]), since = Date.parse(/last_article_at=gte\.([^&]+)/.exec(url)[1]);
+    /* the window the page asked for (one `or` — js/news-edition-core.js windowFilter), applied to the production day — the server's
+       half of the rule; every row of the day states both columns, so the null fallbacks are not exercised here */
+    const until = Date.parse(/first_published_at\.lt\."([^"]+)"/.exec(url)[1]), since = Date.parse(/last_article_at\.gte\."([^"]+)"/.exec(url)[1]);
     const rows = FX.rows.filter((r) => Date.parse(r.first_published_at) < until && Date.parse(r.last_article_at) >= since);
     return route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(rows) });
   });
@@ -64,7 +69,7 @@ test('①–④ the day\'s edition: counted, ranked, drawn, played, archived, an
     expect(r.events).toBe(FX.rows.length);
     expect(asked.at(-1)).toMatch(/order=independent_source_count\.desc,article_count\.desc,first_published_at\.asc/);
     await expect(page.locator('#nedition-popup .nint-big')).toHaveText(String(FX.rows.length));
-    const since = FX.rows.filter((x) => Date.parse(x.first_published_at) > SEEN).length;
+    const since = FX.rows.filter((x) => Date.parse(x.first_seen_at) > SEEN).length;
     await expect(page.locator('#nedition-popup .ned-since b')).toHaveText(String(since));
     expect(r.newSinceLastVisit).toBe(since);
     await expect(page.locator('#nedition-popup .ned-top > li')).toHaveCount(10);

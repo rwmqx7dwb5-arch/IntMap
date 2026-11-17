@@ -327,7 +327,10 @@ test('R819 ④ every operation is classified by the code that runs it, not by a 
 test('R819 ⑤ the public doors answer exactly what they answered before the kernel was wrapped', async () => {
   const { geometry } = await boot();
 
-  assert.equal(geometry.version(), 'geom-2');
+  /* (wave4-refine) raised to geom-3 for a change of meaning that is not this test's subject (bands
+     and caps stated by their full parallels — js/gis-geometry.js, the note above KERNEL_VERSION);
+     every number below is still the one measured before the wrap. */
+  assert.equal(geometry.version(), 'geom-3');
   assert.equal(geometry.available(), true);
 
   assert.deepEqual(geometry.union([box(0, 0, 2, 2), box(1, 1, 3, 3)]),
@@ -371,7 +374,7 @@ test('R819 ⑤ the public doors answer exactly what they answered before the ker
   assert.equal(cov2.value.counts.overlap, 1);
 
   /* The refusals are still refusals and still carry their name. */
-  const WRAPS = { type: 'Polygon', coordinates: [[[-180, 80], [-60, 80], [60, 80], [180, 80], [180, 89], [-180, 89], [-180, 80]]] };
+  const WRAPS = { type: 'Polygon', coordinates: [[[0, 80], [90, 85], [180, 80], [-90, 89], [0, 80]]] };
   assert.equal(geometry.attempt.union([WRAPS]).why, 'geometry-wraps-world');
   assert.equal(geometry.attempt.distanceKm(null, pt(0, 0)).why, 'missing-geometry');
 });

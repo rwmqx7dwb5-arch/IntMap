@@ -13,7 +13,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════════════════════ */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -75,7 +75,8 @@ test('② a page load is counted once, when its launch screen lifts — and a hi
 
 /* ── ③ ─────────────────────────────────────────────────────────────────────── */
 test('③ the public reading publishes shares and bands, the bands the verdict needs, and only the speed shape', () => {
-  const sql = src('supabase/migrations/20261116130000_field_speed.sql');
+  /* the migration that defines the reading now — the newest one that creates public.field_speed (wave4-refine fixed its window) */
+  const sql = src('supabase/migrations/' + readdirSync(join(ROOT, 'supabase/migrations')).filter((n) => /create or replace function public\.field_speed\(/.test(src('supabase/migrations/' + n))).sort().pop());
   const bands = [...sql.matchAll(/then '(\d+\+)'/g)].map((m) => m[1]).concat([...sql.matchAll(/else '(\d+\+)'/g)].map((m) => m[1]));
   for (const b of FS.JUDGE_BANDS) assert.ok(bands.includes(b), `the verdict asks for band ${b}, which the database returns`);
   /* (review) a share with a decimal place lets 30–99 loads be solved back into their count: whole percents, floor 100 */
@@ -166,7 +167,7 @@ test('④ the endpoint: the key the page has, paged until a short page, and «no
   const known = [{ minute: '202610110900', sha: 'a'.repeat(40) }, { minute: '202610121710', sha: 'b'.repeat(40) }];
   const got = await FS.fetchFieldSpeed({ root: ROOT, fetchImpl: fake, known, now: () => new Date('2026-10-13T00:00:00Z') });
   assert.equal(asked.length, 2, 'a full page asks for the next one');
-  assert.match(asked[0], /\/rest\/v1\/rpc\/field_speed\?p_days=14&limit=1000&offset=0$/);
+  assert.match(asked[0], /\/rest\/v1\/rpc\/field_speed\?limit=1000&offset=0$/, 'the window is not the caller\'s to choose');
   assert.deepEqual(got.releases.map((r) => r.release), [B2, A]);
   assert.equal(got.measuredAt, '2026-10-13T00:00:00.000Z');
   const missing = await FS.fetchFieldSpeed({ root: ROOT, known, fetchImpl: async () => ({ ok: false, status: 404, text: async () => '{"code":"PGRST202"}' }) });
@@ -216,7 +217,7 @@ test('④b a release main never had is never published — and the server refuse
   const body = (rows) => JSON.stringify({ c: rows });
   const kept = (rows) => S.parse(body(rows), now).rows.map((r) => r.m + ' ' + r.d);
   assert.deepEqual(kept([['ready', FORGED + '.m.2s', 1]]), [], 'a release in the future');
-  assert.deepEqual(kept([['ready', '202606010000-aaaaaaa.m.2s', 1]]), [], 'a release older than field_speed can read (90 days)');
+  assert.deepEqual(kept([['ready', '202606010000-aaaaaaa.m.2s', 1]]), [], 'a release older than field-speed can verify (90 days of main)');
   assert.deepEqual(kept([['ready', '202610131130-aaaaaaa.m.2s', 1]]), ['ready 202610131130-aaaaaaa.m.2s'], 'a release of the last half hour');
   assert.ok(S.acceptRow('ready', FORGED + '.m.2s', 1), 'the browser has no clock check: its own clock may be wrong, the server decides');
   /* filling the day's ceiling: 64 distinct releases in one request open ONE dimension, not 64 */

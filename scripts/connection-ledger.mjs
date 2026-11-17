@@ -19,7 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readLedger, deriveConnectionLedger, CONNECTION_LEDGER } from './outbound-hosts.mjs';
+import { readLedger, deriveConnectionLedger, protocolsOf, browserFiles, CONNECTION_LEDGER } from './outbound-hosts.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = CONNECTION_LEDGER;
@@ -44,7 +44,8 @@ export const GOVERNANCE = {
   },
 };
 
-export function build(root = ROOT) { return deriveConnectionLedger(readLedger(root)); }
+/* (wave4-refine) with the protocol each host is contacted over and the socket the code opens there, read from the code */
+export function build(root = ROOT) { return deriveConnectionLedger(readLedger(root), protocolsOf(browserFiles(root), root)); }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const want = JSON.stringify(build()) + '\n';

@@ -983,8 +983,10 @@ describe('§ #R763 · meaning carried across ops', () => {
   const featOf = (g, p) => ({ type: 'Feature', properties: p || {}, geometry: g });
   const polyOf = (rings, p) => featOf({ type: 'Polygon', coordinates: rings }, p);
   const boxOf = (w, s, e, n) => [[w, s], [e, s], [e, n], [w, n], [w, s]];
-  /* 一周する環。どの円筒面にも載らないので幾何カーネルが名前を付けて拒む（#R743 の fixture）。 */
-  const WRAPS = { type: 'Polygon', coordinates: [[[-180, 80], [-60, 80], [60, 80], [180, 80], [180, 89], [-180, 89], [-180, 80]]] };
+  /* 極を一周して、どちらの極かを述べない環（閉じる辺が 3/4 周）。どの円筒面にも載らないので幾何カーネルが
+     名前を付けて拒む（#R743 の fixture）。⚠ 以前の [−180,80]…[180,89] は帯（80°–89°N）を GeoJSON の書き方で
+     述べた環で、拒否ではなく受理が正しい（tests/wave4-refine-news-geo-checks.test.mjs）。 */
+  const WRAPS = { type: 'Polygon', coordinates: [[[0, 80], [90, 85], [180, 80], [-90, 89], [0, 80]]] };
 
   function gridOf(values, time) {
     const cells = Float64Array.from(values);

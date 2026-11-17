@@ -167,8 +167,9 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は出�
 
 - **起動時に在るのは扉だけ**: `IntMapNewsIntel.edition`・IntMapOS 命令 `newsedition.open`・`?edition=` の検出（`js/news-pulse.js`）。
   本体は `IntMapLazy` の `newsEdition`。News 一覧の上の入口は `js/news-events.js`（`#news-edition-entry`）。
-- **計算は `js/news-edition-core.js` の 1 本**（純粋）: 窓（`editionWindow`）・入る規則（報道の期間が窓と重なる）・順位（`rank`）・
-  前回以降・国（`makeCountryIndex`）とカテゴリの集計・アドレス（`editionQuery` / `editionFromSearch`）・前回の時刻（`readSeen` /
+- **計算は `js/news-edition-core.js` の 1 本**（純粋）: 窓（`editionWindow`）・入る規則（報道の期間が窓と重なる。公開時刻が null の出来事は
+  取り込み時刻で代える。サーバーへは同じ規則を `windowFilter` で送る）・順位（`rank`）・
+  前回以降（収集に届いた時刻 `first_seen_at` で判定・`ARRIVAL_COL`。印と件数が同じ列を読む）・国（`makeCountryIndex`）とカテゴリの集計・アドレス（`editionQuery` / `editionFromSearch`）・前回の時刻（`readSeen` /
   `writeSeen`、`localStorage` の `intmap_news_edition_seen`）。
 - **サーバーの読み口は既存の表だけ**: `news_events` の匿名 SELECT 1 回（窓の規則と順位をそのまま送る）と、入口の件数の head count。
 - **Chronos に従う**（窓の終わりは時計の瞬間。前回の時刻を書くのは時計が「いま」のときだけ）。

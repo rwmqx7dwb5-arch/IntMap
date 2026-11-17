@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { readLedger, deriveConnectionLedger, CONNECTION_LEDGER, SENDS } from '../scripts/outbound-hosts.mjs';
+import { readLedger, deriveConnectionLedger, protocolsOf, browserFiles, CONNECTION_LEDGER, SENDS } from '../scripts/outbound-hosts.mjs';
 import { build as buildConnectionLedger } from '../scripts/connection-ledger.mjs';
 import { connectionKey, createWatch, MAX_HOSTS, RECENT_URLS } from '../js/connection-watch.js';
 import { SENDS_WORDS, rowFor, judge, compose, reportDocument } from '../js/connections-panel.js';
@@ -17,7 +17,7 @@ const LEDGER = JSON.parse(fs.readFileSync(CONNECTION_LEDGER, 'utf8'));
 const ORIGIN = 'https://intmap.example';   /* any origin: the rule is about the page's own origin, not a particular one */
 
 test('① the shipped statement is exactly what the host ledger derives, row for row, each row in one form', () => {
-  assert.deepEqual(LEDGER, deriveConnectionLedger(readLedger()));
+  assert.deepEqual(LEDGER, deriveConnectionLedger(readLedger(), protocolsOf(browserFiles()))); /* (wave4-refine) with the protocols and sockets read from the code */
   assert.deepEqual(buildConnectionLedger(), LEDGER, 'the builder writes the same thing check:datagov compares');
   assert.equal(LEDGER.hosts.length, readLedger().hosts.length, 'no row of the ledger is left out of what the reader is checked against');
   for (const r of LEDGER.hosts) {

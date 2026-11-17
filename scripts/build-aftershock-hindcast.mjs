@@ -33,8 +33,9 @@ const OUT = join(ROOT, OUT_REL);
 const C = await import(pathToFileURL(join(ROOT, 'js', 'aftershock-core.js')).href);
 
 /* the set: ten whole years of M7+ (137 earthquakes, counted 2026-10-13), the last ended more than a year before the build
-   so the year window is closed for all of them. Unmade if the model changes (re-run) or if this rule is changed. */
-const MIN_MAG = 7, FROM = '2015-01-01', TO = '2025-01-01', ISSUE_DAYS = 1;
+   so the year window is closed for all of them. Unmade if the model changes (re-run) or if this rule is changed. The rule
+   is the core's (AS.TESTED): the forecast also reads it, to know which era its completeness floor was tested on. */
+const { minMag: MIN_MAG, from: FROM, to: TO, issueDays: ISSUE_DAYS } = C.AS.TESTED;
 const KEEP = [5, 6, 7];
 
 export const GOVERNANCE = {
@@ -46,7 +47,7 @@ export const GOVERNANCE = {
     attribution: false,
     cadence: 'static',
     cadenceBasis: {
-      observed: 'a closed set of past sequences (M' + MIN_MAG + '+ from ' + FROM + ' to ' + TO + ') whose forecast windows have all ended',
+      observed: 'a closed set of past sequences — every earthquake the rule AS.TESTED in js/aftershock-core.js names — whose forecast windows have all ended',
       expires: 'if js/aftershock-core.js or data/aftershock-regimes.json.gz changes, or USGS revises the catalogue entries of these sequences',
       canon: 'this record (the only builder that scores the aftershock forecast)',
     },
@@ -67,7 +68,8 @@ async function json(url) {
 export function row(r) {
   return {
     id: r.main.id, mag: r.main.mag, t: new Date(r.main.t).toISOString().slice(0, 19) + 'Z', place: r.main.place, regime: r.regime.regime,
-    used: r.used, a: [r.posterior.mean, r.posterior.sd],
+    used: r.used, a: [r.posterior.mean, r.posterior.sd], p: [r.posterior.pMean, r.posterior.pSd], c: r.posterior.cMean,
+    mc: [r.completeness.magCat, r.completeness.source],
     w: r.forecast.map((w, i) => ({ key: w.key, bins: w.bins.filter((b) => b.asLarge || KEEP.includes(b.mag)).map((b) => {
       const c = r.check[i].bins && r.check[i].bins.find((x) => x.mag === b.mag && x.asLarge === b.asLarge);
       return { m: b.asLarge ? 'main' : b.mag, p: +b.probability.toFixed(4), r: [b.lo, b.median, b.hi], o: c && c.checkable ? c.observed : null };
@@ -105,9 +107,10 @@ async function build() {
     const reach = C.radius(mc, main.mag, 'sample') + C.radius(mc, main.mag, 'centroid');
     const issue = main.t + ISSUE_DAYS * 86400000;
     const yearEnd = C.windows(issue).slice(-1)[0].end;
-    const cat = await json(C.catalogUrl('query', { lng: main.lng, lat: main.lat, radiusKm: reach, minMag: Math.min(mc.magCat, mc.magCentroid), startMs: main.t, endMs: yearEnd }));
+    const readMin = Math.min(mc.magCat, mc.magCentroid);
+    const cat = await json(C.catalogUrl('query', { lng: main.lng, lat: main.lat, radiusKm: reach, minMag: readMin, startMs: main.t, endMs: yearEnd }));
     const ev = cat.features.map(C.normalise).filter(Boolean);
-    rows.push(row(C.run(P, main, ev, issue, { now: Date.now() })));
+    rows.push(row(C.run(P, main, ev, issue, { now: Date.now(), readMin })));
     process.stdout.write('.');
   }
   const bundle = {

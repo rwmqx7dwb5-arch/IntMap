@@ -5,7 +5,7 @@
  *  «what happened in the world today, and what is new since I last looked». It reads the news collection
  *  (public.news_events) for one window — the 24 hours up to the master clock's instant, or one UTC day of the archive
  *  — and shows it as an edition:
- *    · since your last visit: how many events were first reported after this browser last opened the edition, and
+ *    · since your last visit: how many events reached IntMap after this browser last opened the edition, and
  *      which of the top they are (a mark on each);
  *    · the top ten, ranked by the number of independent outlets, each saying whether it is new in the window or has
  *      continued since an earlier day, and opening in the same reader as the News list;
@@ -31,7 +31,8 @@ import { everyTick, stopTick } from './runtime.js';
 import { makeCountryIndex, isIso2 } from './news-intel-core.js';
 import { failureOf } from './news-story-core.js';   /* the one reading of WHY a news read failed */
 import { freshChip } from './freshness.js';
-import { EDITION, editionWindow, backDays, buildEdition, walkOrder, editionQuery, editionFromSearch, readSeen, writeSeen, digestLines, dayOf } from './news-edition-core.js';
+import { EDITION, editionWindow, windowFilter, backDays, buildEdition, walkOrder, editionQuery, editionFromSearch, readSeen, writeSeen, digestLines, dayOf } from './news-edition-core.js';
+import { frameBox } from './card-clearance.js';
 
 export function newsEdition(HOST) {
   const GE = () => IntMapGeoEngine;
@@ -41,6 +42,9 @@ export function newsEdition(HOST) {
   const nf = (v) => { try { return Number(v).toLocaleString(LOC()); } catch (_) { return String(v); } };
   const fmtDay = (ms) => { try { return new Date(ms).toLocaleDateString(LOC(), { month: 'short', day: 'numeric', weekday: 'short', timeZone: 'UTC' }); } catch (_) { return dayOf(ms); } };
   const fmtD = (ms) => { try { return new Date(ms).toLocaleDateString(LOC(), { month: 'short', day: 'numeric' }); } catch (_) { return dayOf(ms); } };
+  /* an archive day IS a UTC day: worded in UTC, so the chip for 2026-10-05 says 5 Oct in every time zone (worded in the
+     reader's zone, noon UTC is already the next day from UTC+12) */
+  const fmtUtcDay = (day) => { try { return new Date(Date.parse(day + 'T00:00:00Z')).toLocaleDateString(LOC(), { month: 'short', day: 'numeric', timeZone: 'UTC' }); } catch (_) { return day; } };
   const fmtDT = (ms) => { try { return new Date(ms).toLocaleString(LOC(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return new Date(ms).toISOString(); } };
   const SRC = 'nedition-src', DOT = 'nedition-dot', PIN = 'nedition-pin', NUM = 'nedition-num', RING = 'nedition-ring';
   /* the event's own facts, not its articles (those are fetched when one is opened) — the columns the story reads */
@@ -83,13 +87,13 @@ export function newsEdition(HOST) {
        rows the server returns first are the top */
     const { data, error } = await HOST.DB.from('news_events').select(COLS)
       .eq('status', 'active').is('merged_into', null)
-      .lt('first_published_at', new Date(win.untilMs).toISOString()).gte('last_article_at', new Date(win.sinceMs).toISOString())
+      .or(windowFilter(win))
       .order('independent_source_count', { ascending: false }).order('article_count', { ascending: false }).order('first_published_at', { ascending: true })
       .limit(EDITION.LIMIT);
     if (error) throw error;
     return data || [];
   }
-  /* «N new since your last visit»: the server's count of every event first reported after the mark — the same counter the
+  /* «N new since your last visit»: the server's count of every event that ARRIVED after the mark (ARRIVAL_COL) — the same counter the
      News entry reads (js/news-events.js API.sinceLastVisit), so the two never differ. null = could not count. */
   async function sinceLastVisit(seen) {
     try { await window.IntMapLazy.need('newsEvents'); const E = window.IntMapNewsEvents; return E && E.sinceLastVisit ? await E.sinceLastVisit(seen) : null; } catch (_) { return null; }
@@ -223,12 +227,12 @@ export function newsEdition(HOST) {
   function fit() {
     const pts = walkOrder(st.ed).map((e) => e.p);
     if (!pts.length) return;
-    let w = 180, s = 90, e = -180, n = -90;
-    for (const p of pts) { if (p[0] < w) w = p[0]; if (p[0] > e) e = p[0]; if (p[1] < s) s = p[1]; if (p[1] > n) n = p[1]; }
+    /* the shortest stretch of longitude holding the stops — across 180° when that is shorter (js/card-clearance.js) */
+    const box = frameBox(pts);
     whenDrawable(() => {
       try {
         if (pts.length === 1) GE().camera.flyTo({ center: pts[0], zoom: 4.6, speed: 1.0 });
-        else GE().camera.fitBounds([[w, s], [e, n]], { padding: clearOfCard(), maxZoom: 4.5, duration: 900 });
+        else GE().camera.fitBounds(box, { padding: clearOfCard(), maxZoom: 4.5, duration: 900 });
       } catch (_) { }
     });
   }
@@ -368,8 +372,8 @@ export function newsEdition(HOST) {
     e.querySelector('#nedition-head').innerHTML = '<div class="nint-h-title">' + S(titleLine()) + '</div><div class="nint-h-sub">' + S(windowLine()) + '</div>';
     /* the archive: the rolling edition and the previous days, the open one pressed */
     const now = clockMs();
-    const chips = [['latest', L('Last 24 h', '直近24時間')]].concat(backDays(now).map((d) => [d, fmtD(Date.parse(d + 'T12:00:00Z'))]));
-    if (st.spec.day && !chips.some((c) => c[0] === st.spec.day)) chips.push([st.spec.day, fmtD(Date.parse(st.spec.day + 'T12:00:00Z'))]);
+    const chips = [['latest', L('Last 24 h', '直近24時間')]].concat(backDays(now).map((d) => [d, fmtUtcDay(d)]));
+    if (st.spec.day && !chips.some((c) => c[0] === st.spec.day)) chips.push([st.spec.day, fmtUtcDay(st.spec.day)]);
     const cur = st.spec.day || 'latest';
     e.querySelector('#nedition-days').innerHTML = '<div class="ned-day-row" role="group" aria-label="' + S(L('Editions', '版')) + '">' + chips.map((c) =>
       '<button type="button" class="ned-day' + (c[0] === cur ? ' on' : '') + '" aria-pressed="' + (c[0] === cur ? 'true' : 'false') + '" data-ned-day="' + S(c[0]) + '">' + S(c[1]) + '</button>').join('') + '</div>';
@@ -390,11 +394,11 @@ export function newsEdition(HOST) {
         by: L('IntMap news collection', 'IntMap のニュース収集'), lang: HOST.lang, fmt: fmtDT }) + '</div>';
     }
     if (E.seenMs != null && st.sinceTotal != null) {
-      h += '<div class="ned-since"><b>' + S(nf(st.sinceTotal)) + '</b><span>' + S(L('new since your last visit ({t}) · {k} of the top ten', '件が前回（{t}）から新しく報じられました・上位10件のうち {k} 件').replace('{t}', fmtDT(E.seenMs)).replace('{k}', nf(E.counts.sinceSeenTop))) + '</span></div>';
+      h += '<div class="ned-since"><b>' + S(nf(st.sinceTotal)) + '</b><span>' + S(L('new since your last visit ({t}) · {k} of the top ten', '件が前回（{t}）以降に新しく届きました・上位10件のうち {k} 件').replace('{t}', fmtDT(E.seenMs)).replace('{k}', nf(E.counts.sinceSeenTop))) + '</span></div>';
     } else if (E.seenMs != null) {
       h += '<div class="ned-since"><span>' + S(L('Could not count what is new since your last visit ({t}) — marked below: {k} of the top ten', '前回（{t}）以降の件数を数えられませんでした——上位10件のうち {k} 件に印を付けています').replace('{t}', fmtDT(E.seenMs)).replace('{k}', nf(E.counts.sinceSeenTop))) + '</span></div>';
     } else if (st.win.kind === 'rolling') {
-      h += '<div class="ned-since ned-first"><span>' + S(L('From your next visit, this edition marks what was first reported since you were last here.', '次に開いたときから、前回以降に初めて報じられた出来事に印が付きます。')) + '</span></div>';
+      h += '<div class="ned-since ned-first"><span>' + S(L('From your next visit, this edition marks what arrived since you were last here.', '次に開いたときから、前回以降に届いた出来事に印が付きます。')) + '</span></div>';
     }
     h += '<div class="nint-stats"><div class="nint-big">' + S(nf(E.counts.events)) + (E.cut ? '+' : '') + '</div><div class="nint-big-lbl">' + S(L('events reported', '件の出来事')) + '</div>'
       + '<div class="nint-sub">' + S(L('{a} new · {b} continuing from earlier · {m} by 2+ independent outlets', '新しく {a} 件・以前から続く {b} 件・独立した2媒体以上 {m} 件')
@@ -414,7 +418,7 @@ export function newsEdition(HOST) {
     if (E.counts.unplaced || E.counts.atSea) h += '<div class="nint-foot nint-cov">' + S(L('{u} with no place · {x} at sea — counted and ranked, not drawn on the map', '地点不明 {u} 件・海上 {x} 件——数えて順位にも入れており、地図には描かれません').replace('{u}', nf(E.counts.unplaced)).replace('{x}', nf(E.counts.atSea))) + '</div>';
     h += '<div class="nint-foot nint-cov">' + S(rankRule() + ' ' + (st.win.kind === 'day'
       ? L('An event is in this edition if it was reported during the day; for a past day the counts are the event\'s counts now, not as they stood that day.', 'その日に報じられていた出来事がこの版に入ります。過去の日の件数は、その日の時点ではなく現在の件数です。')
-      : L('An event is in this edition if it was reported during the window. Numbered pins are the top ten, red where first reported since your last visit; grey dots are every other placed event.', 'この期間に報じられていた出来事がこの版に入ります。番号のピンが上位10件で、前回以降に初めて報じられたものは赤。灰色の点はその他の地点のある出来事です。'))) + '</div>';
+      : L('An event is in this edition if it was reported during the window. Numbered pins are the top ten, red where it arrived since your last visit; grey dots are every other placed event.', 'この期間に報じられていた出来事がこの版に入ります。番号のピンが上位10件で、前回以降に届いたものは赤。灰色の点はその他の地点のある出来事です。'))) + '</div>';
     h += '<div class="ned-share"><button type="button" class="nst-link" data-ned="link">' + S(L('Copy link to this edition', 'この版へのリンクをコピー')) + '</button>'
       + '<button type="button" class="nst-link" data-ned="text">' + S(L('Copy as text', 'テキストでコピー')) + '</button></div>';
     body.innerHTML = h;

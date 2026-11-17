@@ -130,7 +130,11 @@ export const KERNELS = {
      entitled to know that. */
   /* (voronoi) HASH ONLY: a new op (`voronoi`) that no saved recipe names, and a call-time read of the
      kernel it needs. Every op that existed replays to the same numbers and the same refusals. */
-  'js/gis-ops.js': { version: 'ops-9', sha256: '11b10ed29dd9a613e2005a44f1e2b1f2a13743d314fa4d57e841b0483e9d6b22' },
+  /* (wave4-refine) ops-9 -> ops-10: `voronoi` checks that the clipped cells cover the window (summed planar area
+     against the window's, tolerance 1e-9 — the largest gap over 60 random runs was 7.6e-15) and, when they do not,
+     records the loss and refuses to name a farthest point instead of answering «0 cells, no farthest place». A
+     window over the whole ring of longitudes (box(-180,…,180,…)) used to be exactly that silent empty answer. */
+  'js/gis-ops.js': { version: 'ops-10', sha256: '4283f0652b0b8629ad18909165a741cf22a2b56aae9d5ded0d584881cb0879cf' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -152,7 +156,12 @@ export const KERNELS = {
      HASH ONLY once more (deps-runtime-majors): the header paragraph about where polygon-clipping's
      bytes arrive was re-measured after Turf 7 (it is its own async chunk now) and says so. Comment
      text only — the dynamic import and every statement are unchanged. */
-  'js/gis-geometry.js': { version: 'geom-2', sha256: '03c88d0c8d457dbc726094e3396a0a8a26bb3c7355a4284a62881c819d669ec2' },
+  /* (wave4-refine) geom-2 -> geom-3: a ring with an edge of exactly 360° of longitude (one that runs along a whole
+     parallel, as box(-180,s,180,n) does) was read as an antimeridian crossing and collapsed to a zero-width band —
+     intersection and clip returned an EMPTY success. Such a ring is now read as the band / polar cap it is; a ring
+     that circles a pole without saying which is refused by name (geometry-wraps-world) instead of being accepted
+     as a wrong shape. Answers over ordinary rings are unchanged (the existing suite). */
+  'js/gis-geometry.js': { version: 'geom-3', sha256: '26f7f53a321604904890166f9a6547bb1dc006e69b534ca995b45db8f0fa47a9' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project

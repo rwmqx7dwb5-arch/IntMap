@@ -67,6 +67,7 @@ const ALLOW = {
     { match: /^fonts\/(inter|pretendard)/i, why: 'the other half of the pair above' },
     { match: /^assets\/IntMap\.Icon-/, why: 'the app icon: bundled CSS reaches it by hash, the four shells load ./IntMap.Icon.png directly' },
     { match: /^IntMap\.Icon\.png$/, why: 'the other half of the pair above' },
+    { match: /^(ja\/)?history\/polities\/[^/]+\/index\.html$/, why: 'a polity name that is another name of one Wikidata item keeps its old address: scripts/polity-pages.mjs writes the item\'s page there with the canonical, hreflang and og:url on the item\'s (`aliases`), so a link made before the merge still opens the page — the pair is the old address and the item\'s, not a second dataset' },
     { match: /^assets\//, why: "bundler output — chunk identity is Rollup's to decide, not this gate's" },
   ],
   /* served verbatim because a page that is NOT part of the app bundle loads it with a plain

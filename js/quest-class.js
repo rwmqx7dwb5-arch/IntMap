@@ -43,9 +43,21 @@ export function classQuery(kind, seed, n, code) { return questQuery(kind, seed, 
 export function classable(kind, seed, n) {
   return QUEST_KIND_IDS.indexOf(kind) >= 0 && SEED_RE.test(String(seed || '')) && String(seed).length <= 40 && SET_LENGTHS.indexOf(+n) >= 0;
 }
-/** a name as it will be kept (trimmed), or null when it cannot be */
+/* (wave4-refine) THE CHARACTERS A NAME SHOWN TO OTHERS MAY NOT HOLD — each is invisible, or changes how the text around it is
+   drawn, so two names that differ only by them look the same to the teacher, or one is drawn as something it is not: C0/C1
+   controls, the soft hyphen, the Arabic letter mark, the Mongolian vowel separator, zero-width characters and LRM/RLM, bidi
+   embeddings and overrides, the word joiner / invisible operators / bidi isolates, and the zero-width no-break space.
+   The database's one rule is public.display_name() (supabase/migrations/20261116140000_wave4_refine_community_class.sql),
+   which refuses the same code points (NUL aside: a database text value cannot hold one at all);
+   tests/wave4-refine-community-checks.test.mjs reads both and holds them equal. */
+// eslint-disable-next-line no-control-regex
+export const NAME_REFUSED = /[\u0000-\u001F\u007F-\u009F\u00AD\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/;
+/** a name as it will be kept — NFKC-normalised (a full-width «Ａｉｋｏ» IS «Aiko», which is what the teacher reads) and trimmed —
+ *  or null when it cannot be: one of NAME_REFUSED's characters, or not 1..CLASS_NAME_MAX characters after normalising.
+ *  The same rule the database applies (public.display_name), so the page refuses what the database would. */
 export function cleanName(s) {
-  const v = String(s == null ? '' : s).trim();
+  const v = String(s == null ? '' : s).normalize('NFKC').trim();
+  if (NAME_REFUSED.test(v)) return null;
   return v.length >= 1 && v.length <= CLASS_NAME_MAX ? v : null;
 }
 
@@ -147,6 +159,12 @@ export function classCsv(qs, T, lang) {
 }
 
 /* ══ THE DOORS ═══════════════════════════════════════════════════════════════════════════════════ */
+/* (wave4-refine) THE DOOR THAT HANDS BACK WORDS SOMEBODY ELSE WROTE: a hand-in carries the name the STUDENT typed. A capability
+   that puts this result in front of Atlas's model declares it (column 11 `ingests:'external'`, js/atlas-capabilities.js);
+   check:capabilities reads this declaration and holds the rows to it. */
+const WORDS_BY_OTHERS = Object.freeze({
+  classAnswers: 'the name each student typed when they handed in',
+});
 function errOf(error) {
   const c = error && error.code;
   if (c === '42501') return 'sign_in';

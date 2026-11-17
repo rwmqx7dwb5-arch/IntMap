@@ -90,6 +90,13 @@ const recsOf = (idx, mask) => (idx.recs || []).filter((_, i) => mask & (1 << i))
 /** the most precise record in a mask — the one that drew most of a composed stretch (the map composes the more precise first) */
 const leadRec = (idx, mask) => { const r = recsOf(idx, mask); return r.length ? r[r.length - 1] : 'sheet'; };
 
+/** each dated record's first year, from the reach the index states (its `windows`), else its three edges */
+function beginsOf(I) {
+  const W = I.windows;
+  const first = (r) => (W && Array.isArray(W[r]) && W[r].length ? Math.min(...W[r].map((w) => w[0])) : null);
+  return { clio: first('clio') ?? I.clioFrom, ohm: first('ohm') ?? I.dayFrom, cshapes: first('cshapes') ?? I.csFrom };
+}
+
 /**
  * describe(idx, arc) — what the page and Atlas say about one polity.
  *   → { first:{y, edge}, last:{y|null, edge}, peak:{y, km, recs, bb}, points:[{y, km, recs}], sheets:[{y, km}],
@@ -108,9 +115,14 @@ export function describe(idx, arc) {
     out.last = s.length ? { y: s[s.length - 1].y, edge: 'sheet' } : { y: null, edge: 'sheet' };
   } else {
     const p0 = points[0], pn = points[points.length - 1];
-    /* the first year a record covers: Cliopatria's first, OpenHistoricalMap's first (1689), CShapes's first (1886) */
-    const begins = { clio: I.clioFrom, ohm: I.dayFrom, cshapes: I.csFrom };
-    out.first = { y: p0.y, edge: p0.recs.some((r) => begins[r] === p0.y) ? 'reach' : 'stated', rec: leadRec(idx, d[0][2]) };
+    /* the first year a record covers: Cliopatria's first, OpenHistoricalMap's first (1689), CShapes's first (1886) — from the
+       reach the index states (`instants.windows`, scripts/build-polity-arcs.mjs recordWindows), else the three edges.
+       ⚠ (wave4-refine) A RANGE, NOT AN EQUALITY: a first point AT OR BEFORE its record's first year is the record's edge. The
+       equality let a point the index held 119,600 years below Cliopatria's reach (Sumerian City-States at 122,999 BC) be
+       called a stated beginning, and the page said «from 123,000 BC». The index no longer holds such a point (the builder
+       measures a record's pieces inside its reach only); this reads the edge the same way whatever the index holds. */
+    const begins = beginsOf(I);
+    out.first = { y: p0.y, edge: p0.recs.some((r) => begins[r] != null && p0.y <= begins[r]) ? 'reach' : 'stated', rec: leadRec(idx, d[0][2]) };
     if (pn.km > 0) out.last = { y: I.to, edge: 'today', rec: leadRec(idx, d[d.length - 1][2]) };
     else {
       const before = d[d.length - 2];
@@ -147,6 +159,117 @@ export function related(idx, arc, lang) {
   const mine = nameOf(arc, lang);
   if (lang === 'jp' && arc.j) for (const a of idx.arcs) if (!seen.has(a) && a.j === mine) { seen.add(a); out.push({ arc: a, why: 'name' }); }
   return out.sort((x, y) => (describe(idx, x.arc).first || { y: 0 }).y - (describe(idx, y.arc).first || { y: 0 }).y);
+}
+
+/* ══ ONE WIKIDATA ITEM, ONE PAGE (wave4-refine) ═════════════════════════════════════════════════════════════════
+   The index is keyed by the NAME the map writes, so one Wikidata item the records draw under several names is several entries
+   — «United States» (OpenHistoricalMap) and «United States of America» (CShapes), both Q30; the 27 slices «New Spain
+   (1667-1697)» … «New Spain (1865-1899)», all Q170603. The static pages (scripts/polity-pages.mjs) are one per ITEM: the names
+   whose records state exactly one item and the same one are drawn as one line — the area drawn under any of them at each
+   instant, summed. ⚠ IDENTITY IS THE RECORDS' STATED ITEM, NEVER A SPELLING: a name with no item stays its own, and a name
+   whose records state two items (the index's «Ottoman Empire» carries Q12560 and Q1529261) is already two items under one
+   spelling and joins neither. ⚠ AND THE STATED ITEM MUST BE THAT NAME'S UNIT (.agents/rules/historical-verification.md §4-3):
+   only a name whose item the builder CONFIRMED (`qv` 'ok' — scripts/build-polity-arcs.mjs itemIdentity: the item's own
+   labels agree with the row's own names, and its lifespan meets the drawn span) joins. «Zhai» states the Qin dynasty's
+   item and «Republic of Pirates» The Bahamas'; they keep their own pages, and itemsPending lists them for review.
+   The page is headed by the name drawn over the most years among the names that write no year they are drawn in
+   («New Spain (1667-1697)» writes 1697 — a slice of the record, not the polity's name); only when every name writes one
+   is a dated name the heading. */
+
+/** the narrow box of a set of boxes — the narrow way round the antimeridian. A polity that straddles 180° (the Russian
+ *  Empire with Alaska, Fiji) has a plain box the width of the world; the longitudes its parts cover are arcs on a circle, and
+ *  the box is the complement of the widest empty gap between them. (scripts/build-polity-arcs.mjs measures with this one.) */
+export function narrowBox(boxes) {
+  if (!boxes.length) return null;
+  const r2 = (x) => Math.round(x * 100) / 100;
+  const s = Math.min(...boxes.map((b) => b[1])), n = Math.max(...boxes.map((b) => b[3]));
+  const iv = boxes.map((b) => [b[0], b[2]]).sort((a, b) => a[0] - b[0]);
+  /* merge the covered arcs, then find the widest gap between consecutive ones (and the one across ±180°) */
+  const merged = [];
+  for (const x of iv) { const l = merged[merged.length - 1]; if (l && x[0] <= l[1]) l[1] = Math.max(l[1], x[1]); else merged.push([x[0], x[1]]); }
+  let best = { gap: (merged[0][0] + 360) - merged[merged.length - 1][1], w: merged[0][0], e: merged[merged.length - 1][1] };
+  for (let i = 1; i < merged.length; i++) {
+    const gap = merged[i][0] - merged[i - 1][1];
+    if (gap > best.gap) best = { gap, w: merged[i][0], e: merged[i - 1][1] + 360 };
+  }
+  return [r2(best.w), r2(s), r2(best.e), r2(n)];
+}
+/* the step a name's line holds in year `y`: [km, mask] (0 where it is not drawn) */
+const stepAt = (a, y) => { let hit = null; for (const p of a.d || []) { if (p[0] <= y) hit = p; else break; } return hit && hit[1] > 0 ? [hit[1], hit[2]] : [0, 0]; };
+/** the years a name is drawn, counted from its line (each point holds until the next; one still drawn runs to `to`) */
+function drawnYears(arc, to) {
+  const d = arc.d || [];
+  let n = 0;
+  for (let i = 0; i < d.length; i++) if (d[i][1] > 0) n += (i + 1 < d.length ? d[i + 1][0] : to + 1) - d[i][0];
+  return n;
+}
+/** the dated names grouped by the one Wikidata item their records state → Map(arc → { qid, canon, members }), for the items
+ *  drawn under two names or more. `canon` — the name drawn over the most years (then the larger, then by name) — names the page. */
+/* the names of one item: a name stating exactly that one item, and (`confirmed`) one whose item the builder confirmed */
+function byItem(arcs, confirmed) {
+  const byQ = new Map();
+  for (const a of arcs) {
+    if (!(a.d && a.d.length && a.q && a.q.length === 1)) continue;
+    if (confirmed && !(a.qv && a.qv[0] === 'ok')) continue;
+    const k = a.q[0]; if (!byQ.has(k)) byQ.set(k, []); byQ.get(k).push(a);
+  }
+  return byQ;
+}
+/* does a name write a year it is drawn in («New Spain (1667-1697)», drawn 1689–1697) */
+function writesItsYear(a, to) {
+  const d = a.d || [], drawn = d.filter((p) => p[1] > 0).map((p) => p[0]);
+  if (!drawn.length) return false;
+  const from = Math.min(...drawn), end = d[d.length - 1][1] === 0 ? d[d.length - 1][0] - 1 : to;
+  return (String(a.n).match(/\d+/g) || []).some((x) => +x >= from && +x <= end);
+}
+/** the names that state an item shared with another name but whose item was not confirmed for them — never joined, listed
+ *  for review: [{ qid, name, why }] (`why`: 'differs' | 'lifespan' | 'unverified', scripts/build-polity-arcs.mjs itemIdentity) */
+export function itemsPending(idx, arcs) {
+  const out = [];
+  for (const [qid, ms] of byItem(arcs, false)) {
+    if (ms.length < 2) continue;
+    for (const a of ms) if (!(a.qv && a.qv[0] === 'ok')) out.push({ qid, name: a.n, why: (a.qv && a.qv[0]) || 'unverified' });
+  }
+  return out.sort((x, y) => (x.qid < y.qid ? -1 : x.qid > y.qid ? 1 : x.name < y.name ? -1 : 1));
+}
+export function itemsOf(idx, arcs) {
+  const to = (idx.instants || {}).to;
+  const byQ = byItem(arcs, true);
+  const out = new Map();
+  for (const [qid, ms] of byQ) {
+    if (ms.length < 2) continue;
+    const yrs = new Map(ms.map((a) => [a, drawnYears(a, to)]));
+    const plain = ms.filter((a) => !writesItsYear(a, to));
+    const canon = [...(plain.length ? plain : ms)].sort((x, y) => yrs.get(y) - yrs.get(x) || y.pk[1] - x.pk[1] || (x.n < y.n ? -1 : x.n > y.n ? 1 : 0))[0];
+    const members = [...ms].sort((x, y) => x.d[0][0] - y.d[0][0] || (x.n < y.n ? -1 : x.n > y.n ? 1 : 0));
+    const it = { qid, canon, members };
+    for (const a of ms) out.set(a, it);
+  }
+  return out;
+}
+/** one item's line, in the index's own shape (so describe / valueAt / chartSvg read it as they read a name): at every instant
+ *  any member's line changes, the area drawn under all of them and the records that drew it; `names` lists them. */
+export function itemArc(it) {
+  const ms = it.members, c = it.canon;
+  const years = [...new Set(ms.flatMap((a) => a.d.map((p) => p[0])))].sort((a, b) => a - b);
+  const d = [];
+  for (const y of years) {
+    let km = 0, mask = 0;
+    for (const a of ms) { const [k, m] = stepAt(a, y); km += k; mask |= m; }
+    const prev = d[d.length - 1];
+    if (!prev && !km) continue;
+    if (!prev || prev[1] !== km || prev[2] !== mask) d.push([y, km, mask]);
+  }
+  const sy = new Map();
+  for (const a of ms) for (const [y, km] of a.s || []) sy.set(y, (sy.get(y) || 0) + km);
+  let pk = null;
+  for (const p of d) if (p[1] > 0 && (!pk || p[1] > pk[1])) pk = p;   /* the earliest instant of the largest area */
+  /* the box at the largest instant: each member drawn then, by its own box at its own largest if that is the year, else its whole box */
+  const pkBox = narrowBox(ms.filter((a) => stepAt(a, pk[0])[0] > 0).map((a) => (a.pk && a.pk[0] === pk[0] && a.pk[3] ? a.pk[3] : a.bb)).filter(Boolean));
+  const o = { n: c.n, q: [it.qid], d, bb: narrowBox(ms.map((a) => a.bb).filter(Boolean)), pk: [pk[0], pk[1], pk[2], pkBox], names: ms.map((a) => a.n), members: ms };
+  if (c.j) o.j = c.j;
+  if (sy.size) o.s = [...sy.entries()].sort((a, b) => a[0] - b[0]);
+  return o;
 }
 
 /* ══ WORDS ══════════════════════════════════════════════════════════════════════════════════════════════════ */

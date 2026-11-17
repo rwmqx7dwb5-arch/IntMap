@@ -19,11 +19,19 @@
  *    ③ the zone     a circle of the Wells & Coppersmith (1994) median rupture length (clipped as OAF clips it) around
  *                   the spherical centroid of the mainshock and its M≥magCentroid aftershocks;
  *    ④ the data     the aftershocks in the zone at or above the time-dependent completeness of Page et al. (2016),
- *                   Mc(t) = max(magCat, F·Mm − G − H·log10 t) — the catalogue misses small events in the first hours;
- *    ⑤ the update   the Bayesian combination with p and c fixed at the regime's values (OAF's RJ_AftershockModel_Bayesian
- *                   with a generic model whose p and c are single values): log L(a) = n·a·ln10 − 10^a·K, K = ∫ 10^(b(Mm−Mc(t)))(t+c)^−p dt;
+ *                   Mc(t) = max(magCat, F·Mm − G − H·log10 t) — the catalogue misses small events in the first hours —
+ *                   where magCat is the network's floor OR, when the sequence's own magnitudes show the catalogue
+ *                   incomplete above it, the maximum-curvature estimate + 0.2 (Woessner & Wiemer 2005);
+ *    ⑤ the update   the Bayesian posterior over a GRID OF a, p AND c (as OAF's sequence-specific model learns them): the
+ *                   regime's Normal prior on a, Normal priors on p and log10 c around the regime's values (widths: how
+ *                   far the regimes' own values spread), and the likelihood of the aftershock times,
+ *                   log L(a, p, c) = n·a·ln10 − p·Σ ln(tᵢ + c) − 10^a·K(p, c),  K = ∫ 10^(b(Mm−Mc(t)))(t+c)^−p dt;
  *    ⑥ the forecast for each window and magnitude, the probability of at least one and the 2.5 / 50 / 97.5 % of the
  *                   number, over the posterior mixture of Poisson counts — the numbers USGS's products print.
+ *  ⚠ THE 95 % IS THE MODEL'S, NOT A MEASURED RATE. With p and c fixed the ranges were too narrow (the test of 2026-10-12:
+ *    the M5+ count fell inside 117 of 137 over a month, 105 over a year); learning the decay widens them where it is
+ *    uncertain. How often the real count fell inside is measured by scripts/build-aftershock-hindcast.mjs, and the card
+ *    and Atlas show that measurement beside the range.
  *
  *  No DOM, no network, no clock of its own: node evaluates every function here (tests/wave4-science-checks.test.mjs);
  *  js/aftershock.js fetches, paints and words it.
@@ -44,28 +52,53 @@ import { QH, roundedCentre, SLACK_KM } from './quake-history-core.js';
 /* ⚠ EVERY NUMBER HERE SAYS WHERE IT CAME FROM (.agents/rules/no-ad-hoc-hardcoding.md §4).
    · MAGS 3/5/6/7 — the magnitudes USGS's public forecasts tabulate (the `observations` of its oaf products, read 2026-10-13);
      «at least as large as the mainshock» is added beside them (the number a reader asks for first).
-   · WINDOWS — USGS's: 1 day, 1 week, 1 calendar month, 1 calendar year from the issue time (its forecast.json, read
-     2026-10-13: 1, 7, 31 and 366 days from 2026-10-12, i.e. calendar arithmetic).
+   · WINDOWS — USGS's: 1, 7, 31 and 366 DAYS from the issue time, fixed day counts and not calendar arithmetic (its
+     forecast.json read 2026-11-16, issued 2026-11-09T16:00Z: the year ends 2027-11-10T16:00Z, 366 days on, where a
+     calendar year would have ended after 365). Unmade if USGS's products change their windows.
    · MIN_MAIN 5 — below it the WORLD completeness (magCat 4.6) leaves the sequence nothing to learn from and USGS issues no
      forecast; unmade if the catalogue's global completeness falls.
    · CAP 20000 — the FDSN event service's own `maxAllowed` per query (its count answer says so).
    · LIST_DAYS / LIST_MIN — the chooser offered with no earthquake named: the 30-day M4.5+ summary feed USGS already serves
-     (the earthquakes layer reads it), shown from M5.5 so the list stays a page long (measured 2026-10-13: 13 events). */
+     (the earthquakes layer reads it), shown from M5.5 so the list stays a page long (measured 2026-10-13: 13 events).
+   · NEAR_KM — the circle a named place is searched in: the earthquake record's own radius (QH.DEFAULT_RADIUS is the canon).
+   · MC_BIN / MC_CORR — the maximum-curvature completeness: the mode of the 0.1-unit magnitude histogram (ComCat states
+     magnitudes to 0.1 or finer) plus 0.2, the correction Woessner & Wiemer (2005) found MAXC needs (it underestimates Mc).
+   · MC_MIN_EVENTS 50 — AN ESTIMATE, not a cited value: below it the mode of a 0.1-unit histogram is decided by single
+     events. Unmade if the hindcast shows a different floor changes which sequences are estimated and how they score.
+   · TESTED — the rule that chooses the hindcast's set (scripts/build-aftershock-hindcast.mjs reads it from here): every M7+
+     from 2015 through 2024, issued one day after. A sequence older than it whose completeness cannot be estimated from its
+     own magnitudes stands outside what the network floor was tested on, and is forecast from the prior alone.
+   · DEEP_KM 70 — the conventional boundary between shallow and intermediate-depth earthquakes (USGS's glossary: shallow
+     0–70 km, intermediate 70–300, deep 300–700). The regime is looked up by the epicentre, never by depth.
+   · P_NODES / C_NODES / SHAPE_SPAN — the shape prior's grid: p on 33 nodes and log10 c on 9 nodes, each over ±4 σ (steps of
+     σ/4 and σ; the mass outside ±4 σ is 6·10⁻⁵). The c grid is coarser because c moves the forecast windows (a day and
+     longer) far less than p does; the hindcast is the measurement (scripts/build-aftershock-hindcast.mjs).
+   · HINDCAST — the shipped test the card and Atlas quote the measured coverage from. */
 export const AS = Object.freeze({
   ENDPOINT: 'https://earthquake.usgs.gov/fdsnws/event/1/',
   LIST_FEED: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_month.geojson',
   DATA: 'data/aftershock-regimes.json.gz',
   MAGS: Object.freeze([3, 5, 6, 7]),
   WINDOWS: Object.freeze([
-    Object.freeze({ key: 'day', add: (d) => d.setUTCDate(d.getUTCDate() + 1) }),
-    Object.freeze({ key: 'week', add: (d) => d.setUTCDate(d.getUTCDate() + 7) }),
-    Object.freeze({ key: 'month', add: (d) => d.setUTCMonth(d.getUTCMonth() + 1) }),
-    Object.freeze({ key: 'year', add: (d) => d.setUTCFullYear(d.getUTCFullYear() + 1) }),
+    Object.freeze({ key: 'day', days: 1 }),
+    Object.freeze({ key: 'week', days: 7 }),
+    Object.freeze({ key: 'month', days: 31 }),
+    Object.freeze({ key: 'year', days: 366 }),
   ]),
   MIN_MAIN: 5,
   CAP: 20000,
   LIST_DAYS: 30,
   LIST_MIN: 5.5,
+  NEAR_KM: QH.DEFAULT_RADIUS,
+  MC_BIN: 0.1,
+  MC_CORR: 0.2,
+  MC_MIN_EVENTS: 50,
+  TESTED: Object.freeze({ minMag: 7, from: '2015-01-01', to: '2025-01-01', issueDays: 1 }),
+  DEEP_KM: 70,
+  P_NODES: 33,
+  C_NODES: 9,
+  SHAPE_SPAN: 4,
+  HINDCAST: 'data/aftershock-hindcast.json',
   PARAM: 'as',
 });
 const DAY = 86400000;
@@ -89,7 +122,16 @@ export function decodeRows(rows) {
 /** prepare(bundle) — the bundle with its rows decoded once (what every lookup below reads) */
 export function prepare(bundle) {
   if (!bundle || bundle.v !== 1 || !Array.isArray(bundle.rows)) throw Object.assign(new Error('not an aftershock-regimes bundle'), { reason: 'parse' });
-  return Object.assign({}, bundle, { decoded: decodeRows(bundle.rows) });
+  return Object.assign({}, bundle, { decoded: decodeRows(bundle.rows), spread: spreadOf(bundle.params) });
+}
+/** spreadOf(params) — the widths of the shape prior: the standard deviations of the generic p and of log10 c over all the
+    parameter sets the bundle carries (p 0.136 and log10 c 0.210 over its 19 sets, measured 2026-11-16). AN ESTIMATE of
+    how little a regime alone says about one sequence's decay — the regimes' own values disagree by this much. Derived
+    from the bundle, so it follows a rebuilt one. */
+function spreadOf(params) {
+  const sd = (xs) => { if (xs.length < 2) return 0; const m = xs.reduce((q, v) => q + v, 0) / xs.length; return Math.sqrt(xs.reduce((q, v) => q + (v - m) * (v - m), 0) / (xs.length - 1)); };
+  const vs = Object.values(params || {});
+  return { p: sd(vs.map((v) => v && v.p).filter(finite)), logc: sd(vs.map((v) => v && v.c).filter((c) => finite(c) && c > 0).map(Math.log10)) };
 }
 /* OAF's regions are SphRegionMercPolygon: straight edges in the Mercator plane, so the test is made there */
 const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + Math.max(-89.9, Math.min(89.9, lat)) * Math.PI / 360));
@@ -136,6 +178,21 @@ export function completenessAt(P, lng, lat) {
 export function aSigma(par, Mm) {
   if (!(par.aSigma1 > 0)) return par.aSigma;
   return Math.sqrt(par.aSigma0 * par.aSigma0 + par.aSigma1 * par.aSigma1 / Math.pow(10, Math.max(6, Mm)));
+}
+/** shapePrior(P, par) — the prior over the decay's shape on its grid: p ~ Normal(the regime's p, spread.p) on AS.P_NODES
+    nodes and log10 c ~ Normal(log10 of the regime's c, spread.logc) on AS.C_NODES nodes, each over ±AS.SHAPE_SPAN σ
+    (non-positive p dropped); nodes [{p, c, w}] with weights summing to 1. With no spread, the regime's p and c alone
+    (the fixed-shape model). */
+export function shapePrior(P, par) {
+  const sp = (P && P.spread) || {}, sdP = finite(sp.p) ? sp.p : 0, sdC = finite(sp.logc) ? sp.logc : 0;
+  const axis = (n, sd) => { if (!(sd > 0) || n < 2) return [[0, 1]]; const out = []; for (let i = 0; i < n; i++) { const z = -AS.SHAPE_SPAN + 2 * AS.SHAPE_SPAN * i / (n - 1); out.push([z * sd, Math.exp(-0.5 * z * z)]); } return out; };
+  const nodes = []; let tot = 0;
+  for (const [dp, wp] of axis(AS.P_NODES, sdP)) {
+    const p = +(par.p + dp).toFixed(6); if (!(p > 0)) continue;
+    for (const [dc, wc] of axis(AS.C_NODES, sdC)) { const c = +(par.c * Math.pow(10, dc)).toPrecision(6); nodes.push({ p, c, w: wp * wc }); tot += wp * wc; }
+  }
+  for (const n of nodes) n.w /= tot;
+  return { p: { mean: par.p, sd: +sdP.toFixed(4) }, c: { mean: par.c, sdLog10: +sdC.toFixed(4) }, nodes };
 }
 /** aGrid(par) — OAF's a-value grid (aMin … aMax by aDelta) */
 function aGrid(par) {
@@ -206,6 +263,41 @@ function completeAfter(events, main, mc, t0Days, t1Days) {
     return t > t0Days && t <= t1Days && e.mag >= mcAt(mc, main.mag, t);
   });
 }
+/** flatFrom(mc, Mm) — the instant (days) from which Page's Mc(t) has fallen to magCat: F·Mm − G − H·log10 t = magCat */
+function flatFrom(mc, Mm) {
+  return mc.H > 0 ? Math.pow(10, (mc.F * Mm - mc.G - mc.magCat) / mc.H) : (mc.F * Mm - mc.G <= mc.magCat ? 0 : Infinity);
+}
+/** estimateMc(mags, readMin) — the maximum-curvature completeness of a set of magnitudes: the mode of the AS.MC_BIN
+    histogram + AS.MC_CORR (ties go to the larger magnitude — the cautious side). { mc: null } with the reason when it
+    cannot say: 'few' (under AS.MC_MIN_EVENTS) or 'at-floor' (the mode is the read's own lowest bin — the histogram is
+    cut there, so it shows no incompleteness above the floor, and no value either). */
+export function estimateMc(mags, readMin) {
+  const ms = mags.filter(finite);
+  if (ms.length < AS.MC_MIN_EVENTS) return { mc: null, n: ms.length, reason: 'few' };
+  const bin = (m) => Math.round(m / AS.MC_BIN + 1e-9);
+  const count = new Map();
+  for (const m of ms) { const k = bin(m); count.set(k, (count.get(k) || 0) + 1); }
+  let mode = null, best = -1;
+  for (const [k, c] of count) if (c > best || (c === best && k > mode)) { best = c; mode = k; }
+  const modeMag = +(mode * AS.MC_BIN).toFixed(2);
+  if (finite(readMin) && mode <= bin(readMin)) return { mc: null, n: ms.length, mode: modeMag, reason: 'at-floor' };
+  return { mc: +(modeMag + AS.MC_CORR).toFixed(2), n: ms.length, mode: modeMag, reason: null };
+}
+/** completenessOf(base, main, inZone, issueMs, readMin) — the completeness the run uses: the network's rules at the
+    epicentre (`base`), with magCat raised to the sequence's own maximum-curvature estimate when that is higher. The
+    estimate reads only what was recorded by the issue time, after Page's Mc(t) has fallen to the floor (the incomplete
+    first hours would push it up for the wrong reason). When it cannot be made and the mainshock is older than the set
+    the floor was tested on (AS.TESTED), the forecast is the prior alone (`priorOnly`) — refused nothing, claimed nothing. */
+function completenessOf(base, main, inZone, issueMs, readMin) {
+  const t0 = main.t + flatFrom(base, main.mag) * DAY;
+  const est = estimateMc(inZone.filter((e) => e.mag != null && e.t > t0 && e.t <= issueMs && (!finite(readMin) || e.mag >= readMin)).map((e) => e.mag), readMin);
+  const raised = est.mc != null && est.mc > base.magCat;
+  const tested = main.t >= Date.parse(AS.TESTED.from);
+  return Object.assign({}, base, {
+    magCat: raised ? est.mc : base.magCat, networkMagCat: base.magCat, source: raised ? 'sequence' : 'network',
+    estimate: est, priorOnly: est.mc == null && est.reason === 'few' && !tested,
+  });
+}
 
 /* ── ⑤ the update ────────────────────────────────────────────────────────────────────────────── */
 
@@ -218,45 +310,58 @@ export function omoriIntegral(p, c, t1, t2) {
 /** kIntegral(par, mc, Mm, t1, t2) — K = ∫ 10^(b·(Mm − Mc(t))) (t + c)^−p dt over [t1, t2]: the expected count of complete
     aftershocks is 10^a·K (AftershockStatsCalc.getPageExpectedNumEvents with the a-factor taken out). Where Mc(t) is the
     constant magCat the integral is closed-form; the early, incomplete part is integrated in log time (Simpson, 2048 steps). */
-export function kIntegral(par, mc, Mm, t1, t2) {
+export function kIntegral(par, mc, Mm, t1, t2, p = par.p, c = par.c, steps = 2048) {
   if (!(t2 > t1)) return 0;
-  /* the instant from which Mc(t) is magCat: F·Mm − G − H·log10 t = magCat */
-  const tFlat = mc.H > 0 ? Math.pow(10, (mc.F * Mm - mc.G - mc.magCat) / mc.H) : (mc.F * Mm - mc.G <= mc.magCat ? 0 : Infinity);
+  /* the instant from which Mc(t) is magCat */
+  const tFlat = flatFrom(mc, Mm);
   let K = 0;
-  const flatFrom = Math.max(t1, tFlat);
-  if (t2 > flatFrom) K += Math.pow(10, par.b * (Mm - mc.magCat)) * omoriIntegral(par.p, par.c, flatFrom, t2);
+  const from = Math.max(t1, tFlat);
+  if (t2 > from) K += Math.pow(10, par.b * (Mm - mc.magCat)) * omoriIntegral(p, c, from, t2);
   const lo = t1, hi = Math.min(t2, tFlat);
   if (hi > lo) {
     /* the integrand vanishes as t → 0 (it goes as t^(b·H)), so the log-time integral starts where it is negligible */
-    const u0 = Math.log(Math.max(lo, hi * 1e-9)), u1 = Math.log(hi), n = 2048, h = (u1 - u0) / n;
-    const f = (u) => { const t = Math.exp(u); return Math.pow(10, par.b * (Mm - mcAt(mc, Mm, t))) * Math.pow(t + par.c, -par.p) * t; };
+    const u0 = Math.log(Math.max(lo, hi * 1e-9)), u1 = Math.log(hi), n = steps, h = (u1 - u0) / n;
+    const f = (u) => { const t = Math.exp(u); return Math.pow(10, par.b * (Mm - mcAt(mc, Mm, t))) * Math.pow(t + c, -p) * t; };
     let s = f(u0) + f(u1);
     for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * f(u0 + i * h);
     K += s * h / 3;
   }
   return K;
 }
-/** posterior(par, Mm, n, K) — the a-value grid with normalised weights: prior Normal(aMean, σ(Mm)) × Poisson likelihood
-    (log L = n·a·ln10 − 10^a·K). n = 0 and K = 0 return the prior itself (the forecast before any data). */
-export function posterior(par, Mm, n, K) {
-  const a = aGrid(par), s = aSigma(par, Mm), lw = new Array(a.length);
+/** posterior(par, Mm, n, K, opts) — the posterior over the grid of a and the shape nodes, as cells { a[], k[] (the node's
+    index), w[] } with normalised weights: prior Normal(aMean, σ(Mm)) on a × the shape prior (`opts.nodes`: [{p, c, w}],
+    default the regime's p and c alone) × the likelihood of the n complete aftershocks,
+    log L = n·a·ln10 − p·Σ ln(tᵢ + c) − 10^a·K(p, c). `opts.sumLn(c)` is Σ ln(tᵢ + c) (a number when c is one value);
+    `K` a number or a function of the node. n = 0 and K = 0 return the prior itself (the forecast before any data).
+    Cells under 10⁻¹² of the mass are dropped. `mean`/`sd` are a's marginal, `pMean`/`pSd` and `cMean` p's and c's. */
+export function posterior(par, Mm, n, K, opts = {}) {
+  const ag = aGrid(par), s = aSigma(par, Mm), nodes = opts.nodes || [{ p: par.p, c: par.c, w: 1 }];
+  const sumLn = typeof opts.sumLn === 'function' ? opts.sumLn : () => (finite(opts.sumLn) ? opts.sumLn : 0);
+  const A = [], Kx = [], LW = [];
   let max = -Infinity;
-  for (let i = 0; i < a.length; i++) {
-    const z = (a[i] - par.aMean) / s;
-    lw[i] = -0.5 * z * z + n * a[i] * LN10 - Math.pow(10, a[i]) * K;
-    if (lw[i] > max) max = lw[i];
-  }
-  let tot = 0; const w = lw.map((v) => { const x = Math.exp(v - max); tot += x; return x; });
-  for (let i = 0; i < w.length; i++) w[i] /= tot;
-  let mean = 0; for (let i = 0; i < a.length; i++) mean += w[i] * a[i];
-  let v = 0; for (let i = 0; i < a.length; i++) v += w[i] * (a[i] - mean) * (a[i] - mean);
-  return { a, w, mean: +mean.toFixed(4), sd: +Math.sqrt(v).toFixed(4), priorMean: par.aMean, priorSd: +s.toFixed(4), n, K };
+  nodes.forEach((node, j) => {
+    const k = typeof K === 'function' ? K(node, j) : K, lp = Math.log(node.w) - node.p * sumLn(node.c);
+    for (let i = 0; i < ag.length; i++) {
+      const z = (ag[i] - par.aMean) / s, l = -0.5 * z * z + lp + n * ag[i] * LN10 - Math.pow(10, ag[i]) * k;
+      A.push(ag[i]); Kx.push(j); LW.push(l); if (l > max) max = l;
+    }
+  });
+  let tot = 0; for (let i = 0; i < LW.length; i++) { LW[i] = Math.exp(LW[i] - max); tot += LW[i]; }
+  const a = [], k = [], w = [];
+  for (let i = 0; i < LW.length; i++) { const x = LW[i] / tot; if (x > 1e-12) { a.push(A[i]); k.push(Kx[i]); w.push(x); } }
+  const wt = w.reduce((q, x) => q + x, 0); for (let i = 0; i < w.length; i++) w[i] /= wt;
+  const moments = (f) => { let m = 0; for (let i = 0; i < w.length; i++) m += w[i] * f(i); let q = 0; for (let i = 0; i < w.length; i++) q += w[i] * (f(i) - m) * (f(i) - m); return [m, Math.sqrt(q)]; };
+  const [am, as] = moments((i) => a[i]), [pm, ps] = moments((i) => nodes[k[i]].p), [lcm] = moments((i) => Math.log10(nodes[k[i]].c));
+  let pp = 0, pv = 0; for (const node of nodes) pp += node.w * node.p; for (const node of nodes) pv += node.w * (node.p - pp) * (node.p - pp);
+  return { a, k, w, nodes, delta: par.aDelta, mean: +am.toFixed(4), sd: +as.toFixed(4), pMean: +pm.toFixed(4), pSd: +ps.toFixed(4), cMean: +Math.pow(10, lcm).toPrecision(3),
+    priorMean: par.aMean, priorSd: +s.toFixed(4), pPriorMean: +pp.toFixed(4), pPriorSd: +Math.sqrt(pv).toFixed(4), n, K: typeof K === 'function' ? null : K };
 }
-/** aQuantile(post, q) — the a-value below which a fraction q of the posterior lies */
-function aQuantile(post, q) {
-  let c = 0;
-  for (let i = 0; i < post.a.length; i++) { c += post.w[i]; if (c >= q) return post.a[i]; }
-  return post.a[post.a.length - 1];
+/** weightedQuantiles(pairs, qs) — [value, weight][] (weights summing to 1) → the value at each cumulative fraction */
+function weightedQuantiles(pairs, qs) {
+  const s = pairs.slice().sort((x, y) => x[0] - y[0]), out = [];
+  let c = 0, i = 0;
+  for (const q of qs) { while (i < s.length - 1 && c + s[i][1] < q) { c += s[i][1]; i++; } out.push(s.length ? s[i][0] : 0); }
+  return out;
 }
 
 /* ── ⑥ the forecast ──────────────────────────────────────────────────────────────────────────── */
@@ -271,16 +376,50 @@ function lnGamma(z) {
   for (let i = 1; i < 9; i++) x += LANCZOS[i] / (z + i);
   return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
 }
+/* Both the series and the continued fraction need about √s terms where x is near s (the terms shrink as e^(−i²/2s)), so
+   the number of terms they may take grows with √max(s, x) instead of stopping at a fixed count — a fixed 1000 left
+   Q(10⁶, 10⁶) at 0.659 instead of ½. Above QUAD_S (10⁴: ~1,200 terms at most below it) the integral is taken directly,
+   Numerical Recipes 3rd ed. §6.2.1 `gammpapprox`: Gauss–Legendre over the few √s on either side of x where the
+   integrand t^(s−1)e^(−t) lives — a fixed cost at any s, checked against the exact sum in tests/wave4-refine-aftershock-checks. */
+const QUAD_S = 1e4;
+const termsFor = (s, x) => Math.ceil(50 + 12 * Math.sqrt(Math.max(s, x)));
+/** GL — the 64-point Gauss–Legendre nodes and weights on [0, 1], computed once (Newton on Pₙ, NR §4.6 `gauleg`) */
+const GL = (() => {
+  const n = 64, y = new Array(n), w = new Array(n);
+  for (let i = 0; i < (n + 1) >> 1; i++) {
+    let z = Math.cos(Math.PI * (i + 0.75) / (n + 0.5)), pp = 0;
+    for (let it = 0; it < 100; it++) {
+      let p1 = 1, p2 = 0;
+      for (let j = 0; j < n; j++) { const p3 = p2; p2 = p1; p1 = ((2 * j + 1) * z * p2 - j * p3) / (j + 1); }
+      pp = n * (z * p1 - p2) / (z * z - 1);
+      const z1 = z; z = z1 - p1 / pp; if (Math.abs(z - z1) < 1e-15) break;
+    }
+    y[i] = (1 - z) / 2; y[n - 1 - i] = (1 + z) / 2;
+    w[i] = w[n - 1 - i] = 1 / ((1 - z * z) * pp * pp);
+  }
+  return { y, w };
+})();
+function gammaQQuad(s, x) {
+  const a1 = s - 1, la1 = Math.log(a1), sq = Math.sqrt(a1);
+  const xu = x > a1 ? Math.max(a1 + 11.5 * sq, x + 6 * sq) : Math.max(0, Math.min(a1 - 7.5 * sq, x - 5 * sq));
+  let sum = 0;
+  for (let j = 0; j < GL.y.length; j++) { const t = x + (xu - x) * GL.y[j]; sum += GL.w[j] * Math.exp(-(t - a1) + a1 * (Math.log(t) - la1)); }
+  const ans = sum * (xu - x) * Math.exp(a1 * (la1 - 1) - lnGamma(s));
+  /* above the peak the integral IS Q; below it, it is minus the mass between xu and x and Q = 1 + it (decided by the side,
+     not by the sign of a result that underflows to −0 far from the peak) */
+  return Math.max(0, Math.min(1, x > a1 ? ans : 1 + ans));
+}
 export function gammaQ(s, x) {
   if (x <= 0) return 1;
-  const gl = lnGamma(s);
+  if (s >= QUAD_S) return gammaQQuad(s, x);
+  const gl = lnGamma(s), N = termsFor(s, x);
   if (x < s + 1) {
     let sum = 1 / s, del = sum, ap = s;
-    for (let i = 0; i < 1000; i++) { ap += 1; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-14) break; }
+    for (let i = 0; i < N; i++) { ap += 1; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-14) break; }
     return Math.max(0, 1 - sum * Math.exp(-x + s * Math.log(x) - gl));
   }
   let b = x + 1 - s, c = 1 / 1e-300, d = 1 / b, h = d;
-  for (let i = 1; i < 1000; i++) {
+  for (let i = 1; i < N; i++) {
     const an = -i * (i - s); b += 2;
     d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300;
     c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300;
@@ -291,24 +430,39 @@ export function gammaQ(s, x) {
 /** poissonCdf(k, λ) — P(N ≤ k) */
 export const poissonCdf = (k, lam) => (k < 0 ? 0 : lam <= 0 ? 1 : gammaQ(k + 1, lam));
 
-/** windows(issueMs) — USGS's four windows from an issue instant: [{key, start, end}] (calendar arithmetic, UTC) */
+/** windows(issueMs) — USGS's four windows from an issue instant: [{key, days, start, end}] (fixed day counts) */
 export function windows(issueMs) {
-  return AS.WINDOWS.map((w) => { const d = new Date(issueMs); w.add(d); return { key: w.key, start: issueMs, end: d.getTime() }; });
+  return AS.WINDOWS.map((w) => ({ key: w.key, days: w.days, start: issueMs, end: issueMs + w.days * DAY }));
 }
-/** mixture(post, gain) — the posterior predictive of a count whose expectation is 10^a·gain: probability of ≥ 1 and the
-    2.5 / 50 / 97.5 % fractiles (the lowest k whose cumulative probability reaches each). Weights below 1e-9 of the
-    total are dropped (their mass is under one part in 10^7 of the grid's ~400 nodes). */
+/** mixture(post, gain) — the posterior predictive of a count whose expectation is 10^a·gain(node) (`gain` a number or
+    a function of the shape node {p, c}): probability of ≥ 1 and the 2.5 / 50 / 97.5 % fractiles (the lowest k whose cumulative probability
+    reaches each). The (a, p) cells are gathered onto a lattice of log10 λ at the a-grid's own step (each cell's weight
+    shared linearly between its two neighbours), so the sums run over a few hundred λ, not every cell; lattice weights
+    below 1e-12 are dropped. */
 export function mixture(post, gain) {
+  const g = typeof gain === 'function' ? gain : () => gain, d = post.delta || 0.01;
+  const lg = new Map(), lat = new Map(); let zero = 0;
+  for (let i = 0; i < post.a.length; i++) {
+    let L = lg.get(post.k[i]);
+    if (L === undefined) { const v = g(post.nodes[post.k[i]]); L = v > 0 ? Math.log10(v) : -Infinity; lg.set(post.k[i], L); }
+    if (L === -Infinity) { zero += post.w[i]; continue; }
+    const x = (post.a[i] + L) / d, j = Math.floor(x), f = x - j;
+    lat.set(j, (lat.get(j) || 0) + post.w[i] * (1 - f)); lat.set(j + 1, (lat.get(j + 1) || 0) + post.w[i] * f);
+  }
   const nodes = [];
-  for (let i = 0; i < post.a.length; i++) if (post.w[i] > 1e-9) nodes.push([post.w[i], Math.pow(10, post.a[i]) * gain]);
+  if (zero > 1e-12) nodes.push([zero, 0]);
+  for (const [j, w] of lat) if (w > 1e-12) nodes.push([w, Math.pow(10, j * d)]);
+  /* the kept weights are renormalised (what was dropped is under 1e-12 per node), so the cumulative reaches 1 and the
+     search for each fractile always ends */
+  const tot = nodes.reduce((q, [w]) => q + w, 0); for (const n of nodes) n[0] /= tot;
   let p0 = 0, mean = 0;
   for (const [w, lam] of nodes) { p0 += w * Math.exp(-lam); mean += w * lam; }
   const cdf = (k) => { let s = 0; for (const [w, lam] of nodes) s += w * poissonCdf(k, lam); return s; };
   const frac = (q) => {
     if (cdf(0) >= q) return 0;
     let lo = 0, hi = Math.max(1, Math.ceil(nodes.reduce((m, [, l]) => Math.max(m, l), 0) * 3 + 30));
-    while (cdf(hi) < q) hi *= 2;
-    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cdf(mid) >= q) hi = mid; else lo = mid; }
+    while (cdf(hi) < q - 1e-12) { lo = hi; hi *= 2; }
+    while (hi - lo > 1) { const mid = Math.floor((lo + hi) / 2); if (cdf(mid) >= q - 1e-12) hi = mid; else lo = mid; }
     return hi;
   };
   return { probability: Math.max(0, Math.min(1, 1 - p0)), expected: mean, lo: frac(0.025), median: frac(0.5), hi: frac(0.975) };
@@ -318,8 +472,9 @@ export function mixture(post, gain) {
 function forecast(post, par, Mm, tMainMs, issueMs, mags = AS.MAGS) {
   const all = mags.concat([Mm]);
   return windows(issueMs).map((w) => {
-    const t1 = (w.start - tMainMs) / DAY, t2 = (w.end - tMainMs) / DAY, I = omoriIntegral(par.p, par.c, t1, t2);
-    return Object.assign({}, w, { bins: all.map((m, j) => Object.assign({ mag: m, asLarge: j === all.length - 1 }, mixture(post, Math.pow(10, par.b * (Mm - m)) * I))) });
+    const t1 = (w.start - tMainMs) / DAY, t2 = (w.end - tMainMs) / DAY, I = new Map();
+    const omori = (nd) => { let v = I.get(nd); if (v === undefined) { v = omoriIntegral(nd.p, nd.c, t1, t2); I.set(nd, v); } return v; };
+    return Object.assign({}, w, { bins: all.map((m, j) => Object.assign({ mag: m, asLarge: j === all.length - 1 }, mixture(post, (nd) => Math.pow(10, par.b * (Mm - m)) * omori(nd)))) });
   });
 }
 
@@ -343,35 +498,46 @@ export function run(P, main, events, issueMs, opts = {}) {
   const now = finite(opts.now) ? opts.now : issueMs;
   const reg = regimeAt(P, main.lng, main.lat), par = P.params[reg.regime];
   const zone = opts.zone || zoneOf(P, main, events, issueMs);
-  const mc = zone.mc;
   const inZone = within(events, zone.centre, zone.radiusKm).filter((e) => e.id !== main.id && e.t > main.t);
   const tIssue = (issueMs - main.t) / DAY;
-  const used = completeAfter(inZone, main, mc, 0, tIssue);
-  const K = kIntegral(par, mc, main.mag, 0, tIssue);
-  const post = posterior(par, main.mag, used.length, K);
-  const prior = posterior(par, main.mag, 0, 0);
+  /* the read's own floor (what the histogram is cut at): the caller's, else the one the builder and the card read at */
+  const readMin = finite(opts.readMin) ? opts.readMin : Math.min(zone.mc.magCat, zone.mc.magCentroid);
+  const mc = completenessOf(zone.mc, main, inZone, issueMs, readMin);
+  const shape = shapePrior(P, par);
+  const used = mc.priorOnly ? [] : completeAfter(inZone, main, mc, 0, tIssue);
+  const ts = used.map((e) => (e.t - main.t) / DAY), lnSum = new Map();
+  const sumLn = (c) => { let v = lnSum.get(c); if (v === undefined) { v = ts.reduce((q, t) => q + Math.log(t + c), 0); lnSum.set(c, v); } return v; };
+  const Kn = shape.nodes.map((nd) => (mc.priorOnly ? 0 : kIntegral(par, mc, main.mag, 0, tIssue, nd.p, nd.c)));
+  const post = posterior(par, main.mag, used.length, (nd, j) => Kn[j], { nodes: shape.nodes, sumLn });
   const table = forecast(post, par, main.mag, main.t, issueMs);
-  /* the answer check: the windows that ended before the present, at the magnitudes the catalogue records completely */
+  /* the answer check: the windows that ended before the present, at the magnitudes the catalogue records completely —
+     none at all when the completeness itself is unknown (priorOnly) */
   const after = inZone.filter((e) => e.t > issueMs && e.mag != null);
   const check = table.map((w) => {
     if (w.end > now) return { key: w.key, state: 'open' };
     const obsMcMax = mcAt(mc, main.mag, Math.max(tIssue, 1e-9));
     return { key: w.key, state: 'closed', bins: w.bins.map((b) => {
-      if (b.mag < mc.magCat || b.mag < obsMcMax) return { mag: b.mag, asLarge: b.asLarge, checkable: false };
+      if (mc.priorOnly || b.mag < mc.magCat || b.mag < obsMcMax) return { mag: b.mag, asLarge: b.asLarge, checkable: false };
       const n = after.filter((e) => e.t <= w.end && e.mag >= b.mag).length;
       return { mag: b.mag, asLarge: b.asLarge, checkable: true, observed: n, verdict: n < b.lo ? 'below' : n > b.hi ? 'above' : 'within' };
     }) };
   });
-  /* the cumulative curve the card draws: the complete aftershocks against the expected count, to the issue time and
-     (for an answer check) beyond it, with the expected count's 95 % parameter band */
-  const aLo = aQuantile(post, 0.025), aMid = aQuantile(post, 0.5), aHi = aQuantile(post, 0.975);
+  /* the cumulative curve the card draws: the expected count of complete aftershocks to t over the posterior cells —
+     its median and 2.5 / 97.5 % (the parameter band, a and p together) */
+  const expectedBand = (tDays) => {
+    /* a drawing, not a forecast: the early incomplete part integrated in 256 steps (under 10⁻³ of the 2048-step value) */
+    const k = new Map();
+    const pairs = post.a.map((a, i) => { let v = k.get(post.k[i]); if (v === undefined) { const nd = post.nodes[post.k[i]]; v = kIntegral(par, mc, main.mag, 0, tDays, nd.p, nd.c, 256); k.set(post.k[i], v); } return [Math.pow(10, a) * v, post.w[i]]; });
+    const [lo, mid, hi] = weightedQuantiles(pairs, [0.025, 0.5, 0.975]);
+    return { lo, mid, hi };
+  };
   return {
-    main, issueMs, tIssueDays: tIssue, regime: reg, params: par, zone, completeness: mc,
+    main, issueMs, tIssueDays: tIssue, regime: reg, params: par, zone, completeness: mc, priorOnly: mc.priorOnly,
+    deep: finite(main.depthKm) && main.depthKm >= AS.DEEP_KM,
     used: used.length, usedEvents: used, inZone, after,
     largestAfter: inZone.filter((e) => e.t <= issueMs && e.mag != null).reduce((b, e) => (!b || e.mag > b.mag ? e : b), null),
-    posterior: { mean: post.mean, sd: post.sd, priorMean: prior.mean, priorSd: prior.sd, aLo, aMid, aHi },
-    forecast: table, check,
-    expectedAt: (tDays, a) => Math.pow(10, a) * kIntegral(par, mc, main.mag, 0, tDays),
+    posterior: { mean: post.mean, sd: post.sd, priorMean: post.priorMean, priorSd: post.priorSd, pMean: post.pMean, pSd: post.pSd, pPriorMean: post.pPriorMean, pPriorSd: post.pPriorSd, cMean: post.cMean, cPriorSdLog10: shape.c.sdLog10 },
+    forecast: table, check, expectedBand,
   };
 }
 
@@ -421,12 +587,12 @@ export function listRecent(fc, nowMs) {
     .sort((a, b) => b.t - a.t);
 }
 /** nearUrl(lng, lat, endMs) — the earthquakes of M≥MIN_MAIN in the LIST_DAYS before `endMs` around a place the reader named:
-    the point rounded and the radius widened (QH.DEFAULT_RADIUS + SLACK_KM), the exact circle applied by `pickNear` */
+    the point rounded and the radius widened (AS.NEAR_KM + SLACK_KM), the exact circle applied by `pickNear` */
 export function nearUrl(lng, lat, endMs) {
   const c = roundedCentre(lng, lat), p = new URLSearchParams();
   p.set('format', 'geojson'); p.set('eventtype', 'earthquake');
   p.set('latitude', String(c.lat)); p.set('longitude', String(c.lng));
-  p.set('maxradiuskm', String(Math.round(QH.DEFAULT_RADIUS + SLACK_KM)));
+  p.set('maxradiuskm', String(Math.round(AS.NEAR_KM + SLACK_KM)));
   p.set('minmagnitude', String(AS.MIN_MAIN));
   p.set('starttime', new Date(endMs - AS.LIST_DAYS * DAY).toISOString().slice(0, 19));
   p.set('endtime', new Date(endMs).toISOString().slice(0, 19));
@@ -435,7 +601,7 @@ export function nearUrl(lng, lat, endMs) {
 }
 /** pickNear(fc, centre, endMs) — the largest of them within the exact circle (the latest of equals), or null */
 export function pickNear(fc, centre, endMs) {
-  const ev = within(((fc && fc.features) || []).map(normalise).filter((e) => e && e.mag != null && e.mag >= AS.MIN_MAIN && e.t <= endMs), centre, QH.DEFAULT_RADIUS);
+  const ev = within(((fc && fc.features) || []).map(normalise).filter((e) => e && e.mag != null && e.mag >= AS.MIN_MAIN && e.t <= endMs), centre, AS.NEAR_KM);
   return ev.sort((a, b) => (b.mag - a.mag) || (b.t - a.t))[0] || null;
 }
 export function encodeLink(id) { return AS.PARAM + '=' + encodeURIComponent(String(id)); }
@@ -452,16 +618,36 @@ export function decodeLink(search) {
 export function forAtlas(r) {
   const pct = (p) => +(100 * p).toFixed(p < 0.01 ? 2 : 1);
   return {
-    mainshock: { id: r.main.id, magnitude: r.main.mag, time: new Date(r.main.t).toISOString(), place: r.main.place, lng: r.main.lng, lat: r.main.lat },
+    mainshock: { id: r.main.id, magnitude: r.main.mag, time: new Date(r.main.t).toISOString(), place: r.main.place, lng: r.main.lng, lat: r.main.lat, depthKm: r.main.depthKm },
     issued: new Date(r.issueMs).toISOString(), daysAfterMainshock: +r.tIssueDays.toFixed(3),
     regime: r.regime.regime, regimeSource: r.regime.source === 'region' ? 'USGS California region' : 'García et al. (2012) regionalization',
-    parameters: { aPriorMean: r.posterior.priorMean, aPriorSd: r.posterior.priorSd, aPosteriorMean: r.posterior.mean, aPosteriorSd: r.posterior.sd, b: r.params.b, p: r.params.p, c: r.params.c },
+    parameters: { aPriorMean: r.posterior.priorMean, aPriorSd: r.posterior.priorSd, aPosteriorMean: r.posterior.mean, aPosteriorSd: r.posterior.sd,
+      pPriorMean: r.posterior.pPriorMean, pPriorSd: r.posterior.pPriorSd, pPosteriorMean: r.posterior.pMean, pPosteriorSd: r.posterior.pSd, cPrior: r.params.c, cPriorSdLog10: r.posterior.cPriorSdLog10, cPosteriorMean: r.posterior.cMean, b: r.params.b },
     zone: { centre: r.zone.centre, radiusKm: r.zone.radiusKm }, completenessMagnitude: r.completeness.magCat,
+    completeness: { magnitude: r.completeness.magCat, source: r.completeness.source === 'sequence' ? 'estimated from this sequence (maximum curvature + ' + AS.MC_CORR + ')' : 'the network floor for the region (' + r.completeness.region + ')',
+      networkFloor: r.completeness.networkMagCat, estimate: r.completeness.estimate },
+    priorOnly: r.priorOnly || undefined,
     aftershocksUsed: r.used,
     largestAftershockSoFar: r.largestAfter ? { magnitude: r.largestAfter.mag, time: new Date(r.largestAfter.t).toISOString() } : null,
     forecast: r.forecast.map((w) => ({ window: w.key, from: new Date(w.start).toISOString(), to: new Date(w.end).toISOString(),
       bins: w.bins.map((b) => ({ magnitudeAtLeast: b.mag, asLargeAsMainshock: b.asLarge || undefined, probabilityPercent: pct(b.probability), countMedian: b.median, count95: [b.lo, b.hi] })) })),
     answerCheck: r.check.filter((c) => c.state === 'closed').map((c) => ({ window: c.key, bins: c.bins.filter((b) => b.checkable).map((b) => ({ magnitudeAtLeast: b.mag, observed: b.observed, verdict: b.verdict })) })),
-    caveat: 'Not an official forecast: the Reasenberg–Jones model with USGS generic parameters (Page et al. 2016), updated with this sequence\'s own aftershocks. Probabilities are for the circle, not one site, and say nothing about which day. Follow the national agency.',
+    caveat: 'Not an official forecast: the Reasenberg–Jones model with USGS generic parameters (Page et al. 2016), updated with this sequence\'s own aftershocks. Probabilities are for the circle, not one site, and say nothing about which day. The ranges are the model\'s 95 %; how often real counts fell inside them in the published test is under «tested». Follow the national agency.',
+    notes: notesOf(r),
   };
+}
+/** notesOf(r) — what the reader must know about THIS run, as codes with their facts (the card and Atlas word them) */
+function notesOf(r) {
+  const out = [];
+  if (r.priorOnly) out.push({ code: 'prior-only', events: r.completeness.estimate.n, testedFrom: AS.TESTED.from });
+  if (r.completeness.source === 'sequence') out.push({ code: 'completeness-raised', magnitude: r.completeness.magCat, networkFloor: r.completeness.networkMagCat, events: r.completeness.estimate.n });
+  if (r.deep) out.push({ code: 'deep', depthKm: r.main.depthKm, boundaryKm: AS.DEEP_KM });
+  return out;
+}
+/** testedCoverage(hindcast) — from the shipped test (AS.HINDCAST): per window and magnitude, how often the observed count
+    fell inside the model's 95 % range ({ window, mag, n, inside, below, above }; inside is a fraction). Null if unreadable. */
+export function testedCoverage(hc) {
+  if (!hc || !Array.isArray(hc.score) || !hc.set) return null;
+  return { sequences: hc.set.count, minMag: hc.set.minMag, from: hc.set.from, to: hc.set.to, issueDays: hc.set.issueDays,
+    rows: hc.score.filter((z) => typeof z.mag === 'number').map((z) => ({ window: z.window, mag: z.mag, n: z.n, inside: z.n ? z.within / z.n : null, below: z.below, above: z.above })) };
 }

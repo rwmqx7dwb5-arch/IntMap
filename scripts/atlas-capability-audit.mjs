@@ -35,6 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { codeOnly } from './code-only.mjs';
 import { appLangs, authoredLangs } from './lang-policy.mjs';
 import { entrySources, namespaceFiles, stale as capsStale, loadEntries } from './atlas-caps.mjs';
+import { parseSource } from '../tests/helpers/ast.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -90,8 +91,106 @@ const capsEntries = await loadEntries();
 export const CATALOGUE_SILENT = capsEntries.filter((e) => e.catalogueSilent).map((e) => e.id);
 const CATALOGUE_SILENT_DATED = capsEntries.filter((e) => e.catalogueSilent).map((e) => ({ id: e.id, on: String(e.catalogueSilent) }));
 
+/* (wave4-refine) WHICH ROWS HAND THE MODEL WORDS SOMEBODY ELSE WROTE — read from the doors, not from a list of rows.
+   Column 11 (`ingests:'external'`) is the row's statement that its result carries a THIRD PARTY's sentences. Nothing in a
+   row distinguishes «a listing a reader wrote» from «a count IntMap computed», but the DOOR that returns the words knows: a
+   module whose exported function hands back text other people wrote declares it, beside the function, in a top-level
+       const WORDS_BY_OTHERS = Object.freeze({ <exported function>: '<whose words>', … })
+   (not exported: nothing in the app reads it — this reader parses it)
+   (js/community-maps.js, js/shared-collection.js, js/quest-class.js, js/quest-class-board.js). This finds, for every
+   capability entry, each call its `run` makes to such a door — through `const X = await import('./m.js')` or
+   `const { f } = await import('./m.js')` inside the run, or the file's own static imports — so a NEW capability that calls
+   a declared door is held to the declaration without anybody listing it. It also returns the declarations that name no
+   exported function (a stale declaration would excuse nothing and catch nothing).
+   → { calls: [{ id, file, line, module, door, whose }], stale: ['<module>: <name>'] } */
+export function wordsByOthers(root = ROOT) {
+  const readR = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
+  const decls = new Map();   /* 'js/m.js' → { doors: Map(name → whose), exported: Set } | null */
+  const declOf = (rel) => {
+    if (decls.has(rel)) return decls.get(rel);
+    let out = null;
+    try {
+      const ast = parseSource(readR(rel), { sourceType: 'module' });
+      const doors = new Map(), exported = new Set();
+      ast.body.forEach((st) => {
+        /* the declaration is a top-level const (exported or not: this reader is the one that reads it); the doors are exports */
+        const isExport = st.type === 'ExportNamedDeclaration' && !!st.declaration;
+        const d = isExport ? st.declaration : st;
+        if (isExport && d.type === 'FunctionDeclaration') exported.add(d.id.name);
+        if (d.type !== 'VariableDeclaration') return;
+        d.declarations.forEach((v) => {
+          if (v.id.type !== 'Identifier') return;
+          if (isExport) exported.add(v.id.name);
+          if (v.id.name !== 'WORDS_BY_OTHERS') return;
+          let o = v.init;
+          if (o && o.type === 'CallExpression' && o.arguments[0]) o = o.arguments[0];   /* Object.freeze({ … }) */
+          if (!o || o.type !== 'ObjectExpression') { doors.set('<not an object literal>', ''); return; }
+          o.properties.forEach((pr) => { const k = pr.key && (pr.key.name || pr.key.value); if (k) doors.set(String(k), pr.value && pr.value.type === 'Literal' ? String(pr.value.value) : ''); });
+        });
+      });
+      out = { doors, exported };
+    } catch { out = null; }
+    decls.set(rel, out);
+    return out;
+  };
+  const modRel = (fromRel, spec) => (typeof spec === 'string' && spec.startsWith('.') ? path.posix.join(path.posix.dirname(fromRel), spec) : null);
+  const visit = (node, fn) => {
+    (function walk(n) {
+      if (!n || typeof n.type !== 'string') return;
+      fn(n);
+      for (const k of Object.keys(n)) { const v = n[k]; if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v.type === 'string') walk(v); }
+    })(node);
+  };
+  const calls = [];
+  const fileAst = new Map();
+  for (const e of entrySources(root)) {
+    if (e.runStart < 0) continue;
+    if (!fileAst.has(e.runFile)) fileAst.set(e.runFile, parseSource(readR(e.runFile), { sourceType: 'module' }));
+    const ast = fileAst.get(e.runFile);
+    let runNode = null;
+    visit(ast, (n) => { if (!runNode && n.start === e.runStart && /Function/.test(n.type)) runNode = n; });
+    if (!runNode) continue;
+    const ns = new Map(), named = new Map();   /* local name → module · local name → [module, exported name] */
+    ast.body.forEach((st) => {
+      if (st.type !== 'ImportDeclaration') return;
+      const m = modRel(e.runFile, st.source.value); if (!m) return;
+      st.specifiers.forEach((sp) => {
+        if (sp.type === 'ImportNamespaceSpecifier') ns.set(sp.local.name, m);
+        else if (sp.type === 'ImportSpecifier') named.set(sp.local.name, [m, sp.imported.name || sp.imported.value]);
+      });
+    });
+    visit(runNode, (n) => {
+      if (n.type !== 'VariableDeclarator' || !n.init) return;
+      const imp = n.init.type === 'AwaitExpression' ? n.init.argument : n.init;
+      if (!imp || imp.type !== 'ImportExpression' || imp.source.type !== 'Literal') return;
+      const m = modRel(e.runFile, imp.source.value); if (!m) return;
+      if (n.id.type === 'Identifier') ns.set(n.id.name, m);
+      else if (n.id.type === 'ObjectPattern') n.id.properties.forEach((pr) => { if (pr.key && pr.value && pr.value.type === 'Identifier') named.set(pr.value.name, [m, pr.key.name || pr.key.value]); });
+    });
+    visit(runNode, (n) => {
+      if (n.type !== 'CallExpression') return;
+      let m = null, door = null;
+      const c = n.callee;
+      if (c.type === 'MemberExpression' && !c.computed && c.object.type === 'Identifier' && ns.has(c.object.name)) { m = ns.get(c.object.name); door = c.property.name; }
+      else if (c.type === 'Identifier' && named.has(c.name)) [m, door] = named.get(c.name);
+      if (!m) return;
+      const d = declOf(m);
+      if (d && d.doors.has(door)) calls.push({ id: e.id, file: e.runFile, line: n.loc.start.line, module: m, door, whose: d.doors.get(door) });
+    });
+  }
+  const stale = [];
+  for (const f of fs.readdirSync(path.join(root, 'js')).filter((x) => x.endsWith('.js'))) {
+    const rel = 'js/' + f;
+    if (!readR(rel).includes('WORDS_BY_OTHERS')) continue;
+    const d = declOf(rel);
+    if (!d) continue;
+    d.doors.forEach((_, k) => { if (!d.exported.has(k)) stale.push(rel + ': ' + k); });
+  }
+  return { calls, stale };
+}
+
 /* ── the twenty checks. Each takes DATA and returns {id, title, failures[], note} ───────────── */
-export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, uiEntries, pageSrc }) {
+export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, othersWords, uiEntries, pageSrc }) {
   const J = caps.toJSON();
   const byId = Object.create(null);
   J.capabilities.forEach((c) => { byId[c.id] = c; });
@@ -649,6 +748,21 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
       `${silent.length} of ${pop} documented capabilities are silent about themselves`);
   }
 
+  /* (wave4-refine) a row whose run calls a door that hands back words somebody else wrote declares ingests:'external'
+     (column 11). The doors and the calls are DATA (wordsByOthers), so a fixture can hand the check a defect. */
+  if (othersWords) {
+    const bad = [];
+    othersWords.calls.forEach((k) => {
+      const c = caps.resolve(k.id);
+      if (!c) bad.push(`${k.file}:${k.line}: ${k.id} is not a registered capability`);
+      else if (c.ingests !== 'external') bad.push(`${k.id}: its run calls ${k.module} ${k.door}() (${k.file}:${k.line}), which hands back ${k.whose || 'words somebody else wrote'} — the row must declare ingests:'external' (column 11)`);
+    });
+    othersWords.stale.forEach((x) => bad.push(`${x}: WORDS_BY_OTHERS names no exported function of that module — a declaration that excuses nothing and catches nothing`));
+    const rows = new Set(othersWords.calls.map((k) => k.id));
+    add('ingests-declared', "a row whose run calls a door that hands back words somebody else wrote declares ingests:'external'", bad,
+      `${othersWords.calls.length} call(s) to declared doors from ${rows.size} row(s)`);
+  }
+
   /* ㉔ (feature-inventory) a declared screen entry names a control the page's own source builds. `uiEntries` and
      `pageSrc` are DATA: the entries' `ui.at`, and index.html plus every js/ file that is not Atlas's own — a control
      only Atlas builds is not a way around Atlas. It proves the control is BUILT, not that a reader sees it. */
@@ -689,7 +803,8 @@ export function pageSource(root = ROOT) {
   return [...html.map((f) => fs.readFileSync(path.join(root, f), 'utf8')), ...js.map((f) => fs.readFileSync(path.join(root, 'js', f), 'utf8'))].join('\n');
 }
 
-/* `opts.silentLedger` — [{ id, on }] in place of the entries' `catalogueSilent` (a fixture for check ㉓) */
+/* `opts.silentLedger` — [{ id, on }] in place of the entries' `catalogueSilent` (a fixture for check ㉓);
+   `opts.othersWords` — { calls, stale } in place of wordsByOthers() (a fixture for ingests-declared) */
 export async function audit(opts = {}) {
   const { caps, docs, results } = await loadRegistry();
   /* the result messages the four non-positional locales must carry */
@@ -708,6 +823,7 @@ export async function audit(opts = {}) {
       toolsSrc: read('js/atlas-toolsurface.js'),
       schemas: await loadSchemas(),
       silentLedger: opts.silentLedger || null,
+      othersWords: opts.othersWords || wordsByOthers(),
       uiEntries: capsEntries.filter((e) => e.ui && e.ui.at).map((e) => ({ id: e.id, at: e.ui.at })),
       pageSrc: pageSource(),
     }),

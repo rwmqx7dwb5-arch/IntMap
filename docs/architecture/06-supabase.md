@@ -38,10 +38,11 @@
   GET で呼べる目録。語・並び〔新着／よく保存された／更新〕・範囲〔経度をまたぐ箱も〕で引き、名前つきの欄だけを返す）に載る。`copy_shared_collection()` は写した読者の受領
   `collection_copies`（コレクションと口座ごとに 1 行・持ち主自身の写しは数えない）を残し、持ち主は数だけを読む（`my_collection_reach()`）。写した先のコレクションを掲載すると
   `derived_from` が元を指し、元が掲載中で非表示でない間だけ目録と `shared_collection()` の `listing` がその題・作者・リンクを示す（未掲載の元のリンクは出さない）。報告は
-  `report_community_map()`（ログイン必須・口座ごとに 1 件・自分のものは不可）→ `community_map_reports`、管理者が `community_map_reports_admin()` で読み `moderate_community_map()` で
+  `report_community_map()`（ログイン必須・口座ごとに 1 件・自分のものは専用の符号 `IMOWN` で不可）→ `community_map_reports`、管理者が `community_map_reports_admin()` で読み `moderate_community_map()` で
   外す（理由必須・持ち主が読む・持ち主は再掲載できない）／戻す／却下する。**報告と非表示は共有行ではなく (口座, コレクション) に付く**（`community_map_subjects`・
   `community_map_holds`）ので、持ち主が公開をやめて出し直しても非表示は解けず報告も消えない。リンクは触らない。目録はページの分だけ読む（並びごとの部分索引・
-  `reused_count` と `content_updated_at` はトリガーが保つ・総数は返さず `has_more`）。pgTAP `38_community_maps_test.sql`。画面は §8.1.2、モデレーションは §11。
+  `reused_count` と `content_updated_at` はトリガーが保つ・総数は返さず `has_more`）。ページ送りは **keyset**: 前のページが返した `next`（`v1|並び|reused|µs|id`＝最後の行の並びの鍵）を
+  第 4 引数 `p_after` に渡すと、その続きを索引の位置から読む（offset は無い・何ページ目でも同じ費用・型は `(text, text, integer, text, double precision[])`）。カーソルでないもの・別の並びのカーソルは `invalid_cursor`。pgTAP `38_community_maps_test.sql`。画面は §8.1.2、モデレーションは §11。
 - **見守る場所（`place_watches`）** は保存場所 1 件に 1 行（`place_id` が主キー）。半径・種類ごとの基準（NULL＝見守らない）・オン/オフ・既読（`seen_at`・`seen_keys` ≤ 2,000）。所有者の
   RLS で、挿入は場所が呼び手のものであるときだけ、`user_id` はトリガー `tg_place_watches_own` が固定する。判定はページ（§18.1）。
 - **今日のクエストの記録（`quest_daily_results`）** は読者・暦の日・種類ごとに 1 行（主キー）で 5 問の得点だけ（`js/quest-engine.js` の `DAILY_N`・`QUEST_MAX`）。UPDATE の権限が無く
@@ -49,8 +50,8 @@
 - **クラスのセット（`class_sets`）と生徒の提出（`class_set_answers`）** — ログインした先生が学ぶクエストをクラスに配る。セットは種類・seed・問題数（5／10）・題・受付中か・
   コード（8 文字・`gen_random_uuid()` の乱数バイトから。生徒のリンクの鍵）で、所有者の RLS・作成は 1 日 50（`relay_take('class-set')`）。生徒は**アカウントなし**で
   `class_set_open(code)`・`class_set_submit(code, name, answers)` の 2 つだけを呼ぶ（SECURITY DEFINER・コメントに `ANON MAY CALL:`）。提出は名前と**生の答え**だけで
-  **得点を持たない**（ボードが同じエンジンで採点する）。同じ名前の 2 度目は `name_taken`、締め切ったセットは受け付けない、1 セット 400 まで、提出の速さはセットごとの `relay_take('class-answer')`（一度に 45・10 分で 45 回復、超えると `busy`）。読む・消すはセットの持ち主だけ。
-  作ってから 365 日で提出ごと削除（pg_cron `class-sets-purge`）。pgTAP は `39_class_quest_test.sql`。
+  **得点を持たない**（ボードが同じエンジンで採点する）。名前は `display_name()`（NFKC・前後の空白を除く・制御／双方向制御／不可視の書式文字を拒む）で正規化したものを保存するので、全角と半角は同じ生徒になる。答えは `pg_column_size` が 4096 バイトを超えれば読まずに拒み、地点は小数 3 桁に丸め年は整数に組み直したものを保存する（送られたままは保存しない）。同じ名前の 2 度目は `name_taken`、締め切ったセットは受け付けない、1 セット 400 まで、提出の速さはセットごとの `relay_take('class-answer')`（一度に 45・10 分で 45 回復、超えると `busy`）。読む・消すはセットの持ち主だけ。
+  作ってから 365 日で提出ごと削除（pg_cron `class-sets-purge`）。pgTAP は `39_class_quest_test.sql` と `47_wave4_refine_test.sql`。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。
 
@@ -153,7 +154,7 @@
   `supabase/functions/usage-count/shape.js`（ブラウザと関数が同じファイルを import し、宣言に無い metric・規則に合わない dimension を捨てる）。日はサーバーの時計で決め、IP・User-Agent・
   アカウント・セッション・時刻は持たない。守りは POST 限定・本文上限 16 KiB・Origin・共有 token bucket 2 つ（閉じて失敗）・metric ごと 1 日の dimension 数の上限
   （`record_usage_counts`）。1 日の上限は `USAGE_COUNT_GLOBAL_PER_DAY`。保持は 400 日（pg_cron `usage-counts-purge`）。読むのは `admin.html` の **Usage** と **Growth** タブ（Growth は
-  入口・流入元・utm・Atlas の回答の型で読み、utm 付きの発信リンクも作る。`usage_counts_summary` は SECURITY INVOKER）。読者の手元での速さ（`ready` / `boot_end`）だけは `field_speed(p_days)`（SECURITY DEFINER・anon 可）が版と端末ごとの**割合**と帯で公開する（整数％・100 回未満は出さない・件数と日は返さない。§15.10）。[`docs/MONITORING.md`](../MONITORING.md) §2b。
+  入口・流入元・utm・Atlas の回答の型で読み、utm 付きの発信リンクも作る。`usage_counts_summary` は SECURITY INVOKER）。読者の手元での速さ（`ready` / `boot_end`）だけは `field_speed()`（SECURITY DEFINER・anon 可・期間は 14 日固定で呼び出し側は選べない）が版と端末ごとの**割合**と帯で公開する（整数％・100 回未満は出さない・件数と日は返さない。§15.10）。速さの 2 指標は呼び出し元（HMAC 化したネットワークの鍵）× 指標 × 版 × UTC 日につき 1 回だけ数える（その札は `relay_rate_buckets` に最大約 48 時間残る）。[`docs/MONITORING.md`](../MONITORING.md) §2b。
 - **`reader-reports`** … フィードバックとバグ報告の書き込み先（`--no-verify-jwt`・秘密なし）。`js/feedback.js` の 2 つのフォームと組織からの相談フォーム（`contact.html`・`js/org-page.js`、
   kind `inquiry`）が POST し、関数が service_role で `feedback` / `bug_reports` / `org_inquiries` に 1 行書く（相談の語彙・上限・返信先は `_shared/inquiry-shape.js`。返信先は本人が書いた
   アドレスで、`user_id` だけが検証済みのセッションから来る。見えない欄 `website_confirm` が埋まっていれば 400）。表へ直接は書けない（`anon`・`authenticated` の INSERT policy と grant は

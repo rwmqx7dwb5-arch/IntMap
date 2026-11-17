@@ -68,10 +68,12 @@
  *  already uses, so a buffer that crosses the seam and a country that crosses the seam come back in
  *  the same shape.
  *
- *  ⚠ WHAT IS STILL REFUSED, AND FOR WHAT IT IS: a ring that spans 360° or more after unwrapping
- *  (`geometry-wraps-world`). That is a polar cap or a whole-world ring, and it has no simple ring in
- *  ANY cylindrical plane — the refusal is about the plane, not about the data being unusual, and it
- *  is the same measurement #R729 made, moved to the place where it is actually true.
+ *  ⚠ WHAT IS STILL REFUSED, AND FOR WHAT IT IS: a ring more than a turn wide after unwrapping, or
+ *  one whose walk goes round a pole and does not come back (`geometry-wraps-world`) — it never
+ *  says which pole, so it has no simple ring in ANY cylindrical plane. ⚠ A band or a polar cap
+ *  STATED BY ITS FULL PARALLELS (exactly one turn wide and closed — box(−180,S,180,N)) is NOT that:
+ *  its picture in [−180,180] is the region itself, and it is computed there (§ unwrapRingR,
+ *  onePlane). Until wave4-refine it was folded into a line or refused.
  *
  *  ══ DISTANCE AND THE PREDICATES ═══════════════════════════════════════════════════════════════
  *  distanceKm is the minimum over the pieces: point↔point is haversine on _R_EARTH_KM; point↔segment
@@ -195,20 +197,78 @@ export function makeGisGeometry() {
        keeps its step from the previous vertex under 180°. A ring drawn 170 → -170 comes back
        170 → 190 — one 20° edge across the seam, which is what it is, instead of a 340° sweep the
        wrong way round the world. ⚠ The output may lie outside [-180,180]; that is the point, and
-       splitBack() is what returns it. */
-    function unwrapRing(pts) {
-      if (!pts.length) return pts;
+       splitBack() is what returns it.
+       ⚠⚠⚠ A STEP OF EXACTLY 360° HAS TWO READINGS, AND ONLY ONE OF THEM IS A RING. −180 → 180 is
+       either the seam hop (the same meridian, so the step folds to 0) or the whole parallel walked
+       east — which is how every GeoJSON writer states a band round the world or a polar cap:
+       box(−180,−10,180,10), and Antarctica's [−180,−90] → [180,−90]. MEASURED before this note:
+       the seam reading folded that band to a zero-width line at −180, so `intersection` answered
+       「成功・中身なし」 for every shape inside it, and the voronoi runner over that window wrote
+       ok:true with 0 rows and every site 「outside」. The fold also turned Antarctica's ring into a
+       walk that drifted a whole turn and was refused as `geometry-wraps-world`.
+       ⇒ The seam reading is kept whenever it IS a ring (some area, under a turn wide) — a ring that
+       duplicates a vertex on both sides of the seam reads exactly as it did. Only when it is not
+       is the other reading asked, and it is taken only if it closes on itself and is exactly one
+       turn wide: then the ring is a region of the cylinder (`periodic`), whose planar picture in
+       [−180,180] is the region itself, and onePlane() below works on it there. The same is true of
+       a seam reading that walks exactly one turn east along one parallel and back along another
+       (−180 → … → 180, up, 180 → … → −180, down): it closes, so it is the band between them.
+       ⚠ WHAT IS REFUSED (wrapsWorld): a ring more than a turn wide, and a ring whose walk does not
+       come back — the closing edge, after unwrapping, is more than half a turn. That ring went
+       round a pole and never said which one (it was ACCEPTED before this note whenever its open
+       walk stayed under 360°, and the closing edge then swept backwards across the plane). */
+    function fullTurnStep(a, b) { return Math.abs(Math.abs(b - a) - 360) <= SAME_EPS; }
+    function unwrapWalk(pts, keepFullTurn) {
       const out = [[pts[0][0], pts[0][1]]];
       for (let i = 1; i < pts.length; i++) {
         const prev = out[i - 1][0];
         let lon = pts[i][0];
-        while (lon - prev > SEAM_STEP) lon -= 360;
-        while (prev - lon > SEAM_STEP) lon += 360;
+        if (keepFullTurn && fullTurnStep(pts[i - 1][0], lon)) lon = prev + (lon - pts[i - 1][0]);
+        else {
+          while (lon - prev > SEAM_STEP) lon -= 360;
+          while (prev - lon > SEAM_STEP) lon += 360;
+        }
         out.push([lon, pts[i][1]]);
       }
-      /* The closing edge is an edge too: if it crosses the seam the ring is consistent, but if the
-         walk has drifted a whole turn the ring encircles a pole and no planar ring can hold it. */
       return out;
+    }
+    /* → { pts, periodic }. The closing edge is an edge too: if it crosses the seam the ring is
+       consistent, but if the walk has drifted a whole turn the ring encircles a pole and no planar
+       ring can hold it (the caller refuses it — see wrapsWorld). */
+    function unwrapRingR(pts) {
+      if (!pts.length) return { pts: pts, periodic: false, drift: false };
+      const n = pts.length;
+      const seam = unwrapWalk(pts, false);
+      if (n < 3) return { pts: seam, periodic: false, drift: false };
+      const oneTurn = (r) => !!(r && Math.abs((r[1] - r[0]) - 360) <= SAME_EPS);
+      const seamCloses = Math.abs(seam[n - 1][0] - seam[0][0]) <= SEAM_STEP;
+      const sr = lonRange(seam);
+      if (seamCloses && sr && !ringCollapsed(seam)) {
+        if ((sr[1] - sr[0]) < 360) return { pts: seam, periodic: false, drift: false };
+        if (oneTurn(sr)) return { pts: seam, periodic: true, drift: false };
+      }
+      let turn = false;
+      for (let i = 0; i < n && !turn; i++) if (fullTurnStep(pts[i][0], pts[(i + 1) % n][0])) turn = true;
+      if (turn) {
+        const par = unwrapWalk(pts, true);
+        const close = par[n - 1][0] - par[0][0];
+        const closes = Math.abs(close) <= SEAM_STEP || (fullTurnStep(pts[n - 1][0], pts[0][0]) && Math.abs(Math.abs(close) - 360) <= SAME_EPS);
+        if (closes && oneTurn(lonRange(par)) && !ringCollapsed(par)) return { pts: par, periodic: true, drift: false };
+      }
+      return { pts: seam, periodic: false, drift: !seamCloses };
+    }
+    function unwrapRing(pts) { return unwrapRingR(pts).pts; }
+    /* The one refusal of the plane, asked of an unwrapped ring: a turn or more wide, unless it is the
+       band/cap reading above (exactly one turn, closed by its own full-parallel edges). */
+    function wrapsWorld(u) {
+      if (u.periodic) return false;
+      const r = lonRange([u.pts]);
+      return !!(u.drift || (r && (r[1] - r[0]) >= 360));
+    }
+    /* A part that is a region of the cylinder — only a periodic ring survives toMulti one turn wide. */
+    function isPeriodicPart(part) {
+      const r = lonRange(part);
+      return !!(r && (r[1] - r[0]) >= 360 - SAME_EPS);
     }
 
     /* The least and greatest longitude anywhere inside a coordinate array — a ring, a list of rings,
@@ -265,6 +325,34 @@ export function makeGisGeometry() {
       return shiftLng(coords, k * 360);
     }
 
+    /* Several operands put in ONE plane for one sweep. Ordinarily that is alignTo against the first
+       (shapes kept whole across the seam). ⚠ When any part is a band or a cap (isPeriodicPart) no
+       whole-turn shift can do it — the band is as wide as the world, so a shape written 170 → 190
+       overlaps it on BOTH sides of ±180. Then every operand is cut into the one window [−180,180]
+       instead (splitBack, the same cut every answer leaves through), where every point of the
+       sphere has exactly one picture and the arithmetic is the arithmetic of the sphere's ground. */
+    function intoWorldWindow(multi) {
+      const out = [];
+      for (const part of multi) {
+        if (isPeriodicPart(part)) {
+          const r = lonRange(part);
+          const k = Math.round((r[0] + 180) / 360);
+          out.push(k ? shiftLng(part, -k * 360) : part);
+          continue;
+        }
+        for (const piece of splitBack([part])) {
+          const rings = piece.map(ringPositions).filter((x) => x.length >= 3);
+          if (rings.length) out.push(rings);
+        }
+      }
+      return out;
+    }
+    function onePlane(multis) {
+      if (multis.some((m) => m.some(isPeriodicPart))) return multis.map(intoWorldWindow);
+      const base = multis[0];
+      return multis.map((m, i) => (i ? alignTo(m, base) : m));
+    }
+
     /* Back into [-180,180]. js/geodesy.js already owns this cut — diskFillPolys emits unwrapped
        rings and every disk on the map has been through it — so it is asked rather than repeated. */
     function splitBack(polys) {
@@ -276,8 +364,12 @@ export function makeGisGeometry() {
         /* _splitPolyToWindows takes ONE ring and returns the windows it falls into. The outer ring
            decides how many pieces there are; each hole is cut the same way and given to the piece
            whose window it landed in, matched by that window's index. */
-        const outers = G._splitPolyToWindows(closeRing(rings[0]));
-        if (!outers || !outers.length) continue;
+        /* ⚠ A ring that ends ON a window edge (x = 180) gets a second "piece" from the next window
+           that is only that edge — collinear vertices along the meridian, no interior. It is not
+           ground and is not emitted; before the band reading above, no answer ever reached it with
+           three such vertices, and now every band does. */
+        const outers = (G._splitPolyToWindows(closeRing(rings[0])) || []).filter((o) => !ringCollapsed(ringPositions(o)));
+        if (!outers.length) continue;
         const pieces = outers.map((o) => [o]);
         for (let h = 1; h < rings.length; h++) {
           const cuts = G._splitPolyToWindows(closeRing(rings[h])) || [];
@@ -335,11 +427,10 @@ export function makeGisGeometry() {
         if (!Array.isArray(rings)) continue;
         const kept = [];
         for (const r of rings) {
-          const pts = unwrapRing(ringPositions(r));
-          if (pts.length < 3) continue;
-          const range = lonRange([pts]);
-          if (range && (range[1] - range[0]) >= 360) return null;
-          kept.push(pts);
+          const u = unwrapRingR(ringPositions(r));
+          if (u.pts.length < 3) continue;
+          if (wrapsWorld(u)) return null;
+          kept.push(u.pts);
         }
         if (kept.length) out.push(kept);
       }
@@ -394,9 +485,13 @@ export function makeGisGeometry() {
       if (b != null) {
         const B = toMulti(b);
         if (B === null) return NO('geometry-wraps-world', { operand: 1 });
-        if (B.length) args.push(alignTo(B, A));
+        if (B.length) args = onePlane([A, B]);
         else if (kind === 'intersection') return OK(null);
       }
+      /* A cut into the world window can leave an operand with nothing (a sliver); the sweep is not
+         asked about an empty polygon set. */
+      if (!args[0].length) return (kind === 'union' && args[1] && args[1].length) ? OK(fromMulti(splitBack(args[1]))) : OK(null);
+      if (args.length > 1 && !args[1].length) { if (kind === 'intersection') return OK(null); args = [args[0]]; }
       let res;
       try {
         res = (kind === 'union') ? PC.union.apply(PC, args)
@@ -416,15 +511,14 @@ export function makeGisGeometry() {
       /* Unioned in ONE call rather than folded pairwise: the sweep-line is O(n log n) over all the
          edges at once, and folding is O(n²) with an intermediate result rebuilt every step.
          Measured shape, not a guess — this is the path a dissolve of 1,700 municipalities takes. */
-      const multis = [];
-      let base = null;
+      let multis = [];
       for (let i = 0; i < list.length; i++) {
         const m = toMulti(list[i]);
         if (m === null) return NO('geometry-wraps-world', { operand: i });
         if (!m.length) continue;
-        if (!base) { base = m; multis.push(m); }
-        else multis.push(alignTo(m, base));
+        multis.push(m);
       }
+      multis = onePlane(multis).filter((m) => m.length);
       if (!multis.length) return OK(null);
       let res;
       try { res = PC.union.apply(PC, multis); } catch (e) { return NO('clipper-failed', { op: 'union', message: (e && e.message) || String(e) }); }
@@ -738,9 +832,8 @@ export function makeGisGeometry() {
 
       let sleeve = null;
       try {
-        const base = parts[0];
-        const args = parts.map((p, i) => (i ? alignTo(p, base) : p));
-        const res = PC.union.apply(PC, args);
+        const args = onePlane(parts.map((p) => [p])).filter((m) => m.length);
+        const res = args.length ? PC.union.apply(PC, args) : null;
         sleeve = (Array.isArray(res) && res.length) ? res : null;
       } catch (e) { return NO('clipper-failed', { op: 'sleeve', message: (e && e.message) || String(e) }); }
       if (!sleeve) return OK(null);
@@ -751,8 +844,8 @@ export function makeGisGeometry() {
          body, so the sleeve IS the buffer, and an inward one has nothing to eat into. */
       if (!body.length) return (km > 0) ? OK(fromMulti(splitBack(sleeve))) : NO('inward-buffer-needs-area');
       try {
-        const aligned = alignTo(sleeve, body);
-        const res = (km > 0) ? PC.union(body, aligned) : PC.difference(body, aligned);
+        const placed = onePlane([body, sleeve]);
+        const res = (km > 0) ? PC.union(placed[0], placed[1]) : PC.difference(placed[0], placed[1]);
         if (!Array.isArray(res) || !res.length) return OK(null);
         return OK(fromMulti(splitBack(res)));
       } catch (e) { return NO('clipper-failed', { op: (km > 0) ? 'union' : 'difference', message: (e && e.message) || String(e) }); }
@@ -1288,9 +1381,9 @@ export function makeGisGeometry() {
           if (!s.closed) bad('ring-not-closed', rp, null, { positions: s.length });
           if (s.pts.length < 3) { bad('ring-too-few-points', rp, null, { distinct: s.pts.length, need: 3 }); continue; }
           if (ringCollapsed(s.pts)) { bad('ring-zero-area', rp, null, null); continue; }
-          const un = unwrapRing(s.pts);
+          const uu = unwrapRingR(s.pts), un = uu.pts;
           const range = lonRange([un]);
-          if (range && (range[1] - range[0]) >= 360) { note('ring-wraps-world', rp, null, { lngSpanDeg: range[1] - range[0] }); continue; }
+          if (wrapsWorld(uu)) { note('ring-wraps-world', rp, null, { lngSpanDeg: range[1] - range[0] }); continue; }
           const ccw = signedAreaDeg2(un) > 0;
           const wantCcw = (r === 0);
           if (ccw !== wantCcw) note('ring-winding-differs-from-rfc7946', rp, null, { role: r ? 'hole' : 'exterior', winding: ccw ? 'ccw' : 'cw', rfc7946: wantCcw ? 'ccw' : 'cw' });
@@ -1415,9 +1508,9 @@ export function makeGisGeometry() {
           if (s.pts.length < 3) { if (drop('dropped-degenerate-ring', { distinct: s.pts.length })) return []; continue; }
           if (ringCollapsed(s.pts)) { if (drop('dropped-zero-area-ring', null)) return []; continue; }
           if (!s.closed) change('closed-ring', rp, null);
-          const un = unwrapRing(s.pts);
+          const uu = unwrapRingR(s.pts), un = uu.pts;
           const range = lonRange([un]);
-          if (range && (range[1] - range[0]) >= 360) throw new Refusal('geometry-wraps-world', { path: rp, lngSpanDeg: range[1] - range[0] });
+          if (wrapsWorld(uu)) throw new Refusal('geometry-wraps-world', { path: rp, lngSpanDeg: range[1] - range[0] });
           rings.push({ r: r, pts: un, wrapped: s.pts, src: s.src });
         }
         if (!rings.length) return [];
@@ -2326,7 +2419,15 @@ export function makeGisGeometry() {
        of meaning — same precedence of the seam, same refusals, same tolerances, same sweep — so a
        recipe saved last week replays to the same numbers. New capability is not a changed answer.
        (The hash in scripts/gis-kernel-versions.mjs does change, and is re-recorded there.) */
-    const KERNEL_VERSION = 'geom-2';
+    /* (wave4-refine) geom-2 -> geom-3: A REPLAYED STEP NOW GETS A DIFFERENT ANSWER. A ring that states
+       a band or a polar cap the way GeoJSON writers state one — the whole parallel walked east,
+       −180 → 180 (box(−180,−10,180,10); Antarctica's [−180,−90] → [180,−90]) — was folded at the seam
+       into a zero-width line (every intersection with it 「succeeded」 empty, every point was outside
+       it) or refused as `geometry-wraps-world`. It is now the band or the cap it states (unwrapRingR,
+       onePlane). And a ring that goes round a pole WITHOUT saying which (its closing edge unwrapped
+       is more than half a turn) is now refused by name where it used to be accepted with that edge
+       swept backwards across the plane. Both are corrections a saved recipe replays differently. */
+    const KERNEL_VERSION = 'geom-3';
     const API = Object.assign(delegated(PORTABLE, []), {
       /* (#R749) see KERNEL_VERSION above — js/gis-project.js records which engine answered. */
       version: () => KERNEL_VERSION,

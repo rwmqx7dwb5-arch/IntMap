@@ -68,15 +68,22 @@ test('wave4-news ③ a row outside the window is not in the edition, whatever th
 
 test('wave4-news ④ the window MARKS what is new since the last visit; it does not count it (the server does, once)', () => {
   const seen = Date.parse('2026-10-05T12:00:00Z');
-  const ed = build({ seenMs: seen });
-  const want = FX.rows.filter((r) => Date.parse(r.first_published_at) > seen).length;
+  /* (wave4-refine) «new since your last visit» is what ARRIVED since then (first_seen_at — js/news-edition-core.js
+     ARRIVAL_COL). The production fixture was taken before the page asked for that column, so it states none; here each
+     row is given one — its latest article's time, a value that is NOT the first report's, so a mark that still read
+     first_published_at would disagree. A row with no arrival stated is never marked (tests/wave4-refine-news-geo-checks ③). */
+  const arrived = FX.rows.map((r) => Object.assign({}, r, { first_seen_at: r.last_article_at }));
+  const ed = core.buildEdition(arrived, { sinceMs: SINCE, untilMs: UNTIL, keyAt: index.keyAt, limit: core.EDITION.LIMIT, seenMs: seen });
+  const want = arrived.filter((r) => Date.parse(r.first_seen_at) > seen).length;
+  assert.notEqual(want, FX.rows.filter((r) => Date.parse(r.first_published_at) > seen).length, 'the two columns must disagree on this day for the check to see which one is read');
+  assert.equal(build({ seenMs: seen }).events.filter((e) => e.sinceSeen).length, 0, 'a row that states no arrival is not marked');
   assert.equal(ed.events.filter((e) => e.sinceSeen).length, want);
   assert.ok(want > 0 && want < 619);
   /* review: a window-local total said a smaller number than the entry's server count when the last visit was more than
      24 hours ago, under the same words. The edition carries no such total. */
   assert.equal('sinceSeen' in ed.counts, false, 'no window-local «new since your last visit» total');
-  assert.equal(ed.counts.sinceSeenTop, ed.top.filter((e) => Date.parse(e.row.first_published_at) > seen).length);
-  for (const e of ed.events) assert.equal(e.sinceSeen, e.at > seen);
+  assert.equal(ed.counts.sinceSeenTop, ed.top.filter((e) => Date.parse(e.row.first_seen_at) > seen).length);
+  for (const e of ed.events) assert.equal(e.sinceSeen, Date.parse(e.row.first_seen_at) > seen);
   const none = build();
   assert.equal(none.counts.sinceSeenTop, null, 'no last visit: the edition does not claim anything is new since one');
   assert.ok(none.events.every((e) => !e.sinceSeen));
@@ -142,7 +149,9 @@ test('wave4-news ⑨ the text copy carries the top in rank order and the link', 
 
 test('wave4-news ⑩ the wiring: the server is asked with the same rule and order, and every door reaches the one body', async () => {
   const body = code('js/news-edition.js');
-  assert.match(body, /\.lt\('first_published_at'[^)]*untilMs[\s\S]{0,80}\.gte\('last_article_at'[^)]*sinceMs/, 'the window rule, sent to the server');
+  /* (wave4-refine) the rule itself is the core's windowFilter — null columns fall back exactly as atOf / lastOf — and it is
+     evaluated against the edition in tests/wave4-refine-news-geo-checks ④ */
+  assert.match(body, /\.or\(windowFilter\(win\)\)/, 'the window rule, sent to the server');
   assert.match(body, /\.order\('independent_source_count', \{ ascending: false \}\)\.order\('article_count', \{ ascending: false \}\)\.order\('first_published_at', \{ ascending: true \}\)/, 'the rank, sent as the order');
   assert.match(body, /limit\(EDITION\.LIMIT\)/);
   assert.match(body, /clockLive\(\)\)[\s\S]{0,40}writeSeen/, 'only the live clock marks a visit');

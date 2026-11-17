@@ -11,9 +11,11 @@
  *
  *  NOW: every page load counts, once and anonymously, the range its wait fell in and how its launch screen
  *  lifted, under the release it was (supabase/functions/usage-count/shape.js `ready` / `boot_end`, through
- *  the anonymous counter's own consent rules). The database publishes one reading of those counts —
- *  public.field_speed(p_days): per release and device, SHARES and a band, never a count
- *  (supabase/migrations/20261116130000_field_speed.sql). This file is that reading's one reader:
+ *  the anonymous counter's own consent rules — and, on the server, once per caller, release and day: shape.js
+ *  `speedOnce`). The database publishes one reading of those counts — public.field_speed(): per release and device,
+ *  SHARES and a band, never a count, over ONE fixed window no caller chooses (supabase/migrations/
+ *  20261116131000_wave4_refine_field_speed.sql — a window the caller chose could be narrowed to a day and
+ *  differenced). This file is that reading's one reader:
  *
  *    PURE   summarise(rows) — the releases, newest first, each device's shares, its median and 3-in-4
  *           wait as a bucket edge, the share of loads whose map settled (`idle`);
@@ -34,7 +36,6 @@
  *
  *      node scripts/field-speed.mjs            the releases and the verdict
  *      node scripts/field-speed.mjs --json     the same as JSON (what build-service-status.mjs stores)
- *      node scripts/field-speed.mjs --days 30  a wider window (1–90; the database clamps it)
  * ==========================================================================*/
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -43,6 +44,8 @@ import { fileURLToPath } from 'node:url';
 import { BOOT_BUCKETS, BOOT_ENDINGS, BOOT_EDGES_MS } from '../supabase/functions/usage-count/shape.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/* the window public.field_speed() reads — CANON: the migration's `- 14` (it is not an argument there, so that no caller can
+   narrow it). Said here only to tell the reader; tests/wave4-refine-pages-checks.test.mjs holds the two equal. */
 export const DAYS = 14;
 
 /* ══ THE VERDICT'S TWO NUMBERS (.agents/rules/no-ad-hoc-hardcoding.md §4) ═══════════════════════════
@@ -189,7 +192,7 @@ const PAGE = 1000;
 const DEADLINE_MS = 20000;
 
 /** { measuredAt, days, releases, verdict } — or { unread: why }. Never throws. */
-export async function fetchFieldSpeed({ root = ROOT, days = DAYS, fetchImpl = globalThis.fetch, now = () => new Date(), known = knownReleases(root) } = {}) {
+export async function fetchFieldSpeed({ root = ROOT, fetchImpl = globalThis.fetch, now = () => new Date(), known = knownReleases(root) } = {}) {
   if (!known) return { unread: 'main\'s history cannot be read here (a shallow clone), so no release can be verified — nothing is published' };
   const ep = endpointOf(root);
   if (!ep) return { unread: 'the project address and key could not be read from src/vendor.js' };
@@ -201,7 +204,7 @@ export async function fetchFieldSpeed({ root = ROOT, days = DAYS, fetchImpl = gl
     if (left <= 0) return { unread: 'the reading did not finish within ' + DEADLINE_MS / 1000 + ' s' };
     let res;
     try {
-      res = await fetchImpl(`${ep.url}/rest/v1/rpc/field_speed?p_days=${days}&limit=${PAGE}&offset=${offset}`, {
+      res = await fetchImpl(`${ep.url}/rest/v1/rpc/field_speed?limit=${PAGE}&offset=${offset}`, {
         headers: { apikey: ep.key, authorization: 'Bearer ' + ep.key, accept: 'application/json' },
         signal: AbortSignal.timeout(left),
       });
@@ -220,6 +223,7 @@ export async function fetchFieldSpeed({ root = ROOT, days = DAYS, fetchImpl = gl
   const fake = new Set(rows.filter((r) => !isKnownRelease(r && r.release, known)).map((r) => r && r.release));
   const releases = summarise(rows.filter((r) => !fake.has(r && r.release)));
   const verdict = judge(releases);
+  const days = DAYS;
   return { measuredAt: now().toISOString(), days, edgesMs: BOOT_EDGES_MS.slice(), releases: releases.slice(0, 12), verdict,
     words: sentences({ releases, verdict, days }), unverified: fake.size };
 }
@@ -307,8 +311,7 @@ export function line(fsx) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const i = process.argv.indexOf('--days');
-  const fsx = await fetchFieldSpeed({ days: i >= 0 ? Math.max(1, Math.min(90, +process.argv[i + 1] || DAYS)) : DAYS });
+  const fsx = await fetchFieldSpeed();
   if (process.argv.includes('--json')) { process.stdout.write(JSON.stringify(fsx) + '\n'); }
   else {
     console.log(line(fsx).text);
