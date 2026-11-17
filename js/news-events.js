@@ -546,22 +546,27 @@ export function newsEvents(HOST) {
      docs/NEWS-EVENTS.md §9: 検索欄の下、`すべて / ★ 保存済み` と**同じ 1 行**に横スクロールで並ぶ。
      ⚠ 一覧と地図へ**同時に**適用する。地図だけ・一覧だけに効くフィルタは、利用者が
        「どちらが本当か」を判断できない状態を作る。 */
+  function listedAllTopics() {
+    let all = HOST.globalData || [];
+    try { if (typeof HOST.computeFilteredNews === 'function') all = HOST.computeFilteredNews({ allTopics: true }); } catch (_) { }
+    return all.filter((x) => x && x._event);
+  }
   function renderChips() {
     const row = document.getElementById('news-cat-chips');
     if (!row) return;
+    /* (news-search-count-age) the counts are the LIST'S OWN SET with the topic axis left out — the one predicate
+       js/app-body.js computeFilteredNews applies to the list (scope, age, outlet, search words, map area). Counting
+       the raw feed let a count promise events the list then hid. */
+    const shown = listedAllTopics();
     const counts = new Map();
-    for (const it of (HOST.globalData || [])) {
-      if (!it._event) continue;
-      counts.set(it._event.category, (counts.get(it._event.category) || 0) + 1);
-    }
+    for (const it of shown) counts.set(it._event.category, (counts.get(it._event.category) || 0) + 1);
     const mk = (key, label, n) =>
       '<button class="news-cat-chip' + (category === key ? ' active' : '') + '" data-cat="' + S(key) + '">' +
       S(label) + (n == null ? '' : '<span class="news-cat-n">' + n + '</span>') + '</button>';
     /* ⚠ (#R416) NOT 「すべて」. The scope chips immediately to the left of this strip are
        「すべて / ★ 保存済み」, and this one used to say the same word about a different axis — two
        controls, one row, one word, two meanings. This one is about TOPICS. */
-    let html = mk('all', ALL_TOPICS(),
-      (HOST.globalData || []).filter((x) => x._event).length);
+    let html = mk('all', ALL_TOPICS(), shown.length);
     for (const [key, label] of CATS) {
       const n = counts.get(key) || 0;
       if (!n) continue;      /* 0 件のカテゴリは出さない——押せない chip は嘘である */
