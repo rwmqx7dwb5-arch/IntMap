@@ -300,7 +300,7 @@ map していて、**`DECL` に足して `ORDER` に足し忘れた op は run()
 | `union` | 2 | `Polygon`／`Polygon` | `Polygon` | 無し |
 | `dissolve` | 1 | `Polygon` | `Polygon` | `by`（列名。省略＝全部で 1 群） |
 | `relate` | 2 | 何でも／何でも | 入力と同じ | `predicate`（`intersects`/`within`/`contains`/`disjoint`/`nearer-than`）・`maxKm` |
-| `aggregate` | 2（面・相手） | `Polygon`／**何でも** | `Polygon` | `stat`（`count`/`sum`/`mean`/`min`/`max`）・`field`・`outName` |
+| `aggregate` | 2（面・相手） | `Polygon`／**何でも** | `Polygon` | `stat`（`count`/`sum`/`mean`/`min`/`max`/`areaWeightedMean`/`median`/`percentile`/`stdev`/`majority`）・`field`・`outName`・`quantity`・`weightBy`・`p`（§2.7・§2.10） |
 | `sample` | 2（点・**格子**） | `Point`／— | 入力と同じ | `band`・`method`（`nearest`/`bilinear`）・`outName` |
 | `zonal` | 2（面・**格子**） | `Polygon`／— | `Polygon` | `band`・`stat`（`mean`/`sum`/`min`/`max`/`count`/`classes`）・`outName` |
 | `rasterMask` | 1（**格子**） | — | **格子** | `band`・`op`・`value` |
@@ -309,6 +309,31 @@ map していて、**`DECL` に足して `ORDER` に足し忘れた op は run()
 | `join` | 2（対象・**表**） | 何でも／何でも | 対象と同じ | `leftField`・`rightField`（必須）・`fields`・`prefix`・`unmatched`・`duplicates` |
 | `compute` | 1 | 何でも | 入力と同じ | `outName`・`expr`（必須）・`replace` |
 | `voronoi` | 2（地点・窓） | `Point`／`Polygon` | `Polygon` | 無し（§2.9） |
+| `centroid` | 1 | 何でも | `Point` | 無し（球面の重心。面積・長さで重み付け。§2.5.6） |
+| `pointOnSurface` | 1 | 何でも | `Point` | 無し（必ず面の内側・線の上に来る点。§2.5.6） |
+| `convexHull` | 1 | 何でも | `Polygon` | `by`（列名。省略＝全部で 1 群。§2.5.6） |
+| `simplify` | 1 | 何でも | 入力と同じ | `toleranceKm`（必須。§2.5.6） |
+| `grid` | 1（範囲） | 何でも | `Polygon` | `shape`（`square`/`hexagon`）・`cellKm`（必須）・`clip`・`bbox`（§2.10） |
+| `sample` | 2（点・**格子**） | `Point`／— | 入力と同じ | `band`・`method`・`outName` |
+| `resample` | 2（**格子**・**格子**） | — | **格子** | `method`（必須）・`rule`（§1.4b） |
+| `rasterCalc` | 2（**格子**・**格子**） | — | **格子** | `expr`（必須。`a`・`b` だけを名指す）・`bandA`・`bandB`・`outName`・`unit` |
+| `mosaic` | 2（**格子**・**格子**） | — | **格子** | `overlap`・`method`（必須）・`band` |
+| `rasterize` | 1 | 何でも | **格子** | `width`・`height`（必須）・`field`・`stat`・`bbox` |
+| `polygonize` | 1（**格子**） | — | `Polygon` | `band`・`outName` |
+| `measure` | 1 | 何でも | 入力と同じ | `what`（`area`/`length`。必須）・`crs`・`surface`・`unit`・`tolerance`・`outName`（§2.4） |
+| `validate` | 1 | 何でも | 入力と同じ | `prefix`（§5.9） |
+| `repair` | 1 | 何でも | 入力と同じ | `winding`・`prefix`（§5.9） |
+| `spatialJoin` | 2（対象・相手） | 何でも／何でも | 対象と同じ | `predicate`・`cardinality`（必須）・`maxKm`・`fields`・`prefix`・`unmatched` |
+| `nearestJoin` | 2（対象・相手） | 何でも／何でも | 対象と同じ | `maxKm`・`idField`・`fields`・`prefix`・`unmatched` |
+| `timeJoin` | 2（対象・時間軸を持つ相手） | 何でも／何でも | 対象と同じ | `relation`・`at`・`from`・`to`・`ends`・`cardinality`（必須）・`fields`・`prefix`・`unmatched`（§1.5） |
+| `convert` | 1 | 何でも | 入力と同じ | `field`・`to`（必須）・`from`・`outName`・`replace`・`difference`（§3.2） |
+| `coverage` | 1 | `Polygon` | 入力と同じ | `overlaps`・`gaps`・`edges`・`gapToleranceKm`・`edgeToleranceKm`・`limit`（§5.9.2） |
+| `profile` | 2（面・相手） | `Polygon`／何でも | 入力と同じ | `band`・`field`・`quantity`・`reading`・`asOf`・`boundary`・`weightBy`・`total`・`outName`（§2.8） |
+| `compareZones` | 2（面・面） | `Polygon`／`Polygon` | `Polygon` | `field`・`quantity`・`outName`（§2.8） |
+| `reach` | 2（到達圏・相手） | `Polygon`／何でも | 入力と同じ | `profile` と同じ（§2.8） |
+
+⚠ **この表の op の集合は `ops()` と同じでなければならない**——`tests/gis-foundation-refine-ops-checks.test.mjs` ⑧ が
+`ops()` の id と表の行を突き合わせる（手書きの表は、#R783 の 4 op と今回の 5 op を 2 回とも載せ損ねた）。
 
 ⚠ **`kinds` が入力ごとの中身（vector / raster）を宣言し、既定は `vector`。** `accepts` が訊くのは
 geometry で、格子はそれを持たない——この鍵が無ければ、**格子より前に書かれた 9 つの op が
@@ -866,6 +891,33 @@ Douglas–Peucker 3。ほぼ全部が生の度で、±180 を跨ぐ形の箱は�
 
 ---
 
+### 2.10 格子を作り、区域の値の分布を述べる — `grid` と `aggregate` の統計
+
+**格子は 1 つの op で作り、数えるのは既存の `aggregate` である。** `grid` → `aggregate(count)` が
+六角形の集計（hexbin）・方眼の集計（fishnet）で、そのための専用の op は作らない（数える規則が 2 本になる）。
+
+- **セルは地面の上で同じ面積。** 度の刻みを固定すると高緯度ほどセルが縮む——それを黙って配ると、
+  同じ件数が北では「密」に見える。正方形は高さ一定の緯度帯ごとに、その帯で面積が `cellKm²` になる
+  経度幅を取る。六角形は範囲の中央の緯度を標準緯線にした正積円筒図法の上の正六角形で、隣どうしは
+  頂点をビット単位で共有する。どのセルも `_areaKm2`（実測）・`_gridId`・`_gridRow`・`_gridCol` を持ち、
+  切り取られたセルは `_gridFullKm2` に切る前の面積を持つ（実測: 0° と 60°N で `cellKm²` との差 1e-9 未満）。
+- **範囲は入力の `bbox`（§2.5.6）。** 180° の両側にあるデータは 359° 幅ではなく短い向きの範囲になる。
+  入力が面なら既定でその形に切る（`clip`）。点や線なら切らず、`stats` がそう述べる。
+- **数が多すぎるときは作る前に断る**（`grid-too-many-cells`。入力に触れうるセルだけを数え、算術を返す）。
+  予算は `js/gis-worker.js` が述べる最大の受け渡し量で、1 セルの費用はこの実装の実測値（失効条件はコードの註）。
+
+**`aggregate` の統計は `count` / `sum` / `mean` / `min` / `max` / `areaWeightedMean` / `median` / `percentile` /
+`stdev` / `majority`。** `percentile` は `p`（0〜100）を取り、Hyndman & Fan の第 7 法（R・NumPy の既定）。
+`stdev` は標本標準偏差（n−1）で、値が 1 つの区域は 0 ではなく `null`。`majority`（最頻値）は値を**同一性**で
+数え（`"01100"` と `"1100"` は別）、同数なら入力 1 の行順で先に現れた値で、`_majorityCount` / `_majorityTies` を
+行に載せる。⚠ **使ってよいかは `js/gis-units.js` が決める**（§3.3）: 区分の中央値・標準偏差は拒まれ、
+測定値の最頻値も拒まれ、密度の中央値は許される。
+
+⚠ **区域の member は「地面を共有するもの」。** `geom-4` の `intersects` は閉じた集合で答える（§2.5.5）ので、
+辺だけを共有する隣の区画も true になる。`aggregate` は面どうしのときだけ交差の中身を訊き、隣の区画を
+区域の件数に入れない（`geom-3` までの member の規則のまま）。点と線は閉じた集合で、境界をまたぐ線は両側に
+数えられる。⚠ `relate` と `spatialJoin` の `intersects` は読者が選ぶ述語なので OGC のまま——辺で接する区画も結ばれる。
+
 ## 3. 由来 — `provenance` は札ではなくレシピ
 
 ```
@@ -995,7 +1047,9 @@ Atlas へは `datasetRow()` が**投影**する（欄を書き写さない）—
 - ⚠ **判定は何も変わっていない。** `denominator`（割合が何に対する割合かという**列の名前**）は
   運ばれるだけで、この層は解決しない——`aggregation` が返す答えも `comparableQuantity` の答えも
   述べる前と同じで、換算の倍率も 1 つも動かない。だから保存したレシピは同じ数に再生する
-  （`js/gis-units.js` の `KERNEL_VERSION` は `units-2` のまま）。
+  （この変更では `js/gis-units.js` の `KERNEL_VERSION` は `units-2` のままだった。いまの `units-3` は
+  °C・°F・K の換算を有理数で厳密にし（0 °C は 31.999… ではなく 32 °F）、`ftUS`・`坪`・`mmHg`・`inHg` を足し、
+  `percentile`・`stdev` を自分の語として判定するようにした版）。
 
 ---
 

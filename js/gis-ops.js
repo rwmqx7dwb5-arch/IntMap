@@ -8,7 +8,7 @@
  *  writes {kind:'op', op, inputs, params} as its provenance — the recipe, not a label.
  *
  *  ══ WHAT THIS FILE DECLARES, AND WHAT IT REFUSES ══════════════════════════════════════════════
- *  Nine ops: filter, buffer, clip, intersect, difference, union, dissolve, relate, aggregate. Each
+ *  The ops are the keys of DECL (docs/GIS-CORE.md §2.1 tables them; a check keeps the two equal). Each
  *  DECLARES its inputs, the geometry each input must be, and its parameters; ops() is the only thing
  *  a panel reads. A UI that carried its own list of 「buffer は半径を聞く」 would be the hand-written
  *  list .agents/rules/no-ad-hoc-hardcoding.md forbids — it decides for the ops that exist today and

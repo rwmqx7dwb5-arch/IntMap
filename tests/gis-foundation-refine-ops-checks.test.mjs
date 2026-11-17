@@ -324,3 +324,24 @@ test('⑦ aggregate median / percentile / stdev / majority against references, a
   assert.equal(dPct.ok, true);
   assert.equal(dPct.stats.aggregation.method, 'percentile', 'the units kernel did not judge percentile under its own word');
 });
+
+/* ⑧ docs/GIS-CORE.md §2.1 の op 表は ops() と同じ集合である。手書きの表は #R783 の 4 op と
+   gis-foundation-refine の 5 op を 2 回とも載せ損ねた（33 op 中 18 しか無かった）。母集合は ops() 自身。 */
+test('⑧ the op table in docs/GIS-CORE.md §2.1 names exactly the ops ops() declares', async () => {
+  const { ops } = await boot();
+  const { readFileSync } = await import('node:fs');
+  const md = readFileSync(new URL('../docs/GIS-CORE.md', import.meta.url), 'utf8');
+  const start = md.indexOf('### 2.1 ');
+  const end = md.indexOf('\n### 2.2 ', start);
+  assert.ok(start >= 0 && end > start, '§2.1 was not found');
+  const inTable = new Set();
+  for (const line of md.slice(start, end).split('\n')) {
+    const m = /^\| `([A-Za-z]+)` \|/.exec(line);
+    if (m) inTable.add(m[1]);
+  }
+  const declared = new Set(ops.ops().map((d) => d.id));
+  const missing = [...declared].filter((id) => !inTable.has(id));
+  const extra = [...inTable].filter((id) => !declared.has(id));
+  assert.deepEqual(missing, [], 'ops() declares ops the §2.1 table does not list');
+  assert.deepEqual(extra, [], 'the §2.1 table lists ops ops() does not declare');
+});
