@@ -364,6 +364,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.textMap","textMap","mapText,textToEraMap,passageMap,eraMapFromText","time","mapCompose","map.compose,map.highlight,time","map,explanation","session","none","",""],
       ["news.eventPast","eventPast","eventPlacePast,eventHistory,newsPlaceHistory,eventBackground","data","none","","explanation","read","none","text?","newsEvents"],
       ["settings.atlasDisplay","atlasDisplay","atlasFloat,floatingAtlas","settings","setting","settings.atlasDisplay","setting","persist","explicit","",""],
+      ["data.sanctions","sanctions","sanctionsList,designatedParties,sanctionedCountries","data","none","map.layerOption","explanation","session","none","",""],
+      ["data.unVote","unVote","unGeneralAssemblyVote,unResolutionVote,howDidCountriesVote","data","none","map.layerOption","explanation","session","none","",""],
+      ["data.borderCrossings","borderCrossings","borderControl,borderCheckpoint,landBorderCrossing","data","none","map.layerOption","explanation","session","none","point",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

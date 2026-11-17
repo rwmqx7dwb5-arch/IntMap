@@ -159,6 +159,19 @@ export const TIME = Object.freeze({
 
   /* ── population ── */
   /* the urban-population record states a figure per city and year, 3700 BC – AD 2024: the bounds are cited from the file; js/hist-urban.js owns what a year shows (the window of each stated year) */
+  /* (geopolitics-layers) the three lists as they stood on the day they were read: a delisted party is not in them, so no earlier
+     day can be drawn from them (scripts/build-sanctions.mjs). An edition speaks for a day (the lists change any day). */
+  /* ⚠ the three records are CITED, not pointed at: a pointer makes the kernel fetch the file, and these are 0.15–1.6 MB */
+  'dl-sanctions': { kind: 'snapshot', asOf: '2026-11-17', period: 'P1D', by: 'data/sanctions.json', cite: { asOf: 'data/sanctions.json#asOf' },
+    says: LA('Sanctions lists (OFAC, UK, EU) as they stand today', '制裁リスト（OFAC・英国・EU）の現時点の内容') },
+  /* every recorded vote is dated; the layer draws the last vote at or before the clock's day, and after the record's last vote
+     it carries that vote and names its date */
+  'dl-unvotes': { kind: 'record', from: '1946-01-01', to: '2023-09-01', carry: 'last', by: 'data/unga-votes/index.json',
+    cite: { from: 'data/unga-votes/index.json#first', to: 'data/unga-votes/index.json#last' },
+    follows: 'js/layer-pkg-geopolitics.js unvPick', says: LA('UN General Assembly recorded votes (1946–2023)', '国連総会の記録投票（1946〜2023年）') },
+  /* today's OpenStreetMap posts; the open/closed colour is the published schedule read at the clock's instant */
+  'dl-crossings': { kind: 'snapshot', asOf: '2026-11-17', period: 'P1D', by: 'data/border-crossings.json', cite: { asOf: 'data/border-crossings.json#asOf' },
+    says: LA('OpenStreetMap border control posts (today’s map)', 'OpenStreetMap の国境検問所（現在の地図）') },
   'dl-histurban': { kind: 'record', from: -3699, to: 2024, by: 'data/hist-urban.json',
     cite: { from: 'data/hist-urban.json#span.from', to: 'data/hist-urban.json#span.to' },
     follows: 'js/layer-pkg-histurban.js apply', self: 'js/layer-pkg-histurban.js apply',

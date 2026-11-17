@@ -595,6 +595,34 @@ export function routeUi(HOST) {
       if (s.when.kind === 'arrive' && s.when.local && s.result) { const d = new Date(s.when.local); if (isFinite(d.getTime())) return d.getTime() - (s.result.duration || 0) * 1000; }
       return Date.now();
     }
+    /* (geopolitics-layers) EACH BORDER THE ROUTE CROSSES, AND THE BORDER CONTROL POST NEAREST WHERE IT CROSSES — the Border crossings
+       layer's record (data/border-crossings.json, OpenStreetMap), read by the same rules the layer and Atlas use (js/geopolitics-core.js).
+       The post's state is its published schedule at the moment the route reaches that point: the departure plus the route's duration in
+       proportion to the distance (an estimate, said as one). The distance is printed rather than judged — no radius decides that a post
+       «belongs» to the crossing; a post 40 km away says so itself. A record that cannot be read leaves the list out, with a sentence. */
+    async function crossingPosts(b) {
+      if (!b || !b.crossings || !b.crossings.length) return null;
+      let B, G;
+      try { G = await import('./geopolitics-core.js'); const P = await import('./layer-pkg-geopolitics.js'); B = await P.loadRecord(P.PATHS.crossings); }
+      catch (_) { return { failed: true, rows: [] }; }
+      const s = ST().get(), dur = ((s.result && s.result.duration) || 0) * 1000, t0 = departMs();
+      const word = { open: L('open by its hours', '時刻表では開いている'), closed: L('closed by its hours', '時刻表では閉まっている'), unknown: L('hours say «unknown»', '時刻表は「不明」'), unread: L('hours not evaluated', '時刻表を評価できない'), unstated: L('no hours in OpenStreetMap', '時刻表の記載なし') };
+      return { failed: false, rows: b.crossings.map((x) => {
+        const hit = G.nearestCrossings(B, x.lng, x.lat, 1)[0];
+        if (!hit) return null;
+        const st = G.crossingState(hit.c, t0 + (b.totalM > 0 ? dur * (x.atM / b.totalM) : 0));
+        return { pair: (x.from || '?') + ' → ' + (x.to || '?'), name: hit.c.n || hit.c.en || L('unnamed post', '名称のない検問所'), dim: hit.km.toFixed(1) + ' km · ' + word[st.state] };
+      }).filter(Boolean) };
+    }
+    /* the list above, as markup — every value through esc */
+    function crossingPostsHTML(r) {
+      if (!r) return '';
+      if (r.failed) return '<p class="rtp-help">' + esc(L('The border-crossing record could not be read, so the posts are not listed.', '国境検問所の記録を読み込めなかったため、検問所は表示していません。')) + '</p>';
+      return '<h4>' + esc(L('Nearest border control posts', '最寄りの国境検問所')) + '</h4><ul class="rtp-list">'
+        + r.rows.map((x) => '<li>' + esc(x.pair) + ': ' + esc(x.name) + ' <span class="rtp-dim">' + esc(x.dim) + '</span></li>').join('') + '</ul>'
+        + '<p class="rtp-help">' + esc(L('OpenStreetMap border control posts nearest each crossing point, with their published hours read at the estimated time of arrival there (the duration shared out by distance) in the post’s own time zone — not a live feed. Switch on the Border crossings layer for who may cross and how.',
+          '各越境地点に最も近い OpenStreetMap の国境検問所。開閉は到着予想時刻（所要時間を距離で按分した推定）に、各検問所の現地時刻で時刻表を判定したもので、リアルタイムではありません。通過できる人や手段は「国境検問所」レイヤーで確認できます。')) + '</p>';
+    }
 
     /* ⚠ EVERY FAILURE HAS ITS OWN SENTENCE AND ITS OWN NEXT STEP (§22) — never one 「経路が見つかりません」 */
     function errorHTML(status) {
@@ -993,7 +1021,8 @@ export function routeUi(HOST) {
               'アプリの国境ポリゴンを ' + b.sampleStepM + ' m 間隔で判定。描画用に簡略化された境界のため、ごく短い通過は実際の越境ではなく境界の解像度である可能性があります。',
               'Aus den Ländergrenzen der App, alle ' + b.sampleStepM + ' m abgetastet; sie sind vereinfacht.',
               'По контурам стран приложения, шаг ' + b.sampleStepM + ' м; они упрощены.',
-              'Desde los contornos de la app, cada ' + b.sampleStepM + ' m; están simplificados.')) + '</p>');
+              'Desde los contornos de la app, cada ' + b.sampleStepM + ' m; están simplificados.')) + '</p>'
+            + crossingPostsHTML(await crossingPosts(b)));
         } else if (k === 'along') {
           const s = ST().get();
           const a = await O.along(coords, { durationS: (s.result && s.result.duration) || 0, departMs: departMs() });

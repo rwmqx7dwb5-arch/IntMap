@@ -553,6 +553,20 @@ export const IntMapRefData = (function(){
        built by scripts/build-hist-urban.mjs, whose GOVERNANCE.paidBy is this row's `n` (compared as a value). CC BY 4.0:
        the credit is the article's citation, doi:10.1038/sdata.2016.34. */
     {n:'Reba, Reitsma & Seto (2016) — historical urban populations, 3700 BC – AD 2000 (CC BY 4.0)',u:'https://doi.org/10.1038/sdata.2016.34',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    /* (geopolitics-layers) the sanctions layer (dl-sanctions) — data/sanctions.json, built by scripts/build-sanctions.mjs from the three
+       authorities' own lists. OFAC's is a U.S. Government work (no credit is a condition, the row still names it); the UK list is OGL v3.0
+       and the EU list is reused under Decision 2011/833/EU, both of which make the acknowledgement a condition. The UN Security Council's
+       list is NOT read: its site grants personal, non-commercial use only (scripts/build-sanctions.mjs says so). */
+    {n:'Sanctions — U.S. Treasury OFAC Specially Designated Nationals list (public domain)',u:'https://ofac.treasury.gov/specially-designated-nationals-and-blocked-persons-list-sdn-human-readable-lists',lic:'Public domain (U.S. Government work)',licUrl:'https://www.usa.gov/government-copyright',credit:false},
+    {n:'UK Sanctions List — Foreign, Commonwealth & Development Office (Open Government Licence v3.0)',u:'https://www.gov.uk/government/publications/the-uk-sanctions-list',lic:'OGL v3.0',licUrl:'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',credit:true},
+    {n:'EU financial sanctions — European Commission consolidated list (FSF, Decision 2011/833/EU)',u:'https://data.europa.eu/data/datasets/consolidated-list-of-persons-groups-and-entities-subject-to-eu-financial-sanctions',lic:'Decision 2011/833/EU',licUrl:'https://eur-lex.europa.eu/eli/dec/2011/833/oj',credit:true},
+    /* (geopolitics-layers) the UN votes layer (dl-unvotes) — data/unga-votes/, built by scripts/build-unga-votes.mjs. CC0: no condition; the
+       credit is scholarly practice. The UN Digital Library's own file is «Non commercial use» and is not used. */
+    {n:'UN General Assembly voting data — Voeten, Strezhnev & Bailey (Harvard Dataverse, CC0 1.0)',u:'https://doi.org/10.7910/DVN/LEJUQZ',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
+    /* (geopolitics-layers) the border-crossing layer (dl-crossings) — data/border-crossings.json, built by scripts/build-border-crossings.mjs:
+       OpenStreetMap's border controls, each given the time zone that contains it (timezone-boundary-builder, ODbL) */
+    {n:'Border crossings — OpenStreetMap (barrier=border_control, Overpass API)',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Time zone boundaries — timezone-boundary-builder (ODbL, built from OpenStreetMap)',u:'https://github.com/evansiroky/timezone-boundary-builder',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
        from OHM — the day-exact borders of 1689-1885 (data/hist-borders.js, widened from 1850 by
        #R690) and the first-level

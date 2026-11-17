@@ -151,6 +151,9 @@ const DERIVED = [
     { id: "dl-tz", key: "tz", rest: true, share: true },
     { id: "bx-wbwomparl", key: "wbwomparl", rest: true },
     { id: "fac-dl-osmdiplo", key: "osmdiplo", rest: true },
+    { id: "dl-sanctions", key: "sanctions", label: "lyrSanctions", rest: true, share: true },
+    { id: "dl-unvotes", key: "unvotes", label: "lyrUnVotes", rest: true, share: true },
+    { id: "dl-crossings", key: "crossings", label: "lyrCrossings", rest: true, share: true },
   ] },
   { key: "lyrGrpSecurity", layers: [
     { id: "dl-milSpend", key: "milSpend", label: "lyrMilSpend", share: true },
@@ -351,6 +354,9 @@ const DECLARATIONS = [
   { id: "dl-tz", shelf: "lyrGrpPolitics", order: 130, key: "tz", rest: true, share: true },   // dl-tz.js
   { id: "bx-wbwomparl", shelf: "lyrGrpPolitics", order: 140, key: "wbwomparl", rest: true, measures: ["worldbank:SG.GEN.PARL.ZS"] },   // bx-wbwomparl.js
   { id: "fac-dl-osmdiplo", shelf: "lyrGrpPolitics", order: 150, key: "osmdiplo", rest: true },   // fac-dl-osmdiplo.js
+  { id: "dl-sanctions", shelf: "lyrGrpPolitics", order: 160, key: "sanctions", label: "lyrSanctions", rest: true, share: true, sources: ["Sanctions — U.S. Treasury OFAC Specially Designated Nationals list (public domain)", "UK Sanctions List — Foreign, Commonwealth & Development Office (Open Government Licence v3.0)", "EU financial sanctions — European Commission consolidated list (FSF, Decision 2011/833/EU)"], pkg: "geopolitics" },   // dl-sanctions.js
+  { id: "dl-unvotes", shelf: "lyrGrpPolitics", order: 162, key: "unvotes", label: "lyrUnVotes", rest: true, share: true, sources: ["UN General Assembly voting data — Voeten, Strezhnev & Bailey (Harvard Dataverse, CC0 1.0)"], pkg: "geopolitics" },   // dl-unvotes.js
+  { id: "dl-crossings", shelf: "lyrGrpPolitics", order: 164, key: "crossings", label: "lyrCrossings", rest: true, share: true, sources: ["Border crossings — OpenStreetMap (barrier=border_control, Overpass API)", "Time zone boundaries — timezone-boundary-builder (ODbL, built from OpenStreetMap)"], pkg: "geopolitics" },   // dl-crossings.js
   { id: "dl-milSpend", shelf: "lyrGrpSecurity", order: 10, key: "milSpend", label: "lyrMilSpend", share: true, pkg: "alliances", measures: ["countrystats:milSpend"], formerly: ["dl-milSpendGDP"] },   // dl-milSpend.js
   { id: "dl-nato", shelf: "lyrGrpSecurity", order: 20, key: "nato", label: "lyrNATO", share: true, pkg: "alliances" },   // dl-nato.js
   { id: "beta-dl-ukrfront", shelf: "lyrGrpSecurity", order: 30, key: "ukrfront", share: true },   // beta-dl-ukrfront.js
@@ -448,6 +454,7 @@ const DECLARATIONS = [
 /** (layer-packages) every layer package a declaration names → its factory, fetched on first use (js/data-layers.js) */
 const PACKAGES = {
   "alliances": () => import('./layer-pkg-alliances.js').then((m) => m.alliancesPackage),
+  "geopolitics": () => import('./layer-pkg-geopolitics.js').then((m) => m.geopoliticsPackage),
   "histurban": () => import('./layer-pkg-histurban.js').then((m) => m.histurbanPackage),
   "radar": () => import('./layer-pkg-radar.js').then((m) => m.radarPackage),
   "subcables": () => import('./layer-pkg-subcables.js').then((m) => m.subcablesPackage),

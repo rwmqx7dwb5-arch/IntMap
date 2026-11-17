@@ -1,4 +1,5 @@
 {
+ "tests/geopolitics-layers.spec.js": 10,
  "tests/gis-chain-audit.spec.js": 10,
  "tests/wave4-news.spec.js": 6,
  "tests/wave4-history.spec.js": 8,

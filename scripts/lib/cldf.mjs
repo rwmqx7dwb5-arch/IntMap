@@ -14,9 +14,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-/* ── RFC-4180. Quoted fields carry commas, newlines and doubled quotes — Glottolog's names really
+/* ── RFC-4180 (and the same with another separator: the EU sanctions file is «;»-separated and quoted). Quoted fields carry commas, newlines and doubled quotes — Glottolog's names really
       do contain all three («Tonga (Tonga Islands)», «Hai//om-Akhoe»). ─────────────────────────── */
-export function parseCSV(text) {
+export function parseCSV(text, sep = ',') {
   const rows = []; let field = '', row = [], quoted = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
@@ -24,7 +24,7 @@ export function parseCSV(text) {
       if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else quoted = false; }
       else field += c;
     } else if (c === '"') quoted = true;
-    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === sep) { row.push(field); field = ''; }
     else if (c === '\n') { row.push(field); field = ''; rows.push(row); row = []; }
     else if (c !== '\r') field += c;
   }
