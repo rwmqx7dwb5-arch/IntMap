@@ -287,12 +287,36 @@ test('R504 ⑥ one rose, drawn at two sizes — the desktop and the phone cannot
 
   for (const [name, svg] of [['desktop', desk], ['phone', phone]]) {
     assert.match(svg, /viewBox="0 0 40 40"/, `${name}: the rose is drawn in the 40×40 dial box`);
-    /* (compass-redesign) 「方位磁針ボタン、デザインがダサい。」 — a thin ring, one slim needle (north red, south the theme's
-       colour), a small north pointer above it and a pivot. No ticks, no faceted needle: those are what read as clutter. */
-    assert.equal(count(svg, /<polygon /g), 0, `${name}: the needle is flat paths, not faceted polygons`);
-    assert.equal(count(svg, /<circle /g), 2, `${name}: the ring and the pivot`);
-    assert.equal(count(svg, /<path /g), 3, `${name}: the north pointer, the north half and the south half of the needle`);
-    assert.ok(!/stroke-linecap/.test(svg), `${name}: no tick marks`);
+    /* (compass-dial) 利用者が渡した compass-reproduction.html を参考にした文字盤: 薄い円盤と輪 1 つ・22.5° ごとの
+       先細りの目盛り（北の 1 本は赤い三角に置き換わるので 15 本、うち東・南・西の 3 本が明るい）・中央の単線の N。
+       測るのは綴りではなく幾何: 各目盛りの重心の方位を計算し、22.5° の格子に乗っていることと、明るいものが基本方位で
+       あることと、赤い三角が北にあることを確かめる。 */
+    assert.equal(count(svg, /<circle /g), 1, `${name}: one dial disc with its ring`);
+    const paths = [...svg.matchAll(/<path d="([^"]+)"([^>]*)\/>/g)].map(m => ({ d: m[1], attrs: m[2] }));
+    const shapes = (d) => d.split('Z').filter(Boolean).map(sp => {
+      const nums = (sp.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+      let x = 0, y = 0, n = 0; for (let i = 0; i + 1 < nums.length; i += 2) { x += nums[i]; y += nums[i + 1]; n++; }
+      return { x: x / n, y: y / n };
+    });
+    const bearing = (p) => (Math.atan2(p.x - 20, 20 - p.y) * 180 / Math.PI + 360) % 360;
+    const dim = paths.find(p => /fill-opacity="0\.4/.test(p.attrs));
+    const bright = paths.find(p => /fill-opacity="0\.9/.test(p.attrs));
+    assert.ok(dim && bright, `${name}: two tick families — the dim intermediate ones and the bright cardinal ones`);
+    const dimAt = shapes(dim.d).map(bearing), brightAt = shapes(bright.d).map(bearing);
+    assert.equal(dimAt.length + brightAt.length, 15, `${name}: sixteen 22.5° marks, the north one replaced by the pointer`);
+    for (const b of [...dimAt, ...brightAt]) {
+      const k = Math.round(b / 22.5);
+      assert.ok(Math.abs(b - k * 22.5) < 0.5 && k % 16 !== 0, `${name}: a tick at ${b.toFixed(1)}° is off the 22.5° grid or on north`);
+    }
+    assert.deepEqual(brightAt.map(b => Math.round(b)).sort((a, z) => a - z), [90, 180, 270], `${name}: the bright marks are east, south and west`);
+    const red = paths.find(p => /fill="#ff3b30"/i.test(p.attrs));
+    assert.ok(red, `${name}: a red north pointer`);
+    const tip = /^M\s*(-?[\d.]+)[ ,](-?[\d.]+)/.exec(red.d);   /* the pointer's tip is its first point */
+    const rp = bearing({ x: +tip[1], y: +tip[2] });
+    assert.ok(rp < 1 || rp > 359, `${name}: the red pointer sits at north (found ${rp.toFixed(1)}°)`);
+    const glyph = paths.find(p => /stroke-linecap="round"/.test(p.attrs));
+    assert.ok(glyph && /fill="none"/.test(glyph.attrs) && /stroke="currentColor"/.test(glyph.attrs),
+      `${name}: the N is a round-capped monoline stroke in the theme colour, not a font glyph`);
   }
   assert.equal(geometryOf(desk), geometryOf(phone),
     'the two copies must be the same artwork — only class/width/height may differ');
@@ -305,13 +329,13 @@ test('R504 ⑦ every part of the rose but the north needle follows the theme', (
 
   for (const cls of ['compass-svg', 'm-compass-svg']) {
     const svg = roseOf(html, cls);
-    /* 固定色は北の2つ（針の北半分と北の小三角）だけで、同じ赤。#9aa0a6 は「明るい背景のために選ばれた中間灰」で、
+    /* 固定色は北の赤い三角 1 つだけ。#9aa0a6 は「明るい背景のために選ばれた中間灰」で、
        #R480 以来この釦が着ている暗いガラスの上では泥になる。 */
     const fixed = (svg.match(/#[0-9a-fA-F]{3,8}/g) || []);
-    assert.equal(fixed.length, 2, `${cls}: only the north pointer and the north half may carry a fixed colour — found ${fixed.join(', ')}`);
+    assert.equal(fixed.length, 1, `${cls}: only the north pointer may carry a fixed colour — found ${fixed.join(', ')}`);
     for (const c of fixed) assert.match(c, /^#ff3b30$/i, `${cls}: ${c} is not the north red`);
     assert.ok(!/#9aa0a6/i.test(svg), `${cls}: the old fixed grey must be gone`);
-    assert.ok(count(svg, /currentColor/g) >= 3, `${cls}: the ring, the south needle and the pivot all take currentColor`);
+    assert.ok(count(svg, /currentColor/g) >= 4, `${cls}: the disc, both tick families and the N all take currentColor`);
   }
 
   /* …そして currentColor が何かに解決される。ボタンが color を持たなければ、

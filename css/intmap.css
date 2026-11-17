@@ -136,6 +136,9 @@
     /* a borderless field inside a search pill: the PILL is the control the reader sees, so the pill draws
        the ring (.search-bar:focus-within / .map-search:focus-within) and the field draws none */
     :where(.search-bar,.map-search) :where(input,textarea):focus-visible{ outline:none !important; }
+    /* (ui-compass-atlas-polish) 「入力欄の周りがハイライトされるのもやめて」: Atlas の入力欄は、文字を打てる状態をカーソルと
+       placeholder が示す。テキスト欄はクリックでも :focus-visible に当たるので、輪を消すにはここで名指すしかない。 */
+    #atlas-panel .atl-in:focus-visible{ outline:none !important; }
     /* (#R115) The R33-retired skin themes' CSS (cyber/classic/psychedelic/military/medical/baroque/taisho)
        was DEAD CODE: applyTheme() strips every theme-* body class and coerces a saved skin to 'auto', so none
        of those selectors could ever match. Removed per the dead-code cleanup request; the coercion in
@@ -257,9 +260,17 @@
     /* (#R123) desktop normal mode: two fixed rows — row 1 is the IntMap brand (+ language toggle) with NO action
        buttons; row 2 is the actions row (WS / Log in / Feedback / Settings), right-aligned. Mobile reverts to a
        single row below. */
-    .header-area{ display:flex; flex-direction:column; align-items:stretch; gap:10px; margin-bottom:20px; }
+    /* (ui-compass-atlas-polish) 「ロゴと補助操作の配置を詰め」: ロゴと補助ボタンを 1 行に並べ、余白も 20→14px。最初の記事が
+       約 40px 上から始まる。幅が足りない言語では補助ボタンが次の行へ折り返す（flex-wrap）ので、何も見切れない。 */
+    .header-area{ display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 8px; margin-bottom:14px; }
     .header-area .title-group{ flex:1 1 auto; }
-    .header-actions{ display:flex; flex-direction:row; justify-content:flex-end; align-items:center; gap:8px; flex-wrap:wrap; }
+    .header-actions{ display:flex; flex-direction:row; justify-content:flex-end; align-items:center; gap:2px; flex-wrap:wrap; margin-left:auto; }
+    /* (ui-compass-atlas-polish) 「補助操作の背景を弱める」: News/Companies/Countries/Atlas の主タブと同じ強さの塗りをやめ、
+       背景なし・控えめな文字色にする。触れたときだけ塗る。携帯は指の大きさ（44px）を保つため、この幅だけに効かせる。 */
+    @media(min-width:769px){
+      .header-actions > button{ background:transparent; color:var(--text-muted); padding:6px 9px; font-size:12.5px; }
+      .header-actions > button:hover{ background:var(--input-bg); color:var(--text-main); }
+    }
     .header-actions > button{ margin-right:0 !important; }
     .title-group{ display:flex; align-items:center; gap:12px; min-width:0; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
     .btn-settings{ flex-shrink:0; }
@@ -559,7 +570,7 @@
        neighbours with mismatched tops and bottoms. Stretching binds them to the row instead of to their own
        content, so they stay level whatever the emoji font on the machine decides a line box is — the pills
        already centre their own buttons, so nothing inside moves. */
-    .map-view-row{ display:flex; align-items:stretch; justify-content:flex-end; gap:4px; flex-wrap:wrap; max-width:100%; }
+    .map-view-row{ display:flex; align-items:stretch; justify-content:flex-end; gap:8px; flex-wrap:wrap; max-width:100%; }
     .map-view-group{ display:flex; align-items:center; background:var(--sidebar-bg); backdrop-filter:blur(20px); border-radius:var(--r-control); padding:2px 4px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); gap:4px; flex-wrap:wrap; max-width:100%; }
     /* ⚠ (#R504) THE PADDING IS THE HEIGHT OF THE ROW. 「…のバーの縦幅を詰めて」 — measured at
        1440×900: .view-btn 28.0 px (12 px type + 7 px above and below), so each pill row was 35.3 px

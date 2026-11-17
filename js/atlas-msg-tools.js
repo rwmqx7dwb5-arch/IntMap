@@ -31,7 +31,8 @@
 /* the desktop rules, in the order and the wording they had inside the kernel's style string */
 export const MSG_TOOLS_CSS = ''
         /* (#R72/#R296) per-message tools under every Atlas reply (copy + retry) AND under the reader's own (copy + edit) */
-        +'#atlas-panel .atl-msgt{display:flex;gap:2px;margin:4px 0 0;align-self:flex-start;opacity:0.55;transition:opacity .15s ease;}'
+        /* (ui-compass-atlas-polish) 「回答文と、そのしたのコピー、再試行との間の隙間を狭く」: 列の gap 10px にこの 4px が足されて 14px＋ボタンの内余白だった。margin で gap を 6px 打ち消し、回答の直下 4px に置く（返信と次の質問の間は gap のまま）。 */
+        +'#atlas-panel .atl-msgt{display:flex;gap:2px;margin:-6px 0 0;align-self:flex-start;opacity:0.55;transition:opacity .15s ease;}'
         +'#atlas-panel .atl-b.a:hover + .atl-msgt,#atlas-panel .atl-b.u:hover + .atl-msgt,#atlas-panel .atl-msgt:hover{opacity:1;}'
         /* (#R296) the reader's own bar is right-aligned like their message. ⚠ (#R298) 「コピーボタンは…ホバーしたときのみ表
            示…間隔を狭めて」— THIS bar only (Atlas's own is untouched): hidden until the bubble or the bar is hovered/focused,
@@ -53,7 +54,7 @@ export const MSG_TOOLS_CSS = ''
 
 /* …and the overrides that belong INSIDE the kernel's @media(max-width:768px) block */
 export const MSG_TOOLS_CSS_MOBILE = ''
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-msgt-u{margin:-12px 0 0;}body:not(.ws-mode) #atlas-panel.atl-tab .atl-edit{width:96%;}body:not(.ws-mode) #atlas-panel.atl-tab .atl-edit-in{min-height:44px;border-radius:16px;padding:11px 14px;font-size:16px;}body:not(.ws-mode) #atlas-panel.atl-tab .atl-edit-btns button{font-size:14px;padding:9px 16px;}'   /* (#R298) the mobile .atl-chat gap is 12px, so −12 cancels it and the desktop rule's 2px padding still supplies the spacing; 16px in the editor kills the iOS focus auto-zoom exactly as .atl-in does, and the buttons grow to a real touch target */
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-msgt-u{margin:-12px 0 0;}body:not(.ws-mode) #atlas-panel.atl-tab .atl-msgt:not(.atl-msgt-u){margin:-8px 0 0;}body:not(.ws-mode) #atlas-panel.atl-tab .atl-edit{width:96%;}body:not(.ws-mode) #atlas-panel.atl-tab .atl-edit-in{min-height:44px;border-radius:16px;padding:11px 14px;font-size:16px;}body:not(.ws-mode) #atlas-panel.atl-tab .atl-edit-btns button{font-size:14px;padding:9px 16px;}'   /* (#R298) the mobile .atl-chat gap is 12px, so −12 cancels it and the desktop rule's 2px padding still supplies the spacing; 16px in the editor kills the iOS focus auto-zoom exactly as .atl-in does, and the buttons grow to a real touch target */
         ;
 
 /** THE ONE ENTRY POINT: the kernel calls this once and keeps the three builders it returns —
@@ -92,7 +93,7 @@ export function makeMsgTools(CTX){
     function _atlEdOpen(src,ed){ try{ if(!src||!src.parentElement) return; _atlEdClose();
       const nx=src.nextElementSibling, bar=(nx&&nx.classList&&nx.classList.contains('atl-msgt'))?nx:null;
       const box=document.createElement('div'); box.className='atl-edit';
-      box.innerHTML='<textarea class="atl-edit-in" rows="1" aria-label="'+esc(L('Edit message','メッセージを編集','Nachricht bearbeiten','Изменить сообщение','Editar mensaje'))+'"></textarea><div class="atl-edit-btns"><button type="button" class="atl-edit-x">'+esc(L('Cancel','キャンセル','Abbrechen','Отмена','Cancelar'))+'</button><button type="button" class="atl-edit-go">'+esc(L('Send','送信','Senden','Отправить','Enviar'))+'</button></div>';
+      box.innerHTML='<textarea class="atl-edit-in" rows="1" autocomplete="off" writingsuggestions="false" aria-label="'+esc(L('Edit message','メッセージを編集','Nachricht bearbeiten','Изменить сообщение','Editar mensaje'))+'"></textarea><div class="atl-edit-btns"><button type="button" class="atl-edit-x">'+esc(L('Cancel','キャンセル','Abbrechen','Отмена','Cancelar'))+'</button><button type="button" class="atl-edit-go">'+esc(L('Send','送信','Senden','Отправить','Enviar'))+'</button></div>';
       const ta=box.querySelector('.atl-edit-in'); ta.value=String((ed&&ed.q)||'');
       const send=()=>{ const v=String(ta.value||'').trim(); _atlEdClose(); if(v) _atlEdSend(src,ed,v); };   /* empty / whitespace only = Cancel */
       ta.addEventListener('input',()=>_atlEdGrow(ta));
