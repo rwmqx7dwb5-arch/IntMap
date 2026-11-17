@@ -50,7 +50,9 @@ newsjp: ブラウザを拡大しても、左右のパネルを開いても、検
 ## 3. 検査
 
 - 新 `tests/map-chrome-layout.spec.js`: 1440 画面の 100/125/150 %、1920 画面の 200 % × 左パネル（閉／横／フロスト）× 右パネル（閉／開）× 明暗で、①枠と窓からはみ出さない ②開いたパネルと交差しない ③検索とスタックの各行・Chronos が交差しない ④各操作の中央の `elementFromPoint` がその操作。⑤ 1440 の 200 %（720×450）は携帯レイアウト ⑥ 畳んだ形でも同じ操作に届く。 ⑦ 普段の幅（1440×900・1280×800 × 右パネル開閉 × 明暗）で全部品の矩形が変更前の基準と 1px 以内で一致。
-- 監視 JS を前提にしていた検査を、守っていた欠陥のほうで言い直した: `chrome-overlap-checks`（#R484）・`shell-compass-controls-checks`（#R480 ⑤）・`shell-map-input-checks`（#R252 ⑥）・`shell-css-surface-checks`（#R309 ⑤）・`sidebar-layout-checks`（#R160 B5）・`map-a11y-structure.spec`（⑤ は狭い枠＝コンパクト段で、⑥ は印が枠に付く）。`z-layers-baseline.json` は `--update`。
+- 監視 JS を前提にしていた検査を、守っていた欠陥のほうで言い直した: `chrome-overlap-checks`（#R484）・`shell-compass-controls-checks`（#R480 ⑤）・`shell-map-input-checks`（#R252 ⑥）・`shell-css-surface-checks`（#R309 ⑤）・`sidebar-layout-checks`（#R160 B5）・`map-a11y-structure.spec`（⑤ は狭い枠＝コンパクト段で、⑥ は印が枠に付かない）。`z-layers-baseline.json` は `--update`。
+- 監視処理を消したので `js/mobile-ui.js` は `intmap-sidebar-resize` を聞かなくなった——`js/bus.js` の名簿の pending から外した（`event-bus-checks` ③）。`window.IntMapDevice` の読み 2 か所が減った分は `global-surface` の基準を `--update`。
+- **起動時の CSS が約 2.5 kB 増えた**（変更前の main のビルド 303,379 → 305,860 バイト、`check:perf` の `eager.cssRaw` の天井を `--update`）。増えたのは狭い枠の段（検索を畳む・表示メニュー・字を落とす・最狭の縦積み）と、中央とレーンの 2 型を再現する格子の規則。旧規則（右パネル回避 4 本・中央寄せ 2 本・`ms-narrow`/`ms-hide`）は消し、レーンの列定義は変数 1 つに、ワークスペースモードはコンテナ指定自体を外して各規則の前置きを省いた——それでも残るのは新しい能力そのものの分。
 
 ## 4. 残したこと
 
