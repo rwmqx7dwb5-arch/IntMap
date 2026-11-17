@@ -314,6 +314,9 @@ export function makeAtlasBriefing(NOTEBOOK) {
     if (nPts) {
       h += '<label class="atl-br-row atl-br-sw"><input type="checkbox" class="atl-br-pins" data-effect="none"' + (open.pins ? ' checked' : '') + '><span>' + esc(L('Show the recorded rows on the map', '記録時の行を地図に表示') + ' (' + nPts + ')') + '</span></label>';
     }
+    /* (atlas-cited-answers) the list that stood under the reply: each [n], whose record, its licence, and the credit line */
+    if ((s.provenance || []).length) h += '<div class="atl-br-sub">' + esc(L('Sources of this answer', 'この回答の出典')) + '</div>' + s.provenance.map((p) => '<div class="atl-br-meta">' + esc('[' + p.n + '] ' + p.what + ' — ' + p.source + (p.licence ? ' · ' + p.licence : '') + (p.cite ? ' — ' + L('cite as: ', '引用: ') + p.cite : '')) + '</div>').join('')
+      + (s.credit ? '<div class="atl-br-meta">' + esc(L('Credit line: ', '出典表記: ') + s.credit) + '</div>' : '');
     if ((s.sources || []).length) h += '<div class="atl-br-sub">' + esc(L('Web sources Atlas cited', 'Atlas が引用したウェブの出典')) + '</div>' + s.sources.map((x) => '<a class="atl-br-src" href="' + IntMapSafe.url(x.url) + '" target="_blank" rel="noopener noreferrer">' + esc(x.title) + '</a>').join('');
     if ((s.steps || []).length) {
       h += '<details class="atl-br-steps"><summary>' + esc(L('What Atlas ran', 'Atlas が実行した操作') + ' (' + s.steps.length + ')') + '</summary>'

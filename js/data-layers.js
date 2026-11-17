@@ -5011,7 +5011,7 @@ export function dataLayers(HOST){
            at a continental view they are legitimately invisible while `ref-admin1` is painted — which
            is why `painted()` asking "is ANY of them on" is the right question here and a per-id
            assertion would not be. */
-        'cb-admin1':['ref-admin1','ref-admin2','imta-line','imta2-line','imta3-line'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
+        'cb-admin1':['ref-admin1','ref-admin2','imta-line','imta2-line','imta3-line','imta-now-line','imta2-now-line'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
       };
       const sus={}, healed={}, log=[];
       /* (layer-failure-state) every repair this reconciler makes is also recorded with the one owner of layer

@@ -24,7 +24,7 @@ on:
 permissions:
   contents: read
 
-# A newer commit on the same branch/PR cancels the older in-flight run.
+# A newer commit on the same PR cancels the older in-flight run (on main it queues instead — see below).
 # ⚠ (#R372) …AND THE NIGHTLY IS NOT ON ANYBODY'S BRANCH. A scheduled run's `github.ref` is the
 # default branch, so the nightly sat in the SAME group as every push to main — `ci-CI-refs/heads/main`
 # — and `cancel-in-progress` let a late merge kill it. MEASURED over 2026-08-08…08-23: three of the
@@ -42,9 +42,20 @@ permissions:
 #   MEASURED 2026-10-01, three deep-tier dispatches on main cancelled the push runs of c3990ff and
 #   281e584 (the runs that publish), and production stayed on 1a66ec7 while three merges waited —
 #   a dispatch never publishes (event_name is not push), so cancelling the run that does was pure loss.
+# ⚠ (deploy-cancel-chain) …AND ON A PUSH TO MAIN, A NEWER PUSH NO LONGER CANCELS THE RUNNING ONE. MEASURED
+#   2026-11-15: seven merges landed 3-13 minutes apart while a run takes ~17-20, so each push run was
+#   cancelled by the next (24ff5a57 … 98beb3e4, six of them) and only the last, c84eb35a, finished — red,
+#   on a skew between two PRs that were each green alone (#1138 added a job, #1139 the gate it failed).
+#   Production stayed on 0b26439a (2026-10-22) and five green trees in between never reached it:
+#   "the newest commit carries all the older ones" is true only if the newest is green, and under
+#   cancel-in-progress a burst publishes nothing unless its LAST run is. Without the cancel, GitHub keeps
+#   one run going and one pending in the group, and a newer push REPLACES the pending one — so the
+#   running commit finishes and publishes if green, then the newest commit runs. A burst costs at most one
+#   extra run's wait, never an unpublished main; no check is skipped. The order of the publishes is still
+#   held by pages-publish-guard.mjs inside `pages-production` (below). Every other event cancels as before.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'nightly' || github.event_name == 'workflow_dispatch' && format('dispatch-{0}', github.ref) || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
   # ══ (ci-build-once) THE SITE IS BUILT ONCE PER RUN, HERE ═══════════════════════════════════════

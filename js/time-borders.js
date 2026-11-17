@@ -20,7 +20,9 @@ import { IntMapBorderCoast } from './border-coast.js';
 import { jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (hist-era-span-fidelity) the reviewed spans, read under a clock */
 import { clockFor } from './proxy-fetch.js';
 import * as bus from './bus.js';
-import { registerReader, wireLineClick, lineNear, decimalsOf, rowKey, shapesAt } from './border-provenance.js';   /* (border-provenance) the line's own record, on a press */
+import { registerReader, wireLineClick, lineNear, decimalsOf, rowKey, shapesAt } from './border-provenance.js';
+/* (hist-modern-admin) where a past date's borders are today's borders, today's line draws them — js/admin-present.js */
+import { makeRegion, clipLines, ownPieces } from './admin-present.js';   /* (border-provenance) the line's own record, on a press */
 
 /* (then-now-card) THE CREDIT OF THE ERA BORDER RECORDS — the chain collectionAt() reads (CShapes 2.0 → OpenHistoricalMap →
    Cliopatria → historical-basemaps, with OSM under OHM). Written once: the main map's two sources below carry it, and so does
@@ -106,7 +108,7 @@ export function timeBorders(HOST){
   /* (hist-border-same-look) every layer this module draws the era with — ONE list, read by `clear()` below
      and by js/app-body.js `_applyBorders` (via `layerIds`), which each kept a hand-typed copy; a casing
      added to one copy and not the other would have stayed on screen after the clock returned to Now. */
-  const _DRAWN_LAYERS=['imtb-fill','imtb-casing','imtb-line','imtb-lbl','imtb-lbl2'];
+  const _DRAWN_LAYERS=['imtb-fill','imtb-casing','imtb-line','imtb-now-casing','imtb-now-line','imtb-lbl','imtb-lbl2'];
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()||!IntMapTime) return {};
     /* (#R349) 1815 and 1880 are new. The clock's floor moved to 1850 (js/chronos.js) and CShapes —
@@ -159,6 +161,8 @@ export function timeBorders(HOST){
     let shownYear=null, shownFC=null;
     let _provWhen=null;   /* (border-provenance) the instant go() was last asked for — the date the card reads the shapes at */
     let _drawnWhen=null;   /* (sales-pro-audiences) the instant the collection ON SCREEN answers — set only when it is applied, so a reader of the shapes (js/border-extract.js) is never handed the next instant while its collection is still loading */
+    /* (chronos-prefetch) the receipt (js/chronos.js `drawn`) is an OBSERVATION of the hand-over, so it can never cost the hand-over: a clock that does not take receipts (an older build, a test's partial clock) leaves the borders drawn exactly as before. */
+    function _receipt(when){ try{ if(typeof IntMapTime.drawn==='function') IntMapTime.drawn('borders',when); }catch(_){} }
     /* (hist-coverage-expansion) the sheet a COMPOSED collection draws its last layer from — `shownY` is
        the composition's key then, a string, and the sentence still has to name the sheet's year */
     let shownSheet=null;
@@ -442,7 +446,32 @@ export function timeBorders(HOST){
     const _wholeLines=(fc,t)=>_BC().wholeLines(fc,t);
     /* (hist-border-same-look) what `imtb-line` is handed: the outline with every shared edge struck once
        (js/border-coast.js `strokedOnce`). Neighbouring countries cut their common border from both rings. */
-    const _strokeFor=(fc,t)=>{ const v=_linesFor(fc,t); try{ return _BC().strokedOnce(v); }catch(_){ return v; } };
+    const _strokeFor0=(fc,t)=>{ const v=_linesFor(fc,t); try{ return _BC().strokedOnce(v); }catch(_){ return v; } };
+    /* ══ (hist-modern-admin) TODAY'S LINE WHERE THE DATE'S BORDERS ARE TODAY'S ══════════════════════════════════════
+       「今と同じにもかかわらず…変な感じになってる」 — measured 2026-11-16 at 1950-06-15 on the Pyrenees (unchanged since
+       1868): the era line ran 0.56 km from today's at the median, 1.79 km at p90 and 8.25 km at worst. The rule is the
+       subdivisions' (js/admin-present.js): where every polity in force is still in force today (`_open`), the border
+       is drawn by today's supply (`borders-only-line`'s features, read back out of the tiles on screen) and the era
+       outline is clipped away there; within PRESENT_EPS_KM of a polity that has since changed, the era record draws.
+       Offline (no present-day tiles) nothing is handed over. */
+    let _pr={fc:null,region:null}, _prLive=false, _prT=0;
+    const _prRegion=fc=>{ if(!fc) return null; if(_pr.fc!==fc){ _pr={fc,region:makeRegion((fc.features||[]).filter(f=>!(f.properties&&f.properties._coastSnap)))}; } return _pr.region; };
+    const _prOn=fc=>{ if(!_prLive) return false; const r=_prRegion(fc); return !!(r&&!r.empty); };
+    const _strokeFor=(fc,t)=>{ const v=_strokeFor0(fc,t); if(!_prOn(fc)) return v; const r=_prRegion(fc);
+      return {type:'FeatureCollection',features:clipLines(v.features||[],(x,y)=>!r.modernAt(x,y))}; };
+    function _presentNow(){ try{
+      if(!active||!shownFC||!GE().layers.hasSource('imtb-now-src')) return;
+      const C=GE().coords, L=GE().layers;
+      const was=_prOn(shownFC);
+      _prLive=(C.querySourceFeatures('ofm',{sourceLayer:'boundary'})||[]).length>0;
+      const on=_prOn(shownFC); let now=[];
+      if(on){ const r=_prRegion(shownFC);
+        now=clipLines(ownPieces(C.querySourceFeatures('ofm',{sourceLayer:'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]]})||[]),(x,y)=>r.modernAt(x,y)); }
+      L.setSourceData('imtb-now-src',{type:'FeatureCollection',features:now});
+      if(was!==on&&L.hasSource('imtb-ln-src')) L.setSourceData('imtb-ln-src',_strokeFor(shownFC));
+    }catch(_){} }
+    const _presentSoon=()=>{ clearTimeout(_prT); _prT=setTimeout(_presentNow,60); };
+    try{ GE().events.on('idle',()=>{ if(active) _presentSoon(); }); }catch(_){}
     /* (hist-border-refine) the course redraws (data/hist-courses.js) hold only while their fact does, so a line
        depends on the date as well as the collection: lines are memoised per collection AND per course epoch, and a
        composed collection remembers the instant it was composed for (`_tOf`) */
@@ -500,7 +529,11 @@ export function timeBorders(HOST){
         /* (#R695) CShapes names are bare English; the table is what makes 1886-2019 readable in
            anything else. `_gw` is untouched — it is the record's identifier, not a name. */
         const i18=hnFor('cshapes',NAME,null,null);
-        feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:Object.assign({NAME:NAME,name:NAME,_gw:f[1]},i18?{_i18n:i18}:{})});
+        /* (hist-modern-admin) `_open`: the row is still in force on the last day CShapes covers (CS_MAX-12-31) — and on the
+           day after, this file hands the map to today's borders itself (`modernAt`), so the record and the app together
+           say this polity's border has not moved since. js/admin-present.js reads it. */
+        const _open=(f[5]>CS_MAX||(f[5]===CS_MAX&&f[6]===12&&f[7]>=31))?1:0;
+        feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:Object.assign({NAME:NAME,name:NAME,_gw:f[1],_open},i18?{_i18n:i18}:{})});
         const lg=_csLineOf(_csD,i); if(lg) lines.push(_lineFeat(lg)); }
       const fc={type:'FeatureCollection',features:feats};
       _lnOf.set(fc,new Map([['*',{type:'FeatureCollection',features:lines}]]));   /* (#R531) what `imtb-line` strokes — the same at every date ('*'): CShapes and OHM are never redrawn */
@@ -950,23 +983,45 @@ export function timeBorders(HOST){
        polity on 1 July 1885 and 79.1% a year later. data/hist-borders-late.js is OHM on CShapes' days already less
        CShapes' ground (scripts/build-hist-clio.mjs --ohm-late), and data/hist-clio.js is cut against both, so this
        is again a union with no geometric decision in it. Either record unreadable, the others still compose. */
-    async function csComposite(csKey,csfc,year,mon,day){ try{
+    /* ══ (deep-tier-reds) WHAT THE COMPOSITION READS IS ASKED FOR AT ONCE, NOT ONE RECORD AFTER ANOTHER ══════════════
+       Of the four records a 1886–2019 instant is composed from, only the coast-snap MATCH needs another record's answer
+       (a piece is drawn when its parent is) — the OHM-late rows, the Cliopatria rows and the snap rows in force at `t`
+       are each a question about `t` alone. They were asked in a chain: CShapes opened and answered, THEN the two others
+       opened and answered one after the other, THEN the snap record opened and answered. MEASURED 2026-11-16 (Playwright
+       Chromium on the built, tiled site, clock to 1916-07-01 over Europe, the Natural Earth attributes held back as
+       tests/r410-late.spec.js holds them): cshapes open 0.4→3.1 s, edges →3.5, at →5.8; clio + ohm-late open →6.5,
+       ohm-late at →7.9, clio at →9.1; coast-snap open →9.7, at →13.0; borders on the map 14.4 s — every step waiting
+       on the one before it, and on the nightly deep tier (a slower runner) the same chain ran past the test's 20 s on
+       6 of 14 nights. `csSide` starts the three beside CShapes, so the instant costs the longest of them rather than
+       their sum. Nothing is decided differently: the same keys, the same caches, the same failure rules (a record that
+       cannot be read is left out; a build that throws drops the composition to CShapes alone, as before). */
+    function csSide(year,mon,day){ const t=_ymd(year,mon,day);
       /* the course file is asked for but not waited on: its arrival repaints the line (onArrive), and a composition
          keyed before it arrived (`ce-1`) is never reused after */
-      coursesLoad(); const [cd,od]=await Promise.all([clLoad(),olLoad()]); if(!cd&&!od) return null;
+      coursesLoad();
+      /* a record's rows at `t`, built once the names they carry (`hnFor`) are there — as collectionAt awaited them before */
+      const part=(load,bnd,pre,build)=>Promise.all([load(),hnLoad()]).then(async([d])=>{ if(!d) return { d:null };
+        const k=pre+_epochIn(bnd()||[],t); let fc=cache.get(k); if(!fc){ fc=await build(d,year,mon,day); cache.set(k,fc); } return { d, k, fc }; });
+      const s={ ol:part(olLoad,()=>_olBnd,'ol',olFC), cl:part(clLoad,()=>_clBnd,'cl',clFC), snk:_snapEpoch(t) };
+      s.snIx=s.snk.then(k=>k?_snIxAt(k,t):null);
+      /* awaited by csComposite; when CShapes does not answer they are left unread, which must not be an unhandled rejection */
+      for(const p of Object.values(s)) p.catch(()=>{});
+      return s; }
+    /* the snap rows in force in one epoch of the record — a question about the epoch alone, so it is asked once per epoch */
+    const _snIx=new Map();
+    function _snIxAt(snk,t){ let p=_snIx.get(snk); if(!p){ p=_snH.at(t,'exclusive'); _snIx.set(snk,p); p.catch(()=>{ if(_snIx.get(snk)===p) _snIx.delete(snk); }); } return p; }
+    async function csComposite(csKey,csfc,year,mon,day,side){ try{
+      side=side||csSide(year,mon,day);
+      const [o,c]=await Promise.all([side.ol,side.cl]); if(!c.d&&!o.d) return null;
       const t=_ymd(year,mon,day), parts=[], keys=[];
-      let ol=null; if(od){ const k='ol'+_epochIn(_olBnd||[],t);
-        ol=cache.get(k); if(!ol){ ol=await olFC(od,year,mon,day); cache.set(k,ol); }
-        if(ol&&ol.features.length){ parts.push(ol); keys.push(k); } else ol=null; }
-      let cl=null; if(cd){ const k='cl'+_epochIn(_clBnd||[],t);
-        cl=cache.get(k); if(!cl){ cl=await clFC(cd,year,mon,day); cache.set(k,cl); }
-        if(cl&&cl.features.length){ parts.push(cl); keys.push(k); } else cl=null; }
+      let ol=null; if(o.d){ ol=o.fc; if(ol&&ol.features.length){ parts.push(ol); keys.push(o.k); } else ol=null; }
+      let cl=null; if(c.d){ cl=c.fc; if(cl&&cl.features.length){ parts.push(cl); keys.push(c.k); } else cl=null; }
       if(!parts.length) return null;
       /* (coast-snap-gaps) the land the records' coasts left out, under the one polity that bounds it */
-      const snk=await _snapEpoch(t); if(snk) keys.push(snk);
+      const snk=await side.snk; if(snk) keys.push(snk);
       const key='cp:'+csKey+'|'+keys.join('|')+'|ce'+_courseEp(t);
       let fc=cache.get(key);
-      if(!fc){ const base=csfc.features.concat(...parts.map(p=>p.features)), sn=snk?await _snapsFor(base,t):null;
+      if(!fc){ const base=csfc.features.concat(...parts.map(p=>p.features)), sn=snk?await _snapsFor(base,t,side.snIx):null;
         fc={type:'FeatureCollection',features:base.concat(sn||[])}; _tOf.set(fc,t);
         _lnOf.set(fc,new Map([[_courseEp(t),{type:'FeatureCollection',features:_linesFor(csfc,t).features.concat(...parts.map(p=>_linesFor(p,t).features))}]]));
         _made.set(fc,{cs:csfc.features.length,ohm:ol?ol.features.length:0,late:!!ol,clio:cl?cl.features.length:0,sheet:null}); cache.set(key,fc); }
@@ -1064,9 +1119,9 @@ export function timeBorders(HOST){
     async function _snapEpoch(t){ try{ const d=await snLoad(); return (d&&_snH)?'sn'+_epochIn(_snBnd||[],t):null; }catch(_){ return null; } }
     /* the snap pieces in force at `t` whose parents are among `features` (the shapes the composition draws then) → the
        features ([] when nothing is in force or the record cannot be read) */
-    async function _snapsFor(features,t){ try{
+    async function _snapsFor(features,t,ixP){ try{   /* `ixP`: the rows in force, already asked for (csSide) */
       const d=await snLoad(); if(!d||!_snH) return [];
-      const ix=await _snH.at(t,'exclusive'), feats=[];
+      const ix=await (ixP||_snH.at(t,'exclusive')), feats=[];
       if(!ix||!ix.length) return feats;
       const by=new Map(); for(const f of features){ const r=f.geometry?_rowOf.get(f.geometry):null, pk=_snParentKey(r); if(pk&&!by.has(pk)) by.set(pk,[f,r]); }
       for(const i of ix){ const m=d.feats[i][9]||{}, hit=by.get(m.t+':'+(m.y!=null?m.y+':':'')+m.i); if(!hit) continue;
@@ -1558,6 +1613,11 @@ export function timeBorders(HOST){
          the moment the clock left Now. The precision dash is the one thing this line adds. */
       if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-ln-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:Object.assign(_BS.paint?_BS.paint():{'line-color':'#d9dbe0','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]},{'line-dasharray':['match',['to-number',['coalesce',['get','BORDERPRECISION'],['get','borderprecision']],-1],1,['literal',[2,2]],2,['literal',[6,2]],['literal',[1,0]]]})}, before);
       if(!GE().layers.has('imtb-casing')) GE().layers.add({id:'imtb-casing',type:'line',source:'imtb-ln-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:(_BS.casingPaint?_BS.casingPaint():{'line-color':'#000000','line-opacity':0.35,'line-width':['interpolate',['linear'],['zoom'],1,2.0,4,2.8,8,3.8,12,4.9]})}, 'imtb-line');
+      /* (hist-modern-admin) today's border where the date's borders are today's — `borders-only-line` / `-casing`'s own
+         layout and paint (js/border-style.js), so the two are the same stroke */
+      if(!GE().layers.hasSource('imtb-now-src')) GE().layers.addSource('imtb-now-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'});
+      if(!GE().layers.has('imtb-now-line')) GE().layers.add({id:'imtb-now-line',type:'line',source:'imtb-now-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:(_BS.paint?_BS.paint():{'line-color':'#d9dbe0','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]})}, 'imtb-casing');   /* directly under the era line: a national border reads above every subdivision, as at Now */
+      if(!GE().layers.has('imtb-now-casing')) GE().layers.add({id:'imtb-now-casing',type:'line',source:'imtb-now-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:(_BS.casingPaint?_BS.casingPaint():{'line-color':'#000000','line-opacity':0.35,'line-width':['interpolate',['linear'],['zoom'],1,2.0,4,2.8,8,3.8,12,4.9]})}, 'imtb-now-line');
       /* == (#R309) A PAST COUNTRY'S NAME IS A COUNTRY NAME ======================================
          「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 #R101 gave the RENAMED half its
          own smaller "era style" (that request was about the UNCHANGED half keeping the normal one), so
@@ -2187,7 +2247,7 @@ export function timeBorders(HOST){
       }catch(_){} });
       return fc;
       }catch(_){ return fc; } }
-    function apply(fc){ const mySeq=seq; shownFC=fc; _writeNote(); try{ fc=tagSame(fc,_tagWhen()); }catch(_){}
+    function apply(fc){ const mySeq=seq; shownFC=fc; _writeNote(); _presentSoon(); try{ fc=tagSame(fc,_tagWhen()); }catch(_){}
       /* (#R94m) set the data on the EXISTING source directly (not gated by isStyleLoaded) — that gate was why a
          SECOND year change didn't update: ensure() could transiently return false and block setData, so the
          borders stayed on the first year until you went back to Now. No re-assert timeouts → no flicker.
@@ -2199,8 +2259,8 @@ export function timeBorders(HOST){
          from the collection, so a collection that arrived without marks (the aourednik fallback)
          still has one — computed once and kept on the object the year cache holds. */
       const _ln=()=>{ try{ return _strokeFor(fc); }catch(_){ return {type:'FeatureCollection',features:[]}; } };
-      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.hasSource('imtb-ln-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); _pushLbl(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
-      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); }
+      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.hasSource('imtb-ln-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); _pushLbl(fc); window._applyBorders(); _afterApply(); _receipt(_drawnWhen); return; } }catch(_){}
+      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); _receipt(_drawnWhen); }
       /* (#R140) was map.once('idle',…) — a ONE-SHOT 'idle' that NEVER fires on a busy/backgrounded map (another source
          still tile-loading), so the era layers were never created and the borders stayed absent until a reload
          ("歴史的国境が表示されない・再読み込みで治る"). Reuse the app's own whenStyleReady() (polls canDraw(), so a busy
@@ -2215,6 +2275,7 @@ export function timeBorders(HOST){
          the "現在でも地名ラベルをクリックできない" half of the report). */
       try{ GE().layers.setSourceData('imtb-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ GE().layers.setSourceData('imtb-ln-src',{type:'FeatureCollection',features:[]}); }catch(_){}
+      try{ clearTimeout(_prT); if(GE().layers.hasSource('imtb-now-src')) GE().layers.setSourceData('imtb-now-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ GE().layers.setSourceData('imtb-lbl-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ _DRAWN_LAYERS.forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
@@ -2239,7 +2300,8 @@ export function timeBorders(HOST){
       const year=isD?when.getFullYear():Math.round(+when), mon=isD?(when.getMonth()+1):7, day=isD?when.getDate():1;
       /* (#R117/#R421) 1886–2019 → DAY-EXACT CShapes borders. Falls back to the snapshot path below if the
          CShapes bundle can't be loaded. */
-      if(year>=CS_MIN&&year<=CS_MAX){ const d=(await Promise.all([csLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
+      if(year>=CS_MIN&&year<=CS_MAX){ const side=csSide(year,mon,day);   /* (deep-tier-reds) the rest of the composition is asked for beside CShapes, not after it — see `csSide` */
+        const d=(await Promise.all([csLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
         if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day)+String(_csNameKey(_ymd(year,mon,day))).padStart(8,'0'); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing — (marketing-next) and the year of the name rules, which can turn inside an epoch: eight more digits, so the key stays «record + digits» (the tier is what is left when the digits are taken off) */
           let fc=cache.get(key); if(!fc){ try{ fc=_csNotesOn(await csFC(d,year,mon,day),_ymd(year,mon,day)); cache.set(key,fc); }catch(_){ fc=null; } }
           if(fc){
@@ -2248,7 +2310,7 @@ export function timeBorders(HOST){
                Measured 2026-10-04: CShapes alone puts 75.7% of the world's land inside a polity on 1 July 1886 —
                the interior of Africa before the partition is not in a state system's record. When Cliopatria has
                nothing there (or cannot be read) the answer is CShapes' alone, as before. */
-            const cc=await csComposite(key,fc,year,mon,day);
+            const cc=await csComposite(key,fc,year,mon,day,side);
             return cc||{ key, fc, corr:false, tier:'cshapes' }; } } }
       /* (hist-coverage-expansion) below CShapes, the composed world — OHM, then Cliopatria, then the
          sheet, each on the ground the ones above leave. Null (a record that could not be read) falls
@@ -2316,7 +2378,7 @@ export function timeBorders(HOST){
       if(r.modern){ clear(); return; }
       /* (#R140) the same collection already on screen: don't re-push it — and don't silently give up when the style is
          mid-load, retry once ready instead of latching absent borders */
-      if(shownY===r.key&&shownCorr===r.corr){ _drawnWhen=when; try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }
+      if(shownY===r.key&&shownCorr===r.corr){ _drawnWhen=when; try{ if(ensure()){ window._applyBorders(); _receipt(when); } else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()){ window._applyBorders(); _receipt(when); } }); }catch(_){} return; }
       shownY=r.key; shownCorr=r.corr; shownSheet=(r.sheet!=null)?r.sheet:null; _drawnWhen=when; apply(r.fc);
       } finally { if(my===seq||!active) _turnClose(); } }   /* (deep-tier-reds) the turn this instant's subdivisions wait on */
     IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */

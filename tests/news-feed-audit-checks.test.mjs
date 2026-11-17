@@ -126,7 +126,16 @@ test('R372 ④ the nightly cannot be cancelled by a merge — and push/PR are by
     /* ⚠ THE OTHER HALF OF THE ASSERTION. Every other event must still fall through to github.ref,
        or this "fix" would stop a new commit from superseding an in-flight run on the same branch. */
     assert.match(g[1], /\|\|\s*github\.ref/, `${f}: everything else still keys on github.ref`);
-    assert.match(y, /cancel-in-progress:\s*true/, `${f}: newer commits still supersede older runs`);
+    /* (deploy-cancel-chain) ci.yml no longer cancels on a PUSH TO MAIN: seven merges 3-13 min apart each cancelled
+       the previous run, so a burst published nothing unless its last run was green. The fact this test guards —
+       "a newer commit supersedes an older in-flight run" — still holds for every other event, so ci.yml's value
+       is the expression that is true for all of them; security.yml keeps the plain `true`. */
+    if (f.endsWith('/ci.yml')) {
+      assert.match(y, /cancel-in-progress:\s*\$\{\{\s*!\(\s*github\.event_name\s*==\s*'push'\s*&&\s*github\.ref\s*==\s*'refs\/heads\/main'\s*\)\s*\}\}/,
+        `${f}: everything but a push to main still supersedes older runs`);
+    } else {
+      assert.match(y, /cancel-in-progress:\s*true/, `${f}: newer commits still supersede older runs`);
+    }
   }
 });
 

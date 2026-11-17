@@ -22,7 +22,7 @@ import { problems } from './data-assets.mjs';
 import { join, relative, resolve, isAbsolute } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { testFiles, planShards, parseShard } from './checks-shards.mjs';
+import { testFiles, planShards, parseShard, readLedger } from './checks-shards.mjs';
 
 /* ⚠ THE ONE PLACE THE SUITE'S FILE SET IS WRITTEN. CI must not name files of its own — a second
    list is how `npm test` and CI stop running the same thing (#R166). */
@@ -56,6 +56,12 @@ function takeFlag(argv, name) {
 export function offlineEnv(root, env = process.env) {
   const flag = '--import=' + pathToFileURL(join(root, 'tests', 'helpers', 'offline.mjs')).href;
   return { ...env, NODE_OPTIONS: [env.NODE_OPTIONS, flag].filter(Boolean).join(' ') };
+}
+
+/* the per-test ceiling of main() below: 3 × the slowest file the ledger has measured (null when it has none) */
+export function testTimeoutMs(seconds) {
+  const worst = Math.max(0, ...Object.values(seconds || {}).filter(Number.isFinite));
+  return worst > 0 ? Math.ceil(worst * 3 * 1000) : null;
 }
 
 function main() {
@@ -101,6 +107,22 @@ function main() {
        '--test-reporter=' + pathToFileURL(join(ROOT, 'scripts', 'checks-timing-reporter.mjs')).href,
        '--test-reporter-destination=' + timings]
     : [];
+  /* ⚠ (checks-hang-named) A HANG MUST HAVE A NAME. Without a per-test timeout, one stuck test keeps its file's child alive
+     until the job's own timeout-minutes cancels the whole shard — measured twice on 2026-11-15 (PR #1143 Regression
+     3/3, PR #1145 Regression 1/3: the log stops after watch-account-product and «The operation was canceled» 48 and
+     45 minutes later, naming nothing). So every test gets a ceiling derived from the ledger, not written by hand:
+     3 × the slowest FILE ever measured (a single test cannot take longer than its whole file did). Observation: the
+     ledger's maximum was 396.9 s on 2026-11-16 → ~20 min, inside the 60-minute job. Expires by itself: it follows
+     .github/checks-cost.json. A caller that passes its own --test-timeout keeps it. */
+  if (!argv.some((a) => a === '--test-timeout' || a.startsWith('--test-timeout='))) {
+    const ms = testTimeoutMs(readLedger().seconds);
+    if (ms) argv.unshift('--test-timeout=' + ms);
+  }
+  /* ⚠ NOT --test-force-exit. It would also end the leaked handle's file, but it ends files on an empty event loop
+     while a test still awaits a promise that holds no handle — measured on tests/maplibre-6-migration-checks.test.mjs:
+     5 tests pass without it, 3 vanish with it («Promise resolution is still pending but the event loop has already
+     resolved»). A file kept alive by a leaked timer still holds its shard; what this changes is that the stuck test is
+     NAMED in the log within its ceiling, so the leak can be found and fixed where it is. */
   const r = spawnSync(process.execPath, ['--test', ...reporters, ...argv, ...targets],
     { stdio: 'inherit', cwd: shardSpec != null ? ROOT : undefined, env: offlineEnv(ROOT) });
   if (r.error) throw r.error;

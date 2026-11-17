@@ -2246,6 +2246,8 @@ export function makeGisRaster() {
           /* The sampler's own declaration survives if it made one; otherwise null — 「宣言が無い」,
              which is not 「欠損が無い」, and the NaNs written below are missing regardless. */
           nodata: isNum(bandSpec.nodata) ? bandSpec.nodata : null,
+          /* what the numbers MEAN, when somebody stated it (js/gis-units.js quantity) — carried, never inferred */
+          ...((bandSpec.quantity && typeof bandSpec.quantity === 'object') ? { quantity: bandSpec.quantity } : {}),
         }],
         grid: grid,
         read: (i) => ((i == null ? 0 : i) === 0 ? data : null),

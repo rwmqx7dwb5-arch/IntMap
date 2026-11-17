@@ -494,7 +494,15 @@ export function makeGisSources() {
            drawn or not; sup() builds one out of the registration (js/gis-layers.js supplierFor), so
            this is the row answering about itself rather than a list kept here. */
         const rec = sup(id);
-        out.push(entry(id, st.label == null ? id : String(st.label), (rec && rec.fetch) ? 'features' : 'grid', null));
+        /* ⚠ AND A ROW WITHOUT A SUPPLIER IS ASKED THE SAME QUESTION. Measured 2026-11-16: earthquakes,
+           ships, aircraft, news, webcams, satellites and data centres — features rows with no supplier —
+           were listed as `grid` while undrawn, and acquiring `layer:earthquakes` came back
+           `bad-param width` instead of the named `layer-not-visible`. The registration states which
+           doors it has (js/map-ui.js payloadOf); only a row that states nothing stays a field candidate. */
+        let said = null;
+        try { said = (R && typeof R.payloadOf === 'function') ? R.payloadOf(id) : null; } catch (_) { said = null; }
+        const kind = (rec && rec.fetch) ? 'features' : (said === 'features' ? 'features' : 'grid');
+        out.push(entry(id, st.label == null ? id : String(st.label), kind, null));
       }
       return out;
     }
@@ -1176,6 +1184,9 @@ export function makeGisSources() {
           /* the caller's declaration, then the supplier's; `nodata` is a statement about what the
              numbers MEAN, so it is never invented when neither of them made one */
           nodata: (bandSpec.nodata !== undefined) ? bandSpec.nodata : ((supBand.nodata !== undefined) ? supBand.nodata : ans.nodata),
+          /* the supplier's statement of what a cell MEANS (a density, a count …) travels with the band,
+             so zonal / profile judge the arithmetic by it instead of by silence */
+          quantity: (bandSpec.quantity != null) ? bandSpec.quantity : ((supBand.quantity != null) ? supBand.quantity : null),
         },
         sample: () => null,
       });

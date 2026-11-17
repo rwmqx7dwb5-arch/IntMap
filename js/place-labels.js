@@ -721,7 +721,10 @@ export function placeLabels(HOST){
        record runs to today. Between those, one flag would have shown `ofm-admin1` AND `imta-lbl` at
        once — today's prefecture name printed beside the era's, on the same point. Each layer is
        hidden by ITS OWN time machine. */
-    const _travelingAdm=!!(window.IntMapTimeAdmin1&&window.IntMapTimeAdmin1.active&&window.IntMapTimeAdmin1.active());
+    /* (hist-modern-admin) …except where the date's subdivisions ARE today's: js/time-admin1.js narrows this layer to
+       those names (`presentNames`) and shows it, so a past date names an unchanged prefecture exactly as Now does */
+    const _TA=window.IntMapTimeAdmin1;
+    const _travelingAdm=!!(_TA&&_TA.active&&_TA.active()&&!(_TA.presentNames&&_TA.presentNames().length));
     ['ofm-country','ofm-admin1','ofm-city','ofm-other'].forEach(id=>{ if(!GE().layers.has(id)) return;
       const _showThis=((id==='ofm-country'&&_travelingLbl)||(id==='ofm-admin1'&&_travelingAdm))?false:show;
       GE().layers.setLayout(id,'visibility',_showThis?'visible':'none');

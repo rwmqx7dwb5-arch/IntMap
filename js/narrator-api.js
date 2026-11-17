@@ -4,7 +4,7 @@
  *  js/map-narrator.js (eager) fills this in when the shell builds it; js/map-reader.js and js/offline-maps.js (lazy) read it:
  *    say        write the one live region (the narrator is its only writer)
  *    summarise  the narrator's short paragraph for the view as it is now
- *    enrich     set while the reading mode is on: turns the settled summary into the fuller paragraph
+ *    enrich     set while the reading mode is on: (summary, current) → the fuller paragraph; `current()` is true while it will still be said
  *    resettle   ask the narrator to speak again once the view has settled
  *    host       the shell's IM_HOST (its `lang` is the reader's language)
  *    engine     the renderer, as the shell handed it to the narrator (a function — the same one it calls)

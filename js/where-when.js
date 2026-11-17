@@ -382,6 +382,31 @@ export function histCandidates(place, when, lang) {
   return out.sort((a, b) => b.level - a.level).slice(0, 12);
 }
 
+/**
+ * (text-to-era-map) ONE NAME AS IT WAS CALLED AT AN INSTANT — the historical rung of js/atlas-map-compose.js.
+ * The same records and the same identity test as the search field (`histCandidates`, `samePlace`); only WHOLE-NAME
+ * matches count (a prefix is a suggestion to a typist, not a reading of a text), and when two different places answer
+ * to the name nothing is chosen: the candidates come back so the caller can say which, or say it could not.
+ * @param {string} name
+ * @param {string|object} era   a line `parse` reads («1689», «58 BC», 「元禄2年」) or a reading it returned
+ * @returns {Promise<{ok:true,lng:number,lat:number,name:string,source:string,note:string,id?:any}
+ *   | {ok:false,reason:'era_unreadable'|'not_in_records'|'ambiguous',candidates?:object[]}>}
+ */
+export async function placeAt(name, era, lang) {
+  /* an object with no year is «no particular instant»: the records are asked for the name at any time they hold it */
+  const when = (era && typeof era === 'object') ? (era.y == null ? null : era) : parse(String(era == null ? '' : era)).when;
+  if (!when && !(era && typeof era === 'object')) return { ok: false, reason: 'era_unreadable' };
+  await ensureHist();
+  const exact = histCandidates(String(name == null ? '' : name).trim(), when, lang).filter((c) => c.level >= 2.5);
+  if (!exact.length) return { ok: false, reason: 'not_in_records' };
+  /* one place, however many records carry it: a city record's own guard is the identity test */
+  const groups = [];
+  exact.forEach((c) => { const g = groups.find((x) => x.some((y) => samePlace(y, c))); if (g) g.push(c); else groups.push([c]); });
+  if (groups.length > 1) return { ok: false, reason: 'ambiguous', candidates: groups.map((g) => ({ name: g[0].name, lng: g[0].lng, lat: g[0].lat, source: g[0].source, note: g[0].note })) };
+  const g = groups[0], pick = g.find((c) => c.source === 'histCities') || g[0];
+  return { ok: true, lng: pick.lng, lat: pick.lat, name: pick.name, source: pick.source, note: g.map((c) => c.note).filter(Boolean).join(' · '), id: pick.id };
+}
+
 /* great-circle metres (the hist-cities guard is in metres — js/hist-cities.js `metres`) */
 function metres(aLon, aLat, bLon, bLat) {
   const R = Math.PI / 180, dLat = (bLat - aLat) * R, dLon = (bLon - aLon) * R;

@@ -508,6 +508,13 @@ export function makeGisLayers() {
       const key = String(id == null ? '' : id);
       if (!key) return null;
       const R = REG();
+      /* ⚠ A ROW THAT ANSWERS A WHOLE WINDOW ITSELF IS SUPPLIED BY THAT. Without it the only road for a
+         field was js/gis-sources.js's per-pixel walk through the registry's one-position door — for
+         the Open-Meteo rows one HTTP request per pixel (measured 2026-11-16). The registration states
+         the door (js/map-ui.js regionOf); nothing here names an id. */
+      let win = null;
+      try { win = (R && typeof R.regionOf === 'function') ? R.regionOf(key) : null; } catch (_) { win = null; }
+      if (typeof win === 'function') return { sync: false, where: false, cursor: false, limit: false, fields: false, region: win };
       if (!R || typeof R.declarationOf !== 'function' || typeof R.featuresIn !== 'function') return null;
       let d = null;
       try { d = R.declarationOf(key); } catch (_) { d = null; }

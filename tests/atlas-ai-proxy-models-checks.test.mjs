@@ -267,7 +267,7 @@ const AICORE = RAW('js/ai-core.js');
 test('R736 ③: the model every account gets — the developer account included — is Terra', () => {
   /* (tests-by-topic) the constants are imported, not matched in the source text */
   const dflt = OPENAI_DEFAULT_MODEL;
-  assert.equal(dflt, 'gpt-5.6-terra');
+  assert.equal(dflt, 'gpt-6.1-sol');   /* (atlas-gpt6-models) the user's instruction of 2026-11-16: Sol → Terra → Luna, latest point releases */
   /* the ladder under it may not start at the model it is the ladder FOR */
   const chain = FALLBACK_CHAIN.slice();
   assert.ok(chain.length >= 1, 'there is still a ladder');

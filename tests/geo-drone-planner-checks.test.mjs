@@ -54,8 +54,10 @@ describe('§ #R174 · the drone planner', () => {
     /* (module-graph) src/main.js loads the shell, the shell imports the factory BY NAME (a missing export is
        a link error) and calls it with the host */
     assert.match(idx, /import '\.\.\/js\/app-body\.js';/, 'the shell is loaded by the Vite entry (#R175)');
-    assert.match(idx, /^import \{ droneNav \} from '\.\/drone-nav\.js';/m, 'the file is loaded by the shell');
-    assert.match(idx, /(?<![\w.$])droneNav\((IM_HOST)\)/, 'and instantiated');
+    /* (startup-weight) the planner is fetched on demand: the registry loads the file and instantiates the factory with the host */
+    const lazy = readFileSync(new URL('../js/lazy-modules.js', import.meta.url), 'utf8');
+    assert.match(lazy, /\bdrone: \{ publishes: 'IntMapDrone', load: \(\) => import\('\.\/drone-nav\.js'\)/, 'the file is fetched by the registry');
+    assert.match(lazy, /\bm\.drone\(IM_HOST\)/, 'and instantiated');
     /* (#R176) 「DronesはMeasureに置くな。どこにも置くな。」 — the launcher was removed from the Measure menu
        AND from the mobile tools sheet. The planner itself is untouched: the assertions above (loaded,
        instantiated) and the Atlas ones below are what keep the feature alive. */
@@ -122,7 +124,7 @@ describe('§ #R174 · the drone planner', () => {
       mocks: { 'js/geo-engine.js': { IntMapGeoEngine: w.IntMapGeoEngine } },
     });
     pageStore = ls;
-    const real = M.droneNav(HOST);
+    const real = M.drone(HOST);
     const api = new Proxy(real, {
       get: (t, k) => (typeof t[k] === 'function' ? (...a) => { pageStore = ls; return t[k](...a); } : t[k]),
     });

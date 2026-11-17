@@ -37,7 +37,7 @@ export default [
     },
   },
   {
-    row: ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    ''],
+    row: ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    'radiation'],
     science: 'radiation',
     /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
        through js/atlas-reasoning.js `scenarioModels`. `subject` is the argument the place goes in, `baselineParam` the one an instant goes in
@@ -324,7 +324,7 @@ export default [
     },
   },
   {
-    row: ['sim.sunPosition',            'sun',            'shadow,shadows,sunlight,sunPosition,daylight,insolation',     'sim',     'sim',     'map.sun',                'map',                 'session', 'none',   'point',    ''],
+    row: ['sim.sunPosition',            'sun',            'shadow,shadows,sunlight,sunPosition,daylight,insolation',     'sim',     'sim',     'map.sun',                'map',                 'session', 'none',   'point',    'sun'],
     science: 'sun',
     doc: [
       { in: 'sunlight', at: 20, text: '{"type":"sun"} instead. BOTH OF THEM NEED A POINT: give "place" or "lng"/"lat", or let the spot the user tapped on the map supply it. Neither falls back to the map centre any more — every number they print is a function of one coordinate — so an action with no point at all is answered with a question rather than with a guess.\n' },
@@ -413,7 +413,7 @@ export default [
     },
   },
   {
-    row: ['sim.sunHours',               'sunHours',       'shadeHours,terrainShadow,solarHours,insolationYear',          'sim',     'sim',     'map.sunhours',           'map',                 'session', 'none',   'point',    ''],
+    row: ['sim.sunHours',               'sunHours',       'shadeHours,terrainShadow,solarHours,insolationYear',          'sim',     'sim',     'map.sunhours',           'map',                 'session', 'none',   'point',    'sun'],
     science: 'sun',
     doc: [
       { in: 'sunlight', at: 10, text: '{"type":"sunHours","place"?:str,"lng"?:num,"lat"?:num,"solstice"?:bool,"terrainOnly"?:bool} = the Sun & shadow panel\'s terrain half. Without options it analyses ONE POINT for a whole year: it builds a 360° horizon from the real elevation model (with earth curvature and refraction) and steps a year of sun positions against it, giving the annual sunlight hours, how many hours the terrain costs compared with an open horizon, the hours on the winter solstice / summer solstice / equinox, the days a year with no sun at all, the hours a solar panel could work and the clear-sky direct-beam total in kWh/m². "solstice":true instead paints every cell in view that the sun NEVER reaches on the winter solstice; "terrainOnly":true just switches the live terrain-shadow (mountain shade) overlay on. Use for "この土地の年間日照時間は", "冬至にこの家に日は当たる", "山影がかかるのはどこ", "how many hours of sun does this valley get", "solar potential here". For BUILDING shadows at one moment, use ' },

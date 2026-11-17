@@ -310,17 +310,23 @@ test('R201 ③ space is reached by continuing to zoom out, and left by continuin
   /* on the floor it fills, and says so, and only then crosses */
   await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ zoom: window.IntMapGeoEngine.camera.getMinZoom() }));
   await page.waitForFunction(() => window.IntMapSpace.atFloor(), null, { timeout: 20_000 });
+  /* ⚠ ONE GESTURE, SO ONE evaluate. The integral forgets a gesture after OVER_DECAY (js/space-approach.js, 900 ms of no
+     input) — that is the product's rule for «the reader stopped». The second half of the pushes used to be sent in a
+     second page.evaluate after the assertions below, so on a loaded runner the round trip between the two could exceed
+     the decay: the integral reset, four pushes made 1.0 of a 1.6 trigger, and the wait for `open` timed out at 40 s
+     (nightly 2026-11-05, 44.5 s). The state is read mid-gesture, inside the same task, and asserted afterwards. */
   const filling = await page.evaluate(() => {
     window.IntMapSpace._pushOut(0.5); window.IntMapSpace._pushOut(0.5);
     const s = window.IntMapSpace.state();
-    return { over: s.overzoom, trigger: s.overTrigger, gauge: s.gaugeVisible, open: s.open };
+    const mid = { over: s.overzoom, trigger: s.overTrigger, gauge: s.gaugeVisible, open: s.open };
+    window.IntMapSpace._pushOut(0.5); window.IntMapSpace._pushOut(0.5);
+    return mid;
   });
   expect(filling.over, 'the integral is filling').toBeGreaterThan(0);
   expect(filling.over, 'and one flick is not a launch').toBeLessThan(filling.trigger);
   expect(filling.gauge, 'the gauge says what the gesture is doing').toBe(true);
   expect(filling.open, 'still on the map').toBe(false);
 
-  await page.evaluate(() => { window.IntMapSpace._pushOut(0.5); window.IntMapSpace._pushOut(0.5); });
   await page.waitForFunction(() => window.IntMapSpace.state().open, null, { timeout: 40_000 });
   await page.waitForFunction(() => { const s = window.IntMapSpace.state(); return s.stars > 1000; }, null, { timeout: 60_000 });
   const opened = await page.evaluate(() => window.IntMapSpace.state());

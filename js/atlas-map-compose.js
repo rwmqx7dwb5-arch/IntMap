@@ -69,6 +69,11 @@ export function makeAtlasMapCompose(deps) {
     const verifyPlaces = deps.verifyPlaces;   /* async (names[], ms) -> Map<name, {found,lat,lng,kind,country,altNames,confidence,webUsed}|null> */
     const verifyStrong = (typeof deps.verifyStrong === 'function') ? deps.verifyStrong
       : ((gv) => !!(gv && gv.found && gv.webUsed && (gv.confidence == null || gv.confidence >= 0.5)));
+    /* (text-to-era-map) THE NAME AS IT WAS CALLED THEN. With `a.era` the records of historical city names and Pleiades'
+       ancient places are asked BEFORE today's gazetteer — js/where-when.js `placeAt`, the search field's own reading —
+       because 「江戸」 or «Lutetia» put to a modern gazetteer is a question about today, and its answer can be a stranger.
+       async (name, era, lang) -> {ok, lng, lat, name, source, note} | {ok:false, reason, candidates?} */
+    const histResolve = deps.histResolve;
     const ledger = deps.ledger || null;       /* js/atlas-geo-ledger.js */
     const geoObject = deps.geoObject || null; /* js/atlas-geo-object.js — provenance classes */
     const dispatch = deps.dispatch;           /* the console's dispatch, for fills (highlight) */
@@ -122,6 +127,7 @@ export function makeAtlasMapCompose(deps) {
     let artifact = { id: '', revision: 0 };
     let soloSeq = 0;           /* composes that arrive with no turn to belong to (a bare dispatch, the node checks) */
     let hoverId = '';
+    let era = null;            /* (text-to-era-map) the current run's `a.era`; read by resolveOne */
     let mapBound = false;
 
     const str = (v, n) => { const s = String(v == null ? '' : v).trim(); return n ? s.slice(0, n) : s; };
@@ -281,8 +287,11 @@ export function makeAtlasMapCompose(deps) {
       try {
         const id = str(it.stableId || it.geoId || it.id, 80);
         if (id) e = ledger.resolve(id, {});
-        if (!e) e = ledger.resolve(it.name, { kind: str(it.kind, 40) || undefined });
-        if (!e && it.name) e = ledger.resolve(it.name, {});
+        /* (text-to-era-map) an explicit `as` is Atlas saying which place the label means NOW — the ledger's memory of the
+           bare label (measured: 「草加」 filed as a neighbourhood 50 km off) must not answer in its place */
+        const key = str(it.as, 120) || it.name;
+        if (!e) e = ledger.resolve(key, { kind: str(it.kind, 40) || undefined });
+        if (!e && key) e = ledger.resolve(key, {});
       } catch (_) { e = null; }
       return (e && e.lng != null && e.lat != null) ? e : null;
     }
@@ -296,7 +305,7 @@ export function makeAtlasMapCompose(deps) {
        as 「君津製鉄所」 with the country stripped off — a DIFFERENT question from the one that failed.
        One function, so the two rungs cannot drift. */
     function queries(it) {
-      const name = str(it.name, 120);
+      const name = str(it.as, 120) || str(it.name, 120);   /* (text-to-era-map) `as` is the form to look up when the label is the text's own spelling */
       const country = str(it.country, 90);
       return (country && norm(name).indexOf(norm(country)) < 0) ? [name + ', ' + country, name] : [name];
     }
@@ -309,6 +318,22 @@ export function makeAtlasMapCompose(deps) {
       if (known) {
         return { ok: true, lng: known.lng, lat: known.lat, canonical: known.canonicalName || known.name, cc: known.countryCode || '',
           provenance: known.provenance || (isArea(known.kind || kind) ? 'resolved_place_centroid' : 'geocoded_point'), bbox: known.bbox || null, source: 'ledger', stableId: known.stableId };
+      }
+      /* (text-to-era-map) the historical rung: the spelling in the text first, then the form Atlas gave in `as`.
+         ⚠ TWO PLACES UNDER ONE NAME ARE NOT RESOLVED BY THE GAZETTEER EITHER: with no `country` to tell them apart the
+         item is `ambiguous` and the candidates go back to Atlas — today's gazetteer would only pick one of them silently. */
+      if (era && typeof histResolve === 'function') {
+        let hist = null;
+        for (const nm of [name, str(it.as, 120)].filter((x, k, arr) => x && arr.indexOf(x) === k)) {
+          let h = null;
+          try { h = await withTimeout(histResolve(nm, era), Math.max(0, Math.min(ITEM_TIMEOUT_MS, deadline - now()))); } catch (_) { h = null; }
+          if (h && h.ok && num(h.lng) != null && num(h.lat) != null) {
+            return { ok: true, lng: +h.lng, lat: +h.lat, canonical: str(h.name, 120) || nm, cc: '', provenance: 'historical_record', bbox: null,
+              source: str(h.source, 20) || 'histRecord', histNote: str(h.note, 200), identifiedAs: nm !== name ? nm : '' };
+          }
+          if (h && h.reason === 'ambiguous' && !hist) hist = h;
+        }
+        if (hist && !str(it.country)) return { ok: false, reason: 'ambiguous', candidates: (hist.candidates || []).slice(0, 6) };
       }
       if (typeof geocode !== 'function') return { ok: false, reason: 'no_geocoder' };
       const left = deadline - now();
@@ -329,7 +354,7 @@ export function makeAtlasMapCompose(deps) {
       const bbox = (g.bbox && Array.isArray(g.bbox) && g.bbox.length === 2) ? [g.bbox[0][0], g.bbox[0][1], g.bbox[1][0], g.bbox[1][1]] : null;
       let cc = '';
       try { if (typeof deps.countryCodeAt === 'function') cc = str(deps.countryCodeAt(+g.lng, +g.lat), 3); } catch (_) { cc = ''; }
-      return { ok: true, lng: +g.lng, lat: +g.lat, canonical: str(g.name, 120) || name, cc,
+      return { ok: true, lng: +g.lng, lat: +g.lat, canonical: str(g.name, 120) || name, cc, identifiedAs: str(it.as, 120),
         provenance: isArea(kind) || (bbox && (bbox[2] - bbox[0] > 2 || bbox[3] - bbox[1] > 2)) ? 'resolved_place_centroid' : 'geocoded_point', bbox, source: 'geocode' };
     }
 
@@ -381,14 +406,33 @@ export function makeAtlasMapCompose(deps) {
       } catch (_) { return false; }
     }
 
+    /* (text-to-era-map) where each point of a DATED map came from — the reader is owed the difference between a name the
+       historical record holds at that instant, Atlas's identification of it, and today's gazetteer */
+    function sourceText(r) {
+      const as = r.identifiedAs ? (' → ' + r.identifiedAs) : '';
+      if (r.source === 'histCities') return L('historical city name', '歴史都市名') + as;
+      if (r.source === 'pleiades') return L('ancient place · Pleiades', '古代の地名・Pleiades') + as;
+      if (r.provenance === 'web_verified') return L('web-verified', 'ウェブで確認') + as;
+      if (r.source === 'ledger') return L('placed earlier in this conversation', 'この会話で配置済み') + as;
+      return (as ? L('identified by Atlas', 'Atlas の同定') + as + ' · ' : '') + L("today's gazetteer", '現代の地名辞典');
+    }
+    const WHY = {
+      not_in_text: () => L('not in the text', '文中に無い'),
+      ambiguous: () => L('several places share the name', '同名の場所が複数'),
+      not_found: () => L('not found', '見つからない'),
+      timeout: () => L('ran out of time', '時間切れ'),
+      not_attempted: () => L('ran out of time', '時間切れ'),
+    };
+
     /* ── Legend: the same numbers the markers carry, in the bubble. ─────────────────────────────── */
-    function legendHtml(title, recs, rels, unplaced, fills) {
+    function legendHtml(title, recs, rels, unplaced, fills, dated) {
       const T = str(title, 120);
       let h = '<div class="atl-cmp">';
       h += '<div class="atl-cmp-h">' + esc(T || L('Places on the map', '地図上の場所', 'Orte auf der Karte', 'Места на карте', 'Lugares en el mapa')) + '</div>';
       if (recs.length) {
         h += '<ol class="atl-cmp-l">' + recs.map((r) => '<li data-geo="' + esc(r.id) + '"><span class="atl-geo-n" style="background:' + esc(r.color) + '">' + r.n + '</span>'
-          + '<span class="atl-cmp-nm">' + esc(r.name) + '</span>' + (r.role ? ('<span class="atl-cmp-role">' + esc(r.role) + '</span>') : '') + '</li>').join('') + '</ol>';
+          + '<span class="atl-cmp-nm">' + esc(r.name) + '</span>' + (r.role ? ('<span class="atl-cmp-role">' + esc(r.role) + '</span>') : '')
+          + (dated ? ('<span class="atl-cmp-src">' + esc(sourceText(r)) + '</span>') : '') + '</li>').join('') + '</ol>';
       }
       if (rels.length) {
         h += '<div class="atl-cmp-rels">' + rels.map((x) => '<span class="atl-cmp-rel"><span class="atl-geo-n" style="background:' + esc(x.color) + '">' + x.fromN + '</span>'
@@ -397,7 +441,7 @@ export function makeAtlasMapCompose(deps) {
       }
       const fd = (fills || []).filter((f) => f.ok).map((f) => f.name);
       if (fd.length) h += '<div class="atl-cmp-f">' + esc(L('Shaded', '塗り分け', 'Eingefärbt', 'Заливка', 'Sombreado')) + ': ' + esc(fd.join(', ')) + '</div>';
-      if (unplaced.length) h += '<div class="atl-cmp-un">' + esc(L('Could not be placed', '配置できなかった場所', 'Nicht platzierbar', 'Не удалось разместить', 'No se pudo ubicar')) + ': ' + esc(unplaced.map((u) => u.name).join(', ')) + '</div>';
+      if (unplaced.length) h += '<div class="atl-cmp-un">' + esc(L('Could not be placed', '配置できなかった場所', 'Nicht platzierbar', 'Не удалось разместить', 'No se pudo ubicar')) + ': ' + esc(unplaced.map((u) => u.name + (dated && WHY[u.reason] ? ' (' + WHY[u.reason]() + ')' : '')).join(', ')) + '</div>';
       return h + '</div>';
     }
 
@@ -425,6 +469,8 @@ export function makeAtlasMapCompose(deps) {
           exec: { status: 'failed', reason: 'no_items', message: 'compose needs at least one item with a name.' } };
       }
       const composeId = 'c' + (++seq);
+      /* (text-to-era-map) the instant the names are read at — a line js/where-when.js parses, or the reading itself */
+      era = (a.era && (typeof a.era === 'object' || str(a.era))) ? a.era : null;
       const deadline = now() + PASS_BUDGET_MS;
       /* ⚠⚠⚠ (#R551) WHICH MAP THIS IS A REVISION OF — from the EXECUTION CONTEXT, not the arguments.
          The turn id arrives as the third argument js/atlas-executor.js hands every capability and
@@ -501,13 +547,13 @@ export function makeAtlasMapCompose(deps) {
           fills.push({ name: str(it.name, 120), ok: f.ok, reason: f.reason || '' });
         }
         const res = resolved[i];
-        if (!res.ok) { unplaced.push({ name: str(it.name, 120), reason: res.reason, ...(res.tried ? { tried: res.tried } : null), ...(res.verified === false ? { webVerified: false } : null) }); continue; }
+        if (!res.ok) { unplaced.push({ name: str(it.name, 120), reason: res.reason, ...(res.tried ? { tried: res.tried } : null), ...(res.verified === false ? { webVerified: false } : null), ...(res.candidates ? { candidates: res.candidates } : null) }); continue; }
         const sid = fileInLedger(it, res, role);
         const rec = { id: sid || (composeId + ':' + (placed.length + 1)), n: placed.length + 1, name: str(it.name, 120), canonical: res.canonical,
           kind: str(it.kind, 40), country: str(it.country, 90), role: role, color: colour, lng: res.lng, lat: res.lat, provenance: res.provenance,
-          bbox: res.bbox, source: res.source, compose: composeId, artifact: artifactId, revision: revision,
+          bbox: res.bbox, source: res.source, histNote: res.histNote || '', identifiedAs: res.identifiedAs || '', compose: composeId, artifact: artifactId, revision: revision,
           item: i + 1,   /* the 1-based position in THIS call's `items` — what a numeric `from`/`to` refers to (see below) */
-          spellings: [str(it.name, 120), res.canonical].concat(res.altNames || []).filter(Boolean) };
+          spellings: [str(it.name, 120), res.canonical, str(it.as, 120)].concat(res.altNames || []).filter(Boolean) };
         placed.push(rec);
       }
       records = records.concat(placed);
@@ -555,10 +601,10 @@ export function makeAtlasMapCompose(deps) {
       const partial = ok && (missing.length > 0 || skipped.length > 0);
       const exec = { status: ok ? (partial ? 'partial' : 'ok') : 'failed', compose: composeId,
         artifact: artifactId, revision: revision, counts: counts,
-        placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance })),   /* (#R515) `web_verified` = no gazetteer holds this name and a live web search placed it; say where a point came from if it matters to the answer */
+        placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance, ...(era ? { source: r.source, as: r.identifiedAs || undefined, record: r.canonical } : null) })),   /* (#R515) `web_verified` = no gazetteer holds this name and a live web search placed it; say where a point came from if it matters to the answer */
         unplaced: missing, relationsDrawn: drawn.length, relationsSkipped: skipped, fills: fills.length ? fills : undefined,
         note: missing.length ? ("The places listed under `unplaced` are NOT on the map. Say so to the reader; do not describe them as shown. `reason` says WHY, and the three are different problems: `not_found` = the gazetteer holds no feature under the spellings in `tried`, and IntMap will not stand a stranger in for a name it cannot find (#R515). `timeout` / `not_attempted` = the lookup ran out of clock, NOT evidence the place does not exist. `over_item_limit` = more than 24 items were sent and these did not fit. `webVerified:false` means the live-web check was also asked and could not ground the name.\\nTO FINISH THIS MAP, call compose_map ONE more time with the COMPLETE list of places you want shown — the ones already placed AND new spellings for the ones that failed. Re-listing a place that is already placed is FREE: it is in the ledger, so it costs no lookup and no wait. That call becomes the next REVISION of this same map (artifact `{ART}`), it REPLACES this one on the map and in your reply, and the reader sees ONE finished map instead of a draft followed by a correction. Do NOT send only the failures: a revision states the whole map, so anything you leave out disappears from it.\\nIf a different name means the same place — the municipality or ward it is in, its official or local spelling, the facility rather than the district — you may use it. BUT A TOWN IS NOT A FACTORY: if you place a works by naming the city around it, the point is an APPROXIMATE location, and you must say so in your answer rather than let the reader read it as the site itself.").replace('{ART}', artifactId) : undefined };
-      const html = ok ? legendHtml(a.title, placed, drawn, missing, fills) : '';
+      const html = ok ? legendHtml(a.title, placed, drawn, missing, fills, !!era) : '';
       /* ⚠⚠⚠ (#R551) `resultKey` IS WHAT STOPS THE READER SEEING THE DRAFT AND THE FINISHED MAP AT
          ONCE. js/atlas-turn-results.js identifies an operation by its ARGUMENTS unless the result
          declares an identity of its own — and a repair necessarily changes the arguments (that is

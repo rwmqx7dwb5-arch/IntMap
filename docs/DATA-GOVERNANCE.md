@@ -290,7 +290,7 @@ builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-dipl
 |---|---|
 | `build-spacecraft.mjs`（Horizons） | 20 件前後の要求・鍵なし。全応答を確かめ、FLEET の全機が返ったときだけ書く |
 | `build-smallbodies.mjs`（SBDB） | 90 件前後の間隔を空けた要求・鍵なし。行の無い一括検索を拒み、床（100 天体）を書く前に訊く |
-| `build-deepsky.mjs`（SIMBAD） | TAP 4 本・鍵なし。状態・JSON・`data` 配列を確かめ、床（80 天体）を書く前に訊く |
+| `build-deepsky.mjs`（SIMBAD） | TAP 4 本・鍵なし・**1 回の build は 1 つの窓口から**（CDS の正規名 `simbad.cds.unistra.fr` → CDS が名指すミラー CfA・IDIA の順）。状態・JSON・`data` 配列を確かめ、床（80 天体）を書く前に訊く。`source` に答えた窓口を書く |
 | `probe-gibs-range.mjs`（GIBS） | タイル要求のみ・鍵なし。200 と 404 だけが答えで、それ以外は書く前に止まる |
 | `build-who-don.mjs`（WHO） | 公開 API へのページ要求 36 件前後・鍵なし。全ページの状態を確かめる |
 | `build-weekly-earth.mjs`（USGS・NASA EONET、2026-10-04） | 要求 2 件・鍵なし。USGS 自身の件数と EONET の事象の形を確かめてから書き、既にある週は保つ（周期 `P7D`＝記録の単位が ISO 週） |

@@ -123,7 +123,10 @@ test('⑥ Atlas time.polityArc: the page\'s facts; candidates or NOT_FOUND move 
 
 test('⑦ the doors: Chronos, the place card\'s rows (not in a button, not in Atlas\'s bubble), the capability row', async () => {
   assert.match(rd('js/news-timeline.js'), /id='ntl-polityarc'[\s\S]{0,400}import\('\.\/polity-arc\.js'\)\.then\(m=>m\.openArc\(\{ lang:\(\)=>HOST\.lang \}\)\)/);
-  assert.match(rd('js/place-dossier.js'), /k\.indexOf\('pharc:'\) === 0[\s\S]{0,700}import\('\.\/polity-arc\.js'\)\.then\(\(m\) => m\.openArc\(/);
+  /* (news-with-history) the row's door lives in js/place-history.js `historyAction` — the place card and a news event's
+     «This place's past» both press through it */
+  assert.match(rd('js/place-history.js'), /export function historyAction[\s\S]{0,700}import\('\.\/polity-arc\.js'\)\.then\(\(m\) => m\.openArc\(/);
+  assert.match(rd('js/place-dossier.js'), /k\.indexOf\('pharc:'\) === 0[\s\S]{0,500}PH\.historyAction\(/);
   const PH = await importModule('js/place-history.js', { mocks: { 'js/chronos.js': { IntMapTime: clock } } });
   const E = { key: 'q:Q12557', name: 'Mongol Empire', labels: [{ k: 12060101, label: 'Mongol Empire' }], from: { k: 12060101, edge: 'stated', tier: 'clio' }, to: { k: 12940101, edge: 'stated', tier: 'clio' },
     tiers: ['clio'], ids: [{ tier: 'clio', file: 'data/hist-clio.js', id: { qid: 'Q12557' } }], notes: [], sheets: [], realm: false, of: null, life: null, withheld: null, unnamed: false, jump: { k: 12060101 } };

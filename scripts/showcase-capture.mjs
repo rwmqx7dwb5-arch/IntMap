@@ -137,19 +137,6 @@ async function capture(browser, s, { pictures = true, shot = null } = {}) {
   await page.waitForFunction(() => { try { return window.IntMapGeoEngine.canDraw() && window.IntMapLayerHold.pending().length === 0; } catch (_) { return false; } }, null, { timeout: 60000 });
   await page.waitForLoadState('networkidle', { timeout: 45000 }).catch(() => {});
   await page.waitForTimeout(4000);
-  /* the past-date notice (js/layer-time-kernel.js #data-legend-worldtime) is folded with ITS OWN
-     minimise control, as a reader would — it stays on the map, one tap from open, and it is open
-     again for anyone who follows the link (folding is not part of the link) */
-  if (s.at != null) {
-    await page.waitForSelector('#data-legend-worldtime .legend-min', { timeout: 15000 }).catch(() => {});
-    await page.evaluate(() => {
-      const box = document.getElementById('data-legend-worldtime');
-      const b = box && box.querySelector('.legend-min');
-      if (b && !box.classList.contains('legend-collapsed')) b.click();
-    });
-    await page.waitForTimeout(600);
-  }
-
   const link = await page.evaluate(() => window.IntMapBookmark.link());
   const hash = link.slice(link.indexOf('#'));
   /* ⚠ A LINK THAT SAYS MORE THAN THE INTENT IS NOT WRITTEN. The encoder also packs every registered

@@ -100,7 +100,8 @@ test('③ 1950: one name candidate per prefecture, not one per island', () => {
   assert.ok(rings > feats.length * 2, 'the defect needs islands to show: ' + rings + ' rings for ' + feats.length + ' units');
   /* js/time-admin1.js `labelsFor`, lifted and run against the era module the page builds first — with
      `eraBorders`, the one place the file reads that module through the global */
-  const box = vm.createContext({ window: { IntMapTimeBorders: api } });
+  /* (hist-modern-admin) `presentOn` false: no present-day tiles here, so every era name is the era's */
+  const box = vm.createContext({ window: { IntMapTimeBorders: api }, presentOn: () => false });
   const TAsrc = codeOnly(rd('js/time-admin1.js'));
   vm.runInContext(liftFunction(TAsrc, 'eraBorders') + ';' + liftFunction(TAsrc, 'labelsFor'), box);
   const out = box.labelsFor(fc);
