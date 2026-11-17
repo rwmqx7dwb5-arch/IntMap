@@ -470,13 +470,13 @@
     .cp-histnote b{ font-weight:700; }
     /* (#R101) tighter vertical padding so more country cards fit. (#R102) flag+name a little bigger, region/capital a
        little smaller (slash-separated), and the value column carries the number ALONE (no indicator label). */
-    .stat-row{ display:flex; align-items:center; gap:11px; background:var(--card-bg); padding:6px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.14); transition:0.2s; }   /* (#R105) tighter TOP/BOTTOM padding inside the card */
+    .stat-row{ --stat-name-min:5.5rem; display:flex; align-items:center; gap:8px; background:var(--card-bg); padding:6px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.14); transition:0.2s; }   /* (#R105) tighter TOP/BOTTOM padding inside the card */
     /* (#R103) in dark the opaque --card-bg (#1c1c1e) was IDENTICAL to the sidebar (rgb 28,28,30) → country cards had
        zero contrast with the background. Lift the card one elevation step lighter (the frosted-sidebar modes below
        override this with their own frost). */
     [data-theme="dark"] .stat-row{ background:#2a2a2e; }
     .stat-row:hover{ transform:translateX(4px); border-color:var(--primary-color); }
-    .stat-flag{ font-size:30px; line-height:1; } .stat-main{ flex:1; min-width:0; }   /* (#R104) flag a touch larger per request */
+    .stat-flag{ font-size:30px; line-height:1; } .stat-main{ flex:1; min-width:var(--stat-name-min); }   /* (#R104) flag a touch larger per request */
     /* (#R137) optional rank number on the far LEFT of a country card (Settings → default OFF). Fixed width + tabular
        digits so flags/names stay aligned regardless of 1–3 digit ranks. */
     /* (#R139) iOS-style rank numeral: SF Pro Rounded rounded digits, tabular so ranks stay column-aligned, iOS
@@ -2144,6 +2144,16 @@
     /* (countries-companies) A ROW SAYS WHAT ITS TWO GESTURES DO. A click adds the row to the comparison — the round mark
        fills when it is in it — and the details are a visible button, no longer only a double-click to be discovered.
        Shared by the Countries rows (.stat-row) and the Companies rows (.co-row is also a .stat-row). */
+    /* (companies-name-width) THE NAME IS THE COLUMN THAT KEEPS ITS WIDTH. The row is one flex line — rank · pick · logo ·
+       name · value · Details — and when the pick and Details joined it, a live quote time («2026-11-18 01:14», no-wrap) made
+       the value the widest thing that could not shrink, so the only column that could — the name — gave up everything:
+       34 px on production at 1440×900, «A…» «Mi…» «N…» (measured 2026-11-18, build dcd32a0). So the rule is the row's:
+       · the name has a floor, --stat-name-min on .stat-row (5.5rem = 88 px: a 9-letter name such as «Microsoft» at the
+         name's 15 px semibold is about 75 px; longer names still end in an ellipsis, with the full name in the row's title);
+       · the value gives way first — its as-of stamp wraps at its spaces (date over time) instead of holding the line;
+       · the gap between the six columns is 8 px, not 11 (the 11 was set when the row had four).
+       Measured after: 351 px row → name 88 px, value 63 px, nothing spills (tests/companies-name-width.spec.js, also at 390 px). */
+    .stat-val .co-asof{ white-space:normal; }
     .stat-pick{ flex:0 0 auto; width:16px; height:16px; border-radius:50%; border:1.5px solid rgba(128,128,128,0.45); box-sizing:border-box; transition:background .15s,border-color .15s; }
     .stat-row.compare-on .stat-pick{ background:var(--primary-fill,var(--primary-color)); border-color:var(--primary-fill,var(--primary-color)); box-shadow:inset 0 0 0 3px var(--card-bg); }
     [data-theme="dark"] .stat-row.compare-on .stat-pick{ box-shadow:inset 0 0 0 3px #2a2a2e; }

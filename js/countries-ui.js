@@ -272,7 +272,10 @@ export function countriesUi(HOST){
      isStyleLoaded() test only if the host is somehow absent. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* (countries-companies) «(year)» beside a figure is the year THAT value is for — js/country-figures.js; nothing when no writer stated one */
-  const _yt=(s,k)=>{ const y=figureYear(s,k); return y?` (${y})`:''; };
+  /* (companies-name-width) the year AND the source a value is for, printed beside it: «GDP (2023 · World Bank)». A writer that
+     stated no source (life expectancy, internet use) gets its year alone — the card does not name a source nobody stated. */
+  const _asof=(y,src)=>{ const p=[y,src].filter(Boolean); return p.length?` (${p.join(' · ')})`:''; };
+  const _yt=(s,k)=>{ const f=figure(s,k); return f?_asof(f.y,f.src):''; };
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {GDP,HDI,DEM,MILSPEND,STAT_SOURCES,CAPITAL,CURRENCY,LANGS}=IntMapTables;
@@ -758,7 +761,7 @@ export function countriesUi(HOST){
     const _ty=(typeof window!=='undefined'&&window._imTimeYear)||null;
     const _milB=(v)=>'$'+(Math.round(v*10)/10)+'B';
     /* (countries-companies) the year THIS value is for (js/country-figures.js); the travel year only when no writer stated one */
-    const yt=(k)=>{ const y=figureYear(s,k)||_ty; return y?` (${y})`:''; };
+    const yt=(k)=>{ const f=figure(s,k); return escC(_asof((f&&f.y)||_ty,f&&f.src)); };
     const econ=sec(icon('coin')+' '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
       [((s._real||window._imTimeReal)?('GDP · '+TR('real 2011 int$','実質2011年国際ドル','real, int$ 2011','реальный, межд.$ 2011','real int$ 2011')):HOST.t('statGdp'))+yt('gdp'),HOST.fmtMoney(s.gdp)],
       s.gdpPPP?[HOST.t('statGdpPPP')+yt('gdpPPP'),HOST.fmtMoney(s.gdpPPP)]:null,

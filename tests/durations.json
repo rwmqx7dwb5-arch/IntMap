@@ -170,5 +170,6 @@
  "tests/keyboard-and-offline.spec.js": 23,
  "tests/desktop-one-entry.spec.js": 11,
  "tests/atlas-cited-answers.spec.js": 22,
- "tests/countries-companies.spec.js": 18
+ "tests/countries-companies.spec.js": 18,
+ "tests/companies-name-width.spec.js": 25
 }
