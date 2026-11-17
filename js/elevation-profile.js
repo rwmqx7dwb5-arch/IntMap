@@ -33,7 +33,11 @@ export function elevationProfile(HOST){
     /* (#R12) Sample the LOCAL terrarium DEM (includes ocean bathymetry → negative below sea level) so
        the profile is drawn under water too, instead of Open-Meteo elevation which returns 0 over sea. */
     const _z=HOST._demZoomForSpan(dist[dist.length-1]||50);
-    demSampleAll(samples,_z).then(els=>{ _drawProfile(p.querySelector('#elev-profile-body'), samples, dist, els); });
+    /* the panel is reused: a profile overtaken by a newer one draws nothing, and a failure says so instead of
+       leaving «Sampling elevation…» forever */
+    const my=p._imElevSeq=(p._imElevSeq||0)+1;
+    demSampleAll(samples,_z).then(els=>{ if(my!==p._imElevSeq) return; _drawProfile(p.querySelector('#elev-profile-body'), samples, dist, els); },
+      ()=>{ if(my!==p._imElevSeq) return; const b=p.querySelector('#elev-profile-body'); if(b) b.textContent=j?'標高データを取得できませんでした':'No elevation data available'; });
   }
   function _drawProfile(box, samples, dist, els){
     if(!box) return; const j=HOST.lang==='jp';

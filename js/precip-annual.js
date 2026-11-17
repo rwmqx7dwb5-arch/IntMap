@@ -93,29 +93,43 @@ export function precipAnnual(HOST) {
   /* One year, painted into a Mercator canvas. The source is 0.5°, so 2048² is already finer than
      the data — this exists to put an equirectangular grid into the frame MapLibre wants, not to
      invent detail. */
+  /* The source cells are 8-bit codes, so the colour of every code is computed once (256 decodes)
+     instead of once per output pixel (~4M exp/log1p + band scans), and the column → source-x map
+     is the same for every row. The last picture is remembered, so re-selecting the year or the
+     idle retry in paint() does not rebuild it. Same pixels as before. */
+  let lastPic = null;   /* { vals, url } */
   function yearCanvas(y) {
     const vals = yearVals[y]; if (!vals) return null;
+    if (lastPic && lastPic.vals === vals) return lastPic.url;
     const N = 2048, W = yr.width, H = yr.height, LIM = mm.mercator.latLimit;
     const c = document.createElement('canvas'); c.width = c.height = N;
     const cx = c.getContext('2d'); const img = cx.createImageData(N, N);
     const D = img.data;
     const COLS = mm.colors.map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+    const LUT = new Array(256);
+    for (let e = 1; e < 256; e++) LUT[e] = COLS[bandOf(decode(e, yr.logMax))] || COLS[0];
+    const SX = new Int32Array(N);
+    for (let px = 0; px < N; px++) {
+      const lon = (px + 0.5) / N * 360 - 180;
+      SX[px] = Math.min(W - 1, Math.max(0, Math.floor((lon + 180) / 360 * W)));
+    }
     for (let py = 0; py < N; py++) {
       const ym = (1 - 2 * (py + 0.5) / N) * Math.PI;
       const lat = Math.atan(Math.sinh(ym)) * 180 / Math.PI;
       if (lat > LIM || lat < -LIM) continue;
       const sy = Math.min(H - 1, Math.max(0, Math.floor((90 - lat) / 180 * H)));
+      const row = sy * W;
       for (let px = 0; px < N; px++) {
-        const lon = (px + 0.5) / N * 360 - 180;
-        const sx = Math.min(W - 1, Math.max(0, Math.floor((lon + 180) / 360 * W)));
-        const e = vals[sy * W + sx]; if (!e) continue;
-        const col = COLS[bandOf(decode(e, yr.logMax))] || COLS[0];
+        const e = vals[row + SX[px]]; if (!e) continue;
+        const col = LUT[e];
         const o = (py * N + px) * 4;
         D[o] = col[0]; D[o + 1] = col[1]; D[o + 2] = col[2]; D[o + 3] = 255;
       }
     }
     cx.putImageData(img, 0, 0);
-    return c.toDataURL('image/png');
+    const u = c.toDataURL('image/png');
+    lastPic = { vals, url: u };
+    return u;
   }
 
   /* the year bands live in ONE image; `createImageBitmap`'s crop form decodes exactly the band asked
@@ -165,6 +179,7 @@ export function precipAnnual(HOST) {
       if (!ok) { legend(); try { HOST.imToast(IntMapLang.t(HOST.lang, 'Could not load — toggle again later.', '取得できませんでした — 後でもう一度オンにしてください。', 'Laden fehlgeschlagen — später erneut einschalten.', 'Не удалось загрузить — включите позже ещё раз.', 'No se pudo cargar; vuelva a activarlo más tarde.')); } catch (_) { } return; }   /* (fetch-deadline-layer) the reader is told that nothing came; state().manifestFail says why */
       if (year === CLIM) { if (ensure(climURL())) { setVis(true); try { window._raiseLabelLayers && window._raiseLabelLayers(); } catch (_) { } } else { GE().events.once('idle', paint); } legend(); return; }
       loadYear(year).then((got) => {
+        if (!on) return;   /* switched off while the year decoded — painting now would show a layer whose switch is off */
         if (!got) { year = CLIM; paint(); return; }
         const u = yearCanvas(year);
         if (u && ensure(u)) { setVis(true); try { window._raiseLabelLayers && window._raiseLabelLayers(); } catch (_) { } } else { GE().events.once('idle', paint); }

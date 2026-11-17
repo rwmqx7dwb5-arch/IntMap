@@ -489,16 +489,25 @@ const inflight = new Set();
 async function poll(channel, query) {
   if (!ENDPOINT || inflight.has(channel)) return null;
   inflight.add(channel);
+  /* A request that never answers held its channel in `inflight` forever, so every later poll of that
+     channel returned null and the page reported «skipped» rather than a failure. The ceiling is longer
+     than the slowest poll cadence (js/aviation-live.js WORLD_POLL_MS, 20 s) so a slow but live answer
+     is not cut; it covers the body as well as the headers. */
+  const POLL_DEADLINE_MS = 30000;
+  const ac = (typeof AbortController === 'function') ? new AbortController() : null;
+  const deadline = ac ? setTimeout(() => { try { ac.abort(); } catch (_) { } }, POLL_DEADLINE_MS) : null;
   try {
     const url = ENDPOINT + '?ch=' + encodeURIComponent(channel) + (query || '');
     /* (remove-synthetic-planes) a failure carries the vocabulary js/layer-state.js classifies —
        `reason` (network / http / parse) and `status` — so the row can say WHICH failure it was
        rather than one word for every one of them. */
     let r;
-    try { r = await fetch(url, { headers: { accept: 'application/octet-stream' } }); }
+    try { r = await fetch(url, { headers: { accept: 'application/octet-stream' }, signal: ac ? ac.signal : undefined }); }
     catch (e) { throw Object.assign(new Error((e && e.message) || 'network'), { reason: 'network' }); }
     if (!r.ok) throw Object.assign(new Error('http_' + r.status), { reason: 'http', status: r.status });
-    const buf = new Uint8Array(await r.arrayBuffer());
+    let buf;
+    try { buf = new Uint8Array(await r.arrayBuffer()); }
+    catch (e) { throw Object.assign(new Error((e && e.message) || 'network'), { reason: 'network' }); }
     S.provider = r.headers.get('x-intmap-provider') || S.provider;
     /* ODbL requires the source to be named; the NAME travels with the data so a change of
        provider changes what the UI credits without a code change. */
@@ -521,6 +530,7 @@ async function poll(channel, query) {
     const applyMs = performance.now() - t1;
     return { bytes: buf.length, decodeMs, applyMs, counts, seq: msg.seq };
   } finally {
+    if (deadline) clearTimeout(deadline);
     inflight.delete(channel);
   }
 }

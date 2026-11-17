@@ -105,6 +105,9 @@ window.IntMapNavigation = (function () {
   var lastTrafficCheck = 0;
   var _sentPositions = 0;              /* §39 — counted, not asserted about in prose */
   var simHandle = null;
+  /* where a paused simulation was, so resume continues from there at the same speed and clock
+     instead of starting the route over at 1× */
+  var simPausedAt = null;
   var destPlace = null, viaPlaces = [];
   var unsubStore = null;
 
@@ -312,6 +315,7 @@ window.IntMapNavigation = (function () {
     try {
       simHandle = SIM().start(route, {
         speed: opts.speedMultiplier || 1, mode: NS().get().mode, seed: opts.seed,
+        startAlong: opts.startAlong, startAt: opts.startAt,
         onFix: function (f) { onFix(f); },
       });
       return Promise.resolve(true);
@@ -609,12 +613,17 @@ window.IntMapNavigation = (function () {
     return true;
   }
 
-  function pause() { var S = NS(); if (!S.active() && S.state() !== 'ready') return false; stopWatch(); try { VOX().stop(); } catch (_) { } S.to('paused', 'pause'); return true; }
+  function pause() {
+    var S = NS(); if (!S.active() && S.state() !== 'ready') return false;
+    simPausedAt = null;
+    if (simHandle) { try { var p = SIM().progress(); if (p) simPausedAt = { startAlong: p.along, speedMultiplier: p.multiplier, startAt: p.clock }; } catch (_) { } }
+    stopWatch(); try { VOX().stop(); } catch (_) { } S.to('paused', 'pause'); return true; }
   function resume() {
     var S = NS();
     if (S.state() !== 'paused') return false;
     S.to(S.get().route ? 'ready' : 'ready', 'resume');
-    return S.get().simulated ? startSim(S.get().route, {}) : startGPS({});
+    var at = simPausedAt; simPausedAt = null;
+    return S.get().simulated ? startSim(S.get().route, at || {}) : startGPS({});
   }
 
   function recenter() { try { CAM().recenter(); } catch (_) { } NS().setUserPanned(false); return true; }

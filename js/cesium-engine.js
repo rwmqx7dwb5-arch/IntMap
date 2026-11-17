@@ -1956,7 +1956,13 @@ window.IntMapCesiumEngine=(function(){
     }
     removeOrbit(id){
       try{ const O=this._orb&&this._orb[id]; if(!O) return true;
-        this._scene.primitives.remove(O.col); delete this._orb[id]; return true; }catch(_){ return false; }
+        this._scene.primitives.remove(O.col); delete this._orb[id];
+        /* the last orbit gone: release the per-frame listener too (addOrbit reinstalls it) */
+        if(!Object.keys(this._orb).length&&this._orbTick){
+          try{ this._scene.preRender.removeEventListener(this._orbTick); }catch(_){}
+          this._orbTick=null;
+        }
+        return true; }catch(_){ return false; }
     }
     /* ══ (#R341) A CLOUD OF AIRCRAFT — TWO COLLECTIONS, ONE FLEET ═══════════════════════════════
        addOrbit above is the nearest relative and it is NOT the model, for two reasons that are

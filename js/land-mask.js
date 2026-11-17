@@ -82,7 +82,8 @@ window.IntMapLandMask=(function(){
     if(!bits) return null;
     let lo=+lng; if(!isFinite(lo)) return null;
     lo=((lo+180)%360+360)%360-180;                       /* wrap, so a field that crosses ±180 works */
-    const la=Math.max(-90,Math.min(90,+lat||0));
+    let la=+lat; if(!isFinite(la)) return null;            /* a missing latitude is not the equator */
+    la=Math.max(-90,Math.min(90,la));
     let i=Math.floor((lo+180)/360*W); if(i<0) i=0; else if(i>=W) i=W-1;
     let j=Math.floor((90-la)/180*H); if(j<0) j=0; else if(j>=H) j=H-1;
     const k=j*W+i;

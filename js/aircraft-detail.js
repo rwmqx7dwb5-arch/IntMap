@@ -161,20 +161,31 @@ export function aircraftDetail(HOST){
   /* ─── THE PHOTOGRAPH. One request per airframe per session, hits AND misses cached, because the card is
          re-rendered on every 20-second ADS-B refresh and a live feed of 40 aircraft must not become 40
          requests a minute. `seq` drops a reply that arrives after the user has clicked something else. */
-  const photoCache=new Map();
+  /* ⚠ A FAILED REQUEST IS NOT A MISS. «planespotters has no photo of this airframe» is an answer and is cached
+     for the session; a network error, a timeout or a non-2xx (429/5xx) is not — it is remembered for one
+     refresh window only, so one blip no longer means «no photo» until reload, and a refresh does not retry it
+     every 20 s either. The request has a ceiling so a stalled one cannot leave the card searching. */
+  const photoCache=new Map(), photoFailedAt=new Map();
+  const PHOTO_RETRY_MS=60000, PHOTO_DEADLINE_MS=8000;
   let seq=0;
   async function photoFor(hex){
     const k=String(hex||'').toUpperCase(); if(!k) return null;
     if(photoCache.has(k)) return photoCache.get(k);
-    let out=null;
+    const fa=photoFailedAt.get(k); if(fa&&Date.now()-fa<PHOTO_RETRY_MS) return null;
+    let out=null, failed=false;
+    const ac=(typeof AbortController==='function')?new AbortController():null;
+    const tm=ac?setTimeout(()=>{ try{ ac.abort(); }catch(_){} },PHOTO_DEADLINE_MS):null;
     try{
-      const r=await fetch('https://api.planespotters.net/pub/photos/hex/'+encodeURIComponent(k));
-      if(r.ok){ const j=await r.json(); const ph=(j&&Array.isArray(j.photos))?j.photos[0]:null;
+      const r=await fetch('https://api.planespotters.net/pub/photos/hex/'+encodeURIComponent(k),ac?{signal:ac.signal}:undefined);
+      if(!r.ok) failed=true;
+      else{ const j=await r.json(); const ph=(j&&Array.isArray(j.photos))?j.photos[0]:null;
         if(ph){ const im=ph.thumbnail_large||ph.thumbnail||null;
           if(im&&im.src) out={ src:im.src, w:(im.size&&im.size.width)||420, h:(im.size&&im.size.height)||280,
                                link:ph.link||'', by:ph.photographer||'' }; } }
-    }catch(_){ /* offline / blocked — the card simply says there is no photo */ }
-    photoCache.set(k,out); return out;
+    }catch(_){ failed=true; /* offline / blocked / timed out — the card says there is no photo for now */ }
+    finally{ if(tm) clearTimeout(tm); }
+    if(failed){ photoFailedAt.set(k,Date.now()); return null; }
+    photoFailedAt.delete(k); photoCache.set(k,out); return out;
   }
 
   /* ─── the card itself ─── */

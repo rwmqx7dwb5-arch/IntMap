@@ -421,7 +421,13 @@ export function fetchRuptureRing(ev, fetchImpl) {
         zTopKm: isFinite(zTop) ? zTop : null, zBotKm: isFinite(zBot) ? zBot : null,
         ref: (g && g.metadata && g.metadata.reference) ? String(g.metadata.reference) : null };
     })
-    .catch(() => null);
+    /* "this event has no published rupture" is an answer and stays cached; a failed request (HTTP,
+       network, parse) is not, so it is forgotten and the next selection of the event asks again */
+    .catch((e) => {
+      const why = String((e && e.message) || '');
+      if (!/^(no rupture\.json|no polygon|degenerate ring)$/.test(why) && cache[id] === p) delete cache[id];
+      return null;
+    });
   cache[id] = p;
   return p;
 }

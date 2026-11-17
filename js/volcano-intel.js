@@ -788,7 +788,9 @@ export function volcanoIntel(HOST){
         km:haversineKm(c[0],c[1],q.geometry.coordinates[0],q.geometry.coordinates[1]) }));
       const out={ ok:true, rows, radiusKm:radiusKm||50, days:days||30 };
       quakeCache.set(key,out); return out;
-    }catch(e){ const out={ ok:false, rows:[], radiusKm:radiusKm||50, days:days||30 }; quakeCache.set(key,out); return out; }
+    /* a failed request is not an answer: it is returned but not cached, so the next open asks again
+       (caching it kept "nearby quakes" unavailable for that volcano until reload after one timeout) */
+    }catch(e){ return { ok:false, rows:[], radiusKm:radiusKm||50, days:days||30 }; }
   }
 
   /* ══ 7. NEAREST AERODROMES — OpenStreetMap, asked per volcano ══════════════════════════════
@@ -813,7 +815,7 @@ export function volcanoIntel(HOST){
       }).filter(Boolean).filter(a=>a.name||a.icao||a.iata).sort((a,b)=>a.km-b.km).slice(0,12);
       const out={ ok:true, rows, radiusKm:radiusKm||150 };
       aptCache.set(key,out); return out;
-    }catch(_){ const out={ ok:false, rows:[], radiusKm:radiusKm||150 }; aptCache.set(key,out); return out; }
+    }catch(_){ return { ok:false, rows:[], radiusKm:radiusKm||150 }; }   /* not cached — see quakesNear */
   }
 
   /* ══ 8. THE PANEL ══════════════════════════════════════════════════════════════════════════ */
