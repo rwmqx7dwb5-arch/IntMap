@@ -40,7 +40,10 @@ test('① every 2D canvas read back with getImageData is created willReadFrequen
 test('② the sky draws its square stars in one GPU draw, and keeps the canvas loop as the fallback', () => {
   const src = read('js/space-sky.js');
   assert.match(src, /gl\.drawArrays\(gl\.POINTS/, 'one draw call for the field');
-  assert.match(src, /ctx\.drawImage\(field/, 'the field is composited onto #space-canvas, the one canvas the page reads');
+  /* (mobile-map-speed) …and it is SHOWN where it was drawn: copying the WebGL canvas into the 2D one each frame was a GPU read-back */
+  assert.doesNotMatch(src, /drawImage\(\s*field/, 'the field is not copied onto #space-canvas every frame');
+  assert.match(src, /c\.id='space-stars'/, 'the GL canvas is its own page element');
+  assert.match(read('css/intmap.css'), /#space-canvas,#space-stars\{/, 'with the same box as #space-canvas');
   assert.match(src, /stars\.big/, 'the loop paints only the halos and discs when the GPU drew the field');
   assert.match(src, /webglcontextlost/, 'a lost context falls back to the canvas loop instead of a blank sky');
 });
