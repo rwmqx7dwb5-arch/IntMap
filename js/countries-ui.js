@@ -37,6 +37,7 @@ import { IntMapTables } from './tables.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 /* (mobile-performance) the Natural Earth admin-0 files are this site's (data/ne-countries/) — js/ne-countries.js decodes them */
 import { loadNECountries } from './ne-countries.js';
+import * as bus from './bus.js';
 window._imCldrRegion=function(a2,lang){
   try{
     /* ⚠ (#R313 追記2) 追記1 widened this to accept M49 codes so the Atlas chips could name a
@@ -494,7 +495,7 @@ export function countriesUi(HOST){
               HOST.countryGeo=hi; window.countryGeo=hi;
               /* (feature-consolidation) said once, for every reader that built its OWN copy of the outlines from countryGeo
                  (js/wb-layers.js — the World Bank rows): the fine collection replaced the coarse one (#R254) */
-              try{ window.dispatchEvent(new Event('intmap-country-geo')); }catch(_){}
+              try{ bus.emit('intmap-country-geo'); }catch(_){}
               /* ⚠ (#R195) DO NOT PUSH IT AT THE RENDERER UNLESS SOMETHING WILL DRAW IT. The 10 m
                  collection is 258 features and ~548,000 vertices; handing that to the engine rebuilds
                  every feature on the main thread. `country-fill`/`country-line` are created hidden and

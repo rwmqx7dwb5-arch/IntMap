@@ -336,7 +336,7 @@ export function wbLayers(HOST){
     /* (#R254, feature-consolidation) each row builds its own copy of the outlines from countryGeo, so when the 10 m collection
        replaces the 110 m stand-in (js/countries-ui.js says so once) every row on screen repaints on it — otherwise the outline
        current at the moment the row was ticked is kept for the session («国境線が雑い（汚職・腐敗指標）») */
-    try{ window.addEventListener('intmap-country-geo',()=>{ wbOn.forEach(id=>{ const B=wbById[id]; if(B) choroOn(B); }); }); }catch(_){}
+    try{ bus.on('intmap-country-geo',()=>{ wbOn.forEach(id=>{ const B=wbById[id]; if(B) choroOn(B); }); }); }catch(_){}
     /* (map-layer-system) returns a promise that settles when the paint has been done (or given up) — the row's request */
     function choroOn(L){ let fin; const done=new Promise((r)=>{ fin=r; }); wbOn.add(L.id); L=V(L); ensureGeo(geo=>{ if(!geo){ fin(); return; }
       /* (unobserved-is-not-refused) a host silent through every retry is LATE, not empty: say so and paint nothing,
