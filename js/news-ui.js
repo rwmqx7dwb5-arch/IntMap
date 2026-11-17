@@ -126,6 +126,16 @@ export function newsUi(HOST){
     if(a===today)return `${TODAY} ${time}`; if(a===yest)return `${YEST} ${time}`; const[,M,D]=a.split('-'); return `${+M}/${+D} ${time}`; }
 
   let hoveredNewsId=null, hoveredDashId=null;
+  /* (news-map-legibility) the band drawn LEFT of its pin (see setupIntelLayers) */
+  const NEWS_BAND_L='news-labels-left';
+  /* ══ (news-map-legibility) THE NEWS PIN ══════════════════════════════════════════════════════════
+     「白縁が強く、欧州・東アジアで白い輪の集まりが目立つ」. The dot was 7 px with a 2 px opaque white rim and
+     grew to 10 only on hover; nothing marked the event whose detail is open. A resting pin is now 6 px with a
+     1 px rim at 70 % white; a HOT pin (hovered, or the event whose detail is open) is 8 px with the old opaque
+     2 px rim — the emphasis the resting pins gave up. js/map-typography.js `BAND.lead` (13) must clear the hot
+     pin's outer edge (8 + 2), because the open event's band stays beside it. Design numbers of this request;
+     they lapse if the reader asks for another weight. */
+  const NEWS_PIN={ r:6, rim:1, rimA:0.7, rHot:8, rimHot:2 };
 
   function setupIntelLayers(){
     /* (#R161 MapLibre reduction, Phase 3) the NEWS overlay is created through IntMapGeoEngine, reached
@@ -150,8 +160,13 @@ export function newsUi(HOST){
         'circle-opacity':0.18,
         'circle-stroke-width':0
       }});
+      const MTy=window.IntMapMapTypography;   /* the band's size, place and padding: js/map-typography.js BAND */
+      /* (news-map-legibility) a HOT pin is the hovered one or the event whose detail is open (`sel`, written by
+         js/map-typography.js declutterNewsBands); a resting pin is smaller with a thin, translucent rim so a
+         dense cluster stops reading as a cluster of white rings. Sizes: NEWS_PIN above. */
+      const HOT=['any',['boolean',['feature-state','hover'],false],['boolean',['feature-state','sel'],false]], P=NEWS_PIN;
       GE().layers.add({id:'news-dots',type:'circle',source:'news-points',paint:{
-        'circle-radius':['case',['boolean',['feature-state','hover'],false],10,7],
+        'circle-radius':['case',HOT,P.rHot,P.r],
         'circle-color':['match',['get','mapped'],
           'true','#007aff',
           'publisher','#5856d6',
@@ -162,13 +177,14 @@ export function newsUi(HOST){
           'publisher',0.85,
           'none',0.5,
           0.5],
-        'circle-stroke-width':2,
-        'circle-stroke-color':'#ffffff'
+        'circle-stroke-width':['case',HOT,P.rimHot,P.rim],
+        'circle-stroke-color':'#ffffff',
+        'circle-stroke-opacity':['case',HOT,1,P.rimA]
       }});
       /* Title preview "band" to the right of the pin; hidden when hovered (popup takes over).
          (#R15) Shown for publisher-located pins too, not just subject pins. */
-      const MTy=window.IntMapMapTypography;   /* the band's size, place and padding: js/map-typography.js BAND */
-      GE().layers.add({id:'news-labels',type:'symbol',source:'news-points',layout:{   /* (#R15c) band on ALL pins incl. not-yet-located */
+      /* (news-map-legibility) the layout and paint are named so the mirrored band below is built FROM them */
+      const bandLayout={   /* (#R15c) band on ALL pins incl. not-yet-located */
         'text-field':['get','short'],
         'text-size':window.IntMapLabelScale.sub(MTy.BAND_W),
         'text-font':['literal',['Noto Sans Regular']],
@@ -194,13 +210,22 @@ export function newsUi(HOST){
         'icon-allow-overlap':true,
         'icon-ignore-placement':true,
         'icon-optional':false
-      },paint:{
+      }, bandPaint={
         'text-color':'#ffffff',
         'text-halo-color':'rgba(0,0,0,0)',
         'text-halo-width':0,
-        'text-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]],
-        'icon-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]]
-      }});
+        'text-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['all',['boolean',['feature-state','bnd'],false],['!=',['feature-state','side'],'L']],1,0]],
+        'icon-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['all',['boolean',['feature-state','bnd'],false],['!=',['feature-state','side'],'L']],1,0]]
+      };
+      GE().layers.add({id:'news-labels',type:'symbol',source:'news-points',layout:bandLayout,paint:bandPaint});
+      /* (news-map-legibility) THE MIRRORED BAND — 「右端で文章が切れている」. A symbol's anchor and offset are LAYOUT
+         properties, which feature-state cannot drive, so the band that sits LEFT of its pin is a second layer:
+         the same definition with the text anchored right and the offset negated, shown iff the declutter put it
+         there (`side` 'L'). Every other property is read from `bandLayout` / `bandPaint`, so the two cannot drift apart. */
+      const shownL=['case',['boolean',['feature-state','hover'],false],0,['case',['all',['boolean',['feature-state','bnd'],false],['==',['feature-state','side'],'L']],1,0]];
+      GE().layers.add({id:NEWS_BAND_L,type:'symbol',source:'news-points',
+        layout:Object.assign({},bandLayout,{'text-anchor':'right','text-offset':MTy.bandOffset('L')}),
+        paint:Object.assign({},bandPaint,{'text-opacity':shownL,'icon-opacity':shownL})});
       GE().events.on('moveend',HOST.scheduleNewsDeclutter); GE().events.on('zoomend',HOST.scheduleNewsDeclutter);
       /* If pins were accumulated before map.load, flush them now. */
       if(HOST.newsFeatures.length){ GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} }
@@ -312,8 +337,9 @@ export function newsUi(HOST){
     });
     /* (#R37) The BAND (news-labels = the place-name pill) is the big, natural tap target — make it clickable
        too, not just the tiny dot ("地名ラベルを押しても反応しない"). */
-    GE().events.onLayer('click','news-labels',e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(HOST.isMobile()){ _showMobileNewsPopup(p); return; } _openNewsFeature(p); });
-    GE().events.onLayer('mousemove','news-labels',e=>{ if(!e.features.length) return; GE().render.setCursor('pointer'); const f=e.features[0];
+    let _bandClick, _bandMove, _bandLeave;   /* (news-map-legibility) one handler each, bound to both band layers below */
+    GE().events.onLayer('click','news-labels',_bandClick=e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(HOST.isMobile()){ _showMobileNewsPopup(p); return; } _openNewsFeature(p); });
+    GE().events.onLayer('mousemove','news-labels',_bandMove=e=>{ if(!e.features.length) return; GE().render.setCursor('pointer'); const f=e.features[0];
       /* (#R159) hovering the BAND itself must hide the band while the popup shows — the band's icon/text-opacity
          collapses to 0 when this feature's `hover` state is set (same rule the dot uses). The band sits offset to the
          right of the dot and swallows the pointer, so the news-dots handler never fires here; set the state directly,
@@ -326,8 +352,15 @@ export function newsUi(HOST){
       const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
       window.setMapTooltipHTML(el,_newsTipHTML(f.properties));   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
       HOST.positionTooltip(GE().coords.project(f.geometry.coordinates)); });
-    GE().events.onLayer('mouseleave','news-labels',()=>{ GE().render.setCursor(''); if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl);
+    GE().events.onLayer('mouseleave','news-labels',_bandLeave=()=>{ GE().render.setCursor(''); if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl);
       if(hoveredNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }   /* (#R159) restore the band when the pointer leaves it */ });
+    GE().events.onLayer('click',NEWS_BAND_L,_bandClick); GE().events.onLayer('mousemove',NEWS_BAND_L,_bandMove); GE().events.onLayer('mouseleave',NEWS_BAND_L,_bandLeave);
+    /* (news-map-legibility) THE OPEN EVENT'S PIN IS DRAWN HOT. The detail opens and closes by several routes (its
+       Back button, a tab switch, a re-render, an article reader — #R435), so the trigger is the pane itself: any
+       change to it re-runs the declutter, which asks js/news-events.js which event is open and writes `sel`. */
+    try{ const pane=document.getElementById('news-reader-pane');
+      if(pane&&typeof MutationObserver==='function') new MutationObserver(()=>{ try{ HOST.scheduleNewsDeclutter(); }catch(_){} }).observe(pane,{attributes:true,attributeFilter:['style'],childList:true});
+    }catch(_){}
     /* (news-crosshair-shadow) The #R37 MOBILE crosshair → news popup was turned off on request in #R107
        ("disable hover news pin and popping news popup in mobile version"): its body sat after an early `return;`,
        and the tap on its popup could only fire once that body had run. On a phone a news pin or band is opened by

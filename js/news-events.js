@@ -29,7 +29,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { ingestVerdict } from './news-intel-core.js';   /* (news-intelligence) 取り込みの健全性の判定 — node が同じ関数を評価する */
 import { freshChip } from './freshness.js';     /* (news-intelligence) 「いつ時点か・誰が測ったか」の 1 つの部品 */
-import { readSeen, makeSinceCounter, ARRIVAL_COL } from './news-edition-core.js';   /* (wave4-news) 「今日の世界」を前回開いた時刻——入口の件数の起点 */
+import { readSeen, makeSinceCounter, ARRIVAL_COL, editionWindow } from './news-edition-core.js';   /* (wave4-news) 「今日の世界」を前回開いた時刻——入口の件数の起点 */
 
 export function newsEvents(HOST) {
   const L = IntMapLang.pick(() => HOST.lang);
@@ -135,13 +135,76 @@ export function newsEvents(HOST) {
   async function syncSaved() {
     if (!HOST.user || !HOST.DB) return;
     try {
-      const { data, error } = await HOST.DB.from('saved_news_events').select('event_id,event_title');
+      const { data, error } = await HOST.DB.from('saved_news_events').select('event_id,event_title,snapshot,news_events(public_id)');
       if (error) throw error;
-      /* 行は Event の**数値 id** を持つ。public_id との対応は現在読み込んでいる一覧から取る。 */
       dbSaved = new Set((data || []).map((r) => r.event_id));
+      /* ⚠ 別の端末で★を付けた出来事も、この端末の★の一覧に入れる。以前は「いま読み込んだ
+         200 件の中にある★」しか拾わなかったので、古くなった★は一覧から辿れなかった。 */
+      for (const r of data || []) {
+        const pid = r.news_events && r.news_events.public_id;
+        if (!pid) continue;
+        savedIds.add(pid);
+        if (r.snapshot && typeof r.snapshot === 'object') dbSnaps.set(pid, r.snapshot);
+      }
     } catch (e) { lastError = e && e.message; }
   }
   let dbSaved = new Set();
+
+  /* ── ★を付けた瞬間の写し ────────────────────────────────────────────────
+     ⚠⚠ **出来事は残るが、構成記事は残らない。** 記事は CONSTITUTION.md §5 のとおり 72 時間で
+       消え、news_event_articles は記事と一緒に消える。実測 (2026-11-17・本番): 過去の出来事
+       10 件を開くと 10 件とも構成記事が 0 件で、説明も出典 URL も時刻も読めなかった。
+     ⇒ ★を付けたとき、その場で画面に出ていたもの（見出し・説明・出典の見出しと URL と時刻）を
+       写して持つ。ログイン中は saved_news_events.snapshot（本人だけが読める行・32 KiB まで）、
+       未ログインは localStorage。読むときは「いまの出来事に構成記事が無い」ときだけ写しを使い、
+       写しから読んでいることを詳細に書く（`_event.fromSnapshot`）。
+     ⚠ 上限: 出典 12 本・説明は 1 本 600 字・要約 1,200 字。DB 側の 32 KiB はその 2 倍以上の余裕。
+       localStorage は 200 件（800 件の★の id とは別に持つ。写しは id より桁が大きいので、
+       古い写しから捨てる——★そのものは捨てない）。 */
+  const SNAP_KEY = 'intmap_saved_event_snaps';
+  const SNAP_MAX = 200, SNAP_SOURCES = 12, SNAP_DESC = 600, SNAP_SUMMARY = 1200;
+  const dbSnaps = new Map();
+  function snapsLocal() { try { const o = JSON.parse(localStorage.getItem(SNAP_KEY) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch (_) { return {}; } }
+  function putSnapLocal(pid, snap) {
+    const o = snapsLocal();
+    if (snap) o[pid] = snap; else delete o[pid];
+    const keys = Object.keys(o);
+    if (keys.length > SNAP_MAX) {
+      keys.sort((a, b) => String(o[a].savedAt || '').localeCompare(String(o[b].savedAt || '')));
+      for (const k of keys.slice(0, keys.length - SNAP_MAX)) delete o[k];
+    }
+    try { localStorage.setItem(SNAP_KEY, JSON.stringify(o)); } catch (_) { }
+  }
+  function snapFor(pid) { return dbSnaps.get(pid) || snapsLocal()[pid] || null; }
+  function snapshotOf(item) {
+    const ev = item && item._event;
+    if (!ev) return null;
+    const summary = ev.synthesis && ev.synthesis.lines && ev.synthesis.lines.length
+      ? ev.synthesis.lines.map((l) => l.text).join(' ')
+      : ((ev.brief && ev.brief.gist) || []).map((g) => g.text).join(' ');
+    const loc = item.analysis && item.analysis.subjectLoc;
+    return {
+      v: 1, savedAt: new Date(nowMs()).toISOString(),
+      title: String(ev.title || '').slice(0, 400),
+      place: ev.place || '', lng: loc ? loc[0] : null, lat: loc ? loc[1] : null,
+      category: ev.category || '', firstAt: ev.firstAt || '', lastAt: ev.lastAt || '',
+      summary: String(summary || '').slice(0, SNAP_SUMMARY),
+      summaryIsAi: !!(ev.synthesis && ev.synthesis.lines && ev.synthesis.lines.length),
+      sources: (ev.members || []).slice(-SNAP_SOURCES).map((m) => ({
+        outlet: String(m.sourceName || '').slice(0, 120), title: String(m.title || '').slice(0, 300),
+        url: String(m.url || '').slice(0, 600), at: m.publishedAt || '',
+        desc: String(m.description || '').slice(0, SNAP_DESC),
+      })),
+    };
+  }
+  /* 写しの出典を、構成記事と同じ形の「メンバー」に戻す（詳細・要約の規則がそのまま読めるように）。 */
+  function membersFromSnap(snap) {
+    return ((snap && snap.sources) || []).map((s, i) => ({
+      id: 'snap:' + i, title: s.title || '', description: s.desc || '', url: s.url || '',
+      sourceId: s.outlet || '', sourceName: s.outlet || '', family: s.outlet || '',
+      country: '', type: '', hq: null, publishedAt: s.at || '',
+    }));
+  }
 
   async function toggleStar(item) {
     const ev = item && item._event;
@@ -149,11 +212,17 @@ export function newsEvents(HOST) {
     const on = !isSaved(ev.publicId);
     if (on) savedIds.add(ev.publicId); else savedIds.delete(ev.publicId);
     saveLocal([...savedIds]);
+    /* 写しは★を付けた瞬間のもの。既に写しを持つ（構成記事が消えたあとに付け直した）なら上書きしない
+       ——中身の薄い今より、付けたときの写しのほうが読める。 */
+    const snap = on ? (ev.fromSnapshot ? snapFor(ev.publicId) : snapshotOf(item)) : null;
+    putSnapLocal(ev.publicId, snap);
+    if (on && snap) dbSnaps.set(ev.publicId, snap); else dbSnaps.delete(ev.publicId);
     if (HOST.user && HOST.DB) {
       try {
         if (on) {
+          if (ev.id == null) throw new Error('this event is no longer on the server');
           await HOST.DB.from('saved_news_events').upsert(
-            { user_id: HOST.user.id, event_id: ev.id, event_title: ev.title }, { onConflict: 'user_id,event_id' });
+            { user_id: HOST.user.id, event_id: ev.id, event_title: ev.title, snapshot: snap }, { onConflict: 'user_id,event_id' });
           dbSaved.add(ev.id);
         } else {
           await HOST.DB.from('saved_news_events').delete().eq('event_id', ev.id);
@@ -232,6 +301,9 @@ export function newsEvents(HOST) {
   function differences(ev) {
     return CLAIMS.differences((ev.members || []).map((m) => ({
       title: m.title, description: m.description, source: m.sourceName, family: m.family,
+      /* (news-quality) 公開時刻。時刻順に増えていく犠牲者数は「食い違い」ではなく「更新」なので、
+         時刻が無いと規則（js/news-claims.js compare）が両者を分けられない。 */
+      at: m.publishedAt,
     }))).map((d) => ({ ...d, label: KIND_LABEL[d.kind] || d.kind }));
   }
 
@@ -257,6 +329,12 @@ export function newsEvents(HOST) {
         publishedAt: a.published_at || '',
       };
     });
+    /* 構成記事が期限で消えた★の出来事は、★を付けたときの写しから読む（上の SNAP_KEY の説明）。 */
+    let fromSnapshot = null;
+    if (!members.length) {
+      const snap = snapFor(row.public_id);
+      if (snap) { members.push(...membersFromSnap(snap)); fromSnapshot = snap.savedAt || 'unknown'; }
+    }
     const rep = links.find((a) => a.id === row.representative_article_id) || links[0] || null;
     /* ⚠⚠⚠ **見出しの日本語訳は表示しない**（#R405 で利用者が決めた）。News は英語で出す。
        DB の `news_event_i18n`（実測 708 行）は**消していない**——止めたのは生成と表示で
@@ -332,7 +410,7 @@ export function newsEvents(HOST) {
         articleCount: row.article_count, sourceCount: row.independent_source_count,
         clusterConfidence: row.cluster_confidence, manualLock: !!row.manual_lock,
         firstAt, lastAt, updatedAt: row.materially_updated_at || lastAt,
-        outlets, members,
+        outlets, members, fromSnapshot,
       },
     };
   }
@@ -340,15 +418,35 @@ export function newsEvents(HOST) {
   /* ── 読み込み ───────────────────────────────────────────────────────────
      戻り値は「一覧に載せられる項目が取れたか」。取れなければ**呼び出し側が記事モードへ
      落ちられる**ように false を返す（黙って空の一覧を見せない）。 */
-  async function load() {
+  /* ⚠⚠ **検索・過去の日付・カテゴリ・★から、同じ出来事に着く。** 以前は出来事の一覧が
+     「最新 200 件」だけで、検索と過去の日付は記事 RSS の経路へ切り替わり、カテゴリはその
+     200 件の中で絞り、★の一覧も 200 件の中の★だけだった——同じ出来事に、入口によって
+     着いたり着かなかったりした（2026-11-17 の利用者の報告・本番で確認）。
+     ⇒ 入口ごとに**出来事の表そのもの**に訊く:
+       opts.query  見出し（代表見出し）と要約に語を含む出来事（出来事が残る 30 日の中）
+       opts.day    その UTC 日に報道があった出来事（「今日の世界」の日付の窓と同じ editionWindow）
+     どちらも 1 件も無いときは false を返し、呼び出し側は記事 RSS へ落ちる（出来事の表が
+     持たない古い日付や、収集していない媒体の記事を、今までどおり探せる——能力は減らさない）。
+     ★の付いた出来事は、どの入口でも一覧に足す（saved()）。 */
+  /* PostgREST の or() は , ( ) を区切りに、* を ilike の万能記号に使う。利用者の語からそれらを外す。 */
+  const pgSafe = (q) => String(q || '').replace(/[,()*%\\:"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+  async function load(opts) {
+    const o = opts || {};
     if (!HOST.DB) { lastError = 'no database client'; return false; }
     try {
       await loadSources();
       let q = HOST.DB.from('news_events')
         .select(EVENT_COLS + ',' + MEMBER_COLS)
-        .eq('status', 'active').is('merged_into', null)
-        .order('materially_updated_at', { ascending: false })
-        .limit(LIMIT);
+        .eq('status', 'active').is('merged_into', null);
+      const term = pgSafe(o.query);
+      if (o.query && term) q = q.or('representative_title.ilike.*' + term + '*,summary.ilike.*' + term + '*');
+      if (o.day) {
+        const w = editionWindow({ day: o.day }, nowMs());
+        if (!w) { lastError = 'no such day'; return false; }
+        q = q.lte('first_published_at', new Date(w.untilMs).toISOString())
+          .gte('last_article_at', new Date(w.sinceMs).toISOString());
+      }
+      q = q.order(o.day ? 'independent_source_count' : 'materially_updated_at', { ascending: false }).limit(LIMIT);
       const { data, error } = await q;
       if (error) throw error;
       if (!data || !data.length) { lastError = 'no events'; return false; }
@@ -368,6 +466,7 @@ export function newsEvents(HOST) {
          2 つ目の書き手ができた瞬間に「いま一覧に何が入っているか」の
          責任が 2 か所に分かれる。ここは**項目を作って渡すだけ**で、入れるのは呼び出し側。 */
       items = data.map((row) => toItem(row));
+      await addSaved();
       lastLoadedAt = nowMs();
       lastError = null;
       return true;
@@ -376,6 +475,65 @@ export function newsEvents(HOST) {
       console.warn('[IntMap] news events unavailable:', lastError);
       return false;
     }
+  }
+
+  /* ★の付いた出来事のうち、いまの一覧に無いものを足す。
+     ⚠ merge された出来事は行き先を辿る（merge の redirect は消さない——docs/NEWS-EVENTS.md §8）。
+     ⚠ サーバーに出来事が無くなっていても（未ログインの★は 30 日の保持を延ばさない）、写しが
+       あれば写しから 1 件組む。写しも無ければ、その★は一覧に出せない（id しか無い）。 */
+  async function addSaved() {
+    const have = new Set(items.map((x) => x._event && x._event.publicId));
+    const want = [...savedIds].filter((pid) => pid && !have.has(pid)).slice(-LIMIT);
+    if (!want.length) return 0;
+    let rows = [];
+    try {
+      const { data, error } = await HOST.DB.from('news_events').select(EVENT_COLS + ',' + MEMBER_COLS + ',merged_into').in('public_id', want);
+      if (error) throw error;
+      rows = data || [];
+      const hop = rows.filter((r) => r.merged_into != null).map((r) => r.merged_into);
+      if (hop.length) {
+        const { data: tgt } = await HOST.DB.from('news_events').select(EVENT_COLS + ',' + MEMBER_COLS).in('id', hop);
+        const byId = new Map((tgt || []).map((r) => [r.id, r]));
+        rows = rows.map((r) => (r.merged_into != null && byId.get(r.merged_into)) ? Object.assign({}, byId.get(r.merged_into), { public_id: r.public_id }) : r);
+      }
+      await ensureSourcesFor(rows);
+    } catch (e) { lastError = (e && e.message) || String(e); }
+    const got = new Set(rows.map((r) => r.public_id));
+    let n = 0;
+    for (const r of rows) { items.push(toItem(r)); n++; }
+    for (const pid of want) {
+      if (got.has(pid)) continue;
+      const snap = snapFor(pid);
+      if (!snap) continue;
+      items.push(toItem({
+        id: null, public_id: pid, representative_title: snap.title || '', representative_article_id: null,
+        primary_category: snap.category || 'world', secondary_categories: [], category_evidence: null,
+        rep_lng: snap.lng, rep_lat: snap.lat, rep_place_name_en: snap.place || null,
+        first_published_at: snap.firstAt || null, last_article_at: snap.lastAt || null,
+        materially_updated_at: snap.lastAt || null, article_count: (snap.sources || []).length,
+        independent_source_count: new Set((snap.sources || []).map((x) => x.outlet)).size,
+        news_event_articles: [], summary: null, summary_evidence: null,
+      }));
+      n++;
+    }
+    return n;
+  }
+
+  /* カテゴリを選んだら、そのカテゴリの出来事を表から取る（最新 200 件の中を絞るだけにしない）。
+     足したものを一覧に入れるのは js/news-feed.js（'intmap-news-events-grew' を聞く・#R165 の RW 契約）。 */
+  async function ensureCategory(cat) {
+    if (!cat || cat === 'all' || !HOST.DB) return 0;
+    try {
+      const { data, error } = await HOST.DB.from('news_events').select(EVENT_COLS + ',' + MEMBER_COLS)
+        .eq('status', 'active').is('merged_into', null).eq('primary_category', cat)
+        .order('materially_updated_at', { ascending: false }).limit(LIMIT);
+      if (error) throw error;
+      await ensureSourcesFor(data || []);
+      const have = new Set(items.map((x) => x._event && x._event.publicId));
+      let n = 0;
+      for (const r of data || []) if (!have.has(r.public_id)) { items.push(toItem(r)); n++; }
+      return n;
+    } catch (e) { lastError = (e && e.message) || String(e); return 0; }
   }
 
   /* ── カテゴリの chips ───────────────────────────────────────────────────
@@ -412,6 +570,9 @@ export function newsEvents(HOST) {
         category = b.dataset.cat || 'all';
         renderChips();
         try { HOST.startNews(); } catch (_) { }
+        ensureCategory(category).then((n) => {
+          if (n) { try { window.dispatchEvent(new CustomEvent('intmap-news-events-grew')); } catch (_) { } }
+        });
       };
     });
   }
@@ -492,10 +653,13 @@ export function newsEvents(HOST) {
   function editionEntryStyle() {
     if (document.getElementById('news-edition-css')) return;
     const el = document.createElement('style'); el.id = 'news-edition-css'; el.textContent = [
-      '.news-edition-entry{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; margin-top:8px; padding:10px 12px; min-height:48px; border:0; border-radius:12px; background:var(--primary-tint,rgba(10,132,255,0.12)); color:var(--primary-on-tint,#0a63c9); text-align:left; cursor:pointer; }',
+      /* (news-quality) 低い 1 行の帯。以前は 2 行の箱（最小 48px＋上 8px）で、一覧の最初の出来事を押し下げていた
+         （利用者の報告: 最初の記事が画面の約 4 割下から始まる）。題と副題を 1 行に並べ、副題は省略記号で切り、
+         全文は title 属性に残す——情報は減らさず高さだけを詰める。 */
+      '.news-edition-entry{ display:flex; flex-direction:row; align-items:baseline; gap:8px; width:100%; margin-top:6px; padding:7px 12px; min-height:34px; border:0; border-radius:10px; background:var(--primary-tint,rgba(10,132,255,0.12)); color:var(--primary-on-tint,#0a63c9); text-align:left; cursor:pointer; overflow:hidden; }',
       '.news-edition-entry:hover{ filter:brightness(0.97); }',
-      '.news-edition-t{ font-size:14px; font-weight:650; line-height:1.25; }',
-      '.news-edition-s{ font-size:12px; line-height:1.35; color:var(--text-muted); }',
+      '.news-edition-t{ flex:none; font-size:13px; font-weight:650; line-height:1.25; }',
+      '.news-edition-s{ flex:1 1 auto; min-width:0; font-size:12px; line-height:1.25; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }',
       '.news-edition-entry.has-new .news-edition-s{ color:#d70015; font-weight:600; }',
     ].join('\n');
     document.head.appendChild(el);
@@ -517,6 +681,7 @@ export function newsEvents(HOST) {
         ? L('{n} new since your last visit · the most-reported events, on the map', '前回から新しく {n} 件・最も多く報じられた出来事を地図で').replace('{n}', Number(n).toLocaleString(IntMapLang.locale(HOST.lang)))
         : L('The most-reported events of the last 24 hours, on the map', '直近 24 時間に最も多く報じられた出来事を地図で');
       el.innerHTML = '<span class="news-edition-t">' + S(L('Today on the map', '今日の世界')) + '</span><span class="news-edition-s">' + S(sub) + '</span>';
+      el.title = sub;
       el.classList.toggle('has-new', !!(live && seen != null && n));
       el.style.display = '';
     };
@@ -667,6 +832,10 @@ export function newsEvents(HOST) {
     html += '<span class="ev-cat">' + S(catLabel(ev.category)) + '</span>';
     html += '</div>';
     html += '<h2 class="ev-d-title">' + S(ev.titleShown) + '</h2>';
+    /* (news-quality) 構成記事が期限で消えた★の出来事は、★を付けたときの写しを読んでいる。そう書く。 */
+    if (ev.fromSnapshot) {
+      html += '<p class="ev-d-note ev-snap">' + S(String(L('The articles behind this event have expired (IntMap keeps articles for 72 hours). This is what the event showed when you saved it on {d}.', 'この出来事の記事は期限切れで削除されている（IntMap は記事を 72 時間保持する）。以下は {d} に★を付けたときの内容である。')).replace('{d}', fmt(ev.fromSnapshot))) + '</p>';
+    }
 
     /* ── 時刻 ── 初出と最新。「いつから続いているか」は出来事の基本的な事実である。 */
     html += '<div class="ev-d-meta">' +
@@ -780,7 +949,9 @@ export function newsEvents(HOST) {
            伝わらない」。⇒ 先頭は**新しく分かったこと**（最新記事の文から前の記事が既に言ったことを引いた残り——
            js/news-brief.js `latest().learned`）と初めて出た数量。媒体と時刻は後ろに小さく添える出典。
            新しいことが何も無ければ `latest` は null で、この節は出ない。 */
+        const shownGist = new Set((brief.gist || []).map((g) => String(g.text || '').trim()));   /* (news-quality) 「何が起きたか」で既に出した文は繰り返さない */
         for (const n of (u.learned || [])) {
+          if (shownGist.has(String(n.text || '').trim())) continue;
           html += '<p class="ev-line">' + S(n.text) + '<span class="ev-src">— ' + S(u.source) + '</span></p>';
         }
         for (const f of u.figures) {
@@ -795,6 +966,22 @@ export function newsEvents(HOST) {
       /* ── 媒体間で一致している点 ───────────────────────────────────────────
          ⚠ 一致と呼ぶのは**別々の資本系列**が同じ値を言ったときだけ。同じ系列の転載が
            同じ数字を持っていても、それは 1 つの主張である。 */
+      /* ── 時刻とともに更新された数（初報 10 人 → 続報 15 人）──────────────────────────
+         ⚠ (news-quality) 以前はこれが「媒体間で食い違っている点」に並んでいた。累計の量が時刻順に
+           増えるのは食い違いではなく報道の更新である（規則は js/news-claims.js compare）。 */
+      if (brief.updates && brief.updates.length) {
+        html += '<div class="ev-d-sec ev-updates"><h3>' +
+          S(L('How the count changed over time', '時刻とともに更新された数')) + '</h3>';
+        for (const u of brief.updates) {
+          html += '<div class="ev-diff-row"><span class="ev-diff-k">' + S(KIND_LABEL[u.kind] ? L.arr(KIND_LABEL[u.kind]) : u.kind) + '</span><div class="ev-diff-v">';
+          for (const c of u.claims) {
+            html += '<div><b>' + S(c.text) + '</b> <span class="ev-diff-src">— ' + S(c.source) + (c.at ? ' · ' + S(fmt(c.at)) : '') + '</span></div>';
+          }
+          html += '</div></div>';
+        }
+        html += '</div>';
+      }
+
       if (brief.agreements.length) {
         html += '<div class="ev-d-sec ev-agree"><h3>' +
           S(L('Where outlets agree', '媒体間で一致している点', 'Worin die Quellen übereinstimmen', 'В чём источники согласны', 'En qué coinciden los medios')) + '</h3>';
@@ -1071,7 +1258,7 @@ export function newsEvents(HOST) {
     columns: () => EVENT_COLS + ',' + MEMBER_COLS,
     /* (news-intelligence) the ingest summary and its verdict — Atlas's news.health reads these */
     health: () => askHealth().then(() => Object.assign({ summary: healthErr ? null : health, error: healthErr }, healthVerdict())),
-    toggleStar, isSaved, differences, quantities,
+    toggleStar, isSaved, differences, quantities, ensureCategory, snapshotOf,
     categories: () => CATS.map(([k, v]) => ({ key: k, label: L.arr(v) })),
     /* (wave4-news) the edition re-counts its entry after it marked a visit — only when the entry is on screen
        (re-rendering the chips here would show them outside News) */

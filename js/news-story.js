@@ -9,7 +9,11 @@
  *      ringed, and the spread — each newly reached place joined to the nearest place reported before it;
  *    · the spread in numbers (places, countries, farthest from the first report) on the playhead's day;
  *    · the events of the playhead's day, which open in the same reader as the News list.
- *  The words are chips the reader can switch; the words first switched on are js/news-story-core.js `suggest()`.
+ *  The words are chips the reader can switch; the words first switched on are js/news-story-core.js `suggest()`,
+ *  told the CENTRE of the event it was opened from (the words most of its articles' headlines share).
+ *  Opened from an event, and when the words hold more than a thread's worth of events, the card shows the ones
+ *  that FOLLOW from that event (js/news-story-core.js `lineage`), says how many of the events naming the words
+ *  those are, and shows all of them at a tap — nothing the words hold is out of reach.
  *
  *  ⚠ NOTHING HERE DECIDES A FACT. Which events a set of words holds is the server's (public.news_story, the one
  *    word-cutting rule public.news_title_terms); which words to suggest, the days, the places, the countries and
@@ -27,7 +31,7 @@ import { IntMapTime } from './chronos.js';
 import { MapState } from './map-state.js';   /* (map-document-unify) the one link assembly (pageLink) */
 import { everyTick, stopTick } from './runtime.js';
 import { makeCountryIndex, isIso2, arc } from './news-intel-core.js';
-import { STORY, decodeTerms, suggest, buildStory, frameAt, storyQuery, storyFromSearch, isTerm, failureOf } from './news-story-core.js';
+import { STORY, decodeTerms, suggest, centreOf, lineage, buildStory, frameAt, storyQuery, storyFromSearch, isTerm, failureOf } from './news-story-core.js';
 
 export function newsStory(HOST) {
   const GE = () => IntMapGeoEngine;
@@ -42,12 +46,14 @@ export function newsStory(HOST) {
   /* one step of the playhead. Long enough to read the day's headlines change and see the rings move; a 30-day
      story plays in under half a minute. Expires with nothing — it is a pace, not a measurement. */
   const STEP_MS = 900;
-  /* the columns a story row needs — the event's own facts, not its articles (those are fetched when one is opened) */
-  const COLS = 'public_id,representative_title,rep_lng,rep_lat,rep_place_name_en,primary_category,first_published_at,first_seen_at,last_article_at,article_count,independent_source_count';
+  /* the columns a story row needs — the event's own facts, and its articles' HEADLINES only: the lineage compares
+     what each event's outlets wrote (js/news-story-core.js lineage); the articles themselves are fetched when one is
+     opened. Measured 2026-11-17: «putin» (82 events) 22 KB with the headlines. */
+  const COLS = 'public_id,representative_title,rep_lng,rep_lat,rep_place_name_en,primary_category,first_published_at,first_seen_at,last_article_at,article_count,independent_source_count,news_event_articles(news_articles(title))';
   /* when an event was first reported, as a colour: early → late (the timeline's bars use the same three) */
   const RAMP = [0, '#7cc4ff', 0.5, '#0a84ff', 1, '#5e2ca5'];
 
-  const st = { open: false, seq: 0, terms: [], seed: null, stats: null, sug: null, rows: null, story: null, frame: -1,
+  const st = { open: false, seq: 0, terms: [], seed: null, stats: null, sug: null, rows: null, line: null, every: false, story: null, frame: -1,
     loading: false, err: '', fail: null, playing: null, untilMs: null, painted: 0, paintError: '' };
   /* a failed read is recorded as WHY it failed (js/news-story-core.js failureOf) — the card and Atlas say which */
   const failed = (e) => { st.err = (e && e.message) || String(e); st.fail = failureOf(e); };
@@ -91,6 +97,17 @@ export function newsStory(HOST) {
     if (error) throw error;
     return data || [];
   }
+  /* the headlines of the seed event's articles — its CENTRE (js/news-story-core.js centreOf). A failed read is no centre
+     (the words are then suggested from the headline alone, as before), never a failed story. */
+  async function fetchSeedTitles(id) {
+    if (!id || !HOST.DB || typeof HOST.DB.from !== 'function') return [];
+    try {
+      const { data, error } = await HOST.DB.from('news_events').select('public_id,representative_title,news_event_articles(news_articles(title))').eq('public_id', id).limit(1);
+      const r = !error && data && data[0];
+      if (!r) return [];
+      return [r.representative_title].concat((r.news_event_articles || []).map((l) => l && l.news_articles && l.news_articles.title));
+    } catch (_) { return []; }
+  }
 
   /** open({ text, terms, from }) — the story of a headline (`text`, its words suggested) or of chosen words (`terms`).
       `from` is the public_id of the event it was opened from, marked in the list. Resolves to the summary Atlas reads. */
@@ -98,7 +115,7 @@ export function newsStory(HOST) {
     const p = o || {};
     const my = ++st.seq;
     pause();
-    st.open = true; st.err = ''; st.fail = null; st.loading = true; st.rows = null; st.story = null; st.frame = -1;
+    st.open = true; st.err = ''; st.fail = null; st.loading = true; st.rows = null; st.line = null; st.every = false; st.story = null; st.frame = -1;
     st.seed = p.from ? { id: String(p.from), title: String(p.text || '') } : (p.text ? { id: null, title: String(p.text) } : null);
     const asked = Array.isArray(p.terms) ? p.terms : (typeof p.terms === 'string' ? p.terms.split(/[,\s]+/) : (p.search ? (storyFromSearch(p.search) || []) : []));
     const want = Array.from(new Set(asked.map((t) => String(t).normalize('NFKC').trim().toLowerCase()))).filter(isTerm).slice(0, STORY.MAX_TERMS);
@@ -107,9 +124,9 @@ export function newsStory(HOST) {
     const sp = span(); st.untilMs = sp.untilMs;
     try {
       /* the words' counts are asked for the headline AND the words asked for, so a word chosen elsewhere (a link, Atlas) is a chip too */
-      const [stats, idx] = await Promise.all([fetchTerms([p.text || '', want.join(' ')].join(' ').trim(), sp), countries().catch(() => null)]);
+      const [stats, idx, seedTitles] = await Promise.all([fetchTerms([p.text || '', want.join(' ')].join(' ').trim(), sp), countries().catch(() => null), fetchSeedTitles(st.seed && st.seed.id)]);
       if (my !== st.seq) return null;
-      index = idx; st.stats = stats; st.sug = suggest(stats);
+      index = idx; st.stats = stats; st.sug = suggest(stats, { centre: centreOf(seedTitles) });
       if (!st.terms.length && st.sug.pick) st.terms = st.sug.pick.terms.slice();
       /* a word the server does not cut from this text (its rule is news_title_terms) can match no headline — it is not asked with */
       const known = new Set(stats.terms.map((x) => x.t));
@@ -125,9 +142,18 @@ export function newsStory(HOST) {
     const rows = await fetchRows(st.terms, sp);
     if (my !== st.seq) return;
     st.rows = rows;
-    st.story = buildStory(rows, { keyAt: index ? index.keyAt : null, limit: STORY.LIMIT });
-    st.frame = st.story.days.length - 1;
+    st.line = lineage(rows, { seed: st.seed && st.seed.id, terms: st.terms });
+    rebuild();
     fit();
+  }
+  /* the story drawn: the events that follow from the seed (when the lineage applies and the reader has not asked for
+     all), otherwise every event the words hold. «cut» is about what the SERVER returned, whichever is drawn. */
+  function rebuild() {
+    const rows = st.rows || [];
+    const use = st.line && st.line.applied && !st.every ? st.line.rows : rows;
+    st.story = buildStory(use, { keyAt: index ? index.keyAt : null });
+    st.story.cut = rows.length >= STORY.LIMIT;
+    st.frame = st.story.days.length - 1;
   }
   /** setTerms(terms) — switch the words (the chips); the playhead goes back to the whole story */
   async function setTerms(terms) {
@@ -135,7 +161,7 @@ export function newsStory(HOST) {
     const next = Array.from(new Set((terms || []).map((t) => String(t).toLowerCase()))).filter((t) => isTerm(t) && known.has(t)).slice(0, STORY.MAX_TERMS);
     const my = ++st.seq;
     pause();
-    st.terms = next; st.rows = null; st.story = null; st.frame = -1; st.err = ''; st.fail = null;
+    st.terms = next; st.rows = null; st.line = null; st.every = false; st.story = null; st.frame = -1; st.err = ''; st.fail = null;
     if (!next.length) { st.loading = false; draw(); paint(); return summary(); }
     st.loading = true; draw();
     try { await load(my, { since: new Date(st.untilMs - STORY.SPAN_DAYS * DAY).toISOString(), until: new Date(st.untilMs).toISOString() }); } catch (e) { if (my === st.seq) failed(e); }
@@ -305,6 +331,7 @@ export function newsStory(HOST) {
     if (t.closest('[data-nst="next"]')) { pause(); seek(st.frame + 1); return; }
     if (t.closest('[data-nst="all"]')) { pause(); seek((st.story ? st.story.days.length : 1) - 1); fit(); return; }
     if (t.closest('[data-nst="link"]')) { copyLink(); return; }
+    if (t.closest('[data-nst="every"]')) { if (st.line && st.line.applied) { pause(); st.every = !st.every; rebuild(); built = -1; drawFrame(); paint(); fit(); } return; }
     const d = t.closest('[data-nst-day]'); if (d) { pause(); seek(+d.getAttribute('data-nst-day')); return; }
     const e = t.closest('[data-nst-ev]'); if (e) { openEvent(e.getAttribute('data-nst-ev')); }
   }
@@ -403,6 +430,18 @@ export function newsStory(HOST) {
         + '<div class="nint-sub">' + S(L('{a} – {b} · {d} days with new reports · {m} reported by 2+ independent outlets', '{a}〜{b}・新しい報道があった日 {d} 日・独立した2媒体以上 {m} 件')
           .replace('{a}', fmtD(S2.firstAt)).replace('{b}', fmtD(S2.lastAt)).replace('{d}', nf(S2.days.filter((d) => d.events.length).length)).replace('{m}', nf(S2.multiSource))) + '</div></div>';
       if (S2.cut) h += '<div class="nint-empty nst-cut">' + S(L('Showing the first {n} events — there are more. Add a word to narrow the story.', '最初の {n} 件を表示しています（さらにあります）。語を足すと絞り込めます。').replace('{n}', nf(STORY.LIMIT))) + '</div>';
+      /* the lineage: how many of the events naming the words follow from the seed, and all of them at a tap */
+      const LN = st.line, threaded = !!(LN && LN.applied && !st.every);
+      if (LN && LN.applied) {
+        h += '<div class="nint-empty nst-cut nst-line">' + S(st.every
+          ? L('Showing all {n} events naming these words — {d} of them do not follow from the event this story was opened from.', 'これらの語を見出しに含む {n} 件をすべて表示しています（うち {d} 件は、開いた出来事からたどれません）。')
+            .replace('{n}', nf(LN.naming)).replace('{d}', nf(LN.dropped))
+          : L('{k} of the {n} events naming these words follow from the event this story was opened from: each shares at least {w} more headline words with one reported within {h} hours of it.', 'これらの語を見出しに含む {n} 件のうち、開いた出来事からたどれる {k} 件です（どれも、{h} 時間以内に報じられたどれかと、これらの語のほかに見出しの語を {w} つ以上共有しています）。')
+            .replace('{k}', nf(LN.rows.length)).replace('{n}', nf(LN.naming)).replace('{w}', nf(STORY.LINK_SHARED)).replace('{h}', nf(STORY.LINK_GAP_H)))
+          + ' <button type="button" class="nst-alt" data-nst="every" aria-pressed="' + (st.every ? 'true' : 'false') + '">' + S(st.every
+            ? L('Only those that follow from it', 'たどれるものだけ')
+            : L('Show all {n}', '{n} 件すべてを表示').replace('{n}', nf(LN.naming))) + '</button></div>';
+      }
       h += '<div class="nst-tl"></div>';
       h += '<div class="nst-ctl"><button type="button" class="nst-btn" data-nst="prev" aria-label="' + S(L('Previous day', '前の日')) + '" title="' + S(L('Previous day', '前の日')) + '">' + ICON_PREV + '</button>'
         + '<button type="button" class="nst-btn nst-play" data-nst="play"></button>'
@@ -411,7 +450,9 @@ export function newsStory(HOST) {
         + '<button type="button" class="nst-all" data-nst="all">' + S(L('Whole story', '全体')) + '</button></div>';
       h += '<div class="nst-dyn"></div>';
       if (S2.unplaced || S2.atSea) h += '<div class="nint-foot nint-cov">' + S(L('{u} with no place · {x} at sea — in the timeline and the list, not on the map', '地点不明 {u} 件・海上 {x} 件——年表と一覧には入っており、地図には描かれません').replace('{u}', nf(S2.unplaced)).replace('{x}', nf(S2.atSea))) + '</div>';
-      h += '<div class="nint-foot nint-cov">' + S(L('A story here is every event whose headline names these words — chosen from the headline, changeable above. IntMap does not judge that the events are one story. A dashed line joins each newly reported place to the nearest place reported before it; it is the order of the reports, not a cause.', 'ここでのストーリーは、見出しにこれらの語を含む出来事のすべてです（語は見出しから選んでおり、上で変えられます）。IntMap がそれらを 1 つの話だと判定したものではありません。破線は、新しく報じられた地点を、それより前に報じられた最も近い地点と結んだもので、報道の順序であって原因ではありません。')) + '</div>';
+      h += '<div class="nint-foot nint-cov">' + S(threaded
+        ? L('A story here is the events whose headline names these words and that can be reached from the event it was opened from, each sharing headline words with one reported shortly before or after it — the words are chosen from the headline and can be changed above. IntMap does not judge that the events are one story. A dashed line joins each newly reported place to the nearest place reported before it; it is the order of the reports, not a cause.', 'ここでのストーリーは、見出しにこれらの語を含み、開いた出来事から、前後の近い時刻の報道と見出しの語を共有することでたどれる出来事です（語は見出しから選んでおり、上で変えられます）。IntMap がそれらを 1 つの話だと判定したものではありません。破線は、新しく報じられた地点を、それより前に報じられた最も近い地点と結んだもので、報道の順序であって原因ではありません。')
+        : L('A story here is every event whose headline names these words — chosen from the headline, changeable above. IntMap does not judge that the events are one story. A dashed line joins each newly reported place to the nearest place reported before it; it is the order of the reports, not a cause.', 'ここでのストーリーは、見出しにこれらの語を含む出来事のすべてです（語は見出しから選んでおり、上で変えられます）。IntMap がそれらを 1 つの話だと判定したものではありません。破線は、新しく報じられた地点を、それより前に報じられた最も近い地点と結んだもので、報道の順序であって原因ではありません。')) + '</div>';
       h += '<div class="nst-share"><button type="button" class="nst-link" data-nst="link">' + S(L('Copy link to this story', 'このストーリーへのリンクをコピー')) + '</button></div>';
       body.innerHTML = h;
     }
@@ -435,7 +476,10 @@ export function newsStory(HOST) {
     drawControls();
   }
   function evHTML(e) {
-    const meta = [e.place || (e.country ? countryName(e.country) : ''), fmtDT(e.at), L('{n} sources', '{n}媒体').replace('{n}', String(e.sources))].filter(Boolean).join(' · ');
+    /* the words that joined this event to the thread (the lineage's own evidence, shown — never a hidden judgement) */
+    const step = st.line && st.line.applied && !st.every ? st.line.links.get(e.id) : null;
+    const via = step && step.shared.length ? L('joined by {w}', '{w} でつながる').replace('{w}', step.shared.join(', ')) : '';
+    const meta = [e.place || (e.country ? countryName(e.country) : ''), fmtDT(e.at), L('{n} sources', '{n}媒体').replace('{n}', String(e.sources)), via].filter(Boolean).join(' · ');
     const seed = st.seed && st.seed.id === e.id;
     return '<li><button type="button" class="nint-ev' + (seed ? ' nst-seed' : '') + '" data-nst-ev="' + S(e.id) + '"><span class="nint-ev-t">' + S(e.title) + '</span><span class="nint-ev-m">' + S(meta) + (seed ? ' · ' + S(L('opened from here', 'ここから開いた')) : '') + '</span></button></li>';
   }
@@ -458,7 +502,9 @@ export function newsStory(HOST) {
     const base = { ok: !st.err, open: st.open, terms: st.terms.slice(), naming: namingLine(), until: st.untilMs ? new Date(st.untilMs).toISOString() : null, error: st.err || null,
       errorKind: st.fail ? st.fail.kind : null, errorCode: st.fail ? st.fail.code : null,
       suggested: st.sug && st.sug.pick ? st.sug.pick.terms.slice() : null,
-      choices: st.sug ? st.sug.choices.slice(0, 5).map((c) => ({ terms: c.terms, events: c.n })) : [],
+      choices: st.sug ? st.sug.choices.slice(0, 5).map((c) => ({ terms: c.terms, events: c.n, centre: c.central })) : [],
+      /* applied: the events below are those that follow from the event it was opened from; naming: how many the words hold */
+      lineage: st.line ? { applied: st.line.applied, naming: st.line.naming, following: st.line.rows.length, showingAll: !!st.every } : null,
       link: link() || null };
     if (!S2) return Object.assign(base, { events: 0 });
     const F = frameAt(S2, st.frame);

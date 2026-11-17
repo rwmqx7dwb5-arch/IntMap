@@ -27,6 +27,8 @@
  *    このファイルでは country レベルの一致に対して、閾値を下げるのではなく **上げて** いる。
  * ========================================================================== */
 
+import { isTitleCase } from './news-entities.js';
+
 /* ── カテゴリの正本 ─────────────────────────────────────────────────────────
  * ⚠ この配列が唯一の一覧である。migration の check 制約はこれと一致していなければならず、
  *   tests/news-cluster-checks.test.mjs (#R334) #1 が両者を突き合わせる（人が覚えていなければならない一覧は、
@@ -121,6 +123,10 @@ export const DEFAULTS = {
    *     実測: 米加関税の 5 分割（#R351 が recall の代表例に挙げたもの）は
    *     この 1 回で {899,916,977,980,1078} が 1 件に畳まれる。 */
   linkMinMatched: 3,
+  /* 「珍しくない語」の線: 窓の ratio を超える記事に出る語（上限 abs 本）。
+   * ⚠ 候補索引（news-ingest.js INDEX.maxDfRatio / maxDfAbs）が #R334 で決めた線そのもので、
+   *   正本をここへ移した（INDEX はここを読む）。下の inferred-place の規則も同じ線を使う。 */
+  commonDf: { ratio: 0.04, abs: 40 },
   /* ⚠⚠⚠ **代表点しか持たない解決の一覧** (#R351)。
    *   #R334 はこれを `country` だけだと思っていた。実データで動かしたら、同じ穴が
    *   **組織**で開いていた——IntMapNewsGeo が `kind:'org'` に解決した subject は
@@ -149,12 +155,25 @@ const STOP = new Set((
   'still even back down off out up per via'
 ).split(/\s+/));
 
-/** 見出しを正規化する（比較のためだけ。表示には使わない）。 */
-export function normaliseTitle(title) {
+/** 見出しを正規化する（比較のためだけ。表示には使わない）。
+ *  publisher: その見出しを書いた媒体名（分かっているときだけ）。 */
+export function normaliseTitle(title, publisher) {
   let s = String(title || '');
   /* Google News は "Headline - Publisher" を返す。媒体名は比較に入れない
-   * （同じ媒体の無関係な 2 本が媒体名だけで似てしまう）。 */
-  s = s.replace(/\s+[-–—|]\s+[^-–—|]{2,40}$/u, '');
+   * （同じ媒体の無関係な 2 本が媒体名だけで似てしまう）。
+   * ⚠⚠ **外すのは媒体名が分かっているときだけ**（表示用の displayTitle と同じ規則）。
+   *   以前は「末尾の ' – 2〜40 字'」を無条件に削っていた。実測 (2026-11-17・本番):
+   *   「Germany 5-0 Netherlands – UEFA Nations League as it happened」の後半が媒体名として
+   *   削られ、比較用の見出しは {germany, netherlands} の 2 語だけになった。それが
+   *   「Germany, Denmark, Austria, Greece and the Netherlands plan Rwanda migrant hub」と
+   *   包含率 1.00・IDF 重なり 1.00 で一致し、サッカーの試合と移民拠点が 1 つの出来事になった。
+   *   ⇒ 本文を削る規則は、削るものが本文でないと分かっているときにだけ働かせる。
+   *   DB の見出しは取り込み時に displayTitle が媒体名を外し済みなので、publisher は要らない。 */
+  const p = String(publisher || '').trim();
+  if (p.length > 2) {
+    const esc = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    s = s.replace(new RegExp('\\s*[-–—|]\\s*' + esc + '\\s*$', 'iu'), '');
+  }
   return s
     .replace(/[‘’ʼ']/g, '')     /* アポストロフィを落とす: Trump's → Trumps */
     .replace(/[“”"]/g, ' ')
@@ -178,8 +197,8 @@ function stem(w) {
 }
 
 /** 比較用のトークン集合。ラテンは語幹、CJK/ハングルは文字バイグラム。 */
-export function tokenise(text) {
-  const s = normaliseTitle(text);
+export function tokenise(text, publisher) {
+  const s = normaliseTitle(text, publisher);
   const out = [];
   const words = s.match(/[\p{L}\p{N}][\p{L}\p{N}.]{1,}/gu) || [];
   for (const w0 of words) {
@@ -207,14 +226,54 @@ export function tokenise(text) {
 export function buildIdf(articles) {
   const df = new Map();
   for (const a of articles) {
-    const tk = a._tk || (a._tk = tokenise(a.title));
+    const tk = a._tk || (a._tk = tokenise(a.title, a.publisher));
     for (const t of tk) df.set(t, (df.get(t) || 0) + 1);
   }
   const n = Math.max(1, articles.length);
   const idf = new Map();
   for (const [t, d] of df) idf.set(t, Math.log((n + 1) / (d + 0.5)));
-  return { idf, n, fallback: Math.log((n + 1) / 0.5) };
+  /* 「珍しくない語」の線。⚠ 新しい数ではない——候補索引（news-ingest.js の INDEX）が
+     「窓の 4% を超える語は珍しくない（上限 40）」として投稿リストから外している、その同じ線。
+     正本は DEFAULTS.commonDf（INDEX はそこを読む）。 */
+  const cd = DEFAULTS.commonDf;
+  const commonCap = Math.max(2, Math.min(cd.abs, Math.ceil(n * cd.ratio)));
+  return { idf, n, fallback: Math.log((n + 1) / 0.5), df, commonCap, names: nameStats(articles) };
 }
+
+/* ── 名前の語を窓から見つける ────────────────────────────────────────────────
+ * 「誰が」を言う語（人・組織・国・都市の名前）と、「何をした・何に」を言う語を分けるため。
+ * ⚠ 名前の一覧を持たない。窓の見出し自身に訊く: **文の途中で大文字で書かれる語は名前である。**
+ *   ただし見出しの書き方が Title Case（ほぼ全部の語が大文字始まり）なら大文字は何も言わない
+ *   ——その判定は企業名の照合と同じ isTitleCase を使う（_shared/news-entities.js・閾値 0.8 の由来も
+ *   そこにある）。文の先頭の語も数えない。
+ * ⚠ 名前と判定する線も同じ 0.8: 「その語が文中に出たうち 8 割以上で大文字」。実測 (2026-11-17・
+ *   本番 1,000 本): trump 33/33・france 8/8・faa 6/6 は名前、administration 0/7・seek 0/17・
+ *   outage 0/13 は名前ではない。⚠ 一度も文中に出なかった語は**名前と言わない**（言えるのは
+ *   見たものだけ）。 */
+function nameStats(articles) {
+  const cap = new Map(), tot = new Map();
+  for (const a of articles) {
+    const title = String(a.title || '');
+    if (!title || isTitleCase(title)) continue;
+    const ws = title.split(/\s+/);
+    for (let i = 1; i < ws.length; i++) {
+      if (/[.:?!]$/.test(ws[i - 1])) continue;          /* 前の語で文が終わった＝ここは文頭 */
+      const raw = ws[i].replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+      if (!raw) continue;
+      const up = /^\p{Lu}/u.test(raw);
+      for (const t of tokenise(raw)) {
+        tot.set(t, (tot.get(t) || 0) + 1);
+        if (up) cap.set(t, (cap.get(t) || 0) + 1);
+      }
+    }
+  }
+  const names = new Set();
+  for (const [t, n] of tot) if ((cap.get(t) || 0) / n >= TITLE_CASE_SHARE) names.add(t);
+  return names;
+}
+/* 名前と判定する線。isTitleCase（news-entities.js）が「Title Case の行」と判定する線と同じ 0.8
+   ——「ほぼ全部が大文字」を 2 か所で別の数にしない。 */
+const TITLE_CASE_SHARE = 0.8;
 
 const wOf = (t, I) => (I ? (I.idf.get(t) ?? I.fallback) : 1);
 
@@ -310,8 +369,8 @@ export function geoClass(a, b, opt = DEFAULTS) {
  * （news_cluster_decisions がこれを保存する）。 */
 export function pairVerdict(a, b, opt = DEFAULTS, I = null, sim = null) {
   const reasons = [];
-  const ta = a._tk || (a._tk = tokenise(a.title));
-  const tb = b._tk || (b._tk = tokenise(b.title));
+  const ta = a._tk || (a._tk = tokenise(a.title, a.publisher));
+  const tb = b._tk || (b._tk = tokenise(b.title, b.publisher));
 
   const dtH = Math.abs(Date.parse(a.published_at) - Date.parse(b.published_at)) / 3600e3;
   if (!Number.isFinite(dtH)) { return { same: false, code: 'no_time', reasons: ['missing published_at'] }; }
@@ -347,12 +406,67 @@ export function pairVerdict(a, b, opt = DEFAULTS, I = null, sim = null) {
   const byW = !!I && w >= thrW && interWeight >= minW;
   const byE = hasSim && thrE != null && sim >= thrE
     && overlap >= (opt.embedMinOverlap != null ? opt.embedMinOverlap : 2);
-  return {
+  const out = {
     same: byJ || byC || byW || byE,
     code: byJ ? 'jaccard' : (byC ? 'containment' : (byW ? 'idf' : (byE ? 'embedding' : 'below_threshold'))),
     dtH, km, geo: cls, j, containment: c, overlap, weighted: w, interWeight,
     sim: hasSim ? sim : null, reasons,
   };
+  if (out.same && I) {
+    const veto = identityVeto(a, b, ta, tb, cls, I, opt);
+    if (veto) { out.same = false; out.code = veto; reasons.push('veto=' + veto); }
+  }
+  return out;
+}
+
+/* ── 語は重なったが、同じ出来事と言う根拠になっていない対 ─────────────────────
+ * 上の 4 つの入口は「どれだけ語が重なったか」を測る。ここは**重なった語が何であるか**を見る。
+ * 出来事は「誰が・何をした・何に・どこで」であり、そのどれを共有しているかで答えが変わる。
+ * ⚠ 2 つの規則とも、実測 (2026-11-17・本番 1,000 本の取り込みを placeArticle と同じ手順で
+ *   最初から再生) で決めた。誤統合として報告された 3 件のうち 2 件をここが分け
+ *   （3 件目は normaliseTitle が媒体名でない本文を削っていた欠陥）、同じ再生で
+ *   正しい塊が割れたのは 1 件（「US moves to limit remote access to AI chips」の言い換え 3 本が
+ *   2+1 に）。副作用として「各州の選挙結果 9 本」が州ごとに割れた——別々の選挙である。
+ *   試して捨てた規則: 「共有語が名前だけなら別件」は Robert Pattinson の 007 起用 13 本を
+ *   5 つに割った（名前の共有は多くの場合それ自体が出来事の核）。「頻出語を数えない」を
+ *   全対に当てると Xi-Trump-Putin 会談 7 本が 4 つに割れた。⇒ どちらも採らない。
+ *
+ * ① far_no_shared_name — 地理が食い違い（far）、しかも**名前を 1 つも共有しない**。
+ *    地点が別々なら、同じ出来事だと言えるのは同じ当事者（名前）を語っているときだけ。
+ *    実測: 「Macron visits Malaysia as France seeks closer defence … ties」と
+ *    「UK seeks closer ties with EU after Brexit fail」は seek/closer/ties（述語）だけを共有し、
+ *    包含率 0.60 で 1 つの出来事になっていた。
+ * ② inferred_place_common_words — 近い（tight/near）のは、**どちらの見出しも名指していない**
+ *    地点を地点解析が推し量った結果で、しかも共有した珍しい語が minOverlap に満たない。
+ *    地点解析の規則 (4)（news-geo-prompt.js）は組織・政府を本拠の都市に置くので、
+ *    「Trump administration」の記事は全部 Washington, D.C. に、Nvidia の記事は全部 Santa Clara に
+ *    置かれる——その距離ゼロは「同じ場所で起きた」ではなく「同じ当事者だった」の証拠である
+ *    （#R76・#R351 が国と組織について学んだのと同じ形）。
+ *    実測: 「Trump administration asks for billions to overhaul FAA」と
+ *    「…Trump Administration Says It's Investigating Megaspeed」は trump（頻出）と
+ *    administration だけを共有し、Jaccard 0.20（tight の線 0.19）で 1 つの出来事になっていた。
+ *    「珍しい」の線は候補索引と同じ DEFAULTS.commonDf。 */
+function identityVeto(a, b, ta, tb, cls, I, opt) {
+  if (a.title_fingerprint && a.title_fingerprint === b.title_fingerprint) return null;
+  const shared = [];
+  for (const t of ta) if (tb.has(t)) shared.push(t);
+  if (cls === 'far' && I.names && !shared.some((t) => I.names.has(t))) return 'far_no_shared_name';
+  if ((cls === 'tight' || cls === 'near') && I.df && placeInferred(a, ta) && placeInferred(b, tb)) {
+    const rare = shared.filter((t) => (I.df.get(t) || 0) <= I.commonCap).length;
+    if (rare < (opt.minOverlap[cls] || 2)) return 'inferred_place_common_words';
+  }
+  return null;
+}
+
+/* その記事の地点は、見出しが名指した場所か。⚠ 地点名を持たない行（クライアントの Atlas 経路）は
+   「推し量った」とは言えないので false——知らないことを根拠に結びを切らない。 */
+function placeInferred(a, ta) {
+  const name = String(a.subject_name_en || '').split(',')[0];
+  if (!name) return false;
+  const p = tokenise(name);
+  if (!p.size) return false;
+  for (const w of p) if (ta.has(w)) return false;
+  return true;
 }
 
 /* ── 独立媒体数 ─────────────────────────────────────────────────────────────

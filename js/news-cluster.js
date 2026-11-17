@@ -142,7 +142,7 @@ export function makeNewsCluster() {
     const EPOCH = 4e12;   /* an arbitrary fixed instant; only DIFFERENCES are read */
     const articles = rows.map(function (r) {
       return {
-        title: r.it.title,
+        title: r.it.title, publisher: r.it.publisher || null,
         published_at: new Date(EPOCH - r.h * 3600e3).toISOString(),
         subject_lng: r.loc[0], subject_lat: r.loc[1],
         subject_type: r.subj.kind || null,

@@ -242,6 +242,17 @@ export function newsFeed(HOST){
      of only when Settings is opened — the language <select> in that same dialog refetches the feed under it.
      ⚠ The IM_HOST setter cannot raise it: every IM_HOST setter is a bare assignment by contract (#R165). */
   function land(items){ HOST.globalData=items; bus.emit('intmap-news-feed'); }
+  /* (news-quality) カテゴリを選んだあと、出来事のモジュールが表から足した分を、同じ 1 人の書き手
+     （land）で入れ直す。⚠ 出来事のモジュールは一覧を持つだけで globalData には書かない（#R165）。
+     ⚠ いま出来事の一覧が出ているときだけ（記事モードの一覧を出来事で上書きしない）。 */
+  try{ window.addEventListener('intmap-news-events-grew', ()=>{
+    try{
+      const E=window.IntMapNewsEvents; if(!E) return;
+      if(!(HOST.globalData||[]).some((x)=>x&&x._event)) return;
+      land(E.loaded()); E.renderChips();
+      if(HOST.mode==='news'||HOST.mode==='saved') startNews();
+    }catch(_){}
+  }); }catch(_){}
   /* News cache → instant render on load/return, refreshed in the background. */
   function loadNewsCache(){
     try{ const c=JSON.parse(localStorage.getItem('intmap_news_cache')||'null');
@@ -343,10 +354,15 @@ export function newsFeed(HOST){
        ⚠ **落ちる先がある。** `load()` が false（DB が無い・表が空・失敗）なら下の記事経路へ。
          黙って空の一覧を見せない——それが #R162/#R200/#R205/#R208 の「機能が静かに
          存在しなくなる」形である。 */
-    if(HOST.NEWS_EVENT_MODE && !HOST.activeSearchQuery && !HOST.newsDate && HOST.newsLangMode!=='multi'){
+    /* ⚠⚠ (news-quality) 検索と過去の日付も、まず**出来事の表**に訊く。以前はここで記事 RSS へ
+       切り替わったので、同じ出来事に一覧からは着き、検索や日付からは記事の断片として着いた。
+       出来事の表が答えを持たないとき（30 日より前の日付・表に無い語）は load() が false を返し、
+       下の記事経路が今までどおり答える——広く探す能力は減らさない。 */
+    if(HOST.NEWS_EVENT_MODE && HOST.newsLangMode!=='multi'){
       try{
         const okLazy = await window.IntMapLazy.need('newsEvents');
-        if(okLazy && window.IntMapNewsEvents && await window.IntMapNewsEvents.load()){
+        const evOpts = { query: HOST.activeSearchQuery || '', day: HOST.newsDate ? new Date(HOST.newsDate).toISOString().slice(0,10) : '' };
+        if(okLazy && window.IntMapNewsEvents && await window.IntMapNewsEvents.load(evOpts)){
           /* ⚠ 一覧を入れるのは**ここだけ**。`HOST.globalData` の書き手はこのファイル 1 つで、
              出来事のモジュールは項目を**作る**だけである（#R165 の RW 契約）。 */
           land(window.IntMapNewsEvents.loaded());

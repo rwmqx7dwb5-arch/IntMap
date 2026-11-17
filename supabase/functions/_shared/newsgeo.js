@@ -104,6 +104,48 @@
   }
 
   /* NFKC so full-width Latin/digits and half-width katakana fold to one form. */
+  /* Title Case vs sentence case — the same rule as isTitleCase in
+     supabase/functions/_shared/news-entities.js (a line where >= 80% of the words of 4+ letters
+     start with a capital is Title Case). This file is a classic script mirrored into Deno, so it
+     cannot import that module; tests/news-quality-checks.test.mjs runs both on the same lines. */
+  function sentenceCase(text) {
+    var w = String(text || '').split(/\s+/).map(function (x) { return x.replace(/^[^A-Za-zÀ-ɏЀ-ԯ]+|[^A-Za-zÀ-ɏЀ-ԯ]+$/g, ''); })
+      .filter(function (x) { return x.length >= 4; });
+    if (w.length < 3) return false;
+    var cap = w.filter(function (x) { return /^[A-ZÀ-ÞЀ-Я]/.test(x); }).length;
+    return cap / w.length < 0.8;
+  }
+  /* Only PHYSICAL FEATURES (a river, a rainforest, a mountain). A thing named after a CITY or a
+     country usually is in it — "Pittsburgh Steelers", "Michigan State", "Canadian Natural
+     Resources" are where their names say (measured: dropping those lost the right answer
+     against the AI locator on production) — while a company named after a feature is not in
+     the feature (Amazon MGM Studios). Measured 2026-11-17 against the AI locator on the newest
+     1,000 production articles: with this scope exactly one pin changes (the Bond story) and the
+     agreement stays 434/883; applied to every kind it fell to 418. */
+  function onlyFeatures(m) {
+    for (var i = 0; i < m.ids.length; i++) if (ENTS[m.ids[i]].kind !== 'feature') return false;
+    return m.ids.length > 0;
+  }
+  function headOfOtherName(m) {
+    /* a possessive ("India's Fractal", "Okinawa's Shuri Castle") names something OF the place —
+       the place is still what the words point at */
+    if (/['’]s?$/i.test(m.text.slice(m.at, m.end + 2).replace(/\s.*$/, ''))) return false;
+    var rest = m.text.slice(m.end);
+    var nx = /^[ \t]+([A-ZÀ-ÞЀ-Я][0-9A-Za-zÀ-ɏЀ-ԯ'’.&-]*)/.exec(rest);
+    if (!nx) return false;
+    /* "<place> President Neves", "<place> PM Magyar": the office of the place, the same
+       vocabulary the person-title rule reads (HONORIFIC) — and the short forms headlines use */
+    if (HONORIFIC.test(nx[1] + ' ') || /^(?:PM|FM|QB)$/.test(nx[1])) return false;
+    /* the next words start a catalogue surface of their own ("London Heathrow", "Bulgaria Black
+       Sea") → two places, not one longer name */
+    var toks = tokenize(rest.slice(0, 80));
+    for (var len = Math.min(MAXG, toks.length); len >= 1; len--) {
+      var key = ''; for (var k = 0; k < len; k++) { if (k) key += ' '; key += toks[k].n; }
+      if (IDX.has(key)) return false;
+    }
+    return true;
+  }
+
   function prep(s) {
     var t = String(s == null ? '' : s);
     try { t = t.normalize('NFKC'); } catch (_) { }
@@ -547,9 +589,19 @@
            ("russisch", "ruso", "российский").
          · ACRONYMS must additionally be ALL-CAPS, so a sentence-initial
            "Who…" never becomes the WHO and "Ice…" never becomes ICE. */
+    var sentT = sentenceCase(T), sentD = sentenceCase(D);
     ments = ments.filter(function (m) {
       if (m.cjk) return true;
       if (ACRONYM.has(m.surface) && !m.allcaps) return false;
+      /* HEAD OF A LONGER NAME. In sentence-case text a physical feature followed straight away by
+         another Capitalised word that the catalogue does NOT know as a place is the first word of
+         some OTHER proper noun — here a company: "Amazon MGM Studios announced". Measured 2026-11-17 on production: the James
+         Bond story ("…Amazon MGM Studios announced on Monday") was pinned to the Amazon basin.
+         ⚠ No list of such names: the next word's capital is the evidence, and only where capitals
+           mean something (a Title-Case line capitalises every word, so there it says nothing). A
+           longer catalogue name always wins first ("Gaza Strip", "New York") because the scan
+           takes the LONGEST surface, so this only sees what the catalogue did not claim. */
+      if (m.caps && !m.allcaps && (m.field === 't' ? sentT : sentD) && onlyFeatures(m) && headOfOtherName(m)) return false;
       if (m.caps) return true;
       var keep = m.ids.filter(function (id) { return ENTS[id].demonym; });
       if (!keep.length) return false;
@@ -1794,7 +1846,7 @@
   function stats() { build(); return { version: VERSION, entities: ENTS.length, latin: IDX.size, cjk: CIDX.size, stems: STEM.size }; }
 
   var API = { version: VERSION, locate: locate, analyze: analyze, register: register, stats: stats,
-    _norm: normTerm, _tokenize: tokenize, _build: build, _ents: function () { build(); return ENTS; },
+    _norm: normTerm, _tokenize: tokenize, _build: build, _sentenceCase: sentenceCase, _ents: function () { build(); return ENTS; },
     _idx: function () { build(); return IDX; }, _cidx: function () { build(); return CIDX; } };
 
   if (typeof globalThis !== 'undefined') globalThis.IntMapNewsGeo = API;
