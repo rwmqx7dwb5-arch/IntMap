@@ -1019,6 +1019,12 @@ function defaultCcOf(name) {
  *      細かい地点を 1 本しか言っていないなら、その出来事について分かっている精度は国である
  *      ——地図が表す精度を、情報の精度に合わせる。満たす地点が無ければ支持の最も多い地点。
  *   ⚠ 全員が同じ都市を指す出来事（キーウの橋 6 本）は従来どおりその都市になる。 */
+/* (news-quality-followup) 代表地点を選ぶ規則の版。summariseEvent が location_evidence.rule に書き、取り込みは
+   **書かれた版がこれと違う出来事を、構成記事が残っている限り選び直す**（news-ingest/index.ts stageAssign）。
+   規則を変えたらここを変える——変えないと、新しい規則は「次に記事が足された出来事」にしか効かない
+   （実測 2026-11-18・本番: 11-16 08:38 以降記事の来ない 21 本の米中露会談が、上の規則の後も White House のまま）。 */
+export const PLACE_RULE = 'theatre-then-majority-2026-11-17';
+
 function placeNamedIn(name, title) {
   const p = tokenise(String(name || '').split(',')[0]);
   if (!p.size) return false;
@@ -1120,8 +1126,8 @@ export function summariseEvent(members, idf, ccOf = defaultCcOf) {
           /* (#R404) 代表地点を置いたのは AI か決定論エンジンか、そして
              この Event の記事のうち何本が AI 解析済みか。 */
           by: place.by || null,
-          ai_articles: arts.filter((a) => a.subject_located_by === 'ai').length }
-      : { located: 0, of: arts.length },
+          ai_articles: arts.filter((a) => a.subject_located_by === 'ai').length, rule: PLACE_RULE }
+      : { located: 0, of: arts.length, rule: PLACE_RULE },
     first_published_at: times.length ? new Date(Math.min(...times)).toISOString() : null,
     last_article_at: times.length ? new Date(Math.max(...times)).toISOString() : null,
     article_count: arts.length,

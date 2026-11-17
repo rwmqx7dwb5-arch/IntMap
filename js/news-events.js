@@ -72,6 +72,11 @@ export function newsEvents(HOST) {
     'news_event_articles(relation,assignment_score,assigned_by,' +
     'news_articles(id,title,description,canonical_url,source_id,published_at,subject_name_en,subject_type))';
 
+  /* (news-quality-followup) 検索が当たる出来事の欄。サーバーへの問い合わせ（load の or()）と、一覧が
+     手元で絞る文（toItem の _search）が**同じこの一覧**を読む。以前は問い合わせが要約にも当て、手元の文は
+     要約を持たなかったので、要約にだけ語を含む出来事は「All topics」の件数に数えられ一覧からは消えた
+     （本番 2026-11-18「Kerch」: 件数 2・一覧 1）。 */
+  const SEARCH_COLS = ['representative_title', 'summary'];
   const LIMIT = 200;          /* 一覧に載せる Event の上限（記事モードの 150 と同じ桁） */
 
   let sources = null;          /* id → { name, slug, type, country, hq } */
@@ -400,7 +405,7 @@ export function newsEvents(HOST) {
       analysis,
       /* 検索は代表見出しだけでなく**構成記事の見出しにも当てる**。Event を探す人は
          「自分が読んだ 1 本の見出し」を覚えていることのほうが多い。 */
-      _search: (title + ' ' + row.representative_title + ' ' + members.map((m) => m.title).join(' ') + ' ' + outlets.join(' ')).toLowerCase(),
+      _search: [title, ...SEARCH_COLS.map((c) => row[c] || ''), ...members.map((m) => m.title), ...outlets].join(' ').toLowerCase(),
       _event: {
         id: row.id, publicId: row.public_id, title: row.representative_title, titleShown: title,
         brief, synthesis,
@@ -440,7 +445,7 @@ export function newsEvents(HOST) {
         .select(EVENT_COLS + ',' + MEMBER_COLS)
         .eq('status', 'active').is('merged_into', null);
       const term = pgSafe(o.query);
-      if (o.query && term) q = q.or('representative_title.ilike.*' + term + '*,summary.ilike.*' + term + '*');
+      if (o.query && term) q = q.or(SEARCH_COLS.map((c) => c + '.ilike.*' + term + '*').join(','));
       if (o.day) {
         const w = editionWindow({ day: o.day }, nowMs());
         if (!w) { lastError = 'no such day'; return false; }

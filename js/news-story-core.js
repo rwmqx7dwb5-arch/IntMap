@@ -117,6 +117,10 @@ export function centreOf(titles) {
  *              1. a name that is a thread by itself (MIN_EVENTS ≤ df ≤ ALONE_MAX), the rarest first
  *              2. pairs of words that hold ≥ MIN_EVENTS events together, at least one a name and at least one NOT a
  *                 name, by PMI × ln(1 + n)
+ *                 — or two words that are BOTH the event's centre (`centre`), named or not: «cheating + glasses» is the
+ *                 thread of the AI-glasses exam scandal although neither word is a name (measured 2026-11-18, production
+ *                 seed «South Korea cheating scandal»: the centre was south, korea, cheat, glasse, exam, and with only
+ *                 name-holding pairs allowed the pick was «korea + south», 49 events of everything South Korean)
  *              3. pairs made only of names (who / where — «white + house»), by the same score
  *              4. broader names (df > ALONE_MAX), the rarest first
  *            and, when the event's `centre` is given (centreOf the headlines of its articles), the choices holding MORE
@@ -124,10 +128,20 @@ export function centreOf(titles) {
  *            offered, never picked over one that holds the centre (`central`). Measured 2026-11-17: «huang + potential»
  *            (3 events, 1 centre word) came before «huang + jensen» (61, 2) — three reports of one day, against the
  *            resignation-to-return thread that `lineage` reads from the 61 (13 events).
- *   pick     choices[0], or null — «no thread» is an answer (a headline with no name, or names nobody else used) */
+ *            ⚠ A CHOICE WHOSE WORDS ONLY SPELL A PLACE IS NEVER PICKED (`place`). «south + korea», «white + house» name where
+ *            a story happens, not what happens: they hold every report from there. Which words spell a place is asked of
+ *            `opts.placeName(terms)` — js/news-story.js hands in the news geocoder (it is true when the words, in some
+ *            order, ARE the located place's own name; «xi + putin» locates to Russia and is not a place). Such a choice is
+ *            still offered as a chip; with nothing else, the pick is null. It is asked of pairs of names and of broad names
+ *            (df > ALONE_MAX) only: a rare name by itself («shenzhen», «kerch») is a thread by the ALONE_MAX measurement, and
+ *            ruling it out picked «thursday» for the Shenzhen summit (weekdays are capitalised too).
+ *   pick     the first choice that is not a place, or null — «no thread» is an answer (a headline with no name, or names
+ *            nobody else used) */
 export function suggest(stats, opts) {
   const S = stats || { n: 0, terms: [], pairs: [] };
   const centre = (opts && opts.centre instanceof Set) ? opts.centre : null;
+  const placeName = (opts && typeof opts.placeName === 'function') ? opts.placeName : null;
+  const inCentre = (x) => !!centre && centre.has(stemOf(x.t));
   const N = Math.max(1, S.n);
   const by = new Map(S.terms.map((x) => [x.t, x]));
   const cap = Math.max(2, N * STORY.MAX_SHARE);
@@ -136,7 +150,7 @@ export function suggest(stats, opts) {
   for (const [a, b, n] of S.pairs) {
     const A = by.get(a), B = by.get(b);
     if (!usable(A) || !usable(B) || n < STORY.MIN_EVENTS) continue;
-    if (!isName(A) && !isName(B)) continue;
+    if (!isName(A) && !isName(B) && !(inCentre(A) && inCentre(B))) continue;
     const pmi = Math.log((n * N) / (A.df * B.df));
     if (!(pmi > 0)) continue;   /* together no more often than apart: two words, not a thread */
     const both = isName(A) && isName(B);
@@ -152,13 +166,15 @@ export function suggest(stats, opts) {
   for (const c of choices) {
     c.centre = centre ? c.terms.filter((t) => centre.has(stemOf(t))).length : 0;
     c.central = !centre || c.centre > 0;
+    let pl = false; if (placeName && (c.kind === 'names' || (c.kind === 'name' && c.n > STORY.ALONE_MAX))) { try { pl = !!placeName(c.terms); } catch (_) { pl = false; } }
+    c.place = pl;
   }
   /* the more of the centre a choice holds, the earlier (a stable sort: the order above holds among equals) */
   if (centre) choices = choices.map((c, i) => [c, i]).sort((x, y) => y[0].centre - x[0].centre || x[1] - y[1]).map((x) => x[0]);
   const chips = S.terms.filter((x) => x.df >= 2)
     .map((x) => ({ t: x.t, df: x.df, name: isName(x), common: x.df > cap, central: !centre || centre.has(stemOf(x.t)) }))
     .sort((x, y) => (y.name - x.name) || (x.common - y.common) || (x.df - y.df) || (x.t < y.t ? -1 : 1));
-  return { pick: choices[0] || null, choices, chips };
+  return { pick: choices.find((c) => !c.place) || null, choices, chips };
 }
 
 /* ── the lineage: which of the events naming the words FOLLOW from the event the story was opened from ──── */

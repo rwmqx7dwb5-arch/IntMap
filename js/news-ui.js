@@ -226,9 +226,17 @@ export function newsUi(HOST){
       GE().layers.add({id:NEWS_BAND_L,type:'symbol',source:'news-points',
         layout:Object.assign({},bandLayout,{'text-anchor':'right','text-offset':MTy.bandOffset('L')}),
         paint:Object.assign({},bandPaint,{'text-opacity':shownL,'icon-opacity':shownL})});
-      GE().events.on('moveend',HOST.scheduleNewsDeclutter); GE().events.on('zoomend',HOST.scheduleNewsDeclutter);
+      /* (news-quality-followup) THE DECLUTTER ASKS WHERE THE COUNTRY NAMES ARE, SO IT MUST ASK AFTER THEY ARE PLACED.
+         At `moveend` the tiles of the new view are often still loading and their names not yet placed: the box query
+         returns nothing, the band is granted, and the name appears under it a moment later. Measured on production
+         2026-11-18 (375×812, globe, z2.2–2.6, six views): 4 of 6 views had a shown band over a country name 3.5 s after
+         the move, and in all of them re-running the declutter cleared every overlap. So each settle also asks ONCE
+         more, at the renderer's next `idle` (tiles loaded, placement done). ⚠ `once`, never `on('idle')`: the
+         declutter writes feature-state, which repaints and raises `idle` again — a standing binding would loop. */
+      const declutterSettled=()=>{ try{ HOST.scheduleNewsDeclutter(); }catch(_){} try{ GE().events.once('idle',HOST.scheduleNewsDeclutter); }catch(_){} };
+      GE().events.on('moveend',declutterSettled); GE().events.on('zoomend',declutterSettled);
       /* If pins were accumulated before map.load, flush them now. */
-      if(HOST.newsFeatures.length){ GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} }
+      if(HOST.newsFeatures.length){ GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); declutterSettled(); }
       try{ HOST.refreshNewsPill(); }catch(_){}   /* (#R32) set the band's initial colors for the current theme */
     }
     if(!GE().layers.hasSource('dash-points')){

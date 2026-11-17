@@ -73,7 +73,7 @@ function strictKit(log) {
   const GE = fakeEngine(log);
   const el = () => ({ style: {}, dataset: {}, classList: { add() {}, remove() {}, toggle() {}, contains: () => false }, querySelector: () => null, querySelectorAll: () => [], closest: () => null, setAttribute() {}, removeAttribute() {} });
   const values = { HOST: { lang: 'en' }, GE, setVis: (id, on) => log.push(['setVis', id, on]), beforeId: undefined, opacities: {}, layerReads: {},
-    satToast: () => {}, tileLegends: () => {}, whenStyleReady: () => Promise.resolve(), addRaster: (id) => log.push(['addRaster', id]),
+    satToast: () => {}, tileLegends: () => {}, wireDrag: () => {}, whenStyleReady: () => Promise.resolve(), addRaster: (id) => log.push(['addRaster', id]),
     rowUntilObserved: () => Promise.reject(Object.assign(new Error('aborted'), { reason: 'aborted' })), autoUncheck: () => {},
     /* the country-fill machinery the alliance rows draw with */
     withCountries: (cb) => Promise.resolve().then(cb), addChoro: (id) => log.push(['addChoro', id]), applyChoro: (id) => log.push(['applyChoro', id]),

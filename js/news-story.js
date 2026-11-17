@@ -79,6 +79,21 @@ export function newsStory(HOST) {
     return index ? index.name(k) : k;
   }
 
+  /* (news-quality-followup) do these words, in some order, spell a place's own name? (js/news-story-core.js suggest: a
+     choice that only names where a story happens is not its key). Asked of the news geocoder; with it absent, nothing is a
+     place — the pick falls back to the order without this rule rather than to no story. */
+  function placeName(terms) {
+    const G = window.IntMapNewsGeo; if (!G || typeof G.locate !== 'function') return false;
+    const ws = (terms || []).map((x) => String(x || '').toLowerCase()).filter(Boolean);
+    if (!ws.length || ws.length > 3) return false;
+    const orders = ws.length === 1 ? [ws] : ws.length === 2 ? [ws, [ws[1], ws[0]]] : [ws];
+    for (const o of orders) {
+      const phrase = o.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const r = G.locate(phrase); const en = r && r.name && (r.name.en || r.name);
+      if (typeof en === 'string' && en.toLowerCase() === o.join(' ')) return true;
+    }
+    return false;
+  }
   /* ── the data ────────────────────────────────────────────────────────────────────────────────── */
   function span() {
     const until = clockUntil();
@@ -126,7 +141,7 @@ export function newsStory(HOST) {
       /* the words' counts are asked for the headline AND the words asked for, so a word chosen elsewhere (a link, Atlas) is a chip too */
       const [stats, idx, seedTitles] = await Promise.all([fetchTerms([p.text || '', want.join(' ')].join(' ').trim(), sp), countries().catch(() => null), fetchSeedTitles(st.seed && st.seed.id)]);
       if (my !== st.seq) return null;
-      index = idx; st.stats = stats; st.sug = suggest(stats, { centre: centreOf(seedTitles) });
+      index = idx; st.stats = stats; st.sug = suggest(stats, { centre: centreOf(seedTitles), placeName });
       if (!st.terms.length && st.sug.pick) st.terms = st.sug.pick.terms.slice();
       /* a word the server does not cut from this text (its rule is news_title_terms) can match no headline — it is not asked with */
       const known = new Set(stats.terms.map((x) => x.t));
