@@ -132,7 +132,7 @@ test('the detail page calls those rules and folds instead of deleting', () => {
   assert.match(open, /<details class="ev-fold ev-cov-more"><summary>'[\s\S]*for \(const m of g\.more\) html \+= covRow\(m, true/);
   assert.match(open, /<details class="ev-d-sec ev-why ev-fold"><summary>/);
   /* the up-front explanation is one line; the long machine-check text lives only in the folded block */
-  const iLong = open.indexOf('machine-checked against the wording');
+  const iLong = open.indexOf('The program does not check that the sentence states');   /* (integrate) the accurate wording news-quality wrote */
   const iWhy = open.indexOf('<details class="ev-d-sec ev-why ev-fold">');
   assert.ok(iLong > iWhy, 'the long verification text is still printed above the fold');
   assert.doesNotMatch(open, /became the newest outlet to report this/, '«X reported last» is back as the update');

@@ -247,14 +247,14 @@ export function newsFeed(HOST){
      ⚠ いま出来事の一覧が出ているときだけ（記事モードの一覧を出来事で上書きしない）。 */
   let _grewHooked=false;   /* ⚠ (R169 #4) the factory body only DECLARES — the subscription is made on the first startNews() */
   function hookEventsGrew(){ if(_grewHooked) return; _grewHooked=true;
-    bus.on('intmap-news-events-grew', ()=>{
+    try{ bus.on('intmap-news-events-grew', ()=>{
     try{
       const E=window.IntMapNewsEvents; if(!E) return;
       if(!(HOST.globalData||[]).some((x)=>x&&x._event)) return;
       land(E.loaded()); E.renderChips();
       if(HOST.mode==='news'||HOST.mode==='saved') startNews();
     }catch(_){}
-  }); }
+  }); }catch(_){} }
   /* News cache → instant render on load/return, refreshed in the background. */
   function loadNewsCache(){
     try{ const c=JSON.parse(localStorage.getItem('intmap_news_cache')||'null');

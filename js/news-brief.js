@@ -367,10 +367,14 @@ export function makeNewsBrief(claims) {
     const seenText = prior.map((m) => squeeze(m.title) + ' — ' + clean(m.description));   /* (news-quality と統合) 前の記事の文——novelty の比較対象 */
     const learned = [];
     const title = squeeze(last.title);
-    for (const s of [...sentences(last.description, o), ...(title ? [title] : [])]) {
+    /* (integrate) a headline is a candidate only when the article has no body sentence: a re-worded headline over
+       a repeated body is not news, and a lone headline counts only for a number no earlier report gave (tests/news-story-claims-checks.test.mjs A②・A③, measured on production by news-quality) */
+    const body = sentences(last.description, o);
+    for (const s of (body.length ? body : (title ? [title] : []))) {
       if (saidBefore(s, earlier)) continue;              /* 再掲（前の記事の文に含まれる・9 割の語が同じ）は続報ではない */
       const v = novelty(s, seenText);
       if (v.covered || v.contained == null) continue;     /* 測れない文を「新しい」とも言わない */
+      if (!body.length && !v.newNumbers.length) continue;   /* 見出しだけの言い換えは新しい事実ではない——見出しが足せるのは新しい数だけ（A③） */
       learned.push({ text: s, newNumbers: v.newNumbers, fromTitle: s === title });
       seenText.push(s);
     }
