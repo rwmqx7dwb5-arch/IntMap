@@ -54,7 +54,7 @@
   <section class="lp-hero lp-hero-t">
     <div class="lp-hero-text">
       <h1>この端末とネットワークで使えるか、その場で確かめる。</h1>
-      <p class="lp-lede">生徒や職員が使う端末で、同じネットワークにつないだままこのページを開き、診断を実行してください。地図に必要なブラウザの機能を確かめ、IntMap が読み込む外部の接続先 115 件に問い合わせて、使えるもの・遮断されているもの・許可すべきものを示します。</p>
+      <p class="lp-lede">生徒や職員が使う端末で、同じネットワークにつないだままこのページを開き、診断を実行してください。地図に必要なブラウザの機能を確かめ、IntMap が読み込む外部の接続先 116 件に問い合わせて、使えるもの・遮断されているもの・許可すべきものを示します。</p>
       <div class="lp-cta">
         <button class="lp-btn rd-start" id="rd-start" type="button" data-effect="none" hidden>診断を始める</button>
         <a class="lp-btn lp-btn-2" href="#allow">許可が必要な接続先を見る</a>
@@ -206,6 +206,7 @@
           <tr data-probe="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/4/5/8" data-host="services.arcgisonline.com" data-tier="layer"><td><code>services.arcgisonline.com</code></td><td>Esri World Imagery・参照・陰影のタイル（第 2 の窓口）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://services.sentinel-hub.com/ogc/wmts/00000000-0000-0000-0000-000000000000?service=WMTS&amp;request=GetCapabilities" data-host="services.sentinel-hub.com" data-tier="layer"><td><code>services.sentinel-hub.com</code></td><td>Sentinel Hub WMTS（読者自身のインスタンス ID があるときだけ）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://services.swpc.noaa.gov/json/ovation_aurora_latest.json" data-host="services.swpc.noaa.gov" data-tier="layer"><td><code>services.swpc.noaa.gov</code></td><td>NOAA 宇宙天気予報センター：オーロラ（OVATION）・Kp の観測と予報・太陽風・GOES X 線・フレア確率・NOAA スケール・警報</td><td class="rd-state">未確認</td></tr>
+          <tr data-probe="https://ssd-api.jpl.nasa.gov/fireball.api?req-loc=true&amp;limit=1" data-host="ssd-api.jpl.nasa.gov" data-tier="layer"><td><code>ssd-api.jpl.nasa.gov</code></td><td>NASA/JPL SSD API — CNEOS の火球と小惑星の地球接近（IntMap 自身の中継を通して読む。中継が同じ要求を送る）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://stat.ripe.net/data/country-resource-stats/data.json?resource=JP" data-host="stat.ripe.net" data-tier="layer"><td><code>stat.ripe.net</code></td><td>RIPEstat の国別経路統計</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="wss://stream.aisstream.io/v0/stream" data-host="stream.aisstream.io" data-tier="layer"><td><code>stream.aisstream.io</code></td><td>aisstream.io の AIS ライブ接続（読者自身の鍵があるときだけ。無ければ ais-feed が配り、ブラウザはここへ接続しない）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://tie.digitraffic.fi/api/weathercam/v1/stations" data-host="tie.digitraffic.fi" data-tier="layer"><td><code>tie.digitraffic.fi</code></td><td>Digitraffic の道路気象カメラ地点</td><td class="rd-state">未確認</td></tr>

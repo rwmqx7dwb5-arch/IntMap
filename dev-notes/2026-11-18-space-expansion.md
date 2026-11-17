@@ -84,7 +84,7 @@ newsjp: 宇宙の新機能——任意の地点の「今夜の空」（日の出
 
 ## 7. 起動費用の天井を上げた（判断）
 
-`node scripts/perf-budget.mjs --update`（超えた行だけを上げる）。測った値: eager raw 4,601.4 → 4,660.0 kB、gzip 1,513.5 → 1,526.4 kB、
+`node scripts/perf-budget.mjs --update`（超えた行だけを上げる・main と合わせた木で測った）。eager raw 4,711.8 → 4,772.5 kB、gzip 1,549.8 → 1,563.2 kB、
 requests 9 → 10、modules 895 → 896。
 - **バイトの増分の主因は `js/widget-defs-space.js`（main の中で 36.2 kB）**。ウィジェットの定義は盤が起動時に一覧を作るので起動時に読む
   （`js/widget-defs-markets.js` と同じ扱い）。残りは能力表の 3 行・レイヤー一覧の 3 行・出典表・ツール欄の 1 行など、入口そのもの。
@@ -93,5 +93,7 @@ requests 9 → 10、modules 895 → 896。
   `import()`）分かれたままで、この回では束ね器がそう分けた理由を特定できなかった。⚠ 次に起動費用を触る人へ: 2026-11-17 の main（#1167）の
   build では main に含まれていた。宇宙の 3 つの遅延チャンク（space・sky-almanac・layer-pkg-eclipse）が `space-events` を共有チャンクにした
   ことが最も疑わしい。
+- atlas-console（+6.8 kB）は新しい 3 能力のカタログの文、atlas-cap-runs（+14 kB）はその実行部。pandemic-atlas（+2.1 kB）はこの PR が触っていない
+  チャンクで、geo-engine の分離と同じ束ね方の変化で共有部品の置き場所が動いたものと見ている（未確認）。
 - async の増加は新しい遅延チャンク（sky-almanac 41 kB・space-events 13.7 kB・3 つのレイヤー・パッケージ）と、能力の実行部・衛星の通過予報・
   プライバシーポリシーの追記。
