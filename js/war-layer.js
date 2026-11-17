@@ -69,7 +69,7 @@ export function warLayer(HOST) {
   const L = IntMapLang.pick(() => HOST.lang);
   const GE = () => IntMapGeoEngine;
 
-  let data = null, cs = null, loading = null, inWars = [];
+  let data = null, cs = null, door = null, loading = null, inWars = [];
   const insts = new Map();          /* war id → the instance, built on that row's first ON */
 
   const canDraw = () => { try { return !!HOST.canDraw(); } catch (_) { try { return !!GE().ready(); } catch (__) { return false; } } };
@@ -124,7 +124,7 @@ export function warLayer(HOST) {
           let t0 = Infinity, t1 = -Infinity;
           for (const w of data.wars) { const sp = spanOf(w); t0 = Math.min(t0, dnum(sp[0])); t1 = Math.max(t1, dnum(sp[1])); }
           inWars = await h.during(t0, t1);
-          cs = h.data;
+          cs = h.data; door = h;
         }
         return !!(data && cs);
       } catch (_) { return false; } finally { loading = null; }
@@ -155,6 +155,29 @@ export function warLayer(HOST) {
   /* the window the layer draws — DERIVED at build time so nothing in the record is unreachable
      (the assassination at Sarajevo is 30 days before WW1's `from` and was never on screen). */
   const spanOf = (w) => (w && w.span) || [w.from, w.to];
+
+  /* ── what is true in a war on a day — the fill (makeWar) and the point reader (atPoint) read the same three ── */
+  function baseFaction(W, gw, dateStr) {
+    const tl = W.control[gw]; if (!tl) return 'NEUTRAL';
+    let f = 'NEUTRAL';
+    for (const [d, k] of tl) { if (d <= dateStr) f = k; }
+    return f;
+  }
+  /* every front that is drawing a line today, with the line it is drawing */
+  function activeFronts(W, dateStr) {
+    const out = [];
+    for (const F of W.fronts) {
+      if (F.until && dateStr >= F.until) continue;
+      let cur = null;
+      for (const D of F.dates) { if (D.d <= dateStr) cur = D; }
+      if (!cur || !cur.pts.length) continue;
+      out.push({ F, D: cur, left: cur.left || F.left, right: cur.right || F.right });
+    }
+    return out;
+  }
+  /* ⚠ the SAME shape scripts/build-wars.mjs passes to WarGeom — one definition of «today's cuts» */
+  const cutsFor = (fronts, gw) => fronts.filter((a) => a.D.cuts.indexOf(gw) >= 0)
+    .map((a) => ({ pts: a.D.pts, left: a.left, right: a.right }));
 
   /* ── the stylesheet, once for both instances ────────────────────────────────────────────────── */
   function css() {
@@ -254,28 +277,6 @@ export function warLayer(HOST) {
     const war = () => warById(warId);
     const setVis = (v) => IDS.forEach((id) => { try { if (GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', v ? 'visible' : 'none'); } catch (_) { } });
 
-    /* ── what is true in this war on this day ─────────────────────────────────────────────────── */
-    function baseFaction(W, gw, dateStr) {
-      const tl = W.control[gw]; if (!tl) return 'NEUTRAL';
-      let f = 'NEUTRAL';
-      for (const [d, k] of tl) { if (d <= dateStr) f = k; }
-      return f;
-    }
-    /* every front that is drawing a line today, with the line it is drawing */
-    function activeFronts(W, dateStr) {
-      const out = [];
-      for (const F of W.fronts) {
-        if (F.until && dateStr >= F.until) continue;
-        let cur = null;
-        for (const D of F.dates) { if (D.d <= dateStr) cur = D; }
-        if (!cur || !cur.pts.length) continue;
-        out.push({ F, D: cur, left: cur.left || F.left, right: cur.right || F.right });
-      }
-      return out;
-    }
-    /* ⚠ the SAME shape scripts/build-wars.mjs passes to WarGeom — one definition of «today's cuts» */
-    const cutsFor = (fronts, gw) => fronts.filter((a) => a.D.cuts.indexOf(gw) >= 0)
-      .map((a) => ({ pts: a.D.pts, left: a.left, right: a.right }));
 
     /* how big a dot an operation gets: 0 when the record carries no figure, 3 for the ones that
        cost a million. Computed here rather than in a MapLibre expression because the shipped value
@@ -868,6 +869,174 @@ export function warLayer(HOST) {
     return i;
   }
 
+
+  /* ══ (news-with-history) THIS GROUND IN THE RECORDED WARS ══════════════════════════════════════════
+     The SAME record and the SAME rules the fill draws with (`baseFaction` · `activeFronts` · `cutsFor` ·
+     `WarGeom.factionAt`), asked of one point instead of painted: for each war, which side the record puts the point on,
+     from which day to which day, and the war's dated events in the country the point lay in on that day. The country is
+     the CShapes row that holds the point (the bundle's door `contains`, an exact point-in-polygon test). The side changes
+     only on a day the record states something — a control entry, a front's dated line, a country's first or last day — so
+     those days are the only ones asked. `level:'country'` names the country instead of the point: the war's control
+     record for the states that held THE COUNTRY'S LAND in each war, without the fronts' cuts, which are a statement about ground
+     the country-level event does not place. ⚠ (news-past-fixes) ASKED OF THE LAND, NOT OF TODAY'S CODE (the user's decision,
+     2026-11-17: 「土地で問う」). Asking only the present code (Ukraine: gw 369, from 1991) dropped every war fought before the
+     country existed, although its land was in them (the USSR's, gw 365, in the Second World War). The present country's own
+     CShapes territory is sampled (`landSamples`) and each sample asks which CShapes row held it during the war; every state
+     found is a party of that era with its SHARE of the present territory, and a state that is not the present one is marked
+     `predecessor` — its record, not this country's. The same mark is put on a point's periods whose state is not the one
+     that holds the point now. ⚠ A SIDE IS NOT A BATTLEFIELD: the record puts every
+     belligerent state on a side (France is on the UN side of the Korean War), so a side says the state was a party, and the
+     events say where something is recorded. A war that lists neither the ground's state nor an event in it is
+     `involved:false` — the record says nothing here, which is not «peace»; the reply says that. */
+  const dstr = (k) => String(Math.floor(k / 10000)).padStart(4, '0') + '-' + String(Math.floor(k / 100) % 100).padStart(2, '0') + '-' + String(k % 100).padStart(2, '0');
+  /* the present territory as points, at ONE spacing over every polygon of it (so each point stands for the same area and a
+     share is a share of the land), plus the asked point. The spacing is set from the land's own area so about LAND_SAMPLES
+     points fall on it; a polygon smaller than one spacing (an atoll) still gets one point of its own, inside it.
+     ⚠ ONE LATTICE OVER THE TERRITORY'S BOX was measured first and rejected (2026-11-17, the 181 present CShapes rows): a
+     32 × 32 box lattice keeps Ukraine 567 points but Japan 86, and an archipelago's box is mostly sea — the Maldives needed
+     2048 × 2048 for 467 points, Fiji's box crosses the date line.
+     ⚠ LAND_SAMPLES = 512: a state holding less than about 0.2 % of the land can go unseen; shares are reported to the whole
+     percent, and a sliver where two eras' borders disagree by a few kilometres is not a party. Invalid if shares finer than
+     a percent are ever shown. Used only here. */
+  const LAND_SAMPLES = 512;
+  const ringArea = (r) => { let a = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += (r[j][0] - r[i][0]) * (r[j][1] + r[i][1]); return Math.abs(a / 2); };
+  function landSamples(polys, pt) {
+    const parts = polys.map((p) => {
+      let w = Infinity, so = Infinity, e = -Infinity, n = -Infinity;
+      for (const [x, y] of p[0]) { if (x < w) w = x; if (x > e) e = x; if (y < so) so = y; if (y > n) n = y; }
+      return { p, w, so, e, n, area: Math.max(0, ringArea(p[0]) - p.slice(1).reduce((t, h) => t + ringArea(h), 0)) };
+    });
+    const total = parts.reduce((t, q) => t + q.area, 0);
+    const d = Math.sqrt(total / LAND_SAMPLES) || 1;
+    const out = [pt];
+    for (const q of parts) {
+      const before = out.length;
+      for (let x = q.w + d / 2; x < q.e; x += d) for (let y = q.so + d / 2; y < q.n; y += d) {
+        if (WarGeom.pointInPolys([x, y], [q.p])) out.push([x, y]);
+      }
+      if (out.length === before) { try { const c = WarGeom.interiorPoint(q.p[0]); if (c) out.push(c); } catch (_) { /* a degenerate ring holds no land */ } }
+    }
+    return out;
+  }
+  const rowBox = new Map();
+  function boxOf(i) {
+    let b = rowBox.get(i); if (b) return b;
+    b = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const p of polysOf(i)) for (const [x, y] of p[0]) { if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (x > b[2]) b[2] = x; if (y > b[3]) b[3] = y; }
+    rowBox.set(i, b); return b;
+  }
+  /* which states held the land during [a, b]: per gw, its first and last day on the land, its name (the latest row's), the
+     days its hold on the land changed (a row of it starting or ending), and its share of the land ON A GIVEN DAY — the share
+     is asked per day because the land changes hands inside a war (CShapes: Lviv is Poland's until 1945-05-07) */
+  function landParties(samples, a, b) {
+    const cand = [];
+    for (const i of inWars) {
+      const f = cs.feats[i], s0 = f[2] * 10000 + f[3] * 100 + f[4], s1 = f[5] * 10000 + f[6] * 100 + f[7];
+      if (s0 <= b && s1 >= a) cand.push({ i, gw: f[1], name: f[0], s: Math.max(s0, a), e: Math.min(s1, b), last: s1 });
+    }
+    const by = new Map();
+    for (const q of samples) {
+      const seen = new Set();
+      for (const c of cand) {
+        const bx = boxOf(c.i);
+        if (q[0] < bx[0] || q[0] > bx[2] || q[1] < bx[1] || q[1] > bx[3]) continue;
+        if (!WarGeom.pointInPolys(q, polysOf(c.i))) continue;
+        let p = by.get(c.gw); if (!p) { p = { gw: c.gw, name: c.name, n: 0, a: c.s, b: c.e, last: c.last, held: [], days: new Set() }; by.set(c.gw, p); }
+        if (c.s < p.a) p.a = c.s; if (c.e > p.b) p.b = c.e;
+        if (c.last > p.last) { p.last = c.last; p.name = c.name; }
+        if (!seen.has(c.gw)) { seen.add(c.gw); p.n++; }
+        p.held.push([q, c.s, c.e]); p.days.add(c.s);
+      }
+    }
+    const N = samples.length;
+    return [...by.values()].map((p) => Object.assign(p, {
+      shareAt: (k) => { const on = new Set(); for (const [q, s0, s1] of p.held) if (s0 <= k && k <= s1) on.add(q); return on.size / N; },
+    })).sort((u, v) => v.n - u.n || u.gw - v.gw);
+  }
+
+  async function atPoint(lng, lat, { level = 'point' } = {}) {
+    const x = +lng, y = +lat;
+    if (!isFinite(x) || !isFinite(y)) return { status: 'unavailable', reason: 'no-point' };
+    if (!(await load()) || !door) return { status: 'unavailable', reason: 'war-record-unreachable' };
+    let hit;
+    try { hit = await door.contains(x, y); } catch (e) { return { status: 'unavailable', reason: 'borders-' + String((e && e.reason) || 'failed') }; }
+    const rows = (hit.rows || []).map(([i, r]) => ({ i, name: r[0], gw: r[1], s: r[2] * 10000 + r[3] * 100 + r[4], e: r[5] * 10000 + r[6] * 100 + r[7] }))
+      .sort((a, b) => a.s - b.s);
+    const pt = [x, y];
+    const rowAt = (k) => rows.find((r) => r.s <= k && k <= r.e) || null;
+    /* no border record draws a state here (open sea, a coast the record does not reach): no war can be asked */
+    if (!rows.length) return { status: 'none', reason: 'no-country-at-point', at: { lng: x, lat: y }, level, wars: [], src: data.src || '' };
+    /* the state that holds the point now (the latest row): any other state in the answer is a predecessor's record */
+    const now = rows.slice().sort((a, b) => b.e - a.e)[0];
+    let country = null, land = null, terr = null;
+    if (level === 'country') {
+      country = { gw: now.gw, name: now.name, to: dstr(now.e), askedOf: 'land' };
+      /* ⚠ (news-past-land-rows) TODAY'S ROW IS BROUGHT ONTO THE MIRROR FIRST. The page holds a sparse mirror of CShapes
+         (js/hist-bundles.js): this layer brought only the rows in force during its wars (`load`), and `contains` answers
+         from the worker without landing anything. Today's outline of a country whose present row starts after the last
+         recorded war — MEASURED in production 2026-11-17: Ukraine (2014-03-18 →), Russia, Serbia, Montenegro, Sudan,
+         South Sudan — was not on the page, and the answer threw «reading '8'» unless another reader had happened to bring it. */
+      if (!cs.feats[now.i]) { try { await door.during(now.s, now.s); } catch (e) { return { status: 'unavailable', reason: 'borders-' + String((e && e.reason) || 'failed') }; } }
+      if (!cs.feats[now.i]) return { status: 'unavailable', reason: 'present-outline-unreachable' };
+      terr = polysOf(now.i);
+      land = landSamples(terr, pt);
+    }
+    const wars = data.wars.map((W) => {
+      const sp = spanOf(W), s0 = dnum(sp[0]), s1 = dnum(sp[1]);
+      const periods = [];
+      const push = (from, to, row, fac) => {
+        const prev = periods[periods.length - 1];
+        const share = row.shareAt ? row.shareAt(from) : null;
+        if (share === 0) return;   /* on that day this state held none of the land (it held some earlier or later in the war) */
+        if (prev && prev.faction === fac && prev.gw === row.gw && prev.toK === from && prev.share === share) { prev.toK = to; return; }
+        periods.push({ fromK: from, toK: to, gw: row.gw, state: row.name, faction: fac, share });
+      };
+      const cutting = (gw) => W.fronts.filter((F) => F.dates.some((D) => D.cuts.indexOf(gw) >= 0));
+      const segs = level === 'country'
+        ? landParties(land, s0, s1).map((p) => ({ row: { gw: p.gw, name: p.name, shareAt: p.shareAt }, a: p.a, b: p.b, fronts: [], days: p.days }))
+        : rows.filter((r) => r.s <= s1 && r.e >= s0).map((r) => ({ row: r, a: Math.max(r.s, s0), b: Math.min(r.e, s1), fronts: cutting(r.gw) }));
+      for (const g of segs) {
+        const ks = new Set([g.a]);
+        for (const k of g.days || []) if (k > g.a && k <= g.b) ks.add(k);   /* the land changed hands */
+        for (const [d] of (W.control[g.row.gw] || [])) { const k = dnum(d); if (k > g.a && k <= g.b) ks.add(k); }
+        for (const F of g.fronts) {
+          for (const D of F.dates) { const k = dnum(D.d); if (k > g.a && k <= g.b) ks.add(k); }
+          if (F.until) { const k = dnum(F.until); if (k > g.a && k <= g.b) ks.add(k); }
+        }
+        const days = [...ks].sort((u, v) => u - v);
+        days.forEach((k, j) => {
+          const d = dstr(k), base = baseFaction(W, g.row.gw, d);
+          let fac = base;
+          if (level !== 'country') {
+            const cuts = cutsFor(activeFronts(W, d), g.row.gw);
+            if (cuts.length) { try { fac = WarGeom.factionAt(pt, polysOf(g.row.i), base, cuts) || base; } catch (_) { fac = base; } }
+          }
+          push(k, j + 1 < days.length ? days[j + 1] : g.b, g.row, fac);
+        });
+      }
+      /* the war's dated events in the country the point lay in that day (point), or on the country's present land (country) */
+      const events = [];
+      for (const E of W.events || []) {
+        if (!Array.isArray(E.at)) continue;
+        const k = dnum(E.d);
+        let inside = false;
+        if (level === 'country') inside = WarGeom.pointInPolys(E.at, terr);   /* on the present land, whoever held it */
+        else { const r = rowAt(k); inside = !!(r && WarGeom.pointInPolys(E.at, polysOf(r.i))); }
+        if (inside) events.push({ d: E.d, d2: E.d2 || null, name: E.name, kind: E.kind || null, wiki: E.wiki || null, cas: E.cas == null ? null : E.cas });
+      }
+      const listed = segs.some((g) => !!W.control[g.row.gw]) || segs.some((g) => g.fronts.length);
+      const sided = periods.some((p) => p.faction !== 'NEUTRAL');
+      return {
+        id: W.id, name: W.name, span: sp, listed, involved: listed || events.length > 0,
+        periods: periods.map((p) => ({ from: dstr(p.fromK), to: dstr(p.toK), gw: p.gw, state: p.state, faction: p.faction,
+          predecessor: p.gw !== now.gw, share: p.share == null ? undefined : Math.round(p.share * 100),
+          side: (W.factions[p.faction] || W.factions.NEUTRAL || {}).name || null, col: (W.factions[p.faction] || {}).col || null })),
+        sided, events,
+      };
+    });
+    return { status: 'ok', at: { lng: x, lat: y }, level, country, wars, kinds: data.kinds || {}, src: data.src || '' };
+  }
+
   /* ⚠ THE FACADE IS BY WAR ID. `toggle(id, want)` rather than `toggle(want)` — js/war-fronts.js and
      tests/atlas-console-kernel-checks.test.mjs #R209 ③ both reach it here, and the id is what tells two identical layers apart. */
   window.__imWarFronts = {
@@ -880,6 +1049,7 @@ export function warLayer(HOST) {
     span: (id) => inst(id).span(),
     wars: () => ((data && data.wars.map((w) => ({ id: w.id, from: w.from, to: w.to, span: spanOf(w) }))) || []),
     kinds: () => (data && data.kinds) || {},
+    atPoint,
     rowName,
     _build: (id, d) => inst(id)._build(d),
   };

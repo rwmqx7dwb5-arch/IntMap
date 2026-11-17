@@ -21,6 +21,7 @@
  *  reads source it says why. ⚠ The tier list is DISCOVERED from the module's own `makeTier({…})`
  *  calls (#R680: a hand list drops the third tier the day it is added).
  * ==========================================================================*/
+import { rowIsToday } from '../js/admin-present.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -493,7 +494,9 @@ function runtime() {
      was handed by the thread that holds the record — so `load` is LIFTED too and run against the REAL
      js/hist-bundles.js, over a record published on `window` (the door reads it where it is). The rule
      under test is therefore the shipped one on both sides of the door. */
-  const ctx = vm.createContext({ window: { IntMapHistScale: { FLOOR: -123000 } }, cfg: { key: 'a1', file: 'data/x.js', global: '__TESTADM' }, nameOf: f => f[0], geomOf: () => null, Math, Map });
+  const ctx = vm.createContext({ window: { IntMapHistScale: { FLOOR: -123000 } }, cfg: { key: 'a1', file: 'data/x.js', global: '__TESTADM' }, nameOf: f => f[0], geomOf: () => null, Math, Map,
+    /* (hist-modern-admin) `fcAt` stamps whether the row is still in force today, by the rule's own owner */
+    rowIsToday });
   vm.runInContext(read('js/hist-bundles.js'), ctx);
   /* ⚠ `fcAt` stamps the collision order of the name on every feature, so the three names that ordering
      is made of are LIFTED from the shipped module, not stubbed (#R621). `geomOf` stays null because

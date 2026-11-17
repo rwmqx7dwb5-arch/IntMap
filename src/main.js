@@ -252,7 +252,6 @@ import '../js/world-packs-rows.js';
    (the World-data plate and the older data-layers row) read the same grid through it. */
 import '../js/ocean-currents-field.js';
 import '../js/outbreaks.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is. (#R650) …and the WHO Disease Outbreak News layer. */
-import '../js/sims.js';
 import '../js/tables.js';
 /* (#R231) the phone's base-map square + its popover — the five view controls, lifted out of the Map &
    layers sheet ("レイヤー選択欄から分離"). After js/mobile-ui.js because initMobileUI() installs it. */

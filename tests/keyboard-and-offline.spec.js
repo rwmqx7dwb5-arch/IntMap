@@ -59,14 +59,28 @@ test.describe('keyboard-and-offline', () => {
     await test.step('a real arrow key and a real «=» move and zoom the map, and the settled move is said with the profile', async () => {
       await focusMap(page);
       const before = await view(page);
+      /* The two keys are two settled views, and each one's paragraph is gathered (the profile) before it is said. Which of them is
+         said used to depend on the runner's speed: on CI the arrow's paragraph was still being gathered when «=» settled, it was
+         superseded, and the zoom's paragraph said no move — the move was never said. That case is made here on purpose, by events
+         and not by time: each profile's place-name request is held until both paragraphs are being gathered (one request per
+         profile, js/place-dossier.js placeName), then refused like the context route does. The paragraph that IS said must carry
+         the move from the centre the reader was last told about. */
+      const held = []; let release; const go = new Promise((r) => { release = r; });
+      const NOMINATIM = /nominatim\.openstreetmap\.org/;
+      await page.route(NOMINATIM, async (route) => { held.push(route.request().url()); await go; await route.abort(); });
       /* one key at a time: the renderer eases each, and a second key would cancel the first */
       await page.keyboard.press('ArrowRight');
       await expect.poll(async () => (await view(page)).lng, { timeout: 10_000 }).toBeGreaterThan(before.lng);
       await page.waitForFunction(() => !window.IntMapGeoEngine.camera.isAnimating(), null, { timeout: 15_000 });
+      await expect.poll(() => held.length, { timeout: 15_000, message: 'the arrow’s paragraph is being gathered' }).toBe(1);
       await page.keyboard.press('Equal');
       await expect.poll(async () => (await view(page)).zoom, { timeout: 10_000 }).toBeGreaterThan(before.zoom);
       await page.waitForFunction(() => !window.IntMapGeoEngine.camera.isAnimating(), null, { timeout: 15_000 });
+      await expect.poll(() => held.length, { timeout: 15_000, message: 'the zoom’s paragraph is being gathered too' }).toBe(2);
+      release();
       await expect.poll(() => narration(page), { timeout: 30_000 }).toMatch(/Moved about [\d.]+ km east[\s\S]*Country:[\s\S]*Elevation/);
+      expect(await narration(page), 'the said paragraph is the zoom’s').toContain('zoom ' + Math.round((await view(page)).zoom * 10) / 10 + '.');
+      await page.unroute(NOMINATIM);
     });
 
     await test.step('Alt+Shift+R turns it off, and an arrow key then says only the short summary', async () => {
