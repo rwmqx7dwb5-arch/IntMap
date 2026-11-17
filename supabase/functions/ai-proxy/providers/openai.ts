@@ -20,7 +20,7 @@ import type { TurnReq, TurnItem } from "../turn.ts";
    ISOLATE, so an entitlement granted later is picked up without a deploy. */
 let summaryRefused = false;
 
-export async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = "", meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
+export async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = "", meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; incompleteReason: string | null; webAttached: boolean; webUsed: boolean; webCount: number; webSources: number | null; webFailure?: string; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
   // GPT-6 models (gpt-6.1-sol / gpt-6.1-terra / gpt-6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
@@ -120,6 +120,10 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
   // 90s + 40s fallback = 130s worst case — safely inside even a 150s wall-clock limit.
   const WEB_TIMEOUT = 90_000;
   let usedTools = web;
+  /* (atlas-completion) WHY THE SEARCH WAS TAKEN AWAY, when a rung below took it. The answer that follows
+     is still returned — but as an answer WITHOUT the search it was asked to run, and saying so is what
+     lets the page (and Atlas) tell «the search failed» from «nothing was found» (provider-call.ts webOutcome). */
+  let webFailure = "";
   /* (#R397) THE RUNG ABOVE json_object. A caller schema is tried first and a 400 walks down to the
      bare json_object every call used before, so a dialect this model will not accept costs one
      extra request and never an answer. */
@@ -131,6 +135,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     const timedOut = e instanceof ProviderError && e.meta && (e.meta as Record<string, unknown>).timeout === true;
     if (web && timedOut) {
       usedTools = false;
+      webFailure = "timeout";
       r = await post(build(null, usedJson, false), 40_000);
     } else {
       throw e;
@@ -162,6 +167,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
   }
   if (!r.ok && r.status === 400 && usedTools) {
     usedTools = false;
+    webFailure = "rejected";
     r = await post(build(null, usedJson, false), PROVIDER_TIMEOUT_MS);
   }
   if (!r.ok) {
@@ -233,6 +239,15 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
   // it got fresh info, instead of assuming "attached === searched".
   const webCount = outputArr.filter((item: { type?: string }) => typeof item?.type === "string" && item.type.indexOf("web_search") === 0).length;
   const finishReason = String(j?.status || j?.incomplete_details?.reason || "");
+  /* (atlas-completion) Responses says whether the answer ENDED: status "completed", or "incomplete" with
+     incomplete_details.reason (max_output_tokens, content_filter). The text is kept either way; what
+     stopped it travels beside it instead of being folded into a finishReason that only says «incomplete». */
+  const incompleteReason = (j?.status && j.status !== "completed") ? String(j?.incomplete_details?.reason || j.status) : null;
+  /* …and how many results the searches listed, when the provider listed them (web_search_call.action.sources).
+     null when no search call carries the list: not reported is not zero. */
+  // deno-lint-ignore no-explicit-any
+  const listedCalls: any[] = outputArr.filter((item: { type?: string; action?: { sources?: unknown } }) => typeof item?.type === "string" && item.type.indexOf("web_search") === 0 && Array.isArray(item?.action?.sources));
+  const webSources = listedCalls.length ? listedCalls.reduce((n: number, item: { action: { sources: unknown[] } }) => n + item.action.sources.length, 0) : null;
   /* (atlas-native-tools) a turn's answer is the provider's items, in the order it produced them: its encrypted
      reasoning (to be replayed), what it wrote, and every function call with the provider's own id.
      A reply that only calls functions is a complete reply — it is not "empty". */
@@ -256,5 +271,5 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     if (refused) throw new ProviderError("provider_blocked", "Blocked by the provider's safety filter.", 502, false, { finishReason });
     throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
   }
-  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount, citations, schemaAttached: usedJson === "schema", served: String(j?.model || ""), output };
+  return { text, finishReason, incompleteReason, webAttached: usedTools, webUsed: webCount > 0, webCount, webSources, ...(webFailure ? { webFailure } : {}), citations, schemaAttached: usedJson === "schema", served: String(j?.model || ""), output };
 }

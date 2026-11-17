@@ -1189,7 +1189,7 @@ IntMapLang.define('zh-hans', {
     '{n} source(s) did not answer within {s}s': "{n} 个来源未在 {s} 秒内回应",   /* atlas-console.js */
     'live web search': "实时网络搜索",   /* atlas-console.js */
     'live web verification': "实时网络查证",   /* atlas-console.js */
-    'Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.': "这个具时效性的问题未能完成实时网络查证，因此以下是主要依据既有标题的暂定判断 — 请视为线索，而非已确认的直接证据。",   /* atlas-console.js */
+    /* atlas-console.js */
     'LOAD': "加载",   /* flight-sim.js */
     /* seismic.js */
     'loaded news': "已加载的新闻",   /* atlas-console.js */

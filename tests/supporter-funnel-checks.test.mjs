@@ -148,7 +148,7 @@ test('⑥ ai-core raises intmap:ai-limit where the reader is told, never for tur
   const src = rd('js/ai-core.js');
   assert.match(src, /function aiLimitReached\(\)\{[^}]*dispatchEvent\(new CustomEvent\('intmap:ai-limit'\)\)/);
   assert.match(src, /aiToast\(aiLimitMsg\(\)\);\s*\}catch\(_\)\{\}\s*aiLimitReached\(\);\s*return false;/, 'the click-time gate');
-  assert.match(src, /if\(j\.error==='turn_calls'\) throw new Error\(aiTurnCallsMsg\(\)\);\s*aiLimitReached\(\);/, 'ai-proxy\'s 429 «limit», after turn_calls has left');
+  assert.match(src, /if\(j\.error==='turn_calls'\) throw aiFail\(aiTurnCallsMsg\(\),'turn_calls',429,false\);\s*aiLimitReached\(\);/, 'ai-proxy\'s 429 «limit», after turn_calls has left');
   assert.doesNotMatch(src, /gloss_limit[^\n]*aiLimitReached/, 'the gloss lane is not the question allowance');
   assert.match(rd('js/supporter.js'), /addEventListener\('intmap:ai-limit'/);
 });

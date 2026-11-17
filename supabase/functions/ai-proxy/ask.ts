@@ -38,7 +38,7 @@ import { schemaOk, openAiSchemaFormat } from "./schema.ts";
 import { TASKS, maxOutputFor, HARD_MAX_OUTPUT } from "./tasks/index.ts";
 import { parseDataUrl, b64Bytes } from "./media.ts";
 import type { ImgPart, FilePart, DocPart, WebCitation } from "./media.ts";
-import { ProviderError } from "./provider-call.ts";
+import { ProviderError, webOutcome } from "./provider-call.ts";
 import type { Meter, StreamSink } from "./provider-call.ts";
 import { callOpenAI } from "./providers/openai.ts";
 import { callGemini, callGeminiRetry, callGeminiTurn, geminiRetry } from "./providers/gemini.ts";
@@ -443,7 +443,7 @@ export async function ask(req: Request): Promise<Response> {
      status. `sink` is null for every request that did not ask to stream. */
   const answer = async (sink: StreamSink | null): Promise<{ status: number; body: Record<string, unknown> }> => {
   try {
-    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[]; schemaAttached?: boolean; served?: string; output?: TurnItem[] };
+    let out: { text: string; finishReason: string; incompleteReason?: string | null; webAttached?: boolean; webUsed?: boolean; webCount?: number; webSources?: number | null; webFailure?: string; citations?: WebCitation[]; schemaAttached?: boolean; served?: string; output?: TurnItem[] };
     if (provider === "openai") {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
@@ -534,6 +534,11 @@ export async function ask(req: Request): Promise<Response> {
       /* (#R722) `model` is what was ASKED for; `modelServed` is what the provider says ANSWERED.
          They differ exactly when the fallback chain walked, which is the thing nobody could see. */
       meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
+        /* (atlas-completion) whether the answer ENDED, in the provider's own words (providers/*.ts incompleteReason) —
+           the text above is kept whole either way; js/atlas-agent.js reads these two as the reply's `finish` */
+        status: out.incompleteReason ? "incomplete" : "complete", incompleteReason: out.incompleteReason || null,
+        /* (atlas-completion) what the hosted search did: not_run / failed / empty / ok, with its reason and counts (provider-call.ts webOutcome) */
+        web: webOutcome(web, out),
         /* (atlas-native-tools) which protocol answered (js/ai-core.js refuses an Atlas turn answered without 2), and what
            this function's own fence cut from the request — null when nothing was */
         protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined,

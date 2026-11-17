@@ -249,6 +249,13 @@ Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:
 出力をそのターンの成功結果が生んでいなければ final は型付きの注記として Atlas に返る（`producedModes`＝レジストリの `produces` 列から読み、`"map"` は `map_not_drawn`・
 `"chart"` は `chart_not_drawn`・`"mixed"` は `output_not_produced`。`"mixed"` はどちらか一方で満たされる）。`"continuing"` なのに関数呼び出しが無ければ `no_calls_issued`
 （同じ門）。差し戻しは `maxOutputGate`（2 回）まで、上限後は受け入れて `produced` を記録する。`changedMap` はこの集合の地図要素の旧称。
+**受け入れても完了とは呼ばない。** 宣言した出力が `produced` に無いまま終わったターンは `stopped:'output_unmet'`（`'answered'` ではない）。返り値は `completion`
+（`complete`／`partial`／`none`）と `unmet`（`{kind:'output',mode,code}` と、このターンの計画のうち観測状態が completed・noop 以外のステップ `{kind:'step',n,title,state}`）を持ち、
+コンソールは回答の下に「このターンで完了していないもの」を出し、会話履歴には元の要求と未達項目を返信の抜粋とは別の行で残す。`[did: …]` に入るのは実行器の観測（`__exec` を
+`opState` で読む）が completed の操作だけ。プロバイダの途中停止（`meta.status:'incomplete'`）は `trace.incomplete`・`outputIncomplete` に、最後の回答生成の失敗は
+`trace.finalError` に、通信失敗の原因は `trace.transportErrorInfo`（code・status・retryable）に残る。最終回答が書かれたあとは、調査ツールの途中の回答と失敗した操作の
+メッセージを本文に連ねず、折りたたみ（「途中の調査結果と操作のメッセージ」）と 1 行の「完了しなかった操作」にまとめる。同じ計画ステップの調査は安定した goal ID
+（`goal:<turn>:<plan>:<step>`）で 1 つに畳まれる。
 
 **汎用の 2 つの逃げ道。** `control` のカタログは依頼に対して採点して残し、落とした数を明示する（近い候補が複数あれば `ambiguous_target`）。`module` のカタログはまだ
 読み込まれていないモジュールも名前で出し（`IntMapLazy.publishes()`）、`doModule` は必要なら取得する。メソッドの許可リストは変わらない。
