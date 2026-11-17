@@ -62,7 +62,8 @@ test('#R155 admin.html has a Content-Security-Policy', () => {
   assert.match(admin, /http-equiv="Content-Security-Policy"/, 'CSP meta present');
   assert.match(admin, /object-src 'none'/, 'object-src locked');
   /* (security-audit) locked to THIS project's host — the one the console's client is created with — not *.supabase.co */
-  const sbOrigin = new URL((admin.match(/window\.SUPABASE_URL\s*=\s*'([^']+)'/) || [])[1]).origin;
+  /* (admin-origin) the client is made by js/admin-auth.js from the page's <meta name="intmap-backend"> */
+  const sbOrigin = new URL((admin.match(/<meta name="intmap-backend" content="([^"]+)"/) || [])[1]).origin;
   assert.ok(admin.includes("connect-src 'self' " + sbOrigin + ';'), 'connect-src locked to self + this project\'s Supabase host');
 });
 
@@ -75,7 +76,10 @@ test('#R155 admin.html has NO public sign-up', () => {
 test('#R155 admin.html re-authenticates before the destructive import', () => {
   /* spelling kept — admin.html is a standalone page; its CSP meta, its absent sign-up and its re-auth prompt are its markup and inline script */
   assert.match(admin, /Re-authenticate before this destructive/, 'sudo gate comment');
-  assert.match(admin, /Confirm your admin password to replace ALL/, 'password re-prompt');
+  /* (admin-origin) the step-up is a fresh TOTP challenge — a second password sign-in would drop the session to aal1,
+     which has no admin rights (pgTAP 50) */
+  assert.match(admin, /IntMapAdminAuth\.stepUp\(/, 'second-factor re-prompt');
+  assert.doesNotMatch(admin, /signInWithPassword/, 'no password sign-in of its own (js/admin-auth.js is the one sign-in path)');
 });
 
 test('#R155 admin esc() neutralizes XSS payloads (incl. the single quote)', () => {

@@ -1092,6 +1092,32 @@ ${footer(L)}
 `);
 }
 
+/* ── the consoles' auth view (admin-origin) ───────────────────────────────────────────────────
+   The ids js/admin-auth.js (window.IntMapAdminAuth, the one sign-in path) reads under each console's prefix: the
+   password step, then the TOTP step — the code from the account's authenticator, or, for an account that has none,
+   the QR code and the key to enrol one. The database grants admin rights only to an aal2 session. */
+function adminAuthView(p) {
+  return `<div id="${p}view-auth" class="auth">
+  <h2>Sign in as an administrator</h2>
+  <div id="${p}auth-pw" class="auth-step">
+    <input id="${p}auth-email" type="email" autocomplete="username" placeholder="Email">
+    <input id="${p}auth-pass" data-effect="private" type="password" autocomplete="current-password" placeholder="Password">
+    <button class="btn" id="${p}auth-submit" type="button" data-effect="private">Sign in</button>
+  </div>
+  <div id="${p}auth-mfa" class="auth-step hide">
+    <p id="${p}auth-mfa-lead" class="auth-lead"></p>
+    <div id="${p}auth-enrol" class="auth-step hide">
+      <img id="${p}auth-qr" class="auth-qr" alt="QR code to add IntMap to an authenticator app" width="180" height="180">
+      <p class="auth-lead">Key for manual entry: <code id="${p}auth-secret" class="auth-secret"></code></p>
+    </div>
+    <input id="${p}auth-code" data-effect="private" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6-digit code" aria-label="6-digit code from your authenticator app">
+    <button class="btn" id="${p}auth-verify" type="button" data-effect="private">Verify</button>
+    <button class="btn sec" id="${p}auth-cancel" type="button" data-effect="private">Use another account</button>
+  </div>
+  <p id="${p}auth-msg" class="auth-msg" role="status" aria-live="polite"></p>
+</div>`;
+}
+
 /* ── the enquiries console (admin-inquiries.html) ─────────────────────────────────────────────
    English only, like admin.html. Generated here for ONE reason: it needs the backend address and the
    publishable key, and this file already reads them from their owner (src/vendor.js) — a hand-written
@@ -1119,6 +1145,7 @@ ${'<meta http-equiv="Content-Security-Policy" content="' + ["default-src 'self'"
 <link rel="stylesheet" href="./css/admin-inquiries.css">
 <script src="vendor/supabase-js.js"></script>
 <script src="./js/safe-html.js"></script>
+<script src="./js/admin-auth.js"></script>
 <script src="./js/admin-inquiries.js"></script>
 </head>
 <body>
@@ -1126,13 +1153,7 @@ ${'<meta http-equiv="Content-Security-Policy" content="' + ["default-src 'self'"
   <h1>IntMap · Enquiries</h1>
   <div class="row"><a href="./admin.html">Admin console</a><span class="who" id="who"></span><button class="btn sec sm" id="aq-signout" type="button" data-effect="private">Sign out</button></div>
 </header>
-<div id="aq-view-auth" class="auth">
-  <h2>Sign in as an administrator</h2>
-  <input id="aq-auth-email" type="email" autocomplete="username" placeholder="Email">
-  <input id="aq-auth-pass" data-effect="private" type="password" autocomplete="current-password" placeholder="Password">
-  <button class="btn" id="aq-auth-submit" type="button" data-effect="private">Sign in</button>
-  <p id="aq-auth-msg"></p>
-</div>
+${adminAuthView('aq-')}
 <main id="aq-view-admin" class="hide" data-statuses="${esc(INQUIRY_PIPELINE.statuses.join(','))}" data-stages="${esc(INQUIRY_PIPELINE.stages.join(','))}" data-closed-stages="${esc(INQUIRY_PIPELINE.closedStages.join(','))}" data-not-lead-purposes="${esc(INQUIRY_PIPELINE.notLeads.purposes.join(','))}" data-not-lead-statuses="${esc(INQUIRY_PIPELINE.notLeads.statuses.join(','))}" data-next-step-max="${INQUIRY_PIPELINE.nextStepMax}">
   <div class="tabs">
     <button class="tab" type="button" id="tab-pipe" data-effect="none">Pipeline</button>
@@ -1168,11 +1189,13 @@ ${'<meta http-equiv="Content-Security-Policy" content="' + ["default-src 'self'"
 <title>IntMap · Map corrections</title>
 <meta name="intmap-backend" content="${esc(F.backend)}">
 <meta name="intmap-anon-key" content="${esc(F.anonKey)}">
+<meta name="intmap-site" content="__INTMAP_SITE_URL__">
 <link rel="icon" href="./IntMap.Icon.png">
 <link rel="stylesheet" href="./css/admin-inquiries.css">
 <link rel="stylesheet" href="./css/admin-corrections.css">
 <script src="vendor/supabase-js.js"></script>
 <script src="./js/safe-html.js"></script>
+<script src="./js/admin-auth.js"></script>
 <script src="./js/admin-corrections.js"></script>
 </head>
 <body>
@@ -1180,13 +1203,7 @@ ${'<meta http-equiv="Content-Security-Policy" content="' + ["default-src 'self'"
   <h1>IntMap · Map corrections</h1>
   <div class="row"><a href="./admin.html">Admin console</a><a href="./admin-inquiries.html">Enquiries</a><a href="./corrections.html">Public log</a><span class="who" id="who"></span><button class="btn sec sm" id="mc-signout" type="button" data-effect="private">Sign out</button></div>
 </header>
-<div id="mc-view-auth" class="auth">
-  <h2>Sign in as an administrator</h2>
-  <input id="mc-auth-email" type="email" autocomplete="username" placeholder="Email">
-  <input id="mc-auth-pass" data-effect="private" type="password" autocomplete="current-password" placeholder="Password">
-  <button class="btn" id="mc-auth-submit" type="button" data-effect="private">Sign in</button>
-  <p id="mc-auth-msg"></p>
-</div>
+${adminAuthView('mc-')}
 <main id="mc-view-admin" class="mc hide" data-statuses="${CORRECTION.statuses.join(',')}" data-open="${CORRECTION.open.join(',')}" data-publishable="${CORRECTION.publishable.join(',')}">
   <div class="tabs">
     ${filters.map(([f, label]) => '<button class="tab" type="button" data-filter="' + f + '" data-effect="none">' + label + '</button>').join('\n    ')}

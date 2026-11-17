@@ -202,7 +202,7 @@ test('security-audit ③: admin.html connect-src names this project\'s Supabase 
   assert.ok(connect.length, 'connect-src is declared');
   assert.ok(!connect.some((t) => t.includes('*')), 'no wildcard host: ' + connect.join(' '));
   /* the host the console's own client talks to — read from the page, not typed here */
-  const url = (html.match(/window\.SUPABASE_URL\s*=\s*'([^']+)'/) || [])[1];
+  const url = (html.match(/<meta name="intmap-backend" content="([^"]+)"/) || [])[1];   /* (admin-origin) js/admin-auth.js reads it */
   assert.ok(url, 'admin.html names its Supabase URL');
   assert.deepEqual(connect.filter((t) => t !== "'self'"), [new URL(url).origin]);
 });

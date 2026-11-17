@@ -10,11 +10,13 @@
 <title>IntMap · Map corrections</title>
 <meta name="intmap-backend" content="https://vpekfwdpurzejrrmacac.supabase.co">
 <meta name="intmap-anon-key" content="sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0">
+<meta name="intmap-site" content="__INTMAP_SITE_URL__">
 <link rel="icon" href="./IntMap.Icon.png">
 <link rel="stylesheet" href="./css/admin-inquiries.css">
 <link rel="stylesheet" href="./css/admin-corrections.css">
 <script src="vendor/supabase-js.js"></script>
 <script src="./js/safe-html.js"></script>
+<script src="./js/admin-auth.js"></script>
 <script src="./js/admin-corrections.js"></script>
 </head>
 <body>
@@ -24,10 +26,22 @@
 </header>
 <div id="mc-view-auth" class="auth">
   <h2>Sign in as an administrator</h2>
-  <input id="mc-auth-email" type="email" autocomplete="username" placeholder="Email">
-  <input id="mc-auth-pass" data-effect="private" type="password" autocomplete="current-password" placeholder="Password">
-  <button class="btn" id="mc-auth-submit" type="button" data-effect="private">Sign in</button>
-  <p id="mc-auth-msg"></p>
+  <div id="mc-auth-pw" class="auth-step">
+    <input id="mc-auth-email" type="email" autocomplete="username" placeholder="Email">
+    <input id="mc-auth-pass" data-effect="private" type="password" autocomplete="current-password" placeholder="Password">
+    <button class="btn" id="mc-auth-submit" type="button" data-effect="private">Sign in</button>
+  </div>
+  <div id="mc-auth-mfa" class="auth-step hide">
+    <p id="mc-auth-mfa-lead" class="auth-lead"></p>
+    <div id="mc-auth-enrol" class="auth-step hide">
+      <img id="mc-auth-qr" class="auth-qr" alt="QR code to add IntMap to an authenticator app" width="180" height="180">
+      <p class="auth-lead">Key for manual entry: <code id="mc-auth-secret" class="auth-secret"></code></p>
+    </div>
+    <input id="mc-auth-code" data-effect="private" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6-digit code" aria-label="6-digit code from your authenticator app">
+    <button class="btn" id="mc-auth-verify" type="button" data-effect="private">Verify</button>
+    <button class="btn sec" id="mc-auth-cancel" type="button" data-effect="private">Use another account</button>
+  </div>
+  <p id="mc-auth-msg" class="auth-msg" role="status" aria-live="polite"></p>
 </div>
 <main id="mc-view-admin" class="mc hide" data-statuses="new,confirmed,fixed,not_an_error,duplicate,cannot_fix,spam" data-open="new,confirmed" data-publishable="confirmed,fixed,not_an_error,cannot_fix">
   <div class="tabs">
