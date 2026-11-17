@@ -20,7 +20,8 @@ test('the panel offers the bundle\'s rungs, and a rung redraws the model and its
   const { page } = app;
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e && e.message)));
-  await page.waitForFunction(() => !!(window.IntMapRadiation && window.IntMapRadiation.openPanel), null, { timeout: 60_000 });
+  /* (deep-lazy-specs) the simulators are lazy since startup-weight (js/lazy-modules.js `radiation`) — the reader's doors go through need() */
+  expect(await page.evaluate(() => window.IntMapLazy.need('radiation')), 'the simulator mounts').toBeTruthy();
   await page.evaluate(() => window.IntMapRadiation.openPanel({ lng: 141.03, lat: 37.42 }));
   await page.waitForSelector('#rad-panel .rad-hc-b[data-v="model"]', { state: 'visible', timeout: 20_000 });
   await page.click('#rad-panel .rad-hc-b[data-v="model"]');

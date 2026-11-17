@@ -65,6 +65,10 @@ const ALPINE = async (page) => {
   });
 };
 
+/* (deep-lazy-specs) the planner is lazy since startup-weight (js/lazy-modules.js `drone`): a reader reaches it through
+   need() — Atlas, the right-click menu, the map tools — so the spec asks the same door before it reads the global */
+test.beforeEach(async ({ app }) => { expect(await app.page.evaluate(() => window.IntMapLazy.need('drone')), 'the planner mounts').toBeTruthy(); });
+
 /* ── ① THE SEAMS ARE FILLED ───────────────────────────────────────────────────────────────── */
 test('R184 drone ①: the wind field and all four hazard sources are registered into the planner', async ({ app }) => {
   const page = app.page;
