@@ -2282,7 +2282,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function newsSourceAllows(pub){
     try{ const N=window.IntMapNewsSources; return N?N.allows(pub):true; }catch(_){ return true; }
   }
-  function computeFilteredNews(){ const q=searchVal(), at=window._newsAreaTest;
+  /* (news-search-count-age) THE LIST AND ITS COUNTS ARE ONE DECISION. The topic chips (js/news-events.js renderChips)
+     count `computeFilteredNews({ allTopics:true })` — this same predicate with ONLY the topic axis left out — so every
+     other condition (scope, age, outlet, search words, map area) is applied to the count exactly as to the list. They
+     used to count `globalData` raw: «Kerch» counted an event the list's search text did not carry, «cheating» counted
+     5 events the age cut below hid (production 2026-11-18: 18 counted, 13 listed).
+     ⚠ A SEARCH'S EVENTS ARE NOT CUT AT 72 h. The cut guards the LIVE feed (the server deletes articles at 72 h); an Event
+     search is a deliberate ask of the event table, which keeps events 30 days (docs/NEWS-EVENTS.md §9) — like Saved and
+     date travel, it is exempt. Article-mode search (live RSS) keeps the cut. */
+  function computeFilteredNews(opts){ const q=searchVal(), at=window._newsAreaTest, allTopics=!!(opts&&opts.allTopics);
     const ageCut=(currentMode==='saved'||newsDate)?0:(Date.now()-NEWS_MAX_AGE_MS);
     /* (#R210) ★ Saved is no longer only what the LIVE feed still carries — see js/news-ui.js
        ⚠ (#R386) …and the article snapshot is never poured into an EVENT surface (link-keyed, no `_event`).
@@ -2291,10 +2299,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const EV=()=>{ try{ return window.IntMapNewsEvents; }catch(_){ return null; } };
     const starred=(it)=>it._event ? !!(EV()&&EV().isSaved(it._event.publicId)) : bookmarks.includes(it.link);
     return base.filter(it=>{ if(currentMode==='saved'&&!starred(it))return false;
-      if(ageCut&&it.pubDate){ const pd=parseDate(it.pubDate).getTime(); if(pd&&pd<ageCut) return false; }
+      if(ageCut&&it.pubDate&&!(it._event&&activeSearchQuery)){ const pd=parseDate(it.pubDate).getTime(); if(pd&&pd<ageCut) return false; }
       /* (#R207) …except in Saved: the user kept that item deliberately (as with the age cut). */
       if(currentMode!=='saved'&&!it._event&&!newsSourceAllows(it.publisher)) return false;
-      if(it._event&&EV()&&!EV().passes(it)) return false;
+      if(!allTopics&&it._event&&EV()&&!EV().passes(it)) return false;
       if(q&&!(it._search||it.title.toLowerCase()).includes(q))return false; if(at){ const a=it.analysis, c=a&&a.loc; if(!c||!at(c[0],c[1])) return false; } return true; }); }
   /* Title shown on a news card. When the translation pass (Settings → multi-language) has
      produced a translated title in the current UI language, show it plus a '(原文: …)' note. */
