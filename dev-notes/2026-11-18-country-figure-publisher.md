@@ -1,6 +1,7 @@
 ---
 title: 国カードの出典——世界銀行の最新値と、時間を戻したあとの値にも発行者名を運ぶ
 date: 2026-11-18
+pr: 1197
 newsen: The country card now names the publisher beside the year for every figure, including the World Bank's latest values and after travelling through time.
 newsjp: 国カードの全ての数値で、年と並べて発行者名を表示するように（世界銀行の最新値と、時間を戻したあとの値も）。
 ---
