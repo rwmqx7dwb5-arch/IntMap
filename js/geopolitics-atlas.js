@@ -86,7 +86,8 @@ export async function unVote(a, K) {
   if (a.symbol || a.id != null) row = findVote(I, a.symbol || a.id);
   else if (a.query) { matches = searchVotes(I, a.query, { from, to, limit: Math.max(1, Math.min(40, +a.limit || 10)), finalOnly: !!a.finalOnly }); row = matches[0] || null; }
   else if (a.date) row = voteAtOrBefore(I, String(a.date).slice(0, 10));
-  else row = voteAtOrBefore(I, IntMapTime.isLive() ? I.last : new Date(IntMapTime.nowMs()).toISOString().slice(0, 10));
+  /* the clock's day; at the live clock that is today, and the last vote at or before it is the record's last */
+  else row = voteAtOrBefore(I, new Date(IntMapTime.nowMs()).toISOString().slice(0, 10));
   if (!row) return fail(K, LA('No recorded vote in the record matches (the record holds recorded votes of 1946-01 – ' + I.last + ').', '一致する記録投票はありません（記録は 1946年1月〜' + I.last + ' の記録投票）。'), 'NOT_FOUND', 'input', false, { range: [I.first, I.last] });
   let v;
   try { v = decodeVote(I, await loadRecord(sessionFile(row.s)), row.id); } catch (_) { return fail(K, LA('The session file of that vote could not be read.', 'その採決の会期ファイルを読み込めませんでした。'), 'UNAVAILABLE', 'transient', true); }
@@ -125,7 +126,7 @@ export async function borderCrossings(a, K) {
   if (!isFinite(lng) || !isFinite(lat)) return fail(K, LA('Give the point to search from (lng, lat) — a border town or a crossing\'s name resolved first.', '探す地点（lng, lat）が必要です。国境の町や検問所の名前は先に座標へ解決してください。'), 'NEEDS_INPUT', 'input', false);
   let B;
   try { B = await loadRecord(PATHS.crossings); } catch (_) { return fail(K, LA('The border-crossing record could not be read.', '国境検問所の記録を読み込めませんでした。'), 'UNAVAILABLE', 'transient', true); }
-  const ms = IntMapTime.isLive() ? Date.now() : IntMapTime.nowMs();
+  const ms = IntMapTime.nowMs();
   const n = Math.max(1, Math.min(20, Math.round(+a.limit || 5)));
   const near = nearestCrossings(B, lng, lat, n).map(({ c, km }) => {
     const st = crossingState(c, ms), cz = citizenship(c);

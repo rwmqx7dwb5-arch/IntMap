@@ -59,6 +59,7 @@ import { parseCSV } from './lib/cldf.mjs';
 import { fetchChecked } from './lib/upstream.mjs';
 import { countryNameIndex } from './lib/country-name-index.mjs';
 import { neCountries } from './build-world-flows.mjs';
+import { agreeOrRefuse } from './lib/gov-stamp.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = 'data/sanctions.json';
@@ -89,14 +90,32 @@ export const GOVERNANCE = {
       { publisher: 'Natural Earth', url: 'https://www.naturalearthdata.com/', licence: 'public domain', attribution: false,
         fields: 'ISO_A3_EH, ISO_A2_EH, NAME*, LABEL_X, LABEL_Y — read from data/ne-countries (the shapes the map draws) to place a named country' },
     ],
+    /* the file as a whole: the three lists' publishers; its terms are the strictest of the three (OGL v3.0 and the Commission's
+       reuse decision both make the acknowledgement a condition), so the file's licence URL is the OGL's and credit is required */
+    publisher: 'U.S. Treasury OFAC · UK Foreign, Commonwealth & Development Office · European Commission',
+    url: 'https://www.gov.uk/government/publications/the-uk-sanctions-list',
+    licence: 'US public domain · OGL v3.0 · Decision 2011/833/EU',
+    licenceUrl: 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
+    attribution: true,
     paidBy: 'UK Sanctions List — Foreign, Commonwealth & Development Office (Open Government Licence v3.0)',
+    /* which list stands where two speak: none overrides another — each authority is its own link, drawn and counted apart;
+       Natural Earth only places a country the lists name */
+    priority: { rank: ['OFAC SDN', 'UK Sanctions List', 'EU FSF', 'Natural Earth'],
+      over: 'no list overrides another: each authority\'s parties are counted under that authority only; Natural Earth supplies the point and names of a country a list names, never a party' },
     cadence: 'P1D',
     cadenceBasis: {
       observed: 'read 2026-11-17: the UK list file states «Report Date: 12-Nov-2026», the EU file a fileGenerationDate of the same week, and OFAC publishes recent-actions notices several times a week — any day can change a list',
       expires: 'if the three lists are read from a dated archive instead of their live files',
       canon: 'scripts/build-sanctions.mjs GOVERNANCE',
     },
+    /* ⚠ LITERALS THE GATE CAN READ WITHOUT RUNNING THIS FILE, and main() REFUSES to write a bundle that disagrees with them —
+       a rebuild on another day restates them here (the convention of scripts/build-hist-urban.mjs) */
+    retrievedAt: '2026-11-17',
+    generatedAt: '2026-11-17',
+    asOf: '2026-11-17',
     schema: 'scripts/build-sanctions.mjs (authorities · places · links · unplaced) — read by js/geopolitics-core.js; tests/geopolitics-layers-checks.test.mjs',
+    /* measured on links[]: rows = authority × country links; key (a, c); n ≥ 1 */
+    quality: { rows: 432, missing: { a: 0, c: 0, n: 0 }, outOfRange: { n: 0 }, duplicates: 0 },
     builtBy: 'scripts/build-sanctions.mjs',
   },
 };
@@ -316,14 +335,9 @@ async function main() {
     const p = ne.byA3.get(l.c);
     places[l.c] = p ? { en: p.en, ja: p.ja, x: p.x, y: p.y } : { en: l.c, ja: null, x: null, y: null };
   }
-  const g = GOVERNANCE[OUT];
-  const out = {
-    v: 1, asOf: today, retrievedAt: today, generatedAt: today,
-    publisher: authorities.map((a) => a.publisher).join(' · '), url: g.upstreams[1].url,
-    licence: 'US public domain · OGL v3.0 · Decision 2011/833/EU', licenceUrl: g.upstreams[1].licenceUrl, attribution: true,
-    paidBy: g.paidBy, builtBy: g.builtBy, cadence: g.cadence,
-    authorities, places, links, unplaced,
-  };
+  /* the bundle carries its declaration whole (check:datagov reads the same facets from the file as from this script) */
+  const g = agreeOrRefuse(GOVERNANCE[OUT], links, { fields: { a: {}, c: {}, n: { min: 1 } }, key: ['a', 'c'] }, today);
+  const out = { v: 1, ...g, authorities, places, links, unplaced };
   writeFileSync(join(ROOT, OUT), JSON.stringify(out));
   console.log('wrote', OUT, JSON.stringify(out).length, 'bytes ·', links.length, 'links');
 }

@@ -43,6 +43,7 @@ import { Readable } from 'node:stream';
 import { parseCSV } from './lib/cldf.mjs';
 import { USER_AGENT } from './lib/upstream.mjs';
 import { neCountries } from './build-world-flows.mjs';
+import { agreeOrRefuse } from './lib/gov-stamp.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const DIR = 'data/unga-votes';
@@ -51,9 +52,10 @@ const NE_FILE = join(ROOT, 'data', 'ne-countries', 'ne_10m_admin_0_countries.jso
 const DATASET = 'https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/LEJUQZ';
 
 /* ⚠ 出自は値である（js/data-governance.js の read() と npm run check:datagov が読む）。上流が述べることだけを書く。 */
-const REC = {
+export const GOVERNANCE = (() => {
+  const rec = {
   publisher: 'Erik Voeten, Anton Strezhnev & Michael Bailey — United Nations General Assembly Voting Data (Harvard Dataverse)',
-  url: DATASET,
+  url: 'https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/LEJUQZ',
   licence: 'CC0 1.0',
   licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
   /* CC0 waives every condition; the credit is given anyway, as scholarly practice */
@@ -67,8 +69,15 @@ const REC = {
   },
   schema: 'scripts/build-unga-votes.mjs (index: members · sessions · votes; s<NN>: votes with one character per member) — read by js/geopolitics-core.js; tests/geopolitics-layers-checks.test.mjs',
   builtBy: 'scripts/build-unga-votes.mjs',
-};
-export const GOVERNANCE = { 'data/unga-votes/index.json': REC, 'data/unga-votes/*.json': REC };
+  /* ⚠ LITERALS THE GATE CAN READ WITHOUT RUNNING THIS FILE; main() refuses to write an index that disagrees (scripts/lib/gov-stamp.mjs) */
+  retrievedAt: '2026-11-17',
+  generatedAt: '2026-11-17',
+  /* measured on the index's votes[]: key id (the dataset's rcid); session ≥ 1 */
+  quality: { rows: 6464, missing: { id: 0, d: 0, s: 0 }, outOfRange: { s: 0 }, duplicates: 0 },
+  };
+  return { 'data/unga-votes/index.json': rec, 'data/unga-votes/*.json': rec };
+})();
+const REC = GOVERNANCE['data/unga-votes/index.json'];
 
 const VOTE = { 1: 'Y', 2: 'A', 3: 'N', 8: 'X', 9: '-' };
 const ISSUES = ['me', 'nu', 'di', 'hr', 'co', 'ec'];
@@ -140,7 +149,7 @@ async function main() {
   const ne = neCountries(NE_FILE);
   const today = new Date().toISOString().slice(0, 10);
   const index = {
-    v: 1, ...REC, retrievedAt: today, generatedAt: today,
+    v: 1, ...agreeOrRefuse(REC, votes.map((v) => ({ id: v.id, d: v.d, s: v.s })), { fields: { id: {}, d: {}, s: { min: 1 } }, key: ['id'] }, today),
     first: votes[0].d, last: votes[votes.length - 1].d,
     codebook: { Y: 'yes', A: 'abstain', N: 'no', X: 'absent (a member that did not vote)', '-': 'not a member' },
     /* `n` is the file's own name for the seat; `ja` is Natural Earth's Japanese name of the country the code names today (absent

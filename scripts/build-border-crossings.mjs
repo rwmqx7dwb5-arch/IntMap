@@ -45,6 +45,7 @@ import { fileURLToPath } from 'node:url';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { OPENSTREETMAP } from './lib/upstream-cadence.mjs';
 import { fetchChecked, USER_AGENT } from './lib/upstream.mjs';
+import { agreeOrRefuse } from './lib/gov-stamp.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = 'data/border-crossings.json';
@@ -63,15 +64,29 @@ const TZ = {
 export const GOVERNANCE = {
   'data/border-crossings.json': {
     upstreams: [
-      { publisher: 'OpenStreetMap contributors', url: OVERPASS, licence: 'ODbL', licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/', attribution: true, creditRequired: true,
+      { publisher: 'OpenStreetMap contributors', url: 'https://overpass-api.de/api/interpreter', licence: 'ODbL', licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/', attribution: true, creditRequired: true,
         fields: 'barrier=border_control nodes and ways — name, name:en, opening_hours, access:citizenship, the transport-mode access tags, border_control, operator, website, description, check_date',
         paidBy: 'Border crossings — OpenStreetMap (barrier=border_control, Overpass API)' },
-      { publisher: TZ.publisher, url: TZ.url, licence: 'ODbL', licenceUrl: TZ.licenceUrl, attribution: true, creditRequired: true,
+      { publisher: 'Evan Siroky — timezone-boundary-builder (built from OpenStreetMap)', url: 'https://github.com/evansiroky/timezone-boundary-builder/releases/tag/2026f', licence: 'ODbL', licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/', attribution: true, creditRequired: true,
         fields: 'the IANA zone (tzid) of the polygon that contains each crossing — release 2026f, timezones-with-oceans-now',
         paidBy: 'Time zone boundaries — timezone-boundary-builder (ODbL, built from OpenStreetMap)' },
     ],
+    /* the file as a whole: both upstreams are ODbL and both make credit a condition */
+    publisher: 'OpenStreetMap contributors · Evan Siroky (timezone-boundary-builder)',
+    url: 'https://www.openstreetmap.org/copyright',
+    licence: 'ODbL 1.0',
+    licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
+    attribution: true,
     paidBy: 'Border crossings — OpenStreetMap (barrier=border_control, Overpass API)',
+    priority: { rank: ['OpenStreetMap', 'timezone-boundary-builder'],
+      over: 'OpenStreetMap states every crossing and every tag; the time-zone record only names the zone a crossing lies in, and states nothing about the crossing' },
     ...OPENSTREETMAP,
+    /* ⚠ LITERALS THE GATE CAN READ WITHOUT RUNNING THIS FILE; main() refuses to write a bundle that disagrees (scripts/lib/gov-stamp.mjs) */
+    retrievedAt: '2026-11-17',
+    generatedAt: '2026-11-17',
+    asOf: '2026-11-17',
+    /* measured on crossings[]: key i (the OpenStreetMap id); x, y in degrees; every one has a zone */
+    quality: { rows: 9582, missing: { x: 0, y: 0, i: 0, tz: 0 }, outOfRange: { x: 0, y: 0 }, duplicates: 0 },
     schema: 'scripts/build-border-crossings.mjs (crossings: x y i n en tz oh cz bc m op w d cd) — read by js/geopolitics-core.js and js/opening-hours.js; tests/geopolitics-layers-checks.test.mjs',
     builtBy: 'scripts/build-border-crossings.mjs',
   },
@@ -137,11 +152,11 @@ async function main() {
     .sort((a, b) => (a.i < b.i ? -1 : a.i > b.i ? 1 : 0));
   const noZone = crossings.filter((c) => !c.tz).length;
   const today = new Date().toISOString().slice(0, 10);
-  const g = GOVERNANCE[OUT];
+  const g = agreeOrRefuse(GOVERNANCE[OUT], crossings, { fields: { x: { min: -180, max: 180 }, y: { min: -90, max: 90 }, i: {}, tz: {} }, key: ['i'] }, today);
+  const base = (osm.osm3s && String(osm.osm3s.timestamp_osm_base || '').slice(0, 10)) || today;
+  if (base !== g.asOf) throw new Error(g.builtBy + ': restate GOVERNANCE — the OpenStreetMap edition is ' + base + ', declared ' + g.asOf);
   const out = {
-    v: 1, asOf: (osm.osm3s && String(osm.osm3s.timestamp_osm_base || '').slice(0, 10)) || today, retrievedAt: today, generatedAt: today,
-    publisher: 'OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright', licence: 'ODbL 1.0', licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
-    attribution: true, paidBy: g.paidBy, builtBy: g.builtBy, cadence: g.cadence, query: QUERY,
+    v: 1, ...g, query: QUERY,
     tz: { publisher: TZ.publisher, release: TZ.release, url: TZ.url, licence: TZ.licence, licenceUrl: TZ.licenceUrl },
     count: crossings.length, crossings,
   };

@@ -22,6 +22,7 @@ import { IntMapLang } from './lang-registry.js';
 import { layerState } from './layer-state.js';
 import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
+import { everyTick } from './runtime.js';
 import { sanctionFeatures, sanctionsOn, voteAtOrBefore, findVote, searchVotes, decodeVote, sessionFile, crossingFeatures, crossingState, citizenship } from './geopolitics-core.js';
 
 /* ── the records, each read once (a failed read is forgotten so the next asks again) ── */
@@ -56,7 +57,8 @@ export function geopoliticsPackage(K) {
   const jp = () => HOST.lang === 'jp';
   const nf = () => new Intl.NumberFormat(tag());
   const dayText = (/** @type {string} */ d) => { try { return new Date(d + 'T12:00:00Z').toLocaleDateString(tag(), { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }); } catch (_) { return d; } };
-  const clockMs = () => { try { return IntMapTime.isLive() ? Date.now() : IntMapTime.nowMs(); } catch (_) { return Date.now(); } };
+  /* the clock's instant (now when live) — asked of the clock, never re-derived (tests/one-geocode-one-clock-checks (c)) */
+  const clockMs = () => IntMapTime.nowMs();
   const clockDay = () => { try { return IntMapTime.isLive() ? null : new Date(IntMapTime.nowMs()).toISOString().slice(0, 10); } catch (_) { return null; } };
   /* above the base map's fills, under the reader's own pins (the stacking js/world-flows.js measured) */
   const topBefore = () => ['user-pin-shadow', 'user-pin-dot'].find((id) => { try { return !!GE().layers.has(id); } catch (_) { return false; } });
@@ -177,8 +179,8 @@ export function geopoliticsPackage(K) {
   function sanOn() {
     if (SAN.on) return SAN.req;
     SAN.on = true;
-    showLegend(legend('sanctions'), true);
-    SAN.req = K.whenStyleReady().then(() => loadRecord(PATHS.sanctions)).then((d) => {
+    /* (layer-packages ⑥) nothing — not even the legend — before the renderer can draw */
+    SAN.req = K.whenStyleReady().then(() => { if (SAN.on) showLegend(legend('sanctions'), true); return loadRecord(PATHS.sanctions); }).then((d) => {
       SAN.data = d;
       if (!SAN.on) return;
       sanPaint();
@@ -302,8 +304,7 @@ export function geopoliticsPackage(K) {
   function unvOn() {
     if (UNV.on) return UNV.req;
     UNV.on = true;
-    showLegend(legend('unvotes'), true);
-    UNV.req = K.whenStyleReady().then(() => loadRecord(PATHS.votes)).then((I) => {
+    UNV.req = K.whenStyleReady().then(() => { if (UNV.on) showLegend(legend('unvotes'), true); return loadRecord(PATHS.votes); }).then((I) => {
       UNV.index = I;
       if (!UNV.on) return undefined;
       UNV.stops.push(IntMapTime.on(() => { if (UNV.on) unvPaint(); }), bus.on('intmap-lang', () => { if (UNV.on) unvLegend(); }));
@@ -400,15 +401,13 @@ export function geopoliticsPackage(K) {
   function bcOn() {
     if (BC.on) return BC.req;
     BC.on = true;
-    showLegend(legend('crossings'), true);
-    BC.req = K.whenStyleReady().then(() => loadRecord(PATHS.crossings)).then((d) => {
+    BC.req = K.whenStyleReady().then(() => { if (BC.on) showLegend(legend('crossings'), true); return loadRecord(PATHS.crossings); }).then((d) => {
       BC.data = d;
       if (!BC.on) return;
       bcPaint(true);
       BC.stops.push(IntMapTime.on(() => { if (BC.on) bcPaint(); }), bus.on('intmap-lang', () => { if (BC.on) bcLegend(); }));
       /* a live clock moves without telling anyone: the minute is checked once a minute while the row is on */
-      const t = window.setInterval(() => { if (BC.on) bcPaint(); }, 60000);
-      BC.stops.push(() => window.clearInterval(t));
+      BC.stops.push(everyTick('geopolitics:crossings-minute', 60000, () => { if (BC.on) bcPaint(); }));   /* js/runtime.js's one wheel (#R408) */
       const re = () => { if (BC.on && !GE().layers.hasSource(C_SRC)) { BC.wired = false; bcPaint(true); } };
       GE().events.on('styledata', re); BC.stops.push(() => GE().events.off('styledata', re));
     }).catch((e) => { console.warn('Border crossings could not load', e); try { layerState.report('dl-crossings', e); } catch (_) { /* the row's own */ } bcOff(); });

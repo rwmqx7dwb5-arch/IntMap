@@ -140,9 +140,6 @@ const DERIVED = [
     { id: "dl-eez", key: "eez", label: "lyrEEZ", share: true },
     { id: "dl-uselect", key: "uselect", share: true },
     { id: "dl-eu", key: "eu", label: "lyrEU", share: true },
-    { id: "dl-sanctions", key: "sanctions", label: "lyrSanctions", share: true },
-    { id: "dl-unvotes", key: "unvotes", label: "lyrUnVotes", share: true },
-    { id: "dl-crossings", key: "crossings", label: "lyrCrossings", share: true },
     { id: "dl-ww2", key: "ww2", share: true, lazy: ["warLayer"] },
     { id: "dl-elect", key: "elect", rest: true, share: true },
     { id: "dl-newspulse", key: "newspulse", rest: true, share: true, lazy: ["newsIntel"] },
@@ -154,6 +151,9 @@ const DERIVED = [
     { id: "dl-tz", key: "tz", rest: true, share: true },
     { id: "bx-wbwomparl", key: "wbwomparl", rest: true },
     { id: "fac-dl-osmdiplo", key: "osmdiplo", rest: true },
+    { id: "dl-sanctions", key: "sanctions", label: "lyrSanctions", rest: true, share: true },
+    { id: "dl-unvotes", key: "unvotes", label: "lyrUnVotes", rest: true, share: true },
+    { id: "dl-crossings", key: "crossings", label: "lyrCrossings", rest: true, share: true },
   ] },
   { key: "lyrGrpSecurity", layers: [
     { id: "dl-milSpend", key: "milSpend", label: "lyrMilSpend", share: true },
@@ -343,9 +343,6 @@ const DECLARATIONS = [
   { id: "dl-eez", shelf: "lyrGrpPolitics", order: 30, key: "eez", label: "lyrEEZ", share: true },   // dl-eez.js
   { id: "dl-uselect", shelf: "lyrGrpPolitics", order: 40, key: "uselect", share: true },   // dl-uselect.js
   { id: "dl-eu", shelf: "lyrGrpPolitics", order: 50, key: "eu", label: "lyrEU", share: true, pkg: "alliances" },   // dl-eu.js
-  { id: "dl-sanctions", shelf: "lyrGrpPolitics", order: 52, key: "sanctions", label: "lyrSanctions", share: true, sources: ["Sanctions — U.S. Treasury OFAC Specially Designated Nationals list (public domain)", "UK Sanctions List — Foreign, Commonwealth & Development Office (Open Government Licence v3.0)", "EU financial sanctions — European Commission consolidated list (FSF, Decision 2011/833/EU)"], pkg: "geopolitics" },   // dl-sanctions.js
-  { id: "dl-unvotes", shelf: "lyrGrpPolitics", order: 54, key: "unvotes", label: "lyrUnVotes", share: true, sources: ["UN General Assembly voting data — Voeten, Strezhnev & Bailey (Harvard Dataverse, CC0 1.0)"], pkg: "geopolitics" },   // dl-unvotes.js
-  { id: "dl-crossings", shelf: "lyrGrpPolitics", order: 56, key: "crossings", label: "lyrCrossings", share: true, sources: ["Border crossings — OpenStreetMap (barrier=border_control, Overpass API)", "Time zone boundaries — timezone-boundary-builder (ODbL, built from OpenStreetMap)"], pkg: "geopolitics" },   // dl-crossings.js
   { id: "dl-ww2", shelf: "lyrGrpPolitics", order: 60, key: "ww2", share: true, lazy: ["warLayer"], formerly: ["dl-wars"] },   // dl-ww2.js
   { id: "dl-elect", shelf: "lyrGrpPolitics", order: 70, key: "elect", rest: true, share: true },   // dl-elect.js
   { id: "dl-newspulse", shelf: "lyrGrpPolitics", order: 75, key: "newspulse", rest: true, share: true, lazy: ["newsIntel"], commands: ["newspulse.toggle", "newspulse.rank", "newspulse.brief"] },   // dl-newspulse.js
@@ -357,6 +354,9 @@ const DECLARATIONS = [
   { id: "dl-tz", shelf: "lyrGrpPolitics", order: 130, key: "tz", rest: true, share: true },   // dl-tz.js
   { id: "bx-wbwomparl", shelf: "lyrGrpPolitics", order: 140, key: "wbwomparl", rest: true, measures: ["worldbank:SG.GEN.PARL.ZS"] },   // bx-wbwomparl.js
   { id: "fac-dl-osmdiplo", shelf: "lyrGrpPolitics", order: 150, key: "osmdiplo", rest: true },   // fac-dl-osmdiplo.js
+  { id: "dl-sanctions", shelf: "lyrGrpPolitics", order: 160, key: "sanctions", label: "lyrSanctions", rest: true, share: true, sources: ["Sanctions — U.S. Treasury OFAC Specially Designated Nationals list (public domain)", "UK Sanctions List — Foreign, Commonwealth & Development Office (Open Government Licence v3.0)", "EU financial sanctions — European Commission consolidated list (FSF, Decision 2011/833/EU)"], pkg: "geopolitics" },   // dl-sanctions.js
+  { id: "dl-unvotes", shelf: "lyrGrpPolitics", order: 162, key: "unvotes", label: "lyrUnVotes", rest: true, share: true, sources: ["UN General Assembly voting data — Voeten, Strezhnev & Bailey (Harvard Dataverse, CC0 1.0)"], pkg: "geopolitics" },   // dl-unvotes.js
+  { id: "dl-crossings", shelf: "lyrGrpPolitics", order: 164, key: "crossings", label: "lyrCrossings", rest: true, share: true, sources: ["Border crossings — OpenStreetMap (barrier=border_control, Overpass API)", "Time zone boundaries — timezone-boundary-builder (ODbL, built from OpenStreetMap)"], pkg: "geopolitics" },   // dl-crossings.js
   { id: "dl-milSpend", shelf: "lyrGrpSecurity", order: 10, key: "milSpend", label: "lyrMilSpend", share: true, pkg: "alliances", measures: ["countrystats:milSpend"], formerly: ["dl-milSpendGDP"] },   // dl-milSpend.js
   { id: "dl-nato", shelf: "lyrGrpSecurity", order: 20, key: "nato", label: "lyrNATO", share: true, pkg: "alliances" },   // dl-nato.js
   { id: "beta-dl-ukrfront", shelf: "lyrGrpSecurity", order: 30, key: "ukrfront", share: true },   // beta-dl-ukrfront.js

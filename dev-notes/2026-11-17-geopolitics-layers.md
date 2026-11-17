@@ -70,3 +70,13 @@ A/RES/68/262 の照合、測った欠落がまだ欠落であること（埋ま�
   非同期チャンクが増えた。新しいチャンク（`layer-pkg-geopolitics`・`geopolitics-core`・`geopolitics-atlas`）は層を入れたとき・Atlas が呼んだときに
   だけ読む。起動経路のバイトは増えていない。`node scripts/perf-budget.mjs --update` で、増えたぶんだけ上げた。
 - `tests/durations.json` に新しい spec を 44 s（1 回の起動で 3 件、実測 43.8 s）で記入。全体の天井は動かしていない（5,249 s の下に残っていた余地から）。
+
+## 6. CI で赤だった 5 件と、その直し方（手元で再現してから直した）
+
+- **出自（check:datagov ledger-shrinks）**: 3 本の生成器の `GOVERNANCE` が、別の定数や `GOVERNANCE[OUT]` を参照していて門が読めず、
+  束も取得日・生成日・品質の数を持っていなかった。宣言を自己完結した値にし（日付・ライセンス・測った品質・上流の優先順位）、束はその宣言をそのまま
+  運ぶ。生成器は測った品質と日付が宣言と食い違えば書かない（`scripts/lib/gov-stamp.mjs`）。台帳（`--update`）で逃がしていない。
+- **レイヤー・パッケージの道具箱**: `wireDrag` を足したので、検査の写しにも同じ名前を足した。凡例は描画できるようになってから作る（⑥）。
+- **タイマー（#R408 ②a）**: 生の `setInterval` を `js/runtime.js` の `everyTick` へ。
+- **時計（one-geocode-one-clock (c)）**: 「live なら今、さもなくば時計」を自前で組まず `IntMapTime.nowMs()` に訊く。
+- **政治・統治の並び（#R469 ④）**: 読者が並べた 6 行の一覧を伸ばさないよう、3 行は棚の「その他」に畳み、棚の末尾に置いた（`dl-histurban` と同じ扱い）。
