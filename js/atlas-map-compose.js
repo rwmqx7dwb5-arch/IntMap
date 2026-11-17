@@ -78,6 +78,16 @@ export function makeAtlasMapCompose(deps) {
     const geoObject = deps.geoObject || null; /* js/atlas-geo-object.js — provenance classes */
     const dispatch = deps.dispatch;           /* the console's dispatch, for fills (highlight) */
     const parseColor = deps.parseColor || null;
+    /* (atlas-completion) THE SEA, ASKED OF THE ONE ENGINE THAT KNOWS IT. A `computed` relation is a path over water from
+       js/map-tools.js IntMapRoute.seaPath — the same A* over the same land mask the reader's own sea-route tool uses —
+       and every `route` relation is asked whether its line stays on water (IntMapRoute.seaCheck). Injected like the
+       rest; when nothing is injected they are asked of the engine's published API AT CALL TIME (it is created after this
+       module), and a missing engine answers 「could not look」, never 「on the sea」. */
+    const engineRoute = () => { try { return (typeof window !== 'undefined' && window.IntMapRoute) || null; } catch (_) { return null; } };
+    const seaPath = (typeof deps.seaPath === 'function') ? deps.seaPath
+      : ((a, b) => { const S = engineRoute(); return (S && typeof S.seaPath === 'function') ? S.seaPath(a, b) : Promise.resolve({ ok: false, reason: 'unavailable' }); });
+    const seaCheck = (typeof deps.seaCheck === 'function') ? deps.seaCheck
+      : ((c, an, km) => { const S = engineRoute(); return (S && typeof S.seaCheck === 'function') ? S.seaCheck(c, an, km) : { ok: false, reason: 'unavailable' }; });
     const now = (typeof deps.now === 'function') ? deps.now : (() => Date.now());
 
     /* ── Budgets: measured against js/atlas-verify.js's pinning pass (8 s a name, 20 s a pass) ── */
@@ -88,6 +98,16 @@ export function makeAtlasMapCompose(deps) {
     const VERIFY_BUDGET_MS = Math.max(0, deps.verifyBudgetMs == null ? 14000 : +deps.verifyBudgetMs);
     const MAX_ITEMS = 24;
     const MAX_RELATIONS = 24;
+    /* (atlas-completion) WHAT A LINE CLAIMS TO BE. `schematic` = a representative path through the named points (great-circle
+       legs), `computed` = a path IntMap computed over water, `track` = a recorded track. The legend and the result say which,
+       so 「a line was drawn」 and 「the route the question asked about was shown」 can be checked apart. */
+    const BASES = ['schematic', 'computed', 'track'];
+    /* no count limit on via points: each costs one lookup inside the pass budget, and the clock is what bounds it — a via
+       the clock did not reach is reported via_unplaced by name, like any other */
+    /* how far from a NAMED point (an end or a via) a `route` line may touch land before the sea check counts it. ESTIMATE,
+       not a measurement: a port or a strait is resolved to one point — a city centre, a strait's label — that can sit up to
+       a few tens of km from the water. Invalid if the points ever arrive as navigable positions (then this is 0). */
+    const ANCHOR_KM = 40;
     /* ⚠⚠ (#R551) WHY A NAME IS NOT ON THE MAP YET, AND WHETHER ANOTHER RUNG CAN STILL SAVE IT.
        `not_found` is a fact about the NAME — the gazetteer holds no such feature. `timeout` and
        `not_attempted` are facts about the CLOCK: sixteen names through a gazetteer with a 1,100 ms
@@ -227,7 +247,8 @@ export function makeAtlasMapCompose(deps) {
       });
       relations.forEach((rel) => {
         out.push({ type: 'Feature', id: out.length, geometry: rel.geo,
-          properties: { t: 'rel', from: rel.from, to: rel.to, type: rel.type, label: rel.label, color: rel.color, w: rel.w, dash: rel.dash ? 1 : 0, arrow: rel.arrow ? 1 : 0 } });
+          properties: { t: 'rel', from: rel.from, to: rel.to, type: rel.type, label: rel.label, color: rel.color, w: rel.w, dash: rel.dash ? 1 : 0, arrow: rel.arrow ? 1 : 0,
+            basis: rel.basis, sea: rel.sea.checked ? (rel.sea.onSea ? 'sea' : 'land') : 'unchecked' } });
       });
       return { type: 'FeatureCollection', features: out };
     }
@@ -425,7 +446,19 @@ export function makeAtlasMapCompose(deps) {
     };
 
     /* ── Legend: the same numbers the markers carry, in the bubble. ─────────────────────────────── */
-    function legendHtml(title, recs, rels, unplaced, fills, dated) {
+    const BASIS_TEXT = {
+      schematic: () => L('schematic — not a surveyed path', '模式図（実際の経路ではない）'),
+      computed: () => L('computed sea route', '計算した海路'),
+      track: () => L('recorded track', '実航跡'),
+    };
+    const REL_WHY = {
+      endpoint_unplaced: () => L('an end is not on the map', '端点が地図上にない'),
+      same_endpoint: () => L('both ends are the same place', '両端が同じ場所'),
+      via_unplaced: () => L('a via point could not be placed', '経由地を配置できなかった'),
+      sea_path_failed: () => L('no sea path could be computed', '海路を計算できなかった'),
+      track_unavailable: () => L('no recorded track is available', '実航跡のデータがない'),
+    };
+    function legendHtml(title, recs, rels, unplaced, fills, dated, relFailed) {
       const T = str(title, 120);
       let h = '<div class="atl-cmp">';
       h += '<div class="atl-cmp-h">' + esc(T || L('Places on the map', '地図上の場所', 'Orte auf der Karte', 'Места на карте', 'Lugares en el mapa')) + '</div>';
@@ -437,7 +470,16 @@ export function makeAtlasMapCompose(deps) {
       if (rels.length) {
         h += '<div class="atl-cmp-rels">' + rels.map((x) => '<span class="atl-cmp-rel"><span class="atl-geo-n" style="background:' + esc(x.color) + '">' + x.fromN + '</span>'
           + '<span class="atl-cmp-arr">' + (x.arrow ? '→' : '—') + '</span><span class="atl-geo-n" style="background:' + esc(x.color) + '">' + x.toN + '</span>'
-          + (x.label ? ('<span class="atl-cmp-rl">' + esc(x.label) + '</span>') : '') + '</span>').join('') + '</div>';
+          + (x.label ? ('<span class="atl-cmp-rl">' + esc(x.label) + '</span>') : '')
+          /* (atlas-completion) what the line IS — and, for a route, whether it stays on water */
+          + '<span class="atl-cmp-rl">' + esc(BASIS_TEXT[x.basis]())
+          + (x.via.length ? (' · ' + esc(L('via', '経由')) + ' ' + esc(x.via.join(' → '))) : '')
+          + (x.km ? (' · ' + Math.round(x.km).toLocaleString() + ' km') : '')
+          + ((x.sea.checked && !x.sea.onSea) ? (' · ' + esc(L('crosses land', '陸上を横切る'))) : '') + '</span>'
+          + '</span>').join('') + '</div>';
+      }
+      if (relFailed && relFailed.length) {
+        h += '<div class="atl-cmp-un">' + esc(L('Links not drawn', '描けなかった線')) + ': ' + esc(relFailed.map((x) => x.from + ' → ' + x.to + (REL_WHY[x.reason] ? ' (' + REL_WHY[x.reason]() + ')' : '')).join(', ')) + '</div>';
       }
       const fd = (fills || []).filter((f) => f.ok).map((f) => f.name);
       if (fd.length) h += '<div class="atl-cmp-f">' + esc(L('Shaded', '塗り分け', 'Eingefärbt', 'Заливка', 'Sombreado')) + ': ' + esc(fd.join(', ')) + '</div>';
@@ -449,7 +491,8 @@ export function makeAtlasMapCompose(deps) {
      * run(a, ctx) -> legacy dispatch result {ok, html, meta, exec}
      *
      * a.items[]      {name, country?, kind?, stableId?, role?, color?, fill?}   the places, in the order to number them
-     * a.relations[]  {from, to, type?, label?, color?}                          from/to = an item's name, its 1-based number, or its stableId
+     * a.relations[]  {from, to, type?, label?, color?, basis?, via?}            from/to = an item's name, its 1-based number, or its stableId;
+     *                basis = 'schematic' (default) | 'computed' | 'track'; via[] = names (or item names / numbers) passed through in order
      * a.title?       the legend's heading
      * a.camera?      'fit' (default) | 'keep'
      */
@@ -459,6 +502,18 @@ export function makeAtlasMapCompose(deps) {
       const askedRels = (Array.isArray(a.relations) ? a.relations : []).filter((x) => x && (x.from != null) && (x.to != null));
       const items = askedItems.slice(0, MAX_ITEMS);
       const wantRels = askedRels.slice(0, MAX_RELATIONS);
+      /* (atlas-completion) a via that is not one of the items is resolved like one — ledger, gazetteer, the web pass — but is
+         not numbered: it is a point the line passes, not a place the explanation is about */
+      const itemKey = Object.create(null);
+      askedItems.slice(0, MAX_ITEMS).forEach((x) => { itemKey[norm(x.name)] = 1; if (x.as) itemKey[norm(x.as)] = 1; });
+      const viaOf = (v) => (v && typeof v === 'object') ? { name: str(v.name, 120), country: str(v.country, 90), kind: str(v.kind, 40) } : { name: str(v, 120), country: '', kind: '' };
+      const viaItems = [], viaIndex = Object.create(null);
+      wantRels.forEach((x) => (Array.isArray(x.via) ? x.via : (x.via != null ? [x.via] : [])).forEach((v) => {
+        if (typeof v === 'number' || /^\d+$/.test(str(v))) return;
+        const it = viaOf(v); const k = norm(it.name);
+        if (!k || itemKey[k] || viaIndex[k] != null) return;
+        viaIndex[k] = viaItems.length; viaItems.push(it);
+      }));
       /* ⚠ (#R551) WHAT DID NOT FIT IS REPORTED, NOT DROPPED. `.slice(0, MAX_ITEMS)` used to be the
          whole of it: a 25-item explanation lost its 25th place with nothing said to Atlas and
          nothing shown to the reader, which is the same defect as claiming a success that did not
@@ -492,10 +547,11 @@ export function makeAtlasMapCompose(deps) {
 
       /* ── pass 1: the ledger and the gazetteer, in order (each is cached or one bounded request) ── */
       const resolved = [];
-      for (let i = 0; i < items.length; i++) {
+      const all = items.concat(viaItems);
+      for (let i = 0; i < all.length; i++) {
         /* ⚠ (#R551) the clock can run out mid-list; the names behind it were never asked. Saying so
            is what lets pass 2 pick them up — and what stops the reader being told they do not exist. */
-        resolved[i] = (now() >= deadline) ? { ok: false, reason: 'not_attempted' } : await resolveOne(items[i], deadline);
+        resolved[i] = (now() >= deadline) ? { ok: false, reason: 'not_attempted' } : await resolveOne(all[i], deadline);
       }
 
       /* ── pass 2: every name the gazetteer could not place goes to Atlas and the live web AT ONCE ──
@@ -512,14 +568,14 @@ export function makeAtlasMapCompose(deps) {
              reader as 「配置できなかった」. The call carries the entire list either way. */
           if (resolved[i].ok || !RECOVERABLE[resolved[i].reason]) continue;
           misses.push(i);
-          asked.push((resolved[i].tried && resolved[i].tried[0]) || queries(items[i])[0]);
+          asked.push((resolved[i].tried && resolved[i].tried[0]) || queries(all[i])[0]);
         }
         if (misses.length) {
           let found = null;
           try { found = await withTimeout(verifyPlaces(asked.slice(), VERIFY_BUDGET_MS), VERIFY_BUDGET_MS + 1000); } catch (_) { found = null; }
           const get = (q) => { try { return (found && typeof found.get === 'function') ? found.get(q) : (found ? found[q] : null); } catch (_) { return null; } };
           misses.forEach((i, k) => {
-            const it = items[i];
+            const it = all[i];
             const gv = get(asked[k]);
             if (!verifyStrong(gv) || num(gv.lng) == null || num(gv.lat) == null) {
               /* the reason it FIRST failed is kept — 「時間が足りなかった」 and 「そんな名前は無い」 are
@@ -571,15 +627,56 @@ export function makeAtlasMapCompose(deps) {
         return byKey[norm(v)] || byKey[str(v)] || null;
       };
       const drawn = [], skipped = [];
-      wantRels.forEach((x, i) => {
+      /* a via resolves to: an item placed in this compose (by name or 1-based number), a record placed earlier, or its own lookup */
+      const viaPoint = (v) => {
+        if (typeof v === 'number' || /^\d+$/.test(str(v))) return byItem[str(v)] || null;
+        const it = viaOf(v); const hit = endpoint(it.name);
+        if (hit) return { lng: hit.lng, lat: hit.lat, name: hit.name };
+        const k = viaIndex[norm(it.name)]; const r = (k != null) ? resolved[items.length + k] : null;
+        return (r && r.ok) ? { lng: r.lng, lat: r.lat, name: it.name } : null;
+      };
+      for (let i = 0; i < wantRels.length; i++) {
+        const x = wantRels[i];
         const A = endpoint(x.from), B = endpoint(x.to);
-        if (!A || !B || A === B) { skipped.push({ from: str(x.from, 80), to: str(x.to, 80), reason: (!A || !B) ? 'endpoint_unplaced' : 'same_endpoint' }); return; }
+        if (!A || !B || A === B) { skipped.push({ from: str(x.from, 80), to: str(x.to, 80), reason: (!A || !B) ? 'endpoint_unplaced' : 'same_endpoint' }); continue; }
         const type = str(x.type, 20).toLowerCase() || 'link';
-        const rel = { from: A.id, to: B.id, fromN: A.n, toN: B.n, type, label: str(x.label, 120), color: colourOf(x.color, placed.length + i),
+        const basis = BASES.indexOf(str(x.basis, 20).toLowerCase()) >= 0 ? str(x.basis, 20).toLowerCase() : 'schematic';
+        const viaAsked = (Array.isArray(x.via) ? x.via : (x.via != null ? [x.via] : []));
+        const vias = [], viaMissing = [];
+        viaAsked.forEach((v) => { const p = viaPoint(v); if (p) vias.push(p); else viaMissing.push(str(v && typeof v === 'object' ? v.name : v, 120)); });
+        const base = { from: A.name, to: B.name, basis };
+        if (viaMissing.length) { skipped.push(Object.assign(base, { reason: 'via_unplaced', via: viaMissing })); continue; }
+        /* ⚠ IntMap holds no recorded tracks to draw from, and a great circle labelled 「track」 would be the lie this field exists to stop */
+        if (basis === 'track') { skipped.push(Object.assign(base, { reason: 'track_unavailable' })); continue; }
+        const stops = [A].concat(vias, [B]);
+        let coords = [], km = null, sea;
+        if (basis === 'computed') {
+          let fail = null; km = 0;
+          for (let k = 1; k < stops.length; k++) {
+            const p = stops[k - 1], q = stops[k];
+            let leg = null;
+            try { leg = await seaPath([p.lng, p.lat], [q.lng, q.lat]); } catch (_) { leg = null; }
+            if (!leg || !leg.ok || !Array.isArray(leg.coords) || leg.coords.length < 2) { fail = { leg: k, from: p.name, to: q.name, reason: (leg && leg.reason) || 'error' }; break; }
+            coords = coords.length ? coords.concat(leg.coords.slice(1)) : leg.coords.slice();
+            km += +leg.km || 0;
+          }
+          /* computed is NOT claimed for a path that was not computed: the relation fails, it does not fall back to an arc */
+          if (fail) { skipped.push(Object.assign(base, { reason: 'sea_path_failed', leg: fail })); continue; }
+          sea = { checked: true, onSea: true, by: 'computed' };
+        } else {
+          for (let k = 1; k < stops.length; k++) { const g = gcPoints(stops[k - 1], stops[k]); coords = coords.length ? coords.concat(g.slice(1)) : g; }
+          if (type === 'route') {
+            let c = null;
+            try { c = seaCheck(coords, stops.map((p) => [p.lng, p.lat]), ANCHOR_KM); } catch (_) { c = null; }
+            sea = (c && c.ok) ? { checked: true, onSea: !!c.onSea, samples: +c.samples || 0, landSamples: +c.land || 0 } : { checked: false, reason: (c && c.reason) || 'unavailable' };
+          } else sea = { checked: false, reason: 'not_a_route' };
+        }
+        const rel = { from: A.id, to: B.id, fromN: A.n, toN: B.n, fromName: A.name, toName: B.name, type, label: str(x.label, 120), color: colourOf(x.color, placed.length + i),
           w: type === 'flow' || type === 'route' ? 3 : 2.2, dash: type === 'influence' || type === 'border' || type === 'claim', arrow: type === 'flow' || type === 'route' || type === 'supply',
-          geo: splitAntimeridian(gcPoints(A, B)) };
+          basis, via: vias.map((p) => p.name), km, sea,
+          geo: splitAntimeridian(coords) };
         relations.push(rel); drawn.push(rel);
-      });
+      }
 
       await awaitStyle(Math.min(6000, Math.max(0, deadline - now())));
       const painted = paint();
@@ -599,12 +696,18 @@ export function makeAtlasMapCompose(deps) {
          A COUNT DELTA IS NOT COMPLETENESS. `map.compose` now has a verifier of its own that reads
          these counts, and this flag is what tells every generic reader the same thing. */
       const partial = ok && (missing.length > 0 || skipped.length > 0);
+      /* (atlas-completion) per relation: what the line is and whether it stays on water — so 「a line is on the map」 and
+         「the route asked about is on the map」 are separate facts in the result */
+      const relOut = drawn.map(relPub);
       const exec = { status: ok ? (partial ? 'partial' : 'ok') : 'failed', compose: composeId,
         artifact: artifactId, revision: revision, counts: counts,
         placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance, ...(era ? { source: r.source, as: r.identifiedAs || undefined, record: r.canonical } : null) })),   /* (#R515) `web_verified` = no gazetteer holds this name and a live web search placed it; say where a point came from if it matters to the answer */
-        unplaced: missing, relationsDrawn: drawn.length, relationsSkipped: skipped, fills: fills.length ? fills : undefined,
+        unplaced: missing, relationsDrawn: drawn.length, relationsSkipped: skipped, relations: relOut, fills: fills.length ? fills : undefined,
         note: missing.length ? ("The places listed under `unplaced` are NOT on the map. Say so to the reader; do not describe them as shown. `reason` says WHY, and the three are different problems: `not_found` = the gazetteer holds no feature under the spellings in `tried`, and IntMap will not stand a stranger in for a name it cannot find (#R515). `timeout` / `not_attempted` = the lookup ran out of clock, NOT evidence the place does not exist. `over_item_limit` = more than 24 items were sent and these did not fit. `webVerified:false` means the live-web check was also asked and could not ground the name.\\nTO FINISH THIS MAP, call compose_map ONE more time with the COMPLETE list of places you want shown — the ones already placed AND new spellings for the ones that failed. Re-listing a place that is already placed is FREE: it is in the ledger, so it costs no lookup and no wait. That call becomes the next REVISION of this same map (artifact `{ART}`), it REPLACES this one on the map and in your reply, and the reader sees ONE finished map instead of a draft followed by a correction. Do NOT send only the failures: a revision states the whole map, so anything you leave out disappears from it.\\nIf a different name means the same place — the municipality or ward it is in, its official or local spelling, the facility rather than the district — you may use it. BUT A TOWN IS NOT A FACTORY: if you place a works by naming the city around it, the point is an APPROXIMATE location, and you must say so in your answer rather than let the reader read it as the site itself.").replace('{ART}', artifactId) : undefined };
-      const html = ok ? legendHtml(a.title, placed, drawn, missing, fills, !!era) : '';
+      if (skipped.some((x) => REL_WHY[x.reason] && x.reason !== 'endpoint_unplaced' && x.reason !== 'same_endpoint')) {
+        exec.relationNote = 'The relations under `relationsSkipped` are NOT on the map. `via_unplaced` = a via point could not be resolved (its names are listed); `sea_path_failed` = basis "computed" was asked and no path over water was found for the leg shown — IntMap did NOT draw an arc in its place; `track_unavailable` = IntMap holds no recorded tracks. Say so in your answer, or call compose_map again with basis "schematic" if a representative path is what you mean.';
+      }
+      const html = ok ? legendHtml(a.title, placed, drawn, missing, fills, !!era, skipped) : '';
       /* ⚠⚠⚠ (#R551) `resultKey` IS WHAT STOPS THE READER SEEING THE DRAFT AND THE FINISHED MAP AT
          ONCE. js/atlas-turn-results.js identifies an operation by its ARGUMENTS unless the result
          declares an identity of its own — and a repair necessarily changes the arguments (that is
@@ -615,11 +718,14 @@ export function makeAtlasMapCompose(deps) {
       const meta = { code: ok ? 'ok' : 'PLACE_NOT_FOUND', produced: ok ? ['map', 'explanation'] : [],
         resultKey: 'map.compose:' + artifactId, artifact: { id: artifactId, revision: revision },
         partial: partial || undefined, counts: counts,
-        compose: { id: composeId, artifact: artifactId, revision: revision, placed: placed.map(pub), unplaced: missing, relations: drawn.length, fills: fills.length } };
+        compose: { id: composeId, artifact: artifactId, revision: revision, placed: placed.map(pub), unplaced: missing, relations: drawn.length, links: relOut, fills: fills.length } };
       if (!ok) { meta.category = 'input'; meta.retryable = true; meta.message = 'None of the named places could be placed.'; }
       return { ok, html, meta, exec };
     }
 
+    /* what the result says about one drawn relation */
+    function relPub(r) { return { from: r.fromName, to: r.toName, fromN: r.fromN, toN: r.toN, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(),
+      km: r.km != null ? Math.round(r.km) : null, sea: Object.assign({}, r.sea) }; }
     /* what the bubble is allowed to keep about a record — no functions, no engine handles */
     function pub(r) { return { id: r.id, n: r.n, name: r.name, canonical: r.canonical, kind: r.kind, role: r.role, color: r.color, lng: r.lng, lat: r.lat, spellings: r.spellings.slice() }; }
 
@@ -733,7 +839,7 @@ export function makeAtlasMapCompose(deps) {
     }
 
     const API = { SRC, LAYERS, PALETTE, run, clear, paint, focus, bind, linkProse, recordsFor, setVisible, isVisible,
-      records: () => records.map(pub), relations: () => relations.map((r) => ({ from: r.from, to: r.to, type: r.type, label: r.label })),
+      records: () => records.map(pub), relations: () => relations.map((r) => ({ from: r.from, to: r.to, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(), sea: Object.assign({}, r.sea) })),
       gcPoints, splitAntimeridian };
     try { window.IntMapAtlasCompose = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;

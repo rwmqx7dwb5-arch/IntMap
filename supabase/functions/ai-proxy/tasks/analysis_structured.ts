@@ -60,6 +60,7 @@ export const ANSWER_SCHEMA = {
           metric: {
             type: "OBJECT",
             properties: {
+              kind: { type: "STRING" },
               seriesId: { type: "STRING" }, concept: { type: "STRING" },
               value: { type: "NUMBER" }, unit: { type: "STRING" }, basis: { type: "STRING" },
               adjustment: { type: "STRING" }, geography: { type: "STRING" }, period: { type: "STRING" },

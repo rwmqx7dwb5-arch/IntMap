@@ -23,7 +23,7 @@ export interface GeminiOpts {
   noTools?: boolean;         // hardened retry: never attach a tool
 }
 
-export async function callGemini(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string }> {
+export async function callGemini(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; incompleteReason: string | null; webAttached: boolean; webCount?: number; webSources?: number | null; served?: string }> {
   /* (#R540) documents → attached text → the user's prompt; the images keep their place after it. */
   const parts: unknown[] = [];
   for (const dp of docs) parts.push({ inline_data: { mime_type: dp.mime, data: dp.b64 } });
@@ -84,13 +84,18 @@ export async function callGemini(model: string, key: string, prompt: string, sys
     throw new ProviderError("provider_empty", "gemini: empty response (finishReason=" + finishReason + (blockReason ? ", blockReason=" + blockReason : "") + ")", 502, finishReason === "MAX_TOKENS", { finishReason, blockReason });
   }
 
-  return { text, finishReason, webAttached: attachSearch, served: String(j?.modelVersion || "") };
+  /* (atlas-completion) what Google Search grounding did, as the candidate's groundingMetadata states it:
+     the queries it ran and the pages it grounded on — provider-call.ts webOutcome reads both */
+  const gm = c?.groundingMetadata;
+  const webCount = attachSearch && Array.isArray(gm?.webSearchQueries) ? gm.webSearchQueries.length : 0;
+  const webSources = attachSearch && Array.isArray(gm?.groundingChunks) ? gm.groundingChunks.length : null;
+  return { text, finishReason, incompleteReason: geminiIncomplete(finishReason), webAttached: attachSearch, webCount, webSources, served: String(j?.modelVersion || "") };
 }
 
 // (#R113c) Transient Google errors — 503 "the model is overloaded" / other 5xx / rate-limit — are common for a busy
 // model and usually clear on a retry (Gemini's own guidance is to retry with backoff). Retry those up to twice with a
 // short backoff. Timeouts and MALFORMED are handled elsewhere (retrying a timeout would just burn another 45s).
-export async function callGeminiRetry(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string }> {
+export async function callGeminiRetry(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; incompleteReason: string | null; webAttached: boolean; webCount?: number; webSources?: number | null; served?: string }> {
   return await geminiRetry(() => callGemini(model, key, prompt, system, imgs, files, docs, opts));
 }
 /* (atlas-native-tools) the retry policy above, as a wrapper, so the turn path gets the SAME policy rather than a copy */
@@ -121,7 +126,7 @@ export async function geminiRetry<T>(call: () => Promise<T>): Promise<T> {
      · function declarations cannot be combined with JSON mode or with Google Search grounding on this
        endpoint, so a turn carries neither: the final shape is stated by the instruction, and the
        client reads a prose final as the answer (as it always did when JSON mode was dropped). */
-export async function callGeminiTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], maxTokens: number, meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string; output: TurnItem[] }> {
+export async function callGeminiTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], maxTokens: number, meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; incompleteReason: string | null; webAttached: boolean; served?: string; output: TurnItem[] }> {
   const attached = filesBlock(files);
   const nameOf: Record<string, string> = {};
   const contents: { role: string; parts: unknown[] }[] = [];
@@ -182,5 +187,12 @@ export async function callGeminiTurn(model: string, key: string, turn: TurnReq, 
   if (!text.trim() && !output.some((it) => it.type === "function_call")) {
     throw new ProviderError("provider_empty", "gemini: empty response (finishReason=" + finishReason + ")", 502, finishReason === "MAX_TOKENS", { finishReason });
   }
-  return { text: text.trim(), finishReason, webAttached: false, served: String(j?.modelVersion || ""), output };
+  return { text: text.trim(), finishReason, incompleteReason: geminiIncomplete(finishReason), webAttached: false, served: String(j?.modelVersion || ""), output };
+}
+
+/* (atlas-completion) Gemini's finishReason: STOP is the model's own end; every other value Google sends
+   (MAX_TOKENS, RECITATION, OTHER, BLOCKLIST …) stopped the answer, and is reported as the reason.
+   FINISH_REASON_UNSPECIFIED and this file's own NO_CANDIDATE placeholder are not observations. */
+export function geminiIncomplete(finishReason: string): string | null {
+  return (finishReason && finishReason !== "STOP" && finishReason !== "FINISH_REASON_UNSPECIFIED" && finishReason !== "NO_CANDIDATE") ? finishReason : null;
 }

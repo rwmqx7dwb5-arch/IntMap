@@ -1662,7 +1662,6 @@ IntMapLang.define('ko', { ui: {
   "live web news": "실시간 웹 뉴스",
   "{n} source(s) did not answer within {s}s": "{s}초 안에 응답하지 않은 소스 {n}개",
   "live web verification": "실시간 웹 확인",
-  "Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.": "시의성이 중요한 이 질문에 대해 실시간 웹 확인을 끝내지 못했습니다. 따라서 이미 수집한 헤드라인을 주로 근거로 한 잠정 평가입니다. 각 항목은 확인된 직접 증거가 아니라 단서로 다루시기 바랍니다.",
   "LOAD": "하중",
   "loaded news": "불러온 뉴스",
   "Loaded news near here": "이 부근의 불러온 뉴스",

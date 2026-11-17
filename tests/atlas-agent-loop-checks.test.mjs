@@ -401,7 +401,9 @@ test('R406-turn ②: the same tools are offered for every request, and the catal
   }
   assert.equal(new Set(sets).size, 1, 'the tool surface varied with the wording of the request');
   /* the whole surface, schemas included, against the 64,250 characters of catalogue it replaced */
-  assert.ok(biggest < 12_000, `the tool block is ${biggest} characters — it must not become the catalogue again`);
+  /* (atlas-completion) 12,000 → 13,000: a guard against the catalogue coming back (64,250), not a policy on the core tools' length —
+     compose_map gained `basis` / `via` so a route can say whether it is schematic, computed or a recorded track and pass named waypoints. */
+  assert.ok(biggest < 13_000, `the tool block is ${biggest} characters — it must not become the catalogue again`);
   const names = sets[0].split(',');
   assert.ok(names.includes('find_capability'), 'nothing can reach the capabilities that are not core tools');
   assert.ok(names.includes('run_capability'));
@@ -701,7 +703,12 @@ test('R511 ②: "text" — and an undeclared mode — end the turn on step 0 exa
 test('R511 ③: after maxOutputGate bounces a "mixed" final with nothing drawn is accepted as it stands', async () => {
   const model = scripted([{ text: 'The map would show it.', toolCalls: [], answerMode: 'mixed' }]);
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: true }), messages: [{ role: 'user', content: 'x' }] });
-  assert.equal(out.stopped, 'answered');
+  /* (atlas-completion) the words are still accepted as they stand, but the turn no longer reports
+     the same success as one that drew: a declared output that never appeared is 'output_unmet',
+     and the unmet output is listed (tests/atlas-completion-agent.part.test.mjs). Was 'answered'. */
+  assert.equal(out.stopped, 'output_unmet');
+  assert.equal(out.completion, 'partial');
+  assert.deepEqual(out.unmet, [{ kind: 'output', mode: 'mixed', code: 'output_not_produced' }]);
   assert.equal(out.trace.outputGate, AGENT.LIMITS.maxOutputGate);
   assert.equal(model.count(), AGENT.LIMITS.maxOutputGate + 1);
   assert.equal(out.text, 'The map would show it.', 'the reader still gets the sentence');
@@ -711,7 +718,7 @@ test('R511 ③: after maxOutputGate bounces a "mixed" final with nothing drawn i
   const m2 = scripted([{ text: 'x', toolCalls: [], answerMode: 'map' }]);
   const o2 = await AGENT.runTurn({ model: m2, tools: TOOLS, execute: async () => ({ ok: true }), messages: [{ role: 'user', content: 'x' }], limits: { maxSteps: 2 } });
   assert.equal(o2.trace.outputGate, 1);
-  assert.equal(o2.stopped, 'answered');
+  assert.equal(o2.stopped, 'output_unmet', '(atlas-completion) accepted without the map it declared — was \'answered\'');
 });
 
 /* ══ ④ readReply: the declaration is read off the envelope; anything else is no declaration ════════ */

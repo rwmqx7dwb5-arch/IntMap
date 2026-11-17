@@ -57,6 +57,20 @@ export function makeAtlasAnswerContract() {
   const BASES = ['nominal', 'real', 'current_price', 'constant_price', 'percentage_point', 'other'];
   const CONFIDENCE = ['high', 'medium', 'low'];
   const TEMPORAL_MODES = ['current', 'historical', 'mixed', 'unspecified'];
+  /* ══ (atlas-completion) WHAT KIND OF NUMBER A FIGURE IS — DECLARED, NOT GUESSED FROM ITS WORDS ═══════════
+     The contract asked EVERY figure for the statistical series it came from. A fare, a travel time, a
+     distance, an opening hour or the date something was observed is not a reading of a statistical
+     series — it is a value one source states about one thing — so an honest answer about a train fare
+     could only fail `metric.missing_series_id` or invent a series. The claim says which kind its figure is
+     (metric.kind), and the obligations follow from that declaration (metricObligations below), never from
+     a list of words that «look like» fares.
+       'statistic'  a figure of a statistical series (a rate, a share, a level, an index, a growth figure):
+                    the series it came from, its period and its unit are the meaning of the number.
+       'stated'     a value a cited source states about one specific thing: it needs the record it was read
+                    from (evidenceIds) and its unit, and no series.
+     An undeclared kind is held to 'statistic' — the stricter reading, so leaving the field out can never
+     loosen an audit. */
+  const METRIC_KINDS = ['statistic', 'stated'];
 
   /* ── unit CLASSES ───────────────────────────────────────────────────────────────────────────────
      A percentage and a percentage POINT are written with the same glyph in half the world's prose and
@@ -172,6 +186,7 @@ export function makeAtlasAnswerContract() {
             metric: {
               type: 'OBJECT',
               properties: {
+                kind: { type: 'STRING' },
                 seriesId: { type: 'STRING' }, concept: { type: 'STRING' },
                 value: { type: 'NUMBER' }, unit: { type: 'STRING' }, basis: { type: 'STRING' },
                 adjustment: { type: 'STRING' }, geography: { type: 'STRING' }, period: { type: 'STRING' },
@@ -219,6 +234,7 @@ export function makeAtlasAnswerContract() {
     if (!m || typeof m !== 'object') return null;
     const v = Number(m.value);
     const out = {
+      kind: inSet(m.kind, METRIC_KINDS, ''),
       seriesId: str(m.seriesId, 80), concept: str(m.concept, 160),
       value: isFinite(v) ? v : null, unit: str(m.unit, 40),
       basis: str(m.basis, 40), adjustment: str(m.adjustment, 60),
@@ -226,6 +242,17 @@ export function makeAtlasAnswerContract() {
     };
     const any = out.seriesId || out.concept || out.unit || out.period || out.value != null;
     return any ? out : null;
+  }
+
+  /**
+   * metricObligations(metric) -> {errors:[field], warnings:[field]} — the fields a figure's DECLARED kind
+   * obliges its metric to carry. The audit (js/atlas-answer-audit.js) reports a missing field as
+   * `metric.missing_<field>` at the severity this returns; nothing else decides which fields a number owes.
+   */
+  function metricObligations(metric) {
+    const kind = (metric && METRIC_KINDS.indexOf(metric.kind) >= 0) ? metric.kind : 'statistic';
+    if (kind === 'stated') return { kind, errors: ['unit'], warnings: ['period'] };
+    return { kind, errors: ['seriesId', 'period', 'unit'], warnings: ['basis', 'geography'] };
   }
 
   /* A section's `heading` is the TEXT of a heading, not its markup. The prompt tells the model to
@@ -339,7 +366,7 @@ export function makeAtlasAnswerContract() {
       'CITATION: you may NOT write a URL, a domain name, or a source name anywhere. Reference evidence ONLY by the ids in the EVIDENCE RECORDS block. An id that is not in that block is a fabrication and the answer will be rejected.',
       'CLAIMS: every statement of substance is a claim with an id, and each block lists the claimIds it rests on. directAnswer must list at least one claim marked importance:"primary".',
       'DIMENSION IS MANDATORY AND IT IS THE MEANING OF THE CLAIM. "share" = a portion of a total. "growth_contribution" = how many percentage POINTS of a period\'s growth it supplied. "level" = the current size. "structural_capacity" = the long-run capacity that makes the level possible. "trend" = direction. "causal_driver" = a sustained cause. A question like "what actually supports this economy" has more than one correct answer because it has more than one dimension — answer the dimensions separately and say which is which. Never let one word carry two dimensions.',
-      'NUMBERS: a claim that states a figure must carry metric{seriesId, concept, value, unit, basis, geography, period}. seriesId names the STATISTICAL SERIES the figure comes from, copied from the evidence record — never invented. Two figures from different series may not appear in the same claim: split them into two claims. Percentages and percentage points are different units; a growth contribution is measured in percentage points. Never chain a value-added level onto an industrial output growth rate, a nominal figure onto a real one, a share onto a contribution, or an annual figure onto a quarterly one.',
+      'NUMBERS: a claim that states a figure must carry metric{kind, seriesId, concept, value, unit, basis, geography, period}. kind says what the figure IS: "statistic" for a figure of a statistical series (a rate, share, level, index or growth figure), "stated" for a value one cited source states about one specific thing (a fare, a travel time, a distance, an opening time, a date something was observed). A "stated" figure needs its unit and the evidenceIds of the record it was read from, and NO seriesId — never invent a series for it. A "statistic" needs seriesId, period and unit: seriesId names the STATISTICAL SERIES the figure comes from, copied from the evidence record — never invented. Two figures from different series may not appear in the same claim: split them into two claims. Percentages and percentage points are different units; a growth contribution is measured in percentage points. Never chain a value-added level onto an industrial output growth rate, a nominal figure onto a real one, a share onto a contribution, or an annual figure onto a quarterly one.',
       'THE OPENING SENTENCE IS AUDITED HARDER THAN THE BODY. It must be supported by primary claims, it must name the dimension it is answering in, and it must not contradict any figure in the body. Do NOT open with an exclusive or comparative verdict ("A rather than B", "the main driver is", "in fact it is") unless you have measured claims for BOTH sides in the SAME dimension.',
       'INFERENCE IS NOT FACT. claimType "inference" or "judgment" must be worded as an assessment and must list the fact claims it rests on in basedOn.',
       'HONESTY: if the evidence cannot support something, put it in limitations instead of writing it. An answer that says less and is checkable is the required outcome.',
@@ -355,7 +382,7 @@ export function makeAtlasAnswerContract() {
     ].join(' ');
   }
 
-    const API = { ANSWER_SCHEMA, BASES, CLAIM_TYPES, CONFIDENCE, CONTRACT_VERSION, DIMENSIONS, IMPORTANCE, TEMPORAL_MODES, UNIT_CLASSES, answerContractRules, claimById, normalizeAnswer, numericTokens, referencedClaimIds, renderedTexts, unitClass };
+    const API = { ANSWER_SCHEMA, BASES, CLAIM_TYPES, CONFIDENCE, CONTRACT_VERSION, DIMENSIONS, IMPORTANCE, METRIC_KINDS, TEMPORAL_MODES, UNIT_CLASSES, answerContractRules, claimById, metricObligations, normalizeAnswer, numericTokens, referencedClaimIds, renderedTexts, unitClass };
     return API;
   })();
 }

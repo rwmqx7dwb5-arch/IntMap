@@ -556,10 +556,16 @@ export function seaRoute(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const t=HOST.t, fmtLL=HOST.fmtLL, makeDraggable=HOST.makeDraggable;
   window.IntMapRoute=(function(){
-    if(!GE().hasRenderer()) return { open(){}, clear(){}, setStart(){}, active:()=>false };
+    /* (atlas-completion) with no renderer there is no map to draw on — run/seaPath say so rather than resolving to nothing */
+    if(!GE().hasRenderer()) return { open(){}, clear(){}, setStart(){}, setEnd(){}, active:()=>false,
+      run:async()=>({ok:false,opId:0,reason:'no_renderer'}), seaPath:async()=>({ok:false,reason:'no_renderer'}), seaCheck:()=>({ok:false,reason:'no_renderer'}),
+      state:()=>({opId:0,hasRoute:false,painted:false,start:null,end:null,km:null,error:'no_renderer',running:false}) };
     const jp=()=>HOST.lang==='jp';
     const W=3600, H=1800;                /* (#R14) 0.1° mask ≈ 11 km cells — sharper coastlines so a route can start at shallow/coastal points and stops cutting across thin land (was 0.2°/22 km) */
-    let grid=null, panel=null, start=null, end=null, noGo=[], pureDist=false, addNoGoMode=false, busy=false;
+    let grid=null, panel=null, start=null, end=null, noGo=[], pureDist=false, addNoGoMode=false;
+    /* (atlas-completion) the zones the search avoids RIGHT NOW: the panel's no-go circles for the reader's own route, none
+       for a path compose_map asks for (a reader's no-go zones are not a fact about the sea). Set only inside solve(). */
+    let avoid=noGo;
     const toRad=Math.PI/180, Rk=6371;
     function hav(a,b){ const dLat=(b[1]-a[1])*toRad, dLon=(b[0]-a[0])*toRad, la1=a[1]*toRad, la2=b[1]*toRad;
       const x=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2; return 2*Rk*Math.asin(Math.min(1,Math.sqrt(x))); }
@@ -611,7 +617,7 @@ export function seaRoute(HOST){
     }
     const cellOf=(lng,lat)=>{ let x=Math.floor(((lng+180)/360)*W), y=Math.floor(((90-lat)/180)*H); x=((x%W)+W)%W; y=Math.max(0,Math.min(H-1,y)); return {x,y}; };
     const llOf=(x,y)=>[ ((x+0.5)/W)*360-180, 90-((y+0.5)/H)*180 ];
-    const inNoGo=(lng,lat)=>{ for(const z of noGo){ if(hav([lng,lat],[z.lng,z.lat])<=z.km) return true; } return false; };
+    const inNoGo=(lng,lat)=>{ for(const z of avoid){ if(hav([lng,lat],[z.lng,z.lat])<=z.km) return true; } return false; };
     function isSea(x,y){ if(y<0||y>=H) return false; x=((x%W)+W)%W; if(grid.cell[y*W+x]===2) return false; const ll=llOf(x,y); return !inNoGo(ll[0],ll[1]); }
     /* nearest sea cell to a clicked point (snaps a coastal click out to water) */
     function snapSea(lng,lat){ const s=cellOf(lng,lat); if(isSea(s.x,s.y)) return s; for(let r=1;r<140;r++){ for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ if(Math.abs(dx)!==r&&Math.abs(dy)!==r) continue; const nx=((s.x+dx)%W+W)%W, ny=s.y+dy; if(isSea(nx,ny)) return {x:nx,y:ny}; } } return null; }
@@ -662,32 +668,88 @@ export function seaRoute(HOST){
       if(lineCoords&&lineCoords.length>1){ /* split at antimeridian so renderWorldCopies:false draws it */
         let seg=[lineCoords[0]]; for(let i=1;i<lineCoords.length;i++){ if(Math.abs(lineCoords[i][0]-lineCoords[i-1][0])>180){ if(seg.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:seg},properties:{kind:'route'}}); seg=[lineCoords[i]]; } else seg.push(lineCoords[i]); }
         if(seg.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:seg},properties:{kind:'route'}}); }
-      try{ if(ensureLayers()) GE().layers.setSourceData('route-src',{type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ if(ensureLayers()){ GE().layers.setSourceData('route-src',{type:'FeatureCollection',features:feats}); return true; } }catch(_){}
+      return false;
     }
     function setBody(html){ const b=panel&&panel.querySelector('#route-body'); if(b) b.innerHTML=html; }
-    function compute(){ if(!start||!end||busy) return; busy=true;
-      if(pureDist){ let line; try{ line=turf.greatCircle(turf.point(start),turf.point(end),{npoints:128}); }catch(_){ line=null; }
-        const coords=line?(line.geometry.type==='MultiLineString'?[].concat(...line.geometry.coordinates):line.geometry.coordinates):[start,end];
-        draw(coords); const km=hav(start,end); setBody((IntMapLang.t(HOST.lang,"Straight-line (shortest): ","直線距離（最短）: ","Luftlinie (kürzeste): ","По прямой (кратчайшее): ","En línea recta (la más corta): "))+'<b>'+km.toFixed(0)+' km</b>'); busy=false; return; }
-      setBody(IntMapLang.t(HOST.lang,"Computing sea route…","航路を計算中…","Seeroute wird berechnet…","Расчёт морского маршрута…","Calculando la ruta marítima…"));
-      setTimeout(()=>{ try{
-        if(!buildMask()){ setBody(IntMapLang.t(HOST.lang,"Country data still loading — try again.","国境データ読み込み待ち…再試行してください","Länderdaten werden noch geladen — bitte erneut versuchen.","Данные по странам ещё загружаются — попробуйте снова.","Los datos de países aún se están cargando; inténtelo de nuevo.")); busy=false; return; }
-        const s=snapSea(start[0],start[1]), e=snapSea(end[0],end[1]);
-        if(!s||!e){ setBody(IntMapLang.t(HOST.lang,"No sea cell found near a point (is it on land?).","海上の点が見つかりません（陸地の可能性）","In der Nähe eines Punktes wurde keine Seezelle gefunden (liegt er an Land?).","Рядом с точкой не найдено морской ячейки (она на суше?).","No se ha encontrado celda marina cerca de un punto (¿está en tierra?).")); busy=false; return; }
-        let path=astar(s,e);
-        if(!path){ setBody(IntMapLang.t(HOST.lang,"No sea route found (blocked or unreachable).","航路が見つかりません（封鎖/到達不可）","Keine Seeroute gefunden (blockiert oder unerreichbar).","Морской маршрут не найден (заблокирован или недостижим).","No se ha encontrado ruta marítima (bloqueada o inalcanzable).")); busy=false; return; }
+    /* ══ (atlas-completion) ONE RUN, AND IT ENDS WHEN THE ROUTE IS ON THE MAP ═══════════════════════════════
+       compute() used to schedule the search in a setTimeout and return at once, so Atlas's routing.setEndpoints
+       reported success before any route existed and its verdict read the LAND router (window.IntMapRouting) —
+       a sea route on the map was 「no_route」 and a stale land route was 「ok」. Every route now goes through
+       run(): it numbers the operation, awaits the search AND the drawing, and leaves state() describing that
+       operation. The panel's 「Compute route」 button and Atlas call the same run(); seaPath() is the same search
+       without drawing, for compose_map. */
+    let opSeq=0, cur={opId:0,hasRoute:false,start:null,end:null,km:null,error:null,running:false};
+    const llOf2=(p)=>{ if(Array.isArray(p)&&p.length>=2&&isFinite(+p[0])&&isFinite(+p[1])) return [+p[0],+p[1]]; if(p&&isFinite(+p.lng)&&isFinite(+p.lat)) return [+p.lng,+p.lat]; return null; };
+    /* the search alone — no drawing, no state. {ok,coords,km} or {ok:false,reason} */
+    function solve(a,b,zones){ const was=avoid; avoid=zones||[]; try{
+        if(!buildMask()) return {ok:false,reason:'no_land_data'};
+        const s=snapSea(a[0],a[1]), e=snapSea(b[0],b[1]);
+        if(!s||!e) return {ok:false,reason:'on_land'};
+        const path=astar(s,e);
+        if(!path) return {ok:false,reason:'no_sea_route'};
         /* (#R14) if the click landed on a coastal/shallow cell the mask reads as land, anchor the drawn route
            at the nearest navigable water (the snapped cell) rather than drawing a leg across land or failing —
            this is what lets the user start/end at ports & shallows. A water click keeps its exact point. */
-        const sC=cellOf(start[0],start[1]), eC=cellOf(end[0],end[1]);
-        path[0]=isSea(sC.x,sC.y)?start.slice():llOf(s.x,s.y);
-        path[path.length-1]=isSea(eC.x,eC.y)?end.slice():llOf(e.x,e.y);
+        const sC=cellOf(a[0],a[1]), eC=cellOf(b[0],b[1]);
+        path[0]=isSea(sC.x,sC.y)?a.slice():llOf(s.x,s.y);
+        path[path.length-1]=isSea(eC.x,eC.y)?b.slice():llOf(e.x,e.y);
         const pulled=stringPull(path);
         let km=0; for(let i=1;i<pulled.length;i++){ if(Math.abs(pulled[i][0]-pulled[i-1][0])<180) km+=hav(pulled[i-1],pulled[i]); }
-        draw(pulled);
-        setBody((IntMapLang.t(HOST.lang,"Sea route: ","航路距離: ","Seeroute: ","Морской маршрут: ","Ruta marítima: "))+'<b>'+km.toFixed(0)+' km</b> · '+pulled.length+(IntMapLang.t(HOST.lang," pts"," 点"," Pkt."," точек"," ptos"))+(noGo.length?(jp()?(' · 禁止域 '+noGo.length):(' · '+noGo.length+' no-go')):''));
-      }catch(err){ setBody((IntMapLang.t(HOST.lang,"Error: ","エラー: ","Fehler: ","Ошибка: ","Error: "))+err); } busy=false; },30);
+        return {ok:true,coords:pulled,km};
+      }finally{ avoid=was; } }
+    /* is the route's own line on the map: its feature in the source, and its layer shown */
+    function routeOnMap(){ try{ const d=GE().layers.sourceData('route-src'); const n=((d&&d.features)||[]).filter(f=>f&&f.properties&&f.properties.kind==='route').length;
+        return n>0&&!!GE().layers.isVisible('route-line'); }catch(_){ return false; } }
+    const WHY={ no_land_data:()=>IntMapLang.t(HOST.lang,"Country data still loading — try again.","国境データ読み込み待ち…再試行してください","Länderdaten werden noch geladen — bitte erneut versuchen.","Данные по странам ещё загружаются — попробуйте снова.","Los datos de países aún se están cargando; inténtelo de nuevo."),
+      on_land:()=>IntMapLang.t(HOST.lang,"No sea cell found near a point (is it on land?).","海上の点が見つかりません（陸地の可能性）","In der Nähe eines Punktes wurde keine Seezelle gefunden (liegt er an Land?).","Рядом с точкой не найдено морской ячейки (она на суше?).","No se ha encontrado celda marina cerca de un punto (¿está en tierra?)."),
+      no_sea_route:()=>IntMapLang.t(HOST.lang,"No sea route found (blocked or unreachable).","航路が見つかりません（封鎖/到達不可）","Keine Seeroute gefunden (blockiert oder unerreichbar).","Морской маршрут не найден (заблокирован или недостижим).","No se ha encontrado ruta marítima (bloqueada o inalcanzable).") };
+    async function run(o){ o=o||{};
+      const a=llOf2(o.from), b=llOf2(o.to), opId=++opSeq;
+      cur={opId,hasRoute:false,start:a,end:b,km:null,error:null,running:true};
+      if(!a||!b){ cur.error='no_endpoints'; cur.running=false; return {ok:false,opId,reason:'no_endpoints'}; }
+      start=a.slice(); end=b.slice();
+      if(panel&&panel.style.display!=='none') refreshPanel();
+      draw(null);
+      /* a later run or a clear() owns the route from here on — this one reports that instead of painting over it */
+      const gone=()=>(opId===opSeq)?null:{ok:false,opId,reason:'superseded'};
+      let res;
+      if(pureDist){ let line; try{ line=turf.greatCircle(turf.point(a),turf.point(b),{npoints:128}); }catch(_){ line=null; }
+        res={ok:true,coords:line?(line.geometry.type==='MultiLineString'?[].concat(...line.geometry.coordinates):line.geometry.coordinates):[a,b],km:hav(a,b),pure:true}; }
+      else { setBody(IntMapLang.t(HOST.lang,"Computing sea route…","航路を計算中…","Seeroute wird berechnet…","Расчёт морского маршрута…","Calculando la ruta marítima…"));
+        /* one frame for the 「computing」 line to paint before the synchronous search takes the thread */
+        await new Promise(r=>setTimeout(r,30));
+        if(gone()) return gone();
+        try{ res=solve(a,b,noGo); }catch(err){ res={ok:false,reason:'error',message:String(err)}; } }
+      if(gone()) return gone();
+      if(!res.ok){ cur.error=res.reason; cur.running=false; draw(null);
+        setBody(window.IntMapSafe.html(WHY[res.reason]?WHY[res.reason]():((IntMapLang.t(HOST.lang,"Error: ","エラー: ","Fehler: ","Ошибка: ","Error: "))+(res.message||res.reason))));   /* plain text: an exception's message is not markup */
+        return {ok:false,opId,reason:res.reason}; }
+      const drew=draw(res.coords), painted=drew&&routeOnMap();
+      cur={opId,hasRoute:true,start:a,end:b,km:res.km,error:painted?null:'not_rendered',running:false};
+      if(res.pure) setBody((IntMapLang.t(HOST.lang,"Straight-line (shortest): ","直線距離（最短）: ","Luftlinie (kürzeste): ","По прямой (кратчайшее): ","En línea recta (la más corta): "))+'<b>'+res.km.toFixed(0)+' km</b>');
+      else setBody((IntMapLang.t(HOST.lang,"Sea route: ","航路距離: ","Seeroute: ","Морской маршрут: ","Ruta marítima: "))+'<b>'+res.km.toFixed(0)+' km</b> · '+res.coords.length+(IntMapLang.t(HOST.lang," pts"," 点"," Pkt."," точек"," ptos"))+(noGo.length?(jp()?(' · 禁止域 '+noGo.length):(' · '+noGo.length+' no-go')):''));
+      return painted?{ok:true,opId,km:res.km,coords:res.coords}:{ok:false,opId,km:res.km,coords:res.coords,reason:'not_rendered'};
     }
+    /* the panel's button and setEnd: the same run, on the endpoints the panel holds */
+    function compute(){ if(!start||!end) return Promise.resolve({ok:false,opId:0,reason:'no_endpoints'}); return run({from:start,to:end}); }
+    /* (atlas-completion) the search compose_map uses: a sea path between two points, NOT drawn, NOT the panel's route */
+    async function seaPath(a,b){ const p=llOf2(a), q=llOf2(b); if(!p||!q) return {ok:false,reason:'no_endpoints'};
+      await new Promise(r=>setTimeout(r,0));
+      try{ const r=solve(p,q,[]); return r.ok?{ok:true,coords:r.coords,km:r.km}:{ok:false,reason:r.reason}; }catch(_){ return {ok:false,reason:'error'}; } }
+    /* (atlas-completion) does a line stay on water? Samples it every ~20 km against the same land mask the search uses,
+       skipping `anchorKm` around each of `anchors` (a port or a strait is named by a point that may sit on the shore).
+       {ok:true,samples,land,onSea} — or {ok:false,reason} when the mask cannot be built, which is 「could not look」, not 「land」. */
+    function seaCheck(coords,anchors,anchorKm){ try{ if(!buildMask()) return {ok:false,reason:'no_land_data'};
+        const pts=(Array.isArray(coords)?coords:[]).map(llOf2).filter(Boolean), an=(Array.isArray(anchors)?anchors:[]).map(llOf2).filter(Boolean), r=Math.max(0,+anchorKm||0);
+        let samples=0, land=0;
+        for(let i=1;i<pts.length;i++){ const p=pts[i-1], q=pts[i]; if(Math.abs(q[0]-p[0])>180) continue;
+          const n=Math.max(1,Math.ceil(hav(p,q)/20));
+          for(let k=(i===1?0:1);k<=n;k++){ const t=k/n, ll=[p[0]+(q[0]-p[0])*t, p[1]+(q[1]-p[1])*t];
+            if(an.some(x=>hav(x,ll)<=r)) continue;
+            samples++; const c=cellOf(ll[0],ll[1]); if(grid.cell[c.y*W+c.x]===2) land++; } }
+        return {ok:true,samples,land,onSea:samples>0&&land===0}; }catch(_){ return {ok:false,reason:'error'}; } }
+    function state(){ return {opId:cur.opId,hasRoute:!!cur.hasRoute,painted:!!cur.hasRoute&&routeOnMap(),start:cur.start,end:cur.end,km:cur.km,error:cur.error,running:!!cur.running}; }
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='route-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:calc(var(--z-sheet) - 50);width:248px;';
       p.innerHTML='<div class="tp-header"><span class="tp-title">'+icon('ship')+' '+(IntMapLang.t(HOST.lang,"Sea route","洋上ルート","Seeroute","Морской маршрут","Ruta marítima"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
@@ -711,15 +773,19 @@ export function seaRoute(HOST){
     }
     function open(lngLat){ if(lngLat){ if(!start) start=[lngLat.lng,lngLat.lat]; else if(!end) end=[lngLat.lng,lngLat.lat]; } refreshPanel(); draw(null); }
     function setStart(lngLat){ start=[lngLat.lng,lngLat.lat]; end=null; refreshPanel(); draw(null); }
-    function setEnd(lngLat){ end=[lngLat.lng,lngLat.lat]; refreshPanel(); draw(null); if(start&&end) compute(); }
-    function clear(){ start=null; end=null; noGo=[]; addNoGoMode=false; draw(null); refreshPanel(); }
+    function setEnd(lngLat){ end=[lngLat.lng,lngLat.lat]; refreshPanel(); draw(null); if(start&&end) return compute(); }
+    /* a clear is an operation too: it ends whatever run is in flight, and state() then says there is no route */
+    function clear(){ start=null; end=null; noGo=[]; avoid=noGo; addNoGoMode=false; cur={opId:++opSeq,hasRoute:false,start:null,end:null,km:null,error:null,running:false}; draw(null); refreshPanel(); }
     /* When "add no-go" is armed, a left-click drops a no-go zone (start/end come from the right-click
        menu, so normal clicks/measure tools aren't hijacked). */
     GE().events.on('click',(e)=>{ if(!panel||panel.style.display==='none'||!addNoGoMode) return;
-      noGo.push({lng:e.lngLat.lng,lat:e.lngLat.lat,km:120}); draw(null);
+      noGo.push({lng:e.lngLat.lng,lat:e.lngLat.lat,km:120}); avoid=noGo; draw(null);
       const b=panel.querySelector('#route-body'); if(b) b.innerHTML=(IntMapLang.t(HOST.lang,"No-go added (120 km circle). Press Compute route.","禁止域を追加（計500km毎に120km円）。「ルート計算」を押す。","Sperrzone hinzugefügt (120-km-Kreis). „Route berechnen“ drücken.","Запретная зона добавлена (круг 120 км). Нажмите «Рассчитать маршрут».","Zona prohibida añadida (círculo de 120 km). Pulse «Calcular la ruta».")); });
     GE().events.on('styledata',()=>{ if(panel&&panel.style.display!=='none'){ setTimeout(()=>{ if(ensureLayers()) draw(null); },80); } });
-    return { open, setStart, setEnd, clear, active:()=>!!(panel&&panel.style.display!=='none'), _astar:()=>({buildMask, snapSea, astar, stringPull}) };
+    /* (atlas-completion) the drawn route is claimed with the renderer under the effect key routing.setEndpoints declares,
+       so the verdicts, the undo and the object list find it by asking the renderer rather than by a typed source id */
+    try{ GE().render.claim('route-src','map.route',{clear}); }catch(_){}
+    return { open, setStart, setEnd, clear, run, state, seaPath, seaCheck, active:()=>!!(panel&&panel.style.display!=='none'), _astar:()=>({buildMask, snapSea, astar, stringPull}) };
   })();
 }
 
@@ -1233,26 +1299,46 @@ export function objectList(HOST){
         setColor:col=>{ it.col=col; ['-fill','-line','-pt'].forEach((sfx,k)=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setPaint(L, k===0?'fill-color':k===1?'line-color':'circle-color', col); }catch(_){} }); },
         toggleHide:()=>{ hiddenUp[it.sid]=!hiddenUp[it.sid]; const v=hiddenUp[it.sid]?'none':'visible'; ['-fill','-line','-pt'].forEach(sfx=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setLayout(L,'visibility',v); }catch(_){} }); },
         remove:()=>{ try{ if(GU.remove) GU.remove(it.n); }catch(_){} } }); }); }catch(_){}
-      try{ const rf=srcFeats('imroute-src').filter(f=>f.geometry&&f.geometry.type==='LineString'); if(rf.length) out.push({ id:'route', kind:'route', dot:'#1a73e8', name:OL('Route','経路','Route','Маршрут','Ruta'),
+      try{ const rf=srcFeats('imroute-src').filter(f=>f.geometry&&f.geometry.type==='LineString'); if(rf.length) out.push({ id:'route', kind:'route', dot:'#1a73e8', name:OL('Route','経路','Route','Маршрут','Ruta'), src:['imroute-src'],
         focus:()=>fitFeats(rf), remove:()=>{ try{ window.IntMapRouting&&window.IntMapRouting.clear(); }catch(_){} } }); }catch(_){}
-      try{ const isf=srcFeats('im-iso-src'); if(isf.length) out.push({ id:'iso', kind:'iso', dot:'#0a84ff', name:OL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable'),
+      try{ const isf=srcFeats('im-iso-src'); if(isf.length) out.push({ id:'iso', kind:'iso', dot:'#0a84ff', name:OL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable'), src:['im-iso-src'],
         focus:()=>fitFeats(isf), remove:()=>{ try{ window.IntMapIsochrone&&window.IntMapIsochrone.clear(); }catch(_){} } }); }catch(_){}
       /* (#R120) Atlas-drawn polygons + the active place outline join the universal inventory, so "さっき
          描いたやつ" resolves via objectIds and they can be renamed/recoloured/deleted like everything else. */
       try{ const HP=window._imHlPolys; ((HP&&HP.list())||[]).forEach((p,i)=>{ const pid=HP.tagId(p); if(!pid) return;
-        out.push({ id:pid, kind:'poly', dot:p.color||'#ff9500', color:p.color||'#ff9500', name:labels[pid]||p.name||(OL('Polygon','ポリゴン','Polygon','Полигон','Polígono')+' '+(i+1)),
+        out.push({ id:pid, kind:'poly', dot:p.color||'#ff9500', color:p.color||'#ff9500', name:labels[pid]||p.name||(OL('Polygon','ポリゴン','Polygon','Полигон','Polígono')+' '+(i+1)), src:['nlq-poly-src'],
           focus:()=>{ if(p.geo) fitFeats([{geometry:p.geo}]); }, rename:v=>{ labels[pid]=v; },
           setColor:col=>{ p.color=col; try{ HP.repaint(); }catch(_){} },
           remove:()=>{ try{ HP.remove(pid); }catch(_){} } }); }); }catch(_){}
       /* (map-next) the features of the reader's own map on show — js/my-map.js hands over its own entries (focus, rename, recolour, delete act on the map document) */
-      try{ const MM=window.IntMapMyMap; if(MM&&MM.objects) MM.objects().forEach(o=>out.push(o)); }catch(_){}
+      try{ const MM=window.IntMapMyMap; if(MM&&MM.objects){ const mo=MM.objects(); if(mo.length){
+        /* the reader's map lists its own entries; the surfaces it claims (under 'map.myMap') are theirs, found from the claims */
+        let ms=[]; try{ const r=GE().render.drawn({owners:['map.myMap']}); ms=Object.keys((r&&r.surfaces)||{}); }catch(_){}
+        mo.forEach(o=>out.push(Object.assign({src:ms},o))); } } }catch(_){}
       try{ const OT=window.IntMapOutline, cur=OT&&OT.current&&OT.current(); if(cur) out.push({ id:'outline', kind:'outline', dot:'#0a84ff',
         name:labels.outline||cur.name||OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'),
         focus:()=>{ try{ OT.focus&&OT.focus(); }catch(_){} }, rename:v=>{ labels.outline=v; }, remove:()=>{ try{ OT.clear(); }catch(_){} } }); }catch(_){}
+      /* ══ (atlas-completion) WHAT ELSE IS DRAWN, ASKED OF THE RENDERER ═══════════════════════════════════════════
+         The entries above are the subsystems that keep their own lists. Everything else drawn on the map — Atlas's answer
+         pins (nlq-poi-src), its map explanations (atl-compose-src), the sea route — was missing: 4 places on the map, 0 in
+         this list. They are not added by typing their source ids here; every painter CLAIMS its sources with the renderer
+         (js/geo-engine.js render.claim), and each claimed surface that holds features, is shown, and is not already one of
+         the entries above becomes an entry. Its features keep the ids the painter gave them (a composed place's id is its
+         ledger id — the id the compose result reports), and × takes it off through the painter's own remover. */
+      try{ const covered=new Set(); out.forEach(o=>[].concat(o.src||[]).forEach(id=>covered.add(String(id))));
+        const r=GE().render.drawn({});
+        if(r&&r.observable) Object.keys(r.surfaces).sort().forEach(sid=>{ const su=r.surfaces[sid]; if(su.state!=='drawn'||covered.has(sid)) return;
+          const fs=srcFeats(sid); if(!fs.length) return;
+          const feats=fs.map((f,i)=>{ const p=f.properties||{}; return { id:String(p.id!=null?p.id:(f.id!=null?f.id:i)), name:String(p.name||p.label||'') }; });
+          const named=feats.map(f=>f.name).filter(Boolean), oid='surface:'+sid;
+          const col=((fs.find(f=>f.properties&&f.properties.color)||{}).properties||{}).color||'#8e8e93';
+          out.push({ id:oid, kind:'drawn', dot:col, src:[sid], owners:(su.owners||[]).slice(), features:feats,
+            name:labels[oid]||(named.length?(named.slice(0,3).join(', ')+(named.length>3?(' +'+(named.length-3)):'')):(OL('Map drawing','地図の描画')+' ('+fs.length+')')),
+            focus:()=>fitFeats(srcFeats(sid)), rename:v=>{ labels[oid]=v; }, remove:()=>{ try{ GE().render.clearSurface(sid); }catch(_){} } }); }); }catch(_){}
       return out; }
     function count(){ try{ return collect().length; }catch(_){ return 0; } }
-    const ICON={ pin:icon('pin'), radius:icon('radius'), annot:icon('pencil'), poly:icon('polygon'), outline:icon('square'), upload:icon('folder'), route:icon('compass'), iso:icon('target'), mymap:icon('map') };   /* (icon-system) one glyph per object kind, from js/icons.js */
-    function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), poly:OL('Polygons','ポリゴン','Polygone','Полигоны','Polígonos'), outline:OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable'), mymap:OL('My map','マイマップ') })[k]||k; }
+    const ICON={ pin:icon('pin'), radius:icon('radius'), annot:icon('pencil'), poly:icon('polygon'), outline:icon('square'), upload:icon('folder'), route:icon('compass'), iso:icon('target'), mymap:icon('map'), drawn:icon('map') };   /* (icon-system) one glyph per object kind, from js/icons.js */
+    function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), poly:OL('Polygons','ポリゴン','Polygone','Полигоны','Polígonos'), outline:OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable'), mymap:OL('My map','マイマップ'), drawn:OL('Other drawings on the map','地図上のその他の描画') })[k]||k; }
     let _objs=[];
     /* ⚠⚠ (#R293) 「オブジェクト一覧ポップアップは、オブジェクトの数がゼロになったら自動的に消えるように」
        「になったら」 is a TRANSITION, so this closes on the edge — the panel had objects and now has
@@ -1406,7 +1492,8 @@ export function objectList(HOST){
     /* (#R118) PUBLIC object API — Atlas can enumerate and operate on every map-object ("2番目の円を消して"):
        list() = sanitized inventory; get(id) = live handle (focus/rename/remove/setColor); remove/focus/rename
        are id-based conveniences. The ids also appear in Atlas's state context. */
-    function list(){ try{ return collect().map((o,i)=>({ id:String(o.id), kind:o.kind, name:o.name, color:o.color||null, hidden:!!o.hidden, index:i })); }catch(_){ return []; } }
+    /* (atlas-completion) an entry discovered from the renderer also lists its features — the same ids the painter and its result use */
+    function list(){ try{ return collect().map((o,i)=>Object.assign({ id:String(o.id), kind:o.kind, name:o.name, color:o.color||null, hidden:!!o.hidden, index:i }, o.features?{ features:o.features.map(f=>({id:f.id,name:f.name})) }:null)); }catch(_){ return []; } }
     function get(id){ try{ return collect().find(o=>String(o.id)===String(id))||null; }catch(_){ return null; } }
     function removeObj(id){ const o=get(id); if(o&&o.remove){ try{ o.remove(); refresh(); return true; }catch(_){} } return false; }
     function focusObj(id){ const o=get(id); if(o&&o.focus){ try{ o.focus(); return true; }catch(_){} } return false; }

@@ -164,7 +164,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.layerValues","layerData","layerValue,layerQuery","data","none","","explanation","read","none","point",""],
       ["map.object","object","mapObject","map","object","map.object","object","session","explicit","",""],
       ["routing.isochrone","isochrone","reach,reachability,reachable,catchment","routing","isochrone","map.isochrone","map","session","none","place",""],
-      ["routing.setEndpoints","route","","routing","route","map.route","panel","session","none","place",""],
+      ["routing.setEndpoints","route","","routing","seaRoute","map.route","route,map","session","none","place",""],
       ["routing.optimizeStops","optimizeRoute","tsp,multiStop,optimize,optimizeStops","routing","route","map.route","route,map,panel","session","none","points",""],
       ["routing.route","directions","roadRoute,navigate,drivingRoute,walkingRoute,transitRoute","routing","route","map.route","route,map,panel","session","none","place","routeUi"],
       ["panel.streetView","streetview","streetView,pano","panel","panel","panel.streetview","panel","session","none","point","streetView"],
@@ -509,6 +509,22 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       });
       return n;
     }
+    /* (atlas-completion) the LINES drawn in the surfaces claimed under `owner`, each with what it says it is (`basis`) and
+       whether its painter found it on water (`sea`) — null when the renderer cannot be asked. Read off the map, not off the
+       result, so 「the result says a computed route」 and 「a computed route is on the map」 are two observations. */
+    function ownedLines(owner) {
+      var r = rendererDrawn({ owners: [owner] }); if (!r || !r.observable) return null;
+      var out = [], E = null; try { E = GE(); } catch (_) { return null; }
+      Object.keys(r.surfaces).forEach(function (id) {
+        if (r.surfaces[id].state !== 'drawn') return;
+        var d = null; try { d = E.layers.sourceData(id); } catch (_) { d = null; }
+        ((d && d.features) || []).forEach(function (f) {
+          var t = f && f.geometry && f.geometry.type; if (t !== 'LineString' && t !== 'MultiLineString') return;
+          var p = f.properties || {}; out.push({ basis: String(p.basis || ''), sea: String(p.sea || '') });
+        });
+      });
+      return out;
+    }
     /* the surfaces claimed under the effects THIS capability declares it writes (column 5 of the table) —
        null when it declares none, or nothing is claimed under them, or there is no renderer to ask */
     function ownSurfaces(capId) {
@@ -541,6 +557,18 @@ export function makeAtlasCapabilities(HOST, OPTS) {
             ? (sum.altIndex != null ? sum.altIndex : sum.selected) : null,
           panel: (function () { try { return !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen && window.IntMapRouteUI.isOpen()); } catch (_) { return false; } })()
         };
+      } catch (_) { return null; }
+    }
+    /* (atlas-completion) the SEA route engine (js/map-tools.js IntMapRoute) is a different module from the land router
+       above, with its own state: which operation it last ran, whether that produced a route, and whether the route's line
+       is on the map now. `routingNow()` never read it, so a drawn sea route was 「no_route」 and a stale land route 「ok」. */
+    function seaRouteNow() {
+      try {
+        var S = window.IntMapRoute;
+        if (!S || typeof S.state !== 'function') return null;
+        var st = S.state() || {};
+        return { opId: st.opId != null ? +st.opId : null, hasRoute: !!st.hasRoute, painted: !!st.painted,
+          km: st.km != null ? +st.km : null, error: st.error || null, running: !!st.running };
       } catch (_) { return null; }
     }
     function settingsNow() {
@@ -1078,12 +1106,24 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           var obs = { compose: { requested: +counts.requested || 0, placed: +counts.placed || 0,
             unplaced: names.length, features: (after && +after.compose) || 0,
             artifact: ex.artifact || '', revision: +ex.revision || 0 } };
+          /* (atlas-completion) the relations, observed on the map: how many lines are there, of which basis, and how many
+             stay on water — beside what the call asked for and what it reported skipping */
+          var lines = ownedLines('map.compose');
+          var relAsked = +counts.relationsRequested || 0, relSaid = +counts.relationsDrawn || 0;
+          if (relAsked || (lines && lines.length)) {
+            var byBasis = {}, sea = { sea: 0, land: 0, unchecked: 0 };
+            (lines || []).forEach(function (l) { byBasis[l.basis || 'schematic'] = (byBasis[l.basis || 'schematic'] || 0) + 1; sea[sea[l.sea] != null ? l.sea : 'unchecked']++; });
+            obs.compose.relations = { requested: relAsked, reported: relSaid, onMap: lines ? lines.length : null, byBasis: byBasis, sea: sea,
+              skipped: Array.isArray(ex.relationsSkipped) ? ex.relationsSkipped.map(function (x) { return { from: x.from, to: x.to, reason: x.reason }; }) : [] };
+          }
           /* nothing is on the map and nothing was shaded: the claim is not backed by anything */
           if (!drew && !filled) return { status: 'partial', produced: [], code: 'not_rendered', observed: obs, unresolved: names, html: (raw && raw.html) || '' };
           /* something is there, but not what was asked for */
           if (ex.status === 'partial' || names.length || (raw && raw.meta && raw.meta.partial)) {
             return { status: 'partial', code: 'incomplete', observed: obs, unresolved: names, html: (raw && raw.html) || '' };
           }
+          /* the result reported lines the map does not hold */
+          if (lines && relSaid > lines.length) return { status: 'partial', code: 'relations_not_rendered', observed: obs, html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', observed: obs, html: (raw && raw.html) || '' };
         }
       },
@@ -1154,6 +1194,27 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           if (!after.painted) return { status: 'partial', produced: [], code: 'not_rendered', observed: { routing: after }, html: (raw && raw.html) || '' };
           if (!after.visible) return { status: 'partial', produced: [], code: 'not_visible', observed: { routing: after }, html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', observed: { routing: after }, html: (raw && raw.html) || '' };
+        }
+      },
+      /* ══ (atlas-completion) THE SEA ROUTE IS JUDGED BY THE OPERATION THIS CALL STARTED ══════════════════════
+         IntMapRoute.run() numbers every run and resolves only after the search and the drawing; the capability carries
+         that number in `meta.seaRoute.opId`. A route on the map that is NOT this call's run — an earlier one, or a newer
+         one that replaced it — is not this call's result, which is the hole the land observer had: it read whatever
+         route happened to exist. Computed and drawn are separate answers here as they are for the land route. */
+      seaRoute: {
+        observe: function () { return seaRouteNow(); },
+        verify: function (ctx, args, before, after, raw) {
+          var html = (raw && raw.html) || '';
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', observed: { seaRoute: after }, html: html };
+          if (!after) return { status: 'failed', code: 'unavailable', html: html };
+          var op = raw && raw.meta && raw.meta.seaRoute ? raw.meta.seaRoute.opId : null;
+          /* nothing new ran during this call */
+          if (op == null && before && after.opId === before.opId) return { status: 'failed', code: 'no_route', observed: { seaRoute: after }, html: html };
+          /* the engine has moved on to another operation: what is on the map is not this call's route */
+          if (op != null && after.opId !== op) return { status: 'failed', code: 'superseded', observed: { seaRoute: after, opId: op }, html: html };
+          if (!after.hasRoute) return { status: 'failed', code: 'no_route', observed: { seaRoute: after }, html: html };
+          if (!after.painted) return { status: 'partial', produced: [], code: 'not_rendered', observed: { seaRoute: after }, html: html };
+          return { status: 'completed', code: 'ok', observed: { seaRoute: after }, html: html };
         }
       },
       object: {
