@@ -179,6 +179,7 @@ import './tsunami-worker-client.js';
    nothing until the aircraft layer asks for a poll (src/aviation-worker.js). */
 import './aviation-worker-client.js';
 import './radiation-worker-client.js';   /* (#R568) …and the radioactive-plume solver's, which publishes window.IntMapRadiationWorker and starts nothing until the dispersion panel (js/sims.js) asks for a run. The physics is js/radiation-model.js, imported by js/sims.js AND by src/radiation-worker.js — one copy, on whichever thread ends up running it. */
+import './dem-worker-client.js';   /* (speed-overhaul) …and the DEM tile decode's, which publishes window.IntMapDemWorker and starts its worker on the first tile js/map-readout.js asks for. The decode is js/dem-decode.js, run by src/dem-worker.js AND by the page when there is no worker — one copy. */
 import '../js/data-layers.js';
 import '../js/widgets.js';   /* (#R292) …and with it the ten js/widget-*.js modules it imports itself: the platform's load order is the PLATFORM's business, so the entry keeps the one line it had before the board was split. Roles: docs/FILES.md §3; structure: Architecture.md §7.5 */
 /* (#R224) js/atlas-console.js is NOT imported here any more — it is the ninth on-demand module

@@ -23,8 +23,8 @@
  *      need      read only when a reader asks (a panel, a layer, a search). Declared so that the
  *                plan names every file the start-up path can reach, not only the ones it reads.
  *
- *  ⚠ THE STAGE IS PER DEVICE. The plan says what a PHONE does; every other device keeps `boot`
- *  semantics unless a row says otherwise, so a desktop starts exactly as it did. «Phone» is the cost
+ *  ⚠ THE STAGE IS PER DEVICE. The plan says what a PHONE does; on every other device a `settled` row is
+ *  `settled` too and the rest keep `boot` semantics, unless a row says otherwise (`stageFor`). «Phone» is the cost
  *  predicate js/ui-device.js owns (`phoneBudget()` — the pointer and the screen, never a width,
  *  #R232/#R668), read at call time.
  *
@@ -123,8 +123,21 @@
    *  in a caller; the static gate is what catches an undeclared file). */
   function stageOf(id, phone) {
     const r = row(id); if (!r) return 'boot';
-    const p = (phone === undefined) ? isPhone() : !!phone;
-    return (p ? r.phone : (r.other || 'boot')) || 'boot';
+    return stageFor(r, (phone === undefined) ? isPhone() : !!phone);
+  }
+  /** the stage one plan row is read at on a phone (`phone` true) or on any other device. ⚠ ONE RULE, also
+   *  read by scripts/frame-profile.mjs, so the runtime check and the schedule cannot disagree.
+   *  (speed-overhaul) A row a phone reads at `settled` is `settled` on every device unless the row says
+   *  otherwise. MEASURED (desktop 1280×800, unminified build, CDP sampler): the star catalogue's 791 kB
+   *  and its 98,887-row derivation, the gazetteer and the country file were read before the launch screen
+   *  lifted on a desktop — work nothing on the first frame draws (the sky is the dark globe's background,
+   *  the others are tables) — and in production the 2.88 MB country file then landed under the reader's
+   *  first gestures. A desktop has the same first frame to protect. `need` rows keep `boot` off a phone:
+   *  they are read when asked, so the stage only names WHEN a request may start, not whether one is made. */
+  function stageFor(r, phone) {
+    if (!r) return 'boot';
+    if (phone) return r.phone || 'boot';
+    return r.other || (r.phone === 'settled' ? 'settled' : 'boot');
   }
 
   /* ── «interactive»: the launch screen has lifted ─────────────────────────────────────────────
@@ -233,7 +246,7 @@
     return null;
   }
 
-  G.__imBootStage = { STAGES, plan, rowFor, stageOf, whenStage, at, interactive, settled, isPhone, SETTLE_CEILING_MS };
+  G.__imBootStage = { STAGES, plan, rowFor, stageOf, stageFor, whenStage, at, interactive, settled, isPhone, SETTLE_CEILING_MS };
 })(typeof globalThis !== 'undefined' ? globalThis : self);
 
 export const BootStage = globalThis.__imBootStage;

@@ -46,6 +46,18 @@ import { callAnthropic, callAnthropicTurn } from "./providers/anthropic.ts";
 import { listModels } from "./models.ts";
 import { awaitAnswer, claimAnswer, beatAnswer, finishAnswer, replayed } from "./replay.ts";
 
+/* (speed-overhaul) the subject a bearer token CLAIMS — unverified, read only to start the plan lookup early
+   (see its use in ask()). Never an identity: getUser() is what decides who the caller is. */
+function jwtSubject(authHeader: string): string {
+  try {
+    const tok = String(authHeader || "").replace(/^Bearers+/i, "");
+    const part = tok.split(".")[1]; if (!part) return "";
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
+    const sub = JSON.parse(atob(b64))?.sub;
+    return typeof sub === "string" && /^[0-9a-f-]{36}$/i.test(sub) ? sub : "";
+  } catch (_) { return ""; }
+}
+
 export async function ask(req: Request): Promise<Response> {
 
   const url = Deno.env.get("SUPABASE_URL")!;
@@ -55,12 +67,20 @@ export async function ask(req: Request): Promise<Response> {
   // 1) Identify the user from their JWT. Login is required.
   const authHeader = req.headers.get("Authorization") || "";
   const userClient = createClient(url, anon, { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } });
+  // Service-role client for the quota table + plan lookup.
+  const db = createClient(url, serviceKey, { auth: { persistSession: false } });
+  /* (speed-overhaul) THE PLAN IS READ WHILE THE TOKEN IS VERIFIED, NOT AFTER. These were two round trips in
+     series on EVERY step of an Atlas turn (Auth, then profiles). The plan read is a SELECT keyed by the
+     token's own subject, so it is started beside getUser() on that claimed subject — and its answer is
+     used ONLY when the verified user is that subject. A forged or foreign token gets a 401 from getUser()
+     exactly as before and the speculative read is discarded unread; a token whose subject differs from
+     the verified id (it cannot, for a token Auth accepts) is simply read again for the verified id. */
+  const claimed = jwtSubject(authHeader);
+  const env = (k: string) => Deno.env.get(k) || "";
+  const early = claimed ? accountFor(db, claimed, env).catch(() => null) : null;
   const { data: userData } = await userClient.auth.getUser();
   const user = userData?.user;
   if (!user) return json({ error: "auth", message: "Login required." }, 401);
-
-  // Service-role client for the quota table + plan lookup.
-  const db = createClient(url, serviceKey, { auth: { persistSession: false } });
 
   // 2) Plan → limit. (ai-one-ledger) Resolved by _shared/ai-ledger.js accountFor — profiles.plan, then
   //    the developer override below — so any other caller of the ledger resolves the SAME account the same way.
@@ -78,7 +98,7 @@ export async function ask(req: Request): Promise<Response> {
      from the tree and the grant can be moved or withdrawn without touching code. `profiles.plan`
      carries the same grant in the database, so the two agree even if the secret is ever unset.
      (ai-one-ledger) The rule itself is _shared/ai-ledger.js devUserIds now — unchanged, moved. */
-  const account = await accountFor(db, user.id, (k: string) => Deno.env.get(k) || "");
+  const account = (early && claimed === user.id && await early) || await accountFor(db, user.id, env);
   const isDev = account.isDev;
   const plan = account.plan;
   const limit = account.limit;

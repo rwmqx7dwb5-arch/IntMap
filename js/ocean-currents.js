@@ -153,7 +153,7 @@ export function oceanCurrents(HOST){
       try{
         if(GE().scene.hasImage(name)) return true;
         const cv=document.createElement('canvas'); cv.width=S; cv.height=S;
-        const c=cv.getContext('2d');
+        const c=cv.getContext('2d',{willReadFrequently:true});
         c.translate(S/2,S/2);
         c.fillStyle='#ffffff'; c.strokeStyle='#ffffff'; c.lineCap='round'; c.lineJoin='round';
         paint(c);

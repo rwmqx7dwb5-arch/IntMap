@@ -224,7 +224,7 @@ export function iconImageData(name, size, opts) {
   const s = shape(name), S = Math.max(8, Math.round(size || 48));
   const doc = o.doc || globalThis.document;
   const cv = doc.createElement('canvas'); cv.width = S; cv.height = S;
-  const c = cv.getContext('2d');
+  const c = cv.getContext('2d',{willReadFrequently:true});
   c.scale(S / 24, S / 24);
   c.lineCap = 'round'; c.lineJoin = 'round';
   const P2 = globalThis.Path2D;   /* a canvas global, read off globalThis so the module also evaluates where there is none (Node) */

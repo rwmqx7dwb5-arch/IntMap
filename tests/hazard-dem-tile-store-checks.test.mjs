@@ -75,6 +75,9 @@ function demRig({ browseCap = 140, leaseCap = 608, holdLong = false, elev = null
      exports is then a top-level function of the context. */
   const src = read('js/map-readout.js');
   assert.match(src, /^export function mapReadout\(HOST\)\{/m, 'js/map-readout.js no longer exports its factory mapReadout');
+  /* (speed-overhaul) the decode the store runs is js/dem-decode.js — evaluated in the SAME context first,
+     so its Float32Array is the counted one and the store's `decodeTerrarium` import resolves to it */
+  vm.runInContext(asClassicScript(read('js/dem-decode.js')), g, { filename: 'dem-decode.js' });
   vm.runInContext(asClassicScript(src), g, { filename: 'map-readout.js' });
   assert.equal(typeof g.mapReadout, 'function', 'the exported factory was not evaluated');
   const HOST = {

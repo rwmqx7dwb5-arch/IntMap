@@ -713,7 +713,7 @@ export function satellitesLive(HOST){
       const dpr=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1)));
       const s=40, cv=document.createElement('canvas');
       cv.width=s*dpr; cv.height=s*dpr;
-      const c=cv.getContext('2d'); c.scale(dpr,dpr); c.translate(s/2,s/2);
+      const c=cv.getContext('2d',{willReadFrequently:true}); c.scale(dpr,dpr); c.translate(s/2,s/2);
       const body=()=>{ c.beginPath(); c.rect(-3.4,-5.2,6.8,10.4); c.closePath(); };
       const panel=(x)=>{ c.beginPath(); c.rect(x,-3.6,7.4,7.2); c.closePath(); };
       c.save(); c.shadowColor='rgba(0,0,0,0.55)'; c.shadowBlur=4; c.shadowOffsetY=1.4;

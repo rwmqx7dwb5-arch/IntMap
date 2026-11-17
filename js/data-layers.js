@@ -2430,7 +2430,7 @@ export function dataLayers(HOST){
       /* canvas is Web-Mercator → invert the Mercator Y to find the pixel row */
       const mercY=Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
       const y=Math.max(0,Math.min(H-1,Math.round((Math.PI-mercY)/(2*Math.PI)*H)));
-      try{ const p=window._koppenCanvas.getContext('2d').getImageData(x,y,1,1).data; return nearestKoppenCode(p[0],p[1],p[2],p[3]); }
+      try{ const p=window._koppenCanvas.getContext('2d',{willReadFrequently:true}).getImageData(x,y,1,1).data; return nearestKoppenCode(p[0],p[1],p[2],p[3]); }
       catch(e){ return null; }
     };
     /* PERF (#12): classify every pixel into a Köppen-code index ONCE. The previous code ran a
@@ -2441,7 +2441,7 @@ export function dataLayers(HOST){
     function ensureKoppenCodeIndex(){
       if(window._koppenCodeIdx || !window._koppenCanvas) return;
       const c=window._koppenCanvas, W=c.width, H=c.height;
-      let d; try{ d=c.getContext('2d').getImageData(0,0,W,H).data; }catch(e){ return; }
+      let d; try{ d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,W,H).data; }catch(e){ return; }
       const idx=new Uint8Array(W*H), cache=new Map();      /* RGB→code-index cache (only ~30 colors) */
       for(let p=0,i=0;p<idx.length;p++,i+=4){
         if(d[i+3]<32){ idx[p]=255; continue; }
@@ -3987,7 +3987,7 @@ export function dataLayers(HOST){
     function ensureShipIcons(){
       if(!GE().hasRenderer()) return;
       const make=(color)=>{ const s=40, cv=document.createElement('canvas'); cv.width=s; cv.height=s;
-        const ctx=cv.getContext('2d'); ctx.translate(s/2,s/2);
+        const ctx=cv.getContext('2d',{willReadFrequently:true}); ctx.translate(s/2,s/2);
         ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.6; ctx.lineJoin='round';
         const P=[[0,-16],[4.5,-7],[4.5,11],[3,15],[-3,15],[-4.5,11],[-4.5,-7]];
         ctx.beginPath(); P.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); ctx.fill(); ctx.stroke();

@@ -359,7 +359,7 @@ test('R375 ⑨ #R195’s own guard is intact: no wholesale replacement of an enr
   /* tests/r195-checks ⑧ forbids `HOST.countryStats[code]={…}` inside the upgrade. That guard is
      about the ENRICHMENT branch and is still exactly right; this round only added a CREATE branch
      next to it. Asserted here too so the two rounds' intents are visible in one place. */
-  const up = src.slice(src.indexOf('best.forEach'));
+  const up = src.slice(src.search(/best\.forEach|of best\)/));   /* (speed-overhaul) the walk over `best` is a for…of now (it yields) */
   assert.doesNotMatch(up.slice(0, 600), /HOST\.countryStats\[code\]\s*=\s*\{/,
     'an existing row is still never replaced with a fresh object literal');
   assert.match(up.slice(0, 900), /s\.area=Math\.round\(v\.area\)/, 'the in-place enrichment is still there');

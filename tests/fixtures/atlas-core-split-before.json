@@ -1,6 +1,6 @@
 {
  "//": "tests/atlas-core-split-checks.test.mjs ① — what ai-proxy did with each request of CASES (tests/helpers/ai-proxy-contract-cases.mjs), run from `source`. Regenerate: node scripts/ai-proxy-photograph.mjs <git ref>",
- "source": "b7978872cf33228d724dc64990625eed4ede64ea:supabase/functions/ai-proxy/index.ts",
+ "source": "53e2bdd7032ef735d5003d7c49654b19c2425954:supabase/functions/ai-proxy/index.ts",
  "cases": {
   "refusals before the provider (openai)": [
    {
@@ -9,6 +9,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "text/plain;charset=UTF-8"
     },
     "body": "ok",
@@ -21,6 +22,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -35,6 +37,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -62,6 +65,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -133,6 +137,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -204,6 +209,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -271,6 +277,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -342,6 +349,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -412,6 +420,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -479,6 +488,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -552,6 +562,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -626,6 +637,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -683,6 +695,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -741,6 +754,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -797,6 +811,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -851,6 +866,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -906,6 +922,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -977,6 +994,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -1049,6 +1067,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -1215,6 +1234,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -1381,6 +1401,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -1606,6 +1627,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -2017,6 +2039,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -2444,6 +2467,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -2635,6 +2659,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -2800,6 +2825,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -2975,6 +3001,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -3121,6 +3148,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -3312,6 +3340,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -3472,6 +3501,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -3732,6 +3762,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -3979,6 +4010,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -4146,6 +4178,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -4274,6 +4307,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -4399,6 +4433,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -4524,6 +4559,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -4730,6 +4766,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -4961,6 +4998,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -5185,6 +5223,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -5389,6 +5428,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -5534,6 +5574,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -5631,6 +5672,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -5730,6 +5772,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "cache-control": "no-cache, no-transform",
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
@@ -6012,6 +6055,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "cache-control": "no-cache, no-transform",
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
@@ -6346,6 +6390,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -6407,6 +6452,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -6487,6 +6533,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -6837,6 +6884,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -7108,6 +7156,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -7358,6 +7407,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "cache-control": "no-cache, no-transform",
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
@@ -7553,6 +7603,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -7695,6 +7746,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -7787,6 +7839,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -7904,6 +7957,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -8082,6 +8136,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -8276,6 +8331,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -8543,6 +8599,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -8685,6 +8742,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -8758,6 +8816,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -8976,6 +9035,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -9183,6 +9243,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -9388,6 +9449,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -9583,6 +9645,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -9709,6 +9772,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -9854,6 +9918,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -10118,6 +10183,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {
@@ -10199,6 +10265,7 @@
      "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
      "content-type": "application/json"
     },
     "body": {

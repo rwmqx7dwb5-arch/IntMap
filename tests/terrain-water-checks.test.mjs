@@ -124,16 +124,20 @@ test('R265 ① the DEM decode rejects the terrarium void, on a physical threshol
   /* EVALUATED: `_decodeTile` and the constants it reads are lifted out of the comment-stripped
      js/map-readout.js and run on a 256×256 tile whose pixels the test writes, through a canvas stub
      that hands back exactly those bytes. */
+  /* (speed-overhaul) the arithmetic is js/dem-decode.js — the one decode the page and src/dem-worker.js
+     both run — and the page's path still counts the holes it decoded (`_countVoids`) */
   const s = codeOnly(read('js/map-readout.js'));
-  const k = /const DEM_NODATA_BELOW=[^;]+;/.exec(s);
+  const dd = codeOnly(read('js/dem-decode.js'));
+  const k = /(?:export )?const DEM_NODATA_BELOW = [^;]+;/.exec(dd);
   assert.ok(k, 'the floor is one named constant');
+  const decodeSrc = k[0].replace('export ', '') + '\n' + liftFunction(dd, 'decodeTerrarium');
   const decode = (fill) => {
     const data = new Uint8ClampedArray(65536 * 4);
     fill(data);
     const ctx = { clearRect() {}, drawImage() {}, getImageData: () => ({ data }) };
     const document = { createElement: () => ({ getContext: () => ctx }) };
-    return new Function('document', 'let _decCv=null, _decCtx=null;\n' + k[0] + '\nconst _demVoid={ tiles:0, holedTiles:0, cells:0, fallbacks:0, unfilled:0 };\n'
-      + liftFunction(s, '_decodeTile') + '\nreturn { r: _decodeTile({}), _demVoid };')(document);
+    return new Function('document', 'let _decCv=null, _decCtx=null;\n' + decodeSrc + '\nconst _demVoid={ tiles:0, holedTiles:0, cells:0, fallbacks:0, unfilled:0 };\n'
+      + liftFunction(s, '_countVoids') + '\n' + liftFunction(s, '_decodeTile') + '\nreturn { r: _decodeTile({}), _demVoid };')(document);
   };
   const enc = (m) => { const v = m + 32768, r = Math.floor(v / 256), g = Math.floor(v - r * 256); return [r, g, Math.round((v - r * 256 - g) * 256)]; };
   const put = (d, i, [r, g, b], a = 255) => { d[i * 4] = r; d[i * 4 + 1] = g; d[i * 4 + 2] = b; d[i * 4 + 3] = a; };
@@ -160,8 +164,9 @@ test('R265 ① the DEM decode rejects the terrarium void, on a physical threshol
   assert.equal(all._demVoid.tiles, 1, 'a tile with no data at all is reported as such');
   /* nothing decodes without the guard any more.
      ⚠ READ, NOT RUN: «there is no second decode» is a property of the file's text. */
-  const decodes = s.match(/\(d\[o\]\*256\+d\[o\+1\]\+d\[o\+2\]\/256\)-32768/g) || [];
-  assert.equal(decodes.length, 1, 'there is exactly one terrarium decode, and it is the guarded one');
+  const decodes = (src) => (src.match(/\(d\[o\]\s*\*\s*256\s*\+\s*d\[o\s*\+\s*1\]\s*\+\s*d\[o\s*\+\s*2\]\s*\/\s*256\)\s*-\s*32768/g) || []).length;
+  assert.equal(decodes(dd), 1, 'there is exactly one terrarium decode, and it is the guarded one');
+  assert.equal(decodes(s), 0, 'the DEM store keeps no decode of its own — it runs js/dem-decode.js on either thread');
 });
 
 /* ── ② …AND A HOLE IS NOT AN ENDING: the sampler steps down the pyramid ──────────────────────────

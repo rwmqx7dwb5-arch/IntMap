@@ -20,6 +20,12 @@ export const cors = {
      request fail in the browser rather than merely dropping the field. */
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  /* (speed-overhaul) THE PREFLIGHT IS CACHED. The Authorization and x-intmap-* headers make every call a
+     non-simple request, and without a max-age Chrome keeps a preflight for 5 s — shorter than one Atlas
+     step (a model round trip), so every step of a turn paid an OPTIONS round trip to this function before
+     its POST. 86400 is the value the other functions here already send (client-errors, reader-reports,
+     usage-count); the browser caps it at its own ceiling (Chrome 2 h). */
+  "Access-Control-Max-Age": "86400",
 };
 export const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });

@@ -165,6 +165,7 @@ src/
   tsunami-worker.js / tsunami-worker-client.js  津波の伝播計算をワーカーで回す
   aviation-worker.js / aviation-worker-client.js  ライブ航空機の在庫（デコード・格納・時効・フィルタ・GPU バッファの pack）をワーカーで回す
   radiation-worker.js / radiation-worker-client.js  放射性プルームのラグランジュ solve をワーカーで回す（物理は js/radiation-model.js・worker が無ければページ側が少ない粒子で解き、run がそう名乗る）
+  dem-worker.js / dem-worker-client.js  標高タイル（terrarium）の取得・画像デコード・メートルへの変換をワーカーで回す（変換は js/dem-decode.js・worker が無ければ js/map-readout.js が同じ変換をページで行う）
   satellite-wasm-stub.js            satellite.js の wasm 経路を使わないためのスタブ
   supabase-unbundled-stub.js        Supabase の Storage / Functions クライアントを束に入れないためのスタブ（触れると投げる）
 fonts/                              Inter（サブセット woff2 ＋ MapLibre 用 pbf グリフ）と Pretendard
@@ -511,6 +512,8 @@ gis-panel.js                      その操作卓（一覧・属性表・由来�
 map-tools.js                      対話ツール（投影ビュー・描画・Isolate・海路・見通し線・オブジェクト一覧・
                                   アウトライン・図形移動・到達圏（車・徒歩・自転車・公共交通）・3-D 弧）
 map-readout.js                    座標・標高・レイヤー値・コンパスの読み出しと経緯線
+dem-decode.js                     terrarium タイル 1 枚（256×256 RGBA）→ メートルの Float32Array（無データは NaN）。ページと
+                                  src/dem-worker.js が同じ 1 本を実行する
 map-tooltip.js                  地図のホバー用ツールチップ 1 面（`ensureMapTooltip` / `positionTooltip` /
                                 `setMapTooltipHTML`）。アプリ中のホバー処理が全部これを `window` 経由で使う。
                                 `js/app-body.js` から**まるごと**出したもので、幾何（クランプ・下側への
@@ -1313,7 +1316,8 @@ space.js                          宇宙エクスプローラ本体（床での�
 space-bodies.js                   ほかに何があるか（探査機・小惑星・太陽系外）window.IntMapSpaceBodies
 space-cosmos.js                   太陽系の外へ出る距離の梯子 window.IntMapCosmos
 space-events.js                   天文現象 window.IntMapSpaceEvents
-space-sky.js                      地球の背後の実際の星空 window.IntMapSky
+space-sky.js                      地球の背後の実際の星空 window.IntMapSky。暗い星（四角の点）は WebGL の 1 回の描画で塗り、
+                                  明るい星の暈・円盤と月・太陽だけを canvas に描く（WebGL が無ければ全部 canvas）
 star-catalogue.js                 data/stars.bin の読み手と復号器（1本）——星空とエクスプローラが共有
 ephemeris.js                      惑星の実位置 window.IntMapEphemeris
 night-sky.js                      地上の1点から見た空 window.IntMapNightSky
@@ -1655,7 +1659,7 @@ fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWi
                                   （このファイルは何も import しない——共通チャンクの循環を作らないため）
 boot-stage.js                     **携帯がいつ読むか**の宣言 window.__imBootStage。起動時の段（boot／settled／need）を
                                   資源ごとに「誰が・いつ・なぜ」の行で持ち、読み手は自分の発意の読みの前に `at(行)` を待つ。
-                                  settled＝起動画面が上がった後の idle、1 つの idle につき 1 件。携帯以外は全行 boot。
+                                  settled＝起動画面が上がった後の idle、1 つの idle につき 1 件。携帯以外も settled 行は settled、残りは boot（stageFor）。
                                   `npm run check:perf` が起動グラフの `data/…` を全部発見して宣言との一致を測り、
                                   boot 行の合計を phone.bytes／phone.requests の天井にする
 ne-countries.js                   Natural Earth admin-0（110m／50m／10m）の復号器 window.__imNECountries。

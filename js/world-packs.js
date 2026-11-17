@@ -173,7 +173,7 @@ export function worldPacksBody(HOST){
          `icon-size = base/24`. No outline: an arrowhead is part of the arrow, not a sticker on it. */
       const ARROW_PX=64, HEAD_BASE_CSS=24, HEAD_LEN_CSS=30;
       function arrowImg(hex){ const S=ARROW_PX, c=document.createElement('canvas'); c.width=c.height=S;
-        const g=c.getContext('2d');
+        const g=c.getContext('2d',{willReadFrequently:true});
         g.beginPath(); g.moveTo(S*0.5,S*0.03); g.lineTo(S*0.875,S*0.97); g.lineTo(S*0.125,S*0.97);
         g.closePath(); g.fillStyle=hex; g.fill();
         return g.getImageData(0,0,S,S); }
@@ -998,7 +998,7 @@ export function worldPacksBody(HOST){
       let _hatchCv=null;
       function hatchCanvas(){ if(_hatchCv) return _hatchCv;
         const S=HATCH_S, D=HATCH_DPR, c=document.createElement('canvas'); c.width=c.height=S*D;
-        const g=c.getContext('2d');
+        const g=c.getContext('2d',{willReadFrequently:true});
         g.setTransform(D,0,0,D,0,0);
         g.clearRect(0,0,S,S);                       /* (#R290) NO backing sheet — see above */
         g.lineCap='square';
@@ -1019,7 +1019,7 @@ export function worldPacksBody(HOST){
       function ensureHatch(){ if(_hatchOn) return true;
         try{ if(GE().scene.hasImage(HATCH_IMG)){ _hatchOn=true; return true; } }catch(_){}
         try{
-          const S=HATCH_S*HATCH_DPR, g=hatchCanvas().getContext('2d');
+          const S=HATCH_S*HATCH_DPR, g=hatchCanvas().getContext('2d',{willReadFrequently:true});
           /* ⚠ getImageData is in DEVICE pixels, so the transform above does not apply to it */
           const im=g.getImageData(0,0,S,S);
           if(!GE().scene.addImage(HATCH_IMG,{width:S,height:S,data:new Uint8Array(im.data.buffer.slice(0))},{pixelRatio:HATCH_DPR})) return false;
