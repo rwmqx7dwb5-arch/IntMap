@@ -207,6 +207,10 @@ export const IntMapRefData = (function(){
     {n:'Hipparcos Catalog (ESA 1997) — CDS I/239',u:'https://cdsarc.cds.unistra.fr/viz-bin/cat/I/239'},
     {n:'NASA/JPL Horizons — interplanetary spacecraft trajectories',u:'https://ssd.jpl.nasa.gov/horizons/'},
     {n:'NASA/JPL Small-Body Database (SBDB)',u:'https://ssd.jpl.nasa.gov/tools/sbdb_query.html'},
+    {n:'NASA/JPL CNEOS Fireball Data (US Government sensor detections)',u:'https://cneos.jpl.nasa.gov/fireballs/',lic:'Public domain',credit:false},
+    {n:'NASA/JPL SBDB Close-Approach Data',u:'https://ssd-api.jpl.nasa.gov/doc/cad.html',lic:'Public domain',credit:false},
+    {n:'Launch Library 2 (The Space Devs)',u:'https://thespacedevs.com/llapi',credit:true},
+    {n:'IMO Meteor Shower Calendar (International Meteor Organization)',u:'https://www.imo.net/resources/calendar/',credit:true},
     /* ⚠ (2026-11-16) the CANONICAL CDS host, the same one scripts/build-deepsky.mjs asks first (the old
        alias simbad.u-strasbg.fr left DNS that day). Its root is CDS's own front for the service — during
        CDS's November 2026 incident that page names the mirrors the builder falls back to. */

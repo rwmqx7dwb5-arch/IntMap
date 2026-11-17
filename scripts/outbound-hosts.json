@@ -1051,11 +1051,11 @@
     },
     {
       "host": "ll.thespacedevs.com",
-      "what": "The Space Devs upcoming launches widget",
-      "whatJp": "The Space Devs の打ち上げ予定（ウィジェット）",
+      "what": "The Space Devs Launch Library 2 — the rocket-launch layer and the next-launch widget",
+      "whatJp": "The Space Devs の Launch Library 2（ロケット打ち上げレイヤーと次の打ち上げウィジェット）",
       "sends": {
         "code": "nothing",
-        "detail": "the request itself"
+        "detail": "the request itself (a date window around the clock instant for the layer)"
       },
       "disclosure": {
         "en": "The Space Devs",
@@ -1606,8 +1606,8 @@
     },
     {
       "host": "services.swpc.noaa.gov",
-      "what": "NOAA SWPC aurora (OVATION) and planetary Kp index",
-      "whatJp": "NOAA 宇宙天気予報センターのオーロラ（OVATION）と Kp 指数",
+      "what": "NOAA SWPC space weather: aurora (OVATION), Kp observed and forecast, solar wind, GOES X-rays, flare probabilities, NOAA scales and alerts",
+      "whatJp": "NOAA 宇宙天気予報センター：オーロラ（OVATION）・Kp の観測と予報・太陽風・GOES X 線・フレア確率・NOAA スケール・警報",
       "sends": {
         "code": "nothing",
         "detail": "the request itself"

@@ -120,6 +120,8 @@ export const CATALOGUE_CHUNKS = [
       { name: 'sim.tsunami' },
       /* 23 */
       { name: 'night-sky', head: 'NIGHT SKY FROM A POINT: ' },
+      /* 23b (space-expansion) the almanac, satellite passes and space weather */
+      { name: 'sky-tonight', head: 'THE SKY TONIGHT, SATELLITE PASSES AND SPACE WEATHER: ' },
       /* 24 */
       { name: 'sunlight', head: 'SUNLIGHT HOURS & TERRAIN SHADE: ' },
       /* 25 */
