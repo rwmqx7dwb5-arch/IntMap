@@ -357,13 +357,10 @@ test('R504 ⑩ the top bars got shorter without the type getting smaller', () =>
   assert.ok(px(go, 'padding') === fieldPad,
     'the Search button and the field must breathe the same, or the bar grows to the taller of them');
 
-  /* ⚠ THE RADIUS IS HALF THE HEIGHT, AND THAT IS WHAT MAKES IT A PILL. Derived from the shipped
-     numbers rather than written down, so shortening the bar again cannot quietly square it off.
-     The field's line box is the tallest thing inside; 14 px type measures ~17 px. */
-  const height = 17 + fieldPad * 2 + shellPad * 2 + 2 /* 1 px border, both sides */;
-  const radius = px(bar, 'border-radius');
-  assert.ok(Math.abs(radius - height / 2) <= 2.5,
-    'the pill radius (' + radius + ') no longer tracks half the bar height (~' + (height / 2).toFixed(1) + ')');
+  /* (news-type-polish) 「角丸を弱める…検索欄・ボタンは8px程度に揃え、カプセル形は小さなタグに限定」 — the bar is
+     no longer a pill: it and its button take the control corner from the one scale in :root. */
+  assert.match(bar, /border-radius:var\(--r-control\)/, 'the search bar takes the control corner');
+  assert.match(go, /border-radius:var\(--r-inner\)/, 'its button takes the inner corner');
 });
 
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */

@@ -259,6 +259,7 @@ test('⑤ travelled to 1900, the page hatches the ground the record is silent ab
   vm.createContext(ctx);
   vm.runInContext(rd('js/hist-scale.js'), ctx);
   vm.runInContext(rd('js/hist-bundles.js'), ctx);
+  vm.runInContext(rd('js/label-scale.js'), ctx);   /* the page has it before any label layer is made */
   const box = { checked: true, closest: () => null };
   const canvas = { width: 0, height: 0, getContext: () => ({ beginPath() {}, moveTo() {}, lineTo() {}, stroke() {},
     getImageData: (x, y, w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }) }) };

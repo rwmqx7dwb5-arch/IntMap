@@ -344,6 +344,7 @@ function tierHarness(opts = {}) {
   vm.runInContext('globalThis.__NOW = Date.now(); const _RD = Date; globalThis.Date = class extends _RD { static now() { return globalThis.__NOW; } };', ctx);
   vm.runInContext(read('js/hist-scale.js'), ctx, { filename: 'hist-scale.js' });
   vm.runInContext(read('js/hist-bundles.js'), ctx, { filename: 'hist-bundles.js' });   /* (hist-bundles-off-main) the door the tiers open their records through */
+  vm.runInContext(read('js/label-scale.js'), ctx, { filename: 'label-scale.js' });   /* the page has it before any label layer is made */
   /* (module-graph) STILL A vm, ON PURPOSE: the grace period is crossed by moving THIS context's
      `Date.now` (above), and an imported module would share the process's `Date`. So js/time-admin1.js
      runs as a classic script (tests/app-source.mjs asClassicScript): its four imports bind to the
@@ -623,6 +624,7 @@ async function orderHarness(n, counted) {
   vm.createContext(ctx);
   vm.runInContext(read('js/hist-scale.js'), ctx, { filename: 'hist-scale.js' });
   vm.runInContext(read('js/hist-bundles.js'), ctx, { filename: 'hist-bundles.js' });   /* (hist-bundles-off-main) the door the tiers open their records through */
+  vm.runInContext(read('js/label-scale.js'), ctx, { filename: 'label-scale.js' });   /* the page has it before any label layer is made */
   /* (module-graph) js/time-admin1.js is IMPORTED: the renderer, clock, language registry and coast marks
      it imports are handed in at its own import edges; the page it runs in is installed on the global. */
   const { timeAdmin1 } = await importModule('js/time-admin1.js', {
