@@ -1957,8 +1957,9 @@ data/hist-admin-surveys.js        **出版元が測って日付を述べた**第
                                   Nejjar（1896 のオスマン／1926 のフランス委任統治）・Pelagios MAGIS（ローマの属州 117 と 303–324 頃）。
                                   行ごとに出版元の日付と精度（`dates`。導出した端は根拠つき）を持つ。derived ではない記録。
                                   生成は scripts/build-hist-admin-surveys.mjs、門は `npm run check:histsurveys`（docs/MAP-LAYERS.md §7.7）
-data/hist-admin-surveys-nc.js     同じ形で、**CC BY-NC-SA 4.0** の出版元だけ（`window.__HISTADMSURVEYNC`・
-                                  HGIS de las Indias＝スペイン領アメリカの provincia mayor 1701–1808）。data/cshapes.js と同じく
+data/hist-admin-surveys-nc.js     同じ形で、**CC BY-NC-SA 4.0** の条件を負う出版元だけ（`window.__HISTADMSURVEYNC`・
+                                  HGIS de las Indias＝スペイン領アメリカの provincia mayor 1701–1808・Müller-Crepon＝サハラ以南の
+                                  植民地の州・セルクル・郡 1895–1962。後者は CC0 だが外枠の一部が CShapes 由来）。data/cshapes.js と同じく
                                   開いた記録から分け、ファイル自身が `licence` を述べる
 data/hist-admin-recon.js          **IntMap 自身が史実から復元した**第1級区分（`window.__HISTADMRECON`）。区分＝部品の和集合、
                                   所属＝出典つきの事実（調書 scripts/histrecon/dossiers/*.json と明治の府県 scripts/histrecon/meiji-*.json）。

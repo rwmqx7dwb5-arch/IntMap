@@ -2015,10 +2015,15 @@ API ホストを含むか目録を import するファイルの行表（`{id:'<k
   | Nejjar（Oxford・Harvard Dataverse・CC0） | オスマンの mutasarrifate／フランス委任統治の国々 | 1896 年／1926 年 |
   | Pelagios MAGIS（AWMC & Foss・CC BY、日付と名前は Pleiades CC BY 3.0） | ローマの属州 | 117 年と 303–324 年頃（Barrington Atlas の図の時点） |
   | HGIS de las Indias（Graz・**CC BY-NC-SA 4.0**） | スペイン領アメリカの provincia mayor | 1701–1808 の年ごと |
+  | Müller-Crepon（LSE・Harvard Dataverse・CC0。外枠の一部が CShapes 由来のため **CC BY-NC-SA 4.0** 側） | サハラ以南アフリカの植民地の州・セルクル・郡（英・仏・ベルギー・ポルトガル領。今日の 25 か国にあたる土地） | 1895–1962 の図の時点（年単位。再編の日付で期間が決まるものはその期間） |
 
   ⚠ **非営利ライセンスの出版元は開いた記録に混ぜない**——CShapes を `data/cshapes.js` に分けているのと同じ理由で、
-  HGIS de las Indias だけが `-nc` の束に入り、束自身が `licence` を述べる。どちらに入るかは各出版元の
-  `SOURCE.nonCommercial` が決める。
+  HGIS de las Indias と Müller-Crepon が `-nc` の束に入り、束自身が `licence` を述べる。どちらに入るかは各出版元の
+  `SOURCE.nonCommercial` が決める。Müller-Crepon は CC0 だが、95 時点中 13 時点の外枠が CShapes 2.0 と km² 単位で
+  一致する（`node scripts/histsurveys/mullercrepon.mjs --frames`）ので、CShapes の条件を引き継ぐ側に置く。
+  ⚠ **Müller-Crepon は図の時点ごとに「どの欄が第1級か」が違う**（ケニア 1910 は region＝州、仏領はセルクル自体、
+  独立後・連邦期・別の年の配置を描く図もある）。そのため時点ごとの史実審査 `scripts/histsurveys/mullercrepon-review.json`
+  （階層・期間・除外・出典）を読み、審査に無い時点は収穫そのものを止める。IntMap の調書が日付つきで同じ単位を描く時点は除外する。
   ⚠ Newberry（アメリカの州・準州）と heiDATA（1926 年のソ連）の収穫器もあるが、いまは 0 行
   ——その土地はどの区間も OpenHistoricalMap が答えている。**出版元は行を出したときだけ帰属表示に載る**。
   規則:

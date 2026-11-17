@@ -3,9 +3,9 @@
  "atomSet": "ne-admin1@ca96624",
  "scope": {
   "from": "1979-07-01",
-  "to": "2019-12-31"
+  "to": "2008-10-13"
  },
- "polityNote": "People's Republic of China (proclaimed 1949-10-01), mainland province-level units. Taiwan (TWN), Hong Kong (HKG) and Macau (MAC) are separate NE countries, so no Taiwan/SAR atom sits in this catalogue and none is claimed. The Paracel atom (PFA+00?) was wholly PRC-held throughout the scope (since January 1974). Lines follow the de jure provincial boundaries that NE draws.",
+ "polityNote": "People's Republic of China (proclaimed 1949-10-01), mainland province-level units. Taiwan (TWN), Hong Kong (HKG) and Macau (MAC) are separate NE countries, so no Taiwan/SAR atom sits in this catalogue and none is claimed. The Paracel atom (PFA+00?) was wholly PRC-held throughout the scope (since January 1974). Lines follow the de jure provincial boundaries that NE draws. Ends 2008-10-13: from 2008-10-14 CHN-provinces-2008.json draws the provinces on geoBoundaries ADM3 atoms, which carry the new Russia line.",
  "units": [
   {
    "id": "CHN:Beijing",
@@ -773,7 +773,6 @@
     {
      "from": "1979-07-01",
      "precision": "day",
-     "to": "2005",
      "atoms": [
       "CHN-1839"
      ],
@@ -801,9 +800,21 @@
        "title": "中国行政区域边界争议 (zh.wikipedia, permanent revision)",
        "says": "Lists provincial boundary disputes (Jiagedaqi/Songling, Ejin middle section, Weishan Lake adjusted 1967 and 1984, Xingzi islands); provincial lines surveyed 1989–2002.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=93832088",
+       "title": "黑瞎子岛 (zh.wikipedia, permanent revision)",
+       "says": "14 October 2008: boundary-marker ceremony on the island; the same day an exchange of notes confirmed that the 2004 supplementary agreement on the eastern section and its annexes formally entered into force, and border troops began guarding the surveyed line.",
+       "accessed": "2026-11-17"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=93293258",
+       "title": "关于中俄国界东段的补充协定 (zh.wikipedia, permanent revision)",
+       "says": "Signed 14 October 2004; approved by the NPC Standing Committee 27 April 2005, the Duma 20 May and the Federation Council 25 May 2005; ratifications exchanged at Vladivostok 2 June 2005; survey of Abagaitu and Heixiazi began 23 June 2005.",
+       "accessed": "2026-11-17"
       }
      ],
-     "dateNote": "1979-07-01 is the restoration of Inner Mongolia (decision of 1979-05-30, effective 1 July 1979), which moved this unit's boundary. NE draws Jiagedaqi and Songling (Oroqen Banner land administered by Heilongjiang, before and after 1979) inside Inner Mongolia, i.e. the de jure line, unchanged across the span. Span ends at the start of 2005, the year the 2004 Russia agreement took legal effect (day not established); NE keeps the pre-2008 river line at Bolshoy Ussuriysky (measured)."
+     "dateNote": "1979-07-01 is the restoration of Inner Mongolia (decision of 1979-05-30, effective 1 July 1979), which moved this unit's boundary. NE draws Jiagedaqi and Songling (Oroqen Banner land administered by Heilongjiang, before and after 1979) inside Inner Mongolia, i.e. the de jure line, unchanged across the span. NE draws the whole of Bolshoy Ussuriysky as Russian, which is the line until the 2004 supplementary agreement and its annexes took effect and the western part changed hands on 2008-10-14 (ratifications were exchanged on 2005-06-02, but the land stayed Russian until 2008); the span runs to the end of this dossier, 2008-10-13."
     }
    ]
   },
@@ -819,7 +830,6 @@
     {
      "from": "1979-07-01",
      "precision": "day",
-     "to": "2005",
      "atoms": [
       "CHN-1838"
      ],
@@ -847,9 +857,21 @@
        "title": "中国行政区域边界争议 (zh.wikipedia, permanent revision)",
        "says": "Lists provincial boundary disputes (Jiagedaqi/Songling, Ejin middle section, Weishan Lake adjusted 1967 and 1984, Xingzi islands); provincial lines surveyed 1989–2002.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=93832088",
+       "title": "黑瞎子岛 (zh.wikipedia, permanent revision)",
+       "says": "14 October 2008: boundary-marker ceremony on the island; the same day an exchange of notes confirmed that the 2004 supplementary agreement on the eastern section and its annexes formally entered into force, and border troops began guarding the surveyed line.",
+       "accessed": "2026-11-17"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=93652351",
+       "title": "阿巴该图洲渚 (zh.wikipedia, permanent revision)",
+       "says": "Under the 2004 supplementary agreement the islet (57.56 km²) was redivided in 2008: 34.54 km² to China, 23.02 km² to Russia.",
+       "accessed": "2026-11-17"
       }
      ],
-     "dateNote": "Restored to its pre-July-1969 extent on 1979-07-01. Includes Jiagedaqi/Songling de jure (administered by Heilongjiang). Span ends at the start of 2005 (2004 Russia agreement approved 2005); NE still draws Abagaitu as Russian (measured)."
+     "dateNote": "Restored to its pre-July-1969 extent on 1979-07-01. Includes Jiagedaqi/Songling de jure (administered by Heilongjiang). NE draws Abagaitu as Russian, which is the line until 2008-10-14, when 34.54 km² of it passed to China; the span runs to the end of this dossier, 2008-10-13."
     }
    ]
   },
@@ -1251,9 +1273,9 @@
    ]
   },
   {
-   "date": "2005",
-   "precision": "year",
-   "what": "2004 China–Russia complementary agreement approved; western Bolshoy Ussuriysky (Heilongjiang) and part of Abagaitu (Inner Mongolia) to China, handed over 2008-10-14",
+   "date": "2005-06-02",
+   "precision": "day",
+   "what": "2004 China–Russia supplementary agreement ratified (instruments exchanged at Vladivostok); the land it moves (western Bolshoy Ussuriysky to Heilongjiang, part of Abagaitu to Inner Mongolia) stays Russian until 2008-10-14 (CHN-provinces-2008.json)",
    "sources": [
     {
      "url": "https://en.wikipedia.org/w/index.php?oldid=1357447554",
@@ -1266,32 +1288,18 @@
      "title": "Abagaitu Islet (en.wikipedia, permanent revision)",
      "says": "58 km² Argun River islet held by the USSR/Russia since 1929; the 2004 agreement returned part of it to China; approved 2005.",
      "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "2009",
-   "precision": "year",
-   "what": "China–Kyrgyzstan border finalised (Uzengi-Kush to China)",
-   "sources": [
+    },
     {
-     "url": "https://en.wikipedia.org/w/index.php?oldid=1340117630",
-     "title": "China–Kyrgyzstan border (en.wikipedia, permanent revision)",
-     "says": "Border delimited 1996 and finalised 2009, Kyrgyzstan ceding the Uzengi-Kush area and China giving up part of Khan Tengri.",
-     "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "2011",
-   "precision": "year",
-   "what": "Tajikistan ratifies cession of ~1,100 km² in the Pamirs to Xinjiang",
-   "sources": [
+     "url": "https://zh.wikipedia.org/w/index.php?oldid=93293258",
+     "title": "关于中俄国界东段的补充协定 (zh.wikipedia, permanent revision)",
+     "says": "Signed 14 October 2004; approved by the NPC Standing Committee 27 April 2005, the Duma 20 May and the Federation Council 25 May 2005; ratifications exchanged at Vladivostok 2 June 2005; survey of Abagaitu and Heixiazi began 23 June 2005.",
+     "accessed": "2026-11-17"
+    },
     {
-     "url": "https://en.wikipedia.org/w/index.php?oldid=1367020174",
-     "title": "China–Tajikistan border (en.wikipedia, permanent revision)",
-     "says": "In 2011 Tajikistan ratified the 1999 deal and 2002 supplement ceding about 200 and 1,122 km² in the Pamirs to China.",
-     "accessed": "2026-10-05"
+     "url": "https://zh.wikipedia.org/w/index.php?oldid=93832088",
+     "title": "黑瞎子岛 (zh.wikipedia, permanent revision)",
+     "says": "14 October 2008: boundary-marker ceremony on the island; the same day an exchange of notes confirmed that the 2004 supplementary agreement on the eastern section and its annexes formally entered into force, and border troops began guarding the surveyed line.",
+     "accessed": "2026-11-17"
     }
    ]
   }
@@ -1348,32 +1356,6 @@
     }
    ],
    "note": "33 stated, minus Taiwan and Hong Kong"
-  },
-  {
-   "date": "2008-12-31",
-   "n": 31,
-   "sources": [
-    {
-     "url": "https://www.xzqh.org/html/show/cn/2008.html",
-     "title": "2008年行政区划 — year-end figures",
-     "says": "End of 2008: 4 municipalities, 23 provinces, 5 autonomous regions, 2 SARs, 34 in all (Taiwan, Hong Kong, Macau included).",
-     "accessed": "2026-10-05"
-    }
-   ],
-   "note": "34 stated, minus Taiwan, Hong Kong, Macau"
-  },
-  {
-   "date": "2019-12-31",
-   "n": 31,
-   "sources": [
-    {
-     "url": "https://www.xzqh.org/html/show/cn/2019.html",
-     "title": "2019年行政区划 — year-end figures",
-     "says": "End of 2019: 4 municipalities, 23 provinces, 5 autonomous regions, 2 SARs, 34 in all (Taiwan, Hong Kong, Macau included).",
-     "accessed": "2026-10-05"
-    }
-   ],
-   "note": "34 stated, minus Taiwan, Hong Kong, Macau"
   }
  ],
  "atomsOutside": [],
@@ -1408,38 +1390,7 @@
    "needs": "township-level atoms on the Pei–Weishan line"
   },
   {
-   "what": "Heilongjiang 2005 → 2019",
-   "unit": "CHN:Heilongjiang",
-   "atoms": [
-    "CHN-1839"
-   ],
-   "from": "2005",
-   "to": null,
-   "why": "Under the 2004 agreement (approved 2005, handed over 2008-10-14) about 170 km² of Bolshoy Ussuriysky became Chinese. Natural Earth at ca96624 still draws the whole island inside RUS-2614 (grid point-in-polygon test), so CHN-1839 lacks territory Heilongjiang administers.",
-   "checked": [
-    "NE ca96624 geometry, grid test 134.2–135.1E 48.24–48.50N",
-    "OSM relation 270056 comparison (NE RUS-2614 land that OSM gives China: 246 km² at 134.59E 48.35N)",
-    "en.wikipedia Bolshoy Ussuriysky Island oldid 1357447554"
-   ],
-   "needs": "an atom for the Chinese part of Bolshoy Ussuriysky (split of NE RUS-2614 along the 2008 line, e.g. OSM boundary relation, ODbL) and the agreement's entry-into-force day"
-  },
-  {
-   "what": "Inner Mongolia 2005 → 2019",
-   "unit": "CHN:NeiMongol",
-   "atoms": [
-    "CHN-1838"
-   ],
-   "from": "2005",
-   "to": null,
-   "why": "Part of Abagaitu Islet (Argun) became Chinese under the 2004 agreement; NE draws it inside RUS-2610 (grid test), so CHN-1838 lacks it.",
-   "checked": [
-    "NE ca96624 geometry, grid test 117.5–118.1E 49.45–49.75N",
-    "en.wikipedia Abagaitu Islet oldid 1255785272"
-   ],
-   "needs": "an atom for the Chinese part of Abagaitu (split of NE RUS-2610 along the OSM line, ODbL)"
-  },
-  {
-   "what": "Xinjiang 1995 → 2019",
+   "what": "Xinjiang 1995 → 2008-10-13",
    "unit": "CHN:Xinjiang",
    "atoms": [
     "CHN-1756"

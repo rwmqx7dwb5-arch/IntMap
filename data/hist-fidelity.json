@@ -1,6 +1,6 @@
 {
   "note": "Observations, not targets. scripts/hist-fidelity.mjs re-measures the shipped bundles and fails when they do worse. --update re-records them; a round that lowers a number on purpose says why in DEV-NOTES.md.",
-  "measured": "2026-10-13",
+  "measured": "2026-11-17",
   "res": 0.25,
   "unsourcedSpans": 0,
   "years": [
@@ -116,23 +116,23 @@
     },
     {
       "year": 1900,
-      "pct": 65,
-      "pctArea": 56.11,
+      "pct": 65.37,
+      "pctArea": 56.6,
       "polityLand": 90.89,
-      "unitLand": 51.69,
-      "zero": 133,
-      "partial": 47,
-      "full": 73
+      "unitLand": 52.14,
+      "zero": 132,
+      "partial": 46,
+      "full": 75
     },
     {
       "year": 1914,
-      "pct": 70.5,
-      "pctArea": 66.13,
+      "pct": 72.28,
+      "pctArea": 68.59,
       "polityLand": 90.77,
-      "unitLand": 60.81,
-      "zero": 125,
-      "partial": 54,
-      "full": 77
+      "unitLand": 63.06,
+      "zero": 117,
+      "partial": 59,
+      "full": 80
     },
     {
       "year": 1938,
@@ -176,18 +176,18 @@
     },
     {
       "year": 2019,
-      "pct": 94.6,
-      "pctArea": 93.92,
+      "pct": 95.42,
+      "pctArea": 94.76,
       "polityLand": 91.51,
-      "unitLand": 87.43,
+      "unitLand": 88.2,
       "zero": 47,
-      "partial": 45,
-      "full": 176
+      "partial": 46,
+      "full": 175
     }
   ],
   "claims": {
     "seam": 1989,
     "duplicate": 149,
-    "contested": 1737
+    "contested": 1738
   }
 }

@@ -103,7 +103,13 @@ const REPO = 'pelagios/magis-pleiades-regions';
 const SHA = 'ad583a9aaa7f9d2b5c11ca1302e584a1100cd82d';
 const RAW = `https://raw.githubusercontent.com/${REPO}/${SHA}`;
 const README_URL = `${RAW}/README.md`;
-const VOCAB_URL = 'https://pleiades.stoa.org/vocabularies/time-periods';
+/* ⚠ THE VOCABULARY IS READ FROM PLEIADES'S OWN RDF DUMP, NOT ITS WEB PAGE. Measured 2026-11-17: the page
+   https://pleiades.stoa.org/vocabularies/time-periods now answers an automated client with a bot challenge
+   (Anubis proof-of-work) instead of the vocabulary, so the build failed «no roman / late-antique». The
+   challenge is not solved here; the same publisher releases the same vocabulary, under the same CC BY 3.0,
+   as data/rdf/time-periods.ttl in isawnyu/pleiades.datasets (prefLabel «Roman, early Empire (30 BC-AD 300)»).
+   The place JSON (pleiades.stoa.org/places/<id>/json) was still served without a challenge on that day. */
+const VOCAB_URL = 'https://raw.githubusercontent.com/isawnyu/pleiades.datasets/main/data/rdf/time-periods.ttl';
 
 export const SOURCE = {
   key: 'magis',
@@ -124,7 +130,7 @@ const CACHE = path.join(os.tmpdir(), 'intmap-histsurveys-cache', 'magis');
 const GEO = path.join(CACHE, 'pleiades-regions-magis-pelagios.geojson');
 const README = path.join(CACHE, 'README.md');
 const LISTING = path.join(CACHE, 'repo-listing.json');
-const VOCAB = path.join(CACHE, 'time-periods.html');
+const VOCAB = path.join(CACHE, 'time-periods.ttl');
 const PLACES = path.join(CACHE, 'places');
 const UA = { 'User-Agent': 'IntMap-histsurveys/1 (+https://github.com/rwmqx7dwb5-arch/IntMap)' };
 const LICENCE_SENTENCE = /made available by Pedar Foss for free redistribution,\s+with attribution \(Copyright AWMC & Foss, CC-BY\)/;
@@ -160,10 +166,11 @@ export async function fetchRaw() {
 }
 
 /* ── Pleiades's time-period vocabulary: slug → [fromYear, toYear] (negative = BC) ───────────────
-   The page shows each term as «<a href="time-periods/<slug>">Title … (30 BC - AD 300)». */
+   The dump states each term as «<https://pleiades.stoa.org/vocabularies/<slug>> a skos:Concept; … skos:prefLabel
+   "Title … (30 BC-AD 300)"@en». */
 function vocabulary() {
   const h = fs.readFileSync(VOCAB, 'utf8');
-  const heads = [], re = /<a href="time-periods\/([a-z0-9-]+)">/g;
+  const heads = [], re = /^<https:\/\/pleiades\.stoa\.org\/vocabularies\/([a-z0-9-]+)> a /gm;
   let m;
   while ((m = re.exec(h))) heads.push([m.index, m[1]]);
   const year = (n, era) => (/BC/.test(era || '') ? -Number(n) : Number(n));
