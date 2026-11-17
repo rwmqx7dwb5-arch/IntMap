@@ -23,6 +23,14 @@
 # ⚠ A RUN THAT CANNOT REACH THE UPSTREAMS WRITES NOTHING WRONG: build.mjs drops what it cannot
 #   source and marks a company osmPending rather than claiming «no sites», and check:companies gates
 #   the bytes before the pull request is opened.
+# ⚠ (companies-perf-own-bytes) THE BATCH STATES ITS OWN GROWTH IN THE START-UP BUDGET. MEASURED
+#   2026-10-19 → 11-15: the batch's pull request failed check:perf on dist.total every time, because
+#   main sits up to one band above that ceiling (a pull request inside the band is green and raises
+#   nothing) and the batch's bytes came on top. A person raises a ceiling with `--update` and says why;
+#   this job raises the deploy rows by exactly the shipped bytes its own change adds under $OWNED
+#   (`perf-budget.mjs --raise-own`, counted from git — no build), commits that with the batch, and says
+#   so in the commit and the pull request. The pull request's check:perf still judges the real build,
+#   so growth the batch does not account for fails as before. docs/TESTING.md, «the startup budget».
 name: Companies refresh
 
 on:
@@ -49,6 +57,7 @@ jobs:
     timeout-minutes: 90
     env:
       BRANCH: data/companies-refresh
+      OWNED: data/companies       # what this job rewrites, proposes, and answers for in the start-up budget
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -56,7 +65,9 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
-      # No `npm ci`: scripts/companies/ uses nothing but the runtime (and curl, which the runner has).
+          cache: npm
+      # `npm ci` only once there is something to propose: scripts/companies/ uses nothing but the runtime
+      # (and curl); the budget step reads vite.config.js, whose import needs the dependencies.
       - name: Restore the upstream answers of earlier runs
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
@@ -98,24 +109,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet -- data/companies && [ -z "$(git ls-files --others --exclude-standard data/companies)" ]; then
-            echo "nothing under data/companies moved — nothing to propose"
+          if git diff --quiet -- "$OWNED" && [ -z "$(git ls-files --others --exclude-standard "$OWNED")" ]; then
+            echo "nothing under $OWNED moved — nothing to propose"
             exit 0
           fi
+          npm ci --ignore-scripts --no-audit --no-fund
+          # against HEAD (main as checked out), before the commit: the batch's own shipped bytes, no more
+          node scripts/perf-budget.mjs --raise-own "$OWNED" --summary perf-raise.md
+          cat perf-raise.md >> "$GITHUB_STEP_SUMMARY"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$BRANCH"
-          git add data/companies
-          printf 'data: re-read a weekly batch of the company atlas\n\nRebuilt by .github/workflows/companies-refresh.yml; the batch was chosen by\nscripts/companies/refresh-plan.mjs (osmPending first, then the oldest profiles).\n' > commit-message.txt
+          git add "$OWNED" tests/perf-baseline.json
+          { printf 'data: re-read a weekly batch of the company atlas\n\nRebuilt by .github/workflows/companies-refresh.yml; the batch was chosen by\nscripts/companies/refresh-plan.mjs (osmPending first, then the oldest profiles).\n\n'; cat perf-raise.md; } > commit-message.txt
           git commit -F commit-message.txt
           # the checkout kept no credential (persist-credentials: false); the token is given to this one push, from the environment
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
-          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
-            gh pr create --base main --head "$BRANCH" \
-              --title "data: re-read a weekly batch of the company atlas" \
-              --body "Rebuilt by the scheduled \`Companies refresh\` workflow. The batch, the pending count before and after, and the age of the atlas are in the run summary. Every profile states the day it was built (\`generatedAt\`); \`npm run check:companies\` passed on these bytes before this pull request was opened."
+          { printf '%s\n\n' "Rebuilt by the scheduled \`Companies refresh\` workflow. The batch, the pending count before and after, and the age of the atlas are in the run summary. Every profile states the day it was built (\`generatedAt\`); \`npm run check:companies\` passed on these bytes before this pull request was opened."; cat perf-raise.md; } > pr-body.md
+          PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')"
+          if [ -z "$PR" ]; then
+            gh pr create --base main --head "$BRANCH" --title "data: re-read a weekly batch of the company atlas" --body-file pr-body.md
           else
             echo "an open pull request already tracks this branch — it now carries this week's batch"
+            gh pr edit "$PR" --body-file pr-body.md
           fi
       - name: Approve the checks this job caused, wait for them, and land the batch
         uses: ./.github/actions/land-bot-pr
