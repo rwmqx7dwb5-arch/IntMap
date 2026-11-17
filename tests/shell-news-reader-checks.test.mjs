@@ -276,9 +276,19 @@ const NEWS = read('js/news-events.js');
 const NOTE_LINE = NEWS.split(/\r?\n/).find((l) => l.includes('ev-d-note ev-ai'));
 
 /* spelling kept: browser script (js/locales/ui.fr.js, js/locales/ui.ko.js, js/locales/ui.zh-hans.js, …) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
-test('R502 ⑤: 統合文の注記が 9 言語すべてで AI と名乗る', () => {
+/* (ui-feedback-nov17) 「AIの検証工程の説明が目立ちすぎます…表に出す説明は一行程度にして、詳しい検証方法は折りたたむ」——
+   要約の直下は 1 行（IntMap が書く文なので en+jp・CONSTITUTION §7）、9 言語の長い説明は末尾の畳まれた
+   「このページの作り方」（`ev-ai-how`）へ移った。主張は変わらない: 読者に見える場所で AI と名乗ること。 */
+const HOW_LINE = NEWS.split(/\r?\n/).find((l) => l.includes('ev-ai-how ev-d-note'));
+test('R502 ⑤a: 要約直下の 1 行が en と jp で AI と名乗る', () => {
   assert.ok(NOTE_LINE, 'js/news-events.js に `ev-ai` の注記が無い');
-  const args = quoted(NOTE_LINE);
+  const [en, ja] = quoted(NOTE_LINE).slice(1, 3);
+  assert.match(en || '', /\bAI\b/, `en の注記が AI を名乗っていない: «${en}»`);
+  assert.match(ja || '', /AI/, `jp の注記が AI を名乗っていない: «${ja}»`);
+});
+test('R502 ⑤: 畳まれた作り方の説明が 9 言語すべてで AI と名乗る', () => {
+  assert.ok(HOW_LINE, 'js/news-events.js に `ev-ai-how` の説明が無い');
+  const args = quoted(HOW_LINE);
   /* 0 番は `<p class=…>`、末尾は `</p>`。あいだの 5 つが L() の位置引数 en/ja/de/ru/es。 */
   const [en, ja, de, ru, es] = args.slice(1, 6);
   for (const [lang, text, marker] of [

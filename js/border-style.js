@@ -26,6 +26,11 @@ export const ADMIN1_COLOR = '#cba6f7';
 export const BORDER_WIDTH = ['interpolate', ['linear'], ['zoom'], 1, 0.95, 4, 1.55, 8, 2.2, 12, 2.9];
 export const BORDER_CASING = ['interpolate', ['linear'], ['zoom'], 1, 2.0, 4, 2.8, 8, 3.8, 12, 4.9];
 export const ADMIN1_WIDTH = ['interpolate', ['linear'], ['zoom'], 3, 0.8, 7, 1.6, 11, 2.55];
+/* (countries-companies) …AND FAINT WHILE THE WHOLE WORLD IS IN VIEW. At world scale the province lines of every large
+   country (the Canadian provinces, the African and European regions) crowded the national borders the reader is there
+   to compare — «広域表示で目立つ州・県境などの細線を弱める». The line keeps its colour and dash; its opacity rises from
+   0.3 at zoom 3 to the old 0.82 by zoom 6, where provinces are what a reader zooms in to see. */
+export const ADMIN1_OPACITY = ['interpolate', ['linear'], ['zoom'], 3, 0.3, 6, 0.82];
 /* (hist-border-same-look) THE WHOLE LINE, NOT ONLY ITS COLOUR AND WIDTH.
    「歴史地図は、現在の地図の国境や地方区分境界線と、ちょっと違う…見た目を同じにしろ」(2026-10-06).
    #R212 shared the colour and the ladder, but the rest of the stroke stayed written per layer, and it

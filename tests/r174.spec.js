@@ -238,6 +238,8 @@ test('the drone planner answers with the real terrain, says exactly what fails �
   await page.evaluate(() => window.__imap.jumpTo({ center: [138.72, 35.42], zoom: 10, pitch: 55, bearing: 0 }));
   /* (#R176) the toolbar button is gone — the planner opens through its own API, the way Atlas opens it */
   expect(await page.evaluate(() => !!document.getElementById('btn-tool-drone')), 'no drone button anywhere').toBe(false);
+  expect(await page.evaluate(() => window.IntMapLazy.need('drone')), 'the planner mounts').toBeTruthy();   /* (deep-lazy-specs) the planner is lazy since startup-weight (js/lazy-modules.js `drone`): a reader reaches it through
+   need() — Atlas, the right-click menu, the map tools — so the spec asks the same door before it reads the global */
   await page.evaluate(() => window.IntMapDrone.open());
   await until(page, () => window.IntMapDrone.state().open === true, null, { timeout: 10000 });   /* (test-time-headroom) not 600 ms */
   expect(await page.evaluate(() => window.IntMapDrone.state().open)).toBe(true);
@@ -352,7 +354,8 @@ test('the drone planner answers with the real terrain, says exactly what fails �
     await page.evaluate(p => { localStorage.setItem('intmap_drone_routes', JSON.stringify([
       { id: p, name: p, spec: { cruiseSpeed: p }, wp: [{ lng: 139.7, lat: 35.6, alt: p, ref: p }] }])); }, PAYLOAD);
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => !!window.IntMapDrone, null, { timeout: 60000 });
+    await page.waitForFunction(() => !!(window.IntMapLazy && window.IntMapLazy.need), null, { timeout: 60000 });
+    expect(await page.evaluate(() => window.IntMapLazy.need('drone')), 'the planner mounts after the reload').toBeTruthy();   /* (deep-lazy-specs) lazy since startup-weight */
     /* (test-time-headroom) 1.2 s + 0.8 s became the state they stood in for: the store has been read (the route is listed)
        and the panel that lists it is built — the reading below then asks what it always asked */
     await until(page, () => window.IntMapDrone.routes().length > 0, null, { timeout: 15000 });

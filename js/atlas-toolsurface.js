@@ -63,7 +63,7 @@ export function makeAtlasToolSurface(deps) {
          the map costs Atlas one decision. It resolves every place through the ledger first and the
          geocoder second, files what it resolved back with its ROLE, and reports by name what it
          could not place. It never takes a coordinate from the model (js/atlas-map-compose.js). */
-      { name: 'compose_map', cap: 'map.compose', desc: 'Draw a whole map explanation in ONE call: `items` are the places in the order to number them (name + country, optional kind / role — what this place IS in your answer — / color / fill:true to shade a country or region); `relations` are links between items (from/to = an item name or its number; type "flow" or "route" draws an arrow, "influence"/"border" dashes, "link" a plain line; optional label); `title` heads the legend. IntMap resolves every name itself (ledger first, then geocoder — never write coordinates), numbers the markers, draws the arcs, frames the camera over everything that landed, shows a legend with the same numbers, and links the names in your final_text to the markers. The result lists what was placed and — by name — what could NOT be; say so in your answer rather than describing an unplaced place as shown. Use it whenever the map carries part of your answer; use highlight / map_view for a single colour or a single move.' },
+      { name: 'compose_map', cap: 'map.compose', desc: 'Draw a whole map explanation in ONE call: `items` are the places in the order to number them (name + country, optional kind / role — what this place IS in your answer — / color / fill:true to shade a country or region); `relations` are links between items (from/to = an item name or its number; type "flow" or "route" draws an arrow, "influence"/"border" dashes, "link" a plain line; optional label; a route may pass `via` — named ports or straits it goes through, in order — and `basis`: "schematic" (a representative line through the via points, labelled as such), "computed" (IntMap computes a sea path through them; the link is reported as not drawn if no path exists) or "track" (a recorded track — IntMap has none, so it is refused rather than faked)); `title` heads the legend. IntMap resolves every name itself (ledger first, then geocoder — never write coordinates), numbers the markers, draws the arcs, frames the camera over everything that landed, shows a legend with the same numbers, and links the names in your final_text to the markers. The result lists what was placed and — by name — what could NOT be; say so in your answer rather than describing an unplaced place as shown. Use it whenever the map carries part of your answer; use highlight / map_view for a single colour or a single move.' },
       /* ══ ⚠⚠ (#R543) THE OTHER OUTPUT, IN CORE FOR THE SAME REASON. `compose_map` is above because a
          map answer that costs six decisions is one the model does not choose; a chart answer left
          behind `find_capability` is the same bargain with a different picture. It also has to be
@@ -396,6 +396,13 @@ export function makeAtlasToolSurface(deps) {
            repeat, so its revision number rides beside the key. */
         resultKey: (ok && meta.resultKey) ? String(meta.resultKey) : undefined,
         revision: (ok && meta.resultKey && meta.artifact && meta.artifact.revision != null) ? meta.artifact.revision : undefined,
+        /* ⚠ (atlas-completion) WHAT THE WEB SEARCH DID, WHETHER THE OUTPUT WAS CUT, AND WHAT WAS RETRIEVED — js/atlas-cap-research.js
+           states all three on its meta, and this list dropped them, so Atlas saw a research answer and never learned that the search
+           had timed out (or found nothing) — the one fact that tells it to try another route (an official page, an operator's site). */
+        web: meta.web || undefined,
+        finish: meta.finish || undefined,
+        retrieved: (meta.retrieved && meta.retrieved.length) ? meta.retrieved : undefined,
+        webNote: meta.webNote || undefined,
       };
       /* ══ (#R511) DID THIS CALL CHANGE THE MAP? A fact the loop reads the way it reads `endsTurn`:
          a capability whose registry row PRODUCES the map, and whose run the observer marked

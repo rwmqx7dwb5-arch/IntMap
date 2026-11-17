@@ -410,7 +410,10 @@ const R = (f) => (String(f).endsWith('js/i18n.js')
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('#R170 the place-search pill sits at the top of the map', () => {
   const css = R('css/intmap.css');
-  assert.match(css, /\.map-search\{ position:absolute; top:10px;/, 'the search pill must sit level with .map-controls-top (both 10px)');
+  /* (ui-feedback-nov17) the offset is one token now (--chrome-edge): the claim is that the two share it, not its number */
+  const top = (sel) => { const m = new RegExp(sel.replace('.', '\\.') + '\\{ position:absolute; top:([^;]+);').exec(css); return m && m[1]; };
+  assert.ok(top('.map-search'), 'the search pill must be absolutely placed at the top of the map');
+  assert.equal(top('.map-search'), top('.map-controls-top'), 'the search pill must sit level with .map-controls-top');
 });
 }
 

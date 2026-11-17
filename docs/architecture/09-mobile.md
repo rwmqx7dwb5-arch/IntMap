@@ -19,7 +19,7 @@
 ### 8.6 分析の帯 (`#layer-tools`) は Tools パネルへ、プリセットは Layers パネルへ運ばれる
 
 `#layer-tools`（比較ビュー・相関分析・地図データの読み込み・データと分析・プレイグラウンド）は実体が 1 つのノードで、`js/data-layers.js` の `reorganizeLayerPanel()` が
-組み直し、`js/map-ui.js` の `_placeLayerTools()` が**読者が実際に見ている Tools パネル**（Tools ▾ か Map tools シート、§8.1）の「分析」節
+組み直し、`js/map-ui.js` の `_placeLayerTools()` が**読者が実際に見ている Tools パネル**（その他のツール ▾ か Map tools シート、§8.1）の「分析」節
 （`.tlp-sec[data-sec="analysis"] > .tlp-body`）へ移す。同じ関数が `#lyr-presets` を見ている Layers パネルのプリセット節（`.lst-presets-body`）へ移す（`#layer-active-section`
 の `_placeActiveSection()` と同じ形。写しは作らない）。持たない側の節は隠れる。
 

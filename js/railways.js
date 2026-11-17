@@ -44,6 +44,7 @@ import { RailSchema } from './rail-schema.js';
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { anchorToLngLat } from './popup-anchor.js';
 
 
 export function railways(HOST) {
@@ -591,16 +592,8 @@ export function railways(HOST) {
      fold. Placing it is part of using this shell (#R255). */
   function place(el, lngLat, dragSel) {
     document.body.appendChild(el); card = el;
-    try {
-      const vw = window.innerWidth || 1200, vh = window.innerHeight || 800;
-      const w = el.offsetWidth || 380, h = el.offsetHeight || 300;
-      const rs = (() => { try { const s = document.getElementById('layer-sidebar-r'); return (s && document.body.classList.contains('lsr-open')) ? s.getBoundingClientRect().width : 0; } catch (_) { return 0; } })();
-      const px = (() => { try { const p = GE().coords.project({ lng: +lngLat.lng, lat: +lngLat.lat }); const r = GE().render.canvas().getBoundingClientRect(); return r.left + p.x; } catch (_) { return null; } })();
-      let left = (px != null) ? (px + 18) : (vw - rs - w - 24);
-      left = Math.max(12, Math.min(left, vw - rs - w - 12));
-      el.style.left = Math.round(Math.max(12, left)) + 'px';
-      el.style.top = Math.round(Math.max(12, Math.min(96, vh - h - 16))) + 'px';
-    } catch (_) { el.style.left = '16px'; el.style.top = '96px'; }
+    /* beside the place, and it keeps following it (js/popup-anchor.js) */
+    try { anchorToLngLat(el, [+lngLat.lng, +lngLat.lat]); } catch (_) { el.style.left = '16px'; el.style.top = '96px'; }
     try { HOST.makeDraggable && HOST.makeDraggable(el, el.querySelector(dragSel)); } catch (_) {}
     try { el.querySelector('.cp-close').onclick = closeCard; } catch (_) {}
   }

@@ -12,7 +12,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { isUnobserved, untilObserved } from './fetch-deadline.js';   /* (unobserved-is-not-refused) a read that ran out of time is not an empty series */
-import { readWorldBank, wbClock, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and the one catalogue of its series */
+import { readWorldBank, wbClock, wbIndicator, wbIndicatorFor, applyLatest, WB_INDICATORS } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and the one catalogue of its series */
 import { afterTick, tickKey } from './runtime.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
@@ -20,6 +20,7 @@ import { IntMapTime } from './chronos.js';
 /* (mobile-performance) when a phone may refresh the World Bank figures */
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
+import { setFigure } from './country-figures.js';   /* (countries-companies) the refreshed value replaces the old one WITH its own year */
 import { layerInflight } from './layer-rows.js';   /* (map-layer-system) each row's request, for the layer-state audit */
 
 export function wbLayers(HOST){
@@ -100,6 +101,21 @@ export function wbLayers(HOST){
       if(wbCache[key]) return Promise.resolve(wbCache[key]);
       /* (unobserved-is-not-refused) a silent host hands this caller `{}` as before, but NOTHING is cached — the next call reads again */
       return wbSeries(code).then(()=>wbCache[key]||{}).catch(()=>({})); }
+    /* ══ (atlas-answer-integrity) ONE WAY A WORLD BANK SERIES REACHES THE COUNTRY TABLE, AND IT CARRIES ITS YEAR ═════
+       Three writers did this, each its own way: the start-up refresh below (four fields, by key), Atlas's
+       `_fillMetric` and the Countries tab's `_imFillStat` (each: «fill only the empty cells, and not at all once 25
+       countries have a value»). So a field with bundled undated values — life expectancy, 54 of them — was never
+       replaced, and an Atlas ranking presented those constants as current (measured on production 2026-11-17).
+       This writes the series' latest value per country over whatever the table held, and records beside it WHO
+       published it and FOR WHICH YEAR (js/country-figures.js — the stamp js/countries-ui.js starts) — what an answer's source
+       list and its «data year» are read from. A country the World Bank does not report keeps its value and its own
+       label. ⚠ NOT WHILE THE CLOCK IS IN THE PAST: the table then holds that year's figures (js/time-countries.js),
+       and a latest value written over them would be a different year under the same heading.
+       → Promise<{ field, code, n, years:[min,max] } | null> */
+    function applyStat(field){ const I=wbIndicatorFor(field); if(!I) return Promise.resolve(null);
+      const cs=(typeof countryStats!=='undefined'&&countryStats)||null; if(!cs) return Promise.resolve(null);
+      return wbFetch(I.code).then(m=>{ if(!IntMapTime.isLive()&&!IntMapTime.isPresentYear(IntMapTime.year())) return null;   /* the clock's year is js/time-countries.js's — the same test it overlays on */
+        return applyLatest(cs, field, m); }).catch(()=>null); }
     /* (#R40) expose the WB indicator fetch (cached, latest value per country) so the Correlation/Scatter tool
        can offer the full World-Bank indicator set as axes ("対応する項目を大幅に増やして"). (#R266) `series`
        joins it, so Atlas can ask for a specific year rather than only «the latest». */
@@ -107,7 +123,7 @@ export function wbLayers(HOST){
        actually paints. Its `WBP` table carried its own copy, and the copy went stale the moment
        #R268 made GDP growth diverging: the thumbnail was still the old red→green sequential ramp,
        so the tile and the map disagreed about the layer's colours. One owner, read at draw time. */
-    try{ window.IntMapWB={ fetch:wbFetch, get:(code)=>wbCache[_wbKey(code)]||null,
+    try{ window.IntMapWB={ fetch:wbFetch, applyStat, get:(code)=>wbCache[_wbKey(code)]||null,
       series:wbSeries, seriesOf:(code)=>wbSeriesCache[_wbKey(code)]||null,
       rampOf:(id)=>{ const L=WB.find(x=>x.id===id)||wbById[id]; return L?V(L).ramp.slice():null; },
       /* (#R289) …and the INDICATOR, for the same reason #R270 published the ramp: a modal layer's
@@ -357,6 +373,11 @@ export function wbLayers(HOST){
          number in a year it was never reported, so it applies only to the latest-per-country mode and
          to 2024 itself — every other year shows the World Bank's own coverage, gaps included. */
       if((L.base||L.id)==='wbdebt'&&(!year||year==='2024')){ try{ Object.keys(DEBT_IMF_GG).forEach(k=>{ if(!(m[k]&&m[k].v!=null)) m[k]={v:DEBT_IMF_GG[k],y:'2024',imf:true}; }); }catch(_){} }
+      /* (atlas-answer-integrity) «N countries reporting» counts COUNTRIES. The World Bank answers its aggregates in the same
+         rows as its members — World, Euro area, Africa Western and Central, High income … (WLD, EMU, AFW, HIC), every one a
+         three-letter code — so counting the keys of a year said 261 for a series with ~215 countries. What is counted is
+         the code of a country polygon this map paints, the one place the legend's sentence is about. */
+      const onMap=new Set(geo.features.map(f=>iso(f.properties||{})).filter(Boolean)), reporting=(y)=>Object.keys((S&&S.by[y])||{}).filter(k=>onMap.has(k)).length;
       const feats=[]; let withData=0; geo.features.forEach(f=>{ const d=m[iso(f.properties||{})]; const props={nm:_nmOf(f.properties)}; if(d&&d.v!=null){ props.v=d.v; withData++; } feats.push({type:'Feature',geometry:f.geometry,properties:props}); });
       if(!withData&&!S){ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,"No data right now — please try again in a moment.","データを取得できませんでした。少し待って再試行してください。","Derzeit keine Daten — bitte gleich erneut versuchen.","Сейчас данных нет — попробуйте через мгновение.","Ahora mismo no hay datos; inténtelo en un momento.")); }catch(_){} }
       const fc={type:'FeatureCollection',features:feats}, src='src-'+L.id, fill=L.id+'-fill', line=L.id+'-line';
@@ -403,7 +424,7 @@ export function wbLayers(HOST){
           yr.querySelector('.bx-yearlbl').textContent=IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
           const sel=yr.querySelector('.bx-year');
           const latestTxt=IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');
-          const opts=S.years.slice().reverse().map(y=>'<option value="'+y+'">'+y+' ('+S.counts[y]+')</option>').join('')
+          const opts=S.years.slice().reverse().map(y=>'<option value="'+y+'">'+y+' ('+reporting(y)+')</option>').join('')
             +'<option value="">'+HOST.escapeHtml(latestTxt)+'</option>';
           if(sel.getAttribute('data-built')!==String(S.years.length)){ sel.innerHTML=opts; sel.setAttribute('data-built',String(S.years.length)); }
           sel.value=year;
@@ -413,7 +434,7 @@ export function wbLayers(HOST){
            so «the colours are comparable» is a statement the legend actually supports. */
         let ysp='', mode='';
         if(year&&S&&S.counts[year]){ ysp=year;
-          mode=(IntMapLang.t(HOST.lang,' · ','・',' · ',' · ',' · '))+S.counts[year]+(IntMapLang.t(HOST.lang,' countries reporting','か国が報告',' Länder mit Daten',' стран с данными',' países con datos')); }
+          mode=(IntMapLang.t(HOST.lang,' · ','・',' · ',' · ',' · '))+reporting(year)+(IntMapLang.t(HOST.lang,' countries reporting','か国が報告',' Länder mit Daten',' стран с данными',' países con datos')); }
         else { let yrs=[]; try{ yrs=Object.values(m).map(d=>+d.y).filter(isFinite); }catch(_){} if(yrs.length){ const a=Math.min.apply(null,yrs),b=Math.max.apply(null,yrs); ysp=(a===b)?(''+a):(a+'–'+b); }
           mode=IntMapLang.t(HOST.lang," · most recent value per country","（国ごとに最新値）"," · jeweils neuester Wert je Land"," · последнее значение по каждой стране"," · valor más reciente por país"); }
         let nn=el.querySelector('.bx-note'); if(!nn){ nn=document.createElement('div'); nn.className='bx-note'; nn.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(nn); }
@@ -458,7 +479,7 @@ export function wbLayers(HOST){
     function indBrowser(){ if(!_indMod) _indMod=import('./indicator-browser.js').then(m=>m.makeIndicatorBrowser({
         lang:()=>HOST.lang, entries:indicatorEntries, paint:indPaint, clear:indClear, current:()=>IND.cur,
         series:(code)=>wbSeries(code), seriesOf:(code)=>wbSeriesCache[_wbKey(code)]||null, yearOf:(code)=>{ const S=wbSeriesCache[_wbKey(code)]||null; return yearFor({id:'wbind'},S); },
-        name:(n)=>LWB.arr(n), countryName:(iso)=>{ try{ const s=countryStats&&countryStats[iso]; if(s) return (HOST.lang==='jp'?(s.nameJp||s.nameEn):s.nameEn)||iso; }catch(_){} return iso; },
+        name:(n)=>LWB.arr(n), country:(iso)=>(countryStats&&countryStats[iso])||null, ready:()=>Promise.resolve(typeof loadCountryData==='function'?loadCountryData():null).catch(()=>null), countryName:(iso)=>{ try{ const s=countryStats&&countryStats[iso]; if(s) return (HOST.lang==='jp'?(s.nameJp||s.nameEn):s.nameEn)||iso; }catch(_){} return iso; },
         wanted:()=>{ const w=IND.want; IND.want=null; return w||null; },
         /* while a country-table statistic is drawn by its own row, THIS row's drawing is that row's layers — said to the
            layer-state audit (js/data-layers.js `_imAuditReg`, the table it reads first), so a row that is meant to paint
@@ -608,17 +629,12 @@ export function wbLayers(HOST){
     bus.on('intmap-lang',()=>{ ALL.forEach(L=>{ const r=document.getElementById('lyrrow-'+L.id); const sp=r&&r.querySelector('.bx-name'); if(sp) sp.textContent=bxLabel(L); }); });
     if(document.readyState!=='loading') setTimeout(buildRows,700); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildRows,700));
 
-    /* (#R31) Refresh Stats to the LATEST available figures ("Statsの数値はできる限り最新に") — pull the most
-       recent World Bank GDP / population / GDP-per-capita / life-expectancy and merge into countryStats
-       (only overwriting where WB has a value), then re-render Stats if it's open. Runs once, low-priority. */
+    /* (#R31) Refresh Stats to the LATEST available figures ("Statsの数値はできる限り最新に"). (atlas-answer-integrity) EVERY
+       country-table field the World Bank publishes a series for (js/wb-indicators.js `stat` — discovered, not listed:
+       it was four keys written here, so internet use and military spending kept their bundled figures), through
+       `applyStat`, which records the year and the publisher with each value. Then re-render Stats if it's open. */
     function refreshStatsLatest(){ try{ const cs=(typeof countryStats!=='undefined'&&countryStats)||null; if(!cs) return;
-      return Promise.all(['gdp','pop','gdppc','life'].map(k=>wbFetch(wbIndicator(k).code))).then(([gdp,pop,pc,le])=>{
-        Object.keys(cs).forEach(code=>{ const s=cs[code]; if(!s) return;
-          if(gdp[code]&&gdp[code].v>0) s.gdp=gdp[code].v/1e9;
-          if(pop[code]&&pop[code].v>0) s.pop=pop[code].v;
-          if(pc[code]&&pc[code].v>0) s.gdppc=pc[code].v;
-          if(le&&le[code]&&le[code].v>0) s.lifeExp=le[code].v;
-        });
+      return Promise.all(WB_INDICATORS.filter(I=>I.stat).map(I=>applyStat(I.stat))).then(()=>{
         try{ if(typeof HOST.mode!=='undefined'&&HOST.mode==='stats'&&typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){}
       }).catch(()=>{});
     }catch(_){} }

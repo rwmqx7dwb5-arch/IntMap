@@ -133,3 +133,35 @@ export function streamedBody(ps: Streamed, provider: string, meter?: Meter): Rec
    it rather than through a second parameter at each site; absent (the developer's model list, which
    has no request meter) means the project ceiling alone. */
 export type Meter = { add(provider: string, answer: unknown): unknown; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
+
+/* ══ (atlas-completion) WHAT THE ANSWER IS, BESIDES ITS TEXT — did it end, and what did the search do ══
+   Two facts each provider used to read and then drop:
+   ① WHETHER THE ANSWER ENDED. OpenAI says `status:"incomplete"` with `incomplete_details.reason`
+     (max_output_tokens, content_filter), Anthropic a `stop_reason` that is not a natural end
+     (max_tokens, pause_turn, refusal …), Gemini a `finishReason` other than STOP. A text that
+     stopped there was returned as if it were the whole answer. Each provider states the reason in
+     its OWN vocabulary (`incompleteReason`, null = it ended); nothing here translates it.
+   ② WHAT THE HOSTED SEARCH DID. «webUsed:false» was one bit for four different events — never asked
+     for, asked for and taken away after a timeout or a rejection, attached and not used, used and
+     found nothing — and the page answered all four with the same «headline-based provisional»
+     caveat. `webOutcome` tells them apart from what the provider reported, never from a guess:
+       state  'not_run' (reason 'not_requested' | 'not_attached' | 'model_did_not_search')
+              'failed'  (reason = what took it away: 'timeout' | 'rejected' | the provider's own error code)
+              'empty'   (the search ran and the provider listed no result)
+              'ok'
+       searches  how many searches ran · sources  how many results/pages the provider reported
+                 (null when this provider does not report them — not zero). */
+export type WebFacts = { webAttached?: boolean; webCount?: number; citations?: unknown[]; webFailure?: string; webSources?: number | null };
+export type WebOutcome = { state: "not_run" | "failed" | "empty" | "ok"; reason: string | null; searches: number; sources: number | null };
+export function webOutcome(requested: boolean, out: WebFacts): WebOutcome {
+  const searches = Math.max(0, Number(out.webCount) || 0);
+  const cited = Array.isArray(out.citations) ? out.citations.length : 0;
+  const listed = typeof out.webSources === "number" && Number.isFinite(out.webSources) ? out.webSources : null;
+  const sources = listed !== null ? Math.max(listed, cited) : (cited || null);
+  if (!requested) return { state: "not_run", reason: "not_requested", searches: 0, sources: null };
+  if (out.webFailure) return { state: "failed", reason: String(out.webFailure), searches, sources };
+  if (!out.webAttached) return { state: "not_run", reason: "not_attached", searches: 0, sources: null };
+  if (!searches) return { state: "not_run", reason: "model_did_not_search", searches: 0, sources: null };
+  if (listed === 0 && !cited) return { state: "empty", reason: "no_results", searches, sources: 0 };
+  return { state: "ok", reason: null, searches, sources };
+}

@@ -362,10 +362,11 @@ describe('§ #R299 · the JMA reduce, finer units, the Danger list, short notes'
     const one = code.match(/L\('IntMap’s own conversion[^)]*\)/);
     assert.ok(one, '① still says whose arithmetic it is');
     assert.ok(/same step is not the same danger/.test(one[0]), '…and still carries the warning that goes with it');
-    const two = code.match(/L\('Each agency’s own colours[^)]*\)/);
-    assert.ok(two, '② still says the colours are not IntMap’s');
-    /* and 「簡潔に」 is measurable: every language of both notes fits on one line */
-    for (const lit of [one[0], two[0]]) {
+    /* (ui-feedback-nov17) ② is gone with the legend it annotated: 「凡例が各国で異なるのに固定でポップアップに載せているのは
+       おかしい。削除。」 — the agency's own ladder is what a tap opens (legendFor), so no fixed note stands for it */
+    assert.ok(!/L\('Each agency’s own colours/.test(code), '② went with the fixed agency legend');
+    /* and 「簡潔に」 is measurable: every language of the note fits on one line */
+    for (const lit of [one[0]]) {
       for (const arg of lit.match(/'((?:[^'\\]|\\.)*)'/g) || []) {
         assert.ok(arg.length - 2 <= 130, 'a legend note is still one line: ' + arg.slice(0, 60));
       }
@@ -377,16 +378,16 @@ describe('§ #R299 · the JMA reduce, finer units, the Danger list, short notes'
     /* 綴りのまま: 主張が L()／t() に渡す言語別の引数（翻訳の在否と長さ）そのもので、ソースの引数の並びが対象。 */
     const code = noComments(alertsModule(WP()));
     const one = code.match(/L\('IntMap’s own conversion[^)]*\)/);
-    const two = code.match(/L\('Each agency’s own colours[^)]*\)/);
-    assert.ok(one && two, 'both notes are still there');
+    assert.ok(one, 'the note is still there');
     /* production, panel width 330 px: the agency note was 14 px (one line) and this one 29 px (two).
        The claims are what had to survive; the repeated 「tap a country」 hint is said in full below. */
     assert.ok(/same step is not the same danger/.test(one[0]), 'the caveat survives');
     assert.ok(/IntMap/.test(one[0]), 'and whose arithmetic it is');
     assert.ok(!/Tap a country/.test(one[0]), 'the hint the panel already gives in full is not repeated here');
     const longest = (lit) => Math.max(...(lit.match(/'((?:[^'\\]|\\.)*)'/g) || ["''"]).map((a) => a.length - 2));
-    assert.ok(longest(one[0]) <= longest(two[0]) + 20,
-      'and it is not materially longer than the note that measured one line');
+    /* (ui-feedback-nov17) the agency note this was measured against went with its legend; the old bound was «no more
+       than 20 longer than a one-line note» — ⑰ holds the one-line bound itself, in every language */
+    assert.ok(longest(one[0]) <= 130, 'and it is still one line');
   });
 
   /* ── ⑰ 「簡潔に」 is true in a LANGUAGE or it is not true ─────────────────────────────────────── */
@@ -411,7 +412,7 @@ describe('§ #R299 · the JMA reduce, finer units, the Danger list, short notes'
       return out;
     };
     const EXTRA = { fr: 'ui.fr.js', ko: 'ui.ko.js', zh: 'ui.zh.js', 'zh-hans': 'ui.zh-hans.js' };
-    for (const head of ['IntMap’s own conversion', 'Each agency’s own colours']) {
+    for (const head of ['IntMap’s own conversion']) {   /* (ui-feedback-nov17) the agency note went with its legend */
       const args = five(head);
       const rows = [['en', args[0]], ['jp', args[1]], ['de', args[2]], ['ru', args[3]], ['es', args[4]]];
       const key = args[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

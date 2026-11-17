@@ -311,7 +311,7 @@ IntMapLang.define('zh', {
     'first appears in this report': '首次出現於這篇報導',
     'How this was written — the exact wording each sentence came from ({n})': '這段文字從何而來 — 每句話所依據的原文（{n} 則）',
     'In each outlet’s own words': '各家媒體的原文',
-    'The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.': '上面這段由 AI 撰寫。它整合了這些媒體所發布的內容：每一句在儲存前都已由機器與此處顯示的原文比對過，無法比對的句子一律捨棄，絕不顯示。',
+    'The paragraph above was written by AI from what these outlets published. Each sentence names the outlet and the passage it is based on, and before saving a program checked that every such passage really appears in that outlet’s text; a sentence whose passage could not be found is discarded. The program does not check that the sentence states the passage correctly — compare them under “How this was written”.': '上面這段文字是 AI 根據這些媒體發布的內容寫成的。每句話都標明所依據的媒體與原文段落；儲存前，程式確認了每個段落確實出現在該媒體的文字中（找不到段落的句子會被捨棄）。程式不檢查句子是否正確表達了該段落——可在「這段文字從何而來」中對照。',
     'Key figures': '關鍵數字',
     'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': '這則事件只有一家媒體提供內文，因此不離開 IntMap 就能讀到的內容僅止於此。',
     'Read at {s} ↗': '在 {s} 閱讀 ↗',
@@ -1185,7 +1185,7 @@ IntMapLang.define('zh', {
     '{n} source(s) did not answer within {s}s': "{n} 個來源未在 {s} 秒內回應",   /* atlas-console.js */
     'live web search': "即時網路搜尋",   /* atlas-console.js */
     'live web verification': "即時網路查證",   /* atlas-console.js */
-    'Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.': "這個具時效性的問題未能完成即時網路查證，因此以下是主要依據既有標題的暫定判斷 — 請視為線索，而非已確認的直接證據。",   /* atlas-console.js */
+    /* atlas-console.js */
     'LOAD': "載入",   /* flight-sim.js */
     /* seismic.js */
     'loaded news': "已載入的新聞",   /* atlas-console.js */
@@ -4157,7 +4157,6 @@ IntMapLang.define('zh', {
   "Danger warning": "危險警報",
   "Delayed": "略舊",
   "Diagnostics": "診斷",
-  "Each agency’s own published scale": "各機關公布的等級",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "各國均以該國機關的發布單位繪製。僅供參考，請以官方機關發布為準。",
   "Europe — MeteoAlarm": "歐洲 — MeteoAlarm",
   "every 30 s": "每 30 秒",
@@ -4795,7 +4794,7 @@ IntMapLang.define('zh', {
   "Countries at Danger or above": "危險等級以上的國家",   /* (#R299) */
   "No country is at Danger or above right now.": "目前沒有國家達到危險等級以上。",   /* (#R299) */
   "IntMap’s own conversion — the same step is not the same danger.": "IntMap 自行換算——同一等級不代表危險程度相同。",   /* (#R299) */
-  "Each agency’s own colours. Tap a country for its exact scale.": "顏色為各機關自身的配色。點選國家可查看確切等級。",   /* (#R299) */
+  /* (#R299) */
   "No point placed yet": "尚未設定地點",   /* (#R299) */
   "Place the point on the map": "在地圖上設定地點",   /* (#R299) */
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "已在地圖上開啟路線指引面板——請在面板中填入起點與目的地，或在這裡告訴我地點。",   /* (#R299) */

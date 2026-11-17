@@ -1936,7 +1936,11 @@ export function layerSidebar(HOST){
       try{ const lt=root.querySelector('#layer-tools'), dd=document.getElementById('layer-dropdown'); if(lt&&dd) dd.appendChild(lt); }catch(_){}
       const meas=o.measure||null;
       root.textContent='';
-      TOOL_SECS.forEach(([k,lbl])=>{ const sec=_toolSec(k,lbl()); const body=sec.querySelector('.tlp-body');
+      /* (tools-split) a host may hold only some sections — the desktop's 「ツール ▾」 holds 測る・描く and the button to its
+         left holds the rest (the user, 2026-11-17: 「Tools…Measure & drawの三つだけ出るように。それ以外はその左に。」); a host
+         that names none holds all of them (the phone's sheet). */
+      const want=Array.isArray(o.sections)?o.sections:null;
+      TOOL_SECS.filter(([k])=>!want||want.indexOf(k)>=0).forEach(([k,lbl])=>{ const sec=_toolSec(k,lbl()); const body=sec.querySelector('.tlp-body');
         if(k==='measure'){ if(meas) body.appendChild(meas); }
         else if(k!=='analysis') TOOLS.filter(t=>_toolGroup(t)===k).forEach(t=>body.appendChild(_toolRow(t,o.onPick)));
         /* 分析 is decided by `_placeLayerTools` (it holds the strip or it does not); the others by what they hold */
@@ -1965,15 +1969,19 @@ export function layerSidebar(HOST){
     /* the desktop's 「ツール ▾」 — built at boot (so the kernel holds every row's command, and the palette finds each row,
        before anyone opens anything), and re-synced on every press of its trigger */
     function mountDesktopTools(){ const dd=document.getElementById('measure-dropdown'); if(!dd) return null;
-      return mountTools(dd,{ measure:dd.querySelector('.tlp-measure'),
+      const more=document.getElementById('more-tools-dropdown');
+      if(more) mountTools(more,{ sections:TOOL_SECS.map(([k])=>k).filter(k=>k!=='measure'),
+        onPick:()=>{ try{ window._closeMoreToolsMenu&&window._closeMoreToolsMenu(); }catch(_){} } });
+      return mountTools(dd,{ measure:dd.querySelector('.tlp-measure'), sections:more?['measure']:null,
         onPick:()=>{ try{ window._closeMeasureMenu&&window._closeMeasureMenu(); }catch(_){} } }); }
     /* ⚠ THE MENU IS WHAT IS BEING USED. It opens over the map beside floating windows (the route panel is one), and a
        fronted window (`.im-front`) stands above every menu — measured: with the route panel open, a press on the
        Directions row landed on the panel's header. A pointer press on the trigger already raises the toolbar
        (js/ui-stack.js `wire`); a press that is not a pointer (the palette, Atlas' clickId, a test) does not, so the
        opener says that it opened something — the same `opened()` the Chronos panel's openers use. */
-    try{ const trig=document.getElementById('btn-measure-menu'); if(trig) trig.addEventListener('click',()=>{ try{ mountDesktopTools();
-      const dd=document.getElementById('measure-dropdown'); if(dd&&dd.getClientRects().length) window.IntMapStack.opened(dd); }catch(_){} }); }catch(_){}
+    [['btn-measure-menu','measure-dropdown'],['btn-more-tools','more-tools-dropdown']].forEach(([tid,did])=>{
+      try{ const trig=document.getElementById(tid); if(trig) trig.addEventListener('click',()=>{ try{ mountDesktopTools();
+        const dd=document.getElementById(did); if(dd&&dd.getClientRects().length){ window.IntMapStack.opened(dd); placeLayerTools(dd.querySelector('.tlp-root')); } }catch(_){} }); }catch(_){} });
     setTimeout(()=>{ try{ mountDesktopTools(); }catch(_){} },1500);
     window.addEventListener('intmap-lang',()=>setTimeout(()=>{ try{ _toolHosts.forEach(h=>{ if(h.root.isConnected) _fillTools(h); });
       placeLayerTools(); }catch(_){} },40));
@@ -2014,7 +2022,8 @@ export function layerSidebar(HOST){
     function placeLayerTools(prefer){
       try{
         const tools=document.getElementById('layer-tools');
-        const roots=_toolHosts.map(h=>h.root).filter(r=>r.isConnected);
+        /* only a panel that HAS an 分析 section can hold the strip (tools-split: the desktop's 「ツール ▾」 has none) */
+        const roots=_toolHosts.map(h=>h.root).filter(r=>r.isConnected&&r.querySelector('.tlp-sec[data-sec="analysis"]'));
         const root=tools?_laidOut(roots,prefer):null;
         const body=root?root.querySelector('.tlp-sec[data-sec="analysis"] > .tlp-body'):null;
         if(tools&&body){

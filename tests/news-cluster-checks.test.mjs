@@ -181,7 +181,9 @@ test('#R334 ⑧ the labelled fixture scores at least as well as when it was meas
 
 /* ── ⑨ 見出しの正規化 ───────────────────────────────────────────────────── */
 test('#R334 ⑨ titles lose the publisher suffix, stopwords and inflection', () => {
-  assert.equal(normaliseTitle('Boeing Engineers Reject Offer - The Seattle Times'),
+  /* 媒体名は**分かっているときだけ**外す（tests/news-quality-checks.test.mjs が逆側を持つ:
+     媒体名でない末尾——「– UEFA Nations League as it happened」——は本文として残る）。 */
+  assert.equal(normaliseTitle('Boeing Engineers Reject Offer - The Seattle Times', 'The Seattle Times'),
     'boeing engineers reject offer');
   const t = tokenise('The Chinese court sentences the founder of Evergrande to life in prison');
   assert.ok(!t.has('the'), 'stopwords must go');

@@ -14,7 +14,6 @@
  "Danger warning": ["Gefahrenwarnung", "Опасное предупреждение", "Aviso de peligro", "Avertissement de danger", "위험경보", "危險警報"],
  "Delayed": ["Verzögert", "С задержкой", "Con retraso", "En retard", "다소 오래됨", "略舊"],
  "Diagnostics": ["Diagnose", "Диагностика", "Diagnóstico", "Diagnostics", "진단", "診斷"],
- "Each agency’s own published scale": ["Skala der jeweiligen Behörde", "Собственная шкала службы", "Escala propia de cada agencia", "Échelle publiée par chaque service", "각 기관이 공표한 등급", "各機關公布的等級"],
  "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": ["Jedes Land stammt von seiner eigenen Behörde, in deren Warneinheiten. Bildungsanzeige.", "Каждая страна — по данным её собственной службы, в её единицах. Справочно.", "Cada país procede de su propia agencia, en sus unidades. Visualización educativa.", "Chaque pays provient de son propre service, dans les unités qu’il utilise. Affichage à titre indicatif : suivez les autorités officielles.", "각 나라는 그 나라 기관의 발표 단위로 그립니다. 참고용 표시이므로 공식 기관의 발표를 따르십시오.", "各國均以該國機關的發布單位繪製。僅供參考，請以官方機關發布為準。"],
  "Europe — MeteoAlarm": ["Europa — MeteoAlarm", "Европа — MeteoAlarm", "Europa — MeteoAlarm", "Europe — MeteoAlarm", "유럽 — MeteoAlarm", "歐洲 — MeteoAlarm"],
  "every 30 s": ["alle 30 s", "каждые 30 с", "cada 30 s", "toutes les 30 s", "30초마다", "每 30 秒"],

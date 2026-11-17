@@ -305,12 +305,23 @@ window.IntMapMapTypography = (function () {
      centre (rim 9 + gap 4), is padded `padX`/`padY` round the text, and the layer's text-offset is
      derived from it per zoom (text-offset is in ems of a size that changes with zoom). */
   const BAND = { lead: 13, padX: 9, padY: 4 };
-  const BAND_W = 0.92;
-  const labelScale = () => window.IntMapLabelScale;   /* js/label-scale.js, read when asked (it loads before any band is drawn) */   /* the band's text weight on the sub ladder (news-labels' text-size) */
-  function bandOffset() {
-    const LSc = labelScale();
+  /* (news-map-legibility) 「吹き出しの文字が小さい」 — the band's text weight on the sub ladder (news-labels'
+     text-size, `bandBox`'s measurement and `bandOffset`'s ems all read it). 0.92 → 1: z4+ 10.4 → 11.4 px,
+     z1 7.6 → 8.3 px. 1 is the CEILING the ladder allows a non-place label (js/label-scale.js `sub` clamps
+     w ≤ 1 so every overlay stays under the place names), so «one step larger» is the whole of SUB, not a
+     number chosen here; it lapses only if SUB itself moves. */
+  const BAND_W = 1;
+  /* (news-map-legibility) ⚠ `lead` was measured against the pin's outer edge (7 + 2 rim = 9). The pin is now
+     js/news-ui.js `NEWS_PIN` — 6 + 1 at rest, 8 + 2 when HOT (hovered or the open event) — and `lead` must
+     still clear the HOT pin, because the open event's band stays drawn beside it (hover hides the band,
+     selection does not): 10 < 13, a 3 px gap. tests/news-map-legibility-checks.test.mjs evaluates both. */
+  const labelScale = () => window.IntMapLabelScale;   /* js/label-scale.js, read when asked (it loads before any band is drawn) */
+  /* the text's offset from the pin, in the renderer's ems at each zoom. `side` 'L' is the mirrored band
+     (text anchored right, left of the pin) the declutter flips to at the right edge — same distance. */
+  function bandOffset(side) {
+    const LSc = labelScale(), sgn = side === 'L' ? -1 : 1;
     return ['interpolate', ['linear'], ['zoom']].concat(...LSc.SUB.map(([z]) =>
-      [z, ['literal', [Math.round((BAND.lead + BAND.padX) / Math.max(6, LSc.subAt(z, BAND_W)) * 1000) / 1000, 0]]]));
+      [z, ['literal', [sgn * Math.round((BAND.lead + BAND.padX) / Math.max(6, LSc.subAt(z, BAND_W)) * 1000) / 1000, 0]]]));
   }
 
   let _ctx = null, _px = 0; const _cache = new Map();
@@ -343,7 +354,8 @@ window.IntMapMapTypography = (function () {
       }
       push();
       const wide = lines.reduce((m, l) => Math.max(m, _ctx.measureText(l).width), 0);
-      const box = { w: Math.ceil(Math.min(wide, maxW)) + 2 * BAND.padX, h: Math.ceil(Math.max(1, lines.length) * px * 1.2) + 2 * BAND.padY };
+      /* `line` is one line of the band's text — the declutter keeps pills that far apart */
+      const box = { w: Math.ceil(Math.min(wide, maxW)) + 2 * BAND.padX, h: Math.ceil(Math.max(1, lines.length) * px * 1.2) + 2 * BAND.padY, line: Math.ceil(px * 1.2) };
       if (_cache.size > 4000) _cache.clear();
       _cache.set(txt, box);
       return box;
@@ -380,20 +392,47 @@ window.IntMapMapTypography = (function () {
       if (!GE.layers.hasSource('news-points') || !GE.layers.has('news-labels')) return;
       feats = feats || []; if (!feats.length) return;
       const sz = GE.render.size(), W = sz.width, H = sz.height;
-      const M = 48;   /* off-screen margin: keep a band as the pin scrolls just past the edge */
+      const M = 48;   /* off-screen margin: a pin this far out is not measured at all (its band cannot fit in view) */
+      /* (news-map-legibility) THE EVENT WHOSE DETAIL IS OPEN — asked of js/news-events.js's own observed
+         answer (`state().selectedEventId` reads the pane, not the last click: #R435), never remembered
+         here. Its pin is drawn hot (`sel`, js/news-ui.js) and its band is granted first. */
+      let selId = null;
+      try { const NE = window.IntMapNewsEvents, st = NE && NE.state && NE.state(); selId = (st && st.selectedEventId) || null; } catch (_) { selId = null; }
       const items = [];
       for (const f of feats) {
         const g = f.geometry, p = f.properties || {}; const fid = p.fid;
         if (!g || g.type !== 'Point' || fid == null) continue;
+        const sel = !!selId && p.evId === selId;
         let pt; try { pt = GE.coords.project(g.coordinates); } catch (_) { continue; }
         if (!pt) continue;
-        if (pt.x < -M || pt.x > W + M || pt.y < -M || pt.y > H + M) { items.push({ fid, off: true }); continue; }
+        if (pt.x < -M || pt.x > W + M || pt.y < -M || pt.y > H + M) { items.push({ fid, sel, off: true }); continue; }
         const box = bandBox(String(p.short || p.title || ''));
         const pr = (p.mapped === 'true') ? 0 : (p.mapped === 'publisher') ? 1 : 2;
-        items.push({ fid, x: pt.x, y: pt.y, w: box.w, h: box.h, pr });
+        /* (news-map-legibility) how many INDEPENDENT outlets stand behind the pin (js/news-feed.js
+           `evSources`, the count the card's «Details (N sources)» shows; an article pin has none) */
+        items.push({ fid, sel, x: pt.x, y: pt.y, w: box.w, h: box.h, line: box.line || 0, pr, n: +p.evSources || 0 });
       }
-      const vis = items.filter((i) => !i.off).sort((a, b) => a.pr - b.pr || a.y - b.y || a.x - b.x);
-      const claimed = [], win = new Set();
+      /* priority: the open event, then where the place came from (subject > publisher > none), then
+         how many outlets reported it, then top-to-bottom, left-to-right (stable across settles) */
+      const vis = items.filter((i) => !i.off).sort((a, b) => (b.sel - a.sel) || a.pr - b.pr || b.n - a.n || a.y - b.y || a.x - b.x);
+      /* ⚠ (#R242) the pills are kept APART, not merely non-overlapping: a 2 px kiss reads as a
+         collision at a glance, and the reported defect is 「重なりすぎ」. (news-map-legibility) The gap
+         is now one line of the band's own text (`bandBox().line`, 13.7 px at z4+) with the old 5 px as
+         its floor: 「欧州の密集部分」 measured pills packed 5 px apart in rows, which reads as one block
+         of text, not as separate headlines. Derived from the type size, so it scales with it. */
+      const GAP = Math.max(5, vis.reduce((m, i) => Math.max(m, i.line), 0));
+      /* (news-map-legibility) 「密集時に出す帯の数を絞る」 — THE SHARE OF THE MAP THE BANDS MAY COVER.
+         The declutter had no ceiling: every non-overlapping winner showed. Bands are now granted in
+         priority order until their summed area would pass COVER of the map's area, and the rest stay
+         dots (still hoverable/clickable). A ratio, not a count: the common band at z4+ is two lines
+         (`bandText`'s 20 characters / 5 words wrap at 14 em) ≈ 178×36 px, so a phone (390×780) gets
+         about 4 and a 1440×900 desktop about 16, from the same rule. 0.08 is a DESIGN ESTIMATE
+         of this request (not measured on production); it lapses if the reader asks for more or fewer
+         bands. ⚠ It stops at the first band that does not fit (`break`), so a lower-priority short band
+         never takes the room a higher-priority long one was refused. */
+      const COVER = 0.08, budget = COVER * W * H;
+      let used = 0;
+      const claimed = [], win = new Set(), sideOf = new Map();
       /* ⚠ (#R428) THE MAP'S OWN CHROME IS NOT PART OF THE MAP, AND THIS DECLUTTER COULD NOT SEE IT.
          Measured on production (2026-08-24): the Reykjavik band won its slot and then rendered UNDER
          the white Map/Satellite + Flat/Globe/3D cluster in the top-right, so what reached the reader
@@ -420,12 +459,49 @@ window.IntMapMapTypography = (function () {
         }
         return false;
       };
-      /* ⚠ (#R242) the pills are kept APART, not merely non-overlapping: a 2 px kiss reads as a
-         collision at a glance, and the reported defect is 「重なりすぎ」. */
-      const GAP = 5;
       const hit = (r) => { for (const c of claimed) { if (r.x < c.x + c.w + GAP && r.x + r.w + GAP > c.x && r.y < c.y + c.h + GAP && r.y + r.h + GAP > c.y) return true; } return false; };
-      for (const it of vis) { const r = { x: it.x + BAND.lead, y: it.y - it.h / 2, w: it.w, h: it.h }; if (!hit(r) && !covered(r)) { claimed.push(r); win.add(it.fid); } }
-      for (const it of items) { try { GE.layers.setFeatureState({source:'news-points',id:it.fid}, { bnd: win.has(it.fid) }); } catch (_) { } }
+      /* (news-map-legibility) 「右端で文章が切れている」 — the band was always drawn right of its pin, so a
+         pin near the right edge put its text past the canvas. A band is now granted only where it lies
+         wholly inside the map's own canvas. */
+      const inView = (r) => r.x >= 0 && r.y >= 0 && r.x + r.w <= W && r.y + r.h <= H;
+      /* (news-map-legibility) 「国名とニュース帯が重なる」 — the declutter compared bands only with bands.
+         WHICH LAYERS DRAW A COUNTRY NAME is not a list here: it is every visible symbol layer whose
+         text-size is the country curve of js/label-scale.js (`place('country')`) — the base map's
+         country names and the time machine's era names both ask for exactly that (#R309), and a layer
+         added later the same way is found the same way. WHERE a name is drawn is the renderer's own
+         answer: a box query returns the symbols whose PLACED boxes meet it, so nothing is estimated. */
+      const names = (() => {
+        try {
+          const LSc = labelScale(), st = GE.scene.getStyle();
+          if (!LSc || !st || !Array.isArray(st.layers)) return [];
+          const want = JSON.stringify(LSc.place('country'));
+          return st.layers.filter((l) => l && l.type === 'symbol' && !(l.layout && l.layout.visibility === 'none')
+            && JSON.stringify(l.layout && l.layout['text-size']) === want).map((l) => l.id);
+        } catch (_) { return []; }
+      })();
+      const onName = (r) => {
+        if (!names.length) return false;
+        try { return (GE.coords.queryRenderedFeatures([[r.x, r.y], [r.x + r.w, r.y + r.h]], { layers: names }) || []).length > 0; } catch (_) { return false; }
+      };
+      /* Each band tries its own side first and the MIRRORED side (left of the pin, js/news-ui.js's
+         second band layer) when the first is out of the canvas, under the chrome or on a country name.
+         ⚠ Another BAND in the way does not flip it: flipping round every collision would put MORE bands
+         in a dense cluster, which is the opposite of the request — that pin stays a dot. */
+      for (const it of vis) {
+        if (used + it.w * it.h > budget) break;
+        const right = { x: it.x + BAND.lead, y: it.y - it.h / 2, w: it.w, h: it.h };
+        const left = { x: it.x - BAND.lead - it.w, y: right.y, w: it.w, h: it.h };
+        for (const [side, r] of [['R', right], ['L', left]]) {
+          if (!inView(r)) continue;
+          if (hit(r)) break;
+          if (covered(r) || onName(r)) continue;
+          claimed.push(r); win.add(it.fid); sideOf.set(it.fid, side); used += r.w * r.h;
+          break;
+        }
+      }
+      /* `bnd` = a band is shown (either side — every reader of `bnd` keeps its meaning), `side` = which
+         layer draws it, `sel` = this pin's event is the one open in the detail */
+      for (const it of items) { try { GE.layers.setFeatureState({source:'news-points',id:it.fid}, { bnd: win.has(it.fid), side: sideOf.get(it.fid) || 'R', sel: it.sel === true }); } catch (_) { } }
     } catch (_) { }
   }
 

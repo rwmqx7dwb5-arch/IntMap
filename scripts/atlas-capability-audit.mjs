@@ -293,7 +293,7 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
      BOTH or the audit disagreed with itself. `MAP_OBS` is now derived from this table, so
      registering an observer once is registering it everywhere. */
   const OBSERVABLE = { camera: ['camera', 'map'], layer: ['map'], paint: ['map', 'object'], panel: ['panel', 'file'],
-      route: ['route', 'map', 'panel'], object: ['object', 'map'], setting: ['setting'], time: ['map', 'time'],
+      route: ['route', 'map', 'panel'], seaRoute: ['route', 'map'], object: ['object', 'map'], setting: ['setting'], time: ['map', 'time'],
       panelPaint: ['panel', 'map', 'object'],
       /* (ux-next) the "companySites" observer counts the features of the source js/company-footprint.js claims as
          'map.companySites' — an observation OF the map, asked of the renderer */

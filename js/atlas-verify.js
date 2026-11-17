@@ -220,7 +220,9 @@ export function makeAtlasVerify(HOST, CTX) {
        was true for one of them and a false accusation against the place for the other three. The
        reasons are the ones this pass can actually tell apart at the moment it gives up. 「unplaced」
        still lists every one of them, so nothing a caller could already read has changed shape. */
-    const _ATL_UNPLACED_REASONS=['not_found','budget','infra'];
+    /* (atlas-completion) …and 'not_drawn': the place WAS located, and the map does not hold its pin. Different again from the
+       other three — it is a fact about the drawing, not about the place or the lookup. */
+    const _ATL_UNPLACED_REASONS=['not_found','budget','infra','not_drawn'];
     function _atlMappingVerdict(spots){ const mapped=[],unplaced=[],ambiguous=[];
       const by={}; _ATL_UNPLACED_REASONS.forEach(r=>{ by[r]=[]; });
       (Array.isArray(spots)?spots:[]).forEach(s=>{ if(!s||!s.name) return;
@@ -238,7 +240,7 @@ export function makeAtlasVerify(HOST, CTX) {
          could not be resolved is still reported, exactly as before. A structured place, which the model
          named on purpose, is untouched by this. */
       else if(s.verdict==='ambiguous'){ if(s.src==='structured' || (/\s/.test(s.name)&&_atlPlaceNameLike(s.name))) ambiguous.push(s.name); }
-      else if(s.verdict==='unplaced'){ if(s.src==='structured' || (/\s/.test(s.name)&&_atlPlaceNameLike(s.name))){ unplaced.push(s.name);
+      else if(s.verdict==='unplaced'){ if(s.src==='structured' || s.reason==='not_drawn' || (/\s/.test(s.name)&&_atlPlaceNameLike(s.name))){ unplaced.push(s.name);   /* a place that was LOCATED is a place, whatever its shape — the «lone token» doubt is about names that resolved to nothing */
         by[_ATL_UNPLACED_REASONS.indexOf(s.reason)>=0?s.reason:'not_found'].push(s.name); } } });   /* text-source: only multi-word failures are surfaced (a lone capitalized word is likely not a place — don't cry wolf) */
       return { mapped, unplaced, ambiguous, unplacedBy: by }; }
     function _atlMappingNoteHtml(v, src, meta){ meta=meta||{}; let h='';
@@ -257,6 +259,7 @@ export function makeAtlasVerify(HOST, CTX) {
         return '<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;opacity:.85;">'+label+esc(names.slice(0,6).join(', '))+(names.length>6?'…':'')+'</div>'; };
       h+=_uline(_by.not_found,L('Named in the answer but not placed (couldn’t locate precisely): ','本文に登場したが未配置（正確に特定できませんでした）: ','Genannt, aber nicht verortet: ','Упомянуты, но не размещены: ','Mencionados pero sin ubicar: '));
       h+=_uline(_by.budget,L('Named in the answer but not placed (this answer reached its lookup limit — not a judgement about the place): ','本文に登場したが未配置（今回の照会上限に達したためで、その地点を特定できないという意味ではありません）: ','Genannt, aber nicht verortet (Abfragelimit dieser Antwort erreicht): ','Упомянуты, но не размещены (достигнут лимит запросов для этого ответа): ','Mencionados pero sin ubicar (esta respuesta alcanzó su límite de búsquedas): '));
+      h+=_uline(_by.not_drawn,L('Located but not drawn on the map: ','位置は特定しましたが地図に描画できませんでした: '));
       h+=_uline(_by.infra,L('Named in the answer but not placed (the map lookup did not answer — not a judgement about the place): ','本文に登場したが未配置（地図検索が応答しなかったためで、その地点を特定できないという意味ではありません）: ','Genannt, aber nicht verortet (Kartensuche antwortete nicht): ','Упомянуты, но не размещены (поиск по карте не ответил): ','Mencionados pero sin ubicar (la búsqueda en el mapa no respondió): '));
       if(meta.infraFail && !n) h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;opacity:.85;">'+L('Map lookup was unavailable — places could not be verified on the map right now.','地図検索が利用できず、地点を地図上で検証できませんでした。','Kartensuche nicht verfügbar.','Поиск по карте недоступен.','La búsqueda en el mapa no está disponible.')+'</div>';
       if(src && src.concentrated && !src.official.length) h+='<div style="font-size:10.5px;color:var(--warn-color,#c98a00);margin-top:4px;opacity:.95;">'+icon('warning')+' '+L(
@@ -401,13 +404,14 @@ export function makeAtlasVerify(HOST, CTX) {
         const seenCell=new Set(pre.map(p=>Math.round(p.lng*20)+','+Math.round(p.lat*20)));
         /* (#R397) «already on the map?» asked THREE ways, not one: exact name alone left a pin reading
            «14 km SSW of X» unrecognised against prose saying «X», so it was geocoded again. */
+        /* (atlas-completion) …and it answers WHERE: the pin that already stands for it, so the drawing check below can ask the map for that pin */
         const alreadyMapped=(it)=>{
           const key=_atlNorm(it.name);
-          if(key&&preKeys.has(key)) return true;
-          if(GEOBJ.placed(it)&&seenCell.has(Math.round(it.lng*20)+','+Math.round(it.lat*20))) return true;
+          if(key&&preKeys.has(key)) return pre.find(p=>_atlNorm(p.name)===key)||null;
+          if(GEOBJ.placed(it)&&seenCell.has(Math.round(it.lng*20)+','+Math.round(it.lat*20))) return {lng:it.lng,lat:it.lat};
           const n=GEOBJ.normName(it.name);
-          if(n.length>=3){ for(const p of pre){ const pn=GEOBJ.normName(p.name); if(pn.length>=3&&(pn.indexOf(n)>=0||n.indexOf(pn)>=0)) return true; } }
-          return false; };
+          if(n.length>=3){ for(const p of pre){ const pn=GEOBJ.normName(p.name); if(pn.length>=3&&(pn.indexOf(n)>=0||n.indexOf(pn)>=0)) return p; } }
+          return null; };
         const spots=[]; const newPins=[]; let infraFail=0;
         /* ⚠⚠⚠ (#R452) THIS LOOP AWAITS UP TO 24 NOMINATIM LOOKUPS ONE AFTER ANOTHER, and it runs
            immediately before the answer is drawn — so for as long as it took, the reader saw
@@ -417,7 +421,8 @@ export function makeAtlasVerify(HOST, CTX) {
            it runs out keeps the verdict this audit already has for it. */
         const pin0=Date.now();
         for(const it of struct.concat(textCands)){
-          if(alreadyMapped(it)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; }   /* already on the map from the plan — counts as mapped, not re-pinned */
+          const _was=alreadyMapped(it);
+          if(_was){ spots.push({name:it.name,verdict:'mapped',src:it.src,at:[+_was.lng,+_was.lat]}); continue; }   /* already on the map from the plan — not re-pinned; whether it IS on the map is asked below like every other pin */
           if(newPins.length>=14){ spots.push({name:it.name,verdict:'unplaced',reason:'budget',src:it.src}); continue; }   /* (#R545) the 14-pin cap is OUR limit, not a fact about this place */
           if((Date.now()-pin0)>=PINPASS_BUDGET_MS){ spots.push({name:it.name,verdict:'unplaced',reason:'budget',src:it.src}); continue; }   /* (#R545) …and so is the deadline */
           let g=null, ambiguous=false, infra=false;
@@ -449,12 +454,32 @@ export function makeAtlasVerify(HOST, CTX) {
           if(!g&&it.src==='structured'){ try{ const r=await geocode([it.name,_narrow].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; infra=true; } }
           if(!g){ const s=await _atlGeocodeStrict(it.name,it.src==='structured'?_narrow:''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous) ambiguous=true; else if(s.reason==='network'){ infraFail++; infra=true; } }
           if(ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; }
-          if(g){ const cell=Math.round(g.lng*20)+','+Math.round(g.lat*20); if(seenCell.has(cell)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; } seenCell.add(cell);
-            newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); if(ledger){ try{ ledger.record({kind:String(it.kind||''),name:String(it.name||''),canonicalName:g.name||String(it.name||''),countryName:String(it.country||''),lng:g.lng,lat:g.lat,summary:String(it.summary||''),source:'answer',provenance:(GEOBJ.pointLike(it)?it.provenance:(g.prov||'geocoded_point'))}); }catch(_){} }   /* (#R489) …and what it DID resolve is filed, so the next turn is handed an identifier instead of a string */ spots.push({name:it.name,verdict:'mapped',src:it.src}); }
+          if(g){ const cell=Math.round(g.lng*20)+','+Math.round(g.lat*20); if(seenCell.has(cell)){ spots.push({name:it.name,verdict:'mapped',src:it.src,at:[g.lng,g.lat]}); continue; } seenCell.add(cell);
+            newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); if(ledger){ try{ ledger.record({kind:String(it.kind||''),name:String(it.name||''),canonicalName:g.name||String(it.name||''),countryName:String(it.country||''),lng:g.lng,lat:g.lat,summary:String(it.summary||''),source:'answer',provenance:(GEOBJ.pointLike(it)?it.provenance:(g.prov||'geocoded_point'))}); }catch(_){} }   /* (#R489) …and what it DID resolve is filed, so the next turn is handed an identifier instead of a string */ spots.push({name:it.name,verdict:'mapped',src:it.src,at:[g.lng,g.lat],fresh:true}); }
           else spots.push({name:it.name,verdict:'unplaced',reason:(infra?'infra':'not_found'),src:it.src}); }
+        let painted=null;
         if(newPins.length){ const merged=pre.concat(newPins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})));
-          try{ setPois(merged); let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); ok=paintPois(); } }catch(_){}
+          try{ setPois(merged); let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); ok=paintPois(); } painted=!!ok; }catch(_){ painted=false; }
           if(pre.length===0){ try{ let a=180,b=90,c=-180,d=-90; newPins.forEach(p=>{a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat);}); if(isFinite(a)&&(c-a)<340){ if((c-a)<0.05&&(d-b)<0.05) GE().camera.flyTo({center:[a,b],zoom:ctx.zoom||6,duration:1000}); else GE().camera.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); } }catch(_){} } }
+        /* ══ (atlas-completion) LOCATED IS NOT DRAWN ══════════════════════════════════════════════════════════════
+           A spot used to become 「mapped」 the moment it had a coordinate, so when every paint failed the reply still said
+           「4 places mapped」 over an empty map. Now a spot counts as mapped only when its pin is on the map: the renderer is
+           asked for the points in the surfaces claimed under 'map.poi' (the effect key the POI painter claims its source
+           under — js/atlas-console.js), the same reading the verdicts and the object list make. When the renderer cannot be
+           asked, the painter's own answer is all there is: a paint that failed is 「not drawn」, one that succeeded stays
+           mapped — 「could not look」 is not reported as failure (.agents/rules/one-pass-or-a-reason.md §5). */
+        const cellOf=(p)=>Math.round(p[0]*20)+','+Math.round(p[1]*20);
+        const onMap=(function(){ let E=null; try{ E=GE(); }catch(_){ return null; }
+          if(!E||!E.render||typeof E.render.drawn!=='function') return null;
+          let r=null; try{ r=E.render.drawn({owners:['map.poi']}); }catch(_){ return null; }
+          if(!r||!r.observable||!Object.keys(r.surfaces||{}).length) return null;
+          const cells=new Set();
+          Object.keys(r.surfaces).forEach(id=>{ if(r.surfaces[id].state!=='drawn') return; let d=null; try{ d=E.layers.sourceData(id); }catch(_){ d=null; }
+            ((d&&d.features)||[]).forEach(f=>{ const c=f&&f.geometry&&f.geometry.type==='Point'&&f.geometry.coordinates; if(c&&isFinite(+c[0])&&isFinite(+c[1])) cells.add(cellOf([+c[0],+c[1]])); }); });
+          return cells; })();
+        spots.forEach(s=>{ if(s.verdict!=='mapped'||!s.at) return;
+          const drawn=onMap?onMap.has(cellOf(s.at)):!(s.fresh&&painted===false);
+          if(!drawn){ s.verdict='unplaced'; s.reason='not_drawn'; } });
         return _atlMappingNoteHtml(_atlMappingVerdict(spots), _atlAuditSources(ctx.citations||[]), {infraFail, hadNew:newPins.length>0});
       }catch(e){ try{ console.warn('reply-mapping audit failed',e); }catch(_){}   /* (#R150) NEVER an empty catch — record the cause + surface an honest note */
         return '<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;opacity:.85;">'+L('Could not run the map self-check for this answer.','この回答の地図セルフチェックを実行できませんでした。','Karten-Selbstprüfung nicht möglich.','Не удалось выполнить самопроверку карты.','No se pudo verificar el mapa.')+'</div>'; } };

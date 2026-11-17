@@ -168,6 +168,38 @@ export function makeAtlasAgent() {
       const out = Array.isArray(r.producedModes) ? r.producedModes : [];
       return (r.changedMap === true && out.indexOf('map') < 0) ? out.concat(['map']) : out;
     }
+    /* ── (atlas-completion) WHAT A FAILURE SAID ABOUT ITSELF, KEPT. The transport (js/ai-core.js) puts
+          the server's `code`, the HTTP `status` and whether the server called it `retryable` on the
+          Error it throws; the message alone flattened all three into one sentence, so a turn that
+          ended on a refusal and one that ended on a 503 read the same afterwards. Absent is null —
+          never a guess at what the transport would have said. */
+    function errorInfo(e) {
+      const o = (e && typeof e === 'object') ? e : {};
+      return { code: o.code != null ? String(o.code) : null, status: Number.isFinite(+o.status) && o.status != null ? +o.status : null,
+        retryable: typeof o.retryable === 'boolean' ? o.retryable : null, message: String((o.message) || (e ? String(e) : '') || 'model error') };
+    }
+    /* ── (atlas-completion) WHETHER THE TURN DELIVERED WHAT IT DECLARED. Two declarations, each held
+          against the machine's record of the same thing — never against the prose:
+          · `answer_mode` against `produced` — by the SAME rule the output gate uses (MODE_NEEDS read
+            with `some`, so "mixed" is met by a map OR a chart, as it always was); a declaration the
+            gate's bounces could not bring to life is listed rather than accepted as answered.
+          · the plan Atlas declared or moved THIS turn against each step's observed state
+            (js/atlas-plan.js stepState): a step is met only when it was observed completed, or was
+            current and needed no call (noop). Every other state is a step the turn did not deliver.
+          The list is the fact; `completion` is its one-word reading for a caller that wants one. */
+    function unmetOf(answerMode, produced, planSnap) {
+      const out = [];
+      const asked = MODE_NEEDS[answerMode] || null;
+      if (asked && !asked.some((m) => produced.indexOf(m) >= 0)) {
+        out.push({ kind: 'output', mode: answerMode, code: GATE_CODE[answerMode] || 'output_not_produced' });
+      }
+      if (planSnap && planSnap.thisTurn && Array.isArray(planSnap.steps)) {
+        planSnap.steps.forEach((st) => {
+          if (st && st.state !== 'completed' && st.state !== 'noop') out.push({ kind: 'step', n: st.n, title: st.title, state: st.state });
+        });
+      }
+      return out;
+    }
     /* ══ ⚠⚠⚠ (#R663) THE END OF A TURN WAS EXPRESSED BY OMISSION, AND THE ANSWER WAS WRITTEN FIRST ══
        Measured on the live site, logged in, with the request body read off the wire: 「東北沖でM9の
        地震が起きたときの津波の伝播をシミュレーションして見せて」 came back as ONE model call, ZERO tool
@@ -701,8 +733,12 @@ export function makeAtlasAgent() {
          abandoned — the turn stops WAITING for it — and what goes into the transcript is the same
          mechanical record every other outcome gets, so the next step is chosen by Atlas knowing what
          happened rather than by this loop deciding on its behalf. */
-      const runTool = (call) => {
-        const p = Promise.resolve().then(() => execute(call, turn));   /* (#R801) the turn's facts ride beside the call — see `turn` above */
+      const runTool = (call, planStep) => {
+        /* (#R801) the turn's facts ride beside the call — see `turn` above. (atlas-completion) …together with the
+           plan step this call is filed under (-1 when none), so the caller can name the goal it serves. A CHILD of
+           `turn`, not a copy: externalContentSeen changes while the turn runs, and is read live through the prototype. */
+        const facts = Object.assign(Object.create(turn), { planStep: (typeof planStep === 'number') ? planStep : -1 });
+        const p = Promise.resolve().then(() => execute(call, facts));
         if (!(lim.toolTimeoutMs > 0)) return p;
         let tm = null;
         const clock = new Promise((res) => { tm = setTimeout(() => res({ ok: false, error: 'tool_timeout',
@@ -741,7 +777,14 @@ export function makeAtlasAgent() {
           if (step === 0) { endPlan('error'); throw e; }
           stopped = 'transport';
           trace.transportError = (e && e.message) || 'model error';
+          trace.transportErrorInfo = errorInfo(e);   /* (atlas-completion) the code / status / retryable the message flattened */
           break;
+        }
+        /* (atlas-completion) A REPLY THE PROVIDER ITSELF CALLED INCOMPLETE (OpenAI `status:"incomplete"`,
+           ran past its output length, or a content filter cut it) is still read as a step — what it
+           holds is real — but it is not silently taken as finished: the trace says which step and why. */
+        if (reply && reply.finish && reply.finish.status === 'incomplete') {
+          (trace.incomplete = trace.incomplete || []).push({ step, reason: reply.finish.reason || null });
         }
 
         /* (#R801) event ② of `turn` above: the provider's own web search put a third party's page in front of the model */
@@ -1031,7 +1074,7 @@ export function makeAtlasAgent() {
           /* (atlas-plan-on-map) the step this call serves shows it running until its verdict arrives */
           if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed) }); } catch (_) { } }
           try {
-            out = await runTool(p.routed);   /* (#R452) …with a deadline. See `runTool` above. */
+            out = await runTool(p.routed, p.planStep);   /* (#R452) …with a deadline. See `runTool` above. */
           } catch (e) {
             out = { ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
           }
@@ -1275,8 +1318,16 @@ export function makeAtlasAgent() {
              empty-`text` path this is the same assignment it always was (「」 over 「」); on the new one
              there is something to lose, and losing it would trade a partial answer for silence. */
           if (last && typeof last.text === 'string' && last.text.trim()) text = last.text;
+          if (last && last.finish && last.finish.status === 'incomplete') {
+            (trace.incomplete = trace.incomplete || []).push({ step: lim.maxSteps, reason: last.finish.reason || null });
+          }
           trace.steps.push({ step: lim.maxSteps, final: true, forced: true });
-        } catch (_) { /* keep whatever we have; the caller degrades */ }
+        } catch (e) {
+          /* keep whatever we have; the caller degrades — (atlas-completion) and the failure is RECORDED,
+             not swallowed: without it a turn whose last hand-back failed and one that was never asked
+             for one are the same trace. */
+          trace.finalError = errorInfo(e);
+        }
       }
       /* (#R742) the provisional sentence, taken back when no answer was ever written over it — the
          turn that ended by asking the reader a question is the one this is for. */
@@ -1294,7 +1345,21 @@ export function makeAtlasAgent() {
          disagree after the bounces ran out, both are visible. */
       const produced = [];
       results.forEach((r) => producedBy(r).forEach((m) => { if (produced.indexOf(m) < 0) produced.push(m); }));
+      /* ⚠⚠ (atlas-completion) A DECLARED OUTPUT THAT NEVER APPEARED IS NOT «ANSWERED». MEASURED in this
+         loop with a model that declared answer_mode "map" three times and drew nothing:
+         {"modelCalls":3,"stopped":"answered","mapDrawn":false,"outputGate":2} — the gate's two bounces
+         ran out and the turn reported the same success as one that drew. The bounces are unchanged
+         (one-pass-or-a-reason §3: the ceiling is not the fix); what changes is what the turn SAYS when
+         they run out. Only 'answered' is renamed — every other stop already names what happened, and
+         the sentence Atlas wrote is returned as it stands. */
+      const outputUnmet = unmetOf(answerMode, produced, null).length > 0;
+      if (outputUnmet && stopped === 'answered') stopped = 'output_unmet';
       endPlan(stopped);
+      /* …and the plan, read AFTER endTurn has settled what was still in flight (unobserved / stopped) */
+      let planSnap = null;
+      if (PLAN) { try { planSnap = PLAN.snapshot(); } catch (_) { planSnap = null; } }
+      const unmet = unmetOf(answerMode, produced, planSnap);
+      const completion = !String(text || '').trim() ? 'none' : (unmet.length ? 'partial' : 'complete');
       /* (growth-loop) THE KIND OF ANSWER, ANNOUNCED — the one line this loop says to the outside. When the
          turn hands the reader an answer (Atlas finished, or a ceiling closed it after the answer was
          written — CUT_STOPS; not a cancelled turn, a transport failure, a question back to the reader or an
@@ -1304,7 +1369,7 @@ export function makeAtlasAgent() {
          or the answer travels. ⚠ A broadcast, not a dependency: `opts.os` injects the bus (the node checks);
          otherwise the page's one bus, IntMapOS, if it exists — absent (node, a test) it is simply not said,
          and nothing about the turn depends on it either way. */
-      if (String(text || '').trim() && (stopped === 'answered' || CUT_STOPS[stopped]) && ANSWER_MODES.indexOf(answerMode) >= 0) {
+      if (String(text || '').trim() && (stopped === 'answered' || stopped === 'output_unmet' || CUT_STOPS[stopped]) && ANSWER_MODES.indexOf(answerMode) >= 0) {   /* (atlas-completion) 'output_unmet' is a turn that answered with what it had — counted as before */
         try {
           const bus = (opts.os !== undefined) ? opts.os : (typeof globalThis !== 'undefined' ? globalThis.IntMapOS : null);
           if (bus && typeof bus.emit === 'function') bus.emit({ kernel: 'atlas', phase: 'answered', answerMode });
@@ -1312,7 +1377,8 @@ export function makeAtlasAgent() {
       }
       return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode,
         produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen,
-        plan: PLAN ? PLAN.snapshot() : undefined };
+        unmet, completion, outputIncomplete: !!(trace.incomplete && trace.incomplete.length),
+        plan: PLAN ? planSnap : undefined };
     }
 
     /**
@@ -1368,7 +1434,15 @@ export function makeAtlasAgent() {
         turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '', webUsed,
         items: native && native.length ? native : undefined,
         /* (atlas-native-tools) what the proxy's own fence cut from THIS input, reported rather than done in silence */
-        serverTrim: (meta && meta.inputTrimmed) || undefined };
+        serverTrim: (meta && meta.inputTrimmed) || undefined,
+        /* (atlas-completion) HOW THE PROVIDER SAID THIS REPLY ENDED. ai-proxy carries OpenAI's
+           `status:"incomplete"` and `incomplete_details.reason` as meta.status / meta.incompleteReason,
+           and other providers' stop reason as meta.finishReason. A reply is incomplete only when the
+           proxy SAID so — no provider's stop words are interpreted here; the reason is carried verbatim. */
+        finish: {
+          status: (meta && (meta.status === 'incomplete' || meta.incompleteReason)) ? 'incomplete' : 'complete',
+          reason: (meta && (meta.incompleteReason || meta.finishReason)) ? String(meta.incompleteReason || meta.finishReason) : null,
+        } };
     }
 
     const API = { LIMITS, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL, conflicts, keysOverlap,

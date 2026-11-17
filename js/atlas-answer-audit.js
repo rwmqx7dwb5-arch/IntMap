@@ -35,7 +35,7 @@ import { makeAtlasAnswerContract } from './atlas-answer-contract.js';
 
 export function makeAtlasAnswerAudit() {
   return (function () {
-  const { numericTokens, unitClass, renderedTexts, referencedClaimIds, claimById } = makeAtlasAnswerContract();
+  const { numericTokens, unitClass, renderedTexts, referencedClaimIds, claimById, metricObligations } = makeAtlasAnswerContract();
 
   const AUDIT_CODES = {
     /* structure */
@@ -286,8 +286,8 @@ export function makeAtlasAnswerAudit() {
   function auditAnswer(env, registry, ctx) {
     ctx = ctx || {};
     const out = [];
-    const push = (code, detail, claimId) => {
-      const severity = AUDIT_CODES[code] || 'error';
+    const push = (code, detail, claimId, sev) => {
+      const severity = sev || AUDIT_CODES[code] || 'error';
       out.push({ code, severity, detail: String(detail || ''), claimId: claimId || '' });
     };
     if (!env || !env.answer) { push('schema.empty_direct_answer', 'no envelope'); return verdict(out); }
@@ -368,11 +368,16 @@ export function makeAtlasAnswerAudit() {
       /* ─ the metric block a figure obliges the claim to carry ─ */
       const m = c.metric;
       if (!m) { push('metric.missing', c.id, c.id); return; }
-      if (!m.seriesId) push('metric.missing_series_id', c.id, c.id);
-      if (!m.period) push('metric.missing_period', c.id, c.id);
-      if (!m.unit) push('metric.missing_unit', c.id, c.id);
-      if (!m.basis) push('metric.missing_basis', c.id, c.id);
-      if (!m.geography) push('metric.missing_geography', c.id, c.id);
+      /* ⚠ (atlas-completion) WHICH FIELDS A FIGURE OWES IS THE CONTRACT'S, FROM THE KIND THE ANSWER DECLARED. This used to demand a
+         statistical seriesId of every number, so a fare, a travel time or an observation date read off a page this turn fetched — no
+         statistical series exists for it — failed the audit by construction. A figure that declares no kind is held to the strict set. */
+      const ob = metricObligations(m);
+      const sev = (f) => (ob.errors.indexOf(f) >= 0 ? 'error' : ob.warnings.indexOf(f) >= 0 ? 'warning' : '');
+      if (!m.seriesId && sev('seriesId')) push('metric.missing_series_id', c.id, c.id, sev('seriesId'));
+      if (!m.period && sev('period')) push('metric.missing_period', c.id, c.id, sev('period'));
+      if (!m.unit && sev('unit')) push('metric.missing_unit', c.id, c.id, sev('unit'));
+      if (!m.basis && sev('basis')) push('metric.missing_basis', c.id, c.id, sev('basis'));
+      if (!m.geography && sev('geography')) push('metric.missing_geography', c.id, c.id, sev('geography'));
 
       const declared = unitClass(m.unit);
       /* ⚠ A GROWTH CONTRIBUTION IS MEASURED IN PERCENTAGE POINTS AND A SHARE IS NOT. This is the one

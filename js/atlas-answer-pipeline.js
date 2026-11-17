@@ -83,6 +83,9 @@ export function makeAtlasAnswerPipeline() {
    *   webMode           'off' | 'auto' | 'required'
    *   clientSources     the srcSink IntMap gathered  [{url,title,src,date,dateType,origin}]
    *   appFacts          measured values IntMap holds [{title,publisher,validTime,supportFacts:[…]}]
+   *   webSources        web pages already RETRIEVED earlier in this turn [{url,title,publisher?,retrievedAt}]
+   *                     (atlas-completion) — registered before the call, each with its own retrieval time,
+   *                     so the model is shown an id for every page that was actually fetched
    *   retrievedAt       ISO stamp for this turn
    *   ask(prompt, system, opts) -> {data?, text, meta, citations, callId}
    *   parseJSON(text)   -> object | null
@@ -92,6 +95,19 @@ export function makeAtlasAnswerPipeline() {
     const callId = newCallId('ans');
     const registry = makeEvidenceRegistry({ callId, turnId: opts.turnId || '', retrievedAt: opts.retrievedAt || '' });
     registry.addClientSources(opts.clientSources || []);
+    /* ⚠ (atlas-completion) A PAGE THAT WAS FETCHED HAS AN ID BEFORE THE MODEL IS ASKED. The prompt below
+       still says «a page your web search opens has no id here yet» — true of a page opened DURING this
+       call, and only of that one. A page an earlier call of the same turn retrieved (its hosted search's
+       citations, carried by the caller) is a document IntMap holds, with an address and a retrieval
+       time, and it used to have no id in the next call either — so a fare or a timetable read off it
+       could only be written as an unsupported sentence. It enters as a record IntMap holds
+       (client_source: retrieved, not «web-verified by this call» — that label stays the provider's,
+       js/atlas-evidence.js addProviderCitations) with the time it was actually retrieved. */
+    (Array.isArray(opts.webSources) ? opts.webSources : []).forEach((w) => {
+      if (!w || !w.url) return;
+      registry.add({ origin: 'client_source', sourceType: 'secondary', originalUrl: String(w.url), title: String(w.title || ''),
+        publisher: String(w.publisher || ''), label: String(w.label || ''), retrievedAt: String(w.retrievedAt || opts.retrievedAt || ''), dateType: 'retrieval_time' });
+    });
     (opts.appFacts || []).forEach((f) => registry.addAppData(f));
     /* ⚠ (#732) `dataBlock` MAY BE A LIST OF PARTS. A string part is prompt text as before; a part
        `{tag, label, text}` is one DATA block IntMap gathered, and it enters the registry as a record
@@ -147,6 +163,18 @@ export function makeAtlasAnswerPipeline() {
     });
     ctx.webUsed = !!(first && first.meta && first.meta.webUsed);
     registry.addProviderCitations((first && first.citations) || [], { callId: (first && first.callId) || callId, webUsed: ctx.webUsed });
+    /* (atlas-completion) WHAT THE SEARCH DID, AS ai-proxy REPORTED IT — not_run / failed / empty / ok with its
+       reason (supabase/functions/ai-proxy/provider-call.ts webOutcome). null when the server said nothing:
+       an unreported outcome is not a failed one, and the caller words the two differently. */
+    const fm = (first && first.meta && typeof first.meta === 'object') ? first.meta : null;
+    const web = (fm && fm.web && typeof fm.web === 'object' && typeof fm.web.state === 'string')
+      ? { state: String(fm.web.state), reason: fm.web.reason == null ? null : String(fm.web.reason),
+        searches: +fm.web.searches || 0, sources: (typeof fm.web.sources === 'number') ? fm.web.sources : null }
+      : null;
+    /* …and whether the answer ENDED (ai-proxy meta.status / incompleteReason): a cut answer is still audited
+       and rendered, and the caller says it was cut instead of presenting it as whole */
+    const finish = { status: (fm && fm.status === 'incomplete') ? 'incomplete' : (fm && fm.status === 'complete') ? 'complete' : null,
+      reason: (fm && fm.incompleteReason) ? String(fm.incompleteReason) : null };
 
     /* ⚠ `data` FIRST. The transport is askAIJSONEnvelope, which has already parsed this call's
        JSON; parsing `text` a second time would be a second chance to disagree with it. */
@@ -163,7 +191,12 @@ export function makeAtlasAnswerPipeline() {
     env.audit = { status: audit.errors.length ? 'findings' : 'passed', errors: audit.errors, warnings: audit.warnings };
     trace.status = env.audit.status;
     trace.evidence = registry.size();
-    return { env, registry, audit, trace, webUsed: ctx.webUsed };
+    /* (atlas-completion) every document with an address the registry holds after the call — what was fetched,
+       by IntMap or by this call's search, with its id and retrieval time — so the caller can hand it to Atlas
+       and to the next call of the turn (opts.webSources) instead of it being forgotten with this registry */
+    const retrieved = registry.all().filter((r) => r.finalUrl).map((r) => ({
+      id: r.id, url: r.finalUrl, title: r.title, publisher: r.publisher, origin: r.origin, retrievedAt: r.retrievedAt }));
+    return { env, registry, audit, trace, webUsed: ctx.webUsed, web, finish, retrieved };
   }
 
   /**

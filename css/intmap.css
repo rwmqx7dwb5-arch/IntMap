@@ -273,6 +273,10 @@
     }
     .header-actions > button{ margin-right:0 !important; }
     .title-group{ display:flex; align-items:center; gap:12px; min-width:0; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
+    /* the wordmark is the picture of the name (brand/intmap-wordmark.png, cut from the master artwork; outside the statically copied img/ so the build ships it once, hashed): its CAP height is drawn at the
+       cap height the 22px h2 text had (cap ≈ 0.70em = 15.4px; the image is 357 px tall with a 277 px cap, so 15.4·357/277 ≈ 20px).
+       Re-derive if the h2 size changes or the artwork is re-cut. */
+    h2.im-wordmark{ display:flex; align-items:center; line-height:1; min-height:27px; } h2.im-wordmark img{ display:block; height:20px; width:auto; }
     .btn-settings{ flex-shrink:0; }
     /* (#R11) Header EN/JP toggle removed — language is changed from Settings only. */
     .btn-settings{ background:var(--input-bg); border:none; color:var(--text-main); padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; border-radius:var(--r-control); transition:0.2s; }
@@ -386,6 +390,10 @@
     [data-theme="dark"] .loc-chip{ box-shadow:0 1px 4px rgba(0,0,0,0.4); }
     .btn-bookmark{ position:absolute; top:9px; right:14px; background:none; border:none; font-size:17px; line-height:1; color:var(--text-muted); cursor:pointer; transition:0.2s; padding:0; }
     .btn-bookmark:hover{ transform:scale(1.2); } .btn-bookmark.active{ color:#ffcc00; text-shadow:0 0 8px rgba(255,204,0,0.5); }
+    /* (news-map-legibility) 「見出しを主役に」— an UNSAVED star is an affordance, not news: it recedes to the meta
+       colour at half strength and comes back on hover / keyboard focus. A saved star keeps its colour. */
+    .news-item .btn-bookmark:not(.active){ color:var(--text-meta); opacity:0.5; }
+    .news-item:hover .btn-bookmark:not(.active), .news-item .btn-bookmark:focus-visible{ opacity:1; }
     .dash-nav{ display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; padding-bottom:8px; flex-shrink:0; position:sticky; top:0; background:var(--sidebar-bg); z-index:calc(var(--z-inset) + 5); }
     .dash-nav::-webkit-scrollbar{ height:0; }
     .dash-nav-btn{ white-space:nowrap; background:var(--input-bg); border:1px solid transparent; padding:8px 12px; border-radius:10px; font-size:12px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:0.2s; }
@@ -556,7 +564,10 @@
        a slimmer bar (group padding 2px 4px) and the same 4px gap. */
     /* (#R123) the LAST remaining difference was the vertical gap BETWEEN the stacked bars — normal mode was 8px
        while workspace mode uses 4px (see the body.ws-mode override). Match it so the bar spacing is identical. */
-    .map-controls-top{ position:absolute; top:10px; right:10px; z-index:var(--z-controls); display:flex; flex-direction:column; gap:4px; align-items:flex-end; pointer-events:none; }
+    /* (ui-feedback-nov17) 「画面上部の地名検索バーや右上のボタン類はより上、右上に寄せて。ただし余白は確保」 — 10px → var(--chrome-edge) (6px),
+       the two stacked bars 4px → 3px apart. One token for the search pill and this cluster so they stay on one line. */
+    :root{ --chrome-edge:6px; }
+    .map-controls-top{ position:absolute; top:var(--chrome-edge); right:var(--chrome-edge); z-index:var(--z-controls); display:flex; flex-direction:column; gap:3px; align-items:flex-end; pointer-events:none; }
     .map-controls-top > *, .map-controls-top .layer-dropdown{ pointer-events:auto; }
     /* (#R480) 「Map/SatelliteとFlat/Globe/3Dを同じ行にまとめて。」 — .map-controls-top is a COLUMN, so two
        pills can only share a line by sharing a parent. This wrapper is that parent and nothing else: no
@@ -640,8 +651,10 @@
     .share-dropdown{ left:auto; right:0; }   /* (#R151) share sits near the right edge → anchor the dropdown right so it never overflows the viewport */
     /* (tools-out-of-layers) 「Tools ▾」 is a panel of four sections now (js/map-ui.js `mountTools`), so it is anchored right like
        Share, as wide as the Layers panel's cards, and scrolls inside itself rather than running off the bottom of the window. */
-    #measure-dropdown{ left:auto; right:0; width:min(340px, calc(100vw - 24px)); max-height:calc(100vh - 120px); overflow-y:auto; overscroll-behavior:contain; padding:8px; }
-    .measure-menu-container.open .measure-dropdown, .share-menu-container.open .share-dropdown{ display:flex; }
+    #measure-dropdown{ left:auto; right:0; width:min(300px, calc(100vw - 24px)); max-height:calc(100vh - 120px); overflow-y:auto; overscroll-behavior:contain; padding:8px; }
+    .measure-menu-container.open .measure-dropdown, .share-menu-container.open .share-dropdown, .more-tools-container.open .measure-dropdown{ display:flex; }
+    .more-tools-container{ position:relative; display:inline-block; }
+    #more-tools-dropdown{ left:auto; right:0; width:min(340px, calc(100vw - 24px)); max-height:calc(100vh - 120px); overflow-y:auto; overscroll-behavior:contain; padding:8px; }
     .measure-dropdown .view-btn, .share-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
     .caret-sm{ font-size:9px; opacity:0.7; }
     /* (#R15d) Use the shared glass border so the Layers dropdown matches every other frosted surface. */
@@ -1618,6 +1631,14 @@
     /* Compact news card: publisher + a small Read pill share one row (saves vertical space) */
     .news-item .news-head{ display:flex; justify-content:space-between; align-items:center; padding-right:20px; gap:8px; }
     .news-item .loc-chip{ font-size:var(--fs-meta); }   /* (news-type-polish) place / time / outlet share the 12 px meta size */
+    /* (news-map-legibility) 「見出しの周囲の装飾で視線が分散する」— on the CARD the place is a tinted label, not a
+       filled accent pill: the accent's tint behind the accent's text (the same pair .ev-badge.first uses), so the
+       headline is the strongest thing in the card. The publisher / unlocated variants keep their own hue — the
+       colour of their pin on the map (js/news-ui.js news-dots) — as a tint. Light and dark both read the theme's
+       --primary-tint / --text-main, so neither theme needs its own rule. */
+    .news-item .loc-chip{ background:var(--primary-tint); color:var(--primary-on-tint); box-shadow:none; padding:2px 8px; }
+    .news-item .loc-chip.publisher{ background:color-mix(in srgb, #5856d6 14%, transparent); color:color-mix(in srgb, #5856d6 75%, var(--text-main)); }
+    .news-item .loc-chip.unmapped{ background:color-mix(in srgb, #9b59b6 14%, transparent); color:color-mix(in srgb, #9b59b6 75%, var(--text-main)); }
     .news-item .news-date{ color:var(--text-meta); font-size:var(--fs-meta); font-weight:400; white-space:nowrap; }
     .news-item .news-title{ font-weight:700; line-height:1.35; margin-top:5px; font-size:var(--fs-head); color:var(--text-main); }
     .news-item .news-origlang{ font-size:11px; color:var(--text-muted); font-weight:500; margin-top:4px; }
@@ -1691,8 +1712,13 @@
     [data-theme="dark"] .ev-badge.upd{ background:rgba(52,199,89,0.2); color:#5fd67f; }
     .ev-badge.first{ background:var(--primary-tint); color:var(--primary-on-tint); }
     .ev-badge.dup{ background:rgba(128,128,128,0.16); color:var(--text-muted); }
-    .news-item .ev-sources{ flex:0 0 auto; background:var(--input-bg); border:none; color:var(--text-main); font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:var(--r-inner); white-space:nowrap; transition:0.15s; }
-    .news-item .ev-sources:hover{ background:var(--primary-fill); color:#fff; }
+    /* (news-map-legibility) on the card the follow-up mark is a word in the meta row, not a filled pill: its
+       theme colour (the two rules above) stays, the fill goes. The detail's badges are unchanged. */
+    .news-item .ev-badge.upd{ background:none; padding:0; font-size:var(--fs-meta); font-weight:600; }
+    /* (news-map-legibility) the details button (with its outlet count) is outlined in the secondary text
+       colour rather than a filled chip in the headline colour; hover still fills it with the accent. */
+    .news-item .ev-sources{ flex:0 0 auto; background:transparent; border:1px solid color-mix(in srgb, var(--text-main) 16%, transparent); color:var(--text-sub); font-size:11.5px; font-weight:500; cursor:pointer; padding:4px 11px; border-radius:var(--r-inner); white-space:nowrap; transition:0.15s; }
+    .news-item .ev-sources:hover{ background:var(--primary-fill); border-color:var(--primary-fill); color:#fff; }
 
     /* ── 出来事の詳細（`.news-reader-pane` の中） ── */
     .ev-detail{ padding-bottom:24px; }
@@ -1775,7 +1801,7 @@
     /* (#R104) in-map search bar unified with the Atlas input pill (rounding / hairline border / focus ring); keeps its floating frosted material so it stays legible over the map. Size & wording unchanged. */
     /* (#R170) 24px → 10px ("地名検索バーの位置をもう少し上に") — now flush with the top of .map-controls-top
        (also top:10px) on the right, so the two float on one visual row instead of the pill sitting lower. */
-    .map-search{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:var(--z-controls); display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:var(--r-control); padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
+    .map-search{ position:absolute; top:var(--chrome-edge); left:50%; transform:translateX(-50%); z-index:var(--z-controls); display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:var(--r-control); padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
     .map-search:focus-within{ border-color:var(--focus-ring); box-shadow:0 0 0 1px var(--focus-ring), 0 0 0 4px rgba(10,132,255,0.18); }   /* (ui-a11y-polish) the same 2 px edge as .search-bar */
     /* Place-search pin + popup card */
     .search-pin{ width:30px; height:38px; position:relative; cursor:pointer; }
@@ -1895,7 +1921,7 @@
     body.sidebar-translucent #atlas-panel .atl-in, body.sidebar-glass2 #atlas-panel .atl-in{
       background:rgba(140,140,150,0.16); border:1px solid var(--glass-border,rgba(255,255,255,0.18));
       -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); box-shadow:none; }
-    body.sidebar-translucent #atlas-panel .atl-in:focus, body.sidebar-glass2 #atlas-panel .atl-in:focus{ border-color:var(--primary-color); }
+    /* no :focus look in the frosted modes either — the Atlas field does not light up on focus in any sidebar mode */
     /* (#R41) AI follow-up bar polish (applies in ALL sidebar modes + the place-popup AI). The sticky input
        strip painted a HARD --popup-bg RECTANGLE behind the pill + send button ("入力欄と送信ボタンの後ろに
        長方形の背景が見えてダサい") — fade it to transparent upward so it still masks the scrolling chat at the
@@ -1955,8 +1981,8 @@
       /* THE TOP ROW — one grid, so the pill and the stack cannot overlap: the stack's column never goes below its content.
          CENTRED: where the pill fits beside the stack it stands on the middle of the map, 398 px (its 380 px field + its own
          padding and border — the box it has always been, content-box 380). */
-      .map-frame{ --mft-lane:26px [lane-start] minmax(0,1fr) [pill-start] minmax(0,380px) [pill-end] minmax(0,1fr) [lane-end] 14px [stack-start] max-content; }
-      .map-frame-top{ display:grid; padding:10px; row-gap:4px; align-items:start; pointer-events:none;
+      .map-frame{ --mft-lane:calc(36px - var(--chrome-edge)) [lane-start] minmax(0,1fr) [pill-start] minmax(0,380px) [pill-end] minmax(0,1fr) [lane-end] 14px [stack-start] max-content; }
+      .map-frame-top{ display:grid; padding:var(--chrome-edge); row-gap:4px; align-items:start; pointer-events:none;
         grid-template-columns:[lane-start] minmax(0,1fr) [pill-start] minmax(0,398px) [pill-end stack-start] minmax(max-content,1fr) [lane-end];
         column-gap:12px; }
       .map-frame-top > .map-search{ grid-column:pill-start / pill-end; grid-row:1; position:relative; top:auto; left:auto; transform:none;
@@ -1987,12 +2013,12 @@
     @media(min-width:769px){
       body.lsr-open:not(.ws-mode) .map-frame-top{
         grid-template-columns:var(--mft-lane); column-gap:0; }
-      body.lsr-open:not(.ws-mode) .map-frame-top > .map-search{ margin-top:4px; }
+      body.lsr-open:not(.ws-mode) .map-frame-top > .map-search{ margin-top:calc(14px - var(--chrome-edge)); }
     }
     @container map-frame (max-width:1083px){
       .map-frame-top{
         grid-template-columns:var(--mft-lane); column-gap:0; }
-      .map-frame-top > .map-search{ margin-top:4px; }
+      .map-frame-top > .map-search{ margin-top:calc(14px - var(--chrome-edge)); }
     }
     /* ── COMPACT — below 560 px the lane is too short for a field (the 319 px stack + the lane's 40 px of margins + 20 px
        of edge leave < 200 px): the search becomes its button, the two view pills fold into one menu, the tool triggers drop
@@ -2069,7 +2095,10 @@
     @media(min-width:769px){
       body:not(.sidebar-translucent):not(.sidebar-glass2) .sidebar{ background-color:var(--panel-bg,var(--glass-fill)); }
     }
-    [data-theme="dark"] body:not(.sidebar-translucent):not(.sidebar-glass2) .news-item,
+    /* (news-map-legibility) 「灰色の箱が連続する印象」— the news list is a column of many cards, so in dark its tile
+       sits HALFWAY between the panel and the other tiles below (#2a2a2e): still raised off --panel-bg, no longer a
+       stack of grey boxes. The light theme's white tile on #e9ebef does not read as grey and is unchanged. */
+    [data-theme="dark"] body:not(.sidebar-translucent):not(.sidebar-glass2) .news-item{ background:color-mix(in srgb, #2a2a2e 50%, var(--panel-bg)); }
     [data-theme="dark"] body:not(.sidebar-translucent):not(.sidebar-glass2) .wiki-card,
     [data-theme="dark"] body:not(.sidebar-translucent):not(.sidebar-glass2) .comm-post,
     [data-theme="dark"] body:not(.sidebar-translucent):not(.sidebar-glass2) .stat-row{ background:#2a2a2e; }
@@ -2112,6 +2141,16 @@
     .scb-actions button.primary{ background:var(--primary-fill); color:#fff; }
     .scb-actions button:hover{ filter:brightness(1.08); }
     .stat-row.compare-on{ outline:2px solid var(--primary-color); outline-offset:-2px; background:rgba(0,122,255,0.05); }
+    /* (countries-companies) A ROW SAYS WHAT ITS TWO GESTURES DO. A click adds the row to the comparison — the round mark
+       fills when it is in it — and the details are a visible button, no longer only a double-click to be discovered.
+       Shared by the Countries rows (.stat-row) and the Companies rows (.co-row is also a .stat-row). */
+    .stat-pick{ flex:0 0 auto; width:16px; height:16px; border-radius:50%; border:1.5px solid rgba(128,128,128,0.45); box-sizing:border-box; transition:background .15s,border-color .15s; }
+    .stat-row.compare-on .stat-pick{ background:var(--primary-fill,var(--primary-color)); border-color:var(--primary-fill,var(--primary-color)); box-shadow:inset 0 0 0 3px var(--card-bg); }
+    [data-theme="dark"] .stat-row.compare-on .stat-pick{ box-shadow:inset 0 0 0 3px #2a2a2e; }
+    .stat-detail{ flex:0 0 auto; border:none; background:transparent; color:var(--primary-color); font-size:12px; font-weight:600; padding:6px 2px 6px 6px; cursor:pointer; white-space:nowrap; border-radius:8px; }
+    .stat-detail:hover{ text-decoration:underline; }
+    .stat-detail:focus-visible{ outline:2px solid var(--primary-color); outline-offset:1px; }
+    .stats-rankbase{ font-size:11px; color:var(--text-muted); margin:2px 4px 6px; }
 
     .compare-panel{ display:flex; flex-direction:column; gap:14px; padding:6px 0; }
     .cmp-section{ background:var(--card-bg); border:1px solid rgba(128,128,128,0.1); border-radius:14px; padding:14px 16px; }
@@ -6029,3 +6068,9 @@ body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
 .cop-news-m{ font-size:12px; color:var(--text-muted); }
 .cop-news-why{ font-size:12px; color:var(--text-muted); font-style:italic; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .cop-news-src{ font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.45; }
+    /* (countries-companies) the Companies search's second group: profiles that are not market-data rows */
+    .co-more-h{ font-size:11px; font-weight:700; color:var(--text-muted); letter-spacing:.02em; margin:12px 4px 6px; }
+    /* (countries-companies) the country card's links into the company atlas — quiet text links under the action row */
+    .cp-links{ display:flex; flex-wrap:wrap; gap:4px 14px; margin:-4px 0 12px; }
+    .cp-links button{ border:none; background:transparent; padding:2px 0; color:var(--primary-color); font-size:12.5px; font-weight:600; cursor:pointer; }
+    .cp-links button:hover{ text-decoration:underline; }

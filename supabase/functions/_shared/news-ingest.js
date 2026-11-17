@@ -601,8 +601,8 @@ export function categorise(members) {
 
 export const INDEX = {
   /* 投稿リストに載せる語の上限 df。窓の 4% を超える語は「珍しくない」。 */
-  maxDfRatio: 0.04,
-  maxDfAbs: 40,
+  maxDfRatio: DEFAULTS.commonDf.ratio,     /* 正本は news-cluster.js DEFAULTS.commonDf */
+  maxDfAbs: DEFAULTS.commonDf.abs,
   /* 1 記事あたりが見る候補 Event の上限（IDF 質量の大きい順）。 */
   maxCandidates: 12,
   /* 1 Event あたり照合するメンバーの上限（新しい順）。 */
@@ -614,7 +614,7 @@ export const INDEX = {
  * windowArticles: [{ id, title, title_fingerprint, published_at, subject_*, source_family, event_id }]
  */
 export function buildCandidateIndex(windowArticles, opt = INDEX) {
-  const arts = windowArticles.map((a) => ({ ...a, _tk: tokenise(a.title) }));
+  const arts = windowArticles.map((a) => ({ ...a, _tk: tokenise(a.title, a.publisher) }));
   const I = buildIdf(arts);
   const df = new Map();
   for (const a of arts) for (const t of a._tk) df.set(t, (df.get(t) || 0) + 1);
@@ -991,7 +991,70 @@ export function placeArticle(article, index, store, newEventId, opt = DEFAULTS, 
 /* 具体性の順。newsgeo の KIND_LOCAL と同じ並び（あちらは同点の解決、こちらは代表の選択）。 */
 const KIND_RANK = { seat: 6, flashpoint: 5, city: 4, feature: 3, admin1: 2, country: 1, org: 1 };
 
-export function summariseEvent(members, idf) {
+/* 地点名 → 国コード。決定論エンジン（_shared/newsgeo.js）が読み込まれていればそれに訊く。
+   ⚠ 分からない名前は null——「同じ国だ」とも「違う国だ」とも言わない。 */
+function defaultCcOf(name) {
+  const G = globalThis.IntMapNewsGeo;
+  if (!G || !name) return null;
+  try { const r = G.locate(String(name)); return (r && r.iso2) || null; } catch (_) { return null; }
+}
+
+/**
+ * 出来事の代表地点を選ぶ。
+ * ⚠⚠ **細かさより、出来事との関係（何本がそこを指したか）が先。** 以前は
+ *   「具体性 × 10 ＋ 支持（上限 9）」で、具体性が支持を必ず上回った。実測 (2026-11-17・本番):
+ *     · 007 の Robert Pattinson 起用 13 本——英国（国）を 5 本が指し、説明文の
+ *       「Amazon MGM Studios announced」を拾った 1 本だけがアマゾン川流域（地形）を指した。
+ *       地形 3×10 が国 1×10＋5 に勝ち、代表地点は南米になった。
+ *     · 深センでの米中露会談 5 本——中国（国）3 本と北京 1 本に対し、「White House says」の
+ *       発話者を拾った 1 本の `seat`（6×10）が勝ち、代表地点はホワイトハウスになった。
+ *   どちらも「1 本だけの、他の誰も指さない細かい地点」が「多数が指す粗い地点」に勝つ形。
+ * ⇒ 選び方（2 段）:
+ *   ① **舞台（国）を決める。** 地点を国ごとにまとめ、その国を指した記事の本数が最も多い国。
+ *      国の分からない地点はそれだけで 1 つの舞台。同数なら**見出しがその舞台の地点を名指した本数**
+ *      （地点解析が当事者の本拠から推し量った地点より、記事が書いた地点）、それも同数なら具体性。
+ *      実測: 「US moves to curb China's remote access to Nvidia's AI chips」6 本は 米国 3（うち
+ *      Santa Clara＝Nvidia 本社 2）対 中国 3 で、見出しが名指すのは中国だけだった。
+ *   ② **その舞台の中で、記事の半分以上が指している最も細かい地点。**
+ *      細かい地点を 1 本しか言っていないなら、その出来事について分かっている精度は国である
+ *      ——地図が表す精度を、情報の精度に合わせる。満たす地点が無ければ支持の最も多い地点。
+ *   ⚠ 全員が同じ都市を指す出来事（キーウの橋 6 本）は従来どおりその都市になる。 */
+function placeNamedIn(name, title) {
+  const p = tokenise(String(name || '').split(',')[0]);
+  if (!p.size) return false;
+  const t = tokenise(title);
+  for (const w of p) if (t.has(w)) return true;
+  return false;
+}
+
+export function pickEventPlace(list, ccOf = defaultCcOf) {
+  if (!list || !list.length) return null;
+  const old = (p) => (KIND_RANK[p.kind] || 0) * 10 + Math.min(9, p.n) + p.conf;
+  const theatres = new Map();
+  for (const p of list) {
+    const cc = (typeof ccOf === 'function' && ccOf(p.name)) || null;
+    const key = cc ? 'cc:' + cc : 'p:' + (p.name || '') + '|' + p.lng + ',' + p.lat;
+    const t = theatres.get(key) || { places: [], n: 0, named: 0, best: -1 };
+    t.places.push(p); t.n += p.n; t.named += p.named || 0; t.best = Math.max(t.best, old(p));
+    theatres.set(key, t);
+  }
+  let theatre = null;
+  for (const t of theatres.values()) {
+    if (!theatre || t.n > theatre.n
+        || (t.n === theatre.n && (t.named > theatre.named || (t.named === theatre.named && t.best > theatre.best)))) theatre = t;
+  }
+  const half = Math.ceil(theatre.n / 2);
+  let pick = null;
+  for (const p of theatre.places) {
+    if (p.n < half) continue;
+    if (!pick || (KIND_RANK[p.kind] || 0) > (KIND_RANK[pick.kind] || 0)
+        || ((KIND_RANK[p.kind] || 0) === (KIND_RANK[pick.kind] || 0) && (p.n > pick.n || (p.n === pick.n && p.conf > pick.conf)))) pick = p;
+  }
+  if (!pick) for (const p of theatre.places) if (!pick || p.n > pick.n || (p.n === pick.n && old(p) > old(pick))) pick = p;
+  return pick;
+}
+
+export function summariseEvent(members, idf, ccOf = defaultCcOf) {
   const arts = members.map((m) => ({ ...m, _tk: m._tk || tokenise(m.title) }));
   /* ── 代表見出し ──
    * ⚠ **`inter / sa` で測ってはならない（実測で外した）。** 分母を自分の重みだけにすると
@@ -1028,18 +1091,16 @@ export function summariseEvent(members, idf) {
       /* (#R404) 何が置いた地点なのか。同じ座標に AI と辞書の両方が着いたなら 'ai'
          ——弱いほうを名乗ると、あとで「AI はどこまで効いているか」を数えられない。 */
       by: null,
+      named: 0,
     };
     cur.n++;
+    /* 見出しがその地点を名指しているか（地点解析が推し量っただけの地点と区別する） */
+    if (placeNamedIn(a.subject_name_en, a.title)) cur.named++;
     cur.conf = Math.max(cur.conf, Number(a.subject_confidence) || 0);
     if (a.subject_located_by === 'ai' || (!cur.by && a.subject_located_by)) cur.by = a.subject_located_by;
     places.set(key, cur);
   }
-  let place = null, placeScore = -1;
-  for (const p of places.values()) {
-    /* 具体性が主・支持が従。同じ具体性なら支持の多いほう、それも同じなら確度。 */
-    const s = (KIND_RANK[p.kind] || 0) * 10 + Math.min(9, p.n) + p.conf;
-    if (s > placeScore) { place = p; placeScore = s; }
-  }
+  const place = pickEventPlace([...places.values()], ccOf);
   const located = arts.filter((a) => Number.isFinite(lngOf(a)) && Number.isFinite(latOf(a))).length;
 
   /* ── 時刻・件数 ── */

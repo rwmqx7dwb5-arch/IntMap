@@ -120,6 +120,75 @@ export function makeNewsBrief(claims) {
     return n / Math.min(A.size, B.size) >= dupeSameWire;
   }
 
+  /* ══ 「もう言われたこと」を測る (news-detail-condense) ════════════════════════
+     利用者 (2026-11-17):「要約・根拠の原文・媒体別の引用が同じことを繰り返す（"3 首脳が会談する"
+     が 3 回）。最初から全部を広げず、各媒体の**追加の情報・違う角度**を優先して見せて」。
+     ⇒ 文を「既に画面に出た文の和集合」と突き合わせ、**新しい中身を持つ文だけ**を前に出す。
+     残りは消さずに畳む（UI の仕事）——ここは測るだけで、何も捨てない。
+
+     ⚠⚠ これは上の `sameWire`（同じ配信原稿か）とは**別の問い**である。sameWire は「独立した
+       2 媒体に見せてよいか」で、外したときの被害が裏付けの捏造なので c ≥ 0.9 に狭く取った。
+       こちらは「読者に**最初に**見せる必要があるか」で、外したときの被害は「1 行が畳まれる」
+       ——畳まれた行は 1 タップで出る。
+     ⚠ 閾値 `coveredAt` 0.8 の観測: 上の 526 組の分布で、0.8–0.9 の帯 3 組は「短い文が長い文に
+       含まれる」形（NPR/France 24 の関税）、0.7–0.8 の 6 組は 3 つとも別の事実を持っていた。
+       ⇒ **0.7 帯を畳まない**ために 0.8 に置く。0.8 帯の「誰が誰に課したか」の違いは語が
+       同じでも事実が違いうるので、さらに**数字**を見る: 既出の文に無い数字（死者数・日付・
+       金額）を 1 つでも持つ文は、語がどれだけ重なっても新しい。
+       失効条件: 抽出元が英語以外を主に運ぶようになったら（下の CJK の扱い）、または 526 組の
+       測り直しで 0.7–0.8 帯の性格が変わったら。正本はここ 1 か所（UI は `novelty()` を呼ぶだけ）。
+     ⚠ 測れない文（語が 1 つも取れない）は「既出」と呼ばない——観測できなかったことは
+       「重複した」ではない（.agents/rules/one-pass-or-a-reason.md §5）。前に出す。 */
+  const coveredAt = 0.8;
+  /* 語の取り方。⚠ 停止語の一覧を持たない（埋め込み一覧の禁止）——3 文字未満を捨てるのは英語の
+     冠詞・前置詞の大半（a/an/of/in/to/on/at/by/is）が 2 文字以下だという**形**に依る。
+     分かち書きの無い文字（漢字・仮名・ハングル）は連なりを文字の bigram に割る。 */
+  const UNSPACED = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+  function contentTokens(s) {
+    const out = new Set();
+    for (const run of squeeze(s).toLowerCase().match(/[\p{L}\p{N}]+/gu) || []) {
+      if (/^\p{N}+$/u.test(run)) continue;                 /* 数は numbersOf が持つ */
+      if (UNSPACED.test(run)) { for (let i = 0; i + 1 < run.length; i++) out.add(run.slice(i, i + 2)); if (run.length === 1) out.add(run); continue; }
+      if (run.length >= 3) out.add(run);
+    }
+    return out;
+  }
+  /** 文が述べている数（`1,200` と `1200` は同じ数）。 */
+  function numbersOf(s) {
+    const out = new Set();
+    for (const n of squeeze(s).match(/\d[\d,.]*\d|\d/g) || []) out.add(n.replace(/,/g, '').replace(/\.0+$/, ''));
+    return out;
+  }
+  /**
+   * `text` のうち、`prior`（既に画面に出た文）が既に言っている割合と、まだ誰も言っていない数。
+   * @returns {{contained:number|null, newNumbers:string[], covered:boolean}}
+   */
+  function novelty(text, prior) {
+    const T = contentTokens(text);
+    const P = new Set(); const PN = new Set();
+    for (const p of prior || []) { for (const w of contentTokens(p)) P.add(w); for (const n of numbersOf(p)) PN.add(n); }
+    const newNumbers = [...numbersOf(text)].filter((n) => !PN.has(n));
+    if (!T.size || !P.size) return { contained: T.size ? 0 : null, newNumbers, covered: false };
+    let n = 0; for (const w of T) if (P.has(w)) n++;
+    const contained = n / T.size;
+    return { contained, newNumbers, covered: contained >= coveredAt && !newNumbers.length };
+  }
+  /**
+   * 原文の引用を「新しいことを足すもの」と「既出をなぞるもの」に分ける。順序は保つ。
+   * `summary` は既に画面に出ている文（統合文の各文）。無ければ先頭の引用が要約の役をする。
+   * ⚠ 畳む側の文は**消さない**——`folded` として返し、UI が開閉の下に置く。
+   */
+  function condenseGist(gistLines, summary) {
+    const prior = (summary || []).filter(Boolean).slice();
+    const shown = []; const folded = [];
+    for (const g of gistLines || []) {
+      const v = novelty(g && g.text, prior);
+      if (v.covered) folded.push({ ...g, contained: v.contained });
+      else { shown.push({ ...g, newNumbers: v.newNumbers }); prior.push(g.text); }
+    }
+    return { shown, folded };
+  }
+
   /** RSS の description から、原文の文だけを残す。 */
   function clean(text) {
     let t = squeeze(text);
@@ -206,7 +275,7 @@ export function makeNewsBrief(claims) {
     for (const m of order(members)) {
       const text = squeeze(m.title) + ' — ' + clean(m.description);
       for (const qy of claims.quantities(text, o)) {
-        const key = qy.kind + ':' + qy.value;
+        const key = claims.quantityKey(qy);   /* 種類・書かれた単位・値——£10bn と $10bn は別の数字 */
         if (seen.has(key)) continue;
         seen.add(key);
         out.push({ ...qy, source: m.sourceName, sourceId: m.sourceId, family: m.family || m.sourceId, at: m.publishedAt });
@@ -224,16 +293,16 @@ export function makeNewsBrief(claims) {
     for (const m of members || []) {
       const text = squeeze(m.title) + ' — ' + clean(m.description);
       for (const qy of claims.quantities(text, o)) {
-        const key = qy.kind + ':' + qy.value;
+        const key = claims.quantityKey(qy);   /* 単位の違う同じ値は一致ではない */
         let g = byKey.get(key);
-        if (!g) byKey.set(key, (g = { kind: qy.kind, value: qy.value, text: qy.text, context: qy.context, families: new Map() }));
+        if (!g) byKey.set(key, (g = { kind: qy.kind, unit: qy.unit, value: qy.value, text: qy.text, context: qy.context, families: new Map() }));
         if (!g.families.has(m.family || m.sourceId)) g.families.set(m.family || m.sourceId, m.sourceName);
       }
     }
     const out = [];
     for (const g of byKey.values()) {
       if (g.families.size < 2) continue;
-      out.push({ kind: g.kind, value: g.value, text: g.text, context: g.context, sources: [...g.families.values()] });
+      out.push({ kind: g.kind, unit: g.unit, value: g.value, text: g.text, context: g.context, sources: [...g.families.values()] });
     }
     return out;
   }
@@ -242,7 +311,31 @@ export function makeNewsBrief(claims) {
      ⚠⚠ **「最後に届いた記事」は「更新」ではない。** 同じ分に配信された転載が最後に
        来ることのほうが多い。初報から `updateGapMs` 以上あとに出た記事だけを見て、
        **そこで初めて出た数量**と**そこで初めて報じた系列**を出す。何も新しくなければ
-       `null` を返す——「更新がある」と嘘をつくより、欄ごと出さないほうがよい。 */
+       `null` を返す——「更新がある」と嘘をつくより、欄ごと出さないほうがよい。
+     ⚠⚠⚠ **再掲は続報ではない**（2026-11-17）。実測（本番の active 1,000 Event）: この欄が出た
+       187 件のうち **14 件で、欄の文は前の記事の本文にそのまま在った**——The Japan Times が同じ
+       記事を翌日に再掲し（«Man arrested in Osaka…»、11-15 と 11-16）、「新しく分かったこと」として
+       同じ文を出していた。以前の規則は「最後の記事の文」を無条件に出し、数量だけを前と比べていた。
+       ⇒ 最新記事の文は、**それより前のどの記事もまだ述べていない文だけ**を出す。述べたとみなすのは
+         ① 畳んだ文字列が前の記事の見出しか本文に含まれる ② 新しい文の語の `dupeSameWire`（9 割）
+         以上が前の 1 記事の見出しか本文に在る。方向は「新しい文 ⊂ 前の記事」だけ——前より多くを
+         言う文は新しい（同じ線を上の `sameWire` が実測で決めている）。
+       ⇒ 数量も同じ: 前の記事が**同じ種類・同じ書かれた単位・同じ値**を述べていれば新しくない。
+       ⇒ 新しい文も新しい数量も無ければ、**新しい系列であっても欄を出さない**。同じことを別の媒体が
+         載せたのは「加えた点」ではない（どの媒体がいつ報じたかは「発信元で読む」が時刻順に出す）。 */
+  function saidBefore(sentence, earlier) {
+    const k = dedupeKey(sentence);
+    if (!k) return true;
+    const W = wordsOf(sentence);
+    for (const e of earlier) {
+      if (e.key.includes(k)) return true;
+      if (W.size) {
+        let n = 0; for (const w of W) if (e.words.has(w)) n++;
+        if (n / W.size >= dupeSameWire) return true;
+      }
+    }
+    return false;
+  }
   function latest(members, opt) {
     const o = { ...DEFAULTS, ...(opt || {}) };
     const ordered = order(members);
@@ -252,21 +345,68 @@ export function makeNewsBrief(claims) {
     const lastTs = tsOf(last);
     if (!(lastTs - first >= o.updateGapMs)) return null;
 
-    const earlierText = ordered.slice(0, -1).map((m) => squeeze(m.title) + ' — ' + clean(m.description)).join(' \n ');
-    const before = new Set(claims.quantities(earlierText, o).map((q) => q.kind + ':' + q.value));
+    const prior = ordered.slice(0, -1);
+    const earlier = [];
+    for (const m of prior) {
+      for (const s of [squeeze(m.title), clean(m.description)]) if (s) earlier.push({ key: dedupeKey(s), words: wordsOf(s) });
+    }
+    const earlierText = prior.map((m) => squeeze(m.title) + ' — ' + clean(m.description)).join(' \n ');
+    const before = new Set(claims.quantities(earlierText, o).map(claims.quantityKey));
     const lastText = squeeze(last.title) + ' — ' + clean(last.description);
-    const added = claims.quantities(lastText, o).filter((q) => !before.has(q.kind + ':' + q.value));
+    const added = claims.quantities(lastText, o).filter((q) => !before.has(claims.quantityKey(q)));
 
-    const seenFam = new Set(ordered.slice(0, -1).map((m) => m.family || m.sourceId));
+    const seenFam = new Set(prior.map((m) => m.family || m.sourceId));
     const newFamily = !seenFam.has(last.family || last.sourceId);
-    const lines = sentences(last.description, o);
-    if (!added.length && !newFamily && !lines.length) return null;
+    /* (news-detail-condense) ⚠⚠ **「誰が最後に報じたか」は更新ではない。** 利用者 (2026-11-17):
+       「"CNBC が最後に報じた" は配信状況であって、何が新しく分かったかが伝わらない」。以前は
+       `newFamily` だけでも節を出し、`text` は最新記事の**先頭の文**——前の記事と同じことを
+       言っていても「更新」として出していた。
+       ⇒ 最新記事の文（本文の各文と見出し）から、**それより前の記事が既に言っていること**を
+       引く（`novelty()`・上の閾値の箱）。残った文と、初めて出た数量だけが「更新」。
+       どちらも無ければ `null`——新しい系列が加わっただけなら、それは Coverage 節が言う。 */
+    const seenText = prior.map((m) => squeeze(m.title) + ' — ' + clean(m.description));   /* (news-quality と統合) 前の記事の文——novelty の比較対象 */
+    const learned = [];
+    const title = squeeze(last.title);
+    /* (integrate) a headline is a candidate only when the article has no body sentence: a re-worded headline over
+       a repeated body is not news, and a lone headline counts only for a number no earlier report gave (tests/news-story-claims-checks.test.mjs A②・A③, measured on production by news-quality) */
+    const body = sentences(last.description, o);
+    for (const s of (body.length ? body : (title ? [title] : []))) {
+      if (saidBefore(s, earlier)) continue;              /* 再掲（前の記事の文に含まれる・9 割の語が同じ）は続報ではない */
+      const v = novelty(s, seenText);
+      if (v.covered || v.contained == null) continue;     /* 測れない文を「新しい」とも言わない */
+      if (!body.length && !v.newNumbers.length) continue;   /* 見出しだけの言い換えは新しい事実ではない——見出しが足せるのは新しい数だけ（A③） */
+      learned.push({ text: s, newNumbers: v.newNumbers, fromTitle: s === title });
+      seenText.push(s);
+    }
+    if (!added.length && !learned.length) return null;
     return {
       source: last.sourceName, sourceId: last.sourceId, family: last.family || last.sourceId,
-      at: last.publishedAt, url: last.url, title: squeeze(last.title),
-      newFamily, figures: added, text: lines[0] || '',
+      at: last.publishedAt, url: last.url, title,
+      newFamily, figures: added, learned, text: learned.length ? learned[0].text : '',
       sinceMs: lastTs - first,
     };
+  }
+
+  /* ── 発信元の一覧を畳む (news-detail-condense) ─────────────────────────────
+     利用者 (2026-11-17):「似た見出しが繰り返し並ぶ（France 24・BBC の重複）。"同系列" の札を
+     付けても読む量は減らない」。⇒ **資本系列ごとに 1 本**（その系列の最初の記事）を代表に出し、
+     同じ系列の残りは `more` に、別系列でも**同じ配信原稿の見出し**（`sameWire`——独立の判定に
+     使っている狭い規則をそのまま使う。2 本目の閾値を作らない）は `echoes` に寄せる。
+     ⚠ 1 本も捨てない。返すのは並べ方だけで、UI が `more`/`echoes` を開閉の下に置く。
+     ⚠ 系列の代表は**時刻順**で決める（重要そうな順にしない——上の gist と同じ理由）。 */
+  function groupCoverage(members) {
+    const groups = [];
+    const byFam = new Map();
+    for (const m of order(members)) {
+      const fam = m.family || m.sourceId || m.sourceName;
+      const at = byFam.get(fam);       /* その系列が既にどこに居るか（代表として／別系列の echo として） */
+      if (at) { at.group[at.as].push(m); continue; }
+      const echoOf = groups.find((x) => x.lead.title && m.title && sameWire(x.lead.title, m.title));
+      if (echoOf) { echoOf.echoes.push(m); byFam.set(fam, { group: echoOf, as: 'echoes' }); continue; }
+      const ng = { family: fam, lead: m, more: [], echoes: [] };
+      groups.push(ng); byFam.set(fam, { group: ng, as: 'more' });
+    }
+    return groups;
   }
 
   function tsOf(m) { const t = Date.parse((m && m.publishedAt) || ''); return Number.isFinite(t) ? t : 0; }
@@ -296,9 +436,12 @@ export function makeNewsBrief(claims) {
     const fam = new Set(list.map((m) => m.family || m.sourceId));
     const figs = figures(list, o);
     const agrs = agreements(list, o);
-    const diffs = claims.differences(list.map((m) => ({
-      title: m.title, description: clean(m.description), source: m.sourceName, family: m.family || m.sourceId,
+    /* 各値に記事の公開時刻を持たせる——累計の量（死者数など）が時刻順に増えたのは、媒体の
+       食い違いではなく更新である（js/news-claims.js `compare`）。 */
+    const cmp = claims.compare(list.map((m) => ({
+      title: m.title, description: clean(m.description), source: m.sourceName, family: m.family || m.sourceId, at: m.publishedAt,
     })), o);
+    const diffs = cmp.differences;
     const status = g.length >= 2 ? 'ok'
       : g.length === 1 ? 'thin'
         : (figs.length || agrs.length || diffs.length) ? 'facts' : 'none';
@@ -314,6 +457,8 @@ export function makeNewsBrief(claims) {
       figures: figs,
       agreements: agrs,
       differences: diffs,
+      /* 時刻とともに数え直された累計（初報 10 人 → 続報 15 人）。`differences` には入らない。 */
+      updates: cmp.updates,
       latest: latest(list, o),
       coverage: {
         articles: list.length,
@@ -325,5 +470,5 @@ export function makeNewsBrief(claims) {
     };
   }
 
-  return { DEFAULTS, TAIL, DATELINE, clean, sentences, gist, figures, agreements, latest, build };
+  return { DEFAULTS, TAIL, DATELINE, clean, sentences, gist, figures, agreements, latest, build, novelty, condenseGist, groupCoverage };
 }

@@ -40,7 +40,7 @@ import type { TurnReq, TurnItem } from "../turn.ts";
      · a text block's `citations` of type web_search_result_location are the pages it cited
        (OpenAI's url_citation annotations), deduplicated on the address as that path does. */
 // deno-lint-ignore no-explicit-any
-export function anthropicWeb(j: any, attached: boolean): { webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] } {
+export function anthropicWeb(j: any, attached: boolean): { webAttached: boolean; webUsed: boolean; webCount: number; webSources: number | null; webFailure?: string; citations: WebCitation[] } {
   const blocks: Array<Record<string, unknown>> = Array.isArray(j?.content) ? j.content : [];
   const issued = blocks.filter((b) => b && b.type === "server_tool_use" && b.name === "web_search").length;
   const reported = Number(j?.usage?.server_tool_use?.web_search_requests);
@@ -57,10 +57,30 @@ export function anthropicWeb(j: any, attached: boolean): { webAttached: boolean;
       citations.push({ url: c.url, title: String(c.title || "") });
     }
   }
-  return { webAttached: attached, webUsed: webCount > 0, webCount, citations };
+  /* (atlas-completion) …and what the searches RETURNED: a web_search_tool_result block holds the result
+     list, or an error object (web_search_tool_result_error, with the provider's own error_code). The
+     results are counted, the error code is the failure's reason — provider-call.ts webOutcome reads both. */
+  const results = blocks.filter((b) => b && b.type === "web_search_tool_result");
+  let listed: number | null = null;
+  let webFailure = "";
+  for (const b of results) {
+    const c = b.content as unknown;
+    if (Array.isArray(c)) listed = (listed || 0) + c.length;
+    else if (c && typeof c === "object" && (c as Record<string, unknown>).error_code) webFailure = webFailure || String((c as Record<string, unknown>).error_code);
+  }
+  return { webAttached: attached, webUsed: webCount > 0, webCount, webSources: listed, ...(webFailure && listed === null ? { webFailure } : {}), citations };
 }
 
-export async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, meter?: Meter): Promise<{ text: string; finishReason: string; served?: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
+/* (atlas-completion) Anthropic's stop_reason: end_turn, stop_sequence and tool_use are the ends the model
+   chose; every other value (max_tokens, pause_turn, refusal, model_context_window_exceeded …) is the answer
+   being stopped. The provider's documented natural ends are the list — a new stop reason is therefore
+   reported as incomplete, never silently as finished. An absent stop_reason was not observed and claims nothing. */
+const ANTHROPIC_NATURAL_END = new Set(["end_turn", "stop_sequence", "tool_use"]);
+export function anthropicIncomplete(stopReason: string): string | null {
+  return stopReason && !ANTHROPIC_NATURAL_END.has(stopReason) ? stopReason : null;
+}
+
+export async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, meter?: Meter): Promise<{ text: string; finishReason: string; incompleteReason: string | null; served?: string; webAttached: boolean; webUsed: boolean; webCount: number; webSources: number | null; webFailure?: string; citations: WebCitation[] }> {
   const content: unknown[] = [];
   for (const ip of imgs) content.push({ type: "image", source: { type: "base64", media_type: ip.mime, data: ip.b64 } });
   /* (#R540) documents → attached text → the user's prompt. The question is asked ABOUT material the
@@ -88,7 +108,7 @@ export async function callAnthropic(model: string, key: string, prompt: string, 
   const text = (j.content && j.content.map((b: { text?: string }) => b.text || "").join("")) || "";
   const finishReason = String(j?.stop_reason || "");
   if (!text) throw new ProviderError("provider_empty", "Empty response from Anthropic.", 502, true, { finishReason });
-  return { text, finishReason, served: String(j?.model || ""), ...anthropicWeb(j, web) };
+  return { text, finishReason, incompleteReason: anthropicIncomplete(finishReason), served: String(j?.model || ""), ...anthropicWeb(j, web) };
 }
 
 /* ══ (atlas-native-tools) THE TURN, IN ANTHROPIC'S NATIVE SHAPE — tool_use / tool_result ══════════════════════
@@ -98,7 +118,7 @@ export async function callAnthropic(model: string, key: string, prompt: string, 
    alternates roles and opens with the user, so consecutive same-role items are merged and a
    conversation that opens mid-way is said to. No JSON mode here (the instruction states the final
    shape, and the client reads a prose final as the answer — as it always did on this provider). */
-export async function callAnthropicTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; served?: string; output: TurnItem[]; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
+export async function callAnthropicTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; incompleteReason: string | null; served?: string; output: TurnItem[]; webAttached: boolean; webUsed: boolean; webCount: number; webSources: number | null; webFailure?: string; citations: WebCitation[] }> {
   const attached = filesBlock(files);
   const msgs: { role: string; content: unknown[] }[] = [];
   const add = (role: string, block: unknown) => {
@@ -157,5 +177,5 @@ export async function callAnthropicTurn(model: string, key: string, turn: TurnRe
   }
   const finishReason = String(j?.stop_reason || "");
   if (!text && !output.some((it) => it.type === "function_call")) throw new ProviderError("provider_empty", "Empty response from Anthropic.", 502, true, { finishReason });
-  return { text, finishReason, served: String(j?.model || ""), output, ...anthropicWeb(j, web) };
+  return { text, finishReason, incompleteReason: anthropicIncomplete(finishReason), served: String(j?.model || ""), output, ...anthropicWeb(j, web) };
 }
