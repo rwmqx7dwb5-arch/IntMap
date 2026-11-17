@@ -60,15 +60,41 @@ export default [
     },
   },
   {
-    row: ['routing.setEndpoints',       'route',          '',                                                            'routing', 'route',   'map.route',              'panel',               'session', 'none',   'place',    ''],
+    /* (atlas-completion) observed by `seaRoute` — the sea-route engine's own state for THIS call's operation — not by
+       `route`, which reads the land router (js/routing.js) and so called a drawn sea route 「no_route」 and a stale land
+       route 「ok」. It draws the route on the map, so it promises the route and the map — what it verifies; the panel it opens is not. */
+    row: ['routing.setEndpoints',       'route',          '',                                                            'routing', 'seaRoute','map.route',              'route,map',           'session', 'none',   'place',    ''],
     ui: { none: '2026-11-16' },
     doc: [
       { in: 'tools-panels', at: 70, text: '{"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); ' },
     ],
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { from: str(), to: str() }, required: ['from', 'to'] }), /* `route` = the MARITIME route */
-    async run(a, dctx, K) { const geocode = K.geocode, GE = K.GE, R = K.R, note = K.note, L = K.L, esc = K.esc, warn = K.warn;
-      { const A=await geocode(a.from); const B=await geocode(a.to); let any=false; try{ if(window.IntMapRoute&&window.IntMapRoute.open) window.IntMapRoute.open(); }catch(_){} try{ if(A&&window.IntMapRoute&&window.IntMapRoute.setStart){ window.IntMapRoute.setStart({lng:A.lng,lat:A.lat}); any=true; } }catch(_){} try{ if(B&&window.IntMapRoute&&window.IntMapRoute.setEnd){ window.IntMapRoute.setEnd({lng:B.lng,lat:B.lat}); any=true; } }catch(_){} if(A&&B){ try{ GE().camera.fitBounds([[Math.min(A.lng,B.lng),Math.min(A.lat,B.lat)],[Math.max(A.lng,B.lng),Math.max(A.lat,B.lat)]],{padding:80,duration:900}); }catch(_){} } return R(any, any?note(icon('ship')+' '+L('Sea route','海路','Seeroute','Морской путь','Ruta marítima')+': '+esc((A&&A.name)||a.from||'')+' → '+esc((B&&B.name)||a.to||'')):warn(L('Need start & destination','始点と終点が必要','Start & Ziel nötig','Нужны старт и финиш','Origen y destino'))); }
+    async run(a, dctx, K) { const geocode = K.geocode, GE = K.GE, R = K.R, note = K.note, L = K.L, esc = K.esc, warn = K.warn, whereMiss = K.whereMiss;
+      /* ⚠ (atlas-completion) BOTH ENDS, OR NOTHING. A route needs two points; one resolved end used to set a start on the
+         panel and report ok:true. And the answer waits for the route: IntMapRoute.run() resolves after the search AND the
+         drawing, and its operation id travels in meta.seaRoute so the verdict reads THIS run, not an older route. */
+      const A = await geocode(a.from), B = await geocode(a.to);
+      if (!A || !B) {
+        const miss = [!A ? a.from : null, !B ? a.to : null].filter((x) => x != null && String(x).trim());
+        const need = L('Need start & destination', '始点と終点が必要', 'Start & Ziel nötig', 'Нужны старт и финиш', 'Origen y destino');
+        return R(false, warn(miss.length ? miss.map((m) => whereMiss(need, m)).join(' ') : need), { meta: { code: 'PLACE_NOT_FOUND', unresolved: miss.map(String) } });
+      }
+      const SR = window.IntMapRoute;
+      if (!SR || typeof SR.run !== 'function') return R(false, warn(L('The sea-route engine is not available.', '海路の計算機能を利用できません。')), { meta: { code: 'unavailable' } });
+      try { if (SR.open) SR.open(); } catch (_) { }
+      let r = null;
+      try { r = await SR.run({ from: [A.lng, A.lat], to: [B.lng, B.lat] }); } catch (_) { r = { ok: false, opId: null, reason: 'error' }; }
+      try { GE().camera.fitBounds([[Math.min(A.lng, B.lng), Math.min(A.lat, B.lat)], [Math.max(A.lng, B.lng), Math.max(A.lat, B.lat)]], { padding: 80, duration: 900 }); } catch (_) { }
+      const meta = { seaRoute: { opId: r && r.opId != null ? r.opId : null, km: (r && r.km) || null, reason: (r && r.reason) || null } };
+      const head = icon('ship') + ' ' + L('Sea route', '海路', 'Seeroute', 'Морской путь', 'Ruta marítima') + ': ' + esc(A.name || a.from || '') + ' → ' + esc(B.name || a.to || '');
+      /* computed but not on the map is the verdict's to call (partial / not_rendered), read from the engine's state */
+      if (r && (r.ok || r.reason === 'not_rendered')) return R(true, note(head + (r.km ? ' · ' + Math.round(r.km).toLocaleString() + ' km' : '')), { meta });
+      const why = { on_land: L('no navigable water near one of the points', '一方の地点の近くに航行可能な海域がありません'),
+        no_sea_route: L('no sea route connects the two points', '2 地点を結ぶ海路がありません'),
+        no_land_data: L('the land mask is not loaded yet — try again', '陸地データの読み込み中です。再試行してください'),
+        superseded: L('a newer route replaced this one before it finished', '完了前に新しいルートに置き換えられました') }[r && r.reason] || L('the route could not be computed', 'ルートを計算できませんでした');
+      return R(false, warn(head + ' — ' + why), { meta: Object.assign({ code: (r && r.reason) || 'failed' }, meta) });
     },
   },
   {

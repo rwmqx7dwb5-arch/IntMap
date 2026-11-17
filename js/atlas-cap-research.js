@@ -30,6 +30,51 @@ import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-doss
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
 
+/* ══ (atlas-completion) WHAT A RESEARCH ANSWER RESTS ON, SAID FROM WHAT HAPPENED ═══════════════════════════════
+   An answer to a time-sensitive question used to carry ONE fixed caveat whenever `webUsed` was false —
+   «a provisional assessment based mainly on already-gathered headlines» — whether the search timed out,
+   was refused, ran and found nothing, or was never attached, and whether or not the answer cited a single
+   headline. Both halves of that sentence are now read off the facts: the search's outcome as ai-proxy
+   reported it (meta.web — supabase/functions/ai-proxy/provider-call.ts webOutcome) and the records the
+   rendered claims actually cite (citedRecords). The same facts go to Atlas in the tool result, with the
+   documents retrieved so far, so it can look the thing up another way instead of only being told it was not. */
+function webOutcomeLine(w, L) {
+  if (!w) return L('Whether a live web search ran was not reported for this answer.', 'この回答でライブWeb検索が実行されたかは報告されていません。');
+  const why = w.reason ? String(w.reason) : '';
+  if (w.state === 'failed') {
+    if (why === 'timeout') return L('The live web search timed out, so the answer was written without it.', 'ライブWeb検索がタイムアウトしたため、検索なしで回答を作成しました。');
+    if (why === 'rejected') return L('The AI provider refused the live web search for this request, so the answer was written without it.', 'AIプロバイダがこのリクエストでのライブWeb検索を受け付けなかったため、検索なしで回答を作成しました。');
+    return L('The live web search failed (' + why + ').', 'ライブWeb検索が失敗しました（' + why + '）。');
+  }
+  if (w.state === 'empty') return L('The live web search ran (' + w.searches + ' searches) but found no matching pages.', 'ライブWeb検索は実行されました（' + w.searches + '回）が、該当するページは見つかりませんでした。');
+  if (w.state === 'not_run' && why === 'model_did_not_search') return L('A live web search was available, but the model did not run it.', 'ライブWeb検索は利用可能でしたが、モデルは実行しませんでした。');
+  if (w.state === 'not_run') return L('No live web search was available for this answer.', 'この回答ではライブWeb検索を利用できませんでした。');
+  return '';
+}
+function groundsLine(records, L) {
+  const n = { client_source: 0, app_data: 0, hosted_web: 0 };
+  (records || []).forEach((r) => { if (r && Object.prototype.hasOwnProperty.call(n, r.origin)) n[r.origin]++; });
+  const en = [], jp = [];
+  if (n.hosted_web) { en.push(n.hosted_web + ' web page(s) found by the search'); jp.push('検索で見つかったWebページ ' + n.hosted_web + ' 件'); }
+  if (n.client_source) { en.push(n.client_source + ' retrieved article(s) or page(s)'); jp.push('取得済みの記事・ページ ' + n.client_source + ' 件'); }
+  if (n.app_data) { en.push(n.app_data + ' IntMap data record(s)'); jp.push('IntMapのデータ ' + n.app_data + ' 件'); }
+  if (!en.length) return L('The answer cites no record IntMap retrieved — it rests on the model\'s own knowledge, so treat time-sensitive statements as unconfirmed.', 'この回答はIntMapが取得した記録を1件も引用しておらず、モデル自身の知識に基づいています。時間に依存する記述は未確認として扱ってください。');
+  return L('What the answer cites: ' + en.join(', ') + '. Treat time-sensitive statements beyond those as unconfirmed.', 'この回答が引用しているのは ' + jp.join('、') + ' です。それ以外の時間に依存する記述は未確認として扱ってください。');
+}
+/* The pages retrieved earlier in THIS turn, carried into its next answer call so they have ids there
+   (js/atlas-answer-pipeline.js opts.webSources). Keyed by the turn: a page from another turn is not handed on. */
+const _turnPages = { turn: '', pages: [] };   /* read and written only by run (the kernel's copy of this module never runs it) */
+function turnPages(turn) {
+  if (!turn) return [];
+  if (_turnPages.turn !== turn) { _turnPages.turn = turn; _turnPages.pages = []; }
+  return _turnPages.pages;
+}
+function keepTurnPages(turn, list) {
+  if (!turn) return;
+  const pages = turnPages(turn);
+  (list || []).forEach((x) => { if (x && x.url && !pages.some((q) => q.url === x.url)) pages.push({ url: x.url, title: x.title || '', publisher: x.publisher || '', retrievedAt: x.retrievedAt || '' }); });
+}
+
 /* ══ (world-objects) RESOLVING «THAT EARTHQUAKE / THIS VOLCANO / THAT COMPANY» TO ONE REAL-WORLD OBJECT ═══════════════
    The index (js/atlas-world-objects.js) holds what this session already surfaced; a miss falls through to the readers
    the product already has — the loaded news, the volcano catalogue, the company atlas, the USGS feed — each of which
@@ -123,6 +168,7 @@ export default [
           const sysB=personaPrompt('working here as IntMap\'s geopolitical and area-studies research desk')/* (#R285) this opened with a DIFFERENT character from the one answering two panels away; the task role stays, the name and the character are Atlas's */+'The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: if a web-search tool is attached to this request, USE it to find and verify the most recent developments, and cite each recent event with its date and a source; if no web-search tool is attached, rely only on the supplied recent-news headlines below and do not claim to have searched. Either way, treat the supplied headlines as leads. GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from your web-search results this turn OR the supplied headlines — never invent a plausible-sounding recent event from memory. If neither surfaces anything recent, say so plainly under "Recent developments" rather than fabricating one or presenting an old event as if it were current. Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
           let txtB='', _envB=null; try{ _envB=await askAIJSONEnvelope(pB,sysB,null,{task:'brief',webMode:'required',turnId:K._curTurnKey}); txtB=(_envB&&_envB.text)||''; }catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
+          try{ if(_envB&&_envB.meta&&_envB.meta.webUsed) keepTurnPages(K._curTurnKey, (_envB.citations||[]).map(c=>({url:c&&c.url,title:c&&c.title,retrievedAt:new Date().toISOString()}))); }catch(_){}   /* (atlas-completion) what this brief's search retrieved, for the turn's next answer call */
           if(!String(txtB||'').trim()) return R(false, warn(L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
           /* ⚠⚠ (#R232) 「返答の最初に地名だけ」 — re-sent: #R231 fixed the OTHER panel; this branch printed it itself (#R69). */
           /* (#R232) …and the TOPIC with it — resolved name AND typed string (often different scripts). */
@@ -628,10 +674,12 @@ export default [
               temporalMode:String((a&&a.temporalMode)||'unspecified'),
               requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
               turnId:K._curTurnKey, webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
+              webSources:turnPages(K._curTurnKey).slice(),   /* (atlas-completion) pages an earlier call of this turn retrieved — they get ids before this call */
               appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
               ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
           catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
           const _env=RES.env, _reg=RES.registry;
+          try{ keepTurnPages(K._curTurnKey, (RES.retrieved||[]).filter(r=>r.origin==='hosted_web')); }catch(_){}   /* (atlas-completion) this call's search results, for the turn's next call */
           if(!String((_env.answer.directAnswer&&_env.answer.directAnswer.text)||'').trim()) return R(false, warn(L('The analysis returned no answer','分析結果が空でした','Analyse ergab keine Antwort','Анализ не дал ответа','El análisis no dio respuesta')));
           /* ⚠ THE FULL TRACE IS A DEVELOPER FACILITY AND CARRIES NO PROMPT, NO TOKEN AND NO ARTICLE
              BODY — call ids, audit codes and counts only, so turning it on in production leaks
@@ -645,20 +693,29 @@ export default [
              discarded ONE LINE before the pinning step that needed them, and the name was resolved
              again from scratch. `_env.places` are already GeoObjects; hand them over whole. */
           try{ html+=await _pinReplyPlaces(_env.places||[],{text:answerPlainText(_env),placesDeclared:true,citations:_reg.all().filter(r=>r.finalUrl).map(r=>({url:r.finalUrl,title:r.title,publisher:r.publisher||''}))}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
-          /* (#R131) Freshness-critical question but live web verification did NOT run: label the answer a PROVISIONAL
-             assessment built mainly on already-gathered headlines, so headline-only leads are never presented as
-             confirmed direct evidence (the Central-Asia failure). Applies equally when the web search timed out into
-             the tool-free fallback (webUsed stays false). */
-          if(freshness.critical&&!RES.webUsed) html+='<div style="margin-top:8px;padding:7px 10px;border:1px solid var(--warn-color,#c98a00);border-radius:8px;background:rgba(201,138,0,.09);font-size:11px;line-height:1.5;color:var(--text-main);">'+icon('warning')+' '+L(
-            'Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.',
-            '時間依存の質問に対しライブWeb検証を完了できなかったため、これは取得済みの見出しを中心とした暫定評価です。各項目は確認済みの直接的証拠ではなく手がかりとして扱ってください。',
-            'Die Live-Web-Verifizierung wurde für diese zeitkritische Frage nicht abgeschlossen — dies ist eine VORLÄUFIGE Einschätzung, überwiegend auf bereits gesammelten Schlagzeilen; als Hinweise, nicht als bestätigte Belege behandeln.',
-            'Проверка в реальном времени по этому чувствительному ко времени вопросу не завершилась — это ПРЕДВАРИТЕЛЬНАЯ оценка, в основном по уже собранным заголовкам; считайте их зацепками, а не подтверждёнными доказательствами.',
-            'No se completó la verificación web en vivo para esta pregunta sensible al tiempo, por lo que es una evaluación PROVISIONAL basada sobre todo en titulares ya recopilados; trátalos como indicios, no como evidencia directa confirmada.')+'</div>';
-          const usedAll=[]; citedRecords(_env,_reg).forEach(r=>{ if(r.label&&usedAll.indexOf(r.label)<0) usedAll.push(r.label); });   /* (#732) what the rendered claims CITE (js/atlas-answer-render.js citedRecords) — not every block that was put in the prompt */
+          /* (#R131) Freshness-critical question but live web verification did NOT complete: the answer is said to be
+             provisional, so leads are never presented as confirmed direct evidence (the Central-Asia failure).
+             ⚠ (atlas-completion) WHAT IS SAID IS READ OFF WHAT HAPPENED — the search's own outcome (RES.web) and what
+             the rendered claims actually cite — not one sentence about headlines for every case (webOutcomeLine /
+             groundsLine above). A search that ran and found nothing is not one that failed, and an answer that cites
+             no headline is not «based mainly on headlines». */
+          const _cited=citedRecords(_env,_reg);
+          const _web=RES.web||null, _webShort=_web?(_web.state!=='ok'):!RES.webUsed;
+          const _caveat=(freshness.critical&&_webShort)?(webOutcomeLine(_web,L)+' '+groundsLine(_cited,L)):'';
+          const _cut=(RES.finish&&RES.finish.status==='incomplete')?L('The model stopped before finishing this answer ('+(RES.finish.reason||'incomplete')+') — what is shown is the part it wrote.','モデルはこの回答を書き終える前に停止しました（'+(RES.finish.reason||'incomplete')+'）。表示されているのは書かれた部分までです。'):'';
+          [_cut,_caveat].filter(Boolean).forEach(t=>{ html+='<div style="margin-top:8px;padding:7px 10px;border:1px solid var(--warn-color,#c98a00);border-radius:8px;background:rgba(201,138,0,.09);font-size:11px;line-height:1.5;color:var(--text-main);">'+icon('warning')+' '+esc(t)+'</div>'; });
+          const usedAll=[]; _cited.forEach(r=>{ if(r.label&&usedAll.indexOf(r.label)<0) usedAll.push(r.label); });   /* (#732) what the rendered claims CITE (js/atlas-answer-render.js citedRecords) — not every block that was put in the prompt */
           if(RES.webUsed) usedAll.push(L('live web verification','ライブWeb検証','Live-Web-Verifizierung','проверка в интернете','verificación web en vivo'));
           if(usedAll.length) html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+'</div>';   /* (#R118) no data → NO empty "Data used:" line */
-          const _am=auditMeta(_env); return _am?R(true,html,{meta:_am}):R(true,html); }   /* ⚠ (#R419/#R472) THE ANSWER IS RENDERED IN FULL AND ATLAS IS TOLD WHAT THE AUDIT NOTICED — codes, not a verdict, and never a claim that something was removed (nothing is). auditMeta() in js/atlas-answer-pipeline.js. */
+          /* (atlas-completion) …and the same facts to Atlas: what the search did, whether the answer ended, and every
+             document retrieved so far with its id — so a search that failed or found nothing can be followed by a
+             lookup another way, from what is already in hand, rather than only by the caveat. */
+          const _am=auditMeta(_env);
+          const _webMeta={ web:_web||{state:'unreported',reason:null,searches:0,sources:null}, finish:RES.finish||null,
+            retrieved:(RES.retrieved||[]).map(r=>({id:r.id,url:r.url,title:r.title,origin:r.origin,retrievedAt:r.retrievedAt})),
+            citedOrigins:_cited.map(r=>r.origin),
+            webNote:(_webShort?(webOutcomeLine(_web,(en)=>en)+' '):'')+groundsLine(_cited,(en)=>en) };
+          return R(true,html,{meta:Object.assign({},_am||{},_webMeta)}); }   /* ⚠ (#R419/#R472) THE ANSWER IS RENDERED IN FULL AND ATLAS IS TOLD WHAT THE AUDIT NOTICED — codes, not a verdict, and never a claim that something was removed (nothing is). auditMeta() in js/atlas-answer-pipeline.js. */
     },
   },
   {

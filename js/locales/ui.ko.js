@@ -303,7 +303,7 @@ IntMapLang.define('ko', { ui: {
     'first appears in this report': '이 기사에서 처음 나온 수치',
     'How this was written — the exact wording each sentence came from ({n})': '이 글이 무엇에서 쓰였는지 — 각 문장의 근거가 된 원문({n}건)',
     'In each outlet’s own words': '각 매체의 원문 그대로',
-    'The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.': '위 문단은 AI가 작성한 것입니다. 이 매체들이 공개한 내용을 합친 것으로, 각 문장은 저장되기 전에 여기 표시된 원문과 기계적으로 대조했으며, 대조하지 못한 문장은 버려져 표시되지 않습니다.',
+    'The paragraph above was written by AI from what these outlets published. Each sentence names the outlet and the passage it is based on, and before saving a program checked that every such passage really appears in that outlet’s text; a sentence whose passage could not be found is discarded. The program does not check that the sentence states the passage correctly — compare them under “How this was written”.': '위 단락은 이 매체들이 공개한 내용을 바탕으로 AI가 작성한 것입니다. 각 문장은 근거로 삼은 매체와 원문 구절을 밝히며, 저장 전에 프로그램이 그 구절이 실제로 해당 매체의 글에 있는지 확인했습니다(구절을 찾지 못한 문장은 버립니다). 문장이 구절의 내용을 정확히 전달하는지는 프로그램이 확인하지 않습니다 — ‘이 글이 무엇에서 쓰였는지’에서 비교할 수 있습니다.',
     'Key figures': '주요 수치',
     'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': '이 사건의 본문을 제공한 매체는 한 곳뿐이라, 앱을 벗어나지 않고 IntMap이 보여 줄 수 있는 것은 여기까지입니다.',
     'Read at {s} ↗': '{s}에서 읽기 ↗',
@@ -1662,7 +1662,6 @@ IntMapLang.define('ko', { ui: {
   "live web news": "실시간 웹 뉴스",
   "{n} source(s) did not answer within {s}s": "{s}초 안에 응답하지 않은 소스 {n}개",
   "live web verification": "실시간 웹 확인",
-  "Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.": "시의성이 중요한 이 질문에 대해 실시간 웹 확인을 끝내지 못했습니다. 따라서 이미 수집한 헤드라인을 주로 근거로 한 잠정 평가입니다. 각 항목은 확인된 직접 증거가 아니라 단서로 다루시기 바랍니다.",
   "LOAD": "하중",
   "loaded news": "불러온 뉴스",
   "Loaded news near here": "이 부근의 불러온 뉴스",
@@ -3925,7 +3924,6 @@ IntMapLang.define('ko', { ui: {
   "Danger warning": "위험경보",
   "Delayed": "다소 오래됨",
   "Diagnostics": "진단",
-  "Each agency’s own published scale": "각 기관이 공표한 등급",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "각 나라는 그 나라 기관의 발표 단위로 그립니다. 참고용 표시이므로 공식 기관의 발표를 따르십시오.",
   "Europe — MeteoAlarm": "유럽 — MeteoAlarm",
   "every 30 s": "30초마다",
@@ -4562,7 +4560,7 @@ IntMapLang.define('ko', { ui: {
   "Countries at Danger or above": "위험 등급 이상인 국가",   /* (#R299) */
   "No country is at Danger or above right now.": "지금 위험 등급 이상인 국가는 없습니다.",   /* (#R299) */
   "IntMap’s own conversion — the same step is not the same danger.": "IntMap 자체 환산 — 같은 등급이라도 위험도는 같지 않습니다.",   /* (#R299) */
-  "Each agency’s own colours. Tap a country for its exact scale.": "색상은 각 기관 자체의 배색입니다. 국가를 누르면 정확한 등급.",   /* (#R299) */
+  /* (#R299) */
   "No point placed yet": "아직 지점이 설정되지 않았습니다",   /* (#R299) */
   "Place the point on the map": "지도에서 지점 설정",   /* (#R299) */
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "지도에 길찾기 패널을 열었습니다 — 그곳의 두 칸을 채우거나, 여기서 장소를 말씀해 주세요.",   /* (#R299) */

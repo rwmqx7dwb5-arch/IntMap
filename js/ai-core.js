@@ -268,8 +268,18 @@ export function aiCore(HOST){
   }
   /* (#R113) Map a typed PROVIDER error (ai-proxy 502/503) to a clear, localized message. These are DISTINCT from
      the IntMap daily free-use limit (HTTP 429) — a Google-side 429 must never be shown as "out of free uses". */
-  function aiProviderErrMsg(code, message){
+  function aiProviderErrMsg(code, message, info){
     const _pl=IntMapLang.pick(()=>HOST.lang);
+    /* ⚠ (atlas-completion) A FAILURE THE SERVER CALLS NOT RETRYABLE IS NOT «TEMPORARILY UNAVAILABLE».
+       ai-proxy answers a provider's 400 (and an unclassified failure) as provider_unavailable with
+       retryable:false — and this map turned every one of them into «try again shortly», which the reader
+       did, to the same refusal. The code still names the failure; the sentence follows what the server
+       said about retrying it, with the provider's status when it gave one. */
+    if(code==='provider_unavailable'&&info&&info.retryable===false){
+      const ps=(info.meta&&typeof info.meta.providerStatus==='number')?(' ('+info.meta.providerStatus+')'):'';
+      return _pl('The AI service could not process this request'+ps+'. This is not a temporary outage — sending the same request again will not help.',
+        'AIサービスはこのリクエストを処理できませんでした'+ps+'。一時的な障害ではないため、同じリクエストを再送しても解決しません。');
+    }
     const M={
       provider_rate_limit:_pl('The AI service is busy right now — please try again in a moment (this is not your IntMap usage limit).','AIサービスが混雑しています。少し待って再試行してください（IntMapの利用回数上限ではありません）。','Der KI-Dienst ist gerade ausgelastet — bitte gleich erneut versuchen (nicht Ihr IntMap-Limit).','Сервис ИИ сейчас перегружен — повторите через мгновение (это не ваш лимит IntMap).','El servicio de IA está ocupado — inténtalo de nuevo en un momento (no es tu límite de IntMap).'),
       provider_quota:_pl('The AI provider quota was reached — this is separate from your IntMap free uses. Please try again later.','AIプロバイダ側の利用上限に達しました（あなたのIntMap無料利用枠とは別です）。後ほど再試行してください。','Das Kontingent des KI-Anbieters ist erschöpft — getrennt von Ihren IntMap-Freinutzungen. Später erneut versuchen.','Достигнут лимит провайдера ИИ — это отдельно от бесплатных использований IntMap. Повторите позже.','Se alcanzó la cuota del proveedor de IA — es independiente de tus usos gratuitos de IntMap. Inténtalo más tarde.'),
@@ -280,6 +290,36 @@ export function aiCore(HOST){
       invalid_structured_output:_pl('The AI structured output was invalid — please try again.','AIの構造化出力が不正でした。もう一度お試しください。','Die strukturierte KI-Ausgabe war ungültig — bitte erneut versuchen.','Структурированный вывод ИИ был неверным — повторите попытку.','La salida estructurada de la IA no era válida — inténtalo de nuevo.')
     };
     return M[code] || ('AI: '+(message||code||'error'));
+  }
+  /* ══ (atlas-completion) A FAILED CALL KEEPS WHAT THE SERVER SAID ABOUT IT ══════════════════════════
+     The thrown Error used to carry a sentence and (sometimes) a code. What the server ALSO said —
+     whether retrying can help, the HTTP status, the classification in `meta` — was dropped here, so
+     every reader upstream (js/atlas-agent.js trace.transportErrorInfo / finalError) had only the sentence.
+     `retryable` is the server's own value when it gave one; otherwise it is read off the status the way
+     ai-proxy itself classifies (429 / 5xx / no answer at all = a retry may help, any other 4xx = it will not).
+     `meta` keeps only flat scalar fields, each string bounded: the server's meta is already free of the
+     provider's body (providers/openai.ts keeps bodyLen, not the body), and nothing nested is passed on. */
+  function aiSafeMeta(m){
+    if(!m||typeof m!=='object') return undefined;
+    const o={}; let any=false;
+    Object.keys(m).forEach(k=>{ const v=m[k];
+      if((typeof v==='number'&&isFinite(v))||typeof v==='boolean'){ o[k]=v; any=true; }
+      else if(typeof v==='string'){ o[k]=v.slice(0,120); any=true; } });
+    return any?o:undefined;
+  }
+  function aiRetryableStatus(status){ return status===0||status===429||status>=500; }
+  function aiFail(message, code, status, retryable, meta){
+    const e=new Error(message);
+    if(code) e.code=String(code);
+    e.status=+status||0;
+    e.retryable=(typeof retryable==='boolean')?retryable:aiRetryableStatus(e.status);
+    const m=aiSafeMeta(meta); if(m) e.meta=m;
+    return e;
+  }
+  /* the network itself failed (no HTTP answer): the error is the platform's own, annotated, never replaced — an abort stays an abort */
+  function aiNetFail(e){
+    if(e&&e.name!=='AbortError'&&typeof e==='object'){ try{ if(!e.code) e.code='network'; e.status=0; e.retryable=true; }catch(_){} }
+    return e;
   }
   /* (#R132) FULL-envelope server call: returns {text, meta, citations} for a SINGLE call (no reliance on the global
      window._aiLastMeta, which a concurrent call can overwrite) and accepts opts.signal for real AbortController
@@ -355,7 +395,7 @@ export function aiCore(HOST){
     { const mp=aiModelPick(); if(mp){ body.model=mp.model; if(mp.provider) body.provider=mp.provider; } }
     const fetchOpts={method:'POST',headers,body:JSON.stringify(body)};
     if(opts&&opts.signal) fetchOpts.signal=opts.signal;   /* (#R132) real Abort */
-    let r=await fetch(cfg.url,fetchOpts);
+    let r; try{ r=await fetch(cfg.url,fetchOpts); }catch(e){ throw aiNetFail(e); }
     /* ══ (atlas-live-stream) A STREAMED ANSWER IS THE SAME ANSWER, READ AS IT IS MADE ══════════════════
        ai-proxy sends previews (think / text / call / search / reset) and ends with ONE `done` event whose
        {status, body} is exactly what it would have answered without streaming. aiReadStream hands the
@@ -382,10 +422,10 @@ export function aiCore(HOST){
         try{ opts.stream.onEvent('reset',{reason:'stream_broken'}); }catch(_){}
         delete body.stream; fetchOpts.body=JSON.stringify(body);
         if(body.replayKey) fetchOpts.headers={...headers,'x-intmap-replay':String(body.replayKey)};
-        r=await fetch(cfg.url,fetchOpts); _streamRetried=true;
+        try{ r=await fetch(cfg.url,fetchOpts); }catch(e2){ throw aiNetFail(e2); } _streamRetried=true;
       }
     }
-    if(r.status===401){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
+    if(r.status===401){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw aiFail(aiLoginMsg(),'auth_required',401,false); }
     if(r.status===429){
       /* ⚠ (#R447) READ THE BODY ONCE AND KEEP IT. This used to consume the response with r.json()
          and drop everything when that threw — so the one 429 nobody could account for left nothing
@@ -400,23 +440,26 @@ export function aiCore(HOST){
       try{ window._aiLast429={ at:_aiNow(), attributed:mine, error:(j&&j.error)||null,
         used:(j&&typeof j.used==='number')?j.used:null, body:String(raw||'').slice(0,300) }; }catch(_){}
       if(!mine){ try{ aiResyncUsage(); }catch(_){}   /* the row, not a guess */
-        throw new Error(aiProviderErrMsg('provider_rate_limit')); }
+        throw aiFail(aiProviderErrMsg('provider_rate_limit'),'provider_rate_limit',429,true); }
       /* ⚠ (#R491) THE GLOSS 429 IS ANSWERED FIRST AND NEVER TOUCHES THE QUESTION MIRROR. It is
          IntMap's own 429 (so it must not be read as a platform rate limit), it carries its own two
          numbers, and it says nothing whatever about how many questions the reader has left. */
-      if(j.error==='gloss_limit'){ if(typeof j.glossUsed==='number') aiSetGlossUsage(j.glossUsed, j.glossLimit); throw new Error(aiGlossLimitMsg()); }
+      if(j.error==='gloss_limit'){ if(typeof j.glossUsed==='number') aiSetGlossUsage(j.glossUsed, j.glossLimit); throw aiFail(aiGlossLimitMsg(),'gloss_limit',429,false); }
       if(typeof j.used==='number') aiSetUsage(j.used, j.limit); else { try{ aiResyncUsage(); }catch(_){} }
       /* (#R318) two different 429s. "limit" = the day's free uses are gone. "turn_calls" = THIS one
          request has already asked the model as many times as a request may — a bug in the repair
          loop, not a bill the reader owes, so it must not read as "you are out of uses". */
-      if(j.error==='turn_calls') throw new Error(aiTurnCallsMsg());
-      aiLimitReached(); throw new Error(aiLimitMsg()); }
+      if(j.error==='turn_calls') throw aiFail(aiTurnCallsMsg(),'turn_calls',429,false);
+      aiLimitReached(); throw aiFail(aiLimitMsg(),'limit',429,false); }
     if(!r.ok){
       /* (#R113) a typed PROVIDER error (502/503) is NOT the IntMap daily limit — surface a clear, distinct message
          (and never mislabel a Google-side 429 as "out of free uses"). */
-      let ej=null; try{ ej=await r.json(); }catch(_){}
-      if(ej&&ej.error){ const _e=new Error(aiProviderErrMsg(ej.error, ej.message)); _e.code=String(ej.error); throw _e; }   /* (atlas-native-tools) the proxy's own code travels with the message */
-      throw new Error('AI '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
+      /* (atlas-completion) the body is read ONCE as text: r.json() consumed it, so the snippet line below always read nothing */
+      let raw=''; try{ raw=await r.text(); }catch(_){ raw=''; }
+      let ej=null; try{ ej=JSON.parse(raw); }catch(_){ ej=null; }
+      if(ej&&ej.error){ const info={ retryable:(typeof ej.retryable==='boolean')?ej.retryable:undefined, meta:ej.meta };
+        throw aiFail(aiProviderErrMsg(ej.error, ej.message, info), String(ej.error), r.status, info.retryable, ej.meta); }   /* (atlas-native-tools) the proxy's own code travels with the message · (atlas-completion) and its retryable, status and meta */
+      throw aiFail('AI '+r.status+': '+aiErrSnippet(raw), 'http_'+r.status, r.status);
     }
     const j=await r.json().catch(()=>null);
     /* ⚠ (atlas-legacy-protocol-removal) A TURN THAT ASKED FOR PROTOCOL 2 AND DID NOT GET IT DID NOT GET AN ANSWER. The
@@ -425,7 +468,7 @@ export function aiCore(HOST){
        body that did not parse or carries no meta — a malformed answer, said as one, never an empty
        reply for the loop to hand back to the model as if it had written nothing. */
     if(opts&&opts.protocol===2&&!(j&&typeof j==='object'&&j.meta&&j.meta.protocol===2)){ try{ aiResyncUsage(); }catch(_){}   /* the row, not a guess: a body that did not parse carries no count */
-      const _e=new Error(aiProviderErrMsg('provider_malformed')); _e.code='provider_malformed'; throw _e; }
+      throw aiFail(aiProviderErrMsg('provider_malformed'),'provider_malformed',r.status,true); }
     if(j==null) return {text:'',meta:null,citations:[],callId,turnId:String((opts&&opts.turnId)||''),task:String((opts&&opts.task)||'free_text')};
     if(typeof j.used==='number') aiSetUsage(j.used, j.limit);
     if(typeof j.glossUsed==='number') aiSetGlossUsage(j.glossUsed, j.glossLimit);   /* (#R491) the gloss lane names its own numbers; the question mirror above never sees them */

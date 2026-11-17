@@ -1,6 +1,6 @@
 {
  "//": "tests/atlas-core-split-checks.test.mjs ① — what ai-proxy did with each request of CASES (tests/helpers/ai-proxy-contract-cases.mjs), run from `source`. Regenerate: node scripts/ai-proxy-photograph.mjs <git ref>",
- "source": "53e2bdd7032ef735d5003d7c49654b19c2425954:supabase/functions/ai-proxy/index.ts",
+ "source": "97ed1c3170148e9d330b11a20bc284be57eed60c:supabase/functions/ai-proxy/index.ts",
  "cases": {
   "refusals before the provider (openai)": [
    {
@@ -1087,6 +1087,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "ok",
+       "reason": null,
+       "searches": 1,
+       "sources": 1
+      },
       "protocol": 1
      },
      "citations": [
@@ -1254,6 +1262,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "ok",
+       "reason": null,
+       "searches": 1,
+       "sources": 1
+      },
       "protocol": 1
      },
      "citations": [
@@ -1421,6 +1437,14 @@
       "webSearches": 1,
       "schemaAttached": true,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -1840,6 +1864,12 @@
                 "null"
                ],
                "properties": {
+                "kind": {
+                 "type": [
+                  "string",
+                  "null"
+                 ]
+                },
                 "seriesId": {
                  "type": [
                   "string",
@@ -1890,6 +1920,7 @@
                 }
                },
                "required": [
+                "kind",
                 "seriesId",
                 "concept",
                 "value",
@@ -2059,6 +2090,14 @@
       "webSearches": 1,
       "schemaAttached": true,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -2270,6 +2309,12 @@
                 "null"
                ],
                "properties": {
+                "kind": {
+                 "type": [
+                  "string",
+                  "null"
+                 ]
+                },
                 "seriesId": {
                  "type": [
                   "string",
@@ -2320,6 +2365,7 @@
                 }
                },
                "required": [
+                "kind",
                 "seriesId",
                 "concept",
                 "value",
@@ -2487,6 +2533,14 @@
       "webSearches": 1,
       "schemaAttached": true,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -2679,6 +2733,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -2845,6 +2907,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -3021,6 +3091,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -3169,6 +3247,14 @@
       "webSearches": 1,
       "schemaAttached": true,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -3360,6 +3446,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -3521,6 +3615,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
@@ -3782,6 +3884,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
@@ -4030,6 +4140,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -4579,6 +4697,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -4786,6 +4912,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -5243,6 +5377,14 @@
       "webSearches": 1,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": [
@@ -5777,7 +5919,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -6029,6 +6171,14 @@
          "webSearches": 0,
          "schemaAttached": false,
          "finishReason": "completed",
+         "status": "complete",
+         "incompleteReason": null,
+         "web": {
+          "state": "not_run",
+          "reason": "not_requested",
+          "searches": 0,
+          "sources": null
+         },
          "protocol": 2,
          "inputTrimmed": {
           "invalidItems": 1
@@ -6060,7 +6210,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -6553,6 +6703,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
@@ -6848,6 +7006,14 @@
          "webSearches": 0,
          "schemaAttached": false,
          "finishReason": "completed",
+         "status": "complete",
+         "incompleteReason": null,
+         "web": {
+          "state": "not_run",
+          "reason": "not_requested",
+          "searches": 0,
+          "sources": null
+         },
          "protocol": 2,
          "inputTrimmed": {
           "invalidItems": 1
@@ -6904,6 +7070,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
@@ -7176,6 +7350,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "completed",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
@@ -7859,6 +8041,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "end_turn",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": []
@@ -7978,6 +8168,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "STOP",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": []
@@ -8156,6 +8354,14 @@
       "webSearches": 2,
       "schemaAttached": false,
       "finishReason": "end_turn",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "ok",
+       "reason": null,
+       "searches": 2,
+       "sources": 1
+      },
       "protocol": 1
      },
      "citations": [
@@ -8351,6 +8557,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "tool_use",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "model_did_not_search",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
@@ -8836,6 +9050,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "STOP",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": []
@@ -9055,6 +9277,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "STOP",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_attached",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": []
@@ -9263,6 +9493,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "STOP",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": []
@@ -9469,6 +9707,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "STOP",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 1
      },
      "citations": []
@@ -9938,6 +10184,14 @@
       "webSearches": 0,
       "schemaAttached": false,
       "finishReason": "STOP",
+      "status": "complete",
+      "incompleteReason": null,
+      "web": {
+       "state": "not_run",
+       "reason": "not_requested",
+       "searches": 0,
+       "sources": null
+      },
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1

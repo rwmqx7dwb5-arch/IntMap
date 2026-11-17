@@ -197,9 +197,10 @@ const ESCAPED_TAG = /&lt;\/?[a-z]/i;
 test('③ the migrated builders, evaluated: their markup is markup, not text (no builder was left returning a string)', () => {
   const IMG = '<img class="hist-flag" alt="" src="data:image/svg+xml,%3Csvg%3E">';
   const stats = { AAA: { name: 'Japan', flag: '🇯🇵' }, BBB: { name: 'Prussia', flag: IMG } };
-  const SC = run(lift(TREE['js/stats-compare.js'], ['CW', 'CH', 'mChart', 'secHtml', 'fmtSigned', 'barsHtml', 'barBlockHtml', 'blockHtml', '_tsYearList', '_yoptsAvail', '_tsRangeHtml']), {
+  const SC = run(lift(TREE['js/stats-compare.js'], ['CW', 'CH', 'mChart', 'secHtml', 'fmtSigned', 'barsHtml', 'barBlockHtml', 'blockHtml', '_tsYearList', '_yoptsAvail', '_tsRangeHtml', 'shortName', '_niceTicks']), {
     window: { IntMapSafe: S }, LL: (...a) => a[0], codes: ['AAA', 'BBB'], barSort: 'desc', PAL: ['#0a84ff', '#ff9500'], esc: S.html, html, flagM: (f) => S.trusted(S.flag(f)),
     tsFrom: 2000, tsTo: null, SIGNED: { g: 1 }, srcSel: {}, _ttYear: () => null, _cs: (cd) => stats[cd] || {}, cName: (s) => s.name, IntMapTime: { min: 1990 }, _tsAvailYears: new Set([2001]),
+    HOST: { lang: 'jp' }, _enDN: null, tYear: null,   /* tYear: «各国の最新値»; shortName (countries-companies): the CLDR short name only in English */
   }, ['mChart', 'barBlockHtml', 'blockHtml', 'secHtml', '_tsRangeHtml']);
   const ind = { k: 'g', l: ['GDP growth'], fmt: (v) => v.toFixed(1) + '%', imf: true };
   const serMap = { AAA: [{ y: 2000, v: 1 }, { y: 2001, v: -2 }], BBB: [{ y: 2000, v: 3 }, { y: 2001, v: 4 }] };

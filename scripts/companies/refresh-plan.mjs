@@ -58,6 +58,14 @@ export const BATCH = 120;
  * @param {Map<string,{generatedAt?:string, osmPending?:boolean}>} profiles  by id
  * @returns {{ ids:string[], picked:Array<{id,why,generatedAt}>, pending:number, total:number }}
  */
+/* (countries-companies) A PROFILE BUILT BY A RULE THAT HAS SINCE BEEN FIXED GOES FIRST. Until this date
+   scripts/companies/sec.mjs took each financial field from the FIRST us-gaap tag that answered, so a filer that had
+   moved its revenue to another tag shipped an old year beside new ones (NVIDIA: revenue FY2022, profit FY2026).
+   Measured 2026-11-17: 23 profiles whose SEC figures disagree on their fiscal year. A profile built before the fix
+   whose SEC figures still disagree is rebuilt ahead of the rest; once rebuilt its date is past this one and the
+   rule no longer picks it — it expires by itself. (Some will still disagree after the rebuild, honestly: a tag the
+   filer stopped using keeps its last year, and the panel prints each figure's own year.) */
+export const SEC_NEWEST_ACROSS_TAGS_SINCE = '2026-11-17';
 export function plan(rows, profiles, { batch = BATCH } = {}) {
   const known = (rows || []).filter((r) => r && typeof r.id === 'string' && r.id);
   const at = (id) => {
@@ -67,11 +75,20 @@ export function plan(rows, profiles, { batch = BATCH } = {}) {
     return p && /^\d{4}-\d{2}-\d{2}$/.test(String(p.generatedAt || '')) ? p.generatedAt : '0000-00-00';
   };
   const pending = (id) => !!(profiles.get(id) && profiles.get(id).osmPending);
-  const order = known.map((r) => ({ id: r.id, generatedAt: at(r.id), pending: pending(r.id) }))
-    .sort((a, b) => (b.pending - a.pending) || a.generatedAt.localeCompare(b.generatedAt) || a.id.localeCompare(b.id));
+  const staleFy = (id) => !!(profiles.get(id) && profiles.get(id).secYearsDisagree) && at(id) < SEC_NEWEST_ACROSS_TAGS_SINCE;
+  const order = known.map((r) => ({ id: r.id, generatedAt: at(r.id), pending: pending(r.id), staleFy: staleFy(r.id) }))
+    .sort((a, b) => (b.staleFy - a.staleFy) || (b.pending - a.pending) || a.generatedAt.localeCompare(b.generatedAt) || a.id.localeCompare(b.id));
   const n = Math.max(0, Math.floor(Number(batch) || 0));
-  const picked = order.slice(0, n).map((o) => ({ id: o.id, generatedAt: o.generatedAt, why: o.pending ? 'osmPending' : 'oldest' }));
+  const picked = order.slice(0, n).map((o) => ({ id: o.id, generatedAt: o.generatedAt, why: o.staleFy ? 'fiscalYears' : (o.pending ? 'osmPending' : 'oldest') }));
   return { ids: picked.map((p) => p.id), picked, pending: order.filter((o) => o.pending).length, total: order.length };
+}
+
+/** Do the figures a profile took from SEC EDGAR state more than one fiscal year? */
+export function secYearsDisagree(p) {
+  const si = ((p && p.sources) || []).findIndex((x) => x && x.name === 'SEC EDGAR company facts');
+  if (si < 0) return false;
+  const ys = new Set(Object.values((p && p.scale) || {}).filter((v) => v && v.src === si && v.fiscalYear).map((v) => v.fiscalYear));
+  return ys.size > 1;
 }
 
 /** The committed index + profiles, read the same way check:companies reads them. */
@@ -84,7 +101,7 @@ export function readCommitted(root = ROOT) {
     if (!f.endsWith('.json')) continue;
     try {
       const p = JSON.parse(readFileSync(join(pdir, f), 'utf8'));
-      profiles.set(f.replace(/\.json$/, ''), { generatedAt: p.generatedAt, osmPending: !!p.osmPending });
+      profiles.set(f.replace(/\.json$/, ''), { generatedAt: p.generatedAt, osmPending: !!p.osmPending, secYearsDisagree: secYearsDisagree(p) });
     } catch (_) { /* an unreadable profile has no date: plan() puts it first */ }
   }
   return { rows: index.companies || [], profiles };
@@ -107,7 +124,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const p = plan(rows, profiles, { batch: arg('--batch') != null ? Number(arg('--batch')) : BATCH });
   const a = ages(profiles, new Date().toISOString().slice(0, 10));
   console.log(`companies: ${p.total} in the index · osmPending ${p.pending} · median profile age ${a.medianDays} d · oldest ${a.oldestDays} d`);
-  console.log(`this run rebuilds ${p.ids.length}: ${p.picked.filter((x) => x.why === 'osmPending').length} pending, ${p.picked.filter((x) => x.why === 'oldest').length} oldest`);
+  console.log(`this run rebuilds ${p.ids.length}: ${p.picked.filter((x) => x.why === 'fiscalYears').length} built before the SEC fiscal-year fix, ${p.picked.filter((x) => x.why === 'osmPending').length} pending, ${p.picked.filter((x) => x.why === 'oldest').length} oldest`);
   if (arg('--out')) writeFileSync(arg('--out'), p.ids.join(','));
   if (arg('--summary')) {
     appendFileSync(arg('--summary'), [
@@ -116,7 +133,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       `| companies in the index | ${p.total} |`,
       `| osmPending before this run | ${p.pending} |`,
       `| median / oldest profile age | ${a.medianDays} d / ${a.oldestDays} d |`,
-      `| rebuilt by this run | ${p.ids.length} (${p.picked.filter((x) => x.why === 'osmPending').length} pending, ${p.picked.filter((x) => x.why === 'oldest').length} oldest) |`,
+      `| rebuilt by this run | ${p.ids.length} (${p.picked.filter((x) => x.why === 'fiscalYears').length} fiscal-year fix, ${p.picked.filter((x) => x.why === 'osmPending').length} pending, ${p.picked.filter((x) => x.why === 'oldest').length} oldest) |`,
       '', '<sub>scripts/companies/refresh-plan.mjs · docs/COMPANIES.md §11</sub>', '',
     ].join('\n'));
   }

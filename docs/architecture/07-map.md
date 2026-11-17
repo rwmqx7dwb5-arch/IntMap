@@ -385,7 +385,7 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 
 **読者が自分で描くピン・線・範囲と、その名前・メモ・色。保存し、共有リンクで運び、測り、分析し、書き出す。** ログインしていれば
 「アカウントに保存」で地図ドキュメント（`js/map-doc.js` `fromMyMap`——フラグメントの `mm=` が図形を運ぶ）にしてライブラリ（§8.1.2）の
-`save_view` に渡す（ブラウザの一覧は残る）。入口: **Tools ▾ ▸ マイマップ**（`tool.myMap`）・Atlas `map.myMap`（`{"type":"myMap","action":…}`）・
+`save_view` に渡す（ブラウザの一覧は残る）。入口: **その他のツール ▾ ▸ マイマップ**（`tool.myMap`）・Atlas `map.myMap`（`{"type":"myMap","action":…}`）・
 オブジェクト一覧（種類 `mymap`）・`mm=` を持つ共有リンク。モジュールは遅延（`IntMapLazy` の `myMap`、公開名 `window.IntMapMyMap`）。
 
 | 何 | どこで・どう |
@@ -407,7 +407,7 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 ### 7.3h データスタジオ (Data studio) — `js/data-studio.js` / `js/table-bind.js`
 
 **読者の表を、地図・分析・公開まで 1 枚のパネルで。** 取り込み（§7.3d）・データセットと処理（§7.3e）・着色・書き出し・絵葉書を 1 つの
-流れにまとめ、①座標の無い表を場所に結ぶ ②Excel を地図に出す ③取り込んだ表を公開する、を足した面。入口: **Tools ▾ ▸ データスタジオ**
+流れにまとめ、①座標の無い表を場所に結ぶ ②Excel を地図に出す ③取り込んだ表を公開する、を足した面。入口: **その他のツール ▾ ▸ データスタジオ**
 （`tool.dataStudio`。行が描画中かどうかも示す）・座標の無い表を落としたとき（`js/map-ui.js` の `handleFiles` が `format:'table'` を受けたら
 スタジオにその表を渡す）・Atlas `data.studio`・`ds=` を持つ共有リンク。どの入口も同じ字句の `import('./data-studio.js')` で読み
 （`js/lazy-modules.js` に登録せず window に何も公開しない。`studio(HOST)` が 1 つの制御器を返す）、`ds` の復元は `js/map-ui.js` の viewHash が
@@ -461,7 +461,7 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 | 事実 | `js/world-flows-core.js`（純粋）——国の表 `placeIndex`（ISO 3 文字・2 文字・`N:<M49>`）と名前の照合、時刻の規則 `yearFor`（**年ではなく時点で比べる**: 各記録の値はそれが述べる時点——移民は 7 月 1 日 `midYearMs`、航空路はその月の終わり、ケーブルは運用開始年の終わり `heldFromMs` / `yearEndMs`——から成り立つとし、時計の瞬間以前に成り立つ最も新しいものを読む。記録より前は答えず `before-record` と最初の年）、3 つの読み方、`summarise`（合計・割合・地図外）、`arcLine`（アプリの turf の大圏を経度の連続に直す——180 度線で世界を横切らない）、`arcFeatures` |
 | 国 | Natural Earth（`data/ne-countries` の 10m、公有）の `LABEL_X/Y`・`NAME_EN`・`NAME_JA`・`ISO_N3_EH`。同じ番号を国と属領が持つときは `ADM0_A3 = ISO_A3_EH` の地物が国。Natural Earth に無い DESA の地域（一覧は束の `migration.unplaced`、ビルドが印字する）は DESA の名前で表に残し、位置を持たず、カードが「地図外」と数える |
 | カードと地図 | `js/world-flows.js`（遅延チャンク・窓口を公開しない）。`.country-popup` のカード、ソース `wf-src`（流れを替えると作り直し、`attribution` がその記録を名乗る）と層 `wf-arc` / `wf-arrow` / `wf-end`（順位の丸、押すとその国へ）/ `wf-rank` / `wf-home`。`IntMapTime.on` で読み直し、図の棒を押すと時計がその年へ。枠取りはカードが覆わない部分へ（`js/card-clearance.js`）、地球儀では地球がその部分を満たすズーム（`log2(π·D/512)`）より引かず、国を中心に置く |
-| 扉 | Tools ▾ の「道具」`tool.worldFlows`（`js/map-ui.js`）・地点カードの国の行（`js/place-dossier.js` `data-hn="flows"`）・リンク `?wf=<ISO3>.<流れ>.<向き>`（`src/main.js` → `bootFromUrl`）・Atlas `data.worldFlows`（`js/atlas-cap-data.js`、observer `panel`） |
+| 扉 | その他のツール ▾ の「道具」`tool.worldFlows`（`js/map-ui.js`）・地点カードの国の行（`js/place-dossier.js` `data-hn="flows"`）・リンク `?wf=<ISO3>.<流れ>.<向き>`（`src/main.js` → `bootFromUrl`）・Atlas `data.worldFlows`（`js/atlas-cap-data.js`、observer `panel`） |
 
 読めなかったときは「読み込みの失敗であって、つながりが無いという意味ではない」と言う。記録より前の年は別の年で代用しない。
 
@@ -473,7 +473,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 | 事実 | `js/aftershock-core.js`（純粋）——区分 `regimeAt`（カリフォルニアの 5 区域→García の 0.05° 格子）・検知限界 `completenessAt` / `mcAt`・系列からの推定 `estimateMc`・事前分布の形 `shapePrior`・期間 `windows`・余震域 `zoneOf`（Wells & Coppersmith の破壊長、本震と M≥magCentroid の余震の球面重心）・`kIntegral`・`posterior`・`forecast`（事後分布上のポアソン混合で確率と 2.5/50/97.5%）・`run`（答え合わせ `check` と注記 `notes` を含む）・実測の被覆率 `testedCoverage`・USGS の `oaf` 製品の読み `oafUrl` / `readOafForecast`・`?as=` |
 | 束 | `data/aftershock-regimes.json.gz`（`scripts/build-aftershock-regimes.mjs`。OpenSHA OAF の 3 ファイルを 1 コミットに固定して無加工で写す・CC0）／`data/aftershock-hindcast.json`（`scripts/build-aftershock-hindcast.mjs`。2015〜2024 年の M7 以上 137 系列を本震の 1 日後に出した見通しと実際） |
 | カードと地図 | `js/aftershock.js`（IntMapLazy の `aftershock`）。ソース `as-src`、層 `as-ring` / `as-pt` / `as-main`。**マスタークロックが見通しの時点**——時計を動かすと読み込み済みの記録から計算し直し、範囲を外れたときだけ読み直す。ライブの時計がライブのまま進むだけでは計算し直さない |
-| 扉 | `js/wb-layers.js`（起動時）——地震ポップアップの「余震の見通し」（M5 以上）・`data-as-open`（地震の記録の選んだ地震からも）・命令 `aftershock.open`・`?as=` の検出。Tools ▾ の `sim.aftershocks` 行（`js/map-ui.js`）は最近 30 日の M5.5 以上の一覧で開く |
+| 扉 | `js/wb-layers.js`（起動時）——地震ポップアップの「余震の見通し」（M5 以上）・`data-as-open`（地震の記録の選んだ地震からも）・命令 `aftershock.open`・`?as=` の検出。その他のツール ▾ の `sim.aftershocks` 行（`js/map-ui.js`）は最近 30 日の M5.5 以上の一覧で開く |
 | Atlas | `sim.aftershocks`（`js/atlas-cap-sim.js`。observer `panel`、要約は `forAtlas`、`at` で見通しの時点） |
 読めなかったときは理由を言い、「余震が無かった」とは言わない。USGS 自身の予測（いまは ETAS）がある地震では並べて示し、合算しない。
 ### 7.4 Chronos（統一時間）と「年」
@@ -538,7 +538,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - 地名クリックの優先順位はエンジンの登録情報で判定する。`events.onLayer` の第4引数 `{ownership:'fallback'}` は他の地物や地名に譲る領域
   説明用で、`clickLayers()` は全登録、`clickLayers({ownersOnly:true})` は優先権を持つ登録を返す。無名歴史領域の説明は fallback。同一レイヤー
   の別ハンドラの優先権は維持する。登録台帳はレンダラに依存しない `js/click-ownership.js` が持ち、adapter と callback を弱参照する。
-- **境界線を押すと「この線の根拠」が開く**（`js/border-provenance.js`・`js/border-provenance-card.js`）。線を描く記録は自分を読み手として
+- **境界線を押すと「この線の根拠」が開く**（`js/border-provenance.js`・`js/border-provenance-card.js`）。**時計が「現在」のときは開かない**（`today-borders` の `layers()` が空を返す。今日の線は基図のタイルで日付の付いた記録を持たず、読者が現在を見ているときに出所のカードは要らない——2026-11-17 利用者。過去の年を今日の線で描いている間は開く）。線を描く記録は自分を読み手として
   登録する（`registerReader`）——国境は `js/time-borders.js` の `era-borders`（`imtb-line`）と `today-borders`（`borders-only-line`）、地方区分は
   `js/time-admin1.js` の `era-subdivisions`（ベクタタイル・束・継ぎ足しの 3 本）。1 本のリスナが押した点と周囲 8 点を覆う形を両側の記録として
   集める。線はタップの最後の持ち主（独占の持ち主には譲り、地図全体の持ち主は 1 マイクロタスク後に `clickClaimed` で聞く。測定などの道具・

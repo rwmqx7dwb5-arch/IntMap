@@ -326,11 +326,12 @@ test('#R255 ③ detail cards set their own left/top — .country-popup has none'
   for (const f of ['js/datacenters.js', 'js/osm-facilities.js']) {
     const s = code(read(f));
     assert.match(s, /className='country-popup'/, `${f} no longer uses the shared detail-card shell`);
-    assert.match(s, /el\.style\.left=/, `${f} appends a .country-popup without placing it — it lands below the fold`);
-    assert.match(s, /el\.style\.top=/, `${f} appends a .country-popup without placing it — it lands below the fold`);
-    /* project() is canvas-relative; the card is placed in page coordinates (#R252) */
-    assert.match(s, /getBoundingClientRect\(\)/, `${f} places the card without the canvas offset`);
+    /* (ui-feedback-nov17) placed by the ONE owner of «a card that belongs to a place»: js/popup-anchor.js writes left/top in
+       page coordinates (canvas rect + project(), #R252) and keeps writing them as the map moves (tests/popup-follow-checks) */
+    assert.match(s, /anchorToLngLat\(el,/, `${f} appends a .country-popup without placing it — it lands below the fold`);
   }
+  const anchor = code(read('js/popup-anchor.js'));
+  assert.match(anchor, /render\.canvas\(\)\.getBoundingClientRect\(\)/, 'the owner places the card with the canvas offset');
 });
 
 /* ── ⑧ the four new categories, their rows, and the layers that fill them ────────────────────── */

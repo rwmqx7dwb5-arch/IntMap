@@ -311,7 +311,7 @@ IntMapLang.define('fr', { ui: {
     'first appears in this report': 'apparaît pour la première fois dans cet article',
     'How this was written — the exact wording each sentence came from ({n})': 'Comment ce texte a été écrit — la formulation exacte dont provient chaque phrase ({n})',
     'In each outlet’s own words': 'Dans les mots de chaque média',
-    'The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.': 'Le paragraphe ci-dessus a été rédigé par une IA. Il réunit ce que ces médias ont publié : chaque phrase a été vérifiée automatiquement contre la formulation montrée ici avant d’être enregistrée, et les phrases non vérifiables sont écartées et jamais affichées.',
+    'The paragraph above was written by AI from what these outlets published. Each sentence names the outlet and the passage it is based on, and before saving a program checked that every such passage really appears in that outlet’s text; a sentence whose passage could not be found is discarded. The program does not check that the sentence states the passage correctly — compare them under “How this was written”.': 'Le paragraphe ci-dessus a été rédigé par une IA à partir de ce que ces médias ont publié. Chaque phrase indique le média et le passage sur lequel elle s’appuie ; avant l’enregistrement, un programme a vérifié que chacun de ces passages figure réellement dans le texte du média, et les phrases dont le passage est introuvable sont écartées. Le programme ne vérifie pas que la phrase rend fidèlement le passage — comparez-les sous « Comment ce texte a été écrit ».',
     'Key figures': 'Chiffres clés',
     'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': 'Un seul média a fourni le texte de l’article pour cet événement : c’est tout ce qu’IntMap peut montrer sans quitter l’application.',
     'Read at {s} ↗': 'Lire sur {s} ↗',
@@ -1672,7 +1672,6 @@ IntMapLang.define('fr', { ui: {
   "live web news": "actualités du web en direct",
   "{n} source(s) did not answer within {s}s": "{n} source(s) n’ont pas répondu en {s}s",
   "live web verification": "vérification web en direct",
-  "Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.": "La vérification web en direct n'a pas abouti pour cette question sensible au temps ; il s'agit donc d'une évaluation PROVISOIRE fondée surtout sur des titres déjà collectés — considérez ces éléments comme des pistes, pas comme des preuves directes confirmées.",
   "LOAD": "CHARGE",
   "loaded news": "actualités chargées",
   "Loaded news near here": "Actualités chargées à proximité",
@@ -3935,7 +3934,6 @@ IntMapLang.define('fr', { ui: {
   "Danger warning": "Avertissement de danger",
   "Delayed": "En retard",
   "Diagnostics": "Diagnostics",
-  "Each agency’s own published scale": "Échelle publiée par chaque service",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "Chaque pays provient de son propre service, dans les unités qu’il utilise. Affichage à titre indicatif : suivez les autorités officielles.",
   "Europe — MeteoAlarm": "Europe — MeteoAlarm",
   "every 30 s": "toutes les 30 s",
@@ -4572,7 +4570,7 @@ IntMapLang.define('fr', { ui: {
   "Countries at Danger or above": "Pays au niveau Danger ou au-dessus",   /* (#R299) */
   "No country is at Danger or above right now.": "Aucun pays n’atteint le niveau Danger actuellement.",   /* (#R299) */
   "IntMap’s own conversion — the same step is not the same danger.": "Conversion IntMap — un même niveau n’est pas le même danger.",   /* (#R299) */
-  "Each agency’s own colours. Tap a country for its exact scale.": "Couleurs de chaque service. Touchez un pays pour son échelle.",   /* (#R299) */
+  /* (#R299) */
   "No point placed yet": "Aucun point n’est encore placé",   /* (#R299) */
   "Place the point on the map": "Placer le point sur la carte",   /* (#R299) */
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "Le planificateur d’itinéraire est ouvert sur la carte — remplissez-y les deux champs, ou indiquez les lieux ici.",   /* (#R299) */

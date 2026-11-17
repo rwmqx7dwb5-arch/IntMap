@@ -31,6 +31,8 @@ import { LAYERS, layerDeclaration } from './layer-manifest.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper esc() below reads, in Node as in the app */
+import { isRankableCountry } from './atlas-metrics.js';   /* (atlas-answer-integrity) which code is a country — the one answer every ranking uses */
+import { wbCitation } from './wb-indicators.js';   /* (atlas-answer-integrity) how a World Bank series is cited — said once */
 
 const STORE = 'intmap.indicator';   /* the reader's last choice on this device */
 
@@ -238,18 +240,27 @@ export function makeIndicatorBrowser(host) {
     if (!S) return Object.assign(base, { year: null, reporting: 0, top: [], bottom: [], unit: e.unit || '' });
     const year = host.yearOf(e.code.split('+').length > 1 ? e.code.split('+') : e.code) || S.best;
     const row = S.by[year] || {};
-    const vals = Object.keys(row).filter((k) => k.length === 3).map((iso) => ({ iso, name: host.countryName(iso), v: row[iso] })).filter((x) => x.v != null && isFinite(x.v));
+    /* ⚠ (atlas-answer-integrity) A COUNTRY IS WHAT THE COUNTRY TABLE CALLS ONE, not a three-letter key. The World Bank
+       puts its aggregates in the same rows — WLD, EMU, AFW, HIC … — and `k.length === 3` counted every one of them:
+       measured on production 2026-11-17, life expectancy said 「261か国が報告」 for a series of ~215 countries, and an
+       aggregate could stand in «Highest». The table is asked through the same predicate every Atlas ranking uses. */
+    if (host.ready && !Object.keys(row).some((k) => host.country && host.country(k))) { try { await host.ready(); } catch (_) { /* the table could not load: nothing is called a country */ } }
+    const isCountry = (iso) => isRankableCountry(host.country ? host.country(iso) : null);
+    const vals = Object.keys(row).filter(isCountry).map((iso) => ({ iso, name: host.countryName(iso), v: row[iso] })).filter((x) => x.v != null && isFinite(x.v));
     vals.sort((a, b) => b.v - a.v);
     const k = Math.max(1, Math.min(10, n || 5));
-    return Object.assign(base, { year: year || null, years: [S.years[0], S.years[S.years.length - 1]], reporting: vals.length, unit: e.unit || '', top: vals.slice(0, k), bottom: vals.slice(-k).reverse() });
+    return Object.assign(base, { year: year || null, years: [S.years[0], S.years[S.years.length - 1]], reporting: vals.length, unit: e.unit || '', top: vals.slice(0, k), bottom: vals.slice(-k).reverse(), values: vals.map((x) => x.v) });
   }
 
   /** an indicator's facts as Atlas's answer (js/atlas-cap-layers.js `layers.indicator`) — beside the browser, out of Atlas's chunk */
+  /* ⚠ (atlas-answer-integrity) THE READER'S BLOCK CARRIES NO INTERNAL NAME. It used to print the series code
+     («SP.DYN.LE00.IN») and the other panel rows that paint the same series — the reader asked about life expectancy and
+     was shown an identifier and a list of aliases. The code is the citation's (`atlasMeta` → the answer's source list,
+     where it identifies the series a reader can look up) and the subject's (`meta.subject`, which Atlas reads). */
   function atlasHtml(f, note) {
     const fmt = (v) => { const x = Math.abs(v); return (x >= 100 ? Math.round(v).toLocaleString() : String(Math.round(v * 100) / 100)) + (f.unit || ''); };
-    let h = note('✓ ' + t('Country indicators', '国別指標') + ': ') + '<b>' + esc(f.name) + '</b> · ' + esc(f.code);
-    if (f.also && f.also.length) h += '<div>' + esc(t('The same series is also on the panel as ', '同じ系列はパネルでは次の行でもあります: ')) + esc(f.also.map((x) => x.name).join(t(', ', '、'))) + '</div>';
-    if (f.kind === 'row') return (h + '<div>' + esc(t('Drawn by its own row: ', '専用の行が描いています: ')) + esc(f.name) + '</div>');
+    let h = note('✓ ' + t('Map: ', '地図: ')) + '<b>' + esc(f.name) + '</b>';
+    if (f.kind === 'row') return h;
     if (!f.reporting) return (h + '<div>' + esc(t('The World Bank reports no country for this year', 'この年について世界銀行はどの国の値も公表していません')) + (f.year ? ' (' + esc(f.year) + ')' : '') + '</div>');
     h += '<div>' + esc(t('Year on the map: ', '地図の年: ')) + esc(f.year) + ' · ' + f.reporting + esc(t(' countries reporting', 'か国が報告')) + (f.years ? ' · ' + esc(t('series ', '系列 ')) + esc(f.years[0] + '–' + f.years[1]) : '') + '</div>';
     h += '<div>' + esc(t('Highest: ', '高い順: ')) + f.top.map((x) => esc(x.name) + ' ' + esc(fmt(x.v))).join(' · ') + '</div>';
@@ -257,10 +268,28 @@ export function makeIndicatorBrowser(host) {
     return h;
   }
 
+  /**
+   * (atlas-answer-integrity) What the result is about and where its numbers came from, for the reply (js/atlas-metrics.js
+   * `metricResult` says the same for the country table, in the same shape): `subject` is the series, so a ranking of
+   * the same quantity is recognised as the same subject (js/atlas-turn-results.js); `provenance` is the World Bank's
+   * citation with every value this year's map holds (js/atlas-answer-sources.js marks a number in Atlas's words with it).
+   * A `row` entry is drawn by another row and holds no numbers here, so it states nothing.
+   */
+  function atlasMeta(f) {
+    if (!f || f.kind !== 'series' || !f.code) return {};
+    const code = String(f.code).split('+');
+    const cite = wbCitation(code.length > 1 ? code : code[0]);
+    const date = f.year ? String(f.year) : '';
+    const provenance = (f.values && f.values.length) ? [{ kind: 'number', what: f.name, of: t('Countries', '国'), unit: String(f.unit || '').trim(),
+      source: cite.source, licence: cite.licence, url: cite.url, date, origin: 'raw', values: f.values.slice() }] : [];
+    return { subject: 'worldbank:' + f.code, facet: 'map', dataYear: date, provenance, rows: [],
+      brief: esc(t('Map: ', '地図: ') + f.name + (date ? ' · ' + t('data ', 'データ ') + date : '') + (f.reporting ? ' · ' + f.reporting + t(' countries', 'か国') : '')) };
+  }
+
   return {
     open: openBrowser, closed, select, search: (q, shelf) => search(q, shelf).map((e) => ({ id: e.id, kind: e.kind, name: nameOf(e), code: e.code, subject: shelfName(e.shelf), row: e.row })),
     catalogue: () => catalogue().map((e) => ({ id: e.id, kind: e.kind, name: nameOf(e), code: e.code, series: e.series, subject: e.shelf, row: e.row, also: e.also.slice() })),
     current: () => { const c = current(); return c ? { id: c.id, kind: c.kind, name: nameOf(c), code: c.code, row: c.row } : null; },
-    facts, atlasHtml, state: () => ({ open, current: (current() || {}).id || null, delegated }),
+    facts, atlasHtml, atlasMeta, state: () => ({ open, current: (current() || {}).id || null, delegated }),
   };
 }

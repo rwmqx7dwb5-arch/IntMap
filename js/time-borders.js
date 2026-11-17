@@ -3212,6 +3212,7 @@ export function timeBorders(HOST){
       try{ const t=_tOf.get(_drawnFC()); side.courses=_BC().coursesAt(d,row.i,t!=null?t:_whenYmd()); }catch(_){}
       if(row.file) side.index={ name:row.rec==='clio'?'clio':'ohm', file:row.file, i:row.i, key:rowKey(r) };
       return side; }
+    function _liveNow(){ try{ return !!(IntMapTime&&typeof IntMapTime.isLive==='function'&&IntMapTime.isLive()); }catch(_){ return false; } }
     registerReader({ id:'era-borders', family:'country',
       layers:()=>active?['imtb-line']:[],
       sidesAt:(lngLat,rDeg)=>{ const fc=active?_drawnFC():null; if(!fc||!fc.features) return []; return shapesAt(fc.features,lngLat,rDeg).map(_provSide); },
@@ -3220,7 +3221,11 @@ export function timeBorders(HOST){
        record row behind it — it is the base map's vector tile — so it answers only with what the tile itself states
        (the two sides it names, whether it is marked disputed) and the source's own credit; no date is claimed. */
     registerReader({ id:'today-borders', family:'country',
-      layers:()=>active?[]:['borders-only-line'],
+      /* ⚠ NOT WHILE THE MAP IS AT NOW. The user (2026-11-17): a press on a border line opens no card when the reader is
+         looking at the present — the card's job is to say which record a line comes from and since when, and today's line
+         is the base map's own tile with no dated record behind it. A clock set to a past year that still draws this line
+         (no era sheet for it) keeps the card. */
+      layers:()=>(active||_liveNow())?[]:['borders-only-line'],
       sidesAt:()=>[],
       lineFacts:(features)=>{ const f=(features||[]).find(x=>x&&x.layer&&x.layer.id==='borders-only-line'); if(!f) return null; const p=f.properties||{};
         return { supply:'modern', source:f.source||null, props:{ adm0_l:p.adm0_l||null, adm0_r:p.adm0_r||null, disputed:(p.disputed===1||p.disputed===true||p.disputed==='1'), claimed_by:p.claimed_by||null } }; },

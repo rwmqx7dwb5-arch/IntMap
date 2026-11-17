@@ -1,3 +1,4 @@
+import { figure } from './country-figures.js';   /* the ONE store of a value's year and source */
 /* ============================================================================
  *  IntMap · Atlas — ONE set of country metrics, and ONE resolver for its names  (#R740)
  * ----------------------------------------------------------------------------
@@ -22,6 +23,8 @@
  *  below are the kernel's own text, verbatim; everything they read from its closure arrives
  *  through `CTX` under the ORIGINAL names.
  * ==========================================================================*/
+import { wbIndicatorFor } from './wb-indicators.js';   /* (atlas-answer-integrity) the series a field is filled from names the subject a ranking of it is about */
+import { IntMapTime } from './chronos.js';   /* (atlas-answer-integrity) whether the country table holds the present or a past year's figures */
 /* ⚠⚠⚠ (#R775) WHICH ROWS OF `countryStats` ARE A COUNTRY — asked in ONE place, because it was being
    answered in two. Measured on production 2026-09-17, 「GDP上位10か国を…人口あたりGDPと比べて」:
    `data.rank {metric:"gdp_per_capita"}` answered with Antarctica at $200,000 in FIRST place, ahead of
@@ -33,6 +36,14 @@
    ⚠ THIS DOES NOT NARROW THE WORLD. Bermuda (4th) and the French Southern and Antarctic Lands (5th)
    stay, because the product's own Countries table shows them — measured in the same screenshot. The
    only rows it removes are the ones IntMap already declines to call a country. */
+/* ⚠⚠ (atlas-answer-integrity) …AND A THIRD READER ASKS IT NOW, SO IT LEFT THE FACTORY. js/indicator-browser.js ranks a
+   World Bank series straight from the World Bank's rows, and those rows carry the publisher's AGGREGATES under
+   three-letter codes exactly like a country's — World (WLD), Euro area (EMU), Africa Western and Central (AFW), High
+   income (HIC) …. Counting `k.length===3` told the reader 「261 countries reporting」 and could put «Euro area» in a
+   «Highest» list. Which code is a country is this question, so that file imports it by name rather than keeping a
+   second answer (that import is what tests/layer-boot-graph-checks.test.mjs #R175 ③ asks of an export); the factory
+   still hands the same function to the kernel (#R199 ②) — one definition, every reader. */
+export const isRankableCountry = s => !!(s && s.sov !== false && s.nameEn);
 export function makeAtlasMetrics(HOST, CTX) {
   const LA=CTX.LA, lx=CTX.lx, L=CTX.L, esc=CTX.esc, warn=CTX.warn, R=CTX.R;
   /* ⚠⚠ IT LIVES INSIDE THE FACTORY, not at module scope, because two invariants meet here:
@@ -42,7 +53,6 @@ export function makeAtlasMetrics(HOST, CTX) {
      factory return instead of the import line. Inside the factory it is still ONE definition, it
      still travels with the return set tests/atlas-console-kernel-checks.test.mjs #R199 ② holds to the destructuring, and nothing else in
      js/ has a second copy of the question. */
-  const isRankableCountry = s => !!(s && s.sov !== false && s.nameEn);
     /* metric catalog → countryStats keys */
     const METRICS={
       pop:{label:LA('Population','人口','Bevölkerung','Население','Población'),get:s=>s.pop},
@@ -165,5 +175,51 @@ export function makeAtlasMetrics(HOST, CTX) {
          js/atlas-agent.js. ⚠ `meta.retryable` exists elsewhere with no reader at all; it is left
          alone rather than co-opted, because nothing has measured what those producers mean by it. */
       {meta:{code:'unknown_metric', permanent:true}}); }
-  return { METRICS, XMET, VMET, XVMET, metAll, metKeys, metSpec, unknownMetric, isRankableCountry };   /* ⚠ (#R199 ②) the kernel destructures exactly this set — `metNamed` has no consumer outside this file and is deliberately not in it */
+    /* ══ (atlas-answer-integrity) WHAT A COUNTRY-METRIC RESULT IS ABOUT, AND WHERE ITS NUMBERS CAME FROM — AS DATA ══════
+       Measured on production 2026-11-17, one life-expectancy question: the reply carried a ranking in the prose, a
+       「Top 10」 block from `data.rank` and a 「Highest」 line from `layers.indicator` — three rankings of one quantity,
+       one of them from undated bundled constants — and its source list named only the basemap. Nothing on those
+       results said WHICH QUANTITY each was about, so js/atlas-turn-results.js could not tell that a later one answered
+       the same thing, and nothing said where the numbers came from, so js/atlas-answer-sources.js had nothing to cite.
+       This is that statement, built from the same rows the result printed:
+         subject     the quantity's identity — the World Bank series that fills the field when one does
+                     (js/wb-indicators.js `stat`), so a ranking by `lifeExp` and the indicator layer painting
+                     SP.DYN.LE00.IN are ONE subject; otherwise the field.
+         facet       which kind of statement about it this is ('ranking:top', 'ranking:bottom', 'map').
+         dataYear    the years the printed values are FOR, read off each value's own stamp (js/country-figures.js `figure`) (js/countries-ui.js,
+                     js/wb-layers.js `applyStat`) — «2023», or «2021–2023» when the latest per country differs.
+         provenance  one item per publisher of the printed values, with exactly the values it published
+                     (js/atlas-query.js `provenanceOf`'s shape, which js/atlas-answer-sources.js `collect` reads).
+         rows        the names printed, in order (what the reply's composer compares Atlas's own words with).
+         brief       the result in one line, for when the reply already presents it.
+       ⚠ A value with no stamp is cited by nobody. And while the clock is in the past the table holds that year's
+       figures (js/time-countries.js) while the stamp still describes the present ones, so nothing is cited then:
+       an answer must never look more sourced than it is ([[intmap-data-must-not-claim-an-author-it-lacks]]). */
+    function metricResult(key, rows, facet) {
+      const sp = metSpec(key); if (!sp) return {};
+      const I = wbIndicatorFor(sp.key);
+      const label = sp.m.label, list = Array.isArray(rows) ? rows : [];
+      const cs = (HOST && HOST.countryStats) || {};
+      const past = !IntMapTime.isLive() && !IntMapTime.isPresentYear(IntMapTime.year());   /* js/time-countries.js overlays the table exactly then */
+      const by = new Map(), years = [];
+      if (!past) list.forEach((r) => {
+        const f = cs[r.code] && figure(cs[r.code], sp.key), p = f && f.src ? { source: f.src, licence: f.licence, url: f.url, year: f.y == null ? '' : String(f.y) } : null;
+        if (!p || !p.source || typeof r.val !== 'number' || !isFinite(r.val)) return;
+        if (!by.has(p.source)) by.set(p.source, { p, values: [], years: [] });
+        const g = by.get(p.source); g.values.push(r.val);
+        const y = parseInt(p.year, 10); if (isFinite(y)) { g.years.push(y); years.push(y); }
+      });
+      const span = (ys) => { if (!ys.length) return ''; const lo = Math.min.apply(null, ys), hi = Math.max.apply(null, ys); return lo === hi ? String(lo) : (lo + '–' + hi); };
+      const provenance = [];
+      by.forEach((g) => provenance.push({ kind: 'number', what: label, of: LA('Countries', '国'), unit: '', source: g.p.source,
+        licence: g.p.licence || '', url: g.p.url || '', date: span(g.years), origin: 'raw', values: g.values }));
+      const dataYear = span(years);
+      const f = String(facet || 'ranking:top');
+      let what = ''; try { what = lx(label); } catch (_) { what = sp.key; }
+      const brief = (/^ranking/.test(f) ? (f === 'ranking:bottom' ? L('Lowest ', '下位 ') : L('Top ', '上位 ')) + list.length + ' · ' : L('Map: ', '地図: '))
+        + what + (dataYear ? ' · ' + L('data ', 'データ ') + dataYear : '');
+      return { subject: I ? ('worldbank:' + I.code) : ('stat:' + sp.key), facet: f, dataYear, provenance,
+        rows: /^ranking/.test(f) ? list.map((r) => String((r && r.name) || '')).filter(Boolean) : [], brief: esc(brief) };   /* a map's rows are every country, which no sentence presents — its names are not carried */
+    }
+  return { METRICS, XMET, VMET, XVMET, metAll, metKeys, metSpec, unknownMetric, isRankableCountry, metricResult };   /* ⚠ (#R199 ②) the kernel destructures exactly this set — `metNamed` has no consumer outside this file and is deliberately not in it */
 }

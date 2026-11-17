@@ -18,6 +18,7 @@ import { readWorldBank, wbIndicator } from './wb-indicators.js';   /* (country-a
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { figure } from './country-figures.js';   /* (countries-companies) a bundled value in its base unit, with the year and source it is for */
 import * as bus from './bus.js';
 
 export function statsCompare(HOST){
@@ -43,6 +44,15 @@ export function statsCompare(HOST){
        markup by construction, so it is vouched for here and nowhere else. */
     const html=window.IntMapSafe.markup;
     const flagM=f=>window.IntMapSafe.trusted(window.IntMapSafe.flag(f));
+    /* (countries-companies) THE NAME A NARROW COLUMN SHOWS. English reads Natural Earth's long form
+       (`nameEn` = «United States of America»), which the 128 px bar column cut to «United Stat…».
+       CLDR's standard region name is the short form a reader expects («United States», «United Kingdom»,
+       «Russia») and the browser already ships it; every other language already reads CLDR through
+       cName. A code with no ISO alpha-2 (a former state) keeps cName. The full name stays in the title. */
+    let _enDN; function shortName(cd){ const s2=_cs(cd);
+      try{ if(HOST.lang==='en'&&s2&&s2.a2&&s2.a2.length===2){ if(_enDN===undefined){ try{ _enDN=new Intl.DisplayNames(['en'],{type:'region',fallback:'none'}); }catch(_){ _enDN=null; } }
+        const n=_enDN&&_enDN.of(String(s2.a2).toUpperCase()); if(n) return n; } }catch(_){}
+      return cName(s2)||cd; }
     const PAL=['#0a84ff','#ff9500','#34c759','#bf5af2','#ff453a','#5ac8fa','#ffd60a','#ff2d92','#30b0c7','#a2845e'];   /* (#R71) up to 10 countries */
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return (Math.round(v*100)/100).toLocaleString(); }
     const pct=v=>(Math.round(v*100)/100)+'%', usd=v=>'$'+short(v), num=v=>short(v);
@@ -79,12 +89,17 @@ export function statsCompare(HOST){
       /* (#R70) 機能拡充: the bundled per-country reference values (the old bar-compare's data) become
          first-class indicators — instantly available (no fetch), bars/table always work, time-series shows the
          honest single point. `stat` reads countryStats; `src` is the real underlying source. */
-      {k:'area',     stat:s=>s.area,      yr:0, fmt:v=>short(v)+' km²', l:LA('Area','面積','Fläche','Площадь','Superficie'), def:0, src:'Natural Earth'},
-      {k:'hdi',      stat:s=>s.hdi,       yr:2022, fmt:v=>(+v).toFixed(3), l:LA('HDI','人間開発指数 (HDI)','HDI','ИЧР','IDH'), def:0, src:'UNDP'},
-      {k:'demi',     stat:s=>s.dem,       yr:2023, fmt:v=>(+v).toFixed(2), l:LA('Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia'), def:0, src:'EIU'},
-      {k:'gdpppp',   stat:s=>s.gdpPPP,    yr:0, fmt:usd, l:N('gdpppp'), def:0, src:'IMF/WB (PPP)'},
-      {k:'gdppcppp', stat:s=>s.gdppcPPP,  yr:0, fmt:usd, l:N('gdppcppp'), def:0, src:'IMF/WB (PPP)'},
-      {k:'milb',     stat:s=>s.milSpend,  yr:2023, fmt:v=>'$'+short(v*1e9), l:N('milb'), def:0, src:'SIPRI'}
+      /* (countries-companies) `fig` names the countryStats field: js/country-figures.js answers it in the BASE unit
+         (dollars, not billions) with the year its writer stated — no row here writes a unit or a year of its own. */
+      {k:'area',     fig:'area',      fmt:v=>short(v)+' km²', l:LA('Area','面積','Fläche','Площадь','Superficie'), def:0, src:'Natural Earth'},
+      {k:'hdi',      fig:'hdi',       fmt:v=>(+v).toFixed(3), l:LA('HDI','人間開発指数 (HDI)','HDI','ИЧР','IDH'), def:0, src:'UNDP'},
+      {k:'demi',     fig:'dem',       fmt:v=>(+v).toFixed(2), l:LA('Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia'), def:0, src:'EIU'},
+      /* (countries-companies) GDP (PPP) read the country table's `gdpPPP` — held in BILLIONS — through `usd`, which
+         formats dollars: Japan's $6.84T printed as «$6.8k». They are the World Bank's PPP series (wb-indicators.js), so
+         they are World Bank rows like the others: dollars, a year per value, a time series and a year to compare at. */
+      W('gdpppp',   {imf:null, fmt:usd, def:0}),
+      W('gdppcppp', {imf:null, fmt:usd, def:0}),
+      {k:'milb',     fig:'milSpend',  fmt:usd, l:N('milb'), def:0, src:'SIPRI'}
     ];
     /* (#R71) indicator metadata: category (the picker is grouped — "指標選択画面が煩雑"), sign-carrying
        indicators (green/red ± in bars & table — "増減指標は…緑赤"), and bundled-reference fallbacks used to
@@ -99,7 +114,9 @@ export function statsCompare(HOST){
       base:LA('Reference','基礎・参照','Referenz','Справочные','Referencia')};
     const CATORD=['eco','fis','soc','env','base'];
     const SIGNED={growth:1,cab:1,fdi:1};
-    const REFV={gdp:s=>s.gdp,gdppc:s=>s.gdppc,pop:s=>s.pop,life:s=>s.lifeExp,net:s=>s.internet};
+    /* the gap-fill from the bundled table — the FIELD, so js/country-figures.js gives it in the series' unit (GDP was billions
+       here while the World Bank's is dollars) and with its own year */
+    const REFV={gdp:'gdp',gdppc:'gdppc',pop:'pop',life:'lifeExp',net:'internet'};
     /* (#R63) reworked per explicit feedback: NO popup — the comparison renders INSIDE the sidebar (stats area);
        source switching is PER-INDICATOR and only shown where a second source actually exists (no fake implication
        that every metric has two sources). */
@@ -253,14 +270,17 @@ export function statsCompare(HOST){
         m[cd]= have ? {v:(_HSUM[ind.k]?sum:(den?num/den:null)), y:year, hist:true} : null;
       }
     }
+    /* (countries-companies) «各国の最新値» or «同一年»: `tYear` (one state for the bars AND the table) is the year every
+       country is read at; null = each country's own latest value, whose year is printed beside it. The clock's year,
+       while travelling, is the same request. */
     async function latestData(ind){
-      const ttY=_ttYear();
+      const travel=_ttYear(), ttY=(tYear!=null)?tYear:travel;
       if(ttY&&window.IntMapMaddison){ try{ await window.IntMapMaddison.load(); }catch(_){} }
-      if(ind.stat){ const m={}; codes.forEach(cd=>{ const s2=countryStats[cd]; const v=s2?ind.stat(s2):null; if(v!=null&&isFinite(+v)) m[cd]={v:+v,y:(typeof ind.yr==='number')?ind.yr:0}; });
+      if(ind.fig){ const m={}; codes.forEach(cd=>{ const fg=figure(countryStats[cd],ind.fig); if(fg&&(tYear==null||fg.y===tYear)) m[cd]={v:fg.v,y:fg.y||0}; });   /* a same-year comparison shows a bundled value only when it IS that year's */
         return {ind,map:m,srcName:ind.src||'IntMap',mixed:false}; }
       if(ttY){   /* travelling → THAT year only, honest (no present-day gap-fill) */
         const mf=_madField(ind), M=window.IntMapMaddison;
-        if(mf && M && M.ready() && ttY<=(M.maxYear||2018)){   /* GDP/pop → Maddison (real 2011 int$) up to 2018; 2019+ falls through to the World Bank nominal path below */
+        if(travel && mf && M && M.ready() && ttY<=(M.maxYear||2018)){   /* Maddison while the clock travels; a year picked here reads the nominal series */   /* GDP/pop → Maddison (real 2011 int$) up to 2018; 2019+ falls through to the World Bank nominal path below */
           const m2=_madMap(mf,ttY); await _histAddLatest(m2, ind, ttY);
           return {ind,map:m2,srcName:'Maddison Project',mixed:false,ttY:ttY,real:true}; }
         const wantImf2=(ind.imf&&srcSel[ind.k]==='imf');
@@ -278,7 +298,7 @@ export function statsCompare(HOST){
       for(const cd of codes){ if(m[cd]||_histEntry(cd)) continue;
         if(ind.imf&&srcName!=='IMF WEO'){ const vals=await _imfRaw(ind.imf); if(vals){ const im=imfLatest(vals,ind.imfScale); if(im[cd]){ m[cd]=Object.assign({src:'IMF'},im[cd]); mixed=true; continue; } } }
         if(ind.imf&&srcName==='IMF WEO'){ const wl=await wbLatest(ind.wb); if(wl[cd]){ m[cd]=Object.assign({src:'WB'},wl[cd]); mixed=true; continue; } }
-        const rf=REFV[ind.k]; if(rf){ try{ const v=rf(countryStats[cd]||{}); if(v!=null&&isFinite(+v)){ m[cd]={v:+v,y:0,src:'ref'}; mixed=true; } }catch(_){} } }
+        const rf=REFV[ind.k]; if(rf){ const fg=figure(countryStats[cd],rf); if(fg){ m[cd]={v:fg.v,y:fg.y||0,src:'ref'}; mixed=true; } } }
       await _histAddLatest(m, ind, _ttYear());   /* also when a former state lingers in the selection after leaving its era → resolves to — */
       return {ind,map:m,srcName,mixed,imfFail}; }
     /* (#R94d) the picker lists whatever's in countryStats — former states are injected there only while the clock is inside their lifespan, so they appear exactly when they can be compared. */
@@ -286,7 +306,7 @@ export function statsCompare(HOST){
     function cList(){ try{ return Object.keys(countryStats).filter(cd=>{ const s=countryStats[cd]; return s&&s.sov!==false; }).map(cd=>({code:cd,name:cName(_cs(cd))})).sort((a,b)=>a.name.localeCompare(b.name)); }catch(_){ return []; } }
     function ensureView(){ if(host&&document.body.contains(host)) return host;
       if(!ensureView._css){ ensureView._css=1; const st=document.createElement('style');
-      st.textContent='#scp-view .scp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--input-bg);color:var(--text-main);border:1.5px solid transparent;}'
+      st.textContent='#scp-view .scp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.22);}'
         +'#scp-view .scp-chip .scp-x{cursor:pointer;color:var(--text-muted);font-weight:700;} #scp-view .scp-chip .scp-x:hover{color:#ff453a;}'
         +'#scp-view .scp-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}'
         +'#scp-view .scp-add{height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.3);background:var(--card-bg);color:var(--text-main);font-size:12.5px;outline:none;min-width:0;flex:1;box-sizing:border-box;}'
@@ -297,21 +317,26 @@ export function statsCompare(HOST){
         +'#scp-view .scp-m{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid rgba(128,128,128,0.28);background:transparent;color:var(--text-muted);cursor:pointer;}'
         +'#scp-view .scp-m.on{background:var(--primary-fill);border-color:var(--primary-fill);color:#fff;font-weight:600;}'
         +'#scp-view .scp-tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}'
+        /* (countries-companies) the edge that still has columns behind it FADES — «まだ列が続く». A mask, not a painted
+           cover: the sidebar may be frosted glass (#R309), where any colour painted over the table edge is a patch.
+           The classes are set by _tblShade() from the scroll position. */
+        +'#scp-view .scp-tblwrap.more-r{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);}'
+        +'#scp-view .scp-tblwrap.more-l{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 28px),transparent);}'
+        +'#scp-view .scp-tblwrap.more-l.more-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 28px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,transparent,#000 28px,#000 calc(100% - 28px),transparent);}'
         +'#scp-view .scp-tbl{width:100%;border-collapse:collapse;font-size:11.5px;margin:4px 0 6px;}'
         +'#scp-view .scp-tbl td,#scp-view .scp-tbl th{padding:4px 7px;text-align:right;border-bottom:1px solid rgba(128,128,128,0.12);white-space:nowrap;}'
         +'#scp-view .scp-tbl th{color:var(--text-muted);font-weight:600;text-align:right;}'
         +'#scp-view .scp-tbl td:first-child,#scp-view .scp-tbl th:first-child{text-align:left;}'
         +'#scp-view .scp-sec{margin:14px 0 4px;font-weight:700;font-size:13px;color:var(--text-main);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}'
         /* (#R108) thin divider between each indicator block in the bar / time-series results (white in dark, subtle grey in light). */
-        +'#scp-view .scp-blk + .scp-blk{border-top:2px solid rgba(128,128,128,0.45);padding-top:7px;margin-top:5px;}'   /* (#R109) thicker */
-        +'[data-theme="dark"] #scp-view .scp-blk + .scp-blk{border-top-color:rgba(255,255,255,0.75);}'   /* (#R109) whiter */
+        +'#scp-view .scp-blk + .scp-blk{border-top:1px solid rgba(128,128,128,0.2);padding-top:9px;margin-top:9px;}'   /* (countries-companies) a hairline and air between indicators — the 2 px white bar out-shouted the numbers */
         +'#scp-view .scp-src{font-size:10.5px;color:var(--text-muted);font-weight:400;}'
         +'#scp-view .scp-srcsw{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:8px;overflow:hidden;}'
         +'#scp-view .scp-srcsw button{border:none;background:transparent;color:var(--text-muted);font-size:10px;padding:2.5px 8px;cursor:pointer;font-weight:600;}'
         +'#scp-view .scp-srcsw button.on{background:var(--primary-fill);color:#fff;}'
         /* (#R105) Back button: white background, black text, a refined minimal arrow (no plain "←"). */
-        +'#scp-view .scp-back{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(0,0,0,0.12);border-radius:10px;background:#ffffff;color:#111;padding:3px 12px 3px 9px;font-size:12px;font-weight:600;cursor:pointer;margin:0;flex:0 0 auto;}'   /* (#R108) tighter vertical padding (6→3), text size unchanged */
-        +'#scp-view .scp-back:hover{background:#f2f2f4;}'
+        +'#scp-view .scp-back{display:inline-flex;align-items:center;gap:4px;border:none;border-radius:8px;background:transparent;color:var(--text-muted);padding:3px 6px 3px 2px;font-size:12px;font-weight:600;cursor:pointer;margin:0;flex:0 0 auto;}'   /* (countries-companies) a way back, not the loudest thing on the screen — no fill, muted text */
+        +'#scp-view .scp-back:hover{color:var(--primary-color);}'
         +'#scp-view .scp-back .scp-backarr{flex:0 0 auto;display:block;}'
         /* (#R105) sticky compact header: title + view modes + Indicators toggle pinned to the top of the compare view. */
         /* == (#R309) ...and NOT a second time over the sidebar's own glass ====================
@@ -334,7 +359,17 @@ export function statsCompare(HOST){
         +'#scp-list .scp-cr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--text-main);}'
         +'#scp-list .scp-cr:hover{background:var(--input-bg);}'
         +'#scp-list .scp-cr.sel{background:rgba(10,132,255,0.10);}'
-        +'#scp-view .ts-wrap svg{height:100px !important;}'
+        +'#scp-view .ts-wrap svg{height:170px !important;}'
+        /* (countries-companies) the axis values sit over the plot's left edge as crisp HTML (the SVG is stretched) */
+        +'#scp-view .scp-plot{position:relative;}'
+        +'#scp-view .scp-tick{position:absolute;left:6px;transform:translateY(-50%);font-size:9px;line-height:1;color:var(--text-muted);opacity:0.85;pointer-events:none;font-variant-numeric:tabular-nums;background:var(--input-bg);padding:0 2px;border-radius:3px;}'
+        /* the legend WRAPS — a one-line table header cut its last countries off */
+        +'#scp-view .scp-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:2px 0 6px;font-size:11.5px;}'
+        +'#scp-view .scp-lg{display:inline-flex;align-items:baseline;gap:5px;min-width:0;}'
+        +'#scp-view .scp-lg .scp-dot{align-self:center;width:8px;height:8px;}'
+        +'#scp-view .scp-lgn{color:var(--text-muted);}'
+        +'#scp-view .scp-lgh{color:var(--text-muted);font-size:10.5px;font-weight:700;align-self:center;}'
+        +'#scp-view .scp-lg b{font-variant-numeric:tabular-nums;}'
         /* (#R70) unified compare: mode segment + bar view + Excel-like table */
         +'#scp-view .scp-ctrlrow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}'   /* (#R106) modes + Indicators on one row */
         +'#scp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;margin:0;align-self:center;}'
@@ -343,7 +378,8 @@ export function statsCompare(HOST){
         +'#scp-view .scp-modes button + button{border-left:1px solid rgba(128,128,128,0.35);}'
         +'[data-theme="dark"] #scp-view .scp-modes button + button{border-left-color:rgba(255,255,255,0.6);}'
         +'#scp-view .scp-modes button.on{background:var(--primary-fill);color:#fff;}'
-        +'#scp-view .scp-sortbar{display:flex;justify-content:flex-end;margin:0 0 6px;}'
+        +'#scp-view .scp-sortbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 6px;}'
+        +'#scp-view .scp-yearpick select{background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:8px;font-size:12px;font-weight:600;padding:5px 8px;cursor:pointer;outline:none;}'
         +'#scp-view .scp-sortbtn{display:inline-flex;align-items:center;gap:6px;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:8px;font-size:12px;font-weight:600;padding:5px 10px;cursor:pointer;}'
         +'#scp-view .scp-sortbtn:hover{border-color:var(--primary-color);color:var(--primary-color);}'
         +'#scp-view .scp-sortbtn[data-sort="desc"],#scp-view .scp-sortbtn[data-sort="asc"]{color:var(--primary-color);border-color:var(--primary-color);}'
@@ -358,11 +394,11 @@ export function statsCompare(HOST){
            気持ち悪い"); absolute-positioned fills allow a true 0 axis (bars grow left/right from the line). */
         +'#scp-view .scp-bars{display:flex;flex-direction:column;gap:5px;margin:4px 0 10px;}'
         +'#scp-view .scp-brow{display:flex;align-items:center;gap:8px;font-size:12px;}'
-        +'#scp-view .scp-bnm{flex:0 0 118px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);}'
+        +'#scp-view .scp-bnm{flex:0 0 128px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);}'
         +'#scp-view .scp-btrack{flex:1;height:14px;border-radius:7px;background:var(--input-bg);overflow:hidden;display:block;position:relative;}'
         +'#scp-view .scp-bfill{position:absolute;top:0;bottom:0;border-radius:4px;transition:width .35s ease,left .35s ease;}'
         +'#scp-view .scp-zline{position:absolute;top:-1px;bottom:-1px;width:1.5px;background:var(--text-muted);opacity:0.65;z-index:calc(var(--z-inset) + 1);}'
-        +'#scp-view .scp-bval{flex:0 0 112px;font-size:11.5px;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;}'
+        +'#scp-view .scp-bval{flex:0 0 104px;font-size:11.5px;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;}'
         +'#scp-view .scp-fill{color:var(--primary-color);font-weight:700;cursor:help;}'
         +'#scp-view .scp-secl{font-weight:700;}'
         +'#scp-view .scp-focus{margin-left:auto;border:1px solid rgba(128,128,128,0.28);background:transparent;color:var(--text-muted);border-radius:8px;font-size:10.5px;padding:2.5px 8px;cursor:pointer;}'
@@ -386,14 +422,17 @@ export function statsCompare(HOST){
         +'#scp-view .scp-xl th.scp-h{cursor:pointer;user-select:none;background:var(--input-bg);position:sticky;top:0;}'
         +'#scp-view .scp-xl th.scp-h:hover{color:var(--primary-color);}'
         +'#scp-view .scp-xl th.scp-rowh{text-align:left;cursor:grab;}'
-        +'#scp-view .scp-xl td{font-variant-numeric:tabular-nums;}'
-        +'#scp-view .scp-yr{color:var(--text-muted);font-size:9.5px;}'
+        +'#scp-view .scp-xl td{font-variant-numeric:tabular-nums;min-width:84px;text-align:right;}'
+        +'#scp-view .scp-xl td,#scp-view .scp-xl th{padding:7px 8px;}'
+        +'#scp-view .scp-xl th.scp-rowh{max-width:118px;overflow:hidden;text-overflow:ellipsis;}'
+        +'#scp-view .scp-xl th.scp-h[data-ax="col"]{text-align:right;}'
+        +'#scp-view .scp-yr{color:var(--text-muted);font-size:9.5px;opacity:0.72;font-weight:400;}'
         /* (#R79e) the bar chart was crushing in a narrow Countries WINDOW ("countriesウィンドウの幅によっては
            つぶれてしまう") because the name(118)+value(112) columns are fixed and the old media query keys off the
            VIEWPORT, not the window. Make the bars respond to the CONTAINER width: shrink the columns as it
            narrows, then stack (name on its own line, bar+value below) so the bar always has room. */
         +'#scp-view{container-type:inline-size;}'
-        +'@container (max-width:430px){ #scp-view .scp-bnm{flex-basis:94px;} #scp-view .scp-bval{flex-basis:82px;font-size:10.5px;} }'
+        +'@container (max-width:430px){ #scp-view .scp-bnm{flex-basis:112px;} #scp-view .scp-bval{flex-basis:92px;font-size:10.5px;} }'   /* (countries-companies) measured at the 350 px sidebar: 94 px cut «United Kingdom» to «United King…» even with the short name; the track keeps ~130 px */
         +'@container (max-width:340px){ #scp-view .scp-brow{flex-wrap:wrap;gap:2px 8px;} #scp-view .scp-bnm{flex:1 1 100%;} #scp-view .scp-btrack{flex:1 1 62%;min-width:70px;} #scp-view .scp-bval{flex:0 0 auto;text-align:left;} }'
         /* (#R106) NARROW compare view (the ws Countries window is ~270 px): compact the mode segment + Indicators
            toggle so "Bar chart | Time-series | Table" + Indicators still fit on ONE row ("一列に"). The Indicators
@@ -410,7 +449,7 @@ export function statsCompare(HOST){
         +'@container (max-width:335px){ #scp-view .scp-modes button{font-size:11px;} #scp-view .scp-mtog{font-size:11px;} #scp-view .scp-mtog .scp-mcount{min-width:2.5em;} }'
         +'@container (max-width:313px){ #scp-view .scp-modes button{font-size:10.5px;} #scp-view .scp-mtog{font-size:10.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.4em;} }'
         +'@container (max-width:292px){ #scp-view .scp-modes button{font-size:9.5px;} #scp-view .scp-mtog{font-size:9.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.2em;} }'
-        +'@media'+window.IntMapDevice.COMPACT+'{ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
+        +'@media'+window.IntMapDevice.COMPACT+'{ #scp-view .ts-wrap svg{height:150px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
       document.head.appendChild(st); }
       /* render INSIDE the country-list area — no popup. (#R79c) ROOT CAUSE of "比較機能死んでんぞ": the
          comparison mounted into #live-news-feed, but the country list moved to #countries-feed at the R78e
@@ -550,8 +589,8 @@ export function statsCompare(HOST){
       if(_picking){ try{ imToast(LL('Click a country on the map to add it','地図で国をクリックすると比較に追加されます','Land auf der Karte anklicken zum Hinzufügen','Кликните страну на карте, чтобы добавить','Haz clic en un país del mapa para añadirlo')); }catch(_){} } }
     function _endPick(){ try{ _setPick(false); }catch(_){} }
     function chipRow(){ const w=host&&host.querySelector('#scp-chips'); if(!w) return; w.innerHTML='';
-      codes.forEach((cd,i)=>{ const s2=_cs(cd); const el=document.createElement('span'); el.className='scp-chip'; el.style.borderColor=PAL[i];
-        el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+(s2.flag?window.IntMapSafe.flag(s2.flag)+' ':'')+esc(cName(s2)||cd)+'<span class="scp-x" role="button" tabindex="0" aria-label="'+LL('remove','削除','Entfernen','Удалить','Quitar')+'" title="'+LL('remove','削除','Entfernen','Удалить','Quitar')+'">×</span>';
+      codes.forEach((cd,i)=>{ const s2=_cs(cd); const el=document.createElement('span'); el.className='scp-chip';
+        el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+(s2.flag?window.IntMapSafe.flag(s2.flag)+' ':'')+'<span title="'+esc(cName(s2)||cd)+'">'+esc(shortName(cd))+'</span><span class="scp-x" role="button" tabindex="0" aria-label="'+LL('remove','削除','Entfernen','Удалить','Quitar')+'" title="'+LL('remove','削除','Entfernen','Удалить','Quitar')+'">×</span>';
         el.querySelector('.scp-x').onclick=()=>{ codes=codes.filter(x=>x!==cd); render(); }; w.appendChild(el); });
       try{ paintOnMap(); }catch(_){} }   /* (#R83) keep the map fill in sync with the current selection */
     /* (#R71) grouped picker behind a single toggle ("指標選択画面が煩雑になっている。ごちゃごちゃ") */
@@ -578,6 +617,11 @@ export function statsCompare(HOST){
     const CW=760, CH=120;
     /* (#R71) hh = pixel height override (the focus view uses a LARGE chart); a dashed 0-axis gridline is
        drawn whenever the value range crosses zero ("0の位置に補助線があった方が見やすい"). */
+    /* (countries-companies) a FEW round values across [lo,hi] — the axis a reader can actually read off
+       («縦軸には少数の目盛りと薄い補助線»). 1/2/5 × 10^n steps, about three of them. */
+    function _niceTicks(lo,hi,want){ const span=hi-lo; if(!(span>0)||!isFinite(span)) return [];
+      const raw=span/(want||3), p=Math.pow(10,Math.floor(Math.log10(raw))), m=raw/p, step=(m<1.5?1:m<3?2:m<7?5:10)*p;
+      const out=[]; for(let v=Math.ceil(lo/step)*step; v<=hi+step*1e-9; v+=step) out.push(Math.abs(v)<step*1e-9?0:v); return out; }
     function mChart(ind,serMap,hh){ const _lo=(tsFrom!=null?tsFrom:-Infinity), _hi=(tsTo!=null?tsTo:Infinity);
       const entries=codes.map((cd,i)=>({cd,i,s:(serMap[cd]||[]).filter(p=>p.y>=_lo&&p.y<=_hi)})).filter(e=>e.s&&e.s.length>1);   /* (#R122) clip to the chosen year window */
       if(!entries.length) return html`<div style="color:var(--text-muted);font-size:11px;padding:2px 0 8px;">${LL('No time-series available','時系列データなし','Keine Zeitreihe','Нет динамики','Sin series')}${tsFrom!=null||tsTo!=null?(' ('+(tsFrom!=null?tsFrom:'…')+'–'+(tsTo!=null?tsTo:'…')+')'):''}</div>`;
@@ -594,7 +638,10 @@ export function statsCompare(HOST){
       if(_tsNeg){ v0=Math.min(v0,0); v1=Math.max(v1,0); }
       const padL=8,padR=8,padT=10,padB=16; const X=y=>padL+((y-y0)/((y1-y0)||1))*(CW-padL-padR), Y=v=>padT+(1-(v-v0)/((v1-v0)||1))*(CH-padT-padB);
       const paths=[]; const meta=[];
-      if(v0<=0&&v1>=0&&(v1-v0)>0){ const zy=Y(0).toFixed(1); paths.push(html`<line x1="${padL}" x2="${CW-padR}" y1="${zy}" y2="${zy}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="4 4" opacity="0.55" vector-effect="non-scaling-stroke"/><text x="${padL+2}" y="${zy-3}" font-size="9" fill="var(--text-muted)">0</text>`); }
+      const ticks=_niceTicks(v0,v1,3); const tickLbls=[];
+      ticks.forEach(t=>{ if(t===0) return; const ty=Y(t); paths.push(html`<line x1="${padL}" x2="${CW-padR}" y1="${ty.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="var(--text-muted)" stroke-width="1" opacity="0.16" vector-effect="non-scaling-stroke"/>`); });
+      ticks.forEach(t=>{ tickLbls.push(html`<span class="scp-tick" style="top:${(Y(t)/CH*100).toFixed(2)}%;">${ind.fmt(t)}</span>`); });
+      if(v0<=0&&v1>=0&&(v1-v0)>0){ const zy=Y(0).toFixed(1); paths.push(html`<line x1="${padL}" x2="${CW-padR}" y1="${zy}" y2="${zy}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="4 4" opacity="0.55" vector-effect="non-scaling-stroke"/>`); }
       entries.forEach(e=>{ let d=''; const pts=[]; e.s.forEach((p,j)=>{ const x=X(p.y),y=Y(p.v); d+=(j?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' '; pts.push([p.y,+x.toFixed(1),+y.toFixed(1),ind.fmt(p.v)]); });
         paths.push(html`<path d="${d}" fill="none" stroke="${PAL[e.i]}" stroke-width="2" vector-effect="non-scaling-stroke"/>`); meta.push({i:e.i,cd:e.cd,pts}); });
       const hpx=hh||110;
@@ -603,10 +650,13 @@ export function statsCompare(HOST){
       /* the meta rides a single-quoted attribute: the tag escapes ' as well as " there */
       return html`${[
         html`<div class="ts-wrap scp-chart" style="margin:0 0 10px;position:relative;" data-m='${JSON.stringify(meta)}'>`,
+        html`<div class="scp-plot">`,
         html`<svg class="ts-svg" width="100%" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none" style="display:block;height:${hpx}px;background:var(--input-bg);border-radius:10px;cursor:crosshair;touch-action:none;">`,
         paths,
         html`<line class="ts-cursor" y1="0" y2="${CH}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>`,
         html`</svg>`,
+        tickLbls,
+        html`</div>`,
         html`<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);padding:1px 8px 0;font-variant-numeric:tabular-nums;"><span>${y0}</span><span>${y1}</span></div>`,
         html`<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:calc(var(--z-inset) + 5);transform:translate(-50%,-104%);line-height:1.5;"></div>`,
         html`</div>`]}`; }
@@ -659,8 +709,8 @@ export function statsCompare(HOST){
     }
     async function blockData(ind){
       /* (#R70) bundled reference indicators — instant, no fetch, single latest point */
-      if(ind.stat){ const y=(typeof ind.yr==='number')?ind.yr:new Date().getFullYear(); const sm={};   /* y=0 → year unknown/not meaningful, display suppressed */
-        codes.forEach(cd=>{ const s2=countryStats[cd]; const v=s2?ind.stat(s2):null; if(v!=null&&isFinite(+v)) sm[cd]=[{y,v:+v}]; });
+      if(ind.fig){ const sm={};   /* y=0 → no writer stated a year; display suppressed */
+        codes.forEach(cd=>{ const fg=figure(countryStats[cd],ind.fig); if(fg) sm[cd]=[{y:fg.y||0,v:fg.v}]; });
         return {ind,serMap:sm,srcName:ind.src||'IntMap',imfFail:false,statOnly:true}; }
       /* (#R94e) GDP/pop time-series → Maddison (real 2011 int$) while travelling, matching the bar view & Countries tab */
       const _mf=_madField(ind);
@@ -685,7 +735,7 @@ export function statsCompare(HOST){
       const imfOn=srcSel[ind.k]==='imf';
       const sw=(ind.imf && (_ty==null || (_ty>=1980 && _ty<=2030)))
         ?html`<span class="scp-srcsw" data-k="${ind.k}">${imfOn?html`<button data-s="wb">WB</button><button data-s="imf" class="on">IMF</button>`:html`<button data-s="wb" class="on">WB</button><button data-s="imf">IMF</button>`}</span><span class="scp-src">· ${srcName}</span>`
-        :html`<span class="scp-src">· ${ind.stat?(ind.src||'IntMap'):srcName||'World Bank'}</span>`;
+        :html`<span class="scp-src">· ${ind.fig?(ind.src||'IntMap'):srcName||'World Bank'}</span>`;
       /* (safe-dom-template) the focus view hides its own 詳細 button by an attribute the template writes —
          not by a search-and-replace on the finished markup */
       const detT=LL('Details','詳細','Details','Подробно','Detalles'), det=LL('Details','詳細','Details','Подробно','Detalles');   /* the title and the label, as before */
@@ -709,7 +759,7 @@ export function statsCompare(HOST){
       const rows=entries.map(x=>{ const s2=_cs(x.cd);
         /* (#R94g) the flag may be an <img> (former states) — insert it RAW, escape only the NAME (an emoji is a
            safe char, but esc() turned the <img> into visible tag text). The title attr gets the plain name. */
-        const nmTxt=cName(s2)||x.cd, nm=html`${s2.flag?[flagM(s2.flag),' ']:''}${nmTxt}`;
+        const nmTxt=cName(s2)||x.cd, nm=html`${s2.flag?[flagM(s2.flag),' ']:''}${shortName(x.cd)}`;
         if(!x.e) return html`<div class="scp-brow"><span class="scp-bnm" title="${nmTxt}">${nm}</span>${hasNeg?html`<span class="scp-btrack" data-z="1"><span class="scp-zline" style="left:${zero.toFixed(2)}%;"></span></span>`:html`<span class="scp-btrack"></span>`}<span class="scp-bval" style="color:var(--text-muted);">—</span></div>`;
         const v=x.e.v, w=Math.max(0.8,Math.abs(v)/range*100), left=v<0?(zero-w):zero;
         const bar=hasNeg
@@ -719,13 +769,16 @@ export function statsCompare(HOST){
         const srcM=x.e.src?html`<span class="scp-fill" title="${x.e.src==='ref'?LL('from bundled reference data','内蔵参照データで補完','aus Referenzdaten','из справочных данных','de datos de referencia'):LL('filled from ','補完: ','ergänzt aus ','дополнено из ','completado de ')+x.e.src}">°</span>`:'';
         return html`<div class="scp-brow"><span class="scp-bnm" title="${nmTxt}">${nm}</span><span class="scp-btrack">${bar}</span><span class="scp-bval">${fmtSigned(b.ind,v)}${srcM} ${yT}</span></div>`;
       });
-      return html`<div class="scp-bars">${rows}</div>${b.mixed?html`<div class="scp-src" style="margin:-4px 0 8px;">° ${LL('gap filled from the other source / bundled reference','欠損値は他ソース・内蔵参照データで補完','Lücke aus anderer Quelle/Referenz ergänzt','пробел дополнен из другого источника','hueco completado de otra fuente/referencia')}</div>`:''}`; }
+      const yrsSeen=new Set(entries.filter(x=>x.e&&x.e.y).map(x=>x.e.y));
+      const yrNote=(tYear==null&&!_ttYear()&&yrsSeen.size>1)?html`<div class="scp-src" style="margin:-4px 0 8px;">${LL('Each country’s latest value — the years differ (shown beside each value)','各国の最新値です。年が国によって異なります（値の横に表示）')}</div>`:'';
+      return html`<div class="scp-bars">${rows}</div>${yrNote}${b.mixed?html`<div class="scp-src" style="margin:-4px 0 8px;">° ${LL('gap filled from the other source / bundled reference','欠損値は他ソース・内蔵参照データで補完','Lücke aus anderer Quelle/Referenz ergänzt','пробел дополнен из другого источника','hueco completado de otra fuente/referencia')}</div>`:''}`; }
     function barBlockHtml(b){ return html`${secHtml(b.ind,b.srcName,(b.imfFail?html`<span class="scp-src">(${LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')})</span>`:''))}${barsHtml(b)}`; }   /* (#R118) bar view is honest about an IMF fallback too */
     function blockHtml(b){
       const head=secHtml(b.ind,b.srcName,(b.imfFail?html`<span class="scp-src">(${LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')})</span>`:''));
-      const ths=codes.map((cd,i)=>{ const s2=_cs(cd); return html`<th><span style="color:${PAL[i]};">●</span> ${cName(s2)||cd}</th>`; });
-      const tds=codes.map(cd=>{ const s2=b.serMap[cd]; if(!s2||!s2.length) return html`<td style="color:var(--text-muted);">—</td>`; const last=s2[s2.length-1]; return html`<td>${fmtSigned(b.ind,last.v)}${last.y?html` <span style="color:var(--text-muted);">(${last.y})</span>`:''}</td>`; });
-      return html`${head}<div class="scp-tblwrap"><table class="scp-tbl"><tr><th></th>${ths}</tr><tr><td>${LL('Latest','最新値','Aktuell','Последнее','Último')}</td>${tds}</tr></table></div>${mChart(b.ind,b.serMap)}`; }
+      /* (countries-companies) a wrapping legend — colour dot, short name, latest value and its year */
+      const lg=codes.map((cd,i)=>{ const s2=_cs(cd), ser=b.serMap[cd], last=(ser&&ser.length)?ser[ser.length-1]:null;
+        return html`<span class="scp-lg"><span class="scp-dot" style="background:${PAL[i]};"></span><span class="scp-lgn">${shortName(cd)}</span>${last?html`${fmtSigned(b.ind,last.v)}${last.y?html` <span class="scp-yr">(${last.y})</span>`:''}`:html`<span class="scp-yr">—</span>`}</span>`; });
+      return html`${head}<div class="scp-legend"><span class="scp-lgh">${LL('Latest','最新値','Aktuell','Последнее','Último')}</span>${lg}</div>${mChart(b.ind,b.serMap,170)}`; }
     /* (#R64) PER-INDICATOR rendering: a source switch re-renders ONLY its own block, from cache when available —
        no full "Loading data…" wipe, no scroll jump ("ソースを切り替えたらいちいち再度すべて読み込み").
        (#R69) each block additionally remembers WHAT it rendered (countries+source signature): re-renders with an
@@ -759,7 +812,7 @@ export function statsCompare(HOST){
       if(f) f.innerHTML=html`<option value="">${LL('start','開始','Start','начало','inicio')}</option>${_yoptsAvail(tsFrom!=null?tsFrom:'')}`;
       if(t2) t2.innerHTML=html`<option value="">${LL('end','終了','Ende','конец','fin')}</option>${_yoptsAvail(tsTo!=null?tsTo:'')}`; }catch(_){} }
     async function renderInd(k){ if(!host) return; const el=host.querySelector('.scp-blk[data-k="'+k+'"]'); const ind=IND.find(i2=>i2.k===k); if(!el||!ind) return;
-      const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode+'|'+barSort+'|'+(_ttYear()||'now')+'|'+(tsFrom==null?'':tsFrom)+'-'+(tsTo==null?'':tsTo);   /* (#R94) master-clock year; (#R122) time-series year window so a range change re-renders */
+      const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode+'|'+barSort+'|'+(_ttYear()||'now')+'|y'+(tYear==null?'':tYear)+'|'+(tsFrom==null?'':tsFrom)+'-'+(tsTo==null?'':tsTo);   /* (#R94) master-clock year; (#R122) time-series year window so a range change re-renders */
       if(el.dataset.sig===sig&&el.querySelector('.scp-sec')) return;   /* already showing exactly this */
       const my=(el.__seq=(el.__seq||0)+1);
       /* (#R71) bar mode reads the FAST latest-value path (1 request per indicator); only the time-series
@@ -830,6 +883,12 @@ export function statsCompare(HOST){
           const lab={added:LL('Order: as added','並び順: 追加順'),desc:LL('Order: largest first','並び順: 大きい順'),asc:LL('Order: smallest first','並び順: 小さい順')}[barSort];
           sb.innerHTML=html`<button type="button" class="scp-sortbtn" id="scp-sortbtn" data-sort="${barSort}" title="${LL('Change the order of the bars','棒の並び順を切り替える')}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>${lab}</button>`;
           sb.querySelector('#scp-sortbtn').onclick=()=>{ barSort=BAR_SORTS[(BAR_SORTS.indexOf(barSort)+1)%BAR_SORTS.length]; render(); };
+          /* (countries-companies) the year the bars compare at — the table's own picker, shared */
+          const ys=[]; for(let y2=new Date().getFullYear()-1;y2>=1960;y2--) ys.push(y2);
+          const yw=document.createElement('label'); yw.className='scp-yearpick';
+          yw.innerHTML=html`<select id="scp-byear" aria-label="${LL('Year to compare','比較する年')}"><option value=""${tYear==null?' selected':''}>${LL('Latest for each country','各国の最新値')}</option>${ys.map(y2=>html`<option value="${y2}"${tYear===y2?' selected':''}>${LL('Same year: ','同一年: ')}${y2}</option>`)}</select>`;
+          sb.insertBefore(yw,sb.firstChild);
+          yw.querySelector('select').onchange=(e)=>{ const v2=e.target.value; tYear=v2?+v2:null; render(); };
         } else if(sb) sb.remove();
       }catch(_){}
       if(mode==='ts'){ try{ let bar=body.querySelector('#scp-tsrange');
@@ -873,6 +932,9 @@ export function statsCompare(HOST){
        headers are DRAG-reorderable (real column/row rearrangement); a year selector re-reads every cell at
        that year (latest value ≤ the chosen year, year shown per cell); CSV export. All values come from the
        SAME cached series as the charts — no extra fetches. ===== */
+    /* which edges of a horizontally scrolling table still hide columns */
+    function _tblShade(w){ if(!w) return; const upd=()=>{ const max=w.scrollWidth-w.clientWidth; w.classList.toggle('more-r',max>1&&w.scrollLeft<max-1); w.classList.toggle('more-l',max>1&&w.scrollLeft>1); };
+      upd(); if(!w.__shadeWired){ w.__shadeWired=1; w.addEventListener('scroll',upd,{passive:true}); try{ new ResizeObserver(upd).observe(w); }catch(_){} } }
     function _valAt(ser,yr){ if(!ser||!ser.length) return null; if(yr==null) return ser[ser.length-1];
       for(let i=ser.length-1;i>=0;i--){ if(ser[i].y<=yr) return ser[i]; } return null; }
     async function renderTable(){ if(!host) return; const body=host.querySelector('#scp-body');
@@ -885,7 +947,7 @@ export function statsCompare(HOST){
       if(tYear==null){ const ls=await Promise.all(inds.map(ind=>latestData(ind))); if(my!==renderTable._seq||!host||!host.isConnected) return; ls.forEach(b=>{ bByK[b.ind.k]={ind:b.ind,latest:b.map}; }); }
       else { const blocks=await Promise.all(inds.map(ind=>blockData(ind))); if(my!==renderTable._seq||!host||!host.isConnected) return; blocks.forEach(b=>{ bByK[b.ind.k]={ind:b.ind,ser:b.serMap}; }); }
       const wrap=body.querySelector('#scp-tblv'); if(!wrap) return;
-      const cellAt=(indK,cd)=>{ const b=bByK[indK]; if(!b) return null; if(b.latest) return b.latest[cd]||null; return _valAt(b.ser[cd],tYear); };
+      const cellAt=(indK,cd)=>{ const b=bByK[indK]; if(!b) return null; if(b.latest) return b.latest[cd]||null; const p=_valAt(b.ser[cd],tYear); return (p&&p.y===tYear)?p:null; };   /* (countries-companies) «2020» compares 2020 — an older value is not quietly put in its column */
       /* row/col axes — default rows=countries; tFlip transposes */
       const rows=tFlip?inds.map(i2=>i2.k):codes.slice();
       const cols=tFlip?codes.slice():inds.map(i2=>i2.k);
@@ -894,7 +956,7 @@ export function statsCompare(HOST){
       if(tSort&&cols.indexOf(tSort.col)>=0){ const colKey=tSort.col;
         const cellV=(rk)=>{ const indK=tFlip?rk:colKey, cd=tFlip?colKey:rk; const p=cellAt(indK,cd); return p?p.v:null; };
         rowOrder.sort((a,b2)=>{ const va=cellV(a),vb=cellV(b2); if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return tSort.dir==='asc'?va-vb:vb-va; }); }
-      const cLbl=cd=>{ const s2=_cs(cd); return html`${s2.flag?[flagM(s2.flag),' ']:''}${cName(s2)||cd}`; };
+      const cLbl=cd=>{ const s2=_cs(cd); return html`${s2.flag?[flagM(s2.flag),' ']:''}<span title="${cName(s2)||cd}">${shortName(cd)}</span>`; };
       const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return html`${i2?LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4]):k2}`; };
       const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLbl(key));
       const yrs=[]; for(let y2=new Date().getFullYear();y2>=1960;y2--) yrs.push(y2);
@@ -918,6 +980,7 @@ export function statsCompare(HOST){
       h.push(html`</table></div>`);
       h.push(html`<div class="scp-src" style="margin-top:6px;">${LL('Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)','出典は指標ごと（世界銀行／IMF WEO／内蔵参照データ — 棒グラフ・時系列表示に明記）','Quellen je Kennzahl: Weltbank / IWF WEO / Referenzdaten','Источники по показателям: Всемирный банк / МВФ / встроенные данные','Fuentes por indicador: Banco Mundial / FMI WEO / datos de referencia')}</div>`);
       wrap.innerHTML=html`${h}`;
+      _tblShade(wrap.querySelector('.scp-tblwrap'));
       wrap.querySelector('#scp-flip').onclick=()=>{ tFlip=!tFlip; tSort=null; renderTable(); };
       wrap.querySelector('#scp-year').onchange=(e)=>{ const v2=e.target.value; tYear=v2?+v2:null; renderTable(); };
       const un=wrap.querySelector('#scp-unsort'); if(un) un.onclick=()=>{ tSort=null; renderTable(); };
@@ -956,8 +1019,8 @@ export function statsCompare(HOST){
       if(!_LY()) return false;   /* engine not built yet (#R172) */
       if(_LY().has('imcmp-fill')) return true;
       const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!_LY().has(id); }catch(_){ return false; } });
-      try{ _LY().add({id:'imcmp-fill',type:'fill',source:'imcmp-src',paint:{'fill-color':['coalesce',['get','color'],'#0a84ff'],'fill-opacity':0.5}},before);
-        _LY().add({id:'imcmp-line',type:'line',source:'imcmp-src',paint:{'line-color':['coalesce',['get','color'],'#0a84ff'],'line-width':1.6,'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
+      try{ _LY().add({id:'imcmp-fill',type:'fill',source:'imcmp-src',paint:{'fill-color':['coalesce',['get','color'],'#0a84ff'],'fill-opacity':0.34}},before);
+        _LY().add({id:'imcmp-line',type:'line',source:'imcmp-src',paint:{'line-color':['coalesce',['get','color'],'#0a84ff'],'line-width':1,'line-opacity':0.8}},before); return true; }catch(_){ return false; } }
     /* (#R94h/#R94n) while travelling, paint each compared country's ERA polygon (its borders THAT year) rather
        than the modern one, so the Compare highlight matches history — the German Empire's 1910 extent (≠ modern
        Germany), 1910 France (no Alsace-Lorraine), and former states like the USSR that have no modern polygon

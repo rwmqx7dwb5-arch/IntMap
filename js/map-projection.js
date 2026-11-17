@@ -65,6 +65,30 @@ export function makeProjection(CTX){
      desktop keeps a sensible floor. */
   function flatMinZoom(){ return isMobile()?0:1.2; }
 
+  /* ══ (space-floor-same-on-every-screen) THE GLOBE'S FLOOR IS AN APPARENT SIZE, NOT A ZOOM NUMBER ══════════════
+     「デバイスの画面幅によって、keep zooming out for spaceのズーム閾値が変動してしまう。できるだけおなじ体験に。」
+     The globe's floor was minZoom 0 on every screen, and a zoom level is a size in CSS px, not a share of the screen:
+     the globe at z0 is ~89 px in radius WHATEVER the window is (measured on four viewports, js/space.js — the table at
+     the handover knee). So the hint (js/space-approach.js, NEAR_FLOOR levels above the floor) and the floor itself
+     arrived with the Earth filling 0.25 of a 1280×720 window's half-height but over 0.45 of a phone's half-width:
+     the same gesture, a different place on every screen.
+     ⇒ The floor is the zoom at which the globe takes the share of the map's SHORTER side it took on the screen the
+     approach was tuned on (#R201–#R216: a 1280×720 window, floor z0). A world doubles per level, so that is
+     log2(shorter side / 720) — every level-relative rule built on the floor (the hint, the integral, the handover
+     size js/space.js reads back through getMinZoom) then lands at the same apparent size on every screen.
+     Observation: the 1280×720 reference and the 89 px radius are js/space.js's own measurements. Invalidated if the
+     approach is re-tuned on another screen (change 720 to that screen's shorter side) or if the globe stops doubling
+     per zoom level. Bounded below by -2, the renderer's own lowest zoom (js/geo-engine.js TILT_MIN_ZOOM). */
+  const FLOOR_REF_SIDE=720;
+  function globeMinZoom(){
+    try{ const el=document.getElementById('map'); const w=el?el.clientWidth:0, h=el?el.clientHeight:0;
+      const side=Math.min(w,h); if(!(side>0)) return 0;
+      return Math.max(-2, Math.log2(side/FLOOR_REF_SIDE)); }catch(_){ return 0; } }
+  let _floorT=0;
+  function refitGlobeFloor(){ clearTimeout(_floorT); _floorT=setTimeout(()=>{ try{
+    if(GE().hasRenderer()&&CTX.getProj()!=='flat') GE().camera.setMinZoom(globeMinZoom()); }catch(_){} },120); }
+  try{ window.addEventListener('resize',refitGlobeFloor,{passive:true}); }catch(_){}
+
   /* ══ ⚠⚠ (#R297) THE FLAT MAP WRAPS. THERE IS NO OTHER KIND ═══════════════════════════════════
      「平面地図は自由スクロールに一本化し、ヨーロッパ中心の固定地図は完全削除。設定の該当項目も削除。」
      「Fixed extent (Europe-centered)」 was a single, non-repeating world: pan east from Japan and the
@@ -104,7 +128,7 @@ export function makeProjection(CTX){
   /* projection — TRUE kernel commands (UI + Atlas both call these). */
   function wire(){
     IntMapOS.register('view.proj.flat', ()=>{ CTX.setProj('flat'); document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!GE().hasRenderer())return; GE().camera.setProjection('flat'); GE().camera.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); CTX.cmpFollowProj(); }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
-    IntMapOS.register('view.proj.globe', ()=>{ CTX.setProj('globe'); document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!GE().hasRenderer())return; try{ GE().camera.setMaxBounds(null); GE().camera.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(0); GE().camera.setProjection('globe'); updateOcclusion(); CTX.cmpFollowProj(); }, {label:'Globe', btn:'btn-view-globe', group:'view'});
+    IntMapOS.register('view.proj.globe', ()=>{ CTX.setProj('globe'); document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!GE().hasRenderer())return; try{ GE().camera.setMaxBounds(null); GE().camera.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(globeMinZoom()); GE().camera.setProjection('globe'); updateOcclusion(); CTX.cmpFollowProj(); }, {label:'Globe', btn:'btn-view-globe', group:'view'});
     document.getElementById('btn-view-flat').onclick=()=>IntMapOS.exec('view.proj.flat',{source:'ui'});
     document.getElementById('btn-view-globe').onclick=()=>IntMapOS.exec('view.proj.globe',{source:'ui'});
   }
@@ -121,7 +145,7 @@ export function makeProjection(CTX){
     try{ if(openingProjection()==='flat'){
         if(IntMapOS.has&&IntMapOS.has('view.proj.flat')) IntMapOS.exec('view.proj.flat',{source:'url'});
         else { GE().camera.setProjection('flat'); GE().camera.setMinZoom(flatMinZoom()); applyFlatPanSetting(); } }
-      else GE().camera.setProjection('globe'); }catch(e){}
+      else { GE().camera.setProjection('globe'); GE().camera.setMinZoom(globeMinZoom()); } }catch(e){}
   }
 
   function watch(){

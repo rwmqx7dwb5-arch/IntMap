@@ -243,7 +243,7 @@ export function makeAtlasLive(HOST, deps) {
             if (nm) st.callNames.push(nm);
             /* a call in the same reply makes whatever it wrote a note, not the answer */
             if (ai.__atlDraft) { narrate(ai, st, ai.__atlDraft); setDraft(ai, ''); }
-            if (PROG) PROG.detail(ai, L('Next: ', '次: ', 'Als Nächstes: ', 'Далее: ', 'Siguiente: ') + st.callNames.map(wordForTool).join(', '));
+            if (PROG) PROG.detail(ai, st.callNames.map(wordForTool).join(', '), L('Next: ', '次: ', 'Als Nächstes: ', 'Далее: ', 'Siguiente: '));
           } else if (name === 'search') {
             if (PROG) PROG.detail(ai, L('Searching the web', 'Web を検索中', 'Durchsuche das Web', 'Ищу в интернете', 'Buscando en la web'));
           } else if (name === 'reset') {
@@ -453,8 +453,11 @@ export const ATLAS_LIVE_CSS =
   + 'border-radius:2px;background:currentColor;opacity:.45;animation:atl-caret 1s steps(2,start) infinite;}'
   + '@keyframes atl-caret{to{visibility:hidden;}}'
   + '#atlas-panel .atl-draft.stopped{opacity:.72;border-left:2px dashed var(--glass-border,rgba(128,128,128,0.35));padding-left:8px;}'
-  + '#atlas-panel .atl-trace-row.say{align-items:flex-start;}'
-  + '#atlas-panel .atl-trace-row.say .atl-trace-det{white-space:normal;overflow:visible;opacity:.9;font-style:italic;}'
+  /* (ui-feedback-nov17) WHAT ATLAS WROTE ON THE WAY IS BODY TEXT, NOT A CAPTION: upright, at reading size,
+     with room above and below it. Its mark is a speech glyph, not a tick, so it does not wear the green. */
+  + '#atlas-panel .atl-trace-row.say{align-items:flex-start;padding:6px 0;}'
+  + '#atlas-panel .atl-trace-row.say .atl-trace-mark{color:var(--text-muted);margin-top:4px;}'
+  + '#atlas-panel .atl-trace-row.say .atl-trace-det{white-space:normal;overflow:visible;opacity:.92;font-size:14px;line-height:1.55;font-weight:400;}'
   /* ⚠ WHERE IT STANDS WAS MEASURED, NOT CHOSEN: at the top of the map it sat under the search bar, the
      engine switches and every floating legend. The bottom centre of the map is the one band no control
      occupies on a desktop — the readout is bottom-left, Chronos bottom-right. On a phone the sheet covers
