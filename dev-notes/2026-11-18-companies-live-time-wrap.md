@@ -1,6 +1,7 @@
 ---
 title: Companies の時刻は日付と時刻の境でだけ折り返す／国カードは出典の発行者名を年と並べる
 date: 2026-11-18
+pr: 1194
 newsen: In the Companies list a quote time now breaks only between its date and its time, and the country card names each figure's publisher beside its year.
 newsjp: Companies の一覧で、株価の時刻は日付と時刻の境でだけ改行されるように。国カードは各数値の年と並べて出典の発行者名を表示。
 ---
