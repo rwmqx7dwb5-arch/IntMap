@@ -4,7 +4,7 @@
 // signed-in caller could still stream an unbounded body or hold the connection open, so the body is read
 // here with a ceiling on the bytes actually received (not just Content-Length, which may be absent in a
 // chunked request or simply lie) and a wall-clock deadline. Pure: no Deno globals, importable by node tests.
-// (_shared/relay-guard.js `readCapped` was not reused: it takes a Response, throws a RelayError whose
+// (the shared relays' `readCapped` was not reused: it takes a Response, throws a RelayError whose
 // vocabulary is the relays', and has no deadline.)
 
 /* DELETE_BODY_MAX_BYTES

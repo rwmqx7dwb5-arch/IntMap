@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const B = await import(pathToFileURL(join(ROOT, 'supabase/functions/delete-account/body.js')).href);
@@ -83,8 +84,7 @@ test('every refusal has a distinct stable HTTP status', () => {
 });
 
 test('index.ts refuses a rejected body before the admin check, the purge and the auth deletion', () => {
-  const code = readFileSync(join(ROOT, 'supabase/functions/delete-account/index.ts'), 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const code = codeOnly(readFileSync(join(ROOT, 'supabase/functions/delete-account/index.ts'), 'utf8'));
   const at = (s) => code.indexOf(s);
   const read = at('readDeleteConfirm(req)');
   assert.ok(!/req\.json\(\)/.test(code), 'an unbounded req.json() is back');

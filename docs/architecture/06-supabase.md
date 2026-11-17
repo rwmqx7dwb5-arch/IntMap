@@ -55,9 +55,9 @@
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。
 
-### 6.2 Edge Functions — **21本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **22本**（`_shared/` は関数ではない）
 
-> **21本すべてを `supabase/config.toml` に `[functions.*]` として宣言する**（ヘッダコメントの deploy フラグは設定ではない）。
+> **22本すべてを `supabase/config.toml` に `[functions.*]` として宣言する**（ヘッダコメントの deploy フラグは設定ではない）。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`rate-limit.js`・`volcano-parse.js` などを置くライブラリで、
 > import した関数の中に CLI がバンドルする。`[functions._shared]` は書かない。
 
@@ -155,6 +155,7 @@
   アカウント・セッション・時刻は持たない。守りは POST 限定・本文上限 16 KiB・Origin・共有 token bucket 2 つ（閉じて失敗）・metric ごと 1 日の dimension 数の上限
   （`record_usage_counts`）。1 日の上限は `USAGE_COUNT_GLOBAL_PER_DAY`。保持は 400 日（pg_cron `usage-counts-purge`）。読むのは `admin.html` の **Usage** と **Growth** タブ（Growth は
   入口・流入元・utm・Atlas の回答の型で読み、utm 付きの発信リンクも作る。`usage_counts_summary` は SECURITY INVOKER）。読者の手元での速さ（`ready` / `boot_end`）だけは `field_speed()`（SECURITY DEFINER・anon 可・期間は 14 日固定で呼び出し側は選べない）が版と端末ごとの**割合**と帯で公開する（整数％・100 回未満は出さない・件数と日は返さない。§15.10）。速さの 2 指標は呼び出し元（HMAC 化したネットワークの鍵）× 指標 × 版 × UTC 日につき 1 回だけ数える（その札は `relay_rate_buckets` に最大約 48 時間残る）。[`docs/MONITORING.md`](../MONITORING.md) §2b。
+- **`community-class`** … サーバだけが呼べる 3 つの扉——みんなの地図の目録（`community_maps`）と生徒のクラスのリンク（`class_set_open`・`class_set_submit`）——への唯一の道（`--no-verify-jwt`・秘密なし・生徒はアカウント不要）。3 本の RPC は service_role にだけ EXECUTE があり、関数は POST・本文上限・Origin・宣言された引数だけ（`community-class/shape.js`）を通したうえで、クラスの扉では呼び出し元ごとの token（`relay_take`・HMAC の鍵・失敗時は閉じる）を**コードを照会する前に**取る（300 回／10 分・学校の共有アドレスの見積もり）。目録は他の公開 relay と同じ `callerGate`。ブラウザは `js/community-class-door.js` だけを通り、直の RPC へは戻らない。[`docs/SECURITY-ARCHITECTURE.md`](../SECURITY-ARCHITECTURE.md) §8 item 25。
 - **`reader-reports`** … フィードバックとバグ報告の書き込み先（`--no-verify-jwt`・秘密なし）。`js/feedback.js` の 2 つのフォームと組織からの相談フォーム（`contact.html`・`js/org-page.js`、
   kind `inquiry`）が POST し、関数が service_role で `feedback` / `bug_reports` / `org_inquiries` に 1 行書く（相談の語彙・上限・返信先は `_shared/inquiry-shape.js`。返信先は本人が書いた
   アドレスで、`user_id` だけが検証済みのセッションから来る。見えない欄 `website_confirm` が埋まっていれば 400）。表へ直接は書けない（`anon`・`authenticated` の INSERT policy と grant は
@@ -173,9 +174,9 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 その関数の読者 1 人のページが 1 分に送る最大数（各関数の `READER_PER_MIN`＝推定）×`READERS_PER_ADDRESS`（10）。DB が答えなければ通す。拒否は `429 rate_limit`＋`Retry-After`。
 `<関数名>_PER_IP_PER_MIN` で deploy なしに動かせる。`routing-relay` は自前の fail-closed の全体上限を持つ。
 
-**`_shared/relay-guard.js` を共有するのは19本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `fetch-relay` / `gdelt-relay` /
+**`_shared/relay-guard.js` を共有するのは20本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` /
 `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）。そのうち `ai-proxy`（JWT）・
-`atlas-embed`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り15本は無認証。`ai-proxy`・`client-errors`・
+`atlas-embed`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り16本は無認証。`ai-proxy`・`client-errors`・
 `reader-reports`・`usage-count` が共有するのは読み手だけ（`readCapped`＝要求本文を上限で切る、`fetchBounded`＝提供者への POST を本文の最後のバイトまで同じ期限と上限で読む）。
 リダイレクトは手で辿る（`followRedirects`。各ホップを同じ https オリジンか `allowRedirect(next, from)` で検査し、上限は 3 ホップ `MAX_REDIRECTS`）。共有しているのは URL allowlist・GET 限定・
 期限（`AbortSignal.timeout`）・バイト上限（`content-length` とストリーム読み出しの両方）・Content-Type 判定・外向きエラーはコード1語。公開レイヤーなのでログイン必須にはしない。
