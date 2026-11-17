@@ -29,12 +29,13 @@ import { writeFootprint } from './footprint.mjs';   /* (ux-next) the all-compani
 import { join } from 'node:path';
 import {
   ROOT, sparql, entities, httpJSON, claims, best, dvItem, dvStr, dvCoord, dvQuantity,
-  qualItem, qualStr, qualTime, qualQuantity, wdDate, timeYear, label, labelMap, qid, val, chunk, cacheGet, cachePut, SEC_UA,
+  qualItem, qualStr, qualTime, qualQuantity, tieEnded, wdDate, timeYear, label, labelMap, qid, val, chunk, cacheGet, cachePut,
 } from './wd.mjs';
 import { loadManifest, curatedRows } from './manifest.mjs';
 import { typeIndex, pickType, GROUP_OF, PRESENCE_KIND } from './facility-types.mjs';
 import { resolveAll } from './resolve.mjs';
 import { osmFacilities, OSM_SOURCE } from './osm.mjs';
+import { secTickerMap, secFinancials } from './sec.mjs';
 import { countryIndex, countryAt } from './geo.mjs';
 
 const argv = process.argv.slice(2);
@@ -138,64 +139,6 @@ function countClaim(e, prop, srcIdx) {
   return { value: Math.round(q.amount), asOf: String(bestY), src: srcIdx };
 }
 
-/* ── SEC EDGAR ───────────────────────────────────────────────────────────── */
-const SEC_TAGS = {
-  revenue: ['RevenueFromContractWithCustomerExcludingAssessedTax', 'Revenues', 'SalesRevenueNet'],
-  operatingIncome: ['OperatingIncomeLoss'],
-  netIncome: ['NetIncomeLoss'],
-  totalAssets: ['Assets'],
-};
-let _secTickers = null;
-async function secTickerMap() {
-  if (_secTickers) return _secTickers;
-  const cached = cacheGet('sec', 'company_tickers', 7 * 24 * 3600 * 1000);
-  const j = cached || cachePut('sec', 'company_tickers', await httpJSON('https://www.sec.gov/files/company_tickers.json', { headers: { 'User-Agent': SEC_UA } }));
-  const m = new Map();
-  for (const k of Object.keys(j || {})) {
-    const r = j[k];
-    if (r && r.ticker) m.set(String(r.ticker).toUpperCase(), String(r.cik_str).padStart(10, '0'));
-  }
-  _secTickers = m;
-  return m;
-}
-async function secConcept(cik, tag) {
-  const key = cik + '/' + tag;
-  const hit = cacheGet('sec', key, 30 * 24 * 3600 * 1000);
-  if (hit !== null) return hit;
-  let j = null;
-  try {
-    j = await httpJSON('https://data.sec.gov/api/xbrl/companyconcept/CIK' + cik + '/us-gaap/' + tag + '.json', { retries: 2, headers: { 'User-Agent': SEC_UA } });
-  } catch (_) { j = null; }
-  cachePut('sec', key, j || false);
-  return j;
-}
-/** Latest annual (FY, 10-K) figure with its own fiscal year and currency. */
-function secLatestAnnual(concept) {
-  if (!concept || !concept.units) return null;
-  for (const cur of Object.keys(concept.units)) {
-    /* ⚠ NOT EVERY UNIT BUCKET IS A LIST. Measured mid-run: one filer's concept
-       came back with a non-array under a unit key and the whole build died on
-       `.filter is not a function` — after forty minutes of upstream work. A
-       malformed bucket is one company's missing number, never the run. */
-    if (!Array.isArray(concept.units[cur])) continue;
-    const rows = concept.units[cur].filter((u) => u && u.fp === 'FY' && u.form && String(u.form).indexOf('10-K') === 0 && u.end);
-    if (!rows.length) continue;
-    /* ⚠ TWO SHAPES. Income-statement facts are DURATIONS (start..end) and only a
-       ~365-day one is the annual figure; balance-sheet facts (Assets) are
-       INSTANTS and carry no `start` at all. Requiring `start` silently dropped
-       every balance-sheet tag — measured on Apple, where totalAssets fell back to
-       a 2021 Wikidata value while revenue was FY2025 from the filing. */
-    const durations = rows.filter((u) => u.start);
-    const annual = durations.length
-      ? durations.filter((u) => { const d = (Date.parse(u.end) - Date.parse(u.start)) / 86400000; return d > 300 && d < 400; })
-      : rows;
-    const pick = (annual.length ? annual : rows).sort((a, b) => (a.fy - b.fy) || (Date.parse(a.end) - Date.parse(b.end))).pop();
-    if (!pick) continue;
-    return { value: pick.val, currency: cur, fiscalYear: 'FY' + pick.fy, end: pick.end };
-  }
-  return null;
-}
-
 /* ── GLEIF ───────────────────────────────────────────────────────────────── */
 async function gleifByLei(lei) {
   const key = 'lei/' + lei;
@@ -208,6 +151,14 @@ async function gleifByLei(lei) {
 }
 
 /* ── facilities ──────────────────────────────────────────────────────────── */
+/* ⚠ A RELATION THAT HAS ENDED IS NOT A RELATION. The queries below read `wdt:` — every best-rank statement — and
+   Wikidata keeps an owner, operator or parent that stopped being one as a normal-rank statement with an end time
+   (P582). Measured 2026-11-17: Evraz «operated» the Sukha Balka mine through a P749 statement ending 2017-03-01,
+   and ArcelorMittal the Karaganda steel plant through a P137 statement ending 2023 — both shipped as `operating`.
+   The statement-level SPARQL form timed out on WDQS (same day), so the test runs in JS (wd.mjs `tieEnded`), on the facility entities
+   the build fetches anyway: a facility is kept for a company unless EVERY statement that ties the two (the site's
+   P127 / P137 / P749 naming the company, the company's P1830 naming the site) has ended; a site reached only
+   through a subsidiary is kept unless every owner and operator it states has ended. */
 const FACILITY_QUERY = (values) => (
   'SELECT ?co ?f ?type ?coord ?cc ?adm ?opened ?closed ?addr WHERE {\n'
   + '  VALUES ?co { ' + values + ' }\n'
@@ -551,12 +502,8 @@ async function main() {
     const cik = usTicker ? secMap.get(usTicker) || secMap.get(usTicker.replace('.', '-')) : null;
     if (cik && !has('--no-sec')) {
       const secSrc = S.add('SEC EDGAR company facts', 'https://data.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=' + cik);
-      for (const [field, tags] of Object.entries(SEC_TAGS)) {
-        for (const tag of tags) {
-          const got = secLatestAnnual(await secConcept(cik, tag));
-          if (got) { scale[field] = { value: got.value, currency: got.currency, fiscalYear: got.fiscalYear, src: secSrc }; break; }
-        }
-      }
+      const fin = await secFinancials(cik);   /* scripts/companies/sec.mjs — the newest annual figure across each field's tags */
+      for (const field of Object.keys(fin)) scale[field] = { value: fin[field].value, currency: fin[field].currency, fiscalYear: fin[field].fiscalYear, src: secSrc };
     }
 
     /* GLEIF — the LEI, the REGISTERED LEGAL NAME, and the registered address */
@@ -625,6 +572,7 @@ async function main() {
       const fe = facEnts[rec.q];
       const nm = fe ? label(fe, ['en', 'ja', 'de', 'fr', 'es']) : null;
       if (!nm) continue;
+      if (tieEnded(fe, rec.q, e, q)) continue;               /* the company no longer owns or runs it — see TIE_PROPS */
       const key = rec.coord[0].toFixed(5) + ',' + rec.coord[1].toFixed(5);
       if (seenPos.has(key)) continue;                        /* same spot, already published */
       seenPos.add(key);
@@ -753,7 +701,13 @@ async function main() {
        company operate in", which is the question §5 of the brief is about. The
        coordinate always answers it, so a missing P17 is filled from the polygon
        rather than left blank. */
-    for (const f of facs) if (!f.cc) f.cc = countryAt(geoIdx, f.lon, f.lat) || '';
+    /* ⚠ …AND A COUNTRY THAT NO LONGER EXISTS IS NOT WHERE A SITE IS TODAY. P17 lists every country a place has been in
+       (Sukha Balka: Russian Empire, USSR, Ukraine — all normal rank) and the first row won, so the atlas linked
+       companies to «SUN» and «DDR» (8 sites, 2026-11-17): unnamed and undrawable on the present map, and wrong.
+       A stated code that is not a country of today's map is replaced by the country the coordinate is in. */
+    for (const f of facs) {
+      if (!f.cc || !geoIdx.isos.has(f.cc)) f.cc = countryAt(geoIdx, f.lon, f.lat) || f.cc || '';
+    }
 
     /* presence — countries where an operation actually exists */
     const presence = [];

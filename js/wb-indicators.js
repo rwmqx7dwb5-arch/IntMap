@@ -29,6 +29,7 @@
 import { clockFor, ownRelayUrl } from './proxy-fetch.js';
 import { readWithin, isUnobserved } from './fetch-deadline.js';
 import { IntMapLang } from './lang-registry.js';
+import { setFigure } from './country-figures.js';   /* the ONE store of a value's year and source */
 
 /* the translations held as data — the same `pickArgs` every table in js/ uses (js/lang-registry.js #R241) */
 const LA = IntMapLang.pickArgs();
@@ -148,8 +149,8 @@ export function wbCitation(code) {
  *   field   a record field one series fills (`stat` above)
  *   latest  that series' latest value per country, `{ ISO3: { v, y } }` (js/wb-layers.js `wbFetch`)
  * Writes every value the World Bank has over the table's — a bundled figure included — and records beside it who
- * published it and for which year (`record._prov[field]`). A country the series does not report keeps its value and
- * its own `_prov`. A code that is not a row of the table (the World Bank's aggregates: WLD, EMU, AFW …) is not written.
+ * published it and for which year (js/country-figures.js `setFigure` — the one store every reader asks with `figure`).
+ * A country the series does not report keeps its value and its own stamp. A code that is not a row of the table (the World Bank's aggregates: WLD, EMU, AFW …) is not written.
  * The one writer js/wb-layers.js `applyStat` uses, kept here so a check runs this code rather than a copy.
  */
 export function applyLatest(table, field, latest) {
@@ -160,9 +161,9 @@ export function applyLatest(table, field, latest) {
   Object.keys(latest || {}).forEach((code) => {
     const s = table[code], d = latest[code];
     if (!s || !d || d.v == null || !isFinite(d.v)) return;
-    s[field] = (+d.v) * sc; n++;
+    n++;
     const y = +d.y; if (isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
-    (s._prov = s._prov || {})[field] = { source: cite.source, licence: cite.licence, url: cite.url, year: String(d.y || ''), code: I.code };
+    setFigure(s, field, (+d.v) * sc, d.y, { source: cite.source, licence: cite.licence, url: cite.url, code: I.code });
   });
   return { field, code: I.code, n, years: n && isFinite(lo) ? [lo, hi] : null };
 }

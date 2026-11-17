@@ -20,6 +20,7 @@ import { IntMapTime } from './chronos.js';
 /* (mobile-performance) when a phone may refresh the World Bank figures */
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
+import { setFigure } from './country-figures.js';   /* (countries-companies) the refreshed value replaces the old one WITH its own year */
 import { layerInflight } from './layer-rows.js';   /* (map-layer-system) each row's request, for the layer-state audit */
 
 export function wbLayers(HOST){
@@ -106,7 +107,7 @@ export function wbLayers(HOST){
        countries have a value»). So a field with bundled undated values — life expectancy, 54 of them — was never
        replaced, and an Atlas ranking presented those constants as current (measured on production 2026-11-17).
        This writes the series' latest value per country over whatever the table held, and records beside it WHO
-       published it and FOR WHICH YEAR (`_prov`, the record js/countries-ui.js starts) — what an answer's source
+       published it and FOR WHICH YEAR (js/country-figures.js — the stamp js/countries-ui.js starts) — what an answer's source
        list and its «data year» are read from. A country the World Bank does not report keeps its value and its own
        label. ⚠ NOT WHILE THE CLOCK IS IN THE PAST: the table then holds that year's figures (js/time-countries.js),
        and a latest value written over them would be a different year under the same heading.

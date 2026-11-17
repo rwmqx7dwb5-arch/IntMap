@@ -19,6 +19,7 @@
 import { readWorldBank, WB_INDICATORS } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read (under the host's clock, stalled-fetch-and-surface-gauge) and the one catalogue */
 import { IntMapTime } from './chronos.js';
 import * as bus from './bus.js';
+import { stampFigure, figure } from './country-figures.js';   /* (countries-companies) the year a value is for travels with it */
 export function makeTimeCountries(HOST, CTX) {
   const countryStats=CTX.countryStats, loadCountryData=CTX.loadCountryData, renderStats=CTX.renderStats, searchVal=CTX.searchVal;
   /* ============================================================================
@@ -84,12 +85,15 @@ export function makeTimeCountries(HOST, CTX) {
        on screen (`reapply` below), and it must have a present-day snapshot to go back to when the reader
        returns to Now — so this is INCREMENTAL: every code gets a base the first time it is seen, and a
        code already snapshotted is never re-snapshotted from its overlaid values. */
-    function snapshotBase(){ if(!base) base={}; try{ for(const iso in countryStats){ if(base[iso]) continue; const s=countryStats[iso]; if(!s) continue; const o={density:s.density,hdi:s.hdi}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
+    function snapshotBase(){ if(!base) base={}; try{ for(const iso in countryStats){ if(base[iso]) continue; const s=countryStats[iso]; if(!s) continue; const o={density:s.density,hdi:s.hdi}; FIELDS.forEach(F=>o[F.f]=s[F.f]);
+      /* the present's years and sources, so the return to Now gives the card back «2023 · World Bank», not the travel year */
+      const m={}; Object.keys(o).forEach(k=>{ const fg=figure(s,k); m[k]=fg?[fg.y,fg.src]:null; }); FIGMETA.set(o,m); base[iso]=o; } }catch(_){} }
+    const FIGMETA=new WeakMap();
     function restore(){ try{ if(window.IntMapHistId) window.IntMapHistId.clear(); }catch(_){}   /* restore modern names/flags */
       try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries */
       window._imHdiYear=null;
       curWhen=null;   /* (#R425) …and the instant, or the next same-year move compares against a stale one */
-      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
+      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; const m=FIGMETA.get(o); if(m) for(const k in m){ if(m[k]) stampFigure(s,k,m[k][0],m[k][1]); } } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
     /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
        IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
        A run that returns essentially nothing is NOT cached, so the next travel transparently retries. */
@@ -107,7 +111,7 @@ export function makeTimeCountries(HOST, CTX) {
          figures (and mark the basis NOT-real so the banner/labels say World Bank, not "real 2011 int$"). */
       const M=window.IntMapMaddison, useM=!!(M&&M.ready()&&year<=(M.maxYear||2018));
       try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue;
-        FIELDS.forEach(F=>{ const v=data[F.f]&&data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; });
+        FIELDS.forEach(F=>{ const v=data[F.f]&&data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; stampFigure(s,F.f,year,'World Bank'); });
         /* (#R94e) real GDP / GDP-per-capita / population from Maddison (2011 int$) — consistent across every
            country back to the Maddison floor, and the only source before the World Bank's 1960 floor. WB nominal is discarded
            for GDP while travelling so a historical ranking is on ONE basis; life-exp/fertility/internet/military
@@ -115,7 +119,8 @@ export function makeTimeCountries(HOST, CTX) {
         if(useM){ const mpc=M.gdppc(iso,year), mp=M.popN(iso,year), mg=M.gdpBil(iso,year);
           s.gdp=(mg!=null)?mg:(M.has(iso,year)?null:s.gdp);
           s.gdppc=(mpc!=null)?mpc:(M.has(iso,year)?null:s.gdppc);
-          if(mp!=null) s.pop=mp; }
+          if(mp!=null) s.pop=mp;
+          if(mg!=null) stampFigure(s,'gdp',year,'Maddison Project'); if(mpc!=null) stampFigure(s,'gdppc',year,'Maddison Project'); if(mp!=null) stampFigure(s,'pop',year,'Maddison Project'); }
         s.density=(s.pop&&s.area)?s.pop/s.area:null;   /* density recomputed from the year's population */
         /* (#R270) HDI from UNDP's own annual series — local, so it lands in PHASE 1 */
         if(hdiSeries){ const hi=hdiIndex(year);

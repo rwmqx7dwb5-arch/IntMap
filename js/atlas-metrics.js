@@ -1,3 +1,4 @@
+import { figure } from './country-figures.js';   /* the ONE store of a value's year and source */
 /* ============================================================================
  *  IntMap · Atlas — ONE set of country metrics, and ONE resolver for its names  (#R740)
  * ----------------------------------------------------------------------------
@@ -185,14 +186,14 @@ export function makeAtlasMetrics(HOST, CTX) {
                      (js/wb-indicators.js `stat`), so a ranking by `lifeExp` and the indicator layer painting
                      SP.DYN.LE00.IN are ONE subject; otherwise the field.
          facet       which kind of statement about it this is ('ranking:top', 'ranking:bottom', 'map').
-         dataYear    the years the printed values are FOR, read off each value's own `_prov` (js/countries-ui.js,
+         dataYear    the years the printed values are FOR, read off each value's own stamp (js/country-figures.js `figure`) (js/countries-ui.js,
                      js/wb-layers.js `applyStat`) — «2023», or «2021–2023» when the latest per country differs.
          provenance  one item per publisher of the printed values, with exactly the values it published
                      (js/atlas-query.js `provenanceOf`'s shape, which js/atlas-answer-sources.js `collect` reads).
          rows        the names printed, in order (what the reply's composer compares Atlas's own words with).
          brief       the result in one line, for when the reply already presents it.
-       ⚠ A value with no `_prov` is cited by nobody. And while the clock is in the past the table holds that year's
-       figures (js/time-countries.js) while `_prov` still describes the present ones, so nothing is cited then:
+       ⚠ A value with no stamp is cited by nobody. And while the clock is in the past the table holds that year's
+       figures (js/time-countries.js) while the stamp still describes the present ones, so nothing is cited then:
        an answer must never look more sourced than it is ([[intmap-data-must-not-claim-an-author-it-lacks]]). */
     function metricResult(key, rows, facet) {
       const sp = metSpec(key); if (!sp) return {};
@@ -202,7 +203,7 @@ export function makeAtlasMetrics(HOST, CTX) {
       const past = !IntMapTime.isLive() && !IntMapTime.isPresentYear(IntMapTime.year());   /* js/time-countries.js overlays the table exactly then */
       const by = new Map(), years = [];
       if (!past) list.forEach((r) => {
-        const s = cs[r.code], p = s && s._prov && s._prov[sp.key];
+        const f = cs[r.code] && figure(cs[r.code], sp.key), p = f && f.src ? { source: f.src, licence: f.licence, url: f.url, year: f.y == null ? '' : String(f.y) } : null;
         if (!p || !p.source || typeof r.val !== 'number' || !isFinite(r.val)) return;
         if (!by.has(p.source)) by.set(p.source, { p, values: [], years: [] });
         const g = by.get(p.source); g.values.push(r.val);

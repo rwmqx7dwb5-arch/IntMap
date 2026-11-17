@@ -1181,6 +1181,8 @@ analysis-edu.js                   ↳ 学習モード・地図クイズの実装
 stats-compare.js                  多国統計比較 IntMapStatsCompare。1 か国の時系列（`timeline`——国カードの「時系列グラフ」と
                                   Atlas `data.timeSeries` の行き先）もこの時系列表示。指標の系列と名前は wb-indicators.js
 countries-ui.js                   Countries タブと国の詳細
+country-figures.js                国の記録（countryStats）の値・単位・対象年・出典。書き手は setFigure/stampFigure、読み手は
+                                  figure（基準単位＝ドル・人）で読む——カードの「(年)」も比較の単位もここから
 companies-ui.js                   Companies タブ・比較ビュー・ダッシュボード
 company-panel.js                  企業プロフィールのパネル（概要・財務・事業・拠点・進出国・組織・出典） IntMapCompanyPanel
 company-facilities.js             選択中の企業の拠点を地図に描く（クラスタリング・6グループ・施設カード） IntMapCompanyFacilities
@@ -2600,7 +2602,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 162 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 163 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

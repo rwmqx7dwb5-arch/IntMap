@@ -20,6 +20,7 @@
  *  markets.js and holds itself to the same rule.)
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import { toBase } from './country-figures.js';   /* (countries-companies) countryStats holds GDP in BILLIONS; this is where a copy of a row turns it into dollars */
 window.IntMapWidgetDefsData = (function () {
   'use strict';
 
@@ -580,12 +581,12 @@ window.IntMapWidgetDefsData = (function () {
     var out = [
       { k: L('Population', '人口', 'Bevölkerung', 'Население', 'Población'), v: c.pop != null ? WC.compact(c.pop) : '—' },
       { k: L('Area', '面積', 'Fläche', 'Площадь', 'Superficie'), v: c.area != null ? WC.compact(c.area) + ' km²' : '—' },
-      { k: 'GDP', v: c.gdp != null ? '$' + WC.compact(c.gdp) : '—' },
+      { k: 'GDP', v: c.gdp != null ? '$' + WC.compact(toBase('gdp', c.gdp)) : '—' },
       { k: L('Capital', '首都', 'Hauptstadt', 'Столица', 'Capital'), v: c.capital || '—' },
     ];
     if (big) {
       out.push({ k: L('Density', '人口密度', 'Dichte', 'Плотность', 'Densidad'), v: (c.pop && c.area) ? WC.num(c.pop / c.area, { maximumFractionDigits: 1 }) + ' /km²' : '—' });
-      out.push({ k: L('GDP per person', '一人当たりGDP', 'BIP pro Kopf', 'ВВП на человека', 'PIB por persona'), v: (c.gdp && c.pop) ? '$' + WC.num(c.gdp / c.pop, { maximumFractionDigits: 0 }) : '—' });
+      out.push({ k: L('GDP per person', '一人当たりGDP', 'BIP pro Kopf', 'ВВП на человека', 'PIB por persona'), v: (c.gdp && c.pop) ? '$' + WC.num(toBase('gdp', c.gdp) / c.pop, { maximumFractionDigits: 0 }) : '—' });
     }
     return out;
   }

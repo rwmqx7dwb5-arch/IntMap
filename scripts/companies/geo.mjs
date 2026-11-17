@@ -77,6 +77,7 @@ export async function countryIndex() {
     if (two && two !== '-99') a2.set(two, iso);
   }
   rows.alpha2 = a2;
+  rows.isos = new Set(rows.map((r) => r.iso));   /* the countries of today's map — build.mjs replaces a stated code outside it */
   _index = rows;
   return rows;
 }

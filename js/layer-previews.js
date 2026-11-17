@@ -10,6 +10,7 @@
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take. (fetch-deadline-layer) The relay URL it also gave the cable preview is the layer's business now — see layerReads below */
 import { readWithin, jsonWithin } from './fetch-deadline.js';
 import { readWorldBank, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and the one catalogue of its series */
+import { toBase } from './country-figures.js';   /* (countries-companies) countryStats holds GDP in BILLIONS; this is where a copy of a row turns it into dollars */
 import { layerReads } from './data-layers.js';   /* (fetch-deadline-layer) the cable and radar rows' OWN reads — a preview draws what its layer would, fetched the way its layer fetches it */
 
 export function layerPreviews(countryStats,loadCountryData){
@@ -185,7 +186,7 @@ export function layerPreviews(countryStats,loadCountryData){
     const STAT={
       'dl-pop':{g:s=>s.density,log:1},'dl-gdppc':{g:s=>s.gdppc,log:1},'dl-hdi':{g:s=>s.hdi},
       'dl-dem':{g:s=>s.dem},'dl-milSpend':{g:s=>s.milSpend,log:1},
-      'dl-milSpendGDP':{g:s=>(s.milSpend&&s.gdp)?(s.milSpend*1e9/s.gdp*100):null}
+      'dl-milSpendGDP':{g:s=>(s.milSpend&&s.gdp)?(toBase('milSpend',s.milSpend)/toBase('gdp',s.gdp)*100):null}   /* both held in $B — the old ×1e9 made the share a billion times too big */
     };
     function statChoro(spec){ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx);
       let stats=null; try{ stats=(typeof countryStats!=='undefined'&&countryStats&&Object.keys(countryStats).length)?countryStats:null; }catch(_){} if(!stats) return null;

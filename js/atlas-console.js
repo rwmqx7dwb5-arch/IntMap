@@ -1254,7 +1254,7 @@ export function atlasConsole(HOST){
     /* ⚠⚠ (atlas-answer-integrity) IT WRITES THE SERIES, NOT ONLY THE GAPS. It filled empty cells and stopped reading once
        25 countries had a value — and life expectancy arrived with 54 bundled, undated values, so a ranking asked for it
        answered from those (Japan 84.0) and never read the World Bank. js/wb-layers.js `applyStat` is the one writer:
-       every value it has replaces the table's, with its year and publisher (`_prov`), and a country it does not report
+       every value it has replaces the table's, with its year and publisher (js/country-figures.js), and a country it does not report
        keeps its own labelled value. The series is cached there, so asking again costs nothing. */
     async function _fillMetric(key){ try{ if(window.IntMapWB&&window.IntMapWB.applyStat) await window.IntMapWB.applyStat(key); }catch(_){} }
     function _pearson(xs,ys){ const n=xs.length; if(n<3) return null; let sx=0,sy=0; for(let i=0;i<n;i++){ sx+=xs[i]; sy+=ys[i]; }
