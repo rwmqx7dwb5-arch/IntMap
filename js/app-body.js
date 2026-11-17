@@ -42,7 +42,7 @@ import { makeLazyModules } from './lazy-modules.js';
 import { makeRuntime, everyTick, stopTick } from './runtime.js';
 import { makeDemSource } from './dem-source.js';
 import { gridLayerSpecs } from './grid-style.js';
-import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH, BORDER_LAYOUT, BORDER_PAINT, BORDER_CASING_PAINT } from './border-style.js';
+import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH, ADMIN1_OPACITY, BORDER_LAYOUT, BORDER_PAINT, BORDER_CASING_PAINT } from './border-style.js';
 import { makeCoastLine } from './coast-line.js';   /* (#R289) the border line, drawn round the water */
 import { fetchViaProxy, clockFor } from './proxy-fetch.js';
 import { readWithin, jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch-and-surface-gauge) the PPP table from the World Bank, under the host's clock */
@@ -71,6 +71,7 @@ import { companiesUi } from './companies-ui.js';
 import { companies } from './companies.js';
 import { compare } from './compare.js';
 import { countriesUi } from './countries-ui.js';
+import { setFigure } from './country-figures.js';   /* (countries-companies) a value's year and source travel with it */
 import { loadNECountries, neCountriesPath } from './ne-countries.js';   /* (data-studio) handed to the lazy data studio through IM_HOST — see the note at its getters */
 import { dashExtended } from './dash-extended.js';
 import { dataLayers } from './data-layers.js';
@@ -1312,22 +1313,22 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let gdpPPPLoaded=false, gdpPPPPromise=null, _pppLast=null;
   function _mergePPP(pc,tot){ try{ _pppLast={pc,tot};
       Object.keys(countryStats).forEach(code=>{ const s=countryStats[code];
-        if(pc&&pc[code]!=null) s.gdppcPPP=pc[code];
-        if(tot&&tot[code]!=null) s.gdpPPP=tot[code]/1e9; });
+        const _v=(m)=>m&&m[code]!=null?(typeof m[code]==='object'?m[code]:{v:m[code],y:null}):null, a=_v(pc), b=_v(tot);   /* (countries-companies) {v,y}: the year rides with the value — js/country-figures.js */
+        if(a) setFigure(s,'gdppcPPP',a.v,a.y,'World Bank'); if(b) setFigure(s,'gdpPPP',b.v/1e9,b.y,'World Bank'); });
       gdpPPPLoaded=true;
       /* refresh anything currently showing GDP */
-      try{ const cp=document.getElementById('country-popup'); if(cp&&cp.style.display==='block'&&window._cpCurrent){ const s=countryStats[window._cpCurrent.code]; const body=document.getElementById('cp-body'); if(s&&body) body.innerHTML=topBtns()+renderCountryDetailBody(s); } }catch(_){}
+      try{ if(typeof window._imCountryCardRefresh==='function') window._imCountryCardRefresh(); }catch(_){}   /* (countries-companies) the open card's own refresher — the old line called `topBtns`, which exists only inside js/countries-ui.js, so a ReferenceError (swallowed here) left the card without the PPP that had just arrived */
       try{ if(typeof currentMode!=='undefined'&&currentMode==='stats'&&typeof renderStats==='function') renderStats(); }catch(_){}
       try{ if(GE().layers.has('gdppc-fill')) { /* readout fmt already reads the new field */ } }catch(_){}
     }catch(_){} }  function _reapplyPPP(){ if(_pppLast) _mergePPP(_pppLast.pc,_pppLast.tot); }   /* (#R375) js/countries-ui.js adds rows to this table long after the merge ran; they need the same figures. Replays the KEPT payload — never a second copy of the merge. ⚠ ON THIS LINE because tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 budgets the app shell at 8,000 lines and it was at 7,999; the WHY lives at the call site, which is not in the shell. */
   function loadGdpPPP(){
     if(gdpPPPPromise) return gdpPPPPromise;
     gdpPPPPromise=(async()=>{
-      try{ const c=JSON.parse(localStorage.getItem('intmap_gdpppp')||'null');
+      try{ const c=JSON.parse(localStorage.getItem('intmap_gdpppp_v2')||'null');
         if(c&&c.ts&&(Date.now()-c.ts<30*864e5)&&c.pc){ _mergePPP(c.pc,c.tot); return; } }catch(_){}
-      const fetchInd=async(k)=>{ const r=await readWorldBank({ code:wbIndicator(k).code, mrnev:1, perPage:400 }); const out={};   /* (country-analysis-unify) js/wb-indicators.js — anything but an answer is `{}`, as before */ r.rows.forEach(d=>{ if(d.iso3) out[d.iso3]=d.v; }); return out; };
+      const fetchInd=async(k)=>{ const r=await readWorldBank({ code:wbIndicator(k).code, mrnev:1, perPage:400 }); const out={};   /* (country-analysis-unify) js/wb-indicators.js — anything but an answer is `{}`, as before */ r.rows.forEach(d=>{ if(d.iso3) out[d.iso3]={v:d.v,y:d.y||null}; }); return out; };
       const [pc,tot]=await Promise.all([fetchInd('gdppcppp'),fetchInd('gdpppp')]);
-      if(Object.keys(pc).length||Object.keys(tot).length){ try{ localStorage.setItem('intmap_gdpppp',JSON.stringify({ts:Date.now(),pc,tot})); }catch(_){} }
+      if(Object.keys(pc).length||Object.keys(tot).length){ try{ localStorage.setItem('intmap_gdpppp_v2',JSON.stringify({ts:Date.now(),pc,tot})); }catch(_){} }
       _mergePPP(pc,tot);
     })();
     return gdpPPPPromise;
@@ -2025,7 +2026,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         paint:/* (#R210) thicker too (地方区分). Kept violet on purpose — only the NATIONAL border was asked to go white; two white lines would erase country-vs-province.
                  (#R212) 「地方区分は少しだけ明るい色に。両者とも少しだけ細く。」 — same violet hue, one step
                  brighter so it separates from a dark basemap, and the same ~15 % off the widths. */
-              {'line-color':ADMIN1_COLOR,'line-opacity':0.82,'line-dasharray':[3,2],'line-width':ADMIN1_WIDTH}}, before);
+              {'line-color':ADMIN1_COLOR,'line-opacity':ADMIN1_OPACITY,'line-dasharray':[3,2],'line-width':ADMIN1_WIDTH}}, before);
       if(!GE().layers.has('ref-roads')) GE().layers.add({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
         filter:['in',['get','class'],['literal',['motorway','trunk','primary','secondary']]],
         layout:{visibility:'none','line-join':'round','line-cap':'round'},
@@ -2364,7 +2365,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window._imFillStat=async function(key){ try{ const I=wbIndicatorFor(key); if(!I) return; const c=I.code;   /* (country-analysis-unify) the field's series is the catalogue's `stat` (js/wb-indicators.js) */
     let have=0; for(const cd in countryStats){ const s=countryStats[cd]; if(s&&s[key]!=null&&isFinite(s[key])) have++; } if(have>=25) return;
     if(!(window.IntMapWB&&window.IntMapWB.fetch)) return; const m=await window.IntMapWB.fetch(c); if(!m) return;
-    for(const cd in m){ const v=m[cd]&&m[cd].v; if(v==null||!isFinite(v)) continue; const s=countryStats[cd]; if(s&&(s[key]==null||!isFinite(s[key]))) s[key]=(+v)*(I.statScale||1); }
+    for(const cd in m){ const v=m[cd]&&m[cd].v; if(v==null||!isFinite(v)) continue; const s=countryStats[cd]; if(s&&(s[key]==null||!isFinite(s[key]))) setFigure(s,key,(+v)*(I.statScale||1),m[cd].y,'World Bank'); }
     try{ if(statsSort===key && window._countriesActive && window._countriesActive()) renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){}
   }catch(_){} };
   /* Toggle a country in the compare set WITHOUT re-rendering the whole list (keeps scroll
@@ -2373,7 +2374,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(compareSet.has(code)) compareSet.delete(code);
     else if(compareSet.size<10) compareSet.add(code);
     else { const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
-    document.querySelectorAll('#countries-feed .stat-row').forEach(r=>r.classList.toggle('compare-on',compareSet.has(r.getAttribute('data-ccn'))));
+    document.querySelectorAll('#countries-feed .stat-row').forEach(r=>{ const on=compareSet.has(r.getAttribute('data-ccn')); r.classList.toggle('compare-on',on); r.setAttribute('aria-pressed',on?'true':'false'); });
     /* (#R311) ticking a country PAINTS THE MAP, so this is a door, not a passive read. Both calls unchanged. */
     window.IntMapLazy.need('statsCompare').then(()=>{
     /* (#R122) highlight the current selection on the map AS it is built in the Countries tab (not only once the

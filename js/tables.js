@@ -658,6 +658,12 @@ export const IntMapTables = (function(){
     au:{name:LA('Australia','オーストラリア','Australien','Австралия','Australia'),flag:'🇦🇺'}, sa:{name:LA('Saudi Arabia','サウジ','Saudi-Arabien','Саудовская Аравия','Arabia Saudí'),flag:'🇸🇦'},
     tr:{name:LA('Türkiye','トルコ','Türkei','Турция','Turquía'),flag:'🇹🇷'}, eg:{name:LA('Egypt','エジプト','Ägypten','Египет','Egipto'),flag:'🇪🇬'}
   };
-  return {SAT_PROVIDERS,_ORG_GZ,_DEMONYM_GZ,sourceDict,_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM,GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS,RADIUS_PRESETS,CO_SECTORS,CO_CC,_DASH_BADGE,NEWS_EDITIONS_MULTI,NEWS_COUNTRY_EDITIONS,COMM_CATEGORIES,NEWS_COUNTRY_FEEDS};
+  /* (countries-companies) THE YEAR AND SOURCE OF EACH COUNTRY TABLE ABOVE, stated once — js/countries-ui.js
+     stamps them on every row it builds (js/country-figures.js), so a card prints the year of the value it shows
+     rather than a constant. Each year is the one the table's own comment states; GDP's is measured — its rows
+     equal the World Bank's 2023 current-US$ series (USA 27,361 · CHN 17,795 · JPN 4,213 $B). A table refreshed
+     to another year must change its line here, or the cards will print the old year beside the new value. */
+  const ASOF={GDP:{y:2023,src:'World Bank'},HDI:{y:2022,src:'UNDP'},DEM:{y:2023,src:'EIU'},MILSPEND:{y:2023,src:'SIPRI / IISS'},LIFE:{y:2022,src:null},INTERNET:{y:2023,src:null}};   /* LIFE / INTERNET: the comment states the year, not the publisher — so no source is claimed */
+  return {SAT_PROVIDERS,_ORG_GZ,_DEMONYM_GZ,sourceDict,_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM,GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,ASOF,CAPITAL,CURRENCY,LANGS,RADIUS_PRESETS,CO_SECTORS,CO_CC,_DASH_BADGE,NEWS_EDITIONS_MULTI,NEWS_COUNTRY_EDITIONS,COMM_CATEGORIES,NEWS_COUNTRY_FEEDS};
 })();
 globalThis.IntMapTables = IntMapTables;   /* (module-graph) the compat window: importers get the binding above */

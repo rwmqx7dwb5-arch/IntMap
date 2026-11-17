@@ -2062,6 +2062,16 @@
     .scb-actions button.primary{ background:var(--primary-fill); color:#fff; }
     .scb-actions button:hover{ filter:brightness(1.08); }
     .stat-row.compare-on{ outline:2px solid var(--primary-color); outline-offset:-2px; background:rgba(0,122,255,0.05); }
+    /* (countries-companies) A ROW SAYS WHAT ITS TWO GESTURES DO. A click adds the row to the comparison — the round mark
+       fills when it is in it — and the details are a visible button, no longer only a double-click to be discovered.
+       Shared by the Countries rows (.stat-row) and the Companies rows (.co-row is also a .stat-row). */
+    .stat-pick{ flex:0 0 auto; width:16px; height:16px; border-radius:50%; border:1.5px solid rgba(128,128,128,0.45); box-sizing:border-box; transition:background .15s,border-color .15s; }
+    .stat-row.compare-on .stat-pick{ background:var(--primary-fill,var(--primary-color)); border-color:var(--primary-fill,var(--primary-color)); box-shadow:inset 0 0 0 3px var(--card-bg); }
+    [data-theme="dark"] .stat-row.compare-on .stat-pick{ box-shadow:inset 0 0 0 3px #2a2a2e; }
+    .stat-detail{ flex:0 0 auto; border:none; background:transparent; color:var(--primary-color); font-size:12px; font-weight:600; padding:6px 2px 6px 6px; cursor:pointer; white-space:nowrap; border-radius:8px; }
+    .stat-detail:hover{ text-decoration:underline; }
+    .stat-detail:focus-visible{ outline:2px solid var(--primary-color); outline-offset:1px; }
+    .stats-rankbase{ font-size:11px; color:var(--text-muted); margin:2px 4px 6px; }
 
     .compare-panel{ display:flex; flex-direction:column; gap:14px; padding:6px 0; }
     .cmp-section{ background:var(--card-bg); border:1px solid rgba(128,128,128,0.1); border-radius:14px; padding:14px 16px; }
@@ -5988,3 +5998,9 @@ body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
 .cop-news-m{ font-size:12px; color:var(--text-muted); }
 .cop-news-why{ font-size:12px; color:var(--text-muted); font-style:italic; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .cop-news-src{ font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.45; }
+    /* (countries-companies) the Companies search's second group: profiles that are not market-data rows */
+    .co-more-h{ font-size:11px; font-weight:700; color:var(--text-muted); letter-spacing:.02em; margin:12px 4px 6px; }
+    /* (countries-companies) the country card's links into the company atlas — quiet text links under the action row */
+    .cp-links{ display:flex; flex-wrap:wrap; gap:4px 14px; margin:-4px 0 12px; }
+    .cp-links button{ border:none; background:transparent; padding:2px 0; color:var(--primary-color); font-size:12.5px; font-weight:600; cursor:pointer; }
+    .cp-links button:hover{ text-decoration:underline; }

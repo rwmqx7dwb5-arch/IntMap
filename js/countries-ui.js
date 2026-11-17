@@ -37,6 +37,7 @@ import { IntMapTables } from './tables.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 /* (mobile-performance) the Natural Earth admin-0 files are this site's (data/ne-countries/) — js/ne-countries.js decodes them */
 import { loadNECountries } from './ne-countries.js';
+import { stampFigure, figureYear, figure } from './country-figures.js';   /* (countries-companies) a value's year and source travel with it */
 import * as bus from './bus.js';
 window._imCldrRegion=function(a2,lang){
   try{
@@ -270,10 +271,11 @@ export function countriesUi(HOST){
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
-  const GDP_YEAR='2023', POP_YEAR='2024';
+  /* (countries-companies) «(year)» beside a figure is the year THAT value is for — js/country-figures.js; nothing when no writer stated one */
+  const _yt=(s,k)=>{ const y=figureYear(s,k); return y?` (${y})`:''; };
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS}=IntMapTables;
+  const {GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS,ASOF}=IntMapTables;
 
   function flagFromISO2(a2){ if(!a2||a2.length!==2||a2==='-9')return''; try{return a2.toUpperCase().replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0)));}catch(e){return'';} }   /* (icon-system) no code → no flag: the record says nothing, and each display draws js/icons.js «flag» in its place */
 
@@ -396,7 +398,7 @@ export function countriesUi(HOST){
             const _neType=String(p.TYPE||'');
             const _neCountry=/^(sovereign country|country)$/i.test(_neType);
             const _nonSov=(_neType==='Indeterminate')||(!_neCountry&&/indetermin|unrecogn/i.test(String(p.FCLASS_TLC||p.featurecla||p.FEATURECLA||'')));
-            return { code, ccn3:String(p.ISO_N3||''), nameEn:p.NAME_EN||p.ADMIN||p.NAME||code, nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code,
+            const _row={ code, ccn3:String(p.ISO_N3||''), nameEn:p.NAME_EN||p.ADMIN||p.NAME||code, nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code,
               sov:!_nonSov,
               pop, area:Math.round(area), _area:area, density:(pop&&area)?pop/area:null, region:p.CONTINENT||'', subregion:p.SUBREGION||'',
               /* (#R185) THE COUNTRY'S OWN FOOTPRINT, so the search can frame it instead of guessing.
@@ -424,6 +426,13 @@ export function countriesUi(HOST){
               capital:CAPITAL[code]||'', latlng:(p.LABEL_Y!=null&&p.LABEL_X!=null)?[+p.LABEL_Y,+p.LABEL_X]:null, flag:flagFromISO2(a2),
               currency:CURRENCY[code]||'', languages:LANGS[code]||'', gdp, gdppc:(gdp&&pop)?(gdp*1e9/pop):null,
               hdi:HDI[code]||null, dem:DEM[code]||null, milSpend:MILSPEND[code]||null, lifeExp:LIFE[code]||null, internet:INTERNET[code]||null };
+            /* (countries-companies) each value with the year and source it is for (js/country-figures.js) — the card
+               and the comparison print THESE, not a constant. Natural Earth states its own years on the feature. */
+            stampFigure(_row,'pop',p.POP_YEAR,'Natural Earth');
+            if(GDP[code]!=null) stampFigure(_row,'gdp',ASOF.GDP.y,ASOF.GDP.src); else if(gdp!=null) stampFigure(_row,'gdp',p.GDP_YEAR,'Natural Earth');
+            if(_row.gdppc!=null){ const fy=figureYear(_row,'gdp'), py=figureYear(_row,'pop'); stampFigure(_row,'gdppc',(fy!=null&&fy===py)?fy:null,null); }   /* derived: GDP ÷ population — a year only when both are for the same one */
+            [['hdi','HDI'],['dem','DEM'],['milSpend','MILSPEND'],['lifeExp','LIFE'],['internet','INTERNET']].forEach(([k,t])=>{ if(_row[k]!=null) stampFigure(_row,k,ASOF[t].y,ASOF[t].src); });
+            return _row;
           };
           gj.features.forEach(f=>{
             const p=f.properties||{};
@@ -657,8 +666,8 @@ export function countriesUi(HOST){
           name=HOST.cName(s,feat.properties&&(feat.properties.NAME_EN||feat.properties.ADMIN||feat.properties.NAME));
     const haveAny = s && (s.pop||s.gdp||s.area||s.hdi||s.dem||s.milSpend);
     p.innerHTML=`<div class="ci-name">${((s&&s.flag)?window.IntMapSafe.flag(s.flag):icon('flag'))+' '}${escC(name)}</div>
-      <div class="ci-row"><span>${HOST.t('statPop')} (${POP_YEAR})</span><b>${s&&s.pop?fmtNum(s.pop):HOST.t('dataNA')}</b></div>
-      <div class="ci-row"><span>${HOST.t('statGdp')} (${GDP_YEAR})</span><b>${s&&s.gdp?HOST.fmtMoney(s.gdp):HOST.t('dataNA')}</b></div>
+      <div class="ci-row"><span>${HOST.t('statPop')}${escC(_yt(s,'pop'))}</span><b>${s&&s.pop?fmtNum(s.pop):HOST.t('dataNA')}</b></div>
+      <div class="ci-row"><span>${HOST.t('statGdp')}${escC(_yt(s,'gdp'))}</span><b>${s&&s.gdp?HOST.fmtMoney(s.gdp):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statGdpPPP')}</span><b>${s&&s.gdpPPP?HOST.fmtMoney(s.gdpPPP):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statGdpPc')}</span><b>${s&&s.gdppc?HOST.fmtPc(s.gdppc):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statGdpPcPPP')}</span><b>${s&&s.gdppcPPP?HOST.fmtPc(s.gdppcPPP):HOST.t('dataNA')}</b></div>
@@ -741,25 +750,27 @@ export function countriesUi(HOST){
     ]);
     /* (#R94) when the master clock has travelled to a past year, the WB-synced rows carry THAT year;
        HDI (UNDP) and the Democracy Index (EIU) have no WB annual series so they keep their own year. */
-    const _ty=(typeof window!=='undefined'&&window._imTimeYear)||null; const YR=(def)=>_ty||def; const yrTag=()=>(_ty?` (${_ty})`:'');
+    const _ty=(typeof window!=='undefined'&&window._imTimeYear)||null;
     const _milB=(v)=>'$'+(Math.round(v*10)/10)+'B';
+    /* (countries-companies) the year THIS value is for (js/country-figures.js); the travel year only when no writer stated one */
+    const yt=(k)=>{ const y=figureYear(s,k)||_ty; return y?` (${y})`:''; };
     const econ=sec(icon('coin')+' '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
-      [((s._real||window._imTimeReal)?('GDP · '+TR('real 2011 int$','実質2011年国際ドル','real, int$ 2011','реальный, межд.$ 2011','real int$ 2011')):HOST.t('statGdp'))+` (${YR(GDP_YEAR)})`,HOST.fmtMoney(s.gdp)],
-      s.gdpPPP?[HOST.t('statGdpPPP'),HOST.fmtMoney(s.gdpPPP)]:null,
-      [HOST.t('statGdpPc')+yrTag(),HOST.fmtPc(s.gdppc)],
-      s.gdppcPPP?[HOST.t('statGdpPcPPP'),HOST.fmtPc(s.gdppcPPP)]:null,
+      [((s._real||window._imTimeReal)?('GDP · '+TR('real 2011 int$','実質2011年国際ドル','real, int$ 2011','реальный, межд.$ 2011','real int$ 2011')):HOST.t('statGdp'))+yt('gdp'),HOST.fmtMoney(s.gdp)],
+      s.gdpPPP?[HOST.t('statGdpPPP')+yt('gdpPPP'),HOST.fmtMoney(s.gdpPPP)]:null,
+      [HOST.t('statGdpPc')+yt('gdppc'),HOST.fmtPc(s.gdppc)],
+      s.gdppcPPP?[HOST.t('statGdpPcPPP')+yt('gdppcPPP'),HOST.fmtPc(s.gdppcPPP)]:null,
       [HOST.t('statCurrency'),s.currency||'—']
     ]);
     const soc=sec(icon('users')+' '+TR('Society','社会','Gesellschaft','Общество','Sociedad'),[
-      [HOST.t('statPop')+` (${YR(POP_YEAR)})`,fmtNum(s.pop)],
-      s.hdi?[HOST.t('statHDI')+' (2022)',s.hdi.toFixed(3)]:null,
-      s.lifeExp?[HOST.t('statLife')+yrTag(),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет','a')]:null,
-      s.internet?[HOST.t('statInet')+yrTag(),(Math.round(s.internet*10)/10)+'%']:null,
+      [HOST.t('statPop')+yt('pop'),fmtNum(s.pop)],
+      s.hdi?[HOST.t('statHDI')+yt('hdi'),s.hdi.toFixed(3)]:null,
+      s.lifeExp?[HOST.t('statLife')+yt('lifeExp'),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет','a')]:null,
+      s.internet?[HOST.t('statInet')+yt('internet'),(Math.round(s.internet*10)/10)+'%']:null,
       [HOST.t('statLang'),s.languages||'—']
     ]);
     const pol=sec(icon('landmark')+' '+TR('Politics & defense','政治・防衛','Politik & Verteidigung','Политика и оборона','Política y defensa'),[
-      s.dem?[HOST.t('statDem')+' (2023)',s.dem.toFixed(2)]:null,
-      s.milSpend?[HOST.t('statMil')+` (${YR(2023)})`,_milB(s.milSpend)]:null,
+      s.dem?[HOST.t('statDem')+yt('dem'),s.dem.toFixed(2)]:null,
+      s.milSpend?[HOST.t('statMil')+yt('milSpend'),_milB(s.milSpend)]:null,
       s.unMember!=null?[TR('UN member','国連加盟','UN-Mitglied','Член ООН','Miembro de la ONU'),yn(s.unMember)]:null
     ]);
     let histNote='';
@@ -821,7 +832,11 @@ export function countriesUi(HOST){
       +`<button data-cpact="timeseries" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${IntMapLang.t(HOST.lang,'Time-series','時系列グラフ','Zeitverlauf','Динамика','Series temporales')}</button>`
       +`<button data-cpact="brief" data-cpname="${_aiName}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Bericht','ИИ-справка','Informe de IA')}</button>`
       +`<button data-cpact="compare" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${IntMapLang.t(HOST.lang,'Compare','国を比較','Vergleichen','Сравнить','Comparar')}</button>`
-      +`</div>`;
+      +`</div>`
+      /* (countries-companies) THE COUNTRY'S COMPANIES, ONE CLICK AWAY. The company atlas already answers «whose
+         companies operate where» by country (js/company-ties.js, the kernel's company.ties); the card opened it only
+         through Atlas or the command palette, so a reader had to pick the same country a second time. */
+      +`<div class="cp-links"><button type="button" data-cpact="ties-out">${IntMapLang.t(HOST.lang,'Its companies abroad','海外に出ている自国企業')} ›</button><button type="button" data-cpact="ties-in">${IntMapLang.t(HOST.lang,'Foreign companies here','ここに来ている外国企業')} ›</button></div>`;
     if(s && s.latlng) window._cpCurrent._ll={lng:s.latlng[1],lat:s.latlng[0]};
     /* ⚠ SEC: A VALUE INTERPOLATED INTO AN EVENT ATTRIBUTE HAS BECOME JAVASCRIPT SOURCE.
        Each attribute rewritten here carried a runtime value inside an `on…="…"` string, so the only thing
@@ -835,6 +850,7 @@ export function countriesUi(HOST){
       body.addEventListener('click',(ev)=>{ const b=ev.target.closest('[data-cpact]'); if(!b||!body.contains(b)) return;
         const a=b.getAttribute('data-cpact');
         try{
+          if(a==='ties-out'||a==='ties-in'){ const _c=(window._cpCurrent||{}).code; try{ window.IntMapOS.exec('company.ties',{ source:'ui', params:{ country:_c, direction:(a==='ties-out')?'out':'in' } }); }catch(_){} return; }
           if(a==='isolate'){ if(window.IntMapIsolate) window.IntMapIsolate.enter((window._cpCurrent||{}).code); return; }
           /* (country-analysis-unify) the time-series button opens the comparison panel's time-series view with this one country —
              the same chart, series and sources as 「国を比較」, not a second chart of its own (js/stats-compare.js timeline) */
@@ -885,11 +901,16 @@ export function countriesUi(HOST){
        flagged sov:false; they are neither states, unrecognized states, nor regions and don't belong in Countries. */
     let arr=Object.values(HOST.countryStats).filter(s=>s.nameEn && !s._histHidden && s.sov!==false);
     if(arr.length===0){ feed.innerHTML=`<div class="empty-msg">${HOST.t('noData')}</div>`; return; }
+    /* (countries-companies) THE RANK'S POPULATION IS NOT THE SEARCH. Typing «japan» used to re-rank the one row left, so Japan
+       read «1» for GDP. A text search only picks which rows to SHOW; the rank stays the country's standing among all the
+       countries listed — or, when value conditions are set, among the countries that meet them, and the list says which. */
+    const _rankBase=arr.slice();
     if(q) arr=arr.filter(s=>s.nameEn.toLowerCase().includes(q)||(s.nameJp&&s.nameJp.includes(q)));
     /* (#R122) apply the numeric threshold filters (each active condition must hold; a country missing that
        indicator is excluded from a threshold on it — honest, not counted as passing). */
     const _actF=HOST.statsFilters.filter(f=>f&&f.key&&isFinite(f.val));
-    if(_actF.length) arr=arr.filter(s=>_actF.every(f=>{ const v=s[f.key]; if(!isFinite(v)) return false; return f.op==='lte'?(v<=f.val):(v>=f.val); }));
+    const _passF=s=>_actF.every(f=>{ const v=s[f.key]; if(!isFinite(v)) return false; return f.op==='lte'?(v<=f.val):(v>=f.val); });
+    if(_actF.length) arr=arr.filter(_passF);
     const key=HOST.statsSort, dir=HOST.statsSortDir;
     /* (#R102) sort by the chosen indicator in the chosen direction. Numeric: missing/zero values sort to the END in
        BOTH directions (so ascending never fills the top with un-populated countries). Name: locale-aware A–Z / Z–A. */
@@ -956,7 +977,11 @@ export function countriesUi(HOST){
        for every sort/direction → "順序を変えても順位が変わらない"). In time-machine mode s[key] already holds the
        historical value, so the rank is the historical rank. Name sort falls back to the GDP rank. Rank over the shown set. */
     const _rankKey=(key==='name')?'gdp':key;
-    const _rankOf=new Map(); arr.slice().filter(s=>isFinite(s[_rankKey])&&s[_rankKey]>0).sort((a,b)=>b[_rankKey]-a[_rankKey]).forEach((s,ri)=>_rankOf.set(s.code,ri+1));
+    const _rankPool=(_actF.length?_rankBase.filter(_passF):_rankBase).filter(s=>isFinite(s[_rankKey])&&s[_rankKey]>0);
+    const _rankOf=new Map(); _rankPool.slice().sort((a,b)=>b[_rankKey]-a[_rankKey]).forEach((s,ri)=>_rankOf.set(s.code,ri+1));
+    if(_showRank&&_rankPool.length) html+=`<div class="stats-rankbase">${_actF.length
+      ?HOST._sfL(`Rank within your conditions · ${_rankPool.length} countries`,`条件内の順位 · ${_rankPool.length} か国・地域中`)
+      :HOST._sfL(`Rank among all ${_rankPool.length} listed countries and territories`,`掲載している ${_rankPool.length} の国・地域の中での順位`)}${q?HOST._sfL(' · search does not change it',' · 検索しても変わりません'):''}</div>`;
     arr.forEach((s,i)=>{
       const active=HOST.compareSet.has(s.code)?'compare-on':'';
       /* (#R102) region / capital separated by a SLASH (was a middot); the value column shows the number only. */
@@ -967,12 +992,16 @@ export function countriesUi(HOST){
       const subline=`${s.region?_regionName(s.region):''}${(s.region&&s.capital)?' / ':''}${escC(s.capital||'')}`;
       const rankHTML=_showRank?`<span class="stat-rank">${_rankOf.get(s.code)||'—'}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
-      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-flag">${(s.flag?window.IntMapSafe.flag(s.flag):icon('flag'))}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
+      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-pick" aria-hidden="true"></span><span class="stat-flag">${(s.flag?window.IntMapSafe.flag(s.flag):icon('flag'))}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div><button type="button" class="stat-detail" data-ccn="${s.code}" aria-label="${escC(HOST._sfL('Details for ','詳細: ')+HOST.cName(s))}">${HOST._sfL('Details','詳細')} ›</button></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{
       /* Single-click → add/remove from compare; double-click → open detail */
       let clickTimer=null;
+      /* (countries-companies) the details are a BUTTON on the row, not only a double-click a reader has to know about;
+         a click elsewhere on the row still adds it to (or removes it from) the comparison, which the round mark shows */
+      const det=row.querySelector('.stat-detail'); if(det) det.onclick=(e)=>{ e.stopPropagation(); if(clickTimer){ clearTimeout(clickTimer); clickTimer=null; } showCountryDetail(row.getAttribute('data-ccn')); };
+      row.setAttribute('aria-pressed',row.classList.contains('compare-on')?'true':'false');
       row.onclick=(e)=>{
         if(clickTimer){ clearTimeout(clickTimer); clickTimer=null; showCountryDetail(row.getAttribute('data-ccn')); return; }
         clickTimer=setTimeout(()=>{ window._toggleCompare(row.getAttribute('data-ccn')); clickTimer=null; },250);

@@ -20,6 +20,7 @@ import { IntMapTime } from './chronos.js';
 /* (mobile-performance) when a phone may refresh the World Bank figures */
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
+import { setFigure } from './country-figures.js';   /* (countries-companies) the refreshed value replaces the old one WITH its own year */
 import { layerInflight } from './layer-rows.js';   /* (map-layer-system) each row's request, for the layer-state audit */
 
 export function wbLayers(HOST){
@@ -614,10 +615,10 @@ export function wbLayers(HOST){
     function refreshStatsLatest(){ try{ const cs=(typeof countryStats!=='undefined'&&countryStats)||null; if(!cs) return;
       return Promise.all(['gdp','pop','gdppc','life'].map(k=>wbFetch(wbIndicator(k).code))).then(([gdp,pop,pc,le])=>{
         Object.keys(cs).forEach(code=>{ const s=cs[code]; if(!s) return;
-          if(gdp[code]&&gdp[code].v>0) s.gdp=gdp[code].v/1e9;
-          if(pop[code]&&pop[code].v>0) s.pop=pop[code].v;
-          if(pc[code]&&pc[code].v>0) s.gdppc=pc[code].v;
-          if(le&&le[code]&&le[code].v>0) s.lifeExp=le[code].v;
+          if(gdp[code]&&gdp[code].v>0) setFigure(s,'gdp',gdp[code].v/1e9,gdp[code].y,'World Bank');
+          if(pop[code]&&pop[code].v>0) setFigure(s,'pop',pop[code].v,pop[code].y,'World Bank');
+          if(pc[code]&&pc[code].v>0) setFigure(s,'gdppc',pc[code].v,pc[code].y,'World Bank');
+          if(le&&le[code]&&le[code].v>0) setFigure(s,'lifeExp',le[code].v,le[code].y,'World Bank');
         });
         try{ if(typeof HOST.mode!=='undefined'&&HOST.mode==='stats'&&typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){}
       }).catch(()=>{});

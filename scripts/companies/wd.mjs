@@ -176,3 +176,15 @@ export function labelMap(e) {
   for (const k of Object.keys(want)) { const v = e && e.labels && e.labels[k]; if (v && v.value) out[k] = v.value; }
   return out;
 }
+
+/* (countries-companies) Has every statement tying a facility to a company ended? — the reason is at FACILITY_QUERY in build.mjs. */
+export const TIE_PROPS = ['P127', 'P137', 'P749'];
+const ended = (st) => !!qualTime(st, 'P582');
+export function tieEnded(facEnt, facQ, coEnt, coQ) {
+  const direct = [];
+  for (const p of TIE_PROPS) for (const st of claims(facEnt, p)) if (dvItem(st) === coQ) direct.push(st);
+  for (const st of claims(coEnt, 'P1830')) if (dvItem(st) === facQ) direct.push(st);
+  if (direct.length) return direct.every(ended);
+  const holders = ['P127', 'P137'].flatMap((p) => claims(facEnt, p));
+  return holders.length > 0 && holders.every(ended);
+}

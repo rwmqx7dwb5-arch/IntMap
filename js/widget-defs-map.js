@@ -23,6 +23,7 @@
  *  truth, and the two would drift — which is the defect this whole platform exists to stop.
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
+import { toBase } from './country-figures.js';   /* (countries-companies) countryStats holds GDP in BILLIONS; this is where a copy of a row turns it into dollars */
 (function () {
   'use strict';
 
@@ -608,7 +609,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
               caption: ctx.chronos && !ctx.chronos.isLive ? (L('as of', '時点', 'Stand', 'на дату', 'a fecha de') + ' ' + ctx.chronos.iso) : '' })]),
           R.facts([
             { k: L('Population', '人口', 'Bevölkerung', 'Население', 'Población'), v: w.pop != null ? WC.compact(w.pop) : '—' },
-            { k: 'GDP', v: w.gdp != null ? '$' + WC.compact(w.gdp) : '—' },
+            { k: 'GDP', v: w.gdp != null ? '$' + WC.compact(toBase('gdp', w.gdp)) : '—' },
             { k: L('Area', '面積', 'Fläche', 'Площадь', 'Superficie'), v: w.area != null ? WC.compact(w.area) + ' km²' : '—' },
             { k: L('Capital', '首都', 'Hauptstadt', 'Столица', 'Capital'), v: w.capital || '—' },
           ], { cols: 2 }),

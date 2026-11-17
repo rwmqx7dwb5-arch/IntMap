@@ -38,7 +38,7 @@
     { "area": "local", "name": "intmap_fb_prompted_*", "kind": "history", "en": "That IntMap has already asked this account for feedback once", "jp": "このアカウントに一度フィードバックを依頼したこと" },
     { "area": "local", "name": "intmap_fs_last", "kind": "history", "en": "Where your last flight in the flight simulator ended", "jp": "フライトシミュレーターの前回の終了地点" },
     { "area": "local", "name": "intmap_fs_sound", "kind": "preference", "en": "Flight-simulator sound on or off", "jp": "フライトシミュレーターの音のオン・オフ" },
-    { "area": "local", "name": "intmap_gdpppp", "kind": "cache", "en": "A copy of GDP (PPP) figures, so the layer opens quickly", "jp": "GDP（購買力平価）の数値の写し（レイヤーをすぐ開くため）" },
+    { "area": "local", "name": "intmap_gdpppp_v2", "kind": "cache", "en": "A copy of GDP (PPP) figures and their years, so the layer opens quickly", "jp": "GDP（購買力平価）の数値とその年の写し（レイヤーをすぐ開くため）" },
     { "area": "local", "name": "intmap_kbd_single", "kind": "preference", "en": "Whether single-key shortcuts are on", "jp": "1 キーのショートカットを使うか" },
     { "area": "local", "name": "intmap_last_post", "kind": "history", "en": "When you last posted to the community", "jp": "コミュニティに最後に投稿した日時" },
     { "area": "local", "name": "intmap_layer_presets", "kind": "content", "en": "Layer sets you saved", "jp": "保存したレイヤーの組み合わせ" },

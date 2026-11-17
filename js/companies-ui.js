@@ -402,6 +402,10 @@ export function companiesUi(HOST){
 
   function _coRerenderSoon(){ if(_coRrT) return; _coRrT=setTimeout(()=>{ _coRrT=null; if(HOST.mode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } },350); }
 
+  /* (countries-companies) the atlas index, asked once for the Companies tab's search (the same load the command palette makes) */
+  let _coIndexAll=null, _coIndexP=null;
+  function _coWantIndex(){ if(_coIndexAll||_coIndexP) return;
+    try{ _coIndexP=window.IntMapLazy.need('companyData').then(()=>window.IntMapCompanyData.index()).then(ix=>{ _coIndexAll=(ix&&ix.companies)||[]; _coRerenderSoon(); },()=>{ _coIndexP=null; }); }catch(_){ _coIndexP=null; } }
   function renderCompanies(q){
     const feed=document.getElementById('info-dashboard'); if(!feed) return;
     if(document.getElementById('co-cmp-view')) return;   /* (#R142) the compare view owns the feed — don't clobber it */
@@ -409,9 +413,11 @@ export function companiesUi(HOST){
     try{ HOST.clearMarkers(); }catch(_){}
     if(q==null) q=HOST._companiesSearchVal();   /* (#R153) reads the ws-mode Companies filter box too (Countries parity) — was '' in ws-mode → un-filterable */
     let arr=IntMapCompanies.DATA.slice();
+    const _rankBase=arr.slice();   /* (countries-companies) the rank's population is the listed companies, not the search — see _rankPool */
     if(q){ const ql=String(q).toLowerCase(); arr=arr.filter(c=>c.n.toLowerCase().includes(ql)||(c.nJp&&c.nJp.includes(q))||c.tk.toLowerCase().includes(ql)||_coSec(c.sec).toLowerCase().includes(ql)); }
     const actF=HOST.coFilters.filter(f=>f&&f.key&&isFinite(f.val));
-    if(actF.length) arr=arr.filter(c=>actF.every(f=>{ const v=_coVal(c,f.key); if(!isFinite(v)) return false; return f.op==='lte'?(v<=f.val):(v>=f.val); }));
+    const _passF=c=>actF.every(f=>{ const v=_coVal(c,f.key); if(!isFinite(v)) return false; return f.op==='lte'?(v<=f.val):(v>=f.val); });
+    if(actF.length) arr=arr.filter(_passF);
     const key=HOST.coSort, dir=HOST.coSortDir;
     arr.sort((a,b)=>{ if(key==='name'){ const av=HOST._coName(a),bv=HOST._coName(b); const cc=av.localeCompare(bv,HOST.lang==='jp'?'ja':undefined); return dir==='asc'?cc:-cc; }
       const av=_coVal(a,key), bv=_coVal(b,key); const aok=isFinite(av), bok=isFinite(bv); if(!aok&&!bok)return 0; if(!aok)return 1; if(!bok)return -1; return dir==='asc'?(av-bv):(bv-av); });
@@ -420,7 +426,8 @@ export function companiesUi(HOST){
        the row position i+1, which stayed 1,2,3… for every sort → "順序を変えても順位が変わらない"). Name/text sort
        falls back to the canonical market-cap rank so the badge stays meaningful. Rank is over the displayed set. */
     const _rankKey=(key==='name'||key==='fnd')?'mcap':key;
-    const _rankOf=new Map(); arr.slice().filter(c=>isFinite(_coVal(c,_rankKey))).sort((a,b)=>_coVal(b,_rankKey)-_coVal(a,_rankKey)).forEach((c,ri)=>_rankOf.set(c.tk,ri+1));
+    const _rankPool=(actF.length?_rankBase.filter(_passF):_rankBase).filter(c=>isFinite(_coVal(c,_rankKey)));
+    const _rankOf=new Map(); _rankPool.slice().sort((a,b)=>_coVal(b,_rankKey)-_coVal(a,_rankKey)).forEach((c,ri)=>_rankOf.set(c.tk,ri+1));
     const IND=CO_IND();
     const _arrow=up=>'<svg class="ssd-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+(up?'<path d="M12 19.5V5M6.5 11l5.5-6 5.5 6"/>':'<path d="M12 4.5V19M6.5 13l5.5 6 5.5-6"/>')+'</svg>';
     const dirLbl=_arrow(dir==='asc')+'<span class="ssd-labels" data-dir="'+(dir==='asc'?'asc':'desc')+'"><span class="ssd-l ssd-l-asc">'+HOST.t('sortAsc')+'</span><span class="ssd-l ssd-l-desc">'+HOST.t('sortDesc')+'</span></span>';
@@ -440,20 +447,44 @@ export function companiesUi(HOST){
        "latest reported" — header and rows must tell the same story. */
     const _FY=IntMapCompanies.CURATED_FY, _SNAP=IntMapCompanies.CURATED_ASOF;
     html+=_hy?`<div class="stats-timebanner co-banner"><b>${_hy}${IntMapLang.t(HOST.lang,'','年')}</b> · ${HOST._coL('market cap at the '+_hy+' year-end close · current share counts · revenue / profit / employees on a '+_FY+' basis','時価総額は'+_hy+'年の年末終値ベース · 株数は現在値 · 売上・利益・従業員数は'+_FY+'基準','Marktkap. zum Jahresschluss '+_hy+' · heutige Aktienzahl · Umsatz/Gewinn/Mitarbeiter auf Basis '+_FY,'капитализация на закрытие '+_hy+' года · число акций текущее · выручка/прибыль/сотрудники — база '+_FY,'cap. al cierre de '+_hy+' · acciones actuales · ingresos/beneficio/empleados base '+_FY)}</div>`:`<div class="stats-timebanner co-banner">${HOST._coL('Market cap and share price live where available — each value is stamped with its quote time · revenue / profit / employees on a '+_FY+' basis · reported snapshots compiled '+_SNAP,'時価総額・株価は可能な限りライブ（各値に取得時刻を表示） · 売上・利益・従業員数は'+_FY+'基準 · 報告ベースのスナップショットは'+_SNAP+'収録','Marktkap. und Kurs live, wo verfügbar — jeder Wert mit Kurszeit · Umsatz/Gewinn/Mitarbeiter Basis '+_FY+' · berichtete Snapshots vom '+_SNAP,'Капитализация и цена — в реальном времени, где возможно (у каждого значения указано время) · выручка/прибыль/сотрудники — база '+_FY+' · отчётные снимки от '+_SNAP,'Cap. y precio en vivo cuando es posible — cada valor lleva su hora · ingresos/beneficio/empleados base '+_FY+' · instantáneas reportadas del '+_SNAP)}</div>`;
-    if(!arr.length) html+=`<div class="empty-msg">${HOST.t('noMatch')}</div>`;
+    /* (countries-companies) WHO IS RANKED AND WHO IS LISTED. This list is the companies with market data
+       (IntMapCompanies.DATA); the atlas holds more profiles (data/companies/index.json). The line says which
+       population the rank is over, and a search below also reaches every profile. */
+    const _nAll=(_coIndexAll&&_coIndexAll.length)||null;
+    if(window.imShowRank!=='off'&&_rankPool.length) html+=`<div class="stats-rankbase">${actF.length
+      ?HOST._sfL(`Rank within your conditions · ${_rankPool.length} companies`,`条件内の順位 · ${_rankPool.length} 社中`)
+      :HOST._sfL(`Rank among the ${_rankBase.length} listed companies with market data`,`市場データのある上場企業 ${_rankBase.length} 社の中での順位`)}${_nAll?HOST._sfL(` · ${_nAll} company profiles in all — search reaches every one`,` · 収録企業は全 ${_nAll} 社（検索ですべてに届きます）`):''}</div>`;
+    if(!arr.length&&!(q&&String(q).trim().length>=2)) html+=`<div class="empty-msg">${HOST.t('noMatch')}</div>`;
     arr.forEach((c,i)=>{ const nm=HOST._coName(c);
       const cn=_coCountry(c.cc), fl=_coFlag(c.cc);
       const sub=_coSec(c.sec)+(cn?(' / '+(fl?fl+' ':'')+cn):'');
       const hue=[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360;
       const logo=_coLogoInner(c.dom,nm,hue,c.tk);   /* (#R147) cached-logo builder — no flicker; (#R533) ticker joins to the shipped Commons logo */
-      html+=`<div class="stat-row co-row${HOST.coCompareSet.has(c.tk)?' compare-on':''}" role="button" tabindex="0" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}">${(window.imShowRank!=='off')?`<span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span>`:''}<span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}${_coAsOfChip(c,key)}</div></div>`;
+      html+=`<div class="stat-row co-row${HOST.coCompareSet.has(c.tk)?' compare-on':''}" role="button" tabindex="0" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}">${(window.imShowRank!=='off')?`<span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span>`:''}<span class="stat-pick" aria-hidden="true"></span><span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}${_coAsOfChip(c,key)}</div><button type="button" class="stat-detail" aria-label="${IntMapSafe.html(HOST._sfL('Details for ','詳細: ')+nm)}">${HOST._sfL('Details','詳細')} ›</button></div>`;
     });
+    /* (countries-companies) EVERY PROFILE IS SEARCHABLE FROM HERE. The rows above are the companies with market data; a
+       query of two or more characters also asks the atlas index (js/company-data.js — the same search the command palette
+       uses) and lists the profiles that are not rows above. A row opens the company's atlas, as a row above does. */
+    const _ql=(q&&String(q).trim().length>=2)?String(q).trim():'';
+    if(_ql){ const D=window.IntMapCompanyData;
+      if(!_coIndexAll){ _coWantIndex(); html+=`<div class="stats-rankbase">${HOST._sfL('Searching every company profile…','全収録企業を検索中…')}</div>`; }
+      else if(D&&D.search){ const shown=new Set(arr.map(c=>String(c.tk).toUpperCase()));
+        const more=D.search(_ql,_coIndexAll.length).filter(c=>!(c.tk&&shown.has(String(c.tk).toUpperCase())));
+        if(more.length){ html+=`<div class="co-more-h">${HOST._sfL(`Other company profiles · ${more.length}`,`その他の収録企業 · ${more.length} 社`)}</div>`;
+          more.forEach(c=>{ const jp=HOST.lang==='jp'; const nm=(jp&&c.loc&&c.loc.ja)?c.loc.ja:c.n; const cn=_coCountry(c.cc), fl=_coFlag(c.cc);
+            html+=`<div class="stat-row co-row co-prof-row" role="button" tabindex="0" data-coid="${IntMapSafe.html(c.id)}" title="${IntMapSafe.html(nm)}"><span class="stat-flag co-logo-box">${_coLogoInner(c.dom,nm,[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360,c.tk||'')}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html([(_coSec(c.sec)!==c.sec?_coSec(c.sec):''), (cn?((fl?fl+' ':'')+cn):'')].filter(Boolean).join(' / '))}</div></div><span class="stat-detail" aria-hidden="true">${HOST._sfL('Profile','プロフィール')} ›</span></div>`; }); }
+        else if(!arr.length) html+=`<div class="empty-msg">${HOST.t('noMatch')}</div>`; } }
     const st0=feed.scrollTop;
     feed.innerHTML=html;
     try{ feed.scrollTop=st0; }catch(_){}
     feed.querySelectorAll('.co-logo').forEach(_coWireLogo);   /* (#R147) shared cached-logo wiring */
     /* (#R142) single-click selects the row for comparison, double-click opens the detail overlay — mirrors Countries. */
-    feed.querySelectorAll('.co-row').forEach(row=>{ let ct=null; row.onclick=()=>{ const tk=row.getAttribute('data-tk');
+    feed.querySelectorAll('.co-prof-row').forEach(row=>{ const open=()=>{ try{ window.IntMapOS.exec('company.open',{ source:'ui', params:{ company:row.getAttribute('data-coid') } }); }catch(_){} };
+      row.onclick=open; row.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } }; });
+    feed.querySelectorAll('.co-row:not(.co-prof-row)').forEach(row=>{ let ct=null;
+      const det=row.querySelector('.stat-detail'); if(det) det.onclick=(e)=>{ e.stopPropagation(); if(ct){ clearTimeout(ct); ct=null; } try{ openCompanyAtlas(row.getAttribute('data-tk')); }catch(_){} };
+      row.setAttribute('aria-pressed',row.classList.contains('compare-on')?'true':'false');
+      row.onclick=()=>{ const tk=row.getAttribute('data-tk');
       if(ct){ clearTimeout(ct); ct=null; try{ openCompanyAtlas(tk); }catch(_){} return; }
       ct=setTimeout(()=>{ ct=null; try{ window._coToggleCompare(tk); }catch(_){} },250); }; });
     feed.style.paddingBottom='92px';   /* (#R152) reserve room for the absolute-overlay compare dock, matching Countries (was 24px for the old in-feed sticky tray) */
