@@ -31,6 +31,7 @@ import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer w
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each — see js/data-door.js */
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
+import { anchorToLngLat } from './popup-anchor.js';   /* a card that belongs to a place follows it */
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
@@ -4714,20 +4715,11 @@ export function worldPacksBody(HOST){
                  'IntMap-Umrechnung — gleiche Stufe heißt nicht gleiche Gefahr.',
                  'Пересчёт IntMap: ступень равна, опасность — нет.',
                  'Conversión de IntMap: igual nivel no es igual peligro.'))+'</div>';
-        return keyHead(L('Each agency’s own published scale','各機関が公表している配色','Skala der jeweiligen Behörde','Собственная шкала службы','Escala propia de cada agencia'))
-          +keyRows([[PAL.cap[1],L('lower rank','下位の階級','niedrigere Stufe','низкая ступень','rango menor')],
-                    [PAL.cap[3],L('higher rank','上位の階級','höhere Stufe','высокая ступень','rango mayor')],
-                    [NONE_COL,L('Nothing in force','発表なし','Nichts in Kraft','Ничего не действует','Nada vigente')],HATCH_ROW()])
-          +'<div style="margin-top:4px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          /* ⚠ (#R299) 「長すぎ。」 — the roll-call of JMA yellow/red/magenta/black, the CMA's four signal
-             colours and the CAP ladder was a legend for THREE agencies printed over a map that draws
-             fifty-five. The one fact this line owes the reader is that the colours are not IntMap's;
-             which agency and which exact rank is what the tap answers, per country, in `legendFor`. */
-          +esc(L('Each agency’s own colours. Tap a country for its exact scale.',
-                 '色は各機関自身のものです。国をタップで正確な階級。',
-                 'Farben der jeweiligen Behörde. Land antippen für die genaue Skala.',
-                 'Цвета самой службы. Нажмите страну для точной шкалы.',
-                 'Colores de cada agencia. Toque un país para su escala exacta.'))+'</div>'; }
+        /* ⚠⚠ (2026-11-17) 「凡例が各国で異なるのに固定でポップアップに載せているのはおかしい。削除。」 — a lower/higher-rank key
+           with two fixed swatches is a legend for no agency: every agency publishes its own ladder in its own colours, and
+           that ladder is what a tap opens (legendFor, and the panel's own line below says so). What stays is only what is
+           IntMap's and therefore the same for every country: the colour for nothing in force and the hatching for not covered. */
+        return keyRows([[NONE_COL,L('Nothing in force','発表なし','Nichts in Kraft','Ничего не действует','Nada vigente')],HATCH_ROW()]); }
 
       /* ── the per-country legend a tap opens ────────────────────────────────────────────────────── */
       const AGENCY_NAME={ jma:'気象庁 JMA', nws:'US National Weather Service', eccc:'ECCC', cma:'中国气象局 CMA',
@@ -5239,20 +5231,8 @@ export function worldPacksBody(HOST){
           +'<div class="wpa-pt-body"></div></div>';
         const b=el.querySelector('.wpa-pt-body'); if(b) b.innerHTML=pointBody(lng,lat,iso);
         document.body.appendChild(el); ptCard=el;
-        /* ⚠ (#R255) `.country-popup` is `position:absolute` with no left/top of its own — an element
-           appended to <body> without them lands below the whole document. Placed explicitly, in PAGE
-           coordinates (`project()` is canvas-relative — #R252). */
-        try{
-          const vw=window.innerWidth||1200, vh=window.innerHeight||800, w=el.offsetWidth||360, h=el.offsetHeight||280;
-          const rs=(()=>{ try{ const s2=document.getElementById('layer-sidebar-r');
-            return (s2&&document.body.classList.contains('lsr-open'))?s2.getBoundingClientRect().width:0; }catch(_){ return 0; } })();
-          const px=(()=>{ try{ const q=GE().coords.project({lng:+lng,lat:+lat});
-            const r2=GE().render.canvas().getBoundingClientRect(); return r2.left+q.x; }catch(_){ return null; } })();
-          let left=(px!=null)?(px+18):(vw-rs-w-24);
-          left=Math.max(12,Math.min(left,vw-rs-w-12));
-          el.style.left=Math.round(Math.max(12,left))+'px';
-          el.style.top=Math.round(Math.max(12,Math.min(96,vh-h-16)))+'px';
-        }catch(_){ el.style.left='16px'; el.style.top='96px'; }
+        /* beside the point, and it keeps following it while the map moves (js/popup-anchor.js) */
+        try{ anchorToLngLat(el,[+lng,+lat]); }catch(_){ el.style.left='16px'; el.style.top='96px'; }
         try{ HOST.makeDraggable&&HOST.makeDraggable(el,el.querySelector('.wpa-drag')); }catch(_){}
         try{ el.querySelector('.wpa-x').onclick=closeTap; }catch(_){}
         try{ const mb=el.querySelector('.wpa-more-btn');

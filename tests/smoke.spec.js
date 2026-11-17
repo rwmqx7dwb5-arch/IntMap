@@ -1113,10 +1113,11 @@ async function r291Mock() {
 /* (tools-out-of-layers) the door is the toolbar's 「ツール ▾」 now — the Layers panel holds no tool row. A row press
    closes the menu, so every press opens it first, the way a reader does. */
 async function toolsMenuOpen() {
-  if (!(await page.evaluate(() => document.querySelector('.measure-menu-container').classList.contains('open')))) await page.click('#btn-measure-menu');
-  await page.waitForSelector('#measure-dropdown .lst-toolrow', { state: 'visible', timeout: 30_000 });
+  /* (tools-split) the rows live in 「その他のツール ▾」 left of Tools ▾ */
+  if (!(await page.evaluate(() => document.querySelector('.more-tools-container').classList.contains('open')))) await page.click('#btn-more-tools');
+  await page.waitForSelector('#more-tools-dropdown .lst-toolrow', { state: 'visible', timeout: 30_000 });
 }
-const R291_ROW = '#measure-dropdown .lst-toolrow[data-act="tool.directions"]';
+const R291_ROW = '#more-tools-dropdown .lst-toolrow[data-act="tool.directions"]';
 async function r291Open() {
   await toolsMenuOpen();
   await page.locator(R291_ROW).click();
@@ -2224,7 +2225,7 @@ const r766Doors = () => page.evaluate(async () => {
     .map((b) => b.dataset.osAct);
   return {
     strip: strip.closest('#tools-sheet') ? '#tools-sheet'
-      : strip.closest('#measure-dropdown') ? '#measure-dropdown'
+      : strip.closest('#more-tools-dropdown') ? '#more-tools-dropdown'
         : strip.closest('#layer-dropdown') ? '#layer-dropdown' : '?',
     doors, dupes,
   };
@@ -2254,17 +2255,17 @@ function r766Assert(d, where) {
 /* (tools-out-of-layers) …and the panel a reader opens for these doors is the toolbar's 「ツール ▾」 now: the strip is
    carried into its 「分析」 section, not into the Layers panel. Opened by pressing its trigger, as a reader does. */
 async function r766OpenPanel() {
-  const wasOpen = await page.evaluate(() => document.querySelector('.measure-menu-container').classList.contains('open'));
-  if (!wasOpen) await page.click('#btn-measure-menu');
+  const wasOpen = await page.evaluate(() => document.querySelector('.more-tools-container').classList.contains('open'));
+  if (!wasOpen) await page.click('#btn-more-tools');   /* (tools-split) 分析 lives in 「その他のツール ▾」 */
   await page.waitForFunction(() => {
     const t = document.getElementById('layer-tools');
-    return !!t && !!t.closest('#measure-dropdown .tlp-body');
+    return !!t && !!t.closest('#more-tools-dropdown .tlp-body');
   }, null, { timeout: 30_000 });
   return wasOpen;
 }
 async function r766RestorePanel(wasOpen) {
   if (wasOpen) return;
-  await page.evaluate(() => { try { window._closeMeasureMenu && window._closeMeasureMenu(); } catch { /* nothing to restore */ } });
+  await page.evaluate(() => { try { window._closeMoreToolsMenu && window._closeMoreToolsMenu(); } catch { /* nothing to restore */ } });
 }
 
 test('R766 ① every door the layer tools strip offers is reachable on a desktop viewport', async () => {

@@ -49,6 +49,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { anchorToLngLat } from './popup-anchor.js';
 
 export function companyFacilities(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never a raw handle */
@@ -403,20 +404,8 @@ export function companyFacilities(HOST){
     /* ⚠ (#R255) `.country-popup` is `position:absolute` with no left/top of its own, so an element
        appended to <body> takes the END OF THE DOCUMENT FLOW — below every panel in it, i.e. off the
        bottom of the page. Placing it is part of using this shell. */
-    try{
-      const vw=window.innerWidth||1200, vh=window.innerHeight||800;
-      const w=el.offsetWidth||380, h=el.offsetHeight||300;
-      const rs=(()=>{ try{ const s=document.getElementById('layer-sidebar-r');
-        return (s&&document.body.classList.contains('lsr-open'))?s.getBoundingClientRect().width:0; }catch(_){ return 0; } })();
-      /* ⚠ project() is CANVAS-relative (#R252); the card is placed in PAGE coordinates, so the
-         canvas's own offset — the left sidebar's width, when it is open — has to be added back. */
-      const px=(()=>{ try{ const p=GE().coords.project({lng:+lngLat.lng,lat:+lngLat.lat});
-        if(!p) return null; const r=GE().render.canvas().getBoundingClientRect(); return r.left+p.x; }catch(_){ return null; } })();
-      let left=(px!=null)?(px+18):(vw-rs-w-24);
-      left=Math.max(12,Math.min(left,vw-rs-w-12));
-      el.style.left=Math.round(Math.max(12,left))+'px';
-      el.style.top=Math.round(Math.max(12,Math.min(96,vh-h-16)))+'px';
-    }catch(_){ el.style.left='16px'; el.style.top='96px'; }
+    /* beside the place, and it keeps following it (js/popup-anchor.js) */
+    try{ anchorToLngLat(el,[+lngLat.lng,+lngLat.lat]); }catch(_){ el.style.left='16px'; el.style.top='96px'; }
     try{ HOST.makeDraggable&&HOST.makeDraggable(el,el.querySelector('.cf-drag')); }catch(_){}
     try{ el.querySelector('.cf-close').onclick=closeCard; }catch(_){} }
 

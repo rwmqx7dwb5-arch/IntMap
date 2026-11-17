@@ -550,7 +550,7 @@ test('R275 ⑦ a tap answers about the point, in a card of its own', () => {
     'the card is the app’s own detail shell, not a bespoke box');
   assert.match(s, /class="country-popup-close wpa-x"/, '…and its own close button (#R261)');
   /* #R255: that shell is position:absolute with no left/top — an unplaced one lands off-page */
-  assert.match(s, /el\.style\.left=Math\.round\(Math\.max\(12,left\)\)\+'px';/, 'it is placed explicitly');
+  assert.match(s, /anchorToLngLat\(el,\[\+lng,\+lat\]\)/, 'it is placed explicitly — beside the point, and it follows it (js/popup-anchor.js)');
   /* the legend must keep the overview a tap used to destroy */
   /* ⚠ FIVE FAMILIES IN THIS FILE INSTALL A `mapClick` HANDLER, so the pattern has to name the one
      under test rather than the first one in the file — the alerts handler is the one that opens the

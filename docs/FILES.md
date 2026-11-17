@@ -938,6 +938,10 @@ atlas-live.js                     Atlas — ストリームで届く 1 手を、
                                   答えは泡の下書きへ・途中の一言は作業一覧へ・推論の要約と「次: …」は考え中の行へ。
                                   地図の上の HUD（操作の開始と終了）と、体感の待ち時間の計測
                                   （`IntMapAtlasDebug.latency()`）もここ。⚠ 何も決めない——下書きは答えではない
+atlas-float.js                    Atlas — 設定「Atlas の回答の表示: 地図の上に浮かべる」。同じ `#atlas-panel` を
+                                  地図の左の半透明カードへ付け替える（会話と入力欄。2 つ目の実装は持たない）。
+                                  タブを開くとタブへ戻り、離れるとカードへ。待機中は薄く、ホバー／フォーカスで戻る。
+                                  スマートフォン幅・ワークスペース・埋め込みでは浮かべない。設定が選ばれたときだけ読み込む
 atlas-plan.js                     Atlas — 計画の台帳と地図の上の計画。`plan` 道具（Atlas が目標・手順・いまの手順を
                                   宣言する）、手順ごとの状態を実行器の判定から導く台帳（`makeAtlasPlan`。DOM なし・
                                   `runTurn` の `opts.plan`）、モデルへ戻す `promptBlock()`、HUD の中の計画カードと
@@ -981,7 +985,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  240 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  241 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1105,7 +1109,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全240を検索・到達可能 237）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全241を検索・到達可能 238）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1123,7 +1127,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
-atlas-schemas.js                  **引数の schema**（#R406）— 240能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 241能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1214,6 +1218,7 @@ widget-gallery.js                 追加ギャラリー IntMapWidgetGallery —�
 widget-smart.js                   Smart Stack IntMapWidgetSmart —— 文脈による決定論的な優先順位と
                                   「なぜ表示されたか」の説明、切替のちらつき防止
 tool-panel.js                     計測／半径ツールのパネルと地図のコンテキストメニュー
+popup-anchor.js                   地図上の場所に属するカードをその場所へ追従させる共通部品 anchorToLngLat（共有カメラ購読・裏側/画面外で隠す・ドラッグで追従を止める）
 elevation-profile.js              標高断面のパネル
 sims.js                           物理シミュレーションと太陽幾何（放射性物質拡散のパネル・地図・
                                   アニメーション／範囲人口／日照／鉄道の到達圏）

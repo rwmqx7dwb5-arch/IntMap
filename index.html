@@ -348,7 +348,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          #coord-readout into the two slots at phone widths and hands them back when the window widens. -->
     <div class="m-head" id="m-head"><div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div><div class="m-head-row"><div class="m-search-slot" id="m-search-slot"></div><button class="m-clock" id="m-clock" data-prints-map-time data-time-intent type="button" aria-label="Chronos" data-i18n-aria="tlMachine" title="Chronos" data-i18n-title="tlMachine"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M12 6.9V12l3.7 2.2"/></svg></button></div><div class="m-readout-slot" id="m-readout-slot"></div></div>
     <div class="header-area">
-      <div class="title-group"><h2>IntMap</h2></div>
+      <div class="title-group"><h2 class="im-wordmark"><img src="img/intmap-wordmark.png" alt="IntMap" width="63" height="20" decoding="async"></h2></div>
       <!-- (#R123) desktop normal mode: the action buttons (WS / Log in / Feedback / Settings) live on a fixed
            SECOND row, so the first "IntMap" row carries no action buttons. injectAuthUI() inserts WS, Login and
            Feedback before #btn-open-settings, so they land inside .header-actions in that exact order. -->
@@ -459,6 +459,13 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
              other three sections into this dropdown from SIM_TOOLS and carries #layer-tools into 分析; the Layers panel
              no longer holds any of them. The ids stay so every existing caller (Atlas clickId, shortcuts, the phone's
              data-proxy tiles, tests) still reaches the same controls. -->
+        <!-- (tools-split) 「Toolsボタンを押したときに出てくるものが多すぎる。Measure & drawの三つだけ出るように。それ以外はその左に。」 —
+             道具・シミュレーション・分析 live in this menu, built by js/map-ui.js mountDesktopTools from the same SIM_TOOLS rows;
+             the Tools menu to its right keeps only 測る・描く. -->
+        <div class="more-tools-container">
+          <button class="view-btn" id="btn-more-tools" title="Utilities, simulations and analysis" data-i18n-title="ttlMoreTools" aria-haspopup="true"><span data-icon="sliders"></span> <span data-i18n="moreToolsBtn">More tools</span> <span class="caret-sm">▾</span></button>
+          <div class="measure-dropdown" id="more-tools-dropdown"></div>
+        </div>
         <div class="measure-menu-container">
           <button class="view-btn" id="btn-measure-menu" title="Map tools" data-i18n-title="ttlMapTools" aria-haspopup="true"><span data-icon="set-square"></span> <span data-i18n="ttlTools">Tools</span> <span class="caret-sm">▾</span></button>
           <div class="measure-dropdown" id="measure-dropdown">
@@ -624,6 +631,9 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div class="setting-group"><label for="setting-showrank" data-i18n="lblShowRank">Rank numbers (Countries)</label><select id="setting-showrank"><option value="on" data-i18n="showRankOn">On (default)</option><option value="off" data-i18n="showRankOff">Off</option></select></div>
     <div class="setting-group"><label for="setting-ticker" data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select>
       <div id="ticker-syms" style="margin-top:10px;"></div></div>
+    <!-- (ui-feedback-nov17) where Atlas's conversation is shown — the same panel either way (js/atlas-float.js) -->
+    <div class="setting-group"><label for="setting-atlas-display" data-i18n="lblAtlasDisplay">Atlas answers</label><select id="setting-atlas-display"><option value="tab" data-i18n="atlasDisplayTab">In the Atlas tab (default)</option><option value="float" data-i18n="atlasDisplayFloat">Floating over the map</option></select>
+      <div class="sat-keys-hint" data-i18n="atlasDisplayHint">Floating shows the conversation and its input as a translucent card on the left of the map, so you can ask and read without opening the tab. On a phone-width screen Atlas stays in its sheet.</div></div>
     <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><button type="button" id="setting-wsmode-btn" style="width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--primary-color);background:var(--primary-fill);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;">Switch to workspace →</button><div class="sat-keys-hint" data-i18n="wsHint">News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.</div></div>
     </div>
     <div class="settings-sech" data-i18n="setSecMap">Map behavior</div>

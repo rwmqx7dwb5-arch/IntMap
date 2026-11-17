@@ -132,7 +132,7 @@ export default [
     row: ['layers.indicator',           'indicator',      'countryIndicator,showIndicator,worldBankIndicator',            'layers',  'layer',   'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         ''],
     ui: { at: ['.ind-item[data-id]'] },
     doc: [
-      { in: 'layers', at: 15, text: '{"type":"indicator","q":str (the quantity in words — "life expectancy", "医師の数", "CO2 per capita" — or a World Bank code like "SP.DYN.LE00.IN"),"year"?:int,"top"?:int,"list"?:bool} = paint ONE country indicator on the map through the indicator browser (the layer 「国別指標 / Country indicators」): 61 World Bank WDI series and the country-table statistics (GDP per capita, population density, HDI, democracy, fertility, defence spending), ONE AT A TIME, so choosing a new one replaces the last. "year" moves the clock (the map shows that year of the series; every row of the series follows the clock). The result states the indicator, its code, the year painted, how many countries reported that year and the highest and lowest countries with their values — answer from those numbers. Rows that paint the same series (e.g. two life-expectancy rows) are ONE indicator here. {"type":"indicator","list":true,"q"?:str} lists the indicators that match without painting. This is the COUNTRY INDICATORS / 国別指標 browser (country statistics / 国の統計). Use for 「失業率を地図に」「1人当たりGNIで塗って」「2005年の乳児死亡率」「どの国が一番インターネット普及率が高い？」. ' },
+      { in: 'layers', at: 15, text: '{"type":"indicator","q":str (the quantity in words — "life expectancy", "医師の数", "CO2 per capita" — or a World Bank code like "SP.DYN.LE00.IN"),"year"?:int,"top"?:int,"list"?:bool} = paint ONE country indicator on the map through the indicator browser (the layer 「国別指標 / Country indicators」): 61 World Bank WDI series and the country-table statistics (GDP per capita, population density, HDI, democracy, fertility, defence spending), ONE AT A TIME, so choosing a new one replaces the last. "year" moves the clock (the map shows that year of the series; every row of the series follows the clock). The result states the indicator, the year painted, how many countries reported that year (aggregates such as World or Euro area are not countries and are not counted) and the highest and lowest countries with their values — answer from those numbers; its meta names the series (subject) and its World Bank citation (provenance). Rows that paint the same series (e.g. two life-expectancy rows) are ONE indicator here. {"type":"indicator","list":true,"q"?:str} lists the indicators that match without painting. This is the COUNTRY INDICATORS / 国別指標 browser (country statistics / 国の統計). Use for 「失業率を地図に」「1人当たりGNIで塗って」「2005年の乳児死亡率」「どの国が一番インターネット普及率が高い？」. ' },
     ],
     schema: () => ({ type: 'object', properties: { q: str(), name: str(), code: str(), year: int(), top: int(1, 10), list: bool() } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc;
@@ -155,7 +155,8 @@ export default [
       const e = B.select(hit.id);
       if (!e) return R(false, warn(L('Could not choose ', '選べませんでした: ') + esc(hit.name)));
       const f = await B.facts(hit.id, a.top);
-      return R(true, B.atlasHtml(f, note), { indicator: f });
+      /* (atlas-answer-integrity) the subject and the citation travel with the result — the reply's source list and its one-ranking-per-subject edit read them (js/indicator-browser.js `atlasMeta`) */
+      return R(true, B.atlasHtml(f, note), { indicator: f, meta: B.atlasMeta(f) });
     },
   },
   {

@@ -296,21 +296,30 @@ test('③ every tool the Tools menu opens, opened one at a time, has a name on e
      Each door is pressed, the page is left to build what it opens, every form control then in the
      DOM is read, and the door is closed again before the next one — one panel at a time, so no two
      simulators ever run together on the main thread. */
-  await page.waitForFunction(() => document.querySelectorAll('#measure-dropdown .lst-toolrow').length > 0, null, { timeout: 30_000 });
-  await page.click('#btn-measure-menu');   /* opened as a reader opens it, so «a door the reader can see» is measured */
-  await page.waitForFunction(() => !!document.querySelector('#measure-dropdown #layer-tools'), null, { timeout: 30_000 });
-  const doors = await page.evaluate(() => {
+  /* (tools-split) two menus now: Tools ▾ (測る・描く) and 「その他のツール ▾」 (道具・シミュレーション・分析). Each is opened as a
+     reader opens it, so «a door the reader can see» is measured in both. */
+  await page.waitForFunction(() => document.querySelectorAll('#more-tools-dropdown .lst-toolrow').length > 0, null, { timeout: 30_000 });
+  const collect = (sel) => page.evaluate((sel) => {
     const out = [];
     const key = (e) => e.dataset.act ? `[data-act="${e.dataset.act}"]` : (e.id ? '#' + e.id : null);
-    for (const e of document.querySelectorAll('#measure-dropdown .tlp-root button')) {
+    for (const e of document.querySelectorAll(sel + ' .tlp-root button')) {
       if (!e.getClientRects().length) continue;            /* a door the reader cannot see is not a door */
       const k = key(e); if (k && !out.includes(k)) out.push(k);
     }
+    return out;
+  }, sel);
+  await page.click('#btn-measure-menu');
+  const measureDoors = await collect('#measure-dropdown');
+  await page.click('#btn-more-tools');
+  await page.waitForFunction(() => !!document.querySelector('#more-tools-dropdown #layer-tools'), null, { timeout: 30_000 });
+  const moreDoors = await collect('#more-tools-dropdown');
+  const doors = await page.evaluate((found) => {
+    const out = found.slice();
     for (const e of document.querySelectorAll('#tools-sheet [data-proxy]')) {
       const k = '#' + e.dataset.proxy; if (document.querySelector(k) && !out.includes(k)) out.push(k);
     }
     return out;
-  });
+  }, [...measureDoors, ...moreDoors.filter((k) => !measureDoors.includes(k))]);
   expect(doors.length, 'the Tools menu offered tools to open').toBeGreaterThan(10);
   page.on('dialog', (d) => d.dismiss().catch(() => {}));
   page.on('filechooser', () => {});

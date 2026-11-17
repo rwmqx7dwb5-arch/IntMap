@@ -1,0 +1,304 @@
+/* ============================================================================
+ *  IntMap · Atlas — THE CONVERSATION, FLOATING ON THE MAP   (ui-feedback-nov17)
+ *  window-less module, loaded by the Settings code in js/app-body.js and called by js/atlas-console.js
+ * ----------------------------------------------------------------------------
+ *  Settings 「Atlas の回答の表示」 has two values:
+ *    · tab   (default) — Atlas lives in its sidebar tab, as it always has.
+ *    · float           — the SAME panel (#atlas-panel, js/atlas-console.js ensure()) is carried onto the
+ *                        left of the map, inside a translucent glass card: the conversation above, the
+ *                        input below. A whole round trip happens without opening the tab.
+ *
+ *  ⚠ ONE PANEL, NOT TWO. Nothing here renders a message, owns an input or talks to a model. The node
+ *  that moves is the console's own panel, so the conversation, the capabilities, attachments, voice,
+ *  the trace and the stop button are the ones the tab has — re-parented, the way mountTab() moves it
+ *  into #atlas-feed. Choosing the Atlas tab while floating moves it back (mountTab); leaving the tab
+ *  brings it here again. Whoever holds the panel is decided by sync(), from what is on screen.
+ *
+ *  ⚠ NOT ON A PHONE-WIDTH LAYOUT (js/ui-device.js compact()). There the sidebar is a bottom sheet that
+ *  already lies over the map, and a second card plus the on-screen keyboard would leave no map at all;
+ *  Atlas stays in its sheet and the setting's hint says so. Not in the workspace either — Atlas is its
+ *  own window there — nor in an embed (no Atlas in a frame, js/atlas-loader.js).
+ *
+ *  ⚠ THE CARD BLOCKS ONLY ITS OWN RECTANGLE. The positioned box spans the left column of the map so the
+ *  card can grow upward, but it is pointer-events:none; only the card itself takes the pointer.
+ * ==========================================================================*/
+
+import { IntMapLang } from './lang-registry.js';   /* the reader's language for the card's three buttons */
+
+const D = () => (typeof window !== 'undefined' && window.IntMapDevice) || null;
+
+/* ⚠ A CHOSEN DURATION, NOT A MEASURED ONE: long enough to read the first lines of a short answer before
+   the card thins. Idle never makes it unreadable (opacity .58, below) and hover or focus restores it at
+   once, so the number only decides when the map shows through more. Nothing else reads it. */
+const IDLE_MS = 6000;
+
+let mode = 'tab';
+let root = null, card = null;
+let gone = false;          /* the reader hid the card with its × — brought back by open/toggle (the A key, the Atlas button) */
+let folded = false;        /* the conversation is folded away; the input stays */
+let idleT = 0, queued = false, wired = false, chatSeen = null, chatObs = null, warmed = false;
+
+const kt = (key, fb) => { try { return IntMapLang.keyedText(null, key, fb); } catch (_) { return fb; } };
+
+/* ⚠ CSS IN QUOTED STRINGS ONLY (CONSTITUTION §2 — a back-tick here would blank the site). */
+const CSS =
+  '#atlas-float{position:absolute;left:16px;top:84px;bottom:48px;width:min(380px,calc(100% - 32px));z-index:calc(var(--z-map-overlay) + 50);'
+  + 'display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;}'
+  /* the sidebar lies OVER the map in the glass styles, so the card stands right of it there */
+  + 'body.sidebar-glass #atlas-float{left:calc(var(--sidebar-w) + 16px);width:min(380px,calc(100% - var(--sidebar-w) - 32px));}'
+  + 'body.sidebar-glass:has(#sidebar.collapsed) #atlas-float{left:16px;width:min(380px,calc(100% - 32px));}'
+  + '#atlas-float .atl-float-card{pointer-events:auto;display:flex;flex-direction:column;min-height:0;max-height:100%;overflow:hidden;border-radius:20px;'
+  + 'background:color-mix(in srgb,var(--popup-bg) 55%,transparent);color:var(--text-main);'
+  + 'border:1px solid rgba(255,255,255,0.34);box-shadow:0 12px 36px rgba(0,0,0,0.14),inset 0 1px 0 rgba(255,255,255,0.26);'
+  + 'backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
+  + 'opacity:0;transform:translateY(12px) scale(.985);'
+  + 'transition:opacity .5s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.2,.8,.2,1),background-color .5s ease;}'
+  + '[data-theme="dark"] #atlas-float .atl-float-card{border-color:rgba(255,255,255,0.10);box-shadow:0 14px 40px rgba(0,0,0,0.36),inset 0 1px 0 rgba(255,255,255,0.06);}'
+  + '#atlas-float.on .atl-float-card{opacity:1;transform:none;}'
+  /* idle: the map shows through more; the reader's hand or focus brings it back at once */
+  + '#atlas-float.on.idle .atl-float-card{opacity:.58;background:color-mix(in srgb,var(--popup-bg) 38%,transparent);}'
+  + '#atlas-float.on .atl-float-card:hover,#atlas-float.on .atl-float-card:focus-within{opacity:1;background:color-mix(in srgb,var(--popup-bg) 62%,transparent);}'
+  + '#atlas-float:not(.on){visibility:hidden;transition:visibility 0s linear .5s;}'
+  + '#atlas-float:not(.on) .atl-float-card{pointer-events:none;}'
+  + '#atlas-float .atl-float-bar{display:flex;align-items:center;gap:2px;padding:7px 8px 2px 14px;flex:0 0 auto;}'
+  + '#atlas-float .atl-float-name{flex:1 1 auto;font-size:12.5px;font-weight:600;letter-spacing:.01em;color:var(--text-muted);}'
+  + '#atlas-float .atl-float-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:none;border-radius:9px;'
+  + 'background:none;color:var(--text-muted);cursor:pointer;transition:background-color .15s ease,color .15s ease,transform .2s ease;}'
+  + '#atlas-float .atl-float-btn:hover{background:var(--input-bg);color:var(--text-main);}'
+  + '#atlas-float.folded .atl-float-fold svg{transform:rotate(180deg);}'
+  + '#atlas-float .atl-float-fold svg{transition:transform .2s ease;}'
+  /* the panel inside: no window chrome of its own — the card is the window */
+  + '#atlas-float #atlas-panel{position:relative !important;inset:auto !important;left:auto !important;top:auto !important;right:auto !important;bottom:auto !important;'
+  + 'width:100% !important;height:auto !important;max-width:none !important;max-height:none !important;min-width:0 !important;min-height:0 !important;flex:0 1 auto;'
+  + 'transform:none !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;'
+  + 'backdrop-filter:none !important;-webkit-backdrop-filter:none !important;resize:none !important;z-index:auto !important;overflow:hidden;}'
+  + '#atlas-float #atlas-panel .atl-head,#atlas-float #atlas-panel .atl-sub,#atlas-float #atlas-panel .atl-ex{display:none !important;}'
+  + '#atlas-float #atlas-panel .atl-chat{flex:0 1 auto;min-height:0;padding:4px 10px 8px;gap:8px;overscroll-behavior:contain;}'
+  + '#atlas-float #atlas-panel .atl-chat:empty,#atlas-float.folded #atlas-panel .atl-chat{display:none;}'
+  + '#atlas-float #atlas-panel .atl-inbar{border-top:1px solid rgba(128,128,128,0.14);padding:7px 9px 8px;}'
+  + '#atlas-float #atlas-panel .atl-chat:empty+.atl-imgrow+.atl-inbar,#atlas-float.folded #atlas-panel .atl-inbar{border-top-color:transparent;}'
+  + '#atlas-float #atlas-panel .atl-in{background:color-mix(in srgb,var(--card-bg) 72%,transparent);}'
+  /* what arrives while the card is on the map comes in softly */
+  + '#atlas-float .atl-float-new{animation:atl-float-in .55s cubic-bezier(.2,.8,.2,1) both;}'
+  + '@keyframes atl-float-in{from{opacity:0;transform:translateY(8px);filter:blur(3px);}to{opacity:1;transform:none;filter:none;}}'
+  + '@media (prefers-reduced-motion:reduce){#atlas-float .atl-float-card{transition:opacity .01s linear;transform:none;}'
+  + '#atlas-float .atl-float-new{animation:none;}#atlas-float .atl-float-fold svg{transition:none;}}';
+
+const SVG_FOLD = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const SVG_TAB = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>';
+const SVG_X = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+
+function ensureCss() {
+  if (document.getElementById('atlas-float-css')) return;
+  const s = document.createElement('style'); s.id = 'atlas-float-css'; s.textContent = CSS;
+  document.head.appendChild(s);
+}
+
+function btn(cls, svg, key, fb, on) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'atl-float-btn ' + cls; b.innerHTML = svg;
+  b.setAttribute('data-i18n-title', key); b.setAttribute('data-i18n-aria', key);
+  b.title = kt(key, fb); b.setAttribute('aria-label', b.title);
+  b.addEventListener('click', on);
+  return b;
+}
+
+function ensureRoot() {
+  if (root && root.isConnected) return root;
+  const host = document.getElementById('map-container') || ((document.getElementById('map') || {}).parentElement);
+  if (!host) return null;
+  ensureCss();
+  root = document.createElement('section');
+  root.id = 'atlas-float'; root.setAttribute('aria-label', 'Atlas');
+  card = document.createElement('div'); card.className = 'atl-float-card';
+  const bar = document.createElement('div'); bar.className = 'atl-float-bar';
+  const name = document.createElement('span'); name.className = 'atl-float-name'; name.textContent = 'Atlas';
+  bar.appendChild(name);
+  bar.appendChild(btn('atl-float-fold', SVG_FOLD, 'atlFloatFold', 'Collapse conversation', () => setFolded(!folded)));
+  bar.appendChild(btn('atl-float-tab', SVG_TAB, 'atlFloatToTab', 'Open in the Atlas tab', toTab));
+  bar.appendChild(btn('atl-float-x', SVG_X, 'atlFloatHide', 'Hide (press A to bring it back)', () => { gone = true; paint(); }));
+  card.appendChild(bar);
+  root.appendChild(card);
+  /* the idle clock restarts when the hand or the focus leaves the card */
+  card.addEventListener('pointerleave', wake);
+  card.addEventListener('focusout', wake);
+  host.appendChild(root);
+  /* a panel that leaves the card (mountTab, the workspace) leaves the card empty — repaint */
+  try { new MutationObserver(paint).observe(card, { childList: true }); } catch (_) { }
+  return root;
+}
+
+function setFolded(v) {
+  folded = !!v;
+  if (!root) return;
+  root.classList.toggle('folded', folded);
+  const b = root.querySelector('.atl-float-fold');
+  if (b) {
+    const key = folded ? 'atlFloatUnfold' : 'atlFloatFold';
+    b.setAttribute('data-i18n-title', key); b.setAttribute('data-i18n-aria', key);
+    b.title = kt(key, folded ? 'Show conversation' : 'Collapse conversation'); b.setAttribute('aria-label', b.title);
+    b.setAttribute('aria-expanded', folded ? 'false' : 'true');
+  }
+  wake();
+}
+
+/* ── where the panel belongs right now ─────────────────────────────────────────────────────── */
+function compact() { try { return !!(D() && D().compact()); } catch (_) { return false; } }
+function embedded() { try { return !!(D() && D().embedded && D().embedded()); } catch (_) { return false; } }
+function ws() { return document.body.classList.contains('ws-mode'); }
+function eligible() { return mode === 'float' && !compact() && !ws() && !embedded(); }
+function feed() { return document.getElementById('atlas-feed'); }
+function panelEl() { return document.getElementById('atlas-panel'); }
+/* the Atlas tab is what the reader is looking at: its content area is shown and the sidebar is open */
+function tabShown() {
+  const af = feed(); if (!af || !af.isConnected) return false;
+  if (af.style.display === 'none') return false;
+  const sb = document.getElementById('sidebar'); if (sb && sb.classList.contains('collapsed')) return false;
+  try { return getComputedStyle(af).display !== 'none'; } catch (_) { return true; }
+}
+function holds(p) { return !!(p && card && p.parentNode === card); }
+
+function claim(p) {
+  if (!ensureRoot()) return;
+  if (p.parentNode !== card) card.appendChild(p);
+  /* ⚠ `atl-tab` STAYS: js/window-manager.js reads it as 「not a free window」 and gives the panel no
+     edge-resize zone — the card, not the panel, is what has a size here. This file's rules outrank the
+     tab's (two ids against one), so it does not draw as the tab. */
+  p.classList.add('atl-tab'); p.classList.remove('atl-min');
+  ['left', 'top', 'width', 'height', 'transform'].forEach((k) => { try { p.style.removeProperty(k); } catch (_) { } });
+  p.style.display = 'flex';
+  watchChat(p);
+}
+function release(p) {
+  if (ws()) {
+    /* the workspace opens Atlas as its own window from where ensure() first put it */
+    const mc = document.getElementById('map-container') || document.body;
+    mc.appendChild(p); p.style.display = 'none';
+    return;
+  }
+  /* the tab (or the phone sheet) is where the panel lives otherwise — as mountTab() leaves it */
+  const af = feed();
+  if (af) { af.appendChild(p); p.classList.add('atl-tab'); p.style.display = 'flex'; }
+}
+
+function sync() {
+  queued = false;
+  const p = panelEl();
+  if (p) {
+    /* going to the Atlas tab is reaching for Atlas: a card hidden with × comes back when the tab is left */
+    if (tabShown()) gone = false;
+    if (eligible() && !tabShown()) claim(p);
+    else if (holds(p)) release(p);
+  }
+  paint();
+}
+function soon() { if (queued) return; queued = true; queueMicrotask(sync); }
+
+function paint() {
+  if (!root) return;
+  const on = eligible() && !gone && holds(panelEl());
+  const was = root.classList.contains('on');
+  root.classList.toggle('on', on);
+  root.classList.toggle('folded', folded);
+  if (on && !was) wake();
+}
+
+/* ── idle and arrival ──────────────────────────────────────────────────────────────────────── */
+function busy() { const p = panelEl(); return !!(p && p.querySelector('.atl-go.busy')); }
+function wake() {
+  if (!root) return;
+  root.classList.remove('idle');
+  clearTimeout(idleT);
+  idleT = setTimeout(goIdle, IDLE_MS);
+}
+function goIdle() {
+  if (!root || !root.classList.contains('on')) return;
+  if (busy() || (card && (card.matches(':hover') || card.matches(':focus-within')))) { wake(); return; }
+  root.classList.add('idle');
+}
+/* whatever lands in the conversation while the card is on the map wakes it, and a new message or trace
+   fades in. A new turn also unfolds a folded card: the reader asked for this answer. */
+function watchChat(p) {
+  const chat = p.querySelector('.atl-chat');
+  if (!chat || chatSeen === chat) return;
+  chatSeen = chat;
+  try { if (chatObs) chatObs.disconnect(); } catch (_) { }
+  try {
+    chatObs = new MutationObserver((recs) => {
+      if (!holds(panelEl()) || !root || !root.classList.contains('on')) return;
+      let fresh = false;
+      for (const r of recs) {
+        if (r.target !== chat) continue;
+        r.addedNodes.forEach((n) => {
+          if (n.nodeType !== 1) return;
+          fresh = true;
+          /* worn once: a node that kept it would fade in again every time the panel came back from the tab */
+          n.classList.add('atl-float-new');
+          n.addEventListener('animationend', () => { try { n.classList.remove('atl-float-new'); } catch (_) { } }, { once: true });
+        });
+      }
+      if (fresh && folded) setFolded(false);
+      wake();
+    });
+    chatObs.observe(chat, { childList: true, subtree: true, characterData: true });
+  } catch (_) { }
+}
+
+function toTab() {
+  try { const b = document.getElementById('btn-community'); if (b) { b.click(); return; } } catch (_) { }
+  try { window.IntMapAtlas.call('mountTab'); } catch (_) { }
+}
+
+/* the panel is the kernel's; the kernel is lazy (js/atlas-loader.js). A float reader needs the input on
+   the map, so the kernel is fetched once the page has settled rather than on the first press. */
+function warm() {
+  if (warmed || !eligible()) return;
+  warmed = true;
+  const go = () => {
+    try {
+      window.IntMapAtlas.ensure().then((C) => {
+        try { if (C && typeof C.panel === 'function') C.panel(); } catch (_) { }
+        soon();
+      });
+    } catch (_) { }
+  };
+  if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 2000 }); else setTimeout(go, 1200);
+}
+
+function wire() {
+  if (wired) return; wired = true;
+  const obs = (el, o) => { try { if (el) new MutationObserver(soon).observe(el, o); } catch (_) { } };
+  obs(feed(), { attributes: true, attributeFilter: ['style'], childList: true });
+  obs(document.getElementById('sidebar'), { attributes: true, attributeFilter: ['class'] });
+  obs(document.body, { attributes: true, attributeFilter: ['class'] });
+  /* the panel is born in #map-container (ensure()); that is where a first panel is seen */
+  obs(document.getElementById('map-container'), { childList: true });
+  try { if (D() && D().on) D().on(soon); } catch (_) { }
+}
+
+/** applyAtlasDisplay('tab' | 'float') — the Settings value, applied now and on every change. */
+export function applyAtlasDisplay(m) {
+  mode = m === 'float' ? 'float' : 'tab';
+  if (mode === 'float') { gone = false; ensureRoot(); wire(); warm(); }
+  sync();
+}
+
+/** floatRoute('open' | 'close' | 'toggle') — js/atlas-console.js asks before its own open/close/toggle.
+    true = handled here (the floating card is where Atlas is); false = the console does what it always did. */
+export function floatRoute(kind) {
+  if (!eligible() || tabShown()) return false;
+  let p = panelEl();
+  if (!p) { try { const C = window.IntMapConsole; if (C && typeof C.panel === 'function') p = C.panel(); } catch (_) { } }
+  if (!p) return false;
+  const shown = holds(p) && root && root.classList.contains('on');
+  if (kind === 'close' || (kind === 'toggle' && shown)) {
+    if (!holds(p)) return false;
+    gone = true; paint(); return true;
+  }
+  gone = false;
+  claim(p); paint();
+  if (folded) setFolded(false);
+  wake();
+  setTimeout(() => { try { const i = p.querySelector('.atl-in'); if (i) i.focus(); } catch (_) { } }, 60);
+  return true;
+}

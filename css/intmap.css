@@ -273,6 +273,10 @@
     }
     .header-actions > button{ margin-right:0 !important; }
     .title-group{ display:flex; align-items:center; gap:12px; min-width:0; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
+    /* the wordmark is the picture of the name (img/intmap-wordmark.png, cut from the master artwork): its CAP height is drawn at the
+       cap height the 22px h2 text had (cap ≈ 0.70em = 15.4px; the image is 357 px tall with a 277 px cap, so 15.4·357/277 ≈ 20px).
+       Re-derive if the h2 size changes or the artwork is re-cut. */
+    h2.im-wordmark{ display:flex; align-items:center; line-height:1; min-height:27px; } h2.im-wordmark img{ display:block; height:20px; width:auto; }
     .btn-settings{ flex-shrink:0; }
     /* (#R11) Header EN/JP toggle removed — language is changed from Settings only. */
     .btn-settings{ background:var(--input-bg); border:none; color:var(--text-main); padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; border-radius:var(--r-control); transition:0.2s; }
@@ -556,7 +560,10 @@
        a slimmer bar (group padding 2px 4px) and the same 4px gap. */
     /* (#R123) the LAST remaining difference was the vertical gap BETWEEN the stacked bars — normal mode was 8px
        while workspace mode uses 4px (see the body.ws-mode override). Match it so the bar spacing is identical. */
-    .map-controls-top{ position:absolute; top:10px; right:10px; z-index:var(--z-controls); display:flex; flex-direction:column; gap:4px; align-items:flex-end; pointer-events:none; }
+    /* (ui-feedback-nov17) 「画面上部の地名検索バーや右上のボタン類はより上、右上に寄せて。ただし余白は確保」 — 10px → var(--chrome-edge) (6px),
+       the two stacked bars 4px → 3px apart. One token for the search pill and this cluster so they stay on one line. */
+    :root{ --chrome-edge:6px; }
+    .map-controls-top{ position:absolute; top:var(--chrome-edge); right:var(--chrome-edge); z-index:var(--z-controls); display:flex; flex-direction:column; gap:3px; align-items:flex-end; pointer-events:none; }
     .map-controls-top > *, .map-controls-top .layer-dropdown{ pointer-events:auto; }
     /* (#R480) 「Map/SatelliteとFlat/Globe/3Dを同じ行にまとめて。」 — .map-controls-top is a COLUMN, so two
        pills can only share a line by sharing a parent. This wrapper is that parent and nothing else: no
@@ -640,8 +647,10 @@
     .share-dropdown{ left:auto; right:0; }   /* (#R151) share sits near the right edge → anchor the dropdown right so it never overflows the viewport */
     /* (tools-out-of-layers) 「Tools ▾」 is a panel of four sections now (js/map-ui.js `mountTools`), so it is anchored right like
        Share, as wide as the Layers panel's cards, and scrolls inside itself rather than running off the bottom of the window. */
-    #measure-dropdown{ left:auto; right:0; width:min(340px, calc(100vw - 24px)); max-height:calc(100vh - 120px); overflow-y:auto; overscroll-behavior:contain; padding:8px; }
-    .measure-menu-container.open .measure-dropdown, .share-menu-container.open .share-dropdown{ display:flex; }
+    #measure-dropdown{ left:auto; right:0; width:min(300px, calc(100vw - 24px)); max-height:calc(100vh - 120px); overflow-y:auto; overscroll-behavior:contain; padding:8px; }
+    .measure-menu-container.open .measure-dropdown, .share-menu-container.open .share-dropdown, .more-tools-container.open .measure-dropdown{ display:flex; }
+    .more-tools-container{ position:relative; display:inline-block; }
+    #more-tools-dropdown{ left:auto; right:0; width:min(340px, calc(100vw - 24px)); max-height:calc(100vh - 120px); overflow-y:auto; overscroll-behavior:contain; padding:8px; }
     .measure-dropdown .view-btn, .share-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
     .caret-sm{ font-size:9px; opacity:0.7; }
     /* (#R15d) Use the shared glass border so the Layers dropdown matches every other frosted surface. */
@@ -1775,7 +1784,7 @@
     /* (#R104) in-map search bar unified with the Atlas input pill (rounding / hairline border / focus ring); keeps its floating frosted material so it stays legible over the map. Size & wording unchanged. */
     /* (#R170) 24px → 10px ("地名検索バーの位置をもう少し上に") — now flush with the top of .map-controls-top
        (also top:10px) on the right, so the two float on one visual row instead of the pill sitting lower. */
-    .map-search{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:var(--z-controls); display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:var(--r-control); padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
+    .map-search{ position:absolute; top:var(--chrome-edge); left:50%; transform:translateX(-50%); z-index:var(--z-controls); display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:var(--r-control); padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
     .map-search:focus-within{ border-color:var(--focus-ring); box-shadow:0 0 0 1px var(--focus-ring), 0 0 0 4px rgba(10,132,255,0.18); }   /* (ui-a11y-polish) the same 2 px edge as .search-bar */
     /* Place-search pin + popup card */
     .search-pin{ width:30px; height:38px; position:relative; cursor:pointer; }
@@ -3256,7 +3265,7 @@
     @media(min-width:769px){
       body:not(.ws-mode) .map-controls-top, body:not(.ws-mode) #tool-panel,
       body:not(.ws-mode) #sat-controller, body:not(.ws-mode) .news-timeline{ transition:right .38s cubic-bezier(0.25,1,0.5,1); }
-      body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + 10px); }
+      body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + var(--chrome-edge)); }
       body.lsr-open:not(.ws-mode) #tool-panel, body.lsr-open:not(.ws-mode) #sat-controller{ right:calc(var(--lsr-w) + 24px); }
       body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 6px); }
     }

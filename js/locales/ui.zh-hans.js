@@ -4161,7 +4161,6 @@ IntMapLang.define('zh-hans', {
   "Danger warning": "危险警报",
   "Delayed": "略旧",
   "Diagnostics": "诊断",
-  "Each agency’s own published scale": "各机关公布的等级",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "各国均以该国机关的发布单位绘制。仅供参考，请以官方机关发布为准。",
   "Europe — MeteoAlarm": "欧洲 — MeteoAlarm",
   "every 30 s": "每 30 秒",
@@ -4799,7 +4798,7 @@ IntMapLang.define('zh-hans', {
   "Countries at Danger or above": "危险等级以上的国家",   /* (#R299) */
   "No country is at Danger or above right now.": "目前没有国家达到危险等级以上。",   /* (#R299) */
   "IntMap’s own conversion — the same step is not the same danger.": "IntMap 自行换算——同一等级不代表危险程度相同。",   /* (#R299) */
-  "Each agency’s own colours. Tap a country for its exact scale.": "颜色为各机关自身的配色。点击国家可查看确切等级。",   /* (#R299) */
+  /* (#R299) */
   "No point placed yet": "尚未设置地点",   /* (#R299) */
   "Place the point on the map": "在地图上设置地点",   /* (#R299) */
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "已在地图上开启路线指引面板——请在面板中填入起点与目的地，或在这里告诉我地点。",   /* (#R299) */

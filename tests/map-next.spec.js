@@ -33,10 +33,10 @@ async function offEarth(page) {
 test('my map: draw, name, link, receive, keep, reload, export, analyse', async ({ page, browser }) => {
   test.setTimeout(180_000);
   await boot(page);
-  /* the door a reader presses: the row in the toolbar's Tools ▾ (tools-out-of-layers — no longer in Layers) */
-  await page.waitForSelector('#measure-dropdown .lst-toolrow[data-act="tool.myMap"]', { state: 'attached', timeout: 30_000 });
-  await page.click('#btn-measure-menu');
-  await page.locator('#measure-dropdown .lst-toolrow[data-act="tool.myMap"]').click();
+  /* the door a reader presses: the row in the toolbar's 「その他のツール ▾」 (tools-split — Tools ▾ holds only 測る・描く) */
+  await page.waitForSelector('#more-tools-dropdown .lst-toolrow[data-act="tool.myMap"]', { state: 'attached', timeout: 30_000 });
+  await page.click('#btn-more-tools');
+  await page.locator('#more-tools-dropdown .lst-toolrow[data-act="tool.myMap"]').click();
   const panel = page.locator('#im-mymap');
   await expect(panel).toBeVisible({ timeout: 20_000 });
 

@@ -45,6 +45,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { anchorToLngLat } from './popup-anchor.js';
 import { IntMapTables } from './tables.js';
 
 export function companyPanel(HOST) {
@@ -633,27 +634,10 @@ export function companyPanel(HOST) {
   function place() {
     const e = ensureEl();
     if (e.getAttribute('data-dragged') === '1') return;
-    try {
-      const mc = e.offsetParent || document.getElementById('map-container') || document.documentElement;
-      const mr = mc.getBoundingClientRect();
-      const w = e.offsetWidth || 400, h = e.offsetHeight || 360;
-      /* the sidebars overlay the map (#R160), so the right edge keeps clear of the layer panel */
-      const rs = (() => {
-        try {
-          const sb = document.getElementById('layer-sidebar-r');
-          return (sb && document.body.classList.contains('lsr-open')) ? sb.getBoundingClientRect().width : 0;
-        } catch (_) { return 0; }
-      })();
-      const at = anchor();
-      const px = at ? (() => {
-        try { const p = GE().coords.project({ lng: at[0], lat: at[1] }); const cr = GE().render.canvas().getBoundingClientRect(); return cr.left + p.x; } catch (_) { return null; }
-      })() : null;
-      const right = Math.min(mr.left + mr.width, (window.innerWidth || 1200) - rs);
-      let left = (px != null) ? (px + 18) : (right - w - 24);
-      left = Math.max(mr.left + 12, Math.min(left, right - w - 12));
-      e.style.left = Math.round(left - mr.left) + 'px';
-      e.style.top = Math.round(Math.max(12, Math.min(84, mr.height - h - 16))) + 'px';
-    } catch (_) { e.style.left = '16px'; e.style.top = '84px'; }
+    /* beside the headquarters, and it keeps following them as the map moves (js/popup-anchor.js); the
+       anchor is asked each time because the profile that names the HQ can arrive after the first
+       placement. No HQ: docked to the right, as before. Skipped once the reader has dragged the panel. */
+    try { anchorToLngLat(e, () => anchor(), { dockedTop: 84 }); } catch (_) { e.style.left = '16px'; e.style.top = '84px'; }
   }
   function anchor() {
     try { const hq = curProf && curProf._hq; if (hq && hasXY(hq)) return [Number(hq.lon), Number(hq.lat)]; } catch (_) { }

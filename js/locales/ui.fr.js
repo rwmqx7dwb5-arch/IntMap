@@ -3935,7 +3935,6 @@ IntMapLang.define('fr', { ui: {
   "Danger warning": "Avertissement de danger",
   "Delayed": "En retard",
   "Diagnostics": "Diagnostics",
-  "Each agency’s own published scale": "Échelle publiée par chaque service",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "Chaque pays provient de son propre service, dans les unités qu’il utilise. Affichage à titre indicatif : suivez les autorités officielles.",
   "Europe — MeteoAlarm": "Europe — MeteoAlarm",
   "every 30 s": "toutes les 30 s",
@@ -4572,7 +4571,7 @@ IntMapLang.define('fr', { ui: {
   "Countries at Danger or above": "Pays au niveau Danger ou au-dessus",   /* (#R299) */
   "No country is at Danger or above right now.": "Aucun pays n’atteint le niveau Danger actuellement.",   /* (#R299) */
   "IntMap’s own conversion — the same step is not the same danger.": "Conversion IntMap — un même niveau n’est pas le même danger.",   /* (#R299) */
-  "Each agency’s own colours. Tap a country for its exact scale.": "Couleurs de chaque service. Touchez un pays pour son échelle.",   /* (#R299) */
+  /* (#R299) */
   "No point placed yet": "Aucun point n’est encore placé",   /* (#R299) */
   "Place the point on the map": "Placer le point sur la carte",   /* (#R299) */
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "Le planificateur d’itinéraire est ouvert sur la carte — remplissez-y les deux champs, ou indiquez les lieux ici.",   /* (#R299) */

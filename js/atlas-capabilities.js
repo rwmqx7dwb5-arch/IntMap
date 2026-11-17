@@ -363,6 +363,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.gisProject","gisProject","saveAnalysis,openAnalysis,rerunAnalysis,analysisProject","data","none","gis.project","explanation","persist","explicit","","gisCore"],
       ["time.textMap","textMap","mapText,textToEraMap,passageMap,eraMapFromText","time","mapCompose","map.compose,map.highlight,time","map,explanation","session","none","",""],
       ["news.eventPast","eventPast","eventPlacePast,eventHistory,newsPlaceHistory,eventBackground","data","none","","explanation","read","none","text?","newsEvents"],
+      ["settings.atlasDisplay","atlasDisplay","atlasFloat,floatingAtlas","settings","setting","settings.atlasDisplay","setting","persist","explicit","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
