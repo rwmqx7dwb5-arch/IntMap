@@ -51,6 +51,10 @@
    siblings now; the fallback is stated once, below. */
 :root{ --z-inset:0; --z-marker:100; --z-map-overlay:900; --z-controls:1000; --z-m-legend:1040; --z-m-card:1100; --z-m-chrome:1150; --z-m-sheet:1200; --z-dropdown:1300; --z-sheet:1650; --z-popup:2000; --z-window:2200; --z-menu:2500; --z-shell-front:2600; --z-front:2650; --z-toast:3000; --z-modal:10000; --z-overlay:99990; --z-system:200000; --z-max:2147483647; }
 :root{ --safe-top:env(safe-area-inset-top,0px); --safe-right:env(safe-area-inset-right,0px); --safe-bottom:env(safe-area-inset-bottom,0px); --safe-left:env(safe-area-inset-left,0px); }
+/* (news-type-polish) ONE scale for corners and for the news card's type. 「角丸を弱める…カードは角丸12px、検索欄・ボタンは8px程度に揃え、
+   カプセル形は小さなタグに限定」／「記事見出しは16px・太字、要約は14px・標準、場所・時刻・出典は12pxに。見出しは白、要約は明るい灰色、
+   補助情報は薄い灰色」. A rule that wants one of these says the token, so the next «a little rounder» is one line here. */
+:root{ --r-card:12px; --r-control:8px; --r-inner:6px; --fs-head:16px; --fs-body:14px; --fs-meta:12px; --text-sub:color-mix(in srgb, var(--text-main) 82%, var(--card-bg)); --text-meta:color-mix(in srgb, var(--text-main) 62%, var(--card-bg)); }   /* sub = the summary (light grey on dark), meta = place / time / outlet (paler still); 62% keeps 12 px at 4.5:1 on white */
     /* (#R101) --text-muted darkened for legibility ("灰色文字は見えにくい") — was #6c6c70 */
     /* ══ (ui-a11y-polish) THE ACCENT HAS TWO JOBS, SO IT IS TWO TOKENS ══════════════════════════════
        --primary-color is the accent AS TEXT (and borders, rings, icons); --primary-fill is the accent AS A
@@ -260,7 +264,7 @@
     .title-group{ display:flex; align-items:center; gap:12px; min-width:0; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
     .btn-settings{ flex-shrink:0; }
     /* (#R11) Header EN/JP toggle removed — language is changed from Settings only. */
-    .btn-settings{ background:var(--input-bg); border:none; color:var(--text-main); padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; border-radius:20px; transition:0.2s; }
+    .btn-settings{ background:var(--input-bg); border:none; color:var(--text-main); padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; border-radius:var(--r-control); transition:0.2s; }
     .btn-settings:hover{ background:rgba(128,128,128,0.1); }
     /* (#R31) account avatar = a real circular chip (photo or emoji), name beside it — not a bare emoji
        floating centered in the pill. */
@@ -277,7 +281,7 @@
     /* (#R36) Equal-width nav tabs ("News/Information/Stats/Community のボタン幅は同一に"): flex:1 1 0 + min-width:0
        makes all four exactly 1/4 (was flex:1 1 auto → content-sized, so Information/Community were much wider).
        nowrap + a font/padding that fits the longest label keeps text inside the button with no extra rows. */
-    .mode-btn{ flex:1 1 0; min-width:0; background:var(--input-bg); border:none; color:var(--text-main); padding:10px 4px; cursor:pointer; font-size:13px; font-weight:500; border-radius:10px; transition:0.3s; white-space:nowrap; text-align:center; overflow:hidden; }   /* (#R122) larger base; JS auto-fits to never overflow/wrap */
+    .mode-btn{ flex:1 1 0; min-width:0; background:var(--input-bg); border:none; color:var(--text-main); padding:10px 4px; cursor:pointer; font-size:13px; font-weight:500; border-radius:var(--r-control); transition:0.3s; white-space:nowrap; text-align:center; overflow:hidden; }   /* (#R122) larger base; JS auto-fits to never overflow/wrap */
     /* (#R130) News / Information / Countries selected tab = solid WHITE pill, BLACK text (not the accent fill) per
        request ("News/Information/Countriesはアクセントカラーではなく白背景黒文字に"). Atlas keeps an accent-derived
        fill via the higher-specificity .mode-btn.mode-atlas.active rule below. */
@@ -318,7 +322,7 @@
     .ios-segment-btn.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 4px rgba(0,0,0,0.08); }
     [data-theme="dark"] .ios-segment-btn.active{ background:#3a3a3c; }
     /* (#R104) unified with the Atlas input pill (same rounding / hairline border / card material / focus ring) — wording & size unchanged. */
-    .search-bar{ display:flex; align-items:center; gap:6px; background:var(--card-bg); border:1px solid rgba(128,128,128,0.25); border-radius:21px; padding:4px 4px 4px 12px; margin-bottom:10px; transition:border-color .15s ease, box-shadow .15s ease; }   /* (#R105) tighter gap below the search field (to the sort toolbar / content) */
+    .search-bar{ display:flex; align-items:center; gap:6px; background:var(--card-bg); border:1px solid rgba(128,128,128,0.25); border-radius:var(--r-control); padding:4px 4px 4px 12px; margin-bottom:10px; transition:border-color .15s ease, box-shadow .15s ease; }   /* (#R105) tighter gap below the search field (to the sort toolbar / content) */
     /* (#R79e) the Countries window's own search bar is ONLY for workspace mode; keep it out of the normal sidebar
        no matter what (the ws-mode rule below has higher specificity + !important, so it still shows in-window). */
     #countries-search-bar, #info-search-bar{ display:none !important; }   /* (#R153) Companies filter box hidden in normal mode (shown only inside the ws Companies window), same as Countries */
@@ -330,7 +334,7 @@
        case) and stays legible on light themes (where pure white would vanish). Applies to every text input. */
     input::placeholder, textarea::placeholder{ color:var(--text-main) !important; opacity:0.82 !important; }
     input::-webkit-input-placeholder, textarea::-webkit-input-placeholder{ color:var(--text-main) !important; opacity:0.82 !important; }
-    .search-btn{ background:var(--primary-fill); color:#fff; border:none; padding:8px 14px; font-size:13px; font-weight:600; border-radius:9px; flex-shrink:0; transition:0.2s; }
+    .search-btn{ background:var(--primary-fill); color:#fff; border:none; padding:8px 14px; font-size:13px; font-weight:600; border-radius:var(--r-inner); flex-shrink:0; transition:0.2s; }
     .search-btn:hover{ filter:brightness(1.08); }
     /* (#R129) "pick a country on the map" crosshair, shown inline at the right of the Countries search field (same
        control as the compare window's ◎). flex:0 0 auto so it never wraps the single-row search bar. */
@@ -354,7 +358,7 @@
        parent does not disable a child's own scroller. */
     #countries-feed, #info-dashboard{ overflow-x:hidden; overscroll-behavior-x:contain; }
     .empty-msg{ text-align:center; color:var(--text-muted); font-size:13px; padding:48px 16px; line-height:1.6; }
-    .news-item{ background:var(--card-bg); padding:11px 15px; border-radius:14px; font-size:13px; cursor:pointer; transition:0.3s; color:var(--text-main); box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); position:relative; }
+    .news-item{ background:var(--card-bg); padding:11px 15px; border-radius:var(--r-card); font-size:13px; cursor:pointer; transition:0.3s; color:var(--text-main); box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); position:relative; }
     #live-news-feed{ gap:9px; }   /* (#R86) denser news feed — fit more cards without cramming (news only; info/community/countries feeds unaffected) */
     #countries-feed{ gap:7px; padding-top:0; }   /* (#R105) a little MORE gap BETWEEN cards; the in-card top/bottom padding is tightened on .stat-row instead. No top padding so the sort toolbar hugs the search field. */
     .news-item:hover,.news-item.hovered{ transform:translateY(-2px); box-shadow:0 12px 30px rgba(0,0,0,0.1); border-color:var(--primary-color); z-index:calc(var(--z-inset) + 10); }
@@ -556,7 +560,7 @@
        content, so they stay level whatever the emoji font on the machine decides a line box is — the pills
        already centre their own buttons, so nothing inside moves. */
     .map-view-row{ display:flex; align-items:stretch; justify-content:flex-end; gap:4px; flex-wrap:wrap; max-width:100%; }
-    .map-view-group{ display:flex; align-items:center; background:var(--sidebar-bg); backdrop-filter:blur(20px); border-radius:12px; padding:2px 4px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); gap:4px; flex-wrap:wrap; max-width:100%; }
+    .map-view-group{ display:flex; align-items:center; background:var(--sidebar-bg); backdrop-filter:blur(20px); border-radius:var(--r-control); padding:2px 4px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); gap:4px; flex-wrap:wrap; max-width:100%; }
     /* ⚠ (#R504) THE PADDING IS THE HEIGHT OF THE ROW. 「…のバーの縦幅を詰めて」 — measured at
        1440×900: .view-btn 28.0 px (12 px type + 7 px above and below), so each pill row was 35.3 px
        and the three-row stack 120.7 px. Nothing here changes the type, the hit area's width, or the
@@ -1214,7 +1218,7 @@
     .ctx-menu .ctx-coord{ padding:7px 10px 6px; font-size:11.5px; color:var(--text-muted); font-weight:600; letter-spacing:0.2px; }
     /* Time-travel news timeline — anchored on the right side of the map, raised to avoid coord readout/legends */
     /* (#R103) tucked closer to the bottom-right (non-flush) + smaller button/popup per request. */
-    .news-timeline{ position:absolute; right:14px; bottom:54px; z-index:calc(var(--z-controls) + 100); display:flex; align-items:stretch; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:14px; padding:0; overflow:hidden; box-shadow:var(--shadow); backdrop-filter:blur(20px); max-width:min(560px,calc(100vw - 48px)); }
+    .news-timeline{ position:absolute; right:14px; bottom:54px; z-index:calc(var(--z-controls) + 100); display:flex; align-items:stretch; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:var(--r-card); padding:0; overflow:hidden; box-shadow:var(--shadow); backdrop-filter:blur(20px); max-width:min(560px,calc(100vw - 48px)); }
     .news-timeline.collapsed .ntl-body{ display:none; }
     /* (#27) collapsed = the labeled "See the past world / 1900 to present" button (smaller, #R103) */
     .ntl-open{ display:flex; align-items:center; gap:9px; padding:7px 11px; background:transparent; border:none; cursor:pointer; text-align:left; width:100%; }
@@ -1602,16 +1606,17 @@
     .map-tooltip.map-tooltip-below::after{ bottom:auto; top:-6px; border-right:none; border-bottom:none; border-left:1px solid rgba(128,128,128,0.15); border-top:1px solid rgba(128,128,128,0.15); }
     /* Compact news card: publisher + a small Read pill share one row (saves vertical space) */
     .news-item .news-head{ display:flex; justify-content:space-between; align-items:center; padding-right:20px; gap:8px; }
-    .news-item .news-date{ color:var(--text-muted); font-size:11px; font-weight:500; white-space:nowrap; }
-    .news-item .news-title{ font-weight:600; line-height:1.38; margin-top:5px; font-size:13px; }
+    .news-item .loc-chip{ font-size:var(--fs-meta); }   /* (news-type-polish) place / time / outlet share the 12 px meta size */
+    .news-item .news-date{ color:var(--text-meta); font-size:var(--fs-meta); font-weight:400; white-space:nowrap; }
+    .news-item .news-title{ font-weight:700; line-height:1.35; margin-top:5px; font-size:var(--fs-head); color:var(--text-main); }
     .news-item .news-origlang{ font-size:11px; color:var(--text-muted); font-weight:500; margin-top:4px; }
     .news-item .news-foot{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:6px; }
-    .news-item .news-pub{ color:var(--primary-color); font-weight:500; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+    .news-item .news-pub{ color:var(--text-meta); font-weight:400; font-size:var(--fs-meta); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
     /* (#R142) outlet name → its Wikipedia page (clickable). */
     .news-item .news-pub[role="link"]{ cursor:pointer; }
     .news-item .news-pub[role="link"]:hover{ text-decoration:underline; }
     /* (#R137) "Read article" button = solid WHITE background, BLACK text ("ニュースカードの記事を読むボタンは、白背景黒文字に"). */
-    .news-item .btn-read{ flex-shrink:0; background:#fff; border:1px solid rgba(0,0,0,0.14); color:#000; font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:999px; white-space:nowrap; transition:0.15s; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+    .news-item .btn-read{ flex-shrink:0; background:#fff; border:1px solid rgba(0,0,0,0.14); color:#000; font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:var(--r-inner); white-space:nowrap; transition:0.15s; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
     .news-item .btn-read:hover{ background:#f0f0f0; color:#000; border-color:rgba(0,0,0,0.2); }
     /* (#R38) Mobile news pin → popup with a Read button (instead of jumping straight to the article). */
     .m-news-pop-back{ display:none; position:fixed; inset:0; z-index:calc(var(--z-controls) + 190); background:rgba(0,0,0,0.30); }
@@ -1669,13 +1674,13 @@
     .news-cat-chip.active{ background:var(--primary-fill); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
     .news-cat-n{ font-size:10.5px; font-weight:700; opacity:0.68; font-variant-numeric:tabular-nums; }
 
-    .news-item .ev-cat{ font-size:10.5px; font-weight:700; letter-spacing:0.2px; color:var(--text-muted); text-transform:uppercase; white-space:nowrap; }
+    .news-item .ev-cat{ font-size:11px; font-weight:600; letter-spacing:0.2px; color:var(--text-meta); text-transform:uppercase; white-space:nowrap; }
     .ev-badge{ font-size:10px; font-weight:700; letter-spacing:0.2px; padding:2px 7px; border-radius:999px; white-space:nowrap; }
     .ev-badge.upd{ background:rgba(52,199,89,0.16); color:#1f8a3d; }
     [data-theme="dark"] .ev-badge.upd{ background:rgba(52,199,89,0.2); color:#5fd67f; }
     .ev-badge.first{ background:var(--primary-tint); color:var(--primary-on-tint); }
     .ev-badge.dup{ background:rgba(128,128,128,0.16); color:var(--text-muted); }
-    .news-item .ev-sources{ flex:0 0 auto; background:var(--input-bg); border:none; color:var(--text-main); font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:999px; white-space:nowrap; transition:0.15s; }
+    .news-item .ev-sources{ flex:0 0 auto; background:var(--input-bg); border:none; color:var(--text-main); font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:var(--r-inner); white-space:nowrap; transition:0.15s; }
     .news-item .ev-sources:hover{ background:var(--primary-fill); color:#fff; }
 
     /* ── 出来事の詳細（`.news-reader-pane` の中） ── */
@@ -1687,61 +1692,68 @@
        from #R386 to #R435 the button was drawn as a bare UA <button> (measured: #f0f0f0, radius 0,
        padding 0, 2px outset, 44×20) and the bar was `position:static` instead of sticky. Copying a
        look instead of pointing at it is what let the copy be wrong and stay wrong for 49 rounds. */
-    .ev-d-head{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
-    .ev-d-title{ font-size:22px; font-weight:700; line-height:1.28; letter-spacing:-0.35px; margin:0 0 8px; color:var(--text-main); }
-    .ev-d-meta{ display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--text-muted); padding-bottom:16px; margin-bottom:16px; border-bottom:1px solid rgba(128,128,128,0.15); }
-    .ev-d-sec{ margin-bottom:22px; }
-    .ev-d-sec h3{ font-size:13px; font-weight:700; letter-spacing:-0.1px; margin:0 0 10px; color:var(--text-main); }
-    .ev-d-note{ font-size:11.5px; line-height:1.55; color:var(--text-muted); margin:0 0 10px; }
+    .ev-d-head{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .ev-d-title{ font-size:24px; font-weight:700; line-height:1.28; letter-spacing:-0.35px; margin:0 0 12px; color:var(--text-main); }
+    .ev-d-meta{ display:flex; flex-direction:column; gap:2px; font-size:12px; color:var(--text-muted); padding-bottom:20px; margin-bottom:28px; border-bottom:1px solid rgba(128,128,128,0.15); }
+    .ev-d-sec{ margin-bottom:36px; }
+    .ev-d-sec h3{ font-size:16px; font-weight:700; letter-spacing:-0.1px; margin:0 0 14px; color:var(--text-main); }
+    .ev-d-note{ font-size:12px; line-height:1.55; color:var(--text-muted); margin:0 0 12px; }
     .ev-diff-row{ display:flex; gap:10px; align-items:flex-start; background:var(--card-bg); border:1px solid rgba(128,128,128,0.1); border-radius:12px; padding:10px 12px; margin-bottom:8px; box-shadow:var(--shadow); }
     .ev-diff-k{ flex:0 0 auto; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.2px; padding-top:2px; min-width:74px; }
     .ev-diff-v{ flex:1 1 auto; min-width:0; font-size:12.5px; line-height:1.6; color:var(--text-main); }
     .ev-diff-src{ color:var(--text-muted); font-size:11.5px; }
     /* (#R394) 何についての数かは、原文の前後の語で示す——要約も言い換えもしない。 */
     .ev-diff-ctx{ font-size:11px; line-height:1.5; color:var(--text-muted); margin:1px 0 5px; }
-    .ev-cov{ padding:9px 0; border-bottom:1px solid rgba(128,128,128,0.1); }
+    .ev-cov{ padding:14px 0; border-bottom:1px solid rgba(128,128,128,0.1); }
     .ev-cov:last-child{ border-bottom:none; }
     .ev-cov.dup{ opacity:0.62; }
-    .ev-cov-h{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-bottom:3px; }
-    .ev-cov-src{ font-size:11.5px; font-weight:700; color:var(--primary-color); }
-    .ev-cov-at{ font-size:11px; color:var(--text-muted); margin-left:auto; white-space:nowrap; }
-    .ev-cov-t{ display:block; font-size:13px; line-height:1.45; color:var(--text-main); text-decoration:none; }
+    .ev-cov-h{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-bottom:7px; }
+    .ev-cov-src{ font-size:12px; font-weight:700; color:var(--text-main); }
+    .ev-cov-at{ font-size:12px; color:var(--text-muted); margin-left:auto; white-space:nowrap; }
+    .ev-cov-t{ display:block; font-size:14px; line-height:1.45; color:var(--text-main); text-decoration:none; font-weight:500; }
     a.ev-cov-t:hover{ text-decoration:underline; }
+    /* (news-type-polish) 「記事を読む見出しと、作成方法の見出しを区別する」 — «How this event was assembled» is about the
+       making, not the story: a small muted heading, not the 16 px heading the reading sections use. */
+    .ev-why h3{ font-size:12px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; color:var(--text-muted); margin:0 0 10px; }
+    /* the meta block's two groups (dates / counts) read as two: the counts line stands apart */
+    .ev-d-meta > span:last-child{ margin-top:6px; }
+    .ev-d-head .loc-chip{ font-size:11px; }
+    .ev-d-head .ev-cat{ font-size:11px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; color:var(--text-muted); }
     .ev-why ul{ margin:0; padding-left:18px; }
-    .ev-why li{ font-size:11.5px; line-height:1.6; color:var(--text-muted); margin-bottom:6px; }
+    .ev-why li{ font-size:12px; line-height:1.6; color:var(--text-muted); margin-bottom:6px; }
     /* (#R405) 出来事の中身 — 何が起きたか / 数字 / 更新 / 一致。
        ⚠ 既存の視覚言語のまま（docs/NEWS-EVENTS.md §9「Ground News 風の独立画面を作らない」）。
        ⚠ 出典 `.ev-src` は本文と**同じ行の続き**に置く。別の行に落とすと、どの文の出典なのかが
          視覚的に切れる——1 行 1 出典がこの機能の約束である。 */
-    .ev-brief .ev-line{ font-size:13.5px; line-height:1.62; color:var(--text-main); margin:0 0 10px; }
-    .ev-sub{ font-size:11px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase; color:var(--text-muted); margin:18px 0 8px; }
-    .ev-syn{ background:var(--card-bg); border:1px solid rgba(128,128,128,0.12); border-radius:14px; padding:13px 15px 11px; margin-bottom:4px; box-shadow:var(--shadow); }
+    .ev-brief .ev-line{ font-size:15px; line-height:1.65; color:var(--text-main); margin:0 0 14px; }
+    .ev-sub{ font-size:11px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase; color:var(--text-muted); margin:24px 0 12px; }
+    .ev-syn{ background:var(--card-bg); border:1px solid rgba(128,128,128,0.12); border-radius:var(--r-card); padding:14px 16px 12px; margin-bottom:4px; box-shadow:var(--shadow); }
     .ev-syn .ev-line:last-of-type{ margin-bottom:8px; }
     .ev-syn-ev{ margin:0 0 8px; }
-    .ev-syn-ev > summary{ font-size:11.5px; font-weight:600; color:var(--primary-color); cursor:pointer; list-style:none; padding:3px 0; }
+    .ev-syn-ev > summary{ font-size:12px; font-weight:600; color:var(--text-muted); cursor:pointer; list-style:none; padding:3px 0; }
     .ev-syn-ev > summary::-webkit-details-marker{ display:none; }
     .ev-syn-ev > summary::before{ content:'▸ '; }
     .ev-syn-ev[open] > summary::before{ content:'▾ '; }
-    .ev-syn-ev .ev-diff-ctx{ margin:5px 0 0; padding-left:9px; border-left:2px solid rgba(128,128,128,0.22); }
+    .ev-syn-ev .ev-diff-ctx{ margin:8px 0 0; padding-left:10px; border-left:2px solid rgba(128,128,128,0.22); font-size:12.5px; padding-top:4px; padding-bottom:4px; }
     .ev-syn .ev-d-note{ margin:0; }
     /* (#R502) AI が書いたことの表示。 `<details>` の下ではなく段落の直下に置いたので（js/news-events.js）、
        ここで下の余白を戻す。地の注記と同じ字送りのまま、字面だけ一段はっきりさせる——読み飛ばされる
        ところに置いてよい種類の但し書きではない。 */
-    .ev-syn .ev-ai{ margin:0 0 9px; font-weight:600; color:var(--text-main); opacity:.85; }
-    .ev-line .ev-src{ color:var(--text-muted); font-size:11.5px; font-weight:600; white-space:nowrap; margin-left:6px; }
+    .ev-syn .ev-ai{ margin:6px 0 10px; font-weight:400; color:var(--text-muted); opacity:1; font-size:12px; line-height:1.55; padding-top:10px; border-top:1px solid rgba(128,128,128,0.18); }
+    .ev-line .ev-src{ color:var(--text-muted); font-size:13px; font-weight:400; white-space:nowrap; margin-left:8px; }
     .ev-short{ font-size:12.5px; line-height:1.6; color:var(--text-muted); margin:0; padding:11px 13px; background:var(--input-bg); border-radius:12px; }
-    .ev-fig{ display:flex; align-items:baseline; flex-wrap:wrap; gap:8px; font-size:13px; color:var(--text-main); padding:8px 0; border-bottom:1px solid rgba(128,128,128,0.09); }
+    .ev-fig{ display:flex; align-items:baseline; flex-wrap:wrap; gap:8px; font-size:14px; color:var(--text-main); padding:8px 0; border-bottom:1px solid rgba(128,128,128,0.09); }
     .ev-fig:last-child{ border-bottom:none; }
     .ev-fig-k{ flex:0 0 auto; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.2px; min-width:74px; }
-    .ev-fig .ev-src{ color:var(--text-muted); font-size:11.5px; font-weight:600; }
+    .ev-fig .ev-src{ color:var(--text-muted); font-size:13px; font-weight:400; }
     .ev-fig .ev-diff-ctx{ flex:1 0 100%; margin:0; }
-    .ev-upd .ev-line{ font-size:13px; line-height:1.6; color:var(--text-main); margin:0 0 8px; }
-    .ev-cov-read{ display:inline-block; margin-top:5px; font-size:11.5px; font-weight:600; color:var(--primary-color); text-decoration:none; }
+    .ev-upd .ev-line{ font-size:15px; line-height:1.6; color:var(--text-main); margin:0 0 14px; }
+    .ev-cov-read{ display:inline-block; margin-top:6px; font-size:12px; font-weight:500; color:var(--primary-color); text-decoration:none; }
     .ev-cov-read:hover{ text-decoration:underline; }
     /* カードの要点は 2 行まで。実測 123.6px のカードを段落で埋めない。 */
-    .news-item .ev-gist{ font-size:12.5px; line-height:1.5; color:var(--text-muted); margin-top:5px; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .news-item .ev-gist{ font-size:var(--fs-body); line-height:1.5; color:var(--text-sub); margin-top:5px; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-weight:400; }
     /* ⚠ 出典は文の前に置く（末尾だと 2 行クランプで消える）。色で本文と分ける。 */
-    .news-item .ev-gist-src{ font-weight:700; white-space:nowrap; color:var(--primary-color); }
+    .news-item .ev-gist-src{ font-weight:600; white-space:nowrap; color:var(--text-sub); }
     .nrp-orig{ display:inline-flex; align-items:center; gap:6px; align-self:flex-start; margin:20px 0 28px; padding:12px 22px; background:var(--primary-fill); color:#fff; border-radius:12px; font-size:14px; font-weight:600; text-decoration:none; box-shadow:0 6px 18px rgba(0,122,255,0.3); }
     .nrp-orig:hover{ filter:brightness(1.08); }
     .nrp-mode{ background:var(--input-bg); border:none; color:var(--text-main); font-size:12px; font-weight:600; padding:8px 12px; border-radius:999px; cursor:pointer; transition:0.2s; }
@@ -1752,7 +1764,7 @@
     /* (#R104) in-map search bar unified with the Atlas input pill (rounding / hairline border / focus ring); keeps its floating frosted material so it stays legible over the map. Size & wording unchanged. */
     /* (#R170) 24px → 10px ("地名検索バーの位置をもう少し上に") — now flush with the top of .map-controls-top
        (also top:10px) on the right, so the two float on one visual row instead of the pill sitting lower. */
-    .map-search{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:var(--z-controls); display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:18px; padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
+    .map-search{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:var(--z-controls); display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:var(--r-control); padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
     .map-search:focus-within{ border-color:var(--focus-ring); box-shadow:0 0 0 1px var(--focus-ring), 0 0 0 4px rgba(10,132,255,0.18); }   /* (ui-a11y-polish) the same 2 px edge as .search-bar */
     /* Place-search pin + popup card */
     .search-pin{ width:30px; height:38px; position:relative; cursor:pointer; }
@@ -1781,7 +1793,7 @@
     /* (#R105) the search button now matches the pill bar + the sidebar search button: a clean primary rounded button. */
     /* (#R106) the search button is a NEUTRAL pill by default and only turns primary-blue once the input carries
        text ("入力テキストがある場合のみ青くなるように"). The .has-text class is toggled on the bar from the input. */
-    .map-search>button{ background:var(--input-bg); color:var(--text-muted); border:none; border-radius:999px; padding:5px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s ease, color .15s ease, filter .15s ease; }
+    .map-search>button{ background:var(--input-bg); color:var(--text-muted); border:none; border-radius:var(--r-inner); padding:5px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s ease, color .15s ease, filter .15s ease; }
     .map-search.has-text>button{ background:var(--primary-fill); color:#fff; }
     .map-search>button:hover{ filter:brightness(1.08); }
     /* (#R231) the desktop pill shows the WORD; the phone shows the glyph (see the mobile block). */
@@ -2306,7 +2318,7 @@
       h2{ font-size:22px; font-weight:700; letter-spacing:-0.4px; }
       .title-group{ gap:10px; flex:0 1 auto; min-width:0; }
       .title-group h2{ overflow:hidden; text-overflow:ellipsis; }
-      .btn-settings{ padding:7px 14px; font-size:13.5px; min-height:44px; border-radius:22px; flex:0 0 auto; white-space:nowrap; }   /* (mobile-shell) 44 px — the finger's size, not the cursor's */
+      .btn-settings{ padding:7px 14px; font-size:13.5px; min-height:44px; border-radius:var(--r-control); flex:0 0 auto; white-space:nowrap; }   /* (mobile-shell) 44 px — the finger's size, not the cursor's */
       /* (#R32) Two DISTINCT mobile states, fixing two re-reported bugs:
          (a) Logged OUT — "Log in" must stay a proper iOS PILL. The old rule forced EVERY #btn-account to a
              36px circle, so "Log in" text was crammed into a circle and overflowed ("文字がボタンからはみ出そう").
@@ -2326,13 +2338,13 @@
       #btn-account .acct-av{ display:inline-flex; }   /* (#R753) the icon is phone-only; on the desktop row the button is text */
       #btn-account:has(.acct-av) .acct-av{ width:34px; height:34px; font-size:18px; background:rgba(128,128,128,0.20); border-radius:50%; }
 
-      .search-bar{ flex:0 0 auto; margin:0 0 10px; padding:5px 5px 5px 14px; border-radius:12px; }
+      .search-bar{ flex:0 0 auto; margin:0 0 10px; padding:5px 5px 5px 14px; border-radius:var(--r-control); }
       .search-input{ font-size:16px; padding:10px 4px; }     /* 16px stops iOS focus-zoom */
       .search-btn{ min-height:36px; padding:9px 15px; }
 
       /* mode tabs → iOS segmented control */
       .control-panel{ flex:0 0 auto; flex-wrap:nowrap; gap:0; margin:0 0 10px; padding:3px; background:var(--input-bg); border-radius:11px; }
-      .mode-btn{ flex:1 1 0; min-width:0; min-height:44px; padding:8px 4px; font-size:13.5px; font-weight:500; border-radius:9px; background:transparent; color:var(--text-muted); box-shadow:none !important; }   /* (#R122) slightly larger, NOT bold; JS auto-fits so it never wraps/overflows */
+      .mode-btn{ flex:1 1 0; min-width:0; min-height:44px; padding:8px 4px; font-size:13.5px; font-weight:500; border-radius:var(--r-control); background:transparent; color:var(--text-muted); box-shadow:none !important; }   /* (#R122) slightly larger, NOT bold; JS auto-fits so it never wraps/overflows */
       /* (#R137) Mobile: selected News/Information/Countries = solid WHITE pill, BLACK text — match the desktop R130
          treatment ("モバイル版でも…アクセントカラーではなく白背景黒文字に"). Atlas keeps its accent gradient (rule below). */
       .mode-btn.active{ background:#fff !important; color:#000 !important; box-shadow:0 2px 8px rgba(0,0,0,0.14) !important; }
@@ -3167,7 +3179,7 @@
        隙間だけ同じように詰める」。The button, its type, its padding and its shape are untouched; what
        moves is the corner inset, from 10 px to the 6 px the coord readout now uses, so the two
        bottom corners read as one pair rather than as two independently-placed things. */
-    .news-timeline{ right:6px; bottom:6px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); border-radius:999px; padding:5px 6px; }   /* (#R105) tucked a little further DOWN into the corner (not flush) */
+    .news-timeline{ right:6px; bottom:6px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); border-radius:var(--r-card); padding:5px 6px; }   /* (#R105) tucked a little further DOWN into the corner (not flush) */
     /* (#R105) while travelling the collapsed "See the past world" pill turns BLUE and its label shows the year/date in
        place — same size & shape, just colour + text; returns to normal on "Now". */
     .news-timeline.collapsed.active{ background:var(--primary-fill) !important; border-color:var(--primary-fill) !important; }
@@ -3635,8 +3647,8 @@
 
     /* --- Mobile compact tweaks (#1,#2): denser news cards + smaller measurement popups --- */
     @media(max-width:768px){
-      .news-item{ padding:11px 13px !important; border-radius:13px; }
-      .news-item .news-title{ font-size:12.5px; margin-top:5px; -webkit-line-clamp:3; }
+      .news-item{ padding:11px 13px !important; border-radius:var(--r-card); }
+      .news-item .news-title{ font-size:15px; margin-top:5px; -webkit-line-clamp:3; }
       .news-item .news-head{ padding-right:18px; }
       .news-item .news-foot{ margin-top:6px; }
       .news-item .news-origlang{ display:none; }

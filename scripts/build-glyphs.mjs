@@ -45,9 +45,16 @@ import { PbfReader, PbfWriter } from 'pbf';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC_TTF = join(ROOT, 'fonts', 'src', 'Inter.ttf');
-const OUT_DIR = join(ROOT, 'fonts', 'Inter Regular');
-const FALLBACK = 'https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/';
-const STACK = 'Inter Regular';
+/* (news-type-polish) 「国名ラベルは太字に」 — TWO weights from the ONE bundled variable font. Inter.ttf
+   carries a `wght` axis (100–900), so the bold atlas is an INSTANCE of the same outlines (gvar for
+   the shapes, HVAR for the advances), not a second font file. Each weight is merged with the Noto
+   Sans of the same weight, for the same «superset, never a hole» reason as below. The stack NAME is
+   what the renderer asks for: js/map-typography.js `glyphRewrite` sends a stack whose name says
+   «Bold» to `Inter Bold`, everything else to `Inter Regular`. */
+export const WEIGHTS = [
+  { stack: 'Inter Regular', wght: null, fallback: 'https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/' },
+  { stack: 'Inter Bold', wght: 700, fallback: 'https://tiles.openfreemap.org/fonts/Noto%20Sans%20Bold/' },
+];
 
 /* The ranges the app redirects. Latin, Latin-Ext, IPA, Greek, Cyrillic and the punctuation /
    symbol blocks a place name or a legend actually uses. Keep in step with GLYPH_RANGES in
@@ -219,14 +226,19 @@ function decode(buf) {
 }
 
 /* ── one range ────────────────────────────────────────────────────────────────────────────────── */
-function buildRange(font, start, fallback) {
+function buildRange(font, start, fallback, wght) {
   const scale = SIZE / font.unitsPerEm;
   const have = new Set(), glyphs = [];
   for (let cp = start; cp < start + 256; cp++) {
-    const g = font.charToGlyph(String.fromCodePoint(cp));
-    if (!g || g.index === 0) continue;                       /* .notdef — Inter has no such glyph */
-    const advance = Math.round((g.advanceWidth || 0) * scale);
-    const path = g.getPath(0, 0, SIZE);                       /* y grows DOWN in opentype's paths */
+    const g0 = font.charToGlyph(String.fromCodePoint(cp));
+    if (!g0 || g0.index === 0) continue;                      /* .notdef — Inter has no such glyph */
+    /* the default instance is the font as stored; any other weight is the variation instance of it.
+       ⚠ The outline is asked through getPath(…, { variation }, font), not from getTransform()'s glyph:
+       that glyph's path is built without the font's unitsPerEm and comes out 2048/1000 too large
+       (measured: bold «A» 35.8 px tall at 24 px). getTransform is read for the HVAR advance only. */
+    const advUnits = wght == null ? g0.advanceWidth : font.variation.getTransform(g0, { wght }).advanceWidth;
+    const advance = Math.round((advUnits || 0) * scale);
+    const path = wght == null ? g0.getPath(0, 0, SIZE) : g0.getPath(0, 0, SIZE, { variation: { wght } }, font);   /* y grows DOWN */
     const bb = path.getBoundingBox();
     if (!isFinite(bb.x1) || bb.x2 - bb.x1 <= 0 || bb.y2 - bb.y1 <= 0) {
       glyphs.push({ id: cp, bitmap: new Uint8Array(0), width: 0, height: 0, left: 0, top: 0, advance });
@@ -280,8 +292,8 @@ function buildRange(font, start, fallback) {
   return { glyphs, filled };
 }
 
-async function fetchFallback(start) {
-  const url = FALLBACK + start + '-' + (start + 255) + '.pbf';
+async function fetchFallback(base, start) {
+  const url = base + start + '-' + (start + 255) + '.pbf';
   try {
     const r = await fetch(url);
     if (!r.ok) return [];
@@ -294,14 +306,18 @@ if (!existsSync(SRC_TTF)) {
   console.error('scripts/build-glyphs.mjs: fonts/src/Inter.ttf is missing — it is the source of the atlases.');
   process.exit(1);
 }
-const font = opentype.parse(readFileSync(SRC_TTF).buffer.slice(0));
-mkdirSync(OUT_DIR, { recursive: true });
 let bad = 0, total = 0;
+for (const W of WEIGHTS) {
+/* a fresh parse per weight: opentype's getTransform writes the instance's advance back onto the cached glyph */
+const font = opentype.parse(readFileSync(SRC_TTF).buffer.slice(0));
+const OUT_DIR = join(ROOT, 'fonts', W.stack);
+mkdirSync(OUT_DIR, { recursive: true });
+console.log(W.stack);
 for (const start of RANGES) {
   const name = start + '-' + (start + 255);
-  const fb = CHECK ? [] : await fetchFallback(start);
-  const { glyphs, filled } = buildRange(font, start, fb);
-  const buf = encode(STACK, name, glyphs);
+  const fb = CHECK ? [] : await fetchFallback(W.fallback, start);
+  const { glyphs, filled } = buildRange(font, start, fb, W.wght);
+  const buf = encode(W.stack, name, glyphs);
   const out = join(OUT_DIR, name + '.pbf');
   total += glyphs.length;
   if (CHECK) {
@@ -325,5 +341,6 @@ for (const start of RANGES) {
     console.log('  ' + name + '.pbf — ' + glyphs.length + ' glyphs (' + filled + ' from Noto Sans), ' + Math.round(buf.length / 1024) + ' KB');
   }
 }
+}
 if (CHECK && bad) process.exit(1);
-console.log(CHECK ? '\n✓ glyph atlases check out' : '\n✓ ' + total + ' glyphs in ' + RANGES.length + ' ranges → fonts/Inter Regular/');
+console.log(CHECK ? '\n✓ glyph atlases check out' : '\n✓ ' + total + ' glyphs in ' + RANGES.length + ' ranges, ' + WEIGHTS.length + ' weights → ' + WEIGHTS.map((w) => 'fonts/' + w.stack + '/').join(', '));

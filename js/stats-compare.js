@@ -109,6 +109,10 @@ export function statsCompare(HOST){
        the old click-country bar view) | 'ts' (time-series) | 'table' (Excel-like pivot). indOrder keeps the
        user's indicator order (table columns are drag-reorderable); tYear/tSort/tFlip are the table state. */
     let host=null, codes=[], sel=null, indOrder=null, mode='bar'; const srcSel={debt:'imf'};
+    /* (news-type-polish) 「Countriesのbar-chartは順番を昇順降順等にも並び替えできるように。一つのボタンで。」
+       The bars' ORDER, cycled by one button: as added → largest first → smallest first. Each bar keeps its
+       country's colour (PAL by the country's position in `codes`), so re-ordering never re-colours a country. */
+    const BAR_SORTS=['added','desc','asc']; let barSort='added';
     let tYear=null, tSort=null, tFlip=false;
     let tsFrom=null, tsTo=null;   /* (#R122) user-set time-series year window (null = full available range) */
     let _tsAvailYears=new Set(), _tsYearsSig='';   /* (#R123) years that actually have data across the current comparison → the year pickers list ONLY these ("利用可能な年代のみ選択肢に") */
@@ -339,6 +343,10 @@ export function statsCompare(HOST){
         +'#scp-view .scp-modes button + button{border-left:1px solid rgba(128,128,128,0.35);}'
         +'[data-theme="dark"] #scp-view .scp-modes button + button{border-left-color:rgba(255,255,255,0.6);}'
         +'#scp-view .scp-modes button.on{background:var(--primary-fill);color:#fff;}'
+        +'#scp-view .scp-sortbar{display:flex;justify-content:flex-end;margin:0 0 6px;}'
+        +'#scp-view .scp-sortbtn{display:inline-flex;align-items:center;gap:6px;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:8px;font-size:12px;font-weight:600;padding:5px 10px;cursor:pointer;}'
+        +'#scp-view .scp-sortbtn:hover{border-color:var(--primary-color);color:var(--primary-color);}'
+        +'#scp-view .scp-sortbtn[data-sort="desc"],#scp-view .scp-sortbtn[data-sort="asc"]{color:var(--primary-color);border-color:var(--primary-color);}'
         /* (#R122) time-series year-range control */
         +'#scp-view .scp-tsrange{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px;padding:6px 8px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);border-radius:9px;font-size:12px;}'
         +'#scp-view .scp-tsrange .scp-tsl{color:var(--text-muted);font-weight:600;}'
@@ -691,6 +699,8 @@ export function statsCompare(HOST){
        zero axis for sign-carrying indicators (bars grow left/right from the 0 line), ± colouring, per-value
        year, and a ° marker + note when a gap was filled from the other source / bundled reference. */
     function barsHtml(b){ const entries=codes.map((cd,i)=>({cd,i,e:b.map[cd]||null}));
+      /* a country without a value stays after every country with one, in either direction */
+      if(barSort!=='added'){ const dir=barSort==='desc'?-1:1; entries.sort((p,q)=>(!p.e)-(!q.e)||(p.e&&q.e?dir*(p.e.v-q.e.v):0)||p.i-q.i); }
       const vals=entries.filter(x=>x.e).map(x=>x.e.v);
       if(!vals.length) return html`<div style="color:var(--text-muted);font-size:11px;padding:2px 0 8px;">${LL('No data','データなし','Keine Daten','Нет данных','Sin datos')}</div>`;
       const hasNeg=vals.some(v=>v<0);
@@ -749,7 +759,7 @@ export function statsCompare(HOST){
       if(f) f.innerHTML=html`<option value="">${LL('start','開始','Start','начало','inicio')}</option>${_yoptsAvail(tsFrom!=null?tsFrom:'')}`;
       if(t2) t2.innerHTML=html`<option value="">${LL('end','終了','Ende','конец','fin')}</option>${_yoptsAvail(tsTo!=null?tsTo:'')}`; }catch(_){} }
     async function renderInd(k){ if(!host) return; const el=host.querySelector('.scp-blk[data-k="'+k+'"]'); const ind=IND.find(i2=>i2.k===k); if(!el||!ind) return;
-      const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode+'|'+(_ttYear()||'now')+'|'+(tsFrom==null?'':tsFrom)+'-'+(tsTo==null?'':tsTo);   /* (#R94) master-clock year; (#R122) time-series year window so a range change re-renders */
+      const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode+'|'+barSort+'|'+(_ttYear()||'now')+'|'+(tsFrom==null?'':tsFrom)+'-'+(tsTo==null?'':tsTo);   /* (#R94) master-clock year; (#R122) time-series year window so a range change re-renders */
       if(el.dataset.sig===sig&&el.querySelector('.scp-sec')) return;   /* already showing exactly this */
       const my=(el.__seq=(el.__seq||0)+1);
       /* (#R71) bar mode reads the FAST latest-value path (1 request per indicator); only the time-series
@@ -813,6 +823,15 @@ export function statsCompare(HOST){
       if(!body.querySelector('.scp-blk')) body.innerHTML='';
       /* (#R122) time-series YEAR-RANGE control (inserted AFTER the possible wipe above, so it survives the first
          render): pick a start & end year and the graphs redraw to that window. */
+      /* the ONE order button, above the bars, only where there are bars to order */
+      try{ let sb=body.querySelector('#scp-sortbar');
+        if(mode==='bar'){
+          if(!sb){ sb=document.createElement('div'); sb.id='scp-sortbar'; sb.className='scp-sortbar'; body.insertBefore(sb,body.firstChild); }
+          const lab={added:LL('Order: as added','並び順: 追加順'),desc:LL('Order: largest first','並び順: 大きい順'),asc:LL('Order: smallest first','並び順: 小さい順')}[barSort];
+          sb.innerHTML=html`<button type="button" class="scp-sortbtn" id="scp-sortbtn" data-sort="${barSort}" title="${LL('Change the order of the bars','棒の並び順を切り替える')}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>${lab}</button>`;
+          sb.querySelector('#scp-sortbtn').onclick=()=>{ barSort=BAR_SORTS[(BAR_SORTS.indexOf(barSort)+1)%BAR_SORTS.length]; render(); };
+        } else if(sb) sb.remove();
+      }catch(_){}
       if(mode==='ts'){ try{ let bar=body.querySelector('#scp-tsrange');
         /* (#R123) reset the collected available-year set when the comparison (countries × indicators) changes, so
            the pickers rebuild from the new selection's real data years. A tsFrom/tsTo change keeps the same sig. */
@@ -828,7 +847,7 @@ export function statsCompare(HOST){
         if(!el){ el=document.createElement('div'); el.className='scp-blk'; el.setAttribute('data-k',ind.k);
           el.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:10px 2px;">'+LL('Loading data…','データ読み込み中…','Lade Daten…','Загрузка данных…','Cargando datos…')+'</div>';
           if(prev){ if(prev.nextSibling) body.insertBefore(el,prev.nextSibling); else body.appendChild(el); }
-          else { const _tb=body.querySelector('#scp-tsrange'); if(_tb) body.insertBefore(el,_tb.nextSibling); else body.insertBefore(el,body.firstChild); } }   /* (#R122) keep the year-range bar on top */
+          else { const _tb=body.querySelector('#scp-tsrange')||body.querySelector('#scp-sortbar'); if(_tb) body.insertBefore(el,_tb.nextSibling); else body.insertBefore(el,body.firstChild); } }   /* (#R122) keep the year-range bar (or the order button) on top */
         prev=el; renderInd(ind.k); });
     }
     /* (#R70) mode segmented control (bar | time-series | table) */
@@ -968,7 +987,8 @@ export function statsCompare(HOST){
        ensureView() returns the EXISTING host without rebuilding its header (title/back/modes), so we drop the host
        first → render() rebuilds it fresh in the new language (state — codes/sel/mode — is preserved in module vars). */
     try{ bus.on('intmap-lang',()=>{ try{ if(host&&document.getElementById('scp-view')){ try{ host.remove(); }catch(_){} host=null; render(); } }catch(_){} }); }catch(_){}
-    function open(initCodes,initMetrics,initSource,initMode){
+    function open(initCodes,initMetrics,initSource,initMode,initSort){
+      if(BAR_SORTS.indexOf(initSort)>=0) barSort=initSort;   /* (news-type-polish) the bar order, when the caller names one */
       if(!sel){ sel=new Set(IND.filter(i=>i.def).map(i=>i.k)); }
       if(Array.isArray(initMetrics)&&initMetrics.length){ const ok=initMetrics.filter(k=>IND.some(i=>i.k===k)); if(ok.length){ sel=new Set(ok); indOrder=ok.slice(); } }
       if(initSource==='imf'||initSource==='wb'){ IND.forEach(i2=>{ if(i2.imf) srcSel[i2.k]=initSource; }); }
@@ -994,7 +1014,7 @@ export function statsCompare(HOST){
     function indLabel(k){ try{ const i2=IND.find(x=>x.k===k); if(!i2) return k; return (i2.l&&LL.arr(i2.l))||k; }catch(_){ return k; } }
     /* (#R118) state() — the compare panel's LIVE state (also when the user built it BY HAND), so Atlas's
        working context reflects reality instead of only its own past actions. */
-    function state(){ try{ return { open:!!(host&&host.isConnected&&document.getElementById('scp-view')), codes:codes.slice(), indicators:(indOrder||[]).slice(), mode, sources:Object.assign({},srcSel) }; }catch(_){ return null; } }
+    function state(){ try{ return { open:!!(host&&host.isConnected&&document.getElementById('scp-view')), codes:codes.slice(), indicators:(indOrder||[]).slice(), mode, order:barSort, sources:Object.assign({},srcSel) }; }catch(_){ return null; } }
     /* (country-analysis-unify) ONE COUNTRY'S TIMELINE IS THIS PANEL'S TIME-SERIES VIEW, NOT A SECOND CHART. The country card's
        「時系列グラフ」 and Atlas's `timeSeries` used to open js/analysis-timeseries.js — a modal with six of these same World
        Bank series, its own fetch, its own cache and its own crosshair. They open this, with the one country and the rows

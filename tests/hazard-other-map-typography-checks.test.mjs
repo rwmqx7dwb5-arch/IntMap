@@ -57,9 +57,12 @@ test('R242 ⑦ the map is redirected to the bundled Inter atlases, and the range
   assert.ok(a && b, 'both lists must exist');
   assert.deepEqual(a[1].split(',').map((s) => +s.trim()), b[1].split(',').map((s) => +s.trim()),
     'the app and the generator must agree about which ranges are self-hosted');
-  for (const r of b[1].split(',').map((s) => +s.trim())) {
-    assert.ok(existsSync(join(ROOT, 'fonts', 'Inter Regular', r + '-' + (r + 255) + '.pbf')),
-      'fonts/Inter Regular/' + r + '-' + (r + 255) + '.pbf is missing — run node scripts/build-glyphs.mjs');
+  /* every weight the generator declares (its WEIGHTS), every range */
+  const stacks = [...read('scripts/build-glyphs.mjs').matchAll(/\{ stack: '([^']+)'/g)].map((m) => m[1]);
+  assert.ok(stacks.includes('Inter Regular') && stacks.includes('Inter Bold'), 'the generator emits both weights');
+  for (const st of stacks) for (const r of b[1].split(',').map((s) => +s.trim())) {
+    assert.ok(existsSync(join(ROOT, 'fonts', st, r + '-' + (r + 255) + '.pbf')),
+      'fonts/' + st + '/' + r + '-' + (r + 255) + '.pbf is missing — run node scripts/build-glyphs.mjs');
   }
   assert.ok(read('vite.config.js').includes("'fonts',"), 'the fonts directory must be deployed');
 });

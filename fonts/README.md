@@ -24,6 +24,9 @@
   `Inter Regular/0-255.pbf` is a 404 on tiles.openfreemap.org; fonts.openmaptiles.org publishes
   Metropolis / Open Sans / Noto only). So the app ships its own and `js/map-typography.js` redirects
   those ranges to them.
+* `Inter Bold/{range}.pbf` — the same ranges in **weight 700**, an instance of the same variable
+  `src/Inter.ttf` (its `wght` axis), merged with Noto Sans Bold where Inter has no glyph. The country
+  labels ask for it by naming a bold stack; `glyphRewrite` sends a stack whose name says «Bold» here.
   ⚠ Each atlas is a **superset** of the Noto Sans range it replaces: a codepoint Inter does not have
   keeps its Noto glyph, so nothing that is on the map today can disappear. Ranges outside the
   generated set (Arabic, Thai, Devanagari, Hebrew, CJK…) are untouched and still come from
