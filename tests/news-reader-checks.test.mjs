@@ -136,7 +136,7 @@ test('R435 ② the reading surface has ONE back bar, and both readers spell it t
 /* 綴りのまま: 対象は DOM・地図（MapLibre / WebGL）に触れる closure の中で、ブラウザの外では走らない（実ブラウザ側は spec が持つ） */
 test('R435 ③ the Event detail enters and leaves through the shared reading surface', () => {
   const events = CODE('js/news-events.js');
-  const open = lift(events, 'function openDetail(item)', 'js/news-events.js');
+  const open = lift(events, 'function openDetail(item', 'js/news-events.js');
   assert.ok(open.includes('HOST.enterReaderPane()'), 'openDetail no longer enters through the shared surface');
   assert.ok(open.includes('HOST.closeReaderPane('), 'the back button no longer leaves through the shared exit');
   /* ⚠ 自分で一覧を出し入れしない。それをすると、外皮を伏せたままの一覧に戻る。 */

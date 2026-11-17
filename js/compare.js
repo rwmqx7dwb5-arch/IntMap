@@ -53,7 +53,7 @@ export const compareTime={
   /** resolves with `state()` once the picked layer has been judged at the window's instant */
   judged:()=>(_cmpApi&&_cmpApi.judged?_cmpApi.judged():Promise.resolve(null)),
   open:()=>{ if(_cmpApi) _cmpApi.open(); },
-  /** (then-now-card) 「あの頃といま」 thenNow({ then?, now?, split?, layer? }) → { state, needsThen } | null — see js/compare.js thenNow */
+  /** (then-now-card) 「あの頃といま」 thenNow({ then?, now?, split?, layer?, center?, zoom? }) → { state, needsThen } | null — see js/compare.js thenNow */
   thenNow:(o)=>(_cmpApi&&_cmpApi.thenNow?_cmpApi.thenNow(o):null),
   /** fn() whenever the window's instant or its follow choice changes; returns the unsubscribe */
   on:(fn)=>{ if(typeof fn!=='function') return ()=>{}; _cmpSubs.add(fn); return ()=>{ _cmpSubs.delete(fn); }; },
@@ -90,6 +90,18 @@ export const MERRA2=Object.freeze({ kind:'record', from:'1980-01-01',
   by:'NASA GIBS WMTS DescribeDomains, MERRA2_2m_Air_Temperature_Monthly (GoogleMapsCompatible_Level6), read 2026-10-01',
   follows:'js/compare.js dayOf',
   says:LA('MERRA-2 monthly air temperature (NASA GIBS)','MERRA-2 月平均気温（NASA GIBS）') });
+
+/** (exploration-flows) WHERE thenNow PUTS THE CAMERA — `center` ([lng,lat] or {lng,lat}) and `zoom` as a caller (the place
+    card) hands them; → { center:[lng,lat], zoom:number|null }, or null when no usable place was given (the camera stays).
+    The window's map follows the main camera in the swipe (`syncFromMain`), so moving the main camera frames both halves:
+    one camera move, not one per map. */
+export function framingOf(o){
+  const c=o&&o.center; if(c==null) return null;
+  const lng=Array.isArray(c)?+c[0]:+c.lng, lat=Array.isArray(c)?+c[1]:+c.lat;
+  if(!isFinite(lng)||!isFinite(lat)||lat<-90||lat>90) return null;
+  const z=(o.zoom==null||o.zoom==='')?NaN:+o.zoom;
+  return { center:[lng,lat], zoom:isFinite(z)?z:null };
+}
 
 export function compare(HOST){
   const cmpRead=(u)=>jsonWithin(u,clockFor(u),undefined,{idle:true});   /* (fetch-deadline-layer) see the note at the imports */
@@ -815,17 +827,21 @@ export function compare(HOST){
       try{ if(HSc().utcAt(y,5,15,12,0,0).getTime()===d.getTime()) return String(y); }catch(_){}
       return clock.iso(); }
     /**
-     * (then-now-card) 「あの頃といま」 — thenNow({ then?, now?, split?, layer? }) → { state, needsThen }
+     * (then-now-card) 「あの頃といま」 — thenNow({ then?, now?, split?, layer?, center?, zoom? }) → { state, needsThen }
      * The swipe at one place: this window holds THEN (left of the divider), the main map shows NOW (right of it).
      * `then` / `now` are a year, a date or 'now'. With no `then`, the main map's own instant is the one compared when it is
      * in the past (and the main map goes to the present, unless `now` says otherwise); with no past instant anywhere, the
      * window's own clock is kept, and if it has none the year field is focused — no year is chosen for the reader.
      * The window's layer is the reader's; when none is picked and THEN is an instant a border record answers, it shows the
      * borders of that instant (`histb`) — the left half would otherwise be the era base alone (physical geography).
+     * (exploration-flows) `center` / `zoom` (see `framingOf`): the place the two times are compared at — the main camera
+     * flies there, and the window follows it. Absent, the camera stays where the reader has it.
      */
     function thenNow(o){ o=o||{};
       open(); _setMode('swipe');
       if(o.split!=null) setSplit(o.split);
+      const fr=framingOf(o);
+      if(fr){ try{ GE().camera.flyTo(Object.assign({center:fr.center,duration:1000},fr.zoom!=null?{zoom:fr.zoom}:{})); }catch(_){ /* no renderer: the comparison still opens */ } }
       let thenSpec=specOf(o.then), nowSpec=specOf(o.now), needsThen=false;
       if(!thenSpec&&!IntMapTime.isLive()){ thenSpec=specOf(paramOfClock(IntMapTime)); if(!nowSpec) nowSpec={now:true}; }
       if(thenSpec) setTime(thenSpec);

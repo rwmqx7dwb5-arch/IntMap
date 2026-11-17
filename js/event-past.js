@@ -8,7 +8,7 @@
  *
  *  ══ NOTHING IS READ HERE THAT ANOTHER SURFACE DOES NOT ALREADY READ ══════════════════════════════════════════════
  *    · the polities — js/place-history.js `placeHistory`, drawn by its `historyMarkup` and pressed through its
- *      `historyAction`: the same record, drawing and handler as the place card;
+ *      `historyGo` (its `historyAction`, with the map brought to the ground): the same record, drawing and handler as the place card;
  *    · the wars — js/war-layer.js `atPoint` (through the eager door js/war-fronts.js), which asks the war record with
  *      the very rules the war fill paints by;
  *    · the elections — js/elections.js `atPoint`, the election layer's own index, files and district popup;
@@ -28,7 +28,7 @@
 import { IntMapLang } from './lang-registry.js';
 import { DEFAULTS } from '../supabase/functions/_shared/news-cluster.js';
 import './safe-html.js';
-import { placeHistory, historyHtml, historyAction, forAtlas as historyForAtlas, ensureHistoryCss } from './place-history.js';
+import { placeHistory, historyHtml, historyGo, forAtlas as historyForAtlas, ensureHistoryCss } from './place-history.js';
 
 /* the two doors this section asks — both are published by their layer's factory on window (js/war-fronts.js eager, js/elections.js) */
 const WARS = () => window.IntMapWarFronts, ELECTIONS = () => window.IntMapElections;
@@ -246,7 +246,8 @@ export async function mount(el, item, HOST) {
   el.onclick = (ev) => {
     const t = ev.target && ev.target.closest ? ev.target.closest('[data-hn],[data-ep]') : null;
     if (!t) return;
-    if (t.dataset.hn) { historyAction(rec.history, t.dataset.hn, lang); return; }
+    /* (exploration-flows) the same helper the place card presses through: the clock moves AND the map goes to the event's ground */
+    if (t.dataset.hn) { historyGo(rec.history, t.dataset.hn, lang, place.at); return; }
     const k = t.dataset.ep || '';
     if (k.indexOf('war:') === 0) {
       const w = rec.wars && rec.wars.wars[+k.slice(4)], W = WARS();

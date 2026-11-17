@@ -133,7 +133,9 @@ export function wbLayers(HOST){
       /* (map-layer-system) the indicator browser — one row (`bx-wbind`) that paints any of the series below, chosen by
          search and by subject. The module that draws the picker is fetched the first time the row is switched on. */
       indicators:()=>indicatorEntries(), paintIndicator:(id)=>indPaint(id), clearIndicator:()=>indClear(), currentIndicator:()=>IND.cur,
-      indicatorBrowser:()=>indBrowser() }; }catch(_){}
+      indicatorBrowser:()=>indBrowser(),
+      /* (exploration-flows) the same doors by the INDICATOR's key (js/wb-indicators.js) — what the comparison panel holds */
+      layerFor:(k)=>{ const e=indEntryFor(k); return e?e.id:null; }, showIndicator:(k,year)=>indShow(k,year) }; }catch(_){}
     const LA=IntMapLang.pickArgs(), LWB=IntMapLang.pick(()=>HOST.lang);
     /* (country-analysis-unify) A ROW HERE SAYS WHICH INDICATOR IT PAINTS (`k`) AND WITH WHAT RAMP — nothing else. The
        series, the name and the unit are the indicator's, in js/wb-indicators.js; `_wbInd` reads them in, so every path
@@ -461,7 +463,7 @@ export function wbLayers(HOST){
       return out; }
     function indPaint(id){ const e=indicatorEntries().find(x=>x.id===id); if(!e) return false;
       wbById.wbind={ id:'wbind', base:e.base, code:e.code, n:e.n, ramp:e.ramp, unit:e.unit };
-      IND.cur=e.id; delete wbYear.wbind;
+      IND.cur=e.id; if(IND.year!==undefined){ wbYear.wbind=IND.year; IND.year=undefined; } else delete wbYear.wbind;   /* (exploration-flows) indShow's «latest per country», else the series' default */
       /* the year list is the SERIES' — a new indicator has other years and other counts, so the picker is rebuilt */
       try{ const s=document.querySelector('#data-legend-wbind .bx-year'); if(s) s.removeAttribute('data-built'); }catch(_){}
       const req=choroOn(wbById.wbind);
@@ -475,6 +477,22 @@ export function wbLayers(HOST){
        so its claim on wbind-fill/-line is withdrawn until it paints again (choroOn registers it anew) */
     function indClear(){ IND.cur=null; delete wbById.wbind; wbOn.delete('wbind'); try{ if(window._imAuditReg) delete window._imAuditReg['bx-wbind']; }catch(_){}
       ['wbind-fill','wbind-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} }); }
+    /* ══ (exploration-flows) THE COMPARISON'S INDICATOR, ON THIS MAP ════════════════════════════════════════════════════
+       The comparison panel (js/stats-compare.js) compares an indicator by its key in js/wb-indicators.js; the entry that paints
+       the same series is found by the series itself (`key`), never by a second table of names. It is put on the map through the
+       browser's own `select` — the row ticked, its legend, year picker and hover — at the comparison's year:
+         · a year      → the map's year is the clock's (a row keeps no year of its own, docs/architecture/07-map.md §7.4), so the
+                         clock is moved to it, exactly as this row's own year picker does;
+         · no year     → on the live clock, «latest per country» (the picker's '' — what «latest for each country» compares);
+                         while the clock travels, the clock's year, which is the year the comparison reads too. */
+    function indEntryFor(k){ const I=k&&wbIndicator(k); if(!I) return null; const key=_wbKey(I.parts?I.parts.slice():I.code);
+      return indicatorEntries().find(e=>e.key===key)||null; }
+    function indShow(k,year){ const e=indEntryFor(k); if(!e) return Promise.resolve(null);
+      const y=(year==null||year==='')?null:+year;
+      if(y!=null&&isFinite(y)&&clockYear()!==String(y)){ try{ IntMapTime.setYear(y,{source:'ui'}); }catch(_){} }
+      IND.year=(y==null&&clockYear()==null)?'':undefined;
+      return indBrowser().then(b=>{ const got=b.select(e.id); if(!got){ IND.year=undefined; return null; }
+        return { id:e.id, year:(y!=null)?y:(clockYear()!=null?+clockYear():null) }; }); }
     let _indMod=null;
     function indBrowser(){ if(!_indMod) _indMod=import('./indicator-browser.js').then(m=>m.makeIndicatorBrowser({
         lang:()=>HOST.lang, entries:indicatorEntries, paint:indPaint, clear:indClear, current:()=>IND.cur,

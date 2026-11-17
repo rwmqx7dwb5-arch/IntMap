@@ -8,6 +8,9 @@
  *  withdrawn at the reader's request, #R104; a gallery that appeared unasked would be that card again):
  *    · the EMPTY state of the place search: focus the field with nothing typed and a row of cards is under
  *      it (`showInResults`) — on a phone that is the sheet, which the field has just raised;
+ *    · (exploration-flows) above the examples there, «Explore» and «Pick up where you left off» — rows that
+ *      press doors that already exist (the edition, the comparison, the place card, ★ Saved, the Library);
+ *      see `drawStarters`;
  *    · «See all» there, any element marked `data-im-gallery`, and Atlas's `panel.gallery`, which open the
  *      whole gallery (`openGallery`): every example under its subject's heading, then the tours.
  *  A card is a picture, a title and one line, and ONE TAP opens it: an example through `openShowcase` —
@@ -39,6 +42,9 @@ import { MapState } from './map-state.js';   /* the address bar's one door (js/m
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';   /* «an answer is on the map» — the phone's sheet comes down */
 import * as bus from './bus.js';   /* the declared events (js/bus.js) — MAP_ANSWER_EVENT is raised through it */
 import { icon } from './icons.js';
+import { hostDoor } from './host-door.js';   /* (exploration-flows) the app host the starters' doors are opened with */
+import { IntMapGeoEngine } from './geo-engine.js';   /* (exploration-flows) the map's centre and view — the renderer, through the contract */
+import { readSeen } from './news-edition-core.js';   /* (exploration-flows) the last visit the «new since» count is asked for */
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the encoder every string below is written with */
 
 /* the reader's language, as the app holds it (js/i18n.js) — the reading js/tour-player.js makes */
@@ -150,7 +156,7 @@ export function showInResults(res, onLeave) {
   if (!items.length) return false;
   /* (marketing-next) above the examples, the day's own map: js/on-this-day.js fills the slot once its index is read and
      leaves it empty when today has no event — the strip below does not wait for it */
-  res.innerHTML = '<div class="otd-slot"></div><div class="sg-strip" role="group" aria-label="' + H(t('Example maps and tours', '作例とツアー')) + '">'
+  res.innerHTML = '<div class="otd-slot"></div><div class="sg-resume" hidden></div><div class="sg-explore"></div><div class="sg-strip" role="group" aria-label="' + H(t('Example maps and tours', '作例とツアー')) + '">'
     + '<div class="sg-strip-h"><span>' + H(t('Example maps', '作例')) + '</span>'
     + '<button type="button" class="sg-all">' + H(t('See all', 'すべて見る')) + '</button></div>'
     + '<div class="sg-row">' + items.map(cardHTML).join('') + '</div></div>';
@@ -159,11 +165,197 @@ export function showInResults(res, onLeave) {
   const all = res.querySelector('.sg-all');
   const leave = typeof onLeave === 'function' ? onLeave : () => { res.style.display = 'none'; res.innerHTML = ''; };
   if (all) all.addEventListener('click', () => { leave(); openGallery(); });
+  /* (exploration-flows) the three walks and what there is to resume — drawn by `drawStarters` below, ended like «See all» */
+  drawStarters(res, leave);
   res.style.display = 'block';
   return true;
 }
 /** the empty state is showing in this list */
 const showingIn = (res) => !!(res && res.querySelector('.sg-strip'));
+
+/* ══ (exploration-flows) «EXPLORE» AND «PICK UP WHERE YOU LEFT OFF» — EXISTING DOORS, NAMED BY WHAT THEY DO ══════════
+   MEASURED: three walks the app already supports — a news event → the place's background, countries side by side at one
+   year, one place through time — had no start a reader who knows no feature name could find: the edition's entry sits
+   inside the News tab, the comparison inside Countries, and the place card's «through time» opens only from a point
+   the reader already chose. Nothing opens unasked (the field's empty state and the phone sheet's home are both places
+   the reader went to), and each row PRESSES THE DOOR THAT EXISTS — it reimplements nothing:
+     · today   the command `newsedition.open` (js/news-pulse.js — the News entry's own door), with the ONE «new since
+               your last visit» count (js/news-edition-core.js makeSinceCounter, asked through js/news-events.js
+               API.sinceLastVisit) when that module is already here; it is not fetched for a count (#R372: nothing of
+               News comes down for a reader who has not asked for News), so no module → no number;
+     · compare js/stats-compare.js open() with the countries the VIEW holds, measured by the rule Atlas's chips use
+               (js/atlas-view-subject.js landInView — 36 samples, the sliver rule, ordered by share). Two or more → the
+               comparison is exactly those; one → it is added to what is compared (open()'s own rule for a code); none
+               (open sea) → open() with nothing, which is the comparison's own default and its own picker;
+     · change  the place card (js/place-dossier.js openPlaceDossier) at the map's centre: its «This place through time»
+               section, a year from it, then «Compare two times here».
+   «Pick up where you left off» is drawn ONLY when something real is there: the ★ events (the count the News ★ Saved chip
+   says) and the account's places (js/my-places.js listPlaces). An unknown count is not 0 and not a number: a row with
+   no figure, or no row. ══════════════════════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * exploreRows(doors, since, fmt) — the Explore rows whose door exists, in the order of the three walks.
+ * @param {{today?:boolean, compare?:boolean, change?:boolean}} doors  which doors this page has
+ * @param {number|null} since  events new since the last visit (null = not counted)
+ * @param {(n:number)=>string} [fmt]  the reader's number format
+ * @returns {{key:string, icon:string, title:string, sub:string}[]}
+ */
+export function exploreRows(doors, since, fmt) {
+  const d = doors || {}, f = typeof fmt === 'function' ? fmt : String, out = [];
+  if (d.today) out.push({ key: 'today', icon: 'news', title: t('Today\'s most-reported news, on the map', '今日もっとも報じられたニュースを地図で'),
+    sub: (typeof since === 'number' && since > 0) ? t('{n} new since your last visit', '前回から新しく {n} 件').replace('{n}', f(since))
+      : t('The most-reported events of the last 24 hours', '直近 24 時間に最も多く報じられた出来事') });
+  if (d.compare) out.push({ key: 'compare', icon: 'chart', title: t('Compare countries in one year', 'ある年の国々を比べる'),
+    sub: t('The countries in view, side by side, at the year you choose', '地図に見えている国々を、選んだ年で並べて') });
+  if (d.change) out.push({ key: 'change', icon: 'clock', title: t('How has this place changed?', 'この場所はどう変わった？'),
+    sub: t('The place at the centre of the map, through time', '地図の中心の場所を、時代を追って') });
+  return out;
+}
+
+/**
+ * resumeRows(held, fmt) — «Pick up where you left off»: a row for each thing that is really there. `held.x` is
+ * { n, exact } or null; n > 0 draws the row, and the figure is shown only when `exact` (an account may hold more
+ * than this device knows). [] → the group is not drawn.
+ * @returns {{key:string, icon:string, title:string, count:string}[]}
+ */
+export function resumeRows(held, fmt) {
+  const h = held || {}, f = typeof fmt === 'function' ? fmt : String, out = [];
+  const has = (v) => !!(v && typeof v.n === 'number' && isFinite(v.n) && v.n > 0);
+  const fig = (v) => (v.exact ? f(v.n) : '');
+  if (has(h.savedEvents)) out.push({ key: 'saved', icon: 'star', title: t('Saved news events', '保存したニュースの出来事'), count: fig(h.savedEvents) });
+  if (has(h.places)) out.push({ key: 'places', icon: 'pin', title: t('Your saved places', '保存した場所'), count: fig(h.places) });
+  return out;
+}
+
+/**
+ * savedEventsHeld(api, list, signedIn) — how many events carry a ★. The News module's own count when it is here (what
+ * its ★ Saved chip says); otherwise this device's list, which is where that module starts from. Signed in, the account
+ * may hold stars this device has not read yet, so the device's list then says «some», not «how many».
+ * → { n, exact } | null
+ */
+export function savedEventsHeld(api, list, signedIn) {
+  try { const st = api && typeof api.state === 'function' ? api.state() : null; if (st && isFinite(+st.savedCount)) return { n: +st.savedCount, exact: true }; } catch (_) { /* below */ }
+  const n = Array.isArray(list) ? list.length : 0;
+  return n > 0 ? { n, exact: !signedIn } : null;
+}
+
+/** compareInit(codes) — what js/stats-compare.js open() is handed for the countries in view: the list (≥ 2: the
+    comparison is these — open() applies its own cap), the one code (added to what is compared), or nothing */
+export function compareInit(codes) {
+  const c = Array.isArray(codes) ? codes.filter((x) => typeof x === 'string' && x) : [];
+  if (c.length >= 2) return c.slice();
+  return c.length === 1 ? c[0] : undefined;
+}
+
+/* ⚠ THE DEVICE'S ★ LIST IS js/news-events.js's (its SAVE_KEY, not exported). Read here only while that module is not
+   loaded — it is not fetched for a count (#R372). The key is the one thing copied; if it moves, this reads nothing
+   and the row is simply not drawn until News has been opened. */
+const SAVED_EVENTS_KEY = 'intmap_saved_events';
+function deviceStars() { try { const a = JSON.parse(localStorage.getItem(SAVED_EVENTS_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
+const fmtN = (n) => { try { return Number(n).toLocaleString(IntMapLang.locale(lang())); } catch (_) { return String(n); } };
+
+/* writes the group into `box` (the sink sees every value pass through H) and wires each row's own button — no click
+   receiver on a container, so every press is a <button> the keyboard reaches */
+function paintList(box, head, rows, trail, onPress) {
+  const id = 'sg-h-' + head.key;
+  box.innerHTML = '<div class="sg-strip-h" id="' + H(id) + '"><span>' + H(head.title) + '</span></div>'
+    + '<div class="sg-list" role="group" aria-labelledby="' + H(id) + '">'
+    + rows.map((r) => '<button type="button" class="sg-li" data-sg-go="' + H(r.key) + '"><span class="sg-li-i">' + icon(r.icon, { size: 18 }) + '</span>'
+      + '<span class="sg-li-t"><b>' + H(r.title) + '</b>' + (r.sub ? '<small>' + H(r.sub) + '</small>' : '') + '</span>'
+      + (trail(r) ? '<span class="sg-li-n">' + H(trail(r)) + '</span>' : '') + '<span class="sg-li-c" aria-hidden="true">' + icon('chevronR', { size: 14 }) + '</span></button>').join('')
+    + '</div>';
+  box.querySelectorAll('button.sg-li[data-sg-go]').forEach((b) => b.addEventListener('click', () => onPress(b.getAttribute('data-sg-go') || '')));
+}
+
+/* the two published doors the rows go through — the command registry (js/app-body.js) and the lazy loader (js/lazy-modules.js) */
+const osDoor = () => window.IntMapOS;
+const lazyDoor = () => window.IntMapLazy;
+/** the doors this page has (a door that is not here is not offered) */
+function doorsHere() {
+  let today = false, compare = false, change = false;
+  try { const OS = osDoor(); today = !!(OS && OS.has && OS.has('newsedition.open')); } catch (_) { today = false; }
+  try { const LZ = lazyDoor(); compare = !!(LZ && typeof LZ.need === 'function'); } catch (_) { compare = false; }
+  try { change = !!IntMapGeoEngine.hasRenderer(); } catch (_) { change = false; }
+  return { today, compare, change };
+}
+
+function drawExplore(box, since, onPress) {
+  const rows = exploreRows(doorsHere(), since, fmtN);
+  if (!rows.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  paintList(box, { key: 'explore', title: t('Explore', '探索') }, rows, () => '', onPress);
+}
+function drawResume(box, held, onPress) {
+  const rows = resumeRows(held, fmtN);
+  if (!rows.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  paintList(box, { key: 'resume', title: t('Pick up where you left off', '前回の続きから') }, rows, (r) => r.count, onPress);
+}
+
+/* the countries the view holds — the measurement Atlas's chips make (js/atlas-view-subject.js), over the country polygons
+   the app holds (HOST.countryGeo, loaded by the Countries tab's own loader when it has not been yet) */
+async function countriesInView(HOST) {
+  try { if (typeof HOST.loadCountryData === 'function') await HOST.loadCountryData(); } catch (_) { /* no polygons: no codes */ }
+  try {
+    const { makeAtlasViewSubject } = await import('./atlas-view-subject.js');
+    const V = makeAtlasViewSubject({ GE: () => IntMapGeoEngine, geo: () => HOST.countryGeo, countryStats: HOST.countryStats, cName: HOST.cName });
+    return V.landInView(V.viewBox()).codes || [];
+  } catch (_) { return []; }
+}
+
+/** a row was pressed: the place's ending (the search closes its list; the home keeps itself), then the door */
+async function go(key, leave) {
+  const HOST = hostDoor.host;
+  try { leave(); } catch (_) { /* the place's own ending */ }
+  try { const inp = document.getElementById('ms-input'); if (inp && document.activeElement === inp) inp.blur(); } catch (_) { }
+  if (key === 'today') {
+    /* the edition is an answer on the map — the phone's sheet comes down onto it, as an example card's does */
+    try { bus.emit(MAP_ANSWER_EVENT, { kind: 'card' }); } catch (_) { }
+    try { return await osDoor().exec('newsedition.open', { source: 'ui', params: {} }); } catch (_) { return null; }
+  }
+  if (!HOST) return null;
+  if (key === 'compare') {
+    try { await lazyDoor().need('statsCompare'); } catch (_) { return null; }
+    const codes = await countriesInView(HOST);
+    const C = window.IntMapStatsCompare;
+    if (C && C.open) C.open(compareInit(codes));
+    return C && C.state ? C.state() : null;
+  }
+  if (key === 'change') {
+    let c = null; try { c = IntMapGeoEngine.camera.getCenter(); } catch (_) { c = null; }
+    if (!c || !isFinite(c.lng) || !isFinite(c.lat)) return null;
+    return import('./place-dossier.js').then((m) => m.openPlaceDossier(HOST, { lng: c.lng, lat: c.lat })).catch(() => null);
+  }
+  if (key === 'saved') { try { HOST.setMode('saved', 'btn-news'); } catch (_) { } return null; }   /* the ★ Saved scope chip's own call (js/session-tabs.js) */
+  if (key === 'places') return import('./my-places.js').then((M) => M.openMyPlaces(HOST)).catch(() => null);
+  return null;
+}
+
+/** the two groups into the empty state `res`, above the example strip; `leave` is what a press ends there */
+function drawStarters(res, leave) {
+  const ex = /** @type {HTMLElement|null} */ (res.querySelector('.sg-explore'));
+  const rs = /** @type {HTMLElement|null} */ (res.querySelector('.sg-resume'));
+  if (!ex || !rs) return;
+  const press = (key) => { go(key, leave); };
+  drawExplore(ex, null, press);
+  /* the «new since» figure — only while the clock is at now (the mark is «the news read up to then») and only from the
+     News module already here */
+  let live = true; try { live = IntMapTime.isLive(); } catch (_) { live = true; }
+  let seen = null; try { seen = readSeen(window.localStorage); } catch (_) { seen = null; }
+  const NE = window.IntMapNewsEvents;
+  if (live && seen != null && NE && typeof NE.sinceLastVisit === 'function') {
+    Promise.resolve(NE.sinceLastVisit(seen)).then((n) => { if (ex.isConnected && typeof n === 'number') drawExplore(ex, n, press); }, () => { });
+  }
+  const HOST = hostDoor.host, signedIn = !!(HOST && HOST.user);
+  const held = { savedEvents: savedEventsHeld(NE, deviceStars(), signedIn), places: null };
+  drawResume(rs, held, press);
+  if (signedIn && HOST.DB) {
+    import('./my-places.js').then((M) => M.listPlaces(HOST.DB)).then((r) => {
+      if (!rs.isConnected || !r || !r.ok) return;
+      held.places = { n: (r.places || []).length, exact: true }; drawResume(rs, held, press);
+    }).catch(() => { /* not read: no row */ });
+  }
+}
 
 /* ══ THE WHOLE GALLERY ═══════════════════════════════════════════════════════════════════════════
    A dialog of the app's one contract (js/dialog.js IntMapDialog.open — a name, Esc, the Tab trap, focus
@@ -232,6 +424,21 @@ const GALLERY_CSS = [
   '.sg-all{min-height:32px;padding:0 10px;border:none;border-radius:999px;background:transparent;color:var(--primary-color);font:inherit;font-weight:600;cursor:pointer;}',
   '.sg-row{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding-bottom:4px;-webkit-overflow-scrolling:touch;}',
   '.sg-row .sg-card{flex:0 0 172px;scroll-snap-align:start;}',
+  /* (exploration-flows) «Pick up where you left off» and «Explore» — an iOS inset grouped list, one hairline between rows */
+  '.sg-explore,.sg-resume{padding:10px 10px 2px;}',
+  '.sg-explore[hidden],.sg-resume[hidden]{display:none;}',
+  '.sg-list{display:flex;flex-direction:column;border:1px solid rgba(128,128,128,0.18);border-radius:14px;background:var(--input-bg);overflow:hidden;}',
+  '.sg-li{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 10px 8px 12px;border:none;background:transparent;color:var(--text-main);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
+  '.sg-li + .sg-li{border-top:1px solid rgba(128,128,128,0.14);}',
+  '.sg-li:hover{background:rgba(128,128,128,0.06);}',
+  '.sg-li:active{background:rgba(128,128,128,0.12);}',
+  '.sg-li:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px;}',
+  '.sg-li-i{flex:0 0 auto;display:inline-flex;color:var(--primary-color);}',
+  '.sg-li-t{flex:1 1 auto;min-width:0;}',
+  '.sg-li-t b{display:block;font-size:13.5px;font-weight:600;line-height:1.25;}',
+  '.sg-li-t small{display:block;margin-top:2px;font-size:11.5px;line-height:1.3;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+  '.sg-li-n{flex:0 0 auto;font-size:13px;color:var(--text-muted);font-variant-numeric:tabular-nums;}',
+  '.sg-li-c{flex:0 0 auto;display:inline-flex;color:var(--text-muted);opacity:0.7;}',
   /* the whole gallery */
   '#im-gallery{position:fixed;inset:0;z-index:var(--z-modal);display:flex;align-items:center;justify-content:center;}',
   '#im-gallery .sg-scrim{position:absolute;inset:0;background:rgba(0,0,0,0.35);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}',

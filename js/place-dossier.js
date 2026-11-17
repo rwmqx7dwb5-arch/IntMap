@@ -66,6 +66,8 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { whenHost } from './host-door.js';
 import { MapState } from './map-state.js';
 import * as bus from './bus.js';   /* the declared events (js/bus.js) — MAP_ANSWER_EVENT is raised through it */
+import { compareTime } from './compare.js';   /* (exploration-flows) the comparison window's face — its swipe is the card's «Compare two times here» */
+import { shapesAt } from './border-provenance.js';   /* (exploration-flows) the one «which drawn shapes hold this point» test the line card asks */
 import './safe-html.js';
 const WO = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
 const GE = () => IntMapGeoEngine;
@@ -294,8 +296,8 @@ async function newsNear(pt, reachKm, hours, HOST) {
 let PH = null;
 async function historyModule() {
   if (PH) return PH;
-  const { placeHistory, historyMarkup, historySpeech, historyAction, ensureHistoryCss } = await import('./place-history.js');
-  PH = { placeHistory, historyMarkup, historySpeech, historyAction };
+  const { placeHistory, historyMarkup, historySpeech, historyGo, rowCamera, ensureHistoryCss } = await import('./place-history.js');
+  PH = { placeHistory, historyMarkup, historySpeech, historyGo, rowCamera };
   ensureHistoryCss();
   return PH;
 }
@@ -620,11 +622,15 @@ export function profileSpeech(p, HOST) {
 }
 
 /* ══ THE MAP: the quakes and news the card lists, drawn while the card is open ═════════════════════ */
-const SRC = 'hn-src', LYR_Q = 'hn-quake', LYR_N = 'hn-news';
+const SRC = 'hn-src', LYR_Q = 'hn-quake', LYR_N = 'hn-news', LYR_F = 'hn-focus';
+/* (exploration-flows) the related object the reader last pressed (it has no door of its own): a ring on the card's own
+   source, drawn while the card is open — replaced by the next press, gone with a new point or the card */
+let focusAt = null;
 function fc(p) {
   const f = [];
   ((p && p.quakes && p.quakes.items) || []).forEach((x) => f.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [x.lng, x.lat] }, properties: { k: 'q', m: finite(x.mag) ? x.mag : 2.5 } }));
   ((p && p.news && p.news.items) || []).forEach((x) => f.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [x.lng, x.lat] }, properties: { k: 'n' } }));
+  if (focusAt) f.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [focusAt.lng, focusAt.lat] }, properties: { k: 'f' } });
   return { type: 'FeatureCollection', features: f };
 }
 function draw(p, HOST) {
@@ -638,13 +644,14 @@ function draw(p, HOST) {
     E.layers.addSource(SRC, { type: 'geojson', data });
     E.layers.add({ id: LYR_Q, type: 'circle', source: SRC, filter: ['==', ['get', 'k'], 'q'], paint: { 'circle-radius': ['interpolate', ['linear'], ['get', 'm'], 2.5, 4, 7, 14], 'circle-color': '#ff9f0a', 'circle-opacity': 0.75, 'circle-stroke-color': '#fff', 'circle-stroke-width': 1 } });
     E.layers.add({ id: LYR_N, type: 'circle', source: SRC, filter: ['==', ['get', 'k'], 'n'], paint: { 'circle-radius': 5, 'circle-color': '#0a84ff', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.2 } });
+    E.layers.add({ id: LYR_F, type: 'circle', source: SRC, filter: ['==', ['get', 'k'], 'f'], paint: { 'circle-radius': 11, 'circle-color': 'rgba(10,132,255,0.16)', 'circle-stroke-color': '#0a84ff', 'circle-stroke-width': 2.5 } });
   } catch (_) { /* the card is the answer; the dots are an aid */ }
 }
-function undraw() { try { const E = GE(); if (E && E.layers.hasSource(SRC)) E.layers.setSourceData(SRC, { type: 'FeatureCollection', features: [] }); } catch (_) { /* nothing drawn */ } }
+function undraw() { focusAt = null; try { const E = GE(); if (E && E.layers.hasSource(SRC)) E.layers.setSourceData(SRC, { type: 'FeatureCollection', features: [] }); } catch (_) { /* nothing drawn */ } }
 
 /* ══ THE CARD ═══════════════════════════════════════════════════════════════════════════════════════ */
 /* the «now» and «past» lists (.hn-*) — injected the first time a card or an Atlas bubble draws them, the way «Here, now»
-   always did; the card's frame, rows and actions (.pd-*) are in css/intmap.css. The action row wraps: four doors do not
+   always did; the card's frame, rows and actions (.pd-*) are in css/intmap.css. The action row wraps: six doors do not
    fit one line on a phone. */
 const CSS = [
   '.pd-popup .pd-actions{flex-wrap:wrap;} .pd-popup .pd-actions button{flex:1 1 40%;}',
@@ -666,14 +673,78 @@ const CSS = [
   '.hn-priv{font-size:10.5px;color:var(--text-muted);margin-top:10px;line-height:1.45;display:flex;gap:5px;align-items:flex-start;}',
   '.hn-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}',
   '.hn-actions button{flex:1 1 30%;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12px;cursor:pointer;}',
+  /* (exploration-flows) which instant the map shows when it is not now, and the way back */
+  '.pd-when{display:flex;align-items:center;gap:8px;margin:6px 0 2px;padding:8px 10px;border-radius:10px;background:var(--input-bg);font-size:12px;line-height:1.4;color:var(--text-main);}',
+  '.pd-when[hidden]{display:none;}',
+  '.pd-when-t{flex:1 1 auto;min-width:0;}',
+  '.pd-when button{flex:0 0 auto;padding:6px 10px;border:none;border-radius:8px;background:var(--primary-fill);color:#fff;font:inherit;font-weight:600;font-size:12px;cursor:pointer;}',
 ].join('\n');
 /* the phone's sizes: a finger is 44 px — the rows and the actions are that tall; the close keeps the 32 px box every popup ×
    is drawn with (js/data-layers.js, «one UI for every ×») and takes the finger with a 44 px ::after, the way the legend's
    × does (docs/architecture/09-mobile.md §9.2). The layout boundary is js/ui-device.js's (`media()`), never a number here. */
-const PHONE_CSS = '.hn-item{min-height:44px;} .hn-actions button{min-height:44px;font-size:13.5px;} .pd-correct{min-height:44px;}'
+const PHONE_CSS = '.hn-item{min-height:44px;} .hn-actions button{min-height:44px;font-size:13.5px;} .pd-correct{min-height:44px;} .pd-when button{min-height:44px;}'
   + ' .pd-popup .country-popup-close::after{content:"";position:absolute;inset:-6px;}';
 let styled = false;
 export function placeCardStyle() { if (styled) return; styled = true; const st = document.createElement('style'); st.id = 'im-place-card-css'; st.textContent = CSS + '\n' + (window.IntMapDevice ? window.IntMapDevice.media(PHONE_CSS) : ''); document.head.appendChild(st); }
+
+/* ══ (exploration-flows) THE CARD AND THE CLOCK — «this place → its past → two times → back to now» ═════════════════════
+   The card is the hub of that walk. What it keeps for it:
+     · `chosen`  the instant the reader last put the clock at FROM THIS CARD (a «through time» row, a former-name row), for
+                 the point it was chosen at — «Compare two times here» compares that instant with now;
+     · the clock's listener (IntMapTime.on), held while the card is open and removed when it closes: while the map is not at
+                 now, a line says which instant the map shows and that the «now» sections are today's, with the way back;
+     · the country the map draws at the place at that instant — the era layer's own answer (below), never a modern one
+                 relabelled. */
+let chosen = null, offClock = null;
+
+/** what «Compare two times here» hands js/compare.js `thenNow`: the place (`center`), the zoom (js/place-history.js
+    `rowCamera` — the camera a «through time» row brings the map to), `now` (the main map goes to
+    the present), and `then` — the instant the reader chose on this card for THIS point. Absent, thenNow takes the main clock's
+    instant when it is in the past, and only when there is none asks for a year (its `needsThen`): no year is chosen here. */
+export function compareArgs(at, pick, zoom) {
+  const then = (pick && at && pick.at === at.text && pick.then != null) ? pick.then : undefined;
+  return Object.assign({ now: 'now', center: [+at.lng, +at.lat] }, then !== undefined ? { then } : {}, finite(zoom) ? { zoom } : {});
+}
+
+/* the area of a geometry's bounding box in degrees² — the size the map's own country click ranks overlapping era shapes by
+   (js/countries-ui.js, the `country-fill` click while time-travelling: the smallest box that holds the point wins) */
+function boxArea(g) {
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  const eat = (c) => { if (typeof c[0] === 'number') { if (c[0] < w) w = c[0]; if (c[0] > e) e = c[0]; if (c[1] < s) s = c[1]; if (c[1] > n) n = c[1]; } else c.forEach(eat); };
+  try { eat(g.coordinates); } catch (_) { return Infinity; }
+  return (e - w) * (n - s);
+}
+const _eraSeen = new WeakMap();   /* drawn collection → { key, best }: the clock's listener asks on every tick of a lapse */
+/**
+ * eraPolityAt(TB, at, stats) — the polity the era layer draws at `at` for the instant the map shows, resolved the way the
+ * map's own country click resolves it while time-travelling: the drawn shapes that hold the point (border-provenance
+ * `shapesAt`), the smallest, and the era layer's identity rule (js/time-borders.js `resolveHist`).
+ * → { name, code, geometry, wiki, flag } — `code` only when the statistics carry that polity (`stats[code]`) — or null when the
+ *   era layer is not drawing, or draws nothing named here. ⚠ NOTHING IS GUESSED: no shape, no name → null, and the card
+ *   then says the button is today's country.
+ */
+export function eraPolityAt(TB, at, stats) {
+  if (!TB || typeof TB.active !== 'function' || typeof TB.currentFC !== 'function' || typeof TB.resolveHist !== 'function') return null;
+  let on = false; try { on = !!TB.active(); } catch (_) { on = false; }
+  if (!on) return null;
+  let col = null; try { col = TB.currentFC(); } catch (_) { col = null; }
+  if (!col || !Array.isArray(col.features)) return null;
+  /* the shape search is cached per drawn collection and point; the identity is asked every time — an era sheet stays the same
+     collection across many years, and resolveHist's answer depends on the clock (a former state binds only inside its span) */
+  const key = (+at.lng) + ',' + (+at.lat), seen = _eraSeen.get(col);
+  let best = null;
+  if (seen && seen.key === key) best = seen.best;
+  else {
+    let bA = Infinity;
+    for (const f of shapesAt(col.features, { lng: +at.lng, lat: +at.lat }, 0)) { const a = boxArea(f.geometry); if (a < bA) { bA = a; best = f; } }
+    _eraSeen.set(col, { key, best });
+  }
+  const p = (best && best.properties) || {}, nm = p.NAME || p.name || null;
+  if (!nm) return null;
+  let R = null; try { R = TB.resolveHist(String(nm), { lng: +at.lng, lat: +at.lat }) || {}; } catch (_) { R = {}; }
+  return { name: (typeof R.name === 'string' && R.name) ? R.name : String(nm), code: (R.code && stats && stats[R.code]) ? String(R.code) : null,
+    geometry: R.geometry || best.geometry || null, wiki: R.wiki || String(nm), flag: R.flag || null };
+}
 
 let card = null, seq = 0, current = null, lead = null, curHost = null;
 function ensureCard(HOST) {
@@ -684,8 +755,10 @@ function ensureCard(HOST) {
   card.className = 'country-popup pd-popup'; card.id = 'pd-popup';
   card.setAttribute('role', 'dialog'); card.setAttribute('aria-labelledby', 'pd-title');
   card.innerHTML = '<button class="country-popup-close" id="pd-close" type="button"></button>'
-    + '<div class="country-popup-header"><h3 id="pd-title"></h3></div><div id="pd-lead"></div><div id="pd-body" aria-live="polite"></div>'
-    + '<div class="pd-actions"><button type="button" class="primary" data-pd="country"></button><button type="button" data-pd="related"></button><button type="button" data-pd="atlas"></button><button type="button" data-pd="refresh"></button></div><div id="pd-related" class="pd-related" hidden></div>'
+    + '<div class="country-popup-header"><h3 id="pd-title"></h3></div><div id="pd-lead"></div>'
+    + '<div id="pd-when" class="pd-when" role="status" hidden><span class="pd-when-t"></span><button type="button" data-pd="now"></button></div>'
+    + '<div id="pd-body" aria-live="polite"></div>'
+    + '<div class="pd-actions"><button type="button" class="primary" data-pd="country"></button><button type="button" data-pd="compare"></button><button type="button" data-pd="related"></button><button type="button" data-pd="save"></button><button type="button" data-pd="atlas"></button><button type="button" data-pd="refresh"></button></div><div id="pd-related" class="pd-related" hidden></div>'
     + '<button type="button" class="pd-correct" data-pd="correct"></button>';
   (document.getElementById('map-container') || document.body).appendChild(card);
   const x = card.querySelector('#pd-close'); x.textContent = '×'; x.title = L('Close', '閉じる'); x.setAttribute('aria-label', L('Close', '閉じる'));
@@ -701,13 +774,18 @@ function ensureCard(HOST) {
       else if (k === 'qrecord') { try { const t = card.querySelector('#pd-title'); const o = { lng: current.at.lng, lat: current.at.lat, name: t ? t.textContent : '' }; window.IntMapLazy.need('quakeHistory').then(() => window.IntMapQuakeHistory.open(o)).catch(() => { try { H.imToast(words(H).L('Could not load the earthquake record', '地震の記録を読み込めませんでした')); } catch (_) { /* no toast host */ } }); } catch (_) { /* the lazy door is boot's; without it the row does nothing */ } }
       else if (k === 'news') { const it = current.news && current.news.items[i]; if (it) openNews(it, H); }
       else if (k === 'flows') { const c = current.country; if (c && c.status === 'ok') import('./world-flows.js').then((m) => m.openFlows({ country: c.code })).catch(() => { try { H.imToast(words(H).L('World flows could not be loaded', '世界とのつながりを読み込めませんでした')); } catch (_) { /* nothing to say it with */ } }); }
-      else if (k === 'past') { const it = current.past && current.past.spans[i], y = it ? spanYear(it) : null; if (y != null) { try { IntMapTime.setYear(y, { source: 'here-now' }); } catch (_) { /* the clock refuses a year it cannot reach */ } flyTo(current.at.lng, current.at.lat, 9); } }
+      else if (k === 'past') { const it = current.past && current.past.spans[i], y = it ? spanYear(it) : null; if (y != null) { try { IntMapTime.setYear(y, { source: 'here-now' }); chosen = { at: current.at.text, then: y }; } catch (_) { /* the clock refuses a year it cannot reach */ } flyTo(current.at.lng, current.at.lat, 9); } }
       else if (k.indexOf('pharc:') === 0 || k.indexOf('ph:') === 0 || k.indexOf('pha:') === 0) {
         /* (place-through-time) a row of «This place through time»: the clock goes to it and the map to the point; its
-           «rise and fall» opens js/polity-arc.js — js/place-history.js `historyAction`, the one handler every surface uses */
+           «rise and fall» opens js/polity-arc.js — js/place-history.js `historyGo` (its `historyAction` with the camera), the one
+           handler every surface uses. (exploration-flows) the instant it chose is kept for «Compare two times here». */
         const hi = current.history;
-        if (hi && hi.status === 'ok' && PH && PH.historyAction(hi, k, () => { try { return H.lang || 'en'; } catch (_) { return 'en'; } }) === 'clock') flyTo(current.at.lng, current.at.lat, 7);
+        if (hi && hi.status === 'ok' && PH) {
+          const r = PH.historyGo(hi, k, () => { try { return H.lang || 'en'; } catch (_) { return 'en'; } }, current.at);
+          if (r.action === 'clock' && r.then != null) chosen = { at: current.at.text, then: r.then };
+        }
       }
+      else if (k.indexOf('rel:') === 0) goRelated(+k.slice(4), H);
       else if (k === 'ph-load') {
         const at = { lng: current.at.lng, lat: current.at.lat }, rec = current;
         rec.history = null; paintCard(H);
@@ -717,7 +795,10 @@ function ensureCard(HOST) {
       return;
     }
     const b = ev.target && ev.target.closest ? ev.target.closest('[data-pd]') : null; if (!b || !current) return;
-    if (b.dataset.pd === 'country') { const c = current.country; if (c && c.status === 'ok') { try { H.showCountryDetail(c.code, c.name); } catch (_) { /* the country card is the app's */ } } }
+    if (b.dataset.pd === 'country') openCountry(H);
+    else if (b.dataset.pd === 'now') { try { IntMapTime.setNow({ source: 'place-card' }); } catch (_) { /* the clock states its own refusal */ } }
+    else if (b.dataset.pd === 'compare') compareHere(H);
+    else if (b.dataset.pd === 'save') savePlaceHere(H, b);
     else if (b.dataset.pd === 'related') showRelated(H);
     else if (b.dataset.pd === 'refresh') run(H, Object.assign({}, current.at), current.focus);
     /* (community-next) «something here is wrong» — js/map-corrections.js, fetched by this click. The card hands over what it
@@ -736,17 +817,106 @@ function ensureCard(HOST) {
   return card;
 }
 function flyTo(lng, lat, z) { try { const E = GE(); E.camera.flyTo({ center: [lng, lat], zoom: Math.max(z, Math.min(E.camera.getZoom(), z + 2)), duration: 1000 }); } catch (_) { /* no renderer */ } }
-async function openNews(it, HOST) {
+/** a news event's own card by its public id (js/news-events.js) → true when it opened; otherwise the map goes to the event.
+    `onlyFly` (exploration-flows): called when no event card opened — a related row's marker is drawn there */
+async function openNews(it, HOST, onlyFly) {
+  const fly = () => { if (finite(+it.lng) && finite(+it.lat)) { flyTo(+it.lng, +it.lat, 9); if (onlyFly) onlyFly(); } };
   try {
     await window.IntMapLazy.need('newsEvents');
     const E = window.IntMapNewsEvents;
-    if (E.openByPublicId(it.publicId)) return;
+    if (E.openByPublicId(it.publicId)) return true;
     const { data } = await HOST.DB.from('news_events').select(E.columns()).eq('public_id', it.publicId).limit(1);
-    if (data && data[0]) await E.openRow(data[0]);
-  } catch (_) { flyTo(it.lng, it.lat, 9); }
+    if (data && data[0]) { await E.openRow(data[0]); return true; }
+    fly(); return false;   /* (exploration-flows) no event by that id: the row still takes the reader to its place */
+  } catch (_) { fly(); return false; }
+}
+
+/* ── (exploration-flows) the actions ── */
+/** «Country statistics»: at now, the country the card read; with the clock in the past, the polity the era layer draws here
+    (`eraPolityAt`) — its statistics card when the statistics carry it, else its era card (the map's country click does the
+    same); the modern country only when the era layer gives no answer, and then the button says it is today's */
+/* the era layer's door — js/time-borders.js publishes it on window when the app builds it (no module export to import) */
+const eraLayer = () => window.IntMapTimeBorders;
+function countryDoor(HOST) {
+  let live = true; try { live = IntMapTime.isLive(); } catch (_) { live = true; }
+  if (live || !current) return null;
+  let stats = null; try { stats = HOST.countryStats || null; } catch (_) { stats = null; }
+  return eraPolityAt(eraLayer(), current.at, stats);
+}
+function openCountry(HOST) {
+  const era = countryDoor(HOST), c = current.country;
+  if (era) {
+    if (era.code) { try { HOST.showCountryDetail(era.code, era.name); } catch (_) { /* the country card is the app's */ } return; }
+    try { const pop = window._imPlacePopup; if (typeof pop === 'function') pop({ lng: current.at.lng, lat: current.at.lat }, era.name, true, { geojson: era.geometry, wiki: era.wiki, flag: era.flag }); } catch (_) { /* the era card is the app's */ }
+    return;
+  }
+  if (c && c.status === 'ok') { try { HOST.showCountryDetail(c.code, c.name); } catch (_) { /* the country card is the app's */ } }
+}
+/** «Compare two times here» — js/compare.js `thenNow` at this place (see `compareArgs`) */
+async function compareHere(HOST) {
+  const { L } = words(HOST), at = { lng: current.at.lng, lat: current.at.lat, text: current.at.text };
+  let cam = null; try { cam = (await historyModule()).rowCamera(at); } catch (_) { cam = null; }
+  const r = compareTime.thenNow(compareArgs(at, chosen, cam ? cam.zoom : null));
+  if (!r) { try { HOST.imToast(L('The comparison window is not ready yet', '比較ウィンドウはまだ準備できていません')); } catch (_) { /* nothing to say it with */ } }
+}
+/** «Save this place» — the account's My places (js/my-places.js `savePlace`, the one door every save of a place goes through:
+    the pin popup, the My places sheet, Atlas's places.save). A position kept on the device is not offered (see paintCard). */
+async function savePlaceHere(HOST, btn) {
+  const { L } = words(HOST), p = current; if (!p) return;
+  const toast = (s) => { try { HOST.imToast(s); } catch (_) { /* no toast host */ } };
+  let M = null;
+  try { M = await import('./my-places.js'); } catch (_) { toast(L('My places could not be loaded', 'マイプレイスを読み込めませんでした')); return; }
+  let lang = 'en'; try { lang = HOST.lang || 'en'; } catch (_) { lang = 'en'; }
+  if (!HOST.user) { toast(M.placeFailureText('sign_in', lang)); try { if (HOST.openAuthModal) HOST.openAuthModal(); } catch (_) { /* no sign-in door */ } return; }
+  const pl = p.place, name = (pl && pl.status === 'ok' && pl.name) ? pl.name : (p.asked || p.at.name || null);
+  let zoom = null; try { zoom = GE().camera.getZoom(); } catch (_) { zoom = null; }
+  if (btn) btn.disabled = true;
+  const r = await M.savePlace(HOST.DB, { name, lng: p.at.lng, lat: p.at.lat, zoom, source: 'reader' });
+  if (btn) btn.disabled = false;
+  if (!r.ok) { toast(M.placeFailureText(r.error, lang)); return; }
+  toast(r.created ? L('Saved to My places: ' + r.name, 'マイプレイスに保存しました: ' + r.name) : L('Already in My places: ' + r.name, 'マイプレイスに保存済みです: ' + r.name));
+}
+/** what the map shows when it is not now, and the country button's words for that instant — redrawn by the clock's listener */
+function paintClock(HOST) {
+  if (!card || !current) return;
+  const { L } = words(HOST);
+  let lang = 'en'; try { lang = HOST.lang || 'en'; } catch (_) { lang = 'en'; }
+  let live = true, y = null; try { live = IntMapTime.isLive(); y = live ? null : IntMapTime.when().getUTCFullYear(); } catch (_) { live = true; }
+  const w = card.querySelector('#pd-when');
+  if (w) {
+    w.hidden = live;
+    if (!live) {
+      w.querySelector('.pd-when-t').textContent = L('Showing the map at ' + yearOf(y, lang, '') + ' — the live sections below are for today', yearOf(y, lang, '年') + 'の地図を表示中 — 下の「いま」の項目は今日のものです');
+      w.querySelector('[data-pd="now"]').textContent = L('Back to now', '現在に戻る');
+    }
+  }
+  const cb = card.querySelector('[data-pd="country"]'); if (!cb) return;
+  const p = current, era = countryDoor(HOST), modern = !!(p.country && p.country.status === 'ok');
+  let label = L('Country statistics', '国の統計');
+  if (era) label = era.code ? L('Statistics — ' + era.name, era.name + 'の統計') : L('About ' + era.name, era.name + 'について');
+  else if (!live && modern) label = L('Country statistics (today\'s country)', '国の統計（現在の国）');
+  cb.innerHTML = icon('flag') + ' ' + esc(label);
+  cb.disabled = !(era || modern);
+}
+function onClock() {
+  const H = curHost; if (!H || !card || card.style.display === 'none' || !current) return;
+  paintClock(H);
+  /* the era layer draws the new instant a moment later (its own turn) — the country is asked again once it has */
+  try { const TB = eraLayer(); if (TB && typeof TB.settled === 'function') Promise.resolve(TB.settled()).then(() => paintClock(H), () => { /* the layer states its own failure */ }); } catch (_) { /* no era layer */ }
+}
+/** a related row's press: the object's own card when it has one (a news event), else the map goes to it and marks it */
+function goRelated(i, HOST) {
+  const o = relTargets[i]; if (!o || !finite(+o.lng) || !finite(+o.lat)) return;
+  const mark = () => { focusAt = { lng: +o.lng, lat: +o.lat }; if (current) draw(current, HOST); };
+  if (o.type === 'news_event' && o.id) { openNews({ publicId: o.id, lng: o.lng, lat: o.lat }, HOST, mark); return; }
+  flyTo(+o.lng, +o.lat, 9); mark();
 }
 /* (world-objects) «Related» — the point this card is about, as a real-world object, and what the session holds that belongs
-   with it. The rule and the rendering are js/atlas-world-objects.js's — the same ones research.related answers with. */
+   with it. The rule and the rendering are js/atlas-world-objects.js's — the same ones research.related answers with.
+   (exploration-flows) each row is a button (the card's own list row, .hn-item) with its stated basis under its name: it
+   opens the object's own card when it has one, else takes the map to it (`goRelated`). `relTargets` holds the objects the
+   rows name, by their index on the card; a row whose object has no coordinate is shown, but cannot be pressed. */
+let relTargets = [];
 function showRelated(HOST) {
   const box = card && card.querySelector('#pd-related'); if (!box || !current) return;
   const { L } = words(HOST);
@@ -756,7 +926,13 @@ function showRelated(HOST) {
   const groups = WO.relatedGroups(res, { L, perType: 4 });
   const html = window.IntMapSafe.markup;   /* (safe-dom-template) every value below is escaped for where it lands */
   box.hidden = false; box.dataset.at = current.at.text;
-  box.innerHTML = html`<div class="acp-src" style="margin-top:10px;">${L('Related to this point', 'この地点に関連') + ' — ' + L('within ' + RELATED_DEFAULTS.km + ' km', RELATED_DEFAULTS.km + ' km 以内')}</div>${res.total ? groups.map((g) => html`<div style="font-size:12px;margin:5px 0 1px;"><b>${g.type}</b>: ${g.count}</div>${g.items.map((x) => html`<div style="font-size:11.5px;line-height:1.5;padding-left:8px;">${x.name} <span style="color:var(--text-muted);">${x.why + (x.distanceKm != null ? ' · ' + x.distanceKm + ' km' : '') + (x.gapHours != null ? ' · ' + x.gapHours + ' h' : '')}</span></div>`)}${g.more ? html`<div style="font-size:10.5px;color:var(--text-muted);padding-left:8px;">… +${g.more}</div>` : ''}`) : html`<div style="font-size:11.5px;color:var(--text-muted);">${L('Nothing IntMap holds is tied to this point within that reach.', 'この地点に結び付く対象は、その範囲に IntMap にありません。')}</div>`}`;
+  const byRef = new Map(); (res.items || []).forEach((x) => { if (x && x.object && x.object.ref) byRef.set(x.object.ref, x.object); });
+  relTargets = [];
+  const rowOf = (x) => {
+    const o = byRef.get(x.ref) || null, i = relTargets.push(o) - 1, can = !!(o && finite(+o.lng) && finite(+o.lat));
+    return html`<button type="button" class="hn-item" data-hn="rel:${i}" ${can ? false : 'disabled'}><span class="hn-t">${x.name}</span><span class="hn-m">${x.why + (x.distanceKm != null ? ' · ' + x.distanceKm + ' km' : '') + (x.gapHours != null ? ' · ' + x.gapHours + ' h' : '')}</span></button>`;
+  };
+  box.innerHTML = html`<div class="acp-src" style="margin-top:10px;">${L('Related to this point', 'この地点に関連') + ' — ' + L('within ' + RELATED_DEFAULTS.km + ' km', RELATED_DEFAULTS.km + ' km 以内')}</div>${res.total ? groups.map((g) => html`<div style="font-size:12px;margin:5px 0 1px;"><b>${g.type}</b>: ${g.count}</div>${g.items.map(rowOf)}${g.more ? html`<div style="font-size:10.5px;color:var(--text-muted);padding-left:8px;">… +${g.more}</div>` : ''}`) : html`<div style="font-size:11.5px;color:var(--text-muted);">${L('Nothing IntMap holds is tied to this point within that reach.', 'この地点に結び付く対象は、その範囲に IntMap にありません。')}</div>`}`;
 }
 function paintCard(HOST) {
   if (!card || !current) return;
@@ -766,10 +942,12 @@ function paintCard(HOST) {
   card.querySelector('#pd-title').innerHTML = icon(nowFirst ? 'target' : 'pin') + ' ' + esc(p.at.from === 'device' ? L('Here, now', 'いま、ここ') + ' — ' + name : name);
   card.querySelector('#pd-lead').innerHTML = lead ? '<div class="hn-lead">' + esc(lead.text || '') + '</div>' + (lead.actions && lead.actions.length ? '<div class="hn-actions">' + lead.actions.map((a, i) => '<button type="button" data-hn="lead:' + i + '">' + esc(a.label) + '</button>').join('') + '</div>' : '') : '';
   card.querySelector('#pd-body').innerHTML = profileHtml(p, HOST);
-  const cb = card.querySelector('[data-pd="country"]'), ab = card.querySelector('[data-pd="atlas"]'), rb = card.querySelector('[data-pd="related"]');
-  rb.innerHTML = icon('target') + ' ' + esc(L('Related to this point', 'この地点に関連')); const rbox = card.querySelector('#pd-related'); if (rbox && rbox.dataset.at !== p.at.text) { rbox.hidden = true; rbox.innerHTML = ''; }   /* a new point clears the section; a section filling in does not */
-  cb.innerHTML = icon('flag') + ' ' + esc(L('Country statistics', '国の統計'));
-  cb.disabled = !(p.country && p.country.status === 'ok');
+  const ab = card.querySelector('[data-pd="atlas"]'), rb = card.querySelector('[data-pd="related"]');
+  rb.innerHTML = icon('target') + ' ' + esc(L('Related to this point', 'この地点に関連')); const rbox = card.querySelector('#pd-related'); if (rbox && rbox.dataset.at !== p.at.text) { rbox.hidden = true; rbox.innerHTML = ''; relTargets = []; }   /* a new point clears the section; a section filling in does not */
+  paintClock(HOST);   /* (exploration-flows) the instant the map shows, and the country button for it */
+  const mb = card.querySelector('[data-pd="compare"]'); if (mb) mb.innerHTML = icon('clock') + ' ' + esc(L('Compare two times here', 'ここで2つの時代を比べる'));
+  /* (exploration-flows) a position kept on the device is not saved to the account: the card promises it stays here */
+  const sb = card.querySelector('[data-pd="save"]'); if (sb) { sb.innerHTML = icon('pin') + ' ' + esc(L('Save this place', 'この地点を保存')); sb.style.display = keepsPosition(p.at.from) ? 'none' : ''; }
   ab.innerHTML = icon('chat') + ' ' + esc(L('Ask Atlas', 'Atlasに聞く'));
   card.querySelector('[data-pd="refresh"]').textContent = L('Refresh', '更新');
   const xb = card.querySelector('[data-pd="correct"]'); if (xb) xb.innerHTML = icon('flag') + ' ' + esc(L('Something here is wrong? Report it', 'ここの地図に誤りがありますか？ 報告する'));
@@ -788,7 +966,12 @@ function placeCard() {
 async function run(HOST, pt, focus) {
   const my = ++seq;
   ensureCard(HOST);
-  current = Object.assign(recordHead(pt, HOST, { focus }), { place: null, country: null, elevation: null, layers: null, time: null, weather: null, quakes: null, news: null, past: null, history: null });
+  /* (exploration-flows) the card follows the clock while it is open (removed by closePlaceCard) */
+  if (!offClock) { try { offClock = IntMapTime.on(onClock); } catch (_) { offClock = null; } }
+  const head = recordHead(pt, HOST, { focus });
+  if (!chosen || chosen.at !== head.at.text) chosen = null;   /* an instant chosen on another point is not this point's */
+  if (!current || current.at.text !== head.at.text) focusAt = null;
+  current = Object.assign(head, { place: null, country: null, elevation: null, layers: null, time: null, weather: null, quakes: null, news: null, past: null, history: null });
   card.style.display = 'block';
   paintCard(HOST); placeCard();
   try { HOST.bringToFront(card); } catch (_) { /* order is cosmetic */ }
@@ -847,7 +1030,11 @@ export async function openHereNow(HOST, opts) {
   flyTo(+pt.lng, +pt.lat, 9);
   return run(HOST, pt, 'now');
 }
-function closePlaceCard() { seq++; current = null; lead = null; undraw(); if (card) card.style.display = 'none'; }
+function closePlaceCard() {
+  seq++; current = null; lead = null; chosen = null; relTargets = []; undraw();
+  if (offClock) { try { offClock(); } catch (_) { /* already gone */ } offClock = null; }
+  if (card) card.style.display = 'none';
+}
 
 /* ══ OPENED BY A QUERY: the installed icon's shortcut (`?here=1`, manifest.webmanifest) ═════════════════ */
 /** resolves when the renderer can be asked to move (or after 30 s, so a door never waits forever) */

@@ -113,7 +113,7 @@ const { warLayer } = await importModule('js/war-layer.js', { globals: wglobals, 
   'js/geo-engine.js': { IntMapGeoEngine: anything }, 'js/chronos.js': { IntMapTime: anything }, 'js/runtime.js': { everyTick: () => 0, stopTick: () => { } } } });
 const WARS = warLayer(HOST);
 const EP = await importModule('js/event-past.js', { globals: wglobals, mocks: { 'js/place-history.js': {
-  placeHistory: async () => ({}), historyHtml: () => '', historyAction: () => null, forAtlas: () => ({}), ensureHistoryCss() { } } } });
+  placeHistory: async () => ({}), historyHtml: () => '', historyAction: () => null, historyGo: () => ({ action: null, then: null }), forAtlas: () => ({}), ensureHistoryCss() { } } } });
 
 test('⑤ Ukraine, asked of its land: the Second World War is the USSR\'s record, marked as a predecessor\'s; Japan has none', async () => {
   const ua = await WARS.atPoint(31.17, 48.38, { level: 'country' });
