@@ -2006,24 +2006,24 @@
     /* IN THE LANE — the pill stands centred between the left handle (+14 px) and the stack (−14 px), 4 px lower, at most 380 px.
        That is where the old watcher put it whenever a centred pill would reach the stack, and it is kept so nothing moves:
        ① the right panel is open — the watcher measured the centre of the WHOLE map, so with the panel open it chose the lane
-          at every desktop width below 1684 px, which is the look readers have; ② the frame is narrower than 1084 px = 2 × (10 px
-          edge + 319 px stack + 199 px half-pill + 14 px), the width at which the centred pill reaches the stack.
-       ⚠ 319 is the English stack measured at 1440×900 on the build before this change; a wider stack only means the grid
+          at every desktop width below about 1800 px, which is the look readers have; ② the frame is narrower than 1205 px = 2 × (6 px
+          edge + 383 px stack + 199 px half-pill + 14 px), the width at which the centred pill reaches the stack.
+       ⚠ 383 is the English stack measured at 1440×900 on the build of main this branch sits on (dcd32a0c); a wider stack only means the grid
        slides the centred pill left before this switch — it still cannot overlap. */
     @media(min-width:769px){
       body.lsr-open:not(.ws-mode) .map-frame-top{
         grid-template-columns:var(--mft-lane); column-gap:0; }
       body.lsr-open:not(.ws-mode) .map-frame-top > .map-search{ margin-top:calc(14px - var(--chrome-edge)); }
     }
-    @container map-frame (max-width:1083px){
+    @container map-frame (max-width:1204px){
       .map-frame-top{
         grid-template-columns:var(--mft-lane); column-gap:0; }
       .map-frame-top > .map-search{ margin-top:calc(14px - var(--chrome-edge)); }
     }
-    /* ── COMPACT — below 560 px the lane is too short for a field (the 319 px stack + the lane's 40 px of margins + 20 px
+    /* ── COMPACT — below 640 px the lane is too short for a field (the 383 px stack + the lane's 50 px of margins + 6 px
        of edge leave < 200 px): the search becomes its button, the two view pills fold into one menu, the tool triggers drop
        their words (the title still names each), Chronos keeps one line, and the panels hanging from the stack fit the frame. */
-    @container map-frame (max-width:559px){
+    @container map-frame (max-width:639px){
       .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))){ padding:3px; justify-self:center; }
       .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) input{ flex:0 0 0; width:0; padding:0; opacity:0; }
       .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn{ padding:5px 8px; display:flex; align-items:center; }

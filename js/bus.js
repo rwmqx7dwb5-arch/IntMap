@@ -78,7 +78,7 @@ export const EVENTS = Object.freeze({
     means: 'the sidebar opened, closed or changed width; layout that sits beside it re-measures',
     detail: null,
     from: ['js/app-body.js', 'js/article-reader.js', 'js/map-ui.js', 'js/playground.js'],
-    pending: { 'js/app-body.js': 'pinned', 'js/map-ui.js': 'parallel', 'js/mobile-ui.js': 'pinned' },
+    pending: { 'js/app-body.js': 'pinned', 'js/map-ui.js': 'parallel' },
   },
   'intmap-mem-pressure': {
     means: 'the page is short of memory; caches that can be rebuilt drop what is not on screen',
