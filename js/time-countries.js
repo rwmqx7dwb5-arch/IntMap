@@ -16,10 +16,11 @@
  *  both halves of the hand-off — what this file returns and reads, what the core takes and passes — from
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/
-import { readWorldBank, WB_INDICATORS } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read (under the host's clock, stalled-fetch-and-surface-gauge) and the one catalogue */
+import { readWorldBank, WB_INDICATORS, applyLatest } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read (under the host's clock, stalled-fetch-and-surface-gauge) and the one catalogue */
 import { IntMapTime } from './chronos.js';
 import * as bus from './bus.js';
-import { stampFigure, stampOf } from './country-figures.js';   /* (countries-companies) the year a value is for travels with it */
+import { stampFigure, stampOf, setFigure, figureYear } from './country-figures.js';
+import { IntMapTables } from './tables.js';   /* (countries-companies) the year a value is for travels with it */
 export function makeTimeCountries(HOST, CTX) {
   const countryStats=CTX.countryStats, loadCountryData=CTX.loadCountryData, renderStats=CTX.renderStats, searchVal=CTX.searchVal;
   /* ============================================================================
@@ -69,7 +70,10 @@ export function makeTimeCountries(HOST, CTX) {
       if(year<ys[0]) return -1;
       if(year>=ys[ys.length-1]) return ys.length-1;
       const i=ys.indexOf(year); return i>=0?i:-1; }
-    const yearCache={};        /* year -> { field -> {iso3 -> value} } */
+    const yearCache={};        /* year -> { field -> {iso3 -> { v, y }} } — the World Bank's own value and year, unscaled (applyLatest scales) */
+    /* (country-figure-year-on-time) the citations of the two other authors a travelled year reads */
+    const MADDISON={ source:'Maddison Project Database 2020 (Bolt & van Zanden)', publisher:'Maddison Project' };
+    const UNDP_HDI=IntMapTables.STAT_SOURCES.hdi;
     let base=null;             /* present-day snapshot of the overlaid fields (+ density) */
     let curYear=null;          /* the year currently overlaid, or null */
     let seq=0, deb=null;
@@ -93,7 +97,7 @@ export function makeTimeCountries(HOST, CTX) {
       try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries */
       window._imHdiYear=null;
       curWhen=null;   /* (#R425) …and the instant, or the next same-year move compares against a stale one */
-      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; const m=FIGMETA.get(o); if(m) for(const k in m){ if(m[k]) stampFigure(s,k,m[k].y,m[k].src); } } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
+      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; const m=FIGMETA.get(o); if(m) for(const k in m) stampFigure(s,k,m[k]?m[k].y:null,m[k]?m[k].src:null);   /* a field Now had no stamp for gets none back (not the travelled year's) */ } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
     /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
        IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
        A run that returns essentially nothing is NOT cached, so the next travel transparently retries. */
@@ -101,7 +105,7 @@ export function makeTimeCountries(HOST, CTX) {
       const out={}; FIELDS.forEach(F=>out[F.f]={});
       for(const F of FIELDS){ try{
         const r=await readWorldBank({ code:F.ind, date:String(year), perPage:400 });
-        r.rows.forEach(row=>{ if(row.iso3&&row.iso3.length===3) out[F.f][row.iso3]=row.v*F.scale; });
+        r.rows.forEach(row=>{ if(row.iso3&&row.iso3.length===3) out[F.f][row.iso3]={ v:row.v, y:row.y }; });
       }catch(_){} }
       if(Object.keys(out.gdp).length>10||Object.keys(out.pop).length>10) yearCache[year]=out;   /* cache only a real result */
       return out; }
@@ -110,22 +114,33 @@ export function makeTimeCountries(HOST, CTX) {
          there is NO Maddison year → keep the World Bank NOMINAL
          figures (and mark the basis NOT-real so the banner/labels say World Bank, not "real 2011 int$"). */
       const M=window.IntMapMaddison, useM=!!(M&&M.ready()&&year<=(M.maxYear||2018));
-      try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue;
-        FIELDS.forEach(F=>{ const v=data[F.f]&&data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; stampFigure(s,F.f,year,'World Bank'); });
+      /* ⚠ (country-figure-year-on-time) A VALUE, ITS YEAR AND ITS SOURCE ARE WRITTEN TOGETHER, OR NOT AT ALL. This overlay
+         replaced values by assignment and stamped some of them separately — HDI not at all, so in 2010 France's card
+         read 0.880 «(2022 · UNDP)» (production, build d37d1a3, 2026-11-18). Every value written here goes through
+         setFigure (js/country-figures.js): the World Bank's through applyLatest, the same writer as the latest values
+         (its citation, the year the World Bank gives the row); Maddison's and UNDP's with their citations and the year
+         of the row read. A country the year has no value for is cleared with its stamp — never a present value under
+         a past heading, never a past value under the present one. */
+      try{
+        FIELDS.forEach(F=>{ const d=(data&&data[F.f])||{};
+          for(const iso in countryStats){ const s=countryStats[iso]; if(s&&!d[iso]) setFigure(s,F.f,null,null,null); }
+          applyLatest(countryStats,F.f,d); });
+        for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue;
         /* (#R94e) real GDP / GDP-per-capita / population from Maddison (2011 int$) — consistent across every
            country back to the Maddison floor, and the only source before the World Bank's 1960 floor. WB nominal is discarded
            for GDP while travelling so a historical ranking is on ONE basis; life-exp/fertility/internet/military
            stay World Bank. Population prefers Maddison, else keeps the WB value (head-count is basis-free). */
-        if(useM){ const mpc=M.gdppc(iso,year), mp=M.popN(iso,year), mg=M.gdpBil(iso,year);
-          s.gdp=(mg!=null)?mg:(M.has(iso,year)?null:s.gdp);
-          s.gdppc=(mpc!=null)?mpc:(M.has(iso,year)?null:s.gdppc);
-          if(mp!=null) s.pop=mp;
-          if(mg!=null) stampFigure(s,'gdp',year,'Maddison Project'); if(mpc!=null) stampFigure(s,'gdppc',year,'Maddison Project'); if(mp!=null) stampFigure(s,'pop',year,'Maddison Project'); }
-        s.density=(s.pop&&s.area)?s.pop/s.area:null;   /* density recomputed from the year's population */
-        /* (#R270) HDI from UNDP's own annual series — local, so it lands in PHASE 1 */
-        if(hdiSeries){ const hi=hdiIndex(year);
-          const row=hdiSeries.hdi[iso];
-          s.hdi=(hi>=0&&row&&row[hi]!=null)?row[hi]:null; }
+        if(useM){ const mpc=M.gdppc(iso,year), mp=M.popN(iso,year), mg=M.gdpBil(iso,year), has=M.has(iso,year);
+          if(mg!=null) setFigure(s,'gdp',mg,year,MADDISON); else if(has) setFigure(s,'gdp',null,null,null);
+          if(mpc!=null) setFigure(s,'gdppc',mpc,year,MADDISON); else if(has) setFigure(s,'gdppc',null,null,null);
+          if(mp!=null) setFigure(s,'pop',mp,year,MADDISON); }
+        /* density from the year's population — derived, so it carries that population's year and no source of its own */
+        setFigure(s,'density',(s.pop&&s.area)?s.pop/s.area:null,(s.pop&&s.area)?figureYear(s,'pop'):null,null);
+        /* (#R270) HDI from UNDP's own annual series — local, so it lands in PHASE 1. Its year is the year of the
+           column read (the series carries its last year forward), not the clock's. */
+        if(hdiSeries){ const hi=hdiIndex(year); const row=hdiSeries.hdi[iso];
+          const v=(hi>=0&&row&&row[hi]!=null)?row[hi]:null;
+          setFigure(s,'hdi',v,v!=null?hdiSeries.years[hi]:null,v!=null?UNDP_HDI:null); }
       } }catch(_){}
       /* which year the HDI on screen actually IS — the legend prints this rather than 「2022」 */
       if(hdiSeries){ const hi=hdiIndex(year); window._imHdiYear=(hi>=0)?hdiSeries.years[hi]:null; }
