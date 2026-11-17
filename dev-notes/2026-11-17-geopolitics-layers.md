@@ -68,7 +68,11 @@ A/RES/68/262 の照合、測った欠落がまだ欠落であること（埋ま�
   `IntMapSafe` は URL 用に 1 回束縛して減らした（markup のタグは output-taint が束縛で判定するので直に読む）。`node scripts/global-surface.mjs --update`。
 - **`check:perf` の天井**: Atlas の能力 3 件の説明（`atlas-cap-runs`・`atlas-console` の目録）と経路パネルの検問所欄（`routing-ui`）の分だけ
   非同期チャンクが増えた。新しいチャンク（`layer-pkg-geopolitics`・`geopolitics-core`・`geopolitics-atlas`）は層を入れたとき・Atlas が呼んだときに
-  だけ読む。起動経路のバイトは増えていない。`node scripts/perf-budget.mjs --update` で、増えたぶんだけ上げた。
+  だけ読む。`node scripts/perf-budget.mjs --update` で、増えたぶんだけ上げた。
+  **起動時（eager）も +25 kB（gzip +8.6 kB）増えた**——#1177 が天井を main の実測まで下げた後に測り直して見えた。中身を起動チャンクで確かめると、
+  増えたのは宣言だけ（レイヤー・マニフェストの 3 行、出典行 6 件とその en+ja の説明、時間軸の宣言 3 件、能力索引の 3 行）で、どれも設計上起動時に
+  読む表（出典ページ・レイヤー欄・Atlas の索引がデータを読まずに答えるため）。描画・規則・時刻表・Atlas の本体は起動チャンクに 1 行も入っていない
+  （`Voted yes`・`unga-votes` は 0 件）。
 - `tests/durations.json` に新しい spec を 44 s（1 回の起動で 3 件、実測 43.8 s）で記入。全体の天井は動かしていない（5,249 s の下に残っていた余地から）。
 
 ## 6. CI で赤だった 5 件と、その直し方（手元で再現してから直した）
