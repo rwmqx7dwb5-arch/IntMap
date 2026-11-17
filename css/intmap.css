@@ -2024,16 +2024,23 @@
        of edge leave < 200 px): the search becomes its button, the two view pills fold into one menu, the tool triggers drop
        their words (the title still names each), Chronos keeps one line, and the panels hanging from the stack fit the frame. */
     @container map-frame (max-width:639px){
-      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))){ padding:3px; justify-self:center; }
-      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) input{ flex:0 0 0; width:0; padding:0; opacity:0; }
-      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn{ padding:5px 8px; display:flex; align-items:center; }
-      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-btn-t{ display:none; }
-      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-ico{ display:block; width:16px; height:16px; }
-      /* open (typing, a result in hand, or holding text): the field takes the whole lane.
+      .map-frame-top > .map-search:not(.has-text:not(.ms-shut)):not(:has(:focus:not(#ms-btn))){ padding:3px; justify-self:center; }
+      .map-frame-top > .map-search:not(.has-text:not(.ms-shut)):not(:has(:focus:not(#ms-btn))) input{ flex:0 0 0; width:0; padding:0; opacity:0; }
+      .map-frame-top > .map-search:not(.has-text:not(.ms-shut)):not(:has(:focus:not(#ms-btn))) #ms-btn{ padding:5px 8px; display:flex; align-items:center; }
+      .map-frame-top > .map-search:not(.has-text:not(.ms-shut)):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-btn-t{ display:none; }
+      .map-frame-top > .map-search:not(.has-text:not(.ms-shut)):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-ico{ display:block; width:16px; height:16px; }
+      /* open (typing, a result in hand, or holding text): the field takes the WHOLE top row — the frame's own width — and
+         the stack steps down one row under it. Not the lane: in this tier the lane is what the folded stack leaves, and
+         MEASURED in production at 1152×720 with both panels open (a 452 px frame) that was 146 px — a 49 px input whose
+         placeholder read «Searcl» and a result list 134 px wide for rows that need 223. The row is as wide as the frame
+         at every width of the tier, so nothing here is a number that fits one width.
+         ⚠ The tier says so to script as well (--ms-folds), so js/app-body.js closes the open field on Escape only where it folds.
          ⚠ NOT :focus-within. The press that opens the field focuses the BUTTON on pointerdown; if that opened the pill,
          the button would move before pointerup and the click — which is what puts the caret in the field
          (js/app-body.js wireMapSearch) — would land on the map. MEASURED in the narrowest tier: focus stayed on #ms-btn. */
-      .map-frame-top > .map-search:is(.has-text,:has(:focus:not(#ms-btn))){ grid-column:lane-start / lane-end; }
+      .map-frame-top{ --ms-folds:1; }
+      .map-frame-top > .map-search:is(.has-text:not(.ms-shut),:has(:focus:not(#ms-btn))){ grid-column:1 / -1; }
+      .map-frame-top:has(> .map-search.has-text:not(.ms-shut), > .map-search :focus:not(#ms-btn)) > .map-controls-top{ grid-row:2; }
       .map-frame .map-view-menu{ display:flex; }
       .map-frame .map-view-row{ position:relative; }
       .map-frame .map-view-sets{ display:none; }
@@ -2044,12 +2051,10 @@
       .map-frame > :is(.tool-panel,.sat-controller){ max-width:calc(100cqi - 48px); box-sizing:border-box; }
     }
     /* ── NARROWEST — the compact stack alone is most of the frame. The tool triggers stand in a column, the search button
-       stays at the start of the lane, and an open search takes the whole row while the stack steps down one row under it. */
+       stays at the start of the lane (the open field already takes the whole row from the tier above). */
     @container map-frame (max-width:359px){
-      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))){ grid-column:lane-start / lane-end; justify-self:start; }
+      .map-frame-top > .map-search:not(.has-text:not(.ms-shut)):not(:has(:focus:not(#ms-btn))){ grid-column:lane-start / lane-end; justify-self:start; }
       .map-frame #map-tools-group{ flex-direction:column; align-items:stretch; }
-      .map-frame-top > .map-search:is(.has-text,:has(:focus:not(#ms-btn))){ grid-column:1 / -1; }
-      .map-frame-top:has(> .map-search.has-text, > .map-search :focus:not(#ms-btn)) > .map-controls-top{ grid-row:2; }
     }
     /* (#R20) Frosted-glass news cards — Apple-style light frost instead of the intimidating solid
        dark-gray slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */

@@ -222,3 +222,50 @@ test('⑦ at 1440×900 and 1280×800 every control is exactly where, and as big 
   }
   expect(off, `baseline from ${BASELINE.taken.commit}:\n` + off.join('\n')).toEqual([]);
 });
+
+/* ⑧ (map-chrome-search-expand) THE OPEN FIELD IS AS WIDE AS THE FRAME ALLOWS, AND ESCAPE SHUTS IT.
+   MEASURED in production at 1152×720 with both panels open (a 452 px frame): the open field took only the lane the folded
+   stack left — 146 px, an input of 49 px whose placeholder read «Searcl», a result list 134 px wide for rows that need 223.
+   For frames on both sides of the compact threshold (≈640 px) and at 452 / 260 px: open the field the way a reader does,
+   and the field must span the frame's top row, its input must hold the placeholder, and a result row must fit the list.
+   Then Escape: the list closes first, then the field folds back and the caret is on the button. */
+test('⑧ the open search field spans the frame and its list fits; Escape folds it back to the button', async () => {
+  const problems = [];
+  for (const [vw, vh] of [[1352, 760], [1328, 760], [1152, 720], [960, 640]]) {
+    await page.setViewportSize({ width: vw, height: vh });
+    await setChromeState(page, { left: 'frosted', right: true, theme: 'light' });   /* frame = vw − 400 − 300 */
+    const frameW = await page.evaluate(() => document.getElementById('map-frame').getBoundingClientRect().width);
+    const folded = await page.evaluate(() => getComputedStyle(document.querySelector('.map-frame-top')).getPropertyValue('--ms-folds').trim() === '1');
+    if (folded) await page.click('#ms-btn'); else await page.click('#ms-input');
+    await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+    /* the placeholder is measured on the empty field; the list is the one the app draws for what a reader types */
+    const ph = await page.evaluate(() => { const inp = document.getElementById('ms-input'); const c = document.createElement('canvas').getContext('2d'); const cs = getComputedStyle(inp);
+      c.font = [cs.fontStyle, cs.fontWeight, cs.fontSize, cs.fontFamily].join(' ');
+      return { need: c.measureText(inp.placeholder).width + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0), have: inp.getBoundingClientRect().width }; });
+    await page.keyboard.type('Tokyo');
+    await page.waitForFunction(() => document.getElementById('ms-results').style.display === 'block' && !!document.querySelector('#ms-results .ms-item'), null, { timeout: 15_000 }).catch(() => { });
+    const m = await page.evaluate(() => {
+      const box = document.getElementById('map-search'), inp = document.getElementById('ms-input'), res = document.getElementById('ms-results');
+      const out = { field: box.getBoundingClientRect().width, rows: res.querySelectorAll('.ms-item').length, listW: res.clientWidth, listScroll: res.scrollWidth,
+        focused: document.activeElement?.id };
+      return out;
+    });
+    const tag = `${vw}×${vh} (frame ${Math.round(frameW)} px${folded ? ', folded tier' : ''})`;
+    if (m.focused !== 'ms-input') problems.push(`${tag}: the caret is not in the field (${m.focused})`);
+    if (folded && m.field < frameW - 2 * 6 - 1) problems.push(`${tag}: the open field is ${Math.round(m.field)} px of a ${Math.round(frameW)} px frame`);
+    if (ph.have + 0.5 < ph.need) problems.push(`${tag}: the input is ${Math.round(ph.have)} px, the placeholder needs ${Math.round(ph.need)}`);
+    if (!m.rows) problems.push(`${tag}: typing «Tokyo» drew no result rows`);
+    if (m.listScroll > m.listW + 1) problems.push(`${tag}: the result list overflows (${m.listScroll} px of content in ${m.listW})`);
+    /* Escape: the list first, then the field */
+    await page.keyboard.press('Escape');
+    const afterOne = await page.evaluate(() => ({ list: document.getElementById('ms-results').style.display, focused: document.activeElement?.id }));
+    if (afterOne.list !== 'none') problems.push(`${tag}: the first Escape left the result list open`);
+    await page.keyboard.press('Escape');
+    const afterTwo = await page.evaluate(() => ({ focused: document.activeElement?.id, input: document.getElementById('ms-input').getBoundingClientRect().width, leftOpen: !document.getElementById('sidebar').classList.contains('collapsed') }));
+    if (!afterTwo.leftOpen) problems.push(`${tag}: the Escape that folded the field also shut the left panel`);
+    if (folded && (afterTwo.focused !== 'ms-btn' || afterTwo.input >= 1)) problems.push(`${tag}: the second Escape did not fold the field back to its button (focus ${afterTwo.focused}, input ${Math.round(afterTwo.input)} px)`);
+    if (!folded && afterTwo.focused !== 'ms-input') problems.push(`${tag}: a wide pill does not fold, so Escape must leave the caret where it was (${afterTwo.focused})`);
+    await page.evaluate(() => { const i = document.getElementById('ms-input'); i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('ms-results').style.display = 'none'; document.activeElement?.blur?.(); });
+  }
+  expect(problems, problems.join('\n')).toEqual([]);
+});
