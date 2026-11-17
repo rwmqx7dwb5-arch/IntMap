@@ -140,7 +140,7 @@ export function wbIndicatorFor(stat) { return WB_INDICATORS.find((I) => I.stat =
 /** wbCitation(code) → { source, licence, url } for one series code, or for a summed pair (an array) */
 export function wbCitation(code) {
   const codes = (Array.isArray(code) ? code : [code]).map(String).filter(Boolean);
-  return { source: 'World Bank World Development Indicators (' + codes.join(' + ') + ')', licence: 'CC BY 4.0',
+  return { source: 'World Bank World Development Indicators (' + codes.join(' + ') + ')', publisher: 'World Bank', licence: 'CC BY 4.0',
     url: codes.length === 1 ? 'https://data.worldbank.org/indicator/' + encodeURIComponent(codes[0]) : '' };
 }
 /**

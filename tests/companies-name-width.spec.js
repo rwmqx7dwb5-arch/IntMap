@@ -68,7 +68,7 @@ async function openCompanies(page) {
 for (const [label, size, theme] of [
   ['desktop dark', { width: 1440, height: 900 }, 'dark'],
   ['desktop light', { width: 1440, height: 900 }, 'light'],
-  ['phone', { width: 390, height: 844 }, 'light'],
+  ['phone', { width: 375, height: 812 }, 'light'],
 ]) {
   test(`Companies (${label}): with live quote times the names stay readable`, async ({ app }) => {
     const page = app.page;
@@ -87,6 +87,22 @@ for (const [label, size, theme] of [
     for (const n of ['Apple', 'Microsoft', 'NVIDIA']) {
       const r = rows.find((x) => x.name === n);
       if (r) expect(r.cut, `${n} is shown whole`).toBe(false);
+    }
+    /* (companies-live-time-wrap) the stamp breaks only between its words: production split «2026-11-18 04:53» into
+       «2026-11-» / «18 04:53» in a 54 px column. Each word is laid out on ONE line (one line box), and the date and the
+       time are either on one line or on two — never a date cut in two. Read from the layout, not from the markup. */
+    const stamps = await page.evaluate(() => [...document.querySelectorAll('#info-dashboard .co-row .stat-val .co-asof')].slice(0, 40).map((s) => {
+      const lineOf = (el) => { const rs = [...el.getClientRects()]; return { n: rs.length, top: rs.length ? Math.round(rs[0].top) : null }; };
+      const words = [...s.querySelectorAll('.co-asof-w')].map((w) => ({ t: w.textContent, ...lineOf(w) }));
+      return { text: s.textContent, words };
+    }));
+    expect(stamps.length).toBeGreaterThan(10);
+    for (const s of stamps) {
+      expect(s.words.map((w) => w.t).join(' '), 'the words are the stamp').toBe(s.text);
+      for (const w of s.words) expect(w.n, `«${w.t}» of «${s.text}» is on one line`).toBe(1);
+      const date = s.words.find((w) => /^\d{4}-\d\d-\d\d$/.test(w.t)), time = s.words.find((w) => /^\d\d:\d\d$/.test(w.t));
+      expect(!!(date && time), `«${s.text}» is a date and a time`).toBe(true);
+      expect(time.top >= date.top, 'the time is beside or under its date').toBe(true);
     }
   });
 }
