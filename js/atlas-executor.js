@@ -343,15 +343,18 @@ function makeAtlasExecutor(HOST, CTX) {
                           js/atlas-agent.js `turn.externalContentSeen`). A UI button (source 'ui'),
                           a map click that resumes an operation ('atlas-resume') and a plain request
                           with no outside content in the turn run exactly as before.
-           ⚠ IT RIDES THE `needs_input` PATH, NOT `failed`: runActions renders it as a question, keeps
-           it out of the repair pass, and holds it in `_pendingInput`; the model reads error
-           'needs_confirm' and the policy tells it to put the question and end the turn. The reader's
-           approval arrives as their next message; the same call made again in that turn carries no
-           outside content (source 'atlas', nothing observed yet) and runs, and js/atlas-console.js
-           hands `confirmed:true` to the call whose identity matches the question that was asked —
-           which is what an 'always' row needs. ⚠ NOT A REPEAT UNDER .agents/rules/one-pass-or-a-reason.md:
-           the second call follows an answer from the reader, not a failure; js/atlas-agent.js never
-           freezes a `needs_input` in `doneCalls`, so it is not «already done» either. */
+           ⚠ IT RIDES THE `needs_input` PATH, NOT `failed`: runActions renders it as a question with two
+           buttons (js/atlas-results.js), keeps it out of the repair pass, and holds the call under its
+           operation id; the model reads error 'needs_confirm' and the policy tells it to put the question
+           and end the turn. (atlas-outside-mark) THE APPROVAL IS THE READER'S PRESS: js/atlas-console.js
+           `_confirmPress` runs the held call with `confirmed:true` (source 'atlas-confirm') only when Run
+           is pressed on that operation. Nothing the model writes sets `confirmed` — the earlier design,
+           where the same call made again in a later turn counted as the answer, let an instruction carried
+           in Atlas's own summary both ask and approve. `opts.externalContent` is no longer one turn's
+           fact either: js/atlas-agent.js keeps it true while words a marked turn wrote are still in the
+           model's input (composeInput `outside`), docs/SECURITY-ARCHITECTURE.md §8 item 16.
+           ⚠ NOT A REPEAT UNDER .agents/rules/one-pass-or-a-reason.md: js/atlas-agent.js never freezes a
+           `needs_input` in `doneCalls`, and the press runs the call once. */
         var conf = String(cap.confirmation || 'none');
         /* ══ (atlas-outward-effects) …AND WHAT THIS CALL WOULD ACTUALLY DO ═══════════════════════════════════
            Column 8 is per ROW, and one row — `system.control` (confirm 'none') — presses any button in the app,
@@ -376,7 +379,7 @@ function makeAtlasExecutor(HOST, CTX) {
             operationId: operationId, capabilityId: cap.id, code: 'needs_confirm',
             /* `promptKey` names the prompt the renderer draws for this request — the text lives in
                js/atlas-results.js ('atlas.input.confirm', nine languages), not here. */
-            inputRequest: { kind: 'choice', promptKey: 'atlas.input.confirm', pendingArgs: args, capabilityId: cap.id, confirm: conf, effect: eff }
+            inputRequest: { kind: 'choice', promptKey: 'atlas.input.confirm_press', pendingArgs: args, capabilityId: cap.id, confirm: conf, effect: eff }
           }));
         }
 

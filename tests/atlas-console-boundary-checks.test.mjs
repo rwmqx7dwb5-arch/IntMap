@@ -384,7 +384,7 @@ test('R801 C⑦: the tool surface carries the turn record to the action runner b
   /* the model's `__externalContent` is an ARGUMENT here; js/atlas-console.js `_runOne` overwrites it from the record */
   const src = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.match(src, /_runOne=async\(action,turn\)=>\{ action\.__externalContent=!!\(turn&&turn\.externalContentSeen\);/, 'the stamp is unconditional');
-  assert.match(src, /externalContent:a\.__externalContent===true, confirmed:_confirmedBy\(/, 'and the executor is given both facts as execution context');
+  assert.match(src, /externalContent:a\.__externalContent===true, signal:/, 'and the executor is given the fact as execution context — no `confirmed` on the model\'s path (atlas-outside-mark: the approval is the reader\'s press, tests/atlas-outside-mark-checks.test.mjs ⑤)');
 });
 
 /* ══ D — a URL from outside does not open unless it is http(s) ═══════════════════════════════ */

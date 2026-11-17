@@ -160,9 +160,9 @@ export function makeAtlasPolicy() {
         + 'rather than writing it again. Report a failure only when it blocks something the reader asked for; '
         + 'do not list the tools you tried and abandoned.\n'
         + observed
-        + 'CONFIRMATION: a result with error "needs_confirm" did not run — that operation waits for the reader\'s '
-        + 'own approval. Tell the reader plainly what it would do and end the turn; when they approve, make the '
-        + 'same call again. Repeating it before they answer only returns needs_confirm again.\n';
+        + 'CONFIRMATION: a result with error "needs_confirm" did not run — it waits for the reader to press Run on '
+        + 'the buttons IntMap shows. Tell the reader plainly what it would do and end the turn; making the same call '
+        + 'again is not their approval.\n';
     }
 
     turnMechanics.fence = fence;
