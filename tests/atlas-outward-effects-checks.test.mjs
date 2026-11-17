@@ -311,6 +311,24 @@ function localsOf(fn) {
   return out;
 }
 
+/* the functions written inside `fn` (at any depth), whose own parameters and locals shadow a name for the calls in them */
+const _nested = new WeakMap();
+function nestedOf(fn) {
+  let out = _nested.get(fn); if (out) return out;
+  out = [];
+  (function visit(n) {
+    if (!n || typeof n.type !== 'string') return;
+    if (n !== fn && /Function/.test(n.type)) out.push(n);
+    for (const k of Object.keys(n)) {
+      if (k === 'type' || k === 'start' || k === 'end') continue;
+      const v = n[k];
+      if (Array.isArray(v)) v.forEach(visit); else if (v && typeof v.type === 'string') visit(v);
+    }
+  })(fn);
+  _nested.set(fn, out);
+  return out;
+}
+
 export function scanHandlers(files, markup) {
   const parsed = files.map(({ path, src }) => ({ path, src, ast: parse(src) })).filter((f) => f.ast);
   /* names exported across files (a factory's return destructured elsewhere keeps the name) */
@@ -333,6 +351,11 @@ export function scanHandlers(files, markup) {
            buttons in four files «reached» an rpc none of them can reach. The value of a parameter is
            not known here, so it is not followed (its caller's argument is walked where it is written). */
         if (paramsOf(fn).has(nm) || localsOf(fn).has(nm)) return;
+        /* …and the same of every function NESTED in this one that encloses the call — the walk descends into
+           them, so their bindings shadow too. MEASURED (deep-tier-red): js/time-borders.js `csSide` calls its
+           arrow `part`'s parameter `load`, and the walk read only csSide's own bindings, so it resolved `load`
+           to js/news-story.js's `load → fetchRows → rpc` and six handlers «reached» a write. */
+        if (nestedOf(fn).some((g) => g.start <= n.start && n.end <= g.end && (paramsOf(g).has(nm) || localsOf(g).has(nm)))) return;
         const cands = file.named.has(nm) ? [{ f: file, fn: file.named.get(nm) }] : (global.get(nm) || []);
         for (const c of cands) { const r = writes(c.fn, c.f, stack); if (r) { hit = nm + '→' + r; return; } }
       }

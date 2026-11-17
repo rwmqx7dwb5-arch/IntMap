@@ -270,6 +270,16 @@ const MEMBER = {
   newsStory: ['__imNewsStory', 'open'],
   /* (wave4-news) Today on the map. js/news-pulse.js's needEdition() takes the body and calls `open`. */
   newsEdition: ['__imNewsEdition', 'open'],
+  /* (startup-weight) the drone planner and its operational layer, and the four simulators of js/sims.js. The Tools rows,
+     the right-click menu and Atlas call these members: IntMapDrone.open (map-ui, atlas-cap-routing droneRun), IntMapDroneOps.state
+     (droneRun's answer), IntMapRadiation.openPanel (map-ui), IntMapPopArea.estimate (tool-panel, map-tools, data.populationIn),
+     IntMapSun.open (map-ui, tool-panel, sim.sun*), IntMapTransitReach.open (map-tools' transit mode, routing.isochrone). */
+  drone: ['IntMapDrone', 'open'],
+  droneOps: ['IntMapDroneOps', 'state'],
+  radiation: ['IntMapRadiation', 'openPanel'],
+  popArea: ['IntMapPopArea', 'estimate'],
+  sun: ['IntMapSun', 'open'],
+  transitReach: ['IntMapTransitReach', 'open'],
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {

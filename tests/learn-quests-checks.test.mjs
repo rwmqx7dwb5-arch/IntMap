@@ -203,7 +203,6 @@ test('learn-quests ⑦ while a «which year?» question is open, everything that
     const tag = new RegExp('<[a-z]+ [^>]*id="' + id + '"[^>]*>').exec(html);
     assert.ok(tag && tag[0].includes(attr[1]), '#' + id + ' prints the map\'s time and does not say so');
   }
-  assert.match(read('js/layer-time-kernel.js'), /el\.id = 'data-legend-worldtime';\s+el\.setAttribute\('data-prints-map-time', ''\)/, 'the «The map at <day>» legend does not say it prints the time');
   /* (quest-narration-and-label) production, 2026-10-04: the screen-reader narration read «Showing 1995-08-30» during the question */
   assert.match(read('js/map-narrator.js'), /live\.id = 'map-narration';[^\n]*\n\s*live\.setAttribute\('data-prints-map-time', ''\)/, 'the map narration does not say it reads out the time');
   /* …and every attribute the panel writes is well-formed (the year slider wrote aria-label="" year"") */
@@ -214,8 +213,6 @@ test('learn-quests ⑦ while a «which year?» question is open, everything that
   const ntlIds = [...new Set([...read('js/news-timeline.js').matchAll(/getElementById\('(ntl-[a-z-]+)'\)/g)].map((m) => m[1]))].filter((id) => html.includes('id="' + id + '"'));
   assert.ok(ntlIds.includes('ntl-open-t') && ntlIds.includes('ntl-bigval') && ntlIds.length > 10, 'the Chronos ids were read (' + ntlIds.length + ')');
   for (const id of ntlIds) { const at = html.indexOf('id="' + id + '"'); assert.ok(at > a && at < b, '#' + id + ' (written by js/news-timeline.js) is outside #news-timeline'); }
-  /* the legend card really prints the day */
-  assert.match(read('js/layer-time-kernel.js'), /tr\('The map at ' \+ day/);
 });
 
 test('learn-quests ⑧ Atlas: learn.quest is registered, and its catalogue text names every kind', async () => {

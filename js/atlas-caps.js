@@ -196,6 +196,57 @@ export function capabilityRunners(modules) {
   return run;
 }
 
+/* ============================================================================
+ *  (startup-weight) THE DOOR TO A CAPABILITY'S `run`
+ * ----------------------------------------------------------------------------
+ *  The Atlas kernel (the `atlas-console` chunk) needs every capability's row, schema, catalogue text,
+ *  phrases, policy and chips before the first question leaves — the planner is shown the catalogue and
+ *  the tool schemas. It does NOT need what each capability DOES until the model calls it. Measured on
+ *  the build before this file (vite build, .perf/build-report.json): the kernel chunk was 1,491,661 B in
+ *  one piece, and the `run` bodies of the 25 js/atlas-cap-*.js files were 525,085 of their 1,061,824
+ *  source bytes, with most of the 241,058 bytes outside the entries being helpers only a `run` reads.
+ *
+ *  So the BUILD hands the kernel a copy of each capability module with its `run` replaced by a call
+ *  through this door (scripts/atlas-caps-split.mjs — the source is not split, and Node, the tests and
+ *  the generators read the one file as it is), and the module itself becomes a chunk of its own that
+ *  arrives the first time one of its capabilities runs.
+ *
+ *  ⚠ THE CALL IS THE SAME CALL. `run(a, dctx, K)` of the module's own entry, with `this` that entry —
+ *  the entry is found by its id (row column 0), not by position, so a copy and its module cannot pair
+ *  the wrong two. The dispatch already answers with a promise (js/atlas-console.js `dispatch`), so a
+ *  `run` that was synchronous is not observed differently.
+ *  ⚠ A FAILED DOWNLOAD IS NOT REMEMBERED. It rejects — the tool call fails with the reason, which is an
+ *  observed failure (one-pass-or-a-reason.md §5) — and the next call asks again; a module that arrived
+ *  is kept. An id the module does not hold is refused by name rather than answered with nothing.
+ * ==========================================================================*/
+
+/** @typedef {{ row: any[], run: (...args: any[]) => any }} CapEntry */
+/** @type {(loaders: Record<string, () => Promise<{ default: CapEntry[] }>>) => { run: (ns: string, id: string, args: ArrayLike<any>) => Promise<any>, loaded: () => string[] }} */
+export const makeCapRunDoor = (loaders) => {
+  /** @type {Record<string, Promise<Record<string, CapEntry>>>} */
+  const P = Object.create(null);
+  const load = (/** @type {string} */ ns) => {
+    if (P[ns]) return P[ns];
+    const f = loaders[ns];
+    if (typeof f !== 'function') return Promise.reject(new Error('no capability module for the namespace «' + ns + '»'));
+    const p = Promise.resolve().then(f).then((m) => {
+      /** @type {Record<string, CapEntry>} */ const by = Object.create(null);
+      for (const e of (m && m.default) || []) if (e && Array.isArray(e.row)) by[e.row[0]] = e;
+      return by;
+    });
+    p.catch(() => { if (P[ns] === p) delete P[ns]; });
+    P[ns] = p; return p;
+  };
+  return {
+    run: (ns, id, args) => load(ns).then((by) => {
+      const e = by[id];
+      if (!e || typeof e.run !== 'function') throw new Error('the capability ' + id + ' has no run in its module (' + ns + ')');
+      return e.run.apply(e, Array.prototype.slice.call(args));
+    }),
+    loaded: () => Object.keys(P),
+  };
+};
+
 /** capability id → its argument schema, FRESH objects on every call */
 export function capabilitySchemas(modules) {
   const S = {};

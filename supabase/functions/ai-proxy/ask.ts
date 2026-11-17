@@ -391,8 +391,8 @@ export async function ask(req: Request): Promise<Response> {
   /* (atlas-native-tools) WHICH MODEL ANSWERS, AS THE CODE DECIDES IT — this comment used to say «GPT-5.6 Sol
      (AI_MODEL secret = gpt-5.6-sol), Terra the FALLBACK_MODEL», which stopped being true at #R736:
      ① a developer's pick (devPick, below) → ② the AI_MODEL secret, when it is an id for the provider
-     that is answering → ③ PROVIDER_DEFAULT_MODEL (OPENAI_DEFAULT_MODEL = gpt-5.6-terra). A 403/404
-     model_not_found then walks FALLBACK_CHAIN (sol → luna) unless the developer chose the model.
+     that is answering → ③ PROVIDER_DEFAULT_MODEL (OPENAI_DEFAULT_MODEL = gpt-6.1-sol). A 403/404
+     model_not_found then walks FALLBACK_CHAIN (terra → luna) unless the developer chose the model.
      ⚠ The SECRET wins over the constant, so the constant names the model only while the secret is
      unset or agrees; meta.model / meta.modelServed report what was asked and what answered.
      /!\ (#R722) AI_MODEL IS AN ID FOR **ITS OWN** PROVIDER. It holds an OpenAI id, so a developer who

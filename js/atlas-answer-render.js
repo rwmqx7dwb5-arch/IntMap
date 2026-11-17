@@ -146,6 +146,12 @@ export function makeAtlasAnswerRender() {
       const pills = marks.sort((a, b) => a - b).map((n) => {
         const r = order[n - 1];
         const label = esc(r.publisher || r.host || r.title);
+        /* ⚠ (atlas-gpt6-models) THE PILL SAYS WHO, NOT A NUMBER. The source cards under the answer carry no
+           numbers, so 「1」 pointed at nothing the reader could see — an answer resting on one record printed
+           a row of bare 「1」s after every paragraph (reported 2026-11-16, an answer about Czech public-media
+           funding). The pill now shows the publisher's short name; the full name stays in the tooltip and
+           the number stays on the element, so every pill is still its own anchor to its own source. */
+        const short = esc(citeName(r));
         /* ⚠ A RECORD WITH NO URL IS STILL A CITATION. IntMap's own measured data (country statistics,
            a displayed layer's live value, a computed figure) has no page to open, and rendering it as
            nothing would make a figure look unsourced precisely when its source is the most solid one
@@ -157,8 +163,8 @@ export function makeAtlasAnswerRender() {
            is imported now, so it runs in the node checks too — it used to be skipped where there was no window. */
         const href = r.finalUrl ? globalThis.IntMapSafe.url(r.finalUrl) : '';
         return href
-          ? '<a class="atl-cite" href="' + esc(href) + '" target="_blank" rel="noopener" title="' + label + '">' + n + '</a>'
-          : '<span class="atl-cite atl-cite-data" title="' + label + '">' + n + '</span>';
+          ? '<a class="atl-cite" href="' + esc(href) + '" target="_blank" rel="noopener" title="' + label + '" data-n="' + n + '">' + short + '</a>'
+          : '<span class="atl-cite atl-cite-data" title="' + label + '" data-n="' + n + '">' + short + '</span>';
       }).join('');
       return marks.length > 1 ? '<span class="atl-cites">' + pills + '</span>' : pills;
     };
@@ -211,19 +217,26 @@ export function makeAtlasAnswerRender() {
     return html;
   }
 
+  /* The short name a citation pill shows: the publisher the record names, else its host without
+     `www.`, else its title — cut at 24 characters, because the pill sits inside a sentence. */
+  function citeName(r) {
+    const raw = String((r && (r.publisher || (r.host || '').replace(/^www./, '') || r.title)) || '').trim();
+    return raw.length > 24 ? raw.slice(0, 23) + '…' : raw;
+  }
+
   /** The stylesheet for the pieces this file introduces. Appended to the Atlas panel CSS. */
   const answerCSS = `
   .atl-lead{font-size:1.06em;line-height:1.62;margin:0 0 .5em;}
   .atl-blk{margin:0 0 .1em;}
-  .atl-cite{display:inline-block;min-width:1.15em;height:1.15em;line-height:1.15em;text-align:center;margin:0 .12em;padding:0 .22em;
+  .atl-cite{display:inline-block;min-width:1.15em;height:1.35em;line-height:1.35em;text-align:center;margin:0 .12em;padding:0 .5em;white-space:nowrap;
     border-radius:.6em;background:var(--input-bg,rgba(128,128,128,.16));color:var(--text-muted);font-size:.68em;font-weight:600;
-    text-decoration:none;vertical-align:.35em;transition:background .15s,color .15s;}
+    text-decoration:none;vertical-align:.12em;transition:background .15s,color .15s;}
   .atl-cite:hover{background:var(--primary-fill);color:#fff;}
   .atl-cite-data{cursor:default;}
   .atl-cite-data:hover{background:var(--input-bg,rgba(128,128,128,.16));color:var(--text-muted);}
   /* (#R494) the citation CLUSTER: several marks for one statement share one pill instead of scattering
      several. Each number is still its own anchor — only the chrome around them is merged. */
-  .atl-cites{display:inline-flex;vertical-align:.35em;margin:0 .12em;border-radius:.6em;overflow:hidden;
+  .atl-cites{display:inline-flex;vertical-align:.12em;margin:0 .12em;border-radius:.6em;overflow:hidden;
     background:var(--input-bg,rgba(128,128,128,.16));}
   .atl-cites .atl-cite{margin:0;border-radius:0;background:none;vertical-align:baseline;}
   .atl-cites .atl-cite+.atl-cite{border-left:1px solid rgba(128,128,128,.3);}

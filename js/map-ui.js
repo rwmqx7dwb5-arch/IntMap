@@ -202,33 +202,86 @@ export function layerRegistry(HOST){
        scales convert to °F when the reader has asked for Fahrenheit (js/layer-packs.js), so a
        display preference would otherwise have changed the numbers an analysis was computed from. */
     const _numCache=new Map();   /* per (kind,0.25°cell) quantity cache shared by all Open-Meteo samplers */
-    async function _om(kind,lng,lat){ const q=v=>Math.round(v*4)/4, qla=q(lat), qlo=q(lng), key=kind+':'+qla+','+qlo;
-      if(_numCache.has(key)) return _numCache.get(key);
-      let url=null,pick=null,unit='',more=null;
-      if(kind==='temp'){ url='https://api.open-meteo.com/v1/forecast?latitude='+qla+'&longitude='+qlo+'&current=temperature_2m'; pick=j=>j.current&&j.current.temperature_2m; unit='°C'; }
-      else if(kind==='sst'){ url='https://marine-api.open-meteo.com/v1/marine?latitude='+qla+'&longitude='+qlo+'&current=sea_surface_temperature'; pick=j=>j.current&&j.current.sea_surface_temperature; unit='°C'; }
+    /* ⚠⚠ ONE DECLARATION PER KIND, READ BY BOTH ROADS. The point road (_om, one position) and the
+       window road (_omRegion, many positions in one request) used to be one road, and only the first
+       existed: a GIS acquisition of `layer:temp` while the layer was off walked width×height pixels
+       through _om — measured 2026-11-16, 91 sequential Open-Meteo requests in 30 s for a 16×16 window
+       and still unfinished. Which endpoint, which variable, which unit is stated here once; the two
+       roads differ only in how many positions they put in the URL. */
+    /* the reader's wind unit, asked in ONE place for every road that prints a wind speed */
+    const _fmtWind=(v)=>{ const F=window.fmtWindSpeed; return F?F(v):((Math.round(v*10)/10)+' m/s'); };
+    /* (#R276) through window.IntMapWx — one cache, one de-duplicator, one circuit breaker; asked here once */
+    const _omJSON=(url,opts)=>window.IntMapWx.guardedJSON(url,300000,opts);
+    function _omSpec(kind){
+      if(kind==='temp') return { base:'https://api.open-meteo.com/v1/forecast', ask:'current=temperature_2m', pick:j=>j.current&&j.current.temperature_2m, unit:'°C' };
+      if(kind==='sst') return { base:'https://marine-api.open-meteo.com/v1/marine', ask:'current=sea_surface_temperature', pick:j=>j.current&&j.current.sea_surface_temperature, unit:'°C' };
       /* ⚠ (#R763) THE SPEED IS THE VALUE AND THE BEARING TRAVELS BESIDE IT. This branch used to
          compose 「12.3 km/h @240°」 inside `pick` and hand it over as the whole answer, so the one
          field on the map with TWO numbers in it arrived downstream as neither. The text below is
          built from the same two values, unrounded, exactly as it was. */
-      else if(kind==='wind'){ url='https://api.open-meteo.com/v1/forecast?latitude='+qla+'&longitude='+qlo+'&current=wind_speed_10m,wind_direction_10m'; pick=j=>j.current&&j.current.wind_speed_10m; unit=' km/h';
-        more=j=>({ direction:Math.round((j.current&&j.current.wind_direction_10m)||0), text:j.current.wind_speed_10m+' km/h @'+Math.round((j.current&&j.current.wind_direction_10m)||0)+'°' }); }
-      else if(kind==='precip'){ url='https://api.open-meteo.com/v1/forecast?latitude='+qla+'&longitude='+qlo+'&current=precipitation'; pick=j=>j.current&&j.current.precipitation; unit=' mm/h'; }
-      else if(kind==='snow'){ url='https://api.open-meteo.com/v1/forecast?latitude='+qla+'&longitude='+qlo+'&hourly=snow_depth&forecast_days=1'; pick=j=>j.hourly&&j.hourly.snow_depth&&j.hourly.snow_depth[0]; unit=' m'; }
-      else if(kind==='aod'){ url='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+qla+'&longitude='+qlo+'&current=aerosol_optical_depth'; pick=j=>j.current&&j.current.aerosol_optical_depth; unit=''; }
-      else if(kind==='no2'){ url='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+qla+'&longitude='+qlo+'&current=nitrogen_dioxide'; pick=j=>j.current&&j.current.nitrogen_dioxide; unit=' µg/m³'; }
-      else if(kind==='co'){ url='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+qla+'&longitude='+qlo+'&current=carbon_monoxide'; pick=j=>j.current&&j.current.carbon_monoxide; unit=' µg/m³'; }
-      if(!url) return null;
-      /* (#R276) through window.IntMapWx — one cache, one de-duplicator, one circuit breaker */
-      try{ const j=await window.IntMapWx.guardedJSON(url,300000); if(!j) return null; const v=pick(j);
-        if(v==null||v==='') return null;
-        /* ⚠ THE DISPLAY STRING IS DERIVED HERE AND ONLY HERE, from the value one line above it. The
-           reader sees the same characters as before — a number rounded to 2 dp with this kind's unit
-           written after it — and `value` is the number that was rounded, which is the part that used
-           to be thrown away. A non-numeric upstream answer keeps its own words and states no value. */
-        const x=(typeof v==='number')?v:null, extra=(more&&typeof more==='function')?more(j):null;
-        const out=Object.assign({ value:x, unit:(unit===''?null:unit.trim()), text:(x==null)?String(v):(Math.round(x*100)/100+unit) },extra||{});
-        _numCache.set(key,out); return out; }catch(_){ return null; } }
+      /* ⚠ AND IN THE FIELD'S OWN UNIT. The ECMWF road below states m/s; this road used to state km/h
+         under the same `value`, so one wind gave two numbers depending on whether a frame was held.
+         The upstream is asked for m/s, and the sentence is formatted the way the field road formats it
+         (the reader's chosen unit), so what the reader sees did not change. */
+      if(kind==='wind') return { base:'https://api.open-meteo.com/v1/forecast', ask:'current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms', pick:j=>j.current&&j.current.wind_speed_10m, unit:' m/s',
+        more:j=>{ const v=j.current&&j.current.wind_speed_10m, d=Math.round((j.current&&j.current.wind_direction_10m)||0);
+          const sp=(typeof v==='number')?_fmtWind(v):(v+' m/s'); return { direction:d, text:sp+' @'+d+'°' }; } };
+      if(kind==='precip') return { base:'https://api.open-meteo.com/v1/forecast', ask:'current=precipitation', pick:j=>j.current&&j.current.precipitation, unit:' mm/h' };
+      if(kind==='snow') return { base:'https://api.open-meteo.com/v1/forecast', ask:'hourly=snow_depth&forecast_days=1', pick:j=>j.hourly&&j.hourly.snow_depth&&j.hourly.snow_depth[0], unit:' m' };
+      if(kind==='aod') return { base:'https://air-quality-api.open-meteo.com/v1/air-quality', ask:'current=aerosol_optical_depth', pick:j=>j.current&&j.current.aerosol_optical_depth, unit:'' };
+      if(kind==='no2') return { base:'https://air-quality-api.open-meteo.com/v1/air-quality', ask:'current=nitrogen_dioxide', pick:j=>j.current&&j.current.nitrogen_dioxide, unit:' µg/m³' };
+      if(kind==='co') return { base:'https://air-quality-api.open-meteo.com/v1/air-quality', ask:'current=carbon_monoxide', pick:j=>j.current&&j.current.carbon_monoxide, unit:' µg/m³' };
+      return null; }
+    const _omQ=v=>Math.round(v*4)/4;   /* the 0.25° cell both roads cache by — the grid the model publishes */
+    /* ⚠ THE DISPLAY STRING IS DERIVED HERE AND ONLY HERE, from the value one line above it. The
+       reader sees the same characters as before — a number rounded to 2 dp with this kind's unit
+       written after it — and `value` is the number that was rounded, which is the part that used
+       to be thrown away. A non-numeric upstream answer keeps its own words and states no value. */
+    function _omRead(sp,j){ const v=sp.pick(j); if(v==null||v==='') return null;
+      const x=(typeof v==='number')?v:null, extra=(sp.more&&typeof sp.more==='function')?sp.more(j):null;
+      return Object.assign({ value:x, unit:(sp.unit===''?null:sp.unit.trim()), text:(x==null)?String(v):(Math.round(x*100)/100+sp.unit) },extra||{}); }
+    async function _om(kind,lng,lat){ const qla=_omQ(lat), qlo=_omQ(lng), key=kind+':'+qla+','+qlo;
+      if(_numCache.has(key)) return _numCache.get(key);
+      const sp=_omSpec(kind); if(!sp) return null;
+      try{ const j=await _omJSON(sp.base+'?latitude='+qla+'&longitude='+qlo+'&'+sp.ask); if(!j) return null;
+        const out=_omRead(sp,j); if(out) _numCache.set(key,out); return out; }catch(_){ return null; } }
+    /* ── the window road: js/gis-sources.js supply({region}) ──────────────────────────────────────
+       Open-Meteo answers a comma-separated list of positions in ONE request (an array back, one
+       object per position, in order). ⚠ _OM_BATCH IS A URL-LENGTH BOUND, NOT A CAP ON THE ANSWER:
+       every requested cell is still asked, in as many requests as it takes. Observation: a 0.25°
+       position is at most 7 characters per axis, so 100 positions put ≈1.6 KB of query in the URL,
+       well under the ~8 KB request line common HTTP servers accept; void if Open-Meteo states a
+       smaller per-request position limit. ⚠ A REQUEST THAT FAILED IS NOT A CELL WITHOUT A VALUE:
+       if any block could not be read the whole window is refused with the count, rather than
+       handing back a grid whose holes would read as 「そこには値が無い」 (.agents/rules/one-pass-or-a-reason.md §5). */
+    const _OM_BATCH=100;
+    /* `local(lng,lat)` is the row's own in-memory field (the one its picture is drawn from), read first
+       for every pixel exactly as the row's `measure` reads it first; only the pixels it cannot answer
+       go upstream. A row whose `measure` would answer nothing at all says so through `refuse()`. */
+    function _omRegion(kind,local,refuse){ const sp=_omSpec(kind); if(!sp) return null;
+      return async function(req){ const b=req.bbox, W=req.width, H=req.height;
+        const why=(typeof refuse==='function')?refuse():null; if(why) return why;
+        const keys=new Array(W*H), here=new Array(W*H), want=new Map();
+        for(let r=0;r<H;r++){ const y=b.n-(r+0.5)*(b.n-b.s)/H, lat=_omQ(y);
+          for(let c=0;c<W;c++){ const x=b.w+(c+0.5)*(b.e-b.w)/W, i=r*W+c;
+            let v=null; if(typeof local==='function'){ try{ v=local(x,y); }catch(_){ v=null; } }
+            if(typeof v==='number'&&isFinite(v)){ here[i]=v; continue; }
+            const lng=_omQ(x), k=kind+':'+lat+','+lng; keys[i]=k;
+            if(!_numCache.has(k)&&!want.has(k)) want.set(k,[lat,lng]); } }
+        const todo=[...want.entries()]; let failed=0, done=0;
+        for(let i=0;i<todo.length;i+=_OM_BATCH){
+          if(req.signal&&req.signal.aborted) return { ok:false, why:'cancelled' };
+          const part=todo.slice(i,i+_OM_BATCH), note={};
+          const j=await _omJSON(sp.base+'?latitude='+part.map(p=>p[1][0]).join(',')+'&longitude='+part.map(p=>p[1][1]).join(',')+'&'+sp.ask,{ signal:req.signal||null, note });
+          const rows=Array.isArray(j)?j:(j?[j]:null);
+          if(!rows||rows.length!==part.length){ failed+=part.length; }
+          else part.forEach((p,n)=>{ const out=_omRead(sp,rows[n]); _numCache.set(p[0],out); });
+          done+=part.length;
+          try{ if(typeof req.onProgress==='function') req.onProgress({ done, total:todo.length }); }catch(_){}
+        }
+        if(failed) throw new Error('open-meteo: '+failed+' of '+todo.length+' cells could not be read');
+        const cells=keys.map((k,i)=>{ if(here[i]!=null) return here[i]; const o=k?_numCache.get(k):null; return (o&&typeof o.value==='number')?o.value:null; });
+        return { ok:true, cells, band:{ unit:(sp.unit===''?null:sp.unit.trim()) } }; }; }
     /* ══ ⚠ (#R732) 「この範囲に入っているか」を「点であるか」で代用していた ═══════════════════════
        `_srcFeatsIn` asked `f.geometry.type==='Point'` before looking at a single coordinate, so a
        LineString or a Polygon in one of these sources could not be counted, listed or handed to
@@ -413,21 +466,36 @@ export function layerRegistry(HOST){
        request when it cannot (the reanalysis raster has no point-value service). */
     const _wxEC=()=>{ try{ return window.IntMapWeatherEC; }catch(_){ return null; } };
     const _tempSrc=()=>{ try{ const W=_wxEC(); return (W&&W.source)?W.source('ec-temp'):'ecmwf'; }catch(_){ return 'ecmwf'; } };
+    const _tempField=(x,y)=>window.IntMapECMWF.valueNow('temperature_2m',y,x);
     register('temp',   { label:()=>L5('Air temperature','気温','Lufttemperatur','Темп. воздуха','Temp. del aire'),
       on:()=>isOn('ec-temp'),
       /* (#R763) both roads state the same quantity: the ECMWF field it is drawn from, and the
          Open-Meteo point reading when no frame is held. °C either way — the unit the upstream
          publishes, not the one the reader picked. */
-      measure:(x,y)=>{ try{ if(_tempSrc()!=='merra2'){ const v=window.IntMapECMWF.valueNow('temperature_2m',y,x);
+      measure:(x,y)=>{ try{ if(_tempSrc()!=='merra2'){ const v=_tempField(x,y);
           if(v!=null) return { value:v, unit:'°C', text:(Math.round(v*10)/10)+'°C' }; } }catch(_){}
         return (_tempSrc()==='merra2')?null:_om('temp',x,y); },
+      region:_omRegion('temp',(x,y)=>{ try{ return _tempField(x,y); }catch(_){ return null; } },
+        ()=>(_tempSrc()==='merra2')?{ ok:false, why:'layer-values-not-numeric', detail:{ id:'temp', from:'merra2-imagery' } }:null),
       time:()=>{ try{ const W=_wxEC(); if(_tempSrc()==='merra2') return (W&&W.month)?W.month('ec-temp'):null;
           return window.IntMapECMWF.validTime(); }catch(_){ return null; } },
       source:()=>(_tempSrc()==='merra2')?'NASA GIBS · MERRA-2':'ECMWF IFS HRES · Open-Meteo',
       /* the two roads credit two different sets of publishers, so the values follow the road the
          same way the sentence above does */
       rights:()=>(_tempSrc()==='merra2')?{publisher:'NASA GIBS'}:{upstreams:[{publisher:'ECMWF'},{publisher:'Open-Meteo'}]} });
-    register('sst',    { label:()=>L5('Sea surface temp','海面水温','Meerestemperatur','Темп. моря','Temp. del mar'), measure:(x,y)=>_om('sst',x,y), time:()=>_ld('sst'), source:()=>'NASA GIBS / Open-Meteo marine', rights:()=>_RGT_GIBS_OM });
+    /* ⚠⚠ POPULATION AS VALUES (js/population-grid.js). The 「人口密度（グリッド）」 checkbox is GPW
+       IMAGERY from NASA GIBS — colours — so nothing could read a population out of it. This row is the
+       NUMBERS, from a different publisher (WorldPop 1 km, 2000–2020), and it says so: it draws nothing
+       (`on` is false — there is no picture of it to switch), it is reached only through acquisition, and
+       its credit names WorldPop, never GPW. The module is imported when a window is asked for. */
+    let _popGrid=null;
+    register('population',{ label:()=>IntMapLang.t(HOST.lang,'Population (WorldPop 1 km, values)','人口（WorldPop 1 km・数値）'),
+      on:()=>false,
+      region:async(req)=>{ if(!_popGrid) _popGrid=(await import('./population-grid.js')).makePopulationGrid(); return _popGrid.region(req); },
+      /* no `time`: the year is the request's (acquire.time, 2000–2020); the answer's coverage names it */
+      source:()=>'WorldPop (University of Southampton) · CC BY 4.0',
+      rights:()=>({publisher:'WorldPop (University of Southampton) & CIESIN, Columbia University',licence:'CC BY 4.0',licenceUrl:'https://creativecommons.org/licenses/by/4.0/'}) });
+    register('sst',    { label:()=>L5('Sea surface temp','海面水温','Meerestemperatur','Темп. моря','Temp. del mar'), measure:(x,y)=>_om('sst',x,y), region:_omRegion('sst'), time:()=>_ld('sst'), source:()=>'NASA GIBS / Open-Meteo marine', rights:()=>_RGT_GIBS_OM });
     /* ⚠ (#R302) THE WIND ANSWERS FROM THE FIELD THAT IS ON SCREEN, THE WAY `temp` ABOVE DOES.
        This row asked api.open-meteo.com for a point value while the ECMWF field the particles and the
        colour slot are drawn from was already decoded IN RAM — a live 「now」 reading from a different
@@ -442,26 +510,29 @@ export function layerRegistry(HOST){
        hour the axis is standing on. */
     const _WIND_VAR='wind_u_component_10m';
     const _windFld=()=>{ try{ return !!(window.IntMapECMWF&&window.IntMapECMWF.sampler(_WIND_VAR)); }catch(_){ return false; } };
+    /* the field the particles are drawn from, read in ONE place for both of the row's roads below */
+    const _windAt=(x,y)=>{ try{ return window.Wind.sampleAt(x,y); }catch(_){ return null; } };
     register('wind',   { label:()=>L5('Wind','風','Wind','Ветер','Viento'),
       /* ⚠ (#R763) THE VALUE IS THE SPEED IN m/s, WHICH IS NOT WHAT THE READER IS SHOWN. fmtWindSpeed
          honours the reader's chosen unit (km/h, kt, mph), and a zonal mean computed out of whichever
          one they last clicked would be a different number for the same wind. So `text` stays exactly
          what it was — formatted speed, compass word, bearing — and `value` is the field's own m/s,
          with the bearing beside it rather than inside the sentence. */
-      measure:(x,y)=>{ try{ const w=window.Wind.sampleAt(x,y);
-          if(w&&isFinite(w.speed)){ const sp=window.fmtWindSpeed?window.fmtWindSpeed(w.speed):((Math.round(w.speed*10)/10)+' m/s');
+      measure:(x,y)=>{ try{ const w=_windAt(x,y);
+          if(w&&isFinite(w.speed)){ const sp=_fmtWind(w.speed);
             /* (#R289) one compass table for the whole app — the word, not just the number */
             const card=(()=>{ try{ return window.IntMapCompass.point(w.dir,HOST.lang,8); }catch(_){ return ''; } })();
             return { value:w.speed, unit:'m/s', direction:w.dir, text:sp+' '+(card?(card+' '):'')+'@'+Math.round(w.dir)+'°' }; } }catch(_){}
         return _om('wind',x,y); },
+      region:_omRegion('wind',(x,y)=>{ const w=_windAt(x,y); return (w&&isFinite(w.speed))?w.speed:null; }),
       time:()=>{ try{ return _windFld()?window.IntMapECMWF.validTime():null; }catch(_){ return null; } },
       source:()=>_windFld()?'ECMWF IFS HRES · Open-Meteo':'Open-Meteo',
       rights:()=>_windFld()?{upstreams:[{publisher:'ECMWF'},{publisher:'Open-Meteo'}]}:{publisher:'Open-Meteo'} });
-    register('precip', { label:()=>L5('Precipitation','降水','Niederschlag','Осадки','Precipitación'), measure:(x,y)=>_om('precip',x,y), time:()=>_ld('precip'), source:()=>'NASA GIBS (IMERG) / Open-Meteo', rights:()=>_RGT_GIBS_OM });
-    register('snow',   { label:()=>L5('Snow & ice','積雪・氷','Schnee & Eis','Снег и лёд','Nieve y hielo'), measure:(x,y)=>_om('snow',x,y), time:()=>_ld('snow'), source:()=>'NASA GIBS / Open-Meteo', rights:()=>_RGT_GIBS_OM });
-    register('aod',    { label:()=>L5('Aerosol / haze','エアロゾル','Aerosol','Аэрозоль','Aerosol'), measure:(x,y)=>_om('aod',x,y), time:()=>_ld('aod'), source:()=>'NASA GIBS / Open-Meteo air-quality', rights:()=>_RGT_GIBS_OM });
-    register('no2',    { label:()=>'NO₂', measure:(x,y)=>_om('no2',x,y), time:()=>_ld('no2'), source:()=>'NASA GIBS / Open-Meteo air-quality', rights:()=>_RGT_GIBS_OM });
-    register('co',     { label:()=>'CO', measure:(x,y)=>_om('co',x,y), time:()=>_ld('co'), source:()=>'NASA GIBS / Open-Meteo air-quality', rights:()=>_RGT_GIBS_OM });
+    register('precip', { label:()=>L5('Precipitation','降水','Niederschlag','Осадки','Precipitación'), measure:(x,y)=>_om('precip',x,y), region:_omRegion('precip'), time:()=>_ld('precip'), source:()=>'NASA GIBS (IMERG) / Open-Meteo', rights:()=>_RGT_GIBS_OM });
+    register('snow',   { label:()=>L5('Snow & ice','積雪・氷','Schnee & Eis','Снег и лёд','Nieve y hielo'), measure:(x,y)=>_om('snow',x,y), region:_omRegion('snow'), time:()=>_ld('snow'), source:()=>'NASA GIBS / Open-Meteo', rights:()=>_RGT_GIBS_OM });
+    register('aod',    { label:()=>L5('Aerosol / haze','エアロゾル','Aerosol','Аэрозоль','Aerosol'), measure:(x,y)=>_om('aod',x,y), region:_omRegion('aod'), time:()=>_ld('aod'), source:()=>'NASA GIBS / Open-Meteo air-quality', rights:()=>_RGT_GIBS_OM });
+    register('no2',    { label:()=>'NO₂', measure:(x,y)=>_om('no2',x,y), region:_omRegion('no2'), time:()=>_ld('no2'), source:()=>'NASA GIBS / Open-Meteo air-quality', rights:()=>_RGT_GIBS_OM });
+    register('co',     { label:()=>'CO', measure:(x,y)=>_om('co',x,y), region:_omRegion('co'), time:()=>_ld('co'), source:()=>'NASA GIBS / Open-Meteo air-quality', rights:()=>_RGT_GIBS_OM });
     register('climate',{ label:()=>L5('Köppen climate','ケッペン気候区分','Köppen-Klima','Климат Кёппена','Clima de Köppen'),
       /* (#R245) one climate-name lookup for the whole app — see window.kName in js/data-layers.js */
       /* ⚠ (#R763) A CLASSIFICATION IS NOT A MEASUREMENT, AND IT STATES SO BY HAVING A `code` AND NO
@@ -713,6 +784,19 @@ export function layerRegistry(HOST){
        of rows for the same request depending on whether the layer happened to be on screen, which is
        two readers of one contract ([[intmap-two-readers-one-field-list]]) with a map in between. */
     function loaderOf(id){ const r=REG[id]; return (r&&typeof r.load==='function')?(()=>r.load()):null; }
+    /* ⚠⚠ WHAT KIND OF ANSWER A ROW GIVES, ASKED OF THE REGISTRATION'S OWN DOORS. js/gis-sources.js
+       list() used to decide 「features か格子か」 from whether the RENDERER held a source for the row,
+       so a point layer nobody had switched on (earthquakes, ships, news …) was listed as a grid and its
+       acquisition was refused for having no `width` — a statement about the camera, not the layer.
+       A row that hands features over (`featuresIn` / `load`) and has no per-position value door is a
+       features row whether or not it has been drawn; a row with `measure` / `sampleAt` answers
+       values. Nothing is listed here: each registration answers by what it registered. */
+    /* the window door a registration stated (js/gis-sources.js supply({region})), or null */
+    function regionOf(id){ const r=REG[id]; return (r&&typeof r.region==='function')?r.region:null; }
+    function payloadOf(id){ const r=REG[id]; if(!r) return null;
+      const feats=(typeof r.featuresIn==='function')||(typeof r.load==='function');
+      const vals=(typeof r.measure==='function')||(typeof r.sampleAt==='function');
+      return (feats&&!vals)?'features':(vals?'values':null); }
     function narrow(features,bounds){ if(!Array.isArray(features)) return null; if(!bounds) return features.slice();
       const b=bounds, w=b.getWest?b.getWest():b[0][0], e=b.getEast?b.getEast():b[1][0], so=b.getSouth?b.getSouth():b[0][1], n=b.getNorth?b.getNorth():b[1][1];
       return features.filter(f=>{ try{ return _geomInBox(f&&f.geometry,w,e,so,n); }catch(_){ return false; } }); }
@@ -720,7 +804,7 @@ export function layerRegistry(HOST){
        registers here. `declarationOf` (above) is a different question: what a SUPPLIER holds (gis-sources). A module
        that is also evaluated as a script (js/outbreaks.js) reads its own ids through this, since it cannot import. */
     const declaration=(id)=>layerDeclaration(String(id||''));
-    return { register, list, active:activeIds, state, sampleAt, featuresIn, featuresInSource, declarationOf, loaderOf, narrow, context, declaration };
+    return { register, list, active:activeIds, state, sampleAt, featuresIn, featuresInSource, declarationOf, loaderOf, payloadOf, regionOf, narrow, context, declaration };
   })();
 }
 
@@ -1637,7 +1721,7 @@ export function layerSidebar(HOST){
          data the standing rules forbid. Reported rather than papered over. `mod` is still real: the
          row lights when a plume IS on the map and a second press clears it. */
       { id:'sim.radiation', mod:'IntMapRadiation', ic:SVG_PLUME, en:'Radioactive plume simulator',
-        run:()=>{ try{ return !!(window.IntMapRadiation&&window.IntMapRadiation.openPanel()); }catch(_){ return false; } },
+        run:_lazy('radiation',()=>window.IntMapRadiation&&window.IntMapRadiation.openPanel()),
         label:()=>T('Radioactive plume simulator','放射性プルーム拡散シミュレーター','Simulator radioaktiver Fahnen','Симулятор радиоактивного шлейфа','Simulador de pluma radiactiva'),
         hint:()=>T('Disperse a release on the live wind field','実際の風の場で放出を拡散させる','Freisetzung im realen Windfeld ausbreiten','Выброс в реальном поле ветра','Dispersa una emisión con el viento real') },
       /* ══ (science-instruments) IF IT ERUPTED NOW — the volcanic-ash what-if (js/ash-plume.js) ══════
@@ -1687,7 +1771,7 @@ export function layerSidebar(HOST){
            sunrise, noon and sunset, and drew the cast shadows, for `GE().camera.getCenter()` — with
            「観測地点は地図の中心」 written above them. Naming the guess is not the same as not guessing, and
            the reader has now said so. It asks first, like the three rows above it. */
-        run:()=>_askPoint((ll)=>{ try{ if(!window.IntMapSun) return false; window.IntMapSun.open(ll); return true; }catch(_){ return false; } },'sim.sun'),
+        run:()=>_askPoint(_lazy('sun',(ll)=>{ if(!window.IntMapSun) return false; window.IntMapSun.open(ll); return true; }),'sim.sun'),
         label:()=>T('Sunlight hours & shade','日照時間・影の解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra'),
         hint:()=>T('Where the sun reaches, hour by hour','時間ごとに日が当たる場所','Wo die Sonne stündlich hinkommt','Куда солнце попадает по часам','Dónde llega el sol, hora a hora') },
       { id:'sim.nightSky', mod:'IntMapNightSky', ic:SVG_STAR, en:'Night sky from here',
@@ -1717,7 +1801,7 @@ export function layerSidebar(HOST){
          not. #R469 deleted that layer outright — 「⛰ 傾斜・斜面方向レイヤーは完全削除。」 — so there is
          no longer anything to exclude, and nothing here was ever a door to it. */
       { id:'sim.drone', mod:'IntMapDrone', ic:SVG_DRONE, en:'Drone flight planner',
-        run:()=>{ try{ return !!(window.IntMapDrone&&window.IntMapDrone.open()); }catch(_){ return false; } },
+        run:_lazy('drone',()=>window.IntMapDrone&&window.IntMapDrone.open()),
         label:()=>T('Drone flight planner','ドローン飛行計画','Drohnen-Flugplanung','Планировщик полёта дрона','Planificador de vuelo de dron'),
         hint:()=>T('Battery, clearance and no-fly zones over the real terrain','実地形の上で電池・対地高度・飛行禁止区域を解く','Akku, Bodenabstand und Sperrzonen über echtem Gelände','Батарея, высота над землёй и бесполётные зоны над реальным рельефом','Batería, margen sobre el suelo y zonas prohibidas en terreno real') },
       /* ══ ⚠⚠ (#R296) FOUR ROWS STOOD HERE AND NONE OF THEM DOES ANY MORE ═══════════════════════════

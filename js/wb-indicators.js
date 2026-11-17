@@ -26,7 +26,7 @@
  *  ⚠ A NEW READER IMPORTS THESE. It does not write the URL and it does not write a series code:
  *  tests/country-analysis-unify-checks.test.mjs fails on either anywhere else in js/.
  * ==========================================================================*/
-import { clockFor } from './proxy-fetch.js';
+import { clockFor, ownRelayUrl } from './proxy-fetch.js';
 import { readWithin, isUnobserved } from './fetch-deadline.js';
 import { IntMapLang } from './lang-registry.js';
 
@@ -171,10 +171,15 @@ export function makeWorldBankReader(deps) {
      Access-Control-Allow-Origin, while the same query with its parameters in another order — and every other series —
      came back fresh with `*`. The browser can only see that as a network failure, so GDP per capita (PPP) was blank for
      every reader until that copy expired. The API keys its cache on the address as written, not on the question.
-     So a read that met a NETWORK failure (an observed one — not a timeout, which is «could not observe», and not an
-     answer the host gave) asks the SAME question once more, its parameters written in the reverse order: a different
-     cache entry, an identical meaning. One retry, different from the first, recorded on the answer as `via`
-     (.agents/rules/one-pass-or-a-reason.md §5). Lapses if the World Bank's CDN starts varying its cache on Origin. */
+     ⚠ (worldbank-cors-relay) THE OTHER ADDRESS WAS REFUSED THE SAME WAY. MEASURED 2026-11-16: SP.POP.TOTL's query
+     and its reversed spelling were BOTH served from copies without the header (`CF-Cache-Status: HIT`), because a
+     copy is made by whoever asks first, and anyone who asks without an Origin makes one the page cannot read. A
+     second address is one more cache entry that can be in the same state; it changed where the refusal could come
+     from, not whether. So a read that met a NETWORK failure (an observed one — not a timeout, which is «could not
+     observe», and not an answer the host gave) asks the SAME address once more through our own relay
+     (supabase/functions/_shared/fetch-relay-policy.js, rule world-bank-indicator): the relay reads server-side, where
+     a copy without the header is an ordinary answer. One retry, different from the first, recorded on the answer as
+     `via` (.agents/rules/one-pass-or-a-reason.md §5). Lapses if the World Bank's CDN starts varying its cache on Origin. */
   function read(o) {
     const q = o || {};
     const base = 'https://api.worldbank.org/v2/country/' + encodeURIComponent(q.country || 'all') + '/indicator/' + encodeURIComponent(q.code) + '?';
@@ -182,19 +187,25 @@ export function makeWorldBankReader(deps) {
        not name it takes the catalogue's — a reader asking for GOV_WGI_CC.SC by code alone (js/wb-layers.js wbSeries) used to
        ask the default source and get nothing. */
     const source = q.source || ((WB_INDICATORS.find((I) => I.code === q.code) || {}).source) || 0;
-    const parts = ['format=json', source ? 'source=' + source : '', q.date ? 'date=' + q.date : '', q.mrnev ? 'mrnev=' + q.mrnev : '',
-      'per_page=' + (q.perPage || 400)].filter(Boolean);
-    const u = base + parts.join('&');
-    const second = base + parts.slice().reverse().join('&');
+    /* one expression, not a joined list: tests/own-fetch-relay-checks reads the address to know which relay rule it lands on */
+    const u = base + 'format=json' + (source ? '&source=' + source : '') + (q.date ? '&date=' + q.date : '')
+      + (q.mrnev ? '&mrnev=' + q.mrnev : '') + '&per_page=' + (q.perPage || 400);
     const scale = +q.scale || 1;
     const key = u + '#' + scale;
     if (kept.has(key)) return kept.get(key);
     const opts = q.idle ? { idle: true } : undefined;
     let via = null;
-    /* ⚠ both reads are written out against `u` / `second` — tests/stalled-fetch-and-surface-gauge-checks ⑦ traces a read's
+    /* ⚠ both reads are written out against `u` — tests/stalled-fetch-and-surface-gauge-checks ⑦ traces a read's
        address back to the World Bank literal to prove its clock is clockFor(); a helper taking the address as a parameter hid it */
     const p = slot(() => readWithin(u, clockFor(u) * scale, undefined, opts)
-      .catch((e) => { if (!(e && e.reason === 'network')) throw e; via = 'second-address'; return readWithin(second, clockFor(second) * scale, undefined, opts); })
+      .catch((e) => {
+        /* ownRelayUrl is called here, not injected — tests/own-fetch-relay-checks discovers a relay's callers through
+           their imports, and a rule with no discovered caller is refused as an open door nobody asked for */
+        const relay = e && e.reason === 'network' ? ownRelayUrl(u) : '';
+        if (!relay) throw e;
+        via = 'relay';
+        return readWithin(relay, clockFor(u, 'relay') * scale, undefined, opts);
+      })
       .then((r) => {
         const j = JSON.parse(r.text);
         if (!Array.isArray(j)) return { status: 'unavailable', rows: [], late: false };   /* the host answered, and not with the API's shape */

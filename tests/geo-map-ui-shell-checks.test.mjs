@@ -75,8 +75,13 @@ describe('§ #R298 · flat projection, the Atlas message tools', () => {
        answered nothing, `currentProj` stayed 'globe', the Globe button stayed lit over a flat map,
        `minZoom` stayed 0 and `renderWorldCopies` stayed at the construction value (false). Five
        600-px pans left the centre on 141.3°: the camera did not move at all. 「自由スクロールできない」. */
-    assert.match(b, /if\(\/\[\?&\]flat\\b\/\.test\(location\.search\)\)\{\s*\n?\s*if\(IntMapOS\.has&&IntMapOS\.has\('view\.proj\.flat'\)\) IntMapOS\.exec\('view\.proj\.flat'/,
+    /* (deep-tier-red) the `?flat` question is asked in ONE place, `openingProjection()`, because the view is
+       also built in that projection (js/app-body.js) — boot() and the constructor must give the same answer */
+    assert.match(b, /export function openingProjection\(\)\{\s*try\{ return \/\[\?&\]flat\\b\/\.test\(location\.search\)\?'flat':'globe'; \}/,
+      'the URL is read in one place');
+    assert.match(b, /if\(openingProjection\(\)==='flat'\)\{\s*\n?\s*if\(IntMapOS\.has&&IntMapOS\.has\('view\.proj\.flat'\)\) IntMapOS\.exec\('view\.proj\.flat'/,
       'the URL switch goes through the kernel command, not a second entrance');
+    assert.match(read('js/app-body.js'), /projection: ?openingProjection\(\)/, 'and the view is built in the projection it opens in');
     /* the invariant is READ before it is written — writing on every style event is #R297's oscillation */
     assert.match(b, /function _reassertFlatPan\(\)\{/);
     assert.match(b, /if\(c\.getRenderWorldCopies&&c\.getRenderWorldCopies\(\)\) return;/,

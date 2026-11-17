@@ -55,8 +55,14 @@ test('the flight simulator looks up, and the sky is the renderer’s', async ({ 
 
   // pull the nose up hard and hold it: the MAP must follow the pilot's line of sight past the vertical
   await page.evaluate(() => window.IntMapFlightSim._dbg.key('arrowdown', true));
+  /* ⚠ HOLD UNTIL THE NOSE IS PAST THE VERTICAL, NOT FOR A FIXED WALL-CLOCK SPAN. js/flight-sim.js `loop`
+     clamps each frame's dt to 0.1 s, so below 10 fps the aeroplane's own time runs slower than the
+     wall clock. MEASURED on the nightly deep tier (2026-11-01…14, software GL): 8 × 900 ms of wall time
+     reached only 111.6°–116.4° and the first attempt failed on 9 of 14 nights — the fixed span measured
+     the runner's frame rate, not where the map follows the pilot. The claim is the angle; the bound
+     below only stops a sim that never pitches up, and every sample still asserts the eye and the gap. */
   let best = 0, worstGap = 0;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 40 && best <= 120; i++) {
     await page.waitForTimeout(900);
     const s = await snap();
     best = Math.max(best, s.view);

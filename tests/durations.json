@@ -1,4 +1,5 @@
 {
+ "tests/gis-chain-audit.spec.js": 10,
  "tests/wave4-news.spec.js": 6,
  "tests/wave4-history.spec.js": 8,
  "tests/wave4-ux-mobile.spec.js": 22,
@@ -166,5 +167,6 @@
  "tests/atlas-live-stream.spec.js": 36,
  "tests/supporter-funnel.spec.js": 28,
  "tests/keyboard-and-offline.spec.js": 23,
- "tests/desktop-one-entry.spec.js": 11
+ "tests/desktop-one-entry.spec.js": 11,
+ "tests/atlas-cited-answers.spec.js": 22
 }

@@ -453,9 +453,13 @@ test('R302 ⑩ the model run is re-read when the axis is older than the window',
 /* spelling kept: browser script (js/map-ui.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R302 ⑮ the wind row reads the frame that is on the map', () => {
   const ui = noComments(read('js/map-ui.js'));
-  const row = /register\('wind',[\s\S]{0,900}?\n    register\('precip'/.exec(ui);
+  const row = /register\('wind',[\s\S]{0,1400}?\n    register\('precip'/.exec(ui);
   assert.ok(row, "the wind row must be findable");
-  assert.match(row[0], /window\.Wind\.sampleAt\(x,y\)/, 'the field on screen answers first');
+  /* (gis-chain-audit) the field is read through ONE helper that both of the row's roads (the point
+     readout and the GIS window) call — so the fact is: the row asks _windAt first, and _windAt IS
+     the field on screen. */
+  assert.match(ui, /const _windAt=\(x,y\)=>\{ try\{ return window\.Wind\.sampleAt\(x,y\);/, '_windAt is the field on screen');
+  assert.match(row[0], /measure:\(x,y\)=>\{ try\{ const w=_windAt\(x,y\);/, 'the field on screen answers first');
   assert.match(row[0], /return _om\('wind',x,y\);/, '…and Open-Meteo stays as the fallback');
   assert.match(row[0], /_windFld\(\)\?'ECMWF IFS HRES · Open-Meteo':'Open-Meteo'/,
     'the attribution says which of the two answered');

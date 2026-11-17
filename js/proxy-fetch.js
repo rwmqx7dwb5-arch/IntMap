@@ -145,7 +145,8 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
      had given this host by hand since #R69 (20 s), the only one the app had for it. Every reader of the host takes it
      from clockFor() now — js/stats-compare.js had three more hand-written 20 s and js/time-countries.js a 12 s, and
      tests/stalled-fetch-and-surface-gauge-checks ⑦ finds any read of a host with its own row that does not; it lapses if the API's cold
-     answers stop reaching past 6 s, or if the World Bank is ever routed through a relay of ours. */
+     answers stop reaching past 6 s. (worldbank-cors-relay) The World Bank IS now read through fetch-relay — only as the
+     retry after a network failure (js/wb-indicators.js); that read takes the relay rule's clock, clockFor(u, 'relay'). */
   const WORLDBANK_DIRECT_MS = 20000;
   const worldBank = (u) => /^https:\/\/api\.worldbank\.org\/v2\//.test(String(u || ''));
   const directMsFor = (u) => (gdeltRelayable(u) ? GDELT_DIRECT_MS : worldBank(u) ? WORLDBANK_DIRECT_MS : DIRECT_TIMEOUT_MS);

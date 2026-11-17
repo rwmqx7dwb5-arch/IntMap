@@ -445,7 +445,7 @@ test('R184 #1: every new module is in the import graph, the factory guard and ap
   const MODULES = [
     ['js/satellites-live.js', 'satellitesLive', true],
     ['js/satellite-detail.js', 'satelliteDetail', true],
-    ['js/drone-ops.js', 'droneOps', false],
+    ['js/drone-ops.js', 'droneOps', true],   /* (startup-weight) fetched with the planner */
     ['js/routing-ops.js', 'routingOps', false],
   ];
   for (const [file, factory, lazy] of MODULES) {

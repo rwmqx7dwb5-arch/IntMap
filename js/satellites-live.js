@@ -663,12 +663,17 @@ export function satellitesLive(HOST){
   function footprintRing(lng,lat,altKm,n){
     const half=Math.acos(R_EARTH/(R_EARTH+Math.max(1,altKm)));   /* radians at the Earth's centre */
     const out=[], N=n||128, la1=lat*D2R, lo1=lng*D2R;
-    for(let i=0;i<=N;i++){
+    for(let i=0;i<N;i++){
       const brg=i*2*Math.PI/N;
       const la2=Math.asin(Math.sin(la1)*Math.cos(half)+Math.cos(la1)*Math.sin(half)*Math.cos(brg));
       const lo2=lo1+Math.atan2(Math.sin(brg)*Math.sin(half)*Math.cos(la1),Math.cos(half)-Math.sin(la1)*Math.sin(la2));
       out.push([((lo2*R2D+540)%360)-180, la2*R2D]);
     }
+    /* CLOSED BY CONSTRUCTION, not by recomputing bearing 2π: sin(2π) is −2.4e-16, not 0, so the last
+       vertex came out a few ulps from the first — measured 4.8% of ISS-altitude rings and 33% at
+       2,800 km — and a GeoJSON linear ring's first and last positions must be IDENTICAL (RFC 7946
+       §3.1.6). tests/r184-satellites.spec.js ③ caught it as "the footprint ring must close". */
+    out.push(out[0].slice());
     return out;
   }
 

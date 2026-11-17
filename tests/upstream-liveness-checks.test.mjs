@@ -23,7 +23,7 @@ import { spawnSync } from 'node:child_process';
 
 import { classify, fetchChecked, UpstreamError } from '../scripts/lib/upstream.mjs';
 import { measureAll, transitions, declared, hostMatches, CONFIRM_RUNS } from '../scripts/upstream-liveness.mjs';
-import { freshnessOf, basisProblem, subjectOfPath } from '../scripts/data-governance.mjs';
+import { freshnessOf, basisProblem, subjectOfPath, dataSourceRows, builderDeclarations } from '../scripts/data-governance.mjs';
 import { roster, due } from '../scripts/data-refresh.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -191,8 +191,18 @@ test('⑤ every requested host declares a probe of itself, and a non-2xx expecta
    retried, so each case ends in milliseconds rather than after a back-off.
    The fake answer travels as DATA (an environment variable read by a fixed module), not as code
    spliced into the module's text — no case can change what the child executes. */
-const MOCK_FETCH = `const fake = JSON.parse(process.env.INTMAP_FAKE_UPSTREAM);
-globalThis.fetch = async () => new Response(fake.body, { status: fake.status, headers: { 'content-type': fake.contentType } });
+/* One answer for every request, or — with `byHost` — one per host (a host not listed has no DNS
+   name). Every URL asked is appended to `log` when one is given, so a test can say WHERE a builder
+   went as well as what it wrote. */
+const MOCK_FETCH = `import { appendFileSync } from 'node:fs';
+const fake = JSON.parse(process.env.INTMAP_FAKE_UPSTREAM);
+globalThis.fetch = async (url) => {
+  const u = String(url);
+  if (fake.log) appendFileSync(fake.log, u + '\\n');
+  const a = fake.byHost ? fake.byHost[new URL(u).hostname] : fake;
+  if (!a) throw new TypeError('fetch failed', { cause: { code: 'ENOTFOUND' } });
+  return new Response(a.body, { status: a.status, headers: { 'content-type': a.contentType } });
+};
 `;
 function runWithFakeUpstream(script, fake, sentinelRel) {
   const dir = mkdtempSync(join(tmpdir(), 'intmap-upstream-liveness-'));
@@ -233,6 +243,47 @@ test('⑥ a builder whose upstream does not answer writes nothing and exits non-
   r = runWithFakeUpstream('scripts/probe-gibs-range.mjs', R(403, 'forbidden', 'text/plain'), null);
   assert.notEqual(r.status, 0, r.out);
   assert.ok(readFileSync(gibs).equals(before), 'data/gibs-range.json was not written');
+});
+
+/* ⚠ (2026-11-16) THE CREDIT AND THE DATA PATH NAME ONE SIMBAD, AND IT IS THE ONE CDS STATES.
+   The credit link in js/reference-data.js and the builder's TAP both named `simbad.u-strasbg.fr`; on
+   2026-11-16 that alias left DNS and the production smoke (#R533) went red on the link, while the
+   builder — which nothing runs on a deploy — had been asking a host that no longer exists. The same
+   day the canonical `simbad.cds.unistra.fr` answered 404 to every SIMBAD path (CDS's incident) and
+   CDS named two mirrors, which answered the builder's queries. So: the credit row and the builder's
+   first endpoint are the SAME host, the builder goes there FIRST, and when it does not answer the
+   bundle is built from the next endpoint and says which. */
+test('⑥b SIMBAD: the credit row and the builder ask one canonical host first, and a dead canonical falls to a named mirror', () => {
+  const row = dataSourceRows(ROOT).rows.find((r) => /^SIMBAD\b/.test(r.n || ''));
+  assert.ok(row, 'js/reference-data.js credits SIMBAD');
+  const decl = builderDeclarations().find((d) => d.paths.includes('data/deep-sky.json'));
+  const rec = decl && decl.declaration && decl.declaration['data/deep-sky.json'];
+  assert.ok(rec && rec.url, 'scripts/build-deepsky.mjs declares where data/deep-sky.json comes from');
+  const canonical = new URL(rec.url).hostname;
+  assert.equal(new URL(row.u).hostname, canonical, 'the credit names the host the builder declares');
+
+  const M = 110;
+  const rows = Array.from({ length: M }, (_, i) => ['M ' + (i + 1), 'M ' + (i + 1), 10 + i / 10, 20, 'G', 1]);
+  const ok = R(200, JSON.stringify({ data: rows }));
+  const dead = R(404, '<!doctype html><title>Page unavailable — CDS</title>', 'text/html');
+  const log = join(mkdtempSync(join(tmpdir(), 'intmap-simbad-log-')), 'asked.txt');
+  try {
+    let r = runWithFakeUpstream('scripts/build-deepsky.mjs',
+      { log, byHost: { [canonical]: dead, 'simbad.cfa.harvard.edu': ok, 'simbad.idia.ac.za': ok } }, 'data/deep-sky.json');
+    assert.equal(r.status, 0, r.out);
+    const asked = readFileSync(log, 'utf8').trim().split(/\r?\n/).map((u) => new URL(u).hostname);
+    assert.equal(asked[0], canonical, 'the canonical host is asked first');
+    assert.ok(!asked.includes('simbad.idia.ac.za'), 'one mirror answered every query, so the next was never asked');
+    const built = JSON.parse(r.sentinel);
+    assert.equal(built.count, M);
+    assert.match(built.source, /read from simbad\.cfa\.harvard\.edu/, 'the bundle says which endpoint answered');
+
+    /* nothing answers: nothing is written, and every endpoint's reason is in the output */
+    r = runWithFakeUpstream('scripts/build-deepsky.mjs', { byHost: { [canonical]: dead, 'simbad.cfa.harvard.edu': dead, 'simbad.idia.ac.za': dead } }, 'data/deep-sky.json');
+    assert.notEqual(r.status, 0, r.out);
+    assert.equal(r.sentinel, 'SENTINEL', 'data/deep-sky.json was not written');
+    for (const h of [canonical, 'simbad.cfa.harvard.edu', 'simbad.idia.ac.za']) assert.ok(r.out.includes(h + ': '), 'the reason from ' + h + ' is reported');
+  } finally { rmSync(dirname(log), { recursive: true, force: true }); }
 });
 
 /* ── ⑦ ─────────────────────────────────────────────────────────────────────── */

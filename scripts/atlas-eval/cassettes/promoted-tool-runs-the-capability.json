@@ -76,12 +76,16 @@
               "tool": "map_measure"
             },
             {
+              "id": "map.compose",
+              "tool": "compose_map"
+            },
+            {
               "id": "data.gis",
               "tool": "data_gis"
             },
             {
-              "id": "map.compose",
-              "tool": "compose_map"
+              "id": "time.textMap",
+              "tool": "time_textMap"
             },
             {
               "id": "time.changes",

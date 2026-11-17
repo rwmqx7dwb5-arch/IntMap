@@ -47,4 +47,8 @@ export interface Chronos {
   intent(source?: string): Chronos;
   intended(): { source: string; at: number } | null;
   onIntent(fn: (i: { source: string; at: number }) => void): () => void;
+  /** a drawer's receipt: it has just handed the map the data of instant `when` (null = the present) */
+  drawn(layer: string, when: Date | number | null): Chronos;
+  /** the last receipt per layer and when the clock last moved, in performance.now() ms */
+  drawnState(): { movedAt: number; layers: Record<string, { iso: string | null; at: number }> };
 }

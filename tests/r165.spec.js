@@ -8,6 +8,9 @@
 // variable (applyTheme, updateToolPanel, distHTML) must observe the new value. If the setter did
 // not reach the closure variable, every assertion below stays on the old value — silently.
 import { test, expect } from '@playwright/test';
+/* (deep-tier-red) a language switch waits for the switch to land, not a fixed sleep — tests/helpers/settle.js `until`,
+   the same wait tests/r166.spec.js and tests/r167.spec.js use (the locale chunk is fetched on first use) */
+import { until } from './helpers/settle.js';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
 
@@ -88,12 +91,12 @@ test('R165 #4 LIVE getter: the kernel built in English answers in Japanese after
   // The #R162/#R163 proof, now for the kernel: L(en,jp,…) reads HOST.lang on every call. A captured
   // copy of currentLang would keep answering in English forever.
   await page.evaluate(() => ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
-  await page.waitForTimeout(700);
+  await until(page, (c) => (document.documentElement.getAttribute('lang') || '').toLowerCase().startsWith(c), 'ja', { timeout: 15000 });
   const r = await page.evaluate(() => window.IntMapConsole.dispatch({ type: 'theme', mode: 'dark' }));
   expect(r && r.ok).toBe(true);
   expect(r.html, 'the reply is localized through the live HOST.lang').toContain('テーマ');
   await page.evaluate(() => ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
-  await page.waitForTimeout(700);
+  await until(page, (c) => (document.documentElement.getAttribute('lang') || '').toLowerCase().startsWith(c), 'en', { timeout: 15000 });
   const r2 = await page.evaluate(() => window.IntMapConsole.dispatch({ type: 'theme', mode: 'auto' }));
   expect(r2 && r2.ok).toBe(true);
   expect(r2.html).toContain('Theme');

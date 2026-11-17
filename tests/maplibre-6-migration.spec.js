@@ -36,7 +36,45 @@ test.beforeAll(async ({ browser }) => {
     try { return !!window.__imap && window.__imap.isStyleLoaded() && window.IntMapGeoEngine.canDraw(); } catch (_) { return false; }
   }, null, { timeout: 60000 });
   await page.evaluate(installCameraRuler);
+  await page.evaluate(installProbePixels);
 });
+
+/* WHERE A PROBE WAS DRAWN, read off the canvas — ONE definition for ③ and ③b.
+   A probe's pixels are the ones that change when it is shown AND change back when it is hidden, on
+   pixels where the frames either side of it agree. MEASURED (nightly 2026-11-08 and 11-12, and locally
+   under 4× CPU throttling): a two-frame difference (hidden → shown) also caught whatever ELSE changed in
+   those few hundred ms — MapLibre's symbol placement fading labels in and out towards the horizon at
+   pitch 60, which goes on after map.loaded() is true and is spread over more frames on a loaded runner,
+   and vector tiles still arriving when the 15 s settle below gave up — 1,503 to 52,093 pixels whose
+   centroid lay anywhere ({x:172,y:65}, {x:532,y:38}) while the probe's own 269 sat on the pick.
+   Background change is a property of the frame pair, so it is set aside by the frame pair, not by
+   waiting longer: a label that faded between the two hidden frames differs between them and is not
+   counted. Read inside a render tick — the context has no preserveDrawingBuffer (tests/r203's method). */
+function installProbePixels() {
+  const m = window.__imap;
+  const snap = () => new Promise((res) => {
+    m.once('render', () => {
+      const cv = m.getCanvas(), W = cv.width, H = cv.height, c2 = document.createElement('canvas');
+      c2.width = W; c2.height = H; const g = c2.getContext('2d'); g.drawImage(cv, 0, 0);
+      res({ W, k: W / (cv.clientWidth || W), d: g.getImageData(0, 0, W, H).data });
+    });
+    m.triggerRepaint();
+  });
+  window.__probePixels = async (show, hide) => {
+    const before = await snap();
+    await show();
+    const on = await snap();
+    await hide();
+    const after = await snap();
+    const D = (a, b, i) => Math.abs(a.d[i] - b.d[i]) + Math.abs(a.d[i + 1] - b.d[i + 1]) + Math.abs(a.d[i + 2] - b.d[i + 2]);
+    let n = 0, sx = 0, sy = 0, unsteady = 0;
+    for (let i = 0, q = 0; i < on.d.length; i += 4, q++) {
+      if (D(before, after, i) > 120) { unsteady++; continue; }
+      if (D(on, before, i) > 120 && D(on, after, i) > 120) { n++; sx += q % on.W; sy += Math.floor(q / on.W); }
+    }
+    return { changed: n, unsteady, at: n ? { x: sx / n / on.k, y: sy / n / on.k } : null };
+  };
+}
 test.afterAll(async () => { await page?.close(); });
 
 test('① the adapter reads the transform the painter draws with, and isAnimating() sees a flight', async () => {
@@ -108,8 +146,7 @@ test('② the renderer\'s worker comes from this origin and tiles data', async (
 });
 
 /* ③ — the renderer's own drawing of an elevated point is the yardstick (see the header). WHERE it drew
-   is read off the canvas as the difference between two frames that differ only in the probe's
-   visibility, inside a render tick (the context has no preserveDrawingBuffer — tests/r203's method).
+   is read off the canvas by window.__probePixels (installProbePixels above).
    Not queryRenderedFeatures: measured in the z11→z12 cross-fade, MapLibre's hit-test finds a lifted
    symbol neither where it is drawn nor at its ground point, so it cannot be the yardstick there. */
 for (const c of [
@@ -121,14 +158,6 @@ for (const c of [
     const r = await page.evaluate(async (c) => {
       const m = window.__imap, E = window.IntMapGeoEngine;
       const wait = (ms) => new Promise((res) => setTimeout(res, ms));
-      const snap = () => new Promise((res) => {
-        m.once('render', () => {
-          const cv = m.getCanvas(), W = cv.width, H = cv.height, c2 = document.createElement('canvas');
-          c2.width = W; c2.height = H; const g = c2.getContext('2d'); g.drawImage(cv, 0, 0);
-          res({ W, H, k: W / (cv.clientWidth || W), d: g.getImageData(0, 0, W, H).data });
-        });
-        m.triggerRepaint();
-      });
       const lng = 139.767, lat = 35.681, id = 'mlv6-lift-probe';
       m.setProjection({ type: c.proj });
       m.jumpTo({ center: [lng, lat], zoom: c.z, pitch: c.p, bearing: 0 });
@@ -137,24 +166,20 @@ for (const c of [
       m.addLayer({ id, type: 'symbol', source: id, layout: Object.assign({ 'text-field': '■', 'text-size': 28, visibility: 'none',
         'text-allow-overlap': true, 'text-ignore-placement': true, 'symbol-height-offset': c.alt, 'symbol-height-anchor': 'absolute' },
         font ? { 'text-font': font } : {}), paint: { 'text-color': '#000000', 'text-halo-width': 0 } });
-      /* let everything else settle, so the only difference between the two frames is the probe */
+      /* let the rest settle — fewer pixels for __probePixels to set aside; not what its reading rests on */
       const t0 = performance.now();
       while (performance.now() - t0 < 15000 && !(m.loaded() && !m.isMoving())) await wait(100);
       await wait(800);
-      const off = await snap();
-      m.setLayoutProperty(id, 'visibility', 'visible');
-      let drawn = 0; const t1 = performance.now();
-      while (performance.now() - t1 < 15000) { drawn = m.queryRenderedFeatures({ layers: [id] }).length; if (drawn) break; await wait(100); }
-      await wait(400);
-      const on = await snap();
-      let n = 0, sx = 0, sy = 0;
-      for (let i = 0, p = 0; i < on.d.length; i += 4, p++) {
-        if (Math.abs(on.d[i] - off.d[i]) + Math.abs(on.d[i + 1] - off.d[i + 1]) + Math.abs(on.d[i + 2] - off.d[i + 2]) > 120) {
-          n++; sx += p % on.W; sy += Math.floor(p / on.W); }
-      }
+      let drawn = 0;
+      const px = await window.__probePixels(async () => {
+        m.setLayoutProperty(id, 'visibility', 'visible');
+        const t1 = performance.now();
+        while (performance.now() - t1 < 15000) { drawn = m.queryRenderedFeatures({ layers: [id] }).length; if (drawn) break; await wait(100); }
+        await wait(400);
+      }, async () => { m.setLayoutProperty(id, 'visibility', 'none'); });
       const lifted = E.coords.projectAltitude({ lng, lat }, c.alt), ground = m.project([lng, lat]);
       m.removeLayer(id); m.removeSource(id);
-      return { g: E.camera.globeness(), drawn, changed: n, at: n ? { x: sx / n / on.k, y: sy / n / on.k } : null,
+      return { g: E.camera.globeness(), drawn, changed: px.changed, unsteady: px.unsteady, at: px.at,
                lifted, ground: { x: ground.x, y: ground.y } };
     }, c);
     expect(r.drawn, 'MapLibre drew the elevated probe').toBeGreaterThan(0);
@@ -182,14 +207,6 @@ for (const c of [
     const r = await page.evaluate(async (c) => {
       const m = window.__imap, E = window.IntMapGeoEngine;
       const wait = (ms) => new Promise((res) => setTimeout(res, ms));
-      const snap = () => new Promise((res) => {
-        m.once('render', () => {
-          const cv = m.getCanvas(), W = cv.width, H = cv.height, c2 = document.createElement('canvas');
-          c2.width = W; c2.height = H; const g = c2.getContext('2d'); g.drawImage(cv, 0, 0);
-          res({ W, k: W / (cv.clientWidth || W), d: g.getImageData(0, 0, W, H).data });
-        });
-        m.triggerRepaint();
-      });
       const lng = 139.767, lat = 35.681, id = 'mlv6-orbit-probe';
       m.setProjection({ type: c.proj });
       m.jumpTo({ center: [lng, lat], zoom: c.z, pitch: c.p, bearing: 0 });
@@ -197,21 +214,16 @@ for (const c of [
       const t0 = performance.now();
       while (performance.now() - t0 < 15000 && !(m.loaded() && !m.isMoving())) await wait(100);
       await wait(800);
-      const off = await snap();
-      E.layers.setOrbit(id, { visible: true, opacity: 1, list: [{ lng, lat, lng2: lng, lat2: lat, altKm: c.alt / 1000, alt2Km: c.alt / 1000, rgba: [255, 0, 255, 255], size: 22 }] });
-      await wait(300);
-      const on = await snap();
-      let n = 0, sx = 0, sy = 0;
-      for (let i = 0, q = 0; i < on.d.length; i += 4, q++) {
-        if (Math.abs(on.d[i] - off.d[i]) + Math.abs(on.d[i + 1] - off.d[i + 1]) + Math.abs(on.d[i + 2] - off.d[i + 2]) > 120) {
-          n++; sx += q % on.W; sy += Math.floor(q / on.W); }
-      }
+      const px = await window.__probePixels(async () => {
+        E.layers.setOrbit(id, { visible: true, opacity: 1, list: [{ lng, lat, lng2: lng, lat2: lat, altKm: c.alt / 1000, alt2Km: c.alt / 1000, rgba: [255, 0, 255, 255], size: 22 }] });
+        await wait(300);
+      }, async () => { E.layers.setOrbit(id, { visible: false }); });
       const la = lat * Math.PI / 180, mx = (180 + lng) / 360;
       const my = (180 - (180 / Math.PI) * Math.log(Math.tan(Math.PI / 4 + la / 2))) / 360;
       const pick = E.layers.projectMercAlt(new Float64Array([mx, my, c.alt]));
       const ground = m.project([lng, lat]);
       E.layers.removeOrbit(id);
-      return { added: true, g: E.camera.globeness(), changed: n, at: n ? { x: sx / n / on.k, y: sy / n / on.k } : null,
+      return { added: true, g: E.camera.globeness(), changed: px.changed, unsteady: px.unsteady, at: px.at,
                pick: pick ? { x: pick[0], y: pick[1] } : null, ground: { x: ground.x, y: ground.y } };
     }, c);
     expect(r.added, 'the orbit layer can be added').toBe(true);

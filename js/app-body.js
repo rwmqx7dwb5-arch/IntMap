@@ -50,7 +50,7 @@ import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
 import { makeLayerFavs } from './layer-favs.js';
-import { makeProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
+import { makeProjection, openingProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
 import { STRIPE_DONATE, installSupporter, renderSupportCosts } from './supporter.js';   /* (supporter-funnel) where support goes, and when to mention it */
 import { readWorldBank, wbIndicator, wbIndicatorFor } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and its catalogue */
 import { installCapabilityKernel } from './atlas-capabilities.js';   /* (#R318) EAGER: the 124 capability descriptors, so a capability is discoverable before its module loads (§3/§10). The executor, the result shape and the state ledger are NOT — installCapabilityKernel installs IntMapOS.execute() as a thin await over an import(), because nothing needs the machinery until something actually runs. #R311's startup budget measured what mounting all of it eagerly costs a reader who never asks a question: +18.9 kB brotli. */
@@ -74,8 +74,6 @@ import { countriesUi } from './countries-ui.js';
 import { loadNECountries, neCountriesPath } from './ne-countries.js';   /* (data-studio) handed to the lazy data studio through IM_HOST — see the note at its getters */
 import { dashExtended } from './dash-extended.js';
 import { dataLayers } from './data-layers.js';
-import { droneNav } from './drone-nav.js';
-import { droneOps } from './drone-ops.js';
 import { elections } from './elections.js';
 import { elevationProfile } from './elevation-profile.js';
 import { feedback } from './feedback.js';
@@ -111,7 +109,6 @@ import { routing } from './routing.js';
 import { satProto } from './sat-proto.js';
 import { satellite } from './satellite.js';
 import { searchGeocode } from './search-geocode.js';
-import { popArea, radiation, sun, transitReach } from './sims.js';
 import { space } from './space-approach.js';
 import { timeAdmin1 } from './time-admin1.js';
 import { timeBorders } from './time-borders.js';
@@ -895,7 +892,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (#R178) even the primary view is built through the contract. It could not be while the engine
        was created inside this map's own 'load' handler; js/geo-engine.js is imported before anything
        else now, so `maplibregl` is named in exactly one file in the project. */
-    map=GE().ui.createView({ container:'map', renderWorldCopies:false, attributionControl:false,
+    /* (opening-projection) a flat session always wraps (#R297, js/map-projection.js applyFlatPanSetting), so a
+       `?flat` view is BUILT wrapping too — with copies off its first resize clamps the opening centre to ±85° */
+    map=GE().ui.createView({ container:'map', renderWorldCopies:openingProjection()==='flat', attributionControl:false,
       /* (#R18) MSAA antialiasing — DESKTOP ONLY. The 3D globe/terrain silhouette and the satellite
          horizon read jagged without it; MSAA smooths every polygon + terrain edge for a clear quality
          jump WITHOUT dropping tile resolution (so quality up, nothing sacrificed — the user: "表示速度、
@@ -985,6 +984,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       /* ⚠ (#R498) THIS ONE STAYS A WIDTH TEST ON PURPOSE. Everything else #R498 moved onto
          `_imPhoneClass()` is a COST; this is a CAPABILITY, and how far a landscape phone can zoom
          in is not something to take away for speed without being asked. It was asked. Left at 19. */
+      /* (opening-projection) …and it is BUILT in the projection it opens in, or the centre above is clamped
+         to ±85° before the globe exists (js/map-projection.js openingProjection has the measurement) */
+      projection:openingProjection(),
       center:_openingCentre, zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
         sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']),tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
@@ -1088,13 +1090,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   viewControls(IM_HOST);
   /* (#R174) DRONE NAVIGATION (window.IntMapDrone). Reads the terrain through HOST's DEM sampler and draws
      through IntMapGeoEngine only; it owns no camera and installs exactly one map click handler, which
-     does nothing unless its own "add waypoint" mode is armed. See js/drone-nav.js. */
-  droneNav(IM_HOST);
+     does nothing unless its own "add waypoint" mode is armed. See js/drone-nav.js.
+     (startup-weight) fetched on demand — js/lazy-modules.js `drone`: nothing of it is drawn at boot, and every door
+     (the Tools row, Atlas, a shared link's `drone` state) asks the registry for it first. */
   /* (#R184) …and the operational layer on top of it (window.IntMapDroneOps): the wind field and the
      hazard sources that #R174 left as declared-but-unfilled seams, plus route comparison,
      return-to-home and the multi-aircraft conflict check. It registers itself INTO the planner, so
-     the planner keeps working unchanged if this file is absent. */
-  droneOps(IM_HOST);
+     the planner keeps working unchanged if this file is absent.
+     (startup-weight) fetched on demand — js/lazy-modules.js `droneOps`, which arrives with `drone`. */
   /* (#R175) the live-aircraft DETAIL CARD (window.IntMapAircraftPanel). js/data-layers.js reaches for it by
      name when an aircraft is clicked and falls back to the pinned tooltip if it is not there, so this is a
      pure addition to the traffic layer rather than a change to it. See js/aircraft-detail.js.
@@ -4084,8 +4087,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      stability (from temperature), scavenged by real precipitation (wet deposition), dry-deposited, and decayed by
      radioactive half-life. Rendered as an animated particle plume + concentration heatmap. Not an operational
      forecast — clearly labelled educational. ===== */
-  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  radiation(IM_HOST);
+  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. (startup-weight) fetched on demand — js/lazy-modules.js `radiation`. */
   /* ===== (#R84) 3-D ARC OVERLAY — a screen-space canvas that lifts a ground track off the map by REAL altitude so
      ballistic trajectories read as a dimensional arc (「地図にのっぺりではなく立体的な軌道」), coloured by altitude.
      MapLibre line layers can't be raised off the surface, so this projects each ground point every frame and
@@ -4151,8 +4153,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Real gridded-census data, not a country-share guess: the WorldPop Global Project population raster
      (~100 m grid, 2020) summed over the exact polygon by the WorldPop stats API (api.worldpop.org, CORS-open,
      async task polling). Rings are decimated to ≤80 vertices for the GET URL; results are cached per shape. */
-  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  popArea(IM_HOST);
+  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. (startup-weight) fetched on demand — js/lazy-modules.js `popArea`. */
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
   terrain(IM_HOST);
@@ -4167,8 +4168,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      and REAL cast shadows: OSM buildings in view are projected along the sun vector (length = height / tan(altitude))
      into ground-shadow polygons, and maplibre's 3D light is aimed from the sun so extrusions self-shade. Astronomy
      is the standard SunCalc solar-position algorithm. Keyless. ===== */
-  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  sun(IM_HOST);
+  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. (startup-weight) fetched on demand — js/lazy-modules.js `sun`. */
 
   /* ===== (#R91) TRANSIT ISOCHRONE — REACHABLE BY RAIL ("鉄道で1時間以内") — the area you can reach from a point
      within a time budget riding the REAL OSM rail network: fetch rail ways + stations (Overpass), build a welded
@@ -4176,8 +4176,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      budget is plotted (coloured by minutes) and a reachable-area hull (stations buffered by the leftover walk time)
      is drawn. Complements the drive/walk/cycle Valhalla isochrone. Keyless. ===== */
   /* (#R166) moved to js/sims.js. ⚠ (#R296) it still LOADS and has no row of its own: it is the
-     `transit` mode of the reachable-area panel (js/map-tools.js). Only the door moved. */
-  transitReach(IM_HOST);
+     `transit` mode of the reachable-area panel (js/map-tools.js). Only the door moved.
+     (startup-weight) fetched on demand — js/lazy-modules.js `transitReach`. */
 
   /* ⚠ (#R296) `disaster` is gone — 「4つのうち、放射性物質拡散シミュレーションを残し全削除」. Its
      fourth hazard only opened `IntMapRadiation`, which has its own row — and, now, its own panel. */
