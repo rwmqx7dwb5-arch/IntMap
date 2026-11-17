@@ -51,7 +51,6 @@
   ".map-search → 1000",
   ".search-result-card → 1500",
   "#ai-research-panel .tp-header → 6",
-  "@media(min-width:769px){ .map-frame → 1001",
   "body:not(.ws-mode) .map-frame .map-view-row.open .map-view-sets → 2",
   "#img-lightbox → 10000",
   ".compose-modal → 9999",

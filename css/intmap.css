@@ -1933,35 +1933,19 @@
     [data-theme="dark"] .map-view-group, [data-theme="dark"] .compass-btn{ background:rgba(28,28,30,0.62); border:1px solid rgba(255,255,255,0.06); }
     .map-search{ background:rgba(255,255,255,0.62); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); }
     [data-theme="dark"] .map-search{ background:rgba(28,28,30,0.62); }
-    /* ══ ⚠⚠⚠ (map-chrome-layout) THE MAP'S FLOATING CONTROLS HAVE ONE REFERENCE: THE PART OF THE MAP YOU CAN SEE ══════
-       「右サイドバーを開いた状態でブラウザのズームを大きくすると、検索バーと Chronos が崩れる。以前から何度も右サイドバー
-         開閉時のボタン類の問題があった。直すなら根本的に。」
-       Each control used to place itself against the WHOLE map canvas and then dodge the panels standing on it one by one:
-       `body.lsr-open … right:calc(var(--lsr-w) + …)` for four of them, two `left:calc(var(--sidebar-w) + …)` centring
-       rules for the search, and a JS watcher (js/mobile-ui.js) that measured both panels and the right-hand stack and
-       wrote `--ms-left` / `--ms-right` into a `position:fixed` pill. Every new state (a zoom, a resized panel, a language
-       with longer labels) was a case those rules did not know — MEASURED before this change at 1152×720 (= 125 %
-       zoom) with both panels open: the pill spanned 436–1138 px while the right panel began at 852, and
-       `elementFromPoint` at the Search button returned a layer tile; in solid mode Chronos began at 293 px, under the
-       left panel (which ends at 400).
-       ⚠ NOW ONE BOX KNOWS WHERE THE PANELS ARE AND NOTHING ELSE DOES. `.map-frame` (index.html) is the visible map:
-       its left edge is the frosted left panel's width while that panel stands on the canvas, its right edge the layer
-       panel's while it is open — the ONLY two rules in this file that place a floating control against a panel. Inside
-       it the controls know only their own frame, and the frame is a size container, so a zoom, a window width and
-       either panel opening or closing all arrive as the same single fact: «the frame's width changed».
-       ⚠ THE TOP ROW IS A GRID, so the search and the right-hand stack cannot overlap by construction: the stack's
-       column never goes below its own max-content, the search takes up to 380 px of what is left, and the empty
-       first column gives way first — centred while there is room, sliding left (never under the stack) when not.
-       ⚠ NARROW FRAMES CHANGE SHAPE, NOT PLACE (the container queries below). Only the narrowest tier rearranges.
-       ⚠ PHONE (≤768): `display:contents` — the box does not exist, its children keep the sheet layout they had.
-       ⚠ WS-MODE: the frame is the whole map window (no panel stands on it there) and the ws rules in
-       js/workspace.js keep pinning the pill and the stack with their own absolute positions, untouched. */
+    /* (map-chrome-layout) everything floating on the map sits in .map-frame = the visible map. Only its two inset rules
+       know the panels; it is a size container, so zoom, window width and panel open/close are one fact: its width changed.
+       Phone: display:contents. ws-mode: js/workspace.js pins as before. Why and what it replaced: dev-notes/2026-11-17-map-chrome-layout.md */
     .map-frame, .map-frame-bottom{ display:contents; }
     @media(min-width:769px){
       .map-frame{ display:grid; position:absolute; top:0; bottom:0; left:0; right:0; box-sizing:border-box; padding:10px;
-        /* the frame IS the controls' layer: one level above the band's base (#R253 — a sidebar drops to
-           --z-controls while a floating panel is in use, and must then be below what is in this frame) */
-        z-index:calc(var(--z-controls) + 1); pointer-events:none;
+        /* ⚠ NO z-index. The frame places; it does not layer. Each control keeps its own z and competes with the
+           panels and cards outside the frame exactly as before (#R253's band, js/ui-stack.js front marks). MEASURED:
+           with a z-index here the frame was a stacking context, the front mark climbed to it (front-mark-outer-
+           context), and the whole frame rose to 2650 — Chronos's year rail then covered the route panel's «Clear
+           route». A size container is neither a stacking context nor a containing block for fixed boxes in
+           Chromium (measured on a probe page), so without the z-index nothing here traps a child's z. */
+        pointer-events:none;
         container:map-frame / inline-size;
         grid-template-columns:minmax(0,1fr) minmax(0,380px) minmax(max-content,1fr); column-gap:12px; row-gap:4px;
         align-items:start; align-content:start;
@@ -1996,13 +1980,16 @@
        are the same in every tier, and the tiers change only what sits in them — the folded pill stands centred in its
        column instead of stretching across it, and the open one spans the empty column and its own. */
     @container map-frame (max-width:559px){
-      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text){ padding:3px; justify-self:center; }
-      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text) input{ flex:0 0 0; width:0; padding:0; opacity:0; }
-      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text) #ms-btn{ padding:5px 8px; display:flex; align-items:center; }
-      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text) #ms-btn .ms-btn-t{ display:none; }
-      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text) #ms-btn .ms-ico{ display:block; width:16px; height:16px; }
-      /* open (typing, or holding text): the field takes everything left of the stack */
-      body:not(.ws-mode) .map-frame > .map-search:is(:focus-within,.has-text){ grid-column:1 / 3; }
+      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))){ padding:3px; justify-self:center; }
+      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) input{ flex:0 0 0; width:0; padding:0; opacity:0; }
+      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn{ padding:5px 8px; display:flex; align-items:center; }
+      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-btn-t{ display:none; }
+      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-ico{ display:block; width:16px; height:16px; }
+      /* open (typing, a result in hand, or holding text): the field takes everything left of the stack.
+         ⚠ NOT :focus-within. The press that opens the field focuses the BUTTON on pointerdown; if that opened the pill,
+         the button would move before pointerup and the click — which is what puts the caret in the field
+         (js/app-body.js wireMapSearch) — would land on the map. MEASURED in the narrowest tier: focus stayed on #ms-btn. */
+      body:not(.ws-mode) .map-frame > .map-search:is(.has-text,:has(:focus:not(#ms-btn))){ grid-column:1 / 3; }
       body:not(.ws-mode) .map-frame .map-view-menu{ display:flex; }
       body:not(.ws-mode) .map-frame .map-view-row{ position:relative; }
       body:not(.ws-mode) .map-frame .map-view-sets{ display:none; }
@@ -2015,10 +2002,10 @@
        button stays in the top row at the left, and an open search takes the whole row while the stack steps down
        one row under it. */
     @container map-frame (max-width:359px){
-      body:not(.ws-mode) .map-frame > .map-search:not(:focus-within):not(.has-text){ grid-column:1 / 3; justify-self:start; }
+      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))){ grid-column:1 / 3; justify-self:start; }
       body:not(.ws-mode) .map-frame #map-tools-group{ flex-direction:column; align-items:stretch; }
-      body:not(.ws-mode) .map-frame > .map-search:is(:focus-within,.has-text){ grid-column:1 / -1; }
-      body:not(.ws-mode) .map-frame:has(> .map-search:is(:focus-within,.has-text)) > .map-controls-top{ grid-row:2; }
+      body:not(.ws-mode) .map-frame > .map-search:is(.has-text,:has(:focus:not(#ms-btn))){ grid-column:1 / -1; }
+      body:not(.ws-mode) .map-frame:has(> .map-search.has-text, > .map-search :focus:not(#ms-btn)) > .map-controls-top{ grid-row:2; }
     }
     /* (#R20) Frosted-glass news cards — Apple-style light frost instead of the intimidating solid
        dark-gray slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */

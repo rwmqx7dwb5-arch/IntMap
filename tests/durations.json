@@ -33,6 +33,7 @@
  "tests/landing-showcase.spec.js": 16,
  "tests/anonymous-usage-counts.spec.js": 9,
  "tests/map-a11y-structure.spec.js": 13,
+ "tests/map-chrome-layout.spec.js": 46,
  "tests/history-prefetch-on-demand.spec.js": 18,
  "tests/cesium-globe-drag-cesium.spec.js": 49,
  "tests/heal-waits-for-inflight.spec.js": 8,

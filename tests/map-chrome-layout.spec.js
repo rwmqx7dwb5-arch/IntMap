@@ -191,6 +191,7 @@ test('⑥ the compact shapes are the same controls — the search button opens t
   expect(await page.getAttribute('#btn-view-menu', 'aria-expanded')).toBe('true');
   await page.click('#btn-view-flat');
   expect(await page.evaluate(() => document.querySelector('.map-view-row').classList.contains('open')), 'a choice closes the menu').toBe(false);
-  await page.click('#btn-view-globe').catch(async () => { await page.click('#btn-view-menu'); await page.click('#btn-view-globe'); });
+  await page.click('#btn-view-menu');
+  await page.click('#btn-view-globe');   /* put the projection back for whatever runs next */
   expect(diag.pageErrors, `pageerror(s):\n${diag.pageErrors.join('\n---\n')}`).toHaveLength(0);
 });

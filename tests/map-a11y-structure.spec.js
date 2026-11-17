@@ -158,8 +158,9 @@ test.describe('map-a11y-structure', () => {
     });
     await test.step('⑥ pressing a search result keeps it in front until the press is released', async () => {
     /* (front-mark-outer-context) the front-most mark went to the innermost positioned element under
-       the pointer — #ms-results — whose z-index cannot leave the z-indexed context it sits in (then the
-       fixed pill; since map-chrome-layout the map frame, which holds every floating control). The
+       the pointer — #ms-results — whose z-index cannot leave the z-indexed pill it sits in. (map-chrome-layout:
+       the map frame that holds the pill has NO z-index, so the mark must stop at the pill, not climb to the frame —
+       a frame carrying the mark rose whole and covered the route panel.) The
        pointerdown set im-float-front, a legend (1100) rose over the pill (1002), and the pointerup
        landed on the legend: measured in production 2026-09-30, a click on a result chose nothing.
        A real pointerdown is dispatched through the capture-phase handler, then the point is asked again. */
@@ -178,13 +179,15 @@ test.describe('map-a11y-structure', () => {
       it.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, clientX: x, clientY: y }));
       const after = document.elementFromPoint(x, y);
       const out = { beforeIsLegend: before === leg, afterIsItem: !!after && it.contains(after),
-                    marked: document.getElementById('map-frame').classList.contains('im-front') };
+                    marked: document.getElementById('map-search').classList.contains('im-front'),
+                    frameMarked: document.getElementById('map-frame').classList.contains('im-front') };
       leg.remove(); res.style.display = ''; res.innerHTML = '';
       document.body.classList.remove('im-float-front');
       document.querySelectorAll('.im-front').forEach((n) => n.classList.remove('im-front'));
       return out;
     });
-    expect(r.marked, 'the mark is on the context that stands in the band (the map frame), not on the list trapped inside it').toBe(true);
+    expect(r.marked, 'the mark is on the pill that stands in the band, not on the list trapped inside it').toBe(true);
+    expect(r.frameMarked, 'and not on the frame — the frame places the controls, it does not layer them').toBe(false);
     expect(r.afterIsItem, 'after the press, the pressed result is what is under the pointer').toBe(true);
     });
     await test.step('⑦ the window order is written as named layers and the browser paints it inside the band', async () => {
