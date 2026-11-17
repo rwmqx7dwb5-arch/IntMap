@@ -322,7 +322,7 @@ test('C ⑤ one number for the reporting window, read from the grouper; the card
   assert.equal(core.STORY.LINK_GAP_H, CLUSTER.timeWindowH);
   assert.equal(core.centreOf(['One headline only']), null, 'one headline has no majority to read');
   const story = read('js/news-story.js');
-  assert.match(story, /suggest\(stats, \{ centre: centreOf\(seedTitles\) \}\)/, 'the card does not tell suggest() the centre');
+  assert.match(story, /suggest\(stats, \{ centre: centreOf\(seedTitles\), placeName \}\)/, 'the card does not tell suggest() the centre and which words spell a place (news-quality-followup)');
   assert.match(story, /lineage\(rows, \{ seed: st\.seed && st\.seed\.id, terms: st\.terms \}\)/, 'the card does not read the lineage');
   assert.match(story, /data-nst="every"/, 'the events the lineage set aside are out of reach');
   assert.match(story, /news_event_articles\(news_articles\(title\)\)/, 'the rows do not carry their articles\' headlines');
