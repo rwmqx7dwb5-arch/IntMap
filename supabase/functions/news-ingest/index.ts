@@ -61,6 +61,7 @@ import {
   buildRegistry, parseFeed, toArticleRow, buildCandidateIndex, placeArticle,
   summariseEvent, clusterConfidence, sha256Hex, retentionCutoffs, RETENTION,
   eventsAgree, eventPairCandidates, INDEX, parseAiPlaces, GEO_AGREE_KM,
+  PLACE_RULE,
 } from "../_shared/news-ingest.js";
 import { DEFAULTS, buildIdf } from "../_shared/news-cluster.js";
 /* (news-intelligence) 出来事 × 企業。規則は 1 本（node のテストが同じファイルを評価する）、名簿は公開サイトが
@@ -647,7 +648,7 @@ async function stageAssign(db, budget, relocated) {
     const ids = [...evIds];
     for (let i = 0; i < ids.length; i += PAGE) {
       const { data, error } = await db.from("news_events")
-        .select("id,merged_into,status,manual_lock,category_override,location_override")
+        .select("id,merged_into,status,manual_lock,category_override,location_override,place_rule:location_evidence->>rule")
         .in("id", ids.slice(i, i + PAGE));
       if (error) throw new Error("news_events: " + error.message);
       for (const e of data || []) evMeta.set(e.id, e);
@@ -820,17 +821,38 @@ async function stageAssign(db, budget, relocated) {
       if (eid != null && relocated.has(aid) && !dirty.has(eid)) { dirty.add(eid); relocatedEvents++; }
     }
   }
+  /* (news-quality-followup) **代表地点の規則が変わったら、既存の出来事にも効かせる。** 選び直せるのは構成記事が
+     まだ残っている出来事（記事は 72 時間で消える）＝ store にある実 ID だけで、それは全部ここで数え直せる。
+     ⚠ 地点だけを書き直す（ruleOnly）。materially_updated_at は動かさない——記事は何も足されていない。
+     ⚠ 人が決めた地点（location_override・manual_lock）には触れない。 */
+  const ruleOnly = new Set();
+  for (const eid of store.keys()) {
+    if (eid < 0 || dirty.has(eid)) continue;
+    const m = evMeta.get(eid);
+    if (!m || m.merged_into || m.status !== "active" || m.manual_lock || m.location_override) continue;
+    if (m.place_rule === PLACE_RULE) continue;
+    dirty.add(eid); ruleOnly.add(eid);
+  }
   /* ⚠ **今この run で作った Event を数え直さない。** insert が完全な要約を持って書かれており、
      そのあと 1 件も足されていない。実測 (2026-08-23・本番): 外していたら 806 本の初回取り込みで
      **638 件の無駄な UPDATE 往復**が走り、割り当ての段が 15.1 秒かかっていた。 */
   const justCreated = new Set(realOf.values());
-  let updated = 0;
+  let updated = 0, replacedEvents = 0;
   const updates = [];
   for (const eid of dirty) {
     if (eid < 0 || justCreated.has(eid)) continue;
     const ev = store.get(eid);
     const meta = evMeta.get(eid) || {};
     if (!ev || !ev.members.length) continue;
+    if (ruleOnly.has(eid)) {
+      /* 予算を食い尽くさない: 残りが段の余白を切ったら、残りの選び直しは次の run に回す（版が古いまま残るので、必ず拾われる） */
+      if (budget.left() < 20000) continue;
+      const s = summariseEvent(ev.members, index.idf);
+      updates.push({ id: eid, rep_lng: s.rep_lng, rep_lat: s.rep_lat, rep_place_name_en: s.rep_place_name_en,
+        location_confidence: s.location_confidence, location_evidence: s.location_evidence, updated_at: new Date().toISOString() });
+      replacedEvents++;
+      continue;
+    }
     const s = summariseEvent(ev.members, index.idf);
     const row = {
       id: eid,
@@ -904,6 +926,7 @@ async function stageAssign(db, budget, relocated) {
     embedding_error: embedError,
     /* (#R404) 所属は動いていないが、地点が変わったので数え直した Event。 */
     resummarised_after_locate: relocatedEvents,
+    replaced_for_place_rule: replacedEvents,
   };
 }
 
