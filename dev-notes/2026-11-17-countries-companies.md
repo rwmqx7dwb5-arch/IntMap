@@ -1,6 +1,7 @@
 ---
 title: Countries と Companies——値・単位・年・出典を値と一緒に運び、順位の母集団を検索と切り離し、終わった所有関係と消滅国コードを企業アトラスから外す
 date: 2026-11-17
+pr: 1171
 newsen: Countries shows the year of each figure and compares countries at their latest values or at one year; GDP (PPP) is in dollars again. Ranks no longer change when you search, rows have a Details button, and the Companies search reaches every profile.
 newsjp: Countries の数値にその値の年を表示し、比較は「各国の最新値」と「同一年」を選べるように。比較の GDP（購買力平価）をドル表示に修正。検索で順位が変わらず、各行に「詳細」ボタン。Companies の検索は全収録企業に届きます。
 ---
