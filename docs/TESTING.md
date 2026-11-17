@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**166 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
+**167 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
 by re-measuring two deep entries that stood high — the ledger row `2026-10-08 atlas-product` in `scripts/test-budget.mjs` —
 paid for the four product specs of 2026-10-08: hist-product 8, mobile-product 26, live-news-product 8, sales-pro-audiences 15;
 the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); and
@@ -111,7 +111,7 @@ the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); a
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **161 spec files** — is the whole suite minus core
+**deep** tier — **162 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -142,6 +142,10 @@ bin *i* of *n* — the same glob, packed longest-first (the packing `ci-gates.mj
 in `.github/checks-cost.json` — and hands node those files. node's own `--test-shard` splits by count,
 and one run measured 11m16s / 8m32s / 4m52s because the heaviest files had landed together.
 
+- **A hang is named, not cancelled.** The runner gives every test `--test-timeout` = 3 × the slowest file in
+  the ledger (a caller's own value wins), so a stuck test is reported by name within that ceiling — without it
+  one hang held a shard until the job's `timeout-minutes` cancelled it with no name. Not `--test-force-exit`:
+  it ends files on an empty event loop while a test still awaits (it dropped 3 of 5 tests of one file).
 - The ledger decides **balance, never membership**: a file it does not know is charged the median and
   still runs; `node scripts/checks-shards.mjs --check` fails on a row for a file that is gone.
 - Each CI shard writes what it measured (`--timings "$RUNNER_TEMP/checks-timings.json"` — outside the
@@ -1051,7 +1055,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **161 spec files** against core's 5 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **162 spec files** against core's 5 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is

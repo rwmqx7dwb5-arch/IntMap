@@ -795,6 +795,9 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   動的 import）。`coverage().known` がその日付の割合と、同じ土地の二重主張の
                                   種類別の件数（data/hist-claims.json）を返し、Atlas の `time.coverage` が読む
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
+admin-present.js                  過去の日付の地方区分が**今と同じ所**を決める純関数（`makeRegion`・`clipLines`・
+                                  `ownPieces`・`rowIsToday`・`PRESENT_EPS_KM`）。time-admin1.js（区分）と time-borders.js（国境）がそこを現在の線（と名前）で描き、
+                                  記録の線をその外へ切る（docs/MAP-LAYERS.md §7.7）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
 hist-cities.js                    時計の年の**都市名** IntMapHistCities（6474都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
@@ -808,8 +811,11 @@ us-elections.js                   すべての米大統領選挙 IntMapUSElectio
 net-health.js                     インターネットの健康状態の**2行**（障害／到達性）IntMapNetHealth（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 net-health-live.js                その測定そのもの（**on-demand**・`__imNetHealth`・`PROVIDERS` が観測網の正本／信号の一覧は応答から発見／docs/INTERNET-HEALTH.md）
 elections.js                      各国の**国政選挙** IntMapElections（選挙区で塗り、凡例は議会全体・国と選挙を選ぶ／**国名も政党名も1つも持たない**——すべて data/elections/ から来る。正本 docs/ELECTIONS.md）
+                                  `atPoint`: 点を含む選挙区を各議院の最新の選挙から（index.json の `cover` で読むファイルを絞る）・`open`: 選んだ選挙で行からオンにしてそこへ着く
+election-cover.js                 境界の版ごとに「その多角形が触れる 1° の格子」——ビルドが書き、`atPoint` が読む 1 つの符号器（1 版 1 箱では日付変更線や海外領土で地球を覆った）
 war-fronts.js                     戦争の**6行**（WW1／WW2／朝鮮／ベトナム／中東／ユーゴ）IntMapWarFronts（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 war-layer.js                      戦争の層そのもの（**on-demand**・`__imWarFronts`・戦争ごとに1インスタンス／凡例に日スライダーと再生）
+                                  `atPoint`: 1 地点（または国——今の国土に問い、当時その土地を持った国を割合つきで・前身の国の記録と印して）がどの戦争でどの陣営に・いつからいつまで置かれたかと、日付つきの出来事——塗りと同じ規則
 war-geom.js                       戦線の線で国の輪郭を切る幾何 `WarGeom`（ビルドとブラウザが同じ1本を使う）
 industry-web.js                   産業の相関 window.IntMapIndustry
 outbreaks.js                      感染症アウトブレイク window.IntMapOutbreaks（**eager**——行と Atlas 命令が
@@ -842,6 +848,11 @@ news-events.js                    出来事単位の News（一覧・カテゴ�
                                   結果を読む。正本は docs/NEWS-EVENTS.md
                                   一覧の上に取り込みの健全性の 1 行（`news_ingest_health()`）を出し、
                                   国の日報と企業パネルが読む行を開く口（`openRow`・`columns`）を持つ
+event-past.js                     **この土地の過去**——ニュースの出来事の地点を、IntMap の歴史の記録に照らす節（出来事の詳細の
+                                  ボタンで取りに行く・Atlas `news.eventPast`）。治めた政体は place-history.js、記録上の戦争は war-layer.js
+                                  `atPoint`、国政選挙は elections.js `atPoint` が答え、ここは束ねて描くだけ。位置が国の代表点の出来事は地点の
+                                  年表を出さずに国の戦争と選挙だけ（粒度は news-cluster.js の `representativeKinds`）
+                                  （docs/NEWS-EVENTS.md §18）
 news-pulse.js                     「国ごとのニュースの脈」のレイヤー行と IntMapOS 命令と窓口
                                   `IntMapNewsIntel`（**eager**——行・名前・命令だけ。本体は news-intel.js）。
                                   ストーリーの扉（`IntMapNewsIntel.story`・命令 `newsstory.open`・`?story=`）と
@@ -967,7 +978,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  238 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  240 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -975,7 +986,8 @@ atlas-capabilities.js             **能力レジストリの正本**（#R318）�
 atlas-caps.js                     **能力ひとつ＝項目ひとつ**の仕組み — 項目（行・説明文 doc・方針 policy・事後条件 goal・
                                   チップ chips・schema・run）の検証と、そこから dispatch の表・schema の表・登録表の行・
                                   方針の表・カタログのブロック（catalogueBlocks）を導く関数、旧 switch の default
-                                  （unknownAction）、schema の組み立て関数
+                                  （unknownAction）、schema の組み立て関数、能力の `run` への扉 makeCapRunDoor（build はカーネルに各能力ファイルの
+                                  `run` 抜きの写しを渡し、`run` はチャンク `atlas-cap-runs` を初めて要るときに取る。`scripts/atlas-caps-split.mjs`）
 atlas-caps-modules.js             ⚠ 生成物（`node scripts/atlas-caps.mjs --write`）— 能力の名前空間ファイルの一覧（js/ から発見・遅延チャンクだけが読む）
 atlas-cap-account.js              Atlas の能力 — 自分のアカウントのデータの目録と書き出し（account.*。account-data-center）
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
@@ -1090,7 +1102,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全238を検索・到達可能 235）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全240を検索・到達可能 237）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1108,7 +1120,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
-atlas-schemas.js                  **引数の schema**（#R406）— 238能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 240能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1144,6 +1156,8 @@ atlas-answer-pipeline.js          Atlas — 台帳 → 1 回の呼び出し → 
                                   監査は回答を書き換えず・削らず・問い直さない。所見は Atlas が読んで判断する
 atlas-answer-render.js            Atlas — 構造化回答の描画（#R350）。引用記号と出典カードはレジストリからのみ生成し、
                                   モデルが書いた URL はリンクにしない
+atlas-answer-sources.js           Atlas — 道具を使った回答の出典。実行した道具の結果（meta.provenance）・描かれた国境の記録・
+                                  地図の出典表記から一覧を作り、返った値と等しい本文の数字に [n] を付け、線の出自カードと引用を開く
 ```
 
 ### 3.8 `js/` — 分析・パネル・シミュレーション
@@ -1364,6 +1378,9 @@ where-when.js                     **「どこ＋いつ」の読み方**（1 つ�
                                   マスタークロックへ合わせる（`applyWhen`）。検索欄・コマンドパレット・Atlas `time.whereWhen` が使う。使うときに読む
 atlas-where-when.js               Atlas `time.whereWhen` の実行——where-when.js の `interpret` の行から、選んだ行へ飛んで時計を合わせるか、
                                   複数の候補を番号つきで返す（何も動かさない）。atlas-cap-time.js が初めて使うときに読む
+atlas-text-map.js                 Atlas `time.textMap` の実行——読者の文章（このメッセージ・以前のメッセージ・テキスト添付）に Atlas が読んだ地名と
+                                  「いつ」の語句が**本当にあるか**を照合し、語句を暦で読めれば暦の読みを採り（漢数字・「とせ」も）、文が述べる時点に
+                                  だけ時計を合わせ、地名を `map.compose` の `era` で置く。atlas-cap-time.js が初めて使うときに読む
 wiki-lookup.js                    地物の Wikipedia 記事を**照会用の欄**（wikidata・name:<言語>・name:en…）から引く。表示用の `name`
                                   （多言語を並べた表記）は最後に、1 つの名前のときだけ。地名ポップアップの Wikipedia ボタンが使う
 place-dossier.js                  **地点カード**（地点プロファイル／いま、ここ）——1 地点について地図が持つもの（名前と行政区分・国・
@@ -2569,7 +2586,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 161 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 162 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
@@ -2723,7 +2740,9 @@ tests/
 
 置き場所とは別に、**起動時に読むか、押されてから取りに行くか**を決める。`js/lazy-modules.js` の
 `window.IntMapLazy` が遅延モジュールを持つ（フライトシム／Playground／地震／津波／地形と水／
-見通し線／ストリートビュー／夜空／Atlas カーネル）。
+見通し線／ストリートビュー／夜空／Atlas カーネル／ドローン計画／放射性物質拡散・日照・人口・鉄道到達圏ほか。
+一覧の正本は `LAZY_REGISTRY`）。Atlas カーネルの中でも、各能力の `run` は別チャンク（`atlas-cap-runs`）で、
+初めて能力が実行されるときに取る（`js/atlas-caps.js` の `makeCapRunDoor`）。
 
 - ファクトリを呼んだ瞬間に**共有 UI を作らない**こと（レイヤー行やタブは、押される前に現れてはならない）。
 - **入口が数えられること。** 右クリックメニュー・タブ・設定のボタン・Atlas の dispatch のどれから来ても

@@ -23,9 +23,12 @@ regression suite and the core browser tier, all on that one build → **only if 
 green, publish that same `dist/`** (the `pages` job) → post-deploy smoke against the live URL.
 (`dist/` since #R175; it published the exact committed tree via `git archive HEAD` until then.)
 A red `main` run publishes nothing — the site stays on the last green commit until a later push
-(or a re-run of the failed jobs) goes green. A newer push to `main` cancels the older run,
-publish included — but that alone does not keep production in order: a bot merge made with
-`GITHUB_TOKEN` starts no push run, so nothing cancels its parent's run, and the
+(or a re-run of the failed jobs) goes green. A newer push to `main` does **not** cancel the running
+one: the running commit finishes (and publishes if green), the newest push replaces any run still
+waiting, and runs next — so a burst of merges never leaves production behind for want of one
+finished run (measured 2026-11-15: seven merges cancelled each other and production stayed on a
+24-day-old commit; a pull request's newer push still cancels its older run). Order is kept
+separately: a bot merge made with `GITHUB_TOKEN` starts no push run, and the
 `pages-production` concurrency group serializes publishes without ordering them. So **every
 publishing job runs [`scripts/pages-publish-guard.mjs`](../scripts/pages-publish-guard.mjs)
 immediately before the publish**: it reads the live commit from the newest successful

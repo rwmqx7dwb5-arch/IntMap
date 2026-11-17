@@ -121,6 +121,8 @@ import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
 /* (border-provenance) a press on a subdivision line names the records on either side of it */
 import { registerReader, decimalsOf, rowKey, shapesAt } from './border-provenance.js';
+/* (hist-modern-admin) where a past date's subdivisions are today's, they are drawn by today's supply */
+import { makeRegion, clipLines, ownPieces, rowIsToday } from './admin-present.js';
 
 export function timeAdmin1(HOST) {
   const GE = () => IntMapGeoEngine;   /* the renderer, through the contract — never the raw handle */
@@ -440,6 +442,8 @@ export function timeAdmin1(HOST) {
           const dates = (f[10] != null) ? (d.dates && d.dates[f[10]]) : (gd && f[11] != null ? gd[f[11]] : null);
           const sem = (f[10] == null && f[12] != null && d.gapPools && d.gapPools[f[12]] && d.gapPools[f[12]].dateSemantics) || d.dateSemantics;
           feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, ...(dates ? { dates: dates, dateSemantics: sem } : {}), _lvl: f[1], _ix: i, _tier: cfg.key, _gap: (f[10] == null) ? 1 : 0, _gapIx: (f[11] == null) ? -1 : f[11], _gapSet: (f[12] == null) ? -1 : f[12],
+            /* (hist-modern-admin) the record says this unit is still in force today — admin-present.js */
+            _open: rowIsToday(f, (f[10] == null && f[12] != null && cfg.gaps) ? cfg.gaps[f[12]] : null) ? 1 : 0,
             /* (#R707) the collision order of the NAME — see sortKeyOf above. Stamped here, on the
                feature, because the layer must not have to know which bundle it is drawing. */
             [SORT_PROP]: sortKeyOf(areaOf(d, i)),
@@ -484,13 +488,15 @@ export function timeAdmin1(HOST) {
           const gi = (f.properties._gapSet >= 0) ? f.properties._gapSet : -1;
           const K = (gi >= 0 && cfg.gaps[gi]) ? viewOf(gi) : null;
           const m = (gi >= 0) ? marks[gi] : null;
-          if (K && m && f.properties._gapIx >= 0) {
-            const g = BC().lineGeom(K, f.properties._gapIx, m);
-            if (g) { feats.push({ type: 'Feature', geometry: g, properties: {} }); continue; }
+          const mine = [];
+          let g = (K && m && f.properties._gapIx >= 0) ? BC().lineGeom(K, f.properties._gapIx, m) : null;
+          if (g) mine.push({ type: 'Feature', geometry: g, properties: {} });
+          else {
+            g = f.geometry; if (!g) continue;
+            const polys = (g.type === 'Polygon') ? [g.coordinates] : (g.coordinates || []);
+            for (const poly of polys) for (const ring of poly) mine.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: ring }, properties: {} });
           }
-          const g = f.geometry; if (!g) continue;
-          const polys = (g.type === 'Polygon') ? [g.coordinates] : (g.coordinates || []);
-          for (const poly of polys) for (const ring of poly) feats.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: ring }, properties: {} });
+          for (const x of eraPart(f, mine)) feats.push(x);
         }
         return onceEach({ type: 'FeatureCollection', features: feats });
       }
@@ -516,6 +522,8 @@ export function timeAdmin1(HOST) {
          ⚠ Without the era module (a harness that runs this file alone) the whole polygons are handed over
          as before — the defect, not a silence; in the app js/time-borders.js is built first (js/app-body.js). */
       function labelsFor(fc) {
+        /* (hist-modern-admin) a unit still in force today is named by today's label (`ofm-admin1`), exactly as at Now */
+        if (presentOn()) fc = { type: 'FeatureCollection', features: (fc.features || []).filter(f => !(f.properties && f.properties._open)) };
         try {
           const TB = eraBorders();
           if (TB && typeof TB.labelFC === 'function') return TB.labelFC(fc, f => (f.properties && f.properties._ix != null) ? 'ix' + f.properties._ix : '', true);
@@ -529,10 +537,73 @@ export function timeAdmin1(HOST) {
         const feats = [];
         for (const f of (fc.features || [])) {
           const g = BC().lineGeom(_D, f.properties._ix, m, vtState === 'absent');
-          if (g) feats.push({ type: 'Feature', geometry: g, properties: {} });
+          if (g) for (const x of eraPart(f, [{ type: 'Feature', geometry: g, properties: {} }])) feats.push(x);
         }
         return onceEach({ type: 'FeatureCollection', features: feats });
       }
+
+      /* ══ (hist-modern-admin) TODAY'S LINE WHERE THE DATE'S UNITS ARE TODAY'S UNITS ══════════════════════════
+         「1950年みたいな、今と同じにもかかわらず都道府県境界がオリジナルのものかつ変な感じになってる」 — the rule
+         and its measurement are in js/admin-present.js. Here it is applied to every supply this tier draws:
+           · today's line (`cfg.now.nowLine`) is OpenFreeMap's `boundary` at this tier's levels — the very features
+             `ref-admin1` / `ref-admin2` draw at Now, read back out of the tiles on screen and kept where the
+             ground's units are all still in force today;
+           · the era lines of a unit still in force today (the tiles' open-ended lines, re-drawn through
+             `cfg.now.vtoSrc`; the bundle's and the gap records' outlines) are kept only where today's are not.
+         One predicate, applied once each way, so no ground is struck twice and none is left blank.
+         ⚠ ONLY ON EVIDENCE THAT TODAY'S TILES ARE THERE (`ofmLive`): offline, the era lines are drawn whole,
+         as before — a reader with no present-day supply keeps the record's line rather than losing it. */
+      let region = null, regionFC = null, ofmLive = false, presentNames = [], _presT = 0, vtF = null;
+      function regionOf() {
+        if (!cfg.now || !shownFC) return null;
+        if (regionFC !== shownFC) { regionFC = shownFC; region = makeRegion(shownFC.features || []); }
+        return region;
+      }
+      /* ⚠ the evidence first: the region is only built once today's tiles are known to be there, so a page with no
+         present-day supply (offline, a harness) never pays for it — and never re-reads the rings for it */
+      function presentOn() { if (!ofmLive) return false; const r = regionOf(); return !!(r && !r.empty); }
+      function eraPart(f, lines) {
+        if (!(f.properties && f.properties._open) || !presentOn()) return lines;
+        const r = region;
+        return clipLines(lines, (x, y) => !r.modernAt(x, y));
+      }
+      const EMPTY = () => ({ type: 'FeatureCollection', features: [] });
+      function presentNow() {
+        if (!cfg.now || !active || !shownFC) return;
+        try {
+          if (!ensure()) return;
+          const C = GE().coords, L = GE().layers;
+          const lv = ['all', ['>=', ['get', 'admin_level'], cfg.lo], ['<=', ['get', 'admin_level'], cfg.hi], ['!=', ['get', 'maritime'], 1]];
+          /* any boundary at all in the tiles on screen is the evidence the present supply is here */
+          const anyB = (C.querySourceFeatures('ofm', { sourceLayer: 'boundary' }) || []).length > 0;
+          const was = presentOn();
+          ofmLive = anyB;
+          const r = regionOf(), on = presentOn();
+          let now = [], vto, names = [];
+          if (on) {
+            now = clipLines(ownPieces(C.querySourceFeatures('ofm', { sourceLayer: 'boundary', filter: lv }) || []), (x, y) => r.modernAt(x, y));
+            if (cfg.now.names) {
+              const ids = new Set();
+              for (const p of (C.querySourceFeatures('ofm', { sourceLayer: 'place', filter: ['in', ['get', 'class'], ['literal', ['state', 'province']]] }) || [])) {
+                const c = p.geometry && p.geometry.coordinates; if (!c || p.id == null) continue;
+                if (r.inPresent(c[0], c[1])) ids.add(p.id);
+              }
+              names = Array.from(ids).sort((a, b) => a - b);
+            }
+          }
+          /* the tiles' open-ended lines — the native layer draws only the ended ones (vtAim) */
+          const open = vtF ? (C.querySourceFeatures(VT_SRC, { sourceLayer: VT_LAYER, filter: ['all', vtF, ['!', ['has', 'end_decdate']]] }) || []) : [];
+          vto = ownPieces(open);
+          if (on) vto = clipLines(vto, (x, y) => !r.modernAt(x, y));
+          L.setSourceData(cfg.now.nowSrc, { type: 'FeatureCollection', features: now });
+          L.setSourceData(cfg.now.vtoSrc, { type: 'FeatureCollection', features: vto });
+          const namesMoved = names.join(',') !== presentNames.join(',');
+          presentNames = names;
+          if (was !== on) { try { L.setSourceData(cfg.src, labelsFor(shownFC)); L.setSourceData(cfg.lnSrc, linesFor(shownFC)); _setGap(shownFC); } catch (_) {} }
+          if (namesMoved || was !== on) _applyNow();
+        } catch (_) {}
+      }
+      function schedulePresent() { if (!cfg.now) return; clearTimeout(_presT); _presT = setTimeout(presentNow, 60); }
       /* (hist-border-same-look) a boundary two units share is cut from both of their rings; strike it once,
          as `ref-admin1` does at Now (js/border-coast.js `strokedOnce`, which says what doubling looked like) */
       function onceEach(lfc) { try { return BC().strokedOnce(lfc); } catch (_) { return lfc; } }
@@ -562,13 +633,28 @@ export function timeAdmin1(HOST) {
          above it a genuinely offline reader waits with no line at all. EXPIRES if the tile host's
          latency changes character — the symptom is a coarse line that appears and then swaps. */
       const GRACE_MS = 6000;
+      /* (hist-modern-admin) a tier with a present-day counterpart draws its OPEN-ENDED tile lines through
+         `cfg.now.vtoSrc`, clipped where today's line stands in for them; the native layer keeps the rest */
+      const nativeVt = (f) => cfg.now ? ['all', f, ['has', 'end_decdate']] : f;
+      let _aimWait = false;
       function vtAim(y, m, dd) {
         try {
-          if (!ensure()) return;
           const t = _dec(y, m, dd);
+          /* ⚠ THE AIM IS KEPT EVEN WHEN THE LAYER CANNOT BE MADE YET. MEASURED 2026-11-16: a page opened on a
+             share link at 1950 (`tt=1950-06-15`) asked here while the style was still loading; `ensure()` said no,
+             the date was dropped, and the layer was later made by `apply()` with ensure()'s own default —
+             1900-07-01 — so the tile line drew 1900's boundaries under a 1950 clock until the reader moved the
+             clock. `ensure()` now makes the layer with the aim held here. */
+          if (vtAt !== t || !vtF) { vtF = _vtFilter(cfg.lo, cfg.hi, t, vtRev); }
+          if (!ensure()) {
+            /* one wait per aim — if the layer still cannot be made once the style can draw, the next clock move asks again */
+            if (!_aimWait) { _aimWait = true; whenStyleReady().then(() => { _aimWait = false; if (active && vtF && _imCanDraw()) { vtAt = null; vtAim(y, m, dd); } }, () => { _aimWait = false; }); }
+            return;
+          }
           if (vtAt === t) return;
           vtAt = t; if (!vtSince) vtSince = Date.now();
-          GE().layers.setFilter(cfg.vtLine, _vtFilter(cfg.lo, cfg.hi, t, vtRev));
+          GE().layers.setFilter(cfg.vtLine, nativeVt(vtF));
+          schedulePresent();
           vtPoll();
         } catch (_) {}
       }
@@ -593,7 +679,11 @@ export function timeAdmin1(HOST) {
       function vtProbe() {
         try {
           if (vtState === 'live' || !GE().layers.has(cfg.vtLine)) return vtState;   /* latched — stop paying for the query */
-          const n = (GE().coords.queryRenderedFeatures(undefined, { layers: [cfg.vtLine] }) || []).length;
+          /* (hist-modern-admin) the tiles answered if they hold ANY line at this date — the open-ended ones are
+             drawn by another layer (or by today's line), so asking only the native layer would read a fully
+             present-day view as «the tiles never came» and put the coarse bundle line up */
+          let n = (GE().coords.queryRenderedFeatures(undefined, { layers: [cfg.vtLine] }) || []).length;
+          try { if (!n && vtF) n = (GE().coords.querySourceFeatures(VT_SRC, { sourceLayer: VT_LAYER, filter: vtF }) || []).length; } catch (_) {}
           const was = vtState;
           if (n > 0) vtState = 'live';
           else if (vtState !== 'live' && vtSince && (Date.now() - vtSince) > GRACE_MS
@@ -638,7 +728,7 @@ export function timeAdmin1(HOST) {
              both are briefly visible. */
           if (ensureVTSource() && !GE().layers.has(cfg.vtLine)) GE().layers.add(Object.assign({
             id: cfg.vtLine, type: 'line', source: VT_SRC, 'source-layer': VT_LAYER,
-            filter: _vtFilter(cfg.lo, cfg.hi, _dec(1900, 7, 1)),
+            filter: nativeVt(vtF || _vtFilter(cfg.lo, cfg.hi, _dec(1900, 7, 1))),
             layout: { visibility: 'none', 'line-join': 'round' },
             paint: PAINT
           }, cfg.minZ ? { minzoom: cfg.minZ } : {}), before);
@@ -649,6 +739,15 @@ export function timeAdmin1(HOST) {
             layout: { visibility: 'none', 'line-join': 'round' },
             paint: PAINT
           }, cfg.minZ ? { minzoom: cfg.minZ } : {}), before);
+          /* (hist-modern-admin) today's line where the date's units are today's, and the tiles' open-ended lines
+             where they are not — the same paint once more (it is `ref-admin1`'s / `ref-admin2`'s, see PAINT) */
+          if (cfg.now) {
+            if (!GE().layers.hasSource(cfg.now.nowSrc)) GE().layers.addSource(cfg.now.nowSrc, { type: 'geojson', data: EMPTY(), attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' });
+            if (!GE().layers.hasSource(cfg.now.vtoSrc)) GE().layers.addSource(cfg.now.vtoSrc, { type: 'geojson', data: EMPTY(), attribution: VT_ATTR });
+            for (const [id, src] of [[cfg.now.nowLine, cfg.now.nowSrc], [cfg.now.vtoLine, cfg.now.vtoSrc]]) if (!GE().layers.has(id)) GE().layers.add(Object.assign({
+              id, type: 'line', source: src, layout: { visibility: 'none', 'line-join': 'round' }, paint: PAINT
+            }, cfg.minZ ? { minzoom: cfg.minZ } : {}), before);
+          }
           /* the era unit's NAME, in the style `ofm-admin1` uses for the present-day one —
              same zoom window, same size ladder, same colour-of-its-own-boundary (#R252),
              same dark halo on both basemaps.
@@ -689,7 +788,7 @@ export function timeAdmin1(HOST) {
       /* (chronos-prefetch) this tier's receipt: the instant whose units it has just handed the map (js/chronos.js `drawn`) */
       function _declare() { try { IntMapTime.drawn('subdivisions:' + cfg.key, shownWhen); } catch (_) {} }
       function apply(fc) {
-        const my = seq; shownFC = fc;
+        const my = seq; shownFC = fc; schedulePresent();
         if (cfg.onApply) { try { cfg.onApply(fc); } catch (_) {} }
         try {
           if (GE().layers.hasSource(cfg.src) && GE().layers.has(cfg.line)) {
@@ -710,6 +809,9 @@ export function timeAdmin1(HOST) {
       function clear() {
         active = false; shownKey = null; shownFC = null; shownWhen = null; vtSince = 0;
         clearTimeout(_pollT); _pollT = 0;
+        clearTimeout(_presT); _presT = 0; presentNames = []; region = null; regionFC = null;
+        if (cfg.now) for (const s of [cfg.now.nowSrc, cfg.now.vtoSrc]) { try { if (GE().layers.hasSource(s)) GE().layers.setSourceData(s, EMPTY()); } catch (_) {} }
+        if (cfg.now) for (const id of [cfg.now.nowLine, cfg.now.vtoLine]) { try { if (GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', 'none'); } catch (_) {} }
         try { GE().layers.setSourceData(cfg.src, { type: 'FeatureCollection', features: [] }); } catch (_) {}
         try { GE().layers.setSourceData(cfg.lnSrc, { type: 'FeatureCollection', features: [] }); } catch (_) {}
         try { if (cfg.gaps && GE().layers.hasSource(cfg.gapSrc)) GE().layers.setSourceData(cfg.gapSrc, { type: 'FeatureCollection', features: [] }); } catch (_) {}
@@ -774,13 +876,14 @@ export function timeAdmin1(HOST) {
           if (active && _imCanDraw() && !GE().layers.has(cfg.line)) {
             ensure(); const fc = cache.get(shownKey);
             if (fc) { try { GE().layers.setSourceData(cfg.src, labelsFor(fc)); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); } catch (_) {} }
-            _applyNow();
+            schedulePresent(); _applyNow();
           }
         } catch (_) {}
       }
 
       return {
         cfg, load, go, clear, refreshLines, relocalize, reassert, ensure, vtProbe, vtState: () => vtState,
+        schedulePresent, presentNames: () => presentNames, presentOn,
         setActive: v => { active = v; }, isActive: () => active, key: () => shownKey,
         fc: () => shownFC, when: () => shownWhen, data: () => _D,
         geom: ix => { try { return _D ? geomOf(_D, ix) : null; } catch (_) { return null; } },
@@ -859,11 +962,16 @@ export function timeAdmin1(HOST) {
        there are or which ordinal is which: a row says its record by column 12, and the record says
        what it is by its entry. */
     const GAPS = HIST_ADMIN_GAPS;
+    /* (hist-modern-admin) `now` — the tier has a present-day counterpart drawn at Now (`ref-admin1` at levels 3-4,
+       `ref-admin2` at 5-6), so where its units are today's, today's line and (first tier) today's names stand in.
+       The third tier has none: levels 7+ are not drawn at Now, so there is no «today's line» to hand it to. */
     const T1 = makeTier({ key: 'a1', file: 'data/hist-admin1.js', global: '__HISTADM1', set: 'ha', lo: 3, hi: 4,
                           gaps: GAPS, gapSrc: 'imta-gap-src', gapLine: 'imta-gap-line', onApply: () => _know.schedule(),
-                          src: 'imta-src', lnSrc: 'imta-ln-src', line: 'imta-line', vtLine: 'imta-vt-line', lbl: 'imta-lbl', deep: false, minZ: 0 });
+                          src: 'imta-src', lnSrc: 'imta-ln-src', line: 'imta-line', vtLine: 'imta-vt-line', lbl: 'imta-lbl', deep: false, minZ: 0,
+                          now: { nowSrc: 'imta-now-src', nowLine: 'imta-now-line', vtoSrc: 'imta-vto-src', vtoLine: 'imta-vto-line', names: true } });
     const T2 = makeTier({ key: 'a2', file: 'data/hist-admin2.js', global: '__HISTADM2', set: 'ha2', lo: 5, hi: 6,
-                          src: 'imta2-src', lnSrc: 'imta2-ln-src', line: 'imta2-line', vtLine: 'imta2-vt-line', lbl: 'imta2-lbl', deep: true, minZ: DEEP_Z });
+                          src: 'imta2-src', lnSrc: 'imta2-ln-src', line: 'imta2-line', vtLine: 'imta2-vt-line', lbl: 'imta2-lbl', deep: true, minZ: DEEP_Z,
+                          now: { nowSrc: 'imta2-now-src', nowLine: 'imta2-now-line', vtoSrc: 'imta2-vto-src', vtoLine: 'imta2-vto-line', names: false } });
     const T3 = makeTier({ key: 'a3', file: 'data/hist-admin3.js', global: '__HISTADM3', set: 'ha3', lo: 7, hi: 7,
                           src: 'imta3-src', lnSrc: 'imta3-ln-src', line: 'imta3-line', vtLine: 'imta3-vt-line', lbl: 'imta3-lbl', deep: true, minZ: DEEP3_Z });
     const TIERS = [T1, T2, T3];
@@ -993,7 +1101,7 @@ export function timeAdmin1(HOST) {
     /* (#R604) the tiles answer on their own schedule, so the question "did they?" is asked every
        time the map settles rather than once after a guessed delay. `vtProbe` latches, so this costs
        one queryRenderedFeatures per idle until the first tile paints and nothing afterwards. */
-    try { GE().events.on('idle', () => { if (active) { for (const t of TIERS) t.vtProbe(); _know.settle(); } }); } catch (_) {}
+    try { GE().events.on('idle', () => { if (active) { for (const t of TIERS) { t.vtProbe(); t.schedulePresent(); } _know.settle(); } }); } catch (_) {}
 
     /* ══ (#R564) THE PRESENT-DAY DEEPER TIER — the same kind of thing at the same zoom ═══════════
        `ref-admin1` (js/app-body.js) filters the live tiles to admin_level 3-4. Without this the map
@@ -1052,6 +1160,8 @@ export function timeAdmin1(HOST) {
              different resolutions, which is worse than either. */
           const stand = (t.vtState() === 'absent');   /* the bundle stands in ONLY on evidence */
           if (GE().layers.has(t.cfg.vtLine)) GE().layers.setLayout(t.cfg.vtLine, 'visibility', (on && traveling) ? 'visible' : 'none');
+          /* (hist-modern-admin) today's line and the tiles' open-ended lines: the same switch as the tile line */
+          if (t.cfg.now) for (const id of [t.cfg.now.nowLine, t.cfg.now.vtoLine]) if (GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', (on && traveling) ? 'visible' : 'none');
           if (GE().layers.has(t.cfg.line)) GE().layers.setLayout(t.cfg.line, 'visibility', (on && traveling && stand) ? 'visible' : 'none');
           /* (!) (#R669) NOT gated on `stand`. The tiles being alive is exactly why the bundle line is
              hidden, and exactly why these fifteen would vanish if they were hidden along with it. */
@@ -1066,7 +1176,14 @@ export function timeAdmin1(HOST) {
            still `none`, and the names returned 0.8-2.9 s after the boundaries — a layer and its own
            label visibly out of step. `window._applyBorders` has had this exact shape for
            `ofm-country` since #R94g. */
-        if (GE().layers.has('ofm-admin1')) GE().layers.setLayout('ofm-admin1', 'visibility', (namesOn && !traveling) ? 'visible' : 'none');
+        /* (hist-modern-admin) …and while travelling, today's name where the date's units are today's — the same layer,
+           narrowed to the names whose point lies in such a unit (`presentNames`, OpenMapTiles' own feature ids) */
+        if (GE().layers.has('ofm-admin1')) {
+          if (_a1Filter === undefined) { try { _a1Filter = GE().layers.getFilter('ofm-admin1') || null; } catch (_) { _a1Filter = null; } }
+          const pn = (traveling && T1.presentNames) ? T1.presentNames() : [];
+          try { GE().layers.setFilter('ofm-admin1', (traveling && pn.length && _a1Filter) ? ['all', _a1Filter, ['in', ['id'], ['literal', pn]]] : _a1Filter); } catch (_) {}
+          GE().layers.setLayout('ofm-admin1', 'visibility', (namesOn && (!traveling || pn.length)) ? 'visible' : 'none');
+        }
         /* (hist-coverage) the unknown ground follows the same box as the lines it stands in for */
         _know.visible(on && traveling);
         /* ⚠ AND SAY WHAT IS NOT THERE. A country drawn with no subdivision line is either a country
@@ -1080,6 +1197,7 @@ export function timeAdmin1(HOST) {
       } catch (_) {}
     };
     function _applyNow() { try { window._applyAdmin1(); } catch (_) {} }
+    let _a1Filter;   /* `ofm-admin1`'s own filter, read once from the layer (js/place-labels.js owns it) */
 
     /* ══ (#R564) THE DEEPER TIER IS FETCHED BY THE CAMERA, NOT BY THE CLOCK ═══════════════════════
        15.5 MB is not a cost a reader looking at a continent should pay for units that are not drawn
@@ -1347,7 +1465,7 @@ export function timeAdmin1(HOST) {
       const d = t.data(), reviewed = (d && Array.isArray(d.lines)) ? d.lines : [];
       for (const f of features || []) {
         const id = f && f.layer && f.layer.id;
-        if (id === t.cfg.vtLine) {
+        if (id === t.cfg.vtLine || (t.cfg.now && id === t.cfg.now.vtoLine)) {
           supply = 'tiles'; const p = f.properties || {}; const w = Number(p.osm_id);
           if (!isFinite(w) || seen.has(w)) continue; seen.add(w);
           const rv = reviewed.filter(x => Array.isArray(x.ways) && x.ways.indexOf(w) >= 0).map(x => ({ relation: x.id, edge: x.edge, raw: x.raw, at: x.at, wareki: x.wareki || null }));
@@ -1358,7 +1476,7 @@ export function timeAdmin1(HOST) {
       return { supply, ways };
     }
     registerReader({ id: 'era-subdivisions', family: 'subdivision',
-      layers: () => active ? TIERS.filter(t => t.isActive() && t.fc()).flatMap(t => [t.cfg.vtLine, t.cfg.line, t.cfg.gapLine].filter(Boolean)) : [],
+      layers: () => active ? TIERS.filter(t => t.isActive() && t.fc()).flatMap(t => [t.cfg.vtLine, t.cfg.now && t.cfg.now.vtoLine, t.cfg.line, t.cfg.gapLine].filter(Boolean)) : [],
       sidesAt: (lngLat, rDeg) => {
         if (!active) return [];
         const out = [];
@@ -1368,7 +1486,7 @@ export function timeAdmin1(HOST) {
       },
       lineFacts: (features) => {
         const ids = new Set((features || []).map(f => f && f.layer && f.layer.id));
-        const t = TIERS.find(x => ids.has(x.cfg.vtLine) || ids.has(x.cfg.line) || ids.has(x.cfg.gapLine));
+        const t = TIERS.find(x => ids.has(x.cfg.vtLine) || (x.cfg.now && ids.has(x.cfg.now.vtoLine)) || ids.has(x.cfg.line) || ids.has(x.cfg.gapLine));
         return t ? _provLine(t, features) : null;
       },
       date: () => { try { const w = lastWhen; if (w instanceof Date && !isNaN(w.getTime())) return { y: w.getFullYear(), m: w.getMonth() + 1, d: w.getDate(), exact: true }; if (w != null && isFinite(+w)) return { y: Math.round(+w), m: 7, d: 1, exact: false }; } catch (_) {} return null; } });
@@ -1391,6 +1509,8 @@ export function timeAdmin1(HOST) {
       /* (#R604) which supply is drawing the era line: 'unknown' (tiles asked, not yet seen),
          'live' (tiles measured painting) or 'absent' (the grace period passed with nothing, so the
          bundle's coarse line stands in). Read by tests/r530.spec.js, which cannot see a closure. */
+      /* (hist-modern-admin) today's province names standing in for this date's, and whether today's line is drawn */
+      presentNames: () => T1.presentNames(), presentOn: () => T1.presentOn(),
       tileState: () => (T1.vtState() === 'live' || T2.vtState() === 'live') ? 'live'
                      : (T1.vtState() === 'absent' ? 'absent' : T1.vtState()),
       deepZoom: () => DEEP_Z,

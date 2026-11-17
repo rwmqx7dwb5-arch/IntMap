@@ -38,7 +38,7 @@ export default [
     },
   },
   {
-    row: ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    ''],
+    row: ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    'radiation'],
     ui: { at: ['.lst-toolrow[data-act="sim.radiation"]', '.rad-go'] },
     science: 'radiation',
     /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
@@ -330,7 +330,7 @@ export default [
     },
   },
   {
-    row: ['sim.sunPosition',            'sun',            'shadow,shadows,sunlight,sunPosition,daylight,insolation',     'sim',     'sim',     'map.sun',                'map',                 'session', 'none',   'point',    ''],
+    row: ['sim.sunPosition',            'sun',            'shadow,shadows,sunlight,sunPosition,daylight,insolation',     'sim',     'sim',     'map.sun',                'map',                 'session', 'none',   'point',    'sun'],
     ui: { at: ['.lst-toolrow[data-act="sim.sun"]'] },
     science: 'sun',
     doc: [
@@ -422,7 +422,7 @@ export default [
     },
   },
   {
-    row: ['sim.sunHours',               'sunHours',       'shadeHours,terrainShadow,solarHours,insolationYear',          'sim',     'sim',     'map.sunhours',           'map',                 'session', 'none',   'point',    ''],
+    row: ['sim.sunHours',               'sunHours',       'shadeHours,terrainShadow,solarHours,insolationYear',          'sim',     'sim',     'map.sunhours',           'map',                 'session', 'none',   'point',    'sun'],
     ui: { at: ['#ctx-menu'] },
     science: 'sun',
     doc: [

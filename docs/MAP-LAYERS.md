@@ -1199,7 +1199,7 @@ Atlas の語（「平均寿命」）は組の**両方の行**に届く: 点け�
   ⚠ **クリック／ホバーの一覧に入っている**（地図の上では都市名と見分けがつかないので、答えないラベルは
   壊れた機能である）。4つの一覧（レイヤー別クリック・カーソル・厳密ヒット・パディング付きタップ）は
   `PLACE_LBL` / `ALL_LBL` から**導出**するので、片方だけ更新できない。
-  ⚠ **時間旅行中は隠れ、代わりに<b>その日付の区分名</b>（`imta-lbl`・`js/time-admin1.js`）が出る**（§7.7）。
+  ⚠ **時間旅行中は隠れ、代わりに<b>その日付の区分名</b>（`imta-lbl`・`js/time-admin1.js`）が出る**（§7.7）——**ただしその日付の区分が今と同じ土地では、この層がそのまま出る**（同節）。
   書体・文字色・ハローは `ofm-admin1` と同じ値をこの関数が**まとめて**決める——`imta-lbl` の
   `text-font` / `text-color` / `text-halo-*` はここが持ち、`text-field` は `js/time-admin1.js`、
   `visibility` は `window._applyAdmin1()` が持つ（1つの値に持ち主を2つ作らない）。
@@ -1583,6 +1583,19 @@ Atlas の語（「平均寿命」）は組の**両方の行**に届く: 点け�
   |---|---|---|---|
   | Now（ライブ／今年以降） | `cb-admin1` に従う | 非表示 | 非表示 |
   | 過去の日付 | **常に非表示** | `cb-admin1` に従う | `cb-names` に従う |
+
+  ⚠⚠⚠ **過去の日付でも、その時点の区分が今と同じ所は今と同じ線と名前で描く**（`js/admin-present.js`）。
+  その日付に在る単位の記録が**今も続いている**（束の行の終了年が 9999＝OpenHistoricalMap の終了日なし。または
+  記録自身が「どの行も今も在る区分の今日の輪郭」と述べる——`HIST_ADMIN_GAPS` の `todayOutline`、現代区分の写し）なら、その単位の境界はその日から変わっていないと記録自身が述べている。そこでは
+  現在と同じ OpenFreeMap の `boundary`（第1級 `admin_level` 3〜4・第2級 5〜6）を `imta-now-line` / `imta2-now-line`
+  に、名前は `ofm-admin1` そのもの（その土地にある名前の id だけに絞る）で描き、クリックも現在と同じになる。
+  **その後に変わった・廃止された単位**の近く（`PRESENT_EPS_KM`＝7 km 以内）と、記録の無い土地は従来どおり
+  その日付の記録の線（今と違う線を述べているのは記録だけ）。両者は同じ判定の表裏で切り分けるので、同じ土地を
+  2 本で引くことも、どちらも引かないことも無い。OpenHistoricalMap のタイル線のうち終了日の無いものは
+  `imta-vto-line` / `imta2-vto-line`（タイルから読み戻して同じ判定で切る）が描き、`imta-vt-line` は終了日のあるものだけ。
+  現在の線のタイルが読めない（オフライン）ときは何も差し替えず、記録の線をそのまま描く。第3級（`imta3-`）は
+  現在の地図に対応物が無いので対象外。7 km は 1950 年の関西で Natural Earth の写しと現在の線のずれを実測した最大値
+  （6.53 km・中央値 1.08 km）。
 
   ⚠⚠ **記録が黙っている土地は斜線で描く**（`imta-know-fill`・パターン画像 `imta-know-hatch`・
   ラベル `imta-know-lbl`。可視性は線と同じ `cb-admin1` ＋旅行中）。区分線の無い政体は「区分が無かった」
@@ -3160,7 +3173,13 @@ WW2 しか開かない利用者は残り5本の source を1つも払わない。
 とき `js/time-borders.js` が現代の国ポリゴンの上に敷き、`Now` に戻すと消す。source は
 `imtb-src`（ポリゴン）・`imtb-ln-src`（**描かれる境界線**）・`imtb-lbl-src`（名前の点）の3本、
 layer は `imtb-fill`（ほぼ透明なクリック対象）・`imtb-casing`（線の下の暗い縁）・`imtb-line`・`imtb-lbl`（改名・消滅した政体の名前）・
-`imtb-lbl2`（現代と同じ国の、現在の名前）の5本。表示・非表示はこの5本を1つの一覧（`IntMapTimeBorders.layerIds`）で回す。
+`imtb-lbl2`（現代と同じ国の、現在の名前）と、`imtb-now-line` / `imtb-now-casing`（下記）。表示・非表示はこれらを1つの一覧（`IntMapTimeBorders.layerIds`）で回す。
+
+⚠⚠⚠ **過去の日付でも、その後変わっていない国境は今と同じ線で描く**（`js/admin-present.js`・地方区分と同じ規則・§7.7）。CShapes の行が
+記録の最終日（2019-12-31）まで続いていれば、その翌日からこのファイル自身が現在の国境へ引き継ぐ（`modernAt`）ので、その政体の国境はその日から
+変わっていない。そこでは `borders-only-line` と同じ OpenFreeMap の `admin_level` 2 を `imtb-now-line` / `imtb-now-casing`（同じ layout と paint）に描き、
+`imtb-line` はそこから切る。その後に変わった政体から 7 km 以内と、OHM・時代地図などの記録だけの年は従来どおり記録の線。実測 1950 年のピレネー
+（1868 年から不変）で記録の線は現在の線から中央値 0.56 km・最大 8.25 km ずれていた。
 
 ⚠ **描線は現代の国境と同一。** `imtb-line` / `imtb-casing` の layout と paint は、`borders-only-line` / `borders-only-casing`・
 `coast-only-*` と同じ `js/border-style.js` の `BORDER_LAYOUT` / `BORDER_PAINT` / `BORDER_CASING_PAINT` から作る（色・幅・不透明度・

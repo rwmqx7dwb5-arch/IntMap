@@ -33,7 +33,28 @@ import { fetchChecked } from './lib/upstream.mjs';
 import { SIMBAD } from './lib/upstream-cadence.mjs';
 
 const OUT = path.join(process.cwd(), 'data', 'deep-sky.json');
-const TAP = 'https://simbad.u-strasbg.fr/simbad/sim-tap/sync';
+/* ⚠ (2026-11-16) THE SERVICE'S NAME IS THE ONE CDS STATES, AND CDS ALSO STATES WHERE ELSE IT ANSWERS.
+   This used to ask `simbad.u-strasbg.fr` — the University of Strasbourg's pre-merger alias — and on
+   2026-11-16 that name left DNS. The production smoke (#R533) went red on the credit link that named
+   it, and this builder had been asking a host that no longer exists. The canonical host is the one
+   CDS serves the service and its own notices from: `simbad.cds.unistra.fr`.
+   Measured the same day: that host resolves, but every /simbad/ path answers 404 «currently
+   unavailable» — CDS is in a cybersecurity incident (notice dated 2026-11-09 on simbad.cds.unistra.fr)
+   and names two MIRRORS of the same TAP service, at CfA Harvard (data ingested up to 2026-10-14) and
+   at IDIA South Africa. Both answered this file's ADQL with the same row counts (Messier 110 / 110,
+   the Messier distances 740 / 739).
+   So the endpoints are a declared ORDER, not a switch: the canonical service first, so the day CDS
+   comes back this builder is on it again without anyone editing anything, then the mirrors CDS
+   names. One build reads ALL its tables from ONE endpoint (positions and distances from two
+   databases ingested on different days would not be one snapshot), and the bundle's `source` says
+   which endpoint that was. js/reference-data.js credits the canonical host; tests/upstream-liveness-
+   checks.test.mjs holds the two to the same name. */
+const TAP = 'https://simbad.cds.unistra.fr/simbad/sim-tap/sync';
+export const SIMBAD_TAP = [
+  { url: TAP, by: 'CDS, Strasbourg' },
+  { url: 'https://simbad.cfa.harvard.edu/simbad/sim-tap/sync', by: 'the CfA Harvard mirror named by CDS' },
+  { url: 'https://simbad.idia.ac.za/simbad/sim-tap/sync', by: 'the IDIA (South Africa) mirror named by CDS' },
+];
 
 /* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
    npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
@@ -47,7 +68,7 @@ export const GOVERNANCE = {
        silent and the boolean 「表記が再配布の条件か」 is not answered either. */
     ...SIMBAD,
     /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
-    autoRefresh: 'four SIMBAD TAP queries, no key; every answer is checked (status, JSON, the data array) and the 80-object floor is asked before the write',
+    autoRefresh: 'four SIMBAD TAP queries, no key, all from one endpoint — CDS first, then the mirrors CDS names; every answer is checked (status, JSON, the data array) and the 80-object floor is asked before the write',
     builtBy: 'scripts/build-deepsky.mjs',
   },
 };
@@ -62,9 +83,9 @@ const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
    an empty body, a body that is not JSON, and a JSON body without the `data` array the TAP service
    returns (SIMBAD's error document is a VOTable, not JSON); only a dead answer is asked again.
    The whole build then exits non-zero and data/deep-sky.json is not touched. */
-async function adql(query){
+async function adql(tap, query){
   const body = new URLSearchParams({ REQUEST:'doQuery', LANG:'ADQL', FORMAT:'json', QUERY:query });
-  return fetchChecked(TAP, { method:'POST', body, headers:{ 'content-type':'application/x-www-form-urlencoded' } }, {
+  return fetchChecked(tap, { method:'POST', body, headers:{ 'content-type':'application/x-www-form-urlencoded' } }, {
     as:'json', attempts:4, backoffMs:2000,
     validate:(j)=> (j && Array.isArray(j.data)) ? true : 'no `data` array in the TAP answer',
   });
@@ -116,10 +137,12 @@ function medianPc(rows){
 
 const sig = (x,n)=> x===null||x===undefined ? null : Number(Number(x).toPrecision(n));
 
-const main = async () => {
+const build = async (tap, by) => {
+  const host = new URL(tap).hostname;
+  const adqlAt = (q) => adql(tap, q);
   /* 1 — every object SIMBAD indexes under a Messier number, with its position, type and size. */
-  process.stdout.write('SIMBAD: Messier … ');
-  const mess = await adql(`SELECT id.id AS ident, b.main_id, b.ra, b.dec, b.otype_txt, b.galdim_majaxis
+  process.stdout.write('SIMBAD ('+host+'): Messier … ');
+  const mess = await adqlAt(`SELECT id.id AS ident, b.main_id, b.ra, b.dec, b.otype_txt, b.galdim_majaxis
      FROM ident AS id JOIN basic AS b ON b.oid = id.oidref
      WHERE id.id LIKE 'M %'`);
   console.log(mess.data.length + ' rows');
@@ -127,9 +150,9 @@ const main = async () => {
 
   /* 2 — the named objects above. `IN` over the ident table so an alias resolves the same way the
         SIMBAD search box would resolve it. */
-  process.stdout.write('SIMBAD: named objects … ');
+  process.stdout.write('SIMBAD ('+host+'): named objects … ');
   const inList = EXTRA.map(s=>`'${s.replace(/'/g,"''")}'`).join(',');
-  const extra = await adql(`SELECT id.id AS ident, b.main_id, b.ra, b.dec, b.otype_txt, b.galdim_majaxis
+  const extra = await adqlAt(`SELECT id.id AS ident, b.main_id, b.ra, b.dec, b.otype_txt, b.galdim_majaxis
      FROM ident AS id JOIN basic AS b ON b.oid = id.oidref
      WHERE id.id IN (${inList})`);
   console.log(extra.data.length + ' rows');
@@ -152,8 +175,8 @@ const main = async () => {
 
   /* 3 — the published distance measurements, one query for each set. */
   const wantDist = async (where, label)=>{
-    process.stdout.write(`SIMBAD: distances (${label}) … `);
-    const j = await adql(`SELECT b.main_id, d.dist, d.unit
+    process.stdout.write(`SIMBAD (${host}): distances (${label}) … `);
+    const j = await adqlAt(`SELECT b.main_id, d.dist, d.unit
        FROM basic AS b JOIN mesDistance AS d ON d.oidref = b.oid
        WHERE ${where}`);
     console.log(j.data.length + ' measurements');
@@ -184,7 +207,7 @@ const main = async () => {
   const out = {
     v: 1,
     built: new Date().toISOString().slice(0,10),
-    source: 'SIMBAD astronomical database, Centre de Données astronomiques de Strasbourg (simbad.u-strasbg.fr). Positions and object types from `basic`; distances from the published measurements in `mesDistance`.',
+    source: 'SIMBAD astronomical database, Centre de Données astronomiques de Strasbourg, read from ' + host + ' (' + by + '). Positions and object types from `basic`; distances from the published measurements in `mesDistance`.',
     attribution: 'Deep-sky objects: SIMBAD, CDS, Strasbourg, France (Wenger et al. 2000, A&AS 143, 9). Please cite SIMBAD when this data is reused.',
     frame: 'ICRS J2000 right ascension and declination in degrees; distance in parsecs',
     method: 'Distance is the MEDIAN of every distance measurement SIMBAD carries for the object, converted to parsecs. `dn` is how many measurements that median is over and `q1`/`q3` are the quartiles — the spread between them is the real disagreement between published methods, not an error bar.',
@@ -197,9 +220,30 @@ const main = async () => {
      left the short file on disk for the next `git add` to pick up. 80 is the file's own floor: the
      Messier catalogue alone is 110 objects, so fewer than 80 rows is a query that did not finish,
      never a sky that shrank. */
-  if(rows.length < 80){ console.error(`only ${rows.length} objects — refusing to write ${OUT}`); process.exit(1); }
-  fs.writeFileSync(OUT, JSON.stringify(out));
-  console.log(`\n→ ${OUT}  (${rows.length} objects, ${withDist} with a published distance, ${(fs.statSync(OUT).size/1024).toFixed(0)} KB)`);
+  if(rows.length < 80) throw new Error(`only ${rows.length} objects from ${host} — refusing to write ${OUT}`);
+  return { out, rows, withDist };
+};
+
+/* One endpoint answers the whole build, or the next is asked from the start. The write happens once,
+   after an endpoint has answered every query and passed the floor; if none does, nothing is written
+   and the run exits non-zero with every endpoint's reason. */
+const main = async () => {
+  const why = [];
+  for (const { url, by } of SIMBAD_TAP) {
+    const host = new URL(url).hostname;
+    let got;
+    try { got = await build(url, by); }
+    catch (e) {
+      const m = String((e && e.message) || e);
+      why.push(host + ': ' + m);
+      console.warn('\nSIMBAD at ' + host + ' did not answer the build — ' + m);
+      continue;
+    }
+    fs.writeFileSync(OUT, JSON.stringify(got.out));
+    console.log(`\n→ ${OUT}  (${got.rows.length} objects, ${got.withDist} with a published distance, ${(fs.statSync(OUT).size/1024).toFixed(0)} KB, from ${host})`);
+    return;
+  }
+  throw new Error('no SIMBAD endpoint answered — data/deep-sky.json not written:\n  ' + why.join('\n  '));
 };
 
 main().catch(e=>{ console.error(e); process.exit(1); });

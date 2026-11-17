@@ -204,7 +204,10 @@ test('#R518 ② the selector reads the end exclusively, and csFC still reads its
     return { at: async (t, end) => job(S, { op: 'at', global, t, end }, () => {}) }; };
   const hb = { feats: [[{ en: 'OHM polity' }, 'Q1', 1860, 1, 1, 1871, 1, 18, []]] };
   const cs = { feats: [['CShapes polity', 999, 1860, 1, 1, 1871, 1, 18, []]] };
-  const make = new Function('d0', 'H0', 'H1', 'var _ymd=' + ymdDecl[1] + '; var _lnOf=new WeakMap();'
+  /* (hist-modern-admin) csFC reads the record's last year (whether a row is still in force on the day the app hands over to today's borders) — lifted, not restated */
+  const csMax = /const CS_MIN=\d+, CS_MAX=(\d+);/.exec(TBC);
+  assert.ok(csMax, 'js/time-borders.js no longer declares CS_MAX');
+  const make = new Function('d0', 'H0', 'H1', 'var _ymd=' + ymdDecl[1] + '; var CS_MAX=' + csMax[1] + '; var _lnOf=new WeakMap();'
     + 'var _hbGeomOf=function(){return null;},_hbLineOf=function(){return null;},_csGeomOf=function(){return null;},_csLineOf=function(){return null;},_csD=d0,_hbH=H0,_csH=H1;'
     + 'var hnFor=function(){return null;}; var _csName=function(n){return n;}; var _lineFeat=function(g){return g;};\n'
     + 'async ' + liftFunction(TBC, 'hbFC') + '\nasync ' + liftFunction(TBC, 'csFC') + '\nreturn { hbFC: hbFC, csFC: csFC };');

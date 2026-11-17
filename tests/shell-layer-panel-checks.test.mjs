@@ -133,8 +133,10 @@ test('R296 ⑧ nothing lost a feature when four rows were removed', () => {
     assert.doesNotMatch(sims, new RegExp('export function ' + g + '\\('), g + ' is not exported by js/sims.js');
   }
   /* …and transitReach STAYS, because the reachable-area panel calls it */
-  assert.match(body, /^import \{[^}]*\btransitReach\b[^}]*\} from '\.\/sims\.js';/m, 'app-body imports the rail model factory');
-  assert.match(body, /(?<![\w.$])transitReach\(IM_HOST\)/, 'the rail model still loads');
+  /* (startup-weight) fetched on demand: the registry loads js/sims.js and instantiates the factory, and the panel asks for it first */
+  const lazy = readFileSync(new URL('../js/lazy-modules.js', import.meta.url), 'utf8');
+  assert.match(lazy, /\btransitReach: \{ publishes: 'IntMapTransitReach', load: \(\) => import\('\.\/sims\.js'\)/, 'the registry fetches the rail model factory');
+  assert.match(lazy, /\bm\.transitReach\(IM_HOST\)/, 'the rail model still loads');
 });
 }
 

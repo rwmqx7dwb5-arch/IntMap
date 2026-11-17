@@ -22,12 +22,15 @@ import { resolveObserver, satelliteFacts } from './atlas-result-facts.js';
 import { isDisplay } from './layer-manifest.js';   /* (basic-display-not-layers) which rows are the map display, not layers */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
-/* (companies-elections-live) the National elections layer on, through its own Layers-panel row */
-async function _elecOn(E) {
-  if (E.isOn()) return true;
-  const box = document.getElementById('dl-elect');
-  if (box) { box.checked = true; const row = box.closest('.lyr-row'); if (row) row.classList.add('on'); }
-  try { return !!(await E.toggle(true)); } catch (_) { return false; }
+/* (companies-elections-live) the National elections layer on, through its own Layers-panel row.
+   (news-past-fixes) ON THE ELECTION THE CALL NAMES, chosen before the switch (js/elections.js `open`): switching on
+   first chose the newest election anywhere, fetched it and flew there, and the later select left the camera on it.
+   Returns false when the layer could not be switched on; null when the call names something the layer does not carry. */
+async function _elecOn(E, a) {
+  try { if (!(await E.load())) return false; } catch (_) { return false; }
+  const pick = _elecPick(E, a || {});
+  if (pick === null) return null;
+  try { return !!(await E.open(pick)); } catch (_) { return false; }
 }
 /* the election a call names: an election id, else a polity's newest; '' = keep the selection; null = not in the layer */
 function _elecPick(E, a) {
@@ -360,10 +363,9 @@ export default [
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, note = K.note;
       const E = window.IntMapElections; if (!E) return R(false, warn(L('The National elections layer is not available.', '国政選挙レイヤーを利用できません。')));
       if (a.on === false) { E.stop(); return R(true, note('✓ ' + L('Election time-lapse stopped', '選挙の再生を止めました')), { meta: { playing: E.isPlaying() } }); }
-      if (!(await _elecOn(E))) return R(false, warn(L('The National elections layer could not be switched on.', '国政選挙レイヤーをオンにできませんでした。')));
-      const start = _elecPick(E, a);
-      if (start === null) return R(false, warn(L('That country or election is not in the National elections layer.', 'その国・地域または選挙は国政選挙レイヤーにありません。') + ' (' + esc(E.polities().join(' ')) + ')'));
-      if (start) await E.select(start);
+      const on = await _elecOn(E, a);
+      if (on === null) return R(false, warn(L('That country or election is not in the National elections layer.', 'その国・地域または選挙は国政選挙レイヤーにありません。') + ' (' + esc(E.polities().join(' ')) + ')'));
+      if (!on) return R(false, warn(L('The National elections layer could not be switched on.', '国政選挙レイヤーをオンにできませんでした。')));
       const playing = E.play();
       return R(playing, playing ? note(icon('play') + ' ' + L('Playing the elections of this chamber in order', 'この議会の選挙を順に再生しています') + ' · ' + esc(E.current() || '')) : warn(L('This chamber has only one election in the record.', 'この議会の記録は 1 回の選挙だけです。')),
         { meta: { election: E.current(), playing, swing: E.swing(), freshness: E.freshness() } });
@@ -378,10 +380,9 @@ export default [
     schema: () => ({ type: 'object', properties: { election: str(), polity: str() } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note;
       const E = window.IntMapElections; if (!E) return R(false, warn(L('The National elections layer is not available.', '国政選挙レイヤーを利用できません。')));
-      if (!(await _elecOn(E))) return R(false, warn(L('The National elections layer could not be switched on.', '国政選挙レイヤーをオンにできませんでした。')));
-      const pick = _elecPick(E, a);
-      if (pick === null) return R(false, warn(L('That country or election is not in the National elections layer.', 'その国・地域または選挙は国政選挙レイヤーにありません。')));
-      if (pick) await E.select(pick);
+      const on = await _elecOn(E, a);
+      if (on === null) return R(false, warn(L('That country or election is not in the National elections layer.', 'その国・地域または選挙は国政選挙レイヤーにありません。')));
+      if (!on) return R(false, warn(L('The National elections layer could not be switched on.', '国政選挙レイヤーをオンにできませんでした。')));
       const sw = E.swing();
       if (!sw) return R(true, note(L('This is the first election of its chamber in the record — there is nothing before it to compare.', 'この議会の記録で最初の選挙なので、比べる前回がありません。')), { meta: { election: E.current(), swing: null } });
       return R(true, note(sw.comparable
@@ -398,10 +399,9 @@ export default [
     schema: () => ({ type: 'object', properties: { polity: str() } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, note = K.note;
       const E = window.IntMapElections; if (!E) return R(false, warn(L('The National elections layer is not available.', '国政選挙レイヤーを利用できません。')));
-      if (!(await _elecOn(E))) return R(false, warn(L('The National elections layer could not be switched on.', '国政選挙レイヤーをオンにできませんでした。')));
-      const pick = _elecPick(E, { polity: a.polity });
-      if (pick === null) return R(false, warn(L('That country or territory is not in the National elections layer.', 'その国・地域は国政選挙レイヤーにありません。')));
-      if (pick) await E.select(pick);
+      const on = await _elecOn(E, { polity: a.polity });
+      if (on === null) return R(false, warn(L('That country or territory is not in the National elections layer.', 'その国・地域は国政選挙レイヤーにありません。')));
+      if (!on) return R(false, warn(L('The National elections layer could not be switched on.', '国政選挙レイヤーをオンにできませんでした。')));
       const f = E.freshness() || {};
       const late = ((f.refresh && f.refresh.bodies) || []).filter(b => b.state !== 'current');
       return R(true, note((f.fetchedFrom === 'commit' ? L('Recorded', '記録日') : L('Fetched', '取得日')) + ' ' + esc(f.fetchedAt || '—') + ' · ' + esc(f.upstream || '')

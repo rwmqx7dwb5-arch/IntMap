@@ -23,7 +23,7 @@ import { openSupport, operatingFacts } from './supporter.js';   /* (supporter-fu
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 /* (map-postcard) the share panel's published face (js/map-ui.js `share`) — `share` and `postcard` both act through it */
-const shareApi = () => window.IntMapShare;
+export const shareApi = () => window.IntMapShare;   /* (atlas-cited-answers) also js/atlas-console.js — an answer's Cite takes the same link */
 
 export default [
   {
