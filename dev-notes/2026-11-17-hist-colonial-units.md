@@ -75,6 +75,11 @@ GitHub のダンプ `isawnyu/pleiades.datasets` の `data/rdf/time-periods.ttl` 
 - ⚠ 被覆の数字は計器の年（1900・1914・1938…）でしか測られない。植民地の図の年（1906・1922・1928・1937…）の増分は
   この表には出ない——`--year` で列挙して確かめた。
 
+- 配る資産の天井（`check:perf`）: `dist.total`・`dist.data` が約 8.5 MB 増えた（CI 実測 1,541,988.8 kB／1,187,732.6 kB）。
+  内訳は精密な輪郭の 2 記録（非営利側の束 444 行・16.2 MB の断片、復元 3,608 行）と非営利側の束そのもの（2.41→3.15 MB）、
+  `data/border-coast.js` の新しい環。どれも読者が拡大したとき・その年を開いたときにだけ取りに行く資産で、起動費用は
+  変わらない。ローカルの build から `node scripts/perf-budget.mjs --update` で超えた行だけを上げた。
+
 ## 5. 検査
 
 `tests/hist-colonial-units-checks.test.mjs`（6 件）・`check:histsurveys`・`check:histrecon`・`check:histfill`・
