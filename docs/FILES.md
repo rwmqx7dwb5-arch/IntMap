@@ -700,6 +700,9 @@ data-layers.js                    データレイヤーの目録＋エンジン�
 layer-pkg-subcables.js            **レイヤー・パッケージ** 海底ケーブル dl-subcables — 取得の梯子・描画の梯子・クリック情報・切替・不透明度
 layer-pkg-histurban.js            **レイヤー・パッケージ** 歴史上の都市人口 dl-histurban — 人口に比例した円（記載ごとに1つ）・
                                   名前と数値（記載年つき）のラベル・人口の推移カード。切替時に初めて data/hist-urban.json を取得
+layer-pkg-geopolitics.js          **レイヤー・パッケージ** 経済制裁 dl-sanctions・国連総会の採決 dl-unvotes・国境検問所 dl-crossings —
+                                  主体→国の弧と国カード／加盟国の塗り分け（記録投票 1 件・検索・前後送り）／開閉で色分けした点と通過条件カード。
+                                  規則は geopolitics-core.js。Atlas は whenPackage() で同じ描画に触る
 layer-pkg-radar.js                **レイヤー・パッケージ** RainViewer レーダー dl-radar — フレーム索引・再生（window._rvPlayer）・4 分ごとの更新・切替
 layer-pkg-thermal.js              **レイヤー・パッケージ** 火災・熱異常 dl-thermal — GIBS の日ごとの探査・24/48/72 h の重ね・再構築・不透明度
 layer-pkg-alliances.js            **レイヤー・パッケージ** NATO dl-nato・EU dl-eu・国防費 dl-milSpend（部品を共有する 1 族）— 加盟年の色と凡例・
@@ -810,6 +813,10 @@ hist-places.js                    Pleiades の独立した歴史地名 IntMapHis
 hist-urban.js                     歴史上の都市人口の**規則の正本**（純関数）。時刻 T に都市が示す数値（その年以前で最も新しい
                                   記載年の数値を、その年の窓の中でだけ）・人口の推移・名前での検索・収録基準・1 回だけの遅延取得。
                                   地図（layer-pkg-histurban.js）と Atlas（time.cityPopulation）とテストが同じ関数に訊く
+geopolitics-core.js               経済制裁・国連総会の採決・国境検問所の**規則の正本**（純関数）。リストの結び付け・弧、時刻以前の
+                                  最後の採決・記号の二表記・検索・復号、最寄りの検問所・開閉・通過条件。地図・経路パネル・Atlas とテストが同じ関数に訊く
+opening-hours.js                  OpenStreetMap の opening_hours を、その地点の IANA 時間帯で、ある瞬間に評価する（純関数）。読める書式の範囲を
+                                  持ち、それ以外は「評価できない（unread）」をトークン付きで返す——開いている・閉まっているとは言わない
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
 net-health.js                     インターネットの健康状態の**2行**（障害／到達性）IntMapNetHealth（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 net-health-live.js                その測定そのもの（**on-demand**・`__imNetHealth`・`PROVIDERS` が観測網の正本／信号の一覧は応答から発見／docs/INTERNET-HEALTH.md）
@@ -985,7 +992,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  241 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  244 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1127,7 +1134,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
-atlas-schemas.js                  **引数の schema**（#R406）— 241能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
+                                  行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
+atlas-schemas.js                  **引数の schema**（#R406）— 244能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1750,6 +1759,13 @@ hist-urban.json                   歴史上の都市人口（Reba・Reitsma・Se
                                   各数値を出典の表・記載年・位置の確からしさ（1〜3）とともに保持し、補間しない。表示窓（記録自身の
                                   再記載の間隔から導出）・表をまたぐ同一性・hist-places / hist-cities への結び付きを含む。
                                   生成は scripts/build-hist-urban.mjs
+sanctions.json                    経済制裁の指定対象（米 OFAC SDN・英国制裁リスト・EU 金融制裁リスト）を「主体×国」に集計したもの。国は所在地→国籍→
+                                  船籍の順に結び付け、種類・根拠・措置・制裁体制・国連指定の実施数・指定日の範囲を持つ。国を特定できない対象は
+                                  リストの文言のまま unplaced に数える。生成は scripts/build-sanctions.mjs
+unga-votes/                       国連総会の記録投票（Voeten・Strezhnev・Bailey、CC0。第1〜77会期・1946〜2023年）。index.json が加盟国・会期・
+                                  全採決の記号・日付・主題・説明、s<NN>.json が会期ごとの投票（加盟国 1 人 1 文字）。生成は scripts/build-unga-votes.mjs
+border-crossings.json             OpenStreetMap の国境検問所（barrier=border_control）。記載のあるタグだけ（開所時間・通過できる人・通過手段・
+                                  検問の種類など）と、その地点の IANA 時間帯（timezone-boundary-builder・ODbL）。生成は scripts/build-border-crossings.mjs
 hist-cities.json                  時計の年の都市名の記録（6474 都市・9241 の歴史名・125 か国）。
                                   手書き＋Wikidata（CC0）＋OpenHistoricalMap（CC0）＋Pleiades
                                   （CC BY 3.0）の和集合で、行ごとに
@@ -2183,6 +2199,11 @@ scripts/
   build-hist-urban.mjs            Reba ほか（2016）の 3 つの CSV（figshare・md5 と sha256 を固定）→ data/hist-urban.json。
                                   表示窓は記録自身の「次に記載されるまでの間隔」の中央値、同一性は座標＋名前、他の地名記録とは
                                   相互最近傍＋共通名で結ぶ。--harvest は上流を読み直す、--check は固定記録との完全一致（check:histurban）
+  build-sanctions.mjs             米 OFAC（sdn.csv・add.csv）・英国制裁リスト・EU 金融制裁リスト → data/sanctions.json。国名は
+                                  lib/country-name-index.mjs（Natural Earth＋CLDR＋Wikidata の別名）に訊く。国連安保理リストは非営利条件のため読まない
+  build-unga-votes.mjs            Voeten ほかの UNVotes.csv（Dataverse v32・CC0）→ data/unga-votes/。COW 番号で名前書きの行を結ぶ
+  build-border-crossings.mjs      Overpass の barrier=border_control → data/border-crossings.json。各点に時間帯を点内判定で付ける
+  lib/country-name-index.mjs      上流が文章で書いた国名 → ISO 3166-1 alpha-3。2 つの記録が別のコードを与える名前は解かない
   histurban/reba-record.json      都市人口の固定した出典証拠。3 表の空でないセルを文字列のまま・取得日・URL・md5・sha256。
                                   手書きの都市一覧ではない
   build-hist-cities.mjs           手書きの記録（`scripts/histcities/*.mjs`）と、上流から導出した記録の

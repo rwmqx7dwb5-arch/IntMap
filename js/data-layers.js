@@ -962,7 +962,7 @@ export function dataLayers(HOST){
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[HOST.lang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:1,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:1,subcables:0.95,sats:0.95,histurban:0.85};   /* (#R122) Köppen climate default opacity = 100% */
+    const opacities={climate:1,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:1,subcables:0.95,sats:0.95,histurban:0.85,sanctions:0.85,unvotes:0.7,crossings:0.9};   /* (#R122) Köppen climate default opacity = 100% */
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -1397,7 +1397,7 @@ export function dataLayers(HOST){
          一つに」 — the same shape as the CO₂ pair: the total ($B) and the same quantity divided (%
          of GDP) were two rows of one series. `milMode` switches between them inside the legend, so
          both fills, both ramps and both legends stay exactly as they were. */
-      ['milSpend','lyrMilSpend'],['nato','lyrNATO'],['eu','lyrEU']
+      ['milSpend','lyrMilSpend'],['nato','lyrNATO'],['eu','lyrEU'],['sanctions','lyrSanctions'],['unvotes','lyrUnVotes'],['crossings','lyrCrossings']
     ].forEach(([id,key])=>{
       if(id==='__grp'){ const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=i18n[HOST.lang][key]||''; dd.appendChild(h); return; }
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+id;
@@ -1435,7 +1435,7 @@ export function dataLayers(HOST){
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
       const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','thermal','radar','sst','relief','sealevel',
         'gdppc','tfr','milSpend','snow','aod','nightsat','wind',
-        'precip','ships','planes','sats','hillshade','contours','subcables','nato','eu']);   /* (#R232) 'night' removed with its row */
+        'precip','ships','planes','sats','hillshade','contours','subcables','nato','eu','sanctions','unvotes','crossings']);   /* (#R232) 'night' removed with its row */
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
       /* (#R186) 「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」 — these two rows ship
          CHECKED. window.IntMapDefaultLayers is the single list; app-body dispatches the change event for
@@ -4528,7 +4528,7 @@ export function dataLayers(HOST){
     const _pkgs=Object.create(null);   /* name → { p: the promise of the instance, v: the instance once it has arrived } */
     let _kit=null;
     function packageKit(){
-      return _kit||(_kit=Object.freeze({ HOST, GE, setVis, beforeId, opacities, layerReads, satToast, tileLegends,
+      return _kit||(_kit=Object.freeze({ HOST, GE, setVis, beforeId, opacities, layerReads, satToast, tileLegends, wireDrag,
         whenStyleReady, addRaster, rowUntilObserved, autoUncheck,
         withCountries, addChoro, applyChoro, countryStats, cName, ensureMapTooltip, positionTooltip, isMobile, flagM, NATO,
         live:Object.freeze({ get lgdRadar(){ return lgdRadar; }, get lgdThermal(){ return lgdThermal; }, get lgdMil(){ return lgdMil; }, get lgdMilGDP(){ return lgdMilGDP; } }) }));

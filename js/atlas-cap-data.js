@@ -683,6 +683,45 @@ export default [
     /* the run lives beside the card (js/world-flows.js), fetched on first use, so the Atlas chunk does not carry it */
     async run(a, dctx, K) { const F = await import('./world-flows.js'); return F.atlas(a, K); },
   },
+  {
+    row: ['data.sanctions',             'sanctions',      'sanctionsList,designatedParties,sanctionedCountries',          'data',    'none',    'map.layerOption',        'explanation',         'session', 'none',   '',         ''],
+    ui: { at: ['#dl-sanctions'] },
+    /* (geopolitics-layers) WHO SANCTIONS WHOM — the designated-party lists of the U.S. (OFAC SDN), the UK (UK Sanctions List) and the
+       EU (FSF), as data/sanctions.json holds them (scripts/build-sanctions.mjs) and the Sanctions layer draws them. The rule is
+       js/geopolitics-core.js; the run is js/geopolitics-atlas.js, fetched on first use. Read-only unless `show`. */
+    doc: [
+      { in: 'country', at: 610, text: '{"type":"sanctions","country"?:str (a country name in English or Japanese, or ISO alpha-3 / alpha-2; omitted = the countries each list links most parties to),"authority"?:"US"|"UK"|"EU" (omitted = all three),"top"?:int,"show"?:bool (switch on the Sanctions layer and draw the lines — for one country when given)} = SANCTIONS / 経済制裁 — WHICH AUTHORITY DESIGNATES WHOM, AND WITH WHAT: the designated-party lists of the United States (OFAC Specially Designated Nationals — blocking), the United Kingdom (UK Sanctions List — the measures per party: asset freeze, travel ban, trust services, shipping, arms embargo …) and the European Union (financial sanctions list — freezing of funds), as they stand on the day IntMap read them. For a country: per authority the number of parties linked to it (by kind: individuals, entities, ships, aircraft), the measures, the regimes/programmes they are designated under, how many implement UN designations, and the first/last designation dates. A party is linked to the country of its listed address, else nationality, else ship flag (several addresses = counted in each country); parties no list places anywhere are counted as unplaced, not spread. These are lists of designated parties, NOT every trade restriction (sector-wide export bans and goods embargoes are not in them) — say so; and the UN Security Council list itself is not read (its terms are non-commercial), its designations appear where the UK/EU implement them. Use for 「ロシアに制裁しているのはどこ？」「イランへの制裁の内容」「北朝鮮の制裁対象」「EU の制裁対象国」, "who sanctions Iran", "what measures does the UK impose on Russia", "which countries does OFAC list the most parties in". Quote the list and its date when you give a number. ' },
+    ],
+    phrases: () => ['経済制裁', '制裁対象', '制裁リスト', '資産凍結', '禁輸'].concat(['sanctions', 'sanctioned', 'designated parties', 'asset freeze', 'SDN list']),
+    schema: () => ({ type: 'object', properties: { country: str(), authority: one('US', 'UK', 'EU'), top: int(1, 60), show: bool() } }),
+    async run(a, dctx, K) { const G = await import('./geopolitics-atlas.js'); return G.sanctions(a, K); },
+  },
+  {
+    row: ['data.unVote',                'unVote',         'unGeneralAssemblyVote,unResolutionVote,howDidCountriesVote',   'data',    'none',    'map.layerOption',        'explanation',         'session', 'none',   '',         ''],
+    ui: { at: ['#dl-unvotes'] },
+    /* (geopolitics-layers) ONE RECORDED VOTE OF THE UN GENERAL ASSEMBLY, every member's vote — data/unga-votes/ (Voeten, Strezhnev &
+       Bailey, CC0; sessions 1–77, 1946-01 – 2023-09), the record the UN votes layer draws. Read-only unless `show` (the layer colours
+       every member and the clock moves to the vote's day). */
+    doc: [
+      { in: 'country', at: 620, text: '{"type":"unVote","query"?:str (words of the resolution title, e.g. "Palestine", "nuclear test", "embargo Cuba"),"symbol"?:str (e.g. "A/RES/77/321"),"id"?:int (the record rcid),"date"?:"YYYY-MM-DD" (the last vote at or before),"year"?:int (limits the query),"from"?:"YYYY-MM-DD","to"?:"YYYY-MM-DD","finalOnly"?:bool (skip votes on amendments and paragraphs),"country"?:str (also return how this member voted),"limit"?:int (other matches returned),"show"?:bool (draw it: the UN votes layer colours every member — yes green, no red, abstain amber, absent grey — and the clock moves to the day of the vote)} = UN GENERAL ASSEMBLY VOTES / 国連総会の採決 — HOW EVERY MEMBER VOTED on a recorded vote of the General Assembly (1946 – 2023-09-01: Voeten, Strezhnev & Bailey, CC0): the symbol, date, title and description, the totals, the members that voted no / abstained / were absent, and one member\'s vote. With no selector: the last vote at or before the clock. Only RECORDED votes are in the record (a resolution adopted without a vote is not) and votes after 2023-09 are not in it; measured gaps: session 76 holds nothing after 2021-12-24 (the 2022 emergency special session votes on Ukraine, e.g. ES-11/1, are absent) and some early dates differ from the meeting day (the 1971 China representation votes are dated 7 October, the Assembly voted on 25 October); the record has no code for Serbia and keeps its seat under YUG «Yugoslavia» to 2023 — say so rather than inventing; symbols are written R/68/262 in older rows and A/RES/77/321 in newer ones, either is accepted; with several matches, name the one you used and offer the others (otherMatches). Members are drawn on today\'s outline of the country their code names (the USSR seat is Russia); states that no longer exist are listed, not drawn. Use for 「ウクライナ侵攻の国連決議で反対した国」「日本はこの決議にどう投票した？」「キューバ禁輸解除決議の採決結果」, "how did countries vote on the 2022 Ukraine resolution", "which countries voted against". ' },
+    ],
+    phrases: () => ['国連総会', '国連決議', '採決', '賛成', '反対', '棄権'].concat(['UN General Assembly', 'UN resolution', 'voted against', 'abstained', 'roll call']),
+    schema: () => ({ type: 'object', properties: { query: str(), symbol: str(), id: int(), date: str(), year: int(), from: str(), to: str(), finalOnly: bool(), country: str(), limit: int(1, 40), show: bool() } }),
+    async run(a, dctx, K) { const G = await import('./geopolitics-atlas.js'); return G.unVote(a, K); },
+  },
+  {
+    row: ['data.borderCrossings',       'borderCrossings', 'borderControl,borderCheckpoint,landBorderCrossing',           'data',    'none',    'map.layerOption',        'explanation',         'session', 'none',   'point',    ''],
+    ui: { at: ['#dl-crossings'] },
+    /* (geopolitics-layers) THE BORDER CONTROL POSTS NEAREST A POINT, with who may cross, how, and whether the published schedule is open
+       at the clock's instant in the post's own zone — data/border-crossings.json (OpenStreetMap barrier=border_control; zones from
+       timezone-boundary-builder). Read-only unless `show`. */
+    doc: [
+      { in: 'country', at: 630, text: '{"type":"borderCrossings","lng":num,"lat":num (the point to search from — resolve a border town or the name of a crossing to coordinates first),"limit"?:int (default 5),"show"?:bool (switch on the Border crossings layer)} = BORDER CROSSINGS / 国境検問所 — the border control posts OpenStreetMap maps nearest a point, nearest first with the distance: name, the hours as written, whether they are OPEN or CLOSED at the clock instant read in the post\'s own time zone (state: open | closed | unknown = the schedule itself says unknown | unread = a schedule form IntMap does not evaluate | unstated = OpenStreetMap gives no hours), who may cross (access:citizenship: all, international, local, interstate = citizens of the two states only, or country codes), the ways of crossing allowed (foot, car, lorry, bus …), the kind of control and when a mapper last checked it. NOT LIVE: a published schedule, not real-time status — say so. «unstated» is not «24 hours» and not «closed». Use for 「この近くで陸路で越境できる場所は？」「〇〇の国境検問所は今開いている？」「外国人が通れる検問所」, "nearest border crossing to X", "is the crossing open now", "can foreigners cross at …". ' },
+    ],
+    phrases: () => ['国境検問所', '越境', '陸路で国境', '国境を越え'].concat(['border crossing', 'border control', 'checkpoint', 'port of entry']),
+    schema: () => ({ type: 'object', properties: { lng: lng(), lat: lat(), limit: int(1, 20), show: bool() }, required: ['lng', 'lat'] }),
+    async run(a, dctx, K) { const G = await import('./geopolitics-atlas.js'); return G.borderCrossings(a, K); },
+  },
 ];
 
 /* ══ (developer-embed) THE OPEN DATA — what IntMap offers for reuse, under which terms ═══════════════════
