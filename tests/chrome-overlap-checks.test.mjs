@@ -116,10 +116,14 @@ test('R484 the search pill and the control stack are two cells of the map frame\
     assert.ok(html.indexOf(marker) > frameAt, `${marker} sits inside the map frame`);
   }
   const css = read('css/intmap.css');
-  assert.match(css, /\.map-frame > \.map-search\{ grid-column:2; grid-row:1;/, 'the pill is the middle cell of the top row');
-  assert.match(css, /\.map-frame > \.map-controls-top\{ grid-column:3; grid-row:1;/, 'the stack is the last cell of the top row');
-  assert.match(css, /grid-template-columns:minmax\(0,1fr\) minmax\(0,380px\) minmax\(max-content,1fr\)/,
-    'the stack\'s column never goes below its own content, so the pill gives way and never slides under it');
+  assert.match(css, /\.map-frame-top > \.map-search\{ grid-column:pill-start \/ pill-end; grid-row:1;/, 'the pill is a cell of the top row');
+  assert.match(css, /\.map-frame-top > \.map-controls-top\{ grid-column:stack-start \/ -1; grid-row:1;/, 'the stack is the last cell of the same row');
+  /* every template the row can take keeps the stack's column at or above its own content, so the pill gives way and never slides under it */
+  /* the templates as written: inline on .map-frame-top, or the lane held once in --mft-lane and named by var() */
+  const templates = [...css.matchAll(/\.map-frame-top\{[^}]*grid-template-columns:([^;]+);/g), ...css.matchAll(/--mft-lane:([^;]+);/g)]
+    .map((m) => m[1]).filter((t) => !/^var\(/.test(t.trim()));
+  assert.ok(templates.length >= 2, 'the centred and the lane templates are both there');
+  for (const t of templates) assert.match(t, /stack-start\] (minmax\(max-content,1fr\)|max-content)/, `the stack's column cannot shrink below its content: «${t}»`);
   /* nothing writes the pill's position from script any more — a second owner is how #R309 got half of one layout and half of another */
   for (const f of fs_list('js')) {
     const src = codeOnly(read(f));

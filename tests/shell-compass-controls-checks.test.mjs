@@ -238,8 +238,8 @@ test('R480 ④ .compass-btn is a circle that draws its own glass', () => {
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('R480 ⑤ the search pill is kept off the whole stack, every row included', () => {
   const css = read('css/intmap.css');
-  assert.match(css, /\.map-frame > \.map-controls-top\{ grid-column:3; grid-row:1;/, 'the grid cell is the stack container, not a row of it');
-  assert.ok(!/\.map-frame > \.map-controls-top > [^{]*\{[^}]*grid-(column|row)/.test(css), 'no row of the stack is placed as a cell of its own');
+  assert.match(css, /\.map-frame-top > \.map-controls-top\{ grid-column:stack-start \/ -1; grid-row:1;/, 'the grid cell is the stack container, not a row of it');
+  assert.ok(!/\.map-controls-top > [^{]*\{[^}]*grid-(column|row)/.test(css), 'no row of the stack is placed as a cell of its own');
   assert.ok(!/(\.compass-btn|\.map-view-row|#map-tools-group)\{[^}]*position:(fixed|absolute)/.test(css),
     'no row leaves the stack\'s flow, so the cell measures all of them');
 });

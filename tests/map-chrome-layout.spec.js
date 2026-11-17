@@ -19,10 +19,19 @@
  *    the sheet: the floating stack is not drawn over the map at all.
  *  ⑥ the compact shapes are still the same controls: the search button opens the field, and the view menu
  *    reaches all five view buttons.
+ *  ⑦ AT THE WIDTHS THAT WERE NOT BROKEN NOTHING MOVED: at 1440×900 and 1280×800, right panel closed / open, light and
+ *    dark, every part's rect (place AND size) equals tests/map-chrome-layout-baseline.json, measured on the build of
+ *    the commit before this change with the same measurer (tests/helpers/map-chrome.js). The narrow shapes are
+ *    allowed only where the layout used to break.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { setChromeState, measureChrome } from './helpers/map-chrome.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const BASELINE = JSON.parse(readFileSync(join(import.meta.dirname, 'map-chrome-layout-baseline.json'), 'utf8'));
 
 test.describe.configure({ mode: 'serial' });
 
@@ -66,27 +75,7 @@ test.beforeAll(async ({ browser }) => {
 
 test.afterAll(async () => { await page?.context()?.close(); });
 
-/* put the shell in a state and wait until nothing that moves the chrome is still moving */
-async function setState(left, right, theme) {
-  await page.evaluate(({ left, right, theme }) => {
-    document.documentElement.setAttribute('data-theme', theme);
-    const frosted = left === 'frosted';
-    document.body.classList.toggle('sidebar-glass', frosted);
-    document.body.classList.toggle('sidebar-translucent', frosted);
-    const sb = document.getElementById('sidebar');
-    const wantOpen = left !== 'closed';
-    if (sb.classList.contains('collapsed') === wantOpen) document.getElementById('btn-toggle-sidebar').click();
-    if (right) window.IntMapLayerSidebar.open(); else window.IntMapLayerSidebar.close();
-    document.activeElement?.blur?.();
-  }, { left, right, theme });
-  await page.waitForFunction(() => {
-    const moving = ['#map-frame', '#sidebar', '#layer-sidebar-r', '.map-column']
-      .map((s) => document.querySelector(s)).filter(Boolean)
-      .some((el) => el.getAnimations({ subtree: false }).some((a) => a.playState === 'running'));
-    return !moving;
-  }, null, { timeout: 10_000 }).catch(() => { });
-  await page.waitForTimeout(250);
-}
+const setState = (left, right, theme) => setChromeState(page, { left, right, theme });
 
 function measure() {
   return page.evaluate(({ CONTROLS, SURFACES }) => {
@@ -161,6 +150,7 @@ test('⑤ at 200 % of a 1440 screen (720×450) the phone layout holds the contro
     stack: getComputedStyle(document.querySelector('.map-controls-top')).display,
     frame: getComputedStyle(document.getElementById('map-frame')).display,
     searchHome: document.getElementById('map-search').parentElement.id,
+    inFrame: !!document.getElementById('map-search').closest('#map-frame'),
   }));
   expect(m.phone).toBe(true);
   expect(m.frame, 'the frame is no box on a phone').toBe('contents');
@@ -168,7 +158,7 @@ test('⑤ at 200 % of a 1440 screen (720×450) the phone layout holds the contro
   expect(m.searchHome, 'the search is lent into the sheet head').toBe('m-search-slot');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.waitForTimeout(800);
-  expect(await page.evaluate(() => document.getElementById('map-search').parentElement.id), 'and handed back to the frame').toBe('map-frame');
+  expect(await page.evaluate(() => !!document.getElementById('map-search').closest('#map-frame')), 'and handed back to the frame').toBe(true);
 });
 
 test('⑥ the compact shapes are the same controls — the search button opens the field, the menu reaches every view button', async () => {
@@ -194,4 +184,22 @@ test('⑥ the compact shapes are the same controls — the search button opens t
   await page.click('#btn-view-menu');
   await page.click('#btn-view-globe');   /* put the projection back for whatever runs next */
   expect(diag.pageErrors, `pageerror(s):\n${diag.pageErrors.join('\n---\n')}`).toHaveLength(0);
+});
+
+test('⑦ at 1440×900 and 1280×800 every control is exactly where, and as big as, it was before the frame', async () => {
+  const off = [];
+  for (const [key, want] of Object.entries(BASELINE.states)) {
+    const [size, right, theme] = key.split('|');
+    const [w, h] = size.split('x').map(Number);
+    await page.setViewportSize({ width: w, height: h });
+    await setChromeState(page, { left: 'closed', right: right === 'right-open', theme });
+    const got = await measureChrome(page);
+    for (const [part, r] of Object.entries(want)) {
+      const g = got[part];
+      if (!g) { off.push(`${key}: ${part} is not drawn (was ${JSON.stringify(r)})`); continue; }
+      /* one pixel: the old watcher rounded the pill's anchors to whole pixels, the grid does not */
+      for (const k of ['x', 'y', 'w', 'h']) if (Math.abs(g[k] - r[k]) > 1) off.push(`${key}: ${part}.${k} ${g[k]} — was ${r[k]}`);
+    }
+  }
+  expect(off, `baseline from ${BASELINE.taken.commit}:\n` + off.join('\n')).toEqual([]);
 });

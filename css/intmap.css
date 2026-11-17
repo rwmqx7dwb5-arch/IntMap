@@ -1935,77 +1935,95 @@
     [data-theme="dark"] .map-search{ background:rgba(28,28,30,0.62); }
     /* (map-chrome-layout) everything floating on the map sits in .map-frame = the visible map. Only its two inset rules
        know the panels; it is a size container, so zoom, window width and panel open/close are one fact: its width changed.
+       ⚠ AT THE WIDTHS THAT WERE NOT BROKEN NOTHING MOVES — every rect below reproduces what the panel-dodging rules and the
+       old JS watcher drew (tests/map-chrome-layout.spec.js compares them with tests/map-chrome-layout-baseline.json, taken
+       from the build before this change). Only the narrow tiers change shape.
        Phone: display:contents. ws-mode: js/workspace.js pins as before. Why and what it replaced: dev-notes/2026-11-17-map-chrome-layout.md */
-    .map-frame, .map-frame-bottom{ display:contents; }
+    .map-frame, .map-frame-top, .map-frame-bottom{ display:contents; }
     @media(min-width:769px){
-      .map-frame{ display:grid; position:absolute; top:0; bottom:0; left:0; right:0; box-sizing:border-box; padding:10px;
-        /* ⚠ NO z-index. The frame places; it does not layer. Each control keeps its own z and competes with the
-           panels and cards outside the frame exactly as before (#R253's band, js/ui-stack.js front marks). MEASURED:
-           with a z-index here the frame was a stacking context, the front mark climbed to it (front-mark-outer-
-           context), and the whole frame rose to 2650 — Chronos's year rail then covered the route panel's «Clear
-           route». A size container is neither a stacking context nor a containing block for fixed boxes in
-           Chromium (measured on a probe page), so without the z-index nothing here traps a child's z. */
-        pointer-events:none;
+      /* ⚠ NO z-index: the frame places, it does not layer (a z-index made it a stacking context, the front mark climbed to
+         it and the whole frame covered the route panel — measured). A size container is neither a stacking context nor a
+         containing block for fixed boxes in Chromium (measured), so each control keeps competing with its own z. */
+      .map-frame{ display:block; position:absolute; top:0; bottom:0; left:0; right:0; pointer-events:none;
         container:map-frame / inline-size;
-        grid-template-columns:minmax(0,1fr) minmax(0,380px) minmax(max-content,1fr); column-gap:12px; row-gap:4px;
-        align-items:start; align-content:start;
         transition:left .38s cubic-bezier(0.25,1,0.5,1), right .38s cubic-bezier(0.25,1,0.5,1); }
       body.sidebar-glass:not(.ws-mode) .operation-room:has(> .sidebar:not(.collapsed)) .map-frame{ left:var(--sidebar-w); }
       body.lsr-open:not(.ws-mode) .map-frame{ right:var(--lsr-w); }
-      .map-frame > :not(.map-controls-top){ pointer-events:auto; }
-      .map-frame > .map-search{ grid-column:2; grid-row:1; position:relative; top:auto; left:auto; transform:none; width:auto; min-width:0; max-width:none; box-sizing:border-box; }
-      .map-frame > .map-controls-top{ grid-column:3; grid-row:1; justify-self:end; position:relative; top:auto; right:auto; }
-      /* the panels that hang from the stack and the bottom corner keep their offsets — now from the frame's edges */
-      .map-frame > :is(.tool-panel,.sat-controller){ max-width:calc(100cqi - 48px); box-sizing:border-box; }
-      /* the two bottom corners are one row: the readout keeps the left, Chronos the right (each 6 px from its corner, the
-         gap the pair shares — #R504), and when both do not fit Chronos wraps to the row ABOVE (wrap-reverse) instead of
-         lying on the readout. The row is the frame's width, so neither can reach under a panel. */
-      .map-frame-bottom{ display:flex; position:absolute; left:6px; right:6px; bottom:6px; flex-wrap:wrap-reverse; justify-content:space-between;
-        align-items:flex-end; gap:6px; pointer-events:none; }
-      .map-frame-bottom > *{ position:relative; top:auto; right:auto; bottom:auto; left:auto; pointer-events:auto; }
-      .map-frame-bottom > .news-timeline{ margin-left:auto; max-width:min(560px, 100%); box-sizing:border-box; }
-      .map-frame-bottom > .news-timeline .ntl-body{ max-width:100%; }
-      /* the year rail takes what the frame leaves it; js/news-timeline.js thinPeek() re-thins it on ITS OWN resize */
-      .map-frame-bottom > .news-timeline.collapsed .ntl-peek{ flex:1 1 auto; width:360px; min-width:96px; }
+      /* a workspace window is not a size container: js/workspace.js pins the controls there, so no tier below applies */
+      body.ws-mode .map-frame{ container-type:normal; }
+      .map-frame > :is(.tool-panel,.sat-controller), .map-frame-top > .map-search, .map-frame-bottom > *{ pointer-events:auto; }
+      /* THE TOP ROW — one grid, so the pill and the stack cannot overlap: the stack's column never goes below its content.
+         CENTRED: where the pill fits beside the stack it stands on the middle of the map, 398 px (its 380 px field + its own
+         padding and border — the box it has always been, content-box 380). */
+      .map-frame{ --mft-lane:26px [lane-start] minmax(0,1fr) [pill-start] minmax(0,380px) [pill-end] minmax(0,1fr) [lane-end] 14px [stack-start] max-content; }
+      .map-frame-top{ display:grid; padding:10px; row-gap:4px; align-items:start; pointer-events:none;
+        grid-template-columns:[lane-start] minmax(0,1fr) [pill-start] minmax(0,398px) [pill-end stack-start] minmax(max-content,1fr) [lane-end];
+        column-gap:12px; }
+      .map-frame-top > .map-search{ grid-column:pill-start / pill-end; grid-row:1; position:relative; top:auto; left:auto; transform:none;
+        width:auto; min-width:0; max-width:none; box-sizing:border-box; }
+      .map-frame-top > .map-controls-top{ grid-column:stack-start / -1; grid-row:1; justify-self:end; position:relative; top:auto; right:auto; }
       .map-frame .map-view-menu{ display:none; }
       .map-frame .map-view-sets{ display:contents; }
+      /* the bottom corners are one row: the readout keeps the left, Chronos the right (6 px from each corner — #R504), and when
+         both do not fit Chronos wraps to the row ABOVE (wrap-reverse) instead of lying on the readout */
+      .map-frame-bottom{ display:flex; position:absolute; left:6px; right:6px; bottom:6px; flex-wrap:wrap-reverse; justify-content:space-between;
+        align-items:flex-end; gap:6px; pointer-events:none; }
+      /* the two keep their own corner offsets in their base rules (right/bottom/left 6px); the ROW now carries them */
+      .map-frame .map-frame-bottom > *{ position:relative; top:auto; right:auto; bottom:auto; left:auto; }
+      body.sidebar-glass .map-frame .map-frame-bottom > .coord-readout{ margin-left:6px; }   /* frosted: 12 px from the edge, as it was */
+      /* Chronos keeps its 560 px content cap (+ its 8 px of padding and border = 568, measured) and may only be narrower than the row */
+      .map-frame .map-frame-bottom > .news-timeline{ margin-left:auto; box-sizing:border-box; max-width:min(568px, 100%); }
+      .map-frame .map-frame-bottom > .news-timeline .ntl-body{ max-width:100%; }
+      /* the year rail keeps its width and only gives way when the row is short; js/news-timeline.js re-thins it on ITS OWN resize */
+      .map-frame .map-frame-bottom > .news-timeline.collapsed .ntl-peek{ flex-shrink:1; min-width:96px; }
     }
-    /* ── COMPACT — the full top row needs the stack (≈315 px in English, measured at 1440×900) + a 200 px search +
-       the frame's padding and gaps (44 px). Below that the search becomes its button, the two view pills fold into
-       one menu, the tool triggers drop their words (the title still names each), and Chronos keeps one line.
-       ⚠ The threshold is a measurement of the English labels; a language whose stack is wider gets a narrower
-       search here, never an overlap — the grid above guarantees that, this tier only keeps it readable.
-       ws-mode keeps its own layout (js/workspace.js), so none of this applies inside a workspace window. */
-    /* ⚠ A size query styles the container's DESCENDANTS, never the container: the grid's columns (on .map-frame itself)
-       are the same in every tier, and the tiers change only what sits in them — the folded pill stands centred in its
-       column instead of stretching across it, and the open one spans the empty column and its own. */
+    /* IN THE LANE — the pill stands centred between the left handle (+14 px) and the stack (−14 px), 4 px lower, at most 380 px.
+       That is where the old watcher put it whenever a centred pill would reach the stack, and it is kept so nothing moves:
+       ① the right panel is open — the watcher measured the centre of the WHOLE map, so with the panel open it chose the lane
+          at every desktop width below 1684 px, which is the look readers have; ② the frame is narrower than 1084 px = 2 × (10 px
+          edge + 319 px stack + 199 px half-pill + 14 px), the width at which the centred pill reaches the stack.
+       ⚠ 319 is the English stack measured at 1440×900 on the build before this change; a wider stack only means the grid
+       slides the centred pill left before this switch — it still cannot overlap. */
+    @media(min-width:769px){
+      body.lsr-open:not(.ws-mode) .map-frame-top{
+        grid-template-columns:var(--mft-lane); column-gap:0; }
+      body.lsr-open:not(.ws-mode) .map-frame-top > .map-search{ margin-top:4px; }
+    }
+    @container map-frame (max-width:1083px){
+      .map-frame-top{
+        grid-template-columns:var(--mft-lane); column-gap:0; }
+      .map-frame-top > .map-search{ margin-top:4px; }
+    }
+    /* ── COMPACT — below 560 px the lane is too short for a field (the 319 px stack + the lane's 40 px of margins + 20 px
+       of edge leave < 200 px): the search becomes its button, the two view pills fold into one menu, the tool triggers drop
+       their words (the title still names each), Chronos keeps one line, and the panels hanging from the stack fit the frame. */
     @container map-frame (max-width:559px){
-      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))){ padding:3px; justify-self:center; }
-      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) input{ flex:0 0 0; width:0; padding:0; opacity:0; }
-      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn{ padding:5px 8px; display:flex; align-items:center; }
-      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-btn-t{ display:none; }
-      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-ico{ display:block; width:16px; height:16px; }
-      /* open (typing, a result in hand, or holding text): the field takes everything left of the stack.
+      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))){ padding:3px; justify-self:center; }
+      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) input{ flex:0 0 0; width:0; padding:0; opacity:0; }
+      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn{ padding:5px 8px; display:flex; align-items:center; }
+      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-btn-t{ display:none; }
+      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))) #ms-btn .ms-ico{ display:block; width:16px; height:16px; }
+      /* open (typing, a result in hand, or holding text): the field takes the whole lane.
          ⚠ NOT :focus-within. The press that opens the field focuses the BUTTON on pointerdown; if that opened the pill,
          the button would move before pointerup and the click — which is what puts the caret in the field
          (js/app-body.js wireMapSearch) — would land on the map. MEASURED in the narrowest tier: focus stayed on #ms-btn. */
-      body:not(.ws-mode) .map-frame > .map-search:is(.has-text,:has(:focus:not(#ms-btn))){ grid-column:1 / 3; }
-      body:not(.ws-mode) .map-frame .map-view-menu{ display:flex; }
-      body:not(.ws-mode) .map-frame .map-view-row{ position:relative; }
-      body:not(.ws-mode) .map-frame .map-view-sets{ display:none; }
-      body:not(.ws-mode) .map-frame .map-view-row.open .map-view-sets{ display:flex; flex-direction:column; align-items:flex-end; gap:4px;
+      .map-frame-top > .map-search:is(.has-text,:has(:focus:not(#ms-btn))){ grid-column:lane-start / lane-end; }
+      .map-frame .map-view-menu{ display:flex; }
+      .map-frame .map-view-row{ position:relative; }
+      .map-frame .map-view-sets{ display:none; }
+      .map-frame .map-view-row.open .map-view-sets{ display:flex; flex-direction:column; align-items:flex-end; gap:4px;
         position:absolute; top:calc(100% + 6px); right:0; z-index:calc(var(--z-inset) + 2); }
-      body:not(.ws-mode) .map-frame #map-tools-group .view-btn > [data-i18n]{ display:none; }
-      body:not(.ws-mode) .map-frame .news-timeline.collapsed .ntl-open-txt small{ display:none; }
+      .map-frame #map-tools-group .view-btn > [data-i18n]{ display:none; }
+      .map-frame .news-timeline.collapsed .ntl-open-txt small{ display:none; }
+      .map-frame > :is(.tool-panel,.sat-controller){ max-width:calc(100cqi - 48px); box-sizing:border-box; }
     }
-    /* ── NARROWEST — the compact stack alone is most of the frame. The tool triggers stand in a column, the search
-       button stays in the top row at the left, and an open search takes the whole row while the stack steps down
-       one row under it. */
+    /* ── NARROWEST — the compact stack alone is most of the frame. The tool triggers stand in a column, the search button
+       stays at the start of the lane, and an open search takes the whole row while the stack steps down one row under it. */
     @container map-frame (max-width:359px){
-      body:not(.ws-mode) .map-frame > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))){ grid-column:1 / 3; justify-self:start; }
-      body:not(.ws-mode) .map-frame #map-tools-group{ flex-direction:column; align-items:stretch; }
-      body:not(.ws-mode) .map-frame > .map-search:is(.has-text,:has(:focus:not(#ms-btn))){ grid-column:1 / -1; }
-      body:not(.ws-mode) .map-frame:has(> .map-search.has-text, > .map-search :focus:not(#ms-btn)) > .map-controls-top{ grid-row:2; }
+      .map-frame-top > .map-search:not(.has-text):not(:has(:focus:not(#ms-btn))){ grid-column:lane-start / lane-end; justify-self:start; }
+      .map-frame #map-tools-group{ flex-direction:column; align-items:stretch; }
+      .map-frame-top > .map-search:is(.has-text,:has(:focus:not(#ms-btn))){ grid-column:1 / -1; }
+      .map-frame-top:has(> .map-search.has-text, > .map-search :focus:not(#ms-btn)) > .map-controls-top{ grid-row:2; }
     }
     /* (#R20) Frosted-glass news cards — Apple-style light frost instead of the intimidating solid
        dark-gray slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */

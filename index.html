@@ -429,6 +429,8 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          else: its edges are the panels' edges (css/intmap.css `.map-frame`), it is a size container, and a zoom, a
          window width and a panel opening or closing are all «its width changed». On a phone it is display:contents. -->
     <div class="map-frame" id="map-frame">
+      <!-- the top row: the search and the control stack, two cells of one grid (css .map-frame-top) -->
+      <div class="map-frame-top">
       <div class="map-search" id="map-search">
         <input id="ms-input" type="text" placeholder="Search any place on Earth..." data-i18n-ph="msPh">
         <!-- (#R231) 「地名検索ボタンの🔍絵文字は、絵文字ではなく独自のシンプルなアイコンに置換して。」
@@ -536,6 +538,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
              as that one is, with the same dart (outline until the map centre is ON the fix, solid when it is —
              the `.on` class the live-location marker toggles). The reading is js/locate-me.js's. -->
         <button class="compass-btn locate-btn" id="btn-locate" type="button" aria-label="My location" data-i18n-aria="ttlMyLocation" title="My location" data-i18n-title="ttlMyLocation"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><polygon points="20.6,3.4 3.4,10.2 11.1,12.9 13.8,20.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+      </div>
       </div>
       <div id="tool-panel" class="tool-panel"></div>
       <div id="sat-controller" class="sat-controller"></div>
