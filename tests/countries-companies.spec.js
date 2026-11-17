@@ -45,10 +45,12 @@ test('a Countries row has a visible Details button that opens the country, and t
   expect(await page.evaluate(() => window._cpCurrent && window._cpCurrent.code)).toBe('FRA');
   /* the card's years are the values' own: the bundled GDP is the World Bank's 2023 series */
   const gdpLabel = await page.evaluate(() => {
-    const rows = [...document.querySelectorAll('#cp-body *')].map((e) => e.textContent).filter((t) => /GDP/.test(t) && /\(\d{4}\)/.test(t));
+    const rows = [...document.querySelectorAll('#cp-body *')].map((e) => e.textContent).filter((t) => /GDP/.test(t) && /\(\d{4}[ )]/.test(t));
     return rows.length ? rows[rows.length - 1] : '';
   });
-  expect(gdpLabel, 'the GDP row carries the year of its value').toMatch(/\((19|20)\d\d\)/);
+  expect(gdpLabel, 'the GDP row carries the year of its value').toMatch(/\((19|20)\d\d[ )]/);
+  /* (companies-name-width) and its source beside the year: the bundled GDP is the World Bank's series */
+  expect(gdpLabel, 'the GDP row names the source of its value').toMatch(/\((19|20)\d\d · World Bank\)/);
   await page.evaluate(() => { const x = document.querySelector('#country-popup .cp-close, #country-popup [data-im-click="closeCountryPopup"]'); if (x) x.click(); else document.getElementById('country-popup').style.display = 'none'; });
 });
 
