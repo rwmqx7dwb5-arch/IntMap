@@ -191,7 +191,8 @@ export function makeMapNarrator(HOST, CTX) {
     /* (keyboard-and-offline) reading mode: the paragraph is said ONCE, when it is whole — a status region rewritten
        half-way restarts a screen reader's speech. A later change or a feature walk supersedes it (enrichSeq). */
     const my = ++enrichSeq;
-    Promise.resolve().then(() => en(s)).then((t) => { if (my === enrichSeq) speak(t || s); }, () => { if (my === enrichSeq) speak(s); });
+    const current = () => my === enrichSeq;   /* the reader advances its «last told» centre only for a paragraph that is said */
+    Promise.resolve().then(() => en(s, current)).then((t) => { if (my === enrichSeq) speak(t || s); }, () => { if (my === enrichSeq) speak(s); });
   }, 1200); };
 
   let moved = 0;

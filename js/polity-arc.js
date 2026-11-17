@@ -420,7 +420,7 @@ export async function openArc(want) {
   sheet.hidden = false;
   /* opened by the reader's operation: it takes the front from the panel the operation was made in (js/ui-stack.js `opened`) */
   try { globalThis.IntMapStack.opened(sheet); } catch (_) { /* no stack owner (Node) */ }
-  if (!unsubClock) unsubClock = IntMapTime.on(() => { clearTimeout(paintTimer); paintTimer = setTimeout(() => { if (state.arc) paintArc(); }, 200); });
+  if (!unsubClock) unsubClock = IntMapTime.on(() => { clearTimeout(paintTimer); paintTimer = setTimeout(paintNow, 200); });
   const w = want || {};
   if (typeof w.lang === 'function') langOf = w.lang;
   state.q = w.query || '';
@@ -466,6 +466,22 @@ function paintList() {
   if (had) { const r = sheet.querySelector('.pa-results'); if (r) r.outerHTML = sec; return; }
   sheet.innerHTML = head(null) + '<div class="pa-body"><input type="search" class="pa-q" enterkeyhint="search" autocomplete="off" aria-label="' + esc(t('Find a polity', '政体を探す')) + '" placeholder="' + esc(t('Find a polity — e.g. Mongol Empire', '政体を探す（例: モンゴル帝国）')) + '" value="' + esc(state.q) + '">' + sec
     + '<p class="pa-src">' + esc(t('Index of ', '収録: ') + idx.arcs.length.toLocaleString() + t(' names the map draws', ' の名前')) + ' · ' + esc(['clio', 'ohm', 'cshapes', 'sheet'].map((k) => recordName(idx, k)).join(' · ')) + '</p></div>';
+}
+/* The clock moves only the chart's year marker (`chartSvg(…, nowYear())` is the one clock-dependent
+   piece of the sheet), so a clock change replaces the chart and nothing else. Repainting the whole sheet
+   — as it did — wiped the hover readout, the focused button and the reader's place 200 ms after every
+   tick, including the tick the reader's own click on the chart (or «Go to its largest») caused. The
+   chart element itself is kept (its contents and attributes are swapped), so a pointer resting on it
+   and anything holding it stay on the same node. */
+function paintNow() {
+  if (!sheet || sheet.hidden || !state.idx || !state.arc) return;
+  const old = sheet.querySelector('.pa-chart');
+  if (!old) { paintArc(); return; }
+  const idx = state.idx, a = state.arc, box = document.createElement('div');
+  box.innerHTML = chartSvg(idx, a, describe(idx, a), lang(), nowYear());
+  const neu = box.firstElementChild; if (!neu) return;
+  for (const at of Array.from(neu.attributes)) old.setAttribute(at.name, at.value);
+  old.innerHTML = neu.innerHTML;
 }
 function paintArc() {
   if (!sheet || sheet.hidden || !state.idx || !state.arc) return;

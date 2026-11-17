@@ -80,6 +80,16 @@ function clock(name){
      measurement and the expiry beside it (js/hist-scale.js `FLOOR`), where a gate compares it
      against the shipped era bundle. A copy here is what #R604 spent a round undoing. */
   const subs=[]; let _when=null; let _bcast=false;
+  /* ══ (chronos-prefetch) WHAT EACH DRAWER HAS DRAWN, SAID BY THE DRAWER ══════════════════════════
+     «The map shows the new instant» is a claim only the module that handed its collection to the map
+     can make: an observer that counts features in a source sees an EMPTY source as «not drawn» and a
+     source still holding the last instant's collection as «drawn» (memory: an observer that cannot see
+     the painted surface reports every success as a failure). So each drawer declares, at the moment it
+     has handed the map an instant's data, WHICH instant that was — `drawn(layer, when)` — and the
+     clock keeps the last declaration per layer beside the moment it last moved. Nothing decides on
+     these; they are read by the latency instrument (scripts/chronos-latency.mjs) and its check. */
+  const _drawn=new Map(); let _movedAt=0;
+  const _perf=()=>{ try{ return performance.now(); }catch(_){ return Date.now(); } };
   /* ⚠⚠⚠ READ, NOT CAPTURED. `src/main.js:77` imports THIS FILE BEFORE js/hist-scale.js, so a
      `const YMIN = HS.FLOOR` evaluated here reads `undefined` and falls back to 1 — the floor
      would be silently wrong, every deep-time subsystem would be clamped, and nothing would
@@ -130,6 +140,7 @@ function clock(name){
   function ev(source){ const w=_when, live=(w==null); const d=live?now():new Date(w);
     return { date: live?null:new Date(w), when:d, iso: ymdISO(d), year:d.getFullYear(), isLive:live, source:source||'api' }; }
   function broadcast(source){ if(_bcast) return; _bcast=true;
+    _movedAt=_perf();
     const e=ev(source);
     /* (#R289) `newsDate` was assigned HERE and it is a js/app-body.js closure variable, which
        another file cannot write. That file keeps it in lock-step through an ordinary subscriber
@@ -176,6 +187,11 @@ function clock(name){
   OS.intent=function(source){ pageIntent(source); return OS; };
   OS.intended=()=>pageIntended();
   OS.onIntent=function(fn){ return pageOnIntent(fn); };
+  /* (chronos-prefetch) a drawer's receipt: `when` is the instant whose data it has just handed the map (null:
+     it drew the present). `drawnState()` → { movedAt, layers: { [layer]: { iso, at } } } in performance.now() ms. */
+  OS.drawn=function(layer,when){ if(!layer) return OS; const d=(when==null)?null:new Date(when);
+    _drawn.set(String(layer),{ iso:(d&&!isNaN(d.getTime()))?ymdISO(d):null, at:_perf() }); return OS; };
+  OS.drawnState=()=>{ const layers={}; _drawn.forEach((v,k)=>{ layers[k]={ iso:v.iso, at:v.at }; }); return { movedAt:_movedAt, layers }; };
   return OS;
 }
 _make=clock;

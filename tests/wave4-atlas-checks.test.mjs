@@ -29,6 +29,14 @@ import { harness, run } from '../scripts/territory-change.mjs';
 import * as GA from '../js/routing-ops.js';
 import * as T from '../js/territory-change.js';
 
+/* ⚠ THE FILE'S TIMERS BECOME THE HARNESS'S. ③ and ⑦ open scripts/territory-change.mjs `harness`, whose time-borders
+   sandbox installs `setTimeout: () => 0` on globalThis for the rest of this file (scripts/lib/import-module.mjs: globals
+   STAY). ⑥ runs the page's own path, which yields a frame through setTimeout whenever a step took longer than 16 ms
+   (js/territory-change.js `yielder`) — so on a loaded runner the yield never resolved and ⑥ sat until its 1,190 s
+   timeout (MEASURED 2026-11-16: CI regression shards of five branches; locally every step fit in the frame and it
+   passed in 0.17 s). The page's timer is kept here, before any harness runs, and ⑥ is run with it. */
+const PAGE_SET_TIMEOUT = globalThis.setTimeout;
+
 const sq = (w, s, e, n) => [[w, s], [e, s], [e, n], [w, n], [w, s]];
 const P = (...rings) => ({ type: 'Polygon', coordinates: rings });
 const F = (geometry, properties) => ({ type: 'Feature', geometry, properties });
@@ -149,7 +157,13 @@ test('⑤ what the records draw: a transfer, a rename, a new bracket, the edge o
 });
 function T_instant(y) { const d = new Date(0); d.setFullYear(y, 5, 15); d.setHours(12, 0, 0, 0); return { now: false, when: d, year: y, iso: null }; }
 
-test('⑥ Atlas: the answer reaches the model, each transfer is one declared polygon, the same question twice is the same map', async () => {
+test('⑥ Atlas: the answer reaches the model, each transfer is one declared polygon, the same question twice is the same map', async (t) => {
+  /* the page's timer for this test (see PAGE_SET_TIMEOUT), and a clock that passes the 16 ms frame at every reading, so the
+     yield is taken on every machine — not only on a slow one, which is the only place the stubbed timer used to show */
+  const stubbed = globalThis.setTimeout, realNow = Date.now;
+  let clock = realNow();
+  globalThis.setTimeout = PAGE_SET_TIMEOUT; Date.now = () => (clock += 20);
+  t.after(() => { globalThis.setTimeout = stubbed; Date.now = realNow; });
   globalThis.window = globalThis.window || globalThis;
   window.IntMapTimeBorders = bordersOf({ 1900: PAST, 1920: NOW });
   window.countryGeo = { features: LAND };

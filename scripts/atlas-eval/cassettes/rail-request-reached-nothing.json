@@ -278,6 +278,10 @@
             {
               "id": "time.lifeAtPlace",
               "tool": "time_lifeAtPlace"
+            },
+            {
+              "id": "time.textMap",
+              "tool": "time_textMap"
             }
           ]
         }

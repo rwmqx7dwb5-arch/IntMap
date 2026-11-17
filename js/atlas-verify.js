@@ -194,8 +194,19 @@ export function makeAtlasVerify(HOST, CTX) {
       const two=new Set(['co','com','org','net','gov','gob','gouv','go','ac','edu','or','ne','mil']);
       return (two.has(p[p.length-2])) ? p.slice(-3).join('.') : p.slice(-2).join('.'); }
     function _atlIsOfficial(dom){ return /(^|\.)(gov|mil|int)(\.[a-z]{2,3})?$/.test(dom)||/\.(gov|gob|gouv|go|gc|edu|ac)\.[a-z]{2,3}$/.test(dom)||/\.(edu|int)$/.test(dom); }
-    function _atlAuditSources(cites){ const urls=(Array.isArray(cites)?cites:[]).map(c=>String((c&&(c.url||c))||'')).filter(u=>/^https?:\/\//i.test(u));
-      const by={}; urls.forEach(u=>{ const d=_atlRegDomain(u); if(d) by[d]=(by[d]||0)+1; });
+    /* ⚠ (atlas-gpt6-models) A SOURCE IS COUNTED BY WHO PUBLISHED IT, NOT BY THE HOST ITS LINK GOES THROUGH.
+       An answer about Czech public media cited Reuters, AP and Czech outlets and was told 「出典が1サイト
+       （google.com）に集中しています」 (reported 2026-11-16): the links were Google News redirects that the
+       client could not decode (js/atlas-reply.js keeps them, because clicking still reaches the article),
+       so every one of them rounded to google.com. A citation that names its publisher is counted by that
+       name — a name shaped like a host is rounded like a host, so www.psp.cz and psp.cz stay one source
+       and the official-domain test still reads it; a citation with no publisher falls back to its URL. */
+    function _atlSourceKey(c){ const u=String((c&&(c.url||c))||''); if(!/^https?:\/\//i.test(u)) return '';
+      const p=String((c&&typeof c==='object'&&c.publisher)||'').trim().toLowerCase();
+      if(p) return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(p) ? _atlRegDomain('https://'+p) : p;
+      return _atlRegDomain(u); }
+    function _atlAuditSources(cites){ const urls=(Array.isArray(cites)?cites:[]).map(_atlSourceKey).filter(Boolean);
+      const by={}; urls.forEach(d=>{ by[d]=(by[d]||0)+1; });
       const domains=Object.keys(by); const total=urls.length; let dominant='',dmax=0; domains.forEach(d=>{ if(by[d]>dmax){ dmax=by[d]; dominant=d; } });
       const official=domains.filter(_atlIsOfficial);
       const concentrated = total>=2 && (domains.length===1 || (dmax/total)>=0.75 && domains.length<=2);
@@ -376,7 +387,13 @@ export function makeAtlasVerify(HOST, CTX) {
         }).filter(it=>it.name&&it.name.length>1);
         const structKeys=new Set(struct.map(it=>_atlNorm(it.name)));
         const textBudget=struct.length?4:8;   /* text extraction is the SAFETY NET — used hard only when the model under-supplied the list */
-        const textCands=_atlExtractPlaces(text).filter(s=>!structKeys.has(_atlNorm(s))).slice(0,textBudget).map(s=>({name:s,country:'',kind:'',summary:'',src:'text'}));
+        /* ⚠ (atlas-gpt6-models) …BUT AN ANSWER WHOSE SHAPE HAS A PLACES FIELD DID NOT UNDER-SUPPLY IT. The analysis
+           envelope (js/atlas-answer-contract.js) asks the model for its places in a field of their own, so an
+           empty list there is the model's decision that the answer is not about places, and the prose net
+           overrode it: a question about Czech public-media funding was answered with 「本文の主要スポット 1 件を
+           地図にマッピングしました」 (reported 2026-11-16). A caller whose answer carries that field says so with
+           `placesDeclared`, and then only the places the model named are pinned. */
+        const textCands=(ctx.placesDeclared?[]:_atlExtractPlaces(text)).filter(s=>!structKeys.has(_atlNorm(s))).slice(0,textBudget).map(s=>({name:s,country:'',kind:'',summary:'',src:'text'}));
         const _pois=getPois();
         if(!struct.length && textCands.length<2 && !(Array.isArray(_pois)&&_pois.length)) return '';   /* not a place-rich answer — don't geocode incidental capitalized words */
         const pre=(Array.isArray(_pois)?_pois:[]).map(p=>({lng:+p.lng,lat:+p.lat,name:String(p.name||''),kind:String(p.kind||''),sum:String(p.sum||''),url:String(p.url||''),src:String(p.src||'')})).filter(p=>isFinite(p.lng));

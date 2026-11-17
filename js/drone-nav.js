@@ -59,7 +59,7 @@ import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
 
-export function droneNav(HOST){
+export function drone(HOST){
   const GE=()=>IntMapGeoEngine;
   const L=IntMapLang.pick(()=>HOST.lang);
   /* ⚠⚠⚠ (#R248) THE FOURTEENTH SHAPE — this file held FOUR readers that turned the language into

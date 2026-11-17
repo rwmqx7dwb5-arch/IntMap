@@ -58,7 +58,7 @@ export function sectionFromEntry(e, withNotes) {
   return {
     id: n.id, at: n.at, question: n.question, answer: n.answer, lang: n.lang, status: n.status, view: n.view,
     steps: n.steps.map((s) => s.replay ? { cap: s.cap, args: s.args, status: s.status, replay: true } : { cap: s.cap, status: s.status }),
-    results: n.results, sources: n.sources, note: withNotes ? n.note : '',
+    results: n.results, sources: n.sources, provenance: n.provenance, credit: n.credit, note: withNotes ? n.note : '',
   };
 }
 export function buildBriefing(entries, opts) {

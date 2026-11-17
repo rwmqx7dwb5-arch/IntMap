@@ -316,7 +316,7 @@ test('R175 ②: the click opens a detail card, and the ADS-B record carries the 
     'the aircraft click does not fetch the card module first — it would reach a global that has not been downloaded');
   /* (module-graph) the boot-time guard was src/main.js's MODULE_FACTORIES list; a boot factory is now an
      export js/app-body.js imports by name, so a missing one is a link error — the import IS the guard */
-  assert.match(body, /^import \{ droneNav \} from '\.\/drone-nav\.js';/m, 'droneNav is covered by the boot-time required-module guard');
+  assert.ok(LAZY_NAMES.includes('drone'), 'drone (startup-weight: fetched on demand) is covered by the deferred half of the guard');
   assert.ok(LAZY_NAMES.includes('aircraftDetail'),
     'aircraftDetail is covered by the deferred half of that guard — one list still knows every factory');
 });

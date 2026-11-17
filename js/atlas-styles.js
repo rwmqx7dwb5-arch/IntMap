@@ -370,6 +370,15 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel .atl-cmp-l li.atl-geo-on,#atlas-panel .atl-cmp-l li:hover{background:rgba(10,132,255,.12);}'
       +'#atlas-panel .atl-cmp-nm{font-weight:600;}'
       +'#atlas-panel .atl-cmp-role{color:var(--text-muted);}'
+      +'#atlas-panel .atl-cmp-src{margin-left:auto;color:var(--text-muted);font-size:10.5px;white-space:nowrap;}'   /* (text-to-era-map) where a dated map's point came from */
+      +'#atlas-panel .atl-era{margin:8px 0 4px;padding:8px 10px;border-radius:12px;background:var(--input-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.22));font-size:11.5px;line-height:1.5;}'
+      +'#atlas-panel .atl-era-h{font-weight:600;}'
+      +'#atlas-panel .atl-era-q{color:var(--text-muted);}'
+      +'#atlas-panel .atl-era-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}'
+      +'#atlas-panel .atl-era-yr{height:28px;padding:0 11px;border-radius:14px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--panel-bg,transparent);color:var(--text-main);font-size:11.5px;cursor:pointer;}'
+      +'#atlas-panel .atl-era-yr:hover{border-color:var(--primary-color);}'
+      +'#atlas-panel .atl-era-yr.inferred{border-style:dashed;}'
+      +'#atlas-panel .atl-eramap{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--primary-color);background:transparent;color:var(--primary-color);font-size:11.5px;font-weight:600;cursor:pointer;}'   /* (text-to-era-map) the composer chip: this text, on the map of its time */
       +'#atlas-panel .atl-cmp-rels{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:5px;}'
       +'#atlas-panel .atl-cmp-rel{display:inline-flex;align-items:center;gap:3px;color:var(--text-muted);}'
       +'#atlas-panel .atl-cmp-rel .atl-geo-n{margin-left:0;}'
