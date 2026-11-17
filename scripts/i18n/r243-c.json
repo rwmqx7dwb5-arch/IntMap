@@ -79,54 +79,6 @@
     "주요 제약사 본사·생산 클러스터(대표 지점). 기대수명 레이어와 함께 보세요.",
     "主要製藥企業總部與製造聚落（代表地點）。可與平均壽命圖層搭配。"
   ],
-  "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": [
-    "Weltbank-WGI-Wert „Korruptionskontrolle“ (0–100, höher = sauberer) — das Open-API-Gegenstück zum CPI von TI.",
-    "Показатель Всемирного банка WGI «Контроль коррупции» (0–100, выше = чище) — аналог CPI от TI с открытым API.",
-    "Puntuación WGI del Banco Mundial «Control de la corrupción» (0–100, más alto = más limpio): el equivalente con API abierta al IPC de TI.",
-    "Indicateur WGI de la Banque mondiale « Contrôle de la corruption » (0–100, plus haut = plus intègre) — l’équivalent en API ouverte de l’IPC de TI.",
-    "세계은행 WGI「부패 통제」 점수(0–100, 높을수록 청렴) — TI의 CPI에 해당하는 공개 API 지표.",
-    "世界銀行 WGI「貪腐控制」分數（0–100，愈高愈清廉）——相當於 TI 貪腐印象指數的開放 API 指標。"
-  ],
-  "Life expectancy at birth (World Bank).": [
-    "Lebenserwartung bei Geburt (Weltbank).",
-    "Ожидаемая продолжительность жизни при рождении (Всемирный банк).",
-    "Esperanza de vida al nacer (Banco Mundial).",
-    "Espérance de vie à la naissance (Banque mondiale).",
-    "출생 시 기대수명 (세계은행).",
-    "出生時平均餘命（世界銀行）。"
-  ],
-  "Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).": [
-    "Arbeitslosenquote insgesamt (% der Erwerbsbevölkerung; ILO-Modellrechnung / Weltbank, letztes Jahr).",
-    "Уровень безработицы, всего (% рабочей силы; модель МОТ / Всемирный банк, последний год).",
-    "Desempleo total (% de la población activa; estimación modelada OIT / Banco Mundial, último año).",
-    "Chômage total (% de la population active ; estimation modélisée OIT / Banque mondiale, dernière année).",
-    "실업률 (경제활동인구 대비 %; ILO 추정·세계은행, 최신 연도).",
-    "失業率（占勞動力 %；ILO 推估／世界銀行，最新年度）。"
-  ],
-  "Individuals using the Internet (% of population; World Bank, latest year).": [
-    "Internetnutzer (% der Bevölkerung; Weltbank, letztes Jahr).",
-    "Пользователи интернета (% населения; Всемирный банк, последний год).",
-    "Personas que usan Internet (% de la población; Banco Mundial, último año).",
-    "Personnes utilisant Internet (% de la population ; Banque mondiale, dernière année).",
-    "인터넷 이용자 비율 (인구 대비 %; 세계은행, 최신 연도).",
-    "使用網際網路人口比例（占人口 %；世界銀行，最新年度）。"
-  ],
-  "Average annual precipitation (depth in mm, long-term; World Bank).": [
-    "Durchschnittlicher Jahresniederschlag (Höhe in mm, langjährig; Weltbank).",
-    "Среднегодовое количество осадков (в мм, многолетнее; Всемирный банк).",
-    "Precipitación media anual (altura en mm, a largo plazo; Banco Mundial).",
-    "Précipitations annuelles moyennes (hauteur en mm, sur le long terme ; Banque mondiale).",
-    "연평균 강수량 (mm, 장기 평균; 세계은행).",
-    "年平均降水量（深度 mm，長期平均；世界銀行）。"
-  ],
-  "Could not load the data": [
-    "Daten konnten nicht geladen werden",
-    "Не удалось загрузить данные",
-    "No se pudieron cargar los datos",
-    "Impossible de charger les données",
-    "데이터를 가져오지 못했습니다",
-    "無法取得資料"
-  ],
   " yrs": [
     " J.",
     " лет",

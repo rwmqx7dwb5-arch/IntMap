@@ -59,14 +59,6 @@ const WB = Object.freeze({
   says: LA('World Bank WDI (the years this layer reads)', '世界銀行 WDI（このレイヤーが読む年）'),
 });
 
-/* (map-layer-system) the World Bank rows of js/layer-packs.js read the SAME series through the same reader
-   (window.IntMapWB.series — js/wb-layers.js WB_FROM is where it begins) and, like the rows above, paint the
-   clock's year. Three of them measure a series a row above also measures (js/layers/<id>.js `measures`), and
-   one series is one statement about time: tests/map-layer-system-checks.test.mjs holds the pairs to that. */
-const WBP = Object.freeze(Object.assign({}, WB, {
-  follows: 'js/layer-packs.js wbClockYear', reports: 'js/layer-packs.js IntMapLayerTime',
-}));
-
 /* ECMWF IFS open data: one run's valid times answer for every ECMWF row (js/wx-ecmwf.js reports them) */
 const ECMWF = Object.freeze({
   kind: 'forecast', from: 'runtime', to: 'runtime', group: 'ecmwf-ifs',
@@ -194,7 +186,6 @@ export const TIME = Object.freeze({
 
   /* ── politics ── */
   'dl-dem': asOf(2023, 'js/time-countries.js FIELDS (EIU Democracy Index 2023)', LA('EIU Democracy Index 2023', 'EIU 民主主義指数 2023')),
-  'beta-dl-cpi': asOf(2023, 'js/layer-packs.js cpi (WGI 2023)', LA('Worldwide Governance Indicators 2023', '世界ガバナンス指標 2023')),
   'dl-eez': { kind: 'snapshot', asOf: 'fetch', period: 'P1Y', by: 'js/data-layers.js lgdEEZ (Marine Regions, the claims as published today)',
     says: LA('Exclusive economic zones (Marine Regions, today’s claims)', '排他的経済水域（Marine Regions、現在の主張）') },
   'dl-uselect': { kind: 'record', from: 1789, to: 2024, carry: 'last', by: 'data/us-elections.json',
@@ -226,11 +217,10 @@ export const TIME = Object.freeze({
   'fac-dl-osmmil': OSM,
 
   /* ── health ── */
-  'beta-dl-lifeexp': WBP,
   'bx-wbinfmort': WB,
   /* (map-layer-system) the indicator browser paints whichever of those series the reader picks, through the same reader */
   'bx-wbind': WB, 'bx-wbsuicide': WB, 'bx-wbsmoke': WB, 'bx-wbalcohol': WB, 'bx-wbwater': WB, 'bx-wbhealth': WB, 'bx-wbphys': WB,
-  'bx-wbbeds': WB, 'bx-wbu5mort': WB, 'bx-wblife': WB, 'bx-wbsan': WB, 'bx-wboverwt': WB,
+  'bx-wbbeds': WB, 'bx-wbu5mort': WB, 'bx-wblife': WB, 'bx-wbcpi': WB, 'bx-wbprecip': WB, 'bx-wbsan': WB, 'bx-wboverwt': WB,
   'fac-dl-osmhealth': OSM, 'fac-dl-osmwater': OSM,
 
   /* ── technology ── */
@@ -309,9 +299,6 @@ export const TIME = Object.freeze({
   'beta-dl-volcso2': { kind: 'record', follows: 'js/volcano-layers.js IntMapTime',
     rangeUnstated: LA('Volcanic SO₂ (NASA GIBS): the first day of the product is not declared to the clock', '火山 SO₂（NASA GIBS）：製品の初日が時計に宣言されていません'),
     says: LA('Volcanic SO₂ (NASA GIBS)', '火山 SO₂（NASA GIBS）') },
-  'beta-dl-unemp': WBP,
-  'beta-dl-internet': WBP,
-  'beta-dl-precip': WBP,
   'beta-dl-spin': { kind: 'convention', says: LA('Globe rotation (a view, not data)', '地球の自転表示（データではなく表示）') },
   'wp-dl-outbreaks': { kind: 'record', follows: 'js/outbreaks.js clockDay',
     rangeUnstated: LA('WHO Disease Outbreak News: the first item’s date is not declared to the clock', 'WHO 疾病発生ニュース：最初の記事の日付が時計に宣言されていません'),

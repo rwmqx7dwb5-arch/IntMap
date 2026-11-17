@@ -961,7 +961,7 @@ test('#R288 ⑨ the forecast axis is the app clock, and the separate box is gone
    test asserts now. The removal is asserted too, because an unreachable branch that still looks
    like a feature is exactly what this project forbids. */
 /* 綴りのまま: 対象は js/weather.js の closure（凡例の DOM と地図の source / layer）の中で、ブラウザの外では走らない */
-test('#R288 ⑩ air temperature is one layer with one ramp, and the reanalysis is gone', () => {
+test('#R288 ⑩ air temperature is one layer with one ramp, and the reanalysis is gone', async () => {
   const w = WX();
   assert.match(w, /id:'ec-temp',\s*variable:'temperature_2m'/);
   assert.match(w, /label:LA\('Temperature','気温'/, '「名前は単に気温に」');
@@ -981,7 +981,7 @@ test('#R288 ⑩ air temperature is one layer with one ramp, and the reanalysis i
   /* what must SURVIVE: the other dated GIBS layers still have their date control */
   assert.match(d, /const layerDates=\{precip:PRECIP_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE\};/);
   assert.match(d, /const isDated=layerDates\.hasOwnProperty\(id\);/);
-  assert.match(codeOnly(read('js/session-tabs.js')), /'dl-temp':'dl-ec-temp'/, 'a saved session is migrated');
+  assert.deepEqual((await import('../js/layer-manifest.js')).currentIds('dl-temp'), ['dl-ec-temp'], 'a saved session is migrated');
 });
 
 /* ── ⑪ the reanalysis is GONE, and nothing is left half-wired ────────────────────────────────

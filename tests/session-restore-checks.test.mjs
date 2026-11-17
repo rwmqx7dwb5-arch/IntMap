@@ -72,9 +72,9 @@ test('R224 ⑥ the second ocean-current layer is gone and saved sessions migrate
   for (const re of [/\['oceancur','lyrOceanCur'\]/, /function addOceanCurrents/, /lyr-oceancur/, /OC_WARM/])
     assert.ok(!re.test(dl), `data-layers still carries ${re}`);
   const st = read('js/session-tabs.js');
-  /* (#R232) the table gained a second row ('dl-night' → 'dl-nightside'), which is the point of its
-     being a table. What is pinned is that the ocean-current translation is IN it, once. */
-  assert.match(st, /const RETIRED=\{[^}]*'dl-oceancur':'wp-dl-currents'[^}]*\};/, 'the retired id is translated, once');
+  /* (feature-consolidation) the translation is the surviving row's own `formerly`, read through translateRetired */
+  assert.match(st, /translateRetired\(want\)/, 'the saved session translates retired ids');
+  assert.match(read('js/layers/wp-dl-currents.js'), /formerly: \['dl-oceancur'\]/, 'the retired id is translated, once — by the row that replaced it');
   assert.match(read('js/ocean-currents.js'), /wp-dl-currents/, 'and the survivor owns that row');
 });
 

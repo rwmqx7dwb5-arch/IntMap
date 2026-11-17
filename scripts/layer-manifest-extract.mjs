@@ -201,7 +201,7 @@ try {
     const keyOfRow = new Map();
     GROUPS.forEach(([, ids]) => ids.forEach((id) => { const r = rowFor(id); if (r && !keyOfRow.has(r)) keyOfRow.set(r, id); }));
     OTHERS_IDS.concat(EXTRA).forEach((id) => { const r = rowFor(id); if (r && !keyOfRow.has(r)) keyOfRow.set(r, id); });
-    const DATASEL = 'input[id^="dl-"], input[id^="gx-"], input[id^="eco-dl-"], input[id^="l9-dl-"], input[id^="beta-dl-"], input[id^="wp-dl-"], #r7-dl-disputes, #r7-dl-airdef, #r7-dl-langs';
+    const DATASEL = 'input[id^="dl-"], input[id^="gx-"], input[id^="eco-dl-"], input[id^="l9-dl-"], input[id^="beta-dl-"], input[id^="wp-dl-"]';
     const topOf = (el) => { while (el && el.parentElement !== dd) el = el.parentElement; return el; };
     const section = (el) => (el.closest('#layer-active-section') && 'active') || (el.closest('#layer-fav-section') && 'fav')
       || (el.closest('#layer-search-wrap') && 'search') || (el.closest('#layer-tools') && 'tools') || null;

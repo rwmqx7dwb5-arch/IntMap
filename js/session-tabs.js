@@ -17,7 +17,8 @@
  *  both halves of the hand-off — what this file returns and reads, what the core takes and passes — from
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/
-import { whenBoxes } from './layer-rows.js';   /* (layer-manifest) «as soon as its row exists», from the manifest — not a poll */
+import { whenBoxes } from './layer-rows.js';
+import { translateRetired } from './layer-manifest.js';   /* (feature-consolidation) a retired row id opens what replaced it */   /* (layer-manifest) «as soon as its row exists», from the manifest — not a poll */
 import { IntMapTime } from './chronos.js';
 import { MapState } from './map-state.js';   /* (map-state-store) the map's fields of the session are the store's projection */
 import * as bus from './bus.js';
@@ -114,36 +115,12 @@ export function makeSessionTabs(HOST, CTX) {
       try{ if(s.terr3d){ const b=document.getElementById('btn-view-3d'); if(b&&!(typeof HOST.terrain3D!=='undefined'&&HOST.terrain3D)) setTimeout(()=>b.click(),700); } }catch(_){}
       /* re-enable each saved layer as soon as its checkbox exists (rows build lazily up to ~1 s + beta modules) */
       const want=Array.isArray(s.layers)?s.layers.slice():[];
-      /* ══ (#R224) A RETIRED CHECKBOX ID IS NOT A LAYER THE USER GAVE UP ═══════════════════════════
-         「海流レイヤー、二つあるなんていうややこしいことするな。統一しろ。」 The Oceans & maritime row
-         (`dl-oceancur`, #R208) is gone and js/ocean-currents.js is the one ocean-current layer. A saved
-         session naming the retired box would simply find no element and poll 25 times for nothing — the
-         reader would come back and their currents would be off, which is a feature disappearing in a
-         round that was about tidying, not removing. So the id is TRANSLATED, once, on the way in.
-         ⚠ A MAP, not an `if`: this is where any future retirement is recorded, and keeping it a table
-         is what stops the next one being written somewhere else. ⚠ De-duplicated, because a session
-         could legitimately hold BOTH ids (someone who had turned on the World-data plate as well). */
-      /* (#R232) …and the second entry, for the same reason: 「昼/夜レイヤーは削除」. `dl-night` was the
-         flat turf disc; `dl-nightside` is the day/night shading that replaced it. A session that had
-         the old row on wants the night side on, which is what it now gets — and since the shading is
-         on by default anyway, the translation is usually a no-op rather than a surprise. */
-      /* (#R289) …and the two MERGES of this round, which are the same situation seen from the other
-         side: 「1人当たりCO₂排出レイヤーとCO₂排出量（百万t）レイヤーは一つに統合」 and the same for
-         国防費. A session that had the row that went wants the row that stayed — it is the same
-         quantity, and the mode switch in the legend is where the other view now lives. */
-      /* ⚠ (#R409) …and the FIRST retirement that is a SPLIT rather than a rename. 「WW1とWW2で
-         レイヤーを分けろ。」 turned `dl-wars` into `dl-ww1` and `dl-ww2`, so the value may now be a
-         LIST. A session that had the world wars on wants both wars on — translating it to one of
-         them would be choosing for the reader, and translating it to neither is the feature
-         disappearing in a round that was about splitting, not removing. The string form is
-         untouched: every entry above still means exactly what it meant. */
-      const RETIRED={ 'dl-oceancur':'wp-dl-currents', 'dl-night':'dl-nightside', 'dl-temp':'dl-ec-temp',
-                      'bx-wbco2t':'bx-wbco2', 'dl-milSpendGDP':'dl-milSpend',
-                      'dl-wars':['dl-ww1','dl-ww2'] };
-      for(let i=want.length-1;i>=0;i--){ const to=RETIRED[want[i]];
-        if(!to) continue;
-        if(Array.isArray(to)){ want.splice(i,1); for(const id of to) if(want.indexOf(id)<0) want.push(id); continue; }
-        if(want.indexOf(to)<0) want[i]=to; else want.splice(i,1); }
+      /* (#R224/#R232/#R289/#R409) a saved session naming a retired row id is not a layer the reader gave up: it is translated,
+         once, on the way in — ocean currents, the night side, the CO₂ and defence merges, the world-wars split. */
+      /* (feature-consolidation) THE TABLE THAT STOOD HERE IS NOW EACH ROW'S OWN `formerly` (js/layers/<id>.js), read through
+         js/layer-manifest.js translateRetired — the same translation the share link and the favourites make, so a retirement
+         is written once, by the row that replaced the old one, and every door honours it. A split opens every row. */
+      { const now=translateRetired(want); want.length=0; want.push.apply(want,now); }
       /* (#R189) ONE-TIME MIGRATION of poisoned sessions. Every session written before #R188 shipped
          (no `defv` stamp) was written by a snapshot that could not tell "the user switched it off"
          from "the download failed and autoUncheck switched it off" — so an absent default-on id in

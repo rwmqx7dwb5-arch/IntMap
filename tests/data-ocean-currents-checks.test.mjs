@@ -95,9 +95,11 @@ test('R208 ⑧c (#R224): there is exactly ONE ocean-current layer left', () => {
   assert.ok(!/function showOceanCurLegend/.test(dl), 'no second legend');
   assert.ok(!/lyr-oceancur/.test(dl), 'no second set of layer ids');
   /* …and a session that had the old row ticked is carried over to the surviving one */
-  const st = read('js/session-tabs.js');
-  assert.match(st, /dl-oceancur/, 'the migration knows the retired id');
-  assert.match(st, /wp-dl-currents/, 'and where it goes');
+  /* (feature-consolidation) the retired id is read once, from the surviving row's `formerly` in js/layer-manifest.js —
+     js/session-tabs.js and every other reader translate through translateRetired() there, so the fact is the row's */
+  const rows = read('js/layer-manifest.js').split('\n').filter((l) => /id: "wp-dl-currents"/.test(l));
+  assert.ok(rows.some((l) => /formerly: \[[^\]]*"dl-oceancur"/.test(l)), 'the surviving row names the retired id it replaces');
+  assert.match(read('js/session-tabs.js'), /translateRetired/, 'and a restored session goes through that table');
 });
 
 /* ═══ #R219 ④ A BUNDLED DATASET, IN FIVE LANGUAGES ═══════════════════════════════════════════ */

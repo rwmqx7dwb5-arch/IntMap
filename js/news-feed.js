@@ -234,10 +234,6 @@ export function newsFeed(HOST){
     }
     /* National media editions chosen in Settings (#29) — multiple allowed. */
     try{ (window.imNewsCountries||[]).forEach(code=>{ const ed=NEWS_COUNTRY_EDITIONS[code]; if(ed && !base.some(u=>u.includes(ed))) base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed}`); }); }catch(_){}
-    /* Pro "RU·CN local primary-source intel" overlay — pulls the Russian + Chinese editions. */
-    if(window.proIntelOn && window.imIsPro && window.imIsPro()){
-      ['hl=ru&gl=RU&ceid=RU:ru','hl=zh-CN&gl=CN&ceid=CN:zh-Hans'].forEach(ed=>{ if(!base.some(u=>u.includes(ed))) base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed}`); });
-    }
     return base;
   }
   /* (news-sources-follow-feed) A FEED LANDS HERE AND NOWHERE ELSE. Every set of headlines this file puts into

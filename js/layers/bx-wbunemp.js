@@ -5,5 +5,7 @@ export default {
   order: 130,
   key: 'wbunemp',
   rest: true,
+  share: true,
   measures: ['worldbank:SL.UEM.TOTL.ZS'],
+  formerly: ['beta-dl-unemp'],
 };

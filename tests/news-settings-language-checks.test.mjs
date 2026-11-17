@@ -63,7 +63,7 @@ const OWNERS = [
   ['js/satellite.js', '衛星画像の API キー欄'],
   ['js/layer-favs.js', 'レイヤーのお気に入りチップ'],
   ['js/compare.js', '比較ビューの入口ボタン'],
-  ['js/dash-extended.js', '高度な分析の見出しと係争境界の注記'],
+  /* (feature-consolidation) js/dash-extended.js left the list: the dispute lines and their heading were removed, so it paints no text */
   ['js/atlas-controls.js', 'Atlas の命名掃引（aria-label）'],
 ];
 /* 綴りのまま: 主張が配線・不在・一意性（どこが何を呼ぶか／無いこと／1 か所だけ）で、評価して取り出せる値が無い */
@@ -148,7 +148,6 @@ test('R466 ④ 消えたヘッダの言語ピルを、relabel の引き金にし
   const dash = CODE('js/dash-extended.js');
   assert.ok(!/'lang-jp'/.test(dash),
     'ヘッダの言語ピルにまだ relabel を繋いでいる — 押せないボタンは引き金にならない');
-  assert.match(dash, /addEventListener\(\s*'intmap-lang'/, 'dash-extended が言語の切替を聞いていない');
 });
 
 /* ── ⑤ 打ちかけの入力を消す形の「直し」になっていない ──────────────────────────
@@ -158,9 +157,8 @@ test('R466 ④ 消えたヘッダの言語ピルを、relabel の引き金にし
 test('R466 ⑤ 衛星の鍵欄は、言語切替では貼り替えるだけで作り直さない', () => {
   const sat = CODE('js/satellite.js');
   const rel = lift(sat, 'function satRelabelKeyInputs()', 'js/satellite.js');
-  const body = rel.replace(/if\(!HOST\.imIsPro\(\)\)\{[^}]*\}/, '');   /* 施錠側は入力を持たないので作り直してよい */
-  assert.ok(!/innerHTML/.test(body),
-    'Pro 側の鍵欄を作り直している — 打ってまだ Apply していない鍵が消える');
+  assert.ok(!/innerHTML|satRenderKeyInputs\(/.test(rel),
+    '鍵欄を作り直している — 打ってまだ Apply していない鍵が消える');
   assert.match(rel, /sat-key-name/, '提供者名を貼り替えていない');
   assert.match(rel, /sat-key-status/, '●／○ の状態語を貼り替えていない');
 });

@@ -171,7 +171,7 @@ test('R232 layers: the flat night layer is gone and the shading has one owner', 
   assert.doesNotMatch(noJs(read('js/data-layers.js')), /setting-night-side/, '…and nothing still writes to it');
   assert.match(capsSource(), /setEnabled\(want\)[^\n]*\n[^\n]*_imSyncNightSideRow/, 'Atlas’s nightSide capability: the Layers row follows');
   assert.match(noJs(read('js/atlas-console.js')), /nightSide:\{[^\n]*setEnabled\(!!v\)[^\n]*_imSyncNightSideRow/, 'Atlas’s feature chip: the Layers row follows');
-  assert.match(read('js/session-tabs.js'), /'dl-night':'dl-nightside'/, 'a saved session is migrated');
+  assert.deepEqual(LM.currentIds('dl-night'), ['dl-nightside'], 'a saved session or link naming the old row is migrated (by the formerly of the row that replaced it)');
 });
 }
 
@@ -477,7 +477,7 @@ test('R261 ⑩: Others is emptied into named families and the demoted rows stay 
   /* (#R469) the shared reader — the regex this replaced needed `]]` after the id list, and
      matched nothing once each shelf grew a count of the rows the reader named. */
   const grp261 = byKey;
-  for (const id of ['popgrid', 'gdppc', 'tfr', 'hdi', 'dem', 'cpi', 'lifeexp', 'energy']) {
+  for (const id of ['popgrid', 'gdppc', 'tfr', 'hdi', 'dem', 'wbcpi', 'wblife', 'energy']) {
     const w = Object.keys(grp261).filter((g) => grp261[g].includes(id));
     assert.equal(w.length, 1, id + ' must be on exactly one shelf');
     assert.ok(!/Others|Beta/i.test(w[0]), id + ' fell back into ' + w[0]);

@@ -285,8 +285,6 @@ IntMapLang.define('en', { ui: {
       sortAsc:"Ascending",
       sortDesc:"Descending",
       sortDir:"Toggle ascending / descending",
-      proArchive:"10-Year Time-Travel Archive",
-      proIntel:"RU·CN Local Primary-Source Intel",
       lblNavSens:'Map navigation sensitivity',
       lblNavZoom:'Zoom',
       lblNavPan:'Pan',

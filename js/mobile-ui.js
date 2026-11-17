@@ -215,7 +215,7 @@ export function mobileUI(HOST){
          instruction 「なくていい」); nothing is deleted — widening the window brings it straight back. */
       if(isM){ moveTo(layerDropdown,moMountLayers);
         /* Mobile shows every layer group expanded (the carets are hidden there, #12). */
-        try{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ h.classList.remove('lyr-collapsed'); let el=h.nextElementSibling; while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ if(el.style) el.style.display=''; el=el.nextElementSibling; } }); }catch(_){}
+        try{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head').forEach(h=>{ h.classList.remove('lyr-collapsed'); let el=h.nextElementSibling; while(el && !el.matches('.layer-group-title,.lyr-head') && el.tagName!=='HR'){ if(el.style) el.style.display=''; el=el.nextElementSibling; } }); }catch(_){}
         /* (#R28) every group (incl. Others(beta)) shows fully expanded on mobile — no pulldown. */
         try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
         /* (#R232) the classic dropdown stays mounted here as the CHECKBOX STORE — every tile toggles a real

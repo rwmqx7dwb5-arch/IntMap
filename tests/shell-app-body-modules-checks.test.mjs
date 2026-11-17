@@ -53,12 +53,11 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 {
 const CORE = read('js/app-body.js');
 
-/* The nine files and the one name each exports. Every other list below is READ OUT of the sources. */
+/* The files and the one name each exports. Every other list below is READ OUT of the sources. */
 const MODULES = [
   ['js/session-tabs.js', 'makeSessionTabs'],
   ['js/layer-dropdown.js', 'makeLayerDropdown'],
   ['js/layer-favs.js', 'makeLayerFavs'],
-  ['js/premium-plan.js', 'makePremiumPlan'],
   /* (country-analysis-unify) js/screenshot.js left: 「Screenshot」 opens the share panel's Image tab (tests/country-analysis-unify-checks ⑤) */
   ['js/time-countries.js', 'makeTimeCountries'],
   /* the second pass: every section of js/app-body.js was swept for its surface, and these four
@@ -199,7 +198,6 @@ test('R200 ③: the values app-body REASSIGNS are read live off IM_HOST, never c
     'js/label-occlusion.js:markersArray',
     'js/label-occlusion.js:proj',
     'js/layer-favs.js:lang',
-    'js/premium-plan.js:mapType',
     'js/session-tabs.js:mapType',
     'js/session-tabs.js:mode',
     'js/session-tabs.js:terrain3D',
@@ -243,7 +241,7 @@ test('R200 ④b: the names the layers menu hands back are HOISTED, because they 
 });
 
 test('R200 ④: no module inherited a closure variable', () => {
-  const mine = /(session-tabs|layer-dropdown|layer-favs|premium-plan|time-countries)\.js/;
+  const mine = /(session-tabs|layer-dropdown|layer-favs|time-countries)\.js/;
   const problems = checkSplitScope().filter((p) => mine.test(p.file));
   assert.deepEqual(problems, [], 'split-scope problems:\n' + problems.map((p) => `${p.file}: ${p.msg}`).join('\n'));
 });

@@ -185,11 +185,9 @@ test('R266 ④: every World-Bank choropleth paints ONE year, and says which', ()
   /* the default is a year, not the old mixed «latest per country» */
   assert.match(s, /wbYear\[L\.id\]!==undefined\)\?wbYear\[L\.id\]:\(\(S&&S\.best\)\|\|''\)/, 'the default is not the series default year');
   assert.match(s, /counts\[years\[i\]\]>=max\*0\.9/, 'the default year is not chosen by coverage');
-  /* the second World-Bank family (js/layer-packs.js) got the same control */
-  const lp = read('js/layer-packs.js');
-  assert.match(lp, /const wbYr=\{\}/, 'the corruption / life-expectancy / unemployment / internet / precipitation family has no year state');
-  assert.match(lp, /class="wb-year"/, '…and no picker');
-  assert.match(lp, /window\.IntMapWB&&window\.IntMapWB\.series/, '…and it fetches its own series instead of sharing one');
+  /* (feature-consolidation) the second World-Bank family (js/layer-packs.js) is gone — corruption, life expectancy,
+     unemployment, internet and precipitation are rows of this table, so they get the same control by being in it */
+  for (const id of ['wbcpi', 'wblife', 'wbunemp', 'wbnet', 'wbprecip']) assert.match(s, new RegExp("\\{id:'" + id + "'"), id + ' is not a row of the one table');
 });
 
 test('R266 ⑤: the two globally sparse facility sets ship a global snapshot', () => {
@@ -247,17 +245,16 @@ test('R266 ⑧: annual precipitation is a measured field, and its grid is read f
     assert.ok(st.size > 100000, f + ' is suspiciously small');
     assert.ok(st.size < 12 * 1024 * 1024, f + ' is too heavy to ship');
   }
-  /* the country-average World-Bank precipitation layer is still there — this is additive */
-  const lp = read('js/layer-packs.js');
-  /* (country-analysis-unify) the row names its indicator; the series is the catalogue's */
-  assert.match(lp, /precip:\{k:'precip',/);
+  /* the country-average World-Bank precipitation layer is still there — this is additive. (feature-consolidation) it is a row
+     of js/wb-layers.js now; the row names its indicator and the series and the NAME are the catalogue's */
+  assert.match(read('js/wb-layers.js'), /\{id:'wbprecip', k:'precip',/);
   assert.equal(wbIndicator('precip').code, 'AG.LND.PRCP.MM');
   /* ⚠ (#R266 追記) …AND THE TWO ARE NOT BOTH CALLED «Annual precipitation». Measured on production:
      the new 1 km field and the World-Bank country average both read 「年降水量」 in the layer list —
      the very ambiguity 「人口密度レイヤは、国別とグリッドで名称の区別をつけて」 was reported about,
      reproduced by this round's own addition. */
-  assert.match(lp, /precip:LA\('Annual precipitation \(by country\)'/, 'the country average does not say so');
-  assert.ok(!/precip:LA\('Annual precipitation','/.test(lp), 'the two precipitation layers share a name again');
+  assert.equal(wbIndicator('precip').n[0], 'Annual precipitation (by country)', 'the country average does not say so');
+  assert.equal(wbIndicator('precip').n[1], '年降水量（国別平均）', 'the country average does not say so in Japanese');
 });
 
 test('R266 ⑪: 1520 and 1524 are two gauges, and the three population layers are three names', () => {
@@ -511,22 +508,23 @@ test('#R254 ② a country choropleth gets the 10 m outline without the Countries
   assert.match(dl, /_hiResCountries[\s\S]{0,600}_imReapplyChoros/,
     'a flush that lands after the colours are on does not repaint them — the layer would go blank');
 
-  /* the World-Bank family builds its OWN copy of the borders and must follow the upgrade */
-  const lp = code(read('js/layer-packs.js'));
-  assert.match(lp, /geoOf\(\)\s*!==\s*usedGeo/,
-    'wbToggle does not watch for the 10 m replacement — whichever outline was current at toggle time is kept for the session');
+  /* the World-Bank family builds its OWN copy of the borders and must follow the upgrade. (feature-consolidation) the one
+     family is js/wb-layers.js: js/countries-ui.js says once that the fine collection replaced the coarse one, and every row
+     on screen repaints on it */
+  { const cu = code(read('js/countries-ui.js')); const i = cu.indexOf('HOST.countryGeo=hi; window.countryGeo=hi;');
+    assert.ok(i > 0 && /^\s*try\{ bus\.emit\('intmap-country-geo'\)/.test(cu.slice(i + 41)), 'the replacement of the outlines is not announced'); }
+  assert.match(code(read('js/wb-layers.js')), /bus\.on\('intmap-country-geo',\(\)=>\{ wbOn\.forEach\(id=>\{ const B=wbById\[id\]; if\(B\) choroOn\(B\); \}\); \}\)/,
+    'the World Bank rows do not repaint on the 10 m outline — whichever outline was current at toggle time is kept for the session');
 });
 
 /* ── ③ THE LEGEND THAT WAS A BOX WITH NOTHING IN IT ──────────────────────────────────────────── */
 test('#R254 ③ the World-Bank choropleths print a colour scale, built from their own ramp', () => {
-  const lp = code(read('js/layer-packs.js'));
-  assert.match(lp, /function rampKey\(\)/, 'the ramp key is gone — the legend is a title and a slider again');
-  /* it must READ W.ramp, not carry a second table of colours */
-  const rk = /function rampKey\(\)\{([\s\S]*?)\n      \}/.exec(lp);
-  assert.ok(rk, 'rampKey changed shape');
-  assert.match(rk[1], /W\.ramp\[i\]/, 'the scale is not derived from the layer ramp — the two can drift apart');
+  /* (feature-consolidation) the one family is js/wb-layers.js — its key is built from the row's own ramp */
+  const wb = code(read('js/wb-layers.js'));
+  const rk = /function rampKey\(L\)\{([\s\S]*?)\n    \}/.exec(wb);
+  assert.ok(rk, 'the ramp key is gone — the legend is a title and a slider again');
+  assert.match(rk[1], /const r=L\.ramp/, 'the scale is not derived from the layer ramp — the two can drift apart');
   assert.doesNotMatch(rk[1], /linear-gradient\(90deg,\s*#/, 'the gradient is built from typed colours instead of the layer ramp');
-  assert.match(lp, /querySelector\('\.wb-key'\)/, 'the legend does not attach the key');
 });
 
 /* ── ④ THE PREVIEW THAT 403'd ────────────────────────────────────────────────────────────────── */
