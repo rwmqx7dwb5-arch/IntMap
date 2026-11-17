@@ -47,7 +47,17 @@ newsjp: ShakeMap・火山パネル・場所検索・機体写真・ナビのシ�
 GeoTIFF の float32 nodata 比較、高緯度での可視範囲の東西の幅、GeoTIFF の無制限確保・GeoPackage の WKB の再帰の深さ、
 `offline-maps.js` の abort listener の蓄積。これらは報告を受け、コードの記述までは確かめた。ただし実在するファイルでの影響を測っておらず、今回は直していない。
 
-## 3. 検査
+## 3. 起動予算の天井を上げた理由
+
+PR の CI で `check:perf` が赤になった。`eager.gzip` が 1513.6 kB で、天井 1506.0 kB に幅 7.5 kB を足した線を 0.1 kB 超えていた。
+同じ木で、この branch の `js/`・`src/` だけを main の版に戻して build すると、門は通った。つまり main は線のすぐ下にあり、
+この branch が起動時の束に足した分は数百バイトのコードだけである。触ったファイルのうち eager に入るのは `widget-layout`・
+`land-mask`・`elevation-profile`・`precip-annual`・`search-geocode` の 5 本で、足したコメントは束に残らない
+（`dist/` を照合して確かめた）。足したのは欠陥の修正（世代の照合・枠の共有・色表）で、これを外せば欠陥が戻る。
+そこで、最新の main に rebase した木で `perf-budget --update` を走らせた。越えた行だけが上がり、その木で越えていたのは
+`eager.brotli` だけだった（1144.8 → 1151.0 kB）。この差のほとんどは、すでに main に入っていた増加である。
+
+## 4. 検査
 
 `tests/quiet-fixes-sweep-checks.test.mjs`（`;` 区切り CSV の 2 形・`-0°` の符号・破壊域の失敗をキャッシュしないこと。
 いずれも関数を実際に評価する）。既存の `tests/file-import-checks.test.mjs` 11 件も緑。
