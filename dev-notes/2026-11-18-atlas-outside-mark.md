@@ -1,6 +1,7 @@
 ---
 title: Atlas の外部内容の印を「そのターン」から「その言葉が入力に残っている間」へ——要約・計画・作業文脈を通って次のターンに届いても確認が出る。承認はモデルの再呼び出しではなく読者のボタン
 date: 2026-11-18
+pr: 1187
 newsen: When Atlas has read a web page or outside data, sending, publishing or deleting something now asks you with Run and Don't buttons for as long as that content is still part of the conversation, not only in the same turn.
 newsjp: Atlas がウェブページや外部データを読んだ後は、その内容が会話に残っている間、送信・公開・削除などの操作の前に「実行」「やめる」ボタンで確認するようになりました（同じターンの中だけでなく）。
 ---
