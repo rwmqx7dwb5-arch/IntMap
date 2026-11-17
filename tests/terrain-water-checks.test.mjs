@@ -128,7 +128,7 @@ test('R265 ① the DEM decode rejects the terrarium void, on a physical threshol
      both run — and the page's path still counts the holes it decoded (`_countVoids`) */
   const s = codeOnly(read('js/map-readout.js'));
   const dd = codeOnly(read('js/dem-decode.js'));
-  const k = /export const DEM_NODATA_BELOW = [^;]+;/.exec(dd);
+  const k = /(?:export )?const DEM_NODATA_BELOW = [^;]+;/.exec(dd);
   assert.ok(k, 'the floor is one named constant');
   const decodeSrc = k[0].replace('export ', '') + '\n' + liftFunction(dd, 'decodeTerrarium');
   const decode = (fill) => {

@@ -50,5 +50,5 @@ test('r246 ⑤ live aircraft are vivid red when military, with one outline width
   assert.ok(parseFloat(w[1]) > 1.6, `the outline is ${w[1]} units — it was asked to get THICKER than 1.6`);
   assert.match(WORKER, /mil: \[0xFF, 0x30, 0x40\]/, 'military aircraft are the vivid red #FF3040 the reader asked for');
   /* the ship glyph is NOT an aircraft and keeps its own line */
-  assert.match(DL, /const make=\(color\)=>\{ const s=40,[\s\S]{0,200}?ctx\.lineWidth=1\.6;/, 'the ship icon lost its own stroke');
+  assert.match(DL, /const make=\(color\)=>\{ const s=40,(?:(?!return ctx\.getImageData)[\s\S])*?ctx\.lineWidth=1\.6;/, 'the ship icon lost its own stroke');
 });

@@ -17,7 +17,7 @@
    Deep at −10,935 m and terrarium's own bathymetry bottoms out just above it, so nothing this dataset
    can legitimately say is under −12,000 m. A reading below that — RGB(0,0,0) is −32,768 m, the
    dataset's void — is not ground. Expires if the dataset ever encodes a deeper real surface. */
-export const DEM_NODATA_BELOW = -12000;
+const DEM_NODATA_BELOW = -12000;
 
 /** rgba (256×256×4 bytes) → { el: Float32Array(65536) of metres, NaN where there is no data; voids }.
  *  An untouched pixel of a cleared canvas is (0,0,0,0) and a void terrarium pixel is (0,0,0,255); both
