@@ -596,9 +596,14 @@ test('#R221 ② the DEM cache exempts pinned tiles, and the field pins + release
 /* spelling kept: browser script (js/map-readout.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('#R221 ② a failed elevation tile expires instead of poisoning the session', () => {
   const ro = read('js/map-readout.js');
-  const i = ro.indexOf('img.onerror');
-  assert.ok(i > 0);
-  assert.ok(ro.slice(i, i + 260).includes('_demCache.delete(key)'),
+  /* (speed-overhaul) the image and the decoding worker fail through ONE handler, _demFailedFor — both must reach it,
+     and it is the handler that clears the null marker later */
+  assert.match(ro, /img\.onerror=\(\)=>failed\(\)/, 'the image read must fail through the shared handler');
+  assert.match(ro, /viaWorker\.then\([\s\S]{0,200}?\(\)=>failed\(\)\)/, 'the worker read must fail through the shared handler');
+  const i = ro.indexOf('function _demFailedFor(');
+  assert.ok(i > 0, 'the shared failure handler is gone');
+  const body = ro.slice(i, ro.indexOf('\n  }', i));
+  assert.match(body, /setTimeout\(\(\)=>\{ if\(_demCache\.get\(key\)===null\) _demCache\.delete\(key\); \}/,
     'a null (failed) tile must be cleared later so the next field can ask again');
 });
 
