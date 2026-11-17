@@ -84,6 +84,10 @@
               "tool": "data_gis"
             },
             {
+              "id": "time.territoryChange",
+              "tool": "time_territoryChange"
+            },
+            {
               "id": "time.textMap",
               "tool": "time_textMap"
             },

@@ -26,6 +26,8 @@ import { execFileSync } from 'node:child_process';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (p) => readFileSync(join(ROOT, p), 'utf8');
 const modUrl = (p) => pathToFileURL(join(ROOT, p)).href;
+/* a literal inside a RegExp: every metacharacter escaped, the backslash first among them */
+const reEscape = (x) => String(x).replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 const bundle = (rel) => { const t = src(rel); return JSON.parse(t.slice(t.indexOf('=') + 1).replace(/;\s*$/, '')); };
 
 const A = await import(modUrl('js/polity-arc.js'));
@@ -154,7 +156,7 @@ test('② one page per Wikidata item the records state — never by spelling —
   for (const L of (await import(modUrl('scripts/history-pages.mjs'))).LANGS) {
     const alias = out[P.polityPath('united-states-of-america', L) + 'index.html'];
     assert.ok(alias, 'the old address is still written (' + L.key + ')');
-    assert.match(alias, new RegExp('<link rel="canonical" href="[^"]*' + P.polityPath('united-states', L).replace(/\//g, '\\/') + '">'), 'canonical to the item\'s page');
+    assert.match(alias, new RegExp('<link rel="canonical" href="[^"]*' + reEscape(P.polityPath('united-states', L)) + '">'), 'canonical to the item\'s page');
     const page = out[P.polityPath('united-states', L) + 'index.html'];
     assert.ok(page.includes('United States of America'), 'the item\'s page names its other name');
     assert.ok(!out[P.hubPath(L) + 'index.html'].includes('data-polity="united-states-of-america"'), 'the hub lists the item once');
@@ -238,7 +240,7 @@ test('④ a socket the code opens is asked by opening it; an offline device is a
   const backend = new URL(/window\.SUPABASE_URL = '([^']+)'/.exec(src('src/vendor.js'))[1]).hostname;
   const be = ledger.hosts.find((h) => h.host === backend);
   assert.ok(be.protocols.includes('https') && be.protocols.includes('wss'), 'the backend is reached over https and Realtime\'s socket');
-  assert.match(be.socket, new RegExp('^wss://' + backend.replace(/\./g, '\\.') + '/realtime/v1/websocket\\?apikey=[^&]+&vsn='), 'the socket supabase-js opens');
+  assert.match(be.socket, new RegExp('^wss://' + reEscape(backend) + '/realtime/v1/websocket\\?apikey=[^&]+&vsn='), 'the socket supabase-js opens');
 
   const probes = RC.probeRows(ledger.hosts, { firstView: [], backend });
   const aisP = probes.filter((p) => p.host === 'stream.aisstream.io');
