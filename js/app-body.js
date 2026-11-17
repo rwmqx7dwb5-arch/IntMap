@@ -719,7 +719,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!va||!vb) return {err:t('aiVisPickDates')};
     const save={ day:satState.day, year:satState.year, opacity:satState.opacity };
     /* hide map overlays so the captured frame is imagery, not pins/grid */
-    const overlays=['news-dots','news-labels','news-pin-shadow','dash-dots','dash-labels','user-pin-dot','user-pin-shadow','grid-lines','grid-lines-casing','grid-tropic','grid-tropic-label','grid-major'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+    const overlays=['news-dots','news-labels','news-labels-left','news-pin-shadow','dash-dots','dash-labels','user-pin-dot','user-pin-shadow','grid-lines','grid-lines-casing','grid-tropic','grid-tropic-label','grid-major'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
     const vis=overlays.map(id=>{ try{ return GE().layers.getLayout(id,'visibility')||'visible'; }catch(_){ return 'visible'; } });
     overlays.forEach(id=>{ try{ GE().layers.setLayout(id,'visibility','none'); }catch(_){} });
     satState.opacity=1;

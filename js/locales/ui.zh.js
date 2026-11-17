@@ -311,7 +311,7 @@ IntMapLang.define('zh', {
     'first appears in this report': '首次出現於這篇報導',
     'How this was written — the exact wording each sentence came from ({n})': '這段文字從何而來 — 每句話所依據的原文（{n} 則）',
     'In each outlet’s own words': '各家媒體的原文',
-    'The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.': '上面這段由 AI 撰寫。它整合了這些媒體所發布的內容：每一句在儲存前都已由機器與此處顯示的原文比對過，無法比對的句子一律捨棄，絕不顯示。',
+    'The paragraph above was written by AI from what these outlets published. Each sentence names the outlet and the passage it is based on, and before saving a program checked that every such passage really appears in that outlet’s text; a sentence whose passage could not be found is discarded. The program does not check that the sentence states the passage correctly — compare them under “How this was written”.': '上面這段文字是 AI 根據這些媒體發布的內容寫成的。每句話都標明所依據的媒體與原文段落；儲存前，程式確認了每個段落確實出現在該媒體的文字中（找不到段落的句子會被捨棄）。程式不檢查句子是否正確表達了該段落——可在「這段文字從何而來」中對照。',
     'Key figures': '關鍵數字',
     'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': '這則事件只有一家媒體提供內文，因此不離開 IntMap 就能讀到的內容僅止於此。',
     'Read at {s} ↗': '在 {s} 閱讀 ↗',

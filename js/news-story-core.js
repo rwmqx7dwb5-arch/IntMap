@@ -14,8 +14,24 @@
  *    a word is a NAME when the headlines written in sentence case capitalise it mid-sentence (measured
  *    over the window), and a pair of words is preferred by how much more often they appear together than
  *    apart (pointwise mutual information), weighted by how many events they hold together.
- *  ⚠ THE WORDS ARE CUT BY THE SERVER ONLY (public.news_title_terms). This file never splits a headline: it
- *    passes back the spellings news_story_terms returned, so there is one matching rule, not two.
+ *  ⚠ THE WORDS ARE CUT BY THE SERVER ONLY (public.news_title_terms). This file never cuts a headline into the words
+ *    a story is MATCHED on: it passes back the spellings news_story_terms returned, so there is one matching rule,
+ *    not two. Where it COMPARES headlines with each other (the centre of an event, the lineage below) it uses the
+ *    one grouper's tokeniser (supabase/functions/_shared/news-cluster.js tokenise — stems, stop words), the same
+ *    rule that decided which articles are one event; it is never used to ask the server for rows.
+ *
+ *  ⚠⚠⚠ A SUBJECT IS NOT A THREAD (measured 2026-11-17, production, 16,891 events in 60 days). «Follow this story»
+ *    from «Trump, Xi, Putin to hold historic meeting in China: White House» suggested «white + house»: the pair
+ *    with the highest PMI, because the two words are one NAME. The story it opened held 45 events — the CNN
+ *    ban, the ballroom, the Halloween flyover — and 1 of them was the summit. Two faults, two rules:
+ *      1. A pair made only of NAMES says who or where, not what happened («white + house», «huang + jensen»).
+ *         It is offered after the pairs that carry a word of what happened, never before them.
+ *      2. The words must hold the event's CENTRE: a word most of the event's own headlines share (more than half
+ *         of the distinct headlines of its articles). «white» and «house» are in 4 of 11; «putin» in 10,
+ *         «meeting» in 9. A choice with no centre word is offered after those with one.
+ *    And when the words still name a subject rather than a thread (they hold more than ALONE_MAX events), the
+ *    story keeps only the events that FOLLOW from the one it was opened from (`lineage`, below): «putin» holds
+ *    82 events; the 13 reachable from the summit's announcement are the summit.
  *  ⚠ WHAT HAS NO PLACE IS COUNTED, NOT DROPPED — an event with no point is in the timeline and the list
  *    and is said to be unplaced; a point no country contains is said to be at sea.
  *
@@ -24,6 +40,7 @@
  * ==========================================================================*/
 
 import { km } from './news-intel-core.js';
+import { tokenise, DEFAULTS } from '../supabase/functions/_shared/news-cluster.js';   /* the one grouper's tokeniser and its reporting window */
 
 const DAY = 86400000;
 
@@ -43,8 +60,23 @@ const DAY = 86400000;
                      Re-derive if the retention changes.
    SPAN_DAYS   60    the window a story is read over, inside the server's 62-day limit (news_story, news_pulse).
    LIMIT       400   rows asked for; the widest single-name thread measured (india, 361 events in 44 days) fits. A
-                     story that reaches it is said to be cut («at least»), never shown as complete. */
-export const STORY = Object.freeze({ MIN_EVENTS: 3, MAX_SHARE: 0.05, ALONE_MAX: 30, NAME_SHARE: 0.5, NAME_MIN_OCC: 2, SPAN_DAYS: 60, LIMIT: 400, MAX_TERMS: 6 });
+                     story that reaches it is said to be cut («at least»), never shown as complete.
+   CENTRE_SHARE 0.5  a word is the event's centre when MORE than half of the distinct headlines of its articles have it
+                     (a majority, not a tuned number). Measured 2026-11-17 on the summit (11 distinct headlines): putin
+                     10, meeting 9, trump 11, china 6 — white 4, house 4. With fewer than 2 distinct headlines there is
+                     no majority to read and every word of the one headline is central.
+   LINK_SHARED 2     two events are one step of a thread when their headlines share at least two words besides the
+                     story's own. Measured 2026-11-17 (production, from the summit's announcement): with ONE shared word
+                     «white + house» walked through «trump» to four White House stories (Hassett, the judges, ICE, the
+                     Democrats' inquiry) and «huang + jensen» kept 27 of 61; with two, the summit alone, and the 13 of
+                     the resignation-to-return thread; «putin» keeps 13 of 82, joined by «trump + summit», «trump +
+                     meet», «yalta + summit». Re-measure if headlines get shorter (two-word overlaps become rarer).
+   LINK_GAP_H  = news-cluster DEFAULTS.timeWindowH (48 h): how long one happening keeps being reported is the step a
+                     thread may take between two reports — one number, read from the grouper, not copied. A thread with
+                     a silence longer than that is two threads (the summit's 9 November announcement and its 12 November
+                     coverage are measured three days apart: they are not joined). */
+export const STORY = Object.freeze({ MIN_EVENTS: 3, MAX_SHARE: 0.05, ALONE_MAX: 30, NAME_SHARE: 0.5, NAME_MIN_OCC: 2, SPAN_DAYS: 60, LIMIT: 400, MAX_TERMS: 6,
+  CENTRE_SHARE: 0.5, LINK_SHARED: 2, LINK_GAP_H: DEFAULTS.timeWindowH });
 
 /* a word as the server spells it: lower case, letters and digits, 3–40 characters (public.news_title_terms) */
 const TERM_RE = /^[\p{Ll}\p{Lo}\p{N}]{3,40}$/u;
@@ -65,38 +97,119 @@ export function decodeTerms(j) {
 /** isName(term) — capitalised mid-sentence in sentence-case headlines at least NAME_SHARE of the time */
 const isName = (x) => !!x && x.occ >= STORY.NAME_MIN_OCC && x.cap / x.occ >= STORY.NAME_SHARE;
 
-/** suggest(stats) → { pick, choices, chips }
+/* a server word in the grouper's form (stemmed; a stop word has none) — how a word of the story is compared with headlines */
+const stemOf = (t) => { const s = tokenise(String(t || '')); return s.size ? s.values().next().value : null; };
+const distinct = (titles) => Array.from(new Set((titles || []).map((x) => String(x || '').trim()).filter(Boolean)));
+
+/** centreOf(titles) → Set of the grouper's tokens that MORE than CENTRE_SHARE of the distinct headlines share, or null
+ *  when there are fewer than two distinct headlines (no majority to read: every word of the one headline is central) */
+export function centreOf(titles) {
+  const ts = distinct(titles);
+  if (ts.length < 2) return null;
+  const n = new Map();
+  for (const t of ts) for (const k of tokenise(t)) n.set(k, (n.get(k) || 0) + 1);
+  return new Set([...n].filter(([, c]) => c > ts.length * STORY.CENTRE_SHARE).map(([k]) => k));
+}
+
+/** suggest(stats, { centre }) → { pick, choices, chips }
  *   chips    every word of the headline another event also has (df ≥ 2), names first, the rarest first
  *   choices  the threads worth offering, best first:
  *              1. a name that is a thread by itself (MIN_EVENTS ≤ df ≤ ALONE_MAX), the rarest first
- *              2. pairs of words that hold ≥ MIN_EVENTS events together, at least one a name, by PMI × ln(1 + n)
- *              3. broader names (df > ALONE_MAX), the rarest first
+ *              2. pairs of words that hold ≥ MIN_EVENTS events together, at least one a name and at least one NOT a
+ *                 name, by PMI × ln(1 + n)
+ *              3. pairs made only of names (who / where — «white + house»), by the same score
+ *              4. broader names (df > ALONE_MAX), the rarest first
+ *            and, when the event's `centre` is given (centreOf the headlines of its articles), the choices holding MORE
+ *            centre words come first (`centre`: how many; in the order above among equals); a choice holding none is
+ *            offered, never picked over one that holds the centre (`central`). Measured 2026-11-17: «huang + potential»
+ *            (3 events, 1 centre word) came before «huang + jensen» (61, 2) — three reports of one day, against the
+ *            resignation-to-return thread that `lineage` reads from the 61 (13 events).
  *   pick     choices[0], or null — «no thread» is an answer (a headline with no name, or names nobody else used) */
-export function suggest(stats) {
+export function suggest(stats, opts) {
   const S = stats || { n: 0, terms: [], pairs: [] };
+  const centre = (opts && opts.centre instanceof Set) ? opts.centre : null;
   const N = Math.max(1, S.n);
   const by = new Map(S.terms.map((x) => [x.t, x]));
   const cap = Math.max(2, N * STORY.MAX_SHARE);
   const usable = (x) => !!x && x.df >= STORY.MIN_EVENTS && x.df <= cap;
-  const pairs = [];
+  const pairs = [], names = [];
   for (const [a, b, n] of S.pairs) {
     const A = by.get(a), B = by.get(b);
     if (!usable(A) || !usable(B) || n < STORY.MIN_EVENTS) continue;
     if (!isName(A) && !isName(B)) continue;
     const pmi = Math.log((n * N) / (A.df * B.df));
     if (!(pmi > 0)) continue;   /* together no more often than apart: two words, not a thread */
-    pairs.push({ terms: [a, b], n, kind: 'pair', score: pmi * Math.log(1 + n) });
+    const both = isName(A) && isName(B);
+    (both ? names : pairs).push({ terms: [a, b], n, kind: both ? 'names' : 'pair', score: pmi * Math.log(1 + n) });
   }
-  pairs.sort((x, y) => y.score - x.score || y.n - x.n || (x.terms.join(' ') < y.terms.join(' ') ? -1 : 1));
+  const byScore = (x, y) => y.score - x.score || y.n - x.n || (x.terms.join(' ') < y.terms.join(' ') ? -1 : 1);
+  pairs.sort(byScore); names.sort(byScore);
   const singles = S.terms.filter((x) => usable(x) && isName(x))
     .map((x) => ({ terms: [x.t], n: x.df, kind: 'name', score: Math.log(N / x.df) }))
     .sort((x, y) => x.n - y.n || (x.terms[0] < y.terms[0] ? -1 : 1));
   const alone = singles.filter((x) => x.n <= STORY.ALONE_MAX), broad = singles.filter((x) => x.n > STORY.ALONE_MAX);
-  const choices = alone.concat(pairs, broad);
+  let choices = alone.concat(pairs, names, broad);
+  for (const c of choices) {
+    c.centre = centre ? c.terms.filter((t) => centre.has(stemOf(t))).length : 0;
+    c.central = !centre || c.centre > 0;
+  }
+  /* the more of the centre a choice holds, the earlier (a stable sort: the order above holds among equals) */
+  if (centre) choices = choices.map((c, i) => [c, i]).sort((x, y) => y[0].centre - x[0].centre || x[1] - y[1]).map((x) => x[0]);
   const chips = S.terms.filter((x) => x.df >= 2)
-    .map((x) => ({ t: x.t, df: x.df, name: isName(x), common: x.df > cap }))
+    .map((x) => ({ t: x.t, df: x.df, name: isName(x), common: x.df > cap, central: !centre || centre.has(stemOf(x.t)) }))
     .sort((x, y) => (y.name - x.name) || (x.common - y.common) || (x.df - y.df) || (x.t < y.t ? -1 : 1));
   return { pick: choices[0] || null, choices, chips };
+}
+
+/* ── the lineage: which of the events naming the words FOLLOW from the event the story was opened from ──── */
+const titlesOf = (r) => distinct([r && r.representative_title].concat(((r && r.news_event_articles) || [])
+  .map((l) => l && l.news_articles && l.news_articles.title)));
+const atMs = (r) => Date.parse((r && (r.first_published_at || r.first_seen_at || r.last_article_at)) || '');
+
+/** lineage(rows, { seed, terms }) → { rows, applied, naming, dropped, links }
+ *  rows      the events of the story: when `applied`, only those reachable from the seed event
+ *  applied   false when the words are a thread by themselves (≤ ALONE_MAX events — the measured rule `suggest` uses
+ *            for a name), when the seed is not among the rows (opened from words, a link or Atlas), or when it has
+ *            nothing to compare (no headline words besides the story's own)
+ *  naming    every event the words hold (what the server returned)
+ *  links     public_id → { from, shared } — the earlier-reached event and the words the two headlines share
+ *  A STEP of the thread joins two events reported at most LINK_GAP_H apart whose headlines (the event's own and
+ *  its articles') share at least LINK_SHARED of the grouper's words BESIDES the story's words — those every row
+ *  has by construction, so they are no evidence. The step must also land on an event holding a word of the seed's
+ *  centre (besides the story's words), so the thread cannot walk off through two words the seed never had (measured
+ *  2026-11-17: without it «putin» kept 18 of 82 — the step «welcome + european» from Albanese's welcome of the summit
+ *  led into the Ukraine peace talks; with it, 13, all the summit).
+ *  ⚠ «Follows from» is about the words of headlines and the time between them — never a judgement that one event
+ *    caused or continued another; the card says which words joined each step. */
+export function lineage(rows, opts) {
+  const all = (rows || []).filter((r) => r && r.public_id);
+  const o = opts || {};
+  const off = { rows: all, applied: false, naming: all.length, dropped: 0, links: new Map() };
+  const seedRow = o.seed ? all.find((r) => r.public_id === o.seed) : null;
+  if (!seedRow || all.length <= STORY.ALONE_MAX) return off;
+  const story = new Set((o.terms || []).map(stemOf).filter(Boolean));
+  const words = (r) => { const s = new Set(); for (const t of titlesOf(r)) for (const k of tokenise(t)) if (!story.has(k)) s.add(k); return s; };
+  const ev = all.map((r) => ({ r, id: r.public_id, at: atMs(r), w: words(r) }));
+  const seed = ev.find((e) => e.id === o.seed);
+  const centre = centreOf(titlesOf(seedRow)) || seed.w;
+  const anchor = new Set([...centre].filter((k) => !story.has(k)));
+  if (!seed.w.size || !Number.isFinite(seed.at)) return off;
+  const gap = STORY.LINK_GAP_H * 3600e3;
+  const links = new Map([[seed.id, { from: null, shared: [] }]]);
+  const queue = [seed];
+  while (queue.length) {
+    const a = queue.shift();
+    for (const b of ev) {
+      if (links.has(b.id) || !Number.isFinite(b.at) || Math.abs(a.at - b.at) > gap) continue;
+      const shared = [...a.w].filter((k) => b.w.has(k));
+      if (shared.length < STORY.LINK_SHARED) continue;
+      if (anchor.size && ![...b.w].some((k) => anchor.has(k))) continue;
+      links.set(b.id, { from: a.id, shared });
+      queue.push(b);
+    }
+  }
+  const kept = all.filter((r) => links.has(r.public_id));
+  return { rows: kept, applied: true, naming: all.length, dropped: all.length - kept.length, links };
 }
 
 /* ── the story itself ─────────────────────────────────────────────────────────────────────────── */

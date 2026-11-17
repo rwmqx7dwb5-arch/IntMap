@@ -303,7 +303,7 @@ IntMapLang.define('ko', { ui: {
     'first appears in this report': '이 기사에서 처음 나온 수치',
     'How this was written — the exact wording each sentence came from ({n})': '이 글이 무엇에서 쓰였는지 — 각 문장의 근거가 된 원문({n}건)',
     'In each outlet’s own words': '각 매체의 원문 그대로',
-    'The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.': '위 문단은 AI가 작성한 것입니다. 이 매체들이 공개한 내용을 합친 것으로, 각 문장은 저장되기 전에 여기 표시된 원문과 기계적으로 대조했으며, 대조하지 못한 문장은 버려져 표시되지 않습니다.',
+    'The paragraph above was written by AI from what these outlets published. Each sentence names the outlet and the passage it is based on, and before saving a program checked that every such passage really appears in that outlet’s text; a sentence whose passage could not be found is discarded. The program does not check that the sentence states the passage correctly — compare them under “How this was written”.': '위 단락은 이 매체들이 공개한 내용을 바탕으로 AI가 작성한 것입니다. 각 문장은 근거로 삼은 매체와 원문 구절을 밝히며, 저장 전에 프로그램이 그 구절이 실제로 해당 매체의 글에 있는지 확인했습니다(구절을 찾지 못한 문장은 버립니다). 문장이 구절의 내용을 정확히 전달하는지는 프로그램이 확인하지 않습니다 — ‘이 글이 무엇에서 쓰였는지’에서 비교할 수 있습니다.',
     'Key figures': '주요 수치',
     'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': '이 사건의 본문을 제공한 매체는 한 곳뿐이라, 앱을 벗어나지 않고 IntMap이 보여 줄 수 있는 것은 여기까지입니다.',
     'Read at {s} ↗': '{s}에서 읽기 ↗',
