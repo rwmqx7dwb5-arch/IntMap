@@ -1,6 +1,7 @@
 ---
 title: Companies と Countries の行——社名の欄が最低限の幅を保ち、時刻は折り返す／国カードの値に年と並べて出典
 date: 2026-11-18
+pr: 1190
 newsen: Company and country names in the Companies and Countries lists stay readable when a live quote time is shown, and the country card names the source of each figure beside its year.
 newsjp: Companies と Countries の一覧で、ライブ株価の時刻が出ても社名・国名が読める幅を保つように。国カードの各数値に、年と並べて出典を表示。
 ---
