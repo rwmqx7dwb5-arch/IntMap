@@ -485,15 +485,15 @@ function mx2lon(x) { return x * 360 - 180; }
  *  slots. */
 let ENDPOINT = '';
 const inflight = new Set();
-/* A request that never answers held its channel in `inflight` forever, so every later poll of that
-   channel returned null and the page reported «skipped» rather than a failure. The ceiling is longer
-   than the slowest poll cadence (js/aviation-live.js WORLD_POLL_MS, 20 s) so a slow but live answer
-   is not cut; it covers the body as well as the headers. */
-const POLL_DEADLINE_MS = 30000;
 
 async function poll(channel, query) {
   if (!ENDPOINT || inflight.has(channel)) return null;
   inflight.add(channel);
+  /* A request that never answers held its channel in `inflight` forever, so every later poll of that
+     channel returned null and the page reported «skipped» rather than a failure. The ceiling is longer
+     than the slowest poll cadence (js/aviation-live.js WORLD_POLL_MS, 20 s) so a slow but live answer
+     is not cut; it covers the body as well as the headers. */
+  const POLL_DEADLINE_MS = 30000;
   const ac = (typeof AbortController === 'function') ? new AbortController() : null;
   const deadline = ac ? setTimeout(() => { try { ac.abort(); } catch (_) { } }, POLL_DEADLINE_MS) : null;
   try {
