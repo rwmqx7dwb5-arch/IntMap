@@ -36,6 +36,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
+import { cellOf, decodeCells } from './election-cover.js';
 
 export function elections(HOST) {
   /* (#R251) the array form of the language helper — a bare array literal is invisible to the i18n
@@ -174,6 +175,8 @@ export function elections(HOST) {
      token of the most recent request; a load that finishes holding a stale token paints nothing.
      (#R551 measured the same class of bug from the other end — a stale result frozen into a cache
      and served as if it were current.) */
+  /* the camera to the selected election (js/layer-home.js `goTo`) — a place the reader named */
+  function goHome() { try { const H = window.IntMapLayerHome; if (H) H.goTo(CB); } catch (_) {} }
   async function select(eid, { fly = false } = {}) {
     if (!index) return false;
     const e = index.elections.find(x => x.id === eid);
@@ -193,7 +196,7 @@ export function elections(HOST) {
     prevSame = ps; prevRes = pr;
     paint();
     renderPanel();
-    if (fly) { try { window.IntMapLayerHome && window.IntMapLayerHome.goTo(CB); } catch (_) {} }
+    if (fly) goHome();
     return true;
   }
 
@@ -262,6 +265,16 @@ export function elections(HOST) {
      count (an unopposed return, a record that survives only as a name). Those districts get the
      winner and a line saying there is no count — never a bar of length zero, which would read as
      «this candidate received no votes». */
+  /* (news-with-history) ONE district's result, read once: the candidates in vote order, the total, and who won — the
+     popup below and `atPoint` (a news event's «This place's past») both read it, so «who won» is decided in one place */
+  function rowResult(row) {
+    const cands = Array.isArray(row.c) ? row.c.slice() : [];
+    const anyV = cands.some(c => c.v != null);
+    if (anyV) cands.sort((a, b) => (b.v || 0) - (a.v || 0));
+    const maxV = anyV ? Math.max.apply(null, cands.map(c => c.v || 0)) : 0;
+    const tot = row.t != null ? row.t : (anyV ? cands.reduce((a, c) => a + (c.v || 0), 0) : 0);
+    return { cands, anyV, maxV, tot, won: (c) => !!(row.w && c.p === row.w && (!anyV || c.v === maxV)) };
+  }
   function districtHtml(cd) {
     const esc = (x) => HOST.escapeHtml(String(x == null ? '' : x));
     const f = geo && geo.features.find(x => (x.properties || {}).cd === cd);
@@ -273,11 +286,7 @@ export function elections(HOST) {
       + '<div class="elec-pop-y">' + esc(nm(election.body)) + ' · ' + esc(election.date) + '</div>';
     if (!row) return h + '<div class="elec-note">' + L('No result is recorded for this district.', 'この選挙区の結果は記録されていません。', 'Für diesen Wahlkreis ist kein Ergebnis verzeichnet.', 'Результат по этому округу не зафиксирован.', 'No hay resultado registrado para esta circunscripción.') + '</div></div>';
 
-    const cands = Array.isArray(row.c) ? row.c.slice() : [];
-    const anyV = cands.some(c => c.v != null);
-    if (anyV) cands.sort((a, b) => (b.v || 0) - (a.v || 0));
-    const maxV = anyV ? Math.max.apply(null, cands.map(c => c.v || 0)) : 0;
-    const tot = row.t != null ? row.t : (anyV ? cands.reduce((a, c) => a + (c.v || 0), 0) : 0);
+    const { cands, anyV, maxV, tot, won: wonBy } = rowResult(row);
 
     if (!cands.length && row.w) {
       h += '<div class="elec-row"><span class="elec-nm"><i style="background:' + esc(colourOf(row.w) || '#888') + ';"></i><b>' + esc(partyName(row.w)) + '</b></span></div>';
@@ -286,7 +295,7 @@ export function elections(HOST) {
       const col = colourOf(c.p) || '#888';
       const w = (anyV && maxV) ? Math.max(1.5, Math.round((c.v || 0) / maxV * 100)) : 0;
       const pct = (tot && c.v != null) ? (c.v / tot * 100) : null;
-      const won = row.w && c.p === row.w && (!anyV || c.v === maxV);
+      const won = wonBy(c);
       h += '<div class="elec-row' + (won ? ' elec-won' : '') + '">'
         + '<span class="elec-nm"><i style="background:' + esc(col) + ';"></i><b>' + esc(c.n) + '</b></span>'
         + '<span class="elec-ev">' + (c.v != null ? esc(fmt(c.v)) : '') + '</span>'
@@ -532,6 +541,8 @@ export function elections(HOST) {
   }
 
   /* ── the switch ─────────────────────────────────────────────────────────────────────────────── */
+  let arrived = false;   /* whether the latest switch-on moved the camera (js/layer-home.js arrives once per session) */
+  let switching = Promise.resolve(false);   /* the row's latest switch — what `open` waits for */
   async function toggle(want) {
     on = !!want;
     if (!on) {
@@ -562,8 +573,33 @@ export function elections(HOST) {
     renderPanel();
     /* (#R313) the camera is moved by js/layer-home.js and by nothing else — this layer's data lives
        inside whichever polity is selected, which is exactly the shape that file exists for. */
-    try { window.IntMapLayerHome && window.IntMapLayerHome.arrive(CB); } catch (_) {}
+    arrived = false;
+    try { const H = window.IntMapLayerHome; arrived = !!(H && H.arrive(CB)); } catch (_) {}
     return true;
+  }
+
+  /* ══ (news-past-fixes) OPEN THE LAYER ON A CHOSEN ELECTION ═══════════════════════════════════════════════════
+     A caller that names an election (a news event's heading, Atlas) used to switch the layer on first and select
+     second: `toggle(true)` chose the newest election ANYWHERE (MEASURED: Japan), fetched its outlines and results,
+     and flew there; the later `select(id)` repainted the UK without moving the camera — the panel said London, the
+     map stood on Japan. The choice is now made FIRST, so `toggle` finds an election already selected and frames
+     that one. The switch goes through the Layers-panel row's own change event, so the row, the share link and the
+     map agree. An election named while the layer is already on is a request for a place (#R588): it is flown to.
+     `eid` empty = switch on keeping the selection. Resolves true when the layer is on with that election. */
+  async function open(eid) {
+    if (!await loadIndex()) return false;
+    if (eid && !index.elections.some(x => x.id === eid)) return false;
+    stopPlay();
+    if (on) return eid && (!election || election.id !== eid) ? select(eid, { fly: true }) : true;
+    if (eid && !await select(eid)) return false;
+    const box = document.getElementById(CB);
+    if (!box) return toggle(true);
+    box.checked = true;
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    const ok = await switching;
+    /* the session's one arrival may already be spent; a NAMED election is still a place the reader asked for */
+    if (ok && eid && !arrived) goHome();
+    return ok;
   }
 
   /* the row in the Layers panel. The layer owns its own entry (#R164). The swatch is a strip of the
@@ -579,7 +615,7 @@ export function elections(HOST) {
     relabel();
     w.querySelector('input').addEventListener('change', (ev) => {
       ev.target.closest('.lyr-row').classList.toggle('on', ev.target.checked);
-      toggle(ev.target.checked);
+      switching = toggle(ev.target.checked);
     });
     try { window.reorganizeLayerPanel && window.reorganizeLayerPanel(); } catch (_) {}
   }
@@ -592,8 +628,68 @@ export function elections(HOST) {
   /* self-heal across basemap swaps, exactly like the other vector overlays */
   try { GE().events.on('styledata', () => { if (on) setTimeout(() => { if (on && ensure()) {   /* (world-at-time) `on` again at the timer — an «off» inside these 80 ms was undone here (js/cameras.js has the measurement) */ setVis(true); paint(); } }, 80); }); } catch (_) {}
 
+  /* ══ (news-with-history) WHICH NATIONAL ELECTIONS STOOD ON THIS POINT ═══════════════════════════════════════════
+     For each chamber of each polity, its NEWEST election, and whether the point lies on the ground that election was
+     fought on — asked of the election's own districts (an exact point-in-polygon test), never of a country name or a box.
+     The index's `cover` (the grid cells each boundary era's polygons touch, scripts/build-elections.mjs; codec and why it is
+     not one box per file: js/election-cover.js) chooses which files COULD hold the point, so only those are fetched. `district: true` also returns the district the point lies in and its result. ⚠ A chamber
+     with no geometry (a party-list-only record) cannot be placed and is listed as `unplaced`, not dropped and not
+     guessed. Read-only: the layer, the map and the selected election do not change. */
+  const covers = new Map();   /* boundary era → its decoded cells, once per session */
+  async function atPoint(lng, lat, { district = false } = {}) {
+    if (!(await loadIndex())) return { status: 'unavailable', reason: 'election-index-unreachable' };
+    const x = +lng, y = +lat, cover = index.cover || null;
+    const cell = cover ? cellOf(x, y, cover.deg) : -1;
+    /* a file the index states no cover for is fetched rather than skipped — the prefilter may only let too much through */
+    const could = (geoId) => { if (!cover || !cover.files || cover.files[geoId] == null) return true;
+      let c = covers.get(geoId); if (!c) { c = decodeCells(cover.files[geoId]); covers.set(geoId, c); } return c.has(cell); };
+    const pip = (g) => { try { return !!(g && window._imPipGeo(x, y, g)); } catch (_) { return false; } };
+    const polities = [], unplaced = [];
+    for (const p of index.polities) {
+      const newest = new Map();   /* body → its newest election (the index is in date order per polity) */
+      for (const e of electionsOf(p.id)) newest.set((e.body && e.body.en) || '', e);
+      const bodies = [];
+      for (const e of newest.values()) {
+        if (!e.geo) { unplaced.push({ polity: p.id, election: e.id }); continue; }
+        if (!could(e.geo)) continue;
+        let g; try { g = await part(e.geo); } catch (_) { bodies.push({ e, status: 'unavailable', reason: 'geometry-unreachable' }); continue; }
+        const f = (g.features || []).find((ft) => pip(ft.geometry));
+        if (!f) continue;
+        let r = null; try { r = await part(e.res); } catch (_) { r = null; }
+        const cd = String((f.properties || {}).cd);
+        const row = r && r.d ? r.d[cd] : null;
+        const out = { e, status: r ? 'ok' : 'unavailable', reason: r ? null : 'results-unreachable', seats: r && Array.isArray(r.n) ? r.n : [] };
+        if (district) {
+          const rr = row ? rowResult(row) : null;
+          out.district = { cd, name: nm((f.properties || {}).n), native: alt((f.properties || {}).n), recorded: !!row, winner: row && row.w ? row.w : null,
+            candidates: rr ? rr.cands.map((c) => ({ name: c.n, party: c.p, votes: c.v == null ? null : c.v, won: rr.won(c) })) : [], total: rr && rr.anyV ? rr.tot : null };
+        }
+        bodies.push(out);
+      }
+      if (bodies.length) polities.push({ p, bodies });
+    }
+    const brief = (pid) => ({ id: pid, name: partyName(pid), col: colourOf(pid) });
+    return {
+      status: polities.length ? 'ok' : 'none', at: { lng: x, lat: y },
+      polities: polities.map(({ p, bodies }) => ({
+        id: p.id, name: nm(p.n),
+        bodies: bodies.map((b) => ({
+          election: b.e.id, body: nm(b.e.body), date: b.e.date, seatsTotal: b.e.seatsTotal, status: b.status, reason: b.reason,
+          src: b.e.src || '', lic: b.e.lic || '',
+          seats: (b.seats || []).slice().sort((u, v) => (v.seats || 0) - (u.seats || 0)).map((n) => Object.assign(brief(n.p), { seats: n.seats || 0 })),
+          district: b.district ? Object.assign({}, b.district, { winner: b.district.winner ? brief(b.district.winner) : null, candidates: b.district.candidates.map((c) => Object.assign({}, c, { party: brief(c.party) })) }) : undefined,
+        })),
+      })),
+      unplaced,
+    };
+  }
+
   window.IntMapElections = {
+    atPoint,
     toggle,
+    open,
+    /* the index alone (which polities and elections exist), without switching anything on */
+    load: () => loadIndex().then(Boolean),
     isOn: () => on,
     /* what js/layer-home.js frames: the geometry actually on screen, measured, never a typed box */
     fc: () => geo,

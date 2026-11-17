@@ -371,7 +371,8 @@ OpenHistoricalMap・OHM の 1886 年以降の植民地の土地・Cliopatria・h
 合わせた」と述べる）。地方区分は `stated`・`derived`・`unstated`・`undocumented`・`open`。どの記録も描かない期間は空白の行（最後の行の後も
 今日まで）。記録が自分の終わりまでその点を描くなら、翌日から今日までを「この期間を述べる歴史の記録はない（記録はここまで）」の行に
 する（Atlas には `afterTheRecords`）。起点 `device`・`shared` では自動で読まない（どの `Range` を読むかが地点で決まる）。
-Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も）で受け取る。年表を出す道具は
+Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も）で受け取る。行の押下は `historyAction`（Chronos・政体の盛衰）1 つで、
+ニュースの出来事の「この土地の過去」（`js/event-past.js`・`docs/NEWS-EVENTS.md` §18）も同じ記録・描画・押下を使う。年表を出す道具は
 `node scripts/place-history.mjs --at <lng>,<lat>`（`--sites` は史実と突き合わせた 7 地点）。
 
 **範囲 × 期間の地震・出来事の読み手は 1 つ（`js/events-near.js`）。** カード・見守る場所（`js/place-watch.js`）・Atlas の
