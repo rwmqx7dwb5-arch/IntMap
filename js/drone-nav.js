@@ -246,16 +246,23 @@ export function drone(HOST){
   /* ---- the computation ----------------------------------------------------------------------
      Returns everything the panel, the map and the tests read. Nothing is rounded here: the numbers are
      kept in SI and formatted at the edge, so a unit change can never alter a verdict. */
-  async function compute(){
-    if(!route||route.wp.length<1){ lastResult=null; draw(null); return null; }
+  /* ⚠ THE DEM WARM-UP IS AN AWAIT, AND THE ROUTE CAN CHANGE DURING IT. compute() reads a SNAPSHOT of the
+     waypoints (a waypoint deleted meanwhile used to leave wp[i] undefined → TypeError, busy stuck true), and a
+     compute overtaken by a newer one hands back the newer one's answer instead of publishing its own late. */
+  let computeSeq=0, computeLatest=null;
+  function compute(){ const p=computeOnce(++computeSeq); computeLatest=p; return p; }
+  async function computeOnce(my){
+    if(!route||route.wp.length<1){ lastResult=null; busy=false; draw(null); return null; }
     busy=true;
     const spec=route.spec||DEFAULT_SPEC();
-    const wp=route.wp;
+    const wp=route.wp.slice();
     const samples=densify(wp);
     /* span → DEM zoom, then warm every tile the samples touch before reading a single one */
     let spanKm=0; for(let i=1;i<samples.length;i++) spanKm+=distM([samples[i-1].lng,samples[i-1].lat],[samples[i].lng,samples[i].lat])/1000;
     const z=demZoom(Math.max(1,spanKm));
-    await warm(samples.map(s=>[s.lng,s.lat]),z);
+    /* a failed warm-up leaves tiles missing, which the samples below count as demMissing — not a reason to throw */
+    try{ await warm(samples.map(s=>[s.lng,s.lat]),z); }catch(_){}
+    if(my!==computeSeq) return computeLatest;
     let demMissing=0;
     samples.forEach(s=>{ const g=groundAt(s.lng,s.lat,z); if(g==null) demMissing++; s.ground=(g==null)?0:g; s.groundKnown=(g!=null); });
     /* the ground under each WAYPOINT is what converts its altitude between references */

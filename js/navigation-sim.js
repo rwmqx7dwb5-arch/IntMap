@@ -120,6 +120,9 @@ window.IntMapNavSim = (function () {
     run.clock += run.tickMs;
     run.ticks++;
     emit();
+    /* the fix can end the run synchronously (arrival → navigation stops the simulator), so `run`
+       is read again rather than dereferenced as if it were still there */
+    if (!run || run.stopped) return;
     schedule(run.tickMs / run.mult);
   }
 

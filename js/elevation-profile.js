@@ -22,6 +22,7 @@ export function elevationProfile(HOST){
       E.layers.addSource('elev-cursor',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       E.layers.add({id:'elev-cursor-pt',type:'circle',source:'elev-cursor',paint:{'circle-radius':7,'circle-color':'#ff3b30','circle-opacity':0.55,'circle-stroke-color':'#fff','circle-stroke-width':2}}); }
     E.layers.setSourceData('elev-cursor',{type:'FeatureCollection',features:coord?[{type:'Feature',geometry:{type:'Point',coordinates:coord},properties:{}}]:[]}); }catch(_){} }
+  let _elevSeq=0;
   function _openProfilePanel(samples,dist){
     let p=document.getElementById('elev-profile-panel');
     if(!p){ p=document.createElement('div'); p.id='elev-profile-panel'; p.className='tool-panel'; (document.getElementById('map-container')||document.body).appendChild(p); }
@@ -33,7 +34,11 @@ export function elevationProfile(HOST){
     /* (#R12) Sample the LOCAL terrarium DEM (includes ocean bathymetry → negative below sea level) so
        the profile is drawn under water too, instead of Open-Meteo elevation which returns 0 over sea. */
     const _z=HOST._demZoomForSpan(dist[dist.length-1]||50);
-    demSampleAll(samples,_z).then(els=>{ _drawProfile(p.querySelector('#elev-profile-body'), samples, dist, els); });
+    /* the panel is reused: a profile overtaken by a newer one draws nothing, and a failure says so instead of
+       leaving «Sampling elevation…» forever */
+    const my=++_elevSeq;
+    demSampleAll(samples,_z).then(els=>{ if(my!==_elevSeq) return; _drawProfile(p.querySelector('#elev-profile-body'), samples, dist, els); },
+      ()=>{ if(my!==_elevSeq) return; const b=p.querySelector('#elev-profile-body'); if(b) b.textContent=j?'標高データを取得できませんでした':'No elevation data available'; });
   }
   function _drawProfile(box, samples, dist, els){
     if(!box) return; const j=HOST.lang==='jp';

@@ -300,6 +300,16 @@ export function searchGeocode(HOST){
      ⚠ A SEARCH THAT HAS BEEN OVERTAKEN WRITES NOTHING. Each call takes a generation; the three geocoders of an
      earlier Enter can answer after the reader has typed on, and their rows would land under the new letters. */
   let _gcGen=0;
+  /* An overtaken search's requests are aborted when the next one starts, and typed searches share ONE waiting
+     Nominatim slot: each keystroke used to queue its own slot behind the one-a-second floor, so ten quick letters
+     put the last query ~9 s back — past its own 5 s ceiling, so the query the reader actually typed never reached
+     Nominatim. Now at most one slot waits; when it comes, only the newest search uses it. */
+  let _gcCtrl=null, _nomWait=null;
+  function _nomTurn(){
+    if(!window.IntMapNominatimGate) return Promise.resolve(true);
+    if(!_nomWait){ const w=window.IntMapNominatimGate.nominatimSlot(); _nomWait=w; w.then(()=>{ if(_nomWait===w) _nomWait=null; },()=>{ if(_nomWait===w) _nomWait=null; }); }
+    return _nomWait;
+  }
   function _wirePicked(inp){ if(!inp||inp._imPickWired) return; inp._imPickWired=true; try{ inp.addEventListener('input',()=>{ inp._imPicked=null; }); }catch(_){} }
   /* a row was chosen: later answers of the same search write nothing, the field holds a name, and on a phone the
      keyboard goes away (the answer is on the map) */
@@ -481,6 +491,7 @@ export function searchGeocode(HOST){
        **Open-Meteo geocoding** (fast, robust, fuzzy, works where Nominatim doesn't) AND Nominatim (richer
        coverage). Either one alone yields results, so the search practically never comes back empty. */
     const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },5000);
+    try{ if(_gcCtrl) _gcCtrl.abort(); }catch(_){} _gcCtrl=ctrl;
     const omP=fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${IntMapLang.locale(HOST.lang,"en")}&format=json`,{signal:ctrl.signal})
       /* (#R183) `feature_code` is carried under its own name as well as `type`: it is a GeoNames code
          (PCLI / ADM1 / PPLC …), not an OSM type, and placeClass reads the two vocabularies apart. */
@@ -491,8 +502,8 @@ export function searchGeocode(HOST){
        keystroke inside the window answered 「[]」 — and the two parallel geocoders beside this one
        keep answering meanwhile, so the card is never empty while this waits. The 5 s AbortController
        above is still the ceiling, and a search the reader has moved on from is checked for here. */
-    const nomP=(window.IntMapNominatimGate?window.IntMapNominatimGate.nominatimSlot():Promise.resolve(true))
-      .then(()=>ctrl.signal.aborted?null:fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${IntMapLang.locale(HOST.lang,"en")}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal}))
+    const nomP=_nomTurn()
+      .then(()=>(ctrl.signal.aborted||gen!==_gcGen)?null:fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${IntMapLang.locale(HOST.lang,"en")}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal}))
       .then(r=>(r&&r.ok)?r.json():[]).then(async a=>{ const R=await rulesP; (a||[]).forEach(pl=>{ if(!_agrees(R,pq,pl))return;   /* (#R802) measured against what was SENT — preprocessNLQuery may have turned 「capital of France」 into 「Paris, France」 */ addItem(pl.display_name,+pl.lon,+pl.lat,pl); }); }).catch(()=>{});
     /* (#R19) Third parallel geocoder: Photon (komoot) — TYPO-TOLERANT like a search engine
        ("あいまいな単語を入れても検索できるように"; curl-verified CORS* and that "osakaa" → Osaka). */
