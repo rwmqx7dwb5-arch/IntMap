@@ -790,6 +790,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   document.addEventListener('keydown',(e)=>{
     if(e.key!=='Escape') return;
     if(isMobile()) return;
+    /* (map-chrome-search-expand) an Escape something nearer the reader already answered is not this one's: the folded
+       search field takes the caret to its button on Escape, and reading the focus AFTER that move made the same key
+       press also toggle the sidebar (measured: the left panel shut under the open field) */
+    if(e.defaultPrevented) return;
     const ae=document.activeElement, tag=ae&&ae.tagName;
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(ae&&ae.isContentEditable)) return;
     /* (a11y-shared-dialog) «is a modal open?» is the dialog registry's answer (js/dialog.js), not a selector list —
@@ -1898,6 +1902,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        highlighted with the arrow keys, which Enter then picks (js/search-geocode.js listbox), or the Enter is an IME
        confirming its conversion (`isComposing`; 229 is the keyCode a browser reports for a key the IME consumed) */
     inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')){ clearTimeout(_sugT); doGeocode({go:true}); } });
+    /* (map-chrome-search-expand) Escape shuts the field where the map frame folds it into its button: an open result list
+       is closed first (js/search-geocode.js listbox — the first Escape), then the caret leaves the field for the button,
+       which is what folds it again (css: open = focus inside other than the button, or words not shut away by `.ms-shut`). The tier states that it folds
+       (`--ms-folds` on .map-frame-top), so a wide pill, which never folds, keeps its caret. */
+    inp.addEventListener('keydown',(e)=>{ if(e.key!=='Escape'||e.isComposing) return;
+      const res=document.getElementById('ms-results'); if(res&&res.style.display==='block') return;
+      let folds=''; try{ folds=getComputedStyle(box.parentElement).getPropertyValue('--ms-folds').trim(); }catch(_){}
+      /* the words stay in the field: `.ms-shut` folds it over them, and coming back into the field takes the mark off */
+      if(folds==='1'){ e.preventDefault(); box.classList.add('ms-shut'); try{ btn.focus(); }catch(_){} } });
+    inp.addEventListener('focus',()=>box.classList.remove('ms-shut'));
     /* (mobile-shell) …and the candidates follow the typing — local rows only, no network (js/search-geocode.js), with
        «Ask Atlas» last. (desktop-one-entry) on every device, not only a phone. */
     inp.addEventListener('input',()=>{ clearTimeout(_sugT); _sugT=setTimeout(()=>doGeocode({suggest:true}),120); });
