@@ -1,6 +1,7 @@
 ---
 title: 時間を動かしたとき、国の表の値・年・出典を 1 つの記録から一緒に書く
 date: 2026-11-18
+pr: 1201
 newsen: When you move the time slider, every figure on the country card now shows the year of the value it shows — HDI in 2010 reads 2010, not 2022.
 newsjp: 時間を動かしたとき、国カードの各数値に「表示している値の年」が出るように（2010 年の HDI は 2022 年ではなく 2010 年と表示）。
 ---
