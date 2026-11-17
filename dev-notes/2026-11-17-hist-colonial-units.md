@@ -79,8 +79,12 @@ GitHub のダンプ `isawnyu/pleiades.datasets` の `data/rdf/time-periods.ttl` 
   内訳は精密な輪郭の 2 記録（非営利側の束 444 行・16.2 MB の断片、復元 3,608 行）と非営利側の束そのもの（2.41→3.15 MB）、
   `data/border-coast.js` の新しい環。どれも読者が拡大したとき・その年を開いたときにだけ取りに行く資産で、起動費用は
   変わらない。ローカルの build から `node scripts/perf-budget.mjs --update` で超えた行だけを上げた。同じ実行は
-  `eager.gzip` も 1506.0→1513.5 kB に上げたが、この作業が起動の束に足したのは `js/reference-data.js` の 2 行だけで、
-  7.5 kB はこのマシンの build と CI の build の差なので、その行は戻した（起動の天井は main の CI 実測のまま）。
+  `eager.gzip` も 1506.0→1513.5 kB に上げた（CI の実測も 1513.5 kB）。この作業が起動の束に足したのは `js/reference-data.js`
+  の出典 1 行だけで、残りは天井が最後に下げられてから main が幅（7.5 kB）の内側で積んだ分。最後の 1 行が幅を越えさせた
+  ので、ここで上げると述べる（下げるのは main の CI の仕事）。
+- `data/border-coast.js` を組み直すと `data/hist-courses.js` の基礎が古くなる。Overpass が 502 を返し続けたので、
+  取得し直さずに同梱の線から置換を導き直す `--rebasis` を使った（置換は不変）。文書の環の数 136,483→136,871。
+- 出典の一覧の説明（`js/locales/pages.en.js`・`pages.ja.js` の `sourceUse`）に Müller-Crepon の行を足した。
 
 ## 5. 検査
 
