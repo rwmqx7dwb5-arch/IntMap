@@ -512,8 +512,8 @@ test('#R254 ② a country choropleth gets the 10 m outline without the Countries
      family is js/wb-layers.js: js/countries-ui.js says once that the fine collection replaced the coarse one, and every row
      on screen repaints on it */
   { const cu = code(read('js/countries-ui.js')); const i = cu.indexOf('HOST.countryGeo=hi; window.countryGeo=hi;');
-    assert.ok(i > 0 && /^\s*try\{ window\.dispatchEvent\(new Event\('intmap-country-geo'\)\)/.test(cu.slice(i + 41)), 'the replacement of the outlines is not announced'); }
-  assert.match(code(read('js/wb-layers.js')), /addEventListener\('intmap-country-geo',\(\)=>\{ wbOn\.forEach\(id=>\{ const B=wbById\[id\]; if\(B\) choroOn\(B\); \}\); \}\)/,
+    assert.ok(i > 0 && /^\s*try\{ bus\.emit\('intmap-country-geo'\)/.test(cu.slice(i + 41)), 'the replacement of the outlines is not announced'); }
+  assert.match(code(read('js/wb-layers.js')), /bus\.on\('intmap-country-geo',\(\)=>\{ wbOn\.forEach\(id=>\{ const B=wbById\[id\]; if\(B\) choroOn\(B\); \}\); \}\)/,
     'the World Bank rows do not repaint on the 10 m outline — whichever outline was current at toggle time is kept for the session');
 });
 
