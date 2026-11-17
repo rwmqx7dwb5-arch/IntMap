@@ -39,6 +39,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
+import { inlineScripts as cspInlineScripts } from './csp.mjs';
 /* the one matching rule — the panel matches the reader's stored names with it, and the ledger merges with it */
 import { globMatch } from '../js/device-storage-panel.js';
 
@@ -79,16 +80,17 @@ const BROWSER = /^(?:(?:js|src)\/.+\.m?js|sw\.js)$/;
    inline boot guard (the CSP admits it by its hash). Every tracked page's inline scripts are read, each as a file of
    its own whose lines are the page's lines; a <script src> is its file, read above; data blocks (JSON, import maps)
    are not code. */
-const INLINE = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
-const CODE_TYPE = /^\s*$|^\s*(?:module|text\/javascript|application\/javascript)\s*$/i;
+/* The element boundaries are the HTML parser's, not a regex's: scripts/csp.mjs `inlineScripts` is the one reader of a
+   page's inline <script> elements (it ends a script at the first `</script` whatever follows it, skips comments, and
+   keeps `<scripts>` out), so the ledger and the CSP hashes can never disagree about where a script ends. */
+const CODE_TYPE = new Set(['', 'module', 'text/javascript', 'application/javascript']);
 function inlineScripts(file, html) {
   const out = [];
   let i = 0;
-  for (const m of html.matchAll(INLINE)) {
-    const attrs = m[1], type = (/\btype\s*=\s*["']?([^"'\s>]*)/i.exec(attrs) || [, ''])[1];
-    if (/\bsrc\s*=/i.test(attrs) || !CODE_TYPE.test(type) || !m[2].trim()) continue;
-    const before = html.slice(0, m.index + m[0].indexOf('>') + 1).split('\n').length - 1;
-    out.push({ file: file + '#script' + (++i), text: '\n'.repeat(before) + m[2] });
+  for (const m of cspInlineScripts(html)) {
+    if (!CODE_TYPE.has(m.type) || !m.text.trim()) continue;
+    const before = html.slice(0, html.indexOf('>', m.start) + 1).split('\n').length - 1;
+    out.push({ file: file + '#script' + (++i), text: '\n'.repeat(before) + m.text });
   }
   return out;
 }

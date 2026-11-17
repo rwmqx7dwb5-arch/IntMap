@@ -114,7 +114,10 @@ test('ai-usage-ledger-sign ① ai-proxy, evaluated: refunds never outnumber char
         const charges = consumed.length && opening.charged ? consumed.length : 0;
         assert.equal(consumed.length, 1, at + ': charged through the ledger once');
         assert.equal(consumed[0].p_turn, turn, at + ': with the turn key the reader sent');
-        assert.ok(refunds.length <= charges, `${at}: ${refunds.length} refund(s) for ${charges} charge(s)`);
+        /* (security-review-nov) a KEYED attempt closes its turn once whether it charged or not — the ledger gives a use
+           back only when the last attempt of the turn closes without an answer (refund_ai_turn → held / answered /
+           refunded; supabase/tests/48 runs that race). A turn-less call asks only when it charged. */
+        assert.ok(refunds.length <= (turn ? 1 : charges), `${at}: ${refunds.length} refund(s) for ${charges} charge(s)`);
         for (const b of refunds) {
           assert.equal(b.p_user, USER.id, at + ': the refund goes to the account that was charged');
           assert.equal(b.p_turn, consumed[0].p_turn, at + ': and names the charged turn, so the ledger returns it to the day it was charged on');
@@ -145,17 +148,17 @@ test('ai-usage-ledger-sign ② ai-proxy, evaluated: the developer, who consumes 
 /* a db whose rpc() records every call (supabase-js shape: resolves { data, error }) */
 function recordingDb() {
   const calls = [];
-  return { calls, rpc: async (name, args) => { calls.push({ name, args }); return { data: null, error: null }; } };
+  return { calls, rpc: async (name, args) => { calls.push({ name, args }); return { data: name === 'refund_ai_turn' ? 'refunded' : null, error: null }; } };
 }
 
 test('ai-usage-ledger-sign ③ _shared/ai-ledger.js, evaluated: the ledger is never handed a negative number, and a refund names its turn', async () => {
   const db = recordingDb();
   const acct = { id: USER.id, plan: 'free', isDev: false, limit: L.PLAN_LIMITS.free };
-  assert.equal(await L.refundTurn(db, acct, 'turn-x'), true);
+  assert.equal(await L.refundTurn(db, acct, 'turn-x'), 'refunded');
   assert.deepEqual(db.calls, [{ name: 'refund_ai_turn', args: { p_user: USER.id, p_turn: 'turn-x' } }], 'one refund, through the turn — never refund_ai_usage');
   const dev = recordingDb();
-  assert.equal(await L.refundTurn(dev, { ...acct, isDev: true }, 'turn-x'), false);
-  assert.equal(await L.settleTurn(dev, { ...acct, isDev: true }, 'turn-x'), false);
+  assert.equal(await L.refundTurn(dev, { ...acct, isDev: true }, 'turn-x'), 'skipped');
+  assert.equal(await L.settleTurn(dev, { ...acct, isDev: true }, 'turn-x'), 'skipped');
   assert.deepEqual(dev.calls, [], 'the developer\'s turns are neither refunded nor settled — they were never charged');
 
   /* every numeric argument of the cost writer is a non-negative integer, whatever the meter says */

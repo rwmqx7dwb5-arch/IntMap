@@ -120,7 +120,9 @@ function fakeDB(answers, state) {
     return chain;
   };
   return { calls, from,
-    rpc(fn, args, opts) { calls.push({ rpc: fn, args, opts }); const a = answers[fn]; return Promise.resolve(typeof a === 'function' ? a(args) : (a || { data: null, error: { code: 'XX' } })); } };
+    rpc(fn, args, opts) { calls.push({ rpc: fn, args, opts }); const a = answers[fn]; return Promise.resolve(typeof a === 'function' ? a(args) : (a || { data: null, error: { code: 'XX' } })); },
+    /* (security-review-nov) the server-only doors are reached through the community-class Edge Function */
+    functions: { invoke(name, o) { calls.push({ fn: name, op: o.body.op, args: o.body.args }); const a = answers[o.body.op]; return Promise.resolve(typeof a === 'function' ? a(o.body.args) : (a || { data: null, error: { code: 'XX' } })); } } };
 }
 function kernel(HOST) {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -135,7 +137,9 @@ test('④ the doors and the Atlas capabilities, evaluated with a stand-in databa
   const r = await C.browse(DB, { query: '  ', sort: 'bogus', limit: 999 });
   assert.equal(r.ok, true); assert.equal(r.items.length, 2);
   const call = DB.calls[0];
-  assert.deepEqual(call.opts, { get: true }, 'the directory is asked as a GET (read-only in PostgREST)');
+  /* (security-review-nov) the directory is server-only in the database: it is asked through the community-class Edge Function */
+  assert.equal(call.fn, 'community-class', 'the directory is read through the community-class Edge Function');
+  assert.equal(call.op, 'community_maps');
   assert.ok(!('p_query' in call.args) && !('p_bbox' in call.args), 'what was not given is left out (a GET would send the word null)');
   assert.equal(call.args.p_sort, 'new'); assert.equal(call.args.p_limit, 50);
   await C.browse(DB, { query: 'Kyoto', bbox: [170, -10, -160, 10] });

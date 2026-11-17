@@ -23,6 +23,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { escapeRegExp } from './helpers/escape-regexp.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -148,7 +149,7 @@ test('wave4-sales ⑤ every module a verbatim-copied page can reach is copied to
   assert.deepEqual(missing, [], 'imported by a raw-served module but absent from dist/');
   for (const p of ['readiness.html', 'js/readiness-page.js']) assert.ok(STATIC_ASSETS.includes(p), p + ' is shipped');
   const ga = src('.gitattributes');
-  for (const p of ['/readiness.html', 'ja/readiness.html']) assert.match(ga, new RegExp('^' + p.replace(/[./]/g, '\\$&') + '\\s+merge=intmap-generated', 'm'), p + ' is declared to the merge driver');
+  for (const p of ['/readiness.html', 'ja/readiness.html']) assert.match(ga, new RegExp('^' + escapeRegExp(p) + '\\s+merge=intmap-generated', 'm'), p + ' is declared to the merge driver');
 });
 
 /* ── ⑥ ────────────────────────────────────────────────────────────────────────────────────── */

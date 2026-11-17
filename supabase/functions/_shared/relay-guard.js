@@ -122,8 +122,11 @@ export async function fetchGuarded(url, opts) {
   const maxBytes = o.maxBytes || 4 * 1024 * 1024;
   const timeoutMs = o.timeoutMs || 20000;
   /* ⚠ ONE DEADLINE FOR THE WHOLE EXCHANGE, redirects and body included. `AbortSignal.timeout` is
-     minted once here and handed to every hop, so three slow redirects cannot buy three deadlines. */
-  const signal = AbortSignal.timeout(timeoutMs);
+     minted once here and handed to every hop, so three slow redirects cannot buy three deadlines.
+     (security-review-nov) `o.signal`, when given, is the CALLER's budget for the whole request — the
+     one its own DNS checks (resolvesPublic, before the first hop and inside allowRedirect) already
+     run under — and either one ending ends the exchange. */
+  const signal = o.signal ? anySignal([o.signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs);
   const res = await followRedirects(url, { method: "GET", headers: o.headers || {}, signal }, o);
   const contentType = res.headers.get("content-type") || "";
   if (res.ok && o.contentTypeRe && !o.contentTypeRe.test(contentType)) {
@@ -138,6 +141,17 @@ export async function fetchGuarded(url, opts) {
     bytes,
     text() { return new TextDecoder("utf-8").decode(bytes); },
   };
+}
+
+/* Aborts when any of `signals` does. `AbortSignal.any` where the runtime has it (Deno, Node 20+). */
+function anySignal(signals) {
+  if (typeof AbortSignal.any === "function") return AbortSignal.any(signals);
+  const ctl = new AbortController();
+  for (const s of signals) {
+    if (s.aborted) { ctl.abort(s.reason); break; }
+    s.addEventListener("abort", () => ctl.abort(s.reason), { once: true });
+  }
+  return ctl.signal;
 }
 
 /* ══ REDIRECTS ARE FOLLOWED BY HAND, AND EACH HOP IS ASKED THE SAME QUESTION AS THE FIRST ══════
@@ -178,7 +192,12 @@ export async function followRedirects(url, init, opts) {
     let next = null;
     try { next = loc ? new URL(loc, current) : null; } catch (_) { next = null; }
     /* (own-fetch-relay) awaited: a caller may need a network answer (a DNS lookup) to judge a hop */
-    if (!next || hop >= limit || !(await allow(next, current))) throw new RelayError("upstream_redirect", 502);
+    if (!next || hop >= limit || !(await allow(next, current))) {
+      /* (security-review-nov) a hop judged while the exchange's clock ran out was not refused, it was not
+         judged in time — say so, rather than calling the hop disallowed */
+      if (init && init.signal && init.signal.aborted) throw new RelayError("upstream_timeout", 503);
+      throw new RelayError("upstream_redirect", 502);
+    }
     /* A 303, and a 301/302 answered to a POST, turn the request into a GET — the browser rule. */
     if (res.status === 303 || ((res.status === 301 || res.status === 302) && init && init.method && init.method !== "GET" && init.method !== "HEAD")) {
       init = { ...init, method: "GET", body: undefined };
@@ -393,16 +412,44 @@ export function publicAddress(ip) {
   return true;
 }
 
-/* resolvesPublic(hostname) → true only when the name resolves and every A/AAAA answer is public.
-   ⚠ FAILS CLOSED: a runtime with no resolver (`Deno.resolveDns` absent) answers false, so the rule
-   that depends on this is refused rather than taken on trust. ⚠ What it cannot close: the answer
-   the connection later uses may differ from the one checked here (DNS rebinding with a zero TTL). */
-export async function resolvesPublic(hostname) {
+/* resolvesPublic(hostname, { signal }) → true only when it is ESTABLISHED that the name resolves and
+   every A/AAAA answer is public.
+   ⚠ FAILS CLOSED, and "closed" includes every way of not knowing:
+     · a runtime with no resolver (`Deno.resolveDns` absent) answers false;
+     · each type's query must either answer or answer DEFINITELY NOTHING — Deno's `Deno.errors.NotFound`
+       (NXDOMAIN / no record of that type) is the only error read as absence. A SERVFAIL, a timeout, an
+       abort or anything unrecognised means that type's answers are unknown, and an unknown AAAA set
+       beside a public A set is not "every answer is public" (security-review-nov: the loop swallowed
+       every error as absence, so a failed AAAA query let the name through on its A answers alone);
+     · no answer of either type answers false.
+   A and AAAA are asked together (no extra queries). `signal` is handed to both lookups — the caller's
+   one per-request budget (fetch-relay mints it from the rule's timeoutMs and passes the same signal to
+   the redirect hops' checks and to fetchGuarded) — and its abort answers false at once even if a
+   resolver were to ignore it; the lookups themselves were given the signal, so they are cancelled,
+   not left running.
+   ⚠ What it still cannot close: the address the connection later uses is resolved again by fetch,
+   and may differ from the one checked here (DNS rebinding with a zero TTL). This is a check-time
+   answer, not a pin on the connect-time address. */
+export async function resolvesPublic(hostname, opts) {
   const D = globalThis.Deno;
   if (!D || typeof D.resolveDns !== "function") return false;
+  const signal = opts && opts.signal;
+  if (signal && signal.aborted) return false;
+  const lookups = Promise.allSettled(["A", "AAAA"].map((type) =>
+    D.resolveDns(hostname, type, signal ? { signal } : undefined)));
+  let settled;
+  if (signal) {
+    let onAbort;
+    const aborted = new Promise((resolve) => { onAbort = () => resolve(null); signal.addEventListener("abort", onAbort, { once: true }); });
+    try { settled = await Promise.race([lookups, aborted]); } finally { signal.removeEventListener("abort", onAbort); }
+    if (!settled || signal.aborted) return false;
+  } else {
+    settled = await lookups;
+  }
   const addrs = [];
-  for (const type of ["A", "AAAA"]) {
-    try { addrs.push(...(await D.resolveDns(hostname, type))); } catch (_) { /* no record of that type */ }
+  for (const r of settled) {
+    if (r.status === "fulfilled") { if (Array.isArray(r.value)) addrs.push(...r.value); else return false; }
+    else if (!(r.reason && r.reason.name === "NotFound")) return false;   /* failed, not absent */
   }
   return addrs.length > 0 && addrs.every(publicAddress);
 }

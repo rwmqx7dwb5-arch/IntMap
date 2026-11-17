@@ -129,22 +129,48 @@ export async function openTurn(db, account, o) {
     used: Number(row.used) || 0,
     calls: Number(row.calls) || 0,
     reason: row.allowed ? "" : String(row.reason || "limit"),
+    /* (security-review-nov) the generation of the turn row this attempt opened — handed back to
+       settleTurn / refundTurn so a late close cannot land on a row made again under the same key */
+    gen: typeof row.gen === "string" && row.gen ? row.gen : null,
   };
 }
 
-/* refundTurn — give back the use a failed call charged (public.refund_ai_turn). The ledger refuses a
-   refund for a turn that has already answered (#R801), and only a call that CHARGED asks. */
-export async function refundTurn(db, account, turn) {
-  if (!account || account.isDev) return false;
-  try { await db.rpc("refund_ai_turn", { p_user: account.id, p_turn: String(turn || "") }); return true; }
-  catch (_) { return false; }
+/* (security-review-nov) WHAT A CLOSE ANSWERED. supabase-js reports a database error as a RESOLVED
+   { data, error } — it does not throw — so «no exception» is not «done». Before this, both doors said true
+   for an RPC that had failed, and settle said true for a turn that matched no row. Each door now answers
+   a status the caller can record (never the database message: PostgREST errors name the schema):
+     refundTurn → 'refunded' | 'held' | 'answered' | 'not_found' | 'error' | 'skipped'
+     settleTurn → 'settled'  | 'not_found' | 'error' | 'skipped'
+   ⚠ Neither is retried here. A refund that failed is not asked again blindly: a turn-less refund
+   (empty key) has no row to make it idempotent, and a turn's row may have been released already.
+   The turn's row expires with its TTL (consume_ai_turn), which is the recovery path. */
+const REFUND_STATES = new Set(["refunded", "held", "answered", "not_found"]);
+
+/* refundTurn — an attempt of a turn closed without an answer (public.refund_ai_turn). The ledger gives
+   the charge back only when the LAST attempt of the turn closes without one (#R801, security-review-nov). */
+export async function refundTurn(db, account, turn, gen) {
+  if (!account || account.isDev) return "skipped";
+  try {
+    const args = { p_user: account.id, p_turn: String(turn || "") };
+    if (gen) args.p_gen = String(gen);
+    const { data, error } = await db.rpc("refund_ai_turn", args);
+    if (error) return "error";
+    const v = String(firstRow(data) ?? "");
+    return REFUND_STATES.has(v) ? v : "error";
+  } catch (_) { return "error"; }
 }
 
 /* settleTurn — the turn has produced an answer, so no later failure under its key can refund it. */
-export async function settleTurn(db, account, turn) {
-  if (!account || account.isDev || !turn) return false;
-  try { await db.rpc("settle_ai_turn", { p_user: account.id, p_turn: String(turn) }); return true; }
-  catch (_) { return false; }
+export async function settleTurn(db, account, turn, gen) {
+  if (!account || account.isDev || !turn) return "skipped";
+  try {
+    const args = { p_user: account.id, p_turn: String(turn) };
+    if (gen) args.p_gen = String(gen);
+    const { data, error } = await db.rpc("settle_ai_turn", args);
+    if (error) return "error";
+    const v = Array.isArray(data) ? data[0] : data;   /* a boolean — firstRow would read `false` as «no row» */
+    return v === true ? "settled" : (v === false ? "not_found" : "error");
+  } catch (_) { return "error"; }
 }
 
 /* recordUsage — what the provider answers of this request COST, added to the account's day

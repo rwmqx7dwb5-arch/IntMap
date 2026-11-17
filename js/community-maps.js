@@ -23,6 +23,7 @@
  *  ⚠ IntMap-authored text is en + jp (CONSTITUTION.md §7); every owner-written word is set as text, never as markup.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import { communityClassCall } from './community-class-door.js';   /* (security-review-nov) the directory is read through the community-class Edge Function */
 import { IntMapGeoEngine } from './geo-engine.js';   /* the renderer, through the contract — the area the reader is looking at */
 
 /* ── THE WORDS THE DATABASE BOUNDS (the migration's CHECKs are the outer bound on the same values;
@@ -125,7 +126,7 @@ function errOf(error) {
   if (c === '55000') return 'hidden';
   if (c === 'IMOWN') return 'own';   /* report_community_map: the reader's own collection (its own code since wave4-refine) */
   if (c === 'P0002') return 'not_listed';
-  if (c === 'PGRST202' || c === '42883') return 'not_deployed';
+  if (c === 'PGRST202' || c === '42883' || c === 'not_deployed') return 'not_deployed';
   return 'failed';
 }
 
@@ -160,7 +161,7 @@ export async function browse(DB, q) {
   if (typeof q.after === 'string' && q.after) args.p_after = q.after;
   if (Array.isArray(q.bbox) && q.bbox.length === 4 && q.bbox.every(Number.isFinite)) args.p_bbox = q.bbox.map((x) => +(+x).toFixed(4));
   try {
-    const { data, error } = await DB.rpc('community_maps', args, { get: true });
+    const { data, error } = await communityClassCall(DB, 'community_maps', args);
     if (error) return { ok: false, error: errOf(error) };
     if (!data || data.ok !== true) return { ok: false, error: (data && data.error === 'invalid_cursor') ? 'invalid_cursor' : 'failed' };
     const next = data.has_more === true && typeof data.next === 'string' && data.next ? data.next : null;

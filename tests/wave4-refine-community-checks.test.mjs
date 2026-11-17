@@ -318,7 +318,9 @@ function fakeDB(answers, uid) {
   };
   return { calls, from,
     auth: { getSession: async () => ({ data: { session: uid ? { user: { id: uid } } : null } }) },
-    rpc(fn, args, opts) { calls.push({ rpc: fn, args, opts }); const a = answers[fn]; return Promise.resolve(typeof a === 'function' ? a(args) : (a || { data: null, error: { code: 'XX' } })); } };
+    rpc(fn, args, opts) { calls.push({ rpc: fn, args, opts }); const a = answers[fn]; return Promise.resolve(typeof a === 'function' ? a(args) : (a || { data: null, error: { code: 'XX' } })); },
+    /* (security-review-nov) the server-only doors are reached through the community-class Edge Function */
+    functions: { invoke(name, o) { calls.push({ fn: name, op: o.body.op, args: o.body.args }); const a = answers[o.body.op]; return Promise.resolve(typeof a === 'function' ? a(o.body.args) : (a || { data: null, error: { code: 'XX' } })); } } };
 }
 /* the smallest document the card needs */
 function fakeDocument() {

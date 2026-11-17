@@ -23,6 +23,7 @@ import { join, dirname, resolve, relative } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { importModule } from './helpers/import-module.mjs';
+import { escapeRegExp } from './helpers/escape-regexp.js';
 import { parseSource } from './helpers/ast.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { makeQuestEngine, QUEST_KIND_IDS, QUEST_DATA, QUEST_MAX, SET_LENGTHS, DAILY_N, questFromSearch } from '../js/quest-engine.js';
@@ -209,7 +210,7 @@ test('wave4-education ⑦ the database: two anon doors, each saying why; no tabl
   assert.deepEqual(grantsAnon.map((m) => (/on function public\.([a-z_]+)/.exec(m[1]) || [, 'TABLE:' + m[1]])[1]).sort(), ['class_set_open', 'class_set_submit'],
     'anon is granted exactly the two student doors, and no table');
   for (const fn of ['class_set_open(text)', 'class_set_submit(text, text, jsonb)']) {
-    const c = new RegExp("comment on function public\\." + fn.replace(/[()]/g, '\\$&') + " is\\s+'((?:[^']|'')*)'").exec(MIG);
+    const c = new RegExp("comment on function public\\." + escapeRegExp(fn) + " is\\s+'((?:[^']|'')*)'").exec(MIG);
     assert.ok(c, fn + ' has no comment');
     assert.match(c[1], /ANON MAY CALL: \S/, fn + ' does not say why anon may call it (supabase/tests/11_definer_execute_test.sql)');
   }
