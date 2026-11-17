@@ -70,8 +70,8 @@ select ok(not has_column_privilege('authenticated', 'public.collection_shares', 
 select ok(not has_column_privilege('authenticated', 'public.collection_shares', 'reused_count', 'update'), 'the owner cannot write the reuse counter');
 select ok(not has_column_privilege('authenticated', 'public.collection_shares', 'derived_from', 'update'), 'the owner cannot rewrite the lineage');
 select ok(not has_column_privilege('authenticated', 'public.collection_shares', 'author_name', 'update'),  'the author name is written through list_community_map only');
-select ok(    has_function_privilege('anon', 'public.community_maps(text, text, integer, text, double precision[])', 'execute'), 'anon may read the directory');
-select ok(obj_description('public.community_maps(text, text, integer, text, double precision[])'::regprocedure, 'pg_proc') ~ 'ANON MAY CALL: \S', 'and the function states why');
+select ok(not has_function_privilege('anon', 'public.community_maps(text, text, integer, text, double precision[])', 'execute'), 'anon cannot loop the directory straight through PostgREST (security-review-nov)');
+select ok(obj_description('public.community_maps(text, text, integer, text, double precision[])'::regprocedure, 'pg_proc') ~ 'SERVER ONLY: \S', 'and the function states why');
 select ok(not has_function_privilege('anon', 'public.list_community_map(text, text, text, text)', 'execute'), 'anon cannot list');
 select ok(not has_function_privilege('anon', 'public.report_community_map(text, text, text)', 'execute'),     'anon cannot report');
 select ok(not has_function_privilege('anon', 'public.moderate_community_map(text, text, text)', 'execute'),   'anon cannot moderate');
@@ -101,7 +101,7 @@ select _sel('unl_none',  'select public.unlist_community_map(''Home'')::text');
 reset role;
 
 select is(_tok('l_noname'), 'ERR:22023', 'listing needs a name to show the first time');
-select is(_tok('l_long'),   'ERR:23514', 'a name longer than 40 characters is refused by the table');
+select is(_tok('l_long'),   'ERR:22023', 'a name longer than 40 characters is refused (the one name rule, display_name — security-review-nov)');
 select is(_tok('l_empty'),  'ERR:22023', 'an empty collection is not listed (nor published)');
 select ok(_tok('l_first') ~ '^[0-9a-f]{32}\|true$', 'listing publishes and lists in one call');
 select is(_tok('l_again'),  'false', 'listing a listed collection again is «already listed» (listed=false)');
@@ -116,20 +116,46 @@ insert into _cap values ('kansai', split_part(_tok('l_first'), '|', 1));
 -- ─────────────────────────────────────────────────────────────────────────────
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_all',    'select public.community_maps()::text');
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_word',   'select public.community_maps(''KANSAI'')::text');
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_author', 'select public.community_maps(''ms a'')::text');
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_none',   'select public.community_maps(''zzzz'')::text');
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_pct',    'select public.community_maps(''%'')::text');
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_japan',  'select public.community_maps(null, ''new'', 24, null, array[129, 30, 146, 46]::double precision[])::text');
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_europe', 'select public.community_maps(null, ''new'', 24, null, array[-10, 35, 30, 60]::double precision[])::text');
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_wrap',   'select public.community_maps(null, ''new'', 24, null, array[120, 20, -30, 60]::double precision[])::text');
+reset role; set local role anon;
 -- (wave4-refine) KEYSET PAGES: the second page is asked after the first page's cursor, not at an offset
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_page0',  'select public.community_maps(null, ''new'', 1)::text');
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_page',   format('select public.community_maps(null, ''new'', 1, %L)::text', (_tok('d_page0')::jsonb) ->> 'next'));
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_othercur', format('select public.community_maps(null, ''reused'', 1, %L)::text', (_tok('d_page0')::jsonb) ->> 'next'));
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_badcur', 'select public.community_maps(null, ''new'', 1, ''v1|new|0|zz|nope'')::text');
+reset role; set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d_lim',    'select public.community_maps(null, ''bogus'', 9999)::text');
+reset role; set local role anon;
 select _sel('anon_tbl', 'select count(*)::text from public.collection_copies');
 reset role;
 
@@ -193,7 +219,9 @@ select _sel('a_reach', 'select string_agg(c.collection || '':'' || r.reused || '
 reset role;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('d2',      'select public.community_maps(null, ''reused'')::text');
+reset role; set local role anon;
 select _sel('s_kansai', format('select public.shared_collection(%L)::text', _tok('kansai')));
 select _sel('s_home',   format('select public.shared_collection(%L)::text', _tok('home_tok')));
 reset role;
@@ -270,7 +298,9 @@ select _sel('q2',       'select public.community_map_reports_admin()::text');
 reset role;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('h_dir',    'select public.community_maps()::text');
+reset role; set local role anon;
 select _sel('h_link',   format('select public.shared_collection(%L)::text', _tok('kansai')));
 reset role;
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
@@ -284,7 +314,9 @@ select _sel('m_restore', format('select public.moderate_community_map(%L, ''rest
 reset role;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('r_dir',    'select public.community_maps()::text');
+reset role; set local role anon;
 reset role;
 
 select is(jsonb_array_length(_tok('q')::jsonb), 1, 'the administrator reads the queue: one reported collection');
@@ -345,7 +377,9 @@ select _sel('x_exp',    'select public.export_account_data()::text');
 reset role;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
+reset role; set local role service_role;   -- (security-review-nov) the directory is server-only
 select _sel('x_dir',  'select public.community_maps(''Europe'')::text');
+reset role; set local role anon;
 select _sel('x_read', format('select public.shared_collection(%L)::text', _tok('x_repub')));
 reset role;
 select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);

@@ -119,10 +119,25 @@ function fakeDB(answers, state) {
       then(res, rej) { calls.push({ table }); return Promise.resolve({ data: (state && state[table]) || [], error: null }).then(res, rej); } };
     return chain;
   };
-  return { calls, from,
+  const db = { calls, from,
     rpc(fn, args, opts) { calls.push({ rpc: fn, args, opts }); const a = answers[fn]; return Promise.resolve(typeof a === 'function' ? a(args) : (a || { data: null, error: { code: 'XX' } })); },
-    /* (security-review-nov) the server-only doors are reached through the community-class Edge Function */
-    functions: { invoke(name, o) { calls.push({ fn: name, op: o.body.op, args: o.body.args }); const a = answers[o.body.op]; return Promise.resolve(typeof a === 'function' ? a(o.body.args) : (a || { data: null, error: { code: 'XX' } })); } } };
+  };
+  /* (security-review-nov) the server-only doors are reached by a POST to the community-class Edge Function
+     (js/community-class-door.js) — the stub answers it from the same table, by op */
+  globalThis.SUPABASE_URL = 'https://sb.test';
+  /* every stand-in database a test made answers the ops it was given; the newest one that knows the op answers it */
+  (globalThis.__fakeDbs = globalThis.__fakeDbs || []).push({ answers, calls });
+  globalThis.fetch = async (url, init) => {
+    const b = JSON.parse(init.body);
+    const reg = globalThis.__fakeDbs;
+    const owner = [...reg].reverse().find((d) => d.answers[b.op] !== undefined) || reg[reg.length - 1];
+    const answers = owner.answers, calls = owner.calls;
+    calls.push({ fn: String(url).split('/functions/v1/')[1], op: b.op, args: b.args });
+    const a = answers[b.op];
+    const r = typeof a === 'function' ? a(b.args) : (a || { data: null, error: { code: 'XX' } });
+    return r.error ? new Response('{}', { status: 500 }) : new Response(JSON.stringify(r.data), { status: 200 });
+  };
+  return db;
 }
 function kernel(HOST) {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);

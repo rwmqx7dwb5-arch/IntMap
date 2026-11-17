@@ -53,3 +53,6 @@ newsjp: 既知の漏洩データに含まれるパスワードは、登録時と
 
 - `tests/security-review-nov-checks.test.mjs`（6）・`-dns-`（9）・`-delete-body-`（10）、pgTAP `48_security_review_nov_test.sql`（カタログで全 overload の EXECUTE、anon/authenticated の実呼び出し拒否、保留の改名・「全部」、K1 の競合・二重返金・キー再利用）。
 - 既存の台帳・community・class の試験を新しい形へ（`ai-usage-ledger-sign` ①③・`backend-edge-hardening` R801 ③・`ai-one-ledger`・`wave4-community`）。
+- pgTAP 38/39/47 は 3 つの扉を service_role（Edge Function と同じ呼び方）で呼ぶ。38 は「anon が目録を読める」を「読めない」へ、40 字超の作者名は表の CHECK より先に `display_name` が 22023 で拒む。
+- `tests/fixtures/atlas-core-split-before.json`：差分は**ログ行だけ**（49 応答）。試験の台帳の stub が状態を返さないので `ai-proxy ledger refund_failed` / `settle_error` が記録されるようになった——答え・ヘッダ・外への要求は 1 件も変わっていない（49 件を項目ごとに比べて確認）。撮影スクリプトは分割前の単一 `index.ts` しか撮れないので、その差分だけを fixture に当てた。
+- ⚠ 実装の途中で 1 度誤った：ブラウザの扉を `supabase.functions.invoke` で書いたが、IntMap は SDK の Functions client を束ねていない（`src/supabase-unbundled-stub.js`、`deps-runtime-majors` ④が CI で捕まえた）。`js/feedback.js` と同じ `fetch` に直した。
