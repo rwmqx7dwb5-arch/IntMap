@@ -1571,8 +1571,7 @@ export function makeGisProject() {
           return Object.assign({}, cacheLimits);
         },
       },
-      /* named so a test or a panel can talk about the store without re-deriving the strings */
-      dbName: DB_NAME, storeName: STORE, recordVersion: RECORD_VERSION,
+      recordVersion: RECORD_VERSION,
       /* (#R749) What the kernels say they are RIGHT NOW — the other half of what a saved step's
          numbers depend on. Exposed so a panel can show the comparison load() reports without asking
          the kernels a second way; the version itself belongs to js/gis-ops.js and js/gis-geometry.js. */

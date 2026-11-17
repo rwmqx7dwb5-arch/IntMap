@@ -2140,7 +2140,7 @@ export function makeGisCrs() {
       refusals,
       /* exposed because js/geo-import.js asks the same question about a code it read out of a file,
          and two spellings of 「is this 4326」 would drift — one rule, two readers */
-      normalise, WGS84,
+      normalise,
     };
     try { window.IntMapGisCrs = API; } catch (_) { }
     return API;

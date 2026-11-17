@@ -942,7 +942,7 @@ test('R196 ①a js/geodesy.js carries the antimeridian block verbatim, and the s
   const needles = [
     'const _R_EARTH_KM=6371.0088, _HALF_CIRCUM=Math.PI*_R_EARTH_KM;',
     'function _clipHalf(poly,x,keepGE){',
-    'function _splitPolyToWindows(poly){',
+    'function _splitPolyToWindows(poly,keepLat){',   /* (gis-foundation-refine) the kernel's unclamped cut */
     'function _splitLineToWindows(line){',
     'function diskFillPolys(center,radiusKm,steps){',
     'function diskOutlineLines(center,radiusKm,steps){',

@@ -134,7 +134,7 @@ export const KERNELS = {
      against the window's, tolerance 1e-9 — the largest gap over 60 random runs was 7.6e-15) and, when they do not,
      records the loss and refuses to name a farthest point instead of answering «0 cells, no farthest place». A
      window over the whole ring of longitudes (box(-180,…,180,…)) used to be exactly that silent empty answer. */
-  'js/gis-ops.js': { version: 'ops-10', sha256: '4283f0652b0b8629ad18909165a741cf22a2b56aae9d5ded0d584881cb0879cf' },
+  'js/gis-ops.js': { version: 'ops-11', sha256: '1388e47a199f219223985d3580f50bdae4cfc85c643bfb6557b3582734eb84f2' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -161,7 +161,14 @@ export const KERNELS = {
      intersection and clip returned an EMPTY success. Such a ring is now read as the band / polar cap it is; a ring
      that circles a pole without saying which is refused by name (geometry-wraps-world) instead of being accepted
      as a wrong shape. Answers over ordinary rings are unchanged (the existing suite). */
-  'js/gis-geometry.js': { version: 'geom-3', sha256: '26f7f53a321604904890166f9a6547bb1dc006e69b534ca995b45db8f0fa47a9' },
+  /* (gis-foundation-refine) geom-3 -> geom-4: buffers round a pole are caps closed along the pole and are no
+     longer clamped to ±89.9999° (50 km at 89.9°N: 5,529 → π·50² km²); a buffer's long or high-latitude edge is
+     offset point by point (a line's edge on its great circle, a ring's on its lon/lat edge — [0,89]→[180,89] at
+     20 km: 2,497 → 10,152 km²); intersects / disjoint / contains / within are DE-9IM on closed sets (shapes that
+     share only an edge now intersect; a boundary position is never within); every written edge is at most a
+     quarter-turn of longitude. pointInGeometry is unchanged except at a pole. bbox / centroid / pointOnSurface /
+     convexHull / simplify are new doors. Measured in tests/gis-foundation-refine-geometry-checks.test.mjs. */
+  'js/gis-geometry.js': { version: 'geom-4', sha256: '8643e6d25e9a910a3cda30f8dfa1445e3ca1e9de78d6d2068ebd404dbacb9b31' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project
@@ -213,7 +220,9 @@ export const KERNELS = {
   /* (gis-chain-audit) HASH ONLY. samplerGrid() carries a band's stated `quantity` (a supplier's statement of
      what a cell means — js/population-grid.js says density) onto the band it builds; a band that states none
      is built exactly as before, so every recipe replays bit for bit. */
-  'js/gis-raster.js': { version: 'raster-4', sha256: '9ab84a5073301cd5dfb9c125b0d2f735e3b25860a577183b70c50c66845be96f' },
+  /* (#W4) raster-4 -> raster-5: `sample` reads a longitude in the grid's own frame and treats the outer
+     east/south edges as closed, so positions that answered `outside` now answer a value. */
+  'js/gis-raster.js': { version: 'raster-5', sha256: 'e18d7158f6f78cf47d7607a6656e1b614cc1a930ba5049bba7956aebdb80f01f' },
   /* (#R774) A FIRST DECLARATION. js/gis-units.js decides whether two quantities may be combined and
      what the conversion is; every caller above asks it, so a change to the table or to the
      expression walk changes what a replayed recipe answers or refuses. */
@@ -228,7 +237,9 @@ export const KERNELS = {
      a ratio of — and publishes `specFields` so the supplying side and the panel read one list.
      It is carried, never resolved here: this kernel knows nothing about datasets. Measured: all
      nine aggregation methods answer the same verdict for the same quantity as before. */
-  'js/gis-units.js': { version: 'units-2', sha256: '8977ce65f4cb7978736a49d14280fbf3c60ac5af4958ff134e8f08b8f2d5869b' },
+  /* (#W4) units-2 -> units-3: an affine conversion is computed in exact integers (0 °C is 32 °F, not
+     31.999999999999986) and ftUS / tsubo / mmHg / inHg are new spellings. */
+  'js/gis-units.js': { version: 'units-3', sha256: '7ffbd900cc5fcceaf22896b2ea3f8a08a86a7df6ebce76bad73530a0548857d3' },
   /* (#R756) Hash only, for the same reason: the output-pixel loop now yields through the same
      paced walk, and the per-row cancel that had been unreachable code since #R749 is reached. */
     /* (#R783) HASH ONLY: the inverse mapping and the areal footprint boxes may now be computed in the
@@ -273,7 +284,7 @@ export const KERNELS = {
      and the branch-and-bound search for the farthest place. Raise it when a replayed `voronoi` step
      would draw a different border or name a different farthest place. */
   'js/gis-voronoi.js': { version: 'voronoi-1', sha256: '2ca8a32a3066960fd9e2c3a393359db9cc279da71158affc844755e9dee2acc3' },
-  'js/gis-crs.js': { version: 'crs-3', sha256: 'dd306fe9a1f2424ed8518d95c24b14bf6cc200ede37e1067f6510e01eaa3efa9' },
+  'js/gis-crs.js': { version: 'crs-3', sha256: 'f3a8a70462b3eba1449be8f86dc27278fb835af2861593c6bda58dbc87c715cc' },
 };
 
 /* ⚠ THE OTHER HALF, AND IT IS THE HALF THAT MAKES THE FIRST ONE A RULE. A GIS module that is not a
