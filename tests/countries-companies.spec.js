@@ -35,25 +35,6 @@ test('the Countries rank is the country’s standing among all, not within the s
   await page.dispatchEvent('#search-input', 'input');
 });
 
-test('a Countries row has a visible Details button that opens the country, and the card prints the year of its values', async ({ app }) => {
-  const page = app.page;
-  await openCountries(page);
-  const row = page.locator('#countries-feed .stat-row[data-ccn="FRA"]');
-  await expect(row.locator('.stat-detail')).toBeVisible();
-  await row.locator('.stat-detail').click();
-  await page.waitForFunction(() => document.getElementById('country-popup')?.style.display === 'block', null, { timeout: 15000 });
-  expect(await page.evaluate(() => window._cpCurrent && window._cpCurrent.code)).toBe('FRA');
-  /* the card's years are the values' own: the bundled GDP is the World Bank's 2023 series */
-  const gdpLabel = await page.evaluate(() => {
-    const rows = [...document.querySelectorAll('#cp-body *')].map((e) => e.textContent).filter((t) => /GDP/.test(t) && /\(\d{4}[ )]/.test(t));
-    return rows.length ? rows[rows.length - 1] : '';
-  });
-  expect(gdpLabel, 'the GDP row carries the year of its value').toMatch(/\((19|20)\d\d[ )]/);
-  /* (companies-name-width) and its source beside the year: the bundled GDP is the World Bank's series */
-  expect(gdpLabel, 'the GDP row names the source of its value').toMatch(/\((19|20)\d\d · World Bank\)/);
-  await page.evaluate(() => { const x = document.querySelector('#country-popup .cp-close, #country-popup [data-im-click="closeCountryPopup"]'); if (x) x.click(); else document.getElementById('country-popup').style.display = 'none'; });
-});
-
 test('the comparison prints GDP (PPP) in dollars, offers a same-year comparison, and draws a readable chart', async ({ app }, testInfo) => {
   test.setTimeout(180_000);   /* three views, each reading the World Bank */
   const page = app.page;
@@ -109,4 +90,81 @@ test('the Companies search reaches every company profile, not only the market-da
   await page.waitForSelector(`#info-dashboard .co-prof-row[data-coid="${target.id}"]`, { timeout: 20000 });
   await page.fill('#search-input', '');
   await page.dispatchEvent('#search-input', 'input');
+});
+
+/* ── (country-figure-publisher) ───────────────────────────────────────────────────────────────────────
+ *   The country card names each figure's publisher beside its year — every figure, every path
+ *  ----------------------------------------------------------------------------
+ *   Measured on production (build 1be2049, 2026-11-18): HDI read «(2022 · UNDP)», while GDP, GDP per capita,
+ *   population, life expectancy, internet use and military spending read
+ *   «(2025 · World Bank World Development Indicators (NY.GDP.MKTP.CD))» — the values the World Bank's latest series
+ *   had replaced at start-up, and again after a trip through time and back to Now.
+ *   The World Bank is answered here from a fixture (one row per series, for France) so the writer the card depends on
+ *   runs the same way with or without the network; the card is then read as a reader reads it.
+ * ─────────────────────────────────────────────────────────────────────────────────────────────────────*/
+/* the World Bank API's own shape: [meta, rows] — the indicator code read from the address asked for */
+async function answerWorldBank(page) {
+  await page.route(/^https:\/\/api\.worldbank\.org\/v2\//, (route) => {
+    const code = decodeURIComponent((route.request().url().match(/\/indicator\/([^?]+)/) || [])[1] || '');
+    const rows = [{ countryiso3code: 'FRA', country: { id: 'FR', value: 'France' }, indicator: { id: code }, date: '2024', value: 1000 }];
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ page: 1, pages: 1, per_page: 20000, total: 1 }, rows]) });
+  });
+}
+
+/* every «(year · publisher)» the open card prints */
+async function cardStamps(page) {
+  /* a row's Details button is visible and opens that country (it was only a double-click nobody was told about) */
+  const det = page.locator('#countries-feed .stat-row[data-ccn="FRA"] .stat-detail');
+  await expect(det).toBeVisible();
+  await det.click();
+  await page.waitForFunction(() => document.getElementById('country-popup')?.style.display === 'block', null, { timeout: 15000 });
+  expect(await page.evaluate(() => window._cpCurrent && window._cpCurrent.code)).toBe('FRA');
+  return page.evaluate(() => [...document.querySelectorAll('#cp-body .cm-row > span:first-child, #cp-body .ci-row > span:first-child')]
+    .map((e) => e.textContent.trim()).map((t) => { const m = t.match(/\((\d{4}) · (.+)\)$/); return m ? { label: t, y: m[1], pub: m[2] } : { label: t }; }));
+}
+
+async function closeCard(page) {
+  await page.evaluate(() => { const x = document.querySelector('#country-popup .cp-close, #country-popup [data-im-click="closeCountryPopup"]'); if (x) x.click(); else document.getElementById('country-popup').style.display = 'none'; });
+}
+
+/* a publisher is a name, never a citation: no series code, no parenthesis, no «World Development Indicators» */
+function expectPublishers(stamps, when) {
+  const named = stamps.filter((s) => s.pub);
+  expect(named.length, `${when}: the card names sources`).toBeGreaterThanOrEqual(4);
+  for (const s of named) {
+    expect(s.pub, `${when}: «${s.label}» names a publisher, not the citation`).not.toMatch(/[()]|Indicators|\.[A-Z]{2,}\./);
+    expect(s.pub.length, `${when}: «${s.label}»`).toBeLessThanOrEqual(24);
+  }
+  return named;
+}
+
+test('every figure on the country card names its publisher — after the World Bank refresh and after a trip through time', async ({ app }) => {
+  test.setTimeout(120_000);
+  const page = app.page;
+  await answerWorldBank(page);
+  try {
+    await page.click('#btn-stats');
+    await page.waitForFunction(() => document.querySelectorAll('#countries-feed .stat-row').length > 50, null, { timeout: 30000 });
+    /* the one writer of a World Bank latest value (js/wb-layers.js applyStat → js/wb-indicators.js applyLatest), for every field it fills */
+    const filled = await page.evaluate(async () => {
+      const out = [];
+      for (const f of ['gdp', 'gdppc', 'pop', 'milSpend', 'lifeExp', 'internet']) { const r = await window.IntMapWB.applyStat(f); if (r && r.n) out.push(f); }
+      return out;
+    });
+    expect(filled.length, 'the World Bank series reached the table').toBeGreaterThanOrEqual(4);
+    const now = expectPublishers(await cardStamps(page), 'after the refresh');
+    expect(now.filter((s) => s.pub === 'World Bank').length, 'the World Bank figures say «World Bank»').toBeGreaterThanOrEqual(4);
+    await closeCard(page);
+
+    /* a trip through time and back to Now: js/time-countries.js sets the present aside and puts it back */
+    await page.evaluate(() => window.IntMapTime.setYear(2010, { source: 'test' }));
+    await page.waitForFunction(() => window._imTimeYear === 2010, null, { timeout: 30000 });
+    await page.evaluate(() => window.IntMapTime.set(null, { source: 'test' }));
+    await page.waitForFunction(() => !window._imTimeYear, null, { timeout: 30000 });
+    const back = expectPublishers(await cardStamps(page), 'back at Now');
+    expect(back.map((s) => s.label), 'the card after the trip is the card before it').toEqual(now.map((s) => s.label));
+    await closeCard(page);
+  } finally {
+    await page.unroute(/^https:\/\/api\.worldbank\.org\/v2\//);
+  }
 });

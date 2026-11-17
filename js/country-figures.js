@@ -67,6 +67,15 @@ export function figure(row, field) {
     licence: (m.cite && m.cite.licence) || '', url: (m.cite && m.cite.url) || '', code: (m.cite && m.cite.code) || '' };
 }
 
+/** The stamp of `row[field]` exactly as its writer gave it — `{ y, src }` with `src` the citation object or the name —
+ *  so a reader that sets a value aside and puts it back (js/time-countries.js, the return to Now) restores the same
+ *  year, publisher and citation with `stampFigure(row, field, st.y, st.src)`, not a copy of some of its fields.
+ *  Null when the field was never stamped. */
+export function stampOf(row, field) {
+  const m = row && (META.get(row) || {})[field];
+  return m ? { y: m.y, src: m.cite || m.src } : null;
+}
+
 /** The year the value in `row[field]` is for, or null. */
 export function figureYear(row, field) {
   const f = figure(row, field);
