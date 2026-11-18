@@ -1220,6 +1220,11 @@ put a real secret value in the repo, a PR, or a log.**
   `Scheduled security watch` job turns a red scheduled run, or an open high/critical code-scanning alert on
   `main`, into the single `status:security-advisory` issue (`scripts/ci-incident-issue.cjs`, the mechanism the
   backup and deploy jobs share); runbook `INCIDENT-RESPONSE.md` §10 under «Database incidents».
+- **An advisory with no fixed release** — the build-tooling audit step runs `scripts/audit-gate.mjs`: the same «high or
+  critical» audit minus `scripts/audit-exceptions.json`, each row dated and ending within 60 days (after which it
+  counts again and the job goes red). The browser-shipped audit (`--omit=dev`, every severity) has no exceptions.
+  Standing row: picomatch `GHSA-fc5q-39xc-vjpf` (newest release 4.0.7 is inside `<=4.0.7`; reached only through
+  vite → tinyglobby → fdir). Delete the row the day a fixed release exists.
 - **Branch protection / ruleset on `main`** — applied (ruleset «Protect main», re-read 2026-09-18):
   PRs required, force-push and deletion blocked, no bypass actors, and the required checks are the
   three CI jobs (**Static checks**, **Browser smoke + internal QA**, **Regression suite**) plus, since

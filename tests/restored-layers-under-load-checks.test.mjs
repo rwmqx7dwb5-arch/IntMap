@@ -106,17 +106,28 @@ test('② a different instant, or a replaced catalogue, is propagated', () => {
   assert.ok(small.length <= 50, 'and the answer is about the catalogue that replaced it');
 });
 
-test('③ the premise of the cost note: satellite.js does not keep the deep-space integrator between calls', () => {
-  /* ⚠ THE NOTE IN js/satellites-live.js SAYS WHY ONE CALL AT 1991 COSTS ~30× ONE AT THE PRESENT: sgp4()
-     hands dspace() the record's `atime` and throws the advanced one away, so every call re-steps from
-     the epoch in 720-minute strides. If a later satellite.js keeps it (Vallado's reference code does),
-     this fails — and the measured figures in that note have to be measured again. */
-  const rec = resonant[0].satrec;
-  const t = new Date(Date.UTC(1991, 5, 25, 12));
-  SAT.propagate(rec, t);
-  assert.equal(rec.atime, 0, 'the integrator time is not advanced on the record');
-  SAT.propagate(rec, t);
-  assert.equal(rec.atime, 0, 'so a second call integrates from the epoch again');
+test('③ the premise of the cost note: satellite.js keeps the deep-space integrator on the record, and that changes no position', () => {
+  /* ⚠ THE NOTE IN js/satellites-live.js RESTS ON THIS. Up to 7.1.0 sgp4() handed dspace() the record's
+     `atime` and threw the advanced one away, so every call re-stepped from the epoch in 720-minute
+     strides. 7.2.0 keeps atime/xli/xni on the record (Vallado's reference code does), so only the
+     FIRST call at a far instant pays for the distance. If that changes back, this fails — and the
+     measured figures in that note have to be measured again.
+     Keeping state on the record is only harmless if it is a cache: a record that has been asked other
+     instants first — later, earlier, either side of the epoch — must answer exactly what a fresh one
+     does. The layer asks every record many instants in any order (the clock is scrubbable). */
+  const lines = read('data/tle/catalogue.tle').split(/\r?\n/).filter(Boolean);
+  const freshOf = (s) => { const i = lines.findIndex((l, j) => j % 3 === 1 && l.slice(2, 7) === s.satrec.satnum.padStart(5, ' ').slice(-5));
+    assert.ok(i >= 0, s.satrec.satnum); return SAT.twoline2satrec(lines[i], lines[i + 1]); };
+  for (const s of resonant.slice(0, 10)) {
+    const rec = freshOf(s), ep = epochMs(rec);
+    SAT.propagate(rec, new Date(ep + 400 * 864e5));
+    assert.notEqual(rec.atime, 0, 'the integrator time is advanced on the record');
+    for (const days of [3, 30, 2, -4, 10, -1, 0.5]) {
+      const t = new Date(ep + days * 864e5);
+      const a = SAT.propagate(rec, t).position, b = SAT.propagate(freshOf(s), t).position;
+      assert.deepEqual(a, b, `${rec.satnum} at epoch ${days >= 0 ? '+' : ''}${days} d: a reused record answers what a fresh one does`);
+    }
+  }
 });
 
 /* ── the element set speaks for days around its epoch, not for an era ─────────────────────────────── */

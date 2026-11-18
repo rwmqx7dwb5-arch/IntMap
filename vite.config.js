@@ -663,17 +663,26 @@ const ML_DIR = dirname(createRequire(import.meta.url).resolve('maplibre-gl/packa
 const ML_RENDERER_SRC = slash(resolve(ML_DIR, 'src/index.ts'));
 const ML_WORKER_SPEC = slash(resolve(ML_DIR, 'src/source/worker.ts'));
 /* every package MapLibre's source reaches — its own dependencies and theirs, read from the installed
-   package.json files (not listed here), so the chunk groups below hold the whole library */
-const ML_PACKAGES = (() => {
-  const out = new Set(), q = [['maplibre-gl', ML_DIR]];
+   package.json files (not listed here), so the chunk groups below hold the whole library.
+   ⚠ (deps-minor-patch-nov) Held as the DIRECTORIES Node resolves them to from MapLibre, not as names. A
+   name matched anywhere in a path also claimed another package's private copy: cesium 1.147 moved its
+   pinned earcut 3.0.2 under @cesium/core/node_modules/earcut, `node_modules/earcut` matched it, and
+   Cesium's copy (12 kB) landed in the EAGER maplibre-gl chunk — loaded at start-up by a session that
+   never opens Cesium. A module belongs to MapLibre's groups only if it lives in a directory MapLibre's
+   own resolution reaches. */
+const ML_DIRS = (() => {
+  const key = (d) => { const s = slash(realpathSync.native(d)) + '/'; return process.platform === 'win32' ? s.toLowerCase() : s; };
+  const seen = new Set(), q = [ML_DIR];
   while (q.length) {
-    const [name, dir] = q.shift();
-    out.add(name);
+    const dir = q.shift(), k = key(dir);
+    if (seen.has(k)) continue;
+    seen.add(k);
     const deps = Object.keys(JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).dependencies || {});
-    for (const d of deps) if (!out.has(d) && !d.startsWith('@types/')) q.push([d, packageDir(d, dir)]);
+    for (const d of deps) if (!d.startsWith('@types/')) q.push(packageDir(d, dir));
   }
-  return [...out];
+  return [...seen];
 })();
+const inMapLibre = (id) => { const s = slash(id); const c = process.platform === 'win32' ? s.toLowerCase() : s; return ML_DIRS.some((d) => c.startsWith(d)); };
 /* a package's directory as Node finds it from the package that depends on it (its `exports` may not
    expose ./package.json, so require.resolve cannot be asked for it) */
 function packageDir(name, from) {
@@ -903,7 +912,7 @@ export default defineConfig({
                separates them from a package's own modules.
                ⚠ (MapLibre 6) THE LIBRARY IS THREE CHUNKS, BUILT FROM ITS SOURCE.
                The renderer (src/index.ts) and the worker (src/source/worker.ts) import much of the
-               same code, and the packages it depends on (ML_PACKAGES, discovered). The worker is an entry chunk of its own
+               same code, and the packages it depends on (ML_DIRS, discovered). The worker is an entry chunk of its own
                (maplibreSharedWorker above), and what it reaches — the shared module, and any helper
                the bundler injected into it — goes to `maplibre-gl-shared` FIRST (the higher priority),
                so the renderer and the worker import one file. Everything else of the package, and
@@ -912,9 +921,9 @@ export default defineConfig({
                module outside its graph. Both chunk names still carry "maplibre-gl" (the #R166
                stack attribution above reads the name, and a worker stack names its chunk too). */
             { name: (id, ctx) => (id !== mlWorker.id && workerNeeds(id, (m) => ctx.getModuleInfo(m)) ? 'maplibre-gl-shared' : null),
-              debugName: 'maplibre-gl-shared', priority: 5, test: (id) => isBundlerHelper(id) || inPackage(id, ...ML_PACKAGES) },
+              debugName: 'maplibre-gl-shared', priority: 5, test: (id) => isBundlerHelper(id) || inMapLibre(id) },
             { name: (id, ctx) => (workerNeeds(id, (m) => ctx.getModuleInfo(m)) ? null : 'maplibre-gl'),
-              debugName: 'maplibre-gl', priority: 4, test: (id) => isBundlerHelper(id) || inPackage(id, ...ML_PACKAGES) },
+              debugName: 'maplibre-gl', priority: 4, test: (id) => isBundlerHelper(id) || inMapLibre(id) },
             /* ⚠ (#R209) buffer + convex (and their geometry engine) are NOT in the eager geo chunk: the
                app calls them from ONE place (the reachable-area hull in js/sims.js, which awaits
                window.turf.ensureHeavy()), and naming them here would drag them back in with the rest
