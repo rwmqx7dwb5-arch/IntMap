@@ -156,7 +156,9 @@ after enabling.
 [`.github/workflows/supabase-deploy.yml`](../.github/workflows/supabase-deploy.yml) is to
 Supabase what `ci.yml`'s `pages` job is to Pages — except that it runs on the push itself and
 does not wait for `main`'s CI run. On a push to `main` that changes
-`supabase/functions/**`, `supabase/migrations/**` or `supabase/config.toml`,
+`supabase/functions/**`, `supabase/migrations/**` or `supabase/config.toml` — or the deployer itself
+(`scripts/supabase-deploy.mjs`, the workflow file), so that the fix for a red deployer also
+deploys what the red runs left behind —
 [`scripts/supabase-deploy.mjs`](../scripts/supabase-deploy.mjs):
 
 1. reads the diff **from the last successful deploy** to the pushed commit — not the push's own
@@ -171,7 +173,14 @@ does not wait for `main`'s CI run. On a push to `main` that changes
 2. applies the migrations **added** since that base with `supabase db push` — **only if** `db push
    --dry-run` would apply exactly those. Production's history does not record the baseline
    (`MIGRATIONS.md`), so an unguarded `db push` would re-run it against the live database; any
-   other pending version makes the run red with nothing applied and no function deployed;
+   other pending version makes the run red with nothing applied and no function deployed. A version
+   the diff added that the dry run would *not* apply is split by the production history
+   (`supabase migration list --linked`): **recorded** → already applied (by an earlier run or by
+   hand), not a mismatch; **not recorded** → timestamped before the remote head, so `db push` will
+   never apply it — red; history unreadable → red. An older base only ever adds already-applied
+   versions, so it must not turn the run red. MEASURED 2026-11-18: two runs read a run list that
+   lacked the newest green run, fell back to the one before it, and were red over
+   `20261118090000`, which production already recorded;
 3. deploys the functions whose directory changed — **all of them** when `_shared/` or
    `config.toml` changed (`verify_jwt` lives in `config.toml`; #R806's fix was a config-only
    change) — with `supabase functions deploy <name> --project-ref … --use-api`. The roster is

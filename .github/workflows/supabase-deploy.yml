@@ -8,11 +8,12 @@
 # wrong decision. Each was a step nobody was assigned.
 #
 #   deploy  — push to main touching supabase/functions/**, supabase/migrations/** or
-#             supabase/config.toml: deploys exactly the functions that changed SINCE THE LAST
+#             supabase/config.toml (or the deployer itself): deploys exactly the functions that changed SINCE THE LAST
 #             SUCCESSFUL DEPLOY (all of them when _shared/ or config.toml changed — the roster is
 #             config.toml's [functions.*]), plus every declared function production does not have,
 #             and applies the migrations ADDED since then with `supabase db push`, but only when a
-#             dry run shows db push would apply exactly those (scripts/supabase-deploy.mjs says why).
+#             dry run shows db push would apply exactly those (scripts/supabase-deploy.mjs says why);
+#             an added version production already records counts as applied, not as a mismatch.
 #             Then it lists production and is red if a declared function is not there.
 #             ⚠ The base is the headSha of this workflow's last green push run, not the push's own
 #             parent. MEASURED 2026-10-01: #869 and #874 were red (nothing deployed), #878 fixed the
@@ -41,6 +42,12 @@ on:
       - 'supabase/functions/**'
       - 'supabase/migrations/**'
       - 'supabase/config.toml'
+      # The deployer itself. A red deploy leaves its diff for the next green one to pick up, and the
+      # fix for a red deployer is a change to these two files. MEASURED 2026-11-19: after three red
+      # runs, #1193's 20261118130000 was on main and not in production; the deployer's fix touches
+      # only these files, so without them it would merge and leave that backlog where it was.
+      - 'scripts/supabase-deploy.mjs'
+      - '.github/workflows/supabase-deploy.yml'
   schedule:
     - cron: '41 4 * * *'      # nightly drift check, 04:41 UTC (after the 03:17 backup)
   workflow_dispatch:
