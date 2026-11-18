@@ -70,7 +70,8 @@ import { community } from './community.js';
 import { companiesUi } from './companies-ui.js';
 import { companies } from './companies.js';
 import { compare } from './compare.js';
-import { imageryTiles, imagerySources } from './esri-imagery.js';   /* (sat-arcgis-3d) the one place World Imagery's URL is built */
+import { imageryTiles, imagerySources, useImageryMetaReader } from './esri-imagery.js';   /* (sat-arcgis-3d) the one place World Imagery's URL is built */
+useImageryMetaReader((u) => jsonWithin(u, clockFor(u)));   /* the credit's copyrightText, under the host's fetch clock */
 import { countriesUi } from './countries-ui.js';
 import { setFigure } from './country-figures.js';   /* (countries-companies) a value's year and source travel with it */
 import { loadNECountries, neCountriesPath } from './ne-countries.js';   /* (data-studio) handed to the lazy data studio through IM_HOST — see the note at its getters */

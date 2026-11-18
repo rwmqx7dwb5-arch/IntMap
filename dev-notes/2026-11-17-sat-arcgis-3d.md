@@ -71,11 +71,18 @@ newsjp: 傾けた 3D の衛星画像が、動かしたあと早く鮮明にな�
 - 移行しないもの: 参照ラベル（`World_Boundaries_and_Places`）・道路のプレビュー（`World_Transportation`）・陰影起伏は鍵付きの一覧に無い／別の
   サービスなので、今回は鍵なしのまま。
 
-## 3. 全域変数の新しい結合（`check:surface` の台帳を更新）
+## 3. 起動費用（`perf-budget --update`）
+
+- `eager.modules` +1: `js/esri-imagery.js`（衛星画像の URL を作る 1 か所。起動の地図スタイルの satellite ソースが使う）。
+- 出典の `copyrightText` を読む関数は、通信の時計（`js/fetch-deadline.js`・`js/proxy-fetch.js`）を自分で import せず `js/app-body.js` から
+  受け取る。worker もこのモジュールを読むので静的 import できず、動的 import にした版では 2 つが起動の別チャンクに分かれて
+  `eager.requests` が 9→11 になった（測って直した）。
+
+## 4. 全域変数の新しい結合（`check:surface` の台帳を更新）
 
 - `window.IntMapCartoCredit` ×1・`window.IntMapSafe` ×1（`js/carto-basemap.js`）: 出典の文が届いたら表示を描き直す。同じファイルが既に両方を使っている形。
 
-## 4. 検査
+## 5. 検査
 
 - `tests/sat-arcgis-3d-checks.test.mjs`（worker の待ち行列・取り下げ・枠の返却・標高の画面格子・拒否から鍵なし取り直しまでを偽のネットワークで評価）、
   `tests/esri-imagery-checks.test.mjs`。既存の検査の追随: layer-satellite-imagery R286 ⑤、process-map-shell-source-lines R195 ④、map-motion ⑤。

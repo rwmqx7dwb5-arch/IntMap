@@ -91,16 +91,21 @@ let sourcesLive = null, sourcesAsked = null;
 /** The provider list as the service states it now (falls back to the last value seen). */
 export function imagerySources() { return sourcesLive || IMAGERY_SOURCES_SEEN; }
 
+/* HOW the page reads JSON (the fetch clock, js/fetch-deadline.js + js/proxy-fetch.js) is handed in by
+   js/app-body.js, which already has both. Not imported here: src/sat-worker.js imports this module, and a
+   dynamic import of those two split them out of the boot chunk into two extra boot requests (measured:
+   eager.requests 9 → 11). */
+let readMeta = null;
+export function useImageryMetaReader(fn) { readMeta = typeof fn === 'function' ? fn : null; }
+
 /** Ask the service for its copyrightText once; `onChange` runs if it differs from what is shown. */
 export function refreshImagerySources(onChange) {
   if (sourcesAsked) return sourcesAsked;
   const meta = imageryKeyed()
     ? KEYED_SERVICE + '?f=json&token=' + encodeURIComponent(ESRI_IMAGERY_KEY)
     : KEYLESS_HOSTS[0] + KEYLESS_PATH + '?f=json';
-  /* read lazily: this module is also imported by src/sat-worker.js, which must not pull the page's
-     fetch clock in; the credit is only ever refreshed on the page */
-  sourcesAsked = Promise.all([import('./fetch-deadline.js'), import('./proxy-fetch.js')])
-    .then(([{ jsonWithin }, { clockFor }]) => jsonWithin(meta, clockFor(meta)))
+  if (!readMeta) return Promise.resolve();   /* no reader handed in (a worker, a check): the last value seen stays */
+  sourcesAsked = Promise.resolve().then(() => readMeta(meta))
     .then((j) => {
       const t = j && typeof j.copyrightText === 'string' ? j.copyrightText.replace(/^\s*Source[s]?:\s*/i, '').trim() : '';
       if (t && t !== imagerySources()) { sourcesLive = t; if (typeof onChange === 'function') onChange(t); }
