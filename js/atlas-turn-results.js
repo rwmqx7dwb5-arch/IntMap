@@ -58,6 +58,28 @@ import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (atlas-one
 let _ownRegistry = null;
 function ownRegistry() { return _ownRegistry || (_ownRegistry = makeAtlasCapabilities({}, { publish: false })); }
 
+/* ── the one marker a tool's SENTENCE carries (see `forReader` below for why) ─────────────────────────────────────
+   A comment pair, not a class: it survives any HTML a caller builds around it, it renders nothing, and it is split with no
+   DOM — so the node checks run the same code the browser does. */
+const P_OPEN = '<!--atl:p-->', P_CLOSE = '<!--/atl:p-->';
+export function proseMark(h) { return P_OPEN + h + P_CLOSE; }
+export function plainText(h) {
+  /* ONE pass, each match replaced by a SPACE: a removal that joined its neighbours could rebuild a `<!--` (CodeQL js/incomplete-multi-character-sanitization) */
+  return String(h == null ? '' : h).replace(/<!--[\s\S]*?-->|<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ').trim();
+}
+/* {rest, prose}: the HTML with every marked sentence taken out, and those sentences. An unclosed marker keeps its text in `rest` — nothing is dropped by a malformed fragment. */
+export function proseSplit(html) {
+  const s = String(html == null ? '' : html), re = /<!--(\/?)atl:p-->/g;
+  let rest = '', last = 0, start = 0, depth = 0, m; const prose = [];
+  while ((m = re.exec(s))) {
+    if (m[1] === '') { if (depth === 0) { rest += s.slice(last, m.index); last = m.index; start = re.lastIndex; } depth++; }
+    else if (depth > 0) { depth--; if (depth === 0) { prose.push(s.slice(start, m.index)); last = re.lastIndex; } }
+  }
+  return { rest: rest + s.slice(last), prose };
+}
+
 export function makeAtlasTurnResults(deps) {
   return (function () {
     deps = deps || {};
@@ -301,7 +323,44 @@ export function makeAtlasTurnResults(deps) {
       });
     }
 
-    const API = { ANSWER_TYPES, answerKey, opKey, callKey, revisionOf, score, keep, subjectKey, present };
+    /* ══ WHO WRITES THE SENTENCES THE READER READS ══════════════════════════════════════════════════════════
+       A tool's `html` is read by TWO readers: the reader's screen, and — as `text`, the same words with the tags taken off
+       (js/atlas-toolsurface.js `mechanical`) — Atlas. Atlas then writes its answer FROM those sentences, so a sentence a tool
+       wrote for the reader (a note, a warning) reached the reader twice: once as Atlas's own words and once verbatim under
+       them. Measured in the report that named this: 「地図上で調べたい地点をタップしてください」 in the answer and
+       「到達時刻には地点が必要です。地名を指定するか、先に地図をタップしてください。」 under it, and 「移動先: 東京都千代田区」
+       for a map that had just moved there.
+       WHAT IS DECIDED, FOR EVERY TOOL AND NOT ONE: once Atlas has written its final answer, the SENTENCES a tool wrote
+       (`proseMark` — js/atlas-console.js `note` / `warn`, the one place every one of them is made) are Atlas's to say, not the
+       tool's to repeat; what stays is what the reader USES — cards, links, charts, controls, the map toggle, the sources.
+       A new tool needs no declaration to get this: the default is that its prose is material, its artifacts are shown.
+       ⚠ NOTHING IS HIDDEN THAT ATLAS DID NOT HAVE IN FRONT OF IT. A result is stripped only when it succeeded cleanly
+       (no partial / unverified / unobserved status — those are facts the reader is owed) and its whole text fits what Atlas
+       was handed (`modelTextMax`: the rest was cut off for Atlas, so the reader is not denied it). Failures are not
+       stripped here: `unfinished` names them in the reader's words, and the answer's own unmet-goal line (atlas-completion)
+       still states what the turn declared and did not produce. */
+    function forReader(res, modelTextMax) {
+      const h = (res && res.html) || '';
+      if (!h || !res || res.ok === false) return h;
+      const m = res.meta || {};
+      if (m.partial || m.unverified || (m.status && m.status !== 'completed')) return h;
+      if (plainText(h).length > (modelTextMax > 0 ? modelTextMax : 2000)) return h;
+      const split = proseSplit(h);
+      if (!split.prose.length) return h;
+      const bare = split.rest.replace(/<!--[\s\S]*?-->/g, ' ');
+      const visual = /<(img|svg|canvas|button|input|select|textarea|video|audio|iframe|a|table|details)\b/i.test(bare);
+      return (visual || /[\p{L}\p{N}]/u.test(plainText(bare))) ? split.rest : '';
+    }
+    /* what a FAILED result says, in the words it already wrote for the reader — never the action's internal name */
+    function unfinished(res) {
+      const h = (res && res.html) || '';
+      const split = proseSplit(h);
+      let lines = split.prose.map(plainText).filter(Boolean);
+      if (!lines.length) { const t = plainText(split.rest); if (t) lines = [t]; }
+      return lines;
+    }
+
+    const API = { ANSWER_TYPES, answerKey, opKey, callKey, revisionOf, score, keep, subjectKey, present, forReader, unfinished };
     try { window.IntMapAtlasTurnResults = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

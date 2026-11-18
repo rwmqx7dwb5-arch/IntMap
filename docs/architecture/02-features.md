@@ -254,7 +254,10 @@ Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:
 コンソールは回答の下に「このターンで完了していないもの」を出し、会話履歴には元の要求と未達項目を返信の抜粋とは別の行で残す。`[did: …]` に入るのは実行器の観測（`__exec` を
 `opState` で読む）が completed の操作だけ。プロバイダの途中停止（`meta.status:'incomplete'`）は `trace.incomplete`・`outputIncomplete` に、最後の回答生成の失敗は
 `trace.finalError` に、通信失敗の原因は `trace.transportErrorInfo`（code・status・retryable）に残る。最終回答が書かれたあとは、調査ツールの途中の回答と失敗した操作の
-メッセージを本文に連ねず、折りたたみ（「途中の調査結果と操作のメッセージ」）と 1 行の「完了しなかった操作」にまとめる。同じ計画ステップの調査は安定した goal ID
+メッセージを本文に連ねず、折りたたみ（「途中の調査結果と操作のメッセージ」）にまとめる。さらに、ツールが読者のために書いた**文**（`note`／`warn` が
+`proseMark` の印を付ける 1 か所）は、Atlas が最終回答を書いたあとは画面に重ねて出さない（Atlas はその文を `mechanical` の `text` として読んで自分の言葉で書いている）。
+残るのは読者が使うもの（カード・リンク・図・操作・出典）だけで、ツール側の宣言は要らない。部分的・未確認・未観測の結果と、Atlas に渡る長さ（`RESULT_TEXT_MAX`）を超えた結果は
+触らない。最終回答が書かれていないターンでは失敗の文が 1 行で出るが、内部の操作名ではなくそのツールが書いた文で名指す（`js/atlas-turn-results.js` の `forReader`・`unfinished`）。同じ計画ステップの調査は安定した goal ID
 （`goal:<turn>:<plan>:<step>`）で 1 つに畳まれる。
 
 **汎用の 2 つの逃げ道。** `control` のカタログは依頼に対して採点して残し、落とした数を明示する（近い候補が複数あれば `ambiguous_target`）。`module` のカタログはまだ
