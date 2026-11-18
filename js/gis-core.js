@@ -259,7 +259,7 @@ function mount(scope, HOST, CONTEXT) {
      a list of ops written on the Atlas side — is the defect #R732 measured in the panel, where
      `ORDER` had four entries and DECL had nine. It needs no lazy door of its own: the whole of this
      file is behind `gisCore`, and asking Atlas to run an op is asking for this file. */
-  const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, draw: (id, o) => draw(id, o) });
+  const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, warp: warp, crs: crs, draw: (id, o) => draw(id, o) });
 
   /* ⚠ (#R783) THE FIVE STAGES, AS THE FUNCTIONS THAT ACTUALLY DO THEM. The outside review drew the
      flow 「データを探す → 内容・時期・単位・取得可能範囲を確認する → 必要な条件で取得する → 共通 GIS

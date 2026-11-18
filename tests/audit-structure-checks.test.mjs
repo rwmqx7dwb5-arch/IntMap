@@ -1,6 +1,7 @@
 /* 監査（2026-11-19）で見つかった構造上の穴を、回帰として固定する。
    ① 到達可能性は「誰かが import している」ではなく、入口からの探索であること
-   ② GIS の gis-core と gis-runtime は互いを import しないこと */
+   ② GIS の gis-core と gis-runtime は互いを import しないこと
+   （migration の方言は tests/admin-origin-checks.test.mjs が持つ） */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from 'node:fs';
@@ -67,32 +68,4 @@ test('② gis-core と gis-runtime は互いを import しない（依存は gis
   const imports = (f) => [...readFileSync(join(ROOT, 'js', f), 'utf8').matchAll(/^\s*(?:import|export)\s[^;]*?from\s*'\.\/([\w.-]+\.js)'\s*;/gm)].map((m) => m[1]);
   assert.ok(imports('gis-core.js').includes('gis-runtime.js'), 'gis-core が gis-runtime を読む');
   assert.equal(imports('gis-runtime.js').includes('gis-core.js'), false, 'gis-runtime が gis-core を読み返している（循環）');
-});
-
-/* ③ 本番に実在した方言（2026-11-19 の配備ログと pg_policies の読み取り）を、migration 20261118130000 の
-   書き換え規則がすべて拾うこと。拾えない 7 本が残って migration が自分で止まり、22 関数が出なかった。
-   Postgres の正規表現と JS のそれは、ここで使う部分（\s・\(・選択・群）では同じ意味。 */
-test('③ 管理者権限の書き換えは、リポジトリの綴りと本番の綴りの両方を拾う', () => {
-  const sql = readFileSync(join(ROOT, 'supabase/migrations/20261118130000_admin_needs_mfa_session.sql'), 'utf8').replace(/\r\n/g, '\n');
-  const decl = sql.slice(sql.indexOf('declare', sql.indexOf('-- ── 3.')), sql.indexOf('begin\n  for pol'));
-  const lit = (s) => [...s.matchAll(/'((?:[^']|'')*)'/g)].map((m) => m[1].replace(/''/g, "'")).join('');
-  const consts = {};
-  for (const m of decl.matchAll(/^\s*(\w+) constant text :=\s*([\s\S]*?);\s*$(?=\n(?:\s*--|\s*\w+ constant|\s*$))/gm)) {
-    const body = m[2].split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
-    /* '…' || name || '…' の連結を評価する */
-    consts[m[1]] = body.split('||').map((p) => p.trim()).map((p) => (p.startsWith("'") ? lit(p) : consts[p])).join('');
-  }
-  const rx = (n) => new RegExp(consts[n]);
-  const shapes = {
-    'リポジトリ（包み付き）': ['(EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND p.is_admin)))', 're_exists'],
-    '本番・posts admin delete': ['(EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.id = auth.uid()) AND (p.is_admin = true))))', 're_exists'],
-    '本番・feedback_select_admin': ['(EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.id = auth.uid()) AND p.is_admin)))', 're_exists'],
-    '本番・Allow admins to delete any post': ['(auth.uid() IN ( SELECT profiles.id\n   FROM profiles\n  WHERE (profiles.is_admin = true)))', 're_in'],
-    '本番・profiles_select': ['is_admin(auth.uid())', 're_uid'],
-  };
-  for (const [name, [text, re]] of Object.entries(shapes)) {
-    assert.ok(rx(re).test(text), `${name}: ${re} が拾わない`);
-    const out = text.replace(new RegExp(consts[re], 'g'), 'public.is_admin()');
-    assert.equal(out.replace(/(public\.)?is_admin\(\)/g, '').includes('is_admin'), false, `${name}: 書き換え後にまだ is_admin が残る → ${out}`);
-  }
 });

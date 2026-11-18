@@ -78,7 +78,9 @@ test('eval-shape-grading ⑤ a line between towns does not pass as the river; th
   assert.ok(q, 'the key has a question that asks for a real line');
   const A = { highlightCountries: 0, lines: { n: 1 } };
   assert.equal(gradeMap(q.mapState, { atlas: { ...A, shapes: { n: 1, 'line:unstated': 1 } } }).verdict, 'mismatch');
-  assert.equal(gradeMap(q.mapState, { atlas: { ...A, shapes: { n: 1, 'line:real': 1 } } }).verdict, 'match');
+  const nm = q.mapState.drawn[0].named;
+  assert.equal(gradeMap(q.mapState, { atlas: { ...A, shapes: { n: 1, 'line:real': 1, names: [nm ? nm[0] : 'x'] } } }).verdict, 'match');
+  if (nm) assert.equal(gradeMap(q.mapState, { atlas: { ...A, shapes: { n: 1, 'line:real': 1, names: ['Some Other River'] } } }).verdict, 'mismatch', 'a real line of ANOTHER river is not the river asked for');
 });
 
 test('eval-shape-grading ⑥ a decline is graded on the words AND on the map — no stand-in of the asked kind', () => {

@@ -16,7 +16,7 @@ date: 2026-11-19
 ## 1. 直したもの
 - `isReachable` を**入口・worker・単独ページから静的 import・import()・再エクスポートを辿る探索**に。`reached` も返す。js/ 521 本の結果は変わらない。
 - `gis-runtime.js` は `makeGisRuntimeOver(mountGis)` を出し、`gis-core.js` がそれを自分の `mountGis` に結んで `makeGisRuntime` として再エクスポートする。依存は gis-core → gis-runtime の一方向。外から見える `makeGisRuntime`（と `.externals/.contexts/.release/.serve/.attach/.workerSource`）・ブラウザ入口 `gisCore` は同じ。`mountGis` は読み手が無くなったので export をやめた。
-- migration 20261118130000 の policy 書き換えを、デパーサの綴り（`uid_pat`・`flag_pat`）から組み立て直し、第 3 の形 `re_in` を足した。**本番の 35 policy に対して、書き換えと末尾の検査を同じ正規表現で `SELECT` だけで走らせた**: 21 本が一致し、検査に残るものは 0（ほかの 14 本は最初から `is_admin()`）。未適用の migration なので書き換えは履歴を壊さない。
+- migration 20261118130000 は、私が同じ直しを書いている間に別セッションが #1236 で先に main へ入れた（同じ方言 3 種・同じ構造）。**重複を避けて main の版を採った**。私の検証は有効: 修正前の migration を本番の `pg_policies` 35 本に `SELECT` だけで走らせ、書き換え規則が 21 本を拾い末尾の検査に残るのは 0 だった。main の版の規則も、本番で観測した 5 つの綴りを JS で同じ結果に書き換える（確認のみ・検査は #1236 の tests/admin-origin-checks に任せる）。
 
 ## 2. 直していないもの（理由）
 - **Pages の公開が Supabase 配備を待たない**: 順序を一本の処理へ寄せると監査自身の言う「巨大な 1 本」になる。`release-state.mjs` が差を検出しており、今回の本番停止はその検出が機能した例。互換性の契約（API 版・migration 順）を検証する設計は別の仕事。
@@ -25,4 +25,4 @@ date: 2026-11-19
 - **`export-readers` が名前だけで読む件: 本当だが、実害は小さい。** 1535 の export のうち同じ綴りを複数のモジュールが出すものは 63。静的 import を「その import が指すモジュール」にだけ結んで測り直すと、名前の一致だけで読み手と数えられていたのは 6 件（polity-arc:search・radiation-hindcast:compare・offline-plan:rowFor・world-flows:read・family-history:dateWords/locate）。うち 4 件は test/script が `importModule`・`await import(pathToFileURL(…))` の名前空間で本当に読んでいた（detector がその束縛形を知らない）。**読み手の無かった 2 件（map-doc:stateOf・offline-plan:rowFor）は export を外した**。束縛を厳密にするには名前空間・`importModule` の束縛も同じ精度で読む必要があり、半分だけ厳密にすると本物の読み手を落第にする——試して戻した（偽陽性 4 件）。
 
 ## 3. 検査
-`tests/audit-structure-checks.test.mjs`: ① 探索（循環する死んだ対・動的・worker・ページ・再エクスポート・この repo 全部）② gis の一方向 ③ migration の規則が本番の 5 つの綴りを拾う。
+`tests/audit-structure-checks.test.mjs`: ① 探索（循環する死んだ対・動的・worker・ページ・再エクスポート・この repo 全部）② gis の一方向。
