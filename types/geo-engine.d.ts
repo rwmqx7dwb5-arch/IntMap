@@ -58,7 +58,7 @@ export interface GeoEngineCapabilities {
   globe: boolean; flat: boolean; terrain3d: boolean; freeCamera: boolean; pitchBeyond90: boolean;
   rasterLayers: boolean; vectorLayers: boolean; geojson: boolean; terrainElevation: boolean;
   markers: boolean; opacity: boolean; projection: boolean; extrusion3d: boolean; solid3d: boolean;
-  orbit3d: boolean; aircraftCloud: boolean; globeAllZooms: boolean; tiltRange: number[];
+  orbit3d: boolean; aircraftCloud: boolean; tiles3d: boolean; globeAllZooms: boolean; tiltRange: number[];
   cameraAltitude: boolean; eyeControl: boolean; eyeIsPosition: boolean;
   /** Cesium only: the style-language features its interpreter does not implement. */
   styleGaps?: () => string[];
@@ -168,6 +168,11 @@ export interface GeoEngineAdapterCore {
   addAircraftCloud(id?: any, before?: any): any;
   setAircraftCloud(id?: any, o?: any): any;
   removeAircraftCloud(id?: any): any;
+  addTileset(id?: any, spec?: any): any;
+  removeTileset(id?: any): any;
+  setTilesetVisible(id?: any, on?: any): any;
+  hasTileset(id?: any): any;
+  tilesetInfo(id?: any): any;
   hasAircraftCloud(id?: any): any;
   projectMercAlt(xy?: any): any;
   setDragPan(on?: any): any;
@@ -385,6 +390,11 @@ export interface GeoEngineLayers {
   addAircraftCloud(id?: any, b?: any): any;
   setAircraftCloud(id?: any, o?: any): any;
   removeAircraftCloud(id?: any): any;
+  addTileset(id?: any, spec?: any): any;
+  removeTileset(id?: any): any;
+  setTilesetVisible(id?: any, on?: any): any;
+  hasTileset(id?: any): any;
+  tilesetInfo(id?: any): any;
   hasAircraftCloud(id?: any): any;
   projectMercAlt(a?: any): any;
   setFeatureState(f?: any, s?: any): any;

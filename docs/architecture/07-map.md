@@ -476,6 +476,13 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 | 扉 | `js/wb-layers.js`（起動時）——地震ポップアップの「余震の見通し」（M5 以上）・`data-as-open`（地震の記録の選んだ地震からも）・命令 `aftershock.open`・`?as=` の検出。その他のツール ▾ の `sim.aftershocks` 行（`js/map-ui.js`）は最近 30 日の M5.5 以上の一覧で開く |
 | Atlas | `sim.aftershocks`（`js/atlas-cap-sim.js`。observer `panel`、要約は `forAtlas`、`at` で見通しの時点） |
 読めなかったときは理由を言い、「余震が無かった」とは言わない。USGS 自身の予測（いまは ETAS）がある地震では並べて示し、合算しない。
+### 7.3k 3D Tiles（`tiles3d`）と PLATEAU 3D 都市モデル — `js/cesium-engine.js` / `js/plateau-cities.js`
+
+- **エンジンの能力として持つ。** `capabilities.tiles3d` は Cesium だけが true（MapLibre は false で、`layers.addTileset` 系は「できない」と答える）。階層・LOD・メモリは Cesium の `Cesium3DTileset` が管理するので、スタイルレイヤー（ベクタタイル→Entity）には流さない。面は `layers.addTileset(id,{url,maximumScreenSpaceError?,heightOffset?,cacheBytes?})` / `removeTileset` / `setTilesetVisible` / `hasTileset` / `tilesetInfo`。同じ id は置き換え（二重にしない）。
+- **品質とメモリの既定。** `maximumScreenSpaceError` は PC 16・携帯 24、タイルのメモリ上限は PC 384 MiB・携帯 128 MiB（超過許容は 192／64 MiB）。`heightOffset` は既定 0——PLATEAU は楕円体高で、ジオイド補正を推測で足さない。
+- **レイヤー `beta-dl-plateau3d`**（東京の3D都市モデル）。東京23区（JIS 13101–13123）の `<code>-bldg-lod2-texture-latest` を PLATEAU データカタログ（api.plateauview.mlit.go.jp）から読む。オフにすると全タイルセットを破棄し、通信もメモリも残さない。MapLibre エンジンでは行ごと非表示。出典と利用条件は PLATEAU サイトポリシー（CC BY 4.0 互換）。
+- **計測。** Cesium アダプタも `render.instrumentFrames`（`scene.render` を 1 回だけ包む。GPU ではなく CPU の提出時間）と `render.sceneStats`（地球儀タイル数と、3D Tiles の件数・三角形数・バイト数を `extra` に）を実装し、`?perf=1` が Cesium でも縮退しない。
+
 ### 7.4 Chronos（統一時間）と「年」
 
 #### 歴史の束の読み込み

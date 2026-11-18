@@ -724,6 +724,8 @@ function _redrawLocalGlyphs(m,cover){
        pack loop is the cost at 50,000) and from `markers` (one DOM node each). Why, and the buffer
        shape: js/aircraft-points.js. */
     aircraftCloud:true,
+    /* 3D Tiles (Cesium3DTileset) — photogrammetry / city-model meshes the engine streams and levels itself. MapLibre has no such primitive: its `fill-extrusion` is a flat-roofed prism, not a mesh. */
+    tiles3d:false,
     /* (#R171) A CURVED EARTH AT EVERY ZOOM. Declared separately from `globe` because in MapLibre they are
        NOT the same thing: its `globe` projection is DEFINED as vertical-perspective at low zoom and plain
        MERCATOR from z≈12 up. Measured on this app (bow of the ±60° parallel, px): z10 741 → z11 753 →
@@ -2187,6 +2189,8 @@ function _redrawLocalGlyphs(m,cover){
       try{ L._set(o); return true; }catch(_){ return false; } },
     removeAircraftCloud(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _aircraft[id]; return true; },
     hasAircraftCloud(id){ const m=_m(); try{ return !!(m&&m.getLayer(id)); }catch(_){ return false; } },
+    /* 3D Tiles: capability `tiles3d` is FALSE here — a flat-roofed fill-extrusion is not a streamed mesh, so these answer NO rather than approximating one. */
+    addTileset(){ return false; }, removeTileset(){ return false; }, setTilesetVisible(){ return false; }, hasTileset(){ return false; }, tilesetInfo(){ return null; },
     /* …and the SAME projection, on the CPU, for a whole array at once. `projectAltitude` above is the
        one-point form and builds a model matrix per call, which a hover over eleven thousand objects
        cannot afford. This takes the mercator/altitude triples the layer already holds and multiplies
@@ -2547,6 +2551,7 @@ function _redrawLocalGlyphs(m,cover){
        compares them, and a capability that exists in one table and not the other is exactly what
        that gate now refuses. */
     aircraftCloud:true,
+    tiles3d:true,
     /* (#R184) …and TRUE here: Cesium's camera is a position and an orientation, full stop. See the
        MapLibre declaration above for why the distinction matters to the flight simulator. */
     eyeIsPosition:true } };
@@ -2715,6 +2720,12 @@ function _redrawLocalGlyphs(m,cover){
       addAircraftCloud:(id,b)=>A().addAircraftCloud?A().addAircraftCloud(id,b):false,
       setAircraftCloud:(id,o)=>A().setAircraftCloud?A().setAircraftCloud(id,o):false,
       removeAircraftCloud:id=>A().removeAircraftCloud?A().removeAircraftCloud(id):false,
+      /* 3D Tiles datasets (capability `tiles3d`): the engine owns the hierarchy, LOD and memory */
+      addTileset:(id,s)=>A().addTileset?A().addTileset(id,s):false,
+      removeTileset:id=>A().removeTileset?A().removeTileset(id):false,
+      setTilesetVisible:(id,on)=>A().setTilesetVisible?A().setTilesetVisible(id,on):false,
+      hasTileset:id=>A().hasTileset?A().hasTileset(id):false,
+      tilesetInfo:id=>A().tilesetInfo?A().tilesetInfo(id):null,
       hasAircraftCloud:id=>A().hasAircraftCloud?A().hasAircraftCloud(id):false,
       projectMercAlt:(a)=>A().projectMercAlt?A().projectMercAlt(a):null,
       /* (#R160) feature-state (hover/selection highlighting) through the engine */

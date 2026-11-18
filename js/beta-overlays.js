@@ -21,6 +21,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
+import { plateauSpecs, plateauTilesetId, PLATEAU_CITY_CODES } from './plateau-cities.js';   /* the 3D Tiles city models the globe streams (capability `tiles3d`) */
 
 export function betaOverlays(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
@@ -36,7 +37,7 @@ export function betaOverlays(HOST){
   (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
-    const state={ukr:false,bldg:false,hist:false,volc:false,whs:false,radobs:false};
+    const state={ukr:false,bldg:false,plateau:false,hist:false,volc:false,whs:false,radobs:false};
     /* (own-fetch-relay) THE HOST ITSELF, AND NO ONE ELSE. Both upstreams here answer the page directly — measured 2026-09-25 with
        Origin set to the Pages origin: deepstatemap.live 200 + Access-Control-Allow-Origin:* (627,738 B), and
        raw.githubusercontent.com 200 + ACAO:* for historical-basemaps. The two public CORS relays that stood behind
@@ -174,6 +175,20 @@ export function betaOverlays(HOST){
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('bldg3d',LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),['ofm-bldg-3d'],'beta-dl-bldg3d');
              if(el&&!el.querySelector('.bldg-hint')){ const d=document.createElement('div'); d.className='bldg-hint'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=IntMapLang.t(HOST.lang,"Shows from zoom 14. Tilt (3D button / right-drag) to see depth.","ズーム14以上で表示。3D/ドラッグ右クリックで傾けると立体に。","Ab Zoomstufe 14 sichtbar. Neigen (3D-Schaltfläche / Rechtsziehen) zeigt die Tiefe.","Показывается с 14-го зума. Наклоните (кнопка 3D / перетаскивание правой кнопкой), чтобы увидеть объём.","Se muestra a partir del zoom 14. Incline (botón 3D / arrastrar con el botón derecho) para ver el relieve."); el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('bldg3d'); }catch(_){}
+    }
+
+    /* ---------- PLATEAU 3D city models (3D Tiles; the globe engine only — capability `tiles3d`) ----------
+       Real roofs and walls, not footprint prisms. The ENGINE owns the hierarchy, level of detail and
+       memory (js/cesium-engine.js addTileset); this only says which datasets exist and when they are
+       wanted. Off removes them, so a switched-off layer holds no tile memory and fetches nothing. */
+    const plateauCan=()=>{ try{ return !!(GE().can&&GE().can('tiles3d')&&GE().layers.addTileset); }catch(_){ return false; } };
+    function plateauToggle(on){ state.plateau=on;
+      if(!plateauCan()){ if(on) imToast(IntMapLang.t(HOST.lang,'PLATEAU 3D city models need the 3D globe engine (Settings ▸ Map engine ▸ Cesium).','PLATEAU の3D都市モデルには3D地球儀エンジン（設定 ▸ 地図エンジン ▸ Cesium）が必要です。')); return; }
+      const L2=GE().layers;
+      for(const code of PLATEAU_CITY_CODES){ const id=plateauTilesetId(code);
+        if(on){ if(!L2.hasTileset(id)){ const sp=plateauSpecs().find(x=>x.id===id); L2.addTileset(id,sp.spec); } else L2.setTilesetVisible(id,true); }
+        else L2.removeTileset(id); }
+      try{ if(window._hideGenericLegend) window._hideGenericLegend('plateau3d'); }catch(_){}
     }
 
     /* ---------- Historical borders (aourednik/historical-basemaps; raw.githubusercontent = CORS*) ---------- */
@@ -1105,7 +1120,7 @@ export function betaOverlays(HOST){
        `jp()?BLBL[k][0]:BLBL[k][1]` — the English string was in slot 1, so even the positional
        languages could not have been added without reversing the row, and the inline table is keyed
        by the English source string, which was not in slot 0. */
-    const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes — the Smithsonian GVP catalog','火山 — スミソニアンGVPカタログ','Vulkane — der Smithsonian-GVP-Katalog','Вулканы — каталог Смитсоновского GVP','Volcanes — el catálogo del Smithsonian GVP'),
+    const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),plateau3d:LA('Tokyo 3D city model (PLATEAU)','東京の3D都市モデル（PLATEAU）'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes — the Smithsonian GVP catalog','火山 — スミソニアンGVPカタログ','Vulkane — der Smithsonian-GVP-Katalog','Вулканы — каталог Смитсоновского GVP','Volcanes — el catálogo del Smithsonian GVP'),
       volcash:LA('Volcanic ash areas in force (SIGMET)','有効な火山灰域（SIGMET）','Gültige Vulkanasche-Gebiete (SIGMET)','Действующие зоны вулканического пепла (SIGMET)','Zonas de ceniza volcánica vigentes (SIGMET)'),
       volchaz:LA('Volcano hazard zones (USGS)','火山ハザード域（USGS）','Vulkangefahrenzonen (USGS)','Зоны вулканической опасности (USGS)','Zonas de peligro volcánico (USGS)'),
       volcso2:LA('Satellite SO₂ column (OMPS)','衛星 SO₂ 全量（OMPS）','Satelliten-SO₂-Säule (OMPS)','Столб SO₂ со спутника (OMPS)','Columna de SO₂ satelital (OMPS)'),
@@ -1119,13 +1134,15 @@ export function betaOverlays(HOST){
          (#R353) …and the three overlays join the same panel rather than hiding inside the card: a
          feature reachable only from a popup is a feature most readers never learn exists. Each one
          fetches js/volcano-layers.js on its FIRST switch-on and nothing before that. */
-      [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['volc2','#ff6a3d',volcToggle],
+      [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['plateau3d','#5c7cfa',plateauToggle],['volc2','#ff6a3d',volcToggle],
        ['volcash','#7b5cff',(on)=>volcOverlay('ash',on)],['volchaz','#d1381f',(on)=>volcOverlay('hazard',on)],
        ['volcso2','#8ad3c8',(on)=>volcOverlay('so2',on)],['whs','#c9903a',whsToggle],
        ['radobs','#39c07c',radobsToggle]].forEach(([k,sw,fn])=>{   /* (#R122) 'histb' (Historical borders overlay) removed per request — the time-machine's own past-year borders remain */
         const cb=row('beta-dl-'+k, L.arr(BLBL[k]), sw);
         cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); fn(e.target.checked); });
       });
+      /* a row that cannot work here is not offered: the MapLibre engine has no 3D Tiles primitive */
+      try{ if(!plateauCan()){ const c=document.getElementById("beta-dl-plateau3d"); const r=c&&c.closest(".lyr-row"); if(r) r.style.display="none"; } }catch(_){}
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
@@ -1197,6 +1214,6 @@ export function betaOverlays(HOST){
       }
       throw new Error('no loader for '+kind);
     }
-    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle,whsToggle,featuresOf,hbCurrent:()=>({year:hbYear,fc:hbCache.get(hbYear)||null})};
+    window.IntMapBeta={ukrToggle,bldgToggle,plateauToggle,hbToggle,volcToggle,whsToggle,featuresOf,hbCurrent:()=>({year:hbYear,fc:hbCache.get(hbYear)||null})};
   })();
 }
