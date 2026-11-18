@@ -2723,6 +2723,7 @@ scripts/
   supabase-deploy.mjs             `supabase-deploy.yml` の中身。**最後に成功した配備からの**差分で出す関数（起点の読み方は docs/RELEASE.md）（名簿は config.toml の
                                   `[functions.*]`・`_shared/` か config.toml なら全関数）と足された migration を決める。
                                   ⚠ `db push` は `--dry-run` が流すものが**足したものと完全に一致するときだけ**
+                                  （足したのに流れないものは本番の履歴に記録済みなら適用済み）
                                   （本番の履歴は baseline を記録していない）。`--link` は link だけ（ドリフト検査の前段）
   ci-require-secrets.sh           workflow の関門。名指した secret が空なら `::error::` で名前を述べて exit 1
                                   ——「secret が無いので緑で skip」を作らない（全 workflow を r822 の検査が実行して測る）

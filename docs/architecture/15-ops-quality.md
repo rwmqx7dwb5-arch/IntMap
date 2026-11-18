@@ -65,10 +65,10 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
 - **配備単位は 3 つあり、互いに独立している**——静的サイト（Pages）・Edge Functions（Supabase）・DB（migration）。`node scripts/release-state.mjs`（`npm run release:state` / `release:check`）が
   3 面をまとめて測り、判定は時刻ではなく配備されたソースを取り寄せた中身（`supabase functions download`）で出す。PR のゲートではない。読み手は nightly の
   `.github/workflows/supabase-deploy.yml` の drift job（`--edge --db --check` の食い違い〔exit 1〕も測れなかったこと〔exit 2〕も赤にし、Issue を 1 本開く）。
-- **Edge Functions と migration は `.github/workflows/supabase-deploy.yml` が出す。** `main` への push で `supabase/functions/**`・`supabase/migrations/**`・`supabase/config.toml` が変わったとき、
+- **Edge Functions と migration は `.github/workflows/supabase-deploy.yml` が出す。** `main` への push で `supabase/functions/**`・`supabase/migrations/**`・`supabase/config.toml`（と配備器自身）が変わったとき、
   `scripts/supabase-deploy.mjs` が最後に成功した配備から変わった関数（本番に無い宣言済みの関数を含む。起点は docs/RELEASE.md）を `supabase functions deploy <name> --use-api` で出す
   （`_shared/` か `config.toml` が変わったら全関数。名簿は `config.toml` の `[functions.*]`）。その push が足した migration は `supabase db push` で出すが、`--dry-run` が流すものが足したものと
-  完全に一致するときだけ（本番の履歴は baseline を記録していない）。一致しなければ何も流さず赤、関数も出さない。必要な secret は `SUPABASE_ACCESS_TOKEN` 1 本（登録手順は
+  完全に一致するときだけ（本番の履歴は baseline を記録していない。足したのに流れないものは、本番の履歴に記録済みなら適用済みとして通し、未記録なら赤）。一致しなければ何も流さず赤、関数も出さない。必要な secret は `SUPABASE_ACCESS_TOKEN` 1 本（登録手順は
   [`docs/BACKUP-RESTORE.md`](../BACKUP-RESTORE.md)）。無ければ赤＋Issue。手での `supabase functions deploy` は緊急時の手段（`docs/AGENT-SETUP.md` §9）。
 
 ### 15.5 文書間の固定事実の照合 — `npm run check:docs`

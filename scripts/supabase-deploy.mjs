@@ -48,6 +48,8 @@
  *  （20260718090000）を記録していない（docs/MIGRATIONS.md）ので、無防備に走らせると live DB に
  *  baseline を流し直す。だから先に `--dry-run` で流れるものを数え、それが**この push が足したもの
  *  と完全に一致するときだけ**本番に出す。一致しなければ赤で止まり、何が余分か・何が足りないかを言う。
+ *  ただし足されたのに流れない version が**本番の履歴に記録済み**なら、それは適用済みであって不一致では
+ *  ない（起点が古いと起こる。`migrationMismatch` の ⑴⑵）。
  *  ⚠ 「測れなかった」を「何も無い」の代わりにしない——dry-run 自身が失敗したら、それも赤。
  * ==========================================================================*/
 import { spawnSync } from 'node:child_process';
@@ -55,7 +57,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 /* project ref の導出と functions list の読み方は release-state.mjs が正本（同じ判断を 2 か所に持たない） */
-import { supabaseRefFrom, parseFunctionsList } from './release-state.mjs';
+import { supabaseRefFrom, parseFunctionsList, parseMigrationTable } from './release-state.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /* この script 自身のリポジトリ内の位置（過去の commit の中の自分を `git show` で読むのに使う） */
@@ -114,16 +116,36 @@ export const planDeploy = (changes, roster) => {
 export const pendingFromDryRun = (text) =>
   [...new Set([...String(text || '').matchAll(/(?<!\d)(\d{14})_[A-Za-z0-9_.-]*\.sql/g)].map((m) => m[1]))].sort();
 
-/** dry-run が流すものと、この push が足したもの。一致しなければ理由を返す（null＝一致）。 */
-export const migrationMismatch = (pending, added) => {
+/** dry-run が流すものと、差分が足したもの。拒む理由を返す（null＝流してよい）。
+ *  remoteApplied: 本番の履歴（`supabase_migrations.schema_migrations`）に記録済みの version
+ *  ——`supabase migration list --linked` の remote 欄。測れなかったら null。
+ *
+ *  「足されたのに dry-run が流さない」には 2 つあり、答えが逆になる:
+ *    ⑴ 本番の履歴に**記録済み** → もう適用されている。拒まない。
+ *       実測 2026-11-18: 20261118090000 は #1205 の run が適用した。ところが次の 2 本の run は
+ *       一覧からその緑の run が欠け 1 つ前の緑（65aad08b）を起点に選んだので、差分に 090000 が
+ *       「足された」と現れ、dry-run が流さないのを不一致と呼んで 22 関数ごと止まった。
+ *       起点が古いのは安全側（関数を余分に出すだけ）——古い起点で赤になるのは判定の誤り。
+ *    ⑵ 記録されていない → remote head より前の時刻で、`db push` は永遠に流さない。本物の問題。拒む。
+ *  記録を測れなかった（null）なら ⑴ と言えないので ⑵ と同じく拒む——「測れなかった」を「適用済み」にしない。 */
+export const migrationMismatch = (pending, added, remoteApplied = null) => {
   const extra = pending.filter((v) => !added.includes(v));
   const notPending = added.filter((v) => !pending.includes(v));
-  if (!extra.length && !notPending.length) return null;
+  const stranded = remoteApplied == null ? notPending : notPending.filter((v) => !remoteApplied.includes(v));
+  if (!extra.length && !stranded.length) return null;
   const why = [];
   if (extra.length) why.push(`db push would ALSO apply ${extra.join(' ')} — migrations this push did not add. The production history is not reconciled with supabase/migrations (docs/MIGRATIONS.md); running it would re-run them against the live database`);
-  if (notPending.length) why.push(`db push would NOT apply ${notPending.join(' ')} although this push added them (already recorded remotely, or timestamped before the remote head)`);
+  if (stranded.length) {
+    why.push(remoteApplied == null
+      ? `db push would NOT apply ${stranded.join(' ')} although the diff added them, and the production migration history could not be read to tell «already applied» from «never will be»`
+      : `db push would NOT apply ${stranded.join(' ')} although the diff added them, and the production history does not record them — they are timestamped before the remote head, so db push will never apply them (docs/MIGRATIONS.md)`);
+  }
   return why.join('; ');
 };
+
+/** 差分が足したが、本番の履歴にもう記録されている version（＝起点より後に別の run か手で適用済み）。 */
+export const alreadyApplied = (added, remoteApplied) =>
+  remoteApplied == null ? [] : added.filter((v) => remoteApplied.includes(v));
 
 /** `GITHUB_WORKFLOW_REF`（`owner/repo/.github/workflows/<file>@refs/heads/main`）から workflow のファイル名。
  *  名前を手で書かない——この run を走らせている workflow 自身の履歴を訊く。 */
@@ -233,7 +255,11 @@ const main = () => {
             return s.code === 0 && carriesContract(s.out);
           },
         });
-        base = chosen.base; baseWhy = chosen.why;
+        /* 読んだ一覧そのものも述べる——起点が 1 つ前の緑まで戻ったとき（2026-11-18 実測）、
+           一覧に何が載っていたかが後から分からなかった。 */
+        const newest = [...runs].sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt))).slice(0, 3)
+          .map((x) => `${x.databaseId}@${String(x.headSha).slice(0, 8)}`).join(' ');
+        base = chosen.base; baseWhy = `${chosen.why} (read ${runs.length} green push run(s); newest: ${newest || 'none'})`;
       }
     }
   } else if (val('--base')) {
@@ -289,8 +315,19 @@ const main = () => {
          ——緑の run は次の run の起点になり、残った migration は二度と差分に現れない。 */
       if (pending.length) { err(`no deploy base, so this run cannot choose which migrations to apply, and db push would apply ${pending.join(' ')}. Nothing was applied. Apply them by hand (docs/MIGRATIONS.md → "5. Apply to production").`); failed++; }
     } else {
-      const why = migrationMismatch(pending, plan.migrations.added);
+      /* 本番の履歴は、足されたのに dry-run が流さない version があるときだけ訊く（migrationMismatch の ⑴⑵）。 */
+      let remoteApplied = [];
+      if (plan.migrations.added.some((v) => !pending.includes(v))) {
+        const ml = sh('supabase', ['migration', 'list', '--linked'], { timeout: 180_000 });
+        const t = ml.code === 0 ? parseMigrationTable(ml.out) : null;
+        remoteApplied = t && (t.both.length || t.remoteOnly.length) ? [...t.both, ...t.remoteOnly] : null;
+        if (remoteApplied == null) console.log(`supabase migration list --linked could not be read (exit ${ml.code}):\n${ml.out}`);
+      }
+      const done = alreadyApplied(plan.migrations.added, remoteApplied);
+      if (done.length) console.log(`already recorded in the production history (applied after the base, by an earlier run or by hand): ${done.join(' ')} — not re-applied`);
+      const why = migrationMismatch(pending, plan.migrations.added, remoteApplied);
       if (why) { err(`${why}. Nothing was applied.`); failed++; }
+      else if (!pending.length) console.log('db push has nothing to apply — every migration the diff added is already in production');
       else {
         const push = sh('supabase', ['db', 'push', '--linked', '--yes']);
         console.log(push.out);
