@@ -121,6 +121,7 @@ export default [
   },
   {
     row: ['data.gisProject',            'gisProject',     'saveAnalysis,openAnalysis,rerunAnalysis,analysisProject',      'data',    'none',    'gis.project',            'explanation',         'persist', 'explicit', '',         'gisCore'],
+    ui: { none: '2026-11-19' },
     /* ⚠⚠ THE PROJECT LAYER EXISTED AND ATLAS COULD NOT REACH IT. js/gis-project.js saves an analysis as
        its recipe, opens it again by re-running the recipe, and re-computes a chain downstream when one
        step's parameters change (setParams) — measured 2026-11-16 in a real browser: save → setParams →

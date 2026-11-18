@@ -84,10 +84,10 @@ candidates ending in «Ask Atlas»).
 
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-10-04): the **core** tier that
-gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
+gates a push is **6 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**171 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
+**172 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
 by re-measuring two deep entries that stood high — the ledger row `2026-10-08 atlas-product` in `scripts/test-budget.mjs` —
 paid for the four product specs of 2026-10-08: hist-product 8, mobile-product 26, live-news-product 8, sales-pro-audiences 15;
 the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); and
@@ -1069,7 +1069,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **166 spec files** against core's 5 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **166 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is

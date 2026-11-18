@@ -60,6 +60,7 @@ export default [
   },
   {
     row: ['map.choropleth',             'mapMetric',      'choropleth',                                                  'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   'metric',   ''],
+    ui: { none: '2026-11-19' },
     doc: [
       { in: 'country-statistics', at: 40, text: '{"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "color/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); ' },
       { in: 'metric-keys', at: undefined },   /* documented by the chunk's own text, not a fragment */
@@ -236,6 +237,7 @@ export default [
   },
   {
     row: ['map.clearAll',               'clearAll',       '',                                                            'map',     'paint',   'map.all',                'map',                 'session', 'explicit','',        ''],
+    ui: { none: '2026-11-19' },
     doc: [
       { in: 'tools-panels', at: 240, text: '{"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); ' },
     ],
@@ -269,6 +271,7 @@ export default [
   },
   {
     row: ['map.pandemicDay',            'pandemicDraw',   'drawPandemic,showPandemicDay,pandemicMap',                    'map',     'pandemic','map.object',             'map',                 'session', 'none',   '',         'pandemicSim'],
+    ui: { none: '2026-11-19' },
     doc: [
       { in: 'pandemic', at: 20, text: '{"type":"pandemicDraw","metric"?:"cases"|"deaths"} draws the run you just did. "params" accepts r0, baseFatality, latentDays, infectiousDays, naturalImmunityMonths, naturalImmunityLifelong, seasonality, startDayOfYear, initialCases, initialImmunity, mobility, scenario, interventions, vaccineAtStart, vaccineEfficacy, vaccineMonths, vaccineImmunityLifelong, vaccinateUnreached; a value out of range or a key that does not exist is REFUSED WITH THE RANGE (or the list of keys), so correct it once rather than guessing. Anything you do not set comes from the preset, and the reply states every such assumption with the field it came from — repeat those to the reader rather than presenting the numbers as unconditional. The same seed reproduces a run exactly.' },
     ],
@@ -607,6 +610,7 @@ export default [
   },
   {
     row: ['map.clear',                  'clear',          '',                                                            'map',     'clear',   'map.all',                'map',                 'session', 'none',   '',         ''],
+    ui: { none: '2026-11-19' },
     doc: [
       { in: 'tools-panels', at: 230, text: '{"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"|"route"|"historical"|"elevation"|"weather"|"satellite"} removes ONE kind of thing (fine-grained — use when the user names what to remove; "weather" / "satellite" close the floating cards those capabilities opened; a clear that finds nothing of that kind is complete, not a failure); ' },
       { in: 'facilities', at: 20, text: '{"type":"clear","what":"poi"} removes the pins.\n' },
@@ -797,6 +801,7 @@ export default [
   },
   {
     row: ['map.drawLine',               'drawLine',       'line',                                                        'map',     'paint',   'map.line',               'object,map',          'session', 'none',   'points',   ''],
+    ui: { at: ['#btn-tool-draw'] },
     doc: [
       { in: 'free-drawing', at: 10, text: '{"type":"drawLine","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"width"?:num,"label"?:str} draws a line; ' },
     ],
@@ -822,6 +827,7 @@ export default [
   },
   {
     row: ['map.drawPolygon',            'drawPolygon',    'polygon',                                                     'map',     'paint',   'map.polygon',            'object,map',          'session', 'none',   'points',   ''],
+    ui: { at: ['#btn-tool-draw'] },
     doc: [
       { in: 'free-drawing', at: 20, text: '{"type":"drawPolygon","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"label"?:str} draws a polygon. Use these to sketch fronts, corridors, routes, zones or areas that no dataset provides — you supply the real coordinates from your knowledge/search. Combine freely with pin/highlight/outline/poi/mapReport for multi-step tasks ("ピン立てやライン、ポリゴンのハイライト等のマッピングやネット検索や推論等を自在に組み合わせた高度なタスク").\n' },
     ],

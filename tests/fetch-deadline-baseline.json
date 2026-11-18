@@ -1,10 +1,9 @@
 {
  "//": "written by scripts/fetch-deadlines.mjs --update — fetch() calls with no signal, per file; ratcheted both ways by check:static",
- "total": 113,
+ "total": 112,
  "files": {
   "js/ai-core.js": 1,
   "js/aircraft-detail.js": 1,
-  "js/app-body.js": 1,
   "js/atlas-console.js": 8,
   "js/atlas-query.js": 2,
   "js/auth-ui.js": 2,
