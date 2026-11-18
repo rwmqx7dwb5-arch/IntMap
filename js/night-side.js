@@ -66,6 +66,7 @@ import { everyTick, stopTick } from './runtime.js';
 /* (#R550) …and the ONE answer to 「いまどの epoch か」. The date used to be spelled inside the tile
    URL below, which is why the globe could composite 2016 while dl-nightsat drew 2012. */
 import './night-lights.js';
+import { bandWidth } from './antimeridian-seam.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 window.IntMapNightSide=(function(){
@@ -278,15 +279,11 @@ window.IntMapNightSide=(function(){
      VIIRS Black Marble tiles at z3 carry a dark outermost column on the antimeridian — mean RGB sum 9 at
      x=255 of the easternmost tile and at x=0 of the westernmost, against 24 one pixel in. The image samples
      the mosaic column by column, so it painted that seam onto the globe.
-     ⚠ NOT A FIXED OFFSET. Each edge column is compared with its inner neighbour when the mosaic loads, and
-     only an edge measurably darker than it (under 0.6×, over the whole height) is stepped over; sampling
-     then uses the neighbour, one source pixel (~5 km at z3) away. If the upstream stops writing that edge,
-     the test fails and every column is read as before. Invalid if the mosaic stops being a whole-world
-     strip whose first and last columns meet at ±180°. */
-  function seamCols(d,W,H){
-    const mean=(col)=>{ let s=0; for(let y=0;y<H;y+=2){ const j=(y*W+col)*4; s+=d[j]+d[j+1]+d[j+2]; } return s; };
-    const dark=(edge,inner)=>{ const e=mean(edge), i=mean(inner); return i>0&&e<0.6*i; };
-    return { lo: (W>2&&dark(0,1))?1:0, hi: (W>2&&dark(W-1,W-2))?W-2:W-1 };
+     ⚠ NOT A FIXED OFFSET. The band's width is measured by js/antimeridian-seam.js (the SAME judgement the
+     dl-nightsat raster layer asks — #1210 fixed only this reader and the layer still drew the stripe);
+     sampling steps over it to the first column that is not part of it. Zero when the upstream stops writing it. */
+  function seamCols(d,W,H){   /* the band's width is js/antimeridian-seam.js's one judgement */
+    return { lo: bandWidth(d,W,H,1,2), hi: W-1-bandWidth(d,W,H,-1,2) };
   }
 
   /* ── the layers ──────────────────────────────────────────────────────────────────────────────── */
