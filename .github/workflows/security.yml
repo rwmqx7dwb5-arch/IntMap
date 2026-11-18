@@ -98,9 +98,10 @@ jobs:
           node-version-file: .nvmrc
       - name: Shipped to the browser — any advisory
         run: npm audit --package-lock-only --omit=dev --audit-level=low
-      - name: Build and test tooling — high or critical
+      - name: Build and test tooling — high or critical, minus the dated exceptions
         if: ${{ always() }}
-        run: npm audit --package-lock-only --audit-level=high
+        # scripts/audit-gate.mjs: the same audit, minus scripts/audit-exceptions.json (each row expires)
+        run: node scripts/audit-gate.mjs
 
   # (security-watch) A RED SCHEDULED RUN USED TO REACH NOBODY. The weekly run failed in the Actions list and
   # nowhere else; a new advisory against main surfaced only when some unrelated PR happened to run the same job
