@@ -24,7 +24,8 @@ test('city-label-size ① every step stays under the place reference and under t
     for (let t = 0; t < 4; t++) {
       const px = LS.placeTierAt('city', t, zz);
       assert.ok(px <= LS.refAt(zz) + 1e-9, `tier ${t} at z${zz} is ${px}, above the place reference ${LS.refAt(zz)}`);
-      assert.ok(px <= at(BEFORE_CITY, zz) + 1e-9, `tier ${t} at z${zz} is ${px}, above the pre-#R198 city ${at(BEFORE_CITY, zz)}`);
+      /* the pre-#R198 ceiling binds up to z10; past it the curve grows on purpose (city-label-grow, 2026-11-18) */
+      if (zz <= 10) assert.ok(px <= at(BEFORE_CITY, zz) + 1e-9, `tier ${t} at z${zz} is ${px}, above the pre-#R198 city ${at(BEFORE_CITY, zz)}`);
       if (t) assert.ok(px < LS.placeTierAt('city', t - 1, zz), `tier ${t} is not smaller than tier ${t - 1} at z${zz}`);
     }
     /* where the facility names are drawn (js/place-labels.js ofm-poi: minzoom 12, sub(0.86)), the smallest town still out-sizes them */
@@ -86,4 +87,57 @@ test('city-label-size ③ ofm-city sizes and orders by the tiles\' own rank and 
   const layer = /GE\(\)\.layers\.add\(\{id:'ofm-city'[^\n]*/.exec(src)[0];
   assert.match(layer, /'text-size':LS\.placeTiered\('city',CITY_TIER\)/);
   assert.match(layer, /'symbol-sort-key':\['\+',\['\*',CITY_TIER,100\],CITY_RANK\]/);
+});
+
+
+/* ══ (city-label-grow / city-label-gate / city-label-dot) 2026-11-18 ═══════════════════════════════════════════ */
+test('city-label-grow ① every city step grows with zoom (never shrinks) and keeps growing past z10 up to z17', () => {
+  const LS = loadScale();
+  for (let t = 0; t < 4; t++) {
+    let prev = -1;
+    for (let z = 3; z <= 22; z += 0.25) {
+      const px = LS.placeTierAt('city', t, z);
+      assert.ok(px >= prev - 1e-9, `tier ${t} shrank at z${z}: ${px} < ${prev}`);
+      prev = px;
+    }
+    assert.ok(LS.placeTierAt('city', t, 17) > LS.placeTierAt('city', t, 10) + 3, `tier ${t} must still be growing after z10`);
+    assert.equal(LS.placeTierAt('city', t, 22), LS.placeTierAt('city', t, 17), 'flat only past z17');
+  }
+  const top = LS.placeTierAt('city', 0, 16);
+  assert.ok(top >= 19 && top <= 22, `the top tier reads about 20-22 px at z16, got ${top}`);
+  /* the low end is unchanged: this request moved nothing at continent and region level */
+  assert.equal(LS.placeAt('city', 3), 9.5);
+  assert.equal(LS.placeAt('city', 10), 13);
+});
+
+test('city-label-gate ② the rank gate is declared in integer stops, never falls with zoom, and opens fully by z7', () => {
+  const src = read('js/place-labels.js');
+  const m = /const CITY_GATE_STOPS=(\[\[[^;]*\]\]);/.exec(src), o = /const CITY_GATE_OPEN_Z=(\d+);/.exec(src);
+  assert.ok(m && o, 'js/place-labels.js declares CITY_GATE_STOPS and CITY_GATE_OPEN_Z');
+  const stops = JSON.parse(m[1]), open = +o[1];
+  for (const [z] of stops) assert.ok(Number.isInteger(z), 'a filter re-reads [zoom] at integer zooms only');
+  for (let i = 1; i < stops.length; i++) {
+    assert.ok(stops[i][0] > stops[i - 1][0], 'stops are ordered by zoom');
+    assert.ok(stops[i][1] >= stops[i - 1][1], `the gate must not cut MORE at z${stops[i][0]} than at z${stops[i - 1][0]}`);
+  }
+  assert.ok(stops[stops.length - 1][0] < open && open <= 7, 'fully open from z7 — the regional view is not thinned');
+  assert.equal(stops[0][0], 3, 'the gate begins where the layer does (minzoom 3)');
+  /* both the name and its dot read the SAME filter, so a dot never outlives its name's gate */
+  assert.match(src, /id:'ofm-city',type:'symbol'[^\n]*filter:CITY_FILTER/);
+  assert.match(src, /id:'ofm-city-dot',type:'circle'[^\n]*filter:CITY_FILTER/);
+});
+
+test('city-label-dot ③ the dot layer shares the name layer source, scales with the name, and the label is padded off it', () => {
+  const src = read('js/place-labels.js');
+  const dot = /GE\(\)\.layers\.add\(\{id:'ofm-city-dot'[\s\S]*?\}\}\);/.exec(src);
+  assert.ok(dot, 'ofm-city-dot is added');
+  assert.match(dot[0], /source:'ofm','source-layer':'place'/);
+  assert.match(dot[0], /'circle-radius':LS\.placeTiered\('city',CITY_TIER,CITY_DOT_EM\)/);
+  assert.match(src, /'text-radial-offset':CITY_LABEL_OFFSET_EM/);
+  const em = (n) => +new RegExp(n + '=([0-9.]+)').exec(src)[1];
+  assert.ok(em('CITY_LABEL_OFFSET_EM') > em('CITY_DOT_EM') + 0.2, 'the label starts clear of the dot plus its ring stroke');
+  assert.match(src, /setLayout\('ofm-city-dot','visibility'/);
+  /* the multiplier makes the dot radius grow with zoom the same way the name does */
+  const LS = loadScale(), r = LS.placeTiered('city', ['get', 'tier'], 0.27);
+  assert.ok(r[r.length - 1][2] > r[4][2], 'the radius at the last stop is bigger than at the first');
 });

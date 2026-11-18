@@ -1231,6 +1231,7 @@ widget-smart.js                   Smart Stack IntMapWidgetSmart —— 文脈に
                                   「なぜ表示されたか」の説明、切替のちらつき防止
 tool-panel.js                     計測／半径ツールのパネルと地図のコンテキストメニュー
 popup-anchor.js                   地図上の場所に属するカードをその場所へ追従させる共通部品 anchorToLngLat（共有カメラ購読・裏側/画面外で隠す・ドラッグで追従を止める）
+popup-placement.js                地名ポップアップをピンのどの側（右・左・上・下）に開くかを選ぶ部品（面積で数える重なり・端・画面上の操作部品を DOM から発見）
 elevation-profile.js              標高断面のパネル
 sims.js                           物理シミュレーションと太陽幾何（放射性物質拡散のパネル・地図・
                                   アニメーション／範囲人口／日照／鉄道の到達圏）

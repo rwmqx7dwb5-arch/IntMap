@@ -2577,8 +2577,11 @@ export function atlasConsole(HOST){
     function _featTogHtml(kind){ const f=_FEAT_TOG[kind]; if(!f) return ''; let on=false; try{ on=!!f.on(); }catch(_){}
       /* (#R148) removed R147's bespoke .atl-featbtn ("独自ボタン") — restore the standard iOS toggle switch that shipped before R147. */
       return '<div class="atl-ctl-row" style="margin-top:6px;"><span class="atl-ctl-lbl">'+esc(f.lbl())+'</span><button class="atl-ctl-toggle atl-feat-tog'+(on?' on':'')+'" data-feat="'+esc(kind)+'" role="switch" aria-checked="'+(on?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>'; }
-    function mapToggleChip(kinds){ const K=Array.from(new Set((kinds||[]).filter(k=>k==='arc'||_ovlIds(k).length))); if(!K.length) return '';
-      return '<div class="atl-mapctl atl-ctl-row" data-ovls="'+esc(K.join(','))+'" style="margin:7px 0 1px;"><span class="atl-ctl-lbl">'+L('Shown on the map','地図に表示中','Auf der Karte','Показано на карте','En el mapa')+'</span>'
+    /* THE ACTION ROW under the answer: «<what was put on the map> · [toggle]». `names` are the subjects of results that
+       said nothing but their names (`exec.shown`, js/atlas-cap-map.js) — they stand here once instead of again as a line above. */
+    function mapToggleChip(kinds,names){ const K=Array.from(new Set((kinds||[]).filter(k=>k==='arc'||_ovlIds(k).length))); if(!K.length) return '';
+      const nm=(names||[]).filter(Boolean).join(', ');
+      return '<div class="atl-mapctl atl-ctl-row atl-actrow" data-ovls="'+esc(K.join(','))+'"><span class="atl-ctl-lbl"'+(nm?' title="'+esc(nm)+'"':'')+'>'+(nm?esc(nm):L('Shown on the map','地図に表示中','Auf der Karte','Показано на карте','En el mapa'))+'</span>'
         +'<button class="atl-ctl-toggle atl-map-toggle on" role="switch" aria-checked="true" title="'+L('Show / hide on the map','地図で表示 / 非表示','Auf der Karte ein/aus','Показать/скрыть на карте','Mostrar/ocultar en el mapa')+'"><span class="atl-ctl-knob"></span></button></div>'; }
     /* (#R723) THE WORK TRACE — js/atlas-progress.js, which is where the indicator's whole story now is.
        What stood here: ONE WORD that overwrote itself, so a six-step turn showed one word at a time and
@@ -2621,13 +2624,17 @@ export function atlasConsole(HOST){
       /* (atlas-answer-integrity) a result whose content Atlas's words already carry is FOLDED to its one line — js/atlas-turn-results.js `present` has the measurement; its sources stay in the list below (SRCS reads `keep`). */
       /* ⚠⚠ (atlas-completion) ONE EXPLANATION PER REPLY. Once Atlas has written its final answer (`say`), a research tool's own interim answer that `present` cannot measure (no subject) and a failed operation's message are working material: kept, folded under the answer, failures named in one line. A ranking the words do NOT carry stays in the body — it is the evidence the answer rests on. */
       const _pres=TRES.present(keep,say);
+      /* ONE ACTION ROW, NOT A NOTE AND A TOGGLE: a kept result that declares it says only its names (`exec.shown`) hands them to
+         the map-toggle row, so the reader sees «names · toggle» once. Only while that row exists — without a toggle the note stays. */
+      const _shownRes=keep.filter(r=>r&&r.ok!==false&&r.exec&&r.exec.shown&&Array.isArray(r.exec.shown.names)&&r.exec.shown.names.length);
+      let _chip=''; try{ const ks=ai.__atlMappedKinds?Object.keys(ai.__atlMappedKinds):[]; if(ks.length){ const nms=[]; _shownRes.forEach(r=>r.exec.shown.names.forEach(n=>{ if(nms.indexOf(n)<0) nms.push(n); })); _chip=mapToggleChip(ks,nms); } }catch(_){}
       const _interim=say?_pres.filter(p=>{ const r=p.res; if(!r||!r.act) return false; if(r.ok===false) return true; return !!TRES.ANSWER_TYPES[r.act.type] && !(r.meta&&r.meta.subject&&r.meta.brief); }).map(p=>p.res):[];
-      _pres.forEach(({res,fold})=>{ const h=(res&&res.html)||''; if(!h||seen[h]||_interim.indexOf(res)>=0) return; seen[h]=1; body+=fold?('<details class="atl-fold" style="margin:4px 0;"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-muted);">'+res.meta.brief+'</summary>'+h+'</details>'):h; });
+      _pres.forEach(({res,fold})=>{ const h=(res&&res.html)||''; if(!h||seen[h]||_interim.indexOf(res)>=0||(_chip&&_shownRes.indexOf(res)>=0)) return; seen[h]=1; body+=fold?('<details class="atl-fold" style="margin:4px 0;"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-muted);">'+res.meta.brief+'</summary>'+h+'</details>'):h; });
       if(_interim.length){ const _f=_interim.filter(r=>r.ok===false).map(r=>actLabel(r.act)).filter(Boolean);
         let _ih=''; _interim.forEach(res=>{ const h=(res&&res.html)||''; if(!h||seen[h]) return; seen[h]=1; _ih+=h; });
         if(_f.length) body+='<div class="atl-unfinished" style="margin-top:6px;color:var(--text-muted);font-size:11.5px;">'+esc(L('Did not complete: ','完了しなかった操作: ','Nicht abgeschlossen: ','Не завершено: ','No completado: '))+esc(_f.join(' · '))+'</div>';
         if(_ih) body+='<details class="atl-interim" style="margin-top:6px;"><summary style="cursor:pointer;color:var(--text-muted);font-size:11.5px;">'+esc(L('Working material and tool messages','途中の調査結果と操作のメッセージ','Zwischenergebnisse und Meldungen','Промежуточные результаты и сообщения','Resultados intermedios y mensajes'))+' ('+_interim.length+')</summary>'+_ih+'</details>'; }
-      try{ const ks=ai.__atlMappedKinds?Object.keys(ai.__atlMappedKinds):[]; if(ks.length) body+=mapToggleChip(ks); }catch(_){}   /* single deduped map-toggle chip */
+      body+=_chip;   /* single deduped map-toggle chip — the action row */
       /* 4) head — the pre-written `say` (suppressed on all-failed / contradicted visual) + an honest, NAME-FREE summary */
       /* 4) head — ATLAS'S ANSWER, written after the results (js/atlas-agent.js) and therefore
          never a claim about something that did not happen. It is no longer suppressed on failure:
@@ -2637,7 +2644,7 @@ export function atlasConsole(HOST){
          asking whose goal each served, and #R406 gives that judgement back to the one thing that
          knows the reader's goal. What could not be done is said in the answer, in words.
          ⚠ NOT HIDDEN: each action's own body still renders its honest per-action outcome below. */
-      let head=say?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):LIVE.draftHtml(ai);   /* (atlas-live-stream) no answer yet: what is being written stands where it will stand — a compose between tools must not erase it */ try{ const _cr=COMPOSE.recordsFor(keep); if(_cr.length&&head) head=COMPOSE.linkProse(head,_cr); if(head) head=ARENDER.demoteProseLinks(head,_curPlanCites,_cr); }catch(_){}   /* (#R511) the names in the answer get the numbers the markers carry — from the records THIS reply drew, read off its own results. ⚠⚠⚠ (#R589) AND AN ANCHOR IN THAT PROSE CLAIMS INTMAP FETCHED THE PAGE: the structured path builds every link from the registry, this one renders what Atlas wrote, which is how 「(mapion.co.jp)」 shipped as a live link to a page nothing in the turn had requested. The rule, and the set of hosts this turn actually retrieved, are js/atlas-answer-render.js. */
+      let head=say?('<div class="atl-md" style="margin-bottom:6px;">'+mdMini(say)+'</div>'):LIVE.draftHtml(ai);   /* (atlas-live-stream) no answer yet: what is being written stands where it will stand — a compose between tools must not erase it */ try{ const _cr=COMPOSE.recordsFor(keep); if(_cr.length&&head) head=COMPOSE.linkProse(head,_cr); if(head) head=ARENDER.demoteProseLinks(head,_curPlanCites,_cr); }catch(_){}   /* (#R511) the names in the answer get the numbers the markers carry — from the records THIS reply drew, read off its own results. ⚠⚠⚠ (#R589) AND AN ANCHOR IN THAT PROSE CLAIMS INTMAP FETCHED THE PAGE: the structured path builds every link from the registry, this one renders what Atlas wrote, which is how 「(mapion.co.jp)」 shipped as a live link to a page nothing in the turn had requested. The rule, and the set of hosts this turn actually retrieved, are js/atlas-answer-render.js. */
       if(ai.__atlCancelled) head=_cancelledNote()+head;
       try{ const _sv=SRCS.compose(ai,keep,{ final:!!say, question:ai.__atlQ||'' }); head=_sv.head(head); body+=_sv.footer; }catch(_){}   /* (atlas-cited-answers) a number in Atlas's words that equals a value a tool returned gets that source's [n]; the list and the answer's Cite go under the reply — js/atlas-answer-sources.js */
       /* ⚠⚠⚠ (#R733) A TURN THAT RAN OUT IS NOT A TURN THAT FINISHED, and only IntMap knows which it was:

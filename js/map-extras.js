@@ -168,13 +168,13 @@ export function annotations(HOST){
      line/polygon that stays on the map; small popup to rename / recolor / delete; multiple allowed. ===== */
   window.IntMapAnnotations=(function(){
     if(!GE().hasRenderer()) return { add(){}, remove(){}, clear(){}, _items:[] };
-    const SRC='annot-src'; let seq=0, popup=null; const items=[];
+    const SRC='annot-src'; const ANNOT_LINE_W=2.6; /* the width shipped before the Objects list could set one */ let seq=0, popup=null; const items=[];
     const jp=()=>HOST.lang==='jp';
-    function fc(){ return {type:'FeatureCollection',features:items.map(it=>({type:'Feature',geometry:it.geom,properties:{id:it.id,color:it.color,op:it.op}}))}; }
+    function fc(){ return {type:'FeatureCollection',features:items.map(it=>({type:'Feature',geometry:it.geom,properties:{id:it.id,color:it.color,op:it.op*(it.alpha==null?1:it.alpha),lw:it.width,lop:it.alpha}}))}; }   /* lw/lop: the Objects list's per-shape line width and opacity (absent = the layer's own defaults) */
     function ensure(){ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
       try{ GE().layers.addSource(SRC,{type:'geojson',data:fc()});
         GE().layers.add({id:'annot-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['get','color'],'fill-opacity':['coalesce',['get','op'],0.16]}});
-        GE().layers.add({id:'annot-line',type:'line',source:SRC,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['get','color'],'line-width':2.6}});
+        GE().layers.add({id:'annot-line',type:'line',source:SRC,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['get','color'],'line-width':['coalesce',['get','lw'],ANNOT_LINE_W],'line-opacity':['coalesce',['get','lop'],1]}});
         GE().events.onLayer('click','annot-fill',e=>{ if(e.features[0]) openPop(e.features[0].properties.id,e.lngLat); });
         GE().events.onLayer('click','annot-line',e=>{ if(e.features[0]) openPop(e.features[0].properties.id,e.lngLat); });
         ['annot-fill','annot-line'].forEach(l=>{ GE().events.onLayer('mouseenter',l,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',l,()=>{ GE().render.canvas().style.cursor=''; }); });
@@ -203,7 +203,7 @@ export function annotations(HOST){
        dismissable popup with the measured value + rename/recolor/delete. */
     function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((IntMapLang.t(HOST.lang,"Annotation ","注記 ","Anmerkung ","Аннотация ","Anotación "))+seq),value:opts.value||''}); refresh(); return id; }
     function remove(id){ const i=items.findIndex(x=>x.id===id); if(i>=0){ items.splice(i,1); refresh(); } if(popup){ try{popup.remove();}catch(_){} popup=null; } }
-    return { add, remove, refresh, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items };   /* (#R88) expose refresh so the Object List can recolour an annotation live */
+    return { add, remove, refresh, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items, defaultLineWidth:ANNOT_LINE_W };   /* (#R88) expose refresh so the Object List can recolour an annotation live */
   })();
 }
 

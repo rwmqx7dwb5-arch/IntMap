@@ -189,6 +189,9 @@ export function newsEvents(HOST) {
   let sources = null;          /* id → { name, slug, type, country, hq } */
   let lastLoadedAt = 0;
   let lastError = null;
+  /* 直近の load() の結末: 'events'（取れた）／'none'（表は答えたが該当が 0 件・その日が無い）／'error'（答えを得られなかった）。
+     呼び出し側は「無い」と「訊けなかった」を別の画面にする——lastError の文言を読み分けさせない。 */
+  let lastAnswer = null;
   let selected = null;         /* 詳細を開いている Event の public_id */
   let items = [];              /* 直近の load() が作った一覧の項目（HOST.globalData へ入れるのは呼び出し側） */
   let category = 'all';
@@ -612,14 +615,15 @@ export function newsEvents(HOST) {
      ⇒ 入口ごとに**出来事の表そのもの**に訊く:
        opts.query  見出し（代表見出し）と要約に語を含む出来事（出来事が残る 30 日の中）
        opts.day    その UTC 日に報道があった出来事（「今日の世界」の日付の窓と同じ editionWindow）
-     どちらも 1 件も無いときは false を返し、呼び出し側は記事 RSS へ落ちる（出来事の表が
-     持たない古い日付や、収集していない媒体の記事を、今までどおり探せる——能力は減らさない）。
+     どちらも 1 件も無いときは false を返し、`answer()` が 'none'（表は答えた・該当なし）か
+     'error'（訊けなかった）を述べる。呼び出し側は**記事へ落ちず**、出来事の面で「無い」か
+     「読めなかった（再試行）」を出す。
      ★の付いた出来事は、どの入口でも一覧に足す（saved()）。 */
   /* PostgREST の or() は , ( ) を区切りに、* を ilike の万能記号に使う。利用者の語からそれらを外す。 */
   const pgSafe = (q) => String(q || '').replace(/[,()*%\\:"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
   async function load(opts) {
     const o = opts || {};
-    if (!HOST.DB) { lastError = 'no database client'; return false; }
+    if (!HOST.DB) { lastError = 'no database client'; lastAnswer = 'error'; return false; }
     try {
       await loadSources();
       let q = HOST.DB.from('news_events')
@@ -629,14 +633,14 @@ export function newsEvents(HOST) {
       if (o.query && term) q = q.or(SEARCH_COLS.map((c) => c + '.ilike.*' + term + '*').join(','));
       if (o.day) {
         const w = editionWindow({ day: o.day }, nowMs());
-        if (!w) { lastError = 'no such day'; return false; }
+        if (!w) { lastError = 'no such day'; lastAnswer = 'none'; return false; }
         q = q.lte('first_published_at', new Date(w.untilMs).toISOString())
           .gte('last_article_at', new Date(w.sinceMs).toISOString());
       }
       q = q.order(o.day ? 'independent_source_count' : 'materially_updated_at', { ascending: false }).limit(LIMIT);
       const { data, error } = await q;
       if (error) throw error;
-      if (!data || !data.length) { lastError = 'no events'; return false; }
+      if (!data || !data.length) { lastError = 'no events'; lastAnswer = 'none'; return false; }
       await ensureSourcesFor(data);
 
       /* ⚠ #R405: 日本語の見出しを引きに行くクエリはここに在った。利用者が「生成も表示も
@@ -656,9 +660,11 @@ export function newsEvents(HOST) {
       await addSaved();
       lastLoadedAt = nowMs();
       lastError = null;
+      lastAnswer = 'events';
       return true;
     } catch (e) {
       lastError = (e && e.message) || String(e);
+      lastAnswer = 'error';
       console.warn('[IntMap] news events unavailable:', lastError);
       return false;
     }
@@ -1656,6 +1662,7 @@ export function newsEvents(HOST) {
     setCategory: (c) => { category = c || 'all'; renderChips(); try { HOST.startNews(); } catch (_) { } },
     selected: () => selected,
     error: () => lastError,
+    answer: () => lastAnswer,
   };
   try { window.IntMapNewsEvents = API; } catch (_) { }
   return API;

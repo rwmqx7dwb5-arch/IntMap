@@ -234,7 +234,7 @@ test('news-quality ③ a starred event keeps what it showed: the snapshot is wri
   assert.equal(saved._event.members[0].url, 'https://example.org/a', 'its sources are back');
 });
 
-test('news-quality ③ search and a past day ask the events table; nothing found falls back to the article feed', async () => {
+test('news-quality ③ search and a past day ask the events table; nothing found is answered as «no event», not by the article feed', async () => {
   const log = [];
   const tables = { news_sources: [], news_events: [ROW(3, 'ev-a', 'Kyiv bridges hit')] };
   const host = { lang: 'en', user: null, DB: fakeDb(tables, log), applyPinMode: (a) => { a.loc = a.subjectLoc; a.mapped = !!a.subjectLoc; } };
@@ -249,12 +249,13 @@ test('news-quality ③ search and a past day ask the events table; nothing found
   const d = log.find((f) => f.name === 'news_events' && f.ops.some((o) => o[0] === 'lte'));
   assert.ok(d && d.ops.some((o) => o[0] === 'gte' && o[1] === 'last_article_at'), 'a day asks for events reported on that day');
   tables.news_events = [];
-  assert.equal(await api.load({ query: 'nothing here' }), false, 'no event → false, so the caller falls back to RSS');
+  assert.equal(await api.load({ query: 'nothing here' }), false, 'no event → false');
+  assert.equal(api.answer(), 'none', '…and the table ANSWERED (the caller shows «no result», not an article list)');
 });
 
 test('news-quality ③ the feed asks the events table first for search and dates (no longer skips it)', () => {
   const src = fs.readFileSync(here('../js/news-feed.js'), 'utf8');
   assert.ok(!/NEWS_EVENT_MODE && !HOST\.activeSearchQuery && !HOST\.newsDate/.test(src), 'event mode is not switched off by search or a date');
-  assert.match(src, /IntMapNewsEvents\.load\(evOpts\)/);
+  assert.match(src, /(?:IntMapNewsEvents|evMod)\.load\(evOpts\)/);
   assert.match(src, /intmap-news-events-grew/, 'category growth is landed by the feed (the one writer of globalData)');
 });

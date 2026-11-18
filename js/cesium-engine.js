@@ -3052,7 +3052,12 @@ window.IntMapCesiumEngine=(function(){
       }
     } else if(o.element){ el.appendChild(o.element); }
     const state={ view:null, ll:null, open:false, raf:0 };
-    const offset=(typeof o.offset==='number')?o.offset:0;
+    /* `offset` is a number (up = pin height) or MapLibre's [x,y]; `anchor` names the popup edge that touches the point
+       (bottom = above it, the default). Same contract as MapLibre so one placement choice drives both engines. */
+    let offX=0, offY=(typeof o.offset==='number')?-o.offset:0, anchorName=o.anchor||'bottom';
+    const setOff=v=>{ if(Array.isArray(v)){ offX=+v[0]||0; offY=+v[1]||0; } else if(typeof v==='number'){ offX=0; offY=-v; } };
+    setOff(o.offset);
+    const ANCHOR_T={bottom:'-50%,-100%',top:'-50%,0',left:'0,-50%',right:'-100%,-50%','bottom-left':'0,-100%','bottom-right':'-100%,-100%','top-left':'0,0','top-right':'-100%,0',center:'-50%,-50%'};
     function place(){
       state.raf=0;
       const v=state.view; if(!state.open||!v||!state.ll) return;
@@ -3060,8 +3065,8 @@ window.IntMapCesiumEngine=(function(){
       if(!p||p.x<-1e5){ el.style.display='none'; }
       else{
         el.style.display='';
-        const anchor=(kind==='popup')?'translate(-50%,-100%)':'translate(-50%,-100%)';
-        el.style.transform=`translate(${Math.round(p.x)}px,${Math.round(p.y-offset)}px) ${anchor}`;
+        const anchor='translate('+(ANCHOR_T[anchorName]||ANCHOR_T.bottom)+')';
+        el.style.transform=`translate(${Math.round(p.x+offX)}px,${Math.round(p.y+offY)}px) ${anchor}`;
       }
     }
     const sched=()=>{ if(state.open&&!state.raf) state.raf=requestAnimationFrame(place); };
@@ -3083,7 +3088,7 @@ window.IntMapCesiumEngine=(function(){
       setDOMContent(n){ if(content){ content.innerHTML=''; content.appendChild(n); if(closer) content.appendChild(closer); }
                         else { el.innerHTML=''; el.appendChild(n); } sched(); return api; },
       setMaxWidth(w){ if(content) content.style.maxWidth=w; return api; },
-      setOffset(){ return api; },
+      setOffset(v){ setOff(v); sched(); return api; },
       getElement(){ return el; },
       isOpen(){ return state.open; },
       addTo(view){

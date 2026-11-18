@@ -135,6 +135,9 @@ export function viewControls(HOST){
        two numbers next to each other are never in different units). '' when off or unavailable. */
     function text(){ if(!on) return '';
       const a=altitude(); if(a==null) return '';
+      return textFor(a); }
+    /* the wording for ANY altitude — the readout asks it for the longest one it may ever print, to reserve that width */
+    function textFor(a){
       let v=''; try{ v=HOST.fmtElevVal(Math.abs(a)); }catch(_){ v=Math.round(Math.abs(a)).toLocaleString()+' m'; }
       /* Past 90° of tilt the camera has swung below the centre's ground plane; say so with a sign
          rather than quietly showing the height as if it were still above. */
@@ -164,7 +167,7 @@ export function viewControls(HOST){
       try{ HOST.renderCoordReadout(); }catch(_){}
       return on; }
 
-    return { isOn:()=>on, set, text, altitude, label, refresh, wire,
+    return { isOn:()=>on, set, text, textFor, altitude, label, refresh, wire,
       state:()=>({ on, altitude:altitude(), text:text() }) };
   })();
 

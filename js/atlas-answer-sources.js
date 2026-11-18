@@ -181,15 +181,21 @@ export function makeAtlasAnswerSources(deps) {
   function footerHtml(items, o) {
     o = o || {};
     if (!(items && items.length) && !o.pending) return '';
-    let h = '<div class="atl-srcs" data-atl-srcs="' + esc(o.id || '') + '">';
-    h += '<div class="atl-srcs-h">' + esc(T('Sources of this answer', 'この回答の出典')) + '</div>';
+    /* ONE COLLAPSED LINE: how many sources and the first two by name; the list, the credit line and Cite open under it. */
+    const names = [];
+    (items || []).forEach((it) => { const n = String(it.source || '').trim(); if (n && names.indexOf(n) < 0) names.push(n); });
+    const count = (items || []).length;
+    const sum = T('Sources of this answer', 'この回答の出典') + (count ? ' · ' + count : '')
+      + (names.length ? ' — ' + names.slice(0, 2).join(', ') + (names.length > 2 ? ' …' : '') : '');
+    let h = '<details class="atl-srcs" data-atl-srcs="' + esc(o.id || '') + '"' + (o.open ? ' open' : '') + '>';
+    h += '<summary class="atl-srcs-h" title="' + esc(T('Read from the tools this answer ran — not written by Atlas. A number marked [n] equals a value that source returned; a number without a mark was not matched to any of them.',
+      'この回答が実行した道具の結果から IntMap が組み立てたもので、Atlas が書いたものではありません。[n] の付いた数字は、その出典が返した値と一致したものです。印の無い数字は、どの結果とも照合できなかったものです。')) + '">' + esc(sum) + '</summary>';
     /* (atlas-answer-integrity) ONE LINE, AND IT SAYS WHAT THE MARK MEANS. The note was three sentences about how the list is
        assembled («not written by Atlas», «only numbered numbers are verified») set at the same weight as the sources, and
        readers asked what the answer was based on could not find the sources under it (2026-11-17). The whole account is
        still here — in the line's tooltip, for whoever asks how the list was made. */
-    h += '<div class="atl-srcs-note" title="' + esc(T('Read from the tools this answer ran — not written by Atlas. A number marked [n] equals a value that source returned; a number without a mark was not matched to any of them.',
-      'この回答が実行した道具の結果から IntMap が組み立てたもので、Atlas が書いたものではありません。[n] の付いた数字は、その出典が返した値と一致したものです。印の無い数字は、どの結果とも照合できなかったものです。')) + '">'
-      + esc(T('[n] marks a number that matches that source.', '[n] は、その出典の値と一致した数字です。')) + '</div>';
+    /* the key to the mark is shown only when the answer actually carries marks (o.linked) — the account of how the list was made is the summary's tooltip */
+    if (o.linked) h += '<div class="atl-srcs-note">' + esc(T('[n] marks a number that matches that source.', '[n] は、その出典の値と一致した数字です。')) + '</div>';
     if (items && items.length) {
       h += '<ol class="atl-srcs-list">';
       items.forEach((it) => {
@@ -208,7 +214,7 @@ export function makeAtlasAnswerSources(deps) {
     if (o.credit) h += '<div class="atl-srcs-credit-line">' + esc(T('Credit line: ', '出典表記: ') + o.credit) + '</div>';
     if (o.pending) h += '<div class="atl-srcs-note atl-srcs-wait">' + esc(T('Reading the records of the lines on the map…', '地図の線の記録を読んでいます…')) + '</div>';
     h += '<details class="atl-srcs-citebox"><summary>' + esc(T('Cite this answer', 'この回答を引用する')) + '</summary><div class="atl-srcs-citebody"></div></details>';
-    return h + '</div>';
+    return h + '</details>';
   }
 
   /** plainItems(items) → the list as stored data and as text (the notebook, a briefing, a copy): no values, no markup */
@@ -232,8 +238,9 @@ export function makeAtlasAnswerSources(deps) {
    js/atlas-console.js hands one reply bubble here each time it composes it. What needs the network or the
    map — the border records and the map's credits (js/map-cite.js, fetched on first use), the line card, the
    citation — is done here, once per bubble, and the bubble is repainted when it arrives. */
-const CSS = '.atl-srcs{margin-top:10px;padding-top:8px;border-top:1px solid rgba(128,128,128,0.18);font-size:11.5px;line-height:1.5;}'
-  + '.atl-srcs-h{font-weight:700;font-size:12px;margin-bottom:2px;}'
+const CSS = '.atl-srcs{margin-top:var(--atl-zone-gap,10px);padding-top:6px;border-top:1px solid rgba(128,128,128,0.18);font-size:12px;line-height:1.5;color:var(--text-muted);}'
+  + '.atl-srcs-h{cursor:pointer;font-weight:600;font-size:12px;margin-bottom:2px;list-style-position:inside;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+  + '.atl-srcs[open]>.atl-srcs-h{white-space:normal;}'
   + '.atl-srcs-note{color:var(--text-muted);font-size:11px;margin:2px 0 4px;}'
   + '.atl-srcs-list{margin:2px 0 4px;padding-left:4px;list-style:none;}'
   + '.atl-srcs-list li{margin:3px 0;border-radius:6px;transition:background .4s;}'
@@ -290,13 +297,15 @@ export function attachSources(ctx) {
     const pending = mapped && !!bubble.__atlSrcMap && !ex;
     bubble.__atlSrcItems = items;
     let credit = '';
+    let linked = false;
     if (ex && ex.refs && ex.facts && items.length) {
       try { const cr = ex.refs(Object.assign({}, ex.facts, { title: o.question || ex.facts.title, credits: core.creditsOf(items) })).credit; credit = cr[core.lang() === 'jp' ? 'jp' : 'en']; } catch (_) { credit = ''; }
     }
     bubble.__atlSrcCredit = credit;
     return {
-      head: (html) => core.linkNumbers(html, items, bubble.__atlSrcId),
-      footer: o.final ? core.footerHtml(items, { id: bubble.__atlSrcId, pending, credit }) : '',
+      head: (html) => { const out = core.linkNumbers(html, items, bubble.__atlSrcId); if (out !== html) linked = true; return out; },
+      /* read AFTER head(): whether any number was actually linked decides whether the mark's key is shown */
+      get footer() { return o.final ? core.footerHtml(items, { id: bubble.__atlSrcId, pending, credit, linked, open: !!bubble.__atlSrcsOpen }) : ''; },
       items,
     };
   }
@@ -336,6 +345,7 @@ export function attachSources(ctx) {
       if (a) {
         e.preventDefault();
         const li = bubble.querySelector('.atl-srcs-list li[data-n="' + a.getAttribute('data-atl-srcn') + '"]');
+        const dt = bubble.querySelector('details.atl-srcs'); if (dt && !dt.open) dt.open = true;   /* the list is collapsed by default — open it before scrolling to the row */
         if (li) { try { li.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) { /* old engine */ } li.classList.add('atl-srcs-flash'); setTimeout(() => li.classList.remove('atl-srcs-flash'), 1400); }
         return;
       }
@@ -345,6 +355,7 @@ export function attachSources(ctx) {
         if (p.length === 2 && p.every(isFinite)) import('./border-provenance-card.js').then((m) => m.BorderProvenanceCard.openArea({ GE: ctx.GE, HOST: ctx.HOST, lngLat: { lng: p[0], lat: p[1] } })).catch(() => {});
       }
     });
+    root.addEventListener('toggle', (ev) => { if (ev.target === root) bubble.__atlSrcsOpen = root.open; });   /* a repaint (the map's half landing) keeps what the reader opened */
     const box = root.querySelector('.atl-srcs-citebox');
     if (box) box.addEventListener('toggle', () => { const body = box.querySelector('.atl-srcs-citebody'); if (box.open && body && !body.childNodes.length) fillCite(bubble, body, question); });
   }

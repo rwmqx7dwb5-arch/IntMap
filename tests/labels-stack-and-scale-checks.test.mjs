@@ -177,10 +177,15 @@ test('R198 ①c: every place class is SMALLER than it was before this round', ()
      alone: 「国名ラベルを大きくして差を出して視認性を高めて」. It is listed here rather than deleted
      from BEFORE so the exemption is visible — every other class still has to be below #R198. */
   const EXEMPT = new Set(['country']);
+  /* (city-label-grow, 2026-11-18) `city` is exempt ABOVE z10 only: 「Google Earth のように、ズームするほど都市名が大きくなる」
+     replaced the flat 15 px that BEFORE.city held from z10 on with a curve that keeps growing to z17. Up to z10 the pre-#R198
+     ceiling still binds, so the "smaller than before" half of the old request is intact where it was measured. */
+  const LIMIT_Z = { city: 10 };
   for (const kind of Object.keys(BEFORE)) {
     if (EXEMPT.has(kind)) continue;
     for (let z = 0; z <= 22; z += 0.1) {
       const zz = Math.round(z * 10) / 10;
+      if (LIMIT_Z[kind] != null && zz > LIMIT_Z[kind]) continue;
       assert.ok(LS.placeAt(kind, zz) <= at(BEFORE[kind], zz) + 1e-9,
         `place('${kind}') at z${zz} is ${LS.placeAt(kind, zz)}, not below its pre-#R198 ${at(BEFORE[kind], zz)} — ` +
         'the request was 「全体的にラベルのテキストサイズを下げた」');
