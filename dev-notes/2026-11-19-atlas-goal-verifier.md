@@ -28,3 +28,7 @@ newsjp: Atlas が、依頼した内容を実際に満たしているかを別の
 ## 3. 検査
 
 `tests/atlas-goal-verifier-checks.test.mjs`（ループの 3 件＋検証器 1 件）、`tests/atlas-ai-proxy-models-checks.test.mjs`（json タスク一覧に追加）。
+
+## 4. 予算
+
+`atlas-console` の非同期チャンクの天井を上げた（1024.2 → 1032 kB 前後）。独立検証の呼び出しと、先に入った期限切れ取り消しの signal 結合が `js/atlas-console.js` に載るため。検証の組み立て本体は別ファイル（`js/atlas-goal-verify.js`）に置いてあり、console に足したのは配線だけ。
