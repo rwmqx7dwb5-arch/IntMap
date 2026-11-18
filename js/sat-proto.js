@@ -251,7 +251,7 @@ export function satProto(HOST){
       const W=window.IntMapSatWorker;
       if(!W||!W.available()) return null;
       if(!_satWReady){ _satWReady=true;
-        W.configure({ rawMax:_SAT_RAW_MAX, depthMax:_SAT_DEPTH_MAX, lanes:_satTune.lanes,
+        W.configure({ rawMax:_SAT_RAW_MAX, depthMax:_SAT_DEPTH_MAX, lanes:_satTune.lanes, specCap:_satTune.specCap,
           /* the worker learned how deep the imagery goes — keep the MIRROR current, because
              `depth()` and `wouldStitch()` below answer synchronously and the tests ask them that way */
           depth:(rows)=>{ for(const [k,have,stop] of rows){
@@ -267,13 +267,14 @@ export function satProto(HOST){
     /* (sat-arcgis-3d) the worker's fetch queue (src/sat-worker.js): how many fetches per host it hands the
        browser. The number and its observation live there, not here — undefined keeps the worker's own.
        Changeable on the live binary (`setTuning({lanes})`, 0 = no cap) so it is measured A/B against the
-       same build, as #R193's zoom gate is.
+       same build, as #R193's zoom gate is. (sat-mobile-speed) `specCap` likewise: how many speculative
+       fetches per host the worker runs in idle capacity — its number and measurement live there too.
        ⚠ TRIED AND NOT KEPT (same build, same ABBA): stitching @2x only where a tile's on-screen footprint
        exceeds its 256² native pixels. Measured with the queue at 6 lanes, it cut Esri requests 9–26 % pitched but was NOT faster to sharp (jump
        5.3 s vs 3.3 s, pan 4.6 s vs 4.0 s), and a tile fetched single-density far away stays single-density
        in MapLibre's tile cache when the camera later brings it close — a picture that gets worse is not a
        speed-up. */
-    const _satTune={ lanes:undefined };
+    const _satTune={ lanes:undefined, specCap:undefined };
     /* ══ (#R205) THE LEVELS A ZOOM PASSES THROUGH ARE NOT LEVELS ANYONE LOOKS AT ═══════════════════
        「衛星画像の読み込み時の動作を、極限までシームレスにして。（高速・違和感低減・点滅軽減）」
        「地図のホバー、ズームのfpsを劇的に高くしろ」
@@ -354,12 +355,12 @@ export function satProto(HOST){
        glide's end before the glide has moved. So when a destination is announced (`camera.onDestination`,
        js/geo-engine.js) its tiles at the level the renderer will ask for — the four children instead
        when this session stitches @2x — are fetched into the worker's byte cache, nearest the centre
-       first (src/sat-worker.js `warm`: four lanes, a newer destination replaces the queue). Only
+       first (src/sat-worker.js `specPump`: in idle capacity only, a newer destination replaces the list). Only
        while the satellite layer is drawn, and never more than one screenful and its margin. */
     function _satWarmDestination(){
       const d=_satDest(); if(!d) return;
       try{ if(GE().layers.getLayout('layer-sat','visibility')!=='visible') return; }catch(_){ return; }
-      const W=_satWorker(); if(!W||!W.warm) return;
+      const W=_satWorker(); if(!W||!W.speculate) return;
       const L=_satDestLevel(d); if(L<_SAT_HOLD_MINZ) return;              /* the shallow levels are shared and resident */
       const R=_satDestRect(d,L), out=[];
       for(let y=Math.max(0,Math.floor(R.cy-R.hy)); y<=Math.min(R.n-1,Math.floor(R.cy+R.hy)); y++)
@@ -372,7 +373,7 @@ export function satProto(HOST){
         if(_satHiDPI&&z<19){ const st=_satKnownStop(z,x,y); if(!(st!=null&&z+1>st)){ for(const [a,b] of [[0,0],[1,0],[0,1],[1,1]]) tiles.push([z+1,2*y+b,2*x+a]); continue; } }
         tiles.push([z,y,x]); }
       _satStat.warmed+=tiles.length;
-      W.warm(tiles);
+      W.speculate('dest',tiles,false);
     }
     function _satZoomHold(z,signal,x,y){
       if(!_satGateOn||!_satZooming||z<_SAT_HOLD_MINZ) return null;
@@ -448,9 +449,14 @@ export function satProto(HOST){
       zoomGate:()=>({ on:_satGateOn, zooming:_satZooming, wired:_satZoomWired, settleMs:_SAT_SETTLE, maxHoldMs:_SAT_MAX_HOLD, minZoom:_SAT_HOLD_MINZ,
         req:_satStat.req, held:_satStat.held, dropped:_satStat.dropped, resolved:_satStat.resolved, ahead:_satStat.ahead, warmed:_satStat.warmed }),
       resetZoomStats:()=>{ for(const k in _satStat) _satStat[k]=0; return true; },
-      /* (sat-arcgis-3d) the worker's fetch queue, live: {lanes} per host, 0 = no cap. Returns what is now in force. */
-      setTuning:(o)=>{ o=o||{}; if('lanes' in o) _satTune.lanes=o.lanes;
-        const W=_satWorker(); if(W) W.configure({ lanes:_satTune.lanes }); return Object.assign({},_satTune); },
+      /* (sat-arcgis-3d) the worker's fetch queue, live: {lanes} per host, 0 = no cap; (sat-mobile-speed) {specCap}
+         speculative fetches per host in idle capacity. Returns what is now in force. */
+      setTuning:(o)=>{ o=o||{}; for(const k of ['lanes','specCap']) if(k in o) _satTune[k]=o[k];
+        /* a worker not started yet takes _satTune when it starts (_satWorker) — asking here would start it */
+        const W=_satWReady?_satWorker():null; if(W) W.configure({ lanes:_satTune.lanes, specCap:_satTune.specCap }); return Object.assign({},_satTune); },
+      /* (sat-mobile-speed) js/tile-warm.js hands its ring here: the worker speculates in idle capacity only.
+         false = not taken (no worker) — the caller warms through sw.js as before. */
+      speculate:(tiles,more)=>{ const W=_satWorker(); return !!(W&&W.speculate&&W.speculate('ring',tiles,more)); },
       queueStats:()=>{ const W=_satWorker(); return W&&W.stats?W.stats():Promise.resolve(null); },
       /* ⚠ the OFF switch exists so the A/B can be run inside ONE build — #R203 recorded two levers
          that measured WORSE than the shipped setting, and the only reason that is known is that both

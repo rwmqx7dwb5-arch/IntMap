@@ -147,17 +147,17 @@ export function tileWarm(HOST){
        far horizon tiles the oblique view pulls in are resident before they scroll into frame. */
     /* one URL builder for every ring below — the protocol's when it has one, the template otherwise */
     const U=(zz,xx,yy)=>_esriDirect?_esriDirect(zz,yy,xx):_tileUrl(tpl,zz,xx,yy);
-    const RING=aggressive?7:3, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) urls.push(U(z,x,y)); };
-    const urls=[];
+    const RING=aggressive?7:3, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) add(z,x,y); };
+    const urls=[], tzyx=[], add=(zz,xx,yy)=>{ urls.push(U(zz,xx,yy)); tzyx.push([zz,yy,xx]); };   /* tzyx: the same, as [z,y,x] for the satellite worker */
     const _side=(k)=>{ if(dx>0) for(let y=y0-1;y<=y1+1;y++) push(x1+k,y); else if(dx<0) for(let y=y0-1;y<=y1+1;y++) push(x0-k,y);
       if(dy>0) for(let x=x0-1;x<=x1+1;x++) push(x,y1+k); else if(dy<0) for(let x=x0-1;x<=x1+1;x++) push(x,y0-k); };
     for(let k=1;k<=RING;k++) _side(k);
     if(aggressive && dx&&dy){ for(let k=1;k<=RING;k++){ push((dx>0?x1:x0)+dx*k,(dy>0?y1:y0)+ (dy>0?1:-1)*k); } }   /* diagonal corner ahead for a banking turn */
     /* (#R8) Anticipate a zoom-IN: warm the center tiles one AND two levels deeper so the next pinch is
        already resident (the user asked for "Unthinkable Speed" satellite). */
-    for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(U(z2,x,y)); } }
+    for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) add(z2,x,y); } }
     /* (#R151) tilted view → the horizon draws from a shallower zoom; warm a small block one level up in the travel dir. */
-    if(aggressive){ try{ if((GE().camera.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(U(zc,x,y)); } } }catch(_){} }
+    if(aggressive){ try{ if((GE().camera.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) add(zc,x,y); } } }catch(_){} }
     /* (#R178) what level this call chose, for observation. Inferring it from network traffic does not
        work once the protocol is stitching @2x tiles: the RENDER path then fetches the children one
        level below the displayed zoom, and those outnumber the prefetch ring (measured at map z11 on a
@@ -196,7 +196,17 @@ export function tileWarm(HOST){
        invalidated by time: a tile's imagery does not change while a session is open, and the whole
        point is that the second visit is free. Changing PROVIDER changes the URL, so that needs no
        reset either. */
-    const ring=[...new Set(urls)].filter(u=>!_pfSeen.has(u)).slice(0, aggressive?(_mob?110:280):(_mob?60:150));   /* (#R21/#R151) flight spends more of the idle bandwidth to stay ahead */
+    const _cap=aggressive?(_mob?110:280):(_mob?60:150);
+    /* ══ (sat-mobile-speed) THE ESRI RING GOES TO THE ONE SCHEDULER THAT SEES THE VISIBLE TILES ══════════════
+       sw.js's four lanes could not see the tiles on screen, so the ring took sockets from them (MEASURED on a
+       phone: a visible tile waited p95 0.6–2.2 s behind speculation). src/sat-worker.js now runs it only in
+       idle capacity (`specPump`); the worker keeps the bytes and dedupes against what it has, so this path
+       needs no memo. A batch for the same tile rectangle appends, a new rectangle replaces. If the worker
+       does not take it (no worker), the ring goes through sw.js as before. */
+    if(_esriDirect){ try{ const P=window.IntMapSatProto; if(P&&P.speculate){
+      const seen=new Set(), tl=[]; for(let i=0;i<urls.length&&tl.length<_cap;i++){ if(seen.has(urls[i])) continue; seen.add(urls[i]); tl.push(tzyx[i]); }
+      if(P.speculate(tl,_view===_pfView)){ _pfView=_view; try{ predictivePrefetch.lastIssued={ n:tl.length, worker:true }; }catch(_){} return; } } }catch(_){} }
+    const ring=[...new Set(urls)].filter(u=>!_pfSeen.has(u)).slice(0, _cap);   /* (#R21/#R151) flight spends more of the idle bandwidth to stay ahead */
     if(!ring.length) return;
     /* ══ (#R408) A BATCH THAT HAS BEEN OVERTAKEN IS WORK NOBODY IS WAITING FOR ═══════════════════════
        Up to the moment it fires, a pending batch can be called off: the `moveend` registration below

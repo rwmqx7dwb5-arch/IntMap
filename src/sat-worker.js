@@ -122,7 +122,7 @@ let LANES = 12;
 const waiting = [];               /* entries handed to nobody yet — the ONLY ones that may be withdrawn */
 const lanesLive = new Map();      /* origin → fetches handed to the browser and not yet settled */
 let entrySeq = 0;
-const sched = { queued: 0, started: 0, withdrawn: 0 };
+const sched = { queued: 0, started: 0, withdrawn: 0, specStarted: 0 };
 function newOwner() { return { entries: new Set() }; }
 function adopt(e, owner) {
   if (!owner) { e.pinned = true; return; }
@@ -142,6 +142,7 @@ function release(owner) {
 function start(e) {
   e.started = true; sched.started++;
   lanesLive.set(e.host, (lanesLive.get(e.host) || 0) + 1);
+  if (e.spec) { sched.specStarted++; specLive.set(e.host, (specLive.get(e.host) || 0) + 1); }
   (async () => {
     /* built when it LEAVES, not when it was queued: a refusal seen meanwhile already moved this worker to the keyless hosts */
     let u = imageryTileUrl(e.z, e.y, e.x), r = null;
@@ -150,7 +151,8 @@ function start(e) {
        refusal switches this worker to the keyless hosts and the SAME tile is asked again, once. */
     for (let tries = 0; tries < 2; tries++) {
       const keyed = imageryKeyed();
-      r = await fetch(u, { mode: 'cors', credentials: 'omit' });
+      /* a speculative fetch says so to the browser too: below a visible one in its own queue (where supported) */
+      r = await fetch(u, e.spec ? { mode: 'cors', credentials: 'omit', priority: 'low' } : { mode: 'cors', credentials: 'omit' });
       if (!keyed || (r.ok && isImageryReply(r))) break;
       imageryRefused(r.ok ? String(r.headers.get('content-type')) : String(r.status));
       u = imageryTileUrl(e.z, e.y, e.x);
@@ -161,10 +163,11 @@ function start(e) {
     raw.set(e.k, out);
     if (raw.size > RAW_MAX) { const f = raw.keys().next().value; raw.delete(f); }
     return out;
-  })().then(e.res, e.rej).finally(() => { lanesLive.set(e.host, lanesLive.get(e.host) - 1); pump(); });
+  })().then(e.res, e.rej).finally(() => { lanesLive.set(e.host, lanesLive.get(e.host) - 1);
+    if (e.spec) specLive.set(e.host, specLive.get(e.host) - 1);
+    pump(); });
 }
 function pump() {
-  if (!waiting.length) return;
   const cap = LANES > 0 ? LANES : Infinity;
   for (let i = 0; i < waiting.length;) {
     const e = waiting[i];
@@ -172,6 +175,59 @@ function pump() {
     if (e.keyed && !imageryKeyed()) { e.keyed = false; const u = imageryTileUrl(e.z, e.y, e.x); e.host = u.slice(0, u.indexOf('/', 8)); }
     if (e.keyed || (lanesLive.get(e.host) || 0) < cap) { waiting.splice(i, 1); start(e); } else i++;
   }
+  specPump();
+}
+
+/* ══ (sat-mobile-speed) SPECULATION YIELDS TO NEED ═════════════════════════════════════════════════════
+   「携帯で衛星画像を一瞬で」. MEASURED (production, phone 390×844 DPR 3, CPU 4×, 9 Mbps / 150 ms): the
+   page's ring prefetch (js/tile-warm.js, up to 60 URLs, through sw.js) and this worker's destination warm
+   (four lanes of its own) ran at the same time as the tiles on screen, on the same six sockets per
+   Esri host. 30–73 % of the satellite requests were never drawn, and a visible tile waited p95 0.6–2.2 s
+   behind them (0.05–0.11 s with both off). Off entirely, though, a drag got worse (tile p50 176→379 ms):
+   some of it is worth having.
+   So speculation has ONE scheduler, this one, and one rule: a speculative fetch (`spec`: the camera's
+   destination, then the ring around the view) is handed to the browser only while NO tile the renderer
+   asked for is waiting here for the same host, while that host has a socket nobody is using
+   (HOST_SOCKETS), and at most SPEC_CAP at a time per host. It is never withdrawn once it left (#R196) and
+   a visible request for the same tile joins it (`inflight`).
+   HOST_SOCKETS = 6 — OBSERVATION, the same one `LANES` rests on: browsers open six sockets per HTTP/1.1
+   host and both Esri hosts negotiate http/1.1. EXPIRY: an h2/h3 host (the keyed service) has no per-host
+   socket count; there only SPEC_CAP and the "nothing waiting" rule apply.
+   SPEC_CAP = 1 — MEASURED (one build, `setTuning({specCap})`, ABBA, 3 seeds, phone CPU 4× 9 Mbps/150 ms and
+   desktop DPR 2): 0 (no speculation) left a drag unsharp after it stopped (phone pan 0 → 100 ms, unsharp while
+   moving 9 → 16 %); 2 was no faster than 1 anywhere and fetched 19–40 % more (phone zoom 0.75 → 1.02 s to
+   sharp). EXPIRY: a host without the six-socket cap (h2), or a renderer that asks ahead by itself.
+   (dev-notes/2026-11-18-sat-mobile-speed.md) — changeable live through js/sat-proto.js `setTuning`. */
+const HOST_SOCKETS = 6;
+let SPEC_CAP = 1;
+const specLive = new Map();       /* origin → speculative fetches handed to the browser and not yet settled */
+let specDest = [], specRing = []; /* [z, y, x] — the destination's tiles first, then the ring's */
+const keyOf = (z, y, x) => z + '/' + x + '/' + y;
+function specPump() {
+  if (!specDest.length && !specRing.length) return;
+  const needy = new Set(waiting.map((e) => e.host));   /* a host with a visible tile still waiting gets no speculation */
+  for (const list of [specDest, specRing]) {
+    for (let i = 0; i < list.length;) {
+      const [z, y, x] = list[i], k = keyOf(z, y, x);
+      if (raw.has(k) || inflight.has(k)) { list.splice(i, 1); continue; }      /* already here or already coming */
+      const u = imageryTileUrl(z, y, x), host = u.slice(0, u.indexOf('/', 8)), keyed = imageryKeyed();
+      if (needy.has(host) || (specLive.get(host) || 0) >= SPEC_CAP || (!keyed && (lanesLive.get(host) || 0) >= HOST_SOCKETS)) { i++; continue; }
+      list.splice(i, 1);
+      const e = { k, u, z, y, x, keyed, host, owners: new Set(), seq: ++entrySeq, started: false, pinned: true, spec: true, res: null, rej: null };
+      const p = new Promise((res, rej) => { e.res = res; e.rej = rej; }).finally(() => { if (inflight.get(k) && inflight.get(k).e === e) inflight.delete(k); });
+      p.catch(() => null);
+      inflight.set(k, { e, p });
+      start(e);
+    }
+  }
+}
+/* a newer list replaces the old one (the camera changed its mind); `more` appends what is not already there */
+function speculate(kind, tiles, more) {
+  const list = (Array.isArray(tiles) ? tiles : []).filter((t) => Array.isArray(t) && !raw.has(keyOf(t[0], t[1], t[2])));
+  if (kind === 'dest') specDest = list;
+  else if (more) { const have = new Set(specRing.map((t) => keyOf(t[0], t[1], t[2]))); for (const t of list) if (!have.has(keyOf(t[0], t[1], t[2]))) specRing.push(t); }
+  else specRing = list;
+  specPump();
 }
 function fetchTile(z, y, x, owner) {
   const k = z + '/' + x + '/' + y;
@@ -300,28 +356,21 @@ async function decode(buf) {
 
 /* ══ (map-motion) WARMING WHERE THE CAMERA IS GOING ═════════════════════════════════════════════════
    js/sat-proto.js names the tiles the camera's DESTINATION will draw (the wheel's target, the end of a
-   glide) before the renderer asks for them — it asks only when the camera gets there. This fetches
-   their bytes into `raw`, so the renderer's request is answered by a decode instead of a round trip.
-   Bytes only: no decode, no bitmap, nothing posted back. A newer batch REPLACES the queue (the camera
-   changed its mind; the old destination is nobody's), and at most WARM_LANES fetches are in the air,
-   so a warm can never stand in front of the visible tiles in the connection pool by more than that. */
-const WARM_LANES = 4;
-let warmQueue = [], warmLive = 0, warmOwner = newOwner(0);
-function warmPump() {
-  while (warmLive < WARM_LANES && warmQueue.length) {
-    const [z, y, x] = warmQueue.shift();
-    warmLive++;
-    fetchTile(z, y, x, warmOwner).catch(() => null).finally(() => { warmLive--; warmPump(); });
-  }
-}
-
+   glide) before the renderer asks for them — it asks only when the camera gets there. Their bytes are
+   fetched into `raw`, so the renderer's request is answered by a decode instead of a round trip. Bytes
+   only: no decode, no bitmap, nothing posted back. A newer destination REPLACES the old list (the camera
+   changed its mind). (sat-mobile-speed) It is speculation, so it goes through `specPump` like the ring:
+   it used to have four lanes of its own beside the visible tiles' queue, which is one of the two things
+   the phone measurement found standing in front of them. */
 self.onmessage = async (ev) => {
   const m = ev.data || {};
   if (m.type === 'config') { if (m.rawMax) RAW_MAX = m.rawMax; if (m.depthMax) DEPTH_MAX = m.depthMax;
-    if (m.lanes != null && isFinite(m.lanes)) LANES = +m.lanes; pump(); return; }
-  if (m.type === 'stats') { self.postMessage({ id: m.id, ok: true, stats: { ...sched, waiting: waiting.length, live: [...lanesLive.values()].reduce((p, c) => p + c, 0), lanes: LANES } }); return; }
-  /* a newer destination replaces the old one — and the old one's fetches that never left are withdrawn */
-  if (m.type === 'warm') { release(warmOwner); warmOwner = newOwner(); warmQueue = (Array.isArray(m.tiles) ? m.tiles : []).filter((t) => !raw.has(t[0] + '/' + t[2] + '/' + t[1])); warmPump(); return; }
+    if (m.lanes != null && isFinite(m.lanes)) LANES = +m.lanes;
+    if (m.specCap != null && isFinite(m.specCap)) SPEC_CAP = +m.specCap;
+    pump(); return; }
+  if (m.type === 'stats') { self.postMessage({ id: m.id, ok: true, stats: { ...sched, waiting: waiting.length, live: [...lanesLive.values()].reduce((p, c) => p + c, 0), lanes: LANES, specCap: SPEC_CAP, specQueued: specDest.length + specRing.length } }); return; }
+  /* speculation: the destination ('dest') and the ring around the view ('ring') — see `specPump` */
+  if (m.type === 'spec') { speculate(m.kind, m.tiles, !!m.more); return; }
   if (m.type === 'abort') { const a = aborts.get(m.id); if (a) { try { a.ac && a.ac.abort(); } catch (_) { } release(a.owner); aborts.delete(m.id); } return; }
   if (m.type !== 'tile') return;
   const ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
