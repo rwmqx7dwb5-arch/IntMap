@@ -1,6 +1,7 @@
 ---
 title: Atlas の評価が「線が 1 本あるか」しか見ず、町を結んだ線でも川をなぞったことになっていた——地図の形を種類と出どころで数え、答案に実形状と「描けないと言う」を問わせる
 date: 2026-11-18
+pr: 1215
 newsen: When Atlas explains something on the map with an outline that was pieced together from web anchors, that outline is now drawn dashed and labelled approximate, like every other outline IntMap builds rather than holds.
 newsjp: Atlas の地図説明で、Web 上の手がかりから組み立てた輪郭は、IntMap が作った他の輪郭と同じく破線で「近似」と表示するようにしました。
 ---
