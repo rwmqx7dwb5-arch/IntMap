@@ -1,0 +1,9 @@
+[
+  {
+    "ghsa": "GHSA-fc5q-39xc-vjpf",
+    "package": "picomatch",
+    "reason": "ReDoS through single-branch repeated extglobs, range <=4.0.7. No fixed release exists: 4.0.7 is the newest on npm (measured 2026-11-18) and is inside the range. Reached only through vite -> tinyglobby -> fdir, i.e. build tooling; the browser-shipped audit (--omit=dev) is clean and still gated at every severity.",
+    "measured": "2026-11-18",
+    "expires": "2026-12-18"
+  }
+]
