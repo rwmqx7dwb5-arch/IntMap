@@ -13,30 +13,16 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';
 import * as bus from './bus.js';
 
-/* ══ (showcase-gallery) THE EMPTY FIELD SHOWS THE EXAMPLE MAPS ═══════════════════════════════════════════
-   With the caret in the place search and nothing typed, the result list under it holds the example maps and the
-   classroom tours (js/showcase-gallery.js showInResults) — the app's door to them, which nothing opens unasked:
-   it appears because the reader went to the field, and the first letter replaces it with place candidates.
-   Delegated on the document and not inside the factory below, because the factory runs no app code (its header)
-   and this has to hear the field from the first focus. The module is fetched on that first focus, not at boot.
-   The same import answers any control marked `data-im-gallery` (the whole gallery, js/showcase-gallery.js). */
-function _galleryEmptyState(inp, res){
-  if(!inp||!res) return;
-  /* (mobile-next) …and above them the two doors a phone makes natural: «Here, now» and «Photo's place» (js/here-entry.js).
-     (exploration-flows) The strip itself starts with «Explore» and, when there is something, «Pick up where you left off». */
-  import('./showcase-gallery.js').then((G)=>{
-    /* asked again when the module has arrived: the reader may have typed, or left, meanwhile */
-    if(document.activeElement!==inp||inp.value.trim()) return;
-    G.showInResults(res);
-    return import('./here-entry.js').then((m)=>{ if(document.activeElement===inp&&!inp.value.trim()) m.showEntry(res); });
-  }).catch(()=>{});
-}
+/* ══ THE EMPTY FIELD SHOWS NOTHING (2026-11-18, the reader: 「上部の地名検索バーに入力しようとしたら色々出てくるあれ
+   うざいから削除して」) ═══════════════════════════════════════════════════════════════════════════════════════════
+   Focusing the place search with nothing typed used to fill the list under it with the example maps, the classroom
+   tours, «Explore», «Pick up where you left off» and the two phone doors (js/showcase-gallery.js showInResults,
+   js/here-entry.js). It no longer does: the list opens only for what the reader types. Every one of those starts keeps
+   a door of its own — the phone sheet's home holds the same strip and the same two rows (js/start-home.js), the gallery
+   opens from any control marked `data-im-gallery` (Settings) and from Atlas's `panel.gallery`, «Here, now» from Atlas
+   (`research.hereNow`) and the installed app's `?here=1`, and a photo's place from an image given to Atlas. The one delegate that stays is
+   that `data-im-gallery` control. */
 if(typeof document!=='undefined'){
-  document.addEventListener('focusin',(e)=>{ const inp=/** @type {HTMLInputElement} */ (e.target); if(inp&&inp.id==='ms-input'&&!inp.value.trim()) _galleryEmptyState(inp,document.getElementById('ms-results')); });
-  document.addEventListener('input',(e)=>{ const inp=/** @type {HTMLInputElement} */ (e.target); if(!inp||inp.id!=='ms-input') return;
-    const res=document.getElementById('ms-results'); if(!res) return;
-    if(!inp.value.trim()) _galleryEmptyState(inp,res);
-    else if(res.querySelector('.sg-strip, .hn-entry')){ res.style.display='none'; res.innerHTML=''; } });   /* the first letter: the cards make way for the candidates */
   document.addEventListener('click',(e)=>{ const el=/** @type {Element} */ (e.target); const b=el&&el.closest?el.closest('[data-im-gallery]'):null;
     if(b) import('./showcase-gallery.js').then((G)=>G.openGallery({ section:b.getAttribute('data-im-gallery')||null })).catch(()=>{}); });
 }
@@ -350,7 +336,7 @@ export function searchGeocode(HOST){
     _wirePicked(inp);
     if(suggest && inp._imPicked!=null && inp._imPicked===typed) return;
     const gen=++_gcGen;
-    if(!q){ if(suggest&&res){ res.style.display='none'; res.innerHTML=''; _galleryEmptyState(inp,res); } return; }   /* (showcase-gallery) the empty field's own state */
+    if(!q){ if(suggest&&res){ res.style.display='none'; res.innerHTML=''; } return; }   /* an emptied field closes its list (it has no state of its own — see the head of this file) */
     /* ══ (where-when-search) «WHERE + WHEN» — 「京都 1600」「Berlin May 1945」「ローマ 紀元前44年」「1914」 ═══════════════════
        js/where-when.js reads the line (the one reading every door uses: this field, the phone's sheet, the palette and
        Atlas); it is fetched the first time a line carries a digit or 「元年」, never at boot. When it reads an instant:

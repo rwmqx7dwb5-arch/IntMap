@@ -183,7 +183,7 @@ test('⑧ the DEM warm-up samples the SCREEN: sky is skipped, and the bounds are
    service refuses the way ibasemaps-api does (HTTP 200, JSON body) */
 function keyedEsri() {
   let refused = false; const why = [];
-  return { why, imageryKeyed: () => !refused, imageryRefused: (w) => { refused = true; why.push(w); }, isImageryReply: esriImagery.isImageryReply,
+  return { why, imageryKeyed: () => !refused, imageryRefused: (w) => { refused = true; why.push(w); }, isImageryReply: esriImagery.isImageryReply, isImageryPlaceholder: esriImagery.isImageryPlaceholder,
     imageryTileUrl: (z, y, x) => (refused ? esriImagery.keylessTileUrl(z, y, x) : 'https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y + '/' + x + '?token=K') };
 }
 const refusing = (u) => /token=/.test(u)

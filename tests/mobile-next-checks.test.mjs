@@ -244,7 +244,7 @@ test('mobile-next ⑤ the renamed-city record answers by its own guard — Tokyo
 
 /* ══ ⑥ ══ */
 test('mobile-next ⑥ the doors: the empty field, the context menu, the shortcut, the share query, Atlas', () => {
-  assert.match(read('js/search-geocode.js'), /import\('\.\/here-entry\.js'\)/, 'the empty search field shows the two rows');
+  assert.doesNotMatch(read('js/search-geocode.js'), /import\('\.\/here-entry\.js'\)/, 'the empty search field shows nothing (2026-11-18); the two rows live in the home and Atlas');
   assert.match(read('js/here-entry.js'), /data-hn-entry="here"[\s\S]*data-hn-entry="photo"/);
   /* (place-card-unify) the context menu opens THE place card for the pressed point (its «now» sections included); the device
      doors open the same card with «now» first */

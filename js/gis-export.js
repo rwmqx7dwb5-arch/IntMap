@@ -14,6 +14,7 @@
  *      refusals()            → [code, …]  every code this module can answer with
  *      write(target, opts)   → { ok:true, format, filename, mediaType, bytes, text, stated }
  *                            | { ok:false, why, detail }
+ *      save(answer)          → true | false   the browser download of a write() answer
  *  `target` is a registry record or the id of one (looked up in window.IntMapData at CALL time, the
  *  same rule every other module here follows). `why` is a CODE, never a sentence — the languages
  *  belong to the call site (docs/GIS-CORE.md §2.2); js/gis-panel.js has the row for each one.
@@ -25,6 +26,7 @@
  *      geojson → js/geo-import.js  readGeoFile()      (the same path a dropped file takes)
  *      csv     → js/geo-import.js  readGeoFile()      (points only — see §2)
  *      geotiff → js/gis-geotiff.js read()             (the reader #R749 built)
+ *      kml, gpx → js/geo-import.js readGeoFile()      (its KML and GPX decoders)
  *  ⚠ AND THE TOLERANCE OF THAT LOOP IS ZERO, which is a measurement and not a mercy: JSON.stringify
  *  of a double is the shortest decimal that parses back to the SAME double (ECMA-262, Number::
  *  toString), and a float32 sample is exactly Math.fround of the value it was given. There is no
@@ -64,6 +66,8 @@
  *                               of ordinates — WKT has one dimensionality per geometry, and picking
  *                               one would drop the third ordinate of half the shape in silence
  *    export-serialise-failed    a property value that cannot be serialised (a cycle, a BigInt)
+ *    export-geometry-not-representable  a shape the format has no element for — GPX has points and
+ *                               lines and no area, so polygons are refused BY NAME AND COUNT (§7.4)
  *
  *  ══ §1 · PROVENANCE TRAVELS AS A VALUE, AND ONLY WHAT IS THERE TRAVELS ════════════════════════
  *  [[intmap-licence-must-be-a-value]]: 739 cities shipped under CC BY 3.0 with no attribution
@@ -121,7 +125,7 @@ export function makeGisExport() {
       'export-band-out-of-range', 'export-band-unreadable', 'export-datatype-unknown',
       'export-value-out-of-range', 'export-missing-not-representable', 'export-nodata-conflict',
       'export-nodata-not-representable', 'export-crs-unsupported',
-      'export-geometry-mixed-dimensions', 'export-serialise-failed',
+      'export-geometry-mixed-dimensions', 'export-serialise-failed', 'export-geometry-not-representable',
     ]);
     function bad(why, detail) {
       if (REFUSALS.indexOf(why) < 0) throw new Error('gis-export: undeclared refusal code ' + why);
@@ -164,6 +168,20 @@ export function makeGisExport() {
         mediaType: 'application/geopackage+sqlite3', extension: 'gpkg',
         carries: Object.freeze(['geometry', 'attributes', 'column-types', 'crs', 'extent', 'provenance']),
         readBackBy: 'js/gis-geopackage.js', geometryRoundTrip: true,
+      }),
+      /* KML 2.2 and GPX 1.1 (docs/GIS-CORE.md §7.4). Both state WGS 84 and are read back by
+         js/geo-import.js; GPX has no area, so a dataset with polygons is refused by name there. */
+      Object.freeze({
+        id: 'kml', kinds: Object.freeze(['vector']),
+        mediaType: 'application/vnd.google-earth.kml+xml', extension: 'kml',
+        carries: Object.freeze(['geometry', 'attributes', 'time-if-declared', 'provenance-as-description']),
+        readBackBy: 'js/geo-import.js', geometryRoundTrip: true,
+      }),
+      Object.freeze({
+        id: 'gpx', kinds: Object.freeze(['vector']),
+        mediaType: 'application/gpx+xml', extension: 'gpx',
+        carries: Object.freeze(['points-and-lines', 'attributes', 'time-if-declared', 'provenance-as-description']),
+        readBackBy: 'js/geo-import.js', geometryRoundTrip: true,
       }),
       /* ⚠⚠⚠ `cog` IS A LAYOUT CLAIM, NOT A COMPRESSION CLAIM (#R783). The Cloud-Optimized GeoTIFF
          convention is about WHERE the bytes are — tiles, internal overviews, and every IFD ahead of
@@ -536,8 +554,10 @@ export function makeGisExport() {
       return out;
     }
 
-    const xmlEsc = (s) => String(s).split('&').join('&amp;').split('<').join('&lt;')
-      .split('>').join('&gt;').split('"').join('&quot;');
+    /* ONE XML escaper in this file (scripts/safe-output.mjs): the GDAL metadata block is the same
+       grammar the KML/GPX writers below emit, so it reads through xe() — which also drops the
+       characters XML 1.0 cannot carry instead of writing a file no reader parses. Quote-safe (attr). */
+    const xmlEsc = (s) => xe(s, { charactersRemoved: 0 }, true);
 
     /* The inverse of putSample, needed because the overviews below are computed from the samples
        AS WRITTEN rather than from rec.read()'s numbers again. ⚠ THAT IS THE POINT: the write loop is
@@ -1042,11 +1062,7 @@ export function makeGisExport() {
       /* §1 — ONLY WHAT IS STATED. gpkg_contents.description is where a GIS shows a layer's note, so
          the licence and the attribution go there as a VALUE; a record that states neither gets the
          empty string the standard's own DEFAULT uses, not the word 「unknown」. */
-      const notes = [];
-      if (prov.license != null) notes.push('Licence: ' + prov.license);
-      if (prov.attribution != null) notes.push('Attribution: ' + prov.attribution);
-      if (prov.source != null) notes.push('Source: ' + prov.source);
-      if (prov.retrievedAt != null) notes.push('Retrieved: ' + prov.retrievedAt);
+      const notes = provenanceNotes(prov);
 
       /* A GeoPackage table name is a SQL identifier, and a record's id may be anything. The
          transliteration is the module's own (`gpkg-write-table-name` refuses what it cannot take);
@@ -1084,6 +1100,345 @@ export function makeGisExport() {
           provenanceAs: 'gpkg_contents.description',
         }),
       };
+    }
+
+    /* ══ 7.4 · KML AND GPX (vector — the two files every phone and every handheld GPS reads) ═════
+       Both are XML that states WGS 84 and nothing else, so a record in another CRS is refused by
+       the door GeoPackage uses (`export-crs-unsupported`) rather than reprojected here.
+       js/geo-import.js reads both back (its DECODERS `kml` and `gpx`), and that loop is what
+       tests/gis-foundation-refine-export-checks.test.mjs measures.
+
+       ⚠ EVERYTHING A READER SEES IS STATED, NOTHING IS GUESSED.
+         · THE PLACEMARK NAME is the first of the properties `name`, `title`, `label` (compared
+           without regard to case) that holds a non-blank string or number; `stated.nameFrom` counts
+           which one each feature used. A dataset with none of them gets no <name> — not its row
+           number, not its id.
+         · TIME is written ONLY where the dataset DECLARES it (`rec.time`, the verified declaration
+           js/gis-datasets.js holds — the one the GeoJSON writer hands on): `instant` → one
+           <TimeStamp> / <time>, `interval` → <TimeSpan> (KML only), `track` → a per-position axis.
+           A property that merely looks like a date is an attribute and nothing else. A declared value
+           that is not an XML Schema date / dateTime is NOT reformatted: it stays an attribute and
+           `stated.time.notCarried` counts it.
+         · A SHAPE THE FORMAT CANNOT HOLD IS REFUSED BY NAME, WITH THE COUNT (GPX has no area:
+           `export-geometry-not-representable`). Leaving the polygons out and saying 「書き出しました」
+           would be the silent drop this module exists to stop.
+         · CHARACTERS XML 1.0 CANNOT CONTAIN (control codes, lone surrogates) are removed and COUNTED
+           (`stated.charactersRemoved`), because the alternative is a file no parser will open. */
+    const XML_ILLEGAL = /[^\u0009\u000A\u000D -퟿-�\u{10000}-\u{10FFFF}]/gu;
+    /* xsd:dateTime (the type GPX 1.1's <time> has and KML's <when> accepts) and the shorter date
+       forms KML's <when> also accepts — the schema's own lexical spaces, not a guess at what a
+       source might write. */
+    const XSD_DATETIME = /^-?\d{4,}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/;
+    const XSD_DATE = /^-?\d{4,}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$/;
+    const kmlWhen = (v) => typeof v === 'string' && (XSD_DATETIME.test(v) || XSD_DATE.test(v));
+    const gpxTime = (v) => typeof v === 'string' && XSD_DATETIME.test(v);
+    const NAME_FIELDS = Object.freeze(['name', 'title', 'label']);
+    /* the namespace GPX 1.1 requires foreign data to live in; a URN is an identifier, not a URL
+       anybody is asked to fetch */
+    const GPX_NS_ATTR = 'urn:intmap:gpx-attributes:1';
+
+    function xe(s, st, attr) {
+      let t = String(s);
+      const illegal = t.match(XML_ILLEGAL);
+      if (illegal) { st.charactersRemoved += illegal.length; t = t.replace(XML_ILLEGAL, ''); }
+      t = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r/g, '&#13;');
+      if (attr) t = t.replace(/"/g, '&quot;').replace(/'/g, '&apos;').replace(/\t/g, '&#9;').replace(/\n/g, '&#10;');
+      return t;
+    }
+    /* One cell as text, or null when it has none. A non-finite number has no XML notation, so it is
+       left out and counted — never written as 0 (docs/GIS-CORE.md §1.4). */
+    function cellText(v, st) {
+      if (v == null) return null;
+      if (typeof v === 'string') return v;
+      if (typeof v === 'number') { if (!isFinite(v)) { st.cellsNotWritten++; return null; } return String(v); }
+      if (typeof v === 'boolean') return String(v);
+      try { return JSON.stringify(v); } catch (_) { st.cellsNotWritten++; return null; }
+    }
+    function posText(p, index, sep) {
+      if (!Array.isArray(p) || p.length < 2 || typeof p[0] !== 'number' || typeof p[1] !== 'number' || !isFinite(p[0]) || !isFinite(p[1])) {
+        throw { refusal: bad('export-serialise-failed', { message: 'non-finite-coordinate', column: 'feature ' + index }) };
+      }
+      return p[0] + sep + p[1] + ((p.length > 2 && typeof p[2] === 'number' && isFinite(p[2])) ? sep + p[2] : '');
+    }
+    function timeDeclOf(rec) {
+      const t = rec && rec.time;
+      if (!t || typeof t !== 'object') return null;
+      if (t.kind === 'instant' && t.field) return { kind: 'instant', fields: [String(t.field)] };
+      if (t.kind === 'interval' && (t.startField || t.endField)) {
+        return { kind: 'interval', startField: t.startField ? String(t.startField) : null, endField: t.endField ? String(t.endField) : null, fields: [t.startField, t.endField].filter(Boolean).map(String) };
+      }
+      if (t.kind === 'track' && t.timesField) return { kind: 'track', timesField: String(t.timesField), elevationField: t.elevationField ? String(t.elevationField) : null, fields: [String(t.timesField)] };
+      return null;
+    }
+    const filled = (v) => v != null && v !== '';
+    function propsOf(f) { return (f && f.properties && typeof f.properties === 'object' && !Array.isArray(f.properties)) ? f.properties : {}; }
+    function nameOf(props, st) {
+      const keys = Object.keys(props);
+      for (const want of NAME_FIELDS) {
+        const k = keys.find((x) => x.toLowerCase() === want);
+        if (k === undefined) continue;
+        const v = props[k];
+        const s = typeof v === 'string' ? v.trim() : (typeof v === 'number' && isFinite(v) ? String(v) : '');
+        if (s) { st.nameFrom[want] = (st.nameFrom[want] || 0) + 1; return { text: s, key: k }; }
+      }
+      return null;
+    }
+    function provenanceNotes(prov) {
+      const notes = [];
+      if (prov.license != null) notes.push('Licence: ' + prov.license);
+      if (prov.attribution != null) notes.push('Attribution: ' + prov.attribution);
+      if (prov.source != null) notes.push('Source: ' + prov.source);
+      if (prov.retrievedAt != null) notes.push('Retrieved: ' + prov.retrievedAt);
+      return notes;
+    }
+    /* A per-position axis is an axis only while its length equals the number of positions
+       (js/gis-datasets.js measures the same equality). Returns the array, or null. */
+    const alignedAxis = (v, n) => (Array.isArray(v) && v.length === n) ? v : null;
+
+    function newStats() { return { charactersRemoved: 0, cellsNotWritten: 0, nameFrom: {}, timeCarried: 0, timeNotCarried: 0 }; }
+    function statedXml(st, prov, extra) {
+      return Object.assign({
+        license: prov.license == null ? null : prov.license,
+        attribution: prov.attribution == null ? null : prov.attribution,
+        source: prov.source == null ? null : prov.source,
+        retrievedAt: prov.retrievedAt == null ? null : prov.retrievedAt,
+        /* FALSE, AND SAID SO: neither format has a foreign-member slot, so the verbatim provenance
+           object does not travel — the four interoperable values do, as the document's description. */
+        provenanceCarried: false,
+        charactersRemoved: st.charactersRemoved,
+        cellsNotWritten: st.cellsNotWritten,
+        nameFrom: st.nameFrom,
+        time: { carried: st.timeCarried, notCarried: st.timeNotCarried },
+      }, extra);
+    }
+
+    /* ── KML ─────────────────────────────────────────────────────────────────────────────────── */
+    function kmlGeometry(g, index) {
+      if (!g || typeof g !== 'object') return null;
+      const line = (c) => (Array.isArray(c) ? c : []).map((p) => posText(p, index, ',')).join(' ');
+      const ring = (c) => '<LinearRing><coordinates>' + line(c) + '</coordinates></LinearRing>';
+      const poly = (rings) => {
+        if (!Array.isArray(rings) || !rings.length) return null;
+        let s = '<Polygon><outerBoundaryIs>' + ring(rings[0]) + '</outerBoundaryIs>';
+        for (let i = 1; i < rings.length; i++) s += '<innerBoundaryIs>' + ring(rings[i]) + '</innerBoundaryIs>';
+        return s + '</Polygon>';
+      };
+      const point = (p) => '<Point><coordinates>' + posText(p, index, ',') + '</coordinates></Point>';
+      const lineString = (l) => '<LineString><coordinates>' + line(l) + '</coordinates></LineString>';
+      const t = g.type, c = g.coordinates;
+      if (t === 'Point') return Array.isArray(c) && c.length ? point(c) : null;
+      if (t === 'LineString') return Array.isArray(c) && c.length ? lineString(c) : null;
+      if (t === 'Polygon') return poly(c);
+      if (t === 'MultiPoint' || t === 'MultiLineString' || t === 'MultiPolygon') {
+        const one = t === 'MultiPoint' ? point : (t === 'MultiLineString' ? lineString : poly);
+        const parts = (Array.isArray(c) ? c : []).map(one).filter(Boolean);
+        return parts.length ? '<MultiGeometry>' + parts.join('') + '</MultiGeometry>' : null;
+      }
+      if (t === 'GeometryCollection') {
+        const parts = (Array.isArray(g.geometries) ? g.geometries : []).map((x) => kmlGeometry(x, index)).filter(Boolean);
+        return parts.length ? '<MultiGeometry>' + parts.join('') + '</MultiGeometry>' : null;
+      }
+      throw { refusal: bad('export-geometry-not-representable', { format: 'kml', geometryType: String(t), feature: index }) };
+    }
+
+    function writeKml(rec, feats) {
+      const prov = provenanceOf(rec);
+      const td = timeDeclOf(rec);
+      const st = newStats();
+      let without = 0, tracks = 0;
+      let body = '';
+      try {
+        for (let i = 0; i < feats.length; i++) {
+          const f = feats[i] || {};
+          const props = propsOf(f);
+          const g = f.geometry || null;
+          const used = new Set();
+          let pm = '<Placemark>';
+          const nm = nameOf(props, st);
+          if (nm) pm += '<name>' + xe(nm.text, st) + '</name>';
+
+          let gx = null;   /* a gx:Track in place of the LineString, when the dataset declares a per-position axis */
+          if (td && td.kind === 'instant') {
+            const v = props[td.fields[0]];
+            if (kmlWhen(v)) { pm += '<TimeStamp><when>' + xe(v, st) + '</when></TimeStamp>'; st.timeCarried++; }
+            else if (filled(v)) st.timeNotCarried++;
+          } else if (td && td.kind === 'interval') {
+            const b = td.startField ? props[td.startField] : null, e = td.endField ? props[td.endField] : null;
+            const hasB = kmlWhen(b), hasE = kmlWhen(e);
+            if (hasB || hasE) { pm += '<TimeSpan>' + (hasB ? '<begin>' + xe(b, st) + '</begin>' : '') + (hasE ? '<end>' + xe(e, st) + '</end>' : '') + '</TimeSpan>'; st.timeCarried++; }
+            else if (filled(b) || filled(e)) st.timeNotCarried++;
+          } else if (td && td.kind === 'track') {
+            const raw = props[td.timesField];
+            const times = (g && g.type === 'LineString' && Array.isArray(g.coordinates)) ? alignedAxis(raw, g.coordinates.length) : null;
+            if (times && times.length && times.every(kmlWhen)) {
+              const eles = td.elevationField ? alignedAxis(props[td.elevationField], g.coordinates.length) : null;
+              gx = '<gx:Track>' + times.map((x) => '<when>' + xe(x, st) + '</when>').join('')
+                + g.coordinates.map((p, k) => {
+                  const e = eles && typeof eles[k] === 'number' && isFinite(eles[k]) ? eles[k] : (Array.isArray(p) && typeof p[2] === 'number' && isFinite(p[2]) ? p[2] : null);
+                  return '<gx:coord>' + posText([p[0], p[1]], i, ' ') + (e == null ? '' : ' ' + e) + '</gx:coord>';
+                }).join('') + '</gx:Track>';
+              used.add(td.timesField); if (eles) used.add(td.elevationField);
+              st.timeCarried++; tracks++;
+            } else if (filled(raw)) st.timeNotCarried++;
+          }
+
+          let ext = '';
+          for (const k of Object.keys(props)) {
+            if (used.has(k)) continue;
+            const t = cellText(props[k], st);
+            if (t == null) continue;
+            ext += '<Data name="' + xe(k, st, true) + '"><value>' + xe(t, st) + '</value></Data>';
+          }
+          if (ext) pm += '<ExtendedData>' + ext + '</ExtendedData>';
+
+          const geom = gx || kmlGeometry(g, i);
+          if (!geom) without++; else pm += geom;
+          body += pm + '</Placemark>\n';
+        }
+      } catch (e) { if (e && e.refusal) return e.refusal; throw e; }
+
+      const title = rec.title != null ? String(rec.title) : (rec.id != null ? String(rec.id) : '');
+      const notes = provenanceNotes(prov).join(' · ');
+      const text = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        + '<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">\n<Document>\n'
+        + (title ? '<name>' + xe(title, st) + '</name>\n' : '')
+        + (notes ? '<description>' + xe(notes, st) + '</description>\n' : '')
+        + body + '</Document>\n</kml>\n';
+      return {
+        text: text,
+        stated: statedXml(st, prov, {
+          features: feats.length, rowsWithoutGeometry: without,
+          geometry: without === feats.length ? 'none' : 'verbatim', geometryRoundTrip: true,
+          attributesAs: 'ExtendedData', provenanceAs: notes ? 'Document/description' : null, tracks: tracks,
+        }),
+      };
+    }
+
+    /* ── GPX ─────────────────────────────────────────────────────────────────────────────────── */
+    const GPX_POINT_TYPES = Object.freeze(['Point', 'MultiPoint']);
+    const GPX_LINE_TYPES = Object.freeze(['LineString', 'MultiLineString']);
+
+    function writeGpx(rec, feats) {
+      const prov = provenanceOf(rec);
+      const td = timeDeclOf(rec);
+      const st = newStats();
+
+      /* ⚠ REFUSE BEFORE WRITING ANYTHING: GPX has waypoints and tracks and no area. */
+      const refused = {};
+      let refusedCount = 0, without = 0;
+      for (const f of feats) {
+        const g = f && f.geometry;
+        if (!g) { without++; continue; }
+        if (GPX_POINT_TYPES.indexOf(g.type) < 0 && GPX_LINE_TYPES.indexOf(g.type) < 0) { refused[String(g.type)] = (refused[String(g.type)] || 0) + 1; refusedCount++; }
+      }
+      if (refusedCount) {
+        return bad('export-geometry-not-representable', { format: 'gpx', count: refusedCount, writable: feats.length - without - refusedCount, geometryTypes: refused, accepts: GPX_POINT_TYPES.concat(GPX_LINE_TYPES) });
+      }
+      if (without === feats.length) return bad('export-empty', { reason: 'no-geometry', count: feats.length });
+
+      const finiteNum = (v) => (typeof v === 'number' && isFinite(v)) ? v : null;
+      const slot = (props, k, used) => {
+        const v = props[k];
+        if (typeof v !== 'string' || v === '') return null;
+        used.add(k); return xe(v, st);
+      };
+      /* what is left of the attributes goes into <extensions>, in a namespace of its own — the only
+         place GPX 1.1 allows foreign data */
+      const extensions = (props, used) => {
+        let s = '';
+        for (const k of Object.keys(props)) {
+          if (used.has(k)) continue;
+          const t = cellText(props[k], st);
+          if (t == null) continue;
+          s += '<intmap:attr name="' + xe(k, st, true) + '">' + xe(t, st) + '</intmap:attr>';
+        }
+        return s ? '<extensions>' + s + '</extensions>' : '';
+      };
+      const el = (n, v) => (v == null || v === '') ? '' : '<' + n + '>' + v + '</' + n + '>';
+
+      let wpts = '', trks = '', written = 0;
+      try {
+        for (let i = 0; i < feats.length; i++) {
+          const f = feats[i] || {};
+          const g = f.geometry;
+          if (!g) continue;
+          const props = propsOf(f);
+          const used = new Set();
+          const nm = nameOf(props, st);
+          const name = nm ? (used.add(nm.key), xe(nm.text, st)) : null;
+          const cmt = slot(props, 'cmt', used), desc = slot(props, 'desc', used), type = slot(props, 'type', used);
+
+          if (g.type === 'Point' || g.type === 'MultiPoint') {
+            const sym = slot(props, 'sym', used);
+            const pts = g.type === 'Point' ? [g.coordinates] : g.coordinates;
+            let time = null;
+            if (td && td.kind === 'instant') {
+              const v = props[td.fields[0]];
+              if (gpxTime(v)) { time = xe(v, st); used.add(td.fields[0]); st.timeCarried++; }
+              else if (filled(v)) st.timeNotCarried++;
+            } else if (td && td.kind !== 'track' && td.fields.some((k) => filled(props[k]))) st.timeNotCarried++;   /* a span has no <time> in GPX */
+            let e = finiteNum(props.ele);
+            if (e == null && typeof props.ele === 'string' && props.ele.trim() !== '' && isFinite(Number(props.ele))) e = Number(props.ele);
+            if (e != null) used.add('ele');
+            const ext = extensions(props, used);
+            for (const p of (Array.isArray(pts) ? pts : [])) {
+              posText(p, i, ',');   /* the refusal for a non-finite position */
+              const pe = e != null ? e : finiteNum(p[2]);
+              wpts += '<wpt lat="' + p[1] + '" lon="' + p[0] + '">' + el('ele', pe) + el('time', time) + el('name', name) + el('cmt', cmt)
+                + el('desc', desc) + el('sym', sym) + el('type', type) + ext + '</wpt>\n';
+              written++;
+            }
+          } else {
+            const segs = g.type === 'LineString' ? [g.coordinates] : g.coordinates;
+            let times = null, eles = null;
+            if (td && td.kind === 'track') {
+              const raw = props[td.timesField];
+              const t = g.type === 'LineString' ? alignedAxis(raw, g.coordinates.length) : null;
+              if (t && t.every((x) => x == null || gpxTime(x))) {
+                times = t; used.add(td.timesField);
+                const e = td.elevationField ? alignedAxis(props[td.elevationField], g.coordinates.length) : null;
+                if (e) { eles = e; used.add(td.elevationField); }
+                st.timeCarried++;
+              } else if (filled(raw)) st.timeNotCarried++;
+            } else if (td && td.fields.some((k) => filled(props[k]))) st.timeNotCarried++;   /* a line has no single moment in GPX */
+            const ext = extensions(props, used);
+            let seg = '';
+            for (const s of (Array.isArray(segs) ? segs : [])) {
+              seg += '<trkseg>' + (Array.isArray(s) ? s : []).map((p, k) => {
+                posText(p, i, ',');
+                const pe = eles && finiteNum(eles[k]) != null ? eles[k] : finiteNum(p[2]);
+                const pt = times && times[k] != null ? xe(times[k], st) : null;
+                return '<trkpt lat="' + p[1] + '" lon="' + p[0] + '">' + el('ele', pe) + el('time', pt) + '</trkpt>';
+              }).join('') + '</trkseg>';
+            }
+            trks += '<trk>' + el('name', name) + el('cmt', cmt) + el('desc', desc) + el('type', type) + ext + seg + '</trk>\n';
+            written++;
+          }
+        }
+      } catch (e) { if (e && e.refusal) return e.refusal; throw e; }
+
+      const title = rec.title != null ? String(rec.title) : (rec.id != null ? String(rec.id) : '');
+      const notes = provenanceNotes(prov).join(' · ');
+      const meta = (title || notes) ? '<metadata>' + el('name', title ? xe(title, st) : null) + el('desc', notes ? xe(notes, st) : null) + '</metadata>\n' : '';
+      const text = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        + '<gpx version="1.1" creator="IntMap" xmlns="http://www.topografix.com/GPX/1/1" xmlns:intmap="' + GPX_NS_ATTR + '">\n'
+        + meta + wpts + trks + '</gpx>\n';
+      return {
+        text: text,
+        stated: statedXml(st, prov, {
+          features: feats.length - without, rowsWithoutGeometry: without, elementsWritten: written,
+          geometry: 'verbatim',
+          /* a Multi* comes back as one feature per part, and waypoints precede tracks (the schema's order) */
+          geometryRoundTrip: true, order: 'waypoints-then-tracks',
+          attributesAs: 'name/cmt/desc/type/sym/ele as the standard elements; the rest in <extensions>',
+          provenanceAs: notes ? 'metadata/desc' : null,
+        }),
+      };
+    }
+
+    function writeXmlFormat(id, rec, feats) {
+      if (rec.crs && String(rec.crs) !== 'EPSG:4326') return bad('export-crs-unsupported', { crs: String(rec.crs) });
+      return id === 'kml' ? writeKml(rec, feats) : writeGpx(rec, feats);
     }
 
     /* ══ 8 · THE ONE DOOR ═════════════════════════════════════════════════════════════════════ */
@@ -1126,6 +1481,7 @@ export function makeGisExport() {
         catch (e) { return bad('export-band-unreadable', { message: String((e && e.message) || e) }); }
         if (!Array.isArray(feats) || feats.length === 0) return bad('export-empty', { id: rec.id == null ? null : String(rec.id), count: 0 });
         if (fmt.id === 'geopackage') made = writeGeopackage(rec, feats, o);
+        else if (fmt.id === 'kml' || fmt.id === 'gpx') made = writeXmlFormat(fmt.id, rec, feats);
         else made = fmt.id === 'geojson' ? writeGeoJson(rec, feats, o) : writeCsv(rec, feats, o);
       }
       if (made && made.ok === false) return made;
@@ -1142,7 +1498,30 @@ export function makeGisExport() {
       };
     }
 
-    const API = { formats, refusals, write, filenameFor };
+    /* The one place the bytes of an answer become a download in a browser — the GIS panel and the
+       Atlas door both end here. ⚠ The anchor is attached before it is clicked (a detached one does
+       nothing in Firefox) and the object URL is revoked on the next turn of the loop, because
+       revoking it synchronously cancels the download just started. false = no way to save here. */
+    function save(res) {
+      let d = null;
+      try { d = window.document; } catch (_) { d = null; }
+      if (!res || res.ok === false || !d || typeof Blob === 'undefined' || !window.URL || typeof URL.createObjectURL !== 'function') return false;
+      let url = null;
+      try {
+        url = URL.createObjectURL(new Blob([res.bytes], { type: res.mediaType || 'application/octet-stream' }));
+        const a = d.createElement('a');
+        a.href = url; a.download = res.filename; a.style.display = 'none';
+        (d.body || d.documentElement).appendChild(a);
+        a.click(); a.remove();
+        setTimeout(() => { try { URL.revokeObjectURL(url); } catch (_) { } }, 0);
+        return true;
+      } catch (_) {
+        if (url) { try { URL.revokeObjectURL(url); } catch (_) { } }
+        return false;
+      }
+    }
+
+    const API = { formats, refusals, write, filenameFor, save };
     try { window.IntMapGisExport = API; } catch (_) { }
     return API;
   })();

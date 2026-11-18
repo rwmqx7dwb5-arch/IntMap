@@ -72,9 +72,8 @@ test('wave4-ux-mobile ② the home is not on the start-up path, and leaves when 
 test('wave4-ux-mobile ③ the search and the home hold one «Where you are» row', () => {
   const he = read('js/here-entry.js');
   assert.match(he, /export function entryRow\(onPress\)/);
-  const show = he.slice(he.indexOf('export function showEntry('));
-  assert.match(show, /entryRow\(\(\) => \{[\s\S]*res\.style\.display = 'none'; res\.innerHTML = '';/, 'in the search, a press closes the list');
-  assert.doesNotMatch(he.slice(he.indexOf('export function entryRow('), he.indexOf('export function showEntry(')), /ms-results|res\.innerHTML/, 'the row itself ends nothing');
+  assert.doesNotMatch(read('js/search-geocode.js'), /import\('\.\/here-entry\.js'\)/, 'the empty search field shows no row (2026-11-18): the home holds it');
+  assert.doesNotMatch(he.slice(he.indexOf('export function entryRow(')), /ms-results|res\.innerHTML/, 'the row itself ends nothing');
   const sh = read('js/start-home.js');
   assert.match(sh, /entryRow\(null\)/, 'the home holds the row and ends nothing');
   assert.match(sh, /showInResults\(gal, \(\) => \{\}\)/, 'the day\'s map and the examples are the gallery\'s own strip, and the home keeps it');
@@ -90,7 +89,7 @@ test('wave4-ux-mobile ③b «See all» ends what the caller says: the search\'s 
   assert.match(fn, /all\.addEventListener\('click', \(\) => \{ leave\(\); openGallery\(\); \}\)/, '«See all» runs the caller\'s ending');
   assert.equal((fn.match(/res\.innerHTML = ''/g) || []).length, 1, 'the only emptying is the default ending');
   /* the search still passes no ending, so it keeps closing its list */
-  assert.match(read('js/search-geocode.js'), /G\.showInResults\(res\);/);
+  assert.doesNotMatch(read('js/search-geocode.js'), /G\.showInResults\(res\);/);
   /* the home's ending empties nothing */
   const sh = read('js/start-home.js');
   const call = /showInResults\(gal, \(([^)]*)\) => \{([^}]*)\}\)/.exec(sh);

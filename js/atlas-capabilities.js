@@ -368,6 +368,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.unVote","unVote","unGeneralAssemblyVote,unResolutionVote,howDidCountriesVote","data","none","map.layerOption","explanation","session","none","",""],
       ["data.borderCrossings","borderCrossings","borderControl,borderCheckpoint,landBorderCrossing","data","none","map.layerOption","explanation","session","none","point",""],
       ["research.delegate","delegate","delegateResearch,parallelResearch","research","none","","explanation","read","none","","","external"],
+      ["data.gisExport","gisExport","exportDataset,downloadDataset,saveDatasetAsFile,exportGis","data","none","","explanation","persist","explicit","","gisCore"],
       ["sim.skyTonight","skyTonight","almanac,tonightSky,whatsUpTonight,moonPhase,moonrise,sunriseSunset,twilight,visiblePlanets,meteorShowers,nextEclipse,eclipseFromHere","sim","panel","panel.skyAlmanac","panel,explanation","session","none","point","skyAlmanac"],
       ["sim.satellitePasses","satellitePasses","issPasses,whenIsIss,satellitesOverhead,satellitePass,passPrediction","sim","none","","explanation","read","none","point","satellitesLive"],
       ["sim.spaceWeather","spaceWeather","solarWind,solarFlare,geomagneticStorm,kpIndex,auroraChance,noaaScales,asteroidFlyby,nearEarthAsteroids","sim","none","","explanation","read","none","",""],

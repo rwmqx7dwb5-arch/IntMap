@@ -25,7 +25,7 @@
  *  the time of the move), at its original two-space depth so the diff carries no reindentation.
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
-import { imageryTileUrl, imageryKeyed, imageryRefused, isImageryReply } from './esri-imagery.js';   /* (sat-arcgis-3d) where World Imagery comes from, and what to do when a key is refused */
+import { imageryTileUrl, imageryKeyed, imageryRefused, isImageryReply, isImageryPlaceholder } from './esri-imagery.js';   /* (sat-arcgis-3d) where World Imagery comes from, and what to do when a key is refused */
 
 export function satProto(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract */
@@ -41,7 +41,8 @@ export function satProto(HOST){
      to the raw bytes so the map is never worse than before. Also lets the flight sim drop its blue water-fill (#R158). */
   try{ if(typeof fetch!=='undefined' && typeof createImageBitmap!=='undefined'){
     const _satUrl=imageryTileUrl;   /* (sat-arcgis-3d) keyed or keyless — js/esri-imagery.js is the one URL builder */
-    const _SAT_PLACEHOLDER_MAX=3500;   /* grey "no data" tile ≈ 2521 B; real imagery ≥ ~8 KB — a wide, safe gap */
+    /* the grey "no data" tile is one fixed image, recognised by its bytes (js/esri-imagery.js isImageryPlaceholder — a size
+       threshold took small real sea tiles for it and drew squares over the ocean) */
     /* (#R191) 「モバイル版で、衛星画像が圧倒的に重い」 — these two Maps hold JPEG BYTES, and 800 + 1,200
        entries of Esri imagery is 20-60 MB of ArrayBuffers sitting beside MapLibre's own tile cache (whose
        mobile budget #R21 deliberately cut to 640-1,024 tiles for the same reason). They were sized for a
@@ -118,7 +119,7 @@ export function satProto(HOST){
       const live=_satFly.get(rk); if(live) return live;
       const p=(async()=>{
         const r=await _satGet(z,y,x); if(!r.ok) throw new Error('sat http '+r.status); const buf=await r.arrayBuffer();
-        const out={buf, placeholder: buf.byteLength<=_SAT_PLACEHOLDER_MAX}; _satRaw.set(rk,out); if(_satRaw.size>_SAT_RAW_MAX){ const f=_satRaw.keys().next().value; _satRaw.delete(f); }
+        const out={buf, placeholder: isImageryPlaceholder(buf)}; _satRaw.set(rk,out); if(_satRaw.size>_SAT_RAW_MAX){ const f=_satRaw.keys().next().value; _satRaw.delete(f); }
         return out; })().finally(()=>{ _satFly.delete(rk); });
       _satFly.set(rk,p); return p; }
     /* ══ (#R191) THE CROPPED TILE WAS TRANSCODED TWICE, ON THE MAIN THREAD ═══════════════════════════
@@ -414,7 +415,7 @@ export function satProto(HOST){
         /* (#R191) …and `bytes` is only meaningful for the byte paths now; the cropped one answers with
            the bitmap's own size, which is what a test asking "is this real imagery" should look at. */
         return {mode:r.mode, bytes:(r.buf?r.buf.byteLength:null), w:(r.data&&r.data.width)||null, h:(r.data&&r.data.height)||null}; }
-      catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, placeholderMax:_SAT_PLACEHOLDER_MAX,
+      catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, isPlaceholder:isImageryPlaceholder,
       /* (#R178) the HiDPI decision and the stitched tile, so an E2E test can prove against LIVE Esri
          that a 2× screen really gets 512 px of imagery per 256-unit tile — and that a 1× screen is
          left exactly as it was. Reporting the decision separately matters: "no @2x tile" is the right

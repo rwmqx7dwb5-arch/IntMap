@@ -106,7 +106,7 @@ test('R158 #6 flight-sim camera teleport — look-ahead target + smoothing + val
 test('R158 #8/#9 satellite tile protocol — grey placeholder replaced by real cropped imagery, native kept', () => {
   /* (#R178) registered through the contract — js/geo-engine.js is the only file that may say maplibregl */
   ok("GE().scene.addProtocol('imapsat'", 'custom satellite tile protocol registered');
-  ok('const _SAT_PLACEHOLDER_MAX=3500;', 'grey "no data" placeholder detected by byte length');
+  ok('placeholder: isImageryPlaceholder(buf)', 'grey "no data" placeholder recognised by its bytes (js/esri-imagery.js)');
   ok('async function _satCrop(buf, dz, subX, subY)', 'nearest real ancestor cropped to the child quadrant');
   ok('for(let up=0; up<13 && az>1; up++)', 'walk-up deep enough for open ocean (Esri imagery ends ~z8)');
   ok("tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']", 'base satellite source uses the protocol, with a direct-Esri fallback');

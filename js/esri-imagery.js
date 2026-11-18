@@ -72,6 +72,28 @@ export function imageryTiles() {
   return KEYLESS_HOSTS.map((h) => h + KEYLESS_PATH + '/tile/{z}/{y}/{x}');
 }
 
+/* ══ ESRI'S «MAP DATA NOT YET AVAILABLE» TILE IS ONE FIXED IMAGE — RECOGNISED BY ITS BYTES, NOT ITS SIZE ══════════
+   Past its coverage World_Imagery answers HTTP 200 with a grey tile (js/sat-proto.js and src/sat-worker.js replace it with
+   a cropped real ancestor). It used to be recognised as «any tile of 3,500 bytes or less», and that is not a property of
+   the placeholder: a REAL tile of uniform deep sea is as small. MEASURED 2026-11-18 east of Japan at z7: 7/49/116 is
+   2,925 B and 7/50/116 3,065 B — so real sea was taken for the placeholder, replaced by an up-scaled crop of a lower zoom
+   whose tone differs, and the ocean showed tile-sized squares.
+   OBSERVED (2026-11-18, both keyless hosts, six places past coverage — Pacific z19, Atlantic z18, South Pacific z17,
+   Southern Ocean z19, Sahara z19, Antarctica z19): every one is the same 2,521-byte JPEG, FNV-1a 0x92d9118f.
+   EXPIRES when Esri changes that image: nothing is recognised then and the grey tile shows past coverage again (no
+   real imagery is ever replaced). tests/prod-smoke.spec.js fetches a past-coverage tile and a small real sea tile
+   and checks both answers, so the change is seen rather than discovered. The keyed service (unused) is not measured. */
+const PLACEHOLDER_BYTES = 2521, PLACEHOLDER_FNV1A = 0x92d9118f;
+
+/** true when `buf` (ArrayBuffer or Uint8Array) is exactly Esri's «no imagery here» tile */
+export function isImageryPlaceholder(buf) {
+  const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  if (b.byteLength !== PLACEHOLDER_BYTES) return false;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < b.length; i++) { h ^= b[i]; h = Math.imul(h, 0x01000193) >>> 0; }
+  return h === PLACEHOLDER_FNV1A;
+}
+
 /** A reply is imagery when the server says image/*. The refusal comes back 200 text/plain JSON. */
 export function isImageryReply(res) {
   const t = (res && res.headers && res.headers.get && res.headers.get('content-type')) || '';

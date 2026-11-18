@@ -9,7 +9,7 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14239602,
+    "raw": 14210678,
     "gzip": 4796525,
     "chunks": {
       "account-data": 7346,
@@ -76,8 +76,8 @@
       "geo-import": 17728,
       "geopolitics-atlas": 9665,
       "geopolitics-core": 7666,
-      "gis-core": 550533,
-      "gis-export": 19636,
+      "gis-core": 586153,
+      "gis-export": 30142,
       "gis-geopackage": 26667,
       "gis-geotiff": 24029,
       "gis-shapefile": 10420,
@@ -162,7 +162,7 @@
       "sim-datasets": 923,
       "sims": 78223,
       "space": 98790,
-      "start-home": 6911,
+      "start-home": 9231,
       "stats-compare": 66929,
       "street-view": 15113,
       "subcable-info": 9100,
@@ -203,7 +203,7 @@
   "dist": {
     "total": 1579111218,
     "data": 1216229484,
-    "assets": 21720829
+    "assets": 21646324
   },
   "phone": {
     "bytes": 342631,

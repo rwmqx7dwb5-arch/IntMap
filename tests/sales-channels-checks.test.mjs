@@ -157,8 +157,10 @@ test('sales-channels ③ every generated page is on disk exactly as the generato
 test('sales-channels ③ every page and every file a page loads is shipped (vite.config.js STATIC_ASSETS)', async () => {
   const { STATIC_ASSETS, STATIC_EXCLUDE } = await import(modUrl('vite.config.js'));
   /* …or a PNG at the root, which the build copies whole (vite.config.js ROOT_PNG) unless it is excluded */
+  /* (admin-origin) …or, for an operator console page and what it loads, by the console's own site (scripts/admin-site.mjs) */
+  const consoleSet = new Set((await import(modUrl('scripts/admin-site.mjs'))).consoleFiles().files);
   const shipped = (rel) => STATIC_ASSETS.some((a) => rel === a || rel.startsWith(a + '/'))
-    || (/^[^/]+.png$/.test(rel) && !STATIC_EXCLUDE.includes(rel));
+    || (/^[^/]+.png$/.test(rel) && !STATIC_EXCLUDE.includes(rel)) || consoleSet.has(rel);
   for (const [rel, html] of Object.entries(GEN.outputs())) {
     assert.ok(shipped(rel), rel + ' is copied into dist/');
     const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/') + 1) : '';

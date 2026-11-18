@@ -324,7 +324,7 @@ sheet を表の decoder（`decodeRows`）が読む。座標の無い表を場所
 | 入口 | 起点（`at.from`） | 節の順 |
 |---|---|---|
 | コンテキストメニュー（右クリック・長押し）「現地の情報 ▸ 地点について」・検索結果カードの「地点プロファイル」（`openPlaceDossier`） | `point`（地図で選んだ地点） | この地点 → 時刻と太陽 → いま → かつての名前 → レイヤー |
-| 検索欄の空の状態「いま、ここ」（`js/here-entry.js`）・ホーム画面アイコンの長押し `?here=1`（`bootFromUrl`）（`openHereNow`） | `device`（端末の現在地） | **いま** → この地点 → 時刻と太陽 → かつての名前 → レイヤー |
+| 携帯のシートのホームの「いま、ここ」（`js/here-entry.js`）・ホーム画面アイコンの長押し `?here=1`（`bootFromUrl`）（`openHereNow`） | `device`（端末の現在地） | **いま** → この地点 → 時刻と太陽 → かつての名前 → レイヤー |
 | 共有シート・写真の場所（`js/share-inbox.js` → `openHereNow({point})`） | `shared`（共有された地点） | 同上 |
 | Atlas `research.placeProfile` / `research.hereNow` | 地点が渡されれば `point`、`hereNow` に地点が無ければ `device` | 同上（`hereNow` は「いま」が先頭） |
 

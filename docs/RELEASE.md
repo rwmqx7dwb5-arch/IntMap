@@ -354,6 +354,40 @@ only ever be an existing commit — so rollback cannot publish arbitrary/injecte
 > Rollback reverts the **frontend only**. It does not undo Supabase schema or data changes.
 > See [`docs/INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md).
 
+## The operator console's site（管理コンソールの配信）
+
+管理コンソール（`js/admin-auth.js` でサインインする `admin.html` ほか）は**アプリの Pages では配らない**。
+アプリと同じ origin にあると、アプリのどこかの XSS が管理者のセッションを読めるため
+（[`SECURITY-ARCHITECTURE.md`](SECURITY-ARCHITECTURE.md) §8 の 20・§11.4）。
+
+| 何 | どこ |
+|---|---|
+| アドレス | `site-origin.js` の **`ADMIN_URL`**（`intmap-admin` Organization の Pages。同じアカウントの別リポジトリでは同じ origin になるので分離にならない） |
+| 組み立て | `node scripts/admin-site.mjs --out <dir>`（コンソールのページと読むものを発見する。`--list` で中身を出す） |
+| 公開 | `intmap-admin/intmap-admin.github.io` の workflow が、このリポジトリの再利用 workflow `.github/workflows/admin-site.yml@main` を呼ぶ（30 分ごと＋手動）。秘密情報は無く、向こうがこの公開リポジトリを取りに来る |
+| どの commit | **アプリの本番が今出している commit**（`build-info.json`）。コンソールの `source.json` が同じなら何もしない。急ぐときは向こうの workflow を手で走らせる: `gh workflow run pages.yml -R intmap-admin/intmap-admin.github.io` |
+| アプリ側の旧アドレス | `vite.config.js` の `consolePointers()` がリンクだけのページを置く。コンソール専用のファイルをアプリの `dist/` へ写そうとするとビルドが止まる |
+
+**向こうのリポジトリの中身はこの 1 ファイルだけ**（`.github/workflows/pages.yml`）:
+
+```yaml
+name: Publish the console
+on:
+  schedule: [{ cron: '*/30 * * * *' }]
+  workflow_dispatch: {}
+permissions: { contents: read, pages: write, id-token: write }
+concurrency: { group: pages, cancel-in-progress: false }
+jobs:
+  publish:
+    uses: rwmqx7dwb5-arch/IntMap/.github/workflows/admin-site.yml@main
+```
+
+Pages の設定は Source = GitHub Actions。Organization の作成だけは利用者の手作業（API が無い）。
+
+**二要素**: 管理者の権限は TOTP を通したセッション（`aal2`）にだけ付く。初めてコンソールにサインインしたとき、
+コンソールが QR を出すので認証アプリで読み取る。端末を失くしたときは Supabase のダッシュボード
+（Authentication → Users → その利用者 → MFA factors）で因子を消し、もう一度サインインして登録し直す。
+
 ## Moving the site to its own domain（独自ドメインへの移行）
 
 **ドメインはまだ無い**（2026-10-01 時点。名前は未定・購入は利用者）。この節は、取得した日に

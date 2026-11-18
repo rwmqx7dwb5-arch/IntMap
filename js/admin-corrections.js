@@ -30,7 +30,6 @@
   var d = document.documentElement;
   try { d.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (_) { /* light */ }
 
-  function meta(n) { var m = document.querySelector('meta[name="' + n + '"]'); return m ? m.getAttribute('content') || '' : ''; }
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = String(text); return e; }
   function btn(label, cls, fn) { var b = el('button', 'btn' + (cls ? ' ' + cls : ''), label); b.type = 'button'; b.addEventListener('click', fn); return b; }
@@ -53,45 +52,16 @@
     STATUSES = String(main.getAttribute('data-statuses') || '').split(',').filter(Boolean);
     PUBLISHABLE = String(main.getAttribute('data-publishable') || '').split(',').filter(Boolean);
     OPEN = String(main.getAttribute('data-open') || '').split(',').filter(Boolean);
-    if (!window.supabase || !window.supabase.createClient) { $('mc-auth-msg').textContent = 'Supabase SDK failed to loadCorrections (vendor/supabase-js.js missing from this deploy).'; return; }
-    sb = window.supabase.createClient(meta('intmap-backend'), meta('intmap-anon-key'), { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-    $('mc-auth-submit').addEventListener('click', adminSignIn);
-    $('mc-auth-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') adminSignIn(); });
-    $('mc-signout').addEventListener('click', function () { sb.auth.signOut().then(function () { location.reload(); }); });
     document.querySelectorAll('[data-filter]').forEach(function (b) {
       b.addEventListener('click', function () { filter = b.getAttribute('data-filter'); markFilterTabs(); loadCorrections(); });
     });
     $('mc-world').addEventListener('click', function () { view = [-180, -90, 360, 180]; drawReportMap(); });
-    adminGate();
+    /* (admin-origin) the sign-in, the TOTP step (aal2) and the is_admin gate are js/admin-auth.js's, shared with the other consoles */
+    sb = window.IntMapAdminAuth.init({ prefix: 'mc-', onReady: function () { markFilterTabs(); loadCorrections(); loadCorrectionSummary(); } });
   });
 
   function markFilterTabs() {
     Array.prototype.forEach.call(document.querySelectorAll('.tab[data-filter]'), function (b) { b.classList.toggle('active', b.getAttribute('data-filter') === filter); });
-  }
-  function adminSignIn() {
-    var email = $('mc-auth-email').value.trim(), password = $('mc-auth-pass').value;
-    if (!email || !password) { $('mc-auth-msg').textContent = 'Enter email and password.'; return; }
-    $('mc-auth-submit').disabled = true; $('mc-auth-msg').textContent = 'Working…';
-    sb.auth.signInWithPassword({ email: email, password: password }).then(function (r) {
-      if (r.error) { $('mc-auth-msg').textContent = 'Invalid email or password.'; return; }
-      return adminGate();
-    }, function () { $('mc-auth-msg').textContent = 'Invalid email or password.'; })
-      .then(function () { $('mc-auth-submit').disabled = false; });
-  }
-  function showView(v) { $('mc-view-auth').classList.toggle('hide', v !== 'auth'); $('mc-view-admin').classList.toggle('hide', v !== 'admin'); }
-  function adminGate() {
-    return sb.auth.getSession().then(function (r) {
-      var session = r && r.data && r.data.session;
-      if (!session) { showView('auth'); return; }
-      return sb.from('profiles').select('is_admin').eq('id', session.user.id).maybeSingle().then(function (p) {
-        if (p.error || !p.data || !p.data.is_admin) {
-          showView('auth'); $('mc-auth-msg').textContent = 'This account is not an admin.';
-          return sb.auth.signOut();
-        }
-        $('who').textContent = session.user.email || '';
-        showView('admin'); markFilterTabs(); loadCorrections(); loadCorrectionSummary();
-      });
-    });
   }
 
   function loadCorrectionSummary() {
@@ -130,7 +100,10 @@
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     svg.setAttribute('viewBox', view.join(' '));
     var img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-    img.setAttribute('href', './data/land-mask.png'); img.setAttribute('x', '-180'); img.setAttribute('y', '-90');
+    /* (admin-origin) the land mask is the APP's file: the console is served from its own origin, so it is read from the
+       app's address (<meta name="intmap-site">, filled by the build); an unbuilt page reads it beside itself */
+    var siteMeta = document.querySelector('meta[name="intmap-site"]'), site = siteMeta ? siteMeta.getAttribute('content') || '' : '';
+    img.setAttribute('href', new URL('data/land-mask.png', /^https:\/\//.test(site) ? site : location.href).href); img.setAttribute('x', '-180'); img.setAttribute('y', '-90');
     img.setAttribute('width', '360'); img.setAttribute('height', '180'); img.setAttribute('preserveAspectRatio', 'none'); img.setAttribute('class', 'land');
     svg.appendChild(img);
     var r = Math.max(0.35, view[2] / 140);
