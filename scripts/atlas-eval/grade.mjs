@@ -167,6 +167,21 @@ export function dates(text) {
 
 const fold = (s) => norm(s).toLowerCase().replace(/[\s　・·.\-'’]/g, '');
 
+/* (eval-shape-grading) HOW A REPLY SAYS 「I HAVE NO SHAPE FOR THIS」. An answer of kind `declines` is the correct reply to
+   a question whose thing has no geometry in any source IntMap reads (糸魚川静岡構造線, measured 2026-11-18): the answer
+   is to SAY so, not to join nearby towns with a line. Like UNIT_OF above, this is how replies WRITE it — a reading table
+   of the two languages Atlas answers in, not a list of cases — and the map axis (map-state.mjs, `atlas.shapes`) holds
+   the other half: that no stand-in was drawn. A reply that draws a stand-in AND says so is not saved by its words; the
+   map grade fails it. */
+const DECLINES = [
+  /(?:描|示|な ?ぞ|塗)(?:け|れ|画でき|すことができ|ることができ)(?:ない|ません)/,
+  /(?:形|形状|線|境界|輪郭|範囲|ジオメトリ)(?:の|を示す)?(?:データ|情報)?(?:が|は)(?:手元に|IntMapに|地図に)?(?:ない|無い|ありません|見つから(?:ない|ず|ません)|存在しない|存在しません|得られ(?:ない|ません)|取得できませんでした)/,
+  /(?:データ|典拠|情報源|出典)(?:が|は|に)(?:ない|無い|ありません|含まれていません)/,
+  /\b(?:can(?:no|')t|could ?n[o']t|unable to|not able to)\s+(?:draw|trace|map|show|plot|shade|outline)/i,
+  /\bno\s+(?:real\s+|actual\s+|reliable\s+|official\s+)?(?:geometry|shape|outline|boundary|course|trace|line data|polygon)\b/i,
+  /\b(?:geometry|shape|outline|boundary|course)\s+(?:is|was)\s+(?:not\s+(?:available|held|found)|unavailable)/i,
+];
+
 /**
  * gradeAnswer(answer, reply) → { verdict: 'correct'|'incorrect'|'absent', expected, stated:[…] }
  *   answer  one row's `answer` from answer-key.json
@@ -199,6 +214,11 @@ export function gradeAnswer(answer, reply) {
     if (!stated.length) return { verdict: all.length ? 'incorrect' : 'absent', expected: want, stated: all };
     return { verdict: stated.some((d) => d.slice(0, want.length) === want) ? 'correct' : 'incorrect', expected: want, stated };
   }
+  if (a.kind === 'declines') {
+    const n = norm(text);
+    const hit = DECLINES.map((re) => re.exec(n)).find(Boolean);
+    return { verdict: hit ? 'correct' : 'absent', expected: describe(a), stated: hit ? [hit[0]] : [] };
+  }
   if (a.kind === 'name') {
     const t = fold(text);
     const hit = (a.accept || []).find((n) => t.indexOf(fold(n)) >= 0);
@@ -211,6 +231,7 @@ function describe(a) {
   if (a.kind === 'range') return a.min + '–' + a.max + ' ' + a.unit;
   if (a.kind === 'number') return a.value + ' ' + a.unit + (a.tolerance ? (a.tolerance.abs != null ? ' ± ' + a.tolerance.abs : ' ± ' + Math.round(a.tolerance.rel * 1000) / 10 + '%') : '');
   if (a.kind === 'count') return String(a.value);
+  if (a.kind === 'declines') return 'says IntMap holds no real shape of ' + str(a.subject) + ' (and draws no stand-in)';
   return '';
 }
 
@@ -288,9 +309,9 @@ export function readRubric(data) {
 export function validateAnswerKey(key, capabilityExists, mapVocab) {
   const bad = [];
   const ids = new Set();
-  const KINDS = new Set(['number', 'range', 'date', 'name', 'count']);
+  const KINDS = new Set(['number', 'range', 'date', 'name', 'count', 'declines']);
   const UNITS = new Set(Object.keys(ACCEPTS));
-  const CATS = new Set(['distance', 'duration', 'population', 'date', 'area', 'elevation', 'length', 'count', 'name']);
+  const CATS = new Set(['distance', 'duration', 'population', 'date', 'area', 'elevation', 'length', 'count', 'name', 'shape']);
   for (const q of (key && key.questions) || []) {
     if (!q.id || ids.has(q.id)) bad.push('duplicate or missing id: ' + q.id); ids.add(q.id);
     if (q.lang !== 'en' && q.lang !== 'jp') bad.push(q.id + ': lang must be en or jp');
@@ -304,6 +325,11 @@ export function validateAnswerKey(key, capabilityExists, mapVocab) {
     if (a.kind === 'date' && !/^\d{4}(?:-\d{2}(?:-\d{2})?)?$/.test(str(a.value))) bad.push(q.id + ': a date is YYYY[-MM[-DD]]');
     if (a.kind === 'name' && !(Array.isArray(a.accept) && a.accept.length)) bad.push(q.id + ': a name needs accepted spellings');
     if (a.kind === 'count' && !Number.isInteger(a.value)) bad.push(q.id + ': a count is an integer');
+    /* (eval-shape-grading) a decline is correct only while the thing has no shape in what IntMap reads — the row names the
+       thing and the source whose arrival ends that (`until`), so the key does not go on rewarding a refusal; and it is graded
+       on the map too: no stand-in of either kind may stand where the thing was asked */
+    if (a.kind === 'declines' && !(str(a.subject).trim() && str(a.until).trim())) bad.push(q.id + ': a decline names its subject and «until» — the source whose arrival makes it a shape question');
+    if (a.kind === 'declines' && !(q.mapState && Array.isArray(q.mapState.drawn) && q.mapState.drawn.some((d) => /^atlas\.shapes\./.test(str(d && d.path)) && d.max === 0))) bad.push(q.id + ': a decline is graded on the map too — mapState.drawn holds an «atlas.shapes.<kind>:<basis>» with max 0 (no stand-in)');
     const s = q.source || {};
     if (!/^https?:\/\//.test(str(s.url)) || !str(s.title).trim() || !str(s.states).trim()) bad.push(q.id + ': every answer names the source it was verified at (title, url, what it states)');
     for (const c of q.capabilities || []) if (capabilityExists && !capabilityExists(c)) bad.push(q.id + ': names capability «' + c + '», which the registry does not have');

@@ -212,6 +212,58 @@ export const SCENARIOS = [
     snapshot: frame(148.6, -35.7, 149.6, -34.9),
     expect: { verdict: 'pass', grade: 'correct', dispatched: 1, map: 'match' },
   },
+  /* ── (eval-shape-grading) THE THING ITSELF: the map is graded on `atlas.shapes.<kind>:<basis>`, not on «a line».
+     The four turns below are the two ways a shape question is answered right and the two ways it was answered wrong
+     (「フォッサマグナをマッピングして」 — dev-notes 2026-11-18-atlas-real-shapes). The snapshot's `shapes` is what
+     js/atlas-console.js _atlasOverlayState tallies for the drawing the world reports. */
+  {
+    id: 'river-traced-on-its-course',
+    ...textOf('answers', 'shinano-river-length'),
+    origin: { kind: 'scripted', from: 'representative: map.highlight on a river → the waterway\'s own course (fetchRiverLine), basis real' },
+    model: [
+      step(run('map.highlight', { query: '信濃川' })),
+      say('信濃川の流路を地図に描きました（OpenStreetMap の水路）。幹川流路延長は367 kmで、日本一長い川です。'),
+    ],
+    respond: () => done('<div>✦ 信濃川</div>', ['map']),
+    snapshot: { atlas: { ...ATLAS_EMPTY, lines: { n: 1 }, shapes: { n: 1, 'line:real': 1 } } },
+    expect: { verdict: 'pass', grade: 'correct', map: 'match' },
+  },
+  {
+    id: 'river-stood-in-by-a-drawn-line',
+    ...textOf('answers', 'shinano-river-length'),
+    origin: { kind: 'scripted', from: 'the stand-in this round grades: a line the model drew through towns on the river, counted as «a line» by the old key (atlas.lines ≥ 1) — no upstream vouches for its course' },
+    model: [
+      step(run('map.drawLine', { places: ['長野市', '小千谷市', '新潟市'], label: '信濃川' })),
+      say('信濃川を地図に線で描きました。幹川流路延長は367 kmです。'),
+    ],
+    respond: () => done('<div>— 信濃川</div>', ['map']),
+    snapshot: { atlas: { ...ATLAS_EMPTY, lines: { n: 1 }, shapes: { n: 1, 'line:unstated': 1 } } },
+    expect: { verdict: 'pass', grade: 'correct', map: 'mismatch' },
+  },
+  {
+    id: 'fault-stood-in-by-joined-towns',
+    ...textOf('answers', 'itoigawa-shizuoka-tectonic-line-declined'),
+    origin: { kind: 'scripted', from: 'the reported defect (2026-11-18): towns along the fault composed and joined by a schematic relation, reported as the fault' },
+    model: [
+      step(run('map.compose', { title: '糸魚川静岡構造線', items: [{ name: '糸魚川市' }, { name: '諏訪市' }, { name: '静岡市' }], relations: [{ from: 1, to: 2 }, { from: 2, to: 3 }] })),
+      say('糸魚川静岡構造線を地図に描きました。糸魚川から諏訪を経て静岡に至る大断層です。'),
+    ],
+    respond: () => done('<div>1 糸魚川市 · 2 諏訪市 · 3 静岡市</div>', ['map', 'explanation']),
+    snapshot: { atlas: { ...ATLAS_EMPTY, shapes: { n: 2, 'line:unstated': 2 } } },
+    expect: { verdict: 'fail', failures: ['answer'], grade: 'absent', map: 'mismatch' },
+  },
+  {
+    id: 'fault-declined-honestly',
+    ...textOf('answers', 'itoigawa-shizuoka-tectonic-line-declined'),
+    origin: { kind: 'scripted', from: 'representative: the shape is asked for (item.shape line), IntMap has none (shapesUnresolved, not_found), and the reply says so without a stand-in' },
+    model: [
+      step(run('map.compose', { title: '糸魚川静岡構造線', items: [{ name: '糸魚川静岡構造線', shape: 'line' }, { name: '糸魚川市' }, { name: '静岡市' }] })),
+      say('糸魚川静岡構造線の線の形状データは、IntMap が読める典拠にありません。代わりの線は描かず、両端の糸魚川市と静岡市だけを地図に置きました。断層は糸魚川から諏訪湖付近を経て静岡に至ります。'),
+    ],
+    respond: () => ({ ok: true, html: '<div>1 糸魚川市 · 2 静岡市 — 糸魚川静岡構造線: no shape</div>', meta: { status: 'partial', produced: ['map', 'explanation'] } }),
+    snapshot: { atlas: { ...ATLAS_EMPTY } },
+    expect: { verdict: 'pass', grade: 'correct', map: 'match' },
+  },
 ];
 
 /** build(P) → [cassette] — every scenario run once through the real loop */

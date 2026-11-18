@@ -2,7 +2,7 @@
  *  IntMap · ATLAS QUALITY LAB — IS THE MAP RIGHT?  (the map axis; grading is pure)
  * ----------------------------------------------------------------------------
  *  PRODUCT.md §2.2-2: 「地図の上で答えが完結すること——答えは地図の状態として現れる」. Until this file,
- *  the quality lab graded all 74 answer-key questions by the WORDS of the reply alone
+ *  the quality lab graded every answer-key question by the WORDS of the reply alone
  *  (scripts/atlas-eval/grade.mjs): a turn that wrote 「515.4 km」 and left the map on the start-up view
  *  was a correct answer to 「ルートを地図に出して。何 km？」. This is the other half, and it is kept a
  *  SEPARATE AXIS — the text grade and the map grade are never folded into one number, because 「said the
@@ -18,7 +18,11 @@
  *    comparison  { open, codes:[…], indicators:[…], why }   the statistics-comparison panel (`comparison`)
  *    drawn       [{ path, min, max, why } | { anyOf:[{path,min,max}], why }]
  *                                                            a count read off the snapshot: `atlas.lines`,
- *                                                            `objects.kind:route` … (the product's own sections)
+ *                                                            `objects.kind:route` … (the product's own sections);
+ *                                                            `atlas.shapes.<kind>:<basis>` counts the SHAPES by what
+ *                                                            they are and where they came from (`line:real` = an
+ *                                                            upstream's course; `line:unstated` = a line nobody
+ *                                                            vouches for) — the criterion for 「the thing itself」
  *    era         { year, in:[w,s,e,n], includes:[name], excludes:{pattern,why}, source, why }
  *                                                            the historical units in force that year, there
  *
@@ -71,14 +75,25 @@ function bodyOf(src, name) {
 }
 
 const VOCAB = new Map();
+/** the `export const <name> = Object.freeze([...])` word list of the one js/ module that declares it — the shape vocabulary
+ *  (js/atlas-shape-resolve.js SHAPE_KINDS / SHAPE_BASES) is read where the product declares it, not typed here */
+function declaredList(root, name) {
+  for (const f of readdirSync(join(root, 'js')).filter((x) => x.endsWith('.js'))) {
+    const m = new RegExp('export\\s+const\\s+' + name + '\\s*=\\s*(?:Object\\.freeze\\()?\\[([^\\]]*)\\]').exec(readFileSync(join(root, 'js', f), 'utf8'));
+    if (m) return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+  }
+  return [];
+}
+
 /**
- * mapVocabulary(root) → { layers, sections, atlasKeys, objectKinds, era } — what a `mapState` may name.
+ * mapVocabulary(root) → { layers, sections, atlasKeys, shapeKeys, objectKinds, era } — what a `mapState` may name.
  *   layers      the `id` of every declaration in js/layers/ (the files scripts/layer-descriptors.mjs
  *               discovers: `*.js` not starting with `_`) — the same ids the layer rows' checkboxes carry,
  *               which is what the `activeLayers` section reports
  *   sections    every snapshot section a provider is registered for in js/ (js/atlas-state.js `reg('…'`,
  *               and `registerStateProvider('…'` anywhere — the console registers `atlas` itself)
  *   atlasKeys   the fields of the function the console registers as the `atlas` section
+ *   shapeKeys   the tallies of `atlas.shapes`: `n` and every `<kind>:<basis>` of SHAPE_KINDS × SHAPE_BASES
  *   objectKinds the kinds js/map-tools.js's object inventory (`collect()`, read by the `objects` section) emits
  *   era         (year, box) → [unit] — scripts/hist-fidelity.mjs's enumeration (see eraReference)
  */
@@ -111,7 +126,9 @@ export function mapVocabulary(root = ROOT) {
   for (const m of ab.matchAll(/\bo\.([A-Za-z]+)\s*=/g)) atlasKeys.add(m[1]);
   const objectKinds = new Set();
   for (const m of bodyOf(code(root, 'js/map-tools.js'), 'collect').matchAll(/\bkind\s*:\s*'([a-z]+)'/g)) objectKinds.add(m[1]);
-  const v = { root, layers, sections, atlasKeys, objectKinds, era: eraReference(root) };
+  const shapeKeys = new Set(['n']);
+  for (const k of declaredList(root, 'SHAPE_KINDS')) for (const b of declaredList(root, 'SHAPE_BASES')) shapeKeys.add(k + ':' + b);
+  const v = { root, layers, sections, atlasKeys, shapeKeys, objectKinds, era: eraReference(root) };
   VOCAB.set(root, v);
   return v;
 }
@@ -154,6 +171,9 @@ function pathProblems(p, vocab) {
   const parts = str(p).split('.');
   if (!parts[0] || !vocab.sections.has(parts[0])) return ['«' + p + '» reads section «' + parts[0] + '», which no provider in js/ registers'];
   if (parts[0] === 'atlas' && parts[1] && !vocab.atlasKeys.has(parts[1])) return ['«' + p + '»: the `atlas` section has no field «' + parts[1] + '»'];
+  if (parts[0] === 'atlas' && parts[1] === 'shapes' && (parts.length !== 3 || !(vocab.shapeKeys || new Set()).has(parts[2]))) {
+    return ['«' + p + '»: `atlas.shapes` is read as one of ' + [...(vocab.shapeKeys || [])].join(' / ') + ' (js/atlas-shape-resolve.js SHAPE_KINDS × SHAPE_BASES)'];
+  }
   if (parts[0] === 'objects' && parts[1]) {
     const k = /^kind:(.+)$/.exec(parts[1]);
     if (k && !vocab.objectKinds.has(k[1])) return ['«' + p + '»: js/map-tools.js puts no object of kind «' + k[1] + '» on the map'];
