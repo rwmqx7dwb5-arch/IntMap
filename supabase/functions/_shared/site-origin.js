@@ -74,3 +74,15 @@ export function siteUrl(path = "") {
 export function isSiteOrigin(origin) {
   return SITE_ORIGINS.includes(String(origin || ""));
 }
+
+/* ── THE OPERATOR CONSOLE'S OWN ORIGIN ─────────────────────────────────────────────────────────
+   The console (admin.html and the pages that sign in through js/admin-auth.js) is NOT served from
+   SITE_URL. It is published by the `intmap-admin` organisation's Pages site, a different origin —
+   github.io is on the Public Suffix List, so it is a different SITE too: no localStorage, Cache
+   Storage, service worker or cookie of the app's origin reaches it, and an XSS in the app cannot read
+   an administrator's session (docs/SECURITY-ARCHITECTURE.md §11.4). A second repository of the SAME
+   owner would not do: it would be served from the same <owner>.github.io origin as the app.
+   scripts/admin-site.mjs builds the console from this repository; .github/workflows/admin-site.yml is
+   the reusable workflow that organisation's repository calls to publish it. */
+export const ADMIN_URL = "https://intmap-admin.github.io/";
+export const ADMIN_ORIGIN = new URL(ADMIN_URL).origin;

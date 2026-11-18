@@ -288,7 +288,7 @@ select is(_tok('r_own'),   'ERR:IMOWN', 'the owner cannot report their own colle
 select is(_tok('r_aread'), '0',         'the owner never reads who reported them');
 select is(_tok('r_anon'),  'DENIED',    'anon cannot report');
 
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('q',        'select public.community_map_reports_admin()::text');
 select _sel('m_noreason', format('select public.moderate_community_map(%L, ''hide'', ''  '')::text', _tok('kansai')));
@@ -308,7 +308,7 @@ set local role authenticated;
 select _sel('h_relist', 'select token from public.list_community_map(''Kansai'', ''Ms A'')');
 select _sel('h_seen',   'select reason from public.community_map_holds where collection = ''Kansai''');
 reset role;
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('m_restore', format('select public.moderate_community_map(%L, ''restore'')::text', _tok('kansai')));
 reset role;
@@ -363,7 +363,7 @@ select is((select derived_from::text from public.collection_shares where collect
 -- ─────────────────────────────────────────────────────────────────────────────
 --  6b. THE HOLD SURVIVES UNPUBLISHING (A: held, delete the share, publish again, list again)
 -- ─────────────────────────────────────────────────────────────────────────────
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('x_hide',  format('select public.moderate_community_map(%L, ''hide'', ''Deliberately misleading'')::text', _tok('l_europe')));
 reset role;
@@ -382,7 +382,7 @@ select _sel('x_dir',  'select public.community_maps(''Europe'')::text');
 reset role; set local role anon;
 select _sel('x_read', format('select public.shared_collection(%L)::text', _tok('x_repub')));
 reset role;
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('x_q', 'select public.community_map_reports_admin()::text');
 reset role;
@@ -401,7 +401,7 @@ insert into _cap values ('x_ref', (select e ->> 'ref' from jsonb_array_elements(
 select ok((select (e ->> 'published')::boolean = false and (e ->> 'open')::int = 0 and (e ->> 'total')::int = 1
              from jsonb_array_elements(_tok('x_q')::jsonb) e where e ->> 'title' like 'Kansai%'),
           'Kansai — unpublished — is still in the queue under its last title, with its report');
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('x_hide2', format('select public.moderate_community_map(%L, ''hide'', ''Held while unpublished'')::text', _tok('x_ref')));
 reset role;

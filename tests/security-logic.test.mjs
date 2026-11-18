@@ -390,6 +390,10 @@ test('no Edge Function resolves a dependency from a third-party CDN', () => {
       const map = JSON.parse(readFileSync(dj, 'utf8'));
       for (const [k, v] of Object.entries(map.imports || {})) {
         assert.match(v, /^npm:.*@\d+\.\d+\.\d+$/, `${fn}: ${k} is not pinned to an exact npm version`);
+        /* the functions run the browser's supabase-js version (docs/SECURITY-ARCHITECTURE.md): Dependabot
+           watches package.json only, so a deno.json left behind is caught here, not by a bot */
+        const rootPin = JSON.parse(read('package.json')).dependencies?.[k];
+        if (rootPin) assert.equal(v, `npm:${k}@${rootPin}`, `${fn}: ${k} drifted from package.json (${rootPin})`);
       }
     }
   }

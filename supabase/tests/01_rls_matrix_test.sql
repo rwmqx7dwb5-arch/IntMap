@@ -102,7 +102,7 @@ select _dml('a_ins_own_fb',   'insert into public.feedback(user_id,rating) value
 reset role;
 
 -- ─────────────────────────── ADMIN ─────────────────────────────────────────
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('admin_feedback',  'select count(*) from public.feedback');            -- >0
 select _sel('admin_donations', 'select count(*) from public.donations');          -- >0

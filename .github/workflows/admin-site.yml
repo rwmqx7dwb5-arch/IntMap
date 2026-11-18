@@ -1,0 +1,126 @@
+# ============================================================================
+#  The operator console's own site (admin-origin) — a REUSABLE workflow.
+#
+#  The console is published from a different origin than the app (docs/SECURITY-ARCHITECTURE.md
+#  §11.4): the `intmap-admin` organisation's Pages site. That organisation's repository holds only a
+#  caller that runs this file every 30 minutes and on demand — its whole text is in docs/RELEASE.md
+#  «The operator console's site» — so everything the console is made of — and how it is built — stays in this repository and its
+#  review. Nothing here holds a secret and nothing pushes to another repository: the caller PULLS
+#  this public repository and publishes into its own Pages site with its own token.
+#
+#  WHICH COMMIT: the one the app's site is serving now (its build-info.json, written by deploy.yml),
+#  not main's head — the console and the app it administers move together, and a commit main has
+#  not yet published (CI red, deploy pending) never reaches the console first.
+# ============================================================================
+name: Operator console site
+
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build the console from the commit the app serves
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      publish: ${{ steps.source.outputs.publish }}
+      sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - name: Read where the sites are (supabase/functions/_shared/site-origin.js)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: rwmqx7dwb5-arch/IntMap
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/site-url.mjs
+            supabase/functions/_shared/site-origin.js
+          sparse-checkout-cone-mode: false
+          path: origin-src
+      - id: source
+        name: Which commit the app serves, and which the console serves
+        run: |
+          set -euo pipefail
+          site="$(node origin-src/scripts/site-url.mjs)"
+          admin="$(node --input-type=module -e "import('./origin-src/supabase/functions/_shared/site-origin.js').then(m=>console.log(m.ADMIN_URL))")"
+          sha="$(curl -fsS "${site}build-info.json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const v=JSON.parse(s).sha;if(!/^[0-9a-f]{40}$/.test(v||""))process.exit(1);console.log(v)})')"
+          live="$(curl -fsS "${admin}source.json" 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).source||"")}catch(_){console.log("")}})' || true)"
+          echo "app serves ${sha}; console serves ${live:-nothing yet}"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          if [ "${live}" = "${sha}" ] && [ "${GITHUB_EVENT_NAME}" != "workflow_dispatch" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: ${{ steps.source.outputs.publish == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: rwmqx7dwb5-arch/IntMap
+          ref: ${{ steps.source.outputs.sha }}
+          persist-credentials: false
+          path: src
+      - if: ${{ steps.source.outputs.publish == 'true' }}
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version-file: src/.nvmrc
+      - if: ${{ steps.source.outputs.publish == 'true' }}
+        name: Build the console site
+        working-directory: src
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          node scripts/admin-site.mjs --out ../_site --source "${{ steps.source.outputs.sha }}"
+          test -f ../_site/admin.html || { echo "::error::the console site has no admin.html"; exit 1; }
+      - if: ${{ steps.source.outputs.publish == 'true' }}
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+        with:
+          path: _site
+
+  # ⚠ THIS PUBLISHES THE CALLER'S PAGES SITE, NOT THIS REPOSITORY'S. scripts/pages-publish-guard.mjs answers
+  # «is this commit an ancestor of what THIS repository's Pages serves», which is the wrong site here
+  # (GITHUB_SHA is the caller's commit). The console's own rule, with the same purpose — never move the
+  # console backward, and never ahead of the app it administers — is the step below: one publish at a time
+  # (the lock), and only while the commit it built is STILL the one the app serves. If the app moved on
+  # while this was building, nothing is published; the next run builds the newer commit.
+  deploy:
+    name: Publish to the console's Pages site
+    needs: build
+    if: ${{ needs.build.outputs.publish == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: admin-console-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: rwmqx7dwb5-arch/IntMap
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/site-url.mjs
+            supabase/functions/_shared/site-origin.js
+          sparse-checkout-cone-mode: false
+          path: origin-src
+      - id: current
+        name: Is the commit built still the one the app serves?
+        env:
+          BUILT: ${{ needs.build.outputs.sha }}
+        run: |
+          set -euo pipefail
+          site="$(node origin-src/scripts/site-url.mjs)"
+          now="$(curl -fsS "${site}build-info.json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).sha||""))')"
+          if [ "${now}" = "${BUILT}" ]; then echo "publish=true" >> "$GITHUB_OUTPUT"; else
+            echo "the app moved from ${BUILT} to ${now} while this was building — not publishing an older console"
+            echo "publish=false" >> "$GITHUB_OUTPUT"; fi
+      - id: deploy
+        if: ${{ steps.current.outputs.publish == 'true' }}
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1
