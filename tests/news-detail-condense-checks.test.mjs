@@ -123,10 +123,10 @@ test('groupCoverage: one representative per family, the rest folded under it, ne
 
 test('the detail page calls those rules and folds instead of deleting', () => {
   const ui = readFileSync(join(ROOT, 'js/news-events.js'), 'utf8');
-  const open = ui.slice(ui.indexOf('function openDetail(item)'), ui.indexOf('window._imReader = {'));
+  const open = ui.slice(ui.indexOf('function openDetail(item'), ui.indexOf('window._imReader = {'));
   assert.match(open, /BRIEF\.condenseGist\(/);
   assert.match(open, /BRIEF\.groupCoverage\(/);
-  assert.match(open, /u\.learned/);
+  assert.match(open, /latest\.learned/);
   /* the folded quotes, same-family articles and the mechanism text are inside <details>, not removed */
   assert.match(open, /<details class="ev-fold"><summary>'[\s\S]*for \(const g of cg\.folded\)/);
   assert.match(open, /<details class="ev-fold ev-cov-more"><summary>'[\s\S]*for \(const m of g\.more\) html \+= covRow\(m, true/);

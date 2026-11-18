@@ -46,7 +46,7 @@ elections(HOST);
 const ELECT = win.IntMapElections;
 const EP = await importModule('js/event-past.js', { globals, mocks: { 'js/place-history.js': {
   placeHistory: async () => ({ at: {}, nation: { status: 'ok', entries: [], gaps: [{ from: 18680101, to: 18710829 }], records: [], missing: [] }, admin: { status: 'none', entries: [] } }),
-  historyHtml: () => '<div class="ph-list">TIMELINE</div>', historyAction: () => null, forAtlas: (r) => ({ nation: r.nation }), ensureHistoryCss() { } } } });
+  historyHtml: () => '<div class="ph-list">TIMELINE</div>', historyAction: () => null, historyGo: () => ({ action: null, then: null }), forAtlas: (r) => ({ nation: r.nation }), ensureHistoryCss() { } } } });
 
 test('① the place\'s precision is the grouper\'s: city → point; country, admin1, org and unstated → country; none → nothing', () => {
   assert.deepEqual(DEFAULTS.representativeKinds.slice().sort(), ['admin1', 'country', 'org']);

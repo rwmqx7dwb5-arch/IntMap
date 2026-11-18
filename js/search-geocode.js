@@ -22,7 +22,8 @@ import * as bus from './bus.js';
    The same import answers any control marked `data-im-gallery` (the whole gallery, js/showcase-gallery.js). */
 function _galleryEmptyState(inp, res){
   if(!inp||!res) return;
-  /* (mobile-next) …and above them the two doors a phone makes natural: «Here, now» and «Photo's place» (js/here-entry.js) */
+  /* (mobile-next) …and above them the two doors a phone makes natural: «Here, now» and «Photo's place» (js/here-entry.js).
+     (exploration-flows) The strip itself starts with «Explore» and, when there is something, «Pick up where you left off». */
   import('./showcase-gallery.js').then((G)=>{
     /* asked again when the module has arrived: the reader may have typed, or left, meanwhile */
     if(document.activeElement!==inp||inp.value.trim()) return;

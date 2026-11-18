@@ -602,6 +602,8 @@ export function newsUi(HOST){
       document.getElementById('newsfilter-saved').innerHTML = IntMapSafe.html(IntMapLang.t(HOST.lang,'★ Saved','★ 保存済み','★ Gespeichert','★ Сохранённые','★ Guardado'))+(_sv?('<span class="news-cat-n">'+_sv+'</span>'):'');
       document.getElementById('newsfilter-all').classList.toggle('active', HOST.mode==='news');
       document.getElementById('newsfilter-saved').classList.toggle('active', HOST.mode==='saved');
+      /* (exploration-flows) the line under the scope says what the list covers — shown for All, hidden for ★ Saved */
+      try{ window.IntMapNewsEvents && window.IntMapNewsEvents.scopeNote && window.IntMapNewsEvents.scopeNote(); }catch(_){}
       HOST.startNews(); return;
     }
     feed.style.display='flex'; sb.style.display='none'; feed.innerHTML=`<div class="empty-msg">${HOST.t('emptyHint')}</div>`;

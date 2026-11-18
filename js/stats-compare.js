@@ -403,6 +403,10 @@ export function statsCompare(HOST){
         +'#scp-view .scp-fill{color:var(--primary-color);font-weight:700;cursor:help;}'
         +'#scp-view .scp-secl{font-weight:700;}'
         +'#scp-view .scp-focus{margin-left:auto;border:1px solid rgba(128,128,128,0.28);background:transparent;color:var(--text-muted);border-radius:8px;font-size:10.5px;padding:2.5px 8px;cursor:pointer;}'
+        +'#scp-view .scp-onmap{margin-left:auto;border:1px solid rgba(128,128,128,0.28);background:transparent;color:var(--text-muted);border-radius:8px;font-size:10.5px;padding:2.5px 8px;cursor:pointer;}'
+        +'#scp-view .scp-onmap:hover{color:var(--primary-color);border-color:var(--primary-color);}'
+        +'#scp-view .scp-onmap ~ .scp-focus{margin-left:0;}'
+        +'#scp-view .scp-onmapnote{flex-basis:100%;order:9;}'
         +'#scp-view .scp-focus:hover{color:var(--primary-color);border-color:var(--primary-color);}'
         +'#scp-view #scp-fx .ts-wrap svg{height:240px !important;}'
         /* (#R71) grouped indicator picker ("指標選択画面が煩雑") */
@@ -427,6 +431,7 @@ export function statsCompare(HOST){
         +'#scp-view .scp-xl td,#scp-view .scp-xl th{padding:7px 8px;}'
         +'#scp-view .scp-xl th.scp-rowh{max-width:118px;overflow:hidden;text-overflow:ellipsis;}'
         +'#scp-view .scp-xl th.scp-h[data-ax="col"]{text-align:right;}'
+        +'#scp-view .scp-colsrc{display:block;font-size:9.5px;font-weight:400;color:var(--text-muted);opacity:0.8;margin-top:1px;}'
         +'#scp-view .scp-yr{color:var(--text-muted);font-size:9.5px;opacity:0.72;font-weight:400;}'
         /* (#R79e) the bar chart was crushing in a narrow Countries WINDOW ("countriesウィンドウの幅によっては
            つぶれてしまう") because the name(118)+value(112) columns are fixed and the old media query keys off the
@@ -729,7 +734,7 @@ export function statsCompare(HOST){
       await _histAddSeries(serMap, ind);
       return {ind,serMap,srcName,imfFail}; }
     /* shared block header: label · WB⇄IMF switch · source · 詳細 (focus) button */
-    function secHtml(ind,srcName,extra,hideFocus){ const lbl=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
+    function secHtml(ind,srcName,extra,hideFocus,mixed){ const lbl=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
       /* (#R109) the WB/IMF toggle only shows for years IMF WEO actually covers (~1980+; earlier years are World-Bank /
          Maddison only) — "利用可能年度のみ表示". Deep-past travel hides it and shows the real source. */
       const _ty=_ttYear();
@@ -740,7 +745,14 @@ export function statsCompare(HOST){
       /* (safe-dom-template) the focus view hides its own 詳細 button by an attribute the template writes —
          not by a search-and-replace on the finished markup */
       const detT=LL('Details','詳細','Details','Подробно','Detalles'), det=LL('Details','詳細','Details','Подробно','Detalles');   /* the title and the label, as before */
-      return html`<div class="scp-sec"><span class="scp-secl">${lbl}</span> ${sw}${extra||''}${hideFocus
+      /* (exploration-flows) «SHOW THIS INDICATOR ON THE MAP» — the map's own layer for the same World Bank series (js/wb-layers.js
+         `layerFor` / `showIndicator`, the row the Layers panel and the indicator browser paint), so its legend, its hover and this
+         block read one series. Where the values here are not the World Bank's (IMF WEO, a gap-fill) it says so beside the button
+         instead of letting the two look alike. The country colours this panel lays on the map are a HIGHLIGHT of which country
+         is which, not this indicator; they give way to the layer's fill while it is on (_paintCodes). */
+      const WBm=window.IntMapWB, lay=(!ind.fig&&WBm&&typeof WBm.layerFor==='function')?WBm.layerFor(ind.k):null;
+      const mapB=lay?html`<button class="scp-onmap" data-k="${ind.k}" title="${LL('Show this indicator on the map (World Bank layer)','この指標を地図に表示（世界銀行のレイヤー）')}">${LL('Show on map','地図に表示')}</button>${((srcName&&srcName!=='World Bank')||mixed)?html`<span class="scp-src scp-onmapnote">${LL('the map layer shows World Bank data','地図のレイヤーは世界銀行のデータ')}</span>`:''}`:'';
+      return html`<div class="scp-sec"><span class="scp-secl">${lbl}</span> ${sw}${extra||''}${mapB}${hideFocus
         ?html`<button class="scp-focus" style="display:none;" data-k="${ind.k}" title="${detT}">${det} ›</button>`
         :html`<button class="scp-focus" data-k="${ind.k}" title="${detT}">${det} ›</button>`}</div>`; }
     const fmtSigned=(ind,v)=>{ if(!SIGNED[ind.k]) return html`<b>${ind.fmt(v)}</b>`;
@@ -773,7 +785,7 @@ export function statsCompare(HOST){
       const yrsSeen=new Set(entries.filter(x=>x.e&&x.e.y).map(x=>x.e.y));
       const yrNote=(tYear==null&&!_ttYear()&&yrsSeen.size>1)?html`<div class="scp-src" style="margin:-4px 0 8px;">${LL('Each country’s latest value — the years differ (shown beside each value)','各国の最新値です。年が国によって異なります（値の横に表示）')}</div>`:'';
       return html`<div class="scp-bars">${rows}</div>${yrNote}${b.mixed?html`<div class="scp-src" style="margin:-4px 0 8px;">° ${LL('gap filled from the other source / bundled reference','欠損値は他ソース・内蔵参照データで補完','Lücke aus anderer Quelle/Referenz ergänzt','пробел дополнен из другого источника','hueco completado de otra fuente/referencia')}</div>`:''}`; }
-    function barBlockHtml(b){ return html`${secHtml(b.ind,b.srcName,(b.imfFail?html`<span class="scp-src">(${LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')})</span>`:''))}${barsHtml(b)}`; }   /* (#R118) bar view is honest about an IMF fallback too */
+    function barBlockHtml(b){ return html`${secHtml(b.ind,b.srcName,(b.imfFail?html`<span class="scp-src">(${LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')})</span>`:''),false,b.mixed)}${barsHtml(b)}`; }   /* (#R118) bar view is honest about an IMF fallback too */
     function blockHtml(b){
       const head=secHtml(b.ind,b.srcName,(b.imfFail?html`<span class="scp-src">(${LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')})</span>`:''));
       /* (countries-companies) a wrapping legend — colour dot, short name, latest value and its year */
@@ -826,6 +838,7 @@ export function statsCompare(HOST){
       el.innerHTML=(mode==='bar')?barBlockHtml(b):blockHtml(b);
       el.querySelectorAll('.scp-srcsw button').forEach(btn=>{ btn.onclick=(e)=>{ e.stopPropagation(); srcSel[k]=btn.getAttribute('data-s'); renderInd(k); }; });
       el.querySelectorAll('.scp-focus').forEach(btn=>{ btn.onclick=(e)=>{ e.stopPropagation(); renderFocus(k); }; });
+      el.querySelectorAll('.scp-onmap').forEach(btn=>{ btn.onclick=(e)=>{ e.stopPropagation(); _showOnMap(k); }; });
       try{ wireM(el); }catch(_){}
     }
     /* ===== (#R71) FOCUS view ("一つだけ選択したら詳細設定をできるとかなら尚いい"): one indicator, full
@@ -845,22 +858,31 @@ export function statsCompare(HOST){
       if(years.length){ const ths=codes.map((cd,i)=>{ const s2=_cs(cd); return html`<th><span style="color:${PAL[i]};">●</span> ${cName(s2)||cd}</th>`; });
         const trs=years.map(y2=>html`<tr><th class="scp-rowh" style="cursor:default;">${y2}</th>${codes.map(cd=>{ const p=(sb2.serMap[cd]||[]).find(q=>q.y===y2); return p?html`<td>${fmtSigned(ind,p.v)}</td>`:html`<td style="color:var(--text-muted);">—</td>`; })}</tr>`);
         yt=html`<div class="scp-tblwrap" style="max-height:300px;overflow-y:auto;"><table class="scp-tbl scp-xl"><tr><th>${LL('Year','年','Jahr','Год','Año')}</th>${ths}</tr>${trs}</table></div>`; }
-      fx.innerHTML=html`<button class="scp-back" id="scp-fxback">← ${LL('All indicators','指標一覧へ','Alle Kennzahlen','Все показатели','Todos los indicadores')}</button>${secHtml(ind,sb2.srcName,'',true)}${barsHtml(lb)}${mChart(ind,sb2.serMap,240)}${yt}`;
+      fx.innerHTML=html`<button class="scp-back" id="scp-fxback">← ${LL('All indicators','指標一覧へ','Alle Kennzahlen','Все показатели','Todos los indicadores')}</button>${secHtml(ind,sb2.srcName,'',true,lb.mixed)}${barsHtml(lb)}${mChart(ind,sb2.serMap,240)}${yt}`;
       fx.querySelector('#scp-fxback').onclick=()=>{ render(); };
       fx.querySelectorAll('.scp-srcsw button').forEach(btn=>{ btn.onclick=()=>{ srcSel[k]=btn.getAttribute('data-s'); renderFocus(k); }; });
+      fx.querySelectorAll('.scp-onmap').forEach(btn=>{ btn.onclick=()=>{ _showOnMap(k); }; });
       try{ wireM(fx); }catch(_){}
     }
-    async function render(){ const v=ensureView(); if(!v) return; chipRow(); metricRow(); modeRow(); try{ v.__refreshList&&v.__refreshList(); }catch(_){}
-      /* (#R114) time-machine banner — HONEST about the source. While travelling, GDP & population come from the
-         Maddison long-run series (real 2011 int$); other indicators show their World Bank / IMF value for that year
-         WHERE the annual series reaches it (WB/IMF begin in 1960). The old copy wrongly claimed EVERY travelled year
-         was "this year's World Bank / IMF figures" (plainly false for e.g. 1939) and carried a 📅 emoji (removed). */
-      try{ const tb=v.querySelector('#scp-timebanner'); if(tb){ const ty=_ttYear(), pw=(window._imTimePreWB||null);
-        if(ty){ tb.style.display='block';
+    /* (#R114) time-machine banner — HONEST about the source. While travelling, GDP & population come from the
+       Maddison long-run series (real 2011 int$); other indicators show their World Bank / IMF value for that year
+       WHERE the annual series reaches it (WB/IMF begin in 1960). The old copy wrongly claimed EVERY travelled year
+       was "this year's World Bank / IMF figures" (plainly false for e.g. 1939) and carried a 📅 emoji (removed). */
+    /* (exploration-flows) …AND IT STATES THE YEAR THE VALUES ARE FOR, NOT ONLY THE CLOCK'S. MEASURED: with the clock at 1990 and
+       «Same year: 2015» the table showed 2015 and this banner said 1990 — it read `_ttYear()` while the values are read at
+       `tYear ?? travel` (latestData). It reads the same rule (_yearShown), and is repainted where the year is changed. */
+    function _paintBanner(v){
+      try{ const tb=v&&v.querySelector('#scp-timebanner'); if(tb){ const Y=_yearShown(tYear,_ttYear(),mode), ty=Y.y, pw=(window._imTimePreWB||null);
+        if(Y.kind==='same'){ tb.style.display='block'; tb.classList.remove('warn'); tb.innerHTML=html`<b>${ty}</b> · ${LL('every country’s value for this one year, by each indicator’s source — a country with no value for it shows —','各国のこの年の値（各指標の出典による）— この年の値が無い国は —')}`; }
+        else if(Y.kind==='travel'){ tb.style.display='block';
           if(ty<1960){ tb.classList.add('warn'); tb.innerHTML=html`<b>${ty}</b> · ${LL('long-run estimates for this year — World Bank / IMF annual series begin in 1960','この年の長期推計値 — 世界銀行・IMFの年次データは1960年以降','Langzeitschätzungen für dieses Jahr — Weltbank-/IWF-Reihen ab 1960','долгосрочные оценки за этот год — ряды Всемирного банка/МВФ с 1960','estimaciones de largo plazo para este año — las series del Banco Mundial/FMI empiezan en 1960')}`; }
           else { tb.classList.remove('warn'); tb.innerHTML=html`<b>${ty}</b> · ${LL('each indicator’s value for this year, by its own source','この年の各指標の値（各出典による）','Werte je Kennzahl für dieses Jahr, nach Quelle','значение каждого показателя за этот год, по своему источнику','valor de cada indicador para este año, según su fuente')}`; } }
         else if(pw){ tb.style.display='block'; tb.classList.add('warn'); tb.innerHTML=html`<b>${pw}</b> · ${LL('World Bank annual series begin in 1960 — latest available','世界銀行の年次データは1960年以降','Weltbank-Reihen ab 1960','ряды Всемирного банка с 1960','series desde 1960')}`; }
+        else if(Y.kind==='latest'){ tb.style.display='block'; tb.classList.remove('warn'); tb.innerHTML=html`${LL('Latest available value for each country — the year is beside each value','各国の最新値 — 年は各値の横に表示')}`; }
         else tb.style.display='none'; } }catch(_){}
+    }
+    async function render(){ const v=ensureView(); if(!v) return; chipRow(); metricRow(); modeRow(); try{ v.__refreshList&&v.__refreshList(); }catch(_){}
+      _paintBanner(v);
       const body=v.querySelector('#scp-body');
       /* (#R108) FIX the rare "bar→time-series が切り替わらない（tableを経由すると変わる）" bug: a MODE change must fully
          rebuild the blocks. The incremental keep-blocks path (kept for country/indicator changes) occasionally left the
@@ -945,10 +967,14 @@ export function statsCompare(HOST){
       /* (#R71) latest values ride the FAST path (1 request per indicator, WB⇄IMF⇄reference gap-fill);
          only a specific-year selection needs the full per-country series */
       const bByK={};
-      if(tYear==null){ const ls=await Promise.all(inds.map(ind=>latestData(ind))); if(my!==renderTable._seq||!host||!host.isConnected) return; ls.forEach(b=>{ bByK[b.ind.k]={ind:b.ind,latest:b.map}; }); }
-      else { const blocks=await Promise.all(inds.map(ind=>blockData(ind))); if(my!==renderTable._seq||!host||!host.isConnected) return; blocks.forEach(b=>{ bByK[b.ind.k]={ind:b.ind,ser:b.serMap}; }); }
+      /* ⚠⚠ (exploration-flows) ONE PATH FOR THE BARS AND THE TABLE. A picked year used to go through the per-country full
+         series (blockData) while the bars asked latestData for that year: measured on production 2026-11-18, «2020» with
+         Brazil — the World Bank's single-country requests timed out and the table showed «—» under values the bars beside it
+         showed. latestData answers the picked year with one request per indicator for every country (wbYear) — the same
+         numbers, the same source, in both views. */
+      const ls=await Promise.all(inds.map(ind=>latestData(ind))); if(my!==renderTable._seq||!host||!host.isConnected) return; ls.forEach(b=>{ bByK[b.ind.k]={ind:b.ind,latest:b.map,src:b.srcName||'',mixed:!!b.mixed}; });
       const wrap=body.querySelector('#scp-tblv'); if(!wrap) return;
-      const cellAt=(indK,cd)=>{ const b=bByK[indK]; if(!b) return null; if(b.latest) return b.latest[cd]||null; const p=_valAt(b.ser[cd],tYear); return (p&&p.y===tYear)?p:null; };   /* (countries-companies) «2020» compares 2020 — an older value is not quietly put in its column */
+      const cellAt=(indK,cd)=>{ const b=bByK[indK]; if(!b) return null; const p=b.latest[cd]||null; return (p&&(tYear==null||!p.y||p.y===tYear))?p:null; };   /* (countries-companies) «2020» compares 2020 — an older value is not quietly put in its column */
       /* row/col axes — default rows=countries; tFlip transposes */
       const rows=tFlip?inds.map(i2=>i2.k):codes.slice();
       const cols=tFlip?codes.slice():inds.map(i2=>i2.k);
@@ -959,9 +985,15 @@ export function statsCompare(HOST){
         rowOrder.sort((a,b2)=>{ const va=cellV(a),vb=cellV(b2); if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return tSort.dir==='asc'?va-vb:vb-va; }); }
       const cLbl=cd=>{ const s2=_cs(cd); return html`${s2.flag?[flagM(s2.flag),' ']:''}<span title="${cName(s2)||cd}">${shortName(cd)}</span>`; };
       const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return html`${i2?LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4]):k2}`; };
-      const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLbl(key));
       /* the header's PLAIN text, from the same sources the markup is built from (a country's name, an indicator's label) — never by stripping tags out of the markup */
       const hText=(key,isCol)=>{ if(tFlip?isCol:!isCol){ const s2=_cs(key), f=s2.flag&&!/^<img /.test(s2.flag)?s2.flag+' ':''; return f+(cName(s2)||key); } const i2=IND.find(x=>x.k===key); return i2?LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4]):key; };
+      /* (exploration-flows) THE TABLE NAMES ITS SOURCES. It said they were «shown in bar & time-series views», so a reader who
+         compared in the table — or exported it — had numbers with no publisher. Each indicator's header carries the source its
+         values were read from (the same `srcName` the bars print), ° the cells filled from another one; the CSV carries both. */
+      const iSrc=k2=>{ const b=bByK[k2]; return (b&&b.src)?b.src:''; };
+      const iLblH=k2=>{ const sN=iSrc(k2); return html`${iLbl(k2)}${sN?html`<span class="scp-colsrc">${sN}${(bByK[k2]&&bByK[k2].mixed)?' °':''}</span>`:''}`; };
+      const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLblH(key));
+      const csvLbl=(key,isCol)=>{ const t=hText(key,isCol); if(tFlip?isCol:!isCol) return t; const sN=iSrc(key); return t+(sN?' ('+sN+')':''); };   /* plain text from the sources (security review), with the column's publisher */
       const yrs=[]; for(let y2=new Date().getFullYear();y2>=1960;y2--) yrs.push(y2);
       const _selY=(tYear!=null)?tYear:_ttYear();   /* (#R94) the dropdown reflects the master clock while travelling */
       const h=[html`<div class="scp-ttools">`,
@@ -978,20 +1010,20 @@ export function statsCompare(HOST){
         cols.forEach(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const i2=IND.find(x=>x.k===indK);
           const p=cellAt(indK,cd);
           /* (#R71) sign-carrying indicators show ±green/red; ° marks a gap-filled value */
-          h.push(p?html`<td>${fmtSigned(i2,p.v)}${p.src?html`<span class="scp-fill">°</span>`:''}${p.y?html` <span class="scp-yr">(${p.y})</span>`:''}</td>`:html`<td style="color:var(--text-muted);">—</td>`); });
+          h.push(p?html`<td>${fmtSigned(i2,p.v)}${p.src?html`<span class="scp-fill" title="${p.src==='ref'?LL('from bundled reference data','内蔵参照データで補完','aus Referenzdaten','из справочных данных','de datos de referencia'):LL('filled from ','補完: ','ergänzt aus ','дополнено из ','completado de ')+p.src}">°</span>`:''}${p.y?html` <span class="scp-yr">(${p.y})</span>`:''}</td>`:html`<td style="color:var(--text-muted);">—</td>`); });
         h.push(html`</tr>`); });
       h.push(html`</table></div>`);
-      h.push(html`<div class="scp-src" style="margin-top:6px;">${LL('Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)','出典は指標ごと（世界銀行／IMF WEO／内蔵参照データ — 棒グラフ・時系列表示に明記）','Quellen je Kennzahl: Weltbank / IWF WEO / Referenzdaten','Источники по показателям: Всемирный банк / МВФ / встроенные данные','Fuentes por indicador: Banco Mundial / FMI WEO / datos de referencia')}</div>`);
+      h.push(html`<div class="scp-src" style="margin-top:6px;">${LL('Source under each indicator · the year beside each value · ° filled from another source or the bundled reference','出典は各指標の下・年は各値の横・°は他の出典または内蔵参照データで補完')}</div>`);
       wrap.innerHTML=html`${h}`;
       _tblShade(wrap.querySelector('.scp-tblwrap'));
       wrap.querySelector('#scp-flip').onclick=()=>{ tFlip=!tFlip; tSort=null; renderTable(); };
-      wrap.querySelector('#scp-year').onchange=(e)=>{ const v2=e.target.value; tYear=v2?+v2:null; renderTable(); };
+      wrap.querySelector('#scp-year').onchange=(e)=>{ const v2=e.target.value; tYear=v2?+v2:null; _paintBanner(host); renderTable(); };
       const un=wrap.querySelector('#scp-unsort'); if(un) un.onclick=()=>{ tSort=null; renderTable(); };
       wrap.querySelector('#scp-csv').onclick=()=>{ try{
         const esc2=s=>{ s=String(s==null?'':s); return /[",\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s; };
-        let csv=esc2('')+','+cols.map(ck=>esc2(csvText(hText(ck,true)))).join(',')+'\n';
+        let csv=esc2('')+','+cols.map(ck=>esc2(csvText(csvLbl(ck,true)))).join(',')+'\n';
         rowOrder.forEach(rk=>{ const cells=cols.map(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const p=cellAt(indK,cd); return p?esc2(p.y?(p.v+' ('+p.y+')'):String(p.v)):''; });
-          csv+=esc2(csvText(hText(rk,false)))+','+cells.join(',')+'\n'; });
+          csv+=esc2(csvText(csvLbl(rk,false)))+','+cells.join(',')+'\n'; });
         const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'})); a.download='intmap-compare.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
       }catch(_){} };
       /* column-header click = sort; drag = reorder the underlying codes[]/indOrder[] */
@@ -1035,7 +1067,18 @@ export function statsCompare(HOST){
         if(!geom) geom=modernOf[String(cd)]||null;
         if(geom) feats.push({type:'Feature',geometry:geom,properties:{color:col}}); });
       try{ _LY().setSourceData('imcmp-src',{type:'FeatureCollection',features:feats}); }catch(_){}
+      /* (exploration-flows) the highlight is the countries' colours; while the indicator layer paints, the fill would tint its ramp —
+         so only the outline stays (the same colours, still saying which country is which) */
+      try{ _LY().setLayout('imcmp-fill','visibility',_indicatorOnMap()?'none':'visible'); }catch(_){}
       return feats.length>0; }
+    function _indicatorOnMap(){ try{ const W=window.IntMapWB, cb=document.getElementById('bx-wbind'); return !!(W&&W.currentIndicator&&W.currentIndicator()&&cb&&cb.checked); }catch(_){ return false; } }
+    /* (exploration-flows) the button's action: the layer, at the year these values are for — a year picked here (bars, table), else
+       the clock's (js/wb-layers.js paints the clock's year while it travels) or each country's latest on the live clock */
+    function _showOnMap(k){ const W=window.IntMapWB; if(!W||typeof W.showIndicator!=='function') return Promise.resolve(null);
+      const Y=_yearShown(tYear,_ttYear(),mode);
+      return Promise.resolve(W.showIndicator(k,Y.kind==='same'?Y.y:null)).then(r=>{
+        if(!r){ try{ imToast(LL('This indicator has no map layer','この指標には地図のレイヤーがありません')); }catch(_){} return null; }
+        try{ paintOnMap(); }catch(_){} return r; }).catch(()=>null); }
     function paintOnMap(){ return _paintCodes(codes); }
     /* (#R122) live preview from the Countries-tab selection tray (compareSet) BEFORE the compare view opens — the
        same imcmp-src / palette, so selecting a country in Countries highlights it on the map immediately. */
@@ -1052,6 +1095,34 @@ export function statsCompare(HOST){
        ensureView() returns the EXISTING host without rebuilding its header (title/back/modes), so we drop the host
        first → render() rebuilds it fresh in the new language (state — codes/sel/mode — is preserved in module vars). */
     try{ bus.on('intmap-lang',()=>{ try{ if(host&&document.getElementById('scp-view')){ try{ host.remove(); }catch(_){} host=null; render(); } }catch(_){} }); }catch(_){}
+    /* ══ (exploration-flows) WHICH COUNTRIES A COMPARISON OPENS WITH, AND WHETHER ITS YEAR STILL APPLIES ══════════
+       MEASURED: the country card's Compare called open() with nothing, and the card's country was added only when
+       `codes` was EMPTY — so after any earlier comparison the country the reader was looking at was not in it. And
+       the Countries tray (`compareSet`, js/app-body.js, read through HOST) is a second store of the same selection
+       that open() never read.
+       · an ARRAY names the whole selection (the tray's «view comparison», Atlas, a session) — it replaces;
+       · a CODE (the card) is ADDED to what is already compared plus what the tray holds, and is never the one
+         dropped at the 10-country limit;
+       · nothing: what is compared plus the tray, else the card's country.
+       The year (`tYear`) belongs to ONE comparison: a different set of countries is a new comparison and starts
+       at «latest for each country»; the same set re-shown keeps the year the reader chose. */
+    function _openState(prev,prevYear,init,tray,card,known){
+      const ok=(cd)=>!!cd&&known(cd); let next;
+      if(Array.isArray(init)&&init.length) next=init.filter(ok).slice(0,10);   /* (#R71) cap 5→10 */
+      else { next=[]; const add=(cd)=>{ if(ok(cd)&&next.indexOf(cd)<0) next.push(cd); };
+        (prev||[]).forEach(add); (tray||[]).forEach(add); next=next.slice(0,10);
+        const want=(typeof init==='string')?init:null;
+        if(ok(want)&&next.indexOf(want)<0){ if(next.length>=10) next=next.slice(0,9); next.push(want); } }
+      if(!next.length&&ok(card)) next=[card];
+      const same=next.length===(prev||[]).length&&next.every(cd=>prev.indexOf(cd)>=0);
+      return { codes:next, tYear:same?prevYear:null }; }
+    /* (exploration-flows) THE YEAR THE VALUES ON SCREEN ARE FOR — the rule latestData() reads them by, said once:
+       a year picked in the panel (bars and table only — the time-series draws every year), else the clock's year
+       while it travels, else each country's own latest value ('latest'; 'series' in the time-series view). */
+    function _yearShown(tY,travel,m){
+      if(m!=='ts'&&tY!=null) return { y:tY, kind:'same' };
+      if(travel) return { y:travel, kind:'travel' };
+      return { y:null, kind:(m==='ts')?'series':'latest' }; }
     function open(initCodes,initMetrics,initSource,initMode,initSort){
       if(BAR_SORTS.indexOf(initSort)>=0) barSort=initSort;   /* (news-type-polish) the bar order, when the caller names one */
       if(!sel){ sel=new Set(IND.filter(i=>i.def).map(i=>i.k)); }
@@ -1059,8 +1130,11 @@ export function statsCompare(HOST){
       if(initSource==='imf'||initSource==='wb'){ IND.forEach(i2=>{ if(i2.imf) srcSel[i2.k]=initSource; }); }
       /* (#R105) default to the BAR chart unless a view is explicitly requested ("明示がない限りbar-chartを開いて"). */
       mode=(initMode==='bar'||initMode==='ts'||initMode==='table')?initMode:'bar';   /* (#R70) callers may open straight into a view */
-      if(Array.isArray(initCodes)&&initCodes.length){ codes=initCodes.filter(cd=>countryStats[cd]).slice(0,10); }   /* (#R71) cap 5→10 */
-      if(!codes.length&&window._cpCurrent&&window._cpCurrent.code&&countryStats[window._cpCurrent.code]) codes=[window._cpCurrent.code];
+      /* (exploration-flows) the selection and the year it is compared at — see _openState */
+      let tray=[]; try{ const T=HOST.compareSet; if(T&&typeof T.forEach==='function') T.forEach(cd=>tray.push(cd)); }catch(_){ tray=[]; }
+      const card=(window._cpCurrent&&window._cpCurrent.code)||null;
+      const st=_openState(codes,tYear,initCodes,tray,card,(cd)=>!!countryStats[cd]);
+      codes=st.codes; tYear=st.tYear;
       host=null;   /* rebuild inside the sidebar (the feed may have been re-rendered by tab switches) */
       render(); try{ paintOnMap(); }catch(_){} }
     /* (#R124) sync a single Countries-tab toggle into an ALREADY-OPEN compare view. The bug: the Countries tray

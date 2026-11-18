@@ -48,7 +48,7 @@ import { IntMapTime } from './chronos.js';   /* (one-present-year) «is this yea
 /** @typedef {{ key:string, cause:string, gen:number, restoring:boolean }} ChangeEvent */
 
 /* ══ THE SCHEMA ══════════════════════════════════════════════════════════════════════════════════
-   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&d=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…&title=…&note=…&b=…&mm=…&ds=…`, the order js/map-ui.js
+   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&d=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…&title=…&note=…&b=…&mm=…&ds=…&ev=…`, the order js/map-ui.js
    concatenated since #R211 (the caption appended after it, map-postcard). It is also the restore order — every field but the view is staged on a
    timer, and two steps at the same instant (the isobars' switch and the clock, both at 900 ms) fire in
    the order they were scheduled, which is this order, as before.
@@ -132,6 +132,17 @@ export const SCHEMA = Object.freeze([
      (the same one spelling test `b` gets); js/data-studio.js reads it and does not trust it. */
   { key: 'ds',      params: ['ds'],        restore: 'full',   at: [300],              session: null,     owner: 'js/data-studio.js',
     doc: 'a data studio map — the reader\'s table bound to places and coloured by one column (js/data-studio.js), packed; absent is «none»' },
+  /* (exploration-flows) THE NEWS EVENT BEING READ. A reader who sent a link from an open event detail sent the map
+     around it and lost the event itself — the recipient landed on the place with nothing saying what had happened
+     there. The value is the event's public id (`news_events.public_id`, the id js/news-events.js `openByPublicId` /
+     `itemByPublicId` take), opaque here like `b` and `ds` — the same one spelling test. Written while a detail is
+     on screen and absent when none is (the owner READS the reading surface, it does not remember). APPENDED AFTER
+     `ds`, NOT INSERTED: a link written before this field has no `ev` and encodes to the same bytes. 'full', as
+     `mm` / `ds` are: opening it fetches a row and opens a panel, which a crashed reload must not repeat. `lazy` — its
+     owner is the lazily fetched events module (js/lazy-modules.js `newsEvents`): a link that names an event asks
+     for it, one that names none leaves it unfetched. */
+  { key: 'event',   params: ['ev'],        restore: 'full',   at: [300],              session: null,     owner: 'js/news-events.js', lazy: 'newsEvents',
+    doc: 'the news event whose detail is open — its public id (js/news-events.js); absent is «no event open»' },
   { key: 'toggles', params: [],            restore: null,     at: [],                 session: 'layers', owner: 'js/session-tabs.js',
     doc: 'every ticked row of the layer panel, base toggles included — the session\'s set, a superset of `layers` (see the note at `toggles` in js/session-tabs.js)' },
 ]);
@@ -185,7 +196,7 @@ export function carries(hash) { return /[#&]v=/.test(String(hash || '')); }
 /** the address-bar form → the state tree. Fields the link does not name are given the value their
     ABSENCE states (no `tt` is «now», no `l` is «no data layers», no `cmp` is «no window»; no `d` is null, «what `l` names», see `display`) — a full
     restore applies the whole state a link describes (share-embed-distribution).
-    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], display: (string[]|null), time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any, title: string, note: string, brief: string, mymap: any, ds: (string|null) }} */
+    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], display: (string[]|null), time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any, title: string, note: string, brief: string, mymap: any, ds: (string|null), event: (string|null) }} */
 export function decode(hash) {
   const H = String(hash || '');
   let view = null;
@@ -226,11 +237,13 @@ export function decode(hash) {
     mymap: (() => { const m = param(H, 'mm'); return m ? unpackObject(m) : null; })(),
     /* (data-studio) opaque here, like `b` — the same one spelling test; js/data-studio.js reads what is inside. ⚠ null, not '',
        when absent: the restore fetches a lazy owner for any value that is not null, and «no table» must fetch nothing. */
-    ds: briefText(param(H, 'ds')) || null };
+    ds: briefText(param(H, 'ds')) || null,
+    /* (exploration-flows) an event's public id — opaque, the same spelling test; null when absent, as `ds` is (a lazy owner) */
+    event: briefText(param(H, 'ev')) || null };
 }
 
 /** the state tree → the address-bar form. '' when there is no view (nothing to link to).
-    @param {{ view?: ViewValue|null, layers?: string[], display?: (string[]|null), time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any, title?: string, note?: string, brief?: string, mymap?: any, ds?: (string|null) }} st
+    @param {{ view?: ViewValue|null, layers?: string[], display?: (string[]|null), time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any, title?: string, note?: string, brief?: string, mymap?: any, ds?: (string|null), event?: (string|null) }} st
     @returns {string} */
 export function encode(st) {
   try {
@@ -253,6 +266,7 @@ export function encode(st) {
     const bf = briefText(st.brief); if (bf) h += '&b=' + bf;
     const mm = st.mymap ? packObject(st.mymap) : ''; if (mm) h += '&mm=' + mm;
     const dv = briefText(st.ds); if (dv) h += '&ds=' + dv;
+    const ev = briefText(st.event); if (ev) h += '&ev=' + ev;
     return h;
   } catch (_) { return ''; }
 }

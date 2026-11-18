@@ -31,6 +31,113 @@ import { IntMapLang } from './lang-registry.js';
 import { ingestVerdict } from './news-intel-core.js';   /* (news-intelligence) 取り込みの健全性の判定 — node が同じ関数を評価する */
 import { freshChip } from './freshness.js';     /* (news-intelligence) 「いつ時点か・誰が測ったか」の 1 つの部品 */
 import { readSeen, makeSinceCounter, ARRIVAL_COL, editionWindow } from './news-edition-core.js';   /* (wave4-news) 「今日の世界」を前回開いた時刻——入口の件数の起点 */
+import { MapState } from './map-state.js';   /* (exploration-flows) the share link's `ev` field — this module owns it */
+import { icon } from './icons.js';
+
+/* ══ (exploration-flows) HOW CLOSE THE DETAIL BRINGS THE CAMERA ══════════════════════════════════════════
+   The detail flew to every event at zoom 4, so an event in one district of a city showed the city as a dot in a
+   country. The record already states how precise the event's own point is: `analysis.placeKind` (toItem below),
+   the kind the members naming that point give it, in the vocabulary of supabase/functions/_shared/news-geo-prompt.js
+   NEWS_GEO_KINDS. The zoom is read from that kind — a representative point of a country or an organisation keeps
+   the country view, a first-level unit gets a region, and a named place (a city, a seat of government, a
+   flashpoint, a physical feature) gets the city. A kind the record does not state (`''`: the members disagree, or
+   none names the point) keeps the country view: claiming a city's precision for it would be a claim nobody made.
+   ⚠ The numbers are ESTIMATES of «the unit fills the sidebar-side map», not measurements: 4 is the zoom this
+   detail used for every event before, 6 a state or province, 9 a city with its districts. They expire if the
+   renderer's tile pyramid changes. tests/exploration-flows-news-checks.test.mjs fails if NEWS_GEO_KINDS gains a
+   kind this table does not name — a new kind is decided here, not silently given the country view. */
+export const EVENT_ZOOM = Object.freeze({ country: 4, org: 4, admin1: 6, city: 9, seat: 9, flashpoint: 9, feature: 9 });
+export const EVENT_ZOOM_UNSTATED = 4;
+/** @param {string} kind the event point's `placeKind` @returns {number} */
+export function eventZoom(kind) {
+  const k = String(kind || '');
+  return Object.prototype.hasOwnProperty.call(EVENT_ZOOM, k) ? EVENT_ZOOM[k] : EVENT_ZOOM_UNSTATED;
+}
+
+/* ══ (exploration-flows) WHAT CHANGED SINCE THE READER SAVED IT ═════════════════════════════════════════
+   The ★ copy (`snapshotOf` below) was read only once the member articles had expired; it was never compared with the
+   event as it is now, so a reader returning to a saved event could not tell whether anything had happened since.
+   This compares the two from RECORDED data only, and says nothing about what neither side recorded.
+   ⚠ «More reports» is NOT `article_count` minus the saved `article_count`. That column counts the ACTIVE articles
+     (supabase/migrations/20260824090000_news_events_phase_c.sql `news_event_recount`), and articles expire after 72 h
+     (CONSTITUTION.md §5) — so the count shrinks while reports keep arriving, and the difference would under- or
+     over-state. The new reports are the event's live members published after the latest article the copy had seen
+     (`lastArticleAt`, or `lastAt` in a copy written before it was recorded). When the members have expired too, only
+     «reported again, latest at …» can be said (`newerAt`), never a count.
+   ⚠ «New outlets» needs the full set of outlets the copy saw (`families`). A copy written before that was recorded
+     holds at most 12 sources by name, so it cannot answer — `newOutlets` stays null for it.
+   ⚠ «New figures» are the figures present now whose key (js/news-claims.js `quantityKey`, the same key the detail's
+     «Key figures» de-duplicate on — injected, not copied) the copy lacks. Only when the live figures come from live
+     members (a copy compared with itself proves nothing) and the copy recorded its figures.
+   ⚠ «The summary was rewritten» only when BOTH sides carry the server summary's fingerprint (summary_evidence.fp, written
+     in the same update as the summary — supabase/functions/news-ingest/index.ts) and it, or the summary version, differs.
+   ⚠ Corrections are not claimed: `news_articles.correction_status` has no writer.
+   Pure: tests/exploration-flows-revisit-checks.test.mjs evaluates it, and the detail and the ★ Saved badge both call it. */
+/**
+ * @param {object|null} snap the copy (`snapshotOf`), possibly rebased by «Mark as read»
+ * @param {{lastAt?:string, members?:Array<{publishedAt?:string,family?:string,sourceId?:string}>|null, figures?:Array<object>|null, summaryFp?:string|null, summaryVersion?:number|null}|null} live
+ * @param {(q:object)=>string} key js/news-claims.js `quantityKey`
+ */
+export function sinceSaved(snap, live, key) {
+  if (!snap || typeof snap !== 'object' || !live || typeof live !== 'object') return null;
+  const t = (x) => { const n = Date.parse(x || ''); return Number.isFinite(n) ? n : NaN; };
+  const out = {
+    since: snap.at || snap.savedAt || '', marked: !!(snap.at && snap.savedAt && snap.at !== snap.savedAt),
+    compared: false, newReports: null, newOutlets: null, newerAt: null, newFigures: [], rewritten: false, any: false,
+  };
+  const before = t(snap.lastArticleAt || snap.lastAt);
+  if (Number.isFinite(before)) {
+    out.compared = true;
+    const now = t(live.lastAt);
+    if (Number.isFinite(now) && now > before) out.newerAt = live.lastAt;
+    if (Array.isArray(live.members) && live.members.length) {
+      const fresh = live.members.filter((m) => t(m && m.publishedAt) > before);
+      out.newReports = fresh.length;
+      if (Array.isArray(snap.families)) {
+        const had = new Set(snap.families);
+        const fam = new Set();
+        for (const m of fresh) { const f = m.family || m.sourceId; if (f && !had.has(f)) fam.add(f); }
+        out.newOutlets = fam.size;
+      }
+    }
+  }
+  if (Array.isArray(snap.figures) && Array.isArray(live.figures) && typeof key === 'function') {
+    out.compared = true;
+    const had = new Set(snap.figures.map(key));
+    const seen = new Set();
+    for (const q of live.figures) {
+      const k = key(q);
+      if (had.has(k) || seen.has(k)) continue;
+      seen.add(k); out.newFigures.push(q);
+    }
+  }
+  if (snap.summaryFp && live.summaryFp) {
+    out.compared = true;
+    const vDiff = snap.summaryVersion != null && live.summaryVersion != null && snap.summaryVersion !== live.summaryVersion;
+    out.rewritten = snap.summaryFp !== live.summaryFp || vDiff;
+  }
+  out.any = !!(out.newerAt || out.newReports || out.newFigures.length || out.rewritten);
+  return out;
+}
+
+/* ══ (exploration-flows) HOW MANY OF THE LISTED EVENTS ARE IN THE MAP VIEW ═══════════════════════════════
+   The list is asked worldwide (`load` has no spatial filter) while the map may show one region; the note above the list
+   says so, and counts the listed events whose own point is inside the view. `bounds` is the renderer's view rectangle
+   (west, south, east, north in degrees): a west greater than east crosses the antimeridian (Cesium's
+   computeViewRectangle), and a span of 360° or more (MapLibre's world copies) holds every longitude. Pure. */
+/** @param {Array<[number,number]|null>} points @param {{w:number,s:number,e:number,n:number}|null} b @returns {number|null} */
+export function countInView(points, b) {
+  if (!b || ![b.w, b.s, b.e, b.n].every(Number.isFinite)) return null;
+  const raw = b.e - b.w;
+  const span = raw >= 360 ? 360 : ((raw % 360) + 360) % 360;
+  let n = 0;
+  for (const p of points || []) {
+    if (!Array.isArray(p) || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
+    if (p[1] < b.s || p[1] > b.n) continue;
+    if (span >= 360 || ((((p[0] - b.w) % 360) + 360) % 360) <= span) n++;
+  }
+  return n;
+}
 
 export function newsEvents(HOST) {
   const L = IntMapLang.pick(() => HOST.lang);
@@ -189,8 +296,9 @@ export function newsEvents(HOST) {
       ? ev.synthesis.lines.map((l) => l.text).join(' ')
       : ((ev.brief && ev.brief.gist) || []).map((g) => g.text).join(' ');
     const loc = item.analysis && item.analysis.subjectLoc;
+    const at = new Date(nowMs()).toISOString();
     return {
-      v: 1, savedAt: new Date(nowMs()).toISOString(),
+      v: 2, savedAt: at, at, contentAt: at,
       title: String(ev.title || '').slice(0, 400),
       place: ev.place || '', lng: loc ? loc[0] : null, lat: loc ? loc[1] : null,
       category: ev.category || '', firstAt: ev.firstAt || '', lastAt: ev.lastAt || '',
@@ -201,7 +309,46 @@ export function newsEvents(HOST) {
         url: String(m.url || '').slice(0, 600), at: m.publishedAt || '',
         desc: String(m.description || '').slice(0, SNAP_DESC),
       })),
+      ...baselineOf(ev),
     };
+  }
+  /* ══ (exploration-flows) THE BASELINE «what changed since» IS MEASURED FROM (`sinceSaved` at the top of this file) ══
+     What the row and the detail stated at that moment: the row's own counts and latest-article time, the server summary's
+     version and fingerprint, every outlet group among the members, and the figures the detail's «Key figures» showed.
+     ⚠ `families` and `figures` only from live members — when the members have expired, `ev.members` is the copy
+       itself, and a baseline taken from it would claim to have seen what it never saw; `rebaseline` keeps the old ones.
+     ⚠ Bounded: 100 groups and 60 figures (a few KiB) inside the row's 32 KiB check. */
+  const SNAP_FAMILIES = 100, SNAP_FIGURES = 60;
+  function baselineOf(ev) {
+    const live = !ev.fromSnapshot;
+    const base = {
+      articles: Number.isFinite(ev.articleCount) ? ev.articleCount : null,
+      outlets: Number.isFinite(ev.sourceCount) ? ev.sourceCount : null,
+      lastArticleAt: ev.lastArticleAt || null,
+      summaryVersion: ev.summaryVersion != null ? ev.summaryVersion : null,
+      summaryFp: ev.summaryFp || null,
+    };
+    if (live) {
+      base.families = [...new Set((ev.members || []).map((m) => m.family || m.sourceId).filter(Boolean))].slice(0, SNAP_FAMILIES).map((x) => String(x).slice(0, 120));
+      base.figures = ((ev.brief && ev.brief.figures) || []).slice(0, SNAP_FIGURES).map((q) => ({ kind: q.kind, unit: q.unit || '', value: q.value }));
+    }
+    return base;
+  }
+  /* the live side of the comparison — members and figures only when they are the event's own, not the copy */
+  function liveOf(ev) {
+    const own = !ev.fromSnapshot;
+    return {
+      lastAt: ev.lastArticleAt || ev.lastAt || '',
+      members: own ? (ev.members || []) : null,
+      figures: own && ev.brief ? ev.brief.figures : null,
+      summaryFp: ev.summaryFp || null, summaryVersion: ev.summaryVersion != null ? ev.summaryVersion : null,
+    };
+  }
+  /** What changed since the reader saved (or last marked as read) this event — null when it is not saved or has no copy. */
+  function changedSince(item) {
+    const ev = item && item._event;
+    if (!ev || !isSaved(ev.publicId)) return null;
+    return sinceSaved(snapFor(ev.publicId), liveOf(ev), CLAIMS.quantityKey);
   }
   /* 写しの出典を、構成記事と同じ形の「メンバー」に戻す（詳細・要約の規則がそのまま読めるように）。 */
   function membersFromSnap(snap) {
@@ -210,6 +357,38 @@ export function newsEvents(HOST) {
       sourceId: s.outlet || '', sourceName: s.outlet || '', family: s.outlet || '',
       country: '', type: '', hq: null, publishedAt: s.at || '',
     }));
+  }
+
+  /* the one write of a saved row (the ★ and «Mark as read» both go through it) */
+  async function putSavedRow(ev, snap) {
+    if (ev.id == null) throw new Error('this event is no longer on the server');
+    const r = await HOST.DB.from('saved_news_events').upsert(
+      { user_id: HOST.user.id, event_id: ev.id, event_title: ev.title, snapshot: snap }, { onConflict: 'user_id,event_id' });
+    if (r && r.error) throw r.error;   /* PostgREST reports a refusal in the answer, not by throwing */
+  }
+  /* ══ (exploration-flows) «MARK AS READ» — the comparison starts again from now ═══════════════════════════════
+     Re-takes the copy through the same write path as the ★ (the row when logged in, localStorage otherwise). `savedAt`
+     stays the day of the ★; `at` is the new baseline. With live members the whole copy is re-taken (`contentAt` moves);
+     with expired members only the baseline moves — the content still is what was copied, and `contentAt` says when.
+     Returns whether it was written; on a failed row write the previous copy is put back. */
+  async function markRead(item) {
+    const ev = item && item._event;
+    if (!ev || !isSaved(ev.publicId)) return false;
+    const old = snapFor(ev.publicId);
+    const at = new Date(nowMs()).toISOString();
+    let snap;
+    if (ev.fromSnapshot && old) snap = Object.assign({}, old, baselineOf(ev), { v: 2, at, contentAt: old.contentAt || old.savedAt });
+    else { snap = snapshotOf(item); if (!snap) return false; snap.savedAt = (old && old.savedAt) || at; snap.at = at; }
+    putSnapLocal(ev.publicId, snap); dbSnaps.set(ev.publicId, snap);
+    if (HOST.user && HOST.DB) {
+      try { await putSavedRow(ev, snap); }
+      catch (e) {
+        putSnapLocal(ev.publicId, old); if (old) dbSnaps.set(ev.publicId, old); else dbSnaps.delete(ev.publicId);
+        lastError = (e && e.message) || 'save failed';
+        return false;
+      }
+    }
+    return true;
   }
 
   async function toggleStar(item) {
@@ -226,9 +405,7 @@ export function newsEvents(HOST) {
     if (HOST.user && HOST.DB) {
       try {
         if (on) {
-          if (ev.id == null) throw new Error('this event is no longer on the server');
-          await HOST.DB.from('saved_news_events').upsert(
-            { user_id: HOST.user.id, event_id: ev.id, event_title: ev.title, snapshot: snap }, { onConflict: 'user_id,event_id' });
+          await putSavedRow(ev, snap);
           dbSaved.add(ev.id);
         } else {
           await HOST.DB.from('saved_news_events').delete().eq('event_id', ev.id);
@@ -339,7 +516,7 @@ export function newsEvents(HOST) {
     let fromSnapshot = null;
     if (!members.length) {
       const snap = snapFor(row.public_id);
-      if (snap) { members.push(...membersFromSnap(snap)); fromSnapshot = snap.savedAt || 'unknown'; }
+      if (snap) { members.push(...membersFromSnap(snap)); fromSnapshot = snap.contentAt || snap.savedAt || 'unknown'; }
     }
     const rep = links.find((a) => a.id === row.representative_article_id) || links[0] || null;
     /* ⚠⚠⚠ **見出しの日本語訳は表示しない**（#R405 で利用者が決めた）。News は英語で出す。
@@ -414,6 +591,10 @@ export function newsEvents(HOST) {
         categoryConfidence: row.category_confidence,
         place: row.rep_place_name_en || '', locationConfidence: row.location_confidence,
         articleCount: row.article_count, sourceCount: row.independent_source_count,
+        /* (exploration-flows) recorded at ★ time and compared on return (`sinceSaved`) */
+        lastArticleAt: row.last_article_at || '',
+        summaryVersion: row.summary_version != null ? row.summary_version : null,
+        summaryFp: (row.summary_evidence && typeof row.summary_evidence.fp === 'string') ? row.summary_evidence.fp : null,
         clusterConfidence: row.cluster_confidence, manualLock: !!row.manual_lock,
         firstAt, lastAt, updatedAt: row.materially_updated_at || lastAt,
         outlets, members, fromSnapshot,
@@ -576,6 +757,7 @@ export function newsEvents(HOST) {
     row.style.display = '';
     renderHealth();
     renderEditionEntry();
+    paintScopeNote();
     Array.prototype.forEach.call(row.querySelectorAll('.news-cat-chip'), (b) => {
       b.onclick = () => {
         category = b.dataset.cat || 'all';
@@ -591,6 +773,34 @@ export function newsEvents(HOST) {
     const row = document.getElementById('news-cat-chips'); if (row) { row.style.display = 'none'; row.innerHTML = ''; }
     const h = document.getElementById('news-ingest-health'); if (h) h.style.display = 'none';
     const ed = document.getElementById('news-edition-entry'); if (ed) ed.style.display = 'none';
+    const sn = document.getElementById('news-scope-note'); if (sn) { sn.hidden = true; sn.textContent = ''; }
+  }
+
+  /* ══ (exploration-flows) WHAT THE LIST COVERS — the line under All / ★ Saved ═══════════════════════════════
+     `load` asks the events table worldwide, ordered by the latest material update, while the map may show one region —
+     and nothing on screen said the two are unrelated. The line says so, and counts the listed events (the loaded list
+     under the chosen topic — `passes`) whose own point is inside the current view (`countInView` at the top of this
+     file). Re-counted when the map stops moving, only while the line is on screen. Not in ★ Saved (that list is the
+     reader's own, not a query of the world). The view rectangle is the renderer's (MapLibre getBounds / Cesium
+     computeViewRectangle); when the renderer cannot state one the count is left out, not guessed. */
+  let scopeHooked = false;
+  function paintScopeNote() {
+    const el = document.getElementById('news-scope-note');
+    if (!el) return;
+    if (HOST.mode !== 'news' || !(HOST.globalData || []).some((x) => x && x._event)) { el.hidden = true; el.textContent = ''; return; }
+    if (!scopeHooked) {
+      try { IntMapGeoEngine.events.on('moveend', () => { const e = document.getElementById('news-scope-note'); if (e && !e.hidden) paintScopeNote(); }); scopeHooked = true; } catch (_) { /* no renderer yet — the next paint tries again */ }
+    }
+    const listed = (HOST.globalData || []).filter((x) => x && x._event && passes(x));
+    let inView = null;
+    try {
+      const b = IntMapGeoEngine.camera.getBounds();
+      if (b) inView = countInView(listed.map((x) => x.analysis && x.analysis.subjectLoc), { w: b.getWest(), s: b.getSouth(), e: b.getEast(), n: b.getNorth() });
+    } catch (_) { inView = null; }
+    let t = L('Worldwide · not limited to the map view', '世界全体・地図の表示範囲とは連動しない');
+    if (inView != null && listed.length) t += ' · ' + String(L('{n} of {m} in view', '{m} 件中 {n} 件が表示範囲内')).replace('{n}', inView).replace('{m}', listed.length);
+    el.textContent = t;
+    el.hidden = false;
   }
 
   /* ══ (news-intelligence) 取り込みが今も回っているか — 一覧の上の 1 行 ════════════════════════════
@@ -722,6 +932,17 @@ export function newsEvents(HOST) {
       : '';
     const head = card.querySelector('.news-head');
     if (head && badge) head.insertAdjacentHTML('beforeend', badge);
+    /* (exploration-flows) in the ★ Saved list, the events reported again since the reader saved them (or last marked
+       them as read) — the same `changedSince` the detail's «Since you saved this» reads */
+    if (head && HOST.mode === 'saved') {
+      const c = changedSince(item);
+      if (c && (c.newReports || c.newerAt)) {
+        const t = c.newReports
+          ? String(L('Updated · {n} new', '更新 · 新しい報道 {n}')).replace('{n}', c.newReports)
+          : L('Reported again', '新しい報道あり');   /* the later report is recorded, its articles have expired */
+        head.insertAdjacentHTML('beforeend', '<span class="ev-badge since" title="' + S(L('Reported again since you saved this', '★を付けてから新しく報じられた')) + '">' + S(t) + '</span>');
+      }
+    }
     if (head) head.insertAdjacentHTML('beforeend',
       '<span class="ev-cat" title="' + S(L('Event category', '出来事のカテゴリ', 'Ereigniskategorie', 'Категория события', 'Categoría del suceso')) + '">' + S(catLabel(ev.category)) + '</span>');
 
@@ -812,9 +1033,86 @@ export function newsEvents(HOST) {
     ].join('\n');
     document.head.appendChild(el);
   }
-  function openDetail(item) {
+  /* (exploration-flows) the event's own coordinate, or null — the point its pin stands on (`analysis.loc`) */
+  const placeAt = (item) => {
+    const l = item && item.analysis && item.analysis.loc;
+    return (Array.isArray(l) && isFinite(l[0]) && isFinite(l[1])) ? { lng: +l[0], lat: +l[1] } : null;
+  };
+  /* (exploration-flows) the ★ control's face — the same `isSaved` the list card reads */
+  function paintStar(btn, on) {
+    if (!btn) return;
+    btn.classList.toggle('on', !!on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  /* ══ (exploration-flows) THE WAY BACK FROM「この土地の過去」════════════════════════════════════════════
+     The past section (js/event-past.js) moves the master clock, and the detail said nothing more about it — the reader
+     was left in 1900 with no control on the surface they were reading. While the clock is not live the detail shows
+     the instant the map is at and a control that returns it to now; it hides the moment the clock is live again,
+     whoever made it so. One subscription for the open detail (IntMapTime.on), released when the detail leaves the
+     screen by any route (`watchPane` below) — and the painter releases it itself if it finds its row gone. */
+  let clockOff = null;
+  function stopClock() { if (clockOff) { const f = clockOff; clockOff = null; try { f(); } catch (_) { } } }
+  function paintNow() {
+    const row = document.getElementById('ev-now');
+    if (!row) { stopClock(); return; }
+    let live = true; try { live = IntMapTime.isLive(); } catch (_) { live = true; }
+    row.hidden = live;
+    if (live) return;
+    const t = row.querySelector('.ev-now-t');
+    let d = ''; try { d = IntMapTime.when().toLocaleDateString(IntMapLang.locale(HOST.lang), { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) { d = IntMapTime.iso(); }
+    if (t) t.textContent = String(L('The map is showing {d}.', '地図はいま {d} を表示している。')).replace('{d}', d);
+  }
+  /* ══ (exploration-flows) WHICH EVENT IS ON SCREEN, TOLD TO THE SHARE LINK ════════════════════════════════
+     The `event` field (js/map-state.js) is read from the reading surface (`selectedShown`), so a link is right the
+     moment it is written. The address bar, though, is rewritten only when a field says it moved — and the detail
+     leaves the screen by routes this module does not run (a tab switch, a re-render, an article reader: #R435), so
+     the pane itself is watched, the way js/news-ui.js watches it for the open pin. */
+  let shownPid = null, paneWatch = null;
+  function syncShown() {
+    const now = selectedShown();
+    if (!now) stopClock();
+    if (now === shownPid) return;
+    shownPid = now;
+    try { MapState.changed('event'); } catch (_) { }
+  }
+  function watchPane(pane) {
+    if (paneWatch || !pane || typeof MutationObserver !== 'function') return;
+    paneWatch = new MutationObserver(syncShown);
+    paneWatch.observe(pane, { attributes: true, attributeFilter: ['style'], childList: true });
+  }
+  /* ══ (exploration-flows) «SINCE YOU SAVED THIS» — the detail's reading of `changedSince` ═══════════════════════════
+     Only what `sinceSaved` found; nothing when the event is not saved or the copy and the event share nothing to compare. */
+  function sinceHtml(item, fmt) {
+    const c = changedSince(item);
+    if (!c || !c.compared) return '';
+    const day = (iso) => { try { return new Date(iso).toLocaleDateString(IntMapLang.locale(HOST.lang), { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) { return iso || ''; } };
+    let h = '<div class="ev-d-sec ev-since" id="ev-since"><h3>' + S(String(c.marked
+      ? L('Since you marked this as read ({d})', '既読にしてから（{d}）')
+      : L('Since you saved this ({d})', '★を付けてから（{d}）')).replace('{d}', day(c.since))) + '</h3>';
+    if (c.newReports) {
+      h += '<p class="ev-since-l">' + S(String(c.newReports === 1 ? L('1 new report', '新しい報道 1 本') : L('{n} new reports', '新しい報道 {n} 本')).replace('{n}', c.newReports));
+      if (c.newOutlets) h += ' · ' + S(String(c.newOutlets === 1 ? L('from 1 outlet that had not reported it', 'うち、それまで報じていなかった 1 媒体から') : L('from {m} outlets that had not reported it', 'うち、それまで報じていなかった {m} 媒体から')).replace('{m}', c.newOutlets));
+      h += '</p>';
+    } else if (c.newerAt) {
+      /* the new members have expired too: a later report is recorded, its articles are not */
+      h += '<p class="ev-since-l">' + S(String(L('Reported again since — latest report {t}', 'その後も報じられている — 最新の報道 {t}')).replace('{t}', fmt(c.newerAt))) + '</p>';
+    }
+    if (c.newFigures.length) {
+      h += '<div class="ev-since-figs"><span class="ev-since-k">' + S(L('New figures', '新しく出た数字')) + '</span>';
+      for (const q of c.newFigures) {
+        h += '<span class="ev-since-fig"><b>' + S(q.text || String(q.value)) + '</b>' + (q.source ? ' <span class="ev-src">— ' + S(q.source) + '</span>' : '') + '</span>';
+      }
+      h += '</div>';
+    }
+    if (c.rewritten) h += '<p class="ev-since-l">' + S(L('The AI summary was rewritten.', 'AI の要約が書き直された。')) + '</p>';
+    if (!c.any) h += '<p class="ev-since-l ev-since-none">' + S(c.marked ? L('No new reports since you marked this as read.', '既読にしてから新しい報道はない。') : L('No new reports since you saved this.', '★を付けてから新しい報道はない。')) + '</p>';
+    else h += '<button type="button" class="ev-since-read" id="ev-since-read" data-effect="private">' + S(L('Mark as read', '既読にする')) + '</button>';
+    return h + '</div>';
+  }
+  function openDetail(item, opts) {
     const ev = item && item._event;
     if (!ev) return;
+    const fly = !(opts && opts.fly === false);   /* (exploration-flows) a shared link's own view is the map the sender saw */
     detailFoldStyle();
     selected = ev.publicId;
     const pane = HOST.enterReaderPane();
@@ -836,16 +1134,36 @@ export function newsEvents(HOST) {
        the article reader's class names; the markup itself stayed a second copy, so the route to Atlas
        that a reading surface needs would have had to be typed twice to exist once. It is built by
        js/article-reader.js `readerBar()` now (HOST.readerBar), which both surfaces call. */
-    let html = HOST.readerBar({ back, backId: 'ev-back' });
+    /* (exploration-flows) ★ and share ride in the bar as `extra` — the slot js/news-ui.js's reader uses for its own
+       buttons. A reader who reached the detail from a map pin had no ★ (only the list card carried it) and no way
+       to send the event: the ★ calls the same toggleStar the card does, and share opens the one share dialog, whose
+       link now carries the event (js/map-state.js `event`). */
+    const starLbl = L('Bookmark', 'ブックマーク');
+    const shareLbl = L('Share this event', 'この出来事を共有');
+    const on0 = isSaved(ev.publicId);
+    const extra = '<button type="button" class="nrp-mode ev-bar-btn ev-star' + (on0 ? ' on' : '') + '" id="ev-star" data-effect="private" aria-pressed="' + (on0 ? 'true' : 'false') + '" title="' + S(starLbl) + '" aria-label="' + S(starLbl) + '">' + String(icon('star')) + '</button>' +
+      '<button type="button" class="nrp-mode ev-bar-btn" id="ev-share" title="' + S(shareLbl) + '" aria-label="' + S(shareLbl) + '">' + String(icon('share')) + '</button>';
+    let html = HOST.readerBar({ back, backId: 'ev-back', extra });
     html += '<div class="ev-detail">';
     html += '<div class="ev-d-head">';
-    if (ev.place) html += '<span class="loc-chip">' + S(ev.place) + '</span>';
+    /* (exploration-flows) the place is a door to the place card at the event's own point (js/place-dossier.js) — before,
+       the only way to see what surrounds an event was a long-press near its pin */
+    if (ev.place) html += placeAt(item)
+      ? '<button type="button" class="loc-chip ev-place" id="ev-place" title="' + S(L('About the place', '地点について')) + '">' + S(ev.place) + '</button>'
+      : '<span class="loc-chip">' + S(ev.place) + '</span>';
     html += '<span class="ev-cat">' + S(catLabel(ev.category)) + '</span>';
     html += '</div>';
+    html += '<div class="ev-now" id="ev-now" hidden><span class="ev-now-t"></span>' +
+      '<button type="button" class="ev-now-go" id="ev-now-go">' + S(L('Back to now', '現在に戻る')) + '</button></div>';
     html += '<h2 class="ev-d-title">' + S(ev.titleShown) + '</h2>';
     /* (news-quality) 構成記事が期限で消えた★の出来事は、★を付けたときの写しを読んでいる。そう書く。 */
     if (ev.fromSnapshot) {
-      html += '<p class="ev-d-note ev-snap">' + S(String(L('The articles behind this event have expired (IntMap keeps articles for 72 hours). This is what the event showed when you saved it on {d}.', 'この出来事の記事は期限切れで削除されている（IntMap は記事を 72 時間保持する）。以下は {d} に★を付けたときの内容である。')).replace('{d}', fmt(ev.fromSnapshot))) + '</p>';
+      /* (exploration-flows) «Mark as read» may have re-copied the content after the ★ — say which moment it is from */
+      const sn = snapFor(ev.publicId);
+      const reCopied = !!(sn && sn.contentAt && sn.savedAt && sn.contentAt !== sn.savedAt);
+      html += '<p class="ev-d-note ev-snap">' + S(String(reCopied
+        ? L('The articles behind this event have expired (IntMap keeps articles for 72 hours). This is what the event showed when you marked it as read on {d}.', 'この出来事の記事は期限切れで削除されている（IntMap は記事を 72 時間保持する）。以下は {d} に既読にしたときの内容である。')
+        : L('The articles behind this event have expired (IntMap keeps articles for 72 hours). This is what the event showed when you saved it on {d}.', 'この出来事の記事は期限切れで削除されている（IntMap は記事を 72 時間保持する）。以下は {d} に★を付けたときの内容である。')).replace('{d}', fmt(ev.fromSnapshot))) + '</p>';
     }
 
     /* ── 時刻 ── 初出と最新。「いつから続いているか」は出来事の基本的な事実である。 */
@@ -854,6 +1172,7 @@ export function newsEvents(HOST) {
       '<span>' + S(L('Latest article', '最新', 'Neueste', 'Последнее', 'Más reciente')) + ': ' + S(fmt(ev.lastAt)) + ' · ' + S(ago(ev.lastAt)) + '</span>' +
       '<span>' + S(String(L('{a} articles · {b} independent outlets', '記事{a}本・独立{b}媒体', '{a} Artikel · {b} unabhängige Quellen', '{a} статей · {b} независимых источников', '{a} artículos · {b} medios independientes')).replace('{a}', ev.articleCount).replace('{b}', ev.sourceCount)) + '</span>' +
       '</div>';
+    html += sinceHtml(item, fmt);
     /* (news-story) the events before and after this one whose headlines name the same words — on a timeline and the
        map (js/news-story.js through the boot door window.IntMapNewsIntel.story). The words are suggested from THIS
        headline (`representative_title`, the outlets' own) and the reader can change them there. */
@@ -952,7 +1271,12 @@ export function newsEvents(HOST) {
       /* ── 最新記事で何が更新されたか ──────────────────────────────────────
          ⚠ **「最後に届いた記事」は「更新」ではない。** 初報から 1 時間以上あとに出た
            記事だけを見て、そこで初めて出た数量と、初めて報じた系列を出す。 */
-      if (brief.latest) {
+      /* ⚠ (exploration-flows) the sentences are decided BEFORE the heading: measured on production 2026-11-18, an event whose
+         one new sentence was already under «What happened» printed the heading and only «From BBC's report…» — the «X
+         reported last» symptom in a new form. Nothing left to say ⇒ no section. */
+      const shownGist = new Set((brief.gist || []).map((g) => String(g.text || '').trim()));   /* (news-quality) 「何が起きたか」で既に出した文は繰り返さない */
+      const learnedNew = brief.latest ? (brief.latest.learned || []).filter((n) => !shownGist.has(String(n.text || '').trim())) : [];
+      if (brief.latest && (learnedNew.length || (brief.latest.figures || []).length)) {
         const u = brief.latest;
         html += '<div class="ev-d-sec ev-upd"><h3>' +
           S(L('What the latest report added', '最新の記事で更新された点', 'Was der neueste Bericht ergänzt', 'Что добавило последнее сообщение', 'Qué añadió el último informe')) + '</h3>';
@@ -960,9 +1284,7 @@ export function newsEvents(HOST) {
            伝わらない」。⇒ 先頭は**新しく分かったこと**（最新記事の文から前の記事が既に言ったことを引いた残り——
            js/news-brief.js `latest().learned`）と初めて出た数量。媒体と時刻は後ろに小さく添える出典。
            新しいことが何も無ければ `latest` は null で、この節は出ない。 */
-        const shownGist = new Set((brief.gist || []).map((g) => String(g.text || '').trim()));   /* (news-quality) 「何が起きたか」で既に出した文は繰り返さない */
-        for (const n of (u.learned || [])) {
-          if (shownGist.has(String(n.text || '').trim())) continue;
+        for (const n of learnedNew) {
           html += '<p class="ev-line">' + S(n.text) + '<span class="ev-src">— ' + S(u.source) + '</span></p>';
         }
         for (const f of u.figures) {
@@ -1083,7 +1405,7 @@ export function newsEvents(HOST) {
       S(L('How this page was put together', 'このページの作り方')) + '</summary>';
     /* (news-quality) 確かめた範囲だけを言う——保存前の検査は「挙げた一節が原文に実在するか」であって言い換えの正しさではない */
     if (ev.synthesis) html += '<p class="ev-ai-how ev-d-note">' + S(L('The paragraph above was written by AI from what these outlets published. Each sentence names the outlet and the passage it is based on, and before saving a program checked that every such passage really appears in that outlet’s text; a sentence whose passage could not be found is discarded. The program does not check that the sentence states the passage correctly — compare them under “How this was written”.', '上の段落は、これらの媒体が公表した内容から AI が書いたものである。各文は根拠にした媒体と原文の一節を挙げており、保存前にプログラムがその一節が実際にその媒体の文の中にあることを確かめた（見つからない文は捨てる）。文が一節の内容を正しく言い表しているかまではプログラムは確かめていない——「この文が何から書かれたか」で見比べられる。', 'Der Absatz oben wurde von einer KI aus dem geschrieben, was diese Quellen veröffentlicht haben. Jeder Satz nennt die Quelle und die Textstelle, auf der er beruht; vor dem Speichern hat ein Programm geprüft, dass jede dieser Stellen tatsächlich im Text der Quelle steht, und Sätze ohne auffindbare Stelle verworfen. Ob der Satz die Stelle richtig wiedergibt, prüft das Programm nicht — vergleichen Sie beides unter „Woraus dies geschrieben wurde“.', 'Абзац выше написан ИИ на основе опубликованного этими источниками. Каждое предложение указывает источник и фрагмент, на котором оно основано; перед сохранением программа проверила, что каждый такой фрагмент действительно есть в тексте источника, а предложения с ненайденным фрагментом отброшены. Программа не проверяет, верно ли предложение передаёт фрагмент — сравните их в разделе «Из чего это написано».', 'El párrafo anterior lo escribió una IA a partir de lo que publicaron estos medios. Cada frase indica el medio y el pasaje en que se basa; antes de guardarla, un programa comprobó que cada pasaje aparece realmente en el texto de ese medio y descartó las frases cuyo pasaje no se encontró. El programa no comprueba que la frase exprese correctamente el pasaje: compárelos en «De dónde salió esto».')) + '</p>';
-    if (brief && brief.gist.length) html += '<p class="ev-d-note">' + S(L('Sentences are quoted from what each outlet published. IntMap does not rewrite or paraphrase them.', '各媒体が実際に公表した文をそのまま引いている。IntMap は書き換えも言い換えもしない。', 'Die Sätze sind wörtlich aus dem übernommen, was jede Quelle veröffentlicht hat. IntMap schreibt sie nicht um.', 'Предложения приведены дословно из публикаций каждого источника. IntMap их не переписывает.', 'Las frases se citan tal como las publicó cada medio. IntMap no las reescribe ni parafrasea.')) + '</p>';
+    if (brief && brief.gist.length) html += '<p class="ev-d-note">' + S(L('In each outlet’s own words', '各媒体の原文', 'In den Worten der jeweiligen Quelle', 'Словами каждого источника', 'En palabras de cada medio')) + ' — ' + S(L('Sentences are quoted from what each outlet published. IntMap does not rewrite or paraphrase them.', '各媒体が実際に公表した文をそのまま引いている。IntMap は書き換えも言い換えもしない。', 'Die Sätze sind wörtlich aus dem übernommen, was jede Quelle veröffentlicht hat. IntMap schreibt sie nicht um.', 'Предложения приведены дословно из публикаций каждого источника. IntMap их не переписывает.', 'Las frases se citan tal como las publicó cada medio. IntMap no las reescribe ni parafrasea.')) + '</p>';
     html += '<h4 class="ev-sub">' +
       S(L('How this event was assembled', 'この出来事の組み立て方', 'Wie dieses Ereignis entstand', 'Как собрано это событие', 'Cómo se construyó este suceso')) + '</h4><ul>';
     html += '<li>' + S(L('Grouped from published headlines by a deterministic rule (time, place, shared rare words) — not by an AI summary.', '公表された見出しを、時刻・場所・珍しい語の共有という決定論の規則で束ねている（AI の要約ではない）。', 'Aus veröffentlichten Schlagzeilen nach einer deterministischen Regel gruppiert (Zeit, Ort, seltene Wörter) — nicht durch eine KI-Zusammenfassung.', 'Сгруппировано по опубликованным заголовкам детерминированным правилом (время, место, редкие слова), а не сводкой ИИ.', 'Agrupado a partir de titulares publicados mediante una regla determinista (tiempo, lugar, palabras poco frecuentes), no por un resumen de IA.')) + '</li>';
@@ -1144,8 +1466,40 @@ export function newsEvents(HOST) {
         body.textContent = L('The history of this place could not be loaded.', 'この土地の過去を読み込めませんでした。');
       });
     };
-    /* 詳細を開いたら、その出来事の場所へ寄る（カードのクリックと同じ約束）。 */
-    try { if (item.analysis && item.analysis.loc) IntMapGeoEngine.camera.flyTo({ center: item.analysis.loc, zoom: 4, speed: 1.0 }); } catch (_) { }
+    /* (exploration-flows) ★ / share / the place card / back to now */
+    const st = document.getElementById('ev-star');
+    if (st) st.onclick = async () => {
+      st.disabled = true;
+      let on = isSaved(ev.publicId);
+      try { on = await toggleStar(item); } catch (_) { on = isSaved(ev.publicId); }
+      st.disabled = false; paintStar(st, on);
+    };
+    const sh = document.getElementById('ev-share');
+    if (sh) sh.onclick = () => { try { window.IntMapShare.open(); } catch (_) { } };
+    const pl = document.getElementById('ev-place');
+    if (pl) pl.onclick = () => {
+      const at = placeAt(item); if (!at) return;
+      import('./place-dossier.js').then((m) => m.openPlaceDossier(HOST, { lng: at.lng, lat: at.lat, name: ev.place || null })).catch(() => {
+        try { HOST.imToast(L('The place profile could not be loaded', '地点プロファイルを読み込めませんでした')); } catch (_) { }
+      });
+    };
+    const mr = document.getElementById('ev-since-read');
+    if (mr) mr.onclick = async () => {
+      mr.disabled = true;
+      let ok = false; try { ok = await markRead(item); } catch (_) { ok = false; }
+      if (!ok) { mr.disabled = false; try { HOST.imToast(L('Could not mark this as read', '既読にできませんでした')); } catch (_) { } return; }
+      if (selectedShown() === ev.publicId) openDetail(item, { fly: false });   /* the section reads the new baseline */
+    };
+    const ng = document.getElementById('ev-now-go');
+    if (ng) ng.onclick = () => { try { IntMapTime.setNow({ source: 'news-event' }); } catch (_) { } };
+    stopClock();
+    try { clockOff = IntMapTime.on(paintNow); } catch (_) { clockOff = null; }
+    paintNow();
+    watchPane(pane);
+    syncShown();
+    /* 詳細を開いたら、その出来事の場所へ寄る（カードのクリックと同じ約束）。 (exploration-flows) 寄る近さはその地点の
+       精度が決める（`eventZoom`・ファイル冒頭の説明）。 */
+    try { if (fly && item.analysis && item.analysis.loc) IntMapGeoEngine.camera.flyTo({ center: item.analysis.loc, zoom: eventZoom(item.analysis.placeKind), speed: 1.0 }); } catch (_) { }
   }
 
   /* ── Atlas 用の状態（docs/NEWS-EVENTS.md §10）─────────────────────────────
@@ -1239,6 +1593,28 @@ export function newsEvents(HOST) {
     return true;
   }
 
+  /* ══ (exploration-flows) THE SHARE LINK'S `ev` FIELD ════════════════════════════════════════════════════
+     read  — the event whose detail is ON SCREEN (`selectedShown`: the surface is asked, not this module's memory).
+     apply — a link that names an event opens it: on the News tab (the reading surface is the News tab's, and a
+             re-render on another tab closes it — js/news-ui.js `renderUI`), from the loaded list or else that one
+             row from the store (`itemByPublicId`), without flying — the link's own view is the map that was sent.
+             A link that names none applies nothing: its silence is «no event in the link», not «close what the
+             reader is reading». An event the store no longer holds is said, not skipped silently. */
+  MapState.own('event', {
+    read: () => selectedShown(),
+    apply: (pid, ctx) => {
+      if (!pid) return;
+      (async () => {
+        try { if (HOST.mode !== 'news' && HOST.mode !== 'saved') HOST.setMode('news', 'btn-news'); } catch (_) { }
+        let it = null;
+        try { it = await itemByPublicId(pid); } catch (_) { it = null; }
+        if (ctx && typeof ctx.current === 'function' && !ctx.current()) return;
+        if (!it) { try { HOST.imToast(L('This event could not be loaded', 'この出来事を読み込めませんでした')); } catch (_) { } return; }
+        openDetail(it, { fly: false });
+      })();
+    },
+  });
+
   /* ══ (#R428) THE ONE CONTROL ON THE ROW THAT DID NOT RELABEL ════════════════════════════════
      `js/app-body.js` `setLang()` dispatches `intmap-lang` for「modules that relabel on language
      change」and this module was not listening. The chips' words come from `L(...)` evaluated AT
@@ -1270,7 +1646,7 @@ export function newsEvents(HOST) {
     columns: () => EVENT_COLS + ',' + MEMBER_COLS,
     /* (news-intelligence) the ingest summary and its verdict — Atlas's news.health reads these */
     health: () => askHealth().then(() => Object.assign({ summary: healthErr ? null : health, error: healthErr }, healthVerdict())),
-    toggleStar, isSaved, differences, quantities, ensureCategory, snapshotOf,
+    toggleStar, isSaved, differences, quantities, ensureCategory, snapshotOf, markRead, changedSince, scopeNote: () => paintScopeNote(),
     categories: () => CATS.map(([k, v]) => ({ key: k, label: L.arr(v) })),
     /* (wave4-news) the edition re-counts its entry after it marked a visit — only when the entry is on screen
        (re-rendering the chips here would show them outside News) */

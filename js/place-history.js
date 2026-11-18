@@ -26,6 +26,7 @@
  * ==========================================================================*/
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
+import { IntMapGeoEngine } from './geo-engine.js';   /* (exploration-flows) the camera, through the contract — `historyGo` */
 import './safe-html.js';
 
 const HS = () => window.IntMapHistScale;
@@ -490,10 +491,16 @@ function jumpTo(E) {
   } catch (_) { return false; }
 }
 
+/** the entry a `ph:i` / `pha:i` key names (the nation's row, or the subdivision's) */
+function entryOfKey(rec, k) {
+  const j = +k.slice(k.indexOf(':') + 1);
+  return k.indexOf('pha:') === 0 ? (rec.admin && rec.admin.entries[j]) : (rec.nation && rec.nation.entries[j]);
+}
+
 /** a press inside `historyMarkup` (its `data-hn`): `ph:i` / `pha:i` set the clock to that row, `pharc:i` opens that polity's
     rise and fall (js/polity-arc.js). ONE handler for every surface that shows the timeline — the place card and a news
     event's «This place's past» (js/event-past.js). → 'clock' | 'arc' | null (not a key of this timeline, or nothing done) */
-export function historyAction(rec, key, lang) {
+function historyAction(rec, key, lang) {
   const k = String(key || '');
   if (!rec || rec.status === 'unavailable') return null;
   if (k.indexOf('pharc:') === 0) {
@@ -505,11 +512,51 @@ export function historyAction(rec, key, lang) {
     return 'arc';
   }
   if (k.indexOf('ph:') === 0 || k.indexOf('pha:') === 0) {
-    const j = +k.slice(k.indexOf(':') + 1);
-    const E = k.indexOf('pha:') === 0 ? rec.admin && rec.admin.entries[j] : rec.nation && rec.nation.entries[j];
+    const E = entryOfKey(rec, k);
     return E && jumpTo(E) ? 'clock' : null;
   }
   return null;
+}
+
+/** (exploration-flows) the instant a row puts the clock at (`jumpTo`), in the spelling js/compare.js `thenNow` takes for
+    `then`: the sheet's year (a number), or the row's own day at noon UTC as an ISO instant. → null for a row with no jump */
+export function thenOfEntry(E) {
+  if (!E || !E.jump) return null;
+  if (E.jump.sheet != null) return +E.jump.sheet;
+  return isoOf(E.jump.k) + 'T12:00:00Z';
+}
+
+/* the zoom the map is brought to for a timeline row: the place card's own (it flew to 7 for a row since place-through-time),
+   kept when the reader is already closer, by at most two levels */
+const ROW_ZOOM = 7;
+/** (exploration-flows) the camera a place is looked at through time with — { center:[lng,lat], zoom } — the one rule for a
+    timeline row's press (`historyGo`) and the place card's «Compare two times here» (js/compare.js `thenNow` framing).
+    `zoom` is null when no renderer can say how close the reader already is. */
+export function rowCamera(at) {
+  let z = null;
+  try { const E = IntMapGeoEngine; if (E && E.hasRenderer()) z = Math.max(ROW_ZOOM, Math.min(E.camera.getZoom(), ROW_ZOOM + 2)); } catch (_) { z = null; }
+  return { center: [+at.lng, +at.lat], zoom: (typeof z === 'number' && isFinite(z)) ? z : null };
+}
+function bringTo(at) {
+  try {
+    const E = IntMapGeoEngine; if (!E || !E.hasRenderer()) return;
+    const c = rowCamera(at);
+    E.camera.flyTo(Object.assign({ center: c.center, duration: 1000 }, c.zoom != null ? { zoom: c.zoom } : {}));
+  } catch (_) { /* no renderer: the clock still moved */ }
+}
+
+/** (exploration-flows) A ROW'S PRESS, WITH THE MAP BROUGHT TO THE PLACE. `historyAction` moves the clock; when it did, the
+    camera goes to `at` ({lng,lat} — the point the timeline was read at), so on every surface that shows the timeline (the
+    place card, a news event's «This place's past») the map moves to the place when the clock moves. ONE helper; both call it.
+    → { action: 'clock' | 'arc' | null, then } — `then` is `thenOfEntry` of the row the clock went to (null otherwise). */
+export function historyGo(rec, key, lang, at) {
+  const action = historyAction(rec, key, lang);
+  let then = null;
+  if (action === 'clock') {
+    then = thenOfEntry(entryOfKey(rec, String(key)));
+    if (at && isFinite(+at.lng) && isFinite(+at.lat)) bringTo(at);
+  }
+  return { action, then };
 }
 
 /* the timeline's rules — injected with the place card's (js/place-dossier.js `placeCardStyle`) */
