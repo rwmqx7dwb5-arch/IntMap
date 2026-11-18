@@ -8,7 +8,7 @@
  *  writes {kind:'op', op, inputs, params} as its provenance — the recipe, not a label.
  *
  *  ══ WHAT THIS FILE DECLARES, AND WHAT IT REFUSES ══════════════════════════════════════════════
- *  Nine ops: filter, buffer, clip, intersect, difference, union, dissolve, relate, aggregate. Each
+ *  The ops are the keys of DECL (docs/GIS-CORE.md §2.1 tables them; a check keeps the two equal). Each
  *  DECLARES its inputs, the geometry each input must be, and its parameters; ops() is the only thing
  *  a panel reads. A UI that carried its own list of 「buffer は半径を聞く」 would be the hand-written
  *  list .agents/rules/no-ad-hoc-hardcoding.md forbids — it decides for the ops that exist today and
@@ -124,6 +124,10 @@ export function makeGisOps() {
     const STEPS_MIN = 8, STEPS_MAX = 4096;
 
     /* ── small geometry utilities ─────────────────────────────────────────────────────────────── */
+    /* ⚠ (gis-foundation-refine) WHY THESE ARE NOT THE KERNEL'S. js/gis-geometry.js has the same isPos /
+       same / ringPositions, but publishes none of them, and areaKm2 below — which the panel calls — has
+       to answer with no geometry kernel mounted at all. The kernel's own note on SAME_EPS says the two
+       are shared 「by measurement, not by import」. */
 
     function isPos(p) { return Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number' && isFinite(p[0]) && isFinite(p[1]); }
     function same(a, b) { return Math.abs(a[0] - b[0]) <= SAME_EPS && Math.abs(a[1] - b[1]) <= SAME_EPS; }
@@ -243,6 +247,10 @@ export function makeGisOps() {
     function lengthKm(geometry) {
       const Rk = earthKm();
       if (Rk == null) return null;
+      /* ⚠ NOT IntMapGeodesy._distKm, although it is the same haversine: that one subtracts the two
+         latitudes AFTER converting each to radians, and over sub-millimetre segments (1e-6°) it differs
+         from this by up to 8.2e-6 relative — measured over 10⁶ random segments, 2026-11-17. This form
+         subtracts the degrees first, which is the one that keeps those digits. */
       const seg = (a, b) => {
         const dLat = (b[1] - a[1]) * D2R, dLon = (b[0] - a[0]) * D2R;
         const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * D2R) * Math.cos(b[1] * D2R) * Math.sin(dLon / 2) ** 2;
@@ -294,6 +302,10 @@ export function makeGisOps() {
     /* ── convexity, measured ──────────────────────────────────────────────────────────────────── */
 
     /* ── geometry decomposition ───────────────────────────────────────────────────────────────── */
+    /* ⚠ (gis-foundation-refine) linesOf / pointsOf ARE NOT THE KERNEL'S EITHER, and the difference is
+       an answer: the kernel's descend into a GeometryCollection and these do not, so runClip — their
+       one reader — would start clipping the line or point parts of a collection it now passes over.
+       Swapping them is a change of what clip returns, not a removal of a copy. */
 
     function polygonsOf(g) {
       if (!g) return [];
@@ -320,7 +332,11 @@ export function makeGisOps() {
        coordinates and the rejection is four comparisons. ⚠ IT IS A FILTER, NOT AN ANSWER: boxes
        overlapping proves nothing, so a pair that passes still goes to the real predicate. What it
        removes is only pairs where a box says «no», and a box saying no is exact.
-       ⚠ This is not a spatial index. It turns the constant down, not the O(n·m). */
+       ⚠ This is not a spatial index. It turns the constant down, not the O(n·m).
+       ⚠ (gis-foundation-refine) AND IT IS NOT THE KERNEL'S bbox ON PURPOSE. That one answers RFC 7946's
+       box — west > east across the antimeridian — and every reader of this one (boxesMeet, padBoxKm,
+       js/gis-index.js) compares plain min/max. `grid`, which needs the short way round, asks the
+       kernel's. */
     function bboxOf(g) {
       let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
       (function walk(c) {
@@ -491,7 +507,23 @@ export function makeGisOps() {
        「どの stat が列を要るか」 are both derived from it, so a sixth statistic cannot be offered and
        left out of the requirement (it was two hand-written lists one line apart until this round).
        `areaWeightedMean` is the door for the remedy js/gis-units.js hands back — see the note there. */
-    const AGG_STATS = ['count', 'sum', 'mean', 'min', 'max', 'areaWeightedMean'];
+    const AGG_STATS = ['count', 'sum', 'mean', 'min', 'max', 'areaWeightedMean', 'median', 'percentile', 'stdev', 'majority'];
+    /* ══ (gis-foundation-refine) 分布を述べる 4 つの stat と、それぞれを裁く規則 ══════════════════
+         median      中央値。percentile の p=50 と同じ算術（下）で、偶数個なら中央 2 つの平均。
+         percentile  第 p 百分位（p は 0〜100、`p` で述べる）。⚠ 定義を述べる：Hyndman & Fan の
+                     type 7——h = (n−1)·p/100、x[⌊h⌋] と x[⌊h⌋+1] の線形補間。R の既定・NumPy の
+                     既定・Excel の PERCENTILE.INC と同じ数になる定義で、別の定義（最近順位など）で
+                     出した数とは小さい n で一致しない。
+         stdev       ⚠ 標本標準偏差（分母 n−1）。母標準偏差ではない。1 件の区域は分散が定義され
+                     ないので null（0 ではない——0 は「ばらつきが無い」という主張になる）。
+         majority    最頻値。⚠ 名前は js/gis-units.js の語と同じにした——その核は区分（category）を
+                     平均・合計しようとした呼び出しに remedy 'majority' を返すので、扉の名前が remedy
+                     の名前と違えば、拒否は読者が辿れない語を指すことになる（#R752 が grid-mismatch
+                     で見つけた形）。値は列の値そのものを**同一性**で数える（`"01100"` と `"1100"` は
+                     別の値。join の鍵と同じ理由）。同数のときは入力 1 の行順で最初に現れた値——
+                     索引が訪れた順ではない（spatialJoin 'first' と同じ規則）。
+       ⚠ 集計してよいかは、この層が決めない。stat はどれも js/gis-units.js の語そのもので訊く
+       （percentile・stdev も核の語彙にある）。 */
     /* ══ ⚠⚠⚠ (#R819) 「面積で重み付ける」 には 2 つの面積があり、片方しか無かった ══════
        `areaWeightedMean` weighted every member by ITS OWN ground area, whole, however little of it
        lay in the zone — so what it computed was Σ v·A(P) / Σ A(P) over the members that TOUCH the
@@ -522,6 +554,46 @@ export function makeGisOps() {
        ⚠ 述べられなければ**量の measure から導く**（nominal → composition、extensive → total、
        intensive → typical）。既定を 1 つ書くと、分類の格子に平均を出すことになる。 */
     const PROFILE_READINGS = ['total', 'typical', 'composition', 'presence'];
+
+    /* ══ (gis-foundation-refine) 格子を作る — `grid` ════════════════════════════════════════════════
+       「区域ごとに数える」 needs zones, and the zones a reader most often wants are none of their own: a
+       hexbin or a fishnet over the data. `grid` makes them as a dataset, and `aggregate` — unchanged —
+       is the rest of the analysis. There is no second counting engine.
+       ⚠ THE CELLS ARE THE SAME SIZE ON THE GROUND, NOT IN DEGREES. A 0.1° fishnet is 123 km² at the
+       equator and 62 km² at 60°N, and a count per cell over it is a density map with the latitude
+       baked in. So `cellKm` is a length on the ground and every cell's area is cellKm² by
+       construction — the two constructions are stated, and each cell's measured area is written on its
+       row (`_areaKm2`, by this file's areaKm2), so 「同じ大きさ」 is a column a reader can check:
+         square   EQUAL-AREA ROWS. Bands of constant height cellKm along the meridian; in each band the
+                  longitude step is chosen so the cell's spherical area is exactly cellKm²
+                  (Δλ = cellKm² / (R²·(sin φ₂ − sin φ₁))), i.e. ≈ cellKm wide at the band's middle. Each
+                  row is anchored at the extent's west edge, so columns do not line up between rows —
+                  that is what keeps them square at every latitude rather than only at one.
+         hexagon  REGULAR HEXAGONS ON THE LAMBERT CYLINDRICAL EQUAL-AREA PLANE whose standard parallel is
+                  the extent's middle latitude (x = R·cos φ₀·λ, y = R·sin φ / cos φ₀). Hexagon rows
+                  interlock, so they cannot change scale row by row the way squares can; an equal-area
+                  plane keeps every cell's area exactly cellKm² instead, and the shape is true at φ₀
+                  and stretched east–west away from it. Pointy-top, rows offset 'odd-r' (an odd row is
+                  shifted east by half a cell).
+       ⚠ The two are the same SIZE at one cellKm, not the same shape, so a square and a hexagon grid of
+       one cellKm give counts on the same scale. Rows that reach a pole are cut by it and their cells
+       are smaller — the area column says so, it is not hidden. */
+    const GRID_SHAPES = ['square', 'hexagon'];
+    /* ⚠ A REFUSAL BY SIZE, AND THE SIZE IS MEMORY (.agents/rules/no-ad-hoc-hardcoding.md §4).
+       ① OBSERVATION: one cell as a registered feature — the Polygon, its ring, and the five columns
+          this op writes — measured 2026-11-17 on node v24.18.0 (--expose-gc, heapUsed over 100,000
+          cells added through js/gis-datasets.js add()): 762 B for a square (5 positions), 890 B for
+          a hexagon (7 positions). The registry does not copy the features, so that is the residency.
+       ② THE BUDGET IS NOT A NEW NUMBER. js/gis-worker.js states the largest single payload this app
+          holds as one 4096 × 4096 float64 band, 128 MiB, and a grid of cells is one such payload: the
+          answer is allowed the residency a grid band is already allowed (≈ 176,000 squares,
+          ≈ 150,000 hexagons — 5 km hexagons over all of Japan's land is ≈ 15,000).
+       ③ EXPIRES IF the feature representation changes (a typed-array geometry store would cut ① by
+          an order of magnitude) or js/gis-worker.js re-measures the payload ceiling it states.
+       ⚠ IT IS COUNTED BEFORE ANYTHING IS BUILT, over the cells that can meet the input — not the whole
+       extent when the input is areal — so a sparse archipelago is not refused for its sea. */
+    const GRID_BUDGET_BYTES = 4096 * 4096 * 8;
+    const GRID_BYTES_PER_CELL = { square: 762, hexagon: 890 };
 
     /* ── どの面の上で計算したのか (#R756) ──────────────────────────────────────────────────────
        An outside review of R752 said the ops do not state, per op, which surface they compute on.
@@ -600,10 +672,7 @@ export function makeGisOps() {
         params: [{ name: 'where', type: 'conditions', required: true, input: 0, ops: CONDITION_OPS }],
       },
       buffer: {
-        /* ⚠ `accepts:['Point']` UNTIL #R732. The refusal was honest — there was no offset curve —
-           but it is not honest any more: js/gis-geometry.js builds the Minkowski sum of ANY
-           geometry with a geodesic disk, which is what a buffer is. `buffer-needs-points` is
-           therefore gone, and so is the mismatchWhy that named it. */
+        /* Any geometry: js/gis-geometry.js builds the Minkowski sum of it with a geodesic disk. */
         id: 'buffer',
         surface: ['sphere', 'degree-plane'], inputs: 1, accepts: ['any'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true,
@@ -615,9 +684,7 @@ export function makeGisOps() {
         ],
       },
       clip: {
-        /* ⚠ THE CLIPPER NO LONGER HAS TO BE CONVEX (#R732). A ward with a hole, a concave
-           prefecture and a window whose true answer is several disjoint pieces are all ordinary
-           now. `clip-window-not-convex` is raised by nothing. */
+        /* The window may be concave, holed, or several disjoint pieces — the sweep-line takes them all. */
         id: 'clip',
         surface: ['degree-plane'], inputs: 2, accepts: ['any', 'Polygon'], output: 'same-as-input',
         needsGeodesy: true, needsGeometry: true, params: [],
@@ -645,6 +712,51 @@ export function makeGisOps() {
         surface: ['degree-plane'], inputs: 1, accepts: ['Polygon'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true,
         params: [{ name: 'by', type: 'field', required: false, input: 0 }],
+      },
+      /* ── (gis-foundation-refine) the measures a shape has of itself ─────────────────────────────
+         js/gis-geometry.js computes all four (its block 「THE MEASURES A SHAPE HAS OF ITSELF」); these
+         declarations are only the doors, and every refusal the kernel names reaches the reader under
+         that name through the ledger. ⚠ NOTHING IS COMPUTED HERE — a centroid written in this file would
+         be the seventh copy the kernel's note counted. */
+      centroid: {
+        /* One Point per row, the row's columns kept. ⚠ ON THE SPHERE, in the row's highest dimension
+           (area-weighted, else length-weighted, else the mean of the points) — Fiji's centroid is in
+           Fiji, not in the Atlantic. A shape whose vectors cancel (a band symmetric about the equator)
+           has no centroid and is refused by name, not given one. ⚠ It may lie OUTSIDE its shape (a C,
+           a ring with a hole): that is what a centroid is, and pointOnSurface is the door for a point
+           that must be inside. */
+        id: 'centroid',
+        surface: ['sphere'], inputs: 1, accepts: ['any'], output: 'Point',
+        needsGeometry: true, params: [],
+      },
+      pointOnSurface: {
+        /* One Point per row GUARANTEED to be in or on its shape — the kernel checks every candidate
+           against its own point-in-polygon before answering. The label point, the 「代表点」. */
+        id: 'pointOnSurface',
+        surface: ['degree-plane', 'sphere'], inputs: 1, accepts: ['any'], output: 'Point',
+        needsGeometry: true, params: [],
+      },
+      convexHull: {
+        /* The spherical convex hull of every position of a group — one per value of `by`, or ONE for
+           the whole dataset when `by` is absent (the reading dissolve gives the same parameter).
+           ⚠ A group whose positions do not fit in an open hemisphere has no convex hull on the sphere,
+           and is refused by name rather than drawn as something smaller. A group of one position, or
+           of positions on one great circle, answers in its own dimension (a Point, a LineString) —
+           a polygon of zero area would be a shape nobody has. */
+        id: 'convexHull',
+        surface: ['sphere'], inputs: 1, accepts: ['any'], output: 'Polygon',
+        needsGeodesy: true, needsGeometry: true,
+        params: [{ name: 'by', type: 'field', required: false, input: 0 }],
+      },
+      simplify: {
+        /* Douglas–Peucker with the tolerance in KILOMETRES on the ground, every answer passing the
+           kernel's validity walk (a ring that would cross itself is simplified again at half the
+           tolerance). ⚠ PER FEATURE: two neighbours simplified apart no longer share their edge —
+           `stats.simplify.topology` says so, in the kernel's word. */
+        id: 'simplify',
+        surface: ['sphere', 'degree-plane'], inputs: 1, accepts: ['any'], output: 'same-as-input',
+        needsGeodesy: true, needsGeometry: true,
+        params: [{ name: 'toleranceKm', type: 'number', required: true, unit: 'km' }],
       },
       relate: {
         /* The spatial WHERE: keep the features of input 0 that stand in `predicate` to ANY feature
@@ -1003,6 +1115,27 @@ export function makeGisOps() {
         needsGeodesy: true, needsGeometry: true, needsVoronoi: true,
         params: [],
       },
+      grid: {
+        /* 格子（正方形・六角形）: cells of equal GROUND size over input 0 — see GRID_SHAPES for the two
+           constructions. grid → aggregate is the hexbin / fishnet count; there is no second engine.
+           ⚠ `clip` cuts the cells to the input's AREA, so it means something only when the input has
+           one. On points or lines there is nothing to cut to, and the answer says so
+           (`stats.clip: 'input-not-areal'`) instead of returning no cells.
+           ⚠ `bbox` is "west,south,east,north" and west > east CROSSES THE ANTIMERIDIAN (RFC 7946
+           §5.2's convention) — omitted, the extent is the input's own, measured the short way round
+           the world, so data on both sides of 180° gets one grid across the seam and not one across
+           the whole planet. */
+        id: 'grid',
+        surface: ['sphere', 'degree-plane'], inputs: 1, accepts: ['any'], output: 'Polygon',
+        needsGeodesy: true, needsGeometry: true,
+        params: [
+          { name: 'shape', type: 'enum', required: true, default: 'square', values: GRID_SHAPES },
+          /* the side of the square of the same area: every cell is cellKm² whatever its shape */
+          { name: 'cellKm', type: 'number', required: true, unit: 'km' },
+          { name: 'clip', type: 'boolean', required: false, default: true },
+          { name: 'bbox', type: 'text', required: false },
+        ],
+      },
       timeJoin: {
         /* 時点・期間による結合: 「当時の区域」「観測時点の統計」「期間が重なるイベント」 as one op.
            ⚠ INPUT 1 MUST HAVE A DECLARED TIME AXIS — it is the side being asked when it holds, and
@@ -1114,6 +1247,9 @@ export function makeGisOps() {
              so naming it with another stat is refused rather than ignored — the same rule `zonal`'s
              `total` states about `sum`. */
           { name: 'weightBy', type: 'enum', required: false, default: 'memberArea', values: AGG_WEIGHT_BASES },
+          /* (gis-foundation-refine) 第何百分位か（0〜100）。`percentile` の読み方であって他の stat の
+             ものではないので、別の stat に付けたら weightBy と同じく無視せず拒む。 */
+          { name: 'p', type: 'number', required: false, unit: '%', requiredWhen: { stat: ['percentile'] } },
         ],
       },
       /* ══ (#R819) 集合についての問い ═══════════════════════════════════════════════════════════
@@ -2930,6 +3066,345 @@ export function makeGisOps() {
       return withGeoStats({ ok: true, features: out }, led);
     }
 
+    /* ── (gis-foundation-refine) the kernel's measures of a shape, as ops ──────────────────────────────
+       ⚠ A DOOR THE KERNEL DOES NOT HAVE IS NOT AN EMPTY ANSWER. A build whose js/gis-geometry.js predates
+       these doors answers `geometry-unavailable` naming the door, the refusal run() already gives a
+       kernel that did not arrive — never a dataset of zero points. */
+    function kernelDoor(GG, name) {
+      const door = GG && GG.attempt && GG.attempt[name];
+      return (typeof door === 'function') ? door : null;
+    }
+
+    async function runPointOf(which, ds, ctx) {
+      const door = kernelDoor(geometry(), which);
+      if (!door) return fail('geometry-unavailable', { kernel: 'geometry', op: which });
+      const out = [];
+      const led = makeGeoLedger();
+      const rows = ds.features();
+      for (let i = 0; i < rows.length; i++) {
+        if (!(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[i];
+        const g = f && f.geometry;
+        if (!g) continue;
+        const r = door(g);
+        if (!led.ok(r)) continue;
+        if (!r.geometry) continue;
+        /* the row's columns, unchanged — a point standing for a row is still that row */
+        out.push({ type: 'Feature', properties: withProps(props(f)), geometry: r.geometry });
+      }
+      return withGeoStats({ ok: true, features: out }, led);
+    }
+
+    async function runConvexHull(ds, params, R, ctx) {
+      const door = kernelDoor(geometry(), 'convexHull');
+      if (!door) return fail('geometry-unavailable', { kernel: 'geometry', op: 'convexHull' });
+      const by = (params.by == null || String(params.by).trim() === '') ? null : String(params.by);
+      if (by && !hasField(ds, by)) return fail('unknown-field', { field: by });
+      /* grouped exactly as runDissolve groups: insertion order, the reader's own table's order */
+      const groups = new Map();
+      for (const f of ds.features()) {
+        const g = f && f.geometry;
+        if (!g) continue;
+        const key = by ? String(props(f)[by]) : '';
+        if (!groups.has(key)) groups.set(key, { geoms: [], first: props(f) });
+        groups.get(key).geoms.push(g);
+      }
+      if (!groups.size) return fail('no-features', { input: 0 });
+      const out = [];
+      const led = makeGeoLedger();
+      const grps = Array.from(groups.values());
+      let lowerDimension = 0;
+      for (let gi = 0; gi < grps.length; gi++) {
+        if (!(await ctx.tick(1, grps.length))) return fail('cancelled', { done: ctx.done(), total: grps.length });
+        const grp = grps[gi];
+        /* the group as ONE geometry, so the kernel sees every position of it at once — the hull of
+           the group, not a hull of hulls */
+        const whole = (grp.geoms.length === 1) ? grp.geoms[0] : { type: 'GeometryCollection', geometries: grp.geoms };
+        const r = door(whole);
+        if (!led.ok(r)) continue;
+        if (!r.geometry) continue;
+        if (r.geometry.type !== 'Polygon' && r.geometry.type !== 'MultiPolygon') lowerDimension++;
+        /* ⚠ only the grouping column survives, for the reason runDissolve gives */
+        const extra = { _hullOf: grp.geoms.length, _hullVertices: (typeof r.vertices === 'number') ? r.vertices : null, _areaKm2: areaKm2(r.geometry) };
+        if (by) extra[by] = grp.first[by];
+        out.push({ type: 'Feature', properties: extra, geometry: r.geometry });
+      }
+      return withGeoStats({ ok: true, features: out }, led, lowerDimension ? { hullLowerDimension: lowerDimension } : null);
+    }
+
+    async function runSimplify(ds, params, R, ctx) {
+      const door = kernelDoor(geometry(), 'simplify');
+      if (!door) return fail('geometry-unavailable', { kernel: 'geometry', op: 'simplify' });
+      if (params.toleranceKm == null || String(params.toleranceKm).trim() === '') return fail('missing-param', { param: 'toleranceKm' });
+      const tol = R.asNumber(params.toleranceKm);
+      /* 0 is the identity, and the kernel accepts it; a negative distance is not a distance */
+      if (tol == null || !(tol >= 0)) return fail('bad-param', { param: 'toleranceKm', value: params.toleranceKm });
+      const out = [];
+      const led = makeGeoLedger();
+      /* the kernel's own counters, summed over the rows it answered for */
+      const totals = { toleranceKm: tol, positionsBefore: 0, positionsAfter: 0, ringsBackedOff: 0, topology: null };
+      const rows = ds.features();
+      for (let i = 0; i < rows.length; i++) {
+        if (!(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[i];
+        const g = f && f.geometry;
+        if (!g) continue;
+        const r = door(g, tol);
+        if (!led.ok(r)) continue;
+        if (!r.geometry) continue;
+        for (const k of ['positionsBefore', 'positionsAfter', 'ringsBackedOff']) if (typeof r[k] === 'number' && isFinite(r[k])) totals[k] += r[k];
+        if (r.topology != null) totals.topology = String(r.topology);
+        const extra = {};
+        /* a simplified area is a different area, and `_areaKm2` on the row must be the row's own */
+        if (Object.prototype.hasOwnProperty.call(props(f), '_areaKm2')) extra._areaKm2 = areaKm2(r.geometry);
+        out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: r.geometry });
+      }
+      return withGeoStats({ ok: true, features: out }, led, { simplify: totals });
+    }
+
+    /* ── grid (gis-foundation-refine) — see GRID_SHAPES for the constructions ──────────────────────── */
+
+    /* Longitudes into [-180, 180). */
+    function wrapLng(x) { return ((x + 180) % 360 + 360) % 360 - 180; }
+
+    /* Merged column intervals [lo, hi] (inclusive). */
+    function mergeRanges(rs) {
+      rs.sort((a, b) => a[0] - b[0]);
+      const out = [];
+      for (const r of rs) {
+        const last = out[out.length - 1];
+        if (last && r[0] <= last[1] + 1) { if (r[1] > last[1]) last[1] = r[1]; } else out.push([r[0], r[1]]);
+      }
+      return out;
+    }
+
+    async function runGrid(ds, params, R, ctx) {
+      const GG = geometry();
+      const Rk = earthKm();
+      const shapeDecl = DECL.grid.params.find((p) => p.name === 'shape');
+      const shape = (params.shape == null || String(params.shape) === '') ? shapeDecl.default : String(params.shape);
+      if (GRID_SHAPES.indexOf(shape) < 0) return fail('bad-param', { param: 'shape', value: shape, values: GRID_SHAPES.slice() });
+      if (params.cellKm == null || String(params.cellKm).trim() === '') return fail('missing-param', { param: 'cellKm' });
+      const cellKm = R.asNumber(params.cellKm);
+      if (cellKm == null || !(cellKm > 0)) return fail('bad-param', { param: 'cellKm', value: params.cellKm });
+      const A = cellKm * cellKm;
+
+      /* ── the extent ── */
+      let ext;
+      if (params.bbox != null && String(params.bbox).trim() !== '') {
+        const parts = String(params.bbox).split(',').map((x) => Number(x.trim()));
+        if (parts.length !== 4 || parts.some((v) => !isFinite(v)) || parts[1] > parts[3] || parts[1] < -90 || parts[3] > 90) {
+          return fail('bad-param', { param: 'bbox', value: params.bbox });
+        }
+        const bw = parts[0], be = parts[2];
+        /* -180 → 180 is the whole turn; west > east crosses the seam (RFC 7946 §5.2). */
+        const width = (be - bw >= 360) ? 360 : ((be >= bw) ? be - bw : be - bw + 360);
+        ext = { w: wrapLng(bw), width: width, s: parts[1], n: parts[3] };
+      } else {
+        /* ⚠ THE INPUT'S EXTENT IS THE KERNEL'S bbox, THE SHORT WAY ROUND (RFC 7946 §5.2: west > east
+           across the antimeridian), over the whole dataset as one collection — so points at 179.5° and
+           −179.5° are one degree apart, which is what they are; a min/max box would have called them
+           359° wide and gridded the planet. */
+        const bdoor = kernelDoor(GG, 'bbox');
+        if (!bdoor) return fail('geometry-unavailable', { kernel: 'geometry', op: 'bbox' });
+        const all = [];
+        for (const f of ds.features()) if (f && f.geometry) all.push(f.geometry);
+        if (!all.length) return fail('input-has-no-geometry', { input: 0, id: ds.id, rows: ds.count });
+        const br = bdoor({ type: 'GeometryCollection', geometries: all });
+        if (!br.ok) return br;
+        const b = br.value;
+        if (!b) return fail('input-has-no-geometry', { input: 0, id: ds.id, rows: ds.count });
+        const width = (b[0] === -180 && b[2] === 180) ? 360 : ((b[2] >= b[0]) ? b[2] - b[0] : b[2] - b[0] + 360);
+        ext = { w: b[0], width: width, s: b[1], n: b[3] };
+      }
+      const fullTurn = ext.width >= 360;
+      const W = ext.w, S = Math.max(-90, ext.s), N = Math.min(90, ext.n);
+
+      /* ── clip: only an areal input has an area to cut to ── */
+      const clipAsked = (params.clip == null) ? DECL.grid.params.find((p) => p.name === 'clip').default : (params.clip === true || String(params.clip) === 'true');
+      const areal = ds.geometryType === 'Polygon';
+      const clipMode = !clipAsked ? 'off' : (areal ? 'area' : 'input-not-areal');
+      const wins = (clipMode === 'area') ? windowsOf(ds) : null;
+      if (clipMode === 'area' && !wins.length) return fail('no-features', { input: 0 });
+      const cand = wins ? candidateSource(wins) : null;
+
+      /* The longitude intervals of the input's areas within [lo, hi] of latitude, in the extent's own
+         frame (0 … width east of W). A window whose box meets no cell is never asked about again. */
+      const frameIntervals = (lo, hi) => {
+        if (!wins) return [[0, ext.width]];
+        const out = [];
+        for (const w of wins) {
+          const b = w.bbox;
+          if (!b || b[3] < lo || b[1] > hi) continue;
+          for (const k of [-360, 0, 360]) {
+            const a = Math.max(0, b[0] + k - W), z = Math.min(ext.width, b[2] + k - W);
+            if (a <= z) out.push([a, z]);
+          }
+        }
+        return out;
+      };
+
+      /* ── the lattice, row by row: each row says which columns exist and how to draw one ── */
+      const rows = [];
+      let construction, standardParallel = null;
+      if (shape === 'square') {
+        construction = 'equal-area-rows';
+        const dLat = cellKm / (Math.PI * Rk / 180);
+        const nRows = Math.max(1, Math.ceil((N - S) / dLat));
+        for (let r = 0; r < nRows; r++) {
+          const p1 = S + r * dLat;
+          if (p1 >= 90) break;
+          const p2 = Math.min(90, p1 + dLat);
+          const ds_ = Math.sin(p2 * D2R) - Math.sin(p1 * D2R);
+          let dLon = (A / (Rk * Rk * ds_)) / D2R;
+          let ncols;
+          if (fullTurn || dLon >= 360) {
+            /* A whole turn is tiled by a whole number of cells, so the last does not lie on the first;
+               the step moves by less than half a cell and the area column records the difference. */
+            ncols = Math.max(1, Math.round(360 / Math.min(dLon, 360)));
+            dLon = 360 / ncols;
+          } else ncols = Math.max(1, Math.ceil(ext.width / dLon));
+          const ranges = mergeRanges(frameIntervals(p1, p2).map(([a, z]) => [
+            Math.max(0, Math.floor(a / dLon)), Math.min(ncols - 1, Math.floor(z / dLon)),
+          ]).filter(([a, z]) => a <= z));
+          rows.push({
+            r: r, ranges: ranges,
+            ring: (c) => {
+              const x0 = W + c * dLon, x1 = x0 + dLon;
+              return [[x0, p1], [x1, p1], [x1, p2], [x0, p2], [x0, p1]];
+            },
+          });
+        }
+      } else {
+        construction = 'lambert-cylindrical-equal-area';
+        standardParallel = (S + N) / 2;
+        const c0 = Math.cos(standardParallel * D2R);
+        const Y = (lat) => Rk * Math.sin(lat * D2R) / c0;
+        const invLng = (x) => W + (x / (Rk * c0)) / D2R;
+        const invLat = (y) => { const t = y * c0 / Rk; return t >= 1 ? 90 : (t <= -1 ? -90 : Math.asin(t) / D2R); };
+        /* A regular pointy-top hexagon of area A: side a, half-width hx = (√3/2)a, quarter-height
+           hy = a/2, area 6·hx·hy. Every vertex lies on the lattice (i·hx, j·hy), so two neighbours
+           compute a shared vertex from the same integers and get the same float — the cells meet
+           exactly, with no sliver between them. */
+        let hx = Math.sqrt(3) / 2 * Math.sqrt(2 * A / (3 * Math.sqrt(3)));
+        const xWidth = Rk * c0 * ext.width * D2R;
+        let ncolsFull = null;
+        if (fullTurn) {
+          /* A whole turn holds a whole number of cells; widened or narrowed by less than half a cell,
+             with the height moved to keep the area exactly A. */
+          ncolsFull = Math.max(1, Math.round(xWidth / (2 * hx)));
+          hx = xWidth / (2 * ncolsFull);
+        }
+        const hy = A / (6 * hx);
+        const Y0 = Y(S), Yn = Y(N);
+        const nRows = Math.max(1, Math.ceil((Yn - Y0) / (3 * hy)) + 1);
+        const DX = [0, 1, 1, 0, -1, -1], DY = [-2, -1, 1, 2, 1, -1];
+        for (let r = 0; r < nRows; r++) {
+          const odd = r & 1, cy = 3 * r;
+          const latLo = invLat(Y0 + (cy - 2) * hy), latHi = invLat(Y0 + (cy + 2) * hy);
+          if (latLo >= 90) break;
+          const ncols = ncolsFull != null ? ncolsFull : Math.max(1, Math.ceil((xWidth / hx + 1 - odd) / 2));
+          const toX = (lngOff) => Rk * c0 * lngOff * D2R;
+          const ranges = mergeRanges(frameIntervals(latLo, latHi).map(([a, z]) => [
+            Math.max(0, Math.ceil((toX(a) / hx - 1 - odd) / 2)), Math.min(ncols - 1, Math.floor((toX(z) / hx + 1 - odd) / 2)),
+          ]).filter(([a, z]) => a <= z));
+          rows.push({
+            r: r, ranges: ranges,
+            ring: (c) => {
+              const cx = 2 * c + odd;
+              const ring = [];
+              for (let k = 0; k < 6; k++) ring.push([invLng((cx + DX[k]) * hx), invLat(Y0 + (cy + DY[k]) * hy)]);
+              ring.push([ring[0][0], ring[0][1]]);
+              return ring;
+            },
+          });
+        }
+      }
+
+      /* ── counted before anything is built ── */
+      let candidates = 0;
+      for (const row of rows) for (const [a, z] of row.ranges) candidates += z - a + 1;
+      const maxCells = Math.floor(GRID_BUDGET_BYTES / GRID_BYTES_PER_CELL[shape]);
+      if (candidates > maxCells) {
+        return fail('grid-too-many-cells', { cells: candidates, maxCells: maxCells, cellKm: cellKm, shape: shape, budgetBytes: GRID_BUDGET_BYTES, bytesPerCell: GRID_BYTES_PER_CELL[shape] });
+      }
+
+      const out = [];
+      const led = makeGeoLedger();
+      let outside = 0, collapsed = 0, aMin = null, aMax = null;
+      for (const row of rows) {
+        for (const [a, z] of row.ranges) {
+          for (let c = a; c <= z; c++) {
+            if (!(await ctx.tick(1, candidates))) return fail('cancelled', { done: ctx.done(), total: candidates });
+            let ring = row.ring(c);
+            let lo = Infinity, hi = -Infinity, bs = Infinity, bn = -Infinity;
+            for (const p of ring) { if (p[0] < lo) lo = p[0]; if (p[0] > hi) hi = p[0]; if (p[1] < bs) bs = p[1]; if (p[1] > bn) bn = p[1]; }
+            /* the frame runs east of W and may pass 180°; a cell wholly past it is the cell 360° west */
+            if (lo >= 180) { ring = ring.map((p) => [p[0] - 360, p[1]]); lo -= 360; hi -= 360; }
+            const cell = { type: 'Polygon', coordinates: [ring] };
+            const full = areaKm2(cell);
+            /* a cell a pole has cut down to nothing is not a cell */
+            if (!(full > 0)) { collapsed++; continue; }
+            const straddles = lo < 180 && hi > 180;
+            let geom = cell;
+            if (wins) {
+              /* a cell across the seam is asked about every longitude: a box from 179.5 to 180.5 would
+                 miss the window at -179.8 that it actually covers */
+              const box = straddles ? [-180, bs, 180, bn] : [lo, bs, hi, bn];
+              const pieces = [];
+              let lost = false;
+              cand.each(box, 0, (w) => {
+                const ir = GG.attempt.intersection(cell, w.geometry);
+                if (!led.ok(ir)) { lost = true; return false; }
+                if (ir.geometry) pieces.push(ir.geometry);
+                return true;
+              });
+              if (lost) continue;
+              if (!pieces.length) { outside++; continue; }
+              if (pieces.length === 1) geom = pieces[0];
+              else {
+                /* two windows that share a border both cut a piece of one cell; the cell is their union */
+                const ur = GG.attempt.union(pieces);
+                if (!led.ok(ur)) continue;
+                geom = ur.geometry;
+              }
+            } else if (straddles) {
+              /* ⚠ THE KERNEL SPLITS AT THE SEAM, NOT THIS FILE: a union of one shape comes back in the
+                 kernel's own representation (split into its [-180,180] windows), the same one every
+                 clipped cell above arrives in. */
+              const ur = GG.attempt.union([cell]);
+              if (!led.ok(ur)) continue;
+              geom = ur.geometry;
+            }
+            if (!geom) { outside++; continue; }
+            if (aMin == null || full < aMin) aMin = full;
+            if (aMax == null || full > aMax) aMax = full;
+            const id = row.r + ':' + c;
+            out.push({
+              type: 'Feature', id: id,
+              properties: { _gridId: id, _gridRow: row.r, _gridCol: c, _areaKm2: areaKm2(geom), _gridFullKm2: full },
+              geometry: geom,
+            });
+          }
+        }
+      }
+      /* west > east when the extent crosses the antimeridian — the bbox convention the parameter reads */
+      const east = fullTurn ? W + 360 : ((W + ext.width > 180) ? W + ext.width - 360 : W + ext.width);
+      const stats = {
+        grid: {
+          shape: shape, cellKm: cellKm, cellKm2: A, construction: construction,
+          standardParallel: standardParallel, offset: (shape === 'hexagon') ? 'odd-r' : null,
+          extent: [W, S, east, N], crossesAntimeridian: !fullTurn && (W + ext.width > 180),
+          clip: clipMode, rows: rows.length, candidates: candidates, cells: out.length,
+          outside: outside, poleCollapsed: collapsed,
+          /* the area of an UNCLIPPED cell, smallest and largest: equal to cellKm² away from a pole or a
+             whole-turn row, and the column itself is on every row */
+          fullAreaMinKm2: aMin, fullAreaMaxKm2: aMax, maxCells: maxCells,
+        },
+      };
+      return withGeoStats({ ok: true, features: out, stats: stats }, led);
+    }
+
     /* ── relate: the spatial WHERE ────────────────────────────────────────────────────────────── */
 
     /* 0 or the measured distance when the relation holds, null when it does not — so the caller
@@ -3033,6 +3508,30 @@ export function makeGisOps() {
       return withGeoStats({ ok: true, features: out }, led);
     }
 
+    /* Hyndman & Fan type 7 (see AGG_STATS): h = (n−1)·p/100, linear between the two order statistics
+       either side of it. null over no values — there is no percentile of nothing. */
+    function percentileOf(vals, p) {
+      if (!vals || !vals.length) return null;
+      const xs = Float64Array.from(vals).sort();
+      const h = (xs.length - 1) * p / 100;
+      const lo = Math.floor(h), hi = Math.min(xs.length - 1, lo + 1);
+      return xs[lo] + (h - lo) * (xs[hi] - xs[lo]);
+    }
+
+    /* The SAMPLE standard deviation (n − 1). Two passes — mean first, then the squared deviations from
+       it — because the one-pass Σx² − (Σx)²/n form loses every digit when the values are large and
+       close together (a column of elevations near 3,000 m, say). null below two values: the variance
+       of one value is not defined, and 0 would be the claim 「ばらつきが無い」. */
+    function sampleStdev(vals) {
+      if (!vals || vals.length < 2) return null;
+      let m = 0;
+      for (const v of vals) m += v;
+      m /= vals.length;
+      let ss = 0;
+      for (const v of vals) ss += (v - m) * (v - m);
+      return Math.sqrt(ss / (vals.length - 1));
+    }
+
     async function runAggregate(polyDs, memberDs, params, R, ctx) {
       const GG = geometry();
       const stat = (params.stat == null) ? 'count' : String(params.stat);
@@ -3060,10 +3559,23 @@ export function makeGisOps() {
       if (params.weightBy != null && String(params.weightBy) !== '' && stat !== 'areaWeightedMean') {
         return fail('bad-param', { param: 'weightBy', value: String(params.weightBy), detail: 'weight-basis-is-a-reading-of-areaWeightedMean' });
       }
+      /* (gis-foundation-refine) `p` is a reading of `percentile` and of nothing else — refused on
+         another stat for the reason weightBy is, and required on percentile because a percentile
+         nobody named is not a statistic. 0 and 100 are the minimum and the maximum, and allowed. */
+      const pGiven = params.p != null && String(params.p).trim() !== '';
+      let pct = null;
+      if (stat === 'percentile') {
+        if (!pGiven) return fail('missing-param', { param: 'p' });
+        pct = R.asNumber(params.p);
+        if (pct == null || pct < 0 || pct > 100) return fail('bad-param', { param: 'p', value: params.p, min: 0, max: 100 });
+      } else if (pGiven) {
+        return fail('bad-param', { param: 'p', value: String(params.p), detail: 'p-is-a-reading-of-percentile' });
+      }
       const agg = aggregationVerdict(qs.spec, stat, 'space');
       let weight = null;
       if (agg.verdict === 'refused') {
-        return fail('aggregation-refused', { stat: stat, why: agg.why || null, remedy: agg.remedy || null, quantity: agg.quantity || null });
+        const d = { stat: stat, why: agg.why || null, remedy: agg.remedy || null, quantity: agg.quantity || null };
+        return fail('aggregation-refused', d);
       }
       /* ⚠ A WEIGHT COMES BACK ON 'allowed' TOO — `areaWeightedMean` is allowed WITH weight 'area',
          and that is the rule that produced the number, so it travels into the answer and the recipe
@@ -3075,11 +3587,16 @@ export function makeGisOps() {
            a `mean` into an area-weighted one would change a number under a name the reader chose;
            `areaWeightedMean` is the door, and the refusal names it. A `denominator` weight is a
            column nobody has named, so it is the reader's to supply and not this op's to invent. */
-        return fail('aggregation-needs-weight', { stat: stat, weight: weight, why: agg.why || null, remedy: agg.remedy || null });
+        const d = { stat: stat, weight: weight, why: agg.why || null, remedy: agg.remedy || null };
+        return fail('aggregation-needs-weight', d);
       }
+      /* A percentile's default column names WHICH one — 'percentile_v' twice over one table would be
+         two different statistics under one name, refused the second time as output-column-in-use. */
       const outName = (params.outName != null && String(params.outName).trim() !== '')
         ? String(params.outName).trim()
-        : (stat === 'count' ? 'count' : stat + '_' + field);
+        : (stat === 'count' ? 'count' : (stat === 'percentile' ? 'p' + String(pct) + '_' + field : stat + '_' + field));
+      /* Which stats need every value of the zone, not a running total. */
+      const keepsValues = (stat === 'median' || stat === 'percentile' || stat === 'stdev');
       /* Writing over a column the polygons already carry would destroy data the reader imported,
          and doing it silently would make the loss invisible until the next op read the wrong column. */
       if (hasField(polyDs, outName)) return fail('output-column-in-use', { name: outName });
@@ -3089,7 +3606,9 @@ export function makeGisOps() {
          counted, whatever shape it has. Read once with its box so a 50,000-row dataset is not
          walked through its geometry accessors again for every polygon. */
       const members = [];
-      for (const f of memberDs.features()) {
+      const memberRows = memberDs.features();
+      for (let row = 0; row < memberRows.length; row++) {
+        const f = memberRows[row];
         const g = f && f.geometry;
         if (!g) continue;
         /* (#R783) 面積は、使う stat のときだけ測る。It is the member's OWN ground area and it does
@@ -3098,6 +3617,9 @@ export function makeGisOps() {
            on the zone, so it cannot be measured here at all — and measuring the member's own as well
            would be a clip's worth of arithmetic nothing reads. */
         members.push({
+          /* `row` is input 1's own order — the tie rule of `majority` reads it, never the order the
+             index happened to visit in. */
+          row: row,
           geometry: g, bbox: bboxOf(g), raw: (field ? props(f)[field] : null),
           areaKm2: (stat === 'areaWeightedMean' && weightBy === 'memberArea') ? areaKm2(g) : null,
         });
@@ -3118,6 +3640,10 @@ export function makeGisOps() {
         let n = 0, skipped = 0, sum = 0, min = null, max = null;
         /* (#R783) Σ(value·km²) と Σkm²，`areaWeightedMean` のときだけ動く。 */
         let wsum = 0, wtot = 0, noWeight = 0;
+        /* (gis-foundation-refine) the values themselves for the order statistics and the spread, and
+           the tallies for the mode — each only for the stat that reads it. */
+        const vals = keepsValues ? [] : null;
+        const tally = (stat === 'majority') ? new Map() : null;
         cand.each(gb, 0, (m) => {
           /* ⚠ 「この面に重なるもの」, asked of the one predicate. #R729 asked point-in-polygon, which
              is the same answer for a point and no answer at all for the roads and parcels a reader
@@ -3131,8 +3657,29 @@ export function makeGisOps() {
           const ir = GG.attempt.intersects(m.geometry, g);
           if (!led.ok(ir)) return true;
           if (!ir.value) return true;
+          /* ⚠ (gis-foundation-refine) 区域の member は「地面を共有するもの」。geom-4 の `intersects` は
+             OGC どおり閉じた集合で答えるので、辺だけを共有する隣の区画も true になる——述語としては正しいが、
+             「この区域の件数」に隣の区画を数えれば、区分の合計は境界の数だけ膨らむ。面どうしのときだけ
+             交差の中身を訊く（geom-3 までの member の規則そのもの）。点と線は今までどおり閉じた集合で、
+             境界をまたぐ線が両側に数えられるのは上の註のとおり。 */
+          if (GG.hasArea(m.geometry) && GG.hasArea(g)) {
+            const ix = GG.attempt.intersection(m.geometry, g);
+            if (!led.ok(ix)) return true;
+            if (!ix.geometry) return true;
+          }
           n++;
           if (stat === 'count') return true;
+          /* ⚠ THE MODE COUNTS VALUES BY IDENTITY, NOT AS NUMBERS: a land-cover code or a municipality
+             code is the ordinary column it is asked of, and asNumber would make "01100" and "1100" one
+             value. Only an empty cell is skipped. */
+          if (tally) {
+            if (R.isEmpty(m.raw)) { skipped++; return true; }
+            const key = String(m.raw).trim();
+            const t = tally.get(key);
+            if (t) { t.n++; if (m.row < t.row) { t.row = m.row; t.raw = m.raw; } }
+            else tally.set(key, { n: 1, row: m.row, raw: m.raw });
+            return true;
+          }
           const v = R.asNumber(m.raw);
           /* ⚠ A member inside the polygon whose value cannot be a number is COUNTED AS SKIPPED, not
              dropped in silence. A mean over 12 of 400 is not the mean the reader asked for, and
@@ -3141,6 +3688,7 @@ export function makeGisOps() {
           sum += v;
           if (min == null || v < min) min = v;
           if (max == null || v > max) max = v;
+          if (vals) vals.push(v);
           if (stat === 'areaWeightedMean') {
             let a = m.areaKm2;
             if (weightBy === 'intersectionArea') {
@@ -3176,8 +3724,26 @@ export function makeGisOps() {
         else if (stat === 'mean') value = used ? sum / used : null;
         else if (stat === 'areaWeightedMean') value = (wtot > 0) ? (wsum / wtot) : null;
         else if (stat === 'min') value = min;
-        else value = max;
+        else if (stat === 'max') value = max;
+        else if (stat === 'median') value = percentileOf(vals, 50);
+        else if (stat === 'percentile') value = percentileOf(vals, pct);
+        else if (stat === 'stdev') value = sampleStdev(vals);
+        else if (stat === 'majority') value = null;
+        /* A stat added to AGG_STATS and not here is refused by name rather than answered as max —
+           the unconditional `else` this chain used to end in. */
+        else return fail('op-not-wired', { op: 'aggregate', stat: stat });
         const extra = { _areaKm2: areaKm2(g) };
+        if (tally) {
+          /* The winner, how many members carried it, and how many OTHER values carried as many — a
+             mode that won a tie is not the same claim as one that won outright. */
+          let best = null;
+          for (const t of tally.values()) if (!best || t.n > best.n || (t.n === best.n && t.row < best.row)) best = t;
+          let ties = 0;
+          if (best) for (const t of tally.values()) if (t !== best && t.n === best.n) ties++;
+          value = best ? best.raw : null;
+          extra._majorityCount = best ? best.n : 0;
+          extra._majorityTies = ties;
+        }
         extra[outName] = value;
         if (stat !== 'count') extra._statSkipped = skipped;
         if (stat === 'areaWeightedMean') {
@@ -5744,6 +6310,10 @@ export function makeGisOps() {
         difference: () => runOverlay('difference', ds[0], ds[1], ctx),
         union: () => runUnion(ds[0], ds[1], ctx),
         dissolve: () => runDissolve(ds[0], params, R, ctx),
+        centroid: () => runPointOf('centroid', ds[0], ctx),
+        pointOnSurface: () => runPointOf('pointOnSurface', ds[0], ctx),
+        convexHull: () => runConvexHull(ds[0], params, R, ctx),
+        simplify: () => runSimplify(ds[0], params, R, ctx),
         relate: () => runRelate(ds[0], ds[1], params, R, ctx),
         aggregate: () => runAggregate(ds[0], ds[1], params, R, ctx),
         sample: () => runSample(ds[0], ds[1], params, R, ctx),
@@ -5770,6 +6340,7 @@ export function makeGisOps() {
         spatialJoin: () => runSpatialJoin(ds[0], ds[1], params, R, ctx),
         nearestJoin: () => runNearestJoin(ds[0], ds[1], params, R, ctx),
         voronoi: () => runVoronoi(ds[0], ds[1], ctx),
+        grid: () => runGrid(ds[0], params, R, ctx),
         timeJoin: () => runTimeJoin(ds[0], ds[1], params, R, ctx),
         compute: () => runCompute(ds[0], params, R, ctx),
         /* (#R783) 単位換算——同じ §9 の「手作業の倍率計算ではなく」。 */
@@ -5943,7 +6514,13 @@ export function makeGisOps() {
        window (see runVoronoi), so a run that lost ground without any step failing by name now carries
        `geometryFailed` / `farthestBoundWhy` (or is refused when nothing was computed) where ops-9
        answered a plain success. A saved step can replay to a refusal, which is what this announces. */
-    const KERNEL_VERSION = 'ops-10';
+    /* (gis-foundation-refine) ops-10 -> ops-11: A REFUSAL BECAME AN ANSWER, the change ops-6 -> ops-7
+       raised the version for. `aggregate` grew `median`, `percentile`, `stdev` and `majority`, so a
+       step naming one was `bad-param` under ops-10 and computes a number today. The five new ops
+       (centroid / pointOnSurface / convexHull / simplify / grid) cannot change a recipe that predates
+       them, and every stat that existed answers bit for bit what it answered — the chain that picks
+       its value only grew arms, and the old final `else` (max) is now named. */
+    const KERNEL_VERSION = 'ops-11';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,

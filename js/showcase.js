@@ -5,7 +5,7 @@
  *  Five readers take them from HERE and from nowhere else:
  *    · the landing and teacher pages (about.html / teachers.html, news-map.html, and their ja/ twins), which
  *      scripts/landing.mjs generates — gallery, lesson plan, sitemap;
- *    · (showcase-gallery) the app's own gallery, js/showcase-gallery.js — the search field's empty state and
+ *    · (showcase-gallery) the app's own gallery, js/showcase-gallery.js — the phone sheet's home strip and
  *      the whole list, grouped under TOPICS below, each card the thumbnail the capture derives from the card;
  *    · Atlas, through `panel.showcase` (js/atlas-cap-panel.js), which opens one in the map;
  *    · tests/landing-showcase.spec.js, which opens every one and asks the map whether it drew it;

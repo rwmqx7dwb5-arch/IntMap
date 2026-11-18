@@ -197,7 +197,7 @@ test('R192 imagery: the tile pipeline is a worker, with the main thread kept as 
   assert.match(w, /self\.onmessage = async \(ev\) =>/, 'it is a worker');
   assert.match(w, /new OffscreenCanvas\(w, h\)/, 'it composes off-thread');
   assert.match(w, /self\.postMessage\(msg, \[bitmap\]\)/, 'and TRANSFERS the bitmap rather than copying it');
-  assert.match(w, /const PLACEHOLDER_MAX = 3500;/, 'the same placeholder test as #R158');
+  assert.match(w, /placeholder: isImageryPlaceholder\(buf\)/, 'the same placeholder test as the main-thread fallback (js/esri-imagery.js)');
   assert.match(w, /for \(let up = 0; up < 13 && az > 1; up\+\+\)/, 'the same 13-level ancestor walk as #R158');
 
   const c = read('src/sat-worker-client.js');
