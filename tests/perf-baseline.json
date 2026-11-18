@@ -9,7 +9,7 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14097755,
+    "raw": 14210678,
     "gzip": 4749042,
     "chunks": {
       "account-data": 7346,
@@ -77,7 +77,7 @@
       "geopolitics-atlas": 9665,
       "geopolitics-core": 7666,
       "gis-core": 586153,
-      "gis-export": 19636,
+      "gis-export": 30142,
       "gis-geopackage": 26667,
       "gis-geotiff": 24029,
       "gis-shapefile": 10420,
@@ -203,7 +203,7 @@
   "dist": {
     "total": 1579111218,
     "data": 1216229484,
-    "assets": 21529767
+    "assets": 21646324
   },
   "phone": {
     "bytes": 342631,
