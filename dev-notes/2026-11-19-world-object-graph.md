@@ -32,3 +32,7 @@ newsjp: Atlasが、複数の出典で同じ施設・企業・場所を同一の�
 ## 3. 検査
 
 `tests/world-object-graph-checks.test.mjs`（15 件。Overpass の返答を差し替えた `overpassPOIs`、能力の実行を含む）。既存の `world-objects-checks` は変更なしで通る。
+
+## 4. 上げた起動費用の天井
+
+`async chunk "place-dossier"` 61.9 → 73.0 kB、`"atlas-cap-runs"` 853.4 → 860.7 kB。世界オブジェクトの同一性・型付き辺・期間・claims の規則と企業プロフィールのアダプタが、両方のチャンクが取り込む `atlas-geo-object.js`／`atlas-world-objects.js` に入ったため。何が買えたか: 同じ対象の統合、多段の関係探索、時点指定の回答。起動時のチャンクには入らない（async のみ）。
