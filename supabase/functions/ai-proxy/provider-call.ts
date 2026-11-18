@@ -20,6 +20,7 @@ import { CEILING } from "./config.ts";
    below decide on ProviderError's fields (the OpenAI path retries a web call on meta.timeout, the
    Gemini path retries a 5xx on meta.providerStatus), and the ceiling that every request takes from. */
 export async function providerCall(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS, meter?: Meter, onChunk?: (b: Uint8Array) => void): Promise<Response> {
+  try { meter?.attempt?.(); } catch (_) { /* (atlas-turn-observability) counting a request must never stop it */ }
   try {
     return await providerFetch(url, init, { ceiling: meter?.ceiling || CEILING, timeoutMs: ms, onChunk });
   } catch (e) {
@@ -132,7 +133,7 @@ export function streamedBody(ps: Streamed, provider: string, meter?: Meter): Rec
    object every provider call site of a request already receives, so the cohort's share travels with
    it rather than through a second parameter at each site; absent (the developer's model list, which
    has no request meter) means the project ceiling alone. */
-export type Meter = { add(provider: string, answer: unknown): unknown; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
+export type Meter = { add(provider: string, answer: unknown): unknown; attempt?(): void; fallback?(to: string): void; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
 
 /* ══ (atlas-completion) WHAT THE ANSWER IS, BESIDES ITS TEXT — did it end, and what did the search do ══
    Two facts each provider used to read and then drop:

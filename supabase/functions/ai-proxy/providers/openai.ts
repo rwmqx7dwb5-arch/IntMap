@@ -184,6 +184,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     const nextModel = noFallback ? "" : (FALLBACK_CHAIN[FALLBACK_CHAIN.indexOf(model) + 1] || "");
     if (nextModel && (r.status === 403 || r.status === 404) &&
         /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
+      try { meter?.fallback?.(nextModel); } catch (_) { /* observation only */ }
       try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: nextModel, status: r.status })); } catch (_) { /* ignore */ }
       return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, false, schemaFormat, turn, cacheKey, meter, sink);
     }
