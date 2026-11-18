@@ -1914,6 +1914,7 @@ export function atlasConsole(HOST){
       get paintPois(){ return paintPois; },
       get _PINNED(){ return _PINNED; },
       get _lastUserMsg(){ return _lastUserMsg; }, set _lastUserMsg(v){ _lastUserMsg=v; },
+      get turnSignal(){ return turnSignal; },   /* (atlas-delegation) the running turn's abort signal, read at call time — research.delegate hands it to its workers */
       get aiParseJSON(){ return aiParseJSON; },
       get askAI(){ return askAI; },
       get _poiAdd(){ return _poiAdd; },

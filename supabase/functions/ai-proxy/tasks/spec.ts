@@ -50,13 +50,15 @@ export interface TaskSpec {
   protocol2: boolean;
   /** the independent grader: provider chosen by the server, never by a developer pick */
   grader: boolean;
+  /** (atlas-delegation) the worker task: run only under a parent turn (x-intmap-parent-turn), and the only task such a call may carry */
+  delegate: boolean;
 }
 
 /** A task's file states only what differs from these. */
 export function defineTask(t: Partial<TaskSpec> & { name: string; maxOutput: number; reasoning: string }): TaskSpec {
   return Object.freeze({
     perRequestedItem: null, effortHint: false, json: false, jsonOn: [], schema: undefined,
-    accept: null, lane: "", protocol2: false, grader: false,
+    accept: null, lane: "", protocol2: false, grader: false, delegate: false,
     ...t,
   });
 }
