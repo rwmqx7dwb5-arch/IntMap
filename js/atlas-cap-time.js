@@ -621,7 +621,7 @@ async function yearbook(a, K) {
   else if (a.year != null) { const y = Math.round(+a.year); if (y < T.min) return R(false, warn(L('Chronos reaches back to ' + T.min, 'Chronos は ' + T.min + ' 年まで遡れます'))); const d = new Date(0); d.setFullYear(y, 5, 15); d.setHours(12, 0, 0, 0); when = d; }
   if (!when) when = T.when();
   const YB = await import('./year-book.js');
-  const h = { lang: () => (HOST && HOST.lang) || 'en', countryStats: () => (HOST && HOST.countryStats) || {}, escape: esc };
+  const h = { lang: () => (HOST && HOST.lang) || 'en', countryStats: () => (HOST && HOST.countryStats) || {}, countryGeo: () => (HOST && HOST.countryGeo) || null, escape: esc };
   if (a.show) { if (T.isPresentYear(when.getFullYear())) T.setNow({ source: 'atlas' }); else T.set(when, { source: 'atlas' }); YB.openFromPage(h); }
   const r = await YB.readYear(when, YB.pageDeps(h));
   return R(true, YB.atlasHtml(r, when, !!a.show, h.lang(), note), { yearbook: r });

@@ -431,7 +431,7 @@ function warsFor(year) {
 export function pageDeps(h) {
   return {
     borders: bordersNow(), maddison: window.IntMapMaddison, layerTime: window.IntMapLayerTime, lang: h.lang, wars: warsFor, index: loadIndex,
-    modernGeo: () => window.countryGeo,
+    modernGeo: h.countryGeo,
     countryNameEn: (code) => { try { const s = h.countryStats && h.countryStats()[code]; if (s && s.nameEn) return s.nameEn; } catch (_) { /* below */ } return code; },
     countryName: (code) => { try { const s = h.countryStats && h.countryStats()[code]; if (s) return (h.lang() === 'jp' ? (s.nameJp || s.nameEn) : s.nameEn) || code; } catch (_) { /* below */ } return code; },
   };
