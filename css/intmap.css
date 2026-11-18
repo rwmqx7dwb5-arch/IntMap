@@ -273,10 +273,6 @@
     }
     .header-actions > button{ margin-right:0 !important; }
     .title-group{ display:flex; align-items:center; gap:12px; min-width:0; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
-    /* the wordmark is the picture of the name (brand/intmap-wordmark.png, cut from the master artwork; outside the statically copied img/ so the build ships it once, hashed): its CAP height is drawn at the
-       cap height the 22px h2 text had (cap ≈ 0.70em = 15.4px; the image is 357 px tall with a 277 px cap, so 15.4·357/277 ≈ 20px).
-       Re-derive if the h2 size changes or the artwork is re-cut. */
-    h2.im-wordmark{ display:flex; align-items:center; line-height:1; min-height:27px; } h2.im-wordmark img{ display:block; height:20px; width:auto; }
     .btn-settings{ flex-shrink:0; }
     /* (#R11) Header EN/JP toggle removed — language is changed from Settings only. */
     .btn-settings{ background:var(--input-bg); border:none; color:var(--text-main); padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; border-radius:var(--r-control); transition:0.2s; }
@@ -987,7 +983,7 @@
        keeps its coordinates exactly (tests/r252 pins the coord readout at 9/9 — untouched). */
     .map-column{ --credit-h:22px; flex:1; min-width:0; display:flex; flex-direction:column; height:100%; }
     .map-column > .map-container{ flex:1 1 auto; height:auto; min-height:0; }
-    .map-credit{ flex:0 0 auto; height:var(--credit-h); padding:0 12px; background:var(--card-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); font-size:10.5px; line-height:var(--credit-h); color:var(--text-muted); white-space:nowrap; overflow:hidden; }
+    .map-credit{ flex:0 0 auto; margin-top:auto; height:var(--credit-h); padding:0 12px; background:var(--card-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); font-size:10.5px; line-height:var(--credit-h); color:var(--text-muted); white-space:nowrap; overflow:hidden; }
     .map-credit a{ color:var(--text-muted); text-decoration:none; }
     .map-credit a:hover{ color:var(--text-main); text-decoration:underline; }
     /* ⚠ GLASS MODE takes the map out of the flow (position:absolute; inset:0), which would put it
@@ -1806,7 +1802,11 @@
     /* (#R104) in-map search bar unified with the Atlas input pill (rounding / hairline border / focus ring); keeps its floating frosted material so it stays legible over the map. Size & wording unchanged. */
     /* (#R170) 24px → 10px ("地名検索バーの位置をもう少し上に") — now flush with the top of .map-controls-top
        (also top:10px) on the right, so the two float on one visual row instead of the pill sitting lower. */
-    .map-search{ position:absolute; top:var(--chrome-edge); left:50%; transform:translateX(-50%); z-index:var(--z-controls); display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:var(--r-control); padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
+    /* (ui-polish-batch) ONE height for the place-search pill at every tier: 35 px is what the wide tier (sidebar closed) measured
+       (tests/map-chrome-layout-baseline.json). The pill, its field and its button take it from here, so opening the sidebar (the
+       container-query tiers below) changes the pill's width and layout only — never its height or its top margin. */
+    :root{ --ms-h:35px; }
+    .map-search{ position:absolute; top:var(--chrome-edge); left:50%; transform:translateX(-50%); z-index:var(--z-controls); display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:var(--r-control); padding:3px 4px 3px 12px; box-sizing:border-box; height:var(--ms-h); box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
     .map-search:focus-within{ border-color:var(--focus-ring); box-shadow:0 0 0 1px var(--focus-ring), 0 0 0 4px rgba(10,132,255,0.18); }   /* (ui-a11y-polish) the same 2 px edge as .search-bar */
     /* Place-search pin + popup card */
     .search-pin{ width:30px; height:38px; position:relative; cursor:pointer; }
@@ -1831,11 +1831,11 @@
        and the radius follows the height — 21 px was exactly half of 42, and a pill whose radius
        outgrows its half-height stops being a pill. ⚠ The phone is untouched: its own rule turns
        this into a 46 px round FAB with padding:0, so none of these three numbers reach it. */
-    .map-search input{ flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text-main); font-size:14px; padding:5px 4px; text-overflow:ellipsis; }   /* (ui-a11y-polish) a placeholder that still does not fit ends in 「…」, not mid-word — js/mobile-ui.js picks the form that fits first */
+    .map-search input{ flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text-main); font-size:14px; padding:5px 4px; box-sizing:border-box; height:calc(var(--ms-h) - 8px); text-overflow:ellipsis; }   /* (ui-a11y-polish) a placeholder that still does not fit ends in 「…」, not mid-word — js/mobile-ui.js picks the form that fits first */
     /* (#R105) the search button now matches the pill bar + the sidebar search button: a clean primary rounded button. */
     /* (#R106) the search button is a NEUTRAL pill by default and only turns primary-blue once the input carries
        text ("入力テキストがある場合のみ青くなるように"). The .has-text class is toggled on the bar from the input. */
-    .map-search>button{ background:var(--input-bg); color:var(--text-muted); border:none; border-radius:var(--r-inner); padding:5px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s ease, color .15s ease, filter .15s ease; }
+    .map-search>button{ height:calc(var(--ms-h) - 10px); box-sizing:border-box; background:var(--input-bg); color:var(--text-muted); border:none; border-radius:var(--r-inner); padding:5px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s ease, color .15s ease, filter .15s ease; }
     .map-search.has-text>button{ background:var(--primary-fill); color:#fff; }
     .map-search>button:hover{ filter:brightness(1.08); }
     /* (#R231) the desktop pill shows the WORD; the phone shows the glyph (see the mobile block). */
@@ -1995,13 +1995,11 @@
       .map-frame-top > .map-controls-top{ grid-column:stack-start / -1; grid-row:1; justify-self:end; position:relative; top:auto; right:auto; }
       .map-frame .map-view-menu{ display:none; }
       .map-frame .map-view-sets{ display:contents; }
-      /* the bottom corners are one row: the readout keeps the left, Chronos the right (6 px from each corner — #R504), and when
-         both do not fit Chronos wraps to the row ABOVE (wrap-reverse) instead of lying on the readout */
+      /* the bottom corner is a row: Chronos at the right (6 px from the corner — #R504). The coordinate readout left it for the credit strip */
       .map-frame-bottom{ display:flex; position:absolute; left:6px; right:6px; bottom:6px; flex-wrap:wrap-reverse; justify-content:space-between;
         align-items:flex-end; gap:6px; pointer-events:none; }
       /* the two keep their own corner offsets in their base rules (right/bottom/left 6px); the ROW now carries them */
       .map-frame .map-frame-bottom > *{ position:relative; top:auto; right:auto; bottom:auto; left:auto; }
-      body.sidebar-glass .map-frame .map-frame-bottom > .coord-readout{ margin-left:6px; }   /* frosted: 12 px from the edge, as it was */
       /* Chronos keeps its 560 px content cap (+ its 8 px of padding and border = 568, measured) and may only be narrower than the row */
       .map-frame .map-frame-bottom > .news-timeline{ margin-left:auto; box-sizing:border-box; max-width:min(568px, 100%); }
       .map-frame .map-frame-bottom > .news-timeline .ntl-body{ max-width:100%; }
@@ -2018,12 +2016,10 @@
     @media(min-width:769px){
       body.lsr-open:not(.ws-mode) .map-frame-top{
         grid-template-columns:var(--mft-lane); column-gap:0; }
-      body.lsr-open:not(.ws-mode) .map-frame-top > .map-search{ margin-top:calc(14px - var(--chrome-edge)); }
     }
     @container map-frame (max-width:1204px){
       .map-frame-top{
         grid-template-columns:var(--mft-lane); column-gap:0; }
-      .map-frame-top > .map-search{ margin-top:calc(14px - var(--chrome-edge)); }
     }
     /* ── COMPACT — below 640 px the lane is too short for a field (the 383 px stack + the lane's 50 px of margins + 6 px
        of edge leave < 200 px): the search becomes its button, the two view pills fold into one menu, the tool triggers drop
@@ -2168,9 +2164,6 @@
        Measured after: 351 px row → name 88 px, value 63 px, nothing spills (tests/companies-name-width.spec.js, also at 390 px). */
     .stat-val .co-asof{ white-space:normal; }
     .co-asof-w{ white-space:nowrap; }   /* (companies-live-time-wrap) a word of the stamp never splits — js/companies-ui.js _coAsOfChip */
-    .stat-pick{ flex:0 0 auto; width:16px; height:16px; border-radius:50%; border:1.5px solid rgba(128,128,128,0.45); box-sizing:border-box; transition:background .15s,border-color .15s; }
-    .stat-row.compare-on .stat-pick{ background:var(--primary-fill,var(--primary-color)); border-color:var(--primary-fill,var(--primary-color)); box-shadow:inset 0 0 0 3px var(--card-bg); }
-    [data-theme="dark"] .stat-row.compare-on .stat-pick{ box-shadow:inset 0 0 0 3px #2a2a2e; }
     .stat-detail{ flex:0 0 auto; border:none; background:transparent; color:var(--primary-color); font-size:12px; font-weight:600; padding:6px 2px 6px 6px; cursor:pointer; white-space:nowrap; border-radius:8px; }
     .stat-detail:hover{ text-decoration:underline; }
     .stat-detail:focus-visible{ outline:2px solid var(--primary-color); outline-offset:1px; }
@@ -2432,7 +2425,7 @@
       #m-readout-slot .coord-readout{ position:static !important; inset:auto !important; margin:6px 2px 0; padding:0 !important; border:none !important; border-radius:0 !important;
         background:transparent !important; box-shadow:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
         font-size:12px; line-height:1.4; gap:10px; justify-content:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:none; }
-      #m-readout-slot .coord-readout span{ white-space:nowrap; flex-shrink:0; }
+      #m-readout-slot .coord-readout span{ white-space:nowrap; flex-shrink:0; min-width:0 !important; }   /* (ui-polish-batch) the widths js/map-readout.js reserves are for the credit strip; the phone's centred single row keeps its own */
 
       /* (#R30) Keep account / feedback / settings on ONE row — never wrap ("横一列に並ばず改行されてしまう").
          The logged-in account button collapses to the avatar only (the long display name was forcing the
@@ -3351,6 +3344,31 @@
        sidebar when the sidebar overlays the map (frosted mode) so it is never hidden behind it. --- */
     .coord-readout{ background:rgba(18,18,20,0.64) !important; -webkit-backdrop-filter:saturate(160%) blur(14px) !important; backdrop-filter:saturate(160%) blur(14px) !important; border:1px solid rgba(255,255,255,0.14) !important; color:#fff !important; z-index:calc(var(--z-controls) + 200); }
     .coord-readout span, .coord-readout .cr-elev, .coord-readout .cr-sat, .coord-readout .cr-eye{ color:#fff !important; font-weight:600; }
+    /* ══ (ui-polish-batch) THE READOUT STANDS IN THE CREDIT STRIP ══════════════════════════════════════════
+       「座標・標高の欄を下の出典の帯の右端へ」 It is the NEXT flex item of .map-column after #map-credit, pulled up over the strip by a
+       negative margin the height of the strip, so the column's height is exactly what it was and no positioning context is needed
+       (a sibling, not a child, of #map-credit: three writers own that element's contents — js/map-readout.js _crHome). The credit
+       text is at the left and keeps priority: the readout's max-width is the strip less the credit's text (js/map-readout.js
+       _crStripFit writes --cr-credit-w) and less the right Layers panel when it lies over the strip's end (--lsr-w). Over-long, it
+       is clipped at ITS left, so the coordinates at the far right are the last to go. It is the strip's own text, not a HUD pill:
+       no fill, border or shadow, and it takes the strip's type size and the theme's text colours (the dark-HUD white above is for a
+       pill floating over the map). Desktop only — the phone lends the readout to the sheet (#m-readout-slot) and capture mode hides
+       it (`body.capture-mode .coord-readout`), both unchanged. The chips' widths are reserved in js/map-readout.js. */
+    @media(min-width:769px){
+      .map-column > .coord-readout{ --cr-r:0px; position:relative !important; left:auto !important; bottom:auto !important; align-self:flex-end; flex:0 0 auto;
+        box-sizing:border-box; height:var(--credit-h); margin-top:calc(-1 * var(--credit-h)); min-width:0;
+        max-width:calc(100% - var(--cr-credit-w,0px) - var(--cr-r)); overflow:hidden; justify-content:flex-end; gap:14px;
+        padding:0 12px !important; border:none !important; border-radius:0 !important; background:transparent !important; box-shadow:none !important;
+        -webkit-backdrop-filter:none !important; backdrop-filter:none !important; color:var(--text-main) !important;
+        font-size:10.5px; line-height:var(--credit-h); white-space:nowrap; }
+      body.lsr-open:not(.ws-mode) .map-column > .coord-readout{ --cr-r:var(--lsr-w); margin-right:var(--lsr-w); }
+      .map-column > .coord-readout > span{ flex:0 0 auto; text-align:left; color:var(--text-main) !important; font-weight:500; }
+      .map-column > .coord-readout > .cr-elev, .map-column > .coord-readout > .cr-eye{ color:var(--text-muted) !important; }
+      .map-column > .coord-readout > .cr-sat{ color:var(--primary-color) !important; font-weight:600; }
+      .map-column > .coord-readout > .cr-wind{ color:var(--primary-color) !important; font-weight:600; }
+      .map-column > .coord-readout .cr-warr{ color:inherit !important; }
+      .map-column > .coord-readout > .cr-seis{ color:var(--cr-c,var(--text-main)) !important; font-weight:700; }
+    }
     /* (#R13c) Only the FROSTED sidebar overlays the map, so ONLY there must the left-anchored HUD (coord readout,
        data/Köppen legends, country-info) clear it; a collapsed sidebar → flush left. In SOLID mode the sidebar sits
        beside the map (map-container starts to its right), so the HUD is already correctly positioned — no shift. */

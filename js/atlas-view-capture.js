@@ -321,14 +321,9 @@ export function makeViewCapture(deps) {
 
       frames.push({ url: url, facts: facts });
 
-      /* ⚠ THE READER SEES WHAT ATLAS WAS GIVEN. A capability that reads the screen and says nothing
-         about having done so is one nobody can audit — and an answer that turns on «the east half is
-         red» should show the half it means. It is small on purpose: evidence, not a second map. */
-      var capTxt = L('Atlas looked at the map', 'Atlas が地図を見ました', 'Atlas hat auf die Karte geschaut', 'Atlas посмотрел на карту', 'Atlas miró el mapa')
-        + ((inc === 'map') ? (' · ' + L('map only', '地図のみ', 'nur Karte', 'только карта', 'solo el mapa')) : '');
-      var html = '<div class="atl-viewframe"><img src="' + esc(globalThis.IntMapSafe.url(url, { allowData: true })) + '" alt="' + esc(capTxt) + '" loading="lazy">'
-        + '<div class="atl-viewframe-cap">' + esc(capTxt) + (facts.reason ? (' — ' + esc(facts.reason)) : '') + '</div></div>';
-      return { ok: true, html: html, facts: facts };
+      /* The picture goes to the model (urls() / promptBlock()) and the facts to the exec result; the
+         answer the reader sees does not carry a thumbnail or a «looked at the map» caption. */
+      return { ok: true, html: '', facts: facts };
     }
 
     /* The sentences that name the attached images. Every number here was READ FROM THE APP at the

@@ -87,19 +87,12 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel{--atl-u-edge:var(--atlas-glass-edge);--atl-u-sheen:var(--atlas-glass-sheen);--atl-u-shadow:0 1px 4px rgba(0,0,0,0.06);}'
       +'[data-theme="dark"] #atlas-panel{--atl-u-shadow:0 1px 6px rgba(0,0,0,0.22);}'
       +'#atlas-panel .atl-b.u{--atlas-glass-edge:color-mix(in srgb,var(--atl-u-edge) 60%,transparent);--atlas-glass-sheen:color-mix(in srgb,var(--atl-u-sheen) 50%,transparent);--atlas-glass-shadow:var(--atl-u-shadow);align-self:flex-end;max-width:92%;padding:6px 12px;background:var(--atlas-glass);color:var(--text-main);border:1px solid var(--atlas-glass-edge);border-radius:16px 16px 5px 16px;box-shadow:var(--atlas-glass-shadow),inset 0 1px 0 var(--atlas-glass-sheen);backdrop-filter:saturate(var(--glass-sat,150%)) blur(var(--glass-blur,16px));-webkit-backdrop-filter:saturate(var(--glass-sat,150%)) blur(var(--glass-blur,16px));white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble */
-      +'#atlas-panel .atl-b.a{align-self:stretch;max-width:100%;background:transparent;color:var(--text-main);border:none;border-radius:0;padding:2px 1px;}'
+      +'#atlas-panel .atl-b.a{--atl-zone-gap:10px;align-self:stretch;max-width:100%;background:transparent;color:var(--text-main);border:none;border-radius:0;padding:2px 1px;}'
       /* (#R231) the attached-picture row: the user's own column, without the bubble around it */
       +'#atlas-panel .atl-b.u.atl-imgrow{background:none;box-shadow:none;padding:0;border-radius:0;max-width:92%;white-space:normal;border:none;backdrop-filter:none;-webkit-backdrop-filter:none;}'   /* (#R483) the glass is stripped here too: this row is bare pictures, and a pane of frosted glass around them is a bubble by another name */
       +'#atlas-panel .atl-imgrow-in{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}'
       +'#atlas-panel .atl-imgrow-in img{display:block;max-width:100%;max-height:230px;width:auto;height:auto;border-radius:12px;cursor:zoom-in;}'
       +'#atlas-panel .atl-imgrow-in img:only-child{max-height:280px;}'
-      /* (#R493) the frame Atlas looked at, shown back to the reader inside the ANSWER — small, so it
-         reads as evidence rather than as a second map, and captioned so «Atlas looked» is a claim the
-         reader can check rather than one they have to take. js/atlas-attach.js's delegated click
-         names this class too, so a tap opens it full-screen in the same viewer as an attached image. */
-      +'.atl-viewframe{margin:6px 0 4px;max-width:340px;}'
-      +'.atl-viewframe img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--atlas-glass-edge);cursor:zoom-in;}'
-      +'.atl-viewframe-cap{font-size:10.5px;line-height:1.45;color:var(--text-muted);margin-top:4px;}'
       +LIGHTBOX_CSS
       +ATTACH_VIEW_CSS
       /* (#R156) UNIFIED RENDERER — code blocks, inline code, display/inline math, tables, blockquotes. NOT scoped to
@@ -187,7 +180,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
          here now, and this is the line the gates in tests/companies-ui-checks.test.mjs (#R153)/r154-checks read:
          HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR. Every level is weight 600 in
          --text-main; nothing below may introduce a hue, and #R159's 600 is never raised to 750/800. */
-      +'.atl-md{font-size:14px;line-height:1.62;}'
+      +'.atl-md{font-size:15px;line-height:1.62;}'   /* hierarchy: answer 15px > action row 12px > sources 12px muted (js/atlas-answer-sources.js) */
       +'.atl-p{margin:0 0 1.5em;text-wrap:pretty;}'                                 /* (#R158) the paragraph rhythm, unchanged in value */
       +'.atl-ps{margin-bottom:.82em;}'                                              /* (#R150) sentence-end + single newline = a softer gap */
       +'.atl-p:last-child{margin-bottom:0;}'
@@ -355,6 +348,9 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       /* (#R72) inline controls rendered inside replies */
       +'#atlas-panel .atl-ctl-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}'
       +'#atlas-panel .atl-ctl-lbl{font-size:11.5px;color:var(--text-main);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+      /* THE THREE ZONES OF A REPLY — answer / action row / sources — are separated by ONE variable, --atl-zone-gap (set on .atl-b.a; js/atlas-answer-sources.js reads it for the sources). The action row is the secondary tier. */
+      +'#atlas-panel .atl-actrow{margin-top:var(--atl-zone-gap,10px);}'
+      +'#atlas-panel .atl-actrow .atl-ctl-lbl{font-size:12px;color:var(--text-muted);}'
       +'#atlas-panel .atl-ctl-toggle{flex:0 0 auto;width:36px;height:21px;border-radius:11px;border:none;background:rgba(120,120,128,0.32);position:relative;cursor:pointer;transition:background .18s ease;padding:0;}'
       +'#atlas-panel .atl-ctl-toggle .atl-ctl-knob{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:left .18s ease;}'
       +'#atlas-panel .atl-ctl-toggle.on{background:#34c759;} #atlas-panel .atl-ctl-toggle.on .atl-ctl-knob{left:17px;}'
@@ -441,7 +437,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
          the meta/footer builders that have not been converted, and those are the ones this rule was
          always guessing at. */
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:14px"],'
-      +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a .atl-md{font-size:15.5px !important;}'   /* (#R158) desktop reply body is 14px → keep mobile a touch larger */
+      +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a .atl-md{font-size:16px !important;}'   /* (#R158) desktop reply body is 15px → keep mobile a touch larger */
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-sub{font-size:12.5px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ex{gap:7px;padding:6px 11px 2px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chip{font-size:12.5px;padding:8px 12px;}'

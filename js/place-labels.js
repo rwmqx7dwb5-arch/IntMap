@@ -119,6 +119,11 @@ export function placeLabels(HOST){
      re-added — which is exactly why labels were missing on first load but appeared after toggling
      names off/on ("デフォルト選択なのに地名ラベルが出ない、再チェックで出る"). The per-source / per-layer
      `if(!getLayer)` guards already make repeated calls safe, so we just re-attempt every time. */
+  /* (city-label-dot) the dot's colours: a ring (tier 0) swaps fill and stroke relative to a plain dot. `light` = the text is
+     light (dark map / satellite) — the same flag applyLabelLang uses for the name. The tier-0 test is set by ensurePlaceLabels. */
+  let _cityTier0=['==',['literal',1],0];
+  function _cityDotColors(light){ const ink=light?'#ffffff':'#000000', rim=light?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)';
+    return { fill:['case',_cityTier0,rim,ink], stroke:['case',_cityTier0,ink,rim] }; }
   function ensurePlaceLabels(){
     if(!_imCanDraw()) return;
     /* (#R252) the ONE answer to «which `name:*` field is this label showing?», published before any
@@ -172,7 +177,43 @@ export function placeLabels(HOST){
         ['<=',CITY_RANK,4],1,
         ['<=',CITY_RANK,6],2,
         3];
-      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.placeTiered('city',CITY_TIER),'symbol-sort-key':['+',['*',CITY_TIER,100],CITY_RANK],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':LS.halo(1.6)}});   /* (#R210) 発色を濃く */
+      /* ══ (city-label-gate) HOW MANY CITIES A CONTINENT-SIZED VIEW NAMES ═══════════════════════════════
+         「大陸レベルで都市ラベルが多すぎる。Google Earth のように。」 (2026-11-18). `ofm-city` had no gate at all, so a
+         z3-z5 view named every city+town the tiles carry. MEASURED 2026-11-18 on tiles.openfreemap.org/planet (20261115 build),
+         one tile each over Europe, East Asia, North America, India, Brazil — city+town features per tile by `rank`:
+             z3  Europe 205 (rank 1:10, 2:20, 3:47, 4:128)   East Asia 167   North America 159   India 294   Brazil 147
+             z4  Europe 163 (rank 1:6, 2:10, 3:25, 4:40, 5:80)   East Asia 183   North America 172   India 233   Brazil 137
+             z5  Europe  96 (rank 1:3, 2:5, 3:13, 4:7, 5:23, 6:45)   East Asia 201   North America 165   India 147
+             z6  Europe 120 (rank 1..7, 7 = 88)   z7 Europe 190+ (rank 1..14, towns from 10)
+         A viewport is about 4 tiles at any zoom, so "rank <= k" is what a screenful holds: rank <= 1 at z3 is 7-16 per tile,
+         <= 2 at z4 is 14-25, <= 3 at z5 is 8-26, <= 5 at z6 is 14-56. Rank is the tiles' own importance and is stable between
+         tiles (London 1, Wien 2, Luxembourg 6 at z3 and at z5), so it is a gate that does not flicker as tiles change.
+         From CITY_GATE_OPEN_Z the gate is wide open: nothing the layer drew at z7+ is cut (z7 Europe already holds ranks to 14
+         and a gate there would cut the regional view the user did not ask to thin). The stops are INTEGERS for the reason
+         A1_RANK's note gives (`['zoom']` in a filter is re-read at integer zooms only), and the sequence must never fall
+         with zoom — tests/city-label-size-checks.test.mjs pins both. EXPIRY: re-measure if OpenFreeMap changes the meaning
+         of `rank` (e.g. a build whose z3 tile has no rank-1 city); the counts above are a photograph, not a guarantee. */
+      const CITY_GATE_STOPS=[[3,1],[4,2],[5,3],[6,5]];   /* [from zoom, highest rank still named] */
+      const CITY_GATE_OPEN_Z=7;
+      const CITY_GATE=(()=>{ const e=['step',['zoom']]; CITY_GATE_STOPS.forEach(([z,r],i)=>{ if(i) e.push(z); e.push(['<=',['coalesce',['get','rank'],6],r]); }); e.push(CITY_GATE_OPEN_Z,true); return e; })();
+      const CITY_FILTER=['all',['in',['get','class'],['literal',['city','town']]],CITY_GATE];
+      /* ══ (city-label-dot) THE POSITION MARKER NEXT TO THE NAME — Google Earth draws one ══════════════════
+         A name alone does not say where the city IS; `ofm-city-dot` is the point itself, on the SAME source, source-layer and
+         filter (gate included) as the name so a dot never exists for a city the name layer would not draw. Its radius is the
+         name's own size x CITY_DOT_EM (js/label-scale.js `placeTiered`'s multiplier), so dot and name grow together across
+         the whole z3-z17 curve; a national capital or rank <= 2 city (tier 0) is a RING (light stroke, dark core) and every
+         other settlement is a filled dot. The label sits CITY_LABEL_OFFSET_EM from the dot: dot radius (0.27) + ring stroke
+         (0.17 at the 13 px tier-0 size) + a gap, so the two cannot touch. CITY_DOT_EM and the gap are DESIGN NUMBERS read off
+         the Google Earth look the request names, not measurements; they lapse if the reader asks for another proportion.
+         Known limit: the name can lose a collision test while its dot stays, as it does on Google Earth's own dense views. */
+      const CITY_DOT_EM=0.27, CITY_LABEL_OFFSET_EM=0.72;
+      _cityTier0=['==',CITY_TIER,0];
+      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:CITY_FILTER,layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.placeTiered('city',CITY_TIER),'symbol-sort-key':['+',['*',CITY_TIER,100],CITY_RANK],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':CITY_LABEL_OFFSET_EM,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':LS.halo(1.6)}});   /* (#R210) 発色を濃く */
+      if(!GE().layers.has('ofm-city-dot')) GE().layers.add({id:'ofm-city-dot',type:'circle',source:'ofm','source-layer':'place',minzoom:3,filter:CITY_FILTER,
+        layout:{visibility:'none'},
+        paint:{'circle-radius':LS.placeTiered('city',CITY_TIER,CITY_DOT_EM),'circle-pitch-alignment':'map',
+          'circle-color':_cityDotColors(true).fill,'circle-stroke-color':_cityDotColors(true).stroke,
+          'circle-stroke-width':['case',_cityTier0,2.2,1]}});   /* colours are re-written per basemap by applyLabelLang, like the text */
       /* ══ (#R198) THE NAMES OF THE THINGS BETWEEN A COUNTRY AND A CITY ═══════════════════════════
          「地方行政区分も地名ラベルをつけるように。（例：日本の都道府県、アメリカ・ドイツ・オーストラリア
            の州、中国の省など。）」
@@ -747,6 +788,14 @@ export function placeLabels(HOST){
       GE().layers.setPaint(id,'text-halo-color', (id==='ofm-admin1'||lightText)?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
       GE().layers.setPaint(id,'text-halo-width', LS.halo(id==='ofm-country'?1.7:id==='ofm-city'?1.6:1.45));
     });
+    /* (city-label-dot) the dot follows its name: same switch, same basemap colour rule, same time-machine behaviour (the name
+       layer stays up in the past with the era's spelling, so the point it marks stays too). */
+    if(GE().layers.has('ofm-city-dot')){
+      GE().layers.setLayout('ofm-city-dot','visibility',show?'visible':'none');
+      const _dc=_cityDotColors(sat||isDark);
+      GE().layers.setPaint('ofm-city-dot','circle-color',_dc.fill);
+      GE().layers.setPaint('ofm-city-dot','circle-stroke-color',_dc.stroke);
+    }
     /* == (#R309) THE ERA COUNTRY LABELS ARE COUNTRY LABELS, SO THEY FOLLOW THE SAME BASEMAP RULE ==
        「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 `imtb-lbl` / `imtb-lbl2`
        (js/time-borders.js) were painted ONCE, at layer-creation time, with frozen light-on-dark

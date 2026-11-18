@@ -55,7 +55,12 @@ window.IntMapLabelScale=(function(){
        by name so the next round cannot mistake it for a regression. */
     country:[[1,12],[4,17]],
     admin1 :[[4,9.5],[7,11.5]],
-    city   :[[3,9.5],[10,13]],
+    /* (city-label-grow) 「Google Earth のように、ズームするほど都市名が大きくなる」(2026-11-18). The curve used to stop at z10
+       and stay flat for the other twelve zooms, so a street-level city name was the size of a regional one. It now keeps
+       growing — z10 13 -> z13 16 -> z17 19.5 (top tier x1.10 = 21.4 px) — and is flat only past z17, where the tiles carry no
+       further settlements to tell apart. The three slopes (0.5 / 1.0 / 0.875 px per zoom) are a design choice, not a
+       measurement; they lapse if the reader asks for another growth rate. z3..z10 is unchanged byte for byte. */
+    city   :[[3,9.5],[10,13],[13,16],[17,19.5]],
     other  :[[7,9],[13,11]],
     era    :[[1,8.5],[4,12]]
   };
@@ -72,7 +77,9 @@ window.IntMapLabelScale=(function(){
      purpose: a hamlet's name can be smaller than the name of the sea it sits beside, which is what
      a paper atlas does too. The inversion the request is actually about — an OCEAN at 19.3 px
      against a CITY at 15 — is gone: no non-place label exceeds 11.4 px at any zoom. */
-  const REF=[[1,12],[4,17],[22,17]];
+  /* (city-label-grow) the maximum now follows the tallest place name, which past z10 is the top city step
+     (TIER_K[0] x the city curve: 14.3 @z10, 17.6 @z13, 21.45 @z17). Up to z10 it is the country's 17 as before. */
+  const REF=[[1,12],[4,17],[10,17],[13,17.6],[17,21.45],[22,21.45]];
   /* ⚠ (#R210) SUB IS NO LONGER DERIVED FROM REF, AND THAT IS THE POINT. REF answers "how big can a
      place name get" and had to follow the country class up. SUB answers "how big may a NON-place
      label be", and nothing asked the sea names to grow — deriving one from the other would have made
@@ -133,8 +140,11 @@ window.IntMapLabelScale=(function(){
   const TIER_K=[1.10,1.02,0.94,0.82];
   function placeTierAt(kind,tier,z){ const k=TIER_K[Math.max(0,Math.min(TIER_K.length-1,tier|0))]; return _fl(placeAt(kind,z)*k); }
   /* zoom outermost (#R73), each stop a `step` over the tier expression — the shape both renderers evaluate */
-  function placeTiered(kind,tierExpr){ const s=PLACE[kind]; if(!s) throw new Error('IntMapLabelScale.placeTiered: unknown kind '+kind);
-    return _expr(s.map(([z,px])=>{ const st=['step',tierExpr,_fl(px*TIER_K[0])]; for(let i=1;i<TIER_K.length;i++) st.push(i,_fl(px*TIER_K[i])); return [z,st]; })); }
+  /* `mult` (default 1) scales every step — the position dot beside a city name is the name's own size times a
+     fraction (js/place-labels.js `ofm-city-dot`), so the dot and the name grow together and stay in proportion. */
+  function placeTiered(kind,tierExpr,mult){ const s=PLACE[kind]; if(!s) throw new Error('IntMapLabelScale.placeTiered: unknown kind '+kind);
+    const m=(mult==null?1:mult);
+    return _expr(s.map(([z,px])=>{ const st=['step',tierExpr,_fl(px*TIER_K[0]*m)]; for(let i=1;i<TIER_K.length;i++) st.push(i,_fl(px*TIER_K[i]*m)); return [z,st]; })); }
 
   /* ══ (news-type-polish) HOW THICK THE OUTLINE AROUND A NAME IS ═══════════════════════════════════
      「地名ラベルの周囲の黒縁取りは幅を細く。」 (2026-11-16). The halo widths were written as literals per

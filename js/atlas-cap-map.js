@@ -522,7 +522,7 @@ export default [
             if(!fitOk){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} } }
           if((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL)) return R(false, warn(L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
           const shown=found.filter(c=>!c._grp).map(c=>esc(c.name)).concat(grpNames.map(esc)).concat(polys.map(p=>esc(p.name))).concat(lineNames.map(esc));
-          let hh=note((found.length?'✦ ':'')+shown.join(', '));
+          const _namesNote=note((found.length?'✦ ':'')+shown.join(', ')); let hh=_namesNote;
           /* (#R118) HISTORICAL-membership basis stated up front + remembered — kills the "それは何年のもの？"
              death-spiral: the reply itself says what year-basis the highlight uses, and follow-up questions can
              read it from the working context instead of guessing (or citing the time-travel date). */
@@ -548,7 +548,12 @@ export default [
           /* (#R142) PARTIAL result → the planner's pre-written "…をハイライトしました" over-claims the targets that were NOT
              drawn. Flag partial so runActions suppresses that say (#3) and lets this honest body — which lists exactly what
              WAS drawn plus "Not found: X" / "Ambiguous: Y" — lead. (Total miss already returns ok:false above.) */
-          return R(true,hh+cwarn, (miss.length||ambig.length||rejected.length)?{meta:{partial:true}}:undefined); }
+          /* THE NAMES ARE ALL THIS RESULT SAYS → it declares so (`exec.shown`), and the reply folds them into its one
+             action row beside the map toggle (js/atlas-console.js _atlCompose) instead of printing them twice. Declared
+             only when nothing else rides in the html — a basis line, a warning or a missing name stays where it is. */
+          const _namesOnly=(hh===_namesNote)&&!cwarn&&!miss.length&&!ambig.length&&!rejected.length&&shown.length>0;
+          const _shownNames=_namesOnly?found.filter(c=>!c._grp).map(c=>c.name).concat(grpNames,polys.map(p=>p.name),lineNames).filter(Boolean):null;
+          return R(true,hh+cwarn, Object.assign((miss.length||ambig.length||rejected.length)?{meta:{partial:true}}:{}, _shownNames&&_shownNames.length?{exec:{shown:{names:_shownNames}}}:null)); }
     },
   },
   /* (#R511) one map explanation in one call — numbered places with roles, arcs between them,

@@ -1007,7 +1007,7 @@ export function countriesUi(HOST){
       const subline=`${s.region?_regionName(s.region):''}${(s.region&&s.capital)?' / ':''}${escC(s.capital||'')}`;
       const rankHTML=_showRank?`<span class="stat-rank">${_rankOf.get(s.code)||'—'}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
-      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-pick" aria-hidden="true"></span><span class="stat-flag">${(s.flag?window.IntMapSafe.flag(s.flag):icon('flag'))}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div><button type="button" class="stat-detail" data-ccn="${s.code}" aria-label="${escC(HOST._sfL('Details for ','詳細: ')+HOST.cName(s))}">${HOST._sfL('Details','詳細')} ›</button></div>`;
+      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-flag">${(s.flag?window.IntMapSafe.flag(s.flag):icon('flag'))}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div><button type="button" class="stat-detail" data-ccn="${s.code}" aria-label="${escC(HOST._sfL('Details for ','詳細: ')+HOST.cName(s))}">${HOST._sfL('Details','詳細')} ›</button></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{

@@ -2373,11 +2373,14 @@ test('tools-out-of-layers ① Tools holds 測る・描く, the menu left of it t
   await page.waitForSelector('#measure-dropdown .tlp-root', { state: 'visible', timeout: 30_000 });
   const own = await toolsPanel('#measure-dropdown .tlp-root');
   await page.evaluate(() => { try { window._closeMeasureMenu(); } catch { /* courtesy */ } });
-  expect(own.map((s) => s.sec), 'Tools holds only 測る・描く').toEqual(['measure']);
+  /* (ui-polish) a host that holds ONE section draws no heading: the measure controls sit straight in Tools, not inside a fold named after them */
+  const bare = await page.evaluate(() => { const r = document.querySelector('#measure-dropdown .tlp-root'); return { bare: r.classList.contains('tlp-bare'), secs: r.querySelectorAll(':scope > .tlp-sec').length, buttons: r.querySelectorAll('button').length }; });
+  expect(bare.bare && bare.secs === 0 && bare.buttons > 0, 'Tools holds the measure controls directly, with no section fold').toBe(true);
+  void own;
   await toolsMenuOpen();
   try {
-    const secs = own.concat(await toolsPanel('#more-tools-dropdown .tlp-root'));
-    expect(secs.map((s) => s.sec), 'the four sections, in order, across the two menus').toEqual(['measure', 'tool', 'sim', 'analysis']);
+    const secs = await toolsPanel('#more-tools-dropdown .tlp-root');
+    expect(secs.map((s) => s.sec), 'the other three sections, in order, in the menu left of Tools').toEqual(['tool', 'sim', 'analysis']);
     for (const s of secs) {
       expect(s.hidden, s.sec + ' is shown').toBe(false);
       expect(s.heading.length, s.sec + ' has a heading').toBeGreaterThan(1);
@@ -2386,7 +2389,7 @@ test('tools-out-of-layers ① Tools holds 測る・描く, the menu left of it t
     const by = Object.fromEntries(secs.map((s) => [s.sec, s]));
     /* 測る・描く is the four controls the Measure menu had — the same nodes, so their ids and handlers are unchanged */
     for (const id of ['btn-tool-measure', 'btn-tool-draw', 'btn-tool-radius', 'btn-tool-volume']) {
-      expect(await page.locator('#measure-dropdown .tlp-sec[data-sec="measure"] #' + id).count(), id + ' is in 測る・描く').toBe(1);
+      expect(await page.locator('#measure-dropdown .tlp-root #' + id).count(), id + ' is in 測る・描く').toBe(1);
     }
     expect(by.tool.rows.length > 0 && by.tool.rows.every((a) => a.startsWith('tool.')), '道具 holds the tool.* rows').toBe(true);
     expect(by.sim.rows.length > 0 && by.sim.rows.every((a) => a.startsWith('sim.')), 'シミュレーション holds the sim.* rows').toBe(true);

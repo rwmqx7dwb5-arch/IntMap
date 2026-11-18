@@ -336,10 +336,29 @@ export function drawTool(HOST){
       /* (#R719) the AREA trace keeps #R8c's 5-px rate, so enclosedArea's O(n²) cost per screen
          pixel of stroke is unchanged by the finer line sampling above. */
       if(!lastAreaPx || Math.hypot(px.x-lastAreaPx.x,px.y-lastAreaPx.y)>=AREA_PX){ lastAreaPx={x:px.x,y:px.y}; coarse.push(pt); }
-      recomputeLine(); if((++sampleN%9)===0) recomputeArea(); setData(); updateNumbers();
+      /* ══ THE STROKE COSTS O(1) PER POINTER EVENT, AND PAINTS ONCE PER FRAME ═══════════════════════
+         The pointer fires faster than the display refreshes (and MIN_PX=0.5 keeps nearly every event),
+         and each one used to run RDP over the whole raw trace, a turf.distance per kept segment, a
+         full FeatureCollection setData and an innerHTML write, so the line trailed the cursor more
+         the longer the stroke grew. Now: the live line IS the raw trace (no simplification until the
+         stroke is committed or the slider moves), the length is a running sum of the one new
+         segment, and the source/panel writes are coalesced to one per animation frame. Committing
+         (finish) and the slider still run recomputeLine, so the final line, length and point count
+         are exactly what they were. The closed-loop aid is O(n^2) in the 5-px trace, so it is
+         re-measured at most every AREA_MS inside that same frame rather than per event. */
+      if(raw.length>1){ try{ lengthKm+=turf.distance(raw[raw.length-2],pt,{units:'kilometers'}); }catch(_){} }
+      simplified=raw; keptN=raw.length;
+      scheduleFlush();
     }
+    const AREA_MS=200;   /* observation: the 5-px trace of a long stroke is a few hundred points; one enclosedArea per 200 ms keeps the live loop readout without a per-event O(n^2) */
+    let _flushRaf=0, _areaAt=0;
+    function flushNow(){ if(_flushRaf){ try{ cancelAnimationFrame(_flushRaf); }catch(_){} _flushRaf=0; } }
+    function scheduleFlush(){ if(_flushRaf) return;
+      _flushRaf=requestAnimationFrame(()=>{ _flushRaf=0; if(state!=='drawing') return;
+        const now=performance.now(); if(now-_areaAt>=AREA_MS){ _areaAt=now; recomputeArea(); }
+        setData(); updateNumbers(); }); }
     function startStroke(ll){ raw=[[ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]]; coarse=raw.slice(); simplified=raw.slice(); loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; lastAreaPx=null; sampleN=0; closeAux=null; state='drawing'; try{ GE().input.set('dragPan',false); }catch(_){} setData(); renderPanel(); }
-    function finish(){ if(state!=='drawing') return; recomputeLine(); recomputeArea();
+    function finish(){ if(state!=='drawing') return; flushNow(); recomputeLine(); recomputeArea();
       /* (#R8c) No self-crossing ⇒ no enclosed loop. Close END→START with a great-circle line and report
          the area of THAT polygon. The closing line is AREA-only: it is never added to the length and is
          untouched by the resolution slider (both use the open RAW path). */
@@ -433,7 +452,7 @@ export function drawTool(HOST){
         if(pt&&pt.length===2){ startStroke({lng:pt[0],lat:pt[1]}); } else { state='armed'; raw=[]; coarse=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; renderPanel(); }
       },
       toggle(){ if(this.active()) this.exit(); else this.start(); },
-      exit(){ state='off'; silent=false; _onFinish=null; raw=[]; coarse=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; lastAreaPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
+      exit(){ state='off'; flushNow(); silent=false; _onFinish=null; raw=[]; coarse=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; lastAreaPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
       onResolution(v){ resolution=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); },
       /* (#R141) Expose the drawn area as a GeoJSON Polygon/MultiPolygon (written for the since-retired area
          monitors; read today by onFinish and the seismic source capture). Finishes the stroke first if it is
@@ -801,14 +820,45 @@ export function outline(HOST){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { show(){}, clear(){} };
     const L=IntMapLang.pick(()=>HOST.lang);
     let _last=null, _active=false, _seq=0, _col='#0a84ff';   /* (#R61) _col: Atlas can recolor the outline */
-    function setVis(v){ try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setLayout('pl-outline-fill','visibility',v); if(GE().layers.has('pl-outline-line')) GE().layers.setLayout('pl-outline-line','visibility',v); }catch(_){} }
+    /* THE OUTLINE LINE IS THE MAP'S OWN BORDER, NOT A SECOND ACCOUNT OF IT. The visible national
+       border (`borders-only-line`, js/app-body.js) is the `boundary` layer of the `ofm` vector
+       tiles. A country clicked by name used to be outlined from window.countryGeo (generalised
+       Natural Earth) - a different survey of the same frontier, so the highlight sat beside the
+       line it was meant to light up. When the caller's polygon IS a countryGeo feature (or the
+       caller passes `iso3`), the LINE is drawn from the ofm `boundary` lines whose `adm0_l` or
+       `adm0_r` is that country (OpenMapTiles ISO 3166-1 alpha-3; measured on the planet tiles of
+       2026-11-18: present from z5, absent at z<=4, so the polygon edge keeps those zooms). The
+       translucent fill (and Isolate / Move, which read `current().geo`) keep the polygon.
+       Anything else (cities, regions, era borders) has no ofm identity and is drawn as before.
+       Expires if OpenFreeMap stops carrying adm0_l/adm0_r: the line then draws nothing at z>=5;
+       ofmLineCodes() returning null is the single off switch. */
+    const OFM_LINE_MINZOOM=5;
+    function ofmLineCodes(geo,ctx){ try{
+      if(ctx&&ctx.iso3) return [String(ctx.iso3).toUpperCase()];
+      const cg=window.countryGeo; if(!geo||!cg||!cg.features) return null;
+      const f=cg.features.find(x=>x&&x.geometry===geo); if(!f) return null;
+      const p=f.properties||{}, out=[];
+      for(const c of [f.id,p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3]){ const v=c==null?'':String(c).toUpperCase(); if(/^[A-Z]{3}$/.test(v)&&out.indexOf(v)<0) out.push(v); }
+      return out.length?out:null; }catch(_){ return null; } }
+    let _codes=null;   /* ofm country codes of the active outline, or null = polygon-edge line */
+    function setVis(v){ try{ for(const id of ['pl-outline-fill','pl-outline-line','pl-outline-pline']) if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v); }catch(_){} }
+    function _rmLine(){ for(const id of ['pl-outline-line','pl-outline-pline']){ try{ if(GE().layers.has(id)) GE().layers.remove(id); }catch(_){} } }
     function ensureLayers(){ try{
       if(!GE().layers.hasSource('pl-outline-src')) GE().layers.addSource('pl-outline-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       if(!GE().layers.has('pl-outline-fill')) GE().layers.add({id:'pl-outline-fill',type:'fill',source:'pl-outline-src',paint:{'fill-color':_col,'fill-opacity':0.15}},before);
-      if(!GE().layers.has('pl-outline-line')) GE().layers.add({id:'pl-outline-line',type:'line',source:'pl-outline-src',paint:{'line-color':_col,'line-width':2.4,'line-opacity':0.95}},before);
+      const polyPaint=()=>({'line-color':_col,'line-width':2.4,'line-opacity':0.95});
+      const useOfm=!!(_codes&&GE().layers.hasSource('ofm'));
+      /* the line layers must match the mode: stale ones of the other kind are replaced */
+      if(GE().layers.has('pl-outline-line')&&(!!GE().layers.has('pl-outline-pline')!==useOfm)) _rmLine();
+      if(useOfm){
+        if(!GE().layers.has('pl-outline-line')) GE().layers.add({id:'pl-outline-line',type:'line',source:'ofm','source-layer':'boundary',minzoom:OFM_LINE_MINZOOM,
+          filter:['all',['==',['get','admin_level'],2],['any',['in',['get','adm0_l'],['literal',_codes]],['in',['get','adm0_r'],['literal',_codes]]]],
+          layout:{'line-join':'round','line-cap':'round'},paint:polyPaint()},before);
+        if(!GE().layers.has('pl-outline-pline')) GE().layers.add({id:'pl-outline-pline',type:'line',source:'pl-outline-src',maxzoom:OFM_LINE_MINZOOM,paint:polyPaint()},before);
+      } else if(!GE().layers.has('pl-outline-line')) GE().layers.add({id:'pl-outline-line',type:'line',source:'pl-outline-src',paint:polyPaint()},before);
       return true; }catch(_){ return false; } }
-    function setColor(c){ if(!c) return; _col=c; try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setPaint('pl-outline-fill','fill-color',c); if(GE().layers.has('pl-outline-line')) GE().layers.setPaint('pl-outline-line','line-color',c); }catch(_){} }
+    function setColor(c){ if(!c) return; _col=c; try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setPaint('pl-outline-fill','fill-color',c); for(const id of ['pl-outline-line','pl-outline-pline']) if(GE().layers.has(id)) GE().layers.setPaint(id,'line-color',c); }catch(_){} }
     function setData(geo){ try{ ensureLayers(); GE().layers.setSourceData('pl-outline-src',geo); }catch(_){} }
     /* (#R55) Bulletproof clear. The user re-reported the polygon staying after ×. The REAL hole (R54 missed it):
        a show() whose Nominatim fetch was STILL IN FLIGHT would resolve AFTER clear() and repaint the outline. So
@@ -823,8 +873,8 @@ export function outline(HOST){
        click + the × and drives show()/clear() — so there is ONE popup, ONE boundary, and ONE × that clears both
        (the user reported the line staying after the popup's ×, which only closed the popup). clear() is nuclear:
        removes the layers + source so nothing can paint, then forces a repaint. */
-    function clear(){ _seq++; _active=false; _last=null;
-      try{ if(GE().layers.has('pl-outline-line')) GE().layers.remove('pl-outline-line'); }catch(_){}
+    function clear(){ _seq++; _active=false; _last=null; _codes=null;
+      _rmLine();
       try{ if(GE().layers.has('pl-outline-fill')) GE().layers.remove('pl-outline-fill'); }catch(_){}
       try{ if(GE().layers.hasSource('pl-outline-src')) GE().layers.removeSource('pl-outline-src'); }catch(_){}
       try{ setVis('none'); }catch(_){}
@@ -919,6 +969,7 @@ export function outline(HOST){
         if(!geo){ const r=await fetchPolygon(name, ctx); if(myseq!==_seq) return false; if(r&&r.geojson){ disp=r.name||disp; geo=r.geojson; } }
         if(myseq!==_seq) return false;
         if(!geo) return false;   /* (#R59) no real polygon → draw NOTHING (no rectangle, no far same-named place) */
+        _codes=ofmLineCodes(geo,ctx); _rmLine();   /* the filter names this country: rebuilt per show */
         setData({type:'FeatureCollection',features:[{type:'Feature',geometry:geo,properties:{}}]}); _last={name:disp,geo}; _active=true; setVis('visible');
         /* ══ (#R669) A SHARPER SHAPE MAY ARRIVE AFTER THE OUTLINE IS ALREADY UP ═══════════════════
            「クリックしたときのハイライト線が線に比べて解像度が低い。」 The era subdivision layer has
@@ -942,7 +993,7 @@ export function outline(HOST){
     GE().events.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); GE().layers.setSourceData('pl-outline-src',{type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); }
       else { /* (#R57) REAPER — while no outline is active, NO pl-outline layer/source may survive a style event, so a
                 cleared outline can never linger. Only ever removes. */
-        try{ if(GE().layers.has('pl-outline-line')) GE().layers.remove('pl-outline-line'); }catch(_){}
+        _rmLine();
         try{ if(GE().layers.has('pl-outline-fill')) GE().layers.remove('pl-outline-fill'); }catch(_){}
         try{ if(GE().layers.hasSource('pl-outline-src')) GE().layers.removeSource('pl-outline-src'); }catch(_){} } });
     /* (#R120) current()/focus() — the active outline is a first-class map object (Object List + objectIds) */
@@ -1279,6 +1330,8 @@ export function objectList(HOST){
   window.IntMapObjects=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, toggle(){}, refresh(){}, count(){ return 0; } };
     const OL=IntMapLang.pick(()=>HOST.lang);
+    /* the paint js/map-ui.js gives an uploaded layer when it creates it (line 2.2 px, fill 0.22): the starting point of the sliders, nothing else reads them */
+    const UPLOAD_LINE_W=2.2, UPLOAD_FILL_OP=0.22;
     const labels={}, hiddenUp={};   /* labels: rename side-store for objects with no native name; hiddenUp: upload sid→hidden */
     let panel=null, fab=null, openState=false;
     const esc=s=>window.IntMapSafe.html(s);
@@ -1293,9 +1346,14 @@ export function objectList(HOST){
       try{ (HOST.radiusItems||[]).forEach(c=>out.push({ id:c.id, kind:'radius', dot:c.color, color:c.color, name:labels[c.id]||(c.radiusKm+' km '+OL('radius','半径','Radius','радиус','radio')),
         focus:()=>GE().camera.flyTo({center:c.center,duration:800}), rename:v=>{ labels[c.id]=v; }, setColor:col=>{ c.color=col; try{ refreshTool(); }catch(_){} }, remove:()=>{ try{ window.removeRadiusItem(c.id); }catch(_){} } })); }catch(_){}
       try{ const IA=window.IntMapAnnotations; ((IA&&IA._items)||[]).forEach(it=>out.push({ id:it.id, kind:'annot', dot:it.color, color:it.color, name:it.name||OL('Shape','図形','Zeichnung','Фигура','Dibujo'),
+        width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:1,
+        setWidth:w=>{ it.width=w; try{ IA.refresh&&IA.refresh(); }catch(_){} }, setOpacity:a=>{ it.alpha=a; try{ IA.refresh&&IA.refresh(); }catch(_){} },
         focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
       try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', hidden:!!hiddenUp[it.sid],
         focus:()=>fitFeats(srcFeats(it.sid)), rename:v=>{ labels[oid]=v; },
+        width:it.lw!=null?it.lw:UPLOAD_LINE_W, alpha:it.alpha!=null?it.alpha:1,
+        setWidth:w=>{ it.lw=w; try{ if(GE().layers.has(it.sid+'-line')) GE().layers.setPaint(it.sid+'-line','line-width',w); }catch(_){} },
+        setOpacity:a=>{ it.alpha=a; [['-fill','fill-opacity',UPLOAD_FILL_OP],['-line','line-opacity',1],['-pt','circle-opacity',1]].forEach(([sfx,prop,base])=>{ try{ if(GE().layers.has(it.sid+sfx)) GE().layers.setPaint(it.sid+sfx,prop,base*a); }catch(_){} }); },
         setColor:col=>{ it.col=col; ['-fill','-line','-pt'].forEach((sfx,k)=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setPaint(L, k===0?'fill-color':k===1?'line-color':'circle-color', col); }catch(_){} }); },
         toggleHide:()=>{ hiddenUp[it.sid]=!hiddenUp[it.sid]; const v=hiddenUp[it.sid]?'none':'visible'; ['-fill','-line','-pt'].forEach(sfx=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setLayout(L,'visibility',v); }catch(_){} }); },
         remove:()=>{ try{ if(GU.remove) GU.remove(it.n); }catch(_){} } }); }); }catch(_){}
@@ -1364,6 +1422,10 @@ export function objectList(HOST){
             +'<button class="iol-ic" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">◎</button>'
             +(o.rename?('<button class="iol-ic" data-act="rename" title="'+esc(OL('Rename','名称変更','Umbenennen','Переименовать','Renombrar'))+'">✎</button>'):'')
             +'<button class="iol-ic iol-del" data-act="del" title="'+esc(OL('Delete','削除','Löschen','Удалить','Eliminar'))+'">×</button>'
+            +((o.setWidth||o.setOpacity)?('<div class="iol-sl">'
+              +(o.setWidth?('<label title="'+esc(OL('Line width','線の太さ','Linienbreite','Толщина линии','Grosor de línea'))+'"><span>'+esc(OL('Line width','線の太さ','Linienbreite','Толщина линии','Grosor de línea'))+'</span><input type="range" min="0.5" max="12" step="0.5" value="'+esc(o.width)+'" data-act="width"></label>'):'')
+              +(o.setOpacity?('<label title="'+esc(OL('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad'))+'"><span>'+esc(OL('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad'))+'</span><input type="range" min="0.1" max="1" step="0.05" value="'+esc(o.alpha)+'" data-act="alpha"></label>'):'')
+              +'</div>'):'')
           +'</div>'; });
       });
       body.innerHTML=h; }
@@ -1384,6 +1446,13 @@ export function objectList(HOST){
       document.body.appendChild(panel);
       if(!document.getElementById('iol-css')){ const st=document.createElement('style'); st.id='iol-css';
         st.textContent='#iol-panel .iol-head button{line-height:1;padding:0;}'   /* (#R248) the × and 全消去 stop setting the band’s height — see the note by the markup */
+          /* the two head buttons were 8 px apart and ~12 px tall, so aiming at × hit 全消去. 28 px hit areas, a 14 px air gap before the ×, and a negative block margin so the 25 px band (#R248) does not grow */
+          +'#iol-panel .iol-head .iol-clear,#iol-panel .iol-head .iol-close{min-width:28px;min-height:28px;margin-block:-5px;padding-inline:6px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;}'
+          +'#iol-panel .iol-head .iol-close{margin-inline-start:14px;}'
+          +'#iol-panel .iol-row{flex-wrap:wrap;}'
+          +'#iol-panel .iol-sl{flex:1 0 100%;display:flex;gap:12px;padding:0 2px 3px 17px;}'
+          +'#iol-panel .iol-sl label{flex:1;min-width:0;display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text-muted);}'
+          +'#iol-panel .iol-sl input[type=range]{flex:1;min-width:0;height:16px;accent-color:var(--primary-color);}'
           +'#iol-panel .iol-grp{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--text-main);text-transform:uppercase;letter-spacing:.03em;padding:9px 3px 4px;}'
           +'#iol-panel .iol-row{display:flex;align-items:center;gap:6px;padding:4px 3px;border-top:1px solid rgba(128,128,128,0.12);}'
           +'#iol-panel .iol-dot{flex:0 0 auto;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.15);}'
@@ -1401,7 +1470,10 @@ export function objectList(HOST){
         else if(act==='del'){ try{ o.remove&&o.remove(); }catch(_){} setTimeout(renderList,60); }
         else if(act==='hide'){ try{ o.toggleHide&&o.toggleHide(); }catch(_){} renderList(); }
         else if(act==='rename'){ const cur=o.name; const v=window.prompt(OL('New name','新しい名前','Neuer Name','Новое имя','Nuevo nombre'),cur); if(v!=null&&v.trim()){ try{ o.rename&&o.rename(v.trim()); }catch(_){} renderList(); } } });
-      panel.querySelector('.iol-body').addEventListener('input',e=>{ if(!(e.target.getAttribute&&e.target.getAttribute('data-act')==='color')) return; const row=e.target.closest('.iol-row'); const o=row&&_objs[+row.getAttribute('data-i')]; if(o&&o.setColor){ try{ o.setColor(e.target.value); }catch(_){} const dot=row.querySelector('.iol-dot'); if(dot) dot.style.background=e.target.value; } });
+      panel.querySelector('.iol-body').addEventListener('input',e=>{ const act=e.target.getAttribute&&e.target.getAttribute('data-act'); if(act!=='color'&&act!=='width'&&act!=='alpha') return; const row=e.target.closest('.iol-row'); const o=row&&_objs[+row.getAttribute('data-i')]; if(!o) return;
+        if(act==='color'){ if(o.setColor){ try{ o.setColor(e.target.value); }catch(_){} const dot=row.querySelector('.iol-dot'); if(dot) dot.style.background=e.target.value; } }
+        else if(act==='width'){ if(o.setWidth){ try{ o.setWidth(+e.target.value); }catch(_){} o.width=+e.target.value; } }
+        else if(o.setOpacity){ try{ o.setOpacity(+e.target.value); }catch(_){} o.alpha=+e.target.value; } });
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.iol-head')); }catch(_){}
       /* ⚠⚠⚠ (#R251) AN OPEN PANEL FOLLOWS THE LANGUAGE. Its head and body are built ONCE, and
          opening an already-open panel is a no-op, so a reader who opened the Objects panel and then

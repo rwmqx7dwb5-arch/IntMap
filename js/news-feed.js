@@ -32,6 +32,14 @@ export function newsFeed(HOST){
      cleared when a fetch starts, so a new day, a new search or the timer gets the loading line
      while it is really loading. A fetch where no source answered at all still says networkError. */
   let _answeredFor=null;
+  /* the same idea for the Event path: the instant (see _instantKey) for which the Event load FAILED (no
+     database, a query error) — startNews() shows an Event-level error with a retry, not a loading line
+     and never an article list. An Event load that succeeded but found nothing is `_answeredFor` instead. */
+  let _eventError=null;
+  /* ⚠ THE NEWS PANEL IS EVENT-LEVEL. The Event path is the whole feed unless the reader chose the
+     multi-language editions (collection is English-only, docs/NEWS-EVENTS.md §2 decision 2) or the
+     switch is off. In that case nothing may put an article-shaped list into the shared feed or its cache. */
+  const _eventLevel=()=>!!(HOST.NEWS_EVENT_MODE && HOST.newsLangMode!=='multi');
   const _instantKey=()=>{ try{ return HOST.newsDate?String(HOST.newsDate.getTime()):'live'; }catch(_){ return 'live'; } };
   /* the ± window buildItems() keeps around a past instant — ONE number, read by the filter and by
      the sentence that tells the reader what the filter kept (the fetch query itself asks ±3 days;
@@ -74,6 +82,13 @@ export function newsFeed(HOST){
     if(card){ const ft=feed.getBoundingClientRect().top, ct=card.getBoundingClientRect().top; feed.scrollTop=feed.scrollTop+(ct-ft)+place.off; }
     else feed.scrollTop=place.scrollTop;
   }
+  /* An Event load that FAILED says so, with a retry — it never turns into an article list.
+     (The ±N-day «no articles» sentence in startNews describes the article window, so Event level uses noMatch.) */
+  function paintEventError(feed){
+    feed.innerHTML=`<div class="empty-msg" data-news-empty="event-error" style="color:var(--threat-unmapped);">${HOST.t('networkError')}<br><button type="button" data-news-retry style="margin-top:12px;padding:6px 16px;border-radius:999px;border:1px solid rgba(0,0,0,0.14);background:#fff;color:#000;font-size:12px;font-weight:600;cursor:pointer;">${HOST.t('aiRetry')}</button></div>`;
+    const rb=feed.querySelector&&feed.querySelector('[data-news-retry]');
+    if(rb) rb.addEventListener('click',()=>{ try{ fetchData(); }catch(_){} });
+  }
   function startNews(){ hookEventsGrew();
     const feed=document.getElementById('live-news-feed');
     const place=(HOST.globalData.length&&feed)?_readingPlace(feed):null;
@@ -89,8 +104,9 @@ export function newsFeed(HOST){
        leaves the message rather than asking again. The 3-minute timer resumes behind it either
        way, because the latch is now lifted. */
     if(HOST.globalData.length===0){
+      if(_eventError===_instantKey()){ paintEventError(feed); return; }
       if(_answeredFor!==null&&_answeredFor===_instantKey()){
-        const msg=HOST.newsDate
+        const msg=(HOST.newsDate && !_eventLevel())
           ? HOST.t('noNewsForDate').replace('{date}',HOST.ymdISO(HOST.newsDate)).replace('{days}',String(DATE_WINDOW_DAYS))
           : HOST.t('noMatch');
         feed.innerHTML=`<div class="empty-msg" data-news-empty="answered">${window.IntMapSafe.html(msg)}</div>`;
@@ -258,10 +274,15 @@ export function newsFeed(HOST){
   /* News cache → instant render on load/return, refreshed in the background. */
   function loadNewsCache(){
     try{ const c=JSON.parse(localStorage.getItem('intmap_news_cache')||'null');
-      if(c && c.lang===HOST.lang && !HOST.activeSearchQuery && !HOST.newsDate && Array.isArray(c.data) && c.data.length && (Date.now()-c.ts < 6*3600e3)) return c.data; }catch(_){}
+      if(c && c.lang===HOST.lang && !HOST.activeSearchQuery && !HOST.newsDate && Array.isArray(c.data) && c.data.length && (Date.now()-c.ts < 6*3600e3)){
+        /* Event level reads only a cache that carries Events; an article-shaped one (saved by the article
+           path, or by an older build) would paint a different-grained list that nothing replaces if the load fails */
+        if(_eventLevel() && !c.data.every((x)=>x&&x._event)) return null;
+        return c.data; } }catch(_){}
     return null;
   }
   function saveNewsCache(){
+    if(_eventLevel()) return;   /* article lists never enter the cache the Event path reads */
     try{ if(!HOST.activeSearchQuery && !HOST.newsDate) localStorage.setItem('intmap_news_cache', JSON.stringify({ts:Date.now(), lang:HOST.lang, data:HOST.globalData.slice(0,120)})); }catch(_){}
   }
   function buildItems(byLink){
@@ -305,7 +326,7 @@ export function newsFeed(HOST){
     return { title:r.title, publisher:r.publisher||'', link:r.link, pubDate:r.pub_date||'', desc:r.description||'', analysis };
   }
   async function loadNewsFromSupabase(){
-    if(!HOST.DB || HOST.activeSearchQuery || HOST.newsDate || HOST.newsLangMode==='multi') return false;
+    if(!HOST.DB || HOST.activeSearchQuery || HOST.newsDate || HOST.newsLangMode==='multi' || _eventLevel()) return false;   /* article rows never land over Events */
     try{
       const { data, error } = await HOST.DB.from('current_news')
         .select('title,publisher,link,pub_date,description,subject_lng,subject_lat,subject_name_en,subject_name_jp,pub_lng,pub_lat,pub_label,short_en,short_jp')
@@ -343,7 +364,7 @@ export function newsFeed(HOST){
       return;
     }
     _asked=true;
-    _answeredFor=null;
+    _answeredFor=null; _eventError=null;
     const askedFor=_instantKey();
     /* 1) Instant: show cached headlines immediately while fresh ones load. */
     if(HOST.globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ land(cached); if(HOST.mode==='news'||HOST.mode==='saved') startNews(); } }
@@ -353,27 +374,45 @@ export function newsFeed(HOST){
          「既定のフィード」だけである——検索・時間旅行（過去の日付）・多言語モードは、
          収集が英語のみ・保持が 72 時間・カテゴリが Event 単位、という前提の外にある
          （docs/NEWS-EVENTS.md §2 の決定 2 と §8）。そこは記事モードのままにする。
-       ⚠ **落ちる先がある。** `load()` が false（DB が無い・表が空・失敗）なら下の記事経路へ。
-         黙って空の一覧を見せない——それが #R162/#R200/#R205/#R208 の「機能が静かに
-         存在しなくなる」形である。 */
-    /* ⚠⚠ (news-quality) 検索と過去の日付も、まず**出来事の表**に訊く。以前はここで記事 RSS へ
-       切り替わったので、同じ出来事に一覧からは着き、検索や日付からは記事の断片として着いた。
-       出来事の表が答えを持たないとき（30 日より前の日付・表に無い語）は load() が false を返し、
-       下の記事経路が今までどおり答える——広く探す能力は減らさない。 */
-    if(HOST.NEWS_EVENT_MODE && HOST.newsLangMode!=='multi'){
+       ⚠⚠ **落ちる先は無い。** 以前は `load()` が false（DB が無い・表が空・失敗・検索や日付に該当なし）
+         のとき下の記事経路へ落ち、同じパネルが出来事の粒度だったり記事の粒度だったりした。
+         いまは**出来事の面の中で**答える: 該当なし＝「無い」（`answer()==='none'`）、
+         訊けなかった＝エラーと再試行（`'error'`）。記事一覧は決して出来事の一覧の代わりに入らない。
+         記事経路はこの分岐に入らない場合（多言語モード・NEWS_EVENT_MODE 無効）だけが使う。 */
+    /* ⚠⚠ (news-quality) 検索と過去の日付も、まず**出来事の表**に訊く（同じ出来事に、入口によらず着く）。 */
+    if(_eventLevel()){
+      const evOpts = { query: HOST.activeSearchQuery || '', day: HOST.newsDate ? new Date(HOST.newsDate).toISOString().slice(0,10) : '' };
+      let loaded=false, answer='error';
+      let evMod=null;
       try{
         const okLazy = await window.IntMapLazy.need('newsEvents');
-        const evOpts = { query: HOST.activeSearchQuery || '', day: HOST.newsDate ? new Date(HOST.newsDate).toISOString().slice(0,10) : '' };
-        if(okLazy && window.IntMapNewsEvents && await window.IntMapNewsEvents.load(evOpts)){
-          /* ⚠ 一覧を入れるのは**ここだけ**。`HOST.globalData` の書き手はこのファイル 1 つで、
-             出来事のモジュールは項目を**作る**だけである（#R165 の RW 契約）。 */
-          land(window.IntMapNewsEvents.loaded());
-          window.IntMapNewsEvents.renderChips();
-          if(HOST.mode==='news'||HOST.mode==='saved') startNews();
-          return;
+        if(okLazy && window.IntMapNewsEvents){
+          evMod = window.IntMapNewsEvents;
+          loaded = !!(await evMod.load(evOpts));
+          answer = evMod.answer();
         }
-      }catch(e){ console.warn('[IntMap] event mode unavailable, using the article feed:', e&&e.message); }
+      }catch(e){ console.warn('[IntMap] event mode unavailable:', e&&e.message); }
+      const showing = HOST.mode==='news'||HOST.mode==='saved';
+      if(loaded){
+        /* ⚠ 一覧を入れるのは**ここだけ**。`HOST.globalData` の書き手はこのファイル 1 つで、
+           出来事のモジュールは項目を**作る**だけである（#R165 の RW 契約）。 */
+        land(evMod.loaded());
+        evMod.renderChips();
+        if(showing) startNews();
+        return;
+      }
       try{ window.IntMapNewsEvents && window.IntMapNewsEvents.hideChips(); }catch(_){}
+      if(answer==='none'){          /* 表は答えた——該当する出来事は無い（古い一覧を残さない） */
+        land([]); _answeredFor=askedFor;
+        if(showing) startNews();
+        return;
+      }
+      /* 訊けなかった。既定のフィードで出来事がもう出ているなら（背景の更新が失敗しただけ）それを残す。
+         検索・日付の問いには古い一覧は答えにならないので、空にしてエラーを述べる。 */
+      if(!evOpts.query && !evOpts.day && (HOST.globalData||[]).some((x)=>x&&x._event)) return;
+      land([]); _eventError=askedFor;
+      if(showing) startNews();
+      return;
     }
     /* 1b) FAST PATH: pre-analyzed news from Supabase. If it returns rows we're done — no client scoring.
        (#R40) TEMPORARILY DISABLED via USE_SERVER_NEWS — always fall through to the client non-AI locator. */

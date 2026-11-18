@@ -177,12 +177,7 @@ export function attachLightbox(chatEl, closeLabel, fileStrings) {
 
   chatEl.__lb = true;
   chatEl.addEventListener('click', (e) => {
-    /* (#R493) `.atl-viewframe img` is the frame Atlas captured with view.inspect, shown back inside
-       the answer. It is a picture in the chat like any other, so it opens in the same viewer — a
-       340-pixel thumbnail of a map is a thing you have to be able to enlarge. ⚠ THE SELECTOR IS THE
-       WHOLE BINDING: a class renamed on one side and not here fails SILENTLY (the click simply does
-       nothing), which is why tests/atlas-view-checks.test.mjs (#R493) reads both spellings out of the sources. */
-    const im = e.target && e.target.closest && e.target.closest('.atl-imgrow-in img, .atl-viewframe img, .atl-thumb img');   /* (#R773) `.atl-thumb img` は送る前のサムネ——送ってから開けるものは、送る前にも開ける */
+    const im = e.target && e.target.closest && e.target.closest('.atl-imgrow-in img, .atl-thumb img');   /* (#R773) `.atl-thumb img` は送る前のサムネ——送ってから開けるものは、送る前にも開ける */
     if (im && im.src) { e.preventDefault(); e.stopPropagation(); _open(im.src, (typeof closeLabel === 'function') ? closeLabel() : closeLabel); return; }
     /* (#R773) そして非画像の添付。⚠ チップの × は「外す」ボタンであって「開く」ではないので、
        そこから始まったクリックはここを通さない。 */

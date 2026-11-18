@@ -278,8 +278,77 @@ export function mapReadout(HOST){
      where the escaping is the browser's and cannot be forgotten. */
   const CR_ARROW='<i><svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true" focusable="false" fill="currentColor"><path d="M7 0.9 L11.1 10.2 L7 8.1 L2.9 10.2 Z"></path></svg></i>';
   const CR_LL=1, CR_ELEV=2, CR_EYE=4, CR_SAT=8, CR_WIND=16, CR_SEIS=32;
-  /* the order the row has always printed — ONE list, so `_crOrder` cannot disagree with the render */
-  const CR_SEQ=[{b:CR_LL,k:'ll'},{b:CR_ELEV,k:'elev'},{b:CR_EYE,k:'eye'},{b:CR_SAT,k:'sat'},{b:CR_WIND,k:'wind'},{b:CR_SEIS,k:'seis'}];
+  /* (ui-polish-batch) LEFT TO RIGHT: the layer values, then the camera altitude, then the ground's elevation / depth, then the
+     coordinates at the far right — ONE list, so `_crOrder` cannot disagree with the render. The row is right-aligned at the end of
+     the credit strip, so a layer value growing leftwards moves none of the chips to its right. */
+  const CR_SEQ=[{b:CR_SAT,k:'sat'},{b:CR_WIND,k:'wind'},{b:CR_SEIS,k:'seis'},{b:CR_EYE,k:'eye'},{b:CR_ELEV,k:'elev'},{b:CR_LL,k:'ll'}];
+  const CR_BIT={ sat:CR_SAT, wind:CR_WIND, seis:CR_SEIS };
+  const CR_GROW=['sat','wind','seis'];   /* the chips whose text a LAYER writes, so no formatter can say how long it gets */
+  /* ══ (ui-polish-batch) THE CHIPS DO NOT MOVE EACH OTHER ═════════════════════════════════════════
+     「標高・水深・高度・座標が変わるたびに幅が変わってガタつく」 The row is right-aligned, so a chip that changes width slides every
+     chip to its left. Each chip therefore has a box whose width is RESERVED and whose text is left-aligned inside it (min-width,
+     so a longer text still grows the box rather than being cut):
+       · coordinates / elevation-or-depth / eye altitude — the width of the LONGEST text the formatter can print, asked of the same
+         formatters the chips use (fmtLL, HOST.elevText, IntMapEyeAlt.textFor), for both words ('Elev' and 'Depth') and the unit
+         mode in force, so the word switching at the shoreline does not change the width. Re-asked only when the language or the
+         unit mode changes.
+       · a layer value (sat / wind / seis) — nothing can say how long a layer's text gets, so the box grows to the longest text
+         seen WHILE THAT CHIP IS IN THE ROW and does not shrink until the chip leaves it (see _crOrder).
+     The unit is 'ch' (the width of a digit; the digits are tabular) plus CR_SLACK_CH for letters wider than a digit.
+     Observations behind the extremes: the ground's range is Mt Everest 8,849 m to the Challenger Deep 10,935 m (five digits and a
+     separator either way); the camera's is an ESTIMATE — the globe view frames the planet within about one equatorial circumference
+     (4.0075e7 m) of altitude. A taller altitude only grows the box (min-width), it is never cut; raise CR_EYE_MAX_M if readers
+     regularly see that. */
+  const CR_SLACK_CH=1, CR_EYE_MAX_M=40075000, CR_GROUND_MAX_M=8849, CR_GROUND_MIN_M=-10935;
+  const _crEyeAlt=()=>window.IntMapEyeAlt;   /* the one read of the camera-altitude module: the chip's text and its reserved width ask the same object */
+  let _crWkey='';
+  const _crGrown={ sat:0, wind:0, seis:0 };
+  const _crSetW=(chip,n)=>{ const v=n>0?(n+'ch'):''; if(chip.style.minWidth!==v) chip.style.minWidth=v; };
+  function _crReserve(C){
+    const key=HOST.lang+'|'+HOST.unitMode; if(key===_crWkey) return; _crWkey=key;
+    let ll=0, elev=0, eye=0;
+    try{ ll=Math.max(fmtLL(179.999,-88.888).length, fmtLL(-179.999,88.888).length); }catch(_){}
+    try{ elev=Math.max(HOST.elevText(CR_GROUND_MAX_M).length, HOST.elevText(CR_GROUND_MIN_M).length); }catch(_){}
+    try{ const E=_crEyeAlt(); eye=E&&E.textFor?E.textFor(CR_EYE_MAX_M).length:0; }catch(_){}
+    _crSetW(C.ll,ll&&ll+CR_SLACK_CH); _crSetW(C.elev,elev&&elev+CR_SLACK_CH); _crSetW(C.eye,eye&&eye+CR_SLACK_CH);
+  }
+  /* a layer chip's box only grows: the longest text it has shown, in ch */
+  function _crGrow(k,chip,len){ if(len>_crGrown[k]){ _crGrown[k]=len; _crSetW(chip,len+CR_SLACK_CH); } }
+  /* ══ (ui-polish-batch) WHERE THE ROW STANDS ═════════════════════════════════════════════════════
+     At the right end of the credit strip: a SIBLING of #map-credit in .map-column (css/intmap.css `.map-column > .coord-readout`).
+     It is not inside #map-credit because three writers own that element's contents: js/carto-basemap.js replaces its innerHTML on
+     every base switch, and js/atlas-briefing.js and js/map-recorder.js read its textContent as «the credit» — a readout inside it
+     would be erased by the first and printed into the postcard by the others.
+     Two other homes exist: #map-container in workspace mode (js/workspace.js pins it to the map window's corner) and the phone
+     sheet's slot (js/mobile-ui.js lends it; this never takes it back from there). */
+  function _crHome(el){
+    const p=el.parentNode; if(!p||!p.classList) return;
+    const inCol=p.classList.contains('map-column'), inMap=p.id==='map-container';
+    if(!inCol&&!inMap) return;
+    const ws=document.body.classList.contains('ws-mode');
+    if(ws&&inCol){ const mc=document.getElementById('map-container'); if(mc) mc.appendChild(el); }
+    else if(!ws&&inMap){ const col=document.querySelector('.map-column'); if(col) col.appendChild(el); }
+  }
+  /* The credit text keeps priority over the readout: the strip is the attribution's place. The readout's max-width is the strip
+     minus the credit's own text (measured with a Range, because #map-credit is nowrap with overflow hidden — its box says nothing
+     about its text), re-measured when the text changes (a base switch writes it) or the column is resized. */
+  let _crStripCol=null, _crStripRaf=0;
+  function _crStripFit(){ _crStripRaf=0;
+    const col=_crStripCol, credit=document.getElementById('map-credit'); if(!col||!credit) return;
+    let w=0; try{ const r=document.createRange(); r.selectNodeContents(credit); w=Math.ceil(r.getBoundingClientRect().width); }catch(_){}
+    const pad=parseFloat(getComputedStyle(credit).paddingLeft)||0;
+    const v=(w>0?w+pad:0)+'px'; if(col.style.getPropertyValue('--cr-credit-w')!==v) col.style.setProperty('--cr-credit-w',v);
+  }
+  function _crStripWire(el){
+    const p=el.parentNode, col=p&&p.classList&&p.classList.contains('map-column')?p:null;
+    if(!col||col===_crStripCol) return;
+    _crStripCol=col;
+    const soon=()=>{ if(!_crStripRaf) _crStripRaf=requestAnimationFrame(_crStripFit); };
+    const credit=document.getElementById('map-credit');
+    try{ if(credit&&window.MutationObserver) new MutationObserver(soon).observe(credit,{childList:true,characterData:true,subtree:true}); }catch(_){}
+    try{ if(window.ResizeObserver) new ResizeObserver(soon).observe(col); }catch(_){}
+    soon();
+  }
   let _crEl=null, _crChips=null, _crBits=0;
   /* the last value written to each chip — the comparison that makes an unchanged frame cost nothing */
   let _crVll='', _crVelev='', _crVeye='', _crVsat='', _crVwind='', _crVtip='', _crVrot='', _crVseis='', _crVcol='';
@@ -307,6 +376,8 @@ export function mapReadout(HOST){
      SET changes — a layer switched on, the cursor left the map — never on an ordinary move. */
   function _crOrder(el,bits){
     const C=_crChips; let n=el.firstChild;
+    /* a layer chip that leaves the row forgets the width it had grown to, so the next layer starts from its own text */
+    for(const k of CR_GROW){ if(!(bits&CR_BIT[k])){ _crGrown[k]=0; C[k].style.minWidth=''; } }
     for(let i=0;i<CR_SEQ.length;i++){
       if(!(bits&CR_SEQ[i].b)) continue;
       const w=C[CR_SEQ[i].k];
@@ -319,6 +390,7 @@ export function mapReadout(HOST){
     if(!bits){ el.style.display='none'; return; }
     /* ⚠ `el` is re-resolved on every call, so if the row were ever emptied or replaced by someone
        else the chips are moved back into whatever element is there now instead of being orphaned. */
+    _crHome(el); _crStripWire(el);
     if(el!==_crEl||bits!==_crBits){ _crEl=el; _crBits=bits; _crOrder(el,bits); }
     /* ⚠ READ the inline style, do not remember it: the mouseout handler in js/app-body.js sets this
        element's display to 'none' directly, and a remembered 'flex' would leave it hidden for good. */
@@ -331,8 +403,9 @@ export function mapReadout(HOST){
        that still has something true to say when the pointer is off the map. When the option is on the
        readout therefore stays up — it is the "always-on" readout, and the request was for the viewpoint
        altitude to be in it ("常時表示欄に、視点位置の高度も出るように"). */
-    const eye=(()=>{ try{ return window.IntMapEyeAlt?window.IntMapEyeAlt.text():''; }catch(_){ return ''; } })();
+    const eye=(()=>{ try{ const E=_crEyeAlt(); return E?E.text():''; }catch(_){ return ''; } })();
     const C=_crChips||(_crChips=_crBuild());
+    _crReserve(C);
     if(HOST._crLng==null){
       if(!eye){ el.style.display='none'; return; }
       if(eye!==_crVeye){ _crVeye=eye; C.eyeT.nodeValue=eye; }
@@ -341,7 +414,7 @@ export function mapReadout(HOST){
     const _ll=fmtLL(HOST._crLng,HOST._crLat); if(_ll!==_crVll){ _crVll=_ll; C.llT.nodeValue=_ll; }
     const _ev=HOST.lastElev||'·····'; if(_ev!==_crVelev){ _crVelev=_ev; C.elevT.nodeValue=_ev; }
     if(eye){ bits|=CR_EYE; if(eye!==_crVeye){ _crVeye=eye; C.eyeT.nodeValue=eye; } }
-    if(HOST.lastLayerVal){ bits|=CR_SAT; const _sv=HOST.lastLayerVal; if(_sv!==_crVsat){ _crVsat=_sv; C.satT.nodeValue=_sv; } }
+    if(HOST.lastLayerVal){ bits|=CR_SAT; const _sv=HOST.lastLayerVal; if(_sv!==_crVsat){ _crVsat=_sv; C.satT.nodeValue=_sv; _crGrow('sat',C.sat,_sv.length); } }
     /* (#R8c) Live wind speed/direction under the cursor while the Wind layer is on. */
     /* (#R19) No emoji in the always-on readout ("🌬みたいな絵文字は…いらない") — value + direction only. */
     /* ══ (#R289) THE DIRECTION IS A WORD IN THE READER'S LANGUAGE, AND AN ARROW THAT MOVES ═════════
@@ -382,7 +455,7 @@ export function mapReadout(HOST){
          been the raw `tip`. Writing the escaped form straight into the attribute would show a reader
          「Vent de &#39;Est」 the first time a translation contains an apostrophe. There is no HTML
          string left to escape — the sink is a property, and the escaping is the browser's. */
-      const _wt=sp+' '+card;   if(_wt!==_crVwind){ _crVwind=_wt; C.windT.nodeValue=_wt; }
+      const _wt=sp+' '+card;   if(_wt!==_crVwind){ _crVwind=_wt; C.windT.nodeValue=_wt; _crGrow('wind',C.wind,_wt.length+3); }   /* +3 ch: the arrow and its gap */
       if(tip!==_crVtip){ _crVtip=tip; C.wind.title=tip; }
       const _rot='rotate('+to+'deg)'; if(_rot!==_crVrot){ _crVrot=_rot; C.warr.style.transform=_rot; }
       bits|=CR_WIND;
@@ -399,8 +472,8 @@ export function mapReadout(HOST){
            both, a cursor inside one class changes neither. `q.col` is a '#rrggbb' from the field's
            own ramp (js/seismic.js `_mmiHex` / the JMA class table), so the CSSOM takes it verbatim. */
         if(q&&q.label){ bits|=CR_SEIS;
-          if(q.label!==_crVseis){ _crVseis=q.label; C.seisT.nodeValue=q.label; }
-          if(q.col!==_crVcol){ _crVcol=q.col; C.seis.style.color=q.col; } } } }catch(_){}
+          if(q.label!==_crVseis){ _crVseis=q.label; C.seisT.nodeValue=q.label; _crGrow('seis',C.seis,q.label.length); }
+          if(q.col!==_crVcol){ _crVcol=q.col; C.seis.style.color=q.col; C.seis.style.setProperty('--cr-c',q.col); } } } }catch(_){}   /* also a custom property: a stylesheet that forces every chip's colour (dark HUD, credit strip) beats an inline colour but can read this */
     /* Satellite-imagery chip removed from the readout per request — coords + elevation only. */
     _crShow(el,bits);
   }
