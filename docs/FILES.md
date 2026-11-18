@@ -713,6 +713,9 @@ layer-pkg-geopolitics.js          **レイヤー・パッケージ** 経済制�
                                   規則は geopolitics-core.js。Atlas は whenPackage() で同じ描画に触る
 layer-pkg-radar.js                **レイヤー・パッケージ** RainViewer レーダー dl-radar — フレーム索引・再生（window._rvPlayer）・4 分ごとの更新・切替
 layer-pkg-thermal.js              **レイヤー・パッケージ** 火災・熱異常 dl-thermal — GIBS の日ごとの探査・24/48/72 h の重ね・再構築・不透明度
+layer-pkg-launches.js             **レイヤー・パッケージ** ロケット打ち上げ dl-launches — Launch Library 2 を時計の前後の窓で 1 回読み、射場ごとに描く
+layer-pkg-fireballs.js            **レイヤー・パッケージ** 火球 dl-fireballs — CNEOS（自前の中継経由）を時計の瞬間まで・エネルギーの対数で描く
+layer-pkg-eclipse.js              **レイヤー・パッケージ** 日食の通過帯 dl-eclipse — 時計の次の日食（または指定した日食）の帯・中心線・限界
 layer-pkg-alliances.js            **レイヤー・パッケージ** NATO dl-nato・EU dl-eu・国防費 dl-milSpend（部品を共有する 1 族）— 加盟年の色と凡例・
                                   Article 6 の切り取り・hover（window.IntMapNatoFC / IntMapEuFC）・国防費の 2 つの表し方・時計への追従・
                                   凡例が述べる加盟国数（描いている加盟国から）
@@ -1000,7 +1003,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  246 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  249 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1129,7 +1132,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全246を検索・到達可能 243）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全249を検索・到達可能 246）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1149,7 +1152,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 246能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 249能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1232,6 +1235,7 @@ widget-render.js                  レンダーキット IntMapWidgetRender —�
 widget-defs-time.js               定義：時計・進捗・月・太陽・カレンダー・カウントダウン（全て局所計算）
 widget-defs-data.js               定義：天気・大気/UV・地震・国・人口・祝日・知識・宇宙
 widget-defs-markets.js            定義：為替・暗号資産・Fear&Greed・金銀・Bitcoin ネットワーク
+widget-defs-space.js              定義：宇宙天気（太陽風・X 線フレア・NOAA スケール・SWPC 警報）と地球に近づく小惑星
 widget-defs-map.js                定義：地図中心／縮尺／おすすめレイヤー、および IntMap 固有の
                                   9種（有効レイヤー・表示範囲の状況・地図上のニュース・保存地点の警報・
                                   国のウォッチ・見守る場所・経路・Atlas ブリーフィング・Chronos）
@@ -1347,6 +1351,11 @@ space.js                          宇宙エクスプローラ本体（床での�
 space-bodies.js                   ほかに何があるか（探査機・小惑星・太陽系外）window.IntMapSpaceBodies
 space-cosmos.js                   太陽系の外へ出る距離の梯子 window.IntMapCosmos
 space-events.js                   天文現象 window.IntMapSpaceEvents
+space-almanac.js                  ある地点・ある夜の空 window.IntMapAlmanac——日の出入りと薄明・月の出入りと月相・見える惑星と等級・
+                                  活動中の流星群（極大は IMO の太陽黄経から年ごとに計算）・その地点から見える次の食
+space-eclipse-path.js             日食の地表の通過帯 window.IntMapEclipsePath——影の軸と本影・半影の円錐を WGS-84 と交わらせ、
+                                  中心線・本影の帯・半影の限界と地点ごとの局所状況（ΔT・光行差を入れて TT で計算）
+sky-almanac.js                    「今夜の空」パネル window.IntMapSkyAlmanac——太陽・月・惑星・流星群・衛星の通過・食を 1 地点で
 space-sky.js                      地球の背後の実際の星空 window.IntMapSky。暗い星（四角の点）は WebGL の 1 回の描画で塗り、
                                   明るい星の暈・円盤と月・太陽だけを canvas に描く（WebGL が無ければ全部 canvas）。
                                   WebGL の canvas は #space-stars としてそのまま表示し、毎フレーム複写しない

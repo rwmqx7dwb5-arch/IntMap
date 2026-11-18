@@ -114,6 +114,46 @@ export const FETCH_RELAY_RULES = Object.freeze([
     cacheSeconds: 7200,
   },
   {
+    id: "jpl-ssd-api",
+    probe: "https://ssd-api.jpl.nasa.gov/fireball.api?req-loc=true&limit=1",
+    /* js/layer-pkg-fireballs.js — NASA/JPL CNEOS fireballs (fireball.api); cad.api (close approaches of near-Earth
+       objects) is the same host and the same family, admitted for the widget that reads it.
+       MEASURED 2026-11-17 with Origin set to the Pages origin: both answer 200 application/json and NEITHER sends
+       Access-Control-Allow-Origin. fireball.api?req-loc=true&sort=-date: 888 events, 63,900 B in 0.93 s (the
+       unfiltered record, 1,074 events, was 76 KB in 1.1 s on the day this rule was specified). cad.api?dist-max=0.05
+       &date-min=now&date-max=+60&sort=date: 35 approaches, 6,345 B in 0.52 s. maxBytes is 2 MB: about 30 times the
+       fireball record and enough for a wide cad.api query (a cad row is ~180 B, so 2 MB is some 11,000 rows) — and
+       it still refuses a download that is not one of these answers. Lapses if the record grows past ~1 MB.
+       The query holds exactly the arguments the two APIs document (fireball: date-min, date-max, energy-min,
+       req-loc, req-alt, req-vel, limit, sort; cad: dist-max, date-min, date-max, fullname, diameter, sort, limit,
+       h-max, body), every one optional and each held to the shape of its value, so a key neither API has is refused.
+       Cache: the fireball record gains a few events a month (newest of the 888 was five weeks old) and cad.api's
+       is recomputed daily, so an hour is shared between readers; the page itself keeps the answer for the session. */
+    hosts: ["ssd-api.jpl.nasa.gov"],
+    path: /^\/(fireball|cad)\.api$/,
+    query: {
+      "date-min": /^(?:now|[+-]\d{1,5}|\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?)$/,
+      "date-max": /^(?:now|[+-]\d{1,5}|\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?)$/,
+      "energy-min": /^\d{1,4}(?:\.\d{1,3})?$/,
+      "req-loc": /^(?:true|false)$/,
+      "req-alt": /^(?:true|false)$/,
+      "req-vel": /^(?:true|false)$/,
+      limit: /^\d{1,5}$/,
+      sort: /^-?[a-z][a-z-]{0,19}$/,
+      "dist-max": /^\d{1,3}(?:\.\d{1,6})?(?:au|ld)?$/i,
+      fullname: /^[A-Za-z0-9 ()._\/-]{1,60}$/,
+      diameter: /^(?:true|false)$/,
+      "h-max": /^\d{1,2}(?:\.\d{1,3})?$/,
+      body: /^(?:[A-Za-z]{3,12}|ALL)$/,
+    },
+    optional: ["date-min", "date-max", "energy-min", "req-loc", "req-alt", "req-vel", "limit", "sort",
+      "dist-max", "fullname", "diameter", "h-max", "body"],
+    type: /^application\/json/i,
+    maxBytes: 2 * 1024 * 1024,
+    timeoutMs: 15000,
+    cacheSeconds: 3600,
+  },
+  {
     id: "world-bank-indicator",
     probe: "https://api.worldbank.org/v2/country/JPN/indicator/SP.POP.TOTL?format=json&mrnev=1&per_page=1",
     /* js/wb-indicators.js — the World Bank's indicator API, read DIRECTLY first: it sends

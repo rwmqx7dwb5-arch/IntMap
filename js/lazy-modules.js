@@ -85,6 +85,7 @@ export const LAZY_REGISTRY = Object.freeze({
   los: { publishes: 'IntMapLOS', load: () => import('./viewshed.js'), mount: (IM_HOST, m) => { m.los(IM_HOST); } },
   streetView: { publishes: 'IntMapStreetView', load: () => import('./street-view.js'), mount: (IM_HOST, m) => { window.IntMapStreetView=m.streetView(IM_HOST); } },
   nightSky: { publishes: 'IntMapNightSky', load: () => import('./night-sky.js'), self: true },
+  skyAlmanac: { publishes: 'IntMapSkyAlmanac', load: () => import('./sky-almanac.js'), mount: (IM_HOST, m) => { m.skyAlmanac(IM_HOST); } },
   atlasConsole: { publishes: 'IntMapConsole', load: () => import('./atlas-console.js'), mount: (IM_HOST, m) => { window.IntMapConsole=m.atlasConsole(IM_HOST); } },
   atlasQuery: { publishes: 'IntMapQuery', load: () => import('./atlas-query.js'), mount: (IM_HOST, m) => { window.IntMapQuery=m.atlasQuery(IM_HOST); } },
   atlasChart: { publishes: 'IntMapAtlasChart', load: () => import('./atlas-chart.js'), mount: (IM_HOST, m) => { window.IntMapAtlasChart=m.atlasChart(IM_HOST); } },

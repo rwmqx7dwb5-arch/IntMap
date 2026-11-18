@@ -663,6 +663,169 @@ export function satellitesLive(HOST){
       durationS:(setMs&&(inProgress?t0:riseMs))?Math.round((setMs-(inProgress?t0:riseMs))/1000):null };
   }
 
+  /* ══ passesOver — EVERY PASS OVER A POINT, NOT ONE SATELLITE'S NEXT ONE ══════════════════════════
+     nextPass answers 「when does THIS object next rise here」; this answers 「what goes over this place in
+     the next N hours」, which is the question a person standing there asks. Same geometry as nextPass
+     (the look angles of SGP4 positions, the same _elementSpan, the same divergence guard as
+     propagateAll, the same earth-shadow test for «sunlit»), repeated for the whole catalogue.
+
+     ⚠ THE CATALOGUE CANNOT BE WALKED AT THE FINE STEP: 11,000 objects × 24 h × 30 s is 32 million
+     propagations. So most of the day is skipped, and the skip is a THEOREM, not a heuristic — an
+     object can only be above the horizon while the Earth-centred angle θ between its sub-point and
+     the observer is inside λ(h) = acos(Re/(Re+h)·cos e) − e for the elevation e at stake, taken at the
+     orbit's APOGEE altitude (the widest it can ever be). e is minEl − 4°: a pass whose peak reaches minEl
+     has a sample within 15 s of the peak, and 4° is the most elevation can fall in 15 s from a peak that
+     low (an ESTIMATE from the topocentric rate, ≤ 1° at 10°; higher peaks are far above minEl anyway;
+     the exhaustive comparison in tests/space-weather-checks.test.mjs is what would show it wrong), and θ cannot change faster than the object's angular rate about the
+     Earth's centre plus the Earth's own rotation. So from a sample with θ well outside λ the next
+     possible entry is at least (θ−λ)/rate away and nothing in between is looked at. Two cheaper
+     necessary conditions go first: an orbit of inclination i never carries its sub-point beyond
+     latitude min(i,180°−i), so an observer further from that band than λ is skipped outright.
+     · rate = n·√(1+e)/(1−e)^1.5 (the angular rate at PERIGEE, the fastest it ever goes: |r×v|/r²) + Ω⊕,
+       ×1.1. The 1.1 is an ESTIMATE for the mean-element vs osculating difference (J2 moves the rate
+       by well under 1 %); it is retired if the exhaustive comparison in
+       tests/space-weather-checks.test.mjs ever shows a pass the pruned search missed.
+     · +1° on λ covers the spherical Earth used for θ against the ellipsoid the look angles use
+       (geodetic vs geocentric latitude differ by ≤ 0.19°).
+     A pass is bracketed first and its rise/set bisected only once its peak is known to reach minEl.
+     · the ORBIT PLANE bounds θ from below: the sub-point is always in it, so θ ≥ the observer's angle to the
+       plane = asin|ô·n̂| (n̂ = r×v of the sample). That angle changes no faster than the Earth turns the
+       observer under it (Ω·cos φ) plus the plane's own drift (nodedot), which is slow, so a plane far from
+       the observer rules out hours at once. +1° of margin for SGP4's short-period wobble of the plane.
+     `exhaustive:true` turns every one of those off and walks a 5 s grid — it is the ground truth the
+     pruning is tested against, not a second feature.
+     · visible = lit by the Sun at the instant of maximum, observer's Sun lower than −6° (civil
+       twilight: the conventional edge below which the sky is dark enough to see a sunlit satellite),
+       and the maximum at or above `minElevDeg`. `magnitude` is null for everything: no standard-
+       magnitude table with a citable source ships with the app, and a brightness is not derived from
+       nothing. */
+  const _PASS_FINE_MS=30000, _PASS_REF_MS=5000, _PASS_TAIL_MS=12*3600000, _LAM_MARGIN=1*D2R, _RATE_FACTOR=1.1, _EARTH_ROT=7.2921159e-5, _DARK_SUN_DEG=-6, _DETECT_DROP_DEG=4, _BISECT_STEPS=11, _PLANE_MARGIN=1*D2R;
+  function _passSample(s,obs,ms){
+    try{
+      const t=new Date(ms), pv=SAT.propagate(s.satrec,t);
+      if(!pv||!pv.position||!isFinite(pv.position.x)) return null;
+      const gm=SAT.gstime(t), ecf=SAT.eciToEcf(pv.position,gm), r=Math.hypot(ecf.x,ecf.y,ecf.z);
+      /* the guards propagateAll applies: re-entered below 80 km, or SGP4 diverged past 1.5× its own apogee */
+      if(!(r-R_EARTH>80)) return null;
+      const apo=(s.satrec.a>0)?(s.satrec.a*R_EARTH*(1+(s.satrec.ecco||0))):0;
+      if(apo>0&&r>apo*1.5) return null;
+      const la=SAT.ecfToLookAngles(obs,ecf);
+      return { ms, ecf, r, eci:pv.position, vel:pv.velocity, gm, el:la.elevation*R2D, az:((la.azimuth*R2D)%360+360)%360 };
+    }catch(_){ return null; }
+  }
+  function _passScan(s,obs,obsEcf,obsLatRad,a,b,minEl,exhaustive){
+    const sp=_elementSpan(s);
+    const lo=Math.max(a,sp.from), hi=Math.min(b,sp.to);          /* a pass must BEGIN inside what the elements speak for */
+    if(!(lo<hi)) return [];
+    const rec=s.satrec, n=(rec.no||0)/60, e=rec.ecco||0;
+    let lam=Math.PI, rate=Infinity, prune=false, sinPlane=2, rateD=0;
+    if(!exhaustive&&rec.a>0&&n>0&&e<0.99){
+      /* the zone is where a pass that REACHES minEl can be sampled: elevation below minEl−_DETECT_DROP_DEG cannot belong to one */
+      const hApo=Math.max(0,rec.a*R_EARTH*(1+e)-R_EARTH), ed=(minEl-_DETECT_DROP_DEG)*D2R;
+      lam=Math.acos(Math.min(1,R_EARTH/(R_EARTH+hApo)*Math.cos(ed)))-ed+_LAM_MARGIN;
+      rate=(n*Math.sqrt(1+e)/Math.pow(1-e,1.5)+_EARTH_ROT)*_RATE_FACTOR;
+      const inc=Math.min(rec.inclo,Math.PI-rec.inclo);
+      if(Math.abs(obsLatRad)>inc+lam) return [];                 /* the ground track never gets this far */
+      sinPlane=Math.sin(Math.min(Math.PI/2,lam+_PLANE_MARGIN));
+      rateD=((Math.abs(rec.nodedot||0)/60)+_EARTH_ROT*Math.cos(obsLatRad)+1e-6)*_RATE_FACTOR;
+      prune=true;
+    }
+    const FINE=exhaustive?_PASS_REF_MS:_PASS_FINE_MS, end=Math.min(sp.to,hi+_PASS_TAIL_MS), obsR=Math.hypot(obsEcf.x,obsEcf.y,obsEcf.z);
+    const crossing=(msNeg,msPos)=>{ let neg=msNeg, pos=msPos;        /* bisect el=0 between a sample at or below the horizon and one above it (either order in time) */
+      for(let k=0;k<_BISECT_STEPS;k++){ const m=(neg+pos)/2, p=_passSample(s,obs,m); if(!p) break; if(p.el>0) pos=m; else neg=m; }
+      return (neg+pos)/2; };
+    const azAt=(ms,fallback)=>{ const q=_passSample(s,obs,ms); return q?q.az:fallback; };
+    const out=[]; let ms=lo, prev=null, cur=null;
+    /* a pass is bracketed first and bisected only if it turns out to reach minEl — most of a day's horizon crossings do not */
+    const close=(setBr)=>{
+      /* the sampled peak is within one step of the true one; locate it (golden section on a concave top) */
+      let L=Math.max(lo,cur.riseBr?cur.riseBr[0]:lo,cur.maxMs-FINE), H=Math.min(setBr?setBr[1]:end,cur.maxMs+FINE), best={ms:cur.maxMs,el:cur.maxEl,az:cur.maxAz,eci:cur.maxEci};
+      for(let k=0;k<12&&H-L>1000;k++){
+        const m1=L+(H-L)/3, m2=H-(H-L)/3, p1=_passSample(s,obs,m1), p2=_passSample(s,obs,m2);
+        if(!p1||!p2) break;
+        if(p1.el>best.el) best={ms:p1.ms,el:p1.el,az:p1.az,eci:p1.eci};
+        if(p2.el>best.el) best={ms:p2.ms,el:p2.el,az:p2.az,eci:p2.eci};
+        if(p1.el<p2.el) L=m1; else H=m2;
+      }
+      if(best.el>=minEl){
+        const riseMs=cur.riseBr?crossing(cur.riseBr[0],cur.riseBr[1]):null, setMs=setBr?crossing(setBr[1],setBr[0]):null;
+        out.push({ s, riseMs, riseAz:riseMs==null?null:azAt(riseMs+1000,cur.maxAz), setMs, setAz:setMs==null?null:azAt(setMs-1000,cur.maxAz), max:best });
+      }
+      cur=null;
+    };
+    while(ms<=end){
+      if(!cur&&ms>hi+FINE) break;                                /* one more step: a pass that rises in the last FINE ms of the window is seen by the first sample after it */
+      const p=_passSample(s,obs,ms);
+      if(!p){ prev=null; ms+=FINE*2; continue; }
+      if(!cur){
+        if(p.el>0){
+          let riseBr=null;
+          if(prev&&prev.el<=0) riseBr=[prev.ms,p.ms];
+          else{                                                /* first sample, or one after a gap: the rise is behind us */
+            let q=p, back=ms;
+            while(q&&q.el>0&&ms-back<_PASS_TAIL_MS&&back-FINE>=sp.from){ back-=FINE; q=_passSample(s,obs,back); }
+            if(q&&q.el<=0) riseBr=[back,back+FINE];
+          }
+          cur={ riseBr, maxMs:ms, maxEl:p.el, maxAz:p.az, maxEci:p.eci };
+        }
+      }else{
+        if(p.el>cur.maxEl){ cur.maxMs=ms; cur.maxEl=p.el; cur.maxAz=p.az; cur.maxEci=p.eci; }
+        if(p.el<=0) close(prev?[prev.ms,p.ms]:[ms,ms]);
+      }
+      prev=p;
+      if(!cur&&prune){
+        const dot=(p.ecf.x*obsEcf.x+p.ecf.y*obsEcf.y+p.ecf.z*obsEcf.z)/(p.r*obsR);
+        const gap=Math.acos(Math.max(-1,Math.min(1,dot)))-lam;
+        let wait=gap>0?gap/rate*1000:0;                          /* ms until the sub-point could be inside the zone */
+        if(p.vel){                                               /* …and until the observer could be inside the zone's width of the orbit PLANE */
+          const rx=p.eci.x, ry=p.eci.y, rz=p.eci.z, vx=p.vel.x, vy=p.vel.y, vz=p.vel.z;
+          const nx=ry*vz-rz*vy, ny=rz*vx-rx*vz, nz=rx*vy-ry*vx, nn=Math.hypot(nx,ny,nz);
+          if(nn>0){ const q=SAT.eciToEcf({x:nx/nn,y:ny/nn,z:nz/nn},p.gm), d=Math.abs(q.x*obsEcf.x+q.y*obsEcf.y+q.z*obsEcf.z)/obsR;
+            if(d>sinPlane) wait=Math.max(wait,(d-sinPlane)/rateD*1000); }
+        }
+        /* nothing can reach minEl before then. The jump stops at the window's end: a pass can have ROSE (el 0) before it reaches
+           the zone's elevation, so a landing past the end would hide one that began inside the window */
+        if(wait>FINE){ ms=Math.max(ms,Math.min(ms+wait-FINE,hi)); prev=null; }
+      }
+      ms+=FINE;
+    }
+    if(cur) close(null);                                          /* still up when the elements (or 12 h) ran out */
+    return out.filter(x=>x.riseMs!=null||x.setMs!=null);          /* above the horizon the whole time (GEO) is not a pass */
+  }
+  async function passesOver(at,opts){
+    if(!at||!isFinite(at.lng)||!isFinite(at.lat)) throw new TypeError('passesOver needs a point {lng,lat}');   /* never the map centre by default — see (#R298) */
+    const o=opts||{}, hours=(o.hours>0)?+o.hours:24, minEl=(o.minElevDeg==null)?10:+o.minElevDeg;
+    const limit=(o.limit>0)?Math.floor(o.limit):50;
+    if(o.group&&o.group!==group) throw new Error('passesOver: catalogue "'+o.group+'" is not the loaded one ("'+group+'"); setGroup() first');
+    if(!SAT) await loadSGP4();
+    if(!sats.length){ const ok=await load(group); if(!ok||!sats.length) throw new Error(lastErr||'no satellite catalogue available'); }
+    const obs={ longitude:at.lng*D2R, latitude:at.lat*D2R, height:0 }, obsEcf=SAT.geodeticToEcf(obs);
+    const a=+clockNow(), b=a+hours*3600000, cat=sats, found=[];
+    let slice=performance.now();
+    for(let i=0;i<cat.length;i++){
+      for(const p of _passScan(cat[i],obs,obsEcf,obs.latitude,a,b,minEl,!!o.exhaustive)) if(p.riseMs==null||p.riseMs<=b) found.push(p);
+      /* a frame's worth of work, then give the page back (#R735: a loop cannot be cancelled from outside) */
+      if(performance.now()-slice>12){ await new Promise(r=>setTimeout(r,0)); slice=performance.now();
+        if(o.signal&&o.signal.aborted) throw Object.assign(new Error('aborted'),{name:'AbortError'}); }
+    }
+    const out=[];
+    for(const p of found){
+      const t=new Date(p.max.ms), sun=sunAt(t);
+      let lit=null; if(sun){ try{ const f=SAT.shadowFraction(sun,p.max.eci); if(isFinite(f)) lit=(f<0.5); }catch(_){} }
+      let dark=null;
+      try{ const E=window.IntMapEphemeris, q=E&&E.equatorial('sun',E.julianDay(p.max.ms));
+        if(q){ const H=SAT.gstime(t)+obs.longitude-q.raDeg*D2R, d=q.decDeg*D2R;
+          dark=(Math.asin(Math.max(-1,Math.min(1,Math.sin(d)*Math.sin(obs.latitude)+Math.cos(d)*Math.cos(obs.latitude)*Math.cos(H))))*R2D)<_DARK_SUN_DEG; } }catch(_){}
+      out.push({ id:p.s.id, name:p.s.name,
+        rise:{ ms:p.riseMs, azDeg:p.riseAz }, max:{ ms:p.max.ms, elevDeg:p.max.el, azDeg:p.max.az }, set:{ ms:p.setMs, azDeg:p.setAz },
+        sunlit:lit, observerDark:dark, visible:(lit===true&&dark===true),
+        magnitude:null });
+    }
+    const sortKey=(x)=>x.rise.ms==null?x.max.ms:x.rise.ms;
+    out.sort((x,y)=>sortKey(x)-sortKey(y));
+    return (o.visibleOnly?out.filter(x=>x.visible):out).slice(0,limit);
+  }
+
   /* The circle on the ground from which this satellite is above the horizon. Real geometry, not a
      decoration: the Earth-centred half-angle is acos(Re / (Re + h)). */
   function footprintRing(lng,lat,altKm,n){
@@ -1125,7 +1288,7 @@ export function satellitesLive(HOST){
       if(sats.length) return Promise.resolve(propagateAll(when));
       return load(group).then(ok=>ok?propagateAll(when):[]);
     },
-    footprintRing, groundTrack, elementAgeH, nextPass, lookFrom, observer,
+    footprintRing, groundTrack, elementAgeH, nextPass, lookFrom, observer, passesOver,
     /* diagnostics — Atlas and the tests read these instead of poking at the renderer (#R183: a
        GeoJSON source's data is not readable back out of MapLibre 5, so it would lie) */
     state:()=>({ on, group, catalogue:sats.length, drawn:shown().length, computed:fixes.length,

@@ -128,6 +128,16 @@ export const TIME = Object.freeze({
     says: LA('CelesTrak orbital elements (each set states days around its epoch)', 'CelesTrak の軌道要素（各要素は元期の前後数日を述べる）') },
   'l9-dl-aurora': live(LA('NOAA OVATION aurora forecast (the next hour)', 'NOAA OVATION オーロラ予測（この先1時間）')),
   'fac-dl-osmspace': OSM,
+  /* Launch Library 2 holds every orbital launch attempt from Sputnik 1 (1957-10-04) on, and the schedule ahead of
+     today; the package asks it for the window around the clock's instant (net__gte / net__lte) */
+  'dl-launches': { kind: 'record', from: 1957, by: 'Launch Library 2 (The Space Devs) — its earliest launch record, Sputnik 1, 1957-10-04',
+    follows: 'js/layer-pkg-launches.js launchesToPads', self: 'js/layer-pkg-launches.js launchesToPads',
+    says: LA('Launch Library 2 launches around the instant (7 days before to 30 days after)', 'Launch Library 2 の打ち上げ（その瞬間の 7 日前〜30 日後）') },
+  /* CNEOS lists US Government sensor detections; its first located event is 1988-04-15 */
+  'dl-fireballs': { kind: 'record', from: 1988, by: 'NASA/JPL CNEOS Fireball Data API — its earliest event, 1988-04-15',
+    follows: 'js/layer-pkg-fireballs.js fireballsToFeatures', self: 'js/layer-pkg-fireballs.js fireballsToFeatures',
+    says: LA('CNEOS fireballs up to the instant', 'CNEOS の火球（その瞬間まで）') },
+  'dl-eclipse': { kind: 'instant', says: LA('The next solar eclipse after the instant, computed from the ephemeris', 'その瞬間の次の日食（天体暦から計算）') },
 
   /* ── oceans ── */
   'dl-sst': dated('2002-06-01', LA('GHRSST MUR sea-surface temperature (NASA GIBS)', 'GHRSST MUR 海面水温（NASA GIBS）')),

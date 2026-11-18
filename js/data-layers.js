@@ -1374,7 +1374,7 @@ export function dataLayers(HOST){
          list panel and the legend). Both were reachable and both drew over each other. The plate is
          the survivor and the ONLY implementation; a session that had this row ticked is migrated to
          `wp-dl-currents` once, in js/session-tabs.js. */
-      ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],['sats','lyrSats'],
+      ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],['sats','lyrSats'],['launches','lyrLaunches'],['fireballs','lyrFireballs'],['eclipse','lyrEclipse'],
       ['__grp','lyrGrpHazard'],
       /* ══ (#R232) 「昼/夜レイヤーは削除。（新たな昼夜機能がすでにあるため不要。）」 ════════════════════
          ⚠ THERE IS NO 'night' ROW HERE ANY MORE, AND THE ROW THAT REPLACED IT IS NOT A LAYER. The old
@@ -1435,7 +1435,7 @@ export function dataLayers(HOST){
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
       const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','thermal','radar','sst','relief','sealevel',
         'gdppc','tfr','milSpend','snow','aod','nightsat','wind',
-        'precip','ships','planes','sats','hillshade','contours','subcables','nato','eu','sanctions','unvotes','crossings']);   /* (#R232) 'night' removed with its row */
+        'precip','ships','planes','sats','launches','fireballs','eclipse','hillshade','contours','subcables','nato','eu','sanctions','unvotes','crossings']);   /* (#R232) 'night' removed with its row */
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
       /* (#R186) 「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」 — these two rows ship
          CHECKED. window.IntMapDefaultLayers is the single list; app-body dispatches the change event for

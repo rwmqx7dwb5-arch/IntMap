@@ -1511,6 +1511,7 @@ export function layerSidebar(HOST){
     const SVG_REACH=_svg('<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/>');
     const SVG_SUN=_svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>');
     const SVG_STAR=_svg('<path d="M12 3l1.9 4.6 5 .4-3.8 3.3 1.2 4.9L12 13.6 7.7 16.2l1.2-4.9L5.1 8l5-.4z"/>');
+    const SVG_MOON=_svg('<path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.5 8.5 0 1 0 20 14.2"/>');   /* (space-expansion) js/icons.js `moon` */
     const SVG_PLUME=_svg('<path d="M4 20c0-5 3-6 3-9a3 3 0 016 0c0 4 4 3 4 7"/><path d="M3 20h18"/>');
     /* (#R670) a virion: a body with the spikes that make it one rather than a plain circle */
     const SVG_VIRUS=_svg('<circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>');
@@ -1784,6 +1785,12 @@ export function layerSidebar(HOST){
         run:()=>_askPoint(_lazy('nightSky',(ll)=>window.IntMapNightSky&&window.IntMapNightSky.open(ll)),'sim.nightSky'),
         label:()=>T('Night sky from here','ここからの星空','Sternhimmel von hier','Ночное небо отсюда','El cielo nocturno desde aquí'),
         hint:()=>T('The sky a person standing here has','ここに立つ人に見える空','Der Himmel, den man hier hat','Небо, которое видно отсюда','El cielo que se ve desde aquí') },
+      /* (space-expansion) the almanac for one point and one night — sun, twilight, moon, planets, meteor showers,
+         satellite passes and the eclipses seen from there. It asks for the point first, like the rows above (#R302). */
+      { id:'sim.skyTonight', mod:'IntMapSkyAlmanac', ic:SVG_MOON, en:'The sky tonight',
+        run:()=>_askPoint(_lazy('skyAlmanac',(ll)=>window.IntMapSkyAlmanac&&window.IntMapSkyAlmanac.open(ll)),'sim.skyTonight'),
+        label:()=>T('The sky tonight','今夜の空（天文暦）'),
+        hint:()=>T('Moon, planets, meteors, passes and eclipses from a point','月・惑星・流星群・衛星の通過・食をその地点から') },
       /* ══ ⚠⚠⚠ (#R261) FIVE MORE, AND THEY HAD NO UI DOOR AT ALL ═════════════════════════════════════
          「シミュレーション系のもので、レイヤーではないものは、地震波シミュレーターのようにツール欄に
            追加して。（続き）」 — the same sentence as #R258, sent again, and #R258's fix was real but
