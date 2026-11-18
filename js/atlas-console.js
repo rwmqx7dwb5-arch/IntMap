@@ -337,6 +337,10 @@ export function atlasConsole(HOST){
       if(!valid.size&&!_eraActive()) return false;
       let any=false; const eraFeats=[]; codes.forEach(c=>{ const cs=String(c);
         const era=_eraGeomsFor(cs); if(era){ era.forEach(e=>eraFeats.push({type:'Feature',geometry:e.geo,properties:{code:cs,name:e.name}})); _hl.add(cs); any=true; return; }   /* the map's year applies to areas: that year's polity, not the modern polygon */
+        /* ⚠ (hist-audit-fixes) THE MAP IS IN THE PAST AND ITS RECORD HAS NO SHAPE FOR THIS CODE — today's polygon is not that year's land. It used to stand in
+           silently (Compare does the same, and says so on its own page); here the paint is REFUSED, so `any` stays false and the reply reports that nothing was
+           drawn rather than lighting today's country over a year it does not describe. At the live date `_eraActive()` is false and nothing changes. */
+        if(_eraActive()) return;
         if(!valid.has(cs)) return;   /* neither record holds a shape for this code → skip; don't claim an impossible paint */
         try{ GE().layers.setFeatureState({source:'nlq-src',id:cs},{nlq:true}); _hl.add(cs); any=true; }catch(_){} }); if(eraFeats.length&&ensureEraHlLayers()){ try{ GE().layers.setSourceData('nlq-era-src',{type:'FeatureCollection',features:eraFeats}); _eraHl=eraFeats.map(f=>f.properties.name); }catch(_){} }
       return any; }
