@@ -27,7 +27,7 @@ const V = makeAtlasVerify({}, { L: (en) => en, esc: (s) => String(s) });
 const GEOBJ = makeAtlasGeoObject();
 
 test('atlas-gpt6-models: the ladder is Sol → Terra → Luna, each at its latest point release', () => {
-  assert.deepEqual([OPENAI_DEFAULT_MODEL, ...FALLBACK_CHAIN], ['gpt-6.1-sol', 'gpt-6.1-terra', 'gpt-6-luna']);
+  assert.deepEqual([OPENAI_DEFAULT_MODEL, ...FALLBACK_CHAIN], ['gpt-6.2-sol', 'gpt-6.1-terra', 'gpt-6-luna']);
   /* the unattended jobs take one step, to the last rung */
   assert.equal(OPENAI_LAST_RESORT_MODEL, 'gpt-6-luna');
 });

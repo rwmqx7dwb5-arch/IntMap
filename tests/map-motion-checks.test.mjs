@@ -58,8 +58,13 @@ test('① the glide easing: linearity × f′(0) = 2 for the easing js/geo-engin
 
 test('② the wheel: the renderer\'s scroll-zoom handler still has the shape _smoothWheel wraps', () => {
   const s = src('ui/handler/scroll_zoom.ts');
-  for (const f of ['_targetZoom', '_lastExpectedZoom', '_finishTimeout', '_needsRerender', '_active', '_type'])
+  for (const f of ['_targetZoom', '_lastExpectedZoom', '_finishWait', '_needsRerender', '_active', '_type'])
     assert.ok(s.includes('this.' + f), `ScrollZoomHandler.${f}`);
+  /* the finish the spring postpones: a timeout REQUESTED in the result, keyed by `_finishWait`, and
+     ignored by onTimeout once the handler no longer holds that token — so withdrawing both cancels it */
+  assert.match(s, /timeout: finished \? \{delay: 200, token: this\._finishWait\} : undefined/, 'the finish is a timeout the result asks for, tokened by _finishWait');
+  assert.match(s, /if \(wait !== this\._singleWheelWait && wait !== this\._finishWait\) return;/, 'a timeout whose token the handler no longer holds is ignored');
+  assert.match(engine, /res\.timeout&&res\.timeout\.token===this\._finishWait\)\{ delete res\.timeout; delete this\._finishWait; \}/, 'js/geo-engine.js withdraws both');
   assert.match(s, /renderFrame\(\)/, 'renderFrame()');
   assert.match(s, /zoomDelta: zoom - tr\.zoom/, 'renderFrame returns a zoomDelta the wrapper replaces');
   assert.match(s, /this\._lastExpectedZoom = zoom;/, 'the external-change bookkeeping the wrapper overwrites');
@@ -88,7 +93,7 @@ test('③ the labels: the map-level fade is the SYMBOL fade, and 0 forces a full
 });
 
 test('④ the release: what _glideRelease reads in the renderer is still there, with the numbers it restates', () => {
-  const s = src('ui/handler_inertia.ts'), hm = src('ui/handler_manager.ts'), map = src('ui/map.ts'), cam = src('ui/camera.ts');
+  const s = src('ui/handler_inertia.ts'), hm = src('ui/handler_manager.ts'), map = src('ui/map.ts'), cam = src('ui/camera_movement_scheduler.ts');
   assert.equal(num(/INERTIA_CUTOFF_MS=(\d+)/, engine, 'INERTIA_CUTOFF_MS'), num(/const BUFFER_CUTOFF = (\d+);/, s, 'BUFFER_CUTOFF'), 'the buffer the renderer keeps');
   assert.equal(num(/INERTIA_WINDOW_MS=(\d+)/, engine, 'INERTIA_WINDOW_MS'), num(/const VELOCITY_WINDOW = (\d+);/, s, 'VELOCITY_WINDOW'), 'the window it measures over');
   assert.match(s, /_inertiaBuffer: InertiaBufferEntry\[\]/, 'HandlerInertia._inertiaBuffer');
@@ -96,11 +101,18 @@ test('④ the release: what _glideRelease reads in the renderer is still there, 
   assert.match(s, /deltas\.zoom \+= settings\.zoomDelta/, 'zoomDelta per entry');
   assert.match(s, /if \(settings\.panDelta\) deltas\.pan\._add\(settings\.panDelta\)/, 'panDelta per entry');
   assert.match(s, /const defaultZoomInertiaOptions = extend\(\{\s*deceleration: 20,/, 'the zoom glide the renderer cannot be told about (why it is replaced)');
-  assert.match(hm, /this\._inertia\._onMoveEnd\(this\._map\.dragPan\._inertiaOptions\)/, 'the handler manager asks the instance, with the dragPan options');
-  assert.match(map, /_handlers: HandlerManager;/, 'Map._handlers');
-  /* ③ rests on this: an ease draws easing(t) with t measured from the call — easing(0) on the first frame */
-  assert.match(cam, /this\._easeStart = now\(\);/);
-  assert.match(cam, /const t = Math\.min\(\(now\(\) - this\._easeStart\) \/ this\._easeOptions\.duration, 1\);\s*this\._onEaseFrame\(this\._easeOptions\.easing\(t\)\);/);
+  assert.match(hm, /this\._inertia\._onMoveEnd\(this\._dragPan\._inertiaOptions\)/, 'the handler manager asks the instance, with the dragPan options');
+  assert.match(hm, /private _inertia: HandlerInertia;/, 'HandlerManager._inertia');
+  /* the field js/geo-engine.js's _inertiaOf reads, by the name the installed renderer gives it
+     (6.18 renamed Map._handlers to _handlerManager, and the glide silently stopped installing) */
+  const field = /private (\w+): HandlerManager;/.exec(map);
+  assert.ok(field, 'Map holds its HandlerManager in a field');
+  assert.match(engine, new RegExp('mm&&mm\\.' + field[1] + '\\b'), `js/geo-engine.js reads Map.${field[1]}`);
+  /* ③ rests on this: an ease draws easing(t) with t measured from the call — easing(0) on the first frame.
+     (deps-minor-patch-nov) Since 6.17 an ease is a segment of the CameraMovementScheduler: the clock starts at
+     scheduleSegment and each frame draws easing(t) of the time since — the same law, moved out of camera.ts */
+  assert.match(cam, /this\._currentSegment = \{segment, options, startTime: now\(\)\};/);
+  assert.match(cam, /const t = Math\.min\(\(now\(\) - startTime\) \/ duration, 1\);\s*this\._runSegmentFrame\(this\._currentSegment, easing\(t\), t === 1\);/);
 });
 
 test('⑤ the destination: the satellite gate asks the renderer\'s tile level the way the renderer picks it', () => {

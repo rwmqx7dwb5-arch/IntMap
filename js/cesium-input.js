@@ -83,11 +83,13 @@ window.IntMapCesiumInput=(function(){
   const KEY_EASE_MS=300, DBLCLICK_EASE_MS=300;                      /* both handlers' easeTo duration */
   const INERTIA_CUTOFF=160;             /* HandlerInertia: BUFFER_CUTOFF (5.x: cutoff) */
   const VELOCITY_WINDOW=60;             /* HandlerInertia: VELOCITY_WINDOW (new in 6.x) */
-  const INERTIA={                       /* HandlerInertia: default{Pan,Zoom,Bearing,Pitch}InertiaOptions */
+  const INERTIA={                       /* HandlerInertia: default{Pan,Zoom,Pitch}InertiaOptions */
     pan:    { linearity:0.3, deceleration:2500, maxSpeed:1400 },
     zoom:   { linearity:0.3, deceleration:20,   maxSpeed:1400 },
-    bearing:{ linearity:0.3, deceleration:1000, maxSpeed:360  },
     pitch:  { linearity:0.3, deceleration:1000, maxSpeed:90   } };
+  /* HandlerInertia: bearingFrictionOptions (6.18+). The bearing no longer glides on the linear
+     law above: it turns on under friction, MapLibre Native's rotation momentum */
+  const BEARING_FRICTION={ halfLife:140, minSpeed:60, maxSpeed:1200, stopSpeed:1 };
   const MAX_VALID_LATITUDE=85.051129;   /* the Mercator limit MapLibre clamps a centre to */
   const PAN_FALLOFF_BAND=0.1;           /* globe_utils: PAN_FALLOFF_BAND (6.4+) */
   const DIAL_MIN_RADIUS_PX=20;          /* globe_utils: DIAL_MIN_RADIUS_PIXELS (6.4+) */
@@ -244,11 +246,10 @@ window.IntMapCesiumInput=(function(){
     const w=[vTgt[1]*vCur[2]-vTgt[2]*vCur[1], vTgt[2]*vCur[0]-vTgt[0]*vCur[2], vTgt[0]*vCur[1]-vTgt[1]*vCur[0]];
     const l=Math.sqrt(dot3(w,w));
     const t=Math.acos(clamp(dot3(vTgt,vCur),-1,1))/2, s=Math.sin(t);
-    /* `quat.fromValues` allocates gl-matrix's default ARRAY_TYPE, a Float32Array, so MapLibre's
-       per-move rotation is single precision — measured 6e-7° of centre per move at z2.5 without
-       the rounding here, which the transcription check (tests/cesium-globe-drag-checks ②) sees */
-    const f=Math.fround;
-    const delta=l?[f((w[1]/l)*s),f((-w[0]/l)*s),f((w[2]/l)*s),f(Math.cos(t))]:[0,0,0,1];
+    /* double precision, as MapLibre's: 6.18 builds the swing in a Float64 quaternion (createVec4f64).
+       Up to 6.13 it was gl-matrix's default Float32Array and this rounded with Math.fround to match —
+       6e-7° of centre per move at z2.5, which tests/cesium-globe-drag-checks ② sees either way */
+    const delta=l?[(w[1]/l)*s,(-w[0]/l)*s,(w[2]/l)*s,Math.cos(t)]:[0,0,0,1];
     return fromOrientation(quatMul(orientation(cam.lng,cam.lat,cam.bearing),delta));
   }
   const modDeg=(n,m)=>((n%m)+m)%m;
@@ -298,7 +299,18 @@ window.IntMapCesiumInput=(function(){
   function inertiaEase(amount,ms,opt){
     const speed=clamp(amount*opt.linearity/(Math.max(ms,1)/1000),-opt.maxSpeed,opt.maxSpeed);
     const duration=Math.abs(speed)/(opt.deceleration*opt.linearity);
-    return { duration:duration*1000, amount:speed*(duration/2) };
+    return { duration:duration*1000, amount:speed*(duration/2), easing:INERTIA_EASING };
+  }
+  /* calculateFriction(amount, inertiaDuration, options) (6.18+): the speed halves every `halfLife` ms
+     until it is below `stopSpeed`; a turn released slower than `minSpeed` does not glide (undefined).
+     The easing is that exponential, scaled to end at t = 1. Same one-millisecond floor as above. */
+  function frictionEase(amount,ms,opt){
+    const speed=clamp(amount/(Math.max(ms,1)/1000),-opt.maxSpeed,opt.maxSpeed);
+    if(Math.abs(speed)<opt.minSpeed) return undefined;
+    const duration=opt.halfLife*Math.log2(Math.abs(speed)/opt.stopSpeed);
+    const travelled=(t)=>1-Math.pow(2,-t*duration/opt.halfLife), total=travelled(1);
+    return { duration, amount:speed*(opt.halfLife/1000)/Math.LN2*total,
+             easing:(t)=>travelled(clamp(t,0,1))/total };
   }
 
   /* getAngleDelta(lastPoint, currentPoint, centre) */
@@ -575,7 +587,9 @@ window.IntMapCesiumInput=(function(){
       if(!(px||py||dz||db||dp)){ end(); return; }
       const ms=t-E[0].t;
       const from=read();
-      const to={}; let dur=0;
+      const to={}; let dur=0, easing=INERTIA_EASING;
+      /* extendDuration: the longest family carries all of them, with ITS easing */
+      const extend=(r)=>{ if(!dur||dur<r.duration){ dur=r.duration; easing=r.easing; } };
       const mag=Math.hypot(px,py);
       if(mag){
         const r=inertiaEase(mag,ms,INERTIA.pan);
@@ -588,13 +602,14 @@ window.IntMapCesiumInput=(function(){
         const d=diffAngles(from.lng,c.lng);
         to.lng=(Math.abs(d)>179.5)?(from.lng+179.5*Math.sign(d)):c.lng;
         to.lat=c.lat;
-        dur=Math.max(dur,r.duration);
+        extend(r);
       }
-      if(dz){ const r=inertiaEase(dz,ms,INERTIA.zoom);    to.zoom=from.zoom+r.amount;                       dur=Math.max(dur,r.duration); }
-      if(db){ const r=inertiaEase(db,ms,INERTIA.bearing); to.bearing=from.bearing+clamp(r.amount,-179,179); dur=Math.max(dur,r.duration); }
-      if(dp){ const r=inertiaEase(dp,ms,INERTIA.pitch);   to.pitch=from.pitch+r.amount;                     dur=Math.max(dur,r.duration); }
+      if(dz){ const r=inertiaEase(dz,ms,INERTIA.zoom);  to.zoom=from.zoom+r.amount; extend(r); }
+      const rb=db?frictionEase(db,ms,BEARING_FRICTION):undefined;
+      if(rb){ to.bearing=from.bearing+clamp(rb.amount,-179,179); extend(rb); }
+      if(dp){ const r=inertiaEase(dp,ms,INERTIA.pitch); to.pitch=from.pitch+r.amount; extend(r); }
       if(!(dur>0)||!Object.keys(to).length){ end(); return; }
-      runEase({ from, to, duration:dur, easing:INERTIA_EASING,
+      runEase({ from, to, duration:dur, easing,
                 around:(to.zoom!=null||to.bearing!=null)?around:null });
     }
 
@@ -1045,13 +1060,13 @@ window.IntMapCesiumInput=(function(){
   return { attach,
     _math:{ unitBezier, easeOut, INERTIA_EASING, clamp, lerp, remapSaturate, planetScale,
             zoomAdjust, worldSizeAt, globeRadiusPx, degPerPx, diffAngles, wrapLng,
-            panCentre, inertiaEase, angleDelta, angleWith,
+            panCentre, inertiaEase, frictionEase, angleDelta, angleWith,
             raySphere, panSurface, orientation, fromOrientation, versorCentre, globeDrag },
     _consts:{ ROTATE_DEG_PER_PX, PITCH_DEG_PER_PX, ROTATE_CENTRE_PX, CLICK_TOLERANCE,
               WHEEL_ZOOM_DELTA, DEFAULT_ZOOM_RATE, WHEEL_ZOOM_RATE, MAX_SCALE_PER_FRAME,
               WHEEL_EASE_MS, WHEEL_TIME_ADJ, TOUCH_ZOOM_RATE, TOUCH_ZOOM_THRESHOLD,
               TOUCH_ROTATE_THRESHOLD, TOUCH_SINGLE_MS, TOUCH_PITCH_MIN_PX,
               KEY_PAN_STEP, KEY_BEARING_STEP, KEY_PITCH_STEP, KEY_EASE_MS, DBLCLICK_EASE_MS,
-              INERTIA_CUTOFF, VELOCITY_WINDOW, INERTIA, MAX_VALID_LATITUDE, TILE,
+              INERTIA_CUTOFF, VELOCITY_WINDOW, INERTIA, BEARING_FRICTION, MAX_VALID_LATITUDE, TILE,
               PAN_FALLOFF_BAND, DIAL_MIN_RADIUS_PX, PAN_MAX_ANGLE } };
 })();

@@ -10529,7 +10529,7 @@
      "retryable": false,
      "meta": {
       "provider": "openai",
-      "model": "gpt-6.1-sol",
+      "model": "gpt-6.2-sol",
       "task": "free_text"
      }
     },
@@ -10592,7 +10592,7 @@
     ],
     "logs": [
      "ai-proxy ledger refund_failed",
-     "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-6.1-sol\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":502,\"meta\":{}}"
+     "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-6.2-sol\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":502,\"meta\":{}}"
     ]
    }
   ],
