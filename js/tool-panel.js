@@ -545,7 +545,7 @@ export function toolPanel(HOST){
       {h:L('Live info','現地の情報','Aktuelle Infos','Данные на месте','Datos en vivo'),head:true},
       /* (place-dossier · place-card-unify) the ONE place card — what the map knows about this point and what is happening there
          now (js/place-dossier.js, fetched by this click). «Place profile» and «Right now» were two entries opening two cards for
-         the same point; its other doors are the search card, «Here, now» under the empty search field, the installed icon's
+         the same point; its other doors are the search card, «Here, now» on the phone sheet's home, the installed icon's
          shortcut, the share sheet and Atlas's research.placeProfile / research.hereNow */
       {label:`${icon('note')} ${L('About the place','地点について')}`, action:()=>{ import('./place-dossier.js').then(m=>m.openPlaceDossier(HOST,{lng:lngLat.lng,lat:lngLat.lat})).catch(()=>{ try{ HOST.imToast(L('The place profile could not be loaded','地点プロファイルを読み込めませんでした')); }catch(_){} }); }},
       /* (community-next) «something on the map is wrong here» — js/map-corrections.js, fetched by this click (its doors are this
