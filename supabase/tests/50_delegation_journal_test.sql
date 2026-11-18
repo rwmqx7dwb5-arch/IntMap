@@ -82,6 +82,10 @@ select throws_ok($$ select public.delegation_overview(7) $$, '42501', null, 'a s
 reset role;
 
 -- ── ⑤ the overview ───────────────────────────────────────────────────────────
+-- The overview reads EVERY account's rows. The two rows the writer tests (③) appended for an ordinary account are not part of its
+-- fixtures — left in, they add a worker call, a root turn and a code to every count below — so they are removed here, after the
+-- only checks that needed them (the account reads its own two rows) have run.
+delete from public.ai_delegation_journal where root_key = 'j-rpc';
 select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal1"}', true);
 set local role authenticated;
 select throws_ok($$ select public.delegation_overview(7) $$, 'P0001', 'not authorised', 'the administrator account without the second factor is refused');
