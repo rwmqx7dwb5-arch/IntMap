@@ -52,7 +52,7 @@ window.IntMapSatWorker=(function(){
     /* `depth` is called with [[cellKey, have, stop], …] whenever the worker learns something */
     configure(o){ o=o||{}; if(typeof o.depth==='function') onDepth=o.depth;
       const it=worker(); if(!it) return false;
-      try{ it.postMessage({type:'config', rawMax:o.rawMax, depthMax:o.depthMax, lanes:o.lanes}); }catch(_){}
+      try{ it.postMessage({type:'config', rawMax:o.rawMax, depthMax:o.depthMax, lanes:o.lanes, specCap:o.specCap}); }catch(_){}
       return true; },
     /* one tile. Returns a promise for {data: ImageBitmap|ArrayBuffer, mode}, or null when there is
        no worker to ask — null and a rejected promise mean different things to the caller. */
@@ -79,11 +79,11 @@ window.IntMapSatWorker=(function(){
       const id=++seq; const p=new Promise((res,rej)=>{ pend.set(id,{res,rej}); });
       try{ it.postMessage({type:'stats', id}); }catch(_){ pend.delete(id); return Promise.resolve(null); }
       return p; },
-    /* (map-motion) fetch these tiles' bytes ahead of the renderer — [[z,y,x],…], replacing any batch
-       still queued (src/sat-worker.js `warm`). Nothing comes back; the renderer's own request later
-       finds the bytes. false when there is no worker. */
-    warm(tiles){ const it=worker(); if(!it) return false;
-      try{ it.postMessage({type:'warm', tiles:Array.isArray(tiles)?tiles:[]}); return true; }catch(_){ return false; } },
+    /* (map-motion → sat-mobile-speed) fetch these tiles' bytes ahead of the renderer, [[z,y,x],…], in the worker's
+       idle capacity only — kind 'dest' (the camera's destination) | 'ring' (js/tile-warm.js),
+       `more` appends to the ring instead of replacing it (src/sat-worker.js `specPump`). false when there is no worker. */
+    speculate(kind,tiles,more){ const it=worker(); if(!it) return false;
+      try{ it.postMessage({type:'spec', kind:String(kind), tiles:Array.isArray(tiles)?tiles:[], more:!!more}); return true; }catch(_){ return false; } },
     /* ══ ⚠⚠ (#R322) GIVING THE THREAD BACK — see the same note in tsunami-worker-client.js ═══════
        ⚠ THE PENDING TILES ARE REJECTED, NOT RESOLVED, and that is the difference from the tsunami
        client: a tile promise resolves to {data, mode} and js/sat-proto.js hands that straight to

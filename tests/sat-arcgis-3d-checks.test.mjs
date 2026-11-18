@@ -115,17 +115,18 @@ test('⑤ `lanes: 0` hands everything to the browser at once (no cap — the h2/
   assert.equal(W.calls.length, ONE_HOST.length);
 });
 
-test('⑥ a newer warm batch withdraws the old destination\'s fetches that never left', async () => {
+test('⑥ a newer destination replaces the old one: what never left is dropped, what left is not cancelled', async () => {
   const W = bootWorker();
   W.send({ type: 'config', lanes: 1 });
   W.send({ type: 'tile', id: 1, z: 14, y: 100, x: 200, hi: false });     /* occupies the lane */
-  W.send({ type: 'warm', tiles: [[14, 100, 202], [14, 100, 204]] });
+  /* (sat-mobile-speed) a destination is speculation: one at a time per host, in a socket nothing visible uses */
+  W.send({ type: 'spec', kind: 'dest', tiles: [[14, 100, 202], [14, 100, 204]] });
   await settle();
-  W.send({ type: 'warm', tiles: [[14, 100, 206]] });
+  W.send({ type: 'spec', kind: 'dest', tiles: [[14, 100, 206]] });
   await settle();
-  for (let k = 0; k < 3; k++) { if (W.pending.length) W.answer(() => true); await settle(); }
+  for (let k = 0; k < 4; k++) { if (W.pending.length) W.answer(() => true); await settle(); }
   const fetched = W.calls.map((u) => u.replace(/^.*tile\//, ''));
-  assert.deepEqual(fetched, ['14/100/200', '14/100/206'], 'the abandoned destination cost nothing');
+  assert.deepEqual(fetched, ['14/100/200', '14/100/202', '14/100/206'], 'the abandoned destination\'s waiting tile (204) cost nothing; 202 had already left (#R196)');
 });
 
 /* the client, with a fake Worker: an abandoned tile is answered at once, a late bitmap is closed */
