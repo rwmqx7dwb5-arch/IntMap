@@ -46,3 +46,7 @@ internal: 依存の更新と、描画器の内部に合わせた追従。慣性�
 | async raw / dist | 帯を少し超えた | `cesium` チャンク +18.4 kB（1.147 の `@cesium/gltf` 分割）と Cesium・pdf.js の配布物 |
 
 MapLibre は既定の描画エンジンで、起動に必要な分を起動の外へは出せない（6.13 の時点で同じ構成）。版を据え置く理由にはならないので、`node scripts/perf-budget.mjs --update` で超えた行だけ上げた（下げるのは main の CI の仕事）。
+
+## 4. ブラウザで確かめた
+
+build した本物のページ（Chromium・Playwright 1.65）で `tests/map-motion.spec.js`・`tests/cesium-globe-drag-cesium.spec.js`・`tests/r184-satellites.spec.js` の 18 件が緑: ホイールはノッチごとに止まらずカーソルへ向かう／ドラッグと指の弾き・pinch は離した速さで滑り出す／慣性スライダ 0 で止まり 1 で滑る／Cesium で掴んだ場所が MapLibre と同じだけポインタの下に留まる／ISS（SGP4）と静止衛星（SDP4）が正しい軌道と高度で描かれる。衛星の 2 件は 2 並列の初回に起動待ち 60 秒で切れ（衛星の計算の前）、単独で緑。プレビューでも 6.18.0 で起動し、`_handlerManager` 経由でばねと慣性が組み込まれていることを実体で確認した（枠が隠れていて rAF が約 1 Hz なので、フレーム単位の測定は spec の止めた時計に任せた）。
