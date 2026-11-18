@@ -53,6 +53,9 @@ const NOT_YET = {
   'sim.sunHours': 'terrain shade hours — an ephemeris over terrain, not an assumption-driven outcome',
   'sim.nightSky': 'the sky from a place — an ephemeris',
   'sim.space': 'the solar system — an ephemeris',
+  'sim.skyTonight': 'the almanac of one night at one place — an ephemeris, not an assumption-driven outcome',
+  'sim.satellitePasses': 'satellite passes — orbital propagation of published element sets, not a what-if',
+  'sim.spaceWeather': 'space weather — measurements and NOAA forecasts read as they are, not a model IntMap runs',
   'sim.ballistic': 'ballistic trajectory — not yet given its four statements',
   'sim.flyAnimate': 'a camera path',
 };

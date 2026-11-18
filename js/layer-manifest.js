@@ -87,6 +87,9 @@ const DERIVED = [
   { key: "lyrGrpOrbit", layers: [
     { id: "dl-sats", key: "sats", label: "lyrSats", share: true, lazy: ["satellitesLive"] },
     { id: "l9-dl-aurora", key: "aurora", share: true },
+    { id: "dl-launches", key: "launches", label: "lyrLaunches", share: true },
+    { id: "dl-fireballs", key: "fireballs", label: "lyrFireballs", share: true },
+    { id: "dl-eclipse", key: "eclipse", label: "lyrEclipse", share: true },
     { id: "fac-dl-osmspace", key: "osmspace", rest: true },
   ] },
   { key: "lyrGrpMaritime", layers: [
@@ -302,6 +305,9 @@ const DECLARATIONS = [
   { id: "bx-wbprecip", shelf: "lyrGrpClimate", order: 160, key: "wbprecip", rest: true, share: true, measures: ["worldbank:AG.LND.PRCP.MM"], formerly: ["beta-dl-precip"] },   // bx-wbprecip.js
   { id: "dl-sats", shelf: "lyrGrpOrbit", order: 10, key: "sats", label: "lyrSats", share: true, lazy: ["satellitesLive"], registry: ["satellites"], atlas: ["layers.satellites"], time: { kind: "elements", bands: [[11, 5], [1.5, 60], [-Infinity, 14]] } },   // dl-sats.js
   { id: "l9-dl-aurora", shelf: "lyrGrpOrbit", order: 20, key: "aurora", share: true },   // l9-dl-aurora.js
+  { id: "dl-launches", shelf: "lyrGrpOrbit", order: 22, key: "launches", label: "lyrLaunches", share: true, sources: ["Launch Library 2 (The Space Devs)"], pkg: "launches" },   // dl-launches.js
+  { id: "dl-fireballs", shelf: "lyrGrpOrbit", order: 24, key: "fireballs", label: "lyrFireballs", share: true, sources: ["NASA/JPL CNEOS Fireball Data (US Government sensor detections)"], pkg: "fireballs" },   // dl-fireballs.js
+  { id: "dl-eclipse", shelf: "lyrGrpOrbit", order: 26, key: "eclipse", label: "lyrEclipse", share: true, pkg: "eclipse" },   // dl-eclipse.js
   { id: "fac-dl-osmspace", shelf: "lyrGrpOrbit", order: 30, key: "osmspace", rest: true },   // fac-dl-osmspace.js
   { id: "dl-sst", shelf: "lyrGrpMaritime", order: 10, key: "sst", label: "lyrSST", share: true, registry: ["sst"] },   // dl-sst.js
   { id: "dl-waves", shelf: "lyrGrpMaritime", order: 20, key: "waves", share: true, lazy: ["waves"] },   // dl-waves.js
@@ -454,8 +460,11 @@ const DECLARATIONS = [
 /** (layer-packages) every layer package a declaration names → its factory, fetched on first use (js/data-layers.js) */
 const PACKAGES = {
   "alliances": () => import('./layer-pkg-alliances.js').then((m) => m.alliancesPackage),
+  "eclipse": () => import('./layer-pkg-eclipse.js').then((m) => m.eclipsePackage),
+  "fireballs": () => import('./layer-pkg-fireballs.js').then((m) => m.fireballsPackage),
   "geopolitics": () => import('./layer-pkg-geopolitics.js').then((m) => m.geopoliticsPackage),
   "histurban": () => import('./layer-pkg-histurban.js').then((m) => m.histurbanPackage),
+  "launches": () => import('./layer-pkg-launches.js').then((m) => m.launchesPackage),
   "radar": () => import('./layer-pkg-radar.js').then((m) => m.radarPackage),
   "subcables": () => import('./layer-pkg-subcables.js').then((m) => m.subcablesPackage),
   "thermal": () => import('./layer-pkg-thermal.js').then((m) => m.thermalPackage),

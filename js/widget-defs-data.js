@@ -911,7 +911,8 @@ window.IntMapWidgetDefsData = (function () {
     refreshPolicy: { kind: 'stale-while-revalidate', minIntervalMs: 30 * 60000, staleAfterMs: 3 * 3600000, cacheTtlMs: 6 * 3600000 },
     requestKey: function () { return 'launch:upcoming'; },
     loader: function (ctx, cfg, signal) {
-      return getJSON('https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=5&mode=list', signal).then(function (j) {
+      /* mode=normal, not list: a `list` answer carries no `pad` (measured 2026-11-17), so the sites map and the fly-to of the l size were always empty */
+      return getJSON('https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=5&mode=normal', signal).then(function (j) {
         var rs = (j && j.results) || [];
         if (!rs.length) return { empty: true };
         return { data: rs.map(function (r) {
@@ -966,40 +967,77 @@ window.IntMapWidgetDefsData = (function () {
     configSchema: {}, defaultConfig: function () { return {}; },
     refreshPolicy: { kind: 'stale-while-revalidate', minIntervalMs: 15 * 60000, staleAfterMs: 2 * 3600000, cacheTtlMs: 3 * 3600000 },
     requestKey: function () { return 'kp:planetary'; },
+    /* ⚠ THE OBSERVED READINGS ARE THE SAME DOCUMENT AS BEFORE; THE FORECAST IS A SECOND ONE, AND ITS ABSENCE
+       IS NOT THE CARD'S FAILURE. noaa-planetary-k-index.json is what the card has always drawn. The forecast
+       product (observed / estimated / predicted, three days ahead) is asked in the same loader so the two
+       share one request key and one TTL, and when it does not answer the card still has its observed
+       readings and says nothing it does not know. refreshPolicy: Kp is a 3-hourly index and NOAA publishes
+       the forecast a few times a day, so 15 minutes is already more often than either changes. */
     loader: function (ctx, cfg, signal) {
-      return getJSON('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json', signal).then(function (rows) {
-        if (!Array.isArray(rows) || rows.length < 2) throw new Error('no data');
-        var body = rows.slice(1).filter(function (r) { return r && r[1] != null; });
-        if (!body.length) return { empty: true };
-        return { data: body.slice(-24).map(function (r) { return { at: +new Date(String(r[0]).replace(' ', 'T') + 'Z'), kp: +r[1] }; }), source: 'NOAA SWPC' };
+      var BASE = 'https://services.swpc.noaa.gov/products/';
+      var fc = getJSON(BASE + 'noaa-planetary-k-index-forecast.json', signal).catch(function (e) {
+        if (e && e.name === 'AbortError') throw e;
+        return null;
+      });
+      return getJSON(BASE + 'noaa-planetary-k-index.json', signal).then(function (rows) {
+        return fc.then(function (frows) { return kpData(rows, frows); });
+      }).then(function (data) {
+        if (!data) return { empty: true };
+        return { data: data, source: 'NOAA SWPC' };
       });
     },
     renderers: {
       s: function (ctx, cfg, st) {
-        var d = st.data && st.data[st.data.length - 1]; if (!d) return null;
+        var d = kpOf(st).obs; d = d[d.length - 1]; if (!d) return null;
         return el('div', { class: 'wgt-body' }, [R.value({ value: WC.num(d.kp, { maximumFractionDigits: 1 }), unit: 'Kp', caption: kpWord(d.kp) })]);
       },
       m: function (ctx, cfg, st) {
-        var d = st.data && st.data[st.data.length - 1]; if (!d) return null;
+        var k = kpOf(st), d = k.obs[k.obs.length - 1]; if (!d) return null;
+        var peak = k.fc.length ? k.fc.reduce(function (a, b) { return b.kp > a.kp ? b : a; }) : null;
         return el('div', { class: 'wgt-body' }, [
           R.value({ value: WC.num(d.kp, { maximumFractionDigits: 1 }), unit: 'Kp', caption: kpWord(d.kp) }),
           R.progress(d.kp / 9 * 100, { label: 'Kp' }),
+          peak ? R.facts([{ k: L('Forecast peak', '予報の最大', 'Prognose-Maximum', 'Максимум прогноза', 'Máximo previsto'),
+            v: 'Kp ' + WC.num(peak.kp, { maximumFractionDigits: 1 }) + ' · ' + WC.date(new Date(peak.at), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC' }]) : null,
           R.source({ source: st.source, at: d.at }),
         ]);
       },
       l: function (ctx, cfg, st) {
-        if (!st.data || st.data.length < 3) return null;
-        var d = st.data[st.data.length - 1];
+        var k = kpOf(st); if (k.obs.length < 3) return null;
+        var d = k.obs[k.obs.length - 1], all = k.obs.concat(k.fc);
+        var fmt = function (t) { return WC.date(new Date(t), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }); };
+        var line = R.series(all.map(function (x) { return { v: x.kp }; }), { height: 56, min: 0, max: 9,
+          axis: [fmt(all[0].at), fmt(all[all.length - 1].at)],
+          label: !k.fc.length ? L('Planetary K index, recent readings', '直近の惑星K指数', 'Planetarer K-Index, jüngste Werte', 'Планетарный K-индекс, последние значения', 'Índice K planetario, lecturas recientes') : L('Planetary K index: observed readings, then the NOAA forecast', '惑星K指数：観測値とNOAAの予報', 'Planetarer K-Index: Messwerte, dann NOAA-Prognose', 'Планетарный K-индекс: наблюдения и прогноз NOAA', 'Índice K planetario: lecturas y pronóstico de NOAA') });
+        /* the line is ONE series so it reads as one quantity; the seam between what was measured and what is
+           predicted is a dashed rule at the index where the forecast's first point sits */
+        var seam = (k.fc.length && line) ? (k.obs.length - 0.5) / (all.length - 1) * 100 : null;
+        var wrap = el('div', { style: 'position:relative' }, [line,
+          seam == null ? null : el('div', { 'aria-hidden': 'true', style: 'position:absolute;top:0;bottom:14px;left:' + seam.toFixed(1) + '%;border-left:1px dashed currentColor;opacity:.55;pointer-events:none' }),
+        ]);
+        var days = k.fc.length ? kpDays(k.fc) : [];
         return el('div', { class: 'wgt-body' }, [
           R.value({ value: WC.num(d.kp, { maximumFractionDigits: 1 }), unit: 'Kp', caption: kpWord(d.kp) }),
-          R.series(st.data.map(function (x) { return { v: x.kp }; }), { height: 56, min: 0, max: 9,
-            axis: [WC.date(new Date(st.data[0].at), { hour: '2-digit', minute: '2-digit' }), WC.date(new Date(d.at), { hour: '2-digit', minute: '2-digit' })],
-            label: L('Planetary K index, recent readings', '直近の惑星K指数', 'Planetarer K-Index, jüngste Werte', 'Планетарный K-индекс, последние значения', 'Índice K planetario, lecturas recientes') }),
+          wrap,
+          k.fc.length ? R.chips([
+            { label: L('Observed', '観測', 'Gemessen', 'Наблюдение', 'Observado'), value: k.obs.length },
+            { label: L('Forecast (dashed rule →)', '予報（破線より右）', 'Prognose (rechts der Linie)', 'Прогноз (правее черты)', 'Pronóstico (a la derecha)'), value: k.fc.length },
+          ]) : null,
+          days.length ? R.facts(days.map(function (x) {
+            return { k: WC.date(new Date(x.at), { weekday: 'short', month: 'numeric', day: 'numeric', timeZone: 'UTC' }),
+              v: 'Kp ' + WC.num(x.kp, { maximumFractionDigits: 1 }) + (x.scale ? ' · ' + x.scale : '') };
+          }), { cols: 2 }) : null,
           R.source({ source: st.source, at: d.at }),
         ]);
       },
     },
   });
+  function kpOf(st) {
+    var d = st && st.data;
+    if (Array.isArray(d)) return { obs: d, fc: [] };       /* a card cached by the version that drew the observed readings only */
+    return { obs: (d && d.obs) || [], fc: (d && d.fc) || [] };
+  }
+
   function kpWord(v) {
     if (v < 4) return L('Quiet', '静穏', 'Ruhig', 'Спокойно', 'Tranquilo');
     if (v < 5) return L('Unsettled', 'やや活発', 'Unruhig', 'Возмущённое', 'Inestable');
@@ -1008,6 +1046,36 @@ window.IntMapWidgetDefsData = (function () {
     return L('Severe storm', '甚大な嵐', 'Schwerer Sturm', 'Экстремальная буря', 'Tormenta severa');
   }
 
-  return { getJSON: getJSON, firstOf: firstOf, wxWord: wxWord, aqiCat: aqiCat, uvCat: uvCat,
+  /* SWPC writes UTC without a zone designator ("2026-11-17T11:06:00", "2026-11-17 08:48:14.700") */
+  function utcMs(s) {
+    s = String(s == null ? '' : s).replace(' ', 'T');
+    if (!/(Z|[+-]\d\d:?\d\d)$/.test(s)) s += 'Z';
+    return Date.parse(s);
+  }
+  /* planetary K: `rows` is the old [header, ...[time, kp, ...]] table, `frows` the forecast product (which repeats
+     the observed days and then adds `estimated` and `predicted` blocks) */
+  function kpData(rows, frows) {
+    if (!Array.isArray(rows) || rows.length < 2) throw new Error('no data');
+    var obs = rows.slice(1).filter(function (r) { return r && r[1] != null; })
+      .slice(-24).map(function (r) { return { at: utcMs(r[0]), kp: +r[1] }; });
+    if (!obs.length) return null;
+    var after = obs[obs.length - 1].at;
+    var fc = (Array.isArray(frows) ? frows : []).filter(function (r) { return r && r.observed !== 'observed' && r.kp != null && isFinite(+r.kp) && utcMs(r.time_tag) > after; })
+      .map(function (r) { return { at: utcMs(r.time_tag), kp: +r.kp, kind: r.observed, scale: r.noaa_scale || null }; })
+      .sort(function (a, b) { return a.at - b.at; });
+    return { obs: obs, fc: fc };
+  }
+  /* the day's highest forecast Kp, per UTC day */
+  function kpDays(fc) {
+    var by = {};
+    fc.forEach(function (x) {
+      var d = new Date(x.at); var day = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+      if (!by[day] || x.kp > by[day].kp) by[day] = { at: day, kp: x.kp, scale: x.scale };
+    });
+    return Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return a.at - b.at; }).slice(0, 4);
+  }
+
+
+  return { getJSON: getJSON, firstOf: firstOf, utcMs: utcMs, kpData: kpData, kpDays: kpDays, wxWord: wxWord, aqiCat: aqiCat, uvCat: uvCat,
     flagEmoji: flagEmoji, countryRows: countryRows, countryRow: countryRow, countryOptions: countryOptions, DEF_CC: DEF_CC, langKey: langKey, pointOf: pointOf, LOC_CFG: LOC_CFG };
 })();

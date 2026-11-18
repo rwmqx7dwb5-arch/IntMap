@@ -384,7 +384,8 @@ test('R307 ⑨ a tool row asks for its own point every time', () => {
   const rows = (s.match(/run:\(\)=>_askPoint\(/g) || []).length;
   /* (science-instruments) five: los · reach · sun · nightSky, and sim.ashPlume — from this list there is no
      volcano under the cursor, so the tapped point becomes the vent (the row's own comment in js/map-ui.js) */
-  assert.equal(rows, 5, 'exactly the five rows that cannot answer without a coordinate');
+  /* (space-expansion) six: sim.skyTonight — the almanac of one night is a function of one point, so it asks for it */
+  assert.equal(rows, 6, 'exactly the six rows that cannot answer without a coordinate');
   assert.ok(/id:'sim\.terrainWater'/.test(s) && !/sim\.terrainWater'[\s\S]{0,400}?_askPoint/.test(s),
     'the terrain/water simulator opens on the view rectangle and is not asked');
   /* #R305: one gesture, one voice — the shared bar stays silent for a caller that speaks */

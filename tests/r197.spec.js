@@ -67,15 +67,22 @@ test('R197 ③ a planet is a globe with its IAU place names on it', async () => 
     const s = window.IntMapSpace.state();
     return s.mode === 'body' && s.focus === 'mars' && s.names > 0;
   }, null, { timeout: 30_000 });
-  await page.waitForTimeout(1200);
-  /* the labels are drawn on the overlay canvas — check that ink reached it */
-  const ink = await page.evaluate(() => {
+  /* the labels are drawn on the overlay canvas — check that ink reached it. (space-expansion) Asked until it holds rather than
+     after a fixed 1.2 s: the same claim, without paying the whole wait on a fast frame (the suite's total time is a budget). */
+  const inkOf = () => {
     const ov = document.getElementById('space-ov');
     const c = ov.getContext('2d');
     const d = c.getImageData(0, 0, ov.width, ov.height).data;
     let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) n++;
     return n;
-  });
+  };
+  await page.waitForFunction(() => {
+    const ov = document.getElementById('space-ov'); if (!ov) return false;
+    const d = ov.getContext('2d').getImageData(0, 0, ov.width, ov.height).data;
+    let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) n++;
+    return n > 400;
+  }, null, { timeout: 15_000, polling: 100 }).catch(() => { /* the assertion below says what was there */ });
+  const ink = await page.evaluate(inkOf);
   expect(ink, 'feature labels were painted onto the overlay').toBeGreaterThan(400);
   const names = await page.evaluate(() => window.IntMapSpace.state());
   expect(names.names).toBeGreaterThanOrEqual(5);   /* five bodies carry nomenclature */
@@ -200,4 +207,65 @@ test('R197 ⑦ the tsunami model is global, and it is the only tsunami there is'
 test('R197 ⑧ no page errors were logged while all of that happened', async () => {
   const errs = ((diag.pageErrors||[]).concat(diag.consoleErrors||[])).filter(e => !/CORS|Failed to fetch|net::ERR|NetworkError|503|429/i.test(String(e)));
   expect(errs, JSON.stringify(errs.slice(0, 4))).toEqual([]);
+});
+
+/* ══ (space-expansion) THE SKY TONIGHT AND THE ECLIPSE PATH, ON THIS SAME PAGE ════════════════════════════════
+   The arithmetic is held in Node (tests/space-almanac-checks.test.mjs, tests/space-almanac-panel-checks.test.mjs); this
+   asks the page what a reader gets, on a fixed instant. It rides this file's one boot instead of a spec of its own: the
+   suite's total time had no room for a second boot (scripts/test-budget.mjs TOTAL_BUDGET_S). */
+const TOKYO = { lng: 139.6917, lat: 35.6895 };
+const PERSEIDS_NIGHT = Date.UTC(2026, 7, 12, 12, 0);   /* 21:00 JST on the Perseids' 2026 peak night */
+const BURGOS = [-3.70, 42.34];
+
+test('space-expansion ① the tools row asks for a point first; ② Tokyo on the Perseids night; ④ at phone width', async () => {
+  await page.evaluate(() => window.IntMapLazy.need('skyAlmanac'));
+  await page.evaluate(() => window.IntMapSkyAlmanac.open());
+  let st = await page.evaluate(() => window.IntMapSkyAlmanac.state());
+  expect(st.open).toBe(true);
+  expect(st.site, 'nothing is computed for the map centre (#R302)').toBeNull();
+  expect(st.planetsSeen).toEqual([]);
+  await page.evaluate(() => window.IntMapSkyAlmanac.close());
+
+  await page.evaluate(([ll, when]) => window.IntMapSkyAlmanac.open(ll, { when }), [TOKYO, PERSEIDS_NIGHT]);
+  await page.waitForFunction(() => { const s = window.IntMapSkyAlmanac.state(); return s.night && !s.busy; }, null, { timeout: 30_000 });
+  st = await page.evaluate(() => window.IntMapSkyAlmanac.state());
+  expect(st.sections.length).toBe(6);
+  expect(st.showers).toContain('PER');
+  const direct = await page.evaluate(([ll, when]) => {
+    const A = window.IntMapSkyAlmanac.almanac({ lat: ll.lat, lng: ll.lng, when });
+    return { seen: A.planets.filter((p) => p.visibleTonight).map((p) => p.id), showers: A.showers.map((s) => s.code) };
+  }, [TOKYO, PERSEIDS_NIGHT]);
+  expect(st.planetsSeen.slice().sort()).toEqual(direct.seen.slice().sort());
+  expect(st.showers.slice().sort()).toEqual(direct.showers.slice().sort());
+  expect(await page.evaluate(() => (document.getElementById('sky-almanac') || {}).innerText || '')).toMatch(/Perseids|ペルセウス/);
+
+  const was = page.viewportSize();
+  await page.setViewportSize({ width: 375, height: 812 });
+  const box = await page.evaluate(() => { const p = document.getElementById('sky-almanac'); if (!p) return null; const r = p.getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth }; });
+  expect(box).not.toBeNull();
+  expect(box.l).toBeGreaterThanOrEqual(0);
+  expect(box.r).toBeLessThanOrEqual(box.w + 0.5);
+  if (was) await page.setViewportSize(was);
+  await page.evaluate(() => window.IntMapSkyAlmanac.close());
+});
+
+test('space-expansion ③ the eclipse layer draws 2026-08-12 across northern Spain', async () => {
+  await page.evaluate(() => window.IntMapLazy.need('skyAlmanac'));
+  const msMax = await page.evaluate(() => { const E = window.IntMapSpaceEvents.eclipses(Date.UTC(2026, 7, 1), 30, true); return E.length ? E[0].ms : null; });
+  expect(msMax).not.toBeNull();
+  /* switch the row on, wait for its package (it publishes IntMapEclipseLayer when it loads), THEN pin the eclipse —
+     the row first draws the clock's next eclipse */
+  await page.evaluate(() => { const cb = document.getElementById('dl-eclipse'); if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); } });
+  await page.waitForFunction(() => { const s = window.IntMapEclipseLayer && window.IntMapEclipseLayer.state(); return s && s.on; }, null, { timeout: 30_000 });
+  await page.evaluate((ms) => window.IntMapEclipseLayer.show(ms), msMax);
+  await page.waitForFunction((ms) => { const s = window.IntMapEclipseLayer.state(); return s.on && s.kind && Math.abs(s.ms - ms) < 3600000; }, msMax, { timeout: 30_000 });
+  expect((await page.evaluate(() => window.IntMapEclipseLayer.state())).kind).toBe('total');
+  const inside = await page.evaluate((pt) => {
+    const P = window.IntMapEclipsePath.solarEclipsePath(Date.UTC(2026, 7, 12, 17, 47));
+    const ring = P.umbra && (P.umbra.type === 'Polygon' ? [P.umbra.coordinates[0]] : P.umbra.coordinates.map((p) => p[0]));
+    const hit = (r) => { let c = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [xi, yi] = r[i], [xj, yj] = r[j]; if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) c = !c; } return c; };
+    return !!ring && ring.some(hit);
+  }, BURGOS);
+  expect(inside).toBe(true);
+  await page.evaluate(() => { const cb = document.getElementById('dl-eclipse'); if (cb && cb.checked) { cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); } });
 });
