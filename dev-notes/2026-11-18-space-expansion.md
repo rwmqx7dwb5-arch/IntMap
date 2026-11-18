@@ -67,7 +67,7 @@ newsjp: 宇宙の新機能——任意の地点の「今夜の空」（日の出
 
 ## 5. 検査
 
-`tests/space-almanac-checks.test.mjs`・`tests/space-almanac-panel-checks.test.mjs`・`tests/space-layers-checks.test.mjs`・`tests/space-weather-checks.test.mjs`
+`tests/space-almanac-checks.test.mjs`・`tests/space-almanac-panel-checks.test.mjs`・`tests/space-layers-checks.test.mjs`・`tests/space-weather-checks.test.mjs`、ブラウザでは `tests/r197.spec.js` の末尾 2 件（§8）
 （各 12 件）。既存の `engine-space`・`space-ephemeris`・`layer-space-satellites` も緑。
 
 ## 6. CI で見つかり直したもの（PR の 1 周目）
@@ -97,3 +97,13 @@ requests 9 → 10、modules 895 → 896。
   チャンクで、geo-engine の分離と同じ束ね方の変化で共有部品の置き場所が動いたものと見ている（未確認）。
 - async の増加は新しい遅延チャンク（sky-almanac 41 kB・space-events 13.7 kB・3 つのレイヤー・パッケージ）と、能力の実行部・衛星の通過予報・
   プライバシーポリシーの追記。
+
+## 8. テストの総時間——別の spec を足さず、既存の宇宙の spec に相乗りして固定待ちで返す（利用者の判断）
+
+main の時点でスイートの総時間は天井 5,250 s にちょうど達していて（余白 0、`TOTAL_BUDGET_S` は下げる方向にしか動かせないと 3 つの検査が固定）、
+今回の spec（実測 24 s、1 起動に畳んで 16 s）を足すと超えた。利用者の判断（2026-11-18）は「他の固定待ちで返す」。
+- 今夜の空・日食の帯・375px の確認は `tests/space-expansion.spec.js` をやめ、**`tests/r197.spec.js` の共有ページに 2 件として足した**（起動 1 回ぶんが要らない）。
+- **返したもの**: r197 ③ の固定 1.2 s を「オーバーレイに地名が描かれるまで」の条件待ちに。r203（core）の 3 か所（起動後 2.5 s・傾けた後 4 s・
+  宇宙の手前 2.5 s）を「MapLibre の `idle`、ただし元の秒数を上限」に——遅くなることはなく、落ち着いた時点で先へ進む。
+- ⚠ このマシンは他セッションの負荷で同じ spec が 6〜20 s と揺れ、r203 は GPU の無いこの環境では main 版でも落ちるので、**台帳の数は CI のランナーで
+  測った値で合わせる**（`tests/durations.json` の値は CI の計測と同じ尺度）。

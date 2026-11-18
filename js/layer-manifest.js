@@ -460,6 +460,8 @@ const DECLARATIONS = [
 /** (layer-packages) every layer package a declaration names → its factory, fetched on first use (js/data-layers.js) */
 const PACKAGES = {
   "alliances": () => import('./layer-pkg-alliances.js').then((m) => m.alliancesPackage),
+  "eclipse": () => import('./layer-pkg-eclipse.js').then((m) => m.eclipsePackage),
+  "fireballs": () => import('./layer-pkg-fireballs.js').then((m) => m.fireballsPackage),
   "geopolitics": () => import('./layer-pkg-geopolitics.js').then((m) => m.geopoliticsPackage),
   "histurban": () => import('./layer-pkg-histurban.js').then((m) => m.histurbanPackage),
   "launches": () => import('./layer-pkg-launches.js').then((m) => m.launchesPackage),
