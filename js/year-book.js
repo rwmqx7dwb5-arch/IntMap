@@ -67,6 +67,23 @@ const bboxOf = (g) => {
   try { walk(g.coordinates); } catch (_) { return null; }
   return a <= c ? [a, b, c, d] : null;
 };
+/** (hist-audit-fixes) the present-day map as rows of the SAME shape a border record's rows have (`en`, `name`, `km2`, `bbox`),
+    so a past instant can be compared with today by `diffPolities` instead of the whole comparison being skipped. The rows are
+    TODAY'S country polygons (the land layer the app draws at the live date), matched to a past record by English name — the
+    key the record itself uses — and a caller that shows the diff must say the modern end is read that way. `nameEn` / `nameLocal`
+    take an ISO code; a feature with no code or no English name is left out, never given an invented one. */
+export function modernPolityRows(fc, nameEn, nameLocal) {
+  const by = new Map();
+  for (const f of (fc && fc.features) || []) {
+    const p = f.properties || {}, code = p.__code != null ? String(p.__code) : (f.id != null ? String(f.id) : '');
+    const en = code ? String(nameEn(code) || '').trim() : '';
+    if (!en || en === code) continue;
+    const km2 = Math.round(areaKm2(f.geometry)), bb = bboxOf(f.geometry), was = by.get(en);
+    if (!was) by.set(en, { name: String(nameLocal(code) || en), en, km2, bbox: bb, parts: 1 });
+    else { was.km2 += km2; was.parts++; if (bb && was.bbox) was.bbox = [Math.min(was.bbox[0], bb[0]), Math.min(was.bbox[1], bb[1]), Math.max(was.bbox[2], bb[2]), Math.max(was.bbox[3], bb[3])]; }
+  }
+  return [...by.values()].sort((a, b) => b.km2 - a.km2);
+}
 /** the app's one escaper (js/safe-html.js) */
 /** the app's one escaper (js/safe-html.js), as text for markup — exported under a name no other file defines, so the
     output-taint gate can judge an importer's call by this definition alone (js/journey-through-time.js) */
@@ -130,7 +147,12 @@ export async function readYear(when, deps, opts) {
   if (TB && TB.collectionAt) {
     try {
       const c = await TB.collectionAt(when);
-      if (c && c.modern) out.borders = { modern: true };
+      if (c && c.modern) {
+        out.borders = { modern: true };
+        /* (hist-audit-fixes) a caller that asks to COMPARE (`opts.modernRows`) gets today's polygons as rows, marked as such;
+           everyone else reads `modern: true` exactly as before */
+        if (o.modernRows && deps.modernGeo) { try { const rows = modernPolityRows(deps.modernGeo(), deps.countryNameEn || deps.countryName, deps.countryName); if (rows.length) out.borders.largest = rows; } catch (_) { /* no rows → the diff says it could not be read */ } }
+      }
       else if (c && c.fc) {
         const feats = c.fc.features.filter((f) => nameIn(f.properties, 'en'));
         const rows = feats.map((f) => ({ name: nameIn(f.properties, lang), en: nameIn(f.properties, 'en'), km2: Math.round(areaKm2(f.geometry)), bbox: bboxOf(f.geometry),
@@ -409,6 +431,8 @@ function warsFor(year) {
 export function pageDeps(h) {
   return {
     borders: bordersNow(), maddison: window.IntMapMaddison, layerTime: window.IntMapLayerTime, lang: h.lang, wars: warsFor, index: loadIndex,
+    modernGeo: h.countryGeo,
+    countryNameEn: (code) => { try { const s = h.countryStats && h.countryStats()[code]; if (s && s.nameEn) return s.nameEn; } catch (_) { /* below */ } return code; },
     countryName: (code) => { try { const s = h.countryStats && h.countryStats()[code]; if (s) return (h.lang() === 'jp' ? (s.nameJp || s.nameEn) : s.nameEn) || code; } catch (_) { /* below */ } return code; },
   };
 }
