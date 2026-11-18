@@ -37,6 +37,7 @@ import './widget-smart.js';
 import './widget-defs-time.js';
 import './widget-defs-data.js';
 import './widget-defs-markets.js';
+import './widget-defs-space.js';
 import './widget-defs-map.js';
 import './widget-layout.js';
 import './widget-gallery.js';

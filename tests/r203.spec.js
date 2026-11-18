@@ -21,12 +21,23 @@ test.beforeAll(async ({ browser }) => {
   await page.waitForFunction(() => {
     try { return !!window.__imap && window.IntMapGeoEngine.canDraw(); } catch (_) { return false; }
   }, null, { timeout: 60000 });
-  await page.waitForTimeout(2500);
+  await settled(2500);
   /* (startup-lazy-layers) the explorer is fetched on first demand (js/space-approach.js); these checks drive its
      whole API synchronously, so they ask for it once, up front */
   await page.evaluate(() => window.IntMapSpace.ready());
 });
 test.afterAll(async () => { await page?.close(); });
+
+/* (space-expansion) THE MAP HAS SETTLED — MapLibre's own `idle` (no tile loading, no transition), and never longer than the
+   fixed wait these steps used to pay in full (the cap keeps a renderer that never goes idle from waiting longer than before).
+   The suite's total time is a budget (scripts/test-budget.mjs); a settled map is what the fixed waits were waiting for. */
+async function settled(ms) {
+  await page.evaluate((cap) => new Promise((done) => {
+    const m = window.__imap; const t = setTimeout(done, cap);
+    const fin = () => { clearTimeout(t); done(); };
+    try { if (m.loaded() && !m.isMoving() && m.areTilesLoaded()) { requestAnimationFrame(() => requestAnimationFrame(fin)); return; } m.once('idle', fin); } catch (_) { /* the cap answers */ }
+  }), ms);
+}
 
 /* The PLANET's own pixels, read inside a render tick — the context has no preserveDrawingBuffer, so
    this is the only honest way to ask what is on screen (#R197).
@@ -114,7 +125,7 @@ test('R203 ①b the camera opens at the published centre, not clamped to ±85°'
    the short plane loses everything under the horizon, which is the flash. */
 test('R203 ② a pitched zoom does not flip the far clip plane frame to frame', async () => {
   await page.evaluate(() => window.__imap.jumpTo({ center: [138.7274, 35.3606], zoom: 11.5, pitch: 78, bearing: 20 }));
-  await page.waitForTimeout(4000);
+  await settled(4000);
   /* the far plane is the renderer's own, read where MapLibre 6 keeps it (camera-ruler's __mlTr) —
      under 5.24 this read `__imap.transform.farZ`; under 6.x that is undefined on every frame, and
      the ratio test below passes a list of undefineds vacuously. So every frame must carry a number. */
@@ -153,7 +164,7 @@ test('R203 ② a pitched zoom does not flip the far clip plane frame to frame', 
 /* ── ③ 「同じサイズで戻るようにしろ／遷移を断絶的に勝手にするな／別の地球に差し替えるな」 ────── */
 test('R203 ③ the space crossing hands the Earth over at the same size and face, both ways', async () => {
   await page.evaluate(() => window.__imap.jumpTo({ center: [139.7, 35.7], zoom: 0.9, pitch: 0, bearing: 0 }));
-  await page.waitForTimeout(2500);
+  await settled(2500);
   const before = await page.evaluate(() => {
     const G = window.IntMapGeoEngine, c = G.camera.getCenter();
     const a = G.coords.project([c.lng, c.lat]), b = G.coords.project([c.lng + 90, c.lat]);

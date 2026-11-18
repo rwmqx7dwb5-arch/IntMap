@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4802468,
-    "gzip": 1573348,
-    "brotli": 1196724,
-    "requests": 9,
-    "modules": 908,
+    "raw": 4840476,
+    "gzip": 1586709,
+    "brotli": 1209198,
+    "requests": 10,
+    "modules": 910,
     "cssRaw": 382385,
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14210678,
-    "gzip": 4749042,
+    "raw": 14323039,
+    "gzip": 4796525,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -22,10 +22,10 @@
       "atlas-admin1": 12138,
       "atlas-answer-view": 2510,
       "atlas-attach": 23189,
-      "atlas-cap-runs": 859817,
+      "atlas-cap-runs": 873840,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1042130,
+      "atlas-console": 1048742,
       "atlas-deadlines": 39752,
       "atlas-executor": 59145,
       "atlas-float": 10113,
@@ -101,7 +101,7 @@
       "layer-row-label": 402,
       "layer-time": 8905,
       "layer-time-decl": 19470,
-      "legal-text": 89183,
+      "legal-text": 91764,
       "lib": 129709,
       "link-codec": 1344,
       "map-cite": 18254,
@@ -126,7 +126,7 @@
       "offline-maps": 14187,
       "offline-plan": 2286,
       "on-this-day": 11387,
-      "pandemic-atlas": 14814,
+      "pandemic-atlas": 16879,
       "pandemic-world": 32012,
       "photo-geo": 77696,
       "photo-geo-exif": 4679,
@@ -152,7 +152,7 @@
       "routing-ui": 60318,
       "satellite-detail": 13743,
       "satellite-wasm-stub": 194,
-      "satellites-live": 23092,
+      "satellites-live": 29097,
       "seismic": 159113,
       "service-status": 21611,
       "shakemap": 19432,
@@ -203,7 +203,7 @@
   "dist": {
     "total": 1579471807,
     "data": 1216590073,
-    "assets": 21646324
+    "assets": 21801070
   },
   "phone": {
     "bytes": 342631,

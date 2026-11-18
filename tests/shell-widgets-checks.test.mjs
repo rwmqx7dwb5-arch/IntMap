@@ -227,7 +227,7 @@ const code = (p) => codeOnly(read(p));
 
 const PLATFORM = [
   'js/widget-core.js', 'js/widget-store.js', 'js/widget-scheduler.js', 'js/widget-render.js',
-  'js/widget-smart.js', 'js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-map.js',
+  'js/widget-smart.js', 'js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-space.js', 'js/widget-defs-map.js',
   'js/widget-layout.js', 'js/widget-gallery.js', 'js/widgets.js',
 ];
 
@@ -337,7 +337,7 @@ test('R292 ⑤: a trend line refuses to be drawn from fewer than three real poin
   const r = read('js/widget-render.js');
   assert.ok(/if \(pts\.length < 3\) return null;/.test(r), 'R.series must refuse a sparkline it was not given data for');
   /* and no definition fabricates one */
-  for (const f of ['js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-map.js']) {
+  for (const f of ['js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-space.js', 'js/widget-defs-map.js']) {
     const src = read(f);
     assert.ok(!/Math\.random\(\)\s*\*/.test(src.replace(/roll: Math\.random\(\)/g, '')),
       f + ' generates a number with Math.random() — a chart must come from the source');
@@ -379,7 +379,7 @@ test('R292 ⑦: every family with three sizes has three DIFFERENT renderer bodie
   /* ⚠ THE POINT OF §6, AS A MECHANICAL TEST. A definition that supports s/m/l and hands the same
      function to all three would be a CSS-only difference wearing three names — so the bodies are
      compared as text, per definition, in the file that declares them. */
-  const files = ['js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-map.js'];
+  const files = ['js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-space.js', 'js/widget-defs-map.js'];
   let checked = 0;
   for (const f of files) {
     const src = read(f);
@@ -669,7 +669,7 @@ test('R292 ⑱: the default board is five cards, and its defaults cannot be read
      produced by a FUNCTION when the card is created cannot depend on where it was written. */
   assert.ok(/def\.defaultConfig \? def\.defaultConfig\(WC\.context\(\)\) : \{\}/.test(st),
     'a default config is produced by the definition at creation time, not read from a hoisted table');
-  for (const f of ['js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-map.js']) {
+  for (const f of ['js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-space.js', 'js/widget-defs-map.js']) {
     const src = read(f);
     /* every DEF_ table must be declared BEFORE the first defaultConfig that reads it */
     for (const t of ['DEF_FX', 'DEF_CC']) {
@@ -694,7 +694,7 @@ test('R292 ⑲: there is one ticker for the board, and it stops when nothing nee
   assert.ok(/s\.every === 'second' \|\| minuteEdge/.test(core),
     'a card that shows no seconds is called once a minute, not sixty times');
   /* ⚠ AND NO DEFINITION MAY OPEN ITS OWN INTERVAL. */
-  for (const f of ['js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-map.js', 'js/widget-layout.js']) {
+  for (const f of ['js/widget-defs-time.js', 'js/widget-defs-data.js', 'js/widget-defs-markets.js', 'js/widget-defs-space.js', 'js/widget-defs-map.js', 'js/widget-layout.js']) {
     assert.ok(!/setInterval\(/.test(read(f)), f + ' opens its own interval — the board has one ticker');
   }
 });
