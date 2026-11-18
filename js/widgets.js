@@ -127,6 +127,14 @@ export function widgets(HOST){
     _store: ST, _core: WC, _scheduler: SCH, _layout: LAY,
   };
 
+  /* (atlas-screen-reach) THE DOOR `W`, the «widgets» capability and the help text all name: the board's own «Add a widget» sheet.
+     It used to be an empty stub left by the #R15 retirement, which the `W` key and Atlas both called and reported as done. */
+  window.IntMapWidgets = {
+    toggle: function () { var G = window.IntMapWidgetGallery; if (!G) return false; if (G.isOpen()) G.close(); else G.open(); return G.isOpen(); },
+    isOpen: function () { var G = window.IntMapWidgetGallery; return !!(G && G.isOpen()); },
+    refresh: sync,
+  };
+
   if (document.readyState !== 'loading') setTimeout(sync, 0);
   else document.addEventListener('DOMContentLoaded', function () { setTimeout(sync, 0); });
 }

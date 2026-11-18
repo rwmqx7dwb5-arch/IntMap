@@ -80,7 +80,6 @@
     { "area": "local", "name": "intmap_widget_brief1", "kind": "history", "en": "The last Atlas briefing shown on the dashboard (place and text)", "jp": "ダッシュボードに表示した最新の Atlas の概況（場所と文）" },
     { "area": "local", "name": "intmap_widget_cache1", "kind": "cache", "en": "The dashboard cards' last data, shown while new data loads", "jp": "ダッシュボードのカードの最新データ（読み込み中に表示）" },
     { "area": "local", "name": "intmap_widget_recent", "kind": "history", "en": "Dashboard cards you added most recently", "jp": "最近追加したダッシュボードのカード" },
-    { "area": "local", "name": "intmap_widgets", "kind": "preference", "en": "An earlier version's dashboard widget choices", "jp": "以前の版のダッシュボードのウィジェットの選択" },
     { "area": "local", "name": "intmap_widgets4", "kind": "preference", "en": "Your dashboard — which cards, in which order", "jp": "ダッシュボード — どのカードをどの順に置くか" },
     { "area": "local", "name": "intmap_wind_parts", "kind": "preference", "en": "Which parts of the wind layer are shown", "jp": "風のレイヤーで表示する要素" },
     { "area": "local", "name": "intmap_wind_unit", "kind": "preference", "en": "Wind-speed unit", "jp": "風速の単位" },

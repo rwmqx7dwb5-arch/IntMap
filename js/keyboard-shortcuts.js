@@ -136,7 +136,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
         case (K==='m'): click('btn-tool-measure'); break;
         case (K==='r'): click('btn-tool-radius'); break;
         case (K==='d'): click('btn-tool-draw'); break;
-        case (K==='w'): { try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle) window.IntMapWidgets.toggle(); else click('btn-widgets'); }catch(_){} break; }
+        case (K==='w'): { try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle) window.IntMapWidgets.toggle(); }catch(_){} break; }
         case (K==='t'): { try{ const seq={light:'dark',dark:'auto',auto:'light'}; const cur=(typeof HOST.userTheme!=='undefined'?HOST.userTheme:'auto'); const nx=seq[cur]||'light'; const sel=document.getElementById('setting-theme'); if(sel){ sel.value=nx; sel.dispatchEvent(new Event('change',{bubbles:true})); } if(typeof HOST.userTheme!=='undefined'){ HOST.userTheme=nx; if(typeof applyTheme==='function') applyTheme(); } try{ imToast(''+nx); }catch(_){} }catch(_){} break; }
         case (K==='f'): { try{ if(document.fullscreenElement){ document.exitFullscreen&&document.exitFullscreen().catch(()=>{}); } else { const p=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); if(p&&p.catch) p.catch(()=>{}); } }catch(_){} break; }
         case (k==='0'): click('btn-compass'); break;

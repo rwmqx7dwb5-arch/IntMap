@@ -3803,10 +3803,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   religionLang(IM_HOST);
 
-  /* ===== Widgets retired (#R15) — the clock/weather/FX widget panel was removed per user request.
-     A no-op stub remains so any stray reference can't throw. ===== */
-  window.IntMapWidgets={ toggle:function(){}, refresh:function(){} };
-
   /* (#R21) Flag rendering that works on PCs: Windows has no color-emoji flags (a 🇩🇪 renders as the
      letters "DE"), so every flag display goes through this helper — it derives the ISO-2 code from the
      flag emoji's regional-indicator pair and serves a flagcdn.com PNG, with the emoji as alt/fallback. */
@@ -3823,42 +3819,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      stock APIs are key-walled/CORS-blocked, so markets = crypto majors, honestly labeled). ===== */
   /* (#R164) moved to js/widgets.js — see Architecture.md §3.1. */
   widgets(IM_HOST);
-  (function(){
-    return; /* widgets disabled */
-    if(!GE().hasRenderer() || !GE().hasRenderer()) return;
-    const jp=()=>currentLang==='jp'; const KEY='intmap_widgets';
-    let cfg={clock:true,weather:true,fx:false}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cfg=Object.assign(cfg,s); }catch(_){}
-    let panel=null, tick=null, dataTick=null;
-    function save(){ try{ localStorage.setItem(KEY,JSON.stringify(cfg)); }catch(_){} }
-    function ensure(){ if(panel) return panel; panel=document.createElement('div'); panel.id='widget-panel'; panel.className='tool-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
-    function chk(k,label){ return '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-w="'+k+'" '+(cfg[k]?'checked':'')+'> '+label+'</label>'; }
-    function render(){ const p=ensure();
-      p.style.cssText='display:block;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:calc(var(--z-sheet) - 150);width:240px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">'+icon('grid')+' '+(IntMapLang.t(currentLang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
-        +'<div id="wdg-clock" style="'+(cfg.clock?'':'display:none;')+'margin-bottom:7px;"></div>'
-        +'<div id="wdg-weather" style="'+(cfg.weather?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(IntMapLang.t(currentLang,"Loading weather…","天気を取得中…","Wetter wird geladen…","Загрузка погоды…","Cargando el tiempo…"))+'</div>'
-        +'<div id="wdg-fx" style="'+(cfg.fx?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(IntMapLang.t(currentLang,"Loading FX…","為替を取得中…","Wechselkurse werden geladen…","Загрузка курсов валют…","Cargando tipos de cambio…"))+'</div>'
-        +'<div style="border-top:1px solid rgba(128,128,128,0.18);padding-top:7px;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--text-muted);">'+chk('clock',IntMapLang.t(currentLang,"Clock","時計","Uhr","Часы","Reloj"))+chk('weather',IntMapLang.t(currentLang,"Weather","天気","Wetter","Погода","Tiempo"))+chk('fx',IntMapLang.t(currentLang,"FX","為替","Devisen","Валюта","Divisas"))+'</div>';
-      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
-      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
-      p.querySelectorAll('input[data-w]').forEach(c=>c.onchange=()=>{ cfg[c.getAttribute('data-w')]=c.checked; save(); render(); });
-      updateClock(); refreshData(); }
-    function updateClock(){ const el=panel&&panel.querySelector('#wdg-clock'); if(!el||!cfg.clock||(panel&&panel.style.display==='none')) return; const now=new Date(); let tz; try{ if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; }catch(_){}
-      let tstr,dstr; try{ tstr=now.toLocaleTimeString(IntMapLang.locale(currentLang,'en-GB'),{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
-      try{ dstr=now.toLocaleDateString(IntMapLang.locale(currentLang,'en-GB'),{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
-      const _E=window.IntMapSafe.html; /* (module-graph) the zone is the reader's setting (DOM text): encoded like everything else */ el.innerHTML='<div style="font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-main);line-height:1.1;">'+_E(tstr)+'</div><div style="font-size:11px;color:var(--text-muted);">'+_E(dstr)+(tz?' · '+_E(tz):'')+'</div>'; }
-    function wIcon(c){ if(c==null) return icon('thermo'); if(c===0) return icon('sun'); if(c<=3) return icon('cloud-sun'); if(c<=48) return icon('fog'); if(c<=67) return icon('cloud-rain'); if(c<=77) return icon('snowflake'); if(c<=82) return icon('cloud-rain'); if(c<=99) return icon('cloud-bolt'); return icon('thermo'); }
-    function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
-    async function refreshData(){
-      if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const j=await window.IntMapWx.guardedJSON('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m',300000); if(!j) throw new Error('wx'); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(IntMapLang.t(currentLang,"wind ","風 ","Wind ","ветер ","viento "))+Math.round(cu.wind_speed_10m)+' km/h · '+(IntMapLang.t(currentLang,"map center","地図中心","Kartenmitte","центр карты","centro del mapa"))+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=IntMapLang.t(currentLang,"Weather unavailable","天気を取得できません","Wetter nicht verfügbar","Погода недоступна","Tiempo no disponible"); } }
-      if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=IntMapLang.t(currentLang,"FX unavailable","為替を取得できません","Wechselkurse nicht verfügbar","Курсы валют недоступны","Tipos de cambio no disponibles"); } }
-    }
-    function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=everyTick('app-body:widget-clock',1000,updateClock); if(!dataTick) dataTick=everyTick('app-body:widget-data',300000,()=>{ if(panel&&panel.style.display!=='none') refreshData(); }); } else { p.style.display='none'; } }
-    function wire(){ const b=document.getElementById('btn-widgets'); if(b) b.onclick=toggle; }   /* mobile m-tool proxy clicks btn-widgets directly */
-    if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
-    window.addEventListener('intmap-lang',()=>{ if(panel&&panel.style.display!=='none') render(); });
-    window.IntMapWidgets={ toggle, refresh:refreshData };
-  })();
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
   annotations(IM_HOST);

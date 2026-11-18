@@ -60,6 +60,7 @@ export default [
   },
   {
     row: ['time.textMap',               'textMap',        'mapText,textToEraMap,passageMap,eraMapFromText',               'time',    'mapCompose', 'map.compose,map.highlight,time', 'map,explanation', 'session', 'none',   '',         ''],
+    ui: { none: '2026-11-19' },
     /* (text-to-era-map) A PASSAGE ON THE MAP OF ITS OWN TIME. Atlas reads the passage (there is no second AI call and no
        extractor); this checks what it read against the passage — every place name and every quoted date must be IN the
        reader's text — reads the quoted date by the calendar where it can (js/where-when.js), sets the clock only to an
