@@ -169,6 +169,26 @@ overviews は数だけ報告する**）。
 
 ⚠ **`read(i)` は扉である**（§1.4 と同じ理由）。開いただけでは画素を 1 つも展開しない。
 
+### 1.4c URL の COG を、必要な窓だけ読む — `js/gis-cog.js` と `data.gis` の `url:` 入力
+
+`readUrl` は HTTP Range で窓だけ読める読み手だったが、**呼び手が 0 だった**——自分のファイルを落とした
+読者以外に、格子の入口は無かった。いまは `data.gis` の入力に `"url:https://…"`（裸の https 住所も可）を
+渡せる。⚠ **格子の枠だけ**（URL は GeoTIFF＝場を指すので、地物の枠は `url-needs-a-grid-slot` で断る）。
+
+- **窓と解像度は呼び手のもの**（`acquire.bounds / width / height`。述べなければ `raster-sample-needs-window`）。
+  `levelFor` が**その解像度を満たす最も粗い overview**を選び、`readRegion` が窓を覆うタイルだけを取る
+  （実測: 512×512 の float32 を 128 タイルで置き、2°×1° の窓は全体の半分未満のバイトで済む）。
+- **再標本化は `nearest` で、述べる**（値を作らない。分類にも安全）。使った level・`meets`（ファイルが
+  求めた細かさを持っていたか）・要求数が `provenance.source` / `resolution` に残る。
+- **`coverage` はファイル自身の事実から**: 窓がファイルの内側で解像度も満たせば `all`、外へ出る・ファイルが
+  粗いなら `partial` と理由。外側は **NaN**（0 で埋めない）。
+- **断るもの**: http（CSP も https のみ）・URL に資格情報・EPSG:4326 以外（`cog-crs-not-4326`、ファイルが
+  述べた CRS 付き）・CRS を述べない（`crs-not-stated`）・Range 非対応（`range-unsupported`）・HTTP エラー。
+  ⚠ 投影座標系の COG は**未対応**——消せる条件は、bbox をファイルの CRS へ運び、読んだ窓を
+  `gis-warp.js` の `to4326` に通すこと（後半は既にある）。
+- 出来たものは**登録された格子のデータセット**なので、`rasterMask`・`zonal`・`sample`・書き出し・
+  `map.drawDataset` がそのまま効く。`provenance.kind = 'url-raster'`。
+
 ### 1.4b 格子を合わせる — `js/gis-warp.js` (`window.IntMapGisWarp`)
 
 GDAL の warp が担っている役——**座標系・解像度・範囲・再標本化・NoData を 1 つの層で扱う**。
