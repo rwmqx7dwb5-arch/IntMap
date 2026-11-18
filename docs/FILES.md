@@ -200,6 +200,7 @@ cesium-engine.js                  第2エンジン——同じ契約の裏で動
 cesium-style.js                   style 言語の解釈器（式・フィルタ・色）。純粋なので Node から検証できる
 cesium-layers.js                  Cesium のプロバイダとレイヤー描画
 cesium-vector-tiles.js            第2エンジンのベクタタイル
+plateau-cities.js                 PLATEAU 3D 都市モデル（東京23区の 3D Tiles）の一覧と URL。エンジンの tiles3d 能力が読む
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
 i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
 i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
@@ -344,7 +345,7 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
 gis-cog.js                        **URL の COG を窓ごとに読む** `window.IntMapGisCog`（`gis-atlas.js` が動的 import）—
                                   `gis-geotiff.js` の `readUrl`（HTTP Range）・`levelFor`・`readRegion` を呼ぶ唯一の
                                   入口。窓と解像度は呼び手が述べ、必要なタイルだけを取り、`coverage` を添えて
-                                  格子の契約で返す。EPSG:4326 を述べる COG だけ（投影座標系は CRS 名つきで断る）
+                                  格子の契約で返す。ファイルの CRS が何であれ窓を経緯度の格子で返す（投影座標系は窓を CRS へ運んで読む）
 gis-export.js                     **データを外へ出す口** `window.IntMapGisExport`（#R756）—
                                   ベクタ → GeoJSON / CSV、ラスター → GeoTIFF（無圧縮・float32 と
                                   整数・多バンド）。⚠ **「書き出せた」は「読み直せた」ではない**

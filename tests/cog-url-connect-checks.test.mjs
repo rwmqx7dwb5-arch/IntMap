@@ -21,7 +21,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const W = 512, H = 512, TILE = 128, ORIGIN_LNG = 130, ORIGIN_LAT = 40, PX = 0.01;
 
 /* value = x + 1000*y, so a decoded value names the source pixel it came from */
-function buildCog(crsKeys) {
+function buildCog(crsKeys, geo) {
+  const G = geo || { x0: ORIGIN_LNG, y0: ORIGIN_LAT, px: PX };
   const nT = (W / TILE) * (H / TILE);
   const chunks = [];
   for (let ty = 0; ty < H / TILE; ty++) for (let tx = 0; tx < W / TILE; tx++) {
@@ -35,7 +36,7 @@ function buildCog(crsKeys) {
   const add = (tag, type, v) => E.push({ tag, type, v });
   add(256, 3, [W]); add(257, 3, [H]); add(258, 3, [32]); add(259, 3, [1]); add(262, 3, [1]); add(277, 3, [1]);
   add(284, 3, [1]); add(322, 3, [TILE]); add(323, 3, [TILE]); add(324, 4, offs); add(325, 4, counts); add(339, 3, [3]);
-  add(33550, 12, [PX, PX, 0]); add(33922, 12, [0, 0, 0, ORIGIN_LNG, ORIGIN_LAT, 0]);
+  add(33550, 12, [G.px, G.px, 0]); add(33922, 12, [0, 0, 0, G.x0, G.y0, 0]);
   add(34735, 3, [1, 1, 0, keys.length / 4].concat(keys));
   E.sort((a, b) => a.tag - b.tag);
   const SZ = { 3: 2, 4: 4, 12: 8 };
@@ -137,7 +138,7 @@ test('② a window past the file is partial with a reason, and the outside is Na
   assert.ok(!Array.from(cells).some((v) => v === 0), 'a missing pixel was written as 0');
 });
 
-test('③ http, credentials, non-4326 and unreachable are refused by name', async () => {
+test('③ http, credentials and unreachable are refused by name', async () => {
   const { cog } = await boot();
   const srv = server(buildCog());
   const ask = (url, f) => cog.readWindow(url, { bounds: [131, 38, 132, 39], width: 10, height: 10, fetch: (f || srv).fetch || f });
@@ -145,11 +146,6 @@ test('③ http, credentials, non-4326 and unreachable are refused by name', asyn
   assert.equal((await ask('https://user:pw@example.org/a.tif')).why, 'url-has-credentials');
   assert.equal((await ask('not a url')).why, 'url-invalid');
   assert.equal(srv.calls, 0, 'a refused URL was fetched anyway');
-  const utm = server(buildCog([1024, 0, 1, 1, 1025, 0, 1, 1, 3072, 0, 1, 32654]));
-  const r = await cog.readWindow(URL_OK, { bounds: [131, 38, 132, 39], width: 10, height: 10, fetch: utm.fetch });
-  assert.equal(r.ok, false);
-  assert.equal(r.why, 'cog-crs-not-4326');
-  assert.equal(r.detail.crs, 'EPSG:32654');
   const gone = await cog.readWindow(URL_OK, { bounds: [131, 38, 132, 39], width: 10, height: 10, fetch: server(buildCog(), { status: 404 }).fetch });
   assert.equal(gone.ok, false);
   assert.equal(gone.why, 'http-status');
@@ -199,4 +195,48 @@ test('④ through data.gis a url: ref is a registered raster dataset; a feature 
     assert.equal(feat.ok, false);
     assert.equal(feat.why, 'url-needs-a-grid-slot');
   } finally { globalThis.fetch = prevFetch; }
+});
+
+/* ⑤ a PROJECTED file (UTM 54N, 100 m pixels) is read through the window. ⚠ Two witnesses, one
+   independent of js/gis-crs.js: a pixel's easting maps to a longitude by the UTM definition itself
+   (central meridian 141°E sits at easting 500000), and the rest are compared to the crs module. */
+test('⑤ a UTM file is read: only its tiles, on the right ground, and the central meridian is where UTM says', async () => {
+  const { w, cog } = await boot();
+  const X0 = 470000, Y0 = 4100000, PXM = 100;
+  const bytes = buildCog([1024, 0, 1, 1, 1025, 0, 1, 1, 3072, 0, 1, 32654], { x0: X0, y0: Y0, px: PXM });
+  const srv = server(bytes);
+  const win = [140.8, 36.7, 141.0, 36.9], width = 40, height = 40;
+  const r = await cog.readWindow(URL_OK, { bounds: win, width, height, fetch: srv.fetch });
+  assert.equal(r.ok, true, JSON.stringify(r.why) + JSON.stringify(r.detail));
+  assert.ok(srv.sent < bytes.length, 'the whole projected file was downloaded');
+  const cells = r.raster.read(0), pxL = (win[2] - win[0]) / width, pxT = (win[3] - win[1]) / height;
+  let checked = 0;
+  for (let j = 0; j < height; j += 5) for (let i = 0; i < width; i += 5) {
+    const v = cells[j * width + i];
+    assert.ok(Number.isFinite(v), 'hole at ' + i + ',' + j);
+    const { x, y } = decode(v);
+    const ll = w.IntMapGisCrs.toWgs84(X0 + (x + 0.5) * PXM, Y0 - (y + 0.5) * PXM, 'EPSG:32654');
+    assert.ok(Math.abs(ll[0] - (win[0] + (i + 0.5) * pxL)) < 0.002, 'column ' + i + ' is from the wrong ground');
+    assert.ok(Math.abs(ll[1] - (win[3] - (j + 0.5) * pxT)) < 0.002, 'row ' + j + ' is from the wrong ground');
+    checked++;
+  }
+  assert.ok(checked > 40);
+  assert.equal(r.coverage.completeness, 'all');
+  assert.equal(r.source.fileBoundsCrs, 'EPSG:32654');
+
+  /* the independent witness: a window 0.02° wide on the central meridian reads eastings near 500000 */
+  const mid = await cog.readWindow(URL_OK, { bounds: [140.99, 36.7, 141.01, 36.8], width: 10, height: 10, fetch: srv.fetch });
+  assert.equal(mid.ok, true, JSON.stringify(mid.why));
+  const m = mid.raster.read(0);
+  for (let i = 0; i < m.length; i += 7) {
+    assert.ok(Number.isFinite(m[i]));
+    const easting = X0 + (decode(m[i]).x + 0.5) * PXM;
+    assert.ok(Math.abs(easting - 500000) < 1500, 'easting ' + easting + ' is not on the central meridian');
+  }
+
+  /* a window past the file is partial, and the outside is NaN */
+  const edge = await cog.readWindow(URL_OK, { bounds: [141.1, 36.7, 141.6, 36.9], width: 50, height: 20, fetch: srv.fetch });
+  assert.equal(edge.ok, true, JSON.stringify(edge.why));
+  assert.equal(edge.coverage.completeness, 'partial');
+  assert.ok(Number.isNaN(edge.raster.read(0)[49]));
 });

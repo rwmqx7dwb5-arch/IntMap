@@ -249,6 +249,7 @@ window.IntMapCesiumEngine=(function(){
       this._raf=0; this._loaded=false; this._styleParsed=false; this._vid=++_viewSeq;
       this._gestures=Object.create(null);
       this._maxFeatures=(o.maxFeaturesPerLayer||12000);
+      this._tilesets=new Map();                    /* id → {ts:Cesium3DTileset|null, spec, visible} — the engine-owned 3D Tiles datasets (addTileset) */
       this._maxLabels=(o.maxLabels||320);
       /* the same desktop/mobile split the rest of the app makes — see makeTerrainProvider */
       if(o.terrainSamples==null){
@@ -2547,6 +2548,118 @@ window.IntMapCesiumEngine=(function(){
     getCanvas(){ return this._widget.canvas; }
     /* (layer-click-polish) maplibre's `redraw()`: one SYNCHRONOUS frame, for a page whose rAF is stopped (a hidden tab) — postRender fires 'render' inside it */
     redraw(){ try{ this._scene.render(); }catch(_){} return this; }
+    /* ══ THE FRAME'S OWN COST — the Cesium half of `render.instrumentFrames` / `sceneStats` ═══════
+       MapLibre answered these from #R225; this adapter answered nothing, so `?perf=1` on the globe
+       fell back to the frame interval (which a throttled tab makes a liar) and said "n/a" for the
+       scene. The analogue of MapLibre's `_render` is `scene.render`: the CesiumWidget calls it once
+       per frame it actually draws (requestRenderMode), so wrapping it ONCE times exactly the work
+       the engine did for that frame — CPU submit time, not GPU time (the GPU runs behind it).
+       ⚠ Never unwrapped, for the reason geo-engine.js gives for the MapLibre wrapper: a second
+       wrapper would time the first. */
+    instrumentFrames(cb){
+      try{
+        if(typeof cb!=='function') return false;
+        const sc=this._scene; if(!sc||typeof sc.render!=='function') return false;
+        if(!this.__frameSinks){
+          const sinks=this.__frameSinks=[]; const orig=sc.render;
+          sc.render=function(){ const t0=performance.now(); const r=orig.apply(this,arguments);
+            const dt=performance.now()-t0; for(const f of sinks){ try{ f(dt); }catch(_){} } return r; };
+        }
+        this.__frameSinks.push(cb); return true;
+      }catch(_){ return false; }
+    }
+    /* what the engine is being asked to draw, in the shape js/perf-hud.js reads. `tiles` are the
+       globe surface tiles drawn this frame and `tilesHeld` the ones kept in the replacement queue;
+       both come from Cesium's private surface object, so when it is not there they answer null
+       (NOT 0 — "unknown" must not read as "nothing"), and `tilesVia` says which it was. The 3D
+       Tiles and vector-tile numbers have no slot in the MapLibre shape, so they ride in `extra`. */
+    sceneStats(){
+      try{
+        const S=this._layers||[]; const all=S.map(l=>l.def.id);
+        const ids=S.filter(l=>!(l.def.layout&&l.def.layout.visibility==='none')).map(l=>l.def.id);
+        let tiles=null,held=null,via='unknown';
+        try{ const sf=this._globe&&this._globe._surface;
+          if(sf&&sf._tilesToRender){ tiles=sf._tilesToRender.length; via='private';
+            if(sf._tileReplacementQueue&&sf._tileReplacementQueue.count!=null) held=sf._tileReplacementQueue.count; } }catch(_){}
+        const sets=this._tilesets?[...this._tilesets.values()]:[];
+        const extra={ tilesets:sets.length,
+          tilesetTiles:sets.reduce((n,t)=>n+((t.ts&&t.ts.statistics&&t.ts.statistics.numberOfTilesWithContentReady)||0),0),
+          tilesetTriangles:sets.reduce((n,t)=>n+((t.ts&&t.ts.statistics&&t.ts.statistics.numberOfTrianglesSelected)||0),0),
+          tilesetBytes:sets.reduce((n,t)=>n+((t.ts&&t.ts.totalMemoryUsageInBytes)||0),0),
+          maxFeaturesPerLayer:this._maxFeatures, maxLabels:this._maxLabels,
+          frameNo:this._frameNo };
+        return { layers:all.length, visible:ids.length, sources:this._sources.size, tiles, tilesHeld:held, tilesVia:via,
+                 ids, allIds:all, via:'api', extra };
+      }catch(_){ return null; }
+    }
+    /* ══ 3D TILES — a dataset the ENGINE owns, not a style layer ══════════════════════════════════
+       Photogrammetry and city-model meshes are not features: they are a hierarchy of binary tiles
+       whose level of detail, culling and memory Cesium already manages (Cesium3DTileset). Pushing
+       them through the vector-tile → Entity path (cesium-vector-tiles.js) would throw that away, so
+       a tileset is its own primitive, added to scene.primitives, and the style layers never see it.
+       spec: { url, maximumScreenSpaceError?, heightOffset?, cacheBytes?, opacity?, onReady?, onError? }
+       · maximumScreenSpaceError — the quality/cost knob (Cesium's default is 16; phones get a looser 24
+         because the tile count, not the pixel count, is what they run out of).
+       · heightOffset — metres added along the local up axis. 0 by default: PLATEAU states its heights
+         as ellipsoidal, and nothing here may invent a geoid correction that its data did not ask for.
+       · cacheBytes — the tileset's own tile-memory budget, so a second dataset cannot grow without a
+         bound (the terrain/imagery caches above are bounded the same way).
+       Returns true when the request was accepted; the tileset arrives asynchronously and `onReady`
+       / 'tileset' events say when. Same id again → replaced, never doubled. */
+    addTileset(id,spec){
+      try{
+        if(!id||!spec||typeof spec.url!=='string') return false;
+        if(this._tilesets.has(id)) this.removeTileset(id);
+        const rec={ ts:null, spec:Object.assign({},spec), visible:true, error:null, gone:false };
+        this._tilesets.set(id,rec);
+        const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
+        Cesium.Cesium3DTileset.fromUrl(spec.url,{
+          maximumScreenSpaceError:spec.maximumScreenSpaceError!=null?spec.maximumScreenSpaceError:(mob?24:16),
+          cacheBytes:spec.cacheBytes!=null?spec.cacheBytes:(mob?128:384)*1048576,
+          maximumCacheOverflowBytes:(mob?64:192)*1048576,
+          /* a tileset that is not looked at must not keep fetching */
+          skipLevelOfDetail:true, dynamicScreenSpaceError:true
+        }).then(ts=>{
+          if(rec.gone||this._tilesets.get(id)!==rec){ try{ ts.destroy(); }catch(_){} return; }
+          rec.ts=ts; ts.show=rec.visible;
+          try{ if(spec.heightOffset){ const c=Cesium.Cartographic.fromCartesian(ts.boundingSphere.center);
+            const a=Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height), b=Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height+spec.heightOffset);
+            ts.modelMatrix=Cesium.Matrix4.fromTranslation(Cesium.Cartesian3.subtract(b,a,new Cesium.Cartesian3())); } }catch(_){}
+          this._scene.primitives.add(ts);
+          try{ ts.allTilesLoaded.addEventListener(()=>{ try{ this.fire('tilesetidle',{id}); }catch(_){} }); }catch(_){}
+          try{ ts.loadProgress.addEventListener(()=>{ try{ this._scene.requestRender(); }catch(_){} }); }catch(_){}
+          this._scene.requestRender();
+          try{ this.fire('tileset',{id}); }catch(_){}
+          if(typeof spec.onReady==='function'){ try{ spec.onReady(ts); }catch(_){} }
+        }).catch(e=>{
+          rec.error=String(e&&e.message||e);
+          if(typeof spec.onError==='function'){ try{ spec.onError(e); }catch(_){} }
+        });
+        return true;
+      }catch(_){ return false; }
+    }
+    removeTileset(id){
+      const rec=this._tilesets.get(id); if(!rec) return false;
+      rec.gone=true; this._tilesets.delete(id);
+      try{ if(rec.ts){ this._scene.primitives.remove(rec.ts); if(!rec.ts.isDestroyed()) rec.ts.destroy(); } }catch(_){}
+      try{ this._scene.requestRender(); }catch(_){}
+      return true;
+    }
+    setTilesetVisible(id,on){
+      const rec=this._tilesets.get(id); if(!rec) return false;
+      rec.visible=!!on; if(rec.ts) rec.ts.show=rec.visible;
+      try{ this._scene.requestRender(); }catch(_){} return true;
+    }
+    hasTileset(id){ return this._tilesets.has(id); }
+    /* what one dataset is doing, for a caller deciding whether it is ready — null when unknown */
+    tilesetInfo(id){
+      const rec=this._tilesets.get(id); if(!rec) return null;
+      const ts=rec.ts, st=ts&&ts.statistics;
+      return { ready:!!ts, error:rec.error, visible:rec.visible,
+               loaded:ts?ts.tilesLoaded:false,
+               tilesReady:st?st.numberOfTilesWithContentReady:0, selected:st?st.selected:0,
+               triangles:st?st.numberOfTrianglesSelected:0, bytes:ts?ts.totalMemoryUsageInBytes:0 };
+    }
     getContainer(){ return this._container; }
     getCanvasContainer(){ return this._widget.canvas&&this._widget.canvas.parentNode; }
     isStyleLoaded(){ return this._loaded&&this._styleParsed; }
@@ -2654,6 +2767,7 @@ window.IntMapCesiumEngine=(function(){
       try{ if(this._timeOff) this._timeOff(); this._timeOff=null; }catch(_){}
       this._settleTok=(this._settleTok||0)+1;
       clearTimeout(this._settleTimer); clearTimeout(this._moveEndTimer);
+      try{ for(const id of [...this._tilesets.keys()]) this.removeTileset(id); }catch(_){}
       try{ if(this._dem) this._dem.destroy(); }catch(_){}
       try{ for(const rec of this._sources.values()) if(rec.vt) rec.vt.destroy(); this._sources.clear(); }catch(_){}
       try{ if(this._ro) this._ro.disconnect(); }catch(_){}
@@ -2731,6 +2845,8 @@ window.IntMapCesiumEngine=(function(){
        here changes a dart into a dot, never the count. An engine that could only draw a fraction
        would have to say false and let the caller keep its own path. */
     aircraftCloud:true,
+    /* 3D Tiles datasets: addTileset / removeTileset / setTilesetVisible — see the view's addTileset */
+    tiles3d:true,
     /* the three things #R171/#R172 had to ask MapLibre for, and which a positional
        camera on a real ellipsoid simply has */
     globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true,
@@ -2945,6 +3061,13 @@ window.IntMapCesiumEngine=(function(){
       addAircraftCloud(id,b){ const v=V(); return v&&v.addAircraftCloud?v.addAircraftCloud(id,b):false; },
       setAircraftCloud(id,o){ const v=V(); return v&&v.setAircraftCloud?v.setAircraftCloud(id,o):false; },
       removeAircraftCloud(id){ const v=V(); return v&&v.removeAircraftCloud?v.removeAircraftCloud(id):false; },
+      addTileset(id,s){ const v=V(); return v&&v.addTileset?v.addTileset(id,s):false; },
+      removeTileset(id){ const v=V(); return v&&v.removeTileset?v.removeTileset(id):false; },
+      setTilesetVisible(id,on){ const v=V(); return v&&v.setTilesetVisible?v.setTilesetVisible(id,on):false; },
+      hasTileset(id){ const v=V(); return v&&v.hasTileset?v.hasTileset(id):false; },
+      tilesetInfo(id){ const v=V(); return v&&v.tilesetInfo?v.tilesetInfo(id):null; },
+      instrumentFrames(cb){ const v=V(); return v&&v.instrumentFrames?v.instrumentFrames(cb):false; },
+      sceneStats(){ const v=V(); return v&&v.sceneStats?v.sceneStats():null; },
       hasAircraftCloud(id){ const v=V(); return v&&v.hasAircraftCloud?v.hasAircraftCloud(id):false; },
       projectMercAlt(a){ const v=V(); return v&&v.projectMercAlt?v.projectMercAlt(a):null; },
       /* scene */

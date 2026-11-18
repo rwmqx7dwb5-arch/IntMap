@@ -22,21 +22,21 @@
 - JA: 無料の時空間アトラス。いまの世界も、紀元前123,000年からのどの年の世界も、一枚の地図で。
 
 ### 短い段落 (medium)
-- EN: IntMap is a free space-time atlas of the Earth. Today’s map carries live earthquakes, rain radar and aircraft; set the clock to any date from 123,000 BC and the borders, the city names, the provinces and 169 layers follow, each with its source named. It runs in a browser with no sign-up, and one link reopens exactly what you see.
-- JA: IntMap は無料の地球の時空間アトラスです。いまの地図には地震・雨雲レーダー・航空機のライブが載り、時計を紀元前123,000年からのどの日付に合わせても、国境・都市名・地方区分・169のレイヤーがついてきて、それぞれの出典が明記されています。ブラウザで登録なしに使え、リンク一つで見ているものをそのまま開き直せます。
+- EN: IntMap is a free space-time atlas of the Earth. Today’s map carries live earthquakes, rain radar and aircraft; set the clock to any date from 123,000 BC and the borders, the city names, the provinces and 170 layers follow, each with its source named. It runs in a browser with no sign-up, and one link reopens exactly what you see.
+- JA: IntMap は無料の地球の時空間アトラスです。いまの地図には地震・雨雲レーダー・航空機のライブが載り、時計を紀元前123,000年からのどの日付に合わせても、国境・都市名・地方区分・170のレイヤーがついてきて、それぞれの出典が明記されています。ブラウザで登録なしに使え、リンク一つで見ているものをそのまま開き直せます。
 
 ### 長い段落 (long)
-EN: IntMap is a free space-time atlas of the Earth: one map for the world as it is now and as it was on any date. For today it carries live earthquakes, rain radar, aircraft, weather warnings and the news placed where it happened. Move the clock anywhere from 123,000 BC and the map moves with it: country borders day by day from CShapes 2.0 (1886–2019) and OpenHistoricalMap (1689–1885), year by year from Cliopatria (Seshat Global History Databank, from 3,400 BC) where those are silent, and from 54 historical snapshots where none of them speaks. Where the records reach, city labels take that year’s names and the provinces are drawn as they were, and both World Wars can be followed day by day. On the same map sit 169 layers — climate, hazards, population, economy, infrastructure and live feeds — and every one names its source; a layer whose source does not describe the chosen date is simply not drawn. A link reopens the same place, date and layers on any device, and the page for teachers shows how to build a lesson on that. Signed in, Atlas, IntMap’s AI assistant, answers on the map itself. IntMap has no ads and no paid plan and is kept running by donations.
+EN: IntMap is a free space-time atlas of the Earth: one map for the world as it is now and as it was on any date. For today it carries live earthquakes, rain radar, aircraft, weather warnings and the news placed where it happened. Move the clock anywhere from 123,000 BC and the map moves with it: country borders day by day from CShapes 2.0 (1886–2019) and OpenHistoricalMap (1689–1885), year by year from Cliopatria (Seshat Global History Databank, from 3,400 BC) where those are silent, and from 54 historical snapshots where none of them speaks. Where the records reach, city labels take that year’s names and the provinces are drawn as they were, and both World Wars can be followed day by day. On the same map sit 170 layers — climate, hazards, population, economy, infrastructure and live feeds — and every one names its source; a layer whose source does not describe the chosen date is simply not drawn. A link reopens the same place, date and layers on any device, and the page for teachers shows how to build a lesson on that. Signed in, Atlas, IntMap’s AI assistant, answers on the map itself. IntMap has no ads and no paid plan and is kept running by donations.
 
-JA: IntMap は無料の地球の時空間アトラスです。いまの世界と、どの日付の世界も、一枚の地図で見られます。いまの地図には、地震・雨雲レーダー・航空機・気象警報のライブと、起きた場所に置いたニュースが載ります。時計を紀元前123,000年からのどこへ動かしても、地図がついてきます。国境は、1886〜2019年の CShapes 2.0 と 1689〜1885年の OpenHistoricalMap（どちらも日単位）、それらが述べない土地に Seshat Global History Databank の Cliopatria（紀元前3,400年から・年単位）、どれも述べない土地に54枚の歴史スナップショットを重ねたものです。記録が届くところでは、都市のラベルがその年の名前になり、地方区分も当時の形で描かれ、両大戦は日ごとに追えます。同じ地図に気候・災害・人口・経済・インフラ・リアルタイムの169のレイヤーが重なり、すべてが出典を明記しています。選んだ日付を出典が述べていないレイヤーは、そもそも描きません。リンク一つで同じ場所・日付・レイヤーをどの端末でも開け、それを使った授業の組み立て方を「先生へ」のページにまとめています。ログインすれば、AI アシスタントの Atlas が地図の上で答えます。広告も有料プランもなく、寄付で運営しています。
+JA: IntMap は無料の地球の時空間アトラスです。いまの世界と、どの日付の世界も、一枚の地図で見られます。いまの地図には、地震・雨雲レーダー・航空機・気象警報のライブと、起きた場所に置いたニュースが載ります。時計を紀元前123,000年からのどこへ動かしても、地図がついてきます。国境は、1886〜2019年の CShapes 2.0 と 1689〜1885年の OpenHistoricalMap（どちらも日単位）、それらが述べない土地に Seshat Global History Databank の Cliopatria（紀元前3,400年から・年単位）、どれも述べない土地に54枚の歴史スナップショットを重ねたものです。記録が届くところでは、都市のラベルがその年の名前になり、地方区分も当時の形で描かれ、両大戦は日ごとに追えます。同じ地図に気候・災害・人口・経済・インフラ・リアルタイムの170のレイヤーが重なり、すべてが出典を明記しています。選んだ日付を出典が述べていないレイヤーは、そもそも描きません。リンク一つで同じ場所・日付・レイヤーをどの端末でも開け、それを使った授業の組み立て方を「先生へ」のページにまとめています。ログインすれば、AI アシスタントの Atlas が地図の上で答えます。広告も有料プランもなく、寄付で運営しています。
 
 ### 検索結果の一行 (meta description)
 - EN: A free space-time atlas of the Earth. See today’s world live — earthquakes, rain radar, aircraft — or set the clock to any date from 123,000 BC and the borders follow. Every source named. No sign-up.
 - JA: 無料の地球の時空間アトラス。いまの世界を地震・雨雲レーダー・航空機のライブで、時計を紀元前123,000年からのどの日付に合わせてもその日の国境で。すべての出典を明記。登録不要。
 
 ### リンクのカード (Open Graph / X)
-- EN: The world today, or in any year, on one map: live earthquakes, radar and aircraft for now, and borders for any date from 123,000 BC — with that year’s city names and provinces where the records reach. 169 layers, every source named, free and with no sign-up. Signed in, Atlas answers on the map.
-- JA: いまの世界も、どの年の世界も、一枚の地図で。いまは地震・雨雲レーダー・航空機のライブ、時計を紀元前123,000年からのどこに合わせてもその日の国境——記録が届くところでは、その年の都市名と地方区分まで。169のレイヤーすべてに出典を明記。無料・登録不要。ログインすれば、Atlas が地図の上で答えます。
+- EN: The world today, or in any year, on one map: live earthquakes, radar and aircraft for now, and borders for any date from 123,000 BC — with that year’s city names and provinces where the records reach. 170 layers, every source named, free and with no sign-up. Signed in, Atlas answers on the map.
+- JA: いまの世界も、どの年の世界も、一枚の地図で。いまは地震・雨雲レーダー・航空機のライブ、時計を紀元前123,000年からのどこに合わせてもその日の国境——記録が届くところでは、その年の都市名と地方区分まで。170のレイヤーすべてに出典を明記。無料・登録不要。ログインすれば、Atlas が地図の上で答えます。
 
 ## 3. ポジショニング
 
@@ -56,8 +56,8 @@ JA: IntMap は無料の地球の時空間アトラスです。いまの世界と
   JA: 両大戦を日ごとに：それぞれの陣営の支配地域、記録が位置を伝えている日付の戦線、進行中の作戦。
 - EN: The present, live: earthquakes, rain radar, aircraft, weather and disaster warnings, the weather forecast, and the news placed where it happened.
   JA: いまをライブで：地震、雨雲レーダー、航空機、気象・災害の警報、天気予報、起きた場所に置いたニュース。
-- EN: 169 layers — climate, hazards, population, economy, infrastructure, live feeds — each with its source and licence on the Data sources page. A layer whose source does not describe the chosen date is not drawn.
-  JA: 気候・災害・人口・経済・インフラ・リアルタイムの169のレイヤー。すべての出典とライセンスを「データの出典」ページに載せています。選んだ日付を出典が述べていないレイヤーは描きません。
+- EN: 170 layers — climate, hazards, population, economy, infrastructure, live feeds — each with its source and licence on the Data sources page. A layer whose source does not describe the chosen date is not drawn.
+  JA: 気候・災害・人口・経済・インフラ・リアルタイムの170のレイヤー。すべての出典とライセンスを「データの出典」ページに載せています。選んだ日付を出典が述べていないレイヤーは描きません。
 - EN: One link reopens the same place, date and layers on any device; the same map can be embedded on another site.
   JA: リンク一つで、同じ場所・日付・レイヤーをどの端末でも開き直せます。同じ地図を他のサイトに埋め込むこともできます。
 - EN: Atlas, IntMap’s AI assistant, answers on the map itself — switching layers, moving the camera and the clock — for signed-in users, within a daily limit per account.
@@ -73,7 +73,7 @@ JA: IntMap は無料の地球の時空間アトラスです。いまの世界と
 | 歴史スナップショット | 54 | `data/hist-eras.js` |
 | OpenHistoricalMap の範囲 | 1689–1885 | `js/time-borders.js` `HB_MIN`/`HB_MAX` |
 | CShapes 2.0 の範囲（日単位） | 1886–2019 | `js/time-borders.js` `CS_MIN`/`CS_MAX` |
-| レイヤーの数（基本表示を除く） | 169 | `js/layer-manifest.js` `dataLayers()` |
+| レイヤーの数（基本表示を除く） | 170 | `js/layer-manifest.js` `dataLayers()` |
 | 画面の言語 | 9 | `js/locales/_langs.js` |
 
 ⚠ 文中の数はすべてこの表から入る。数が変わったら `node scripts/brand.mjs --write` で全部が追従する。
