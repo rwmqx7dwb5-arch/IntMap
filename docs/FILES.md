@@ -944,6 +944,7 @@ atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラ
                                   1つの事実の2つの値**で、`whereMiss()` がその区別の唯一の持ち主（#R667）。
                                   dispatch の拒否 8 か所がこれを通る。**渡されていなければ呼び出し側の文を
                                   そのまま返す**ので、今読める拒否は 1 つも変わらない
+atlas-goal-verify.js              Atlas — 依頼を答え手とは別に読む検証（atlas_verify の 1 回の呼び出し）。ループへ渡す verify を作る。
 atlas-reply.js                    Atlas — 返答の描画（安全な markdown・コード／数式・GFM 表・出典カード）
 atlas-annotate.js                 Atlas — 返答本文の小注釈（単位換算・UTC→現地時刻・略語34語の展開）と、
                                   ホバー／タップで出る一枚。印は mdMini が返す HTML 文字列に入る

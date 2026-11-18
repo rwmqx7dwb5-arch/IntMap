@@ -461,7 +461,9 @@ test('R318 ⑧a: the client stamps a turn key, and it travels in a header', () =
      is unchanged and harder: every one of them carries the same key. */
   const turnCalls = atlas.match(/task:'atlas_turn'/g) || [];
   assert.ok(turnCalls.length >= 1, 'the turn call is gone — this check would pass on nothing');
-  assert.equal((atlas.match(/turnId:_turnKey/g) || []).length, turnCalls.length,
+  /* (atlas-goal-verifier) the independent reader of the request rides the same key (task atlas_verify), so the count is
+     AT LEAST one per turn call: a verifier call is a call under the turn, not a second turn. */
+  assert.ok((atlas.match(/turnId:_turnKey/g) || []).length >= turnCalls.length,
     'every atlas_turn call must carry the SAME turn key, or a multi-step turn bills the user once per step');
 });
 
