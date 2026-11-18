@@ -1,6 +1,6 @@
 {
   "eager": {
-    "raw": 4777288,
+    "raw": 4818387,
     "gzip": 1573348,
     "brotli": 1196724,
     "requests": 10,
@@ -9,7 +9,7 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14097755,
+    "raw": 14239602,
     "gzip": 4749042,
     "chunks": {
       "account-data": 7346,
@@ -203,7 +203,7 @@
   "dist": {
     "total": 1579111218,
     "data": 1216229484,
-    "assets": 21529767
+    "assets": 21720829
   },
   "phone": {
     "bytes": 342631,

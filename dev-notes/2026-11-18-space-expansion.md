@@ -84,8 +84,8 @@ newsjp: 宇宙の新機能——任意の地点の「今夜の空」（日の出
 
 ## 7. 起動費用の天井を上げた（判断）
 
-`node scripts/perf-budget.mjs --update`（超えた行だけを上げる・main と合わせた木で測った）。eager raw 4,711.8 → 4,772.5 kB、gzip 1,549.8 → 1,563.2 kB、
-requests 9 → 10、modules 895 → 896。
+`node scripts/perf-budget.mjs --update`（超えた行だけを上げる・main と合わせた木で測った。#1192 で main の天井が下がった後に測り直した最終値）。
+eager raw 4,665.3 → 4,705.5 kB、gzip 1,528.7 → 1,542.7 kB、brotli 1,162.6 → 1,176.1 kB。requests と modules は main 側で既に 10 本になっていて超えていない。
 - **バイトの増分の主因は `js/widget-defs-space.js`（main の中で 36.2 kB）**。ウィジェットの定義は盤が起動時に一覧を作るので起動時に読む
   （`js/widget-defs-markets.js` と同じ扱い）。残りは能力表の 3 行・レイヤー一覧の 3 行・出典表・ツール欄の 1 行など、入口そのもの。
 - **requests +1 は `geo-engine-*.js`（70 kB、`js/geo-engine.js`・camera-math・geo-command-log・click-ownership）が main から別ファイルに
