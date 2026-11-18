@@ -72,6 +72,50 @@ export const PROVIDER_DEFAULT_MODEL = Object.freeze({
   anthropic: "claude-haiku-4-5-20251001",
 });
 
+/* ══ ①b WHAT A MODEL COSTS — the price table a turn family's spend is reckoned in (atlas-delegation) ══
+   USD per 1M tokens: input (uncached), cached input, output. The ledger records tokens (usageMeter);
+   this turns them into money, which is the unit the per-turn cap (ai-proxy config.ts TURN_COST_CAP_USD)
+   is stated in — a call count says nothing about whether a call read 2k tokens or 300k.
+   Observation:
+     · gpt-6.1-sol $2 / $0.20 / $10, gpt-6.1-terra $1 / – / $5, gpt-6-luna $0.1 / – / $0.5 — OpenAI's
+       pricing as read 2026-11-16 (the comment at OPENAI_DEFAULT_MODEL); the cached-input price of
+       sol ($0.20, a tenth of input) was read 2026-11-18 from OpenAI's help-centre table for GPT-6 Sol.
+       Terra's and Luna's cached prices were not read: they are taken at the full input price, which
+       can only over-count.
+     · claude-haiku-4-5-20251001 $1 / $0.10 / $5 — Anthropic's pricing page.
+   ⚠ A MODEL NOT IN THIS TABLE IS PRICED AT THE MOST EXPENSIVE ROW (priceOf → `known:false`). That is
+   gpt-6.2-sol today: its price was not found on 2026-11-18 (only third-party tables, all for 6/6.1 Sol).
+   An unknown price can make a family reach its cap early; it can never let one spend past it.
+   Expires: whenever a model in FALLBACK_CHAIN / PROVIDER_DEFAULT_MODEL changes, or a provider changes
+   its prices — add or correct the row here, the one place every function reads. */
+export const MODEL_PRICE_USD_PER_MTOK = Object.freeze({
+  "gpt-6.1-sol": Object.freeze({ input: 2, cached: 0.2, output: 10 }),
+  "gpt-6-sol": Object.freeze({ input: 2, cached: 0.2, output: 10 }),
+  "gpt-6.1-terra": Object.freeze({ input: 1, cached: 1, output: 5 }),
+  "gpt-6-luna": Object.freeze({ input: 0.1, cached: 0.1, output: 0.5 }),
+  "claude-haiku-4-5-20251001": Object.freeze({ input: 1, cached: 0.1, output: 5 }),
+});
+const PRICE_CEILING = Object.freeze(Object.values(MODEL_PRICE_USD_PER_MTOK).reduce((m, p) => ({
+  input: Math.max(m.input, p.input), cached: Math.max(m.cached, p.cached), output: Math.max(m.output, p.output),
+}), { input: 0, cached: 0, output: 0 }));
+/* priceOf(model) → { input, cached, output, known } */
+export function priceOf(model) {
+  const p = Object.prototype.hasOwnProperty.call(MODEL_PRICE_USD_PER_MTOK, String(model || "")) ? MODEL_PRICE_USD_PER_MTOK[String(model)] : null;
+  return p ? { ...p, known: true } : { ...PRICE_CEILING, known: false };
+}
+/* costMicros(model, usage) — micro-dollars for a usageMeter total ({ input, cached_read, cache_write, output }).
+   OpenAI and Gemini report `input` as the WHOLE prompt with the cached part inside it; Anthropic reports the
+   uncached remainder (normalizeUsage's comment) — so for Anthropic the cached part is added, not subtracted. */
+export function costMicros(model, usage, provider) {
+  const u = usage || {};
+  const p = priceOf(model);
+  const cached = Math.max(0, Number(u.cached_read) || 0);
+  const whole = Math.max(0, Number(u.input) || 0);
+  const uncached = String(provider || "").toLowerCase() === "anthropic" ? whole + (Number(u.cache_write) || 0) : Math.max(0, whole - cached);
+  const out = Math.max(0, Number(u.output) || 0);
+  return Math.ceil(uncached * p.input + cached * p.cached + out * p.output);   /* USD per 1M tokens × tokens = micro-dollars */
+}
+
 /* ══ ② WHAT A PROVIDER MAY TAKE AND SEND BACK ════════════════════════════════════════════════════
    (#R113b) A hung provider must not run the isolate into the wall-clock limit (an opaque 546).
    (#R801) The ceiling on an answer: the largest this project asks for is a few hundred KB of JSON

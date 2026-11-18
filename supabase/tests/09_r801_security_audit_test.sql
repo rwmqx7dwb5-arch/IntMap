@@ -40,7 +40,7 @@ select _sel('s0', 'select public.settle_ai_turn(''33333333-3333-3333-3333-333333
 reset role;
 -- the row is read as its OWNER (ai_turns_select_own): service_role holds no table grant on the ledger,
 -- only the RPCs do, and that is the point of the ledger.
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('row1','select (succeeded::text) from public.ai_turns where user_id=''33333333-3333-3333-3333-333333333333'' and turn_key=''turn-S''');     -- true (row kept)
 reset role;

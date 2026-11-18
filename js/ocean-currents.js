@@ -123,6 +123,9 @@ export function oceanCurrents(HOST){
     const ALL=[FLOWC,FLOW,GLOW,CASE,LINE,HEADC,HEAD,LBL];
 
     let on=false, doc=null, state='idle', err=null, picked=null;
+    /* (layer-click-polish) 「海流名一覧がでかすぎるから折り畳み式に」 — the list is a disclosure, closed until the
+       reader opens it; the panel re-renders on every field/month change, so the open state is kept here, not in the DOM. */
+    let listOpen=false;
     /* (#R222) the field, the months, and which plane is being shown. `month` is 0 for the
        climatological mean and 1…12 for a calendar month. */
     let field=null, fieldState='idle', months=null, monthState='idle', month=0, lastBox=null, lastStride=0;
@@ -468,7 +471,8 @@ export function oceanCurrents(HOST){
           +'<b style="white-space:nowrap;">'+_speedOf(c).toFixed(2)+' m/s</b></div>').join('');
       const b=panel.open('<div style="font-size:11.5px;color:var(--text-main);margin-bottom:4px;">'+(state==='error'?icon('warning')+' ':'')+esc(head)+'</div>'
         +_monthBar()
-        +'<div style="max-height:34vh;overflow:auto;">'+list+'</div>'
+        +((doc&&(doc.named||[]).length)?('<details class="im-more oc-list"'+(listOpen?' open':'')+'><summary>'+esc(L('Named currents','海流名の一覧'))+' ('+(doc.named||[]).length+')</summary>'
+          +'<div style="max-height:34vh;overflow:auto;margin-top:3px;">'+list+'</div></details>'):'')
         +'<div style="margin-top:6px;">'
         /* (#R221) the legend says what the colour now MEANS — a measured temperature contrast — and
            not what it used to be derived from (the sign of the flow's poleward component). */
@@ -511,6 +515,7 @@ export function oceanCurrents(HOST){
              'Источники: NOAA CoastWatch (геострофические поверхностные течения по мультимиссионной альтиметрии, 0.25°), NOAA NCEI (напряжение ветра → экмановское течение по Ralph & Niiler, 1999), NOAA OISST v2.1 (температура поверхности). Общественное достояние. Фиксированный набор данных в составе приложения: климатическое среднее за весь период на сетке 0.25° самого источника. Тёплое/холодное/зональное ИЗМЕРЕНО — температура течения против зонального среднего на той же широте. Среднее поле не следует за часами.',
              'Fuentes: NOAA CoastWatch (corrientes geostróficas superficiales por altimetría multimisión, 0.25°), NOAA NCEI (tensión del viento → corriente de Ekman según Ralph y Niiler, 1999) y NOAA OISST v2.1 (temperatura superficial). Dominio público. Conjunto fijo incluido en la app: una media climatológica de todo el registro en la propia malla de 0.25°. Cálida/fría/zonal se MIDE — la temperatura de la corriente frente a la media zonal de su misma latitud. Una media no sigue al reloj.'))
         +'</div></details>');
+      if(b){ const d=b.querySelector('details.oc-list'); if(d) d.addEventListener('toggle',()=>{ listOpen=d.open; }); }
       if(b) b.querySelectorAll('.oc-row').forEach(r=>{ r.onclick=()=>flyTo(r.getAttribute('data-en')); });
       if(b) b.querySelectorAll('.oc-m').forEach(r=>{ r.onclick=()=>setMonth(+r.getAttribute('data-m')||0); });
     }

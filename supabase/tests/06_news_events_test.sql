@@ -188,7 +188,7 @@ select _dml('a_ins_decision', $q$ insert into public.news_cluster_decisions (art
 reset role;
 
 -- ── ADMIN — the only human who may read why a cluster decision was made ─────
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('admin_decisions', $q$ select count(*) from public.news_cluster_decisions where id = 900301 $q$);
 reset role;

@@ -685,7 +685,9 @@ test('R423 ④ every reader of the sovereignty flag is found by sweeping js/, an
   /* (place-dossier) NINE. `js/place-dossier.js` reports `recognised` for the country a place lies in,
      and it reads the same flag rather than deciding sovereignty a second way — a reader that appeared,
      and this watchman noticed it, which is what it is for. */
-  assert.equal(total, 9, 'readers of the sovereignty flag across js/ — found: ' + readers.join(', '));
+  /* (exploration-flows) TEN. js/showcase-gallery.js «Compare countries in one year» lists the countries whose name point is in
+     view, and leaves out what this flag marks as not a country (Antarctica, Bir Tawil …) by reading it — not by a second rule. */
+  assert.equal(total, 10, 'readers of the sovereignty flag across js/ — found: ' + readers.join(', '));
   assert.ok(readers.indexOf('js/atlas-metrics.js:1') >= 0, 'including the one predicate every Atlas ranking asks');
   assert.ok(readers.indexOf('js/atlas-query.js:1') >= 0, 'including the one the frozen list could not see');
 

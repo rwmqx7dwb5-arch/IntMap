@@ -117,7 +117,7 @@ export function communityBoard(HOST){
   }
   function postCardHTML(post){
     const jp=HOST.lang==='jp', mine=HOST.user&&post.userId===HOST.user.id;
-    const canDel = HOST.user && (mine || HOST.user.isAdmin);
+    const canDel = HOST.user && mine;
     const cat=commCatById(post.category||'general');
     const imgHtml=post.img?`<img class="comm-post-img" src="${IntMapSafe.html(IntMapSafe.url(post.img,{allowData:true}))}" data-id="${post.id}" alt="" role="button" tabindex="0" aria-label="${IntMapSafe.html(IntMapLang.t(HOST.lang,'View image','画像を表示'))}">`:'';   /* (#R138 SEC) post.img is user-controlled (direct Supabase insert) → scheme-validate + quote-escape (stored XSS, auto-fires on feed render) */
     const edited=post.editedTs?` · <span class="comm-edited">${HOST.t('commEdited')}</span>`:'';
@@ -162,7 +162,7 @@ export function communityBoard(HOST){
     }).join('');
   }
   function commentHTML(c,isReply){
-    const mine=HOST.user&&c.userId===HOST.user.id, canDel=HOST.user&&(mine||HOST.user.isAdmin);
+    const mine=HOST.user&&c.userId===HOST.user.id, canDel=HOST.user&&mine;
     const edited=c.editedTs?` · ${HOST.t('commEdited')}`:'';
     const cv=HOST.commCaps&&HOST.commCaps.commentVotes, th=HOST.commCaps&&HOST.commCaps.threads;
     return `<div class="comm-comment ${isReply?'reply':''}" id="comm-c-${c.id}">

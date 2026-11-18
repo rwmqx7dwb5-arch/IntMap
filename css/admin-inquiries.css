@@ -36,7 +36,12 @@ label.f{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:var
 .msg{ white-space:pre-wrap; overflow-wrap:anywhere; margin:10px 0; font-size:14px; line-height:1.5; }
 .empty{ color:var(--muted); font-size:14px; }
 .auth{ max-width:360px; margin:60px auto; display:grid; gap:10px; }
-#aq-auth-msg{ font-size:13px; color:var(--muted); min-height:18px; }
+/* (admin-origin) the auth view js/admin-auth.js drives, written by scripts/org-pages.mjs adminAuthView for both consoles */
+.auth-step{ display:grid; gap:10px; }
+.auth-lead{ margin:0; font-size:13px; line-height:1.5; color:var(--muted); }
+.auth-qr{ justify-self:center; width:180px; height:180px; padding:8px; border-radius:12px; background:#fff; }
+.auth-secret{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; color:var(--text); overflow-wrap:anywhere; user-select:all; }
+.auth-msg{ font-size:13px; color:var(--muted); min-height:18px; }
 .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1c1c1e; color:#fff; padding:11px 18px; border-radius:11px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .25s; max-width:90vw; }
 .toast.show{ opacity:1; }
 .sup-form{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; margin-top:10px; }

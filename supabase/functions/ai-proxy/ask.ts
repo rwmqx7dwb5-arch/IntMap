@@ -15,7 +15,7 @@ import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js"
 /* (ai-one-ledger) The plan table, the account and the turn ledger's doors (written to be shared by
    every caller that charges the same allowance), and what a provider answer cost (one shape for three providers,
    plus the Anthropic prompt-cache breakpoints). */
-import { accountFor, openTurn, refundTurn, settleTurn, recordUsage, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
+import { accountFor, openTurn, openChildTurn, reserveSpend, settleSpend, refundTurn, settleTurn, recordUsage, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
 import { usageMeter } from "../_shared/ai-usage.js";
 /* (atlas-live-stream) The provider's server-sent events, read twice: as previews for the reader while
    they arrive, and folded back into the body the parsers below already read. */
@@ -23,7 +23,7 @@ import { previewSink, sseEncode, HEARTBEAT_MS } from "../_shared/ai-stream.js";
 /* (edge-spend-and-models) The model table, the provider-answer ceilings and the one door to a paid
    provider are shared with every other function that holds a provider key — see that file's header
    for what was found when each of them lived here and in four other places. */
-import { OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL } from "../_shared/ai-provider.js";
+import { OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, costMicros, priceOf } from "../_shared/ai-provider.js";
 /* (atlas-quality-lab) the independent grader's shape, budget and provider rule — shared with
    scripts/atlas-eval/grade.mjs, which reads the grade back against the same criteria */
 import { graderProviderFor } from "../_shared/atlas-grade-schema.js";
@@ -31,6 +31,7 @@ import {
   cors, json, GLOSS_PLAN_LIMITS, GLOSS_LANE, MAX_GLOSS_PROMPT, TURN_MAX_CALLS, TURN_TTL_S, MAX_TURN_KEY, REPLAY_KEY_OK,
   CEILING, NEWCOMER_CEILING, PROVIDERS, MODEL_ID_OK, MAX_PROMPT, MAX_SYSTEM, MAX_IMAGES, MAX_BODY_BYTES, MAX_IMAGES_BYTES,
   MAX_FILES, MAX_FILE_TEXT, MAX_FILES_TEXT, MAX_DOCS, MAX_DOC_BYTES, MAX_DOCS_BYTES, DOC_MIME,
+  delegationPolicy, turnCostCapMicros,
 } from "./config.ts";
 import { normalizeTurn, cacheBasis, sha256Hex } from "./turn.ts";
 import type { TurnReq, TurnItem } from "./turn.ts";
@@ -108,7 +109,23 @@ export async function ask(req: Request): Promise<Response> {
      unbounded body cannot be parsed by an over-quota caller (the comment above MAX_BODY_BYTES).
      It is a client-supplied string and is treated as one — see the migration's header for the
      three things that make it safe to accept. */
-  const turnId = String(req.headers.get("x-intmap-turn") || "").slice(0, MAX_TURN_KEY);
+  let turnId = String(req.headers.get("x-intmap-turn") || "").slice(0, MAX_TURN_KEY);
+  /* ══ (atlas-delegation) A WORKER'S CALL names the turn that opened it (js/atlas-delegate.js). Read here, with the
+     turn key, because which ledger row it is charged to is decided before the body is read. The policy is
+     configuration (config.ts delegationPolicy): "off" is the kill switch and refuses every worker call — the
+     developer's included, since a switch that skips one account is not a switch. */
+  const parentTurn = String(req.headers.get("x-intmap-parent-turn") || "").slice(0, MAX_TURN_KEY);
+  const delegation = delegationPolicy((k: string) => Deno.env.get(k) || "");
+  if (parentTurn) {
+    if (delegation.mode === "off") return json({ error: "delegation_off", message: "Delegation to worker models is switched off on this server.", delegation }, 409);
+    if (!turnId || turnId === parentTurn) return json({ error: "delegation_key", message: "A worker call needs its own turn key." }, 400);
+  }
+  /* "shared": the worker's calls ARE the parent's — they carry the parent's key from here on, so consume_ai_turn
+     counts them against the parent's TURN_MAX_CALLS and the parent's settle/refund closes them. */
+  if (parentTurn && delegation.mode === "shared") turnId = parentTurn;
+  const childTurn = !!parentTurn && delegation.mode === "independent";
+  /* the turn family a cost is reckoned against: the reader's turn, whichever key this call carries */
+  const rootTurn = parentTurn || turnId;
   /* (#R491) ...and the LANE, read here for the same reason: the body is not available yet. */
   const lane = String(req.headers.get("x-intmap-lane") || "").toLowerCase().slice(0, 16);
   const isGloss = lane === GLOSS_LANE;
@@ -152,8 +169,16 @@ export async function ask(req: Request): Promise<Response> {
     }
   } else if (!isDev) try {
     /* (ai-one-ledger) through the shared door (_shared/ai-ledger.js openTurn → consume_ai_turn), with
-       THIS function's turn bounds — the one door every charge goes through. */
-    const row = await openTurn(db, account, { turn: turnId, maxCalls: TURN_MAX_CALLS, ttlSeconds: TURN_TTL_S });
+       THIS function's turn bounds — the one door every charge goes through.
+       (atlas-delegation) …or, for an independent worker, the child door: its own allowance under the parent,
+       never a charge (consume_ai_child_turn). Its refusals name themselves as 409s — a 429 is read by the
+       page as the reader's quota, and none of these is about the reader's day. */
+    const row = childTurn
+      ? await openChildTurn(db, account, { parent: parentTurn, turn: turnId, maxChildren: delegation.maxChildren, maxCalls: delegation.childMaxCalls, ttlSeconds: TURN_TTL_S })
+      : await openTurn(db, account, { turn: turnId, maxCalls: TURN_MAX_CALLS, ttlSeconds: TURN_TTL_S });
+    if (childTurn && !row.allowed) {
+      return json({ error: row.reason || "delegation_refused", calls: row.calls, children: row.children, delegation }, 409);
+    }
     used = row.used;
     charged = row.charged;
     turnGen = row.gen;
@@ -217,7 +242,17 @@ export async function ask(req: Request): Promise<Response> {
   const meter: Meter & ReturnType<typeof usageMeter> = Object.assign(usageMeter(), {
     ceiling: cohortOf(user.created_at, Date.now()) === NEWCOMER ? NEWCOMER_CEILING : CEILING,
   });
-  const record = () => recordUsage(db, user.id, isGloss ? "" : turnId, meter.total());
+  /* (atlas-delegation) …and the money: the reservation this request holds against its turn family (made below,
+     once the model is known) is replaced by what the meter read. Once — record() runs on both paths. */
+  let spendHold: { micros: number; model: string; provider: string } | null = null;
+  const record = async () => {
+    await recordUsage(db, user.id, isGloss ? "" : turnId, meter.total());
+    if (spendHold) {
+      const h = spendHold; spendHold = null;
+      const st = await settleSpend(db, account, rootTurn, h.micros, costMicros(h.model, meter.total(), h.provider));
+      if (st !== "settled") try { console.error("ai-proxy spend settle_" + st); } catch (_) { /* ignore */ }
+    }
+  };
 
   // Parse the request body.
   // (#R113) `task` + `webMode` let the proxy configure output budget, JSON mode and
@@ -296,6 +331,13 @@ export async function ask(req: Request): Promise<Response> {
     return json({ error: "bad_task", message: "Unknown task." }, 400);
   }
   const spec = TASKS.get(task)!;   /* (atlas-core-split) everything this task decides — tasks/<task>.ts */
+  /* (atlas-delegation) A worker's call and the worker task are one thing, in both directions: the parent header
+     buys free calls under a reader's turn, so it carries ONLY the worker task (tasks/atlas_delegate.ts) — never an
+     atlas_turn or a brief bought out of a child allowance — and the worker task is only ever a worker's call. */
+  if (!!parentTurn !== !!spec.delegate) {
+    await refund();
+    return json({ error: "bad_task", message: parentTurn ? "A worker call carries only the delegated task." : "The delegated task is only run under a parent turn." }, 400);
+  }
   /* == (#R491) THE LANE WAS A CLAIM ABOUT A BODY NOBODY HAD READ. HERE IS THE BODY. ============
      Both directions are wrong and both are refused: "lane: gloss" carrying an expensive task would
      buy `atlas_turn` out of the cheap counter, and `task: "gloss"` with no lane would charge a
@@ -456,6 +498,37 @@ export async function ask(req: Request): Promise<Response> {
      routed together, which is what makes the cache hit. */
   const cacheKey = turnReq ? "atlas_turn:" + await sha256Hex(cacheBasis(system, turnReq.tools)) : "";   /* (atlas-turn-engine) the fixed functions only — see cacheBasis */
 
+  /* ══ (atlas-delegation) RESERVE BEFORE, SETTLE AFTER — the turn family's spend (config.ts TURN_COST_CAP_USD) ══
+     The estimate is deliberately high so a family cannot pass its cap between a reservation and its settlement:
+     every character sent counted as a token at the uncached price (a token is ~4 characters of English and fewer
+     of Japanese, so this over-counts), each image as 1,600 tokens (the largest tile count the providers bill a
+     `detail:auto` image at), and output as twice the visible allowance (the reasoning tokens the provider adds on
+     top are billed as output). record() replaces it with what was billed. The gloss lane has no turn; the
+     developer is exempt from the ledger, as from every other row of it.
+     ⚠ A LEDGER THAT CANNOT BE CONSULTED DOES NOT STOP THE REQUEST HERE — unlike the turn door above. That door
+     decides whether the reader may ask at all; this one bounds ONE request's spend, beside two fences that already
+     fail closed on the same invoice (the project-day CEILING in the provider door, and the child call allowance).
+     Failing closed here would have turned every Atlas question into a 500 wherever this ledger is absent — a
+     function deployed before its migration, or briefly unreachable — for a fence whose job is the rare expensive
+     turn. The miss is logged and said in meta.spend, and the request runs without a reservation. */
+  let spendState = "";
+  if (!isDev && !isGloss && rootTurn) {
+    const pr = priceOf(model);
+    const chars = prompt.length + system.length + files.reduce((n, f) => n + f.text.length, 0)
+      + (turnReq ? JSON.stringify(turnReq.input || []).length + JSON.stringify(turnReq.tools || []).length : 0);
+    const estimate = Math.ceil((chars + imgs.length * 1600) * pr.input + 2 * maxTokens * pr.output);
+    const capMicros = turnCostCapMicros((k: string) => Deno.env.get(k) || "");
+    let held: { allowed: boolean; reserved: number; spent: number } | null = null;
+    try { held = await reserveSpend(db, account, { root: rootTurn, micros: estimate, capMicros, ttlSeconds: TURN_TTL_S }); }
+    catch (_) { held = null; spendState = "unavailable"; try { console.error("ai-proxy spend reserve_unavailable"); } catch (_e) { /* ignore */ } }
+    if (held && !held.allowed) {
+      await refund();
+      return json({ error: "turn_cost", message: "This request has reached the most it may spend with the AI provider.",
+        spend: { capUsd: capMicros / 1e6, spentUsd: held.spent / 1e6, reservedUsd: held.reserved / 1e6, estimateUsd: estimate / 1e6, priceKnown: pr.known } }, 409);
+    }
+    if (held) { spendHold = { micros: estimate, model, provider }; spendState = "reserved"; }
+  }
+
   /* ══ (atlas-live-stream) THE ANSWER, AS A VALUE — sent as JSON, or as the last event of a stream ═══════
      Everything from the provider call to the refund was `try { … return json(…) } catch { … return json(…) }`.
      It is the same code returning { status, body } instead, so the plain request and the streamed one
@@ -562,7 +635,11 @@ export async function ask(req: Request): Promise<Response> {
         /* (atlas-native-tools) which protocol answered (js/ai-core.js refuses an Atlas turn answered without 2), and what
            this function's own fence cut from the request — null when nothing was */
         protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined,
-        streamed: sink ? true : undefined },   /* (atlas-live-stream) this body is the `done` event of a stream */
+        streamed: sink ? true : undefined,   /* (atlas-live-stream) this body is the `done` event of a stream */
+        /* (atlas-delegation) what THIS request cost at the asked model's price (_shared/ai-provider.js costMicros) — the
+           figure js/atlas-delegate.js records per task — and, for a worker's call, the policy that admitted it */
+        costUsd: costMicros(model, meter.total(), provider) / 1e6, priceKnown: priceOf(model).known, spend: spendState || undefined,
+        ...(parentTurn ? { delegation: { mode: delegation.mode, parent: parentTurn } } : {}) },
       /* (atlas-native-tools) the provider's items — reasoning to replay, what it wrote, the calls with their ids */
       ...(turnReq ? { output: Array.isArray(out.output) ? out.output : [] } : {}),
       // (#R131) Hosted web-search citation URLs (OpenAI url_citation annotations). The client shows

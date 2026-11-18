@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(118);  -- (community-maps) +8: collection_copies, community_map_reports, community_map_holds and community_map_subjects join both lists   -- (wave4-education) +4: class_sets and class_set_answers join both lists   -- (watch-account-product) +2: quest_daily_results joins both lists   -- (monitors-retire) −16: the five area-monitor tables leave both lists (−10) and their six key/function assertions go (−6)   -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
+select plan(120);  -- (atlas-delegation) +2: ai_turn_spend joins both lists   -- (community-maps) +8: collection_copies, community_map_reports, community_map_holds and community_map_subjects join both lists   -- (wave4-education) +4: class_sets and class_set_answers join both lists   -- (watch-account-product) +2: quest_daily_results joins both lists   -- (monitors-retire) −16: the five area-monitor tables leave both lists (−10) and their six key/function assertions go (−6)   -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
                    -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
                    -- (atlas-semantic-search) +2: atlas_capability_vectors joins both lists   -- (client-error-log) +2: client_errors joins both lists
                    -- (#R801) +2 tables in both lists, +2 has_function   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
@@ -31,6 +31,8 @@ from unnest(array[
   -- (#R318) the AI TURN ledger: one row per (account, turn). The first call of a turn charges
   -- ai_usage and the rest are free, so a single question no longer costs three uses.
   'ai_turns',
+  -- (atlas-delegation) what one turn family (a reader turn and its workers) reserved and spent, in micro-dollars
+  'ai_turn_spend',
   -- (#R491) the TERM-GLOSS lane's counter. Its own table rather than a column on ai_usage, so the
   -- two budgets cannot block each other in either direction (Architecture.md §5).
   'ai_gloss_usage','relay_rate_buckets',
@@ -103,7 +105,7 @@ from unnest(array[
   -- class_set_submit(code); read and deleted only by the set's owner) (supabase/tests/39_class_quest_test.sql).
   'class_sets',
   'class_set_answers'
-]) as t;                                                    -- 51 assertions
+]) as t;                                                    -- 52 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -114,7 +116,7 @@ from unnest(array[
   'profiles','ai_usage','user_prefs','favorites','donations','feedback',
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
-  'current_news','ai_turns','ai_gloss_usage','relay_rate_buckets',
+  'current_news','ai_turns','ai_turn_spend','ai_gloss_usage','relay_rate_buckets',
   'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
   -- (#R351) …and the ingest telemetry beside them (docs/NEWS-EVENTS.md §13). Operational
   -- rather than public: admin reads it, service_role writes it.
@@ -138,7 +140,7 @@ from unnest(array[
   'collection_copies','community_map_reports',               -- (community-maps) see the note above
   'community_map_holds','community_map_subjects',
   'class_sets','class_set_answers'                           -- (wave4-education) see the note above
-]) as t;                                                    -- 51 assertions
+]) as t;                                                    -- 52 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
 --   a button that calls a function which is not there fails at the moment an operator needs it.

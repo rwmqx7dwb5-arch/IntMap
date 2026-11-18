@@ -67,6 +67,7 @@ const EXPECTED_CALLS = {
      every 「AI調査」 is the brief above (js/atlas-cap-research.js) and «ask about here» was already Atlas's askHere. */
   'js/app-body.js': 2,               /* satellite-image comparison, area news summary */
   'js/atlas-geo-resolve.js': 2,      /* place verification, region resolution */
+  'js/atlas-delegate.js': 1,        /* (atlas-delegation) the worker: Atlas at work on one piece of a request, internal mode */
   'js/atlas-gloss.js': 1,            /* (#R491) the term gloss: one prompt, whose own task role is the glossary */
   'js/news-ui.js': 1,                /* article translation. (#R416) the publisher-HQ prompt went with the Subject/Publisher pin mode; (#R430) the headline-subject one went with aiGeocodeNews — CONSTITUTION §5 forbids a user-facing AI-locate button, so the browser no longer prompts for a headline's location at all */
   'supabase/functions/refresh-news/index.ts': 1,

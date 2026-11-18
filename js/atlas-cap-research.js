@@ -29,6 +29,7 @@ const W = worldObjects;   /* the one session index (js/atlas-world-objects.js) *
 import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
+import { makeDelegation, makeWorkerExecutor } from './atlas-delegate.js';   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
 
 /* ══ (atlas-completion) WHAT A RESEARCH ANSWER RESTS ON, SAID FROM WHAT HAPPENED ═══════════════════════════════
    An answer to a time-sensitive question used to carry ONE fixed caveat whenever `webUsed` was false —
@@ -959,6 +960,45 @@ export default [
       }
       return R(true, title + run.html + (exHtml ? '<div style="margin-top:6px;">' + exHtml + '</div>' : '') + fields,
         { meta: Object.assign({}, run.meta, { scenario: rep, produced: ['explanation'], userGoalSatisfied: true }) });
+    },
+  },
+  {
+    /* ══ (atlas-delegation) HAND PIECES OF THE REQUEST TO WORKERS, AND GET THEIR FINDINGS BACK ═══════════════
+       Atlas decides whether a request has pieces worth researching apart, how many, and what each returns; the
+       workers run at once (js/atlas-delegate.js), each in its own context, and only their findings come back.
+       They read and search; they never touch the map — what is drawn, Atlas draws, from what came back.
+       How the workers are paid for and whether they may run at all is the server's (ai-proxy config.ts
+       delegationPolicy): a refusal comes back as the task's `refused` state with its code, not as a failure. */
+    row: ['research.delegate',          'delegate',       'delegateResearch,parallelResearch',                           'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
+    ui: { none: '2026-11-18' },
+    phrases: () => ['並行して調べる', '手分けして調査', '分担して調べる', '複数の調査', '同時に調査'].concat(['in parallel', 'split the research', 'research separately', 'several pieces', 'delegate']),
+    doc: [
+      { in: 'research.analyze', at: 30, text: 'DELEGATE RESEARCH TO WORKERS (parallel, each in its own context): {"type":"delegate","tasks":[{"id"?:str,"goal":str,"returns"?:str,"inputs"?:[{"from":task id}]}]} — 並行して調べる・手分けして調査 — hands independent pieces of a large request to worker models that run AT THE SAME TIME, search the web, and return structured findings (summary, claims with places/coordinates/dates/source URLs, and what they could not establish). Use it when a request has several pieces that can be researched apart (e.g. crude oil from the Gulf, iron ore and coal from Australia, and LNG routes to Japan) — not for a single lookup, which you answer faster yourself. A task that needs another task\'s result names it in "inputs" and starts when that one ends. The workers do not draw anything: you integrate their findings and draw the map from them. Each task comes back with a state (done / partial / failed / refused / unobservable / cancelled) and its cost; a refused task carries the server\'s reason (e.g. delegation_children = the server admits fewer workers; delegation_off = delegation is switched off).\n' },
+    ],
+    schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', required: ['goal'], properties: { id: str(), goal: str(), returns: str(), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1) } }),
+    async run(a, dctx, K) {
+      const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
+      const tasks = Array.isArray(a && a.tasks) ? a.tasks : [];
+      if (!tasks.length) return R(false, warn(L('No task was given to delegate.', '委譲する仕事が指定されていません。')), { meta: { status: 'failed', code: 'no_tasks' } });
+      const parent = String(K._curTurnKey || '');
+      if (!parent) return R(false, warn(L('Delegation needs a running Atlas turn.', '委譲は Atlas のターンの中でだけ行えます。')), { meta: { status: 'failed', code: 'no_turn' } });
+      const signal = (typeof K.turnSignal === 'function') ? K.turnSignal() : undefined;
+      const D = makeDelegation({ parent, executor: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal }) });
+      const results = await D.run(tasks);
+      const done = results.filter((r) => r.state === 'done' || r.state === 'partial').length;
+      const cost = results.reduce((m, r) => m + r.costUsd, 0);
+      const stateWord = (st) => ({ done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), unobservable: L('no answer came back', '応答なし'), cancelled: L('cancelled', '取消') })[st] || st;
+      const rows = results.map((r, i) => '<li style="margin:2px 0;"><b>' + esc(String((tasks[i] && tasks[i].goal) || r.id).slice(0, 120)) + '</b> — ' + esc(stateWord(r.state))
+        + (r.code ? ' (' + esc(r.code) + ')' : '') + (r.sources.length ? ' · ' + esc(L(r.sources.length + ' source(s)', '出典 ' + r.sources.length + ' 件')) : '') + '</li>').join('');
+      const html = '<div class="atl-deleg" style="font-size:12px;line-height:1.5;"><div style="font-weight:600;margin-bottom:2px;">'
+        + esc(L('Researched in parallel', '並行して調査')) + ' — ' + esc(L(done + ' of ' + results.length + ' returned findings', results.length + ' 件中 ' + done + ' 件が結果を返しました')) + '</div><ul style="margin:2px 0 0 16px;padding:0;">' + rows + '</ul></div>';
+      return R(done > 0, html, { meta: {
+        status: done === results.length ? 'completed' : (done ? 'partial' : 'failed'),
+        code: done === results.length ? undefined : (done ? 'some_tasks_ended_otherwise' : (results[0] && results[0].code) || 'no_findings'),
+        produced: done ? ['explanation'] : undefined,
+        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, reused: r.reused || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
+        delegatedCostUsd: cost,
+      } });
     },
   },
 ];

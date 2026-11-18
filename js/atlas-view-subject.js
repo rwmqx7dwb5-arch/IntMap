@@ -204,6 +204,33 @@ export function makeAtlasViewSubject(CTX) {
         }
       }
     } catch (_) {}
+    /* ⚠ (exploration-flows) ON THE GLOBE THE RENDERER'S BOUNDS ARE THE BOX AROUND THE WHOLE VISIBLE HEMISPHERE'S EDGE, NOT WHAT
+       THE READER SEES. Measured 2026-11-18 (globe, centre 10°E 50°N, zoom 3.6): getBounds() said 79°W–99°E, 7°N–67°N, and
+       «the countries in view» came back Russia, Mali and China over a view of central Europe. The screen itself is the
+       measurement: a 5×5 grid of the canvas's pixels taken back to the ground (`coords.unproject`), the ones that miss the
+       Earth dropped (`coords.onSurface` — the renderer's own ray test), and the box around what is left. It replaces the
+       bounds only when it is narrower; a flat map at the same view gets the same box either way. */
+    try {
+      const cv = GE().render && GE().render.canvas ? GE().render.canvas() : null;
+      const W = cv ? (cv.clientWidth || cv.width) : 0, Hh = cv ? (cv.clientHeight || cv.height) : 0;
+      const C = GE().coords;
+      if (W > 0 && Hh > 0 && C && typeof C.unproject === 'function') {
+        const lons = [], lats = [];
+        for (let i = 0; i <= 4; i++) for (let j = 0; j <= 4; j++) {
+          const pt = [W * i / 4, Hh * j / 4];
+          let on = null; try { on = typeof C.onSurface === 'function' ? C.onSurface(pt) : null; } catch (_) { on = null; }
+          if (on === false) continue;
+          let ll = null; try { ll = C.unproject(pt); } catch (_) { ll = null; }
+          if (ll && isFinite(ll.lng) && isFinite(ll.lat)) { lons.push(+ll.lng); lats.push(+ll.lat); }
+        }
+        if (lons.length >= 4) {
+          const sw = Math.min(...lons), se = Math.max(...lons), ss = Math.min(...lats), sn = Math.max(...lats);
+          if (se - sw > 0 && se - sw < 180 && sn - ss > 0 && (!viaBounds || (se - sw) * (sn - ss) < (e - w) * (n - s))) {
+            w = sw; e = se; s = ss; n = sn; viaBounds = true;
+          }
+        }
+      }
+    } catch (_) {}
     if (!viaBounds || !(e - w > 0) || (e - w) >= 180 || !(n - s > 0)) {
       /* a square-ish window derived from the zoom — the width of the map at this scale */
       const halfDeg = Math.min(80, 180 / Math.pow(2, Math.max(0, z)));

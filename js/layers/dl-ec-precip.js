@@ -5,4 +5,5 @@ export default {
   order: 50,
   key: 'ec-precip',
   share: true,
+  noAir: true,
 };

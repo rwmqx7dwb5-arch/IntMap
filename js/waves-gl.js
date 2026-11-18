@@ -610,6 +610,101 @@
     '}'
   ].join('\n');
 
+  /* ══ (layer-click-polish) THE FIELD IS PINNED TO THE MAP, NOT TO THE GLASS ══════════════════════════
+     「Waves、パンとズームしたときにそれと同時に動くのがきもい。Windy のサイトと同じ挙動にしろ」 — and asked
+     which behaviour, the reader chose 「粒子も地図に貼り付いて動く」. The particles and their trail live in
+     SCREEN coordinates (that is Windy's design and the integrator above depends on it), so when the camera
+     moved, every particle and every trail pixel stayed where it was on the glass while the sea slid away under
+     it: the swell appeared to be dragged along with the finger. The fix keeps the screen-space design and
+     adds what it lacked — when the view changes between two frames, both the particle state and the trail
+     buffer are carried from the OLD view to the NEW one through the places they stand on:
+         screen(old) → lon/lat (old inverse projection) → screen(new) (new forward projection)
+     ⚠ It is the SAME mapping for both buffers, written once (VIEW_MAP_GLSL), with the direction set by which
+     view is bound as A (from) and which as B (to): particles go old→new, and each new trail pixel asks where
+     it WAS (new→old) and samples there. Plane and globe both, and a frame that crosses between them, because
+     the bridge is a place, not a matrix. Nothing is approximated: the globe branch is the same ray/sphere
+     intersection the integrator uses. */
+  var VIEW_MAP_GLSL = [
+    'uniform float uGlobeA; uniform vec4 uViewA; uniform mat4 uInvA;',
+    'uniform float uGlobeB; uniform vec4 uViewB; uniform mat4 uProjB; uniform mat4 uInvB;',
+    'float mercY(float lat){ return log(tan(radians(45.0 + clamp(lat, -85.0, 85.0) * 0.5))); }',
+    'bool rayHit(vec2 sp, mat4 inv, out vec3 sph){',
+    '  vec2 ndc = vec2(sp.x * 2.0 - 1.0, 1.0 - sp.y * 2.0);',
+    '  vec4 pn = inv * vec4(ndc, -1.0, 1.0); vec4 pf = inv * vec4(ndc, 1.0, 1.0);',
+    '  vec3 o = pn.xyz / pn.w; vec3 d = normalize(pf.xyz / pf.w - o);',
+    '  float b = dot(o, d), c = dot(o, o) - 1.0, disc = b * b - c;',
+    '  if (disc < 0.0) return false;',
+    '  float t = -b - sqrt(disc); if (t < 0.0) t = -b + sqrt(disc); if (t < 0.0) return false;',
+    '  sph = o + d * t; return true;',
+    '}',
+    /* screen position in view A → the place (lon/lat in degrees, and the unit-sphere point) */
+    'bool fromA(vec2 sp, out vec2 ll, out vec3 sph){',
+    '  if (uGlobeA > 0.5) {',
+    '    if (!rayHit(sp, uInvA, sph)) return false;',
+    '    ll = vec2(degrees(atan(sph.x, sph.z)), degrees(asin(clamp(sph.y, -1.0, 1.0))));',
+    '  } else {',
+    '    float lon = mix(uViewA.x, uViewA.z, sp.x);',
+    '    float lat = degrees(2.0 * atan(exp(mix(mercY(uViewA.w), mercY(uViewA.y), sp.y))) - 1.5707963267948966);',
+    '    ll = vec2(lon, lat);',
+    '    float rl = radians(lon), rp = radians(lat);',
+    '    sph = vec3(cos(rp) * sin(rl), sin(rp), cos(rp) * cos(rl));',   /* the inverse of fromA's globe branch */
+    '  }',
+    '  return true;',
+    '}',
+    /* the place → screen position in view B; false when B cannot see it (behind the planet) */
+    'bool toB(vec2 ll, vec3 sph, out vec2 sp){',
+    '  if (uGlobeB > 0.5) {',
+    '    vec4 c = uProjB * vec4(sph, 1.0);',
+    '    if (c.w <= 0.0) return false;',
+    '    vec2 ndc = c.xy / c.w;',
+    '    sp = vec2(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5);',
+    /* the far hemisphere projects too — it is visible only if the eye ray through sp meets the sphere HERE first */
+    '    vec3 h; if (!rayHit(sp, uInvB, h) || distance(h, sph) > 0.002) return false;',
+    '  } else {',
+    '    float cx = 0.5 * (uViewB.x + uViewB.z);',
+    '    float lon = ll.x + 360.0 * floor((cx - ll.x + 180.0) / 360.0);',   /* the copy of the world nearest the view */
+    '    float yn = mercY(uViewB.w), ys = mercY(uViewB.y);',
+    '    sp = vec2((lon - uViewB.x) / (uViewB.z - uViewB.x), (yn - mercY(ll.y)) / (yn - ys));',
+    '  }',
+    '  return true;',
+    '}'
+  ].join('\n');
+
+  /* one particle, carried from the old view to the new one. A particle that leaves the glass is wrapped to
+     the opposite edge — which on a pan is exactly the strip the camera has just uncovered — and one the new
+     view cannot see (behind the globe) is killed; the cohort clock respawns both kinds as it always has. */
+  var REPROJ_STATE_FS = [
+    'precision highp float;',
+    'uniform sampler2D uState;',
+    'varying vec2 vUv;',
+    VIEW_MAP_GLSL,
+    'void main(){',
+    '  vec4 t = texture2D(uState, vUv);',
+    '  if (t.r + t.g + t.b + t.a <= 0.0) { gl_FragColor = vec4(0.0); return; }',
+    '  vec2 pos = fract(t.ba + t.rg / 255.5);',
+    '  vec2 ll; vec3 sph; vec2 o;',
+    '  if (!fromA(pos, ll, sph) || !toB(ll, sph, o)) { gl_FragColor = vec4(0.0); return; }',
+    '  o = fract(o);',
+    '  gl_FragColor.rg = fract(o * 255.0 + 0.25 / 255.0);',
+    '  gl_FragColor.ba = o - gl_FragColor.rg / 255.0;',
+    '}'
+  ].join('\n');
+
+  /* one trail pixel of the NEW view: where was this place on the old glass? (A = new view, B = old view).
+     The texture's v runs up and the screen's y down — the same reconciliation as DRAW_VS's toClip. */
+  var REPROJ_TRAIL_FS = [
+    'precision highp float;',
+    'uniform sampler2D uTex;',
+    'varying vec2 vUv;',
+    VIEW_MAP_GLSL,
+    'void main(){',
+    '  vec2 ll; vec3 sph; vec2 o;',
+    '  if (!fromA(vec2(vUv.x, 1.0 - vUv.y), ll, sph) || !toB(ll, sph, o)',
+    '      || o.x < 0.0 || o.x > 1.0 || o.y < 0.0 || o.y > 1.0) { gl_FragColor = vec4(0.0); return; }',
+    '  gl_FragColor = texture2D(uTex, vec2(o.x, 1.0 - o.y));',
+    '}'
+  ].join('\n');
+
   var FADE_FS = [
     'precision mediump float;',
     'uniform vec4 uColor;',
@@ -735,6 +830,9 @@
     var landGrey = !!opts.landGrey;
 
     var gl = null, progRaster = null, progUpdate = null, progDraw = null, progFade = null, progCopy = null;
+    var progReState = null, progReTrail = null;   /* (layer-click-polish) the view-to-view carry — see REPROJ_STATE_FS */
+    var backTex2 = null;                          /* the trail's second buffer, so the carry can read one and write the other */
+    var lastView = null;                          /* {globe, view[4], proj, inv} of the frame the buffers were drawn in */
     var quadBuf = null, worldBuf = null, partBuf = null, partIdx = null;
     var dataTex = null, lutTex = null, state0 = null, state1 = null, backTex = null, fbo = null, stateFbo = null;
     var backW = 0, backH = 0;
@@ -867,6 +965,8 @@
       progDraw = compile(gl, DRAW_VS, DRAW_FS);
       progFade = compile(gl, QUAD_VS, FADE_FS);
       progCopy = compile(gl, QUAD_VS, COPY_FS);
+      progReState = compile(gl, QUAD_VS, REPROJ_STATE_FS);
+      progReTrail = compile(gl, QUAD_VS, REPROJ_TRAIL_FS);
 
       quadBuf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
@@ -903,7 +1003,10 @@
       var th = Math.max(1, Math.min(2048, Math.round(k * h)));
       if (backTex && tw === backW && th === backH) return;
       if (backTex) gl.deleteTexture(backTex);
+      if (backTex2) gl.deleteTexture(backTex2);
       backTex = tex(gl, tw, th, null, gl.LINEAR);
+      backTex2 = tex(gl, tw, th, null, gl.LINEAR);
+      lastView = null;   /* a fresh, empty trail has no old view to be carried from */
       backW = tw; backH = th;
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, backTex, 0);
@@ -974,6 +1077,49 @@
       for (var r = 0; r < worldBuf.seg; r++) gl.drawArrays(gl.TRIANGLE_STRIP, r * perRow, perRow);
     }
 
+    var IDENT4 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    function sameView(a, c) {
+      if (!a || a.globe !== c.globe) return false;
+      for (var i = 0; i < 4; i++) if (a.view[i] !== c.view[i]) return false;
+      if (c.globe) for (var j = 0; j < 16; j++) if (a.proj[j] !== c.proj[j]) return false;
+      return true;
+    }
+    function bindViews(p, A, B) {
+      gl.uniform1f(p.u.uGlobeA, A.globe ? 1 : 0); gl.uniform4f(p.u.uViewA, A.view[0], A.view[1], A.view[2], A.view[3]);
+      gl.uniformMatrix4fv(p.u.uInvA, false, A.inv || IDENT4);
+      gl.uniform1f(p.u.uGlobeB, B.globe ? 1 : 0); gl.uniform4f(p.u.uViewB, B.view[0], B.view[1], B.view[2], B.view[3]);
+      gl.uniformMatrix4fv(p.u.uProjB, false, B.proj || IDENT4);
+      gl.uniformMatrix4fv(p.u.uInvB, false, B.inv || IDENT4);
+    }
+    /* (layer-click-polish) carry the particles and the trail from the view they were drawn in to this one —
+       only on a frame whose view differs, so a still map runs exactly the passes it ran before. */
+    function carryToView(b, proj, inv, cw, chh) {
+      var cur = { globe: !!inv, view: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], proj: proj ? new Float32Array(proj) : null, inv: inv };
+      var prev = lastView; lastView = cur;
+      if (!prev || sameView(prev, cur) || !progReState || !progReTrail) return;
+      stats.carries = (stats.carries || 0) + 1;
+      gl.disable(gl.BLEND);
+      /* particles: old → new */
+      gl.useProgram(progReState.prog);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, stateFbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, state1, 0);
+      gl.viewport(0, 0, W.stateW, W.stateW);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, state0); gl.uniform1i(progReState.u.uState, 0);
+      bindViews(progReState, prev, cur);
+      drawQuad(progReState);
+      var sw = state0; state0 = state1; state1 = sw;
+      /* trail: each new pixel samples where its place was (A = new, B = old) */
+      gl.useProgram(progReTrail.prog);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, backTex2, 0);
+      gl.viewport(0, 0, backW, backH);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, backTex); gl.uniform1i(progReTrail.u.uTex, 0);
+      bindViews(progReTrail, cur, prev);
+      drawQuad(progReTrail);
+      var tw = backTex; backTex = backTex2; backTex2 = tw;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
     function renderParticles(map) {
       if (!particlesOn || !dataTex || !grid) return;
       var cw = gl.drawingBufferWidth, chh = gl.drawingBufferHeight;
@@ -1000,8 +1146,14 @@
       accum = Math.max(0, accum - frames60 / 60);
 
       var b = map.getBounds();
+      /* which projection this frame is in — read by the carry and by the integrator (see the note there) */
+      var sphere = !!(projData && projData.mainMatrix && projData.projectionTransition > 0.999);
+      var inv = sphere ? invert4(f32(projData.mainMatrix)) : null;
+      if (sphere && !inv) sphere = false;
       var zoom = Math.max(0, Math.min(24, Math.round(map.getZoom())));
       drawnPerBlock = particleCount(map.getCanvas().clientWidth, map.getCanvas().clientHeight, zoom);
+
+      carryToView(b, sphere ? f32(projData.mainMatrix) : null, inv, cw, chh);
 
       /* ── integrate ── */
       var pu = progUpdate;
@@ -1026,8 +1178,6 @@
          that, the plane branch is right, and it is exactly what MapLibre's own `fallbackMatrix` is
          drawing. During the second or so of the animated switch the two disagree slightly; nothing
          is killed by it, the particles simply lag the surface for that second. */
-      var sphere = !!(projData && projData.mainMatrix && projData.projectionTransition > 0.999);
-      var inv = sphere ? invert4(f32(projData.mainMatrix)) : null;
       gl.uniform1f(pu.u.uGlobe, inv ? 1 : 0);
       gl.uniform1f(pu.u.uAspect, chh / cw);
       if (inv) {
@@ -1091,6 +1241,7 @@
 
       /* ── draw the cohorts into the trail buffer ── */
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, backTex, 0);
       gl.viewport(0, 0, backW, backH);
       gl.enable(gl.BLEND);
       gl.blendEquation(gl.FUNC_ADD);
@@ -1292,12 +1443,12 @@
       },
       destroy: function () {
         if (!gl) return;
-        [dataTex, lutTex, state0, state1, backTex].forEach(function (t) { if (t) gl.deleteTexture(t); });
+        [dataTex, lutTex, state0, state1, backTex, backTex2].forEach(function (t) { if (t) gl.deleteTexture(t); });
         [quadBuf, worldBuf, partBuf, partIdx].forEach(function (b) { if (b) gl.deleteBuffer(b); });
-        [progRaster, progUpdate, progDraw, progFade, progCopy].forEach(function (p) { if (p) gl.deleteProgram(p.prog); });
+        [progRaster, progUpdate, progDraw, progFade, progCopy, progReState, progReTrail].forEach(function (p) { if (p) gl.deleteProgram(p.prog); });
         if (fbo) gl.deleteFramebuffer(fbo);
         if (stateFbo) gl.deleteFramebuffer(stateFbo);
-        dataTex = lutTex = state0 = state1 = backTex = null;
+        dataTex = lutTex = state0 = state1 = backTex = backTex2 = null; lastView = null;
         gl = null;
       }
     };

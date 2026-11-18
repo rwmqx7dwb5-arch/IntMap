@@ -722,7 +722,7 @@ const _eraSeen = new WeakMap();   /* drawn collection → { key, best }: the clo
  *   then says the button is today's country.
  */
 export function eraPolityAt(TB, at, stats) {
-  if (!TB || typeof TB.active !== 'function' || typeof TB.currentFC !== 'function' || typeof TB.drawnAt !== 'function' || typeof TB.resolveHist !== 'function') return null;
+  if (!TB || typeof TB.active !== 'function' || typeof TB.currentFC !== 'function' || typeof TB.shapesHolding !== 'function' || typeof TB.resolveHist !== 'function') return null;
   let on = false; try { on = !!TB.active(); } catch (_) { on = false; }
   if (!on) return null;
   let col = null; try { col = TB.currentFC(); } catch (_) { col = null; }
@@ -734,7 +734,7 @@ export function eraPolityAt(TB, at, stats) {
   if (seen && seen.key === key) best = seen.best;
   else {
     let bA = Infinity;
-    for (const f of TB.drawnAt({ lng: +at.lng, lat: +at.lat }))   /* js/time-borders.js `drawnAt` — the one «which drawn shapes hold this point» test (js/border-provenance.js `shapesAt`), asked of the era layer that draws them */ { const a = boxArea(f.geometry); if (a < bA) { bA = a; best = f; } }
+    for (const f of TB.shapesHolding({ lng: +at.lng, lat: +at.lat }))   /* js/time-borders.js `shapesHolding` — the one «which drawn shapes hold this point» test (js/border-provenance.js `shapesAt`), asked of the era layer that draws them */ { const a = boxArea(f.geometry); if (a < bA) { bA = a; best = f; } }
     _eraSeen.set(col, { key, best });
   }
   const p = (best && best.properties) || {}, nm = p.NAME || p.name || null;
