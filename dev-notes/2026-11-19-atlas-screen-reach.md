@@ -36,3 +36,10 @@ newsjp: Atlas が押せる画面の部品が増え（選択肢・スイッチ・
 孤立した翻訳 4 キー（天気・為替の読み込み中／失敗の表示、16 行）は `i18n-dead-key-codemod --write` で撤去。
 
 `check:capabilities` 25→26 検査。core tier 5→6 本（`docs/TESTING.md` ほか追従）。`fetch-deadlines`・`global-surface` の台帳は死んだコードの撤去分だけ更新。
+
+## 4. CI で赤くなって直したもの
+
+- `tests/durations.json` に新しい spec の実測（8 s）を記録。未測定だと p75 の 32 s が core に課金されていた。spec は 1 秒の価格を超えるので core には入らず deep に置かれる（core 5・deep 168・全体 173）。
+- `scripts/device-storage-words.json` の `local:intmap_widgets` を撤去し台帳を再生成（死んだ IIFE が最後の書き手だった）。
+- `tests/perf-baseline.json`: `eager.modules` 908→909 を、main を取り込んだこの木で実測して引き上げ。この変更の差分に import の追加は無い（`js/widgets.js` と `js/atlas-controls.js` は既存モジュール内の編集）ので、+1 の出所は main 側の取り込みの可能性が高いが、どのモジュールかは特定していない。
+- `ui-declared` は main から入った `data.gisExport` を初回で捕まえた（GIS パネルを入口として宣言）。
