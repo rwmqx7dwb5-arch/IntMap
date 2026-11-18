@@ -35,7 +35,7 @@ import { appendFileSync, readFileSync, readdirSync, writeFileSync } from 'node:f
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
-  CUSTOM_DOMAIN, PAGES_URL, SITE_BASE_PATH, SITE_HOST, SITE_ORIGIN, SITE_URL, siteUrl,
+  ADMIN_URL, CUSTOM_DOMAIN, PAGES_URL, SITE_BASE_PATH, SITE_HOST, SITE_ORIGIN, SITE_URL, siteUrl,
 } from '../supabase/functions/_shared/site-origin.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -135,6 +135,11 @@ export function writeDefinitions(root = ROOT) {
    so the plugin also fills the token in every copied .html / .xml / .txt in dist/ once the copy is done
    (fillSiteToken). The day the site moves, those pages follow without being regenerated. */
 export const SITE_TOKEN = '__INTMAP_SITE_URL__';
+/* (admin-origin) …and the operator console's address, which the app names when it signs an administrator
+   account out (index.html <meta name="intmap-admin-url">, js/auth-ui.js). Filled the same way, by the same
+   plugin, from the same file. */
+export const ADMIN_TOKEN = '__INTMAP_ADMIN_URL__';
+const fillAdmin = (t, url) => (t.includes(ADMIN_TOKEN) ? t.split(ADMIN_TOKEN).join(url) : t);
 
 /** Vite plugin: fill SITE_TOKEN in index.html, and — when the site has a domain of its own — emit
  *  dist/CNAME. ⚠ The CNAME file is NOT what binds the domain: this repository publishes with a custom
@@ -155,8 +160,8 @@ export function fillSiteToken(dir, url = SITE_URL, rel = '') {
     if (e.isDirectory()) { if (!(rel === '' && TOKEN_SKIP.has(e.name))) changed.push(...fillSiteToken(p, url, r + '/')); continue; }
     if (!e.isFile() || !TOKEN_FILE.test(e.name)) continue;
     const t = readFileSync(p, 'utf8');
-    if (!t.includes(SITE_TOKEN)) continue;
-    writeFileSync(p, t.split(SITE_TOKEN).join(url));
+    if (!t.includes(SITE_TOKEN) && !t.includes(ADMIN_TOKEN)) continue;
+    writeFileSync(p, fillAdmin(t.split(SITE_TOKEN).join(url), ADMIN_URL));
     changed.push(r);
   }
   return changed;
@@ -171,7 +176,7 @@ export function siteUrlPlugin(site = { SITE_URL, CUSTOM_DOMAIN }) {   // the arg
     closeBundle: { order: 'post', sequential: true, handler() { if (outDir) fillSiteToken(outDir, site.SITE_URL); } },
     transformIndexHtml: {
       order: 'pre',
-      handler(html) { return html.includes(SITE_TOKEN) ? html.split(SITE_TOKEN).join(site.SITE_URL) : html; },
+      handler(html) { return fillAdmin(html.includes(SITE_TOKEN) ? html.split(SITE_TOKEN).join(site.SITE_URL) : html, site.ADMIN_URL || ADMIN_URL); },
     },
     generateBundle() {
       if (site.CUSTOM_DOMAIN) this.emitFile({ type: 'asset', fileName: 'CNAME', source: site.CUSTOM_DOMAIN + '\n' });

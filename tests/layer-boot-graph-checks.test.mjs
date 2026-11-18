@@ -392,7 +392,8 @@ test('R175 ③: every root asset the site references is in the build’s copy li
     if (!copied.has(clean) && !copied.has(topDir)) missing.push(clean);
   }
   assert.deepEqual(missing, [], 'these ship today but the Vite build would not copy them: ' + missing.join(', '));
-  assert.ok(copied.has('sw.js') && copied.has('admin.html') && copied.has('data'));
+  assert.ok(copied.has('sw.js') && copied.has('data'));
+  assert.ok(!copied.has('admin.html'), '(admin-origin) the operator console is published from its own origin, not copied with the app');
 });
 
 test('R175 ③: production publishes the build output, not the sources', () => {

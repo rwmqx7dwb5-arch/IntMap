@@ -159,7 +159,10 @@ test('⑤ the board\'s model, evaluated: leads, due on the operator\'s day, open
 
 test('⑥ the board is shipped, and the new columns are granted to the role RLS already confines to admins', async () => {
   const { STATIC_ASSETS } = await import(modUrl('vite.config.js'));
-  assert.ok(STATIC_ASSETS.includes('js/admin-pipeline.js'), 'copied into dist/ beside admin-inquiries.js');
+  /* (admin-origin) the console is shipped by its own site (scripts/admin-site.mjs), not the app's copy list */
+  const { consoleFiles } = await import(modUrl('scripts/admin-site.mjs'));
+  assert.ok(consoleFiles().files.includes('js/admin-pipeline.js'), 'shipped in the console site beside admin-inquiries.js');
+  assert.ok(!STATIC_ASSETS.includes('js/admin-pipeline.js'), 'and not on the app\'s origin');
   assert.match(rd('js/admin-inquiries.js'), /import\('\.\/admin-pipeline\.js'\)/, 'loaded only when the Pipeline tab opens');
   const g = /grant update \(([^)]*)\) on table public\.org_inquiries to authenticated;/.exec(MIG);
   assert.ok(g); assert.deepEqual(g[1].split(',').map((s) => s.trim()), ['stage', 'next_step', 'next_step_on', 'stage_changed_at']);

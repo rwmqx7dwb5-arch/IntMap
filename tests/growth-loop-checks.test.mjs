@@ -204,7 +204,8 @@ test('growth-loop ③ the campaign link uses the counter\'s tag rule and the sit
   assert.ok(ADMIN.includes('<meta name="intmap-site" content="' + SITE_TOKEN + '">'));
   assert.equal(ADMIN.split(SITE_TOKEN).length, 2, 'the token is written once — in that attribute, not inside a script');
   /* destinations are discovered from the sitemap, not listed */
-  assert.match(GROWTH, /fetch\('\.\/sitemap\.xml'/);
+  /* (admin-origin) the APP's sitemap, read from the app's address — the console is served from its own origin */
+  assert.match(GROWTH, /fetch\(gSite\(\)\.base\+'sitemap\.xml'/);
   assert.ok(!/s\/koppen|teachers\.html|about\.html/.test(GROWTH), 'no page is listed by hand');
   /* the tab is wired like «Usage»: its own section, shown by its own listener */
   assert.match(ADMIN, /<button class="tab" data-tab="growth">Growth<\/button>/);

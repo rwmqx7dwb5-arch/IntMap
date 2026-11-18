@@ -642,14 +642,12 @@ export function authUi(HOST){
        re-read both server rows and repaint. */
     _acctAiPaint(typeof HOST.aiUsageSummary==='function'?HOST.aiUsageSummary():null);
     try{ if(typeof HOST.aiRefreshUsage==='function') HOST.aiRefreshUsage().then(s=>{ if(m.style.display!=='none') _acctAiPaint(s); }).catch(()=>{}); }catch(_){}
-    /* (#R10) Pro status / upgrade row removed — the app is fully free, no plan indicator. Admin still
-       shown for moderators. (#R753) the sign-in method joins it: the security rows below only make
+    /* (#R10) Pro status / upgrade row removed — the app is fully free, no plan indicator. (#R753) the sign-in method joins it: the security rows below only make
        sense once the reader knows which credential they are actually using. */
     const proRow=document.getElementById('acct-pro');
     if(proRow){
       const bits=[];
       const how=_acctSignInName(); if(how) bits.push(how);
-      if(HOST.user && HOST.user.isAdmin) bits.push(_authL('admin','管理者','Admin','админ','admin'));
       if(bits.length){ proRow.style.display=''; proRow.textContent=bits.join(' · '); }
       else { proRow.style.display='none'; proRow.textContent=''; }
     }
@@ -701,6 +699,24 @@ export function authUi(HOST){
   }
   function _acctSyncIcon(){ const c=document.getElementById('acct-avatar-clear'); if(c) c.hidden=!window.imGetAvatarImg(); }
 
+  /* The operator console's address, written into the page at build time (<meta name="intmap-admin-url">).
+     An unbuilt page still carries the token, which is not an http(s) URL — that is "no address". */
+  function _adminConsoleUrl(){
+    try{
+      const c=(document.querySelector('meta[name="intmap-admin-url"]')||{}).content||'';
+      const u=new URL(c);
+      return (u.protocol==='https:'||u.protocol==='http:')?u.href:'';
+    }catch(_){ return ''; }
+  }
+  function _adminNotSignedIn(){
+    const url=_adminConsoleUrl();
+    _acctAsk({
+      title:_authL('An administrator account cannot stay signed in to the app','管理者アカウントではアプリにログインしたままにできません'),
+      body:_authL('You have been signed out. Use the operator console for administrator work, and an ordinary account for everyday use of IntMap.','ログアウトしました。管理者の作業は運営コンソールで、IntMap の通常の利用は一般のアカウントで行ってください。'),
+      confirmLabel:url?_authL('Open the operator console','運営コンソールを開く'):_authL('OK','OK')
+    }).then(v=>{ if(v!==null && url){ try{ window.open(url,'_blank','noopener'); }catch(_){} } });
+  }
+
   async function refreshCurrentUser(sessionArg){
     if(!HOST.DB){ HOST.user=null; return; }
     /* Accept a session passed in from onAuthStateChange so we don't re-enter getSession() while the
@@ -710,7 +726,7 @@ export function authUi(HOST){
     if(session===undefined){ try{ const r=await HOST.DB.auth.getSession(); session=(r&&r.data)?r.data.session:null; }catch(_){ session=null; } }
     if(!session){ HOST.user=null; HOST.updateAccountButton(); return; }
     const meta=session.user.user_metadata||{};
-    let isAdmin=false, isPro=false, name='';
+    let isAdmin=false, isPro=false, name='';   /* isAdmin is a local verdict only — it never reaches HOST.user (an administrator is not signed in to the app) */
     try{
       /* try to read is_pro too; if that column doesn't exist yet, fall back to the basic select */
       let r=await HOST.DB.from('profiles').select('display_name,is_admin,is_pro').eq('id',session.user.id).maybeSingle();
@@ -723,7 +739,18 @@ export function authUi(HOST){
     /* (#R33) PRIVACY: never derive the public name from the email (its local part would expose part of the
        address in community posts). Fall back to a neutral handle from the user id instead. */
     if(!name) name='User-'+String(session.user.id||'').replace(/[^a-z0-9]/gi,'').slice(0,5);
-    HOST.user={ id:session.user.id, email:session.user.email, name, isAdmin, isPro:isPro||isAdmin, provider:_sessionProvider(session) }; HOST.updateAccountButton();
+    /* An administrator account does not stay signed in to the app: admin work is done in the operator
+       console (its own origin, MFA sessions only), everyday use with an ordinary account. This settles
+       BEFORE anything below or in onAuthStateChange acts on the session (they all read HOST.user, which
+       is null from here on). scope:'local' ends this session and revokes its refresh token server-side. */
+    if(isAdmin){
+      HOST.user=null;
+      try{ await HOST.DB.auth.signOut({scope:'local'}); }catch(_){}
+      try{ HOST.updateAccountButton(); }catch(_){}
+      try{ _adminNotSignedIn(); }catch(_){}
+      return;
+    }
+    HOST.user={ id:session.user.id, email:session.user.email, name, isPro, provider:_sessionProvider(session) }; HOST.updateAccountButton();
     /* (#R35) Persist the developer flag the moment the OWNER account logs in, so "unlimited AI" is recognised
        SYNCHRONOUSLY everywhere afterward — even before currentUser repopulates on the next load. This is why
        the Settings usage graph "wasn't reflecting unlimited": aiRenderSettings could run before the async
@@ -807,7 +834,7 @@ export function authUi(HOST){
         if(session&&session.user){
           if(!HOST.user||HOST.user.id!==session.user.id){
             const m=session.user.user_metadata||{};
-            HOST.user={ id:session.user.id, email:session.user.email||'', name:(m.display_name||m.full_name||m.name||('User-'+String(session.user.id||'').replace(/[^a-z0-9]/gi,'').slice(0,5))), isAdmin:false, isPro:false, provider:_sessionProvider(session) };   /* (#R753) the session already says which door — no call, no wait */
+            HOST.user={ id:session.user.id, email:session.user.email||'', name:(m.display_name||m.full_name||m.name||('User-'+String(session.user.id||'').replace(/[^a-z0-9]/gi,'').slice(0,5))), isPro:false, provider:_sessionProvider(session) };   /* (#R753) the session already says which door — no call, no wait */
           }
           try{ HOST.updateAccountButton(); }catch(_){}
           try{ const am=document.getElementById('auth-modal'); if(am && am.style.display!=='none') am.style.display='none'; }catch(_){}

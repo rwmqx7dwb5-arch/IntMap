@@ -4,8 +4,8 @@
  *  Where an administrator reads what organisations sent through contact.html (public.org_inquiries)
  *  and keeps the public list of supporters (public.supporters). A page of its own beside admin.html,
  *  not a tab inside it: admin.html is one 2,000-line inline console, and this one has no reason to load
- *  with it. It signs in with the same Supabase project, so a session started in admin.html is the
- *  session here (supabase-js keeps it under one key per project, in this origin's storage).
+ *  with it. It signs in through js/admin-auth.js like admin.html, so a session started in admin.html is the
+ *  session here when the operator follows the link in the same tab (the session lives in this tab's sessionStorage).
  *
  *  WHO MAY DO WHAT is decided by the database, not by this file (20261003150000_org_inquiries.sql):
  *  RLS lets only an admin read an enquiry, change its status / note / handled_at (the message and the
@@ -31,7 +31,6 @@
   var d = document.documentElement;
   try { d.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (_) { /* light */ }
 
-  function meta(n) { var m = document.querySelector('meta[name="' + n + '"]'); return m ? m.getAttribute('content') || '' : ''; }
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = String(text); return e; }
   function btn(label, cls, fn) { var b = el('button', 'btn' + (cls ? ' ' + cls : ''), label); b.type = 'button'; b.addEventListener('click', fn); return b; }
@@ -44,21 +43,16 @@
   var sb = null, filter = null, only = null, pipe = null;
 
   document.addEventListener('DOMContentLoaded', function () {
-    if (!window.supabase || !window.supabase.createClient) { $('aq-auth-msg').textContent = 'Supabase SDK failed to load (vendor/supabase-js.js missing from this deploy).'; return; }
     var main = $('aq-view-admin');
     STATUSES = String((main && main.getAttribute('data-statuses')) || '').split(',').filter(Boolean);
     filter = STATUSES[0] || 'all';   /* the console opens on the first triage word: what nobody has answered yet */
-    sb = window.supabase.createClient(meta('intmap-backend'), meta('intmap-anon-key'), { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-
-    $('aq-auth-submit').addEventListener('click', signIn);
-    $('aq-auth-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') signIn(); });
-    $('aq-signout').addEventListener('click', function () { sb.auth.signOut().then(function () { location.reload(); }); });
     document.querySelectorAll('[data-filter]').forEach(function (b) {
       b.addEventListener('click', function () { filter = b.getAttribute('data-filter'); only = null; markTabs(); loadInquiries(); });
     });
     $('tab-sup').addEventListener('click', function () { filter = 'supporters'; markTabs(); loadSupporters(); });
     $('tab-pipe').addEventListener('click', function () { filter = 'pipeline'; markTabs(); loadPipeline(); });
-    gate();
+    /* (admin-origin) the sign-in, the TOTP step (aal2) and the is_admin gate are js/admin-auth.js's, shared with the other consoles */
+    sb = window.IntMapAdminAuth.init({ prefix: 'aq-', onReady: function () { markTabs(); loadInquiries(); } });
   });
 
   function markTabs() {
@@ -70,34 +64,6 @@
     $('list-pipe').classList.toggle('hide', filter !== 'pipeline');
   }
 
-  function signIn() {
-    var email = $('aq-auth-email').value.trim(), password = $('aq-auth-pass').value;
-    if (!email || !password) { $('aq-auth-msg').textContent = 'Enter email and password.'; return; }
-    $('aq-auth-submit').disabled = true; $('aq-auth-msg').textContent = 'Working…';
-    sb.auth.signInWithPassword({ email: email, password: password }).then(function (r) {
-      /* enumeration-safe, as admin.html: never say whether the address exists or is an admin */
-      if (r.error) { $('aq-auth-msg').textContent = 'Invalid email or password.'; return; }
-      return gate();
-    }, function () { $('aq-auth-msg').textContent = 'Invalid email or password.'; })
-      .then(function () { $('aq-auth-submit').disabled = false; });
-  }
-
-  function show(v) { $('aq-view-auth').classList.toggle('hide', v !== 'auth'); $('aq-view-admin').classList.toggle('hide', v !== 'admin'); }
-
-  function gate() {
-    return sb.auth.getSession().then(function (r) {
-      var session = r && r.data && r.data.session;
-      if (!session) { show('auth'); return; }
-      return sb.from('profiles').select('is_admin').eq('id', session.user.id).maybeSingle().then(function (p) {
-        if (p.error || !p.data || !p.data.is_admin) {
-          show('auth'); $('aq-auth-msg').textContent = 'This account is not an admin.';
-          return sb.auth.signOut();
-        }
-        $('who').textContent = session.user.email || '';
-        show('admin'); markTabs(); loadInquiries();
-      });
-    });
-  }
 
   /* ── enquiries ─────────────────────────────────────────────────────────────────────────── */
   function loadInquiries() {

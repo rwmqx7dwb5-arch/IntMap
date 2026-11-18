@@ -22,8 +22,14 @@
   - EN: `https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en`
   - JA: `https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja`
 - **管理コンソール `admin.html`**：`geo_pins`（ニュース辞書）の追加／編集、`dashboard_cards` 編集、`community_reports` の対応、`feedback` 閲覧、`community_posts` / `community_comments` の
-  モデレーション。公開サインアップは無い。CSP は厳格（`connect-src` は self ＋ このプロジェクトの Supabase のホスト 1 つ。ワイルドカードは無い）。破壊的操作の前に再認証を求める。ログインゲートは利便のためで、非 admin が開いても
-  RLS が 0 行しか返さない。
+  モデレーション、**みんなの地図の報告への対応**（Community タブの Community maps——外す／戻す／却下。アプリの中にあった管理者の欄はここへ移った）。公開サインアップは無い。
+  CSP は厳格（`connect-src` は self ＋ このプロジェクトの Supabase のホスト 1 つ。ワイルドカードは無い）。
+  - **アプリとは別の origin で配る**（`ADMIN_URL` = `intmap-admin` Organization の Pages。`scripts/admin-site.mjs` が `js/admin-auth.js` でサインインするページと、それが読むものを
+    発見して組み立て、そのリポジトリが `.github/workflows/admin-site.yml` を呼んで公開する。アプリの旧アドレスにはリンクだけのページが残る）。手順は [`docs/RELEASE.md`](../RELEASE.md)。
+  - **管理者の権限は二要素（TOTP）を通したセッションにだけ付く**（`public.is_admin()` が `aal2` を要求）。コンソールはパスワードの後に TOTP を求め（初回は登録）、セッションはその
+    タブの `sessionStorage` にだけ置く。破壊的な取り込みの前の再確認も TOTP。
+  - **管理者アカウントはアプリにサインインしたままにならない**（`js/auth-ui.js` が見つけた時点でサインアウトし、コンソールへ案内する）。普段の閲覧は管理者でないアカウントで行う。
+  - ログインゲートは利便のためで、非 admin や二要素を通していないセッションが開いても RLS は 0 行しか返さない（[`docs/SECURITY-ARCHITECTURE.md`](../SECURITY-ARCHITECTURE.md) §3・§11.4）。
 - **バグ報告**：`bug_reports`（診断情報 JSON 付き。`reader-reports` 経由で誰でも送れる・表へ直接は書けない・admin が閲覧）。未ログインで送られたフィードバックとバグ報告は
   受信から 730 日で消える（`purge_anonymous_reports`・pg_cron `anonymous-reports-purge`。ログイン中に送った分はアカウントの削除と共に消える。プライバシーポリシー §6）。
 - **教育向けの導入パック**：単元対応表（`curriculum.html`）と学校向けの 1 枚（`school-handout.html`）、いずれも `ja/` あり（§8.6.5）。どちらも相談フォーム（`about=classroom`）へ結ぶ。

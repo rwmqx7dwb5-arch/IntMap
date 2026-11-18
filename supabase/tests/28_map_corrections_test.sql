@@ -122,7 +122,7 @@ select _dml('user_del', 'delete from public.map_corrections');
 select _sel('user_mine', 'select string_agg(kind, '','') from public.my_map_corrections()');
 reset role;
 
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('admin_sel', 'select count(*)::text from public.map_corrections');
 select _dml('admin_pub_noreply', $q$update public.map_corrections set status = 'fixed', published = true where place_label = 'Osaka'$q$);
@@ -168,7 +168,7 @@ select ok(not exists(select 1 from information_schema.routines r join informatio
           'community-next: the public log returns no message, sender, receipt or internal note');
 
 -- reopening clears resolved_at
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _dml('admin_reopen', $q$update public.map_corrections set status = 'confirmed' where kind = 'name' and lng = 2.35$q$);
 reset role;

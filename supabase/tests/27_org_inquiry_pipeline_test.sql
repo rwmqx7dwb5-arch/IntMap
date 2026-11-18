@@ -63,7 +63,7 @@ set local role authenticated;
 select _dml('user_stage', $q$update public.org_inquiries set stage = 'adopted'$q$);
 reset role;
 
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _dml('admin_stage', $q$update public.org_inquiries set stage = 'trial', next_step = 'Ask how the class went', next_step_on = date '2026-10-20', stage_changed_at = now() where email = 'teacher@example.org'$q$);
 reset role;
