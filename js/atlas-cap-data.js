@@ -164,6 +164,7 @@ export default [
   },
   {
     row: ['data.gisExport',             'gisExport',      'exportDataset,downloadDataset,saveDatasetAsFile,exportGis',   'data',    'none',    '',                       'explanation',         'persist', 'explicit', '',         'gisCore'],
+    ui: { at: ['#btn-gis-panel'] },   /* the GIS panel holds its 「ファイルに書き出す」 */
     /* ⚠ THE DATASETS COULD BE MADE, DRAWN AND SAVED AS A PROJECT, AND NOT TAKEN AWAY. The GIS panel's
        「ファイルに書き出す」 calls js/gis-export.js; Atlas had no door to it, so 「この結果を KML で
        ください」 ended at a picture. This row is that door and nothing more — one write() call and the
