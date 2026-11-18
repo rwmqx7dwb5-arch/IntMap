@@ -106,7 +106,7 @@ function makeEventLog(now) {
    (null where one did not normalise). Only names that are tasks of the list count as edges; a name that is not one is
    `input_unknown` at run time, not a cycle. Strongly connected components (Tarjan): a component of two or more tasks, or
    a task that names itself, is a cycle. */
-export function cycleMembers(contracts) {
+function cycleMembers(contracts) {
   const list = Array.isArray(contracts) ? contracts : [];
   const at = new Map();
   list.forEach((c, i) => { if (c && c.id && !at.has(c.id)) at.set(c.id, i); });
