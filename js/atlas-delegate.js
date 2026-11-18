@@ -93,6 +93,7 @@ export function makeDelegation(o) {
     const res = Object.freeze({
       id, state: RESULT_STATES.includes(r && r.state) ? r.state : 'failed',
       code: (r && r.code) || undefined,
+      detail: (r && r.detail && typeof r.detail === 'object') ? Object.freeze(Object.fromEntries(Object.entries(r.detail).filter(([, v]) => v !== undefined))) : undefined,
       summary: s(r && r.summary, 4000),
       findings: Array.isArray(r && r.findings) ? r.findings.slice(0, 40) : [],
       gaps: Array.isArray(r && r.gaps) ? r.gaps.slice(0, 20).map((g) => s(g, 400)).filter(Boolean) : [],
@@ -239,11 +240,15 @@ export function makeWorkerExecutor(o) {
         } catch (e) {
           if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, sources };
           const code = String((e && e.code) || '');
-          ctx.emit('effect.failed', { intent: intent.id, code });
-          if (REFUSAL_CODES.includes(code)) return { state: 'refused', code, summary: s(e && e.message, 400), calls, costUsd, sources };
+          /* (delegation-limits) WHY, as the server said it — measured 2026-11-19: a worker failed `provider_unavailable` after 90.7 s and
+             nothing recorded whether its web search had timed out (the failed child's ledger row is released with its refund) */
+          const m = (e && e.meta) || {};
+          const detail = { timeout: m.timeout === true ? true : undefined, tooLarge: m.tooLarge === true ? true : undefined, status: Number(e && e.status) || undefined, model: m.model ? String(m.model).slice(0, 60) : undefined };
+          ctx.emit('effect.failed', { intent: intent.id, code, timeout: !!detail.timeout, status: detail.status || 0 });
+          if (REFUSAL_CODES.includes(code)) return { state: 'refused', code, detail, summary: s(e && e.message, 400), calls, costUsd, sources };
           /* the request may or may not have reached the provider: nothing came back to say which */
-          if (code === 'network' || code === 'stream_broken' || (e && e.status === 0)) return { state: 'unobservable', code: code || 'network', summary: s(e && e.message, 400), calls, costUsd, sources };
-          return { state: 'failed', code: code || 'error', summary: s(e && e.message, 400), calls, costUsd, sources };
+          if (code === 'network' || code === 'stream_broken' || (e && e.status === 0)) return { state: 'unobservable', code: code || 'network', detail, summary: s(e && e.message, 400), calls, costUsd, sources };
+          return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), calls, costUsd, sources };
         }
         const meta = (env && env.meta) || {};
         const c = Math.max(0, Number(meta.costUsd) || 0);

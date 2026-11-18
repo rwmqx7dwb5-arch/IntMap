@@ -199,6 +199,7 @@ export function atlasConsole(HOST){
        absolute position means nothing, and an edited message must rewind history as far as it rewinds the chat. */
     let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null; let _lastRadCtx=null; let _lastRouteCtx=null;   /* (#R85) last missile / radiation / route → in-message controls re-run it */
     let _curPlanCites=[];   /* (#R350) the citations of THIS turn's planner call. The `answer` action used to read window._aiLastCitations at render time — a second Atlas turn finishing in between handed it the other turn's sources. */
+    let _delegationPolicy=null;   /* (delegation-limits) the worker policy ai-proxy last reported on an Atlas turn (meta.delegationPolicy) — read by research.delegate and stated to Atlas below */
     let _turnSeq=0, _curTurn=0, _curTurnKey='', _atlSentNames=[], _atlRecallImgs=[], _atlRecallAtts=null; const _atlTurnImgs=(frames,recalled)=>{ const a=(frames||[]).concat(recalled||[]); return a.length?a:null; };   /* ⚠⚠⚠ (#R779) `VFRAMES.urls()` は空のとき null を返す契約（その理由は js/atlas-view-capture.js の urls() に書いてある）。#R773 がここに .concat を足したとき契約が一緒に運ばれず、inspect を通らない普通の初回送信が毎回 null.concat で死んだ。空なら null のまま返す——[] は「画像が無い」ではなく「空の一覧を送る」になる */
     /* (#R86c) multi-stop route optimisation (TSP): order N points shortest-first via nearest-neighbour + 2-opt on
        great-circle distance (keyless, instant), keeping the first point as the fixed start; the ordered tour is then
@@ -1915,7 +1916,8 @@ export function atlasConsole(HOST){
       get paintPois(){ return paintPois; },
       get _PINNED(){ return _PINNED; },
       get _lastUserMsg(){ return _lastUserMsg; }, set _lastUserMsg(v){ _lastUserMsg=v; },
-      get turnSignal(){ return turnSignal; },   /* (atlas-delegation) the running turn's abort signal, read at call time — research.delegate hands it to its workers */
+      get turnSignal(){ return turnSignal; },
+      get _delegationPolicy(){ return _delegationPolicy; },   /* (delegation-limits) */   /* (atlas-delegation) the running turn's abort signal, read at call time — research.delegate hands it to its workers */
       get aiParseJSON(){ return aiParseJSON; },
       get askAI(){ return askAI; },
       get _poiAdd(){ return _poiAdd; },
@@ -2884,7 +2886,8 @@ export function atlasConsole(HOST){
       const _tools=TOOLS.baseTools();   /* (atlas-turn-engine) the same declarations every turn — nothing on the page is written into them */
       _liveTools=_tools; const _sys=SYS(_tools); const _c0=_agentCtx();
       /* ⚠ (atlas-turn-engine) THE REAL LAYER NAMES, AS INPUT AND AS A CHECK — NOT AS PART OF THE DECLARATION. They were set as set_layer's `name.enum`, which made the tool list (and ai-proxy's prompt-cache key, a hash of it) move whenever the page did. js/atlas-toolsurface.js liveEnum keeps them enforced (js/atlas-agent.js `reject` reads `check`) and returns the sentence that puts them in front of the model in the request item — input, after the cached prefix */
-      try{ _c0.text+=TOOLS.liveEnum(_tools,'set_layer','name',layerCatalogText().split(';').map(s2=>s2.trim()).filter(Boolean)); }catch(_){}   /* (atlas-native-tools) both fixed for the turn, so every step re-sends the same prefix — see _agentCtx */
+      try{ _c0.text+=TOOLS.liveEnum(_tools,'set_layer','name',layerCatalogText().split(';').map(s2=>s2.trim()).filter(Boolean)); }catch(_){}
+      try{ const _dp=_delegationPolicy; if(_dp&&_dp.mode) _c0.text+='\nDelegation (research.delegate) on this server: '+(_dp.mode==='off'?'switched off — research the pieces yourself.':(_dp.mode==='independent'?('at most '+(+_dp.maxChildren||0)+' worker task(s) per request, each up to '+(+_dp.childMaxCalls||0)+' model call(s) — group the pieces into that many tasks.'):'workers share the model calls of this request.')); }catch(_){}   /* (delegation-limits) the server's worker policy, as it last reported it — so Atlas plans within it instead of meeting a refusal. (atlas-native-tools) both lines are fixed for the turn, so every step re-sends the same prefix — see _agentCtx */
       /* ⚠⚠⚠ (atlas-native-tools) THE TRANSPORT IS NATIVE FUNCTION CALLING. What stood here said the opposite, and was
          true: ai-proxy attached `tools` only for hosted web search and parsed no function_call item, so
          every call rode a JSON envelope inside ONE string, and one step was the whole string, re-sent.
@@ -2902,6 +2905,7 @@ export function atlasConsole(HOST){
         const built=_agentInput(req,q,_c0), _tImgs=_atlTurnImgs(VFRAMES.urls(),_atlRecallImgs), _o={task:'atlas_turn',files:_atts.files,docs:_atts.docs,webMode:'auto',effortHint:_cplx?'high':undefined,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined),stream:LIVE.hooks(ai)};   /* (atlas-live-stream) watched: this model call streams its previews into the reply — js/ai-core.js aiReadStream */
         const env=await askAIJSONEnvelope('',_sys,_tImgs,Object.assign({},_o,{ protocol:2, input:built.input, schema:AGENT.FINAL_SCHEMA, toolChoice:(req&&req.final)?'none':undefined,
             tools:((req&&req.tools)||[]).concat(built.cut?[AGENT.READ_RESULT_TOOL]:[]).map(t=>({name:t.name,description:t.description,parameters:t.parameters,promoted:t.promoted?true:undefined})) }));   /* ⚠ (#R493) `_tImgs`: THE THIRD ARGUMENT WAS `null` AND IS NOW THE FRAMES — the vision channel js/ai-core.js has had since #R149 and supabase/functions/ai-proxy turns into `input_image`. Nothing new is built for it: from the step after an `inspect`, the model is reading the reader's actual screen. */   /* read_result only on a step whose input was cut: the tool list is the start of the cached prefix */
+        try{ if(env&&env.meta&&env.meta.delegationPolicy&&typeof env.meta.delegationPolicy==='object') _delegationPolicy=env.meta.delegationPolicy; }catch(_){}
         try{ _curPlanCites=(Array.isArray(env&&env.citations)?env.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; }
         const _r=AGENT.readReply(env&&env.data, env&&env.text, aiParseJSON, env&&env.meta, env&&env.output); _r.contextOutside=!!(built&&built.outside);   /* (atlas-outside-mark) what this reply was written from still carried outside content — js/atlas-agent.js event ④ */ if(built.trim.droppedHistory||built.cut) _r.inputTrim=built.trim; try{ if(_atlasDbg) _atlasDbg.replies.push({ step:req&&req.step, final:!!(req&&req.final), text:String(_r.text||''), turnState:_r.turnState||'', answerMode:_r.answerMode||'', webUsed:!!_r.webUsed, toolCalls:(_r.toolCalls||[]).map(c=>({ id:c.id, name:c.name, arguments:c.arguments })) }); }catch(_){} return _r; };   /* (#R801) THIS call's meta (webUsed/webAttached), not window._aiLastMeta — the #R350 reason, one reader over. (atlas-native-tools) `output` = the provider's items; `inputTrim` = what the composer gave up, recorded in the trace by runTurn */
       try{

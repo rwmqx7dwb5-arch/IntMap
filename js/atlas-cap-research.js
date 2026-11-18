@@ -982,6 +982,16 @@ export default [
       if (!tasks.length) return R(false, warn(L('No task was given to delegate.', '委譲する仕事が指定されていません。')), { meta: { status: 'failed', code: 'no_tasks' } });
       const parent = String(K._curTurnKey || '');
       if (!parent) return R(false, warn(L('Delegation needs a running Atlas turn.', '委譲は Atlas のターンの中でだけ行えます。')), { meta: { status: 'failed', code: 'no_turn' } });
+      /* (delegation-limits) THE SERVER'S POLICY, BEFORE ANYTHING IS SPENT. ai-proxy refuses a worker past its policy anyway; asking it
+         would cost a round trip per excess task and leave Atlas to discover the number from the wreckage (measured 2026-11-19: three
+         workers under a two-worker policy — the third refused after the first two had started). Said back with the number, so Atlas
+         regroups the pieces; nothing is cut or merged here (atlas-full-authority — which pieces belong together is Atlas's call). */
+      const pol = K._delegationPolicy;
+      if (pol && pol.mode === 'off') return R(false, warn(L('Delegation is switched off on the server; research the pieces directly.', 'サーバで委譲が停止されています。各部分は直接調べてください。')), { meta: { status: 'failed', code: 'delegation_off', permanent: true } });
+      if (pol && pol.mode === 'independent' && Number.isInteger(pol.maxChildren) && tasks.length > pol.maxChildren) {
+        return R(false, warn(L('The server admits at most ' + pol.maxChildren + ' worker task(s) per request; ' + tasks.length + ' were given.', 'サーバが 1 つの依頼で受け付ける子の仕事は最大 ' + pol.maxChildren + ' 件です（指定は ' + tasks.length + ' 件）。')),
+          { meta: { status: 'failed', code: 'too_many_tasks', maxChildren: pol.maxChildren, given: tasks.length, childMaxCalls: pol.childMaxCalls } });
+      }
       const signal = (typeof K.turnSignal === 'function') ? K.turnSignal() : undefined;
       const D = makeDelegation({ parent, executor: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal }) });
       const results = await D.run(tasks);
@@ -996,7 +1006,7 @@ export default [
         status: done === results.length ? 'completed' : (done ? 'partial' : 'failed'),
         code: done === results.length ? undefined : (done ? 'some_tasks_ended_otherwise' : (results[0] && results[0].code) || 'no_findings'),
         produced: done ? ['explanation'] : undefined,
-        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, reused: r.reused || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
+        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
         delegatedCostUsd: cost,
       } });
     },
