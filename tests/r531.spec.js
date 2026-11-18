@@ -21,7 +21,8 @@ const CAMERA = { center: [4.1, 43.45], zoom: 8.6 };   /* the Gulf of Lion — th
 const CHORD = [[3.547, 43.32], [3.965, 43.541]];      /* the reported edge */
 
 const READ = () => {
-  const o = { poly: 0, lines: 0, coords: 0, layerSource: null, chord: false, attribution: '' };
+  const o = { poly: 0, lines: 0, coords: 0, layerSource: null, chord: false, attribution: '', marks: false };
+  try { o.marks = !!(window.IntMapBorderCoast && window.IntMapBorderCoast.loaded()); } catch (_) {}
   try { o.layerSource = window.__imap.getLayer('imtb-line').source; } catch (_) {}
   try { o.poly = window.__imap.getSource('imtb-src').serialize().data.features.length; } catch (_) {}
   try {
@@ -54,7 +55,11 @@ test('R531 ① 1900年に旅すると国境線は出るが、報告された海�
   expect(r.layerSource, 'imtb-line must stroke the line source, not the polygons').toBe('imtb-ln-src');
   expect(r.poly, 'the polygons are still the click target and the label anchors').toBeGreaterThan(100);
   expect(r.lines, 'the border line is empty — the era map has no borders at all').toBeGreaterThan(50);
-  expect(r.lines, 'every polity draws a line, so nothing was dropped — the marks never arrived').toBeLessThan(r.poly);
+  /* ⚠ (deep-hist-specs) THE MARKS ARE ASKED OF THEIR OWNER, NOT INFERRED FROM A COUNT. This read «fewer line features than
+     polygons» — true while each polity drew one line feature; since the present-day clip (js/admin-present.js `clipLines`)
+     a polity's line is one feature per run, and 346 lines over 338 polygons (measured 2026-11-18) say nothing about the marks.
+     Whether the seaward edge is dropped is the chord check below; whether the marks arrived is js/border-coast.js's own answer. */
+  expect(r.marks, 'the coast marks never arrived').toBe(true);
   expect(r.coords, 'the line source carries no geometry').toBeGreaterThan(1000);
   expect(r.chord, 'the 40 km chord across the Gulf of Lion is being stroked again').toBe(false);
   expect(r.attribution, 'the line the reader sees must credit the records it comes from').toContain('CShapes');
