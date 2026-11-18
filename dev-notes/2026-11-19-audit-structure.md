@@ -22,7 +22,7 @@ date: 2026-11-19
 - **Pages の公開が Supabase 配備を待たない**: 順序を一本の処理へ寄せると監査自身の言う「巨大な 1 本」になる。`release-state.mjs` が差を検出しており、今回の本番停止はその検出が機能した例。互換性の契約（API 版・migration 順）を検証する設計は別の仕事。
 - **`IM_HOST` の縮小・型の strict 化・`atlas-console.js`/`app-body.js` の分割**: 計測ずみの方針転換が要る大きな仕事で、1 回のパスで完了できない。
 - **夜間 deep の連続赤（map-next・r530・r531）**: 退行の疑いは `nightly-blame` が #1150〜#1159 を指す。再現は別の主題。
-- **`export-readers` が名前だけで読む件**: 同名 export の取り違えは理論上ありうる。いま偽陰性（本当は死んでいるのに通る）が実在するかは未測定——記録のみ。
+- **`export-readers` が名前だけで読む件: 本当だが、実害は小さい。** 1535 の export のうち同じ綴りを複数のモジュールが出すものは 63。静的 import を「その import が指すモジュール」にだけ結んで測り直すと、名前の一致だけで読み手と数えられていたのは 6 件（polity-arc:search・radiation-hindcast:compare・offline-plan:rowFor・world-flows:read・family-history:dateWords/locate）。うち 4 件は test/script が `importModule`・`await import(pathToFileURL(…))` の名前空間で本当に読んでいた（detector がその束縛形を知らない）。**読み手の無かった 2 件（map-doc:stateOf・offline-plan:rowFor）は export を外した**。束縛を厳密にするには名前空間・`importModule` の束縛も同じ精度で読む必要があり、半分だけ厳密にすると本物の読み手を落第にする——試して戻した（偽陽性 4 件）。
 
 ## 3. 検査
 `tests/audit-structure-checks.test.mjs`: ① 探索（循環する死んだ対・動的・worker・ページ・再エクスポート・この repo 全部）② gis の一方向 ③ migration の規則が本番の 5 つの綴りを拾う。
