@@ -1,6 +1,7 @@
 ---
 title: Atlas の到達性検査が「能力表→画面」の向きしか測らず、画面から Atlas に届かない操作と死んだ widgets 能力が見えなかった——逆向きを測る
 date: 2026-11-19
+pr: 1224
 newsen: Atlas can now press more of the page's own controls (list options, switches, tabs, menu items, summaries), the W key and Atlas open the real Add-a-widget sheet again, and checks now fail when a control or a capability's screen entry goes unaccounted for.
 newsjp: Atlas が押せる画面の部品が増え（選択肢・スイッチ・タブ・メニュー項目・折り畳み見出し）、W キーと Atlas が実在の「ウィジェットを追加」シートを再び開くように。画面の操作や能力の入口が宣言されないと検査が落ちる。
 ---
