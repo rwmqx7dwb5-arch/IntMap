@@ -22,3 +22,4 @@ date: 2026-11-19
 
 ## 2. 引き継ぎ
 - merge で走る配備 run が 20261118130000 を適用し、それ以降に変わった関数を出すはず。緑であることと `node scripts/release-state.mjs` の一致を確かめる。
+- `tests/perf-baseline.json` の `eager.modules` を 908 → 909。この PR は `js/` に触れていない。PR の CI（run 44361181822）で main＋この差分が 909 と測られた——#1217・#1223 などが同じ起点に対してそれぞれ 1 本ずつ天井を上げて並行に入り、main の実測が天井を 1 越えていた（全 PR が赤になる状態）。上げたのは実測に合わせただけで、下げるのは main の CI（perf-ceiling.yml）。
