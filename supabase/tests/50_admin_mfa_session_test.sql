@@ -53,7 +53,8 @@ select is(
   (select string_agg(format('%s on %s', policyname, tablename), ', ')
      from pg_policies
     where schemaname = 'public'
-      and regexp_replace(coalesce(qual, '') || ' ' || coalesce(with_check, ''), '(public\.)?is_admin\(\)', '', 'g') ~ 'is_admin'),
+      -- `(select public.is_admin())` deparses as `( SELECT is_admin() AS is_admin)` — the alias is not a read of the column
+      and regexp_replace(coalesce(qual, '') || ' ' || coalesce(with_check, ''), '(public\.)?is_admin\(\)(\s+AS\s+is_admin)?', '', 'g') ~ 'is_admin'),
   null,
   'every policy in public decides admin rights through public.is_admin() only');
 

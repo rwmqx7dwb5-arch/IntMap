@@ -27,6 +27,7 @@ jobs:
     timeout-minutes: 15
     outputs:
       publish: ${{ steps.source.outputs.publish }}
+      sha: ${{ steps.source.outputs.sha }}
     steps:
       - name: Read where the sites are (supabase/functions/_shared/site-origin.js)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -77,18 +78,49 @@ jobs:
         with:
           path: _site
 
+  # ⚠ THIS PUBLISHES THE CALLER'S PAGES SITE, NOT THIS REPOSITORY'S. scripts/pages-publish-guard.mjs answers
+  # «is this commit an ancestor of what THIS repository's Pages serves», which is the wrong site here
+  # (GITHUB_SHA is the caller's commit). The console's own rule, with the same purpose — never move the
+  # console backward, and never ahead of the app it administers — is the step below: one publish at a time
+  # (the lock), and only while the commit it built is STILL the one the app serves. If the app moved on
+  # while this was building, nothing is published; the next run builds the newer commit.
   deploy:
     name: Publish to the console's Pages site
     needs: build
     if: ${{ needs.build.outputs.publish == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: admin-console-pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     permissions:
       pages: write
       id-token: write
+      contents: read
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: rwmqx7dwb5-arch/IntMap
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/site-url.mjs
+            supabase/functions/_shared/site-origin.js
+          sparse-checkout-cone-mode: false
+          path: origin-src
+      - id: current
+        name: Is the commit built still the one the app serves?
+        env:
+          BUILT: ${{ needs.build.outputs.sha }}
+        run: |
+          set -euo pipefail
+          site="$(node origin-src/scripts/site-url.mjs)"
+          now="$(curl -fsS "${site}build-info.json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).sha||""))')"
+          if [ "${now}" = "${BUILT}" ]; then echo "publish=true" >> "$GITHUB_OUTPUT"; else
+            echo "the app moved from ${BUILT} to ${now} while this was building — not publishing an older console"
+            echo "publish=false" >> "$GITHUB_OUTPUT"; fi
       - id: deploy
+        if: ${{ steps.current.outputs.publish == 'true' }}
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1

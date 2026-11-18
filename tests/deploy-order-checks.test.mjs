@@ -122,6 +122,19 @@ test('③ every job that publishes refuses an ancestor of what is live first', (
       const at = steps.findIndex((s) => DEPLOY.test(s.uses || ''));
       if (at < 0) continue;
       publishers.push(`${f}:${id}`);
+      /* (admin-origin) a workflow only OTHER repositories call publishes THEIR Pages site, not this one's: this
+         repository's lock and guard answer about the wrong site. Its own rule, same purpose: one publish at a
+         time, and only while the commit it built is still the one the app serves (.github/workflows/admin-site.yml). */
+      const on = w.on || w[true] || {};
+      if (Object.keys(on).length === 1 && 'workflow_call' in on) {
+        assert.ok(job.concurrency && job.concurrency.group && job.concurrency['cancel-in-progress'] === false,
+          `${f}:${id}: one publish at a time, none cancelled half-way`);
+        const ci = steps.findIndex((s) => /build-info\.json/.test(s.run || '') && s.id);
+        assert.ok(ci >= 0 && ci < at, `${f}:${id}: re-reads which commit the app serves before publishing`);
+        assert.equal(String(steps[at].if).replace(/\s+/g, ' '), `\${{ steps.${steps[ci].id}.outputs.publish == 'true' }}`,
+          `${f}:${id}: the publish depends on that answer`);
+        continue;
+      }
       const conc = job.concurrency || w.concurrency;
       assert.equal(conc && conc.group, 'pages-production', `${f}:${id} publishes outside the production lock — the guard's answer could go stale`);
       if (/^# publishes-older-by-design: \S/m.test(text)) continue;   /* rollback.yml, which says why */
