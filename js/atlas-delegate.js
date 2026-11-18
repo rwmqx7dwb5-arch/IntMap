@@ -52,11 +52,11 @@ export function normaliseContract(c) {
 }
 
 /* the identity of a piece of work: what it is asked to do and from what — not the id it was given */
-export function contractKey(c) {
+function contractKey(c) {
   return JSON.stringify([c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort()]);
 }
 
-export function makeEventLog(now) {
+function makeEventLog(now) {
   const clock = typeof now === 'function' ? now : () => Date.now();
   const events = [];
   let seq = 0;
@@ -183,14 +183,14 @@ export function makeDelegation(o) {
    One request; if what comes back is not the shape asked for, ONE repair request that names what was wrong
    (a retry that does something different — one-pass-or-a-reason §5). The calls a worker may make are the
    server's to bound. */
-export const WORKER_SYSTEM = personaPrompt('working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers', { mode: 'internal' }) + [
+const WORKER_SYSTEM = personaPrompt('working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers', { mode: 'internal' }) + [
   'Do only the piece you are given. Use the web search tool when it is attached to find and verify current facts; prefer primary and official sources.',
   'Never invent a fact, a figure, a date, a source or a coordinate. Give coordinates only when you know them (a well-known city, port, strait or facility); otherwise leave them out and name the place.',
   'Write in the language the piece is written in.',
   'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL)}], "gaps": [string] (what you could not establish, and why)}.',
 ].join('\n');
 
-export function workerPrompt(task) {
+function workerPrompt(task) {
   let p = 'YOUR PIECE OF THE WORK:\n' + task.goal;
   if (task.returns) p += '\n\nWHAT ATLAS NEEDS BACK:\n' + task.returns;
   (task.inputs || []).forEach((i) => {
