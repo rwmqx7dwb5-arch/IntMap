@@ -400,12 +400,24 @@ test('(#R178) prod satellite protocol is live, and its HiDPI decision is honest'
   const r = await page.evaluate(() => {
     const S = window.IntMapSatProto;
     if (!window.__imSatProto || !S) return { err: 'satellite protocol not registered' };
-    return { dpr: S.dpr(), hiDPI: S.hiDPI(), placeholderMax: S.placeholderMax,
+    return { dpr: S.dpr(), hiDPI: S.hiDPI(), hasTest: typeof S.isPlaceholder === 'function',
              can2x: typeof S.tile2x === 'function' };
   });
   expect(r.err).toBeUndefined();
   expect(r.can2x, 'the @2x stitcher deployed').toBe(true);
-  expect(r.placeholderMax, 'the grey-placeholder threshold deployed').toBe(3500);
+  expect(r.hasTest, 'the grey-placeholder recogniser deployed').toBe(true);
+  /* (atlas-glass-look) the recogniser is Esri's fixed «no imagery» tile, by its bytes (js/esri-imagery.js). Its failure
+     condition is Esri changing that image, so it is asked against the live service: a tile past coverage (open Pacific,
+     z19) must be recognised, and a REAL sea tile smaller than the old 3,500-byte threshold (7/49/116, 2,925 B on
+     2026-11-18) must not be — that one being taken for the placeholder is what drew squares over the ocean. */
+  const live = await page.evaluate(async () => {
+    const S = window.IntMapSatProto;
+    const get = async (z, y, x) => new Uint8Array(await (await fetch(S.tileUrl ? S.tileUrl(z, y, x) : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y + '/' + x)).arrayBuffer());
+    const past = await get(19, 216308, 495160), sea = await get(7, 49, 116);
+    return { past: S.isPlaceholder(past), sea: S.isPlaceholder(sea), seaBytes: sea.byteLength };
+  });
+  expect(live.past, 'Esri\'s past-coverage tile is still the image the recogniser knows').toBe(true);
+  expect(live.sea, `a real ${live.seaBytes}-byte sea tile is imagery, not the placeholder`).toBe(false);
   /* the runner is a 1× display, so the honest answer is "no @2x here" — asserting the DECISION
      rather than the outcome is what makes this meaningful on any machine */
   expect(r.hiDPI, `dpr ${r.dpr} must decide @2x as ${r.dpr >= 1.5}`).toBe(r.dpr >= 1.5);

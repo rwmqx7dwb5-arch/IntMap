@@ -1,13 +1,13 @@
 /* ============================================================================
- *  IntMap · the two phone doors under the empty search field — «Here, now» and «Photo's place»   (mobile-next)
+ *  IntMap · the two phone doors — «Here, now» and «Photo's place»   (mobile-next)
  * ----------------------------------------------------------------------------
- *  The sheet's head field is the phone's one entry (docs/architecture/09-mobile.md §9.2): focusing it with nothing
- *  typed already shows the example maps (js/showcase-gallery.js). Above them, two rows that only a phone makes
+ *  The phone sheet's home (js/start-home.js, docs/architecture/09-mobile.md §9.2) holds, beside the example maps
+ *  (js/showcase-gallery.js), two rows that only a phone makes
  *  natural — what is happening where I stand (the place card's «Here, now», js/place-dossier.js), and where a photo in my library was taken
  *  (js/share-inbox.js openShared). Neither opens by itself and neither reads the position before it is pressed:
  *  the browser's own location prompt follows the press.
- *  Loaded with the gallery on the first empty focus (js/search-geocode.js), and by the phone sheet's home
- *  (js/start-home.js), which holds the same row (`entryRow`); the two modules it opens are fetched
+ *  Loaded by the phone sheet's home (js/start-home.js), which holds the row (`entryRow`); the empty search field no
+ *  longer shows it (js/search-geocode.js, the head). The two modules it opens are fetched
  *  by the press. Strings are en + jp (CONSTITUTION.md §7); marks are js/icons.js line icons.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
@@ -40,9 +40,8 @@ function pickPhoto(HOST) {
   inp.click();
 }
 
-/** The two rows as one element — the search's empty state (`showEntry`) and the phone sheet's home
- *  (js/start-home.js) both hold this same row. `onPress` runs first on a press, so each place says what a press
- *  ends there (the search closes its list; the home leaves itself as it is). */
+/** The two rows as one element, held by the phone sheet's home (js/start-home.js). `onPress` runs first on a press,
+ *  so the place that holds the row says what a press ends there. */
 export function entryRow(onPress) {
   style();
   const row = document.createElement('div');
@@ -57,17 +56,4 @@ export function entryRow(onPress) {
     else pickPhoto(HOST);
   });
   return row;
-}
-
-/** put the two rows at the top of the empty-state list `res` (idempotent). → true when drawn */
-export function showEntry(res) {
-  if (!res || res.querySelector('.hn-entry')) return false;
-  /* the press ends the search: the field gives up the caret (on a phone the keyboard closes and the sheet comes down) */
-  const row = entryRow(() => {
-    try { const inp = document.getElementById('ms-input'); if (inp) inp.blur(); } catch (_) { /* no field */ }
-    res.style.display = 'none'; res.innerHTML = '';
-  });
-  res.insertBefore(row, res.firstChild);
-  res.style.display = 'block';
-  return true;
 }

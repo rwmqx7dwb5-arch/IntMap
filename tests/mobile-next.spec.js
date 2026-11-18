@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · mobile-next — the phone's own doors, on a phone (375 × 812, touch)
  * ----------------------------------------------------------------------------
- *  ① The empty search field holds «Here, now» and «Photo's place» above the example maps. A finger on «Here, now»
+ *  ① The phone sheet's home holds «Here, now» and «Photo's place» (js/start-home.js; the empty search field no longer does). A finger on «Here, now»
  *    (the device position is emulated at Tokyo Tower) puts the dot on the map and opens the card; every section
  *    settles to a value or a reason (none left «Reading…»), and every control of the card is what a finger lands on
  *    above the sheet and the data credit.
@@ -45,17 +45,16 @@ const REACH = (sel) => {
 test.describe('mobile-next: 375 × 812, touch', () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true, geolocation: TOKYO_TOWER, permissions: ['geolocation'] });
 
-  test('① «Here, now» from the empty search field: the dot, the card, every section settled, every control reachable', async ({ page }) => {
+  test('① «Here, now» from the sheet\'s home: the dot, the card, every section settled, every control reachable', async ({ page }) => {
     test.setTimeout(150_000);
     await boot(page);
-    await page.tap('#ms-input');
-    await page.waitForSelector('#ms-results .hn-entry [data-hn-entry="here"]', { state: 'visible', timeout: 20_000 });
-    const order = await page.evaluate(() => { const r = document.getElementById('ms-results'); return [...r.children].map((c) => c.className.split(' ')[0]); });
-    expect(order[0], 'the phone\'s doors come first, above the example maps').toBe('hn-entry');
-    /* (wave4-ux-mobile) scoped to the search's list: the sheet's home holds the same row (js/start-home.js), hidden under the list while it is open */
-    const rows = await page.evaluate(() => [...document.querySelectorAll('#ms-results .hn-entry button')].map((b) => { const r = b.getBoundingClientRect(); return { h: r.height, own: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('button') === b }; }));
+    await page.evaluate(() => window.__setDetent('half'));
+    await page.waitForSelector('.m-home .hn-entry [data-hn-entry="here"]', { state: 'attached', timeout: 20_000 });
+    await page.evaluate(() => document.querySelector('.m-home .hn-entry').scrollIntoView({ block: 'center' }));
+    await settle(page, ['#sidebar']);
+    const rows = await page.evaluate(() => [...document.querySelectorAll('.m-home .hn-entry button')].map((b) => { const r = b.getBoundingClientRect(); return { h: r.height, own: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('button') === b }; }));
     for (const r of rows) { expect(r.own, 'the row is what a finger lands on').toBe(true); expect(r.h).toBeGreaterThanOrEqual(44); }
-    await page.tap('#ms-results .hn-entry [data-hn-entry="here"]');
+    await page.tap('.m-home .hn-entry [data-hn-entry="here"]');
     await page.waitForSelector('#pd-popup', { state: 'visible', timeout: 20_000 });
     await page.waitForFunction(() => document.querySelectorAll('#pd-popup [data-pending]').length === 0 && !!document.querySelector('#pd-popup .hn-sec'), null, { timeout: 60_000 });
     const card = await page.evaluate(() => ({

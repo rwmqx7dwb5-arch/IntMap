@@ -21,7 +21,7 @@
  *  decode on the far side, and MapLibre's protocol contract takes it directly.
  *
  *  WHAT STAYED THE SAME. Every decision this file makes is the one #R158/#R178/#R179 established:
- *  the placeholder is still Esri's fixed ~2.5 KB grey JPEG, the walk-up still goes 13 levels, the
+ *  the placeholder is still Esri's fixed grey JPEG (recognised by its bytes — js/esri-imagery.js isImageryPlaceholder), the walk-up still goes 13 levels, the
  *  `have`/`stop` depth memo still learns per z10 neighbourhood (and is mirrored back to the main
  *  thread so the debug hooks and the tests can still ask it synchronously), and any failure still
  *  falls back to the raw bytes so the map is never worse than before.
@@ -29,8 +29,7 @@
 /* (sat-arcgis-3d) WHERE the tile comes from is js/esri-imagery.js's — keyed or keyless, one URL builder for
    the whole app. This module worker has its own instance of it, so its own `refused` flag: a key this
    worker saw refused falls back here independently of the page, which is what a refusal needs. */
-import { imageryTileUrl, imageryKeyed, imageryRefused, isImageryReply } from '../js/esri-imagery.js';
-const PLACEHOLDER_MAX = 3500;
+import { imageryTileUrl, imageryKeyed, imageryRefused, isImageryReply, isImageryPlaceholder } from '../js/esri-imagery.js';
 
 let RAW_MAX = 1200, DEPTH_MAX = 4000;
 const raw = new Map();            /* z/x/y → {buf, placeholder} — the ANCESTORS are what is worth keeping */
@@ -159,7 +158,7 @@ function start(e) {
     }
     if (!r.ok) throw new Error('sat http ' + r.status);
     const buf = await r.arrayBuffer();
-    const out = { buf, placeholder: buf.byteLength <= PLACEHOLDER_MAX };
+    const out = { buf, placeholder: isImageryPlaceholder(buf) };
     raw.set(e.k, out);
     if (raw.size > RAW_MAX) { const f = raw.keys().next().value; raw.delete(f); }
     return out;

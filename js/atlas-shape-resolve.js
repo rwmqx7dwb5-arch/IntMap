@@ -28,6 +28,51 @@
 const AREA_TYPES = /^(Multi)?Polygon$/;
 const LINE_TYPES = /^(Multi)?LineString$/;
 
+/* (eval-shape-grading) THE WORDS A DRAWN SHAPE IS DESCRIBED WITH — one place, read by every reader of them: the
+   `atlas` state section tallies the shapes on the map as `<kind>:<basis>` (js/atlas-console.js _atlasOverlayState),
+   and the evaluator (scripts/atlas-eval/map-state.mjs) discovers which tallies a question may ask for from here.
+     · kind   — what the thing IS on the map: an `area` (a (Multi)Polygon) or a `line` (a (Multi)LineString)
+     · basis  — `real` / `derived` as above; `unstated` = IntMap makes no claim about where the shape came from
+                (coordinates a model wrote — map.drawLine / map.drawPolygon —, a bounding box, a restored drawing that
+                lost its record). It is never counted as real: a grader that asks for the real shape is not answered
+                by a line someone drew between two dots. */
+export const SHAPE_KINDS = Object.freeze(['area', 'line']);
+export const SHAPE_BASES = Object.freeze(['real', 'derived', 'unstated']);
+
+/** the kind of a GeoJSON geometry, or '' when it is neither an area nor a line (a point, a collection) */
+export function shapeKindOf(g) {
+  const t = g && typeof g === 'object' ? String(g.type || '') : '';
+  return AREA_TYPES.test(t) ? 'area' : LINE_TYPES.test(t) ? 'line' : '';
+}
+
+/**
+ * shapeBasisOf(r) → 'real' | 'derived' | 'unstated' — the basis of an answer of the highlight ladder (resolveHlTarget),
+ * the ONE rule both the map explanation (area() below) and the highlight (js/atlas-cap-map.js) apply. A soft answer is
+ * a bounding box (not a shape at all); an approximate, partial, sliced or web-anchored outline is one IntMap built.
+ */
+export function shapeBasisOf(r) {
+  if (!r || typeof r !== 'object') return 'unstated';
+  if (r.soft) return 'unstated';
+  if (r.approx || r.partial || r.sliced || r.rrMethod === 'derived_anchors') return 'derived';
+  return 'real';
+}
+
+/**
+ * tallyShapes(items) → null | { n, '<kind>:<basis>': count … } — items are [{ geo, basis }]; an item whose geometry is
+ * neither an area nor a line is not a shape and is not counted. `basis` outside SHAPE_BASES is `unstated`.
+ */
+export function tallyShapes(items) {
+  const o = { n: 0 };
+  for (const it of items || []) {
+    const k = shapeKindOf(it && it.geo);
+    if (!k) continue;
+    const b = SHAPE_BASES.includes(it.basis) ? it.basis : 'unstated';
+    o.n++;
+    o[k + ':' + b] = (o[k + ':' + b] || 0) + 1;
+  }
+  return o.n ? o : null;
+}
+
 /** the first GeoJSON geometry a highlight-ladder answer carries, wherever that rung put it */
 export function geometryOf(r) {
   if (!r || typeof r !== 'object') return null;
@@ -95,8 +140,7 @@ async function area(nm, deps) {
   if (!g) return { ok: false, reason: 'no_geometry' };
   if (LINE_TYPES.test(g.type)) return { ok: false, reason: 'kind_mismatch', got: 'line' };
   if (!AREA_TYPES.test(g.type)) return { ok: false, reason: 'kind_mismatch', got: g.type };
-  const derived = !!(r.approx || r.partial || r.sliced);
-  return { ok: true, geometry: g, basis: derived ? 'derived' : 'real', method, source };
+  return { ok: true, geometry: g, basis: shapeBasisOf(r), method, source };
 }
 
 async function line(nm, deps) {

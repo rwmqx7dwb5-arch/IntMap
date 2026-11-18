@@ -53,6 +53,7 @@ import { tmpdir } from 'node:os';
 import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { nearestSheet as pageNearestSheet } from '../../js/hist-sheet-pick.js';
 import { createHash } from 'node:crypto';
 import os from 'node:os';
 import vm from 'node:vm';
@@ -129,17 +130,10 @@ function clockFloor() {
   return (_FLOOR = w.IntMapHistScale.FLOOR);
 }
 
-/* ══ WHICH SHEET THE PAGE SHOWS IN A YEAR ════════════════════════════════════════════════════════
-   ⚠ A COPY OF js/time-borders.js `nearest` FOR YEARS BELOW CShapes (its MAXGAP branch never applies there): the page's
-   rule lives inside the module's closure and has no export a build can call. The two are held equal by
-   tests/coast-snap-gaps-checks.test.mjs, which evaluates the page's own function. */
-export function nearestSheet(y, years) {
-  let prev = null, next = null;
-  for (const yy of years) { if (yy <= y) { if (prev === null || yy > prev) prev = yy; } else if (next === null || yy < next) next = yy; }
-  if (prev === null) return next != null ? next : years[0];
-  if (next === null) return prev;
-  return (next - y) >= (y - prev) ? prev : next;
-}
+/* ══ WHICH SHEET THE PAGE SHOWS IN A YEAR ═══════════════════════════════════════════════════
+   The page's own rule (js/hist-sheet-pick.js — js/time-borders.js `nearest` calls it, as does scripts/hist-fidelity.mjs).
+   This build only asks about years below CShapes, where the forward jump is always taken: `csMin` is above every year here. */
+export function nearestSheet(y, years) { return pageNearestSheet(y, years, Infinity); }
 /* the years [lo, hi] a sheet is shown below CShapes (`csMin`), found by asking `nearestSheet` (js/time-borders.js `_sheetReach`) */
 export function sheetReach(y, years, floor, csMin) {
   const ys = years.slice().sort((a, b) => a - b), i = ys.indexOf(y), shows = (Y) => nearestSheet(Y, ys) === y;

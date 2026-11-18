@@ -10,7 +10,7 @@
  *
  *    · the long-press / right-click menu ▸ «About the place» (js/tool-panel.js)   — a point on the map
  *    · the search card's «Place profile» (js/search-geocode.js)                    — a point on the map
- *    · «Here, now» under the empty search field (js/here-entry.js), the installed icon's shortcut (`?here=1`,
+ *    · «Here, now» on the phone sheet's home (js/here-entry.js), the installed icon's shortcut (`?here=1`,
  *      manifest.webmanifest → src/main.js → bootFromUrl)                           — the DEVICE position
  *    · the share sheet / a photo's place (js/share-inbox.js openHereNow)           — a SHARED point
  *    · Atlas: `research.placeProfile` and `research.hereNow` (js/atlas-cap-research.js) — both are kept, both are

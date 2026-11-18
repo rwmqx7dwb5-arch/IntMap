@@ -6,8 +6,8 @@
  *  only show of what IntMap can do was the automatic layer tour (js/onboarding.js). This file is the door,
  *  in two places a reader already goes — and NOTHING opens it by itself (the first-visit welcome card was
  *  withdrawn at the reader's request, #R104; a gallery that appeared unasked would be that card again):
- *    · the EMPTY state of the place search: focus the field with nothing typed and a row of cards is under
- *      it (`showInResults`) — on a phone that is the sheet, which the field has just raised;
+ *    · a row of cards (`showInResults`) on the phone sheet's home (js/start-home.js). The place search's empty
+ *      state held the same row until 2026-11-18, when the reader asked for it to go (js/search-geocode.js, the head);
  *    · (exploration-flows) above the examples there, «Explore» and «Pick up where you left off» — rows that
  *      press doors that already exist (the edition, the comparison, the place card, ★ Saved, the Library);
  *      see `drawStarters`;
@@ -28,8 +28,8 @@
  *  open an example the same way and read it back the same way: it is reported open only once the clock
  *  and the layer boxes say what the example declares.
  *
- *  ⚠ LOADED ON DEMAND: js/search-geocode.js imports this the first time the empty field is focused (or a
- *  `data-im-gallery` control is pressed); Atlas imports it inside its own lazy kernel. A start-up that
+ *  ⚠ LOADED ON DEMAND: js/search-geocode.js imports this when a `data-im-gallery` control is pressed,
+ *  js/start-home.js when the phone sheet's home is drawn; Atlas imports it inside its own lazy kernel. A start-up that
  *  never reaches for it downloads none of it, and the thumbnails are fetched only as their cards are drawn.
  *  ⚠ IntMap-authored text is en + jp (CONSTITUTION.md §7). No emoji: the marks are js/icons.js line icons.
  * ==========================================================================*/
@@ -177,7 +177,7 @@ const showingIn = (res) => !!(res && res.querySelector('.sg-strip'));
    MEASURED: three walks the app already supports — a news event → the place's background, countries side by side at one
    year, one place through time — had no start a reader who knows no feature name could find: the edition's entry sits
    inside the News tab, the comparison inside Countries, and the place card's «through time» opens only from a point
-   the reader already chose. Nothing opens unasked (the field's empty state and the phone sheet's home are both places
+   the reader already chose. Nothing opens unasked (the phone sheet's home and the whole gallery are both places
    the reader went to), and each row PRESSES THE DOOR THAT EXISTS — it reimplements nothing:
      · today   the command `newsedition.open` (js/news-pulse.js — the News entry's own door), with the ONE «new since
                your last visit» count (js/news-edition-core.js makeSinceCounter, asked through js/news-events.js
