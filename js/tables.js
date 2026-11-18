@@ -13,6 +13,7 @@
 /* @i18n-entity-data  sea and ocean NAMES, one row per water body, pinned by [lng,lat]  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
    against the row carrying a coordinate / ISO code / ticker / domain) */
 import { IntMapLang } from './lang-registry.js';
+import { imageryTiles, imagerySources } from './esri-imagery.js';   /* (sat-arcgis-3d) the one place World Imagery's URL is built */
 export const SEA_LABELS = [
   [-160,32,0.5,'North Pacific Ocean','北太平洋','Nordpazifik','Северная часть Тихого океана','Océano Pacífico Norte'],
   [-125,-30,0.5,'South Pacific Ocean','南太平洋','Südpazifik','Южная часть Тихого океана','Océano Pacífico Sur'],
@@ -156,10 +157,10 @@ export const IntMapTables = (function(){
   const LA=IntMapLang.pickArgs();
   const SAT_PROVIDERS=[
     { id:'esri', tier:'free', short:'Esri', name:LA('Esri World Imagery','Esri 衛星画像','Esri Satellitenbilder','Спутниковые снимки Esri','Imágenes satelitales de Esri'),
-      dated:false, maxzoom:19, attribution:'Imagery © Esri, Maxar, Earthstar Geographics',
+      dated:false, maxzoom:19, get attribution(){ return 'Powered by Esri · Sources: '+imagerySources(); },
       /* Two host aliases serving the SAME World_Imagery tiles — MapLibre round-robins across them, so
          the browser's per-host connection cap no longer throttles high-res imagery in 3D (#2,#18). */
-      tiles:()=>['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] },
+      tiles:()=>imageryTiles() },
     { id:'gibs-modis', tier:'free', short:'MODIS Terra', name:LA('NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra'),
       dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — MODIS Terra true color',
       tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },

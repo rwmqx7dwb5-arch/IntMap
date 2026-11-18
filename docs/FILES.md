@@ -593,6 +593,7 @@ mem-budget.js                     **この端末が復号済み DEM タイルを
                                   src/photo-geo-worker.js も import するため
 border-style.js                   国境線を1本にまとめるスタイル層
 carto-basemap.js                  CARTO 基図の API キー・タイル URL 組み立て・地図上の帰属表示
+esri-imagery.js                   Esri World Imagery の取得先（鍵があれば ArcGIS Location Platform、無ければ鍵なしの窓口）・タイル URL・拒否時の戻り・帰属表示の文
 coast-line.js                     海岸線・湖岸線——国境線と同じ手法で makeCoastLine()
 coastline.js                      **海までの距離**（#R495）— data/coastline.json.gz（Natural Earth 1:10m、2km 許容で
                                   簡略化）を読み、任意の点から**線分**までの大円距離を返す makeCoastline()。

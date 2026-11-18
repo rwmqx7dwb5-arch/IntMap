@@ -30,8 +30,13 @@ window.IntMapSatWorker=(function(){
       it.onmessage=(ev)=>{
         const m=ev.data||{};
         if(m.depth&&m.depth.length&&onDepth){ try{ onDepth(m.depth); }catch(_){} }
-        const p=pend.get(m.id); if(!p) return; pend.delete(m.id);
-        if(m.ok) p.res({ data:(m.bitmap||m.buf), mode:m.mode });
+        const p=pend.get(m.id);
+        /* a tile the renderer already abandoned (see `tile` below): nobody will draw this bitmap, so it is
+           closed here rather than left for the collector */
+        if(!p){ if(m.bitmap){ try{ m.bitmap.close(); }catch(_){} } return; }
+        pend.delete(m.id);
+        if(m.stats) p.res(m.stats);
+        else if(m.ok) p.res({ data:(m.bitmap||m.buf), mode:m.mode });
         else p.rej(new Error(m.err||'sat worker'));
       };
       /* a worker that dies must not take the imagery with it — the caller falls back to its own path */
@@ -47,19 +52,33 @@ window.IntMapSatWorker=(function(){
     /* `depth` is called with [[cellKey, have, stop], …] whenever the worker learns something */
     configure(o){ o=o||{}; if(typeof o.depth==='function') onDepth=o.depth;
       const it=worker(); if(!it) return false;
-      try{ it.postMessage({type:'config', rawMax:o.rawMax, depthMax:o.depthMax}); }catch(_){}
+      try{ it.postMessage({type:'config', rawMax:o.rawMax, depthMax:o.depthMax, lanes:o.lanes}); }catch(_){}
       return true; },
     /* one tile. Returns a promise for {data: ImageBitmap|ArrayBuffer, mode}, or null when there is
        no worker to ask — null and a rejected promise mean different things to the caller. */
+    /* ══ (sat-arcgis-3d) AN ABANDONED TILE IS ANSWERED AT ONCE ══════════════════════════════════════
+       MapLibre counts this promise against `MAX_PARALLEL_IMAGE_REQUESTS` (src/util/image_request.ts:
+       `currentParallelImageRequests` is decremented only when the protocol handler settles) — and the
+       satellite and the DEM share that one limit. The abort used to be forwarded and nothing else, so an
+       abandoned tile kept its slot until the worker had finished fetching it: MEASURED on a phone (limit
+       16, 8 while moving), 54 % of a needed tile's wait was that shared limit. The worker still decides
+       what happens to the bytes (#R196); the SLOT is given back the moment the renderer lets go. */
     tile(z,y,x,hi,signal){
       const it=worker(); if(!it) return null;
       const id=++seq;
       const p=new Promise((res,rej)=>{ pend.set(id,{res,rej}); });
       try{ it.postMessage({type:'tile', id, z, y, x, hi:!!hi}); }
       catch(_){ pend.delete(id); return null; }
-      if(signal){ try{ signal.addEventListener('abort',()=>{ try{ it.postMessage({type:'abort',id}); }catch(_){} },{once:true}); }catch(_){} }
+      if(signal){ try{ signal.addEventListener('abort',()=>{ try{ it.postMessage({type:'abort',id}); }catch(_){}
+        const q=pend.get(id); if(q){ pend.delete(id); const e=new Error('aborted'); e.name='AbortError'; try{ q.rej(e); }catch(_){} } },{once:true}); }catch(_){} }
       return p;
     },
+    /* what the worker's fetch queue has done — queued / handed to the browser / withdrawn — for the
+       instruments (the fetches themselves happen in the worker, invisible to the page's resource timing) */
+    stats(){ const it=worker(); if(!it) return Promise.resolve(null);
+      const id=++seq; const p=new Promise((res,rej)=>{ pend.set(id,{res,rej}); });
+      try{ it.postMessage({type:'stats', id}); }catch(_){ pend.delete(id); return Promise.resolve(null); }
+      return p; },
     /* (map-motion) fetch these tiles' bytes ahead of the renderer — [[z,y,x],…], replacing any batch
        still queued (src/sat-worker.js `warm`). Nothing comes back; the renderer's own request later
        finds the bytes. false when there is no worker. */

@@ -37,6 +37,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { installSafe } from './helpers/safe-html.mjs';
+import { cartoBasemapScript, esriImageryStub } from './helpers/carto-basemap-script.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -74,7 +75,7 @@ function loadCarto({ sat = false } = {}) {
   };
   const win = {};
   installSafe(win);
-  new Function('window', 'document', read('js/carto-basemap.js'))(win, document);
+  new Function('window', 'document', '__esriImagery', cartoBasemapScript())(win, document, esriImageryStub);
   return { win, credit };
 }
 

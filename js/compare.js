@@ -27,6 +27,7 @@ import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
 import { IntMapGeoEngine } from './geo-engine.js';
+import { imageryTiles, imagerySources } from './esri-imagery.js';   /* (sat-arcgis-3d) the one place World Imagery's URL is built */
 import { IntMapLang } from './lang-registry.js';
 /* (time-compare-lapse) the main map's clock, and the factory this window makes its own clock with */
 import { IntMapTime, makeClock } from './chronos.js';
@@ -319,7 +320,7 @@ export function compare(HOST){
            is a CAPABILITY, not a cost, and #R498 asked and was told to leave landscape at 19. If that
            answer ever changes, it changes in BOTH places — the compare map is supposed to be the same
            quality as the main one, which is the whole point of the paragraph above. */
-        'cmp-sat':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:(typeof isMobile==='function'&&isMobile())?18:19,attribution:'© Esri'},
+        'cmp-sat':{type:'raster',tiles:imageryTiles(),tileSize:256,maxzoom:(typeof isMobile==='function'&&isMobile())?18:19,attribution:'Powered by Esri · Sources: '+imagerySources()},
         'cmp-koppen':{type:'image',url:koppenUrl(),coordinates:KC},
         'cmp-worldcover':{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:14,attribution:'ESA WorldCover 2021 · Terrascope'},
         'cmp-relief':{type:'raster',tiles:window.cartoTiles('rastertiles/voyager',{hosts:['a']}),tileSize:256,attribution:window.CARTO_ATTRIBUTION}

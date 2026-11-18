@@ -1154,6 +1154,14 @@ API ホストを含むか目録を import するファイルの行表（`{id:'<k
   ——z10 近傍ごとに `have`（実画像が見えた最深）と `stop`（次の段が灰色だと**観測された**最深）を
   **別々に**持ち、止めてよいのは `stop` だけ。記録は**訊かれたタイル**に対して行う（祖先に対してではない）。
   観測は `window.IntMapSatProto.depth/wouldStitch/hiDPI`。
+- **衛星画像の取得先は `js/esri-imagery.js` 1 か所**：`ESRI_IMAGERY_KEY` が空なら（いまの既定。鍵付きは計測で遅かった）鍵なしの arcgisonline 2 ホスト
+  （HTTP/1.1・計 12 接続）、鍵があれば ArcGIS Location Platform の `ibasemaps-api.arcgis.com`（h2・タイル課金）。
+  鍵が拒否された応答（非 2xx か image/* 以外。拒否は HTTP 200 の JSON で来る）はそのページの間だけ鍵なしへ戻し、
+  同じタイルを 1 回取り直す。出典は「Powered by Esri · Sources: <サービスの copyrightText>」。鍵付きのタイルは
+  Service Worker に溜めない（規約が HTTP のキャッシュ指示の範囲しか認めない）。
+- **取得の待ち行列はワーカーが持つ**（`src/sat-worker.js`）：鍵なしの窓口には 1 ホスト 12 本までを渡し、
+  まだ渡していない取得は描画側が捨てたら取り下げる（渡した取得は取り消さない）。描画側の共有の画像要求枠は
+  捨てた瞬間に返す（`src/sat-worker-client.js`）。標高の先読みは画面上の 7×7 点（空は除く）。
 - **粗い地球全体の衛星ベース**：`js/world-base.js` が同梱の正距円筒画像から `imapworld://` で低ズーム
   衛星タイルを**ネットワーク無しで**生成し、`layer-sat` の下に敷く。
 - **極冠 (±85.0511°〜±90°)**：Mercator にそこのタイルは存在しないので、`layer-polar-cap`

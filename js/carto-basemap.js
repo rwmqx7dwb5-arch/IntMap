@@ -19,6 +19,7 @@
  *  js/lazy-modules.js). The key, the builders and the credit are one self-contained concern, and
  *  keeping them here is also where the vector migration will land when CARTO retires raster.
  * ==========================================================================*/
+import { imagerySources, refreshImagerySources } from './esri-imagery.js';   /* (sat-arcgis-3d) Esri's credit text */
 (function () {
   window.CARTO_BASEMAP_KEY = 'cb1_2cll_1_fb3404d89ac6926cee468d89';
   /* the credit CARTO's terms require to stay visible wherever their basemap is drawn */
@@ -66,8 +67,11 @@
       var sat = !!(document.getElementById('btn-view-sat') || {}).classList &&
         document.getElementById('btn-view-sat').classList.contains('active');
       var historical = !!window.IntMapTimeBorders?.active?.();
+      /* (sat-arcgis-3d) Esri's rule for interactive maps: "Powered by Esri" plus the providers as
+         "Sources: \u2026" from the service's own copyrightText (js/esri-imagery.js reads it once). */
+      if (sat) refreshImagerySources(function () { window.IntMapCartoCredit(); });
       el.innerHTML = sat
-        ? '\u00a9 ' + a('https://www.esri.com/', 'Esri')
+        ? 'Powered by ' + a('https://www.esri.com/', 'Esri') + ' \u00b7 Sources: ' + window.IntMapSafe.html(imagerySources())
         : historical
           ? '\u00a9 ' + a('https://openfreemap.org/', 'OpenFreeMap') + ' \u00a9 ' + a('https://openmaptiles.org/', 'OpenMapTiles') +
             ' \u00a9 ' + a('https://www.openstreetmap.org/copyright', 'OpenStreetMap')
