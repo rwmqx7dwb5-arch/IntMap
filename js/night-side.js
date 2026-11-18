@@ -265,10 +265,28 @@ window.IntMapNightSide=(function(){
       if(!now){ lights=null; lightsZ=0; lightsEpoch=''; return null; }
       if(now.id!==want) return loadLights(z);
       if(!oks.some(Boolean)){ lastErr='lights'; return lights; }
-      try{ lights={ w:W, h:W, d:cx.getImageData(0,0,W,W).data }; lightsZ=z; lightsEpoch=want; lastErr=null; }
+      try{ const d=cx.getImageData(0,0,W,W).data; lights=Object.assign({ w:W, h:W, d }, seamCols(d,W,W)); lightsZ=z; lightsEpoch=want; lastErr=null; }
       catch(_){ lastErr='lights-cors'; }
       return lights;
     }).catch(()=>{ lightsBusy=false; lastErr='lights'; return lights; });
+  }
+
+  /* ══ (layer-click-polish) THE MOSAIC'S ±180° COLUMNS ARE THE UPSTREAM'S EDGE, NOT THE EARTH ══════════
+     「夜の状態になっている日付変更線付近が…そこだけ線上に暗くなってしまっている」. MEASURED 2026-11-18 on the
+     built site (globe, satellite, z2.6 at 180°/20°N): a 2-device-px column right at 180° read luminance 27
+     against ~37 either side, and switching THIS image off removed it. The cause is in the source: GIBS's
+     VIIRS Black Marble tiles at z3 carry a dark outermost column on the antimeridian — mean RGB sum 9 at
+     x=255 of the easternmost tile and at x=0 of the westernmost, against 24 one pixel in. The image samples
+     the mosaic column by column, so it painted that seam onto the globe.
+     ⚠ NOT A FIXED OFFSET. Each edge column is compared with its inner neighbour when the mosaic loads, and
+     only an edge measurably darker than it (under 0.6×, over the whole height) is stepped over; sampling
+     then uses the neighbour, one source pixel (~5 km at z3) away. If the upstream stops writing that edge,
+     the test fails and every column is read as before. Invalid if the mosaic stops being a whole-world
+     strip whose first and last columns meet at ±180°. */
+  function seamCols(d,W,H){
+    const mean=(col)=>{ let s=0; for(let y=0;y<H;y+=2){ const j=(y*W+col)*4; s+=d[j]+d[j+1]+d[j+2]; } return s; };
+    const dark=(edge,inner)=>{ const e=mean(edge), i=mean(inner); return i>0&&e<0.6*i; };
+    return { lo: (W>2&&dark(0,1))?1:0, hi: (W>2&&dark(W-1,W-2))?W-2:W-1 };
   }
 
   /* ── the layers ──────────────────────────────────────────────────────────────────────────────── */
@@ -364,7 +382,7 @@ window.IntMapNightSide=(function(){
     const cosH=new Float64Array(W), sx=new Int32Array(W);
     for(let c=0;c<W;c++){ const lng=-180+360*(c+0.5)/W;
       cosH[c]=Math.cos(th0+D*lng);
-      sx[c]=L?Math.max(0,Math.min(L.w-1,Math.round((lng+180)/360*L.w))):0; }
+      sx[c]=L?Math.max(L.lo||0,Math.min(L.hi!=null?L.hi:L.w-1,Math.round((lng+180)/360*L.w))):0; }   /* lo/hi: seamCols */
     const SIN_DAY=0, SIN_NIGHT=Math.sin(TWILIGHT_END*D);   /* the two ends of the ramp, as sines */
     const y0=Math.log(Math.tan(Math.PI/4+LIM*D/2));
     const U0=UNLIT[0], U1=UNLIT[1], U2=UNLIT[2];

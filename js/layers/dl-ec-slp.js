@@ -5,5 +5,6 @@ export default {
   order: 70,
   key: 'ec-slp',
   share: true,
+  noAir: true,
   atlas: ['layers.isobars'],
 };

@@ -674,56 +674,49 @@ export function popArea(HOST){
        batch until the browser's default socket timeout (minutes) — the tiled sum then never finished and the panel
        looked broken. R124/R127 bounded only the POLLING loop, never the create/poll fetch()es themselves. Aborting
        each request turns a stall into a fast retry instead of a permanent freeze. */
-    function _fetchT(url, ms){
+    function _fetchT(url, ms, init){
       let ctl=null, timer=null; try{ ctl=new AbortController(); }catch(_){ ctl=null; }
-      const opt=ctl?{signal:ctl.signal}:{};
+      const opt=Object.assign({}, init||{}, ctl?{signal:ctl.signal}:{});
       if(ctl) timer=setTimeout(()=>{ try{ ctl.abort(); }catch(_){} }, ms||28000);
       return fetch(url,opt).finally(()=>{ if(timer) clearTimeout(timer); }); }
-    /* ══ ⚠ (#R254) THE WORLDPOP TASK ENDPOINT APPENDS PHP WARNINGS TO ITS JSON ═══════════════════════
-       MEASURED this round while checking the tiling change (curl, content-type `application/json`):
-           {  "status": "created", … }<br /><b>Warning</b>: Trying to access array offset on value of
-           type bool in /srv/www/api.worldpop.org/html/app/TasksController.php on line 40 …
-       749 bytes, of which the last ~470 are HTML. `response.json()` throws on that, and the polling
-       loop below treats a throw as «transient, poll again» — so a body that DID carry the answer
-       would be retried until the deadline and reported as a timeout. Read the text and take the JSON
-       object out of it; a body with no object at all still throws, as it should. */
-    async function _json(r){ const t=await r.text();
-      try{ return JSON.parse(t); }catch(_){}
-      const i=t.indexOf('{'), k=t.lastIndexOf('}');
-      if(i>=0&&k>i) return JSON.parse(t.slice(i,k+1));
-      throw new Error('WorldPop: unparseable response'); }
-    /* one WorldPop request for a single (sub-limit) polygon → total_population number. `deadlineMs` bounds the WHOLE
-       call (create + polling); each individual fetch aborts well inside it (a ≤90k km² tile normally finishes in
-       seconds; a single free-form polygon keeps the full ~2 min). */
-    async function _estimateOne(g, deadlineMs){
-      const t0=Date.now(), DEADLINE=deadlineMs||125000;
-      const fc={type:'FeatureCollection',features:[{type:'Feature',geometry:g,properties:{}}]};
-      const u='https://api.worldpop.org/v1/services/stats?dataset=wpgppop&year=2020&geojson='+encodeURIComponent(JSON.stringify(fc));
-      const r=await _fetchT(u, Math.min(30000, DEADLINE)); const j=await _json(r);
-      if(j&&j.error&&!j.taskid) throw new Error(String(j.error_message||'WorldPop error'));
-      let data=j&&j.data&&j.data.total_population!=null?j.data:null;
-      if(!data&&j&&j.taskid){
-        /* (#R123/#R128) poll with a gentle backoff; each poll fetch is itself abortable so a stalled poll can't hang;
-           break IMMEDIATELY on a real task error; ignore a transient hiccup. */
-        let iv=1200;
-        while(Date.now()-t0<DEADLINE){ await new Promise(rs=>setTimeout(rs,iv)); iv=Math.min(4000,iv+250);
-          let j2=null; try{ const r2=await _fetchT('https://api.worldpop.org/v1/tasks/'+encodeURIComponent(j.taskid), 18000); j2=await _json(r2); }catch(_){ continue; }
-          if(!j2) continue;
-          if(j2.status==='finished'){ if(j2.error) throw new Error(String(j2.error_message||'WorldPop task error')); data=j2.data; break; }
-          if(j2.status==='error'){ throw new Error(String(j2.error_message||'WorldPop task error')); } }
-      }
-      if(!data||data.total_population==null) throw new Error('WorldPop: no result (timeout or empty)');
-      return +data.total_population; }
+    /* ══ ⚠ WORLDPOP RETIRED ITS v1 API (observed 2026-11-18) ══════════════════════════════════════
+       `GET api.worldpop.org/v1/services/stats` now answers 302 → /services/stats → 404, so EVERY
+       «Population in this area» failed with «Population lookup failed». The current API is v3:
+       `POST https://api.worldpop.org/v3/population` with {geojson, year} answers synchronously
+       (no task polling), CORS `*`, from WorldPop Global2 R2025A at 100 m for 2015–2030.
+       Anonymous limits, from its own `GET /v3/health` the same day: 100,000 km² per polygon,
+       3 concurrent, 60/minute, 1,000/day — the tiling below keeps every cell under the area cap
+       and CONC=2 under the concurrency cap. A 429 carries `Retry-After`; the retry waits that long
+       instead of a fixed backoff (an observed refusal, retried differently — one-pass-or-a-reason.md §5).
+       ⚠ Invalid when WorldPop changes v3's request shape or limits again — the upstream-liveness
+       probe (scripts/outbound-hosts.json) asks /v3/health, which stops answering 200 if v3 is retired. */
+    const WP_URL='https://api.worldpop.org/v3/population', WP_Y0=2015, WP_Y1=2030;
+    /* the year the map is showing (the master clock — window.IntMapTime), inside the years WorldPop serves */
+    function _year(){ let y=new Date().getUTCFullYear(); try{ const T=window.IntMapTime; if(T&&T.year) y=+T.year(); }catch(_){}
+      return Math.max(WP_Y0, Math.min(WP_Y1, Math.round(isFinite(y)?y:new Date().getUTCFullYear()))); }
+    /* one WorldPop request for a single (sub-limit) polygon → {pop, year, source}. */
+    async function _estimateOne(g, deadlineMs, year){
+      const r=await _fetchT(WP_URL, Math.min(60000, deadlineMs||60000), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({geojson:g, year}) });
+      let j=null; try{ j=await r.json(); }catch(_){}
+      if(r.status===429){ const e=new Error('WorldPop: rate limited'); e.retryAfterS=Math.max(1, Math.min(120, +r.headers.get('Retry-After')||20)); throw e; }
+      /* v3 states its refusals as {error, message} (measured: 413 «area_limit_exceeded»). A 4xx other than
+         408/429 is the same answer on every retry, so it is FATAL rather than retried. */
+      if(!r.ok){ const d=j&&(j.message||j.error||j.detail); const e=new Error('WorldPop '+r.status+': '+(typeof d==='string'?d:JSON.stringify(d||'')).slice(0,200));
+        e.fatal=r.status>=400&&r.status<500&&r.status!==408; throw e; }
+      if(!j||j.total_population==null||!isFinite(+j.total_population)) throw new Error('WorldPop: no total_population in the answer');
+      return { pop:+j.total_population, year:+j.data_year||year, source:String(j.data_source||'WorldPop') }; }
     /* one tile, with retries — the public WorldPop API rate-limits/stalls on bursts, so a lone transient failure must
        NOT be silently counted as 0 (that was the R124 undercount bug). (#R128) 3 attempts with a growing backoff and
        a 90s per-attempt budget (create can take ~15s under load + task processing); a stalled request now aborts fast
        (see _fetchT) so a retry actually gets a fresh connection instead of waiting on a dead socket. A "too large"
        error is FATAL (retrying can't help) and bubbles up. Returns {ok,v} or {ok:false,err,fatal?}. */
-    async function _tileWithRetry(cell, tries){
+    async function _tileWithRetry(cell, tries, year){
       let lastErr=null; const N=tries||4;
-      for(let t=0;t<N;t++){ if(t) await new Promise(rs=>setTimeout(rs, 2000+3000*t));   /* 2s,5s,8s,11s — long enough to ride out a WorldPop rate-limit window */
-        try{ const v=await _estimateOne(cell, 105000); if(v!=null&&isFinite(v)) return {ok:true, v:+v}; }
-        catch(e){ lastErr=e; if(/too large/i.test(String(e&&e.message||''))) return {ok:false, err:e.message, fatal:true}; } }
+      for(let t=0;t<N;t++){
+        /* a 429 names its own wait (Retry-After); anything else transient keeps the growing backoff */
+        if(t) await new Promise(rs=>setTimeout(rs, (lastErr&&lastErr.retryAfterS)?lastErr.retryAfterS*1000:(2000+3000*t)));
+        try{ const v=await _estimateOne(cell, 60000, year); if(v&&isFinite(v.pop)) return {ok:true, v}; }
+        catch(e){ lastErr=e; if(e&&e.fatal) return {ok:false, err:e.message, fatal:true}; } }
       return {ok:false, err:(lastErr&&lastErr.message)||'failed'}; }
     /* (#R124/#R127) FIX "大きい範囲になると失敗する": WorldPop caps EACH request at 100,000 km² (it returns
        "The requested area was too large … allowance was 100000"), which a poll-extension can't help because it
@@ -732,7 +725,7 @@ export function popArea(HOST){
        with modest land) and swallowed every tile error as 0 (→ a rate-limited land tile silently undercounted, and
        an all-fail returned 0 as a bogus "success"). R127: raise the ceiling to cover continental selections, retry
        transient tile failures, and account for real failures HONESTLY (partial flag) instead of zeroing them. */
-    async function _estimateTiled(g, areaKm2, onProgress){
+    async function _estimateTiled(g, areaKm2, onProgress, year){
       const feat={type:'Feature',geometry:g,properties:{}}; const bb=turf.bbox(feat);   /* [w,s,e,n] */
       /* size cells for the WORST case = the bbox's equator-ward edge (highest cos → largest cells); every cell
          poleward of it is then smaller, so ALL cells stay ≤ ~90,000 km² (safely under the 100k cap) while using the
@@ -776,14 +769,14 @@ export function popArea(HOST){
       if(cells.length>340) throw new Error('WorldPop: area too large to tile precisely ('+Math.round(areaKm2).toLocaleString()+' km²)');
       /* (#R128) STAGGERED WORKER POOL rather than fixed Promise.all batches. A batch waits for its slowest tile, so a
          single 30s-stall stalled the whole batch; a pool keeps CONC requests continuously in flight and pulls the next
-         cell the instant one finishes. CONC=2 — measured: WorldPop serves ~4 concurrent CREATES but rate-limits under
-         the SUSTAINED create+poll load of a many-tile sum (a 6-tile run during a self-inflicted burst lost 3 tiles);
-         2-wide + patient retries trades a little speed for actually completing. Worker starts staggered ~300ms. */
-      let total=0, done=0, ok=0, failed=0, fatal=null; let idx=0; const CONC=Math.min(2, cells.length);
+         cell the instant one finishes. CONC=2 — WorldPop v3 allows an anonymous caller 3 concurrent
+         requests and 60 a minute (its /v3/health, 2026-11-18); 2-wide leaves room for another tab and a 429 waits
+         its own Retry-After. Worker starts staggered ~300ms. */
+      let total=0, done=0, ok=0, failed=0, fatal=null, dataYear=year, dataSrc='WorldPop'; let idx=0; const CONC=Math.min(2, cells.length);
       async function _worker(w){ if(w) await new Promise(rs=>setTimeout(rs, w*300));
         for(;;){ const my=idx++; if(my>=cells.length) return;
-          const rr=await _tileWithRetry(cells[my], 3);
-          if(rr.ok){ total+=rr.v; ok++; } else { failed++; if(rr.fatal&&!fatal) fatal=rr.err; }
+          const rr=await _tileWithRetry(cells[my], 3, year);
+          if(rr.ok){ total+=rr.v.pop; ok++; dataYear=rr.v.year; dataSrc=rr.v.source; } else { failed++; if(rr.fatal&&!fatal) fatal=rr.err; }
           done++; if(onProgress){ try{ onProgress(Math.min(1, done/cells.length)); }catch(_){} } } }
       await Promise.all(Array.from({length:CONC}, (_,w)=>_worker(w)));
       if(fatal) throw new Error(fatal);
@@ -794,17 +787,19 @@ export function popArea(HOST){
          «4 tiles» would be printed beside every answer the app has ever given — a number about HTTP,
          in the slot that says where the population figure came from. It stays what it was; the tile
          count is still reported when it changes the ANSWER (a partial sum, below) and on the object. */
-      const out={ pop:Math.round(total), year:2020, src:'WorldPop (100m grid)', tiles:cells.length, tilesOk:ok };
-      if(failed>0){ out.partial=true; out.tilesFailed=failed; out.src='WorldPop (100m grid, '+ok+'/'+cells.length+' tiles, '+failed+' unavailable)'; }
+      /* the source line is WorldPop's own (v3 `data_source`, e.g. «WorldPop Global2 R2025A, 100 m») and the year is
+         the one it answered for (`data_year`), not a constant written here. */
+      const out={ pop:Math.round(total), year:dataYear, src:dataSrc, tiles:cells.length, tilesOk:ok };
+      if(failed>0){ out.partial=true; out.tilesFailed=failed; out.src=dataSrc+' ('+ok+'/'+cells.length+' tiles, '+failed+' unavailable)'; }
       return out; }
     async function estimate(geom, onProgress){ const g=_prep(geom); if(!g) throw new Error('polygon required');
-      const key=JSON.stringify(g); if(cache.has(key)) return cache.get(key);
+      const year=_year(); const key=year+'|'+JSON.stringify(g); if(cache.has(key)) return cache.get(key);
       let areaKm2=0; try{ areaKm2=turf.area({type:'Feature',geometry:g,properties:{}})/1e6; }catch(_){}
       /* (#R128) even a SINGLE sub-cap request goes through the retry wrapper — a lone stalled connection used to
          hang the panel on "Calculating…" forever; now it aborts and retries, so a transient WorldPop hiccup recovers.
          (#R254) …and there is no longer a separate "single request" branch: EVERY area is tiled, because that is
          where the progress fraction comes from (see _estimateTiled). `_tileWithRetry` is still what runs per cell. */
-      const out=await _estimateTiled(g, areaKm2, onProgress);
+      const out=await _estimateTiled(g, areaKm2, onProgress, year);
       if(!out.partial) cache.set(key,out); return out; }   /* never cache a partial (undercounted) sum */
     function circleGeom(center,km){ try{ if(typeof turf!=='undefined'&&turf.circle){ return turf.circle(center,km,{units:'kilometers',steps:48}).geometry; } }catch(_){}
       const lat=center[1]*Math.PI/180; const dLat=km/111.32, dLng=km/(111.32*Math.cos(lat)||1);

@@ -538,7 +538,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - 地名クリックの優先順位はエンジンの登録情報で判定する。`events.onLayer` の第4引数 `{ownership:'fallback'}` は他の地物や地名に譲る領域
   説明用で、`clickLayers()` は全登録、`clickLayers({ownersOnly:true})` は優先権を持つ登録を返す。無名歴史領域の説明は fallback。同一レイヤー
   の別ハンドラの優先権は維持する。登録台帳はレンダラに依存しない `js/click-ownership.js` が持ち、adapter と callback を弱参照する。
-- **境界線を押すと「この線の根拠」が開く**（`js/border-provenance.js`・`js/border-provenance-card.js`）。**時計が「現在」のときは開かない**（`today-borders` の `layers()` が空を返す。今日の線は基図のタイルで日付の付いた記録を持たず、読者が現在を見ているときに出所のカードは要らない——2026-11-17 利用者。過去の年を今日の線で描いている間は開く）。線を描く記録は自分を読み手として
+- **境界線を押すと「この線の根拠」が開き、カードの間その線が光る**（`js/border-provenance.js`・`js/border-provenance-card.js`・強調は `js/feature-highlight.js`）。**時計が「現在」のときは開かない**（`today-borders` の `layers()` が空を返す。今日の線は基図のタイルで日付の付いた記録を持たず、読者が現在を見ているときに出所のカードは要らない——2026-11-17 利用者。過去の年を今日の線で描いている間は開く）。線を描く記録は自分を読み手として
   登録する（`registerReader`）——国境は `js/time-borders.js` の `era-borders`（`imtb-line`）と `today-borders`（`borders-only-line`）、地方区分は
   `js/time-admin1.js` の `era-subdivisions`（ベクタタイル・束・継ぎ足しの 3 本）。1 本のリスナが押した点と周囲 8 点を覆う形を両側の記録として
   集める。線はタップの最後の持ち主（独占の持ち主には譲り、地図全体の持ち主は 1 マイクロタスク後に `clickClaimed` で聞く。測定などの道具・

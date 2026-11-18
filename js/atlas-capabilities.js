@@ -850,6 +850,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       none: {
         observe: function () { return null; },
         verify: function (ctx, args, before, after, raw) {
+          /* (layer-click-polish) a read that could not LOOK because the renderer was not drawing did not fail — it was
+             not observed (.agents/rules/one-pass-or-a-reason.md §5). Stated by the capability as meta.code, read here once
+             for every read, so the loop answers a repeat with 「already done」 instead of inviting a retry. */
+          if (raw && raw.ok === false && raw.meta && raw.meta.code === 'not_rendering') return { status: 'unobserved', produced: [], code: 'not_rendering', observed: { rendering: false }, html: raw.html || '' };
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
         }
