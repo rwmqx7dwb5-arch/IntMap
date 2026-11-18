@@ -280,3 +280,65 @@ test('ai-one-ledger ① ai-proxy records a failed request\'s cost too, and recor
   assert.notEqual(down.status, 200);
   assert.deepEqual(rpcArgs(down.calls, 'record_ai_usage'), [], 'a request that read no provider answer writes no cost');
 });
+
+/* ══ atlas-turn-observability — how a request WENT is counted, anonymously, and decides nothing ══════════
+   Written to the counter that already exists (public.usage_counts through record_usage_counts), so the
+   rows are (day, metric, dimension) += n and a person has no place in them. */
+const healthRowsOf = (calls) => rpcArgs(calls, 'record_usage_counts').flatMap((b) => b.p_rows);
+const HEALTH_ROUTES = [
+  ['*', '/auth/v1/user$', { json: USER }],
+  ['*', '/rest/v1/profiles', { json: [] }],
+  ['*', '/rest/v1/rpc/consume_ai_turn$', { json: [{ allowed: true, used: 1, charged: true, calls: 1 }] }],
+  ['*', '/rest/v1/rpc/(refund|settle)_ai_turn$', { json: null }],
+  ['*', '/rest/v1/rpc/record_ai_usage$', { json: null }],
+  ['*', '/rest/v1/rpc/record_usage_counts$', { json: 4 }],
+];
+const HEALTH_ENV = { SUPABASE_URL: SUPA, SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'svc', AI_PROVIDER: 'openai', OPENAI_API_KEY: 'sk-stub' };
+const healthAsk = (turn) => ({ headers: { authorization: 'Bearer good', 'content-type': 'application/json', 'x-intmap-turn': turn }, body: { task: 'free_text', prompt: 'hello' } });
+
+test('atlas-turn-observability healthRows: closed words, one row per fact, nothing about a person', () => {
+  const rows = L.healthRows({ outcome: 'ok', wallMs: 7200, attempts: 2, fallbackTo: 'gpt-5-mini', incomplete: 'max_output_tokens' });
+  assert.deepEqual(rows.map((r) => r.m + '=' + r.d), ['ai_request=ok', 'ai_wall=5to15s', 'ai_rungs=2', 'ai_fallback=gpt-5-mini', 'ai_incomplete=max_output_tokens']);
+  assert.ok(rows.every((r) => r.n === 1 && r.cap >= 1 && /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(r.d)), 'every row fits the table\'s own CHECK');
+  assert.deepEqual(L.healthRows({ outcome: 'provider_unavailable', wallMs: 200000, attempts: 9 }).map((r) => r.m + '=' + r.d), ['ai_request=provider_unavailable', 'ai_wall=ge120s', 'ai_rungs=6plus']);
+  assert.deepEqual(L.healthRows({ outcome: 'ok', wallMs: 100 }).map((r) => r.m), ['ai_request', 'ai_wall'], 'a fact that did not happen is not a row');
+  assert.ok(!/user|turn|prompt|email|ip/i.test(JSON.stringify(Object.keys(L.healthRows({ outcome: 'ok', wallMs: 1, attempts: 1 })[0]))), 'the row has no field for a person');
+});
+
+test('atlas-turn-observability ai-proxy: an answered request is counted — outcome, wall range, provider requests', () => {
+  const [r] = runEdge('ai-proxy', [healthAsk('turn-H1')], { env: HEALTH_ENV, routes: [...HEALTH_ROUTES,
+    ['*', 'api\.openai\.com/v1/responses', { json: { model: 'gpt-x', status: 'completed', output_text: 'hi', output: [{ type: 'message', content: [{ type: 'output_text', text: 'hi' }] }], usage: { input_tokens: 5, output_tokens: 2 } } }]] });
+  assert.equal(r.status, 200, JSON.stringify(r.json));
+  const rows = healthRowsOf(r.calls).map((x) => x.m + '=' + x.d);
+  assert.ok(rows.includes('ai_request=ok'), rows.join());
+  assert.ok(rows.includes('ai_wall=lt5s'), rows.join());
+  assert.ok(rows.includes('ai_rungs=1'), rows.join());
+  assert.ok(!rows.some((x) => x.startsWith('ai_fallback')), 'the provider reporting a dated snapshot of the asked model is not a fallback');
+  assert.ok(!JSON.stringify(rpcArgs(r.calls, 'record_usage_counts')).includes(USER.id), 'no account id reaches the counter');
+});
+
+test('atlas-turn-observability ai-proxy: a failed request is counted under its typed code, with the rungs it walked', () => {
+  const [r] = runEdge('ai-proxy', [healthAsk('turn-H2')], { env: HEALTH_ENV, routes: [...HEALTH_ROUTES,
+    ['*', 'api\.openai\.com/v1/responses', { status: 500, json: { error: { message: 'x' } } }]] });
+  assert.notEqual(r.status, 200);
+  const rows = healthRowsOf(r.calls).map((x) => x.m + '=' + x.d);
+  assert.ok(rows.includes('ai_request=' + r.json.error), 'the code the reader got is the code counted: ' + r.json.error + ' / ' + rows.join());
+  assert.ok(rows.some((x) => x.startsWith('ai_rungs=')), rows.join());
+});
+
+test('atlas-turn-observability ai-proxy: the model chain walking is counted where it walks, and the answer is unchanged', () => {
+  const [r] = runEdge('ai-proxy', [healthAsk('turn-H3')], { env: HEALTH_ENV, routes: [...HEALTH_ROUTES,
+    ['*', 'api\.openai\.com/v1/responses', { status: 404, json: { error: { message: 'The model does not exist' } } }]] });
+  assert.notEqual(r.status, 200);
+  const rows = healthRowsOf(r.calls).map((x) => x.m + '=' + x.d);
+  assert.ok(rows.some((x) => x.startsWith('ai_fallback=')), 'a walk down the chain leaves a row: ' + rows.join());
+  assert.ok(rows.some((x) => /^ai_rungs=(\d|6plus)$/.test(x) && x !== 'ai_rungs=1'), 'and more than one provider request: ' + rows.join());
+});
+
+test('atlas-turn-observability: the counter being down changes nothing the reader receives', () => {
+  const ok = [...HEALTH_ROUTES.filter((x) => !/record_usage_counts/.test(x[1])), ['*', '/rest/v1/rpc/record_usage_counts$', { status: 500, json: { message: 'down' } }],
+    ['*', 'api\.openai\.com/v1/responses', { json: { model: 'gpt-x', status: 'completed', output_text: 'hi', output: [{ type: 'message', content: [{ type: 'output_text', text: 'hi' }] }], usage: { input_tokens: 5, output_tokens: 2 } } }]];
+  const [r] = runEdge('ai-proxy', [healthAsk('turn-H4')], { env: HEALTH_ENV, routes: ok });
+  assert.equal(r.status, 200, JSON.stringify(r.json));
+  assert.equal(r.json.text, 'hi');
+});

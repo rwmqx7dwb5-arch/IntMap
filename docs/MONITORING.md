@@ -458,6 +458,47 @@ ceiling in the Usage tab is the signal that the ceiling (an estimate) has expire
 400 days — a year plus a month, so a day can be compared with the same day a year earlier — removed daily by
 the pg_cron job `usage-counts-purge`, which the migration schedules itself (idempotently, when pg_cron exists).
 
+## 2b2. How the AI requests went (atlas-turn-observability)
+
+### Why
+The ledger (`ai_usage`, `ai_turns`) says what a request **cost** and whether the reader was charged. Nothing said how it
+**went** — how long it took, how many provider requests it needed, whether the model chain walked, whether the answer
+ended. The server logged only failures (`console.error`, gone after a short retention), so a slow week or a model that
+quietly stopped being reachable looked like "fewer readers". These are runtime facts, not a judgement of any answer —
+evaluating Atlas's answers is not what this measures.
+
+### The path
+```
+ai-proxy/ask.ts  answer()        times the request; providerCall() counts each provider request it makes
+  → _shared/ai-ledger.js         healthRows() → closed (metric, dimension) rows;  recordHealth() best-effort, off the answer's path
+  → record_usage_counts          the same anonymous counter as §2b  (server UTC day, metric, dimension) += 1
+  → admin.html «Usage»           the `ai_*` metrics appear in the per-metric totals with the others
+```
+Written for every request that reaches the provider step, answered or failed — not for a request refused before it
+(allowance, ceiling), which has its own answer. The browser cannot write these metrics: `usage-count` accepts only what
+`shape.js` declares, and `ai_*` is not in it.
+
+| metric | dimension | reads as |
+|---|---|---|
+| `ai_request` | `ok` or the typed error code (`provider_unavailable`, `provider_quota`, `invalid_structured_output`, …, `unclassified`) | ended well / how it failed. A day of `provider_quota` or 503s is visible as such, not as fewer readers |
+| `ai_wall` | `lt5s` `5to15s` `15to30s` `30to60s` `60to120s` `ge120s` | wall-clock of the request. Compare the shape of one week with the one before |
+| `ai_rungs` | `1` … `5`, `6plus` | provider requests that **one** request needed. `1` = straight through; a growing `2+` share = the 400 ladder is walking |
+| `ai_fallback` | the model walked **to** | the `FALLBACK_CHAIN` stepped (model not found / no access). Not inferred from the provider's reported model name, which is a dated snapshot of the model asked for |
+| `ai_incomplete` | the provider's reason (`max_output_tokens`, …) | answers that did not end |
+
+### What it does not do, and never records
+It **observes only**: no request is refused, shortened, retried or re-routed because of these numbers (CONSTITUTION §5,
+`.agents/rules/one-pass-or-a-reason.md` §1), and a failing write changes nothing the reader receives. No account id, turn
+key, prompt, answer, address or time finer than the UTC day is an argument — the same "no person by construction" as §2b
+(`docs/DATA-GOVERNANCE.md`). Dimensions are closed words, typed codes, or model names from the server's own configuration;
+at most 32 distinct values per metric per day (`record_usage_counts` refuses a new one past that and still counts known ones —
+a metric at 32 means a code or model list changed, look at it). Retention is the table's: 400 days.
+
+### Reading it
+Admin console «Usage», or as an admin: `select day, metric, dimension, count from usage_counts where metric like 'ai_%' order by day desc`.
+A day to be suspicious of: `ai_request` non-`ok` share up, `ai_wall` mass moving to `60to120s`/`ge120s`, `ai_rungs` `2+` share up,
+any `ai_fallback` row. Counts are per provider request-handling, not per reader.
+
 ## 2c. How long readers wait, by release (field-speed)
 
 ### Why

@@ -268,3 +268,53 @@ export function recordUsage(db, userId, turn, total) {
   }
   return p;
 }
+
+/* ══ (atlas-turn-observability) HOW THE REQUESTS WENT — one anonymous count per fact, in the counter that already exists ══
+   The ledger above says what a request COST and whether the reader was charged; nothing said how it WENT:
+   how long it took, how many provider requests it needed, whether the model answering was the one asked
+   for, whether the answer ended. A slow week, a model that quietly stopped being reachable, a ladder
+   that walks every request down three rungs — none of it was visible until a reader said so.
+   ⚠ THIS OBSERVES; IT DECIDES NOTHING. No request is refused, shortened, retried or re-routed because of
+   a number written here (CONSTITUTION.md §5; .agents/rules/one-pass-or-a-reason.md §1), and the write is
+   best-effort and off the answer's path — a measurement that fails must not fail the answer it measures.
+   ⚠ NO PERSON IN IT. Rows are (UTC day, metric, dimension) += n in public.usage_counts — the same
+   anonymous, admin-only counter the page's own counts go to (docs/MONITORING.md §2b); no user, turn key,
+   prompt, model output or address is an argument. Every dimension is a closed word from this file, a
+   typed error code, or a model name from the server's own configuration, shaped to the table's CHECK.
+   Metrics (ai_ prefix; the browser cannot write them — usage-count validates against shape.js):
+     ai_request    outcome: "ok", or the typed error code the request ended in ("provider_unavailable", …)
+     ai_wall       wall-clock of the request, in ranges
+     ai_rungs      provider requests the ONE request needed (1 = no ladder; 2+ = it walked down)
+     ai_fallback   the model the chain walked TO (providers/openai.ts FALLBACK_CHAIN), when it walked — never inferred from the
+                   provider's reported model name, which is a dated snapshot of the one asked for and differs every time
+     ai_incomplete the provider's own reason, when the answer did not end */
+export const HEALTH_WALL_BUCKETS = Object.freeze([[5000, "lt5s"], [15000, "5to15s"], [30000, "15to30s"], [60000, "30to60s"], [120000, "60to120s"]]);
+const HEALTH_CAP = 32;   /* distinct dimensions per metric per day — outcomes and models are a handful; the table bounds the rest */
+const dimOf = (v) => String(v == null ? "" : v).replace(/[^A-Za-z0-9._-]/g, "_").replace(/^[^A-Za-z0-9]+/, "").slice(0, 64);
+export function healthRows(ev) {
+  const e = ev || {};
+  const rows = [];
+  const add = (m, d) => { const dim = dimOf(d); if (dim) rows.push({ m, d: dim, n: 1, cap: HEALTH_CAP }); };
+  add("ai_request", e.outcome || "ok");
+  const ms = Math.max(0, Math.floor(Number(e.wallMs) || 0));
+  const b = HEALTH_WALL_BUCKETS.find(([top]) => ms < top);
+  add("ai_wall", b ? b[1] : "ge120s");
+  const rungs = Math.max(0, Math.floor(Number(e.attempts) || 0));
+  if (rungs > 0) add("ai_rungs", rungs >= 6 ? "6plus" : String(rungs));
+  if (e.fallbackTo) add("ai_fallback", e.fallbackTo);
+  if (e.incomplete) add("ai_incomplete", e.incomplete);
+  return rows;
+}
+export function recordHealth(db, ev) {
+  const rows = healthRows(ev);
+  if (!rows.length) return Promise.resolve(false);
+  const p = (async () => {
+    try { const { error } = await db.rpc("record_usage_counts", { p_rows: rows }); return !error; }
+    catch (_) { return false; }
+  })();
+  const rt = globalThis.EdgeRuntime;
+  if (rt && typeof rt.waitUntil === "function") {
+    try { rt.waitUntil(p); return Promise.resolve(true); } catch (_) { /* fall through: await it */ }
+  }
+  return p;
+}
