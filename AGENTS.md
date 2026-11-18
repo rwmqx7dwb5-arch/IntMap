@@ -100,7 +100,7 @@
   **`supabase test db`** も実行する。
 - 1 ターンを数時間にしない。**全件（`npm test` 相当）は PR の CI が 1 回走らせ、ローカルでは回さない**
   （3 台で全部走り、緑でなければ merge されない）。赤なら**落ちた門だけを単独で**再現して直す。待つ間は
-  ポーリングせず別の独立作業を進める。変更が足した・変えた spec は PR の core で走る（`scripts/tiers.mjs`）。
+  ポーリングせず別の独立作業を進める（無ければ §5.1 のとおり background で待つ。去らない）。変更が足した・変えた spec は PR の core で走る（`scripts/tiers.mjs`）。
 
 ## 5. ワークフロー（原則として最後まで完走する）
 
@@ -120,9 +120,21 @@
 次の作業の着手時に前回分を: production verification → 原本 (OneDrive) の最新化 → USB（§11）
 ```
 
-- **PR は auto-merge on green にし、CI を座って見ない**（緑なら squash merge され branch も消える＝branch
-  deletion まで。**赤いときだけ戻る**。ゲートは `fail-fast: false` で落ちたものが全部出る・`scripts/ci-gates.mjs`）:
+- **PR は auto-merge on green にする**（緑なら squash merge され branch も消える。ゲートは
+  `fail-fast: false` で落ちたものが全部出る・`scripts/ci-gates.mjs`）:
   `gh pr merge --squash --auto --delete-branch`
+- ⚠ **auto-merge を付けたことは「完了」ではない。作業の終わりは PR が `MERGED` になった時点**であり、それまで
+  ターンを閉じない・報告して終わらない。過去、PR を作って auto-merge を付けただけで離れたセッションが、CI 赤・
+  conflict（`BLOCKED`/`DIRTY`）のまま誰にも戻られず放置された（2026-11-19 時点で open PR 12 本）。手順:
+  1. `gh pr checks <番号> --watch` を **background 実行**（`run_in_background`）して終了通知を待つ。
+     自分でポーリングしない・別の独立作業があればその間に進める。**去ること**が禁止であって、待つことは禁止でない。
+  2. 赤なら落ちた門だけを単独で再現して直し、push して 1 に戻る。`DIRTY`（conflict）なら
+     `origin/main` を取り込んで解消し、push して 1 に戻る。flaky に見える赤も、原因を示せるまでは再実行で
+     済ませず再現して直す。
+  3. `gh pr view <番号> --json state` が `MERGED` になったら `worktree.mjs done`（§6）。
+     **`MERGED` を確認できていない限り「完了」と書かない。**
+  4. 安全かつ明確に解決できない場合だけ、**PR 番号・赤いゲート名・試したこと**を添えて確認を求める。
+     「CI を待っている」「auto-merge 設定済み」を理由に作業を閉じてはならない。
 - **merge 後に main で走る CI を待たない。** 本番公開はその run が緑のときに同じ run が行う（赤なら公開しない）。
 - 後ろへ倒した工程は `node scripts/worktree.mjs status` が PR 番号で述べる（本番未到達・本番検証の記録なし・
   原本の遅れ）。検証を終えたら `node scripts/worktree.mjs verified` で受領証を残す——**書かずに次へ行かない**。

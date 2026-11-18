@@ -939,7 +939,7 @@ describe('§ #R783 · quantity semantics', () => {
 
   test('#R783 ⑤ 単位カーネルの版が上がっている（拒否と導出が変わった）', async () => {
     const { units } = await boot();
-    assert.equal(units.version(), 'units-2');
+    assert.match(units.version(), /^units-([2-9]|\d{2,})$/, 'the unit kernel declares a version at or above the one that moved these answers');
     /* ⚠ 拒否コードは増やしていない: quantity-* は ok:false で op へ返るものではなく、呼び手が読む verdict。 */
     assert.deepEqual(units.refusals(), ['unit-mismatch']);
   });

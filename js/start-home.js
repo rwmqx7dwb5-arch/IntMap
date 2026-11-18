@@ -11,8 +11,8 @@
  *  So, on a phone, the sheet's home (the state with no tab chosen) opens with the starts, and the board follows:
  *    · «Live now» — a switch per live layer (below), one tap shows it and lowers the sheet onto the map — first,
  *      because it is the one start that needs nothing from the reader (no position, no choice of year);
- *    · «Where you are» — js/here-entry.js entryRow, the same two rows the field's empty state holds;
- *    · the day's map and the example maps / classroom tours — js/showcase-gallery.js showInResults, the field's own
+ *    · «Where you are» — js/here-entry.js entryRow (the search field's empty state held them too until 2026-11-18);
+ *    · the day's map and the example maps / classroom tours — js/showcase-gallery.js showInResults, the gallery's
  *      strip, opened by the same `choose` (a card is an answer on the map: the sheet comes down) — and above the
  *      examples, in that same strip, «Pick up where you left off» (only when something is there) and «Explore»: the
  *      day's news on the map, countries compared at one year, a place through time (js/showcase-gallery.js drawStarters);

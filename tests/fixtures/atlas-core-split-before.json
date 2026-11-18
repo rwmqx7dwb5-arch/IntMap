@@ -1257,6 +1257,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -1452,6 +1485,39 @@
        "p_cached_read": 20,
        "p_cache_write": 0,
        "p_output": 30
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -1710,6 +1776,39 @@
        "p_cached_read": 20,
        "p_cache_write": 0,
        "p_output": 30
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -2163,6 +2262,39 @@
        "p_cached_read": 20,
        "p_cache_write": 0,
        "p_output": 30
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "invalid_structured_output",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],
@@ -2620,6 +2752,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -2844,6 +3009,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -3038,6 +3236,39 @@
        "p_cached_read": 20,
        "p_cache_write": 0,
        "p_output": 30
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -3250,6 +3481,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -3425,6 +3689,39 @@
        "p_cached_read": 20,
        "p_cache_write": 0,
        "p_output": 30
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -3646,6 +3943,39 @@
        "p_cache_write": 0,
        "p_output": 30
       }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
      }
     ],
     "logs": []
@@ -3820,6 +4150,39 @@
        "p_cached_read": 20,
        "p_cache_write": 0,
        "p_output": 30
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -4117,6 +4480,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -4397,6 +4793,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -4595,6 +5024,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -4757,6 +5219,39 @@
        "p_user": "u-1",
        "p_turn": "turn-0001"
       }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_rate_limit",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
      }
     ],
     "logs": [
@@ -4903,6 +5398,39 @@
        "p_user": "u-1",
        "p_turn": "turn-0001"
       }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_quota",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
      }
     ],
     "logs": [
@@ -5048,6 +5576,39 @@
       "body": {
        "p_user": "u-1",
        "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_unavailable",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],
@@ -5271,6 +5832,45 @@
        "p_cached_read": 20,
        "p_cache_write": 0,
        "p_output": 30
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "2",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_fallback",
+         "d": "gpt-6.1-terra",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -5540,6 +6140,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "2",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -5796,6 +6429,39 @@
        "p_user": "u-1",
        "p_turn": "turn-0001"
       }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_unavailable",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "3",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
      }
     ],
     "logs": [
@@ -6022,6 +6688,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "2",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -6199,6 +6898,39 @@
        "p_cache_write": 0,
        "p_output": 0
       }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_blocked",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
      }
     ],
     "logs": [
@@ -6317,6 +7049,39 @@
        "p_user": "u-1",
        "p_turn": "turn-0001"
       }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_quota",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
      }
     ],
     "logs": [
@@ -6434,6 +7199,39 @@
       "body": {
        "p_user": "u-1",
        "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_quota",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],
@@ -6675,6 +7473,39 @@
        "p_cached_read": 0,
        "p_cache_write": 0,
        "p_output": 2
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -7093,6 +7924,39 @@
        "p_cached_read": 0,
        "p_cache_write": 0,
        "p_output": 2
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "2",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -7582,6 +8446,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -7958,6 +8855,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -8241,6 +9171,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -8465,6 +9428,39 @@
       "body": {
        "p_user": "u-1",
        "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_unavailable",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],
@@ -8706,6 +9702,39 @@
        },
        "store": false
       }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_unavailable",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
      }
     ],
     "logs": [
@@ -8835,6 +9864,39 @@
        "p_cached_read": 0,
        "p_cache_write": 0,
        "p_output": 1
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],
@@ -9022,6 +10084,39 @@
        "p_cached_read": 0,
        "p_cache_write": 0,
        "p_output": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],
@@ -9233,6 +10328,39 @@
        "p_cached_read": 0,
        "p_cache_write": 0,
        "p_output": 3
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -9537,6 +10665,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -9710,6 +10871,39 @@
        "p_cached_read": 0,
        "p_cache_write": 0,
        "p_output": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_empty",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],
@@ -10027,6 +11221,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -10263,6 +11490,39 @@
        "p_cached_read": 0,
        "p_cache_write": 0,
        "p_output": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "2",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      },
      {
@@ -10505,6 +11765,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "2",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -10733,6 +12026,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "2",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -10890,6 +12216,39 @@
       "body": {
        "p_user": "u-1",
        "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_quota",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],
@@ -11056,6 +12415,39 @@
        "p_cached_read": 0,
        "p_cache_write": 0,
        "p_output": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_blocked",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],
@@ -11341,6 +12733,39 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "ok",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_rungs",
+         "d": "1",
+         "n": 1,
+         "cap": 32
+        }
+       ]
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -11453,6 +12878,33 @@
       "body": {
        "p_user": "u-1",
        "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/record_usage_counts",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_rows": [
+        {
+         "m": "ai_request",
+         "d": "provider_unavailable",
+         "n": 1,
+         "cap": 32
+        },
+        {
+         "m": "ai_wall",
+         "d": "lt5s",
+         "n": 1,
+         "cap": 32
+        }
+       ]
       }
      }
     ],

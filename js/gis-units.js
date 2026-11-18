@@ -101,8 +101,14 @@ export function makeGisUnits() {
       mi: { f: 1609.344, d: dim(1) }, ft: { f: 0.3048, d: dim(1) },
       in: { f: 0.0254, d: dim(1) }, yd: { f: 0.9144, d: dim(1) },
       nmi: { f: 1852, d: dim(1) },                      /* conventional: SI-accepted, exact */
+      /* US survey foot: 1200/3937 m exactly (the 1893 Mendenhall definition, still the unit of the
+         US State Plane tables; it differs from the international foot by 2 ppm, 2 mm in 1 km). */
+      ftUS: { f: 1200 / 3937, d: dim(1) },
       /* area and volume that are NOT a power of a length spelling */
       ha: { f: 1e4, d: dim(2) }, acre: { f: 4046.8564224, d: dim(2) },
+      /* 坪: 1 tsubo = 400/121 m² exactly (the Japanese Measures Act: 1 shaku = 10/33 m, one tsubo is
+         6 shaku × 6 shaku; it is two jō, 3.3058 m²). 'tsubo' and 「坪」 are the same atom. */
+      tsubo: { f: 400 / 121, d: dim(2) }, '坪': { f: 400 / 121, d: dim(2) },
       L: { f: 1e-3, d: dim(3) }, l: { f: 1e-3, d: dim(3) },
       /* mass */
       kg: { f: 1, d: dim(0, 1) }, g: { f: 1e-3, d: dim(0, 1) }, mg: { f: 1e-6, d: dim(0, 1) },
@@ -113,9 +119,13 @@ export function makeGisUnits() {
       s: { f: 1, d: dim(0, 0, 1) }, min: { f: 60, d: dim(0, 0, 1) },
       h: { f: 3600, d: dim(0, 0, 1) }, d: { f: 86400, d: dim(0, 0, 1) },
       /* temperature */
-      K: { f: 1, d: dim(0, 0, 0, 1) },
-      '°C': { f: 1, off: 273.15, d: dim(0, 0, 0, 1) },
-      '°F': { f: 5 / 9, off: 273.15 - 160 / 9, d: dim(0, 0, 0, 1) },
+      /* ⚠ `fr`/`or` are the same f and off as EXACT RATIONALS [numerator, denominator] (K = f·v + off).
+         convert() computes an affine pair in integers with ONE division at the end, so 0 °C is 32 °F
+         and not 31.999999999999986 (measured). 273.15 = 27315/100; the °F offset is
+         459.67 K·5/9 = 45967/180. The float f/off stay for the compound and non-affine paths. */
+      K: { f: 1, fr: [1, 1], or: [0, 1], d: dim(0, 0, 0, 1) },
+      '°C': { f: 1, off: 273.15, fr: [1, 1], or: [27315, 100], d: dim(0, 0, 0, 1) },
+      '°F': { f: 5 / 9, off: 273.15 - 160 / 9, fr: [5, 9], or: [45967, 180], d: dim(0, 0, 0, 1) },
       /* speed spellings that are not a quotient of two atoms already here */
       kn: { f: 1852 / 3600, d: dim(1, 0, -1) }, kt: { f: 1852 / 3600, d: dim(1, 0, -1) },
       mph: { f: 1609.344 / 3600, d: dim(1, 0, -1) },
@@ -124,6 +134,11 @@ export function makeGisUnits() {
       kPa: { f: 1e3, d: dim(-1, 1, -2) }, mbar: { f: 100, d: dim(-1, 1, -2) },
       bar: { f: 1e5, d: dim(-1, 1, -2) },
       atm: { f: 101325, d: dim(-1, 1, -2) },            /* conventional: standard atmosphere, exact */
+      /* conventional mercury columns. 1 mmHg = 133.322387415 Pa (13595.1 kg/m³ × 9.80665 m/s² ×
+         1 mm, exact by the definition of the conventional millimetre of mercury); 1 inHg =
+         3386.389 Pa (the conventional value US weather services publish, and the one an altimeter
+         setting is written in). */
+      mmHg: { f: 133.322387415, d: dim(-1, 1, -2) }, inHg: { f: 3386.389, d: dim(-1, 1, -2) },
       /* energy and power (J = kg·m²·s⁻², W = J/s) */
       J: { f: 1, d: dim(2, 1, -2) }, kJ: { f: 1e3, d: dim(2, 1, -2) },
       W: { f: 1, d: dim(2, 1, -3) }, kW: { f: 1e3, d: dim(2, 1, -3) }, MW: { f: 1e6, d: dim(2, 1, -3) },
@@ -182,7 +197,7 @@ export function makeGisUnits() {
       const s = stated(unit);
       if (s == null) return null;
       const parts = s.split(/([*/·⋅])/);
-      let f = 1, d = dim(), sign = 1, atoms = 0, off = 0, solo = true;
+      let f = 1, d = dim(), sign = 1, atoms = 0, off = 0, solo = true, soloAtom = null;
       for (let i = 0; i < parts.length; i++) {
         const p = parts[i];
         if (p === '/') { sign = -1; continue; }
@@ -194,12 +209,13 @@ export function makeGisUnits() {
         d = dimAdd(d, a.atom.d, power);
         if (a.atom.off) off = a.atom.off;
         atoms++;
+        soloAtom = a.atom;
         if (!(atoms === 1 && power === 1)) solo = false;
       }
       if (!atoms) return null;
       /* An offset only means anything for the bare affine atom; in a compound it is a per-something
          difference and the offset is dropped WITH the affine flag saying so. */
-      return { f: f, d: d, off: solo ? off : 0, affine: !!(solo && off), spelling: s };
+      return { f: f, d: d, off: solo ? off : 0, affine: !!(solo && off), spelling: s, rat: (solo && soloAtom && soloAtom.fr) ? soloAtom : null };
     }
 
     /* The whole question, in one verdict word:
@@ -233,7 +249,22 @@ export function makeGisUnits() {
       if (!pa || !pb || !dimEq(pa.d, pb.d)) return null;
       const diff = !!(opts && opts.difference);
       if (diff || (!pa.affine && !pb.affine)) return v * (pa.f / pb.f);
+      if (pa.rat && pb.rat) return affineExact(v, pa.rat, pb.rat);
       return ((v * pa.f + pa.off) - pb.off) / pb.f;
+    }
+
+    function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a; }
+    /* v·(fa/fb) + (oa − ob)/fb with every ratio an integer pair, then ONE division — the order that
+       keeps a decimal relationship (0 °C = 32 °F, 100 °C = 212 °F) exact for representable inputs.
+       Every integer involved is far below 2^53, so the integer products are exact. */
+    function affineExact(v, a, b) {
+      const A = a.fr[0] * b.fr[1], C0 = a.fr[1] * b.fr[0];
+      const Bn = (a.or[0] * b.or[1] - b.or[0] * a.or[1]) * b.fr[1];
+      const Bd = a.or[1] * b.or[1] * b.fr[0];
+      let N = A * Bd, M = Bn * C0, D = C0 * Bd;
+      const g = gcd(gcd(N, M), D) || 1;
+      N /= g; M /= g; D /= g;
+      return (v * N + M) / D;
     }
 
     /* ── the expression walk ──────────────────────────────────────────────────────────────────── */
@@ -442,7 +473,7 @@ export function makeGisUnits() {
     /* ⚠ month と year は原子ではない（ATOMS のコメントと同じ理由——どちらも一つの長さを持たない）。
        比較は「同じ暦の単位で同じ個数か」で行い、秒に直さない。 */
     const CALENDAR_UNITS = ['month', 'year'];
-    const METHODS = ['sum', 'mean', 'areaWeightedMean', 'weightedMean', 'min', 'max', 'median', 'majority', 'count'];
+    const METHODS = ['sum', 'mean', 'areaWeightedMean', 'weightedMean', 'min', 'max', 'median', 'percentile', 'stdev', 'majority', 'count'];
 
     function normPeriod(p) {
       if (p == null) return { ok: true, value: null };
@@ -539,7 +570,11 @@ export function makeGisUnits() {
 
       if (m === 'majority') return q.measure === 'nominal' ? out('allowed') : out('refused', 'majority-of-a-measurement', { remedy: 'mean' });
       if (q.measure === 'nominal') return out('refused', 'aggregating-a-category', { remedy: 'majority' });
-      if (m === 'min' || m === 'max' || m === 'median') return out('allowed');
+      /* (gis-foundation-refine) percentile is an order statistic like the median, and the sample
+         standard deviation measures spread in the column's own unit — neither adds values up, so
+         neither can count the same people twice; both need ORDERED numbers, which the line above
+         already guarantees by refusing a category. */
+      if (m === 'min' || m === 'max' || m === 'median' || m === 'percentile' || m === 'stdev') return out('allowed');
 
       if (m === 'weightedMean') return out('allowed', null, { weight: q.weight || 'caller' });
 
@@ -627,7 +662,11 @@ export function makeGisUnits() {
        `comparableQuantity` return for a spec that states one is the verdict they returned for the
        same spec without it, and no conversion factor moves. A saved recipe replays to the same
        numbers and the same refusals. */
-    const KERNEL_VERSION = 'units-2';
+    /* (#W4) units-2 -> units-3: ONE ANSWER MOVED AND FOUR SPELLINGS ARRIVED. An affine conversion is
+       now computed in exact integers (0 °C → 31.999999999999986 °F became 32), so a replayed
+       temperature step can land one unit in the last place from where it did. `ftUS`, `tsubo` (坪),
+       `mmHg` and `inHg` turn refusals into answers and move no existing one. */
+    const KERNEL_VERSION = 'units-3';
     /* ⚠ ONLY THE CODES THAT LEAVE HERE AS `ok:false`. The `quantity-*` and `summing-*` codes below
        are VERDICTS a caller reads and reports in its own words — they are not this kernel refusing an
        op, and declaring them here would tell tests/geo-gis-datasets-checks.test.mjs #R729 ④ to look for a sentence in js/gis-panel.js

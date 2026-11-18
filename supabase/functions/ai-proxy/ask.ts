@@ -15,7 +15,7 @@ import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js"
 /* (ai-one-ledger) The plan table, the account and the turn ledger's doors (written to be shared by
    every caller that charges the same allowance), and what a provider answer cost (one shape for three providers,
    plus the Anthropic prompt-cache breakpoints). */
-import { accountFor, openTurn, openChildTurn, reserveSpend, settleSpend, refundTurn, settleTurn, recordUsage, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
+import { accountFor, openTurn, openChildTurn, reserveSpend, settleSpend, refundTurn, settleTurn, recordUsage, recordHealth, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
 import { usageMeter } from "../_shared/ai-usage.js";
 /* (atlas-live-stream) The provider's server-sent events, read twice: as previews for the reader while
    they arrive, and folded back into the body the parsers below already read. */
@@ -239,7 +239,11 @@ export async function ask(req: Request): Promise<Response> {
      The gloss lane is recorded too, as account-day totals (it has no turn row). */
   /* (ai-quota-fairness) …and which part of the project ceiling it is drawn from: a newcomer's share,
      or the whole. Decided from the account's age as the auth server reports it (see NEWCOMER_SHARE). */
+  let fellBackTo = "";
+  let attempts = 0;   /* (atlas-turn-observability) provider requests this ONE request made — providerCall calls attempt() before each */
   const meter: Meter & ReturnType<typeof usageMeter> = Object.assign(usageMeter(), {
+    attempt() { attempts += 1; },
+    fallback(to: string) { fellBackTo = to; },
     ceiling: cohortOf(user.created_at, Date.now()) === NEWCOMER ? NEWCOMER_CEILING : CEILING,
   });
   /* (atlas-delegation) …and the money: the reservation this request holds against its turn family (made below,
@@ -535,6 +539,10 @@ export async function ask(req: Request): Promise<Response> {
      cannot answer differently: the stream's `done` event carries exactly this body under exactly this
      status. `sink` is null for every request that did not ask to stream. */
   const answer = async (sink: StreamSink | null): Promise<{ status: number; body: Record<string, unknown> }> => {
+  const startedAt = Date.now();
+  /* (atlas-turn-observability) how this request WENT, counted anonymously in usage_counts (_shared/ai-ledger.js healthRows). Observes only. */
+  const observe = (outcome: string, extra: { incomplete?: string } = {}) =>
+    recordHealth(db, { outcome, wallMs: Date.now() - startedAt, attempts, fallbackTo: fellBackTo, ...extra });
   try {
     let out: { text: string; finishReason: string; incompleteReason?: string | null; webAttached?: boolean; webUsed?: boolean; webCount?: number; webSources?: number | null; webFailure?: string; citations?: WebCitation[]; schemaAttached?: boolean; served?: string; output?: TurnItem[] };
     if (provider === "openai") {
@@ -602,6 +610,7 @@ export async function ask(req: Request): Promise<Response> {
     }
     // 5) Success. (#R801) Settled BEFORE the answer leaves, so the turn cannot be refunded after it.
     await record();   // (ai-one-ledger) what it cost — off the answer's path where the platform allows (EdgeRuntime.waitUntil)
+    await observe("ok", { incomplete: out.incompleteReason || "" });   // (atlas-turn-observability)
     await settle();
     return { status: 200, body: {
       text: out.text,
@@ -649,6 +658,7 @@ export async function ask(req: Request): Promise<Response> {
   } catch (e) {
     await refund();   // a failed provider call never costs the user a use (dev never consumed one)
     await record();   // (ai-one-ledger) …but what the provider billed before failing is still a cost, and is recorded
+    await observe(e instanceof ProviderError ? e.code : "unclassified");   // (atlas-turn-observability)
     if (e instanceof ProviderError) {
       // Non-sensitive telemetry only (no prompt / key / JWT).
       try { console.error("ai-proxy provider fail", JSON.stringify({ provider, model, task, code: e.code, http: e.http, meta: e.meta })); } catch (_) { /* ignore */ }

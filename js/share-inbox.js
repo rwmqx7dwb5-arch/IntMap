@@ -15,7 +15,7 @@
  *    · any TEXT      → the place search, as if typed.
  *
  *  Three doors reach `openShared`: the share sheet (sw.js puts the parts in a page cache and redirects to
- *  `?share=<id>`; src/main.js imports this on that query), the «Photo's place» row under the empty search field
+ *  `?share=<id>`; src/main.js imports this on that query), the «Photo's place» row of the phone sheet's home
  *  (js/here-entry.js), and Atlas (`view.openShared` reads a link or text; js/atlas-cap-view.js).
  *  ⚠ NOTHING HERE SENDS THE PHOTO ANYWHERE. Its bytes are read in this page; only the point it names is used —
  *  the same as a tap on the map.

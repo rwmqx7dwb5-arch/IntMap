@@ -140,7 +140,7 @@ test('icon-system ⑦: the served tree draws no emoji as an icon, and every decl
 
 test('icon-system ⑧: the shared helpers draw their own mark — a warning line, the copy button, the static pickers', () => {
   const con = codeOnly(read('js/atlas-console.js'), { literals: 'keep' });
-  assert.match(con, /const warn=s=>'<div[^']*'\+icon\('warning'\)\+' '\+s\+'<\/div>'/, 'Atlas\'s warn() draws the warning sign itself');
+  assert.match(con, /const warn=s=>(?:proseMark\()?'<div[^']*'\+icon\('warning'\)\+' '\+s\+'<\/div>'/, 'Atlas\'s warn() draws the warning sign itself');   /* (atlas-answer-surface) the line may be wrapped in `proseMark(` — the sentence marker */
   const ui = codeOnly(read('js/map-ui.js'));
   assert.match(ui, /btn\.replaceChildren\(iconNode\('clipboard'\),' '\+label\(\)\)/, 'the copy button restores its glyph beside its words');
   for (const f of ['js/page-i18n.js', 'js/legal-page.js']) assert.match(codeOnly(read(f)), /globe\.appendChild\(iconNode\('world'\)\)/, f + ' draws the picker globe');
