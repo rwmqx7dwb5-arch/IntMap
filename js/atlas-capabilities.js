@@ -372,6 +372,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["sim.skyTonight","skyTonight","almanac,tonightSky,whatsUpTonight,moonPhase,moonrise,sunriseSunset,twilight,visiblePlanets,meteorShowers,nextEclipse,eclipseFromHere","sim","panel","panel.skyAlmanac","panel,explanation","session","none","point","skyAlmanac"],
       ["sim.satellitePasses","satellitePasses","issPasses,whenIsIss,satellitesOverhead,satellitePass,passPrediction","sim","none","","explanation","read","none","point","satellitesLive"],
       ["sim.spaceWeather","spaceWeather","solarWind,solarFlare,geomagneticStorm,kpIndex,auroraChance,noaaScales,asteroidFlyby,nearEarthAsteroids","sim","none","","explanation","read","none","",""],
+      ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
     ];
     /* ⚠ GENERATED ROWS — END */
 

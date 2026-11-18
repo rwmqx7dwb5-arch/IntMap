@@ -19,19 +19,19 @@
       }
     },
     {
-      "host": "ssd-api.jpl.nasa.gov",
-      "what": "NASA/JPL SSD APIs — CNEOS fireballs and asteroid close approaches (read through IntMap’s own relay, which sends the same request)",
-      "whatJp": "NASA/JPL SSD API — CNEOS の火球と小惑星の地球接近（IntMap 自身の中継を通して読む。中継が同じ要求を送る）",
+      "host": "*.s3.amazonaws.com",
+      "what": "AWS Open Data buckets — a remote Cloud-Optimised GeoTIFF read by HTTP range, only when Atlas is asked to read a dataset (the address comes from a catalogue it searched, or from the reader)",
+      "whatJp": "AWS Open Data のバケット — リモートの Cloud-Optimised GeoTIFF を HTTP Range で読む（Atlas に頼んだときだけ。宛先は検索したカタログか読者が与えたもの）",
       "sends": {
-        "code": "nothing",
-        "detail": "the request itself (date window and distance limits)"
+        "code": "area",
+        "detail": "the file path and the byte ranges of the part of the file asked for (the window the reader named)"
       },
       "disclosure": {
-        "en": "NASA/JPL Solar System Dynamics",
-        "jp": "NASA/JPL Solar System Dynamics"
+        "en": "s3.amazonaws.com",
+        "jp": "s3.amazonaws.com"
       },
       "probe": {
-        "url": "https://ssd-api.jpl.nasa.gov/fireball.api?req-loc=true&limit=1"
+        "url": "https://copernicus-dem-30m.s3.amazonaws.com/readme.html"
       }
     },
     {
@@ -497,22 +497,6 @@
       }
     },
     {
-      "host": "worldpop.arcgis.com",
-      "what": "WorldPop 1 km population grid (image service)",
-      "whatJp": "WorldPop 1 km 人口格子（画像サービス）",
-      "sends": {
-        "code": "area",
-        "detail": "the corner coordinates of the analysed window and the year"
-      },
-      "disclosure": {
-        "en": "worldpop.arcgis.com",
-        "jp": "worldpop.arcgis.com"
-      },
-      "probe": {
-        "url": "https://worldpop.arcgis.com/arcgis/rest/services/WorldPop_Total_Population_1km/ImageServer?f=json"
-      }
-    },
-    {
       "host": "apiprevmet3.inmet.gov.br",
       "what": "Brazil INMET active warnings",
       "whatJp": "ブラジル INMET の発表中の警報",
@@ -656,6 +640,22 @@
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
     },
     {
+      "host": "cmr.earthdata.nasa.gov",
+      "what": "NASA CMR-STAC (LP DAAC cloud) — dataset search, only when Atlas is asked to find or acquire data",
+      "whatJp": "NASA CMR-STAC（LP DAAC クラウド）— Atlas にデータの検索・取得を頼んだときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to search for datasets: the bounding box and date range of the place and period named (never a name, an account or a position of the reader)"
+      },
+      "disclosure": {
+        "en": "NASA CMR-STAC",
+        "jp": "NASA CMR-STAC"
+      },
+      "probe": {
+        "url": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
+      }
+    },
+    {
       "host": "cwwp2.dot.ca.gov",
       "what": "Caltrans CCTV status lists",
       "whatJp": "カリフォルニア州交通局の CCTV 状態一覧",
@@ -759,6 +759,22 @@
       "host": "donate.stripe.com",
       "what": "Stripe donation pages",
       "link": "the Donate button opens it when the reader clicks it (a navigation); the page never requests it"
+    },
+    {
+      "host": "earth-search.aws.element84.com",
+      "what": "Earth Search STAC catalogue (Element 84 / AWS Open Data) — dataset search and item footprints, only when Atlas is asked to find or acquire data",
+      "whatJp": "Earth Search STAC カタログ（Element 84 / AWS Open Data）— Atlas にデータの検索・取得を頼んだときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to search for datasets: the bounding box and date range of the place and period named (never a name, an account or a position of the reader)"
+      },
+      "disclosure": {
+        "en": "Earth Search",
+        "jp": "Earth Search"
+      },
+      "probe": {
+        "url": "https://earth-search.aws.element84.com/v1"
+      }
     },
     {
       "host": "earthquake.usgs.gov",
@@ -1056,6 +1072,22 @@
       }
     },
     {
+      "host": "ibasemaps-api.arcgis.com",
+      "what": "Esri World Imagery tiles through ArcGIS Location Platform (used only when IntMap's own key is set in js/esri-imagery.js)",
+      "whatJp": "ArcGIS Location Platform 経由の Esri World Imagery タイル（js/esri-imagery.js に IntMap 自身の鍵があるときだけ）",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn, and IntMap's public API key"
+      },
+      "disclosure": {
+        "en": "Esri, NASA GIBS and EOX",
+        "jp": "Esri・NASA GIBS・EOX"
+      },
+      "probe": {
+        "none": "every request carries IntMap's API key, and the key is empty until the Location Platform account exists (js/esri-imagery.js) — a keyless probe only measures the 200 'Token Required' refusal"
+      }
+    },
+    {
       "host": "ix.br",
       "what": "data-centre source citation",
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
@@ -1278,6 +1310,22 @@
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
     },
     {
+      "host": "ogcapi.bgs.ac.uk",
+      "what": "British Geological Survey OGC API – Features — dataset search and features, only when Atlas is asked to find or acquire data",
+      "whatJp": "英国地質調査所（BGS）の OGC API – Features — Atlas にデータの検索・取得を頼んだときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to search for datasets: the bounding box and date range of the place and period named (never a name, an account or a position of the reader)"
+      },
+      "disclosure": {
+        "en": "British Geological Survey",
+        "jp": "英国地質調査所"
+      },
+      "probe": {
+        "url": "https://ogcapi.bgs.ac.uk/?f=json"
+      }
+    },
+    {
       "host": "open.er-api.com",
       "what": "ER-API exchange rates",
       "whatJp": "ER-API の為替レート",
@@ -1418,6 +1466,22 @@
       },
       "probe": {
         "url": "https://photon.komoot.io/api/?q=Tokyo&limit=1&lang=en"
+      }
+    },
+    {
+      "host": "planetarycomputer.microsoft.com",
+      "what": "Microsoft Planetary Computer STAC catalogue — dataset search, only when Atlas is asked to find or acquire data",
+      "whatJp": "Microsoft Planetary Computer の STAC カタログ — Atlas にデータの検索・取得を頼んだときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to search for datasets: the bounding box and date range of the place and period named (never a name, an account or a position of the reader)"
+      },
+      "disclosure": {
+        "en": "Microsoft Planetary Computer",
+        "jp": "Microsoft Planetary Computer"
+      },
+      "probe": {
+        "url": "https://planetarycomputer.microsoft.com/api/stac/v1"
       }
     },
     {
@@ -1580,22 +1644,6 @@
       }
     },
     {
-      "host": "ibasemaps-api.arcgis.com",
-      "what": "Esri World Imagery tiles through ArcGIS Location Platform (used only when IntMap's own key is set in js/esri-imagery.js)",
-      "whatJp": "ArcGIS Location Platform 経由の Esri World Imagery タイル（js/esri-imagery.js に IntMap 自身の鍵があるときだけ）",
-      "sends": {
-        "code": "area",
-        "detail": "tile z/x/y of the map area drawn, and IntMap's public API key"
-      },
-      "disclosure": {
-        "en": "Esri, NASA GIBS and EOX",
-        "jp": "Esri・NASA GIBS・EOX"
-      },
-      "probe": {
-        "none": "every request carries IntMap's API key, and the key is empty until the Location Platform account exists (js/esri-imagery.js) — a keyless probe only measures the 200 'Token Required' refusal"
-      }
-    },
-    {
       "host": "services.global.ntt",
       "what": "data-centre source citation",
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
@@ -1634,6 +1682,22 @@
       },
       "probe": {
         "url": "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
+      }
+    },
+    {
+      "host": "ssd-api.jpl.nasa.gov",
+      "what": "NASA/JPL SSD APIs — CNEOS fireballs and asteroid close approaches (read through IntMap’s own relay, which sends the same request)",
+      "whatJp": "NASA/JPL SSD API — CNEOS の火球と小惑星の地球接近（IntMap 自身の中継を通して読む。中継が同じ要求を送る）",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself (date window and distance limits)"
+      },
+      "disclosure": {
+        "en": "NASA/JPL Solar System Dynamics",
+        "jp": "NASA/JPL Solar System Dynamics"
+      },
+      "probe": {
+        "url": "https://ssd-api.jpl.nasa.gov/fireball.api?req-loc=true&limit=1"
       }
     },
     {
@@ -1917,6 +1981,22 @@
       }
     },
     {
+      "host": "worldpop.arcgis.com",
+      "what": "WorldPop 1 km population grid (image service)",
+      "whatJp": "WorldPop 1 km 人口格子（画像サービス）",
+      "sends": {
+        "code": "area",
+        "detail": "the corner coordinates of the analysed window and the year"
+      },
+      "disclosure": {
+        "en": "worldpop.arcgis.com",
+        "jp": "worldpop.arcgis.com"
+      },
+      "probe": {
+        "url": "https://worldpop.arcgis.com/arcgis/rest/services/WorldPop_Total_Population_1km/ImageServer?f=json"
+      }
+    },
+    {
       "host": "www.aboutamazon.com",
       "what": "data-centre source citation",
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
@@ -2146,6 +2226,11 @@
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
     },
     {
+      "host": "www.openhistoricalmap.org",
+      "what": "OpenHistoricalMap relation and way pages",
+      "link": "links on the «where this line comes from» card to the relation or way a drawn boundary comes from; the data itself comes from vtiles.openhistoricalmap.org and the bundles"
+    },
+    {
       "host": "www.openstreetmap.org",
       "what": "OpenStreetMap copyright and object links",
       "link": "carto-basemap.js's attribution a(href, text) and a data-centre record's OSM object link (<a href> in the popup)"
@@ -2236,11 +2321,6 @@
       "probe": {
         "url": "https://www.who.int/api/news/diseaseoutbreaknews?$top=1"
       }
-    },
-    {
-      "host": "www.openhistoricalmap.org",
-      "what": "OpenHistoricalMap relation and way pages",
-      "link": "links on the «where this line comes from» card to the relation or way a drawn boundary comes from; the data itself comes from vtiles.openhistoricalmap.org and the bundles"
     },
     {
       "host": "www.wikidata.org",

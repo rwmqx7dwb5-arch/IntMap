@@ -956,8 +956,87 @@ export function makeGisAtlas(core) {
       return r;
     }
 
+    /* ══ (data-supply) DATA THAT IS NOT IN THE APP ═══════════════════════════════════════════════
+       catalogue() lists what THIS app holds; js/gis-remote.js asks the catalogues of the world (STAC,
+       OGC API – Features) and reads a remote Cloud-Optimised GeoTIFF by HTTP range. ⚠ NOTHING IS
+       JUDGED HERE: the module's refusals travel back by name, the datasets it makes are ordinary
+       registry records (so `inputs` of the next step), and what it says about completeness is
+       js/gis-sources.js coverageOf()'s verdict plus `evidence` — never a second one. */
+    async function remote(action) {
+      const a = action || {};
+      let M = null;
+      try {
+        M = (await import('./gis-remote.js')).makeGisRemote({
+          /* the CRS engine and the warp are looked up by the module itself at call time */
+          data: data, sources: SOURCES(),
+        });
+      } catch (_) { M = null; }
+      if (!M) return fail('map-unavailable', { needs: 'IntMapGisRemote' });
+      const act = (a.action == null || a.action === '') ? 'discover' : String(a.action);
+      /* the actions are the module's own declaration (plus the one this door answers itself) */
+      const ACTS = M.actions().concat('sources');
+      if (ACTS.indexOf(act) < 0) return fail('bad-param', { param: 'action', actions: ACTS });
+      const win = (a.bounds != null) ? a.bounds : a.bbox;
+      const give = (r) => (r && r.ok === false) ? fail(r.why, r.detail || null) : r;
+      /* what the app's OWN sources can supply — every claim and every silence, asked of nobody */
+      if (act === 'sources') {
+        const S = SOURCES();
+        if (!S || typeof S.capabilityTable !== 'function') return fail('map-unavailable', { needs: 'IntMapGisSources' });
+        const t = S.capabilityTable();
+        const u = t.summary.unstated;
+        return Object.assign({}, t, { html: '<div class="atlas-gis-result"><b>' + esc(L('What the sources of this app state they can supply', 'このアプリの供給元が述べている取得能力')) + '</b> — ' + t.summary.total
+          + '<div class="atlas-gis-detail">' + esc(L('stated nothing about: ', '何も述べていない項目: ')) + esc('extent ' + u.extent + ' · time ' + u.time + ' · end ' + u.boundedEnd + ' · offscreen ' + u.offscreen) + '</div></div>' });
+      }
+      if (act === 'catalogs') {
+        const cs = M.catalogs();
+        return { ok: true, catalogs: cs, html: '<div class="atlas-gis-result"><b>' + esc(L('Catalogues that are asked', '問い合わせるカタログ')) + '</b><br>'
+          + cs.map((c) => esc(c.id) + ' · ' + esc(c.kind) + ' · ' + esc(c.label)).join('<br>') + '</div>' };
+      }
+      if (act === 'add') {
+        const r = give(M.add({ id: a.id, kind: a.kind, url: a.url, label: a.label, operator: a.operator }));
+        return r.ok === false ? r : Object.assign({}, r, { html: '<div class="atlas-gis-result">' + esc(L('Catalogue added', 'カタログを追加しました')) + ': <code>' + esc(r.catalog.id) + '</code></div>' });
+      }
+      if (act === 'discover') {
+        const r = give(await M.discover({ q: a.q, bbox: win, time: a.time, catalogs: a.catalogs, kinds: a.kinds, limit: a.limit, signal: a.signal || null }));
+        if (r.ok === false) return r;
+        const silent = r.catalogs.filter((c) => !c.answered);
+        return Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(L('Datasets found', '見つかったデータセット')) + '</b> — ' + r.total + '<br>'
+          + r.entries.map((e) => '<code>' + esc(e.ref) + '</code> ' + esc(e.title) + ' · ' + esc(e.match.spatial) + '/' + esc(e.match.temporal) + ' · ' + esc(e.rights.license == null ? L('licence not stated', 'ライセンス記載なし') : e.rights.license)).join('<br>')
+          + (silent.length ? '<div class="atlas-gis-detail">' + esc(L('NOT ANSWERED (this is not "nothing there"): ', '応答なし（「無かった」ではありません）: ')) + silent.map((c) => c.id + ' (' + c.why + ')').join(', ') + '</div>' : '')
+          + '<div class="atlas-gis-next">' + esc(r.note) + '</div></div>' });
+      }
+      if (act === 'inspect') {
+        const r = give(await M.inspect(a.ref, { bbox: win, signal: a.signal || null }));
+        return r.ok === false ? r : Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(r.collection.title) + '</b> · <code>' + esc(r.ref) + '</code><br>'
+          + esc(L('licence', 'ライセンス')) + ': ' + esc(r.collection.rights.license == null ? L('not stated', '記載なし') : r.collection.rights.license)
+          + '<br>' + esc(JSON.stringify(r.evidence)) + '</div>' });
+      }
+      if (act === 'acquire') {
+        const r = give(await M.acquire(a.ref, { bbox: win, time: a.time, limit: a.limit, cursor: a.cursor, title: a.title, signal: a.signal || null }));
+        if (r.ok === false) return r;
+        const row = datasetRow(r.dataset);
+        row.acquiredFrom = String(a.ref);
+        if (r.next != null) row.next = r.next;
+        return { ok: true, dataset: row, coverage: r.coverage, evidence: r.evidence, rights: r.rights, next: r.next == null ? undefined : r.next,
+          html: '<div class="atlas-gis-result"><b>' + esc(L('Acquired', '取得しました')) + '</b> — ' + esc(row.title) + ' · ' + row.count + ' ' + esc(L('rows', '行')) + ' · <code>' + esc(row.id) + '</code>'
+            + '<div class="atlas-gis-detail">' + esc((r.coverage && r.coverage.completeness) || '') + (r.coverage && r.coverage.reason ? ' · ' + esc(r.coverage.reason) : '') + '</div>'
+            + '<div class="atlas-gis-next">' + esc(r.next != null ? L('More remains — ask again with cursor.', '続きがあります — cursor を付けてもう一度。') : L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。')) + '</div></div>' };
+      }
+      /* cog */
+      const r = give(await M.cog({ url: a.url, bbox: win, width: a.width, height: a.height, band: a.band, title: a.title, license: a.license, attribution: a.attribution, signal: a.signal || null }));
+      if (r.ok === false) return r;
+      const row = datasetRow(r.dataset);
+      row.acquiredFrom = String(a.url);
+      return { ok: true, dataset: row, level: r.level, isOverview: r.isOverview, meetsAsk: r.meetsAsk, requests: r.requests, fileBytes: r.fileBytes, coverage: r.coverage,
+        html: '<div class="atlas-gis-result"><b>' + esc(L('Read part of a remote GeoTIFF', 'リモート GeoTIFF の一部を読みました')) + '</b> — ' + r.pixels + ' ' + esc(L('pixels', '画素'))
+          + ' · ' + r.requests + ' ' + esc(L('requests', '回の取得')) + ' / ' + esc(String(r.fileBytes)) + ' B · <code>' + esc(row.id) + '</code>'
+          + '<div class="atlas-gis-detail">' + esc(L('resolution step ', '解像度の段 ')) + r.level + (r.meetsAsk ? '' : ' · ' + esc(L('the file has nothing as fine as asked', '求めた解像度のものはファイルにありません'))) + '</div></div>' };
+    }
+
     const API = {
       catalogue, run, draw, acquire: acquireOnly,
+      /* (data-supply) 世界のカタログの発見・検査・取得と、リモート COG の部分読み込み */
+      remote,
       /* the file a reader takes away (js/gis-export.js's formats, not a list kept here) */
       export: exportDataset,
       /* (#R819) 供給元の能力——申告は describe() の `query.capabilities`、実測はこの扉。 */

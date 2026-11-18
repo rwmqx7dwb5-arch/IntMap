@@ -341,6 +341,16 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
                                   JPEG-in-TIFF・その他の圧縮は登録名つき・地理参照の無い TIFF …）。
                                   ⚠ **欠損は NaN**（`GDAL_NODATA` を含む。0 で埋めない）。
                                   `read(i)` は扉で、開いただけでは画素を展開しない
+gis-remote.js                     **アプリの外のデータ** `window.IntMapGisRemote` — 世界のカタログ（STAC・OGC API – Features。
+                                  `catalogs()` が登録簿）に「この場所・この期間を覆うと**述べている**コレクション」を
+                                  訊く `discover()`／`inspect()`／`acquire()`（地物のデータセット）と、リモートの COG を
+                                  HTTP Range で**欲しい窓だけ**読む `cog()`（`js/gis-geotiff.js` の `readUrl()` の最初の呼び手）。
+                                  ⚠ **完全性の 3 つの主張を混ぜない**——①供給元が窓の全部を返した（`coverage`・
+                                  `js/gis-sources.js` の `coverageOf()` の判定）②供給元の範囲が窓を覆うと述べている
+                                  （`evidence`）③世界の全部である（`worldCompleteness` は常に `unproven`）。
+                                  ⚠ **応答しなかったカタログは「無かった」ではない**（カタログごとに answered / complete）。
+                                  ⚠ ライセンスは述べられたまま、述べが無ければ**欄ごと無い**（open と読まない）。
+                                  ⚠ https 以外・認証情報つき・私的/ループバックの宛先は `url-not-public` で断る
 gis-export.js                     **データを外へ出す口** `window.IntMapGisExport`（#R756）—
                                   ベクタ → GeoJSON / CSV、ラスター → GeoTIFF（無圧縮・float32 と
                                   整数・多バンド）。⚠ **「書き出せた」は「読み直せた」ではない**
@@ -1003,7 +1013,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  249 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  250 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1132,7 +1142,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全249を検索・到達可能 246）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全250を検索・到達可能 247）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1152,7 +1162,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 249能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 250能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝

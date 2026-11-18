@@ -1837,6 +1837,51 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   「一致した」にしない）／面積の図形が無い点（理由の無い false を作らない）。
 - ⚠ **`bound` は保守的な区間積**なので、実際より厳しく拒むことがある（767km の UTM で実誤差 4e-5 に
   対し bound 1.2e-3）。同位置での同時評価は次の回の仕事。
+## 5.11 アプリの外のデータ — `js/gis-remote.js` (`window.IntMapGisRemote`)
+
+`catalogue()`（§5.4）が列挙するのは**このアプリが持っているもの**で、「その地域のこのデータは世界のどこに在るか」という
+最初の問いに答える手が無かった。`readUrl()`（`js/gis-geotiff.js`）も呼び手が無かった。この層は両方の扉で、他は何もしない。
+
+| 扉 | 何をするか |
+|---|---|
+| `catalogs()` / `add()` | 問い合わせるカタログの登録簿（STAC API・OGC API – Features）。**種別は述べる**（アドレスから推測しない）。`add()` は https の公開宛先だけ |
+| `discover({q,bbox,time,…})` | 各カタログの `/collections` を読み、場所・期間を**覆うと述べている**コレクションを返す。`q` の語は全部が要る |
+| `inspect(ref)` | コレクション自身の述べること、標本アイテムの資産（COG か・バンド・単位）、`evidence` |
+| `acquire(ref,{bbox,time,limit,cursor})` | アイテム／地物を**ベクタのデータセット**として登録（次の `gis` 段の入力になる）。供給元の `next` リンクで終わりまで読む |
+| `cog({url,bbox,width,height})` | リモート COG の**欲しい窓だけ**を HTTP Range で読み、格子のデータセットにする。解像度は呼び手が述べ、答えは「どの段を読み、求めた細かさに届いたか」を述べる |
+
+### 完全性の 3 つの主張を混ぜない
+
+1. **供給元が窓の全部を返した** — `coverage`。`js/gis-sources.js` の `coverageOf()` の判定そのもの（ここに第 2 の判定を持たない）。
+   最後のページまで読み、`numberMatched` と件数が合ったときだけ `all`。上限で止めたら `partial` / `sample`（理由つき）。
+2. **供給元の範囲が窓・期間を覆うと述べている** — `evidence.spatialExtent` / `temporalExtent`（`covers` / `overlaps` / `unstated`）。
+3. **世界の全部である** — `evidence.worldCompleteness` は**常に `unproven`**。OSM が持つ病院を全部返しても、世界の病院の一覧ではない。
+
+### 守っていること
+
+- **応答しなかったカタログは「無かった」ではない**。`discover()` はカタログごとに `answered` / `pages` / `complete` を返す。
+- **ライセンスは述べられたまま、無ければ欄ごと無い**（`provenance.license` は存在しない。`open` と読まない）。
+- **宛先**: https のみ・認証情報つきは断る・ループバック／私的／リンクローカルを名指す宛先は `url-not-public`（名前だけで判定し DNS は引かない。
+  画面の無い実行環境ではさらに外向き通信の制限が要る）。
+- **COG**: Range を無視するサーバは `range-unsupported`（丸ごとのダウンロードを黙って行わない）、400 万画素超は `region-too-large`。
+  投影座標の格子は `IntMapGisWarp.to4326` で **nearest** として 4326 へ（`provenance.warp` に残る）。
+  ⚠ CORS はホストの事実: Copernicus DEM のバケット（`*.s3.amazonaws.com`）は Range に答えるが ACAO を返さないので、
+  **ブラウザからは読めず、画面の無い実行環境からは読める**（2026-11-19 実測）。ブラウザでは `fetch-failed` として出る。
+- **通信の開示**: `scripts/outbound-hosts.json` とプライバシー §4（en/jp）に、検索先 5 ホストと `*.s3.amazonaws.com` を載せた。
+  送るのは頼んだときだけで、中身は場所と期間の矩形・Range 要求（識別情報なし）。
+
+### Atlas
+
+能力 `data.gisRemote`（`discover`・`inspect`・`acquire`・`cog`・`catalogs`・`add`・`sources`）。作った dataset の id は `gis` 段の入力になる。
+`sources` は**このアプリ自身**の供給元が述べる取得能力（窓・時刻・条件・終わり・範囲）を 1 回で全部返す
+（`IntMapGisSources.capabilityTable()`。何も訊かない。述べていない＝`null` と「できない」＝`false` を数え分ける）。
+
+### まだやっていないこと（実装していないので書く）
+
+世界規模のベクタを**メモリに載せず**分割して保存・検索する基盤（GeoParquet・DuckDB / PostGIS）、長時間・大容量解析の非同期ジョブ、
+解析結果の永続キャッシュ、複数供給元の品質・優先順位の機械可読な統合。これらは構造の追加であって、この層の延長ではない。
+
+
 ## 6. どこまでやるか・何をやらないか（現時点）
 
 - **⚠ #R759 まで、Worker には呼び出し元が 1 つも無かった。** `run` / `register` / `probe` を呼ぶコードは

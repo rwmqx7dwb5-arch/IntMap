@@ -1607,6 +1607,47 @@ export function makeGisSources() {
       };
     }
 
+    /* ── capabilityTable(): EVERY source's claim, side by side, free ───────────────────────────
+       「何を・どの範囲・いつ・どこまで取れるか」を、供給元ごとにではなく**全部を 1 回で**機械可読に。
+       ⚠ IT ASKS NOBODY ANYTHING: each row is capabilitiesOf() (the registration's CLAIM) plus the
+       declaration and the stated time that already exist for that id, so a source registered tomorrow
+       is in the table by being registered — and its silences are in it too. null is 「述べていない」,
+       which is a different row of the summary from false. ⚠ NOT A VERDICT: a source that says nothing
+       is not broken, it is unstated, and the summary counts the two apart so 「足りないデータ」 (never
+       connected) is not confused with 「接続はあるが何も述べない」 (the gap this table exists to show). */
+    function capabilityTable() {
+      const rows = [];
+      for (const e of list()) {
+        const c = capabilitiesOf(e.id);
+        if (!c) continue;
+        const d = declarationOf(e.id);
+        rows.push({
+          id: c.id, label: e.label == null ? c.id : e.label, kind: c.kind, road: c.road,
+          claimed: c.claimed,
+          declared: {
+            extent: !!(d && d.extent), complete: d ? d.complete : null, viewBound: d ? d.viewBound : null,
+            live: d ? d.live : null, asOf: d ? d.asOf : null, resolution: d ? d.resolution : null,
+          },
+          statedTime: statedTime(c.id),
+        });
+      }
+      const count = (f) => rows.filter(f).length;
+      const summary = {
+        total: rows.length,
+        road: { supplier: count((r) => r.road === 'supplier'), renderer: count((r) => r.road === 'renderer') },
+        /* 述べていない（null）と、できないと述べた（false）は別の行 */
+        unstated: {
+          offscreen: count((r) => r.claimed.offscreen === null), time: count((r) => r.claimed.time === null),
+          boundedEnd: count((r) => r.claimed.boundedEnd === null), extent: count((r) => !r.declared.extent),
+          statedTime: count((r) => r.statedTime === null),
+        },
+        cannot: { offscreen: count((r) => r.claimed.offscreen === false), time: count((r) => r.claimed.time === false), conditions: count((r) => r.claimed.conditions === false) },
+        viewBound: count((r) => r.declared.viewBound === true),
+        completeDeclared: count((r) => r.declared.complete === true),
+      };
+      return { ok: true, rows: rows, summary: summary };
+    }
+
     /* ⚠ MEASURED THROUGH THE SAME DOORS A CALLER USES, so what is reported is what a caller would
        actually get. Every observation says what it observed; a question that could not discriminate
        answers null and says why, because 「測れなかった」 と 「できない」 is the distinction this whole
@@ -1756,6 +1797,9 @@ export function makeGisSources() {
 
     const API = {
       list, acquire, features, region, declare, declarationOf,
+      /* (data-supply) the ONE verdict on 「this answer covers the window」, published so a supplier that
+         is not a layer of the map (js/gis-remote.js) is judged by the same rules, not a second copy */
+      coverageOf,
       /* (#R752) the supply contract: register an implementation, or ask what one can do */
       supply, supplierOf,
       /* (#R819) 取得の実行計画: どの条件が上流で効き、どれが後段で効くか。plan() は何も取らずに
@@ -1764,7 +1808,7 @@ export function makeGisSources() {
          「窓は取れた。条件はまだ実行されていない」であって答えではない。 */
       plan, acquirePlanned,
       /* (#R819) 能力: 登録から導いた申告と、同じ扉を通した実測と、その食い違い */
-      capabilitiesOf, measureCapabilities, auditCapabilities,
+      capabilitiesOf, measureCapabilities, auditCapabilities, capabilityTable,
       capabilityNames: () => CAPABILITIES.slice(),
       /* the reasons that mean 「母集団が画面に依存している（かもしれない）」 — read from here by the
          caller that asked for an analysis, so there is one judgement and not two */
