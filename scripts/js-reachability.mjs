@@ -83,11 +83,54 @@ export function jsReachability(root, jsFiles) {
     }
   }
 
-  const importedSet = new Set(imported);
+  /* (audit 2026-11-19) REACHABILITY IS A WALK, NOT A MEMBERSHIP TEST.
+     The three sets above say "somebody imports this", and that is not "the app can get to this": two
+     modules that import each other and nothing else import each other, so each one is in a set and
+     neither is alive. So the answer is computed from the ROOTS — the entry's imports, what a src/
+     module (worker) imports, what a standalone page loads — following every static import and every
+     import() of a module already reached. A module in no walk is dead whatever imports it. */
+  const edges = new Map();
+  for (const f of files) {
+    const p = join(root, 'js', f);
+    if (!existsSync(p)) continue;
+    const t = readFileSync(p, 'utf8');
+    const out = new Set();
+    for (const m of t.matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) out.add('js/' + m[1]);
+    for (const m of t.matchAll(/^\s*import\s[^;]*?from\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) out.add('js/' + m[1]);
+    for (const m of t.matchAll(/^\s*import\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) out.add('js/' + m[1]);
+    for (const m of t.matchAll(/^\s*export\s[^;]*?from\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) out.add('js/' + m[1]);
+    edges.set('js/' + f, out);
+  }
+  /* the roots are exactly the modules the non-js/ readers (entry, src/, pages) name: 1, 4 and 5 above,
+     plus the dynamic imports written in src/. sib/dyn also hold js/->js/ edges, so they are NOT the roots. */
+  const roots = new Set(imported);
+  const srcDir2 = join(root, 'src');
+  if (existsSync(srcDir2)) {
+    for (const f of readdirSync(srcDir2).filter((x) => x.endsWith('.js'))) {
+      const s = readFileSync(join(srcDir2, f), 'utf8');
+      for (const m of s.matchAll(/^\s*import\s*'\.\.\/(js\/[A-Za-z0-9_.-]+\.js)'\s*;/gm)) roots.add(m[1]);
+      for (const m of s.matchAll(/^\s*import\s[^;]*?from\s*'\.\.\/(js\/[A-Za-z0-9_.-]+\.js)'\s*;/gm)) roots.add(m[1]);
+      for (const m of s.matchAll(/import\(\s*'\.\.\/(js\/[A-Za-z0-9_.-]+\.js)'\s*\)/g)) roots.add(m[1]);
+    }
+  }
+  for (const page of standalonePages(root)) {
+    const p = join(root, page);
+    if (!existsSync(p)) continue;
+    for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) roots.add(m[1]);
+  }
+  const reached = new Set();
+  const queue = [...roots];
+  while (queue.length) {
+    const cur = queue.pop();
+    if (reached.has(cur)) continue;
+    reached.add(cur);
+    for (const nxt of edges.get(cur) || []) if (!reached.has(nxt)) queue.push(nxt);
+  }
   return {
     imported,
     dyn,
     sib,
-    isReachable: (rel) => importedSet.has(rel) || dyn.has(rel) || sib.has(rel),
+    reached,
+    isReachable: (rel) => reached.has(rel),
   };
 }
