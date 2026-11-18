@@ -1099,6 +1099,11 @@ atlas-map-compose.js              **地図説明を1回で合成する層**（#R
                                   **コードが**解決し、解決したものは役割ごと台帳へ戻す。解決できなかった地名は
                                   **名前で `unplaced`** として Atlas と読者に報告する（座標を発明しない）。
                                   `linkProse()` が回答文中の地名に番号バッジを付け、hover で地図の印と双方向に光る。
+                                  `shape:"area"|"line"` の項目は実形状を描き（出典つき・導出は破線）、取れなければ
+                                  `shapesUnresolved` で報告して点や線で代用しない（atlas-shape-resolve）。
+atlas-shape-resolve.js            **名前の実形状か、正直な「無い」か**（atlas-real-shapes）— 面は highlight の梯子、線は
+                                  川筋と Nominatim の線を注入で使い、`real`／`derived`（作った形・手段つき）／拒否を返す。
+                                  矩形・種類違い・同名多数は形として返さない。純関数（網は全部注入）。
                                   ⚠ 描画元は `atl-compose-src` 1本——`atlas-capabilities.js` の paintNow が
                                   この source を数えて「描いたか」を観測する。
                                   ⚠ **1つの依頼＝1つの地図**（#R551）— 同じターンの2回目は2枚目ではなく

@@ -1110,10 +1110,15 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           var missing = Array.isArray(ex.unplaced) ? ex.unplaced : [];
           var names = missing.map(function (u) { return (u && u.name) || String(u || ''); }).filter(Boolean);
           var filled = Array.isArray(ex.fills) && ex.fills.some(function (f) { return f && f.ok; });
+          /* (atlas-real-shapes) an item asked as an AREA or a LINE whose real geometry IntMap could not obtain is unfinished work —
+             its marker landing does not make the map the one that was asked for */
+          var shapeMiss = Array.isArray(ex.shapesUnresolved) ? ex.shapesUnresolved : [];
+          var shapeNames = shapeMiss.map(function (u) { return (u && u.name) ? (u.name + ' (' + (u.shape || u.want || 'shape') + ')') : ''; }).filter(Boolean);
           var drew = !!(after && +after.compose > 0);
           var obs = { compose: { requested: +counts.requested || 0, placed: +counts.placed || 0,
             unplaced: names.length, features: (after && +after.compose) || 0,
             artifact: ex.artifact || '', revision: +ex.revision || 0 } };
+          if (+counts.shapesRequested) obs.compose.shapes = { requested: +counts.shapesRequested || 0, drawn: +counts.shapesDrawn || 0, derived: +counts.shapesDerived || 0, unresolved: shapeMiss.map(function (u) { return { name: u.name, want: u.want, reason: u.reason }; }) };
           /* (atlas-completion) the relations, observed on the map: how many lines are there, of which basis, and how many
              stay on water — beside what the call asked for and what it reported skipping */
           var lines = ownedLines('map.compose');
@@ -1125,7 +1130,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
               skipped: Array.isArray(ex.relationsSkipped) ? ex.relationsSkipped.map(function (x) { return { from: x.from, to: x.to, reason: x.reason }; }) : [] };
           }
           /* nothing is on the map and nothing was shaded: the claim is not backed by anything */
-          if (!drew && !filled) return { status: 'partial', produced: [], code: 'not_rendered', observed: obs, unresolved: names, html: (raw && raw.html) || '' };
+          if (!drew && !filled) return { status: 'partial', produced: [], code: 'not_rendered', observed: obs, unresolved: names.concat(shapeNames), html: (raw && raw.html) || '' };
+          if (shapeNames.length) return { status: 'partial', code: 'shape_unresolved', observed: obs, unresolved: names.concat(shapeNames), html: (raw && raw.html) || '' };
           /* something is there, but not what was asked for */
           if (ex.status === 'partial' || names.length || (raw && raw.meta && raw.meta.partial)) {
             return { status: 'partial', code: 'incomplete', observed: obs, unresolved: names, html: (raw && raw.html) || '' };
