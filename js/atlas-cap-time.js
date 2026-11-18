@@ -738,9 +738,11 @@ async function changes(a, K) {
   const h = { lang: () => (HOST && HOST.lang) || 'en', countryStats: () => (HOST && HOST.countryStats) || {}, escape: esc };
   const deps = YB.pageDeps(h);
   /* the two ends — whole border list (`top` unbounded), one change day each (readYear's own per-year section is not used here) */
-  const [r0, r1] = await Promise.all([YB.readYear(w0, deps, { top: Infinity, maxDays: 1 }), YB.readYear(w1, deps, { top: Infinity, maxDays: 1 })]);
-  const polities = (r0.borders && r0.borders.largest && r1.borders && r1.borders.largest && !r0.borders.modern && !r1.borders.modern) ? diffPolities(r0.borders.largest, r1.borders.largest, region) : null;
-  /* the layers a source states at each end */
+  const [r0, r1] = await Promise.all([YB.readYear(w0, deps, { top: Infinity, maxDays: 1, modernRows: true }), YB.readYear(w1, deps, { top: Infinity, maxDays: 1, modernRows: true })]);
+  /* (hist-audit-fixes) an end drawn with today's borders used to switch the whole polity diff off, so 1914 → now compared nothing.
+     Its rows are now today's country polygons (js/year-book.js modernPolityRows), matched by English name, and the answer says so. */
+  const modernEnd = !!((r0.borders && r0.borders.modern) || (r1.borders && r1.borders.modern));
+  const polities = (r0.borders && r0.borders.largest && r1.borders && r1.borders.largest) ? diffPolities(r0.borders.largest, r1.borders.largest, region) : null;  /* the layers a source states at each end */
   let layers = null;
   try { const LT = window.IntMapLayerTime; if (LT && LT.coverage) layers = diffLayers(await LT.coverage(isoOf(w0)), await LT.coverage(isoOf(w1))); } catch (_) { layers = null; }
   /* the days inside the period on which the border record changes (the record states each day; before 1689 it states none) */
@@ -805,7 +807,8 @@ async function changes(a, K) {
   let out = note('✓ ' + L('What changed: ' + label(P.t0) + ' → ' + label(P.t1) + (regionName ? ' · ' + regionName : ''), '変化: ' + label(P.t0) + ' → ' + label(P.t1) + (regionName ? ' · ' + regionName : '')));
   out += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('A bare year is read as the middle of that year (the same instant the year book reads); the map and the clock are not moved.', '年だけの指定はその年の半ばとして読みます（年鑑と同じ時点）。地図も時計も動かしません。')) + '</div>';
   if (polities) {
-    out += sec(L('Polities on the map', '地図に描かれる政体')) + '<div>' + esc(L(polities.countA + ' at the start, ' + polities.countB + ' at the end' + (regionName ? ' (those touching ' + regionName + ')' : ''), '開始時 ' + polities.countA + '・終了時 ' + polities.countB + (regionName ? '（' + regionName + ' にかかるもの）' : ''))) + '</div>';
+    if (modernEnd) out += sec(L('Polities on the map', '地図に描かれる政体')) + '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('One end is today\'s map: its polities are today\'s country polygons matched to the other end by English name. A renamed state, or one that split or merged, appears as one ending and another beginning, and a changed area is a difference in drawn area, not in who held which land.', '片方の端は現在の地図です。その政体は現在の国のポリゴンで、もう一方の端と英語名で対応づけています。改称・分裂・統合した国は「消滅」と「出現」の組として現れ、面積の変化は描かれた面積の差であり、どの土地を誰が持っていたかの差ではありません。')) + '</div>';
+    out += (modernEnd ? '' : sec(L('Polities on the map', '地図に描かれる政体'))) + '<div>' + esc(L(polities.countA + ' at the start, ' + polities.countB + ' at the end' + (regionName ? ' (those touching ' + regionName + ')' : ''), '開始時 ' + polities.countA + '・終了時 ' + polities.countB + (regionName ? '（' + regionName + ' にかかるもの）' : ''))) + '</div>';
     if (polities.appeared.length) out += '<div>' + esc(L('Appear', '出現')) + ' (' + polities.appeared.length + '): ' + esc(nameList(polities.appeared, (p) => p.name + ' ' + km(p.km2))) + '</div>';
     if (polities.gone.length) out += '<div>' + esc(L('No longer drawn', '描かれなくなる')) + ' (' + polities.gone.length + '): ' + esc(nameList(polities.gone, (p) => p.name + ' ' + km(p.km2))) + '</div>';
     if (polities.reshaped.length) out += '<div>' + esc(L('Drawn area changes', '描かれる面積が変わる')) + ' (' + polities.reshaped.length + '): ' + esc(nameList(polities.reshaped, (p) => p.name + ' ' + pct(p.rel))) + '</div>';
