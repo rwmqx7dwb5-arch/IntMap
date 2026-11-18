@@ -341,6 +341,10 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
                                   JPEG-in-TIFF・その他の圧縮は登録名つき・地理参照の無い TIFF …）。
                                   ⚠ **欠損は NaN**（`GDAL_NODATA` を含む。0 で埋めない）。
                                   `read(i)` は扉で、開いただけでは画素を展開しない
+gis-cog.js                        **URL の COG を窓ごとに読む** `window.IntMapGisCog`（`gis-atlas.js` が動的 import）—
+                                  `gis-geotiff.js` の `readUrl`（HTTP Range）・`levelFor`・`readRegion` を呼ぶ唯一の
+                                  入口。窓と解像度は呼び手が述べ、必要なタイルだけを取り、`coverage` を添えて
+                                  格子の契約で返す。EPSG:4326 を述べる COG だけ（投影座標系は CRS 名つきで断る）
 gis-export.js                     **データを外へ出す口** `window.IntMapGisExport`（#R756）—
                                   ベクタ → GeoJSON / CSV、ラスター → GeoTIFF（無圧縮・float32 と
                                   整数・多バンド）。⚠ **「書き出せた」は「読み直せた」ではない**

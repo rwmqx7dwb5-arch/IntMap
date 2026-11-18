@@ -697,6 +697,19 @@ export function makeGisAtlas(core) {
         return made;
       }
 
+      /* 2b. (cog-url-connect) A GRID AT A URL — `url:https://…` (or a bare https:// address). Only a
+         GRID slot can take one: a URL names a Cloud Optimized GeoTIFF, which is a field, and a
+         feature slot handed one is refused by name instead of being read as something else. The
+         window and the resolution are the planner's to state (acquire.bounds/width/height), as for
+         any grid (fromLayer), and only the tiles that window needs are fetched. */
+      if (/^(url:)?https?:\/\//i.test(raw)) {
+        if (!wantsRaster) return fail('url-needs-a-grid-slot', { slot: slot, ref: raw, why: 'a URL is read as a GeoTIFF, which is a grid' });
+        const made = await fromUrl(raw.replace(/^url:/i, ''), action, cache);
+        if (!made.ok) return made;
+        cache.set(raw, made.id);
+        return made;
+      }
+
       /* 3. a dataset the reader named by its title. Two datasets may share one — the reader chose
          both names — so an ambiguous title is REFUSED WITH THE IDS rather than resolved by order of
          registration, which is a choice neither the reader nor the planner made. */
@@ -761,6 +774,44 @@ export function makeGisAtlas(core) {
         return fail('raster-sample-needs-window', { layer: id, needs: ['acquire.bounds', 'acquire.width', 'acquire.height'], accepts: layers.acquireFields ? layers.acquireFields('raster') : null });
       }
       return note(await layers.toRaster(id, a.opts));
+    }
+
+    /* A COG at a URL becomes a registered raster dataset over the window the planner stated. What
+       js/gis-cog.js read, at which level, with how many requests, and what it could not answer
+       (`coverage`) travel in the record's provenance — the next op and the planner read them there. */
+    async function fromUrl(url, action, cache) {
+      const a = acquireOpts(action, true);
+      if (!a.ok) return a;
+      if (a.opts.bounds == null || a.opts.width == null || a.opts.height == null) {
+        return fail('raster-sample-needs-window', { url: url, needs: ['acquire.bounds', 'acquire.width', 'acquire.height'], accepts: layers && layers.acquireFields ? layers.acquireFields('raster') : null });
+      }
+      let C = null;
+      try { C = (await import('./gis-cog.js')).makeGisCog({ warp: core.warp, crs: core.crs }); } catch (_) { C = null; }
+      if (!C) return fail('map-unavailable', { needs: 'IntMapGisCog' });
+      const r = await C.readWindow(url, { bounds: a.opts.bounds, width: a.opts.width, height: a.opts.height, band: a.opts.band, signal: a.opts.signal || null });
+      if (!r.ok) return fail(r.why, r.detail || { url: url });
+      const ras = r.raster;
+      const bn = (a.opts.band && typeof a.opts.band === 'object') ? a.opts.band : {};
+      const band = Object.assign({}, ras.bands[0], {
+        name: bn.name != null ? bn.name : (r.band.name != null ? r.band.name : url.split('/').pop()),
+        unit: a.opts.unit != null ? String(a.opts.unit) : (bn.unit != null ? bn.unit : (r.band.unit != null ? r.band.unit : null)),
+      });
+      const cells = ras.read(0);
+      let ds;
+      try {
+        ds = data.add({
+          kind: 'raster', title: (action && action.title) ? String(action.title) : (url.split('/').pop() || url),
+          sourceCrs: 'EPSG:4326', width: ras.width, height: ras.height,
+          grid: { west: ras.grid.west, north: ras.grid.north, pixelLng: ras.grid.pixelLng, pixelLat: ras.grid.pixelLat },
+          bands: [band], read: () => cells,
+          provenance: { kind: 'url-raster', url: url, bounds: a.opts.bounds, width: ras.width, height: ras.height, at: Date.now(), source: r.source, coverage: r.coverage, resampled: 'nearest' },
+        });
+      } catch (e) { return fail('add-failed', { message: e && e.message }); }
+      const row = datasetRow(ds);
+      row.acquiredFrom = 'url:' + url;
+      row.coverage = r.coverage;
+      if (cache && cache.acquired) cache.acquired.push(row);
+      return { ok: true, id: ds.id };
     }
 
     /* ── acquiring, which is a step of its own ───────────────────────────────────────────────── */
