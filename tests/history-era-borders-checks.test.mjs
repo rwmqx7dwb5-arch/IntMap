@@ -39,6 +39,7 @@ import { eraBundle } from './helpers/hist-eras.mjs';
 import { timeBorders } from '../scripts/histeras/time-borders.mjs';   /* (#R695) ask the module, not its source (#R488) */
 import { migrateBatches, loadGeom } from '../scripts/histborders/fetch.mjs';
 import { simplifyRing } from '../scripts/histborders/geom.mjs';
+import { nearestSheet } from '../js/hist-sheet-pick.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -60,12 +61,10 @@ test('R349 ②: nearest() answers 1875 with the 1880 snapshot and 1830 with 1815
   assert.ok(years, 'js/time-borders.js must declare YEARS');
   const YEARS = years[1].split(',').map((n) => +n.trim());
   assert.ok(YEARS.includes(1815) && YEARS.includes(1880), 'the two pre-1900 snapshots are offered');
-  /* run the shipped resolver rather than reading it: lift the exact source of `nearest`.
+  /* the resolver is the page's own: js/hist-sheet-pick.js, which js/time-borders.js `nearest` calls with these YEARS and CS_MIN.
      ⚠ (#R679) the parameter list is not the claim — what R349 asserts is what it ANSWERS below CShapes */
-  const fn = TB.match(/const nearest\s*=\s*\(?[\w\s,]*\)?\s*=>\s*\{[\s\S]*?\};/);
-  assert.ok(fn, 'the nearest() resolver must still be a single expression this test can lift');
-  const nearest = new Function('YEARS', 'MAXGAP', 'CS_MIN',
-    fn[0].replace(/^const nearest\s*=/, 'const nearest =') + ' return nearest;')(YEARS, 20, 1886);
+  assert.match(TB, /nearestSheet\(\s*y\s*,[^;]*YEARS\s*,\s*CS_MIN\s*\)/, 'the page `nearest` must call the shared rule with its YEARS and CS_MIN');
+  const nearest = (y) => nearestSheet(y, YEARS, 1886);
   assert.equal(nearest(1875), 1880, '1875 is nearer 1880 than 1815 — and below CShapes there is nothing better');
   assert.equal(nearest(1850), 1880, 'the midpoint of the 1815/1880 gap is 1847.5');
   assert.equal(nearest(1830), 1815, '…and 1830 is on the other side of it');

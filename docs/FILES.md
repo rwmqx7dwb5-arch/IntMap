@@ -572,6 +572,9 @@ hist-knowledge.js                 歴史地図が**どこまで分かってい�
                                   輪郭**、一部だけの政体は**記録の無い土地**（0.1° の矩形）を GeoJSON で返す。
                                   ⚠ **読み手は 2 つで規則は 1 つ**——`npm run check:histfidelity`（scripts/hist-fidelity.mjs）
                                   が記録する数と、js/time-admin1.js が地図に引く斜線は同じ関数から出る
+hist-sheet-pick.js                CShapes より前の年に**どの sheet を描くか**の規則（`nearestSheet`）の唯一の所有者。純関数。
+                                  js/time-borders.js の `nearest` と scripts/hist-fidelity.mjs の `politiesAt` が同じ関数を呼ぶ
+                                  ので、計器が測る sheet とページが描く sheet は食い違えない
 hist-scale.js                     深い時間の**算術**だけを持つ純関数 window.IntMapHistScale。DOM も地図も時計も
                                   言語も触らないので検査が**評価**できる（#R570 の教訓）。①`decYear()`＝
                                   OpenHistoricalMap が書く10進年（実測 103,093 件に当てて決めた「その日の中点」）
