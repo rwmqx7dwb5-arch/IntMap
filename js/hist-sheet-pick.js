@@ -11,7 +11,7 @@
  *  Pure: no DOM, no clock, no data. `years` is the list of sheet years; `csMin` is where CShapes
  *  begins (below it the forward jump is always taken — see time-borders.js on MAXGAP).
  * ========================================================================== */
-export const MAXGAP = 20;
+const MAXGAP = 20;
 export function nearestSheet(y, years, csMin) {
   let prev = null, next = null;
   for (const yy of years) { if (yy <= y) { if (prev === null || yy > prev) prev = yy; } else if (next === null || yy < next) next = yy; }

@@ -33,3 +33,8 @@ date: 2026-11-19
 ## 3. 残したもの
 
 - scripts/year-pages.mjs の `nearestSheet(M, y)` は距離最小で同点の扱いが違う別の写し。年ページの文言用で計器ではないので今回は触らない。
+
+## 4. 起動時の費用（perf 天井）
+
+`js/hist-sheet-pick.js` は js/time-borders.js が静的に import する純関数 1 つ（22 行）なので、起動時に読み込まれるモジュールが 1 つ増える（eager.modules 907 → 908）。
+規則を 2 か所に持たせない代わりの費用で、帯域は無視できる。`node scripts/perf-budget.mjs --update` で天井を上げた。
