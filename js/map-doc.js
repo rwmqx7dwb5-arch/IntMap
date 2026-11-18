@@ -44,7 +44,7 @@ export const STEPS_MAX = 200;
 
 const str = (/** @type {any} */ v) => String(v == null ? '' : v);
 /** a fragment from outside → the codec's own, without '#' ('' when it names no map) @param {any} h */
-export const stateOf = (h) => canonical(h).replace(/^#/, '');
+const stateOf = (h) => canonical(h).replace(/^#/, '');
 /** does this fragment carry a reader's own drawing (`mm=`)? — a map is a «my map» by what it holds @param {string} state */
 const holdsMyMap = (state) => /(^|&)mm=/.test(str(state).replace(/^#/, ''));
 
