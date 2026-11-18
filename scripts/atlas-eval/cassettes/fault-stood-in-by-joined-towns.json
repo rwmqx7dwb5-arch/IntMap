@@ -1,0 +1,136 @@
+{
+  "id": "fault-stood-in-by-joined-towns",
+  "text": "糸魚川静岡構造線を地図に線で描いて。",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "the reported defect (2026-11-18): towns along the fault composed and joined by a schematic relation, reported as the fault"
+  },
+  "question": {
+    "set": "answers",
+    "id": "itoigawa-shizuoka-tectonic-line-declined"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "map.compose",
+            "args": {
+              "title": "糸魚川静岡構造線",
+              "items": [
+                {
+                  "name": "糸魚川市"
+                },
+                {
+                  "name": "諏訪市"
+                },
+                {
+                  "name": "静岡市"
+                }
+              ],
+              "relations": [
+                {
+                  "from": 1,
+                  "to": 2
+                },
+                {
+                  "from": 2,
+                  "to": 3
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "糸魚川静岡構造線を地図に描きました。糸魚川から諏訪を経て静岡に至る大断層です。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "title": "糸魚川静岡構造線",
+          "items": [
+            {
+              "name": "糸魚川市"
+            },
+            {
+              "name": "諏訪市"
+            },
+            {
+              "name": "静岡市"
+            }
+          ],
+          "relations": [
+            {
+              "from": 1,
+              "to": 2
+            },
+            {
+              "from": 2,
+              "to": 3
+            }
+          ],
+          "type": "compose"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>1 糸魚川市 · 2 諏訪市 · 3 静岡市</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "explanation"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {
+      "atlas": {
+        "highlightCountries": 0,
+        "highlight": null,
+        "choropleth": null,
+        "customScore": null,
+        "pins": null,
+        "polygons": null,
+        "lines": null,
+        "measure": null,
+        "radius": null,
+        "userPins": null,
+        "tool": "",
+        "shapes": {
+          "n": 2,
+          "line:unstated": 2
+        }
+      }
+    }
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:map.compose",
+        "status": "completed"
+      }
+    ],
+    "text": "糸魚川静岡構造線を地図に描きました。糸魚川から諏訪を経て静岡に至る大断層です。"
+  },
+  "expect": {
+    "verdict": "fail",
+    "failures": [
+      "answer"
+    ],
+    "grade": "absent",
+    "map": "mismatch"
+  }
+}

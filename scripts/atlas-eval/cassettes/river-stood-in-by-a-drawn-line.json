@@ -1,0 +1,102 @@
+{
+  "id": "river-stood-in-by-a-drawn-line",
+  "text": "信濃川を地図でなぞって。幹川流路延長は何 km？",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "the stand-in this round grades: a line the model drew through towns on the river, counted as «a line» by the old key (atlas.lines ≥ 1) — no upstream vouches for its course"
+  },
+  "question": {
+    "set": "answers",
+    "id": "shinano-river-length"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "map.drawLine",
+            "args": {
+              "places": [
+                "長野市",
+                "小千谷市",
+                "新潟市"
+              ],
+              "label": "信濃川"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "信濃川を地図に線で描きました。幹川流路延長は367 kmです。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "places": [
+            "長野市",
+            "小千谷市",
+            "新潟市"
+          ],
+          "label": "信濃川",
+          "type": "drawLine"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>— 信濃川</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {
+      "atlas": {
+        "highlightCountries": 0,
+        "highlight": null,
+        "choropleth": null,
+        "customScore": null,
+        "pins": null,
+        "polygons": null,
+        "lines": {
+          "n": 1
+        },
+        "measure": null,
+        "radius": null,
+        "userPins": null,
+        "tool": "",
+        "shapes": {
+          "n": 1,
+          "line:unstated": 1
+        }
+      }
+    }
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:map.drawLine",
+        "status": "completed"
+      }
+    ],
+    "text": "信濃川を地図に線で描きました。幹川流路延長は367 kmです。"
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct",
+    "map": "mismatch"
+  }
+}
