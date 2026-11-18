@@ -145,7 +145,8 @@ test('R722 ② the model catalogue is fetched from each provider, never listed i
 /* ── ③ the secret's id belongs to the secret's provider ───────────────────────────────────── */
 test('R722 ③ a provider switch does not inherit the AI_MODEL secret', () => {
   assert.match(PROXY, /const envModel = provider === envProvider \? \(Deno\.env\.get\("AI_MODEL"\) \|\| ""\) : "";/);
-  assert.match(PROXY, /const model = devPick\?\.model \|\| envModel \|\| PROVIDER_DEFAULT_MODEL\[provider\]/);
+  /* (atlas-delegation) a WORKER's call may carry an operator-set tier (ATLAS_DELEGATION_MODEL, "" for every other call) ahead of the pick */
+  assert.match(PROXY, /const model = tier\.model \|\| devPick\?\.model \|\| envModel \|\| PROVIDER_DEFAULT_MODEL\[provider\]/);
 
   /* ⚠ ONE TABLE OF DEFAULTS, NOT A TERNARY AT EVERY READER. Two readers exist now (the call and the
      catalogue's serverDefault); #R515's shape is two copies of one rule drifting apart.
@@ -162,7 +163,7 @@ test('R722 ③ a provider switch does not inherit the AI_MODEL secret', () => {
 /* ── ④ a chosen model reports its own 403 instead of quietly running another one ──────────── */
 test('R722 ④ the fallback walks sol → terra → luna, and stops for a model the developer chose', () => {
   /* kept as a spelling: supabase/functions/ai-proxy/index.ts is Deno TypeScript node cannot import, and js/ai-core.js / js/app-body.js run only in the signed-in page */
-  assert.match(PROXY, /const noFallbackForPick = !!devPick\?\.model;/);
+  assert.match(PROXY, /const noFallbackForPick = !tier\.model && !!devPick\?\.model;/);
   const call = PROXY.slice(PROXY.indexOf('out = await callOpenAI(model, key'));
   assert.match(call.slice(0, 260), /imageDetail, noFallbackForPick, oaFormat[,)]/,   /* (atlas-native-tools) the turn and its cache key follow it */
     'the call site still hard-codes false — a chosen model would be substituted in silence');
@@ -182,7 +183,7 @@ test('R722 ④ the fallback walks sol → terra → luna, and stops for a model 
   assert.match(oa, /served: String\(j\?\.model \|\| ""\)/);
 
   /* and the answer says who decided, so a pick that did not take effect is visible */
-  assert.match(PROXY, /modelChosenBy: devPick\?\.model \? "developer" : "server"/);
+  assert.match(PROXY, /modelChosenBy: !tier\.model && devPick\?\.model \? "developer" : "server"/);
 });
 
 /* ── ⑤ the pick is stored where the account record already travels ────────────────────────── */

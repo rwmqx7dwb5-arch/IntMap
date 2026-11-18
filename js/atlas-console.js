@@ -1359,6 +1359,19 @@ export function atlasConsole(HOST){
        that returned nothing are listed honestly in the footer (never silently pretended). ---- */
     const { EVIDENCE_BUDGET_MS, GATHER_BUDGET_MS, WEB_BUDGET_MS } = ATLAS_BUDGETS;   /* (#R452) the clocks, the bounded gather and the evidence fetcher live in js/atlas-deadlines.js — this file has a SHRINK-ONLY ceiling, so the subject moved OUT rather than the ceiling moving up */
     const turnSignal = () => { try{ return _abortCtl?_abortCtl.signal:undefined; }catch(_){ return undefined; } }, _fetchJSON = makeFetchJSON(turnSignal);   /* ⚠ read at CALL time — `run()` installs the controller when a turn starts, so one captured here would belong to no turn */
+    /* ══ (atlas-orchestration) THE HOST LANES OF A DELEGATED CAPABILITY TASK (js/atlas-orchestrate.js makeCapabilityExecutor) ══════
+       classifyCapability(id): 'read' ONLY for a capability the registry itself describes as reading and writing nothing — risk
+       'read-only' (row column 7), no writes (column 5) and no confirmation (column 8) — and that is not research.delegate (a task
+       that delegates is the recursion this lane must not open). 'unknown' when nothing resolves; every other capability is 'other'.
+       Read off the table at call time: no list of ids is written here, so a capability added tomorrow is classified by what its row says.
+       runReadCapability(id,args,{signal}): the SAME kernel path a call of Atlas's own takes (EXEC.execute — availability, schema,
+       observation, postcondition), source 'atlas-worker' so it is never a call that may ask the reader to confirm. The result is the kernel's
+       own: {ok: it reached 'completed', html, meta, code, status}; the lane turns html into text and meta into the task's data. */
+    const classifyCapability = (id) => { let c=null; try{ c=CAPS.resolve(String(id||'')); }catch(_){ c=null; }
+      if(!c) return 'unknown';
+      return (c.risk==='read-only' && !((c.effects&&c.effects.writes)||[]).length && String(c.confirmation||'none')==='none' && c.id!=='research.delegate') ? 'read' : 'other'; };
+    const runReadCapability = async (id,args,o) => { const r=await EXEC.execute(id, args||{}, {source:'atlas-worker', turnId:_curTurn, signal:(o&&o.signal)||undefined});
+      return { ok:!!r&&r.status==='completed', html:(r&&r.html)||'', meta:(r&&r.meta)||undefined, code:(r&&r.code)||'', status:r&&r.status }; };
     function _agoH(d){ try{ const t2=(typeof parseDate==='function')?parseDate(d).getTime():Date.parse(d); if(!t2) return null; return Math.max(0,Math.round((Date.now()-t2)/3600000)); }catch(_){ return null; } }
     function _newsData(ctx,q,sink){ try{ if(typeof HOST.globalData==='undefined'||!HOST.globalData||!HOST.globalData.length) return null;
       let items=HOST.globalData.slice();
@@ -1917,6 +1930,7 @@ export function atlasConsole(HOST){
       get _PINNED(){ return _PINNED; },
       get _lastUserMsg(){ return _lastUserMsg; }, set _lastUserMsg(v){ _lastUserMsg=v; },
       get turnSignal(){ return turnSignal; },
+      get runReadCapability(){ return runReadCapability; }, get classifyCapability(){ return classifyCapability; },   /* (atlas-orchestration) the host lanes of a delegated capability task — below, beside turnSignal */
       get _delegationPolicy(){ return _delegationPolicy; },   /* (delegation-limits) */   /* (atlas-delegation) the running turn's abort signal, read at call time — research.delegate hands it to its workers */
       get aiParseJSON(){ return aiParseJSON; },
       get askAI(){ return askAI; },

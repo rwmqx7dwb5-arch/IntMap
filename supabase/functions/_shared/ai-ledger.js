@@ -318,3 +318,49 @@ export function recordHealth(db, ev) {
   }
   return p;
 }
+
+/* ══ (atlas-delegation) THE JOURNAL — one row per worker call and per Atlas root turn (public.ai_delegation_journal) ══
+   Why it exists (migration 20261119120000): ai_turns forgets a refused or failed worker within a day, and the
+   delegation comparison needs exactly those. Like recordHealth this OBSERVES and decides nothing, and it is
+   best-effort and off the answer's path — a journal write that fails never fails the request it describes
+   (the posture of spend 'unavailable'). Unlike usage_counts it names the account: the table is the owner's to
+   read and is in the account's data inventory. No prompt, answer, address or token is an argument.
+   outcome: ok | failed (the provider or the request failed) | refused (a policy answered no: delegation_*, a cap, a quota). */
+export const JOURNAL_OUTCOMES = Object.freeze(["ok", "failed", "refused"]);
+const jtext = (v, n) => String(v == null ? "" : v).replace(/[^A-Za-z0-9._:/@-]/g, "_").slice(0, n);
+const jint = (v) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? Math.min(2147483647, Math.floor(x)) : 0; };
+export function journalArgs(ev) {
+  const e = ev || {};
+  const t = e.total || {};
+  /* the whole prompt, whichever provider: openai/gemini's `input` is the uncached remainder after normalizeUsage and the
+     cache read is reported beside it, as is Anthropic's cache write — so the three sum to what was sent */
+  const input = jint(t.input) + jint(t.cached_read) + jint(t.cache_write);
+  return {
+    p_user: String(e.user || ""),
+    p_root: String(e.root || "").slice(0, 120),
+    p_child: String(e.child || "").slice(0, 120),
+    p_task: jtext(e.task, 40),
+    p_outcome: JOURNAL_OUTCOMES.includes(e.outcome) ? e.outcome : "failed",
+    p_code: e.outcome === "ok" ? "" : jtext(e.code, 64),
+    p_http: jint(e.http),
+    p_model: jtext(e.model, 80),
+    p_latency_ms: jint(e.latencyMs),
+    p_input: Math.min(2147483647, input),
+    p_output: jint(t.output),
+    p_cost_micros: Math.max(0, Math.floor(Number(e.costMicros) || 0)),
+    p_web: e.web === true,
+  };
+}
+export function recordJournal(db, ev) {
+  const args = journalArgs(ev);
+  if (!args.p_user || !args.p_root) return Promise.resolve(false);
+  const p = (async () => {
+    try { const { error } = await db.rpc("log_ai_delegation", args); return !error; }
+    catch (_) { return false; }
+  })();
+  const rt = globalThis.EdgeRuntime;
+  if (rt && typeof rt.waitUntil === "function") {
+    try { rt.waitUntil(p); return Promise.resolve(true); } catch (_) { /* fall through: await it */ }
+  }
+  return p;
+}

@@ -67,7 +67,7 @@ const arg = (k, d = '') => { const i = argv.indexOf(k); return i >= 0 && argv[i 
 
 /* The rules IntMap keeps, from where it keeps them. The modules touch `window` only inside try, and
    publish nothing we read here — the shim only gives those try blocks something to write to. */
-async function productRules() {
+export async function productRules() {
   if (typeof globalThis.window === 'undefined') globalThis.window = {};
   const { makeAtlasAgent } = await import('../js/atlas-agent.js');
   const { makeAtlasTurnResults } = await import('../js/atlas-turn-results.js');
@@ -98,7 +98,7 @@ const KEEP_RESULT_CHARS = 4000;
 const trimCalls = (calls) => (calls || []).map((c) => ({ ...c, resultText: String(c.resultText || '').slice(0, KEEP_RESULT_CHARS) }));
 
 /* ── in-page probes (serialised into the page by Playwright — they must be self-contained) ───────── */
-const PAGE = {
+export const PAGE = {
   booted: () => !!(window.sb && window.IntMapAtlas && typeof window.IntMapAtlas.ensure === 'function'),
   build: () => (window.__imBuild || window.INTMAP_BUILD || null),
   session: async () => {
@@ -221,7 +221,61 @@ export function observeTurn(q, raw, askRes) {
     measured: true, ms: askRes.ms, stopped: String(t.status || raw.stopped || ''), reply: t.reply,
     operations: t.operations, calls, steps: raw.steps, snapshot: raw.snapshot,
     replies: raw.replies || null, dispatches: raw.dispatches || null,
+    aiCalls: Number.isFinite(+t.aiCalls) ? +t.aiCalls : null,   /* (atlas-delegation-eval) the model calls of the turn, for the A/B bench */
   };
+}
+
+/* (atlas-delegation-eval) THE SESSION AND THE ASKING, SHARED. evaluate() below and scripts/atlas-delegation-bench.mjs
+   both open the page, sign in with the same refresh token, and ask each question on a fresh page through the same
+   observation ports — so they are the same two functions, not two copies of the sequence. Moved out of evaluate()
+   unchanged. */
+export async function openAtlasSession({ url, token, headed, dryRun }) {
+  const { chromium } = await import('@playwright/test');
+  const browser = await chromium.launch({ headless: !headed });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'en-US' });
+  const page = await context.newPage();
+  const S = { browser, page, build: null, session: '', who: { signedIn: false }, fatal: '', ports: null };
+  S.boot = async () => {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
+    await page.waitForFunction(PAGE.booted, null, { timeout: 90000 });
+  };
+  try {
+    await S.boot();
+    S.build = await page.evaluate(PAGE.build);
+    if (!dryRun) {
+      const s = await page.evaluate(PAGE.signIn, token);
+      if (!s.ok) S.session = 'the refresh token was refused — ' + (s.error || 'no session returned') + ' (a spent or revoked token; see docs/TESTING.md)';
+      else await S.boot();   /* boot again so the app starts from the stored session, the way a returning reader does */
+    }
+    S.who = await page.evaluate(PAGE.session);
+    if (!S.session) S.session = S.who.signedIn ? 'signed in (user ' + S.who.user + '…)' : 'not signed in' + (S.who.error ? ' — ' + S.who.error : '');
+    S.ports = await page.evaluate(PAGE.ensureAtlas);
+    await page.waitForFunction(() => !!(window.IntMapConsole && window.IntMapConsole.run), null, { timeout: 60000 }).catch(() => { });
+    const missing = Object.entries(await page.evaluate(PAGE.ensureAtlas)).filter(([, v]) => !v).map(([k]) => k);
+    if (missing.length) S.fatal = 'observation port(s) missing: ' + missing.join(', ') + ' (was ' + JSON.stringify(S.ports) + ')';
+  } catch (e) { await browser.close().catch(() => { }); throw e; }
+  return S;
+}
+
+/** askOnFreshPage(S, text, {patienceMs, sections}) → { unmeasured:{measured:false,unmeasured,detail} } | { askRes, raw }
+ *  One question on a fresh page: a turn is judged on what IT did, not on what the previous turn — or the place
+ *  probes, which set the geocoder's language — left behind. The watchdog is the harness's patience, not a limit on Atlas. */
+export async function askOnFreshPage(S, text, { patienceMs, sections }) {
+  const { page } = S;
+  await S.boot(); await page.evaluate(PAGE.ensureAtlas);
+  await page.waitForFunction(() => !!(window.IntMapConsole && window.IntMapConsole.run), null, { timeout: 60000 });
+  await page.evaluate(PAGE.tap);
+  let askRes, timer = null;
+  const asking = page.evaluate(PAGE.ask, text);
+  asking.catch(() => { });   /* if the watchdog wins, the next boot() rejects this one — that is not an error */
+  try {
+    askRes = await Promise.race([asking, new Promise((r) => { timer = setTimeout(() => r({ timedOut: true }), patienceMs); })]);
+  } catch (e) { askRes = { err: String((e && e.message) || e) }; }
+  finally { clearTimeout(timer); }
+  if (askRes.timedOut) { await page.evaluate(PAGE.stop).catch(() => { }); return { unmeasured: { measured: false, unmeasured: 'harness_timeout', detail: 'no end after ' + Math.round(patienceMs / 1000) + ' s' } }; }
+  if (askRes.err && !Number.isFinite(askRes.ms)) return { unmeasured: { measured: false, unmeasured: 'page_error', detail: askRes.err } };
+  const raw = await page.evaluate(PAGE.observe, sections);
+  return { askRes, raw };
 }
 
 /* (atlas-quality-lab) cassetteOf — one measured turn as a cassette scripts/atlas-eval/replay.mjs replays
@@ -273,31 +327,13 @@ async function evaluate() {
      answer call. Twice the tool timeout on top covers both; waiting longer only means the page is stuck. */
   const patienceMs = rules.turnBudgetMs + 2 * rules.toolTimeoutMs;
 
-  const { chromium } = await import('@playwright/test');
-  const browser = await chromium.launch({ headless: !has('--headed') });
-  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'en-US' });
-  const page = await context.newPage();
   const turns = [], probes = [];
-  let build = null, session = '', rotated = null, fatal = '';
+  let build = null, session = '', rotated = null, fatal = '', S = null;
 
-  const boot = async () => {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
-    await page.waitForFunction(PAGE.booted, null, { timeout: 90000 });
-  };
   try {
-    await boot();
-    build = await page.evaluate(PAGE.build);
-    if (!dryRun) {
-      const s = await page.evaluate(PAGE.signIn, token);
-      if (!s.ok) session = 'the refresh token was refused — ' + (s.error || 'no session returned') + ' (a spent or revoked token; see docs/TESTING.md)';
-      else await boot();   /* boot again so the app starts from the stored session, the way a returning reader does */
-    }
-    const who = await page.evaluate(PAGE.session);
-    if (!session) session = who.signedIn ? 'signed in (user ' + who.user + '…)' : 'not signed in' + (who.error ? ' — ' + who.error : '');
-    const ports = await page.evaluate(PAGE.ensureAtlas);
-    await page.waitForFunction(() => !!(window.IntMapConsole && window.IntMapConsole.run), null, { timeout: 60000 }).catch(() => { });
-    const missing = Object.entries(await page.evaluate(PAGE.ensureAtlas)).filter(([, v]) => !v).map(([k]) => k);
-    if (missing.length) fatal = 'observation port(s) missing: ' + missing.join(', ') + ' (was ' + JSON.stringify(ports) + ')';
+    S = await openAtlasSession({ url, token, headed: has('--headed'), dryRun });
+    const { page, who } = S;
+    build = S.build; session = S.session; fatal = S.fatal;
 
     /* the place probes: no model call, no session needed — they run in every mode */
     for (const row of probeRows) {
@@ -314,22 +350,10 @@ async function evaluate() {
       if (dryRun) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'dry_run' }, rules)); continue; }
       if (stopAll) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'not_reached', detail: stopAll }, rules)); continue; }
       if (deadlineMs && Date.now() - t0run + patienceMs > deadlineMs) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'deadline', detail: 'started ' + Math.round((Date.now() - t0run) / 60000) + ' min into a ' + Math.round(deadlineMs / 60000) + '-min run' }, rules)); continue; }
-      /* each question on a fresh page: a turn is judged on what IT did, not on what the previous turn — or
-         the place probes, which set the geocoder's language — left behind */
-      await boot(); await page.evaluate(PAGE.ensureAtlas);
-      await page.waitForFunction(() => !!(window.IntMapConsole && window.IntMapConsole.run), null, { timeout: 60000 });
-      await page.evaluate(PAGE.tap);
-      let askRes, timer = null;
-      const asking = page.evaluate(PAGE.ask, q.text);
-      asking.catch(() => { });   /* if the watchdog wins, the next boot() rejects this one — that is not an error */
-      try {
-        askRes = await Promise.race([asking, new Promise((r) => { timer = setTimeout(() => r({ timedOut: true }), patienceMs); })]);
-      } catch (e) { askRes = { err: String((e && e.message) || e) }; }
-      finally { clearTimeout(timer); }
-      if (askRes.timedOut) { await page.evaluate(PAGE.stop).catch(() => { }); turns.push(judgeTurn(q, { measured: false, unmeasured: 'harness_timeout', detail: 'no end after ' + Math.round(patienceMs / 1000) + ' s' }, rules)); continue; }
-      if (askRes.err && !Number.isFinite(askRes.ms)) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'page_error', detail: askRes.err }, rules)); continue; }
-      const raw = await page.evaluate(PAGE.observe, sectionsRead(questions));
-      const obs = observeTurn(q, raw, askRes);
+      /* each question on a fresh page (askOnFreshPage) */
+      const asked = await askOnFreshPage(S, q.text, { patienceMs, sections: sectionsRead(questions) });
+      if (asked.unmeasured) { turns.push(judgeTurn(q, asked.unmeasured, rules)); continue; }
+      const obs = observeTurn(q, asked.raw, asked.askRes);
       /* (atlas-quality-lab) the independent grade — only for a question with a verified answer, only when
          asked for (it costs a use), and never for an empty reply (there is nothing to grade; the
          deterministic grade already says 「absent」) */
@@ -353,7 +377,7 @@ async function evaluate() {
     for (const q of questions.slice(turns.length)) turns.push(judgeTurn(q, { measured: false, unmeasured: 'page_error', detail: fatal }, rules));
     for (const row of probeRows.slice(probes.length)) probes.push(judgeProbe(row, { measured: false, unmeasured: 'page_error', detail: fatal }));
   } finally {
-    await browser.close().catch(() => { });
+    if (S) await S.browser.close().catch(() => { });
   }
 
   /* against the previous report: the reference moves only when a fact did not get worse (judge.mjs advance) */

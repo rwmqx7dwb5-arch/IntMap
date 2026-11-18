@@ -1104,6 +1104,36 @@
           { "path": "atlas.shapes.line:real", "max": 0, "why": "no source holds the fault, so a real line drawn for it is some other feature that shares a name" }
         ]
       }
+    },
+    {
+      "id": "delegate-north-america-census-total",
+      "lang": "en",
+      "category": "population",
+      "text": "Research the populations counted by the 2020 Census of the United States, the 2021 Census of Canada and the 2021 Census of Australia separately, then give me the combined total of the three countries.",
+      "answer": { "kind": "number", "value": 393864050, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "2020 Census Apportionment Results", "publisher": "U.S. Census Bureau (with Statistics Canada and the Australian Bureau of Statistics, rows below)", "url": "https://census.gov/newsroom/press-releases/2021/2020-census-apportionment-results.html", "states": "United States 331,449,281 (1 April 2020); Canada 36,991,981 (2021 Census, 11 May 2021); Australia 25,422,788 (2021 Census, excluding overseas visitors)." },
+      "capabilities": ["research.delegate"],
+      "note": "DERIVED, not stated by one source: 331,449,281 + 36,991,981 + 25,422,788 = 393,864,050, each addend being the figure verified in the rows us-population-2020-census, canada-population-2021-census and australia-population-2021-census (their sources: census.gov, Statistics Canada, ABS). Three independent pieces of research whose results only the total needs together — the question a delegating Atlas is measured on. A reply that lists the three and no total states no figure within tolerance and grades incorrect."
+    },
+    {
+      "id": "delegate-japan-three-prefectures-census-total",
+      "lang": "jp",
+      "category": "population",
+      "text": "東京都・大阪府・北海道の人口（令和2年国勢調査）をそれぞれ別々に調べて、3 つの合計を教えて。",
+      "answer": { "kind": "number", "value": 28109893, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "令和2年国勢調査人口等基本集計結果概要", "publisher": "東京都 (with 大阪府 and 北海道, rows below)", "url": "https://www.spt.metro.tokyo.lg.jp/tosei/hodohappyo/press/2022/01/20/07.html", "states": "2020 census (1 October 2020): Tokyo 14,047,594; Osaka Prefecture 8,837,685; Hokkaido 5,224,614." },
+      "capabilities": ["research.delegate"],
+      "note": "DERIVED: 14,047,594 + 8,837,685 + 5,224,614 = 28,109,893, each addend being the figure verified in the rows tokyo-population-2020-census, osaka-pref-population-2020-census and hokkaido-population-2020-census. The url is the one tokyo-population-2020-census cites; the other two prefectures' sources are in their own rows."
+    },
+    {
+      "id": "delegate-gulf-to-japan-routes-strait-name",
+      "lang": "en",
+      "category": "name",
+      "text": "Japan buys crude oil from the Persian Gulf, iron ore from Western Australia and LNG from Qatar. Research the three shipping routes separately, and tell me which narrow strait the Gulf crude and the Qatari LNG tankers both have to pass through on the way out.",
+      "answer": { "kind": "name", "accept": ["Strait of Hormuz", "Hormuz", "Straits of Hormuz", "ホルムズ海峡", "ホルムズ"]},
+      "source": { "title": "Strait of Hormuz", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Strait_of_Hormuz", "states": "The Strait of Hormuz is a waterway between the Persian Gulf and the Gulf of Oman (read 2026-11-19)." },
+      "capabilities": ["research.delegate"],
+      "note": "Qatar and the crude terminals sit inside the Persian Gulf, whose only sea outlet is the Gulf of Oman through this strait — an inference from the cited sentence and the geography, stated as such. Three independent routes (Gulf crude, Western Australian iron ore, Qatari LNG); only the first and third share the answer, so a reply that researched the iron-ore route alone cannot give it. The name is graded by a word in the reply (kind name), which a reply could also say wrongly — the independent grader (--rubric) reads the reasoning."
     }
   ]
 }

@@ -499,6 +499,30 @@ Admin console «Usage», or as an admin: `select day, metric, dimension, count f
 A day to be suspicious of: `ai_request` non-`ok` share up, `ai_wall` mass moving to `60to120s`/`ge120s`, `ai_rungs` `2+` share up,
 any `ai_fallback` row. Counts are per provider request-handling, not per reader.
 
+## 2b3. Atlas delegation health (admin «Delegation»)
+
+### What the panel shows
+Admin console tab **Delegation** (`js/admin-delegation.js`) calls the admin-only RPC `delegation_overview(p_days)` (1, 7 or 30 days) and
+draws: a day table (children, ok, failed, refused, unobserved, p50/p90 latency, cost) with a stacked bar per day and a total row;
+a **Root turns** row (turns, p50/p90, cost of the parent turns that delegated); and the top refusal / failure codes. An RPC error
+is printed as its own text and no rows prints an empty state; nothing is filled in. A percentile the journal could not compute is a dash, not 0.
+
+### refused vs failed vs unobserved
+- **refused** — the policy declined to start the child (children or child-call limit reached, delegation off). No model call was made.
+- **failed** — the child started and did not finish (provider error, timeout). The code says which.
+- **unobserved** — derived by the panel as `children - ok - failed - refused` when positive: a child whose outcome was never written
+  (the request ended first). It is "not observed", not "failed" — do not count it as either.
+
+### Controls (Edge Function environment)
+- `ATLAS_DELEGATION=off` — the kill switch: no child is started.
+- `ATLAS_DELEGATION_CHILDREN` — the most children one root turn may start.
+- `ATLAS_DELEGATION_CHILD_CALLS` — the most model calls one child may make.
+- `ATLAS_DELEGATION_MODEL` — the model children use.
+
+### The journal
+`ai_delegation_journal` keeps child outcomes and root turns for **30 days**; the panel cannot show further back than that
+(1/7/30 are all inside it). Rows hold counts, codes, latency and cost only: no account id, prompt or answer.
+
 ## 2c. How long readers wait, by release (field-speed)
 
 ### Why
