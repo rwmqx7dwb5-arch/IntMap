@@ -111,8 +111,8 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
   ① **いまの地球**——ライブのレイヤーのスイッチ（読者に何も求めない始まりなので先頭）。一覧は書かず
   `liveStarts` が導く（時間の宣言 `kind:'live'`・パネルで畳まれていない〔`rest` でも beta の棚でもない〕・パネルの行が組まれている、の 3 つ。
   名前はタイルと同じ `IntMapLayerSidebar.rows()`）。押すと OS の `layer.on` / `layer.off`、点けたら地図が答え（`MAP_ANSWER_EVENT` `card`）で
-  シートは `min` へ。状態は地図の状態ストアの `toggles` で読み直す ② いまいる場所（`js/here-entry.js` `entryRow`——検索欄の空の状態と同じ行）
-  ③ この日の歴史地図と作例・ツアー（`showInResults`——検索欄の帯そのもの）
+  シートは `min` へ。状態は地図の状態ストアの `toggles` で読み直す ② いまいる場所（`js/here-entry.js` `entryRow`）
+  ③ この日の歴史地図と作例・ツアー（`showInResults`）
   ④ ホーム画面への追加（設定の入口と同じ保持された prompt。`installState` が `prompt` か `ios` のときだけ）。**起動では読まない**——シートを
   掴むか `min` より上で止まったときに `js/mobile-ui.js` `wantStart` が読み、`min` のシートは検索欄の行のまま。幅が広がるとボードを列へ返す。
   門は `tests/wave4-ux-mobile-checks.test.mjs` と `tests/wave4-ux-mobile.spec.js`。
@@ -301,7 +301,7 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
   出来事——ニュース・72 時間）を先頭に置く。続いてこの地点・時刻と太陽・その場所のかつての名前（`data/hist-cities.json` を `IntMapHistCities.near` が記録自身の判定半径で
   引く——東京なら江戸）。「近く」の定義は `js/atlas-world-objects.js` `RELATED_DEFAULTS` の 1 つ。各節は値か理由（`ok` / `none` / `unavailable`）。正確な現在地は端末から出ない
   （送るのは `PRIVACY_GRID_DEG`＝0.1°・約 11 km に丸めた地点だけで、地名の Nominatim は zoom 10 と天気。地震のフィードと出来事は位置を付けずに読んで端末で絞る——
-  `js/events-near.js`。何も保存しない——privacy.html §5）。入口: 検索欄の空の状態の先頭の行（`js/here-entry.js`）・ホーム画面のアイコンの長押し（manifest の `shortcuts` →
+  `js/events-near.js`。何も保存しない——privacy.html §5）。入口: シートのホームの「いまいる場所」の行（`js/here-entry.js`）・Atlas `research.hereNow`・ホーム画面のアイコンの長押し（manifest の `shortcuts` →
   `?here=1`）・Atlas `research.hereNow`（確認の列は `explicit`）。地図上の任意の地点は長押しメニュー「現地の情報 ▸ 地点について」で同じカード。
 - **共有で開く**（`js/share-inbox.js`）——インストールした IntMap は共有シートの宛先になる（manifest の `share_target`。POST・multipart）。静的ホストは POST を受けられないので
   `sw.js` が受けて中身を `intmap-page-share-inbox` に置き `?share=<id>` へ 303 で送る。ページは 1 度だけ読み、1 時間より古い項目を捨てる。写真は 1 枚・40 MB まで、文は 4,000 字まで。

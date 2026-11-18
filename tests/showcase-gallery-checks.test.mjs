@@ -61,10 +61,11 @@ test('① sixteen examples are shown, and every subject the gallery has a headin
   for (const topic of Object.keys(TOPICS)) assert.ok(SHOWCASE.some((s) => s.topic === topic), topic + ' has an example');
 });
 
-test('② the doors: the empty field asks for the strip, nothing imports the gallery at boot, and Atlas can open it', () => {
+test('② the doors: the phone sheet\'s home holds the strip, nothing imports the gallery at boot, and Atlas can open it', () => {
   const sg = rd('js/search-geocode.js');
-  assert.match(sg, /addEventListener\('focusin'[\s\S]{0,200}ms-input[\s\S]{0,200}_galleryEmptyState/, 'focusing the empty field asks for the strip');
-  assert.match(sg, /if\(!q\)\{ if\(suggest&&res\)\{[^}]*\}?[^\n]*_galleryEmptyState\(inp,res\)/, 'an emptied field on a phone shows the strip instead of closing the list');
+  /* (atlas-glass-look) the empty place search shows nothing since 2026-11-18 (the reader asked for it to go); the strip's door is
+     the phone sheet's home, and its absence from the field is held by tests/atlas-glass-look-checks.test.mjs */
+  assert.match(rd('js/start-home.js'), /G\.showInResults\(gal/, 'the phone sheet\'s home draws the strip');
   assert.match(sg, /closest\('\[data-im-gallery\]'\)/, 'a data-im-gallery control opens the gallery');
   /* fetched when reached for: no file imports it statically */
   const statics = [];

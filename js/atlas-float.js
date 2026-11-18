@@ -5,7 +5,7 @@
  *  Settings 「Atlas の回答の表示」 has two values:
  *    · tab   (default) — Atlas lives in its sidebar tab, as it always has.
  *    · float           — the SAME panel (#atlas-panel, js/atlas-console.js ensure()) is carried onto the
- *                        left of the map, inside a translucent glass card: the conversation above, the
+ *                        left of the map, the answer as text lying on the map itself: the conversation above, the
  *                        input below. A whole round trip happens without opening the tab.
  *
  *  ⚠ ONE PANEL, NOT TWO. Nothing here renders a message, owns an input or talks to a model. The node
@@ -47,8 +47,8 @@ const CSS =
   /* the sidebar lies OVER the map in the glass styles, so the card stands right of it there */
   + 'body.sidebar-glass #atlas-float{left:calc(var(--sidebar-w) + 16px);width:min(380px,calc(100% - var(--sidebar-w) - 32px));}'
   + 'body.sidebar-glass:has(#sidebar.collapsed) #atlas-float{left:16px;width:min(380px,calc(100% - 32px));}'
-  /* THE CARD IS NOT A SURFACE (2026-11-18): answers lie directly on the map, each run of text on its own frosted glass, and only the
-     input row is a pill. So the card has no background, border, shadow or backdrop-filter, and it does not take the pointer — the map
+  /* THE CARD IS NOT A SURFACE (2026-11-18): answers lie directly on the map as text (no surface
+     at all — see THE ANSWER IS TEXT ON THE MAP below), the bar is a small pill and only the input row becomes a surface. So the card has no background, border, shadow or backdrop-filter, and it does not take the pointer — the map
      under the empty parts of it stays draggable; the pieces that are content (bar, answers, input) take it themselves. */
   + '#atlas-float .atl-float-card{pointer-events:none;display:flex;flex-direction:column;min-height:0;max-height:100%;overflow:hidden;color:var(--text-main);'
   + 'opacity:0;transform:translateY(12px) scale(.985);'
@@ -58,8 +58,8 @@ const CSS =
   + '#atlas-float.on.idle .atl-float-card{opacity:.58;}'
   + '#atlas-float.on .atl-float-card:hover,#atlas-float.on .atl-float-card:focus-within{opacity:1;}'
   + '#atlas-float:not(.on){visibility:hidden;transition:visibility 0s linear .5s;}'
-  /* the glass every piece of content wears: the popup colour at 45%, blurred behind. One variable-free recipe, used by the bar, the text runs and the chips below */
-  + '#atlas-float .atl-float-bar,#atlas-float .atl-b.a .atl-md,#atlas-float .atl-b.a .atl-md>*,#atlas-float .atl-b.a .atl-actrow,#atlas-float .atl-b.a .atl-srcs,#atlas-float .atl-b.a .atl-fold,#atlas-float .atl-b.a .atl-interim{'
+  /* the bar is a control, so it is a small glass pill: the popup colour at 45%, blurred behind */
+  + '#atlas-float .atl-float-bar{'
   + 'background:color-mix(in srgb,var(--popup-bg) 45%,transparent);backdrop-filter:saturate(170%) blur(14px);-webkit-backdrop-filter:saturate(170%) blur(14px);}'
   + '#atlas-float .atl-float-bar{pointer-events:auto;align-self:flex-start;border-radius:999px;margin-bottom:6px;display:flex;align-items:center;gap:2px;padding:3px 6px 3px 12px;flex:0 0 auto;}'
   + '#atlas-float .atl-float-name{flex:1 1 auto;font-size:12.5px;font-weight:600;letter-spacing:.01em;color:var(--text-muted);}'
@@ -75,23 +75,33 @@ const CSS =
   + 'backdrop-filter:none !important;-webkit-backdrop-filter:none !important;resize:none !important;z-index:auto !important;overflow:hidden;}'
   + '#atlas-float #atlas-panel .atl-head,#atlas-float #atlas-panel .atl-sub,#atlas-float #atlas-panel .atl-ex{display:none !important;}'
   + '#atlas-float #atlas-panel .atl-chat{flex:0 1 auto;min-height:0;padding:4px 4px 8px;gap:8px;overscroll-behavior:contain;pointer-events:none;}'
-  /* answer text: inline runs, each line of each run its own glass (box-decoration-break:clone repeats padding and radius per line) */
+  /* THE ANSWER IS TEXT ON THE MAP (2026-11-18, chosen by the reader from three shots: one glass sheet / a feathered shade / text only).
+     No piece of an answer paints a surface — no per-line run, no chip, no legend card. What keeps it legible is the halo each glyph
+     carries: a tight edge, a soft drop and a wide falloff, in the colour opposite the ink (light ink + dark halo in the dark theme,
+     dark ink + light halo in the light one). text-shadow is inherited, so it is set once on the conversation; the reader's own
+     question keeps its bubble and so needs no halo. */
+  + '#atlas-float{--atl-halo:255,255,255;}'
+  + '[data-theme="dark"] #atlas-float{--atl-halo:0,0,0;}'
+  + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 1px rgba(var(--atl-halo),.85),0 1px 3px rgba(var(--atl-halo),.75),0 0 14px rgba(var(--atl-halo),.55);}'
+  + '#atlas-float #atlas-panel .atl-chat .atl-b.u{text-shadow:none;}'
   + '#atlas-float #atlas-panel .atl-chat>.atl-b{pointer-events:none;}'
-  + '#atlas-float .atl-b.a .atl-md{display:inline;pointer-events:auto;padding:2px 7px;border-radius:9px;line-height:1.85;'
-  + '-webkit-box-decoration-break:clone;box-decoration-break:clone;}'
-  /* block children of an answer cannot be inline runs: each is a chip as wide as its content */
-  + '#atlas-float .atl-b.a .atl-md>:is(ul,ol,pre,table,blockquote,.atl-tablewrap,details){display:block;width:fit-content;max-width:100%;box-sizing:border-box;margin:6px 0;padding:6px 10px;border-radius:12px;}'
-  + '#atlas-float .atl-b.a .atl-md>:is(p,div,h1,h2,h3,h4){display:inline;pointer-events:auto;padding:2px 7px;border-radius:9px;line-height:1.85;-webkit-box-decoration-break:clone;box-decoration-break:clone;}'
-  + '#atlas-float .atl-b.a .atl-actrow,#atlas-float .atl-b.a .atl-srcs,#atlas-float .atl-b.a .atl-fold,#atlas-float .atl-b.a .atl-interim{pointer-events:auto;display:block;width:fit-content;max-width:100%;box-sizing:border-box;padding:5px 10px;border-radius:12px;border-top-color:transparent;}'
+  + '#atlas-float .atl-b.a :is(.atl-md,.atl-md>*,.atl-cmp,.atl-actrow,.atl-srcs,.atl-fold,.atl-interim){background:none;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;}'
+  + '#atlas-float .atl-b.a .atl-md{display:block;pointer-events:auto;padding:0;color:var(--text-main);font-size:15px;line-height:1.72;}'
+  + '#atlas-float .atl-b.a .atl-md>p+p{margin-top:.75em;}'
+  + '#atlas-float .atl-b.a .atl-cmp{pointer-events:auto;padding:0;margin:12px 0 4px;border-radius:0;font-size:.92em;}'
+  + '#atlas-float .atl-b.a .atl-actrow,#atlas-float .atl-b.a .atl-srcs,#atlas-float .atl-b.a .atl-fold,#atlas-float .atl-b.a .atl-interim{pointer-events:auto;display:block;width:fit-content;max-width:100%;box-sizing:border-box;padding:4px 0;}'
   + '#atlas-float .atl-b.a .atl-actrow{display:flex;}'
   + '#atlas-float .atl-b.a .atl-md :is(.atl-ctl-row,.atl-row){pointer-events:auto;}'
   + '#atlas-float #atlas-panel .atl-chat:empty,#atlas-float.folded #atlas-panel .atl-chat{display:none;}'
-  /* the input row: its own glass pill, bottom-left — the one surface that is a surface */
-  + '#atlas-float #atlas-panel .atl-inbar{pointer-events:auto;border:1px solid rgba(255,255,255,0.34);border-radius:26px;padding:6px 8px;'
-  + 'background:color-mix(in srgb,var(--popup-bg) 62%,transparent);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
-  + 'box-shadow:0 8px 28px rgba(0,0,0,0.14),inset 0 1px 0 rgba(255,255,255,0.26);}'
-  + '[data-theme="dark"] #atlas-float #atlas-panel .atl-inbar{border-color:rgba(255,255,255,0.10);box-shadow:0 10px 30px rgba(0,0,0,0.36),inset 0 1px 0 rgba(255,255,255,0.06);}'
-  + '#atlas-float #atlas-panel .atl-in{background:color-mix(in srgb,var(--card-bg) 72%,transparent);}'
+  /* the input row: the one surface, bottom-left, and it only becomes one when it is used — quiet at rest (a faint glass and a
+     hairline), its edge on hover, a full surface with a shadow while the caret is in it */
+  + '#atlas-float #atlas-panel .atl-inbar{pointer-events:auto;border:1px solid color-mix(in srgb,var(--text-main) 12%,transparent);border-radius:26px;padding:6px 8px;'
+  + 'background:color-mix(in srgb,var(--popup-bg) 30%,transparent);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
+  + 'box-shadow:none;transition:background-color .25s ease,border-color .25s ease,box-shadow .25s ease;}'
+  + '#atlas-float #atlas-panel .atl-inbar:hover{border-color:color-mix(in srgb,var(--text-main) 24%,transparent);}'
+  + '#atlas-float #atlas-panel .atl-inbar:focus-within{background:color-mix(in srgb,var(--popup-bg) 72%,transparent);border-color:color-mix(in srgb,var(--text-main) 28%,transparent);box-shadow:0 10px 30px rgba(0,0,0,0.28);}'
+  + '#atlas-float #atlas-panel .atl-in{background:transparent;}'
+  + '@media (prefers-reduced-motion:reduce){#atlas-float #atlas-panel .atl-inbar{transition:none;}}'
   /* what arrives while the card is on the map comes in softly */
   + '#atlas-float .atl-float-new{animation:atl-float-in .55s cubic-bezier(.2,.8,.2,1) both;}'
   + '@keyframes atl-float-in{from{opacity:0;transform:translateY(8px);filter:blur(3px);}to{opacity:1;transform:none;filter:none;}}'
