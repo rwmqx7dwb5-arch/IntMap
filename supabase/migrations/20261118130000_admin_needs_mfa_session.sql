@@ -65,29 +65,37 @@ end;
 $$;
 
 -- ── 3. policies that decide admin rights another way → ask is_admin() ──────────────────────────
---  Two shapes exist: the inline EXISTS over profiles (repository migrations) and is_admin(<uid>)
---  (production's profiles_select). Both are matched on the deparsed expression.
+--  Three shapes exist, all matched on the deparsed expression. Production was partly written by hand,
+--  so its policies are not the repository's: (a) the inline EXISTS over profiles, with auth.uid()
+--  bare or in a sub-select and the flag bare or `= true`; (b) `auth.uid() IN (select profiles.id ...
+--  is_admin = true)`; (c) is_admin(<uid>) (production's profiles_select). The first run against
+--  production stopped in block 4 on seven policies of shapes (a)-bare/`= true` and (b), which this
+--  block did not yet know. supabase/tests/50 cannot see them (the repository has none), so
+--  tests/admin-origin-checks.test.mjs runs these patterns on production's deparsed text.
 do $$
 declare
   pol record;
   q text; c text; stmt text;
+  uid constant text := '(\(\s*SELECT\s+auth\.uid\(\)\s+AS\s+uid\)|auth\.uid\(\))';
   re_exists constant text :=
     -- the deparser writes the sub-query bare or inside its own pair of parentheses; the two
     -- alternatives keep that pair together, so the rewrite never leaves a parenthesis unmatched
-    '\(EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+(public\.)?profiles\s+p\s+WHERE\s+\(\(p\.id\s*=\s*\(\s*SELECT\s+auth\.uid\(\)\s+AS\s+uid\)\)\s+AND\s+p\.is_admin\)\)\)'
-    '|EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+(public\.)?profiles\s+p\s+WHERE\s+\(\(p\.id\s*=\s*\(\s*SELECT\s+auth\.uid\(\)\s+AS\s+uid\)\)\s+AND\s+p\.is_admin\)\)';
+    '\(EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+(public\.)?profiles\s+p\s+WHERE\s+\(\(p\.id\s*=\s*' || uid || '\)\s+AND\s+(\(p\.is_admin\s*=\s*true\)|p\.is_admin)\)\)\)'
+    || '|EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+(public\.)?profiles\s+p\s+WHERE\s+\(\(p\.id\s*=\s*' || uid || '\)\s+AND\s+(\(p\.is_admin\s*=\s*true\)|p\.is_admin)\)\)';
+  re_in constant text :=
+    '\(auth\.uid\(\)\s+IN\s*\(\s*SELECT\s+(public\.)?profiles\.id\s+FROM\s+(public\.)?profiles\s+WHERE\s+\(profiles\.is_admin\s*=\s*true\)\)\)';
   re_uid constant text :=
-    '(public\.)?is_admin\((\(\s*SELECT\s+auth\.uid\(\)\s+AS\s+uid\)|auth\.uid\(\))\)';
+    '(public\.)?is_admin\(' || uid || '\)';
 begin
   for pol in
     select schemaname, tablename, policyname, qual, with_check
       from pg_policies
      where schemaname = 'public'
-       and (coalesce(qual, '') ~ re_exists or coalesce(qual, '') ~ re_uid
-         or coalesce(with_check, '') ~ re_exists or coalesce(with_check, '') ~ re_uid)
+       and (coalesce(qual, '') ~ re_exists or coalesce(qual, '') ~ re_in or coalesce(qual, '') ~ re_uid
+         or coalesce(with_check, '') ~ re_exists or coalesce(with_check, '') ~ re_in or coalesce(with_check, '') ~ re_uid)
   loop
-    q := regexp_replace(regexp_replace(pol.qual, re_exists, 'public.is_admin()', 'g'), re_uid, 'public.is_admin()', 'g');
-    c := regexp_replace(regexp_replace(pol.with_check, re_exists, 'public.is_admin()', 'g'), re_uid, 'public.is_admin()', 'g');
+    q := regexp_replace(regexp_replace(regexp_replace(pol.qual, re_exists, 'public.is_admin()', 'g'), re_in, 'public.is_admin()', 'g'), re_uid, 'public.is_admin()', 'g');
+    c := regexp_replace(regexp_replace(regexp_replace(pol.with_check, re_exists, 'public.is_admin()', 'g'), re_in, 'public.is_admin()', 'g'), re_uid, 'public.is_admin()', 'g');
     stmt := format('alter policy %I on %I.%I', pol.policyname, pol.schemaname, pol.tablename);
     if q is not null then stmt := stmt || ' using (' || q || ')'; end if;
     if c is not null then stmt := stmt || ' with check (' || c || ')'; end if;

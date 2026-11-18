@@ -771,14 +771,25 @@ export function makeAtlasAgent() {
         /* (#R801) the turn's facts ride beside the call — see `turn` above. (atlas-completion) …together with the
            plan step this call is filed under (-1 when none), so the caller can name the goal it serves. A CHILD of
            `turn`, not a copy: externalContentSeen changes while the turn runs, and is read live through the prototype. */
-        const facts = Object.assign(Object.create(turn), { planStep: (typeof planStep === 'number') ? planStep : -1 });
+        /* ⚠ (atlas-timeout-cancel) THE DEADLINE ENDS THE WORK, NOT ONLY THE WAITING. `callSignal` rides beside the call
+           like the rest of the turn's facts; the executor links it to the operation it starts, so when the deadline
+           passes the operation is CANCELLED — settled as 'cancelled' — instead of left to land on the map after Atlas
+           was told it never arrived. A caller whose execute ignores it behaves exactly as before. */
+        let callAbort = null;
+        try { callAbort = new AbortController(); } catch (_) { /* no AbortController: the old, waiting-only deadline */ }
+        const facts = Object.assign(Object.create(turn), { planStep: (typeof planStep === 'number') ? planStep : -1,
+          callSignal: callAbort ? callAbort.signal : undefined });
         const p = Promise.resolve().then(() => execute(call, facts));
         if (!(lim.toolTimeoutMs > 0)) return p;
         let tm = null;
-        const clock = new Promise((res) => { tm = setTimeout(() => res({ ok: false, error: 'tool_timeout',
-          message: '"' + String((call && call.name) || '') + '" did not finish within '
-            + Math.round(lim.toolTimeoutMs / 1000) + ' s and was left running; nothing it was fetching '
-            + 'arrived in time. Answer with what you have, or try a different approach.' }), lim.toolTimeoutMs); });
+        const clock = new Promise((res) => { tm = setTimeout(() => {
+          let cancelled = false;
+          if (callAbort) { try { callAbort.abort(); cancelled = true; } catch (_) { /* could not signal */ } }
+          res({ ok: false, error: 'tool_timeout',
+            message: '"' + String((call && call.name) || '') + '" did not finish within '
+              + Math.round(lim.toolTimeoutMs / 1000) + ' s and ' + (cancelled ? 'was cancelled' : 'was left running')
+              + '; nothing it was fetching arrived in time. Answer with what you have, or try a different approach.' });
+        }, lim.toolTimeoutMs); });
         return Promise.race([p, clock]).finally(() => { try { clearTimeout(tm); } catch (_) { /* already fired */ } });
       };
 

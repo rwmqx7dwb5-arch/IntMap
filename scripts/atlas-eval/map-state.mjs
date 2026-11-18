@@ -16,7 +16,8 @@
  *                                                            a ticked row that is not painted is NOT on
  *    clock       { year | date:'YYYY-MM-DD' | live:true, why }  the master clock (`time`)
  *    comparison  { open, codes:[…], indicators:[…], why }   the statistics-comparison panel (`comparison`)
- *    drawn       [{ path, min, max, why } | { anyOf:[{path,min,max}], why }]
+ *    drawn       [{ path, min, max, why, named? } | { anyOf:[{path,min,max}], why, named? }] — `named`: spellings of the ONE thing the
+ *                shapes counted must be (read off `atlas.shapes.names`; only on `atlas.shapes.*` paths)
  *                                                            a count read off the snapshot: `atlas.lines`,
  *                                                            `objects.kind:route` … (the product's own sections);
  *                                                            `atlas.shapes.<kind>:<basis>` counts the SHAPES by what
@@ -235,6 +236,10 @@ export function validateMapState(ms, vocab, id = '(question)') {
         if (!(Number.isInteger(a && a.min) && a.min >= 0) && !Number.isInteger(a && a.max)) say('drawn «' + str(a && a.path) + '» states a min or a max count');
         if (Number.isInteger(a && a.min) && Number.isInteger(a && a.max) && a.min > a.max) say('drawn «' + a.path + '» has min > max');
       }
+      if (d && d.named != null) {
+        if (!Array.isArray(d.named) || !d.named.length || d.named.some((n) => !normName(n))) say('drawn `named` is a non-empty list of names');
+        else if (alts.some((a) => !/^atlas.shapes./.test(str(a && a.path)))) say('drawn `named` reads the names of atlas.shapes, so every path of it is an atlas.shapes tally');
+      }
     }
   }
   if (ms.era) {
@@ -290,6 +295,15 @@ export function countAt(snap, path) {
   if (Array.isArray(v)) return v.length;
   if (isObj(v)) return Number.isFinite(+v.n) ? +v.n : 1;
   return str(v) ? 1 : 0;
+}
+
+/** a name as compared: case-folded, without spaces or punctuation (so 'Shinano River' and 'shinano-river' agree) */
+const normName = (v) => str(v).toLowerCase().replace(/[sp{P}p{S}]+/gu, '');
+/** the names the final map's shapes carry (`atlas.shapes.names`), normalised; null when the map did not list any */
+export function shapeNamesOf(snap) {
+  const a = sectionOf(snap, 'atlas');
+  const l = a && a.shapes && Array.isArray(a.shapes.names) ? a.shapes.names : null;
+  return l && l.length ? l.map(normName).filter(Boolean) : null;
 }
 
 /** is (lng, lat) inside the frame? The frame of a globe may cross the antimeridian (west > east) or span
@@ -388,7 +402,18 @@ export function gradeMap(ms, snapshot, ctx = {}) {
     const fits = (s) => (s.a.min == null || s.n >= s.a.min) && (s.a.max == null || s.n <= s.a.max);
     const range = (a) => (a.min != null ? '≥ ' + a.min : '') + (a.min != null && a.max != null ? ', ' : '') + (a.max != null ? '≤ ' + a.max : '');
     const label = 'drawn' + (ms.drawn.length > 1 ? '[' + i + ']' : '');
-    if (read.some(fits)) { const s = read.find(fits); put(label, 'match', s.a.path + ' = ' + s.n); }
+    if (read.some(fits)) {
+      const s = read.find(fits);
+      /* (atlas-shape-identity) `named`: the shape(s) counted must be THE ONE asked for — any listed spelling, read off the
+         names the final map's shapes carry. A map that predates the names (no list) is unobserved, never a pass. */
+      const want = Array.isArray(d.named) ? d.named.map(normName).filter(Boolean) : [];
+      if (want.length) {
+        const have = shapeNamesOf(snap);
+        if (!have) put(label, 'unobserved', s.a.path + ' = ' + s.n + ', but the final map did not say which shapes they are');
+        else if (have.some((h) => want.some((w) => h.includes(w) || w.includes(h)))) put(label, 'match', s.a.path + ' = ' + s.n + ' (' + have.join(', ') + ')');
+        else put(label, 'mismatch', s.a.path + ' = ' + s.n + ' but the shapes are ' + have.join(', ') + ' — not ' + d.named.join(' / '));
+      } else put(label, 'match', s.a.path + ' = ' + s.n);
+    }
     /* any-of: a mismatch only when EVERY alternative was read — an unread one might have held it */
     else if (read.length < seen.length) put(label, 'unobserved', seen.filter((s) => s.n === undefined).map((s) => s.a.path).join(', ') + ' not read' + (read.length ? '; ' + read.map((s) => s.a.path + ' = ' + s.n).join(', ') : ''));
     else put(label, 'mismatch', read.map((s) => s.a.path + ' = ' + s.n + ' (' + range(s.a) + ')').join(' · '));

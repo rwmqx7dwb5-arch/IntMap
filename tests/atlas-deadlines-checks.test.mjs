@@ -279,3 +279,23 @@ test('R452 ⑤b: the evidence gather is bounded, and says how many sources did n
     'a gather whose jobs all settled — a refusal is settled too — reports nothing missing');
   assert.equal(await settleWithin([], 10), 0, 'and an empty gather is not a late one');
 });
+
+/* ── (atlas-timeout-cancel) the deadline ends the WORK: the call's signal is aborted when it passes ───────── */
+test('atlas-timeout-cancel: a tool past its deadline has its callSignal aborted, and Atlas is told it was cancelled', async () => {
+  let seen = null;
+  const replies = [
+    { text: '', toolCalls: [{ id: 't0', name: 'web_search', arguments: { query: 'news' } }] },
+    { text: 'answer', toolCalls: [] },
+  ];
+  let i = 0;
+  const out = await orHang(AGENT.runTurn({
+    model: async () => replies[Math.min(i++, replies.length - 1)],
+    tools: { web_search: { name: 'web_search', description: 'x', parameters: { type: 'object', required: ['query'], properties: { query: { type: 'string', minLength: 1 } } } } },
+    execute: (call, facts) => { seen = facts.callSignal; return new Promise(() => {}); },
+    messages: [{ role: 'user', content: 'q' }],
+    limits: { toolTimeoutMs: 40 },
+  }), 8000);
+  assert.ok(seen, 'the executor is handed the call signal');
+  assert.equal(seen.aborted, true, 'and it is aborted once the deadline has passed');
+  assert.match(out.results[0].message, /was cancelled/);
+});

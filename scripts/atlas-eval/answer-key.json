@@ -691,7 +691,7 @@
       "capabilities": ["map.highlight", "data.value"],
       "mapState": {
         "drawn": [
-          { "path": "atlas.shapes.line:real", "min": 1, "why": "「信濃川を地図でなぞって」 — the river's own course (an upstream's waterway), not a line drawn between places along it" }
+          { "path": "atlas.shapes.line:real", "min": 1, "named": ["信濃川", "Shinano", "千曲川"], "why": "「信濃川を地図でなぞって」 — the river's own course (an upstream's waterway), not a line drawn between places along it" }
         ]
       }
     },
@@ -752,7 +752,7 @@
       "note": "Length is disputed by definition of the source; the range covers the commonly cited 6,650 and 6,695 km.",
       "mapState": {
         "drawn": [
-          { "path": "atlas.shapes.line:real", "min": 1, "why": "\"Trace the Nile on the map\" — the river's own course (an upstream's waterway), not a line drawn between places along it" }
+          { "path": "atlas.shapes.line:real", "min": 1, "named": ["Nile", "ナイル"], "why": "\"Trace the Nile on the map\" — the river's own course (an upstream's waterway), not a line drawn between places along it" }
         ]
       }
     },
