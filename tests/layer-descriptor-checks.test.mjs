@@ -89,6 +89,17 @@ function withoutAdded(text, photo) {
   out.layerGroups = out.layerGroups.map(([k, keys, n]) => [k, keys, n - added.filter((l) => l.shelf === k && !l.rest).length]);
   return JSON.stringify(out, null, 1) + '\n';
 }
+/* (layer-click-polish, 2026-11-18) A DELIBERATE CHANGE OF ANOTHER KIND: A NEW ROW FACT. `noAir` (scripts/lib/layer-descriptor.mjs
+   ROW_FIELDS) is a flag the photograph predates; it is taken out of the derived side so ① still proves nothing ELSE moved.
+   The flags are discovered from ROW_FIELDS against the photograph's own rows — no field name is written here. */
+function withoutNewFacts(text) {
+  const photo = JSON.parse(amendPhotograph(read('tests/fixtures/layer-descriptor-before.json')));   /* the photograph as already amended for the earlier flags */
+  const known = new Set(photo.LAYERS.flatMap((l) => Object.keys(l)));
+  const N = JSON.parse(text);
+  const strip = (v) => (Array.isArray(v) ? v.map(strip) : (v && typeof v === 'object')
+    ? Object.fromEntries(Object.entries(v).filter(([k, x]) => !(x === true && 'id' in v && !known.has(k))).map(([k, x]) => [k, strip(x)])) : v);
+  return JSON.stringify(strip(N), null, 1) + '\n';
+}
 /* (feature-consolidation, 2026-11-16) THE THIRD DELIBERATE CHANGE: A MERGE. A row whose declaration says it is `formerly` an id
    the photograph holds took that row in — the retired row is gone, and the row that took it in now says what its declaration
    says (a fold, an order, `share`). Both are taken out of BOTH sides, discovered from the declarations' `formerly` (no list
@@ -111,7 +122,7 @@ function withoutMerged(text, photoText) {
   return JSON.stringify(out, null, 1) + '\n';
 }
 test('layer-descriptor ① the derived Layers list is byte-for-byte the list the hand-kept manifest handed its readers', () => {
-  const now = withoutMerged(withoutAdded(layerDerivedText(M), read('tests/fixtures/layer-descriptor-before.json')), read('tests/fixtures/layer-descriptor-before.json'));
+  const now = withoutMerged(withoutAdded(withoutNewFacts(layerDerivedText(M)), read('tests/fixtures/layer-descriptor-before.json')), read('tests/fixtures/layer-descriptor-before.json'));
   const photo = read('tests/fixtures/layer-descriptor-before.json');
   assert.ok(photo.length > 50000, 'the photograph is there');
   assert.equal(JSON.stringify(JSON.parse(photo), null, 1) + '\n', photo, 'the photograph re-serialises to itself (so the amendment below changes only what it says)');

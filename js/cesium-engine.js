@@ -2512,7 +2512,14 @@ window.IntMapCesiumEngine=(function(){
            back; the approximation stays in how it is APPLIED. */
         this._skySpec=(s===false)?null:(s||null);
         if(s===null||s===false){ this._scene.skyAtmosphere.show=false; return; }
-        this._scene.skyAtmosphere.show=true;
+        /* (layer-click-polish) `atmosphere-blend: 0` is the app saying «no air» (js/theme-sky.js `_airOn`: the
+           Map basemap, or a row that declares `noAir`). MapLibre multiplies its halo by it; Cesium has no
+           blend, so zero switches its two airs off and anything else puts them back. */
+        const noAir=s&&s['atmosphere-blend']===0;
+        this._globe.showGroundAtmosphere=!noAir;
+        this._scene.skyAtmosphere.show=!noAir;
+        try{ this._scene.requestRender(); }catch(_){}
+        if(noAir) return;
         /* MapLibre's sky spec names a horizon and a fog colour; Cesium's atmosphere
            is parameterised by brightness/hue/saturation shifts, so the colour is
            carried across as a brightness shift rather than pretended to be exact. */
@@ -2520,7 +2527,7 @@ window.IntMapCesiumEngine=(function(){
         if(c) this._scene.skyAtmosphere.brightnessShift=Math.max(-1,Math.min(1,(c.r+c.g+c.b)/3-0.5));
       }catch(_){}
     }
-    getSky(){ try{ return this._scene.skyAtmosphere.show?(this._skySpec||{}):null; }catch(_){ return null; } }
+    getSky(){ try{ return (this._scene.skyAtmosphere.show||this._skySpec)?(this._skySpec||{}):null; }catch(_){ return null; } }   /* a spec with blend 0 hides the air and is still a sky */
     setLight(l){
       try{
         /* MapLibre `light` is a lighting model for extrusions; Cesium's equivalent
@@ -2538,6 +2545,8 @@ window.IntMapCesiumEngine=(function(){
     resize(){ try{ this._widget.resize(); this._applyFov(); this._scene.requestRender(); this.fire('resize',{}); }catch(_){} }
     triggerRepaint(){ try{ this._scene.requestRender(); }catch(_){} }
     getCanvas(){ return this._widget.canvas; }
+    /* (layer-click-polish) maplibre's `redraw()`: one SYNCHRONOUS frame, for a page whose rAF is stopped (a hidden tab) — postRender fires 'render' inside it */
+    redraw(){ try{ this._scene.render(); }catch(_){} return this; }
     getContainer(){ return this._container; }
     getCanvasContainer(){ return this._widget.canvas&&this._widget.canvas.parentNode; }
     isStyleLoaded(){ return this._loaded&&this._styleParsed; }
@@ -2985,6 +2994,7 @@ window.IntMapCesiumEngine=(function(){
       getRenderScale(){ const v=V(); try{ return v?v._widget.resolutionScale:null; }catch(_){ return null; } },
       setRenderScale(r){ const v=V(); try{ if(v&&isFinite(r)&&r>0){ v._widget.resolutionScale=r; v._scene.requestRender&&v._scene.requestRender(); return true; } }catch(_){} return false; },
       triggerRepaint(){ const v=V(); if(v) v.triggerRepaint(); },
+      redraw(){ const v=V(); if(v&&v.redraw) v.redraw(); },
       getCanvas(){ const v=V(); return v?v.getCanvas():null; },
       getContainer(){ const v=V(); return v?v.getContainer():null; },
       getCanvasContainer(){ const v=V(); return v?v.getCanvasContainer():null; },

@@ -6,4 +6,5 @@ export default {
   key: 'nightsat',
   label: 'lyrNightSat',
   share: true,
+  noAir: true,
 };

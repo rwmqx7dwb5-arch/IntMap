@@ -5,4 +5,5 @@ export default {
   order: 80,
   key: 'ec-gust',
   share: true,
+  noAir: true,
 };

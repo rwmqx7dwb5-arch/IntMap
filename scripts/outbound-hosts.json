@@ -477,7 +477,7 @@
         "jp": "api.worldpop.org"
       },
       "probe": {
-        "url": "https://api.worldpop.org/v1/services"
+        "url": "https://api.worldpop.org/v3/health"
       }
     },
     {
