@@ -235,7 +235,54 @@ export function makeAtlasGeoObject() {
     var WORLD_TYPES = ['earthquake', 'news_event', 'article', 'facility', 'company', 'volcano',
       'city', 'electoral_district', 'place_profile', 'place'];
 
-    var MAX_IDS = 40, MAX_LINKS = 40, MAX_SOURCES = 6;
+    var MAX_IDS = 40, MAX_LINKS = 40, MAX_SOURCES = 6, MAX_EXT_IDS = 12, MAX_CLAIMS = 40;
+
+    /* ── IDENTITY: the identifiers OTHER SYSTEMS gave the same real-world thing ──────────────────────
+       `ref` (type:id) is how IntMap names an object; `ids` is how its sources do. Two records that state the
+       same external id are the same thing — that is a FACT the sources assert, and the only one the index
+       merges on. A name and a coordinate are never enough (see js/atlas-world-objects.js, IDENTITY).
+       Each scheme validates its own value, so a malformed one is dropped and not stored as «an id».
+         osm        node/123 · way/45 · relation/6 — an OpenStreetMap element (the TYPE is part of the id)
+         wikidata   Q123
+         geonames   a positive integer
+         company    IntMap's own company-atlas id
+         dataset    <dataset id>:<feature id> — a feature a loaded GIS dataset NAMES (never its row number)
+       A scheme outside the list is kept if it is a plain token: the vocabulary is free-ended like WORLD_TYPES. */
+    var EXT_ID_RULES = {
+      osm: function (v) { return /^(node|way|relation)\/[1-9]\d{0,15}$/.test(v) ? v : ''; },
+      wikidata: function (v) { v = v.toUpperCase(); return /^Q[1-9]\d{0,12}$/.test(v) ? v : ''; },
+      geonames: function (v) { return /^[1-9]\d{0,10}$/.test(v) ? v : ''; },
+    };
+    function cleanExtIds(src) {
+      var out = {}, n = 0;
+      if (!src || typeof src !== 'object') return out;
+      Object.keys(src).forEach(function (k) {
+        var scheme = String(k).toLowerCase();
+        if (n >= MAX_EXT_IDS || !/^[a-z][a-z0-9_]{0,19}$/.test(scheme)) return;
+        var v = src[k]; if (v == null || typeof v === 'object' || typeof v === 'boolean') return;
+        v = str(v, 120).trim(); if (!v) return;
+        v = EXT_ID_RULES[scheme] ? EXT_ID_RULES[scheme](v) : v;
+        if (v) { out[scheme] = v; n++; }
+      });
+      return out;
+    }
+
+    /* ── RELATIONS: a typed edge is read in BOTH directions ────────────────────────────────────────
+       `links` is stored once, on the object that states it. REL_INVERSE says what the same edge is called when read
+       from the other end, so «Terminal T operated_by Company C» is also «Company C operates Terminal T» without a
+       second copy that could disagree. A relation outside the table is kept verbatim and reads as `~<rel>` backwards
+       (the vocabulary is free-ended). `related_to`, `part_of` and `same_as` are three names and not one on purpose:
+       a terminal is PART OF a port, it is not THE port. */
+    var REL_INVERSE = {
+      part_of: 'contains', contains: 'part_of', operated_by: 'operates', operates: 'operated_by',
+      owned_by: 'owns', owns: 'owned_by', mentions: 'mentioned_in', mentioned_in: 'mentions',
+      reported_by: 'reports', reports: 'reported_by', within_impact_of: 'impacts', impacts: 'within_impact_of',
+      site_of: 'has_site', has_site: 'site_of', serves: 'served_by', served_by: 'serves',
+      same_as: 'same_as', connected_to: 'connected_to', related_to: 'related_to', candidate_match: 'candidate_match',
+      conflicting_identity: 'conflicting_identity',
+    };
+    function inverseRel(rel) { return REL_INVERSE[rel] || ('~' + rel); }
+    var REL_CONFIDENCE = ['high', 'medium', 'low'];
 
     function worldRef(type, id) {
       var t = str(type, 40), i = str(id, 120);
@@ -261,6 +308,43 @@ export function makeAtlasGeoObject() {
     function uniq(list, n, max) {
       var out = [];
       arr(list).forEach(function (x) { var s = str(x, n); if (s && out.indexOf(s) < 0 && out.length < max) out.push(s); });
+      return out;
+    }
+
+    /** a link keeps {rel, ref}; when the source states them it also keeps WHEN the tie held, HOW SURE it is and WHAT vouches for it */
+    function cleanLink(l) {
+      l = (l && typeof l === 'object') ? l : {};
+      var out = { rel: str(l.rel, 40), ref: str(l.ref, 160) };
+      var f = timeMs(l.fromMs), t = timeMs(l.toMs);
+      if (f != null) out.fromMs = f;
+      if (t != null && (f == null || t >= f)) out.toMs = t;
+      if (REL_CONFIDENCE.indexOf(l.confidence) >= 0) out.confidence = l.confidence;
+      var ev = uniq(l.evidenceIds, 80, 10); if (ev.length) out.evidenceIds = ev;
+      var sn = str(l.source, 120); if (sn) out.source = sn;
+      return out;
+    }
+
+    /** { fromMs, toMs } or null — an end before the start is not an interval, so the end is dropped */
+    function cleanValidity(v) {
+      if (!v || typeof v !== 'object') return null;
+      var f = timeMs(v.fromMs), t = timeMs(v.toMs);
+      if (f != null && t != null && t < f) t = null;
+      return (f == null && t == null) ? null : { fromMs: f, toMs: t };
+    }
+
+    /** a value, its unit, the period it covers and who said so; two sources' values for one key coexist instead of overwriting */
+    function cleanClaim(c) {
+      if (!c || typeof c !== 'object') return null;
+      var key = str(c.key, 40), v = c.value;
+      if (!key) return null;
+      if (!(typeof v === 'number' ? isFinite(v) : (typeof v === 'string' || typeof v === 'boolean'))) return null;
+      var out = { key: key, value: typeof v === 'string' ? str(v, 160) : v };
+      var unit = str(c.unit, 24); if (unit) out.unit = unit;
+      var f = timeMs(c.fromMs), t = timeMs(c.toMs);
+      if (f != null) out.fromMs = f;
+      if (t != null && (f == null || t >= f)) out.toMs = t;
+      var src = str(c.source, 120); if (src) out.source = src;
+      var ev = str(c.evidenceId, 80); if (ev) out.evidenceId = ev;
       return out;
     }
 
@@ -290,11 +374,15 @@ export function makeAtlasGeoObject() {
           s = (s && typeof s === 'object') ? s : {};
           return { name: str(s.name || s.publisher, 80), url: /^https?:\/\//i.test(String(s.url || '')) ? str(s.url, 400) : '', licence: str(s.licence, 80) };
         }).filter(function (s) { return s.name || s.url; }),
-        links: arr(src.links).slice(0, MAX_LINKS).map(function (l) {
-          l = (l && typeof l === 'object') ? l : {};
-          return { rel: str(l.rel, 40), ref: str(l.ref, 160) };
-        }).filter(function (l) { return l.rel && l.ref; }),
+        links: arr(src.links).slice(0, MAX_LINKS).map(cleanLink).filter(function (l) { return l.rel && l.ref; }),
         facts: facts,
+        /* (world-object-graph) who ELSE names it — see EXT_ID_RULES */
+        ids: cleanExtIds(src.ids),
+        /* (world-object-graph) when the THING existed or was in force — not when it was reported (`time`). A facility has an
+           opening and a closing; an operator's tenure too. null = the source states neither end. */
+        validity: cleanValidity(src.validity || { fromMs: src.validFromMs, toMs: src.validToMs }),
+        /* (world-object-graph) numbers WITH their basis — see cleanClaim. `facts` stays the one-line scalar view. */
+        claims: arr(src.claims).slice(0, MAX_CLAIMS).map(cleanClaim).filter(Boolean),
       });
       /* `at` (the display string geoObject keeps) is derived from the number when the caller gave only the number */
       if (!o.at && o.time) o.at = new Date(o.time.atMs).toISOString();
@@ -305,7 +393,7 @@ export function makeAtlasGeoObject() {
     function isWorldObject(o) { return !!(o && typeof o === 'object' && o.wv === WORLD_OBJECT_VERSION && typeof o.type === 'string'); }
 
     var API = { CONFIDENCE, GEO_OBJECT_VERSION, POINT_LIKE, PROVENANCE, USER_POINT, WORLD_OBJECT_VERSION, WORLD_TYPES,
-      describesUserPoint, geoObject, isWorldObject, mergeKnown, normName, placed, pointLike, rank, timeMs, validBounds, validLngLat, worldObject, worldRef };
+      REL_INVERSE, cleanClaim, cleanExtIds, cleanLink, cleanValidity, inverseRel, describesUserPoint, geoObject, isWorldObject, mergeKnown, normName, placed, pointLike, rank, timeMs, validBounds, validLngLat, worldObject, worldRef };
     return API;
   })();
 }

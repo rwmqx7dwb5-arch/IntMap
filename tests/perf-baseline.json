@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 14323039,
-    "gzip": 4796525,
+    "gzip": 4822614,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -130,7 +130,7 @@
       "pandemic-world": 32012,
       "photo-geo": 77696,
       "photo-geo-exif": 4679,
-      "place-dossier": 63403,
+      "place-dossier": 74729,
       "place-history": 22252,
       "place-watch": 24764,
       "plane-glyph": 867,
