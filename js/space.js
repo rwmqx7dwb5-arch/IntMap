@@ -62,6 +62,7 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { IntMapSpaceEvents } from './space-events.js';
 
 /* (startup-lazy-layers) THE EXPLORER, FETCHED AT THE ZOOM FLOOR. The way in — the zoom-out the map can no
    longer spend, its integral and its gauge — and window.IntMapSpace itself are js/space-approach.js, which
@@ -1734,7 +1735,7 @@ export function spaceBody(HOST){
     }
     function loadEvents(){
       if(evList||evBusy) return;
-      const SE=window.IntMapSpaceEvents; if(!SE) return;
+      const SE=IntMapSpaceEvents; if(!SE) return;
       evBusy=true;
       /* the scan is a few thousand ephemeris evaluations — off the frame that opened the view */
       setTimeout(()=>{ try{ const w=evWhere();

@@ -29,8 +29,26 @@
  *  event with `localCircumstances:false` — the honest half. A LUNAR eclipse is the same for everyone
  *  who can see the Moon at all, so 「現在地から」 is exactly one extra question: is the Moon above the
  *  observer's horizon at greatest eclipse? That is answered here, from the observer's coordinates.
+ *
+ *  ── TIME SCALES, AND THE SUN'S DIRECTION ───────────────────────────────────────────────────────
+ *  The ephemeris is a dynamical-time theory, and the instants this module is asked about and hands back
+ *  are UTC. Measured 2026-11-17 before this was done: every search fed the UTC Julian day straight to the
+ *  ephemeris and took the Sun's GEOMETRIC barycentric direction, so the 2026-03-03 total lunar eclipse
+ *  came out at 11:36:44 UTC against NASA's 11:33:37 UT (eclipse.gsfc.nasa.gov LEcat5: 11:34:52 TD, ΔT
+ *  75 s) — 188 s late; 2025-09-07 82 s and 2026-08-28 112 s. Three corrections close it, and none of them
+ *  is written here: js/space-eclipse-path.js owns all three (its header gives each one's size) and this
+ *  module imports them —
+ *    · `jdTT` / `deltaTSeconds`: positions are taken at TT = UT + ΔT (Espenak & Meeus polynomials);
+ *    · `sunMoon`: the Sun's direction from the GEOCENTRE (the JPL row is the Earth–Moon barycentre) with
+ *      the annual aberration applied — the shadow points away from where the Sun's light left it.
+ *  So: every `ms` this module takes or returns is UTC; every `jd` it takes or returns (`eclipses()[i].jd`,
+ *  `shadowSep(jd)`, `shadowRadii(jd)`, `classifyLunar(jd)`, `altitudeDeg(…, jd, …)`) is a Julian day in TT,
+ *  the scale the ephemeris is evaluated at. `msOf(jd)` is the one conversion back.
+ *  tests/space-almanac-panel-checks.test.mjs holds the 2026-03-03 maximum to NASA's within ±30 s.
  * ==========================================================================*/
-window.IntMapSpaceEvents=(function(){
+import { deltaTSeconds, jdTT, IntMapEclipsePath } from './space-eclipse-path.js';
+
+export const IntMapSpaceEvents=(function(){
   'use strict';
   const E=()=>window.IntMapEphemeris;
   const D2R=Math.PI/180, R2D=180/Math.PI;
@@ -38,34 +56,45 @@ window.IntMapSpaceEvents=(function(){
   const AU_KM=149597870.7;
 
   const wrap180=(d)=>{ let x=((d+180)%360+360)%360-180; return x; };
-  const jdOf=(ms)=>E().julianDay(ms);
-  const msOf=(jd)=>E().msOfJD?E().msOfJD(jd):(Date.UTC(2000,0,1,12)+ (jd-2451545.0)*DAY);
+  const yearOf=(ms)=>1970+ms/(365.2425*DAY);
+  /* UTC ms → the ephemeris' Julian day (TT), and back (ΔT moves by < 1 s a year, so taking it at the
+     UT-as-TT instant is exact to well under a millisecond) */
+  const jdOf=(ms)=>jdTT(ms);
+  const msOf=(jd)=>{ const t=E().msOfJD(jd); return t-deltaTSeconds(yearOf(t))*1000; };
 
-  /* angular separation of two ecliptic directions, in degrees */
-  function sep(l1,b1,l2,b2){
-    const v=(l,b)=>{ const L=l*D2R,B=b*D2R; return [Math.cos(B)*Math.cos(L),Math.cos(B)*Math.sin(L),Math.sin(B)]; };
-    const a=v(l1,b1), c=v(l2,b2);
-    return Math.acos(Math.max(-1,Math.min(1,a[0]*c[0]+a[1]*c[1]+a[2]*c[2])))*R2D;
-  }
+  /* the geocentric Sun (aberrated) and Moon at a TT Julian day, mean equator and equinox of date, km —
+     js/space-eclipse-path.js `sunMoon`, which takes the UTC instant */
+  const SM=(jd)=>IntMapEclipsePath.sunMoon(msOf(jd));
+  const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const len3=(a)=>Math.sqrt(dot3(a,a));
+  /* the angle between two directions, in degrees */
+  const angle=(a,b)=>Math.acos(Math.max(-1,Math.min(1,dot3(a,b)/(len3(a)*len3(b)))))*R2D;
 
   /* the Moon's distance from the axis of the Earth's shadow (the antisolar point), in degrees */
   function shadowSep(jd){
-    const m=E().geocentric('moon',jd), s=E().geocentric('sun',jd);
-    return sep(m.lonDeg,m.latDeg,s.lonDeg+180,-s.latDeg);
+    const { S, M }=SM(jd);
+    return angle(M,[-S[0],-S[1],-S[2]]);
   }
   /* …and the same for a solar eclipse: the Moon's distance from the Sun itself */
   function sunSep(jd){
-    const m=E().geocentric('moon',jd), s=E().geocentric('sun',jd);
-    return sep(m.lonDeg,m.latDeg,s.lonDeg,s.latDeg);
+    const { S, M }=SM(jd);
+    return angle(M,S);
+  }
+  /* the Moon's elongation from the Sun in ecliptic longitude of date (0 new, 180 full), degrees —
+     the same aberrated, geocentric Sun, rotated back from the equator by the obliquity */
+  function phaseLonDeg(jd){
+    const { S, M }=SM(jd), e=E().obliquityDeg(jd)*D2R, c=Math.cos(e), s=Math.sin(e);
+    const lon=(v)=>Math.atan2(c*v[1]+s*v[2],v[0])*R2D;
+    return wrap180(lon(M)-lon(S));
   }
 
   /* Meeus ch. 54 — the two shadow radii and the Moon's semidiameter, all in degrees */
   function shadowRadii(jd){
-    const m=E().geocentric('moon',jd), s=E().geocentric('sun',jd);
-    const dKm=m.distAU*AU_KM;
+    const { S, M }=SM(jd);
+    const dKm=len3(M), sunAU=len3(S)/AU_KM;
     const par=Math.asin(6378.14/dKm)*R2D;                 /* the Moon's horizontal parallax */
-    const parS=(8.794/3600)/Math.max(1e-6,s.distAU);      /* the Sun's parallax */
-    const semiS=(959.63/3600)/Math.max(1e-6,s.distAU);    /* the Sun's semidiameter */
+    const parS=(8.794/3600)/Math.max(1e-6,sunAU);         /* the Sun's parallax */
+    const semiS=(959.63/3600)/Math.max(1e-6,sunAU);       /* the Sun's semidiameter */
     /* ⚠ 0.998340, NOT 1.29. Verified numerically before it was believed: with this coefficient the
        umbral magnitudes come out 0.117 / −0.077 / 1.17 / 0.95 for 2023-10-28, 2024-03-25, 2025-03-14
        and 2026-08-28 against the published 0.122 / penumbral / 1.178 / 0.9297 — and the first draft,
@@ -115,7 +144,7 @@ window.IntMapSpaceEvents=(function(){
     return { kind, d, R, gamma };
   }
 
-  /* every eclipse in [fromMs, fromMs + days), newest first found */
+  /* every eclipse in [fromMs, fromMs + days), in time order; `jd` is TT, `ms` UTC */
   function eclipses(fromMs,days,solar){
     const out=[];
     const f=solar?sunSep:shadowSep;
@@ -134,12 +163,14 @@ window.IntMapSpaceEvents=(function(){
     return out;
   }
 
-  /* is the Moon (or the Sun) above the horizon at this instant, from here? */
+  /* is the Moon (or the Sun) above the horizon at this instant, from here? `jd` is TT (the scale of
+     `eclipses()[i].jd`); the sidereal angle is the Earth's rotation, so it is taken at UT */
   function altitudeDeg(id,jd,lat,lng){
     const eq=E().equatorial(id,jd); if(!eq) return null;
-    /* Greenwich mean sidereal time, Meeus 12.4 */
-    const T=(jd-2451545.0)/36525;
-    let gmst=280.46061837+360.98564736629*(jd-2451545.0)+0.000387933*T*T-T*T*T/38710000;
+    /* Greenwich mean sidereal time, Meeus 12.4, at the UT Julian day of the same instant */
+    const ju=E().julianDay(msOf(jd));
+    const T=(ju-2451545.0)/36525;
+    let gmst=280.46061837+360.98564736629*(ju-2451545.0)+0.000387933*T*T-T*T*T/38710000;
     gmst=((gmst%360)+360)%360;
     const H=(gmst+lng-eq.raDeg)*D2R;
     const dec=eq.decDeg*D2R, phi=lat*D2R;
@@ -147,8 +178,8 @@ window.IntMapSpaceEvents=(function(){
   }
 
   /* ── PHASES, OPPOSITIONS, GREATEST ELONGATIONS ───────────────────────────────────────────────── */
-  function nextPhase(fromMs,target){        /* target 0 = new, 180 = full */
-    const g=(jd)=>wrap180(E().geocentric('moon',jd).lonDeg-E().geocentric('sun',jd).lonDeg-target);
+  function nextPhase(fromMs,target){        /* target 0 = new, 180 = full; the instant returned is UTC */
+    const g=(jd)=>wrap180(phaseLonDeg(jd)-target);
     let jd=jdOf(fromMs), prev=g(jd);
     for(let i=1;i<=120;i++){ const t=jd+i*0.5, v=g(t);
       if(prev<0&&v>=0&&Math.abs(v-prev)<180){ const r=refineRoot(g,t-0.5,t,1/2880); return msOf(r); }
@@ -214,6 +245,9 @@ window.IntMapSpaceEvents=(function(){
 
   return { upcoming, eclipses, classifyLunar, classifySolar, shadowSep, shadowRadii,
     altitudeDeg, nextPhase, nextOpposition, nextGreatestElongation,
+    msOf, jdOf,
     state:()=>({ source:'js/ephemeris.js', model:'Meeus ch. 54 shadow radii (Chauvenet 1.02 enlargement)',
+      timeScale:'ms UTC; jd TT (js/space-eclipse-path.js jdTT, ΔT Espenak & Meeus); Sun geocentric + aberrated (sunMoon)',
       solarLocalCircumstances:false }) };
 })();
+window.IntMapSpaceEvents=IntMapSpaceEvents;

@@ -19,6 +19,7 @@ import { byKey } from './helpers/layer-groups.mjs';
 import { uiLocale, langCodes } from './helpers/layer-locale-tables.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { importModule } from './helpers/import-module.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -166,13 +167,11 @@ test('R184 #7: the satellite layer is registered, grouped, legended and toggled'
 
 /* ── 6. the eclipse arithmetic, against the published catalogue ────────────────────────────────── */
 test('R212 ⑥: lunar and solar eclipses come out where — and what — the catalogue says', async () => {
-  const win = {};
-  const ephem = read('js/ephemeris.js');
-  const events = read('js/space-events.js');
-  // eslint-disable-next-line no-new-func
-  new Function('window', ephem + '\n;return window.IntMapEphemeris;')(win);
-  win.IntMapEphemeris = new Function('window', ephem + '\n;return window.IntMapEphemeris;')(win);
-  const SE = new Function('window', events + '\n;return window.IntMapSpaceEvents;')(win);
+  /* js/space-events.js is a module now (it imports ΔT and the aberrated Sun from js/space-eclipse-path.js), so it is
+     evaluated as one; js/space-sky.js under it needs a document to build its canvas against, and nothing else */
+  const document = { createElement: () => ({ style: {}, getContext: () => null, appendChild() {} }),
+    addEventListener() {}, readyState: 'complete', body: { appendChild() {} } };
+  const { IntMapSpaceEvents: SE } = await importModule('js/space-events.js', { globals: { document } });
 
   const lunar = SE.eclipses(Date.UTC(2023, 8, 1), 1200, false);
   const byDate = (list) => Object.fromEntries(list.map((x) => [new Date(x.ms).toISOString().slice(0, 10), x]));
@@ -198,7 +197,7 @@ test('R212 ⑥: lunar and solar eclipses come out where — and what — the cat
   near(S['2026-08-12'].gamma, 0.898, 0.02, '2026-08-12 gamma');
 
   /* the shadow radii are Meeus's, and the coefficient is the one that reproduces all of the above */
-  assert.match(events, /0\.998340\*par/, 'the umbra/penumbra coefficient is 0.998340 (1.29 gave every eclipse as total)');
+  assert.match(read('js/space-events.js'), /0\.998340\*par/, 'the umbra/penumbra coefficient is 0.998340 (1.29 gave every eclipse as total)');
 });
 }
 

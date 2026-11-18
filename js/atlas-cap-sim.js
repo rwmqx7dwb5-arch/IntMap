@@ -16,10 +16,25 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, num, one, obj, lat, lng } from './atlas-caps.js';
+import { str, bool, num, int, one, obj, lat, lng } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
 const T = IntMapLang.pickArgs();   /* (atlas-reasoning) a sentence of a `scenario` declaration: the array [en, jp] */
 import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { IntMapTime } from './chronos.js';
+import { fetchViaProxy } from './proxy-fetch.js';   /* (space-expansion) the relay ladder — JPL's close-approach API sends no CORS header */
+
+/* (space-expansion) the point a sky question is about: the coordinates given, a place resolved, or the point the
+   reader pinned — never the map's centre (#R302). Shared by sim.skyTonight and sim.satellitePasses. */
+async function skyPoint(a, K) {
+  try {
+    if (a.lat != null && a.lng != null && isFinite(+a.lat) && isFinite(+a.lng)) return { lng: +a.lng, lat: +a.lat };
+    const q = a.place || a.at || a.location;
+    if (q) { const g = await K.geocode(q); return g ? { lng: g.lng, lat: g.lat } : null; }
+    const h = K._herePoint; return h && isFinite(h.lng) ? { lng: +h.lng, lat: +h.lat } : null;
+  } catch (_) { return null; }
+}
+/** a short list of IntMap's own sentences, escaped */
+const ulOf = (lines, esc) => (lines.length ? '<ul style="margin:4px 0 0 16px;padding:0;font-size:12px;line-height:1.5;">' + lines.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '');
 
 export default [
   {
@@ -497,7 +512,7 @@ export default [
     science: 'space',
     /* leaving the Earth needs nothing: the default is the solar system, live, at model scale */
     doc: [
-      { in: 'sim.space', text: 'SPACE EXPLORER (planets as globes, and the solar system in time): {"type":"space"|"solarSystem"|"planet","body"?:"sun"|"mercury"|"venus"|"earth"|"moon"|"mars"|"jupiter"|"saturn"|"uranus"|"neptune"|"pluto","mode"?:"system"|"body","scale"?:"real"|"model","date"?:ISO,"rate"?:seconds-per-second} = leave the Earth. "mode":"body" (or naming a "body" with {"type":"planet"}) shows that world AS A GLOBE in the same form the app shows the Earth — the real surface imagery, lit by the real Sun direction for the instant on the clock, turning about its real IAU pole and prime meridian, with the IAU-approved place names from the USGS Gazetteer placed at their published coordinates. "mode":"system" shows the SOLAR SYSTEM: the Sun, the eight planets, Pluto and the Moon at their real positions for ANY instant from 3000 BC to 3000 AD (JPL approximate elements; the Moon from truncated ELP-2000/82), with orbits, a clock that can run forwards or backwards at any "rate", and two honest scales — "real" (1 unit = 1 AU and true radii, so a planet is a fraction of a pixel) and "model" (orbits compressed, bodies enlarged, so the whole system is legible). Default: live, model scale, the solar system. Satellites other than the Moon are NOT modeled — their phase cannot be computed faithfully from published elements alone, and the app says so rather than drawing an invented one. Reachable in the UI only from the button that appears when the map cannot zoom out any further. Use for "太陽系を見せて", "show me Mars", "火星の地名を見たい", "where were the planets on my birthday", "show the solar system in the year 2200", "冥王星まで行って".\n' },
+      { in: 'sim.space', text: 'SPACE EXPLORER (planets as globes, and the solar system in time): {"type":"space"|"solarSystem"|"planet","body"?:"sun"|"mercury"|"venus"|"earth"|"moon"|"mars"|"jupiter"|"saturn"|"uranus"|"neptune"|"pluto","mode"?:"system"|"body","scale"?:"real"|"model","date"?:ISO,"rate"?:seconds-per-second} = leave the Earth. "mode":"body" (or naming a "body" with {"type":"planet"}) shows that world AS A GLOBE in the same form the app shows the Earth — the real surface imagery, lit by the real Sun direction for the instant on the clock, turning about its real IAU pole and prime meridian, with the IAU-approved place names from the USGS Gazetteer placed at their published coordinates. "mode":"system" shows the SOLAR SYSTEM: the Sun, the eight planets, Pluto and the Moon at their real positions for ANY instant from 3000 BC to 3000 AD (JPL approximate elements; the Moon from truncated ELP-2000/82), with orbits, a clock that can run forwards or backwards at any "rate", and two honest scales — "real" (1 unit = 1 AU and true radii, so a planet is a fraction of a pixel) and "model" (orbits compressed, bodies enlarged, so the whole system is legible). Default: live, model scale, the solar system. The planets\' own moons are drawn too (177 of them, from JPL\'s published mean elements at their stated epochs — data/moons.json), and so are the major spacecraft, comets and asteroids. Reached in the UI by zooming out past the map\'s farthest zoom and keeping on pulling back. Use for "太陽系を見せて", "show me Mars", "火星の地名を見たい", "where were the planets on my birthday", "show the solar system in the year 2200", "冥王星まで行って".\n' },
       { in: 'night-sky', at: 20, text: '{"type":"space"} instead.\n' },
     ],
     schema: () => ({ type: 'object', properties: { body: str(), planet: str(), target: str(), mode: one('system', 'body'), scale: one('real', 'model'), date: str(), datetime: str(), when: str(), rate: num() } }),
@@ -720,6 +735,119 @@ export default [
           const secs=Math.max(6,Math.min(90,+a.seconds||22));
           const r=await flyAnimate(A,B,mode,secs);
           return R(r.ok, r.ok?note(icon('rocket')+' '+esc(A.name||a.from)+' → '+esc(B.name||a.to)+' · '+Math.round(r.km).toLocaleString()+' km · '+r.real):warn(L('Flight could not start','飛行を開始できませんでした','Flug konnte nicht starten','Полёт не запустился','No se pudo iniciar el vuelo'))); }
+    },
+  },
+  {
+    row: ['sim.skyTonight',             'skyTonight',     'almanac,tonightSky,whatsUpTonight,moonPhase,moonrise,sunriseSunset,twilight,visiblePlanets,meteorShowers,nextEclipse,eclipseFromHere', 'sim', 'panel', 'panel.skyAlmanac', 'panel,explanation', 'session', 'none', 'point', 'skyAlmanac'],
+    ui: { at: ['.lst-toolrow[data-act="sim.skyTonight"]'] },
+    science: 'space',
+    doc: [
+      { in: 'sky-tonight', at: 10, text: '{"type":"skyTonight","place"?:str,"lng"?:num,"lat"?:num,"when"?:ISO-8601 str} = THE ALMANAC FOR ONE PLACE AND ONE NIGHT (今夜の空・天文暦), opened as a panel and returned as facts: sunrise, sunset and the civil / nautical / astronomical twilights (or polar day / night); moonrise, moonset, illumination, age, phase name and the next new and full moon; each planet\'s rise, set, best time, altitude and magnitude tonight and whether it is visible; the meteor showers active tonight (peaks computed each year from the IMO solar longitudes, with the radiant altitude and the moonlight); and the next lunar and solar eclipse seen FROM THERE with the days until it, its local maximum and magnitude. Everything is computed from the ephemeris for that point — nothing is a table of dates. Use for 「今夜の月は」「月の出は何時」「今夜見える惑星」「流星群はいつ」「次の皆既月食まであと何日」「日の出の時刻」, "what\'s up tonight", "when is the next eclipse visible from here". For the sky drawn as a picture use {"type":"nightSky"}; for the eclipse\'s ground track switch the layer dl-eclipse on.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), when: str(), date: str(), time: str() }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }),
+    /* (space-expansion) the almanac panel and its facts — one point, one night, computed from the ephemeris */
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note, esc = K.esc;
+      const ll = await skyPoint(a, K);
+      if (!ll) return R(false, warn(K.whereMiss(L('Which place? Give a place name or lng/lat.', 'どこの空ですか（地名または経緯度）。'), a.place || a.at || a.location)), { meta: { code: 'NEEDS_INPUT', category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
+      if (!(await window.IntMapLazy.need('skyAlmanac')) || !window.IntMapSkyAlmanac || !window.IntMapSkyAlmanac.almanac) return R(false, warn(L('The almanac is not available', '天文暦を利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      const whenRaw = a.when || a.date || a.time; const whenMs = whenRaw != null && isFinite(+new Date(whenRaw)) ? +new Date(whenRaw) : null;
+      try { window.IntMapSkyAlmanac.open({ lng: ll.lng, lat: ll.lat }, whenMs != null ? { when: whenMs } : undefined); } catch (_) { /* the facts below still answer */ }
+      const A = window.IntMapSkyAlmanac.almanac({ lat: ll.lat, lng: ll.lng, when: whenMs != null ? whenMs : IntMapTime.nowMs() });
+      if (!A || !A.sun) return R(false, warn(esc(L('The almanac could not be computed for this instant', 'この日時の天文暦を計算できませんでした'))), { meta: { code: 'NO_RESULTS', category: 'evidence', retryable: false, produced: ['panel'], userGoalSatisfied: false } });
+      const iso = (t) => (t == null ? null : new Date(t).toISOString());
+      const pair = (x) => (x ? { dusk: iso(x.dusk), dawn: iso(x.dawn) } : null);
+      const seen = A.planets.filter((p) => p.visibleTonight).map((p) => p.id);
+      const facts = {
+        point: { lat: ll.lat, lng: ll.lng }, night: { from: iso(A.window.from), to: iso(A.window.to) },
+        sun: { rise: iso(A.sun.rise), set: iso(A.sun.set), transit: iso(A.sun.transit), polar: A.sun.polar || null, civil: pair(A.sun.civil), nautical: pair(A.sun.nautical), astronomical: pair(A.sun.astronomical) },
+        dark: A.dark ? { from: iso(A.dark.from), to: iso(A.dark.to) } : null, darkReason: A.darkReason || null,
+        moon: { rise: iso(A.moon.rise), set: iso(A.moon.set), illumination: A.moon.illumination, ageDays: A.moon.ageDays, phase: A.moon.phaseName, nextNew: iso(A.moon.nextNew), nextFull: iso(A.moon.nextFull) },
+        planets: A.planets.map((p) => ({ id: p.id, visibleTonight: p.visibleTonight, rise: iso(p.rise), set: iso(p.set), best: iso(p.bestTimeMs), altitudeDeg: p.altAtDarkMaxDeg, magnitude: p.magnitude, elongationDeg: p.elongationDeg })),
+        meteorShowers: A.showers.map((s) => ({ code: s.code, name: s.name, zhr: s.zhr, daysFromPeak: s.daysFromPeak, radiantAltMaxDeg: s.radiantAltMaxDeg, moonIllumination: s.moon.illumination, source: s.source })),
+        eclipses: A.eclipses.map((e) => ({ type: e.type, kind: e.kind, max: iso(e.maxMs), daysUntil: e.daysUntil, visibleHere: e.visibleHere, magnitude: e.magnitude })),
+        method: A.source,
+      };
+      const t = (ms) => { try { return new Date(ms).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); } catch (_) { return '—'; } };
+      const lines = [];
+      if (A.sun.rise != null || A.sun.set != null) lines.push(L('Sunset', '日の入り') + ' ' + (A.sun.set != null ? t(A.sun.set) : '—') + ' · ' + L('sunrise', '日の出') + ' ' + (A.sun.rise != null ? t(A.sun.rise) : '—'));
+      lines.push(L('Moon', '月') + ' ' + Math.round(A.moon.illumination * 100) + '%' + (A.moon.phaseName ? ' · ' + L(A.moon.phaseName.en, A.moon.phaseName.jp) : ''));
+      lines.push(L('Planets visible tonight', '今夜見える惑星') + ': ' + (seen.length ? seen.join(', ') : L('none', 'なし')));
+      if (A.showers.length) lines.push(L('Meteor showers active', '活動中の流星群') + ': ' + A.showers.map((s) => L(s.name.en, s.name.jp)).join(', '));
+      for (const e of A.eclipses) lines.push((e.type === 'lunar' ? L('Next lunar eclipse', '次の月食') : L('Next solar eclipse', '次の日食')) + ': ' + new Date(e.maxMs).toISOString().slice(0, 10) + ' (' + Math.round(e.daysUntil) + ' ' + L('days from now', '日後') + (e.visibleHere ? '' : ', ' + L('not visible from here', 'ここからは見えない')) + ')');
+      return R(true, note(icon('moon') + ' ' + esc(L('Tonight’s sky', '今夜の空')) + ' — ' + ll.lat.toFixed(3) + '°, ' + ll.lng.toFixed(3) + '°') + ulOf(lines, esc),
+        { meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: ll.lat.toFixed(3) + ',' + ll.lng.toFixed(3), produced: ['panel', 'explanation'], userGoalSatisfied: true, skyTonight: facts } });
+    },
+  },
+  {
+    row: ['sim.satellitePasses',        'satellitePasses','issPasses,whenIsIss,satellitesOverhead,satellitePass,passPrediction', 'sim', 'none', '', 'explanation', 'read', 'none', 'point', 'satellitesLive'],
+    ui: { at: ['.lst-toolrow[data-act="sim.skyTonight"]'] },
+    science: 'space',
+    doc: [
+      { in: 'sky-tonight', at: 20, text: '{"type":"satellitePasses","place"?:str,"lng"?:num,"lat"?:num,"hours"?:num (1-72, default 24),"group"?:"visual"|"stations"|"weather"|…,"visibleOnly"?:bool,"minElevDeg"?:num} = the satellites that pass over that point in the next hours from the clock\'s instant, each with rise, highest point (elevation and compass direction) and set, whether it is sunlit and whether the sky there is dark — "visible" means both, which is when it can be seen with the eye. SGP4 on the CelesTrak element sets the satellite layer uses. "group":"stations" for the ISS and Tiangong (the fastest answer to 「ISS はいつ見える」); the default is the catalogue the satellite layer has loaded, and naming another switches the layer\'s catalogue. Use for 「ISSはいつ見える」「今夜見える人工衛星」「頭上を通る衛星」, "when can I see the ISS".\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), hours: num(1, 72), group: str(), visibleOnly: bool(), minElevDeg: num(0, 89), limit: int(1, 100) }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }),
+    /* (space-expansion) js/satellites-live.js passesOver — the same propagation the layer draws */
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note, esc = K.esc;
+      const ll = await skyPoint(a, K);
+      if (!ll) return R(false, warn(K.whereMiss(L('Over which place? Give a place name or lng/lat.', 'どこの上空ですか（地名または経緯度）。'), a.place || a.at || a.location)), { meta: { code: 'NEEDS_INPUT', category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
+      await window.IntMapLazy.need('satellitesLive'); const S = window.IntMapSatellites;
+      if (!S || !S.passesOver) return R(false, warn(L('Satellites are not available', '人工衛星を利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      /* the catalogue is the layer's: naming another one switches the layer's catalogue too, and the reply says so */
+      let switched = null; try { const g = a.group ? String(a.group) : null; if (g && S.state().group !== g && S.setGroup(g) === g) switched = g; } catch (_) { /* keep the loaded one */ }
+      let list;
+      try { list = await S.passesOver({ lng: ll.lng, lat: ll.lat }, { hours: a.hours > 0 ? Math.min(72, +a.hours) : 24, minElevDeg: a.minElevDeg != null ? +a.minElevDeg : 10, visibleOnly: !!a.visibleOnly, limit: a.limit > 0 ? +a.limit : 30 }); }
+      catch (e) { return R(false, warn(esc(L('Passes could not be computed: ', '通過を計算できませんでした: ') + ((e && e.message) || ''))), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } }); }
+      const iso = (t) => (t == null ? null : new Date(t).toISOString());
+      const facts = { point: { lat: ll.lat, lng: ll.lng }, group: S.state().group, switchedCatalogue: switched, count: list.length,
+        passes: list.map((p) => ({ id: p.id, name: p.name, rise: iso(p.rise.ms), riseAzDeg: p.rise.azDeg, max: iso(p.max.ms), maxElevDeg: p.max.elevDeg, maxAzDeg: p.max.azDeg, set: iso(p.set.ms), setAzDeg: p.set.azDeg, sunlit: p.sunlit, observerDark: p.observerDark, visible: p.visible })),
+        method: 'SGP4 (satellite.js) on CelesTrak element sets; visible = sunlit while the observer\'s Sun is below −6°' };
+      const t = (ms) => { try { return new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return '—'; } };
+      const lines = list.slice(0, 8).map((p) => p.name + ' — ' + t(p.max.ms) + ' · ' + Math.round(p.max.elevDeg) + '° · ' + (p.visible ? L('visible', '見える') : L('not visible (daylight or in shadow)', '見えない（昼間か地球の影）')));
+      return R(true, note(icon('satellite') + ' ' + esc(L(list.length + ' passes over this point', 'この地点の上空の通過 ' + list.length + ' 件'))) + (switched ? '<div style="font-size:11px;color:var(--text-muted)">' + esc(L('The satellite layer\'s catalogue is now: ', '衛星レイヤーのカタログを切り替えました: ') + switched) + '</div>' : '') + ulOf(lines, esc),
+        { meta: { code: list.length ? 'OK' : 'NO_RESULTS', category: list.length ? 'ok' : 'evidence', retryable: false, semanticTarget: ll.lat.toFixed(3) + ',' + ll.lng.toFixed(3), produced: ['explanation'], userGoalSatisfied: true, satellitePasses: facts } });
+    },
+  },
+  {
+    row: ['sim.spaceWeather',           'spaceWeather',   'solarWind,solarFlare,geomagneticStorm,kpIndex,auroraChance,noaaScales,asteroidFlyby,nearEarthAsteroids', 'sim', 'none', '', 'explanation', 'read', 'none', '', ''],
+    ui: { none: '2026-11-18' },
+    science: 'space',
+    doc: [
+      { in: 'sky-tonight', at: 30, text: '{"type":"spaceWeather","part"?:"all"|"wind"|"xray"|"scales"|"kp"|"alerts"|"neo"} = space weather NOW, read from NOAA SWPC: the solar wind at L1 (speed, density, Bz), the GOES X-ray class and the biggest flare in 24 h with the C/M/X flare odds, the NOAA R/S/G scales now and for 3 days, the planetary Kp observed and forecast, the latest SWPC alert titles — and "neo": the asteroids passing within 0.05 au of the Earth in the next 60 days (NASA/JPL close-approach data). The same readings the space widgets show. Use for 「太陽フレア」「磁気嵐」「オーロラは見える？」 (with the layer l9-dl-aurora for the oval) 「地球に近づく小惑星」, "is there a geomagnetic storm".\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { part: one('all', 'wind', 'xray', 'scales', 'kp', 'alerts', 'neo') } }),
+    /* (space-expansion) the space widgets' parsers (js/widget-defs-space.js, on IntMapWidgetDefsData.space) on a fresh read */
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note, esc = K.esc;
+      const D = window.IntMapWidgetDefsData, P = D && D.space;
+      if (!P || !D.getJSON) return R(false, warn(L('Space weather is not available', '宇宙天気を利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      const part = a.part || 'all', want = (k) => part === 'all' || part === k;
+      const SW = 'https://services.swpc.noaa.gov/', ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 15000);
+      const get = (u, on) => (on ? D.getJSON(u, ctl.signal).catch(() => null) : null);
+      const neoRead = want('neo') ? fetchViaProxy(P.NEO_URL, { as: 'json', signal: ctl.signal, note: {} }).catch(() => null) : null;
+      const [wind, mag, xr, prob, sc, kp, al, neoText] = await Promise.all([
+        get(SW + 'json/rtsw/rtsw_wind_1m.json', want('wind')), get(SW + 'json/rtsw/rtsw_mag_1m.json', want('wind')),
+        get(SW + 'json/goes/primary/xrays-1-day.json', want('xray')), get(SW + 'json/solar_probabilities.json', want('xray')),
+        get(SW + 'products/noaa-scales.json', want('scales')), get(SW + 'products/noaa-planetary-k-index-forecast.json', want('kp')),
+        get(SW + 'products/alerts.json', want('alerts')), neoRead]);
+      clearTimeout(timer);
+      const safe = (f) => { try { return f(); } catch (_) { return null; } };
+      const neo = neoText ? safe(() => P.neo(JSON.parse(neoText), Date.now())) : null;
+      const xray = xr ? safe(() => P.xray(xr, prob)) : null;
+      const facts = { source: 'NOAA SWPC' + (want('neo') ? ' · NASA/JPL SBDB close-approach data' : ''),
+        solarWind: wind ? safe(() => { const w = P.solarWind(wind, mag); return w && { speedKmS: w.speed, density: w.density, temperatureK: w.temperature, btNT: w.bt, bzNT: w.bz, at: new Date(w.at).toISOString(), spacecraft: w.windSource }; }) : null,
+        xray: xray ? { now: xray.now && xray.now.text, max24h: xray.max && xray.max.text, maxAt: xray.max && new Date(xray.max.at).toISOString(), probabilities: xray.prob || null } : null,
+        scales: sc ? safe(() => P.scales(sc)) : null,
+        kp: Array.isArray(kp) ? kp.filter((r) => r && r.kp != null).slice(-40).map((r) => ({ at: String(r.time_tag) + 'Z', kp: +r.kp, observed: r.observed })) : null,
+        alerts: al ? safe(() => P.alerts(al).slice(0, 5).map((x) => ({ at: new Date(x.at).toISOString(), title: x.title, code: x.code }))) : null,
+        nearEarthAsteroids: neo ? neo.slice(0, 15).map((x) => ({ name: x.name, at: new Date(x.at).toISOString(), lunarDistances: x.ld, km: x.distKm, vKmS: x.vKmS, diameterKm: [x.dMinKm, x.dMaxKm] })) : null };
+      const got = Object.keys(facts).filter((k) => k !== 'source' && facts[k] != null);
+      if (!got.length) return R(false, warn(esc(L('NOAA SWPC did not answer', 'NOAA SWPC から応答がありませんでした'))), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } });
+      const lines = [];
+      if (facts.xray && facts.xray.now) lines.push(L('X-ray class now', '現在のX線等級') + ': ' + facts.xray.now + (facts.xray.max24h ? ' · ' + L('24 h max', '24 時間の最大') + ' ' + facts.xray.max24h : ''));
+      if (facts.solarWind && facts.solarWind.speedKmS != null) lines.push(L('Solar wind', '太陽風') + ': ' + Math.round(facts.solarWind.speedKmS) + ' km/s' + (facts.solarWind.bzNT != null ? ' · Bz ' + facts.solarWind.bzNT.toFixed(1) + ' nT' : ''));
+      if (facts.kp) { const o = facts.kp.filter((r) => r.observed === 'observed'); const k = o[o.length - 1]; if (k) lines.push('Kp ' + k.kp.toFixed(1)); }
+      if (facts.nearEarthAsteroids && facts.nearEarthAsteroids.length) { const n = facts.nearEarthAsteroids[0]; lines.push(L('Closest asteroid flyby', '最も近い小惑星の接近') + ': ' + n.name + ' · ' + n.lunarDistances.toFixed(2) + ' ' + L('lunar distances', '月距離')); }
+      return R(true, note(icon('sun') + ' ' + esc(L('Space weather', '宇宙天気'))) + ulOf(lines, esc),
+        { meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: 'space weather', produced: ['explanation'], userGoalSatisfied: true, spaceWeather: facts } });
     },
   },
 ];
