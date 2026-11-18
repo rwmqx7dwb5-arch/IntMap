@@ -18,7 +18,7 @@ export const cors = {
   /* (#R318) x-intmap-turn — the turn key. It is a HEADER because the quota is consumed before the
      body is read (see the consumption step), and a preflight that does not name it makes the whole
      request fail in the browser rather than merely dropping the field. */
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   /* (speed-overhaul) THE PREFLIGHT IS CACHED. The Authorization and x-intmap-* headers make every call a
      non-simple request, and without a max-age Chrome keeps a preflight for 5 s — shorter than one Atlas
@@ -64,6 +64,56 @@ export const MAX_GLOSS_PROMPT = 8_000;   // the selection + the sentence around 
    left to fix a mistake. Twelve is the same protection against a runaway loop without deciding for
    Atlas how much thinking one answer is allowed. */
 export const TURN_MAX_CALLS = 12;
+/* ══ (atlas-delegation) A TURN THAT HANDS WORK TO WORKERS — the budget policy, as configuration ═════════
+   Atlas may delegate pieces of a request to worker models (js/atlas-delegate.js). How the workers are paid
+   for is a POLICY, chosen here and moved by the environment without a deploy — the user's instruction of
+   2026-11-18: the scheme must stay switchable (shared / independent / a cost cap), because which one is
+   right depends on models and prices that will change.
+     · mode "independent" — each worker has its own call allowance (CHILD_MAX_CALLS) under its own turn key,
+       linked to its parent (public.consume_ai_child_turn). The parent's TURN_MAX_CALLS is untouched.
+     · mode "shared"      — a worker's calls are the parent's: they carry the parent's key and count against
+       the parent's TURN_MAX_CALLS (no child row at all).
+     · mode "off"         — the KILL SWITCH. Every worker call is refused (`delegation_off`); Atlas reads the
+       refusal and answers without workers. Nothing else changes.
+   Either way no worker charges the reader's day: the parent's first call paid for the request (#R318).
+   THE NUMBERS (no-ad-hoc-hardcoding §4):
+     · MAX_CHILDREN 2 × CHILD_MAX_CALLS 3 — the first experiment the user set on 2026-11-18 («子エージェント最大
+       2 体、各 3 回»). Not measured: they are where the comparison starts. Expire when the single-vs-delegated
+       comparison (dev-notes/2026-11-18-atlas-delegation.md) has been run; ATLAS_DELEGATION_* move them.
+     · Canonical place: these constants; the environment may move them, never define them. */
+export type DelegationMode = "independent" | "shared" | "off";
+export const DELEGATION_DEFAULTS = Object.freeze({ mode: "independent" as DelegationMode, maxChildren: 2, childMaxCalls: 3 });
+export function delegationPolicy(env: (k: string) => string) {
+  const m = String(env("ATLAS_DELEGATION") || "").trim().toLowerCase();
+  const mode: DelegationMode = m === "off" || m === "shared" || m === "independent" ? m : DELEGATION_DEFAULTS.mode;
+  /* an unset variable is "" and Number("") is 0 — read as «not given», never as zero */
+  const int = (k: string, d: number) => { const raw = String(env(k) || "").trim(); if (!raw) return d; const v = Number(raw); return Number.isInteger(v) && v >= 0 && v <= 64 ? v : d; };
+  return Object.freeze({
+    mode,
+    maxChildren: int("ATLAS_DELEGATION_CHILDREN", DELEGATION_DEFAULTS.maxChildren),
+    childMaxCalls: Math.max(1, int("ATLAS_DELEGATION_CHILD_CALLS", DELEGATION_DEFAULTS.childMaxCalls)),
+  });
+}
+/* ══ (atlas-delegation) WHAT ONE TURN FAMILY MAY SPEND — in money, reserved before and settled after ═════
+   A turn family is a reader's turn and every worker it opened. Before each provider request ai-proxy
+   reserves an estimate (the prompt it is about to send + the whole output allowance, at the model's price —
+   _shared/ai-provider.js priceOf) against this cap, and after the answer it replaces the reservation with
+   what the provider billed (public.reserve_ai_spend / settle_ai_spend). Refused: 409 {error:"turn_cost"}.
+   ⚠ NOT A LIMIT ON WHAT ATLAS MAY DO (CONSTITUTION.md §5) — it is the invoice fence for ONE request, set
+   far above anything a request has cost, so that several strong models working at once fit inside it.
+   THE NUMBER (no-ad-hoc-hardcoding §4):
+     · Observation — production ledger public.ai_turns read 2026-11-18 (60 metered reader turns,
+       2026-10-04 → 2026-11-18, developer exempt): the most expensive turn read 367,309 input tokens
+       (79,461 cached) and wrote 1,803 — $0.61 at gpt-6.1-sol prices; p99 input 345,819, p99 output 9,716.
+     · $3.00 is ~4.9× that turn: the parent's worst case plus two workers at the same scale, with room left.
+     · Expires the first time a reader's turn meets `turn_cost` doing work it was asked to do — then
+       AI_TURN_COST_CAP_USD moves it without a deploy. Canonical place: THIS constant. */
+export const TURN_COST_CAP_USD = 3;
+export function turnCostCapMicros(env: (k: string) => string) {
+  const raw = String(env("AI_TURN_COST_CAP_USD") || "").trim();
+  const v = raw ? Number(raw) : NaN;
+  return Math.round((Number.isFinite(v) && v > 0 ? v : TURN_COST_CAP_USD) * 1_000_000);
+}
 export const TURN_TTL_S = 900;
 export const MAX_TURN_KEY = 120;
 /* ══ (atlas-stream-replay) A BROKEN STREAM IS RECEIVED AGAIN, NOT COMPUTED AGAIN ═══════════════════
