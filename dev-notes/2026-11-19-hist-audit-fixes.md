@@ -34,3 +34,6 @@ newsjp: Atlas が過去の年と現在の国境を比較でき、西暦 1〜99 �
 
 ## 4. 検証
 `tests/hist-audit-fixes-checks.test.mjs`（評価する検査）: 期間 50→100 が通る・99→10 は拒否・現代ポリゴンが行になり `diffPolities` が差を出す・ハイライトの guard が現代ポリゴン参照の前にある。既存の `atlas-reasoning-checks` は緑。
+
+## 5. 天井を上げた理由
+`check:perf`: 非同期チャンク `atlas-cap-runs` の天井を 853.4 kB → 858.5 kB に上げた。`time.changes` が現在の国ポリゴンを行にして比較する経路（`modernPolityRows` と、その答えの註）が同じチャンクに入るため。得たもの: 1914 年と現在の国境の比較が答えられる。
