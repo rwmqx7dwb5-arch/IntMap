@@ -121,6 +121,7 @@ export default [
   },
   {
     row: ['data.gisProject',            'gisProject',     'saveAnalysis,openAnalysis,rerunAnalysis,analysisProject',      'data',    'none',    'gis.project',            'explanation',         'persist', 'explicit', '',         'gisCore'],
+    ui: { none: '2026-11-19' },
     /* ⚠⚠ THE PROJECT LAYER EXISTED AND ATLAS COULD NOT REACH IT. js/gis-project.js saves an analysis as
        its recipe, opens it again by re-running the recipe, and re-computes a chain downstream when one
        step's parameters change (setParams) — measured 2026-11-16 in a real browser: save → setParams →
@@ -163,6 +164,7 @@ export default [
   },
   {
     row: ['data.gisExport',             'gisExport',      'exportDataset,downloadDataset,saveDatasetAsFile,exportGis',   'data',    'none',    '',                       'explanation',         'persist', 'explicit', '',         'gisCore'],
+    ui: { at: ['#btn-gis-panel'] },   /* the GIS panel holds its 「ファイルに書き出す」 */
     /* ⚠ THE DATASETS COULD BE MADE, DRAWN AND SAVED AS A PROJECT, AND NOT TAKEN AWAY. The GIS panel's
        「ファイルに書き出す」 calls js/gis-export.js; Atlas had no door to it, so 「この結果を KML で
        ください」 ended at a picture. This row is that door and nothing more — one write() call and the

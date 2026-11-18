@@ -190,7 +190,7 @@ export function wordsByOthers(root = ROOT) {
 }
 
 /* ── the twenty checks. Each takes DATA and returns {id, title, failures[], note} ───────────── */
-export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, othersWords, uiEntries, pageSrc }) {
+export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, othersWords, uiEntries, pageSrc, uiDeclared }) {
   const J = caps.toJSON();
   const byId = Object.create(null);
   J.capabilities.forEach((c) => { byId[c.id] = c; });
@@ -771,7 +771,20 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
     add('ui-entry-built', 'a declared screen entry is a control the page really builds', bad, `${n} declared entries`);
   }
 
+  /* ㉕ (atlas-screen-reach) every live capability SAYS how a reader reaches it without Atlas: a control, a key, or «none, searched
+     on <date>». An entry with no `ui` is the answer nobody gave — the inventory printed it as «unknown» and no gate noticed, which
+     is how thirteen capabilities went unmeasured in the page→Atlas direction. `uiDeclared` is DATA ([{ id, has }]). */
+  if (uiDeclared) {
+    const bad = uiUndeclared(uiDeclared);
+    add('ui-declared', 'a live capability declares how a reader reaches it without Atlas', bad, `${uiDeclared.length} live capabilities`);
+  }
+
   return checks;
+}
+
+/** ㉕'s rule on its own: the ids that say nothing about how a reader reaches them without Atlas */
+export function uiUndeclared(uiDeclared) {
+  return uiDeclared.filter((x) => !x.has).map((x) => `${x.id}: no \`ui\` — declare { at: [selector] }, { key } or { none: 'YYYY-MM-DD' } (js/atlas-caps.js documents the three)`);
 }
 
 /** ㉔'s rule on its own: which declared `ui.at` selectors the page source never builds */
@@ -826,6 +839,7 @@ export async function audit(opts = {}) {
       othersWords: opts.othersWords || wordsByOthers(),
       uiEntries: capsEntries.filter((e) => e.ui && e.ui.at).map((e) => ({ id: e.id, at: e.ui.at })),
       pageSrc: pageSource(),
+      uiDeclared: capsEntries.filter((e) => !(e.policy && e.policy.withdrawn)).map((e) => ({ id: e.id, has: !!e.ui })),
     }),
   };
 }

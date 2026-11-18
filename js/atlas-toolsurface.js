@@ -408,6 +408,9 @@ export function makeAtlasToolSurface(deps) {
            and Atlas would have learned nothing from it (one-pass-or-a-reason §2 ②). */
         delegated: (meta.delegated && meta.delegated.length) ? meta.delegated : undefined,
         delegatedCostUsd: meta.delegated ? meta.delegatedCostUsd : undefined,
+        /* (delegation-limits) a refusal before any worker ran says the number it was refused by */
+        maxChildren: meta.code === 'too_many_tasks' ? meta.maxChildren : undefined,
+        given: meta.code === 'too_many_tasks' ? meta.given : undefined,
       };
       /* ══ (#R511) DID THIS CALL CHANGE THE MAP? A fact the loop reads the way it reads `endsTurn`:
          a capability whose registry row PRODUCES the map, and whose run the observer marked

@@ -37,6 +37,7 @@ import './widget-smart.js';
 import './widget-defs-time.js';
 import './widget-defs-data.js';
 import './widget-defs-markets.js';
+import './widget-defs-space.js';
 import './widget-defs-map.js';
 import './widget-layout.js';
 import './widget-gallery.js';
@@ -124,6 +125,14 @@ export function widgets(HOST){
     /* the richer payload, for the account sync — an older build simply never asks for it */
     _payload: function () { ST.load(); return ST.syncPayload(); },
     _store: ST, _core: WC, _scheduler: SCH, _layout: LAY,
+  };
+
+  /* (atlas-screen-reach) THE DOOR `W`, the «widgets» capability and the help text all name: the board's own «Add a widget» sheet.
+     It used to be an empty stub left by the #R15 retirement, which the `W` key and Atlas both called and reported as done. */
+  window.IntMapWidgets = {
+    toggle: function () { var G = window.IntMapWidgetGallery; if (!G) return false; if (G.isOpen()) G.close(); else G.open(); return G.isOpen(); },
+    isOpen: function () { var G = window.IntMapWidgetGallery; return !!(G && G.isOpen()); },
+    refresh: sync,
   };
 
   if (document.readyState !== 'loading') setTimeout(sync, 0);

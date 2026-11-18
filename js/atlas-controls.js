@@ -33,7 +33,10 @@ export function makeAtlasControls(HOST, CTX) {
        DOM ops + dispatched events still run the real handler) and clicks/sets/toggles it. ---- */
     function _assocLabel(el){ try{ if(el.id){ const l=document.querySelector('label[for="'+el.id+'"]'); if(l) return l.textContent||''; } const grp=el.closest&&(el.closest('.setting-group')||el.closest('label')); if(grp&&grp!==el){ const l=grp.tagName==='LABEL'?grp:grp.querySelector('label'); if(l) return l.textContent||''; } let p=el.previousElementSibling; let k=0; while(p&&k++<2){ if(p.tagName==='LABEL') return p.textContent||''; p=p.previousElementSibling; } }catch(_){} return ''; }
     function _ctlLabel(el){ const opts=(el.tagName==='SELECT')?'':(el.textContent||''); return ((el.id||'')+' '+opts+' '+_assocLabel(el)+' '+(el.getAttribute&&(el.getAttribute('title')||'')||'')+' '+(el.getAttribute&&(el.getAttribute('aria-label')||'')||'')+' '+(el.getAttribute&&(el.getAttribute('data-i18n')||el.getAttribute('data-i18n-title')||'')||'')+' '+(el.placeholder||'')).toLowerCase().replace(/\s+/g,' ').trim(); }
-    function _ctlEls(){ return [].slice.call(document.querySelectorAll('button, input, select, textarea, [role="button"], .view-btn, .mode-btn, .ios-segment-btn, .dash-nav-btn, .lyr-head')); }
+    /* (atlas-screen-reach) WHAT `control` CAN PRESS, AS ONE SELECTOR — and the same one `IntMapUIAudit.reach()` measures the
+       page against, so a control the page builds that this list misses is counted instead of being invisible to both. */
+    const _CTL_SEL='button, input, select, textarea, [role="button"], [role="option"], [role="switch"], [role="radio"], [role="checkbox"], [role="tab"], [role="menuitem"], summary, a[href^="#"], .view-btn, .mode-btn, .ios-segment-btn, .dash-nav-btn, .lyr-head';
+    function _ctlEls(){ return [].slice.call(document.querySelectorAll(_CTL_SEL)); }
     function findControl(target){ const q=String(target||'').toLowerCase().trim(); if(!q) return null; let best=null,bs=0; const all=[];
       _ctlEls().forEach(el=>{ if(el.disabled) return; if((el.type==='checkbox'||el.type==='radio')&&el.closest&&el.closest('#layer-dropdown')) return; /* layers use the `layer` action */ const id=(el.id||'').toLowerCase(); const lab=_ctlLabel(el); let sc=0;
         if(id&&id===q) sc=100; else if(lab===q) sc=96; else if(id&&q===id.replace(/^(btn-|cb-|setting-|dl-)/,'')) sc=92;
@@ -209,7 +212,25 @@ export function makeAtlasControls(HOST, CTX) {
       _uiNameSweep();
     }catch(_){} },40));
     /* permanent §17 diagnostic: how much of the UI can Atlas actually address? Names elements first, then counts. */
-    window.IntMapUIAudit={ sweep:_uiNameSweep,
+    /* (atlas-screen-reach) THE OTHER DIRECTION: PAGE → `control`. `run()` below asks «has it a name»; this asks «would findControl
+       even look at it». A page element is a CONTROL when the platform or its author says it takes an act (a native
+       interactive, an ARIA widget role, a tab stop, an onclick, an in-page anchor, or `cursor:pointer`); one that is a
+       control and matches neither _CTL_SEL nor sits inside something that does is a screen function `control` cannot reach. */
+    function _reach(){ const seen=new Set(), out=[]; let total=0;
+      const WIDGET='button,input,select,textarea,summary,[role="button"],[role="option"],[role="switch"],[role="radio"],[role="checkbox"],[role="tab"],[role="menuitem"],[role="link"],[onclick],[tabindex]:not([tabindex^="-"]),a[href]';
+      /* a tab stop is a CONTROL only when it says it is a widget (no role, or a widget role); a card/landmark/canvas that merely takes focus (role listitem, region…) is structure, and what it holds is counted on its own */
+      const WIDGET_ROLE=/^(button|option|switch|radio|checkbox|tab|menuitem|link|slider|spinbutton|combobox|textbox|searchbox|treeitem|gridcell)$/;
+      const inPage=el=>!(el.closest&&(el.closest('#atlas-panel')||el.closest('[inert]')));
+      const consider=(el,why)=>{ if(seen.has(el)||el.disabled||!inPage(el)) return; seen.add(el);
+        if(el.tagName.toLowerCase()==='a'&&el.href&&el.href.split('#')[0]!==location.href.split('#')[0]&&!/^javascript:/i.test(el.getAttribute('href')||'')) return; /* a link to another document is content, not a function of this page: following it leaves the page Atlas is operating */
+        { const r=el.getAttribute('role'); if(r&&!WIDGET_ROLE.test(r)&&!el.matches('button,input,select,textarea,summary,a[href]')) return; }
+        if(el.type==='hidden') return;
+        total++; if(el.matches(_CTL_SEL)||(el.closest&&el.closest(_CTL_SEL))) return;
+        out.push({ tag:el.tagName.toLowerCase(), id:el.id||'', cls:String(el.className&&el.className.baseVal!=null?el.className.baseVal:el.className||'').split(/s+/)[0]||'', role:el.getAttribute('role')||'', why:why, text:(el.textContent||el.getAttribute('aria-label')||'').replace(/s+/g,' ').trim().slice(0,30) }); };
+      [].slice.call(document.querySelectorAll(WIDGET)).forEach(el=>consider(el,'semantic'));
+      [].slice.call(document.querySelectorAll('body *')).forEach(el=>{ if(seen.has(el)) return; try{ if(getComputedStyle(el).cursor==='pointer'&&!el.closest('a[href],button,[role],[onclick],summary,label,select')) consider(el,'cursor'); }catch(_){} });
+      return { total:total, unreached:out.length, list:out }; }
+    window.IntMapUIAudit={ sweep:_uiNameSweep, reach:_reach,
       run(){ _uiNameSweep(); const seen=new Set(); let total=0,named=0; const un=[];
         [].slice.call(document.querySelectorAll('button, input, select, textarea, [role="button"], [onclick]')).forEach(el=>{
           if(seen.has(el)||el.disabled) return; seen.add(el);

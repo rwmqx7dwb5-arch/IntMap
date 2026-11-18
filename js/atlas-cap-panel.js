@@ -101,14 +101,14 @@ export default [
   },
   {
     row: ['panel.widgets',              'widgets',        '',                                                            'panel',   'panel',   'panel.widgets',          'panel',               'session', 'none',   '',         ''],
-    ui: { none: '2026-11-16' },
+    ui: { key: 'W' },
     doc: [
       { in: 'tools-panels', at: 150, text: '{"type":"widgets"}; ' },
     ],
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('widgets')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle){ window.IntMapWidgets.toggle(); ok=true; } else ok=clickId('btn-widgets'); }catch(_){} return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('')); }
+      { let ok=false; try{ const W=window.IntMapWidgets; if(W&&W.toggle){ if(!W.isOpen()) W.toggle(); ok=W.isOpen(); } }catch(_){} /* ok is what the board's sheet reports, not that a function was called */ return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('')); }
     },
   },
   {
