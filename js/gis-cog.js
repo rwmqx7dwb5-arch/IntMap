@@ -18,11 +18,11 @@
  *  ⚠ THE RESAMPLING IS STATED, NOT HIDDEN: `nearest`, because it creates no value the file did not
  *  hold (it survives a land-cover class map), and the answer carries the level used and whether the
  *  file had pixels as fine as the ask (`resolution.meets`).
- *  ⚠ ONLY A FILE THAT STATES EPSG:4326 IS READ (non-4326 → `cog-crs-not-4326`, with the code the
- *  file stated). 消せる条件: a window of a projected COG needs the bbox carried into the file's CRS
- *  and the region reprojected (js/gis-warp.js to4326 already does the second half); until that is
- *  written the refusal NAMES the CRS so the reader knows what to convert, rather than reading metres
- *  as degrees.
+ *  ⚠ A FILE IN ANOTHER CRS (UTM, Web Mercator …) IS READ TOO: the window is carried into the file's CRS,
+ *  the file is read there, and js/gis-warp.js to4326 brings the piece back — the one transform rule.
+ *  A projection that does not answer is refused by name (`crs-unavailable` / `crs-transform-failed`).
+ *  ⚠ A window that crosses the antimeridian is not handled (its perimeter would wrap); 消せる条件:
+ *  splitting the window at ±180 and reading both halves.
  *  ⚠ A GRID THAT HAS NO STATED CRS IS REFUSED (`crs-not-stated`): where it is has not been said.
  *  ⚠ https ONLY — the page's CSP connect-src allows nothing else, and a URL with a user name in it
  *  is a credential written into a string that will be logged.
@@ -73,33 +73,84 @@ export function makeGisCog(deps) {
     const g = opened.grid;
 
     if (g.crs == null || String(g.crs).trim() === '') return bad('crs-not-stated', { url: u.url });
-    if (!C.isWgs84(g.crs)) return bad('cog-crs-not-4326', { crs: String(g.crs), url: u.url });
-
+    const wgs = C.isWgs84(g.crs);
     const pixelLng = (b[2] - b[0]) / q.width, pixelLat = (b[3] - b[1]) / q.height;
-    const pick = g.levelFor({ dx: pixelLng, dy: pixelLat });
+
+    /* ⚠ A PROJECTED FILE: the window is carried INTO the file's CRS, the file is read there, and the
+       piece comes back to degrees through js/gis-warp.js to4326 — the one transform rule, not a second
+       one here. Two things are derived from the projection itself rather than from a constant: the
+       window's box in the file's CRS (its perimeter is WALKED, because a projected edge bows, so four
+       corners under-state it) and the size of the asked-for pixel in the file's units (so the right
+       overview is chosen). Both fail by name when the projection does not answer. */
+    let readBox = [b[0], b[1], b[2], b[3]], wantDx = pixelLng, wantDy = pixelLat, wantBox = null;
+    if (!wgs) {
+      if (typeof C.ready !== 'function' || typeof C.fromWgs84 !== 'function') return bad('crs-unavailable', { crs: String(g.crs) });
+      if (!(await C.ready())) return bad('crs-unavailable', { crs: String(g.crs) });
+      const fwd = (lng, lat) => {
+        const xy = C.fromWgs84(lng, lat, g.crs);
+        return (xy && isNum(xy[0]) && isNum(xy[1])) ? xy : null;
+      };
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      const STEPS = 32;
+      for (let k = 0; k <= STEPS; k++) {
+        const t = k / STEPS;
+        for (const [lng, lat] of [[b[0] + t * (b[2] - b[0]), b[1]], [b[0] + t * (b[2] - b[0]), b[3]], [b[0], b[1] + t * (b[3] - b[1])], [b[2], b[1] + t * (b[3] - b[1])]]) {
+          const xy = fwd(lng, lat);
+          if (!xy) return bad(typeof C.why === 'function' && C.why() ? C.why() : 'crs-transform-failed', { crs: String(g.crs), at: [lng, lat] });
+          if (xy[0] < x0) x0 = xy[0]; if (xy[0] > x1) x1 = xy[0];
+          if (xy[1] < y0) y0 = xy[1]; if (xy[1] > y1) y1 = xy[1];
+        }
+      }
+      const cLng = (b[0] + b[2]) / 2, cLat = (b[1] + b[3]) / 2;
+      const c0 = fwd(cLng, cLat), cE = fwd(cLng + pixelLng, cLat), cN = fwd(cLng, cLat + pixelLat);
+      if (!c0 || !cE || !cN) return bad('crs-transform-failed', { crs: String(g.crs) });
+      wantDx = Math.hypot(cE[0] - c0[0], cE[1] - c0[1]);
+      wantDy = Math.hypot(cN[0] - c0[0], cN[1] - c0[1]);
+      if (!(wantDx > 0) || !(wantDy > 0)) return bad('pixel-size-underivable', { crs: String(g.crs) });
+      wantBox = [x0, y0, x1, y1];
+      /* one file pixel of margin, so the pixels the warp reads at the window's edge exist */
+      readBox = [x0 - g.affine.dx, y0 - g.affine.dy, x1 + g.affine.dx, y1 + g.affine.dy];
+    }
+
+    const pick = g.levelFor({ dx: wantDx, dy: wantDy });
     if (!pick.ok) return pick;
     const lv = await g.levelAt(pick.level);
     if (!lv.ok) return lv;
     const bandIndex = (q.band && Number.isInteger(q.band.index)) ? q.band.index : 0;
-    const part = await lv.grid.readRegion({ bbox: [b[0], b[1], b[2], b[3]], band: bandIndex, signal: q.signal });
+    const part = await lv.grid.readRegion({ bbox: readBox, band: bandIndex, signal: q.signal });
     if (!part.ok) return part;
     const r = part.region;
     const meta = (lv.grid.bands && lv.grid.bands[bandIndex]) || {};
 
-    /* the region is a north-up piece of the file in 4326; the caller's lattice is the target */
-    const src = {
-      crs: 'EPSG:4326', width: r.width, height: r.height,
+    /* the region is a north-up piece of the file; the caller's lattice is the target */
+    let src = {
+      crs: wgs ? 'EPSG:4326' : String(g.crs), width: r.width, height: r.height,
       affine: { x0: r.affine.x0, y0: r.affine.y0, dx: r.affine.dx, dy: r.affine.dy, rotated: false },
       bands: [{ name: meta.name != null ? meta.name : null, unit: meta.unit != null ? meta.unit : null, nodata: meta.nodata != null ? meta.nodata : null }],
       read: () => r.values,
     };
+    let regionDeg = null;
+    if (!wgs) {
+      const deg = await W.to4326(src, { method: 'nearest' });
+      if (!deg.ok) return deg;
+      regionDeg = [deg.grid.grid.west, deg.grid.grid.north - deg.grid.grid.pixelLat * deg.grid.height, deg.grid.grid.west + deg.grid.grid.pixelLng * deg.grid.width, deg.grid.grid.north];
+      src = Object.assign({}, deg.grid, { crs: 'EPSG:4326' });
+    }
     const out = await W.resample(src, { west: b[0], north: b[3], pixelLng: pixelLng, pixelLat: pixelLat, width: q.width, height: q.height }, { method: 'nearest' });
     if (!out.ok) return out;
 
     const full = g.affine;
     const fileBox = [full.x0, full.y0 - full.dy * g.height, full.x0 + full.dx * g.width, full.y0];
-    const served = [Math.max(b[0], fileBox[0]), Math.max(b[1], fileBox[1]), Math.min(b[2], fileBox[2]), Math.min(b[3], fileBox[3])];
-    const inside = served[0] === b[0] && served[1] === b[1] && served[2] === b[2] && served[3] === b[3];
+    let served, inside;
+    if (wgs) {
+      served = [Math.max(b[0], fileBox[0]), Math.max(b[1], fileBox[1]), Math.min(b[2], fileBox[2]), Math.min(b[3], fileBox[3])];
+      inside = served[0] === b[0] && served[1] === b[1] && served[2] === b[2] && served[3] === b[3];
+    } else {
+      /* inside = the window's own box in the file's CRS lies within the file; what was served is then
+         the whole window, and otherwise the part of it the piece that WAS read covers */
+      inside = wantBox[0] >= fileBox[0] && wantBox[1] >= fileBox[1] && wantBox[2] <= fileBox[2] && wantBox[3] <= fileBox[3];
+      served = inside ? [b[0], b[1], b[2], b[3]] : [Math.max(b[0], regionDeg[0]), Math.max(b[1], regionDeg[1]), Math.min(b[2], regionDeg[2]), Math.min(b[3], regionDeg[3])];
+    }
     const reasons = [];
     if (!inside) reasons.push('window-extends-past-the-file');
     if (!pick.meets) reasons.push('file-coarser-than-asked');
@@ -109,11 +160,11 @@ export function makeGisCog(deps) {
       requested: [b[0], b[1], b[2], b[3]], served: served,
       count: out.report ? out.report.filled : null,
       asOf: null,
-      resolution: { pixelLng: pixelLng, pixelLat: pixelLat, width: q.width, height: q.height, nativeDx: pick.dx, nativeDy: pick.dy, level: pick.level, isOverview: pick.isOverview, meets: pick.meets },
+      resolution: { pixelLng: pixelLng, pixelLat: pixelLat, width: q.width, height: q.height, nativeDx: pick.dx, nativeDy: pick.dy, nativeUnit: wgs ? 'degree' : 'crs-unit', level: pick.level, isOverview: pick.isOverview, meets: pick.meets },
     };
     return {
       ok: true, raster: out.grid, band: meta, coverage: coverage,
-      source: { url: u.url, level: pick.level, requests: g.source && typeof g.source.requests === 'function' ? g.source.requests() : null, fileWidth: g.width, fileHeight: g.height, fileBounds: fileBox, crs: String(g.crs) },
+      source: { url: u.url, level: pick.level, requests: g.source && typeof g.source.requests === 'function' ? g.source.requests() : null, fileWidth: g.width, fileHeight: g.height, fileBounds: fileBox, fileBoundsCrs: String(g.crs), crs: String(g.crs) },
     };
   }
 

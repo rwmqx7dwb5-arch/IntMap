@@ -182,10 +182,10 @@ overviews は数だけ報告する**）。
   求めた細かさを持っていたか）・要求数が `provenance.source` / `resolution` に残る。
 - **`coverage` はファイル自身の事実から**: 窓がファイルの内側で解像度も満たせば `all`、外へ出る・ファイルが
   粗いなら `partial` と理由。外側は **NaN**（0 で埋めない）。
-- **断るもの**: http（CSP も https のみ）・URL に資格情報・EPSG:4326 以外（`cog-crs-not-4326`、ファイルが
-  述べた CRS 付き）・CRS を述べない（`crs-not-stated`）・Range 非対応（`range-unsupported`）・HTTP エラー。
-  ⚠ 投影座標系の COG は**未対応**——消せる条件は、bbox をファイルの CRS へ運び、読んだ窓を
-  `gis-warp.js` の `to4326` に通すこと（後半は既にある）。
+- **断るもの**: http（CSP も https のみ）・URL に資格情報・CRS を述べない（`crs-not-stated`）・Range 非対応（`range-unsupported`）・HTTP エラー。
+  ⚠ **投影座標系の COG も読める**（UTM・Web メルカトル等。窓の周を歩いてファイルの CRS へ運び、そこで読み、
+  `gis-warp.js` の `to4326` で戻す。窓の対辺が弯曲する分を 4 隅でなく周で測る）。⚠ **日付変更線をまたぐ窓は未対応**
+  （消せる条件: 窓を ±180 で割って両側を読む）。
 - 出来たものは**登録された格子のデータセット**なので、`rasterMask`・`zonal`・`sample`・書き出し・
   `map.drawDataset` がそのまま効く。`provenance.kind = 'url-raster'`。
 
