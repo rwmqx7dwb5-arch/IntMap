@@ -2,7 +2,8 @@
   "$comment": [
     "Atlas evaluation questions with ground-truth answers. Every answer was checked on 2026-10-01 against the source recorded with it; each question pins its reference (census year, survey edition, named service, named event).",
     "Great-circle distances are computed (haversine, R=6371.0088 km) from the coordinates given in each derivation; everything else is a figure stated by the cited source.",
-    "(atlas-eval-map-state) `mapState` — what the FINAL MAP must hold, only where the question's own words ask the map for something (「地図に出して」「Highlight」「Fly to」「線を引いて」…). A coordinate names the source it was read at. Field meanings and the discovered vocabulary: scripts/atlas-eval/map-state.mjs. A question without such words carries none."
+    "(atlas-eval-map-state) `mapState` — what the FINAL MAP must hold, only where the question's own words ask the map for something (「地図に出して」「Highlight」「Fly to」「線を引いて」…). A coordinate names the source it was read at. Field meanings and the discovered vocabulary: scripts/atlas-eval/map-state.mjs. A question without such words carries none.",
+    "(eval-shape-grading) When the thing asked for IS an area or a line in the world (a river, a basin, a prefecture, a state, a canal, a fault), the map is graded on `atlas.shapes.<kind>:<basis>` — `line:real` is an upstream's course, `line:unstated` a line nobody vouches for — so a line drawn between two towns does not pass as the river. A thing with no shape in any source IntMap reads is answered by saying so (answer kind `declines`, graded on the words) and drawing no stand-in (`max: 0` on the map); its `until` names the source whose arrival turns it into a shape question."
   ],
   "version": 1,
   "retrieved": "2026-10-01",
@@ -270,7 +271,7 @@
       "capabilities": ["map.outline", "data.populationIn", "data.value"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「東京都を地図で囲って」 — an outline of the prefecture" }
+          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「東京都を地図で囲って」 — an outline of the prefecture" }
         ]
       }
     },
@@ -284,7 +285,7 @@
       "capabilities": ["map.highlight", "data.populationIn", "data.value"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「大阪府をハイライトして」" }
+          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「大阪府をハイライトして」 — the prefecture's own boundary" }
         ]
       }
     },
@@ -326,7 +327,7 @@
       "note": "Census count, not the adjusted population estimate (~38.2 million).",
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.highlightCountries", "min": 1 }, { "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Canada.\"" }
+          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Canada.\"" }
         ]
       }
     },
@@ -495,7 +496,7 @@
           "why": "「琵琶湖を地図でハイライトして」 — the lake is on screen"
         },
         "drawn": [
-          { "anyOf": [{ "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「ハイライトして」" }
+          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「琵琶湖を地図でハイライトして」 — the lake's own outline, not an approximate one" }
         ]
       }
     },
@@ -519,7 +520,7 @@
       "capabilities": ["map.highlight", "data.countryCard", "data.value"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.highlightCountries", "min": 1 }, { "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Russia.\"" }
+          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Russia.\" — the national border (a lit country counts as area:real)" }
         ]
       }
     },
@@ -566,7 +567,7 @@
           "why": "\"Outline Lake Superior on the map\" — the lake is on screen"
         },
         "drawn": [
-          { "anyOf": [{ "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Outline Lake Superior\"" }
+          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Outline Lake Superior\"" }
         ]
       }
     },
@@ -690,7 +691,7 @@
       "capabilities": ["map.highlight", "data.value"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.lines", "min": 1 }, { "path": "atlas.polygons", "min": 1 }], "why": "「信濃川を地図でなぞって」 — the river traced" }
+          { "path": "atlas.shapes.line:real", "min": 1, "why": "「信濃川を地図でなぞって」 — the river's own course (an upstream's waterway), not a line drawn between places along it" }
         ]
       }
     },
@@ -751,7 +752,7 @@
       "note": "Length is disputed by definition of the source; the range covers the commonly cited 6,650 and 6,695 km.",
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.lines", "min": 1 }, { "path": "atlas.polygons", "min": 1 }], "why": "\"Trace the Nile on the map\"" }
+          { "path": "atlas.shapes.line:real", "min": 1, "why": "\"Trace the Nile on the map\" — the river's own course (an upstream's waterway), not a line drawn between places along it" }
         ]
       }
     },
@@ -830,7 +831,7 @@
       "capabilities": ["map.highlight", "data.countryCard"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.highlightCountries", "min": 1 }, { "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Germany.\"" }
+          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Germany.\"" }
         ]
       }
     },
@@ -959,6 +960,150 @@
       "source": { "title": "Badwater Basin", "publisher": "U.S. National Park Service", "url": "https://www.nps.gov/places/badwater-basin.htm", "states": "Badwater Basin in Death Valley, 86 m below sea level, is the lowest point in North America." },
       "capabilities": ["map.pin", "data.rank"],
       "note": "'Death Valley' accepted as the containing feature."
+    },
+    {
+      "id": "tone-river-basin-area",
+      "lang": "jp",
+      "category": "area",
+      "text": "利根川の流域を地図に塗って。流域面積は何 km²？",
+      "answer": { "kind": "number", "value": 16840, "unit": "km2", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "利根川のながれ", "publisher": "国土交通省 関東地方整備局 利根川ダム統合管理事務所", "url": "https://www.ktr.mlit.go.jp/tonedamu/tonedamu00061.html", "states": "The Tone River basin covers 16,840 km², the largest in Japan." },
+      "capabilities": ["map.highlight", "data.value"],
+      "mapState": {
+        "drawn": [
+          { "path": "atlas.shapes.area:real", "min": 1, "why": "「流域を地図に塗って」 — the basin's hydrological outline (GRDC / HydroSHEDS / OSM), not an outline a model traced" }
+        ]
+      }
+    },
+    {
+      "id": "nagano-pref-area",
+      "lang": "jp",
+      "category": "area",
+      "text": "長野県を地図で塗って。面積は何 km²？",
+      "answer": { "kind": "number", "value": 13561.56, "unit": "km2", "tolerance": { "rel": 0.005 } },
+      "source": { "title": "長野県のいち、大きさ", "publisher": "長野県", "url": "https://www.pref.nagano.lg.jp/koho/kids/menu02/ookisa.html", "states": "Nagano Prefecture covers 13,561.56 km²." },
+      "capabilities": ["map.highlight", "data.value"],
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「長野県を地図で塗って」 — the prefecture's own boundary" }
+        ]
+      }
+    },
+    {
+      "id": "texas-area",
+      "lang": "en",
+      "category": "area",
+      "text": "Shade Texas on the map. What is its total area in km²?",
+      "answer": { "kind": "number", "value": 695662, "unit": "km2", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "State Area Measurements and Internal Point Coordinates", "publisher": "U.S. Census Bureau", "url": "https://www.census.gov/geographies/reference-files/2010/geo/state-area.html", "states": "Texas has a total area of 268,596 sq mi (695,662 km²)." },
+      "capabilities": ["map.highlight", "data.value"],
+      "note": "Total area (land and water).",
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Shade Texas on the map\" — the state's own boundary" }
+        ]
+      }
+    },
+    {
+      "id": "suez-canal-length",
+      "lang": "en",
+      "category": "length",
+      "text": "Trace the Suez Canal on the map. How long is it?",
+      "answer": { "kind": "number", "value": 193.3, "unit": "km", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "Canal Characteristics", "publisher": "Suez Canal Authority", "url": "https://www.suezcanal.gov.eg/English/About/SuezCanal/Pages/CanalCharacteristics.aspx", "states": "The canal's overall length is 193.30 km (2015)." },
+      "capabilities": ["map.compose", "data.value"],
+      "note": "Length since the 2015 expansion; older figures (162–164 km) measure the canal without its approach channels.",
+      "mapState": {
+        "drawn": [
+          { "path": "atlas.shapes.line:real", "min": 1, "why": "\"Trace the Suez Canal\" — the waterway's own course, not a straight line from Port Said to Suez" }
+        ]
+      }
+    },
+    {
+      "id": "itoigawa-shizuoka-tectonic-line-declined",
+      "lang": "jp",
+      "category": "shape",
+      "text": "糸魚川静岡構造線を地図に線で描いて。",
+      "answer": { "kind": "declines", "subject": "糸魚川静岡構造線 (Itoigawa-Shizuoka Tectonic Line)", "until": "a fault-trace source in what IntMap reads (the AIST active fault database or geological map, once its terms of use are confirmed) — then this becomes a line:real question" },
+      "source": { "title": "Nominatim search: Itoigawa-Shizuoka Tectonic Line", "publisher": "OpenStreetMap Nominatim", "url": "https://nominatim.openstreetmap.org/search?q=Itoigawa-Shizuoka+Tectonic+Line&format=jsonv2", "states": "Measured 2026-11-18: the only result is an information board (a point) in Itoigawa; OSM holds no line for the fault, and 「糸魚川静岡構造線」 returns unrelated administrative areas." },
+      "capabilities": ["map.compose"],
+      "note": "The correct reply says IntMap holds no trace of the fault and draws none; it may place Itoigawa and Shizuoka as points and describe the line in words. A line joining them is a schematic stand-in and fails the map.",
+      "mapState": {
+        "drawn": [
+          { "path": "atlas.shapes.line:unstated", "max": 0, "why": "「線で描いて」 with no trace to draw — no line between towns standing for the fault" },
+          { "path": "atlas.shapes.line:derived", "max": 0, "why": "no line IntMap built standing for the fault" },
+          { "path": "atlas.shapes.line:real", "max": 0, "why": "no source holds the fault, so a real line drawn for it is some other feature that shares a name" }
+        ]
+      }
+    },
+    {
+      "id": "fossa-magna-shape-declined",
+      "lang": "jp",
+      "category": "shape",
+      "text": "フォッサマグナを地図に塗って。",
+      "answer": { "kind": "declines", "subject": "フォッサマグナ (Fossa Magna)", "until": "a geological-structure source in what IntMap reads (the AIST seamless geological map, once its terms of use are confirmed) — and even then its eastern edge is unsettled, so the area stays derived at best" },
+      "source": { "title": "Nominatim search: Fossa Magna", "publisher": "OpenStreetMap Nominatim", "url": "https://nominatim.openstreetmap.org/search?q=Fossa+Magna&format=jsonv2", "states": "Measured 2026-11-18: three canals named Fossa Magna in Lombardy, Italy; nothing in Japan, and no area for the structure." },
+      "capabilities": ["map.compose"],
+      "note": "The western edge is the Itoigawa-Shizuoka Tectonic Line; the eastern edge is not settled, so no outline is a fact. The correct reply says so and shades nothing; the Lombardy canals are a name match on another continent.",
+      "mapState": {
+        "drawn": [
+          { "path": "atlas.shapes.area:unstated", "max": 0, "why": "「地図に塗って」 with no outline to shade — no box or hand-drawn polygon standing for it" },
+          { "path": "atlas.shapes.area:derived", "max": 0, "why": "no outline IntMap or a model built standing for it" },
+          { "path": "atlas.shapes.area:real", "max": 0, "why": "no source holds the structure, so a real outline drawn for it is some other feature that shares a name" },
+          { "path": "atlas.shapes.line:unstated", "max": 0, "why": "no lines joining towns standing for its edges" }
+        ]
+      }
+    },
+    {
+      "id": "median-tectonic-line-declined",
+      "lang": "jp",
+      "category": "shape",
+      "text": "中央構造線を地図に線で描いて。",
+      "answer": { "kind": "declines", "subject": "中央構造線 (Median Tectonic Line)", "until": "a fault-trace source in what IntMap reads (the AIST active fault database or geological map, once its terms of use are confirmed) — then this becomes a line:real question" },
+      "source": { "title": "Nominatim search: Median Tectonic Line", "publisher": "OpenStreetMap Nominatim", "url": "https://nominatim.openstreetmap.org/search?q=Median+Tectonic+Line&format=jsonv2", "states": "Measured 2026-11-18: only points named after the fault (a museum and mountain passes in Ōshika, Nagano); no line for the fault, and 「中央構造線」 returns nothing." },
+      "capabilities": ["map.compose"],
+      "note": "The correct reply says IntMap holds no trace of the fault and draws none; it may place points it passes (Ōshika) and describe its course in words.",
+      "mapState": {
+        "drawn": [
+          { "path": "atlas.shapes.line:unstated", "max": 0, "why": "no line between places standing for the fault" },
+          { "path": "atlas.shapes.line:derived", "max": 0, "why": "no line IntMap built standing for the fault" },
+          { "path": "atlas.shapes.line:real", "max": 0, "why": "no source holds the fault, so a real line drawn for it is some other feature that shares a name" }
+        ]
+      }
+    },
+    {
+      "id": "wallace-line-declined",
+      "lang": "en",
+      "category": "shape",
+      "text": "Draw the Wallace Line on the map.",
+      "answer": { "kind": "declines", "subject": "the Wallace Line", "until": "a biogeographic-boundary source in what IntMap reads — then this becomes a line:real question" },
+      "source": { "title": "Nominatim search: Wallace Line", "publisher": "OpenStreetMap Nominatim", "url": "https://nominatim.openstreetmap.org/search?q=Wallace+Line&format=jsonv2", "states": "Measured 2026-11-18: two road segments named Wallace Line in Oxford County, Ontario; nothing between Bali and Lombok or Borneo and Sulawesi." },
+      "capabilities": ["map.compose"],
+      "note": "A name match on another continent (a road in Ontario) is the trap: it is a real line, of the wrong thing. The correct reply says IntMap holds no line for the biogeographic boundary and may describe it (between Bali and Lombok, Borneo and Sulawesi).",
+      "mapState": {
+        "drawn": [
+          { "path": "atlas.shapes.line:unstated", "max": 0, "why": "no line between places standing for the Wallace Line" },
+          { "path": "atlas.shapes.line:derived", "max": 0, "why": "no line IntMap built standing for the Wallace Line" },
+          { "path": "atlas.shapes.line:real", "max": 0, "why": "no source holds the Wallace Line, so a real line drawn for it is some other feature that shares a name" }
+        ]
+      }
+    },
+    {
+      "id": "tanakura-tectonic-line-declined",
+      "lang": "en",
+      "category": "shape",
+      "text": "Trace the Tanakura Tectonic Line on the map.",
+      "answer": { "kind": "declines", "subject": "the Tanakura Tectonic Line", "until": "a fault-trace source in what IntMap reads (the AIST geological map, once its terms of use are confirmed) — then this becomes a line:real question" },
+      "source": { "title": "Nominatim search: Tanakura Tectonic Line", "publisher": "OpenStreetMap Nominatim", "url": "https://nominatim.openstreetmap.org/search?q=Tanakura+Tectonic+Line&format=jsonv2", "states": "Measured 2026-11-18: no result." },
+      "capabilities": ["map.compose"],
+      "note": "The correct reply says IntMap holds no trace of the fault and draws none.",
+      "mapState": {
+        "drawn": [
+          { "path": "atlas.shapes.line:unstated", "max": 0, "why": "no line between places standing for the fault" },
+          { "path": "atlas.shapes.line:derived", "max": 0, "why": "no line IntMap built standing for the fault" },
+          { "path": "atlas.shapes.line:real", "max": 0, "why": "no source holds the fault, so a real line drawn for it is some other feature that shares a name" }
+        ]
+      }
     }
   ]
 }

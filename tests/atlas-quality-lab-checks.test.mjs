@@ -105,6 +105,7 @@ test('atlas-quality-lab ② every verified answer, written as a careful reply wo
     const reply = a.kind === 'name' ? 'It is ' + a.accept[0] + '.'
       : a.kind === 'date' ? 'It was ' + a.value + '.'
       : a.kind === 'count' ? 'There are ' + a.value + '.'
+      : a.kind === 'declines' ? 'IntMap holds no geometry for ' + a.subject + ', so I cannot draw it.'   /* (eval-shape-grading) the honest reply to a thing with no shape */
       : a.kind === 'range' ? 'About ' + ((a.min + a.max) / 2) + ' ' + unitWord[a.unit] + '.'
       : 'About ' + a.value + ' ' + unitWord[a.unit] + '.';
     assert.equal(G.gradeAnswer(a, reply).verdict, 'correct', q.id + ': «' + reply + '» does not grade correct');

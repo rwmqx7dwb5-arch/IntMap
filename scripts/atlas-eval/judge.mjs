@@ -200,7 +200,7 @@ export function judgeTurn(q, obs, ctx) {
     const g = gradeAnswer(q.answer, reply);
     metrics.grade = g;
     if (g.verdict !== 'correct') fail('answer', g.verdict === 'absent'
-      ? 'the reply states no ' + (q.answer.kind === 'name' ? 'accepted name' : q.answer.kind === 'date' ? 'date' : 'value in ' + (q.answer.unit || 'the asked unit')) + ' — expected ' + g.expected
+      ? (q.answer.kind === 'declines' ? 'the reply never says it has no shape for it' : 'the reply states no ' + (q.answer.kind === 'name' ? 'accepted name' : q.answer.kind === 'date' ? 'date' : 'value in ' + (q.answer.unit || 'the asked unit'))) + ' — expected ' + g.expected
       : 'the reply states ' + g.stated.slice(0, 4).join(', ') + ' — expected ' + g.expected);
   }
   const replyLang = languageOf(reply);

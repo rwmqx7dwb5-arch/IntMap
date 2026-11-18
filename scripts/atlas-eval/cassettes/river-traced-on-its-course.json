@@ -1,0 +1,92 @@
+{
+  "id": "river-traced-on-its-course",
+  "text": "信濃川を地図でなぞって。幹川流路延長は何 km？",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "representative: map.highlight on a river → the waterway's own course (fetchRiverLine), basis real"
+  },
+  "question": {
+    "set": "answers",
+    "id": "shinano-river-length"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "map.highlight",
+            "args": {
+              "query": "信濃川"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "信濃川の流路を地図に描きました（OpenStreetMap の水路）。幹川流路延長は367 kmで、日本一長い川です。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "query": "信濃川",
+          "type": "highlight"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>✦ 信濃川</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {
+      "atlas": {
+        "highlightCountries": 0,
+        "highlight": null,
+        "choropleth": null,
+        "customScore": null,
+        "pins": null,
+        "polygons": null,
+        "lines": {
+          "n": 1
+        },
+        "measure": null,
+        "radius": null,
+        "userPins": null,
+        "tool": "",
+        "shapes": {
+          "n": 1,
+          "line:real": 1
+        }
+      }
+    }
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:map.highlight",
+        "status": "completed"
+      }
+    ],
+    "text": "信濃川の流路を地図に描きました（OpenStreetMap の水路）。幹川流路延長は367 kmで、日本一長い川です。"
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct",
+    "map": "match"
+  }
+}

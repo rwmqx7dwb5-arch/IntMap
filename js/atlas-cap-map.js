@@ -19,7 +19,8 @@
 import { str, bool, num, int, one, list, obj, loose, noArgs } from './atlas-caps.js';
 import { volcanoFilterRun, heritageFilterRun, radiationNearRun } from './atlas-cap-data.js';
 import { droneRun } from './atlas-cap-routing.js';
-import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { icon } from './icons.js';
+import { shapeBasisOf } from './atlas-shape-resolve.js';   /* (eval-shape-grading) every shape the highlight leaves carries its basis — the one rule, js/atlas-shape-resolve.js */   /* (icon-system) the one icon set — js/icons.js */
 
 export default [
   {
@@ -328,7 +329,7 @@ export default [
               if(!G.length){   /* nothing valid to draw → return the STRUCTURED result (not a dead-end) so Terra corrects the identifiers */
                 return R(false, warn(L('None of those identifiers could be matched to a boundary in the data IntMap holds — the places may well exist','いずれの識別子も、IntMapが保持する境界データに一致させられませんでした（場所自体は実在する可能性があります）','Keiner dieser Bezeichner ließ sich den vorhandenen Grenzdaten zuordnen — die Orte können durchaus existieren','Ни один идентификатор запроса не сопоставлен с реальной границей','Ninguno de los identificadores de esa solicitud se resolvió a una frontera real'))+(gUnresolved.length?note(esc(_unrSum(gUnresolved))):'')+cwarn, {meta:{partial:true}, exec:_mkExec(false,0,false)}); }
               const _keepA=_hlAdd(a); const _prevA=_keepA?K._hlPolys.slice():[]; if(!_keepA){ clearHl(); clearLineHl(); K._hlLines=[]; } clearPolyHl();   /* (#R489) additive within one turn — see the note beside `_hlAdd` */
-              K._hlPolys=_prevA.concat(G.map((g,i)=>{ g.color=_single||_hlPaletteColor(_prevA.length+i); return {name:g.name,geo:g.geo,color:g.color,comp:1,op:0.42}; }));   /* the palette continues from what is already drawn, so the second action's groups are not the first action's colours */
+              K._hlPolys=_prevA.concat(G.map((g,i)=>{ g.color=_single||_hlPaletteColor(_prevA.length+i); return {name:g.name,geo:g.geo,color:g.color,comp:1,op:0.42,shapeBasis:'real'}; }));   /* national borders → real (eval-shape-grading) */   /* the palette continues from what is already drawn, so the second action's groups are not the first action's colours */
               let paintedP=paintPolys();
               for(let i5=0;i5<8&&!paintedP;i5++){ await new Promise(r5=>setTimeout(r5,700)); if(_hlMyGen!==K._hlGen) return R(true,''); paintedP=paintPolys(); }
               if(!paintedP) return R(false, warn(L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn, {exec:_mkExec(false,0,false)});
@@ -440,7 +441,7 @@ export default [
                 : osm?'OpenStreetMap' : derived?('⬡ '+L('web-derived','Web由来','Web-abgeleitet','из веба','de la web'))
                 : approx?('⬡ '+L('approx.','近似','ca.','прибл.','aprox.'))
                 : (kind==='country'||kind==='set')?L('national borders','国境','Staatsgrenzen','госграницы','fronteras'):'';
-              G.push({name:nm4,displayName:_regionLabel(nm4),kind,geo:gj,codes,nCountries:nC,composed,osm,derived,approx,verified,basis,basisShort}); }
+              G.push({name:nm4,displayName:_regionLabel(nm4),kind,geo:gj,codes,nCountries:nC,composed,osm,derived,approx,verified,basis,basisShort,shapeBasis:codes?'real':shapeBasisOf(t3)}); }
             /* (#R150) AMBIGUITY GATE — an exclusive/ambiguous target STOPS the whole request: ask ONE confirmation,
                paint nothing (no partial + confirmation co-display). Gate before the paint so it applies whether or
                not the multi-region branch would have drawn. */
@@ -448,7 +449,7 @@ export default [
             if(G.length>=2 && G.some(g=>g.kind==='set'||g.kind==='region')){
               if(_hlMyGen!==K._hlGen) return R(true,'');   /* superseded by a newer highlight → don't overwrite it */
               const _keepB=_hlAdd(a); const _prevB=_keepB?K._hlPolys.slice():[]; if(!_keepB){ clearHl(); clearLineHl(); K._hlLines=[]; } clearPolyHl();   /* (#R489) additive within one turn — see the note beside `_hlAdd` */
-              K._hlPolys=_prevB.concat(G.map((g,i)=>{ g.color=_hlPaletteColor(_prevB.length+i); return {name:g.name,geo:g.geo,color:g.color,comp:(g.kind!=='region'||g.composed)?1:0,op:0.42}; }));
+              K._hlPolys=_prevB.concat(G.map((g,i)=>{ g.color=_hlPaletteColor(_prevB.length+i); return {name:g.name,geo:g.geo,color:g.color,comp:(g.kind!=='region'||g.composed)?1:0,op:0.42,shapeBasis:g.shapeBasis}; }));
               let paintedP=paintPolys();
               for(let i4=0;i4<8&&!paintedP;i4++){ await new Promise(r4=>setTimeout(r4,700)); if(_hlMyGen!==K._hlGen) return R(true,''); paintedP=paintPolys(); }
               if(!paintedP) return R(false, warn(L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
@@ -479,14 +480,14 @@ export default [
             const bi=basinIntent(nm2);
             if(bi){ let B=null; try{ B=await buildBasin(bi.base); }catch(_){}
               if(!B||(!B.river&&!B.basin)){ miss.push(nm2); continue; }
-              if(B.basin){ const bp={name:nm2,geo:B.basin.geo,op:0.14,comp:true}; if(pc2) bp.color=pc2; polys.push(bp); if(B.approx) anyApprox=true; }
-              if(B.trib&&B.trib.geo) lines.push({geo:B.trib.geo,w:1.1,op:0.75,color:pc2||null});
-              if(B.river) lines.push({geo:B.river.geo,w:3.2,color:pc2||null,name:B.river.name});
+              if(B.basin){ const bp={name:nm2,geo:B.basin.geo,op:0.14,comp:true,shapeBasis:B.approx?'derived':'real'};   /* the AI-traced outline is the basin ladder's last rung (buildBasin) */ if(pc2) bp.color=pc2; polys.push(bp); if(B.approx) anyApprox=true; }
+              if(B.trib&&B.trib.geo) lines.push({geo:B.trib.geo,w:1.1,op:0.75,color:pc2||null,shapeBasis:'real'});
+              if(B.river) lines.push({geo:B.river.geo,w:3.2,color:pc2||null,name:B.river.name,shapeBasis:'real'});
               if(!B.basin&&B.river) lineNames.push(B.river.name);
               basinInfo={trib:(B.trib&&B.trib.n)||0, trunc:!!(B.trib&&B.trib.truncated), noBasin:!B.basin, noTrib:!B.trib, src:B.src||''};
               continue; }
             if(riverIntent(nm2)){ let rl=null; try{ rl=await fetchRiverLine(nm2); }catch(_){}
-              if(rl){ lines.push({geo:rl.geo,w:3.2,color:pc2||null,name:rl.name}); lineNames.push(rl.name); continue; } }
+              if(rl){ lines.push({geo:rl.geo,w:3.2,color:pc2||null,name:rl.name,shapeBasis:'real'});   /* the waterway's own course (fetchRiverLine) — the same rung js/atlas-shape-resolve.js line() calls real */ lineNames.push(rl.name); continue; } }
             let t2=null; try{ t2=await resolveHlTarget(nm2); }catch(_){}
             if(t2&&t2.verified) anyVerified=true;   /* (#R130) at least one target's location was web-search-verified */
             if(t2&&t2.ambiguous&&Array.isArray(t2.candidates)&&t2.candidates.length){ ambig.push({name:t2.name||nm2, candidates:t2.candidates}); }   /* (#R132) ambiguous → ask instead of guessing */
@@ -499,7 +500,7 @@ export default [
                  shape is reported honestly (never drawn as a "close enough" blob). */
               const _tr=!(t2.soft||t2.approx||t2.rrMethod==='derived_anchors'); const _vg=_validGeo(t2.poly.geo,{trusted:_tr,autoclose:true});
               if(!_vg.ok){ rejected.push({name:t2.poly.name||nm2,reason:_vg.reason}); }
-              else { if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; polys.push(t2.poly); if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true;
+              else { if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; t2.poly.shapeBasis=shapeBasisOf(t2); polys.push(t2.poly); if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true;
                 /* (#R132) precise BASIS per method — real OSM boundary vs web-anchor-derived vs curated gazetteer/AI outline */
                 if(t2.rrMethod==='admin1_index') anyAdm1=true; else if(t2.rrMethod==='osm_polygon') anyOsm=true; else if(t2.rrMethod==='derived_anchors') anyDerived=true; else if(t2.soft||t2.approx) anyApprox=true; } }
             else miss.push(nm2); }
