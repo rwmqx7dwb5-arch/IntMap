@@ -182,3 +182,17 @@ comment on function public.settle_ai_spend(uuid, text, bigint, bigint) is
   '(atlas-delegation) Replace a reservation with what the provider actually billed. → false when the family row is gone (expired), which the caller records.';
 revoke execute on function public.settle_ai_spend(uuid, text, bigint, bigint) from public, anon, authenticated;
 grant  execute on function public.settle_ai_spend(uuid, text, bigint, bigint) to service_role;
+
+-- ③ the account's data inventory states the new table (supabase/tests/23_account_data_center_test.sql:
+--    every table that holds a reader's rows has its sentence in account_data_catalog)
+insert into public.account_data_catalog (tbl, written_by, label_en, label_jp, purpose_en, purpose_jp, retention_en, retention_jp) values
+  ('ai_turn_spend', 'intmap',
+   'AI question spending', 'AIの質問の費用',
+   'One short-lived row per AI question, holding what the question and the research workers it opened reserved and spent with the AI provider, so that one question cannot spend past its limit.',
+   'AIの質問1つにつき1行の短命な記録。その質問と、それが調査を任せた子のAIが、AI提供元に対して予約した額と使った額を持ち、1つの質問が上限を超えて使えないようにします。',
+   'Replaced when the question''s key expires.',
+   '質問の鍵が失効すると置き換わります。')
+on conflict (tbl) do update set
+  written_by = excluded.written_by, label_en = excluded.label_en, label_jp = excluded.label_jp,
+  purpose_en = excluded.purpose_en, purpose_jp = excluded.purpose_jp,
+  retention_en = excluded.retention_en, retention_jp = excluded.retention_jp;

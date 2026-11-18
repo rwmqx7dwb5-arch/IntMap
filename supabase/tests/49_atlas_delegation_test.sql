@@ -48,6 +48,8 @@ select is((select reason from public.consume_ai_child_turn('33333333-3333-3333-3
 select is((select reason from public.consume_ai_child_turn('33333333-3333-3333-3333-333333333333','d-parent','d-parent',2,3,900)),
   'delegation_key', 'atlas-delegation: a child cannot carry its parent''s key');
 select ok((select allowed from public.consume_ai_turn('33333333-3333-3333-3333-333333333333',10,'d-other',12,900)), 'atlas-delegation: another reader turn');
+-- that reader turn charged once; the day is measured from here on
+update _u set used = (select count from public.ai_usage where user_id='33333333-3333-3333-3333-333333333333' and usage_date=current_date);
 select is((select reason from public.consume_ai_child_turn('33333333-3333-3333-3333-333333333333','d-parent','d-other',5,3,900)),
   'delegation_key', 'atlas-delegation: a reader''s own turn key cannot be taken over as a child');
 select is((select reason from public.consume_ai_child_turn('33333333-3333-3333-3333-333333333333','d-c1','d-grand',2,3,900)),
