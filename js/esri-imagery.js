@@ -24,7 +24,7 @@
  *  ⚠ A KEY HERE IS PUBLIC, like CARTO_BASEMAP_KEY in js/carto-basemap.js: a static site hands every tile
  *  URL to the visitor. IntMap's key exists (ArcGIS portal item "IntMap World Imagery (production)":
  *  Public application · no item access · ONE privilege, Basemaps › Basemap styles service
- *  (premium:user:basemaps) · referrer https://rwmqx7dwb5-arch.github.io · expires 2027-11-16 23:59 JST).
+ *  (premium:user:basemaps) · referrer = the production origin (supabase/functions/_shared/site-origin.js) · expires 2027-11-16 23:59 JST).
  *  ⚠ THE REFERRER IS NOT ENFORCED ON TILES — measured 2026-11-18: a fresh z11 tile came back as a JPEG
  *  with a foreign Referer and with none — so a key committed here is usable by anyone who copies it; what
  *  bounds the cost is the account (pay-as-you-go OFF: past the free tier the service refuses, and the
