@@ -1,6 +1,7 @@
 ---
 title: 範囲人口が WorldPop の旧 API 廃止で全滅していたのを v3 へ・背面の Atlas が「描画できなかった」を失敗と報告していた・押した線の強調・波の粒子を地図に貼る・面を塗るレイヤーの間は大気なし・日付変更線の暗い筋・海流名一覧の折り畳み
 date: 2026-11-18
+pr: 1210
 newsen: Population in this area works again; clicked borders and cables light up; wave particles stay pinned to the map while you move it; the atmosphere turns off under full-surface weather layers and Night Lights; the dark line at the date line is gone; the current list folds.
 newsjp: 「この範囲の人口」が再び使えるように。押した国境線と海底ケーブルが光るように。波の粒子が地図に貼り付いて動くように。面を塗る気象レイヤーと夜間光の間は大気をオフに。日付変更線の暗い筋を解消。海流名一覧は折り畳み式に。
 ---
