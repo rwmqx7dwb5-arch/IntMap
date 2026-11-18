@@ -19,6 +19,7 @@ import { IntMapLang } from './lang-registry.js';
 import { IntMapBorderCoast } from './border-coast.js';
 import { jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (hist-era-span-fidelity) the reviewed spans, read under a clock */
 import { clockFor } from './proxy-fetch.js';
+import { nearestSheet } from './hist-sheet-pick.js';
 import * as bus from './bus.js';
 import { registerReader, wireLineClick, lineNear, decimalsOf, rowKey, shapesAt } from './border-provenance.js';
 /* (hist-modern-admin) where a past date's borders are today's borders, today's line draws them — js/admin-present.js */
@@ -171,19 +172,15 @@ export function timeBorders(HOST){
        gap midpoint, roughly halving how long a year is shown with the "wrong" borders. A FORWARD jump is only
        taken across a MODEST gap (≤ MAXGAP yr); the huge 1960→1994 gap keeps the earlier snapshot so the 1980s
        never render a post-Soviet world (the faithful state DATES already live in IntMapHistStates). */
-    const MAXGAP=20;
-    const nearest=(y,years)=>{ const LIST=(years&&years.length)?years:YEARS; let prev=null,next=null; for(const yy of LIST){ if(yy<=y){ if(prev===null||yy>prev) prev=yy; } else if(next===null||yy<next) next=yy; }
-      if(prev===null) return next!=null?next:LIST[0];
-      if(next===null) return prev;
-      if((next-y)>=(y-prev)) return prev;
-      /* ⚠ (#R349/#R518) MAXGAP GUARDS A FALLBACK, NOT A SOURCE — so it does not apply below CShapes.
+    const nearest=(y,years)=>nearestSheet(y,(years&&years.length)?years:YEARS,CS_MIN);
+      /* the rule lives in js/hist-sheet-pick.js (the gate calls the same function). ⚠ (#R349/#R518) MAXGAP GUARDS A FALLBACK, NOT A SOURCE — so it does not apply below CShapes.
          These snapshots now run ONLY when the bundle for the band failed to load (data/cshapes.js
          above 1886, data/hist-borders.js from 1689 to 1885), and the guard is there so that degraded
          mode never answers 1980 with the post-Soviet 1994 map. Below CS_MIN the gap between the two
          available snapshots is 65 years wide — exactly what would trip the guard — and refusing the
          forward jump would answer a degraded 1875 with the Congress-of-Vienna map, sixty years stale,
          for no gain. */
-      return (y<CS_MIN || (next-prev)<=MAXGAP) ? next : prev; };
+
     /* ===== (#R117) DAY-EXACT borders 1886–2019 from CShapes 2.0 (Schvitz et al. 2022, ETH Zürich — international
        borders with per-feature validity DATES). Self-hosted simplified copy (data/cshapes.js, ring-pooled).
        aourednik snapshots remain the automatic FALLBACK (and nothing else about that path was removed).
