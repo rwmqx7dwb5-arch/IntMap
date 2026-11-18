@@ -60,6 +60,11 @@ newsjp: Atlas が大きな依頼を独立な部分に分け、子のモデルに
 - 子への指示文が名乗りを手書きしていた。`personaPrompt(…, {mode:'internal'})` を通すようにした（R285）。
 - ai-proxy の写真（`tests/fixtures/atlas-core-split-before.json`）を撮り直した。差分は意図した変更だけ（許可ヘッダ、予約の RPC 呼び出し、`meta` の `costUsd`・`priceKnown`・`spend`）。
 
+## 3c. 容量の上限を上げた理由（check:perf）
+
+- **async**: gzip で +5.2 kB（4,743,807 → 4,749,042 バイト）。うち `atlas-cap-runs` が +5.0 kB。これは委譲の能力の実行部分と、基盤 `js/atlas-delegate.js` の増加で、この PR が買ったものそのもの。
+- **eager**: 起動時に読む分（gzip 1,573,348 バイト）のうち、この PR の増分は 77 バイトだけ（能力表の 1 行と、ai-core のヘッダ 1 行）。2026-11-18 に同じ機械で `025caa33`（このブランチの土台の main）をビルドすると、main だけで 1,573,271 バイトになり、すでに上限 1,565,397 を超えていた。上限を引き下げた bot が測ったのは `3f1c208d` で、その後の main で増えた分が台帳に入っていなかった。`perf-budget --update` が超えた行だけを実測まで上げた（eager.gzip・eager.brotli・async.gzip・`atlas-cap-runs`）。
+
 ## 4. 検査
 
 - `tests/atlas-delegation-checks.test.mjs`（13 件）は、基盤と実行役を実際に評価する。並列実行、依存、再利用、取消、拒否と応答なしの区別、修復は 1 回だけ、方式の環境変数（未設定を 0 と読まない。単体で評価してこの誤りを見つけた）、単価と実測の上限を確かめる。

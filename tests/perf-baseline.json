@@ -1,8 +1,8 @@
 {
   "eager": {
     "raw": 4777288,
-    "gzip": 1565397,
-    "brotli": 1190500,
+    "gzip": 1573348,
+    "brotli": 1196724,
     "requests": 9,
     "modules": 907,
     "cssRaw": 382385,
@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 14097755,
-    "gzip": 4722540,
+    "gzip": 4749042,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -22,7 +22,7 @@
       "atlas-admin1": 12138,
       "atlas-answer-view": 2510,
       "atlas-attach": 23189,
-      "atlas-cap-runs": 854774,
+      "atlas-cap-runs": 859817,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
       "atlas-console": 1042130,
