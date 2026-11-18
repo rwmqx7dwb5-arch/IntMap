@@ -26,3 +26,9 @@ http・地物でない本体・登録と `filter` の鎖・格子の枠と条件
 - 実在の OGC API サーバ（CORS・ページ形式の差）での実測は未実施。
 - CQL2・`datetime` の送出（適合クラスを読んでから）。
 - STAC 検索の入口（次）。
+
+## 4. 起動費用（`check:perf` の天井を上げた理由）
+
+遅延チャンク 3 つ: `atlas-cap-runs` 857.8 → 862.1 kB、`atlas-console` 1024.2 → 1029.5 kB、`gis-core` 572.4 → 578.9 kB。
+`gis-atlas.js` の `ogc:` 入力と、読者向けの拒否文 10 行（en+jp・`gis-panel.js`）と、Atlas への案内文の追記が運ぶバイト。
+どれも分析・Atlas を開いたときだけ読まれ、起動時（eager）の行は動いていない。`perf-budget --update` が上げたのはこの 3 行だけ。
