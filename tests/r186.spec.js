@@ -164,6 +164,10 @@ test('R186 sky: real stars are drawn behind the globe in dark mode', async ({ pa
   /* …and here too: wait for the RESULT — pixels on the canvas — rather than for a stopwatch. The
      camera is still settling for a while after boot and each settle clears and redraws the sky, so a
      fixed sleep is a test of the runner's load (it failed once and passed on retry in CI). */
+  /* (mobile-map-speed) the GPU draws the faint stars on its own canvas (#space-stars) now, which is not read back; the
+     canvas loop paints every star on #space-canvas — the same picture (tests/speed-overhaul-checks.test.mjs ②) — so it is
+     the one counted here */
+  await page.evaluate(() => window.IntMapSky && window.IntMapSky.gpu(false));
   const count = () => {
     const cv = document.getElementById('space-canvas');
     if (!cv || !cv.width) return -1;

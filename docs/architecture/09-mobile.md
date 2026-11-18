@@ -249,6 +249,9 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
   範囲——は持ち続ける）。Noto の rule sheet は `wght@400..700` で頼む。作り直すのは届いた書体の `unicode-range` に入るグリフだけ（`js/map-typography.js` が届いた面の範囲を
   `refreshCjkGlyphs(範囲)` に渡す。何も落ちなければスタイルに変更を告げない）。
 - **ブラウザが描くグリフは 1 字 1 回**（`js/geo-engine.js` `_dedupeGlyphDraws`。進行中の〔スタック・変種・字〕は 1 つの約束。`_newMap` がクラスに 1 度だけ入れる）。
+- **グリフはその字の書体で描き、端末に残す**（`js/geo-engine.js` `_drawWithItsFace`）。描く前にその字を含む subset を `document.fonts.load(font, 字)` で頼み、
+  CSS の block period（100 ms）の間に届けばその書体で 1 回だけ描く。書体で描けたグリフは書体の到着で作り直さず、`js/glyph-store.js` が 1 日（Google Fonts の
+  CSS の max-age）保持する——次のセッションは同じ字を描かない。届かなければ従来どおり代替書体で描き、到着で作り直す。
 - **地名照合器は項目ごとに最初の照合で作る**（`js/place-terms.js`。語の先頭 3 単位と末尾 3 単位が `/i` の大文字化規則で本文の部分文字列かという取りこぼしの無い前置フィルタで
   届きうる項目だけを作る）。
 - **携帯のレイヤー格子は起動時に組まない**（`js/mobile-ui.js` `prebuildGrid`。シートを開いたときか、起動画面が上がってから 3 秒後の `settled` の番で 1 度だけ）。

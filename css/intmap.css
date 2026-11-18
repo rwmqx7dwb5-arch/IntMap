@@ -3695,7 +3695,7 @@
        inserted BEFORE #map in the DOM, so the renderer's own canvas — and therefore the opaque Earth
        — paints on top of it and occludes every star behind the planet for free. `#map` gives up its
        --bg-color while the sky is up, because that colour IS the black the request is about. */
-    #space-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:var(--z-inset); display:none; }
+    #space-canvas,#space-stars{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:var(--z-inset); display:none; }
     body.space-sky-on #map{ background:transparent; }
     body.space-sky-on .map-container{ background:#000; }
     #wind-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:calc(var(--z-inset) + 5); display:none; }

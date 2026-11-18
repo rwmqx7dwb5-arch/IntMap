@@ -79,7 +79,7 @@
   ".alc-panel → 60",
   ".layer-ctrl → 1100",
   ".stats-compare-fixed, .co-compare-fixed → 30",
-  "#space-canvas → 0",
+  "#space-canvas,#space-stars → 0",
   "#wind-canvas → 5",
   ".dash-nav → 6",
   "#live-news-feed .stats-toolbar → 6",

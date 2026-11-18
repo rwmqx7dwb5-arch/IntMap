@@ -186,6 +186,8 @@ camera-math.js                    ↳ カメラ幾何。メルカトル投影・
                                   レンダラに直接訊くので geo-engine.js に残り、`guard` として渡る
 geo-command-log.js                ↳ レンダラ命令の集計と比較。attempted / sent / same / absent と、
                                   「同じ値をもう一度送るか」の判定。既定では数えない（?cmdlog=1）
+glyph-store.js                    ↳ この端末が自分の書体で描いた地名グリフ（SDF）を IndexedDB に 1 日保持する。
+                                  読み・書きは 1 タスク 1 トランザクション。保存先が無ければ何もしない
 click-ownership.js                ↳ クリック登録と排他的所有権の台帳。adapter/handlerを弱参照し、
                                   背景fallbackと地物のownerを区別する。レンダラや地名IDには依存しない
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
@@ -1335,7 +1337,8 @@ space-bodies.js                   ほかに何があるか（探査機・小惑�
 space-cosmos.js                   太陽系の外へ出る距離の梯子 window.IntMapCosmos
 space-events.js                   天文現象 window.IntMapSpaceEvents
 space-sky.js                      地球の背後の実際の星空 window.IntMapSky。暗い星（四角の点）は WebGL の 1 回の描画で塗り、
-                                  明るい星の暈・円盤と月・太陽だけを canvas に描く（WebGL が無ければ全部 canvas）
+                                  明るい星の暈・円盤と月・太陽だけを canvas に描く（WebGL が無ければ全部 canvas）。
+                                  WebGL の canvas は #space-stars としてそのまま表示し、毎フレーム複写しない
 star-catalogue.js                 data/stars.bin の読み手と復号器（1本）——星空とエクスプローラが共有
 ephemeris.js                      惑星の実位置 window.IntMapEphemeris
 night-sky.js                      地上の1点から見た空 window.IntMapNightSky
