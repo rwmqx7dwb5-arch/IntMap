@@ -473,10 +473,15 @@ export function satellitesLive(HOST){
      name the same one, and every call after the first recomputed a catalogue whose answer it
      already held.
      MEASURED, and why it is not the 21 ms the note above budgets: that figure is for elements a
-     day old. SGP4's deep-space integrator (satellite.js `dspace`) re-steps resonant orbits from the
-     element epoch in 720-minute strides on EVERY call — 7.1.0's `sgp4` does not keep the
-     integrator's `atime`/`xli`/`xni` between calls — so its cost grows with the distance from the
-     epoch to the instant. A share link carrying every layer opens with the clock stopped at
+     day old. SGP4's deep-space integrator (satellite.js `dspace`) steps resonant orbits from the
+     element epoch in 720-minute strides, so its cost grows with the distance from the epoch to the
+     instant. ⚠ The figures below are 7.1.0's, whose `sgp4` threw the advanced `atime`/`xli`/`xni`
+     away and so paid that distance on EVERY call. 7.2.0 keeps them on the record (measured
+     2026-11-16, the bundled catalogue's 605 resonant objects 3 years from their epochs: 226 ms the
+     first call, 1.3 ms each call after; a reused record answers exactly what a fresh one does —
+     tests/restored-layers-under-load-checks ③), and the element-span rule above no longer computes
+     1991 at all. The memo below still saves the whole catalogue's ~60 ms per repeated instant.
+     A share link carrying every layer opens with the clock stopped at
      1991-06-25 (the last war layer's start): the whole catalogue then took **1,748 ms** a call
      against **60 ms** at the present (desktop, unthrottled, 8,355 fixes), and the globe's spin
      (`setCenter` every frame) fires `moveend` every frame on top of the 3 s tick. Over 30 s of that

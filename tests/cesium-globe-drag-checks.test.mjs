@@ -37,7 +37,7 @@ const ML = await (async () => {
   const r = await build({
     stdin: {
       contents: [
-        "export {GlobeTransform} from './geo/projection/globe_transform.ts';",
+        "export {createGlobeTransform} from './geo/projection/globe_transform.ts';",
         "export {VerticalPerspectiveCameraHelper} from './geo/projection/vertical_perspective_camera_helper.ts';",
         "export {sphereSurfacePointToCoordinates, computeGlobePanCenter, getZoomAdjustment} from './geo/projection/globe_utils.ts';",
         "export {LngLat} from './geo/lng_lat.ts';",
@@ -68,7 +68,9 @@ function libConst(re) {
 
 const W = 800, H = 600;
 function transform(c) {
-  const tr = new ML.GlobeTransform();
+  /* (deps-minor-patch-nov) 6.18 split the globe into a Transform (camera state, size) and its
+     projection part (GlobeTransform); createGlobeTransform is how the library builds the whole */
+  const tr = ML.createGlobeTransform();
   tr.resize(W, H);
   tr.setZoom(c.zoom); tr.setCenter(new ML.LngLat(c.lng, c.lat));
   tr.setBearing(c.bearing || 0); tr.setPitch(c.pitch || 0);
