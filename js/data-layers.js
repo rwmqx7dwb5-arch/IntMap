@@ -14,7 +14,7 @@
  * ==========================================================================*/
 import { everyTick, stopTick, afterTick, tickKey } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 import { readWorldBank, wbClock, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the fertility row's World Bank read — the one read, under the host's clock (stalled-fetch). (layer-packages) The relay rung of the cable ladder (ownRelayUrl) went with the cables to js/layer-pkg-subcables.js */
-import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
+import './night-lights.js'; import { seamlessTiles } from './antimeridian-seam.js';   /* (dateline-nightsat-seam: the ±180° band stepped over) (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
 import { layerInflight, ownershipLearner } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there; (layer-ownership-by-declaration) which layers a box owns: what its own OFF took off the map */
 import { layerState } from './layer-state.js';   /* (layer-failure-state) what became of a row's request — failed / unobserved and why — kept, shown on the row, told once, readable by Atlas */
 import { untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock (the radar's rvFetch is js/layer-pkg-radar.js now); (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
@@ -1299,7 +1299,7 @@ export function dataLayers(HOST){
       if(!ep){ try{ if(GE().layers.has('lyr-nightsat')) setVis('lyr-nightsat',false); }catch(_){}
         try{ _refreshLegendDates(); }catch(_){} return false; }
       _nightsatErr=false;
-      const tiles=NL().tiles(ep);
+      const tiles=seamlessTiles(NL(),ep,GE());
       if(!_nlWired){ _nlWired=true;
         /* the renderer is the only thing that knows a tile did not arrive */
         try{ GE().events.on('error',(e)=>{ try{ if(e&&e.sourceId==='src-nightsat'){ _nightsatErr=true; _refreshLegendDates(); } }catch(_){} }); }catch(_){} }

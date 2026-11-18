@@ -683,6 +683,7 @@ sky-model.js                      空自身の色（Rayleigh ＋ Mie を march �
 limb-layer.js                     このアプリが描く大気の縁（評価時に IntMapGeoEngine.provideLayerKind で engine へ渡す）
 night-side.js                     地球の夜側 window.IntMapNightSide
 night-lights.js                   夜間光がいつの絵かを決める唯一の場所 window.IntMapNightLights
+antimeridian-seam.js             世界ストリップの ±180° 端の黒い帯を測って埋める唯一の場所（夜間光の raster 層と夜側のモザイクが使う）
 world-base.js                     全球衛星ベース window.IntMapWorldBase
 satellite.js                      衛星画像コントローラ
 sat-proto.js                      衛星タイルの imapsat:// スキーム
