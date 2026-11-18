@@ -403,6 +403,11 @@ export function makeAtlasToolSurface(deps) {
         finish: meta.finish || undefined,
         retrieved: (meta.retrieved && meta.retrieved.length) ? meta.retrieved : undefined,
         webNote: meta.webNote || undefined,
+        /* (atlas-delegation) WHAT THE WORKERS FOUND. research.delegate's card shows only each task's state; the
+           findings are what Atlas integrates, so they are the result — dropped here, the delegation would have run
+           and Atlas would have learned nothing from it (one-pass-or-a-reason §2 ②). */
+        delegated: (meta.delegated && meta.delegated.length) ? meta.delegated : undefined,
+        delegatedCostUsd: meta.delegated ? meta.delegatedCostUsd : undefined,
       };
       /* ══ (#R511) DID THIS CALL CHANGE THE MAP? A fact the loop reads the way it reads `endsTurn`:
          a capability whose registry row PRODUCES the map, and whose run the observer marked
