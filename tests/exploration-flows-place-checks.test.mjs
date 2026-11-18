@@ -24,6 +24,7 @@ import { importModule } from './helpers/import-module.mjs';
 /* read by name (scripts/export-readers.mjs counts static imports) */
 import { framingOf } from '../js/compare.js';
 import { compareArgs, eraPolityAt } from '../js/place-dossier.js';
+import { shapesAt } from '../js/border-provenance.js';
 import { thenOfEntry, historyGo, rowCamera } from '../js/place-history.js';
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
@@ -108,7 +109,7 @@ test('⑤ the country button\'s era answer is the era layer\'s, or nothing', () 
   const kingdom = { properties: { NAME: 'Small Kingdom' }, geometry: box(5, 5, 15, 15) };
   const nameless = { properties: {}, geometry: box(8, 8, 12, 12) };
   const asked = [];
-  const TB = (fs, on = true) => ({ active: () => on, currentFC: () => ({ features: fs }),
+  const TB = (fs, on = true) => ({ active: () => on, currentFC: () => ({ features: fs }), drawnAt: (pt) => (on ? shapesAt(fs, pt, 0) : []),
     resolveHist: (nm) => { asked.push(nm); return nm === 'Small Kingdom' ? { name: 'Small Kingdom', code: 'SKG', wiki: 'Small_Kingdom' } : { name: nm, code: 'BIG' }; } });
   const stats = { SKG: { nameEn: 'Small Kingdom' } };
 
@@ -134,7 +135,8 @@ test('⑥ the wiring that needs the page: the clock listener, the way back, the 
   assert.match(pd, /w\.hidden = live;/);
   assert.match(pd, /dataset\.pd === 'now'\) \{ try \{ IntMapTime\.setNow\(/);
   /* the comparison goes through thenNow, the save through My places' one door */
-  assert.match(pd, /compareTime\.thenNow\(compareArgs\(at, chosen,/);
+  assert.match(pd, /C\.thenNow\(compareArgs\(at, chosen,/);
+  assert.doesNotMatch(pd, /from '\.\/compare\.js'|import\('\.\/compare\.js'\)/, 'the lazy card must not reference js/compare.js (it split eight shared modules out of main: boot requests 9 → 17)');
   assert.match(pd, /M\.savePlace\(HOST\.DB, \{[^}]*source: 'reader' \}\)/);
   /* a related row is a button that keeps its stated basis */
   assert.match(pd, /<button type="button" class="hn-item" data-hn="rel:\$\{i\}"[^`]*<span class="hn-m">\$\{x\.why/);

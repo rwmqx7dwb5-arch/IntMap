@@ -66,8 +66,6 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { whenHost } from './host-door.js';
 import { MapState } from './map-state.js';
 import * as bus from './bus.js';   /* the declared events (js/bus.js) — MAP_ANSWER_EVENT is raised through it */
-import { compareTime } from './compare.js';   /* (exploration-flows) the comparison window's face — its swipe is the card's «Compare two times here» */
-import { shapesAt } from './border-provenance.js';   /* (exploration-flows) the one «which drawn shapes hold this point» test the line card asks */
 import './safe-html.js';
 const WO = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
 const GE = () => IntMapGeoEngine;
@@ -724,7 +722,7 @@ const _eraSeen = new WeakMap();   /* drawn collection → { key, best }: the clo
  *   then says the button is today's country.
  */
 export function eraPolityAt(TB, at, stats) {
-  if (!TB || typeof TB.active !== 'function' || typeof TB.currentFC !== 'function' || typeof TB.resolveHist !== 'function') return null;
+  if (!TB || typeof TB.active !== 'function' || typeof TB.currentFC !== 'function' || typeof TB.drawnAt !== 'function' || typeof TB.resolveHist !== 'function') return null;
   let on = false; try { on = !!TB.active(); } catch (_) { on = false; }
   if (!on) return null;
   let col = null; try { col = TB.currentFC(); } catch (_) { col = null; }
@@ -736,7 +734,7 @@ export function eraPolityAt(TB, at, stats) {
   if (seen && seen.key === key) best = seen.best;
   else {
     let bA = Infinity;
-    for (const f of shapesAt(col.features, { lng: +at.lng, lat: +at.lat }, 0)) { const a = boxArea(f.geometry); if (a < bA) { bA = a; best = f; } }
+    for (const f of TB.drawnAt({ lng: +at.lng, lat: +at.lat }))   /* js/time-borders.js `drawnAt` — the one «which drawn shapes hold this point» test (js/border-provenance.js `shapesAt`), asked of the era layer that draws them */ { const a = boxArea(f.geometry); if (a < bA) { bA = a; best = f; } }
     _eraSeen.set(col, { key, best });
   }
   const p = (best && best.properties) || {}, nm = p.NAME || p.name || null;
@@ -856,7 +854,13 @@ function openCountry(HOST) {
 async function compareHere(HOST) {
   const { L } = words(HOST), at = { lng: current.at.lng, lat: current.at.lat, text: current.at.text };
   let cam = null; try { cam = (await historyModule()).rowCamera(at); } catch (_) { cam = null; }
-  const r = compareTime.thenNow(compareArgs(at, chosen, cam ? cam.zoom : null));
+  /* ⚠⚠ (exploration-flows) THROUGH THE WINDOW'S CONTROLLER, NOT AN IMPORT OF js/compare.js. Measured by bisecting builds
+     (2026-11-18): any reference to compare.js from this lazy card — static or import() — made the bundler split eight shared
+     modules (bus, chronos, map-state, geo-engine, lang-registry, safe-html, proxy-fetch, fetch-deadline) out of main into files
+     of their own, boot requests 9 → 17. js/app-body.js creates the controller at boot (`window.IntMapCompare = compare(HOST)`),
+     and `thenNow` is its own method (compareTime.thenNow forwards to it). */
+  let C = null; try { C = window.IntMapCompare || null; } catch (_) { C = null; }
+  const r = (C && typeof C.thenNow === 'function') ? C.thenNow(compareArgs(at, chosen, cam ? cam.zoom : null)) : null;
   if (!r) { try { HOST.imToast(L('The comparison window is not ready yet', '比較ウィンドウはまだ準備できていません')); } catch (_) { /* nothing to say it with */ } }
 }
 /** «Save this place» — the account's My places (js/my-places.js `savePlace`, the one door every save of a place goes through:
