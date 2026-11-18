@@ -710,6 +710,17 @@ export function makeGisAtlas(core) {
         return made;
       }
 
+      /* 2c. FEATURES AT A URL — `ogc:https://…/collections/<id>` (an OGC API – Features collection).
+         The twin of 2b: only a FEATURE slot takes one, and the answer carries the server's own
+         statement of whether more follows (js/gis-ogcapi.js). */
+      if (/^ogc:https?:\/\//i.test(raw)) {
+        if (wantsRaster) return fail('ogc-needs-a-vector-slot', { slot: slot, ref: raw, why: 'an OGC API – Features collection holds features, not a grid' });
+        const made = await fromOgc(raw.replace(/^ogc:/i, ''), action, cache);
+        if (!made.ok) return made;
+        cache.set(raw, made.id);
+        return made;
+      }
+
       /* 3. a dataset the reader named by its title. Two datasets may share one — the reader chose
          both names — so an ambiguous title is REFUSED WITH THE IDS rather than resolved by order of
          registration, which is a choice neither the reader nor the planner made. */
@@ -810,6 +821,39 @@ export function makeGisAtlas(core) {
       const row = datasetRow(ds);
       row.acquiredFrom = 'url:' + url;
       row.coverage = r.coverage;
+      if (cache && cache.acquired) cache.acquired.push(row);
+      return { ok: true, id: ds.id };
+    }
+
+    /* An OGC API – Features collection becomes a registered vector dataset. The window, the count and
+       the cursor are the planner's; what the server could not say is `coverage`, and the server's own
+       next link is handed back as `next` (a cursor). ⚠ Conditions, columns and time are refused BY
+       NAME — js/gis-ogcapi.js sends none of them, and a server that ignored one would hand back a
+       complete-looking answer to a different question. */
+    async function fromOgc(url, action, cache) {
+      const a = acquireOpts(action, false);
+      if (!a.ok) return a;
+      let G = null;
+      try { G = (await import('./gis-ogcapi.js')).makeGisOgcApi(); } catch (_) { G = null; }
+      if (!G) return fail('map-unavailable', { needs: 'IntMapGisOgcApi' });
+      /* what the source can DO is the source's statement (G.supports); the vocabulary stays js/gis-layers.js's */
+      for (const k of Object.keys(a.opts)) {
+        if (G.supports.indexOf(k) < 0) return fail('ogc-param-not-supported', { param: k, accepts: G.supports.slice() });
+      }
+      const r = await G.readItems(url, { bounds: a.opts.bounds, limit: a.opts.limit, cursor: a.opts.cursor, signal: a.opts.signal || null });
+      if (!r.ok) return fail(r.why, r.detail || { url: url });
+      let ds;
+      try {
+        ds = data.add({
+          title: (action && action.title) ? String(action.title) : (url.replace(/\/+$/, '').split('/').pop() || url),
+          features: r.features, sourceCrs: 'EPSG:4326',
+          provenance: { kind: 'url-features', url: url, bounds: a.opts.bounds || null, at: Date.now(), coverage: r.coverage },
+        });
+      } catch (e) { return fail('add-failed', { message: e && e.message }); }
+      const row = datasetRow(ds);
+      row.acquiredFrom = 'ogc:' + url;
+      row.coverage = r.coverage;
+      if (r.next != null) row.next = r.next;
       if (cache && cache.acquired) cache.acquired.push(row);
       return { ok: true, id: ds.id };
     }
