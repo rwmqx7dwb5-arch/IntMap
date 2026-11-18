@@ -136,7 +136,7 @@ select _sel('user_rpc', $q$select public.record_usage_counts('[{"m":"view","d":"
 reset role;
 
 -- the seeded admin (supabase/seed.sql: 33333333-… has profiles.is_admin = true)
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('admin_sel', 'select count(*)::text from public.usage_counts');
 select _sel('admin_view', $q$select total::text from public.usage_counts_summary(30) where metric = 'view'$q$);

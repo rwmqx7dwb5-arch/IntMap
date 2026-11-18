@@ -172,9 +172,18 @@ flowchart LR
   ⚠ **Per-account quota is not a bound on the project**: an account costs one confirmed e-mail
   address (§8 item 14), so N addresses are N quotas. What bounds the invoice is the
   project-wide ceiling in §5 («Spend ceilings»).
-- **AuthZ — admin:** `profiles.is_admin`, checked by the `is_admin()` SECURITY DEFINER
-  function (with `search_path=''`) inside the admin-only RLS policies. `admin.html`'s login
-  gate is convenience; a non-admin who loads it still gets **zero** rows from RLS.
+- **AuthZ — admin: an administrator ACCOUNT is not enough; the SESSION must have passed the second
+  factor.** `public.is_admin()` (SECURITY DEFINER, `search_path=''`) is true only when
+  `profiles.is_admin` is set **and** the JWT says `aal = aal2` — a session raised by a TOTP challenge,
+  which only the operator console performs. It is the one admin predicate: every admin policy and RPC
+  calls it (`20261118130000_admin_needs_mfa_session.sql` rewrote the ones that read the column inline, and
+  production's own `profiles_select`, by catalogue discovery), and pgTAP 50 fails the day a policy or
+  function decides admin rights another way. Consequence: a stolen app session of an administrator, or
+  the refresh token behind it, mints aal1 tokens and has **no** admin rights. The console's login gate is
+  convenience; a non-admin, or an admin without the second factor, gets **zero** rows from RLS.
+  The console itself is served from its own origin and keeps its session in that tab's
+  `sessionStorage` (§11.4), and the app signs an administrator account out the moment it sees one
+  (`js/auth-ui.js`) — an administrator uses an ordinary account for everyday reading.
 
 ---
 
@@ -1128,9 +1137,16 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    URL fragment until supabase-js reads them and `js/auth-ui.js` clears the address (analytics never
    see it, §7). PKCE would keep them out of the URL, but its code verifier lives in the browser that
    started the flow, so a confirmation link opened on another device would stop working — left as is.
-20. **The admin console shares the app's origin and storage key.** An XSS anywhere in the app reads the
-   same `localStorage`, so it reads an administrator's session as well; `admin.html`'s stricter CSP
-   (§11.4) does not separate them. The close is a separate origin for the console.
+20. ~~**The admin console shares the app's origin and storage key.**~~ — **CLOSED 2026-11-18
+   (admin-origin).** Three layers, each closing what the one before leaves: the console is published from
+   its own origin (the `intmap-admin` organisation's Pages site, a different *site* because github.io is
+   a public suffix — §11.4), so nothing the app's origin stores reaches it; admin rights need an aal2
+   (TOTP) session (§3), so an administrator's session found anywhere else is not an admin session; and
+   the app signs an administrator account out on sight, so such a session is not kept there either.
+   Left: the console's session is readable by an XSS **in the console's own pages** (it is in that
+   tab's `sessionStorage`; Supabase JS cannot use an httpOnly cookie); those pages render every value
+   through `window.IntMapSafe` under a hash-only `script-src`. The second factor is a TOTP secret on the
+   operator's device — enrolment happens in the console on first sign-in.
 21. **`main` is guarded by required CI alone.** The ruleset (§9) requires a PR and the checks, with no
    approving review and no CODEOWNERS — the repository is run by one person, so a review would be the
    same person. The bots that push (data refreshes) hold a write token; it is kept away from
@@ -1176,7 +1192,7 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    **The items above that remain, in order of what to do next** (none was shown exploitable in this review):
    ① item 16 — carry the outside-content mark through the turn history and summaries, and decide the
    confirmation for outward / publishing / destructive actions in code rather than from the model's output;
-   ② item 20 — the admin console on its own origin, and admin accounts not kept signed in on the app;
+   ② item 20 — closed 2026-11-18 (admin-origin: the console on its own origin, admin rights for aal2 sessions only, administrator accounts signed out of the app);
    ③ item 22 — page `shared_collection`'s answer instead of building one unbounded jsonb;
    ④ item 15 — a burst / capacity bound on a signed-in reader's own writes, sized from the measured
    distribution; ⑤ item 14 — a budget and alert on provider tokens (the ceilings count requests, not money).
@@ -1403,6 +1419,20 @@ one thing vanilla CI could not otherwise reproduce.
   only; `referrer` meta is `strict-origin-when-cross-origin`.
 
 ### 11.4 Admin console isolation (`admin.html`)
+**Its own origin (admin-origin, 2026-11-18).** The console pages — every root page that signs in through
+`js/admin-auth.js` — are not published by the app's Pages site. `scripts/admin-site.mjs` discovers them and
+everything they load, and builds them into a site of their own; the `intmap-admin` organisation's
+repository publishes that site at `ADMIN_URL` (`supabase/functions/_shared/site-origin.js`) by calling the
+reusable `.github/workflows/admin-site.yml`, always from the commit the app's site is serving. A second
+repository of the same owner would not have separated anything: it would be served from the same
+`<owner>.github.io` origin. The app's build refuses to copy a console-only file (`vite.config.js`
+copyStatic) and leaves, at each old console address, a page with one link and no script.
+**Session.** The console's Supabase client stores its session in `sessionStorage` under its own key
+(`intmap-admin-auth`) — this tab only, never `localStorage` — and after the password asks for the TOTP
+code (enrolling a factor on first use), because the database grants admin rights to aal2 sessions only
+(§3). The step-up before a destructive import is a fresh TOTP challenge; a second password sign-in would
+drop the session to aal1.
+
 Removed the public **Sign Up** (admins are DB-provisioned; the real boundary is RLS/RPC + the
 profiles guard trigger, so a non-admin who signs in is bounced by `gate()`). Added a **strict CSP**
 (`connect-src` locked to self + this project's own Supabase host — no `*.supabase.co` wildcard, which

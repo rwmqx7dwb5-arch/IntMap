@@ -17,13 +17,16 @@
          operator picked off disk. It calls js/admin-literal.js's PARSER now, which cannot invoke anything, so the whole
          page no longer needs the capability. A CSP that grants eval to a page with no eval in it is
          a grant nobody is watching. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-3OHKZ+ViBKyiUEP3Z8TsVNvIaOif1akJt0G8TYhecw0=' 'sha256-SwRJlvZxS9TaqiYiegX5HvZSBnYn9h5lTxkaEBxX0Cc='; connect-src 'self' https://vpekfwdpurzejrrmacac.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-CePd/QvEPBLVzhJsX/PwUs9f7r458SpqYXScUjzG6JA='; connect-src 'self' https://vpekfwdpurzejrrmacac.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- (growth-loop) the site's address, for the «Growth» tab's campaign links. NOT written here: the build fills the
      token in every copied page (scripts/site-url.mjs fillSiteToken — the address has one owner,
      supabase/functions/_shared/site-origin.js). It sits in an attribute, not in a script, so filling it never
      changes the text a script-src hash names. -->
 <meta name="intmap-site" content="__INTMAP_SITE_URL__">
+<!-- (admin-origin) the backend this console talks to — read by js/admin-auth.js, the one sign-in path of the three consoles. -->
+<meta name="intmap-backend" content="https://vpekfwdpurzejrrmacac.supabase.co">
+<meta name="intmap-anon-key" content="sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0">
 <title>IntMap · Admin Console</title>
 <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
 <style>
@@ -64,6 +67,10 @@
   .modal{ background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:24px; width:100%; max-width:640px; }
   .modal h2{ margin:0 0 16px; font-size:18px; }
   .auth-box{ max-width:380px; margin:8vh auto; }
+  /* (admin-origin) the TOTP step js/admin-auth.js shows after the password */
+  .auth-qr{ display:block; margin:0 auto 12px; width:180px; height:180px; padding:8px; border-radius:12px; background:#fff; }
+  .auth-secret{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; color:var(--text); overflow-wrap:anywhere; user-select:all; }
+  .cmap-reason{ min-width:200px; margin-bottom:6px; }
   .muted{ color:var(--muted); font-size:12.5px; line-height:1.55; }
   .seg{ display:flex; background:var(--in); border-radius:10px; padding:3px; margin-bottom:16px; }
   .seg button{ flex:1; background:transparent; border:none; color:var(--muted); padding:8px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer; }
@@ -95,10 +102,24 @@
     <div class="card auth-box">
       <h1 style="margin:0 0 4px;font-size:20px;">IntMap · Admin</h1>
       <p class="muted" style="margin:0 0 18px;">Restricted console. Sign in with an existing administrator account. There is no self-service sign-up here — admins are provisioned in the database.</p>
-      <div class="field"><label>Email</label><input id="auth-email" type="email" autocomplete="username" placeholder="you@example.com"></div>
-      <div class="field"><label>Password</label><input id="auth-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
-      <button id="auth-submit" class="btn" style="width:100%;">Log In</button>
-      <p id="auth-msg" class="muted" style="margin:14px 0 0;"></p>
+      <div id="auth-pw">
+        <div class="field"><label for="auth-email">Email</label><input id="auth-email" type="email" autocomplete="username" placeholder="you@example.com"></div>
+        <div class="field"><label for="auth-pass">Password</label><input id="auth-pass" data-effect="private" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+        <button id="auth-submit" class="btn" data-effect="private" style="width:100%;">Log In</button>
+      </div>
+      <!-- (admin-origin) the database grants admin rights only to an aal2 session: after the password, the code from the
+           account's authenticator app — or, for an account that has none, the QR code and the key to enrol one. -->
+      <div id="auth-mfa" class="hide">
+        <p id="auth-mfa-lead" class="muted" style="margin:0 0 12px;"></p>
+        <div id="auth-enrol" class="hide">
+          <img id="auth-qr" class="auth-qr" alt="" width="180" height="180">
+          <p class="muted" style="margin:0 0 12px;">Key for manual entry: <code id="auth-secret" class="auth-secret"></code></p>
+        </div>
+        <div class="field"><label for="auth-code">Code</label><input id="auth-code" data-effect="private" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"></div>
+        <button id="auth-verify" class="btn" data-effect="private" style="width:100%;">Verify</button>
+        <button id="auth-cancel" class="btn sec" data-effect="private" style="width:100%;margin-top:8px;">Use another account</button>
+      </div>
+      <p id="auth-msg" class="muted" role="status" aria-live="polite" style="margin:14px 0 0;"></p>
     </div>
   </div>
 </div>
@@ -110,7 +131,7 @@
     <div style="display:flex;align-items:center;gap:14px;">
       <span class="who" id="who"></span>
       <button class="btn sec sm" id="btn-import">Import starter dataset</button>
-      <button class="btn sec sm" id="btn-signout">Sign Out</button>
+      <button class="btn sec sm" id="signout" data-effect="private">Sign Out</button>
     </div>
   </header>
   <div class="wrap">
@@ -156,10 +177,11 @@
             <button class="btn sec sm" id="comm-refresh">Refresh</button>
           </div>
         </div>
-        <div class="seg" style="max-width:520px;">
+        <div class="seg" style="max-width:680px;">
           <button id="cm-seg-posts" class="active">All posts</button>
           <button id="cm-seg-reported"><span data-icon="warning"></span> Reported</button>
           <button id="cm-seg-comments">All comments</button>
+          <button id="cm-seg-maps">Community maps</button>
         </div>
         <p class="muted" id="comm-note" style="margin:0 0 10px;">Tip: run <code>supabase_admin_moderation.sql</code> once so admins can see reports and delete any post/comment.</p>
         <div style="overflow:auto;"><table id="comm-table"><thead><tr id="comm-head"></tr></thead><tbody></tbody></table></div>
@@ -351,13 +373,9 @@
      file is copied beside it (vite.config.js STATIC_ASSETS) — left to Vite, the second entry made js/icons.js a module
      shared by two entries, which no entry chunk may hold, and every app session paid a request for it (MEASURED). -->
 <script type="module" src="./js/icons.js" vite-ignore></script>
-<script>
-  window.SUPABASE_URL='https://vpekfwdpurzejrrmacac.supabase.co';
-  window.SUPABASE_ANON_KEY='sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
-  window.sb=(window.supabase&&window.supabase.createClient)
-    ? window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})
-    : (console.error('[IntMap] Supabase SDK failed to load (vendor/supabase-js.js missing from this deploy).'),null);
-</script>
+<!-- (admin-origin) the ONE sign-in path of the three consoles, window.IntMapAdminAuth: the client (this tab's
+     sessionStorage), the password, the TOTP step to aal2, the is_admin gate, and the step-up before the import below. -->
+<script src="./js/admin-auth.js"></script>
 <script>
 (function(){
   const $=(id)=>document.getElementById(id);
@@ -376,47 +394,23 @@
   let toastT;
   function toast(msg,kind){ const el=$('toast'); el.textContent=msg; el.className='toast show'+(kind?(' '+kind):''); clearTimeout(toastT); toastT=setTimeout(()=>el.className='toast',3200); }
 
-  if(!window.sb){ $('auth-msg').textContent='Supabase SDK failed to load.'; return; }
-
   /* ---------------- AUTH (login only; #R155 — no self-service sign-up in the admin console) ----------------
      Admins are provisioned in the DB (update public.profiles set is_admin=true …). The real boundary is
-     RLS/RPC + the profiles guard trigger (a user cannot self-promote), so this console is a pure
-     administrator surface — a non-admin who signs in is bounced right back out by gate(). */
-  $('auth-submit').onclick=async()=>{
-    const email=$('auth-email').value.trim(), password=$('auth-pass').value;
-    if(!email||!password){ $('auth-msg').textContent='Enter email and password.'; return; }
-    $('auth-submit').disabled=true; $('auth-msg').textContent='Working…';
-    try{
-      const {error}=await sb.auth.signInWithPassword({email,password});
-      /* (#R155) enumeration-safe: never reveal whether the email exists or is an admin. */
-      if(error){ $('auth-msg').textContent='Invalid email or password.'; return; }
-      await gate();
-    }catch(_){ $('auth-msg').textContent='Invalid email or password.'; }
-    finally{ $('auth-submit').disabled=false; }
-  };
-  $('auth-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('auth-submit').click(); });
-  $('btn-signout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
-
-  /* ---------------- GATE: admin check ---------------- */
-  async function gate(){
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session){ show('auth'); return; }
-    const {data:prof,error}=await sb.from('profiles').select('email,is_admin,display_name').eq('id',session.user.id).maybeSingle();
-    if(error){ // table may not exist yet
-      show('auth'); $('auth-msg').textContent='Could not read profiles — did you run supabase_setup.sql in the SQL Editor? ('+error.message+')';
-      return;
-    }
-    if(!prof || !prof.is_admin){
-      show('auth');
-      $('auth-msg').innerHTML='Signed in as <b>'+esc(session.user.email)+'</b> but this account is not an admin.<br>In the SQL Editor run:<br><code>update public.profiles set is_admin = true where email = \''+esc(session.user.email)+'\';</code><br>then log in again.';
-      await sb.auth.signOut();
-      return;
-    }
-    $('who').textContent=session.user.email;
-    show('admin');
-    loadGeo(); loadDash();
-  }
-  function show(v){ $('view-auth').classList.toggle('hide',v!=='auth'); $('view-admin').classList.toggle('hide',v!=='admin'); }
+     RLS/RPC + the profiles guard trigger (a user cannot self-promote) + the aal2 rule (admin rights only for a
+     session that passed TOTP), so this console is a pure administrator surface — a non-admin who signs in is
+     bounced right back out. (admin-origin) The sign-in, the TOTP step and the gate are js/admin-auth.js's, the one
+     path the three consoles share; the two messages below are this console's own. */
+  const sb=window.IntMapAdminAuth.init({
+    prefix:'',
+    onReady(){ loadGeo(); loadDash(); },
+    notAdmin(session,msg){
+      msg.innerHTML='Signed in as <b>'+esc(session.user.email)+'</b> but this account is not an admin.<br>In the SQL Editor run:<br><code>update public.profiles set is_admin = true where email = \''+esc(session.user.email)+'\';</code><br>then log in again.';
+    },
+    profileError(error,session,msg){ // table may not exist yet
+      msg.textContent='Could not read profiles — did you run supabase_setup.sql in the SQL Editor? ('+error.message+')';
+    },
+  });
+  if(!sb) return;
 
   /* ---------------- TABS ---------------- */
   document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
@@ -641,7 +635,7 @@
     $('g-copy').onclick=gCopy;
     gLinkBuild();
     try{
-      const r=await fetch('./sitemap.xml',{cache:'no-store'});
+      const r=await fetch(gSite().base+'sitemap.xml',{cache:'no-store'});   /* (admin-origin) the APP's sitemap — the console has its own origin */
       if(!r.ok) return;
       const doc=new DOMParser().parseFromString(await r.text(),'application/xml');
       const site=gSite(), sel=$('g-dest');
@@ -927,13 +921,69 @@
   $('cm-seg-posts').onclick=()=>{ commView='posts'; cmSeg(); loadComm(); };
   $('cm-seg-reported').onclick=()=>{ commView='reported'; cmSeg(); loadComm(); };
   $('cm-seg-comments').onclick=()=>{ commView='comments'; cmSeg(); loadComm(); };
+  $('cm-seg-maps').onclick=()=>{ commView='maps'; cmSeg(); loadComm(); };
   $('comm-refresh').onclick=()=>loadComm();
-  function cmSeg(){ $('cm-seg-posts').classList.toggle('active',commView==='posts'); $('cm-seg-reported').classList.toggle('active',commView==='reported'); $('cm-seg-comments').classList.toggle('active',commView==='comments'); }
+  function cmSeg(){ ['posts','reported','comments','maps'].forEach(v=>$('cm-seg-'+v).classList.toggle('active',commView===v)); }
+  /* (admin-origin) COMMUNITY MAPS — the reported (or held) community map collections and an administrator's three
+     decisions, moved here from the app's Community maps sheet (js/community-maps.js) when admin accounts stopped staying
+     signed in there. The queue is community_map_reports_admin() (a GET: read-only), the decision moderate_community_map()
+     — both administrators only (42501), the database's rule, not this page's. Hiding needs a reason the owner reads
+     (the function refuses one without, 22023; 300 characters at most). Every value is untrusted and goes through html``.
+     The reason words are the ones readers chose from in the app (js/community-maps.js REPORT_REASONS / reasonLabel);
+     a word this console does not know is shown as the database wrote it rather than guessed. */
+  const CMAP_REASON={ spam:'Spam or advertising', offensive:'Offensive or hateful', personal_info:'Someone’s personal information',
+    copyright:'Copies someone else’s work', misleading:'Deliberately misleading', other:'Another reason' };
+  const CMAP_STATUS={ open:'not yet settled', dismissed:'dismissed', actioned:'acted on' };
+  const CMAP_REASON_MAX=300;
+  function cmapErr(error){
+    const c=error&&error.code;
+    if(c==='42501') return 'Administrators only — sign in again with your authenticator code.';
+    if(c==='22023') return 'Hiding needs a reason the owner will read.';
+    if(c==='PGRST202'||c==='42883') return 'Community maps are not available on this server yet.';
+    return (error&&error.message)||String(error);
+  }
+  async function loadCommunityMaps(head,tb){
+    head.innerHTML='<th>Reports</th><th>Collection</th><th>Reasons</th><th>Decision</th>';
+    const {data,error}=await sb.rpc('community_map_reports_admin',{},{get:true});
+    if(error){ tb.innerHTML=html`<tr><td colspan="4" class="muted">${cmapErr(error)}</td></tr>`; $('comm-count').textContent=''; return; }
+    const items=Array.isArray(data)?data:[];
+    $('comm-count').textContent='· '+items.length+' collections';
+    if(!items.length){ tb.innerHTML='<tr><td colspan="4" class="muted">No reports.</td></tr>'; return; }
+    tb.innerHTML=items.map((it,i)=>{
+      const reasons=(Array.isArray(it.reasons)?it.reasons:[]).map(r=>html`<li>${CMAP_REASON[r.reason]||r.reason}${r.note?': '+r.note:''} <span class="muted">(${CMAP_STATUS[r.status]||r.status})</span></li>`);   /* an array of markup objects: the tag places each */
+      return html`<tr>
+        <td><span class="pill" style="${(+it.open||0)>0?'background:var(--danger);color:#fff':''}">${+it.open||0} / ${+it.total||0}</span><div class="muted" style="font-size:11px;">open / all</div></td>
+        <td><b>${it.title||'(no title)'}</b><div class="muted" style="font-size:11.5px;">by ${it.author||'—'}${it.published?'':' · not published now'}</div>${it.hidden_at?html`<div class="muted" style="font-size:11.5px;">Hidden ${fmtTime(it.hidden_at)}: ${it.hidden_reason||''}</div>`:''}</td>
+        <td style="max-width:360px;"><ul style="margin:0;padding-left:16px;">${reasons}</ul></td>
+        <td style="min-width:240px;"><label class="muted" style="display:block;font-size:11px;">Reason shown to the owner (required to hide)<input class="cmap-reason" id="cmap-why-${i}" maxlength="300" style="display:block;width:100%;margin-top:4px;"></label>
+          <div class="row-actions" style="flex-wrap:wrap;">
+            <button class="btn danger sm" data-effect="outward" data-cmap-act="hide" data-cmap-i="${i}">Take out of Community maps</button>
+            <button class="btn sm" data-effect="outward" data-cmap-act="restore" data-cmap-i="${i}">Put back</button>
+            <button class="btn sec sm" data-effect="private" data-cmap-act="dismiss" data-cmap-i="${i}">Dismiss reports</button>
+          </div></td></tr>`;
+    }).join('');
+    tb.querySelectorAll('[data-cmap-act]').forEach(b=>b.onclick=()=>moderateCommunityMap(items[+b.dataset.cmapI],b.dataset.cmapAct,$('cmap-why-'+b.dataset.cmapI).value,b));
+  }
+  async function moderateCommunityMap(it,action,why,btn){
+    if(!it) return;
+    const reason=String(why||'').trim().slice(0,CMAP_REASON_MAX);
+    if(action==='hide'&&!reason){ toast('Hiding needs a reason the owner will read.','err'); return; }
+    btn.disabled=true;
+    try{
+      const {data,error}=await sb.rpc('moderate_community_map',{p_ref:String(it.ref||''),p_action:action,p_reason:reason||null});
+      if(error){ toast(cmapErr(error),'err'); return; }
+      if(!(data&&data.ok)){ toast(data&&data.error==='not_found'?'That collection is no longer in the queue.':('Not done: '+((data&&data.error)||'no answer')),'err'); return; }
+      toast(action==='hide'?'Taken out of Community maps':action==='restore'?'Put back in Community maps':'Reports dismissed','ok');
+      loadComm();
+    }catch(e){ toast(cmapErr(e),'err'); }
+    finally{ btn.disabled=false; }
+  }
   function fmtTime(t){ try{ return new Date(t).toLocaleString(); }catch(_){ return t; } }
   async function loadComm(){
     const head=$('comm-head'), tb=$('comm-table').querySelector('tbody');
     tb.innerHTML='<tr><td colspan="7" class="muted">Loading…</td></tr>';
     try{
+      if(commView==='maps'){ await loadCommunityMaps(head,tb); return; }
       if(commView==='comments'){
         head.innerHTML='<th>When</th><th>Author</th><th>Comment</th><th></th>';
         const {data,error}=await sb.from('community_comments').select('id,author_name,body,created_at,post_id').order('created_at',{ascending:false}).limit(500);
@@ -1151,13 +1201,13 @@
     }
     if(!confirm('This DELETES all current Geo Pins and Dashboard Cards, then loads the original defaults from intmap.html. Continue?')) return;
     /* (#R155 SEC) Re-authenticate before this destructive, irreversible bulk operation (a "sudo" gate for
-       critical admin actions). Proves the person at the keyboard — not just an open session — is the admin. */
-    { const {data:{session}}=await sb.auth.getSession(); const email=session&&session.user&&session.user.email;
-      if(!email){ toast('Session expired — please sign in again.','err'); return; }
-      const pw=window.prompt('Confirm your admin password to replace ALL geo pins + dashboard cards:');
-      if(pw==null){ return; }
-      const {error:raErr}=await sb.auth.signInWithPassword({email,password:pw});
-      if(raErr){ toast('Re-authentication failed — import cancelled.','err'); return; } }
+       critical admin actions). Proves the person at the keyboard — not just an open session — is the admin.
+       (admin-origin) The proof is a fresh TOTP challenge against the account's verified factor: a second password
+       sign-in would start a NEW session at aal1, and an aal1 session has no admin rights, so the import that
+       follows would be refused by the database. */
+    { const r=await window.IntMapAdminAuth.stepUp('Enter the 6-digit code from your authenticator app to replace ALL geo pins + dashboard cards:');
+      if(r.cancelled){ return; }
+      if(!r.ok){ toast('Re-authentication failed — import cancelled. '+(r.error||''),'err'); return; } }
     $('btn-import').disabled=true; toast('Importing…');
     try{
       /* WARNING: PARSED, NOT RUN. `txt` is a file the operator chose off disk (getIntmapSource falls

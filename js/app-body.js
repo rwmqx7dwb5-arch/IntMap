@@ -3345,7 +3345,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
    *  and realtime. This block turns the prototype into a multi-user service.
    * ===================================================================== */
   const DB = window.sb;        /* Supabase client (null only if the SDK failed to load) */
-  let currentUser = null;      /* {id,email,name,isAdmin} when logged in, else null */
+  let currentUser = null;      /* {id,email,name,isPro,provider} when logged in, else null */
   function imToast(msg){ try{ aiToast(msg); }catch(_){ try{ satToast(msg); }catch(__){ try{ alert(msg); }catch(___){} } } }
 
   /* ---------- DATA: dashboard_cards -> extendedDashDB ---------- */

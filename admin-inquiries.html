@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="./css/admin-inquiries.css">
 <script src="vendor/supabase-js.js"></script>
 <script src="./js/safe-html.js"></script>
+<script src="./js/admin-auth.js"></script>
 <script src="./js/admin-inquiries.js"></script>
 </head>
 <body>
@@ -23,10 +24,22 @@
 </header>
 <div id="aq-view-auth" class="auth">
   <h2>Sign in as an administrator</h2>
-  <input id="aq-auth-email" type="email" autocomplete="username" placeholder="Email">
-  <input id="aq-auth-pass" data-effect="private" type="password" autocomplete="current-password" placeholder="Password">
-  <button class="btn" id="aq-auth-submit" type="button" data-effect="private">Sign in</button>
-  <p id="aq-auth-msg"></p>
+  <div id="aq-auth-pw" class="auth-step">
+    <input id="aq-auth-email" type="email" autocomplete="username" placeholder="Email">
+    <input id="aq-auth-pass" data-effect="private" type="password" autocomplete="current-password" placeholder="Password">
+    <button class="btn" id="aq-auth-submit" type="button" data-effect="private">Sign in</button>
+  </div>
+  <div id="aq-auth-mfa" class="auth-step hide">
+    <p id="aq-auth-mfa-lead" class="auth-lead"></p>
+    <div id="aq-auth-enrol" class="auth-step hide">
+      <img id="aq-auth-qr" class="auth-qr" alt="QR code to add IntMap to an authenticator app" width="180" height="180">
+      <p class="auth-lead">Key for manual entry: <code id="aq-auth-secret" class="auth-secret"></code></p>
+    </div>
+    <input id="aq-auth-code" data-effect="private" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6-digit code" aria-label="6-digit code from your authenticator app">
+    <button class="btn" id="aq-auth-verify" type="button" data-effect="private">Verify</button>
+    <button class="btn sec" id="aq-auth-cancel" type="button" data-effect="private">Use another account</button>
+  </div>
+  <p id="aq-auth-msg" class="auth-msg" role="status" aria-live="polite"></p>
 </div>
 <main id="aq-view-admin" class="hide" data-statuses="new,replied,closed,spam" data-stages="lead,talking,trial,adopted,declined" data-closed-stages="adopted,declined" data-not-lead-purposes="supporter_listing" data-not-lead-statuses="spam" data-next-step-max="300">
   <div class="tabs">

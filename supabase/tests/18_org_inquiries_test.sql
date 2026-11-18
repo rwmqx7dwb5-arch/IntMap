@@ -101,7 +101,7 @@ select _dml('user_upd', $q$update public.org_inquiries set status = 'closed'$q$)
 select _dml('user_del', 'delete from public.org_inquiries');
 reset role;
 
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _sel('admin_sel', 'select count(*)::text from public.org_inquiries');
 select _dml('admin_triage', $q$update public.org_inquiries set status = 'replied', admin_note = 'answered by mail', handled_at = now() where email = 'desk@example.org'$q$);
@@ -122,7 +122,7 @@ select is((select status from public.org_inquiries where email = 'desk@example.o
 -- ─────────────────────────────────────────────────────────────────────────────
 --  4. SUPPORTERS
 -- ─────────────────────────────────────────────────────────────────────────────
-select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select _dml('admin_sup', $q$insert into public.supporters (display_name, since_month, note, consented_at) values ('A. Reader', date '2026-10-01', 'For the history maps.', now()), ('Hidden One', date '2026-09-01', null, now())$q$);
 select _dml('admin_hide', $q$update public.supporters set listed = false where display_name = 'Hidden One'$q$);

@@ -15,7 +15,6 @@
  *    unlist_community_map()    out of the directory, the link kept
  *    my_collection_reach()     the owner's counts, per published collection
  *    report_community_map()    a signed-in reader's report (one per account; again = update)
- *    community_map_reports_admin() / moderate_community_map()   an administrator's queue and decision
  *
  *  Reached from: the account sheet (js/auth-ui.js «Community maps»), the gallery (js/showcase-gallery.js), the Library's
  *  share panel (js/my-places.js — listing), the shared collection's card (js/shared-collection.js — its listing, the
@@ -223,32 +222,6 @@ async function reportMap(DB, token, reason, note) {
   } catch (_) { return { ok: false, error: 'failed' }; }
 }
 
-/** An administrator's queue (42501 → 'sign_in' for anyone else). */
-async function adminQueue(DB) {
-  if (!DB) return { ok: false, error: 'unavailable' };
-  try {
-    const { data, error } = await DB.rpc('community_map_reports_admin', {}, { get: true });
-    if (error) return { ok: false, error: errOf(error) };
-    return { ok: true, items: Array.isArray(data) ? data : [] };
-  } catch (_) { return { ok: false, error: 'failed' }; }
-}
-
-/** An administrator's decision on a queue entry's `ref` (or the token the collection is published under — the one
- *  argument moderate_community_map() takes, p_ref): 'hide' (with the reason the owner reads) | 'restore' | 'dismiss'. */
-async function moderate(DB, ref, action, reason) {
-  if (!DB) return { ok: false, error: 'unavailable' };
-  try {
-    const { data, error } = await DB.rpc('moderate_community_map', { p_ref: String(ref || ''), p_action: action, p_reason: reason == null ? null : String(reason).slice(0, 300) });
-    if (error) return { ok: false, error: errOf(error) };
-    return data && data.ok ? { ok: true } : { ok: false, error: (data && data.error) || 'failed' };
-  } catch (_) { return { ok: false, error: 'failed' }; }
-}
-
-/** Is the signed-in reader an administrator? (the database's own answer — public.is_admin()) */
-async function isAdmin(DB) {
-  try { const { data, error } = await DB.rpc('is_admin', {}, { get: true }); return !error && data === true; } catch (_) { return false; }
-}
-
 /** The area the map is showing now, or null (the renderer is the one that knows). */
 export function viewBbox() {
   try { const GE = IntMapGeoEngine; if (GE && GE.hasRenderer && GE.hasRenderer()) return bboxOfBounds(GE.camera.getBounds()); } catch (_) { }
@@ -289,10 +262,6 @@ function ensureStyle() {
     + '.cmm-acts .acct-btn{flex:1;}'
     + '.cmm-more{width:100%;margin:4px 0 10px;}'
     + '.cmm-empty{font-size:13px;color:var(--text-muted);padding:14px 4px;}'
-    + '.cmm-mod{margin:14px 0 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,149,0,.45);}'
-    + '.cmm-mod h3{margin:0 0 6px;font-size:13px;font-weight:700;}'
-    + '.cmm-mod .cmm-acts{flex-direction:column;gap:6px;}'
-    + '.cmm-mod input{width:100%;box-sizing:border-box;padding:7px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.22);background:var(--card-bg);color:var(--text-main);font-size:12px;margin:0 0 6px;}'
     /* the Library's listing box (js/my-places.js) */
     + '.cmm-list-box{margin:10px 0 0;padding:10px 0 0;box-shadow:inset 0 0.5px 0 rgba(128,128,128,0.3);}'
     + '.cmm-list-box input,.cmm-list-box textarea{width:100%;box-sizing:border-box;padding:7px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.22);background:var(--card-bg);color:var(--text-main);font-size:12.5px;margin:0 0 8px;font-family:inherit;}'
@@ -357,13 +326,12 @@ export async function openCommunityMaps(HOST, opts) {
   const more = el('button', { cls: 'acct-btn acct-btn-quiet cmm-more', type: 'button', text: T('Show more', 'さらに表示') });
   more.dataset.effect = 'none';
   more.hidden = true;
-  const modSlot = el('div');
   const close = el('button', { cls: 'acct-close', id: 'cmm-close', type: 'button', text: T('Close', '閉じる') });
   const sheet = el('div', { cls: 'acct-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'cmm-h', tabindex: '-1' }, [
     el('h2', { cls: 'acct-h', id: 'cmm-h', text: T('Community maps', 'みんなの地図') }),
     el('p', { cls: 'cmm-lead', text: T('Collections of places, maps and tours that readers chose to share with everyone. Open one on the map; add it to your Library to build on it — what you list from it says where it came from. To share your own, publish a collection in your Library and list it.',
       '読者がみんなに向けて公開した、場所・地図・ツアーのコレクションです。地図で開き、ライブラリに追加すればそれを元に作れます（元にしたものから掲載すると、元の地図が示されます）。自分のものを載せるには、ライブラリでコレクションを公開して掲載してください。') }),
-    search, seg, area, msg, list, more, modSlot, close,
+    search, seg, area, msg, list, more, close,
   ]);
   const m = el('div', { id: 'cmm-modal' }, [sheet]);
   m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:calc(var(--z-toast) + 2001);padding:20px;';
@@ -416,44 +384,7 @@ export async function openCommunityMaps(HOST, opts) {
   } catch (_) { document.body.appendChild(m); }
   try { sheet.focus(); } catch (_) { }
   await load(false);
-  if (HOST && HOST.user && HOST.DB && await isAdmin(HOST.DB)) moderation(HOST, modSlot, lang);
   return { ok: true, hasMore: st.hasMore, items: st.items.slice() };
-}
-
-/* ── an administrator's part of the sheet: the reported collections and the three decisions ─────────── */
-async function moderation(HOST, slot, lang) {
-  const T = IntMapLang.pick(() => lang);
-  const q = await adminQueue(HOST.DB);
-  if (!q.ok) return;
-  slot.textContent = '';
-  const box = el('section', { cls: 'cmm-mod' }, [el('h3', { text: T('Reported collections (administrators)', '報告されたコレクション（管理者）') + ' · ' + q.items.length })]);
-  if (!q.items.length) box.appendChild(el('p', { cls: 'cmm-meta', text: T('No reports.', '報告はありません。') }));
-  q.items.forEach((it) => {
-    const status = { open: T('not yet settled', '未対応'), dismissed: T('dismissed', '却下'), actioned: T('acted on', '対応済み') };
-    const reasons = (Array.isArray(it.reasons) ? it.reasons : []).map((r) => reasonLabel(r.reason, lang) + (r.note ? ': ' + r.note : '') + ' (' + (status[r.status] || r.status) + ')').join(' / ');
-    const why = el('input', { type: 'text', maxlength: '300', 'aria-label': T('Reason shown to the owner', '持ち主に示す理由'), placeholder: T('Reason shown to the owner (required to hide)', '持ち主に示す理由（外すときは必須）') });
-    const res = el('p', { cls: 'cmm-meta', role: 'status' });
-    const act = (action, text) => {
-      const b = el('button', { cls: 'acct-btn acct-btn-quiet', type: 'button', text });
-      /* hiding and restoring change what every reader finds; dismissing settles the queue (scripts/data-effects.mjs) */
-      if (action === 'dismiss') b.dataset.effect = 'private'; else b.dataset.effect = 'outward';
-      b.onclick = async () => {
-        const r = await moderate(HOST.DB, it.ref, action, why.value);   /* the queue's ref: the collection, published or not */
-        res.textContent = r.ok ? T('Done.', '完了しました。') : failureText(r.error, lang);
-        if (r.ok) moderation(HOST, slot, lang);
-      };
-      return b;
-    };
-    box.appendChild(el('div', { cls: 'cmm-card' }, [
-      el('h3', { text: String(it.title || '') }),
-      el('p', { cls: 'cmm-by', text: T('by ', '作成: ') + String(it.author || '—') + (it.published ? '' : T(' · not published now', ' · 現在は非公開')) + (it.hidden_at ? T(' · hidden: ', ' · 非表示: ') + String(it.hidden_reason || '') : '') }),
-      el('p', { cls: 'cmm-meta', text: T('Open reports: ', '未対応の報告: ') + (+it.open || 0) + ' / ' + (+it.total || 0) + ' — ' + reasons }),
-      why,
-      el('div', { cls: 'cmm-acts' }, [act('hide', T('Take out of Community maps', 'みんなの地図から外す')), act('restore', T('Put back in Community maps', 'みんなの地図に戻す')), act('dismiss', T('Dismiss reports', '報告を却下'))]),
-      res,
-    ]));
-  });
-  slot.appendChild(box);
 }
 
 /* ══ THE LIBRARY'S LISTING BOX — inside a published collection's share panel (js/my-places.js) ═══════════════

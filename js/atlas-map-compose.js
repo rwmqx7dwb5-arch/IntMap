@@ -697,7 +697,13 @@ export function makeAtlasMapCompose(deps) {
         const A = endpoint(x.from), B = endpoint(x.to);
         if (!A || !B || A === B) { skipped.push({ from: str(x.from, 80), to: str(x.to, 80), reason: (!A || !B) ? 'endpoint_unplaced' : 'same_endpoint' }); continue; }
         const type = str(x.type, 20).toLowerCase() || 'link';
-        const basis = BASES.indexOf(str(x.basis, 20).toLowerCase()) >= 0 ? str(x.basis, 20).toLowerCase() : 'schematic';
+        /* (atlas-real-shapes) A ROUTE IS COMPUTED UNLESS ASKED OTHERWISE — the reader's decision 2026-11-18 (「海路計算を既定に」). A
+           `route` with no basis used to be a great circle over whatever lay between, so 「ペルシャ湾から日本までの航路」 crossed
+           land unless the model remembered to ask. Now it is the sea-route engine's path; a leg with no path over water is
+           `sea_path_failed` and NOT drawn (never an arc in its place), and "basis":"schematic" still asks for the arc. Every
+           other relation type keeps the schematic default: a flow or an influence is a claim, not a path. */
+        const askedBasis = str(x.basis, 20).toLowerCase();
+        const basis = BASES.indexOf(askedBasis) >= 0 ? askedBasis : (type === 'route' ? 'computed' : 'schematic');
         const viaAsked = (Array.isArray(x.via) ? x.via : (x.via != null ? [x.via] : []));
         const vias = [], viaMissing = [];
         viaAsked.forEach((v) => { const p = viaPoint(v); if (p) vias.push(p); else viaMissing.push(str(v && typeof v === 'object' ? v.name : v, 120)); });
