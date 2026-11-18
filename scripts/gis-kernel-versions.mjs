@@ -305,6 +305,7 @@ export const NOT_A_KERNEL = {
   'js/gis-layers.js': 'the bridge to what the renderer holds; same reason as js/gis-sources.js',
   'js/gis-shapefile.js': 'a reader of bytes — what it decoded is the dataset, and a re-import is a new import, not a replay',
   'js/gis-geopackage.js': 'a reader of bytes; same reason as js/gis-shapefile.js',
+  'js/gis-cog.js': 'a window of a file at a URL: the values are js/gis-geotiff.js and js/gis-warp.js; what it could not answer travels in `coverage`, and the dataset it feeds replays by its recorded provenance, not a recipe',
   'js/gis-geotiff.js': 'a reader of bytes; same reason as js/gis-shapefile.js',
   'js/gis-worker.js': 'moves work off the main thread; the arithmetic it runs belongs to the kernel that registered it',
 };
