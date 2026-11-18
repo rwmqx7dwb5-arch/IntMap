@@ -10,7 +10,7 @@
 
 ### 6.1 テーブル
 
-**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **51 表**（`collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
+**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **52 表**（`ai_turn_spend`（1 つの質問と、それが委譲した子の実費の予約と精算・§5） / `collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
 `map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の
 調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` / `user_prefs` /
 `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` / `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） / `community_*` 5 表 / `feedback` /

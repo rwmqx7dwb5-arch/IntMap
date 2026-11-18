@@ -135,6 +135,66 @@ export async function openTurn(db, account, o) {
   };
 }
 
+/* (atlas-delegation) openChildTurn — a worker's call under a live parent turn (public.consume_ai_child_turn).
+     → { allowed, charged:false, used, calls, children, reason, gen }
+     reason '' | 'delegation_key' | 'delegation_parent' | 'delegation_children' | 'turn_calls'
+   Never a charge: the parent's first call paid for the request. The developer, exempt from the ledger,
+   opens nothing (as openTurn). Closes through settleTurn / refundTurn with the child's own key. */
+export async function openChildTurn(db, account, o) {
+  const opt = o || {};
+  if (account && account.isDev) return { allowed: true, charged: false, used: 0, calls: 0, children: 0, reason: "", gen: null };
+  let row = null;
+  try {
+    const { data, error } = await db.rpc("consume_ai_child_turn", {
+      p_user: account.id, p_parent: String(opt.parent || ""), p_child: String(opt.turn || ""),
+      p_max_children: opt.maxChildren, p_max_calls: opt.maxCalls, p_ttl_seconds: opt.ttlSeconds,
+    });
+    if (error) throw error;
+    row = firstRow(data);
+  } catch (_) { throw new LedgerUnavailable(); }
+  if (!row) throw new LedgerUnavailable();
+  return {
+    allowed: !!row.allowed, charged: false,
+    used: Number(row.used) || 0, calls: Number(row.calls) || 0, children: Number(row.children) || 0,
+    reason: row.allowed ? "" : String(row.reason || "delegation_refused"),
+    gen: typeof row.gen === "string" && row.gen ? row.gen : null,
+  };
+}
+
+/* (atlas-delegation) reserveSpend — hold an estimated cost against a turn family's cap (public.reserve_ai_spend).
+     → { allowed, reserved, spent }  (micro-dollars). Throws LedgerUnavailable: an invoice fence that cannot be
+   consulted cannot say the request is inside it (the direction every fence here fails in). */
+export async function reserveSpend(db, account, o) {
+  const opt = o || {};
+  if (account && account.isDev) return { allowed: true, reserved: 0, spent: 0 };
+  let row = null;
+  try {
+    const { data, error } = await db.rpc("reserve_ai_spend", {
+      p_user: account.id, p_root: String(opt.root || ""), p_micros: Math.max(0, Math.ceil(Number(opt.micros) || 0)),
+      p_cap_micros: Math.max(0, Math.floor(Number(opt.capMicros) || 0)), p_ttl_seconds: opt.ttlSeconds,
+    });
+    if (error) throw error;
+    row = firstRow(data);
+  } catch (_) { throw new LedgerUnavailable(); }
+  if (!row) throw new LedgerUnavailable();
+  return { allowed: !!row.allowed, reserved: Number(row.reserved_micros) || 0, spent: Number(row.spent_micros) || 0 };
+}
+
+/* (atlas-delegation) settleSpend — replace a reservation with what was billed. → 'settled' | 'not_found' | 'error' | 'skipped'.
+   Not retried: an unsettled reservation over-counts until the family's row expires, and over-counting is the safe side. */
+export async function settleSpend(db, account, root, reservedMicros, actualMicros) {
+  if (!account || account.isDev || !root) return "skipped";
+  try {
+    const { data, error } = await db.rpc("settle_ai_spend", {
+      p_user: account.id, p_root: String(root), p_reserved: Math.max(0, Math.ceil(Number(reservedMicros) || 0)),
+      p_actual: Math.max(0, Math.ceil(Number(actualMicros) || 0)),
+    });
+    if (error) return "error";
+    const v = Array.isArray(data) ? data[0] : data;
+    return v === true ? "settled" : (v === false ? "not_found" : "error");
+  } catch (_) { return "error"; }
+}
+
 /* (security-review-nov) WHAT A CLOSE ANSWERED. supabase-js reports a database error as a RESOLVED
    { data, error } — it does not throw — so «no exception» is not «done». Before this, both doors said true
    for an RPC that had failed, and settle said true for a turn that matched no row. Each door now answers

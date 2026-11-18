@@ -45,6 +45,10 @@ const READ = () => {
     refAdmin1: n('ref-admin1'), imtaLine: n('imta-line'), imtaVt: n('imta-vt-line'),
     eraLine: Math.max(0, n('imta-line')) + Math.max(0, n('imta-vt-line')),
     ofmAdmin1: n('ofm-admin1'), imtaLbl: n('imta-lbl'),
+    /* (hist-modern-admin) the present-day names drawn, by OpenMapTiles' feature id, and the ids of the names whose unit is in force
+       at the shown date (js/time-admin1.js `presentNames`) — a past map may name an unchanged unit by today's name, and nothing else */
+    ofmIds: (() => { try { return [...new Set(window.__imap.queryRenderedFeatures({ layers: ['ofm-admin1'] }).map((f) => f.id))]; } catch (_) { return []; } })(),
+    presentIds: (window.IntMapTimeAdmin1 && window.IntMapTimeAdmin1.presentNames && window.IntMapTimeAdmin1.presentNames()) || [],
     eraNames: names('imta-lbl'),
     active: !!(window.IntMapTimeAdmin1 && window.IntMapTimeAdmin1.active()),
     units: (window.IntMapTimeAdmin1 && window.IntMapTimeAdmin1.coverage().units) || 0,
@@ -67,8 +71,9 @@ const eraDrawn = (page) => page.waitForFunction(() => {
               + m.queryRenderedFeatures({ layers: ['imta-vt-line'] }).length;
     return era > 0
         && m.queryRenderedFeatures({ layers: ['imta-lbl'] }).length > 0
-        && m.getLayoutProperty('ofm-admin1', 'visibility') === 'none'
-        && m.queryRenderedFeatures({ layers: ['ofm-admin1'] }).length === 0;
+        /* (hist-modern-admin) a present-day name may stand only where the date's unit is today's (`presentNames`) */
+        && (() => { const ok = new Set((window.IntMapTimeAdmin1 && window.IntMapTimeAdmin1.presentNames && window.IntMapTimeAdmin1.presentNames()) || []);
+                    return m.queryRenderedFeatures({ layers: ['ofm-admin1'] }).every((f) => ok.has(f.id)); })();
   } catch (_) { return false; }
 }, null, { timeout: 90000, polling: 200 });
 
@@ -107,7 +112,10 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
   expect(past.active, 'the admin-1 time machine is travelling').toBe(true);
   /* ⚠⚠⚠ 修正前はここが「1900年の地図の上の 2026 年の州境」だった。 */
   expect(past.refAdmin1, "today's province boundaries must not be drawn under a past date").toBe(0);
-  expect(past.ofmAdmin1, "today's province NAMES must not be drawn either").toBe(0);
+  /* ⚠ (hist-modern-admin) NOT «zero» any more: since the rule «a unit still in force is named by today's label» (js/time-admin1.js),
+     an unchanged unit carries today's name in 1900 too. The defect this line was written for is a name of a unit the date did
+     NOT have — so every present-day name drawn must be one whose unit is in force then. */
+  expect(past.ofmIds.filter((id) => past.presentIds.indexOf(id) < 0), "today's province NAMES for units the date did not have").toEqual([]);
   expect(past.eraLine, 'the era province boundaries are drawn').toBeGreaterThan(0);
   expect(past.imtaLbl, 'the era province names are placed').toBeGreaterThan(0);
   expect(past.units, 'coverage() reports what is in force').toBeGreaterThan(300);
@@ -186,14 +194,16 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
   const r564 = await page.evaluate(() => {
     const m = window.__imap;
     const cnt = (id) => { try { return m.getSource(id).serialize().data.features.length; } catch (_) { return -1; } };
-    return { lineSource: (m.getLayer("imta-line") || {}).source, poly: cnt("imta-src"), line: cnt("imta-ln-src"),
+    return { lineSource: (m.getLayer("imta-line") || {}).source, line: cnt("imta-ln-src"),
              deepLoaded: window.IntMapHistBundles.requested("__HISTADM2"), deepDrawn: m.queryRenderedFeatures({ layers: ["imta2-line"] }).length };
   });
   /* ① 線は多角形ではなく「境界と印された run」だけ — 沿岸の区分が海に二本目の海岸線を引かない */
   expect(r564.lineSource, "imta-line must stroke the border runs, not the polygons").toBe("imta-ln-src");
   expect(r564.line, "the line collection is empty — nothing is drawn").toBeGreaterThan(0);
-  expect(r564.line, "every polygon still produced a whole outline — the coastline copies are back")
-    .toBeLessThan(r564.poly);
+  /* ⚠ (deep-hist-specs) asked of the marks' owner, not inferred from «fewer lines than polygons»: since the present-day clip
+     (js/admin-present.js `clipLines`) one unit's border is one feature per run — measured 2026-11-18, 763 lines over 605
+     polygons with the marks applied. js/border-coast.js says whether the marks that drop the coast have arrived. */
+  expect(await page.evaluate(() => !!(window.IntMapBorderCoast && window.IntMapBorderCoast.loaded())), "the coast marks never arrived — every polygon would draw its whole outline").toBe(true);
   /* ② 深い層は、描かない縮尺では取得もしない */
   expect(r564.deepDrawn, "the deeper tier must not draw below its zoom").toBe(0);
   expect(r564.deepLoaded, "the deeper tier was fetched at a zoom where it is not drawn — 10.2 MB nobody sees").toBe(false);
