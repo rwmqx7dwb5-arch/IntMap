@@ -46,6 +46,7 @@
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
+import { shapeAnchor } from './atlas-shape-resolve.js';
 
 export function makeAtlasMapCompose(deps) {
   return (function () {
@@ -78,6 +79,9 @@ export function makeAtlasMapCompose(deps) {
     const geoObject = deps.geoObject || null; /* js/atlas-geo-object.js — provenance classes */
     const dispatch = deps.dispatch;           /* the console's dispatch, for fills (highlight) */
     const parseColor = deps.parseColor || null;
+    /* (atlas-real-shapes) THE REAL SHAPE OF AN ITEM ASKED TO BE SEEN AS AN AREA OR A LINE — js/atlas-shape-resolve.js
+       `resolveShape` with the console's ladders injected. async (name, want, item) -> {ok, geometry, basis, method, source} | {ok:false, reason} */
+    const resolveShape = deps.resolveShape;
     /* (atlas-completion) THE SEA, ASKED OF THE ONE ENGINE THAT KNOWS IT. A `computed` relation is a path over water from
        js/map-tools.js IntMapRoute.seaPath — the same A* over the same land mask the reader's own sea-route tool uses —
        and every `route` relation is asked whether its line stays on water (IntMapRoute.seaCheck). Injected like the
@@ -123,7 +127,7 @@ export function makeAtlasMapCompose(deps) {
        features here to decide whether a compose actually drew. Renaming one without the other makes
        every compose `not_rendered`. */
     const SRC = 'atl-compose-src';
-    const LAYERS = ['atl-compose-line', 'atl-compose-dash', 'atl-compose-arrow', 'atl-compose-c', 'atl-compose-hl', 'atl-compose-n', 'atl-compose-t'];
+    const LAYERS = ['atl-compose-sf', 'atl-compose-sl', 'atl-compose-sld', 'atl-compose-line', 'atl-compose-dash', 'atl-compose-arrow', 'atl-compose-c', 'atl-compose-hl', 'atl-compose-n', 'atl-compose-t'];
 
     /* iOS system colours, in the order markers take them when the model names none. */
     const PALETTE = ['#0a84ff', '#ff453a', '#30d158', '#ff9f0a', '#bf5af2', '#64d2ff', '#ffd60a', '#ff375f', '#5e5ce6', '#ac8e68'];
@@ -133,6 +137,7 @@ export function makeAtlasMapCompose(deps) {
 
     let records = [];          /* placed items, in numbering order — what the legend and the prose link read */
     let relations = [];        /* drawn relations */
+    let shapes = [];           /* (atlas-real-shapes) the real (or derived) geometries of items asked as an area or a line */
     let seq = 0;               /* compose counter, for stable record ids across a session */
     /* ⚠⚠⚠ (#R551) THE ARTIFACT THIS MODULE IS HOLDING, AND WHICH REVISION OF IT.
        One request = one map. A second compose_map in the SAME turn is not a second map — the map
@@ -214,6 +219,16 @@ export function makeAtlasMapCompose(deps) {
         const font = ['literal', ['Noto Sans Regular']];
         let sub = 11;
         try { if (window.IntMapLabelScale && window.IntMapLabelScale.sub) sub = window.IntMapLabelScale.sub(0.9); } catch (_) { sub = 11; }
+        /* (atlas-real-shapes) shapes first, so lines and markers sit on them. A DERIVED shape is drawn dashed — the map says
+           「approximate」 in the same place the legend does. */
+        g.layers.add({ id: 'atl-compose-sf', type: 'fill', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'g'], 'area']],
+          paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 } }, before);
+        g.layers.add({ id: 'atl-compose-sl', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['!=', ['get', 'basis'], 'derived']],
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['==', ['get', 'g'], 'line'], 3.4, 1.8], 'line-opacity': 0.95 } }, before);
+        g.layers.add({ id: 'atl-compose-sld', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'basis'], 'derived']],
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['==', ['get', 'g'], 'line'], 3.4, 1.8], 'line-opacity': 0.9, 'line-dasharray': [2.2, 1.6] } }, before);
         g.layers.add({ id: 'atl-compose-line', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'rel'], ['!=', ['get', 'dash'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'w'], 'line-opacity': 0.85 } }, before);
@@ -241,6 +256,10 @@ export function makeAtlasMapCompose(deps) {
 
     function features() {
       const out = [];
+      shapes.forEach((sh) => {
+        out.push({ type: 'Feature', id: out.length, geometry: sh.geometry,
+          properties: { t: 'shape', g: sh.want, name: sh.name, basis: sh.basis, method: sh.method, source: sh.source, color: sh.color } });
+      });
       records.forEach((r) => {
         out.push({ type: 'Feature', id: out.length, geometry: { type: 'Point', coordinates: [r.lng, r.lat] },
           properties: { t: 'pt', id: r.id, n: String(r.n), name: r.name, kind: r.kind, role: r.role, color: r.color, hl: (hoverId && hoverId === r.id) ? 1 : 0 } });
@@ -280,7 +299,7 @@ export function makeAtlasMapCompose(deps) {
 
     /** clear() — a new conversation, a reset, or a «clear the map». */
     function clear() {
-      records = []; relations = []; hoverId = '';
+      records = []; relations = []; shapes = []; hoverId = '';
       try { if (GE && GE().layers.hasSource(SRC)) GE().layers.setSourceData(SRC, { type: 'FeatureCollection', features: [] }); } catch (_) { /* no renderer */ }
     }
 
@@ -458,7 +477,21 @@ export function makeAtlasMapCompose(deps) {
       sea_path_failed: () => L('no sea path could be computed', '海路を計算できなかった'),
       track_unavailable: () => L('no recorded track is available', '実航跡のデータがない'),
     };
-    function legendHtml(title, recs, rels, unplaced, fills, dated, relFailed) {
+    const SHAPE_TEXT = {
+      real: (x) => L('real outline', '実際の形') + (x.source ? ' — ' + x.source : ''),
+      derived: (x) => L('approximate — built by IntMap', '近似（IntMap が作成）') + (x.method ? ' · ' + x.method : ''),
+    };
+    const SHAPE_WHY = {
+      not_found: () => L('no feature with this name', 'この名前の地物が無い'),
+      kind_mismatch: () => L('the name exists, but not as this kind of shape', '名前はあるが、この種類の形ではない'),
+      only_extent: () => L('only a bounding box is known', '範囲の矩形しか分からない'),
+      ambiguous: () => L('several features share the name', '同名の地物が複数'),
+      elsewhere: () => L('only found in another country', '別の国にしか見つからない'),
+      no_geometry: () => L('no geometry', '図形なし'),
+      timeout: () => L('ran out of time', '時間切れ'),
+      unavailable: () => L('not available here', 'ここでは取得できない'),
+    };
+    function legendHtml(title, recs, rels, unplaced, fills, dated, relFailed, shp, shpMiss) {
       const T = str(title, 120);
       let h = '<div class="atl-cmp">';
       h += '<div class="atl-cmp-h">' + esc(T || L('Places on the map', '地図上の場所', 'Orte auf der Karte', 'Места на карте', 'Lugares en el mapa')) + '</div>';
@@ -480,6 +513,13 @@ export function makeAtlasMapCompose(deps) {
       }
       if (relFailed && relFailed.length) {
         h += '<div class="atl-cmp-un">' + esc(L('Links not drawn', '描けなかった線')) + ': ' + esc(relFailed.map((x) => x.from + ' → ' + x.to + (REL_WHY[x.reason] ? ' (' + REL_WHY[x.reason]() + ')' : '')).join(', ')) + '</div>';
+      }
+      if (shp && shp.length) {
+        h += '<div class="atl-cmp-rels">' + shp.map((x) => '<span class="atl-cmp-rel"><span class="atl-geo-n" style="background:' + esc(x.color) + '">' + esc(x.want === 'line' ? '—' : '▢') + '</span>'
+          + '<span class="atl-cmp-rl">' + esc(x.name) + ' · ' + esc(SHAPE_TEXT[x.basis](x)) + '</span></span>').join('') + '</div>';
+      }
+      if (shpMiss && shpMiss.length) {
+        h += '<div class="atl-cmp-un">' + esc(L('Shapes not drawn', '描けなかった形')) + ': ' + esc(shpMiss.map((x) => x.name + (SHAPE_WHY[x.reason] ? ' (' + SHAPE_WHY[x.reason]() + ')' : '')).join(', ')) + '</div>';
       }
       const fd = (fills || []).filter((f) => f.ok).map((f) => f.name);
       if (fd.length) h += '<div class="atl-cmp-f">' + esc(L('Shaded', '塗り分け', 'Eingefärbt', 'Заливка', 'Sombreado')) + ': ' + esc(fd.join(', ')) + '</div>';
@@ -542,8 +582,8 @@ export function makeAtlasMapCompose(deps) {
       const revision = ++artifact.revision;
       const paintToken = artifactId + '#r' + revision;
       /* a revision restates the whole map (see `artifact` above) */
-      records = []; relations = [];
-      const placed = [], unplaced = [], fills = [];
+      records = []; relations = []; shapes = [];
+      const placed = [], unplaced = [], fills = [], shapeMiss = [];
 
       /* ── pass 1: the ledger and the gazetteer, in order (each is cached or one bounded request) ── */
       const resolved = [];
@@ -602,7 +642,24 @@ export function makeAtlasMapCompose(deps) {
           const f = await fill(it, colour, paintToken);
           fills.push({ name: str(it.name, 120), ok: f.ok, reason: f.reason || '' });
         }
-        const res = resolved[i];
+        let res = resolved[i];
+        /* (atlas-real-shapes) WHAT THE READER IS TO SEE OF THIS ITEM. `shape:"area"|"line"` asks for its real geometry; a point
+           is still placed for the number. A shape IntMap cannot obtain is reported by name under `shapesUnresolved` and is
+           NOT drawn — and nothing is drawn in its place: joining nearby places with lines is not the shape of anything. */
+        const want = shapeOf(it);
+        if (want) {
+          let sh = null;
+          if (typeof resolveShape === 'function' && now() < deadline + ITEM_TIMEOUT_MS) {
+            try { sh = await withTimeout(resolveShape(str(it.name, 120), want, { country: str(it.country, 90) }), ITEM_TIMEOUT_MS * 2); } catch (_) { sh = null; }
+          }
+          if (sh && sh.ok && sh.geometry) {
+            shapes.push({ name: str(it.name, 120), want, geometry: sh.geometry, basis: sh.basis === 'derived' ? 'derived' : 'real', method: str(sh.method, 40), source: str(sh.source, 120), color: colour, item: i + 1 });
+            /* a name whose only answer is its shape still gets its numbered marker — at the shape, said so */
+            if (!res.ok) { const c = shapeAnchor(sh.geometry); if (c) res = { ok: true, lng: c.lng, lat: c.lat, canonical: str(it.name, 120), provenance: 'resolved_place_centroid', bbox: null, source: 'shape' }; }
+          } else {
+            shapeMiss.push({ name: str(it.name, 120), want, reason: (sh && sh.reason) || (typeof resolveShape === 'function' ? 'timeout' : 'unavailable'), ...(sh && sh.got ? { got: sh.got } : null), ...(sh && sh.candidates ? { candidates: sh.candidates } : null) });
+          }
+        }
         if (!res.ok) { unplaced.push({ name: str(it.name, 120), reason: res.reason, ...(res.tried ? { tried: res.tried } : null), ...(res.verified === false ? { webVerified: false } : null), ...(res.candidates ? { candidates: res.candidates } : null) }); continue; }
         const sid = fileInLedger(it, res, role);
         const rec = { id: sid || (composeId + ':' + (placed.length + 1)), n: placed.length + 1, name: str(it.name, 120), canonical: res.canonical,
@@ -682,20 +739,22 @@ export function makeAtlasMapCompose(deps) {
       const painted = paint();
       if (a.camera !== 'keep') frame(placed.length ? placed : records);
 
-      const anyDrawn = painted && (placed.length > 0 || drawn.length > 0);
+      const anyDrawn = painted && (placed.length > 0 || drawn.length > 0 || shapes.length > 0);
       const anyFill = fills.some((f) => f.ok);
       const ok = anyDrawn || anyFill;
       /* ⚠ (#R551) WHAT WAS ASKED FOR AND IS NOT ON THE MAP — including what never fit. */
       const missing = unplaced.concat(overflow);
       const counts = { requested: askedItems.length, placed: placed.length, unplaced: missing.length,
         relationsRequested: askedRels.length, relationsDrawn: drawn.length };
+      /* (atlas-real-shapes) only a map that asked for shapes carries their tally — a points-and-lines map reads as before */
+      if (shapes.length + shapeMiss.length) Object.assign(counts, { shapesRequested: shapes.length + shapeMiss.length, shapesDrawn: shapes.length, shapesDerived: shapes.filter((x) => x.basis === 'derived').length, shapesUnresolved: shapeMiss.length });
       /* ⚠⚠⚠ (#R551) PARTIAL IS THE WHOLE POINT, AND IT USED TO STOP HERE. `exec.status` said
          'partial' already — but js/atlas-capabilities.js's `paint` verifier reads `meta.partial`,
          and this module never set it, so five of sixteen places came out of the kernel as
          `completed`: the compose source went 0 → 5 features, something moved, verdict passed.
          A COUNT DELTA IS NOT COMPLETENESS. `map.compose` now has a verifier of its own that reads
          these counts, and this flag is what tells every generic reader the same thing. */
-      const partial = ok && (missing.length > 0 || skipped.length > 0);
+      const partial = ok && (missing.length > 0 || skipped.length > 0 || shapeMiss.length > 0);
       /* (atlas-completion) per relation: what the line is and whether it stays on water — so 「a line is on the map」 and
          「the route asked about is on the map」 are separate facts in the result */
       const relOut = drawn.map(relPub);
@@ -703,11 +762,16 @@ export function makeAtlasMapCompose(deps) {
         artifact: artifactId, revision: revision, counts: counts,
         placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance, ...(era ? { source: r.source, as: r.identifiedAs || undefined, record: r.canonical } : null) })),   /* (#R515) `web_verified` = no gazetteer holds this name and a live web search placed it; say where a point came from if it matters to the answer */
         unplaced: missing, relationsDrawn: drawn.length, relationsSkipped: skipped, relations: relOut, fills: fills.length ? fills : undefined,
+        shapes: shapes.length ? shapes.map(shapePub) : undefined, shapesUnresolved: shapeMiss.length ? shapeMiss : undefined,
         note: missing.length ? ("The places listed under `unplaced` are NOT on the map. Say so to the reader; do not describe them as shown. `reason` says WHY, and the three are different problems: `not_found` = the gazetteer holds no feature under the spellings in `tried`, and IntMap will not stand a stranger in for a name it cannot find (#R515). `timeout` / `not_attempted` = the lookup ran out of clock, NOT evidence the place does not exist. `over_item_limit` = more than 24 items were sent and these did not fit. `webVerified:false` means the live-web check was also asked and could not ground the name.\\nTO FINISH THIS MAP, call compose_map ONE more time with the COMPLETE list of places you want shown — the ones already placed AND new spellings for the ones that failed. Re-listing a place that is already placed is FREE: it is in the ledger, so it costs no lookup and no wait. That call becomes the next REVISION of this same map (artifact `{ART}`), it REPLACES this one on the map and in your reply, and the reader sees ONE finished map instead of a draft followed by a correction. Do NOT send only the failures: a revision states the whole map, so anything you leave out disappears from it.\\nIf a different name means the same place — the municipality or ward it is in, its official or local spelling, the facility rather than the district — you may use it. BUT A TOWN IS NOT A FACTORY: if you place a works by naming the city around it, the point is an APPROXIMATE location, and you must say so in your answer rather than let the reader read it as the site itself.").replace('{ART}', artifactId) : undefined };
       if (skipped.some((x) => REL_WHY[x.reason] && x.reason !== 'endpoint_unplaced' && x.reason !== 'same_endpoint')) {
         exec.relationNote = 'The relations under `relationsSkipped` are NOT on the map. `via_unplaced` = a via point could not be resolved (its names are listed); `sea_path_failed` = basis "computed" was asked and no path over water was found for the leg shown — IntMap did NOT draw an arc in its place; `track_unavailable` = IntMap holds no recorded tracks. Say so in your answer, or call compose_map again with basis "schematic" if a representative path is what you mean.';
       }
-      const html = ok ? legendHtml(a.title, placed, drawn, missing, fills, !!era, skipped) : '';
+      if (shapeMiss.length) {
+        exec.shapeNote = 'The items under `shapesUnresolved` were asked as an AREA or a LINE and IntMap could NOT obtain their real geometry (`reason`: not_found = no feature with that name; kind_mismatch = the name exists but as the other kind — `got` says which; only_extent = only a bounding box exists, which is not a shape; ambiguous = several features share the name, see `candidates`; timeout). Their SHAPE IS NOT ON THE MAP. Do NOT stand relations, a schematic line or a ring of nearby places in for it — that draws a picture of something else. Say in your answer that the shape could not be drawn, and why; if another name is the same feature (its official name, its name in the local language), you may ask again with that name.';
+      }
+      if (shapes.some((x) => x.basis === 'derived')) exec.shapeDerivedNote = 'Shapes with basis "derived" were BUILT by IntMap (method says how), not held by a source: they are drawn dashed and labelled approximate. Say so if the answer depends on the exact outline.';
+      const html = ok ? legendHtml(a.title, placed, drawn, missing, fills, !!era, skipped, shapes, shapeMiss) : '';
       /* ⚠⚠⚠ (#R551) `resultKey` IS WHAT STOPS THE READER SEEING THE DRAFT AND THE FINISHED MAP AT
          ONCE. js/atlas-turn-results.js identifies an operation by its ARGUMENTS unless the result
          declares an identity of its own — and a repair necessarily changes the arguments (that is
@@ -718,11 +782,16 @@ export function makeAtlasMapCompose(deps) {
       const meta = { code: ok ? 'ok' : 'PLACE_NOT_FOUND', produced: ok ? ['map', 'explanation'] : [],
         resultKey: 'map.compose:' + artifactId, artifact: { id: artifactId, revision: revision },
         partial: partial || undefined, counts: counts,
-        compose: { id: composeId, artifact: artifactId, revision: revision, placed: placed.map(pub), unplaced: missing, relations: drawn.length, links: relOut, fills: fills.length } };
+        compose: { id: composeId, artifact: artifactId, revision: revision, placed: placed.map(pub), unplaced: missing, relations: drawn.length, links: relOut, fills: fills.length,
+          shapes: shapes.map(shapePub), shapesUnresolved: shapeMiss } };
       if (!ok) { meta.category = 'input'; meta.retryable = true; meta.message = 'None of the named places could be placed.'; }
       return { ok, html, meta, exec };
     }
 
+    /* (atlas-real-shapes) what the reader asked to SEE of an item: 'area' | 'line' | '' (a point) */
+    function shapeOf(it) { const v = str(it && it.shape, 10).toLowerCase(); return (v === 'area' || v === 'line') ? v : ''; }
+    /* what the result says about one drawn shape — no geometry (the map holds it; the model does not need the vertices) */
+    function shapePub(x) { return { name: x.name, shape: x.want, basis: x.basis, method: x.method, source: x.source, item: x.item }; }
     /* what the result says about one drawn relation */
     function relPub(r) { return { from: r.fromName, to: r.toName, fromN: r.fromN, toN: r.toN, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(),
       km: r.km != null ? Math.round(r.km) : null, sea: Object.assign({}, r.sea) }; }

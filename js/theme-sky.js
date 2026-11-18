@@ -25,6 +25,7 @@ import { skyColour, limbViewElev, sunOpticalDepth, skyModelTables } from './sky-
 import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import * as bus from './bus.js';   /* (event-bus) the theme's one publisher raises `intmap-theme` — see _applyThemeBody */
+import { noAirItems } from './layer-manifest.js';   /* (layer-click-polish) the rows that switch the air off — their own `noAir` */
 /* ⚠ (#R227) THE MODEL IS PUBLISHED, NOT COPIED. js/limb-layer.js is a `window.IntMapModules` factory
    (a MapLibre adapter implementation detail, like js/solid3d.js) and cannot `import` an ES module,
    but the whole point of that layer is that it marches THIS model — same coefficients, same ozone
@@ -771,7 +772,21 @@ export function makeThemeSky(HOST, CTX) {
      globe grow an atmosphere it had never had, which is the thing being objected to. The sun still
      points (the shading and the limb of the SATELLITE globe need it); what changed is that nothing
      draws air over a vector basemap. */
-  function _airOn(){ try{ return HOST.mapType==='sat'; }catch(_){ return false; } }
+  /* ══ (layer-click-polish) A FIELD OVER THE WHOLE GLOBE HAS NO AIR IN FRONT OF IT ═══════════════════
+     「Night Lights, Wind, Temperature, Precipitation (forecast), Sea-level pressure, Wind gusts をオンに
+     しているときは大気の効果をオフに。」 The halo is an additive wash over the limb; over a field the
+     reader is reading by colour it shifts the colours. WHICH rows is their own declaration (js/layers/<id>.js
+     `noAir`, read through js/layer-manifest.js) — no id is written here. Their checkbox is the state
+     every switch writes (the panel, Atlas's layers.toggle, the share link), and a `change` on one of them
+     re-applies the sky (below, _wireAirYield). */
+  function _airYielded(){ try{ return noAirItems().some((id)=>{ const el=document.getElementById(id); return !!(el&&el.checked); }); }catch(_){ return false; } }
+  function _airOn(){ try{ return HOST.mapType==='sat'&&!_airYielded(); }catch(_){ return false; } }
+  function _wireAirYield(){
+    if(_wireAirYield._done) return; _wireAirYield._done=true;
+    let ids=null; try{ ids=new Set(noAirItems()); }catch(_){ ids=new Set(); }
+    document.addEventListener('change',(e)=>{ const t=e&&e.target; if(!t||!ids.has(t.id)) return;
+      try{ _applySkyAtmosphere(HOST.mapType==='sat'); }catch(_){} }, true);
+  }
   function _limbOwnsRim(){
     try{
       if(!_airOn()) return false;             /* (#R241) 「Mapでは大気ゼロ」 — including the rim */
@@ -873,8 +888,10 @@ export function makeThemeSky(HOST, CTX) {
   function _applySkyAtmosphere(sat){
     if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
     _followClock();
+    sat=!!sat&&!_airYielded();   /* (layer-click-polish) a `noAir` row is up — the air is off exactly as on the Map basemap; see _airOn */
     try{
       _applySkyAtmosphere._on=true;
+      _wireAirYield();
       _wireSkyFollow();   /* (#R234) the rim handover follows the camera, not the settle — see there */
       /* ══ (#R187) THINNER. THE HALO WAS THE "CHEAP" PART ═════════════════════════════════════════
          「（追記：質感がチープかつ、読み込み時の動作が不安定で視覚的に美しくない。）」 and

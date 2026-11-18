@@ -109,7 +109,7 @@ test('⑤ the country button\'s era answer is the era layer\'s, or nothing', () 
   const kingdom = { properties: { NAME: 'Small Kingdom' }, geometry: box(5, 5, 15, 15) };
   const nameless = { properties: {}, geometry: box(8, 8, 12, 12) };
   const asked = [];
-  const TB = (fs, on = true) => ({ active: () => on, currentFC: () => ({ features: fs }), drawnAt: (pt) => (on ? shapesAt(fs, pt, 0) : []),
+  const TB = (fs, on = true) => ({ active: () => on, currentFC: () => ({ features: fs }), shapesHolding: (pt) => (on ? shapesAt(fs, pt, 0) : []),
     resolveHist: (nm) => { asked.push(nm); return nm === 'Small Kingdom' ? { name: 'Small Kingdom', code: 'SKG', wiki: 'Small_Kingdom' } : { name: nm, code: 'BIG' }; } });
   const stats = { SKG: { nameEn: 'Small Kingdom' } };
 
@@ -144,4 +144,13 @@ test('⑥ the wiring that needs the page: the clock listener, the way back, the 
   assert.match(pd, /PH\.historyGo\(hi, k,/);
   assert.match(ep, /historyGo\(rec\.history, t\.dataset\.hn, lang, place\.at\)/);
   assert.doesNotMatch(pd + ep, /historyAction\(/, 'a surface that calls historyAction directly moves the clock without the map');
+});
+
+/* measured in the browser 2026-11-18: the era layer's public object already had a `drawnAt` (the instant drawn, for js/map-cite.js),
+   written later in the same literal, so the one added for the card was overwritten and the card always said «today's country» */
+test('the era layer hands out the shapes holding a point under a name of its own, not overwritten in its public object', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../js/time-borders.js', import.meta.url), 'utf8');
+  assert.equal((src.match(/\bshapesHolding\s*:/g) || []).length, 1, 'declared once');
+  assert.match(src, /shapesHolding:\(lngLat\)=>\{ const fc=active\?_drawnFC\(\):null;/);
 });

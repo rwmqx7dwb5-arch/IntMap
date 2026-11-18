@@ -3,7 +3,8 @@
  * ----------------------------------------------------------------------------
  *  「ケーブルをクリックすると情報を表示する」「landing pointもクリック可能にする」
  *
- *  ⚠ THIS FILE DRAWS NOTHING ON THE MAP. Not one paint or layout property of
+ *  ⚠ THIS FILE NEVER TOUCHES THE CABLE GRAPHIC. (The one thing drawn for a click, the lit clicked cable, is
+ *  js/feature-highlight.js on its own source and layers, 2026-11-18.) Not one paint or layout property of
  *  `lyr-subcables`, `lyr-subcables-glow` or `lyr-subcables-pts` is read here, let
  *  alone written; there is no hover glow, no hit-target layer, no width change.
  *  The brief's §2 and §13 are explicit that the cable graphic stays exactly as it
@@ -39,6 +40,7 @@
    file runs. */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { highlight, clearHighlight } from './feature-highlight.js';
 window.IntMapSubcableInfo = function (HOST) {
   const GE = () => IntMapGeoEngine;
   /* ⚠ `window.IntMapLang.t(HOST.lang, …)` IN FULL AT EVERY CALL SITE, and not
@@ -258,15 +260,21 @@ window.IntMapSubcableInfo = function (HOST) {
     return out;
   }
 
-  function open(lngLat, html) {
+  /* the cable the popup is about is lit while the popup stands (js/feature-highlight.js); `cableId` null = a landing point */
+  const HL_OWNER = 'subcable-info';
+  function open(lngLat, html, cableId) {
     close();
     try {
       popup = GE().ui.attach(GE().ui.popup({ closeButton: true, closeOnClick: false, maxWidth: '286px', className: 'plc-popup subc-popup' })
         .setLngLat(lngLat).setHTML(html));
+      if (cableId) {
+        const seed = lastHits.find(h => h.properties && h.properties.id === cableId);
+        if (seed && highlight(GE, HL_OWNER, seed, { hits: lastHits, layerIds: LINE_LAYERS, key: 'id' }) && popup.on) popup.on('close', () => clearHighlight(GE, HL_OWNER));
+      }
       setTimeout(wireChips, 0);
     } catch (_) { popup = null; }
   }
-  function close() { if (popup) { try { popup.remove(); } catch (_) {} popup = null; } }
+  function close() { if (popup) { try { popup.remove(); } catch (_) {} popup = null; } clearHighlight(GE, HL_OWNER); }
 
   function wireChips() {
     let root = null;
@@ -278,7 +286,7 @@ window.IntMapSubcableInfo = function (HOST) {
         const at = lastHits.filter(h => h.properties && h.properties.id === id);
         const props = at.length ? at[0].properties : { id, name: (meta && meta.cables[id] && meta.cables[id].name) || id, quality: null, src: null };
         const others = uniqueCables(lastHits).filter(o => o.id !== id);
-        open(lastLngLat, cableHtml(props, others));
+        open(lastLngLat, cableHtml(props, others), id);
       };
     });
   }
@@ -313,7 +321,7 @@ window.IntMapSubcableInfo = function (HOST) {
     lastHits = hits; lastLngLat = e.lngLat;
     const cables = uniqueCables(hits);
     const first = hits[0].properties || {};
-    loadMeta().then(() => open(e.lngLat, cableHtml(first, cables.filter(c => c.id !== first.id))));
+    loadMeta().then(() => open(e.lngLat, cableHtml(first, cables.filter(c => c.id !== first.id)), first.id));
     if (e.originalEvent && e.originalEvent.stopPropagation) e.originalEvent.stopPropagation();
   }
 

@@ -299,8 +299,27 @@ async function countriesInView(HOST) {
   try {
     const { makeAtlasViewSubject } = await import('./atlas-view-subject.js');
     const V = makeAtlasViewSubject({ GE: () => IntMapGeoEngine, geo: () => HOST.countryGeo, countryStats: HOST.countryStats, cName: HOST.cName });
-    return V.landInView(V.viewBox()).codes || [];
+    /* THE COUNTRIES WHOSE LABEL POINT IS ON SCREEN (countryStats.latlng — where the map writes the country's name), nearest
+       the centre first, ten kept (the comparison's limit). ⚠ Not Atlas's «subject of the view» (landInView: a sliver is not a
+       subject): measured 2026-11-18 over central Europe, a sampling grid wide enough for the whole view gave Germany, Belgium,
+       Switzerland one sample or none, and the list was Russia, Iran, Algeria… The view box is the module's own (viewBox —
+       on the globe, the screen taken back to the ground). */
+    const box = V.viewBox(); if (!box) return [];
+    const stats = HOST.countryStats || {};
+    const inBox = (ll) => ll && isFinite(ll[0]) && isFinite(ll[1]) && ll[0] >= box.s && ll[0] <= box.n && ll[1] >= box.w && ll[1] <= box.e;
+    const codes = Object.keys(stats).filter((cd) => stats[cd] && stats[cd].sov !== false && inBox(stats[cd].latlng));
+    return nearestFirst(codes, box, stats).slice(0, 10);
   } catch (_) { return []; }
+}
+
+/** the codes ordered by the great-circle-free planar distance of each country's label point to the view's centre (a code with
+    no label point keeps its place after the others) — exported for the check */
+export function nearestFirst(codes, box, stats) {
+  const c = box && isFinite(box.lng) && isFinite(box.lat) ? box : null;
+  if (!c) return codes.slice();
+  const d = (cd) => { const ll = stats && stats[cd] && stats[cd].latlng; if (!ll || !isFinite(ll[0]) || !isFinite(ll[1])) return Infinity;
+    const dx = (ll[1] - c.lng) * Math.cos(c.lat * Math.PI / 180), dy = ll[0] - c.lat; return dx * dx + dy * dy; };
+  return codes.map((cd, i) => ({ cd, i, k: d(cd) })).sort((a, b) => (a.k - b.k) || (a.i - b.i)).map((x) => x.cd);
 }
 
 /** a row was pressed: the place's ending (the search closes its list; the home keeps itself), then the door */

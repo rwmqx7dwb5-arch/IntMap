@@ -14,3 +14,4 @@ export { default as research_map } from "./research_map.ts";
 export { default as vision_read } from "./vision_read.ts";
 export { default as gloss } from "./gloss.ts";
 export { default as atlas_grade } from "./atlas_grade.ts";
+export { default as atlas_delegate } from "./atlas_delegate.ts";

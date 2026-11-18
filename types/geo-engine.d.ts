@@ -148,6 +148,7 @@ export interface GeoEngineAdapterCore {
   stop(): any;
   resize(): any;
   triggerRepaint(): any;
+  redraw(): any;
   getCanvas(): any;
   getRenderScale(): any;
   setRenderScale(r?: any): any;

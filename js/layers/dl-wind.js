@@ -6,6 +6,7 @@ export default {
   key: 'wind',
   label: 'lyrWind',
   share: true,
+  noAir: true,
   registry: ['wind'],
   atlas: ['layers.windParticles'],
 };
