@@ -18,10 +18,13 @@
  *  way to hold that property is not to hide the export; it is to give it a real reader. So the two
  *  halves read each other, and each one's export is named by the other:
  *
- *      js/gis-core.js      export const mountGis      ← imported by name below
- *      js/gis-runtime.js   export const makeGisRuntime ← imported by name by js/gis-core.js,
- *                                                        which re-exports it for the outside caller
- *                                                        and registers the browser door with it
+ *      js/gis-core.js      export const mountGis      ← handed to makeGisRuntimeOver by js/gis-core.js
+ *      js/gis-runtime.js   export const makeGisRuntimeOver ← imported by name by js/gis-core.js,
+ *                                                        which binds it to mountGis, re-exports the
+ *                                                        result for the outside caller and registers
+ *                                                        the browser door with it
+ *  (audit 2026-11-19: the two files used to import each other. They no longer do — the one reason for
+ *  the cycle, an export with no js/ reader, is answered by this factory being read by name.)
  *
  *  ⚠ THE CYCLE IS EVALUATION-SAFE AND ONE-DIRECTIONAL IN TIME. js/gis-core.js is the entry (that is
  *  what js/lazy-modules.js imports), so this file is evaluated first, and nothing here CALLS
@@ -73,7 +76,8 @@
  *  られなかった」), and it is the shape that makes a caller re-run work that already happened.
  * ==========================================================================*/
 
-import { mountGis } from './gis-core.js';
+/* The mounting order is NOT imported: js/gis-core.js hands it in (makeGisRuntimeOver below), so the
+   dependency runs one way, gis-core -> gis-runtime, and this file can be loaded with nothing else. */
 /* ══ ⚠ ONE TOP-LEVEL BINDING, AND THE REST OF THE FILE INSIDE IT ═════════════════════════════
    tests/layer-boot-graph-checks.test.mjs #R175 ③ is the property the bundling rests on: a js/ module may hold NO unexported
    top-level declaration, because a classic script's top-level `const`/`function` was a global and
@@ -87,7 +91,7 @@ import { mountGis } from './gis-core.js';
    place — with ONE identifier changed: the mounting step, which was a local `mount(...)`, is now the
    imported `mountGis(...)`. Re-indenting 130 lines while calling it a move is the shape
    [[intmap-my-own-fix-had-the-shape-i-was-fixing]] records. */
-export const makeGisRuntime = (function () {
+export const makeGisRuntimeOver = (mountGis) => (function () {
 
 /* ── WHAT THIS LAYER BORROWS AND DOES NOT OWN (#R783) ─────────────────────────────────────────
    ⚠ THE `global` IS WHERE THE KERNELS ACTUALLY LOOK, and it is why this table can be verified

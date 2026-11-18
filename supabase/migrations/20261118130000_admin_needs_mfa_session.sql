@@ -71,23 +71,31 @@ do $$
 declare
   pol record;
   q text; c text; stmt text;
+  -- how the deparser spells the caller: bare, or wrapped as an init-plan sub-select (repository migrations)
+  uid_pat constant text := '(\(\s*SELECT\s+auth\.uid\(\)\s+AS\s+uid\)|auth\.uid\(\))';
+  -- how it spells the flag: bare (repository) or compared to true (rows created in the dashboard)
+  flag_pat constant text := '(p\.is_admin|\(p\.is_admin\s*=\s*true\))';
+  -- the deparser writes the sub-query bare or inside its own pair of parentheses; the two
+  -- alternatives keep that pair together, so the rewrite never leaves a parenthesis unmatched
   re_exists constant text :=
-    -- the deparser writes the sub-query bare or inside its own pair of parentheses; the two
-    -- alternatives keep that pair together, so the rewrite never leaves a parenthesis unmatched
-    '\(EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+(public\.)?profiles\s+p\s+WHERE\s+\(\(p\.id\s*=\s*\(\s*SELECT\s+auth\.uid\(\)\s+AS\s+uid\)\)\s+AND\s+p\.is_admin\)\)\)'
-    '|EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+(public\.)?profiles\s+p\s+WHERE\s+\(\(p\.id\s*=\s*\(\s*SELECT\s+auth\.uid\(\)\s+AS\s+uid\)\)\s+AND\s+p\.is_admin\)\)';
+    '\(EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+(public\.)?profiles\s+p\s+WHERE\s+\(\(p\.id\s*=\s*' || uid_pat || '\)\s+AND\s+' || flag_pat || '\)\)\)'
+    || '|EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+(public\.)?profiles\s+p\s+WHERE\s+\(\(p\.id\s*=\s*' || uid_pat || '\)\s+AND\s+' || flag_pat || '\)\)';
+  -- the third shape production carries: auth.uid() IN (SELECT profiles.id FROM profiles WHERE profiles.is_admin = true)
+  -- (policies written in the dashboard, "Allow admins to delete any post/comment"). Same meaning, same rewrite.
+  re_in constant text :=
+    '\(' || uid_pat || '\s+IN\s*\(\s*SELECT\s+profiles\.id\s+FROM\s+(public\.)?profiles\s+WHERE\s+\(profiles\.is_admin\s*=\s*true\)\)\)';
   re_uid constant text :=
-    '(public\.)?is_admin\((\(\s*SELECT\s+auth\.uid\(\)\s+AS\s+uid\)|auth\.uid\(\))\)';
+    '(public\.)?is_admin\(' || uid_pat || '\)';
 begin
   for pol in
     select schemaname, tablename, policyname, qual, with_check
       from pg_policies
      where schemaname = 'public'
-       and (coalesce(qual, '') ~ re_exists or coalesce(qual, '') ~ re_uid
-         or coalesce(with_check, '') ~ re_exists or coalesce(with_check, '') ~ re_uid)
+       and (coalesce(qual, '') ~ re_exists or coalesce(qual, '') ~ re_in or coalesce(qual, '') ~ re_uid
+         or coalesce(with_check, '') ~ re_exists or coalesce(with_check, '') ~ re_in or coalesce(with_check, '') ~ re_uid)
   loop
-    q := regexp_replace(regexp_replace(pol.qual, re_exists, 'public.is_admin()', 'g'), re_uid, 'public.is_admin()', 'g');
-    c := regexp_replace(regexp_replace(pol.with_check, re_exists, 'public.is_admin()', 'g'), re_uid, 'public.is_admin()', 'g');
+    q := regexp_replace(regexp_replace(regexp_replace(pol.qual, re_exists, 'public.is_admin()', 'g'), re_in, 'public.is_admin()', 'g'), re_uid, 'public.is_admin()', 'g');
+    c := regexp_replace(regexp_replace(regexp_replace(pol.with_check, re_exists, 'public.is_admin()', 'g'), re_in, 'public.is_admin()', 'g'), re_uid, 'public.is_admin()', 'g');
     stmt := format('alter policy %I on %I.%I', pol.policyname, pol.schemaname, pol.tablename);
     if q is not null then stmt := stmt || ' using (' || q || ')'; end if;
     if c is not null then stmt := stmt || ' with check (' || c || ')'; end if;

@@ -55,14 +55,13 @@
  *  file publishes is the mounting order ITSELF — `mountGis`, the function the assembler calls once
  *  it has decided what the scope is and what has been handed over.
  *
- *  ⚠ WHY THE ASSEMBLER IS A SECOND FILE. Its reader is outside js/: a Node caller imports
- *  `makeGisRuntime` from THIS file (docs/GIS-CORE.md §5.8), while the browser comes in through
- *  window.IntMapModules.gisCore below. An export no js/ module names is dead code by
- *  tests/layer-boot-graph-checks.test.mjs #R175 ③ — and the answer to that is a real reader, not a hidden export. So the
- *  mounting order and the assembler are two files that import each other by name: this one reads
- *  `makeGisRuntime` (to re-export it, and to build the browser door out of it), and
- *  js/gis-runtime.js reads `mountGis`. The cycle is evaluation-safe because neither half CALLS the
- *  other while the modules evaluate; js/gis-runtime.js's header says the same thing from its side.
+ *  ⚠ WHY THE ASSEMBLER IS A SECOND FILE, AND WHY THE DEPENDENCY RUNS ONE WAY. Its reader is outside js/: a
+ *  Node caller imports `makeGisRuntime` from THIS file (docs/GIS-CORE.md §5.8), while the browser comes
+ *  in through window.IntMapModules.gisCore below. js/gis-runtime.js exports a FACTORY,
+ *  `makeGisRuntimeOver(mountGis)`, and this file binds it to its own mounting order and re-exports the
+ *  result. The two files used to import each other so that each export had a js/ reader; the factory
+ *  gives gis-runtime.js its reader without that, so the graph is gis-core -> gis-runtime and a
+ *  headless caller can load the assembler without the cycle's evaluation-order rule (audit 2026-11-19).
  *
  *  ══ #R819 — 組み立てに「どの実行コンテキストのものか」を持たせる ═══════════════════════════════
  *  #R783 left one sentence true and unsaid: an assembly had no NAME for the world it lives in. Every
@@ -106,8 +105,7 @@ import { makeGisPanel } from './gis-panel.js';
 /* ⚠ (#R783) THE ASSEMBLER, READ BY NAME AND HANDED STRAIGHT ON. The re-export is what an outside
    caller imports (`import { makeGisRuntime } from './js/gis-core.js'`), and shellEntry below is the
    browser's way into the same function — one assembler, two doors, no second set of kernels. */
-import { makeGisRuntime } from './gis-runtime.js';
-export { makeGisRuntime };
+import { makeGisRuntimeOver } from './gis-runtime.js';
 /* ══ ⚠ (#R783) ONE TOP-LEVEL BINDING, AND THE REST OF THE FILE INSIDE IT ═════════════════════
    tests/layer-boot-graph-checks.test.mjs #R175 ③ is the property the bundling rests on: a js/ module may hold NO unexported
    top-level declaration, because a classic script's top-level `const`/`function` was a global and
@@ -115,12 +113,12 @@ export { makeGisRuntime };
    by global name. What is inside this closure is `mount` and `shellEntry` — module-private in
    intent, neither of them wrapped in fact before this round, and the rule does not admit an export
    written only so a test can reach a helper. So the mounting order lives in one closure and the
-   file publishes the ONE name the assembler reads: `mountGis`.
+   file hands that one binding (`mountGis`) to the assembler's factory and publishes nothing else of it.
    ⚠ WRAPPED WHOLE, NOT REFORMATTED. The body below is byte-for-byte what it was — the same
    expressions, the same indentation, the same order, and the window registration still running at
    module evaluation — so this change cannot alter an answer. Re-indenting 185 lines while calling
    it a move is the shape [[intmap-my-own-fix-had-the-shape-i-was-fixing]] records. */
-export const mountGis = (function () {
+const mountGis = (function () {
 
 function mount(scope, HOST, CONTEXT) {
   /* ⚠ (#R819) WHICH EXECUTION CONTEXT THIS ASSEMBLY BELONGS TO, stated before anything is built.
@@ -347,6 +345,10 @@ function shellEntry(HOST) {
 mount.shellEntry = shellEntry;
 return mount;
 })();
+
+/* The assembler, bound to the mounting order above. Read by shellEntry (at call time) and re-exported for
+   the outside caller (`import { makeGisRuntime } from './js/gis-core.js'`) — one assembler, two doors. */
+export const makeGisRuntime = makeGisRuntimeOver(mountGis);
 
 /** The shell's door to the assembler: `gisCore(HOST)` mounts a fresh assembly on the page and returns its API. */
 export function gisCore(HOST) { return mountGis.shellEntry(HOST); }
