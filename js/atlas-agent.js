@@ -187,6 +187,12 @@ export function makeAtlasAgent() {
             (js/atlas-plan.js stepState): a step is met only when it was observed completed, or was
             current and needed no call (noop). Every other state is a step the turn did not deliver.
           The list is the fact; `completion` is its one-word reading for a caller that wants one. */
+    /* (atlas-goal-verifier) the last thing the reader said, as text — what the independent reader is asked about */
+    function lastUserText(messages) {
+      const ms = Array.isArray(messages) ? messages : [];
+      for (let i = ms.length - 1; i >= 0; i--) { const m = ms[i]; if (m && m.role === 'user') return typeof m.content === 'string' ? m.content : ''; }
+      return '';
+    }
     function unmetOf(answerMode, produced, planSnap) {
       const out = [];
       const asked = MODE_NEEDS[answerMode] || null;
@@ -735,6 +741,10 @@ export function makeAtlasAgent() {
       let answerMode = '';       /* (#R511) the latest mode Atlas declared; '' until it says */
       let gateBounces = 0;       /* (#R511→#R543) how many finals came back having declared an output they had not produced */
       trace.outputGate = 0;
+      let goalChecked = false;   /* (atlas-goal-verifier) the independent read of the request happens once per turn */
+      let goalAt = -1;           /* results.length when the finding was put to Atlas (-1: it was not) */
+      let goalUnmet = [];        /* …and what it found, when the bounce was not taken or ran out: carried into `unmet` */
+      trace.goalCheck = '';
 
       /* (#R452) the turn's clock. `now()` is injected in the node checks, which have no wall time. */
       const now = (typeof opts.now === 'function') ? opts.now : (() => Date.now());
@@ -905,6 +915,42 @@ export function makeAtlasAgent() {
             : (need && !made) ? (GATE_CODE[answerMode] || 'output_not_produced')
             : ((turnState === 'continuing') ? 'no_calls_issued'
               : (!String(answerHere || '').trim() ? 'no_answer_written' : ''));
+          /* ══ (atlas-goal-verifier) THE REQUEST, READ BY SOMETHING OTHER THAN THE ANSWERER ═════════════════════
+             Every check above holds Atlas to what Atlas DECLARED (answer_mode, turn, its own plan). A turn that
+             declares nothing, or declares "text" for a request that asked for a drawing, is measured against
+             nothing and is "complete". `opts.verify` is an independent reader of the REQUEST and of the turn's
+             RECORD — the caller supplies it (a separate model call; this loop reads no word of either), and it
+             answers {unmet:[{need, why}]} or null. ⚠ A NOTE, NOT A REFUSAL, exactly like the gate it sits beside:
+             it is put to Atlas once, as a typed note naming what was not met, and Atlas may answer that the
+             request does not need it. ⚠ NOT OBSERVED IS NOT UNMET: null / a throw / a timeout accepts the turn and
+             says only that it was not checked (`trace.goalCheck`). Only on a turn the gate above would accept. */
+          let goalNote = '';
+          if (!code && !goalChecked && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
+            goalChecked = true;
+            let v = null;
+            try {
+              v = await opts.verify({ request: lastUserText(opts.messages), text: answerHere, answerMode, produced: results.reduce((a, r) => { producedBy(r).forEach((m) => { if (a.indexOf(m) < 0) a.push(m); }); return a; }, []), results: results.slice(),
+                plan: PLAN ? (() => { try { return PLAN.snapshot(); } catch (_) { return null; } })() : null });
+            } catch (_) { v = null; }
+            const list = (v && Array.isArray(v.unmet)) ? v.unmet.filter((u) => u && String(u.need || '').trim()).map((u) => ({ kind: 'goal', need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) })) : null;
+            trace.goalCheck = list === null ? 'unobserved' : (list.length ? 'unmet' : 'met');
+            if (list && list.length) {
+              goalUnmet = list;
+              if ((step + 1) < lim.maxSteps && !outOfTime()) {
+                goalNote = 'An independent reader checked the request against what this turn produced and found these not met: '
+                  + list.map((u) => '"' + u.need + '"' + (u.why ? ' (' + u.why + ')' : '')).join('; ')
+                  + '. Do them now with function calls and then answer; or, if the request does not actually need them, '
+                  + 'reply again with the answer as it stands and say why.';
+              }
+            }
+          }
+          if (goalNote) {
+            trace.steps.push({ step, toolCalls: 0, bounced: 'goal_unmet' });
+            transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: [], items: (reply && reply.items) || undefined });
+            observe([{ ok: false, error: 'goal_unmet', message: goalNote }]);
+            goalAt = results.length;   /* put to Atlas: if it then makes no call, nothing was done about it and the finding stays on the record */
+            continue;
+          }
           if (code && gateBounces < lim.maxOutputGate && (step + 1) < lim.maxSteps && !outOfTime()) {
             gateBounces++; trace.outputGate++;
             /* (#R543) the note names the outputs the declaration asked for and the call that makes
@@ -1397,7 +1443,7 @@ export function makeAtlasAgent() {
       /* …and the plan, read AFTER endTurn has settled what was still in flight (unobserved / stopped) */
       let planSnap = null;
       if (PLAN) { try { planSnap = PLAN.snapshot(); } catch (_) { planSnap = null; } }
-      const unmet = unmetOf(answerMode, produced, planSnap);
+      const unmet = unmetOf(answerMode, produced, planSnap).concat((goalAt < 0 || results.length === goalAt) ? goalUnmet : []);   /* (atlas-goal-verifier) the independent reader's findings that stood */
       const completion = !String(text || '').trim() ? 'none' : (unmet.length ? 'partial' : 'complete');
       /* (growth-loop) THE KIND OF ANSWER, ANNOUNCED — the one line this loop says to the outside. When the
          turn hands the reader an answer (Atlas finished, or a ceiling closed it after the answer was

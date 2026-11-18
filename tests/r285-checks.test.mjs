@@ -61,7 +61,7 @@ const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
    is the one that found the rest, and it is the one that keeps them found. */
 const EXPECTED_CALLS = {
   /* (atlas-capability-modules) three of the kernel's nine moved with their capabilities' runs */
-  'js/atlas-console.js': 6,          /* analyze, mapReport, planner, vision, region outline, region units */
+  'js/atlas-console.js': 7,          /* analyze, mapReport, planner, vision, region outline, region units, goal verifier (atlas_verify) */
   'js/atlas-cap-research.js': 3,     /* brief, researchMap, historical */
   /* (country-analysis-unify) js/analysis-research.js's two (place brief, ask-about-this-point) left with the panel:
      every 「AI調査」 is the brief above (js/atlas-cap-research.js) and «ask about here» was already Atlas's askHere. */
