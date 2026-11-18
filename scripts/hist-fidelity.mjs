@@ -53,6 +53,7 @@ import zlib from 'node:zlib';
 import { measure, status as knowStatus, KNOW, grid as kGrid, scan as kScan } from '../js/hist-knowledge.js';
 /* (hist-coverage-depth) the records spliced into the first tier — the one list js/time-admin1.js draws */
 import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
+import { nearestSheet } from '../js/hist-sheet-pick.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -304,13 +305,15 @@ export function politiesAt(y, opt = {}) {
   }
   /* (hist-coverage-expansion) below CShapes the page draws a COMPOSITION — OHM in its band, Cliopatria, and
      the sheet less both (js/time-borders.js `compositeAt`); the subtraction is in the files, so the measure
-     is their union. The sheet is chosen as this gate has always chosen it (latest at or before the year). */
+     is their union. The sheet is the one the PAGE draws: js/hist-sheet-pick.js `nearestSheet`, the function
+     js/time-borders.js `nearest` calls (it was «latest at or before the year» here, which measured sheet -599
+     where the page drew -499 and -199 where it drew -99). */
   if (y < csLo && cl && rs) {
     if (y >= hbLo && y <= hbHi) for (const f of hb.feats) if (inForce(f, y, 7, 1)) out.push({ nm: (f[0] && f[0].en) || f[1], polys: resolve(f[8], hb.rings), rec: 'ohm' });
     /* a realm (`r`) is the union of member rows drawn beside it — its ground is counted through them */
     for (const f of cl.feats) if (!(f[9] && f[9].r) && inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], cl.rings), rec: 'clio' });
-    let sb = null;
-    for (const s of rs.snaps) if (s.y <= y && (!sb || s.y > sb.y)) sb = s;
+    const ny = rs.snaps.length ? nearestSheet(y, rs.snaps.map((x) => x.y), csLo) : null;
+    const sb = ny == null ? null : rs.snaps.find((x) => x.y === ny) || null;
     if (sb) for (const f of sb.feats) out.push({ nm: (f[0] && f[0].en) || '?', polys: resolve(f[2], rs.rings), rec: 'sheet ' + sb.y });
     out.push(...snapsAt(R, y, sb ? sb.y : null));
     return out;

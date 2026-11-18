@@ -1,6 +1,6 @@
 {
   "note": "Observations, not targets. scripts/hist-fidelity.mjs re-measures the shipped bundles and fails when they do worse. --update re-records them; a round that lowers a number on purpose says why in DEV-NOTES.md.",
-  "measured": "2026-11-17",
+  "measured": "2026-11-18",
   "res": 0.25,
   "unsourcedSpans": 0,
   "years": [
@@ -8,20 +8,20 @@
       "year": -500,
       "pct": 0.02,
       "pctArea": 0.02,
-      "polityLand": 87.78,
+      "polityLand": 73.19,
       "unitLand": 0.03,
-      "zero": 111,
-      "partial": 3,
+      "zero": 153,
+      "partial": 4,
       "full": 0
     },
     {
       "year": -100,
-      "pct": 0.8,
-      "pctArea": 0.85,
-      "polityLand": 83.87,
+      "pct": 0.95,
+      "pctArea": 1.03,
+      "polityLand": 67.63,
       "unitLand": 0.81,
-      "zero": 118,
-      "partial": 12,
+      "zero": 143,
+      "partial": 10,
       "full": 2
     },
     {
@@ -76,13 +76,13 @@
     },
     {
       "year": 1689,
-      "pct": 13.03,
-      "pctArea": 14.74,
-      "polityLand": 73.61,
+      "pct": 13.09,
+      "pctArea": 14.81,
+      "polityLand": 73.28,
       "unitLand": 11.27,
-      "zero": 640,
-      "partial": 64,
-      "full": 58
+      "zero": 624,
+      "partial": 32,
+      "full": 13
     },
     {
       "year": 1800,
@@ -96,13 +96,13 @@
     },
     {
       "year": 1850,
-      "pct": 31.45,
-      "pctArea": 36.88,
-      "polityLand": 86.45,
+      "pct": 42.43,
+      "pctArea": 39.66,
+      "polityLand": 80.15,
       "unitLand": 32.81,
-      "zero": 369,
-      "partial": 44,
-      "full": 26
+      "zero": 252,
+      "partial": 40,
+      "full": 25
     },
     {
       "year": 1886,

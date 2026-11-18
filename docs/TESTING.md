@@ -1268,6 +1268,18 @@ written are graded:
   row that is not painted is not on); `clock` — a year, a date or live (`time`); `comparison` — the
   statistics-comparison panel; `drawn` — a count read off the snapshot (`atlas.lines`,
   `objects.kind:route` …), with `anyOf` where more than one capability can draw what was asked.
+* **The thing itself** — when what was asked for IS an area or a line in the world (a river, a basin, a
+  prefecture, a canal), `drawn` reads `atlas.shapes.<kind>:<basis>`: every shape Atlas left on the map,
+  counted by what it is (`area` / `line`) and where it came from (`real` = an upstream's geometry,
+  `derived` = one IntMap built, `unstated` = nobody vouches for it — a line a model drew between places, a
+  relation arc, a bounding box). The words are `js/atlas-shape-resolve.js` `SHAPE_KINDS` × `SHAPE_BASES`
+  and `map-state.mjs` discovers them there. So 「信濃川を地図でなぞって」 asks for `line:real`, and a line
+  through three towns on the river — which `atlas.lines ≥ 1` passed — is a `mismatch`.
+* **A thing with no shape** — when no source IntMap reads holds its geometry (a fault, a biogeographic
+  line; measured on the day the row was written), the correct answer is to say so: answer kind `declines`
+  (`grade.mjs` reads how the replies write it) and `max: 0` on every `atlas.shapes` tally a stand-in could
+  take. The row names `until` — the source whose arrival turns it into a shape question — so the key does not
+  go on rewarding a refusal after the shape exists.
 * `era` — **history graded as history** (`.agents/rules/historical-verification.md`): the units the shipped
   bundles draw are a function of the clock and the frame, so `scripts/hist-fidelity.mjs --year --in`
   enumerates the units in force at the **observed** year in the observed frame and compares them with the
@@ -1371,8 +1383,8 @@ run) · 3 regressed.
 2. **Its daily allowance.** One turn is one use (`ai-proxy` keys uses by turn) and one independent grade
    is one more. A night asks every sendable question of both sets (16 recorded + the answer key) and
    grades each answer-key reply — `node scripts/atlas-eval.mjs --validate` and the report's header give
-   today's counts; with the answer key's 74 questions that is about 90 turns and up to 74 grades, over
-   every plan but `pro` (200) and `unlimited`. Either
+   today's counts (a turn per sendable question, and a grade per answer-key question); that is more than
+   every plan's daily uses but `pro` (200) and `unlimited`. Either
    * give the account a plan: `update public.profiles set plan = 'pro' where id = '<uuid>';`
      (`PLAN_LIMITS` in `supabase/functions/_shared/ai-ledger.js`; run in the Supabase SQL editor
      — the column is guarded against the account itself), or

@@ -572,6 +572,9 @@ hist-knowledge.js                 歴史地図が**どこまで分かってい�
                                   輪郭**、一部だけの政体は**記録の無い土地**（0.1° の矩形）を GeoJSON で返す。
                                   ⚠ **読み手は 2 つで規則は 1 つ**——`npm run check:histfidelity`（scripts/hist-fidelity.mjs）
                                   が記録する数と、js/time-admin1.js が地図に引く斜線は同じ関数から出る
+hist-sheet-pick.js                CShapes より前の年に**どの sheet を描くか**の規則（`nearestSheet`）の唯一の所有者。純関数。
+                                  js/time-borders.js の `nearest` と scripts/hist-fidelity.mjs の `politiesAt` が同じ関数を呼ぶ
+                                  ので、計器が測る sheet とページが描く sheet は食い違えない
 hist-scale.js                     深い時間の**算術**だけを持つ純関数 window.IntMapHistScale。DOM も地図も時計も
                                   言語も触らないので検査が**評価**できる（#R570 の教訓）。①`decYear()`＝
                                   OpenHistoricalMap が書く10進年（実測 103,093 件に当てて決めた「その日の中点」）
@@ -2688,12 +2691,15 @@ scripts/
                                   答えの正誤（grade.mjs）・返答の言語・独立採点の結果・地図の状態（map-state.mjs、
                                   別の軸）も判定し、種類別・言語別・能力別に集計する
   atlas-eval/answer-key.json      **検証済みの答えを持つ問題集**（日英・距離／所要時間／人口／日付／面積／標高／
-                                  長さ／数／名前）。各行に答え・許容誤差か範囲・確かめた出典の URL。地図に何かを
-                                  求める問いには `mapState`（視野に入る地点と座標の出典・描くもの）
+                                  長さ／数／名前／形）。各行に答え・許容誤差か範囲・確かめた出典の URL。地図に何かを
+                                  求める問いには `mapState`（視野に入る地点と座標の出典・描くもの）。物そのものが
+                                  面・線の問いは `atlas.shapes.<種類>:<出どころ>` で実形状を求め、どの典拠にも形が
+                                  無いものは「描けないと言う」（`declines`）と代用の線を描かないことを正解にする
   atlas-eval/map-state.mjs        **地図の採点**（採点は純粋）。最終の地図のスナップショットを `mapState` と照らし
                                   一致／不一致／観測できず。語彙（層 ID・節・描画の欄・地物の種類・歴史の単位）は
-                                  製品と scripts/hist-fidelity.mjs から発見し、無いものを書いた鍵を赤にする
-  atlas-eval/grade.mjs            答えの採点（純粋）。返答が述べた量・日付・名前を読み、正しい／誤り／述べていない。
+                                  製品と scripts/hist-fidelity.mjs から発見し、無いものを書いた鍵を赤にする。
+                                  形の語彙は js/atlas-shape-resolve.js の SHAPE_KINDS × SHAPE_BASES
+  atlas-eval/grade.mjs            答えの採点（純粋）。返答が述べた量・日付・名前・「形が無い」という断りを読み、正しい／誤り／述べていない。
                                   独立採点（ai-proxy `atlas_grade`）への依頼文と、その結果の厳密な読み戻し
   atlas-eval/replay.mjs           **モデル無しの再生**。カセット（台本＝モデルの各手、世界＝ディスパッチの結果）を
                                   現在の `runTurn`・道具の面・スキーマ・レジストリに流し、録画との乖離を述べる。
