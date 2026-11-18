@@ -64,7 +64,8 @@ function ownRegistry() { return _ownRegistry || (_ownRegistry = makeAtlasCapabil
 const P_OPEN = '<!--atl:p-->', P_CLOSE = '<!--/atl:p-->';
 export function proseMark(h) { return P_OPEN + h + P_CLOSE; }
 export function plainText(h) {
-  return String(h == null ? '' : h).replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]*>/g, ' ')
+  /* ONE pass, each match replaced by a SPACE: a removal that joined its neighbours could rebuild a `<!--` (CodeQL js/incomplete-multi-character-sanitization) */
+  return String(h == null ? '' : h).replace(/<!--[\s\S]*?-->|<[^>]*>/g, ' ')
     .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ').trim();
 }
@@ -346,7 +347,7 @@ export function makeAtlasTurnResults(deps) {
       if (plainText(h).length > (modelTextMax > 0 ? modelTextMax : 2000)) return h;
       const split = proseSplit(h);
       if (!split.prose.length) return h;
-      const bare = split.rest.replace(/<!--[\s\S]*?-->/g, '');
+      const bare = split.rest.replace(/<!--[\s\S]*?-->/g, ' ');
       const visual = /<(img|svg|canvas|button|input|select|textarea|video|audio|iframe|a|table|details)\b/i.test(bare);
       return (visual || /[\p{L}\p{N}]/u.test(plainText(bare))) ? split.rest : '';
     }

@@ -69,7 +69,7 @@ test('⑤ 壊れた印・入れ子の印は何も落とさない', () => {
   const nested = proseSplit('a' + proseMark('x' + proseMark('y') + 'z') + 'b');
   assert.equal(nested.rest, 'ab');
   assert.equal(nested.prose.length, 1);
-  assert.equal(plainText(nested.prose[0]), 'xyz');
+  assert.equal(plainText(nested.prose[0]), 'x y z', '印は取り除かれて空白になり、隣の文字を連結しない（連結すると印が組み上がりうる）');
   assert.equal(plainText('<b>a&amp;b</b> &lt;c&gt;'), 'a&b <c>');
 });
 
