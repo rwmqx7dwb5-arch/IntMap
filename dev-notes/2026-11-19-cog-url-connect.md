@@ -29,3 +29,14 @@ newsjp: Atlas が、Web 上の Cloud Optimized GeoTIFF をアドレスから直�
 - 投影座標系の COG（多くの公開 COG は UTM / 3857）は `cog-crs-not-4326` で断る。bbox の CRS 変換＋`to4326` が次。
 - 画面（パネル）側の入口は未追加。Atlas 経由のみ。
 - 本番での実 COG（CORS・Range）の実測は未実施（本番検証で）。
+
+## 4. 起動費用（`check:perf` の天井を上げた理由）
+
+遅延チャンク `atlas-cap-runs` 853.4 → 857.8 kB（+4.4 kB）。`js/gis-cog.js`（窓の読み取り）と `js/gis-atlas.js` の
+`url:` 入口がこのチャンクに入る。分析で URL の格子を読んだときだけ読まれ、起動時の経路には載らない。
+`perf-budget --update` が上げたのはこの 1 行だけ。
+
+## 5. CI で落ちたもの
+
+読者向けの文が無かった 4 コード（`url-not-https`・`url-has-credentials`・`url-invalid`・`cog-crs-not-4326`）を
+`js/gis-panel.js` に足した（en+jp。`tests/geo-gis-datasets-checks.test.mjs` が全コードに文があることを測る）。
