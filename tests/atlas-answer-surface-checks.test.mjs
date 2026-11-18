@@ -80,3 +80,20 @@ test('⑥ 文を作る 2 つの定義（note / warn）の両方に印が付い�
   assert.match(src, /TRES\.forReader\(res,TOOLS\.RESULT_TEXT_MAX\)/);
   assert.doesNotMatch(src, /actLabel\(r\.act\)\)\.filter\(Boolean\);\s*\n?\s*let _ih/, '画面の失敗行が内部名（actLabel）を使っている');
 });
+
+test('⑦ 「回答が書かれた」の判定は、js/atlas-agent.js が実際に述べる completion の値で動く（本番の返信で不活性だったと判明した形）', () => {
+  /* 最初の版は `completion === 'answered'` を読んでいた。'answered' は `stopped` の値で `completion` には無いので、判定は一度も真にならず、
+     検査は部品（forReader）だけを測っていて緑だった。判定の入力を、それを作る側の宣言から取る。 */
+  const agent = fs.readFileSync(new URL('../js/atlas-agent.js', import.meta.url), 'utf8');
+  const decl = agent.match(/const completion = [^;]*;/);
+  assert.ok(decl, 'js/atlas-agent.js が completion を宣言している');
+  const values = [...new Set([...decl[0].matchAll(/'([a-z]+)'/g)].map((m) => m[1]))];
+  assert.deepEqual(values.sort(), ['complete', 'none', 'partial'], 'completion の値の集合が変わった——written() の読み方を見直す');
+  for (const v of values) assert.equal(TRES.written('回答です', v), v !== 'none', 'completion=' + v);
+  assert.equal(TRES.written('回答です', ''), false, '実行前に書かれた say（completion がまだ無い）では文を外さない');
+  assert.equal(TRES.written('回答です', undefined), false);
+  assert.equal(TRES.written('', 'complete'), false, '本文が空なら外さない');
+  const src = fs.readFileSync(new URL('../js/atlas-console.js', import.meta.url), 'utf8');
+  assert.match(src, /const _done=TRES\.written\(say,ai\.__atlCompletion\)/);
+  assert.doesNotMatch(src, /__atlCompletion==='answered'/, "'answered' は stopped の値であって completion の値ではない");
+});

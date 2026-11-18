@@ -2629,7 +2629,7 @@ export function atlasConsole(HOST){
       let body=''; const seen=Object.create(null);
       /* (atlas-answer-integrity) a result whose content Atlas's words already carry is FOLDED to its one line — js/atlas-turn-results.js `present` has the measurement; its sources stay in the list below (SRCS reads `keep`). */
       /* ⚠⚠ (atlas-completion) ONE EXPLANATION PER REPLY. Once Atlas has written its final answer (`say`), a research tool's own interim answer that `present` cannot measure (no subject) and a failed operation's message are working material: kept, folded under the answer, failures named in one line. A ranking the words do NOT carry stays in the body — it is the evidence the answer rests on. */
-      const _pres=TRES.present(keep,say); const _done=!!say&&ai.__atlCompletion==='answered';   /* (atlas-answer-surface) Atlas finished and wrote its answer: the sentences the tools wrote are its to say — js/atlas-turn-results.js `forReader` */
+      const _pres=TRES.present(keep,say); const _done=TRES.written(say,ai.__atlCompletion);   /* (atlas-answer-surface) Atlas finished and wrote its answer: the sentences the tools wrote are its to say — js/atlas-turn-results.js `forReader` */
       /* ONE ACTION ROW, NOT A NOTE AND A TOGGLE: a kept result that declares it says only its names (`exec.shown`) hands them to
          the map-toggle row, so the reader sees «names · toggle» once. Only while that row exists — without a toggle the note stays. */
       const _shownRes=keep.filter(r=>r&&r.ok!==false&&r.exec&&r.exec.shown&&Array.isArray(r.exec.shown.names)&&r.exec.shown.names.length);
