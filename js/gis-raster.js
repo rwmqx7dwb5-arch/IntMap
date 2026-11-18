@@ -435,16 +435,30 @@ export function makeGisRaster() {
       return { ok: true, km2: km2, row: r, north: rowNorth(raster, r), south: rowNorth(raster, r + 1) };
     }
 
-    /* Which pixel holds a position. Floor, so the cell owns [west, west+pixelLng) — the half-open
-       interval that makes every position belong to exactly one pixel. The east and south EDGES of the
-       whole grid are therefore outside it by one limit; that is one line of pixels' worth of edge and
-       it is the price of not double-counting every interior boundary. */
+    /* The longitude of a query IN THE GRID'S OWN FRAME. A longitude is periodic, and a grid is written
+       on whichever side of the seam its producer chose (zonal's `columnRanges` tries every whole turn
+       for the same reason), so 540.5, 180.5 and −179.5 are one place and a grid written 179.5…181.5
+       owns −179.8. The query moves by whole turns into [west, west+360); the FIRST turn wins, which is
+       what makes 180 and −180 on a global grid the same column (the west one) rather than two answers.
+       ⚠ THE OTHER TWO OUTER EDGES ARE CLOSED. Interior boundaries are half-open (a position belongs to
+       exactly one pixel); the OUTER east and south limits of a grid narrower than one turn belong to the
+       last column and last row, so that lat −90 is answered exactly as lat +90 is. */
+    function lngInFrame(raster, lng) {
+      const west = raster.grid.west;
+      const t = lng - west;
+      return west + (t - 360 * Math.floor(t / 360));
+    }
     function pixelAt(raster, lng, lat) {
       const g = raster.grid;
-      const col = Math.floor((lng - g.west) / g.pixelLng);
-      const row = Math.floor((g.north - lat) / g.pixelLat);
+      const east = g.west + g.pixelLng * raster.width;
+      const south = g.north - g.pixelLat * raster.height;
+      const L = lngInFrame(raster, lng);
+      let col = Math.floor((L - g.west) / g.pixelLng);
+      let row = Math.floor((g.north - lat) / g.pixelLat);
+      if (L === east) col = raster.width - 1;
+      if (lat === south) row = raster.height - 1;
       if (!(col >= 0 && col < raster.width && row >= 0 && row < raster.height)) return null;
-      return { row: row, col: col };
+      return { row: row, col: col, lng: L };
     }
 
     /* ── sampling ─────────────────────────────────────────────────────────────────────────────── */
@@ -608,7 +622,7 @@ export function makeGisRaster() {
          offset by 0.5 because the value belongs to the centre of its cell, not to its corner — the
          same −0.5 js/map-readout.js's DEM sampler applies for the same reason. */
       const g = raster.grid;
-      const fx = (lng - g.west) / g.pixelLng - 0.5;
+      const fx = (at.lng - g.west) / g.pixelLng - 0.5;
       const fy = (g.north - lat) / g.pixelLat - 0.5;
       const x0 = Math.floor(fx), y0 = Math.floor(fy);
       const tx = fx - x0, ty = fy - y0;
@@ -2364,7 +2378,13 @@ export function makeGisRaster() {
        `fractional` and `allTouched` answer over a notched, bayed or holed zone therefore moves:
        areaKm2, sumTimesAreaKm2, mean and the class areas. ⚠ `center` is untouched — it never asked
        for a cover — and a project saved with the default replays to the same numbers as before. */
-    const KERNEL_VERSION = 'raster-4';
+    /* (#W4) raster-4 -> raster-5: `sample` ANSWERS WHERE IT USED TO SAY `outside`. A longitude is read in the
+       grid's own frame (180 ≡ −180, 540.5 ≡ −179.5, −179.8 on a 179.5…181.5 grid), and the outer east
+       and south edges of a grid narrower than one turn belong to the last column and row, so lat −90 is
+       answered as lat +90 always was. Nothing that answered before changes its number; a replayed
+       step that was an `outside` refusal may now be a value (and a bilinear fraction at a wrapped
+       longitude is taken in the wrapped frame). */
+    const KERNEL_VERSION = 'raster-5';
 
     const API = {
       /* see KERNEL_VERSION above — js/gis-project.js records which kernel answered */

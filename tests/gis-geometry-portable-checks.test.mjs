@@ -281,6 +281,12 @@ const PROBES = {
      the sweep line and would be classified by the probe rather than by the operation. */
   repair: [BOWTIE],
   coverage: [[box(0, 0, 1, 1), box(1, 0, 2, 1)], { overlaps: 'forbid' }],
+  /* (gis-foundation-refine) the measures a shape has of itself */
+  bbox: [box(0, 0, 2, 2)],
+  centroid: [box(0, 0, 2, 2)],
+  pointOnSurface: [box(0, 0, 2, 2)],
+  convexHull: [LINE],
+  simplify: [LINE, 1],
 };
 
 const DEP_CODE = { clipper: 'clipper-unavailable', geodesy: 'geodesy-unavailable' };
@@ -329,8 +335,10 @@ test('R819 ⑤ the public doors answer exactly what they answered before the ker
 
   /* (wave4-refine) raised to geom-3 for a change of meaning that is not this test's subject (bands
      and caps stated by their full parallels — js/gis-geometry.js, the note above KERNEL_VERSION);
-     every number below is still the one measured before the wrap. */
-  assert.equal(geometry.version(), 'geom-3');
+     every number below is still the one measured before the wrap.
+     (gis-foundation-refine) geom-4: polar and long-edge buffers, DE-9IM predicates — again not this
+     test's subject; none of the probes below touches a pole, a long edge or a boundary. */
+  assert.equal(geometry.version(), 'geom-4');
   assert.equal(geometry.available(), true);
 
   assert.deepEqual(geometry.union([box(0, 0, 2, 2), box(1, 1, 3, 3)]),

@@ -896,6 +896,50 @@ export function makeGisAtlas(core) {
       };
     }
 
+    /* ── taking a dataset out of the app as a file ───────────────────────────────────────────── */
+
+    /* ⚠ THE DOOR IS THE PANEL'S DOOR. js/gis-panel.js's 「ファイルに書き出す」 calls
+       IntMapGisExport.write(id, {format}) and saves what comes back; Atlas could draw a dataset and
+       could not hand it to the reader, so 「この結果を KML で」 had nothing to call. This is the same
+       call, and nothing in it is decided here: THE FORMATS ARE THE WRITER'S OWN DECLARATION (a
+       refusal that names none answers with every id, `export-format-unknown` the same), and every
+       refusal — a polygon asked of GPX, a CRS the file cannot state — travels back by its own code
+       and detail. A write that succeeded and could not be saved is said to be exactly that.
+       ⚠ THE ANSWER'S SENTENCE IS BUILT FROM `stated`, never from what the format is assumed to do:
+       what the file did NOT keep comes first, because a line that opens with 「書き出しました」 and
+       mentions the lost rows at the end is read as a success. */
+    async function exportDataset(action) {
+      const a = action || {};
+      const cache = makeCache();
+      const r = await resolveRef(a.dataset, 0, {}, cache, a);
+      if (!r.ok) return r;
+      let X = null;
+      try { X = (await import('./gis-export.js')).makeGisExport(); } catch (_) { X = null; }
+      if (!X || typeof X.write !== 'function') return fail('map-unavailable', { needs: 'IntMapGisExport' });
+      const opts = { format: a.format };
+      for (const k of ['band', 'bands', 'dataType']) if (a[k] != null) opts[k] = a[k];
+      const res = X.write(r.id, opts);
+      if (!res || res.ok === false) return fail((res && res.why) || 'export-serialise-failed', Object.assign({ id: r.id }, (res && res.detail) || {}));
+      if (!X.save(res)) return fail('export-not-saved', { id: r.id, filename: res.filename, reason: 'this environment has no way to save a file' });
+      const st = res.stated || {};
+      const lost = [];
+      if (st.rowsWithoutGeometry) lost.push(L('rows with no shape: ', '図形を持たない行: ') + st.rowsWithoutGeometry);
+      if (st.geometry === 'wkt' && st.geometryRoundTrip === false) lost.push(L('the shapes are WKT text and read back as attributes only', '図形は WKT のテキストで、読み直すと属性だけになります'));
+      if (st.charactersRemoved) lost.push(L('characters XML cannot hold, removed: ', 'XML に書けず取り除いた文字: ') + st.charactersRemoved);
+      if (st.cellsNotWritten || st.nonFiniteCells) lost.push(L('values with no notation in this format, left out: ', 'この形式に表記が無く書かなかった値: ') + (st.cellsNotWritten || st.nonFiniteCells));
+      if (st.time && st.time.notCarried) lost.push(L('declared time values that are not valid dates in this format (kept as attributes): ', 'この形式の日時として書けず属性のまま残した時刻: ') + st.time.notCarried);
+      const kept = [];
+      if (st.license != null) kept.push(L('licence carried: ', 'ライセンスを入れました: ') + st.license);
+      else kept.push(st.provenanceCarried ? L('the dataset states no licence, so the file claims none', 'ライセンスの記載が無いため、ファイルにも書いていません') : L('this format carries no origin (GeoJSON does)', 'この形式は出典を運びません（GeoJSON は運びます）'));
+      const parts = lost.concat(kept);
+      return {
+        ok: true, exported: true, format: res.format, filename: res.filename, bytes: res.bytes.length, stated: st,
+        dataset: datasetRow(data.get(r.id)),
+        html: '<div class="atlas-gis-result">' + esc(L('Saved as a file', 'ファイルに書き出しました')) + ': ' + esc(res.filename)
+          + ' · ' + esc(res.format) + (parts.length ? '<div class="atlas-gis-detail">' + parts.map(esc).join('<br>') + '</div>' : '') + '</div>',
+      };
+    }
+
     /* ⚠ (#R819) 申告と実測を並べる扉。describe() carries the CLAIM — capabilitiesOf(), read off the
        registration, free — and this one MEASURES it through the same doors a caller uses and names
        every place the two disagree. They are separate because they cost differently: an audit
@@ -914,6 +958,8 @@ export function makeGisAtlas(core) {
 
     const API = {
       catalogue, run, draw, acquire: acquireOnly,
+      /* the file a reader takes away (js/gis-export.js's formats, not a list kept here) */
+      export: exportDataset,
       /* (#R819) 供給元の能力——申告は describe() の `query.capabilities`、実測はこの扉。 */
       capabilities,
       /* (#R783) 取得する前に供給元が述べていること。One surface for the panel, Atlas and an external
