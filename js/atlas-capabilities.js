@@ -367,6 +367,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.sanctions","sanctions","sanctionsList,designatedParties,sanctionedCountries","data","none","map.layerOption","explanation","session","none","",""],
       ["data.unVote","unVote","unGeneralAssemblyVote,unResolutionVote,howDidCountriesVote","data","none","map.layerOption","explanation","session","none","",""],
       ["data.borderCrossings","borderCrossings","borderControl,borderCheckpoint,landBorderCrossing","data","none","map.layerOption","explanation","session","none","point",""],
+      ["research.delegate","delegate","delegateResearch,parallelResearch","research","none","","explanation","read","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 

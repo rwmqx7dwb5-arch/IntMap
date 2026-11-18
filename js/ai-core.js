@@ -383,6 +383,8 @@ export function aiCore(HOST){
          the body (so an over-quota caller's body is never parsed). ⚠ AND IT IS NOT TRUSTED: the
          server binds it to the account, caps how many calls one key may carry and expires it. */
       if(opts.turnId) headers['x-intmap-turn']=String(opts.turnId).slice(0,120);
+      /* (atlas-delegation) a worker's call names the reader turn that opened it — js/atlas-delegate.js; ai-proxy decides how it is paid for */
+      if(opts.parentTurnId) headers['x-intmap-parent-turn']=String(opts.parentTurnId).slice(0,120);
       /* (#R491) …and the LANE, for the identical reason: which counter pays is decided before the
          body is read. The server verifies this header against `task` once it HAS read the body. */
       if(opts.lane) headers['x-intmap-lane']=String(opts.lane).slice(0,16);
