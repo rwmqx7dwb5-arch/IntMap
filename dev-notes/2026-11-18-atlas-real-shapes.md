@@ -1,6 +1,7 @@
 ---
 title: Atlas の地図説明が「地名の点を線で結ぶ」しか持たず、面や線である地物（地質帯・断層・川・流域）を模式図で完了扱いにしていた——項目に実形状を持たせ、取れなければ代用せず未完と報告する
 date: 2026-11-18
+pr: 1211
 newsen: When Atlas maps a region or a line itself — a basin, a river, a geological zone, a fault — it now draws the thing's real outline with its source (approximate ones dashed and labelled), and says plainly when no real shape exists instead of joining nearby places with lines.
 newsjp: Atlas が流域・川・地質帯・断層のような「面や線そのもの」を地図にするとき、実際の形を出典つきで描くように（近似は破線で明示）。実形状が無いときは近くの地名を線で結んで代用せず、描けなかったと伝えます。
 ---
