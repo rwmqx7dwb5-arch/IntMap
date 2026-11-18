@@ -207,7 +207,6 @@ export function makeAtlasReply(HOST, CTX) {
        load clears itself so the next render retries; arrival typesets the document (idempotent). */
     let _atlKatexLoad=null;
     function _atlEnsureKatex(){ try{ if(window.katex&&window.katex.renderToString) return; if(_atlKatexLoad) return;
-      if(!window.IntMapVendor||typeof window.IntMapVendor.katex!=='function') return;
       _atlKatexLoad=window.IntMapVendor.katex().then(()=>{ _atlKatexLoad=null; _atlTypesetMath(document);
         try{ requestAnimationFrame(()=>_atlTypesetMath(document)); }catch(_){} },()=>{ _atlKatexLoad=null; });
     }catch(_){ _atlKatexLoad=null; } }
