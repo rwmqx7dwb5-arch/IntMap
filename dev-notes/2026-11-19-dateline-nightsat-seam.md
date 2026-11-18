@@ -34,3 +34,9 @@ z8 では最外列だけが明るく（28〜64）黒は 1 列目から始まる�
 ## 2. 残り
 - 比較ウィンドウ（`js/compare.js` の夜間光）は素の URL のままで、同じ筋が出うる。別の描画器インスタンスなので今回は触っていない。
 - 本番での再確認は merge・配信後。
+
+## 3. 起動費用（perf 上限）
+`js/antimeridian-seam.js` は `dl-nightsat` を持つ `js/data-layers.js` から静的に import されるので eager に 1 モジュール増える
+（eager.modules 907→908）。eager.raw の超過（4665.3→4689.9 kB）は新モジュール 1 本（コメント込みで約 6 kB）より大きく、
+残りは main に先に入った変更の分で、その ceiling は main の CI が merge 後に記録する。上限は `perf-budget.mjs --update` で
+超えた行だけ上げた。遅延 import に分けなかった理由: 夜側のモザイクと raster 層が同じ判定を共有し、層を開いた瞬間に要るため。
