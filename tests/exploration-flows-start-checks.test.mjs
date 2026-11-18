@@ -110,3 +110,11 @@ test('④ every row presses a door that exists — the owners still have it', ()
   assert.match(sg, /<div class="sg-resume" hidden><\/div><div class="sg-explore"><\/div><div class="sg-strip"/);
   assert.match(sg.slice(sg.indexOf('export function showInResults('), sg.indexOf('/** the empty state is showing in this list */')), /drawStarters\(res, leave\)/);
 });
+
+/* measured 2026-11-18: a view of central Europe ordered by visible area gave Russia, Iran, Algeria… and no Germany */
+test('the comparison takes the countries nearest the centre of the view first', async () => {
+  const { nearestFirst } = await import('../js/showcase-gallery.js');
+  const stats = { RUS: { latlng: [60, 90] }, IRN: { latlng: [32, 53] }, DEU: { latlng: [51, 10] }, FRA: { latlng: [46, 2] }, XXX: {} };
+  assert.deepEqual(nearestFirst(['RUS', 'IRN', 'XXX', 'FRA', 'DEU'], { lng: 10, lat: 50 }, stats), ['DEU', 'FRA', 'IRN', 'RUS', 'XXX']);
+  assert.deepEqual(nearestFirst(['RUS', 'DEU'], null, stats), ['RUS', 'DEU'], 'no view: the order is kept');
+});
