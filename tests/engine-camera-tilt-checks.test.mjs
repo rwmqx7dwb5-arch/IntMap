@@ -101,7 +101,7 @@ test('#R171 the viewpoint-altitude readout is a real setting, in five languages,
     }
   }
   const readout = stripComments(R('js/map-readout.js'));
-  assert.match(readout, /window\.IntMapEyeAlt\.text\(\)/, 'the readout asks the module for its chip');
+  assert.match(readout, /(?:window\.IntMapEyeAlt\.text\(\)|const E=_crEyeAlt\(\); return E\?E\.text\(\))/, 'the readout asks the module for its chip');
   assert.match(readout, /if\(!eye\)\{ el\.style\.display='none'; return; \}/,
     'with the option on, the readout must stay up when the cursor leaves the map — the camera altitude is still true, and it is the ALWAYS-on readout');
 });

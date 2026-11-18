@@ -2657,7 +2657,8 @@ export function labelPopup(HOST){
         _hidLbl=keep; }catch(_){ _restoreLabel(); } }
     function _dropPin(mine){ if(!placePin||(mine&&mine!==placePin)) return; const p=placePin; placePin=null; _restoreLabel(); try{ p.remove(); }catch(_){} }
     /* stand the pin on the point; hands back its box (the name chip counts: it is what a popup beside it must clear) */
-    function _standPin(lngLat,name){ _dropPin(); _pinCss();
+    function _standPin(lngLat,name){ try{ return _standPinNow(lngLat,name); }catch(_){ return null; } }   /* a pin is decoration: a host that cannot draw one (no DOM) still opens the card */
+    function _standPinNow(lngLat,name){ _dropPin(); _pinCss();
       const el=document.createElement('div'); el.className='plc-pin';
       const nm=document.createElement('div'); nm.className='pp-name'; nm.textContent=String(name||''); const bd=document.createElement('div'); bd.className='pp-body';
       el.appendChild(bd); el.appendChild(nm);
@@ -2668,7 +2669,8 @@ export function labelPopup(HOST){
         if(r.width>0){ w=Math.max(30,Math.round(nr.width)); h=Math.round(Math.max(38,r.bottom-nr.top)); } }catch(_){}
       return { mk, box:{w,h} }; }
     /* which side of the pin the card opens on: right unless something is in the way (js/popup-placement.js) */
-    function _placeBeside(lngLat,html,pin){
+    function _placeBeside(lngLat,html,pin){ try{ return _placeBesideNow(lngLat,html,pin); }catch(_){ return {}; } }   /* no placement is still a popup: the engine's own default anchor */
+    function _placeBesideNow(lngLat,html,pin){
       const box=pin&&pin.box||{w:30,h:38};
       try{ const cv=GE().render.canvas(), host=document.getElementById('map-container'); const cr=cv.getBoundingClientRect();
         const p=GE().coords.project([lngLat.lng,lngLat.lat]);
@@ -3011,7 +3013,7 @@ export function labelPopup(HOST){
       };
     }};
     function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
-      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
+      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-city-dot',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
       GEO_LBL.forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
       ALL_LBL.filter(id=>!placeReaders.has(id)).forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
