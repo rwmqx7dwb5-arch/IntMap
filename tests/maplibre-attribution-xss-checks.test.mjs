@@ -26,6 +26,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
+import { cartoBasemapScript, esriImageryStub } from './helpers/carto-basemap-script.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -176,9 +177,9 @@ test('② compare and the guessing game ask for a credit', () => {
 });
 
 test('② the credit names what is drawn, follows a base switch, and goes with the view', async () => {
-  const sandbox = { window: {}, document: { readyState: 'complete', getElementById: () => null } };
+  const sandbox = { window: {}, document: { readyState: 'complete', getElementById: () => null }, __esriImagery: esriImageryStub };
   sandbox.window.document = sandbox.document;
-  vm.runInNewContext(rd('js/carto-basemap.js'), sandbox, { filename: 'carto-basemap.js' });
+  vm.runInNewContext(cartoBasemapScript(), sandbox, { filename: 'carto-basemap.js' });
   const CARTO = sandbox.window.CARTO_ATTRIBUTION;
   assert.ok(typeof CARTO === 'string' && /CARTO/.test(CARTO) && /OpenStreetMap/.test(CARTO));
 

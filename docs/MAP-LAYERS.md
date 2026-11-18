@@ -1154,7 +1154,7 @@ API ホストを含むか目録を import するファイルの行表（`{id:'<k
   ——z10 近傍ごとに `have`（実画像が見えた最深）と `stop`（次の段が灰色だと**観測された**最深）を
   **別々に**持ち、止めてよいのは `stop` だけ。記録は**訊かれたタイル**に対して行う（祖先に対してではない）。
   観測は `window.IntMapSatProto.depth/wouldStitch/hiDPI`。
-- **衛星画像の取得先は `js/esri-imagery.js` 1 か所**：`ESRI_IMAGERY_KEY` が空なら鍵なしの arcgisonline 2 ホスト
+- **衛星画像の取得先は `js/esri-imagery.js` 1 か所**：`ESRI_IMAGERY_KEY` が空なら（いまの既定。鍵付きは計測で遅かった）鍵なしの arcgisonline 2 ホスト
   （HTTP/1.1・計 12 接続）、鍵があれば ArcGIS Location Platform の `ibasemaps-api.arcgis.com`（h2・タイル課金）。
   鍵が拒否された応答（非 2xx か image/* 以外。拒否は HTTP 200 の JSON で来る）はそのページの間だけ鍵なしへ戻し、
   同じタイルを 1 回取り直す。出典は「Powered by Esri · Sources: <サービスの copyrightText>」。鍵付きのタイルは

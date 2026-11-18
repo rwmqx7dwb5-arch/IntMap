@@ -24,7 +24,9 @@ const settle = async (n = 8) => { for (let i = 0; i < n; i++) await tick(); };
 /* the worker, in a sandbox whose `fetch` is held open until the test lets it answer */
 /* the worker imports js/esri-imagery.js; the sandbox hands it that module (or a stand-in with a key) */
 const IMPORT_RE = /^import \{([^}]*)\} from '\.\.\/js\/esri-imagery\.js';$/m;
-function bootWorker(esri = esriImagery, reply = () => ({ ok: true, status: 200, headers: { get: () => 'image/jpeg' }, arrayBuffer: async () => new ArrayBuffer(9000) })) {
+/* the keyless hosts (HTTP/1.1, where the lane cap applies), whatever key the shipped module carries */
+const KEYLESS = { ...esriImagery, imageryKeyed: () => false, imageryRefused: () => {}, imageryTileUrl: esriImagery.keylessTileUrl };
+function bootWorker(esri = KEYLESS, reply = () => ({ ok: true, status: 200, headers: { get: () => 'image/jpeg' }, arrayBuffer: async () => new ArrayBuffer(9000) })) {
   const calls = [];          /* every URL handed to the browser, in order */
   const pending = [];        /* their resolvers */
   const posted = [];
@@ -181,7 +183,7 @@ test('⑧ the DEM warm-up samples the SCREEN: sky is skipped, and the bounds are
 function keyedEsri() {
   let refused = false; const why = [];
   return { why, imageryKeyed: () => !refused, imageryRefused: (w) => { refused = true; why.push(w); }, isImageryReply: esriImagery.isImageryReply,
-    imageryTileUrl: (z, y, x) => (refused ? esriImagery.imageryTileUrl(z, y, x) : 'https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y + '/' + x + '?token=K') };
+    imageryTileUrl: (z, y, x) => (refused ? esriImagery.keylessTileUrl(z, y, x) : 'https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y + '/' + x + '?token=K') };
 }
 const refusing = (u) => /token=/.test(u)
   ? { ok: true, status: 200, headers: { get: () => 'text/plain; charset=utf-8' }, arrayBuffer: async () => new ArrayBuffer(60) }
@@ -194,14 +196,14 @@ test('⑨ worker: a keyed reply that is not an image → the same tile again, ke
   await settle();
   assert.equal(W.calls.length, 2, 'asked twice');
   assert.match(W.calls[0], /ibasemaps-api.*token=/);
-  assert.equal(W.calls[1], esriImagery.imageryTileUrl(14, 100, 200), 'the second ask is the keyless URL of the SAME tile');
+  assert.equal(W.calls[1], esriImagery.keylessTileUrl(14, 100, 200), 'the second ask is the keyless URL of the SAME tile');
   assert.deepEqual(E.why, ['text/plain; charset=utf-8'], 'the refusal is reported once, with what came back');
   const r = W.posted.find((m) => m.id === 1);
   assert.ok(r && r.ok && r.mode === 'native', 'a real tile, not the 60-byte refusal read as a placeholder');
   /* after the refusal every later tile goes keyless straight away */
   W.send({ type: 'tile', id: 2, z: 14, y: 100, x: 202, hi: false });
   await settle(); W.answer(() => true); await settle();
-  assert.equal(W.calls[2], esriImagery.imageryTileUrl(14, 100, 202));
+  assert.equal(W.calls[2], esriImagery.keylessTileUrl(14, 100, 202));
 });
 
 test('⑩ main thread (the fallback path): the same refusal, the same one retry', async () => {
@@ -215,12 +217,12 @@ test('⑩ main thread (the fallback path): the same refusal, the same one retry'
     async (u) => { calls.push(u); return refusing(u); }, E.imageryKeyed, E.imageryRefused, E.isImageryReply, E.imageryTileUrl);
   const r = await get(14, 100, 200);
   assert.equal(calls.length, 2);
-  assert.equal(calls[1], esriImagery.imageryTileUrl(14, 100, 200));
+  assert.equal(calls[1], esriImagery.keylessTileUrl(14, 100, 200));
   assert.ok(esriImagery.isImageryReply(r), 'what is returned is the image');
   /* keyless from the start: one ask, no retry, even for a non-image */
   const calls2 = [];
   const get2 = new Function('fetch', 'imageryKeyed', 'imageryRefused', 'isImageryReply', '_satUrl', s.slice(a, i + 1) + '; return _satGet;')(
-    async (u) => { calls2.push(u); return { ok: false, status: 404, headers: { get: () => '' } }; }, () => false, () => { throw new Error('not keyed'); }, E.isImageryReply, esriImagery.imageryTileUrl);
+    async (u) => { calls2.push(u); return { ok: false, status: 404, headers: { get: () => '' } }; }, () => false, () => { throw new Error('not keyed'); }, E.isImageryReply, esriImagery.keylessTileUrl);
   await get2(14, 100, 200);
   assert.equal(calls2.length, 1, 'the keyless path is asked once, as before');
 });

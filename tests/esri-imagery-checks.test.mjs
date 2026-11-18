@@ -18,9 +18,9 @@ const SRC = readFileSync(new URL('js/esri-imagery.js', root), 'utf8');
 async function load(key) {
   /* a data: URL, so nothing is written to the checkout; the module's own imports are lazy (inside the
      credit refresh, never called here), so it evaluates on its own */
-  assert.match(SRC, /export const ESRI_IMAGERY_KEY = '[^']*';/, 'the key is one line the test can set');
+  assert.match(SRC, /^const ESRI_IMAGERY_KEY = '[^']*';/m, 'the key is one line the test can set');
   assert.doesNotMatch(SRC, /^import /m, 'no static import — the worker imports this module too');
-  const text = SRC.replace(/export const ESRI_IMAGERY_KEY = '[^']*';/, 'export const ESRI_IMAGERY_KEY = ' + JSON.stringify(key) + ';');
+  const text = SRC.replace(/^const ESRI_IMAGERY_KEY = '[^']*';/m, 'const ESRI_IMAGERY_KEY = ' + JSON.stringify(key) + ';');
   return import('data:text/javascript;charset=utf-8,' + encodeURIComponent(text + '\n//' + Math.random()));
 }
 
