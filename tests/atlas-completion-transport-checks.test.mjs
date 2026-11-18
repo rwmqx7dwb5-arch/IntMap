@@ -54,7 +54,7 @@ const failOf = async (IM) => { try { await IM.askAIJSONEnvelope('q', 's', null, 
 test('A6a ① a failure the server calls not retryable keeps its code, status, retryable and meta — and is not «temporarily unavailable»', async () => {
   try {
     const body = JSON.stringify({ error: 'provider_unavailable', message: 'AI provider error 400.', retryable: false,
-      meta: { provider: 'openai', model: 'gpt-6.1-sol', task: 'free_text', providerStatus: 400, bodyLen: 120, nested: { leak: 'x' } } });
+      meta: { provider: 'openai', model: 'gpt-6.2-sol', task: 'free_text', providerStatus: 400, bodyLen: 120, nested: { leak: 'x' } } });
     const { IM, calls } = await core(() => res(502, body));
     const e = await failOf(IM);
     assert.ok(e, 'the call failed');
@@ -107,7 +107,7 @@ async function withFetch(fn, body) { const keep = globalThis.fetch; globalThis.f
 
 test('A6b openai: an incomplete Responses answer keeps its text and says why it stopped', async () => {
   const { callOpenAI } = await imp('providers/openai.ts');
-  const call = () => callOpenAI('gpt-6.1-sol', 'k', 'p', 's', [], [], [], false, 500, false, false, 'low', 'auto', true, null, null, '', meter);
+  const call = () => callOpenAI('gpt-6.2-sol', 'k', 'p', 's', [], [], [], false, 500, false, false, 'low', 'auto', true, null, null, '', meter);
   const cut = await withFetch(async () => ok({ status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, model: 'm', output: [msg('half')] }), call);
   assert.equal(cut.text, 'half');
   assert.equal(cut.incompleteReason, 'max_output_tokens');
@@ -135,7 +135,7 @@ test('A6b anthropic / gemini: a stop that is not the model\'s own end is reporte
 
 test('B3 openai: a required search taken away is reported as failed, with what took it', async () => {
   const { callOpenAI } = await imp('providers/openai.ts');
-  const call = () => callOpenAI('gpt-6.1-sol', 'k', 'p', 's', [], [], [], true, 500, false, true, 'low', 'auto', true, null, null, '', meter);
+  const call = () => callOpenAI('gpt-6.2-sol', 'k', 'p', 's', [], [], [], true, 500, false, true, 'low', 'auto', true, null, null, '', meter);
   const sent = [];
   const timedOut = await withFetch(async (u, init) => {
     sent.push(JSON.parse(init.body));
@@ -181,14 +181,14 @@ function runProxy(env, requests) {
 }
 
 test('A6b · B3 ai-proxy: meta.status / incompleteReason / web are the provider\'s report, in the answer the page receives', async () => {
-  const env = { SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', SUPABASE_SERVICE_ROLE_KEY: 'service-key', AI_PROVIDER: 'openai', AI_MODEL: 'gpt-6.1-sol', OPENAI_API_KEY: 'sk' };
+  const env = { SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', SUPABASE_SERVICE_ROLE_KEY: 'service-key', AI_PROVIDER: 'openai', AI_MODEL: 'gpt-6.2-sol', OPENAI_API_KEY: 'sk' };
   const user = { id: 'u-1', email: 'r@example.test', aud: 'authenticated', role: 'authenticated' };
   const headers = { Authorization: 'Bearer jwt', 'content-type': 'application/json', 'x-intmap-turn': 'turn-c1' };
   const out = await runProxy(env, [
     { method: 'POST', headers, user, body: { task: 'free_text', prompt: 'hi' },
-      provider: [{ status: 200, json: { model: 'gpt-6.1-sol', status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output: [msg('half an answer')] } }] },
+      provider: [{ status: 200, json: { model: 'gpt-6.2-sol', status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output: [msg('half an answer')] } }] },
     { method: 'POST', headers, user, body: { task: 'free_text', prompt: 'latest?', webMode: 'required' },
-      provider: [{ status: 200, json: { model: 'gpt-6.1-sol', status: 'completed', output: [{ type: 'web_search_call', action: { type: 'search', sources: [] } }, msg('nothing on the web')] } }] },
+      provider: [{ status: 200, json: { model: 'gpt-6.2-sol', status: 'completed', output: [{ type: 'web_search_call', action: { type: 'search', sources: [] } }, msg('nothing on the web')] } }] },
   ]);
   const [cut, empty] = out.map((r) => r.body);
   assert.equal(out[0].status, 200);

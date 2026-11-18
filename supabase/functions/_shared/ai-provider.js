@@ -52,13 +52,13 @@ import { secretKey } from "./supabase-keys.js";
    provider's own current light model is claude-haiku-4-5-20251001 (Anthropic's model list, read
    2026-09-29). It expires when that id is retired; the developer's model picker (ai-proxy `op:
    "models"`) lists what the provider offers today, so the replacement is read there, not guessed. */
-/* (atlas-gpt6-models) …AND IT IS GPT-6.1 SOL NOW, with GPT-6.1 Terra and GPT-6 Luna under it — the user's
+/* (atlas-gpt6-models) …AND IT IS GPT-6.2 SOL NOW (was 6.1 until 2026-11-18), with GPT-6.1 Terra and GPT-6 Luna under it — the user's
    instruction of 2026-11-16: 「Sol→Terra→luna の順番かつ、それぞれの最新番号に」. Read from OpenAI's own model
-   pages and pricing that day: gpt-6.1-sol $2/$10, gpt-6.1-terra $1/$5, gpt-6-luna $0.1/$0.5 per 1M tokens
+   pages and pricing that day: gpt-6.1-sol $2/$10 (the 6.2 price was not read), gpt-6.1-terra $1/$5, gpt-6-luna $0.1/$0.5 per 1M tokens
    (input/output) — gpt-5.6-terra, the model it replaces, was $2/$12. All three take reasoning effort
    low/medium/high (the only values callOpenAI sends) and the Responses API's hosted web_search.
    Expires when OpenAI ships a newer point release of any of the three. */
-export const OPENAI_DEFAULT_MODEL = "gpt-6.1-sol";
+export const OPENAI_DEFAULT_MODEL = "gpt-6.2-sol";
 /* (#R722) What answers when the default cannot, IN ORDER — ai-proxy walks it one step per 403/404
    model_not_found. ⚠ ORDER IS THE POLICY: newest first, oldest-and-known-good last. */
 export const FALLBACK_CHAIN = ["gpt-6.1-terra", "gpt-6-luna"];
