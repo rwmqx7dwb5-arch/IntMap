@@ -69,7 +69,10 @@
         "tool": "",
         "shapes": {
           "n": 1,
-          "line:real": 1
+          "line:real": 1,
+          "names": [
+            "信濃川"
+          ]
         }
       }
     }

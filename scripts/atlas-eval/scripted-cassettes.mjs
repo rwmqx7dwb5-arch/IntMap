@@ -251,7 +251,7 @@ export const SCENARIOS = [
       say('信濃川の流路を地図に描きました（OpenStreetMap の水路）。幹川流路延長は367 kmで、日本一長い川です。'),
     ],
     respond: () => done('<div>✦ 信濃川</div>', ['map']),
-    snapshot: { atlas: { ...ATLAS_EMPTY, lines: { n: 1 }, shapes: { n: 1, 'line:real': 1 } } },
+    snapshot: { atlas: { ...ATLAS_EMPTY, lines: { n: 1 }, shapes: { n: 1, 'line:real': 1, names: ['信濃川'] } } },
     expect: { verdict: 'pass', grade: 'correct', map: 'match' },
   },
   {
