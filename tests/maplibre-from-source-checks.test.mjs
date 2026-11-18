@@ -19,7 +19,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import * as acorn from 'acorn';
@@ -83,17 +83,24 @@ test('③ the chunk groups hold every package MapLibre\'s source reaches', () =>
   /* a package's own directory, looked up the way Node walks node_modules (a package's `exports` may
      not expose ./package.json, so require.resolve cannot be asked for it) */
   const dirOf = (name, from) => createRequire(join(from, 'package.json')).resolve.paths(name).map((b) => join(b, name)).find((d) => existsSync(join(d, 'package.json')));
-  const reach = new Set(), q = [[ 'maplibre-gl', PKG_DIR ]];
+  const reach = new Map(), q = [[ 'maplibre-gl', PKG_DIR ]];
   while (q.length) {
     const [name, dir] = q.shift();
     for (const d of Object.keys(JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).dependencies || {})) {
       if (d.startsWith('@types/') || reach.has(d)) continue;
-      reach.add(d); q.push([d, dirOf(d, dir)]);
+      const at = dirOf(d, dir);
+      reach.set(d, at); q.push([d, at]);
     }
   }
   assert.ok(reach.size >= Object.keys(PKG.dependencies).length - 1, 'discovered from the installed package.json files');
-  const missing = [...reach].filter((p) => !groups.every((g) => g.test(`/x/node_modules/${p}/index.js`)));
+  /* (deps-minor-patch-nov) asked with the file's REAL path: the groups claim the directories MapLibre's
+     own resolution reaches, not a name found anywhere in a path */
+  const missing = [...reach].filter(([, at]) => !groups.every((g) => g.test(slash(realpathSync.native(at)) + '/index.js'))).map(([p]) => p);
   assert.deepEqual(missing, [], 'none of them falls to another group (the lazy cesium group also names pbf and @mapbox/vector-tile)');
+  /* …and the same NAME installed privately under another package is that package's, not MapLibre's —
+     measured: cesium 1.147's own earcut under @cesium/core/node_modules landed in the eager chunk */
+  const claimed = [...reach.keys()].filter((p) => groups.some((g) => g.test(slash(join(PKG_DIR, '..', 'some-other-package', 'node_modules', p, 'index.js')))));
+  assert.deepEqual(claimed, [], 'another package\'s private copy of a same-named dependency is not claimed by MapLibre\'s groups');
 });
 
 test('④ the worker may evaluate the bundler\'s runtime, and still not a plugin\'s virtual module', async () => {
