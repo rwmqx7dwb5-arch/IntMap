@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { heldWhole, meanWidthKm } from '../scripts/build-hist-clio.mjs';
 import { inlandKmFor } from '../scripts/build-border-coast.mjs';
 import * as CS from '../scripts/histclio/coast-snap.mjs';
+import { nearestSheet as pageNearest } from '../js/hist-sheet-pick.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -83,10 +84,8 @@ test('③ the snap bundle as shipped: its parents, its years, on land, inside no
   }
 });
 
-test('④ the build dates a sheet\'s pieces by the sheet the page shows (`nearest`, evaluated from js/time-borders.js)', () => {
-  const src = rd('js/time-borders.js'), a = src.indexOf('const nearest=(y,years)=>{'), b = src.indexOf('};', src.indexOf('MAXGAP) ? next : prev', a)) + 2;
-  assert.ok(a > 0 && b > a, 'the page\'s `nearest` is not where this test reads it');
-  const page = new Function('CS_MIN', 'MAXGAP', 'YEARS', src.slice(a, b) + ' return nearest;')(1886, 20, []);
+test('④ the build dates a sheet\'s pieces by the sheet the page shows (`nearest`, the one in js/hist-sheet-pick.js)', () => {
+  const page = (y, ys) => pageNearest(y, ys, 1886);   /* js/hist-sheet-pick.js — the function js/time-borders.js `nearest` calls */
   const ys = bundle('data/hist-eras-rest.js', '__HISTERASREST').snaps.map((s) => s.y);
   for (let y = -5000; y < 1886; y += 7) assert.equal(CS.nearestSheet(y, ys), page(y, ys), 'year ' + y);
   for (const y of ys) { const [lo, hi] = CS.sheetReach(y, ys, -122999, 1886); assert.equal(page(lo, ys), y); assert.equal(page(hi, ys), y); if (hi < 1885) assert.notEqual(page(hi + 1, ys), y); }
