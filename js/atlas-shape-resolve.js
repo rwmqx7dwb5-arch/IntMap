@@ -69,6 +69,10 @@ export function tallyShapes(items) {
     const b = SHAPE_BASES.includes(it.basis) ? it.basis : 'unstated';
     o.n++;
     o[k + ':' + b] = (o[k + ':' + b] || 0) + 1;
+    /* (atlas-shape-identity) WHICH thing each shape is: the name it was resolved for. A count says a river-shaped line is
+       on the map; only the name says it is the river that was asked for. Absent when a shape carries none. */
+    const nm = it && typeof it.name === 'string' ? it.name.trim() : '';
+    if (nm) { (o.names || (o.names = [])); if (o.names.indexOf(nm) < 0) o.names.push(nm); }
   }
   return o.n ? o : null;
 }
