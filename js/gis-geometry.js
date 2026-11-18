@@ -43,8 +43,8 @@
  *  ══ THE BUFFER IS A MINKOWSKI SUM, NOT AN OFFSET CURVE ════════════════════════════════════════
  *  A buffer of radius r is, by definition, the set of points within r of the shape — i.e. the
  *  Minkowski sum of the shape with a disk of radius r. So that is what is built: a GEODESIC disk at
- *  every vertex (js/geodesy.js diskFillPolys, the same one the point buffer has always used) and a
- *  geodesic quad along every segment (its two ends offset by r on the bearing ± 90°), all unioned.
+ *  every vertex (js/geodesy.js _diskRing — the walk diskFillPolys draws) and a strip of quads along
+ *  every edge (each point offset by r on its own normal; see edgeSleeve), all unioned.
  *  The union is what removes self-intersection; the disks are what make the joins round.
  *
  *  ⚠ THIS IS WHY @turf/buffer IS NOT USED even though it is in package.json. It reaches turf-jsts
@@ -52,10 +52,13 @@
  *  is computed in a plane, so the 5 km it draws at 60°N is not 5 km. The sum above is assembled from
  *  geodesic pieces on the radius the rest of the app uses, and it costs no new bytes.
  *
- *  ⚠ AND IT IS AN INSCRIBED APPROXIMATION, STATED AS ONE. `steps` disks and quads meet at chords,
- *  so the boundary lies inside the true buffer by r·(1−cos(π/steps)) at worst — 3 m on a 5 km buffer
- *  at the default 64. The number is reported in `_bufferSteps` rather than rounded off, because a
- *  reader measuring an area against a published figure needs to know which way the error runs.
+ *  ⚠ AND IT IS AN APPROXIMATION, STATED AS ONE. `steps` disks meet at chords, so round a vertex the
+ *  boundary lies inside the true buffer by r·(1−cos(π/steps)) at worst — 3 m on a 5 km buffer at the
+ *  default 64. (gis-foundation-refine) Along an edge whose offset is curved (the offset of a meridian
+ *  is a small circle, not a meridian) the edge is cut until each chord is within that same width of
+ *  the offset curve, so there the boundary may stand up to that far OUTSIDE. The number is reported
+ *  in `_bufferSteps` rather than rounded off, because a reader measuring an area against a published
+ *  figure needs to know how large the error can be.
  *
  *  ══ THE PLANE, AND THE SEAM ═══════════════════════════════════════════════════════════════════
  *  A sweep-line is planar. #R729 handled that by REFUSING any ring whose longitude span exceeded
@@ -334,11 +337,15 @@ export function makeGisGeometry() {
     function intoWorldWindow(multi) {
       const out = [];
       for (const part of multi) {
+        /* ⚠ (gis-foundation-refine) A periodic part that does not START on a window edge — a cap built
+           round a pole from the longitude its disk began at, [10, 370] — has no whole-turn shift into
+           [−180,180]; shifted anyway it lay at [−350, 10] beside window-cut neighbours and was counted
+           twice where they overlapped. It is cut like everything else (splitBack: [10,180] and
+           [−180,10], which the sweep joins back along their shared meridian). */
         if (isPeriodicPart(part)) {
           const r = lonRange(part);
           const k = Math.round((r[0] + 180) / 360);
-          out.push(k ? shiftLng(part, -k * 360) : part);
-          continue;
+          if (Math.abs(r[0] + 180 - k * 360) <= SAME_EPS) { out.push(k ? shiftLng(part, -k * 360) : part); continue; }
         }
         for (const piece of splitBack([part])) {
           const rings = piece.map(ringPositions).filter((x) => x.length >= 3);
@@ -368,11 +375,14 @@ export function makeGisGeometry() {
            that is only that edge — collinear vertices along the meridian, no interior. It is not
            ground and is not emitted; before the band reading above, no answer ever reached it with
            three such vertices, and now every band does. */
-        const outers = (G._splitPolyToWindows(closeRing(rings[0])) || []).filter((o) => !ringCollapsed(ringPositions(o)));
+        /* ⚠ (gis-foundation-refine) with the latitudes AS COMPUTED: the splitter's ±89.9999 clamp is the
+           map's (MapLibre cannot draw the pole), and through it every polar cap this kernel returned
+           had lost the pole it was built round. */
+        const outers = (G._splitPolyToWindows(closeRing(rings[0]), true) || []).filter((o) => !ringCollapsed(ringPositions(o)));
         if (!outers.length) continue;
         const pieces = outers.map((o) => [o]);
         for (let h = 1; h < rings.length; h++) {
-          const cuts = G._splitPolyToWindows(closeRing(rings[h])) || [];
+          const cuts = G._splitPolyToWindows(closeRing(rings[h]), true) || [];
           for (const c of cuts) {
             const cr = lonRange([ringPositions(c)]);
             if (!cr) continue;
@@ -437,11 +447,30 @@ export function makeGisGeometry() {
       return out;
     }
 
+    /* ⚠ (gis-foundation-refine) EVERY EDGE THIS KERNEL WRITES IS READ BACK BY ITS OWN SEAM RULE, so no
+       written edge may be half a turn long. The sweep line drops collinear vertices, and in the window
+       [−180,180] a long straight edge is real: a cap's edge along the pole (MEASURED: a cap's west
+       piece ran 190° along lat 90 in ONE edge, and toMulti — and js/gis-ops.js areaKm2 — then read that
+       edge the short way round, the fold that made the 89.9°N buffer wrong), the parallel of a band
+       340° wide. Such an edge is written with vertices on it at most a quarter-turn apart; the
+       line they describe in the plane is the same line. */
+    function writeRing(pts) {
+      const out = [];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length], d = b[0] - a[0];
+        out.push([a[0], a[1]]);
+        if (Math.abs(d) < SEAM_STEP) continue;
+        const k = Math.ceil(Math.abs(d) / (SEAM_STEP / 2));
+        for (let j = 1; j < k; j++) out.push([a[0] + d * j / k, a[1] + (b[1] - a[1]) * j / k]);
+      }
+      return closeRing(out);
+    }
+
     function fromMulti(multi) {
       const polys = [];
       for (const rings of (multi || [])) {
         const kept = [];
-        for (const r of rings) { const pts = ringPositions(r); if (pts.length >= 3) kept.push(closeRing(pts)); }
+        for (const r of rings) { const pts = ringPositions(r); if (pts.length >= 3) kept.push(writeRing(pts)); }
         if (kept.length) polys.push(kept);
       }
       if (!polys.length) return null;
@@ -565,13 +594,45 @@ export function makeGisGeometry() {
 
     /* ── point in polygon: ray casting, planar, holes by parity ───────────────────────────────── */
 
+    /* ══ (gis-foundation-refine) THIS IS THE ASSIGNMENT RULE, AND IT IS HALF-OPEN ON PURPOSE ══════════
+       The crossing count below (edges straddling y, crossings strictly east of x) answers EXACTLY this
+       for a position on a boundary: it belongs to the region that holds the position nudged an
+       infinitesimal step EAST — and, when that step runs along a horizontal edge, an infinitesimal
+       step NORTH after it. So of box(0,0,10,10) the west and south edges are in and the east and north
+       edges are out, and a hole is read by the same nudge: its east edge belongs to the polygon (east
+       of it is the polygon), its west edge to the hole. That is not two rules mirrored, it is one.
+       ⚠ IT IS KEPT BECAUSE ITS READERS NEED A PARTITION. js/gis-raster.js `zonal` ('center') gives a
+       pixel to the zone holding its centre and says 「none is counted twice」; js/gis-ops.js
+       `rasterize`, `voronoi` and the point/line clips assign the same way. Two zones sharing an edge,
+       a polygon and the island filling its hole, the two halves of a shape cut at ±180 (the window is
+       aligned to the position, so 180 and −180 land on the same side) — every position goes to exactly
+       one of them. A closed rule would give a centre on a shared edge to both.
+       ⚠ IT IS NOT WHAT THE PREDICATES MEAN BY 「内側」. intersects / contains / within ask the boundary
+       by name (locate(), below) and never read this parity as a verdict about a boundary position.
+       ⚠ A POSITION ON A POLE is read as the same nudge toward the equator. In the plane the pole is the
+       whole line lat = ±90, so the plain crossing test can never put it inside anything (nothing is
+       north of 90); nudged, it is inside every cap that holds it, and inside the ONE sector of a
+       pie of sectors that holds its own longitude — still a partition. */
     function pointInRing(x, y, pts) {
+      const north = (y >= 90);
       let inside = false;
       for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
         const xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1];
-        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+        const straddles = north ? ((yi >= 90) !== (yj >= 90)) : ((yi > y) !== (yj > y));
+        if (straddles && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
       }
       return inside;
+    }
+
+    /* Inside one of `parts` (each [shell, hole…], already in the position's window) by the rule above. */
+    function inParts(x, y, parts) {
+      for (const rings of parts) {
+        if (!rings.length || !pointInRing(x, y, rings[0])) continue;
+        let inHole = false;
+        for (let h = 1; h < rings.length; h++) if (pointInRing(x, y, rings[h])) { inHole = true; break; }
+        if (!inHole) return true;
+      }
+      return false;
     }
 
     /* A position is inside an areal geometry when it is inside an odd number of that polygon's
@@ -579,13 +640,8 @@ export function makeGisGeometry() {
     function pointInGeometry(pos, g) {
       const multi = toMulti(g);
       if (!multi || !multi.length || !isPos(pos)) return false;
-      for (const rings of multi) {
-        const aligned = alignTo(rings, [[[pos[0], pos[1]]]]);
-        if (!pointInRing(pos[0], pos[1], aligned[0])) continue;
-        let inHole = false;
-        for (let h = 1; h < aligned.length; h++) if (pointInRing(pos[0], pos[1], aligned[h])) { inHole = true; break; }
-        if (!inHole) return true;
-      }
+      const at = [[[pos[0], pos[1]]]];
+      for (const rings of multi) if (inParts(pos[0], pos[1], [alignTo(rings, at)])) return true;
       return false;
     }
 
@@ -667,15 +723,6 @@ export function makeGisGeometry() {
       return out;
     }
 
-    function strandsCross(A, B) {
-      for (const la of A) for (let i = 1; i < la.length; i++) {
-        for (const lb of B) for (let j = 1; j < lb.length; j++) {
-          if (segmentsCross(la[i - 1], la[i], lb[j - 1], lb[j])) return true;
-        }
-      }
-      return false;
-    }
-
     /* 0 when the two shapes touch or overlap; otherwise the least geodesic distance between any part
        of one and any part of the other. ⚠ This is the answer 「道路そのものからの距離」 needs, and
        it is exactly what a bounding-box centre cannot give: the centre of a prefecture's box can sit
@@ -713,9 +760,25 @@ export function makeGisGeometry() {
 
     /* ── the predicates ───────────────────────────────────────────────────────────────────────── */
 
-    /* Sharing a single point of the plane. Areal × areal is asked of the clipper, because a square
-       inside a square crosses nothing and shares no vertex; every other pair is a crossing, a
-       containment, or a coincident position. */
+    /* ══ (gis-foundation-refine) THE PREDICATES ARE OGC's, AND THE BOUNDARY IS ASKED FOR BY NAME ══════
+       MEASURED before this note, on box(0,0,10,10): a point on the WEST edge was `within` it and a
+       point on the EAST edge was not, while `intersects` said both touch; box(10,0,20,10) — sharing
+       the whole east edge — was `disjoint` from it, because the sweep line returns no area for an
+       edge and that empty answer was the whole verdict. The predicates were inheriting the
+       half-open parity above, which is an ASSIGNMENT rule, and reading it as a statement about the
+       boundary. Now they are DE-9IM's, stated on the closed point sets:
+         · intersects(a, b) ⇔ the closures share a point — touching counts, along an edge or at one
+           position; disjoint = !intersects.
+         · contains(a, b) ⇔ no point of b is in a's exterior AND some point of b's interior is in a's
+           interior; within(a, b) = contains(b, a). So a position exactly on a's boundary is NOT
+           within a, a polygon touching a from outside is not contained, and a line lying along a's
+           boundary is not either (its interior meets only the boundary).
+       ⚠ The boundary is FOUND (locate), never inferred from a parity, and it is found ON THE SPHERE'S
+       terms: an edge the plane needs and the sphere does not have — the two meridian edges of a band
+       stated −180 → 180, the seam cut between two halves of one shape, a cap's edge along the pole —
+       has the region on both of its sides and is interior.
+       ⚠ A container with no area answers false, as it did (a line containing its own vertex is not
+       decided here). */
     /* ⚠ THE AREAL QUESTION CAN FAIL TOO (#R743). hasArea() answers false for a ring that wraps the
        world, which is not 「面ではない」 — it is 「この平面では答えられない」 — and the predicates
        below then measured its VERTICES and reported a verdict about a shape they had refused. */
@@ -725,17 +788,232 @@ export function makeGisGeometry() {
       return { ok: true, areal: !!m.length };
     }
 
+    /* The points and lines of g as open strands with CONTINUOUS longitudes (unwrapWalk's seam rule);
+       a point is a strand of one position. ⚠ A position ON A POLE is written as the pole's whole
+       line: in the plane the pole is that line, and [0,90] and [120,90] are one point. */
+    function bareStrands(g) {
+      const out = [];
+      for (const p of pointsOf(g)) out.push((p[1] >= 90 || p[1] <= -90) ? [[-180, p[1]], [180, p[1]]] : [[p[0], p[1]]]);
+      for (const l of linesOf(g)) { const pts = l.filter(isPos); if (pts.length) out.push(unwrapWalk(pts, false)); }
+      return out;
+    }
+
+    /* The boundary of g's areal parts: every ring, unwrapped as toMulti reads it, closed. */
+    function ringStrands(g) {
+      const out = [];
+      const m = toMulti(g);
+      if (m) for (const part of m) for (const r of part) out.push(closeRing(r));
+      return out;
+    }
+
+    /* Do two sets of strands share a point. One sweep (sweepBoxes — the prune is written once) over
+       both sets' segments, with B also laid down one turn east and west wherever that copy can reach
+       A's window: a strand written at +179 and one written at −179 meet where they meet on the
+       sphere. ⚠ A meeting is segmentsCross's — generous on purpose: a shared vertex, a collinear
+       overlap and a T-junction all touch. A one-position strand is a segment of length 0. */
+    function strandsMeet(A, B) {
+      const ra = lonRange(A), rb = lonRange(B);
+      if (!ra || !rb) return false;
+      const k0 = Math.ceil((ra[0] - rb[1] - SAME_EPS) / 360), k1 = Math.floor((ra[1] - rb[0] + SAME_EPS) / 360);
+      const segs = [];
+      const lay = (strands, side, dx) => {
+        for (const s of strands) {
+          for (let i = 0; i < Math.max(1, s.length - 1); i++) {
+            const a = [s[i][0] + dx, s[i][1]], b = (s.length > 1) ? [s[i + 1][0] + dx, s[i + 1][1]] : a;
+            segs.push({ side: side, a: a, b: b, x0: Math.min(a[0], b[0]), x1: Math.max(a[0], b[0]), y0: Math.min(a[1], b[1]), y1: Math.max(a[1], b[1]) });
+          }
+        }
+      };
+      lay(A, 0, 0);
+      for (let k = k0; k <= k1; k++) lay(B, 1, 360 * k);
+      let hit = false;
+      sweepBoxes(segs, (s, t) => {
+        if (s.side === t.side) return true;
+        if (!segmentsCross(s.a, s.b, t.a, t.b)) return true;
+        hit = true;
+        return false;
+      });
+      return hit;
+    }
+
+    /* Each part of an areal geometry put in `ref`'s window — and, for a part a whole turn wide (a band,
+       a cap), once more a turn either side: its ground is on both sides of the seam, and a position at
+       180 has to see both. alignTo leaves any narrower part within half a turn of `ref`, where a copy
+       a turn away cannot reach it. Whole-turn copies of one part are disjoint in the plane, so parity
+       is unchanged. */
+    function windowCopies(multi, ref) {
+      const out = [];
+      for (const part of multi) {
+        const al = alignTo(part, ref), r = lonRange(al);
+        out.push(al);
+        if (r && r[1] - r[0] > SEAM_STEP) out.push(shiftLng(al, 360), shiftLng(al, -360));
+      }
+      return out;
+    }
+
+    /* Is a position on the boundary of an areal geometry — on an edge the sphere has (not one along a
+       pole). The direct walk, for the commonest question (a point against a zone); locate() answers
+       whether such an edge is cancelled by ground on its other side. */
+    function onAreaEdge(p, multi) {
+      for (const part of windowCopies(multi, [[[p[0], p[1]]]])) for (const ring of part) {
+        for (let i = 0, n = ring.length; i < n; i++) {
+          const a = ring[i], b = ring[(i + 1) % n];
+          if (Math.abs(a[1]) >= 90 && Math.abs(b[1]) >= 90) continue;
+          if (onSegment(a, b, p)) return true;
+        }
+      }
+      return false;
+    }
+
+    function segDistDeg(p, a, b) {
+      const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy;
+      const t = (l2 > 0) ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2)) : 0;
+      return Math.hypot(p[0] - (a[0] + dx * t), p[1] - (a[1] + dy * t));
+    }
+
+    /* Where a position stands relative to an areal geometry: 'interior', 'boundary' or 'exterior' —
+       the three answers DE-9IM is built from.
+       ⚠ NOT A PARITY WITH A TOLERANCE. A position on no edge is decided by pointInGeometry (exact
+       there: no tie). A position ON edges is decided by LOOKING AROUND IT: the edges through it cut
+       its neighbourhood into sectors, and each sector is probed at half the distance to the nearest
+       edge that does not pass through it — so the probe is in that sector's ground and on no edge.
+       Every sector inside ⇒ interior (the seam cut between two halves of one shape, the two meridian
+       edges of a band); some ⇒ boundary; none ⇒ exterior. */
+    function locate(p, g) {
+      const multi = toMulti(g);
+      if (!multi || !multi.length || !isPos(p)) return 'exterior';
+      if (p[1] >= 90 || p[1] <= -90) return locatePole(p, g, multi);
+      const parts = windowCopies(multi, [[[p[0], p[1]]]]);
+      const dirs = [];
+      let reach = Infinity;
+      for (const part of parts) for (const ring of part) {
+        for (let i = 0, n = ring.length; i < n; i++) {
+          const a = ring[i], b = ring[(i + 1) % n];
+          if (same(a, b) || !onSegment(a, b, p)) continue;
+          for (const e of [a, b]) {
+            if (same(e, p)) continue;
+            dirs.push(Math.atan2(e[1] - p[1], e[0] - p[0]));
+            reach = Math.min(reach, Math.hypot(e[0] - p[0], e[1] - p[1]));
+          }
+        }
+      }
+      /* on no edge: the parity is exact (whole-turn copies are disjoint, so this is pointInGeometry) */
+      if (!dirs.length) return inParts(p[0], p[1], parts) ? 'interior' : 'exterior';
+      for (const part of parts) for (const ring of part) {
+        for (let i = 0, n = ring.length; i < n; i++) {
+          const a = ring[i], b = ring[(i + 1) % n];
+          if (!same(a, b) && !onSegment(a, b, p)) reach = Math.min(reach, segDistDeg(p, a, b));
+        }
+      }
+      if (!(reach > 0 && isFinite(reach))) return 'boundary';
+      dirs.sort((x, y) => x - y);
+      const rho = reach / 2;
+      let sectors = 0, inside = 0;
+      for (let i = 0; i < dirs.length; i++) {
+        const lo = dirs[i], hi = (i + 1 < dirs.length) ? dirs[i + 1] : dirs[0] + 2 * Math.PI;
+        if (!(hi - lo > 0)) continue;
+        const m = (lo + hi) / 2;
+        sectors++;
+        if (inParts(p[0] + rho * Math.cos(m), p[1] + rho * Math.sin(m), parts)) inside++;
+      }
+      if (!sectors) return 'boundary';
+      return (inside === sectors) ? 'interior' : (inside ? 'boundary' : 'exterior');
+    }
+
+    /* The pole is a LINE in the plane, so its neighbourhood is read along that line: whether
+       (λ, ±90 nudged toward the equator) is inside changes only at the longitudes where a ring has a
+       vertex on the pole. Between each two of those one longitude is asked. A ring with a vertex on
+       the pole puts the pole in the closure; it is interior only if every stretch is inside (a cap),
+       and a boundary if some is not (a sector of a pie, a triangle with a vertex there). */
+    function locatePole(p, g, multi) {
+      const lat = (p[1] > 0) ? 90 : -90;
+      const breaks = [];
+      for (const part of multi) for (const ring of part) for (const v of ring) {
+        if (Math.abs(v[1] - lat) <= SAME_EPS) breaks.push(((v[0] % 360) + 360) % 360);
+      }
+      if (!breaks.length) return pointInGeometry([p[0], lat], g) ? 'interior' : 'exterior';
+      breaks.sort((x, y) => x - y);
+      let sectors = 0, inside = 0;
+      for (let i = 0; i < breaks.length; i++) {
+        const lo = breaks[i], hi = (i + 1 < breaks.length) ? breaks[i + 1] : breaks[0] + 360;
+        if (!(hi - lo > SAME_EPS)) continue;
+        sectors++;
+        let m = (lo + hi) / 2; while (m > 180) m -= 360;
+        if (pointInGeometry([m, lat], g)) inside++;
+      }
+      return (sectors && inside === sectors) ? 'interior' : 'boundary';
+    }
+
+    /* Segment p→q (continuous longitudes) against an areal geometry: 'exterior' if any stretch of it
+       is outside, else 'interior' if any stretch is inside, else 'boundary' (it lies along the
+       boundary throughout). The segment is cut at every place it meets an edge — crossings, touches
+       and the ends of collinear overlaps — so between two cuts it is wholly inside, wholly outside or
+       wholly ON one edge; the last is known from the overlap itself, not from re-testing a computed
+       midpoint against a tolerance. */
+    function segmentAgainst(p, q, g) {
+      if (same(p, q)) return locate(p, g);
+      const multi = toMulti(g);
+      if (!multi || !multi.length) return 'exterior';
+      const rx = q[0] - p[0], ry = q[1] - p[1], rr = rx * rx + ry * ry;
+      const proj = (e) => ((e[0] - p[0]) * rx + (e[1] - p[1]) * ry) / rr;
+      const cuts = [0, 1], along = [];
+      for (const part of windowCopies(multi, [[p, q]])) for (const ring of part) {
+        for (let i = 0, n = ring.length; i < n; i++) {
+          const e1 = ring[i], e2 = ring[(i + 1) % n];
+          if (same(e1, e2)) continue;
+          if (Math.abs(orient(p, q, e1)) <= SAME_EPS && Math.abs(orient(p, q, e2)) <= SAME_EPS) {
+            const t1 = proj(e1), t2 = proj(e2), lo = Math.max(0, Math.min(t1, t2)), hi = Math.min(1, Math.max(t1, t2));
+            if (hi >= lo) { cuts.push(lo, hi); if (hi > lo) along.push([lo, hi]); }
+            continue;
+          }
+          if (onSegment(p, q, e1)) cuts.push(proj(e1));
+          if (onSegment(p, q, e2)) cuts.push(proj(e2));
+          const sx = e2[0] - e1[0], sy = e2[1] - e1[1], den = rx * sy - ry * sx;
+          if (den === 0) continue;
+          const wx = e1[0] - p[0], wy = e1[1] - p[1];
+          const t = (wx * sy - wy * sx) / den, u = (wx * ry - wy * rx) / den;
+          if (t >= 0 && t <= 1 && u >= 0 && u <= 1) cuts.push(t);
+        }
+      }
+      const ts = cuts.map((t) => Math.max(0, Math.min(1, t))).sort((x, y) => x - y);
+      const minGap = SAME_EPS / Math.sqrt(rr);
+      let inside = false;
+      for (let i = 1; i < ts.length; i++) {
+        if (!(ts[i] - ts[i - 1] > minGap)) continue;
+        const tm = (ts[i] + ts[i - 1]) / 2;
+        if (along.some((iv) => tm >= iv[0] && tm <= iv[1])) continue;
+        if (!pointInGeometry([p[0] + rx * tm, p[1] + ry * tm], g)) return 'exterior';
+        inside = true;
+      }
+      return inside ? 'interior' : 'boundary';
+    }
+
     function intersectsR(a, b) {
       if (!a || !b) return NO('missing-geometry');
       const ra = arealR(a); if (!ra.ok) return ra;
       const rb = arealR(b); if (!rb.ok) return rb;
+      const SA = bareStrands(a), SB = bareStrands(b);
+      if (SA.length && SB.length && strandsMeet(SA, SB)) return OKV(true);
+      /* A point or a line against an area: inside by the assignment rule is inside the closure; what
+         that rule leaves out of the closure is the boundary, which the strands meeting the rings find. */
+      const touchesArea = (S, g) => {
+        for (const s of S) for (const p of s) if (pointInGeometry(p, g)) return true;
+        const lines = S.filter((s) => s.length > 1 && !(Math.abs(s[0][1]) >= 90 && s.every((p) => p[1] === s[0][1])));
+        const single = S.filter((s) => lines.indexOf(s) < 0);
+        if (single.length) { const m = toMulti(g); for (const s of single) if (s[0][1] >= 90 || s[0][1] <= -90 ? locate(s[0], g) !== 'exterior' : onAreaEdge(s[0], m)) return true; }
+        return !!lines.length && strandsMeet(lines, ringStrands(g));
+      };
+      if (rb.areal && SA.length && touchesArea(SA, b)) return OKV(true);
+      if (ra.areal && SB.length && touchesArea(SB, a)) return OKV(true);
       if (ra.areal && rb.areal) {
+        /* The sweep line answers 「do the interiors (or one inside the other) share ground」; an edge
+           or a corner shared with no area between is the boundaries meeting, which it returns empty. */
         const r = boolOpR('intersection', a, b);
-        return r.ok ? OKV(!!r.geometry) : r;
+        if (!r.ok) return r;
+        if (r.geometry) return OKV(true);
+        return OKV(strandsMeet(ringStrands(a), ringStrands(b)));
       }
-      /* Nothing below this line can fail: it is arithmetic on positions that toMulti has already
-         agreed are expressible in the plane. */
-      return OKV(intersects(a, b));
+      return OKV(false);
     }
 
     function containsR(a, b) {
@@ -743,11 +1021,31 @@ export function makeGisGeometry() {
       const ra = arealR(a); if (!ra.ok) return ra;
       if (!ra.areal) return OKV(false);
       const rb = arealR(b); if (!rb.ok) return rb;
+      let shared = false;
       if (rb.areal) {
+        /* 「what of b is outside a」 is exact for the sweep line; an areal b with nothing outside has
+           its interior inside a's interior. */
         const r = boolOpR('difference', b, a);
-        return r.ok ? OKV(!r.geometry) : r;
+        if (!r.ok) return r;
+        if (r.geometry) return OKV(false);
+        shared = true;
       }
-      return OKV(contains(a, b));
+      for (const p of pointsOf(b)) {
+        const at = locate(p, a);
+        if (at === 'exterior') return OKV(false);
+        if (at === 'interior') shared = true;
+      }
+      for (const l of linesOf(b)) {
+        const pts = l.filter(isPos);
+        if (pts.length === 1) { const at = locate(pts[0], a); if (at === 'exterior') return OKV(false); if (at === 'interior') shared = true; continue; }
+        const u = unwrapWalk(pts, false);
+        for (let i = 1; i < u.length; i++) {
+          const at = segmentAgainst(u[i - 1], u[i], a);
+          if (at === 'exterior') return OKV(false);
+          if (at === 'interior') shared = true;
+        }
+      }
+      return OKV(shared);
     }
 
     function withinR(a, b) { return containsR(b, a); }
@@ -755,52 +1053,135 @@ export function makeGisGeometry() {
        assertion 「離れている」, which is the one answer a failed computation most resembles. */
     function disjointR(a, b) { const r = intersectsR(a, b); return r.ok ? OKV(!r.value) : r; }
 
-    function intersects(a, b) {
-      if (!a || !b) return false;
-      const aA = hasArea(a), aB = hasArea(b);
-      if (aA && aB) { if (!available()) return false; return !!intersection(a, b); }
-      if (aA) { for (const p of pointsOf(b)) if (pointInGeometry(p, a)) return true; for (const l of linesOf(b)) for (const p of l) if (pointInGeometry(p, a)) return true; }
-      if (aB) { for (const p of pointsOf(a)) if (pointInGeometry(p, b)) return true; for (const l of linesOf(a)) for (const p of l) if (pointInGeometry(p, b)) return true; }
-      if (strandsCross(strandsOf(a), strandsOf(b))) return true;
-      const pa = pointsOf(a), pb = pointsOf(b);
-      for (const p of pa) for (const q of pb) if (same(p, q)) return true;
-      for (const p of pa) for (const l of strandsOf(b)) for (let i = 1; i < l.length; i++) { const d = pointToSegmentKm(p, l[i - 1], l[i]); if (d != null && d <= 0) return true; }
-      return false;
-    }
-
-    /* Every part of b lies in a. For an areal b this is asked as 「what of b is outside a」 — an
-       exact question for the clipper — rather than by testing vertices, because a ring whose
-       vertices are all inside a concave a can still bulge out between two of them. */
-    function contains(a, b) {
-      if (!a || !b) return false;
-      if (!hasArea(a)) return false;
-      if (hasArea(b)) { if (!available()) return false; return !difference(b, a); }
-      const pts = pointsOf(b);
-      for (const p of pts) if (!pointInGeometry(p, a)) return false;
-      for (const l of linesOf(b)) { for (const p of l) if (!pointInGeometry(p, a)) return false; }
-      /* All vertices in, but an edge may still leave and come back through a concave notch. */
-      if (strandsCross(strandsOf(b), ringsOf(a))) return false;
-      return pts.length > 0 || linesOf(b).length > 0;
-    }
-
+    /* The plain names keep their old shape — a refusal reads as false — over the one rule above. */
+    function intersects(a, b) { const r = intersectsR(a, b); return !!(r.ok && r.value); }
+    function contains(a, b) { const r = containsR(a, b); return !!(r.ok && r.value); }
     function within(a, b) { return contains(b, a); }
-    function disjoint(a, b) { return !intersects(a, b); }
+    function disjoint(a, b) { const r = intersectsR(a, b); return r.ok ? !r.value : true; }
+
+    /* ── vectors on the unit sphere — the buffer's edges, and the centroid and hull below ────────── */
+
+    function vecOf(p) { const la = p[1] * D2R, lo = p[0] * D2R, c = Math.cos(la); return [c * Math.cos(lo), c * Math.sin(lo), Math.sin(la)]; }
+    function vdot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+    function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    function vlin(a, sa, b, sb) { return [a[0] * sa + b[0] * sb, a[1] * sa + b[1] * sb, a[2] * sa + b[2] * sb]; }
+    function vlen(a) { return Math.hypot(a[0], a[1], a[2]); }
+    function vunit(a) { const n = vlen(a); return (n > 0 && isFinite(n)) ? [a[0] / n, a[1] / n, a[2] / n] : null; }
+    function vangle(a, b) { return Math.atan2(vlen(vcross(a, b)), vdot(a, b)); }
+    /* Below this angle (radians) from the axis a vector IS the pole, and two directions are one:
+       SAME_EPS — the width at which two positions are the same position — said in radians. */
+    const AXIS_EPS = SAME_EPS * D2R;
+    /* A vector as [lon, lat], its longitude put within half a turn of `lonRef` when one is given.
+       ⚠ On the axis there is no longitude to read (atan2(0,0) is rounding), so the pole is written at
+       the longitude it was asked about. */
+    function posOf(v, lonRef) {
+      const h = Math.hypot(v[0], v[1]);
+      if (h <= AXIS_EPS * vlen(v)) return [(lonRef == null) ? 0 : lonRef, (v[2] > 0) ? 90 : -90];
+      let lon = Math.atan2(v[1], v[0]) / D2R;
+      if (lonRef != null) { while (lon - lonRef > 180) lon -= 360; while (lonRef - lon > 180) lon += 360; }
+      return [lon, Math.atan2(v[2], h) / D2R];
+    }
+    /* The angle from v to the nearer pole. */
+    function poleAngle(v) { return Math.atan2(Math.hypot(v[0], v[1]), Math.abs(v[2])); }
 
     /* ── the buffer ───────────────────────────────────────────────────────────────────────────── */
 
-    /* One geodesic quad for one segment: the two ends pushed r to the left and r to the right of
-       the bearing, which is the rectangle half of the Minkowski sum. The disks at the ends are what
-       round the joins, so nothing here has to know about mitres. */
-    function segmentQuad(a, b, km) {
-      const G = geodesy();
-      if (!G || typeof G._dest !== 'function') return null;
-      const dLon = ((b[0] - a[0] + 540) % 360) - 180;
-      const brg = Math.atan2(Math.sin(dLon * D2R) * Math.cos(b[1] * D2R),
-        Math.cos(a[1] * D2R) * Math.sin(b[1] * D2R) - Math.sin(a[1] * D2R) * Math.cos(b[1] * D2R) * Math.cos(dLon * D2R)) / D2R;
-      const l = (brg + 270) % 360, r = (brg + 90) % 360;
-      const p = [G._dest(a[0], a[1], l, km), G._dest(b[0], b[1], l, km), G._dest(b[0], b[1], r, km), G._dest(a[0], a[1], r, km)];
-      for (const q of p) if (!isPos(q)) return null;
-      return [unwrapRing(p)];
+    /* ══ (gis-foundation-refine) WHICH CURVE AN EDGE IS, FOR THE BUFFER ════════════════════════════
+       A buffer is the set of points within r of the shape, so it is only defined once 「the shape」
+       between two positions is. docs/GIS-CORE.md §2.4 already answers that per quantity, and the
+       buffer takes the same answers rather than a third:
+         · an edge of a LINE is a great-circle arc — the curve js/gis-ops.js lengthKm measures, so the
+           kilometres a reader is told a road has are the kilometres its buffer is built around;
+         · an edge of a RING is straight in lon/lat — the curve the sweep line, pointInGeometry and
+           every predicate read, so an outward buffer's sleeve hugs the very edge of the body it is
+           unioned with (a great-circle sleeve round box(0,60,90,70)'s top edge would leave a gap
+           four degrees wide between the body and its own buffer).
+       MEASURED before this note: segmentQuad offset BOTH ends of an edge on the bearing at its START.
+       Along a long or high-latitude edge the bearing turns — [0,89]→[180,89] leaves northward and
+       arrives southward over the pole — so the far end was pushed the wrong way and the quad was a
+       twisted bow-tie: a 20 km buffer of that 222 km arc came back 2,497 km² where the capsule is
+       10,152. Now every point of the edge is offset on ITS OWN normal (vectors, so the pole has one),
+       and an edge is cut wherever a chord between two offset points would stray from the offset
+       curve by more than the disks already do (r·(1−cos(π/steps)) — the stated inscribed error).
+       ⚠ NEAR A POLE the offset curve passes over the pole or folds back on itself, and no strip of
+       quads can be drawn in the plane. Where the pole is within reach of a stretch, that stretch is
+       covered by disks spaced so that the scallops between them stay inside the same error, and a
+       disk holding a pole is a CAP (below). */
+    const BUFFER_MAX_DEPTH = 16;     /* a runaway guard on halving one edge (65,536 pieces), not a quality knob */
+
+    /* One edge as a curve on the sphere: at(t) → { v: the point, left: the unit normal to its left }. */
+    function edgeCurve(a, b, kind) {
+      if (kind === 'gc') {
+        const va = vecOf(a), vb = vecOf(b), w = vangle(va, vb);
+        if (!(w > AXIS_EPS)) return { degenerate: true };
+        const nrm = vunit(vcross(va, vb));
+        if (!nrm || Math.PI - w <= AXIS_EPS) return { antipodal: true };
+        const ua = vcross(nrm, va);
+        return { at: (t) => ({ v: vlin(va, Math.cos(t * w), ua, Math.sin(t * w)), left: nrm }), span: (t0, t1) => (t1 - t0) * w };
+      }
+      const dl = (b[0] - a[0]) * D2R, dp = (b[1] - a[1]) * D2R;
+      if (Math.abs(dl) <= AXIS_EPS && Math.abs(dp) <= AXIS_EPS) return { degenerate: true };
+      const latAt = (t) => (a[1] + (b[1] - a[1]) * t) * D2R;
+      return {
+        at: (t) => {
+          const lo = (a[0] + (b[0] - a[0]) * t) * D2R, la = latAt(t);
+          const cl = Math.cos(la), sl = Math.sin(la), co = Math.cos(lo), so = Math.sin(lo);
+          const v = [cl * co, cl * so, sl];
+          const T = [-cl * so * dl - sl * co * dp, cl * co * dl - sl * so * dp, cl * dp];
+          return { v: v, left: vunit(vcross(v, T)) };
+        },
+        /* an upper bound on the length of [t0,t1]: the latitude nearest the equator bounds cos φ */
+        span: (t0, t1) => { const l0 = latAt(t0), l1 = latAt(t1); const c = (l0 * l1 <= 0) ? 1 : Math.max(Math.cos(l0), Math.cos(l1)); return (t1 - t0) * Math.hypot(dl * c, dp); },
+      };
+    }
+
+    /* The sleeve of one edge: hexagons [L0, L1, P1, R1, R0, P0] where the pole is out of reach, disk
+       centres where it is not. Consecutive pieces share their end chords exactly (the same point
+       object, offset by the same normal), so the union has no seam between them. */
+    function edgeSleeve(curve, delta, R, tolKm, dMaxKm, hexes, diskAt) {
+      const off = (P, s) => vlin(P.v, Math.cos(delta), P.left, s * Math.sin(delta));
+      const chordKm = (u, w, m) => { const pu = posOf(u), pw = posOf(w, pu[0]); return vangle(vecOf([(pu[0] + pw[0]) / 2, (pu[1] + pw[1]) / 2]), m) * R; };
+      const stack = [[0, curve.at(0), 1, curve.at(1), 0]];
+      while (stack.length) {
+        const [t0, P0, t1, P1, depth] = stack.pop();
+        const len = curve.span(t0, t1);
+        const tm = (t0 + t1) / 2;
+        const deeper = (Pm) => { stack.push([t0, P0, tm, Pm, depth + 1], [tm, Pm, t1, P1, depth + 1]); };
+        if (!P0.left || !P1.left || Math.min(poleAngle(P0.v), poleAngle(P1.v)) - len <= delta) {
+          if (len * R <= dMaxKm || depth >= BUFFER_MAX_DEPTH) { diskAt.add(P0); diskAt.add(P1); } else deeper(curve.at(tm));
+          continue;
+        }
+        const L0 = off(P0, 1), L1 = off(P1, 1), R0 = off(P0, -1), R1 = off(P1, -1);
+        const Pm = curve.at(tm);
+        if (depth < BUFFER_MAX_DEPTH && len * R > tolKm && Pm.left
+          && Math.max(chordKm(L0, L1, off(Pm, 1)), chordKm(R0, R1, off(Pm, -1))) > tolKm) { deeper(Pm); continue; }
+        const ring = [];
+        let ref = null;
+        for (const v of [L0, L1, P1.v, R1, R0, P0.v]) { const p = posOf(v, ref); ring.push(p); ref = p[0]; }
+        hexes.push(ring);
+      }
+    }
+
+    /* The union of many small overlapping pieces, as a tree of unions over consecutive runs of them.
+       ⚠ A PERFORMANCE CHOICE AND NOTHING ELSE — union is associative, so the answer is the same set.
+       MEASURED (node, a 2,000-vertex ring buffered 5 km: 4,001 pieces, 140,064 vertices): the sweep
+       line took 26.7 s over all of them in one call and 1.8 s as a tree of 16 — every piece here
+       overlaps its neighbours, and one sweep over all of them pays for every overlap at once. The
+       pieces arrive in the order they were laid along their edges, so a run is a stretch of sleeve.
+       The fan-in only sets the cost; any value answers the same. */
+    const UNION_FAN_IN = 16;
+    function unionTree(list) {
+      if (!list.length) return null;
+      let level = list;
+      do {
+        const next = [];
+        for (let i = 0; i < level.length; i += UNION_FAN_IN) {
+          const r = PC.union.apply(PC, level.slice(i, i + UNION_FAN_IN));
+          if (Array.isArray(r) && r.length) next.push(r);
+        }
+        level = next;
+      } while (level.length > 1);
+      return level[0] || null;
     }
 
     /* The Minkowski sum of a geometry with a disk of `km`, as ONE union. A negative km is the
@@ -812,40 +1193,99 @@ export function makeGisGeometry() {
        number, a shape with no positions, a sleeve the clipper threw on, a ring that wraps the
        world, an inward buffer asked of something with no interior, a sweep that answered nothing,
        and a final union that threw. js/gis-ops.js names the seventh (`inward-buffer-needs-area`)
-       before it calls; the other eight had no name anywhere (#R743). */
+       before it calls; the other eight had no name anywhere (#R743).
+       ⚠ (gis-foundation-refine) A DISK THAT HOLDS A POLE IS A CAP, AND IS WRITTEN AS ONE. It used to
+       be taken from diskFillPolys already cut into [−180,180] and clamped to 89.9999°, and then
+       unwrapped again here — which folded the 350° edge each piece runs along the pole the short way.
+       MEASURED: a 50 km buffer of a point at 89.9°N was 5,529 km² (π·50² = 7,854) and pointInGeometry
+       put both the centre and the pole outside it. Now the ring is js/geodesy.js _diskRing (the same
+       walk the map draws), it walks one turn round the pole, and its closing edge runs along the pole
+       ITSELF (lat ±90) — the band/cap reading this kernel already has (unwrapRingR). A disk holding
+       both poles is the world minus the antipodal disk. Nothing is cut until the union is. */
     function bufferKmR(g, km, steps) {
       const G = geodesy();
       if (!available()) return NO('clipper-unavailable');
-      if (!G || typeof G.diskFillPolys !== 'function') return NO('geodesy-unavailable');
+      const R = earthKm();
+      if (!G || R == null || typeof G._diskRing !== 'function' || typeof G._splitPolyToWindows !== 'function') return NO('geodesy-unavailable');
       if (!isFinite(km) || km === 0) return NO('bad-radius', { radiusKm: km });
       const r = Math.abs(km);
       const n = Math.max(8, Math.min(4096, Math.round(steps || 64)));
+      const body = toMulti(g);
+      if (body === null) return NO('geometry-wraps-world');
+      const delta = r / R;
+      const tolKm = r * (1 - Math.cos(Math.PI / n));
+      /* two disks of radius r whose centres are d apart leave a scallop of r − √(r² − d²/4) between
+         them; this is the d at which that scallop is the same tolerance */
+      const dMaxKm = 2 * Math.sqrt(Math.max(0, r * r - (r - tolKm) * (r - tolKm)));
       const parts = [];
-      const addDisk = (p) => { const d = G.diskFillPolys([p[0], p[1]], r, n); if (Array.isArray(d)) for (const poly of d) { const rings = (poly || []).map((ring) => unwrapRing(ringPositions(ring))).filter((x) => x.length >= 3); if (rings.length) parts.push(rings); } };
-      const addStrand = (l) => { for (let i = 0; i < l.length; i++) { addDisk(l[i]); if (i) { const q = segmentQuad(l[i - 1], l[i], r); if (q) parts.push(q); } } };
-
-      for (const p of pointsOf(g)) addDisk(p);
-      for (const l of linesOf(g)) addStrand(l);
-      for (const ring of ringsOf(g)) addStrand(ring);
-      /* No position anywhere in the geometry: an empty shape buffered is empty, not a failure. */
-      if (!parts.length) return OK(null);
+      const addDisk = (p) => {
+        const d = G._diskRing([p[0], p[1]], r, n);
+        const ring = d && d.ring;
+        if (!ring || ring.length < 4) return;
+        if (d.north && d.south) {
+          const anti = G._diskRing([p[0] + 180, -p[1]], Math.PI * R - r, n);
+          const holes = splitBack([[anti.ring.slice(0, -1)]]).map((poly) => poly.map(closeRing));
+          const world = [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]];
+          for (const poly of (holes.length ? PC.difference(world, holes) : [world])) parts.push(poly.map(ringPositions));
+          return;
+        }
+        if (d.north || d.south) {
+          const lat = d.north ? 90 : -90, first = ring[0], last = ring[ring.length - 1];
+          parts.push([ring.concat([[last[0], lat], [first[0], lat]])]);
+          return;
+        }
+        parts.push([ring.slice(0, -1)]);
+      };
+      const hexes = [], diskAt = new Set();
+      let antipodal = null;
+      const addStrand = (pts, kind, notBoundary) => {
+        for (let i = 0; i < pts.length; i++) {
+          /* a ring's vertex ON a pole is a boundary point only if the pole is (a pie's sector); the
+             corners a cap's pole edge is written with are interior, and a disk there would be eaten
+             out of an inward buffer */
+          if (!(kind === 'plane' && Math.abs(pts[i][1]) >= 90 && locate(pts[i], g) !== 'boundary')) addDisk(pts[i]);
+          if (!i || (notBoundary && notBoundary(pts[i - 1], pts[i]))) continue;
+          const c = edgeCurve(pts[i - 1], pts[i], kind);
+          if (c.degenerate) continue;
+          if (c.antipodal) { if (!antipodal) antipodal = [pts[i - 1], pts[i]]; continue; }
+          edgeSleeve(c, delta, R, tolKm, dMaxKm, hexes, diskAt);
+        }
+      };
 
       let sleeve = null;
       try {
-        const args = onePlane(parts.map((p) => [p])).filter((m) => m.length);
-        const res = args.length ? PC.union.apply(PC, args) : null;
+        for (const p of pointsOf(g)) addDisk(p);
+        for (const l of linesOf(g)) { const pts = l.filter(isPos); if (pts.length) addStrand(unwrapWalk(pts, false), 'gc'); }
+        /* ⚠ AN EDGE THE PLANE NEEDS AND THE SPHERE DOES NOT HAVE IS NOT BOUNDARY, and a sleeve along it
+           would eat a slot into an inward buffer: an edge along a pole is one point (its vertices
+           already carry its disk), and the two meridian edges a band or a cap is cut along in the
+           plane (both at its western limit, a turn apart) have the region on both sides. */
+        for (const part of body) for (const ring of part) {
+          const lr = lonRange([ring]), periodic = !!lr && (lr[1] - lr[0]) >= 360 - SAME_EPS;
+          addStrand(closeRing(ring), 'plane', (a, b) => (Math.abs(a[1]) >= 90 && Math.abs(b[1]) >= 90)
+            || (periodic && Math.abs(a[0] - b[0]) <= SAME_EPS && Math.abs((((a[0] - lr[0]) % 360) + 540) % 360 - 180) <= SAME_EPS));
+        }
+        /* An edge between two antipodal positions is on every great circle through them, so 「the
+           points within r of it」 has no one answer. Said by name rather than drawn on a guess. */
+        if (antipodal) return NO('edge-antipodal', { edge: antipodal });
+        for (const P of diskAt) addDisk(posOf(P.v));
+        for (const h of hexes) parts.push([h]);
+        /* No position anywhere in the geometry: an empty shape buffered is empty, not a failure. */
+        if (!parts.length) return OK(null);
+        /* Every piece in the ONE window [−180,180], where each point of the sphere has exactly one
+           picture — a cap is as wide as the world, and a long line's pieces could otherwise be laid
+           down a turn apart and counted twice. */
+        const res = unionTree(parts.map((p) => intoWorldWindow([p])).filter((m) => m.length));
         sleeve = (Array.isArray(res) && res.length) ? res : null;
       } catch (e) { return NO('clipper-failed', { op: 'sleeve', message: (e && e.message) || String(e) }); }
       if (!sleeve) return OK(null);
 
-      const body = toMulti(g);
-      if (body === null) return NO('geometry-wraps-world');
       /* Outward: the shape plus its sleeve. Inward: the shape minus it. A line or a point has no
          body, so the sleeve IS the buffer, and an inward one has nothing to eat into. */
       if (!body.length) return (km > 0) ? OK(fromMulti(splitBack(sleeve))) : NO('inward-buffer-needs-area');
       try {
-        const placed = onePlane([body, sleeve]);
-        const res = (km > 0) ? PC.union(placed[0], placed[1]) : PC.difference(placed[0], placed[1]);
+        const placed = intoWorldWindow(body);
+        const res = (km > 0) ? PC.union(placed, sleeve) : PC.difference(placed, sleeve);
         if (!Array.isArray(res) || !res.length) return OK(null);
         return OK(fromMulti(splitBack(res)));
       } catch (e) { return NO('clipper-failed', { op: (km > 0) ? 'union' : 'difference', message: (e && e.message) || String(e) }); }
@@ -2199,6 +2639,463 @@ export function makeGisGeometry() {
       };
     }
 
+    /* ══ (gis-foundation-refine) THE MEASURES A SHAPE HAS OF ITSELF ══════════════════════════════════
+       bbox, centroid, a point on the surface, the convex hull and a simplification were not in this
+       kernel, so every reader that needed one wrote its own: MEASURED in js/ at the time of writing,
+       about fifteen bounding boxes, six centroids and three Douglas–Peuckers, nearly all of them on raw
+       degrees — a box across ±180 that is the whole world, a centroid of Fiji in the Atlantic. These are
+       the kernel's, on the kernel's own seam and pole rules, so a reader can ask instead of copying.
+       Each one is a door in the readable shape (`attempt`) and a plain name that answers its value or
+       null. */
+
+    /* [w, s, e, n] — RFC 7946 §5: w > e when the box crosses the antimeridian (§5.2), and
+       [−180, s, 180, n] only when the longitudes really go all the way round (a band, a cap, a
+       shape round a pole). ⚠ The longitudes are the SMALLEST arc holding every part, found as the
+       complement of the widest gap on the circle — each part's own extent read after unwrapping it
+       (the seam rule every other door uses), never the min and max of raw degrees, which make Fiji
+       a box of the world. ⚠ The extent is the positions' (edges straight in lon/lat, §2.4): a
+       great-circle reading of a line that passes near a pole reaches further north than its box. */
+    function bboxR(g) {
+      if (!g || typeof g !== 'object') return NO('missing-geometry');
+      const multi = toMulti(g);
+      if (multi === null) return NO('geometry-wraps-world');
+      const spans = [];
+      let s = Infinity, n = -Infinity;
+      const take = (pts) => { const r = lonRange(pts); if (!r) return; spans.push(r); for (const p of pts) { if (p[1] < s) s = p[1]; if (p[1] > n) n = p[1]; } };
+      for (const p of pointsOf(g)) take([p]);
+      for (const l of linesOf(g)) { const pts = l.filter(isPos); if (pts.length) take(unwrapWalk(pts, false)); }
+      for (const part of multi) for (const ring of part) take(ring);
+      if (!spans.length) return OKV(null);
+      const ivs = [];
+      let full = false;
+      for (const r of spans) {
+        if (r[1] - r[0] >= 360 - SAME_EPS) { full = true; break; }
+        const lo = ((((r[0] + 180) % 360) + 360) % 360) - 180;
+        ivs.push([lo, lo + (r[1] - r[0])]);
+      }
+      if (!full) {
+        ivs.sort((x, y) => x[0] - y[0]);
+        const merged = [];
+        for (const iv of ivs) { const last = merged[merged.length - 1]; if (last && iv[0] <= last[1] + SAME_EPS) last[1] = Math.max(last[1], iv[1]); else merged.push(iv.slice()); }
+        /* the last interval can run past +180 into the first */
+        while (merged.length > 1 && merged[merged.length - 1][1] >= merged[0][0] + 360 - SAME_EPS) { merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], merged[0][1] + 360); merged.shift(); }
+        if (merged.some((iv) => iv[1] - iv[0] >= 360 - SAME_EPS)) full = true;
+        else {
+          let best = -1, w = 0, e = 0;
+          for (let i = 0; i < merged.length; i++) {
+            const next = (i + 1 < merged.length) ? merged[i + 1][0] : merged[0][0] + 360;
+            const gap = next - merged[i][1];
+            if (gap > best) { best = gap; e = merged[i][1]; w = next; }
+          }
+          if (best <= SAME_EPS) full = true;
+          else {
+            while (w >= 180) w -= 360; while (w < -180) w += 360;
+            while (e > 180) e -= 360; while (e <= -180) e += 360;
+            return OKV([w, s, e, n]);
+          }
+        }
+      }
+      return OKV([-180, s, 180, n]);
+    }
+    function bbox(g) { const r = bboxR(g); return r.ok ? r.value : null; }
+
+    /* ── the centroid ─────────────────────────────────────────────────────────────────────────── */
+
+    /* ∫₀¹ sin(α+βt) dt and ∫₀¹ cos(α+βt) dt, exactly (the sinc form has no cancellation at small β). */
+    function sincHalf(b) { const x = b / 2; return (Math.abs(x) < 1e-4) ? 1 - x * x / 6 : Math.sin(x) / x; }
+    function intSin(a, b) { return Math.sin(a + b / 2) * sincHalf(b); }
+    function intCos(a, b) { return Math.cos(a + b / 2) * sincHalf(b); }
+    /* ∫₀¹ t·sin(α+βt) dt and ∫₀¹ t·cos(α+βt) dt. The closed form divides by β², so below |β| = 0.1 the
+       series Σ βᵏ/(k!(k+2))·f⁽ᵏ⁾(α) is used (eleven terms: the next is below 1e-19). */
+    function intTSinCos(a, b) {
+      if (Math.abs(b) >= 0.1) {
+        const s1 = Math.sin(a + b), c1 = Math.cos(a + b), s0 = Math.sin(a), c0 = Math.cos(a);
+        return [(-c1 * b + s1 - s0) / (b * b), (s1 * b + c1 - c0) / (b * b)];
+      }
+      const ds = [Math.sin(a), Math.cos(a), -Math.sin(a), -Math.cos(a)];
+      let ts = 0, tc = 0, bk = 1, fact = 1;
+      for (let k = 0; k <= 10; k++) {
+        if (k) { bk *= b; fact *= k; }
+        const w = bk / (fact * (k + 2));
+        ts += w * ds[k % 4]; tc += w * ds[(k + 1) % 4];
+      }
+      return [ts, tc];
+    }
+
+    /* One ring's ∬ p·dA and ∬ dA over the region it bounds IN THE KERNEL'S PLANE (edges straight in
+       lon/lat — the region pointInGeometry and the sweep line read), where p is the unit vector and
+       dA = cos φ dλ dφ: Green's theorem with Q = ∫ f dλ, integrated along each straight edge in
+       closed form. Signed by the ring's direction. ⚠ Every term but two is periodic in λ, and those
+       two (λ·cos φ, λ·sin 2φ / 2) integrate to 0 round any closed ring when λ is shifted by a turn —
+       so a ring written at +179 or at −181 gives the same vector, and a band or cap stated one turn
+       wide integrates as the ground it is. */
+    function ringMoments(pts) {
+      let X = 0, Y = 0, Z = 0, A = 0;
+      for (let i = 0, n = pts.length; i < n; i++) {
+        const a = pts[i], b = pts[(i + 1) % n];
+        const l0 = a[0] * D2R, p0 = a[1] * D2R, dl = (b[0] - a[0]) * D2R, dp = (b[1] - a[1]) * D2R;
+        if (dp === 0) continue;
+        /* cos²φ sinλ = sinλ/2 + [sin(λ+2φ) + sin(λ−2φ)]/4, and the same with cos for −cos²φ cosλ */
+        X += dp * (intSin(l0, dl) / 2 + (intSin(l0 + 2 * p0, dl + 2 * dp) + intSin(l0 - 2 * p0, dl - 2 * dp)) / 4);
+        Y -= dp * (intCos(l0, dl) / 2 + (intCos(l0 + 2 * p0, dl + 2 * dp) + intCos(l0 - 2 * p0, dl - 2 * dp)) / 4);
+        const tz = intTSinCos(2 * p0, 2 * dp), ta = intTSinCos(p0, dp);
+        Z += dp * (l0 * intSin(2 * p0, 2 * dp) + dl * tz[0]) / 2;
+        A += dp * (l0 * intCos(p0, dp) + dl * ta[1]);
+      }
+      return { v: [X, Y, Z], area: A };
+    }
+
+    /* The areal parts of g, each ring aligned into its shell's window and weighed: [{ rings, area, v }]. */
+    function arealParts(multi) {
+      const out = [];
+      for (const part of multi) {
+        const rings = part.map((r, i) => (i ? alignTo([r], [part[0]])[0] : r));
+        let area = 0, v = [0, 0, 0];
+        for (let i = 0; i < rings.length; i++) {
+          const m = ringMoments(rings[i]);
+          const sgn = ((m.area < 0) ? -1 : 1) * (i ? -1 : 1);
+          area += sgn * m.area; v = vlin(v, 1, m.v, sgn);
+        }
+        out.push({ rings: rings, area: area, v: v });
+      }
+      return out;
+    }
+
+    /* Spherical, in the highest dimension present: an area-weighted mean of the unit vector over
+       the region (holes subtract), else a length-weighted one along the lines' great-circle edges
+       (the curve lengthKm measures: an arc a→b contributes (a + b)·tan(θ/2)), else the mean of the
+       points' unit vectors. Projected back to the sphere. ⚠ REFUSED BY NAME WHEN THE VECTORS CANCEL
+       (`centroid-undefined`) — two antipodal points, a band symmetric about the equator: the mean
+       has no direction, and any point named would be a guess. */
+    function centroidR(g) {
+      if (!g || typeof g !== 'object') return NO('missing-geometry');
+      const multi = toMulti(g);
+      if (multi === null) return NO('geometry-wraps-world');
+      let v = null, weight = 0, dimension = null;
+      if (multi.length) {
+        dimension = 2; v = [0, 0, 0];
+        for (const p of arealParts(multi)) { v = vlin(v, 1, p.v, 1); weight += p.area; }
+      }
+      if (!v || !(weight > 0)) {
+        const lines = linesOf(g).map((l) => l.filter(isPos)).filter((l) => l.length > 1);
+        let lv = [0, 0, 0], len = 0;
+        for (const l of lines) for (let i = 1; i < l.length; i++) {
+          const a = vecOf(l[i - 1]), b = vecOf(l[i]), th = vangle(a, b);
+          if (!(th > AXIS_EPS)) continue;
+          if (Math.PI - th <= AXIS_EPS) return NO('edge-antipodal', { edge: [l[i - 1], l[i]] });
+          lv = vlin(lv, 1, vlin(a, 1, b, 1), Math.tan(th / 2)); len += th;
+        }
+        if (len > 0) { v = lv; weight = len; dimension = 1; }
+      }
+      if (!v || !(weight > 0)) {
+        const pts = pointsOf(g).concat(...linesOf(g).map((l) => l.filter(isPos)));
+        if (!pts.length) return NO('geometry-empty');
+        v = [0, 0, 0];
+        for (const p of pts) v = vlin(v, 1, vecOf(p), 1);
+        weight = pts.length; dimension = 0;
+      }
+      if (!(vlen(v) > AXIS_EPS * weight)) return NO('centroid-undefined', { dimension: dimension });
+      return { ok: true, geometry: { type: 'Point', coordinates: posOf(v) }, dimension: dimension };
+    }
+    function centroid(g) { return centroidR(g).geometry; }
+
+    /* A position GUARANTEED to be in the shape — what a label or a 「この区域の代表点」 needs, and what
+       a centroid is not (the centroid of a C or of a ring with a hole lies in the gap):
+         · areal: on a scanline through the part with the most area, between two vertex latitudes,
+           at the middle of the widest stretch the parity calls inside (interiorPoints — the same walk
+           the validity stage probes with); and it is CHECKED against pointInGeometry before it is
+           returned, so the guarantee is the door's and not an argument;
+         · lineal: an interior vertex of a line, the one nearest the centroid (as GEOS does); a line of
+           two positions gives an end — every candidate is a position of the line itself;
+         · points: the member nearest the centroid. */
+    function pointOnSurfaceR(g) {
+      if (!g || typeof g !== 'object') return NO('missing-geometry');
+      const multi = toMulti(g);
+      if (multi === null) return NO('geometry-wraps-world');
+      const wrap = (p, dimension) => { let x = p[0]; while (x > 180) x -= 360; while (x < -180) x += 360; return { ok: true, geometry: { type: 'Point', coordinates: [x, p[1]] }, dimension: dimension }; };
+      if (multi.length) {
+        const parts = arealParts(multi).sort((x, y) => Math.abs(y.area) - Math.abs(x.area));
+        for (const part of parts) {
+          for (const p of interiorPoints(part.rings.map((pts) => ({ pts: pts })), 16)) {
+            const cand = wrap(p, 2);
+            if (pointInGeometry(cand.geometry.coordinates, g)) return cand;
+          }
+        }
+        return NO('geometry-empty', { dimension: 2, interior: false });
+      }
+      const c = centroidR(g);
+      const cv = c.ok ? vecOf(c.geometry.coordinates) : null;
+      const nearest = (cands) => { let best = null, bd = Infinity; for (const p of cands) { const d = cv ? vangle(cv, vecOf(p)) : 0; if (d < bd) { bd = d; best = p; } } return best; };
+      const lines = linesOf(g).map((l) => l.filter(isPos)).filter((l) => l.length > 1);
+      if (lines.length) {
+        const inner = [];
+        for (const l of lines) for (let i = 1; i < l.length - 1; i++) inner.push(l[i]);
+        const ends = [];
+        for (const l of lines) ends.push(l[0], l[l.length - 1]);
+        return wrap(nearest(inner.length ? inner : ends), 1);
+      }
+      const pts = pointsOf(g).concat(...linesOf(g).map((l) => l.filter(isPos)));
+      if (!pts.length) return NO('geometry-empty');
+      return wrap(nearest(pts), 0);
+    }
+    function pointOnSurface(g) { return pointOnSurfaceR(g).geometry; }
+
+    /* ── the convex hull ──────────────────────────────────────────────────────────────────────── */
+
+    /* The largest relative error the sphere itself carries against WGS 84 (0.561 %, measured —
+       docs/GIS-CORE.md §2.4.1). ⚠ The same number is js/gis-voronoi.js SPHERE_REL_ERR (its canonical
+       home, published as sphereRelError()); it is restated here because this factory is shipped to
+       the other thread as its own source and can read nothing beside it. Expires when this layer
+       measures on the ellipsoid. A great-circle edge written as lon/lat chords is cut until each chord
+       strays from the arc by less than this fraction of half the arc — finer is precision the
+       surface does not have. */
+    const SPHERE_REL_ERR = 0.0056;
+
+    /* One great-circle arc u→w as positions with continuous longitude (from `ref`), u included and w
+       excluded, cut until every chord is within SPHERE_REL_ERR of half its arc. */
+    function arcPositions(u, w, ref, out, where) {
+      const stack = [[u, w, 0]];
+      const pending = [];
+      while (stack.length) {
+        const [a, b, depth] = stack.pop();
+        const m = vunit(vlin(a, 1, b, 1));
+        const th = vangle(a, b);
+        const pa = posOf(a, ref), pb = posOf(b, pa[0]);
+        const dev = m ? vangle(vecOf([(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2]), m) : 0;
+        if (!m || depth >= BUFFER_MAX_DEPTH || dev <= SPHERE_REL_ERR * th / 2) { pending.push(a); continue; }
+        stack.push([m, b, depth + 1], [a, m, depth + 1]);
+      }
+      for (const v of pending) { const p = where(v, ref); out.push(p); ref = p[0]; }
+      return ref;
+    }
+
+    /* The spherical convex hull: the smallest spherically convex set holding every position — the
+       hull of their unit vectors' cone. Incremental: a triangle, then each position either inside
+       (skipped) or seen from outside by one contiguous run of edges, which it replaces.
+       ⚠ IT EXISTS ONLY IN AN OPEN HEMISPHERE (Gordan: otherwise the origin is in the vectors' convex
+       hull and the cone is the whole space), and a position whose antipode is in the hull so far is
+       exactly the one that breaks it — refused by name (`hull-not-in-hemisphere`), not drawn as
+       something smaller. Degenerate input answers in its own dimension: one position is a Point,
+       positions on one great circle (within a half-turn) a LineString of its two ends. The edges are
+       great-circle arcs, written as lon/lat chords cut finely enough (SPHERE_REL_ERR); a hull round a
+       pole is closed along the pole, as a cap is. */
+    function convexHullR(g) {
+      if (!g || typeof g !== 'object') return NO('missing-geometry');
+      const multi = toMulti(g);
+      if (multi === null) return NO('geometry-wraps-world');
+      const vs = [];
+      /* the hull's vertices are written as the positions they were given, not as their vectors read
+         back (which differ in the last bits); only the points cut into an edge are computed */
+      const given = new Map();
+      /* one entry per place on the sphere (a seam or a pole spelled twice is one place); positions
+         closer than AXIS_EPS but not equal are kept and read as one by the tolerances below */
+      const seen = new Set();
+      const add = (p) => {
+        const key = (Math.abs(p[1]) >= 90) ? 'pole' + Math.sign(p[1]) : ((((p[0] % 360) + 540) % 360) - 180) + ',' + p[1];
+        if (seen.has(key)) return;
+        seen.add(key);
+        const v = vecOf(p); vs.push(v); given.set(v, [p[0], p[1]]);
+      };
+      const where = (v, ref) => {
+        const p = given.get(v);
+        if (!p) return posOf(v, ref);
+        let lon = p[0];
+        if (ref != null && Math.abs(p[1]) < 90) { while (lon - ref > 180) lon -= 360; while (ref - lon > 180) lon += 360; }
+        return [lon, p[1]];
+      };
+      for (const p of pointsOf(g)) add(p);
+      for (const l of linesOf(g)) for (const p of l) if (isPos(p)) add(p);
+      for (const part of multi) for (const r of part) for (const p of r) add(p);
+      if (!vs.length) return NO('geometry-empty');
+      const pt = (v) => { const p = where(v, null); return { ok: true, geometry: { type: 'Point', coordinates: p }, vertices: 1 }; };
+      const det = (a, b, c) => vdot(vcross(a, b), c);
+      const a = vs[0];
+      const b = vs.find((v) => vlen(vcross(a, v)) > AXIS_EPS);
+      if (!b) { if (vs.some((v) => vdot(a, v) < 0)) return NO('hull-not-in-hemisphere'); return pt(a); }
+      const c = vs.find((v) => Math.abs(det(a, b, v)) > AXIS_EPS);
+      if (!c) {
+        /* every position on one great circle: an arc, if they fit in less than half a turn of it */
+        const nrm = vunit(vcross(a, b)), ua = vcross(nrm, a);
+        const ang = vs.map((v) => ({ v: v, t: Math.atan2(vdot(v, ua), vdot(v, a)) })).sort((x, y) => x.t - y.t);
+        let gap = -1, at = 0;
+        for (let i = 0; i < ang.length; i++) { const nx = (i + 1 < ang.length) ? ang[i + 1].t : ang[0].t + 2 * Math.PI; if (nx - ang[i].t > gap) { gap = nx - ang[i].t; at = i; } }
+        if (!(gap > Math.PI + AXIS_EPS)) return NO('hull-not-in-hemisphere');
+        const from = ang[(at + 1) % ang.length].v, to = ang[at].v;
+        const coords = [];
+        const ref = arcPositions(from, to, null, coords, where);
+        coords.push(where(to, ref));
+        return { ok: true, geometry: { type: 'LineString', coordinates: coords }, vertices: 2 };
+      }
+      let hull = (det(a, b, c) > 0) ? [a, b, c] : [a, c, b];
+      for (const v of vs) {
+        if (v === a || v === b || v === c) continue;
+        const s = hull.map((h, i) => det(h, hull[(i + 1) % hull.length], v));
+        if (s.every((x) => x >= -AXIS_EPS)) continue;
+        if (s.every((x) => x <= AXIS_EPS)) return NO('hull-not-in-hemisphere');
+        const k = hull.length;
+        let i0 = -1;
+        for (let i = 0; i < k; i++) if (s[i] < -AXIS_EPS && !(s[(i - 1 + k) % k] < -AXIS_EPS)) { i0 = i; break; }
+        if (i0 < 0) return NO('hull-not-in-hemisphere');
+        let i1 = i0;
+        while (s[(i1 + 1) % k] < -AXIS_EPS && (i1 + 1) % k !== i0) i1 = (i1 + 1) % k;
+        /* keep h[i1+1] … h[i0] (going round), then v */
+        const next = [];
+        for (let j = (i1 + 1) % k; ; j = (j + 1) % k) { next.push(hull[j]); if (j === i0) break; }
+        next.push(v);
+        hull = next;
+      }
+      /* the antipode of a position found later can still sit inside: Gordan's test, once more, whole */
+      for (const v of vs) { const m = [-v[0], -v[1], -v[2]]; if (hull.every((h, i) => det(h, hull[(i + 1) % hull.length], m) >= -AXIS_EPS)) return NO('hull-not-in-hemisphere'); }
+      const ring = [];
+      let ref = null;
+      for (let i = 0; i < hull.length; i++) ref = arcPositions(hull[i], hull[(i + 1) % hull.length], ref, ring, where);
+      /* Counter-clockwise from outside, so the interior is on the left: a walk that gains a turn east
+         went round the north pole, one that loses a turn went round the south. */
+      const back = where(hull[0], ring[ring.length - 1][0]);
+      const turn = Math.round((back[0] - ring[0][0]) / 360);
+      if (turn) {
+        const lat = (turn > 0) ? 90 : -90, endLon = ring[0][0] + 360 * turn;
+        ring.push([endLon, back[1]], [endLon, lat], [ring[0][0], lat]);
+      }
+      return { ok: true, geometry: fromMulti(splitBack([[ring]])), vertices: hull.length };
+    }
+    function convexHull(g) { return convexHullR(g).geometry; }
+
+    /* ── simplification ───────────────────────────────────────────────────────────────────────── */
+
+    /* Douglas–Peucker on one open polyline with continuous longitudes: keep[i] for each position. The
+       distance from a position to a chord is pointToSegmentKm — the kernel's own, measured on the
+       real geodesic — so the tolerance is kilometres everywhere, not degrees that shrink with cos φ. */
+    function dpKeep(pts, tolKm, from, to, keep) {
+      const stack = [[from, to]];
+      while (stack.length) {
+        const [i, j] = stack.pop();
+        if (j - i < 2) continue;
+        let best = -1, at = -1;
+        for (let k = i + 1; k < j; k++) { const d = pointToSegmentKm(pts[k], pts[i], pts[j]); if (d != null && d > best) { best = d; at = k; } }
+        if (at < 0 || best <= tolKm) continue;
+        keep[at] = true;
+        stack.push([i, at], [at, j]);
+      }
+    }
+
+    /* One ring (as written) simplified at tolKm: the positions it keeps, closed. ⚠ A RING KEEPS THREE
+       DISTINCT POSITIONS AT LEAST (four with the closing one): it is anchored at its first position
+       and at the one farthest from it, and if both halves fold flat the third is the position
+       farthest from that chord. Every kept position is one of the ring's own — nothing moves. */
+    function simplifyRing(raw, tolKm) {
+      const pts = ringPositions(raw);
+      if (pts.length < 4 || !(tolKm > 0)) return closeRing(pts);
+      const u = unwrapWalk(pts, false);
+      const n = u.length, keep = new Array(n + 1).fill(false);
+      let far = 1, fd = -1;
+      for (let k = 1; k < n; k++) { const d = haversineKm(u[0], u[k]); if (d != null && d > fd) { fd = d; far = k; } }
+      const loop = u.concat([u[0]]);
+      keep[0] = keep[far] = keep[n] = true;
+      dpKeep(loop, tolKm, 0, far, keep);
+      dpKeep(loop, tolKm, far, n, keep);
+      if (keep.slice(0, n).filter(Boolean).length < 3) {
+        let third = -1, td = -1;
+        for (let k = 1; k < n; k++) { if (k === far) continue; const d = pointToSegmentKm(u[k], u[0], u[far]); if (d != null && d > td) { td = d; third = k; } }
+        if (third >= 0) keep[third] = true;
+      }
+      const out = [];
+      for (let k = 0; k < n; k++) if (keep[k]) out.push(pts[k]);
+      return closeRing(out);
+    }
+
+    function simplifyLine(raw, tolKm) {
+      const pts = (raw || []).filter(isPos).map((p) => [p[0], p[1]]);
+      if (pts.length < 3 || !(tolKm > 0)) return pts;
+      const u = unwrapWalk(pts, false), keep = new Array(u.length).fill(false);
+      keep[0] = keep[u.length - 1] = true;
+      dpKeep(u, tolKm, 0, u.length - 1, keep);
+      return pts.filter((_, k) => keep[k]);
+    }
+
+    /* The ring indices validate() names in its problems (a Polygon's path is ['coordinates', ring];
+       a MultiPolygon's is ['coordinates', part, ring], and the between-parts findings name parts). */
+    function implicated(problems, keys) {
+      const out = new Set();
+      for (const p of problems) {
+        const path = p.path || [], d = p.detail || {};
+        if (typeof path[1] === 'number') out.add(path[1]);
+        for (const k of keys) { const x = d[k]; if (typeof x === 'number') out.add(x); else if (Array.isArray(x)) for (const y of x) if (typeof y === 'number') out.add(y); }
+      }
+      return out;
+    }
+
+    /* Douglas–Peucker with a tolerance in KILOMETRES on every line and every ring, answered as
+       { ok, geometry, toleranceKm, positionsBefore, positionsAfter, ringsBackedOff, topology }.
+       ⚠ EVERY ANSWER PASSES validate(). A ring simplified into a self-crossing, a hole pushed out of
+       its shell, two parts made to overlap — each is caught by the kernel's own validity walk and
+       that ring (or part) is simplified again at half the tolerance, down to its original positions
+       if need be; `ringsBackedOff` counts the rings that had to give way. An input that is invalid
+       before it is touched is refused (`geometry-invalid`): no tolerance could make a promise about it.
+       ⚠ IT IS PER FEATURE (`topology: 'per-feature'`). Two neighbouring districts simplified one at a
+       time each keep their own positions along the edge they share, so the shared edge is no longer
+       one edge — slivers and gaps appear between them. Keeping shared edges identical needs the whole
+       coverage at once, which this door does not take. */
+    function simplifyR(g, toleranceKm) {
+      if (!g || typeof g !== 'object') return NO('missing-geometry');
+      if (earthKm() == null) return NO('geodesy-unavailable');
+      if (!(typeof toleranceKm === 'number' && isFinite(toleranceKm) && toleranceKm >= 0)) return NO('bad-tolerance', { toleranceKm: toleranceKm });
+      const v0 = validate(g, { limit: 0 });
+      if (!v0.ok) return v0;
+      if (!v0.value.valid) return NO('geometry-invalid', { problems: v0.value.problems.slice(0, 20) });
+      let backed = 0;
+      const count = (c) => (isPos(c) ? 1 : (Array.isArray(c) ? c.reduce((s, x) => s + count(x), 0) : 0));
+      /* one polygon's rings at per-ring tolerances, backed off until validate() accepts the part */
+      const polygon = (rings, tols, backedSet) => {
+        for (let round = 0; ; round++) {
+          const out = rings.map((r, i) => simplifyRing(r, tols[i]));
+          const v = validate({ type: 'Polygon', coordinates: out }, { limit: 0 });
+          if (v.ok && v.value.valid) return out;
+          let ids = implicated(v.value.problems, ['rings', 'ring']);
+          if (!ids.size || ![...ids].some((i) => tols[i] > 0)) ids = new Set(rings.map((_, i) => i));
+          let moved = false;
+          for (const i of ids) if (tols[i] > 0) { tols[i] = (round > 50) ? 0 : tols[i] / 2; backedSet.add(i); moved = true; }
+          if (!moved) return rings.map((r) => closeRing(ringPositions(r)));
+        }
+      };
+      const visit = (node) => {
+        if (!node || typeof node !== 'object') return node;
+        const t = node.type;
+        if (t === 'GeometryCollection') return { type: t, geometries: (node.geometries || []).map(visit) };
+        if (t === 'LineString') return { type: t, coordinates: simplifyLine(node.coordinates, toleranceKm) };
+        if (t === 'MultiLineString') return { type: t, coordinates: (node.coordinates || []).map((l) => simplifyLine(l, toleranceKm)) };
+        if (t === 'Polygon') {
+          const rings = node.coordinates || [], set = new Set();
+          const out = polygon(rings, rings.map(() => toleranceKm), set);
+          backed += set.size;
+          return { type: t, coordinates: out };
+        }
+        if (t === 'MultiPolygon') {
+          const polys = node.coordinates || [];
+          const tols = polys.map((rings) => rings.map(() => toleranceKm)), sets = polys.map(() => new Set());
+          for (let round = 0; ; round++) {
+            const out = polys.map((rings, i) => polygon(rings, tols[i], sets[i]));
+            const v = validate({ type: t, coordinates: out }, { limit: 0 });
+            if ((v.ok && v.value.valid) || round > 60) { for (const s of sets) backed += s.size; return { type: t, coordinates: out }; }
+            let ids = implicated(v.value.problems, ['parts', 'part', 'insideOf', 'duplicateOf']);
+            if (!ids.size) ids = new Set(polys.map((_, i) => i));
+            for (const i of ids) if (tols[i]) tols[i] = tols[i].map((x, k) => { if (x > 0) sets[i].add(k); return (round > 50) ? 0 : x / 2; });
+          }
+        }
+        return node;
+      };
+      const out = visit(g);
+      const check = validate(out, { limit: 0 });
+      if (!check.ok || !check.value.valid) return NO('geometry-invalid', { problems: check.ok ? check.value.problems.slice(0, 20) : null, stage: 'output' });
+      return {
+        ok: true, geometry: out, toleranceKm: toleranceKm,
+        positionsBefore: count(g.coordinates || (g.geometries || []).map((x) => x.coordinates)),
+        positionsAfter: count(out.coordinates || (out.geometries || []).map((x) => x.coordinates)),
+        ringsBackedOff: backed, topology: 'per-feature',
+      };
+    }
+    function simplify(g, toleranceKm) { return simplifyR(g, toleranceKm).geometry; }
+
     /* ── what this kernel can be ASKED FOR BY NAME, and what each asking needs (#R819) ──────────
        ⚠ ONE ENTRY DISPATCHES AND DECLARES. The function in `fn` is THE function the door above
        exposes — the same object, not a second spelling of it — and `needs` names the borrowed
@@ -2234,6 +3131,13 @@ export function makeGisGeometry() {
       validate: { fn: validate, needs: [] },
       repair: { fn: repair, needs: ['clipper'] },
       coverage: { fn: coverage, needs: ['clipper', 'geodesy'] },
+      /* (gis-foundation-refine) the measures a shape has of itself — arithmetic on unit vectors and
+         positions, so they travel; simplify measures its tolerance in km, on the app's one radius. */
+      bbox: { fn: bboxR, needs: [] },
+      centroid: { fn: centroidR, needs: [] },
+      pointOnSurface: { fn: pointOnSurfaceR, needs: [] },
+      convexHull: { fn: convexHullR, needs: [] },
+      simplify: { fn: simplifyR, needs: ['geodesy'] },
     };
 
     function opNames() { return Object.keys(OPS); }
@@ -2270,6 +3174,8 @@ export function makeGisGeometry() {
       union, intersection, difference, dissolve, bufferKm,
       intersects, contains, within, disjoint, distanceKm,
       pointInGeometry,
+      /* (gis-foundation-refine) see the block above bboxR — plain names answer the value or null. */
+      bbox, centroid, pointOnSurface, convexHull, simplify,
       /* ⚠ VALIDITY IS A FACT ABOUT A GEOMETRY, SO IT LIVES BESIDE THE OPERATIONS AND NOT INSIDE ONE
          (#R752). Both doors already return the readable shape, so neither has a loose twin above and
          neither is repeated inside `attempt` — one name, one place. See the block above for what is
@@ -2299,6 +3205,7 @@ export function makeGisGeometry() {
         dissolve: unionR, bufferKm: bufferKmR,
         intersects: intersectsR, contains: containsR, within: withinR, disjoint: disjointR,
         distanceKm: distanceKmR, areal: arealR,
+        bbox: bboxR, centroid: centroidR, pointOnSurface: pointOnSurfaceR, convexHull: convexHullR, simplify: simplifyR,
       },
       /* exposed because js/gis-ops.js converts the same way and the checks measure the same
          conversion — two readers of one rule, not two rules */
@@ -2427,7 +3334,27 @@ export function makeGisGeometry() {
        onePlane). And a ring that goes round a pole WITHOUT saying which (its closing edge unwrapped
        is more than half a turn) is now refused by name where it used to be accepted with that edge
        swept backwards across the plane. Both are corrections a saved recipe replays differently. */
-    const KERNEL_VERSION = 'geom-3';
+    /* (gis-foundation-refine) geom-3 -> geom-4: A REPLAYED STEP NOW GETS A DIFFERENT ANSWER, in four
+       places, and each is a wrong answer becoming a right one.
+       · bufferKm round a pole: a disk holding a pole is built as a cap closed along the pole itself
+         (it was cut, clamped to 89.9999° and its 350° pole edge folded the short way): 50 km at
+         89.9°N was 5,529 km² and is now π·50² within the stated inscribed error, with the centre and
+         the pole inside. Answers are no longer clamped to ±89.9999° at all.
+       · bufferKm of a long or high-latitude edge: each point of an edge is offset on its own normal
+         (a line's edge is the great circle lengthKm measures; a ring's is the lon/lat edge the body
+         has), and long edges are cut until the chords are within the inscribed error. [0,89]→[180,89]
+         at 20 km was 2,497 km² and is now the capsule's 10,152. Ordinary short edges move by
+         rounding only. An edge between antipodal positions is refused (`edge-antipodal`).
+       · intersects / disjoint / contains / within are DE-9IM on closed sets (see the predicates
+         block): two polygons sharing only an edge now intersect, and a position on a polygon's
+         boundary is no longer within it on its west/south edges. A saved `relate` or `aggregate`
+         step that met a boundary replays to a different row set.
+       · every written edge is at most a quarter-turn of longitude (writeRing): a band's or a cap's
+         long parallel comes back with vertices on it — the same ground, more positions.
+       pointInGeometry (the assignment rule zonal / rasterize read) is unchanged except AT a pole,
+       where a position is now inside the cap that holds it. New doors (bbox, centroid,
+       pointOnSurface, convexHull, simplify) are new capability, not a changed answer. */
+    const KERNEL_VERSION = 'geom-4';
     const API = Object.assign(delegated(PORTABLE, []), {
       /* (#R749) see KERNEL_VERSION above — js/gis-project.js records which engine answered. */
       version: () => KERNEL_VERSION,

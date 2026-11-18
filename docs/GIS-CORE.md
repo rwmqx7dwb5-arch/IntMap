@@ -300,7 +300,7 @@ map していて、**`DECL` に足して `ORDER` に足し忘れた op は run()
 | `union` | 2 | `Polygon`／`Polygon` | `Polygon` | 無し |
 | `dissolve` | 1 | `Polygon` | `Polygon` | `by`（列名。省略＝全部で 1 群） |
 | `relate` | 2 | 何でも／何でも | 入力と同じ | `predicate`（`intersects`/`within`/`contains`/`disjoint`/`nearer-than`）・`maxKm` |
-| `aggregate` | 2（面・相手） | `Polygon`／**何でも** | `Polygon` | `stat`（`count`/`sum`/`mean`/`min`/`max`）・`field`・`outName` |
+| `aggregate` | 2（面・相手） | `Polygon`／**何でも** | `Polygon` | `stat`（`count`/`sum`/`mean`/`min`/`max`/`areaWeightedMean`/`median`/`percentile`/`stdev`/`majority`）・`field`・`outName`・`quantity`・`weightBy`・`p`（§2.7・§2.10） |
 | `sample` | 2（点・**格子**） | `Point`／— | 入力と同じ | `band`・`method`（`nearest`/`bilinear`）・`outName` |
 | `zonal` | 2（面・**格子**） | `Polygon`／— | `Polygon` | `band`・`stat`（`mean`/`sum`/`min`/`max`/`count`/`classes`）・`outName` |
 | `rasterMask` | 1（**格子**） | — | **格子** | `band`・`op`・`value` |
@@ -309,6 +309,31 @@ map していて、**`DECL` に足して `ORDER` に足し忘れた op は run()
 | `join` | 2（対象・**表**） | 何でも／何でも | 対象と同じ | `leftField`・`rightField`（必須）・`fields`・`prefix`・`unmatched`・`duplicates` |
 | `compute` | 1 | 何でも | 入力と同じ | `outName`・`expr`（必須）・`replace` |
 | `voronoi` | 2（地点・窓） | `Point`／`Polygon` | `Polygon` | 無し（§2.9） |
+| `centroid` | 1 | 何でも | `Point` | 無し（球面の重心。面積・長さで重み付け。§2.5.6） |
+| `pointOnSurface` | 1 | 何でも | `Point` | 無し（必ず面の内側・線の上に来る点。§2.5.6） |
+| `convexHull` | 1 | 何でも | `Polygon` | `by`（列名。省略＝全部で 1 群。§2.5.6） |
+| `simplify` | 1 | 何でも | 入力と同じ | `toleranceKm`（必須。§2.5.6） |
+| `grid` | 1（範囲） | 何でも | `Polygon` | `shape`（`square`/`hexagon`）・`cellKm`（必須）・`clip`・`bbox`（§2.10） |
+| `sample` | 2（点・**格子**） | `Point`／— | 入力と同じ | `band`・`method`・`outName` |
+| `resample` | 2（**格子**・**格子**） | — | **格子** | `method`（必須）・`rule`（§1.4b） |
+| `rasterCalc` | 2（**格子**・**格子**） | — | **格子** | `expr`（必須。`a`・`b` だけを名指す）・`bandA`・`bandB`・`outName`・`unit` |
+| `mosaic` | 2（**格子**・**格子**） | — | **格子** | `overlap`・`method`（必須）・`band` |
+| `rasterize` | 1 | 何でも | **格子** | `width`・`height`（必須）・`field`・`stat`・`bbox` |
+| `polygonize` | 1（**格子**） | — | `Polygon` | `band`・`outName` |
+| `measure` | 1 | 何でも | 入力と同じ | `what`（`area`/`length`。必須）・`crs`・`surface`・`unit`・`tolerance`・`outName`（§2.4） |
+| `validate` | 1 | 何でも | 入力と同じ | `prefix`（§5.9） |
+| `repair` | 1 | 何でも | 入力と同じ | `winding`・`prefix`（§5.9） |
+| `spatialJoin` | 2（対象・相手） | 何でも／何でも | 対象と同じ | `predicate`・`cardinality`（必須）・`maxKm`・`fields`・`prefix`・`unmatched` |
+| `nearestJoin` | 2（対象・相手） | 何でも／何でも | 対象と同じ | `maxKm`・`idField`・`fields`・`prefix`・`unmatched` |
+| `timeJoin` | 2（対象・時間軸を持つ相手） | 何でも／何でも | 対象と同じ | `relation`・`at`・`from`・`to`・`ends`・`cardinality`（必須）・`fields`・`prefix`・`unmatched`（§1.5） |
+| `convert` | 1 | 何でも | 入力と同じ | `field`・`to`（必須）・`from`・`outName`・`replace`・`difference`（§3.2） |
+| `coverage` | 1 | `Polygon` | 入力と同じ | `overlaps`・`gaps`・`edges`・`gapToleranceKm`・`edgeToleranceKm`・`limit`（§5.9.2） |
+| `profile` | 2（面・相手） | `Polygon`／何でも | 入力と同じ | `band`・`field`・`quantity`・`reading`・`asOf`・`boundary`・`weightBy`・`total`・`outName`（§2.8） |
+| `compareZones` | 2（面・面） | `Polygon`／`Polygon` | `Polygon` | `field`・`quantity`・`outName`（§2.8） |
+| `reach` | 2（到達圏・相手） | `Polygon`／何でも | 入力と同じ | `profile` と同じ（§2.8） |
+
+⚠ **この表の op の集合は `ops()` と同じでなければならない**——`tests/gis-foundation-refine-ops-checks.test.mjs` ⑧ が
+`ops()` の id と表の行を突き合わせる（手書きの表は、#R783 の 4 op と今回の 5 op を 2 回とも載せ損ねた）。
 
 ⚠ **`kinds` が入力ごとの中身（vector / raster）を宣言し、既定は `vector`。** `accepts` が訊くのは
 geometry で、格子はそれを持たない——この鍵が無ければ、**格子より前に書かれた 9 つの op が
@@ -456,13 +481,35 @@ boolean 演算は **`polygon-clipping`（Martinez–Rueda の sweep line）** �
 
 **バッファはオフセット曲線ではなく Minkowski 和である。** 半径 r のバッファの定義が「その形から
 r 以内の点の集合」＝「その形と半径 r の円盤の Minkowski 和」なので、そのとおりに作る:
-頂点ごとに**測地円盤**（`diskFillPolys`。点バッファがずっと使ってきたもの）、辺ごとに**測地の
-四辺形**（両端を方位角 ±90° に r ずらす）、全部を union する。union が自己交差を消し、円盤が継ぎ目を
-丸める。⚠ `@turf/buffer` を使わないのは、幾何エンジン（Turf 7 では `@turf/jsts`・272 kB）に届くことと、**オフセットを平面で
+頂点ごとに**測地円盤**（`IntMapGeodesy._diskRing`。地図の `diskFillPolys` が描くのと同じ 1 本の周回）、
+辺ごとに**帯**（辺の各点を、**その点自身の法線**の向きに r ずらした四辺形の列）、全部を union する。
+union が自己交差を消し、円盤が継ぎ目を丸める。⚠ `@turf/buffer` を使わないのは、幾何エンジン（Turf 7 では `@turf/jsts`・272 kB）に届くことと、**オフセットを平面で
 計算するので緯度 60° の「5 km」が 5 km ではない**ことの 2 つ。
-⚠ **内接近似であることを述べる**: `steps` 枚の円盤と四辺形は弦で接するので、境界は真のバッファの
-内側に最大 r·(1−cos(π/steps))——既定の 64 で 5 km バッファなら 3 m——入る。丸めずに
-`_bufferSteps` として行に書く。
+
+- **辺がどの曲線かは、測る量ごとの規則（§2.4）をそのまま使う。** 線（LineString）の辺は**大円**——
+  `lengthKm` が長さを測る曲線なので、道路の「何 km」と、その道路のバッファの芯は同じもの。面の環の辺は
+  **経緯度の直線**——sweep line・`pointInGeometry`・述語が読む辺なので、外向きバッファの帯は本体の辺に
+  ぴったり沿う（大円で帯を作ると、高緯度の長い辺では本体と帯のあいだに隙間ができる）。
+- **長い辺は切る。** オフセット点を結ぶ弦がオフセット曲線から円盤と同じ幅 r·(1−cos(π/steps)) 以上離れる
+  あいだ二分する（実測: 両端を辺の始点の方位で一緒にずらしていた以前の作りでは、極を越える
+  [0,89]→[180,89] の 20 km バッファが 2,497 km²。正しくは 10,152 km²）。
+- **極に手が届く区間は円盤で覆う。** オフセット曲線が極を越えるか折り返すところでは平面に帯を描けない
+  ので、極が r の届く範囲にある区間は、円盤の間隔を同じ誤差に収まるまで詰めて並べる。
+- **極を含む円盤は極冠として作る**——経度を 1 周する環を、**極そのもの（緯度 ±90）に沿う辺**で閉じる
+  （§2.5.1 の帯・極冠の読み方）。両極を含む円盤は「世界 − 対蹠の円盤」。実測: 以前は `diskFillPolys` の
+  切り分け済み・89.9999° に丸めた片を巻き直していて、89.9°N の 50 km バッファが 5,529 km²（π·50² = 7,854）、
+  中心も極も外と判定された。⚠ **カーネルの答えは ±89.9999° に丸めない**（丸めは MapLibre のためのもので、
+  地図側の `diskFillPolys` / `sanitizeFeatures` が引き続き行う）。
+- **書き出す辺は経度 90° 以下に刻む。** sweep line は同一直線上の頂点を落とすので、極に沿う辺や幅 340° の帯の
+  緯線は 1 本の長い辺で返ってくる。そのままだとカーネル自身の継ぎ目規則（隣り合う頂点の経度差 180° 超は継ぎ目）
+  が逆向きに読む。辺の上に頂点を足すだけで、平面上の線は変わらない。
+- 対蹠の 2 点を結ぶ辺は大円が 1 本に決まらないので `edge-antipodal` で断る。
+- 多数の重なり合う片の union は、**連続した 16 片ずつの木**で行う（性能だけの選択で、答えは同じ集合）。
+  実測: 2,000 頂点の環の 5 km バッファ（4,001 片）が一括 26.7 s・木 1.8 s。
+
+⚠ **近似であることを述べる**: 頂点の円盤は弦で接するので、そこでは境界が真のバッファの内側に最大
+r·(1−cos(π/steps))——既定の 64 で 5 km バッファなら 3 m——入る。曲がったオフセット（子午線のオフセットは
+小円であって子午線ではない）に沿う弦は、同じ幅だけ**外側**に出うる。丸めずに `_bufferSteps` として行に書く。
 
 #### 2.5.1 ⚠ 「答えは空だった」と「答えられなかった」は同じ null ではない（#R743）
 
@@ -485,7 +532,7 @@ r 以内の点の集合」＝「その形と半径 r の円盤の Minkowski 和�
 |---|---|
 | `{ ok: true, geometry: <G> }` / `{ ok: true, value: v }` | 計算できた |
 | `{ ok: true, geometry: null }` | 計算できて、**答えが空だった** |
-| `{ ok: false, why, detail }` | **計算できなかった**。`why` は `clipper-unavailable` / `clipper-failed` / `geometry-wraps-world` / `geodesy-unavailable` / `bad-radius` / `inward-buffer-needs-area` / `missing-geometry` / `no-comparable-parts` |
+| `{ ok: false, why, detail }` | **計算できなかった**。`why` は `clipper-unavailable` / `clipper-failed` / `geometry-wraps-world` / `geodesy-unavailable` / `bad-radius` / `inward-buffer-needs-area` / `missing-geometry` / `no-comparable-parts` / `edge-antipodal` / `centroid-undefined` / `hull-not-in-hemisphere` / `geometry-empty` / `geometry-invalid` / `bad-tolerance`（後の 5 つは §2.5.6） |
 
 ⚠ **全周の緯線で述べた帯と極冠は「世界を一周する環」ではない**（カーネル版 `geom-3`）。経度がちょうど 1 周（360°）の辺を持ち
 閉じた環——`box(-180, S, 180, N)` のように ±180° の子午線に沿う辺と全周の緯線で囲んだもの——は、[−180, 180] の平面での
@@ -581,6 +628,58 @@ r 以内の点の集合」＝「その形と半径 r の円盤の Minkowski 和�
 
 ⚠ **使った規則は答えにも行にも載る**（`stats.boundary` と各行の `_boundary`）。行こそが後で結合・
 書き出し・比較されるものなので、規則が「その場の表示」にしか無い数は、誰も検算できない。
+
+#### 2.5.5 境界の上の点 — 述語は DE-9IM、割り当ては半開（カーネル版 `geom-4`）
+
+境界の上の点には **2 つの問い**があり、カーネルは 2 つの規則で別々に答える。1 つの規則で両方に答えていた
+とき（実測）: `box(0,0,10,10)` の**西辺**の点は `within`、**東辺**の点は `within` でなく、`intersects` は両方
+「触れている」。辺だけを共有する `box(10,0,20,10)` は `disjoint` だった（sweep line は辺に面積を返さない）。
+
+| 問い | 規則 | 誰が読むか |
+|---|---|---|
+| **述語** `intersects` / `disjoint` / `contains` / `within` | **DE-9IM（OGC）を閉集合で**: `intersects` ⇔ 閉包が 1 点でも共有する（辺・頂点で接するだけでも真）、`disjoint` = ¬`intersects`。`contains(a,b)` ⇔ b のどの点も a の外部に無く、**かつ** b の内部の点が少なくとも 1 つ a の内部にある。`within(a,b)` = `contains(b,a)` | `relate`・`aggregate`・`distanceKm`（接していれば 0 km） |
+| **割り当て** `pointInGeometry` | **半開**: 境界上の点は、その点を**東へ無限小**（東へ動かすと水平な辺に沿うなら、続けて**北へ無限小**）動かした先を含む領域に属する。穴も同じ 1 つの規則（穴の東辺は多角形に、西辺は穴に属する） | `zonal`（`center`）・`rasterize`・`voronoi`・点と線の切り抜き |
+
+- **述語は境界を名指して探す**（`locate`）。境界上の点は、そこを通る辺が近傍を扇形に切るので、各扇形を
+  最寄りの他の辺までの距離の半分で探針する——全部が内なら内部、一部なら境界、無ければ外部。だから
+  **球に無い辺は境界ではない**: 帯（−180→180 で述べた全周）の 2 本の子午線の辺、±180 で切られた 1 つの形の
+  2 つの半分の継ぎ目、極冠の極に沿う辺。線については、線分を各辺との交点・接点・共線区間の端で切り、
+  区間ごとに内・外・境界上を決める（共線区間は重なり自体から分かり、計算した中点を許容幅で測り直さない）。
+- ⚠ **点が境界上なら `within` は偽**、外から接する多角形は含まれず、境界に沿うだけの線も含まれない
+  （内部が相手の内部と交わらない）。⚠ **面積を持たない容器（点・線）の `contains` は偽のまま**（線が自分の
+  頂点を含むかは、ここでは答えない）。
+- **割り当てを閉じた規則にしない理由**: 読み手が**区分**を要する。`zonal` は「どの画素も二度数えない」と述べ、
+  隣り合う 2 区域の共有辺上の画素中心、穴とそれを埋める島、±180 で切られた 2 つの半分（窓は点に揃えるので
+  180 と −180 は同じ側に落ちる）——どれも**ちょうど 1 つ**に属する。閉じた規則なら両方に数える。
+- **極**: 平面では極は緯度 ±90 の**線**なので、素の交差判定では何も極を含めない。割り当ては極の点を
+  **赤道側へ無限小**動かして読む——極冠は極を含み、極を囲む扇形の並びでは自分の経度の 1 枚だけが含む。
+  述語は極の近傍を経度に沿って読む（環が極に頂点を持つ経度で区切り、区間ごとに 1 経度を訊く）。
+- ⚠ **`aggregate` の member の数え方が変わる**: `aggregate` は member を `intersects` で決めるので、区域と
+  **辺だけを共有する**面も member になる（重みは 0）。区域が区分を成すデータで「重なるもの」だけを数えたい
+  読み手には、内部どうしの交わりという別の問いが要る。
+
+#### 2.5.6 形が自分について持つ量 — `bbox` / `centroid` / `pointOnSurface` / `convexHull` / `simplify`
+
+カーネルに無かったので、`js/` の読み手がそれぞれ自前で書いていた（実測: 外接矩形およそ 15・重心 6・
+Douglas–Peucker 3。ほぼ全部が生の度で、±180 を跨ぐ形の箱は全世界、フィジーの重心は大西洋）。どれも
+`attempt` に読める形の扉があり、素の名前は値か `null` を返す。継ぎ目と極の規則はカーネルのもの。
+
+| 扉 | 答え | 断るとき |
+|---|---|---|
+| `bbox(g)` | `[w, s, e, n]`。経度は**全部を含む最小の弧**（円周上の最大の隙間の補集合。各部分はほどいてから測る）。日付変更線を跨げば **w > e**（RFC 7946 §5.2）。`[-180, s, 180, n]` は本当に 1 周するとき（帯・極冠・極を囲む形）だけ。範囲は**頂点の**もの（辺は経緯度の直線、§2.4） | `missing-geometry` / 空なら `null` |
+| `centroid(g)` | **球面上**で、存在する最高次元で: 面は面積で重み付けた単位ベクトルの平均（カーネルの平面＝経緯度の直線の辺が囲む領域、dA = cos φ dλ dφ を Green の定理で辺ごとに閉じた形で積分。穴は引く）、線は大円の辺の長さで重み付け（弧 a→b の寄与は (a+b)·tan(θ/2)）、点は単位ベクトルの平均。球へ戻した点 | ベクトルが打ち消す（対蹠の 2 点・赤道に対称な帯）: `centroid-undefined`。空: `geometry-empty`。対蹠の辺: `edge-antipodal` |
+| `pointOnSurface(g)` | **必ず形の中にある点**。面は面積最大の部分を走査線で切り、内側の最も広い区間の中点——返す前に `pointInGeometry` で**確かめる**（C 字・穴・継ぎ目・極冠でも）。線は内側の頂点のうち重心に最も近いもの（2 点の線なら端点）。点は重心に最も近い member | `geometry-empty` |
+| `convexHull(g)` | **球面の凸包**（単位ベクトルの錐の凸包）。辺は大円で、経緯度の弦として書くときは弧から半弧長の 0.56 %（球と楕円体の差、§2.4.1・`js/gis-voronoi.js` の `SPHERE_REL_ERR`）以内になるまで刻む。極を囲めば極に沿って閉じる。1 点なら Point、1 本の大円の半周未満に並ぶなら両端の LineString | 開いた半球に収まらない（Gordan の定理により凸包が無い）: `hull-not-in-hemisphere` |
+| `simplify(g, toleranceKm)` | 線と環ごとの Douglas–Peucker で、許容は **km**（点と弦の距離は `pointToSegmentKm` の測地線）。位置は動かさず、元の位置を残す。環は少なくとも 4 位置。`{ geometry, toleranceKm, positionsBefore, positionsAfter, ringsBackedOff, topology: 'per-feature' }` | 入力が不正: `geometry-invalid`。許容が数でない・負: `bad-tolerance` |
+
+- ⚠ **`simplify` の答えは必ず `validate()` を通る**（§5.9 の 3 段すべて）。自己交差・外環から出た穴・重なった
+  パートは、その環（またはパート）だけを許容の半分でやり直し、必要なら元の位置まで戻す。戻した環の数が
+  `ringsBackedOff`。
+- ⚠ **`simplify` は地物ごと**（`topology: 'per-feature'`）。隣り合う 2 つの区域を別々に単純化すると、共有辺の
+  上でそれぞれ別の頂点が残り、共有辺は 1 本でなくなる（細い隙間と重なりができる）。共有辺を保つには被覆全体を
+  一度に扱う必要があり、この扉はそれを取らない。
+- `bbox` / `centroid` / `pointOnSurface` / `convexHull` は位置と単位ベクトルの算術だけなので別スレッドへ運べる
+  （`needs: []`）。`simplify` は km をアプリの半径で測るので `geodesy` を要する。
 
 ### 2.6 対の数え上げと、止められること（#R735）
 
@@ -792,6 +891,33 @@ r 以内の点の集合」＝「その形と半径 r の円盤の Minkowski 和�
 
 ---
 
+### 2.10 格子を作り、区域の値の分布を述べる — `grid` と `aggregate` の統計
+
+**格子は 1 つの op で作り、数えるのは既存の `aggregate` である。** `grid` → `aggregate(count)` が
+六角形の集計（hexbin）・方眼の集計（fishnet）で、そのための専用の op は作らない（数える規則が 2 本になる）。
+
+- **セルは地面の上で同じ面積。** 度の刻みを固定すると高緯度ほどセルが縮む——それを黙って配ると、
+  同じ件数が北では「密」に見える。正方形は高さ一定の緯度帯ごとに、その帯で面積が `cellKm²` になる
+  経度幅を取る。六角形は範囲の中央の緯度を標準緯線にした正積円筒図法の上の正六角形で、隣どうしは
+  頂点をビット単位で共有する。どのセルも `_areaKm2`（実測）・`_gridId`・`_gridRow`・`_gridCol` を持ち、
+  切り取られたセルは `_gridFullKm2` に切る前の面積を持つ（実測: 0° と 60°N で `cellKm²` との差 1e-9 未満）。
+- **範囲は入力の `bbox`（§2.5.6）。** 180° の両側にあるデータは 359° 幅ではなく短い向きの範囲になる。
+  入力が面なら既定でその形に切る（`clip`）。点や線なら切らず、`stats` がそう述べる。
+- **数が多すぎるときは作る前に断る**（`grid-too-many-cells`。入力に触れうるセルだけを数え、算術を返す）。
+  予算は `js/gis-worker.js` が述べる最大の受け渡し量で、1 セルの費用はこの実装の実測値（失効条件はコードの註）。
+
+**`aggregate` の統計は `count` / `sum` / `mean` / `min` / `max` / `areaWeightedMean` / `median` / `percentile` /
+`stdev` / `majority`。** `percentile` は `p`（0〜100）を取り、Hyndman & Fan の第 7 法（R・NumPy の既定）。
+`stdev` は標本標準偏差（n−1）で、値が 1 つの区域は 0 ではなく `null`。`majority`（最頻値）は値を**同一性**で
+数え（`"01100"` と `"1100"` は別）、同数なら入力 1 の行順で先に現れた値で、`_majorityCount` / `_majorityTies` を
+行に載せる。⚠ **使ってよいかは `js/gis-units.js` が決める**（§3.3）: 区分の中央値・標準偏差は拒まれ、
+測定値の最頻値も拒まれ、密度の中央値は許される。
+
+⚠ **区域の member は「地面を共有するもの」。** `geom-4` の `intersects` は閉じた集合で答える（§2.5.5）ので、
+辺だけを共有する隣の区画も true になる。`aggregate` は面どうしのときだけ交差の中身を訊き、隣の区画を
+区域の件数に入れない（`geom-3` までの member の規則のまま）。点と線は閉じた集合で、境界をまたぐ線は両側に
+数えられる。⚠ `relate` と `spatialJoin` の `intersects` は読者が選ぶ述語なので OGC のまま——辺で接する区画も結ばれる。
+
 ## 3. 由来 — `provenance` は札ではなくレシピ
 
 ```
@@ -921,7 +1047,9 @@ Atlas へは `datasetRow()` が**投影**する（欄を書き写さない）—
 - ⚠ **判定は何も変わっていない。** `denominator`（割合が何に対する割合かという**列の名前**）は
   運ばれるだけで、この層は解決しない——`aggregation` が返す答えも `comparableQuantity` の答えも
   述べる前と同じで、換算の倍率も 1 つも動かない。だから保存したレシピは同じ数に再生する
-  （`js/gis-units.js` の `KERNEL_VERSION` は `units-2` のまま）。
+  （この変更では `js/gis-units.js` の `KERNEL_VERSION` は `units-2` のままだった。いまの `units-3` は
+  °C・°F・K の換算を有理数で厳密にし（0 °C は 31.999… ではなく 32 °F）、`ftUS`・`坪`・`mmHg`・`inHg` を足し、
+  `percentile`・`stdev` を自分の語として判定するようにした版）。
 
 ---
 
@@ -1228,6 +1356,7 @@ geo-engine が持つ geojson source。手で並べた一覧は、次に足され
 |---|---|
 | `data.gis` | `{"type":"gis","op":OP,"inputs":[REF,…],"params":{…},"acquire":{…}}` を走らせ、**登録されたデータセットの id** を返す。⚠ **`op` を述べなければ「取得だけ」**（#R759） |
 | `map.drawDataset` | `{"type":"gisDraw","dataset":REF}` — 出来たものを地図に描く |
+| `data.gisExport` | `{"type":"gisExport","dataset":REF,"format":ID,"band"?,"dataType"?}` — データセットをファイルにして読者の端末へ保存する。⚠ **`format` は列挙しない**——正本は `js/gis-export.js` の `formats()` で、形式の無指定・未知の指定は**書き手が宣言する全 id を載せて断る**。リスクは `persist` / 確認は `explicit`（ファイルが端末に残り、外部の内容を見た後の自発的な提案には読者の同意が要る）。答えは**保てなかったもの（図形の無い行・表記の無い値・ライセンスの置き場）を先に**述べる |
 
 ⚠ **取得条件は #R759 まで 1 つも渡っていなかった。** この扉は `layers.toDataset(id, {})` ——
 **空の object** を渡していたので、`js/gis-sources.js` が持つ 8 欄の契約のうち planner が使えるものは
@@ -1606,6 +1735,8 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   菱形が実測で無検出だった） ⑷ 方向は包含判定で、**相手の穴が自分の中にあるなら包含ではない**。
 - `repair()` はパート間の問題を `union` で解決し、`resolved-part-overlap` などを `changes` に残す。
   ⚠ 直せないときは `remaining` が述べる（黙って `valid` を返さない）。
+- `simplify()` は同じ 3 段で自分の答えを測り、落第させた環（またはパート）だけを許容を下げてやり直す
+  （§2.5.6）。不正な入力は単純化せず `geometry-invalid` で断る。
 - ⚠⚠⚠ **「既存の正常データを落第させていないか」は、実測では逆だった。**
   `data/ecoregions_2017.geojson`（635 MultiPolygon / 87,783 パート）のうち **126 件が本当に
   パート間の欠陥を持ち**、独立した sweep-line（Martinez–Rueda）が **568/568 を裏付けた**
@@ -1865,8 +1996,15 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   手元に無いので断る。⚠ **b-tree は平衡させずに構築する**——行は rowid 昇順で一度だけ書かれ、挿入経路が
   存在しないので葉を前から詰めて interior を下から積むだけでよい。⚠ **標準が含意する auto-index 4 本を
   実際に建てる**（宣言だけして索引を建てないファイルは `integrity_check` が落ちる壊れた DB である）。
-- **出口は #R756 でできた**（`js/gis-export.js`）。ベクタは GeoJSON と CSV、ラスタは GeoTIFF
-  （無圧縮）。⚠ **「書き出せた」は「読み直せた」ではない**ので、3 形式とも既存の読み手
+- **出口は #R756 でできた**（`js/gis-export.js`）。ベクタは GeoJSON・CSV・GeoPackage・**KML 2.2・GPX 1.1**、
+  ラスタは GeoTIFF・COG。⚠ **KML / GPX は WGS 84 だけを述べる**ので他の座標系は断る。**名前は
+  `name` → `title` → `label` の最初の非空の値**で、無ければ名前を付けない（行番号や id を代入しない）。
+  **時刻はデータセットが宣言したときだけ**（`instant` → `TimeStamp` / `time`、`interval` → KML の `TimeSpan`、
+  `track` → `gx:Track` / 各 `trkpt` の `time`・`ele`）で、XML Schema の日時として書けない値は属性のまま残して数える。
+  ⚠ **GPX に面は無い**ので、Polygon / MultiPolygon を含むデータセットは**型と件数を挙げて断る**
+  （`export-geometry-not-representable`。黙って落とさない）。属性は KML では `ExtendedData`、GPX では標準要素と
+  `<extensions>`（専用の名前空間）。XML 1.0 に書けない文字は取り除いて**数を述べる**。読み直しは `geo-import.js` の
+  KML / GPX。ラスタの GeoTIFF は無圧縮。⚠ **「書き出せた」は「読み直せた」ではない**ので、3 形式とも既存の読み手
   （`js/geo-import.js`・`js/gis-geotiff.js`）が読み返し、**許容幅 0** で一致を測る。
   ⚠ **画素が一致しても場所が違えば別のデータ**なので grid の west/north/pixel も測る。
   ⚠ **持っていない出典を主張しない**——述べていないデータセットには欄自体を作らない。

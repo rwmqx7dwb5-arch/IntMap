@@ -70,13 +70,18 @@ window.IntMapGeodesy=(function(){
       if(ai!==bi){ const t=(x-a[0])/(b[0]-a[0]); out.push([x, a[1]+(b[1]-a[1])*t]); } }
     return out;
   }
-  /* split a polygon given in CONTINUOUS lon into 1+ rings, each shifted into [-180,180] */
-  function _splitPolyToWindows(poly){
+  /* split a polygon given in CONTINUOUS lon into 1+ rings, each shifted into [-180,180].
+     ⚠ (gis-foundation-refine) `keepLat` is the geometry kernel's: the clamp to ±89.9999 below is for
+     MapLibre, which cannot draw ±90, and a kernel that writes its ANSWER through the clamp moves the
+     pole out of every polar cap it returns (measured: bufferKm of a point at 89.9°N answered a cap
+     whose pointInGeometry said the pole and the centre were outside). The map's own callers pass
+     nothing and get exactly what they always got. */
+  function _splitPolyToWindows(poly,keepLat){
     let mn=Infinity,mx=-Infinity; poly.forEach(p=>{ if(p[0]<mn)mn=p[0]; if(p[0]>mx)mx=p[0]; });
     const rings=[]; for(let k=Math.floor((mn+180)/360);k<=Math.floor((mx+180)/360);k++){
       let c=_clipHalf(poly,k*360-180,true); if(c.length<3) continue;
       c=_clipHalf(c,k*360+180,false); if(c.length<3) continue;
-      rings.push(c.map(p=>[p[0]-k*360,_clampLat(p[1])])); }
+      rings.push(c.map(p=>[p[0]-k*360,keepLat?p[1]:_clampLat(p[1])])); }
     return rings;
   }
   /* split a CONTINUOUS-lon line into segments, each shifted into [-180,180] */
@@ -91,13 +96,44 @@ window.IntMapGeodesy=(function(){
     if(cur.length) segs.push(cur);
     return segs.map(s=>{ const k=Math.round(s[Math.floor(s.length/2)][0]/360); return s.map(p=>[p[0]-k*360,_clampLat(p[1])]); }).filter(s=>s.length>=2);
   }
+  /* (gis-foundation-refine) THE ONE DISK BOUNDARY, as a continuous-longitude ring, unclamped, with
+     which poles it encloses. diskFillPolys / diskOutlineLines (the map) and js/gis-geometry.js's
+     bufferKm (the kernel) both read it, so the disk drawn and the disk computed are one walk.
+     ⚠ IT IS WRITTEN WITH VECTORS, not with _dest, because _dest takes its longitude from
+     atan2(sin·cos φ, …) and at a centre ON a pole both arguments are 0 — the ring of a disk centred
+     at 90°N came back with longitudes that were rounding noise. The basis below (north, east at the
+     centre) is defined at the pole too, so every bearing lands where it should.
+     ⚠ A VERTEX THAT FALLS ON A POLE HAS NO LONGITUDE. It is written as two vertices on that pole's
+     line, at its two neighbours' longitudes — in the plane the pole IS that line — rather than at a
+     longitude atan2(0,0) happened to answer.
+     ⚠ THE LAST VERTEX IS THE FIRST, a whole number of turns over: bearing 360° is bearing 0°, and a
+     ring that closes on itself one turn east is how the caller tells a cap from a disk. */
+  function _diskRing(center,radiusKm,steps){
+    const clon=center[0], clat=center[1], R=Math.min(radiusKm,19500), d=R/_R_EARTH_KM;
+    const la=_d2r(clat), lo=_d2r(clon), sl=Math.sin(la), cl=Math.cos(la), so=Math.sin(lo), co=Math.cos(lo);
+    const C=[cl*co,cl*so,sl], N=[-sl*co,-sl*so,cl], E=[-so,co,0], cd=Math.cos(d), sd=Math.sin(d);
+    const raw=[];
+    for(let i=0;i<steps;i++){ const b=(i/steps)*2*Math.PI, cb=Math.cos(b), sb=Math.sin(b);
+      const x=C[0]*cd+(N[0]*cb+E[0]*sb)*sd, y=C[1]*cd+(N[1]*cb+E[1]*sb)*sd, z=C[2]*cd+(N[2]*cb+E[2]*sb)*sd;
+      const h=Math.hypot(x,y), lat=_r2d(Math.atan2(z,h));
+      /* below 1e-12° from the axis a position is the pole (the kernel's own 「same position」) */
+      raw.push((h<=1e-12*Math.PI/180)?[null,z>0?90:-90]:[_r2d(Math.atan2(y,x)),lat]); }
+    const ring=[]; let prev=null;
+    for(let i=0;i<raw.length;i++){ const p=raw[i];
+      if(p[0]==null){ let nx=null; for(let j=1;j<raw.length&&nx==null;j++) nx=raw[(i+j)%raw.length][0];
+        if(nx==null){ ring.push([clon,p[1]]); continue; }
+        let a=(prev==null)?nx:prev, b=nx; while(b-a>180)b-=360; while(b-a<-180)b+=360;
+        ring.push([a,p[1]],[b,p[1]]); prev=b; continue; }
+      let l=p[0]; if(prev!=null){ while(l-prev>180)l-=360; while(l-prev<-180)l+=360; } ring.push([l,p[1]]); prev=l; }
+    if(ring.length){ const f=ring[0], last=ring[ring.length-1]; let l=f[0]; while(l-last[0]>180)l-=360; while(l-last[0]<-180)l+=360; ring.push([l,f[1]]); }
+    const dNP=(90-clat)/180*_HALF_CIRCUM, dSP=(90+clat)/180*_HALF_CIRCUM;
+    return { ring:ring, north:R>dNP, south:R>dSP };
+  }
   /* geodesic-disk fill polygons (array of GeoJSON Polygon coord arrays) for a radius circle */
   function diskFillPolys(center,radiusKm,steps){
     const clon=center[0], clat=center[1], R=Math.min(radiusKm,19500);
-    const dNP=(90-clat)/180*_HALF_CIRCUM, dSP=(90+clat)/180*_HALF_CIRCUM, npIn=R>dNP, spIn=R>dSP;
-    const ring=[]; let prev=null;
-    for(let i=0;i<=steps;i++){ let p=_dest(clon,clat,(i/steps)*360,R); let lo=p[0];
-      if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; } ring.push([lo,_clampLat(p[1])]); prev=lo; }
+    const dr=_diskRing(center,R,steps), npIn=dr.north, spIn=dr.south;
+    const ring=dr.ring.map(p=>[p[0],_clampLat(p[1])]);
     if(npIn&&spIn){                                                         /* disk covers ~everything → world minus antipodal hole */
       const antiLon=((clon+180+540)%360)-180;
       const holes=diskFillPolys([antiLon,-clat],_HALF_CIRCUM-R,steps).map(poly=>poly[0]);
@@ -111,10 +147,7 @@ window.IntMapGeodesy=(function(){
   }
   /* geodesic-disk outline lines (array of LineString coord arrays) */
   function diskOutlineLines(center,radiusKm,steps){
-    const clon=center[0], clat=center[1], R=Math.min(radiusKm,19500);
-    const ring=[]; let prev=null;
-    for(let i=0;i<=steps;i++){ let p=_dest(clon,clat,(i/steps)*360,R); let lo=p[0];
-      if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; } ring.push([lo,_clampLat(p[1])]); prev=lo; }
+    const ring=_diskRing(center,Math.min(radiusKm,19500),steps).ring.map(p=>[p[0],_clampLat(p[1])]);
     return _splitLineToWindows(ring);
   }
 
@@ -139,6 +172,6 @@ window.IntMapGeodesy=(function(){
     return out;
   }
   return { _R_EARTH_KM, _HALF_CIRCUM, _d2r, _r2d, _clampLat, _dest, _distKm, _gcPoints, _gcRingUnwrapped,
-           _clipHalf, _splitPolyToWindows, _splitLineToWindows, diskFillPolys, diskOutlineLines,
+           _clipHalf, _splitPolyToWindows, _splitLineToWindows, _diskRing, diskFillPolys, diskOutlineLines,
            sanitizeFeatures };
 })();

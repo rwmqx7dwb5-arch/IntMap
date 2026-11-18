@@ -1455,7 +1455,7 @@ export function makeGisDatasets() {
       /* exposed because js/gis-ops.js must type the columns of its OWN output the same way an import
          is typed — two typing rules would drift, and the drift would show up as a column that can be
          compared in one panel and not in the other */
-      typeColumn, describeFields, geometryKind, countWithGeometry, asNumber, asDate, isEmpty,
+      typeColumn, geometryKind, countWithGeometry, asNumber, asDate, isEmpty,
       /* ⚠ (#R819) THE SAME RULE, AS SOMETHING THAT CAN CROSS A THREAD. Handed to
          js/gis-expr.js's `worker.install(w, { rule })`, which calls it once on THIS thread to check
          that the three functions it needs are built, and then hands its SOURCE to js/gis-worker.js.
