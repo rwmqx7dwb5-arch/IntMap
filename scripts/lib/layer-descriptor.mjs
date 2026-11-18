@@ -42,6 +42,11 @@
  *    names     (learn-quests) the row WRITES NAMES on the map (place names, feature labels, points of interest) —
  *              a reader asked «where is X» can read the answer off it. js/quest-panel.js switches exactly these
  *              off while a place question is open and puts them back after (js/layer-manifest.js `nameItems`)
+ *    noAir     (layer-click-polish) while the row is on, the globe's AIR is off — maplibre's `atmosphere-blend`, the
+ *              app's own limb (js/limb-layer.js) and Cesium's sky/ground atmosphere. For a field painted over the whole
+ *              surface (wind, temperature, forecast precipitation, sea-level pressure, gusts) and for night lights,
+ *              the halo washes the colours the reader is reading. The reader's decision 2026-11-18. js/theme-sky.js
+ *              `_airOn` reads it through js/layer-manifest.js `noAirItems`; no id is listed anywhere else
  *    lazy      the on-demand module(s) its toggle loads (names in js/lazy-modules.js LAZY_REGISTRY)
  *    ⚠ A ROW WITHOUT `label` IS NAMED BY THE MODULE THAT BUILDS IT (136 of 174 on 2026-10-01), as an
  *      `L.arr(LA(…))` tuple at the call site. Not an oversight: scripts/i18n-audit.mjs finds a translation
@@ -80,7 +85,7 @@
  * ==========================================================================*/
 
 /** the row facts js/layer-manifest.js has always carried, in the order it carried them */
-const ROW_FIELDS = Object.freeze(['id', 'kind', 'key', 'label', 'rest', 'on', 'share', 'html', 'names', 'lazy']);
+const ROW_FIELDS = Object.freeze(['id', 'kind', 'key', 'label', 'rest', 'on', 'share', 'html', 'names', 'noAir', 'lazy']);
 /** (basic-display-not-layers) the kinds a declaration may state — absent is a layer */
 export const KINDS = Object.freeze(['display']);
 /** the shelf whose rows are the map display, and nothing else (js/layers/_shelves.js) */
@@ -118,7 +123,7 @@ export function descriptorProblems(d, file, shelves) {
   if (typeof d.order !== 'number' || !Number.isFinite(d.order)) at('has no numeric `order` on its shelf');
   for (const k of ['key', 'label', 'state']) if (k in d && !isStr(d[k])) at('`' + k + '` must be a non-empty string');
   if ('pkg' in d && !PKG_NAME.test(String(d.pkg))) at('`pkg` must be a lower-case kebab name (it names js/layer-pkg-<pkg>.js)');
-  for (const k of ['rest', 'on', 'share', 'html', 'names']) if (k in d && d[k] !== true) at('`' + k + '` is written only when it is true (absent means false)');
+  for (const k of ['rest', 'on', 'share', 'html', 'names', 'noAir']) if (k in d && d[k] !== true) at('`' + k + '` is written only when it is true (absent means false)');
   for (const k of ['lazy', 'registry', 'commands', 'atlas', 'sources', 'measures', 'formerly']) if (k in d && !isStrList(d[k])) at('`' + k + '` must be a list of distinct names');
   if ('kind' in d && !KINDS.includes(d.kind)) at('`kind` is one of ' + KINDS.join(', ') + ' (absent means a layer)');
   if ((d.kind === 'display') !== (d.shelf === DISPLAY_SHELF)) at(d.kind === 'display'

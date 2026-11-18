@@ -141,7 +141,9 @@ test('③ a phone-width layout does not float: the sheet already covers the map'
 test('① the card blocks only its own rectangle, and motion yields to prefers-reduced-motion', () => {
   const s = read('js/atlas-float.js');
   assert.match(s, /'#atlas-float\{[^}]*pointer-events:none;\}/, 'the positioned column lets the map through');
-  assert.match(s, /#atlas-float \.atl-float-card\{pointer-events:auto;/, 'only the card takes the pointer');
+  assert.match(s, /#atlas-float \.atl-float-card\{pointer-events:none;/, 'the card is no surface: the map under its empty parts keeps the pointer');
+  assert.match(s, /#atlas-float #atlas-panel \.atl-inbar\{pointer-events:auto;/, 'the input pill and the bar take it themselves');
+  assert.doesNotMatch(s.slice(s.indexOf('.atl-float-card{pointer-events'), s.indexOf('.atl-float-card{pointer-events')+400), /backdrop-filter/, 'the card itself has no glass');
   assert.match(s, /@media \(prefers-reduced-motion:reduce\)\{#atlas-float/, 'reduced motion is honoured');
 });
 

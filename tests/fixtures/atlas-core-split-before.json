@@ -6,7 +6,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -19,7 +19,7 @@
    {
     "status": 405,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -34,7 +34,7 @@
    {
     "status": 401,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -62,7 +62,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -136,7 +136,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -210,7 +210,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -278,7 +278,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -352,7 +352,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -425,7 +425,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -493,7 +493,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -569,7 +569,7 @@
    {
     "status": 413,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -646,7 +646,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -704,7 +704,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -763,7 +763,7 @@
    {
     "status": 500,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -820,7 +820,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -875,7 +875,7 @@
    {
     "status": 404,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -931,7 +931,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1005,7 +1005,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1080,7 +1080,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1111,7 +1111,10 @@
        "searches": 1,
        "sources": 1
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -1160,6 +1163,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36012,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -1251,13 +1272,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1288,7 +1310,10 @@
        "searches": 1,
        "sources": 1
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -1337,6 +1362,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36012,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -1428,13 +1471,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1465,7 +1509,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -1514,6 +1561,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 92012,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -1664,13 +1729,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1724,6 +1790,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 68006,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -2083,6 +2167,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"analysis_structured\",\"code\":\"invalid_structured_output\",\"http\":502,\"meta\":{}}"
     ]
@@ -2090,7 +2175,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2121,7 +2206,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -2170,6 +2258,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 68006,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -2529,13 +2635,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2566,7 +2673,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -2615,6 +2725,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 24002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -2731,13 +2859,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2768,7 +2897,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -2817,6 +2949,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -2907,13 +3057,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2944,7 +3095,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -2993,6 +3147,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 66408,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -3093,13 +3265,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3130,7 +3303,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -3179,6 +3355,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 288034,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -3250,13 +3444,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3288,7 +3483,9 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false
      },
      "citations": [
       {
@@ -3456,7 +3653,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3487,7 +3684,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -3536,6 +3736,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -3621,13 +3839,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3661,7 +3880,10 @@
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
-      }
+      },
+      "costUsd": 0.0022,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "output": [
       {
@@ -3721,6 +3943,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 56116,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -3892,13 +4132,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3932,7 +4173,10 @@
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
-      }
+      },
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "output": [
       {
@@ -3988,6 +4232,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52916,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -4150,13 +4412,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4187,7 +4450,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -4236,6 +4502,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 44008,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -4326,6 +4610,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    }
@@ -4334,7 +4619,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4398,6 +4683,24 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/relay_take",
       "headers": {
        "accept": "application/json",
@@ -4457,6 +4760,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_rate_limit\",\"http\":503,\"meta\":{\"providerStatus\":429,\"quotaScope\":\"per-minute\",\"quotaId\":\"\",\"retryAfter\":\"\",\"bodyLen\":66}}"
     ]
@@ -4464,7 +4768,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4525,51 +4829,7 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/relay_take",
-      "headers": {
-       "accept": "application/json",
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-type": "application/json"
-      },
-      "body": {
-       "p_scope": "ai-proxy:global:day",
-       "p_key": "*",
-       "p_capacity": 3000,
-       "p_refill_per_sec": 0.034722222222222224,
-       "p_cost": 1
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://api.openai.com/v1/responses",
-      "headers": {
-       "authorization": "Bearer sk-oa",
-       "content-type": "application/json"
-      },
-      "body": {
-       "model": "gpt-5.6-terra",
-       "input": [
-        {
-         "role": "user",
-         "content": [
-          {
-           "type": "input_text",
-           "text": "p"
-          }
-         ]
-        }
-       ],
-       "max_output_tokens": 3300,
-       "reasoning": {
-        "effort": "low"
-       },
-       "store": false
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/refund_ai_turn",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
       "headers": {
        "apikey": "service-key",
        "authorization": "Bearer service-key",
@@ -4579,74 +4839,9 @@
       },
       "body": {
        "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     }
-    ],
-    "logs": [
-     "ai-proxy ledger refund_failed",
-     "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_quota\",\"http\":502,\"meta\":{\"providerStatus\":429,\"bodyLen\":39}}"
-    ]
-   },
-   {
-    "status": 503,
-    "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
-     "access-control-allow-methods": "POST, OPTIONS",
-     "access-control-allow-origin": "*",
-     "access-control-max-age": "86400",
-     "content-type": "application/json"
-    },
-    "body": {
-     "error": "provider_unavailable",
-     "message": "The AI provider is temporarily unavailable.",
-     "retryable": true,
-     "meta": {
-      "provider": "openai",
-      "model": "gpt-5.6-terra",
-      "task": "free_text",
-      "providerStatus": 500,
-      "bodyLen": 13
-     }
-    },
-    "calls": [
-     {
-      "method": "GET",
-      "url": "https://sb.test/auth/v1/user",
-      "headers": {
-       "apikey": "anon-key",
-       "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/<version>; runtime=deno",
-       "x-supabase-api-version": "2024-01-01"
-      },
-      "body": null
-     },
-     {
-      "method": "GET",
-      "url": "https://sb.test/rest/v1/profiles?select=plan&id=eq.u-1",
-      "headers": {
-       "accept-profile": "public",
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": null
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/consume_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_limit": 10,
-       "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -4711,6 +4906,153 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
+     "ai-proxy ledger refund_failed",
+     "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_quota\",\"http\":502,\"meta\":{\"providerStatus\":429,\"bodyLen\":39}}"
+    ]
+   },
+   {
+    "status": 503,
+    "headers": {
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-methods": "POST, OPTIONS",
+     "access-control-allow-origin": "*",
+     "access-control-max-age": "86400",
+     "content-type": "application/json"
+    },
+    "body": {
+     "error": "provider_unavailable",
+     "message": "The AI provider is temporarily unavailable.",
+     "retryable": true,
+     "meta": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "task": "free_text",
+      "providerStatus": 500,
+      "bodyLen": 13
+     }
+    },
+    "calls": [
+     {
+      "method": "GET",
+      "url": "https://sb.test/auth/v1/user",
+      "headers": {
+       "apikey": "anon-key",
+       "authorization": "Bearer jwt",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
+       "x-supabase-api-version": "2024-01-01"
+      },
+      "body": null
+     },
+     {
+      "method": "GET",
+      "url": "https://sb.test/rest/v1/profiles?select=plan&id=eq.u-1",
+      "headers": {
+       "accept-profile": "public",
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": null
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/consume_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_limit": 10,
+       "p_turn": "turn-0001",
+       "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/relay_take",
+      "headers": {
+       "accept": "application/json",
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-type": "application/json"
+      },
+      "body": {
+       "p_scope": "ai-proxy:global:day",
+       "p_key": "*",
+       "p_capacity": 3000,
+       "p_refill_per_sec": 0.034722222222222224,
+       "p_cost": 1
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/responses",
+      "headers": {
+       "authorization": "Bearer sk-oa",
+       "content-type": "application/json"
+      },
+      "body": {
+       "model": "gpt-5.6-terra",
+       "input": [
+        {
+         "role": "user",
+         "content": [
+          {
+           "type": "input_text",
+           "text": "p"
+          }
+         ]
+        }
+       ],
+       "max_output_tokens": 3300,
+       "reasoning": {
+        "effort": "low"
+       },
+       "store": false
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/refund_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     }
+    ],
+    "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":503,\"meta\":{\"providerStatus\":500,\"bodyLen\":13}}"
     ]
@@ -4718,7 +5060,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4749,7 +5091,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -4798,6 +5143,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -4927,6 +5290,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy model fallback {\"from\":\"gpt-5.6-terra\",\"to\":\"gpt-6.1-terra\",\"status\":404}",
      "ai-proxy ledger settle_error"
     ]
@@ -4934,7 +5298,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4965,7 +5329,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -5014,6 +5381,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 24002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -5170,13 +5555,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5232,6 +5618,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -5395,6 +5799,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":502,\"meta\":{\"providerStatus\":400,\"bodyLen\":2}}"
     ]
@@ -5402,7 +5807,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5433,7 +5838,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.00048,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -5482,6 +5890,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -5611,13 +6037,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5672,6 +6099,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -5757,6 +6202,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_blocked\",\"http\":502,\"meta\":{\"finishReason\":\"\"}}"
     ]
@@ -5764,7 +6210,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5824,6 +6270,24 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/relay_take",
       "headers": {
        "accept": "application/json",
@@ -5856,6 +6320,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_quota\",\"http\":503,\"meta\":{\"ceiling\":\"project_day\"}}"
     ]
@@ -5863,7 +6328,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5923,6 +6388,24 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/relay_take",
       "headers": {
        "accept": "application/json",
@@ -5955,6 +6438,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_quota\",\"http\":503,\"meta\":{\"ceiling\":\"newcomer_day\"}}"
     ]
@@ -5964,7 +6448,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5972,7 +6456,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\"},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -6011,6 +6495,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52916,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -6236,7 +6738,10 @@
          "inputTrimmed": {
           "invalidItems": 1
          },
-         "streamed": true
+         "streamed": true,
+         "costUsd": 0.00003,
+         "priceKnown": false,
+         "spend": "unavailable"
         },
         "output": [
          {
@@ -6251,13 +6756,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6265,7 +6771,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\"},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -6304,6 +6810,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52916,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -6588,13 +7112,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6656,7 +7181,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6715,6 +7240,24 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52916,
+       "p_cap_micros": 3000000,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/claim_ai_answer",
       "headers": {
        "apikey": "service-key",
@@ -6732,12 +7275,14 @@
       }
      }
     ],
-    "logs": []
+    "logs": [
+     "ai-proxy spend reserve_unavailable"
+    ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6772,6 +7317,9 @@
       "inputTrimmed": {
        "invalidItems": 1
       },
+      "costUsd": 0.0022,
+      "priceKnown": false,
+      "spend": "unavailable",
       "replay": {
        "kind": "rerun",
        "after": "failed",
@@ -6852,6 +7400,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52916,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -7074,7 +7640,10 @@
          "protocol": 2,
          "inputTrimmed": {
           "invalidItems": 1
-         }
+         },
+         "costUsd": 0.0022,
+         "priceKnown": false,
+         "spend": "unavailable"
         },
         "output": [
          {
@@ -7100,13 +7669,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7141,6 +7711,9 @@
       "inputTrimmed": {
        "invalidItems": 1
       },
+      "costUsd": 0.0022,
+      "priceKnown": false,
+      "spend": "unavailable",
       "replay": {
        "kind": "unheld"
       }
@@ -7203,6 +7776,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52916,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -7382,13 +7973,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7422,7 +8014,10 @@
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
-      }
+      },
+      "costUsd": 0.0022,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "output": [
       {
@@ -7482,6 +8077,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52916,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -7643,13 +8256,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7696,6 +8310,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52916,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -7837,6 +8469,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"atlas_turn\",\"code\":\"provider_unavailable\",\"http\":503,\"meta\":{\"providerStatus\":503}}"
     ]
@@ -7846,7 +8479,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7989,7 +8622,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8082,7 +8715,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8113,7 +8746,9 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.000008,
+      "priceKnown": true
      },
      "citations": []
     },
@@ -8208,7 +8843,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8240,7 +8875,9 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0,
+      "priceKnown": false
      },
      "citations": []
     },
@@ -8395,7 +9032,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8426,7 +9063,10 @@
        "searches": 2,
        "sources": 1
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0.000024,
+      "priceKnown": true,
+      "spend": "unavailable"
      },
      "citations": [
       {
@@ -8473,6 +9113,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 19603,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -8594,13 +9252,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8634,7 +9293,10 @@
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
-      }
+      },
+      "costUsd": 0.000024,
+      "priceKnown": true,
+      "spend": "unavailable"
      },
      "output": [
       {
@@ -8689,6 +9351,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 26458,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -8872,13 +9552,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8933,6 +9614,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 18001,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -9015,6 +9714,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"anthropic\",\"model\":\"claude-haiku-4-5-20251001\",\"task\":\"free_text\",\"code\":\"provider_empty\",\"http\":502,\"meta\":{\"finishReason\":\"end_turn\"}}"
     ]
@@ -9022,7 +9722,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9098,7 +9798,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9129,7 +9829,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": []
     },
@@ -9171,6 +9874,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 64002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -9321,13 +10042,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9358,7 +10080,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": []
     },
@@ -9400,6 +10125,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -9539,13 +10282,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9576,7 +10320,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": []
     },
@@ -9618,6 +10365,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 24002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -9755,13 +10520,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9792,7 +10558,10 @@
        "searches": 0,
        "sources": null
       },
-      "protocol": 1
+      "protocol": 1,
+      "costUsd": 0,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "citations": []
     },
@@ -9834,6 +10603,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -9961,13 +10748,14 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    },
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10025,6 +10813,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -10088,6 +10894,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"gemini\",\"model\":\"gemini-3.5-flash\",\"task\":\"free_text\",\"code\":\"provider_quota\",\"http\":502,\"meta\":{\"providerStatus\":429,\"quotaScope\":\"per-day\",\"quotaId\":\"GenerateRequestsPerDayPerProject\",\"retryAfter\":\"\"}}"
     ]
@@ -10095,7 +10902,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10151,6 +10958,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -10235,6 +11060,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"gemini\",\"model\":\"gemini-3.5-flash\",\"task\":\"free_text\",\"code\":\"provider_blocked\",\"http\":502,\"meta\":{\"finishReason\":\"NO_CANDIDATE\",\"blockReason\":\"SAFETY\"}}"
     ]
@@ -10242,7 +11068,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10276,7 +11102,10 @@
       "protocol": 2,
       "inputTrimmed": {
        "invalidItems": 1
-      }
+      },
+      "costUsd": 0,
+      "priceKnown": false,
+      "spend": "unavailable"
      },
      "output": [
       {
@@ -10332,6 +11161,24 @@
        "p_limit": 10,
        "p_turn": "turn-0001",
        "p_max_calls": 12,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 52916,
+       "p_cap_micros": 3000000,
        "p_ttl_seconds": 900
       }
      },
@@ -10509,6 +11356,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger settle_error"
     ]
    }
@@ -10517,7 +11365,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10576,6 +11424,24 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/reserve_ai_spend",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_micros": 36002,
+       "p_cap_micros": 3000000,
+       "p_ttl_seconds": 900
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/refund_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -10591,6 +11457,7 @@
      }
     ],
     "logs": [
+     "ai-proxy spend reserve_unavailable",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-6.2-sol\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":502,\"meta\":{}}"
     ]
@@ -10600,7 +11467,7 @@
    {
     "status": 500,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",

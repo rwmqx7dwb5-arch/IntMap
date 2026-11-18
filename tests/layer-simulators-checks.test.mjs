@@ -68,7 +68,7 @@ test('R190 seismic: opacity, a compute button, LOS-style progress, and no borrow
   const mt = read('js/map-tools.js');
   assert.match(mt, /function renderPanel\(\)\{ const p=ensurePanel\(\); if\(silent\)\{ p\.style\.display='none'; return; \}/,
     '…which the tool itself implements, so nothing reaches into its DOM');
-  assert.match(mt, /exit\(\)\{ state='off'; silent=false;/, 'and an ordinary Draw is unaffected afterwards');
+  assert.match(mt, /exit\(\)\{ state='off';(?: flushNow\(\);)? silent=false;/, 'and an ordinary Draw is unaffected afterwards');
 });
 
 test('R190 seismic: the field reaches the end of the lowest class and declares its extrapolation', () => {

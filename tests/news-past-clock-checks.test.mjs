@@ -37,14 +37,14 @@ class FakeDOMParser {
 const rss = (dates) => `<rss><channel>${dates.map((d, i) =>
   `<item><title>Headline ${i} - Pub</title><link>https://example.invalid/${i}</link><pubDate>${d.toUTCString()}</pubDate><description>x</description></item>`).join('')}</channel></rss>`;
 
-const T = { loading: 'LOADING', noMatch: 'NO_MATCH', networkError: 'NETWORK_ERROR', noNewsForDate: 'NONE {date} ±{days}' };
+const T = { loading: 'LOADING', noMatch: 'NO_MATCH', networkError: 'NETWORK_ERROR', aiRetry: 'RETRY', noNewsForDate: 'NONE {date} ±{days}' };
 
-async function boot({ newsDate, answer }) {
+async function boot({ newsDate, answer, events = null, cache = null }) {
   const feed = { _html: '', set innerHTML(v) { this._html = v; }, get innerHTML() { return this._html; }, children: [], getBoundingClientRect: () => ({ top: 0 }) };
   const calls = [];
   const HOST = {
     lang: 'en', mode: 'news', NEWS_BATCH: 30, globalData: [], newsFiltered: [], renderedCount: 0, newsFeatures: [],
-    newsDate, activeSearchQuery: '', newsLangMode: 'single', NEWS_EVENT_MODE: false, USE_SERVER_NEWS: false,
+    newsDate, activeSearchQuery: '', newsLangMode: 'single', NEWS_EVENT_MODE: !!events, USE_SERVER_NEWS: false,
     t: (k) => T[k],
     ymdISO: (d) => d.toISOString().slice(0, 10),
     parseDate: (s) => Date.parse(s),
@@ -58,8 +58,15 @@ async function boot({ newsDate, answer }) {
   const window = {
     IntMapMapTypography: { bandText: (s) => s }, IntMapSafe: { text: (s) => s, html: (s) => String(s).replace(/</g, "&lt;") },
   };
+  if (events) {   /* an Event module whose load() outcome the test chooses */
+    window.IntMapLazy = { need: async () => true };
+    window.IntMapNewsEvents = {
+      load: async () => events.ok, answer: () => events.answer, loaded: () => events.items || [],
+      renderChips() {}, hideChips() {},
+    };
+  }
   const document = { getElementById: (id) => (id === 'live-news-feed' ? feed : null) };
-  const localStorage = { getItem: () => null, setItem() {} };
+  const localStorage = { getItem: () => (cache ? JSON.stringify(cache) : null), setItem() {} };
   const M = await importModule('js/news-feed.js', {
     globals: { window, document, DOMParser: FakeDOMParser, localStorage },
     mocks: {
@@ -104,6 +111,29 @@ test('news-past-clock: a past instant with articles dated near it shows them', a
   await env.api.fetchData();
   assert.equal(env.HOST.globalData.length, 1, 'only the article dated near the instant');
   assert.equal(env.feed.innerHTML, 'CARDS:1');
+});
+
+/* Event level never degrades to articles: no RSS request, no article list, no article cache restore. */
+test('event level: a load that failed shows an Event-level error with a retry, and asks for no article feed', async () => {
+  const env = await boot({ newsDate: null, answer: () => rss([new Date()]), events: { ok: false, answer: 'error' } });
+  await env.api.fetchData();
+  assert.equal(env.calls.length, 0, 'no article RSS was requested');
+  assert.equal(env.HOST.globalData.length, 0, 'no article list was landed');
+  assert.ok(env.feed.innerHTML.includes('data-news-empty="event-error"') && env.feed.innerHTML.includes('data-news-retry'), env.feed.innerHTML);
+});
+
+test('event level: a search or day the table has no event for says so, in the Event surface', async () => {
+  const env = await boot({ newsDate: PAST, answer: () => rss([new Date()]), events: { ok: false, answer: 'none' } });
+  await env.api.fetchData();
+  assert.equal(env.calls.length, 0, 'no article RSS was requested');
+  assert.ok(env.feed.innerHTML.includes('NO_MATCH'), env.feed.innerHTML);
+});
+
+test('event level: an article-shaped cache is not restored', async () => {
+  const cache = { ts: Date.now(), lang: 'en', data: [{ title: 'old article', link: 'https://example.invalid/a' }] };
+  const env = await boot({ newsDate: null, answer: () => null, events: { ok: false, answer: 'error' }, cache });
+  await env.api.fetchData();
+  assert.equal(env.HOST.globalData.length, 0, 'the article list from the cache never reached the feed');
 });
 
 test('news-past-clock: the live clock is unchanged — articles are drawn', async () => {

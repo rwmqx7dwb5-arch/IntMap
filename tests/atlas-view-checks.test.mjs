@@ -169,9 +169,10 @@ test('R493 ②a: the record Atlas reads describes the frame WITHOUT carrying it'
 
   /* the pixels exist — in the ledger, which is the only thing that hands them to the vision call */
   assert.deepEqual(V.urls(), ['data:image/jpeg;base64,FRAME1']);
-  /* and the reader is shown what Atlas was given */
-  assert.match(r.html, /class="atl-viewframe"/);
-  assert.match(r.html, /check whether precipitation actually painted/);
+  /* the reader's answer carries no thumbnail or caption — the model's copy is the frame ledger */
+  assert.equal(r.html, '', 'no «Atlas looked at the map» markup in the visible answer');
+  assert.doesNotMatch(r.html, /atl-viewframe/);
+  assert.match(V.promptBlock(), /check whether precipitation actually painted/, 'the model still receives the frame and its reason');
 });
 
 test('R493 ②b: a turn that looks more than the server accepts drops the OLDEST, and says so', async () => {
@@ -329,25 +330,19 @@ test('R493 ④c: an observer that reports its own `exec` still wins', async () =
   assert.deepEqual(r.observed.exec, { from: 'observer' }, 'the verifier watching the app is the authority');
 });
 
-/* ══ ⑤ THE THUMBNAIL IS ONE CLASS, NAMED BY EVERYTHING THAT NEEDS IT ══════════════════════════ */
+/* ══ ⑤ THE FRAME IS THE MODEL'S COPY, NOT THE READER'S ═══════════════════════════════════════ */
 
-test('R493 ⑤: the frame shown to the reader is styled AND opens in the viewer', async () => {
-  /* ⚠ #R488's shape: a selector that stops matching fails SILENTLY — the tap simply does nothing.
-     All three spellings are read out of the three sources, so a rename on one side cannot pass.
-     ⚠ (tests-by-topic) TWO OF THE THREE ARE NOW WHAT THE MODULES EMIT: the stylesheet
-     js/atlas-styles.js actually injects (atlasPanelCSS()), and the markup a real capture returns. The
-     third — the lightbox delegation — is a click handler in js/atlas-attach.js that needs a document,
-     so it stays a spelling. */
+test('R493 ⑤: the captured frame is not shown in the answer — no markup, no style, no lightbox binding', async () => {
   const { atlasPanelCSS } = await import('../js/atlas-styles.js');
   const styles = atlasPanelCSS();
   const attach = codeOnly(read('js/atlas-attach.js'));
-  const capture = (await ledger(SNAP).captureFrame({ include: 'screen' })).html;
-  assert.match(styles, /\.atl-viewframe\{/, 'the frame has a size — otherwise it renders as a full-width second map');
-  assert.match(styles, /\.atl-viewframe-cap\{/, 'and the caption has a style');
-  assert.match(capture, /class="atl-viewframe"/, 'the ledger emits that class…');
-  assert.match(capture, /class="atl-viewframe-cap"/, '…with the caption, so «Atlas looked» is auditable rather than asserted');
-  assert.match(attach, /closest\('[^']*\.atl-viewframe img[^']*'\)/,
-    'the lightbox delegation must name .atl-viewframe img, or tapping the frame does nothing at all');
+  const V = ledger(SNAP);
+  const cap = await V.captureFrame({ include: 'screen' });
+  assert.equal(cap.html, '', 'the visible answer carries nothing');
+  assert.equal(cap.ok, true);
+  assert.equal(V.urls().length, 1, 'while the model still receives the frame');
+  assert.doesNotMatch(styles, /atl-viewframe/, 'no dead style for a thumbnail that is never emitted');
+  assert.doesNotMatch(attach, /atl-viewframe/, 'no dead lightbox binding');
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════════

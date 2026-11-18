@@ -70,6 +70,7 @@ import { community } from './community.js';
 import { companiesUi } from './companies-ui.js';
 import { companies } from './companies.js';
 import { compare } from './compare.js';
+import { imageryTiles, imagerySources, useImageryMetaReader } from './esri-imagery.js';   /* (sat-arcgis-3d) the one place World Imagery's URL is built */
 import { countriesUi } from './countries-ui.js';
 import { setFigure } from './country-figures.js';   /* (countries-companies) a value's year and source travel with it */
 import { loadNECountries, neCountriesPath } from './ne-countries.js';   /* (data-studio) handed to the lazy data studio through IM_HOST — see the note at its getters */
@@ -137,6 +138,7 @@ import { setHost } from './host-door.js';   /* (mobile-next) the doors opened by
    its own (MEASURED eager.requests 9 → 10 — vite.config.js, codeSplitting, has why). Read at call time. */
 window.IntMapFetchWithin = { jsonWithin, readWithin, clockFor, isUnobserved };
 window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
+  useImageryMetaReader((u) => jsonWithin(u, clockFor(u)));   /* (sat-arcgis-3d) the credit's copyrightText, under the host's fetch clock */
   /* (#R178) THE renderer handle for this file — the same `const GE=()=>window.IntMapGeoEngine` every
      split module already uses. A getter, not the object: the engine is built inside map.on('load'),
      i.e. long after this line runs (#R170 learned that the hard way). */
@@ -994,7 +996,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       projection:openingProjection(),
       center:_openingCentre, zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-        sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']),tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
+        sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']:imageryTiles()),tileSize:256,maxzoom:19,attribution:'Powered by Esri · Sources: '+imagerySources()},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
         /* ══ (#R191) A TILE SHOULD ARRIVE, NOT APPEAR ═══════════════════════════════════════════════
            「衛星画像の読み込み時の動作を、極限までシームレスにして。（高速・違和感低減・点滅軽減）」
            #R147 set this to 0 against MapLibre's 300 ms default, and it was right about the default:
@@ -1602,10 +1604,20 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
   /* Warm the DEM tile cache across the visible area once the camera settles, so the
      elevation/depth readout is instant on hover (kills the first-hover network wait). */
+  /* ══ (sat-arcgis-3d) THE GRID IS LAID OVER THE SCREEN, NOT OVER THE BOUNDS ══════════════════════════
+     The readout reads the tile under the POINTER, so what is worth warming is what a pointer can reach:
+     the screen. The old grid was laid over `getBounds()` — the same thing only while the view is flat and
+     north-up. Pitched, the bounds run to the horizon (and rotated, past the corners), so the 49 points fell
+     on 49 different far-away tiles the pointer barely covers: MEASURED with terrain OFF at pitch 70°, 35–112
+     DEM reads per camera move, issued while the satellite tiles were still loading. The same 7×7 points
+     taken on the screen (sky excluded — `onSurface`) are the same warm-up flat, and pitched they follow
+     where the ground actually is on screen. */
   function prefetchDEMViewport(){
     if(!GE().hasRenderer()||_imPhoneClass()) return;   /* (#R498) 49 DEM reads on every settle is a phone cost in either orientation */
-    try{ const z=demZoomForMap(); const b=GE().camera.getBounds(), w=b.getWest(),e=b.getEast(),s=b.getSouth(),n=b.getNorth(), STEP=6;
-      for(let i=0;i<=STEP;i++) for(let j=0;j<=STEP;j++) demElevAt(w+(e-w)*i/STEP, s+(n-s)*j/STEP, null, z);
+    try{ const z=demZoomForMap(); const sz=GE().render.size(), W=sz.width, H=sz.height, STEP=6; if(!(W>0&&H>0)) return;
+      for(let i=0;i<=STEP;i++) for(let j=0;j<=STEP;j++){ const pt=[W*i/STEP, H*j/STEP];
+        if(GE().coords.onSurface(pt)===false) continue;
+        const ll=GE().coords.unproject(pt); if(ll&&isFinite(ll.lng)&&isFinite(ll.lat)) demElevAt(ll.lng, ll.lat, null, z); }
     }catch(_){}
   }
   let _demPrefetchT=null;

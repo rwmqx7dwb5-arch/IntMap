@@ -86,10 +86,15 @@ export function geopoliticsPackage(K) {
   const sourceLine = (/** @type {Array<{n:string,u:string,lic?:string,licUrl?:string}>} */ rows) => html`<div style="font-size:10px;margin-top:6px;color:var(--text-muted)">${rows.map((r, i) => html`${i ? ' · ' : ''}<a href="${Safe.url(r.u)}" target="_blank" rel="noopener noreferrer">${r.n}</a>${r.lic ? html` (${r.licUrl ? html`<a href="${Safe.url(r.licUrl)}" target="_blank" rel="noopener noreferrer">${r.lic}</a>` : r.lic})` : ''}`)}</div>`;
   const note = (/** @type {string} */ s) => html`<p style="font-size:11px;color:var(--text-muted);margin:6px 0 0">${s}</p>`;
   let popup = null;
-  function closePopup() { if (popup) { try { popup.remove(); } catch (_) { /* gone */ } } popup = null; }
-  function openPopup(/** @type {[number, number]} */ at, /** @type {any} */ body) {
+  /* (geopolitics-legends) A CARD BELONGS TO THE ROW THAT OPENED IT. One shared `popup` closed by every row's switch-off took another
+     row's card with it: measured 2026-11-18, a sanctions/crossings switch-off delivered after the UN votes card had opened removed
+     the vote card (stack: layer-pkg-geopolitics off → closePopup). A row closes its own card only; a new card replaces the old. */
+  let popupOwner = '';
+  function closePopup(/** @type {string} */ owner) { if (popup && (!owner || owner === popupOwner)) { try { popup.remove(); } catch (_) { /* gone */ } popup = null; popupOwner = ''; } }
+  function openPopup(/** @type {string} */ owner, /** @type {[number, number]} */ at, /** @type {any} */ body) {
     closePopup();
-    popup = GE().ui.attach(GE().ui.popup({ closeButton: true, closeOnClick: true, maxWidth: '360px', className: 'plc-popup' }).setLngLat({ lng: at[0], lat: at[1] }).setHTML(String(body)));
+    popupOwner = owner;
+    popup = GE().ui.attach(GE().ui.popup({ closeButton: true, closeOnClick: true, maxWidth: '360px', className: 'plc-popup gp-popup' }).setLngLat({ lng: at[0], lat: at[1] }).setHTML(String(body)));
     return !!popup;
   }
   function safeRemove(/** @type {string[]} */ layers, /** @type {string[]} */ sources) {
@@ -152,8 +157,9 @@ export function geopoliticsPackage(K) {
     const body = html`<div style="min-width:240px;max-width:340px;padding-right:18px"><strong>${placeName(c)}</strong>
       <div style="font-size:11px;color:var(--text-muted)">${text('Parties the lists link to this country (address, else nationality, else ship flag) — as each list stands today', '各リストがこの国に結び付けている指定対象（所在地、なければ国籍、なければ船籍）— 各リストの現時点の内容')}</div>
       ${blocks.length ? blocks : note(text('No list shown links a designated party to this country.', '表示中のリストには、この国に結び付く指定対象はありません。'))}
-      ${note(text('A party with addresses in several countries is counted in each. This is the list of designated parties, not every trade restriction: sector-wide export bans and embargoes on goods are not in these files.', '複数の国に所在地を持つ対象は各国で数えています。これは指定対象の名簿であり、すべての貿易規制ではありません。分野全体の輸出禁止や物品の禁輸はこれらのファイルには含まれません。'))}</div>`;
-    return openPopup([r.place.x, r.place.y], body);
+      ${note(text('A party with addresses in several countries is counted in each. This is the list of designated parties, not every trade restriction: sector-wide export bans and embargoes on goods are not in these files.', '複数の国に所在地を持つ対象は各国で数えています。これは指定対象の名簿であり、すべての貿易規制ではありません。分野全体の輸出禁止や物品の禁輸はこれらのファイルには含まれません。'))}
+      ${sourceLine(r.by.filter((b) => SAN.show.has(b.authority)).map((b) => A.get(b.authority)).filter(Boolean).map((a) => ({ n: a.publisher, u: a.url, lic: a.licence, licUrl: a.licenceUrl })))}</div>`;
+    return openPopup('sanctions', [r.place.x, r.place.y], body);
   }
   function sanLegend() {
     const S = SAN.data; const el = legend('sanctions');
@@ -172,9 +178,9 @@ export function geopoliticsPackage(K) {
     body.querySelectorAll('input[data-gp-auth]').forEach((cb) => cb.addEventListener('change', () => {
       const id = cb.getAttribute('data-gp-auth');
       if (/** @type {HTMLInputElement} */ (cb).checked) SAN.show.add(id); else SAN.show.delete(id);
-      closePopup(); sanPaint();
+      closePopup('sanctions'); sanPaint();
     }));
-    const all = body.querySelector('[data-gp-all]'); if (all) all.addEventListener('click', () => { SAN.country = null; closePopup(); sanPaint(); });
+    const all = body.querySelector('[data-gp-all]'); if (all) all.addEventListener('click', () => { SAN.country = null; closePopup('sanctions'); sanPaint(); });
   }
   function sanOn() {
     if (SAN.on) return SAN.req;
@@ -193,7 +199,7 @@ export function geopoliticsPackage(K) {
   function sanOff() {
     SAN.on = false; SAN.req = null;
     for (const s of SAN.stops.splice(0)) { try { s(); } catch (_) { /* detached */ } }
-    closePopup(); safeRemove([S_SEAT, S_END, S_ARC], [S_SRC]);
+    closePopup('sanctions'); safeRemove([S_SEAT, S_END, S_ARC], [S_SRC]);
     const el = document.getElementById('data-legend-sanctions'); if (el) showLegend(el, false);
   }
 
@@ -246,11 +252,31 @@ export function geopoliticsPackage(K) {
           K.positionTooltip(e.point);
         };
         const out = () => { if (HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); };
-        GE().events.onLayer('mousemove', U_FILL, move); GE().events.onLayer('mouseleave', U_FILL, out);
-        UNV.stops.push(() => { try { GE().events.offLayer('mousemove', U_FILL, move); GE().events.offLayer('mouseleave', U_FILL, out); } catch (_) { /* gone */ } UNV.hover = false; });
+        /* (geopolitics-legends) a tap on a member is a question about THIS vote: the card is its vote, not the general country card */
+        const tap = (/** @type {any} */ e) => {
+          const f = e.features && e.features[0]; if (!f || !UNV.vote) return;
+          const ch = UNV.vote.by[f.id]; if (!ch || ch === '-') return;
+          try { GE().events.claimClick(e); } catch (_) { /* the country card may also answer */ }
+          unvCard(f.id, e.lngLat);
+        };
+        GE().events.onLayer('mousemove', U_FILL, move); GE().events.onLayer('mouseleave', U_FILL, out); GE().events.onLayer('click', U_FILL, tap);
+        UNV.stops.push(() => { try { GE().events.offLayer('mousemove', U_FILL, move); GE().events.offLayer('mouseleave', U_FILL, out); GE().events.offLayer('click', U_FILL, tap); } catch (_) { /* gone */ } UNV.hover = false; });
       }
       unvLegend();
     });
+  }
+  /** one member's vote on the drawn resolution, as a card at the tap */
+  function unvCard(/** @type {string} */ code, /** @type {any} */ at) {
+    const v = UNV.vote, I = UNV.index; if (!v || !I || !at) return false;
+    const ch = v.by[code];
+    const body = html`<div style="min-width:230px;max-width:330px;padding-right:18px"><strong>${memberName(code)}</strong>
+      <div style="margin-top:6px;font-size:13px"><i style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${VOTE_COLOUR[ch] || '#999'};margin-right:6px"></i><b>${voteWord(ch)}</b></div>
+      <div style="font-size:12px;margin-top:6px"><b>${v.sym || text('(no symbol)', '（文書番号なし）')}</b> · ${dayText(v.d)}</div>
+      <div style="font-size:12px;margin-top:2px">${v.ds || v.t}</div>
+      <div style="font-size:11px;margin-top:6px;color:var(--text-muted);font-variant-numeric:tabular-nums">${voteWord('Y')} ${nf().format(v.y)} · ${voteWord('N')} ${nf().format(v.n)} · ${voteWord('A')} ${nf().format(v.a)} · ${voteWord('X')} ${nf().format(v.x)}</div>
+      ${note(text('The seat is drawn on today’s outline of the country its code names.', '議席は、そのコードが指す国の現在の輪郭で描いています。'))}
+      ${sourceLine([{ n: 'Voeten, Strezhnev & Bailey — UN General Assembly Voting Data (Harvard Dataverse)', u: I.url, lic: I.licence, licUrl: I.licenceUrl }])}</div>`;
+    return openPopup('unvotes', [at.lng, at.lat], body);
   }
   function unvLegend() {
     const I = UNV.index; const el = legend('unvotes'); const v = UNV.vote;
@@ -319,6 +345,7 @@ export function geopoliticsPackage(K) {
     for (const s of UNV.stops.splice(0)) { try { s(); } catch (_) { /* detached */ } }
     for (const id of UNV.painted) { try { GE().layers.removeFeatureState({ source: 'countries', id }, 'unv'); } catch (_) { /* gone */ } }
     UNV.painted = [];
+    closePopup('unvotes');
     safeRemove([U_LINE, U_FILL], []);
     if (HOST.mapTooltipEl) { try { window.hideMapTooltip(HOST.mapTooltipEl); } catch (_) { /* none */ } }
     const el = document.getElementById('data-legend-unvotes'); if (el) showLegend(el, false);
@@ -384,7 +411,7 @@ export function geopoliticsPackage(K) {
       ${c.cd ? note(text('Last checked by a mapper: ' + c.cd, 'マッパーの最終確認: ' + c.cd)) : ''}
       ${note(text('From the schedule OpenStreetMap publishes, not a live feed: a crossing may close without notice.', 'OpenStreetMap が公開する時刻表に基づくもので、リアルタイムの情報ではありません。予告なく閉鎖されることがあります。'))}
       <div style="font-size:10px;margin-top:6px">${c.w ? html`<a href="${Safe.url(c.w)}" target="_blank" rel="noopener noreferrer">${text('Website of the post', 'ウェブサイト')}</a> · ` : ''}<a href="${Safe.url(osm)}" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> (ODbL)</div></div>`;
-    return openPopup([c.x, c.y], body);
+    return openPopup('crossings', [c.x, c.y], body);
   }
   function bcLegend() {
     const el = legend('crossings'); const B = BC.data;
@@ -416,7 +443,7 @@ export function geopoliticsPackage(K) {
   function bcOff() {
     BC.on = false; BC.req = null; BC.minute = -1;
     for (const s of BC.stops.splice(0)) { try { s(); } catch (_) { /* detached */ } }
-    closePopup(); safeRemove([C_DOT], [C_SRC]);
+    closePopup('crossings'); safeRemove([C_DOT], [C_SRC]);
     const el = document.getElementById('data-legend-crossings'); if (el) showLegend(el, false);
   }
 

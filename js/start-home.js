@@ -13,7 +13,9 @@
  *      because it is the one start that needs nothing from the reader (no position, no choice of year);
  *    · «Where you are» — js/here-entry.js entryRow, the same two rows the field's empty state holds;
  *    · the day's map and the example maps / classroom tours — js/showcase-gallery.js showInResults, the field's own
- *      strip, opened by the same `choose` (a card is an answer on the map: the sheet comes down);
+ *      strip, opened by the same `choose` (a card is an answer on the map: the sheet comes down) — and above the
+ *      examples, in that same strip, «Pick up where you left off» (only when something is there) and «Explore»: the
+ *      day's news on the map, countries compared at one year, a place through time (js/showcase-gallery.js drawStarters);
  *    · «IntMap on your Home Screen» — the install entry of Settings (js/installable-app.js), offered only where the
  *      browser can act on it (a held prompt) or where the one sentence says how (iOS Safari). An installed app sees nothing.
  *
@@ -85,6 +87,7 @@ const CSS = [
   '.sh-start{display:flex;flex-direction:column;gap:18px;padding:2px 0 20px;}',
   '.sh-start .hn-entry{padding:0;}',
   '.sh-start .sg-strip{padding:0;}',
+  '.sh-start .sg-explore,.sh-start .sg-resume{padding:0 0 18px;}',   /* (exploration-flows) the gallery's two lists, at the home's own spacing */
   '.sh-start .otd-slot:empty{display:none;}',
   /* the strip's own text buttons are drawn for a pointer; in the sheet every target answers a finger at 44 px (docs/architecture/09-mobile.md §9.2) */
   '.sh-start .sg-all,.sh-start .otd-all{min-height:44px;}',

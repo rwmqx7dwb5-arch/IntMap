@@ -6,11 +6,10 @@
  *  ② today's border line opens no provenance card while the clock is at Now (js/time-borders.js reader).
  *  ③ the official-warnings world key carries no fixed rank ladder (js/world-packs.js `worldKey`).
  *  ④ the desktop Tools menu holds only 測る・描く; the rest is in the menu to its left (index.html + js/map-ui.js).
- *  ⑤ the sidebar wordmark is the picture of the name, and the picture is shipped.
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 
 const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 
@@ -62,10 +61,4 @@ test('④ Tools ▾ holds 測る・描く; 道具・シミュレーション・�
   const ui = read('js/map-ui.js');
   assert.match(ui, /sections:TOOL_SECS\.map\(\(\[k\]\)=>k\)\.filter\(k=>k!=='measure'\)/, 'the left menu holds every section but 測る・描く');
   assert.match(ui, /sections:more\?\['measure'\]:null/, 'Tools ▾ holds only 測る・描く when the left menu exists');
-});
-
-test('⑤ the sidebar wordmark is the shipped picture of the name', () => {
-  const html = read('index.html');
-  assert.match(html, /<h2 class="im-wordmark"><img src="brand\/intmap-wordmark\.png" alt="IntMap"/);
-  assert.ok(existsSync(new URL('../brand/intmap-wordmark.png', import.meta.url)), 'the picture is in the tree');
 });

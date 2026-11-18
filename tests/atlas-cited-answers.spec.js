@@ -71,7 +71,9 @@ test.beforeAll(async ({ browser }) => {
   await page.fill('#atlas-panel .atl-in', '6000m を超える火山で一番高いのは？ 1900年の国境も見せて');
   await page.click('#atlas-panel .atl-go');
   await expect.poll(() => turnBodies.length, { timeout: 120_000 }).toBeGreaterThanOrEqual(2);
-  await page.waitForSelector('#atlas-panel .atl-srcs .atl-srcs-list li', { timeout: 60_000 });
+  /* the sources are ONE collapsed line (<details class="atl-srcs">): wait for the rows to exist, then open it as a reader would */
+  await page.waitForSelector('#atlas-panel details.atl-srcs .atl-srcs-list li', { state: 'attached', timeout: 60_000 });
+  await page.locator('#atlas-panel details.atl-srcs > summary').last().click();
   /* the map's half (the border records) lands after the answer */
   await expect.poll(() => page.evaluate(() => document.querySelectorAll('#atlas-panel .atl-srcs-list li[data-kind="line"]').length), { timeout: 60_000 }).toBeGreaterThan(0);
 });
@@ -112,7 +114,7 @@ test('③ the answer can be cited, naming the map and every listed source', asyn
 });
 
 test('④ the visible credit line and the list are part of what Copy copies', async () => {
-  const txt = await page.evaluate(() => [...document.querySelectorAll('#atlas-panel .atl-srcs')].pop().parentElement.innerText);
+  const txt = await page.evaluate(() => [...document.querySelectorAll('#atlas-panel .atl-srcs')].pop().parentElement.textContent);
   expect(txt).toMatch(/この回答の出典|Sources of this answer/);
   expect(txt).toMatch(/出典表記|Credit line/);
   expect(diag.pageErrors || [], 'no page errors').toEqual([]);

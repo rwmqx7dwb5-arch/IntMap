@@ -150,10 +150,10 @@ test('R286 ⑤: js/tile-warm.js still owns satellite warming, through the protoc
 
   const proto = codeOnly(read('js/sat-proto.js'));
   assert.match(proto, /tileUrl:\(z,y,x\)=>_satUrl\(/, 'which the protocol still exports');
-  assert.match(proto, /_SAT_HOSTS=\['https:\/\/[^']+','https:\/\/[^']+'\]/,
-    'and it resolves to ordinary https origins — something the browser can load');
-  assert.match(proto, /_satUrl=\(z,y,x\)=>_SAT_HOSTS\[\(x\+y\)&1\]/,
-    'chosen by the (x+y)&1 host rule the render path uses');
+  /* (sat-arcgis-3d) the URL is js/esri-imagery.js's — the https origins and the (x+y)&1 host rule are
+     asserted there (tests/esri-imagery-checks.test.mjs ①), against the function itself */
+  assert.match(proto, /const _satUrl=imageryTileUrl;/, 'and it resolves through the one URL builder');
+  assert.match(read('js/sat-proto.js'), /^import \{[^}]*\bimageryTileUrl\b[^}]*\} from '\.\/esri-imagery\.js';/m, 'imported, not copied');
 });
 }
 

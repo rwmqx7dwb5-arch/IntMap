@@ -25,6 +25,7 @@ import { skyColour, limbViewElev, sunOpticalDepth, skyModelTables } from './sky-
 import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import * as bus from './bus.js';   /* (event-bus) the theme's one publisher raises `intmap-theme` — see _applyThemeBody */
+import { noAirItems } from './layer-manifest.js';   /* (layer-click-polish) the rows that switch the air off — their own `noAir` */
 /* ⚠ (#R227) THE MODEL IS PUBLISHED, NOT COPIED. js/limb-layer.js is a `window.IntMapModules` factory
    (a MapLibre adapter implementation detail, like js/solid3d.js) and cannot `import` an ES module,
    but the whole point of that layer is that it marches THIS model — same coefficients, same ozone
@@ -739,8 +740,29 @@ export function makeThemeSky(HOST, CTX) {
     }
     return 0;
   }
-  function _airRamp(peak){ const out=['interpolate',['linear'],['zoom']];
-    for(let i=0;i<AIR_Z.length;i+=2){ out.push(AIR_Z[i], +(AIR_Z[i+1]*peak).toFixed(4)); }
+  /* ══ (ui-polish-batch) THE AIR IS A FUNCTION OF HOW BIG THE EARTH LOOKS, NOT OF THE ZOOM NUMBER ════
+     「極付近に移動すると大気が広がって何も見えなくなる」 MapLibre's globe is drawn with a radius of worldSize/2π DIVIDED BY
+     cos(centre latitude) (the `wr` in js/geo-engine.js _limbUniforms, from the renderer's own transform): a zoom level means the
+     same on the globe as on the plane, so toward a pole the sphere is drawn larger and the eye is closer to it. At 85° the same
+     zoom is a sphere 11.5× the size it has on the equator, i.e. log2(1/cos 85°) = 3.5 zoom levels nearer. AIR_Z is keyed to the zoom
+     NUMBER, so at 85° it was still handing out the air of a view from far above (z3 → 0.62) to a camera that is, in size and in
+     height, at z6.5 (0.22): the haze stood in front of the pole and the ground was not to be seen.
+     So the curve is read at the EQUATOR-EQUIVALENT zoom, z + log2(1/cos φ): the same eye height gets the same air at every
+     latitude. Both readers (the sky block's expression and the limb's strength) take the shift from _airShift(), so they cannot
+     disagree. The shift is quantised to a quarter of a zoom level so the sky block (a maplibre expression, re-parsed when it
+     changes) is re-set a handful of times over a whole pole-ward pan, not every frame; a quarter level is under 4 % of the curve.
+     The shift only moves the stops DOWN the zoom axis, so the curve still reaches 0 before z11, where the globe becomes a plane.
+     φ is clamped to the web-mercator limit (85.0511°), the latitude past which maplibre does not centre the camera.
+     Expiry: if maplibre stops dividing the globe's radius by cos(latitude), this shift is wrong and must go with it. */
+  const _AIR_LAT_MAX=85.0511287798, _AIR_SHIFT_STEP=0.25;
+  function _airLatShift(lat){ const l=Math.min(Math.abs(+lat||0),_AIR_LAT_MAX); return Math.log2(1/Math.cos(l*Math.PI/180)); }
+  function _airShift(){
+    let lat=0; try{ const c=GE().camera.getCenter(); if(c&&isFinite(c.lat)) lat=c.lat; }catch(_){}
+    return Math.round(_airLatShift(lat)/_AIR_SHIFT_STEP)*_AIR_SHIFT_STEP; }
+  /* the zoom the curve is read at: the camera's own, plus the shift for the latitude it is looking at */
+  function _airEqZoom(z,shift){ return z+(shift==null?_airShift():shift); }
+  function _airRamp(peak){ const out=['interpolate',['linear'],['zoom']], sh=_airShift();
+    for(let i=0;i<AIR_Z.length;i+=2){ out.push(+(AIR_Z[i]-sh).toFixed(4), +(AIR_Z[i+1]*peak).toFixed(4)); }
     return out; }
   /* ══ ⚠⚠⚠ (#R241) THE STANDARD MAP HAS NO AIR AT ALL ════════════════════════════════════════════
      「衛生写真ではあっても、標準マップでは大気はなしって言ってるだろうがクソが」 — and asked again
@@ -750,7 +772,21 @@ export function makeThemeSky(HOST, CTX) {
      globe grow an atmosphere it had never had, which is the thing being objected to. The sun still
      points (the shading and the limb of the SATELLITE globe need it); what changed is that nothing
      draws air over a vector basemap. */
-  function _airOn(){ try{ return HOST.mapType==='sat'; }catch(_){ return false; } }
+  /* ══ (layer-click-polish) A FIELD OVER THE WHOLE GLOBE HAS NO AIR IN FRONT OF IT ═══════════════════
+     「Night Lights, Wind, Temperature, Precipitation (forecast), Sea-level pressure, Wind gusts をオンに
+     しているときは大気の効果をオフに。」 The halo is an additive wash over the limb; over a field the
+     reader is reading by colour it shifts the colours. WHICH rows is their own declaration (js/layers/<id>.js
+     `noAir`, read through js/layer-manifest.js) — no id is written here. Their checkbox is the state
+     every switch writes (the panel, Atlas's layers.toggle, the share link), and a `change` on one of them
+     re-applies the sky (below, _wireAirYield). */
+  function _airYielded(){ try{ return noAirItems().some((id)=>{ const el=document.getElementById(id); return !!(el&&el.checked); }); }catch(_){ return false; } }
+  function _airOn(){ try{ return HOST.mapType==='sat'&&!_airYielded(); }catch(_){ return false; } }
+  function _wireAirYield(){
+    if(_wireAirYield._done) return; _wireAirYield._done=true;
+    let ids=null; try{ ids=new Set(noAirItems()); }catch(_){ ids=new Set(); }
+    document.addEventListener('change',(e)=>{ const t=e&&e.target; if(!t||!ids.has(t.id)) return;
+      try{ _applySkyAtmosphere(HOST.mapType==='sat'); }catch(_){} }, true);
+  }
   function _limbOwnsRim(){
     try{
       if(!_airOn()) return false;             /* (#R241) 「Mapでは大気ゼロ」 — including the rim */
@@ -842,7 +878,7 @@ export function makeThemeSky(HOST, CTX) {
       /* (#R241) the layer's own strength rides the SAME zoom curve the sky block does, so the two
          owners of the air fade together and neither of them is still at full value when maplibre
          cuts the globe at z11→z12. `_skyFollowCamera` re-pushes it as the camera moves. */
-      let az=1; try{ az=_airAtZoom(GE().camera.getZoom()); }catch(_){}
+      let az=1; try{ az=_airAtZoom(_airEqZoom(GE().camera.getZoom())); }catch(_){}
       _applyLimb._az=az;
       GE().layers.setLimb(_LIMB_ID,{on:!!(want&&there), strength:az, disc:_discStrength()*az});
       if(want&&there) _armLimbWatch();
@@ -852,8 +888,10 @@ export function makeThemeSky(HOST, CTX) {
   function _applySkyAtmosphere(sat){
     if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
     _followClock();
+    sat=!!sat&&!_airYielded();   /* (layer-click-polish) a `noAir` row is up — the air is off exactly as on the Map basemap; see _airOn */
     try{
       _applySkyAtmosphere._on=true;
+      _wireAirYield();
       _wireSkyFollow();   /* (#R234) the rim handover follows the camera, not the settle — see there */
       /* ══ (#R187) THINNER. THE HALO WAS THE "CHEAP" PART ═════════════════════════════════════════
          「（追記：質感がチープかつ、読み込み時の動作が不安定で視覚的に美しくない。）」 and
@@ -880,6 +918,7 @@ export function makeThemeSky(HOST, CTX) {
          actually happened and not what was wanted — see _applyLimb */
       const limb=_applyLimb(_limbOwnsRim());
       _applySkyAtmosphere._limb=limb;
+      _applySkyAtmosphere._shift=_airShift();   /* the shift the ramp below is built with */
       GE().scene.setSky({
         'sky-color':sc, 'sky-horizon-blend':_horizonBlend(),   /* (#R213) */
         /* ══ (#R223) THE `fog-*` PAIR IS OFF, AND `_aerial()` IS THE ONLY PLACE THAT SAYS SO ═════════
@@ -1008,7 +1047,7 @@ export function makeThemeSky(HOST, CTX) {
          round is closing. This is `setLimb` (two numbers into an object), NOT a re-parse of the sky
          block, so it is cheap enough for the per-frame camera hook. The sky block's own ramp is a
          maplibre expression and follows the zoom on its own. */
-      if(limb){ try{ const az=_airAtZoom(GE().camera.getZoom());
+      if(limb){ try{ const az=_airAtZoom(_airEqZoom(GE().camera.getZoom()));
         if(!(Math.abs(az-(_applyLimb._az==null?-1:_applyLimb._az))<0.002)){
           _applyLimb._az=az;
           GE().layers.setLimb(_LIMB_ID,{on:true,strength:az,disc:_discStrength()*az}); } }catch(_){} }
@@ -1035,7 +1074,8 @@ export function makeThemeSky(HOST, CTX) {
         _skyFollowCamera._t=_n; const q=_skyColoursNow(); hz=q.hz; sc=q.sc;
       }
       if(hz===_applySkyAtmosphere._hz&&sc===_applySkyAtmosphere._sc
-         &&fg.ground===of.ground&&fg.horizon===of.horizon&&limb===_applySkyAtmosphere._limb) return;
+         &&fg.ground===of.ground&&fg.horizon===of.horizon&&limb===_applySkyAtmosphere._limb
+         &&(HOST.mapType!=='sat'||_airShift()===_applySkyAtmosphere._shift)) return;   /* (ui-polish-batch) a pole-ward pan changes the air with no colour moving */
       _applySkyAtmosphere(HOST.mapType==='sat');
     }catch(_){}
   }

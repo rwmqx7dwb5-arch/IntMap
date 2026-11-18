@@ -350,7 +350,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          #coord-readout into the two slots at phone widths and hands them back when the window widens. -->
     <div class="m-head" id="m-head"><div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div><div class="m-head-row"><div class="m-search-slot" id="m-search-slot"></div><button class="m-clock" id="m-clock" data-prints-map-time data-time-intent type="button" aria-label="Chronos" data-i18n-aria="tlMachine" title="Chronos" data-i18n-title="tlMachine"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M12 6.9V12l3.7 2.2"/></svg></button></div><div class="m-readout-slot" id="m-readout-slot"></div></div>
     <div class="header-area">
-      <div class="title-group"><h2 class="im-wordmark"><img src="brand/intmap-wordmark.png" alt="IntMap" width="63" height="20" decoding="async"></h2></div>
+      <div class="title-group"><h2>IntMap</h2></div>
       <!-- (#R123) desktop normal mode: the action buttons (WS / Log in / Feedback / Settings) live on a fixed
            SECOND row, so the first "IntMap" row carries no action buttons. injectAuthUI() inserts WS, Login and
            Feedback before #btn-open-settings, so they land inside .header-actions in that exact order. -->
@@ -383,6 +383,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
         </div>
         <div class="news-cat-chips" id="news-cat-chips" style="display:none;" role="tablist" aria-label="Event categories" data-i18n-aria="evCatsAria"></div><!-- (#R386) 出来事のカテゴリ。中身は js/news-events.js が実データから作る（docs/NEWS-EVENTS.md §9） -->
       </div>
+      <p class="news-scope-note" id="news-scope-note" hidden></p><!-- (exploration-flows) what the list covers (worldwide, not the map view) and how many of it are in view — written by js/news-events.js paintScopeNote -->
     </div>
     <!-- (#R30) Translate titles only appears when the news set actually contains a language other than the
          UI language ("設定言語のみなら表示しない"); it translates only those non-UI-language headlines. -->
@@ -555,10 +556,9 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
       <!-- (#R101) Time-machine popup redesigned to match the requested layout: title + "viewing past" badge + ×,
            a Year/Date mode toggle, a big current-value readout + "Back to now", a year (or recent-date) slider with
            era marks, and a "What's applied" chip row. Closes when the user operates elsewhere on the map. -->
-      <!-- (map-chrome-layout) the two bottom corners are ONE row of the frame: the readout at the left, Chronos at the
-           right, and where the frame is too narrow for both, Chronos steps up one row instead of covering the readout -->
+      <!-- (map-chrome-layout) the bottom corner is a row of the frame: Chronos at the right. The coordinate / elevation
+           readout is no longer in it — it stands at the right end of the credit strip (#map-credit, below) -->
       <div class="map-frame-bottom">
-        <div id="coord-readout" class="coord-readout"></div>
         <div id="news-timeline" class="news-timeline collapsed" data-prints-map-time>
           <!-- (#R102/#27) collapsed = the labeled entry point (per the attached mock). ⚠ (#R289) renamed it to 「Chronos / Control the map's time」: it names no year, so nothing here follows the clock's floor. ⚠ (#R504) the glyph is a CLOCK (face, cardinal marks, hour+minute hands, pivot), built like the compass rose — the old rotate-ccw arrow read as 「戻す」 at 23 px; DEV-NOTES #R504 §7. ⚠ no id in it: the compass roses share this document (r504 ⑧). -->
           <button class="ntl-open" id="ntl-toggle" type="button" title="Chronos" data-i18n-title="tlMachine" data-time-intent>
@@ -599,7 +599,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
         </div>
       </div>
     </div>
-  </div><div id="map-credit" class="map-credit"></div></div>
+  </div><div id="map-credit" class="map-credit"></div><!-- the readout shares the credit strip's row (css/intmap.css .map-column > .coord-readout); js/map-readout.js keeps it clear of the credit text --><div id="coord-readout" class="coord-readout"></div></div>
 </div>
 
 <div class="modal-overlay" id="settings-modal" data-effect="private"><!-- (desktop-one-entry) data-effect: each control commits itself through one listener on this dialog (js/app-body.js commitSetting) — the reader's own preferences, mirrored to their account -->

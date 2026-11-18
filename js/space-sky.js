@@ -251,8 +251,16 @@ window.IntMapSky=(function(){
      So the square stars go to one WebGL draw of a buffer uploaded once per precession (once a day of map
      time), with the SAME projection (the #R187 matrix, below as uniforms) and the SAME anti-aliasing a
      canvas gives an axis-aligned rect — the exact box overlap of the square with each device pixel.
-     The result is copied onto #space-canvas with one drawImage, so the canvas the page (and the tests)
-     read is still the one canvas, and the halos, discs, Moon and Sun are painted over it as before.
+     ══ (mobile-map-speed) …AND IT IS SHOWN WHERE IT WAS DRAWN, NOT COPIED ══════════════════════════════
+     The field used to be copied onto #space-canvas with one drawImage per camera frame. Copying a WebGL canvas
+     into a 2D canvas is a read of the GPU's drawing buffer: on a software rasteriser it is a full read-back —
+     MEASURED 2026-11-17, production on SwiftShader (390×844, DPR 3, CPU ×4, touch pans and pinches): that one
+     drawImage was 55.3 s of the 216 s gesture window, 4.4 fps. On a GPU canvas it is a GPU copy and a
+     synchronisation point instead, every frame; either way it is work the picture does not need. So the GL canvas is a page element, #space-stars, directly under #space-canvas
+     (css/intmap.css gives both the same box): the compositor puts the two together, which it does anyway for
+     every layer of the page, and the halos, discs, Moon and Sun are painted on #space-canvas over it as
+     before. Shown only on a frame it drew (starsShown); a lost or missing context hides it and the canvas
+     loop below draws every star on #space-canvas, as it always did.
      ⚠ A browser without WebGL, or a lost context, takes the canvas loop below — the same picture, the
      old cost. Nothing is dropped. */
   const GLS={ cv:null, gl:null, prog:null, buf:null, n:0, failed:false, u:null };
@@ -274,14 +282,17 @@ window.IntMapSky=(function(){
   function glInit(){
     if(GLS.gl||GLS.failed) return GLS.gl;
     try{
-      const c=document.createElement('canvas');
+      if(GLS.cv&&GLS.cv.parentNode) GLS.cv.parentNode.removeChild(GLS.cv);   /* gpu(true) after a loss: one element, not two */
+      _starsOn=null;
+      const c=document.createElement('canvas'); c.id='space-stars'; c.setAttribute('aria-hidden','true');
       const gl=c.getContext('webgl',{ alpha:true, premultipliedAlpha:true, antialias:false, depth:false, stencil:false, preserveDrawingBuffer:false });
       if(!gl){ GLS.failed=true; return null; }
       const sh=(t,s)=>{ const o=gl.createShader(t); gl.shaderSource(o,s); gl.compileShader(o); if(!gl.getShaderParameter(o,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)||'shader'); return o; };
       const p=gl.createProgram(); gl.attachShader(p,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS)); gl.linkProgram(p);
       if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)||'link');
-      c.addEventListener('webglcontextlost',(e)=>{ try{ e.preventDefault(); }catch(_){} GLS.gl=null; GLS.failed=true; if(stars) stars.glFor=null; schedule(); });
+      c.addEventListener('webglcontextlost',(e)=>{ try{ e.preventDefault(); }catch(_){} GLS.gl=null; GLS.failed=true; c.style.display='none'; if(stars) stars.glFor=null; schedule(); });
       GLS.cv=c; GLS.gl=gl; GLS.prog=p; GLS.buf=gl.createBuffer();
+      if(cv&&cv.parentNode) cv.parentNode.insertBefore(c,cv);   /* (mobile-map-speed) on the page, directly under #space-canvas — see GLS */
       GLS.u={ m:gl.getUniformLocation(p,'u_m'), p:gl.getUniformLocation(p,'u_p'), d:gl.getUniformLocation(p,'u_d'), hd:gl.getUniformLocation(p,'u_hd'), dev:gl.getUniformLocation(p,'u_dev'),
               v:gl.getAttribLocation(p,'a_v'), s:gl.getAttribLocation(p,'a_s'), c:gl.getAttribLocation(p,'a_c') };
     }catch(e){ GLS.failed=true; GLS.gl=null; try{ console.warn('[sky] GPU star field unavailable — drawing on the canvas:',String(e&&e.message||e)); }catch(_){} }
@@ -385,7 +396,10 @@ window.IntMapSky=(function(){
      answer: up to 6 ms a frame, on the gesture's own frames). */
   let _shown=null;
   function shown(on){ if(_shown===on) return; _shown=on;
-    cv.style.display=on?'block':'none'; document.body.classList.toggle('space-sky-on',on); }
+    cv.style.display=on?'block':'none'; document.body.classList.toggle('space-sky-on',on); if(!on) starsShown(false); }
+  /* (mobile-map-speed) the GPU field's own canvas, shown only on a frame it drew — written when it changes, like shown() */
+  let _starsOn=null;
+  function starsShown(on){ const c=GLS.cv; on=!!(on&&_shown); if(!c||_starsOn===on) return; _starsOn=on; c.style.display=on?'block':'none'; }
   function draw(){
     raf=0;
     const _t0=performance.now();
@@ -399,6 +413,7 @@ window.IntMapSky=(function(){
     ctx.clearRect(0,0,F.width,F.height);
     const ms=mapClock(), gm=gmstDeg(ms);
     let drawn=0;
+    if(!stars) starsShown(false);
     if(stars){
       ensurePrecessed(ms);
       const W=F.width, H=F.height;
@@ -413,7 +428,7 @@ window.IntMapSky=(function(){
       /* (speed-overhaul) the square stars in one GPU draw (see GLS); the loop below then paints only the
          halos and discs over them. Without a GPU the loop paints every star, as it always did. */
       const field=glField(cv.width,cv.height,M,f,fa,ox,oy,W,H,dpr);
-      if(field){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.drawImage(field,0,0); ctx.restore(); }
+      starsShown(!!field);   /* (mobile-map-speed) the field IS on screen — no copy onto this canvas (see GLS) */
       const big=field?stars.big:null, nb=big?big.length:stars.n;
       for(let j=0;j<nb;j++){ const i=big?big[j]:j;
         const vx=stars.vx[i], vy=stars.vy[i], vz=stars.vz[i];

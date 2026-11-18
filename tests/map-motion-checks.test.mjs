@@ -122,5 +122,5 @@ test('⑤ the destination: the satellite gate asks the renderer\'s tile level th
   const sat = readFileSync(join(ROOT, 'js', 'sat-proto.js'), 'utf8');
   assert.match(sat, /_satDestLevel=\(d\)=>Math\.max\(0,Math\.min\(19,Math\.round\(d\.zoom\+1\)\)\)/);
   const body = readFileSync(join(ROOT, 'js', 'app-body.js'), 'utf8');
-  assert.match(body, /'satellite':\{type:'raster',tiles:\([^)]*\),tileSize:256,maxzoom:19/, 'the satellite source is declared tileSize 256 (the +1) and maxzoom 19 (the clamp)');
+  assert.match(body, /'satellite':\{type:'raster',tiles:\((?:[^()]|\(\))*\),tileSize:256,maxzoom:19/, 'the satellite source is declared tileSize 256 (the +1) and maxzoom 19 (the clamp)');
 });

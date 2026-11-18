@@ -3251,7 +3251,7 @@ export function dataLayers(HOST){
        generic ones, each in document order. */
     function discoverLegends(){
       const ec=[...document.getElementsByClassName('data-legend')].filter(el=>String(el.id||'').startsWith('data-legend-ec-'));
-      return [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat(ec,[...document.getElementsByClassName('data-legend generic-legend')]);
+      return ((listed,mc)=>listed.concat(mc&&mc.querySelectorAll?[...mc.querySelectorAll('.data-legend, .koppen-legend')].filter(el=>listed.indexOf(el)<0):[]))([document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat(ec,[...document.getElementsByClassName('data-legend generic-legend')]),document.getElementById('map-container'));   /* (geopolitics-legends) …and every other legend card in the map, found by what it is (.data-legend / .koppen-legend): a card a module builds for itself (waves, land cover, the three geopolitics cards) was never on this list, so it was never placed — production 2026-11-18, three cards on one spot over the World Bank card and the search button. The listed order stays first. */
     }
     function placeLegends(_refold){
       const all=discoverLegends();
@@ -4995,7 +4995,7 @@ export function dataLayers(HOST){
          ensureBordersLayer / ensureRefLayers / applyCountryVisibility), so the heal is a single gentle
          re-fire of the change event (see BASE branch below) — no off→on flicker of the whole label stack. */
       const BASE={
-        'cb-names':['ofm-country','ofm-admin1','ofm-city','ofm-other'],   /* (#R198) admin-1 names are place names — same switch, same audit */
+        'cb-names':['ofm-country','ofm-admin1','ofm-city','ofm-city-dot','ofm-other'],   /* (#R198) admin-1 names are place names — same switch, same audit */
         'cb-geolabels':['ofm-water','ofm-water2','ofm-river','ofm-peak','geo-sea'],
         'cb-poi':['ofm-poi','ofm-poi-dot'],   /* (#R186) shop/facility names — audited like every other label group */
         'cb-borders':['borders-only-line','borders-only-casing'],'cb-countries':['country-fill'],

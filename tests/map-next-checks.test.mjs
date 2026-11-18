@@ -84,7 +84,7 @@ test('③ the map state carries it last, and fetches its owner only for a link t
      since — the byte check on `old` below is the measurement of that. */
   const rows = MapState.SCHEMA.filter((f) => f.params.length);
   const keys = rows.map((f) => f.key);
-  assert.deepEqual(keys.slice(keys.indexOf('mymap')), ['mymap', 'ds'], 'mm must stay after every older field, with only later fields appended after it');
+  assert.deepEqual(keys.slice(keys.indexOf('mymap')), ['mymap', 'ds', 'event'], 'mm must stay after every older field, with only later fields appended after it (ds: data-studio, event: exploration-flows)');
   const old = '#v=139.7000,35.6800,9.00,0,0,f&l=dl-quakes&tt=1914-06-15&title=T&note=N';
   assert.equal(MapState.encode(MapState.decode(old)), old);
   assert.equal(MapState.decode(old).mymap, null);

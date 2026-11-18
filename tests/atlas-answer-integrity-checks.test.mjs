@@ -189,9 +189,11 @@ test('④ metricResult: subject, data year and one source item per publisher, fr
 
 test('④ the sources footer leads with one line; the account of how it was made is the tooltip', () => {
   const SRC = makeAtlasAnswerSources({ lang: () => 'en', esc });
-  const html = SRC.footerHtml([{ n: 1, kind: 'number', what: 'Life expectancy', source: wbCitation(LIFE).source, values: [1] }], { id: 'a' });
+  const html = SRC.footerHtml([{ n: 1, kind: 'number', what: 'Life expectancy', source: wbCitation(LIFE).source, values: [1] }], { id: 'a', linked: true });
   const note = /<div class="atl-srcs-note"[^>]*>([^<]*)<\/div>/.exec(html);
   assert.ok(note, html);
   assert.ok(note[1].length < 60, 'the visible note is one short line: ' + note[1]);
   assert.match(html, /title="[^"]*not written by Atlas/, 'the full account is kept in the tooltip');
+  assert.match(html, /^<details class="atl-srcs"[^>]*><summary[^>]*>Sources of this answer · 1 — /, 'the footer is one collapsed line: count and the first source names');
+  assert.doesNotMatch(SRC.footerHtml([{ n: 1, kind: 'number', what: 'x', source: 'S', values: [1] }], { id: 'a' }), /atl-srcs-note/, 'the key to [n] is not shown when no number in the answer was marked');
 });

@@ -289,7 +289,7 @@ export function makeViewCapture(deps) {
       /* a full-viewport retina raster is tens of megabytes; let it go the moment it is encoded — the
          refused one too, which is why this releases `shot.canvas` rather than the narrowed `cv`. */
       try { if (shot.canvas) { shot.canvas.width = shot.canvas.height = 0; } } catch (_) { /* already collected */ }
-      if (!url) return { ok: false, message: (shot.canvas && !shot.live)
+      if (!url) return { ok: false, notRendering: !!(shot.canvas && !shot.live), message: (shot.canvas && !shot.live)
         ? L('The map was not drawing when I looked — the page is in the background, so there was no frame to capture. Ask again with IntMap in front.', '見に行った時点で地図が描画されていませんでした（ページが背面にあるため、取得できるフレームがありません）。IntMap を前面にしてもう一度お尋ねください。', 'Die Karte hat nicht gezeichnet — die Seite ist im Hintergrund, es gab kein Bild aufzunehmen.', 'В момент съёмки карта не отрисовывалась — страница в фоне, кадра не было.', 'El mapa no estaba dibujando: la página está en segundo plano y no había fotograma que capturar.')
         : L('Could not read the map frame — the renderer gave nothing back.', '地図のフレームを読み取れませんでした（レンダラから画像が返りませんでした）。', 'Der Kartenframe konnte nicht gelesen werden — der Renderer gab nichts zurück.', 'Не удалось прочитать кадр карты — рендерер ничего не вернул.', 'No se pudo leer el fotograma del mapa: el renderizador no devolvió nada.') };
 
@@ -321,14 +321,9 @@ export function makeViewCapture(deps) {
 
       frames.push({ url: url, facts: facts });
 
-      /* ⚠ THE READER SEES WHAT ATLAS WAS GIVEN. A capability that reads the screen and says nothing
-         about having done so is one nobody can audit — and an answer that turns on «the east half is
-         red» should show the half it means. It is small on purpose: evidence, not a second map. */
-      var capTxt = L('Atlas looked at the map', 'Atlas が地図を見ました', 'Atlas hat auf die Karte geschaut', 'Atlas посмотрел на карту', 'Atlas miró el mapa')
-        + ((inc === 'map') ? (' · ' + L('map only', '地図のみ', 'nur Karte', 'только карта', 'solo el mapa')) : '');
-      var html = '<div class="atl-viewframe"><img src="' + esc(globalThis.IntMapSafe.url(url, { allowData: true })) + '" alt="' + esc(capTxt) + '" loading="lazy">'
-        + '<div class="atl-viewframe-cap">' + esc(capTxt) + (facts.reason ? (' — ' + esc(facts.reason)) : '') + '</div></div>';
-      return { ok: true, html: html, facts: facts };
+      /* The picture goes to the model (urls() / promptBlock()) and the facts to the exec result; the
+         answer the reader sees does not carry a thumbnail or a «looked at the map» caption. */
+      return { ok: true, html: '', facts: facts };
     }
 
     /* The sentences that name the attached images. Every number here was READ FROM THE APP at the

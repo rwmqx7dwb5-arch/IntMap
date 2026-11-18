@@ -26,6 +26,7 @@ import { MapState, viewOf, timeOf } from './map-state.js';   /* (map-state-store
 import './briefing-link.js';   /* (atlas-briefing) the owner of the store's `brief` field — a link may carry an Atlas briefing; js/briefing-link.js */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { choosePlacement, collectObstacles, measureHtml, optionsFor } from './popup-placement.js';   /* (ui-polish-popup) which side of the pin the place popup opens on */
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
@@ -1027,6 +1028,11 @@ export function layerSidebar(HOST){
         +'.tlp-body.closed{display:none;}'
         +'.tlp-body>.tlp-measure{display:grid;grid-template-columns:1fr 1fr;gap:4px;}'
         +'.tlp-body>.m-tool-grid{margin-bottom:0;}'
+        /* a host that holds ONE section draws no heading and carries the body straight into the root (ui-polish-popup) —
+           the same rules as .tlp-body, written against the root because the body is the root there */
+        +'.tlp-root.tlp-bare{gap:8px;}'
+        +'.tlp-root.tlp-bare>.tlp-measure{display:grid;grid-template-columns:1fr 1fr;gap:4px;}'
+        +'.tlp-root.tlp-bare>.m-tool-grid{margin-bottom:0;}'
         /* ══ ⚠⚠⚠ (#R766) #layer-tools IS CARRIED IN HERE, SO ITS OWN SECTION HEADER IS A SECOND ONE ═══
            `_placeLayerTools` below moves the real `#layer-tools` node into the Tools panel's 「分析」 body;
            the strip carries a 「ツール」 header of its own (js/data-layers.js builds one on every rebuild),
@@ -1927,8 +1933,9 @@ export function layerSidebar(HOST){
         body.classList.toggle('closed',now); _secClosed[sk]=now; });
       wrap.appendChild(h); wrap.appendChild(body); return body; }
     /* a Tools section: a quiet iOS-style heading over its rows */
-    function _toolSec(key,label){
+    function _toolSec(key,label,headless){
       const sec=document.createElement('div'); sec.className='tlp-sec'; sec.dataset.sec=key;
+      if(headless){ const b=document.createElement('div'); b.className='tlp-body'; sec.appendChild(b); return sec; }
       _foldSec(sec,'tlp-sech','tlp-body','__tools_'+key+'__',label); return sec; }
     function _fillTools(h){ const root=h.root, o=h.opts||{};
       /* ⚠ (#R766's hazard) the carried strip leaves before the sections it sits in are thrown away, and is parked in
@@ -1940,12 +1947,20 @@ export function layerSidebar(HOST){
          left holds the rest (the user, 2026-11-17: 「Tools…Measure & drawの三つだけ出るように。それ以外はその左に。」); a host
          that names none holds all of them (the phone's sheet). */
       const want=Array.isArray(o.sections)?o.sections:null;
-      TOOL_SECS.filter(([k])=>!want||want.indexOf(k)>=0).forEach(([k,lbl])=>{ const sec=_toolSec(k,lbl()); const body=sec.querySelector('.tlp-body');
+      /* ⚠ A HOST THAT HOLDS EXACTLY ONE SECTION DRAWS NO HEADING: a fold over the only thing in the panel is a second
+         press for nothing (the desktop's 「ツール ▾」 held a collapsible 「測る・描く」 over four buttons). The body goes
+         straight into the root. The 分析 section is the exception only in shape: `placeLayerTools` finds the strip's
+         place by `.tlp-sec[data-sec="analysis"] > .tlp-body`, so it keeps that wrapper — still without a heading. */
+      const secs=TOOL_SECS.filter(([k])=>!want||want.indexOf(k)>=0), bare=secs.length===1;
+      root.classList.toggle('tlp-bare',bare&&secs[0][0]!=='analysis');
+      secs.forEach(([k,lbl])=>{
+        const direct=bare&&k!=='analysis';
+        const sec=direct?null:_toolSec(k,lbl(),bare);
+        const body=direct?root:sec.querySelector('.tlp-body');
         if(k==='measure'){ if(meas) body.appendChild(meas); }
         else if(k!=='analysis') TOOLS.filter(t=>_toolGroup(t)===k).forEach(t=>body.appendChild(_toolRow(t,o.onPick)));
         /* 分析 is decided by `_placeLayerTools` (it holds the strip or it does not); the others by what they hold */
-        sec.hidden=(k==='analysis')?true:!body.childElementCount;
-        root.appendChild(sec); });
+        if(sec){ sec.hidden=(k==='analysis')?true:!body.childElementCount; root.appendChild(sec); } });
       root.dataset.lang=String(HOST.lang||''); }
     /* Idempotent: the first call builds the panel into `container`; every later call re-syncs the rows' state (or
        rebuilds them after a language change) and carries the analysis strip to the panel being opened. */
@@ -2446,7 +2461,7 @@ export function labelPopup(HOST){
   const imToast=HOST.imToast, isMobile=HOST.isMobile;
   (function(){
     if(!GE().hasRenderer()) return;
-    let popup=null, wired=false;
+    let popup=null, wired=false, placePin=null;
     const placeReaders=new Map();
     function closeReaders(){ for(const reader of placeReaders.values()){ try{ if(reader.close) reader.close(); }catch(_){} } }
     function readPlace(f,e){
@@ -2613,7 +2628,60 @@ export function labelPopup(HOST){
         }).catch(()=>{});
       }catch(_){}
     }
-    function clearHL(){ closeReaders(); try{ GE().layers.setSourceData('place-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} clearRiverHL(); if(popup){ try{popup.remove();}catch(_){} popup=null; }
+    /* ══ (ui-polish-popup) THE PIN A PLACE POPUP STANDS BESIDE ═════════════════════════════════════════
+       「Google Earth のように、ラベルをクリックするとピンが立ち、地名がその上に出て、情報はピンの右に出る」
+       The pin is a renderer marker (`ui.marker`, so MapLibre and Cesium both draw it) whose element carries the place
+       NAME above the teardrop. The city label and dot under it are hidden while it stands (_hideLabelAt, city layers only:
+       other label layers' filters are rewritten by time-admin1.js / place-labels.js, so they keep showing under the pin). */
+    function _pinCss(){ if(document.getElementById('plc-pin-css')) return;
+      const st=document.createElement('style'); st.id='plc-pin-css';
+      st.textContent='.plc-pin{position:relative;width:30px;height:38px;pointer-events:none;}'
+        +'.plc-pin .pp-body{position:absolute;left:3px;top:0;width:24px;height:24px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#ff3b30,#c2271f);transform-origin:bottom;transform:rotate(-45deg);box-shadow:0 4px 10px rgba(0,0,0,0.3);border:2px solid #fff;box-sizing:border-box;}'
+        +'.plc-pin .pp-body::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:#fff;}'
+        +'.plc-pin .pp-name{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:2px;max-width:240px;color:#fff;font-size:13px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 3px rgba(0,0,0,0.9),0 0 3px rgba(0,0,0,0.9),0 1px 4px rgba(0,0,0,0.6);}';
+      (document.head||document.documentElement).appendChild(st); }
+    /* The city label and dot under the pin are hidden while it stands (Google Earth: the label turns into the pin).
+       Tile labels have no feature id, so the clicked feature is excluded by its OWN name property, read from the
+       features actually rendered at the point; the layer's previous filter is kept and put back on close. Only the two
+       city layers: they are the ones whose filter nothing else rewrites (ofm-admin1's is written by time-admin1.js). */
+    let _hidLbl=null;
+    const _CITY_LBL=['ofm-city','ofm-city-dot'];
+    function _restoreLabel(){ const h=_hidLbl; _hidLbl=null; if(!h) return; for(const id of Object.keys(h)){ try{ GE().layers.setFilter(id,h[id]); }catch(_){} } }
+    function _hideLabelAt(lngLat){ _restoreLabel();
+      try{ const p=GE().coords.project([lngLat.lng,lngLat.lat]); if(!p||!isFinite(p.x)||!isFinite(p.y)) return;
+        const ids=_CITY_LBL.filter(id=>GE().layers.has(id)); if(!ids.length) return;
+        const pad=14, hit=GE().coords.queryRenderedFeatures([[p.x-pad,p.y-pad],[p.x+pad,p.y+pad]],{layers:ids})||[];
+        const names=[...new Set(hit.map(h=>h&&h.properties&&h.properties.name).filter(n=>typeof n==='string'&&n))]; if(!names.length) return;
+        const keep={}; for(const id of ids){ keep[id]=GE().layers.getFilter(id);
+          GE().layers.setFilter(id,['all',keep[id],...names.map(n=>['!=',['get','name'],n])]); }
+        _hidLbl=keep; }catch(_){ _restoreLabel(); } }
+    function _dropPin(mine){ if(!placePin||(mine&&mine!==placePin)) return; const p=placePin; placePin=null; _restoreLabel(); try{ p.remove(); }catch(_){} }
+    /* stand the pin on the point; hands back its box (the name chip counts: it is what a popup beside it must clear) */
+    function _standPin(lngLat,name){ try{ return _standPinNow(lngLat,name); }catch(_){ return null; } }   /* a pin is decoration: a host that cannot draw one (no DOM) still opens the card */
+    function _standPinNow(lngLat,name){ _dropPin(); _pinCss();
+      const el=document.createElement('div'); el.className='plc-pin';
+      const nm=document.createElement('div'); nm.className='pp-name'; nm.textContent=String(name||''); const bd=document.createElement('div'); bd.className='pp-body';
+      el.appendChild(bd); el.appendChild(nm);
+      let mk=null; try{ mk=GE().ui.attach(GE().ui.marker({element:el,anchor:'bottom'}).setLngLat(lngLat)); }catch(_){ mk=null; }
+      if(!mk) return null;
+      placePin=mk; _hideLabelAt(lngLat);
+      let w=30,h=38; try{ const r=el.getBoundingClientRect(); const nr=nm.getBoundingClientRect();
+        if(r.width>0){ w=Math.max(30,Math.round(nr.width)); h=Math.round(Math.max(38,r.bottom-nr.top)); } }catch(_){}
+      return { mk, box:{w,h} }; }
+    /* which side of the pin the card opens on: right unless something is in the way (js/popup-placement.js) */
+    function _placeBeside(lngLat,html,pin){ try{ return _placeBesideNow(lngLat,html,pin); }catch(_){ return {}; } }   /* no placement is still a popup: the engine's own default anchor */
+    function _placeBesideNow(lngLat,html,pin){
+      const box=pin&&pin.box||{w:30,h:38};
+      try{ const cv=GE().render.canvas(), host=document.getElementById('map-container'); const cr=cv.getBoundingClientRect();
+        const p=GE().coords.project([lngLat.lng,lngLat.lat]);
+        if(!p||!isFinite(p.x)||!isFinite(p.y)||!host) return optionsFor('right',box);
+        const bounds={left:cr.left,top:cr.top,right:cr.right,bottom:cr.bottom};
+        const size=measureHtml(host,(c)=>{ c.innerHTML=html; },{className:'plc-popup',maxWidth:'268px'});
+        const skip=[pin&&pin.mk&&pin.mk.getElement&&pin.mk.getElement()].filter(Boolean);
+        const pl=choosePlacement({ point:{x:cr.left+p.x,y:cr.top+p.y}, size, pin:box, bounds, obstacles:collectObstacles(host,bounds,skip) });
+        return { anchor:pl.anchor, offset:pl.offset };
+      }catch(_){ return optionsFor('right',box); } }
+    function clearHL(){ _dropPin(); closeReaders(); try{ GE().layers.setSourceData('place-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} clearRiverHL(); if(popup){ try{popup.remove();}catch(_){} popup=null; }
       /* (#R59) the place popup now OWNS the boundary outline (#R8c popup + IntMapOutline unified) — closing/clearing
          the popup (×, click-away, or a new label) also clears the blue boundary, so it can never linger. */
       try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){} }
@@ -2621,7 +2689,7 @@ export function labelPopup(HOST){
        writes, what the Wikipedia probe and the AI brief are asked about, and what IntMapOutline looks
        the boundary up by — so the two must not be confused: 「大阪府 (Osaka Prefecture)」 is a caption,
        not a query. See `_bothNames` below for what builds it. */
-    function showPopup(lngLat,name,isCountry,opts){ closeReaders(); opts=opts||{}; if(popup){ try{popup.remove();}catch(_){} } const jp=HOST.lang==='jp', safe=window.IntMapSafe.html(String(opts.title||name));
+    function showPopup(lngLat,name,isCountry,opts){ closeReaders(); opts=opts||{}; if(popup){ try{popup.remove();}catch(_){} } _dropPin(); const jp=HOST.lang==='jp', safe=window.IntMapSafe.html(String(opts.title||name));
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
       /* (#R210) 「地名ラベルクリック時のポップアップをすこし小さくして」— one step down across the
@@ -2657,7 +2725,11 @@ export function labelPopup(HOST){
       const moreBtn=(opts&&opts.more&&opts.more.label&&typeof opts.more.run==='function')?('<button class="plc-more" style="background:var(--input-bg);'+btnBase+'">'+window.IntMapSafe.html(String(opts.more.label))+'</button>'):'';
       const subHtml=(opts&&opts.sub)?('<div class="plc-sub" style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin:-4px 0 8px;padding-right:30px;">'+window.IntMapSafe.html(opts.sub)+'</div>'):'';
       const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div>${subHtml}<div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${IntMapLang.t(HOST.lang,'Copy name','地名をコピー','Namen kopieren','Копировать название','Copiar el nombre')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Kurzbericht','Обзор ИИ','Informe de IA')}</button>${isoBtn}${moveBtn}${moreBtn}</div></div>`;
-      try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'268px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html));
+      /* ⚠ Cesium's overlay reads a NUMERIC `offset` only and always anchors bottom-centre (js/cesium-engine.js makeOverlay),
+         so there the popup keeps its old place above the point and the pin stands under it; MapLibre honours both. */
+      const _pin=_standPin(lngLat,name), _pl=_placeBeside(lngLat,html,_pin);
+      try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'268px',className:'plc-popup',anchor:_pl.anchor,offset:_pl.offset,onClose:()=>_dropPin(_pin&&_pin.mk)}).setLngLat(lngLat).setHTML(html));
+        try{ if(popup.on) popup.on('close',()=>_dropPin(_pin&&_pin.mk)); }catch(_){}
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
            boundary (no ugly rectangle). The popup's × / click-away clears it (clearHL → IntMapOutline.clear). */
@@ -2669,7 +2741,7 @@ export function labelPopup(HOST){
           /* (#R62) "国名のラベルをクリックしても国の範囲がハイライトされない" — countries now outline too, from the
              LOCAL countryGeo polygon (point-in-polygon; no network, no wrong-namesake risk). */
           else { try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]);
-            for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)){ window.IntMapOutline&&window.IntMapOutline.show&&window.IntMapOutline.show(name,{geojson:f.geometry,lng:lngLat.lng,lat:lngLat.lat,fit:false}); break; } }catch(_){} } } }catch(_){} }
+            for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)){ window.IntMapOutline&&window.IntMapOutline.show&&window.IntMapOutline.show(name,{geojson:f.geometry,iso3:(f.properties&&(f.properties.ISO_A3_EH||f.properties.ADM0_A3)),lng:lngLat.lng,lat:lngLat.lat,fit:false}); break; } }catch(_){} } } }catch(_){} }
         }
         setTimeout(()=>{ try{ const xb=document.querySelector('.plc-popup .maplibregl-popup-close-button'); if(xb) xb.addEventListener('click',()=>{ try{ clearHL(); }catch(_){} }); }catch(_){}
           const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=IntMapLang.t(HOST.lang,'✓ Copied','✓ コピーしました','✓ Kopiert','✓ Скопировано','✓ Copiado'); };
@@ -2917,7 +2989,7 @@ export function labelPopup(HOST){
        EVENT time, and the era layer is created lazily on the first travel. */
     /* (#R564) …and `imta2-lbl`, the deeper era tier, for the same reason `imta-lbl` is here: a name
        that answers a tap at one zoom must not stop answering it at the next. */
-    const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-other'];
+    const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-city-dot','ofm-other'];
     /* ══ (poi-label-click) THE POINT LABELS ARE LABELS TOO ═════════════════════════════════════════════════════════
        「地点・施設ラベルをクリックしても無反応なのは不親切では？」 (2026-10-05, «Places, businesses & facilities»): the
        station, hospital and shop names (`ofm-poi`, and its dot `ofm-poi-dot`) were in none of these lists — no click,
@@ -2941,7 +3013,7 @@ export function labelPopup(HOST){
       };
     }};
     function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
-      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
+      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-city-dot',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
       GEO_LBL.forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
       ALL_LBL.filter(id=>!placeReaders.has(id)).forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */

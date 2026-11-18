@@ -1154,6 +1154,17 @@ API ホストを含むか目録を import するファイルの行表（`{id:'<k
   ——z10 近傍ごとに `have`（実画像が見えた最深）と `stop`（次の段が灰色だと**観測された**最深）を
   **別々に**持ち、止めてよいのは `stop` だけ。記録は**訊かれたタイル**に対して行う（祖先に対してではない）。
   観測は `window.IntMapSatProto.depth/wouldStitch/hiDPI`。
+- **衛星画像の取得先は `js/esri-imagery.js` 1 か所**：`ESRI_IMAGERY_KEY` が空なら（いまの既定。鍵付きは計測で遅かった）鍵なしの arcgisonline 2 ホスト
+  （HTTP/1.1・計 12 接続）、鍵があれば ArcGIS Location Platform の `ibasemaps-api.arcgis.com`（h2・タイル課金）。
+  鍵が拒否された応答（非 2xx か image/* 以外。拒否は HTTP 200 の JSON で来る）はそのページの間だけ鍵なしへ戻し、
+  同じタイルを 1 回取り直す。出典は「Powered by Esri · Sources: <サービスの copyrightText>」。鍵付きのタイルは
+  Service Worker に溜めない（規約が HTTP のキャッシュ指示の範囲しか認めない）。
+- **取得の待ち行列はワーカーが持つ**（`src/sat-worker.js`）：鍵なしの窓口には 1 ホスト 12 本までを渡し、
+  まだ渡していない取得は描画側が捨てたら取り下げる（渡した取得は取り消さない）。描画側の共有の画像要求枠は
+  捨てた瞬間に返す（`src/sat-worker-client.js`）。標高の先読みは画面上の 7×7 点（空は除く）。
+- **衛星の先読み（投機）は必要に譲る**（`src/sat-worker.js` `specPump`）：行き先の先読みと `js/tile-warm.js` の Esri の輪は
+  worker の 1 つの待ち行列が持ち、同じホストに描画側のタイルが待っている間は出さず、6 接続に空きがあるときだけ 1 本ずつ
+  （`priority:'low'`）。描画側の同じタイルは出ている投機に合流する。
 - **粗い地球全体の衛星ベース**：`js/world-base.js` が同梱の正距円筒画像から `imapworld://` で低ズーム
   衛星タイルを**ネットワーク無しで**生成し、`layer-sat` の下に敷く。
 - **極冠 (±85.0511°〜±90°)**：Mercator にそこのタイルは存在しないので、`layer-polar-cap`
@@ -1166,6 +1177,11 @@ API ホストを含むか目録を import するファイルの行表（`{id:'<k
   ⑴ 衛星写真でなければ `null`（標準マップに大気は出さない）、⑵ **昼夜表示がオフなら 90°**
   （`_aimSun()` がカメラ中心の真上へ向けた光の読み戻し）、⑶ それ以外は実際の太陽高度を返す。
   ⚠ **「モードをオフ」は「その量が不明」ではない**——`null` を返すとアプリ自身の大気がそもそも点かない。
+- **面を塗るレイヤーが出ている間は大気なし**：レイヤー宣言 `js/layers/<id>.js` の `noAir: true`（いまは夜間光・風・気温・
+  降水（予報）・海面気圧・突風）が 1 つでもオンなら、`_airOn()` が偽になり `atmosphere-blend` は 0、自前の縁も出さない。
+  Cesium は同じ 0 を受けて空と地表の大気を消す。どの行かを決めるのは宣言だけで、id の一覧は他のどこにも無い。
+- **夜側の画像の ±180° 列**：Black Marble の最外列は上流のタイル自身が暗い（z3 で RGB 和 9 対内側 24）。
+  `js/night-side.js` `seamCols` が読み込み時に端列を内側と比べ、0.6 倍未満なら 1 つ内側を使う（上流が直れば自動で外れる）。
 - **`image` source は両エンジンで Mercator の 1 枚**：MapLibre は 4 隅を Web Mercator に写して Mercator Y に
   線形に貼る。Cesium（`js/cesium-layers.js` `makeImageSourceProvider`）は画像を読んでから、その 4 隅の
   Mercator 矩形を 1 枚のタイルとする `WebMercatorTilingScheme` で同じ置き方をする。⚠ 以前の Cesium は
@@ -2111,6 +2127,8 @@ API ホストを含むか目録を import するファイルの行表（`{id:'<k
   ⚠ **取得は4段**（自オリジンの `data/subcables.json` → その Cache API の写し →
   TeleGeography の写し → 中継。`js/data-layers.js` `fetchSubcables()`）。
   ⚠ **クリックの当たり判定は箱**（マウス ±8px・タッチ ±16px）で、**線は太くしない**。
+  ポップアップが出ている間、押したケーブル（タイルで分かれた断片は `id` で全部）が `js/feature-highlight.js` の
+  専用ソースで光る（ケーブル自体の描画には触れない）。歴史国境の「この線の根拠」も同じ部品で押した線を光らせる。
   情報ポップアップは `js/subcable-info.js`（動的 import・`.plc-popup .subc-popup`）で、
   ケーブル線と陸揚げ点の両方に付く。重なっている場合は同じポップアップ内で選べる。
   ⚠⚠ **カードは「見出し」だけでなく「答え」も9言語で出す。** TeleGeography が持つのは
@@ -3335,6 +3353,11 @@ Release の asset を持ち、`npm run data:pull` がチェックアウトの外
 | `js/waves-palette.js` | 波高→色の **1024 段 LUT** と凡例の CSS グラデーション。**色の写しはここだけ** |
 | `js/waves-gl.js` | ラスタと粒子の 2 パス。格子と視野を渡されるだけで、モデルも時刻もパネルも知らない |
 | `js/waves.js` | 行・凡例・モデル切替・時刻軸。**描かず、取りに行かない**（両者の結線） |
+
+**粒子と軌跡は地図に貼り付いて動く**：両者は画面座標で持つ（Windy と同じ設計）ので、視点が前のフレームと違うフレームだけ
+`carryToView` が粒子の状態と軌跡バッファを「旧画面 → 経緯度 → 新画面」で写し直す（平面・地球儀・その切り替えの両方。
+対応は `VIEW_MAP_GLSL` 1 か所）。画面外へ出た粒子は反対側へ回り込み＝パンで現れた帯に入り、地球の裏へ回った粒子は消えて
+寿命の周期で生まれ直す。止まっている地図では何も足さない。
 
 **データは既存の `.om` 経路そのまま**（読み口は `js/wx-ecmwf.js`、ホストとパス規則の正本は
 [`Architecture.md`](../Architecture.md) §7.3b）。新しい Edge Function も新しい配信元も無い。

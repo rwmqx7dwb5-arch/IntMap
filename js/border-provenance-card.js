@@ -18,6 +18,7 @@ import { IntMapLang } from './lang-registry.js';
 import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
 import { IntMapGeoEngine } from './geo-engine.js';
+import { highlight, clearHighlight } from './feature-highlight.js';
 import { PROVENANCE_INDEX, remember, last, sidesAt } from './border-provenance.js';
 
 export const BorderProvenanceCard = (function () {
@@ -339,11 +340,22 @@ export const BorderProvenanceCard = (function () {
 
   let _pop = null;
   function _close() { try { if (_pop) _pop.remove(); } catch (_) { /* gone */ } _pop = null; }
-  async function present(GE, HOST, lngLat, prov) {
+  /* the line the card is about is lit while the card stands: its first drawn feature, joined with the viewport's other pieces of it */
+  const HL_OWNER = 'border-provenance';
+  function _light(GE, pop, hits) {
+    try {
+      const h = (hits || []).find((x) => x && x.features && x.features.length);
+      if (!h) return;
+      if (!highlight(GE, HL_OWNER, h.features[0], { hits: h.features, layerIds: h.reader.layers() })) return;
+      if (pop && pop.on) pop.on('close', () => clearHighlight(GE, HL_OWNER));
+    } catch (_) { /* the card stands without it */ }
+  }
+  async function present(GE, HOST, lngLat, prov, hits) {
     remember(prov);
     const card = await render(prov, HOST, GE);
     _close();
     _pop = GE().ui.attach(GE().ui.popup({ closeButton: true, closeOnClick: true, maxWidth: '340px', className: 'plc-popup bp-popup' }).setLngLat(lngLat).setHTML(html`${card}`));
+    _light(GE, _pop, hits);
     const el = (_pop && _pop.getElement) ? _pop.getElement() : document;
     try {
       el.querySelectorAll('[data-bp-dossier]').forEach((b) => b.addEventListener('click', () => showDossier(b, HOST)));
@@ -414,7 +426,7 @@ export const BorderProvenanceCard = (function () {
   }
 
   return {
-    async openAt({ GE, HOST, lngLat, point, hits, pad }) { const prov = await buildLine(GE, lngLat, point, hits, pad); return present(GE, HOST, lngLat, prov); },
+    async openAt({ GE, HOST, lngLat, point, hits, pad }) { const prov = await buildLine(GE, lngLat, point, hits, pad); return present(GE, HOST, lngLat, prov, hits); },
     async openArea({ GE, HOST, lngLat }) { const prov = await buildArea(lngLat, 0); return present(GE, HOST, lngLat, prov); },
     atlas,
   };

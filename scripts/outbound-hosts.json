@@ -477,7 +477,7 @@
         "jp": "api.worldpop.org"
       },
       "probe": {
-        "url": "https://api.worldpop.org/v1/services"
+        "url": "https://api.worldpop.org/v3/health"
       }
     },
     {
@@ -1561,6 +1561,22 @@
       },
       "probe": {
         "url": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/4/5/8"
+      }
+    },
+    {
+      "host": "ibasemaps-api.arcgis.com",
+      "what": "Esri World Imagery tiles through ArcGIS Location Platform (used only when IntMap's own key is set in js/esri-imagery.js)",
+      "whatJp": "ArcGIS Location Platform 経由の Esri World Imagery タイル（js/esri-imagery.js に IntMap 自身の鍵があるときだけ）",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn, and IntMap's public API key"
+      },
+      "disclosure": {
+        "en": "Esri, NASA GIBS and EOX",
+        "jp": "Esri・NASA GIBS・EOX"
+      },
+      "probe": {
+        "none": "every request carries IntMap's API key, and the key is empty until the Location Platform account exists (js/esri-imagery.js) — a keyless probe only measures the 200 'Token Required' refusal"
       }
     },
     {

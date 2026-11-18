@@ -14,6 +14,7 @@ import { parse } from 'acorn';
 import { full } from 'acorn-walk';
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import { installSafe } from './helpers/safe-html.mjs';
+import { cartoBasemapScript, esriImageryStub } from './helpers/carto-basemap-script.mjs';
 
 const read = (p) => fs.readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 
@@ -67,7 +68,7 @@ test('#R705 visible credit follows historical physical base, satellite and retur
   const document = { readyState: 'complete', getElementById: (id) => (id === 'map-credit' ? el : { classList: { contains: () => sat } }) };
   const win = { IntMapTimeBorders: { active: () => active } };
   installSafe(win);   /* the credit's links go through window.IntMapSafe.url (safe-output-single-module) */
-  vm.runInNewContext(read('js/carto-basemap.js'), { window: win, document });
+  vm.runInNewContext(cartoBasemapScript(), { window: win, document, __esriImagery: esriImageryStub });
   assert.match(el.innerHTML, /CARTO/);
   active = true; win.IntMapCartoCredit(); assert.match(el.innerHTML, /OpenFreeMap/); assert.match(el.innerHTML, /OpenStreetMap/); assert.doesNotMatch(el.innerHTML, /CARTO/);
   sat = true; win.IntMapCartoCredit(); assert.match(el.innerHTML, /Esri/); assert.doesNotMatch(el.innerHTML, /OpenFreeMap/);

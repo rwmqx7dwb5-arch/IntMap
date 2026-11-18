@@ -243,8 +243,6 @@ IntMapLang.define('zh-hans', {
   inline: {
     /* (#R493) view.inspect — what the reader is told when Atlas looks at the map for them */
     "The map was not drawing when I looked — the page is in the background, so there was no frame to capture. Ask again with IntMap in front.": "查看时地图并未在绘制——页面在背景中，因此没有可撷取的画面。请将 IntMap 移到前景后再问一次。",
-    'Atlas looked at the map': 'Atlas 查看了地图',
-    'map only': '仅地图',
     'The map is not running, so there is nothing to look at.': '地图未在执行，因此没有可以查看的内容。',
     'Could not read the map frame — the renderer gave nothing back.': '无法读取地图画面——算绘引擎没有回传任何内容。',
     /* (#R511) map.compose — the legend of a map explanation */
@@ -1976,7 +1974,6 @@ IntMapLang.define('zh-hans', {
     'Source: AI-estimated (neither OpenStreetMap nor Wikidata had matching entries here — positions are approximate, verify before relying on them)': "来源：AI 推估（此处 OpenStreetMap 与 Wikidata 都没有相符的项目 — 位置为概略值，采用前请自行查证）",   /* atlas-console.js */
     'Source: Our World in Data — Ember (electricity) and the Energy Institute Statistical Review (primary energy). The map shades the low-carbon share of electricity, and the fossil share of primary energy; the bar is the mix itself, because nine sources are not one color.': "来源：Our World in Data — Ember（电力）与 Energy Institute Statistical Review（一次能源）。地图着色为电力的低碳占比，以及一次能源的化石占比；长条则是能源结构本身，因为九种来源不能用一种颜色表示。",   /* world-packs.js */
     'Sources': "来源",   /* atlas-console.js space.js */
-    'Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)': "各指标的来源：世界银行／IMF WEO／内置参考数据（在条形图与时间序列检视中标示）",   /* stats-compare.js */
     'Sources: NOAA CoastWatch blended sea-surface geostrophic currents from multi-mission satellite altimetry (0.25°); NOAA NCEI blended wind stress, turned into the Ekman surface current by the drifter-fitted relation of Ralph & Niiler (1999); and NOAA OISST v2.1 sea-surface temperature. All U.S. Government works in the public domain; altimetric products generated using AVISO+. This layer is a FIXED dataset that ships with the app: a climatological mean of fields spread across the whole record, on the source\'s own 0.25° grid, with each named current traced through that measured field from a published seed on its core. Warm / cold / zonal is MEASURED, not asserted — it is the current\'s own temperature against the zonal mean at the same latitude. Because it is a mean, it does not follow the app clock: it is the climatological picture, the same every time you open it.': "来源：NOAA CoastWatch 由多任务卫星测高融合而成的海表地转流（0.25°）；NOAA NCEI 融合风应力，并依 Ralph & Niiler（1999）以漂流浮标拟合的关系换算为艾克曼表层流；以及 NOAA OISST v2.1 海面水温。以上皆为美国政府公有领域作品；测高产品使用 AVISO+ 产制。本图层是随应用一并提供的固定数据集：以整段纪录期间的场求气候平均，采用来源本身的 0.25° 网格，每一条具名海流都是从其核心上已发表的种子点，在该实测场中追踪而成。暖流／寒流／东西流是实测而非宣称 — 它是该海流自身的水温与同纬度纬向平均的比较。由于是平均值，它不随应用时钟变动：它是气候平均的样貌，每次开启都相同。",   /* ocean-currents.js */
     'Sources: OpenStreetMap (facilities, city population tags — coverage varies by region), USGS (earthquakes), IntMap country statistics. Pins are clickable; the circle marks the analysis radius.': "来源：OpenStreetMap（设施、城市人口标记 — 各地涵盖程度不一）、USGS（地震）、IntMap 国家统计。图钉可点击；圆形标示分析半径。",   /* atlas-console.js */
     'south': "南",   /* atlas-console.js */

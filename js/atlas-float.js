@@ -47,20 +47,21 @@ const CSS =
   /* the sidebar lies OVER the map in the glass styles, so the card stands right of it there */
   + 'body.sidebar-glass #atlas-float{left:calc(var(--sidebar-w) + 16px);width:min(380px,calc(100% - var(--sidebar-w) - 32px));}'
   + 'body.sidebar-glass:has(#sidebar.collapsed) #atlas-float{left:16px;width:min(380px,calc(100% - 32px));}'
-  + '#atlas-float .atl-float-card{pointer-events:auto;display:flex;flex-direction:column;min-height:0;max-height:100%;overflow:hidden;border-radius:20px;'
-  + 'background:color-mix(in srgb,var(--popup-bg) 55%,transparent);color:var(--text-main);'
-  + 'border:1px solid rgba(255,255,255,0.34);box-shadow:0 12px 36px rgba(0,0,0,0.14),inset 0 1px 0 rgba(255,255,255,0.26);'
-  + 'backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
+  /* THE CARD IS NOT A SURFACE (2026-11-18): answers lie directly on the map, each run of text on its own frosted glass, and only the
+     input row is a pill. So the card has no background, border, shadow or backdrop-filter, and it does not take the pointer — the map
+     under the empty parts of it stays draggable; the pieces that are content (bar, answers, input) take it themselves. */
+  + '#atlas-float .atl-float-card{pointer-events:none;display:flex;flex-direction:column;min-height:0;max-height:100%;overflow:hidden;color:var(--text-main);'
   + 'opacity:0;transform:translateY(12px) scale(.985);'
-  + 'transition:opacity .5s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.2,.8,.2,1),background-color .5s ease;}'
-  + '[data-theme="dark"] #atlas-float .atl-float-card{border-color:rgba(255,255,255,0.10);box-shadow:0 14px 40px rgba(0,0,0,0.36),inset 0 1px 0 rgba(255,255,255,0.06);}'
+  + 'transition:opacity .5s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.2,.8,.2,1);}'
   + '#atlas-float.on .atl-float-card{opacity:1;transform:none;}'
   /* idle: the map shows through more; the reader's hand or focus brings it back at once */
-  + '#atlas-float.on.idle .atl-float-card{opacity:.58;background:color-mix(in srgb,var(--popup-bg) 38%,transparent);}'
-  + '#atlas-float.on .atl-float-card:hover,#atlas-float.on .atl-float-card:focus-within{opacity:1;background:color-mix(in srgb,var(--popup-bg) 62%,transparent);}'
+  + '#atlas-float.on.idle .atl-float-card{opacity:.58;}'
+  + '#atlas-float.on .atl-float-card:hover,#atlas-float.on .atl-float-card:focus-within{opacity:1;}'
   + '#atlas-float:not(.on){visibility:hidden;transition:visibility 0s linear .5s;}'
-  + '#atlas-float:not(.on) .atl-float-card{pointer-events:none;}'
-  + '#atlas-float .atl-float-bar{display:flex;align-items:center;gap:2px;padding:7px 8px 2px 14px;flex:0 0 auto;}'
+  /* the glass every piece of content wears: the popup colour at 45%, blurred behind. One variable-free recipe, used by the bar, the text runs and the chips below */
+  + '#atlas-float .atl-float-bar,#atlas-float .atl-b.a .atl-md,#atlas-float .atl-b.a .atl-md>*,#atlas-float .atl-b.a .atl-actrow,#atlas-float .atl-b.a .atl-srcs,#atlas-float .atl-b.a .atl-fold,#atlas-float .atl-b.a .atl-interim{'
+  + 'background:color-mix(in srgb,var(--popup-bg) 45%,transparent);backdrop-filter:saturate(170%) blur(14px);-webkit-backdrop-filter:saturate(170%) blur(14px);}'
+  + '#atlas-float .atl-float-bar{pointer-events:auto;align-self:flex-start;border-radius:999px;margin-bottom:6px;display:flex;align-items:center;gap:2px;padding:3px 6px 3px 12px;flex:0 0 auto;}'
   + '#atlas-float .atl-float-name{flex:1 1 auto;font-size:12.5px;font-weight:600;letter-spacing:.01em;color:var(--text-muted);}'
   + '#atlas-float .atl-float-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:none;border-radius:9px;'
   + 'background:none;color:var(--text-muted);cursor:pointer;transition:background-color .15s ease,color .15s ease,transform .2s ease;}'
@@ -73,10 +74,23 @@ const CSS =
   + 'transform:none !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;'
   + 'backdrop-filter:none !important;-webkit-backdrop-filter:none !important;resize:none !important;z-index:auto !important;overflow:hidden;}'
   + '#atlas-float #atlas-panel .atl-head,#atlas-float #atlas-panel .atl-sub,#atlas-float #atlas-panel .atl-ex{display:none !important;}'
-  + '#atlas-float #atlas-panel .atl-chat{flex:0 1 auto;min-height:0;padding:4px 10px 8px;gap:8px;overscroll-behavior:contain;}'
+  + '#atlas-float #atlas-panel .atl-chat{flex:0 1 auto;min-height:0;padding:4px 4px 8px;gap:8px;overscroll-behavior:contain;pointer-events:none;}'
+  /* answer text: inline runs, each line of each run its own glass (box-decoration-break:clone repeats padding and radius per line) */
+  + '#atlas-float #atlas-panel .atl-chat>.atl-b{pointer-events:none;}'
+  + '#atlas-float .atl-b.a .atl-md{display:inline;pointer-events:auto;padding:2px 7px;border-radius:9px;line-height:1.85;'
+  + '-webkit-box-decoration-break:clone;box-decoration-break:clone;}'
+  /* block children of an answer cannot be inline runs: each is a chip as wide as its content */
+  + '#atlas-float .atl-b.a .atl-md>:is(ul,ol,pre,table,blockquote,.atl-tablewrap,details){display:block;width:fit-content;max-width:100%;box-sizing:border-box;margin:6px 0;padding:6px 10px;border-radius:12px;}'
+  + '#atlas-float .atl-b.a .atl-md>:is(p,div,h1,h2,h3,h4){display:inline;pointer-events:auto;padding:2px 7px;border-radius:9px;line-height:1.85;-webkit-box-decoration-break:clone;box-decoration-break:clone;}'
+  + '#atlas-float .atl-b.a .atl-actrow,#atlas-float .atl-b.a .atl-srcs,#atlas-float .atl-b.a .atl-fold,#atlas-float .atl-b.a .atl-interim{pointer-events:auto;display:block;width:fit-content;max-width:100%;box-sizing:border-box;padding:5px 10px;border-radius:12px;border-top-color:transparent;}'
+  + '#atlas-float .atl-b.a .atl-actrow{display:flex;}'
+  + '#atlas-float .atl-b.a .atl-md :is(.atl-ctl-row,.atl-row){pointer-events:auto;}'
   + '#atlas-float #atlas-panel .atl-chat:empty,#atlas-float.folded #atlas-panel .atl-chat{display:none;}'
-  + '#atlas-float #atlas-panel .atl-inbar{border-top:1px solid rgba(128,128,128,0.14);padding:7px 9px 8px;}'
-  + '#atlas-float #atlas-panel .atl-chat:empty+.atl-imgrow+.atl-inbar,#atlas-float.folded #atlas-panel .atl-inbar{border-top-color:transparent;}'
+  /* the input row: its own glass pill, bottom-left — the one surface that is a surface */
+  + '#atlas-float #atlas-panel .atl-inbar{pointer-events:auto;border:1px solid rgba(255,255,255,0.34);border-radius:26px;padding:6px 8px;'
+  + 'background:color-mix(in srgb,var(--popup-bg) 62%,transparent);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
+  + 'box-shadow:0 8px 28px rgba(0,0,0,0.14),inset 0 1px 0 rgba(255,255,255,0.26);}'
+  + '[data-theme="dark"] #atlas-float #atlas-panel .atl-inbar{border-color:rgba(255,255,255,0.10);box-shadow:0 10px 30px rgba(0,0,0,0.36),inset 0 1px 0 rgba(255,255,255,0.06);}'
   + '#atlas-float #atlas-panel .atl-in{background:color-mix(in srgb,var(--card-bg) 72%,transparent);}'
   /* what arrives while the card is on the map comes in softly */
   + '#atlas-float .atl-float-new{animation:atl-float-in .55s cubic-bezier(.2,.8,.2,1) both;}'

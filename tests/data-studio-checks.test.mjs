@@ -154,7 +154,7 @@ test('⑥ a link from before `ds` is byte-identical, and only a link carrying `d
     '#v=1.0000,2.0000,3.00,0,0,f&mm=eyJ2IjoxfQ'];
   for (const h of old) { assert.equal(MapState.encode(MapState.decode(h)), h); assert.equal(MapState.decode(h).ds, null); }
   const rows = MapState.SCHEMA.filter((f) => f.params.length).map((f) => f.key);
-  assert.equal(rows[rows.length - 1], 'ds', 'ds is appended after every older field');
+  assert.ok(rows.indexOf('ds') > rows.indexOf('mymap'), 'ds is appended after every field older than it (exploration-flows appended event after it)');
   const f = MapState.SCHEMA.find((x) => x.key === 'ds');
   assert.equal(f.owner, 'js/data-studio.js'); assert.equal(f.restore, 'full');
   assert.equal('lazy' in f, false, 'the studio is not a js/lazy-modules.js module, so the row names no lazy loader');

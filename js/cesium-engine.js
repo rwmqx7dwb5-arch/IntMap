@@ -2512,7 +2512,14 @@ window.IntMapCesiumEngine=(function(){
            back; the approximation stays in how it is APPLIED. */
         this._skySpec=(s===false)?null:(s||null);
         if(s===null||s===false){ this._scene.skyAtmosphere.show=false; return; }
-        this._scene.skyAtmosphere.show=true;
+        /* (layer-click-polish) `atmosphere-blend: 0` is the app saying «no air» (js/theme-sky.js `_airOn`: the
+           Map basemap, or a row that declares `noAir`). MapLibre multiplies its halo by it; Cesium has no
+           blend, so zero switches its two airs off and anything else puts them back. */
+        const noAir=s&&s['atmosphere-blend']===0;
+        this._globe.showGroundAtmosphere=!noAir;
+        this._scene.skyAtmosphere.show=!noAir;
+        try{ this._scene.requestRender(); }catch(_){}
+        if(noAir) return;
         /* MapLibre's sky spec names a horizon and a fog colour; Cesium's atmosphere
            is parameterised by brightness/hue/saturation shifts, so the colour is
            carried across as a brightness shift rather than pretended to be exact. */
@@ -2520,7 +2527,7 @@ window.IntMapCesiumEngine=(function(){
         if(c) this._scene.skyAtmosphere.brightnessShift=Math.max(-1,Math.min(1,(c.r+c.g+c.b)/3-0.5));
       }catch(_){}
     }
-    getSky(){ try{ return this._scene.skyAtmosphere.show?(this._skySpec||{}):null; }catch(_){ return null; } }
+    getSky(){ try{ return (this._scene.skyAtmosphere.show||this._skySpec)?(this._skySpec||{}):null; }catch(_){ return null; } }   /* a spec with blend 0 hides the air and is still a sky */
     setLight(l){
       try{
         /* MapLibre `light` is a lighting model for extrusions; Cesium's equivalent
@@ -2538,6 +2545,8 @@ window.IntMapCesiumEngine=(function(){
     resize(){ try{ this._widget.resize(); this._applyFov(); this._scene.requestRender(); this.fire('resize',{}); }catch(_){} }
     triggerRepaint(){ try{ this._scene.requestRender(); }catch(_){} }
     getCanvas(){ return this._widget.canvas; }
+    /* (layer-click-polish) maplibre's `redraw()`: one SYNCHRONOUS frame, for a page whose rAF is stopped (a hidden tab) — postRender fires 'render' inside it */
+    redraw(){ try{ this._scene.render(); }catch(_){} return this; }
     getContainer(){ return this._container; }
     getCanvasContainer(){ return this._widget.canvas&&this._widget.canvas.parentNode; }
     isStyleLoaded(){ return this._loaded&&this._styleParsed; }
@@ -2985,6 +2994,7 @@ window.IntMapCesiumEngine=(function(){
       getRenderScale(){ const v=V(); try{ return v?v._widget.resolutionScale:null; }catch(_){ return null; } },
       setRenderScale(r){ const v=V(); try{ if(v&&isFinite(r)&&r>0){ v._widget.resolutionScale=r; v._scene.requestRender&&v._scene.requestRender(); return true; } }catch(_){} return false; },
       triggerRepaint(){ const v=V(); if(v) v.triggerRepaint(); },
+      redraw(){ const v=V(); if(v&&v.redraw) v.redraw(); },
       getCanvas(){ const v=V(); return v?v.getCanvas():null; },
       getContainer(){ const v=V(); return v?v.getContainer():null; },
       getCanvasContainer(){ const v=V(); return v?v.getCanvasContainer():null; },
@@ -3052,7 +3062,12 @@ window.IntMapCesiumEngine=(function(){
       }
     } else if(o.element){ el.appendChild(o.element); }
     const state={ view:null, ll:null, open:false, raf:0 };
-    const offset=(typeof o.offset==='number')?o.offset:0;
+    /* `offset` is a number (up = pin height) or MapLibre's [x,y]; `anchor` names the popup edge that touches the point
+       (bottom = above it, the default). Same contract as MapLibre so one placement choice drives both engines. */
+    let offX=0, offY=(typeof o.offset==='number')?-o.offset:0, anchorName=o.anchor||'bottom';
+    const setOff=v=>{ if(Array.isArray(v)){ offX=+v[0]||0; offY=+v[1]||0; } else if(typeof v==='number'){ offX=0; offY=-v; } };
+    setOff(o.offset);
+    const ANCHOR_T={bottom:'-50%,-100%',top:'-50%,0',left:'0,-50%',right:'-100%,-50%','bottom-left':'0,-100%','bottom-right':'-100%,-100%','top-left':'0,0','top-right':'-100%,0',center:'-50%,-50%'};
     function place(){
       state.raf=0;
       const v=state.view; if(!state.open||!v||!state.ll) return;
@@ -3060,8 +3075,8 @@ window.IntMapCesiumEngine=(function(){
       if(!p||p.x<-1e5){ el.style.display='none'; }
       else{
         el.style.display='';
-        const anchor=(kind==='popup')?'translate(-50%,-100%)':'translate(-50%,-100%)';
-        el.style.transform=`translate(${Math.round(p.x)}px,${Math.round(p.y-offset)}px) ${anchor}`;
+        const anchor='translate('+(ANCHOR_T[anchorName]||ANCHOR_T.bottom)+')';
+        el.style.transform=`translate(${Math.round(p.x+offX)}px,${Math.round(p.y+offY)}px) ${anchor}`;
       }
     }
     const sched=()=>{ if(state.open&&!state.raf) state.raf=requestAnimationFrame(place); };
@@ -3083,7 +3098,7 @@ window.IntMapCesiumEngine=(function(){
       setDOMContent(n){ if(content){ content.innerHTML=''; content.appendChild(n); if(closer) content.appendChild(closer); }
                         else { el.innerHTML=''; el.appendChild(n); } sched(); return api; },
       setMaxWidth(w){ if(content) content.style.maxWidth=w; return api; },
-      setOffset(){ return api; },
+      setOffset(v){ setOff(v); sched(); return api; },
       getElement(){ return el; },
       isOpen(){ return state.open; },
       addTo(view){

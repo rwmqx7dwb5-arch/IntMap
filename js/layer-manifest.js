@@ -68,13 +68,13 @@ const DERIVED = [
   ] },
   { key: "lyrGrpClimate", layers: [
     { id: "dl-climate", key: "climate", label: "lyrClimate", share: true },
-    { id: "dl-wind", key: "wind", label: "lyrWind", share: true },
+    { id: "dl-wind", key: "wind", label: "lyrWind", share: true, noAir: true },
     { id: "dl-annprecip", key: "annprecip", share: true },
-    { id: "dl-ec-temp", key: "ec-temp", share: true },
-    { id: "dl-ec-precip", key: "ec-precip", share: true },
+    { id: "dl-ec-temp", key: "ec-temp", share: true, noAir: true },
+    { id: "dl-ec-precip", key: "ec-precip", share: true, noAir: true },
     { id: "dl-radar", key: "radar", label: "lyrRadar", share: true },
-    { id: "dl-ec-slp", key: "ec-slp", share: true },
-    { id: "dl-ec-gust", key: "ec-gust", share: true },
+    { id: "dl-ec-slp", key: "ec-slp", share: true, noAir: true },
+    { id: "dl-ec-gust", key: "ec-gust", share: true, noAir: true },
     { id: "dl-snow", key: "snow", label: "lyrSnow", share: true },
     { id: "dl-ec-cloud", key: "ec-cloud", rest: true, share: true },
     { id: "dl-ec-dew", key: "ec-dew", rest: true, share: true },
@@ -113,7 +113,7 @@ const DERIVED = [
   { key: "lyrGrpDemo", layers: [
     { id: "bx-wbind", key: "wbind", share: true },
     { id: "dl-popgrid", key: "popgrid", label: "lyrPopGrid", share: true },
-    { id: "dl-nightsat", key: "nightsat", label: "lyrNightSat", share: true },
+    { id: "dl-nightsat", key: "nightsat", label: "lyrNightSat", share: true, noAir: true },
     { id: "dl-tfr", key: "tfr", label: "lyrTFR", share: true },
     { id: "dl-pop", key: "pop", label: "lyrPop", rest: true, share: true },
     { id: "bx-wbpopgrow", key: "wbpopgrow", rest: true },
@@ -285,13 +285,13 @@ const DECLARATIONS = [
   { id: "dl-nightside", kind: "display", shelf: "base", order: 100, key: "nightside", label: "lyrNightSide", share: true, atlas: ["layers.nightSide"], formerly: ["dl-night"] },   // dl-nightside.js
   { id: "beta-dl-bldg3d", kind: "display", shelf: "base", order: 110, key: "bldg3d", share: true },   // beta-dl-bldg3d.js
   { id: "dl-climate", shelf: "lyrGrpClimate", order: 10, key: "climate", label: "lyrClimate", share: true, registry: ["climate"] },   // dl-climate.js
-  { id: "dl-wind", shelf: "lyrGrpClimate", order: 20, key: "wind", label: "lyrWind", share: true, registry: ["wind"], atlas: ["layers.windParticles"] },   // dl-wind.js
+  { id: "dl-wind", shelf: "lyrGrpClimate", order: 20, key: "wind", label: "lyrWind", share: true, noAir: true, registry: ["wind"], atlas: ["layers.windParticles"] },   // dl-wind.js
   { id: "dl-annprecip", shelf: "lyrGrpClimate", order: 30, key: "annprecip", share: true, registry: ["annprecip"] },   // dl-annprecip.js
-  { id: "dl-ec-temp", shelf: "lyrGrpClimate", order: 40, key: "ec-temp", share: true, registry: ["temp"], formerly: ["dl-temp"] },   // dl-ec-temp.js
-  { id: "dl-ec-precip", shelf: "lyrGrpClimate", order: 50, key: "ec-precip", share: true },   // dl-ec-precip.js
+  { id: "dl-ec-temp", shelf: "lyrGrpClimate", order: 40, key: "ec-temp", share: true, noAir: true, registry: ["temp"], formerly: ["dl-temp"] },   // dl-ec-temp.js
+  { id: "dl-ec-precip", shelf: "lyrGrpClimate", order: 50, key: "ec-precip", share: true, noAir: true },   // dl-ec-precip.js
   { id: "dl-radar", shelf: "lyrGrpClimate", order: 60, key: "radar", label: "lyrRadar", share: true, pkg: "radar" },   // dl-radar.js
-  { id: "dl-ec-slp", shelf: "lyrGrpClimate", order: 70, key: "ec-slp", share: true, atlas: ["layers.isobars"] },   // dl-ec-slp.js
-  { id: "dl-ec-gust", shelf: "lyrGrpClimate", order: 80, key: "ec-gust", share: true },   // dl-ec-gust.js
+  { id: "dl-ec-slp", shelf: "lyrGrpClimate", order: 70, key: "ec-slp", share: true, noAir: true, atlas: ["layers.isobars"] },   // dl-ec-slp.js
+  { id: "dl-ec-gust", shelf: "lyrGrpClimate", order: 80, key: "ec-gust", share: true, noAir: true },   // dl-ec-gust.js
   { id: "dl-snow", shelf: "lyrGrpClimate", order: 90, key: "snow", label: "lyrSnow", share: true, registry: ["snow"], sources: ["Open-Meteo"] },   // dl-snow.js
   { id: "dl-ec-cloud", shelf: "lyrGrpClimate", order: 100, key: "ec-cloud", rest: true, share: true },   // dl-ec-cloud.js
   { id: "dl-ec-dew", shelf: "lyrGrpClimate", order: 110, key: "ec-dew", rest: true, share: true },   // dl-ec-dew.js
@@ -320,7 +320,7 @@ const DECLARATIONS = [
   { id: "bx-wbforest", shelf: "lyrGrpNature", order: 40, key: "wbforest", rest: true, measures: ["worldbank:AG.LND.FRST.ZS"] },   // bx-wbforest.js
   { id: "bx-wbind", shelf: "lyrGrpDemo", order: 1, key: "wbind", share: true, state: "wbind", atlas: ["layers.indicator"] },   // bx-wbind.js
   { id: "dl-popgrid", shelf: "lyrGrpDemo", order: 10, key: "popgrid", label: "lyrPopGrid", share: true },   // dl-popgrid.js
-  { id: "dl-nightsat", shelf: "lyrGrpDemo", order: 20, key: "nightsat", label: "lyrNightSat", share: true },   // dl-nightsat.js
+  { id: "dl-nightsat", shelf: "lyrGrpDemo", order: 20, key: "nightsat", label: "lyrNightSat", share: true, noAir: true },   // dl-nightsat.js
   { id: "dl-tfr", shelf: "lyrGrpDemo", order: 30, key: "tfr", label: "lyrTFR", share: true, measures: ["countrystats:tfr"] },   // dl-tfr.js
   { id: "dl-pop", shelf: "lyrGrpDemo", order: 40, key: "pop", label: "lyrPop", rest: true, share: true, measures: ["countrystats:density"] },   // dl-pop.js
   { id: "bx-wbpopgrow", shelf: "lyrGrpDemo", order: 50, key: "wbpopgrow", rest: true, measures: ["worldbank:SP.POP.GROW"] },   // bx-wbpopgrow.js
@@ -509,6 +509,8 @@ export const dataLayers = () => LAYERS.filter((l) => l.kind !== 'display');
 /** (basic-display-not-layers) the map display, in panel order — the items the 基本表示 section switches */
 export const displayItems = () => LAYERS.filter((l) => l.kind === 'display');
 /** (learn-quests) the rows that write names on the map — the declaration's own `names` (scripts/lib/layer-descriptor.mjs) */
+/** (layer-click-polish) the rows during which the globe has no air — their own declaration (`noAir`) */
+export const noAirItems = () => LAYERS.filter((l) => l.noAir === true).map((l) => l.id);
 export const nameItems = () => LAYERS.filter((l) => l.names === true).map((l) => l.id);
 
 /** the curated shelves in panel order, in the shape reorganizeLayerPanel has always read:

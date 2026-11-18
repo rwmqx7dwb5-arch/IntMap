@@ -237,10 +237,10 @@ export function makeAtlasMarkdown(CTX) {
        wrote its own attribute — the model's prose, which quotes what it fetched, is exactly where such
        a string arrives. The bare-URL rule below already excluded the quote; this one now does too, and
        both go through `esc()` so a URL can never write past its own attribute (tests/atlas-console-boundary-checks.test.mjs (#R801)). */
-    s = s.replace(/\[([^\]\n]{1,160})\]\((https?:[^)\s"'<>]{4,400})\)/g,
+    s = s.replace(/\[([^\]\n]{1,160})\]\((https?:(?:[^()\s"'<>]|\([^()\s"'<>]*\)){4,400})\)/g,
       (m, t, u) => put('<a href="' + esc(globalThis.IntMapSafe.url(u)) + '" class="atl-a" target="_blank" rel="noopener">' + esc(t) + '</a>'));
     /* (#R79g) bare urls too — the leading-char guard skips one already inside an href="…" */
-    s = s.replace(/(^|[^"'=>/])(https?:\/\/[^\s<>)"'）】]{4,400})/g,
+    s = s.replace(/(^|[^"'=>/])(https?:\/\/(?:[^\s<>()"'）】]|\([^\s<>()"'）】]*\)){4,400})/g,
       (m, pre, u) => pre + put('<a href="' + esc(globalThis.IntMapSafe.url(u)) + '" class="atl-a atl-a-url" target="_blank" rel="noopener">' + esc(u) + '</a>'));
     /* (#R159) inline **bold** → plain: an Atlas reply body carries no bold */
     s = s.replace(/\*\*([^*\n]+?)\*\*/g, '$1');

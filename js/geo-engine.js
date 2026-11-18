@@ -29,6 +29,7 @@
 import { makeCameraMath } from './camera-math.js';
 import { makeCommandCensus } from './geo-command-log.js';
 import { makeClickOwnership } from './click-ownership.js';
+import { readGlyph, keepGlyph } from './glyph-store.js';
 /* ===== (#R152) IntMapGeoEngine — Phase 1 renderer-abstraction (業務委託: 地図エンジン交換可能化・第1段階).
    A THIN facade over a swappable renderer adapter, so a future Google-Earth-class "Earth Mode" can be dropped in
    later without touching every call site. Phase 1 ships the MapLibre adapter ONLY and moves just the SAFE common
@@ -113,8 +114,77 @@ function _dedupeGlyphDraws(m){
       return q;
     };
     once.__imOnce=true; P._getAndCacheGlyphsPromise=once;
+    _drawWithItsFace(P);
     return true;
   }catch(_){ return false; }
+}
+/* ══ (mobile-map-speed) A LOCAL GLYPH IS DRAWN ONCE, IN ITS OWN FACE — NOT IN THE FALLBACK AND THEN AGAIN ══════════
+   「スマホ版で地図が遅すぎる」. MEASURED 2026-11-17 on production (390×844, DPR 3, CPU ×4, a phone user agent): a tour
+   of six places in Japan, Korea and China drew 2,381 glyphs locally at 4.22 ms each — 10.0 s of main thread, more than
+   any other single thing the app asks of the renderer while the map moves (CPU profile of a touch gesture: TinySDF
+   10.5 % of the busy time, the frames themselves 56 %). 450 of them were the SAME character in the SAME face drawn a
+   second time.
+   THE CAUSE IS THE ORDER. The CJK faces are Google Fonts unicode-range subsets, and MapLibre's rasteriser awaits
+   `document.fonts.load(font)` with NO TEXT — which, per the CSS Font Loading spec, loads only the subset that holds
+   U+0020. So a character whose subset had not arrived was drawn in the system fallback; the subset then arrived
+   (fetched by that very fillText), `loadingdone` fired, js/map-typography.js asked `_redrawLocalGlyphs` to drop
+   every local glyph in its range, the glyph was drawn again and every symbol tile that used it was laid out again.
+   So: the subset that holds THIS character is asked for first — `document.fonts.load(font, id)` with the rasteriser's
+   own font string — and when it is there the glyph is drawn once, in the face it is meant to have. A glyph drawn while its face was loaded
+   (`document.fonts.check(font, id)`) is marked, and `_redrawLocalGlyphs` keeps it: a face arriving cannot change it.
+   ⚠ A FACE THAT IS NOT HERE YET DOES NOT HOLD THE LABEL. The wait is the platform's own answer to «how long may text
+   stay invisible for its face»: the CSS Fonts 4 `font-display` block period, «100ms or less is recommended». A subset
+   already loaded, in the HTTP cache (every later session) or arriving within that window is drawn once in its face;
+   one that is not is drawn in the fallback as before, unmarked, and its arrival redraws it as before. `load()` rejecting
+   (offline) takes the same fallback.
+   ⚠ MEASURED BEFORE CHOOSING (2026-11-17, production, emulated 9 Mbit/s · 80 ms RTT, first visit): the 121 subsets a
+   tour of Tokyo and Beijing fetches took 134 ms min, 2,337 ms median, 3,077 ms max — they share the link. A wait long
+   enough to cover that would hold every first-visit label for seconds, which is the opposite of the request; so the
+   window is the platform's, and the gain is in the sessions that already have the faces. Invalid if the CSS
+   recommendation changes. Only this function uses it. */
+const FACE_WAIT_MS=100;
+/* the renderer's own bitmap class, which a kept glyph must be rebuilt as (getGlyphs calls `bitmap.clone()`). It is
+   not exported, so it is taken from a glyph the manager already holds — the Latin ranges are parsed into it before any
+   CJK label is drawn. None held yet: null, and the glyph is drawn as before. */
+const _alphaCtor=new WeakMap();
+function _alphaImage(gm){
+  try{
+    let A=_alphaCtor.get(gm); if(A) return A;
+    for(const stack of Object.keys(gm.entries||{})){ const e=gm.entries[stack], gs=e&&e.glyphs;
+      for(const v of Object.keys(gs||{})){ const tab=gs[v];
+        for(const id of Object.keys(tab||{})){ const b=tab[id]&&tab[id].bitmap;
+          if(b&&typeof b.clone==='function'&&typeof b.constructor==='function'){ A=b.constructor; _alphaCtor.set(gm,A); return A; } } } }
+  }catch(_){}
+  return null;
+}
+function _drawWithItsFace(P){
+  try{
+    const orig=P&&P._drawGlyph;
+    if(typeof orig!=='function'||orig.__imFace) return;
+    const fonts=(typeof document!=='undefined')?document.fonts:null;
+    if(!fonts||typeof fonts.load!=='function'||typeof fonts.check!=='function') return;
+    const faceIn=(font,id)=>{ try{ return fonts.check(font,id); }catch(_){ return false; } };
+    const mark=(g)=>{ try{ Object.defineProperty(g,'__imFace',{value:true}); }catch(_){} return g; };
+    const drawn=async function(entry,stack,id,fontFaceFamily){
+      let font='', key='';
+      try{ const r=await this._getTinySDF(entry,stack,id,fontFaceFamily); font=(r&&r.ctx&&r.ctx.font)||'';
+        /* everything the bitmap is a function of (js/glyph-store.js) — the font string, the language, the canvas and the SDF parameters */
+        if(font) key=[font,r.lang||'',r.size,r.buffer,r.radius,r.cutoff,id].join('\u0001'); }catch(_){ font=''; }
+      /* (mobile-map-speed) drawn on this device before, in its own face: the same bitmap, without drawing it */
+      if(key){ const A=_alphaImage(this), k=A&&await readGlyph(key);
+        if(k&&k.d&&k.w*k.h===k.d.length){ try{ return mark({ id:k.id, bitmap:new A({width:k.w,height:k.h},k.d), metrics:k.m }); }catch(_){} } }
+      if(font&&!faceIn(font,id)){
+        let timer=0;
+        try{ await Promise.race([fonts.load(font,id), new Promise((res)=>{ timer=setTimeout(res,FACE_WAIT_MS); })]); }catch(_){}
+        clearTimeout(timer);
+      }
+      const g=await orig.call(this,entry,stack,id,fontFaceFamily);
+      try{ if(g&&font&&faceIn(font,id)){ mark(g);
+        const b=g.bitmap; if(key&&b&&b.data&&b.width*b.height===b.data.length) keepGlyph(key,{ id:g.id, w:b.width, h:b.height, d:b.data, m:g.metrics, t:Date.now() }); } }catch(_){}
+      return g;
+    };
+    drawn.__imFace=true; P._drawGlyph=drawn;
+  }catch(_){}
 }
 function _redrawLocalGlyphs(m,cover){
   try{
@@ -130,7 +200,8 @@ function _redrawLocalGlyphs(m,cover){
         for(const id of Object.keys(tab)){
           const cp=id.codePointAt(0), single=id.length===(cp>0xffff?2:1);
           const fromFile=v==='default'&&single&&e.ranges[Math.floor(cp/256)]===true&&!local(cp);
-          if(!fromFile&&_covers(cover,id)){ delete tab[id]; here++; }
+          const inItsFace=!!(tab[id]&&tab[id].__imFace)&&!!cover;   /* (mobile-map-speed) drawn in its own face: a face arriving cannot change it — a new FAMILY (no cover) still can */
+          if(!fromFile&&!inItsFace&&_covers(cover,id)){ delete tab[id]; here++; }
         } }
       if(here||!cover){ delete e.tinySDF; delete e.ideographTinySDF; delete e.clusterTinySDFs; delete e.fontFaceTinySDFs; }
       dropped+=here;
@@ -1863,7 +1934,7 @@ function _redrawLocalGlyphs(m,cover){
     zoomIn(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomIn(o); } },
     zoomOut(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomOut(o); } },
     stop(){ const m=_m(); if(m&&m.stop) m.stop(); },
-    resize(){ const m=_m(); if(m&&m.resize) m.resize(); }, triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }, getCanvas(){ const m=_m(); return (m&&m.getCanvas)?m.getCanvas():null; },
+    resize(){ const m=_m(); if(m&&m.resize) m.resize(); }, triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }, redraw(){ const m=_m(); if(m&&m.redraw) m.redraw(); }, getCanvas(){ const m=_m(); return (m&&m.getCanvas)?m.getCanvas():null; },
     /* (#R202) HOW MANY DEVICE PIXELS PER CSS PIXEL THE RENDERER IS DRAWING. The app already chooses
        this once at create time (#3: a phone at DPR 3 is capped to 2); this is the same number, asked
        for and changed while running, which is what lets js/render-scale.js spend fewer fragments
@@ -2738,7 +2809,7 @@ function _redrawLocalGlyphs(m,cover){
       /* (#R180) attach a popup/marker the caller built itself — see the adapter */
       attach:o=>A().attach?A().attach(o):o },
     /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
-    render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(), /* (#R768) IS THE RENDERER DRAWING RIGHT NOW? `onNextFrame` runs fn INSIDE the tick (a WebGL drawing buffer is only readable there); `ticking` asks the same thing as a Promise. Both adapters fire 'render'. ⚠ A false answer may only WEAKEN a claim, never make one — .agents/rules/one-pass-or-a-reason.md §5, DEV-NOTES #R768. ⚠ ON ONE LINE BECAUSE THE APP-SHELL BUDGET HAD NO HEADROOM AT ALL (8,049/8,050 at origin/main; the ceiling was retired in #R795) — the prose for this lives in DEV-NOTES and in the two files that read it, not here. */ onNextFrame(ms,fn){ let d=false; const f=v=>{ if(d) return; d=true; try{ fn(!!v); }catch(_){} }; try{ A().once('render',()=>f(true)); A().triggerRepaint(); }catch(_){ f(false); } setTimeout(()=>f(false), Math.max(50,+ms||600)); }, ticking(ms){ return new Promise(r=>{ try{ this.onNextFrame(ms,r); }catch(_){ r(false); } }); },
+    render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(), /* (#R768) IS THE RENDERER DRAWING RIGHT NOW? `onNextFrame` runs fn INSIDE the tick (a WebGL drawing buffer is only readable there); `ticking` asks the same thing as a Promise. Both adapters fire 'render'. ⚠ A false answer may only WEAKEN a claim, never make one — .agents/rules/one-pass-or-a-reason.md §5, DEV-NOTES #R768. ⚠ ON ONE LINE BECAUSE THE APP-SHELL BUDGET HAD NO HEADROOM AT ALL (8,049/8,050 at origin/main; the ceiling was retired in #R795) — the prose for this lives in DEV-NOTES and in the two files that read it, not here. */ onNextFrame(ms,fn){ let d=false; const f=v=>{ if(d) return; d=true; try{ fn(!!v); }catch(_){} }; const sync=()=>{ try{ if(!d&&typeof A().redraw==='function') A().redraw(); }catch(_){} }; try{ A().once('render',()=>f(true)); A().triggerRepaint(); }catch(_){ f(false); } /* (layer-click-polish) a HIDDEN page has no rAF, so no tick will come — draw one synchronously (maplibre `redraw()`, Cesium `scene.render()`); 'render' fires inside it and fn reads a real buffer. The timer's last step does the same before giving up. dev-notes 2026-11-18-layer-click-polish */ if(typeof document!=='undefined'&&document.hidden) sync(); setTimeout(()=>{ sync(); f(false); }, Math.max(50,+ms||600)); }, ticking(ms){ return new Promise(r=>{ try{ this.onNextFrame(ms,r); }catch(_){ r(false); } }); },
       /* the one 「is it on the map」 question every verdict asks, and the claims it answers about — see surfacesDrawn above */
       claim:(ids,owner,o)=>claimSurfaces(_claims,ids,owner,o), drawn:q=>surfacesDrawn(A,_claims,q),
       clearSurface:id=>{ const c=_claims.get(String(id)); if(!c||!c.clear) return false; try{ c.clear(); return true; }catch(_){ return false; } },

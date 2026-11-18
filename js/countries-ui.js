@@ -731,7 +731,10 @@ export function countriesUi(HOST){
     const _de=HOST.lang==='de', _jp=HOST.lang==='jp', _ru=HOST.lang==='ru', _es=HOST.lang==='es';
     const TR=IntMapLang.pick(()=>HOST.lang);
     const yn=v=>v?TR('Yes','はい','Ja','Да','Sí'):TR('No','いいえ','Nein','Нет','No');
-    const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${escC(v)}</b></div>`).join('')+`</div>`; };
+    /* (exploration-flows) a fact's third item is its field: the row then says WHO published that value (js/country-figures.js
+       `figure().src`, the writer's own statement beside its year) — one short muted line, nothing when no writer named one */
+    const srcOf=(f)=>{ const fg=f?figure(s,f):null; return (fg&&fg.src)?`<span class="cm-src" style="display:block;font-size:10px;font-weight:400;color:var(--text-muted);opacity:0.85;margin-top:1px;">${escC(TR('Data source: ','出典: ')+fg.src)}</span>`:''; };
+    const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v,f])=>`<div class="cm-row"><span>${k}${srcOf(f)}</span><b>${escC(v)}</b></div>`).join('')+`</div>`; };
     /* ⚠ (#R443) THE COLLAPSE IS COMPARED AFTER RESOLUTION, NOT BEFORE. Natural Earth's CONTINENT
        and SUBREGION are different English strings for the same place on four groups of rows —
        «North America»/«Northern America» (13), «South America»/«South America» (41), «Antarctica»
@@ -765,22 +768,22 @@ export function countriesUi(HOST){
     /* (countries-companies) the year THIS value is for (js/country-figures.js); the travel year only when no writer stated one */
     const yt=(k)=>{ const f=figure(s,k); return escC(_asof((f&&f.y)||_ty,f&&f.publisher)); };
     const econ=sec(icon('coin')+' '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
-      [((s._real||window._imTimeReal)?('GDP · '+TR('real 2011 int$','実質2011年国際ドル','real, int$ 2011','реальный, межд.$ 2011','real int$ 2011')):HOST.t('statGdp'))+yt('gdp'),HOST.fmtMoney(s.gdp)],
-      s.gdpPPP?[HOST.t('statGdpPPP')+yt('gdpPPP'),HOST.fmtMoney(s.gdpPPP)]:null,
-      [HOST.t('statGdpPc')+yt('gdppc'),HOST.fmtPc(s.gdppc)],
-      s.gdppcPPP?[HOST.t('statGdpPcPPP')+yt('gdppcPPP'),HOST.fmtPc(s.gdppcPPP)]:null,
+      [((s._real||window._imTimeReal)?('GDP · '+TR('real 2011 int$','実質2011年国際ドル','real, int$ 2011','реальный, межд.$ 2011','real int$ 2011')):HOST.t('statGdp'))+yt('gdp'),HOST.fmtMoney(s.gdp),'gdp'],
+      s.gdpPPP?[HOST.t('statGdpPPP')+yt('gdpPPP'),HOST.fmtMoney(s.gdpPPP),'gdpPPP']:null,
+      [HOST.t('statGdpPc')+yt('gdppc'),HOST.fmtPc(s.gdppc),'gdppc'],
+      s.gdppcPPP?[HOST.t('statGdpPcPPP')+yt('gdppcPPP'),HOST.fmtPc(s.gdppcPPP),'gdppcPPP']:null,
       [HOST.t('statCurrency'),s.currency||'—']
     ]);
     const soc=sec(icon('users')+' '+TR('Society','社会','Gesellschaft','Общество','Sociedad'),[
-      [HOST.t('statPop')+yt('pop'),fmtNum(s.pop)],
-      s.hdi?[HOST.t('statHDI')+yt('hdi'),s.hdi.toFixed(3)]:null,
-      s.lifeExp?[HOST.t('statLife')+yt('lifeExp'),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет','a')]:null,
-      s.internet?[HOST.t('statInet')+yt('internet'),(Math.round(s.internet*10)/10)+'%']:null,
+      [HOST.t('statPop')+yt('pop'),fmtNum(s.pop),'pop'],
+      s.hdi?[HOST.t('statHDI')+yt('hdi'),s.hdi.toFixed(3),'hdi']:null,
+      s.lifeExp?[HOST.t('statLife')+yt('lifeExp'),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет','a'),'lifeExp']:null,
+      s.internet?[HOST.t('statInet')+yt('internet'),(Math.round(s.internet*10)/10)+'%','internet']:null,
       [HOST.t('statLang'),s.languages||'—']
     ]);
     const pol=sec(icon('landmark')+' '+TR('Politics & defense','政治・防衛','Politik & Verteidigung','Политика и оборона','Política y defensa'),[
-      s.dem?[HOST.t('statDem')+yt('dem'),s.dem.toFixed(2)]:null,
-      s.milSpend?[HOST.t('statMil')+yt('milSpend'),_milB(s.milSpend)]:null,
+      s.dem?[HOST.t('statDem')+yt('dem'),s.dem.toFixed(2),'dem']:null,
+      s.milSpend?[HOST.t('statMil')+yt('milSpend'),_milB(s.milSpend),'milSpend']:null,
       s.unMember!=null?[TR('UN member','国連加盟','UN-Mitglied','Член ООН','Miembro de la ONU'),yn(s.unMember)]:null
     ]);
     let histNote='';
@@ -865,8 +868,10 @@ export function countriesUi(HOST){
           /* (country-analysis-unify) the time-series button opens the comparison panel's time-series view with this one country —
              the same chart, series and sources as 「国を比較」, not a second chart of its own (js/stats-compare.js timeline) */
           if(a==='timeseries'){ const _c=(window._cpCurrent||{}).code; window.IntMapLazy.need('statsCompare').then(()=>{ try{ const SC=window.IntMapStatsCompare; if(SC) SC.timeline(_c); }catch(_){} }); return; }
-          /* (#R311) the country card's Compare item is a door into the on-demand comparison panel */
-          if(a==='compare'){ window.IntMapLazy.need('statsCompare').then(()=>{ try{ if(window.IntMapStatsCompare) window.IntMapStatsCompare.open(); }catch(_){} }); return; }
+          /* (#R311) the country card's Compare item is a door into the on-demand comparison panel.
+             (exploration-flows) It names THIS card's country: open(code) adds it to what is already compared (and to the
+             Countries tray) — called with nothing, the card's country went in only when the comparison was empty. */
+          if(a==='compare'){ const _c=(window._cpCurrent||{}).code; window.IntMapLazy.need('statsCompare').then(()=>{ try{ if(window.IntMapStatsCompare) window.IntMapStatsCompare.open(_c||undefined); }catch(_){} }); return; }
           if(a==='brief'){
             /* (country-analysis-unify) ONE PATH: Atlas's brief, fetched if it is not here yet (js/atlas-loader.js). There were three
                — Atlas, else the console's own brief, else a separate research panel — so WHICH screen and WHICH format the reader
@@ -1002,7 +1007,7 @@ export function countriesUi(HOST){
       const subline=`${s.region?_regionName(s.region):''}${(s.region&&s.capital)?' / ':''}${escC(s.capital||'')}`;
       const rankHTML=_showRank?`<span class="stat-rank">${_rankOf.get(s.code)||'—'}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
-      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-pick" aria-hidden="true"></span><span class="stat-flag">${(s.flag?window.IntMapSafe.flag(s.flag):icon('flag'))}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div><button type="button" class="stat-detail" data-ccn="${s.code}" aria-label="${escC(HOST._sfL('Details for ','詳細: ')+HOST.cName(s))}">${HOST._sfL('Details','詳細')} ›</button></div>`;
+      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-flag">${(s.flag?window.IntMapSafe.flag(s.flag):icon('flag'))}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div><button type="button" class="stat-detail" data-ccn="${s.code}" aria-label="${escC(HOST._sfL('Details for ','詳細: ')+HOST.cName(s))}">${HOST._sfL('Details','詳細')} ›</button></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{

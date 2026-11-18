@@ -231,8 +231,6 @@ IntMapLang.define('ko', { ui: {
     }, inline: {
       /* (#R493) view.inspect — what the reader is told when Atlas looks at the map for them */
       "The map was not drawing when I looked — the page is in the background, so there was no frame to capture. Ask again with IntMap in front.": "확인하러 갔을 때 지도가 그려지고 있지 않았습니다 — 페이지가 백그라운드에 있어 캡처할 화면이 없었습니다. IntMap을 앞으로 놓고 다시 물어봐 주세요.",
-      'Atlas looked at the map': 'Atlas가 지도를 보았습니다',
-      'map only': '지도만',
       'The map is not running, so there is nothing to look at.': '지도가 실행 중이 아니어서 볼 것이 없습니다.',
       'Could not read the map frame — the renderer gave nothing back.': '지도 화면을 읽지 못했습니다 — 렌더러가 아무것도 반환하지 않았습니다.',
       /* (#R511) map.compose — the legend of a map explanation */
@@ -2133,7 +2131,6 @@ IntMapLang.define('ko', { ui: {
   "Source: AI-estimated (neither OpenStreetMap nor Wikidata had matching entries here — positions are approximate, verify before relying on them)": "출처: AI 추정 (OpenStreetMap과 Wikidata 모두 이곳에 해당 항목이 없었습니다. 위치는 근사값이므로 활용 전에 확인하세요)",
   "Source: MarineRegions WMS": "출처: MarineRegions WMS",
   "Source: Our World in Data — Ember (electricity) and the Energy Institute Statistical Review (primary energy). The map shades the low-carbon share of electricity, and the fossil share of primary energy; the bar is the mix itself, because nine sources are not one color.": "출처: Our World in Data — Ember(전력)와 Energy Institute Statistical Review(1차 에너지). 지도에는 전력의 저탄소 비중과 1차 에너지의 화석연료 비중을 칠했습니다. 막대는 구성 자체를 보여 주는데, 아홉 가지 전원을 한 가지 색으로 나타낼 수 없기 때문입니다.",
-  "Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)": "지표별 출처: 세계은행 / IMF WEO / 내장 참조 자료 (막대·시계열 화면에 표시됩니다)",
   "Sources: NOAA CoastWatch blended sea-surface geostrophic currents from multi-mission satellite altimetry (0.25°); NOAA NCEI blended wind stress, turned into the Ekman surface current by the drifter-fitted relation of Ralph & Niiler (1999); and NOAA OISST v2.1 sea-surface temperature. All U.S. Government works in the public domain; altimetric products generated using AVISO+. This layer is a FIXED dataset that ships with the app: a climatological mean of fields spread across the whole record, on the source's own 0.25° grid, with each named current traced through that measured field from a published seed on its core. Warm / cold / zonal is MEASURED, not asserted — it is the current's own temperature against the zonal mean at the same latitude. Because it is a mean, it does not follow the app clock: it is the climatological picture, the same every time you open it.": "출처: 다중 위성 고도계에서 합성한 NOAA CoastWatch의 해면 지형류(0.25°), NOAA NCEI의 합성 바람 응력을 Ralph & Niiler(1999)의 표류부이 적합식으로 에크만 표층류로 변환한 값, 그리고 NOAA OISST v2.1 해수면 온도입니다. 모두 미국 정부 저작물로 퍼블릭 도메인이며, 고도계 산출물은 AVISO+로 생성했습니다. 이 레이어는 앱에 함께 배포되는 고정 데이터셋입니다. 전 기간에 걸친 자료의 기후 평균을 출처 자체의 0.25° 격자 위에 올린 것이며, 이름 있는 해류는 각각 공표된 시작점에서 그 실측장을 따라 추적했습니다. 난류·한류·동서류 구분은 주장이 아니라 실측입니다. 같은 위도의 동서 평균과 비교한 해류 자체의 온도로 판정합니다. 평균값이므로 앱 시계를 따르지 않으며, 언제 열어도 같은 기후학적 그림을 보여 줍니다.",
   "Sources: OpenStreetMap (facilities, city population tags — coverage varies by region), USGS (earthquakes), IntMap country statistics. Pins are clickable; the circle marks the analysis radius.": "출처: OpenStreetMap(시설, 도시 인구 태그 — 지역마다 수록 정도가 다릅니다), USGS(지진), IntMap 국가 통계. 핀은 클릭할 수 있고, 원은 분석 반경을 나타냅니다.",
   "Space stations": "우주정거장",
