@@ -571,7 +571,7 @@ export function makeAtlasToolSurface(deps) {
       return '[LIVE VALUES] ' + toolName + ' "' + prop + '" is exactly one of: ' + v.join('; ') + '\n\n';
     }
 
-    var API = { CORE, baseTools, find, describe, actionFor, makeExecute, schemaOf, footprintOf, promotionsOf, toolNameOf, liveEnum };
+    var API = { CORE, baseTools, find, describe, actionFor, makeExecute, schemaOf, footprintOf, promotionsOf, toolNameOf, liveEnum, RESULT_TEXT_MAX };   /* the length Atlas is handed of a result's text — the console reads it to know what Atlas did NOT see (js/atlas-turn-results.js `forReader`) */
     try { window.IntMapAtlasTools = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
