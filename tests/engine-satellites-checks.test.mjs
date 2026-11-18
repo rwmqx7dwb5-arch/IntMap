@@ -51,7 +51,9 @@ test('R185 satellites: the bundled catalogue is real, current and parseable', ()
     const yy = Math.floor(e / 1000), year = yy < 57 ? 2000 + yy : 1900 + yy;
     return Date.UTC(year, 0, 1) + (e % 1000 - 1) * 86400000;
   };
-  const newest = Math.max(...lines.filter((_, i) => i % 3 === 1).map(epochMs));
+  /* a set whose epoch is after the build instant is a prediction (Chandra's, three days ahead) and is not counted */
+  const built = Date.parse(meta.builtAt);
+  const newest = Math.max(...lines.filter((_, i) => i % 3 === 1).map(epochMs).filter((e) => e <= built));
   assert.equal(new Date(newest).toISOString(), meta.newestEpoch);
   assert.ok(newest > Date.UTC(2020, 0, 1), 'these have to be modern element sets');
 });
