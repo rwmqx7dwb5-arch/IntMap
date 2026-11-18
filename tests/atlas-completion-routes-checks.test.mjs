@@ -185,14 +185,24 @@ function compose() { return makeAtlasMapCompose({ GE: () => GE, geocode, now: Da
 const relLines = () => (GE.layers.sourceData('atl-compose-src').features || []).filter((f) => f.properties.t === 'rel');
 const flat = (g) => (g.type === 'LineString' ? g.coordinates : g.coordinates.flat());
 
+test('A3 ⓪: a route with no basis is COMPUTED (the reader’s decision 2026-11-18); other types keep the arc', async () => {
+  const C = compose();
+  const r = await C.run({ items: ['West Port', 'East Port'].map((name) => ({ name })), relations: [
+    { from: 1, to: 2, type: 'route', label: 'R' },
+    { from: 1, to: 2, type: 'flow', label: 'F' },
+  ] });
+  assert.deepEqual(r.exec.relations.map((x) => x.basis), ['computed', 'schematic']);
+  assert.equal(r.exec.relations[0].sea.onSea, true);
+});
+
 test('A3 ①: basis "computed" is a path over water; "schematic" through via points stays a schematic and says whether it is on water', async () => {
   const C = compose();
   const items = ['West Port', 'East Port', 'South Port'].map((name) => ({ name }));
   const r = await C.run({ items, relations: [
     { from: 1, to: 2, type: 'route', basis: 'computed', label: 'A' },
     { from: 3, to: 2, type: 'route', basis: 'computed', label: 'B' },
-    { from: 1, to: 2, type: 'route', label: 'C' },
-    { from: 1, to: 2, type: 'route', via: ['NW Mark', 'NE Mark'], label: 'D' },
+    { from: 1, to: 2, type: 'route', basis: 'schematic', label: 'C' },
+    { from: 1, to: 2, type: 'route', basis: 'schematic', via: ['NW Mark', 'NE Mark'], label: 'D' },
   ] });
   assert.equal(r.ok, true);
   const rel = r.exec.relations;
