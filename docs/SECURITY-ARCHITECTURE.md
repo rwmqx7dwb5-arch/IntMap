@@ -176,7 +176,7 @@ flowchart LR
   factor.** `public.is_admin()` (SECURITY DEFINER, `search_path=''`) is true only when
   `profiles.is_admin` is set **and** the JWT says `aal = aal2` — a session raised by a TOTP challenge,
   which only the operator console performs. It is the one admin predicate: every admin policy and RPC
-  calls it (`20261118090000_admin_needs_mfa_session.sql` rewrote the ones that read the column inline, and
+  calls it (`20261118130000_admin_needs_mfa_session.sql` rewrote the ones that read the column inline, and
   production's own `profiles_select`, by catalogue discovery), and pgTAP 50 fails the day a policy or
   function decides admin rights another way. Consequence: a stolen app session of an administrator, or
   the refresh token behind it, mints aal1 tokens and has **no** admin rights. The console's login gate is
