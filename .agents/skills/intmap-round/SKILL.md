@@ -161,12 +161,15 @@ npm run regen                                  # 生成物と台帳の帳簿（�
 git add -A && git commit -m "<一行の要約>"
 git push -u origin feat/<slug>
 gh pr create --fill
-gh pr merge --squash --auto --delete-branch   # 緑なら勝手に merge される。座って見ない
+gh pr merge --squash --auto --delete-branch   # 緑なら merge される。ただし「完了」はここではない
 ```
 
-- **`gh pr checks --watch` で CI を見張らない。** 赤い CI は 1 回約 12 分で、待ちとその往復が「数時間」の正体だった。
-  `--auto` なら緑で merge・branch 削除まで行き、赤いときだけ戻る。ゲートは 3 台・`fail-fast: false` で 1 回の run に
-  落ちたゲートが全部出る（計画は `node scripts/ci-gates.mjs --plan`）。
+- ⚠ **この回の終わりは PR が `MERGED` になった時点。** auto-merge を付けて去ると、CI が赤・DIRTY のまま誰にも戻られず
+  放置される（2026-11-19 時点で open PR 12 本）。`gh pr checks <番号> --watch` を **background 実行**して終了通知を待つ
+  （ポーリングではなく 1 本の待ち。独立した作業があればその間に進める）。赤なら落ちた門だけを直して push、`DIRTY`
+  なら下の rebase。`gh pr view <番号> --json state` が `MERGED` になるまでターンを閉じず、「CI 待ち」「auto-merge 設定済み」
+  で完了と報告しない。ゲートは 3 台・`fail-fast: false` で 1 回の run に落ちたゲートが全部出る
+  （計画は `node scripts/ci-gates.mjs --plan`）。
 - **PR が DIRTY になったら** `git fetch && git rebase origin/main`。生成物・台帳・件数（perf-baseline・global-surface・
   durations・`TOTAL_BUDGET_S`・`plan(N)`・能力の生成行・cassette・文書の件数…）の衝突は **merge driver が解く**（宣言は
   `.gitattributes`、仕組みは `docs/AGENT-SETUP.md` §12）。終わったら `node scripts/merge-driver.mjs --finish`（保留した
@@ -205,7 +208,7 @@ node scripts/worktree.mjs verified      # origin/main の HEAD（sha と件名�
 
 ## 7. 終了処理（省略できない。ただし**待たない**）
 
-**この回でやるのは `done` だけ。** 残りは merge が本番へ届いてからでないと意味が無いので、**次の作業の着手時に
+**この回でやるのは、PR が `MERGED` になったことを確認してからの `done` だけ。** 残りは merge が本番へ届いてからでないと意味が無いので、**次の作業の着手時に
 まとめて**走らせる（1 回の `--sync` がその時点で merge 済みの全セッション分を運ぶ）。
 
 ```bash
