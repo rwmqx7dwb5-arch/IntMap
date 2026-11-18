@@ -11,6 +11,7 @@
     { "area": "cache", "name": "intmap-tiles-v2", "kind": "cache", "en": "Map tiles you have already viewed, so revisiting is fast", "jp": "表示済みの地図タイル（再訪を速くするため）" },
     { "area": "idb", "name": "intmap", "kind": "cache", "en": "A copy of the dashboard's last data, for an instant start", "jp": "ダッシュボードの最新データの写し（すぐに開くため）" },
     { "area": "idb", "name": "intmap_regionresolver", "kind": "cache", "en": "Region shapes Atlas has looked up, so it does not fetch them again", "jp": "Atlas が調べた地域の形（再取得しないため）" },
+    { "area": "idb", "name": "intmap-glyphs", "kind": "cache", "en": "Place-name letters the map has already drawn on this device, kept for a day so they are not drawn again", "jp": "この端末で地図が描いた地名の文字（1 日保持し、描き直さないため）" },
     { "area": "idb", "name": "intmap-atlas-notebook", "kind": "content", "en": "Your Atlas notebook — the questions you asked and the answers you kept", "jp": "Atlas ノート — 尋ねた質問と残した回答" },
     { "area": "idb", "name": "intmap-gis", "kind": "content", "en": "Your GIS projects — the layers and data you added", "jp": "GIS プロジェクト — 追加したレイヤーとデータ" },
     { "area": "local", "name": "im-photogeo-vision-consent", "kind": "preference", "en": "Whether you agreed to send a photo to Atlas to find where it was taken", "jp": "撮影地の推定のために写真を Atlas に送ることへの同意" },
