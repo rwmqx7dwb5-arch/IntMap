@@ -115,13 +115,18 @@ const { kept, counts, celestrakAnswered } = composeCatalogue({ celestrak, satnog
 if (!kept.length) { console.error('no catalogue could be built:', err.join('; ')); process.exit(1); }
 const source = celestrakAnswered ? 'CelesTrak GP (active)'
   : (counts.satnogs ? 'SatNOGS DB (Space-Track / CelesTrak elements) + carried forward from the previous bundle' : 'carried forward from the previous bundle (no upstream answered)');
-const builtAt = new Date().toISOString();
+/* an element set whose epoch is AFTER the instant it was fetched is a prediction, not a measurement (CelesTrak
+   publishes Chandra's with an epoch three days ahead — MEASURED 2026-11-18: CXO 25867 at 2026-11-21 in a bundle
+   built on the 18th). It is shipped and propagates, but it is not "the newest element set" the bundle's date and
+   the layer's tests stand on: one forward prediction made the whole catalogue claim a date nobody had measured. */
+const builtMs = Date.now();
+const builtAt = new Date(builtMs).toISOString();
 const text = kept.map(o => o.name + '\n' + o.l1 + '\n' + o.l2).join('\n') + '\n';
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
 fs.writeFileSync(path.join(OUT_DIR, 'catalogue.tle'), text, 'utf8');
 /* the newest epoch in the file, so the app can say how old the elements are without parsing them */
-const newestIso = new Date(kept.reduce((m, o) => Math.max(m, o.epoch), 0)).toISOString();
+const newestIso = new Date(kept.reduce((m, o) => (o.epoch <= builtMs ? Math.max(m, o.epoch) : m), 0)).toISOString();
 const medianAgeH = (() => {
   const now = Date.now();
   const ages = kept.map(o => (now - o.epoch) / 3600000).sort((a, b) => a - b);
