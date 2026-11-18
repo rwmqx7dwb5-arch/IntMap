@@ -102,8 +102,9 @@ async function resolveWorldObject(a, K) {
       if (D) {
         await D.index(); const row = D.get(q) || D.resolve(q);
         if (row && row.id) {
-          let hq = null; try { const prof = await D.profile(row.id); hq = prof && prof._hq; } catch (_) { /* no profile → no position, and the object says so */ }
-          const o = W.fromCompany(row, hq); if (o) return { obj: W.register(o)[0], via: 'company' };
+          let prof = null; try { prof = await D.profile(row.id); } catch (_) { /* no profile → no position, and the object says so */ }
+          const { company: o, sites } = W.fromCompanyProfile(row, prof);   /* its sites are written down with it (each tied `operated_by`), so «what does it operate» can be followed */
+          if (o) { const stored = W.register([o].concat(sites)); return { obj: stored[0], via: 'company' }; }
         }
       }
     } catch (_) { /* the company atlas is optional here */ }
@@ -269,7 +270,7 @@ export default [
     row: ['research.object',            'worldObject',    'realWorldObject,whatIsThis',                                     'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
     ui: { none: '2026-11-16' },
     doc: [
-      { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref. TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. Use research.related for «what else belongs with it».\n' },
+      { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref, or an external identifier such as "wikidata:Q123" / "osm:node/123" (the same thing surfaced by two sources is ONE object; the answer lists its identifiers, the refs folded into it and look-alikes that were not merged). TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place, dataset_feature. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. Use research.related for «what else belongs with it».\n' },
     ],
     schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str() }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
@@ -287,15 +288,24 @@ export default [
       h += '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">' + (placed ? esc(o.lat.toFixed(3) + ', ' + o.lng.toFixed(3) + ' — ' + o.provenance) : esc(L('no position known', '位置は不明'))) + (o.bounds ? ' · ' + esc(L('has an extent', '範囲あり')) : '') + '</div>';
       if (o.articleIds.length || o.evidenceIds.length || o.links.length) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(o.articleIds.length + L(' articles', ' 記事') + ' · ' + o.evidenceIds.length + L(' evidence records', ' 証拠記録') + ' · ' + o.links.length + L(' ties', ' 結び付き')) + '</div>';
       if (o.sources.length) h += '<div class="acp-src" style="font-size:10px;color:var(--text-muted);margin-top:4px;">' + esc(L('Sources: ', '出典: ') + o.sources.map((s) => s.name + (s.licence ? ' (' + s.licence + ')' : '')).filter(Boolean).join(' · ')) + '</div>';
-      return R(true, h, { exec: { worldObjects: { subject: o.ref, objects: [W.brief(o)], via: r.via } }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: o.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
+      /* WHO it is: the identifiers other systems gave it, the records folded into it, and look-alikes that were NOT folded (so a reader can see what was and was not asserted) */
+      const idn = W.identity(o);
+      const idBits = Object.keys(idn.ids).map((k) => k + ':' + idn.ids[k]);
+      if (idBits.length || idn.aliases.length) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(idBits.join(' · ') + (idn.aliases.length ? ' · ' + L('also known here as ', 'ここでの別の ref: ') + idn.aliases.join(', ') : '')) + '</div>';
+      if (o.validity) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('in force ', '存続期間 ') + (o.validity.fromMs != null ? new Date(o.validity.fromMs).toISOString().slice(0, 10) : '?') + ' → ' + (o.validity.toMs != null ? new Date(o.validity.toMs).toISOString().slice(0, 10) : L('now / not stated', '現在／記載なし'))) + '</div>';
+      if (idn.candidates.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Not merged (same name, close by, no shared identifier): ', '同一とは扱っていない候補（同名・近接・共通の識別子なし）: ') + idn.candidates.map((c) => c.name + ' [' + c.ref + ']').join(', ')) + '</div>';
+      if (idn.conflicts.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Identifier disagreement left unresolved: ', '識別子の食い違い（未解決）: ') + idn.conflicts.map((c) => (c.rel || c.scheme) + ' ' + (c.ref || (c.kept + ' vs ' + c.dropped))).join(', ')) + '</div>';
+      const cc = W.claimConflicts(o);
+      if (cc.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Sources disagree on: ', '出典間で値が異なる項目: ') + cc.map((c) => c.key + (c.unitMismatch ? ' (' + L('units differ', '単位が異なる') + ')' : '')).join(', ')) + '</div>';
+      return R(true, h, { exec: { worldObjects: { subject: o.ref, objects: [W.brief(o)], via: r.via, identity: idn, claimConflicts: cc.length ? cc : undefined } }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: o.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
   },
   {
     row: ['research.related',           'worldRelated',   'related,relatedObjects,whatIsAround',                                 'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
     ui: { at: ['[data-pd="related"]'] },
     doc: [
-      { in: 'country', at: 63, text: '{"type":"worldRelated","ref"?:str,"name"?:str,"objectType"?:str,"km"?:num,"hours"?:num,"types"?:[TYPE,…]} = 関連オブジェクト・周辺の対象 — WHAT BELONGS WITH ONE REAL-WORLD OBJECT: the earthquakes, news events, articles, facilities, cities, volcanoes and companies tied to it, each with WHY: `linked` (an edge, or an article / evidence id they share), `near` (within km — default 300 — or inside its extent) and `concurrent` (within hours — default 72). Two things are related when linked, or near and concurrent (a facility has no time, so it is judged by place alone); time alone is never a relation. Use it for 「この地震について、近くの施設と関連記事も」「この出来事の周辺」, "what is around that quake", "news about this volcano"; pass the `ref` an earlier answer returned (observed.worldObjects) or the name. It reads the objects this session surfaced plus the loaded news and the USGS week; it reports what it found and how many, and says so when nothing is tied to the object.\n' },
+      { in: 'country', at: 63, text: '{"type":"worldRelated","ref"?:str,"name"?:str,"objectType"?:str,"km"?:num,"hours"?:num,"types"?:[TYPE,…],"rels"?:[str,…],"depth"?:num,"at"?:"YYYY-MM-DD"} = 関連オブジェクト・周辺の対象 — TYPED TIES: pass "rels" (names such as contains, part_of, operated_by, operates, owned_by, mentions — read from the object you start at) and/or "depth" > 1 to FOLLOW named edges across several steps («the terminals of this port, then who operates them»); only stated edges are followed, never proximity. "at" asks as of a date: ties and objects whose stated period excludes it are left out. Without rels/depth: WHAT BELONGS WITH ONE REAL-WORLD OBJECT: the earthquakes, news events, articles, facilities, cities, volcanoes and companies tied to it, each with WHY: `linked` (an edge, or an article / evidence id they share), `near` (within km — default 300 — or inside its extent) and `concurrent` (within hours — default 72). Two things are related when linked, or near and concurrent (a facility has no time, so it is judged by place alone); time alone is never a relation. Use it for 「この地震について、近くの施設と関連記事も」「この出来事の周辺」, "what is around that quake", "news about this volcano"; pass the `ref` an earlier answer returned (observed.worldObjects) or the name. It reads the objects this session surfaced plus the loaded news and the USGS week; it reports what it found and how many, and says so when nothing is tied to the object.\n' },
     ],
-    schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str(), km: num(0), hours: num(0), types: list(str()) }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
+    schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str(), km: num(0), hours: num(0), types: list(str()), rels: list(str()), depth: num(1), at: str() }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, HOST = K.HOST;
       const r = await resolveWorldObject(a, K);
       if (!r.obj) {
@@ -313,15 +323,23 @@ export default [
         if (rq.state === 'unavailable') quakeFeedFailed = true;
         else rq.features.forEach((f) => { const o = W.fromUsgs(f); if (o) extra.push(o); });
       }
-      const res = W.related(r.obj, { km: a.km, hours: a.hours, types, extra });
+      /* typed-edge mode: `rels` (the names of the ties to follow, read from the object being left) and/or `depth` (how many to follow); `at` asks «as of this date» */
+      const rels = Array.isArray(a.rels) ? a.rels.map(String).filter(Boolean) : [];
+      const atMs = a.at != null && a.at !== '' ? (typeof a.at === 'number' ? a.at : Date.parse(String(a.at))) : null;
+      if (atMs != null && !isFinite(atMs)) return R(false, warn(L('«at» must be a date such as 1990-06-01.', '«at» は 1990-06-01 のような日付で指定してください。')), { meta: { code: 'INVALID_INPUT', category: 'input', retryable: false, semanticTarget: String(a.at), produced: [], userGoalSatisfied: false } });
+      const res = W.related(r.obj, { km: a.km, hours: a.hours, types, extra, rels, depth: a.depth, atMs });
       W.register(res.items.map((x) => x.object));   /* what was found can be followed next */
       const rows = W.relatedHtml(res, { L, esc }), byType = rows.byType;
       const km = (a.km != null && isFinite(+a.km)) ? +a.km : W.RELATED_DEFAULTS.km, hrs = (a.hours != null && isFinite(+a.hours)) ? +a.hours : W.RELATED_DEFAULTS.hours;
       let h = '<div style="font-weight:600;margin:2px 0 4px;">' + icon('target') + ' ' + esc(r.obj.name || r.obj.ref) + ' — ' + esc(L('related objects', '関連する対象') + ' (' + res.total + ')') + '</div>';
-      h += '<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">' + esc(L('within ' + km + ' km and ' + hrs + ' h, or linked directly', km + ' km・' + hrs + ' 時間以内、または直接の結び付き')) + '</div>' + rows.html;
+      const graphMode = rels.length > 0 || (a.depth != null && +a.depth > 1);
+      const scope = graphMode
+        ? L('following ' + (rels.length ? rels.join(', ') : 'any tie') + ' up to ' + Math.max(1, Math.floor(+a.depth || 1)) + ' step(s)', (rels.length ? rels.join('、') : 'すべての結び付き') + ' を最大 ' + Math.max(1, Math.floor(+a.depth || 1)) + ' 段たどる')
+        : L('within ' + km + ' km and ' + hrs + ' h, or linked directly', km + ' km・' + hrs + ' 時間以内、または直接の結び付き');
+      h += '<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">' + esc(scope + (atMs != null ? L(' · as of ', ' ・基準日 ') + new Date(atMs).toISOString().slice(0, 10) : '')) + '</div>' + rows.html;
       if (!res.total) h += '<div style="font-size:12px;">' + esc(L('Nothing IntMap holds is tied to this object within that reach.', 'その範囲で、このオブジェクトに結び付く対象は IntMap にありません。')) + '</div>';
       if (quakeFeedFailed) h += warn(L('The USGS feed could not be read — earthquakes are not part of this answer.', 'USGS のフィードを読めなかったため、地震はこの答えに含まれていません。'));
-      const shown = res.items.slice(0, 40).map((x) => Object.assign(W.brief(x.object), { why: x.why, distanceKm: x.distanceKm == null ? undefined : x.distanceKm, gapHours: x.gapHours == null ? undefined : x.gapHours }));
+      const shown = res.items.slice(0, 40).map((x) => Object.assign(W.brief(x.object), { why: x.why, rels: x.rels && x.rels.length ? x.rels : undefined, depth: x.depth, distanceKm: x.distanceKm == null ? undefined : x.distanceKm, gapHours: x.gapHours == null ? undefined : x.gapHours }));
       const totals = {}; Object.keys(byType).forEach((t) => { totals[t] = byType[t].count; });
       return R(true, h, { exec: { worldObjects: { subject: r.obj.ref, objects: [W.brief(r.obj)], related: shown, totals, total: res.total, partial: quakeFeedFailed || undefined } }, meta: { code: res.total ? 'OK' : 'NO_RESULTS', category: res.total ? 'ok' : 'evidence', retryable: false, semanticTarget: r.obj.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
   },
@@ -768,7 +786,7 @@ export default [
             const q3='[out:json][timeout:12];node[place~"^(city|town)$"]["population"]'+bb+';out 200;';
             const j=await overpassRaw(q3).catch(()=>null); if(!j) return null;
             /* a successful reply with ZERO cities is a real answer (open ocean), not a failure */
-            return j.elements.map(e=>({lng:+e.lon,lat:+e.lat,name:(e.tags&&(e.tags['name:'+(HOST.lang==='jp'?'ja':HOST.lang)]||e.tags.name))||'?',pop:+((e.tags&&e.tags.population)||0)})).filter(c2=>isFinite(c2.pop)&&c2.pop>0); });
+            return j.elements.map(e=>({lng:+e.lon,lat:+e.lat,name:(e.tags&&(e.tags['name:'+(HOST.lang==='jp'?'ja':HOST.lang)]||e.tags.name))||'?',pop:+((e.tags&&e.tags.population)||0),osm:e.id!=null?'node/'+e.id:'',wd:(e.tags&&e.tags.wikidata)||''})).filter(c2=>isFinite(c2.pop)&&c2.pop>0); });
           /* (place-card-unify) the app's one reader of the week's feed, filtered to the radius here. `unavailable` (the feed did not
              answer) is said in the report and marked partial — it used to be `.catch(()=>null)`, which drew «no quakes» for both */
           const qkP=readQuakes({ area:{ point:ctr, radiusKm:kmR }, days:7 });

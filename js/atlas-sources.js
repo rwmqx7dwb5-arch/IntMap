@@ -174,6 +174,9 @@ export function makeAtlasSources(HOST, CTX) {
         const t2=el.tags||{}; const nm2=t2.name||t2['name:en']||t2.operator||''; const key=(nm2||'?')+'|'+(+lat).toFixed(3)+'|'+(+lon).toFixed(3); if(seen.has(key)) continue; seen.add(key);
         /* (#R72) keep the OSM wikipedia/wikidata/website tags so the pin popup can offer a real detail link */
         out.push({lng:+lon,lat:+lat,name:nm2,kind:t2.man_made||t2.industrial||t2.power||t2.amenity||t2.aeroway||t2.military||t2.landuse||t2.leisure||t2.railway||'',
+          /* (world-object-graph) the element's OWN id — `node/123` — travels with the pin: the identity of the thing in OSM, which a
+             later search, a renamed label or a refined coordinate does not change */
+          osm:(el.type&&el.id!=null)?el.type+'/'+el.id:'',
           wiki:t2.wikipedia||'',wd:t2.wikidata||'',web:t2.website||t2['contact:website']||''}); if(out.length>=600) break; }
       out._truncated=(j.elements.length>=600||out.length>=600);
       return out; }
