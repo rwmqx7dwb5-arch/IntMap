@@ -35,3 +35,9 @@ date: 2026-11-18
 `tests/atlas-answer-surface-checks.test.mjs`（新規 6 件）、Atlas の node 検査 1283 件緑。本番相当の preview で実 dispatch の `flyTo`
 が印付きの文を返し、`forReader` が空にすることを確認。⚠ 実際の AI ターン（ログイン要）では未確認——本番で地震の依頼を再現して
 確かめる（`node scripts/worktree.mjs verified`）。
+
+## i18n の床を下げた理由
+
+「完了しなかった操作: 」の 5 言語行は、失敗の行が内部名をやめてツールの文を出すようになったので、どこからも呼ばれなくなった
+（de・es・ru の positional が 7114 → 7113）。死んだ文字列であり、読者が得るものは減っていない（同じ失敗はツールが書いた文で、
+より具体的に名指される）。`node scripts/i18n-audit.mjs --update-floor` で 3 言語の床を 1 ずつ下げた。
