@@ -648,7 +648,11 @@ export async function ask(req: Request): Promise<Response> {
         /* (atlas-delegation) what THIS request cost at the asked model's price (_shared/ai-provider.js costMicros) — the
            figure js/atlas-delegate.js records per task — and, for a worker's call, the policy that admitted it */
         costUsd: costMicros(model, meter.total(), provider) / 1e6, priceKnown: priceOf(model).known, spend: spendState || undefined,
-        ...(parentTurn ? { delegation: { mode: delegation.mode, parent: parentTurn } } : {}) },
+        ...(parentTurn ? { delegation: { mode: delegation.mode, parent: parentTurn } } : {}),
+        /* (delegation-limits) the worker policy this server runs, on every Atlas turn: Atlas plans within it (js/atlas-console.js
+           states it in the turn's context) instead of learning it from a refused worker — measured 2026-11-19: it opened three
+           workers under a two-worker policy and the third was refused */
+        ...(spec.protocol2 ? { delegationPolicy: { mode: delegation.mode, maxChildren: delegation.maxChildren, childMaxCalls: delegation.childMaxCalls } } : {}) },
       /* (atlas-native-tools) the provider's items — reasoning to replay, what it wrote, the calls with their ids */
       ...(turnReq ? { output: Array.isArray(out.output) ? out.output : [] } : {}),
       // (#R131) Hosted web-search citation URLs (OpenAI url_citation annotations). The client shows

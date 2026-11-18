@@ -188,3 +188,41 @@ test('⑬ the worker task exists, is the only task a worker call may carry, and 
   assert.ok(gate > src.indexOf('const spec = TASKS.get(task)!') && gate < src.indexOf('const answer = async'), 'the task gate precedes the provider call');
   assert.ok(src.indexOf('reserveSpend(') < src.indexOf('const answer = async'), 'the spend is reserved before the provider is called');
 });
+
+/* ── (delegation-limits) measured on production 2026-11-19 ───────────────────── */
+test('⑭ a failed worker says why, as the server said it (timeout, status) — the refunded ledger row cannot', async () => {
+  const e = new Error('The AI provider timed out.'); e.code = 'provider_unavailable'; e.status = 503; e.meta = { timeout: true, model: 'gpt-6.2-sol' };
+  const r = await run1(fakeAsk([e]));
+  assert.equal(r.state, 'failed');
+  assert.equal(r.detail.timeout, true);
+  assert.equal(r.detail.status, 503);
+});
+
+test('⑮ research.delegate refuses past the server\'s policy before anything is spent, and says the number', async () => {
+  const caps = (await import('../js/atlas-cap-research.js')).default;
+  const entry = caps.find((c) => c.row[0] === 'research.delegate');
+  let asked = 0;
+  const K = {
+    R: (ok, html, extra) => Object.assign({ ok, html }, extra || null), L: (en) => en, esc: (x) => String(x), warn: (x) => x,
+    _curTurnKey: 't5-1', turnSignal: () => undefined, askAIJSONEnvelope: async () => { asked++; return { data: { summary: 's' }, meta: {} }; },
+    _delegationPolicy: { mode: 'independent', maxChildren: 2, childMaxCalls: 3 },
+  };
+  const three = { tasks: [{ goal: 'a' }, { goal: 'b' }, { goal: 'c' }] };
+  const r = await entry.run(three, {}, K);
+  assert.equal(r.ok, false); assert.equal(r.meta.code, 'too_many_tasks'); assert.equal(r.meta.maxChildren, 2); assert.equal(r.meta.given, 3);
+  assert.equal(asked, 0, 'no worker was asked');
+  const off = await entry.run(three, {}, Object.assign({}, K, { _delegationPolicy: { mode: 'off' } }));
+  assert.equal(off.meta.code, 'delegation_off'); assert.equal(asked, 0);
+  const two = await entry.run({ tasks: [{ goal: 'a' }, { goal: 'b' }] }, {}, K);
+  assert.equal(two.ok, true); assert.equal(asked, 2, 'within the policy, both run');
+  const unknown = await entry.run({ tasks: [{ goal: 'x' }, { goal: 'y' }, { goal: 'z' }] }, {}, Object.assign({}, K, { _delegationPolicy: null }));
+  assert.equal(unknown.meta.delegated.length, 3, 'with no policy reported yet, the server decides');
+});
+
+test('⑯ every Atlas turn answer states the worker policy; the console reads it from there', () => {
+  const ask = readFileSync(new URL('../supabase/functions/ai-proxy/ask.ts', import.meta.url), 'utf8');
+  assert.match(ask, /spec\.protocol2 \? \{ delegationPolicy: \{ mode: delegation\.mode, maxChildren: delegation\.maxChildren, childMaxCalls: delegation\.childMaxCalls \} \}/);
+  const con = readFileSync(new URL('../js/atlas-console.js', import.meta.url), 'utf8');
+  assert.match(con, /env\.meta\.delegationPolicy/);
+  assert.match(con, /get _delegationPolicy\(\)/);
+});
