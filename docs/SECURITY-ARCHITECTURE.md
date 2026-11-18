@@ -360,7 +360,7 @@ retires by the end of 2026, are only the fallback. No other file under `supabase
 of those variables — `tests/security-audit-checks.test.mjs` ⑦ discovers that rather than listing
 files — so disabling the legacy keys (§9) is one dashboard switch, not an edit per function. A
 function's diagnostics report which generation it resolved (`secret` / `legacy` / `none`), never the
-key. The functions' supabase-js is the browser's version (2.117.3), each pinned in its `deno.json`.
+key. The functions' supabase-js is the browser's version (`package.json`'s exact pin), each function pinning the same version in its `deno.json` — `tests/security-logic.test.mjs` compares them.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
@@ -1269,7 +1269,7 @@ put a real secret value in the repo, a PR, or a log.**
   passkey buttons degrade gracefully to password auth (feature-detected). supabase-js ≥ 2.105 is
   required; the app no longer takes it from a CDN at all — `src/vendor.js` imports the version
   `package.json` pins, so **check that pin** (and `admin.html`'s vendored copy) when this matters.
-  Current state: the pin is 2.117.3 (the Edge Functions pin the same version), `admin.html`'s copy is built from the same package, and the
+  Current state: the pin is `package.json`'s exact version (the Edge Functions pin the same version), `admin.html`'s copy is built from the same package, and the
   relying party above answers on production (§8 item 9).
 - **Auth → SMTP**: for reliable delivery of confirmation / reset / email-change mails at volume,
   configure a custom SMTP sender (the default Supabase mailer is rate-limited). Optional but
