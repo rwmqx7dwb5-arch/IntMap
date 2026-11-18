@@ -75,7 +75,8 @@ export function makeGisOgcApi() {
     const q = o || {};
     const base = httpsUrl(url);
     if (!base.ok) return base;
-    const items = itemsUrl(base.url);
+    /* `search`: a STAC item-search endpoint (…/search), which is addressed as it stands and takes `datetime` */
+    const items = q.search ? new URL(base.url.href) : itemsUrl(base.url);
     if (q.limit != null && !(Number.isInteger(q.limit) && q.limit > 0)) return bad('bad-param', { param: 'limit', value: q.limit });
     const b = q.bounds;
     if (b != null && (!Array.isArray(b) || b.length < 4 || !b.slice(0, 4).every(isNum) || !(b[2] > b[0]) || !(b[3] > b[1]))) return bad('bad-param', { param: 'bounds', value: b });
@@ -86,9 +87,10 @@ export function makeGisOgcApi() {
       if (!c.ok || c.url.origin !== items.origin) return bad('cursor-not-recognised', { reason: 'cursor-of-another-origin' });
       href = c.url.href;
     } else {
-      items.searchParams.set('f', 'json');
+      if (!q.search) items.searchParams.set('f', 'json');
       if (b) items.searchParams.set('bbox', b.slice(0, 4).join(','));
       if (q.limit != null) items.searchParams.set('limit', String(q.limit));
+      if (q.search && q.time != null && q.time !== '') items.searchParams.set('datetime', String(q.time));
       href = items.href;
     }
 
@@ -112,6 +114,22 @@ export function makeGisOgcApi() {
       /* a limit was stated: keep reading until that many have arrived; none stated: one page */
       if (!next || q.limit == null || features.length >= q.limit) break;
       href = next;
+    }
+
+    /* a STAC item keeps what a reader wants OUTSIDE `properties` — its id, its collection and above all
+       its ASSETS (the files). Put them where a dataset's columns are, one `asset:<key>` column per file, so
+       the address of a COG is a value the next step can read (`url:` takes it) and not something lost on
+       the way in. Nothing is invented: an asset without an href is skipped. */
+    if (q.search) {
+      for (const f of features) {
+        if (!f || typeof f !== 'object') continue;
+        const pr = Object.assign({}, f.properties || {});
+        if (f.id != null) pr.stac_id = String(f.id);
+        if (f.collection != null) pr.stac_collection = String(f.collection);
+        const as = (f.assets && typeof f.assets === 'object') ? f.assets : {};
+        for (const k of Object.keys(as)) if (as[k] && typeof as[k].href === 'string') pr['asset:' + k] = as[k].href;
+        f.properties = pr;
+      }
     }
 
     const more = next != null;
@@ -139,5 +157,6 @@ export function makeGisOgcApi() {
 
   /* the acquisition fields this source can honour — the others are refused by name by the caller */
   const supports = ['bounds', 'limit', 'cursor'];
-  return { readItems, supports };
+  const supportsSearch = supports.concat(['time']);
+  return { readItems, supports, supportsSearch };
 }

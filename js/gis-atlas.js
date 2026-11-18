@@ -721,6 +721,17 @@ export function makeGisAtlas(core) {
         return made;
       }
 
+      /* 2d. A STAC CATALOGUE SEARCH — `stac:https://…/search` (the item-search endpoint). The answer is a
+         dataset of the ITEMS (footprints, dates, and one `asset:<key>` column per file), so the way to
+         the data is a chain: find, then read the `asset:` address of the row you chose with `url:`. */
+      if (/^stac:https?:\/\//i.test(raw)) {
+        if (wantsRaster) return fail('ogc-needs-a-vector-slot', { slot: slot, ref: raw, why: 'a STAC search answers with items, which are features; read a file it names with url:' });
+        const made = await fromOgc(raw.replace(/^stac:/i, ''), action, cache, true);
+        if (!made.ok) return made;
+        cache.set(raw, made.id);
+        return made;
+      }
+
       /* 3. a dataset the reader named by its title. Two datasets may share one — the reader chose
          both names — so an ambiguous title is REFUSED WITH THE IDS rather than resolved by order of
          registration, which is a choice neither the reader nor the planner made. */
@@ -830,7 +841,7 @@ export function makeGisAtlas(core) {
        next link is handed back as `next` (a cursor). ⚠ Conditions, columns and time are refused BY
        NAME — js/gis-ogcapi.js sends none of them, and a server that ignored one would hand back a
        complete-looking answer to a different question. */
-    async function fromOgc(url, action, cache) {
+    async function fromOgc(url, action, cache, search) {
       const a = acquireOpts(action, false);
       if (!a.ok) return a;
       let G = null;
@@ -838,20 +849,21 @@ export function makeGisAtlas(core) {
       if (!G) return fail('map-unavailable', { needs: 'IntMapGisOgcApi' });
       /* what the source can DO is the source's statement (G.supports); the vocabulary stays js/gis-layers.js's */
       for (const k of Object.keys(a.opts)) {
-        if (G.supports.indexOf(k) < 0) return fail('ogc-param-not-supported', { param: k, accepts: G.supports.slice() });
+        const ok = search ? G.supportsSearch : G.supports;
+        if (ok.indexOf(k) < 0) return fail('ogc-param-not-supported', { param: k, accepts: ok.slice() });
       }
-      const r = await G.readItems(url, { bounds: a.opts.bounds, limit: a.opts.limit, cursor: a.opts.cursor, signal: a.opts.signal || null });
+      const r = await G.readItems(url, { bounds: a.opts.bounds, limit: a.opts.limit, cursor: a.opts.cursor, time: a.opts.time, search: !!search, signal: a.opts.signal || null });
       if (!r.ok) return fail(r.why, r.detail || { url: url });
       let ds;
       try {
         ds = data.add({
           title: (action && action.title) ? String(action.title) : (url.replace(/\/+$/, '').split('/').pop() || url),
           features: r.features, sourceCrs: 'EPSG:4326',
-          provenance: { kind: 'url-features', url: url, bounds: a.opts.bounds || null, at: Date.now(), coverage: r.coverage },
+          provenance: { kind: search ? 'stac-search' : 'url-features', url: url, bounds: a.opts.bounds || null, at: Date.now(), coverage: r.coverage },
         });
       } catch (e) { return fail('add-failed', { message: e && e.message }); }
       const row = datasetRow(ds);
-      row.acquiredFrom = 'ogc:' + url;
+      row.acquiredFrom = (search ? 'stac:' : 'ogc:') + url;
       row.coverage = r.coverage;
       if (r.next != null) row.next = r.next;
       if (cache && cache.acquired) cache.acquired.push(row);
