@@ -43,3 +43,4 @@ newsjp: Atlas が押せる画面の部品が増え（選択肢・スイッチ・
 - `scripts/device-storage-words.json` の `local:intmap_widgets` を撤去し台帳を再生成（死んだ IIFE が最後の書き手だった）。
 - `tests/perf-baseline.json`: `eager.modules` 908→909 を、main を取り込んだこの木で実測して引き上げ。この変更の差分に import の追加は無い（`js/widgets.js` と `js/atlas-controls.js` は既存モジュール内の編集）ので、+1 の出所は main 側の取り込みの可能性が高いが、どのモジュールかは特定していない。
 - `ui-declared` は main から入った `data.gisExport` を初回で捕まえた（GIS パネルを入口として宣言）。
+- セキュリティ頁（security.html・ja/security.html）は台帳から生成されるので、台帳の 104→103 に合わせて `node scripts/org-pages.mjs --write` で作り直した。
