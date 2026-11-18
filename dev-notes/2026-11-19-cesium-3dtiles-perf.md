@@ -32,3 +32,9 @@ newsjp: 3D地球儀エンジンで、国土交通省 PLATEAU の建物モデル�
 ## 3. 検査
 
 `tests/cesium-3dtiles-perf-checks.test.mjs`（能力表 3 か所・アダプタの 7 メンバ・フレーム計測の単一ラッパ・null と 0・23 区・ホスト台帳）。`check:engine` `check:types` `check:datagov` `check:i18n` `check:archfiles` `check:static` ほか。
+
+## 4. 配布サイズの天井を上げた理由（check:perf）
+
+- 非同期チャンク `cesium-engine` が 66.3 → 71.3 kB: 3D Tiles の受け皿（addTileset/removeTileset/setTilesetVisible/tilesetInfo と、そのコメント）と、フレーム計測・sceneStats の実装。Cesium を選んだ利用者にだけ読まれるチャンクで、起動時の読み込みには入らない。
+- 非同期チャンク `layer-time-decl` が 19.0 → 21.2 kB: `beta-dl-plateau3d` の時間宣言 1 行と、同じ build で入った他のレイヤーの宣言。
+- どちらも利用者が得る能力（3D 都市モデルと、Cesium での計測）に見合う増加で、削れる重複は無い。

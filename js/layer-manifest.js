@@ -395,7 +395,7 @@ const DECLARATIONS = [
   { id: "bx-wbresearch", shelf: "lyrGrpTech", order: 90, key: "wbresearch", rest: true, measures: ["worldbank:SP.POP.SCIE.RD.P6"] },   // bx-wbresearch.js
   { id: "bx-wbpatent", shelf: "lyrGrpTech", order: 100, key: "wbpatent", rest: true, measures: ["worldbank:IP.PAT.RESD"] },   // bx-wbpatent.js
   { id: "fac-dl-osmtelecom", shelf: "lyrGrpTech", order: 110, key: "osmtelecom", rest: true },   // fac-dl-osmtelecom.js
-  { id: "beta-dl-plateau3d", shelf: "lyrGrpTech", order: 900, key: "plateau3d", rest: true, share: true, sources: ["PLATEAU (MLIT Japan)"] },   // beta-dl-plateau3d.js
+  { id: "beta-dl-plateau3d", shelf: "lyrGrpTech", order: 900, key: "plateau3d", rest: true, share: true, sources: ["PLATEAU 3D city models (MLIT Japan)"] },   // beta-dl-plateau3d.js
   { id: "dl-gdppc", shelf: "lyrGrpEconomy", order: 10, key: "gdppc", label: "lyrGDPpc", share: true, measures: ["countrystats:gdppc"] },   // dl-gdppc.js
   { id: "wp-dl-trade", shelf: "lyrGrpEconomy", order: 20, key: "trade", share: true, lazy: ["worldPacksBody"] },   // wp-dl-trade.js
   { id: "bx-wbgini", shelf: "lyrGrpEconomy", order: 30, key: "wbgini", measures: ["worldbank:SI.POV.GINI"] },   // bx-wbgini.js

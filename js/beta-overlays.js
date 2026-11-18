@@ -188,7 +188,6 @@ export function betaOverlays(HOST){
       for(const code of PLATEAU_CITY_CODES){ const id=plateauTilesetId(code);
         if(on){ if(!L2.hasTileset(id)){ const sp=plateauSpecs().find(x=>x.id===id); L2.addTileset(id,sp.spec); } else L2.setTilesetVisible(id,true); }
         else L2.removeTileset(id); }
-      try{ if(window._hideGenericLegend) window._hideGenericLegend('plateau3d'); }catch(_){}
     }
 
     /* ---------- Historical borders (aourednik/historical-basemaps; raw.githubusercontent = CORS*) ---------- */
