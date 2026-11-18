@@ -189,6 +189,24 @@ overviews は数だけ報告する**）。
 - 出来たものは**登録された格子のデータセット**なので、`rasterMask`・`zonal`・`sample`・書き出し・
   `map.drawDataset` がそのまま効く。`provenance.kind = 'url-raster'`。
 
+### 1.4d URL の地物コレクションを読む — `js/gis-ogcapi.js` と `data.gis` の `ogc:` 入力
+
+OGC API – Features（OGC 17-069r4。WFS の後継）のコレクションを、`data.gis` の入力 `"ogc:https://…/collections/<id>"`
+で渡せる。⚠ **地物の枠だけ**（格子の枠は `ogc-needs-a-vector-slot`）。
+
+- **使う欄は `bounds` / `limit` / `cursor` だけ**。`where` / `fields` / `time` は**名前を挙げて断る**
+  （`ogc-param-not-supported`）——サーバが黙って無視した条件は「別の問いへの完全に見える答え」になるため。
+  消せる条件: Part 3（CQL2）の `filter`・`datetime` を、適合クラスで述べているサーバに対して。
+- **上限を発明しない**: `limit` を述べなければ**サーバ既定の 1 ページ**を読み、サーバの `rel=next` を `next`
+  （＝次の `acquire.cursor`）として返す。述べれば、その件数に届くまでページをたどる（最後のページは切らず、
+  超えた分もそのまま報告する——切ると `next` が行を飛ばす）。
+- **`coverage.completeness:'all'` はサーバの述べ方**: 最後のページに next が無く、数えるサーバなら
+  `numberMatched` が届いた件数と一致。⚠ **カーソルで着いたページは、最後でも `all` と呼ばない**（このデータセット
+  は収集の一部。`continues:false` が「この先は無い」を言う）。
+- **カーソルは呼び手が送り返す URL** なので、https かつ**同じオリジンのときだけ**たどる（別オリジンは
+  `cursor-not-recognised`）。サーバの next が別オリジンなら `ogc-next-elsewhere`、自分自身を指すなら `ogc-next-loop`。
+- 登録されるのは `provenance.kind='url-features'` のベクタのデータセット（座標は標準の既定 CRS84＝経緯度）。
+
 ### 1.4b 格子を合わせる — `js/gis-warp.js` (`window.IntMapGisWarp`)
 
 GDAL の warp が担っている役——**座標系・解像度・範囲・再標本化・NoData を 1 つの層で扱う**。
