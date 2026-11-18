@@ -22,7 +22,7 @@
  *  The band's columns are replaced, row by row, with the first column that is not part of it (a
  *  few km of ground at z8, the same source's own pixel one step in).
  * ==========================================================================*/
-export const STEP=0.15, STEP_ROWS=0.9;
+const STEP=0.15, STEP_ROWS=0.9;
 
 /* how many columns, counting inward from an edge, belong to the band — d is RGBA, dir +1 from the left
    edge, −1 from the right; rows are sampled every `step`. The band is found by its SIGNATURE, not by a
