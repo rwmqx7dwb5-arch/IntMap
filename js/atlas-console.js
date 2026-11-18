@@ -1197,7 +1197,7 @@ export function atlasConsole(HOST){
        inspected) the moment Atlas loads rather than only once a question is in flight. */
     let _turnRunAction=null;
     const TOOLS=makeAtlasToolSurface({ capabilities:CAPS, schemas:SCHEMAS,
-      runAction:(action)=>(_turnRunAction?_turnRunAction(action):Promise.resolve({ ok:false, error:'no_turn', message:'no turn is running' })) });
+      runAction:(action,turn)=>(_turnRunAction?_turnRunAction(action,turn):Promise.resolve({ ok:false, error:'no_turn', message:'no turn is running' })) });
     /* ---- (#R43) CHOROPLETH — genuine "data + map" combined output ("データやレイヤー、地図を組み合わせた複合的な
        処理＆出力"): shade EVERY country by a metric on a YlGnBu ramp (log-scaled for skewed metrics) with a legend,
        reusing the same nlq-src feature-state source the highlights use. ---- */
