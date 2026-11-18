@@ -886,9 +886,9 @@ export function makeThemeSky(HOST, CTX) {
     }catch(_){ return false; }
   }
   function _applySkyAtmosphere(sat){
-    sat=!!sat&&!_airYielded();   /* (layer-click-polish) a `noAir` row is up — the air is off exactly as on the Map basemap; see _airOn */
     if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
     _followClock();
+    sat=!!sat&&!_airYielded();   /* (layer-click-polish) a `noAir` row is up — the air is off exactly as on the Map basemap; see _airOn */
     try{
       _applySkyAtmosphere._on=true;
       _wireAirYield();

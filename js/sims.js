@@ -24,6 +24,7 @@ import { jsonWithin } from './fetch-deadline.js';
 import { registerSimOutput } from './sim-datasets.js';   /* (science-instruments) the deposit becomes a dataset the analysis tools and Atlas's query can read */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { IntMapTime } from './chronos.js';   /* (layer-click-polish) the population year is the map's year */
 import { icon, withIcons, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
@@ -691,8 +692,9 @@ export function popArea(HOST){
        ⚠ Invalid when WorldPop changes v3's request shape or limits again — the upstream-liveness
        probe (scripts/outbound-hosts.json) asks /v3/health, which stops answering 200 if v3 is retired. */
     const WP_URL='https://api.worldpop.org/v3/population', WP_Y0=2015, WP_Y1=2030;
-    /* the year the map is showing (the master clock — window.IntMapTime), inside the years WorldPop serves */
-    function _year(){ let y=new Date().getUTCFullYear(); try{ const T=window.IntMapTime; if(T&&T.year) y=+T.year(); }catch(_){}
+    /* the year the map is showing (the master clock — js/chronos.js), inside the years WorldPop serves */
+    function _year(asked){ if(asked!=null&&isFinite(+asked)) return Math.max(WP_Y0, Math.min(WP_Y1, Math.round(+asked)));   /* a year the caller named (Atlas `year`) wins over the clock */
+      let y=new Date().getUTCFullYear(); try{ if(IntMapTime&&IntMapTime.year) y=+IntMapTime.year(); }catch(_){}
       return Math.max(WP_Y0, Math.min(WP_Y1, Math.round(isFinite(y)?y:new Date().getUTCFullYear()))); }
     /* one WorldPop request for a single (sub-limit) polygon → {pop, year, source}. */
     async function _estimateOne(g, deadlineMs, year){
@@ -792,8 +794,8 @@ export function popArea(HOST){
       const out={ pop:Math.round(total), year:dataYear, src:dataSrc, tiles:cells.length, tilesOk:ok };
       if(failed>0){ out.partial=true; out.tilesFailed=failed; out.src=dataSrc+' ('+ok+'/'+cells.length+' tiles, '+failed+' unavailable)'; }
       return out; }
-    async function estimate(geom, onProgress){ const g=_prep(geom); if(!g) throw new Error('polygon required');
-      const year=_year(); const key=year+'|'+JSON.stringify(g); if(cache.has(key)) return cache.get(key);
+    async function estimate(geom, onProgress, askedYear){ const g=_prep(geom); if(!g) throw new Error('polygon required');
+      const year=_year(askedYear); const key=year+'|'+JSON.stringify(g); if(cache.has(key)) return cache.get(key);
       let areaKm2=0; try{ areaKm2=turf.area({type:'Feature',geometry:g,properties:{}})/1e6; }catch(_){}
       /* (#R128) even a SINGLE sub-cap request goes through the retry wrapper — a lone stalled connection used to
          hang the panel on "Calculating…" forever; now it aborts and retries, so a transient WorldPop hiccup recovers.
