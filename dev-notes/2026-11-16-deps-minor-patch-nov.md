@@ -33,8 +33,16 @@ internal: 依存の更新と、描画器の内部に合わせた追従。慣性�
 
 全 node 検査 7378 件のうち赤は 3 件で、どれもこの変更と無関係: `ci-job-timeouts` は main 自体の赤（`security.yml` の watch に上限が無い・#1143 が直す）、`security-audit` ① と ⑦ は全件同時実行の負荷で、単独では緑。
 
-## 3. 起動の重さ（check:perf）
+## 3. 起動の重さ（check:perf）——上げた分と、上げずに外した 1 件
 
-（build 後に追記）
+**外した: Cesium の earcut が起動チャンクに入っていた。** cesium 1.147 で Cesium の固定版 earcut 3.0.2 の置き場所が `@cesium/core/node_modules/earcut` に移った。`vite.config.js` は MapLibre のチャンク群を「パスのどこかに `node_modules/<MapLibre の依存の名前>` を含むか」で判定していたので、名前 `earcut` が Cesium の写し（12 kB）を拾い、eager の `maplibre-gl` チャンクへ入れていた——Cesium を開かない起動でも読まれる。直したのは規則: MapLibre の群は **MapLibre 自身の解決が届くディレクトリ**（`ML_DIRS`・package.json の依存を Node の解決で辿って実パスで持つ）にある module だけを取る。名前の一致で他パッケージの私的な写しを拾う形がもう起きない。直した後の build で eager に `@cesium/core` は 0 件。
 
-（未了・引き継ぎ）build 後の実測: eager の bytes は帯の内側、modules だけ 908 > 897。base（c84eb35a・6.13）と比べた増分は maplibre-gl 自身の新ファイル +11（camera_movement_scheduler・elevation_hold・camera_state・transform・crs ほか）と **`@cesium/core/node_modules/earcut`（12 kB）が eager の `maplibre-gl` チャンクに入った 1 件**。cesium 1.147 で Cesium の earcut 3.0.2 の置き場所が `@cesium/core` に移り、`vite.config.js` の `inPackage` が「パスのどこかに `node_modules/earcut` を含むか」で判定するため、MapLibre の依存名 `earcut` に一致して Cesium の写しを起動チャンクへ引き込んでいる。直すのは規則: MapLibre の群は `ML_PACKAGES` が解決した**ディレクトリ**で判定する（名前ではなく）。直したあと build して modules +11 を確かめてから `--update`。
+**上げた: 増えた分はどれも更新した依存そのもの。** 同じ日の main の build（他セッションの worktree の build-report を読むだけ）とチャンクごとに比べた:
+
+| | 増分 | 中身 |
+|---|---|---|
+| eager modules | +9（ceiling 895 → 904） | maplibre-gl の新ファイル +11（`camera_movement_scheduler`・`elevation_hold`・`camera_state`・`transform`・`crs`・`tile_matrix_set`・`projection_crud`・`projection_handler_worker`・`geojson_reproject`・`global_dispatcher`・`map_event_factory`・`create_map_handlers`・`layer_composite` 一式）−削除 4（`transform_helper`・`layer_opacity` 一式）＋その他。IntMap のコードは増えていない |
+| eager raw | 約 +40 kB | `maplibre-gl` +22.5 kB・`maplibre-gl-shared` +17.2 kB（6.14〜6.18 の機能: layer-blend・sparse vector source・カメラのタスク化・地形の保持） |
+| async raw / dist | 帯を少し超えた | `cesium` チャンク +18.4 kB（1.147 の `@cesium/gltf` 分割）と Cesium・pdf.js の配布物 |
+
+MapLibre は既定の描画エンジンで、起動に必要な分を起動の外へは出せない（6.13 の時点で同じ構成）。版を据え置く理由にはならないので、`node scripts/perf-budget.mjs --update` で超えた行だけ上げた（下げるのは main の CI の仕事）。
