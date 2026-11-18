@@ -40,4 +40,6 @@ newsjp: ニュースの詳細に★・共有・場所のカードへの扉を付
 - 訂正（correction_status）の書き手はまだ無い。作るなら news-ingest に。
 - 場所のカードを「時代」の節まで開いた状態で開く口は無い（カードは開き、節は 1 押しで出る）。
 - 実ブラウザでの見た目と動作は統合後にプレビューで確かめる（この記録の後の作業）。
-- `check:surface`: 新しい window 経由の読み（`IntMapShare`・`IntMapWB`・`IntMapStatsCompare`・`IntMapTimeBorders`・`_imPlacePopup`・`IntMapNewsEvents`・`IntMapLazy`・`IntMapOS`）はどれも持ち主が import の形で公開していない窓口。基準を更新した。
+- 場所のカードの「ここで2つの時代を比べる」は `window.IntMapCompare`（app-body が起動時に作る比較ウィンドウの制御器）の `thenNow` を呼ぶ。js/compare.js を参照すると（静的 import でも import() でも）本体の共有部品 8 つが別ファイルに分かれ、起動時リクエストが 9 → 17 になった（ビルドの二分探索で確定）。
+- 容量: 4 つの遅延チャンク（news-events・place-dossier・showcase-gallery・stats-compare）が今回の機能の分だけ増えた。起動時の読み込み（eager）は main と同じ。
+- `check:surface`: 新しい window 経由の読み（`IntMapCompare`・`IntMapShare`・`IntMapWB`・`IntMapStatsCompare`・`IntMapTimeBorders`・`_imPlacePopup`・`IntMapNewsEvents`・`IntMapLazy`・`IntMapOS`）はどれも持ち主が import の形で公開していない窓口。基準を更新した。
