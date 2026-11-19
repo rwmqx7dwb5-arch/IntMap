@@ -1,10 +1,11 @@
-// (plateau-3d-render-cesium) THE PLATEAU 3D TILES PATH, DRAWN IN A REAL BROWSER AND MEASURED.
+// (plateau-3d-render-profile) THE PLATEAU 3D TILES PATH, DRAWN IN A REAL BROWSER AND MEASURED.
 //
 // tests/cesium-3dtiles-perf-checks.test.mjs reads the SOURCE; nothing before this drew a tile. This
 // spec turns the `beta-dl-plateau3d` layer on the Cesium engine, parks the camera over Tokyo Station,
 // and asks the engine what it actually has: tiles whose content is ready, triangles selected, bytes
 // held, the CPU time of each frame (render.instrumentFrames), and whether the console stayed clean.
 //
+// ⚠ AN INSTRUMENT, NOT A GATE: named -profile so the default run and the budget skip it; `npm run test:profile` runs it.
 // ⚠ IT NEEDS THE NETWORK. The tilesets live on api.plateauview.mlit.go.jp (and their content on
 // MLIT's asset store). When the catalogue cannot be reached the test SKIPS and says why — it does not
 // pass on an empty scene, and it does not assert numbers it did not observe. (Note: that host answers

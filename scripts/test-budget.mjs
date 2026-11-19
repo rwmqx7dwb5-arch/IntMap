@@ -802,7 +802,7 @@ const specs = fs.readdirSync(path.join(ROOT, 'tests')).filter(f => f.endsWith('.
        · prod-smoke runs against the deployed site, after the merge;
        · r184-imagery-profile is the renderer PROFILING instrument, which playwright.config.js keeps
          out of the default run because it is a measurement rather than a gate (#R184). */
-  .filter(f => !/prod-smoke|imagery-profile/.test(f));
+  .filter(f => !/prod-smoke|-profile\.spec/.test(f));
 
 const times = measured.map(([, v]) => v).sort((a, b) => a - b);
 const p75 = times.length ? times[Math.floor(times.length * 0.75)] : 0;

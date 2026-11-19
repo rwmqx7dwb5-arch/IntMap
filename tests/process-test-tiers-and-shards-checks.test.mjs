@@ -338,7 +338,7 @@ test('R195 ⑦: the measured shard plan runs every spec exactly once, and is bal
      is expanded so its own tests can spread. Either way every spec must be represented. */
   const expected = readdirSync(join(ROOT, 'tests'))
     .filter((f) => f.endsWith('.spec.js'))
-    .filter((f) => !/^prod-smoke\.spec\.js$|^r184-imagery-profile\.spec\.js$/.test(f))
+    .filter((f) => !/^prod-smoke\.spec\.js$|-profile\.spec\.js$/.test(f))
     .map((f) => 'tests/' + f).sort();
   const fileOf = (e) => e.replace(/:\d+$/, '');
   assert.deepEqual([...new Set(seen.map(fileOf))].sort(), expected,
