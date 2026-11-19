@@ -43,7 +43,7 @@ newsjp: Atlasが、ページを閉じても残る永続のグラフから、施�
 
 ## 5. 起動費用の天井を上げた理由
 
-永続グラフの読み出し（`js/world-graph-store.js`）と `research.object` / `research.related` の拡張を Atlas の能力チャンクへ足したので、遅延チャンクが増えた: `atlas-cap-runs` +4.5 kB（872.9→877.4）・`atlas-delegate` +2.2 kB（59.8→62.0）。いずれも利用者が Atlas を開いたときにだけ読まれる遅延チャンクで、起動時（eager）の費用は変わらない。呼び出しの名前は `findPersisted`／`nearPersisted`／`rpcWorldGraph`——`find`／`call`／`near` だと呼び出し網の照合が配列の `find` と取り違え、無関係な押下を「データベース書き込みに届く」と数えた（`check:static` の data-effect が落ちた）。
+永続グラフの読み出し（`js/world-graph-store.js`）と `research.object` / `research.related` の拡張を Atlas の能力チャンクへ足したので、遅延チャンクが増えた: `atlas-cap-runs` +4.5 kB（872.9→877.4）・`atlas-delegate` +2.2 kB（main 側の 62.7 から 64.9）。いずれも利用者が Atlas を開いたときにだけ読まれる遅延チャンクで、起動時（eager）の費用は変わらない。呼び出しの名前は `findPersisted`／`nearPersisted`／`rpcWorldGraph`——`find`／`call`／`near` だと呼び出し網の照合が配列の `find` と取り違え、無関係な押下を「データベース書き込みに届く」と数えた（`check:static` の data-effect が落ちた）。
 
 ## 6. データ統治の台帳が増えた件
 
