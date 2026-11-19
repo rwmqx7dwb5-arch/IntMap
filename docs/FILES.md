@@ -343,7 +343,7 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
                                   ⚠ **欠損は NaN**（`GDAL_NODATA` を含む。0 で埋めない）。
                                   `read(i)` は扉で、開いただけでは画素を展開しない
 gis-ogcapi.js                     **URL の地物コレクション（OGC API – Features）を読む** `window.IntMapGisOgcApi`（`gis-atlas.js` が動的 import）—
-                                  `…/items?bbox&limit` を叩き、サーバ自身の `rel=next` をたどる。上限は発明しない（limit を述べなければ 1 ページ・
+                                  `…/items?bbox&limit` を叩き（STAC の `…/search` も同じ形で、`datetime` を取り、各 asset を `asset:<key>` 列にする）、サーバ自身の `rel=next` をたどる。上限は発明しない（limit を述べなければ 1 ページ・
                                   続きは `next`）。`all` はサーバの「次が無い」という述べ方だけ。カーソルは同一オリジンの https だけ
 gis-cog.js                        **URL の COG を窓ごとに読む** `window.IntMapGisCog`（`gis-atlas.js` が動的 import）—
                                   `gis-geotiff.js` の `readUrl`（HTTP Range）・`levelFor`・`readRegion` を呼ぶ唯一の
