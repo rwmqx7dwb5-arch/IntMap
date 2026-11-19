@@ -61,6 +61,9 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
 - **配信先は AWS（S3 + CloudFront）へ移行中**（決定は `DECISIONS.md`「配信とビルド」、手順は `docs/RELEASE.md`「AWS（S3 + CloudFront）での配信」）。`ci.yml` の `aws` ジョブは `pages` と同じ
   門を待ち、同じ `dist/` を `scripts/aws-publish.mjs` で S3 に置いて CloudFront を無効化する（応答ヘッダは Pages の実測値に合わせる）。`AWS_PUBLISH_ROLE_ARN` が無い間はスキップし本番は Pages の
   まま。構成は `infra/aws/`（CloudFormation）。
+- **公開はサーバー側の配備を待つ（release contract）。** `ci.yml` の `server-ready` が、サーバー面（`supabase-deploy.yml` の push `paths:` で定義）を最後に触れた commit の `supabase-deploy` 成功と
+  この commit の `db.yml` 成功を GitHub API で確かめ（最大 25 分待つ）、`pages`・`aws` はその成功を `needs` する。build は `release-contract.json`（サーバー面の版・migration 先頭・クライアントが叩く
+  Edge Function）を `dist/` に同梱し、`post-smoke` が公開後にその関数が本番に在るかを照合する。実体は `scripts/release-contract.mjs`、仕様は `docs/RELEASE.md`「Release contract」。
 - 公開する 3 か所（`ci.yml` の `pages`・`deploy.yml`・`rollback.yml`）は `concurrency: pages-production` で直列に走り、`main` への新しい push は古い CI の run を公開ごと取り消す。
 - **配備単位は 3 つあり、互いに独立している**——静的サイト（Pages）・Edge Functions（Supabase）・DB（migration）。`node scripts/release-state.mjs`（`npm run release:state` / `release:check`）が
   3 面をまとめて測り、判定は時刻ではなく配備されたソースを取り寄せた中身（`supabase functions download`）で出す。PR のゲートではない。読み手は nightly の

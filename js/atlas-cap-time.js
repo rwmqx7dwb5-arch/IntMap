@@ -23,6 +23,7 @@ import { changesPeriod, diffPolities, diffEconomy, diffLayers, rankChanges, boxe
 export default [
   {
     row: ['time.travel',                'timeTravel',     'setTime,timeSet',                                             'time',    'time',    'time',                   'map,time',            'session', 'none',   '',         ''],
+    commands: ['time.now', 'time.set', 'time.year'],
     ui: { at: ['#ntl-slider', '#ntl-date', '#ntl-today'] },
     /* Chronos: a year, a date, a number of days — or the return to live. With none of them the
        case says «give a year or date», which is what this branch list makes it stop needing to. */
@@ -336,6 +337,7 @@ export default [
   },
   {
     row: ['time.quakeHistory',          'quakeHistory',   'earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes', 'time', 'panel',  'panel.quakeHistory,camera', 'panel,explanation', 'session', 'none',   'place?',   'quakeHistory'],
+    commands: ['quakehistory.open'],
     ui: { at: ['[data-hn="qrecord"]'] },
     /* (live-news-product) THE EARTHQUAKE RECORD OF A PLACE — js/quake-history.js (the card and the map) over
        js/quake-history-core.js (the facts): every earthquake the USGS ANSS ComCat holds within a radius at or above a

@@ -838,8 +838,8 @@ export function makeGisAtlas(core) {
 
     /* An OGC API – Features collection becomes a registered vector dataset. The window, the count and
        the cursor are the planner's; what the server could not say is `coverage`, and the server's own
-       next link is handed back as `next` (a cursor). ⚠ Conditions, columns and time are refused BY
-       NAME — js/gis-ogcapi.js sends none of them, and a server that ignored one would hand back a
+       next link is handed back as `next` (a cursor). ⚠ Conditions and columns are refused BY
+       NAME — js/gis-ogcapi.js sends neither through here (time goes as `datetime`), and a server that ignored one would hand back a
        complete-looking answer to a different question. */
     async function fromOgc(url, action, cache, search) {
       const a = acquireOpts(action, false);
