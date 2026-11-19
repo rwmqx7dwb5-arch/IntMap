@@ -230,10 +230,10 @@ export default [
     },
   },
   /* ⚠ (#R801) WHAT LEAVES, TO WHOM: the device's position, read from the sensor and returned to
-     the MODEL as a fact ({lat,lng,accuracyM}, #R413) — column 8 'explicit', same rule as
+     the MODEL as a fact ({lat,lng,accuracyM}, #R413) — column 8 'none' (it asks nothing: the model it reaches already holds the conversation), same rule as
      navigation.start above. */
   {
-    row: ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera,map.location',                 'camera,map',          'session', 'explicit','',        ''],
+    row: ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera,map.location',                 'camera,map',          'session', 'none'    ,'',        ''],
     ui: { at: ['#btn-locate'] },
     doc: [
       { in: 'navigation-view', at: 120, text: '{"type":"locate"} flies to the user\'s real GPS position — where the reader IS, right now, from the device itself (asks browser permission; use for 「現在地を表示して」「今いる場所に移動して」, "where am I", "go to my location"). ' },
@@ -299,9 +299,9 @@ export default [
      and moves nothing (observer `none`, empty `writes`), so it holds no conflict key and can
      run beside anything. risk='read' for the same reason.
      ⚠ (#R801) WHAT LEAVES, TO WHOM: the pixels on the reader's screen, to the MODEL as an image
-     — column 8 'explicit' (js/atlas-executor.js 4b). */
+     — column 8 'none' (same reason) (js/atlas-executor.js 4b). */
   {
-    row: ['view.inspect',               'inspect',        'lookAtMap,seeMap,viewInspect,readScreen',                     'view',    'none',    '',                       'explanation',         'read',    'explicit','',        ''],
+    row: ['view.inspect',               'inspect',        'lookAtMap,seeMap,viewInspect,readScreen',                     'view',    'none',    '',                       'explanation',         'read',    'none'    ,'',        ''],
     ui: { none: '2026-11-16' },
     /* (#R493) `include` is a CLOSED, ASCII set the dispatch really compares against (rule 2 above),
        and neither argument is required: an inspect with no arguments takes the whole screen, which

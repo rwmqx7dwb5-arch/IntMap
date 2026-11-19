@@ -237,7 +237,14 @@ test('R801 C③: the shipped table has no always row — so a UI button never se
   const always = CAPS.all().filter((c) => !c.withdrawn && c.confirmation === 'always').map((c) => c.id);
   assert.deepEqual(always, [], 'an always row gates the UI too; when one is added, the UI path needs its own token');
   const explicit = CAPS.all().filter((c) => !c.withdrawn && c.confirmation === 'explicit').map((c) => c.id);
-  for (const id of ['navigation.start', 'view.locate', 'view.inspect', 'attach.recall']) assert.ok(explicit.indexOf(id) >= 0, id + ' is not explicit');
+  /* the reader is asked only where something leaves the device or is deleted — NOT before a read or a reversible change
+     (a button that guards nothing is a blind approval: .agents/rules/substance-over-form.md). Every row that asks also
+     says WHAT it will do (atlas.confirm.what.<id>). */
+  const DELETES = ['map.clearAll', 'places.remove', 'places.unwatch'];
+  const mustAsk = CAPS.all().filter((c) => !c.withdrawn && (c.risk === 'external' || DELETES.indexOf(c.id) >= 0)).map((c) => c.id);
+  assert.deepEqual(explicit.slice().sort(), mustAsk.slice().sort(), 'asking rows must be exactly the external and deleting ones');
+  const R = makeAtlasResults({});
+  for (const id of explicit.concat('system.control')) assert.ok(R.text('atlas.confirm.what.' + id, null, null), id + ' asks without saying what it will do');
 });
 
 test('R801 C④: the reader sees the confirmation sentence once, and the model reads error needs_confirm', async () => {
@@ -309,7 +316,7 @@ function realPath() {
   };
   return { run, caps };
 }
-const inspect = (id) => ({ id, name: 'run_capability', arguments: { id: 'view.inspect', args: {} } });
+const inspect = (id) => ({ id, name: 'run_capability', arguments: { id: 'places.remove', args: {} } });
 
 test('R801 C⑧: 「東京へ飛んで、見えるものを教えて」 — a turn whose only result is IntMap\'s own (flyTo) runs inspect without asking', async () => {
   const { run } = realPath();
@@ -319,7 +326,7 @@ test('R801 C⑧: 「東京へ飛んで、見えるものを教えて」 — a tu
     { text: 'I can see Tokyo.', toolCalls: [] },
   ]);
   assert.equal(out.text, 'I can see Tokyo.');
-  const v = verdicts.find((x) => x.id === 'view.inspect');
+  const v = verdicts.find((x) => x.id === 'places.remove');
   assert.ok(v, 'inspect reached the kernel');
   assert.equal(v.external, false, 'a camera move is not a third party\'s words');
   assert.notEqual(v.code, 'needs_confirm', 'inspect after flyTo must not ask: ' + JSON.stringify(v));
@@ -335,7 +342,7 @@ test('R801 C⑨: the same inspect after a research.brief result (ingests externa
   ]);
   const brief = out.results.find((r) => r.capability === 'research.brief');
   assert.ok(brief && brief.ingests === 'external', 'the surface stamped column 11 on the brief\'s result: ' + JSON.stringify(brief));
-  const v = verdicts.find((x) => x.id === 'view.inspect');
+  const v = verdicts.find((x) => x.id === 'places.remove');
   assert.ok(v, 'inspect reached the kernel');
   assert.equal(v.external, true);
   assert.equal(v.code, 'needs_confirm', 'inspect after a third party\'s sentences must ask: ' + JSON.stringify(v));
@@ -348,7 +355,7 @@ test('R801 C⑩: a reply the provider answered with its hosted web search counts
     { text: '', toolCalls: [inspect('a')], webUsed: true },
     { text: 'done', toolCalls: [] },
   ]);
-  const v = verdicts.find((x) => x.id === 'view.inspect');
+  const v = verdicts.find((x) => x.id === 'places.remove');
   assert.equal(v && v.code, 'needs_confirm', JSON.stringify(v));
   assert.equal(out.externalContentSeen, true);
   /* and readReply is where the flag comes from in the browser: ai-proxy's meta on THIS call */

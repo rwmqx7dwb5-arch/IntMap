@@ -378,8 +378,18 @@ function makeAtlasExecutor(HOST, CTX) {
           return settle(Results.needsInput({
             operationId: operationId, capabilityId: cap.id, code: 'needs_confirm',
             /* `promptKey` names the prompt the renderer draws for this request — the text lives in
-               js/atlas-results.js ('atlas.input.confirm', nine languages), not here. */
-            inputRequest: { kind: 'choice', promptKey: 'atlas.input.confirm_press', pendingArgs: args, capabilityId: cap.id, confirm: conf, effect: eff }
+               js/atlas-results.js, not here. It says WHAT will run: `atlas.confirm.what.<capability id>`, and
+               `{what}` is the thing the call names (a place, a button, a destination — whichever the args carry).
+               Only the generic line is left for a row that has no sentence of its own, and a check makes every
+               row that asks have one — a confirmation that does not say what it confirms is a blind approval. */
+            inputRequest: (function () {
+              var named = ['name', 'place', 'target', 'query', 'collection', 'to', 'id'].map(function (k) { return args && args[k]; })
+                .filter(function (v) { return typeof v === 'string' && v; })[0] || '';
+              var own = 'atlas.confirm.what.' + cap.id;
+              return { kind: 'choice', promptKey: Results.text(own, null, null) ? own : 'atlas.input.confirm_press',
+                promptParams: { what: named ? '「' + named + '」' : cap.id },
+                pendingArgs: args, capabilityId: cap.id, confirm: conf, effect: eff };
+            })()
           }));
         }
 

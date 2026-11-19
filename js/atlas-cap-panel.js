@@ -533,7 +533,7 @@ export default [
     },
   },
   {
-    row: ['panel.tourBuilder',          'tourBuilder',    'buildTour,makeTour,tourEditor,addMapToTour,shareTour',        'panel',   'time',    'camera,map.layer,time,tour.draft', 'map,time',     'persist', 'explicit', '',     ''],
+    row: ['panel.tourBuilder',          'tourBuilder',    'buildTour,makeTour,tourEditor,addMapToTour,shareTour',        'panel',   'time',    'camera,map.layer,time,tour.draft', 'map,time',     'persist', 'none'    , '',     ''],
     ui: { at: ['button[data-imtp-make]'] },
     /* (tour-builder) the TOUR BUILDER (js/tour-builder.js): the tour a reader writes for their own lesson, kept in
        this browser while it is written and shared as a link that carries the whole tour (`?tour=custom&t=…`,
@@ -550,7 +550,7 @@ export default [
          link            the share link, with how much of the address it uses against the hosted site's measured limit
          play            preview the draft in the classroom mode from `step` — the same player a shared link opens
          clear           delete the draft
-       Column 7 is 'persist' (the draft is written to localStorage) and column 8 'explicit' — `clear` and `remove`
+       Column 7 is 'persist' (the draft is written to localStorage) and column 8 'none' — `clear` and `remove`
        destroy what a teacher wrote. Column 5 names `tour.draft`, which no restorer puts back, so the turn's undo
        does not claim to reverse it (js/atlas-capabilities.js UNDO_EXACT). */
     doc: [

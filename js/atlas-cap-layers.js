@@ -161,7 +161,7 @@ export default [
     },
   },
   {
-    row: ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
+    row: ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'none'    ,'',        ''],
     ui: { at: ['.alc-clear-all'] },
     doc: [
       { in: 'layers', at: 30, text: '{"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); the map display (place names, labels, borders, roads, railways, day/night, 3-D buildings) is not a layer and stays as it is — "all":true clears it too; ' },

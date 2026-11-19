@@ -372,7 +372,7 @@ describe('gis-foundation-refine · export — the Atlas door', () => {
     assert.ok(at > 0);
     const row = src.slice(at, src.indexOf('\n', at));
     assert.match(row, /'gisExport'/);
-    assert.match(row, /'persist', 'explicit'/, 'a file written to the reader\'s device is not a read');
+    assert.match(row, /'persist', 'none'/, 'a file written to the reader\'s device is not a read');
     assert.match(row, /'gisCore'/);
     /* the planner is handed no copy of the formats: the guide points at the writer's refusal */
     const doc = src.slice(at, src.indexOf("schema: () =>", at));

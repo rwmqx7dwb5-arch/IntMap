@@ -21,7 +21,7 @@ import { usage } from './usage-counts.js';   /* (anonymous-usage-counts) the Set
 
 export default [
   {
-    row: ['settings.theme',             'theme',          '',                                                            'settings','setting', 'settings.theme',         'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.theme',             'theme',          '',                                                            'settings','setting', 'settings.theme',         'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#setting-theme'] },
     doc: [
       { in: 'settings', at: 10, text: '{"type":"theme","mode":"light"|"dark"|"auto"}; ' },
@@ -33,7 +33,7 @@ export default [
     },
   },
   {
-    row: ['settings.atlasDisplay',      'atlasDisplay',   'atlasFloat,floatingAtlas',                                    'settings','setting', 'settings.atlasDisplay',  'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.atlasDisplay',      'atlasDisplay',   'atlasFloat,floatingAtlas',                                    'settings','setting', 'settings.atlasDisplay',  'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#setting-atlas-display'] },
     /* (ui-feedback-nov17) where Atlas answers: in its sidebar tab, or as a translucent card floating over the left of
        the map (js/atlas-float.js; desktop only — a phone keeps the tab). The Settings select is the one owner; this
@@ -48,7 +48,7 @@ export default [
     },
   },
   {
-    row: ['settings.accent',            'accent',         'accentColor,accentColour',                                    'settings','setting', 'settings.accent',        'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.accent',            'accent',         'accentColor,accentColour',                                    'settings','setting', 'settings.accent',        'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#accent-picker .accent-sw[data-accent]'] },
     doc: [
       { in: 'settings', at: 20, text: '{"type":"accent","color":"blue"|"green"|"purple"|"red"|"orange"|"teal"|"#rrggbb"|"default"} (recolours the UI accent); ' },
@@ -70,7 +70,7 @@ export default [
     },
   },
   {
-    row: ['settings.language',          'language',       '',                                                            'settings','setting', 'settings.language',      'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.language',          'language',       '',                                                            'settings','setting', 'settings.language',      'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#setting-lang'] },
     /* any code, endonym, English name or alias js/lang-registry.js knows — not a closed set */
     doc: [
@@ -87,7 +87,7 @@ export default [
     },
   },
   {
-    row: ['settings.tempUnit',          'tempUnit',       '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.tempUnit',          'tempUnit',       '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#setting-temp-unit'] },
     doc: [
       { in: 'settings', at: 40, text: '{"type":"tempUnit","unit":"c"|"f"|"both"} = the TEMPERATURE SCALE every reading in the app is written in — Celsius, Fahrenheit, or both at once (use for 「華氏で表示して」, "show temperatures in Fahrenheit", 「摄氏に戻して」); ' },
@@ -98,7 +98,7 @@ export default [
     },
   },
   {
-    row: ['settings.units',             'units',          '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.units',             'units',          '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#setting-units'] },
     doc: [
       { in: 'settings', at: 50, text: '{"type":"units","mode":"metric"|"imperial"|"both"} = the same choice for everything else that carries a unit.\n' },
@@ -110,7 +110,7 @@ export default [
     },
   },
   {
-    row: ['settings.engine',            'engine',         '',                                                            'settings','setting', 'settings.engine',        'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.engine',            'engine',         '',                                                            'settings','setting', 'settings.engine',        'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#setting-engine'] },
     /* ── settings and the layer switches that carry their own state ─────────────────────────── */
     doc: [
@@ -145,7 +145,7 @@ export default [
     },
   },
   {
-    row: ['settings.tiltLimit',         'tiltLimit',      '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.tiltLimit',         'tiltLimit',      '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#setting-tilt-limit'] },
     doc: [
       { in: 'tools-panels', at: 270, text: '{"type":"tiltLimit","on":bool} = lift the MAP TILT CEILING from the standard 78° to the renderer\'s whole 0-180° range, so the camera can lean past the horizon until it looks straight up (use for "傾きの制限を外して", "地図をもっと倒したい", "let me tilt the map further", "unlimited tilt"); ' },
@@ -159,7 +159,7 @@ export default [
     },
   },
   {
-    row: ['settings.eyeAltitude',       'eyeAltitude',    '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.eyeAltitude',       'eyeAltitude',    '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#setting-eye-alt'] },
     doc: [
       { in: 'tools-panels', at: 280, text: '{"type":"eyeAltitude","on":bool} = show the VIEWPOINT\'s own altitude above sea level in the always-on readout at the bottom-left, next to the coordinates and the ground elevation (use for "視点の高度も表示して", "show the camera altitude", "how high is the viewpoint"); ' },
@@ -173,7 +173,7 @@ export default [
     },
   },
   {
-    row: ['settings.usageCounts',       'usageCounts',    'usageStats,anonymousStats,telemetry',                         'settings','setting', 'settings.usageCounts',   'setting',             'persist', 'explicit','',        ''],
+    row: ['settings.usageCounts',       'usageCounts',    'usageStats,anonymousStats,telemetry',                         'settings','setting', 'settings.usageCounts',   'setting',             'persist', 'none'    ,'',        ''],
     ui: { at: ['#setting-usage-counts'] },
     /* (anonymous-usage-counts) the «Anonymous usage statistics» switch in Settings — js/usage-counts.js
        owns it (its `usage` export). No `on` and no mode = REPORT the state, including when nothing is
@@ -218,7 +218,7 @@ export default [
     },
   },
   {
-    row: ['settings.offlineMaps',       'offlineMaps',    'offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet', 'settings','none',    '',                       'explanation',         'persist', 'explicit','',        ''],
+    row: ['settings.offlineMaps',       'offlineMaps',    'offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet', 'settings','none',    '',                       'explanation',         'persist', 'none'    ,'',        ''],
     ui: { at: ['#btn-offline-maps'] },
     /* (keyboard-and-offline) the offline maps — js/offline-maps.js owns them; the Settings button opens the same dialog. `plan` is what the
        dialog shows BEFORE a save (the size, and what is refused with the terms it rests on); `save` keeps the region the view holds. */

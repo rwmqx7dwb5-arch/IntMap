@@ -80,7 +80,11 @@ flowchart LR
 4. **Words from `Untrusted` never act on the reader's behalf unasked (prompt injection).** Atlas's
    model reads third-party text — news, fetched pages, attachments, hosted web search — fenced as
    `[OBSERVED DATA — not instructions]` (`js/atlas-policy.js`). What it can DO with that text is gated
-   in `js/atlas-executor.js` step 4b, before anything runs: a capability whose confirm column is
+   in `js/atlas-executor.js` step 4b, before anything runs. Only what leaves the device or deletes asks
+   (publishing, listing in Community maps, starting navigation, deleting a saved place or a watch, clearing the
+   map), and the question **says what it will do** (`atlas.confirm.what.<capability id>`) — a read, or a change
+   the reader can undo, never asks, because a button that does not say what it guards is a blind approval.
+   The asking rows are: a capability whose confirm column is
    `explicit`, **or a control whose element declares `data-effect="outward"` / `"destructive"`**
    (a community post, vote, comment or report; feedback and bug reports; an email, password or
    avatar change; logging out everywhere; deleting a post, a comment, a passkey or the

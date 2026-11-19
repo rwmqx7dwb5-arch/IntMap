@@ -36,9 +36,9 @@ export default [
      data.coverage above (#R760). tests/atlas-capabilities-checks.test.mjs #R783 ①/② measure
      both halves of that for all 145 rows rather than for these two. */
   /* ⚠ (#R801) WHAT LEAVES, TO WHOM: a file the reader attached in an EARLIER turn, back into
-     the MODEL's next input — column 8 'explicit' (js/atlas-executor.js 4b). */
+     the MODEL's next input — column 8 'none' (it only reaches the model that already holds the conversation) (js/atlas-executor.js 4b). */
   {
-    row: ['attach.recall',              'recallAttachment','recall_attachment,recallFile,reopenAttachment',               'dialog',  'none',    '',                       'explanation',         'read',    'explicit','',        '', 'external'],
+    row: ['attach.recall',              'recallAttachment','recall_attachment,recallFile,reopenAttachment',               'dialog',  'none',    '',                       'explanation',         'read',    'none'    ,'',        '', 'external'],
     ui: { none: '2026-11-16' },
     /* (#R773) 取り寄せるものは名前で指す。名前は [ATTACHED EARLIER…] が述べたもので、無ければ
        その一覧が返る（存在しない名前に対して黙って別のものを返さない）。

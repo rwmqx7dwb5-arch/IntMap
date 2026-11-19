@@ -112,7 +112,17 @@ export function makeAtlasResults(HOST) {
       'atlas.input.confirm':         LA('Reply yes to go ahead, or say what to do instead.', '進めてよければそう答えてください。別のやり方がよければそう言ってください。', 'Antworte mit Ja, um fortzufahren, oder sag, was stattdessen zu tun ist.', 'Ответьте «да», чтобы продолжить, или скажите, что сделать вместо этого.', 'Responde sí para continuar, o di qué hacer en su lugar.'),
       /* (atlas-outside-mark) the confirmation is the reader's PRESS, read by IntMap — not words Atlas interprets, and not the
          same call made again (js/atlas-console.js `_confirmPress`). Written by IntMap: en + jp (CONSTITUTION.md §7). */
-      'atlas.input.confirm_press':   LA('Press Run to go ahead. Nothing has been done yet.', '進めてよければ「実行」を押してください。まだ何も実行していません。'),
+      /* A confirmation says WHAT it will do. A button that does not is a blind approval — the reader cannot judge it, so it
+         protects nothing. One line per operation that asks (the ones that publish, send or delete); `{what}` is the thing the
+         call names. js/atlas-executor.js picks `atlas.confirm.what.<capability id>`; a check makes every asking row have one. */
+      'atlas.input.confirm_press':   LA('Run {what}?', '{what} を実行します。'),
+      'atlas.confirm.what.map.clearAll':      LA('Clear everything drawn on the map: pins, shading, rings and routes.', '地図に描いたピン・塗り・円・ルートをすべて消します。'),
+      'atlas.confirm.what.places.remove':     LA('Delete {what} from your saved places. This cannot be undone.', 'マイプレイスから {what} を削除します。元に戻せません。'),
+      'atlas.confirm.what.places.unwatch':    LA('Stop watching {what}.', '{what} の見守りを止めます。'),
+      'atlas.confirm.what.places.publish':    LA('Publish your saved places. Anyone with the link can see them.', '保存した場所を公開します。リンクを知っている人は誰でも見られます。'),
+      'atlas.confirm.what.community.list':    LA('List this map in Community maps, where everyone can see it.', 'この地図をコミュニティマップに載せます。誰でも見られます。'),
+      'atlas.confirm.what.navigation.start':  LA('Start navigation to {what} in another app.', '{what} への経路案内を別のアプリで開始します。'),
+      'atlas.confirm.what.system.control':    LA('Press {what}. It posts, sends or deletes something that cannot be taken back.', '{what} を押します。投稿・送信・削除など、取り消せない操作です。'),
       'atlas.confirm.run':           LA('Run', '実行'),
       'atlas.confirm.cancel':        LA("Don't", 'やめる'),
       'atlas.confirm.declined':      LA('Not run — you chose not to.', '実行しませんでした（取りやめ）。'),

@@ -137,7 +137,7 @@ const norm = (x) => String(x || '').normalize('NFKC').toLowerCase().trim();
 
 export default [
   {
-    row: ['places.save',                'savePlace',      'saveToMyPlaces,bookmarkPlace,rememberPlace,keepPlace', 'places', 'none', 'account.places', 'explanation', 'persist', 'explicit', 'place?', ''],
+    row: ['places.save',                'savePlace',      'saveToMyPlaces,bookmarkPlace,rememberPlace,keepPlace', 'places', 'none', 'account.places', 'explanation', 'persist', 'none'    , 'place?', ''],
     ui: { at: ['#mpl-save-view', '[data-pinact="save"]'], login: true },
     doc: [
       { in: 'more-features', at: 180, text: '{"type":"savePlace","place"?:str,"country"?:str,"lng"?:num,"lat"?:num,"pinId"?:str,"name"?:str,"note"?:str,"collection"?:str} = SAVE A PLACE TO THE READER\'S ACCOUNT — 「マイプレイス」, the reader\'s own saved places, kept across devices (unlike a pin, which lasts only this session). Give the place by name (with its country), by coordinates, or by the id of a pin already on the map; "name" is what it will be called, "note" a line of text, "collection" groups places ("Field trip", 「京都旅行」). Saving the same position again updates it and says it was already saved. Use for 「この場所を保存して」「ブックマークして」「マイプレイスに追加」, "save this place", "remember Kyoto Station for my trip"; ' },
@@ -249,7 +249,7 @@ export default [
      «everything» by default. Its risk is 'external' (whoever has the link reads it) and its confirmation 'explicit'
      (js/atlas-executor.js 4b asks the reader when outside content has been in front of the model this turn). */
   {
-    row: ['places.saveView',            'saveMap',        'saveView,saveThisMap,keepThisMap,bookmarkMap', 'places', 'none', 'account.places', 'explanation', 'persist', 'explicit', '', ''],
+    row: ['places.saveView',            'saveMap',        'saveView,saveThisMap,keepThisMap,bookmarkMap', 'places', 'none', 'account.places', 'explanation', 'persist', 'none'    , '', ''],
     ui: { at: ['#mpl-save-map'], login: true },
     doc: [
       { in: 'more-features', at: 220, text: '{"type":"saveMap","name"?:str,"note"?:str,"collection"?:str,"what"?:"map"|"myMap"|"tour"|"atlasTour"|"answer","entry"?:str} = SAVE THE MAP AS IT IS NOW TO THE READER\'S ACCOUNT — the layers that are on, the date on the clock, the base map, the camera and the caption, exactly what a share link holds — under a name, in a collection beside the saved places, so it opens again on any device («保存した地図», the Library). With no name it takes the map\'s caption or the date. Saving the same map again updates it and says it was already saved. "what" keeps something else the reader made of a map, as ONE saved document in the same Library: "myMap" the reader\'s own drawn map on show (pins, lines, areas — マイマップ) over the map as it is now; "tour" the tour being written in the tour builder (ツアー作成の下書き); "atlasTour" the tour you assembled in this tab with panel.tour addStep; "answer" a notebook entry (its "entry" id, else the newest) kept as a map with its question and answer. A saved tour (several steps) can be filed in a collection, published read-only and played by whoever opens the link. Use for 「この地図を保存して」「今の表示を『1914年のヨーロッパ』として保存」「京都旅行に入れておいて」「このツアーをアカウントに保存」「マイマップを別の端末でも開けるように」「さっきの回答を地図として保存」, "save this map", "keep this view as Europe 1914 in my Field trip collection", "save my tour to my account"; ' },
@@ -349,7 +349,7 @@ export default [
     },
   },
   {
-    row: ['places.watch',               'watchPlace',     'monitorPlace,watchArea,alertMeNear,keepAnEyeOn', 'places', 'none', 'account.watches', 'explanation', 'persist', 'explicit', 'place?', ''],
+    row: ['places.watch',               'watchPlace',     'monitorPlace,watchArea,alertMeNear,keepAnEyeOn', 'places', 'none', 'account.watches', 'explanation', 'persist', 'none'    , 'place?', ''],
     ui: { at: ['.pw-add'], login: true },
     doc: [
       { in: 'more-features', at: 260, text: '{"type":"watchPlace","id"?:str,"name"?:str,"place"?:str,"country"?:str,"lng"?:num,"lat"?:num,"radiusKm"?:num,"quakeMinMag"?:num|"off","alertMinLevel"?:1-4|"off","volcanoMinRank"?:1-4|"off","newsMinSources"?:num|"off","enabled"?:bool} = WATCH A SAVED PLACE (「見守る場所」): while IntMap is open it checks every 10 minutes for earthquakes (USGS, M≥quakeMinMag within radiusKm), official weather warnings whose area contains the place (alertMinLevel on the agencies\' ladder 1 advisory · 2 warning · 3 danger · 4 emergency; read only while the Weather warnings layer is on), volcano alert levels within radiusKm (volcanoMinRank 2 advisory/yellow · 3 watch/orange · 4 warning/red) and news events reported by ≥newsMinSources independent outlets within radiusKm, and tells the reader what is new. Defaults: 300 km, M4.5, level 2, rank 2, 2 outlets; "off" stops a kind. Name a saved place by id/name (myPlaces), or give a place/coordinates — it is saved to My places first. Watching a watched place again changes only what you pass. Nothing is sent while IntMap is closed. Use for 「自宅の周辺で地震があったら教えて」「この場所を見守って」「警報が出たら知らせて」, "watch my home for earthquakes", "alert me to news near Kyoto"; ' },
