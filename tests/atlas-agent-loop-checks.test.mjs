@@ -958,9 +958,9 @@ test('R511 ⑧: linkProse numbers the first mention of each place in the text no
   const html = '<p>The <b>Strait of Hormuz</b> and the Strait of Hormuz again; Tokyoite is not Tokyo. <a href="#">Tokyo</a> ホルムズ海峡。</p>';
   const out = C.linkProse(html, recs);
   assert.equal((out.match(/atl-geo-ref/g) || []).length, 2, 'one reference per record');
-  assert.match(out, /<b><span class="atl-geo-ref" data-geo="water:IR:hormuz">Strait of Hormuz<span class="atl-geo-n"[^>]*>1<\/span><\/span><\/b>/, 'the first mention, inside the <b>, got the badge');
+  assert.match(out, /<b><span class="atl-geo-ref" data-geo="water:IR:hormuz"[^>]*>Strait of Hormuz<span class="atl-geo-n"[^>]*>1<\/span><\/span><\/b>/, 'the first mention, inside the <b>, got the badge');
   assert.ok(out.indexOf('Tokyoite') >= 0 && !/Tokyo<span class="atl-geo-n"[^>]*>2<\/span><\/span>ite/.test(out), 'a word containing the name is not the name');
-  assert.match(out, /is not <span class="atl-geo-ref" data-geo="city:JP:tokyo">Tokyo/, 'the standalone Tokyo is');
+  assert.match(out, /is not <span class="atl-geo-ref" data-geo="city:JP:tokyo"[^>]*>Tokyo/, 'the standalone Tokyo is');
   assert.match(out, /<a href="#">Tokyo<\/a>/, 'the one inside the link is untouched');
   assert.equal(out.indexOf('data-geo="water:IR:hormuz"'), out.lastIndexOf('data-geo="water:IR:hormuz"'), 'the Japanese spelling was not linked a second time');
   assert.equal(C.linkProse(html, []), html, 'no records → unchanged');
