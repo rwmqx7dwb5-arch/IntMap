@@ -41,9 +41,9 @@
  *  docs/architecture/05-ai.md «Evidence Graph»).
  * ==========================================================================*/
 
-export const GRAPH_VERSION = 1;
-export const SOURCE_TYPES = ['dataset', 'web_document', 'app_data', 'world_object', 'other'];
-export const DERIVED_TYPES = ['gis_op', 'metric', 'answer_number', 'ai_inference', 'other'];
+const GRAPH_VERSION = 1;
+const SOURCE_TYPES = ['dataset', 'web_document', 'app_data', 'world_object', 'other'];
+const DERIVED_TYPES = ['gis_op', 'metric', 'answer_number', 'ai_inference', 'other'];
 
 /* A fingerprint, not a signature: 53-bit cyrb53 over a canonical JSON. It names «the same inputs and the same
    calculation», it does not defend against anyone — so it is synchronous (a lineage must not need `await`). */
