@@ -359,6 +359,7 @@ export default [
   },
   {
     row: ['data.layerValues',           'layerData',      'layerValue,layerQuery',                                       'data',    'none',    '',                       'explanation',         'read',    'none',   'point',    ''],
+    commands: ['layers.data'],
     ui: { at: ['#ctx-menu'] },
     doc: [
       { in: 'data.layerValues', text: 'LAYER DATA (read the REAL values of the layers currently displayed): {"type":"layerData","place"?:str,"lng"?:num,"lat"?:num,"layer"?:str} = live value of each active data layer at that point (air temp, SST, wind, precipitation, snow depth, aerosol/NO2/CO, Köppen class, elevation, every NASA GIBS science raster — LST, sea ice, SST anomaly, NDVI, water vapour, clouds, chlorophyll, soil moisture… read from the actual tile pixel via the colormap — every visible country choropleth\'s value — the core stat fills AND all ~50 World-Bank choropleths, on- or off-screen — and active-fire detection: real FIRMS hot-spot pixel counts within ~15 km when the thermal layer is on) + the actual features in view for point layers (cameras, news, volcanoes, live aircraft, live ships, earthquakes with magnitude, data centers, pharma hubs). No place = the pinned point or map center. Use this whenever the user asks WHAT a displayed layer shows ("ここの気温は？", "what does this layer say here?", "画面内のカメラは？", "今見えている飛行機は？", "この辺で山火事ある？").\n' },
@@ -585,6 +586,7 @@ export default [
   },
   {
     row: ['data.companySites',          'companySites',   'companyFootprint,whoIsHere,companiesHere,industryMap',       'data',    'companySites', 'map.companySites',  'map,panel,explanation','session', 'none',   '',         'companyFootprint'],
+    commands: ['company.footprint'],
     ui: { at: ['#btn-co-footprint'] },
     /* (ux-next) the company atlas read from the land: every published site of every company IntMap carries
        (data/companies/footprint.json, js/company-footprint.js). `query` counts without drawing; `show` (the default)
@@ -617,6 +619,7 @@ export default [
   },
   {
     row: ['data.companyTies',           'companyTies',    'companiesBetweenCountries,foreignCompanies,companiesAbroad,corporatePresence,whoseCompanies', 'data', 'paint', 'map.companyTies', 'map,explanation', 'session', 'none', 'country?', 'companyTies'],
+    commands: ['company.ties'],
     ui: { at: ['.cfp-ties'] },
     /* (wave4-companies) the company atlas read by country PAIR: the country a company is headquartered in against the
        country each of its published sites stands in (js/company-ties.js over data/companies/footprint.json). With a

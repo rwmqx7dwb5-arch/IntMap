@@ -26,6 +26,7 @@ export default [
      or not the count moved. The measurement and the general rule are at the observer below. */
   {
     row: ['routing.isochrone',          'isochrone',      'reach,reachability,reachable,catchment',                      'routing', 'isochrone','map.isochrone',         'map',                 'session', 'none',   'place',    ''],
+    commands: ['sim.reach'],
     ui: { at: ['.lst-toolrow[data-act="sim.reach"]'] },
     /* ── routing ────────────────────────────────────────────────────────────────────────────── */
     doc: [
@@ -128,6 +129,7 @@ export default [
   },
   {
     row: ['routing.route',              'directions',     'roadRoute,navigate,drivingRoute,walkingRoute,transitRoute',   'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'place',    'routeUi'],
+    commands: ['tool.directions'],
     ui: { at: ['.lst-toolrow[data-act="tool.directions"]', '#route-panel .rtp-go'] },
     /* `directions` — both endpoints, in any of the spellings the case reads for the destination */
     doc: [
@@ -264,6 +266,7 @@ export default [
   },
   {
     row: ['routing.drone',              'drone',          '',                                                            'routing', 'route',   'map.drone',              'route,map,panel',     'session', 'none',   '',         ''],
+    commands: ['sim.drone'],
     ui: { at: ['.lst-toolrow[data-act="sim.drone"]', '#dn-calc'] },
     /* `drone` with nothing opens the planner; `action` is compared lower-cased, so the catalogue's
        own `followTerrain` would fail an enum — it stays a string */

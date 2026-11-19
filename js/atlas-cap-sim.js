@@ -39,6 +39,7 @@ const ulOf = (lines, esc) => (lines.length ? '<ul style="margin:4px 0 0 16px;pad
 export default [
   {
     row: ['sim.lineOfSight',            'los',            'lineOfSight',                                                 'sim',     'sim',     'map.los',                'map',                 'session', 'none',   'place',    'los'],
+    commands: ['sim.los'],
     ui: { at: ['.lst-toolrow[data-act="sim.los"]', '#los-m-los'] },
     science: 'sun',
     doc: [
@@ -54,6 +55,7 @@ export default [
   },
   {
     row: ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    'radiation'],
+    commands: ['sim.radiation'],
     ui: { at: ['.lst-toolrow[data-act="sim.radiation"]', '.rad-go'] },
     science: 'radiation',
     /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
@@ -234,6 +236,7 @@ export default [
      (js/aftershock.js). The earthquake is named by its ComCat id, or found as the largest M5+ of the last 30 days near a place. */
   {
     row: ['sim.aftershocks',            'aftershocks',    'aftershockForecast,aftershockProbability,aftershockOutlook,afterShocks', 'sim', 'panel', 'panel.aftershock,camera', 'panel,explanation', 'session', 'none', 'place?', 'aftershock'],
+    commands: ['aftershock.open', 'sim.aftershocks'],
     ui: { at: ['.lst-toolrow[data-act="sim.aftershocks"]'] },
     science: 'aftershock',
     scenario: {
@@ -310,6 +313,7 @@ export default [
   },
   {
     row: ['sim.flightSim',              'flightSim',      'flightsim,flightsimulator,flysim,pilot',                      'sim',     'sim',     'camera,map.flightsim',   'map,camera',          'session', 'none',   'place?',   'flightSim'],
+    commands: ['flightsim.setup', 'flightsim.stop'],
     ui: { at: ['#btn-edu'] },
     science: 'flight',
     doc: [
@@ -414,6 +418,7 @@ export default [
   },
   {
     row: ['sim.earthquake',             'earthquake',     'seismic,quakeSim,seismicWaves,earthquakeSim',                 'sim',     'sim',     'map.seismic',            'map',                 'session', 'none',   'point',    'seismic'],
+    commands: ['sim.seismic'],
     ui: { at: ['.lst-toolrow[data-act="sim.seismic"]'] },
     science: 'seismic',
     doc: [
@@ -457,6 +462,7 @@ export default [
   },
   {
     row: ['sim.sunHours',               'sunHours',       'shadeHours,terrainShadow,solarHours,insolationYear',          'sim',     'sim',     'map.sunhours',           'map',                 'session', 'none',   'point',    'sun'],
+    commands: ['sim.sun'],
     ui: { at: ['#ctx-menu'] },
     science: 'sun',
     doc: [
@@ -613,6 +619,7 @@ export default [
      declaration() rather than copied into a list here. */
   {
     row: ['sim.pandemicRun',            'pandemicRun',    'simulatePandemic,runPandemic,pandemicSimulate,outbreakSim',   'sim',     'none',    '',                       'explanation',         'read',    'none',   'place',    'pandemicSim'],
+    commands: ['sim.pandemic'],
     ui: { at: ['.lst-toolrow[data-act="sim.pandemic"]'] },
     science: 'pandemic',
     /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
