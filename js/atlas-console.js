@@ -2188,7 +2188,7 @@ export function atlasConsole(HOST){
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in'); try{ GLOSS.wire(panel); }catch(_){} try{ EFFORT.mount(panel); }catch(_){}
-      try{ NOTEBOOK.mount(panel,{ ASTATE, lang:()=>HOST.lang, host:()=>HOST, mdMini, waitIdle:HOST.aiWaitMapIdle, resolve:(id)=>CAPS.resolve(id), runDirect:(label,acts)=>runDirect(label,acts), ask:(q)=>run(q), share:(ids)=>BRIEFING.compose(ids) }); BRIEFING.mount(panel,{ ASTATE, lang:()=>HOST.lang, mdMini, waitIdle:HOST.aiWaitMapIdle, resolve:(id)=>CAPS.resolve(id), runDirect:(label,acts)=>runDirect(label,acts) }); }catch(_){}   /* (atlas-os) the investigation notebook — every finished turn is filed there; js/atlas-notebook.js */   /* (#R491) one delegated listener per gesture, for every message the panel will ever hold */
+      try{ NOTEBOOK.mount(panel,{ ASTATE, lang:()=>HOST.lang, host:()=>HOST, mdMini, waitIdle:HOST.aiWaitMapIdle, resolve:(id)=>CAPS.resolve(id), runDirect:(label,acts)=>runDirect(label,acts), ask:(q)=>run(q), share:(ids)=>BRIEFING.compose(ids), redraw:(st)=>{ const c=st&&CAPS.resolve(st.cap); return (c&&c.legacy)?dispatch(Object.assign({},st.args,{type:c.legacy})):Promise.resolve(null); } });   /* (declarative-workspace) redraw: a recorded step drawn again into the notebook, through the same dispatch (no turn, no model) */ BRIEFING.mount(panel,{ ASTATE, lang:()=>HOST.lang, mdMini, waitIdle:HOST.aiWaitMapIdle, resolve:(id)=>CAPS.resolve(id), runDirect:(label,acts)=>runDirect(label,acts) }); }catch(_){}   /* (atlas-os) the investigation notebook — every finished turn is filed there; js/atlas-notebook.js */   /* (#R491) one delegated listener per gesture, for every message the panel will ever hold */
       try{ const _cl=()=>L('Close','閉じる','Schließen','Закрыть','Cerrar'), _fs=()=>attachViewStrings(L); attachLightbox(chatEl,_cl,_fs); attachLightbox(panel.querySelector('.atl-imgrow'),_cl,_fs); }catch(_){}   /* (#R232) 送信後の吹き出しと、(#R773) 送る前のコンポーザ——同じ委譲を 2 つの入れ物に貼るだけで、開き方は 1 つ */
       /* (#R79g) auto-scroll so a reply that REPLACES the "thinking" dots stays visible ("返答が短いものであれば返答に合わせて自動的に最下部までスクロール"). A MutationObserver covers every
          reply-setting path; it only moves when the reader is already near the bottom, so a SHORT reply drops fully into view while a LONG one keeps its TOP where the dots were and is read from the start.
@@ -2332,6 +2332,12 @@ export function atlasConsole(HOST){
           if(m==='marv') act.marv=!c2.marv; else act.loft=m;
           const ai=_pend(bubble('a',stageDots('think')),'think'); const gen=++_runGen;
           runActions(ai,'',[act],gen).then(()=>{ try{ PROG.done(ai); }catch(_){} },()=>{ try{ PROG.done(ai); }catch(_){} }); return; }
+        /* (declarative-workspace) a place in an Atlas view (js/atlas-ui-spec.js placesHtml): the flyTo call is BUILT HERE from the button's own attributes — never read whole from the markup — and run in the Atlas thread like any step */
+        const ugo=e.target.closest&&e.target.closest('.atl-ui-go');
+        if(ugo){ const act={type:'flyTo'}; const la=+ugo.getAttribute('data-lat'), ln=+ugo.getAttribute('data-lng'), z=ugo.getAttribute('data-zoom'), pl=ugo.getAttribute('data-place')||'';
+          if(ugo.hasAttribute('data-lat')&&ugo.hasAttribute('data-lng')&&isFinite(la)&&isFinite(ln)){ act.lat=la; act.lng=ln; } else if(pl) act.place=pl; else return;
+          if(z!=null&&z!==''&&isFinite(+z)) act.zoom=+z;
+          runDirect((ugo.textContent||'').trim()||pl,[act]); return; }
         const bt=e.target.closest&&e.target.closest('.atl-ctl-btn');
         if(bt){ const cmd=decodeURIComponent(bt.getAttribute('data-run')||''); if(cmd) run(cmd); return; }
         const ch=e.target.closest&&e.target.closest('.atl-choice');
