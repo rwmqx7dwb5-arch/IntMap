@@ -259,12 +259,12 @@ at npipe:…`（実測 2026-08-24）。旗が無いと標準出力が 1 バイ�
 
 ### Edge Function の名簿（**ここが正本**）
 
-**Edge Functions は 22 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` /
+**Edge Functions は 23 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `atlas-jobs` / `aviation-feed` / `cable-geo` /
 `client-errors` / `community-class` / `delete-account` / `fetch-relay` / `gdelt-relay` / `news-ingest` / `news-relay` / `quotes-relay` /
-`radiation-feed` / `reader-reports` / `refresh-news` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）。22 本すべてが
+`radiation-feed` / `reader-reports` / `refresh-news` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）。23 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`ai-provider.js`・`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
-`atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-entities.js`・`news-geo-prompt.js`・
+`atlas-persona.js`・`atlas-job-core.js`・`atlas-job-runner.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-entities.js`・`news-geo-prompt.js`・
 `news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`・`bbox.js`・`read-budget.js`・`client-error-shape.js`・`site-origin.js`・`fetch-relay-policy.js`・`ai-ledger.js`・`ai-usage.js`・`atlas-grade-schema.js`・`ai-stream.js`・`plans.js`・`inquiry-shape.js`・`correction-shape.js`・`place-watch.js`・`great-circle.js`・`supabase-keys.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 
 `AGENTS.md` の天井のため、測定の詳細も名簿もここが正本で、`AGENTS.md` は 1 行で指すだけ。**数と名前を 2 か所に置かない。**
