@@ -325,7 +325,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["places.unwatch","unwatchPlace","stopWatchingPlace,stopMonitoringPlace","places","none","account.watches","explanation","persist","explicit","",""],
       ["places.watchDigest","watchDigest","watchedPlaces,placeAlerts,whatHappenedNear,watchReport","places","none","","explanation","read","none","",""],
       ["places.watchSeen","markWatchSeen","watchMarkRead,clearWatchAlerts","places","none","account.watches","explanation","persist","none","",""],
-      ["research.hereNow","hereNow","hereAndNow,whatIsHappeningHere,aroundMeNow,nearMeNow","research","none","","explanation","read","none","place?","","external"],
+      ["research.hereNow","hereNow","hereAndNow,whatIsHappeningHere,aroundMeNow,nearMeNow","research","none","","explanation","external","explicit","place?","","external"],
       ["system.connections","connections","pageConnections,networkActivity,thirdParties,whoIsThisPageTalkingTo","system","none","","explanation","read","none","",""],
       ["system.whatsNew","whatsNew","whatsnew,changelog,releaseNotes,updates,newFeatures","system","none","","explanation","read","none","",""],
       ["time.onThisDay","onThisDay","thisDayInHistory,todayInHistory,onThisDate","time","time","camera,map.layer,time","map,time,explanation","session","none","",""],

@@ -122,6 +122,7 @@ export function makeAtlasResults(HOST) {
       'atlas.confirm.what.places.publish':    LA('Publish your saved places. Anyone with the link can see them.', '保存した場所を公開します。リンクを知っている人は誰でも見られます。'),
       'atlas.confirm.what.community.list':    LA('List this map in Community maps, where everyone can see it.', 'この地図をコミュニティマップに載せます。誰でも見られます。'),
       'atlas.confirm.what.navigation.start':  LA('Start navigation to {what} in another app.', '{what} への経路案内を別のアプリで開始します。'),
+      'atlas.confirm.what.research.hereNow':  LA('Read your current position and look up what is happening around it. The position goes to the data services that answer.', '現在地を読み取り、周辺で今起きていることを調べます。現在地は調べる先のデータサービスへ送られます。'),
       'atlas.confirm.what.system.control':    LA('Press {what}. It posts, sends or deletes something that cannot be taken back.', '{what} を押します。投稿・送信・削除など、取り消せない操作です。'),
       'atlas.confirm.run':           LA('Run', '実行'),
       'atlas.confirm.cancel':        LA("Don't", 'やめる'),
