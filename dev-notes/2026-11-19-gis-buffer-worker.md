@@ -64,3 +64,7 @@ Worker へ。能力・精度（`steps` 既定 64）は下げない。
   ⑵ テスト予算 — `tests/gis-buffer-worker.spec.js` は実測 5.0 s（1 boot・worker 起動を含む）で、校正（この
   機械の 1 秒 ≈ CI の約 2 表秒・前例 #R451）を掛けて **11 を `tests/durations.json` に入れ**、全体の天井を
   **5,250 → 5,261（+11）**。deep tier は 168 → 169 本（文書の件数も実体に合わせた）。
+- **配布資産の天井**: `dist.assets` の天井を 21,801,070 → 21,961,000 B（+約 156 kB）に上げた。主な中身は module worker
+  `gis-buffer-worker`（85 kB — polygon-clipping と幾何カーネルを worker の bundle に持つ）と遅延 client（1.4 kB）。
+  起動時（EAGER）の行は動かしていない（worker は buffer を実行したときにだけ取りに行く）。
+  `--update` は origin/main が進むたびに拒まれる（40 分の build の間に main が動く）ので手で書いた。
