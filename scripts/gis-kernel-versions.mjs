@@ -137,7 +137,10 @@ export const KERNELS = {
   /* (gis-buffer-worker) HASH ONLY: `buffer` may be computed on another thread, by the same `bufferKmR`, and a replayed step
      registers the same rows byte for byte (tests/gis-buffer-worker-checks.test.mjs measures that at tolerance 0). The one
      addition a reader sees is `stats.worker`, a note about which thread did the work. */
-  'js/gis-ops.js': { version: 'ops-11', sha256: 'd746d93fc0c7a2588eee997da8c87160574f647917dc77706b78c940f51b930a' },
+  /* (time-spatial-base) ops-11 -> ops-12: `intersect` / `union` register the overlap / the bracket of the two inputs' constant periods
+     (or none, when an input never stated one or the periods never meet) where ops-11 registered the first input's. Geometry and
+     columns are unchanged; the recipe now also records `inputTimes`, `timeRule` and `recordedAt` (js/gis-ops.js vectorOutTime). */
+  'js/gis-ops.js': { version: 'ops-12', sha256: '0d77f4a81813bf9ddbd20ec9f0cdac73f16c9a449fba76daa6cd033fd4c4a1bd' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /

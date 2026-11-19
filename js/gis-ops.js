@@ -6063,6 +6063,51 @@ export function makeGisOps() {
       return t;
     }
 
+    /* ══ ⚠⚠⚠ (time-spatial-base) 2 つの入力の「形」から出来た答えは、いつ有効か ══════════════════════
+       Until now a vector output carried the FIRST input's declaration whatever the op had done with
+       the second, so intersecting a layer valid 1914–1918 with one valid 1900–1910 was registered as
+       1914–1918 — an overlay of two things that never coexisted, stated as if it held. The raster side
+       fixed this in #R759 by letting each runner say which input it only borrowed a shape from. The
+       vector ops that make a NEW shape out of two inputs say the same thing the same way: the runner's
+       result carries `validTime`, and an op that says nothing is unchanged (first input's declaration).
+         · 'intersection' — the output exists only where BOTH do, so it is valid only when both are:
+                            the overlap of their periods. Periods that never overlap are not an empty
+                            period but a refusal to state one (`disjoint`), and the record says so.
+         · 'union'        — the output is the two together, so it is valid over the span that brackets
+                            them; `contiguous:false` says the bracket spans a gap nobody stated.
+       ⚠ VALID TIME ONLY. `time` is when the thing held IN THE WORLD. When this record was MADE is a
+         different axis (`provenance.recordedAt`, transaction time) and is never written into `time`.
+       ⚠ UNKNOWN STAYS UNKNOWN. A voter that never declared a period makes the result's period
+         something nobody stated, so none is declared and each input's own is recorded in the recipe.
+       ⚠ A ROW-WISE AXIS (instant / interval fields) CANNOT BE COMBINED BY ONE DECLARATION — each row
+         has its own pair of ends. The first input's axis is kept, as before, and the record says the
+         rule was NOT applied (`result:'row-wise'`) rather than looking as if it had been. */
+    function vectorOutTime(ds, R, rule, decl) {
+      if (rule !== 'intersection' && rule !== 'union') return { time: outTime(ds[0], decl), stated: [], rule: null };
+      const stated = ds.map((d) => ({ id: d && d.id, time: (d && d.time) || null }));
+      const info = (result, extra) => Object.assign({ rule: rule, result: result }, extra || {});
+      if (stated.some((x) => !x.time)) return { time: null, stated: stated, rule: info('unknown') };
+      if (stated.some((x) => x.time.kind !== 'constant')) return { time: outTime(ds[0], decl), stated: stated, rule: info('row-wise') };
+      const ms = (v, which) => {
+        if (v == null) return which === 'start' ? -Infinity : Infinity;
+        if (typeof v === 'number' && isFinite(v)) return v;
+        const m = R.momentOf(v);
+        return m ? (which === 'end' ? m.end : m.start) : NaN;
+      };
+      const iv = stated.map((x) => ({ s: ms(x.time.start, 'start'), e: ms(x.time.end, 'end') }));
+      if (iv.some((x) => x.s !== x.s || x.e !== x.e)) return { time: null, stated: stated, rule: info('unknown') };
+      const out = (s, e) => ({ kind: 'constant', start: isFinite(s) ? s : null, end: isFinite(e) ? e : null });
+      if (rule === 'intersection') {
+        const s = Math.max.apply(null, iv.map((x) => x.s)), e = Math.min.apply(null, iv.map((x) => x.e));
+        if (s > e) return { time: null, stated: stated, rule: info('disjoint') };
+        return { time: out(s, e), stated: stated, rule: info('span') };
+      }
+      const sorted = iv.slice().sort((a, b) => a.s - b.s);
+      let reach = sorted[0].e, contiguous = true;
+      for (let i = 1; i < sorted.length; i++) { if (sorted[i].s > reach) contiguous = false; if (sorted[i].e > reach) reach = sorted[i].e; }
+      return { time: out(Math.min.apply(null, iv.map((x) => x.s)), Math.max.apply(null, iv.map((x) => x.e))), stated: stated, rule: info('span', { contiguous: contiguous }) };
+    }
+
     /* ══ ⚠⚠⚠ (#R759) 答えは、その答えを作った入力より完全にはなれない ════════════════════════════
        #R749 put `coverage` on an ACQUISITION — 「求めた窓のうち、どこまでが答えられたか」 — and #R756
        published it to the planner, and both stopped at the door. An op's output carried the recipe
@@ -6408,13 +6453,15 @@ export function makeGisOps() {
          tick is only awaited when a frame has passed. ⚠ AND THERE ARE NOT TWO IMPLEMENTATIONS — the
          same loop runs either way; `ctx` decides only whether it ever hands the thread back. */
       const ctx = makeCtx(opts);
+      const stampValidTime = (r, rule) => { if (r && r.ok) r.validTime = rule; return r; };
       const RUN = {
         filter: () => runFilter(ds[0], params, R, ctx),
         buffer: () => runBuffer(ds[0], params, R, ctx),
         clip: () => runClip(ds[0], ds[1], ctx),
-        intersect: () => runOverlay('intersect', ds[0], ds[1], ctx),
+        /* (time-spatial-base) the runner states how the two inputs' periods combine — see vectorOutTime */
+        intersect: async () => stampValidTime(await runOverlay('intersect', ds[0], ds[1], ctx), 'intersection'),
         difference: () => runOverlay('difference', ds[0], ds[1], ctx),
-        union: () => runUnion(ds[0], ds[1], ctx),
+        union: async () => stampValidTime(await runUnion(ds[0], ds[1], ctx), 'union'),
         dissolve: () => runDissolve(ds[0], params, R, ctx),
         centroid: () => runPointOf('centroid', ds[0], ctx),
         pointOnSurface: () => runPointOf('pointOnSurface', ds[0], ctx),
@@ -6522,6 +6569,10 @@ export function makeGisOps() {
       const cov = inheritCoverage(ds, res.stats, decl.id);
       if (cov) prov.coverage = cov;
       const grid = rasterOutTime(ds, R, res.shapeOnly);
+      /* (time-spatial-base) VALID time of a vector output, and — separately — when it was recorded. */
+      const vt = res.raster ? null : vectorOutTime(ds, R, res.validTime, decl);
+      if (vt && vt.rule) { prov.inputTimes = vt.stated; prov.timeRule = vt.rule; }
+      prov.recordedAt = new Date().toISOString();
       /* The inputs' own epochs, recorded whenever more than one grid contributed samples — including
          (especially) when they could not be combined into a span. */
       if (grid.stated.length > 1) prov.inputTimes = grid.stated;
@@ -6556,7 +6607,7 @@ export function makeGisOps() {
                attribute-based shapes (instant, interval, constant) survive, because the properties do.
                ⚠ AND IT IS RE-VERIFIED ON THE WAY IN (js/gis-datasets.js declareTime): an op that
                dropped the parallel array is told rather than believed. */
-            time: outTime(ds[0], decl),
+            time: vt.time,
             /* (#R759) 単位は測れないので、名前が残った列については入力の陳述が著者ごと運ばれる。
                See fieldStatements. */
             fieldStatements: statements,
@@ -6626,7 +6677,10 @@ export function makeGisOps() {
        (centroid / pointOnSurface / convexHull / simplify / grid) cannot change a recipe that predates
        them, and every stat that existed answers bit for bit what it answered — the chain that picks
        its value only grew arms, and the old final `else` (max) is now named. */
-    const KERNEL_VERSION = 'ops-11';
+    /* (time-spatial-base) ops-11 -> ops-12: A RECIPE REPLAYS TO A DIFFERENT PERIOD. `intersect` and `union` of two
+       inputs that each declare a constant period used to register the FIRST input's period; they now register
+       the overlap / the bracket (or none, when unstated or disjoint). Geometry and columns are unchanged. */
+    const KERNEL_VERSION = 'ops-12';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,

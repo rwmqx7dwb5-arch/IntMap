@@ -183,22 +183,51 @@ export const boxesMeet = (a, b) => !!a && !!b && a[0] <= b[2] && a[2] >= b[0] &&
 export function diffPolities(rowsA, rowsB, region, tolerance) {
   const tol = tolerance == null ? 0 : tolerance;
   const inRegion = (r) => !region || !r.bbox || boxesMeet(r.bbox, region);
+  /* (time-spatial-base) LINKED BY IDENTIFIER, NOT BY SPELLING. A row that states its polity's identifier (`key`, js/year-book.js polityKey) is
+     linked to the row of the other end that states the SAME identifier — so Kenya in 1920 is British East Africa in 1913, and a polity that
+     was renamed is `renamed`, not an ending and a beginning. Two rows with the same spelling and different identifiers are NOT linked. Only
+     a row with no identifier on either end falls back to the English name, and those links are listed (`matchedByName`) so an answer can say
+     which of its links rest on a spelling. A keyed row never links to an unkeyed one: there is nothing to compare. */
+  const idOf = (r) => (r.key ? 'k:' + r.key : 'n:' + r.en);
   const A = new Map(), B = new Map();
-  (rowsA || []).forEach((r) => { if (inRegion(r)) A.set(r.en, r); });
-  (rowsB || []).forEach((r) => { if (inRegion(r)) B.set(r.en, r); });
-  const appeared = [], gone = [], reshaped = [];
-  for (const [k, r] of B) if (!A.has(k)) appeared.push({ name: r.name, en: k, km2: r.km2 });
-  for (const [k, r] of A) if (!B.has(k)) gone.push({ name: r.name, en: k, km2: r.km2 });
+  (rowsA || []).forEach((r) => { if (inRegion(r)) A.set(idOf(r), r); });
+  (rowsB || []).forEach((r) => { if (inRegion(r)) B.set(idOf(r), r); });
+  const appeared = [], gone = [], reshaped = [], renamed = [], matchedByName = [];
+  for (const [k, r] of B) if (!A.has(k)) appeared.push({ name: r.name, en: r.en, km2: r.km2 });
+  for (const [k, r] of A) if (!B.has(k)) gone.push({ name: r.name, en: r.en, km2: r.km2 });
   for (const [k, r] of B) {
     const was = A.get(k);
-    if (!was || !(was.km2 > 0)) continue;
+    if (!was) continue;
+    if (k.charAt(0) === 'n') matchedByName.push(r.en);
+    else if (was.en !== r.en) renamed.push({ key: r.key, from: was.en, to: r.en, fromName: was.name, name: r.name });
+    if (!(was.km2 > 0)) continue;
     const rel = (r.km2 - was.km2) / was.km2;
-    if (Math.abs(rel) > tol) reshaped.push({ name: r.name, en: k, from: was.km2, to: r.km2, rel });
+    if (Math.abs(rel) > tol) reshaped.push({ name: r.name, en: r.en, key: r.key || null, from: was.km2, to: r.km2, rel });
   }
   reshaped.sort((x, y) => Math.abs(y.rel) - Math.abs(x.rel));
   appeared.sort((x, y) => (y.km2 || 0) - (x.km2 || 0));
   gone.sort((x, y) => (y.km2 || 0) - (x.km2 || 0));
-  return { appeared, gone, reshaped, countA: A.size, countB: B.size };
+  return { appeared, gone, reshaped, renamed, matchedByName, countA: A.size, countB: B.size };
+}
+
+/** (time-spatial-base) ONE POLITY, FOLLOWED ACROSS ERAS BY ITS IDENTIFIER. `snapshots` = [{ year, rows }] (year-book `borders.largest` rows, each
+    with `key`). Returns Map(key → { key, names: [{ en, from, to }], points: [{ year, km2 }] }): the names a polity was drawn under, in order, each
+    with the first and last snapshot year it was seen under it, and its drawn area at every snapshot that has it. A row with no key is not followed
+    — it is counted in `unkeyed` per year, never linked by its name. */
+export function followPolities(snapshots) {
+  const out = new Map(); const unkeyed = {};
+  for (const sn of snapshots || []) {
+    for (const r of sn.rows || []) {
+      if (!r.key) { unkeyed[sn.year] = (unkeyed[sn.year] || 0) + 1; continue; }
+      let e = out.get(r.key);
+      if (!e) { e = { key: r.key, names: [], points: [] }; out.set(r.key, e); }
+      const last = e.names[e.names.length - 1];
+      if (last && last.en === r.en) last.to = sn.year; else e.names.push({ en: r.en, from: sn.year, to: sn.year });
+      e.points.push({ year: sn.year, km2: r.km2 });
+    }
+  }
+  out.unkeyed = unkeyed;
+  return out;
 }
 
 /** the statistics that moved: Maddison rows (`{code,name,pop,gdppc}`) at each end. A country is compared only when BOTH ends
