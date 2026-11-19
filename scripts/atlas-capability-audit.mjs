@@ -190,7 +190,43 @@ export function wordsByOthers(root = ROOT) {
 }
 
 /* ── the twenty checks. Each takes DATA and returns {id, title, failures[], note} ───────────── */
-export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, othersWords, uiEntries, pageSrc, uiDeclared }) {
+/* THE IntMapOS COMMANDS THE PAGE REGISTERS. Registrations come in three shapes and all three are real: a literal
+   `IntMapOS.register('x',…)`, the REGL table in js/session-tabs.js (`['x', run, meta]`), and the SIM_TOOLS table in
+   js/map-ui.js (`{ id:'x', … run: … }`, where `run:null` means someone else registers it). Reading only the first shape
+   reported seventeen registered commands as missing. Shared by ⑧ and by command-declared. */
+export function registeredCommandIds() {
+  const allJs = fs.readdirSync(path.join(ROOT, 'js')).filter((f) => f.endsWith('.js')).map((f) => read('js/' + f)).join('\n');
+  const registered = new Set([...allJs.matchAll(/IntMapOS\.register\('([a-z0-9._]+)'/g)].map((m) => m[1]));
+  [...read('js/session-tabs.js').matchAll(/\[\s*'([a-z0-9._]+)'\s*,/g)].forEach((m) => registered.add(m[1]));
+  [...read('js/map-ui.js').matchAll(/\{\s*id:\s*'([a-z0-9._]+)'[\s\S]{0,900}?run:\s*(?!null)/g)].forEach((m) => registered.add(m[1]));
+  return registered;
+}
+
+/* THE CAPABILITY ↔ COMMAND DECLARATION (command-declared). A capability that drives an IntMapOS command says so in its
+   own row — `commands: ['view.base.map', …]` — so the capability is the ONE definition and the GUI's command is its
+   named implementation, not a second thing to keep in step by hand. DATA in, failures out:
+     rows        [{ id, commands, src }] — each live capability's declaration and its run body
+     registered  the registered command ids
+   Held: every declared command is registered; no command is claimed by two capabilities; and every registered command a
+   run body names as a literal is declared (an undeclared use is how the two definitions drift). The registered commands
+   NO capability claims are counted, not failed — that list is the migration's remaining work, re-derived each run. */
+export function commandDeclarations(rows, registered) {
+  const bad = [], claimed = new Map();
+  rows.forEach((r) => {
+    const decl = new Set(r.commands || []);
+    decl.forEach((c) => {
+      if (!registered.has(c)) bad.push(`${r.id}: declares command '${c}', which nothing registers`);
+      if (claimed.has(c) && claimed.get(c) !== r.id) bad.push(`command '${c}' is claimed by both ${claimed.get(c)} and ${r.id}`);
+      claimed.set(c, r.id);
+    });
+    const used = new Set([...String(r.src || '').matchAll(/'([a-z][a-z0-9]*(?:\.[a-z0-9]+)+)'/g)].map((m) => m[1]).filter((c) => registered.has(c)));
+    used.forEach((c) => { if (!decl.has(c)) bad.push(`${r.id}: its run uses command '${c}' but does not declare it in its commands list`); });
+  });
+  const unclaimed = [...registered].filter((c) => !claimed.has(c));
+  return { bad, claimed: claimed.size, unclaimed };
+}
+
+export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, othersWords, uiEntries, pageSrc, uiDeclared, commandRows }) {
   const J = caps.toJSON();
   const byId = Object.create(null);
   J.capabilities.forEach((c) => { byId[c.id] = c; });
@@ -376,10 +412,7 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
        the REGL table in js/session-tabs.js (`['x', run, meta]`), and the SIM_TOOLS table in
        js/map-ui.js (`{ id:'x', … run: … }`, where `run:null` means someone else registers it).
        Reading only the first shape reported seventeen registered commands as missing. */
-    const allJs = fs.readdirSync(path.join(ROOT, 'js')).filter((f) => f.endsWith('.js')).map((f) => read('js/' + f)).join('\n');
-    const registered = new Set([...allJs.matchAll(/IntMapOS\.register\('([a-z0-9._]+)'/g)].map((m) => m[1]));
-    [...read('js/session-tabs.js').matchAll(/\[\s*'([a-z0-9._]+)'\s*,/g)].forEach((m) => registered.add(m[1]));
-    [...read('js/map-ui.js').matchAll(/\{\s*id:\s*'([a-z0-9._]+)'[\s\S]{0,900}?run:\s*(?!null)/g)].forEach((m) => registered.add(m[1]));
+    const registered = registeredCommandIds();
     [...new Set(kexecs)].forEach((cmd) => {
       if (registered.has(cmd)) converged.push(cmd);
       else bad.push(`the dispatch runs IntMapOS command '${cmd}', which nothing registers`);
@@ -397,6 +430,13 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
     });
     add('ui-atlas-converge', 'the button and the sentence reach the same command', bad,
       `${converged.length} commands reached from both shells · ${registered.size} registered`);
+  }
+
+  /* ⑩ a capability that drives a GUI command declares it; the declaration is held to the registry and the run body */
+  if (commandRows) {
+    const r = commandDeclarations(commandRows, registeredCommandIds());
+    add('command-declared', 'a capability names the IntMapOS commands it drives, and the declaration is true', r.bad,
+      `${r.claimed} commands declared · ${r.unclaimed.length} registered commands not yet claimed by a capability`);
   }
 
   /* ⑨ nothing in the registry is unrunnable */
@@ -839,6 +879,7 @@ export async function audit(opts = {}) {
       othersWords: opts.othersWords || wordsByOthers(),
       uiEntries: capsEntries.filter((e) => e.ui && e.ui.at).map((e) => ({ id: e.id, at: e.ui.at })),
       pageSrc: pageSource(),
+      commandRows: capsEntries.filter((e) => !(e.policy && e.policy.withdrawn)).map((e) => ({ id: e.id, commands: e.commands || [], src: (dispatchGroups().find((g) => g.id === e.id) || {}).src || '' })),
       uiDeclared: capsEntries.filter((e) => !(e.policy && e.policy.withdrawn)).map((e) => ({ id: e.id, has: !!e.ui })),
     }),
   };
