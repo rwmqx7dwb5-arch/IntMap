@@ -2884,6 +2884,7 @@ export function makeGisOps() {
           geoms.push(bg);
         }
         store.add(shells, PACKED.pack(geoms));
+        await store.settle();
         return true;
       };
       const got = new Map();
@@ -2989,10 +2990,12 @@ export function makeGisOps() {
         if (!head) head = res;
         stats.push(res.stats);
         out.addFeatures(res.features || []);
+        await out.settle();
         return null;
       };
-      const it = src.chunks();
-      for (let n = it.next(); !n.done; n = it.next()) {
+      /* (gis-scale) read back one chunk at a time: from memory, or from where it was spilled to */
+      const it = typeof src.chunksAsync === 'function' ? src.chunksAsync() : src.chunks();
+      for (let n = await it.next(); !n.done; n = await it.next()) {
         for (const f of n.value) group.push(f);
         if (group.length >= per) { const bad = await flush(); if (bad) return bad; }
       }
