@@ -1,6 +1,9 @@
 ---
 title: Atlas が宣言するビュー（ui.compose）——JSON の仕様を IntMap の部品だけで描き、全部の問題を理由つきで拒む
 date: 2026-11-20
+pr: 1301
+newsen: Atlas can now lay out an answer as a dashboard in the chat - figure tiles, tables, charts, switches and place buttons in one view.
+newsjp: Atlas が返答の中にダッシュボードを組めるようになりました。数字の札・表・グラフ・切り替え・地名ボタンを 1 つの画面に並べます。
 ---
 
 # declarative-workspace — Atlas の宣言的 UI（ダッシュボード）
