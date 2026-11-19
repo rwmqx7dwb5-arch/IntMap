@@ -695,6 +695,10 @@ export const IntMapRefData = (function(){
     {n:'World Bank Open Data',u:'https://data.worldbank.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO'},
     {n:'WorldPop (University of Southampton)',u:'https://www.worldpop.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/'},
+    {n:'Earth Search STAC catalogue (Element 84 / AWS Open Data)',u:'https://earth-search.aws.element84.com/v1'},
+    {n:'Microsoft Planetary Computer STAC catalogue',u:'https://planetarycomputer.microsoft.com/'},
+    {n:'NASA CMR-STAC — LP DAAC (NASA EOSDIS)',u:'https://cmr.earthdata.nasa.gov/stac'},
+    {n:'British Geological Survey — OGC API',u:'https://ogcapi.bgs.ac.uk/'},
     {n:'AI provider — OpenAI (Anthropic / Google selectable)',u:'https://openai.com/'}
   ];
   /* ══ ⚠ (#R246) ONE RESOLVER FOR THIS REGISTRY'S DESCRIPTIONS, AND IT LIVES WITH THE REGISTRY ═══

@@ -1910,6 +1910,37 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   「一致した」にしない）／面積の図形が無い点（理由の無い false を作らない）。
 - ⚠ **`bound` は保守的な区間積**なので、実際より厳しく拒むことがある（767km の UTM で実誤差 4e-5 に
   対し bound 1.2e-3）。同位置での同時評価は次の回の仕事。
+## 5.11 アプリの外のデータを探す — `js/gis-remote.js` (`window.IntMapGisRemote`)
+
+読む扉は別にある（`url:` の COG＝`js/gis-cog.js`、`ogc:`／`stac:`＝`js/gis-ogcapi.js`）。`catalogue()`（§5.4）が列挙するのは
+**このアプリが持っているもの**で、「その場所・期間のデータは世界のどのコレクションに在るか」という**最初の問い**に答える手が無かった。
+この層はそれだけを担い、データそのものは取らない（第 2 の読み手を持たない）。
+
+| 扉 | 何をするか |
+|---|---|
+| `catalogs()` / `add()` | 問い合わせるカタログの登録簿（STAC API・OGC API – Features）。**種別は述べる**（アドレスから推測しない）。`add()` は https の公開宛先だけ |
+| `discover({q,bbox,time,…})` | 各カタログの `/collections` を読み、場所・期間を**覆うと述べている**コレクションを返す。`q` の語は全部が要る |
+| `inspect(ref)` | コレクション自身の述べること、標本アイテムの資産（COG か・バンド・単位）、`evidence`、そして**読むための ref**（`refs.features`＝`ogc:…`、`refs.grids`＝`url:…`） |
+
+### 完全性の 3 つの主張を混ぜない
+1. 供給元が窓の全部を返した — 読む扉の `coverage`（`js/gis-sources.js` の `coverageOf()` の判定）。
+2. 供給元の範囲が窓・期間を覆うと述べている — `evidence.spatialExtent` / `temporalExtent`（`covers` / `overlaps` / `unstated`）。
+3. 世界の全部である — `evidence.worldCompleteness` は**常に `unproven`**。
+
+### 守っていること
+- **応答しなかったカタログは「無かった」ではない**（`discover()` はカタログごとに `answered` / `pages` / `complete`）。
+- **ライセンスは述べられたまま、述べが無ければ null**（`open` と読まない）。
+- **宛先**: https のみ・認証情報つきは断る・ループバック／私的／リンクローカルを名指す宛先は `url-not-public`（名前だけで判定し DNS は引かない）。
+- **通信の開示**: `scripts/outbound-hosts.json` とプライバシー §4（en/jp）に検索先ホストを載せた。送るのは頼んだときだけ。
+
+### Atlas
+能力 `data.gisRemote`（`discover`・`inspect`・`catalogs`・`add`・`sources`）。`sources` は**このアプリ自身**の供給元が述べる取得能力を 1 回で全部返す
+（`IntMapGisSources.capabilityTable()`。何も訊かない。述べていない＝`null` と「できない」＝`false` を数え分ける）。
+
+### まだやっていないこと
+世界規模のベクタを**メモリに載せず**分割して保存・検索する基盤（GeoParquet・DuckDB / PostGIS）、長時間・大容量解析の非同期ジョブ、
+解析結果の永続キャッシュ、複数供給元の品質・優先順位の機械可読な統合。
+
 ## 6. どこまでやるか・何をやらないか（現時点）
 
 - **⚠ #R759 まで、Worker には呼び出し元が 1 つも無かった。** `run` / `register` / `probe` を呼ぶコードは
