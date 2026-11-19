@@ -1380,7 +1380,10 @@ export function atlasConsole(HOST){
     const runReadCapability = async (id,args,o) => { const r=await EXEC.execute(id, args||{}, {source:'atlas-worker', turnId:_curTurn, signal:(o&&o.signal)||undefined});
       return { ok:!!r&&r.status==='completed', html:(r&&r.html)||'', meta:(r&&r.meta)||undefined, code:(r&&r.code)||'', status:r&&r.status }; };
     /* (delegation-agency) describeCapability(id): the argument schema of a capability, as JSON text, for a worker that has been granted it — read off the registry row at call time, so a capability added tomorrow describes itself. */
-    const describeCapability = (id) => { try{ const c=CAPS.resolve(String(id||'')); return c&&typeof c.schema==='function' ? JSON.stringify(c.schema()) : ''; }catch(_){ return ''; } };
+    /* (delegate-child-loop) ⚠ A REGISTRY RECORD HAS NO `schema()` — the schema is js/atlas-schemas.js, bound to the registry and read through the tool surface (TOOLS.schemaOf, what run_capability validates against). Reading `c.schema` returned '' for every capability, so a worker was never shown the arguments it was granted. */
+    const describeCapability = (id) => { try{ const c=CAPS.resolve(String(id||'')); return c ? JSON.stringify(TOOLS.schemaOf(c.id)) : ''; }catch(_){ return ''; } };
+    /* (delegate-child-loop) findCapabilities(query): the ids the registry search returns for some words — Atlas's own find_capability (TOOLS.find, js/atlas-toolsurface.js), not a second search; a worker granted `find_capability` calls it (js/atlas-delegate.js), and the read-only rule is applied to what it returns. */
+    const findCapabilities = async (q) => { const r=await TOOLS.find(String(q||'')); return ((r&&r.matches)||[]).map(m=>m.id); };
     function _agoH(d){ try{ const t2=(typeof parseDate==='function')?parseDate(d).getTime():Date.parse(d); if(!t2) return null; return Math.max(0,Math.round((Date.now()-t2)/3600000)); }catch(_){ return null; } }
     function _newsData(ctx,q,sink){ try{ if(typeof HOST.globalData==='undefined'||!HOST.globalData||!HOST.globalData.length) return null;
       let items=HOST.globalData.slice();
@@ -1939,7 +1942,7 @@ export function atlasConsole(HOST){
       get _PINNED(){ return _PINNED; },
       get _lastUserMsg(){ return _lastUserMsg; }, set _lastUserMsg(v){ _lastUserMsg=v; },
       get turnSignal(){ return turnSignal; },
-      get runReadCapability(){ return runReadCapability; }, get classifyCapability(){ return classifyCapability; }, get describeCapability(){ return describeCapability; },   /* (atlas-orchestration) the host lanes of a delegated capability task — below, beside turnSignal */
+      get runReadCapability(){ return runReadCapability; }, get classifyCapability(){ return classifyCapability; }, get describeCapability(){ return describeCapability; }, get findCapabilities(){ return findCapabilities; },   /* (atlas-orchestration) the host lanes of a delegated capability task — below, beside turnSignal */
       get _delegationPolicy(){ return _delegationPolicy; },   /* (delegation-limits) */   /* (atlas-delegation) the running turn's abort signal, read at call time — research.delegate hands it to its workers */
       get aiParseJSON(){ return aiParseJSON; },
       get askAI(){ return askAI; },
