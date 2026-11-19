@@ -28,10 +28,12 @@
  *                   answers a repeated call. It is not refused and it is not run again.
  *
  *  Pure apart from the executor it is given: no DOM, no network, no globals — tests/atlas-delegation-checks.test.mjs
- *  runs it with a fake executor.
+ *  runs it with a fake executor. The one exception is pageDelegationStore(), the page's single IndexedDB store for
+ *  resuming (it reads `indexedDB` once, and is absent where there is none).
  * ==========================================================================*/
 
 import { personaPrompt } from './atlas-persona.js';   /* the one identity — a worker is Atlas at work, not a second character (R285) */
+import { idbBackend, memoryBackend } from './atlas-notebook-store.js';   /* (delegate-child-loop) the device store's two backends — a delegation is kept in its OWN database beside the notebook's */
 
 export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refused', 'unobservable', 'cancelled']);
 
@@ -368,6 +370,82 @@ export function makeDelegation(o) {
   };
 }
 
+/* ══ WHERE A DELEGATION IS KEPT BETWEEN EXECUTORS — snapshot() written down, read back as makeDelegation({resume}) ══
+   A delegation is identified by its LIST: every contract's key, in order, with whether it asked for a checker
+   (`verify`). The same list asked again — after the tab was closed, the page reloaded, the turn cut off — finds the
+   snapshot the last run wrote, and its tasks that ended done/partial are answered from it (makeDelegation `resume`).
+   A different list is a different delegation: a dependent task's key names its input by id, not by what that input
+   returned, so only inside the SAME list does a matching key mean the same work from the same inputs. */
+export function delegationKey(contracts) {
+  const list = (Array.isArray(contracts) ? contracts : []).map((raw) => {
+    const nc = normaliseContract(raw);
+    return [nc.ok ? contractKey(nc.contract) : 'invalid:' + nc.error, !!(raw && raw.verify === true)];
+  });
+  return 'd-' + requestKey(stable(list), 'delegation').slice(2);
+}
+
+/* How long a written snapshot answers for its list. OBSERVATION: it is ai-proxy's TURN_TTL_S (900 s,
+   supabase/functions/ai-proxy/config.ts) — the window in which the server itself treats a turn as alive and hands a
+   held answer back for the same request (replay.ts) instead of computing it again. A finished task kept longer than
+   that would answer a reader's question about the world with a reading the server would no longer replay. EXPIRES
+   when TURN_TTL_S moves. CANONICAL: TURN_TTL_S; tests/delegate-child-loop-checks.test.mjs holds the two equal. */
+const RESUME_TTL_MS = 900 * 1000;
+
+/* makeDelegationStore(backend, { fallback?, now?, ttlMs? }) — backend is the four-promise shape js/atlas-notebook-store.js
+   memoryBackend / idbBackend speak (all / put / del / clear, entries keyed by `id`).
+     get(key)            → the snapshot written for that list within ttlMs, or null (older entries are deleted as read)
+     save(key, snapshot) → Promise<boolean> — true when it was written
+   A backend that refuses (IndexedDB unavailable: private browsing, a full disk) is replaced by `fallback` for the rest of
+   the page and the store says so (`state()` → 'fallback'); a store that cannot keep anything never fails the delegation
+   it serves — the delegation runs, and only resuming it elsewhere is lost. */
+export function makeDelegationStore(backend, o) {
+  const opt = o || {};
+  const clock = typeof opt.now === 'function' ? opt.now : () => Date.now();
+  const ttl = Number(opt.ttlMs) > 0 ? Number(opt.ttlMs) : RESUME_TTL_MS;
+  let B = backend, state = 'primary';
+  const use = async (fn) => {
+    try { return await fn(B); } catch (e) {
+      if (state !== 'primary' || !opt.fallback) throw e;
+      B = opt.fallback; state = 'fallback';
+      return fn(B);
+    }
+  };
+  return {
+    state: () => state,
+    async get(key) {
+      let all = [];
+      try { all = await use((b) => b.all()); } catch (_) { return null; }
+      const t = clock();
+      let hit = null;
+      for (const e of (Array.isArray(all) ? all : [])) {
+        if (!e || !e.id) continue;
+        if (!(t - Number(e.at) < ttl)) { try { await use((b) => b.del(e.id)); } catch (_) { /* gone with the next read */ } continue; }
+        if (e.id === key && e.snapshot && Array.isArray(e.snapshot.results)) hit = e.snapshot;
+      }
+      return hit;
+    },
+    async save(key, snapshot) {
+      if (!key || !snapshot) return false;
+      try { await use((b) => b.put({ id: String(key), at: clock(), snapshot: JSON.parse(JSON.stringify(snapshot)) })); return true; } catch (_) { return false; }
+    },
+  };
+}
+
+/* (delegate-child-loop) WHERE research.delegate KEEPS ITS DELEGATIONS ON THIS DEVICE — one store for the page (kept HERE, not in the capability module: the build refuses state at the top of a capability module — a copy and its module would be two instances, scripts/atlas-caps-split.mjs), in its own
+   IndexedDB database ('intmap-atlas-delegation', beside the notebook's, never in it), falling back to memory for the rest of
+   the page when IndexedDB refuses (js/atlas-delegate.js makeDelegationStore). A host with no IndexedDB at all (node) keeps
+   nothing unless it hands one in with useDelegationStore() — so resuming is a property of the page, not of every caller. */
+let _delegationStore;
+export function pageDelegationStore() {
+  if (_delegationStore !== undefined) return _delegationStore;
+  let idb = null;
+  try { idb = (typeof indexedDB !== 'undefined' && indexedDB) ? indexedDB : null; } catch (_) { idb = null; }
+  _delegationStore = idb ? makeDelegationStore(idbBackend(idb, 'intmap-atlas-delegation'), { fallback: memoryBackend() }) : null;
+  return _delegationStore;
+}
+/* A host with no IndexedDB (node, a test) hands in the store it wants the page to use; null turns keeping off again. */
+export function useDelegationStore(store) { _delegationStore = store; return store; }
+
 /* ══ THE WORKER EXECUTOR — a model behind ai-proxy (task atlas_delegate) ══════════════════════════════
    ask(prompt, system, images, opts) is js/ai-core.js askAIJSONEnvelope. The worker's turn key is the parent's
    with the task id after it; ai-proxy reads x-intmap-parent-turn and decides — by its own policy, not this
@@ -440,10 +518,18 @@ export function toolCallOf(data) {
   const args = (c.args && typeof c.args === 'object' && !Array.isArray(c.args)) ? c.args : {};
   return { capability: s(c.capability, 80), args };
 }
-function toolSection(allowed, describe, steps, remaining) {
-  let p = '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + allowed.join(', ') + '.';
+/* (delegate-child-loop) THE SEARCH A WORKER MAY BE GRANTED. `find_capability` in a contract's `tools` is the parent's grant to
+   SEARCH: the worker then calls {"call":{"capability":"find_capability","args":{"query":"<words>"}}}, the host searches the
+   registry (the lane's `find` — js/atlas-console.js findCapabilities, the same search Atlas's own find_capability runs), and
+   every match the host classifies as read-only joins this worker's grant from the next request on; any other match is
+   reported with the reason it may not be called. It is the name Atlas already holds the same search under, and no
+   capability id has that spelling, so the grant cannot be confused with a capability. */
+const FIND = 'find_capability';
+function toolSection(allowed, describe, steps, remaining, canFind) {
+  let p = '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + (allowed.length ? allowed.join(', ') : '(none yet)') + '.';
   allowed.forEach((id) => { let d = ''; try { d = typeof describe === 'function' ? s(describe(id), 1200) : ''; } catch (_) { d = ''; } if (d) p += '\n  ' + id + ' arguments: ' + d; });
   p += '\nTo call one, return ONLY {"call":{"capability":"<id>","args":{...}}} instead of the findings. Its result comes back in your next request.';
+  if (canFind) p += '\nTo look for a capability you do not have, return ONLY {"call":{"capability":"' + FIND + '","args":{"query":"<a few words for what you need>"}}}: IntMap searches its whole registry, and every read-only match becomes one you may call from your next request on (the others are named with the reason you may not call them).';
   if (steps.length) p += '\n\nRESULTS OF YOUR CALLS SO FAR:\n' + steps.map((x, i) => (i + 1) + '. ' + x.capability + ' ' + JSON.stringify(x.args).slice(0, 300) + ' → ' + (x.ok ? '' : 'FAILED: ') + x.text).join('\n');
   p += remaining <= 1 ? '\n\nTHIS IS YOUR LAST REQUEST: make no more calls; return the findings JSON now from what you have, and say in "gaps" what you could not establish.' : '\n\nYou have ' + remaining + ' request(s) left including the one that returns the findings.';
   return p;
@@ -464,7 +550,7 @@ export function makeWorkerExecutor(o) {
   /* a retry after a transient failure is the caller's opt-in, by saying how many requests the server allows: without
      it the one spare request stays what it always was, the repair of a wrong shape */
   const retryTransient = Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1;
-  const cap = opt.capability && typeof opt.capability.run === 'function' && typeof opt.capability.classify === 'function' ? opt.capability : null;   /* { run, classify, describe? } — the host's kernel lane */
+  const cap = opt.capability && typeof opt.capability.run === 'function' && typeof opt.capability.classify === 'function' ? opt.capability : null;   /* { run, classify, describe?, find? } — the host's kernel lane (find: the registry search a worker granted find_capability uses) */
   return {
     id: 'worker-model@page',
     async run(task, ctx) {
@@ -477,11 +563,36 @@ export function makeWorkerExecutor(o) {
       const sources = [];
       /* the grant: only ids the parent named AND the host classifies as read-only; with no lane, or no grant, the worker researches only */
       const allowed = cap ? (task.tools || []).filter((id) => cap.classify(id) === 'read') : [];
+      /* (delegate-child-loop) …and the grant to SEARCH, when the parent named it and the host has a search: what it finds is
+         added to `allowed` under the same read-only rule, so the grant never widens past what the host classifies as read */
+      const canFind = !!(cap && typeof cap.find === 'function' && (task.tools || []).includes(FIND));
       const steps = [];
-      const base = (done) => workerPrompt(task) + (allowed.length ? toolSection(allowed, cap.describe, steps, maxCalls - done) : '');
+      const base = (done) => workerPrompt(task) + ((allowed.length || canFind) ? toolSection(allowed, cap.describe, steps, maxCalls - done, canFind) : '');
       let prompt = base(0);
       let webMode = 'auto';
       let degraded = '';   /* what the final answer was made without, after a retry that changed the request */
+      /* one search of the registry, as a step: read-only matches join the grant; the others are named with why they may not be
+         called. Throws only when the task was cancelled while it searched. */
+      const searchStep = async (args) => {
+        const query = s(args && args.query, 200);
+        if (!query) return { ok: false, text: 'give the words to search for in args.query' };
+        const ti = ctx.emit('effect.intent', { capability: FIND, by: 'worker', turn: childKey });
+        let ids = [];
+        try { ids = await cap.find(query); } catch (e) {
+          if (controller.signal.aborted) throw e;
+          ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
+          return { ok: false, text: 'the search failed: ' + s(e && e.message, 200) };
+        }
+        if (controller.signal.aborted) throw new Error('cancelled');
+        ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: FIND });
+        const found = Array.from(new Set((Array.isArray(ids) ? ids : []).map((x) => s(x, 80)).filter(Boolean)));
+        if (!found.length) return { ok: true, text: 'nothing in IntMap\'s registry matched these words; try other words, or answer without it' };
+        return { ok: true, text: found.map((id) => {
+          const kind = cap.classify(id);
+          if (kind === 'read') { const had = allowed.includes(id); if (!had) allowed.push(id); return id + ' — ' + (had ? 'already yours' : 'you may call it now (its arguments are listed above)'); }
+          return id + ' — you may NOT call it: ' + (kind === 'other' ? 'it is not read-only (capability_not_read_only); leave it to Atlas' : 'no such capability');
+        }).join('; ') };
+      };
       for (let attempt = 0; attempt < maxCalls; attempt++) {
         const intent = ctx.emit('effect.intent', { attempt, turn: childKey, webMode });
         let env;
@@ -525,11 +636,18 @@ export function makeWorkerExecutor(o) {
         (Array.isArray(env && env.citations) ? env.citations : []).forEach((x) => {
           if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: s(x.url, 500), title: s(x.title, 200) });
         });
-        const wanted = allowed.length ? toolCallOf(env && env.data) : null;
+        const wanted = (allowed.length || canFind) ? toolCallOf(env && env.data) : null;
         if (wanted && attempt + 1 < maxCalls) {
           let step;
-          if (!allowed.includes(wanted.capability)) step = { ok: false, text: 'not in your grant (' + allowed.join(', ') + ')' };
-          else {
+          if (canFind && wanted.capability === FIND) {
+            try { step = await searchStep(wanted.args); } catch (e) { return { state: 'cancelled', calls, costUsd, sources }; }
+          } else if (!allowed.includes(wanted.capability)) {
+            /* the reason, not only the refusal: a capability that changes something is no worker's, whatever the grant says */
+            const kind = cap.classify(wanted.capability);
+            step = { ok: false, text: 'not in your grant (' + (allowed.join(', ') || 'nothing yet') + ')'
+              + (kind === 'other' ? ' — and it is not read-only (capability_not_read_only): it changes something IntMap shows or keeps, so no worker may run it; leave it to Atlas and say so in "gaps"'
+                : (kind === 'unknown' ? ' — and no capability has that id' : (canFind ? ' — find it with ' + FIND + ' first' : ''))) };
+          } else {
             const ti = ctx.emit('effect.intent', { capability: wanted.capability, by: 'worker', turn: childKey });
             try {
               const out = await cap.run(wanted.capability, wanted.args, { signal: controller.signal });
