@@ -147,6 +147,7 @@ jobs:
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_PAGES_DEPLOY == 'true' }}
         run: |
           set -euo pipefail
+          node scripts/release-contract.mjs --write dist --sha "${GITHUB_SHA}"   # (release-contract) which server surface this client needs
           rm -rf _site && mkdir -p _site
           cp -r dist/. _site/
           test -f _site/index.html || { echo "::error::dist/index.html missing — the build produced no site"; exit 1; }
@@ -835,10 +836,40 @@ jobs:
   #   is live and refuses to publish an ancestor of it (scripts/pages-publish-guard.mjs), inside the group,
   #   immediately before the publish. A refusal is green: the live commit already carries this one.
   # Nightly and dispatch runs never publish (event_name is not push).
+  # ══ (release-contract) THE SERVER THIS CLIENT NEEDS IS DEPLOYED BEFORE THE CLIENT IS PUBLISHED ═════
+  # `needs:` cannot name another workflow, so this job asks GitHub instead: it waits (in parallel with the
+  # browser tier, so it normally costs nothing) until supabase-deploy.yml has succeeded for the commit
+  # that last touched the server surface (or a descendant of it), and db.yml has succeeded for this
+  # commit. Red or timed out → `pages` and `aws` do not run; the next push or a re-run publishes.
+  # MEASURED 2026-11-18: Pages updated while a failed migration left 22 Edge Functions hours behind.
+  # The contract, its derivation and its limits: scripts/release-contract.mjs, docs/RELEASE.md.
+  server-ready:
+    name: Server side of this release is deployed
+    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.ENABLE_PAGES_DEPLOY == 'true' || vars.AWS_PUBLISH_ROLE_ARN != '') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: the wait itself is capped at 25 minutes (RELEASE_CONTRACT_WAIT_MIN)
+    permissions:
+      contents: read
+      actions: read         # the two workflows' runs
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0          # the server surface's last commit and its descendants are history
+          filter: blob:none
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci --ignore-scripts
+      - name: Wait for supabase-deploy and db.yml
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/release-contract.mjs --gate --sha "${GITHUB_SHA}"
+
   pages:
     name: Deploy to Pages
-    needs: [build, static, checks-gate, browser-gate]
-    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_PAGES_DEPLOY == 'true' && needs.build.result == 'success' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
+    needs: [build, static, checks-gate, browser-gate, server-ready]
+    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_PAGES_DEPLOY == 'true' && needs.build.result == 'success' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' && needs.server-ready.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:
@@ -881,8 +912,8 @@ jobs:
   # (the `if:` reads vars.AWS_PUBLISH_ROLE_ARN — declared green-skip-by-design at the top of this file)
   aws:
     name: Publish to AWS (S3 + CloudFront)
-    needs: [build, static, checks-gate, browser-gate]
-    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_PUBLISH_ROLE_ARN != '' && needs.build.result == 'success' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
+    needs: [build, static, checks-gate, browser-gate, server-ready]
+    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_PUBLISH_ROLE_ARN != '' && needs.build.result == 'success' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' && needs.server-ready.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:
@@ -947,6 +978,10 @@ jobs:
       - name: The published address is the one site-origin.js names
         if: ${{ !cancelled() }}
         run: node scripts/site-url.mjs --pages-agrees "${{ needs.pages.outputs.page_url }}"
+      # (release-contract) the published client's Edge Functions exist on production
+      - name: Every Edge Function the published client calls exists
+        if: ${{ !cancelled() }}
+        run: node scripts/release-contract.mjs --live "${{ needs.pages.outputs.page_url }}"
       - name: Upload post-deploy report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2

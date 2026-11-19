@@ -1209,6 +1209,8 @@ The enumeration for one instant is `node scripts/world-at-time.mjs --year 1914`.
 
 ## Atlas evaluation — the production Atlas, asked every night (`scripts/atlas-eval.mjs`)
 
+> **FROZEN (2026-11-19, the developer's decision).** The nightly workflow `atlas-eval.yml` is disabled and issue #755 closed: an automated evaluation by a machine, by anyone but the developer, is not accepted as an evaluation of Atlas. Nothing below runs nightly now. The code, the tests and the per-PR replay stay. To resume: `gh workflow enable atlas-eval.yml` and the one-time setup below. Reason and record: `dev-notes/2026-11-19-atlas-eval-frozen.md`.
+
 Every evaluation of the production Atlas used to be a person typing questions into the live page
 and reading `IntMapAtlasState.lastTurn()`. What those sessions found — Japanese requests that
 reached no capability, half the turns ending on 「作業の上限」, one operation fired 7 and 17 times,
