@@ -103,6 +103,15 @@
 **使えない典拠（再配布不可）**: CHGIS（V4–V6・非商用・再配布禁止）と、その派生——Virtual Shanghai「Prefectures in 1909 Qing China」は CC0 と表示されるが、配布 zip の処理履歴が CHGIS V6 の 1911 年府界の融合（`Dissolve v6_1911_pref_pgn_utf`）であることを述べる（2026-10-06 確認）。上流の再配布禁止は下流の CC0 表示で消えない、GADM、SHRUG（CC BY-NC-SA）、
 India State Stories の形状（ライセンス無し）、THCTS（台湾、CC BY-NC-SA・国内限定）、IPUMS の境界、
 Berkeley/China Data Center、UN SALB。
+さらに 2026-11-20 に確かめたもの（出典は `dev-notes/2026-11-20-hist-admin-coverage.md`）: Stanford「Provincial Boundaries, China, 1820」
+（CC BY 3.0 表示）は属性の列が CHGIS の列（`SYS_ID` `NAME_PY` `NAME_CH` `NAME_FT` `OBJ_TYPE` `GEO_SRC` `COMPILER` `GEOCOMP` `CHECKER` `ENT_DATE`）と一致し、1820 年は CHGIS の
+断面の年でもあるのに、出自を述べない——派生と見て使わない（上の Virtual Shanghai と同じ形）／Harvard Imperiia GIS（1820 年代のロシア帝国の県。CC BY-NC-SA 4.0）／IPUMS International の境界（規約が
+商用と再配布を禁じる）／CShapes 2.0（論文は CC BY-NC）／aourednik「historical-basemaps」（GPL-3.0・出典が個別に無く国の単位）。
+⚠ **使えるが、求めている線ではないもの**: CONICET「Base cartográfica de departamentos … 1869 a 2022」（CC BY 2.5 AR・Rodríguez 2022/2026v2）。アルゼンチンの県を国勢調査年（1869・1895・
+1914・1947・1960・1970・1980）の線で述べるが、作者自身が「現在の線から過去へ、変わったと確かめられた縁だけ編集する」方法（adelante hacia atrás）と述べる——つまり州と州の境の
+うち後年の法律（1969–83）で固定された所は、国勢調査年の線として今日の線が運ばれているだけで、ARG.json が「当時の線は確定していない」と書く所を解かない。州・領土を和集合として描くと、
+その運ばれた線を史実として主張することになるので、組まなかった。国勢調査年に**変わったと確かめられた**所（ロス・アンデス領 1900–43、コモドロ・リバダビア軍事地帯 1944–55、
+ティエラ・デル・フエゴの南極区分 1947）だけは、このデータの 2 つの断面の差が史実と一致する（測定は開発記録）。
 ⚠ **IntMap は営利である**（利用者 2026-10-06）。非営利に限る条件の典拠は、再配布できても使えない——国立歴史民俗博物館
 「旧高旧領取調帳」データベース（利用規程が営利目的を禁じる）と、その領主の列を転載した Kyudaka_agrivillage（作者の
 CC BY-SA は上流の禁止を外さない。村の位置と農業集落の対応は作者の作業なので使える）。

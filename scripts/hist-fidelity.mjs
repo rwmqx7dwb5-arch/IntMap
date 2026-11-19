@@ -31,6 +31,9 @@
  *  Run:
  *    node scripts/hist-fidelity.mjs --check        the gate (npm run check:histfidelity)
  *    node scripts/hist-fidelity.mjs --report       all three, with the per-polity table
+    node scripts/hist-fidelity.mjs --gaps [--from 1700]
+                                                  the uncovered ground in km², ranked by present-day
+                                                  country and reason — what to fill next
  *    node scripts/hist-fidelity.mjs --year 1900 --in 128,30,146,46
  *                                                  list what is drawn there, that year
  *    node scripts/hist-fidelity.mjs --update       re-record the observations in data/
@@ -408,20 +411,26 @@ function neGrid() {
   return (_ne = { G, iso, cell, codeIso });
 }
 function fillOf(bs) { const x = bs.find((q) => /admin-fill/.test(q.file)); return x ? x.b : null; }
-export function holes(bs, y, m = null) {
-  if (!m) m = measure(politiesAt(y), firstLevelAt(bs, y), RES);
-  const { G, iso, cell, codeIso } = neGrid(), fill = fillOf(bs) || {};
+/** why the ground under present-day country `c` (an ISO3, or null = no unit's outline) carries no
+ *  first-level unit on 1 July `y` — one of HOLE_REASONS. Shared by the ledger (`holes`) and the
+ *  area-ranked backlog (`gaps`) so the two cannot give different reasons for the same ground. */
+function holeWhy(bs, y) {
+  const { codeIso } = neGrid(), fill = fillOf(bs) || {};
   const refused = fill.refused || {}, inc = fill.inception || {};
-  const floor = new Map(), drawn = new Set();
+  const floor = new Map();
   for (const [code, s] of Object.entries(inc)) { const c = codeIso.get(code); if (c && (!floor.has(c) || s > floor.get(c))) floor.set(c, s); }
-  for (const f of (fill.feats || [])) drawn.add(f[11]);
   const t = y * 10000 + 701;
-  const why = (c) => {
+  return (c) => {
     if (c == null) return ['no-outline'];
     if (refused[c]) return refused[c];
     if (floor.has(c) && t < floor.get(c)) return ['before-set-floor', floor.get(c)];
     return ['withheld'];
   };
+}
+export function holes(bs, y, m = null) {
+  if (!m) m = measure(politiesAt(y), firstLevelAt(bs, y), RES);
+  const { iso, cell } = neGrid();
+  const why = holeWhy(bs, y);
   const out = [];
   /* the per-cell arrays measure() just filled: cid (which polity) and cov (covered) */
   const cid = m.cells.cid, cov = m.cells.cov;
@@ -444,6 +453,30 @@ export function holes(bs, y, m = null) {
     }
     if (other) parts.push(['*', Math.round(1000 * other / un) / 10]);
     out.push([p.nm, Math.round(p.pct * 10) / 10, p.cells, parts]);
+  }
+  return out;
+}
+
+/** (hist-coverage-gaps) the uncovered ground of year `y` in km², by present-day country and reason —
+ *  AREA, not cells: a 0.25° cell is 770 km² at the equator and 190 km² at 75°N, so ranking holes by
+ *  cell count sends the work to Arctic Russia and away from the Sahel. `holes()` records cells and the
+ *  ledger stays that way (it is a photograph the gate re-takes); this is the ranking a person reads
+ *  to choose what to fill next. Only ground a polity holds on `y` is counted, and `m` must be the
+ *  measure of that same year. Returns Map «ISO3|reason» → { km2, polities: Map name → km2 }. */
+export function gaps(bs, y, m) {
+  const { G, iso, cell } = neGrid(), why = holeWhy(bs, y);
+  const cid = m.cells.cid, cov = m.cells.cov, out = new Map();
+  const KM = 111.195, nameOf = new Map(m.per.map((p) => [p.ix, p.nm]));
+  for (let k = 0; k < cid.length; k++) {
+    const c = cid[k]; if (c < 0 || cov[k]) continue;
+    const j = Math.floor(k / G.NX), lat = -90 + (j + 0.5) * RES;
+    const km2 = RES * RES * KM * KM * Math.cos(lat * Math.PI / 180);
+    const ii = cell[k], code = ii < 0 ? null : iso[ii];
+    const key = (code || '') + '|' + why(code)[0];
+    let e = out.get(key); if (!e) out.set(key, e = { km2: 0, polities: new Map() });
+    e.km2 += km2;
+    const nm = nameOf.get(c) || '?';
+    e.polities.set(nm, (e.polities.get(nm) || 0) + km2);
   }
   return out;
 }
@@ -790,7 +823,28 @@ async function main() {
   const observed = JSON.parse(fs.readFileSync(path.join(ROOT, OBSERVED), 'utf8'));
   /* each year's measure is read for its holes before the next year's overwrites the cells */
   const cov = [], holeYears = [];
-  for (const r of observed.years) { const c = coverage(bs, r.year); holeYears.push({ year: r.year, holes: holes(bs, r.year, c) }); cov.push(c); }
+  const gapYears = [];
+  for (const r of observed.years) { const c = coverage(bs, r.year); holeYears.push({ year: r.year, holes: holes(bs, r.year, c) }); cov.push(c); if (has('--gaps')) gapYears.push({ year: r.year, g: gaps(bs, r.year, c) }); }
+  if (has('--gaps')) {
+    /* (hist-coverage-gaps) what to fill next: uncovered km² summed over the measured years from --from,
+       by present-day country and reason, with the years it lies in and the polities that hold the ground */
+    const from = +arg('--from', 1700), agg = new Map();
+    for (const { year, g } of gapYears) {
+      if (year < from) continue;
+      for (const [k, e] of g) {
+        let a2 = agg.get(k); if (!a2) agg.set(k, a2 = { sum: 0, years: new Map(), pol: new Map() });
+        a2.sum += e.km2; a2.years.set(year, e.km2);
+        for (const [n, v] of e.polities) a2.pol.set(n, (a2.pol.get(n) || 0) + v);
+      }
+    }
+    const M = (v) => (v / 1e6).toFixed(2);
+    console.log('uncovered land (million km², summed over the measured years from ' + from + '), by present-day country and reason:');
+    for (const [k, a2] of [...agg].sort((x, y) => y[1].sum - x[1].sum).slice(0, +arg('--top', 40))) {
+      const [iso3, why] = k.split('|');
+      console.log('  ' + (iso3 || '—').padEnd(4) + why.padEnd(17) + M(a2.sum).padStart(7) + '   ' + [...a2.years].map(([y, v]) => y + ':' + M(v)).join(' ') + '   · ' + [...a2.pol].sort((x, y) => y[1] - x[1]).slice(0, 3).map(([n, v]) => n + ' ' + M(v)).join(', '));
+    }
+    return;
+  }
 
   if (has('--update')) {
     const today = new Date().toISOString().slice(0, 10);
