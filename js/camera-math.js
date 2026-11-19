@@ -78,7 +78,7 @@ const grotY=(v,a)=>{ const c=Math.cos(a),s=Math.sin(a); return [v[2]*s+v[0]*c, v
    transform AND a mercator one, swapping by zoom; `isGlobeRendering` is its own name for
    which is drawing, and the clone handed to transformCameraUpdate carries it. A plain
    mercator transform has no such property, which reads false — correctly. */
-const gSpherical=t=>{ try{ return !!(t&&t.isGlobeRendering); }catch(_){ return false; } };
+const gSpherical=t=>{ try{ return !!(t&&(t.isGlobeRendering??(t._projection&&t._projection.isGlobeRendering))); }catch(_){ return false; } };
 /* the canvas-and-fov constant, in pixels; never latitude- or zoom-dependent. `t` is the transform
    being judged (often a proposal clone); `live` is the renderer's own transform, asked when the
    proposal does not carry the number. The caller supplies `live` — js/geo-engine.js is the one file

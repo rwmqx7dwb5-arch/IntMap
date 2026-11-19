@@ -51,6 +51,7 @@ const PHONE = {
   deviceScaleFactor: 3,
   isMobile: true,
   hasTouch: true,
+  screen: { width: 390, height: 844 },   /* Playwright 1.65: window.screen is the host's unless set; ui-device.js reads it */
 };
 
 /* what the page answers about the device and about what it may hold. Everything here is public

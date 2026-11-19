@@ -173,6 +173,7 @@ test('my map on a phone: every control in the panel is reachable by a finger', a
   await page.evaluate(() => { try { window.IntMapMyMap.close(); } catch (_) { } document.getElementById('btn-info').click(); });
   await expect(page.locator('#co-compare-fixed')).toHaveClass(/\bshow\b/, { timeout: 10_000 });
   await page.locator('#ms-input').focus();
+  await page.locator('#ms-input').fill('Tokyo');
   await expect(page.locator('#ms-results')).not.toBeEmpty({ timeout: 15_000 });
   await page.waitForTimeout(500);   /* the sheet's spring to `full` */
   const under = await page.evaluate(() => {

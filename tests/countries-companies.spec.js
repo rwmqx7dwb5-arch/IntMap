@@ -120,7 +120,7 @@ async function cardStamps(page) {
   await page.waitForFunction(() => document.getElementById('country-popup')?.style.display === 'block', null, { timeout: 15000 });
   expect(await page.evaluate(() => window._cpCurrent && window._cpCurrent.code)).toBe('FRA');
   return page.evaluate(() => [...document.querySelectorAll('#cp-body .cm-row > span:first-child, #cp-body .ci-row > span:first-child')]
-    .map((e) => e.textContent.trim()).map((t) => { const m = t.match(/\((\d{4}) · (.+)\)$/); return m ? { label: t, y: m[1], pub: m[2] } : { label: t }; }));
+    .map((e) => { const c = e.cloneNode(true); c.querySelectorAll('.cm-src').forEach((x) => x.remove()); return c.textContent.trim(); }).map((t) => { const m = t.match(/\((\d{4}) · (.+)\)$/); return m ? { label: t, y: m[1], pub: m[2] } : { label: t }; }));
 }
 
 async function closeCard(page) {

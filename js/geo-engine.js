@@ -222,8 +222,9 @@ function _redrawLocalGlyphs(m,cover){
   /* ══ THE RENDERER'S CAMERA — WHICH MAPLIBRE 6 NO LONGER HANGS ON THE MAP ══════════════════════
      v6's Map COMPOSES a Camera instead of extending one (its 6.0.0 changelog, and the v5→v6
      migration guide: «The internal `map.transform` property has been removed»). The transform the painter
-     draws with is the camera's (`this.painter = new Painter(gl, this._camera.transform)`, and
-     migrateProjection hands the painter the camera's new one), and three things this adapter needs
+     draws with is the camera's: the painter keeps none of its own (6.18: no `transform` key on it) and the map hands
+     it the camera's as the second argument of every frame, `painter.render(style, this._camera.transform, …)`
+     (tests/maplibre-6-migration.spec.js ① watches one frame do so). Three things this adapter needs
      live only there:
        · the transform's matrices, its far plane and its camera distance — the limb, the sky's frame,
          the horizon reach, the eye geometry and the lifted projection below. None is public in any
@@ -1330,7 +1331,10 @@ function _redrawLocalGlyphs(m,cover){
       }catch(_){ return false; } },
     /* (#R172) is the RENDERER running a camera animation of its own right now? Lets a caller tell a user
        gesture apart from a programmatic flyTo/easeTo without reaching for MapLibre's isEasing(). */
-    isAnimating(){ const c=_cam(_m()); try{ return !!(c&&typeof c.isEasing==='function'&&c.isEasing()); }catch(_){ return false; } },
+    /* 6.13–6.17 had camera.isEasing(); 6.18 dropped it (nightly 2026-11-19: isAnimating() read false for the whole of a flyTo).
+       Camera.isMoving() is the scheduler's — programmatic animation only; a user gesture lives in the Map's handler manager,
+       so it is still told apart. Expires if the camera stops exposing either. */
+    isAnimating(){ const c=_cam(_m()); try{ if(!c) return false; if(typeof c.isEasing==='function') return !!c.isEasing(); return typeof c.isMoving==='function' ? !!c.isMoving() : false; }catch(_){ return false; } },
     /* (#R172) does the point the camera looks at STICK TO THE GROUND? MapLibre pins it there by default,
        which is why jumpTo silently drops the `elevation` that calculateCameraOptionsFromTo returns
        (measured: asked for 8,531 m, read back 0 m) — and with the target pinned to the ground the eye's

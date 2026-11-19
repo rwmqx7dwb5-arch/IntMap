@@ -22,6 +22,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { CORE_TOOL_BLOCK_MAX } from './helpers/atlas-registry.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the sections below (each used to declare its own copy) */
@@ -401,9 +402,8 @@ test('R406-turn ②: the same tools are offered for every request, and the catal
   }
   assert.equal(new Set(sets).size, 1, 'the tool surface varied with the wording of the request');
   /* the whole surface, schemas included, against the 64,250 characters of catalogue it replaced */
-  /* (atlas-completion) 12,000 → 13,000: a guard against the catalogue coming back (64,250), not a policy on the core tools' length —
-     compose_map gained `basis` / `via` so a route can say whether it is schematic, computed or a recorded track and pass named waypoints. */
-  assert.ok(biggest < 13_000, `the tool block is ${biggest} characters — it must not become the catalogue again`);
+  /* the ceiling and why it is what it is: CORE_TOOL_BLOCK_MAX in tests/helpers/atlas-registry.mjs */
+  assert.ok(biggest < CORE_TOOL_BLOCK_MAX, `the tool block is ${biggest} characters — it must not become the catalogue again`);
   const names = sets[0].split(',');
   assert.ok(names.includes('find_capability'), 'nothing can reach the capabilities that are not core tools');
   assert.ok(names.includes('run_capability'));

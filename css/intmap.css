@@ -2164,7 +2164,7 @@
        Measured after: 351 px row → name 88 px, value 63 px, nothing spills (tests/companies-name-width.spec.js, also at 390 px). */
     .stat-val .co-asof{ white-space:normal; }
     .co-asof-w{ white-space:nowrap; }   /* (companies-live-time-wrap) a word of the stamp never splits — js/companies-ui.js _coAsOfChip */
-    .stat-detail{ flex:0 0 auto; border:none; background:transparent; color:var(--primary-color); font-size:12px; font-weight:600; padding:6px 2px 6px 6px; cursor:pointer; white-space:nowrap; border-radius:8px; }
+    .stat-detail{ flex:0 0 auto; border:none; background:transparent; color:var(--primary-on-tint); font-size:12px; font-weight:600; padding:6px 2px 6px 6px; cursor:pointer; white-space:nowrap; border-radius:8px; }
     .stat-detail:hover{ text-decoration:underline; }
     .stat-detail:focus-visible{ outline:2px solid var(--primary-color); outline-offset:1px; }
     .stats-rankbase{ font-size:11px; color:var(--text-muted); margin:2px 4px 6px; }

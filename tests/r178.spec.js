@@ -101,7 +101,8 @@ test('unlimited tilt owns the zoom floor and gives it back (#R178)', async ({ ap
   const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const r = await page.evaluate(async () => {
     const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));
-    const out = {};
+    /* the globe's own floor is log2(min(w,h)/720) since #1175 (js/map-projection.js globeMinZoom) — 0 only at 720 px */
+    const out = { floor: Math.log2(Math.min(m.getContainer().clientWidth, m.getContainer().clientHeight) / 720) };
     window.IntMapTilt.set(false); await wait(200); out.offBefore = m.getMinZoom();
     window.IntMapTilt.set(true); await wait(200); out.on = m.getMinZoom();
     window.IntMapTilt.set(false); await wait(200); out.offAfter = m.getMinZoom();
@@ -112,12 +113,12 @@ test('unlimited tilt owns the zoom floor and gives it back (#R178)', async ({ ap
     window.IntMapOS.exec('view.proj.globe', { source: 'test' }); await wait(400); out.globeOff = m.getMinZoom();
     return out;
   });
-  expect(r.offBefore, 'the app owns the floor while the setting is off').toBe(0);
+  expect(r.offBefore, 'the app owns the floor while the setting is off').toBeCloseTo(r.floor, 6);
   expect(r.on, 'and the tilt setting widens it to the renderer\'s own floor').toBe(-2);
-  expect(r.offAfter, 'turning it off hands the app\'s floor straight back').toBe(0);
+  expect(r.offAfter, 'turning it off hands the app\'s floor straight back').toBeCloseTo(r.floor, 6);
   expect(r.flatOn, 'still widened after a projection switch').toBe(-2);
   expect(r.flatOff, 'and the flat map gets ITS floor back, not the globe\'s').toBe(1.2);
-  expect(r.globeOff, 'and the globe gets its own').toBe(0);
+  expect(r.globeOff, 'and the globe gets its own').toBeCloseTo(r.floor, 6);
 });
 
 /* ── ④ the feasibility question is asked of the RENDERER, not of a rule we wrote ────────────────
