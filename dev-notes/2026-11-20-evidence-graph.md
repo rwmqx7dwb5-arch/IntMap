@@ -24,3 +24,9 @@ newsjp: Atlas の回答の数値と GIS の結果が系譜グラフを持つよ�
 
 ## 3. 検査
 `tests/evidence-graph-checks.test.mjs`（実際の dataset レジストリと registry で、元データ→buffer→aggregate→回答の数値の鎖、版更新後の stale、冪等、snapshot）。
+
+## perf 天井を上げた理由
+
+`atlas-console` チャンクが 1051.8 → 1061.2 kB（+9.4 kB）、`dist.assets` が 21446.3 → 21560.0 kB。
+増えたのは Evidence Graph の 2 モジュール（`evidence-graph.js` / `evidence-graph-record.js`）が回答パイプラインの
+チャンクに入ったため。回答の数値を元データまで遡る能力の代価で、遅延読み込みにはしない（回答ごとに呼ぶ）。
