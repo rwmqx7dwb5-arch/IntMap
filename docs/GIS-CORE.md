@@ -207,6 +207,16 @@ OGC API – Features（OGC 17-069r4。WFS の後継）のコレクションを�
   `cursor-not-recognised`）。サーバの next が別オリジンなら `ogc-next-elsewhere`、自分自身を指すなら `ogc-next-loop`。
 - 登録されるのは `provenance.kind='url-features'` のベクタのデータセット（座標は標準の既定 CRS84＝経緯度）。
 
+### 1.4e データの所在を探す — STAC 検索（`stac:` 入力）
+
+`"stac:https://…/search"`（STAC API の item-search。Planetary Computer・Earth Search 等）を地物の枠に渡すと、
+**項目（item）の一覧**がデータセットとして返る（足跡の図形・日時・`stac_id`・`stac_collection`、そして**ファイル 1 つにつき 1 列**
+`asset:<key>`＝その href）。⚠ **ここで探して、選んだ行の `asset:…` を `url:` に渡して読む**——所在の発見と
+実データの取得を 1 本の鎖にするため（§1.4c）。取る欄は `bounds` / `time`（STAC の `datetime` へそのまま）/ `limit` / `cursor`
+で、ページ送り・同一オリジンのカーソル・`coverage` は §1.4d と同じ。コレクションの絞り込みは URL の `?collections=` で
+述べる。条件（`where`）は断る。⚠ 資産の href が実在するか・公開か（署名付き URL が要る供給元）は**この層は述べない**
+——読んだときに `http-status` / `fetch-failed` で分かる。
+
 ### 1.4b 格子を合わせる — `js/gis-warp.js` (`window.IntMapGisWarp`)
 
 GDAL の warp が担っている役——**座標系・解像度・範囲・再標本化・NoData を 1 つの層で扱う**。
