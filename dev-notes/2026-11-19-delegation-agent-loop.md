@@ -28,3 +28,8 @@ newsjp: 委譲した調査の子に読み取り専用の地図の能力を許可
 - 8 回で十分かの実測。本番での単独 vs 委譲の比較が要る（`scripts/atlas-delegation-bench.mjs`）。
 
 回帰: `tests/delegation-agent-loop-checks.test.mjs`。
+
+## 3. 起動費用の天井を上げた理由
+
+- 非同期チャンク `atlas-delegate` が 57.3 kB → 59.8 kB、`async.raw` が 13987.3 → 14060.2 kB。子の能力ループ（`toolSection` / `toolCallOf` と実行器の分岐）が買ったもの。起動時の同期チャンクは増えていない（委譲を使うときだけ読み込まれる）。
+- 名前に注意: ローカル関数を `htmlText` と名づけると `output-taint` が journey-through-time.js の同名の呼び出しを誤って数えた。`stripTags` に変えて解消。
