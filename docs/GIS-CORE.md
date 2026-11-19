@@ -429,7 +429,8 @@ geometry で、格子はそれを持たない——この鍵が無ければ、**
 ⚠ 列名がぶつかれば拒む（`prefix` が読者の答え）。上書きは画面に出ているデータを壊し、ここで改名すれば
 **誰も知らない名前**を発明することになる。
 
-⚠ **`compute` の式は解釈されるのであって評価されない（#R738）。** `js/gis-expr.js` は自前の
+⚠ **`compute` の式は解釈されるのであって評価されない（#R738）。** （Python を走らせる `compute.run`〔綴り `python`〕は
+この op とは別物で、別の Worker〔`js/compute-sandbox.js`〕で隔離して実行する——`docs/SECURITY-ARCHITECTURE.md` §6。）`js/gis-expr.js` は自前の
 トークナイザと再帰下降パーサで、**`eval` も `new Function` も使わない**。空は 0 ではなく**伝播**し
 （`coalesce(x,0)` は読者が述べる）、先頭ゼロのセルは算術に入らず（規則は `IntMapData` に訊く。
 §1.1）、0 除算は `null`、`'a' + 1` は連結ではなく `expr-type`。⚠ **式が名指す列はデータセットに

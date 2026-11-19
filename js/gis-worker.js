@@ -89,6 +89,10 @@
  *  worker from an older one is retired rather than handed the new job.
  *  ⚠ register() IS NOT A DOOR FOR TEXT FROM OUTSIDE. Its argument is a function authored in this
  *  repository; nothing reader-supplied reaches the assembled source.
+ *  ⚠ (compute-sandbox) AND IT STAYS THAT WAY. Code the model writes (Python, `compute.run`) runs in a
+ *  DIFFERENT worker, built from a different source by js/compute-sandbox.js, whose realm is stripped of
+ *  the origin and the network before that code runs. This pool's workers keep their full scope — they
+ *  run only this repository's jobs — so nothing outside may ever be routed through register().
  *
  *  ══ CANCELLATION REACHES terminate(), AND THAT IS WHY A WORKER RUNS ONE JOB ═══════════════════
  *  `terminate()` is not selective — it kills the thread, not a task on it. So a worker here holds

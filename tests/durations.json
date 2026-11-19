@@ -1,4 +1,5 @@
 {
+ "tests/compute-sandbox.spec.js": 22,
  "tests/geopolitics-layers.spec.js": 14,
  "tests/gis-chain-audit.spec.js": 10,
  "tests/wave4-news.spec.js": 6,
@@ -150,7 +151,7 @@
  "tests/r508.spec.js": 3,
  "tests/r510.spec.js": 1,
  "tests/security.spec.js": 4,
- "tests/r530.spec.js": 160,
+ "tests/r530.spec.js": 80,
  "tests/r545.spec.js": 5,
  "tests/smoke.spec.js": 8,
  "tests/r550.spec.js": 12,
