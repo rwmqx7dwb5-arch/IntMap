@@ -256,14 +256,17 @@ export async function sha256Hex(s) {
   return Array.from(new Uint8Array(d), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/* the ONE corsFor() call of this function (tests/r333-checks reads the allowed-header table from a single call) */
+const CORS = { ...corsFor("mcp-protocol-version, mcp-session-id"), "Access-Control-Allow-Methods": "POST, OPTIONS" };
+
 function json(status, body, headers) {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsFor("mcp-protocol-version, mcp-session-id"), "content-type": "application/json", "cache-control": "no-store", ...(headers || {}) } });
+  return new Response(JSON.stringify(body), { status, headers: { ...CORS, "content-type": "application/json", "cache-control": "no-store", ...(headers || {}) } });
 }
 
 /** deps: { db, limiter, loadGis, now, globalPerDay } → handle(req) */
 export function makeHandler(deps) {
   const tools = makeTools(deps);
-  const cors = { ...corsFor("mcp-protocol-version, mcp-session-id"), "Access-Control-Allow-Methods": "POST, OPTIONS" };
+  const cors = CORS;
 
   async function gateKey(req) {
     const m = /^Bearer\s+(\S+)$/i.exec(req.headers.get("authorization") || "");
