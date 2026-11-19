@@ -200,15 +200,15 @@ export function makeSessionTabs(HOST, CTX) {
   const _atlasTab=()=>{ try{ if(document.body.classList.contains('ws-mode')){ if(window.IntMapAtlas) window.IntMapAtlas.call('open'); else if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); } else setMode('atlas','btn-community'); }catch(_){} };
   IntMapOS.register('tab.atlas', _atlasTab, {label:'Atlas tab', btn:'btn-community', group:'tab'});
   IntMapOS.register('tab.community', _atlasTab, {label:'Atlas tab', btn:'btn-community', group:'tab'});   /* legacy alias */
-  document.getElementById('btn-news').onclick=()=>IntMapOS.exec('tab.news',{source:'ui'});
+  document.getElementById('btn-news').onclick=()=>IntMapOS.press('panel.tab',{name:'news'},'tab.news');
   /* Saved is now a sub-filter inside the News tab (keeps btn-news active) */
   document.getElementById('newsfilter-all').onclick=()=>{ if(HOST.mode!=='news') setMode('news','btn-news'); };
   document.getElementById('newsfilter-saved').onclick=()=>{ if(HOST.mode!=='saved') setMode('saved','btn-news'); };
-  document.getElementById('btn-info').onclick=()=>IntMapOS.exec('tab.info',{source:'ui'});
-  document.getElementById('btn-stats').onclick=()=>IntMapOS.exec('tab.stats',{source:'ui'});
+  document.getElementById('btn-info').onclick=()=>IntMapOS.press('panel.tab',{name:'info'},'tab.info');
+  document.getElementById('btn-stats').onclick=()=>IntMapOS.press('panel.tab',{name:'stats'},'tab.stats');
   /* (#R98) Community feature removed — this sidebar button is the Atlas tab. (#R112) It now behaves like the other
      tabs (News/Info/Countries): a true kernel tab command that renders Atlas INSIDE the sidebar/bottom-sheet. */
-  document.getElementById('btn-community').onclick=()=>IntMapOS.exec('tab.atlas',{source:'ui'});
+  document.getElementById('btn-community').onclick=()=>IntMapOS.press('panel.tab',{name:'atlas'},'tab.atlas');
   /* (#R122) auto-fit the News/Information/Countries/Atlas tab labels: the largest font (≤14px) that keeps every
      label on ONE line inside its equal-width button, in every language — so the text is as large as possible
      yet never wraps or overflows ("ボタンサイズに応じてテキストサイズも変更…はみ出さない…改行されない"). */
