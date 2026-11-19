@@ -611,6 +611,7 @@
   "IntMapGisPanel",
   "IntMapGisProject",
   "IntMapGisRaster",
+  "IntMapGisSemantics",
   "IntMapGisShapefile",
   "IntMapGisSources",
   "IntMapGisUnits",

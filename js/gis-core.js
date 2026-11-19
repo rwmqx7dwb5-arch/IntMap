@@ -93,6 +93,7 @@ import { makeGisWarp } from './gis-warp.js';
 import { makeGisAtlas } from './gis-atlas.js';
 import { makeGisIndex } from './gis-index.js';
 import { makeGisVoronoi } from './gis-voronoi.js';
+import { makeGisSemantics } from './gis-semantics.js';
 import { makeGisExpr } from './gis-expr.js';
 import { makeGisUnits } from './gis-units.js';
 import { makeDataGovernance } from './data-governance.js';
@@ -176,6 +177,10 @@ function mount(scope, HOST, CONTEXT) {
      reader-visible credits and the shipped bundle came to disagree (34 of 69 bundles named no terms
      at all). ⚠ It reads nothing and holds no table of sources — see its header. */
   const governance = makeDataGovernance();
+  /* (gis-semantic-layer) 「この列は現実で何を意味し、何と比べてよいか」. Reads the registry, the unit kernel and the
+     governance vocabulary at CALL time, so it is mounted after all three; it holds no table of sources and changes
+     no result — js/gis-atlas.js asks it for warnings before a step runs. */
+  const semantics = makeGisSemantics();
   /* (#R752) Parallelism, which is the half of 「重い処理」 the yield in js/gis-ops.js does NOT provide
      (docs/GIS-CORE.md §6 said so: 「ここで足りないのは並列性であって応答性ではない」). It takes PURE
      ARITHMETIC over numeric arrays — pixel loops, where there is no registry and no geodesy to leave
@@ -259,7 +264,7 @@ function mount(scope, HOST, CONTEXT) {
      a list of ops written on the Atlas side — is the defect #R732 measured in the panel, where
      `ORDER` had four entries and DECL had nine. It needs no lazy door of its own: the whole of this
      file is behind `gisCore`, and asking Atlas to run an op is asking for this file. */
-  const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, warp: warp, crs: crs, draw: (id, o) => draw(id, o) });
+  const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, warp: warp, crs: crs, semantics: semantics, draw: (id, o) => draw(id, o) });
 
   /* ⚠ (#R783) THE FIVE STAGES, AS THE FUNCTIONS THAT ACTUALLY DO THEM. The outside review drew the
      flow 「データを探す → 内容・時期・単位・取得可能範囲を確認する → 必要な条件で取得する → 共通 GIS
@@ -280,7 +285,7 @@ function mount(scope, HOST, CONTEXT) {
     verify: project.verify,
   });
 
-  const API = { data, geometry, crs, raster, warp, index, voronoi, expr, units, worker, sources, layers, ops, project, panel, draw, atlas, flow,
+  const API = { data, geometry, crs, raster, warp, index, voronoi, expr, units, semantics, worker, sources, layers, ops, project, panel, draw, atlas, flow,
     context: ctx,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { scope.IntMapGis = API; } catch (_) { }
@@ -302,7 +307,7 @@ function mount(scope, HOST, CONTEXT) {
      (.agents/rules/no-ad-hoc-hardcoding.md §2-4: 「一覧が要るなら、一覧を発見する」). */
   const verified = [['IntMapData', data], ['IntMapGisGeometry', geometry], ['IntMapGisCrs', crs],
     ['IntMapGisRaster', raster], ['IntMapGisWarp', warp], ['IntMapGisIndex', index], ['IntMapGisVoronoi', voronoi], ['IntMapGisExpr', expr],
-    ['IntMapGisUnits', units], ['IntMapDataGovernance', governance], ['IntMapGisWorker', worker], ['IntMapGisSources', sources],
+    ['IntMapGisUnits', units], ['IntMapDataGovernance', governance], ['IntMapGisSemantics', semantics], ['IntMapGisWorker', worker], ['IntMapGisSources', sources],
     ['IntMapGisLayers', layers], ['IntMapGisOps', ops], ['IntMapGisProject', project], ['IntMapGis', API],
     ['IntMapGisContext', ctx]];
   const unreachable = [];

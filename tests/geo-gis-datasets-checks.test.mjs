@@ -251,6 +251,7 @@ describe('§ #R729 · the GIS core (registry, chain, refusals, project, query)',
     'js/gis-geopackage.js': 'a reader of bytes on the IMPORT path, reached through js/geo-import.js; js/map-ui.js words its codes',
     'js/gis-remote.js': 'reached only through js/gis-atlas.js (data.gisRemote), whose refusals answer the MODEL in the turn result with the code and its detail; this panel never calls it. ⚠ if a panel control ever asks the catalogues of the world, each code needs a sentence here first',
     'js/gis-atlas.js': 'the Atlas-facing surface — its refusals answer the MODEL in the turn result, not this panel, which never calls it',
+    'js/gis-semantics.js': 'reached only through js/gis-atlas.js (data.gis semantics:true / strict:true) and answers the MODEL with the code and its detail; the panel never declares or checks a meaning — if a panel control ever does, this excuse is wrong and the codes need sentences there',
     /* ⚠ MEASURED, not assumed (#R819): js/gis-warp.js and js/gis-raster.js treat a refusal from the
        other thread as 「あちらが駄目だった」 and run the same rows here instead (gis-warp.js's
        `retry: { used:false, reason: why }`), so a worker code is a note about the machinery rather
