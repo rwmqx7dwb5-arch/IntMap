@@ -38,3 +38,7 @@ newsjp: Atlas が網を距離ではなくつながりとして分析できるよ
   航路（線）と港（ノード）の実データセットを取り込む別の仕事（出典・利用規約・`data-governance` を伴う）が要る。
   いまは同じ op が海底ケーブル・鉄道・LNG ターミナル網で動く。
 - ノード容量（港の取扱量）を使うフローは未対応（辺容量のみ）。
+
+## 予算と台帳（CI が求めたもの）
+- `check:surface`: 大域名 `window.IntMapGisNetwork` を 1 つ足した（`--update`）。他の GIS カーネルと同じく、`gis-ops.js` が呼び出し時に名前で読む唯一の形（`IntMapGisVoronoi` と同じ契約）。読みは 1 本。
+- `check:perf`: `gis-core` チャンクが約 26 kB 増えた（新しい純粋カーネル `gis-network.js` ＋ `atlas-cap-runs` に能力の断片 1 つ）。増えた理由はこの機能そのもので、天井を `perf-budget --update` で上げた。

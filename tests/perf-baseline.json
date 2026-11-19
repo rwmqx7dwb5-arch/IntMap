@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 14475671,
-    "gzip": 4859500,
+    "gzip": 4888613,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -22,7 +22,7 @@
       "atlas-admin1": 12138,
       "atlas-answer-view": 2510,
       "atlas-attach": 23189,
-      "atlas-cap-runs": 905439,
+      "atlas-cap-runs": 910655,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
       "atlas-console": 1077036,
@@ -79,7 +79,7 @@
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
       "gis-cog": 4676,
-      "gis-core": 629786,
+      "gis-core": 656088,
       "gis-export": 30142,
       "gis-geopackage": 26667,
       "gis-geotiff": 24029,
@@ -213,7 +213,7 @@
   "dist": {
     "total": 1579471807,
     "data": 1216590073,
-    "assets": 21961000
+    "assets": 22099835
   },
   "phone": {
     "bytes": 342631,
