@@ -242,8 +242,9 @@ export function makeAtlasMarkdown(CTX) {
     /* (#R79g) bare urls too — the leading-char guard skips one already inside an href="…" */
     s = s.replace(/(^|[^"'=>/])(https?:\/\/(?:[^\s<>()"'）】]|\([^\s<>()"'）】]*\)){4,400})/g,
       (m, pre, u) => pre + put('<a href="' + esc(globalThis.IntMapSafe.url(u)) + '" class="atl-a atl-a-url" target="_blank" rel="noopener">' + esc(u) + '</a>'));
-    /* (#R159) inline **bold** → plain: an Atlas reply body carries no bold */
-    s = s.replace(/\*\*([^*\n]+?)\*\*/g, '$1');
+    /* inline **bold** → <b>. (#R159 stripped it so a reply carried no bold; the reader reversed that — emphasis is how a long
+       answer shows what matters. Headings keep their own semibold weight and monochrome colour.) */
+    s = s.replace(/\*\*([^*\n]+?)\*\*/g, (m, t) => put('<b>' + esc(t) + '</b>'));
     /* (#R156) *italic* — guarded so `**`, a bullet and `2 * 3` cannot misfire */
     s = s.replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)(?<!\s)\*(?!\w)/g,
       (m, pre, t) => pre + put('<i>' + esc(t) + '</i>'));

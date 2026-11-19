@@ -31,18 +31,15 @@ test.afterAll(async () => {
   await page?.context()?.close();
 });
 
-test('R159 #1 Atlas markdown renders with no bold and no divider line', async () => {
+test('R159 #1 Atlas markdown renders bold and no divider line', async () => {
   const out = await page.evaluate(() =>
     window.IntMapAtlasDebug.mdMini('This is **bold** text and a key **term**.\n\n## Section Heading\n\n### Subheading\n\n# Big Title\n\nA closing sentence.'),
   );
-  // (1) no bold anywhere in the reply body
-  expect(out, 'no inline <b>').not.toContain('<b>');
-  expect(out, 'no <strong>').not.toContain('<strong>');
+  // (1) bold renders as <b> (the reader reversed #R159's strip)
+  expect(out, 'inline <b>').toContain('<b>bold</b>');
   expect(out, 'no heavy 800 weight').not.toContain('font-weight:800');
   expect(out, 'no heavy 750 weight').not.toContain('font-weight:750');
-  // the emphasised words survive as plain text (only the ** markers are stripped)
-  expect(out).toContain('bold');
-  expect(out).toContain('term');
+  expect(out).toContain('<b>term</b>');
   // (2) no horizontal divider line (the old "## " top-rule is removed)
   expect(out, 'no divider hairline').not.toContain('border-top');
   // headings still exist, differentiated by SIZE (semibold, not bold)

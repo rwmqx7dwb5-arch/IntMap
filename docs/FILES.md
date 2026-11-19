@@ -996,6 +996,7 @@ atlas-attach-log.js               Atlas — 会話 1 本ぶんの添付の台帳
 atlas-file-view.js                Atlas — 添付ファイルの**中身**を全画面ビューアの中に描く（PDF はブラウザの表示器へ、
                                   表は中身の列の揃い方で判定して表として、長い本文と大きな表は残りの量を述べる
                                   ボタンで畳む）。全画面の枠そのものは `atlas-attach.js` が 1 本だけ持つ
+atlas-effort.js                    Atlas — 考える強さ（自動・高速・標準・深く考える・最大）の選択と保存とメニュー、自動のときの強さの判定（atlas_effort の 1 回の呼び出し）
 atlas-msg-tools.js                Atlas — メッセージごとの操作バー（コピー／再試行／編集）とその場編集
 atlas-notebook.js                 Atlas — **調査ノート**（atlas-os）のページ側。終わったターンを綴じる・パネルの帯とシート・
                                   再現（runDirect＋restorer で読み返し）・今と比べる・もう一度訊く・書き出し／読み込み・アカウント同期
