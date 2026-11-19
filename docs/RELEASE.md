@@ -105,9 +105,11 @@ never be mistaken for production. Production never shows it.
   every browser machine as an artifact; on `main` it also assembles the Pages artifact — `dist/`
   plus a `build-info.json` stamp whose `runId` is that CI run. The `pages` job publishes it only
   after `build`, «Static checks», «Regression suite» and «Browser smoke + internal QA» all
-  succeeded, then `post-smoke` tests the live URL. Nightly and dispatched CI runs never publish.
-  «Migrations rebuild + RLS/permission tests» (`db.yml`) is a separate workflow and cannot be
-  waited on; it is required on the PR, which is where a migration is judged.
+  succeeded **and** the `server-ready` job is green, then `post-smoke` tests the live URL.
+  Nightly and dispatched CI runs never publish.
+  `db.yml` and `supabase-deploy.yml` are separate workflows that `needs:` cannot name, so
+  `server-ready` asks GitHub for their runs (see «Release contract» below): the publish waits for
+  the server side of the same commit instead of racing it.
 - **Why `main` is tested again after the merge.** The ruleset's required checks are not
   «strict» — a PR need not be up to date with `main` to merge — so two PRs green on their own can
   merge into a tree no PR run saw. `main`'s CI run is the one place that tree is checked, and it
@@ -271,6 +273,28 @@ node scripts/release-state.mjs --diff <function>   # その関数の実際の差
 > remote 2 本が local に無い**（`docs/DATABASE.md` のベースライン再構築の経緯を読むこと）。
 > ⚠ この履歴の食い違いが解消されるまで、`supabase-deploy.yml` は新しい migration を**流さずに赤で止まる**
 > （`db push --dry-run` が「その push が足したもの」以外も流すと言うため）。nightly の drift job も赤のまま。
+
+## Release contract（クライアントとサーバーの互換を検証できる形にする）
+
+> ⚠ 実測 2026-11-18: Pages だけが更新され、migration の失敗で 22 本の Edge Function が数時間古いまま
+> 残った。公開の job は別ワークフローの DB 検査・Supabase 配備を待っていなかった。巨大な 1 本への統合は
+> せず、**公開される各部品が何の版を要求するかを宣言し、本番の実際と照合する**。実体は
+> `scripts/release-contract.mjs`、検査は `tests/release-contract-checks.test.mjs`。
+
+| 段 | いつ | 何を見るか | 外れたら |
+|---|---|---|---|
+| 契約を書く | `ci.yml` の build（main の push） | `release-contract.json` を `dist/` に同梱: commit・**サーバー面の版**・migration の先頭・Edge Function の名簿・**クライアントが叩く関数**（`js/` と `src/` の `functions/v1/<name>` から導く。手で書かない） | 叩く関数が `supabase/functions` に無ければ build が赤 |
+| 公開前 | `server-ready` job（`pages`・`aws` が `needs`） | ① サーバー面を最後に触れた commit H（面＝`supabase-deploy.yml` の push `paths:` そのもの）か H の子孫で、`supabase-deploy` の push run が**成功**している ② この commit の `db.yml` push run が成功している。実行中なら待つ（最大 25 分、ブラウザ検査と並行なので通常は待たない） | 失敗・取消・期限切れは赤＝**公開されない**。次の push か re-run が公開する。run が 1 本も無いことは成功ではなく待ち |
+| 公開後 | `post-smoke` | 公開された `release-contract.json` を読み戻し、クライアントが叩く各関数が本番に**在る**こと（存在しない関数は 404、在れば 401/200） | 404・測れないものは赤 |
+
+- 配備された migration の**適用そのもの**は `SUPABASE_ACCESS_TOKEN` が要るので Pages の job では測らない。
+  `db push` は `supabase-deploy` の deploy job の中にあり、その成功が上の ② に運ばれる。本番の履歴との突き合わせは
+  nightly の drift（`release-state.mjs --edge --db --check`）が続ける。
+- **後方互換性の約束**: サーバーはクライアントより先に出る（配備が先・公開が後）ので、公開される新しいクライアントが
+  古いサーバーを叩く窓は無い。逆（古いクライアントが新しいサーバーを叩く）は CDN・Service Worker のキャッシュが残る間
+  かならず起きるので、**Edge Function の応答と migration は 1 つ前のクライアントに対しても後方互換**に保つ
+  （列・関数の削除は、それを呼ぶクライアントが消えたあとの別の変更で行う）。
+- 手動の `deploy.yml`／`rollback.yml` はこの門の外（人が選んだ公開）。ロールバックでサーバーは戻らない。
 
 ## Which build is live?
 
