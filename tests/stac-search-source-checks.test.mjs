@@ -48,7 +48,7 @@ test('① the search is addressed as given, with bbox and datetime, and time is 
   assert.equal(u.searchParams.get('datetime'), '2026-01-01T00:00:00Z/2026-03-01T00:00:00Z');
   assert.equal(u.searchParams.get('f'), null, 'f=json is not part of STAC search');
   assert.ok(g.supportsSearch.includes('time'));
-  assert.ok(!g.supports.includes('time'), 'an OGC collection claims a time it does not send');
+  assert.ok(g.supports.includes('time'), 'datetime is Core of OGC API Features and is sent on /items');
 });
 
 test('② an item keeps its id, collection and one column per file with an href', async () => {
@@ -94,8 +94,5 @@ test('③④ through data.gis a stac: ref is a dataset with those columns; a gri
     assert.equal(cond.why, 'ogc-param-not-supported');
     const grid = await atlas.resolve('stac:' + SEARCH, 0, { kinds: ['raster'] }, { acquire: { bounds: [0, 0, 1, 1], width: 2, height: 2 } });
     assert.equal(grid.why, 'ogc-needs-a-vector-slot');
-    /* time is NOT accepted on an OGC collection */
-    const ogcTime = await atlas.run({ inputs: ['ogc:https://data.example.org/c/collections/x'], acquire: { time: '2026' } });
-    assert.equal(ogcTime.why, 'ogc-param-not-supported');
   } finally { globalThis.fetch = prev; }
 });

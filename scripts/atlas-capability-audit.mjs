@@ -210,7 +210,7 @@ export function registeredCommandIds() {
    Held: every declared command is registered; no command is claimed by two capabilities; and every registered command a
    run body names as a literal is declared (an undeclared use is how the two definitions drift). The registered commands
    NO capability claims are counted, not failed — that list is the migration's remaining work, re-derived each run. */
-export function commandDeclarations(rows, registered) {
+export function commandDeclarations(rows, registered, unbridged = {}) {
   const bad = [], claimed = new Map();
   rows.forEach((r) => {
     const decl = new Set(r.commands || []);
@@ -222,8 +222,16 @@ export function commandDeclarations(rows, registered) {
     const used = new Set([...String(r.src || '').matchAll(/'([a-z][a-z0-9]*(?:\.[a-z0-9]+)+)'/g)].map((m) => m[1]).filter((c) => registered.has(c)));
     used.forEach((c) => { if (!decl.has(c)) bad.push(`${r.id}: its run uses command '${c}' but does not declare it in its commands list`); });
   });
-  const unclaimed = [...registered].filter((c) => !claimed.has(c));
-  return { bad, claimed: claimed.size, unclaimed };
+  /* A registered command no capability claims either has a DECLARED reason (scripts/atlas-command-unbridged.json — a reason,
+     not a count, so the number cannot be edited to silence this) or it is the migration's remaining work, counted below. */
+  Object.entries(unbridged).forEach(([c, why]) => {
+    if (!registered.has(c)) bad.push(`unbridged '${c}': nothing registers it any more — delete the entry`);
+    else if (claimed.has(c)) bad.push(`unbridged '${c}': it is now claimed by ${claimed.get(c)} — delete the entry`);
+    if (typeof why !== 'string' || why.trim().length < 30) bad.push(`unbridged '${c}': the reason is missing or too short to be one`);
+  });
+  const declined = [...registered].filter((c) => !claimed.has(c) && Object.prototype.hasOwnProperty.call(unbridged, c));
+  const unclaimed = [...registered].filter((c) => !claimed.has(c) && !declined.includes(c));
+  return { bad, claimed: claimed.size, unclaimed, declined };
 }
 
 export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, othersWords, uiEntries, pageSrc, uiDeclared, commandRows }) {
@@ -434,9 +442,9 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
 
   /* ⑩ a capability that drives a GUI command declares it; the declaration is held to the registry and the run body */
   if (commandRows) {
-    const r = commandDeclarations(commandRows, registeredCommandIds());
+    const r = commandDeclarations(commandRows, registeredCommandIds(), JSON.parse(read('scripts/atlas-command-unbridged.json')));
     add('command-declared', 'a capability names the IntMapOS commands it drives, and the declaration is true', r.bad,
-      `${r.claimed} commands declared · ${r.unclaimed.length} registered commands not yet claimed by a capability`);
+      `${r.claimed} commands declared · ${r.declined.length} declined with a stated reason · ${r.unclaimed.length} registered commands not yet claimed by a capability`);
   }
 
   /* ⑨ nothing in the registry is unrunnable */

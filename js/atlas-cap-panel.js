@@ -28,6 +28,7 @@ export const shareApi = () => window.IntMapShare;   /* (atlas-cited-answers) als
 export default [
   {
     row: ['panel.compare',              'compare',        '',                                                            'panel',   'panel',   'panel.compare',          'panel',               'session', 'none',   '',         ''],
+    commands: ['compare.open', 'compare.clear'],
     ui: { at: ['#btn-compare'] },
     doc: [
       { in: 'tools-panels', at: 20, text: '{"type":"compare","on":bool}; ' },
@@ -283,6 +284,7 @@ export default [
   },
   {
     row: ['panel.settings',             'settings',       '',                                                            'panel',   'panel',   'panel.settings',         'panel',               'session', 'none',   '',         ''],
+    commands: ['settings.open'],
     ui: { at: ['#btn-open-settings'] },
     doc: [
       { in: 'tools-panels', at: 180, text: '{"type":"settings"}; ' },
@@ -295,6 +297,7 @@ export default [
   },
   {
     row: ['panel.workspace',            'workspace',      'windows,windowMode,windowWorkspace',                          'panel',   'panel',   'panel.workspace',        'panel',               'session', 'none',   '',         ''],
+    commands: ['workspace.enter', 'workspace.exit'],
     ui: { at: ['#btn-ws-enter'] },
     doc: [
       { in: 'tools-panels', at: 190, text: '{"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); ' },
