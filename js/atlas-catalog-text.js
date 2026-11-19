@@ -181,6 +181,8 @@ export const CATALOGUE_CHUNKS = [
       { name: 'map.undo' },
       /* 41 (#R493) */
       { name: 'view.inspect' },
+      /* (web-browse) operating a web site and taking its file */
+      { name: 'web.browse' },
       /* 49 (landing-showcase) */
       { name: 'about-and-showcase', head: 'ABOUT INTMAP AND THE EXAMPLE MAPS: ' },
       /* 50 (classroom-tours) */

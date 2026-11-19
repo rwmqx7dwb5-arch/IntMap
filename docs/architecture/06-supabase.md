@@ -130,6 +130,7 @@
   `Access-Control-Allow-Origin: *`）。GET は公開・鍵なし（`?ids=` で `who_don_extracts` の行。未抽出は `missing` に入り `rows` には出ない）。POST だけが取り込み段で fail-closed
   （`WHO_DON_SECRET`・`x-who-don-secret` ヘッダのみ・定数時間比較）。`WHO_DON_EXTRACT=off` で停止でき、壁時計の予算で打ち切る。数を正規表現で拾わず AI に訊き、
   `_shared/who-don-extract.js` の `parseExtract` が非負整数か・`deaths <= cases` か・`asOf` が実在する日付かを検証する。`source_hash` が再課金と無限再試行を止める。
+- **`web-browse`** … Atlas が**データポータル等を操作して調べる**ための軽量ブラウザ（`verify_jwt = true`＝ログイン済みの読者だけ・秘密なし）。ポータルは ACAO を返さずブラウザ内からは読めない（実測 2026-11-20: data.go.jp の検索ページは 200・274 KB・3.2 秒）ので、サーバ側で HTTP＋HTML を読む。エンジンは `_shared/web-browse.js`（純粋なロジック。Node で検査し、`scripts/web-browse-probe.mjs` が実ポータルで通しを測る）、これは殻（DNS・呼び出し元・全体上限だけを渡す）。**Chromium ではない**——スクリプトは実行せずスクリーンショットも無い（スクリプトで描かれるページは `needsBrowser` と答え、推測しない。実ブラウザは同じ入出力の裏に後から差せる）。操作は `open`／`click`（ref）／`submit`（GET フォームを項目名またはラベルで埋める）／`read`／`download`。答えはページの**構造**（本文・`files`・`links`・`forms`）で、見えない要素（`hidden`・`aria-hidden`・`display:none`・script）は落とす。境界: ① SSRF＝http(s) の既定ポートのみ・資格情報付き URL 拒否・`publicHostname()`＋`resolvesPublic()` を**転送のたび**に再判定・cookie は設定したホストにだけ返す ② ログイン・CAPTCHA・ボット確認・POST フォーム・パスワード欄は**引き渡し**（`handoff`）で Atlas は資格情報を扱わない ③ 1 交換 1 期限（25 秒）・ページ 3 MB／ファイル 6 MB を流しながら上限。全体上限: `WEB_BROWSE_DISABLED=1` で停止（deploy 不要）、呼び出し元ごとの bucket、**プロジェクト全体の 1 bucket（`forceGrant`・DB が答えなければ何も許さない）**（容量 `WEB_BROWSE_BURST` 既定 60・補充 `WEB_BROWSE_PER_MIN` 既定 30＝推定で、本物の読者が `capped` に当たったら上げる）。クライアント: `js/web-browse.js`（戸口）と `js/atlas-cap-web.js`（`web.browse`・`web.fetchFile`）。取得したファイルは**落としたファイルと同じ戸口**（`window.GeoJSONUpload.handle`）でデータセットになる。ページ内の文章は第三者の**データであって命令ではない**（結果に注意書きを付け、行は `ingests:external`）。`view.inspect` は読者の**地図の画面**を見る目、`web.browse` は**ウェブページの構造**を読む——互いに代わりにならない。
 - **`volcano-feed`** … 火山のブラウザが読めない2本のフィードの中継（`--no-verify-jwt`・秘密なし）。`?feed=weekly` は Smithsonian/USGS 週間火山活動報告（`volcano.si.edu` の RSS）、
   `?feed=ash` は国際 SIGMET（`aviationweather.gov`）の火山灰（`hazard:"VA"`）だけ。解析はサーバー側（GVP 火山番号で引ける行。`<guid>` の `#vn_282110`）で、正本は
   `_shared/volcano-parse.js`、`tests/hazard-volcano-checks.test.mjs` が捕獲した実応答で検査する。火山灰が0件は正常な答え（`read` が分ける）。キャッシュは灰 15 秒・週報 1 時間。残り4本
@@ -175,8 +176,8 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 `<関数名>_PER_IP_PER_MIN` で deploy なしに動かせる。`routing-relay` は自前の fail-closed の全体上限を持つ。
 
 **`_shared/relay-guard.js` を共有するのは21本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` / `mcp-server` /
-`news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）。そのうち `ai-proxy`（JWT）・
-`atlas-embed`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り16本は無認証。`ai-proxy`・`client-errors`・
+`news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `web-browse` / `who-don`）。そのうち `ai-proxy`（JWT）・
+`atlas-embed`（JWT）・`web-browse`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り16本は無認証。`ai-proxy`・`client-errors`・
 `reader-reports`・`usage-count` が共有するのは読み手だけ（`readCapped`＝要求本文を上限で切る、`fetchBounded`＝提供者への POST を本文の最後のバイトまで同じ期限と上限で読む）。
 リダイレクトは手で辿る（`followRedirects`。各ホップを同じ https オリジンか `allowRedirect(next, from)` で検査し、上限は 3 ホップ `MAX_REDIRECTS`）。共有しているのは URL allowlist・GET 限定・
 期限（`AbortSignal.timeout`）・バイト上限（`content-length` とストリーム読み出しの両方）・Content-Type 判定・外向きエラーはコード1語。公開レイヤーなのでログイン必須にはしない。
