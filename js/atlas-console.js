@@ -1380,6 +1380,8 @@ export function atlasConsole(HOST){
       return (c.risk==='read-only' && !((c.effects&&c.effects.writes)||[]).length && String(c.confirmation||'none')==='none' && c.id!=='research.delegate') ? 'read' : 'other'; };
     const runReadCapability = async (id,args,o) => { const r=await EXEC.execute(id, args||{}, {source:'atlas-worker', turnId:_curTurn, signal:(o&&o.signal)||undefined});
       return { ok:!!r&&r.status==='completed', html:(r&&r.html)||'', meta:(r&&r.meta)||undefined, code:(r&&r.code)||'', status:r&&r.status }; };
+    /* (delegation-agency) describeCapability(id): the argument schema of a capability, as JSON text, for a worker that has been granted it — read off the registry row at call time, so a capability added tomorrow describes itself. */
+    const describeCapability = (id) => { try{ const c=CAPS.resolve(String(id||'')); return c&&typeof c.schema==='function' ? JSON.stringify(c.schema()) : ''; }catch(_){ return ''; } };
     function _agoH(d){ try{ const t2=(typeof parseDate==='function')?parseDate(d).getTime():Date.parse(d); if(!t2) return null; return Math.max(0,Math.round((Date.now()-t2)/3600000)); }catch(_){ return null; } }
     function _newsData(ctx,q,sink){ try{ if(typeof HOST.globalData==='undefined'||!HOST.globalData||!HOST.globalData.length) return null;
       let items=HOST.globalData.slice();
@@ -1938,7 +1940,7 @@ export function atlasConsole(HOST){
       get _PINNED(){ return _PINNED; },
       get _lastUserMsg(){ return _lastUserMsg; }, set _lastUserMsg(v){ _lastUserMsg=v; },
       get turnSignal(){ return turnSignal; },
-      get runReadCapability(){ return runReadCapability; }, get classifyCapability(){ return classifyCapability; },   /* (atlas-orchestration) the host lanes of a delegated capability task — below, beside turnSignal */
+      get runReadCapability(){ return runReadCapability; }, get classifyCapability(){ return classifyCapability; }, get describeCapability(){ return describeCapability; },   /* (atlas-orchestration) the host lanes of a delegated capability task — below, beside turnSignal */
       get _delegationPolicy(){ return _delegationPolicy; },   /* (delegation-limits) */   /* (atlas-delegation) the running turn's abort signal, read at call time — research.delegate hands it to its workers */
       get aiParseJSON(){ return aiParseJSON; },
       get askAI(){ return askAI; },
