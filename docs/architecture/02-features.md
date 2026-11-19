@@ -72,7 +72,7 @@
 
 | 部品 | ファイル | 何の正本か |
 |---|---|---|
-| Capability Registry | `js/atlas-capabilities.js`（行は `js/atlas-cap-*.js` の項目の写し＝`GENERATED ROWS`） | **251 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。照合は camelCase を語に割ってから）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・必要な対象・遅延モジュール・観測器・検証器 |
+| Capability Registry | `js/atlas-capabilities.js`（行は `js/atlas-cap-*.js` の項目の写し＝`GENERATED ROWS`） | **255 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。照合は camelCase を語に割ってから）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・必要な対象・遅延モジュール・観測器・検証器 |
 | 能力の索引 | `js/atlas-capabilities.js` の `index()` | 毎ターン system prompt に載る ID だけの一覧（カテゴリ別・撤去済みは除く）。レジストリから導出 |
 | 能力の説明文 | 各項目の `doc` ＋ `js/atlas-catalog-text.js` | 60 ブロック。`find_capability` が要求されたときだけ返す |
 | 能力の項目 | `js/atlas-cap-<名前空間>.js`（19 本）・`js/atlas-caps.js` | 能力ひとつに項目ひとつ。dispatch・登録表・方針の表・カタログ・schema の表・監査の台帳はここから導出 |
@@ -131,7 +131,7 @@
 
 **`find_capability` の採点。** 別名（完全一致 100・部分 40）・id・category hint に加えて、要求の各語（Latin は 3 文字以上の語、CJK はブロックと共有する連続部分文字列の
 窓と、`Intl.Segmenter` が連続の中に見つける 2 文字以上の語）がその能力のカタログ文にあれば上がる（1 語 6 点・天井 30）。Latin は隣り合う 2〜3 語の句も同じ規則で数える。
-語の重みはそれを持つブロックの少なさで割る（`min(1, 2/df)`）。df はブロックを数える（カタログは 251 能力を 62 ブロックで説明する）。ブロック内の語は項目の開始から次の
+語の重みはそれを持つブロックの少なさで割る（`min(1, 2/df)`）。df はブロックを数える（カタログは 255 能力を 62 ブロックで説明する）。ブロック内の語は項目の開始から次の
 項目の開始までの区間だけがその能力の証拠。カテゴリ hint は順序を決めない（hint しか当たっていない行は名指された行の下に置き、同じカテゴリで誰かが名指されたら降りる）。
 5 ブロック以上が持つ語は数えない（`DOC_TERM_MAX_DF`＝4）。空振りの文は「持っている id で直接 `run_capability` を」と告げる。同点を綴りで決めない（`self` → 得点 →
 証拠の数、それでも等しい行は同じ `rank` の宣言された同点）。
@@ -221,7 +221,7 @@ placeholder は使わない。
 
 **何があるかは常に見せ、何ができるかは訊かれたときに返す。** そのターンに渡すのは中核のツールとその schema と、能力 ID だけの索引（`CAPS.index(direct)`。カテゴリ別・撤去済みを
 除く・約 2.5 千文字）。索引は、そのプロンプトが型付きツールとして既に手渡している能力を載せない（`direct` は道具の面が名乗る `capabilityId` の集合＝`js/atlas-console.js` の
-`_directCaps`）。それ以外は `find_capability(query)` が全 251 を検索し、得点したものを全部 schema 付きで返し（説明文のブロックはまとめて 1 回引いて重複を落とす）、
+`_directCaps`）。それ以外は `find_capability(query)` が全 255 を検索し、得点したものを全部 schema 付きで返し（説明文のブロックはまとめて 1 回引いて重複を落とす）、
 `run_capability(id, args)` が起動する。
 
 **1 手の入力は item の列で、道具はモデル標準の関数である（ai-proxy protocol 2）。** `js/atlas-agent.js` の `composeInput` が組む——会話履歴 → 添付の置き場 → 依頼（依頼時の
