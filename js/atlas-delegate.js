@@ -59,6 +59,8 @@ export const CONTRACT_KINDS = Object.freeze(['worker', 'capability']);
    keys); 4000 characters is an order of magnitude over that. Expires if a read capability starts taking a document
    as an argument — then pass it by reference (an input task) instead of raising this. Canonical: here only. */
 const ARGS_MAX_CHARS = 4000;
+/* How many capabilities one worker may be granted. Observation 2026-11-19: Atlas's own read tools it reaches for in one turn are a handful; 12 is above that. Expires if a worker is asked to choose among more — then it should search (find_capability) rather than be handed a longer list. */
+const TOOLS_MAX = 12;
 
 /* normaliseContract(c) → { ok, contract } | { ok:false, error } */
 export function normaliseContract(c) {
@@ -75,12 +77,15 @@ export function normaliseContract(c) {
   }
   const goal = s(c.goal, 2000);
   if (!goal) return { ok: false, error: 'goal_missing' };
-  return { ok: true, contract: { id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs } };
+  /* (delegation-agency) the read capabilities this worker may call ITSELF, by id — the parent's grant, nothing wider. Absent = the worker
+     only researches (the model and its web search), which is what it was before. */
+  const tools = Array.from(new Set((Array.isArray(c.tools) ? c.tools : []).map((x) => s(x, 80)).filter(Boolean))).slice(0, TOOLS_MAX);
+  return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null) };
 }
 
 /* the identity of a piece of work: what it is asked to do and from what — not the id it was given */
 export function contractKey(c) {
-  return stable([c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null]);
+  return stable([c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null, (c.tools || []).slice().sort()]);
 }
 
 function makeEventLog(now) {
@@ -307,7 +312,7 @@ export function makeDelegation(o) {
       entry.holder = String(executor.id || 'executor');
       note('task.lease', id, { holder: entry.holder });
       try {
-        const r = await executor.run({ id, kind: c.kind, goal: c.goal, returns: c.returns, inputs, capability: c.capability, args: runArgs }, {
+        const r = await executor.run({ id, kind: c.kind, goal: c.goal, returns: c.returns, inputs, capability: c.capability, args: runArgs, tools: c.tools }, {
           signal: controller.signal,
           emit: (kind, data) => note(kind, id, data),
         });
@@ -424,6 +429,26 @@ export function isTransientFailure(code, detail) {
   return code === 'provider_unavailable' || code === 'timeout' || d.timeout === true || (Number(d.status) >= 500 && Number(d.status) < 600);
 }
 
+/* (delegation-agency) A WORKER THAT MAY CALL READ CAPABILITIES. The worker's answer is either the findings object or ONE call
+   {"call":{"capability":id,"args":{...}}}; a call is run by the host's kernel lane (the same one a capability task uses) and its
+   result goes into the next request. Every request is one of the child's server-bounded calls, so the loop cannot outrun the
+   server, and the last request is always asked for the answer. */
+const htmlText = (h) => { let o = '', inTag = false; for (const ch of String(h == null ? '' : h)) { if (ch === '<') inTag = true; else if (ch === '>') { inTag = false; o += ' '; } else if (!inTag) o += ch; } return o.split(' ').filter(Boolean).join(' '); };
+export function toolCallOf(data) {
+  const c = data && typeof data === 'object' && !Array.isArray(data) ? data.call : null;
+  if (!c || typeof c !== 'object' || Array.isArray(c) || typeof c.capability !== 'string' || !c.capability.trim()) return null;
+  const args = (c.args && typeof c.args === 'object' && !Array.isArray(c.args)) ? c.args : {};
+  return { capability: s(c.capability, 80), args };
+}
+function toolSection(allowed, describe, steps, remaining) {
+  let p = '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + allowed.join(', ') + '.';
+  allowed.forEach((id) => { let d = ''; try { d = typeof describe === 'function' ? s(describe(id), 1200) : ''; } catch (_) { d = ''; } if (d) p += '\n  ' + id + ' arguments: ' + d; });
+  p += '\nTo call one, return ONLY {"call":{"capability":"<id>","args":{...}}} instead of the findings. Its result comes back in your next request.';
+  if (steps.length) p += '\n\nRESULTS OF YOUR CALLS SO FAR:\n' + steps.map((x, i) => (i + 1) + '. ' + x.capability + ' ' + JSON.stringify(x.args).slice(0, 300) + ' → ' + (x.ok ? '' : 'FAILED: ') + x.text).join('\n');
+  p += remaining <= 1 ? '\n\nTHIS IS YOUR LAST REQUEST: make no more calls; return the findings JSON now from what you have, and say in "gaps" what you could not establish.' : '\n\nYou have ' + remaining + ' request(s) left including the one that returns the findings.';
+  return p;
+}
+
 /* makeWorkerExecutor({ ask, parentTurn, signal, maxCalls? })
    maxCalls — how many requests one worker may make (the first, a repair of a wrong shape, a retry after a transient
    failure). Pass the server's own bound (meta.delegationPolicy.childMaxCalls): the server refuses a call past it with
@@ -439,6 +464,7 @@ export function makeWorkerExecutor(o) {
   /* a retry after a transient failure is the caller's opt-in, by saying how many requests the server allows: without
      it the one spare request stays what it always was, the repair of a wrong shape */
   const retryTransient = Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1;
+  const cap = opt.capability && typeof opt.capability.run === 'function' && typeof opt.capability.classify === 'function' ? opt.capability : null;   /* { run, classify, describe? } — the host's kernel lane */
   return {
     id: 'worker-model@page',
     async run(task, ctx) {
@@ -449,7 +475,11 @@ export function makeWorkerExecutor(o) {
       if (ctx.signal) { if (ctx.signal.aborted) abort(); else ctx.signal.addEventListener('abort', abort, { once: true }); }
       let calls = 0, costUsd = 0, why = '';
       const sources = [];
-      let prompt = workerPrompt(task);
+      /* the grant: only ids the parent named AND the host classifies as read-only; with no lane, or no grant, the worker researches only */
+      const allowed = cap ? (task.tools || []).filter((id) => cap.classify(id) === 'read') : [];
+      const steps = [];
+      const base = (done) => workerPrompt(task) + (allowed.length ? toolSection(allowed, cap.describe, steps, maxCalls - done) : '');
+      let prompt = base(0);
       let webMode = 'auto';
       let degraded = '';   /* what the final answer was made without, after a retry that changed the request */
       for (let attempt = 0; attempt < maxCalls; attempt++) {
@@ -481,7 +511,7 @@ export function makeWorkerExecutor(o) {
           if (retryTransient && isTransientFailure(code, detail) && attempt + 1 < maxCalls) {
             const change = detail.timeout ? 'web_off' : 'concise';
             if (change === 'web_off') { webMode = 'off'; degraded = 'The web search timed out, so this was answered without it, from what the model knows: treat every claim as unverified.'; }
-            prompt = workerPrompt(task) + '\n\nA PREVIOUS ATTEMPT AT THIS PIECE FAILED (' + (code || 'error') + '). '
+            prompt = base(attempt + 1) + '\n\nA PREVIOUS ATTEMPT AT THIS PIECE FAILED (' + (code || 'error') + '). '
               + (change === 'web_off' ? 'Web search is NOT available this time: answer only from what you reliably know, say plainly what you could not check, and give no source URL you cannot vouch for.' : 'Be concise: at most 5 findings, each one sentence, and say what you could not establish.');
             ctx.emit('effect.retry', { intent: intent.id, code, change, attempt: attempt + 1 });
             continue;
@@ -495,6 +525,27 @@ export function makeWorkerExecutor(o) {
         (Array.isArray(env && env.citations) ? env.citations : []).forEach((x) => {
           if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: s(x.url, 500), title: s(x.title, 200) });
         });
+        const wanted = allowed.length ? toolCallOf(env && env.data) : null;
+        if (wanted && attempt + 1 < maxCalls) {
+          let step;
+          if (!allowed.includes(wanted.capability)) step = { ok: false, text: 'not in your grant (' + allowed.join(', ') + ')' };
+          else {
+            const ti = ctx.emit('effect.intent', { capability: wanted.capability, by: 'worker', turn: childKey });
+            try {
+              const out = await cap.run(wanted.capability, wanted.args, { signal: controller.signal });
+              ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: wanted.capability });
+              step = { ok: !(out && out.ok === false), text: s(out && (out.text != null ? out.text : htmlText(out.html)), 3000) || (out && out.code) || '' };
+              if (out && out.meta && step.ok) step.text += (step.text ? '\n' : '') + 'DATA: ' + s(JSON.stringify(out.meta), 1500);
+            } catch (e) {
+              if (controller.signal.aborted) return { state: 'cancelled', calls, costUsd, sources };
+              ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
+              step = { ok: false, text: s(e && e.message, 300) };
+            }
+          }
+          steps.push({ capability: wanted.capability, args: wanted.args, ok: step.ok, text: step.text });
+          prompt = base(attempt + 1);
+          continue;
+        }
         const sh = shapeOf(env && env.data);
         if (sh.ok) {
           const out = Object.assign({ state: 'done', calls, costUsd, sources }, sh.out);
@@ -503,7 +554,7 @@ export function makeWorkerExecutor(o) {
         }
         why = sh.why;
         if (attempt + 1 < maxCalls) {
-          prompt = workerPrompt(task) + '\n\nYOUR PREVIOUS ANSWER COULD NOT BE USED: ' + why + '. Return exactly the JSON object described, with a non-empty "summary".';
+          prompt = base(attempt + 1) + '\n\nYOUR PREVIOUS ANSWER COULD NOT BE USED: ' + why + '. Return exactly the JSON object described, with a non-empty "summary".';
           continue;
         }
         const raw = s(env && env.text, 4000);

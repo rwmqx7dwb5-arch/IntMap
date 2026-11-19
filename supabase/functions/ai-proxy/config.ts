@@ -77,12 +77,13 @@ export const TURN_MAX_CALLS = 12;
        refusal and answers without workers. Nothing else changes.
    Either way no worker charges the reader's day: the parent's first call paid for the request (#R318).
    THE NUMBERS (no-ad-hoc-hardcoding §4):
-     · MAX_CHILDREN 2 × CHILD_MAX_CALLS 3 — the first experiment the user set on 2026-11-18 («子エージェント最大
-       2 体、各 3 回»). Not measured: they are where the comparison starts. Expire when the single-vs-delegated
+     · MAX_CHILDREN 2 × CHILD_MAX_CALLS 8 — the first experiment was 2 × 3 (user, 2026-11-18). 3 left a worker one tool
+       step and no room for the answer; the user raised it to 8 on 2026-11-19 for workers that call read capabilities
+       themselves (five or six steps and the answer). The money fence (TURN_COST_CAP_USD) is unchanged and still stops the family. Not measured: they are where the comparison starts. Expire when the single-vs-delegated
        comparison (dev-notes/2026-11-18-atlas-delegation.md) has been run; ATLAS_DELEGATION_* move them.
      · Canonical place: these constants; the environment may move them, never define them. */
 export type DelegationMode = "independent" | "shared" | "off";
-export const DELEGATION_DEFAULTS = Object.freeze({ mode: "independent" as DelegationMode, maxChildren: 2, childMaxCalls: 3 });
+export const DELEGATION_DEFAULTS = Object.freeze({ mode: "independent" as DelegationMode, maxChildren: 2, childMaxCalls: 8 });
 export function delegationPolicy(env: (k: string) => string) {
   const m = String(env("ATLAS_DELEGATION") || "").trim().toLowerCase();
   const mode: DelegationMode = m === "off" || m === "shared" || m === "independent" ? m : DELEGATION_DEFAULTS.mode;
