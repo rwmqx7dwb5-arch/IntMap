@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Worker, MessageChannel } from 'node:worker_threads';
-import { makeCapabilityBridge, attachBridge, makeBridgeClient, clientSource, effectClass, canonicalKey, PROTOCOL } from '../js/cap-bridge.js';
+import { makeCapabilityBridge, attachBridge, makeBridgeClient, clientSource, effectClass, canonicalKey, PROTOCOL, CLASSES, REFUSALS } from '../js/cap-bridge.js';
 
 const CAPS = [
   { id: 'data.gis', risk: 'read', effects: { writes: [] }, confirmation: 'none', ingests: '' },
@@ -174,4 +174,33 @@ test('clientSource() evaluates with nothing in scope', () => {
   const sent = []; const port = { postMessage: (m) => sent.push(m) };
   const c = make(port); c.call('data.gis', { a: 1 });
   assert.deepEqual(sent[0], { v: PROTOCOL.version, seq: 1, kind: 'call', capability: 'data.gis', args: { a: 1 } });
+});
+
+test('js/atlas-toolsurface.js openProgramBridge puts the program behind the model\'s own gate (schema check, runAction)', async () => {
+  globalThis.window = globalThis.window || {};
+  const { makeAtlasToolSurface } = await import('../js/atlas-toolsurface.js');
+  const ran = [];
+  const S = makeAtlasToolSurface({ capabilities: registry, schemas: { schemaFor: () => ({ type: 'object' }) },
+    runAction: async (action) => { ran.push(action); return { ok: true, html: '', meta: {} }; } });
+  const agent = { validateAgainst: (s, a, p, e) => { if (a.bad) e.push('bad'); } };
+  const o = S.openProgramBridge({}, agent, { turn: {} });
+  const client = new Function('return ' + o.source)()(o.port);
+  const ok = await client.call('data.gis', { op: 'distance' });
+  assert.equal(ok.ok, true); assert.equal(ran[0].type, 'data.gis');
+  assert.equal((await client.call('data.gis', { bad: 1 })).refused, 'invalid-arguments');
+  assert.equal((await client.call('map.drawDataset', {})).refused, 'not-granted');
+  assert.equal(ran.length, 1);
+  o.close();
+});
+
+test('every class and every refusal the bridge states is one of the published names', async () => {
+  const r = rig({ limits: { maxCalls: 1 }, schemaOf: () => ({}), validate: (s, a, p, e) => { if (a.bad) e.push('x'); } });
+  const seen = new Set();
+  for (const m of [{ capability: 'zz' }, { capability: 'map.drawDataset' }, { capability: 'data.gis', args: { bad: 1 } }, { capability: 'data.gis', args: { i: 1 } }, { capability: 'data.gis', args: { i: 2 } }]) {
+    const x = await r.client.call(m.capability, m.args); if (x.refused) seen.add(x.refused);
+  }
+  assert.deepEqual([...seen].sort(), ['call-limit', 'invalid-arguments', 'not-granted', 'unknown-capability']);
+  for (const s of seen) assert.ok(REFUSALS.includes(s));
+  for (const c of CAPS) if (effectClass(c)) assert.ok(CLASSES.includes(effectClass(c)));
+  r.close();
 });
