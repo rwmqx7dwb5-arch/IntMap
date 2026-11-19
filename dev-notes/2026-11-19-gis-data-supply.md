@@ -71,3 +71,5 @@ main に `gis-cog.js`（`url:`、投影 COG 含む）・`gis-ogcapi.js`（`ogc:`
 
 `gis-core` +6.7 kB（`capabilityTable()` と `remote()` の扉）、`legal-text` +2.2 kB（プライバシー §4 の開示文 en/jp）も同じ理由で上げた。
 どれも遅延チャンクで、起動時の行は動いていない。
+
+`atlas-cap-runs` +4.9 kB（`data.gisRemote` の `run`）と `gis-core` +3.9 kB（`capabilityTable()`・`remote()`）。main の天井を取り込み直した後の再測定で、遅延チャンクだけ。
