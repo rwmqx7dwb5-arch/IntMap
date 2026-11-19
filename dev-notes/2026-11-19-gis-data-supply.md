@@ -68,3 +68,6 @@ main に `gis-cog.js`（`url:`、投影 COG 含む）・`gis-ogcapi.js`（`ogc:`
 
 遅延チャンクだけが増えた（起動時の行は動いていない）: 新しい async チャンク `gis-remote`（12.5 kB）と、`atlas-console` の
 `data.gisRemote` の説明文（+5.7 kB raw）。async の合計は raw 14076.6 kB・gzip 4733.9 kB に上がった。Atlas で発見を頼んだときだけ読まれる。
+
+`gis-core` +6.7 kB（`capabilityTable()` と `remote()` の扉）、`legal-text` +2.2 kB（プライバシー §4 の開示文 en/jp）も同じ理由で上げた。
+どれも遅延チャンクで、起動時の行は動いていない。
