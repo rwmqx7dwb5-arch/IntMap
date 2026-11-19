@@ -34,3 +34,7 @@ newsjp: 複数の上流を持つデータの優先規則が値になり、GIS �
 
 - 上記 0 のとおり integrity / retrievedAt / asOf / generatedAt は再ビルドが要る。
 - 約 40 の builder の publisher / url / licence は、上流の条件を確認できていないので書いていない。
+
+## 5. 予算（perf-budget）
+
+非同期チャンク `gis-core` の上限を 586.0 kB から 589.2 kB へ引き上げた（+3.2 kB）。理由: 解析の出力が入力の出典・条件を引き継ぐ実装（`inheritTerms`・`gis-export` の upstreams 対応・`gis-layers` の `layerRights`）と、そのための `data-governance.js` の `read` の取り込み。能力（出典・ライセンスの引き継ぎ）に対する費用で、重複する実装は足していない。
