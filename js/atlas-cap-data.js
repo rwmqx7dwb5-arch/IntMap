@@ -187,6 +187,30 @@ export default [
       return r.ok ? R(true, r.html, { meta: { gisExport: { dataset: r.dataset && r.dataset.id, format: r.format, filename: r.filename, bytes: r.bytes, stated: r.stated } } }) : R(false, warn(r.html));
     },
   },
+  /* ⚠⚠ (data-supply) THE GIS KERNEL COULD ONLY ACQUIRE WHAT THE APP ALREADY KNEW ABOUT. `data.gis`' refs are a
+     dataset id or a layer of THIS map, so 「その地域の標高・洪水リスクのデータを探して」 had no first move — the
+     catalogue lists the app's own holdings — and js/gis-geotiff.js's readUrl() (a Cloud-Optimised GeoTIFF read by
+     HTTP range) had no caller at all. (Those readers landed as the url: / ogc: / stac: inputs of `gis`; what was
+     still missing was the question that comes first.) This row asks the world's catalogues (STAC, OGC API –
+     Features) which collections state they cover a place and period, and answers with the ref to read one with. ⚠ NOTHING HERE ASSERTS COMPLETENESS OF THE WORLD: the
+     answer's `coverage` is js/gis-sources.js's verdict, `evidence` states what the collection states
+     (extent, licence) and `worldCompleteness` is always "unproven". Column 7 'read' / 8 'none' as for `data.gis`:
+     it fetches from third-party hosts the reader never named, but changes no setting and persists nothing. */
+  {
+    row: ['data.gisRemote',             'gisRemote',      'discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog', 'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'gisCore'],
+    ui: { at: ['#btn-gis-panel'] },
+    doc: [
+      { in: 'spatial-analysis', at: 48, text: 'FIND DATA THAT IS NOT IN IntMap (世界のオープンデータカタログから、場所と期間に合うデータセットを探す): {"type":"gisRemote","action":"discover"|"inspect"|"catalogs"|"add"|"sources","q"?:str,"bounds"?:[w,s,e,n],"time"?:str,"ref"?:"<catalog>/<collection>","catalogs"?:[id],"kinds"?:["stac"|"ogc-features"],"limit"?:int,"kind"?:"stac"|"ogc-features","url"?:str,"id"?:str,"label"?:str,"operator"?:str}. THIS IS THE FIRST MOVE when the data you need is not a layer or dataset IntMap already holds. discover = which COLLECTIONS of the world\'s open catalogues (STAC: Earth Search, Planetary Computer, NASA LP DAAC; OGC API – Features: Canada MSC, BGS) STATE that they cover the place (bounds) and period (time, a year or an ISO range) and match every word of q — each carries its licence VERBATIM or null (null = NOT STATED, never read it as open) and match.spatial / match.temporal = covers|overlaps|unstated; a catalogue that did not answer is listed with why and is NOT 「nothing there」. inspect = one collection\'s own statement, a sample item\'s assets (which are Cloud-Optimised GeoTIFFs, bands, units), `evidence` — worldCompleteness is ALWAYS "unproven": a catalogue cannot say it holds everything that exists — and `refs`: the input to READ it with the gis step: refs.features = "ogc:<…/collections/id>" (items as a vector dataset), refs.grids = ["url:<COG address>"] (a grid, with acquire.bounds/width/height). Discovery does not fetch data; reading is the gis step. add registers another STAC / OGC Features catalogue (kind stated, https public address) for this session. sources lists what IntMap\'s OWN sources state they can supply (window, time, conditions, end, extent) — null is NOT STATED, which is different from "cannot", and it asks nobody anything. Use for 「ベトナム北部の最高解像度の標高データを探して」「この地域で使える衛星画像のコレクション」, "find open elevation data for Kenya", "which catalogues hold flood data here". Say plainly that results are what the catalogues STATE, and name the licence (or that none is stated). Do NOT use it for layers already on the map (use gis with layer:<id>) or for a file the reader uploaded. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('discover', 'inspect', 'catalogs', 'add', 'sources'), q: str(), bounds: list(num()), time: str(), ref: str(), limit: int(1, 1000), kind: one('stac', 'ogc-features'), kinds: list(one('stac', 'ogc-features')), catalogs: list(str()), url: str(), id: str(), label: str(), operator: str() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn;
+      await window.IntMapLazy.need('gisCore');
+      const _G = (window.IntMapGis || {}).atlas;
+      if (!_G || typeof _G.remote !== 'function') return R(false, warn(K.L('The GIS engine could not be loaded.', 'GIS エンジンを読み込めませんでした。')));
+      const r = await _G.remote(a);
+      return r.ok ? R(true, r.html, { meta: { gisRemote: { action: a.action || 'discover', dataset: r.dataset && r.dataset.id, coverage: r.coverage && r.coverage.completeness } } }) : R(false, warn(r.html));
+    },
+  },
   {
     row: ['data.rank',                  'rank',           '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
     ui: { at: ['#countries-feed .stats-sort-sel'] },
