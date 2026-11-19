@@ -857,7 +857,7 @@ export function makeAtlasMapCompose(deps) {
             if (/[A-Za-z0-9]/.test(c.s.charAt(0)) && /[A-Za-z0-9]/.test(before)) continue;
             if (/[A-Za-z0-9]/.test(c.s.charAt(c.s.length - 1)) && /[A-Za-z0-9]/.test(after)) continue;
             if (!free(at, at + c.s.length)) continue;
-            taken.push([at, at + c.s.length, '<span class="atl-geo-ref" data-geo="' + esc(c.id) + '">' + p.slice(at, at + c.s.length)
+            taken.push([at, at + c.s.length, '<span class="atl-geo-ref" data-geo="' + esc(c.id) + '" role="button" tabindex="0">' + p.slice(at, at + c.s.length)
               + '<span class="atl-geo-n" style="background:' + esc(c.color) + '">' + c.n + '</span></span>']);
             done[c.id] = 1;
             break;
@@ -891,6 +891,9 @@ export function makeAtlasMapCompose(deps) {
         const id = node.getAttribute('data-geo');
         node.addEventListener('mouseenter', () => focus(id));
         node.addEventListener('mouseleave', () => focus(''));
+        node.addEventListener('focus', () => focus(id));
+        node.addEventListener('blur', () => focus(''));
+        node.addEventListener('keydown', (ev) => { if (ev && (ev.key === 'Enter' || ev.key === ' ')) { try { ev.preventDefault(); } catch (_) { } node.click(); } });
         node.addEventListener('click', (ev) => {
           const r = records.find((x) => x.id === id);
           if (!r) return;

@@ -185,8 +185,16 @@ export function makeAtlasAnswerRender() {
         if (!body.trim()) return;
         if (firstBlock) { body = dropRestatedHeading(body, headText); firstBlock = false; }
         if (!body.trim()) return;
+        /* a bullet list keeps its own nesting: indentation and a wrapped continuation line survive, and
+           only a line with no marker at all (a bare list of items) is given one */
+        const ls = body.split(/\r?\n/).filter((l) => l.trim());
+        const marked = ls.some((l) => /^\s*(?:[-*•]\s+|・)/.test(l));
         const md = (b.type === 'bullet_list')
-          ? body.split(/\r?\n/).map((l) => l.replace(/^\s*[-・*]\s*/, '')).filter(Boolean).map((l) => '- ' + l).join('\n')
+          ? ls.map((l) => {
+            const m = /^(\s*)(?:[-*•]\s+|・\s*)(.*)$/.exec(l);
+            if (m) return m[1] + '- ' + m[2];
+            return (marked && /^\s+\S/.test(l)) ? l : '- ' + l.trim();
+          }).join('\n')
           : body;
         html += '<div class="atl-blk">' + mdMini(md) + cite(b.claimIds) + '</div>';
       });
@@ -228,8 +236,8 @@ export function makeAtlasAnswerRender() {
   const answerCSS = `
   .atl-lead{font-size:1.06em;line-height:1.62;margin:0 0 .5em;}
   .atl-blk{margin:0 0 .1em;}
-  .atl-cite{display:inline-block;min-width:1.15em;height:1.35em;line-height:1.35em;text-align:center;margin:0 .12em;padding:0 .5em;white-space:nowrap;
-    border-radius:.6em;background:var(--input-bg,rgba(128,128,128,.16));color:var(--text-muted);font-size:.68em;font-weight:600;
+  .atl-cite{display:inline-block;min-width:1.4em;height:1.55em;line-height:1.55em;text-align:center;margin:0 .12em;padding:0 .5em;white-space:nowrap;
+    border-radius:.6em;background:var(--input-bg,rgba(128,128,128,.16));color:var(--text-muted);font-size:.78em;font-weight:600;
     text-decoration:none;vertical-align:.12em;transition:background .15s,color .15s;}
   .atl-cite:hover{background:var(--primary-fill);color:#fff;}
   .atl-cite-data{cursor:default;}
