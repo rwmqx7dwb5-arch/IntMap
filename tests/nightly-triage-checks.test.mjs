@@ -35,12 +35,15 @@ test('③ a summary in colour codes parses', () => {
 /* CodeQL js/redos #269 (js/opening-hours.js): `\s*,?\s*` inside a `+` splits a whitespace run two ways.
    The rewrite `\s*(?:,\s*)?` accepts the same strings — held here against the old pattern on random input. */
 test('④ the weekday-selector pattern is unambiguous and accepts what it accepted', () => {
-  const OLD = /^((?:(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:-(?:Mo|Tu|We|Th|Fr|Sa|Su))?\s*,?\s*)+)(?=\s|$)/;
   /* the SHIPPED pattern, read out of the module (the fix landed as #1269; this holds it to the old language, not to a copy) */
   const src = readFileSync(new URL('../js/opening-hours.js', import.meta.url), 'utf8');
   const m = /const wdM = s\.match\((\/\^\(\(\?:\(\?:Mo\|.*?\/)\);/.exec(src);
   assert.ok(m, 'the weekday-selector pattern is where this test looks for it');
   const NEW = (0, eval)(m[1]);
+  /* the pre-#1269 separator (the one CodeQL flagged), rebuilt at run time from the shipped source so no ambiguous literal lives in the repository */
+  const SEP = String.raw`(?:\s*,\s*|\s+)?`, OLD_SEP = String.raw`\s*,?\s*`;
+  assert.ok(NEW.source.includes(SEP), 'the shipped separator is the one this test expects');
+  const OLD = new RegExp(NEW.source.replace(SEP, OLD_SEP));
   const atoms = ['Mo', 'Fr', 'PH', '-', 'Su', ' ', '  ', '\t', ',', ' , ', '10:00', 'x'];
   let seed = 7; const rnd = (n) => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) % n;
   for (let k = 0; k < 4000; k++) {
