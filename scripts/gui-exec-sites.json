@@ -1,0 +1,18 @@
+{
+  "_doc": "Every js/ file that still calls IntMapOS.exec(command) directly instead of IntMapOS.press(capability, args, command) (= execute()), and WHY. A button whose command is driven 1:1 by a capability must press it; a file listed here is one where that is not true. tests/exec-path-unify-checks.test.mjs holds the list to the code: a new direct caller must be added with a reason, and an entry whose file no longer calls exec fails as stale.",
+  "app-body.js": "The kernel itself (OS.exec/OS.dispatch are defined here) plus one internal re-assert of the satellite basemap after a style reload (source 'default'): a self-heal, not a press, so there is no operation to observe.",
+  "command-palette.js": "The palette is a generic shell over EVERY registered command id (OS.list()), including the ones no capability claims (atlas-command-unbridged.json); the id is data, so there is no capability to name. It still records source 'palette' in the same log.",
+  "companies-ui.js": "company.open opens the profile panel only; the capability that claims it (news.company) also fetches and words the company's news and writes world objects, so pressing it from a list row would add effects the row never had.",
+  "company-footprint.js": "company.open / company.ties open the panel or card the reader is already in; data.companyTies reads and words a whole country pair (a different result than the card opening).",
+  "company-ties.js": "company.open / company.footprint from inside the ties card: the capabilities that claim them (news.company, data.companySites) run their own query and wording, not the card hand-off these links mean.",
+  "countries-ui.js": "company.ties from a country card opens the ties card for that country; data.companyTies additionally queries and words the pair, which a card link does not do.",
+  "flight-sim.js": "The flight simulator switches the map projection around itself (source 'flightsim', sync, must finish before the next frame setup); it is a mode's own internal step, not a control a reader presses.",
+  "inline-actions.js": "company.footprint from an inline chip; the capability data.companySites queries and words the result, the chip only opens the map.",
+  "map-projection.js": "The URL-restore of the flat projection at boot (source 'url'): state restoration, not a press. The two projection buttons in the same file press view.projection.",
+  "map-ui.js": "The Tools rows open sim/tool panels by command id and wait on the returned promise to repaint (see the #R264 note there); each tool's capability takes different, named arguments (sim.pandemic vs sim.radiation ...), so the row's id is data.",
+  "search-geocode.js": "ui.sidebar.open with source 'auto' after a result: a layout reflex declared unbridged on purpose (atlas-command-unbridged.json).",
+  "session-tabs.js": "Boot and session-restore tab selection (sources 'default' and 'restore'): state restoration, not a press. The four tab buttons in the same file press panel.tab.",
+  "start-home.js": "layer.on/layer.off by layer ID and the synchronous ok it returns; layers.toggle takes a NAME and resolves it, and the home screen needs the sync result to repaint its switch.",
+  "widget-layout.js": "A widget's runCommand(cmdId) is a declared command id in a widget definition (data); it records source 'widget'.",
+  "window-manager.js": "tab.docked / ui.sidebar.open: window-docking reflexes (sources 'auto' and 'ui' on a dock toggle) that no capability claims."
+}

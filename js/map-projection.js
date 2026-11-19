@@ -129,8 +129,8 @@ export function makeProjection(CTX){
   function wire(){
     IntMapOS.register('view.proj.flat', ()=>{ CTX.setProj('flat'); document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!GE().hasRenderer())return; GE().camera.setProjection('flat'); GE().camera.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); CTX.cmpFollowProj(); }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
     IntMapOS.register('view.proj.globe', ()=>{ CTX.setProj('globe'); document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!GE().hasRenderer())return; try{ GE().camera.setMaxBounds(null); GE().camera.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(globeMinZoom()); GE().camera.setProjection('globe'); updateOcclusion(); CTX.cmpFollowProj(); }, {label:'Globe', btn:'btn-view-globe', group:'view'});
-    document.getElementById('btn-view-flat').onclick=()=>IntMapOS.exec('view.proj.flat',{source:'ui'});
-    document.getElementById('btn-view-globe').onclick=()=>IntMapOS.exec('view.proj.globe',{source:'ui'});
+    document.getElementById('btn-view-flat').onclick=()=>IntMapOS.press('view.projection',{mode:'flat'},'view.proj.flat');
+    document.getElementById('btn-view-globe').onclick=()=>IntMapOS.press('view.projection',{mode:'globe'},'view.proj.globe');
   }
 
   function boot(){
