@@ -71,7 +71,10 @@
  *    not-an-op            setParams named a dataset that has no recipe (an import has no parameters).
  *    no-such-dataset      setParams named an id that is not registered.
  *    cycle                the dependency graph reached itself; no order exists, so nothing was run.
- *  ⚠ `failed[].why` may ALSO carry a code that came straight out of window.IntMapGisOps — the reason
+ *    compute-unavailable  a Python record (provenance.kind 'compute') has to be re-run and
+ *                         window.IntMapCompute is not loaded.
+ *  ⚠ `failed[].why` may ALSO carry a code that came straight out of window.IntMapGisOps — or, for a
+ *  Python record, out of window.IntMapCompute (`timeout`, `python-exception` …) — the reason
  *  an op refused belongs to the op, and rewriting it here as a generic 'op-failed' would throw away
  *  the only sentence that tells the reader what to change.
  *
@@ -346,7 +349,14 @@ export function makeGisProject() {
       }
       /* Anything that is not an op is a body — an import, and also the `unknown` provenance a
          built-in record carries. Neither can be re-run, so the features go in and the provenance is
-         carried verbatim rather than being re-labelled as an import it was not. */
+         carried verbatim rather than being re-labelled as an import it was not.
+         ⚠ (compute-sandbox) A PYTHON RECORD (`kind:'compute'`) IS SAVED HERE TOO, AND ON PURPOSE. Its
+         provenance carries the whole code, so it COULD be replayed on load — but replaying means
+         downloading and booting an interpreter (6.2 MB on the wire; 3–10 s measured on a desktop, a
+         minute and more on a slow phone link) to reopen a project, and code may draw random numbers, so
+         the replay need not even be the answer that was saved. Its inputs come back from this same save, so the body and its inputs are the pair that
+         existed when it was saved. The recipe is not lost: setParams re-runs it (computeStep below)
+         when an input upstream is recomputed, which is the one moment the body stops being its answer. */
       return Object.assign(base, {
         kind: 'body',
         provenance: JSON.parse(JSON.stringify(prov)),
@@ -658,6 +668,20 @@ export function makeGisProject() {
       return order;
     }
 
+    /* ── (compute-sandbox) re-running a Python record ────────────────────────────────────────────
+       An op is re-run by IntMapGisOps; a record whose provenance is `kind:'compute'` is re-run by the
+       sandbox from the code it carries, under its own id. ⚠ NOT THROUGH runStep'S CACHE: the cache key is
+       an op's (#R819 — engine versions, params), and a Python run's answer is a function of its code,
+       which may draw random numbers; a remembered answer would be a claim about a run that did not
+       happen. A failure keeps the sandbox's own reason (`timeout` is not `op-failed`). */
+    function computeApi() { try { return (typeof window !== 'undefined' && window && window.IntMapCompute) || null; } catch (_) { return null; } }
+    async function computeStep(step, opts) {
+      const C = computeApi();
+      if (!C || typeof C.rerun !== 'function') return { ok: false, why: 'compute-unavailable' };
+      const r = await C.rerun({ id: step.id, title: step.title, provenance: step.compute }, opts || null);
+      return (r && r.ok) ? { ok: true, dataset: r.dataset } : { ok: false, why: (r && r.why) || 'compute-unavailable', detail: (r && r.detail) || null };
+    }
+
     /* ⚠ `opts` IS `{signal, onProgress}` AND IT IS NOT DECORATION (#R738). #R735 built the interruptible
        runner in js/gis-ops.js — `run(step, {signal, onProgress})`, yielding by elapsed milliseconds —
        and then NOTHING passed it: the only caller in the whole program that handed over a signal was a
@@ -697,6 +721,8 @@ export function makeGisProject() {
           inputs: Array.isArray(p.inputs) ? p.inputs.slice() : [],
           title: (rec && rec.title) || id,
           params: (id === datasetId) ? Object.assign(old, params || {}) : old,
+          /* (compute-sandbox) a Python record downstream is re-run from its own code, not as an op */
+          compute: (p.kind === 'compute') ? JSON.parse(JSON.stringify(p)) : null,
         };
       });
 
@@ -773,8 +799,9 @@ export function makeGisProject() {
         /* (#R819) 「半径を 10km に変えて、また 5km に戻す」 is the case this exists for: the second
            change asks a question that was already answered under conditions nothing has moved. Through
            runStep — which is O.run with the same arguments whenever there is no entry to reuse. */
-        return runStep({ id: step.id, op: step.op, inputs: step.inputs, params: step.params, title: step.title },
-          { signal: sig, onProgress: (inner) => report(i, step, inner) })
+        return (step.compute ? computeStep(step, { signal: sig })
+          : runStep({ id: step.id, op: step.op, inputs: step.inputs, params: step.params, title: step.title },
+            { signal: sig, onProgress: (inner) => report(i, step, inner) }))
           .then((res) => {
             if (res && res.ok) { rebuilt.push(step.id); if (res.fromCache) reused.push(step.id); return; }
             stopped = true;
@@ -1261,6 +1288,29 @@ export function makeGisProject() {
         return out;
       }
 
+      /* (compute-sandbox) Python の段。レシピ（コード全文）は provenance の中にあり、入力が文書にあれば
+         再実行できる。⚠ 同じ答えになるのは同じ実行環境で、かつコードが決定的なときだけ——乱数を引く
+         コードは同じ版でも別の数を出すので、`sameAnswer` はそれを条件として述べる。 */
+      if (step.origin === 'compute' && step.recipe) {
+        const inputs = Array.isArray(step.recipe.inputs) ? step.recipe.inputs.slice() : [];
+        const missing = inputs.filter((i) => !known.has(i));
+        const hasCode = !!(step.provenance && typeof step.provenance.code === 'string' && step.provenance.code);
+        out.data = !hasCode ? 'body' : (missing.length ? 'recipe-inputs-missing' : 'recipe');
+        if (missing.length) out.dataDetail = { missingInputs: missing };
+        if (out.data === 'body' && !hasFp) out.data = 'body-unverifiable';
+        out.environment = (step.engineThen && step.engineThen.runtime && step.engineThen.python) ? 'recorded'
+          : (step.engineThen && step.engineThen.runtime ? 'partly-recorded' : 'not-recorded');
+        out.retrieval = {
+          by: 'replay',
+          call: 'IntMapCompute.run',
+          args: { code: '(provenance.code)', inputs: inputs, outputs: [step.recipe.output] },
+          sameAnswer: (out.environment === 'recorded') ? 'if-runtime-matches-and-code-is-deterministic' : 'unknown',
+          verifyWith: hasFp ? step.fingerprintOf : null,
+          expect: hasFp ? step.fingerprint : null,
+        };
+        return out;
+      }
+
       /* 演算でないもの——取り込み・地図レイヤーの取得・組み込みの記録。⚠ ここで計算されたものは
          何も無いので、実行環境は「この段についての主張ではない」。今日のエンジンを書けば、
          そのエンジンが作ったという主張になる。 */
@@ -1325,6 +1375,11 @@ export function makeGisProject() {
         /* Stamped when it ran (#R765). Absent for a record computed before that, or while
            js/gis-project.js was not mounted — reported as a gap rather than filled in from today. */
         step.engineThen = prov.engine || null;
+      } else if (prov.kind === 'compute') {
+        /* (compute-sandbox) the code IS the recipe; it is in `step.provenance` below, whole, so it is
+           named here by its hash rather than written twice into the document */
+        step.recipe = { language: prov.language || null, codeSha256: prov.codeSha256 || null, inputs: (prov.inputs || []).slice(), output: prov.output || null };
+        step.engineThen = prov.runtime ? { runtime: String(prov.runtime), python: prov.python || null } : null;
       } else {
         step.recipe = null;
       }
@@ -1449,7 +1504,8 @@ export function makeGisProject() {
         if (s.trace.data === 'body') { needsBody = true; continue; }
         blockedBy.push({ step: s.id, axis: 'data', state: s.trace.data, detail: s.trace.dataDetail || null });
       }
-      const opSteps = steps.filter((s) => s.origin === 'op');
+      /* (compute-sandbox) a Python step was computed here too, so its environment is part of the answer */
+      const opSteps = steps.filter((s) => s.origin === 'op' || s.origin === 'compute');
       let envState;
       if (!opSteps.length) envState = 'nothing-computed';
       else if (opSteps.every((s) => s.trace.environment === 'recorded')) envState = 'recorded';

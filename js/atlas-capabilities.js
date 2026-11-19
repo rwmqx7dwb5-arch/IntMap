@@ -38,8 +38,16 @@
  *  js/atlas-console.js, in the Atlas chunk. Moving the prose here would put 58 kB back on the boot
  *  path and undo #R224 for no gain.
  *
- *  ⚠ NO ARBITRARY EXECUTION. There is no eval, no "call this method name", no dynamic capability.
- *  Atlas's reach is WIDE — every row below — and it is CLOSED: what is not in the table cannot run.
+ *  ⚠ NO ARBITRARY EXECUTION ON THE PAGE. There is no eval, no "call this method name", no dynamic
+ *  capability. Atlas's reach is WIDE — every row below — and it is CLOSED: what is not in the table
+ *  cannot run.
+ *  ⚠ THE ONE EXCEPTION, AND WHERE ITS EDGE IS (compute-sandbox). `compute.run` is a row like any other
+ *  and runs code the model wrote — Python, in Pyodide, inside a dedicated Worker built by
+ *  js/compute-sandbox.js. Nothing of it runs on this thread: the worker's realm has the origin's
+ *  storage, every network door but the hash-checked Pyodide files, nested workers and run-time code
+ *  generation removed BEFORE the code runs, and what comes back is JSON that becomes a dataset through
+ *  js/gis-datasets.js. It does not open the table: it cannot call a capability, name a method or touch
+ *  the DOM. Any second door of this kind is a decision for docs/architecture/17-security.md, not a row.
  * ==========================================================================*/
 /* ══ installCapabilityKernel(OS, HOST, deps) — WHAT IS EAGER, AND WHAT IS NOT ══════════════════
    §3 and §10 of this round's commission require ONE thing before a module loads: that a capability
@@ -860,6 +868,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
              not observed (.agents/rules/one-pass-or-a-reason.md §5). Stated by the capability as meta.code, read here once
              for every read, so the loop answers a repeat with 「already done」 instead of inviting a retry. */
           if (raw && raw.ok === false && raw.meta && raw.meta.code === 'not_rendering') return { status: 'unobserved', produced: [], code: 'not_rendering', observed: { rendering: false }, html: raw.html || '' };
+          /* (compute-sandbox) the same distinction stated by a capability for itself: `meta.unobserved` names WHY the
+             outcome could not be seen (a run at its time limit, an interpreter that never started) — not a failure */
+          if (raw && raw.ok === false && raw.meta && typeof raw.meta.unobserved === 'string' && raw.meta.unobserved) return { status: 'unobserved', produced: [], code: raw.meta.unobserved, html: raw.html || '' };
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
         }

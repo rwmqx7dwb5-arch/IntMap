@@ -12,6 +12,8 @@
  *      js/gis-ops.js        window.IntMapGisOps       what can be done to one, and to its output
  *      js/gis-project.js    window.IntMapGisProject   what survives closing the tab
  *      js/gis-panel.js      window.IntMapGisPanel     the operating surface
+ *  ⚠ (compute-sandbox) AND ONE THAT RUNS CODE:
+ *      js/compute-sandbox.js  window.IntMapCompute     Python (Pyodide) on these datasets, in an isolated Worker
  *
  *  ⚠ (#729) AND ONE THAT IS NOT A GIS FILE AT ALL:
  *      js/data-governance.js  window.IntMapDataGovernance  where a number came from, on what terms,
@@ -101,6 +103,7 @@ import { makeGisLayers } from './gis-layers.js';
 import { makeGisSources } from './gis-sources.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
+import { makeComputeSandbox } from './compute-sandbox.js';
 import { makeGisPanel } from './gis-panel.js';
 /* ⚠ (#R783) THE ASSEMBLER, READ BY NAME AND HANDED STRAIGHT ON. The re-export is what an outside
    caller imports (`import { makeGisRuntime } from './js/gis-core.js'`), and shellEntry below is the
@@ -191,6 +194,12 @@ function mount(scope, HOST, CONTEXT) {
   const layers = makeGisLayers();
   const ops = makeGisOps();
   const project = makeGisProject();
+  /* (compute-sandbox) Python on the datasets, in a Worker that holds nothing of the page. Mounted here
+     because its inputs and outputs ARE this registry's records, and because js/gis-project.js reads
+     window.IntMapCompute at CALL time to re-run a compute record whose input was recomputed. ⚠ What
+     this costs here is its own bytes: the interpreter (6.2 MB on the wire) is fetched by the worker of
+     the first run, never by mounting. */
+  const compute = makeComputeSandbox();
   const panel = makeGisPanel(HOST);
 
   /* The one thing this file adds that none of the four could: turning a dataset into something the
@@ -280,7 +289,7 @@ function mount(scope, HOST, CONTEXT) {
     verify: project.verify,
   });
 
-  const API = { data, geometry, crs, raster, warp, index, voronoi, expr, units, worker, sources, layers, ops, project, panel, draw, atlas, flow,
+  const API = { data, geometry, crs, raster, warp, index, voronoi, expr, units, worker, sources, layers, ops, project, compute, panel, draw, atlas, flow,
     context: ctx,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { scope.IntMapGis = API; } catch (_) { }
@@ -303,7 +312,7 @@ function mount(scope, HOST, CONTEXT) {
   const verified = [['IntMapData', data], ['IntMapGisGeometry', geometry], ['IntMapGisCrs', crs],
     ['IntMapGisRaster', raster], ['IntMapGisWarp', warp], ['IntMapGisIndex', index], ['IntMapGisVoronoi', voronoi], ['IntMapGisExpr', expr],
     ['IntMapGisUnits', units], ['IntMapDataGovernance', governance], ['IntMapGisWorker', worker], ['IntMapGisSources', sources],
-    ['IntMapGisLayers', layers], ['IntMapGisOps', ops], ['IntMapGisProject', project], ['IntMapGis', API],
+    ['IntMapGisLayers', layers], ['IntMapGisOps', ops], ['IntMapGisProject', project], ['IntMapCompute', compute], ['IntMapGis', API],
     ['IntMapGisContext', ctx]];
   const unreachable = [];
   for (const [g, inst] of verified) {

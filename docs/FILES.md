@@ -480,6 +480,17 @@ gis-expr.js                       **式の解釈器** `window.IntMapGisExpr`（#
                                   `expr.rows` は行の配列でも等長の面の組でも受ける）。⚠ **数値規則は写さずに
                                   渡す**（規則の無い扉はジョブが作られる前に `expr-no-number-rule`）。
                                   ⚠ **運べるかは木を queue する前に訊く**（`portable(ast)`）
+                                  ⚠ Python を走らせる経路は**ここではない**——`compute-sandbox.js`（別 Worker）
+compute-sandbox.js                **Python の隔離実行** `window.IntMapCompute`（compute-sandbox）— Atlas が書いた
+                                  Python を Pyodide で走らせ、結果を新しいデータセットにする。**1 回の実行に
+                                  1 つの Worker**（前の実行の状態を持ち越さない）。Pyodide は同梱せず jsDelivr の
+                                  版固定パスから取り、**全ファイルをハッシュで検証**（核の 5 ファイルは SRI、
+                                  パッケージは検証済みの lock の sha256）してから `blob:` で実行——CSP に新しい
+                                  host を足さない。コードが走る前に Worker の realm から **origin の保存領域・
+                                  ほかのネットワーク・入れ子の Worker・実行時のコード生成**を取り除き、閉じられ
+                                  なければ何も走らせない。失敗は観測された失敗（例外・出力の拒否）と観測できな
+                                  かったこと（`timeout`・`runtime-unavailable`）を分けて返す。出力の
+                                  provenance は `{kind:'compute', code, codeSha256, inputs, output, runtime}`
 gis-atlas.js                      **GIS 層が自分で持つ Atlas の扉** `window.IntMapGis.atlas`
                                   （#R743）— `catalogue()` は `ops.ops()` **そのもの**で、op を
                                   1 本足せばその日のうちに Atlas にも出る（手書きの一覧を作らない）。
@@ -1040,6 +1051,7 @@ atlas-caps-modules.js             ⚠ 生成物（`node scripts/atlas-caps.mjs -
 atlas-cap-account.js              Atlas の能力 — 自分のアカウントのデータの目録と書き出し（account.*。account-data-center）
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
 atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart.compose）
+atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
