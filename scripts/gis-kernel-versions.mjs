@@ -298,6 +298,7 @@ export const KERNELS = {
    not — and an absence is what let four answer-bearing kernels sit outside the ledger for a whole
    round. ⚠ 「まだ版を付けていない」 is not a reason. If it can change an answer it declares a version. */
 export const NOT_A_KERNEL = {
+  'js/gis-http.js': 'names why a remote read failed from the response (CORS, the words the server sent, a sign-in page); it reads no value and produces no answer a saved recipe replays',
   'js/gis-core.js': 'mounts the modules and draws a dataset on the map; computes nothing',
   /* (#R783) the assembly, not the arithmetic: it decides what plays the part of the scope and what
      was handed over, mounts through js/gis-core.js, and computes nothing a saved recipe replays. */
