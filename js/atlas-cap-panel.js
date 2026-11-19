@@ -674,14 +674,15 @@ export default [
   {
     row: ['panel.ticker',               'ticker',         '',                                                            'panel',   'panel',   'panel.ticker',           'panel',               'session', 'none',   '',         ''],
     ui: { at: ['#setting-ticker'] },
+    commands: ['ticker.on', 'ticker.off'],   /* the run drives these two commands (was a second copy of their body) */
     doc: [
       { in: 'tools-panels', at: 250, text: '{"type":"ticker","on":bool} (the bottom news/markets ticker strip); ' },
     ],
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
-    async run(a, dctx, K) { const saveSettings = K.saveSettings, R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
+    async run(a, dctx, K) { const kexec = K.kexec, saveSettings = K.saveSettings, R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const onT=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let okT=false;
-          try{ if(window.IntMapTicker){ window.imTicker=onT?'on':'off'; window.IntMapTicker.apply(); okT=true; try{ if(typeof saveSettings==='function') saveSettings(); }catch(_){} } }catch(_){}
+          try{ if(window.IntMapTicker){ kexec(onT?'ticker.on':'ticker.off'); okT=true; try{ if(typeof saveSettings==='function') saveSettings(); }catch(_){} } }catch(_){}
           return R(okT, okT?note('✓ '+L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior')+': '+(onT?'on':'off'))+_featTogHtml('ticker'):warn('')); }   /* (#R149) offer the ticker on/off toggle */
     },
   },
