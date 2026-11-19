@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { PLATEAU_CITY_CODES, plateauTilesetUrl, plateauTilesetId, plateauSpecs } from '../js/plateau-cities.js';
+import { PLATEAU_HEIGHT_OFFSET_M, PLATEAU_CITY_CODES, plateauTilesetUrl, plateauTilesetId, plateauSpecs } from '../js/plateau-cities.js';
 
 const R = (f) => fs.readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 const cesium = R('js/cesium-engine.js'), geo = R('js/geo-engine.js'), types = R('types/geo-engine.d.ts');
@@ -45,7 +45,10 @@ test('the PLATEAU list is the 23 special wards, one distinct URL and id each, on
   assert.ok(hosts.includes('api.plateauview.mlit.go.jp'));
 });
 
-test('the engine never applies an invented geoid offset: heightOffset defaults to nothing', () => {
-  assert.doesNotMatch(cesium, /geoidOffset|GEOID_/);
-  assert.match(R('js/plateau-cities.js'), /no geoid offset|nothing here applies a geoid/);
+test('the geoid offset is one measured constant, not an engine default and not a guess', () => {
+  assert.doesNotMatch(cesium, /geoidOffset|GEOID_/);                         /* the engine invents none: heightOffset defaults to 0 */
+  const src = R('js/plateau-cities.js');
+  assert.match(src, /export const PLATEAU_HEIGHT_OFFSET_M = -\d+(\.\d+)?;/);
+  assert.match(src, /MEASURED 2026-11-19[\s\S]*EXPIRES/);                   /* a number must carry its observation and its expiry */
+  for (const { spec } of plateauSpecs()) assert.equal(spec.heightOffset, PLATEAU_HEIGHT_OFFSET_M);
 });

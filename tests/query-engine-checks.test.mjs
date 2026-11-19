@@ -177,7 +177,7 @@ test('R740 ⑤ the result table scrolls instead of collapsing to one character p
   const API = await engine(t);
   const out = await API.answer({ from: 'earthquakes', where: [{ col: 'magnitude', op: '>=', value: 5 }], show: ['mag'] }, {});
   assert.equal(out.ok, true);
-  const tbl = /<table style="([^"]*)"/.exec(out.html);
+  const tbl = /<table[^>]*? style="([^"]*)"/.exec(out.html);
   assert.ok(tbl, 'the answer renders a table');
   assert.ok(!/(^|;)\s*width:100%/.test(tbl[1]) && /min-width:100%/.test(tbl[1]),
     `a table at width:100% inside overflow-x:auto never overflows — it compresses, and in the 365 px Atlas panel `

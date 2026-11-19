@@ -189,6 +189,13 @@ overviews は数だけ報告する**）。
 - 出来たものは**登録された格子のデータセット**なので、`rasterMask`・`zonal`・`sample`・書き出し・
   `map.drawDataset` がそのまま効く。`provenance.kind = 'url-raster'`。
 
+⚠ **失敗は応答から名指す**（`js/gis-http.js`、実在サービスでの実測は `dev-notes/2026-11-19-gis-live-probe.md`）:
+`fetch-failed` は「ホストは応答するが CORS ヘッダが無く、ページから読めない」を `corsBlocked`（`no-cors` の HEAD が opaque で返ることで観測）、
+`http-status` はサーバ自身の言葉（`serverSaid`）と別オリジンへの転送（`redirectedTo`）を運ぶ。ログイン画面が 200 で返るものは
+「Range 非対応」ではなく `http-status`（200・画面）。`s3://bucket/key`（STAC の資産が使う）は https の virtual-host 形（ドット付きは path 形）へ
+**導出**して読み、`source.derivedFrom` に元の綴りを残す。署名付き URL が要る供給元（Planetary Computer など）は署名を作らず、
+サーバの言葉で断る。計器は `node scripts/gis-live-probe.mjs`（ネットワーク要・CI では走らない）。
+
 ### 1.4d URL の地物コレクションを読む — `js/gis-ogcapi.js` と `data.gis` の `ogc:` 入力
 
 OGC API – Features（OGC 17-069r4。WFS の後継）のコレクションを、`data.gis` の入力 `"ogc:https://…/collections/<id>"`
@@ -320,6 +327,22 @@ IntMap にはまさにそれを壊す経路がある——`js/geodesy.js` の `s
 ⚠ **裸の年はその年 1 年**である。`asDate` は `1889` を ISO の年接頭辞として受け、
 `1889-01-01T00:00:00Z`＝**1 ミリ秒**を答える——年の列に対して「1889 年」の窓がほとんど何も掴まなくなる。
 だから年の規則を**先に**訊く。⚠ 年の作り方は `Date.UTC` ではない（100 未満の年が 1900+y になる・#R602）。
+
+#### 1.5.1 ⚠⚠ 有効時刻と記録時刻は別の欄で、2 つの形から出来た答えの有効時刻は入力の期間から導く
+
+- **有効時刻（valid time）＝ `time`**: それが**世界で**成り立っていた期間。**記録時刻（transaction time）＝ `provenance.recordedAt`**
+  （演算の出力）／`readAt`（取り込み）／取得の `at`: **この記録が作られた**瞬間。両者は混ぜない——1914 年の国境を 2026 年に取り込んでも、
+  有効時刻は 1914 年のまま。`recordedAt` は演算が走った瞬間で、**再実行の鍵ではない**（レシピは op・入力・params だけ。§4）。
+- **形が 2 入力から出来る演算は、入力の期間から出力の期間を導く**（`js/gis-ops.js` `vectorOutTime`）。どちらが形を出すかは**走者が述べる**
+  （ラスターの `shapeOnly` と同じ形・§3.1。op ごとの表を別に持たない）。何も述べない op は従来どおり第 1 入力の宣言。
+  | 走者の陳述 | op | 出力の期間 |
+  |---|---|---|
+  | `intersection` | `intersect` | 両入力の期間の**重なり**。重ならなければ期間を述べず `timeRule.result:'disjoint'`（空の期間ではなく「述べられない」） |
+  | `union` | `union` | 両者を**括る**期間。間に隙間があれば `timeRule.contiguous:false`（誰も述べていない隙間を黙って埋めない） |
+  ⚠ **述べていない入力が 1 つでもあれば、期間は述べない**（`timeRule.result:'unknown'`・各入力の期間は `provenance.inputTimes` に残る。「述べられていない」は「述べられていない」のまま）。
+  ⚠ **行ごとの軸（`instant` / `interval`）は 1 つの宣言では合成できない**ので第 1 入力の軸を保ち、`timeRule.result:'row-wise'` で「規則は適用していない」と述べる。
+  `difference` / `clip` / `aggregate` / 各 join は第 1 入力の期間のまま（もう一方は形を選ぶだけで、出力の行はそれが述べたものではない）。
+  `KERNEL_VERSION` は `ops-12`。検査 `tests/time-spatial-base-checks.test.mjs`。
 
 ## 2. 処理 — `js/gis-ops.js` (`window.IntMapGisOps`)
 

@@ -883,6 +883,12 @@ export function makeGisProject() {
       if (!desc) return null;
       const record = {};
       for (const k of Object.keys(desc)) { if (k === 'createdAt') continue; record[k] = desc[k]; }
+      /* (time-spatial-base) WHEN A RECORD WAS MADE IS NOT A CONDITION OF ITS ANSWER — the same reason `createdAt` is left out above.
+         `provenance.recordedAt` (js/gis-ops.js, transaction time) differs between two runs of one recipe by construction, so keeping it
+         would make an identical chain key differently every time and nothing would ever be reused. */
+      if (record.provenance && typeof record.provenance === 'object' && 'recordedAt' in record.provenance) {
+        record.provenance = Object.assign({}, record.provenance); delete record.provenance.recordedAt;
+      }
       const declared = (typeof reg.declarations === 'function') ? reg.declarations(id) : null;
       return { record: record, declared: declared };
     }

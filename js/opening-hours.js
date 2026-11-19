@@ -80,9 +80,9 @@ function parseRule(text) {
   /* a day number is one NOT followed by «:<digit>» — «Nov-Mar 07:00» is the months then a time, not «Mar 07»; «Aug 31: …»
      is a day and the selector's colon */
   const DAY = '\\d{1,2}(?!\\d|:\\d)';
-  const monM = s.match(new RegExp('^((?:(?:' + MON_RE + ')(?:\\s+' + DAY + ')?(?:\\s*-\\s*(?:' + MON_RE + ')?(?:\\s*' + DAY + ')?)?\\s*,?\\s*)+):?\\s*'));
+  const monM = s.match(new RegExp('^((?:(?:' + MON_RE + ')(?:\\s+' + DAY + ')?(?:\\s*-\\s*(?:' + MON_RE + ')?(?:\\s*' + DAY + ')?)?(?:\\s*,\\s*|\\s+)?)+):?\\s*'));
   if (monM && monM[1].trim()) { rule.months = parseMonths(monM[1].replace(/[,\s]+$/, '')); s = s.slice(monM[0].length); }
-  const wdM = s.match(/^((?:(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:-(?:Mo|Tu|We|Th|Fr|Sa|Su))?\s*,?\s*)+)(?=\s|$)/);
+  const wdM = s.match(/^((?:(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:-(?:Mo|Tu|We|Th|Fr|Sa|Su))?(?:\s*,\s*|\s+)?)+)(?=\s|$)/);   /* the separator is one alternation, not «\s*,?\s*»: with the comma optional the whitespace could be split between the two \s* in 2^n ways (CodeQL js/redos) */
   if (wdM) { const w = parseWdays(wdM[1].replace(/[,\s]+$/, '')); rule.wdays = w.days; rule.ph = w.ph; s = s.slice(wdM[0].length).trim(); }
   if (s === '24/7') { rule.spans = 'all'; return rule; }
   if (!s) { rule.spans = rule.mode === 'open' ? 'all' : []; return rule; }

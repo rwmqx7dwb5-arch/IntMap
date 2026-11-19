@@ -28,7 +28,7 @@ import { IntMapLang } from './lang-registry.js';   /* the reader's language for 
 const D = () => (typeof window !== 'undefined' && window.IntMapDevice) || null;
 
 /* ⚠ A CHOSEN DURATION, NOT A MEASURED ONE: long enough to read the first lines of a short answer before
-   the card thins. Idle never makes it unreadable (opacity .58, below) and hover or focus restores it at
+   the card thins. Idle never makes it unreadable (opacity .86, below: a reader still reading must not watch the words thin) and hover or focus restores it at
    once, so the number only decides when the map shows through more. Nothing else reads it. */
 const IDLE_MS = 6000;
 
@@ -55,7 +55,7 @@ const CSS =
   + 'transition:opacity .5s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.2,.8,.2,1);}'
   + '#atlas-float.on .atl-float-card{opacity:1;transform:none;}'
   /* idle: the map shows through more; the reader's hand or focus brings it back at once */
-  + '#atlas-float.on.idle .atl-float-card{opacity:.58;}'
+  + '#atlas-float.on.idle .atl-float-card{opacity:.86;}'
   + '#atlas-float.on .atl-float-card:hover,#atlas-float.on .atl-float-card:focus-within{opacity:1;}'
   + '#atlas-float:not(.on){visibility:hidden;transition:visibility 0s linear .5s;}'
   /* the bar is a control, so it is a small glass pill: the popup colour at 45%, blurred behind */

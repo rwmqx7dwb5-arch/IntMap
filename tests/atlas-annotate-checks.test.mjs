@@ -195,7 +195,7 @@ test('R492 ⑥: the annotation pass stands inside mdMini, before the placeholder
     { L: (en) => en, esc, fitTo: (x) => x, fmtVal: (x) => x, highlight: (x) => x, note: () => {}, warn: () => {} });
   const html = REPLY.mdMini('Drive 120 miles. The code `120 miles` stays.\n\nThe EEZ is wide.\n\nThe EEZ again.\n\n'
     + '| a | b |\n|---|---|\n| 120 miles | x |\n\n```\n120 miles\n```');
-  assert.match(html, /Drive <span class="atl-an[^"]*" data-atl-note="≈ 193 km">120 miles<\/span>/,
+  assert.match(html, /Drive <span class="atl-an[^"]*" data-atl-note="≈ 193 km" tabindex="0">120 miles<\/span>/,
     'js/atlas-reply.js must run the annotation pass');
   for (const m of html.matchAll(/<code[^>]*>([\s\S]*?)<\/code>/g)) {
     assert.ok(!/atl-an/.test(m[1]),
@@ -205,7 +205,7 @@ test('R492 ⑥: the annotation pass stands inside mdMini, before the placeholder
   assert.equal((html.match(/data-atl-note="Exclusive Economic Zone"/g) || []).length, 1,
     'mdMini builds one options object — the abbreviation is expanded on its first use in the reply, not per paragraph');
   /* table cells go through the SAME object */
-  assert.match(html, /<td><span class="atl-an[^"]*" data-atl-note="≈ 193 km">120 miles<\/span><\/td>/,
+  assert.match(html, /<td><span class="atl-an[^"]*" data-atl-note="≈ 193 km" tabindex="0">120 miles<\/span><\/td>/,
     'table cells are annotated too');
   /* the hover wiring is document-level, so the sidebar tab and the workspace window get it as well.
      read, not run: wireAtlasAnnotations() attaches listeners to `document`, which node does not have. */

@@ -34,6 +34,8 @@
  *  ⚠ CRS: the default of the standard is CRS84 (lon/lat), which is what the dataset is registered as.
  * ==========================================================================*/
 
+import { explainFetchFailure, describeResponse } from './gis-http.js';
+
 export function makeGisOgcApi() {
   const bad = (why, detail) => (detail === undefined ? { ok: false, why: why } : { ok: false, why: why, detail: detail });
   const isNum = (v) => typeof v === 'number' && isFinite(v);
@@ -86,8 +88,8 @@ export function makeGisOgcApi() {
     if (o.signal) init.signal = o.signal;
     let res;
     try { res = await doFetch(href, init); }
-    catch (e) { return bad('fetch-failed', { url: href, reason: String((e && e.message) || e) }); }
-    if (!res || res.status < 200 || res.status > 299) return bad('http-status', { url: href, status: res ? res.status : null });
+    catch (e) { return bad('fetch-failed', Object.assign({ url: href }, await explainFetchFailure(href, doFetch, e))); }
+    if (!res || res.status < 200 || res.status > 299) return bad('http-status', Object.assign({ url: href, status: res ? res.status : null }, res ? await describeResponse(href, res) : {}));
     let j;
     try { j = await res.json(); } catch (_) { return bad('ogc-not-json', { url: href }); }
     if (!j || typeof j !== 'object' || j.type !== 'FeatureCollection' || !Array.isArray(j.features)) {
@@ -168,7 +170,7 @@ export function makeGisOgcApi() {
         if (!nu.ok || nu.url.origin !== items.origin) return bad('ogc-next-elsewhere', { next: String(next).slice(0, 200), expected: items.origin });
         next = nu.url.href;
       }
-      const nextIsPost = !!(post && nl && String(nl.method || '').toUpperCase() === 'POST');
+      const nextIsPost = !!(nl && String(nl.method || '').toUpperCase() === 'POST');
       /* a limit was stated: keep reading until that many have arrived; none stated: one page */
       if (!next || q.limit == null || features.length >= q.limit) {
         /* a POST next link carries its own body, so it cannot travel as a URL cursor */
