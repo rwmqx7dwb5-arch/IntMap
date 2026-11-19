@@ -22,7 +22,7 @@ import { untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor, packageOf, loadPackage } from './layer-manifest.js';   /* (layer-packages) …and which rows a package implements, and the package's literal import */
 import { IntMapTime } from './chronos.js'; import { dimPixel } from './class-highlight.js';   /* (landcover-class-highlight) the one «dim what was not picked» rule — Köppen and WorldCover */
-import { IntMapGeoEngine } from './geo-engine.js'; import * as bus from './bus.js'; import { IntMapDialog } from './dialog.js'; import { IntMapLabelScale } from './label-scale.js';
+import { IntMapGeoEngine } from './geo-engine.js'; import * as bus from './bus.js'; import { IntMapDialog } from './dialog.js';
 import { IntMapLang } from './lang-registry.js'; import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js; on this line because this file's line count only goes down (scripts/layer-packages.mjs), and icons.js is reached from js/app-body.js for the reachability rule */
 /* ══ (fetch-deadline-layer) THE READS A ROW MAKES, FOR THE OTHER READERS OF THE SAME DATA ══════════════
    js/layer-previews.js drew the cable and radar thumbnails from reads of its own: a bare `fetch` with no
@@ -4484,7 +4484,7 @@ export function dataLayers(HOST){
         const dark=document.documentElement.getAttribute('data-theme')==='dark';
         GE().layers.add({ id:'contour-lines', type:'line', source:'contour-src', 'source-layer':'contours', layout:{visibility:'none'},
           paint:{ 'line-color': dark?'rgba(220,180,120,0.6)':'rgba(150,100,40,0.7)', 'line-width':['match',['get','level'],1,1.3,0.55], 'line-opacity':opacities.contours } }, beforeId);
-        GE().layers.add({ id:'contour-labels', type:'symbol', source:'contour-src', 'source-layer':'contours', layout:{visibility:'none','symbol-placement':'line','symbol-spacing':320,'text-size':IntMapLabelScale.sub(0.82),'text-field':['concat',['to-string',['get','ele']],' m'],'text-font':['Noto Sans Regular'],'text-allow-overlap':false},
+        GE().layers.add({ id:'contour-labels', type:'symbol', source:'contour-src', 'source-layer':'contours', layout:{visibility:'none','symbol-placement':'line','symbol-spacing':320,'text-size':window.IntMapLabelScale.sub(0.82),'text-field':['concat',['to-string',['get','ele']],' m'],'text-font':['Noto Sans Regular'],'text-allow-overlap':false},
           paint:{ 'text-color': dark?'#e8c890':'#7a5320', 'text-halo-color': dark?'rgba(0,0,0,0.7)':'rgba(255,255,255,0.8)', 'text-halo-width':1.2 } }, beforeId);
         return true;
       }catch(e){ console.warn('addContours',e); return false; }

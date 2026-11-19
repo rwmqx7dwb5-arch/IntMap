@@ -34,7 +34,6 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { anchorToLngLat } from './popup-anchor.js';   /* a card that belongs to a place follows it */
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { IntMapLabelScale } from './label-scale.js';
 
 /* (startup-lazy-layers) THE FIVE LAYERS, FETCHED THE FIRST TIME ONE OF THEM IS ASKED FOR. The rows, the
    toolkit every member of the family shares and the share-link state are js/world-packs-rows.js, which is
@@ -334,7 +333,7 @@ export function worldPacksBody(HOST){
            third statement of the same thing sitting on top of the map. The `node` FEATURES stay:
            they are what places the partner NAME, which the reader kept. */
         if(!GE().layers.has('wp-trade-lbl')) GE().layers.add({id:'wp-trade-lbl',type:'symbol',source:SRC,filter:['==',['get','kind'],'node'],
-          layout:{visibility:'none','text-field':['get','name'],'text-size':IntMapLabelScale.sub(0.86),'text-offset':[0,0.2],'text-anchor':'top','text-allow-overlap':false},
+          layout:{visibility:'none','text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.86),'text-offset':[0,0.2],'text-anchor':'top','text-allow-overlap':false},
           paint:{'text-color':'#eaf2ff','text-halo-color':'rgba(0,10,25,0.85)','text-halo-width':1.4}});
         return true; }catch(_){ return false; } }
 
@@ -5593,11 +5592,11 @@ export function worldPacksBody(HOST){
             'circle-stroke-color':'#ffd60a','circle-stroke-width':2.4,'circle-stroke-opacity':0.95,'circle-pitch-alignment':'map'}});
         if(!GE().layers.has(LBL)) GE().layers.add({id:LBL,type:'symbol',source:SRC,minzoom:3.4,
           filter:['==',['get','kind'],'st'],layout:{visibility:'none','text-field':['get','lbl'],
-            'text-size':IntMapLabelScale.sub(0.82),'text-offset':[0,1.15],'text-anchor':'top','text-allow-overlap':false},
+            'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.15],'text-anchor':'top','text-allow-overlap':false},
           paint:{'text-color':'#d8f6ff','text-halo-color':'rgba(0,18,32,0.88)','text-halo-width':1.4}});
         if(!GE().layers.has(SELLBL)) GE().layers.add({id:SELLBL,type:'symbol',source:SRC,
           filter:['==',['get','kind'],'probe'],layout:{visibility:'none','text-field':['get','lbl'],
-            'text-size':IntMapLabelScale.sub(0.95),'text-offset':[0,-1.5],'text-anchor':'bottom',
+            'text-size':window.IntMapLabelScale.sub(0.95),'text-offset':[0,-1.5],'text-anchor':'bottom',
             'text-allow-overlap':true,'text-ignore-placement':true},
           paint:{'text-color':'#ffd60a','text-halo-color':'rgba(0,18,32,0.94)','text-halo-width':1.7}});
         return true; }catch(_){ return false; } }

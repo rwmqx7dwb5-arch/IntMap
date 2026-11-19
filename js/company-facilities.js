@@ -50,7 +50,6 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { anchorToLngLat } from './popup-anchor.js';
-import { IntMapLabelScale } from './label-scale.js';
 
 export function companyFacilities(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never a raw handle */
@@ -142,7 +141,7 @@ export function companyFacilities(HOST){
         'circle-stroke-width':['case',['==',['get','status'],'operating'],1.1,1.8]}},before());
 
       if(!GE().layers.has(LBL)) GE().layers.add({id:LBL,type:'symbol',source:SRC,filter:_ptFilter(),minzoom:4.2,layout:{
-        'text-field':['get','name'],'text-size':IntMapLabelScale.sub(0.8),
+        'text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.8),
         'text-offset':[0,1.0],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']],
         'text-max-width':15,'text-optional':true,
         'symbol-sort-key':['case',['==',['get','group'],'hq'],0,1]},

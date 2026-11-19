@@ -75,7 +75,6 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { IntMapLabelScale } from './label-scale.js';
 
 export function tsunami(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -726,7 +725,7 @@ export function tsunami(HOST){
           paint:{'line-color':'rgba(255,255,255,0.85)','line-width':1.1,'line-dasharray':[3,2]}});
         if(!GE().layers.has(LYR_ISOL)) GE().layers.add({id:LYR_ISOL,type:'symbol',source:SRC_ISO,
           layout:{visibility:showIso?'visible':'none','symbol-placement':'line','text-field':['get','label'],
-                  'text-size':IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']]},
+                  'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']]},
           paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.3}});
       }catch(_){}
     }

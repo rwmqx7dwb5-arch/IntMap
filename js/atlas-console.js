@@ -74,7 +74,6 @@ import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
 import { layerRowLabel, registryBoxes } from './layer-row-label.js';   /* (ux-next) the row's name — one reading, shared with the command palette */
-import { IntMapLabelScale } from './label-scale.js';
 
 const CAP_RUN = capabilityRunners(CAPABILITY_MODULES);   /* dispatch spelling → run, derived once from the entries (js/atlas-caps.js) */
 export function atlasConsole(HOST){
@@ -1645,7 +1644,7 @@ export function atlasConsole(HOST){
       if(GE().layers.has('nlq-poi-c')) return true;
       const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       GE().layers.add({id:'nlq-poi-c',type:'circle',source:'nlq-poi-src',paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,4.5,10,7.5],'circle-color':['coalesce',['get','color'],'#ff453a'],'circle-opacity':0.88,'circle-stroke-color':'#ffffff','circle-stroke-width':1.4}},before);
-      GE().layers.add({id:'nlq-poi-t',type:'symbol',source:'nlq-poi-src',minzoom:7.5,layout:{'text-field':['get','name'],'text-font':['literal',['Noto Sans Regular']],'text-size':IntMapLabelScale.sub(0.86),'text-offset':[0,1.05],'text-anchor':'top','text-optional':true},paint:{'text-color':'#ff453a','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.3}},before);
+      GE().layers.add({id:'nlq-poi-t',type:'symbol',source:'nlq-poi-src',minzoom:7.5,layout:{'text-field':['get','name'],'text-font':['literal',['Noto Sans Regular']],'text-size':window.IntMapLabelScale.sub(0.86),'text-offset':[0,1.05],'text-anchor':'top','text-optional':true},paint:{'text-color':'#ff453a','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.3}},before);
       /* (#R72) POI popups reworked ("ポップアップがホバーしたときに出てこないほか、ポップアップの文字が見えないし、
          詳細情報をWikipediaのリンクで確認することもできない"):
          (a) HOVER now shows a light name/kind popup (desktop pointer);

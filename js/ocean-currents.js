@@ -74,7 +74,6 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
-import { IntMapLabelScale } from './label-scale.js';
 
 export function oceanCurrents(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -262,7 +261,7 @@ export function oceanCurrents(HOST){
         /* ③ the name, along the current it belongs to */
         if(!GE().layers.has(LBL)) GE().layers.add({id:LBL,type:'symbol',source:SRC,layout:{visibility:'none',
           'symbol-placement':'line','symbol-spacing':600,
-          'text-field':['get','name'],'text-size':IntMapLabelScale.sub(0.92),
+          'text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.92),
           'text-offset':[0,1.0],'text-allow-overlap':false,'text-optional':true,'text-max-angle':38},
           paint:{'text-color':'#eaf4ff','text-halo-color':'rgba(0,20,36,0.92)','text-halo-width':1.5}});
         return true;

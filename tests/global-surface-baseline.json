@@ -1267,6 +1267,7 @@
   "IntMapIsolate": 42,
   "IntMapKbdHelp": 2,
   "IntMapLOS": 16,
+  "IntMapLabelScale": 48,
   "IntMapLandMask": 10,
   "IntMapLangSwitch": 5,
   "IntMapLayerAudit": 3,

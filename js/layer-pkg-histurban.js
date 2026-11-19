@@ -26,7 +26,6 @@ import { layerState } from './layer-state.js';
 import { activeAt, historyOf, loadRecord, namesOf } from './hist-urban.js';
 import { readWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
-import { IntMapLabelScale } from './label-scale.js';
 
 /** @param {any} K the layer kit js/data-layers.js hands every package (`packageKit` there)
     @returns {{ rows: Record<string, { on: () => any, off: () => void, opacity: (v: number) => void }> }} */
@@ -115,7 +114,7 @@ export function histurbanPackage(K) {
       published = stamp;
       if (!GE().layers.has(CIRCLES)) GE().layers.add({ id: CIRCLES, type: 'circle', source: SRC_C, layout: { 'circle-sort-key': ['*', -1, ['get', 'p']] }, paint: circlePaint() }, CITY);
       const layout = { visibility: 'visible', 'text-field': ['get', 'text'], 'symbol-sort-key': ['get', 'sort'],
-        'text-font': window.IntMapMapTypography.readerFont(), 'text-size': IntMapLabelScale.place('city'), 'text-optional': true };
+        'text-font': window.IntMapMapTypography.readerFont(), 'text-size': window.IntMapLabelScale.place('city'), 'text-optional': true };
       for (const prop of ['text-max-width', 'text-variable-anchor', 'text-radial-offset', 'text-justify', 'text-padding']) {
         const v = GE().layers.getLayout(CITY, prop);
         if (v !== undefined) layout[prop] = v;

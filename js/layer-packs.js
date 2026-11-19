@@ -40,7 +40,6 @@ import { IntMapTime } from './chronos.js';
 import { keepClasses, rgbKey } from './class-highlight.js';   /* (landcover-class-highlight) the one «dim what was not picked» rule, shared with Köppen */
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
-import { IntMapLabelScale } from './label-scale.js';
 
 
 /* ══ ⚠ (railways-handover-idempotent) THE BASEMAP-SWAP SELF-HEAL — ONE RULE FOR EVERY PACK IN THIS FILE ══
@@ -109,16 +108,16 @@ export function earthSky(HOST){
       try{
         if(!GE().layers.hasSource('l9-dams')){ GE().layers.addSource('l9-dams',{type:'geojson',data:ptFC(DAMS,'dam')});
           GE().layers.add({id:'l9-dams-pt',type:'circle',source:'l9-dams',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3.4,7,7],'circle-color':'#34c7ff','circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
-          GE().layers.add({id:'l9-dams-lbl',type:'symbol',source:'l9-dams',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':IntMapLabelScale.sub(0.82),'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#bdeaff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+          GE().layers.add({id:'l9-dams-lbl',type:'symbol',source:'l9-dams',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#bdeaff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
         }
         if(!GE().layers.hasSource('l9-volc')){ GE().layers.addSource('l9-volc',{type:'geojson',data:ptFC(VOLC,'volcano')});
           GE().layers.add({id:'l9-volc-pt',type:'circle',source:'l9-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3.6,7,7.5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff2e0','circle-stroke-width':1.3,'circle-opacity':0.95}});
-          GE().layers.add({id:'l9-volc-lbl',type:'symbol',source:'l9-volc',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':IntMapLabelScale.sub(0.82),'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+          GE().layers.add({id:'l9-volc-lbl',type:'symbol',source:'l9-volc',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
         }
         if(!GE().layers.hasSource('l9-adiz')){ GE().layers.addSource('l9-adiz',{type:'geojson',data:adizFC()});
           GE().layers.add({id:'l9-adiz-fill',type:'fill',source:'l9-adiz',layout:{visibility:'none'},paint:{'fill-color':['get','color'],'fill-opacity':0.08}});
           GE().layers.add({id:'l9-adiz-line',type:'line',source:'l9-adiz',layout:{visibility:'none'},paint:{'line-color':['get','color'],'line-width':1.6,'line-dasharray':[3,2],'line-opacity':0.8}});
-          GE().layers.add({id:'l9-adiz-lbl',type:'symbol',source:'l9-adiz',layout:{visibility:'none','symbol-placement':'point','text-field':['get','name'],'text-size':IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':['get','color'],'text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
+          GE().layers.add({id:'l9-adiz-lbl',type:'symbol',source:'l9-adiz',layout:{visibility:'none','symbol-placement':'point','text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':['get','color'],'text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
         }
         if(!GE().layers.hasSource('l9-aurora')){ GE().layers.addSource('l9-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
           GE().layers.add({id:'l9-aurora-heat',type:'heatmap',source:'l9-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],
@@ -327,7 +326,7 @@ export function landCover(HOST){
 
            `text-opacity` is stated here as well, so the layer is opaque from the first frame rather
            than only after the opacity registry has run. */
-        GE().layers.add({id:'eco-plates-lbl',type:'symbol',source:'eco-plates',minzoom:2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','PlateName'],['get','Name'],['get','Code'],''],'text-size':IntMapLabelScale.sub(1),'text-font':['Noto Sans Bold'],'text-letter-spacing':0.06,'text-padding':3},paint:{'text-color':'#ffe2d8','text-halo-color':'rgba(0,0,0,1)','text-halo-width':2,'text-opacity':1}});
+        GE().layers.add({id:'eco-plates-lbl',type:'symbol',source:'eco-plates',minzoom:2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','PlateName'],['get','Name'],['get','Code'],''],'text-size':window.IntMapLabelScale.sub(1),'text-font':['Noto Sans Bold'],'text-letter-spacing':0.06,'text-padding':3},paint:{'text-color':'#ffe2d8','text-halo-color':'rgba(0,0,0,1)','text-halo-width':2,'text-opacity':1}});
         try{ (window._opacityOpaqueText=window._opacityOpaqueText||{})['eco-plates-lbl']=true; }catch(_){}
         /* ⚠ …AND IT IS CLICKABLE, WHICH THE LABEL ALONE IS NOT ENOUGH FOR. 「また、クリック可能に。」
            A symbol layer answers a click only where a glyph actually is; the plate is the whole
@@ -770,7 +769,7 @@ export function betaPack2(HOST){
         GE().layers.add({id:ids[0],type:'circle',source:src,layout:{visibility:'none'},paint:{
           'circle-radius':['interpolate',['linear'],['zoom'],1,2.6,5,4.6,9,7.5],
           'circle-color':['coalesce',['get','col'],'#5e8bff'],'circle-stroke-color':'#ffffff','circle-stroke-width':0.9,'circle-opacity':0.92}},before());
-        GE().layers.add({id:ids[1],type:'symbol',source:src,minzoom:4.5,layout:{visibility:'none','text-field':['get','n'],'text-size':IntMapLabelScale.sub(0.82),'text-offset':[0,1.0],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']],'text-max-width':16},paint:{'text-color':'#dce6f5','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before());
+        GE().layers.add({id:ids[1],type:'symbol',source:src,minzoom:4.5,layout:{visibility:'none','text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.0],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']],'text-max-width':16},paint:{'text-color':'#dce6f5','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before());
         clickPop(ids[0]);
         return true;
       }catch(_){ return false; } }
@@ -1445,7 +1444,7 @@ export function timeZones(HOST){
          rather than as a new shape on top; `-1e9` is a zone no feature has, i.e. "nothing selected". */
       if(!GE().layers.has('tzl-hl')) GE().layers.add({id:'tzl-hl',type:'fill',source:'tzl-src',layout:{visibility:'none'},filter:['==',['get','zone'],-1e9],paint:{'fill-color':'#ffd43b','fill-opacity':0.55}},before);
       if(!GE().layers.has('tzl-hl-line')) GE().layers.add({id:'tzl-hl-line',type:'line',source:'tzl-src',layout:{visibility:'none','line-join':'round'},filter:['==',['get','zone'],-1e9],paint:{'line-color':'#ffd43b','line-width':['interpolate',['linear'],['zoom'],1,1.6,5,3],'line-opacity':0.95}},before);
-      if(!GE().layers.has('tzl-time')) GE().layers.add({id:'tzl-time',type:'symbol',source:'tzl-lbl-src',layout:{visibility:'none','text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':IntMapLabelScale.sub(1),'text-line-height':1.1,'text-allow-overlap':false,'text-padding':5},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,38,76,0.92)','text-halo-width':1.7}});
+      if(!GE().layers.has('tzl-time')) GE().layers.add({id:'tzl-time',type:'symbol',source:'tzl-lbl-src',layout:{visibility:'none','text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':window.IntMapLabelScale.sub(1),'text-line-height':1.1,'text-allow-overlap':false,'text-padding':5},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,38,76,0.92)','text-halo-width':1.7}});
       wireHighlight(); }
     /* ══ (#R204) PRESSING 「UTC+9」 LIGHTS UP EVERY BAND ON THAT OFFSET ═════════════════════════════
        One offset is not one polygon: UTC+9 is Japan, Korea, eastern Indonesia, Palau and a slice of

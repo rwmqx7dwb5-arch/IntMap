@@ -60,7 +60,6 @@ import { makeRadiationObs } from './radiation-obs-core.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
-import { IntMapLabelScale } from './label-scale.js';
 
 export function radiationLayer(HOST) {
   /* what this layer needs from the host — stated, so a reader (or a test) can hand exactly these */
@@ -130,7 +129,7 @@ export function radiationLayer(HOST) {
         id: 'imrad-obs-lbl', type: 'symbol', source: SRC, minzoom: 7, layout: {
           visibility: 'none',
           'text-field': ['concat', ['to-string', ['coalesce', ['get', 'v'], '—']], ' nSv/h'],
-          'text-size': IntMapLabelScale.sub(0.78), 'text-offset': [0, 1.0], 'text-anchor': 'top',
+          'text-size': window.IntMapLabelScale.sub(0.78), 'text-offset': [0, 1.0], 'text-anchor': 'top',
           'text-font': ['literal', ['Noto Sans Regular']]
         },
         paint: { 'text-color': '#d8ecff', 'text-halo-color': 'rgba(0,0,0,0.8)', 'text-halo-width': 1.2 }

@@ -3,7 +3,6 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { IntMapDialog } from './dialog.js';
-import { IntMapLabelScale } from './label-scale.js';
 /* ============================================================================
  *  IntMap · News feed, pins & reader  (#R168)
  * ----------------------------------------------------------------------------
@@ -188,7 +187,7 @@ export function newsUi(HOST){
       /* (news-map-legibility) the layout and paint are named so the mirrored band below is built FROM them */
       const bandLayout={   /* (#R15c) band on ALL pins incl. not-yet-located */
         'text-field':['get','short'],
-        'text-size':IntMapLabelScale.sub(MTy.BAND_W),
+        'text-size':window.IntMapLabelScale.sub(MTy.BAND_W),
         'text-font':['literal',['Noto Sans Regular']],
         'text-anchor':'left',
         'text-offset':MTy.bandOffset(),   /* (news-type-polish) clear of the pin: js/map-typography.js BAND */

@@ -47,7 +47,6 @@
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
 import { shapeAnchor } from './atlas-shape-resolve.js';
-import { IntMapLabelScale } from './label-scale.js';
 
 export function makeAtlasMapCompose(deps) {
   return (function () {
@@ -219,7 +218,7 @@ export function makeAtlasMapCompose(deps) {
         const before = ['user-pin-shadow', 'user-pin-dot'].find((id) => { try { return !!g.layers.has(id); } catch (_) { return false; } });
         const font = ['literal', ['Noto Sans Regular']];
         let sub = 11;
-        try { if (IntMapLabelScale && IntMapLabelScale.sub) sub = IntMapLabelScale.sub(0.9); } catch (_) { sub = 11; }
+        try { if (window.IntMapLabelScale && window.IntMapLabelScale.sub) sub = window.IntMapLabelScale.sub(0.9); } catch (_) { sub = 11; }
         /* (atlas-real-shapes) shapes first, so lines and markers sit on them. A DERIVED shape is drawn dashed — the map says
            「approximate」 in the same place the legend does. */
         g.layers.add({ id: 'atl-compose-sf', type: 'fill', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'g'], 'area']],

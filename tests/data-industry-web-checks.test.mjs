@@ -101,5 +101,5 @@ test('R213 ⑧: revenue carries its own currency, and the ranking says what it c
   assert.ok(wpAt < iwAt, 'world-packs is instantiated first');
   /* (module-graph) the factory is the module's export, imported by name and called with the host */
   assert.match(read('js/app-body.js'), /^import \{ industryWeb \} from '\.\/industry-web\.js';/m, 'the factory is imported from its module');
-  assert.match(read('js/app-body.js'), /(?<![\w.$])industryWeb\(IM_HOST\);/, 'and the factory is instantiated');
+  assert.match(read('js/app-body.js'), /(?<![\w.$])industryWeb\((?:hostSlice\(IM_HOST, \[[^\]]*\]\)|IM_HOST)\);/, 'and the factory is instantiated');
 });

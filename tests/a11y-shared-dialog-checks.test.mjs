@@ -63,7 +63,7 @@ function makeDom() {
     disconnect() { const i = observers.indexOf(this); if (i >= 0) observers.splice(i, 1); } }
   const gcs = (el) => ({ display: el.style.display || (el.classList.contains('hidden-by-class') ? 'none' : 'block'), visibility: el.style.visibility || 'visible' });
   const win = {};
-  const D = new Function('window', 'document', 'getComputedStyle', 'MutationObserver', read('js/dialog.js') + '\n;return window.IntMapDialog;')(win, doc, gcs, MO);
+  const D = new Function('window', 'document', 'getComputedStyle', 'MutationObserver', read('js/dialog.js').replace(/^export const IntMapDialog/m, 'const IntMapDialog').replace(/^globalThis\.IntMapDialog = IntMapDialog;/m, 'window.IntMapDialog = IntMapDialog;') + '\n;return window.IntMapDialog;')(win, doc, gcs, MO);
   return { D, doc, El, key };
 }
 function overlay(dom, withButtons = 2) {
@@ -210,7 +210,7 @@ test('«is a modal open?» is asked of the registry — the two hand-written sel
   for (const f of ['js/app-body.js', 'js/workspace.js']) {
     const s = read(f);
     assert.doesNotMatch(s, /querySelectorAll\('[^']*(?:\.modal-overlay|\.lightbox|#compose-modal)[^']*'\)\]\.some/, f + ' still carries its own list');
-    assert.match(s, /window\.IntMapDialog\.anyOpen\(\)/, f + ' asks the registry');
+    assert.match(s, /(?<![\w$])(?:window\.)?IntMapDialog\.anyOpen\(\)/, f + ' asks the registry');
   }
   /* and the dialogs those lists named — plus the ones they missed — are registered */
   const body = read('js/app-body.js');

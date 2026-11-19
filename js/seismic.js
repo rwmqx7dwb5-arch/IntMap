@@ -62,7 +62,6 @@ import './earth-structure.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { IntMapLabelScale } from './label-scale.js';
 
 
 export function seismic(HOST){
@@ -2678,14 +2677,14 @@ export function seismic(HOST){
       if(!GE().layers.has('seis-sta')) GE().layers.add({id:'seis-sta',type:'circle',source:SRC,filter:['==',['get','kind'],'station'],
         paint:{'circle-radius':9,'circle-color':'#ffffff','circle-stroke-color':'#222','circle-stroke-width':1.8}});
       if(!GE().layers.has('seis-sta-n')) GE().layers.add({id:'seis-sta-n',type:'symbol',source:SRC,filter:['==',['get','kind'],'station'],
-        layout:{'text-field':['get','n'],'text-size':IntMapLabelScale.sub(0.8),'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':true,'text-ignore-placement':true},
+        layout:{'text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.8),'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':true,'text-ignore-placement':true},
         paint:{'text-color':'#111111'}});
       /* (#R242) the cities the panel picked: a smaller ringed dot and the name, under the numbered
          markers above so a placed point always wins the overlap. */
       if(!GE().layers.has('seis-city')) GE().layers.add({id:'seis-city',type:'circle',source:SRC,filter:['==',['get','kind'],'city'],
         paint:{'circle-radius':4.5,'circle-color':'#ffffff','circle-stroke-color':'#1c1c1e','circle-stroke-width':1.6,'circle-opacity':0.95}});
       if(!GE().layers.has('seis-city-n')) GE().layers.add({id:'seis-city-n',type:'symbol',source:SRC,filter:['==',['get','kind'],'city'],
-        layout:{'text-field':['get','name'],'text-size':IntMapLabelScale.sub(0.82),'text-font':['literal',['Noto Sans Regular']],
+        layout:{'text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.82),'text-font':['literal',['Noto Sans Regular']],
           'text-anchor':'top','text-offset':[0,0.62],'text-optional':true,'text-max-width':9},
         paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.85)','text-halo-width':1.5}});
       if(!GE().layers.has('seis-epi')) GE().layers.add({id:'seis-epi',type:'circle',source:SRC,filter:['==',['get','kind'],'epi'],
@@ -2697,7 +2696,7 @@ export function seismic(HOST){
          the leading edge, in the colour of its line, placed ON the ring. The halo is what keeps them
          legible over the intensity paint, which can be any colour underneath. */
       if(!GE().layers.has('seis-front-lbl')) GE().layers.add({id:'seis-front-lbl',type:'symbol',source:SRC,filter:['==',['get','kind'],'frontLabel'],
-        layout:{'text-field':['get','t'],'text-size':IntMapLabelScale.sub(0.86),'text-font':['literal',['Noto Sans Regular']],
+        layout:{'text-field':['get','t'],'text-size':window.IntMapLabelScale.sub(0.86),'text-font':['literal',['Noto Sans Regular']],
                 'text-allow-overlap':false,'text-ignore-placement':false,'text-padding':6,'text-offset':[0,-0.65]},
         paint:{'text-color':['get','col'],'text-halo-color':'rgba(0,0,0,0.72)','text-halo-width':1.5}});
       return true; }catch(_){ return false; } }

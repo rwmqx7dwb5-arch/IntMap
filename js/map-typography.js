@@ -41,7 +41,6 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
-import { IntMapLabelScale } from './label-scale.js';
 window.IntMapMapTypography = (function () {
   /* the ranges scripts/build-glyphs.mjs emits. ⚠ tests/hazard-seismic-panel-checks.test.mjs (#R242) asserts this list is identical to
      that script's RANGES — one list, two readers ([[intmap-recurring-lessons]] G). */
@@ -316,7 +315,7 @@ window.IntMapMapTypography = (function () {
      js/news-ui.js `NEWS_PIN` — 6 + 1 at rest, 8 + 2 when HOT (hovered or the open event) — and `lead` must
      still clear the HOT pin, because the open event's band stays drawn beside it (hover hides the band,
      selection does not): 10 < 13, a 3 px gap. tests/news-map-legibility-checks.test.mjs evaluates both. */
-  const labelScale = () => IntMapLabelScale;   /* js/label-scale.js, read when asked (it loads before any band is drawn) */
+  const labelScale = () => window.IntMapLabelScale;   /* js/label-scale.js, read when asked (it loads before any band is drawn) */
   /* the text's offset from the pin, in the renderer's ems at each zoom. `side` 'L' is the mirrored band
      (text anchored right, left of the pin) the declutter flips to at the right edge — same distance. */
   function bandOffset(side) {

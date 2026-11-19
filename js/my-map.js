@@ -36,7 +36,6 @@ import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encode
 import * as D from './my-map-doc.js';
 import { fromMyMap } from './map-doc.js';   /* (map-document-unify) a my map, as the one map document the Library and the account hold */
 import * as bus from './bus.js';   /* the declared events (js/bus.js): the language change is heard through it, not a bare window listener */
-import { IntMapLabelScale } from './label-scale.js';
 
 /* where the library is kept. One key: {v:1, current, maps:[doc…]} */
 const STORE = 'intmap_mymaps';
@@ -118,7 +117,7 @@ export function myMap(HOST) {
       if (!E.layers.hasSource(LBL)) E.layers.addSource(LBL, { type: 'geojson', data: fc([]) });
       if (!E.layers.hasSource(DRAFT)) E.layers.addSource(DRAFT, { type: 'geojson', data: fc([]) });
       const font = ['literal', ['Noto Sans Regular']];
-      let sub = 12; try { const S = IntMapLabelScale; if (S && S.sub) sub = S.sub(0.95); } catch (_) { }
+      let sub = 12; try { const S = window.IntMapLabelScale; if (S && S.sub) sub = S.sub(0.95); } catch (_) { }
       const add = (spec) => { if (!E.layers.has(spec.id)) E.layers.add(spec); };
       add({ id: 'mymap-fill', type: 'fill', source: SRC, filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': ['get', 'color'], 'fill-opacity': ['case', ['==', ['get', 'sel'], 1], 0.32, 0.2] } });
       add({ id: 'mymap-line', type: 'line', source: SRC, filter: ['!=', '$type', 'Point'], layout: { 'line-cap': 'round', 'line-join': 'round' },

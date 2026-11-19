@@ -18,9 +18,11 @@ date: 2026-11-19
    `factory(hostSlice(IM_HOST, [読むメンバー]))` へ。対象は「`HOST` を `HOST.メンバー` の形でしか使わず、メンバーが 4 つ以下」の
    工場を**ソースから機械的に**選んだもの（`HOST[...]`・分割代入・他へ渡す工場は対象外）。工場本体は 1 行も変えていない。
    一覧が呼び出し側の依存契約になる。
-3. **`window` 経由の参照を import へ**（`scripts/module-graph.mjs --migrate` の手順）: `IntMapDialog`（30 ファイル 49 件）と
-   `IntMapLabelScale`（32 ファイル 48 件）。どちらも所有者が `export const` し `globalThis.X = X` で従来どおり公開も続ける
-   （Atlas・テスト・クラシック script の読み手は変わらない）。
+3. **`window` 経由の参照を import へ**（`scripts/module-graph.mjs --migrate` の手順）: `IntMapDialog`（29 ファイル 42 件）。所有者が
+   `export const` し `globalThis.IntMapDialog` でも従来どおり公開する（Atlas・クラシック script の読み手は変わらない）。
+   ⚠ `IntMapLabelScale`（48 件）も一度 import 化したが **取り下げた**: `js/label-scale.js` を `vm`／`new Function` でクラシック script として
+   評価するテストが 14 本あり、`export` を含むと SyntaxError で全部落ちた（PR の CI で実測）。これらのテストを共通の読み込み器へ
+   寄せるのが先で、その後に移す。
 
 ## 門
 
@@ -34,7 +36,7 @@ date: 2026-11-19
 
 | | 前 | 後 |
 |---|---|---|
-| `window` 経由の参照 | 4,162 | 4,065 |
+| `window` 経由の参照 | 4,162 | 4,113（Dialog 42 件減ほか main の変動を含む） |
 | `IM_HOST` を丸ごと渡される工場 | 162 | 139 |
 | `IM_HOST` メンバー／書き換え可能／公開グローバル | 281／55／660 | 同じ（挙動と能力は不変） |
 

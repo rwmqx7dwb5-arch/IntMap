@@ -123,7 +123,6 @@ import { clockFor } from './proxy-fetch.js';
 import { registerReader, decimalsOf, rowKey, shapesAt } from './border-provenance.js';
 /* (hist-modern-admin) where a past date's subdivisions are today's, they are drawn by today's supply */
 import { makeRegion, clipLines, ownPieces, rowIsToday } from './admin-present.js';
-import { IntMapLabelScale } from './label-scale.js';
 
 export function timeAdmin1(HOST) {
   const GE = () => IntMapGeoEngine;   /* the renderer, through the contract — never the raw handle */
@@ -757,7 +756,7 @@ export function timeAdmin1(HOST) {
              name is already baked into `NAME` above, which is exactly the case readerFont()
              exists for (js/time-borders.js `_ERAFONT`, #R309). */
           const FONT = readerFont();
-          const SIZE = (function () { try { return IntMapLabelScale.place('admin1'); } catch (_) { return ['interpolate', ['linear'], ['zoom'], 4, 9.5, 7, 11.5]; } })();
+          const SIZE = (function () { try { return window.IntMapLabelScale.place('admin1'); } catch (_) { return ['interpolate', ['linear'], ['zoom'], 4, 9.5, 7, 11.5]; } })();
           if (!GE().layers.has(cfg.lbl)) GE().layers.add({
             id: cfg.lbl, type: 'symbol', source: cfg.src, minzoom: cfg.minZ ? cfg.minZ + 1 : 4,
             layout: {
@@ -774,7 +773,7 @@ export function timeAdmin1(HOST) {
                  bottom, for a feature that somehow arrived without a measured area. */
               'symbol-sort-key': ['coalesce', ['get', SORT_PROP], 0]
             },
-            paint: { 'text-color': COL, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': IntMapLabelScale.halo(1.5), 'text-opacity': cfg.deep ? 0.8 : 1 }
+            paint: { 'text-color': COL, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': window.IntMapLabelScale.halo(1.5), 'text-opacity': cfg.deep ? 0.8 : 1 }
           });
           /* ⚠ THE CLICK IS NOT WIRED HERE. An era province name is a place label like any other, and
              js/map-ui.js is the ONE place that decides what a place label does when it is tapped —
@@ -1045,7 +1044,7 @@ export function timeAdmin1(HOST) {
             layout: { visibility: 'none', 'text-field': ['get', 'txt'], 'text-font': FONT,
               'text-size': ['interpolate', ['linear'], ['zoom'], 3, 9.5, 7, 11], 'text-max-width': 9, 'text-padding': 6,
               'text-optional': true, 'text-offset': [0, 1.6], 'symbol-sort-key': ['get', 'rank'] },
-            paint: { 'text-color': ADMIN1_COLOR, 'text-opacity': 0.85, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': IntMapLabelScale.halo(1.4) } });
+            paint: { 'text-color': ADMIN1_COLOR, 'text-opacity': 0.85, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': window.IntMapLabelScale.halo(1.4) } });
           return true;
         } catch (_) { return false; }
       }

@@ -7,7 +7,6 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
-import { IntMapLabelScale } from './label-scale.js';
 
 export function histPlaces(HOST) {
   const GE = () => IntMapGeoEngine;
@@ -117,7 +116,7 @@ export function histPlaces(HOST) {
         attribution: 'Pleiades and its contributors (CC BY 3.0)' });
       const layout = { visibility: 'visible', 'text-field': ['get', 'name'],
         'text-font': window.IntMapMapTypography.readerFont(),
-        'text-size': IntMapLabelScale.place('city') };
+        'text-size': window.IntMapLabelScale.place('city') };
       for (const prop of ['text-max-width', 'text-variable-anchor', 'text-radial-offset', 'text-justify', 'text-padding']) {
         const value = GE().layers.getLayout(CITY, prop);
         if (value !== undefined) layout[prop] = value;

@@ -81,7 +81,6 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { IntMapLabelScale } from './label-scale.js';
 
 export function satellitesLive(HOST){
   /* ── (#R184) SGP4 ARRIVES WHEN THE LAYER DOES, NOT WHEN THE PAGE DOES ────────────────────────
@@ -938,7 +937,7 @@ export function satellitesLive(HOST){
            CONSIDERING eleven thousand of them every frame. Name the selected object always, and the
            rest only while the catalogue is small enough for names to be readable at all. */
         filter:['any',['==',['get','sel'],1],['==',['get','lbl'],1]], layout:{
-        'text-field':['get','name'], 'text-size':IntMapLabelScale.sub(0.86), 'text-offset':[0,1.3], 'text-anchor':'top',
+        'text-field':['get','name'], 'text-size':window.IntMapLabelScale.sub(0.86), 'text-offset':[0,1.3], 'text-anchor':'top',
         'text-allow-overlap':false, 'text-optional':true },
         paint:{ 'text-color':'#ffd23f', 'text-halo-color':'rgba(0,0,0,0.85)', 'text-halo-width':1.4,
                 'text-opacity':opacity } });

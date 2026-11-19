@@ -21,7 +21,6 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
-import { IntMapLabelScale } from './label-scale.js';
 
 
   /* ══ ⚠⚠ (#R284) THE PLAYER'S ICONS ARE DRAWN, AND NO TWO OF THEM ARE THE SAME ═══════════════
@@ -1267,7 +1266,7 @@ export function weatherEC(HOST){
              the collision grid thin them, which is how a printed isobar chart labels its lines
              anyway — upright, not bent along the curve. The 'line' variant was never observable
              before this round because the source carried no contours at all. */
-          if(!GE().layers.has(lbl)) GE().layers.add({id:lbl,type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'point','text-field':_contourLabel(cfg),'text-font':['literal',['Noto Sans Regular']],'text-size':IntMapLabelScale.sub(0.82)},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
+          if(!GE().layers.has(lbl)) GE().layers.add({id:lbl,type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'point','text-field':_contourLabel(cfg),'text-font':['literal',['Noto Sans Regular']],'text-size':window.IntMapLabelScale.sub(0.82)},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
         } else if(cfg.type==='arrows'){
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:url});
           if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);
