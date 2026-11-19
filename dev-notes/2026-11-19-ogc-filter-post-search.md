@@ -19,3 +19,6 @@ newsjp: OGC API の地物サービスからの取得で時間による絞り込�
 
 ## 2. 検査
 `tests/ogc-filter-post-search-checks.test.mjs`（新規 6）。旧契約（OGC は time を断る）を assert していた 2 行を `tests/stac-search-source-checks.test.mjs` で更新——断ることが欠陥だったため。
+
+## 3. 天井を上げた理由
+`gis-ogcapi` の async チャンクの天井（`tests/perf-baseline.json`）を、実測の増分まで上げた。増えたのは POST 本文の組み立て・/conformance の判定・next リンクの POST 追従で、どれも利用者が使う能力であり、遅延チャンクなので起動時の転送量は増えない。
