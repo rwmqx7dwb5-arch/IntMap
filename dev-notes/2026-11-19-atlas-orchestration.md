@@ -47,7 +47,7 @@ newsjp: Atlas が、地図の分析の手順を並行して実行して連鎖さ
 
 ## 3. 容量の上限を上げた理由（check:perf）
 
-増えたのは **async のみ**（起動時に読む分は不変）。`atlas-cap-runs` と `atlas-console` は、`research.delegate` の実行部分・ホスト側の経路・オーケストレーション部品が載った分で、この変更が買ったものそのもの。`async.gzip` も同じ分。
+増えたのは **async のみ**（起動時に読む分は不変）。`atlas-delegate`（委譲の基盤の chunk。前方参照の読み・輪の検出・引数の参照・要求の鍵・再開が載った）も、`atlas-cap-runs` と `atlas-console` と同じ理由で上げた。`atlas-cap-runs` と `atlas-console` は、`research.delegate` の実行部分・ホスト側の経路・オーケストレーション部品が載った分で、この変更が買ったものそのもの。`async.gzip` も同じ分。
 
 ## 4. 検査
 
