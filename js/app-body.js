@@ -132,7 +132,6 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
 import { setHost } from './host-door.js';   /* (mobile-next) the doors opened by a URL or a delegated tap read the host there */
-import { IntMapDialog } from './dialog.js';
 
 /* (fetch-deadline-layer) the classic scripts' handle on the fetch clock (js/countries-ui.js, js/routing-ops.js —
    see the end of js/fetch-deadline.js). Assembled HERE because this file is in main alone and imports both
@@ -802,7 +801,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(ae&&ae.isContentEditable)) return;
     /* (a11y-shared-dialog) «is a modal open?» is the dialog registry's answer (js/dialog.js), not a selector list —
        the list here named two classes no element carried and missed Terms, Sources, Support and Feedback */
-    if(IntMapDialog.anyOpen()) return;
+    if(window.IntMapDialog.anyOpen()) return;
     /* (#R62) ESC now TOGGLES the sidebar (open AND close), not close-only. */
     document.getElementById('btn-toggle-sidebar').click();
   });
@@ -2960,7 +2959,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!q || 'auto'.includes(q) || (i18n[currentLang].optLocal||'').toLowerCase().includes(q)) add('auto', i18n[currentLang].optLocal);
     if(!q || 'utc'.includes(q)) add('UTC','UTC');
     zones.forEach(z=>{ if(z==='UTC')return; const disp=z.replace(/_/g,' '); if(!q || disp.toLowerCase().includes(q) || z.toLowerCase().includes(q)) add(z,disp); });
-    rows.slice(0,80).forEach(r=>{ const d=document.createElement('div'); d.className='tz-row'+(r.v===prev?' sel':''); d.textContent=r.label; d.setAttribute('role','option'); IntMapDialog.makeActionable(d);
+    rows.slice(0,80).forEach(r=>{ const d=document.createElement('div'); d.className='tz-row'+(r.v===prev?' sel':''); d.textContent=r.label; d.setAttribute('role','option'); window.IntMapDialog.makeActionable(d);
       d.addEventListener('click',()=>{ _tzSelect(r.v); res.classList.remove('show'); }); res.appendChild(d); });
     if(!rows.length){ const d=document.createElement('div'); d.className='tz-row tz-empty'; d.textContent=(IntMapLang.t(currentLang,'No match','該当なし','Kein Treffer','Нет совпадений','Sin coincidencias')); res.appendChild(d); }
   }
@@ -3035,7 +3034,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   modal.addEventListener('click',(e)=>{ if(e.target===modal) closeSettings(); });
   /* (a11y-shared-dialog) the Escape the #R212 note below promised now exists: the registry closes it through
      closeSettings; Tab stays inside; focus returns to the gear */
-  IntMapDialog.adopt(modal,{ panel:modal.querySelector('.modal-content'), labelledby:'modal-title', close:closeSettings });
+  window.IntMapDialog.adopt(modal,{ panel:modal.querySelector('.modal-content'), labelledby:'modal-title', close:closeSettings });
 
   /* ===== (#R9/#R10) "Buy me a blueberry" / 開発を支援する =====
      Stripe Payment Links — JPY page for the Japanese UI, USD page for the English UI. The "Continue"
@@ -3059,7 +3058,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (community-next) the reader's map corrections and their answers — js/map-corrections.js, fetched by this click */
     { const mr=document.getElementById('btn-map-reports'); if(mr) mr.onclick=()=>{ import('./map-corrections.js').then(m=>m.openMine(IM_HOST)).catch(()=>{ try{ imToast(IntMapLang.t(currentLang,'My map reports could not be loaded','地図の誤り報告を読み込めませんでした')); }catch(_){} }); }; }
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
-    IntMapDialog.adopt(bm,{ panel:bm.querySelector('.modal-content'), labelledby:'blueberry-title', close });
+    window.IntMapDialog.adopt(bm,{ panel:bm.querySelector('.modal-content'), labelledby:'blueberry-title', close });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
     const go=document.getElementById('blueberry-go'); if(go) go.setAttribute('data-effect','outward');   /* (atlas-outward-effects) its markup is index.html's; the write is wired here */
@@ -3241,7 +3240,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const close=()=>{ try{ URL.revokeObjectURL(url); }catch(_){} window.removeEventListener('mousemove',onMM); window.removeEventListener('mouseup',onMU); ov.remove(); };
       ov.querySelector('#crop-cancel').onclick=()=>{ close(); resolve(null); };
       ov.addEventListener('click',e=>{ if(e.target===ov){ close(); resolve(null); } });
-      IntMapDialog.open(ov,{ panel:ov.querySelector('.crop-card'), label:ov.querySelector('.crop-title').textContent, close:()=>ov.querySelector('#crop-cancel').click() });   /* (a11y-shared-dialog) Escape = Cancel */
+      window.IntMapDialog.open(ov,{ panel:ov.querySelector('.crop-card'), label:ov.querySelector('.crop-title').textContent, close:()=>ov.querySelector('#crop-cancel').click() });   /* (a11y-shared-dialog) Escape = Cancel */
       ov.querySelector('#crop-ok').onclick=()=>{
         const out=document.createElement('canvas'); out.width=256; out.height=256; const cx=out.getContext('2d');
         const sxp=-tx/scale, syp=-ty/scale, sw=SIZE/scale, sh=SIZE/scale;
@@ -3281,7 +3280,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   /* (a11y-shared-dialog) the composer is a registered dialog; Escape is its Cancel (the same discard, no second path) */
-  IntMapDialog.adopt(document.getElementById('compose-modal'),{ panel:document.querySelector('#compose-modal .compose-content'), labelledby:'compose-title', close:()=>document.getElementById('compose-cancel').click() });
+  window.IntMapDialog.adopt(document.getElementById('compose-modal'),{ panel:document.querySelector('#compose-modal .compose-content'), labelledby:'compose-title', close:()=>document.getElementById('compose-cancel').click() });
   document.getElementById('compose-cancel').onclick=()=>{
     document.getElementById('compose-modal').classList.remove('active'); pendingPostLoc=null; composeEditId=null;
     if(currentMode==='community') renderCommunity();
@@ -3547,7 +3546,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     IntMapRefData.ensureDocs(currentLang,paint); }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
-    const m=document.getElementById('sources-modal'); if(m){ m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); IntMapDialog.adopt(m,{ panel:m.querySelector('.modal-content'), labelledby:'sources-title' }); } }   /* (#R218) folded onto one line: tests/shell-app-body-modules-checks.test.mjs #R200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
+    const m=document.getElementById('sources-modal'); if(m){ m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); window.IntMapDialog.adopt(m,{ panel:m.querySelector('.modal-content'), labelledby:'sources-title' }); } }   /* (#R218) folded onto one line: tests/shell-app-body-modules-checks.test.mjs #R200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
 
   /* (#R207) BOTH news pickers (by-country #29, by-outlet new) live in js/news-sources.js — one
      feature, one nc-dd shape, and instruction 13 says new work leaves the core. Thin names only here. */
