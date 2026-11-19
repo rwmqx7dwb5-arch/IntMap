@@ -390,7 +390,7 @@ export function pageClient(HOST) {
       if (!DB || !DB.auth || typeof DB.auth.getSession !== 'function') return {};
       const r = await DB.auth.getSession();
       const tok = r && r.data && r.data.session && r.data.session.access_token;
-      return tok ? { authorization: 'Bearer ' + tok, apikey: String(globalThis.SUPABASE_ANON_KEY || '') } : {};
+      return tok ? { authorization: 'Bearer ' + tok } : {};   /* verify_jwt is false and the function checks the JWT itself: no apikey header is needed */
     },
   });
   return _page;

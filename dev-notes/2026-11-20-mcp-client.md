@@ -29,3 +29,5 @@ newsjp: Atlasが、登録した外部MCPサーバーのツールを、自身の�
 ## 3. 残したもの
 
 設定画面（登録は Atlas 経由）、OAuth、resources/prompts/sampling、旧 HTTP+SSE、SSE の途中経過の表示、トークンの暗号化保存（いまは `localStorage` に平文）。詳細は `docs/architecture/05-ai.md` の同名の節。
+
+- `globalThis.SUPABASE_URL` を 1 か所（`pageClient`）で読む——リレーの URL を作る既存の呼び手（community-class-door など）と同じ読み方で、global-surface の基準線を 1 増やした。
