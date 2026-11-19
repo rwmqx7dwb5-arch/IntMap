@@ -135,7 +135,7 @@ export function slug(name) { return String(name || '').toLowerCase().replace(/[^
  */
 export function createMcpClient(opts) {
   const o = opts || {};
-  const doFetch = o.fetchImpl || ((u, i) => globalThis.fetch(u, i));
+  const doFetch = o.fetchImpl || ((u, i) => globalThis.fetch(u, { ...i, signal: i.signal }));   /* every call passes the deadline's signal (post / relay) */
   const relayUrl = o.relayUrl || null;
   const timeoutMs = o.timeoutMs || DEFAULT_TIMEOUT_MS;
   const mem = {};

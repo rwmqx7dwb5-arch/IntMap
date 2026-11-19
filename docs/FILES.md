@@ -2111,7 +2111,7 @@ supabase/
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
-                                  fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
+                                  fetch-relay-policy.js / mcp-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
                                   correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /
