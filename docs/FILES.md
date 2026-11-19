@@ -996,6 +996,7 @@ atlas-attach-log.js               Atlas — 会話 1 本ぶんの添付の台帳
 atlas-file-view.js                Atlas — 添付ファイルの**中身**を全画面ビューアの中に描く（PDF はブラウザの表示器へ、
                                   表は中身の列の揃い方で判定して表として、長い本文と大きな表は残りの量を述べる
                                   ボタンで畳む）。全画面の枠そのものは `atlas-attach.js` が 1 本だけ持つ
+atlas-effort.js                    Atlas — 考える強さ（自動・高速・標準・深く考える・最大）の選択と保存とメニュー、自動のときの強さの判定（atlas_effort の 1 回の呼び出し）
 atlas-msg-tools.js                Atlas — メッセージごとの操作バー（コピー／再試行／編集）とその場編集
 atlas-notebook.js                 Atlas — **調査ノート**（atlas-os）のページ側。終わったターンを綴じる・パネルの帯とシート・
                                   再現（runDirect＋restorer で読み返し）・今と比べる・もう一度訊く・書き出し／読み込み・アカウント同期
@@ -1512,6 +1513,7 @@ share-inbox.js                    **共有で開く**——共有シート（man
                                   photo-geo-exif.js）からピン・地点カード（「いま」が先頭）・撮影日の地図。位置の無い写真は稜線照合（photo-geo.js）へ。
                                   地図のリンク（Google／Apple／OSM／geo:／座標）は地点、名前だけのリンクと文は検索、短縮リンクはそう言う
 host-door.js                      app-body.js の IM_HOST を、URL や委譲されたタップで開く遅延モジュール（share-inbox.js・place-dossier.js・
+host-slice.js                     工場へ IM_HOST 丸ごとではなく、読むメンバーだけの生きた窓 hostSlice(IM_HOST, [名前])（その一覧が依存契約）
                                   here-entry.js）へ渡す葉（import なし）
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare。**独自の時計**（`makeClock('compare')`）を持ち、
                                   「メイン地図の時刻に従う／独自の時刻」を切り替える。選んだ層はその時計で時間カーネルの規則に

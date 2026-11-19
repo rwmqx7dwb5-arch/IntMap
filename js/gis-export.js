@@ -233,9 +233,22 @@ export function makeGisExport() {
        writers, so a licence that reaches a GeoJSON reaches a GeoTIFF too — one rule, two carriers. */
     function provenanceOf(rec) {
       const prov = (rec && rec.provenance) || null;
+      /* (#gov) 演算の出力は入力の条件を `upstreams` に持つ（js/gis-ops.js inheritTerms）。
+         ⚠ license は**全ての入力が述べているときだけ**書く: 1 つでも黙っていれば、残りの条件を束全体の
+         条件として主張しない（沈黙は許諾ではない）。credit の文は、述べた入力の分を全部載せる——表示の義務は
+         黙った入力の分だけ消えてよいものではない。どちらも完全な行は `intmap.provenance` に残る。 */
+      const ups = prov && Array.isArray(prov.upstreams) ? prov.upstreams.filter((u) => u && typeof u === 'object') : null;
+      const uniq = (a) => a.filter((v, i) => a.indexOf(v) === i);
+      let lic = statedOf(prov, 'license'), att = statedOf(prov, 'attribution');
+      if (ups && ups.length) {
+        const ls = ups.map((u) => statedOf(u, 'license'));
+        if (lic == null && ls.every((v) => typeof v === 'string')) lic = uniq(ls).join('; ');
+        const as = ups.map((u) => (typeof u.credit === 'string' ? u.credit : statedOf(u, 'attribution'))).filter((v) => typeof v === 'string' && v.trim());
+        if (att == null && as.length) att = uniq(as).join(' / ');
+      }
       return {
-        license: statedOf(prov, 'license'),
-        attribution: statedOf(prov, 'attribution'),
+        license: lic,
+        attribution: att,
         source: statedOf(prov, 'source'),
         retrievedAt: statedOf(prov, 'retrievedAt'),
         /* verbatim — the real carrier. null when the record states nothing at all. */

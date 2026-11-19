@@ -142,6 +142,8 @@ const REASONS = Object.freeze([
   'static-by-construction',     /* a derived bundle whose inputs are fixed — 「次の更新」 が無い */
   'not-measured',               /* the quality facets: nobody ran a pass, so there is no count */
   'single-upstream',            /* precedence does not apply: one supplier answers this question */
+  'disjoint-upstreams',         /* precedence does not apply: the record names, per upstream, the question only it answers */
+  'stated-per-upstream',        /* every upstream states this facet on its own row, and no one value would be true of the file */
 ]);
 
 /* ── freshness ──────────────────────────────────────────────────────────────────────────────────
@@ -395,17 +397,20 @@ function account(x, opts) {
      undeclared facets counts the same way whether the record is absent or merely silent. */
   const mute = r.raw ? 'facet-undeclared' : 'record-absent';
 
+  /* ⚠ 「全ての上流が自分の行で述べている」ときだけ、束全体の 1 値が無いことは欠落ではない。1 本でも黙っていれば未申告のまま
+     （strictest-wins と同じ向き: 沈黙は『全部述べた』にならない）。 */
+  const every = (k) => !!(r.upstreams && r.upstreams.length > 1 && r.upstreams.every((u) => u && u[k] != null));
   /* 誰の仕事か */
-  if (r.publisher != null) put('origin.publisher', String(r.publisher)); else none('origin.publisher', mute);
-  if (r.url != null) put('origin.url', String(r.url)); else none('origin.url', mute);
+  if (r.publisher != null) put('origin.publisher', String(r.publisher)); else if (every('publisher')) na('origin.publisher', 'stated-per-upstream'); else none('origin.publisher', mute);
+  if (r.url != null) put('origin.url', String(r.url)); else if (every('url')) na('origin.url', 'stated-per-upstream'); else none('origin.url', mute);
   if (r.retrievedAt != null) put('origin.retrievedAt', String(r.retrievedAt)); else none('origin.retrievedAt', mute);
   if (r.builtBy != null) put('origin.builtBy', String(r.builtBy));
   else if (o.hasBuilder === false) na('origin.builtBy', 'no-builder-in-repo');
   else none('origin.builtBy', mute);
 
   /* どの条件で再配布できるか */
-  if (r.licence != null) put('rights.licence', String(r.licence)); else none('rights.licence', mute);
-  if (r.licenceUrl != null) put('rights.licenceUrl', String(r.licenceUrl)); else none('rights.licenceUrl', mute);
+  if (r.licence != null) put('rights.licence', String(r.licence)); else if (every('licence')) na('rights.licence', 'stated-per-upstream'); else none('rights.licence', mute);
+  if (r.licenceUrl != null) put('rights.licenceUrl', String(r.licenceUrl)); else if (every('licenceUrl')) na('rights.licenceUrl', 'stated-per-upstream'); else none('rights.licenceUrl', mute);
   if (r.creditRequired != null) put('rights.attribution', r.creditRequired); else none('rights.attribution', mute);
   /* ⚠ THE ROW THAT PAYS IT IS OWED ONLY WHEN THE TERMS IMPOSE IT. Asking every bundle for a
      DATA_SOURCES row would make a public-domain file fail a test about somebody else's licence. */
@@ -434,7 +439,14 @@ function account(x, opts) {
 
   /* 同じ問いに上流が 2 つあるとき */
   const pr = r.priority;
-  if (pr != null && typeof pr === 'object') {
+  const nUp = r.upstreams ? r.upstreams.length : 0;
+  if (pr != null && typeof pr === 'object' && Array.isArray(pr.disjoint) && nUp > 1 && pr.disjoint.length === nUp
+      && pr.disjoint.every((t) => typeof t === 'string' && t.trim() !== '')) {
+    /* ⚠ 「上流が 2 つある」と「同じ問いに 2 つが答える」は別の事実である。後者でなければ、優先順位は存在しない
+       ——存在しない順位を書くことは、誰も述べていない勝敗を述べることになる。申告は上流ごとに「その上流だけが
+       答える問い」を 1 つずつ持ち、数が上流と一致するときだけ適用外と読む（無言・数違いは未申告のまま）。 */
+    na('precedence.rank', 'disjoint-upstreams'); na('precedence.over', 'disjoint-upstreams');
+  } else if (pr != null && typeof pr === 'object') {
     if (pr.rank != null) put('precedence.rank', pr.rank); else none('precedence.rank', 'facet-undeclared');
     if (pr.over != null) put('precedence.over', pr.over); else none('precedence.over', 'facet-undeclared');
   } else if (pr != null) {

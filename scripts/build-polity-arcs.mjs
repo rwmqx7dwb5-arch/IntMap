@@ -56,6 +56,8 @@ export const GOVERNANCE = {
         attribution: true, creditRequired: true, paidBy: 'CShapes 2.0 (Schvitz et al., ETH Zürich)' },
       { publisher: 'aourednik/historical-basemaps', url: 'https://github.com/aourednik/historical-basemaps', licence: 'GPL-3.0', attribution: true },
     ],
+    /* the builder merges (sums area, ORs a per-record bit) and chooses no record; which record wins at a point is decided in the map code, not here */
+    priority: { disjoint: ['its records’ drawn area (Cliopatria)', 'its records’ drawn area (OpenHistoricalMap)', 'its records’ drawn area (CShapes)', 'area only in the sheet years it covers'] },
     ...DERIVED_FROM_THE_REPOSITORY,
     schema: 'scripts/build-polity-arcs.mjs --check (re-derived from the bundles and compared)',
     builtBy: 'scripts/build-polity-arcs.mjs',

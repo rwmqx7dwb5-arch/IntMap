@@ -53,13 +53,13 @@ test('① the country-indicator row opens its picker; search finds; choosing pai
   /* painted by the row's own painter: the fill layer is on the map and the legend has the series' year picker */
   await page.waitForFunction(() => { try { return window.IntMapGeoEngine.layers.has('wbind-fill') && window.IntMapGeoEngine.layers.getLayout('wbind-fill', 'visibility') === 'visible'; } catch (_) { return false; } }, null, BOOT);
   await expect(page.locator('#data-legend-wbind .bx-year')).toBeAttached(BOOT);
-  /* the same series stands on two rows: the picker names the other one */
-  await expect(page.locator('#data-legend-wbind .ind-note').first()).toContainText(/.+/);
   /* Japanese finds the same thing */
   const jp = await page.evaluate(() => window.IntMapIndicators.search('失業率')[0].id);
   expect(jp).toBe('wbunemp');
   /* a country-table statistic is drawn by its own row, and handed back when another indicator is chosen */
   await page.evaluate(() => window.IntMapIndicators.select('row:dl-gdppc'));
+  /* the row-kind picker says it is drawn by the row's own painter */
+  await expect(page.locator('#data-legend-wbind .ind-note').first()).toContainText(/Drawn by its own row/);
   await expect(page.locator('#dl-gdppc')).toBeChecked();
   await page.evaluate(() => window.IntMapIndicators.select('wbunemp'));
   await expect(page.locator('#dl-gdppc')).not.toBeChecked();

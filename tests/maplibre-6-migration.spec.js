@@ -80,11 +80,21 @@ test.afterAll(async () => { await page?.close(); });
 test('① the adapter reads the transform the painter draws with, and isAnimating() sees a flight', async () => {
   const r = await page.evaluate(async () => {
     const m = window.__imap, E = window.IntMapGeoEngine;
+    /* the transform the painter draws a frame with. In 6.18 the painter keeps NO transform of its own (no `transform` key on it,
+       and the frame context it builds is internal): the map hands it to every frame as the SECOND argument —
+       `painter.render(style, this._camera.transform, …)`. So the only honest observation is to watch one real frame go through
+       `painter.render` and keep that argument, then compare it with the one the adapter reads. The wrapper is an own property
+       on the painter, removed again in `finally`. */
+    const painter = m.painter, hadOwn = Object.prototype.hasOwnProperty.call(painter, 'render'), origRender = painter.render;
+    let drawnWith = null;
+    painter.render = function (style, tr, ...rest) { drawnWith = tr; return origRender.call(this, style, tr, ...rest); };
+    try {
+      const rendered = new Promise((res) => m.once('render', res));
+      m.triggerRepaint();
+      await rendered;
+    } finally { if (hadOwn) painter.render = origRender; else delete painter.render; }
     const out = {
-      /* the transform the painter last drew with. 6.11 kept it on the painter (`new Painter(gl, transform)`); from 6.12
-         the map hands it to every frame (`painter.render(style, this._camera.transform, …)`) and the painter keeps that
-         frame's on `frameRenderContext.transform` — the same object, asked where it now lives (maplibre-6-13) */
-      samePainter: window.__mlTr() === (m.painter && ((m.painter.frameRenderContext && m.painter.frameRenderContext.transform) || m.painter.transform)),
+      samePainter: !!drawnWith && window.__mlTr() === drawnWith,
       mapHasTransform: 'transform' in m,
       mapHasIsEasing: typeof m.isEasing,
       idle: E.camera.isAnimating(),

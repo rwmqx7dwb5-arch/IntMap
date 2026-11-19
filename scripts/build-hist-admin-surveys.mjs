@@ -109,6 +109,8 @@ export const GOVERNANCE = {
         "paidBy": "Virtual Shanghai (ENP-China Project) — Provinces in Republican China, 1912-1949 (CC0 1.0)"
       }
     ],
+    priority: { rank: 'computed from the records',
+      over: 'harvesters are ordered at build by the share of units with day-precision starts (sharp(), ties by SOURCE.key); a later publisher yields to every row an earlier one placed; every publisher first yields to the OpenHistoricalMap-derived data/hist-admin1.js' },
     cadence: 'static',
     cadenceBasis: { observed: 'finished historical atlases; on 2026-10-05 the newest revision among them is Virtual Shanghai (2026-06-19), the oldest AHCB (2011)', expires: 'when a publisher announces a new edition', canon: 'scripts/histsurveys/<publisher>.mjs SOURCE' },
     builtBy: 'scripts/build-hist-admin-surveys.mjs',
@@ -136,6 +138,8 @@ export const GOVERNANCE = {
     ],
     licence: 'CC BY-NC-SA 4.0',
     licenceUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
+    priority: { rank: 'computed from the records',
+      over: 'harvesters are ordered at build by the share of units with day-precision starts (sharp(), ties by SOURCE.key); a later publisher yields to every row an earlier one placed; every publisher first yields to the OpenHistoricalMap-derived data/hist-admin1.js' },
     cadence: 'static',
     cadenceBasis: { observed: 'on 2026-10-05 the HGIS de las Indias gazetteer is at V4 (2023-10-26); on 2026-11-17 the Müller-Crepon replication data is at V1.0', expires: 'when either publisher releases a new version', canon: 'scripts/histsurveys/hgisindias.mjs and scripts/histsurveys/mullercrepon.mjs SOURCE' },
     builtBy: 'scripts/build-hist-admin-surveys.mjs',

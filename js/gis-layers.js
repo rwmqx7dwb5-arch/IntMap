@@ -140,6 +140,18 @@ export function makeGisLayers() {
       } catch (_) { return null; }
     }
 
+    /* (#gov) 登録が述べている条件（rights）。取得した記録の provenance に**そのまま**運ぶ——演算の出力が入力の
+       出典・ライセンスを引き継ぐ元になる（js/gis-ops.js inheritTerms）。登録が何も述べていなければ null で、
+       空の欄を作らない。 */
+    function layerRights(id) {
+      const R = REG();
+      try {
+        const s = R && R.state ? R.state(id) : null;
+        const r = s && s.rights;
+        return (r && typeof r === 'object') ? JSON.parse(JSON.stringify(r)) : null;
+      } catch (_) { return null; }
+    }
+
     function layerLabel(id) {
       const R = REG();
       try { const s = R && R.state ? R.state(id) : null; return (s && s.label) || null; } catch (_) { return null; }
@@ -882,6 +894,7 @@ export function makeGisLayers() {
            asking 「これは世界についての答えか」 has somewhere to look. */
         provenance: { kind: 'layer', layer: String(id), bounds: r.bounds, at: Date.now(), statedTime: stated || null, coverage: r.coverage },
       };
+      { const rt = layerRights(String(id)); if (rt) spec.provenance.rights = rt; }
       if (wanted) spec.id = wanted;
       try {
         const made = { ok: true, dataset: D.add(spec) };
@@ -962,6 +975,7 @@ export function makeGisLayers() {
            next op can read, instead of only in this file's header. */
         provenance: { kind: 'layer-raster', layer: key, bounds: box, width: ras.width, height: ras.height, sampled: got.filled, at: Date.now(), statedTime: stated || null, coverage: got.coverage },
       };
+      { const rt = layerRights(key); if (rt) spec.provenance.rights = rt; }
       if (o.id != null && o.id !== '') {
         const wanted = String(o.id);
         if (D.has && D.has(wanted)) return { ok: false, why: 'id-in-use', detail: { id: wanted } };

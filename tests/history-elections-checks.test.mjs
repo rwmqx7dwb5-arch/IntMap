@@ -199,7 +199,7 @@ test('#R588 ④ the elections module is in every ledger an eager layer needs', (
      eager factory list — are one edge now: js/app-body.js imports the factory by name, which puts the
      file in the bundle and makes a missing factory a link error instead of a console line. */
   assert.match(rd('js/app-body.js'), /^import \{ elections \} from '\.\/elections\.js';/m, 'js/app-body.js does not import it');
-  assert.match(rd('js/app-body.js'), /\belections\(IM_HOST\)/, 'js/app-body.js never calls it');
+  assert.match(rd('js/app-body.js'), /\belections\((?:hostSlice\(IM_HOST, \[[^\]]*\]\)|IM_HOST)\)/, 'js/app-body.js never calls it');
   /* the fourth ledger is js/layer-manifest.js now (the shelf reorganizeLayerPanel files by, and the id it
      resolves the row through) — a layer it does not declare is swept into Beta and unknown to its readers */
   assert.ok(onShelf('lyrGrpPolitics', 'elect', 'dl-elect'), 'the row is not in 政治 / Politics');
@@ -352,7 +352,7 @@ test('#R588 ⑨ the U.S. presidential layer still exists and is still registered
   assert.ok(onShelf('lyrGrpPolitics', 'uselect', 'dl-uselect'), 'the U.S. presidential row is still on 政治 / Politics (layer manifest)');
   /* ⚠ SPELLING, ON PURPOSE: the app-shell call is a boot-wiring fact (see ④) */
   assert.match(rd('js/app-body.js'), /^import \{ usElections \} from '\.\/us-elections\.js';/m);   /* (module-graph) imported by name */
-  assert.match(rd('js/app-body.js'), /\busElections\(IM_HOST\)/);
+  assert.match(rd('js/app-body.js'), /\busElections\((?:hostSlice\(IM_HOST, \[[^\]]*\]\)|IM_HOST)\)/);
   /* EVALUATED (was: a regex for HOMES['dl-uselect']): the audited table still answers for it */
   const { LH } = await layerHome(null);
   assert.ok(LH.ids().includes('dl-uselect'), 'the U.S. presidential layer left the audited camera table');

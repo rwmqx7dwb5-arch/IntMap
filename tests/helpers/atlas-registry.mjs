@@ -29,3 +29,9 @@ import { makeAtlasCapabilities } from '../../js/atlas-capabilities.js';
 export function declaredCapabilityIds() {
   return makeAtlasCapabilities({}).all().map((c) => c.id).sort();
 }
+
+/** The ceiling on the tool block that crosses the wire (JSON.stringify of the core tools, schemas included).
+ *  Observation (atlas-completion): 12,000 → 13,000 because compose_map gained `basis` / `via`. It is a guard against
+ *  the 64,250-character catalogue coming back, NOT a policy on the core tools' length. Expires if the core tool set is
+ *  redesigned. Canonical home: here — tests/atlas-agent-loop-checks.test.mjs and the deep spec r318-atlas.spec.js read it. */
+export const CORE_TOOL_BLOCK_MAX = 13_000;

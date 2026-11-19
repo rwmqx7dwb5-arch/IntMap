@@ -112,7 +112,9 @@ export const GOVERNANCE = (() => {
     { publisher: 'mledoze/countries', url: MLEDOZE, licence: 'ODbL 1.0',
       paidBy: 'Country facts — mledoze/countries (capital, currency, languages, land borders, UN membership, demonym; ODbL 1.0, build time only)' },
   ];
-  return { 'data/mobility.json': { upstreams, ...OURAIRPORTS, builtBy: 'scripts/build-mobility.mjs' } };
+  return { 'data/mobility.json': { upstreams,
+    priority: { disjoint: ['route counts per country pair', 'airport code to ISO3 country', 'international arrivals volume', 'the cca2 to cca3 country-code key map only'] },
+    ...OURAIRPORTS, builtBy: 'scripts/build-mobility.mjs' } };
 })();
 
 /* the reader-visible credit lines, DERIVED from those values */

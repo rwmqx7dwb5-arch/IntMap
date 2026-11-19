@@ -180,6 +180,8 @@ export const GOVERNANCE = (() => {
         licence: 'ODbL 1.0', licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/', attribution: true, creditRequired: true,
         paidBy: 'Historical map coastline — OpenStreetMap land polygons, OpenStreetMap contributors (ODbL 1.0)' },
     ],
+    priority: { rank: 'partitioned by licence',
+      over: 'the coast is chosen per row by the parent record’s shareAlike flag: OSM coast for parents ohm/ohm-late/clio, Natural Earth for cshapes/sheet (ODbL cannot be combined with share-alike terms); Natural Earth alone supplies land borders and islands OSM does not draw' },
     schema: 'scripts/histclio/coast-snap.mjs checkCoastSnap (npm run check:histclio): every row names a parent the page draws over the same years, no piece lies inside a record, and each record reaches the coast its terms allow',
     ...NATURAL_EARTH,
     builtBy: 'scripts/build-hist-clio.mjs',

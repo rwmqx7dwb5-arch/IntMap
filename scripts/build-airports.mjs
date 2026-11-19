@@ -73,7 +73,9 @@ export const GOVERNANCE = (() => {
       fields: 'cca2 to cca3 only' },
   ];
   /* ⚠ ONE BUNDLE, TWO UPSTREAMS: a single licence for the file would be a claim neither made. */
-  return { 'data/airports.json': { upstreams, ...OURAIRPORTS, builtBy: 'scripts/build-airports.mjs' } };
+  return { 'data/airports.json': { upstreams,
+    priority: { disjoint: ['airport counts per country (type, iso_country, scheduled_service)', 'the cca2 to cca3 country-code key map only'] },
+    ...OURAIRPORTS, builtBy: 'scripts/build-airports.mjs' } };
 })();
 
 /* the same one alias data/country-facts.json declares — Natural Earth's KOS is mledoze's UNK */

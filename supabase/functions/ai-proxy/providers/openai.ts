@@ -73,8 +73,8 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     const b: Record<string, unknown> = {
       model,
       input: turn ? turnInput() : [{ role: "user", content }],
-      max_output_tokens: Math.min(12_000, maxTokens + (effort === "high" ? 5_000 : effort === "medium" ? 3_500 : 1_500)),
-      reasoning: { effort: effort === "high" ? "high" : effort === "medium" ? "medium" : "low", ...(summary ? { summary: "auto" } : {}) },   /* (#R117) pass "high" through (the old mapping silently crushed anything ≠ medium down to low) · (atlas-live-stream) summary — see `summary` above */
+      max_output_tokens: Math.min(12_000, maxTokens + (effort === "xhigh" ? 8_000 : effort === "high" ? 5_000 : effort === "medium" ? 3_500 : 1_500)),
+      reasoning: { effort: effort === "xhigh" ? "xhigh" : effort === "high" ? "high" : effort === "medium" ? "medium" : "low", ...(summary ? { summary: "auto" } : {}) },   /* (#R117) pass "high" through (the old mapping silently crushed anything ≠ medium down to low) · (atlas-live-stream) summary — see `summary` above */
       store: false,
     };
     if (system) b.instructions = system;
@@ -186,7 +186,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
         /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
       try { meter?.fallback?.(nextModel); } catch (_) { /* observation only */ }
       try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: nextModel, status: r.status })); } catch (_) { /* ignore */ }
-      return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, false, schemaFormat, turn, cacheKey, meter, sink);
+      return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort === "xhigh" ? "high" : effort, imageDetail, false, schemaFormat, turn, cacheKey, meter, sink);   // the model that replaces this one may not take xhigh
     }
     const pe = classifyGemini(r.status, t, "", "");
     /* ⚠ THE UPSTREAM BODY IS NOT OURS TO REPEAT. `pe.meta.bodySnippet = t.slice(0,160)` was written

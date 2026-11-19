@@ -67,6 +67,7 @@ const REPO = resolve(HERE, '..');
 
 /* ── the summary block of one job log ──────────────────────────────────────────────────────── */
 /* GitHub prefixes every log line with an ISO timestamp; Playwright's own line follows it. */
+const ANSI = /\u001b\[[0-9;?]*[ -\/]*[@-~]/g;
 const STAMP = /^\d{4}-\d\d-\d\dT[\d:.]+Z ?/;
 const COUNT = /^\s*(\d+) (failed|flaky|passed|skipped|interrupted|did not run)\b/;
 const ENTRY = /^\s+\[[^\]]+\] › (.+?)\s*$/;
@@ -74,7 +75,7 @@ const ENTRY = /^\s+\[[^\]]+\] › (.+?)\s*$/;
 /** The test ids Playwright's final summary names, by category — `null` when the log carries no
     summary at all (the job died before or around the suite: nothing about any test was said). */
 export function parseSummary(log) {
-  const lines = String(log || '').split(/\r?\n/).map((l) => l.replace(STAMP, ''));
+  const lines = String(log || '').replace(ANSI, '').split(/\r?\n/).map((l) => l.replace(STAMP, ''));
   /* the LAST summary in the log is the run's — a step that printed an earlier one (none does today)
      must not be merged with it */
   let start = -1;
@@ -202,6 +203,18 @@ function readCache(p) { try { return JSON.parse(readFileSync(p, 'utf8')) || {}; 
 
 /** One finished scheduled run → one night. Every deep shard's log is read, not only the red ones:
     a test that needed its retry in a GREEN shard is part of the same ledger. */
+/** (nightly-unread, 2026-11-19) gh refuses a response that carries terminal escape sequences unless told
+    --allow-escape-sequences, and Playwright's colour codes are in every CI log: 14 nights x 5 shards were
+    unread for exactly that reason. OBSERVED: gh 2.96 says «pass --allow-escape-sequences to output it anyway».
+    The flag is added only after gh itself reported that refusal (an older gh does not know the flag, and a
+    plain first call keeps working there); parseSummary strips the codes. Expires if gh drops the refusal. */
+export async function readJobLog(jobId, left, ghFn = gh) {
+  const url = `repos/{owner}/{repo}/actions/jobs/${jobId}/logs`;
+  const first = await ghFn(['api', url], Math.max(1000, left()));
+  if (first.ok || !/escape sequences/i.test(first.why || '')) return first;
+  return ghFn(['api', '--allow-escape-sequences', url], Math.max(1000, left()));
+}
+
 async function readNight(run, deadline) {
   const night = { runId: run.databaseId, day: String(run.createdAt).slice(0, 10), sha: String(run.headSha || '').slice(0, 8),
     conclusion: run.conclusion, read: false, failed: [], flaky: [], infra: [] };
@@ -214,7 +227,7 @@ async function readNight(run, deadline) {
   if (!list.length) { night.why = 'deep の job が無い（build が落ちた夜）'; night.read = false; return { night, final: true }; }
   const logs = await Promise.all(list.map((j) => (j.conclusion === 'skipped' || j.conclusion === 'cancelled')
     ? Promise.resolve({ ok: false, why: j.conclusion })
-    : gh(['api', `repos/{owner}/{repo}/actions/jobs/${j.databaseId}/logs`], Math.max(1000, left()))));
+    : readJobLog(j.databaseId, left)));
   let final = true;
   list.forEach((j, k) => {
     const L = logs[k];

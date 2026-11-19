@@ -16,3 +16,4 @@ export { default as gloss } from "./gloss.ts";
 export { default as atlas_grade } from "./atlas_grade.ts";
 export { default as atlas_delegate } from "./atlas_delegate.ts";
 export { default as atlas_verify } from "./atlas_verify.ts";
+export { default as atlas_effort } from "./atlas_effort.ts";

@@ -47,6 +47,8 @@ export const GOVERNANCE = {
         { publisher: 'CelesTrak', url: CELESTRAK },
         { publisher: 'SatNOGS DB', url: SATNOGS },
       ],
+      priority: { rank: ['CelesTrak', 'SatNOGS DB'],
+        over: 'SatNOGS is asked only when CelesTrak did not answer; per object the newest epoch is adopted, an epoch tie goes to CelesTrak (scripts/lib/tle-compose.mjs)' },
       /* ⚠ THE CADENCE IS THE UPSTREAM'S, MEASURED — NOT THE TWICE-A-DAY SCHEDULE THIS REPOSITORY
          REFRESHES AT (.github/workflows/tle-refresh.yml). A schedule we chose is not a period a
          supplier publishes (js/data-governance.js, `cadence`); the median element age at build time

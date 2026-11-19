@@ -88,7 +88,9 @@ export const GOVERNANCE = (() => {
     { publisher: 'World Bank World Development Indicators', url: WB, licence: 'CC BY 4.0',
       attribution: true, paidBy: 'World Bank Open Data' },
   ];
-  return { 'data/health.json': { upstreams, ...WORLD_BANK_WDI, builtBy: 'scripts/build-health.mjs' } };
+  return { 'data/health.json': { upstreams,
+    priority: { disjoint: ['uhc (UHC service coverage index), spar (IHR SPAR)', 'dtp3, mcv1 (immunisation coverage)'] },
+    ...WORLD_BANK_WDI, builtBy: 'scripts/build-health.mjs' } };
 })();
 
 /* the sentence a reader sees, BUILT FROM those values — never parsed back out of it */

@@ -36,6 +36,7 @@ import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is �
 /* (#R203) the opening view: a lit Earth rather than a black one — see the file for the measurement. */
 import { OpeningView } from './opening-view.js';
 import { makeI18nLate } from './i18n-late.js';
+import { hostSlice } from './host-slice.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { makeMapNarrator } from './map-narrator.js';   /* (map-a11y-structure) the map's text alternative + keyboard feature walk */
 import { makeLazyModules } from './lazy-modules.js';
@@ -872,7 +873,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      and the @2x stitch, moved out whole. Called from exactly here because the style object below
      reads the `window.__imSatProto` flag this sets — see the file header. `_hiDPITiles` is the one
      value it needs from this scope and is handed over explicitly (scripts/check-split-scope.mjs). */
-  try{ satProto(IM_HOST); }catch(_){}
+  try{ satProto(hostSlice(IM_HOST, ['hiDPITiles'])); }catch(_){}
   /* (#R209) …and the loader for the modules that are NOT downloaded at boot. Built here, this early,
      because every entry point below reaches it through window.IntMapLazy rather than through a
      parameter, and an entry point that fires before the loader exists is the silent no-op #R205. */
@@ -1094,7 +1095,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      (`#btn-tool-volume` and Atlas's volume3d action); it polls for IntMapGeoEngine itself, so no order changes. */
   /* (#R171) The tilt-limit setting + the eye-altitude readout chip (window.IntMapTilt / window.IntMapEyeAlt).
      Engine-only like volume3d; both wait for IntMapGeoEngine themselves before touching the camera. */
-  viewControls(IM_HOST);
+  viewControls(hostSlice(IM_HOST, ['fmtElevVal', 'lang', 'renderCoordReadout']));
   /* (#R174) DRONE NAVIGATION (window.IntMapDrone). Reads the terrain through HOST's DEM sampler and draws
      through IntMapGeoEngine only; it owns no camera and installs exactly one map click handler, which
      does nothing unless its own "add waypoint" mode is armed. See js/drone-nav.js.
@@ -1732,7 +1733,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ window.IntMapNightSide&&window.IntMapNightSide.apply(); }catch(_){}
       /* (#R197/#R201) the space explorer's mount() — three passive input listeners that only add up
          while the camera is standing on the zoom floor; nothing exists until the crossing happens */
-      try{ space(IM_HOST); window.IntMapSpace.mount(); }catch(_){}
+      try{ space(hostSlice(IM_HOST, ['lang', 'proj'])); window.IntMapSpace.mount(); }catch(_){}
       /* (#R186) LAUNCH-SCREEN MILESTONES 4 and 5. 4 is here: the style is parsed and the map is
          usable. 5 is "the default layers are actually painting" — 「完全に準備完了なるまで」 means
          the first thing the user sees should be the finished map, not a bare basemap that grows
@@ -3549,7 +3550,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R207) BOTH news pickers (by-country #29, by-outlet new) live in js/news-sources.js — one
      feature, one nc-dd shape, and instruction 13 says new work leaves the core. Thin names only here. */
-  newsSources(IM_HOST,{ NEWS_COUNTRY_FEEDS });
+  newsSources(hostSlice(IM_HOST, ['globalData', 'lang']),{ NEWS_COUNTRY_FEEDS });
   const NS=()=>window.IntMapNewsSources;
   const renderNewsCountryChecks=()=>{ try{ NS().renderCountries(); }catch(_){} };
   const updateNewsCountryLabel=()=>{ try{ NS().syncCountryLabel(); }catch(_){} };
@@ -3800,7 +3801,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      elections 1789–2024, states coloured by who took their electoral votes, with the year picker
      and the electoral-vote / popular-vote bar chart in the layer's own legend. See
      js/us-elections.js and scripts/build-us-elections.mjs. ===== */
-  usElections(IM_HOST); warFronts(IM_HOST); netHealth(IM_HOST); elections(IM_HOST); newsPulse(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
+  usElections(hostSlice(IM_HOST, ['canDraw', 'escapeHtml', 'imToast', 'lang'])); warFronts(hostSlice(IM_HOST, ['imToast', 'lang'])); netHealth(hostSlice(IM_HOST, ['imToast', 'lang'])); elections(hostSlice(IM_HOST, ['canDraw', 'escapeHtml', 'imToast', 'lang'])); newsPulse(hostSlice(IM_HOST, ['imToast', 'lang']));   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
 
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;
@@ -4226,7 +4227,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      INSTRUCTION (「以下のレイヤーは削除」) — seven remain and the list lives in js/layer-packs.js. */
   gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
-  facilities(IM_HOST); industryWeb(IM_HOST); oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ precipAnnual(IM_HOST); outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same (since retired) shell budget, and after worldPacks for the same toolkit reason as the two above. */
+  facilities(hostSlice(IM_HOST, ['canDraw', 'lang', 'makeDraggable'])); industryWeb(hostSlice(IM_HOST, ['lang'])); oceanCurrents(hostSlice(IM_HOST, ['canDraw', 'lang']));   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ precipAnnual(hostSlice(IM_HOST, ['canDraw', 'imToast', 'lang'])); outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same (since retired) shell budget, and after worldPacks for the same toolkit reason as the two above. */
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical
@@ -4234,7 +4235,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      before the year; the repo jumps 1960→1994, so 1960 covers the late-Cold-War world incl. the USSR). The
      modern boundary line + country labels are hidden while a past year is shown and restored at "Now". ===== */
   /* (#R163) moved to js/time-borders.js — see Architecture.md §3.1. */
-  window.IntMapTimeBorders=timeBorders(IM_HOST); window.IntMapTimeAdmin1=timeAdmin1(IM_HOST); window.IntMapHistPlaces=histPlaces(IM_HOST); try{ window._applyAdmin1(); }catch(_){}
+  window.IntMapTimeBorders=timeBorders(IM_HOST); window.IntMapTimeAdmin1=timeAdmin1(IM_HOST); window.IntMapHistPlaces=histPlaces(hostSlice(IM_HOST, ['canDraw', 'lang'])); try{ window._applyAdmin1(); }catch(_){}
 
   /* ===== Init ===== */
   /* (#R21) Mobile-start smoothness: the gazetteer index + the 420-zone timezone list build in an

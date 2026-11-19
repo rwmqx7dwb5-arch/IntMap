@@ -160,7 +160,7 @@ test('#R171 the module list, script tag and boot call for view-controls all agre
      js/app-body.js, which imports the factory BY NAME (a missing export is a link error) and calls it. */
   assert.match(INDEX, /import '\.\.\/js\/app-body\.js';/, 'the shell must be loaded by the Vite entry');
   assert.match(INDEX, /^import \{ viewControls \} from '\.\/view-controls\.js';/m, 'the file must be loaded by the shell');
-  assert.match(INDEX, /(?<![\w.$])viewControls\((IM_HOST)\)/, 'the factory must be instantiated with the other module factories');
+  assert.match(INDEX, /(?<![\w.$])viewControls\((?:hostSlice\(IM_HOST, \[[^\]]*\]\)|IM_HOST)\)/, 'the factory must be instantiated with the other module factories');
   const src = R('js/view-controls.js');
   /* (#R180) the renderer parameter is gone from every factory — no module receives the raw handle */
   assert.match(src, /export function viewControls\(HOST\)/, 'factory shape');

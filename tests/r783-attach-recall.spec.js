@@ -65,11 +65,12 @@ const recall = (name) => ({ name: 'run_capability', arguments_json: JSON.stringi
 /* ⚠ 番号は**ターンの呼び出しの通し番号**であって「読者の何通目か」ではない。1 通目（画像つき）は
    視覚の道へ行くので、ここに来る 1 本目は読者の 2 通目である。 */
 function modelReply(n) {
-  /* 1 本目: 取り寄せを 2 件（画像と PDF）＋ **同じ呼び出しをもう一度**（④ のため） */
+  /* 1 本目: 取り寄せを 2 件（画像と PDF）＋ **同じ呼び出しをもう一度**（④ のため）＋ 在りもしない名前（⑤ のため）。
+     ⚠ 在りもしない名前を 1 手目の**並列呼び出し**に入れるのが要点。PDF の中身は外部内容（ingests:'external'）で、それを
+     見た後のモデル発の呼び出しは確認ゲート（#1187）が needs_confirm にする——それが仕様で、ゲートは緩めない。
+     ⑤ が測るのは「失敗として届くか」であって、外部内容を見た後の確認ではないので、見る前の同じ手に並べる。 */
   if (n === 1) return { turn: 'continuing', final_text: '前に添付されたものを取り寄せます。',
-    tool_calls: [recall('paper.pdf'), recall('image-1'), recall('paper.pdf')] };
-  /* 2 本目: 在りもしない名前で取り寄せる（⑤ のため） */
-  if (n === 2) return { turn: 'continuing', final_text: 'もう 1 件確かめます。', tool_calls: [recall('nope.pdf')] };
+    tool_calls: [recall('paper.pdf'), recall('image-1'), recall('paper.pdf'), recall('nope.pdf')] };
   return { turn: 'final', final_text: '両方読めました。' };
 }
 
@@ -204,9 +205,9 @@ test('R783 ③④ 取り寄せは中身を次の一手の目の前に置き、�
 });
 
 test('R783 ⑤ 無い名前の取り寄せは失敗として届き、在る名前を述べる', async () => {
-  /* ③ の返答も continuing だったので、4 本目が来る——その中身が「失敗の受領証」 */
-  await expect.poll(() => turnBodies.length, { timeout: 60_000 }).toBeGreaterThanOrEqual(3);
-  const p = modelText(turnBodies[2]);
+  /* 1 手目が continuing だったので 2 手目が来る——その中身が、同じ手の 4 件ぶんの受領証（失敗を含む） */
+  await expect.poll(() => turnBodies.length, { timeout: 60_000 }).toBeGreaterThanOrEqual(2);
+  const p = modelText(turnBodies[1]);
   /* ⚠ 文はブラウザの言語で書かれる（この dispatch は 5 言語を持つ）。だから測るのは
      「どちらかの言い方で失敗が述べられていること」であって、英語の綴りではない。 */
   const REFUSED = /No attachment called that|その名前の添付はありません/;
