@@ -22,3 +22,4 @@ newsjp: OGC API の地物サービスからの取得で時間による絞り込�
 
 ## 3. 天井を上げた理由
 `gis-ogcapi` の async チャンクの天井（`tests/perf-baseline.json`）を、実測の増分まで上げた。増えたのは POST 本文の組み立て・/conformance の判定・next リンクの POST 追従で、どれも利用者が使う能力であり、遅延チャンクなので起動時の転送量は増えない。
+`gis-core` も 592799→596030 に上がった。これは本 PR の差分ではなく、rebase で入った main 側の変更による増分（本 PR は gis-core を触っていない）。同じ実測で ceiling が超えられていたため合わせた。
