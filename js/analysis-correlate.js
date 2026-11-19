@@ -15,6 +15,7 @@ import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the one catalogue of World Bank series */
 import { correlationReport } from './atlas-reasoning.js';   /* (atlas-reasoning) what the words may say is decided by the sample, in one place — Atlas's panel.correlate reads the same report */
+import { IntMapDialog } from './dialog.js';
 
 export function analysisCorrelate(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -133,7 +134,7 @@ export function analysisCorrelate(HOST){
       document.body.appendChild(ov);
       ov.addEventListener('click',e=>{ if(e.target===ov) hide(); });
       ov.querySelector('.corr-x').onclick=hide;
-      window.IntMapDialog.adopt(ov,{ panel:ov.querySelector('.corr-card'), close:hide });   /* (a11y-shared-dialog) Escape, Tab trap, focus back */
+      IntMapDialog.adopt(ov,{ panel:ov.querySelector('.corr-card'), close:hide });   /* (a11y-shared-dialog) Escape, Tab trap, focus back */
       /* (#R41) drag the card by its header so the user can shove it aside and watch the map — combined with the
          now-translucent backdrop this answers "機能使ってたら地図が見れない". */
       (function(){ const card=ov.querySelector('.corr-card'), head=ov.querySelector('.corr-head'); let dx=0,dy=0,ox=0,oy=0,drag=false;

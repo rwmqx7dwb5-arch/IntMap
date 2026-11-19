@@ -32,7 +32,7 @@
  *  which never puts `['zoom']` anywhere but the top. Both renderers evaluate that form —
  *  js/cesium-style.js implements `interpolate`/`case`/`step` for exactly this reason.
  * ==========================================================================*/
-window.IntMapLabelScale=(function(){
+export const IntMapLabelScale=(function(){
   /* ── 地名ラベル ────────────────────────────────────────────────────────────────────────────
      kind → [[zoom, px], …]. Compare with what these were before #R198:
        country  10 → 15   ·  city  11 → 15   ·  other (village/suburb)  10 → 13
@@ -158,3 +158,5 @@ window.IntMapLabelScale=(function(){
 
   return { place, placeAt, placeTiered, placeTierAt, refAt, sub, subAt, subCase, halo, HALO_K, PLACE, REF, SUB_REF, SUB, SUB_RATIO, TIER_K };
 })();
+
+globalThis.IntMapLabelScale=IntMapLabelScale;

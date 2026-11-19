@@ -13,6 +13,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { IntMapDialog } from './dialog.js';
 
 
 export function feedback(HOST){
@@ -141,7 +142,7 @@ export function feedback(HOST){
       if(dn) dn.addEventListener('click',()=>{ try{ if(typeof HOST.DB!=='undefined'&&HOST.DB&&typeof HOST.user!=='undefined'&&HOST.user){ HOST.DB.from('donations').insert({user_id:HOST.user.id,email:HOST.user.email||null,locale:HOST.lang,source:'feedback_upsell',status:'initiated'}); } }catch(_){} setTimeout(closeM,400); }); }
     /* (a11y-shared-dialog) a registered dialog — Escape, a Tab trap, focus back to what opened it (js/dialog.js) */
     function openM(){ ensure(); rating=0; cat='general'; renderForm(); modal.style.display='flex';
-      window.IntMapDialog.adopt(modal,{ panel:modal.querySelector('#fb-card'), label:IntMapLang.t(HOST.lang,"Send feedback","フィードバックを送る","Feedback senden","Отправить отзыв","Enviar comentarios"), close:closeM }); }
+      IntMapDialog.adopt(modal,{ panel:modal.querySelector('#fb-card'), label:IntMapLang.t(HOST.lang,"Send feedback","フィードバックを送る","Feedback senden","Отправить отзыв","Enviar comentarios"), close:closeM }); }
     function closeM(){ if(modal) modal.style.display='none'; }
     window._openFeedback=openM;
   })();
@@ -230,7 +231,7 @@ export function feedback(HOST){
         '<button id="bug-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(IntMapLang.t(HOST.lang,"Close","閉じる","Schließen","Закрыть","Cerrar"))+'</button></div>';
       c.querySelector('#bug-done').onclick=close; }
     function open(){ ensure(); renderForm(); modal.style.display='flex';
-      window.IntMapDialog.adopt(modal,{ panel:modal.querySelector('#bug-card'), label:IntMapLang.t(HOST.lang,"Report a bug","バグを報告","Fehler melden","Сообщить об ошибке","Informar de un error"), close:close }); }
+      IntMapDialog.adopt(modal,{ panel:modal.querySelector('#bug-card'), label:IntMapLang.t(HOST.lang,"Report a bug","バグを報告","Fehler melden","Сообщить об ошибке","Informar de un error"), close:close }); }
     function close(){ if(modal) modal.style.display='none'; }
     window._openBugReport=open;
   })();

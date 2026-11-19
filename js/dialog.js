@@ -45,7 +45,7 @@
  *  reader's language). Published synchronously; imported by src/main.js before any module that could
  *  register a dialog.
  * ==========================================================================*/
-window.IntMapDialog = (function () {
+export const IntMapDialog = (function () {
   'use strict';
 
   var entries = [];          /* every registered dialog: { root, panel, opts, open, returnTo, mo } */
@@ -345,3 +345,5 @@ window.IntMapDialog = (function () {
            /* for the tests */
            _entries: function () { return entries.length; }, FOCUSABLE: FOCUSABLE, ACTIVATE_ROLES: ACTIVATE_ROLES };
 })();
+
+globalThis.IntMapDialog = IntMapDialog;

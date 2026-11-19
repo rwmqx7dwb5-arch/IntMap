@@ -36,6 +36,7 @@ import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is �
 /* (#R203) the opening view: a lit Earth rather than a black one — see the file for the measurement. */
 import { OpeningView } from './opening-view.js';
 import { makeI18nLate } from './i18n-late.js';
+import { hostSlice } from './host-slice.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { makeMapNarrator } from './map-narrator.js';   /* (map-a11y-structure) the map's text alternative + keyboard feature walk */
 import { makeLazyModules } from './lazy-modules.js';
@@ -131,6 +132,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
 import { setHost } from './host-door.js';   /* (mobile-next) the doors opened by a URL or a delegated tap read the host there */
+import { IntMapDialog } from './dialog.js';
 
 /* (fetch-deadline-layer) the classic scripts' handle on the fetch clock (js/countries-ui.js, js/routing-ops.js —
    see the end of js/fetch-deadline.js). Assembled HERE because this file is in main alone and imports both
@@ -800,7 +802,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(ae&&ae.isContentEditable)) return;
     /* (a11y-shared-dialog) «is a modal open?» is the dialog registry's answer (js/dialog.js), not a selector list —
        the list here named two classes no element carried and missed Terms, Sources, Support and Feedback */
-    if(window.IntMapDialog.anyOpen()) return;
+    if(IntMapDialog.anyOpen()) return;
     /* (#R62) ESC now TOGGLES the sidebar (open AND close), not close-only. */
     document.getElementById('btn-toggle-sidebar').click();
   });
@@ -872,7 +874,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      and the @2x stitch, moved out whole. Called from exactly here because the style object below
      reads the `window.__imSatProto` flag this sets — see the file header. `_hiDPITiles` is the one
      value it needs from this scope and is handed over explicitly (scripts/check-split-scope.mjs). */
-  try{ satProto(IM_HOST); }catch(_){}
+  try{ satProto(hostSlice(IM_HOST, ['hiDPITiles'])); }catch(_){}
   /* (#R209) …and the loader for the modules that are NOT downloaded at boot. Built here, this early,
      because every entry point below reaches it through window.IntMapLazy rather than through a
      parameter, and an entry point that fires before the loader exists is the silent no-op #R205. */
@@ -1094,7 +1096,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      (`#btn-tool-volume` and Atlas's volume3d action); it polls for IntMapGeoEngine itself, so no order changes. */
   /* (#R171) The tilt-limit setting + the eye-altitude readout chip (window.IntMapTilt / window.IntMapEyeAlt).
      Engine-only like volume3d; both wait for IntMapGeoEngine themselves before touching the camera. */
-  viewControls(IM_HOST);
+  viewControls(hostSlice(IM_HOST, ['fmtElevVal', 'lang', 'renderCoordReadout']));
   /* (#R174) DRONE NAVIGATION (window.IntMapDrone). Reads the terrain through HOST's DEM sampler and draws
      through IntMapGeoEngine only; it owns no camera and installs exactly one map click handler, which
      does nothing unless its own "add waypoint" mode is armed. See js/drone-nav.js.
@@ -1175,7 +1177,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const IM_LABELS=placeLabels(IM_HOST);
   function applyLabelLang(){ return IM_LABELS.applyLabelLang.apply(this,arguments); }
   function ensurePlaceLabels(){ return IM_LABELS.ensurePlaceLabels.apply(this,arguments); }
-  const IM_WINMGR=windowManager(IM_HOST);
+  const IM_WINMGR=windowManager(hostSlice(IM_HOST, ['panelDrag']));
   function addEdgeResize(){ return IM_WINMGR.addEdgeResize.apply(this,arguments); }
   function bringToFront(){ return IM_WINMGR.bringToFront.apply(this,arguments); }
   function makeDraggable(){ return IM_WINMGR.makeDraggable.apply(this,arguments); }
@@ -1271,7 +1273,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }catch(_){} }
   /* (#R200) moved to js/wheel-zoom.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeWheelZoom(IM_HOST, { GE, i18n });
+  makeWheelZoom(hostSlice(IM_HOST, []), { GE, i18n });
   /* (#R200) moved to js/label-occlusion.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   _IM_LABELOCCLUSION = makeLabelOcclusion(IM_HOST, { GE, isMobile });
@@ -1732,7 +1734,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ window.IntMapNightSide&&window.IntMapNightSide.apply(); }catch(_){}
       /* (#R197/#R201) the space explorer's mount() — three passive input listeners that only add up
          while the camera is standing on the zoom floor; nothing exists until the crossing happens */
-      try{ space(IM_HOST); window.IntMapSpace.mount(); }catch(_){}
+      try{ space(hostSlice(IM_HOST, ['lang', 'proj'])); window.IntMapSpace.mount(); }catch(_){}
       /* (#R186) LAUNCH-SCREEN MILESTONES 4 and 5. 4 is here: the style is parsed and the map is
          usable. 5 is "the default layers are actually painting" — 「完全に準備完了なるまで」 means
          the first thing the user sees should be the finished map, not a bare basemap that grows
@@ -1959,7 +1961,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R200) moved to js/layer-dropdown.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  _IM_LDROP = makeLayerDropdown(IM_HOST, { GE });
+  _IM_LDROP = makeLayerDropdown(hostSlice(IM_HOST, []), { GE });
   /* ===== (#R62) RIGHT layer sidebar (opt-in via Settings → Layer panel) — the layer list REPARENTED into a
      full-height right sidebar that mirrors the left one, with a search box and a PREVIEW SQUARE on every row
      (real tile thumbnails where a stable endpoint exists, a deterministic colour swatch + icon otherwise).
@@ -2525,7 +2527,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window._sfSetOp=(i,op)=>{ if(statsFilters[i]){ statsFilters[i].op=op; _sfRerender(); } };
   window._sfSetVal=(i,raw)=>{ if(statsFilters[i]){ statsFilters[i].raw=raw; statsFilters[i].val=_sfParse(raw); _sfRerender(); } };
   /* (#R163) moved to js/companies.js — see Architecture.md §3.1. */
-  window.IntMapCompanies=companies(IM_HOST);
+  window.IntMapCompanies=companies(hostSlice(IM_HOST, ['fetchViaProxy']));
   let coSort='mcap', coSortDir='desc', coFilters=[], coFilterOpen=false;
   const _coL=IntMapLang.pick(()=>currentLang);
   /* (#R142) Companies COMPARE + TIME MACHINE. Compare mirrors Countries: single-click a row selects it, double-click opens
@@ -2849,7 +2851,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   /* (#R200) moved to js/session-tabs.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeSessionTabs(IM_HOST, { GE, isMobile, setMode });
+  makeSessionTabs(hostSlice(IM_HOST, ['mapType', 'mode', 'terrain3D']), { GE, isMobile, setMode });
 
   /* ===== Language ===== */
   /* ⚠ (#R233) THE SWITCH WAITS FOR ITS STRINGS — js/lang-switch.js holds the whole rule and the
@@ -2958,7 +2960,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!q || 'auto'.includes(q) || (i18n[currentLang].optLocal||'').toLowerCase().includes(q)) add('auto', i18n[currentLang].optLocal);
     if(!q || 'utc'.includes(q)) add('UTC','UTC');
     zones.forEach(z=>{ if(z==='UTC')return; const disp=z.replace(/_/g,' '); if(!q || disp.toLowerCase().includes(q) || z.toLowerCase().includes(q)) add(z,disp); });
-    rows.slice(0,80).forEach(r=>{ const d=document.createElement('div'); d.className='tz-row'+(r.v===prev?' sel':''); d.textContent=r.label; d.setAttribute('role','option'); window.IntMapDialog.makeActionable(d);
+    rows.slice(0,80).forEach(r=>{ const d=document.createElement('div'); d.className='tz-row'+(r.v===prev?' sel':''); d.textContent=r.label; d.setAttribute('role','option'); IntMapDialog.makeActionable(d);
       d.addEventListener('click',()=>{ _tzSelect(r.v); res.classList.remove('show'); }); res.appendChild(d); });
     if(!rows.length){ const d=document.createElement('div'); d.className='tz-row tz-empty'; d.textContent=(IntMapLang.t(currentLang,'No match','該当なし','Kein Treffer','Нет совпадений','Sin coincidencias')); res.appendChild(d); }
   }
@@ -3033,7 +3035,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   modal.addEventListener('click',(e)=>{ if(e.target===modal) closeSettings(); });
   /* (a11y-shared-dialog) the Escape the #R212 note below promised now exists: the registry closes it through
      closeSettings; Tab stays inside; focus returns to the gear */
-  window.IntMapDialog.adopt(modal,{ panel:modal.querySelector('.modal-content'), labelledby:'modal-title', close:closeSettings });
+  IntMapDialog.adopt(modal,{ panel:modal.querySelector('.modal-content'), labelledby:'modal-title', close:closeSettings });
 
   /* ===== (#R9/#R10) "Buy me a blueberry" / 開発を支援する =====
      Stripe Payment Links — JPY page for the Japanese UI, USD page for the English UI. The "Continue"
@@ -3057,7 +3059,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (community-next) the reader's map corrections and their answers — js/map-corrections.js, fetched by this click */
     { const mr=document.getElementById('btn-map-reports'); if(mr) mr.onclick=()=>{ import('./map-corrections.js').then(m=>m.openMine(IM_HOST)).catch(()=>{ try{ imToast(IntMapLang.t(currentLang,'My map reports could not be loaded','地図の誤り報告を読み込めませんでした')); }catch(_){} }); }; }
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
-    window.IntMapDialog.adopt(bm,{ panel:bm.querySelector('.modal-content'), labelledby:'blueberry-title', close });
+    IntMapDialog.adopt(bm,{ panel:bm.querySelector('.modal-content'), labelledby:'blueberry-title', close });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
     const go=document.getElementById('blueberry-go'); if(go) go.setAttribute('data-effect','outward');   /* (atlas-outward-effects) its markup is index.html's; the write is wired here */
@@ -3082,7 +3084,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R166) moved to js/playground.js; (#R209) fetched when Settings ▸ Playground is pressed. */
 
   /* (#R167) moved to js/legal.js — see Architecture.md §3.1. */
-  legal(IM_HOST);
+  legal(hostSlice(IM_HOST, ['lang']));
   _wireCountryPopupClose();
 
   /* ===================== Right-click pins ===================== */
@@ -3239,7 +3241,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const close=()=>{ try{ URL.revokeObjectURL(url); }catch(_){} window.removeEventListener('mousemove',onMM); window.removeEventListener('mouseup',onMU); ov.remove(); };
       ov.querySelector('#crop-cancel').onclick=()=>{ close(); resolve(null); };
       ov.addEventListener('click',e=>{ if(e.target===ov){ close(); resolve(null); } });
-      window.IntMapDialog.open(ov,{ panel:ov.querySelector('.crop-card'), label:ov.querySelector('.crop-title').textContent, close:()=>ov.querySelector('#crop-cancel').click() });   /* (a11y-shared-dialog) Escape = Cancel */
+      IntMapDialog.open(ov,{ panel:ov.querySelector('.crop-card'), label:ov.querySelector('.crop-title').textContent, close:()=>ov.querySelector('#crop-cancel').click() });   /* (a11y-shared-dialog) Escape = Cancel */
       ov.querySelector('#crop-ok').onclick=()=>{
         const out=document.createElement('canvas'); out.width=256; out.height=256; const cx=out.getContext('2d');
         const sxp=-tx/scale, syp=-ty/scale, sw=SIZE/scale, sh=SIZE/scale;
@@ -3279,7 +3281,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   /* (a11y-shared-dialog) the composer is a registered dialog; Escape is its Cancel (the same discard, no second path) */
-  window.IntMapDialog.adopt(document.getElementById('compose-modal'),{ panel:document.querySelector('#compose-modal .compose-content'), labelledby:'compose-title', close:()=>document.getElementById('compose-cancel').click() });
+  IntMapDialog.adopt(document.getElementById('compose-modal'),{ panel:document.querySelector('#compose-modal .compose-content'), labelledby:'compose-title', close:()=>document.getElementById('compose-cancel').click() });
   document.getElementById('compose-cancel').onclick=()=>{
     document.getElementById('compose-modal').classList.remove('active'); pendingPostLoc=null; composeEditId=null;
     if(currentMode==='community') renderCommunity();
@@ -3426,7 +3428,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R200) moved to js/i18n-late.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeI18nLate(IM_HOST, { i18n });
+  makeI18nLate(hostSlice(IM_HOST, ['lang']), { i18n });
   /* ---------- Settings persistence (#48) ---------- */
   window.imLabelLang='ui+local';   /* (#R772) 「このハイブリッド方式をデフォルト設定に。」 — a first visit gets the app language with the tile's own name under it. A reader who already chose ui / local / en keeps it: loadSettings restores the saved value below. */   /* (#R297) 「平面地図は自由スクロールに一本化し、ヨーロッパ中心の固定地図は完全削除。設定の該当項目も削除。」 — `imFlatPan` is gone: a flat map ALWAYS wraps (see applyFlatPanSetting). */ window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imDockPanels='off';   /* (#R238) 「規定オフ」 — the dock is opt-in on every device */ window.imLayerPanel='right';   /* ⚠ (#R296) NOT A SETTING ANY MORE — 「classic dropdownを完全削除…設定から該当項目を削除」. It is still read by js/map-ui.js `apply()`, which is the one place that decides whether to build and open the sidebar, so the name survives as a constant rather than as a choice. A saved 'classic' from before this round is ignored: see loadSettings. */
   /* (#R170) ticker defaults to OFF everywhere ("ティッカーはオフをデフォルトに"). This also removes a long-standing
@@ -3530,7 +3532,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R200) moved to js/layer-favs.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  _IM_LFAVS = makeLayerFavs(IM_HOST, { escapeHtml, i18n, saveSettings, t });
+  _IM_LFAVS = makeLayerFavs(hostSlice(IM_HOST, ['lang']), { escapeHtml, i18n, saveSettings, t });
 
   /* ---------- Data sources & attribution modal (#37) ---------- */  /* (#R162) the list moved to js/reference-data.js — see Architecture.md "File layout". */
   const DATA_SOURCES=IntMapRefData.dataSources;
@@ -3545,11 +3547,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     IntMapRefData.ensureDocs(currentLang,paint); }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
-    const m=document.getElementById('sources-modal'); if(m){ m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); window.IntMapDialog.adopt(m,{ panel:m.querySelector('.modal-content'), labelledby:'sources-title' }); } }   /* (#R218) folded onto one line: tests/shell-app-body-modules-checks.test.mjs #R200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
+    const m=document.getElementById('sources-modal'); if(m){ m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); IntMapDialog.adopt(m,{ panel:m.querySelector('.modal-content'), labelledby:'sources-title' }); } }   /* (#R218) folded onto one line: tests/shell-app-body-modules-checks.test.mjs #R200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
 
   /* (#R207) BOTH news pickers (by-country #29, by-outlet new) live in js/news-sources.js — one
      feature, one nc-dd shape, and instruction 13 says new work leaves the core. Thin names only here. */
-  newsSources(IM_HOST,{ NEWS_COUNTRY_FEEDS });
+  newsSources(hostSlice(IM_HOST, ['globalData', 'lang']),{ NEWS_COUNTRY_FEEDS });
   const NS=()=>window.IntMapNewsSources;
   const renderNewsCountryChecks=()=>{ try{ NS().renderCountries(); }catch(_){} };
   const updateNewsCountryLabel=()=>{ try{ NS().syncCountryLabel(); }catch(_){} };
@@ -3677,7 +3679,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R200) moved to js/time-countries.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeTimeCountries(IM_HOST, { countryStats, loadCountryData, renderStats, searchVal });
+  makeTimeCountries(hostSlice(IM_HOST, ['countryDataLoaded']), { countryStats, loadCountryData, renderStats, searchVal });
 
   /* ============================================================================
    *  (#R94b) HISTORICAL / FORMER STATES — when the master clock is inside a former country's real lifespan,
@@ -3800,7 +3802,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      elections 1789–2024, states coloured by who took their electoral votes, with the year picker
      and the electoral-vote / popular-vote bar chart in the layer's own legend. See
      js/us-elections.js and scripts/build-us-elections.mjs. ===== */
-  usElections(IM_HOST); warFronts(IM_HOST); netHealth(IM_HOST); elections(IM_HOST); newsPulse(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
+  usElections(hostSlice(IM_HOST, ['canDraw', 'escapeHtml', 'imToast', 'lang'])); warFronts(hostSlice(IM_HOST, ['imToast', 'lang'])); netHealth(hostSlice(IM_HOST, ['imToast', 'lang'])); elections(hostSlice(IM_HOST, ['canDraw', 'escapeHtml', 'imToast', 'lang'])); newsPulse(hostSlice(IM_HOST, ['imToast', 'lang']));   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
 
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;
@@ -4226,7 +4228,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      INSTRUCTION (「以下のレイヤーは削除」) — seven remain and the list lives in js/layer-packs.js. */
   gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
-  facilities(IM_HOST); industryWeb(IM_HOST); oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ precipAnnual(IM_HOST); outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same (since retired) shell budget, and after worldPacks for the same toolkit reason as the two above. */
+  facilities(hostSlice(IM_HOST, ['canDraw', 'lang', 'makeDraggable'])); industryWeb(hostSlice(IM_HOST, ['lang'])); oceanCurrents(hostSlice(IM_HOST, ['canDraw', 'lang']));   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ precipAnnual(hostSlice(IM_HOST, ['canDraw', 'imToast', 'lang'])); outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same (since retired) shell budget, and after worldPacks for the same toolkit reason as the two above. */
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical
@@ -4234,7 +4236,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      before the year; the repo jumps 1960→1994, so 1960 covers the late-Cold-War world incl. the USSR). The
      modern boundary line + country labels are hidden while a past year is shown and restored at "Now". ===== */
   /* (#R163) moved to js/time-borders.js — see Architecture.md §3.1. */
-  window.IntMapTimeBorders=timeBorders(IM_HOST); window.IntMapTimeAdmin1=timeAdmin1(IM_HOST); window.IntMapHistPlaces=histPlaces(IM_HOST); try{ window._applyAdmin1(); }catch(_){}
+  window.IntMapTimeBorders=timeBorders(IM_HOST); window.IntMapTimeAdmin1=timeAdmin1(IM_HOST); window.IntMapHistPlaces=histPlaces(hostSlice(IM_HOST, ['canDraw', 'lang'])); try{ window._applyAdmin1(); }catch(_){}
 
   /* ===== Init ===== */
   /* (#R21) Mobile-start smoothness: the gazetteer index + the 420-zone timezone list build in an

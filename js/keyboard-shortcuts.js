@@ -14,6 +14,7 @@
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { IntMapDialog } from './dialog.js';
 export function makeKeyboardShortcuts(HOST, CTX) {
   const GE=CTX.GE, applyTheme=CTX.applyTheme, imToast=CTX.imToast, isMobile=CTX.isMobile;
   /* ===== (#R62) Keyboard shortcuts ("その他のキーボードショートカットも大幅に追加") — desktop, no modifier,
@@ -52,7 +53,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
       m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; });
       document.body.appendChild(m);
       m.querySelector('#kbd-x').onclick=()=>{ m.style.display='none'; };
-      window.IntMapDialog.adopt(m,{ panel:m.firstElementChild, labelledby:'kbd-help-title' });   /* (a11y-shared-dialog) Escape, Tab trap, focus back */
+      IntMapDialog.adopt(m,{ panel:m.firstElementChild, labelledby:'kbd-help-title' });   /* (a11y-shared-dialog) Escape, Tab trap, focus back */
     }
     /* (#R72) discoverable entry points: Settings button + Atlas ("ショートカットキーの説明がどこにもない") */
     window.IntMapKbdHelp=helpModal;
@@ -116,7 +117,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
          while a modal dialog is open the single-letter shortcuts do not reach the page behind it; «?» still toggles the help */
       if(k==='Escape') return;
       if(!singleOn()) return;
-      if(k!=='?'&&window.IntMapDialog.anyOpen()) return;
+      if(k!=='?'&&IntMapDialog.anyOpen()) return;
       const K=k.toLowerCase();
       let done=true;
       switch(true){

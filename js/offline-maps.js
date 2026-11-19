@@ -29,6 +29,7 @@ import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
 import { makeDemSource } from './dem-source.js';
 import { PACKS_KEY, tilesOf, fill, savableTemplate, refusals, terrainOptions, mb, packId, defaultDetail } from './offline-plan.js';
+import { IntMapDialog } from './dialog.js';
 
 /* the renderer, as the narrator was handed it (js/app-body.js). ⚠ NOT `import … from './geo-engine.js'`: this module is lazy, and a lazy
    importer is what made the bundler cut geo-engine out of the entry chunk into a chunk of its own — one more request at start-up for every reader. */
@@ -228,7 +229,7 @@ export async function openOfflineMaps(HOST) {
   const body = el('div', { id: 'offline-maps-body', 'aria-live': 'polite' });
   card.append(el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;' }, title, close), body);
   let ctl = null;
-  const handle = window.IntMapDialog.open(root, { panel: card, labelledby: 'offline-maps-title', close: () => { if (ctl) ctl.abort(); root.remove(); } });
+  const handle = IntMapDialog.open(root, { panel: card, labelledby: 'offline-maps-title', close: () => { if (ctl) ctl.abort(); root.remove(); } });
   close.onclick = () => { if (handle && handle.close) handle.close(); else { if (ctl) ctl.abort(); root.remove(); } };
 
   const p = (text, style) => el('p', { style: 'margin:6px 0;font-size:13px;line-height:1.45;' + (style || '') }, text);

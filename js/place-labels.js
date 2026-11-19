@@ -10,10 +10,11 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { SEA_LABELS } from './tables.js';
+import { IntMapLabelScale } from './label-scale.js';
 
 export function placeLabels(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
- const LS=window.IntMapLabelScale;      /* (#R198) every text size on the map comes from js/label-scale.js */
+ const LS=IntMapLabelScale;      /* (#R198) every text size on the map comes from js/label-scale.js */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */

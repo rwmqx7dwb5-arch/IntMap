@@ -17,6 +17,7 @@
  *  injected when the sheet first opens, so a reader who never opens it never downloads them.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import { IntMapDialog } from './dialog.js';
 
 /* ── pure helpers (tests/platform-backend-checks.test.mjs runs them in Node) ───────────────────── */
 
@@ -173,7 +174,7 @@ export async function openYourData(HOST) {
       : failureText(r.error, lang);
   };
   try {
-    if (window.IntMapDialog) window.IntMapDialog.open(m, { panel: sheet, labelledby: 'ydc-h', backdrop: true, close: shut });
+    if (IntMapDialog) IntMapDialog.open(m, { panel: sheet, labelledby: 'ydc-h', backdrop: true, close: shut });
     else document.body.appendChild(m);
   } catch (_) { document.body.appendChild(m); }
   try { sheet.focus(); } catch (_) { }

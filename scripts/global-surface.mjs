@@ -284,11 +284,34 @@ export function unreadPublications(root) {
   return out.sort();
 }
 
+/* ══ (host-narrow-deps) WHO IS HANDED THE WHOLE SHELL ═════════════════════════════════════════════
+   A factory called `name(IM_HOST…)` receives all of IM_HOST — every member, and the setters of the
+   writable ones — whatever it reads. One called `name(hostSlice(IM_HOST, [...]))` (js/host-slice.js)
+   receives the members it declares. This register is the first kind: the factories (and lazy-module
+   mounts) still given the whole shell. It is ratcheted like the rest — a factory that is NEW here
+   fails (hand it a slice, or a dependency object of its own), one that is gone fails until --update
+   records the smaller list. The members a SLICE lists are held equal to what the factory reads by
+   tests/host-narrow-deps-checks.test.mjs. Names are the callee's last identifier, from the parser's
+   tokens (comments and strings blanked), over every js/ and src/ file. */
+export function wholeHostFactories(root) {
+  const R = root || ROOT, out = new Set();
+  for (const dir of ['js', 'src']) {
+    const d = join(R, dir);
+    if (!existsSync(d)) continue;
+    for (const f of readdirSync(d).filter((x) => x.endsWith('.js')).sort()) {
+      const src = codeOnly(readFileSync(join(d, f), 'utf8'), dir + '/' + f);
+      for (const m of src.matchAll(/(?<![\w$])([A-Za-z_$][\w$]*)\(\s*IM_HOST\s*[,)]/g)) if (m[1] !== 'hostSlice') out.add(m[1]);
+    }
+  }
+  return [...out].sort();
+}
+
 export function measure(root) {
   const host = hostMembers(root);
   const win = windowPublications(root);
   return {
     host: host.members,
+    hostWhole: wholeHostFactories(root),
     hostWritable: host.writable,
     window: Array.from(win.keys()).sort(),
     unread: unreadPublications(root),
@@ -312,8 +335,8 @@ export function check(root) {
   const base = JSON.parse(readFileSync(BASELINE, 'utf8'));
   const lines = [];
   let ok = true;
-  for (const d of [diff('IM_HOST member', base.host || [], cur.host), diff('IM_HOST writable member', base.hostWritable || [], cur.hostWritable), diff('window global', base.window || [], cur.window)]) {
-    for (const x of d.added) { ok = false; lines.push(`  + ${d.label} ${x}  — new coupling: name it (DEV-NOTES) and run --update, or route it through the module's own dependencies`); }
+  for (const d of [diff('IM_HOST member', base.host || [], cur.host), diff('IM_HOST writable member', base.hostWritable || [], cur.hostWritable), diff('window global', base.window || [], cur.window), diff('factory handed the whole IM_HOST', base.hostWhole || [], cur.hostWhole)]) {
+    for (const x of d.added) { ok = false; lines.push(`  + ${d.label} ${x}  — new coupling: name it (DEV-NOTES) and run --update, or pass hostSlice(IM_HOST, [the members it reads]) (js/host-slice.js) or a dependency object of its own`); }
     for (const x of d.removed) { ok = false; lines.push(`  − ${d.label} ${x}  — gone: run --update so the baseline records the smaller surface`); }
   }
   /* ══ (module-graph) THE REACH, BY NAME, BOTH WAYS ══════════════════════════════════════════════

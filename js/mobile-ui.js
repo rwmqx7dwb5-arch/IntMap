@@ -15,6 +15,7 @@ import { IntMapLang } from './lang-registry.js';
 import { detentHeights, settleDetent, spring, detentFor, MAP_ANSWER_EVENT, makeScreens, makeLegendTray, makeFloatFit } from './mobile-sheet.js';
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
+import { IntMapDialog } from './dialog.js';
 
 
 export function mobileUI(HOST){
@@ -93,7 +94,7 @@ export function mobileUI(HOST){
     function closeSheet(){ if(openSheetEl){ openSheetEl.classList.remove('show'); openSheetEl=null; } }
     /* (a11y-shared-dialog) both sheets already say role=dialog aria-modal — now they keep it: Escape closes, Tab stays in.
        Open is the .show class; focus is not moved on a phone. */
-    [moSheet,toolsSheet].forEach(sh=>{ if(sh) window.IntMapDialog.adopt(sh,{ close:closeSheet, isOpen:()=>sh.classList.contains('show'), focus:false }); });
+    [moSheet,toolsSheet].forEach(sh=>{ if(sh) IntMapDialog.adopt(sh,{ close:closeSheet, isOpen:()=>sh.classList.contains('show'), focus:false }); });
     const moDone=document.getElementById('mo-done'); if(moDone) moDone.addEventListener('click',closeSheet);
     const toolsDone=document.getElementById('tools-done'); if(toolsDone) toolsDone.addEventListener('click',closeSheet);
     if(fabMap) fabMap.addEventListener('click',()=>{ openSheetEl===moSheet?closeSheet():openSheet(moSheet); });

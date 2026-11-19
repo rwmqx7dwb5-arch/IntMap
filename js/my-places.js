@@ -22,6 +22,7 @@ import { IntMapGeoEngine } from './geo-engine.js';   /* the renderer, through th
 import { MapState } from './map-state.js';           /* (collection-workspace) a saved map IS a share link's fragment */
 /* (map-document-unify) every saved thing is a map document — a map, a my map, a tour, an Atlas answer (js/map-doc.js) */
 import { readMapDoc, fromSavedView, toSavedView, fromTourDraft, toTourInput, isTour, firstState, STEPS_MAX } from './map-doc.js';
+import { IntMapDialog } from './dialog.js';
 
 const COLS = 'id,name,note,collection,lng,lat,zoom,source,created_at,updated_at';
 const VIEW_COLS = 'id,name,note,collection,state,kind,steps,created_at,updated_at';
@@ -746,7 +747,7 @@ export async function openMyPlaces(HOST, opts) {
   };
 
   try {
-    if (window.IntMapDialog) window.IntMapDialog.open(m, { panel: sheet, labelledby: 'mpl-h', backdrop: true, close: shut });
+    if (IntMapDialog) IntMapDialog.open(m, { panel: sheet, labelledby: 'mpl-h', backdrop: true, close: shut });
     else document.body.appendChild(m);
   } catch (_) { document.body.appendChild(m); }
   try { sheet.focus(); } catch (_) { }

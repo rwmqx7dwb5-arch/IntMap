@@ -37,6 +37,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { anchorToLngLat } from './popup-anchor.js';
 import * as bus from './bus.js';
+import { IntMapLabelScale } from './label-scale.js';
 
 export function facilities(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -453,7 +454,7 @@ export function facilities(HOST){
           'circle-color':['coalesce',['get','col'],'#a0a6b0'],
           'circle-stroke-color':'rgba(255,255,255,0.8)','circle-stroke-width':0.9,'circle-opacity':0.92}},before());
         GE().layers.add({id:LBL,type:'symbol',source:SRC,minzoom:11,layout:{visibility:'none',
-          'text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.8),'text-offset':[0,1.0],
+          'text-field':['get','n'],'text-size':IntMapLabelScale.sub(0.8),'text-offset':[0,1.0],
           'text-anchor':'top','text-font':['literal',['Noto Sans Regular']],'text-max-width':15,'text-optional':true},
           paint:{'text-color':'#e6ecf6','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before());
         return true;

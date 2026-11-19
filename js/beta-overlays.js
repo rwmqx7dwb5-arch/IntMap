@@ -22,6 +22,7 @@ import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
 import { plateauSpecs, plateauTilesetId, PLATEAU_CITY_CODES } from './plateau-cities.js';   /* the 3D Tiles city models the globe streams (capability `tiles3d`) */
+import { IntMapLabelScale } from './label-scale.js';
 
 export function betaOverlays(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
@@ -211,7 +212,7 @@ export function betaOverlays(HOST){
         const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
         GE().layers.add({id:'hb-fill',type:'fill',source:'hb-src',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#c9b18a'],'fill-opacity':0.30}},before);
         GE().layers.add({id:'hb-line',type:'line',source:'hb-src',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}},before);
-        GE().layers.add({id:'hb-lbl',type:'symbol',source:'hb-src',minzoom:2.2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#4a3a26','text-halo-color':'rgba(255,250,240,0.9)','text-halo-width':1.4}},before);
+        GE().layers.add({id:'hb-lbl',type:'symbol',source:'hb-src',minzoom:2.2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-size':IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#4a3a26','text-halo-color':'rgba(255,250,240,0.9)','text-halo-width':1.4}},before);
         return true;
       }catch(_){ return false; } }
     async function hbLoad(year){
@@ -371,7 +372,7 @@ export function betaOverlays(HOST){
           'circle-radius':volcRadius,
           'circle-color':volcColor(volcMode),
           'circle-stroke-color':'#fff2e0','circle-stroke-width':0.9,'circle-opacity':0.92}},before);
-        GE().layers.add({id:'volc2-lbl',type:'symbol',source:'volc2-src',minzoom:5,layout:{visibility:'none','text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.05],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
+        GE().layers.add({id:'volc2-lbl',type:'symbol',source:'volc2-src',minzoom:5,layout:{visibility:'none','text-field':['get','n'],'text-size':IntMapLabelScale.sub(0.82),'text-offset':[0,1.05],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
         /* ⚠ (#R353) A CLICK NOW OPENS THE INTELLIGENCE CARD, and the four-line popup it replaces is
            kept only as the answer when that module cannot be downloaded — a feature that silently
            stops existing is this project's most expensive recurring defect. */
@@ -847,7 +848,7 @@ export function betaOverlays(HOST){
           paint:{'circle-radius':r,'circle-color':whsColour(),
                  'circle-stroke-color':'rgba(255,255,255,0.88)','circle-stroke-width':0.9,'circle-opacity':0.94}},before);
         GE().layers.add({id:'whs-lbl',type:'symbol',source:'whs-src',minzoom:6,layout:{visibility:'none',
-          'text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.8),'text-offset':[0,1.05],
+          'text-field':['get','n'],'text-size':IntMapLabelScale.sub(0.8),'text-offset':[0,1.05],
           'text-anchor':'top','text-font':['literal',['Noto Sans Regular']],'text-max-width':11},
           paint:{'text-color':'#f0dcb8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
         GE().events.onLayer('click','whs-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return;

@@ -16,8 +16,9 @@
  *  is NOT one of the named singles, so any new named kind must also be excluded there or it will
  *  be painted twice — once as itself and once as a plain graticule line.
  */
+import { IntMapLabelScale } from './label-scale.js';
 export function gridLayerSpecs() {
-  const sz = (v) => window.IntMapLabelScale.sub(v);
+  const sz = (v) => IntMapLabelScale.sub(v);
   /* (#R210) WHITE, not blue ("グリッド線の色は青ではなく白に"). `grid-lines-casing` is a dark,
      wider, low-opacity stroke UNDER the white one — without it a white line over the LIGHT
      basemap is white-on-white, so the casing is what makes "white" mean visible in both themes

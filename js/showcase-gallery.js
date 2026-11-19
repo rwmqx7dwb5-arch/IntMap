@@ -46,6 +46,7 @@ import { hostDoor } from './host-door.js';   /* (exploration-flows) the app host
 import { IntMapGeoEngine } from './geo-engine.js';   /* (exploration-flows) the map's centre and view — the renderer, through the contract */
 import { readSeen } from './news-edition-core.js';   /* (exploration-flows) the last visit the «new since» count is asked for */
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the encoder every string below is written with */
+import { IntMapDialog } from './dialog.js';
 
 /* the reader's language, as the app holds it (js/i18n.js) — the reading js/tour-player.js makes */
 function lang() { try { return window.IntMapI18N.lang(); } catch (_) { return 'en'; } }
@@ -406,7 +407,7 @@ export function openGallery(opts) {
   const panel = /** @type {HTMLElement} */ (box.querySelector('.sg-box'));
   const close = () => { dlg = null; try { box.remove(); } catch (_) { } };
   box.querySelector('.sg-x').addEventListener('click', () => { if (dlg) dlg.close('button'); else close(); });
-  const D = window.IntMapDialog;
+  const D = IntMapDialog;
   if (D && D.open) dlg = D.open(box, { panel, labelledby: 'sg-title', backdrop: box.querySelector('.sg-scrim'), close });
   else {
     document.body.appendChild(box);

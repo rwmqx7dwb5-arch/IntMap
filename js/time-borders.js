@@ -24,6 +24,7 @@ import * as bus from './bus.js';
 import { registerReader, wireLineClick, lineNear, decimalsOf, rowKey, shapesAt } from './border-provenance.js';
 /* (hist-modern-admin) where a past date's borders are today's borders, today's line draws them — js/admin-present.js */
 import { makeRegion, clipLines, ownPieces } from './admin-present.js';   /* (border-provenance) the line's own record, on a press */
+import { IntMapLabelScale } from './label-scale.js';
 
 /* (then-now-card) THE CREDIT OF THE ERA BORDER RECORDS — the chain collectionAt() reads (CShapes 2.0 → OpenHistoricalMap →
    Cliopatria → historical-basemaps, with OSM under OHM). Written once: the main map's two sources below carry it, and so does
@@ -1668,7 +1669,7 @@ export function timeBorders(HOST){
          Collision placement and the existing interior anchors still decide what fits. */
       /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire).
          Filtered to _same!=1 (see tagSame). */
-      const _LS=window.IntMapLabelScale;
+      const _LS=IntMapLabelScale;
       if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-lbl-src',filter:['!=',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':_LS.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':_LS.halo(1.7)}});
       /* (#R101) UNCHANGED countries (same name as today, e.g. Japan, France) keep their normal country label style
          (matching ofm-country) rather than the era style — per request "国名が変わってない国は既存の国名ラベルのまま".

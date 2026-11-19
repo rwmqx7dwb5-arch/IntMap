@@ -36,6 +36,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { anchorToLngLat } from './popup-anchor.js';
+import { IntMapLabelScale } from './label-scale.js';
 
 export function dataCenters(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -492,7 +493,7 @@ export function dataCenters(HOST){
         'circle-stroke-width':['case',['==',['get','origin'],'curated'],1.1,0.7],
         'circle-opacity':0.92}},before());
       GE().layers.add({id:LBL,type:'symbol',source:SRC,minzoom:4.5,layout:{visibility:'none',
-        'text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.0],'text-anchor':'top',
+        'text-field':['get','n'],'text-size':IntMapLabelScale.sub(0.82),'text-offset':[0,1.0],'text-anchor':'top',
         'text-font':['literal',['Noto Sans Regular']],'text-max-width':16,'text-optional':true,
         'symbol-sort-key':['case',['==',['get','origin'],'curated'],0,1]},
         paint:{'text-color':'#dce6f5','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before());

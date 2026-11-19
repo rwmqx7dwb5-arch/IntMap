@@ -45,6 +45,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { IntMapLabelScale } from './label-scale.js';
 
 export function volcanoLayers(HOST){
   const L=IntMapLang.pick(()=>HOST.lang);
@@ -113,7 +114,7 @@ export function volcanoLayers(HOST){
       GE().layers.add({id:'volc-ash-line',type:'line',source:'volc-ash-src',layout:{visibility:'none','line-join':'round'},
         paint:{'line-color':'#b3a1ff','line-width':1.6,'line-opacity':0.95}},before());
       GE().layers.add({id:'volc-ash-lbl',type:'symbol',source:'volc-ash-src',layout:{visibility:'none',
-        'text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(0.86),'text-font':['literal',['Noto Sans Regular']],
+        'text-field':['get','label'],'text-size':IntMapLabelScale.sub(0.86),'text-font':['literal',['Noto Sans Regular']],
         'text-allow-overlap':false,'symbol-placement':'point'},
         paint:{'text-color':'#e6dcff','text-halo-color':'rgba(0,0,0,0.85)','text-halo-width':1.3}},before());
       GE().events.onLayer('click','volc-ash-fill',e=>{

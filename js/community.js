@@ -12,6 +12,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { IntMapDialog } from './dialog.js';
 
 export function community(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -26,7 +27,7 @@ export function community(HOST){
     /* (a11y-shared-dialog) a registered dialog: Escape and a press anywhere on it close it (it is all
        «tap to dismiss», cursor:zoom-out), focus goes back to the thumbnail — js/dialog.js. The keydown
        listener this used to add was never removed when the lightbox was closed by a click. */
-    window.IntMapDialog.open(lb,{ label:im.alt, backdrop:'any' });
+    IntMapDialog.open(lb,{ label:im.alt, backdrop:'any' });
   }
 
   function renderCommunity(){

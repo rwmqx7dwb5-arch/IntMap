@@ -34,6 +34,7 @@ import './safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper th
 import { INDEX_PATH, onDay, loadIndex } from './time-index.js';   /* (time-index-unify) the one index, its calendar cut and its reader */
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';   /* «an answer is on the map» — the phone's sheet comes down */
 import * as bus from './bus.js';
+import { IntMapDialog } from './dialog.js';
 
 export { INDEX_PATH, loadIndex };
 
@@ -249,7 +250,7 @@ export async function openOnThisDay(opts) {
   };
   paint();
   const close = () => { dlg = null; try { box.remove(); } catch (_) { /* gone */ } };
-  const D = window.IntMapDialog;
+  const D = IntMapDialog;
   if (D && D.open) dlg = D.open(box, { panel, labelledby: 'otd-title', backdrop: box.querySelector('.otd-scrim'), close });
   else {
     document.body.appendChild(box);

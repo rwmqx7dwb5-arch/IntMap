@@ -19,6 +19,7 @@
  *      otherwise a declared `sample`. A sample preview is LABELLED as one — an example dressed as
  *      live data is exactly the kind of lie §8's last line forbids.
  * ==========================================================================*/
+import { IntMapDialog } from './dialog.js';
 window.IntMapWidgetGallery = (function () {
   'use strict';
 
@@ -122,7 +123,7 @@ window.IntMapWidgetGallery = (function () {
     renderList();
     /* (a11y-shared-dialog) the Esc / Tab-trap / focus-return this sheet used to carry itself is now
        js/dialog.js — the same contract every dialog in the app registers for (§18). */
-    dlg = window.IntMapDialog.open(sheet, { close: function () { G.close(); }, initialFocus: search, backdrop: scrim });
+    dlg = IntMapDialog.open(sheet, { close: function () { G.close(); }, initialFocus: search, backdrop: scrim });
   };
   G.close = function () {
     if (!sheet) return;

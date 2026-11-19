@@ -31,6 +31,7 @@ import { IntMapLang } from './lang-registry.js';
 import { iconNode } from './icons.js';
 import { connections, coverage } from './connection-watch.js';
 import * as bus from './bus.js';
+import { IntMapDialog } from './dialog.js';
 
 /* where the derived statement is shipped (scripts/connection-ledger.mjs OUT) */
 const LEDGER_URL = './data/connection-ledger.json';
@@ -400,7 +401,7 @@ export async function open() {
     panel.setAttribute('aria-labelledby', 'im-conn-title'); panel.setAttribute('aria-busy', 'true');
     panel.appendChild(el('p', 'imc-sub', t(docLang(), 'Reading…', '確認しています…')));
     root.appendChild(panel); document.body.appendChild(root);
-    try { window.IntMapDialog.adopt(root, { panel, labelledby: 'im-conn-title', backdrop: true, close }); } catch (_) { /* no registry: Escape and the trap are lost, the list is not */ }
+    try { IntMapDialog.adopt(root, { panel, labelledby: 'im-conn-title', backdrop: true, close }); } catch (_) { /* no registry: Escape and the trap are lost, the list is not */ }
   }
   root.style.display = 'flex';
   const L = await loadLedger();

@@ -44,6 +44,7 @@ import {
   WATCH_DEFAULTS, QUAKE_FLOOR_MAG, RADIUS_MAX_KM, KINDS, NEWS_WINDOW_MS,
   watchSettings, watchedKinds, quakeItems, warningItems, volcanoItems, newsItems, evaluate, nextSeen, triage,
 } from '../supabase/functions/_shared/place-watch.js';
+import { IntMapDialog } from './dialog.js';
 
 const WCOLS = 'place_id,radius_km,quake_min_mag,alert_min_level,volcano_min_rank,news_min_sources,enabled,seen_at,seen_keys,created_at,updated_at';
 /* The news read is ONE read for every watch (js/events-near.js readNewsEvents). MEASURED 2026-10-03: 296 active
@@ -637,7 +638,7 @@ export async function openWatchDigest(HOST) {
   seenAll.onclick = async () => { const x = await markSeen(host); if (!x.ok) msg.textContent = placeFailureText(x.error, lang); render(); };
 
   try {
-    if (window.IntMapDialog) window.IntMapDialog.open(m, { panel: sheet, labelledby: 'pw-h', backdrop: true, close: shut });
+    if (IntMapDialog) IntMapDialog.open(m, { panel: sheet, labelledby: 'pw-h', backdrop: true, close: shut });
     else document.body.appendChild(m);
   } catch (_) { document.body.appendChild(m); }
   try { sheet.focus(); } catch (_) { }

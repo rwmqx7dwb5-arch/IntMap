@@ -12,6 +12,7 @@
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
+import { IntMapDialog } from './dialog.js';
 
 export function authUi(HOST){
   /* ---------- DATA: geo_pins -> geoRaw -> rebuildGeoIndex ---------- */
@@ -251,7 +252,7 @@ export function authUi(HOST){
     try{ setTab('login'); }catch(_){}   /* (#R122) normalize the initial segment colours for the current theme */
     $am('am-close').onclick=()=>{ m.style.display='none'; };
     m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
-    window.IntMapDialog.adopt(m,{ panel:m.firstElementChild, labelledby:'am-h' });   /* (a11y-shared-dialog) Escape, Tab trap, focus back — js/dialog.js */
+    IntMapDialog.adopt(m,{ panel:m.firstElementChild, labelledby:'am-h' });   /* (a11y-shared-dialog) Escape, Tab trap, focus back — js/dialog.js */
     $am('am-submit').onclick=async()=>{
       const email=$am('am-email').value.trim(), password=$am('am-pass').value, name=$am('am-name').value.trim(), msg=$am('am-msg');
       if(!email||!password){ msg.textContent=_authL('Enter email and password.','メールアドレスとパスワードを入力してください。','Gib E-Mail und Passwort ein.','Введите e-mail и пароль.','Introduce el correo y la contraseña.'); return; }
@@ -370,7 +371,7 @@ export function authUi(HOST){
       d.onclick=(e)=>{ if(e.target===d) done(null); };
       document.addEventListener('keydown',key,true);
       d.style.display='flex';
-      window.IntMapDialog.adopt(d,{ panel:box, labelledby:'acct-ask-h', close:()=>done(null), focus:false });
+      IntMapDialog.adopt(d,{ panel:box, labelledby:'acct-ask-h', close:()=>done(null), focus:false });
       try{ (o.input?inp:go).focus(); }catch(_){}
       try{ box.scrollTop=0; }catch(_){}
     });
@@ -652,7 +653,7 @@ export function authUi(HOST){
       else { proRow.style.display='none'; proRow.textContent=''; }
     }
     m.style.display='flex';
-    window.IntMapDialog.adopt(m,{ panel:m.querySelector('.acct-sheet'), labelledby:'acct-h', close:_acctClose, focus:false });   /* (a11y-shared-dialog) Escape + Tab trap from the registry; _acctClose still owns where focus lands */
+    IntMapDialog.adopt(m,{ panel:m.querySelector('.acct-sheet'), labelledby:'acct-h', close:_acctClose, focus:false });   /* (a11y-shared-dialog) Escape + Tab trap from the registry; _acctClose still owns where focus lands */
     try{ _acctPrevFocus=document.activeElement; m.querySelector('.acct-sheet').focus(); }catch(_){}
   }
 

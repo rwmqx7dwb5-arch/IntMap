@@ -63,6 +63,7 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
+import { IntMapLabelScale } from './label-scale.js';
 
 
 export function warLayer(HOST) {
@@ -413,7 +414,7 @@ export function warLayer(HOST) {
                `ensure()` is caught by its own try and reported as «cannot draw» — the layer would
                simply never appear, with nothing in the console to say why. */
             visibility: 'none', 'text-field': ['get', 'nm'],
-            'text-size': (window.IntMapLabelScale ? window.IntMapLabelScale.sub(0.82) : 11),
+            'text-size': (IntMapLabelScale ? IntMapLabelScale.sub(0.82) : 11),
             'text-font': ['literal', ['Noto Sans Regular']], 'text-offset': [0, 1.0], 'text-anchor': 'top', 'text-optional': true,
           },
           paint: { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.78)', 'text-halo-width': 1.3 },

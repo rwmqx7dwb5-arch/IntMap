@@ -13,6 +13,7 @@
 
 
 
+import { IntMapDialog } from './dialog.js';
 export function legal(HOST){
   function textOf(which){
     var T=window.IntMapLegalText;
@@ -39,7 +40,7 @@ export function legal(HOST){
     document.getElementById('legal-close-x').onclick=()=>{ lm.style.display='none'; };
     lm.addEventListener('click',(e)=>{ if(e.target===lm) lm.style.display='none'; });
     /* (a11y-shared-dialog) registered: Escape, Tab trap, focus back. Named by its two tabs — the dialog has no heading of its own */
-    window.IntMapDialog.adopt(lm,{ panel:lm.querySelector('.modal-content'), labelledby:'legal-tab-terms legal-tab-privacy' });
+    IntMapDialog.adopt(lm,{ panel:lm.querySelector('.modal-content'), labelledby:'legal-tab-terms legal-tab-privacy' });
     const lt=document.getElementById('link-terms'); if(lt) lt.onclick=(e)=>{ e.preventDefault(); openLegal('terms'); };
     const lp=document.getElementById('link-privacy'); if(lp) lp.onclick=(e)=>{ e.preventDefault(); openLegal('privacy'); };
   })();

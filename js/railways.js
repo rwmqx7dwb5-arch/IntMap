@@ -45,6 +45,7 @@ import { loadData } from './data-door.js';   /* (data-one-door) the shipped data
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { anchorToLngLat } from './popup-anchor.js';
+import { IntMapLabelScale } from './label-scale.js';
 
 
 export function railways(HOST) {
@@ -331,7 +332,7 @@ export function railways(HOST) {
         id: 'rail-st-lbl', type: 'symbol', source: 'rail-st-src', minzoom: 10,
         layout: {
           visibility: 'none', 'text-field': ['get', 'n'],
-          'text-size': window.IntMapLabelScale.sub(0.8), 'text-offset': [0, 1.0], 'text-anchor': 'top',
+          'text-size': IntMapLabelScale.sub(0.8), 'text-offset': [0, 1.0], 'text-anchor': 'top',
           'text-font': ['literal', ['Noto Sans Regular']], 'text-max-width': 14,
         },
         paint: { 'text-color': '#e8eef8', 'text-halo-color': 'rgba(0,0,0,0.82)', 'text-halo-width': 1.2 },
