@@ -3693,7 +3693,7 @@ export function geojsonUpload(HOST){
          the answer this table exists to replace, so each one says what happened to THEIR file and
          what is left to try. ⚠ The set is published by refusals(); the sentences are here. */
       if(why==='fetch-failed') return IntMapLang.t(HOST.lang,"The file could not be fetched from that address at all","そのアドレスからファイルを取得できませんでした")+(detail?' ('+[detail.url,detail.reason].filter(Boolean).join(' · ')+')':'');
-      if(why==='http-status') return IntMapLang.t(HOST.lang,"The server answered with an error rather than the file","サーバがファイルではなくエラーを返しました")+(detail&&detail.status!=null?' (HTTP '+detail.status+')':'');
+      if(why==='http-status') return IntMapLang.t(HOST.lang,"The server answered with an error rather than the file","サーバがファイルではなくエラーを返しました")+(detail&&detail.status!=null?' (HTTP '+detail.status+[detail.redirectedTo&&'→ '+detail.redirectedTo,detail.serverSaid&&'"'+detail.serverSaid+'"'].filter(Boolean).map(x=>' · '+x).join('')+')':'');
       /* ⚠ THIS ONE IS NOT A FAILURE OF THE FILE. The server sent the WHOLE body where a piece was
          asked for, and reading it as a piece would decode the wrong bytes — so it is refused, and
          the reader is told the one thing that makes it work: ask for the whole file. */

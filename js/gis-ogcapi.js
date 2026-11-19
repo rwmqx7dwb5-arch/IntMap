@@ -26,6 +26,8 @@
  *  ⚠ CRS: the default of the standard is CRS84 (lon/lat), which is what the dataset is registered as.
  * ==========================================================================*/
 
+import { explainFetchFailure, describeResponse } from './gis-http.js';
+
 export function makeGisOgcApi() {
   const bad = (why, detail) => (detail === undefined ? { ok: false, why: why } : { ok: false, why: why, detail: detail });
   const isNum = (v) => typeof v === 'number' && isFinite(v);
@@ -54,8 +56,8 @@ export function makeGisOgcApi() {
     if (o.signal) init.signal = o.signal;
     let res;
     try { res = await doFetch(href, init); }
-    catch (e) { return bad('fetch-failed', { url: href, reason: String((e && e.message) || e) }); }
-    if (!res || res.status < 200 || res.status > 299) return bad('http-status', { url: href, status: res ? res.status : null });
+    catch (e) { return bad('fetch-failed', Object.assign({ url: href }, await explainFetchFailure(href, doFetch, e))); }
+    if (!res || res.status < 200 || res.status > 299) return bad('http-status', Object.assign({ url: href, status: res ? res.status : null }, res ? await describeResponse(href, res) : {}));
     let j;
     try { j = await res.json(); } catch (_) { return bad('ogc-not-json', { url: href }); }
     if (!j || typeof j !== 'object' || j.type !== 'FeatureCollection' || !Array.isArray(j.features)) {
@@ -64,10 +66,15 @@ export function makeGisOgcApi() {
     return { ok: true, json: j };
   }
 
+  /* ⚠ A STAC server may state its next page as a POST with a body (method + body on the link). Following only
+     the href with GET would fetch a DIFFERENT page and call it the next one, so such a link is reported
+     (`postNext`) and not followed: the result is 'partial' with a reason, and the cursor is withheld. */
+  const nextLink = (j) => (Array.isArray(j.links) ? j.links.find((x) => x && x.rel === 'next' && typeof x.href === 'string') : null);
   const nextOf = (j) => {
-    const l = Array.isArray(j.links) ? j.links.find((x) => x && x.rel === 'next' && typeof x.href === 'string') : null;
-    return l ? l.href : null;
+    const l = nextLink(j);
+    return l && !isPost(l) ? l.href : null;
   };
+  const isPost = (l) => !!l && ((typeof l.method === 'string' && l.method.toUpperCase() !== 'GET') || l.body != null);
 
   /* readItems(url, {bounds?:[w,s,e,n], limit?:int, cursor?:string, fetch?, signal?})
        → { ok:true, features, next, coverage } | { ok:false, why, detail } */
@@ -96,7 +103,7 @@ export function makeGisOgcApi() {
 
     const features = [];
     const seen = new Set();
-    let pages = 0, matched = null, next = null;
+    let pages = 0, matched = null, next = null, postNext = false;
     for (;;) {
       if (seen.has(href)) return bad('ogc-next-loop', { url: href, pages: pages });
       seen.add(href);
@@ -106,6 +113,7 @@ export function makeGisOgcApi() {
       for (const f of r.json.features) features.push(f);
       if (isNum(r.json.numberMatched)) matched = r.json.numberMatched;
       next = nextOf(r.json);
+      if (!next && isPost(nextLink(r.json))) postNext = true;
       if (next) {
         const nu = httpsUrl(next);
         if (!nu.ok || nu.url.origin !== items.origin) return bad('ogc-next-elsewhere', { next: String(next).slice(0, 200), expected: items.origin });
@@ -140,6 +148,7 @@ export function makeGisOgcApi() {
     const reasons = [];
     if (more) reasons.push('server-has-a-next-page');
     if (short) reasons.push('server-counts-more-than-arrived');
+    if (postNext) reasons.push('next-page-needs-a-POST-this-reader-does-not-send');
     /* ⚠ A PAGE REACHED BY A CURSOR IS A PART OF THE RESULT EVEN WHEN IT IS THE LAST: the dataset holds this
        page, not the collection, so it is never 'all' — `continues:false` is what says nothing follows it */
     if (!fromStart) reasons.push('page-reached-by-cursor');
@@ -149,7 +158,7 @@ export function makeGisOgcApi() {
         completeness: reasons.length ? 'partial' : 'all',
         reason: reasons.length ? reasons.join(',') : 'server-stated-no-next-page',
         requested: b ? b.slice(0, 4) : null, served: b ? b.slice(0, 4) : null,
-        count: features.length, numberMatched: matched, pages: pages, continues: more,
+        count: features.length, numberMatched: matched, pages: pages, continues: more || postNext,
         asOf: null,
       },
     };

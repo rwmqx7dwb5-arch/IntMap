@@ -189,6 +189,13 @@ overviews は数だけ報告する**）。
 - 出来たものは**登録された格子のデータセット**なので、`rasterMask`・`zonal`・`sample`・書き出し・
   `map.drawDataset` がそのまま効く。`provenance.kind = 'url-raster'`。
 
+⚠ **失敗は応答から名指す**（`js/gis-http.js`、実在サービスでの実測は `dev-notes/2026-11-19-gis-live-probe.md`）:
+`fetch-failed` は「ホストは応答するが CORS ヘッダが無く、ページから読めない」を `corsBlocked`（`no-cors` の HEAD が opaque で返ることで観測）、
+`http-status` はサーバ自身の言葉（`serverSaid`）と別オリジンへの転送（`redirectedTo`）を運ぶ。ログイン画面が 200 で返るものは
+「Range 非対応」ではなく `http-status`（200・画面）。`s3://bucket/key`（STAC の資産が使う）は https の virtual-host 形（ドット付きは path 形）へ
+**導出**して読み、`source.derivedFrom` に元の綴りを残す。署名付き URL が要る供給元（Planetary Computer など）は署名を作らず、
+サーバの言葉で断る。計器は `node scripts/gis-live-probe.mjs`（ネットワーク要・CI では走らない）。
+
 ### 1.4d URL の地物コレクションを読む — `js/gis-ogcapi.js` と `data.gis` の `ogc:` 入力
 
 OGC API – Features（OGC 17-069r4。WFS の後継）のコレクションを、`data.gis` の入力 `"ogc:https://…/collections/<id>"`
@@ -213,7 +220,7 @@ OGC API – Features（OGC 17-069r4。WFS の後継）のコレクションを�
 **項目（item）の一覧**がデータセットとして返る（足跡の図形・日時・`stac_id`・`stac_collection`、そして**ファイル 1 つにつき 1 列**
 `asset:<key>`＝その href）。⚠ **ここで探して、選んだ行の `asset:…` を `url:` に渡して読む**——所在の発見と
 実データの取得を 1 本の鎖にするため（§1.4c）。取る欄は `bounds` / `time`（STAC の `datetime` へそのまま）/ `limit` / `cursor`
-で、ページ送り・同一オリジンのカーソル・`coverage` は §1.4d と同じ。コレクションの絞り込みは URL の `?collections=` で
+で、ページ送り・同一オリジンのカーソル・`coverage` は §1.4d と同じ（⚠ サーバの next が **POST**（method/body 付き）のときは GET で辿らず、`coverage` が `partial`＋理由 `next-page-needs-a-POST…`・`continues:true` で述べる）。コレクションの絞り込みは URL の `?collections=` で
 述べる。条件（`where`）は断る。⚠ 資産の href が実在するか・公開か（署名付き URL が要る供給元）は**この層は述べない**
 ——読んだときに `http-status` / `fetch-failed` で分かる。
 
