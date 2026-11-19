@@ -1,0 +1,7 @@
+{
+  "atlas.open": "Atlas's own window: Atlas cannot open or close the window it is answering inside, so there is no sentence-form capability to bridge. The GUI and the palette are its only callers.",
+  "atlas.close": "Atlas's own window (see atlas.open). Closing it from inside an answer would discard that answer.",
+  "ui.sidebar.open": "A layout reflex, not an intent: search-geocode.js and window-manager.js call it with source:'auto' to restore the sidebar after a result. A reader never asks for it; panel and layer capabilities already open what the sidebar holds.",
+  "wars.show": "A kept legacy name (js/war-fronts.js: a saved plan or an older Atlas turn may still say it). The war layers are reached through the layer rows; no capability should claim the old spelling.",
+  "wars.toggle": "A kept legacy name for moving both war rows together (js/war-fronts.js). The war layers are reached through the layer rows."
+}

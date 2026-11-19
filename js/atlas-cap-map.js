@@ -76,6 +76,7 @@ export default [
   },
   {
     row: ['map.isolateCountry',         'isolate',        '',                                                            'map',     'paint',   'map.isolate',            'map',                 'session', 'none',   'country',  ''],
+    commands: ['isolate.exit'],
     ui: { at: ['[data-cpact="isolate"]'] },
     /* `on:false` (or country "off"/"exit"/"clear") leaves isolation — a complete call with no country */
     doc: [
@@ -225,6 +226,7 @@ export default [
   },
   {
     row: ['map.objectList',             'objects',        'objectList,manageObjects,listObjects,myObjects',              'map',     'panel',   'panel.objects',          'panel',               'session', 'none',   '',         ''],
+    commands: ['objects.open', 'objects.remove'],
     ui: { at: ['#btn-tool-objects', '#iol-fab'] },
     doc: [
       { in: 'more-features', at: 120, text: '{"type":"objects"} = open the panel listing EVERY object on the map — pins, drawings, radius circles, polygons, boundary outlines, uploaded layers, routes and reachable areas — each with fly-to / rename / recolour / hide / delete. Use for 「オブジェクト一覧」「地図上のものを管理」, "manage my objects", "show everything I have drawn". (To operate on ONE object by its id use ' },
@@ -971,6 +973,7 @@ export default [
      that is deferred — nothing is fetched until the layer is switched on. */
   {
     row: ['map.outbreaks',              'outbreaks',      'diseaseOutbreaks,outbreakLayer,epidemics,whoOutbreaks,diseaseMap', 'map', 'paint', 'map.outbreaks',          'map,explanation',     'session', 'none',   '',         ''],
+    commands: ['outbreaks.open', 'outbreaks.close'],
     ui: { at: ['#wp-dl-outbreaks'] },
     /* (#R650) EVERY ARGUMENT IS OPTIONAL, and that is the shape of the feature rather than a
        relaxation of rule (3): 「感染症のアウトブレイクを見せて」 is a complete request, and the
