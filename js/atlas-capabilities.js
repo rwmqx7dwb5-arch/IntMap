@@ -71,6 +71,16 @@ export function installCapabilityKernel(OS, HOST, deps) {
   OS.execute = function (capabilityId, args, opts) {
     return OS.kernel().then(function (k) { return k.exec.execute(capabilityId, args, opts); });
   };
+  /* press(capabilityId, args, command) — what a BUTTON calls. It is execute(): the same door Atlas uses, so the same
+     operation record, the same observation and the same postcondition. The only thing added is the one place a button
+     differs from a sentence: a press must not die silently if the executor chunk cannot be fetched (offline, a stale
+     deploy), so a REJECTION — never a failed result, which is an honest answer — falls back to the command the
+     capability drives. Source is always 'ui'. */
+  OS.press = function (capabilityId, args, command) {
+    return OS.execute(capabilityId, args || {}, { source: 'ui' }).catch(function () {
+      return command && OS.has && OS.has(command) ? OS.exec(command, { source: 'ui' }) : { ok: false };
+    });
+  };
   /* Everything below answers WITHOUT fetching when nothing has run yet, because "nothing has run"
      is a true and cheap answer — a boot-time reader must not pay for a subsystem to be told it is
      idle. Once the kernel is up, installAtlasKernel replaces each of these with the real one. */
@@ -1569,7 +1579,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
        委譲させる。」 Both directions exist during the migration and BOTH go through this one door:
          · Atlas's planner calls execute(id) → here → the dispatch case (the engine work)
          · IntMapOS.execute(id) (the undo path today) → here → the same case
-       ⚠ UI buttons do NOT yet call execute(): the ~36 toolbar/panel call sites still go through IntMapOS.exec(id), the command table, which records but does not check a postcondition. Moving them is the open migration (dev-notes/2026-11-19-exec-path-unify.md); until then this adapter is the one door for Atlas, not for both shells. */
+       ⚠ The toolbar buttons that a capability drives 1:1 (projection, basemap, the four tabs) press it through IntMapOS.press → execute(). The other direct IntMapOS.exec(command) callers are listed WITH A REASON in scripts/gui-exec-sites.json, which tests/exec-path-unify-checks.test.mjs holds to the code (dev-notes/2026-11-20-gui-press-capability.md). */
     function legacyExecute(cap) {
       return function (ctx, args, opts) {
         if (!runtime.dispatch) return Promise.resolve({ ok: false, meta: { code: 'unavailable' } });
