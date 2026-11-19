@@ -36,3 +36,9 @@ date: 2026-11-20
 ## 4. 検査
 `tests/cap-bridge-checks.test.mjs`（12 件）。MessageChannel の実通信に加え、`clientSource()` の本文だけを渡した worker_threads の
 Worker が 500 呼びを回し、返るのは最終値だけであることを確かめる。
+
+## 5. 上げた天井とその理由（perf）
+`atlas-console` の async チャンクを 1051.8 → 1057.8 kB、`dist.assets` を 21446.3 → 21556.6 kB に上げた。`js/atlas-toolsurface.js` が `js/cap-bridge.js`
+を静的に import するため、橋はこのチャンクに入る（コメントを除いた実体は数 kB）。増分のうち橋が占める分と、同じ時期に main へ入った他の変更が占める分は
+**分けて測っていない**（CI の赤は merge 後のビルドの合計）。橋だけを外した差は未測定。遅延 import にしなかったのは、遅延チャンクが共有部品を割って
+起動時リクエストを増やした前例（memory: lazy-import-splits-main）があるため。
