@@ -4302,7 +4302,7 @@
       "delegationPolicy": {
        "mode": "independent",
        "maxChildren": 2,
-       "childMaxCalls": 3
+       "childMaxCalls": 8
       }
      },
      "output": [
@@ -4659,7 +4659,7 @@
       "delegationPolicy": {
        "mode": "independent",
        "maxChildren": 2,
-       "childMaxCalls": 3
+       "childMaxCalls": 8
       }
      },
      "output": [
@@ -7368,7 +7368,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":3}},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":8}},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -7716,7 +7716,7 @@
          "delegationPolicy": {
           "mode": "independent",
           "maxChildren": 2,
-          "childMaxCalls": 3
+          "childMaxCalls": 8
          }
         },
         "output": [
@@ -7747,7 +7747,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":3}},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":8}},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -8358,7 +8358,7 @@
       "delegationPolicy": {
        "mode": "independent",
        "maxChildren": 2,
-       "childMaxCalls": 3
+       "childMaxCalls": 8
       },
       "replay": {
        "kind": "rerun",
@@ -8746,7 +8746,7 @@
          "delegationPolicy": {
           "mode": "independent",
           "maxChildren": 2,
-          "childMaxCalls": 3
+          "childMaxCalls": 8
          }
         },
         "output": [
@@ -8821,7 +8821,7 @@
       "delegationPolicy": {
        "mode": "independent",
        "maxChildren": 2,
-       "childMaxCalls": 3
+       "childMaxCalls": 8
       },
       "replay": {
        "kind": "unheld"
@@ -9189,7 +9189,7 @@
       "delegationPolicy": {
        "mode": "independent",
        "maxChildren": 2,
-       "childMaxCalls": 3
+       "childMaxCalls": 8
       }
      },
      "output": [
@@ -10723,7 +10723,7 @@
       "delegationPolicy": {
        "mode": "independent",
        "maxChildren": 2,
-       "childMaxCalls": 3
+       "childMaxCalls": 8
       }
      },
      "output": [
@@ -12827,7 +12827,7 @@
       "delegationPolicy": {
        "mode": "independent",
        "maxChildren": 2,
-       "childMaxCalls": 3
+       "childMaxCalls": 8
       }
      },
      "output": [
