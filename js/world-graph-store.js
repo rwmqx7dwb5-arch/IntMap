@@ -10,8 +10,8 @@
  *  reach, not a second way to ask.
  *
  *    fetchSubgraph(DB, ref, {rels, depth, atMs})   the ties within `depth` of `ref`, registered
- *    find(DB, query)                                a ref / «wikidata:Q…» / exact name → the object (and its neighbours)
- *    near(DB, lng, lat, km)                         placed persisted objects within km, registered
+ *    findPersisted(DB, query)                                a ref / «wikidata:Q…» / exact name → the object (and its neighbours)
+ *    nearPersisted(DB, lng, lat, km)                         placed persisted objects within km, registered
  *
  *  ⚠ NOTHING HERE DECIDES WHETHER AN ANSWER IS EMPTY. Every door returns `{ ok, error? }`: a database that did not
  *  answer is `unavailable` / `failed`, never an empty graph (the page says «could not read», not «nothing is tied»).
@@ -50,7 +50,7 @@ export function makeWorldGraphStore(deps) {
     }).filter(Boolean);
   }
 
-  async function call(DB, name, args) {
+  async function rpcWorldGraph(DB, name, args) {
     if (!DB || typeof DB.rpc !== 'function') return { ok: false, error: 'unavailable' };
     try {
       const { data, error } = await DB.rpc(name, args);
@@ -62,15 +62,15 @@ export function makeWorldGraphStore(deps) {
   async function fetchSubgraph(DB, ref, opts) {
     opts = opts || {};
     const rels = relNames(opts.rels);
-    const r = await call(DB, 'world_graph_subgraph', { p_ref: String(ref || ''), p_rels: rels.length ? rels : null, p_depth: opts.depth >= 1 ? Math.floor(opts.depth) : 1, p_at_ms: opts.atMs != null ? opts.atMs : null });
+    const r = await rpcWorldGraph(DB, 'world_graph_subgraph', { p_ref: String(ref || ''), p_rels: rels.length ? rels : null, p_depth: opts.depth >= 1 ? Math.floor(opts.depth) : 1, p_at_ms: opts.atMs != null ? opts.atMs : null });
     if (!r.ok) return r;
     const objects = W.register(toObjects(r.data));
     return { ok: true, objects, edges: arr(r.data && r.data.edges).length, claims: arr(r.data && r.data.claims).length };
   }
 
-  async function find(DB, query) {
+  async function findPersisted(DB, query) {
     const q = String(query || '').trim(); if (!q) return { ok: true, object: null };
-    const r = await call(DB, 'world_graph_find', { p_q: q });
+    const r = await rpcWorldGraph(DB, 'world_graph_find', { p_q: q });
     if (!r.ok) return r;
     const row = arr(r.data)[0]; if (!row) return { ok: true, object: null };
     const sub = await fetchSubgraph(DB, row.ref, { depth: 1 });
@@ -78,12 +78,12 @@ export function makeWorldGraphStore(deps) {
     return { ok: true, object: W.find(row.ref) || null, matches: arr(r.data).length };
   }
 
-  async function near(DB, lng, lat, km) {
-    const r = await call(DB, 'world_graph_near', { p_lng: +lng, p_lat: +lat, p_km: +km });
+  async function nearPersisted(DB, lng, lat, km) {
+    const r = await rpcWorldGraph(DB, 'world_graph_near', { p_lng: +lng, p_lat: +lat, p_km: +km });
     if (!r.ok) return r;
     const rows = arr(r.data);
     return { ok: true, objects: W.register(toObjects({ nodes: rows.map((x) => x.node) })), count: rows.length };
   }
 
-  return { relNames, toObjects, fetchSubgraph, find, near };
+  return { relNames, toObjects, fetchSubgraph, findPersisted, nearPersisted };
 }

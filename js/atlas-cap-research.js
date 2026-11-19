@@ -96,7 +96,7 @@ async function resolveWorldObject(a, K) {
   /* (world-graph) a ref or an external identifier (`facility:wd-Q123`, `wikidata:Q123`) is a key the persistent graph can answer exactly — ask it first; a name is asked last */
   const keyed = /^[A-Za-z][A-Za-z0-9_]*:[^\s]+$/.test(q);
   const fromGraph = async () => {
-    const g = await G.find(HOST.DB, q);
+    const g = await G.findPersisted(HOST.DB, q);
     if (g.ok && g.object && (!type || g.object.type === type)) return { obj: g.object, via: 'graph' };
     return g.ok ? null : { obj: null, code: 'GRAPH_' + String(g.error || 'failed').toUpperCase() };
   };
@@ -385,7 +385,7 @@ export default [
         if (!sub.ok) graphCode = 'GRAPH_' + String(sub.error).toUpperCase();
         else await hydrateAtlasCompanies(sub.objects, K);
         if (!graphMode0(rels, a) && r.obj.lng != null && r.obj.lat != null) {
-          const nr = await G.near(K.HOST.DB, r.obj.lng, r.obj.lat, (a.km != null && isFinite(+a.km)) ? +a.km : W.RELATED_DEFAULTS.km);
+          const nr = await G.nearPersisted(K.HOST.DB, r.obj.lng, r.obj.lat, (a.km != null && isFinite(+a.km)) ? +a.km : W.RELATED_DEFAULTS.km);
           if (!nr.ok && !graphCode) graphCode = 'GRAPH_' + String(nr.error).toUpperCase();
         }
         graphNote = graphUnreadNote(graphCode, L);

@@ -40,3 +40,7 @@ newsjp: Atlasが、ページを閉じても残る永続のグラフから、施�
 - **継続取り込み**: いまは migration の seed（手で build を回す）。夜間の取り込み（Edge Function か CI）と鮮度の表示は次。
 - 世界規模のノード数・探索深度の実測は、LNG 以外が入ってから（`world_graph_nodes_pos_idx` は緯度の帯で絞る単純な索引で、これ以上の索引は測ってから）。
 - `supabase/tests/00_structure_test.sql` の表一覧には足していない（一覧に無い表は落ちない・51 が表と列を固定）。
+
+## 5. 起動費用の天井を上げた理由
+
+永続グラフの読み出し（`js/world-graph-store.js`）と `research.object` / `research.related` の拡張を Atlas の能力チャンクへ足したので、遅延チャンクが増えた: `atlas-cap-runs` +4.5 kB（872.9→877.4）・`atlas-console` +5.2 kB（1033.2→1038.4）・`atlas-delegate` +2.3 kB（59.8→62.0）。いずれも利用者が Atlas を開いたときにだけ読まれる遅延チャンクで、起動時（eager）の費用は変わらない。呼び出しの名前は `findPersisted`／`nearPersisted`／`rpcWorldGraph`——`find`／`call`／`near` だと呼び出し網の照合が配列の `find` と取り違え、無関係な押下を「データベース書き込みに届く」と数えた（`check:static` の data-effect が落ちた）。
