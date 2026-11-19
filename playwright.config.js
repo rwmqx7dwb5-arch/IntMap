@@ -65,7 +65,7 @@ export default defineConfig({
      IM_SUITE therefore selects only the WORKER COUNT and the ignore list; the FILES come from the
      planner. It is unset everywhere else, so `npm test` locally is unchanged and still runs the lot. */
   testMatch: process.env.IM_SUITE === 'cesium' ? /-cesium.*\.spec\.js$/
-    : (process.env.IM_PROFILE === '1' ? /r184-imagery-profile\.spec\.js$/ : undefined),
+    : (process.env.IM_PROFILE === '1' ? /-profile\.spec\.js$/ : undefined),
   /* ⚠ (#R203) THE TIER IS APPLIED HERE AS WELL AS IN THE PLANNER, ON PURPOSE. CI hands the planner's
      file list to `playwright test`, so the tier is already decided there — but `npx playwright test`
      with no arguments (what a developer types, and what run-tests.mjs falls back to) would otherwise
@@ -74,7 +74,7 @@ export default defineConfig({
   testIgnore: process.env.IM_PROFILE === '1'
     ? [/prod-smoke\.spec\.js/]
     : [
-      /prod-smoke\.spec\.js/, /r184-imagery-profile\.spec\.js/,
+      /prod-smoke\.spec\.js/, /-profile\.spec\.js$/,
       ...(process.env.IM_SUITE === 'rest' ? [/-cesium.*\.spec\.js$/] : []),
       /* core → hide the deep files; deep → hide everything that is not one of them */
       ...tierIgnoreRegExps(TIER),
