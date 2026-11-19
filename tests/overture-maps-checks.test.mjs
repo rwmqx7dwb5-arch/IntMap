@@ -27,6 +27,7 @@ import { makeGisSources } from '../js/gis-sources.js';
 import { read as govRead, account, attribution, freshness } from '../js/data-governance.js';
 import { toSql } from '../scripts/world-graph/ingest-overture.mjs';
 import { installWindow } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const json = (o, status) => ({ ok: (status || 200) < 400, status: status || 200, json: async () => o, text: async () => JSON.stringify(o) });
@@ -403,7 +404,7 @@ describe('gis-overture · the module itself', () => {
     assert.deepEqual(makeGisOverture({}).actions(), ['release', 'themes', 'plan', 'query', 'acquire']);
   });
   test('no release version, no bucket address and no hand-written list of themes lives in the module', () => {
-    const src = fs.readFileSync(path.join(ROOT, 'js/gis-overture.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    const src = codeOnly(fs.readFileSync(path.join(ROOT, 'js/gis-overture.js'), 'utf8'));
     assert.ok(!/\b20\d\d-\d\d-\d\d\.\d\b/.test(src), 'a release version is written in code');
     assert.ok(!/s3:\/\//.test(src), 'an s3:// address is written in code');
     assert.ok(!/'(places|buildings|divisions|transportation)'.*'(places|buildings|divisions|transportation)'/.test(src),'a list of themes is written in code — the catalogue says which themes exist');
