@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · THE FETCH THE GIS READERS USE — window.IntMapGisFetch   (js/gis-fetch.js)
+ *  IntMap · THE FETCH THE GIS READERS USE   (js/gis-fetch.js)
  * ----------------------------------------------------------------------------
  *  js/gis-geotiff.js (HTTP Range), js/gis-ogcapi.js (STAC / OGC) and js/gis-remote.js (catalogues) each
  *  chose `fetch` for themselves and so each met the same three walls the same way — by failing:
@@ -259,7 +259,8 @@ export function makeGisFetch(deps) {
 }
 
 /* The readers' one way to choose a fetch: the caller's own (a test, the headless runtime), else the page's relay-aware one.
-   ⚠ The default instance is made on first use and registered as window.IntMapGisFetch so every reader shares ONE origin memory and ONE cache. */
+   ⚠ The default instance is made on first use and shared by every reader through this module (ONE origin memory, ONE cache) — it is
+   not published on `window`: nothing outside the readers asks for it. */
 let shared = null;
 export function reachingFetch(explicit) {
   if (typeof explicit === 'function') return explicit;
@@ -276,7 +277,6 @@ export function reachingFetch(explicit) {
         return R && typeof R.signHref === 'function' ? R.signHref(href) : null;
       },
     });
-    try { if (typeof window !== 'undefined') window.IntMapGisFetch = shared; } catch (_) { }
   }
   return shared.fetch;
 }
