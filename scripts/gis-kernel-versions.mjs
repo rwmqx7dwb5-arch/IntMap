@@ -134,7 +134,10 @@ export const KERNELS = {
      against the window's, tolerance 1e-9 — the largest gap over 60 random runs was 7.6e-15) and, when they do not,
      records the loss and refuses to name a farthest point instead of answering «0 cells, no farthest place». A
      window over the whole ring of longitudes (box(-180,…,180,…)) used to be exactly that silent empty answer. */
-  'js/gis-ops.js': { version: 'ops-11', sha256: 'a583ff4891dee508899b6daf09a7529e1ee627c36579bde91a77da4f36f2c94f' },
+  /* (gis-buffer-worker) HASH ONLY: `buffer` may be computed on another thread, by the same `bufferKmR`, and a replayed step
+     registers the same rows byte for byte (tests/gis-buffer-worker-checks.test.mjs measures that at tolerance 0). The one
+     addition a reader sees is `stats.worker`, a note about which thread did the work. */
+  'js/gis-ops.js': { version: 'ops-11', sha256: 'd746d93fc0c7a2588eee997da8c87160574f647917dc77706b78c940f51b930a' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /

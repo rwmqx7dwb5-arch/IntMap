@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /* GIS scale bench — how long and how much memory the SHIPPED ops take as the feature count grows.
    Measures; asserts nothing (a number is an observation, dev-notes records it with the date).
-   usage: node --expose-gc scripts/gis-scale-bench.mjs [--sizes 10000,100000,1000000] [--ops filter,buffer,spatialJoin] */
+   usage: node --expose-gc scripts/gis-scale-bench.mjs [--sizes 10000,100000,1000000] [--ops filter,buffer,spatialJoin] [--worker]
+   --worker mounts the product's buffer worker (src/gis-buffer-worker.js on node:worker_threads) and prints the longest stretch the main thread was held (lagMs) */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -18,6 +19,14 @@ const { makeGisOps } = await import('../js/gis-ops.js');
 const data = makeGisDatasets(), geometry = makeGisGeometry(), ops = makeGisOps();
 w.IntMapData = data; w.IntMapGisGeometry = geometry; w.IntMapGisOps = ops;
 await geometry.ready();
+let threads = null;
+if (process.argv.includes('--worker')) {
+  const { installNodeWorker } = await import('../tests/helpers/gis-buffer-worker-node.mjs');
+  const { makeGisWorker } = await import('../js/gis-worker.js');
+  threads = installNodeWorker(); w.IntMapGisWorker = makeGisWorker();
+}
+let lag = 0, lastBeat = performance.now();
+setInterval(() => { const n = performance.now(); lag = Math.max(lag, n - lastBeat - 10); lastBeat = n; }, 10).unref();
 
 let seed = 12345; const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
 const points = (n) => Array.from({ length: n }, (_, i) => ({ type: 'Feature', properties: { id: i, v: rnd() * 100 }, geometry: { type: 'Point', coordinates: [120 + rnd() * 30, 20 + rnd() * 25] } }));
@@ -36,10 +45,10 @@ for (const n of sizes) {
   const p = data.add({ kind: 'vector', title: 'pts' + n, features: points(n) });
   const z = data.add({ kind: 'vector', title: 'zones' + n, features: cells(Math.min(400, Math.max(16, Math.round(n / 250)))) });
   for (const name of only) {
-    const t0 = performance.now(); let r, err = null;
+    const t0 = performance.now(); let r, err = null; lag = 0; lastBeat = performance.now(); const elu0 = performance.eventLoopUtilization();
     try { r = await ops.run(plan[name](p.id, z.id)); } catch (e) { err = String(e && e.message || e); }
     const ms = Math.round(performance.now() - t0);
-    rows.push({ n, op: name, ms, ok: !!(r && r.ok), why: err || (r && !r.ok ? r.why : null), heapMB: mb() - base });
+    rows.push({ n, op: name, ms, ok: !!(r && r.ok), why: err || (r && !r.ok ? r.why : null), heapMB: mb() - base, lagMs: Math.round(lag), mainBusyMs: Math.round(performance.eventLoopUtilization(elu0).active), worker: (r && r.stats) ? r.stats.worker : null, threads: threads ? threads.spawned : 0 });
     console.log(JSON.stringify(rows[rows.length - 1]));
   }
   data.remove && data.remove(p.id); data.remove && data.remove(z.id);

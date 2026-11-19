@@ -1966,7 +1966,22 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
 - **⚠ 途中まで書いた消費者は、そう述べる。** `runBlocks` が失敗・中止したときの `partial`
   （`units` / `blocks` / `of`）は「使ってよい半分」ではなく、**捨てるか作り直す量の測定**である
   ——`take` は呼び出し元が持つ場所へ書くので、そう言わない拒否は「何も起きなかった」と読まれる。
-- ⚠ **近傍依存（バッファ・近傍検索・和集合の縫い直し）は未着手**で、分けたのは
+- **`buffer` は別の module worker で走る**（`src/gis-buffer-worker.js`・`src/gis-buffer-worker-client.js`）。
+  上の Blob worker は sweep line と測地を持てないので、**bundler が出す module worker**に
+  `polygon-clipping` を静的 import させ、`js/geodesy.js` を副作用 import して、`js/gis-geometry.js` の
+  `geomKernel`（`worker.kernelFunction()`）を `call` 口から呼ぶ——**ページが呼ぶ `bufferKmR` と同じ関数**
+  なので、答えが走ったスレッドに依存する余地がない。実測（node 22・`scripts/gis-scale-bench.mjs --worker`・
+  点 5 km）: 10 万点 **34 s → 9.9 s**、主スレッドの占有（event loop active）**23.9 s → 4.9 s**、heap 約
+  700 MB（出力そのものの大きさで、スレッドを足しても増えない）。残る主スレッドは面積の列と複製の受け取り。
+  ⚠ **1 地物 1 仕事なので、塊は件数でなく推定出力位置数で切る**（`steps + 4×入力位置`・塊の上限は
+  `planBlocks` の予算、塊が 1 つで済む量でも 1 レーンあたり 2 塊に割る）。予算を超える 1 地物は主スレッドで
+  計算し、落とさない。⚠ **運べなかった塊があれば運んだ分を丸ごと捨て**、全地物をこちらで同じカーネルが
+  計算する（`validate` と同じ形）。`stats.worker` は `used: N of M features` /
+  `not-used: <理由>`（`worker-not-mounted` / `worker-unavailable` / `nothing-large-enough` …）。
+  ⚠ 検査は `tests/gis-buffer-worker-checks.test.mjs`（実スレッドで 1 バイトも違わないこと・起動不能・
+  下限未満・中止）と `tests/gis-buffer-worker.spec.js`（bundle された worker を実ブラウザで）。
+  ⚠ 下限（`BUFFER_CARRY_FLOOR`・約 1,500 点）は観測値で、worker を使い回す（pool を残す）ようにすれば下がる。
+- ⚠ **近傍依存（近傍検索・和集合の縫い直し）は未着手**で、分けたのは
   「出力画素ごとに独立な位置計算」と「1 呼びで完結する幾何演算」だけ。
   ⚠ **出力格子を丸ごと確保するのはやめた**（§1.4b-1 の受け皿）——`to4326` / `resample` の契約は
   そのままで、`opts.sink` を渡した呼びだけが窓で受け取る。
