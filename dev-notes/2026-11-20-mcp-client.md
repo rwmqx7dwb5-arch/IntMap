@@ -31,3 +31,7 @@ newsjp: Atlasが、登録した外部MCPサーバーのツールを、自身の�
 設定画面（登録は Atlas 経由）、OAuth、resources/prompts/sampling、旧 HTTP+SSE、SSE の途中経過の表示、トークンの暗号化保存（いまは `localStorage` に平文）。詳細は `docs/architecture/05-ai.md` の同名の節。
 
 - `globalThis.SUPABASE_URL` を 1 か所（`pageClient`）で読む——リレーの URL を作る既存の呼び手（community-class-door など）と同じ読み方で、global-surface の基準線を 1 増やした。
+
+## 4. 上げた予算の理由（perf）
+
+`async.gzip` 4745.6→4773.7 kB・`atlas-cap-runs` 884.2→894.9 kB・`atlas-console` 1051.8→1057.4 kB・`dist.assets` 21446.3→21579.3 kB。MCP の能力モジュール（`atlas-cap-mcp.js`）が能力の遅延チャンクに入り、`atlas-console` に外部ツール探索の依存 1 行が入った。クライアント本体（`atlas-mcp-client`、約 14 kB）は独立した遅延チャンクで、サーバが 1 つも登録されていない読者には読み込まれない（起動時リクエストは 10 のまま）。
