@@ -132,7 +132,8 @@ ${names.map((n) => `  ${JSON.stringify(n)}: ${ident(n)},`).join('\n')}
   const bodies = {
     ROWS: '    var T = [\n' + rows.map((r) => '      ' + JSON.stringify(r) + ',').join('\n') + '\n    ];\n',
     POLICY: table('WITHDRAWN', P.withdrawn) + table('RULE_DOCUMENTED', P.ruleDocumented) + table('FALLBACKS', P.fallbacks)
-      + table('FORBIDDEN_SUBSTITUTES', P.forbidden) + table('EQUIVALENTS', P.equivalents) + table('ANSWERS', P.answers),
+      + table('FORBIDDEN_SUBSTITUTES', P.forbidden) + table('EQUIVALENTS', P.equivalents) + table('ANSWERS', P.answers)
+      + table('ASKS_USER', P.asksUser) + table('DELEGATES', P.delegates),
     'CAMERA GOALS': '    var CAMERA_GOAL = {\n' + goals.map((g) => '      ' + JSON.stringify(g.id) + ': ' + g.src + ',').join('\n') + (goals.length ? '\n' : '') + '    };\n',
   };
   let hostJs = host;

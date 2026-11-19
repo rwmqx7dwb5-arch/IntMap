@@ -38,8 +38,16 @@
  *  js/atlas-console.js, in the Atlas chunk. Moving the prose here would put 58 kB back on the boot
  *  path and undo #R224 for no gain.
  *
- *  ⚠ NO ARBITRARY EXECUTION. There is no eval, no "call this method name", no dynamic capability.
- *  Atlas's reach is WIDE — every row below — and it is CLOSED: what is not in the table cannot run.
+ *  ⚠ NO ARBITRARY EXECUTION ON THE PAGE. There is no eval, no "call this method name", no dynamic
+ *  capability. Atlas's reach is WIDE — every row below — and it is CLOSED: what is not in the table
+ *  cannot run.
+ *  ⚠ THE ONE EXCEPTION, AND WHERE ITS EDGE IS (compute-sandbox). `compute.run` is a row like any other
+ *  and runs code the model wrote — Python, in Pyodide, inside a dedicated Worker built by
+ *  js/compute-sandbox.js. Nothing of it runs on this thread: the worker's realm has the origin's
+ *  storage, every network door but the hash-checked Pyodide files, nested workers and run-time code
+ *  generation removed BEFORE the code runs, and what comes back is JSON that becomes a dataset through
+ *  js/gis-datasets.js. It does not open the table: it cannot call a capability, name a method or touch
+ *  the DOM. Any second door of this kind is a decision for docs/architecture/17-security.md, not a row.
  * ==========================================================================*/
 /* ══ installCapabilityKernel(OS, HOST, deps) — WHAT IS EAGER, AND WHAT IS NOT ══════════════════
    §3 and §10 of this round's commission require ONE thing before a module loads: that a capability
@@ -373,10 +381,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["sim.satellitePasses","satellitePasses","issPasses,whenIsIss,satellitesOverhead,satellitePass,passPrediction","sim","none","","explanation","read","none","point","satellitesLive"],
       ["sim.spaceWeather","spaceWeather","solarWind,solarFlare,geomagneticStorm,kpIndex,auroraChance,noaaScales,asteroidFlyby,nearEarthAsteroids","sim","none","","explanation","read","none","",""],
       ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
-      ["mcp.servers","mcpServers","listMcpServers,mcpTools,refreshMcp","mcp","none","","explanation","external","explicit","","","external"],
-      ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","always","","",""],
-      ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
-      ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","always","","","external"],
+      ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -410,6 +415,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var FORBIDDEN_SUBSTITUTES = {"routing.isochrone":["map.radius"],"routing.route":["sim.flyAnimate","map.drawLine"],"map.radius":["routing.isochrone"],"sim.tsunami":["sim.earthquake"],"research.mapReport":["research.historicalMap"],"sim.ballistic":["sim.flyAnimate"],"research.historicalMap":["research.mapReport"]};
     var EQUIVALENTS = {"data.countryCard":["data.timeSeries"],"research.mapReport":["research.situationMap"],"research.situationMap":["research.mapReport"]};
     var ANSWERS = {"research.brief":1,"research.mapReport":1,"research.situationMap":1,"research.historicalMap":1,"research.analyze":1};
+    var ASKS_USER = {"dialog.ask":1};
+    var DELEGATES = {"research.delegate":1};
     /* ⚠ GENERATED POLICY — END */
 
     /* ══ OBSERVERS ═══════════════════════════════════════════════════════════════════════════════
@@ -864,6 +871,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
              not observed (.agents/rules/one-pass-or-a-reason.md §5). Stated by the capability as meta.code, read here once
              for every read, so the loop answers a repeat with 「already done」 instead of inviting a retry. */
           if (raw && raw.ok === false && raw.meta && raw.meta.code === 'not_rendering') return { status: 'unobserved', produced: [], code: 'not_rendering', observed: { rendering: false }, html: raw.html || '' };
+          /* (compute-sandbox) the same distinction stated by a capability for itself: `meta.unobserved` names WHY the
+             outcome could not be seen (a run at its time limit, an interpreter that never started) — not a failure */
+          if (raw && raw.ok === false && raw.meta && typeof raw.meta.unobserved === 'string' && raw.meta.unobserved) return { status: 'unobserved', produced: [], code: raw.meta.unobserved, html: raw.html || '' };
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
         }
@@ -1617,6 +1627,35 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       }
     }
 
+    /* ══ (capability-facets) WHAT A CAPABILITY DOES, AS INDEPENDENT FACTS ═══════════════════════════════════
+       `risk` (column 7) answers ONE question — how hard is it to undo — and was being read as if it answered
+       "may a child AI run this?". It does not: `dialog.ask` is risk 'read', writes nothing and confirms
+       nothing, yet it puts a question in front of the reader. Reading, changing state, reaching outside,
+       asking, showing and saving are separate facts, and each consumer (the child-AI lane, the confirmation
+       rule, autonomous runs) asks for the ones it cares about. DERIVED from the row where the row already says
+       it, and from the entry's `policy` (asksUser, delegates) where only the implementation knows:
+         mutatesState  risk is not 'read', or the row names something it writes
+         network       the result carries a third party's words (column 11), or risk is 'external'. ⚠ A LOWER BOUND:
+                       it is what the row declares, not a scan of every fetch a run makes
+         asksUser      policy.asksUser — the reader is asked something and must answer
+         showsUI       produces something the reader SEES change (map, panel, chart, camera, route, view, object, time)
+                       — as opposed to 'explanation' (text handed back) and 'file'
+         savesFile     produces 'file'
+         delegates     policy.delegates — starts other model work
+       Nothing here is a list of ids. js/atlas-console.js classifyCapability reads these, and
+       tests/atlas-capability-facets-checks.test.mjs holds every row to them. */
+    var SEEN_PRODUCES = ['map', 'panel', 'chart', 'camera', 'route', 'view', 'object', 'time'];
+    function facetsOf(id, row, writes, produces, ingests) {
+      return {
+        mutatesState: row[7] !== 'read' || writes.length > 0,
+        network: ingests === 'external' || row[7] === 'external',
+        asksUser: !!ASKS_USER[id],
+        showsUI: produces.some(function (p) { return SEEN_PRODUCES.indexOf(p) >= 0; }),
+        savesFile: produces.indexOf('file') >= 0,
+        delegates: !!DELEGATES[id]
+      };
+    }
+
     function build(row) {
       var id = row[0], legacy = row[1], aliases = row[2] ? row[2].split(',') : [];
       var obsKind = row[4];
@@ -1636,6 +1675,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         lazyModules: lazy,
         effects: { reads: [], writes: writes, conflictKeys: writes.slice() },
         produces: produces,
+        facets: facetsOf(id, row, writes, produces, ingests),
         risk: { read: 'read-only', session: 'reversible-session', persist: 'persistent-setting', external: 'external' }[row[7]] || 'reversible-session',
         confirmation: row[8],
         ingests: ingests,
@@ -2650,7 +2690,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           return {
             id: c.id, legacy: c.legacy, aliases: c.aliases.slice(), category: c.category,
             observerKind: c.observerKind, effects: c.effects, produces: c.produces,
-            risk: c.risk, confirmation: c.confirmation, ingests: c.ingests || '', targetPolicy: c.targetPolicy,
+            facets: c.facets, risk: c.risk, confirmation: c.confirmation, ingests: c.ingests || '', targetPolicy: c.targetPolicy,
             lazyModules: c.lazyModules, withdrawn: c.withdrawn ? c.withdrawn.why : null,
             isFallback: c.isFallback, forbiddenSubstitutes: c.forbiddenSubstitutes,
             equivalents: c.equivalents,
