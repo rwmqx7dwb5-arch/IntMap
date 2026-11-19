@@ -1737,7 +1737,7 @@ overpass.js                       **Overpass の唯一のクライアント** `o
                                   次のミラーを並走させ、観測された失敗は即座に次へ。全滅は `OverpassUnavailable` を投げる
                                   （空の答えとは別）。`race`・`budgetMs`（下げるだけ）・`accept`・`historical`（OHM）・`relay`。
                                   window.IntMapOverpass ＋ ES import の両方（同一の関数）
-atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
+atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（許可された読み取り能力を呼び、能力表を語で引く）・委譲を端末に残して再開する保存口（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`
