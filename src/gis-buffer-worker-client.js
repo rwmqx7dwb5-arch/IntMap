@@ -27,7 +27,7 @@ export function bufferPool(lanes) {
   let seq = 0;
   /* → Promise<{ok:true, results} | {ok:false, why, message?}>. One block per call; the caller keeps at most
      `lanes` in the air, so `take()` always finds a slot. */
-  function run(geometries, radiusKm, steps, signal) {
+  function run(geometries, radiusKm, steps, signal, pack) {
     if (dead) return Promise.resolve({ ok: false, why: dead });
     const s = take();
     if (!s) return Promise.resolve({ ok: false, why: 'no-free-lane' });
@@ -47,12 +47,12 @@ export function bufferPool(lanes) {
       w.onmessage = (ev) => {
         const m = ev.data || {};
         if (m.id !== id) return;
-        if (m.ok) finish({ ok: true, results: m.results }, false);
+        if (m.ok) finish(m.packed ? { ok: true, packed: m.packed, fails: m.fails || {} } : { ok: true, results: m.results }, false);
         else finish({ ok: false, why: m.why || 'worker-answered-nothing', message: m.message || null }, true);
       };
       w.onerror = (ev) => { dead = 'worker-died'; finish({ ok: false, why: 'worker-died', message: String((ev && ev.message) || '') }, true); };
       if (signal) { if (signal.aborted) return onAbort(); try { signal.addEventListener('abort', onAbort, { once: true }); } catch (_) { } }
-      try { w.postMessage({ id, geometries, radiusKm, steps }); }
+      try { w.postMessage({ id, geometries, radiusKm, steps, pack: !!pack }); }
       catch (e) { finish({ ok: false, why: 'worker-post-failed', message: String((e && e.message) || e) }, true); }
     });
   }

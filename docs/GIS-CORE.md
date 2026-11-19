@@ -2037,6 +2037,22 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   ⚠ 検査は `tests/gis-buffer-worker-checks.test.mjs`（実スレッドで 1 バイトも違わないこと・起動不能・
   下限未満・中止）と `tests/gis-buffer-worker.spec.js`（bundle された worker を実ブラウザで）。
   ⚠ 下限（`BUFFER_CARRY_FLOOR`・約 1,500 点）は観測値で、worker を使い回す（pool を残す）ようにすれば下がる。
+- **100 万件の `buffer` は、結果を平らな塊で持つ**（gis-scale・`js/gis-packed.js`）。実測（node 24・
+  `scripts/gis-scale-bench.mjs --worker`・点 5 km・既定のヒープ上限）: 100 万点を全部配列で持つ旧経路は
+  **234 s・heap +7,006 MB**（12 GB の上限を足してやっと完走・主スレッド占有 243 s・最長停止 14 s）。
+  推定出力位置数が `CHUNK_ABOVE_POSITIONS`（800 万・**6.5 M 位置＝10 万点は従来どおりの経路**）を超える
+  と、結果を**入力の順のチャンク**（地物の殻＋幾何を `Float64Array` に平らにしたもの）で持ち、worker は
+  圧縮して**転送**で返す。同じ実測で **93 s・heap のピーク 512 MB・RSS のピーク 1.7 GB・主スレッド占有
+  27 s・最長停止 0.7 s**。⚠ **答えは同じ**（同じカーネルが同じ地物を計算する。違うのは出来た地物の置き場
+  だけ）で、`tests/gis-scale-checks.test.mjs` が全配列経路と JSON で 1 バイトも違わないことを測る。
+  ⚠ **worker が無くても全配列へは戻らない**（塊をこのスレッドで計算し、経過時間で譲る＝中止も効く）。
+  ⚠ **チャンクのレコードは `features()` を持つが、`MATERIALIZE_MAX_POSITIONS`（1,600 万位置）を超えると
+  `too-large-to-materialize` で拒む**（OOM の代わりに名前のある拒否）。`chunks()` が 1 塊ずつの配列を返す。
+  ⚠ **チャンクを入力にできる op**: `filter` / `spatialJoin` / `nearestJoin`（左の行が互いに独立なので、
+  群ごとに走らせて連結すれば全体の答えと同じ＝行ごとに一致を測る）。出力もチャンク。それ以外は、収まる間は
+  配列にして走らせ、超えれば `input-too-large-for-op`。書き出しは `IntMapGisExport.writeAsync`（GeoJSON を
+  Blob で 1 塊ずつ組む＝1 つの文字列にしない・経過時間で譲る）。
+  ⚠ **未了**: 結果を OPFS/IndexedDB へ逃がす経路は無い（100 万点の結果は外部メモリに約 1 GB 残る）。
 - ⚠ **近傍依存（近傍検索・和集合の縫い直し）は未着手**で、分けたのは
   「出力画素ごとに独立な位置計算」と「1 呼びで完結する幾何演算」だけ。
   ⚠ **出力格子を丸ごと確保するのはやめた**（§1.4b-1 の受け皿）——`to4326` / `resample` の契約は

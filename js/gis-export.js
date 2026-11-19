@@ -1511,6 +1511,63 @@ export function makeGisExport() {
       };
     }
 
+    /* ══ (gis-scale) A RESULT HELD AS CHUNKS, WRITTEN WITHOUT EVER BEING ONE STRING ═════════════════
+       JSON.stringify of a million buffered features is over a gigabyte of text, and one JS string cannot be
+       that long (V8's limit is about 512 MB). So the document is assembled as a Blob, one chunk at a time:
+       the frame (everything but the features) comes from the SAME writeGeoJson the whole-array path uses, with
+       an empty feature list, and the features are written between its brackets. A Blob may be built from
+       Blobs, which is what lets each chunk's text be dropped as soon as it is part of the file.
+       ⚠ THE YIELD IS BY ELAPSED TIME, the way every runner in js/gis-ops.js does it: a loop that serialises a
+       million features without handing the thread back is a frozen page, and a stop button cannot reach it. */
+    async function writeChunkedGeoJson(rec, opts, signal) {
+      const frame = writeGeoJson(rec, [], opts);
+      if (frame && frame.ok === false) return frame;
+      const mark = /"features": ?\[\]/.exec(frame.text), at = mark ? mark.index : -1;
+      if (at < 0) return bad('export-serialise-failed', { message: 'frame-without-features' });
+      const pretty = !(opts && opts.pretty === false);
+      let blob = new Blob([frame.text.slice(0, at) + (pretty ? '"features": [' : '"features":[')]);
+      let first = true, last = Date.now();
+      const it = rec.chunks();
+      for (let n = it.next(); !n.done; n = it.next()) {
+        const parts = [];
+        for (const f0 of n.value) {
+          const f = f0 || {};
+          const one = { type: 'Feature', geometry: f.geometry || null, properties: (f.properties == null ? {} : f.properties) };
+          if (f.id !== undefined) one.id = f.id;
+          if (f.bbox !== undefined) one.bbox = f.bbox;
+          let s;
+          try { s = pretty ? JSON.stringify(one, null, 1).replace(/\n/g, '\n  ') : JSON.stringify(one); }
+          catch (e) { return bad('export-serialise-failed', { message: String((e && e.message) || e) }); }
+          parts.push((first ? (pretty ? '\n  ' : '') : (pretty ? ',\n  ' : ',')) + s);
+          first = false;
+        }
+        blob = new Blob([blob, parts.join('')]);
+        if (signal && signal.aborted) return bad('export-serialise-failed', { message: 'cancelled' });
+        if (Date.now() - last >= 16) { last = Date.now(); await new Promise((r) => setTimeout(r, 0)); }
+      }
+      blob = new Blob([blob, (pretty && !first ? '\n ' : '') + ']' + frame.text.slice(at + mark[0].length)]);
+      const stated = Object.assign({}, frame.stated, {
+        features: rec.count, rowsWithoutGeometry: rec.count - (rec.withGeometry || 0),
+        geometry: (rec.withGeometry || 0) === 0 ? 'none' : 'verbatim',
+      });
+      return { blob: blob, stated: stated };
+    }
+
+    /* The door for a record that may be chunked. Anything else is the sync `write`, unchanged. A chunked record
+       is written as GeoJSON here; another format needs the whole result as arrays, which `write` asks of the
+       registry and which refuses by name above its ceiling (the same error a reader gets for any other op). */
+    async function writeAsync(target, opts, signal) {
+      const got = resolve(target);
+      if (!got.ok) return got.res;
+      const rec = got.rec, o = opts || {};
+      const fmt = (o.format == null || String(o.format) === '') ? null : formatById(o.format);
+      if (!(rec && typeof rec.chunks === 'function' && fmt && fmt.id === 'geojson')) return write(target, opts);
+      if (!(rec.count > 0)) return bad('export-empty', { id: rec.id == null ? null : String(rec.id), count: 0 });
+      const made = await writeChunkedGeoJson(rec, o, signal);
+      if (made && made.ok === false) return made;
+      return { ok: true, format: fmt.id, mediaType: fmt.mediaType, filename: filenameFor(rec, fmt), bytes: made.blob, text: null, stated: made.stated };
+    }
+
     /* The one place the bytes of an answer become a download in a browser — the GIS panel and the
        Atlas door both end here. ⚠ The anchor is attached before it is clicked (a detached one does
        nothing in Firefox) and the object URL is revoked on the next turn of the loop, because
@@ -1534,7 +1591,7 @@ export function makeGisExport() {
       }
     }
 
-    const API = { formats, refusals, write, filenameFor, save };
+    const API = { formats, refusals, write, writeAsync, filenameFor, save };
     try { window.IntMapGisExport = API; } catch (_) { }
     return API;
   })();

@@ -550,7 +550,9 @@ export function makeGisDatasets() {
 
     function add(spec) {
       if (spec && (spec.kind === 'raster' || spec.raster)) return addRaster(spec);
-      const features = Array.isArray(spec && spec.features) ? spec.features : [];
+      /* (gis-scale) A CHUNKED RESULT IS MEASURED THROUGH ITS STUBS — type and properties, never coordinates — and its features() builds the whole array only up to MATERIALIZE_MAX_POSITIONS. */
+      const chunked = (spec && spec.chunked && typeof spec.chunked.chunk === 'function') ? spec.chunked : null;
+      let features = chunked ? chunked.stubs() : (Array.isArray(spec && spec.features) ? spec.features : []);
       const id = claimId((spec && spec.id) || null);
       const declared = declareTime((spec && spec.time) || null, features);
       const rec = {
@@ -575,8 +577,18 @@ export function makeGisDatasets() {
            ever born fresh: a rebuild removes the old record and adds a new one, so freshness is not
            a flag anybody has to remember to clear. See invalidate(). */
         stale: null,
-        features: () => features,
+        features: chunked ? (() => {
+          if (chunked.positions > chunked.materializeMax) { const e = new Error('too-large-to-materialize'); e.why = 'too-large-to-materialize'; e.detail = { rows: chunked.count, positions: chunked.positions, max: chunked.materializeMax }; throw e; }
+          const all = []; for (let k = 0; k < chunked.chunkCount; k++) { const c = chunked.chunk(k); for (let j = 0; j < c.length; j++) all.push(c[j]); } return all;
+        }) : (() => features),
+        /* the chunk door: one bounded array at a time, so a consumer never holds the whole result */
       };
+      if (chunked) {
+        rec.chunks = () => { let k = 0; return { next: () => (k < chunked.chunkCount ? { done: false, value: chunked.chunk(k++) } : { done: true, value: undefined }), [Symbol.iterator]() { return this; } }; };
+        rec.chunkedCount = chunked.chunkCount;
+        rec.positions = chunked.positions;
+      }
+      if (chunked) features = null; /* the stubs measured the record and are not kept: a million of them are the heap this path exists to spare */
       applyInherited(rec, spec && spec.fieldStatements);
       DS.set(id, rec);
       emit('add', rec);
