@@ -63,3 +63,8 @@ main に `gis-cog.js`（`url:`、投影 COG 含む）・`gis-ogcapi.js`（`ogc:`
 ## 6. 消したもの・引き継いだもの
 
 何も消していない（加算のみ）。
+
+## 7. 性能の天井を上げた理由（`check:perf`）
+
+遅延チャンクだけが増えた（起動時の行は動いていない）: 新しい async チャンク `gis-remote`（12.5 kB）と、`atlas-console` の
+`data.gisRemote` の説明文（+5.7 kB raw）。async の合計は raw 14076.6 kB・gzip 4733.9 kB に上がった。Atlas で発見を頼んだときだけ読まれる。
