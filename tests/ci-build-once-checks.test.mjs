@@ -257,7 +257,7 @@ test('⑥ production is published by ci.yml after main’s run is green, from th
 
   const p = CI.jobs.pages;
   assert.ok(p, 'ci.yml has no pages job');
-  assert.deepEqual([].concat(p.needs).sort(), ['build', ...aggregates].sort(), 'pages must wait for the build and every aggregate gate');
+  assert.deepEqual([].concat(p.needs).sort(), ['build', 'server-ready', ...aggregates].sort(), 'pages must wait for the build, the server side (release contract) and every aggregate gate');
   const cond = String(p.if);
   for (const need of ['!cancelled()', "github.event_name == 'push'", "github.ref == 'refs/heads/main'", "vars.ENABLE_PAGES_DEPLOY == 'true'"]) {
     assert.ok(cond.includes(need), `pages.if lacks ${need}`);
