@@ -342,7 +342,7 @@ test('C1 signHref signs an address a catalogue states it holds, from the stated 
   const a = await R.signHref(href);
   assert.equal(a.ok, true, JSON.stringify(a));
   assert.equal(a.href, href + '?st=1&sig=abc'); assert.equal(a.collection, 'sentinel-2-l2a');
-  const mine = () => calls.filter((c) => c.includes('catalogue.example.org')).length;
+  const mine = () => calls.filter((c) => new URL(c).host === 'catalogue.example.org').length;
   const n = mine();
   const b = await R.signHref(href + '?x=1');
   assert.equal(b.href, href + '?x=1&st=1&sig=abc');
