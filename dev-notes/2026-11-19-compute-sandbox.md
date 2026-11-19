@@ -39,7 +39,7 @@ newsjp: Atlas が、手元のデータセットに対して Python（numpy・pan
   ネットワーク・入れ子の Worker・実行時のコード生成を除去し、扉ごとに再確認、閉じなければ走らせない ④ それからコード。
   出力は FeatureCollection / Feature の列 / dict の列 / DataFrame → 新データセット、それ以外は値。NaN は null にして**数える**。
 - **能力 `compute.run`**（`js/atlas-cap-compute.js`・綴り `python`——`compute` は GIS の op の名前なので避けた）。
-  列: writes `gis.dataset`／risk `session`／confirm `explicit`（外の文章を読んだ後はモデルの判断だけでは走らせない）／
+  列: writes `gis.dataset`／risk `session`／confirm `none`（R801 ② の規則: 読むだけ・元に戻せる行は確認を出さない。守るのは確認ではなく隔離）／
   observer `none`＋`meta.unobserved`（`timeout` 等は「観測できなかった」）。
 - **provenance `kind:'compute'`**: `{code(全文), codeSha256, inputs, output, runtime:'pyodide@314.0.7', python, packages, nonFinite}`。
   コードの上限 64,000 字は HARD_MAX_OUTPUT（5,000 トークン）から導いたので**切り詰めは起きない**＝どの記録も再実行できる。

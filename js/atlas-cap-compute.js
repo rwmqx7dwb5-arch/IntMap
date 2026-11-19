@@ -30,21 +30,17 @@ export default [
        risk 'session'        nothing outside this tab changes: the datasets live in memory until the reader
                              saves a project, and removing one undoes it. The only network is the pinned
                              Pyodide distribution, by exact file and hash.
-       confirm 'explicit'    the code is the MODEL's text. With nothing from outside the conversation in front
-                             of it this turn it runs on its say-so like any other row; after a web page, a
-                             headline or a reader's file has been read (js/atlas-executor.js 4b), the reader
-                             presses Run first — outside text that can steer what code is written can steer what
-                             numbers are put in front of the reader as an analysis, and on a phone a first run
-                             also downloads 6.2 MB (numpy +2.9, pandas +4.7). The sandbox stops the code
-                             reaching the origin; the press is about whether the reader wanted this
-                             computation at all.
+       confirm 'none'        the repository's own rule (tests/atlas-capabilities-checks R801 ②) is that a row which only reads or only
+                             changes what the reader can undo never asks: a button in front of code the reader cannot judge
+                             is a blind approval, worse than none. What guards this row is the sandbox, not a press — the code
+                             cannot reach the origin, a network, a storage area or the page (js/compute-sandbox.js).
        ingests ''            the result is IntMap's own observation of what the code returned; inputs are
                              datasets already in the session, exactly as `data.gis` reads them.
        observer 'none'       nothing on the map moves. A run that could not be SEEN to finish (timeout, the
                              interpreter never started, the thread died) states meta.unobserved, which the
                              observer turns into 「観測できなかった」 rather than 「失敗した」. */
   {
-    row: ['compute.run',                'python',         'runPython,pythonRun,computePython',                            'data',    'none',    'gis.dataset',            'explanation',         'session', 'explicit', '',         'gisCore'],
+    row: ['compute.run',                'python',         'runPython,pythonRun,computePython',                            'data',    'none',    'gis.dataset',            'explanation',         'session', 'none', '',         'gisCore'],
     ui: { none: '2026-11-19' },
     doc: [
       { in: 'spatial-analysis', at: 60, text: '{"type":"python","code":str,"inputs"?:[ID,…],"outputs"?:[NAME,…],"title"?:str,"timeoutSec"?:num} = Python で計算する（回帰・相関・クラスタ分け・統計の集計・自前の解析）/ RUN PYTHON ON THE DATASETS — 「この CSV で回帰して」「相関を計算して」「クラスタに分けて」「Python で集計して」, "fit a regression", "correlation matrix", "run this in Python". Use it when the analysis is NOT one of the GIS ops — a regression, a correlation matrix, a clustering, a time-series decomposition, a custom index, reshaping a table — and only then: an op that exists is checked against what the numbers mean, Python is not. The code runs in Pyodide (CPython 3.14) inside an isolated worker: NO network, NO page, NO storage, no other datasets than the ones you name. `inputs` are dataset ids or titles; inside the code, `rows(i)` is the rows of input i as a list of dicts, `features(i)` its GeoJSON features, `INPUTS[i]` the whole record (a grid carries width, height, grid and bands[k].values); `i` may be the index, the id or the title. Import numpy, pandas, scipy, statsmodels, scikit-learn, shapely … as usual — a package of the Pyodide distribution is loaded on import; nothing can be pip-installed. RETURN BY ASSIGNING the variable `result` (or every name in `outputs`): a GeoJSON FeatureCollection, a list of Features, a list of dicts or a pandas DataFrame becomes a NEW DATASET whose id comes back (coordinates must be [longitude, latitude] degrees or the output is refused); anything else (a number, a dict of coefficients) comes back as a VALUE. NaN/inf become null and are COUNTED (nonFinite). print() output comes back too. FAILURES ARE FACTS: python-exception carries the traceback — fix the code and run a DIFFERENT version; `timeout` (default 60 s, up to 300 with timeoutSec) and `runtime-unavailable` mean the result was NOT OBSERVED, not that the code was wrong — do not resend the same call. The datasets keep the code as their recipe: a saved project restores them, and when an input upstream is recomputed they are re-run. Make or fetch the inputs first with a GIS step, and hand the new id on — to a GIS step, to gisDraw to draw it, or to a chart with "source":"compute.run → <dataset id>". ' },

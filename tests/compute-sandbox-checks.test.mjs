@@ -233,7 +233,7 @@ test('⑩ the capability row: one row, closed table, the columns this round deci
   const c = caps.resolve('compute.run');
   assert.ok(c, 'compute.run is in the registry');
   const row = (await import('../js/atlas-cap-compute.js')).default[0].row;
-  assert.deepEqual(row.slice(0, 11), ['compute.run', 'python', 'runPython,pythonRun,computePython', 'data', 'none', 'gis.dataset', 'explanation', 'session', 'explicit', '', 'gisCore']);
+  assert.deepEqual(row.slice(0, 11), ['compute.run', 'python', 'runPython,pythonRun,computePython', 'data', 'none', 'gis.dataset', 'explanation', 'session', 'none', '', 'gisCore']);
   assert.equal(caps.dispatchName ? caps.dispatchName('python') : 'python', 'python');
   const mods = R('js/atlas-caps-modules.js');
   assert.match(mods, /import caps_compute from '\.\/atlas-cap-compute\.js';/);
