@@ -115,6 +115,7 @@ export const GOVERNANCE = (() => {
         paidBy: 'UNESCO World Heritage Centre' },
       { publisher: WD_ATTRIB, url: WDQS, licence: 'CC0', attribution: false },
     ],
+    priority: { disjoint: ['the World Heritage List itself', 'current in-danger status only'] },
     ...UNESCO_WHC,
     builtBy: 'scripts/build-whs.mjs',
   };

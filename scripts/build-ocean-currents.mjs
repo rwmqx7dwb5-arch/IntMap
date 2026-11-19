@@ -157,6 +157,8 @@ export const GOVERNANCE = (() => {
   });
   const rec = {
     upstreams: [...VEL_SOURCES.map(one), one(WIND_SOURCE), one(SST_SOURCE)],
+    /* index-aligned with upstreams: VEL_SOURCES (1), WIND_SOURCE, SST_SOURCE */
+    priority: { disjoint: ['geostrophic surface velocity from altimetry', 'wind stress (the Ekman term)', 'sea-surface temperature (warm/cold class)'] },
     ...NOAA_CLIMATOLOGY,
     builtBy: 'scripts/build-ocean-currents.mjs',
   };

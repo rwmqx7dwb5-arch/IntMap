@@ -60,7 +60,7 @@ export const GOVERNANCE = (() => {
   const tex = {
     publisher: 'Solar System Scope',
     url: 'https://www.solarsystemscope.com/textures/',
-    licence: 'CC BY 4.0',
+    licence: 'CC BY 4.0', licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
     /* 「BY」 is part of the identifier: credit is a condition of these terms. */
     attribution: true,
     paidBy: 'Solar System Scope — planetary surface textures',
@@ -83,7 +83,9 @@ export const GOVERNANCE = (() => {
   return {
     'data/planets/': tex,
     'data/planet-names.json': names,
-    'data/planets.json': { upstreams: [tex, names], ...USGS_PLANETARY_NAMES, builtBy: 'scripts/build-planet-data.mjs' },
+    'data/planets.json': { upstreams: [tex, names],
+      priority: { disjoint: ['planetary surface textures', 'planetary feature names'] },
+      ...USGS_PLANETARY_NAMES, builtBy: 'scripts/build-planet-data.mjs' },
   };
 })();
 

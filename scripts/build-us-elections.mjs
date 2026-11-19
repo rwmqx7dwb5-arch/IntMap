@@ -70,6 +70,7 @@ export const GOVERNANCE = {
       { publisher: 'National Archives / American Presidency Project (UCSB), compiled via zonination/election-history', url: CSV_URL },
       { publisher: 'tonmcg/US_County_Level_Election_Results_08-24', url: 'https://github.com/tonmcg/US_County_Level_Election_Results_08-24' },
     ],
+    priority: { disjoint: ['state popular vote for years before 2020', 'county results for 2020 and later'] },
     ...US_PRESIDENTIAL,
     builtBy: 'scripts/build-us-elections.mjs',
   },

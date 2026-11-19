@@ -399,9 +399,22 @@ builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-dipl
   死活は、名簿に載った builder が走るときに builder 自身が確かめるだけである。
 - **周期の多くは推定である。** `scripts/lib/upstream-cadence.mjs` の `observed` が「estimate」と
   述べている値は、測れば置き換える。
-- **`source priority` は値になっていない。** 同じ事実の複数上流は主題ごとの散文 ladder として
-  `js/world-packs.js`・`js/time-borders.js`・`js/reference-data.js` に埋まっている。`FACETS` に
-  `precedence.*` の欄はあるが、**述べている実装はまだ無い**。
+- **`source priority` は、複数の上流を持つ builder では値になった。** 同じ問いに複数の上流が答えるときは
+  `priority: { rank: [...] | '<規則>', over: '<理由>' }`、**上流が別々の問いに答えるだけ**なら
+  `priority: { disjoint: ['<上流 0 だけが答える問い>', …] }`（上流と同数・同順）。後者は `precedence.*` を
+  適用外（理由 `disjoint-upstreams`）として数え、**存在しない勝敗を書かない**。門 `precedence-declared` は
+  disjoint の数が上流と合うこと、rank が理由を伴うことを測る（優先規則が**無い**ことは台帳が数える）。
+  静的な順位にならない規則（hist-admin-surveys の「句点精度で build が決める」、hist-coast-snap の「ライセンスで
+  行ごとに分かれる」）は `rank` に規則そのものを文で述べる。まだ述べていない複数上流の束は台帳に残っている。
+  束全体の 1 値が無いのは、**全ての上流が自分の行で述べている**ときに限り `stated-per-upstream`（適用外）と
+  数える——1 本でも黙っていれば未申告のまま。
+- **GIS の分析結果は、入力の出典・条件・取得時刻・対象時点を引き継ぐ（js/gis-ops.js `inheritTerms`）。**
+  演算の出力は `provenance.upstreams` に入力ごとの 1 行（publisher・url・licence・licenceUrl・attribution・credit・
+  retrievedAt・asOf）を持つ。入力が演算出力なら平らに引き継ぎ、黙った入力は `{ input }` だけの行として残る
+  （`read()` が最も厳しい義務を残し、沈黙は「不要」にならない）。取得レコード（`js/gis-layers.js`）は登録の
+  `rights` をそのまま運ぶ。書き出し（`js/gis-export.js`）は**全入力が述べたときだけ** `license` を書き、表示の文は
+  述べた入力の分を全部書く。⚠ ベクタの演算が複数入力の対象時点を 1 つにまとめる規則は無い（`asOf` は入力ごとの行に
+  残る）。
 - **ホスト全体が実行時の式で組み立てられる URL は、通信先の規則から見えない**
   （`'https://' + prof[0] + '/route/…'` の OSRM、511 各州のカメラ網など）。門は件数と場所を
   note として毎回印字し、推測で埋めない。そのホストが `https://` の無い裸の文字列として
