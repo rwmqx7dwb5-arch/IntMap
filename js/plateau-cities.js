@@ -15,10 +15,18 @@
  *  EXPIRES when MLIT renames the `-latest` alias or retires a ward's dataset — the layer then shows
  *  that tileset's error through `tilesetInfo(id).error` instead of drawing nothing silently.
  *
- *  HEIGHTS. PLATEAU 3D Tiles state heights above the ellipsoid; nothing here applies a geoid
- *  offset. If a measurement shows buildings floating or sunk against the terrain, the correction
- *  belongs in `heightOffset` below with the measurement that justified it — not as a guess.
+ *  HEIGHTS. PLATEAU 3D Tiles state heights above the ellipsoid; the globe's ground is sea-level.
+ *  PLATEAU_HEIGHT_OFFSET_M below carries the measurement and the correction.
  * ==========================================================================*/
+/** Metres added to PLATEAU's ellipsoidal heights so they meet the globe's ground, which is mean-sea-level.
+ *  MEASURED 2026-11-19 (tests/plateau-render-quality-profile.spec.js, Chiyoda): the lowest point of building tiles sits at
+ *  37.3–40.1 m above the ellipsoid, while the terrain surface (AWS Terrarium = sea-level heights, handed to Cesium as if
+ *  ellipsoidal) and the no-terrain globe both sit at about 0–3 m — buildings floated ~37 m. 36.7 m is Tokyo's geoid
+ *  undulation (JGEOID2011 ≈ 36.7 m, EGM96 ≈ 36.8 m; it varies < 0.5 m across the 23 wards).
+ *  EXPIRES when the terrain source becomes ellipsoidal, or when a ward set outside Tokyo is added (its undulation differs:
+ *  make this a per-city lookup then). Source of truth for the number: this constant. */
+export const PLATEAU_HEIGHT_OFFSET_M = -36.7;
+
 /** JIS X 0402 codes of the cities whose building models are streamed (Tokyo's 23 special wards). */
 export const PLATEAU_CITY_CODES = Object.freeze(Array.from({ length: 23 }, (_, i) => 13101 + i));
 
@@ -33,5 +41,5 @@ export const plateauTilesetId = (/** @type {number} */ code) => 'plateau-bldg-' 
 
 /** the engine specs for every dataset: one call per city, in order */
 export function plateauSpecs() {
-  return PLATEAU_CITY_CODES.map((code) => ({ id: plateauTilesetId(code), spec: { url: plateauTilesetUrl(code) } }));
+  return PLATEAU_CITY_CODES.map((code) => ({ id: plateauTilesetId(code), spec: { url: plateauTilesetUrl(code), heightOffset: PLATEAU_HEIGHT_OFFSET_M } }));
 }
