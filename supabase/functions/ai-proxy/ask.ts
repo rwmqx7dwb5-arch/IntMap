@@ -578,7 +578,8 @@ export async function ask(req: Request): Promise<Response> {
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
       // (#R114) webMode:"required" → force the hosted web search so a latest-info task really runs it.
       let effort = spec.reasoning || "low";   // (#R116) planner/analysis think at "medium"
-      if (effortHint === "high" && spec.effortHint) effort = "high";   // (#R117/#R156/#R350) complexity hint — the tasks whose file says effortHint (vision reading small text + maths earns "high")
+      /* the reader's pick (js/atlas-effort.js) arrives as the hint; "high" is also what the client's own complexity guess sends */
+      if (spec.effortHint && ["low", "medium", "high", "xhigh"].includes(effortHint)) effort = effortHint;   // (#R117/#R156/#R350) complexity hint — the tasks whose file says effortHint (vision reading small text + maths earns "high")
       /* (#R397) The same `responseSchema` callGemini has had since #R113, in OpenAI's dialect.
          null = this schema cannot be expressed strictly → the call behaves exactly as it did before. */
       const oaFormat = (wantJson && responseSchema) ? openAiSchemaFormat(responseSchema, task) : null;

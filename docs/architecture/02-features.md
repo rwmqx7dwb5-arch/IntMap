@@ -102,7 +102,7 @@
 | 早く終わったターンが残すもの | `js/atlas-turn-continuity.js` | ①訊いた質問を会話の記録へ 1 行として残す（選択肢付き。`did:` の一覧には入れない）。②中止の印は「考え中の点」だけを置き換える |
 | 返信に載せる結果 | `js/atlas-turn-results.js` | ①回答の族は主題ごとに最良を1つ ②同じ操作の繰り返しは最後のもの（同一性は action の型と引数、または `meta.resultKey`。経路は解決済みの端点と mode）③`callKey(name,args)`（実行前に `js/atlas-agent.js` が引く）。Atlas の呼び出し回数は制限しない |
 | 返信の描画 | `js/atlas-reply.js` | 返答テキスト → HTML。安全な markdown・コード／数式（KaTeX）・GFM 表・出典カード。見出しの無い長い段落は約2文ごとに区切り、繰り返された文と段落は落とす。文分割は URL・markdown リンク・メールアドレス・小数を切らない（散文でありえない範囲を分割の前に取り除いて後で戻す） |
-| 返信の組版 | `js/atlas-markdown.js` ＋ `js/atlas-styles.js` | 行 → ブロック木 → semantic DOM → CSS。`<p>` / `<h1>`〜`<h6>` / `<ul>` / `<ol>` / `<li>` / `<blockquote>` / `<hr>`。余白は CSS の margin collapsing に任せる。入れ子リスト・番号付きリスト（`1.` / `①` の値を保つ）・項目内の複数段落やコード・複数行の引用・水平線・エスケープ（`\*`）。見出しは色を持たず、本文に太字は無い（規定） |
+| 返信の組版 | `js/atlas-markdown.js` ＋ `js/atlas-styles.js` | 行 → ブロック木 → semantic DOM → CSS。`<p>` / `<h1>`〜`<h6>` / `<ul>` / `<ol>` / `<li>` / `<blockquote>` / `<hr>`。余白は CSS の margin collapsing に任せる。入れ子リスト・番号付きリスト（`1.` / `①` の値を保つ）・項目内の複数段落やコード・複数行の引用・水平線・エスケープ（`\*`）。見出しは色を持たず、本文の `**太字**` は `<b>` で描く |
 | コードブロックの色 | `js/atlas-highlight.js` | 外部ライブラリなしの 8 文法（js/ts・python・json・html/xml・css・sql・bash・yaml）＋未知の言語は comment / string / number だけ、言語名が無ければ着色しない。出力は必ず esc 済み。配色は light / dark（`HIGHLIGHT_CSS`）。`Wrap` は読み手ごと・ブロックごとの切り替え |
 | 中核指示 | `js/atlas-policy.js` | 1 段落の中核指示＋座標ラベルの意味＋ターンの終わり方 |
 | この会話が解決した場所 | `js/atlas-geo-ledger.js` | 解決した地点を種別・国コード・正規名・`stableId`・座標・回答の中での役割としてターンを越えて保持する台帳。`resolve(name)` は再ジオコードの前に引かれ、`contextLines()` が次のターンへ識別子として渡る（`[RESOLVED PLACES]`）。質問ごとの時間窓（`setWindow`）。地点の形と provenance は `js/atlas-geo-object.js`。何も決めない |

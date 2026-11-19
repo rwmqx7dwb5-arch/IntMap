@@ -150,8 +150,8 @@ test('R494 ⑤ escaped markdown is literal text', () => {
 /* ── ⑥ ─────────────────────────────────────────────────────────────────────────────────────── */
 test('R494 ⑥ the #R154 / #R159 decisions survive the rewrite', () => {
   const h = md('**強調は平文になる** の途中と、*斜体* は残る。');
-  assert.ok(h.includes('強調は平文になる') && !/<b>|<strong>|font-weight:(7|8)/.test(h),
-    '#R159: the reply body carries no bold');
+  assert.ok(h.includes('<b>強調は平文になる</b>') && !/font-weight:(7|8)/.test(h),
+    'bold renders as a plain <b> (the #R159 strip was reversed by the reader)');
   assert.ok(h.includes('<i>斜体</i>'), '…but italic still renders');
   assert.match(CSS, /\.atl-h\{font-weight:600;color:var\(--text-main\);/, '#R154/#R159: monochrome, semibold');
   /* the BASE .atl-h rule states the one colour; no per-LEVEL rule may add another */
@@ -469,22 +469,21 @@ test('R156 #2 unified renderer: code blocks, math, tables, inline code — place
   assert.match(CSS, /\.atl-h\{font-weight:600;color:var\(--text-main\);/, 'R159 heading weight + R154 monochrome');
   assert.match(CSS, /\.atl-h2\{font-size:1\.56em;/, 'R159 "## " heading size');
   assert.ok(!/border-top:[^;]*;?\s*\}?\s*'?\s*\/\*\s*\(#R155\)/.test(html), 'R159 no "## " divider rule');
-  assert.ok(!/<b>|<strong>/.test(md('plain **bold** text')), 'R159 inline **bold** stripped to plain (no bold in Atlas replies)');
+  assert.ok(md('plain **bold** text').includes('<b>bold</b>'), 'inline **bold** renders as <b> (the reader reversed the R159 strip)');
   // interactive wiring at document level (works in panel + sidebar tab + workspace) — a document-level listener, a spelling
   assert.match(html, /if\(!window\.__atlRenderWired\)\{ window\.__atlRenderWired=true;/, 'one-time document-level wiring for the Copy button');
   assert.match(CSS, /\.atl-codeblock\{margin:0;padding:10px 12px;overflow-x:auto;/, 'code block scrolls horizontally (mobile)');
   assert.match(CSS, /\.atl-math-b\{margin:\.55em 0;overflow-x:auto;/, 'display math scrolls horizontally (mobile)');
 });
 
-test('R159 #1 Atlas replies carry NO bold and NO divider lines', () => {
+test('R159 #1 Atlas replies carry bold and NO divider lines', () => {
   /* ⚠ (tests-by-topic) RENDERED, NOT READ: the two .replace() calls this matched are asked what they
      do — a bold run inline and inside a table cell comes out as plain text. */
-  assert.ok(!/<b>|<strong>/.test(md('the **key** point')), 'inline **bold** → plain (js/atlas-markdown.js)');
+  assert.ok(md('the **key** point').includes('<b>key</b>'), 'inline **bold** → <b> (js/atlas-markdown.js)');
   /* (#R492) the cell formatter also annotates the cell (units / clocks / abbreviations), so it takes the
      options object as a second argument. The property THIS line protects — the bold strip — is unchanged. */
   const cell = md('| a | b |\n|---|---|\n| **x** | 1 |\n');
-  assert.match(cell, /<td>x<\/td>/, 'table-cell **bold** → plain');
-  assert.ok(!/<b>|<strong>/.test(cell));
+  assert.match(cell, /<td><b>x<\/b><\/td>/, 'table-cell **bold** → <b>');
   /* ⚠ (#R494) THREE ASSERTIONS USED TO NAME AN IMPLEMENTATION AND NOT A RULE. Each asserted the literal
      text of one `.replace()` call, so what they actually protected was that the renderer kept being
      written as a regex chain — and when #R494 replaced the chain with a parser, all three would have

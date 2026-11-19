@@ -1,0 +1,111 @@
+/* ============================================================================
+ *  IntMap · Atlas — HOW HARD ATLAS THINKS, AS THE READER'S CHOICE
+ * ----------------------------------------------------------------------------
+ *  「推論強度を ChatGPT のように選べるように。料金体系は後付けでいい。」
+ *
+ *  One setting, five values: auto · low · medium · high · xhigh.
+ *
+ *    auto    what Atlas has always done — the server's default tier for the task, raised to high
+ *            when the request looks compound (`cplx`, computed by js/atlas-console.js). Nothing is
+ *            sent for it that was not sent before.
+ *    others  the reader's pick, sent as `effortHint`. The server (supabase/functions/ai-proxy/ask.ts)
+ *            applies it to the tasks that opt in (`effortHint: true`) and ignores it elsewhere.
+ *
+ *  This module owns the stored value, the menu and the label; it decides nothing about a request.
+ *  The value is a per-reader convenience, so it lives in localStorage and a failed read means auto.
+ *  Entitlements are deliberately not here: the menu offers every value to everyone until a plan
+ *  exists to gate it, and a gate then belongs in `pick`, the single place a value leaves.
+ * ==========================================================================*/
+
+/** @returns {{pick:(cplx:boolean)=>(string|undefined), decide:(d:object)=>Promise<string|undefined>, mount:(panel:HTMLElement)=>void, get:()=>string}} */
+export function makeAtlasEffort(H) {
+  const KEY = 'intmap.atlas.effort';
+  const MODES = ['auto', 'low', 'medium', 'high', 'xhigh'];
+  /* the words are written where they are spoken: L() calls, not a table of pairs (scripts/i18n-pair-audit.mjs counts a pair held as data) */
+  const nm = (m) => ({
+    auto: H.L('Auto', '自動'), low: H.L('Fast', '高速'), medium: H.L('Standard', '標準'),
+    high: H.L('Deep', '深く考える'), xhigh: H.L('Maximum', '最大'),
+  })[m];
+  const note = (m) => ({
+    auto: H.L('Atlas sizes each request', '質問ごとにAtlasが決めます'),
+    low: H.L('Quickest answers', '最も速く答えます'),
+    medium: H.L('Balanced speed and depth', '速さと深さのバランス'),
+    high: H.L('Thinks longer on hard questions', '難しい質問をじっくり考えます'),
+    xhigh: H.L('Longest thinking, slowest', '最も長く考えます（最も遅い）'),
+  })[m];
+  let cur = 'auto';
+  try { const v = localStorage.getItem(KEY); if (MODES.includes(v)) cur = v; } catch (_) { /* private window: auto */ }
+
+  /* what an automatic pick falls back to when the sizing call fails: the client's own complexity guess (js/atlas-console.js) */
+  function pick(cplx) { return cur === 'auto' ? (cplx ? 'high' : undefined) : cur; }
+
+  /* AUTO IS A MODEL'S DECISION. The reader's own pick is used as it is; on auto, one small low-effort call reads the request and
+     names a tier. Only a failure of that call (an error, a timeout, an answer that is not a tier) falls back — to `fallback`. */
+  const TIERS = ['low', 'medium', 'high', 'xhigh'], NL = String.fromCharCode(10);
+  async function decide(d) {
+    if (cur !== 'auto') return cur;
+    if (typeof d.ask !== 'function' || !String(d.request || '').trim()) return d.fallback;
+    let timer = null, ctl = null;
+    try { ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; } catch (_) { ctl = null; }
+    /* observation: one low-effort JSON call returning a single word; this bounds WAITING for it. Expires with: a measured p95 of atlas_effort. */
+    if (ctl) timer = setTimeout(() => { try { ctl.abort(); } catch (_) { /* settled */ } }, d.timeoutMs > 0 ? d.timeoutMs : 8000);
+    if (ctl && d.signal && typeof d.signal.addEventListener === 'function') { try { d.signal.addEventListener('abort', () => { try { ctl.abort(); } catch (_) { /* settled */ } }); } catch (_) { /* no signal */ } }
+    try {
+      const prompt = "REQUEST (the reader's own words):" + NL + String(d.request).slice(0, 1500)
+        + NL + NL + 'WHAT RIDES WITH IT: ' + (d.attachments ? d.attachments + ' attachment(s)' : 'no attachments')
+        + (d.history ? NL + NL + 'EARLIER IN THIS CONVERSATION:' + NL + String(d.history).slice(-800) : '');
+      const env = await d.ask(prompt, d.system || '', null, { task: 'atlas_effort', webMode: 'off', turnId: d.turnId || undefined, signal: ctl ? ctl.signal : (d.signal || undefined) });
+      const t = String(env && env.data && env.data.effort || '').toLowerCase();
+      return TIERS.includes(t) ? t : d.fallback;
+    } catch (_) { return d.fallback; } finally { if (timer) clearTimeout(timer); }
+  }
+
+  function mount(panel) {
+    const btns = panel.querySelector('.atl-btns');
+    if (!btns || btns.querySelector('.atl-eff')) return;
+    if (!document.getElementById('atl-eff-css')) {
+      const s = document.createElement('style'); s.id = 'atl-eff-css';
+      s.textContent = '#atlas-panel .atl-eff{position:relative;display:inline-block;}'
+        + '#atlas-panel .atl-eff-b{background:var(--input-bg);border:none;color:var(--text-muted);font-size:12px;line-height:1;cursor:pointer;padding:5px 10px;border-radius:999px;margin-right:4px;}'
+        + '#atlas-panel .atl-eff-b:hover{color:var(--text-main);}'
+        + '#atlas-panel .atl-eff-m{position:absolute;right:0;top:calc(100% + 6px);min-width:230px;padding:6px;border-radius:14px;background:var(--panel-bg,var(--input-bg));border:1px solid var(--border,rgba(128,128,128,.25));box-shadow:0 8px 28px rgba(0,0,0,.25);}'
+        + '#atlas-panel .atl-eff-i{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-main);cursor:pointer;padding:8px 10px;border-radius:10px;font-size:13px;}'
+        + '#atlas-panel .atl-eff-i:hover,#atlas-panel .atl-eff-i[aria-checked="true"]{background:var(--input-bg);}'
+        + '#atlas-panel .atl-eff-i small{display:block;color:var(--text-muted);font-size:11px;margin-top:2px;}';
+      document.head.appendChild(s);
+    }
+    const wrap = document.createElement('span'); wrap.className = 'atl-eff';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'atl-eff-b';
+    b.setAttribute('aria-haspopup', 'menu'); b.setAttribute('aria-expanded', 'false');
+    const menu = document.createElement('div'); menu.className = 'atl-eff-m'; menu.setAttribute('role', 'menu'); menu.hidden = true;
+    const label = () => { b.textContent = nm(cur); b.title = H.L('How hard Atlas thinks', 'Atlasの考える強さ'); };
+    const close = () => { menu.hidden = true; b.setAttribute('aria-expanded', 'false'); };
+    function render() {
+      menu.textContent = '';
+      MODES.forEach((m) => {
+        const i = document.createElement('button'); i.type = 'button'; i.className = 'atl-eff-i';
+        i.setAttribute('role', 'menuitemradio'); i.setAttribute('aria-checked', String(m === cur));
+        i.textContent = nm(m);
+        const n = document.createElement('small'); n.textContent = note(m); i.appendChild(n);
+        i.addEventListener('click', () => { cur = m; try { localStorage.setItem(KEY, m); } catch (_) { /* per-reader convenience */ } label(); close(); });
+        menu.appendChild(i);
+      });
+    }
+    b.addEventListener('click', (e) => { e.stopPropagation(); if (menu.hidden) { render(); menu.hidden = false; b.setAttribute('aria-expanded', 'true'); } else close(); });
+    document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) close(); });
+    panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    label(); wrap.appendChild(b); wrap.appendChild(menu);
+    btns.insertBefore(wrap, btns.firstChild);
+  }
+
+  return { pick, decide, mount, get: () => cur };
+}
+
+/** the task rules the sizing call's system prompt adds beside the persona (the persona itself is js/atlas-persona.js's) */
+export const EFFORT_RULES = 'You are given a REQUEST and decide how much thinking the model that answers it should spend. '
+  + 'Return STRICT JSON ONLY: {"effort":"low"|"medium"|"high"|"xhigh"}. '
+  + 'low: a single fact, a simple lookup or a plain map action. '
+  + 'medium: an ordinary question, an explanation, a news or topic digest, one or two sources. '
+  + 'high: a multi-step task, a comparison or analysis across several datasets, planning, careful reading of documents or images, or an answer where a mistake is costly. '
+  + 'xhigh: only for hard research, mathematics or long analysis the reader plainly wants done thoroughly. '
+  + 'Speed is part of quality: choose the lowest tier that will still produce a complete, correct answer, and medium when unsure.';
