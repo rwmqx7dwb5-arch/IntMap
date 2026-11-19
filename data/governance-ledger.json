@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-11-17T08:14:47.641Z",
+    "generatedAt": "2026-11-19T05:03:02.783Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -1352,24 +1352,16 @@
     {
       "subject": "data/planets/",
       "facets": [
-        "origin.publisher",
-        "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
-        "rights.licence",
         "rights.licenceUrl",
-        "rights.attribution",
-        "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/polity-arcs",
@@ -2218,7 +2210,6 @@
     {
       "subject": "scripts/build-cshapes.mjs → data/cshapes.js",
       "facets": [
-        "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2301,10 +2292,6 @@
       "facets": [
         "origin.url",
         "origin.retrievedAt",
-        "rights.licence",
-        "rights.licenceUrl",
-        "rights.attribution",
-        "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2319,7 +2306,6 @@
       "subject": "scripts/build-gazetteer.mjs → data/gazetteer-world.json.gz",
       "facets": [
         "origin.retrievedAt",
-        "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2414,7 +2400,6 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
-        "rights.licenceUrl",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
@@ -2453,10 +2438,6 @@
       "subject": "scripts/build-hist-admin1.mjs → data/hist-admin1.js",
       "facets": [
         "origin.retrievedAt",
-        "rights.licence",
-        "rights.licenceUrl",
-        "rights.attribution",
-        "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2471,10 +2452,6 @@
       "subject": "scripts/build-hist-admin1.mjs → data/hist-admin2.js",
       "facets": [
         "origin.retrievedAt",
-        "rights.licence",
-        "rights.licenceUrl",
-        "rights.attribution",
-        "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2489,10 +2466,6 @@
       "subject": "scripts/build-hist-admin1.mjs → data/hist-admin3.js",
       "facets": [
         "origin.retrievedAt",
-        "rights.licence",
-        "rights.licenceUrl",
-        "rights.attribution",
-        "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2674,10 +2647,6 @@
       "subject": "scripts/build-histcities-homonyms.mjs → data/histcities-homonyms.json.gz",
       "facets": [
         "origin.retrievedAt",
-        "rights.licence",
-        "rights.licenceUrl",
-        "rights.attribution",
-        "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2840,7 +2809,6 @@
       "subject": "scripts/build-npp-registry.mjs → data/npp.json",
       "facets": [
         "origin.retrievedAt",
-        "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2915,7 +2883,6 @@
       "subject": "scripts/build-on-this-day.mjs → data/on-this-day.json",
       "facets": [
         "origin.retrievedAt",
-        "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2930,7 +2897,6 @@
       "subject": "scripts/build-osm-sparse.mjs → data/osm-diplo.json",
       "facets": [
         "origin.retrievedAt",
-        "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -2945,7 +2911,6 @@
       "subject": "scripts/build-osm-sparse.mjs → data/osm-space.json",
       "facets": [
         "origin.retrievedAt",
-        "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -3057,12 +3022,7 @@
     {
       "subject": "scripts/build-slab2.mjs → data/slab2.bin.gz",
       "facets": [
-        "origin.publisher",
         "origin.retrievedAt",
-        "rights.licence",
-        "rights.licenceUrl",
-        "rights.attribution",
-        "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -3076,12 +3036,7 @@
     {
       "subject": "scripts/build-slab2.mjs → data/slab2.json",
       "facets": [
-        "origin.publisher",
         "origin.retrievedAt",
-        "rights.licence",
-        "rights.licenceUrl",
-        "rights.attribution",
-        "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -3825,10 +3780,6 @@
       "subject": "scripts/lib/glottolog.mjs → data/language-aliases.json",
       "facets": [
         "origin.retrievedAt",
-        "rights.licence",
-        "rights.licenceUrl",
-        "rights.attribution",
-        "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
         "integrity.schema",
@@ -3891,19 +3842,13 @@
     }
   ],
   "updateFailureExposed": [],
-  "shardsWithoutIndex": [
-    {
-      "subject": "data/planets/",
-      "why": "record-absent",
-      "shards": 9
-    }
-  ],
+  "shardsWithoutIndex": [],
   "unreadableDeclaration": [],
   "counts": {
     "undeclared": 205,
-    "undeclaredFacets": 2630,
+    "undeclaredFacets": 2581,
     "updateFailureExposed": 0,
-    "shardsWithoutIndex": 1,
+    "shardsWithoutIndex": 0,
     "unreadableDeclaration": 0
   }
 }

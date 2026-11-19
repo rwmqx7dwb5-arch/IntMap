@@ -51,7 +51,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateRawSync, gzipSync, gunzipSync } from 'node:zlib';
 import { loadRecord, allKeys } from './histcities-record.mjs';
-import { GEONAMES } from './lib/upstream-cadence.mjs';
+import { GEONAMES, GEONAMES_TERMS } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'histcities-homonyms.json.gz');
@@ -65,9 +65,9 @@ export const GOVERNANCE = {
   'data/histcities-homonyms.json.gz': {
     publisher: 'GeoNames',
     url: SRC,
-    /* ⚠ THE LICENCE IS NOT STATED IN THIS FILE. scripts/build-gazetteer.mjs states GeoNames'
-       terms for the bundle it builds; importing that builder to reuse the value would RUN it, so
-       the facet stays silent here rather than being spelled a second time. */
+    /* the terms of the cities500 dump this reads — scripts/lib/upstream-cadence.mjs GEONAMES_TERMS (importing
+       scripts/build-gazetteer.mjs to reuse them would RUN it, which is why they live in a pure-data module) */
+    ...GEONAMES_TERMS,
     ...GEONAMES,
     builtBy: 'scripts/build-histcities-homonyms.mjs',
   },

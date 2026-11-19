@@ -36,7 +36,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { GEONAMES } from './lib/upstream-cadence.mjs';
+import { GEONAMES, GEONAMES_TERMS } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'data', 'gazetteer-world.json.gz');
@@ -49,9 +49,10 @@ export const GOVERNANCE = {
   'data/gazetteer-phone.json.gz': {
     /* ⚠ THIS BUNDLE IS A SLICE OF ANOTHER ONE and re-derives nothing: the rows, the credit line and
        therefore the terms are carried through from data/gazetteer-world.json.gz, whose builder
-       states them. Restating the licence here would be a second spelling of one fact, so only the
-       publisher and the derivation are declared. */
+       states them. The terms are spread from scripts/lib/upstream-cadence.mjs GEONAMES_TERMS, the one
+       spelling both builders share, so neither restates them. */
     publisher: 'GeoNames',
+    ...GEONAMES_TERMS,
     ...GEONAMES,
     builtBy: 'scripts/build-gazetteer-phone.mjs',
   },
