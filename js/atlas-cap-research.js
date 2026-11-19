@@ -1007,9 +1007,12 @@ export default [
          regroups the pieces; nothing is cut or merged here (atlas-full-authority — which pieces belong together is Atlas's call). */
       const pol = K._delegationPolicy;
       if (pol && pol.mode === 'off') return R(false, warn(L('Delegation is switched off on the server; research the pieces directly.', 'サーバで委譲が停止されています。各部分は直接調べてください。')), { meta: { status: 'failed', code: 'delegation_off', permanent: true } });
-      if (pol && pol.mode === 'independent' && Number.isInteger(pol.maxChildren) && tasks.length > pol.maxChildren) {
-        return R(false, warn(L('The server admits at most ' + pol.maxChildren + ' worker task(s) per request; ' + tasks.length + ' were given.', 'サーバが 1 つの依頼で受け付ける子の仕事は最大 ' + pol.maxChildren + ' 件です（指定は ' + tasks.length + ' 件）。')),
-          { meta: { status: 'failed', code: 'too_many_tasks', maxChildren: pol.maxChildren, given: tasks.length, childMaxCalls: pol.childMaxCalls } });
+      const isWorker = (x) => !x || !x.kind || x.kind === 'worker';   /* a capability task runs no model: it opens no child turn on the server and is not counted against the worker limit */
+      const workerCount = tasks.filter(isWorker).length, checkerCount = tasks.filter((x) => isWorker(x) && x.verify === true).length;   /* a verify:true worker is followed by a second worker — a child turn of its own */
+      const childTurns = workerCount + checkerCount;
+      if (pol && pol.mode === 'independent' && Number.isInteger(pol.maxChildren) && childTurns > pol.maxChildren) {
+        return R(false, warn(L('The server admits at most ' + pol.maxChildren + ' model worker(s) per request; this call needs ' + childTurns + ' (' + workerCount + ' worker task(s)' + (checkerCount ? ' + ' + checkerCount + ' checker(s) for verify:true' : '') + '). Capability tasks are not counted.', 'サーバが 1 つの依頼で受け付ける AI の子は最大 ' + pol.maxChildren + ' 件です。この呼び出しは ' + childTurns + ' 件を要します（worker ' + workerCount + ' 件' + (checkerCount ? ' + verify:true の検証 ' + checkerCount + ' 件' : '') + '。能力タスクは数えません）。')),
+          { meta: { status: 'failed', code: 'too_many_tasks', maxChildren: pol.maxChildren, given: tasks.length, workers: workerCount, checkers: checkerCount, childMaxCalls: pol.childMaxCalls } });
       }
       const signal = (typeof K.turnSignal === 'function') ? K.turnSignal() : undefined;
       /* (atlas-orchestration) ONE EXECUTOR, TWO KINDS OF TASK. A worker task is a model behind ai-proxy; a capability task runs one

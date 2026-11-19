@@ -116,7 +116,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { op: str(), inputs: list(str()), params: obj(), title: str(), acquire: obj(), kind: one('vector', 'raster'), sample: obj() }, required: ['inputs'] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L;
-      { await window.IntMapLazy.need('gisCore'); const _G=window.IntMapGis&&window.IntMapGis.atlas; if(!_G) return R(false, warn(L('The GIS engine could not be loaded.','GIS エンジンを読み込めませんでした。','Die GIS-Engine konnte nicht geladen werden.','Не удалось загрузить GIS-движок.','No se pudo cargar el motor GIS.'))); const _gr=await _G.run(a); return _gr.ok ? R(true,_gr.html,{meta:{gis:{op:_gr.op,dataset:_gr.dataset.id,count:_gr.dataset.count,drawn:!!_gr.drawn}}}) : R(false, warn(_gr.html)); }
+      { await window.IntMapLazy.need('gisCore'); const _G=window.IntMapGis&&window.IntMapGis.atlas; if(!_G) return R(false, warn(L('The GIS engine could not be loaded.','GIS エンジンを読み込めませんでした。','Die GIS-Engine konnte nicht geladen werden.','Не удалось загрузить GIS-движок.','No se pudo cargar el motor GIS.'))); const _gr=await _G.run(a); return _gr.ok ? R(true,_gr.html,{meta:{gis:{op:_gr.op,dataset:_gr.dataset.id,count:_gr.dataset.count,drawn:!!_gr.drawn,record:_gr.dataset}}}) : R(false, warn(_gr.html)); }
     },
   },
   {
