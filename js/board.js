@@ -223,7 +223,7 @@ export function board(HOST) {
     const card = el('div', 'bd-card'), t = el('div'), meta = el('div', 'bd-meta');
     card.append(t, meta);
     return { el: card, update() {
-      t.textContent = L('Data source: ', 'データの出典: ') + cur.spec.source;
+      t.textContent = L('Board data source: ', 'ボードのデータの出典: ') + cur.spec.source;
       const fs = Object.values(cur.state.get().filters), n = cur.state.visible(cur.rows).length;
       meta.textContent = (cur.datasetId ? L('Dataset ', 'データセット ') + cur.datasetId + ' · ' : '') + n + '/' + cur.rows.length + L(' rows pass ', ' 行が通過 / 条件 ') + fs.length + L(' filter(s)', ' 件');
     } };

@@ -21,11 +21,11 @@
  * ==========================================================================*/
 
 export const KINDS = ['table', 'chart', 'filter', 'map', 'evidence', 'param'];
-export const SECTION_OF = { map: 'Map', table: 'Data', filter: 'Data', chart: 'Analysis', evidence: 'Evidence', param: 'Execution' };
+const SECTION_OF = { map: 'Map', table: 'Data', filter: 'Data', chart: 'Analysis', evidence: 'Evidence', param: 'Execution' };
 /* Bounds, not caps on what Atlas may do: a spec is stored and re-sent, so its size has to be a number somebody can state.
    Observed 2026-11-20: a 40-row × 8-column answer is ~6 KB; 2000 rows keeps a record under ~1 MB of IndexedDB. */
 export const MAX_ROWS = 2000;
-export const MAX_WIDGETS = 12;
+const MAX_WIDGETS = 12;
 
 const s = (v, n) => (v == null ? '' : String(v).slice(0, n || 200));
 const id = (v) => /^[A-Za-z0-9_.-]{1,64}$/.test(String(v || '')) ? String(v) : '';
