@@ -123,6 +123,19 @@ function invisible(at) {
   return /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)/i.test(String(at.style || ""));
 }
 
+/* comments are cut by position, not by one regex pass (a pass can leave a new `<!--` behind it, CodeQL js/incomplete-multi-character-sanitization); an unterminated one runs to the end, as a browser reads it */
+function stripComments(s) {
+  let out = "", i = 0;
+  for (;;) {
+    const a = s.indexOf("<!--", i);
+    if (a < 0) return out + s.slice(i);
+    out += s.slice(i, a) + " ";
+    const b = s.indexOf("-->", a + 4);
+    if (b < 0) return out;
+    i = b + 3;
+  }
+}
+
 /* ── parse: HTML → the page's structure ──────────────────────────────────────────────────────────────
    → { title, text, links:[{text,href,file?}], forms:[{method,action,enctype,fields:[…],buttons:[…],password}],
        captcha, blank } — and nothing in it that a reader of the page could not see. */
@@ -131,7 +144,7 @@ export function parseHtml(html, baseUrl) {
   const captcha = CAPTCHA_TAG.test(src);
   const titleM = /<title\b[^>]*>([\s\S]*?)<\/title\s*>/i.exec(src);
   const title = titleM ? squash(titleM[1]).slice(0, 200) : "";
-  const doc = src.replace(/<!--[\s\S]*?-->/g, "").replace(RAW_DROP, " ");
+  const doc = stripComments(src).replace(RAW_DROP, " ");
   const bodyOnly = (/<body\b/i.test(doc)) ? doc.slice(doc.search(/<body\b/i)) : doc;
 
   const lines = [];

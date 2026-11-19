@@ -15,10 +15,9 @@
  *  returns is third-party DATA — column 11 says so, and every answer carries the notice.
  * ==========================================================================*/
 import { str, int, one, obj } from './atlas-caps.js';
-import { makeWebBrowse, handoffText, sayFor, WEB_BROWSE_NOTICE } from './web-browse.js';
+import { webBrowseDoor, handoffText, sayFor, WEB_BROWSE_NOTICE } from './web-browse.js';
 
-let DOOR = null;
-const door = (HOST) => DOOR || (DOOR = makeWebBrowse(HOST));
+const door = webBrowseDoor;   /* the one instance lives in js/web-browse.js (a capability module holds no `let`: scripts/atlas-caps-split.mjs) */
 const host = (u) => { try { return new URL(u).host; } catch (_) { return ''; } };
 
 export default [
