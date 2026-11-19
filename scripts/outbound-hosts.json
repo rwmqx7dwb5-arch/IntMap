@@ -19,22 +19,6 @@
       }
     },
     {
-      "host": "*.s3.amazonaws.com",
-      "what": "AWS Open Data buckets — a remote Cloud-Optimised GeoTIFF read by HTTP range, only when Atlas is asked to read a dataset (the address comes from a catalogue it searched, or from the reader)",
-      "whatJp": "AWS Open Data のバケット — リモートの Cloud-Optimised GeoTIFF を HTTP Range で読む（Atlas に頼んだときだけ。宛先は検索したカタログか読者が与えたもの）",
-      "sends": {
-        "code": "area",
-        "detail": "the file path and the byte ranges of the part of the file asked for (the window the reader named)"
-      },
-      "disclosure": {
-        "en": "s3.amazonaws.com",
-        "jp": "s3.amazonaws.com"
-      },
-      "probe": {
-        "url": "https://copernicus-dem-30m.s3.amazonaws.com/readme.html"
-      }
-    },
-    {
       "host": "*.wikipedia.org",
       "what": "Wikipedia REST summaries and search in the reader’s language",
       "whatJp": "読者の言語の Wikipedia 要約と検索",
@@ -1355,6 +1339,26 @@
       "host": "openmaptiles.org",
       "what": "OpenMapTiles attribution link",
       "link": "passed to carto-basemap.js's a(href, text), which builds an <a href> in the map attribution"
+    },
+    {
+      "host": "*.s3.amazonaws.com",
+      "what": "A file on an AWS S3 bucket that the user named as s3://bucket/key (js/gis-cog.js derives the https address)",
+      "whatJp": "利用者が s3://バケット/キー で指定した AWS S3 上のファイル（js/gis-cog.js が https アドレスを導出）",
+      "sends": {
+        "code": "identifier",
+        "detail": "the file path and a byte range"
+      },
+      "disclosure": {
+        "en": "bucket-name.s3.amazonaws.com",
+        "jp": "バケット名.s3.amazonaws.com"
+      },
+      "probe": {
+        "url": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif",
+        "expect": [
+          206
+        ],
+        "why": "a Range request is answered with 206 by the bucket"
+      }
     },
     {
       "host": "openmeteo.s3.amazonaws.com",

@@ -152,6 +152,8 @@
  *  worse than either refusing or telling.
  * ==========================================================================*/
 
+import { explainFetchFailure, describeResponse, looksLikeAPage } from './gis-http.js';
+
 export function makeGisGeotiff() {
   return (function () {
 
@@ -437,7 +439,12 @@ export function makeGisGeotiff() {
       };
       let res;
       try { res = await ask(0, BLOCK_BYTES - 1); }
-      catch (e) { return bad('fetch-failed', { url: String(url), reason: String((e && e.message) || e) }); }
+      catch (e) { return bad('fetch-failed', Object.assign({ url: String(url) }, await explainFetchFailure(String(url), doFetch, e))); }
+      if (res.status === 200 && looksLikeAPage(res)) {
+        /* a sign-in or error PAGE answered the anonymous request: not a server that ignores Range */
+        try { if (res.body && res.body.cancel) res.body.cancel(); } catch (_) { }
+        return bad('http-status', Object.assign({ url: String(url), status: 200, reason: 'a web page, not the file, came back (usually a sign-in page)' }, await describeResponse(String(url), res)));
+      }
       if (res.status === 200) {
         if (!o.allowWholeFile) {
           try { if (res.body && res.body.cancel) res.body.cancel(); } catch (_) { }
@@ -448,7 +455,7 @@ export function makeGisGeotiff() {
         s.url = String(url); s.wholeFile = true; s.rangeSupported = false;
         return { ok: true, source: s };
       }
-      if (res.status !== 206) return bad('http-status', { url: String(url), status: res.status });
+      if (res.status !== 206) return bad('http-status', Object.assign({ url: String(url), status: res.status }, await describeResponse(String(url), res)));
       const cr = hdr(res, 'content-range');
       const m = /bytes\s+(\d+)\s*-\s*(\d+)\s*\/\s*(\d+)/i.exec(cr || '');
       /* ⚠ 206 WITHOUT A TOTAL is a supply whose size nobody stated, and a reader that guessed the
@@ -469,11 +476,11 @@ export function makeGisGeotiff() {
         async read(off, len) {
           let r;
           try { r = await ask(off, off + len - 1); }
-          catch (e) { return raise('fetch-failed', { url: String(url), offset: off, reason: String((e && e.message) || e) }); }
+          catch (e) { return raise('fetch-failed', Object.assign({ url: String(url), offset: off }, await explainFetchFailure(String(url), doFetch, e))); }
           src.requests++;
           /* the server answered the first range and not this one: say which fact changed */
           if (r.status === 200) return raise('range-unsupported', { url: String(url), status: 200, offset: off });
-          if (r.status !== 206) return raise('http-status', { url: String(url), status: r.status, offset: off });
+          if (r.status !== 206) return raise('http-status', Object.assign({ url: String(url), status: r.status, offset: off }, await describeResponse(String(url), r)));
           return new Uint8Array(await r.arrayBuffer());
         },
       };

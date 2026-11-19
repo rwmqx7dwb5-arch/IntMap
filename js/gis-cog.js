@@ -37,10 +37,22 @@ export function makeGisCog(deps) {
      the host, by the reader, and come back as codes (fetch-failed / http-status / range-unsupported) */
   function checkUrl(url) {
     let u;
+    /* ⚠ s3://bucket/key IS HOW A STAC ASSET NAMES A FILE ON AN OBJECT STORE (Earth Search's Copernicus DEM
+       has no other address). The scheme is AWS's own, and the https address of the same object is a
+       DERIVATION of it, not a guess: virtual-hosted style, or path style when the bucket name has a dot
+       (the wildcard certificate does not cover it). It is reported as `derivedFrom` so nobody reads it as
+       the address the catalogue gave. A requester-pays or private bucket still answers 403 and says so. */
+    let derivedFrom = null;
+    const m3 = /^s3:\/\/([^/]+)\/(.+)$/i.exec(String(url).trim());
+    if (m3) {
+      derivedFrom = String(url).trim();
+      const bucket = m3[1], key = m3[2];
+      url = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket) ? 'https://' + bucket + '.s3.amazonaws.com/' + key : 'https://s3.amazonaws.com/' + bucket + '/' + key;
+    }
     try { u = new URL(String(url)); } catch (_) { return bad('url-invalid', { url: String(url).slice(0, 200) }); }
     if (u.protocol !== 'https:') return bad('url-not-https', { protocol: u.protocol });
     if (u.username || u.password) return bad('url-has-credentials', { host: u.host });
-    return { ok: true, url: u.href };
+    return derivedFrom ? { ok: true, url: u.href, derivedFrom: derivedFrom } : { ok: true, url: u.href };
   }
 
   async function geotiff() {
@@ -164,7 +176,7 @@ export function makeGisCog(deps) {
     };
     return {
       ok: true, raster: out.grid, band: meta, coverage: coverage,
-      source: { url: u.url, level: pick.level, requests: g.source && typeof g.source.requests === 'function' ? g.source.requests() : null, fileWidth: g.width, fileHeight: g.height, fileBounds: fileBox, fileBoundsCrs: String(g.crs), crs: String(g.crs) },
+      source: { url: u.url, derivedFrom: u.derivedFrom || null, level: pick.level, requests: g.source && typeof g.source.requests === 'function' ? g.source.requests() : null, fileWidth: g.width, fileHeight: g.height, fileBounds: fileBox, fileBoundsCrs: String(g.crs), crs: String(g.crs) },
     };
   }
 
