@@ -112,6 +112,7 @@ export const GOVERNANCE = (() => {
     publisher: 'Schvitz, Rüegger, Girardin, Cederman, Weidmann, Gleditsch (ICR, ETH Zürich)',
     url: 'https://icr.ethz.ch/data/cshapes/',
     licence: 'CC BY-NC-SA 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
     attribution: true,
     paidBy: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
     /* (sales-pro-audiences) the citation the publisher asks for, as a value the open-data catalogue passes on (CITATION

@@ -101,11 +101,9 @@ export const GOVERNANCE = {
   'data/gazetteer-world.json.gz': {
     publisher: 'GeoNames',
     url: SRC,
-    /* the licence the header states for all three dumps this build reads */
-    licence: 'CC BY 4.0',
-    /* 「BY」 is part of the identifier: credit is a condition of these terms. */
-    attribution: true,
-    paidBy: 'GeoNames',
+    /* the licence the header states for all three dumps this build reads — scripts/lib/upstream-cadence.mjs
+       GEONAMES_TERMS (「BY」 is part of the identifier: credit is a condition of these terms) */
+    ...GEONAMES_TERMS,
     ...GEONAMES,
     builtBy: 'scripts/build-gazetteer.mjs',
   },
@@ -495,4 +493,4 @@ async function main() {
 
 main().catch((e) => { console.error(e); process.exit(1); });
 
-import { GEONAMES } from './lib/upstream-cadence.mjs';
+import { GEONAMES, GEONAMES_TERMS } from './lib/upstream-cadence.mjs';

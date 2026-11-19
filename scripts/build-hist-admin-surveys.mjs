@@ -135,6 +135,7 @@ export const GOVERNANCE = {
       }
     ],
     licence: 'CC BY-NC-SA 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
     cadence: 'static',
     cadenceBasis: { observed: 'on 2026-10-05 the HGIS de las Indias gazetteer is at V4 (2023-10-26); on 2026-11-17 the Müller-Crepon replication data is at V1.0', expires: 'when either publisher releases a new version', canon: 'scripts/histsurveys/hgisindias.mjs and scripts/histsurveys/mullercrepon.mjs SOURCE' },
     builtBy: 'scripts/build-hist-admin-surveys.mjs',

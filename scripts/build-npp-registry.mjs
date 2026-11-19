@@ -74,6 +74,7 @@ export const GOVERNANCE = {
     /* ⚠ THE SAME VALUE THE BUNDLE SHIPS — see the `sources` entry written below, which reads it
        from here rather than spelling CC0 a second time. */
     licence: 'CC0-1.0',
+    licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
     /* CC0 waives the conditions, so no DATA_SOURCES row is owed for this bundle. */
     attribution: false,
     ...WIKIDATA,

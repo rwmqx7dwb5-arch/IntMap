@@ -96,7 +96,8 @@ const EP = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
    ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
 export const GOVERNANCE = (() => {
   /* one builder, three tiers (--levels / --out): the same upstream and the same cadence for each */
-  const rec = { publisher: 'OpenHistoricalMap', url: EP, ...OPENHISTORICALMAP, builtBy: 'scripts/build-hist-admin1.mjs' };
+  /* CC0, as the header above states for OpenHistoricalMap; no credit is a condition, so no DATA_SOURCES row is owed */
+  const rec = { publisher: 'OpenHistoricalMap', url: EP, licence: 'CC0 1.0', licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', attribution: false, ...OPENHISTORICALMAP, builtBy: 'scripts/build-hist-admin1.mjs' };
   return { 'data/hist-admin1.js': rec, 'data/hist-admin2.js': rec, 'data/hist-admin3.js': rec };
 })();
 

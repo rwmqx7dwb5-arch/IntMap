@@ -70,11 +70,16 @@ const SB = 'https://www.sciencebase.gov/catalog/';
    npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
    突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
 export const GOVERNANCE = (() => {
-  /* ⚠ A CITATION IS NOT A LICENCE, AND NOT A PUBLISHER. This build states Slab2's citation
-     (Hayes et al. 2018) and its ScienceBase distribution, and nothing about terms; both facets
-     stay silent. */
+  /* ⚠ A CITATION IS NOT A LICENCE, AND NOT A PUBLISHER. The publisher and the terms below are not read off the
+     citation (Hayes et al. 2018): the release is a USGS ScienceBase item, and the terms are the ones
+     js/reference-data.js already publishes for it («USGS Slab2 — subduction zone geometry»: public domain,
+     no credit condition, https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits). */
   const rec = {
+    publisher: 'U.S. Geological Survey (ScienceBase)',
     url: SB,
+    licence: 'Public domain',
+    licenceUrl: 'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',
+    attribution: false,
     cadence: 'static',
     cadenceBasis: {
       observed: 'Slab2 is a published model (Hayes et al. 2018) whose ScienceBase release has not been superseded',

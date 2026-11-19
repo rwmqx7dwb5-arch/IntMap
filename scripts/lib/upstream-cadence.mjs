@@ -47,6 +47,21 @@ export const GEONAMES = {
   },
 };
 
+/* ⚠ TERMS, NOT CADENCE — THE SAME «ONCE PER UPSTREAM» FOR THE FACTS THAT DO NOT CHANGE WITH THE BUILDER.
+   Three builders slice or derive from the same GeoNames dumps; each used to state the terms itself (one of
+   them said «restating would be a second spelling» and stayed silent). Spread into a record that is ONLY
+   GeoNames' material — never into a record that also carries another upstream's rows.
+   observed: the cities500 / allCountries dump header states CC BY 4.0, read by scripts/build-gazetteer.mjs
+   («the licence the header states for all three dumps this build reads»); js/reference-data.js row «GeoNames»
+   carries the same terms and is the row that pays the credit.
+   expires: if GeoNames changes the licence its dump header states. */
+export const GEONAMES_TERMS = {
+  licence: 'CC BY 4.0',
+  licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  attribution: true,
+  paidBy: 'GeoNames',
+};
+
 export const OURAIRPORTS = {
   cadence: 'P1D',
   cadenceBasis: {
