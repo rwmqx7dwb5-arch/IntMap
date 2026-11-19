@@ -3044,7 +3044,9 @@ export function makeGisOps() {
           return true;
         });
       }
-      return withGeoStats({ ok: true, features: out }, led);
+      /* (time-spatial-base) the runner states how the inputs' periods combine (see vectorOutTime): an intersection exists only where
+         both inputs do; a difference is a's shape with b removed, so it keeps a's period (no statement) */
+      return withGeoStats({ ok: true, features: out, validTime: kind === 'intersect' ? 'intersection' : undefined }, led);
     }
 
     /* ── union: every part of both inputs, exactly once (#R743) ─────────────────────────────────
@@ -3130,7 +3132,7 @@ export function makeGisOps() {
         }
       }
 
-      return withGeoStats({ ok: true, features: out }, led);
+      return withGeoStats({ ok: true, features: out, validTime: 'union' }, led);   /* (time-spatial-base) the bracket of both periods */
     }
 
     async function runDissolve(ds, params, R, ctx) {
@@ -6453,15 +6455,13 @@ export function makeGisOps() {
          tick is only awaited when a frame has passed. ⚠ AND THERE ARE NOT TWO IMPLEMENTATIONS — the
          same loop runs either way; `ctx` decides only whether it ever hands the thread back. */
       const ctx = makeCtx(opts);
-      const stampValidTime = (r, rule) => { if (r && r.ok) r.validTime = rule; return r; };
       const RUN = {
         filter: () => runFilter(ds[0], params, R, ctx),
         buffer: () => runBuffer(ds[0], params, R, ctx),
         clip: () => runClip(ds[0], ds[1], ctx),
-        /* (time-spatial-base) the runner states how the two inputs' periods combine — see vectorOutTime */
-        intersect: async () => stampValidTime(await runOverlay('intersect', ds[0], ds[1], ctx), 'intersection'),
+        intersect: () => runOverlay('intersect', ds[0], ds[1], ctx),
         difference: () => runOverlay('difference', ds[0], ds[1], ctx),
-        union: async () => stampValidTime(await runUnion(ds[0], ds[1], ctx), 'union'),
+        union: () => runUnion(ds[0], ds[1], ctx),
         dissolve: () => runDissolve(ds[0], params, R, ctx),
         centroid: () => runPointOf('centroid', ds[0], ctx),
         pointOnSurface: () => runPointOf('pointOnSurface', ds[0], ctx),
