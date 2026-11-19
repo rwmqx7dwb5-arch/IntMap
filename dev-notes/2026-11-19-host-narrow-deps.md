@@ -56,3 +56,8 @@ CI で実測して、広げすぎた分を戻した。
 2. テストの classic-script 読み込みを 1 つの器に集めてから、`IntMapDialog`（42 件）・`IntMapLabelScale`（48 件）を import 化。
    以降の候補は `--plan` の leaf: `IntMapWx`（34）・`IntMapHistScale`（26）・`IntMapCache`（26）。
 3. `IM_HOST` のメンバー数そのものは減らしていない。スライスの一覧にも現れないメンバーを落とす段が、その次。
+
+## 性能予算
+
+`js/host-slice.js` は eager に入る新しいモジュール 1 本（約 1.5 KB）なので `check:perf` の `eager.modules` が 911 → 912。理由は上のとおり
+（依存契約を 1 か所に持つ）で、`tests/perf-baseline.json` をこの PR で 1 だけ上げた。raw/gzip の幅は超えていない。
