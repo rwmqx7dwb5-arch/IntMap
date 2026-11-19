@@ -129,6 +129,8 @@ export const KERNELS = {
      number or a named refusal — a replayed step produces, and a reader comparing two loads is
      entitled to know that. */
   /* (gis-scale) ops-11 HASH ONLY: a result estimated above 8 M positions is held as chunks and a few ops run over it group by group. Every size that answered before takes the path it took and answers byte for byte (tests/gis-scale-checks.test.mjs compares the two); what is new is a representation and two named refusals for sizes that used to run out of memory. */
+  /* (gis-network) HASH ONLY: two new ops (`network`, `networkDisrupt`) that no saved recipe names, a call-time read of the kernel they
+     need, and one line in vectorOutTime (rule 'none') that only they reach. Every op that existed replays to the same numbers and refusals. */
   /* (voronoi) HASH ONLY: a new op (`voronoi`) that no saved recipe names, and a call-time read of the
      kernel it needs. Every op that existed replays to the same numbers and the same refusals. */
   /* (wave4-refine) ops-9 -> ops-10: `voronoi` checks that the clipped cells cover the window (summed planar area
@@ -144,7 +146,7 @@ export const KERNELS = {
   /* (gov-gis-terms) ops-12 -> ops-13: a REPLAYED STEP NOW REGISTERS A RECORD THAT SAYS MORE — `provenance.upstreams` carries each
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
-  'js/gis-ops.js': { version: 'ops-13', sha256: '1d5ac5e9ea9ca67aae1ee3f5bbe30c1e0b20148c50350a08da377e023baaeb56' },
+  'js/gis-ops.js': { version: 'ops-13', sha256: 'ff5e18199bc4948268ca51f8335fe178e8aaed17e078828840191336aa168682' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -294,6 +296,11 @@ export const KERNELS = {
      and the branch-and-bound search for the farthest place. Raise it when a replayed `voronoi` step
      would draw a different border or name a different farthest place. */
   'js/gis-voronoi.js': { version: 'voronoi-1', sha256: '2ca8a32a3066960fd9e2c3a393359db9cc279da71158affc844755e9dee2acc3' },
+  /* (gis-network) network-1: the first version. Graph construction (3-D grid snapping, endpoint or vertex nodes), Brandes
+     betweenness, harmonic closeness, Dinic max flow with the min cut, Yen's k loop-free routes and the intact-versus-damaged
+     comparison of a disruption. Raise it when a replayed `network` / `networkDisrupt` step would name a different node,
+     a different cut, a different route or a different loss. */
+  'js/gis-network.js': { version: 'network-1', sha256: '116dc959977eaca475dbeb31652d5429a9b6d99b9d298dc7154c1327d167946d' },
   'js/gis-crs.js': { version: 'crs-3', sha256: 'f3a8a70462b3eba1449be8f86dc27278fb835af2861593c6bda58dbc87c715cc' },
 };
 

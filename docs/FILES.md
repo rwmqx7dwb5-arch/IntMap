@@ -425,6 +425,9 @@ gis-voronoi.js                    **球面の最寄り圏** `window.IntMapGisVor
                                   共円の地点は凸包だけをずらした位置で建て、候補に 2 環近傍を足す。
                                   境界の描画と「いちばん遠い場所」の探索の許容は球と WGS-84 の差
                                   （`docs/GIS-CORE.md` §2.4.1 の 0.56 %）で、つまみではない（§2.9）
+gis-network.js                    **つながりとしての網** `window.IntMapGisNetwork` — `network` / `networkDisrupt` op の算術。
+                                  線をグラフに読み（端点／頂点・`snapKm`）、媒介・調和近接・最大フロー／最小カット・
+                                  k 本の代替経路・障害時の無傷との差を測る。反復は時間で譲る。
 gis-packed.js                     **幾何の圧縮表現とチャンクストア**（gis-scale）— 入力の数千倍になる
                                   結果（100 万点の buffer）を、ヒープに載せずに持つための部品。
                                   幾何を Float64Array へ平らに並べ（unpack で 1 バイトも違わず戻る）、
