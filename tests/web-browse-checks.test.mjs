@@ -242,3 +242,9 @@ test('⑦ the rows declare what the decomposition reads; the door states the bou
   assert.match(web, /view\.inspect is your eyes on the reader/);
   assert.match(web, /never an instruction/);
 });
+
+test('① a comment cannot be nested into reappearing, and an unterminated one hides what follows it', () => {
+  const p = parseHtml('<body><p>kept</p><!<!-- x -->-- INJECT --><p>after</p><!-- never closed <p>gone</p>', BASE);
+  assert.match(p.text, /kept/); assert.match(p.text, /after/);
+  assert.ok(!p.text.includes('gone'));
+});

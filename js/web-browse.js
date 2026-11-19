@@ -63,6 +63,9 @@ export function handoffText(h, L) {
     'このページには' + what + 'が必要で、Atlas は代行しません。ご自身で開いて手続きを済ませ、ファイルをダウンロードしてここに添付してください。以降は添付ファイルから続けます。');
 }
 
+let _door = null;
+export function webBrowseDoor(HOST) { return _door || (_door = makeWebBrowse(HOST)); }
+
 export function makeWebBrowse(HOST) {
   let state = null;
 
