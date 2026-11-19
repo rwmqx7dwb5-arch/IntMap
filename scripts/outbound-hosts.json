@@ -1322,7 +1322,7 @@
       },
       "probe": {
         "url": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif",
-        "expect": 206,
+        "expect": [206],
         "why": "a Range request is answered with 206 by the bucket"
       }
     },
