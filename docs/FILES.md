@@ -1326,7 +1326,7 @@ world-flows-core.js               その事実の全部（純粋なモジュー�
 evidence-graph.js               **数値の出自の長期グラフ**（純粋）— 元の事実（source・版は追記）と IntMap/AI が作った派生（derived・入力の版と計算を固定）を分け、`trace`／`impact`／`staleness`／`wouldStale` で元データ〜回答の数値を遡り、更新の影響先を調べる。
 evidence-graph-record.js        Evidence Graph の記録係 — GIS データセット（`bindGis`）と Atlas 回答の数値（`recordAnswer`、`graphRef` 経由で GIS 鎖へ）。モデルが書いた URL/id は節を作らない。
 world-graph-store.js            **永続の世界グラフの読み口**（遅延・純粋）— Supabase の `world_graph_*`（対象・型付きの辺・値）を、世界オブジェクトの索引と同じ型
-                                  （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `find` / `near`）。結ぶのは識別子（`ids`）で綴りではない。
+                                  （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `findPersisted` / `nearPersisted` / `freshness`〔フィードの最終確認〕）。結ぶのは識別子（`ids`）で綴りではない。
                                   データベースが答えなかったことは `unavailable` / `failed` で返し、空のグラフとは区別する。能力 `research.object` / `research.related` が読む
 card-clearance.js                 カードが覆わない部分に地図を収める余白（fitBounds の padding）。js/news-story.js と js/quake-history.js も同じ規則を閉包に持つ
 aftershock.js                     **余震の見通し**のカードと地図——M5 以上の地震について、今後 1 日〜1 年に各規模の余震が起きる確率と
@@ -2123,7 +2123,7 @@ supabase/
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
                                   correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /
                                   place-watch.js〔見守る場所の判定——近さ・強さ・新しさ。今はページだけが読む。将来のサーバー評価が同じ規則を使うためここに置く〕 /
-                                  supabase-keys.js〔project key の唯一の読み手。新しい secret・publishable key を優先し、旧 JWT はフォールバック〕 /
+                                  supabase-keys.js〔project key の唯一の読み手。新しい secret・publishable key を優先し、旧 JWT はフォールバック〕 / world-graph-ports.js〔港湾の面の取り込み＝Wikidata・UN/LOCODE・Eurostat を識別子で結ぶ純粋なモジュール。Edge Function と node の検査が同じものを読む〕 /
                                   great-circle.js〔大円距離 `haversineKm`（地球半径 6,371 km）の唯一の実装。ページと関数が import する〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
