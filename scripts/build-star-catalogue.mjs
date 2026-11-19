@@ -82,6 +82,8 @@ export const GOVERNANCE = (() => {
      anywhere in this build, so only 「誰の・どこから」 is declared. */
   const rec = {
     upstreams: SOURCES.map((s) => ({ publisher: s.name, url: s.url })),
+    priority: { rank: ['Hipparcos Catalogue (ESA 1997, CDS I/239)', 'Bright Star Catalogue, 5th Revised Ed. (Hoffleit & Warren 1991)'],
+      over: 'SOURCES is tried in order and the first that answers wins the whole run; BSC5 is the fallback (no per-star merge)' },
     cadence: 'static',
     cadenceBasis: {
       observed: 'all three upstreams are finished catalogues: Hipparcos (ESA 1997, CDS I/239) and the Bright Star Catalogue 5th revised edition (Hoffleit & Warren 1991) at two mirrors',

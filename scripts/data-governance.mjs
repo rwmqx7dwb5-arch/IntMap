@@ -33,6 +33,8 @@
  *                       bytes it writes.
  *    ledger-shrinks     everything already violating the four above is written down in
  *                       data/governance-ledger.json, and that file may only get SMALLER.
+ *    precedence-declared a declared source priority agrees with the record's own upstreams (disjoint: one
+ *                       question per upstream; rank: stated together with its reason).
  *    facets-accounted   every FACET of every subject is stated, undeclared-with-a-reason, or
  *                       not-applicable-with-a-reason. Never an absent key — that is the whole of
  *                       「何を知らないかを知っている」 ([[intmap-data-must-not-claim-an-author-it-lacks]]).
@@ -1192,6 +1194,32 @@ async function main() {
     : m.facetGaps.slice(0, 6).map((g) => g.subject + ': '
       + (g.reasons ? 'reason(s) outside REASONS — ' + g.reasons.join(',')
         : [g.missing.length ? 'unaccounted ' + g.missing.join(',') : '', g.twice.length ? 'twice ' + g.twice.join(',') : '', g.alien.length ? 'not a facet ' + g.alien.join(',') : ''].filter(Boolean).join('; '))).join(' | '));
+
+  /* ── 6b. precedence-declared ─────────────────────────────────────────────────────────── */
+  /* ⚠ 申告の「形」ではなく「中身が上流と合っているか」を測る。disjoint は上流と同数の問いを持つこと、rank は理由 over を伴うこと
+     （rank の名前は上流の正式名の写しではなく短い呼び名なので、綴りの一致は測らない）。
+     優先規則が無いこと自体は台帳が数える（ここでは落とさない）。 */
+  {
+    const bad = [];
+    let nDisjoint = 0, nRank = 0;
+    for (const s of m.subjects) {
+      if (s.kind !== 'builder' || !s.record || !s.record.priority || typeof s.record.priority !== 'object') continue;
+      const up = Array.isArray(s.record.upstreams) ? s.record.upstreams : null;
+      const pr = s.record.priority;
+      if (Array.isArray(pr.disjoint)) {
+        nDisjoint++;
+        if (!up || up.length < 2) bad.push(s.subject + ': priority.disjoint on a record with ' + (up ? up.length : 0) + ' upstream(s)');
+        else if (pr.disjoint.length !== up.length) bad.push(s.subject + ': priority.disjoint has ' + pr.disjoint.length + ' entries for ' + up.length + ' upstreams');
+        else if (!pr.disjoint.every((t) => typeof t === 'string' && t.trim())) bad.push(s.subject + ': priority.disjoint has an empty entry');
+      } else if (pr.rank != null) {
+        nRank++;
+        if (typeof pr.over !== 'string' || !pr.over.trim()) bad.push(s.subject + ': priority.rank without the reason (over)');
+      }
+    }
+    say('precedence-declared', bad.length === 0, bad.length === 0
+      ? 'every declared source priority matches its upstreams (' + nDisjoint + ' disjoint, ' + nRank + ' ranked)'
+      : bad.slice(0, 8).join(' | '));
+  }
 
   /* ── 7. outbound-disclosed ────────────────────────────────────────────────────────────── */
   /* ⚠ THE SAME REFUSAL OF AN EMPTY UNIVERSE as the four above: a parser that found no host has

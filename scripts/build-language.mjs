@@ -54,6 +54,7 @@ export const GOVERNANCE = (() => {
         attribution: true,
         paidBy: 'Language identity, genealogical classification and endangerment status — Glottolog (CC BY 4.0)' },
     ],
+    priority: { disjoint: ['which languages a country lists and their shares', 'language identity, classification, endangerment and localized names'] },
     /* the shorter of the two: the Factbook's shares move monthly, Glottolog releases twice a year */
     ...FACTBOOK,
     builtBy: 'scripts/build-language.mjs',

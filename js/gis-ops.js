@@ -61,6 +61,8 @@
  *      { ok:false, why, detail? }
  * ==========================================================================*/
 
+import { read } from './data-governance.js';
+
 export function makeGisOps() {
   return (function () {
 
@@ -6153,6 +6155,47 @@ export function makeGisOps() {
        取れたか」 and 「取れたもののうちどこまで計算できたか」 are two different questions with two
        different fixes, so `computed` sits beside `inputs` rather than overwriting it. What they share
        is the summary word: an answer that lost rows is not complete, whatever its inputs were. */
+    /* ══ ⚠⚠ (#gov) 出力は、入力の出典・条件・取得時刻・対象時点を引き継ぐ ═══════════════════════════
+       inheritCoverage は「どこまで取れたか」だけを運び、**誰のデータか・どの条件で再配布できるか**は 1 つも
+       運ばなかった。CC BY の入力から作った buffer を書き出すと、記録は何も主張せず、export は
+       「ライセンスの記載が無い」と述べた——入力の義務が、演算を 1 回挟んだだけで黙って消えた。
+       ⚠ ここは**導出**であって新しい主張ではない: 入力の provenance（取得レコードなら `rights`、演算出力なら
+       その `upstreams`）に**書かれていたものだけ**を、入力ごとに 1 行として写す。書かれていない入力も
+       `{ input }` だけの行として残す——その行が null の `creditRequired` を作り、js/data-governance.js
+       read() の「最も厳しい義務が残り、沈黙は『不要』にならない」規則が束全体の答えを決める
+       （ここで 1 つの値に畳まない: 束の条件は上流ごとに違う）。
+       ⚠ 演算出力が入力のとき、その `upstreams` を平らにして引き継ぐ（演算を重ねても落ちない）。 */
+    function inheritTerms(ds) {
+      const out = [];
+      const iso = (v) => { if (typeof v === 'number' && Number.isFinite(v)) { try { return new Date(v).toISOString(); } catch (_) { return null; } } return (typeof v === 'string' && v.trim()) ? v : null; };
+      for (const d of ds) {
+        if (!d) continue;
+        const p = d.provenance || null;
+        if (p && Array.isArray(p.upstreams) && p.upstreams.length) {
+          for (const u of p.upstreams) { try { out.push(JSON.parse(JSON.stringify(u))); } catch (_) { out.push({ input: d.id }); } }
+          continue;
+        }
+        const src = p && p.rights && typeof p.rights === 'object' && !Array.isArray(p.rights) ? p.rights : p;
+        const t = read(src);
+        const row = { input: d.id };
+        if (t.publisher != null) row.publisher = t.publisher;
+        if (t.url != null) row.url = t.url;
+        if (t.licence != null) row.licence = t.licence;
+        if (t.licenceUrl != null) row.licenceUrl = t.licenceUrl;
+        if (t.creditRequired != null) row.attribution = t.creditRequired;
+        /* ⚠ 表示の文は、booleanの attribution と同じ行に並ぶと read() の 1 欄に潰れる（先に当たった綴りが勝つ）。
+           文のほうを自分で拾う: 表示する義務の中身を、真偽の陰に落とさない。 */
+        const credit = t.credit != null ? t.credit : (src && typeof src.credit === 'string' && src.credit.trim() ? src.credit : null);
+        if (credit != null) row.credit = credit;
+        if (t.paidBy != null) row.paidBy = t.paidBy;
+        const at = iso(p && (p.at != null ? p.at : (p.readAt != null ? p.readAt : p.retrievedAt)));
+        if (at) row.retrievedAt = at;
+        if (p && p.statedTime) row.asOf = String(p.statedTime);
+        out.push(row);
+      }
+      return out;
+    }
+
     function inheritCoverage(ds, stats, opId) {
       const lost = (stats && typeof stats.geometryFailed === 'number' && stats.geometryFailed > 0)
         ? { failed: stats.geometryFailed, why: stats.geometryWhy || null }
@@ -6568,6 +6611,9 @@ export function makeGisOps() {
          said anything, which is the state every record made from an imported file is in. */
       const cov = inheritCoverage(ds, res.stats, decl.id);
       if (cov) prov.coverage = cov;
+      /* (#gov) 出典・条件・取得時刻・対象時点。See inheritTerms. */
+      const terms = inheritTerms(ds);
+      if (terms.length) prov.upstreams = terms;
       const grid = rasterOutTime(ds, R, res.shapeOnly);
       /* (time-spatial-base) VALID time of a vector output, and — separately — when it was recorded. */
       const vt = res.raster ? null : vectorOutTime(ds, R, res.validTime, decl);
@@ -6680,7 +6726,8 @@ export function makeGisOps() {
     /* (time-spatial-base) ops-11 -> ops-12: A RECIPE REPLAYS TO A DIFFERENT PERIOD. `intersect` and `union` of two
        inputs that each declare a constant period used to register the FIRST input's period; they now register
        the overlap / the bracket (or none, when unstated or disjoint). Geometry and columns are unchanged. */
-    const KERNEL_VERSION = 'ops-12';
+    /* (gov-gis-terms) ops-12 -> ops-13: a replayed step registers a record that says more (`provenance.upstreams`, inheritTerms); no cell or geometry changes. */
+    const KERNEL_VERSION = 'ops-13';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,

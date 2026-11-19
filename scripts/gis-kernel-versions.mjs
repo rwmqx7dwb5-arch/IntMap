@@ -140,7 +140,10 @@ export const KERNELS = {
   /* (time-spatial-base) ops-11 -> ops-12: `intersect` / `union` register the overlap / the bracket of the two inputs' constant periods
      (or none, when an input never stated one or the periods never meet) where ops-11 registered the first input's. Geometry and
      columns are unchanged; the recipe now also records `inputTimes`, `timeRule` and `recordedAt` (js/gis-ops.js vectorOutTime). */
-  'js/gis-ops.js': { version: 'ops-12', sha256: '15bc27de84dfda828d035f51e18138bdf1d09e54d090a0fc5640508a415c5e97' },
+  /* (gov-gis-terms) ops-12 -> ops-13: a REPLAYED STEP NOW REGISTERS A RECORD THAT SAYS MORE — `provenance.upstreams` carries each
+     input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
+     arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
+  'js/gis-ops.js': { version: 'ops-13', sha256: '16f2b99b43fbf439c4b4a129e951a0b94fef8e85783af56181f2daf45fec7839' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /

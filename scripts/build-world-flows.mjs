@@ -63,6 +63,7 @@ export const GOVERNANCE = {
       { publisher: 'Natural Earth', url: 'https://www.naturalearthdata.com/', licence: 'public domain', attribution: false,
         fields: 'ISO_N3_EH, ISO_A3_EH, ISO_A2_EH, ADM0_A3, NAME_EN, NAME_JA, LABEL_X, LABEL_Y — read from data/ne-countries (the shapes the map draws)' },
     ],
+    priority: { disjoint: ['migrant stocks by destination and origin', 'the place table (names, ISO codes, label points); a place is named from Natural Earth’s row, else DESA’s name'] },
     /* the instant the newest stock describes (DESA: «at mid-year»), and the row that pays the one credit the file owes (Natural
        Earth requires none) */
     asOf: '2024-07-01',

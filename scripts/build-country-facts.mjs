@@ -117,6 +117,7 @@ export const GOVERNANCE = {
     /* three upstreams under two different sets of terms; the file has no single licence and saying
        it did would be a claim none of them made */
     upstreams: UPSTREAMS.map((s) => ({ publisher: s.n, url: s.u, licence: s.licence })),
+    priority: { disjoint: ['capital, currency, languages, area, land borders, UN membership, demonym', 'time zones (tz)', 'the key set of countries only'] },
     ...IANA_TZDB,
     builtBy: 'scripts/build-country-facts.mjs',
   },
