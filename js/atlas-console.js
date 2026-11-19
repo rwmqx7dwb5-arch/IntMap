@@ -1368,16 +1368,16 @@ export function atlasConsole(HOST){
     const _linkSignals = (t, c) => { if (!c) return t; if (!t) return c; try { const l = new AbortController(), f = () => { try { l.abort(); } catch (_) { /* already aborted */ } }; if (t.aborted || c.aborted) f(); else { t.addEventListener('abort', f); c.addEventListener('abort', f); } return l.signal; } catch (_) { return t; } };
     const turnSignal = () => { try{ return _abortCtl?_abortCtl.signal:undefined; }catch(_){ return undefined; } }, _fetchJSON = makeFetchJSON(turnSignal);   /* ⚠ read at CALL time — `run()` installs the controller when a turn starts, so one captured here would belong to no turn */
     /* ══ (atlas-orchestration) THE HOST LANES OF A DELEGATED CAPABILITY TASK (js/atlas-orchestrate.js makeCapabilityExecutor) ══════
-       classifyCapability(id): 'read' ONLY for a capability the registry itself describes as reading and writing nothing — risk
-       'read-only' (row column 7), no writes (column 5) and no confirmation (column 8) — and that is not research.delegate (a task
-       that delegates is the recursion this lane must not open). 'unknown' when nothing resolves; every other capability is 'other'.
+       classifyCapability(id): 'read' ONLY for a capability whose FACETS (js/atlas-capabilities.js facetsOf, capability-facets) say it changes no state, asks the reader
+       nothing, shows nothing, saves nothing and starts no model work, with no confirmation (column 8) — a delegating task is the recursion this lane must not open. 'unknown' when nothing resolves; every other capability is 'other'.
        Read off the table at call time: no list of ids is written here, so a capability added tomorrow is classified by what its row says.
        runReadCapability(id,args,{signal}): the SAME kernel path a call of Atlas's own takes (EXEC.execute — availability, schema,
        observation, postcondition), source 'atlas-worker' so it is never a call that may ask the reader to confirm. The result is the kernel's
        own: {ok: it reached 'completed', html, meta, code, status}; the lane turns html into text and meta into the task's data. */
     const classifyCapability = (id) => { let c=null; try{ c=CAPS.resolve(String(id||'')); }catch(_){ c=null; }
       if(!c) return 'unknown';
-      return (c.risk==='read-only' && !((c.effects&&c.effects.writes)||[]).length && String(c.confirmation||'none')==='none' && c.id!=='research.delegate') ? 'read' : 'other'; };
+      const f=c.facets||{};   /* (capability-facets) 'read' = it changes no state, asks nobody, shows nothing, saves nothing, starts no model work, and needs no confirmation — each a fact of its own, not one risk column */
+      return (!f.mutatesState && !f.asksUser && !f.showsUI && !f.savesFile && !f.delegates && String(c.confirmation||'none')==='none') ? 'read' : 'other'; };
     const runReadCapability = async (id,args,o) => { const r=await EXEC.execute(id, args||{}, {source:'atlas-worker', turnId:_curTurn, signal:(o&&o.signal)||undefined});
       return { ok:!!r&&r.status==='completed', html:(r&&r.html)||'', meta:(r&&r.meta)||undefined, code:(r&&r.code)||'', status:r&&r.status }; };
     /* (delegation-agency) describeCapability(id): the argument schema of a capability, as JSON text, for a worker that has been granted it — read off the registry row at call time, so a capability added tomorrow describes itself. */

@@ -406,6 +406,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var FORBIDDEN_SUBSTITUTES = {"routing.isochrone":["map.radius"],"routing.route":["sim.flyAnimate","map.drawLine"],"map.radius":["routing.isochrone"],"sim.tsunami":["sim.earthquake"],"research.mapReport":["research.historicalMap"],"sim.ballistic":["sim.flyAnimate"],"research.historicalMap":["research.mapReport"]};
     var EQUIVALENTS = {"data.countryCard":["data.timeSeries"],"research.mapReport":["research.situationMap"],"research.situationMap":["research.mapReport"]};
     var ANSWERS = {"research.brief":1,"research.mapReport":1,"research.situationMap":1,"research.historicalMap":1,"research.analyze":1};
+    var ASKS_USER = {"dialog.ask":1};
+    var DELEGATES = {"research.delegate":1};
     /* ⚠ GENERATED POLICY — END */
 
     /* ══ OBSERVERS ═══════════════════════════════════════════════════════════════════════════════
@@ -1613,6 +1615,35 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       }
     }
 
+    /* ══ (capability-facets) WHAT A CAPABILITY DOES, AS INDEPENDENT FACTS ═══════════════════════════════════
+       `risk` (column 7) answers ONE question — how hard is it to undo — and was being read as if it answered
+       "may a child AI run this?". It does not: `dialog.ask` is risk 'read', writes nothing and confirms
+       nothing, yet it puts a question in front of the reader. Reading, changing state, reaching outside,
+       asking, showing and saving are separate facts, and each consumer (the child-AI lane, the confirmation
+       rule, autonomous runs) asks for the ones it cares about. DERIVED from the row where the row already says
+       it, and from the entry's `policy` (asksUser, delegates) where only the implementation knows:
+         mutatesState  risk is not 'read', or the row names something it writes
+         network       the result carries a third party's words (column 11), or risk is 'external'. ⚠ A LOWER BOUND:
+                       it is what the row declares, not a scan of every fetch a run makes
+         asksUser      policy.asksUser — the reader is asked something and must answer
+         showsUI       produces something the reader SEES change (map, panel, chart, camera, route, view, object, time)
+                       — as opposed to 'explanation' (text handed back) and 'file'
+         savesFile     produces 'file'
+         delegates     policy.delegates — starts other model work
+       Nothing here is a list of ids. js/atlas-console.js classifyCapability reads these, and
+       tests/atlas-capability-facets-checks.test.mjs holds every row to them. */
+    var SEEN_PRODUCES = ['map', 'panel', 'chart', 'camera', 'route', 'view', 'object', 'time'];
+    function facetsOf(id, row, writes, produces, ingests) {
+      return {
+        mutatesState: row[7] !== 'read' || writes.length > 0,
+        network: ingests === 'external' || row[7] === 'external',
+        asksUser: !!ASKS_USER[id],
+        showsUI: produces.some(function (p) { return SEEN_PRODUCES.indexOf(p) >= 0; }),
+        savesFile: produces.indexOf('file') >= 0,
+        delegates: !!DELEGATES[id]
+      };
+    }
+
     function build(row) {
       var id = row[0], legacy = row[1], aliases = row[2] ? row[2].split(',') : [];
       var obsKind = row[4];
@@ -1632,6 +1663,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         lazyModules: lazy,
         effects: { reads: [], writes: writes, conflictKeys: writes.slice() },
         produces: produces,
+        facets: facetsOf(id, row, writes, produces, ingests),
         risk: { read: 'read-only', session: 'reversible-session', persist: 'persistent-setting', external: 'external' }[row[7]] || 'reversible-session',
         confirmation: row[8],
         ingests: ingests,
@@ -2646,7 +2678,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           return {
             id: c.id, legacy: c.legacy, aliases: c.aliases.slice(), category: c.category,
             observerKind: c.observerKind, effects: c.effects, produces: c.produces,
-            risk: c.risk, confirmation: c.confirmation, ingests: c.ingests || '', targetPolicy: c.targetPolicy,
+            facets: c.facets, risk: c.risk, confirmation: c.confirmation, ingests: c.ingests || '', targetPolicy: c.targetPolicy,
             lazyModules: c.lazyModules, withdrawn: c.withdrawn ? c.withdrawn.why : null,
             isFallback: c.isFallback, forbiddenSubstitutes: c.forbiddenSubstitutes,
             equivalents: c.equivalents,
