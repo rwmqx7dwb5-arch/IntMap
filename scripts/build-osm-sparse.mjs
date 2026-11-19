@@ -43,6 +43,7 @@ export const GOVERNANCE = (() => {
     publisher: 'OpenStreetMap contributors',
     url: EPS[0],
     licence: 'ODbL',
+    licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
     /* ⚠ 「ODbL」 IS THE NAME OF THE TERMS AND NOT A READING OF THEM. Whether credit is a condition
        is stated by js/reference-data.js (「OpenStreetMap is ODbL 1.0 and does」), and the row that
        pays it is named per bundle because the two bundles are credited separately. */

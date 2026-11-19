@@ -33,6 +33,11 @@ export const GOVERNANCE = {
   'data/language-aliases.json': {
     publisher: 'Glottolog',
     url: REPO,
+    /* the licence GLOTTOLOG_STAMP below states for the same upstream */
+    licence: 'CC BY 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    attribution: true,
+    paidBy: 'Language identity, genealogical classification and endangerment status — Glottolog (CC BY 4.0)',
     ...GLOTTOLOG,
     builtBy: 'scripts/lib/glottolog.mjs',
   },

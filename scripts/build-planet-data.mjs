@@ -230,3 +230,18 @@ fs.writeFileSync(mp, JSON.stringify({
   keptPerBody: KEEP
 }, null, 2) + '\n');
 process.stdout.write('wrote data/planets.json\n');
+
+/* ⚠ (data-governance) data/planets/ IS A DIRECTORY OF JPEGs, AND A JPEG CANNOT STATE ITS TERMS. scripts/data-governance.mjs
+   measures a shard directory through its index (a file named index/manifest/catalogue), so this is that file: the
+   Solar System Scope record from GOVERNANCE (the same literal — never spelled a second time) beside the per-body
+   listing the build already measured (size, bytes, the URL each came from). It states only what the build holds:
+   freshly fetched textures carry this run's time, kept textures carry the time of the run that fetched them
+   (prev.built) — never today's date over bytes this run did not write. */
+{
+  const textures = manifest.textures || prev.textures || null;
+  if (textures) {
+    const gov = { ...GOVERNANCE['data/planets/'], generatedAt: manifest.textures ? manifest.built : prev.built };
+    fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify({ gov, textures }, null, 2) + '\n');
+    process.stdout.write('wrote data/planets/index.json\n');
+  }
+}

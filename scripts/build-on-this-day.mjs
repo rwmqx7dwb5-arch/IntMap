@@ -63,6 +63,7 @@ export const GOVERNANCE = {
     publisher: 'IntMap (derived from CShapes 2.0, OpenHistoricalMap and the war record in this repository; dated events beside them from Wikidata, CC0)',
     url: 'https://icr.ethz.ch/data/cshapes/',
     licence: 'CC BY-NC-SA 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
     attribution: true,
     paidBy: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
     cadence: 'static',
