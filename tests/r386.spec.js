@@ -23,6 +23,10 @@ const SOURCES = [
   { id: 'sinclair2', name: 'KOMO', slug: 'komo', source_type: 'broadcaster', country: 'US', hq_lng: -122.3, hq_lat: 47.6, source_family: 'sinclair', homepage_url: 'https://komonews.com' },
 ];
 
+/* 固定の日付は時計とともに古くなる: 一覧の述語は 72 時間より古い出来事を数えない（js/app-body.js computeFilteredNews）ので、
+   出来事の時刻は「いま」から数える（36 時間前を起点に +h 時間）。 */
+const at = (h) => new Date(Date.now() - 36 * 3600e3 + h * 3600e3).toISOString();
+
 const mem = (id, source_id, title, at, description) => ({
   relation: 'same_event', assignment_score: 0.5, assigned_by: 'deterministic',
   news_articles: { id, title, description: description || '', canonical_url: 'https://example.org/a' + id,
@@ -34,28 +38,28 @@ const EVENTS = [
     representative_article_id: 11, primary_category: 'disasters', secondary_categories: [],
     category_confidence: 0.8, category_evidence: { by: 'classifier' },
     rep_lng: -119.81, rep_lat: 39.53, rep_place_name_en: 'Reno', location_confidence: 0.7,
-    first_published_at: '2026-08-24T06:00:00Z', last_article_at: '2026-08-24T11:00:00Z',
-    materially_updated_at: '2026-08-24T11:00:00Z', article_count: 4, independent_source_count: 3,
+    first_published_at: at(6), last_article_at: at(11),
+    materially_updated_at: at(11), article_count: 4, independent_source_count: 3,
     cluster_confidence: 0.62, manual_lock: false, status: 'active', merged_into: null,
     news_event_articles: [
       /* ⚠ 数量が媒体間で食い違っている: BBC は 3 人、AP は 5 人。 */
-      mem(11, 'bbc', 'Fast-moving Reno wildfire forces thousands to flee', '2026-08-24T06:00:00Z', 'At least 3 people injured as the fire crossed the ridge.'),
-      mem(12, 'apnews', 'Human-started wildfire nears Reno, Nevada', '2026-08-24T07:30:00Z', 'Officials said at least 5 people injured overnight.'),
+      mem(11, 'bbc', 'Fast-moving Reno wildfire forces thousands to flee', at(6), 'At least 3 people injured as the fire crossed the ridge.'),
+      mem(12, 'apnews', 'Human-started wildfire nears Reno, Nevada', at(7.5), 'Officials said at least 5 people injured overnight.'),
       /* ⚠ 同じ系列（Sinclair）の 2 本。独立媒体としては 1 票にしかならず、詳細では
          「同系列」と印が付く。数量は BBC と同じなので、相違の値は 3 と 5 の 2 つ。 */
-      mem(13, 'sinclair1', 'Reno wildfire prompts evacuations', '2026-08-24T09:00:00Z', 'At least 3 people injured.'),
-      mem(14, 'sinclair2', 'Reno wildfire prompts evacuations', '2026-08-24T11:00:00Z', 'At least 3 people injured.'),
+      mem(13, 'sinclair1', 'Reno wildfire prompts evacuations', at(9), 'At least 3 people injured.'),
+      mem(14, 'sinclair2', 'Reno wildfire prompts evacuations', at(11), 'At least 3 people injured.'),
     ] },
   { id: 2, public_id: 'etest002', representative_title: 'Canada says it will match new US tariffs dollar for dollar',
     representative_article_id: 21, primary_category: 'business', secondary_categories: [],
     category_confidence: 1, category_evidence: { by: 'feed' },
     rep_lng: -106.3, rep_lat: 56.1, rep_place_name_en: 'Canada', location_confidence: 0.4,
-    first_published_at: '2026-08-24T04:00:00Z', last_article_at: '2026-08-24T05:00:00Z',
-    materially_updated_at: '2026-08-24T05:00:00Z', article_count: 2, independent_source_count: 2,
+    first_published_at: at(4), last_article_at: at(5),
+    materially_updated_at: at(5), article_count: 2, independent_source_count: 2,
     cluster_confidence: 0.71, manual_lock: false, status: 'active', merged_into: null,
     news_event_articles: [
-      mem(21, 'apnews', 'Canada to match US tariffs dollar for dollar', '2026-08-24T04:00:00Z', ''),
-      mem(22, 'aljazeera', 'Canada vows dollar-for-dollar response to US tariffs', '2026-08-24T05:00:00Z', ''),
+      mem(21, 'apnews', 'Canada to match US tariffs dollar for dollar', at(4), ''),
+      mem(22, 'aljazeera', 'Canada vows dollar-for-dollar response to US tariffs', at(5), ''),
     ] },
   /* ⚠⚠ **同じ系列だけが数を変えた出来事。** 速報 3 人 → 続報 6 人は 1 つの声の**更新**で
      あって、媒体間の相違ではない。⇒ ここは相違 0 件でなければならない。地点も無い。 */
@@ -63,12 +67,12 @@ const EVENTS = [
     representative_article_id: 31, primary_category: 'world', secondary_categories: [],
     category_confidence: 0.5, category_evidence: { by: 'feed' },
     rep_lng: null, rep_lat: null, rep_place_name_en: null, location_confidence: null,
-    first_published_at: '2026-08-24T03:00:00Z', last_article_at: '2026-08-24T05:00:00Z',
-    materially_updated_at: '2026-08-24T05:00:00Z', article_count: 2, independent_source_count: 1,
+    first_published_at: at(3), last_article_at: at(5),
+    materially_updated_at: at(5), article_count: 2, independent_source_count: 1,
     cluster_confidence: null, manual_lock: false, status: 'active', merged_into: null,
     news_event_articles: [
-      mem(31, 'sinclair1', 'A one-voice story with no location at all', '2026-08-24T03:00:00Z', 'At least 3 people injured.'),
-      mem(32, 'sinclair2', 'A one-voice story with no location at all', '2026-08-24T05:00:00Z', 'At least 6 people injured.'),
+      mem(31, 'sinclair1', 'A one-voice story with no location at all', at(3), 'At least 3 people injured.'),
+      mem(32, 'sinclair2', 'A one-voice story with no location at all', at(5), 'At least 6 people injured.'),
     ] },
 ];
 

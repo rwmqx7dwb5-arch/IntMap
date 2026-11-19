@@ -54,6 +54,19 @@ test.beforeAll(async ({ browser }) => {
   context = await browser.newContext({ storageState: seededStorageState(), viewport: { width: 1280, height: 800 } });
   await installHermeticRouting(context);
   expect(API_KEYS, 'js/countries-ui.js still hands back loadCountryData').toContain('loadCountryData');
+  /* ⚠ 平均寿命は同梱から外れ、世界銀行からだけ入る（js/countries-ui.js は lifeExp:null で行を作り、js/wb-layers.js
+     applyStat が満たす）。相関パネルの既定の Y 軸は寿命なので、hermetic が api.worldbank.org を遮断するこの環境では
+     散布図に載る国が 0 になる——製品の退行ではなく、入力が無いだけ。実 API の形（[meta, [{countryiso3code,date,value}]]）で
+     SP.DYN.LE00.IN だけを固定の小さな応答にする。他の系列は hermetic のまま（fallback）。値は 2022 年前後の妥当な範囲。 */
+  const LIFE_EXP = { JPN: 84.5, KOR: 83.6, ESP: 83.1, ITA: 83.5, AUS: 83.3, FRA: 82.9, CAN: 82.6, DEU: 80.7, GBR: 80.7, USA: 77.4,
+    CHN: 78.2, TUR: 76.0, MEX: 75.0, BRA: 75.5, RUS: 73.2, IDN: 67.6, EGY: 70.2, IND: 67.7, ZAF: 62.3, NGA: 54.5 };
+  await context.route('**/api.worldbank.org/**', async (route) => {
+    if (!route.request().url().includes('/indicator/SP.DYN.LE00.IN')) return route.fallback();
+    const rows = Object.entries(LIFE_EXP).map(([iso3, v]) => ({ indicator: { id: 'SP.DYN.LE00.IN', value: 'Life expectancy at birth, total (years)' },
+      country: { id: iso3.slice(0, 2), value: iso3 }, countryiso3code: iso3, date: '2022', value: v, unit: '', obs_status: '', decimal: 1 }));
+    await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify([{ page: 1, pages: 1, per_page: 400, total: rows.length, sourceid: '2', lastupdated: '2025-01-01' }, rows]) });
+  });
   /* while this is true, `loadCountryData()` returns a REJECTED promise to everything that goes through the
      host — exactly what a loader that threw would give them. It starts false so the session boots with real
      country data. */
@@ -98,6 +111,8 @@ const pillText = () => page.evaluate(() => {
 });
 
 test('#R545 ③ (non-regression) with the data present the scatter draws and the residual map paints', async () => {
+  /* 寿命は起動後のアイドルで世界銀行から入る（js/wb-layers.js refreshStatsLatest）。パネルは開いた時点の表を読むので、入るのを待つ */
+  await page.waitForFunction(() => !!(window.IntMapWB && window.IntMapWB.get('SP.DYN.LE00.IN')), null, { timeout: 45_000 });
   await openPanel();
   const drawn = await page.waitForFunction(() => {
     const svg = document.querySelector('#corr-overlay .corr-svg-wrap svg');

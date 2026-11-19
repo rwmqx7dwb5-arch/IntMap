@@ -51,7 +51,7 @@ test.beforeAll(async ({ browser }) => {
   await context.addInitScript((seed) => {
     try {
       localStorage.setItem('intmap_ws4', JSON.stringify({ on: false }));
-      localStorage.setItem('intmap_news_cache', JSON.stringify(seed));
+      localStorage.setItem('intmap_news_cache', JSON.stringify(seed)); localStorage.setItem('intmap_news_lang', 'multi');
     } catch { /* ignore */ }
   }, NEWS_SEED);
   page = await context.newPage();

@@ -60,8 +60,19 @@ test.describe('① desktop, first visit', () => {
       const c = document.createElement('canvas').getContext('2d'); c.font = [cs.fontStyle, cs.fontWeight, cs.fontSize, cs.fontFamily].join(' ');
       return { text: i.placeholder, width: c.measureText(i.placeholder).width, room: i.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) };
     });
-    expect(ph.room, 'the field is the narrow one the health check saw (the pill between two open sidebars)').toBeLessThan(200);
+    /* below 640 px of map frame an empty search folds into its button and the input has no width (css/intmap.css) */
+    expect(ph.room, 'the empty search is folded away at this width').toBe(0);
+    await expect(page.locator('#ms-btn')).toBeVisible();
+    await page.locator('#ms-btn').click();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const ph2 = await page.evaluate(() => { const i = document.getElementById('ms-input'), cs = getComputedStyle(i); return { room: i.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) }; });
+    ph.room = ph2.room;
     expect(ph.width, `「${ph.text}」 is ${ph.width.toFixed(0)} px in a ${ph.room.toFixed(0)} px field`).toBeLessThanOrEqual(ph.room);
+
+    /* the two view pills are folded into one menu at this frame width too (css/intmap.css, same tier): the contrast and the
+       Tab walk below are about the pills, so give the frame the width where they stand. The left panel stays open. */
+    await page.setViewportSize({ width: 1700, height: 800 });
+    await page.waitForTimeout(800);
 
     /* ── contrast, light then dark ────────────────────────────────────────────────────────────── */
     for (const theme of ['light', 'dark']) {
@@ -83,7 +94,7 @@ test.describe('① desktop, first visit', () => {
     const ring = await page.evaluate(() => { const i = document.createElement('i'); i.style.color = 'var(--focus-ring)'; document.body.appendChild(i); const c = getComputedStyle(i).color; i.remove(); return c; });
     await page.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
     const stops = [];
-    for (let k = 0; k < 45; k++) {
+    for (let k = 0; k < 200; k++) {
       await page.keyboard.press('Tab');
       const s = await page.evaluate((ringColor) => {
         const a = document.activeElement; if (!a || a === document.body) return null;
@@ -103,6 +114,8 @@ test.describe('① desktop, first visit', () => {
         return { what, by: 'outline', px: cs.outlineStyle === 'solid' ? parseFloat(cs.outlineWidth) : 0, colour: cs.outlineColor };
       }, ring);
       if (s) stops.push(s);
+      /* the walk is as long as the page is: it ends when both controls the health check named have been reached (a fixed count went stale as the header grew) */
+      if (stops.some((x) => x.what === '#search-input') && stops.some((x) => /^select\.stats-sort-sel/.test(x.what))) break;
     }
     const seen = stops.filter((s) => !s.skip);
     expect(seen.length, 'Tab reached the page').toBeGreaterThan(15);

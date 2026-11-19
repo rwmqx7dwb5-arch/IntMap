@@ -24,7 +24,7 @@
  *  ない（tests/deep-tier-reds-checks.test.mjs が、dist のチャンクを名前で import する全 spec についてそれを測る）。
  *  だから R493 の主張は Atlas が実際に呼ぶ道——`IntMapConsole.dispatch({type:'inspect'})` →
  *  js/atlas-cap-view.js → js/atlas-console.js が束ねた VFRAMES——で測る。作り物の依存を注入していた頃より、
- *  測っているものが製品に近い。画素は応答の `<img>` から取る（captureFrame は台帳と同じ data URL をそこに置く）。
+ *  測っているものが製品に近い。画素は captureFrame が JPEG に符号化した戻り（toDataURL）から取る（応答の html は空）。
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
@@ -51,14 +51,23 @@ test('R493 撮ったフレームには地図が写っている（黒い矩形で
   await page.waitForFunction(() => !!(window.IntMapConsole && typeof window.IntMapConsole.dispatch === 'function'), null, { timeout: 60000 });
 
   const out = await page.evaluate(async () => {
-    const r = await window.IntMapConsole.dispatch({ type: 'inspect', include: 'map', reason: 'spec' });
+    /* ⚠ captureFrame の応答 html は空（絵は台帳とモデルへ行き、読者の吹き出しには載らない）。画素の出どころは
+       エンコーダが返した JPEG なので、公開口を足さずに HTMLCanvasElement.prototype.toDataURL を一時的に包んで
+       image/jpeg の戻りを捕まえる——撮られた絵そのもので、応答の <img> の代用品ではない。 */
+    const proto = HTMLCanvasElement.prototype, orig = proto.toDataURL, jpegs = [];
+    proto.toDataURL = function (...args) {
+      const u = orig.apply(this, args);
+      if (typeof u === 'string' && u.startsWith('data:image/jpeg')) jpegs.push(u);
+      return u;
+    };
+    let r;
+    try { r = await window.IntMapConsole.dispatch({ type: 'inspect', include: 'map', reason: 'spec' }); }
+    finally { proto.toDataURL = orig; }
     if (!r || !r.ok) return { ok: false, message: r ? r.html : 'no result' };
 
-    /* 撮った data URL を応答の <img> から戻して復号し、画素を標本する——「絵が返った」ではなく「色がある」を測る */
-    const t = document.createElement('template'); t.innerHTML = r.html;
-    const shown = t.content.querySelector('img');
-    const url = shown ? shown.getAttribute('src') : '';
-    if (!url) return { ok: false, message: 'the answer carries no picture: ' + r.html.slice(0, 200) };
+    /* 撮った data URL を復号し、画素を標本する——「絵が返った」ではなく「色がある」を測る */
+    const url = jpegs[jpegs.length - 1] || '';
+    if (!url) return { ok: false, message: 'the capture encoded no JPEG: ' + JSON.stringify(r.facts || {}).slice(0, 200) };
     const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
     const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
     const x = c.getContext('2d'); x.drawImage(img, 0, 0);

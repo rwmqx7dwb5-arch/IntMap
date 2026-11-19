@@ -184,22 +184,26 @@ test.describe('the imagery-depth memo', () => {
     const r = await page.evaluate(async () => {
       const P = window.IntMapSatProto;
       if (!P || !P.wouldStitch) return { has: false };
-      /* OPEN OCEAN — mid Pacific. Esri's imagery stops at about z8 there, so the four z+1 children of
-         a z12 tile are all the grey placeholder. Tile numbers for lng -150, lat 0 at z12. */
+      /* OPEN OCEAN — mid Pacific. Esri serves real tiles there up to z13 and the grey placeholder from z14 on
+         (the product's own comment puts open sea at z16 — js/sat-proto.js, since the placeholder is now
+         recognised by its exact bytes), so the ocean is probed at z16, where the four z+1 children of the
+         tile are all placeholder. Tile numbers for lng -150, lat 0 at z16. A z12 sea tile is real imagery. */
+      const oz = 16, on = 1 << oz;
+      const ocx = Math.floor((-150 + 180) / 360 * on), ocy = Math.floor(on / 2);
+      /* TOKYO stays at z12 */
       const z = 12, n = 1 << z;
-      const ocx = Math.floor((-150 + 180) / 360 * n), ocy = Math.floor(n / 2);
       /* TOKYO at the same zoom, where imagery goes to z19 */
       const lat = 35.681, lng = 139.767;
       const tkx = Math.floor((lng + 180) / 360 * n);
       const tky = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
-      const out = { has: true, before: { ocean: P.wouldStitch(z, ocx, ocy), tokyo: P.wouldStitch(z, tkx, tky) } };
+      const out = { has: true, oz, before: { ocean: P.wouldStitch(oz, ocx, ocy), tokyo: P.wouldStitch(z, tkx, tky) } };
       /* learn, the way the protocol learns: resolve each tile once */
-      out.oceanMode = (await P.resolve(z, ocy, ocx)).mode;
+      out.oceanMode = (await P.resolve(oz, ocy, ocx)).mode;
       out.tokyoMode = (await P.resolve(z, tky, tkx)).mode;
-      await P.tile2x(z, ocy, ocx);
+      await P.tile2x(oz, ocy, ocx);
       await P.tile2x(z, tky, tkx);
-      out.after = { ocean: P.wouldStitch(z, ocx, ocy), tokyo: P.wouldStitch(z, tkx, tky) };
-      out.oceanDepth = P.depth(z, ocx, ocy);
+      out.after = { ocean: P.wouldStitch(oz, ocx, ocy), tokyo: P.wouldStitch(z, tkx, tky) };
+      out.oceanDepth = P.depth(oz, ocx, ocy);
       out.tokyoDepth = P.depth(z, tkx, tky);
       out.learned = P.depthEntries();
       return out;
@@ -209,7 +213,7 @@ test.describe('the imagery-depth memo', () => {
     expect(r.before.ocean, 'an unknown neighbourhood is attempted — never a lost pixel').toBe(true);
     expect(r.before.tokyo, 'and so is a city').toBe(true);
     /* the ocean tile really is past Esri's coverage — that is what makes it the interesting case */
-    expect(r.oceanMode, 'mid-Pacific at z12 is beyond Esri, so it comes from an upscaled ancestor')
+    expect(r.oceanMode, 'mid-Pacific at z16 is beyond Esri, so it comes from an upscaled ancestor')
       .toBe('cropped');
     expect(r.tokyoMode, 'Tokyo at z12 is native imagery').toBe('native');
     expect(r.learned, 'the memo learned something').toBeGreaterThan(0);
@@ -220,7 +224,7 @@ test.describe('the imagery-depth memo', () => {
        nothing about z+1, so only a positively-observed STOP may block the stitch. Recording one
        number and treating it as a ceiling switched @2x off for every city. */
     expect(r.oceanDepth.stop, 'over the ocean a stop was positively observed').not.toBeNull();
-    expect(r.oceanDepth.stop, '…and it is shallower than the level the stitch needs').toBeLessThan(13);
+    expect(r.oceanDepth.stop, '…and it is shallower than the level the stitch needs').toBeLessThan(r.oz + 1);
     expect(r.tokyoDepth.stop, 'over Tokyo nothing says imagery stops — so nothing may block it').toBeNull();
     expect(r.tokyoDepth.have, 'and real imagery was seen at least at the tile fetched').toBeGreaterThanOrEqual(12);
   });

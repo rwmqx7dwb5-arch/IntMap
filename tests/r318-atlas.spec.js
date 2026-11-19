@@ -13,7 +13,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
-import { declaredCapabilityIds } from './helpers/atlas-registry.mjs';
+import { declaredCapabilityIds, CORE_TOOL_BLOCK_MAX } from './helpers/atlas-registry.mjs';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -274,7 +274,7 @@ test('R406 ②: what is sent is small, and discovery returns what matched — no
   expect(r.names, 'the core tools did not survive the build').toContain('find_capability');
   expect(r.all, 'the catalogue is gone — find_capability would have nothing to serve').toBeGreaterThan(50_000);
   /* ── «small» — and it is about the block that crosses the wire, not about the search ── */
-  expect(r.chars, `the tool block is ${r.chars} chars against a ${r.all}-char catalogue`).toBeLessThan(12_000);
+  expect(r.chars, `the tool block is ${r.chars} chars against a ${r.all}-char catalogue`).toBeLessThan(CORE_TOOL_BLOCK_MAX);
 
   /* ── relevance: what MATCHED, sized by the request rather than by a constant ── */
   expect(r.matches).toBeGreaterThan(0);

@@ -31,6 +31,10 @@ import { test, expect } from './helpers/app.js';
    7〜16 件の要求が出て①が落ちた。z6.2 は ZMAX+0.4 の外なので、①はこのレイヤーだけの主張になる。 */
 const CAMERA = { center: [139.7, 35.7], zoom: 6.2 };
 
+/* 夜間光 source の URL は実 URL か、`imnl://<epoch>/{z}/{x}/{y}`（js/antimeridian-seam.js・日付変更線をまたぐ継ぎ目の処理が実 URL へ解く）。
+   どちらでも「その epoch を指している」。要求された実 URL を見る years() は影響を受けない。 */
+const atEpoch = (u, e) => !!u && (u.includes('/default/' + e + '/') || u.startsWith('imnl://' + e + '/'));
+
 /* 1×1 の透明 PNG。中身は主張の対象ではない——「どの URL を頼んだか」だけが対象。 */
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
@@ -107,7 +111,7 @@ test('夜間光が Chronos に従う — OFF・2016・2013・同一epoch内・�
       'no year other than the newest epoch may be asked for').toEqual([]);
     expect(on.state.epoch, 'a live clock shows the most recent record').toBe('2016-01-01');
     expect(on.vis, 'and the layer is visible').toBe('visible');
-    expect(on.srcTiles, 'the raster source points at that epoch').toContain('/default/2016-01-01/');
+    expect(atEpoch(on.srcTiles, '2016-01-01'), 'the raster source points at that epoch').toBe(true);
     expect(on.legend, 'the legend names the DATA year').toContain('2016');
     expect(on.legend, '…and the sensor').toContain('VIIRS');
     expect(on.nightSideWant, 'the globe wants the same epoch as the layer').toBe(on.state.epoch);
@@ -116,7 +120,7 @@ test('夜間光が Chronos に従う — OFF・2016・2013・同一epoch内・�
     asked = [];
     await goYear(page, 2013);
     await page.waitForFunction(() => {
-      try { return (window.__imap.getSource('src-nightsat').tiles[0] || '').includes('/default/2012-01-01/'); }
+      try { const u = window.__imap.getSource('src-nightsat').tiles[0] || ''; return u.includes('/default/2012-01-01/') || u.startsWith('imnl://2012-01-01/'); }
       catch (_) { return false; }
     }, null, { timeout: 20000, polling: 100 });
     /* ⚠ 待つのは「主張する対象」であって固定の 500 ms ではない（#R399 の作法）。実測: 同じ位置で
@@ -129,7 +133,7 @@ test('夜間光が Chronos に従う — OFF・2016・2013・同一epoch内・�
     expect(y2013.state.epoch, '2013 resolves to the 2012 epoch').toBe('2012-01-01');
     expect(y2013.state.clockYear, 'the clock is where it was put').toBe(2013);
     expect(y2013.state.matches, 'and the two years are NOT the same, which the reader must be told').toBe(false);
-    expect(y2013.srcTiles, 'the source followed').toContain('/default/2012-01-01/');
+    expect(atEpoch(y2013.srcTiles, '2012-01-01'), 'the source followed').toBe(true);
     /* 「Chronos年と、表示中データの年を混同しないこと」——凡例は両方を言う */
     expect(y2013.legend, 'the legend states the data year').toContain('2012');
     expect(y2013.legend, '…and the clock year beside it').toContain('2013');
@@ -138,7 +142,7 @@ test('夜間光が Chronos に従う — OFF・2016・2013・同一epoch内・�
     /* ── ④ 同じ epoch の中を動かしても、1 件も取り直さない ────────────────────────── */
     await goYear(page, 2017);
     await page.waitForFunction(() => {
-      try { return (window.__imap.getSource('src-nightsat').tiles[0] || '').includes('/default/2016-01-01/'); }
+      try { const u = window.__imap.getSource('src-nightsat').tiles[0] || ''; return u.includes('/default/2016-01-01/') || u.startsWith('imnl://2016-01-01/'); }
       catch (_) { return false; }
     }, null, { timeout: 20000, polling: 100 });
     await settle();
@@ -176,7 +180,7 @@ test('夜間光が Chronos に従う — OFF・2016・2013・同一epoch内・�
     }, null, { timeout: 20000, polling: 120 });
     const back = await page.evaluate(READ);
     expect(back.state.epoch, 'returning to Now restores the newest epoch').toBe('2016-01-01');
-    expect(back.srcTiles, 'and the source with it').toContain('/default/2016-01-01/');
+    expect(atEpoch(back.srcTiles, '2016-01-01'), 'and the source with it').toBe(true);
   } finally {
     /* 共有ページを元に戻す——失敗した回でも */
     await flip(page, false).catch(() => { });
