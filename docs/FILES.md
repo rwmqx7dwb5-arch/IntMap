@@ -953,6 +953,7 @@ atlas-examples.js                 Atlas — 例文チップの候補プール（
 atlas-view-subject.js             Atlas — 「いま何を見ているか」の測定（視界に入る国・陸と海の割合・
                                   名前のある水域・タイルが名指す地名と山・戦略拠点・km 単位の縮尺）
 atlas-styles.js                   Atlas パネルのスタイルシート 1 本（atlasPanelCSS）
+atlas-mcp-client.js               Atlas — 汎用 MCP クライアント（Streamable HTTP の発見・実行・CSP/CORS の失敗理由・外部出力を信頼できないデータとして囲う。mcp-client）
 atlas-metrics.js                  Atlas — 国の指標の集合 1 つ（METRICS＋XMET）と、その名前を解く解決器 1 つ。
                                   各レコードが自ら名乗るラベル（5 言語＋現在の言語）で引き当て、拒否は有効な全鍵を列挙する
 atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラの寄せ方。
@@ -1045,6 +1046,7 @@ atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（di
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
+atlas-cap-mcp.js                  Atlas の能力 — 外部 MCP サーバ（mcp.servers / connect / call / act。mcp-client）
 atlas-cap-navigation.js           Atlas の能力 — ナビゲーション（navigation.*）
 atlas-cap-news.js                 Atlas の能力 — ニュースの分類（news.category）
 atlas-cap-notebook.js             Atlas の能力 — 調査ノート（notebook.list / open / compare。前に調べたことを探す・地図を戻す・今と比べる）
@@ -2086,7 +2088,7 @@ supabase/
   migrations/*.sql                DB の唯一の設計図（66本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
-  functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
+  functions/<name>/index.ts       Edge Functions（23本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /

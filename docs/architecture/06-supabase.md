@@ -55,9 +55,9 @@
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。
 
-### 6.2 Edge Functions — **22本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **23本**（`_shared/` は関数ではない）
 
-> **22本すべてを `supabase/config.toml` に `[functions.*]` として宣言する**（ヘッダコメントの deploy フラグは設定ではない）。
+> **23本すべてを `supabase/config.toml` に `[functions.*]` として宣言する**（ヘッダコメントの deploy フラグは設定ではない）。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`rate-limit.js`・`volcano-parse.js` などを置くライブラリで、
 > import した関数の中に CLI がバンドルする。`[functions._shared]` は書かない。
 
@@ -92,6 +92,7 @@
   CAP 索引が指すリンクは索引と同じ origin か明示リストだけを `fetchGuarded`（索引 8 MB・CAP 1 MB・並列 6）で読み、落とした本数は `offHost`。`?ma=` は並列 2。MeteoAlarm は要約する
   （`?ma=<国>,…&lang=…` で複数国をまとめ、地域ごとの行——最悪階級・災害名・`<polygon>`——に落とす。上限は1国 400 区域、`areaTotal` が実数）。フィリピンは `?ph=1`（Atom の索引から
   地域ごとの最新1件の CAP を州ごとの行にし、PAR の矩形と `expires` 切れは落とす）。上流の期限は 45 秒、キャッシュは 15 秒。カナダ ECCC は ACAO を返すので通さない。
+- **`mcp-relay`** … Atlas の外部 MCP クライアント（§5「外部 MCP サーバ」）の CORS 橋。`verify_jwt = false` だが関数内で JWT を検証し、**ログイン済みの利用者だけ**。https・公開 DNS 名（解決結果も公開のみ）・JSON-RPC 1 件（method は 5 つ）・転送ヘッダ 5 つ・リダイレクトなし・256 KB／4 MiB／40 秒・呼び出し元の上限。絞りの正本は `_shared/mcp-relay-policy.js`。応答は JSON の封筒で返し、中身は解釈しない。
 - **`fetch-relay`** … ACAO を返さず専用の relay も持たない上流のための汎用の ACAO 付与中継（`--no-verify-jwt`・秘密なし）。転送するのは
   `supabase/functions/_shared/fetch-relay-policy.js` の規則が認める URL だけで、同じファイルを `js/proxy-fetch.js` も import する。規則は上流ごとにホスト名（完全一致）・パス（錨付き）・
   クエリ鍵の集合と値の形・Content-Type・バイト上限・期限・共有キャッシュの寿命を持つ。規則は 4 本——IMF DataMapper、「511」交通カメラ一覧 13 サイト、GEBCO 2020 水深（opentopodata）、
