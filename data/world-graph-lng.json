@@ -5,558 +5,6 @@
  "class": "Q15709854",
  "nodes": [
   {
-   "ref": "facility:wd-Q59590911",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Brunsbüttel LNG Terminal",
-   "country": "DEU",
-   "lng": 9.188888888,
-   "lat": 53.895,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q59590911"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q59590911",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q60768180",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Dörtyol LNG terminal",
-   "country": "TUR",
-   "lng": 36.1494,
-   "lat": 36.8675,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q60768180"
-   },
-   "validFromMs": 1514764800000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q60768180",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q104316724",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Incheon LNG terminal",
-   "country": "KOR",
-   "lng": 126.602,
-   "lat": 37.35124,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q104316724"
-   },
-   "validFromMs": 820454400000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q104316724",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q104324039",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Northeast Gateway Deepwater Port",
-   "country": "USA",
-   "lng": -70.616774,
-   "lat": 42.398986,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q104324039"
-   },
-   "validFromMs": 1199145600000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q104324039",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q104518607",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Risavika Liquefaction Plant",
-   "country": "NOR",
-   "lng": 5.5761,
-   "lat": 58.9237,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q104518607"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q104518607",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q104518878",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Tornio Manga LNG terminal",
-   "country": "FIN",
-   "lng": 24.1652,
-   "lat": 65.75273,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q104518878"
-   },
-   "validFromMs": 1514764800000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q104518878",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q104518980",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Gibraltar LNG terminal",
-   "country": "GIB",
-   "lng": -5.365557635,
-   "lat": 36.149162652,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q104518980"
-   },
-   "validFromMs": 1546300800000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q104518980",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q104524380",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Fredrikstad LNG terminal",
-   "country": "NOR",
-   "lng": 10.9595717,
-   "lat": 59.1875329,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q104524380"
-   },
-   "validFromMs": 1293840000000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q104524380",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q104524403",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Mosjøen LNG terminal",
-   "country": "NOR",
-   "lng": 13.183976641,
-   "lat": 65.850289495,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q104524403"
-   },
-   "validFromMs": 1167609600000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q104524403",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q104546684",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Etki LNG terminal",
-   "country": "TUR",
-   "lng": 26.902222222,
-   "lat": 38.743888888,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q104546684"
-   },
-   "validFromMs": 1451606400000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q104546684",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q110788484",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Pecém Regasification Terminal",
-   "country": "BRA",
-   "lng": -38.7972897,
-   "lat": -3.5317969,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q110788484"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q110788484",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q111082440",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Wilhelmshaven LNG Terminal",
-   "country": "DEU",
-   "lng": 8.108888888,
-   "lat": 53.641666666,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q111082440"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q111082440",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q113958502",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Stade LNG Terminal",
-   "country": "DEU",
-   "lng": null,
-   "lat": null,
-   "provenance": null,
-   "ids": {
-    "wikidata": "Q113958502"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q113958502",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q114247507",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Lubmin LNG Terminal",
-   "country": "DEU",
-   "lng": null,
-   "lat": null,
-   "provenance": null,
-   "ids": {
-    "wikidata": "Q114247507"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q114247507",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q114349437",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Mukran LNG Terminal",
-   "country": "DEU",
-   "lng": null,
-   "lat": null,
-   "provenance": null,
-   "ids": {
-    "wikidata": "Q114349437"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q114349437",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q116056600",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Botaş Saros FSRU Terminal",
-   "country": "TUR",
-   "lng": 26.639444444,
-   "lat": 40.638055555,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q116056600"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q116056600",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q120862931",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Zhouchi Liquefied Natural Gas Plant",
-   "country": "TWN",
-   "lng": 120.313611111,
-   "lat": 22.51825,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q120862931"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q120862931",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q132655899",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "LNG terminal",
-   "country": "HRV",
-   "lng": 14.534047,
-   "lat": 45.20052,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q132655899"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q132655899",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q133308287",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Aceh-Nias LNG Terminal",
-   "country": "IDN",
-   "lng": 95.2938741,
-   "lat": 5.5648441,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q133308287"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q133308287",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q139769894",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Terminal Marítima de Tuxpan (PEMEX)",
-   "country": "MEX",
-   "lng": -97.4,
-   "lat": 20.95,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q139769894"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q139769894",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q141159406",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Gdańsk FSRU terminal",
-   "country": "POL",
-   "lng": null,
-   "lat": null,
-   "provenance": null,
-   "ids": {
-    "wikidata": "Q141159406"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q141159406",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q30972644",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "PFLNG Satu",
-   "country": "MYS",
-   "lng": null,
-   "lat": null,
-   "provenance": null,
-   "ids": {
-    "wikidata": "Q30972644"
-   },
-   "validFromMs": null,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q30972644",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q2526824",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Gate terminal",
-   "country": null,
-   "lng": 4.0592,
-   "lat": 51.97,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q2526824"
-   },
-   "validFromMs": 1104537600000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q2526824",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
-   "ref": "facility:wd-Q113992266",
-   "type": "facility",
-   "kind": "LNG terminal",
-   "name": "Eemshaven LNG terminal",
-   "country": null,
-   "lng": 6.8536,
-   "lat": 53.4443,
-   "provenance": "feed_coordinate",
-   "ids": {
-    "wikidata": "Q113992266"
-   },
-   "validFromMs": 1640995200000,
-   "validToMs": null,
-   "facts": {},
-   "sources": [
-    {
-     "name": "Wikidata",
-     "url": "https://www.wikidata.org/wiki/Q113992266",
-     "licence": "CC0"
-    }
-   ]
-  },
-  {
    "ref": "facility:wd-Q1116627",
    "type": "facility",
    "kind": "LNG terminal",
@@ -1564,6 +1012,558 @@
     {
      "name": "Wikidata",
      "url": "https://www.wikidata.org/wiki/Q30972609",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972644",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "PFLNG Satu",
+   "country": "MYS",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q30972644"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972644",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q2526824",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Gate terminal",
+   "country": null,
+   "lng": 4.0592,
+   "lat": 51.97,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q2526824"
+   },
+   "validFromMs": 1104537600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q2526824",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q113992266",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Eemshaven LNG terminal",
+   "country": null,
+   "lng": 6.8536,
+   "lat": 53.4443,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q113992266"
+   },
+   "validFromMs": 1640995200000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q113992266",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q59590911",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Brunsbüttel LNG Terminal",
+   "country": "DEU",
+   "lng": 9.188888888,
+   "lat": 53.895,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q59590911"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q59590911",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q60768180",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Dörtyol LNG terminal",
+   "country": "TUR",
+   "lng": 36.1494,
+   "lat": 36.8675,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q60768180"
+   },
+   "validFromMs": 1514764800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q60768180",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104316724",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Incheon LNG terminal",
+   "country": "KOR",
+   "lng": 126.602,
+   "lat": 37.35124,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104316724"
+   },
+   "validFromMs": 820454400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104316724",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104324039",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Northeast Gateway Deepwater Port",
+   "country": "USA",
+   "lng": -70.616774,
+   "lat": 42.398986,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104324039"
+   },
+   "validFromMs": 1199145600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104324039",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104518607",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Risavika Liquefaction Plant",
+   "country": "NOR",
+   "lng": 5.5761,
+   "lat": 58.9237,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104518607"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104518607",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104518878",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Tornio Manga LNG terminal",
+   "country": "FIN",
+   "lng": 24.1652,
+   "lat": 65.75273,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104518878"
+   },
+   "validFromMs": 1514764800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104518878",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104518980",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Gibraltar LNG terminal",
+   "country": "GIB",
+   "lng": -5.365557635,
+   "lat": 36.149162652,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104518980"
+   },
+   "validFromMs": 1546300800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104518980",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104524380",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Fredrikstad LNG terminal",
+   "country": "NOR",
+   "lng": 10.9595717,
+   "lat": 59.1875329,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104524380"
+   },
+   "validFromMs": 1293840000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104524380",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104524403",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Mosjøen LNG terminal",
+   "country": "NOR",
+   "lng": 13.183976641,
+   "lat": 65.850289495,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104524403"
+   },
+   "validFromMs": 1167609600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104524403",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104546684",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Etki LNG terminal",
+   "country": "TUR",
+   "lng": 26.902222222,
+   "lat": 38.743888888,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104546684"
+   },
+   "validFromMs": 1451606400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104546684",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q110788484",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Pecém Regasification Terminal",
+   "country": "BRA",
+   "lng": -38.7972897,
+   "lat": -3.5317969,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q110788484"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q110788484",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q111082440",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Wilhelmshaven LNG Terminal",
+   "country": "DEU",
+   "lng": 8.108888888,
+   "lat": 53.641666666,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q111082440"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q111082440",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q113958502",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Stade LNG Terminal",
+   "country": "DEU",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q113958502"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q113958502",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q114247507",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Lubmin LNG Terminal",
+   "country": "DEU",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q114247507"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q114247507",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q114349437",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Mukran LNG Terminal",
+   "country": "DEU",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q114349437"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q114349437",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q116056600",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Botaş Saros FSRU Terminal",
+   "country": "TUR",
+   "lng": 26.639444444,
+   "lat": 40.638055555,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q116056600"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q116056600",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q120862931",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Zhouchi Liquefied Natural Gas Plant",
+   "country": "TWN",
+   "lng": 120.313611111,
+   "lat": 22.51825,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q120862931"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q120862931",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q132655899",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "LNG terminal",
+   "country": "HRV",
+   "lng": 14.534047,
+   "lat": 45.20052,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q132655899"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q132655899",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q133308287",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Aceh-Nias LNG Terminal",
+   "country": "IDN",
+   "lng": 95.2938741,
+   "lat": 5.5648441,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q133308287"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q133308287",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q139769894",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Terminal Marítima de Tuxpan (PEMEX)",
+   "country": "MEX",
+   "lng": -97.4,
+   "lat": 20.95,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q139769894"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q139769894",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q141159406",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Gdańsk FSRU terminal",
+   "country": "POL",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q141159406"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q141159406",
      "licence": "CC0"
     }
    ]

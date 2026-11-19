@@ -23,7 +23,7 @@ newsjp: Atlasが、ページを閉じても残る永続のグラフから、施�
 ## 2. 作ったもの
 
 - `supabase/migrations/20261119150000_world_graph.sql`: `world_graph_nodes`（`ref`＝ページの `type:id`・`ids`＝外部識別子・存在期間）・`world_graph_edges`（述べた側 1 行・期間・確度・出典・同一の文は一意）・`world_graph_claims`（値＋単位＋期間＋出典・並べて持つ）。RPC `world_graph_subgraph`（辺をどちらの向きにも・`rels`・`depth`・`at_ms`）・`world_graph_find`（ref／識別子／完全一致の名前）・`world_graph_near`。
-- `scripts/world-graph/build-lng.mjs` → `data/world-graph/lng.json`＋seed migration（`20261119150100_…`）。企業は IntMap の企業アトラスが同じ Wikidata id を持てば `company:<atlas id>` になる（4 社: ExxonMobil・Pemex・Shell・Petrobras）。結果: 対象 102（ターミナル 68・企業 34）・辺 49・取扱量 48。
+- `scripts/world-graph/build-lng.mjs` → `data/world-graph-lng.json`＋seed migration（`20261119150100_…`）。企業は IntMap の企業アトラスが同じ Wikidata id を持てば `company:<atlas id>` になる（4 社: ExxonMobil・Pemex・Shell・Petrobras）。結果: 対象 102（ターミナル 68・企業 34）・辺 49・取扱量 48。
 - `js/world-graph-store.js`: 行 → `geo.worldObject` → 同じ索引。データベースが答えないことは `unavailable`／`failed` で返し、空のグラフと区別する。
 - Atlas: **能力は増やしていない**。`research.object` は session に無い ref・`wikidata:Q…`・名前をこのグラフへ訊き（`via: "graph"`）、値を単位・期間・出典つきで答える。`research.related` は `rels`・`depth`・`at` を永続グラフにも向け、企業アトラスの拠点も同じ索引へ書いて「ターミナル→運営企業→その企業の他の拠点」を 1 回のたどりにし、近接の問いには `world_graph_near` を足す。dispatch の doc 文（SYS に出る説明）に永続グラフの存在と使い方を足した。
 

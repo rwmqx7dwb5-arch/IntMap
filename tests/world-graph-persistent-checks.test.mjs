@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · world-graph-persistent — the graph that outlives the page, walked from a real terminal
  * ----------------------------------------------------------------------------
- *  The data are REAL: data/world-graph/lng.json is what scripts/world-graph/build-lng.mjs read from Wikidata
+ *  The data are REAL: data/world-graph-lng.json is what scripts/world-graph/build-lng.mjs read from Wikidata
  *  (CC0) — LNG terminals, the operator and owner statements with the dates Wikidata gives them, the stated capacity.
  *  The database is replaced by `fakeDB`, a few lines of JS that answer the three RPCs from that snapshot. ⚠ It is
  *  a stand-in for the transport only: the SQL itself (recursive walk, «as of», both directions) is asserted by
@@ -23,7 +23,7 @@ import { makeAtlasWorldObjects } from '../js/atlas-world-objects.js';
 import { makeWorldGraphStore } from '../js/world-graph-store.js';
 import caps from '../js/atlas-cap-research.js';
 
-const snap = JSON.parse(fs.readFileSync(new URL('../data/world-graph/lng.json', import.meta.url), 'utf8'));
+const snap = JSON.parse(fs.readFileSync(new URL('../data/world-graph-lng.json', import.meta.url), 'utf8'));
 const seed = fs.readFileSync(new URL('../supabase/migrations/20261119150100_world_graph_lng_seed.sql', import.meta.url), 'utf8');
 const geo = makeAtlasGeoObject();
 const fresh = () => makeAtlasWorldObjects({ geo });

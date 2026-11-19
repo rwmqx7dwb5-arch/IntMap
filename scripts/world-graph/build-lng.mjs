@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · world-graph — build the LNG-terminal slice of the persistent world graph from Wikidata
  * ----------------------------------------------------------------------------
- *  node scripts/world-graph/build-lng.mjs           fetch, write data/world-graph/lng.json (+ print the counts)
+ *  node scripts/world-graph/build-lng.mjs           fetch, write data/world-graph-lng.json (+ print the counts)
  *  node scripts/world-graph/build-lng.mjs --sql     also (re)write the seed migration from that snapshot
  *
  *  WHAT IT READS (all from Wikidata, CC0; one SPARQL query per relation, because OPTIONALs in one query
@@ -19,9 +19,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WIKIDATA } from '../lib/upstream-cadence.mjs';
+
+/* data-governance declaration (npm run check:datagov): the snapshot is Wikidata's statements, CC0 — public domain, no credit condition.
+   Its cadence is Wikidata's (scripts/lib/upstream-cadence.mjs). */
+export const GOVERNANCE = {
+  'data/world-graph-lng.json': {
+    publisher: 'Wikidata', url: 'https://query.wikidata.org/sparql', licence: 'CC0 1.0', licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', attribution: false,
+    ...WIKIDATA,
+    builtBy: 'scripts/world-graph/build-lng.mjs',
+  },
+};
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const OUT = path.join(ROOT, 'data', 'world-graph', 'lng.json');
+const OUT = path.join(ROOT, 'data', 'world-graph-lng.json');
 const MIG = path.join(ROOT, 'supabase', 'migrations', '20261119150100_world_graph_lng_seed.sql');
 const UA = 'IntMap-world-graph-build/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap)';
 const CLASS = 'Q15709854';
