@@ -433,7 +433,7 @@ export function isTransientFailure(code, detail) {
    {"call":{"capability":id,"args":{...}}}; a call is run by the host's kernel lane (the same one a capability task uses) and its
    result goes into the next request. Every request is one of the child's server-bounded calls, so the loop cannot outrun the
    server, and the last request is always asked for the answer. */
-const htmlText = (h) => { let o = '', inTag = false; for (const ch of String(h == null ? '' : h)) { if (ch === '<') inTag = true; else if (ch === '>') { inTag = false; o += ' '; } else if (!inTag) o += ch; } return o.split(' ').filter(Boolean).join(' '); };
+const stripTags = (h) => { let o = '', inTag = false; for (const ch of String(h == null ? '' : h)) { if (ch === '<') inTag = true; else if (ch === '>') { inTag = false; o += ' '; } else if (!inTag) o += ch; } return o.split(' ').filter(Boolean).join(' '); };
 export function toolCallOf(data) {
   const c = data && typeof data === 'object' && !Array.isArray(data) ? data.call : null;
   if (!c || typeof c !== 'object' || Array.isArray(c) || typeof c.capability !== 'string' || !c.capability.trim()) return null;
@@ -534,7 +534,7 @@ export function makeWorkerExecutor(o) {
             try {
               const out = await cap.run(wanted.capability, wanted.args, { signal: controller.signal });
               ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: wanted.capability });
-              step = { ok: !(out && out.ok === false), text: s(out && (out.text != null ? out.text : htmlText(out.html)), 3000) || (out && out.code) || '' };
+              step = { ok: !(out && out.ok === false), text: s(out && (out.text != null ? out.text : stripTags(out.html)), 3000) || (out && out.code) || '' };
               if (out && out.meta && step.ok) step.text += (step.text ? '\n' : '') + 'DATA: ' + s(JSON.stringify(out.meta), 1500);
             } catch (e) {
               if (controller.signal.aborted) return { state: 'cancelled', calls, costUsd, sources };
