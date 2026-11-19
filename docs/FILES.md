@@ -357,6 +357,15 @@ gis-remote.js                     **アプリの外のデータを探す** `wind
                                   `coverage`）／供給元が覆うと述べている（`evidence`）／世界の全部（`worldCompleteness` は常に
                                   `unproven`）。応答しなかったカタログは「無かった」ではない。ライセンスは述べられたまま、無ければ null。
                                   https 以外・認証情報つき・私的/ループバックの宛先は `url-not-public`
+gis-overture.js                   **Overture Maps を窓で読む** `window.IntMapGisOverture` — 地図全体（places ~9 千万・buildings ~25 億・
+                                  addresses・divisions・transportation・base）の GeoParquet を、**言われた窓のぶんだけ**読む。①STAC が述べる
+                                  ファイルの範囲 ②Parquet フッターの row group 統計（`bbox` の最小・最大）で絞り、③`bbox` と条件の列だけ
+                                  を走査して行番号を得、④当たった row group の残りの列を読む（hyparquet の動的 import＝別チャンク。DuckDB-WASM
+                                  は ~30 MB の WASM と `wasm-unsafe-eval` が要るので採らない）。`release()`／`themes()`／`plan()`／`query()`／
+                                  `acquire()`（結果を `window.IntMapData` のデータセットに＝次の手の入力）。⚠ リリースは**読む**（バケットは 60 日で
+                                  消す）・ホストは Privacy §4 が名指すものだけ（`host-not-disclosed`）・ライセンスは**行が述べる値の集合**で、
+                                  述べていなければ欄ごと無い・GERS ID は振り直されるので `worldNodes()` は元レコード（`sources[].record_id`）と
+                                  リリースを履歴に残す（`world_graph_id_history`）。世界の全部であるとは**述べない**（`worldCompleteness:'unproven'`）
 gis-export.js                     **データを外へ出す口** `window.IntMapGisExport`（#R756）—
                                   ベクタ → GeoJSON / CSV、ラスター → GeoTIFF（無圧縮・float32 と
                                   整数・多バンド）。⚠ **「書き出せた」は「読み直せた」ではない**

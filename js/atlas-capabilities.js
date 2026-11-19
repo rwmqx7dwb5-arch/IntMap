@@ -373,6 +373,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["sim.satellitePasses","satellitePasses","issPasses,whenIsIss,satellitesOverhead,satellitePass,passPrediction","sim","none","","explanation","read","none","point","satellitesLive"],
       ["sim.spaceWeather","spaceWeather","solarWind,solarFlare,geomagneticStorm,kpIndex,auroraChance,noaaScales,asteroidFlyby,nearEarthAsteroids","sim","none","","explanation","read","none","",""],
       ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
+      ["data.gisOverture","gisOverture","overtureMaps,worldBuildings,worldPlaces,buildingFootprints,geoparquet","data","none","","explanation","read","none","","gisCore"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
