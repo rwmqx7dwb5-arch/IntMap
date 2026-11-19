@@ -61,7 +61,7 @@
  *      { ok:false, why, detail? }
  * ==========================================================================*/
 
-import { read as readTerms } from './data-governance.js';
+import { read } from './data-governance.js';
 
 export function makeGisOps() {
   return (function () {
@@ -6129,7 +6129,7 @@ export function makeGisOps() {
           continue;
         }
         const src = p && p.rights && typeof p.rights === 'object' && !Array.isArray(p.rights) ? p.rights : p;
-        const t = readTerms(src);
+        const t = read(src);
         const row = { input: d.id };
         if (t.publisher != null) row.publisher = t.publisher;
         if (t.url != null) row.url = t.url;
