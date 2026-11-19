@@ -41,6 +41,7 @@ export default [
   {
     row: ['panel.tab',                  'tab',            '',                                                            'panel',   'panel',   'panel.tab',              'panel',               'session', 'none',   '',         ''],
     ui: { at: ['#btn-news', '#btn-info', '#btn-stats', '#btn-community'] },
+    commands: ['tab.news', 'tab.info', 'tab.stats', 'tab.atlas', 'tab.community'],
     doc: [
       { in: 'tools-panels', at: 210, text: '{"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); ' },
     ],

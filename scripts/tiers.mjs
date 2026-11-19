@@ -78,7 +78,7 @@ const DUR = join(ROOT, 'tests', 'durations.json');
 /* Specs that take part in no tier at all (see playwright.config.js for each one):
    prod-smoke runs against the deployed site after the merge; r184-imagery-profile is the renderer
    PROFILING instrument, a measurement rather than a gate. */
-export const NEVER = [/^prod-smoke\.spec\.js$/, /^r184-imagery-profile\.spec\.js$/];
+export const NEVER = [/^prod-smoke\.spec\.js$/, /-profile\.spec\.js$/];
 
 /** every spec file that exists and belongs to some tier, as `tests/<name>.spec.js` */
 export function allSpecs() {

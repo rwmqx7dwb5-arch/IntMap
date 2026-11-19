@@ -57,7 +57,8 @@
  * ==========================================================================*/
 
 /** what an entry may hold — a field outside this list is a typo nothing would ever read */
-const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalogueSilent', 'schema', 'run', 'science', 'scenario', 'ui'];
+const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalogueSilent', 'schema', 'run', 'science', 'scenario', 'ui', 'commands'];
+/* `commands` — the IntMapOS command ids this capability drives (its GUI implementation), held by scripts/atlas-capability-audit.mjs command-declared. */
 /* (feature-inventory) `ui` — where a reader does the same act WITHOUT Atlas, as measured by reading the handlers:
      { at: ['<one CSS selector>', …], login?: true }     the control(s) on the page, or the panel holding a control that has
                                                          no handle of its own; login = only a signed-in reader has it
@@ -133,7 +134,7 @@ export function capabilityEntries(modules) {
       if (e.policy != null) Object.keys(e.policy).forEach(function (k) { if (POLICY_KEYS.indexOf(k) < 0) problems.push(where + ': ' + id + ' policy has an unknown field «' + k + '» (' + POLICY_KEYS.join(', ') + ')'); });
       seenId.add(id); if (spelling) seenSpelling.add(spelling);
       out.push({ ns: ns, id: id, row: e.row, schema: e.schema, run: e.run, doc: Array.isArray(e.doc) ? e.doc : [], phrases: e.phrases || null,
-        policy: e.policy || null, goal: e.goal || null, chips: e.chips || null, catalogueSilent: e.catalogueSilent || null, science: e.science || null, scenario: e.scenario || null, ui: e.ui || null });
+        policy: e.policy || null, goal: e.goal || null, chips: e.chips || null, catalogueSilent: e.catalogueSilent || null, science: e.science || null, scenario: e.scenario || null, ui: e.ui || null, commands: e.commands || null });
     });
   });
   if (problems.length) { const err = new Error('js/atlas-caps: ' + problems.join('; ')); err.problems = problems; throw err; }
