@@ -6672,7 +6672,7 @@ export function makeGisOps() {
        (centroid / pointOnSurface / convexHull / simplify / grid) cannot change a recipe that predates
        them, and every stat that existed answers bit for bit what it answered — the chain that picks
        its value only grew arms, and the old final `else` (max) is now named. */
-    const KERNEL_VERSION = 'ops-11';
+    const KERNEL_VERSION = 'ops-12';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,
