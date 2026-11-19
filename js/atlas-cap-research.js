@@ -26,6 +26,8 @@ import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) the one shape a result names the thing it is about by */
 const W = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
+import { makeWorldGraphStore } from './world-graph-store.js';
+const G = makeWorldGraphStore({ worldObjects: W });   /* (world-graph) the persistent graph (Supabase) read into that same index */
 import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
@@ -81,11 +83,25 @@ function keepTurnPages(turn, list) {
    The index (js/atlas-world-objects.js) holds what this session already surfaced; a miss falls through to the readers
    the product already has — the loaded news, the volcano catalogue, the company atlas, the USGS feed — each of which
    writes its record down through the SAME adapters. Nothing here guesses: a name nothing holds is answered as not found. */
+/** the company atlas' data module, loaded on first use — the ONE place this file reaches for it (a name resolve and a graph hydrate both read it) */
+async function companyData() {
+  const ok = await window.IntMapLazy.need('companyPanel');
+  return ok ? window.IntMapCompanyData : null;
+}
 async function resolveWorldObject(a, K) {
   const HOST = K.HOST, q = String(a.ref || a.name || a.place || '').trim(), type = String(a.objectType || '').trim() || undefined;
   if (!q) return { obj: null, code: 'NEEDS_INPUT' };
   const hit0 = W.find(q, { type });
   if (hit0) return { obj: hit0, via: 'session' };
+  /* (world-graph) a ref or an external identifier (`facility:wd-Q123`, `wikidata:Q123`) is a key the persistent graph can answer exactly — ask it first; a name is asked last */
+  const keyed = /^[A-Za-z][A-Za-z0-9_]*:[^\s]+$/.test(q);
+  const fromGraph = async () => {
+    const g = await G.findPersisted(HOST.DB, q);
+    if (g.ok && g.object && (!type || g.object.type === type)) return { obj: g.object, via: 'graph' };
+    return g.ok ? null : { obj: null, code: 'GRAPH_' + String(g.error || 'failed').toUpperCase() };
+  };
+  let graphErr = null;
+  if (keyed) { const g = await fromGraph(); if (g && g.obj) return g; if (g) graphErr = g; }
   const want = (t) => !type || type === t;
   if (want('news_event') || want('article')) {
     const news = W.register(W.fromLoadedNews((typeof HOST.globalData !== 'undefined' && HOST.globalData) || []).filter((o) => !type || o.type === type));
@@ -99,7 +115,7 @@ async function resolveWorldObject(a, K) {
   }
   if (want('company')) {
     try {
-      const ok = await window.IntMapLazy.need('companyPanel'), D = ok && window.IntMapCompanyData;
+      const D = await companyData();
       if (D) {
         await D.index(); const row = D.get(q) || D.resolve(q);
         if (row && row.id) {
@@ -117,7 +133,34 @@ async function resolveWorldObject(a, K) {
       const hit = W.find(q, { type: 'earthquake' }); if (hit && qs.indexOf(hit) >= 0) return { obj: hit, via: 'usgs' };
     } catch (_) { /* the feed is optional here */ }
   }
-  return { obj: null, code: 'NOT_FOUND' };
+  if (!keyed) { const g = await fromGraph(); if (g && g.obj) return g; if (g) graphErr = g; }
+  /* a graph that did not answer is not a graph that holds nothing: say which */
+  return graphErr ? { obj: null, code: 'NOT_FOUND', graph: graphErr.code } : { obj: null, code: 'NOT_FOUND' };
+}
+
+/* (world-graph) A company the graph names by the atlas id (`ids.company`) has SITES in the company atlas. They are written down through the
+   same adapter as `news.company`, so «this terminal → its operator → what else it runs» is one walk over one index — joined by the id the
+   graph states, never by a spelling. A profile that cannot be read leaves the company without sites, and the answer says nothing more than that. */
+async function hydrateAtlasCompanies(objs, K) {
+  const todo = (objs || []).filter((o) => o && o.type === 'company' && o.ids && o.ids.company);
+  if (!todo.length) return 0;
+  let n = 0;
+  try {
+    const D = await companyData(); if (!D) return 0;
+    await D.index();
+    for (const o of todo) {
+      const row = D.get(o.ids.company); if (!row) continue;
+      let prof = null; try { prof = await D.profile(row.id); } catch (_) { continue; }
+      const { sites } = W.fromCompanyProfile(row, prof); W.register(sites); n += sites.length;
+    }
+  } catch (_) { /* the company atlas is optional here */ }
+  return n;
+}
+
+/** why the persistent graph added nothing, when it could not be read — a graph that did not answer is not a graph that is empty */
+function graphMode0(rels, a) { return rels.length > 0 || (a.depth != null && +a.depth > 1); }
+function graphUnreadNote(code, L) {
+  return code ? L(' (The persistent world graph could not be read: ' + String(code).replace(/^GRAPH_/, '').toLowerCase() + '.)', '（永続の世界グラフを読み込めませんでした: ' + String(code).replace(/^GRAPH_/, '').toLowerCase() + '。）') : '';
 }
 
 /** the one-line facts an object states, in the reader's language — values only, from `facts` and `time` */
@@ -271,7 +314,7 @@ export default [
     row: ['research.object',            'worldObject',    'realWorldObject,whatIsThis',                                     'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
     ui: { none: '2026-11-16' },
     doc: [
-      { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref, or an external identifier such as "wikidata:Q123" / "osm:node/123" (the same thing surfaced by two sources is ONE object; the answer lists its identifiers, the refs folded into it and look-alikes that were not merged). TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place, dataset_feature. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. Use research.related for «what else belongs with it».\n' },
+      { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref, or an external identifier such as "wikidata:Q123" / "osm:node/123" (the same thing surfaced by two sources is ONE object; the answer lists its identifiers, the refs folded into it and look-alikes that were not merged). TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place, dataset_feature. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. IntMap ALSO keeps a PERSISTENT world graph (database) that outlives the session — today the LNG terminals of the world with their operators, owners (with the dates the tie held) and stated capacity; a ref such as \"facility:wd-Q104518607\", an identifier such as \"wikidata:Q104518607\" or an exact name is looked up there, and the answer lists each number with its unit, period and source. Use research.related for «what else belongs with it».\n' },
     ],
     schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str() }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
@@ -281,7 +324,7 @@ export default [
         const msg = r.code === 'NEEDS_INPUT'
           ? L('Which object? Give its ref (from an earlier answer) or its name.', 'どの対象ですか？先の回答に出た ref か名前を指定してください。')
           : L('IntMap holds no object called «' + esc(q) + '» — name one a previous answer surfaced, or a volcano, company, loaded news event or recent earthquake.', '「' + esc(q) + '」という対象を IntMap は持っていません。先の回答に出たもの、火山・企業・読み込み済みの出来事・直近の地震の名前で指定してください。');
-        return R(false, warn(msg), { meta: { code: r.code, category: 'input', retryable: false, semanticTarget: q, produced: [], userGoalSatisfied: false } });
+        return R(false, warn(msg + graphUnreadNote(r.graph, L)), { meta: { code: r.code, category: 'input', retryable: false, semanticTarget: q, produced: [], userGoalSatisfied: false } });
       }
       const o = r.obj, placed = isFinite(+o.lng) && o.lng != null && o.lat != null;
       let h = '<div><b>' + icon('pin') + ' ' + esc(o.name || o.ref) + '</b> <span style="font-size:10.5px;color:var(--text-muted);">' + esc(o.type + (o.kind && o.kind !== o.type ? ' · ' + o.kind : '')) + ' · ' + esc(o.ref) + '</span></div>';
@@ -296,6 +339,12 @@ export default [
       if (o.validity) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('in force ', '存続期間 ') + (o.validity.fromMs != null ? new Date(o.validity.fromMs).toISOString().slice(0, 10) : '?') + ' → ' + (o.validity.toMs != null ? new Date(o.validity.toMs).toISOString().slice(0, 10) : L('now / not stated', '現在／記載なし'))) + '</div>';
       if (idn.candidates.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Not merged (same name, close by, no shared identifier): ', '同一とは扱っていない候補（同名・近接・共通の識別子なし）: ') + idn.candidates.map((c) => c.name + ' [' + c.ref + ']').join(', ')) + '</div>';
       if (idn.conflicts.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Identifier disagreement left unresolved: ', '識別子の食い違い（未解決）: ') + idn.conflicts.map((c) => (c.rel || c.scheme) + ' ' + (c.ref || (c.kept + ' vs ' + c.dropped))).join(', ')) + '</div>';
+      /* (world-graph) the numbers it carries, each with its unit, period and who said it — side by side, never merged into one */
+      if (o.claims && o.claims.length) {
+        const day = (t) => new Date(t).toISOString().slice(0, 10);
+        h += '<div style="font-size:11.5px;margin-top:3px;">' + o.claims.map((c) => esc(c.key + ' ' + c.value + (c.unit ? ' ' + c.unit : '')
+          + (c.fromMs != null ? ' (' + day(c.fromMs) + (c.toMs != null && c.toMs !== c.fromMs ? ' → ' + day(c.toMs) : '') + ')' : L(' (period not stated)', '（期間の記載なし）')) + (c.source ? ' — ' + c.source : ''))).join('<br>') + '</div>';
+      }
       const cc = W.claimConflicts(o);
       if (cc.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Sources disagree on: ', '出典間で値が異なる項目: ') + cc.map((c) => c.key + (c.unitMismatch ? ' (' + L('units differ', '単位が異なる') + ')' : '')).join(', ')) + '</div>';
       return R(true, h, { exec: { worldObjects: { subject: o.ref, objects: [W.brief(o)], via: r.via, identity: idn, claimConflicts: cc.length ? cc : undefined } }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: o.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
@@ -304,7 +353,7 @@ export default [
     row: ['research.related',           'worldRelated',   'related,relatedObjects,whatIsAround',                                 'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
     ui: { at: ['[data-pd="related"]'] },
     doc: [
-      { in: 'country', at: 63, text: '{"type":"worldRelated","ref"?:str,"name"?:str,"objectType"?:str,"km"?:num,"hours"?:num,"types"?:[TYPE,…],"rels"?:[str,…],"depth"?:num,"at"?:"YYYY-MM-DD"} = 関連オブジェクト・周辺の対象 — TYPED TIES: pass "rels" (names such as contains, part_of, operated_by, operates, owned_by, mentions — read from the object you start at) and/or "depth" > 1 to FOLLOW named edges across several steps («the terminals of this port, then who operates them»); only stated edges are followed, never proximity. "at" asks as of a date: ties and objects whose stated period excludes it are left out. Without rels/depth: WHAT BELONGS WITH ONE REAL-WORLD OBJECT: the earthquakes, news events, articles, facilities, cities, volcanoes and companies tied to it, each with WHY: `linked` (an edge, or an article / evidence id they share), `near` (within km — default 300 — or inside its extent) and `concurrent` (within hours — default 72). Two things are related when linked, or near and concurrent (a facility has no time, so it is judged by place alone); time alone is never a relation. Use it for 「この地震について、近くの施設と関連記事も」「この出来事の周辺」, "what is around that quake", "news about this volcano"; pass the `ref` an earlier answer returned (observed.worldObjects) or the name. It reads the objects this session surfaced plus the loaded news and the USGS week; it reports what it found and how many, and says so when nothing is tied to the object.\n' },
+      { in: 'country', at: 63, text: '{"type":"worldRelated","ref"?:str,"name"?:str,"objectType"?:str,"km"?:num,"hours"?:num,"types"?:[TYPE,…],"rels"?:[str,…],"depth"?:num,"at"?:"YYYY-MM-DD"} = 関連オブジェクト・周辺の対象 — TYPED TIES: pass "rels" (names such as contains, part_of, operated_by, operates, owned_by, mentions — read from the object you start at) and/or "depth" > 1 to FOLLOW named edges across several steps («the terminals of this port, then who operates them»); only stated edges are followed, never proximity. "at" asks as of a date: ties and objects whose stated period excludes it are left out. Without rels/depth: WHAT BELONGS WITH ONE REAL-WORLD OBJECT: the earthquakes, news events, articles, facilities, cities, volcanoes and companies tied to it, each with WHY: `linked` (an edge, or an article / evidence id they share), `near` (within km — default 300 — or inside its extent) and `concurrent` (within hours — default 72). Two things are related when linked, or near and concurrent (a facility has no time, so it is judged by place alone); time alone is never a relation. Use it for 「この地震について、近くの施設と関連記事も」「この出来事の周辺」, "what is around that quake", "news about this volcano"; pass the `ref` an earlier answer returned (observed.worldObjects) or the name. It reads the objects this session surfaced plus the loaded news and the USGS week; it reports what it found and how many, and says so when nothing is tied to the object. It ALSO reads the persistent world graph (LNG terminals → operated_by / owned_by company, with the period each tie held — pass \"at\" for «who owned it in 2018» — and, through the company atlas id the graph states, the own sites of the company): «terminal → its operator → what else that operator runs» is rels [\"operated_by\",\"operates\"], depth 2; a proximity question also lists the persisted objects near it.\n' },
     ],
     schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str(), km: num(0), hours: num(0), types: list(str()), rels: list(str()), depth: num(1), at: str() }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, HOST = K.HOST;
@@ -312,7 +361,7 @@ export default [
       if (!r.obj) {
         const q = String(a.ref || a.name || a.place || '');
         const msg = r.code === 'NEEDS_INPUT' ? L('Related to what? Give a ref from an earlier answer or a name.', '何の関連ですか？先の回答に出た ref か名前を指定してください。') : L('IntMap holds no object called «' + esc(q) + '».', '「' + esc(q) + '」という対象を IntMap は持っていません。');
-        return R(false, warn(msg), { meta: { code: r.code, category: 'input', retryable: false, semanticTarget: q, produced: [], userGoalSatisfied: false } });
+        return R(false, warn(msg + graphUnreadNote(r.graph, L)), { meta: { code: r.code, category: 'input', retryable: false, semanticTarget: q, produced: [], userGoalSatisfied: false } });
       }
       const types = Array.isArray(a.types) ? a.types.map(String) : [];
       const extra = W.fromLoadedNews((typeof HOST.globalData !== 'undefined' && HOST.globalData) || []);
@@ -328,6 +377,19 @@ export default [
       const rels = Array.isArray(a.rels) ? a.rels.map(String).filter(Boolean) : [];
       const atMs = a.at != null && a.at !== '' ? (typeof a.at === 'number' ? a.at : Date.parse(String(a.at))) : null;
       if (atMs != null && !isFinite(atMs)) return R(false, warn(L('«at» must be a date such as 1990-06-01.', '«at» は 1990-06-01 のような日付で指定してください。')), { meta: { code: 'INVALID_INPUT', category: 'input', retryable: false, semanticTarget: String(a.at), produced: [], userGoalSatisfied: false } });
+      /* (world-graph) What the PERSISTENT graph holds joins the session's index before the walk, by the same shapes and the same rules:
+         the ties within reach of this object as of `at`, and (for a proximity question) the persisted objects near it. */
+      let graphNote = '', graphCode = '';
+      {
+        const sub = await G.fetchSubgraph(K.HOST.DB, r.obj.ref, { rels, depth: a.depth, atMs });
+        if (!sub.ok) graphCode = 'GRAPH_' + String(sub.error).toUpperCase();
+        else await hydrateAtlasCompanies(sub.objects, K);
+        if (!graphMode0(rels, a) && r.obj.lng != null && r.obj.lat != null) {
+          const nr = await G.nearPersisted(K.HOST.DB, r.obj.lng, r.obj.lat, (a.km != null && isFinite(+a.km)) ? +a.km : W.RELATED_DEFAULTS.km);
+          if (!nr.ok && !graphCode) graphCode = 'GRAPH_' + String(nr.error).toUpperCase();
+        }
+        graphNote = graphUnreadNote(graphCode, L);
+      }
       const res = W.related(r.obj, { km: a.km, hours: a.hours, types, extra, rels, depth: a.depth, atMs });
       W.register(res.items.map((x) => x.object));   /* what was found can be followed next */
       const rows = W.relatedHtml(res, { L, esc }), byType = rows.byType;
@@ -339,6 +401,7 @@ export default [
         : L('within ' + km + ' km and ' + hrs + ' h, or linked directly', km + ' km・' + hrs + ' 時間以内、または直接の結び付き');
       h += '<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">' + esc(scope + (atMs != null ? L(' · as of ', ' ・基準日 ') + new Date(atMs).toISOString().slice(0, 10) : '')) + '</div>' + rows.html;
       if (!res.total) h += '<div style="font-size:12px;">' + esc(L('Nothing IntMap holds is tied to this object within that reach.', 'その範囲で、このオブジェクトに結び付く対象は IntMap にありません。')) + '</div>';
+      if (graphNote) h += warn(graphNote.trim());
       if (quakeFeedFailed) h += warn(L('The USGS feed could not be read — earthquakes are not part of this answer.', 'USGS のフィードを読めなかったため、地震はこの答えに含まれていません。'));
       const shown = res.items.slice(0, 40).map((x) => Object.assign(W.brief(x.object), { why: x.why, rels: x.rels && x.rels.length ? x.rels : undefined, depth: x.depth, distanceKm: x.distanceKm == null ? undefined : x.distanceKm, gapHours: x.gapHours == null ? undefined : x.gapHours }));
       const totals = {}; Object.keys(byType).forEach((t) => { totals[t] = byType[t].count; });

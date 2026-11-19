@@ -1,0 +1,3355 @@
+{
+ "publisher": "Wikidata",
+ "url": "https://query.wikidata.org/sparql",
+ "licence": "CC0 1.0",
+ "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+ "attribution": false,
+ "cadence": "P1D",
+ "cadenceBasis": {
+  "observed": "estimate, not measured per class: Wikidata is edited continuously and its Query Service reflects an edit within minutes, so any day can change what a query answers",
+  "expires": "if the builders read a Wikidata dump or a frozen snapshot instead of the live Query Service",
+  "canon": "scripts/lib/upstream-cadence.mjs WIKIDATA"
+ },
+ "retrievedAt": "2026-11-19",
+ "generatedAt": "2026-11-19",
+ "asOf": "2026-11-19",
+ "schema": "scripts/world-graph/build-lng.mjs (nodes · edges · claims) — read by tests/world-graph-persistent-checks.test.mjs and the seed supabase/migrations/20261119150100_world_graph_lng_seed.sql; js/world-graph-store.js reads the same rows from the database",
+ "quality": {
+  "rows": 102,
+  "missing": {
+   "ref": 0,
+   "type": 0,
+   "name": 0
+  },
+  "outOfRange": {},
+  "duplicates": 0
+ },
+ "builtBy": "scripts/world-graph/build-lng.mjs",
+ "class": "Q15709854",
+ "nodes": [
+  {
+   "ref": "facility:wd-Q1116627",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Panigaglia LNG terminal",
+   "country": "ITA",
+   "lng": 9.831,
+   "lat": 44.074,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q1116627"
+   },
+   "validFromMs": 31536000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q1116627",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q2050949",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Papua New Guinea LNG",
+   "country": "PNG",
+   "lng": 147.0168328,
+   "lat": -9.3381102,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q2050949"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q2050949",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q2131826",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Ras Laffan Industrial City",
+   "country": "QAT",
+   "lng": 51.5564,
+   "lat": 25.9146,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q2131826"
+   },
+   "validFromMs": 820454400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q2131826",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q2387693",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Montoir-de-Bretagne LNG terminal",
+   "country": "FRA",
+   "lng": -2.1417,
+   "lat": 47.3028,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q2387693"
+   },
+   "validFromMs": 315532800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q2387693",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q3503110",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Oman LNG",
+   "country": "OMN",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q3503110"
+   },
+   "validFromMs": 757382400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q3503110",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q3518425",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Fos Cavaou LNG terminal",
+   "country": "FRA",
+   "lng": 4.89917,
+   "lat": 43.4233,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q3518425"
+   },
+   "validFromMs": 1262304000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q3518425",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q3518426",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Fos Tonkin LNG terminal",
+   "country": "FRA",
+   "lng": 4.85194,
+   "lat": 43.4531,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q3518426"
+   },
+   "validFromMs": 63072000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q3518426",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q3984428",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Adriatic LNG terminal",
+   "country": "ITA",
+   "lng": 12.58611111,
+   "lat": 45.09166667,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q3984428"
+   },
+   "validFromMs": 1230768000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q3984428",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q4978918",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Brunei LNG",
+   "country": "BRN",
+   "lng": 114.461866,
+   "lat": 4.669093,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q4978918"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q4978918",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q5291044",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Cove Point LNG terminal",
+   "country": "USA",
+   "lng": -76.408,
+   "lat": 38.389,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q5291044"
+   },
+   "validFromMs": 252460800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q5291044",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q5617485",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Gulf Gateway Deepwater Port",
+   "country": "USA",
+   "lng": -93.051944444,
+   "lat": 28.087777777,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q5617485"
+   },
+   "validFromMs": 1104537600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q5617485",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q6424863",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Kochi LNG terminal",
+   "country": "IND",
+   "lng": 76.2525,
+   "lat": 9.98166667,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q6424863"
+   },
+   "validFromMs": 1356998400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q6424863",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q7032809",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Nigeria LNG",
+   "country": "NGA",
+   "lng": 7.153138733,
+   "lat": 4.425859792,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q7032809"
+   },
+   "validFromMs": 611366400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q7032809",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q7240065",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "IMO 9648714",
+   "country": "AUS",
+   "lng": 123.3199,
+   "lat": -13.78923,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q7240065"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q7240065",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q7318506",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Revithoussa LNG terminal",
+   "country": "GRC",
+   "lng": 23.403283,
+   "lat": 37.960432,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q7318506"
+   },
+   "validFromMs": 946684800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q7318506",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q7567499",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "South Hook LNG terminal",
+   "country": "GBR",
+   "lng": -5.079,
+   "lat": 51.72,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q7567499"
+   },
+   "validFromMs": 1230768000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q7567499",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q7570064",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Elba Island LNG terminal",
+   "country": "USA",
+   "lng": -80.9978,
+   "lat": 32.08916,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q7570064"
+   },
+   "validFromMs": 252460800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q7570064",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q7847988",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Lake Charles LNG terminal",
+   "country": "USA",
+   "lng": -93.2878,
+   "lat": 30.1125,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q7847988"
+   },
+   "validFromMs": 378691200000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q7847988",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q8239907",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Bahía de Bizkaia Gas",
+   "country": "ESP",
+   "lng": -3.0966027,
+   "lat": 43.3619737,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q8239907"
+   },
+   "validFromMs": 1041379200000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q8239907",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q9357429",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Świnoujście LNG Terminal",
+   "country": "POL",
+   "lng": 14.2947,
+   "lat": 53.9092,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q9357429"
+   },
+   "validFromMs": 1451606400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q9357429",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q12472558",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Arun LNG terminal",
+   "country": "IDN",
+   "lng": 97.083,
+   "lat": 5.2234,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q12472558"
+   },
+   "validFromMs": 1420070400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q12472558",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q12493274",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Tangguh LNG terminal",
+   "country": "IDN",
+   "lng": 133.136111111,
+   "lat": -2.441666666,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q12493274"
+   },
+   "validFromMs": 1230768000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q12493274",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q15709872",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Klaipėda LNG FSRU",
+   "country": "LTU",
+   "lng": 21.137649,
+   "lat": 55.664457,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q15709872"
+   },
+   "validFromMs": 1388534400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q15709872",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q16040906",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Dunkerque LNG terminal",
+   "country": "FRA",
+   "lng": 2.31039,
+   "lat": 51.0442,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q16040906"
+   },
+   "validFromMs": 1451606400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q16040906",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q17466774",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Idku LNG",
+   "country": "EGY",
+   "lng": 30.31719,
+   "lat": 31.34977,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q17466774"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q17466774",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q22293813",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Costa Azul LNG terminal",
+   "country": "MEX",
+   "lng": -116.8476,
+   "lat": 31.9886,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q22293813"
+   },
+   "validFromMs": 1199145600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q22293813",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q28402256",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Grain LNG terminal",
+   "country": "GBR",
+   "lng": 0.67987,
+   "lat": 51.45107,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q28402256"
+   },
+   "validFromMs": 1104537600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q28402256",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q29831366",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Izmir Aliaga LNG terminal",
+   "country": "TUR",
+   "lng": 26.919444444,
+   "lat": 38.820833333,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q29831366"
+   },
+   "validFromMs": 1136073600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q29831366",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30595926",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Marmara Ereğlisi LNG terminal",
+   "country": "TUR",
+   "lng": 27.9819,
+   "lat": 40.9939,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30595926"
+   },
+   "validFromMs": 757382400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30595926",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30957034",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Pori LNG terminal",
+   "country": "FIN",
+   "lng": 21.39881,
+   "lat": 61.63817,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30957034"
+   },
+   "validFromMs": 1451606400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30957034",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972238",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Zeebrugge LNG terminal",
+   "country": "BEL",
+   "lng": 3.22241,
+   "lat": 51.353,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972238"
+   },
+   "validFromMs": 536457600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972238",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972257",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "El Musel LNG terminal",
+   "country": "ESP",
+   "lng": -5.6934,
+   "lat": 43.5696,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972257"
+   },
+   "validFromMs": 1356998400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972257",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972280",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Cartagena LNG terminal",
+   "country": "ESP",
+   "lng": -0.9595,
+   "lat": 37.57457,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972280"
+   },
+   "validFromMs": 599616000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972280",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972281",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Sagunto LNG terminal",
+   "country": "ESP",
+   "lng": -0.2152,
+   "lat": 39.6329,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972281"
+   },
+   "validFromMs": 1136073600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972281",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972283",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Huelva LNG terminal",
+   "country": "ESP",
+   "lng": -6.911,
+   "lat": 37.17355,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972283"
+   },
+   "validFromMs": 567993600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972283",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972300",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Barcelona LNG Terminal",
+   "country": "ESP",
+   "lng": 2.1583,
+   "lat": 41.3394,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972300"
+   },
+   "validFromMs": -63158400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972300",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972301",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Mugardos LNG terminal",
+   "country": "ESP",
+   "lng": -8.2395,
+   "lat": 43.4613,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972301"
+   },
+   "validFromMs": 1167609600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972301",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972398",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Australia Pacific LNG",
+   "country": "AUS",
+   "lng": 151.1896,
+   "lat": -23.7554,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972398"
+   },
+   "validFromMs": 1451606400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972398",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972414",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Dragon LNG terminal",
+   "country": "GBR",
+   "lng": -4.99774,
+   "lat": 51.70453,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972414"
+   },
+   "validFromMs": 1230768000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972414",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972486",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Nynäshamn LNG terminal",
+   "country": "SWE",
+   "lng": 17.977742635,
+   "lat": 58.922312071,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972486"
+   },
+   "validFromMs": 1298937600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972486",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972487",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Lysekil LNG terminal",
+   "country": "SWE",
+   "lng": 11.4325,
+   "lat": 58.3534,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972487"
+   },
+   "validFromMs": 1388534400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972487",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972547",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Delimara LNG terminal",
+   "country": "MLT",
+   "lng": 14.556570733,
+   "lat": 35.828908153,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972547"
+   },
+   "validFromMs": 1483228800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972547",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972557",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Pluto LNG",
+   "country": "AUS",
+   "lng": 116.75738,
+   "lat": -20.606996,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972557"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972557",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972609",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Sines LNG terminal",
+   "country": "PRT",
+   "lng": -8.8435,
+   "lat": 37.9419,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q30972609"
+   },
+   "validFromMs": 1072915200000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972609",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q30972644",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "PFLNG Satu",
+   "country": "MYS",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q30972644"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q30972644",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q2526824",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Gate terminal",
+   "country": null,
+   "lng": 4.0592,
+   "lat": 51.97,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q2526824"
+   },
+   "validFromMs": 1104537600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q2526824",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q113992266",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Eemshaven LNG terminal",
+   "country": null,
+   "lng": 6.8536,
+   "lat": 53.4443,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q113992266"
+   },
+   "validFromMs": 1640995200000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q113992266",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q59590911",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Brunsbüttel LNG Terminal",
+   "country": "DEU",
+   "lng": 9.188888888,
+   "lat": 53.895,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q59590911"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q59590911",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q60768180",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Dörtyol LNG terminal",
+   "country": "TUR",
+   "lng": 36.1494,
+   "lat": 36.8675,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q60768180"
+   },
+   "validFromMs": 1514764800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q60768180",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104316724",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Incheon LNG terminal",
+   "country": "KOR",
+   "lng": 126.602,
+   "lat": 37.35124,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104316724"
+   },
+   "validFromMs": 820454400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104316724",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104324039",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Northeast Gateway Deepwater Port",
+   "country": "USA",
+   "lng": -70.616774,
+   "lat": 42.398986,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104324039"
+   },
+   "validFromMs": 1199145600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104324039",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104518607",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Risavika Liquefaction Plant",
+   "country": "NOR",
+   "lng": 5.5761,
+   "lat": 58.9237,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104518607"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104518607",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104518878",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Tornio Manga LNG terminal",
+   "country": "FIN",
+   "lng": 24.1652,
+   "lat": 65.75273,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104518878"
+   },
+   "validFromMs": 1514764800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104518878",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104518980",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Gibraltar LNG terminal",
+   "country": "GIB",
+   "lng": -5.365557635,
+   "lat": 36.149162652,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104518980"
+   },
+   "validFromMs": 1546300800000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104518980",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104524380",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Fredrikstad LNG terminal",
+   "country": "NOR",
+   "lng": 10.9595717,
+   "lat": 59.1875329,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104524380"
+   },
+   "validFromMs": 1293840000000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104524380",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104524403",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Mosjøen LNG terminal",
+   "country": "NOR",
+   "lng": 13.183976641,
+   "lat": 65.850289495,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104524403"
+   },
+   "validFromMs": 1167609600000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104524403",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q104546684",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Etki LNG terminal",
+   "country": "TUR",
+   "lng": 26.902222222,
+   "lat": 38.743888888,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q104546684"
+   },
+   "validFromMs": 1451606400000,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q104546684",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q110788484",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Pecém Regasification Terminal",
+   "country": "BRA",
+   "lng": -38.7972897,
+   "lat": -3.5317969,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q110788484"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q110788484",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q111082440",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Wilhelmshaven LNG Terminal",
+   "country": "DEU",
+   "lng": 8.108888888,
+   "lat": 53.641666666,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q111082440"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q111082440",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q113958502",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Stade LNG Terminal",
+   "country": "DEU",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q113958502"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q113958502",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q114247507",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Lubmin LNG Terminal",
+   "country": "DEU",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q114247507"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q114247507",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q114349437",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Mukran LNG Terminal",
+   "country": "DEU",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q114349437"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q114349437",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q116056600",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Botaş Saros FSRU Terminal",
+   "country": "TUR",
+   "lng": 26.639444444,
+   "lat": 40.638055555,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q116056600"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q116056600",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q120862931",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Zhouchi Liquefied Natural Gas Plant",
+   "country": "TWN",
+   "lng": 120.313611111,
+   "lat": 22.51825,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q120862931"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q120862931",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q132655899",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "LNG terminal",
+   "country": "HRV",
+   "lng": 14.534047,
+   "lat": 45.20052,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q132655899"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q132655899",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q133308287",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Aceh-Nias LNG Terminal",
+   "country": "IDN",
+   "lng": 95.2938741,
+   "lat": 5.5648441,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q133308287"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q133308287",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q139769894",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Terminal Marítima de Tuxpan (PEMEX)",
+   "country": "MEX",
+   "lng": -97.4,
+   "lat": 20.95,
+   "provenance": "feed_coordinate",
+   "ids": {
+    "wikidata": "Q139769894"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q139769894",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "facility:wd-Q141159406",
+   "type": "facility",
+   "kind": "LNG terminal",
+   "name": "Gdańsk FSRU terminal",
+   "country": "POL",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q141159406"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q141159406",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q116912771",
+   "type": "company",
+   "kind": "company",
+   "name": "px Group",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q116912771"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q116912771",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q16561252",
+   "type": "company",
+   "kind": "company",
+   "name": "GNL Italia",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q16561252"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q16561252",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q918239",
+   "type": "company",
+   "kind": "company",
+   "name": "Gasunie",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q918239"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q918239",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q4684768",
+   "type": "company",
+   "kind": "company",
+   "name": "LNG Hrvatska",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q4684768"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q4684768",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:exxon-mobil",
+   "type": "company",
+   "kind": "company",
+   "name": "Exxon Mobil",
+   "country": "USA",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q156238",
+    "company": "exxon-mobil"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q156238",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q3050737",
+   "type": "company",
+   "kind": "company",
+   "name": "Elengy",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q3050737"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q3050737",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q1336773",
+   "type": "company",
+   "kind": "company",
+   "name": "Fluxys",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q1336773"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q1336773",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q131319014",
+   "type": "company",
+   "kind": "company",
+   "name": "Australia Pacific LNG",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q131319014"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q131319014",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q107431914",
+   "type": "company",
+   "kind": "company",
+   "name": "Dragon LNG Ltd",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q107431914"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q107431914",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q4036873",
+   "type": "company",
+   "kind": "company",
+   "name": "DESFA",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q4036873"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q4036873",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q136405996",
+   "type": "company",
+   "kind": "company",
+   "name": "German ReGas",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q136405996"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q136405996",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q136406145",
+   "type": "company",
+   "kind": "company",
+   "name": "Q136406145",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q136406145"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q136406145",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q973930",
+   "type": "company",
+   "kind": "company",
+   "name": "Qatargas",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q973930"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q973930",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:pemex",
+   "type": "company",
+   "kind": "company",
+   "name": "Pemex",
+   "country": "MEX",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q871308",
+    "company": "pemex"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q871308",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q5528948",
+   "type": "company",
+   "kind": "company",
+   "name": "Gaz-System",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q5528948"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q5528948",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q1495701",
+   "type": "company",
+   "kind": "company",
+   "name": "Gasum",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q1495701"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q1495701",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q116914114",
+   "type": "company",
+   "kind": "company",
+   "name": "North Sea Midstream Partners",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q116914114"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q116914114",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:shell",
+   "type": "company",
+   "kind": "company",
+   "name": "Shell",
+   "country": "GBR",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q154950",
+    "company": "shell"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q154950",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:petrobras",
+   "type": "company",
+   "kind": "company",
+   "name": "Petrobras",
+   "country": "BRA",
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q210047",
+    "company": "petrobras"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q210047",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q787604",
+   "type": "company",
+   "kind": "company",
+   "name": "BOTAŞ",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q787604"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q787604",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q698024",
+   "type": "company",
+   "kind": "company",
+   "name": "CPC Corporation, Taiwan",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q698024"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q698024",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q12193248",
+   "type": "company",
+   "kind": "company",
+   "name": "Egyptian Liquefied Natural Gas",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q12193248"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q12193248",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q846914",
+   "type": "company",
+   "kind": "company",
+   "name": "Santos",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q846914"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q846914",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q11226761",
+   "type": "company",
+   "kind": "company",
+   "name": "Eneos Xplora",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q11226761"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q11226761",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q6864308",
+   "type": "company",
+   "kind": "company",
+   "name": "Mineral Resources Development Company",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q6864308"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q6864308",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q2016854",
+   "type": "company",
+   "kind": "company",
+   "name": "Oil Search",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q2016854"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q2016854",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q110781758",
+   "type": "company",
+   "kind": "company",
+   "name": "Kumul Petroleum",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q110781758"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q110781758",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q1812208",
+   "type": "company",
+   "kind": "company",
+   "name": "Woodside Energy",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q1812208"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q1812208",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q1365015",
+   "type": "company",
+   "kind": "company",
+   "name": "Kansai Electric Power Company",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q1365015"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q1365015",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q221692",
+   "type": "company",
+   "kind": "company",
+   "name": "Petronas",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q221692"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q221692",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q1505649",
+   "type": "company",
+   "kind": "company",
+   "name": "Elf Aquitaine",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q1505649"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q1505649",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q1671299",
+   "type": "company",
+   "kind": "company",
+   "name": "Nigerian National Petroleum Corporation",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q1671299"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q1671299",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q377915",
+   "type": "company",
+   "kind": "company",
+   "name": "Agip",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q377915"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q377915",
+     "licence": "CC0"
+    }
+   ]
+  },
+  {
+   "ref": "company:wd-Q13095961",
+   "type": "company",
+   "kind": "company",
+   "name": "Perusahaan Gas Negara",
+   "country": null,
+   "lng": null,
+   "lat": null,
+   "provenance": null,
+   "ids": {
+    "wikidata": "Q13095961"
+   },
+   "validFromMs": null,
+   "validToMs": null,
+   "facts": {},
+   "sources": [
+    {
+     "name": "Wikidata",
+     "url": "https://www.wikidata.org/wiki/Q13095961",
+     "licence": "CC0"
+    }
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "from": "facility:wd-Q104518607",
+   "rel": "operated_by",
+   "to": "company:wd-Q116912771",
+   "fromMs": 1638316800000,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q104518607",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q1116627",
+   "rel": "operated_by",
+   "to": "company:wd-Q16561252",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q1116627",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q113992266",
+   "rel": "operated_by",
+   "to": "company:wd-Q918239",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q113992266",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q132655899",
+   "rel": "operated_by",
+   "to": "company:wd-Q4684768",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q132655899",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q2050949",
+   "rel": "operated_by",
+   "to": "company:exxon-mobil",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q2050949",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q2387693",
+   "rel": "operated_by",
+   "to": "company:wd-Q3050737",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q2387693",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q30972238",
+   "rel": "operated_by",
+   "to": "company:wd-Q1336773",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q30972238",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q30972398",
+   "rel": "operated_by",
+   "to": "company:wd-Q131319014",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q30972398",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q30972414",
+   "rel": "operated_by",
+   "to": "company:wd-Q107431914",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q30972414",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q3518425",
+   "rel": "operated_by",
+   "to": "company:wd-Q3050737",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q3518425",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q3518426",
+   "rel": "operated_by",
+   "to": "company:wd-Q3050737",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q3518426",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q7318506",
+   "rel": "operated_by",
+   "to": "company:wd-Q4036873",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q7318506",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q114349437",
+   "rel": "operated_by",
+   "to": "company:wd-Q136405996",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q114349437",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q114247507",
+   "rel": "operated_by",
+   "to": "company:wd-Q136405996",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q114247507",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q59590911",
+   "rel": "operated_by",
+   "to": "company:wd-Q136406145",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q59590911",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q113958502",
+   "rel": "operated_by",
+   "to": "company:wd-Q136406145",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q113958502",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q111082440",
+   "rel": "operated_by",
+   "to": "company:wd-Q136406145",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q111082440",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q2131826",
+   "rel": "operated_by",
+   "to": "company:wd-Q973930",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q2131826",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q139769894",
+   "rel": "operated_by",
+   "to": "company:pemex",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q139769894",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q141159406",
+   "rel": "operated_by",
+   "to": "company:wd-Q5528948",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q141159406",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q104518607",
+   "rel": "owned_by",
+   "to": "company:wd-Q1495701",
+   "fromMs": null,
+   "toMs": 1635724800000,
+   "confidence": "high",
+   "source": "Wikidata Q104518607",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q104518607",
+   "rel": "owned_by",
+   "to": "company:wd-Q116914114",
+   "fromMs": 1635724800000,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q104518607",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q104518980",
+   "rel": "owned_by",
+   "to": "company:shell",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q104518980",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q104524380",
+   "rel": "owned_by",
+   "to": "company:wd-Q1495701",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q104524380",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q110788484",
+   "rel": "owned_by",
+   "to": "company:petrobras",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q110788484",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q113992266",
+   "rel": "owned_by",
+   "to": "company:wd-Q918239",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q113992266",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q116056600",
+   "rel": "owned_by",
+   "to": "company:wd-Q787604",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q116056600",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q120862931",
+   "rel": "owned_by",
+   "to": "company:wd-Q698024",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q120862931",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q17466774",
+   "rel": "owned_by",
+   "to": "company:wd-Q12193248",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q17466774",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q2050949",
+   "rel": "owned_by",
+   "to": "company:wd-Q846914",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q2050949",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q2050949",
+   "rel": "owned_by",
+   "to": "company:wd-Q11226761",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q2050949",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q2050949",
+   "rel": "owned_by",
+   "to": "company:wd-Q6864308",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q2050949",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q2050949",
+   "rel": "owned_by",
+   "to": "company:wd-Q2016854",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q2050949",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q2050949",
+   "rel": "owned_by",
+   "to": "company:exxon-mobil",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q2050949",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q2050949",
+   "rel": "owned_by",
+   "to": "company:wd-Q110781758",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q2050949",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q30957034",
+   "rel": "owned_by",
+   "to": "company:wd-Q1495701",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q30957034",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q30972486",
+   "rel": "owned_by",
+   "to": "company:wd-Q1495701",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q30972486",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q30972487",
+   "rel": "owned_by",
+   "to": "company:wd-Q1495701",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q30972487",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q30972557",
+   "rel": "owned_by",
+   "to": "company:wd-Q1812208",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q30972557",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q30972557",
+   "rel": "owned_by",
+   "to": "company:wd-Q1365015",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q30972557",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q30972644",
+   "rel": "owned_by",
+   "to": "company:wd-Q221692",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q30972644",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q3503110",
+   "rel": "owned_by",
+   "to": "company:shell",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q3503110",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q4978918",
+   "rel": "owned_by",
+   "to": "company:shell",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q4978918",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q7032809",
+   "rel": "owned_by",
+   "to": "company:wd-Q1505649",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q7032809",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q7032809",
+   "rel": "owned_by",
+   "to": "company:shell",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q7032809",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q7032809",
+   "rel": "owned_by",
+   "to": "company:wd-Q1671299",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q7032809",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q7032809",
+   "rel": "owned_by",
+   "to": "company:wd-Q377915",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q7032809",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q9357429",
+   "rel": "owned_by",
+   "to": "company:wd-Q5528948",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q9357429",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "from": "facility:wd-Q133308287",
+   "rel": "owned_by",
+   "to": "company:wd-Q13095961",
+   "fromMs": null,
+   "toMs": null,
+   "confidence": "high",
+   "source": "Wikidata Q133308287",
+   "retrieved": "2026-11-19"
+  }
+ ],
+ "claims": [
+  {
+   "ref": "facility:wd-Q104316724",
+   "key": "throughput",
+   "value": 41.7,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q104316724",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q104324039",
+   "key": "throughput",
+   "value": 4.5,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q104324039",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q104518607",
+   "key": "throughput",
+   "value": 0.3,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q104518607",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q104518878",
+   "key": "throughput",
+   "value": 0.4,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q104518878",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q104518980",
+   "key": "throughput",
+   "value": 0.1,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q104518980",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q104524380",
+   "key": "throughput",
+   "value": 0.1,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q104524380",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q104524403",
+   "key": "throughput",
+   "value": 0,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q104524403",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q104546684",
+   "key": "throughput",
+   "value": 5.7,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q104546684",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q110788484",
+   "key": "throughput",
+   "value": 3.8,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q110788484",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q1116627",
+   "key": "throughput",
+   "value": 2.5,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q1116627",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q12472558",
+   "key": "throughput",
+   "value": 3,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q12472558",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q12493274",
+   "key": "throughput",
+   "value": 7.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q12493274",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q15709872",
+   "key": "throughput",
+   "value": 2.9,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q15709872",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q16040906",
+   "key": "throughput",
+   "value": 9.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q16040906",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q22293813",
+   "key": "throughput",
+   "value": 7.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q22293813",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q2387693",
+   "key": "throughput",
+   "value": 8,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q2387693",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q2526824",
+   "key": "throughput",
+   "value": 8.8,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q2526824",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q28402256",
+   "key": "throughput",
+   "value": 14.3,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q28402256",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q29831366",
+   "key": "throughput",
+   "value": 4.4,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q29831366",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30595926",
+   "key": "throughput",
+   "value": 4.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30595926",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30957034",
+   "key": "throughput",
+   "value": 0.1,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30957034",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972238",
+   "key": "throughput",
+   "value": 6.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972238",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972257",
+   "key": "throughput",
+   "value": 5.1,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972257",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972280",
+   "key": "throughput",
+   "value": 8.7,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972280",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972281",
+   "key": "throughput",
+   "value": 6.4,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972281",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972283",
+   "key": "throughput",
+   "value": 8.7,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972283",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972300",
+   "key": "throughput",
+   "value": 12.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972300",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972301",
+   "key": "throughput",
+   "value": 2.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972301",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972414",
+   "key": "throughput",
+   "value": 5.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972414",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972486",
+   "key": "throughput",
+   "value": 0.4,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972486",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972487",
+   "key": "throughput",
+   "value": 0.2,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972487",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972547",
+   "key": "throughput",
+   "value": 0.5,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972547",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q30972609",
+   "key": "throughput",
+   "value": 5.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q30972609",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q3518425",
+   "key": "throughput",
+   "value": 6.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q3518425",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q3518426",
+   "key": "throughput",
+   "value": 2.4,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q3518426",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q3984428",
+   "key": "throughput",
+   "value": 5.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q3984428",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q5291044",
+   "key": "throughput",
+   "value": 13.7,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q5291044",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q5617485",
+   "key": "throughput",
+   "value": 5.3,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q5617485",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q60768180",
+   "key": "throughput",
+   "value": 4.1,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q60768180",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q6424863",
+   "key": "throughput",
+   "value": 5,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q6424863",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q7240065",
+   "key": "throughput",
+   "value": 3.6,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q7240065",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q7318506",
+   "key": "throughput",
+   "value": 5.1,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q7318506",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q7567499",
+   "key": "throughput",
+   "value": 15.4,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q7567499",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q7570064",
+   "key": "throughput",
+   "value": 12,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q7570064",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q7847988",
+   "key": "throughput",
+   "value": 17.9,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q7847988",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q8239907",
+   "key": "throughput",
+   "value": 7,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q8239907",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q9357429",
+   "key": "throughput",
+   "value": 3.7,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q9357429",
+   "retrieved": "2026-11-19"
+  },
+  {
+   "ref": "facility:wd-Q2131826",
+   "key": "throughput",
+   "value": 40.7,
+   "unit": "million tonnes per annum",
+   "fromMs": null,
+   "toMs": null,
+   "source": "Wikidata Q2131826",
+   "retrieved": "2026-11-19"
+  }
+ ]
+}

@@ -1305,6 +1305,9 @@ world-flows.js                    **世界とのつながり**のカードと地
                                   航空路（OpenFlights 2014）でどの国とつながるかを、時計の瞬間以前に成り立つ最も新しい記録で（値が述べる時点と比べる）。「モノ」は貿易フロー
                                   レイヤーを同じ国で開く扉。扉は Tools・地点カードの国の行・`?wf=`・Atlas `data.worldFlows`。遅延チャンク（§7.3j）
 world-flows-core.js               その事実の全部（純粋なモジュール）——国の表と照合・時刻の規則・3 つの読み方・合計と割合・弧（大圏の経度を連続に）
+world-graph-store.js            **永続の世界グラフの読み口**（遅延・純粋）— Supabase の `world_graph_*`（対象・型付きの辺・値）を、世界オブジェクトの索引と同じ型
+                                  （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `find` / `near`）。結ぶのは識別子（`ids`）で綴りではない。
+                                  データベースが答えなかったことは `unavailable` / `failed` で返し、空のグラフとは区別する。能力 `research.object` / `research.related` が読む
 card-clearance.js                 カードが覆わない部分に地図を収める余白（fitBounds の padding）。js/news-story.js と js/quake-history.js も同じ規則を閉包に持つ
 aftershock.js                     **余震の見通し**のカードと地図——M5 以上の地震について、今後 1 日〜1 年に各規模の余震が起きる確率と
                                   回数の 95% の範囲、根拠（区分・一般パラメータ・事後分布）、累積余震と予想の図、USGS 自身の予測（あれば）、
@@ -2080,7 +2083,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（64本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（66本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
