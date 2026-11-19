@@ -2736,8 +2736,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        {cmd:'id'} runs a registered command; everything else goes to the Atlas dispatcher. Both are logged. */
     OS.dispatch=function(a, ctx){ ctx=ctx||{};
       if(a&&a.cmd&&commands[a.cmd]) return OS.exec(a.cmd,{source:ctx.source||'api',params:a});
-      rec({t:Date.now(), cmd:(a&&a.type)||'action', source:ctx.source||'api', ok:true, action:true});
-      if(_dispatch) return _dispatch(a); return {ok:false,err:'kernel dispatcher not ready'}; };
+      /* the record is written AFTER the dispatcher has answered, never before: it used to say ok:true first and so claimed a success a missing dispatcher or a rejected action never reached (same rule as exec above). A thenable settles the record it earned. */
+      const r={t:Date.now(), cmd:(a&&a.type)||'action', source:ctx.source||'api', ok:true, action:true};
+      if(!_dispatch){ r.ok=false; r.err='kernel dispatcher not ready'; rec(r); return {ok:false,err:r.err}; }
+      let res, threw=false; try{ res=_dispatch(a); if(res&&res.ok===false){ r.ok=false; r.err=res.err||res.error||'action reported failure'; } }catch(e){ r.ok=false; threw=true; r.err=(e&&e.message)||'error'; }
+      const pend=!threw&&res&&typeof res.then==='function'; if(pend) r.pending=true; rec(r);
+      if(pend) res.then(v=>{ r.pending=false; if(v&&v.ok===false){ r.ok=false; r.err=r.err||v.err||v.error||'action reported failure'; } emit(r); }, e=>{ r.pending=false; r.ok=false; r.err=(e&&e.message)||'error'; emit(r); });
+      if(threw) throw new Error(r.err); return res; };
     OS.state=function(){ return ''; };                       /* replaced by Atlas (stateContext) */
     OS.catalog=function(){ return {commands:OS.list()}; };   /* replaced by Atlas (full control/layer/module catalog) */
     OS._setDispatch=function(fn){ _dispatch=fn; };
