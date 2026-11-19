@@ -425,6 +425,11 @@ gis-voronoi.js                    **球面の最寄り圏** `window.IntMapGisVor
                                   共円の地点は凸包だけをずらした位置で建て、候補に 2 環近傍を足す。
                                   境界の描画と「いちばん遠い場所」の探索の許容は球と WGS-84 の差
                                   （`docs/GIS-CORE.md` §2.4.1 の 0.56 %）で、つまみではない（§2.9）
+gis-packed.js                     **幾何の圧縮表現とチャンクストア**（gis-scale）— 入力の数千倍になる
+                                  結果（100 万点の buffer）を、ヒープに載せずに持つための部品。
+                                  幾何を Float64Array へ平らに並べ（unpack で 1 バイトも違わず戻る）、
+                                  結果を入力の順のチャンクとして持つ。閾値と、その観測は同じ file の末尾
+                                  （`docs/GIS-CORE.md` §6「100 万件」）
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**

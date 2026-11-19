@@ -128,6 +128,7 @@ export const KERNELS = {
      reach) cannot change a recipe that predates them. What moved is which of two answers — a
      number or a named refusal — a replayed step produces, and a reader comparing two loads is
      entitled to know that. */
+  /* (gis-scale) ops-11 HASH ONLY: a result estimated above 8 M positions is held as chunks and a few ops run over it group by group. Every size that answered before takes the path it took and answers byte for byte (tests/gis-scale-checks.test.mjs compares the two); what is new is a representation and two named refusals for sizes that used to run out of memory. */
   /* (voronoi) HASH ONLY: a new op (`voronoi`) that no saved recipe names, and a call-time read of the
      kernel it needs. Every op that existed replays to the same numbers and the same refusals. */
   /* (wave4-refine) ops-9 -> ops-10: `voronoi` checks that the clipped cells cover the window (summed planar area
@@ -143,7 +144,7 @@ export const KERNELS = {
   /* (gov-gis-terms) ops-12 -> ops-13: a REPLAYED STEP NOW REGISTERS A RECORD THAT SAYS MORE — `provenance.upstreams` carries each
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
-  'js/gis-ops.js': { version: 'ops-13', sha256: '16f2b99b43fbf439c4b4a129e951a0b94fef8e85783af56181f2daf45fec7839' },
+  'js/gis-ops.js': { version: 'ops-13', sha256: '1d5ac5e9ea9ca67aae1ee3f5bbe30c1e0b20148c50350a08da377e023baaeb56' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -302,6 +303,7 @@ export const KERNELS = {
    round. ⚠ 「まだ版を付けていない」 is not a reason. If it can change an answer it declares a version. */
 export const NOT_A_KERNEL = {
   'js/gis-http.js': 'names why a remote read failed from the response (CORS, the words the server sent, a sign-in page); it reads no value and produces no answer a saved recipe replays',
+  'js/gis-packed.js': 'a lossless codec (unpack(pack(g)) is g, number for number — tests/gis-scale-checks.test.mjs) and a store that keeps results in input order; it decides nothing about a shape and a saved recipe never replays through it',
   'js/gis-core.js': 'mounts the modules and draws a dataset on the map; computes nothing',
   /* (#R783) the assembly, not the arithmetic: it decides what plays the part of the scope and what
      was handed over, mounts through js/gis-core.js, and computes nothing a saved recipe replays. */

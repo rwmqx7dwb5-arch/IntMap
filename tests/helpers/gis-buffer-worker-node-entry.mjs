@@ -3,6 +3,6 @@
    it the messages. Nothing of the worker's logic is here. */
 import { parentPort } from 'node:worker_threads';
 globalThis.self = globalThis;
-globalThis.postMessage = (m) => parentPort.postMessage(m);
+globalThis.postMessage = (m, t) => parentPort.postMessage(m, t);
 await import('../../src/gis-buffer-worker.js');
 parentPort.on('message', (m) => globalThis.onmessage({ data: m }));

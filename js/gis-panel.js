@@ -204,6 +204,7 @@ export function makeGisPanel(HOST) {
       if (code === 'no-overlay-polygons') return IntMapLang.t(HOST.lang, "The second input holds no polygon to overlay with", "2つ目の入力に、重ね合わせに使える多角形がありません", "Die zweite Eingabe enthält kein Polygon zum Überlagern", "Во втором входе нет полигона для наложения", "La segunda entrada no tiene ningún polígono con el que superponer");
       if (code === 'no-features') return IntMapLang.t(HOST.lang, "That input holds nothing this step can work on", "その入力に、この処理が扱える地物がありません", "Diese Eingabe enthält nichts, womit dieser Schritt arbeiten kann", "В этом входе нет объектов, с которыми может работать шаг", "Esa entrada no contiene nada con lo que este paso pueda trabajar");
       if (code === 'grid-too-many-cells') return IntMapLang.t(HOST.lang, 'That many cells would not fit in memory, so none were made — use a larger cell size or a smaller extent', 'その数のセルはメモリに収まらないため、作成していません。セルを大きくするか、範囲を狭めてください') + par([d.cells != null ? nf(d.cells) : null, d.maxCells != null ? '≤ ' + nf(d.maxCells) : null].filter((x) => x != null).join(' / '));
+      if (code === 'input-too-large-for-op') return IntMapLang.t(HOST.lang, "This input is a very large result held in pieces, and this step needs all of it at once. Filter or join it first, or export it", "この入力は断片で保持されている非常に大きな結果で、この処理は全体を一度に必要とします。先に絞り込むか結合するか、書き出してください", "Diese Eingabe ist ein sehr großes, stückweise gehaltenes Ergebnis, und dieser Schritt braucht alles auf einmal. Zuerst filtern oder verknüpfen, oder exportieren", "Этот вход — очень большой результат, хранимый по частям, а этому шагу нужен весь он сразу. Сначала отфильтруйте или соедините его, либо экспортируйте", "Esta entrada es un resultado muy grande guardado por partes y este paso lo necesita entero. Fíltrelo o únalo primero, o expórtelo");
       if (code === 'op-not-wired') return IntMapLang.t(HOST.lang, "That step is declared but has no implementation in this build", "その処理は宣言されていますが、このビルドに実装がありません", "Dieser Schritt ist deklariert, hat in diesem Build aber keine Implementierung", "Этот шаг объявлен, но в этой сборке нет реализации", "Ese paso está declarado pero no tiene implementación en esta compilación") + par(d.op);
       /* ⚠ (#R752) NOT RUN, RATHER THAN RUN WITHOUT REPROJECTING. js/gis-ops.js refuses a step whose
          declaration says it needs the warp when that kernel is absent: running it anyway would put
@@ -1701,9 +1702,7 @@ export function makeGisPanel(HOST) {
            picker for the same choice would be two answers to one question */
         const b = drawBand.get(ds.id);
         if (ds.kind === 'raster' && b != null) opts.band = b;
-        let res = null;
-        try { res = X.write(ds.id, opts); }
-        catch (e) { res = { ok: false, why: 'export-serialise-failed', detail: { message: e && e.message } }; }
+        const done = (res) => {
         if (!res || res.ok === false) exportMsg.set(ds.id, reasonText(res && res.why, res && res.detail));
         else if (!saveBytes(res.bytes, res.filename, res.mediaType)) {
           exportMsg.set(ds.id, IntMapLang.t(HOST.lang,
@@ -1711,6 +1710,16 @@ export function makeGisPanel(HOST) {
             'ファイルは作れましたが、このブラウザが保存を受け付けませんでした'));
         } else exportMsg.set(ds.id, exportedText(res));
         render();
+        };
+        /* (gis-scale) a result held as chunks is written by the async door (a Blob built chunk by chunk, yielding by elapsed time); everything else is the sync door, unchanged */
+        if (ds.chunks && typeof X.writeAsync === 'function') {
+          Promise.resolve().then(() => X.writeAsync(ds.id, opts)).then(done, (e) => done({ ok: false, why: 'export-serialise-failed', detail: { message: e && e.message } }));
+          return;
+        }
+        let res = null;
+        try { res = X.write(ds.id, opts); }
+        catch (e) { res = { ok: false, why: 'export-serialise-failed', detail: { message: e && e.message } }; }
+        done(res);
       };
       bar.appendChild(btn);
       sec.appendChild(bar);

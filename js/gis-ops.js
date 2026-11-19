@@ -1593,7 +1593,7 @@ export function makeGisOps() {
         res.stats = Object.assign({}, res.stats || {}, more);
         return res;
       }
-      if (!res.features || !res.features.length) {
+      if (res.chunked ? !res.chunked.count : (!res.features || !res.features.length)) {
         return fail('geometry-failed', { failed: led.failed(), why: led.why(), detail: led.detail() });
       }
       res.stats = Object.assign({}, res.stats || {}, more || {}, { geometryFailed: led.failed(), geometryWhy: led.why() });
@@ -2735,6 +2735,8 @@ export function makeGisOps() {
     const BUFFER_OUT_PER_IN = 4;
     /* Estimated output positions below which no thread is started. Observed (node 22, scripts/gis-scale-bench.mjs --worker, 2026-11-19): 1,000 points (65,000 estimated positions) took 508 ms here and 494 ms through one carried block — thread start and the clone back cost what they saved — so the floor is set above that, at about 1,500 points. Expires with the buffer's per-position cost or the way a thread is started (a pooled worker would lower it). */
     const BUFFER_CARRY_FLOOR = 100000;
+    /* Output positions per block when no worker carries the blocks (the chunked path, below). Observed (node 24, main thread, 2026-11-19): 10,000 points = 650,000 positions took 3.1 s ≈ 200,000 positions/s, so a block of 50,000 is about a quarter of a second between two memory releases; the reader's frame budget is kept by ctx.tick per row, not by this number. Expires with the buffer's per-position cost. */
+    const BUFFER_INLINE_BLOCK_POSITIONS = 50000;
 
     async function bufferOffThread(GG, W, rows, radius, steps, ctx) {
       const no = (reason, detail) => ({ ok: false, reason: reason, detail: detail || null });
@@ -2812,6 +2814,198 @@ export function makeGisOps() {
       return { ok: true, answers: answers, left: left };
     }
 
+    /* ══ (gis-scale) A BUFFER TOO BIG TO HOLD, KEPT AS CHUNKS ════════════════════════════════════════
+       MEASURED (node 24, scripts/gis-scale-bench.mjs --worker, 2026-11-19): 1,000,000 points buffered 5 km took
+       234 s and +7,006 MB of heap with a 12 GB limit (the default heap would not have survived), and the main
+       thread was busy for 243 of those seconds with one stall of 14 s. The cost was never the arithmetic — it was
+       that every answer was kept as nested arrays until the last one arrived (≈108 B per position).
+       ⚠ THE ANSWER IS THE SAME ONE. The same kernel computes every feature (in a worker when one is mounted, here
+       when not); what changes is only where a finished feature is kept: packed flat (js/gis-packed.js), in input
+       order, in a chunk store the registry reads one chunk at a time. A run estimated at or below
+       CHUNK_ABOVE_POSITIONS never comes here, so every size that worked before keeps its own path.
+       ⚠ IT NEVER FALLS BACK TO HOLDING EVERYTHING: with no worker the blocks are computed on this thread (yielding
+       by elapsed time through ctx, which is also what makes cancel work), not thrown away for a whole-array pass
+       that would be the out-of-memory. A feature too big for a block is its own block, computed here. */
+    /* js/gis-packed.js is read when a run needs it and not before: it costs a start-up nothing, and a loader that reads this file as source text (some checks do) simply has no chunked path rather than a module it cannot resolve. */
+    let PACKED = null;
+    async function loadPacked() {
+      if (PACKED) return PACKED;
+      try { const m = await import('./gis-packed.js'); PACKED = { limits: m.limits, makeChunkStore: m.makeChunkStore, pack: m.pack, reader: m.reader }; } catch (_) { PACKED = null; }
+      return PACKED;
+    }
+
+    function estimateBufferPositions(rows, steps) {
+      let total = 0;
+      for (let i = 0; i < rows.length; i++) { const g = rows[i] && rows[i].geometry; if (g) total += steps + BUFFER_OUT_PER_IN * positionsIn(g); }
+      return total;
+    }
+
+    async function runBufferChunked(GG, W, rows, radius, steps, ctx, led) {
+      const store = PACKED.makeChunkStore();
+      const cost = new Array(rows.length);
+      for (let i = 0; i < rows.length; i++) { const g = rows[i] && rows[i].geometry; cost[i] = g ? steps + BUFFER_OUT_PER_IN * positionsIn(g) : 0; }
+      const workerOk = !!W && typeof W.planBlocks === 'function' && typeof W.maxConcurrency === 'function' && typeof AbortController === 'function';
+      let cap = BUFFER_INLINE_BLOCK_POSITIONS, lanes = 1, why = null;
+      if (workerOk) {
+        const plan = W.planBlocks({ units: Math.max(1, estimateBufferPositions(rows, steps)), bytesPerUnit: VALIDATE_BYTES_PER_POSITION, inFlight: W.maxConcurrency() });
+        if (plan && plan.ok) { cap = plan.plan.unitsPerBlock; lanes = plan.plan.inFlight; } else why = plan ? plan.why : 'plan-invalid';
+      } else why = W ? 'worker-door-invalid' : 'worker-not-mounted';
+      /* consecutive ranges, so the store's order is the input's order; a row bigger than a block stands alone */
+      const blocks = [];
+      let from = 0, curCost = 0;
+      const flush = (to) => { if (to > from) blocks.push({ from: from, to: to, inline: false }); from = to; curCost = 0; };
+      for (let i = 0; i < rows.length; i++) {
+        if (cost[i] > cap) { flush(i); blocks.push({ from: i, to: i + 1, inline: true }); from = i + 1; continue; }
+        if (curCost && curCost + cost[i] > cap) flush(i);
+        curCost += cost[i];
+      }
+      flush(rows.length);
+      let mod = null, pool = null;
+      if (workerOk && !why) {
+        try { mod = await import('../src/gis-buffer-worker-client.js'); } catch (e) { why = 'worker-client-unavailable'; }
+        if (mod && typeof mod.bufferPool === 'function') pool = mod.bufferPool(Math.max(1, Math.min(lanes, blocks.length)));
+        else if (!why) why = 'worker-client-unavailable';
+      }
+      const stop = new AbortController();
+      if (ctx && ctx.signal) {
+        if (ctx.signal.aborted) { if (pool) pool.close(); return { ok: false, cancelled: true }; }
+        try { ctx.signal.addEventListener('abort', () => stop.abort(), { once: true }); } catch (_) { }
+      }
+      const emit = async (b, answerOf) => {
+        const shells = [], geoms = [];
+        for (let j = b.from; j < b.to; j++) {
+          if (ctx && !(await ctx.tick(1, rows.length))) return false;
+          const r = answerOf(j), f = rows[j], g = f && f.geometry;
+          if (!g) continue;
+          if (!led.ok(r)) continue;
+          const bg = r.geometry;
+          if (!bg) continue;
+          shells.push({ type: 'Feature', properties: withProps(props(f), { _bufferKm: radius, _bufferSteps: steps, _areaKm2: areaKm2(bg) }), geometry: null /* filled from the packed block, in this position */ });
+          geoms.push(bg);
+        }
+        store.add(shells, PACKED.pack(geoms));
+        return true;
+      };
+      const got = new Map();
+      let next = 0, cancelled = false, failed = null, carried = 0;
+      const drainOnce = async () => {
+        while (next < blocks.length && !cancelled && !failed) {
+          const b = blocks[next];
+          let ok;
+          if (b.inline || !pool) { ok = await emit(b, (j) => { const g = rows[j] && rows[j].geometry; return g ? GG.attempt.bufferKm(g, radius, steps) : null; }); }
+          else {
+            const have = got.get(next);
+            if (!have) break;
+            got.delete(next);
+            const rd = PACKED.reader(have.packed);
+            ok = await emit(b, (j) => { const geometry = rd.next(), bad = have.fails[j - b.from]; return bad || { ok: true, geometry: geometry }; });
+            if (ok) carried += b.to - b.from;
+          }
+          if (!ok) { cancelled = true; stop.abort(); break; }
+          next++;
+        }
+      };
+      let chain = Promise.resolve();
+      const kick = () => (chain = chain.then(drainOnce));
+      if (pool) {
+        let take = 0;
+        const lane = async () => {
+          while (!cancelled && !failed) {
+            const k = take++;
+            if (k >= blocks.length) return;
+            const b = blocks[k];
+            if (b.inline) continue;
+            const res = await pool.run(rows.slice(b.from, b.to).map((f) => (f && f.geometry) || null), radius, steps, stop.signal, true);
+            if (!res || !res.ok || !res.packed) {
+              const w = res ? res.why : 'worker-answered-nothing';
+              if (w === 'aborted') { if (!failed) cancelled = true; return; }
+              failed = w; stop.abort(); return;
+            }
+            got.set(k, { packed: res.packed, fails: res.fails || {} });
+            await kick();
+          }
+        };
+        const running = [];
+        for (let i = 0; i < pool.lanes; i++) running.push(lane());
+        await Promise.all(running);
+        pool.close();
+      }
+      if (failed) {
+        /* A worker that died is told, by name, and the remaining blocks are computed here by the same kernel — still chunked. */
+        why = failed; failed = null; pool = null; got.clear();
+        /* blocks already written stay; the rest are read as inline */
+      }
+      await kick(); await chain;
+      if (cancelled) return { ok: false, cancelled: true };
+      return { ok: true, store: store, carried: carried, blocks: blocks.length, why: why };
+    }
+
+    /* ══ (gis-scale) AN OP OVER A RESULT THAT IS HELD AS CHUNKS ═════════════════════════════════════
+       A chunked record cannot be handed to a runner that reads `ds.features()` without building the array the
+       chunks exist to avoid. The ops below treat each LEFT row independently of the others (the right-hand input
+       is read whole, and it is the small one), so running them group by group and concatenating the groups'
+       rows IS the whole run — row for row, in the input's order — and the output is held as chunks too.
+       ⚠ THE TABLE IS THE LIST: an op is chunk-mapped by having an entry here, and nothing else names them.
+       ⚠ AN OP THAT IS NOT HERE IS NOT REFUSED WHILE IT FITS: it gets the materialised array up to the registry's
+       own ceiling, and above it a named refusal (`input-too-large-for-op`) — never an out-of-memory.
+       A group is sized in positions (MAP_GROUP_POSITIONS), so the arrays alive at once stay bounded however the
+       result was chunked. */
+    const MAPPED = {
+      filter: (v, ds, params, R, c) => runFilter(v, params, R, c),
+      spatialJoin: (v, ds, params, R, c) => runSpatialJoin(v, ds[1], params, R, c),
+      nearestJoin: (v, ds, params, R, c) => runNearestJoin(v, ds[1], params, R, c),
+    };
+
+    function mergeStats(list) {
+      const out = {};
+      for (const s of list) {
+        if (!s) continue;
+        for (const k of Object.keys(s)) {
+          const v = s[k];
+          if (!(k in out)) { out[k] = v; continue; }
+          if (typeof v === 'number' && typeof out[k] === 'number') out[k] = /^max/.test(k) ? Math.max(out[k], v) : out[k] + v;
+        }
+      }
+      return out;
+    }
+
+    async function runMapped(id, ds, params, R, ctx) {
+      const src = ds[0];
+      const per = Math.max(1, Math.floor(PACKED.limits().mapGroupPositions / Math.max(1, (src.positions || 0) / Math.max(1, src.count || 1))));
+      const wrapped = Object.assign({}, ctx, { tick: (u) => ctx.tick(u, src.count) });
+      const out = PACKED.makeChunkStore();
+      const stats = [];
+      let head = null, offset = 0, group = [];
+      const flush = async () => {
+        if (!group.length) return null;
+        const rows = group; group = [];
+        const view = Object.assign({}, src, { features: () => rows, count: rows.length, chunks: undefined });
+        const res = await MAPPED[id](view, ds, params, R, wrapped);
+        if (!res || !res.ok) {
+          if (res && res.detail && typeof res.detail.row === 'number') res.detail.row += offset;
+          return res || fail('op-unknown', { op: id });
+        }
+        offset += rows.length;
+        if (!head) head = res;
+        stats.push(res.stats);
+        out.addFeatures(res.features || []);
+        return null;
+      };
+      const it = src.chunks();
+      for (let n = it.next(); !n.done; n = it.next()) {
+        for (const f of n.value) group.push(f);
+        if (group.length >= per) { const bad = await flush(); if (bad) return bad; }
+      }
+      const bad = await flush();
+      if (bad) return bad;
+      if (!head) return fail('no-features', { input: 0 });
+      const res = { ok: true, features: null, chunked: out, stats: Object.assign(mergeStats(stats), { chunks: out.chunkCount, positions: out.positions, groups: stats.length }) };
+      if (head.renamed) res.renamed = head.renamed;
+      if (head.units) res.units = head.units;
+      if (head.resolved) res.resolved = head.resolved;
+      return res;
+    }
+
     async function runBuffer(ds, params, R, ctx) {
       const GG = geometry();
       const radius = R.asNumber(params.radiusKm);
@@ -2833,6 +3027,14 @@ export function makeGisOps() {
       const rows = ds.features();
       /* (gis-buffer-worker) the carried pass first, then THIS loop assembles every output row — a carried
          feature brings the kernel's answer, a feature that was not carried asks the same kernel here. */
+      /* (gis-scale) a result that would not fit the heap as arrays is kept as chunks (see runBufferChunked) */
+      const estimate = estimateBufferPositions(rows, steps);
+      if (estimate > BUFFER_CARRY_FLOOR && await loadPacked() && estimate > PACKED.limits().chunkAbovePositions) {
+        const big = await runBufferChunked(GG, workerKernel(), rows, radius, steps, ctx, led);
+        if (big.cancelled) return fail('cancelled', { done: ctx ? ctx.done() : 0, total: rows.length });
+        const bnote = big.carried ? ('used: ' + big.carried + ' of ' + rows.length + ' features') : ('not-used: ' + (big.why || 'computed-here'));
+        return withGeoStats({ ok: true, features: null, chunked: big.store }, led, { worker: bnote, chunks: big.store.chunkCount, positions: big.store.positions, estimatedPositions: estimate });
+      }
       const carried = await bufferOffThread(GG, workerKernel(), rows, radius, steps, ctx);
       if (carried.cancelled) return fail('cancelled', { done: ctx ? ctx.done() : 0, total: rows.length });
       const answers = carried.ok ? carried.answers : null;
@@ -6556,7 +6758,18 @@ export function makeGisOps() {
          checks, so it is stated as 「every」: that stays true when the next op is added.
          `res.ok` on an unawaited Promise is
          `undefined` — which this function would have reported as a refusal with no reason. */
-      const res = await runner();
+      /* (gis-scale) an input held as chunks: mapped group by group where the op is per-left-row, else materialised only while it fits */
+      let res;
+      const bigAt = ds.findIndex((d) => d && typeof d.chunks === 'function');
+      if (bigAt < 0) res = await runner();
+      else if (!(await loadPacked())) return fail('input-too-large-for-op', { op: decl.id, input: bigAt, rows: ds[bigAt].count, positions: ds[bigAt].positions, max: null });
+      else if (bigAt === 0 && MAPPED[decl.id]) res = await runMapped(decl.id, ds, params, R, ctx);
+      else {
+        const max = PACKED.limits().materializeMaxPositions;
+        const over = ds.findIndex((d) => d && typeof d.chunks === 'function' && d.positions > max);
+        if (over >= 0) return fail('input-too-large-for-op', { op: decl.id, input: over, rows: ds[over].count, positions: ds[over].positions, max: max });
+        res = await runner();
+      }
       if (!res || !res.ok) return res || fail('op-unknown', { op: decl.id });
 
       /* The title is an identifier, not a sentence: op(input, input). Nothing here composes prose,
@@ -6643,7 +6856,7 @@ export function makeGisOps() {
           });
         } else {
           rec = R.add({
-            id: step.id, title: title, features: res.features,
+            id: step.id, title: title, features: res.features, chunked: res.chunked || null,
             /* An op's output carries the time axis of its input: 「1889 年の行」 is still stamped 1889
                after a clip, and dropping the declaration would make the next timeWindow in the chain
                refuse a dataset that plainly has times in it.
