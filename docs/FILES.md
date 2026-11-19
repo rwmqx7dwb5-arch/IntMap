@@ -1022,6 +1022,8 @@ atlas-msg-tools.js                Atlas — メッセージごとの操作バー
 atlas-notebook.js                 Atlas — **調査ノート**（atlas-os）のページ側。終わったターンを綴じる・パネルの帯とシート・
                                   再現（runDirect＋restorer で読み返し）・今と比べる・もう一度訊く・書き出し／読み込み・アカウント同期
 atlas-notebook-store.js           Atlas — 調査ノートのデータ（記録の形・行ごとの差分・検索・Markdown／ファイル・IndexedDB・同期の突き合わせ）。DOM なし
+atlas-knowledge-store.js          Atlas — **統合知識層**のデータと規則（主張＝確認済み／推論／矛盾／古い情報・出典の再確認可否・場所/期間/世界ref・supersedes/contradicts・想起の絞り込み）。DOM なし
+atlas-knowledge.js                Atlas — 統合知識層のページ側（既定オフの利用者スイッチ・端末の IndexedDB ストア）
 atlas-briefing.js                 Atlas — **ブリーフィング**（調査をリンクで手渡す）のページ側。作成画面（ノートの回答を選ぶ・並べる・
                                   メモを含めるか・リンクの長さ・コピー／共有／プレビュー／ノートのファイル）と、リンクから開いた人の
                                   読む画面（回答・根拠と時刻・記録時の行を地図に描く・地図を再現・今と比べる・ノートに保存）。
@@ -1042,7 +1044,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  252 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  256 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1066,6 +1068,7 @@ atlas-cap-map.js                  Atlas の能力 — 地図への描画・強�
 atlas-cap-navigation.js           Atlas の能力 — ナビゲーション（navigation.*）
 atlas-cap-news.js                 Atlas の能力 — ニュースの分類（news.category）
 atlas-cap-notebook.js             Atlas の能力 — 調査ノート（notebook.list / open / compare。前に調べたことを探す・地図を戻す・今と比べる）
+atlas-cap-knowledge.js            Atlas の能力 — 統合知識（knowledge.remember / recall / forget / setting）
 atlas-cap-briefing.js             Atlas の能力 — ブリーフィング（briefing.share：ノートの回答や「この回答」をリンクにする／
                                   briefing.open：リンクから開いたブリーフィングの回答を読み、その表示に戻す）
 atlas-cap-panel.js                Atlas の能力 — パネルを開く・閉じる（panel.*）
