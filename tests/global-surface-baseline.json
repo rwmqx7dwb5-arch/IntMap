@@ -1095,7 +1095,7 @@
   "IntMapFetchWithin": 3,
   "IntMapFlightSim": 19,
   "IntMapGazetteer": 24,
-  "IntMapGeodesy": 14,
+  "IntMapGeodesy": 15,
   "IntMapGis": 13,
   "IntMapGisCrs": 3,
   "IntMapGisExport": 2,

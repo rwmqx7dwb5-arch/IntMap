@@ -2713,6 +2713,103 @@ export function makeGisOps() {
       return { ok: true, features: out };
     }
 
+    /* ══ (gis-buffer-worker) THE BUFFER, ON ANOTHER THREAD ═════════════════════════════════════════════
+       MEASURED (node 22, scripts/gis-scale-bench.mjs, 2026-11-19): 10,000 points buffered 5 km took 4.1 s and
+       100,000 took 57 s with 716 MB of heap — all of it on the thread that draws the map. One buffered point
+       is 65 positions out of 1 in, a 100-vertex polygon 447 out of 101, a 60-vertex line 503 out of 60.
+       ⚠ A BUFFER IS ONE INDEPENDENT JOB PER FEATURE, so it blocks by cost and not by count, and the answer
+       is the page kernel's own: src/gis-buffer-worker.js runs `geomKernel` — the function js/gis-geometry.js
+       builds its kernel from — through its `call` door, so no second implementation exists to disagree.
+       (js/gis-worker.js's Blob worker cannot carry it: the sweep line is a bare specifier and a fingerprinted
+       chunk, neither of which a Blob worker can import — see the note in js/gis-geometry.js.)
+       ⚠ A BLOCK THAT COULD NOT BE CARRIED THROWS THE CARRIED PASS AWAY WHOLE, and every feature is then
+       buffered here by the same kernel to the same answer; `stats.worker` says which thread did the work and
+       why (the shape validateOffThread above set). Nothing here is a limit (CONSTITUTION.md §5): a feature
+       too large for a block is buffered on this thread, not dropped. */
+    /* Output positions per input position, for sizing a block. Observed (see above): ≈3.5 for a polygon, ≈8
+       for a line, and a point adds `steps` out of one in — so `steps + 4·in` sizes a polygon and a point and
+       under-sizes a line. It sizes MEMORY only; a wrong guess changes the block size and never an answer.
+       Expires if the buffer stops being a union of per-vertex disks and per-edge sleeves. */
+    const BUFFER_OUT_PER_IN = 4;
+    /* Estimated output positions below which no thread is started. Observed (node 22, scripts/gis-scale-bench.mjs --worker, 2026-11-19): 1,000 points (65,000 estimated positions) took 508 ms here and 494 ms through one carried block — thread start and the clone back cost what they saved — so the floor is set above that, at about 1,500 points. Expires with the buffer's per-position cost or the way a thread is started (a pooled worker would lower it). */
+    const BUFFER_CARRY_FLOOR = 100000;
+
+    async function bufferOffThread(GG, W, rows, radius, steps, ctx) {
+      const no = (reason, detail) => ({ ok: false, reason: reason, detail: detail || null });
+      if (!W) return no('worker-not-mounted');
+      if (typeof W.planBlocks !== 'function' || typeof W.maxConcurrency !== 'function') return no('worker-door-invalid');
+      const cost = new Array(rows.length);
+      let total = 0;
+      for (let i = 0; i < rows.length; i++) {
+        const g = rows[i] && rows[i].geometry;
+        cost[i] = g ? steps + BUFFER_OUT_PER_IN * positionsIn(g) : 0;
+        total += cost[i];
+      }
+      /* ⚠ before a thread exists: starting one for nothing is the cost this floor was measured against */
+      if (total < BUFFER_CARRY_FLOOR) return no(NOTHING_WORTH_CARRYING, { cost: total, floor: BUFFER_CARRY_FLOOR });
+      if (typeof AbortController !== 'function') return no('stop-handle-unavailable');
+      const plan = W.planBlocks({ units: total, bytesPerUnit: VALIDATE_BYTES_PER_POSITION /* 1 position held on both threads while carried — one number, read at call time because the const sits below this function */, inFlight: W.maxConcurrency() });
+      if (!plan || !plan.ok) return no(plan ? plan.why : 'plan-invalid', plan ? plan.detail : null);
+      const cap = plan.plan.unitsPerBlock;
+      /* ⚠ THE MEMORY BUDGET ONLY SAYS HOW BIG A BLOCK MAY BE. A run that fits one block would use one thread, so a block is also closed once it holds a
+         twelfth... — two blocks per lane, which keeps every lane fed when the blocks finish unevenly. Sizing only: it never changes an answer. */
+      const target = Math.ceil(total / (2 * Math.max(1, W.maxConcurrency())));
+      const blocks = [];
+      let cur = [], curCost = 0, left = 0;
+      for (let i = 0; i < rows.length; i++) {
+        if (!cost[i]) continue;
+        if (cost[i] > cap) { left++; continue; }
+        if (cur.length && (curCost + cost[i] > cap || curCost >= target)) { blocks.push(cur); cur = []; curCost = 0; }
+        cur.push(i); curCost += cost[i];
+      }
+      if (cur.length) blocks.push(cur);
+      if (!blocks.length) return no('nothing-fits-the-budget', { fits: cap });
+      let mod = null;
+      try { mod = await import('../src/gis-buffer-worker-client.js'); } catch (e) { return no('worker-client-unavailable', { message: String((e && e.message) || e) }); }
+      if (!mod || typeof mod.bufferPool !== 'function') return no('worker-client-unavailable');
+      const lanes = Math.max(1, Math.min(plan.plan.inFlight, blocks.length));
+      const pool = mod.bufferPool(lanes);
+      const stop = new AbortController();
+      if (ctx && ctx.signal) {
+        if (ctx.signal.aborted) { pool.close(); return { ok: false, cancelled: true }; }
+        try { ctx.signal.addEventListener('abort', () => stop.abort(), { once: true }); } catch (_) { }
+      }
+      const answers = new Map();
+      let cancelled = false, failed = null, next = 0;
+      const lane = async () => {
+        while (!cancelled && !failed) {
+          const k = next++;
+          if (k >= blocks.length) return;
+          const idx = blocks[k];
+          const res = await pool.run(idx.map((i) => rows[i].geometry), radius, steps, stop.signal);
+          if (!res || !res.ok) {
+            const why = res ? res.why : 'worker-answered-nothing';
+            if (why === 'aborted') { if (!failed) cancelled = true; return; }
+            failed = { why: why, detail: res && res.message ? { message: res.message } : null };
+            stop.abort();
+            return;
+          }
+          /* The worker is a runner and not an authority: a malformed answer is refused before it is
+             written into a table that would look finished. */
+          const got = res.results;
+          let sane = Array.isArray(got) && got.length === idx.length;
+          for (let j = 0; sane && j < idx.length; j++) { const r = got[j]; if (r !== null && !(r && typeof r === 'object' && typeof r.ok === 'boolean')) sane = false; }
+          if (!sane) { failed = { why: CARRIED_ANSWER_BAD, detail: { block: k } }; stop.abort(); return; }
+          for (let j = 0; j < idx.length; j++) answers.set(idx[j], got[j]);
+          if (ctx) {
+            for (let j = 0; j < idx.length; j++) if (!(await ctx.tick(1, rows.length))) { cancelled = true; stop.abort(); return; }
+          }
+        }
+      };
+      const running = [];
+      for (let i = 0; i < lanes; i++) running.push(lane());
+      await Promise.all(running);
+      pool.close();
+      if (failed) return no(failed.why, failed.detail);
+      if (cancelled) return { ok: false, cancelled: true };
+      return { ok: true, answers: answers, left: left };
+    }
+
     async function runBuffer(ds, params, R, ctx) {
       const GG = geometry();
       const radius = R.asNumber(params.radiusKm);
@@ -2732,8 +2829,17 @@ export function makeGisOps() {
          geodesic disk PER VERTEX, so its cost grows with the data more steeply than almost anything
          else here — and it was the one being described as finishing 「in one turn」. */
       const rows = ds.features();
+      /* (gis-buffer-worker) the carried pass first, then THIS loop assembles every output row — a carried
+         feature brings the kernel's answer, a feature that was not carried asks the same kernel here. */
+      const carried = await bufferOffThread(GG, workerKernel(), rows, radius, steps, ctx);
+      if (carried.cancelled) return fail('cancelled', { done: ctx ? ctx.done() : 0, total: rows.length });
+      const answers = carried.ok ? carried.answers : null;
+      const note = carried.ok
+        ? ('used: ' + answers.size + ' of ' + rows.length + ' features')
+        : ('not-used: ' + carried.reason);
       for (let i = 0; i < rows.length; i++) {
-        if (ctx && !(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const had = !!(answers && answers.has(i));
+        if (!had && ctx && !(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
         const f = rows[i];
         const g = f && f.geometry;
         if (!g) continue;
@@ -2742,7 +2848,7 @@ export function makeGisOps() {
            double-counted the overlap in the area. It can union them now, so the MultiPoint's buffer
            is the one shape it should always have been — and `_bufferPart` is gone with the reason
            it existed. */
-        const r = GG.attempt.bufferKm(g, radius, steps);
+        const r = had ? answers.get(i) : GG.attempt.bufferKm(g, radius, steps);
         if (!led.ok(r)) continue;
         const bg = r.geometry;
         if (!bg) continue;
@@ -2752,7 +2858,7 @@ export function makeGisOps() {
           geometry: bg,
         });
       }
-      return withGeoStats({ ok: true, features: out }, led);
+      return withGeoStats({ ok: true, features: out }, led, { worker: note });
     }
 
     /* Every areal feature of a dataset as a window: what clip cuts with, and what the overlays and
