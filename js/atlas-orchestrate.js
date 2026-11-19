@@ -23,7 +23,8 @@
  *  neither. tests/atlas-orchestration-checks.test.mjs runs every export.
  * ==========================================================================*/
 
-export { mergeFacts, normalizeFacts, normalizeFact, makeFactResolver } from './atlas-fact-merge.js';
+import * as factMerge from './atlas-fact-merge.js';
+export const mergeFacts = factMerge.mergeFacts, normalizeFacts = factMerge.normalizeFacts, normalizeFact = factMerge.normalizeFact, makeFactResolver = factMerge.makeFactResolver;
 
 const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 const USABLE = (st) => st === 'done' || st === 'partial';
