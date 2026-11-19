@@ -2,7 +2,6 @@ import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is �
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { IntMapDialog } from './dialog.js';
 /* ============================================================================
  *  IntMap · News feed, pins & reader  (#R168)
  * ----------------------------------------------------------------------------
@@ -676,7 +675,7 @@ export function newsUi(HOST){
           pub.onclick=openWiki; pub.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWiki(e); } }); } }
       /* Whole card → fly to the map location (replaces the old "Show on map" button) */
       card.onclick=()=>{ if(item.analysis.loc) GE().camera.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
-      IntMapDialog.makeActionable(card);   /* (a11y-shared-dialog) Tab reaches the card, Enter/Space flies — the same click */
+      window.IntMapDialog.makeActionable(card);   /* (a11y-shared-dialog) Tab reaches the card, Enter/Space flies — the same click */
       item._cardEl=card; /* lets the translation pass update this title in place */
       feed.appendChild(card);
       /* Pins are populated in bulk by startNews(); no per-batch pin push here. */

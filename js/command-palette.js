@@ -47,7 +47,6 @@ import { icon } from './icons.js';
 import { isDisplay } from './layer-manifest.js';
 import { layerRowLabel, registryBoxes } from './layer-row-label.js';
 import './safe-html.js';
-import { IntMapDialog } from './dialog.js';
 
 /* ══ THE AGREEMENT OF A NAME WITH WHAT WAS TYPED (pure — tests/ux-next-checks.test.mjs) ════════════════════════ */
 /** fold for comparison: compatibility forms, case, and the Latin accents (not the Japanese voicing marks) */
@@ -338,7 +337,7 @@ export async function openPalette(host, opts) {
     + '</div>';
   const inp = /** @type {HTMLInputElement} */ (box.querySelector('#cp-input'));
   inp.value = q0;
-  const D = IntMapDialog;
+  const D = window.IntMapDialog;
   const onClose = () => { dlg = null; try { box && box.remove(); } catch (_) { } box = null; };
   if (D && D.open) dlg = D.open(box, { panel: box.querySelector('.cp-box'), labelledby: 'cp-h', backdrop: box.querySelector('.cp-scrim'), close: onClose, initialFocus: inp });
   else { document.body.appendChild(box); box.querySelector('.cp-scrim').addEventListener('click', closePalette); }

@@ -44,7 +44,6 @@ import { IntMapLang } from './lang-registry.js';
 import { iconNode } from './icons.js';
 import * as bus from './bus.js';
 import { releaseOf, BOOT_ENDINGS } from '../supabase/functions/usage-count/shape.js';   /* (field-speed) this page's own release */
-import { IntMapDialog } from './dialog.js';
 
 /* where the nightly measurement is shipped (scripts/build-service-status.mjs OUT) */
 const BUNDLE_URL = './data/service-status.json';
@@ -562,7 +561,7 @@ export async function open(ctx) {
     panel.setAttribute('aria-labelledby', 'im-status-title'); panel.setAttribute('aria-busy', 'true');
     panel.appendChild(el('p', 'ims-sub', IntMapLang.t(docLang(), 'Reading…', '確認しています…')));
     root.appendChild(panel); document.body.appendChild(root);
-    try { IntMapDialog.adopt(root, { panel, labelledby: 'im-status-title', backdrop: true }); } catch (_) { /* no registry: Escape and the trap are lost, the page is not */ }
+    try { window.IntMapDialog.adopt(root, { panel, labelledby: 'im-status-title', backdrop: true }); } catch (_) { /* no registry: Escape and the trap are lost, the page is not */ }
   }
   root.style.display = 'flex';
   const { lang, model } = await gather(lastCtx);

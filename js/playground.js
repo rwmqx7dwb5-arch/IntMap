@@ -31,7 +31,6 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
-import { IntMapDialog } from './dialog.js';
 
 
 
@@ -54,7 +53,7 @@ export function playground(HOST){
       ov.appendChild(card); ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); }); document.body.appendChild(ov);
       /* (a11y-shared-dialog) every playground card is a registered dialog — Escape, Tab trap, focus back; named by its heading.
          focus:false — the card is filled AFTER this returns, so the owner's own first control is not there yet */
-      IntMapDialog.open(ov,{ panel:card, focus:false }); return {ov,card}; }
+      window.IntMapDialog.open(ov,{ panel:card, focus:false }); return {ov,card}; }
     function xbtn(onclick){ const b=document.createElement('button'); b.textContent='×'; b.style.cssText='position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;z-index:calc(var(--z-inset) + 2);'; b.setAttribute('aria-label',L('Close','閉じる','Schließen','Закрыть','Cerrar')); b.onclick=onclick; return b; }
     function pill(txt,bg){ const s=document.createElement('span'); s.textContent=txt; s.style.cssText='display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:'+(bg||'var(--primary-fill)')+';color:#fff;'; return s; }
 

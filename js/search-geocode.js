@@ -12,7 +12,6 @@ import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';
 import * as bus from './bus.js';
-import { IntMapDialog } from './dialog.js';
 
 /* ══ THE EMPTY FIELD SHOWS NOTHING (2026-11-18, the reader: 「上部の地名検索バーに入力しようとしたら色々出てくるあれ
    うざいから削除して」) ═══════════════════════════════════════════════════════════════════════════════════════════
@@ -365,7 +364,7 @@ export function searchGeocode(HOST){
     /* (a11y-shared-dialog) the results are a listbox driven from the field — ArrowDown/ArrowUp move, Enter picks,
        Escape closes the list; focus stays in the field (the combobox pattern js/routing-ui.js's stop field uses).
        Wired once per field, here, because this is the file that renders the rows. */
-    if(!inp._imListbox&&IntMapDialog) inp._imListbox=IntMapDialog.listbox(inp,res,{
+    if(!inp._imListbox&&window.IntMapDialog) inp._imListbox=window.IntMapDialog.listbox(inp,res,{
       options:()=>res.style.display==='none'?[]:res.querySelectorAll('.ms-item'),
       pick:(el)=>el.click(), close:()=>{ res.style.display='none'; },
       label:IntMapLang.t(HOST.lang,'Search results','検索結果') });

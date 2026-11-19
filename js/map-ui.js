@@ -28,7 +28,6 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { choosePlacement, collectObstacles, measureHtml, optionsFor } from './popup-placement.js';   /* (ui-polish-popup) which side of the pin the place popup opens on */
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { IntMapDialog } from './dialog.js';
 
 
 /* ══ ⚠⚠⚠ (#R273) THE CLOSE MARK, ONE CHARACTER, EVERYWHERE ════════════════════════════════════════
@@ -1214,7 +1213,7 @@ export function layerSidebar(HOST){
       const nm=document.createElement('div'); nm.className='lst-nm'; nm.textContent=r.name; nm.title=r.name;
       /* both shapes are one switch to a keyboard and a screen reader: Tab reaches it, Space/Enter flips it
          (js/dialog.js presses a focusable role=switch), and the view does not move (CONSTITUTION §3) */
-      d.setAttribute('role','switch'); d.setAttribute('aria-checked',r.cb.checked?'true':'false'); IntMapDialog.makeActionable(d,{label:r.name});
+      d.setAttribute('role','switch'); d.setAttribute('aria-checked',r.cb.checked?'true':'false'); window.IntMapDialog.makeActionable(d,{label:r.name});
       if(asRow){ d.appendChild(nm); }
       else{
         const pv=document.createElement('div'); pv.className='lst-prev'; if(r.gk) pv.dataset.gk=r.gk;
@@ -1313,7 +1312,7 @@ export function layerSidebar(HOST){
     const LA_MORE=(n)=>String(T('{n} more','その他{n}件','{n} weitere','ещё {n}','{n} más')).replace('{n}',n);
     function modeRows(grid){ ['default','clean','custom'].forEach(m=>{
       const d=document.createElement('div'); d.className='lst-tile lst-row lst-mode'; d.dataset.mode=m;
-      d.setAttribute('role','radio'); d.setAttribute('aria-checked','false'); IntMapDialog.makeActionable(d);
+      d.setAttribute('role','radio'); d.setAttribute('aria-checked','false'); window.IntMapDialog.makeActionable(d);
       const nm=document.createElement('div'); nm.className='lst-nm'; nm.textContent=MODE_LBL[m]();
       d.dataset.nm=(MODE_LBL[m]()+' '+m).toLowerCase();
       const sw=document.createElement('span'); sw.className='lst-sw'; sw.appendChild(document.createElement('i'));
@@ -1390,7 +1389,7 @@ export function layerSidebar(HOST){
              beta group still starts closed (#R72/#R101), and both are still remembered per session. */
           if(!(secName in _secClosed)) _secClosed[secName]=(!!r.secBeta || _isBeta(secName));
           const closed=!!_secClosed[secName];
-          const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('aria-expanded',closed?'false':'true'); IntMapDialog.makeActionable(h);
+          const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('aria-expanded',closed?'false':'true'); window.IntMapDialog.makeActionable(h);
           const ch=document.createElement('span'); ch.className='lst-chev'; h.appendChild(ch);
           const tt=document.createElement('span'); tt.textContent=secName; h.appendChild(tt);
           root.appendChild(h);
@@ -1423,7 +1422,7 @@ export function layerSidebar(HOST){
         const anchor=Array.from(root.querySelectorAll('.lst-grid')).find(x=>x.querySelector('.lst-mode'))||null;
         if(!(FAV_SEC in _secClosed)) _secClosed[FAV_SEC]=false;
         const closed=!!_secClosed[FAV_SEC];
-        const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('aria-expanded',closed?'false':'true'); IntMapDialog.makeActionable(h);
+        const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('aria-expanded',closed?'false':'true'); window.IntMapDialog.makeActionable(h);
         const ch=document.createElement('span'); ch.className='lst-chev'; h.appendChild(ch);
         const tt=document.createElement('span'); tt.textContent=favLabel(); h.appendChild(tt);
         const g=document.createElement('div'); g.className='lst-grid lst-favgrid'+(closed?' closed':'');
@@ -1932,7 +1931,7 @@ export function layerSidebar(HOST){
       if(!(sk in _secClosed)) _secClosed[sk]=false;
       const closed=!!_secClosed[sk];
       const h=document.createElement('div'); h.className=headCls+(closed?' closed':'');
-      h.setAttribute('aria-expanded',closed?'false':'true'); IntMapDialog.makeActionable(h);
+      h.setAttribute('aria-expanded',closed?'false':'true'); window.IntMapDialog.makeActionable(h);
       const cv=document.createElement('span'); cv.className='lst-chev'; h.appendChild(cv);
       const tt=document.createElement('span'); tt.textContent=label; h.appendChild(tt);
       const body=document.createElement('div'); body.className=bodyCls+(closed?' closed':'');

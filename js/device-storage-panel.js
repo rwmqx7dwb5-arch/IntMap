@@ -28,7 +28,6 @@ import { jsonWithin } from './fetch-deadline.js';
 import { IntMapLang } from './lang-registry.js';
 import { iconNode } from './icons.js';
 import * as bus from './bus.js';
-import { IntMapDialog } from './dialog.js';
 
 /* where the derived ledger is shipped (scripts/device-storage-ledger.mjs OUT) */
 const LEDGER_URL = './data/device-storage-ledger.json';
@@ -515,7 +514,7 @@ export async function open() {
     const T = IntMapLang.pick(docLang);
     panel.appendChild(el('p', 'imd-sub', T('Reading…', '確認しています…')));
     root.appendChild(panel); document.body.appendChild(root);
-    try { IntMapDialog.adopt(root, { panel, labelledby: 'im-dev-title', backdrop: true, close }); } catch (_) { /* no registry: Escape and the trap are lost, the list is not */ }
+    try { window.IntMapDialog.adopt(root, { panel, labelledby: 'im-dev-title', backdrop: true, close }); } catch (_) { /* no registry: Escape and the trap are lost, the list is not */ }
   }
   root.style.display = 'flex';
   const L = await loadLedger();

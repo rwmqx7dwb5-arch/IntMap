@@ -10,7 +10,6 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { IntMapDialog } from './dialog.js';
 
 export function aiCore(HOST){
   const saveAIConfig=()=>{ try{ localStorage.setItem('intmap_ai_config',JSON.stringify(HOST.aiConfig)); }catch(_){} };
@@ -589,7 +588,7 @@ export function aiCore(HOST){
     </div>`;
     ov.style.display='flex';
     /* (a11y-shared-dialog) registered (idempotent — the overlay is reused): Escape, a Tab trap, focus back */
-    IntMapDialog.adopt(ov,{ label:String(opts.title||'AI') });
+    window.IntMapDialog.adopt(ov,{ label:String(opts.title||'AI') });
     const bodyEl=ov.querySelector('#ai-report-body'), actEl=ov.querySelector('#ai-report-actions');
     const api={
       el:ov,

@@ -1177,7 +1177,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const IM_LABELS=placeLabels(IM_HOST);
   function applyLabelLang(){ return IM_LABELS.applyLabelLang.apply(this,arguments); }
   function ensurePlaceLabels(){ return IM_LABELS.ensurePlaceLabels.apply(this,arguments); }
-  const IM_WINMGR=windowManager(hostSlice(IM_HOST, ['panelDrag']));
+  const IM_WINMGR=windowManager(IM_HOST);
   function addEdgeResize(){ return IM_WINMGR.addEdgeResize.apply(this,arguments); }
   function bringToFront(){ return IM_WINMGR.bringToFront.apply(this,arguments); }
   function makeDraggable(){ return IM_WINMGR.makeDraggable.apply(this,arguments); }
@@ -1273,7 +1273,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }catch(_){} }
   /* (#R200) moved to js/wheel-zoom.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeWheelZoom(hostSlice(IM_HOST, []), { GE, i18n });
+  makeWheelZoom(IM_HOST, { GE, i18n });
   /* (#R200) moved to js/label-occlusion.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   _IM_LABELOCCLUSION = makeLabelOcclusion(IM_HOST, { GE, isMobile });
@@ -1961,7 +1961,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R200) moved to js/layer-dropdown.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  _IM_LDROP = makeLayerDropdown(hostSlice(IM_HOST, []), { GE });
+  _IM_LDROP = makeLayerDropdown(IM_HOST, { GE });
   /* ===== (#R62) RIGHT layer sidebar (opt-in via Settings → Layer panel) — the layer list REPARENTED into a
      full-height right sidebar that mirrors the left one, with a search box and a PREVIEW SQUARE on every row
      (real tile thumbnails where a stable endpoint exists, a deterministic colour swatch + icon otherwise).
@@ -2527,7 +2527,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window._sfSetOp=(i,op)=>{ if(statsFilters[i]){ statsFilters[i].op=op; _sfRerender(); } };
   window._sfSetVal=(i,raw)=>{ if(statsFilters[i]){ statsFilters[i].raw=raw; statsFilters[i].val=_sfParse(raw); _sfRerender(); } };
   /* (#R163) moved to js/companies.js — see Architecture.md §3.1. */
-  window.IntMapCompanies=companies(hostSlice(IM_HOST, ['fetchViaProxy']));
+  window.IntMapCompanies=companies(IM_HOST);
   let coSort='mcap', coSortDir='desc', coFilters=[], coFilterOpen=false;
   const _coL=IntMapLang.pick(()=>currentLang);
   /* (#R142) Companies COMPARE + TIME MACHINE. Compare mirrors Countries: single-click a row selects it, double-click opens
@@ -2851,7 +2851,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   /* (#R200) moved to js/session-tabs.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeSessionTabs(hostSlice(IM_HOST, ['mapType', 'mode', 'terrain3D']), { GE, isMobile, setMode });
+  makeSessionTabs(IM_HOST, { GE, isMobile, setMode });
 
   /* ===== Language ===== */
   /* ⚠ (#R233) THE SWITCH WAITS FOR ITS STRINGS — js/lang-switch.js holds the whole rule and the
@@ -3084,7 +3084,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R166) moved to js/playground.js; (#R209) fetched when Settings ▸ Playground is pressed. */
 
   /* (#R167) moved to js/legal.js — see Architecture.md §3.1. */
-  legal(hostSlice(IM_HOST, ['lang']));
+  legal(IM_HOST);
   _wireCountryPopupClose();
 
   /* ===================== Right-click pins ===================== */
@@ -3428,7 +3428,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R200) moved to js/i18n-late.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeI18nLate(hostSlice(IM_HOST, ['lang']), { i18n });
+  makeI18nLate(IM_HOST, { i18n });
   /* ---------- Settings persistence (#48) ---------- */
   window.imLabelLang='ui+local';   /* (#R772) 「このハイブリッド方式をデフォルト設定に。」 — a first visit gets the app language with the tile's own name under it. A reader who already chose ui / local / en keeps it: loadSettings restores the saved value below. */   /* (#R297) 「平面地図は自由スクロールに一本化し、ヨーロッパ中心の固定地図は完全削除。設定の該当項目も削除。」 — `imFlatPan` is gone: a flat map ALWAYS wraps (see applyFlatPanSetting). */ window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imDockPanels='off';   /* (#R238) 「規定オフ」 — the dock is opt-in on every device */ window.imLayerPanel='right';   /* ⚠ (#R296) NOT A SETTING ANY MORE — 「classic dropdownを完全削除…設定から該当項目を削除」. It is still read by js/map-ui.js `apply()`, which is the one place that decides whether to build and open the sidebar, so the name survives as a constant rather than as a choice. A saved 'classic' from before this round is ignored: see loadSettings. */
   /* (#R170) ticker defaults to OFF everywhere ("ティッカーはオフをデフォルトに"). This also removes a long-standing
@@ -3532,7 +3532,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R200) moved to js/layer-favs.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  _IM_LFAVS = makeLayerFavs(hostSlice(IM_HOST, ['lang']), { escapeHtml, i18n, saveSettings, t });
+  _IM_LFAVS = makeLayerFavs(IM_HOST, { escapeHtml, i18n, saveSettings, t });
 
   /* ---------- Data sources & attribution modal (#37) ---------- */  /* (#R162) the list moved to js/reference-data.js — see Architecture.md "File layout". */
   const DATA_SOURCES=IntMapRefData.dataSources;
@@ -3679,7 +3679,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R200) moved to js/time-countries.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeTimeCountries(hostSlice(IM_HOST, ['countryDataLoaded']), { countryStats, loadCountryData, renderStats, searchVal });
+  makeTimeCountries(IM_HOST, { countryStats, loadCountryData, renderStats, searchVal });
 
   /* ============================================================================
    *  (#R94b) HISTORICAL / FORMER STATES — when the master clock is inside a former country's real lifespan,

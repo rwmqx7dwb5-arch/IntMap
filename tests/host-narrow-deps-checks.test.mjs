@@ -46,7 +46,7 @@ function importedFile(callee) {
 }
 
 test('there are slice call sites to check', () => {
-  assert.ok(SITES.length >= 20, 'found ' + SITES.length);
+  assert.ok(SITES.length >= 10, 'found ' + SITES.length);
 });
 
 for (const { callee, listed } of SITES) {

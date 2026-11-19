@@ -22,7 +22,7 @@ import { untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor, packageOf, loadPackage } from './layer-manifest.js';   /* (layer-packages) …and which rows a package implements, and the package's literal import */
 import { IntMapTime } from './chronos.js'; import { dimPixel } from './class-highlight.js';   /* (landcover-class-highlight) the one «dim what was not picked» rule — Köppen and WorldCover */
-import { IntMapGeoEngine } from './geo-engine.js'; import * as bus from './bus.js'; import { IntMapDialog } from './dialog.js';
+import { IntMapGeoEngine } from './geo-engine.js'; import * as bus from './bus.js';
 import { IntMapLang } from './lang-registry.js'; import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js; on this line because this file's line count only goes down (scripts/layer-packages.mjs), and icons.js is reached from js/app-body.js for the reachability rule */
 /* ══ (fetch-deadline-layer) THE READS A ROW MAKES, FOR THE OTHER READERS OF THE SAME DATA ══════════════
    js/layer-previews.js drew the cable and radar thumbnails from reads of its own: a bare `fetch` with no
@@ -1587,7 +1587,7 @@ export function dataLayers(HOST){
       wrap.addEventListener('wheel',(e)=>{ if(e.deltaY&&!e.deltaX&&wrap.scrollWidth>wrap.clientWidth){ wrap.scrollLeft+=e.deltaY; e.preventDefault(); } },{passive:false});
       chips.forEach(c=>{
         const chip=document.createElement('span'); chip.className='active-lyr-chip';
-        const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name; IntMapDialog.makeActionable(nm);
+        const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name; window.IntMapDialog.makeActionable(nm);
         nm.onclick=()=>{ const row=c.el.closest('.lyr-row')||c.el.closest('label'); if(row&&row.scrollIntoView) try{ row.scrollIntoView({block:'nearest'}); }catch(_){} };
         const x=document.createElement('button'); x.className='alc-x'; x.textContent='×'; x.title=(IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
         x.onclick=(e)=>{ e.stopPropagation(); c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
@@ -1604,7 +1604,7 @@ export function dataLayers(HOST){
         const pn=document.createElement('div'); pn.className='alc-panel';
         if(!chips.length){ const em=document.createElement('div'); em.className='alc-empty'; em.textContent=(IntMapLang.t(lang,'No layers are on','表示中のレイヤーはありません','Keine aktiven Ebenen','Нет активных слоёв','Sin capas activas')); pn.appendChild(em); }
         chips.forEach(c=>{ const row=document.createElement('div'); row.className='alc-row';
-          const nm=document.createElement('span'); nm.className='alcr-name'; nm.textContent=c.name; nm.title=c.name; IntMapDialog.makeActionable(nm);
+          const nm=document.createElement('span'); nm.className='alcr-name'; nm.textContent=c.name; nm.title=c.name; window.IntMapDialog.makeActionable(nm);
           nm.onclick=()=>{ const r2=c.el.closest('.lyr-row')||c.el.closest('label'); if(r2&&r2.scrollIntoView) try{ r2.scrollIntoView({block:'nearest'}); }catch(_){} };
           row.appendChild(nm);
           const src=findOp(c.el);

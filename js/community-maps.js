@@ -24,7 +24,6 @@
 import { IntMapLang } from './lang-registry.js';
 import { communityClassCall } from './community-class-door.js';   /* (security-review-nov) the directory is read through the community-class Edge Function */
 import { IntMapGeoEngine } from './geo-engine.js';   /* the renderer, through the contract — the area the reader is looking at */
-import { IntMapDialog } from './dialog.js';
 
 /* ── THE WORDS THE DATABASE BOUNDS (the migration's CHECKs are the outer bound on the same values;
       tests/wave4-community-checks.test.mjs reads the migration and holds the two equal) ──────────── */
@@ -379,7 +378,7 @@ export async function openCommunityMaps(HOST, opts) {
   /* the app's one dialog manager (js/dialog.js — a classic script that publishes window.IntMapDialog and exports nothing;
      the account sheets read it the same way): Escape, the backdrop, focus return */
   try {
-    const D = IntMapDialog;
+    const D = window.IntMapDialog;
     if (D) D.open(m, { panel: sheet, labelledby: 'cmm-h', backdrop: true, close: shut });
     else document.body.appendChild(m);
   } catch (_) { document.body.appendChild(m); }

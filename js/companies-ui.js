@@ -14,7 +14,6 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTables } from './tables.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { IntMapDialog } from './dialog.js';
 
 export function companiesUi(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -543,7 +542,7 @@ export function companiesUi(HOST){
       `<a class="co-detail-link" href="${IntMapSafe.html(IntMapSafe.url(site)||'#')}" target="_blank" rel="noopener">${IntMapSafe.html(c.dom)} ↗</a></div>`;
     document.body.appendChild(ov);
     const close=()=>{ try{ ov.remove(); }catch(_){} };
-    IntMapDialog.open(ov,{ panel:ov.querySelector('.co-detail'), label:nm, close });   /* (a11y-shared-dialog) Escape, Tab trap, focus back */
+    window.IntMapDialog.open(ov,{ panel:ov.querySelector('.co-detail'), label:nm, close });   /* (a11y-shared-dialog) Escape, Tab trap, focus back */
     ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
     const xb=ov.querySelector('.co-detail-x'); if(xb) xb.onclick=close;
     /* (#R146) Compare from the detail (Countries parity): add this company; open the compare view once ≥2 are selected */

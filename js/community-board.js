@@ -10,7 +10,6 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { IntMapDialog } from './dialog.js';
 
 export function communityBoard(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -230,7 +229,7 @@ export function communityBoard(HOST){
     m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:320px;text-align:center;">${ava}<h2 style="margin:0 0 6px;font-size:18px;">${HOST.escapeHtml(name||'?')}</h2><p style="color:var(--text-muted);font-size:13px;line-height:1.55;white-space:pre-wrap;margin:0 0 16px;">${bio?HOST.escapeHtml(bio):(IntMapLang.t(HOST.lang,'No bio yet.','自己紹介はまだありません。','Noch keine Bio.','Пока без описания.','Aún sin biografía.'))}</p><button id="pm-close" style="width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:10px;border-radius:9px;font-weight:600;cursor:pointer;">${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}</button></div>`;
     m.querySelector('#pm-close').onclick=()=>{ m.style.display='none'; };
     m.style.display='flex';
-    IntMapDialog.adopt(m,{ panel:m.firstElementChild });   /* (a11y-shared-dialog) Escape, Tab trap, focus back; named by its heading */
+    window.IntMapDialog.adopt(m,{ panel:m.firstElementChild });   /* (a11y-shared-dialog) Escape, Tab trap, focus back; named by its heading */
   }
   /* Detect which v2 columns/tables exist so the UI degrades gracefully on an un-migrated DB.
      (Same tolerant pattern as refreshCurrentUser's is_pro probe.) Runs once, then cached. */

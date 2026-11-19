@@ -23,7 +23,6 @@ import { IntMapLang } from './lang-registry.js';
 import { iconNode } from './icons.js';
 import * as bus from './bus.js';
 import { hubHref } from './weekly-earth.js';   /* (weekly-earth) the weekly digest's pages, one more way back to IntMap */
-import { IntMapDialog } from './dialog.js';
 
 /* where the build writes the list (scripts/whats-new.mjs JSON_PATH) */
 const LIST_URL = './whats-new.json';
@@ -192,7 +191,7 @@ export async function open() {
     panel.style.position = 'relative';
     panel.appendChild(el('p', 'wn-sub', IntMapLang.t(docLang(), 'Reading…', '読み込んでいます…')));
     root.appendChild(panel); document.body.appendChild(root);
-    try { IntMapDialog.adopt(root, { panel, labelledby: 'im-whats-new-title', backdrop: true }); } catch (_) { /* no registry: Escape and the trap are lost, the page is not */ }
+    try { window.IntMapDialog.adopt(root, { panel, labelledby: 'im-whats-new-title', backdrop: true }); } catch (_) { /* no registry: Escape and the trap are lost, the page is not */ }
   }
   root.style.display = 'flex';
   const lang = docLang();
