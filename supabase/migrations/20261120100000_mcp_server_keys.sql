@@ -48,7 +48,7 @@ grant all on public.mcp_api_keys, public.mcp_server_state to service_role;
 -- issue: returns the raw key ONCE. At most 5 live keys per reader.
 create or replace function public.mcp_issue_key(p_label text)
 returns text
-language plpgsql security definer set search_path = public, pg_temp
+language plpgsql security definer set search_path = ''
 as $$
 declare
   v_uid  uuid := auth.uid();
@@ -70,7 +70,7 @@ $$;
 
 create or replace function public.mcp_revoke_key(p_id uuid)
 returns boolean
-language plpgsql security definer set search_path = public, pg_temp
+language plpgsql security definer set search_path = ''
 as $$
 declare v_n integer;
 begin
@@ -84,7 +84,7 @@ $$;
 
 create or replace function public.mcp_list_keys()
 returns table (id uuid, label text, created_at timestamptz, revoked_at timestamptz, last_used timestamptz, daily_limit integer)
-language sql stable security definer set search_path = public, pg_temp
+language sql stable security definer set search_path = ''
 as $$
   select k.id, k.label, k.created_at, k.revoked_at, k.last_used, k.daily_limit
     from public.mcp_api_keys k where k.owner = auth.uid() order by k.created_at desc;
@@ -93,7 +93,7 @@ $$;
 -- the Edge Function's one question: «is the server on, and is this key live?»
 create or replace function public.mcp_authorize(p_key_hash text)
 returns table (ok boolean, reason text, key_id uuid, daily_limit integer)
-language plpgsql security definer set search_path = public, pg_temp
+language plpgsql security definer set search_path = ''
 as $$
 declare v_on boolean; v_k public.mcp_api_keys;
 begin
@@ -109,3 +109,16 @@ $$;
 revoke all on function public.mcp_issue_key(text), public.mcp_revoke_key(uuid), public.mcp_list_keys(), public.mcp_authorize(text) from public, anon, authenticated;
 grant execute on function public.mcp_issue_key(text), public.mcp_revoke_key(uuid), public.mcp_list_keys() to authenticated;
 grant execute on function public.mcp_authorize(text) to service_role;
+
+-- ── the account's data inventory states the new table (supabase/tests/23_account_data_center_test.sql) ──
+insert into public.account_data_catalog (tbl, written_by, label_en, label_jp, purpose_en, purpose_jp, retention_en, retention_jp) values
+  ('mcp_api_keys', 'you',
+   'Keys for outside AI tools', '外部のAIツール用のキー',
+   'The keys you made so that an outside AI tool (Claude Code, ChatGPT and others) can read IntMap''s public map data for you. Each key has your name for it, when it was made and last used, and its daily limit. IntMap keeps only a fingerprint of the key, never the key itself.',
+   '外部のAIツール(Claude Code、ChatGPTなど)があなたの代わりにIntMapの公開地図データを読めるように、あなたが作ったキーの記録です。キーごとに、あなたが付けた名前、作った日時、最後に使った日時、1日あたりの上限を持ちます。キーそのものは保存せず、照合用の指紋だけを保存します。',
+   'Kept until you revoke the key, and deleted when you delete your account.',
+   'キーを取り消すまで残り、アカウントを削除したときに消えます。')
+on conflict (tbl) do update set
+  written_by = excluded.written_by, label_en = excluded.label_en, label_jp = excluded.label_jp,
+  purpose_en = excluded.purpose_en, purpose_jp = excluded.purpose_jp,
+  retention_en = excluded.retention_en, retention_jp = excluded.retention_jp;
