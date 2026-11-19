@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WIKIDATA } from '../lib/upstream-cadence.mjs';
+import { agreeOrRefuse } from '../lib/gov-stamp.mjs';
 
 /* data-governance declaration (npm run check:datagov): the snapshot is Wikidata's statements, CC0 — public domain, no credit condition.
    Its cadence is Wikidata's (scripts/lib/upstream-cadence.mjs). */
@@ -27,6 +28,13 @@ export const GOVERNANCE = {
   'data/world-graph-lng.json': {
     publisher: 'Wikidata', url: 'https://query.wikidata.org/sparql', licence: 'CC0 1.0', licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', attribution: false,
     ...WIKIDATA,
+    /* LITERALS THE GATE READS WITHOUT RUNNING THIS FILE; the write below refuses a bundle that disagrees with them
+       (scripts/lib/gov-stamp.mjs) — a rebuild on another day restates them here. quality is measured on nodes[]. */
+    retrievedAt: '2026-11-19',
+    generatedAt: '2026-11-19',
+    asOf: '2026-11-19',
+    schema: 'scripts/world-graph/build-lng.mjs (nodes · edges · claims) — read by tests/world-graph-persistent-checks.test.mjs and the seed supabase/migrations/20261119150100_world_graph_lng_seed.sql; js/world-graph-store.js reads the same rows from the database',
+    quality: { rows: 102, missing: { ref: 0, type: 0, name: 0 }, outOfRange: {}, duplicates: 0 },
     builtBy: 'scripts/world-graph/build-lng.mjs',
   },
 };
@@ -54,6 +62,8 @@ const ms = (v) => {
   const t = Date.parse(m[1] + '-' + m[2] + '-' + m[3] + 'T00:00:00Z');
   return isFinite(t) ? t : null;
 };
+/* importing this file (the data-governance gate reads GOVERNANCE) must not call Wikidata or write files */
+async function main() {
 const base = '?t wdt:P31/wdt:P279* wd:' + CLASS + ' .';
 const label = 'SERVICE wikibase:label { bd:serviceParam wikibase:language "en,ja". }';
 const rankOk = '?s wikibase:rank ?rk . FILTER(?rk != wikibase:DeprecatedRank)';
@@ -110,7 +120,8 @@ tpR.forEach((b) => {
 /* keep terminals that take part in at least one stated relation or value — an isolated node is no graph */
 const used = new Set(edges.map((e) => e.from).concat(claims.map((c) => c.ref)));
 [...nodes.keys()].filter((r) => r.startsWith('facility:') && !used.has(r)).forEach((r) => nodes.delete(r));
-const out = { schema: 1, source: 'Wikidata (CC0)', retrieved, class: CLASS, nodes: [...nodes.values()], edges, claims };
+const g = agreeOrRefuse(GOVERNANCE['data/world-graph-lng.json'], [...nodes.values()], { fields: { ref: {}, type: {}, name: {} }, key: ['ref'] }, retrieved);
+const out = { ...g, class: CLASS, nodes: [...nodes.values()], edges, claims };
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(out, null, 1) + '\n');
 console.log('nodes', out.nodes.length, '(facility', out.nodes.filter((n) => n.type === 'facility').length, 'company', out.nodes.filter((n) => n.type === 'company').length, 'atlas-joined', out.nodes.filter((n) => n.ids.company).length + ')', 'edges', edges.length, 'claims', claims.length);
@@ -140,3 +151,6 @@ if (process.argv.includes('--sql')) {
   fs.writeFileSync(MIG, s);
   console.log('wrote', path.relative(ROOT, MIG));
 }
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) main().catch((e) => { console.error(e); process.exit(1); });

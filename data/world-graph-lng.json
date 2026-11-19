@@ -1,7 +1,30 @@
 {
- "schema": 1,
- "source": "Wikidata (CC0)",
- "retrieved": "2026-11-19",
+ "publisher": "Wikidata",
+ "url": "https://query.wikidata.org/sparql",
+ "licence": "CC0 1.0",
+ "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+ "attribution": false,
+ "cadence": "P1D",
+ "cadenceBasis": {
+  "observed": "estimate, not measured per class: Wikidata is edited continuously and its Query Service reflects an edit within minutes, so any day can change what a query answers",
+  "expires": "if the builders read a Wikidata dump or a frozen snapshot instead of the live Query Service",
+  "canon": "scripts/lib/upstream-cadence.mjs WIKIDATA"
+ },
+ "retrievedAt": "2026-11-19",
+ "generatedAt": "2026-11-19",
+ "asOf": "2026-11-19",
+ "schema": "scripts/world-graph/build-lng.mjs (nodes · edges · claims) — read by tests/world-graph-persistent-checks.test.mjs and the seed supabase/migrations/20261119150100_world_graph_lng_seed.sql; js/world-graph-store.js reads the same rows from the database",
+ "quality": {
+  "rows": 102,
+  "missing": {
+   "ref": 0,
+   "type": 0,
+   "name": 0
+  },
+  "outOfRange": {},
+  "duplicates": 0
+ },
+ "builtBy": "scripts/world-graph/build-lng.mjs",
  "class": "Q15709854",
  "nodes": [
   {
