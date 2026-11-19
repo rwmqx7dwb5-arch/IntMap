@@ -24,3 +24,22 @@ test('the real registry discovers the commands the capabilities drive', () => {
   const ids = registeredCommandIds();
   ['view.proj.flat', 'view.base.sat', 'tab.stats'].forEach((c) => assert.ok(ids.has(c), c));
 });
+
+test('a command with a stated reason is declined, not unclaimed; a bare or stale reason fails', () => {
+  const why = 'a reason that is long enough to actually be one, naming what is true';
+  const ok = commandDeclarations([], reg, { 'tab.news': why });
+  assert.deepEqual(ok.bad, []); assert.deepEqual(ok.declined, ['tab.news']); assert.ok(!ok.unclaimed.includes('tab.news'));
+  assert.ok(commandDeclarations([], reg, { 'tab.news': 'todo' }).bad.some((m) => /too short/.test(m)));
+  assert.ok(commandDeclarations([], reg, { 'view.nope': why }).bad.some((m) => /nothing registers/.test(m)));
+  assert.ok(commandDeclarations([row({ id: 'a', commands: ['tab.news'] })], reg, { 'tab.news': why }).bad.some((m) => /now claimed/.test(m)));
+});
+test('every registered command is claimed by a capability or declined with a reason (none left unaccounted)', async () => {
+  const fs = await import('node:fs');
+  const unb = JSON.parse(fs.readFileSync(new URL('../scripts/atlas-command-unbridged.json', import.meta.url), 'utf8'));
+  const claimed = new Set();
+  for (const f of fs.readdirSync(new URL('../js/', import.meta.url)).filter((x) => /^atlas-cap-.*\.js$/.test(x)))
+    for (const m of fs.readFileSync(new URL('../js/' + f, import.meta.url), 'utf8').matchAll(/commands:\s*\[([^\]]*)\]/g))
+      for (const x of m[1].matchAll(/'([^']+)'/g)) claimed.add(x[1]);
+  const left = [...registeredCommandIds()].filter((c) => !claimed.has(c) && !(c in unb));
+  assert.deepEqual(left, [], 'commands with neither a capability nor a stated reason');
+});

@@ -6,7 +6,6 @@
  *    ③ the server's own words and a cross-origin redirect travel with http-status
  *    ④ a 200 HTML page is a login page, not "the server ignores Range"
  *    ⑤ s3://bucket/key is read through its derived https address, and says so
- *    ⑥ a STAC next link that is a POST is not followed with GET; the result is partial and says why
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -57,15 +56,3 @@ test('⑤ s3:// is derived to https and reported as derived', async () => {
   assert.equal(C.checkUrl('ftp://x/y').why, 'url-not-https');
 });
 
-test('⑥ a POST next link is not followed with GET', async () => {
-  const body = JSON.stringify({ type: 'FeatureCollection', features: [{ id: 'a', properties: {}, assets: {} }], links: [{ rel: 'next', href: 'https://h.example/search', method: 'POST', body: { token: 't' } }] });
-  const seen = [];
-  const o = makeGisOgcApi();
-  const r = await o.readItems('https://h.example/search', { search: true, limit: 10, fetch: async (u) => { seen.push(u); return resp(200, body, {}); } });
-  assert.equal(r.ok, true);
-  assert.equal(seen.length, 1);
-  assert.equal(r.next, null);
-  assert.equal(r.coverage.completeness, 'partial');
-  assert.equal(r.coverage.continues, true);
-  assert.match(r.coverage.reason, /POST/);
-});

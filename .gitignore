@@ -80,7 +80,6 @@ __pycache__/
 # written and still read (scripts/worktree.mjs derives the free round number
 # from it); it just stops standing in the way of everyone else's merge.
 .claude/launch.json
-.cache/
 
 # ── (#R771) 本番検証などの受領証（machine-local） ─────────────────────────────
 # .intmap/receipts.json は「このマシンの operator が、この commit の本番を実際に

@@ -19,10 +19,18 @@
  *  when it is https and on the SAME ORIGIN as the collection it belongs to, so a cursor cannot be a
  *  way to make the page fetch an address the reader never named. A server whose next link repeats
  *  itself is stopped (`ogc-next-loop`); a next link on another origin is refused (`ogc-next-elsewhere`).
- *  ⚠ NOT SUPPORTED, AND SAID SO BY NAME (js/gis-atlas.js): attribute conditions, column selection and
- *  time are not sent — a condition the server silently ignores comes back as a complete-looking
- *  answer to a different question. 消せる条件: OGC API – Features Part 3 (CQL2) `filter` and
- *  `datetime`, once a server that states them in its conformance classes is the thing being read.
+ *  ⚠ TIME: `datetime` is part of the Core of OGC API – Features (Part 1), so `time` is sent on
+ *  `/items` as it is on a STAC search.
+ *  ⚠ ATTRIBUTE CONDITIONS (`filter`, CQL2 text) ARE SENT ONLY WHEN THE SERVER STATES THEM: the API's
+ *  /conformance is read first, and a server that does not list a Features-filter class and CQL2 text is
+ *  REFUSED BY NAME (`ogc-filter-not-declared`) — a condition the server silently ignores comes back as a
+ *  complete-looking answer to a different question. Column selection is still not sent (named by
+ *  js/gis-atlas.js).
+ *  ⚠ STAC `method:'POST'`: the search body carries bbox / datetime / limit / collections / ids /
+ *  intersects / query / filter. A POST next link is followed inside the call (its own `body`, merged when
+ *  the server says `merge`), but it cannot be a cursor — a cursor is a URL — so a POST read that stops with
+ *  more to come says `post-next-not-resumable` and `next` is null. Signed assets (a token the reader
+ *  holds for a provider) are NOT handled: that needs a credential this page does not keep.
  *  ⚠ CRS: the default of the standard is CRS84 (lon/lat), which is what the dataset is registered as.
  * ==========================================================================*/
 
@@ -49,10 +57,34 @@ export function makeGisOgcApi() {
     return x;
   }
 
-  async function getJson(href, o) {
+  /* conformance classes that state "this server evaluates a CQL2 text filter on /items" (Features Part 3
+     names the class features-filter / filter; CQL2 itself names cql2-text). Both must be stated. */
+  const hasClass = (list, re) => list.some((c) => typeof c === 'string' && re.test(c));
+  async function filterDeclared(items, o) {
+    const root = new URL(items.href);
+    root.search = '';
+    const at = root.pathname.indexOf('/collections/');
+    root.pathname = (at >= 0 ? root.pathname.slice(0, at) : root.pathname.replace(/\/[^/]*$/, '')) + '/conformance';
+    const doFetch = (typeof o.fetch === 'function') ? o.fetch : ((typeof fetch === 'function') ? fetch : null);
+    if (!doFetch) return false;
+    try {
+      const res = await doFetch(root.href, { headers: { Accept: 'application/json' } });
+      if (!res || res.status < 200 || res.status > 299) return false;
+      const j = await res.json();
+      const list = (j && Array.isArray(j.conformsTo)) ? j.conformsTo : [];
+      return hasClass(list, /ogcapi-features-3\/[^/]+\/conf\/(features-)?filter$/) && hasClass(list, /cql2\/[^/]+\/conf\/cql2-text$/);
+    } catch (_) { return false; }
+  }
+
+  async function getJson(href, o, post) {
     const doFetch = (typeof o.fetch === 'function') ? o.fetch : ((typeof fetch === 'function') ? fetch : null);
     if (!doFetch) return bad('fetch-failed', { url: href, reason: 'no-fetch-in-this-runtime' });
     const init = { headers: { Accept: 'application/geo+json, application/json;q=0.9' } };
+    if (post) {
+      init.method = 'POST';
+      init.headers['Content-Type'] = 'application/json';
+      init.body = JSON.stringify(post);
+    }
     if (o.signal) init.signal = o.signal;
     let res;
     try { res = await doFetch(href, init); }
@@ -66,15 +98,7 @@ export function makeGisOgcApi() {
     return { ok: true, json: j };
   }
 
-  /* ⚠ A STAC server may state its next page as a POST with a body (method + body on the link). Following only
-     the href with GET would fetch a DIFFERENT page and call it the next one, so such a link is reported
-     (`postNext`) and not followed: the result is 'partial' with a reason, and the cursor is withheld. */
-  const nextLink = (j) => (Array.isArray(j.links) ? j.links.find((x) => x && x.rel === 'next' && typeof x.href === 'string') : null);
-  const nextOf = (j) => {
-    const l = nextLink(j);
-    return l && !isPost(l) ? l.href : null;
-  };
-  const isPost = (l) => !!l && ((typeof l.method === 'string' && l.method.toUpperCase() !== 'GET') || l.body != null);
+  const nextLink = (j) => (Array.isArray(j.links) ? j.links.find((x) => x && x.rel === 'next' && typeof x.href === 'string') : null) || null;
 
   /* readItems(url, {bounds?:[w,s,e,n], limit?:int, cursor?:string, fetch?, signal?})
        → { ok:true, features, next, coverage } | { ok:false, why, detail } */
@@ -88,6 +112,13 @@ export function makeGisOgcApi() {
     const b = q.bounds;
     if (b != null && (!Array.isArray(b) || b.length < 4 || !b.slice(0, 4).every(isNum) || !(b[2] > b[0]) || !(b[3] > b[1]))) return bad('bad-param', { param: 'bounds', value: b });
 
+    const post = !!q.search && q.method === 'POST';
+    if (q.method != null && q.method !== 'GET' && q.method !== 'POST') return bad('bad-param', { param: 'method', value: q.method });
+    if (q.method === 'POST' && !q.search) return bad('bad-param', { param: 'method', value: 'POST', reason: 'post-is-for-stac-search' });
+    if (q.filter != null && (typeof q.filter !== 'string' || !q.filter.trim())) return bad('bad-param', { param: 'filter', value: q.filter });
+    if (post && q.cursor != null && q.cursor !== '') return bad('cursor-not-recognised', { reason: 'post-search-has-no-url-cursor' });
+    const hasTime = q.time != null && q.time !== '';
+    let body = null;
     let href;
     if (q.cursor != null && q.cursor !== '') {
       const c = httpsUrl(q.cursor);
@@ -97,30 +128,58 @@ export function makeGisOgcApi() {
       if (!q.search) items.searchParams.set('f', 'json');
       if (b) items.searchParams.set('bbox', b.slice(0, 4).join(','));
       if (q.limit != null) items.searchParams.set('limit', String(q.limit));
-      if (q.search && q.time != null && q.time !== '') items.searchParams.set('datetime', String(q.time));
-      href = items.href;
+      if (post) {
+        body = {};
+        if (b) body.bbox = b.slice(0, 4);
+        if (q.limit != null) body.limit = q.limit;
+        if (hasTime) body.datetime = String(q.time);
+        if (Array.isArray(q.collections)) body.collections = q.collections.map(String);
+        if (Array.isArray(q.ids)) body.ids = q.ids.map(String);
+        if (q.intersects && typeof q.intersects === 'object') body.intersects = q.intersects;
+        if (q.query && typeof q.query === 'object') body.query = q.query;
+        if (q.filter != null) { body.filter = q.filter; body['filter-lang'] = 'cql2-text'; }
+        href = items.href;
+      } else {
+        if (hasTime) items.searchParams.set('datetime', String(q.time));
+        if (q.filter != null) {
+          if (!q.search && !(await filterDeclared(items, q))) return bad('ogc-filter-not-declared', { url: items.href, needs: 'features-filter + cql2-text in /conformance' });
+          items.searchParams.set('filter', q.filter);
+          items.searchParams.set('filter-lang', 'cql2-text');
+        }
+        href = items.href;
+      }
     }
 
     const features = [];
     const seen = new Set();
-    let pages = 0, matched = null, next = null, postNext = false;
+    let pages = 0, matched = null, next = null;
+    let postNext = false;
     for (;;) {
-      if (seen.has(href)) return bad('ogc-next-loop', { url: href, pages: pages });
-      seen.add(href);
-      const r = await getJson(href, q);
+      const key = href + (body ? '#' + JSON.stringify(body) : '');
+      if (seen.has(key)) return bad('ogc-next-loop', { url: href, pages: pages });
+      seen.add(key);
+      const r = await getJson(href, q, body);
       if (!r.ok) return r;
       pages++;
       for (const f of r.json.features) features.push(f);
       if (isNum(r.json.numberMatched)) matched = r.json.numberMatched;
-      next = nextOf(r.json);
-      if (!next && isPost(nextLink(r.json))) postNext = true;
+      const nl = nextLink(r.json);
+      next = nl ? nl.href : null;
       if (next) {
         const nu = httpsUrl(next);
         if (!nu.ok || nu.url.origin !== items.origin) return bad('ogc-next-elsewhere', { next: String(next).slice(0, 200), expected: items.origin });
         next = nu.url.href;
       }
+      const nextIsPost = !!(nl && String(nl.method || '').toUpperCase() === 'POST');
       /* a limit was stated: keep reading until that many have arrived; none stated: one page */
-      if (!next || q.limit == null || features.length >= q.limit) break;
+      if (!next || q.limit == null || features.length >= q.limit) {
+        /* a POST next link carries its own body, so it cannot travel as a URL cursor */
+        if (next && nextIsPost) postNext = true;
+        break;
+      }
+      if (nextIsPost) {
+        body = (nl.merge && nl.body && typeof nl.body === 'object') ? Object.assign({}, body, nl.body) : ((nl.body && typeof nl.body === 'object') ? nl.body : body);
+      } else body = null;
       href = next;
     }
 
@@ -141,14 +200,15 @@ export function makeGisOgcApi() {
     }
 
     const more = next != null;
+    if (postNext) next = null;
     /* numberMatched counts the WHOLE result, so it is comparable with what arrived only when this call
        started at the beginning — a page reached by a cursor is a part, and is not 'short' for being one */
     const fromStart = !(q.cursor != null && q.cursor !== '');
     const short = (fromStart && !more && matched != null && matched !== features.length);
     const reasons = [];
     if (more) reasons.push('server-has-a-next-page');
+    if (postNext) reasons.push('post-next-not-resumable');
     if (short) reasons.push('server-counts-more-than-arrived');
-    if (postNext) reasons.push('next-page-needs-a-POST-this-reader-does-not-send');
     /* ⚠ A PAGE REACHED BY A CURSOR IS A PART OF THE RESULT EVEN WHEN IT IS THE LAST: the dataset holds this
        page, not the collection, so it is never 'all' — `continues:false` is what says nothing follows it */
     if (!fromStart) reasons.push('page-reached-by-cursor');
@@ -158,14 +218,14 @@ export function makeGisOgcApi() {
         completeness: reasons.length ? 'partial' : 'all',
         reason: reasons.length ? reasons.join(',') : 'server-stated-no-next-page',
         requested: b ? b.slice(0, 4) : null, served: b ? b.slice(0, 4) : null,
-        count: features.length, numberMatched: matched, pages: pages, continues: more || postNext,
+        count: features.length, numberMatched: matched, pages: pages, continues: more,
         asOf: null,
       },
     };
   }
 
   /* the acquisition fields this source can honour — the others are refused by name by the caller */
-  const supports = ['bounds', 'limit', 'cursor'];
-  const supportsSearch = supports.concat(['time']);
+  const supports = ['bounds', 'limit', 'cursor', 'time'];
+  const supportsSearch = supports.slice();
   return { readItems, supports, supportsSearch };
 }

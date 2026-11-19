@@ -42,14 +42,14 @@ newsjp: Atlas が、公開データの読み込みに失敗したとき、CORS �
 
 - `js/gis-http.js`（新）: `fetch-failed` に **`corsBlocked`**（`no-cors` HEAD が opaque ＝到達できるが読めない。Node は opaque を返さないので本物の通信失敗は誤って CORS とは言われない）、`http-status` に **サーバ自身の言葉 `serverSaid`** と別オリジンへの **`redirectedTo`**。HTML の 200 は「Range 非対応」ではなくログイン画面（`http-status`）。`gis-geotiff.js`（`readUrl`）と `gis-ogcapi.js`（STAC/OGC）が同じ判定を使う。
 - `gis-cog.js`: **`s3://bucket/key` を https へ導出**（AWS の定義による導出・ドット付きバケットは path 形）。`source.derivedFrom` に元の綴りを残す。`gis-atlas.js` の `url:` 入口も `s3://` を受ける。
-- `gis-ogcapi.js`: STAC の **next が POST**（method/body 付き）なら GET で辿らない（別のページを「次」と呼ぶことになるため）。`partial`＋理由・`continues:true` で述べる。
+- （POST の next は #1248 が先に直したので、こちらでは触らない。）
 - 画面の文（`map-ui.js` / `gis-panel.js`）に上の 3 つを出す。
 
 完全性の申告は元から機能していた: 検索・items は next が在れば `partial`（実測 7 供給元すべて）、窓が全部ファイルの内側で解像度も足りるときだけ `all`。
 
 ## 4. 検査
 
-`tests/gis-live-diagnosis-checks.test.mjs`（6 件・オフライン）。実接続の計器は CI で走らせない（外部サービスの機嫌で赤くなるため）。
+`tests/gis-live-diagnosis-checks.test.mjs`（5 件・オフライン）。実接続の計器は CI で走らせない（外部サービスの機嫌で赤くなるため）。
 
 ## 5. 未了・提案
 

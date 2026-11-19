@@ -201,9 +201,11 @@ overviews は数だけ報告する**）。
 OGC API – Features（OGC 17-069r4。WFS の後継）のコレクションを、`data.gis` の入力 `"ogc:https://…/collections/<id>"`
 で渡せる。⚠ **地物の枠だけ**（格子の枠は `ogc-needs-a-vector-slot`）。
 
-- **使う欄は `bounds` / `limit` / `cursor` だけ**。`where` / `fields` / `time` は**名前を挙げて断る**
+- **`data.gis` から使う欄は `bounds` / `limit` / `cursor` / `time`**（`time` は Part 1 の Core にある `datetime` として `/items` へ送る）。`where` / `fields` は**名前を挙げて断る**
   （`ogc-param-not-supported`）——サーバが黙って無視した条件は「別の問いへの完全に見える答え」になるため。
-  消せる条件: Part 3（CQL2）の `filter`・`datetime` を、適合クラスで述べているサーバに対して。
+- **CQL2 `filter`（テキスト）は `js/gis-ogcapi.js` の `readItems` が持つ**: API ルートの `/conformance` が Features の filter クラスと
+  `cql2-text` の**両方**を述べているときだけ `filter` / `filter-lang=cql2-text` を送り、述べていなければ `ogc-filter-not-declared` で断る
+  （条件を無視した完全に見える答えを返さない）。`data.gis` の `where` との結線は未（`where` は構造化条件で、CQL2 への翻訳は別の仕事）。
 - **上限を発明しない**: `limit` を述べなければ**サーバ既定の 1 ページ**を読み、サーバの `rel=next` を `next`
   （＝次の `acquire.cursor`）として返す。述べれば、その件数に届くまでページをたどる（最後のページは切らず、
   超えた分もそのまま報告する——切ると `next` が行を飛ばす）。
@@ -220,8 +222,8 @@ OGC API – Features（OGC 17-069r4。WFS の後継）のコレクションを�
 **項目（item）の一覧**がデータセットとして返る（足跡の図形・日時・`stac_id`・`stac_collection`、そして**ファイル 1 つにつき 1 列**
 `asset:<key>`＝その href）。⚠ **ここで探して、選んだ行の `asset:…` を `url:` に渡して読む**——所在の発見と
 実データの取得を 1 本の鎖にするため（§1.4c）。取る欄は `bounds` / `time`（STAC の `datetime` へそのまま）/ `limit` / `cursor`
-で、ページ送り・同一オリジンのカーソル・`coverage` は §1.4d と同じ（⚠ サーバの next が **POST**（method/body 付き）のときは GET で辿らず、`coverage` が `partial`＋理由 `next-page-needs-a-POST…`・`continues:true` で述べる）。コレクションの絞り込みは URL の `?collections=` で
-述べる。条件（`where`）は断る。⚠ 資産の href が実在するか・公開か（署名付き URL が要る供給元）は**この層は述べない**
+で、ページ送り・同一オリジンのカーソル・`coverage` は §1.4d と同じ。コレクションの絞り込みは URL の `?collections=` で
+述べる。条件（`where`）は断る。`js/gis-ogcapi.js` の `readItems` は `method:'POST'`（本文に bbox / datetime / limit / collections / ids / intersects / query / filter）も持ち、POST の next リンクは呼び出しの中でたどる（`merge` も尊重）。POST の続きは URL のカーソルにできないので、途中で止まれば `post-next-not-resumable` で `next` は null。署名付き資産（提供元のトークン）は扱わない。⚠ 資産の href が実在するか・公開か（署名付き URL が要る供給元）は**この層は述べない**
 ——読んだときに `http-status` / `fetch-failed` で分かる。
 
 ### 1.4b 格子を合わせる — `js/gis-warp.js` (`window.IntMapGisWarp`)
