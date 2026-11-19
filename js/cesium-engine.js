@@ -2627,7 +2627,8 @@ window.IntMapCesiumEngine=(function(){
             ts.modelMatrix=Cesium.Matrix4.fromTranslation(Cesium.Cartesian3.subtract(b,a,new Cesium.Cartesian3())); } }catch(_){}
           this._scene.primitives.add(ts);
           try{ ts.allTilesLoaded.addEventListener(()=>{ try{ this.fire('tilesetidle',{id}); }catch(_){} }); }catch(_){}
-          try{ ts.loadProgress.addEventListener(()=>{ try{ this._scene.requestRender(); }catch(_){} }); }catch(_){}
+          rec.baseSse=ts.maximumScreenSpaceError;
+          try{ ts.loadProgress.addEventListener(()=>{ try{ this._governTilesets(); this._scene.requestRender(); }catch(_){} }); }catch(_){}
           this._scene.requestRender();
           try{ this.fire('tileset',{id}); }catch(_){}
           if(typeof spec.onReady==='function'){ try{ spec.onReady(ts); }catch(_){} }
@@ -2637,6 +2638,20 @@ window.IntMapCesiumEngine=(function(){
         });
         return true;
       }catch(_){ return false; }
+    }
+    /* ONE MEMORY BUDGET FOR ALL TILESETS. `cacheBytes` is per tileset, and a tile in the current selection is never
+       evicted, so 23 PLATEAU wards seen at once held 503 MB (measured 2026-11-19, 9 km up over Tokyo, desktop; 364 MB
+       at 650 m) against a 384 MB per-dataset figure. When the sum goes over the budget every tileset's
+       screenSpaceError is raised one step (coarser tiles are smaller), up to 4x its base; under 60% it steps back down.
+       The budget is the per-dataset figure the engine already chose (384 MB desktop / 128 MB phone) applied to the
+       SUM. EXPIRES with a measurement that shows a different ceiling. */
+    _governTilesets(){
+      const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent), budget=(mob?128:384)*1048576;
+      let total=0, n=0; for(const r of this._tilesets.values()) if(r.ts){ total+=r.ts.totalMemoryUsageInBytes||0; n++; }
+      /* the per-dataset cache is what EVICTS tiles that are no longer selected: shared out, so N datasets keep N x less. */
+      if(n){ const share=Math.max(16*1048576,Math.floor(budget/n)); for(const r of this._tilesets.values()) if(r.ts){ r.ts.cacheBytes=share; r.ts.maximumCacheOverflowBytes=share; } }
+      if(total>budget) for(const r of this._tilesets.values()){ if(r.ts&&r.baseSse) r.ts.maximumScreenSpaceError=Math.min(r.baseSse*4,r.ts.maximumScreenSpaceError*1.25); }
+      else if(total<budget*0.6) for(const r of this._tilesets.values()){ if(r.ts&&r.baseSse&&r.ts.maximumScreenSpaceError>r.baseSse) r.ts.maximumScreenSpaceError=Math.max(r.baseSse,r.ts.maximumScreenSpaceError/1.25); }
     }
     removeTileset(id){
       const rec=this._tilesets.get(id); if(!rec) return false;

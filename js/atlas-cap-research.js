@@ -31,7 +31,7 @@ const G = makeWorldGraphStore({ worldObjects: W });   /* (world-graph) the persi
 import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
-import { makeDelegation, makeWorkerExecutor, CONTRACT_KINDS } from './atlas-delegate.js';
+import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, CONTRACT_KINDS } from './atlas-delegate.js';
 import { integrate, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
 
 /* ══ (atlas-completion) WHAT A RESEARCH ANSWER RESTS ON, SAID FROM WHAT HAPPENED ═══════════════════════════════
@@ -1055,9 +1055,9 @@ export default [
     ui: { none: '2026-11-18' },
     phrases: () => ['並行して調べる', '手分けして調査', '分担して調べる', '複数の調査', '同時に調査'].concat(['in parallel', 'split the research', 'research separately', 'several pieces', 'delegate']),
     doc: [
-      { in: 'research.analyze', at: 30, text: 'DELEGATE RESEARCH TO WORKERS (parallel, each in its own context): {"type":"delegate","tasks":[{"id"?:str,"goal":str,"returns"?:str,"tools"?:[read capability ids this worker may call itself (it then looks, calls, reads the result and calls again, within the per-worker request limit the server states)],"inputs"?:[{"from":task id}]} | {"id"?:str,"kind":"capability","capability":str (a read capability id),"args"?:{...}}]} — 並行して調べる・手分けして調査 — hands independent pieces of a large request to worker models that run AT THE SAME TIME, search the web, and return structured findings (summary, claims with places/coordinates/dates/source URLs, and what they could not establish). Use it when a request has several pieces that can be researched apart (e.g. crude oil from the Gulf, iron ore and coal from Australia, and LNG routes to Japan) — not for a single lookup, which you answer faster yourself. A task that needs another task\'s result names it in "inputs" and starts when that one ends. A task of kind "capability" runs ONE exact lookup you already know how to ask (a read-only capability id and its arguments) with NO model and NO cost, alongside the others — use it to fan the same lookup out over several places or items (the weather in five cities, a figure for each of ten countries) and to mix exact figures in with the research; its answer comes back as the task\'s summary and "data". A capability that is not read-only (it draws, changes the view, saves or sends anything) is refused with capability_not_read_only — run that yourself. Tasks may be listed in any order: an input may name a task that comes later in the list, and a loop of inputs is ended input_cycle. A capability task\'s argument may be the string "@<task id>:data.<path>" (also "@<task id>:summary") to receive what an input task produced — e.g. a spatial step\'s "inputs":["@acq:data.gis.dataset"] is handed the dataset the "acq" step made (name acq in "inputs" too); a string that must begin with @ is written "@@…". A reference that leads nowhere ends the task input_ref_unresolved without running it. Add "verify":true to a worker task to have a SECOND worker check its claims against sources of its own: the result\'s integrated.verification says per claim supported / contradicted / unsupported / unchecked (a claim the checker did not repeat stays unchecked, never assumed supported). The workers do not draw anything: you integrate their findings and draw the map from them. Besides each task, the result carries "integrated": findings that more than one worker found (duplicateFindings), places where workers\' figures differ (placeOverlaps with numbersDiffer), the deduplicated sources and who cited each, the gaps, the cost, and which tasks did not return and in what state (unreturned) — read it before you write the answer. Each task comes back with a state (done / partial / failed / refused / unobservable / cancelled) and its cost; a refused task carries the server\'s reason (e.g. delegation_children = the server admits fewer workers; delegation_off = delegation is switched off).\n' },
+      { in: 'research.analyze', at: 30, text: 'DELEGATE RESEARCH TO WORKERS (parallel, each in its own context): {"type":"delegate","tasks":[{"id"?:str,"goal":str,"returns"?:str,"tools"?:[read capability ids this worker may call itself (it then looks, calls, reads the result and calls again, within the per-worker request limit the server states); add "find_capability" to let it search IntMap\'s registry itself — every read-only capability it finds becomes callable by it, anything else is refused with the reason],"inputs"?:[{"from":task id}]} | {"id"?:str,"kind":"capability","capability":str (a read capability id),"args"?:{...}}]} — 並行して調べる・手分けして調査 — hands independent pieces of a large request to worker models that run AT THE SAME TIME, search the web, and return structured findings (summary, claims with places/coordinates/dates/source URLs, and what they could not establish). Use it when a request has several pieces that can be researched apart (e.g. crude oil from the Gulf, iron ore and coal from Australia, and LNG routes to Japan) — not for a single lookup, which you answer faster yourself. A task that needs another task\'s result names it in "inputs" and starts when that one ends. A task of kind "capability" runs ONE exact lookup you already know how to ask (a read-only capability id and its arguments) with NO model and NO cost, alongside the others — use it to fan the same lookup out over several places or items (the weather in five cities, a figure for each of ten countries) and to mix exact figures in with the research; its answer comes back as the task\'s summary and "data". A capability that is not read-only (it draws, changes the view, saves or sends anything) is refused with capability_not_read_only — run that yourself. Tasks may be listed in any order: an input may name a task that comes later in the list, and a loop of inputs is ended input_cycle. A capability task\'s argument may be the string "@<task id>:data.<path>" (also "@<task id>:summary") to receive what an input task produced — e.g. a spatial step\'s "inputs":["@acq:data.gis.dataset"] is handed the dataset the "acq" step made (name acq in "inputs" too); a string that must begin with @ is written "@@…". A reference that leads nowhere ends the task input_ref_unresolved without running it. Add "verify":true to a worker task to have a SECOND worker check its claims against sources of its own: the result\'s integrated.verification says per claim supported / contradicted / unsupported / unchecked (a claim the checker did not repeat stays unchecked, never assumed supported). The workers do not draw anything: you integrate their findings and draw the map from them. Besides each task, the result carries "integrated": findings that more than one worker found (duplicateFindings), places where workers\' figures differ (placeOverlaps with numbersDiffer), the deduplicated sources and who cited each, the gaps, the cost, and which tasks did not return and in what state (unreturned) — read it before you write the answer. Each task comes back with a state (done / partial / failed / refused / unobservable / cancelled) and its cost; a refused task carries the server\'s reason (e.g. delegation_children = the server admits fewer workers; delegation_off = delegation is switched off). The same task list asked again soon after (within the server\'s turn lifetime — e.g. after the page was closed or the turn was cut off) answers its tasks that already ended done/partial from that earlier run — marked "resumed", not run or paid for again; pass "fresh":true to run every task anew.\n' },
     ],
-    schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', properties: { id: str(), kind: one(...CONTRACT_KINDS),   /* the substrate's own list of kinds, not a copy of it */ goal: str(), returns: str(), capability: str(), args: obj(), verify: bool(), tools: list(str()), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1) } }),
+    schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', properties: { id: str(), kind: one(...CONTRACT_KINDS),   /* the substrate's own list of kinds, not a copy of it */ goal: str(), returns: str(), capability: str(), args: obj(), verify: bool(), tools: list(str()), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1), fresh: bool() } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
       const tasks = Array.isArray(a && a.tasks) ? a.tasks : [];
@@ -1086,10 +1086,22 @@ export default [
       const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : undefined;
       const executor = makeRouterExecutor({
         worker: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal, maxCalls: childMax,
-          capability: typeof K.runReadCapability === 'function' ? { run: K.runReadCapability, classify: K.classifyCapability, describe: K.describeCapability } : null }),   /* (delegation-agency) a worker granted `tools` runs read capabilities itself, through the same lane */
+          capability: typeof K.runReadCapability === 'function' ? { run: K.runReadCapability, classify: K.classifyCapability, describe: K.describeCapability, find: K.findCapabilities } : null }),   /* (delegation-agency) a worker granted `tools` runs read capabilities itself, through the same lane */
         capability: typeof K.runReadCapability === 'function' ? makeCapabilityExecutor({ run: K.runReadCapability, classify: K.classifyCapability }) : null,
       });
-      const D = makeDelegation({ parent, executor });
+      /* (delegate-child-loop) RESUMING. The same task list asked again — after the tab was closed, the page reloaded or the turn cut off —
+         finds what the last run of it wrote (js/atlas-delegate.js pageDelegationStore, within ai-proxy's turn lifetime), and its tasks that
+         ended done/partial answer from that record instead of running and paying again (`resumed`). `fresh:true` runs every task anew.
+         The record is written each time a task ends, so an interruption loses only the tasks that had not ended. The list's identity is
+         every contract's key (its `tools` grant included) and its `verify` flag (delegationKey). */
+      const store = pageDelegationStore();
+      const dKey = delegationKey(tasks);
+      let prior = null;
+      if (store && a.fresh !== true) { try { prior = await store.get(dKey); } catch (_) { prior = null; } }
+      const D = makeDelegation({ parent, executor, resume: prior || undefined });
+      let saving = Promise.resolve(), saves = 0;
+      const save = () => { saving = saving.then(() => store.save(dKey, D.snapshot())).then((ok) => { if (ok) saves++; }, () => {}); };
+      const unsave = store ? D.subscribe((e) => { if (e && e.kind === 'task.ended') save(); }) : () => {};
       const stateWord = (st) => ({ done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), unobservable: L('no answer came back', '応答なし'), cancelled: L('cancelled', '取消'), waiting: L('waiting', '待機中'), running: L('running', '実行中'), retrying: L('retrying', '再試行中') })[st] || st;
       const usd = (n) => '$' + (Number(n) || 0).toFixed(3);
       /* LIVE PROGRESS — read off the delegation's own event log as it is written (D.subscribe), not kept beside it. dctx.progress is
@@ -1132,7 +1144,8 @@ export default [
         }
       } finally {
         if (signal && typeof signal.removeEventListener === 'function') signal.removeEventListener('abort', onAbort);
-        unsub();
+        unsub(); unsave();
+        await saving;   /* the record of every task that ended is written before the answer leaves */
       }
       const done = results.filter((r) => r.state === 'done' || r.state === 'partial').length;
       const cost = results.reduce((m, r) => m + r.costUsd, 0);
@@ -1151,7 +1164,7 @@ export default [
       };
       const label = (r, i) => String((tasks[i] && (tasks[i].goal || tasks[i].capability)) || r.id).slice(0, 120);
       const rows = results.map((r, i) => '<li style="margin:2px 0;"><b>' + esc(label(r, i)) + '</b> — ' + esc(stateWord(r.state))
-        + (r.code ? ' (' + esc(r.code) + ')' : '') + (r.sources.length ? ' · ' + esc(L(r.sources.length + ' source(s)', '出典 ' + r.sources.length + ' 件')) : '') + '</li>').join('');
+        + (r.code ? ' (' + esc(r.code) + ')' : '') + (r.resumed ? ' · ' + esc(L('from the earlier run, not run again', '前回の実行の結果・再実行なし')) : '') + (r.sources.length ? ' · ' + esc(L(r.sources.length + ' source(s)', '出典 ' + r.sources.length + ' 件')) : '') + '</li>').join('');
       const notes = [];
       if (dupes.length) notes.push(L(dupes.length + ' finding(s) were found by more than one worker', dupes.length + ' 件の所見が複数の子で一致しました'));
       if (differ.length) notes.push(L('Figures differ between workers at: ', '子どうしで数値が異なる地点: ') + differ.map((p) => p.place).slice(0, 6).join(', '));
@@ -1166,9 +1179,11 @@ export default [
         status: done === results.length ? 'completed' : (done ? 'partial' : 'failed'),
         code: done === results.length ? undefined : (done ? 'some_tasks_ended_otherwise' : (results[0] && results[0].code) || 'no_findings'),
         produced: done ? ['explanation'] : undefined,
-        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, data: r.data, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
+        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, resumed: r.resumed || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, data: r.data, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
         delegatedCostUsd: cost,
         integrated,
+        /* (delegate-child-loop) what was answered from the last run of the same list, and whether this run's record was kept */
+        resume: store ? { key: dKey, resumed: results.filter((r) => r.resumed).length, from: prior ? prior.at : undefined, saved: saves > 0 } : undefined,
       } });
     },
   },
