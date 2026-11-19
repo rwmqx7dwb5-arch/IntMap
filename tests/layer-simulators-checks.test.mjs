@@ -36,7 +36,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ── 7 · the seismic simulator ───────────────────────────────────────────────────────────────── */
 test('R190 seismic: opacity, a compute button, LOS-style progress, and no borrowed draw panel', () => {
   const src = read('js/seismic.js');
-  assert.match(src, /let fldOpacity=0\.85;/, 'the default fill is opaque enough to read the classes');
+  assert.match(src, /let fldOpacity=0.6;/, 'the default fill is 60 % — the owner chose it so the basemap reads through (2026-11-19)');
   assert.match(src, /function setFieldOpacity\(v\)\{/, 'and it is a control');
   assert.match(src, /class="sq-op"/, 'with a slider in the panel');
   /* (#R237) the run button's class is now BUILT (`_runBtnClass()`), because its two states are a

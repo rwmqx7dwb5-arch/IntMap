@@ -84,6 +84,17 @@ export function modernPolityRows(fc, nameEn, nameLocal) {
   }
   return [...by.values()].sort((a, b) => b.km2 - a.km2);
 }
+/** (time-spatial-base) THE IDENTIFIER OF THE POLITY A DRAWN PIECE BELONGS TO — what links one instant's row to another's, so a rename is
+    not read as an ending and a beginning. The record states it on the piece: CShapes' Gleditsch–Ward state-system code (`_gw`, the same
+    code through every border change and every name the state had: British East Africa and Kenya are one) and the Wikidata item OpenHistoricalMap
+    / Cliopatria state (`_qid`). Two codes of different registries are never equal, so the key says which registry it is from. A piece that
+    states neither has NO key (null) — it is never given one made from its name, because a spelling is what this exists to stop linking by. */
+export function polityKey(p) {
+  if (!p) return null;
+  if (p._gw != null && p._gw !== '') return 'gw:' + String(p._gw);
+  if (p._qid != null && /^Q[0-9]+$/.test(String(p._qid))) return 'wd:' + String(p._qid);
+  return null;
+}
 /** the app's one escaper (js/safe-html.js) */
 /** the app's one escaper (js/safe-html.js), as text for markup — exported under a name no other file defines, so the
     output-taint gate can judge an importer's call by this definition alone (js/journey-through-time.js) */
@@ -156,10 +167,10 @@ export async function readYear(when, deps, opts) {
       else if (c && c.fc) {
         const feats = c.fc.features.filter((f) => nameIn(f.properties, 'en'));
         const rows = feats.map((f) => ({ name: nameIn(f.properties, lang), en: nameIn(f.properties, 'en'), km2: Math.round(areaKm2(f.geometry)), bbox: bboxOf(f.geometry),
-          subjectTo: (f.properties && (f.properties.SUBJECTO || f.properties.PARTOF)) || null }));
+          subjectTo: (f.properties && (f.properties.SUBJECTO || f.properties.PARTOF)) || null, key: polityKey(f.properties) }));
         /* one polity drawn as several features (an empire and its exclaves) is one line, its areas summed */
         const by = new Map();
-        for (const r of rows) { const k = r.en; const was = by.get(k); if (!was) by.set(k, Object.assign({ parts: 1 }, r)); else { was.km2 += r.km2; was.parts++; if (r.bbox && was.bbox) was.bbox = [Math.min(was.bbox[0], r.bbox[0]), Math.min(was.bbox[1], r.bbox[1]), Math.max(was.bbox[2], r.bbox[2]), Math.max(was.bbox[3], r.bbox[3])]; } }
+        for (const r of rows) { const k = r.en; const was = by.get(k); if (!was) by.set(k, Object.assign({ parts: 1 }, r)); else { was.km2 += r.km2; was.parts++; if (was.key !== r.key) was.key = null; /* two identifiers under one name: neither is the name's */ if (r.bbox && was.bbox) was.bbox = [Math.min(was.bbox[0], r.bbox[0]), Math.min(was.bbox[1], r.bbox[1]), Math.max(was.bbox[2], r.bbox[2]), Math.max(was.bbox[3], r.bbox[3])]; } }
         const list = [...by.values()].sort((a, b) => b.km2 - a.km2);
         /* (hist-coverage-expansion) a realm (Cliopatria's «(Holy Roman Empire)») is the union of polities also listed — its area is not counted twice */
         const realms = new Set(feats.filter((f) => f.properties && f.properties._realm).map((f) => nameIn(f.properties, 'en')));

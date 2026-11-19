@@ -137,10 +137,13 @@ export const KERNELS = {
   /* (gis-buffer-worker) HASH ONLY: `buffer` may be computed on another thread, by the same `bufferKmR`, and a replayed step
      registers the same rows byte for byte (tests/gis-buffer-worker-checks.test.mjs measures that at tolerance 0). The one
      addition a reader sees is `stats.worker`, a note about which thread did the work. */
-  /* (gov-gis-terms) ops-11 -> ops-12: a REPLAYED STEP NOW REGISTERS A RECORD THAT SAYS MORE — `provenance.upstreams` carries each
+  /* (time-spatial-base) ops-11 -> ops-12: `intersect` / `union` register the overlap / the bracket of the two inputs' constant periods
+     (or none, when an input never stated one or the periods never meet) where ops-11 registered the first input's. Geometry and
+     columns are unchanged; the recipe now also records `inputTimes`, `timeRule` and `recordedAt` (js/gis-ops.js vectorOutTime). */
+  /* (gov-gis-terms) ops-12 -> ops-13: a REPLAYED STEP NOW REGISTERS A RECORD THAT SAYS MORE — `provenance.upstreams` carries each
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
-  'js/gis-ops.js': { version: 'ops-12', sha256: '3b737d515050c4ac728a995ba33a45014887b7c4754399c8ba59a0ed23b09513' },
+  'js/gis-ops.js': { version: 'ops-13', sha256: '16f2b99b43fbf439c4b4a129e951a0b94fef8e85783af56181f2daf45fec7839' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -298,6 +301,7 @@ export const KERNELS = {
    not — and an absence is what let four answer-bearing kernels sit outside the ledger for a whole
    round. ⚠ 「まだ版を付けていない」 is not a reason. If it can change an answer it declares a version. */
 export const NOT_A_KERNEL = {
+  'js/gis-http.js': 'names why a remote read failed from the response (CORS, the words the server sent, a sign-in page); it reads no value and produces no answer a saved recipe replays',
   'js/gis-core.js': 'mounts the modules and draws a dataset on the map; computes nothing',
   /* (#R783) the assembly, not the arithmetic: it decides what plays the part of the scope and what
      was handed over, mounts through js/gis-core.js, and computes nothing a saved recipe replays. */

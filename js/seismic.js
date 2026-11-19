@@ -1289,9 +1289,9 @@ export function seismic(HOST){
        「震度の塗は透明度選択を可能に。デフォルト透明度が薄すぎる。」 (confirmed this round: the
        intensity fill — it is the only painted surface the simulator has.) 0.55 let the basemap read
        through strongly enough that the 震度 colours were hard to tell apart, which is the report;
-       0.85 keeps the coastline and the place names legible underneath while the colour is the colour
-       of the class. The slider writes straight to the layer — no rebuild, so it is instant. */
-    let fldOpacity=0.85;
+       0.85 kept the colour the colour of the class; the owner then asked for 0.60 (2026-11-19) so the
+       coastline and the place names read through the field. The slider writes straight to the layer — no rebuild, so it is instant. */
+    let fldOpacity=0.6;
     function paintField(){
       try{
         if(!fld||!fld.url){ if(GE().layers.has(LYR_IMG)) GE().layers.remove(LYR_IMG);
@@ -4384,7 +4384,7 @@ export function seismic(HOST){
          read it every frame, the ground-motion chain never does — so `touch()` would be a lie. */
       const og=panel.querySelector('.sq-og'); if(og) og.onchange=e=>{ OCEAN_G=Math.max(1,Math.min(1.3,+e.target.value||1.08)); _pTab=null; _pKey=''; drawFronts(); };
       const op=panel.querySelector('.sq-op');
-      if(op) op.oninput=e=>{ const v=setFieldOpacity((+e.target.value||85)/100);
+      if(op) op.oninput=e=>{ const v=setFieldOpacity((+e.target.value||60)/100);
         const b=panel.querySelector('.sq-opv'); if(b) b.textContent=Math.round(v*100)+'%'; };
       const run=panel.querySelector('.sq-run'); if(run) run.onclick=()=>{ if(!epi){ report(); return; } buildField(); };
       /* (#R240) the footer's own verb while there is nothing to compute yet — it arms the SAME mode

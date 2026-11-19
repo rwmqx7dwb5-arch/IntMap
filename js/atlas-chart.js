@@ -160,7 +160,7 @@ export function atlasChart(HOST, CTX) {
     return '<figure class="atl-ch" style="max-width:' + MAXW + 'px;">'
       + (o.title ? '<div class="atl-ch-t">' + esc(o.title) + '</div>' : '')
       + inner + legend
-      + '<figcaption class="atl-ch-c">' + esc(o.source) + esc(drops) + '</figcaption>'
+      + '<figcaption class="atl-ch-c">' + esc(o.source) + esc(drops) + (o.note ? ' · ' + esc(o.note) : '') + '</figcaption>'
       + '</figure>';
   }
 
@@ -336,13 +336,27 @@ export function atlasChart(HOST, CTX) {
       }
     }
     g += '<line class="atl-ch-tl" x1="' + pad.l + '" x2="' + (pad.l + iw) + '" y1="' + (H - pad.b - 8) + '" y2="' + (H - pad.b - 8) + '"/>';
-    /* labels alternate above the rule so that neighbours in time do not overprint */
+    /* labels sit above or below the rule; each goes to the lane where it does not overprint a neighbour
+       (width estimated per character: a Han or kana glyph is about twice a Latin one). A label that fits
+       in neither lane is not drawn as text, but its dot stays, is focusable and carries the full label in
+       its title, and the caption says how many were left to the dots. */
+    const LANE_GAP = 4, laneEnd = [-1e9, -1e9];
+    let unlabelled = 0;
     evs.forEach((e, i) => {
-      const x = X(e.t), up = i % 2 === 0;
+      const x = X(e.t);
+      let wd = 0; for (const ch of e.label) wd += ch.charCodeAt(0) > 255 ? 10.5 : 5.8;
+      const anchor = x - wd / 2 < 2 ? 'start' : (x + wd / 2 > VBW - 2 ? 'end' : 'middle');
+      const l = anchor === 'start' ? x : (anchor === 'end' ? x - wd : x - wd / 2);
+      e.lane = -1; e.anchor = anchor;
+      [i % 2, (i + 1) % 2].some((ln) => { if (l >= laneEnd[ln] + LANE_GAP) { e.lane = ln; laneEnd[ln] = l + wd; return true; } return false; });
+      if (e.lane < 0) unlabelled++;
+    });
+    evs.forEach((e, i) => {
+      const x = X(e.t), up = e.lane < 0 ? i % 2 === 0 : e.lane === 0;
       g += '<line class="atl-ch-tk" x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (H - pad.b - 8) + '" y2="' + (up ? pad.t + 8 : H - pad.b - 2) + '"/>'
-        + '<circle class="atl-ch-p"' + MARK + ' style="fill:var(--chart-cat-' + (i % 10 + 1) + ')" cx="' + x.toFixed(1) + '" cy="' + (H - pad.b - 8) + '" r="3"><title>'
+        + '<circle class="atl-ch-p"' + MARK + ' style="fill:var(--chart-cat-' + (i % 10 + 1) + ')" cx="' + x.toFixed(1) + '" cy="' + (H - pad.b - 8) + '" r="3" tabindex="0"><title>'
         + esc(new Date(e.t).toISOString().slice(0, 10) + ' · ' + e.label) + '</title></circle>'
-        + '<text class="atl-ch-ev" x="' + x.toFixed(1) + '" y="' + (up ? pad.t + 4 : H - pad.b + 2) + '" text-anchor="middle">' + esc(e.label) + '</text>';
+        + (e.lane < 0 ? '' : '<text class="atl-ch-ev" x="' + x.toFixed(1) + '" y="' + (up ? pad.t + 4 : H - pad.b + 2) + '" text-anchor="' + e.anchor + '">' + esc(e.label) + '</text>');
     });
     const aria = (spec.title ? spec.title + ' — ' : '') + L(
       'timeline, {n} events from {y0} to {y1}',
@@ -351,7 +365,7 @@ export function atlasChart(HOST, CTX) {
       'хронология, {n} событий с {y0} по {y1}',
       'cronología, {n} eventos de {y0} a {y1}')
       .split('{n}').join(evs.length).split('{y0}').join(yr(t0)).split('{y1}').join(yr(t1));
-    return { ok: true, plotted: evs.length, kind: 'timeline', html: figure(open(H, aria) + g + '</svg>', { title: spec.title, source: spec.source, dropped, legend: [] }) };
+    return { ok: true, plotted: evs.length, kind: 'timeline', html: figure(open(H, aria) + g + '</svg>', { title: spec.title, source: spec.source, dropped, legend: [], note: unlabelled ? L('{n} label(s) are shown on the dots only (hover or focus a dot)', '{n} 件のラベルは点にだけ付いています（点に触れるか選択すると表示）', '{n} Beschriftung(en) nur an den Punkten (Hover oder Fokus)', '{n} подпис(ей) только у точек (наведите или выберите точку)', '{n} etiqueta(s) solo en los puntos (pase el cursor o enfoque el punto)').split('{n}').join(unlabelled) : '' }) };
   }
 
   /* ── the one entry point ────────────────────────────────────────────────────────────────────── */

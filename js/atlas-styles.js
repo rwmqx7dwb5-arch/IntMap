@@ -102,7 +102,8 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'.atl-codewrap{margin:.7em 0;border:1px solid var(--glass-border,rgba(128,128,128,.22));border-radius:10px;overflow:hidden;background:var(--input-bg,rgba(120,120,128,.08));}'
       +'.atl-codebar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px 4px 11px;background:rgba(120,120,128,.14);border-bottom:1px solid var(--glass-border,rgba(128,128,128,.18));}'
       +'.atl-codelang{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);}'
-      +'.atl-codecopy{font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:7px;padding:2px 9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}'
+      +'.atl-codecopy.fail{color:#fff;background:#c0392b;border-color:#c0392b;}'
+      +'.atl-codecopy{min-height:28px;font-size:12px;font-weight:600;color:var(--text-muted);background:transparent;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:7px;padding:2px 9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}'
       +'.atl-codecopy:hover{color:var(--text-main);border-color:var(--primary-color);}'
       +'.atl-codecopy.ok{color:#fff;background:var(--primary-fill);border-color:var(--primary-fill);}'
       +'.atl-codeblock{margin:0;padding:10px 12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12.5px;line-height:1.55;white-space:pre;}'
@@ -137,14 +138,14 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'.atl-ch-0{stroke:var(--text-muted);stroke-width:1;opacity:.55;vector-effect:non-scaling-stroke;}'
       +'.atl-ch-tl{stroke:var(--text-muted);stroke-width:1.2;opacity:.7;vector-effect:non-scaling-stroke;}'
       +'.atl-ch-tk{stroke:var(--widget-chart-grid,rgba(128,128,128,.26));stroke-width:.7;vector-effect:non-scaling-stroke;}'
-      +'.atl-ch-ax{font-size:8.5px;fill:var(--text-muted);}'
-      +'.atl-ch-ev{font-size:9px;fill:var(--text-main);}'
+      +'.atl-ch-ax{font-size:10px;fill:var(--text-muted);}'
+      +'.atl-ch-ev{font-size:10.5px;fill:var(--text-main);}'
       +'.atl-ch-l{fill:none;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;}'
       +'.atl-ch-p{stroke:var(--popup-bg,#fff);stroke-width:.8;}'
-      +'.atl-ch-lg{display:flex;flex-wrap:wrap;gap:2px 10px;margin:3px 0 0;font-size:11px;color:var(--text-muted);}'
+      +'.atl-ch-lg{display:flex;flex-wrap:wrap;gap:2px 10px;margin:3px 0 0;font-size:12px;color:var(--text-muted);}'
       +'.atl-ch-lgi{display:inline-flex;align-items:center;gap:4px;}'
       +'.atl-ch-sw{width:9px;height:9px;border-radius:2px;display:inline-block;flex:0 0 auto;}'
-      +'.atl-ch-c{font-size:10.5px;line-height:1.45;color:var(--text-muted);margin-top:4px;}'
+      +'.atl-ch-c{font-size:11.5px;line-height:1.45;color:var(--text-muted);margin-top:4px;}'
       +'.atl-ch-bs{display:flex;flex-direction:column;gap:3px;margin:2px 0;}'
       +'.atl-ch-br{display:grid;grid-template-columns:minmax(0,7.5em) 1fr auto;align-items:center;gap:6px;font-size:11.5px;}'
       +'.atl-ch-bl{color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
@@ -165,7 +166,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +BRIEFING_CSS
       +HIGHLIGHT_CSS
       +'.atl-codebtns{display:flex;align-items:center;gap:5px;}'
-      +'.atl-codewrapbtn{font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:7px;padding:2px 9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}'
+      +'.atl-codewrapbtn{min-height:28px;font-size:12px;font-weight:600;color:var(--text-muted);background:transparent;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:7px;padding:2px 9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}'
       +'.atl-codewrapbtn:hover{color:var(--text-main);border-color:var(--primary-color);}'
       +'.atl-codewrapbtn.on{color:var(--primary-color);border-color:var(--primary-color);background:rgba(120,120,128,.12);}'
       /* ══ ⚠⚠⚠ (#R494) THE REPLY'S TYPOGRAPHY — ONE PLACE, AND IT IS THIS ONE ══════════════════════
@@ -224,6 +225,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel .atl-lc-rest:not([hidden]){display:contents;}'
       +'#atlas-panel .atl-lc-more{align-self:center;font-size:11.5px;font-weight:600;color:var(--text-muted);background:var(--input-bg);border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:11px;padding:5px 11px;cursor:pointer;transition:color .15s,border-color .15s;}'
       +'#atlas-panel .atl-lc-more:hover{color:var(--text-main);border-color:var(--primary-color);}'
+      +'#atlas-panel .atl-lc-more{min-height:32px;}'
       /* ══ ⚠⚠⚠ (#R313) THE PROGRESS INDICATOR IS CHATGPT'S SHIMMER, NOT THREE BOUNCING DOTS ═════
          「AtlasのThinkingとかSearchingとかのUI、ChatGPTと同じグラフィックにしてください。
            （実際にChatGPTのサイト見て、実装してください。）」
@@ -397,8 +399,8 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel .atl-lc:hover{border-color:var(--primary-color);}'
       +'#atlas-panel .atl-lc-ico{width:18px;height:18px;border-radius:5px;flex:0 0 auto;}'
       +'#atlas-panel .atl-lc-tx{display:flex;flex-direction:column;min-width:0;}'
-      +'#atlas-panel .atl-lc-t{font-size:10.5px;font-weight:600;color:var(--text-main);line-height:1.25;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
-      +'#atlas-panel .atl-lc-d{font-size:9.5px;color:var(--text-muted);line-height:1.25;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+      +'#atlas-panel .atl-lc-t{font-size:12.5px;font-weight:600;color:var(--text-main);line-height:1.3;max-width:230px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere;}'
+      +'#atlas-panel .atl-lc-d{font-size:11px;color:var(--text-muted);line-height:1.3;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
       /* (#R112) Atlas as a NATIVE sidebar TAB (normal + mobile). The panel is mounted, IN NORMAL FLOW, into
          #atlas-feed — a content area below the tab bar, sibling of #live-news-feed / #countries-feed / #info-dashboard
          — so the sidebar header + tab bar stay visible and Atlas reads as native sidebar content, exactly like the

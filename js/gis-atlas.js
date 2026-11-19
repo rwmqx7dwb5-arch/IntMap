@@ -702,7 +702,7 @@ export function makeGisAtlas(core) {
          feature slot handed one is refused by name instead of being read as something else. The
          window and the resolution are the planner's to state (acquire.bounds/width/height), as for
          any grid (fromLayer), and only the tiles that window needs are fetched. */
-      if (/^(url:)?https?:\/\//i.test(raw)) {
+      if (/^(url:)?(https?|s3):\/\//i.test(raw)) {
         if (!wantsRaster) return fail('url-needs-a-grid-slot', { slot: slot, ref: raw, why: 'a URL is read as a GeoTIFF, which is a grid' });
         const made = await fromUrl(raw.replace(/^url:/i, ''), action, cache);
         if (!made.ok) return made;

@@ -51,7 +51,7 @@
   <section class="lp-hero lp-hero-t">
     <div class="lp-hero-text">
       <h1>Will IntMap work here? Check it on the spot.</h1>
-      <p class="lp-lede">Open this page on a device your students or staff will use, on the same network, and run the check. It tests what the map needs from the browser and asks each of the 117 outside services IntMap loads, then tells you what works, what is blocked and what to allow.</p>
+      <p class="lp-lede">Open this page on a device your students or staff will use, on the same network, and run the check. It tests what the map needs from the browser and asks each of the 118 outside services IntMap loads, then tells you what works, what is blocked and what to allow.</p>
       <div class="lp-cta">
         <button class="lp-btn rd-start" id="rd-start" type="button" data-effect="none" hidden>Run the check</button>
         <a class="lp-btn lp-btn-2" href="#allow">See the list to allow</a>
@@ -120,6 +120,7 @@
         <table>
           <thead><tr><th>Address</th><th>Used for</th><th>This device</th></tr></thead>
           <tbody>
+          <tr data-probe="https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif" data-host="*.s3.amazonaws.com" data-tier="layer"><td><code>*.s3.amazonaws.com</code></td><td>A file on an AWS S3 bucket that the user named as s3://bucket/key (js/gis-cog.js derives the https address)</td><td class="rd-state">Not checked</td></tr>
           <tr data-probe="https://de.wikipedia.org/api/rest_v1/page/summary/Tokio" data-host="*.wikipedia.org" data-tier="layer"><td><code>*.wikipedia.org</code></td><td>Wikipedia REST summaries and search in the reader’s language</td><td class="rd-state">Not checked</td></tr>
           <tr data-probe="https://a.tiles.openrailwaymap.org/standard/4/8/5.png" data-host="a.tiles.openrailwaymap.org" data-tier="layer"><td><code>a.tiles.openrailwaymap.org</code></td><td>OpenRailwayMap tiles</td><td class="rd-state">Not checked</td></tr>
           <tr data-probe="https://air-quality-api.open-meteo.com/v1/air-quality?latitude=35.681&amp;longitude=139.767&amp;current=us_aqi,pm2_5,pm10,ozone" data-host="air-quality-api.open-meteo.com" data-tier="layer"><td><code>air-quality-api.open-meteo.com</code></td><td>Open-Meteo air quality at a point</td><td class="rd-state">Not checked</td></tr>

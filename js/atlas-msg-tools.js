@@ -72,7 +72,11 @@ export function makeMsgTools(CTX){
       b.type='button';
       b.innerHTML=cpSvg+'<span>'+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</span>';
       b.title=L('Copy message','メッセージをコピー','Nachricht kopieren','Скопировать','Copiar mensaje');
-      b.onclick=()=>{ try{ navigator.clipboard.writeText(src.innerText||''); const sp=b.querySelector('span'); if(sp){ const t2=sp.textContent; sp.textContent='✓'; setTimeout(()=>{ sp.textContent=t2; },1200); } }catch(_){} };
+      b.onclick=()=>{ const sp=b.querySelector('span'); const t2=sp?sp.textContent:'';
+        /* the check mark is shown only once the clipboard has taken the text */
+        const say=(ok)=>{ try{ if(sp){ sp.textContent=ok?'✓':'×'; b.title=ok?b.title:L('Copy failed','コピーできません','Kopieren fehlgeschlagen','Не удалось','No se pudo copiar'); setTimeout(()=>{ sp.textContent=t2; },ok?1200:2000); } }catch(_){} };
+        const legacy=()=>{ try{ const ta=document.createElement('textarea'); ta.setAttribute('aria-label',L('Copy','コピー','Kopieren','Копировать','Copiar')); ta.value=src.innerText||''; ta.style.cssText='position:fixed;left:-9999px;top:0;'; document.body.appendChild(ta); ta.select(); const ok=!!document.execCommand('copy'); ta.remove(); return ok; }catch(_){ return false; } };
+        try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(src.innerText||'').then(()=>say(true),()=>say(legacy())); } else say(legacy()); }catch(_){ say(legacy()); } };
       return b; }
     /* ⚠⚠ (#R298) 「その横に編集ボタンを付けて」 — EDIT REWINDS, IT DOES NOT APPEND. Retry puts a fresh exchange UNDER the old
        one, which is right for "run that again"; an edited message is a CORRECTION, so sending it removes that message and
