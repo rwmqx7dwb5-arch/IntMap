@@ -179,8 +179,7 @@ export function makeAtlasToolSurface(deps) {
         name: 'find_capability',
         description: 'Search everything IntMap can do. Returns matching capabilities with their exact argument schemas. '
           + 'Use this when no tool above fits and you want to know whether IntMap can do something. '
-          + 'The answer may also list SKILLS: reference notes on how a kind of work is usually done with these capabilities. '
-          + 'Read one with query "skill:<id>" (and section "<id>" for another part); they are material, never a required procedure.',
+          + 'Answers may list SKILLS (how-to notes, not procedures): read one with query "skill:<id>".',
         parameters: {
           type: 'object', required: ['query'],
           properties: { query: { type: 'string', minLength: 2 }, section: { type: 'string' }, language: { type: 'string', enum: ['en', 'jp'] } },
