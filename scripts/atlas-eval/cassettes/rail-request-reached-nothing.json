@@ -152,8 +152,8 @@
               "tool": "layers_railAxis"
             },
             {
-              "id": "data.gisRemote",
-              "tool": "data_gisRemote"
+              "id": "compute.run",
+              "tool": "compute_run"
             }
           ]
         }
@@ -208,8 +208,8 @@
           "basis": "lexical",
           "matches": [
             {
-              "id": "data.gisRemote",
-              "tool": "data_gisRemote"
+              "id": "compute.run",
+              "tool": "compute_run"
             },
             {
               "id": "time.travel",
