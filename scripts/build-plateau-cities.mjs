@@ -26,10 +26,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PLATEAU_CATALOGUE } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'data', 'plateau-cities.json');
 const CATALOGUE = 'https://api.plateauview.mlit.go.jp/datacatalog/plateau-datasets';
+/* 出自は値である（check:datagov が読む）。上流が述べていることだけを書く。 */
+export const GOVERNANCE = {
+  'data/plateau-cities.json': {
+    upstreams: [
+      { publisher: 'MLIT Japan — Project PLATEAU data catalogue', url: 'https://api.plateauview.mlit.go.jp/datacatalog/plateau-datasets', licence: 'PLATEAU site policy (compatible with CC BY 4.0)', attribution: true,
+        paidBy: 'PLATEAU 3D city models (MLIT Japan)', fields: 'which cities have building 3D Tiles, the tileset alias, LOD, texture, the tileset root region' },
+      { publisher: 'Geospatial Information Authority of Japan (GSI) — geoid height calculator', url: 'https://vldb.gsi.go.jp/sokuchi/surveycalc/geoid/calcgh/calc_f.html', licence: 'GSI terms of use', attribution: false,
+        fields: 'geoid height at each unit centre (build time only)' },
+    ],
+    priority: { disjoint: ['city list, tileset alias, extent (PLATEAU catalogue)', 'geoid height (GSI calculator)'] },
+    ...PLATEAU_CATALOGUE, builtBy: 'scripts/build-plateau-cities.mjs' },
+};
+
 const GEOID = 'https://vldb.gsi.go.jp/sokuchi/surveycalc/geoid/calcgh/cgi/geoidcalc.pl';
 
 /** @param {{lod:string,texture:boolean}} d  higher = preferred; null = not streamed */
@@ -108,7 +122,10 @@ async function build() {
   }
   await Promise.all(Array.from({ length: 6 }, worker));
   rows.splice(0, rows.length, ...rows.filter(Boolean));
-  return { source: 'PLATEAU (MLIT Japan) data catalogue + GSI geoid calculator', catalogue: CATALOGUE, geoidModel: GEOID,
+  const now = new Date().toISOString();
+  const g = GOVERNANCE['data/plateau-cities.json'];
+  return { source: 'PLATEAU (MLIT Japan) data catalogue + GSI geoid calculator', publisher: g.upstreams[0].publisher, licence: g.upstreams[0].licence, licenceUrl: 'https://www.mlit.go.jp/plateau/site-policy/', attribution: true, paidBy: g.upstreams[0].paidBy,
+           retrievedAt: now, generatedAt: now, asOf: now.slice(0, 10), cadence: g.cadence, builtBy: g.builtBy, catalogue: CATALOGUE, geoidModel: GEOID,
            heights: 'geoid = metres PLATEAU ellipsoidal heights exceed mean sea level at the unit centre; apply -geoid', units: rows };
 }
 
