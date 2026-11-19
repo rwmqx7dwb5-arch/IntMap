@@ -26,6 +26,7 @@ export default [
   {
     row: ['view.projection',            'projection',     '',                                                            'view',    'camera',  'camera',                 'map',                 'session', 'none',   '',         ''],
     ui: { at: ['#btn-view-flat', '#btn-view-globe'] },
+    commands: ['view.proj.flat', 'view.proj.globe'],   /* the IntMapOS commands this capability drives — the audit holds the declaration to the run body and the registry (scripts/atlas-capability-audit.mjs, command-declared) */
     doc: [
       { in: 'navigation-view', at: 50, text: '{"type":"projection","mode":"globe"|"flat"}; ' },
     ],
@@ -38,6 +39,7 @@ export default [
   {
     row: ['view.basemap',               'base',           '',                                                            'view',    'layer',   'map.basemap',            'map',                 'session', 'none',   '',         ''],
     ui: { at: ['#btn-view-map', '#btn-view-sat'] },
+    commands: ['view.base.map', 'view.base.sat'],
     doc: [
       { in: 'navigation-view', at: 70, text: '{"type":"base","mode":"map"|"satellite"}; ' },
     ],
