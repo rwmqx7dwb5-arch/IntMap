@@ -90,3 +90,10 @@ newsjp: Atlas が、手元のデータセットに対して Python（numpy・pan
 この spec（22 秒）で全体が天井を 0.3 分超えた。天井は上げず、`tests/r530.spec.js` の表値 160 秒を
 測り直して 80 秒にした（IM_PREBUILT_DIST=1・IM_TIER=all・1 worker・3 回、最も遅い wall 66 秒・全回 pass）。
 spec は 1 行も触っていない。
+
+## 起動費用の天井を上げた理由
+
+遅延チャンクだけが増えた（起動時のバイト数と要求数は不変）。`gis-core` 589.2 → 608.4 kB（+19.2）、
+`atlas-console` 1045.8 → 1051.8 kB（+6.0）、`atlas-cap-runs` +5.5 kB。Python の実行・出自・再計算の配線で、
+`compute.run` を使うときにだけ読み込まれる。Pyodide 本体は同梱せず遅延取得（ハッシュ検証つき）なので、
+同梱サイズには入らない。天井は origin/main を取り込んだ木で `perf-budget --update` した値。
