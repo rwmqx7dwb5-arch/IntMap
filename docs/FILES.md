@@ -200,6 +200,7 @@ cesium-engine.js                  第2エンジン——同じ契約の裏で動
 cesium-style.js                   style 言語の解釈器（式・フィルタ・色）。純粋なので Node から検証できる
 cesium-layers.js                  Cesium のプロバイダとレイヤー描画
 cesium-vector-tiles.js            第2エンジンのベクタタイル
+plateau-cities.js                 PLATEAU 3D 都市モデル（東京23区の 3D Tiles）の一覧と URL。エンジンの tiles3d 能力が読む
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
 i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
 i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
@@ -341,16 +342,20 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
                                   JPEG-in-TIFF・その他の圧縮は登録名つき・地理参照の無い TIFF …）。
                                   ⚠ **欠損は NaN**（`GDAL_NODATA` を含む。0 で埋めない）。
                                   `read(i)` は扉で、開いただけでは画素を展開しない
-gis-remote.js                     **アプリの外のデータ** `window.IntMapGisRemote` — 世界のカタログ（STAC・OGC API – Features。
-                                  `catalogs()` が登録簿）に「この場所・この期間を覆うと**述べている**コレクション」を
-                                  訊く `discover()`／`inspect()`／`acquire()`（地物のデータセット）と、リモートの COG を
-                                  HTTP Range で**欲しい窓だけ**読む `cog()`（`js/gis-geotiff.js` の `readUrl()` の最初の呼び手）。
-                                  ⚠ **完全性の 3 つの主張を混ぜない**——①供給元が窓の全部を返した（`coverage`・
-                                  `js/gis-sources.js` の `coverageOf()` の判定）②供給元の範囲が窓を覆うと述べている
-                                  （`evidence`）③世界の全部である（`worldCompleteness` は常に `unproven`）。
-                                  ⚠ **応答しなかったカタログは「無かった」ではない**（カタログごとに answered / complete）。
-                                  ⚠ ライセンスは述べられたまま、述べが無ければ**欄ごと無い**（open と読まない）。
-                                  ⚠ https 以外・認証情報つき・私的/ループバックの宛先は `url-not-public` で断る
+gis-ogcapi.js                     **URL の地物コレクション（OGC API – Features）を読む** `window.IntMapGisOgcApi`（`gis-atlas.js` が動的 import）—
+                                  `…/items?bbox&limit` を叩き（STAC の `…/search` も同じ形で、`datetime` を取り、各 asset を `asset:<key>` 列にする）、サーバ自身の `rel=next` をたどる。上限は発明しない（limit を述べなければ 1 ページ・
+                                  続きは `next`）。`all` はサーバの「次が無い」という述べ方だけ。カーソルは同一オリジンの https だけ
+gis-cog.js                        **URL の COG を窓ごとに読む** `window.IntMapGisCog`（`gis-atlas.js` が動的 import）—
+                                  `gis-geotiff.js` の `readUrl`（HTTP Range）・`levelFor`・`readRegion` を呼ぶ唯一の
+                                  入口。窓と解像度は呼び手が述べ、必要なタイルだけを取り、`coverage` を添えて
+                                  格子の契約で返す。ファイルの CRS が何であれ窓を経緯度の格子で返す（投影座標系は窓を CRS へ運んで読む）
+gis-remote.js                     **アプリの外のデータを探す** `window.IntMapGisRemote` — 世界のカタログ（STAC・OGC API – Features。
+                                  `catalogs()` が登録簿）に「この場所・この期間を覆うと**述べている**コレクション」を訊く
+                                  `discover()`／`inspect()`。**データは取らない**（読むのは `url:`／`ogc:`／`stac:` の入力で、
+                                  `inspect()` はその ref を返す）。⚠ 完全性の 3 つの主張を混ぜない——供給元が全部返した（読む扉の
+                                  `coverage`）／供給元が覆うと述べている（`evidence`）／世界の全部（`worldCompleteness` は常に
+                                  `unproven`）。応答しなかったカタログは「無かった」ではない。ライセンスは述べられたまま、無ければ null。
+                                  https 以外・認証情報つき・私的/ループバックの宛先は `url-not-public`
 gis-export.js                     **データを外へ出す口** `window.IntMapGisExport`（#R756）—
                                   ベクタ → GeoJSON / CSV、ラスター → GeoTIFF（無圧縮・float32 と
                                   整数・多バンド）。⚠ **「書き出せた」は「読み直せた」ではない**
@@ -949,6 +954,7 @@ atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラ
                                   1つの事実の2つの値**で、`whereMiss()` がその区別の唯一の持ち主（#R667）。
                                   dispatch の拒否 8 か所がこれを通る。**渡されていなければ呼び出し側の文を
                                   そのまま返す**ので、今読める拒否は 1 つも変わらない
+atlas-goal-verify.js              Atlas — 依頼を答え手とは別に読む検証（atlas_verify の 1 回の呼び出し）。ループへ渡す verify を作る。
 atlas-reply.js                    Atlas — 返答の描画（安全な markdown・コード／数式・GFM 表・出典カード）
 atlas-annotate.js                 Atlas — 返答本文の小注釈（単位換算・UTC→現地時刻・略語34語の展開）と、
                                   ホバー／タップで出る一枚。印は mdMini が返す HTML 文字列に入る
@@ -1671,6 +1677,7 @@ admin-auth.js                     運営コンソールの唯一のサインイ�
                                   セッションはそのタブの sessionStorage（キー intmap-admin-auth）、破壊的操作前の stepUp。これを読むページが
                                   コンソールで、scripts/admin-site.mjs がアプリとは別の origin へ組み立てる
 admin-inquiries.js                admin-inquiries.html の動き——管理者の確認、相談の一覧・状態・メモ・削除、支援者の掲載・非表示・削除
+admin-delegation.js               運営コンソール admin.html の Delegation タブ（素の script・window.IntMapAdminDelegation）——RPC delegation_overview を日別の表・棒・コード上位で描く
 admin-pipeline.js                 相談のコンソールの Pipeline タブ（ES module・admin-inquiries.js がタブを開いたとき import()）——会話の段
                                   （lead→talking→trial→adopted|declined）・次にやること・期日。語はページの data-*（inquiry-shape.js が正本）
 weather.js                        気象（export wind / weatherEC / weatherPanel）
@@ -1737,6 +1744,7 @@ overpass.js                       **Overpass の唯一のクライアント** `o
                                   （空の答えとは別）。`race`・`budgetMs`（下げるだけ）・`accept`・`historical`（OHM）・`relay`。
                                   window.IntMapOverpass ＋ ES import の両方（同一の関数）
 atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
+atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
@@ -2064,7 +2072,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（63本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（64本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。

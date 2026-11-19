@@ -54,7 +54,7 @@ export function* tilesOf(box, zMin, zMax) {
 export const fill = (tpl, t) => tpl.replace('{z}', t.z).replace('{x}', t.x).replace('{y}', t.y);
 
 /** the policy row that speaks for a host: the exact name, or a `*.` row for any subdomain of it */
-export function rowFor(policy, host) {
+function rowFor(policy, host) {
   const rows = (policy && Array.isArray(policy.hosts)) ? policy.hosts : [];
   return rows.find((r) => r.host === host) || rows.find((r) => r.host.startsWith('*.') && host.endsWith(r.host.slice(1))) || null;
 }

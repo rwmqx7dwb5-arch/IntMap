@@ -304,6 +304,9 @@ window.IntMapPerfHud = (function () {
         + '   sources ' + NA(scene && scene.sources) + '   via ' + ((scene && scene.via) || 'n/a') + '\n'
       + 'tiles in view ' + NA(scene && scene.tiles) + '   held out of view ' + NA(scene && scene.tilesHeld)
         + '   (renderer only, not total memory)\n'
+      /* the globe engine's own extras (3D Tiles datasets and the caps that can silently truncate a layer) — absent on MapLibre */
+      + (scene && scene.extra ? ('3D Tiles   ' + NA(scene.extra.tilesets) + ' sets  ' + NA(scene.extra.tilesetTiles) + ' tiles  ' + N(scene.extra.tilesetTriangles / 1e6, 2) + ' M tri  ' + N(scene.extra.tilesetBytes / 1048576, 0) + ' MiB\n'
+        + 'vector caps  ' + NA(scene.extra.maxFeaturesPerLayer) + ' features/layer  ' + NA(scene.extra.maxLabels) + ' labels\n') : '')
       + (sw.layers ? '' : 'app layers hidden: paint is off, tiles and buffers are still held\n')
       /* (#R671) THE OTHER RETAINED THING. The renderer's tile count says nothing about the DEM tile
          store (js/map-readout.js), which is where a phone's elevation readout, the terrain sculptor

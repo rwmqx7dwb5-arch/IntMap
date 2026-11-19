@@ -104,6 +104,8 @@ export const TIME = Object.freeze({
   'cb-grid': { kind: 'convention', says: LA('The graticule (a convention, not a record)', '経緯線（記録ではなく約束事）') },
   'dl-nightside': { kind: 'instant', says: LA('Day and night, computed from the Sun’s position at the instant', '昼夜（その瞬間の太陽の位置から計算）') },
   'beta-dl-bldg3d': OSM,
+  'beta-dl-plateau3d': { kind: 'snapshot', asOf: 'fetch', period: 'P1Y', by: 'js/plateau-cities.js (PLATEAU, MLIT Japan — the latest alias of each ward building model)',
+    says: LA('PLATEAU city models (the latest published survey)', 'PLATEAU 都市モデル（最新の公開時点）') },
   'cb-countries': { kind: 'record', self: 'js/time-countries.js IntMapHistStates',
     says: LA('Countries (the states that existed at the date)', '国（その日に存在した国家）') },
   'dl-contours': LANDFORM,

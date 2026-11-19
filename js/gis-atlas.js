@@ -697,6 +697,41 @@ export function makeGisAtlas(core) {
         return made;
       }
 
+      /* 2b. (cog-url-connect) A GRID AT A URL — `url:https://…` (or a bare https:// address). Only a
+         GRID slot can take one: a URL names a Cloud Optimized GeoTIFF, which is a field, and a
+         feature slot handed one is refused by name instead of being read as something else. The
+         window and the resolution are the planner's to state (acquire.bounds/width/height), as for
+         any grid (fromLayer), and only the tiles that window needs are fetched. */
+      if (/^(url:)?https?:\/\//i.test(raw)) {
+        if (!wantsRaster) return fail('url-needs-a-grid-slot', { slot: slot, ref: raw, why: 'a URL is read as a GeoTIFF, which is a grid' });
+        const made = await fromUrl(raw.replace(/^url:/i, ''), action, cache);
+        if (!made.ok) return made;
+        cache.set(raw, made.id);
+        return made;
+      }
+
+      /* 2c. FEATURES AT A URL — `ogc:https://…/collections/<id>` (an OGC API – Features collection).
+         The twin of 2b: only a FEATURE slot takes one, and the answer carries the server's own
+         statement of whether more follows (js/gis-ogcapi.js). */
+      if (/^ogc:https?:\/\//i.test(raw)) {
+        if (wantsRaster) return fail('ogc-needs-a-vector-slot', { slot: slot, ref: raw, why: 'an OGC API – Features collection holds features, not a grid' });
+        const made = await fromOgc(raw.replace(/^ogc:/i, ''), action, cache);
+        if (!made.ok) return made;
+        cache.set(raw, made.id);
+        return made;
+      }
+
+      /* 2d. A STAC CATALOGUE SEARCH — `stac:https://…/search` (the item-search endpoint). The answer is a
+         dataset of the ITEMS (footprints, dates, and one `asset:<key>` column per file), so the way to
+         the data is a chain: find, then read the `asset:` address of the row you chose with `url:`. */
+      if (/^stac:https?:\/\//i.test(raw)) {
+        if (wantsRaster) return fail('ogc-needs-a-vector-slot', { slot: slot, ref: raw, why: 'a STAC search answers with items, which are features; read a file it names with url:' });
+        const made = await fromOgc(raw.replace(/^stac:/i, ''), action, cache, true);
+        if (!made.ok) return made;
+        cache.set(raw, made.id);
+        return made;
+      }
+
       /* 3. a dataset the reader named by its title. Two datasets may share one — the reader chose
          both names — so an ambiguous title is REFUSED WITH THE IDS rather than resolved by order of
          registration, which is a choice neither the reader nor the planner made. */
@@ -761,6 +796,78 @@ export function makeGisAtlas(core) {
         return fail('raster-sample-needs-window', { layer: id, needs: ['acquire.bounds', 'acquire.width', 'acquire.height'], accepts: layers.acquireFields ? layers.acquireFields('raster') : null });
       }
       return note(await layers.toRaster(id, a.opts));
+    }
+
+    /* A COG at a URL becomes a registered raster dataset over the window the planner stated. What
+       js/gis-cog.js read, at which level, with how many requests, and what it could not answer
+       (`coverage`) travel in the record's provenance — the next op and the planner read them there. */
+    async function fromUrl(url, action, cache) {
+      const a = acquireOpts(action, true);
+      if (!a.ok) return a;
+      if (a.opts.bounds == null || a.opts.width == null || a.opts.height == null) {
+        return fail('raster-sample-needs-window', { url: url, needs: ['acquire.bounds', 'acquire.width', 'acquire.height'], accepts: layers && layers.acquireFields ? layers.acquireFields('raster') : null });
+      }
+      let C = null;
+      try { C = (await import('./gis-cog.js')).makeGisCog({ warp: core.warp, crs: core.crs }); } catch (_) { C = null; }
+      if (!C) return fail('map-unavailable', { needs: 'IntMapGisCog' });
+      const r = await C.readWindow(url, { bounds: a.opts.bounds, width: a.opts.width, height: a.opts.height, band: a.opts.band, signal: a.opts.signal || null });
+      if (!r.ok) return fail(r.why, r.detail || { url: url });
+      const ras = r.raster;
+      const bn = (a.opts.band && typeof a.opts.band === 'object') ? a.opts.band : {};
+      const band = Object.assign({}, ras.bands[0], {
+        name: bn.name != null ? bn.name : (r.band.name != null ? r.band.name : url.split('/').pop()),
+        unit: a.opts.unit != null ? String(a.opts.unit) : (bn.unit != null ? bn.unit : (r.band.unit != null ? r.band.unit : null)),
+      });
+      const cells = ras.read(0);
+      let ds;
+      try {
+        ds = data.add({
+          kind: 'raster', title: (action && action.title) ? String(action.title) : (url.split('/').pop() || url),
+          sourceCrs: 'EPSG:4326', width: ras.width, height: ras.height,
+          grid: { west: ras.grid.west, north: ras.grid.north, pixelLng: ras.grid.pixelLng, pixelLat: ras.grid.pixelLat },
+          bands: [band], read: () => cells,
+          provenance: { kind: 'url-raster', url: url, bounds: a.opts.bounds, width: ras.width, height: ras.height, at: Date.now(), source: r.source, coverage: r.coverage, resampled: 'nearest' },
+        });
+      } catch (e) { return fail('add-failed', { message: e && e.message }); }
+      const row = datasetRow(ds);
+      row.acquiredFrom = 'url:' + url;
+      row.coverage = r.coverage;
+      if (cache && cache.acquired) cache.acquired.push(row);
+      return { ok: true, id: ds.id };
+    }
+
+    /* An OGC API – Features collection becomes a registered vector dataset. The window, the count and
+       the cursor are the planner's; what the server could not say is `coverage`, and the server's own
+       next link is handed back as `next` (a cursor). ⚠ Conditions, columns and time are refused BY
+       NAME — js/gis-ogcapi.js sends none of them, and a server that ignored one would hand back a
+       complete-looking answer to a different question. */
+    async function fromOgc(url, action, cache, search) {
+      const a = acquireOpts(action, false);
+      if (!a.ok) return a;
+      let G = null;
+      try { G = (await import('./gis-ogcapi.js')).makeGisOgcApi(); } catch (_) { G = null; }
+      if (!G) return fail('map-unavailable', { needs: 'IntMapGisOgcApi' });
+      /* what the source can DO is the source's statement (G.supports); the vocabulary stays js/gis-layers.js's */
+      for (const k of Object.keys(a.opts)) {
+        const ok = search ? G.supportsSearch : G.supports;
+        if (ok.indexOf(k) < 0) return fail('ogc-param-not-supported', { param: k, accepts: ok.slice() });
+      }
+      const r = await G.readItems(url, { bounds: a.opts.bounds, limit: a.opts.limit, cursor: a.opts.cursor, time: a.opts.time, search: !!search, signal: a.opts.signal || null });
+      if (!r.ok) return fail(r.why, r.detail || { url: url });
+      let ds;
+      try {
+        ds = data.add({
+          title: (action && action.title) ? String(action.title) : (url.replace(/\/+$/, '').split('/').pop() || url),
+          features: r.features, sourceCrs: 'EPSG:4326',
+          provenance: { kind: search ? 'stac-search' : 'url-features', url: url, bounds: a.opts.bounds || null, at: Date.now(), coverage: r.coverage },
+        });
+      } catch (e) { return fail('add-failed', { message: e && e.message }); }
+      const row = datasetRow(ds);
+      row.acquiredFrom = (search ? 'stac:' : 'ogc:') + url;
+      row.coverage = r.coverage;
+      if (r.next != null) row.next = r.next;
+      if (cache && cache.acquired) cache.acquired.push(row);
+      return { ok: true, id: ds.id };
     }
 
     /* ── acquiring, which is a step of its own ───────────────────────────────────────────────── */
@@ -1009,33 +1116,14 @@ export function makeGisAtlas(core) {
         const r = give(await M.inspect(a.ref, { bbox: win, signal: a.signal || null }));
         return r.ok === false ? r : Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(r.collection.title) + '</b> · <code>' + esc(r.ref) + '</code><br>'
           + esc(L('licence', 'ライセンス')) + ': ' + esc(r.collection.rights.license == null ? L('not stated', '記載なし') : r.collection.rights.license)
-          + '<br>' + esc(JSON.stringify(r.evidence)) + '</div>' });
+          + '<br>' + esc(JSON.stringify(r.evidence)) + '<br>' + esc(L('read it with', '読むには')) + ': <code>' + esc([r.refs.features].concat(r.refs.grids).join('</code> <code>')) + '</code></div>' });
       }
-      if (act === 'acquire') {
-        const r = give(await M.acquire(a.ref, { bbox: win, time: a.time, limit: a.limit, cursor: a.cursor, title: a.title, signal: a.signal || null }));
-        if (r.ok === false) return r;
-        const row = datasetRow(r.dataset);
-        row.acquiredFrom = String(a.ref);
-        if (r.next != null) row.next = r.next;
-        return { ok: true, dataset: row, coverage: r.coverage, evidence: r.evidence, rights: r.rights, next: r.next == null ? undefined : r.next,
-          html: '<div class="atlas-gis-result"><b>' + esc(L('Acquired', '取得しました')) + '</b> — ' + esc(row.title) + ' · ' + row.count + ' ' + esc(L('rows', '行')) + ' · <code>' + esc(row.id) + '</code>'
-            + '<div class="atlas-gis-detail">' + esc((r.coverage && r.coverage.completeness) || '') + (r.coverage && r.coverage.reason ? ' · ' + esc(r.coverage.reason) : '') + '</div>'
-            + '<div class="atlas-gis-next">' + esc(r.next != null ? L('More remains — ask again with cursor.', '続きがあります — cursor を付けてもう一度。') : L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。')) + '</div></div>' };
-      }
-      /* cog */
-      const r = give(await M.cog({ url: a.url, bbox: win, width: a.width, height: a.height, band: a.band, title: a.title, license: a.license, attribution: a.attribution, signal: a.signal || null }));
-      if (r.ok === false) return r;
-      const row = datasetRow(r.dataset);
-      row.acquiredFrom = String(a.url);
-      return { ok: true, dataset: row, level: r.level, isOverview: r.isOverview, meetsAsk: r.meetsAsk, requests: r.requests, fileBytes: r.fileBytes, coverage: r.coverage,
-        html: '<div class="atlas-gis-result"><b>' + esc(L('Read part of a remote GeoTIFF', 'リモート GeoTIFF の一部を読みました')) + '</b> — ' + r.pixels + ' ' + esc(L('pixels', '画素'))
-          + ' · ' + r.requests + ' ' + esc(L('requests', '回の取得')) + ' / ' + esc(String(r.fileBytes)) + ' B · <code>' + esc(row.id) + '</code>'
-          + '<div class="atlas-gis-detail">' + esc(L('resolution step ', '解像度の段 ')) + r.level + (r.meetsAsk ? '' : ' · ' + esc(L('the file has nothing as fine as asked', '求めた解像度のものはファイルにありません'))) + '</div></div>' };
+      return fail('bad-param', { param: 'action', actions: ACTS });
     }
 
     const API = {
       catalogue, run, draw, acquire: acquireOnly,
-      /* (data-supply) 世界のカタログの発見・検査・取得と、リモート COG の部分読み込み */
+      /* (data-supply) 世界のカタログの発見・検査（読むのは url: / ogc: / stac: の入力） */
       remote,
       /* the file a reader takes away (js/gis-export.js's formats, not a list kept here) */
       export: exportDataset,

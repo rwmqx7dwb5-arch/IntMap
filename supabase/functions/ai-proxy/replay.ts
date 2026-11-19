@@ -62,3 +62,20 @@ export function replayed(status: number, body: Record<string, unknown>, attempts
   meta.replay = { kind: "replayed", attempts };
   return { status: status || 200, body: { ...body, charged: false, meta } };
 }
+
+/* ══ (atlas-delegation) WHICH REQUESTS HOLD THEIR ANSWER ═════════════════════════════════════════════
+   The held answer was for a protocol-2 Atlas turn only. A WORKER's call (task atlas_delegate, a one-string
+   request that carries a parent turn) is the other request whose duplicate costs real money: the orchestrator
+   retries a worker whose connection broke, and a second run would be a second provider bill for an answer that
+   already exists, charged against the child's call allowance. It goes through the same claim / finish rows
+   (ai_turn_answers) under the CHILD's turn key, so a duplicate is received, not computed again. Nothing else
+   changes: no other one-string task is keyed (they have no retry that can duplicate them).
+   Pure — ask.ts passes in what it read; tests/delegation-journal-checks.test.mjs evaluates it. */
+export function replayKeyFor(o: {
+  protocol2Turn: boolean; delegate: boolean; turnId: string; bodyKey?: unknown; headerKey?: string;
+  keyOk: RegExp; maxLen: number;
+}): string {
+  if (!(o.protocol2Turn || o.delegate) || !o.turnId) return "";
+  const k = String(o.bodyKey || o.headerKey || "").slice(0, o.maxLen);
+  return o.keyOk.test(k) ? k : "";
+}

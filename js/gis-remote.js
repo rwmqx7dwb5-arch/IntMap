@@ -7,13 +7,15 @@
  *  question that comes first — 「そういうデータは、世界のどこに在るか」 — and js/gis-geotiff.js's
  *  readUrl() (HTTP range reads of a Cloud-Optimised GeoTIFF) had no caller at all.
  *
- *  This file is both doors, and nothing else:
+ *  ⚠ THIS FILE DISCOVERS; IT DOES NOT FETCH DATA. Reading what a collection holds is already a door of
+ *  its own — `ogc:<…/collections/id>` (js/gis-ogcapi.js; a STAC collection serves the same items
+ *  endpoint), `stac:<…/search>` and `url:<a COG>` (js/gis-cog.js) — so inspect() answers with the REF
+ *  to use rather than a second reader. What only this file knows is WHICH collection of which
+ *  catalogue states that it covers a place and a period, under what licence, and who did not answer.
  *
- *      catalogs()                       → the registry of catalogues that are asked
+ *      catalogs() / add()               → the registry of catalogues that are asked
  *      discover({q,bbox,time,…})        → collections of those catalogues, filtered by place and time
- *      inspect(ref, {bbox})             → what one collection states, and what its assets are
- *      acquire(ref, {bbox,time,limit})  → the ITEMS / FEATURES of a collection, as a vector dataset
- *      cog({url,bbox,width,height})     → the part of a remote Cloud-Optimised GeoTIFF that was asked for
+ *      inspect(ref, {bbox})             → what one collection states, its assets, and the refs to read it
  *
  *  Standards, not a vendor: STAC API 1.x (`/collections`, `/search`) and OGC API – Features
  *  (`/collections`, `/collections/{id}/items`). A catalogue is DATA in CATALOGS below, not a branch.
@@ -53,17 +55,7 @@ export function makeGisRemote(deps) {
     const D = deps || {};
     const WIN = () => { try { return (typeof window !== 'undefined' && window) || null; } catch (_) { return null; } };
     const pick = (k, g) => (D[k] !== undefined ? D[k] : (WIN() && WIN()[g]) || null);
-    const DATA = () => pick('data', 'IntMapData');
-    const SOURCES = () => pick('sources', 'IntMapGisSources');
-    const CRS = () => pick('crs', 'IntMapGisCrs');
-    const WARP = () => pick('warp', 'IntMapGisWarp');
     const now = () => (typeof D.now === 'function' ? D.now() : Date.now());
-    async function TIFF() {
-      if (D.geotiff) return typeof D.geotiff === 'function' ? await D.geotiff() : D.geotiff;
-      const w = WIN();
-      if (w && w.IntMapGisGeotiff) return w.IntMapGisGeotiff;
-      return (await import('./gis-geotiff.js')).makeGisGeotiff();
-    }
 
     /* ── the registry of catalogues ───────────────────────────────────────────────────────────
        観測: each answered `GET <url>` with 200 JSON and a permissive Access-Control-Allow-Origin
@@ -83,8 +75,7 @@ export function makeGisRemote(deps) {
     /* the codes this file itself returns — declared, like js/gis-sources.js refusalCodes() */
     const REFUSALS = [
       'bad-param', 'url-not-public', 'catalog-unknown', 'catalog-kind-unknown', 'collection-unknown',
-      'fetch-failed', 'http-status', 'not-json', 'response-too-large', 'asset-not-cog', 'asset-not-found',
-      'crs-unreadable', 'region-too-large', 'region-out-of-range', 'map-unavailable', 'registry-missing', 'add-failed', 'cancelled',
+      'fetch-failed', 'http-status', 'not-json', 'response-too-large', 'cancelled',
     ];
     const refuse = (why, detail) => (detail === undefined ? { ok: false, why: why } : { ok: false, why: why, detail: detail });
 
@@ -412,6 +403,11 @@ export function makeGisRemote(deps) {
       return {
         ok: true, ref: p.cat.id + '/' + p.collection, collection: col, sample: sample, sampleWhy: sampleWhy,
         evidence: evidenceOf(col, asked, null),
+        /* how to READ it — the existing doors, not a second reader */
+        refs: {
+          features: 'ogc:' + p.cat.url + '/collections/' + encodeURIComponent(p.collection),
+          grids: sample && sample.assets ? sample.assets.filter((x) => x.cog && /^https:/.test(x.href)).map((x) => 'url:' + x.href) : [],
+        },
       };
     }
 
@@ -425,216 +421,11 @@ export function makeGisRemote(deps) {
       };
     }
 
-    /* ── acquire(): items / features → a vector dataset ───────────────────────────────────────── */
-
-    const PAGE = 100;       /* what a STAC/OGC page is asked for; both standards cap it lower or higher at will */
-    const DEFAULT_LIMIT = 500;   /* a default for a CALLER THAT SAID NOTHING — it truncates, and `coverage` says so (limit-truncated) */
-
-    function flat(props, extra) {
-      const out = Object.assign({}, extra || {});
-      for (const k of Object.keys(props || {})) {
-        const v = props[k];
-        if (v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') out[k] = v;
-        else out[k] = JSON.stringify(v);   /* nested values are kept as text, not dropped: 「無い」 is not 「入れ子だった」 */
-      }
-      return out;
-    }
-
-    /* → {ok, features[], matched|null, next|null, pages}. `next` is an opaque cursor string, or null when
-       the SOURCE stopped offering one (that is a statement; its absence from the answer is not). */
-    async function pageItems(p, box, time, limit, cursor, signal) {
-      const feats = []; let matched = null, pages = 0;
-      let state = null;
-      if (cursor) { try { state = JSON.parse(cursor); } catch (_) { state = null; } if (!state || !state.url) return refuse('bad-param', { param: 'cursor', reason: 'not-a-cursor-from-this-door' }); }
-      if (!state) {
-        if (p.cat.kind === 'stac') {
-          const body = { collections: [p.collection], limit: Math.min(PAGE, limit) };
-          if (box) body.bbox = [box.w, box.s, box.e, box.n];
-          if (time) body.datetime = time;
-          state = { method: 'POST', url: p.cat.url + '/search', body: body };
-        } else {
-          const q = ['f=json', 'limit=' + Math.min(PAGE, limit)];
-          if (box) q.push('bbox=' + [box.w, box.s, box.e, box.n].join(','));
-          if (time) q.push('datetime=' + encodeURIComponent(time));
-          state = { method: 'GET', url: p.cat.url + '/collections/' + encodeURIComponent(p.collection) + '/items?' + q.join('&'), body: null };
-        }
-      }
-      for (;;) {
-        const init = state.method === 'POST' ? { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/geo+json' }, body: JSON.stringify(state.body) } : null;
-        const r = await fetchJson(state.url, init, signal);
-        if (!r.ok) return r;
-        pages++;
-        const j = r.json || {};
-        if (!Array.isArray(j.features)) return refuse('not-json', { url: r.url, reason: 'no-features-member' });
-        for (const f of j.features) feats.push(f);
-        if (isNum(j.numberMatched)) matched = j.numberMatched;
-        else if (j.context && isNum(j.context.matched)) matched = j.context.matched;
-        const nx = (Array.isArray(j.links) ? j.links : []).find((l) => l && l.rel === 'next' && l.href);
-        let next = null;
-        if (nx) {
-          const href = new URL(nx.href, r.url).href;
-          const post = (nx.method || 'GET').toUpperCase() === 'POST';
-          next = { method: post ? 'POST' : 'GET', url: href, body: post ? (nx.merge ? Object.assign({}, state.body || {}, nx.body || {}) : (nx.body || state.body || null)) : null };
-        }
-        if (!next) return { ok: true, features: feats, matched: matched, next: null, pages: pages };
-        if (feats.length >= limit) return { ok: true, features: feats, matched: matched, next: JSON.stringify(next), pages: pages };
-        state = next;
-      }
-    }
-
-    /* req = {bbox?, time?, limit?, cursor?, title?, signal?}  → {ok, dataset, coverage, evidence, next?, rights} */
-    async function acquire(ref, opts) {
-      const p = parseRef(ref);
-      if (!p.ok) return p;
-      const o = opts || {};
-      const box = (o.bbox == null) ? null : asBox(o.bbox);
-      if (o.bbox != null && !box) return refuse('bad-param', { param: 'bbox', value: o.bbox });
-      const time = (o.time == null || o.time === '') ? null : String(o.time);
-      if (time) { const t = timeSpan(time); if (!t || t.bad) return refuse('bad-param', { param: 'time', value: o.time }); }
-      const limit = (isNum(o.limit) && o.limit > 0) ? Math.floor(o.limit) : DEFAULT_LIMIT;
-      const Dd = DATA();
-      if (!Dd || typeof Dd.add !== 'function') return refuse('registry-missing');
-      const cr = await fetchJson(colUrl(p.cat, p.collection), null, o.signal);
-      if (!cr.ok) return cr.why === 'http-status' && cr.detail && cr.detail.status === 404 ? refuse('collection-unknown', { ref: p.cat.id + '/' + p.collection }) : cr;
-      const col = normaliseCollection(p.cat, cr.json);
-      const got = await pageItems(p, box, time, limit, o.cursor == null ? null : o.cursor, o.signal || null);
-      if (!got.ok) return got;
-      let feats = got.features;
-      const arrived = feats.length;
-      let truncated = false;
-      if (arrived > limit) { feats = feats.slice(0, limit); truncated = true; }
-      const features = feats.filter((f) => f && f.geometry).map((f) => ({
-        type: 'Feature', geometry: f.geometry,
-        properties: p.cat.kind === 'stac'
-          ? flat(f.properties, { _id: f.id, _collection: p.collection, _assets: Object.keys(f.assets || {}).join(','), _cog: Object.keys(f.assets || {}).filter((k) => assetRow(k, f.assets[k]).cog).join(',') })
-          : flat(f.properties, f.id === undefined ? {} : { _id: f.id }),
-      }));
-      const noGeom = feats.length - features.length;
-      const S = SOURCES();
-      const stated = got.next !== null;
-      const cov = (S && typeof S.coverageOf === 'function') ? S.coverageOf({
-        kind: 'features', requestedBox: box, servedBox: box, servedStated: !!box,
-        requestedTime: time, timeEstablished: !!time,   /* the SERVER executed `datetime`; we did not */
-        limit: o.limit != null ? limit : null, fields: null, where: null, cursor: o.cursor == null ? null : o.cursor,
-        count: features.length, available: got.matched, truncated: truncated || (o.limit != null && stated),
-        shortOfStated: got.matched != null && got.matched > feats.length && !stated && !truncated,
-        asOf: null, resolution: 'none', declaration: null,
-        answerComplete: !stated && !truncated && (got.matched == null || got.matched === feats.length),
-        supplied: true, continues: stated, viewEvidence: false,
-      }) : { completeness: stated || truncated ? 'partial' : 'partial', reason: 'coverage-verdict-unavailable' };
-      const rec = {
-        title: o.title ? String(o.title) : col.title, features: features, sourceCrs: 'EPSG:4326', time: null,
-        provenance: {
-          kind: 'remote', catalog: p.cat.id, collection: p.collection, source: p.cat.url, at: now(), retrievedAt: new Date(now()).toISOString(),
-          bounds: box, statedTime: time, pages: got.pages, matched: got.matched, rowsWithoutGeometry: noGeom,
-          evidence: evidenceOf(col, box, time), coverage: cov,
-          /* ⚠ ABSENT, NOT NULL, when the collection states none (js/gis-export.js writes what is stated) */
-          ...(col.rights.license ? { license: col.rights.license } : {}),
-          ...(col.rights.providers.length ? { attribution: col.rights.providers.join(', ') } : (p.cat.operator ? { attribution: p.cat.operator } : {})),
-        },
-      };
-      if (o.id) rec.id = String(o.id);
-      let dataset;
-      try { dataset = Dd.add(rec); } catch (e) { return refuse('add-failed', { message: e && e.message }); }
-      const out = { ok: true, dataset: dataset, coverage: cov, evidence: rec.provenance.evidence, rights: col.rights, pages: got.pages, matched: got.matched };
-      if (got.next != null) out.next = got.next;
-      return out;
-    }
-
-    /* ── cog(): the part of a remote GeoTIFF that was asked for ───────────────────────────────── */
-
-    const MAX_PIXELS = 4000000;   /* 観測: 4 M doubles = 32 MB in the tab, which every browser tested decodes without the tab dying; 失効: raise with a Worker-side decode */
-
-    /* req = {url, bbox:[w,s,e,n] in lon/lat, width?, height?, band?, title?, license?, attribution?, signal?, fetch?}
-       ⚠ THE RESOLUTION IS THE CALLER'S (width/height), or the file's own when none is named — never a
-       guess. The answer says which level was read and whether it MET the ask. */
-    async function cog(req) {
-      const o = req || {};
-      const u = publicUrl(o.url);
-      if (!u.ok) return u;
-      const box = asBox(o.bbox);
-      if (!box || !(box.w < box.e) || !(box.s < box.n)) return refuse('bad-param', { param: 'bbox', value: o.bbox === undefined ? null : o.bbox, shape: '[west,south,east,north] in degrees, west < east' });
-      const Dd = DATA();
-      if (!Dd || typeof Dd.add !== 'function') return refuse('registry-missing');
-      const T = await TIFF();
-      const opened = await T.readUrl(u.url, { fetch: o.fetch || D.fetch || undefined, signal: o.signal || undefined, allowWholeFile: false });
-      if (!opened || !opened.ok) return opened || refuse('fetch-failed', { url: u.url });
-      const g = opened.grid;
-      const code = g.crs || null;
-      /* the window, in the file's own CRS */
-      let fbox = box;
-      const C = CRS();
-      const isDeg = !code || /^EPSG:4326$/i.test(code) || (C && typeof C.isWgs84 === 'function' && C.isWgs84(code));
-      if (!isDeg) {
-        if (!C || typeof C.fromWgs84 !== 'function') return refuse('crs-unreadable', { crs: code, reason: 'IntMapGisCrs-not-mounted' });
-        try { if (typeof C.ready === 'function') await C.ready(); } catch (_) { }
-        const pts = [[box.w, box.s], [box.e, box.s], [box.e, box.n], [box.w, box.n]].map((q) => C.fromWgs84(q[0], q[1], code));
-        if (pts.some((q) => !q)) return refuse('crs-unreadable', { crs: code, reason: typeof C.why === 'function' ? C.why() : 'transform-failed' });
-        /* the BOX of the four corners: it errs outward, which is the only direction a window may err */
-        fbox = { w: Math.min(...pts.map((q) => q[0])), e: Math.max(...pts.map((q) => q[0])), s: Math.min(...pts.map((q) => q[1])), n: Math.max(...pts.map((q) => q[1])) };
-      }
-      /* which level: the ask in the file's units, or the file's own when none was named */
-      let lv = null, grid = g, asked = null;
-      if (isNum(o.width) && o.width > 0) {
-        const wantDx = (fbox.e - fbox.w) / Math.floor(o.width);
-        const hh = isNum(o.height) && o.height > 0 ? Math.floor(o.height) : Math.max(1, Math.round(o.width * (fbox.n - fbox.s) / (fbox.e - fbox.w)));
-        const wantDy = (fbox.n - fbox.s) / hh;
-        lv = g.levelFor({ dx: wantDx, dy: wantDy });
-        if (!lv.ok) return lv;
-        asked = { dx: wantDx, dy: wantDy };
-        if (lv.level > 0) { const lo = await g.levelAt(lv.level); if (!lo.ok) return lo; grid = lo.grid; }
-      } else { lv = { ok: true, level: 0, meets: true, isOverview: false, dx: g.affine.dx, dy: g.affine.dy }; }
-      const a = grid.affine;
-      const px = Math.max(0, Math.ceil((Math.min(fbox.e, a.x0 + grid.width * a.dx) - Math.max(fbox.w, a.x0)) / a.dx));
-      const py = Math.max(0, Math.ceil((Math.min(fbox.n, a.y0) - Math.max(fbox.s, a.y0 - grid.height * a.dy)) / a.dy));
-      if (!(px > 0 && py > 0)) return refuse('region-out-of-range', { bbox: box, fileCrs: code, extent: { x0: a.x0, y0: a.y0, dx: a.dx, dy: a.dy, width: grid.width, height: grid.height } });
-      if (px * py > MAX_PIXELS) return refuse('region-too-large', { pixels: px * py, limit: MAX_PIXELS, level: lv.level, levels: g.levels.length, hint: 'ask for a smaller window or give width/height for a coarser level' });
-      const bandIdx = (isNum(o.band) && o.band >= 0) ? Math.floor(o.band) : 0;
-      const rr = await grid.readRegion({ bbox: [fbox.w, fbox.s, fbox.e, fbox.n], band: bandIdx, signal: o.signal });
-      if (!rr.ok) return rr;
-      const reg = rr.region;
-      const requests = typeof g.source.requests === 'function' ? g.source.requests() : null;
-      const band0 = (g.bands && g.bands[bandIdx]) || {};
-      const spec = {
-        kind: 'raster', title: o.title ? String(o.title) : (String(u.url).split('/').pop() || 'remote GeoTIFF'),
-        width: reg.width, height: reg.height, bands: [{ name: band0.name || ('band' + (bandIdx + 1)), unit: band0.unit == null ? null : band0.unit, nodata: band0.nodata == null ? null : band0.nodata, quantity: null }],
-        provenance: {
-          kind: 'remote-cog', source: u.url, at: now(), retrievedAt: new Date(now()).toISOString(),
-          level: lv.level, isOverview: !!lv.isOverview, meetsAsk: lv.meets, asked: asked, requests: requests, fileBytes: g.source.size,
-          bounds: box, fileCrs: code, pixelsRead: reg.width * reg.height, chunksRead: reg.chunks, chunksInFile: reg.chunksTotal,
-          coverage: { completeness: 'sample', reason: 'grid-is-a-sample', requested: { bbox: box }, answeredBy: 'supplier', level: lv.level, resolutionMet: lv.meets },
-          ...(o.license ? { license: String(o.license) } : {}), ...(o.attribution ? { attribution: String(o.attribution) } : {}),
-        },
-      };
-      const vals = reg.values;
-      const gridIn = { width: reg.width, height: reg.height, bands: spec.bands, crs: code, affine: reg.affine, model: g.model, read: () => vals };
-      if (isDeg) {
-        spec.sourceCrs = code || null;
-        spec.grid = { west: reg.affine.x0, north: reg.affine.y0, pixelLng: reg.affine.dx, pixelLat: reg.affine.dy };
-        spec.read = () => vals;
-      } else {
-        /* ⚠ A PROJECTED GRID IS PUT ON THE 4326 LATTICE BY THE ONE WARP, with a method NAMED — nearest
-           is the only one that cannot invent a value, and the record says that is what happened */
-        const W = WARP();
-        if (!W || typeof W.to4326 !== 'function') return refuse('map-unavailable', { needs: 'IntMapGisWarp' });
-        const w = await W.to4326(Object.assign({}, gridIn, { crs: code }), { method: 'nearest' });
-        if (!w.ok) return w;
-        spec.sourceCrs = code;
-        spec.width = w.grid.width; spec.height = w.grid.height; spec.grid = w.grid.grid; spec.bands = w.grid.bands;
-        spec.read = (i) => w.grid.read(i);
-        spec.provenance.warp = { from: code, method: 'nearest' };
-      }
-      if (o.id) spec.id = String(o.id);
-      let dataset;
-      try { dataset = Dd.add(spec); } catch (e) { return refuse('add-failed', { message: e && e.message }); }
-      return { ok: true, dataset: dataset, level: lv.level, isOverview: !!lv.isOverview, meetsAsk: lv.meets, requests: requests, pixels: reg.width * reg.height, fileBytes: g.source.size, coverage: spec.provenance.coverage };
-    }
-
     const API = {
-      catalogs, add, discover, inspect, acquire, cog,
+      catalogs, add, discover, inspect,
       publicUrl, resolveHref, refusals: () => REFUSALS.slice(), kinds: () => KINDS.slice(),
       /* what the Atlas door may ask of this module — one declaration, read by the door */
-      actions: () => ['catalogs', 'add', 'discover', 'inspect', 'acquire', 'cog'],
+      actions: () => ['catalogs', 'add', 'discover', 'inspect'],
       /* the pure parts, published so a check can drive them without a network */
       _spatialRelation: spatialRelation, _temporalRelation: temporalRelation, _timeSpan: timeSpan,
     };

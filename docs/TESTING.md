@@ -1423,6 +1423,43 @@ secrets exist, and uploads `atlas-eval-offline` (JSON + Markdown; the Markdown i
 the live report is found by its own name (`atlas-eval-report`), so the offline artifact cannot make a run that
 measured nothing live look measured. Run it by hand: `node scripts/atlas-eval.mjs --offline`.
 
+### Delegation — does handing pieces to workers pay (`scripts/atlas-delegation-bench.mjs`)
+
+`research.delegate` hands independent pieces of a request to worker models that run at the same time.
+It was unmeasured: the judge read the call as one operation and dropped the children. Now:
+
+* **The judge reads the children** (`judge.mjs` `delegationOf`, from the result the model received —
+  `delegated[]` and `delegatedCostUsd`): per turn `metrics.delegation` = calls, child count, a states
+  histogram (`js/atlas-delegate.js` `RESULT_STATES`), the refused children with their code, the
+  unobservable ones, worker cost, the slowest child, and — when the call was timed — `overlapped`
+  (the call took less than its children one after another) and `slowestShareOfCall`. A later delegate
+  call after a refusal is `regrouped`. `null` for a turn that did not delegate; `{observed:false}` when
+  the tool-call tap saw nothing. Aggregated in `metricsOf().delegation`, printed as the report's
+  *Delegation* section, and `<id>:delegationUnfinished` is a regression key.
+* **Three answer-key questions need parallel pieces** (`capabilities: ["research.delegate"]`): two
+  census sums (each addend is a figure already verified in its own row — the note says so) and the
+  strait both the Gulf crude and the Qatari LNG tankers pass. Six scripted cassettes pair them: arm
+  `delegate` (all children done / one refused then regrouped / one unobservable and the reply says so)
+  against arm `direct`. A cassette's `expect.delegation` and `expect.replyMustMatch` hold what the judge
+  must keep reading and what the reply must say (`lab.mjs`). Their costs and times are fixtures.
+* **The A/B bench** asks each question twice through the nightly's own session and asking functions:
+  arm A with a sentence in front asking Atlas to split it and use `research.delegate`, arm B asking it
+  not to. **Atlas decides whether to delegate in production; the sentence is only the experiment**, and a
+  turn that did not do what its arm asked is reported as `not followed`, not as an error.
+
+  ```bash
+  node scripts/atlas-delegation-bench.mjs --offline                  # paired cassettes; no login (CI)
+  ATLAS_EVAL_REFRESH_TOKEN=… node scripts/atlas-delegation-bench.mjs [--questions id,id] [--rotated-token-out f]
+  ```
+
+  Output: a table and `test-results/atlas-delegation-bench/delegation-bench.json` — wall-clock, tool and
+  model calls, worker cost (`delegatedCostUsd`; the parent's own model cost is the server ledger's, not on
+  the page), the judged answer, the children's states. Offline records no whole-turn clock (shown `—`):
+  it proves the judge reads delegation, not how fast delegation is. Exit is non-zero only for a harness
+  error (a pair that no longer replays, the page not booting, nothing measurable), never for slowness or cost.
+  Online needs the same secret as the nightly and fails with the same message when it is missing; it has
+  not been run against production by the change that added it.
+
 ### What it does not measure yet
 
 * **The recorded questions are still only the recorded ones.** The manual rounds asked 46 and 50+; 11

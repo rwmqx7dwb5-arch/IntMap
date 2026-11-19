@@ -1,0 +1,134 @@
+{
+  "id": "direct-gulf-routes-no-delegation",
+  "text": "Japan buys crude oil from the Persian Gulf, iron ore from Western Australia and LNG from Qatar. Research the three shipping routes separately, and tell me which narrow strait the Gulf crude and the Qatari LNG tankers both have to pass through on the way out.",
+  "lang": "en",
+  "origin": {
+    "kind": "scripted",
+    "from": "representative: the same question answered without delegating"
+  },
+  "question": {
+    "set": "answers",
+    "id": "delegate-gulf-to-japan-routes-strait-name"
+  },
+  "arm": "direct",
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.analyze",
+            "args": {
+              "question": "Describe the sea route from the Persian Gulf terminals to Japan and the narrow straits it passes."
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.analyze",
+            "args": {
+              "question": "Describe the sea route from Port Hedland to Japan and the narrow straits it passes."
+            }
+          }
+        },
+        {
+          "id": "c2",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.analyze",
+            "args": {
+              "question": "Describe the sea route from Ras Laffan to Japan and the narrow straits it passes."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "The Gulf crude and the Qatari LNG tankers both leave through the Strait of Hormuz, between Iran and the Musandam Peninsula of Oman, into the Gulf of Oman. The iron-ore route from Port Hedland does not pass it.",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "question": "Describe the sea route from the Persian Gulf terminals to Japan and the narrow straits it passes.",
+          "type": "analyze"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>Describe the sea route from the Persian Gulf terminals to Japan and the narrow straits it passes.</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "question": "Describe the sea route from Port Hedland to Japan and the narrow straits it passes.",
+          "type": "analyze"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>Describe the sea route from Port Hedland to Japan and the narrow straits it passes.</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "question": "Describe the sea route from Ras Laffan to Japan and the narrow straits it passes.",
+          "type": "analyze"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>Describe the sea route from Ras Laffan to Japan and the narrow straits it passes.</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:research.analyze",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:research.analyze",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:research.analyze",
+        "status": "completed"
+      }
+    ],
+    "text": "The Gulf crude and the Qatari LNG tankers both leave through the Strait of Hormuz, between Iran and the Musandam Peninsula of Oman, into the Gulf of Oman. The iron-ore route from Port Hedland does not pass it."
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct",
+    "dispatched": 3,
+    "delegation": null
+  }
+}

@@ -15,7 +15,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { judgeTurn, metricsOf } from './judge.mjs';
-import { replayCassette, validateCassette } from './replay.mjs';
+import { replayCassette, validateCassette, canon } from './replay.mjs';
 import { eraReference } from './map-state.mjs';
 
 export function loadSets(root) {
@@ -40,6 +40,35 @@ export function questionOf(sets, cas) {
   const set = ref.set === 'answers' ? sets.answers : sets.records;
   const q = ((set && set.questions) || []).find((x) => x.id === ref.id);
   return q ? Object.assign({ sendable: true, expect: {} }, q) : null;
+}
+
+/** (atlas-delegation-eval) replyHeldTo(expect, reply) → [problem…] — what a cassette says the REPLY must contain, over and
+ *  above the question's own answer: `expect.replyMustMatch` = [{ pattern, flags?, why }]. It exists for the property of a
+ *  SCENARIO rather than of a question — a delegated child that came back unobservable is a fact of that turn's world, so
+ *  the sentence that tells the reader so is held by the cassette that has such a child, not by the question every other
+ *  turn of it also answers. (The nightly's live turns carry no such expectation: what the world does is not scripted.) */
+export function replyHeldTo(expect, reply) {
+  const bad = [];
+  for (const p of (expect && expect.replyMustMatch) || []) {
+    let rx = null;
+    try { rx = new RegExp(p.pattern, p.flags == null ? 'i' : p.flags); } catch (_) { bad.push('expect.replyMustMatch has a bad pattern ' + p.pattern); continue; }
+    if (!String(p.why || '').trim()) bad.push('expect.replyMustMatch /' + p.pattern + '/ carries no «why»');
+    if (!rx.test(String(reply == null ? '' : reply))) bad.push('the reply does not match /' + p.pattern + '/ — ' + p.why);
+  }
+  return bad;
+}
+
+/** (atlas-delegation-eval) delegationHeld(expect, delegation) → [problem…] — `expect.delegation` is the delegation facts the
+ *  judge must keep reading from the turn (judge.mjs delegationOf): each key named is compared, the others are not. `null`
+ *  says the turn did not delegate. Absent = not held (a recording made before this existed). */
+export function delegationHeld(expect, d) {
+  const bad = [];
+  if (!expect || !('delegation' in expect)) return bad;
+  const want = expect.delegation;
+  if (want === null) { if (d) bad.push('the turn delegated (' + d.calls + ' call(s)); recorded as not delegating'); return bad; }
+  if (!d || !d.observed) return ['expect.delegation is declared but the replayed turn shows no delegation'];
+  for (const k of Object.keys(want)) if (canon(d[k]) !== canon(want[k])) bad.push('delegation.' + k + ' is ' + canon(d[k]) + '; recorded ' + canon(want[k]));
+  return bad;
 }
 
 /** rulesOf(P) — the rules the judge is handed, from the product (the same three the harness hands in) */
@@ -84,6 +113,7 @@ export async function evaluateCassettes(cassettes, { P, sets, root }) {
     const mv = judged.metrics.map ? judged.metrics.map.verdict : null;
     if (!q.mapState && e.map != null) problems.push('expect.map is declared but the question states no map (mapState)');
     else if (e.map != null && mv !== e.map) problems.push('the map grades ' + mv + '; recorded ' + e.map + ' — ' + judged.metrics.map.criteria.map((c) => c.criterion + ' ' + c.verdict + ': ' + c.detail).join(' | '));
+    problems.push(...replyHeldTo(e, r.text), ...delegationHeld(e, judged.metrics.delegation));
     if (e.dispatched != null && r.dispatched !== e.dispatched) problems.push(r.dispatched + ' action(s) reached the dispatch; recorded ' + e.dispatched);
     out.push({ id: cas.id, file: cas.__file, origin: cas.origin, judged, divergences: r.divergences, problems });
   }

@@ -475,6 +475,7 @@ export const IntMapRefData = (function(){
     {n:'Public CORS relays (allorigins.win, corsproxy.io, corsfix.com, codetabs.com)',u:'https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/supabase/functions/_shared/fetch-relay-policy.js'},
     {n:'Google News',u:'https://news.google.com/'},
     {n:'OpenFreeMap / OpenMapTiles',u:'https://openfreemap.org/'},
+    {n:'PLATEAU 3D city models (MLIT Japan)',u:'https://www.mlit.go.jp/plateau/',lic:'PLATEAU site policy (compatible with CC BY 4.0)',licUrl:'https://www.mlit.go.jp/plateau/site-policy/',credit:true},
     {n:'Google Fonts (Noto Sans JP / SC / TC)',u:'https://fonts.google.com/noto'},
     {n:'Inter / Pretendard (bundled, SIL OFL 1.1)',u:'https://rsms.me/inter/',lic:'SIL OFL 1.1',credit:true},
     {n:'ESA WorldCover',u:'https://esa-worldcover.org/'},

@@ -1,0 +1,152 @@
+{
+  "id": "direct-census-total-no-delegation",
+  "text": "Research the populations counted by the 2020 Census of the United States, the 2021 Census of Canada and the 2021 Census of Australia separately, then give me the combined total of the three countries.",
+  "lang": "en",
+  "origin": {
+    "kind": "scripted",
+    "from": "representative: the same question answered without delegating — Atlas researches the three countries itself, three analyses in one reply"
+  },
+  "question": {
+    "set": "answers",
+    "id": "delegate-north-america-census-total"
+  },
+  "arm": "direct",
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.analyze",
+            "args": {
+              "question": "What is the United States's resident population in the 2020 Census (1 April 2020)?",
+              "countries": [
+                "the United States"
+              ]
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.analyze",
+            "args": {
+              "question": "What is Canada's population in the 2021 Census?",
+              "countries": [
+                "Canada"
+              ]
+            }
+          }
+        },
+        {
+          "id": "c2",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.analyze",
+            "args": {
+              "question": "What is Australia's population in the 2021 Census?",
+              "countries": [
+                "Australia"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "The latest national censuses count 331,449,281 people in the United States (2020), 36,991,981 in Canada (2021) and 25,422,788 in Australia (2021). Together that is 393,864,050 people.",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "question": "What is the United States's resident population in the 2020 Census (1 April 2020)?",
+          "countries": [
+            "the United States"
+          ],
+          "type": "analyze"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>What is the United States's resident population in the 2020 Census (1 April 2020)?</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "question": "What is Canada's population in the 2021 Census?",
+          "countries": [
+            "Canada"
+          ],
+          "type": "analyze"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>What is Canada's population in the 2021 Census?</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "question": "What is Australia's population in the 2021 Census?",
+          "countries": [
+            "Australia"
+          ],
+          "type": "analyze"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>What is Australia's population in the 2021 Census?</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:research.analyze",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:research.analyze",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:research.analyze",
+        "status": "completed"
+      }
+    ],
+    "text": "The latest national censuses count 331,449,281 people in the United States (2020), 36,991,981 in Canada (2021) and 25,422,788 in Australia (2021). Together that is 393,864,050 people."
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct",
+    "dispatched": 3,
+    "delegation": null
+  }
+}

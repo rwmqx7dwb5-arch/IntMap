@@ -15,7 +15,7 @@ import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js"
 /* (ai-one-ledger) The plan table, the account and the turn ledger's doors (written to be shared by
    every caller that charges the same allowance), and what a provider answer cost (one shape for three providers,
    plus the Anthropic prompt-cache breakpoints). */
-import { accountFor, openTurn, openChildTurn, reserveSpend, settleSpend, refundTurn, settleTurn, recordUsage, recordHealth, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
+import { accountFor, openTurn, openChildTurn, reserveSpend, settleSpend, refundTurn, settleTurn, recordUsage, recordHealth, recordJournal, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
 import { usageMeter } from "../_shared/ai-usage.js";
 /* (atlas-live-stream) The provider's server-sent events, read twice: as previews for the reader while
    they arrive, and folded back into the body the parsers below already read. */
@@ -31,7 +31,7 @@ import {
   cors, json, GLOSS_PLAN_LIMITS, GLOSS_LANE, MAX_GLOSS_PROMPT, TURN_MAX_CALLS, TURN_TTL_S, MAX_TURN_KEY, REPLAY_KEY_OK,
   CEILING, NEWCOMER_CEILING, PROVIDERS, MODEL_ID_OK, MAX_PROMPT, MAX_SYSTEM, MAX_IMAGES, MAX_BODY_BYTES, MAX_IMAGES_BYTES,
   MAX_FILES, MAX_FILE_TEXT, MAX_FILES_TEXT, MAX_DOCS, MAX_DOC_BYTES, MAX_DOCS_BYTES, DOC_MIME,
-  delegationPolicy, turnCostCapMicros,
+  delegationPolicy, delegationModel, turnCostCapMicros,
 } from "./config.ts";
 import { normalizeTurn, cacheBasis, sha256Hex } from "./turn.ts";
 import type { TurnReq, TurnItem } from "./turn.ts";
@@ -45,7 +45,7 @@ import { callOpenAI } from "./providers/openai.ts";
 import { callGemini, callGeminiRetry, callGeminiTurn, geminiRetry } from "./providers/gemini.ts";
 import { callAnthropic, callAnthropicTurn } from "./providers/anthropic.ts";
 import { listModels } from "./models.ts";
-import { awaitAnswer, claimAnswer, beatAnswer, finishAnswer, replayed } from "./replay.ts";
+import { awaitAnswer, claimAnswer, beatAnswer, finishAnswer, replayed, replayKeyFor } from "./replay.ts";
 
 /* (speed-overhaul) the subject a bearer token CLAIMS — unverified, read only to start the plan lookup early
    (see its use in ask()). Never an identity: getUser() is what decides who the caller is. */
@@ -116,16 +116,37 @@ export async function ask(req: Request): Promise<Response> {
      developer's included, since a switch that skips one account is not a switch. */
   const parentTurn = String(req.headers.get("x-intmap-parent-turn") || "").slice(0, MAX_TURN_KEY);
   const delegation = delegationPolicy((k: string) => Deno.env.get(k) || "");
+  /* the turn family a cost is reckoned against: the reader's turn, whichever key this call carries */
+  const rootTurn = parentTurn || turnId;
+  /* ══ (atlas-delegation) THE JOURNAL — every worker call and every Atlas root turn leaves one row, whichever way it ended ══
+     public.ai_delegation_journal (migration 20261119120000): the scratch ledger forgets a refused or failed worker within a
+     day, and the delegation comparison needs exactly those. Best-effort and off the answer's path (_shared/ai-ledger.js
+     recordJournal): a journal that cannot be written never fails the request it describes — the posture of spend
+     'unavailable' below. A worker call is a worker call by its HEADER, so even a malformed one is journalled as one; a
+     root turn is known by its task, which is read from the body — so the refusals that happen at the allowance's door
+     BEFORE the body is read (quota 429s of a reader's turn) are not journalled: the door runs first on purpose, and the
+     quota ledger already counts them. `workerKey` is the child's own key, kept before "shared" mode gives the call the
+     parent's. */
+  const reqStart = Date.now();
+  const workerKey = parentTurn ? turnId : "";
+  let journalTask = parentTurn ? "atlas_delegate" : "";
+  const journal = (outcome: string, code: string, http: number, o: { model?: string; latencyMs?: number; total?: unknown; costMicros?: number; web?: boolean } = {}) =>
+    (parentTurn || journalTask === "atlas_turn")
+      ? recordJournal(db, { user: user.id, root: rootTurn, child: workerKey, task: journalTask, outcome, code, http, model: o.model || "", latencyMs: o.latencyMs ?? Date.now() - reqStart, total: o.total, costMicros: o.costMicros, web: o.web })
+      : Promise.resolve(false);
+  /* a refusal / failure answered before the provider is asked: the same JSON the caller always got, and its row */
+  const bail = async (body: Record<string, unknown>, status: number) => {
+    await journal(status >= 500 ? "failed" : "refused", String(body.error || ""), status);
+    return json(body, status);
+  };
   if (parentTurn) {
-    if (delegation.mode === "off") return json({ error: "delegation_off", message: "Delegation to worker models is switched off on this server.", delegation }, 409);
-    if (!turnId || turnId === parentTurn) return json({ error: "delegation_key", message: "A worker call needs its own turn key." }, 400);
+    if (delegation.mode === "off") return await bail({ error: "delegation_off", message: "Delegation to worker models is switched off on this server.", delegation }, 409);
+    if (!turnId || turnId === parentTurn) return await bail({ error: "delegation_key", message: "A worker call needs its own turn key." }, 400);
   }
   /* "shared": the worker's calls ARE the parent's — they carry the parent's key from here on, so consume_ai_turn
      counts them against the parent's TURN_MAX_CALLS and the parent's settle/refund closes them. */
   if (parentTurn && delegation.mode === "shared") turnId = parentTurn;
   const childTurn = !!parentTurn && delegation.mode === "independent";
-  /* the turn family a cost is reckoned against: the reader's turn, whichever key this call carries */
-  const rootTurn = parentTurn || turnId;
   /* (#R491) ...and the LANE, read here for the same reason: the body is not available yet. */
   const lane = String(req.headers.get("x-intmap-lane") || "").toLowerCase().slice(0, 16);
   const isGloss = lane === GLOSS_LANE;
@@ -177,7 +198,7 @@ export async function ask(req: Request): Promise<Response> {
       ? await openChildTurn(db, account, { parent: parentTurn, turn: turnId, maxChildren: delegation.maxChildren, maxCalls: delegation.childMaxCalls, ttlSeconds: TURN_TTL_S })
       : await openTurn(db, account, { turn: turnId, maxCalls: TURN_MAX_CALLS, ttlSeconds: TURN_TTL_S });
     if (childTurn && !row.allowed) {
-      return json({ error: row.reason || "delegation_refused", calls: row.calls, children: row.children, delegation }, 409);
+      return await bail({ error: row.reason || "delegation_refused", calls: row.calls, children: row.children, delegation }, 409);
     }
     used = row.used;
     charged = row.charged;
@@ -186,15 +207,15 @@ export async function ask(req: Request): Promise<Response> {
     if (!row.allowed) {
       /* Two different 429s, and the client must be able to tell them apart: one means "come back
          tomorrow", the other means "this one request has asked enough times". */
-      if (row.reason === "turn_calls") return json({ error: "turn_calls", used, limit, calls: row.calls }, 429);
-      return json({ error: "limit", used, limit }, 429);
+      if (row.reason === "turn_calls") return await bail({ error: "turn_calls", used, limit, calls: row.calls }, 429);
+      return await bail({ error: "limit", used, limit }, 429);
     }
   } catch (e) {
     /* ⚠ NOT the database error. `String(e.message)` from a PostgREST/RPC failure names the schema,
        the function signature and sometimes the row that tripped a constraint — openTurn throws a
        LedgerUnavailable that carries none of it. */
     if (!(e instanceof LedgerUnavailable)) try { console.error("ai-proxy ledger", String((e as Error)?.name || "")); } catch (_) { /* ignore */ }
-    return json({ error: "quota_unavailable", message: "The usage counter is unavailable — please try again." }, 500);
+    return await bail({ error: "quota_unavailable", message: "The usage counter is unavailable — please try again." }, 500);
   }
   /* ⚠ (#R318) A REFUND RELEASES THE CHARGE **AND** THE TURN. Refunding the use while leaving the
      turn row behind would make the user's retry look like a free continuation of a turn nobody
@@ -285,7 +306,7 @@ export async function ask(req: Request): Promise<Response> {
     } catch (e) {
       if (e instanceof RelayError && e.code === "upstream_too_large") {
         await refund();
-        return json({ error: "too_large", message: "Request body is too large." }, 413);
+        return await bail({ error: "too_large", message: "Request body is too large." }, 413);
       }
       raw = null;
     }
@@ -335,12 +356,13 @@ export async function ask(req: Request): Promise<Response> {
     return json({ error: "bad_task", message: "Unknown task." }, 400);
   }
   const spec = TASKS.get(task)!;   /* (atlas-core-split) everything this task decides — tasks/<task>.ts */
+  if (!parentTurn) journalTask = task;   /* (atlas-delegation) a root turn is journalled by its task; a worker call by its header (above) */
   /* (atlas-delegation) A worker's call and the worker task are one thing, in both directions: the parent header
      buys free calls under a reader's turn, so it carries ONLY the worker task (tasks/atlas_delegate.ts) — never an
      atlas_turn or a brief bought out of a child allowance — and the worker task is only ever a worker's call. */
   if (!!parentTurn !== !!spec.delegate) {
     await refund();
-    return json({ error: "bad_task", message: parentTurn ? "A worker call carries only the delegated task." : "The delegated task is only run under a parent turn." }, 400);
+    return await bail({ error: "bad_task", message: parentTurn ? "A worker call carries only the delegated task." : "The delegated task is only run under a parent turn." }, 400);
   }
   /* == (#R491) THE LANE WAS A CLAIM ABOUT A BODY NOBODY HAD READ. HERE IS THE BODY. ============
      Both directions are wrong and both are refused: "lane: gloss" carrying an expensive task would
@@ -348,7 +370,7 @@ export async function ask(req: Request): Promise<Response> {
      lookup against the reader's questions - the one thing this whole lane exists to prevent. */
   if (isGloss !== (spec.lane === GLOSS_LANE)) {
     await refund();
-    return json({ error: "bad_lane", message: "The declared lane does not match the task." }, 400);
+    return await bail({ error: "bad_lane", message: "The declared lane does not match the task." }, 400);
   }
   // (#R156) input_image detail — "high" is the small-text/maths OCR lever for vision_read; clamp to a safe set.
   const imageDetail = (payload.imageDetail === "high" || payload.imageDetail === "low") ? payload.imageDetail : "auto";
@@ -373,8 +395,8 @@ export async function ask(req: Request): Promise<Response> {
   if (turnParsed && "error" in turnParsed) {
     await refund();
     return turnParsed.error === "too_large"
-      ? json({ error: "too_large", message: "The turn is larger than the server accepts, even without the earlier conversation.", meta: { protocol: 2 } }, 413)
-      : json({ error: "empty_turn", meta: { protocol: 2 } }, 400);   /* NOT "empty": that is the one-string request's code, and this is a protocol-2 request with nothing in it */
+      ? await bail({ error: "too_large", message: "The turn is larger than the server accepts, even without the earlier conversation.", meta: { protocol: 2 } }, 413)
+      : await bail({ error: "empty_turn", meta: { protocol: 2 } }, 400);   /* NOT "empty": that is the one-string request's code, and this is a protocol-2 request with nothing in it */
   }
   const turnReq: TurnReq | null = turnParsed;
   /* ⚠ THE PER-IMAGE CEILING IS IN parseDataUrl; THIS IS THE ONE FOR ALL OF THEM TOGETHER. Four
@@ -436,7 +458,7 @@ export async function ask(req: Request): Promise<Response> {
      or a dropped file with no typed text, is a real request — not an empty one. */
   if (!prompt && !imgs.length && !files.length && !docs.length && !turnReq) {
     await refund();
-    return json({ error: "empty" }, 400);
+    return await bail({ error: "empty" }, 400);
   }
   /* (#R491) ...and what the cheap lane may NOT ask for. An image read or a hosted web search costs
      what `vision_read` and `brief` cost, and neither is a dictionary lookup.
@@ -444,7 +466,7 @@ export async function ask(req: Request): Promise<Response> {
      expensive input the images are, so the gloss lane takes text only. */
   if (isGloss && (imgs.length || docs.length || files.length || web)) {
     await refund();
-    return json({ error: "bad_lane", message: "The gloss lane takes text only." }, 400);
+    return await bail({ error: "bad_lane", message: "The gloss lane takes text only." }, 400);
   }
 
   const maxTokens = maxOutputFor(spec, requestedCount);
@@ -461,7 +483,7 @@ export async function ask(req: Request): Promise<Response> {
     : null;
   if (spec.grader && !graderProvider) {
     await refund();
-    return json({ error: "no_independent_grader", message: "No provider other than the one answering Atlas is configured, so no independent grade can be given." }, 503);
+    return await bail({ error: "no_independent_grader", message: "No provider other than the one answering Atlas is configured, so no independent grade can be given." }, 503);
   }
   const provider = (graderProvider || devPick?.provider || Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();   /* devPick is null for atlas_grade (above) */
   // (#R115) On OpenAI, atlas_plan ALSO runs in JSON mode: the R113c exclusion was a GEMINI-latency
@@ -489,13 +511,19 @@ export async function ask(req: Request): Promise<Response> {
   const envModel = provider === envProvider ? (Deno.env.get("AI_MODEL") || "") : "";
   /* (atlas-quality-lab) for the grader: devPick is null and envModel is "" (the grader is never
      AI_PROVIDER), so this is the grader provider's default model */
-  const model = devPick?.model || envModel || PROVIDER_DEFAULT_MODEL[provider] || OPENAI_DEFAULT_MODEL;
+  /* (atlas-delegation) A WORKER'S MODEL TIER: ATLAS_DELEGATION_MODEL (config.ts delegationModel), when set to a priced model,
+     answers every worker call instead of the model the parent's selection resolves to — including a developer's pick,
+     which the tier replaces on a worker (the pick tests the parent's model; the tier is what is being measured on the
+     workers). One that is set but unusable is logged and ignored, never run unpriced. Unset: nothing changes. */
+  const tier = parentTurn ? delegationModel((k: string) => Deno.env.get(k) || "") : { model: "", ignored: "" };
+  if (tier.ignored) try { console.error("ai-proxy delegation_model_ignored", tier.ignored); } catch (_) { /* ignore */ }
+  const model = tier.model || devPick?.model || envModel || PROVIDER_DEFAULT_MODEL[provider] || OPENAI_DEFAULT_MODEL;
   /* /!\ A CHOSEN MODEL DOES NOT FALL BACK. The fallback exists so that a model the PROJECT lost
      access to cannot blanket-kill Atlas for every reader - an unattended substitution is the right
      answer when nobody asked for this model in particular. When the developer asked for this model
      in particular, substituting another one silently answers a different question than the one being
      tested, and the panel would then report a model that never ran. The 403 is the answer. */
-  const noFallbackForPick = !!devPick?.model;
+  const noFallbackForPick = !tier.model && !!devPick?.model;
   /* (atlas-native-tools) THE PROMPT-CACHE KEY: the same instructions and the same functions produce the same key,
      whoever is asking — it is derived from the prefix OpenAI caches, and names no account (nothing
      about the reader leaves in it; the privacy notice is unchanged). Requests that share a prefix are
@@ -527,7 +555,7 @@ export async function ask(req: Request): Promise<Response> {
     catch (_) { held = null; spendState = "unavailable"; try { console.error("ai-proxy spend reserve_unavailable"); } catch (_e) { /* ignore */ } }
     if (held && !held.allowed) {
       await refund();
-      return json({ error: "turn_cost", message: "This request has reached the most it may spend with the AI provider.",
+      return await bail({ error: "turn_cost", message: "This request has reached the most it may spend with the AI provider.",
         spend: { capUsd: capMicros / 1e6, spentUsd: held.spent / 1e6, reservedUsd: held.reserved / 1e6, estimateUsd: estimate / 1e6, priceKnown: pr.known } }, 409);
     }
     if (held) { spendHold = { micros: estimate, model, provider }; spendState = "reserved"; }
@@ -611,6 +639,7 @@ export async function ask(req: Request): Promise<Response> {
     // 5) Success. (#R801) Settled BEFORE the answer leaves, so the turn cannot be refunded after it.
     await record();   // (ai-one-ledger) what it cost — off the answer's path where the platform allows (EdgeRuntime.waitUntil)
     await observe("ok", { incomplete: out.incompleteReason || "" });   // (atlas-turn-observability)
+    await journal("ok", "", 200, { model: out.served || model, latencyMs: Date.now() - startedAt, total: meter.total(), costMicros: costMicros(model, meter.total(), provider), web: !!out.webUsed });   // (atlas-delegation)
     await settle();
     return { status: 200, body: {
       text: out.text,
@@ -635,7 +664,7 @@ export async function ask(req: Request): Promise<Response> {
          visible instead of being believed. */
       /* (#R722) `model` is what was ASKED for; `modelServed` is what the provider says ANSWERED.
          They differ exactly when the fallback chain walked, which is the thing nobody could see. */
-      meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
+      meta: { provider, model, modelServed: out.served || "", modelChosenBy: !tier.model && devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
         /* (atlas-completion) whether the answer ENDED, in the provider's own words (providers/*.ts incompleteReason) —
            the text above is kept whole either way; js/atlas-agent.js reads these two as the reply's `finish` */
         status: out.incompleteReason ? "incomplete" : "complete", incompleteReason: out.incompleteReason || null,
@@ -663,6 +692,11 @@ export async function ask(req: Request): Promise<Response> {
     await refund();   // a failed provider call never costs the user a use (dev never consumed one)
     await record();   // (ai-one-ledger) …but what the provider billed before failing is still a cost, and is recorded
     await observe(e instanceof ProviderError ? e.code : "unclassified");   // (atlas-turn-observability)
+    /* (atlas-delegation) the row of a failure: what the provider billed before failing is in it. "refused" is IntMap's own
+       ceiling saying no (provider-call.ts sets meta.ceiling only for those); everything else the provider or the network did is "failed". */
+    await journal(e instanceof ProviderError && e.code === "provider_quota" && e.meta && e.meta.ceiling ? "refused" : "failed",
+      e instanceof ProviderError ? e.code : "unclassified", e instanceof ProviderError ? e.http : 502,
+      { latencyMs: Date.now() - startedAt, total: meter.total(), costMicros: costMicros(model, meter.total(), provider) });
     if (e instanceof ProviderError) {
       // Non-sensitive telemetry only (no prompt / key / JWT).
       try { console.error("ai-proxy provider fail", JSON.stringify({ provider, model, task, code: e.code, http: e.http, meta: e.meta })); } catch (_) { /* ignore */ }
@@ -690,11 +724,10 @@ export async function ask(req: Request): Promise<Response> {
      consulted for this request like any other, so a re-run after a refunded failure is charged like
      a first run and a re-run of a continuation is a continuation (consume_ai_turn decides, as before).
      A request without a key runs exactly as it did. */
-  const replayKey = (() => {
-    if (!turnReq || !turnId) return "";
-    const k = String(payload.replayKey || replayHdr || "").slice(0, MAX_TURN_KEY);
-    return REPLAY_KEY_OK.test(k) ? k : "";
-  })();
+  /* (atlas-delegation) …and a WORKER's call too (spec.delegate): its duplicate is the other one that costs a provider bill and
+     a slot of the child's call allowance, so it is claimed and held under the child's own turn key like an Atlas turn
+     (replay.ts replayKeyFor says why). The early check above already returns a done answer for any keyed turn. */
+  const replayKey = replayKeyFor({ protocol2Turn: !!turnReq, delegate: !!spec.delegate, turnId, bodyKey: payload.replayKey, headerKey: replayHdr, keyOk: REPLAY_KEY_OK, maxLen: MAX_TURN_KEY });
   const keyedAnswer = async (sink: StreamSink | null): Promise<{ status: number; body: Record<string, unknown> }> => {
     if (!replayKey) return answer(sink);
     for (;;) {

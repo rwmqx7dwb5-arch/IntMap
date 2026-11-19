@@ -1,0 +1,173 @@
+{
+  "id": "delegate-census-total-all-children-done",
+  "text": "Research the populations counted by the 2020 Census of the United States, the 2021 Census of Canada and the 2021 Census of Australia separately, then give me the combined total of the three countries.",
+  "lang": "en",
+  "origin": {
+    "kind": "scripted",
+    "from": "representative: three independent pieces handed to workers at once, all three return findings, the reply integrates them into the total (fixture costs and times — see the note above)"
+  },
+  "question": {
+    "set": "answers",
+    "id": "delegate-north-america-census-total"
+  },
+  "arm": "delegate",
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.delegate",
+            "args": {
+              "tasks": [
+                {
+                  "id": "us",
+                  "goal": "Find the United States's resident population in the 2020 Census (1 April 2020) as published by its national statistics office.",
+                  "returns": "one figure with its reference date and a source URL"
+                },
+                {
+                  "id": "ca",
+                  "goal": "Find Canada's population in the 2021 Census as published by its national statistics office.",
+                  "returns": "one figure with its reference date and a source URL"
+                },
+                {
+                  "id": "au",
+                  "goal": "Find Australia's population in the 2021 Census as published by its national statistics office.",
+                  "returns": "one figure with its reference date and a source URL"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "The latest national censuses count 331,449,281 people in the United States (2020), 36,991,981 in Canada (2021) and 25,422,788 in Australia (2021). Together that is 393,864,050 people.",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "tasks": [
+            {
+              "id": "us",
+              "goal": "Find the United States's resident population in the 2020 Census (1 April 2020) as published by its national statistics office.",
+              "returns": "one figure with its reference date and a source URL"
+            },
+            {
+              "id": "ca",
+              "goal": "Find Canada's population in the 2021 Census as published by its national statistics office.",
+              "returns": "one figure with its reference date and a source URL"
+            },
+            {
+              "id": "au",
+              "goal": "Find Australia's population in the 2021 Census as published by its national statistics office.",
+              "returns": "one figure with its reference date and a source URL"
+            }
+          ],
+          "type": "delegate"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div class=\"atl-deleg\">us — done · ca — done · au — done</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ],
+            "delegated": [
+              {
+                "id": "us",
+                "state": "done",
+                "summary": "The 2020 Census counted 331,449,281 residents on 1 April 2020.",
+                "findings": [
+                  {
+                    "claim": "Resident population of the United States, 1 April 2020: 331,449,281",
+                    "place": "United States",
+                    "date": "2020-04-01",
+                    "source": "https://census.gov/newsroom/press-releases/2021/2020-census-apportionment-results.html"
+                  }
+                ],
+                "gaps": [],
+                "sources": [
+                  "https://census.gov/newsroom/press-releases/2021/2020-census-apportionment-results.html"
+                ],
+                "costUsd": 0.0118,
+                "calls": 1,
+                "ms": 13800
+              },
+              {
+                "id": "ca",
+                "state": "done",
+                "summary": "The 2021 Census counted 36,991,981 people in Canada (11 May 2021).",
+                "findings": [
+                  {
+                    "claim": "Population of Canada, 2021 Census: 36,991,981",
+                    "place": "Canada",
+                    "date": "2021-05-11",
+                    "source": "https://www12.statcan.gc.ca/census-recensement/stats/statind2021.cfm?Lang=E"
+                  }
+                ],
+                "gaps": [],
+                "sources": [
+                  "https://www12.statcan.gc.ca/census-recensement/stats/statind2021.cfm?Lang=E"
+                ],
+                "costUsd": 0.0094,
+                "calls": 1,
+                "ms": 11200
+              },
+              {
+                "id": "au",
+                "state": "done",
+                "summary": "The 2021 Census counted 25,422,788 people in Australia, excluding overseas visitors.",
+                "findings": [
+                  {
+                    "claim": "Population of Australia, 2021 Census: 25,422,788",
+                    "place": "Australia"
+                  }
+                ],
+                "gaps": [],
+                "sources": [],
+                "costUsd": 0.0103,
+                "calls": 1,
+                "ms": 16400
+              }
+            ],
+            "delegatedCostUsd": 0.0315
+          }
+        },
+        "ms": 17100
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:research.delegate",
+        "status": "completed"
+      }
+    ],
+    "text": "The latest national censuses count 331,449,281 people in the United States (2020), 36,991,981 in Canada (2021) and 25,422,788 in Australia (2021). Together that is 393,864,050 people."
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct",
+    "dispatched": 1,
+    "delegation": {
+      "delegatedCount": 3,
+      "states": {
+        "done": 3
+      },
+      "overlapped": true,
+      "regrouped": false
+    }
+  }
+}

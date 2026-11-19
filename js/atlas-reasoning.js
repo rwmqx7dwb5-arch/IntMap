@@ -158,7 +158,8 @@ export function changesPeriod(a, minYear, nowMs) {
   const nowYear = new Date(nowMs).getUTCFullYear();
   if (t0.year < minYear || t1.year < minYear) return { ok: false, code: 'before-clock', min: minYear };
   if (t1.year > nowYear) return { ok: false, code: 'in-future', year: nowYear };
-  const k = (p) => (p.iso ? p.ms : Date.UTC(p.year, 5, 15, 12));
+  /* (hist-audit-fixes) `Date.UTC(50, …)` is 1950: a year 0–99 is read as 1900+year. setUTCFullYear takes the year as written. */
+  const k = (p) => { if (p.iso) return p.ms; const d = new Date(0); d.setUTCFullYear(p.year, 5, 15); d.setUTCHours(12, 0, 0, 0); return d.getTime(); };
   if (k(t1) <= k(t0)) return { ok: false, code: 'empty-period' };
   return { ok: true, t0, t1 };
 }

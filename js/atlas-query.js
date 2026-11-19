@@ -342,7 +342,10 @@ export function atlasQuery(HOST) {
     if (list === null && areaRel) list = await D.overpassPOIs(kind, box, true, null);
     const wd = D.wikidataPOIs ? await Promise.resolve(D.wikidataPOIs(kind, box, iso3)).catch(() => null) : null;
     const all = (list || []).concat(wd || []);
-    const rows = all.map((f, i) => ({ id: 'f' + i, name: f.name || kind, lng: +f.lng, lat: +f.lat, kind: f.kind || kind }));
+    /* A row's id is the SOURCE'S id when the source gave one (an OSM element, a Wikidata item): `f3` names a position in this
+       result and means a different facility on the next search. Only a record with no identifier of its own keeps the position. */
+    const rows = all.map((f, i) => ({ id: f.osm ? 'osm-' + String(f.osm).replace('/', '-') : (f.wd ? 'wd-' + f.wd : 'f' + i),
+      name: f.name || kind, lng: +f.lng, lat: +f.lat, kind: f.kind || kind, osm: f.osm || '', wd: f.wd || '' }));
     return { rows, note: null, capped: (list && list._truncated) ? rows.length : null,
       source: 'OpenStreetMap (ODbL)' + (wd && wd.length ? ' + Wikidata (CC0)' : '') };
   }
@@ -443,7 +446,7 @@ export function atlasQuery(HOST) {
       }
       const p = f.properties || {};
       rows.push({ id: ds.id + ':' + i, name: String(p.name != null ? p.name : (p.NAME != null ? p.NAME : ds.title + ' ' + (i + 1))),
-        lng, lat, _p: p, _g: g, _bbox: bbox, _gv: vertices, _derivedPoint: derivedPoint });
+        lng, lat, _fid: f.id != null ? f.id : null, _p: p, _g: g, _bbox: bbox, _gv: vertices, _derivedPoint: derivedPoint });
     }
     const prov = ds.provenance || {};
     const src = prov.kind === 'op'

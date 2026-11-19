@@ -1,8 +1,8 @@
 ---
-title: 地理空間データの供給網——世界のカタログを発見し、リモート COG を欲しい窓だけ読む（外部監査の P0/P1 のうち実装できた部分）
+title: データの発見——世界のカタログに「この場所・期間を覆うと述べているコレクション」を訊く（取得は別セッションの url:/ogc:/stac: に委ねる）
 date: 2026-11-19
-newsen: Atlas can now search the world's open data catalogues for datasets covering a place and period, import their items, and read just the window you need from a remote Cloud-Optimised GeoTIFF. Results never claim to be everything that exists.
-newsjp: Atlas が世界のオープンデータカタログ（STAC・OGC API）から場所と期間に合うデータセットを探し、アイテムを取り込み、リモートの COG から必要な窓だけを読めるようになりました。結果は「供給元が持つもの」を述べ、世界の全部だとは主張しません。
+newsen: Atlas can now ask the world's open data catalogues which datasets state that they cover a place and period, with each one's licence as stated, and says which catalogues did not answer.
+newsjp: Atlas が世界のオープンデータカタログに「この場所と期間を覆うと述べているデータセット」を問い合わせ、各ライセンスをそのまま示し、応答しなかったカタログも明示するようになりました。
 ---
 
 〈依頼〉外部の技術監査（IntMap の地理空間データ基盤・データ供給網）の指摘を、できるだけ全部やる。
@@ -17,19 +17,24 @@ newsjp: Atlas が世界のオープンデータカタログ（STAC・OGC API）�
 | 供給能力の監査 `auditCapabilities` | あるが 1 id ずつで、全体を 1 回で見る表が無かった → `capabilityTable()` |
 | ベクタ全件のメモリ保持・世界規模の分割保存基盤が無い | 正しい。**今回は実装していない**（下の §4） |
 
-## 1. 足したもの
+## 0b. 同じ監査から別セッションが先に取得側を入れていた（merge 時に発覚）
 
-- `js/gis-remote.js`（`window.IntMapGisRemote`）— STAC API と OGC API – Features の発見（`discover`）・検査（`inspect`）・取得（`acquire`、ベクタのデータセット）と、リモート COG の部分読み（`cog`）。カタログは `CATALOGS` というデータで、実行時に `add()` で足せる。
-- Atlas の能力 `data.gisRemote`（`discover`/`inspect`/`acquire`/`cog`/`catalogs`/`add`/`sources`）。`js/gis-atlas.js` の `remote()`。
+main に `gis-cog.js`（`url:`、投影 COG 含む）・`gis-ogcapi.js`（`ogc:`／`stac:`）が入っていた。私の `acquire`／`cog` は**二重実装**になるので削り、
+新規性のある部分だけを残した（`.agents/rules/substance-over-form.md`: 届く先が同じ入口は統合する）。`discover`/`inspect` は
+`ogc:`/`url:` の ref を返して既存の扉へ案内する。引き継いだ能力は失っていない（取得は main 側が同じだけ働く）。
+
+## 1. 足したもの（残したもの）
+
+- `js/gis-remote.js`（`window.IntMapGisRemote`）— `discover`・`inspect`・`catalogs`・`add`。カタログは `CATALOGS` というデータ。
+- Atlas の能力 `data.gisRemote`（`discover`/`inspect`/`catalogs`/`add`/`sources`）。
 - `IntMapGisSources.capabilityTable()` と `coverageOf` の公開。
-- 外部通信の開示: `scripts/outbound-hosts.json` と `data/connection-ledger.json`、プライバシー §4（en/jp）、`DATA_SOURCES` に 4 行（`js/reference-data.js`、説明は `pages.en.js` / `pages.ja.js`）。
-
+- 外部通信の開示: `scripts/outbound-hosts.json`・`data/connection-ledger.json`・プライバシー §4（en/jp）・`DATA_SOURCES` 4 行。
 ## 2. 守ったこと（監査の「証明できないものは不明」を値にした）
 
 - 完全性は 3 つの主張に分けた（供給元が窓の全部を返した／供給元の範囲が窓を覆うと述べている／世界の全部）。1 つ目は `coverage`（既存の判定）、2 つ目は `evidence`、3 つ目の `worldCompleteness` は**常に `unproven`**。
 - 応答しなかったカタログは `answered:false` と理由で出す（空の一覧と混ぜない）。
 - ライセンスは述べられたまま。述べが無ければ `provenance.license` は欄ごと無い（`open` と読まない）。
-- 宛先は https の公開宛先だけ（`url-not-public`）。Range を無視するサーバは `range-unsupported`。400 万画素超は `region-too-large`。
+- 宛先は https の公開宛先だけ（`url-not-public`）。
 
 ## 3. 実測（2026-11-19、Node から。ブラウザではない）
 
@@ -37,11 +42,8 @@ newsjp: Atlas が世界のオープンデータカタログ（STAC・OGC API）�
 |---|---|
 | 5 カタログの `discover`（キャッシュ無し） | 全部が応答。コレクション数 9 / 140 / 793 / 104 / 45。NASA は 9 ページで合計 17 秒（`complete:true`） |
 | Earth Search `cop-dem-glo-30`（東京の窓）の `inspect` | 資産は `s3://` で、https は**導出**と明記。COG と判定 |
-| `acquire`（STAC・5 件）/ MSC `hydrometric-stations`（161 件中 30 件） | 前者 `all`、後者 `sample` / `limit-truncated` と報告 |
-| `cog`（Copernicus DEM 36.8 MB、0.1° 角、幅 100 画素） | 概観の段（level 1）を読み、2 リクエストで 181×181 画素。解像度に届いたと報告 |
 | MSC の `/collections/{id}` の 1 回目 | Node の fetch が 1 度だけ `fetch failed`。再実行で成功 → 一過性の失敗は `fetch-failed` として返り、「無い」にはならなかった |
 
-⚠ **CORS**: Copernicus DEM のバケットは Range に答えるが `Access-Control-Allow-Origin` を返さない（curl で Origin を付けて確認）。**ブラウザからは読めず、画面の無い実行環境からは読める**。ブラウザでは `fetch-failed`。回避に中継（`fetch-relay`）の許可リストを広げることは、今回はしていない（Edge Function の配備を伴う別の判断）。
 
 ## 4. やっていないこと（構造の追加であって、この延長ではない）
 

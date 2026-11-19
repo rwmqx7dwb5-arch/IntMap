@@ -19,6 +19,7 @@
 /* (#R199) The six subsystems that left this file, plus (#R285) the persona. Real ES imports — not window.IntMapModules, not load
    order: the bundler resolves each binding by name, so a missing or renamed export is a BUILD error rather than a silent undefined at runtime. See DEV-NOTES #R199. */
 import { makeAtlasReply } from './atlas-reply.js';
+import { makeGoalVerify, GOAL_VERIFY_RULES } from './atlas-goal-verify.js';   /* (atlas-goal-verifier) the independent reader of the request — js/atlas-agent.js `verify` */
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy. Every system prompt below opens with personaPrompt('<its task role>') and adds ONLY its task rules. */
 import { attachLightbox, atlFmtBytes, ATL_FILE } from './atlas-attach.js';   /* (#R232) attachments + the full-screen viewer; (#R540) ATL_FILE asks the BYTES what a file is */
 import { ATTACH_STORE, attachViewStrings, ATTACH_LOG } from './atlas-file-view.js';   /* (#R773) 添付を見せる側（記録の預かり所とビューアの文）と、会話 1 本ぶんの台帳 ATTACH_LOG（実体は js/atlas-attach-log.js。ここを 1 行に束ねているのは、この中心部に import 1 行の余白も無いから） */   /* (#R232) attachments + the full-screen viewer; (#R540) ATL_FILE asks the BYTES what a file is */
@@ -337,6 +338,10 @@ export function atlasConsole(HOST){
       if(!valid.size&&!_eraActive()) return false;
       let any=false; const eraFeats=[]; codes.forEach(c=>{ const cs=String(c);
         const era=_eraGeomsFor(cs); if(era){ era.forEach(e=>eraFeats.push({type:'Feature',geometry:e.geo,properties:{code:cs,name:e.name}})); _hl.add(cs); any=true; return; }   /* the map's year applies to areas: that year's polity, not the modern polygon */
+        /* ⚠ (hist-audit-fixes) THE MAP IS IN THE PAST AND ITS RECORD HAS NO SHAPE FOR THIS CODE — today's polygon is not that year's land. It used to stand in
+           silently (Compare does the same, and says so on its own page); here the paint is REFUSED, so `any` stays false and the reply reports that nothing was
+           drawn rather than lighting today's country over a year it does not describe. At the live date `_eraActive()` is false and nothing changes. */
+        if(_eraActive()) return;
         if(!valid.has(cs)) return;   /* neither record holds a shape for this code → skip; don't claim an impossible paint */
         try{ GE().layers.setFeatureState({source:'nlq-src',id:cs},{nlq:true}); _hl.add(cs); any=true; }catch(_){} }); if(eraFeats.length&&ensureEraHlLayers()){ try{ GE().layers.setSourceData('nlq-era-src',{type:'FeatureCollection',features:eraFeats}); _eraHl=eraFeats.map(f=>f.properties.name); }catch(_){} }
       return any; }
@@ -1196,7 +1201,7 @@ export function atlasConsole(HOST){
        inspected) the moment Atlas loads rather than only once a question is in flight. */
     let _turnRunAction=null;
     const TOOLS=makeAtlasToolSurface({ capabilities:CAPS, schemas:SCHEMAS,
-      runAction:(action)=>(_turnRunAction?_turnRunAction(action):Promise.resolve({ ok:false, error:'no_turn', message:'no turn is running' })) });
+      runAction:(action,turn)=>(_turnRunAction?_turnRunAction(action,turn):Promise.resolve({ ok:false, error:'no_turn', message:'no turn is running' })) });
     /* ---- (#R43) CHOROPLETH — genuine "data + map" combined output ("データやレイヤー、地図を組み合わせた複合的な
        処理＆出力"): shade EVERY country by a metric on a YlGnBu ramp (log-scaled for skewed metrics) with a legend,
        reusing the same nlq-src feature-state source the highlights use. ---- */
@@ -1361,6 +1366,19 @@ export function atlasConsole(HOST){
     /* (atlas-timeout-cancel) ONE signal for an operation that has two reasons to stop: the turn ended (the reader pressed stop) or this call's deadline passed (js/atlas-agent.js `callSignal`). Either alone is returned as it is; both are joined. */
     const _linkSignals = (t, c) => { if (!c) return t; if (!t) return c; try { const l = new AbortController(), f = () => { try { l.abort(); } catch (_) { /* already aborted */ } }; if (t.aborted || c.aborted) f(); else { t.addEventListener('abort', f); c.addEventListener('abort', f); } return l.signal; } catch (_) { return t; } };
     const turnSignal = () => { try{ return _abortCtl?_abortCtl.signal:undefined; }catch(_){ return undefined; } }, _fetchJSON = makeFetchJSON(turnSignal);   /* ⚠ read at CALL time — `run()` installs the controller when a turn starts, so one captured here would belong to no turn */
+    /* ══ (atlas-orchestration) THE HOST LANES OF A DELEGATED CAPABILITY TASK (js/atlas-orchestrate.js makeCapabilityExecutor) ══════
+       classifyCapability(id): 'read' ONLY for a capability the registry itself describes as reading and writing nothing — risk
+       'read-only' (row column 7), no writes (column 5) and no confirmation (column 8) — and that is not research.delegate (a task
+       that delegates is the recursion this lane must not open). 'unknown' when nothing resolves; every other capability is 'other'.
+       Read off the table at call time: no list of ids is written here, so a capability added tomorrow is classified by what its row says.
+       runReadCapability(id,args,{signal}): the SAME kernel path a call of Atlas's own takes (EXEC.execute — availability, schema,
+       observation, postcondition), source 'atlas-worker' so it is never a call that may ask the reader to confirm. The result is the kernel's
+       own: {ok: it reached 'completed', html, meta, code, status}; the lane turns html into text and meta into the task's data. */
+    const classifyCapability = (id) => { let c=null; try{ c=CAPS.resolve(String(id||'')); }catch(_){ c=null; }
+      if(!c) return 'unknown';
+      return (c.risk==='read-only' && !((c.effects&&c.effects.writes)||[]).length && String(c.confirmation||'none')==='none' && c.id!=='research.delegate') ? 'read' : 'other'; };
+    const runReadCapability = async (id,args,o) => { const r=await EXEC.execute(id, args||{}, {source:'atlas-worker', turnId:_curTurn, signal:(o&&o.signal)||undefined});
+      return { ok:!!r&&r.status==='completed', html:(r&&r.html)||'', meta:(r&&r.meta)||undefined, code:(r&&r.code)||'', status:r&&r.status }; };
     function _agoH(d){ try{ const t2=(typeof parseDate==='function')?parseDate(d).getTime():Date.parse(d); if(!t2) return null; return Math.max(0,Math.round((Date.now()-t2)/3600000)); }catch(_){ return null; } }
     function _newsData(ctx,q,sink){ try{ if(typeof HOST.globalData==='undefined'||!HOST.globalData||!HOST.globalData.length) return null;
       let items=HOST.globalData.slice();
@@ -1919,6 +1937,7 @@ export function atlasConsole(HOST){
       get _PINNED(){ return _PINNED; },
       get _lastUserMsg(){ return _lastUserMsg; }, set _lastUserMsg(v){ _lastUserMsg=v; },
       get turnSignal(){ return turnSignal; },
+      get runReadCapability(){ return runReadCapability; }, get classifyCapability(){ return classifyCapability; },   /* (atlas-orchestration) the host lanes of a delegated capability task — below, beside turnSignal */
       get _delegationPolicy(){ return _delegationPolicy; },   /* (delegation-limits) */   /* (atlas-delegation) the running turn's abort signal, read at call time — research.delegate hands it to its workers */
       get aiParseJSON(){ return aiParseJSON; },
       get askAI(){ return askAI; },
@@ -2912,7 +2931,8 @@ export function atlasConsole(HOST){
         const _r=AGENT.readReply(env&&env.data, env&&env.text, aiParseJSON, env&&env.meta, env&&env.output); _r.contextOutside=!!(built&&built.outside);   /* (atlas-outside-mark) what this reply was written from still carried outside content — js/atlas-agent.js event ④ */ if(built.trim.droppedHistory||built.cut) _r.inputTrim=built.trim; try{ if(_atlasDbg) _atlasDbg.replies.push({ step:req&&req.step, final:!!(req&&req.final), text:String(_r.text||''), turnState:_r.turnState||'', answerMode:_r.answerMode||'', webUsed:!!_r.webUsed, toolCalls:(_r.toolCalls||[]).map(c=>({ id:c.id, name:c.name, arguments:c.arguments })) }); }catch(_){} return _r; };   /* (#R801) THIS call's meta (webUsed/webAttached), not window._aiLastMeta — the #R350 reason, one reader over. (atlas-native-tools) `output` = the provider's items; `inputTrim` = what the composer gave up, recorded in the trace by runTurn */
       try{
         const out=await AGENT.runTurn({ model:_model, tools:_tools, execute:TOOLS.makeExecute(_tools,AGENT), footprint:(c)=>TOOLS.footprintOf(c,_tools), promote:TOOLS.promotionsOf,   /* (atlas-turn-engine) which calls of one reply may run together, and what find_capability makes callable by name — js/atlas-agent.js */ externalContent:!!((_atts.files&&_atts.files.length)||(_atts.docs&&_atts.docs.length)),   /* (#R801) an attachment's text or a document is outside content in the FIRST model input — js/atlas-agent.js `turn` starts true */
-          system:_sys, messages:[{role:'user',content:q}], signal:(_abortCtl?_abortCtl.signal:undefined), plan:PLAN,   /* (atlas-plan-on-map) the `plan` tool and the step each call serves — js/atlas-agent.js */
+          system:_sys, messages:[{role:'user',content:q}], signal:(_abortCtl?_abortCtl.signal:undefined), plan:PLAN,
+          verify:makeGoalVerify({ ask:askAIJSONEnvelope, system:personaPrompt('checking a request against what an IntMap turn produced',{mode:'internal'})+GOAL_VERIFY_RULES, turnId:_turnKey, signal:(_abortCtl?_abortCtl.signal:undefined) }),   /* (atlas-goal-verifier) */   /* (atlas-plan-on-map) the `plan` tool and the step each call serves — js/atlas-agent.js */
           onStep:(s)=>{ try{ LIVE.stepDone(ai,s); }catch(_){} try{ PROG.plan(ai,s); }catch(_){} try{ if(_atlasDbg){ _atlasDbg.steps.push(s); _atlasDbg.toolCalls=_atlasDbg.toolCalls.concat(s.calls||[]); } }catch(_){} } });   /* ⚠ (#R723) THE SECOND CALL IS THE ONE THAT WAS HERE ALONE — the only consumer of the turn's own trace was a developer diagnostics object. The reader's turn is now told to the reader. */
         if(gen!==_runGen){ try{ ASTATE.endTurn(turn,{status:'cancelled'}); }catch(_){} _markCancelled(ai); return; }
         try{ if(_atlasDbg){ _atlasDbg.rejected=(out.trace&&out.trace.rejected)||0; _atlasDbg.stopped=out.stopped; _atlasDbg.answerMode=out.answerMode||''; _atlasDbg.mapDrawn=!!out.mapDrawn; _atlasDbg.produced=(out.produced||[]).join(',')||'-'; _atlasDbg.outputGate=(out.trace&&out.trace.outputGate)||0; _atlasDbg.inputTrims=(out.trace&&out.trace.inputTrims)||[]; } }catch(_){}   /* (atlas-native-tools) inputTrims: what the composer or the proxy's fence gave up on each step — js/atlas-agent.js */   /* (#R511) what Atlas declared vs what the machine drew, and how often the final was handed back */

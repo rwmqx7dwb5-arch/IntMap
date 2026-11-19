@@ -169,6 +169,54 @@ overviews は数だけ報告する**）。
 
 ⚠ **`read(i)` は扉である**（§1.4 と同じ理由）。開いただけでは画素を 1 つも展開しない。
 
+### 1.4c URL の COG を、必要な窓だけ読む — `js/gis-cog.js` と `data.gis` の `url:` 入力
+
+`readUrl` は HTTP Range で窓だけ読める読み手だったが、**呼び手が 0 だった**——自分のファイルを落とした
+読者以外に、格子の入口は無かった。いまは `data.gis` の入力に `"url:https://…"`（裸の https 住所も可）を
+渡せる。⚠ **格子の枠だけ**（URL は GeoTIFF＝場を指すので、地物の枠は `url-needs-a-grid-slot` で断る）。
+
+- **窓と解像度は呼び手のもの**（`acquire.bounds / width / height`。述べなければ `raster-sample-needs-window`）。
+  `levelFor` が**その解像度を満たす最も粗い overview**を選び、`readRegion` が窓を覆うタイルだけを取る
+  （実測: 512×512 の float32 を 128 タイルで置き、2°×1° の窓は全体の半分未満のバイトで済む）。
+- **再標本化は `nearest` で、述べる**（値を作らない。分類にも安全）。使った level・`meets`（ファイルが
+  求めた細かさを持っていたか）・要求数が `provenance.source` / `resolution` に残る。
+- **`coverage` はファイル自身の事実から**: 窓がファイルの内側で解像度も満たせば `all`、外へ出る・ファイルが
+  粗いなら `partial` と理由。外側は **NaN**（0 で埋めない）。
+- **断るもの**: http（CSP も https のみ）・URL に資格情報・CRS を述べない（`crs-not-stated`）・Range 非対応（`range-unsupported`）・HTTP エラー。
+  ⚠ **投影座標系の COG も読める**（UTM・Web メルカトル等。窓の周を歩いてファイルの CRS へ運び、そこで読み、
+  `gis-warp.js` の `to4326` で戻す。窓の対辺が弯曲する分を 4 隅でなく周で測る）。⚠ **日付変更線をまたぐ窓は未対応**
+  （消せる条件: 窓を ±180 で割って両側を読む）。
+- 出来たものは**登録された格子のデータセット**なので、`rasterMask`・`zonal`・`sample`・書き出し・
+  `map.drawDataset` がそのまま効く。`provenance.kind = 'url-raster'`。
+
+### 1.4d URL の地物コレクションを読む — `js/gis-ogcapi.js` と `data.gis` の `ogc:` 入力
+
+OGC API – Features（OGC 17-069r4。WFS の後継）のコレクションを、`data.gis` の入力 `"ogc:https://…/collections/<id>"`
+で渡せる。⚠ **地物の枠だけ**（格子の枠は `ogc-needs-a-vector-slot`）。
+
+- **使う欄は `bounds` / `limit` / `cursor` だけ**。`where` / `fields` / `time` は**名前を挙げて断る**
+  （`ogc-param-not-supported`）——サーバが黙って無視した条件は「別の問いへの完全に見える答え」になるため。
+  消せる条件: Part 3（CQL2）の `filter`・`datetime` を、適合クラスで述べているサーバに対して。
+- **上限を発明しない**: `limit` を述べなければ**サーバ既定の 1 ページ**を読み、サーバの `rel=next` を `next`
+  （＝次の `acquire.cursor`）として返す。述べれば、その件数に届くまでページをたどる（最後のページは切らず、
+  超えた分もそのまま報告する——切ると `next` が行を飛ばす）。
+- **`coverage.completeness:'all'` はサーバの述べ方**: 最後のページに next が無く、数えるサーバなら
+  `numberMatched` が届いた件数と一致。⚠ **カーソルで着いたページは、最後でも `all` と呼ばない**（このデータセット
+  は収集の一部。`continues:false` が「この先は無い」を言う）。
+- **カーソルは呼び手が送り返す URL** なので、https かつ**同じオリジンのときだけ**たどる（別オリジンは
+  `cursor-not-recognised`）。サーバの next が別オリジンなら `ogc-next-elsewhere`、自分自身を指すなら `ogc-next-loop`。
+- 登録されるのは `provenance.kind='url-features'` のベクタのデータセット（座標は標準の既定 CRS84＝経緯度）。
+
+### 1.4e データの所在を探す — STAC 検索（`stac:` 入力）
+
+`"stac:https://…/search"`（STAC API の item-search。Planetary Computer・Earth Search 等）を地物の枠に渡すと、
+**項目（item）の一覧**がデータセットとして返る（足跡の図形・日時・`stac_id`・`stac_collection`、そして**ファイル 1 つにつき 1 列**
+`asset:<key>`＝その href）。⚠ **ここで探して、選んだ行の `asset:…` を `url:` に渡して読む**——所在の発見と
+実データの取得を 1 本の鎖にするため（§1.4c）。取る欄は `bounds` / `time`（STAC の `datetime` へそのまま）/ `limit` / `cursor`
+で、ページ送り・同一オリジンのカーソル・`coverage` は §1.4d と同じ。コレクションの絞り込みは URL の `?collections=` で
+述べる。条件（`where`）は断る。⚠ 資産の href が実在するか・公開か（署名付き URL が要る供給元）は**この層は述べない**
+——読んだときに `http-status` / `fetch-failed` で分かる。
+
 ### 1.4b 格子を合わせる — `js/gis-warp.js` (`window.IntMapGisWarp`)
 
 GDAL の warp が担っている役——**座標系・解像度・範囲・再標本化・NoData を 1 つの層で扱う**。
@@ -1837,50 +1885,36 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   「一致した」にしない）／面積の図形が無い点（理由の無い false を作らない）。
 - ⚠ **`bound` は保守的な区間積**なので、実際より厳しく拒むことがある（767km の UTM で実誤差 4e-5 に
   対し bound 1.2e-3）。同位置での同時評価は次の回の仕事。
-## 5.11 アプリの外のデータ — `js/gis-remote.js` (`window.IntMapGisRemote`)
+## 5.11 アプリの外のデータを探す — `js/gis-remote.js` (`window.IntMapGisRemote`)
 
-`catalogue()`（§5.4）が列挙するのは**このアプリが持っているもの**で、「その地域のこのデータは世界のどこに在るか」という
-最初の問いに答える手が無かった。`readUrl()`（`js/gis-geotiff.js`）も呼び手が無かった。この層は両方の扉で、他は何もしない。
+読む扉は別にある（`url:` の COG＝`js/gis-cog.js`、`ogc:`／`stac:`＝`js/gis-ogcapi.js`）。`catalogue()`（§5.4）が列挙するのは
+**このアプリが持っているもの**で、「その場所・期間のデータは世界のどのコレクションに在るか」という**最初の問い**に答える手が無かった。
+この層はそれだけを担い、データそのものは取らない（第 2 の読み手を持たない）。
 
 | 扉 | 何をするか |
 |---|---|
 | `catalogs()` / `add()` | 問い合わせるカタログの登録簿（STAC API・OGC API – Features）。**種別は述べる**（アドレスから推測しない）。`add()` は https の公開宛先だけ |
 | `discover({q,bbox,time,…})` | 各カタログの `/collections` を読み、場所・期間を**覆うと述べている**コレクションを返す。`q` の語は全部が要る |
-| `inspect(ref)` | コレクション自身の述べること、標本アイテムの資産（COG か・バンド・単位）、`evidence` |
-| `acquire(ref,{bbox,time,limit,cursor})` | アイテム／地物を**ベクタのデータセット**として登録（次の `gis` 段の入力になる）。供給元の `next` リンクで終わりまで読む |
-| `cog({url,bbox,width,height})` | リモート COG の**欲しい窓だけ**を HTTP Range で読み、格子のデータセットにする。解像度は呼び手が述べ、答えは「どの段を読み、求めた細かさに届いたか」を述べる |
+| `inspect(ref)` | コレクション自身の述べること、標本アイテムの資産（COG か・バンド・単位）、`evidence`、そして**読むための ref**（`refs.features`＝`ogc:…`、`refs.grids`＝`url:…`） |
 
 ### 完全性の 3 つの主張を混ぜない
-
-1. **供給元が窓の全部を返した** — `coverage`。`js/gis-sources.js` の `coverageOf()` の判定そのもの（ここに第 2 の判定を持たない）。
-   最後のページまで読み、`numberMatched` と件数が合ったときだけ `all`。上限で止めたら `partial` / `sample`（理由つき）。
-2. **供給元の範囲が窓・期間を覆うと述べている** — `evidence.spatialExtent` / `temporalExtent`（`covers` / `overlaps` / `unstated`）。
-3. **世界の全部である** — `evidence.worldCompleteness` は**常に `unproven`**。OSM が持つ病院を全部返しても、世界の病院の一覧ではない。
+1. 供給元が窓の全部を返した — 読む扉の `coverage`（`js/gis-sources.js` の `coverageOf()` の判定）。
+2. 供給元の範囲が窓・期間を覆うと述べている — `evidence.spatialExtent` / `temporalExtent`（`covers` / `overlaps` / `unstated`）。
+3. 世界の全部である — `evidence.worldCompleteness` は**常に `unproven`**。
 
 ### 守っていること
-
-- **応答しなかったカタログは「無かった」ではない**。`discover()` はカタログごとに `answered` / `pages` / `complete` を返す。
-- **ライセンスは述べられたまま、無ければ欄ごと無い**（`provenance.license` は存在しない。`open` と読まない）。
-- **宛先**: https のみ・認証情報つきは断る・ループバック／私的／リンクローカルを名指す宛先は `url-not-public`（名前だけで判定し DNS は引かない。
-  画面の無い実行環境ではさらに外向き通信の制限が要る）。
-- **COG**: Range を無視するサーバは `range-unsupported`（丸ごとのダウンロードを黙って行わない）、400 万画素超は `region-too-large`。
-  投影座標の格子は `IntMapGisWarp.to4326` で **nearest** として 4326 へ（`provenance.warp` に残る）。
-  ⚠ CORS はホストの事実: Copernicus DEM のバケット（`*.s3.amazonaws.com`）は Range に答えるが ACAO を返さないので、
-  **ブラウザからは読めず、画面の無い実行環境からは読める**（2026-11-19 実測）。ブラウザでは `fetch-failed` として出る。
-- **通信の開示**: `scripts/outbound-hosts.json` とプライバシー §4（en/jp）に、検索先 5 ホストと `*.s3.amazonaws.com` を載せた。
-  送るのは頼んだときだけで、中身は場所と期間の矩形・Range 要求（識別情報なし）。
+- **応答しなかったカタログは「無かった」ではない**（`discover()` はカタログごとに `answered` / `pages` / `complete`）。
+- **ライセンスは述べられたまま、述べが無ければ null**（`open` と読まない）。
+- **宛先**: https のみ・認証情報つきは断る・ループバック／私的／リンクローカルを名指す宛先は `url-not-public`（名前だけで判定し DNS は引かない）。
+- **通信の開示**: `scripts/outbound-hosts.json` とプライバシー §4（en/jp）に検索先ホストを載せた。送るのは頼んだときだけ。
 
 ### Atlas
-
-能力 `data.gisRemote`（`discover`・`inspect`・`acquire`・`cog`・`catalogs`・`add`・`sources`）。作った dataset の id は `gis` 段の入力になる。
-`sources` は**このアプリ自身**の供給元が述べる取得能力（窓・時刻・条件・終わり・範囲）を 1 回で全部返す
+能力 `data.gisRemote`（`discover`・`inspect`・`catalogs`・`add`・`sources`）。`sources` は**このアプリ自身**の供給元が述べる取得能力を 1 回で全部返す
 （`IntMapGisSources.capabilityTable()`。何も訊かない。述べていない＝`null` と「できない」＝`false` を数え分ける）。
 
-### まだやっていないこと（実装していないので書く）
-
+### まだやっていないこと
 世界規模のベクタを**メモリに載せず**分割して保存・検索する基盤（GeoParquet・DuckDB / PostGIS）、長時間・大容量解析の非同期ジョブ、
-解析結果の永続キャッシュ、複数供給元の品質・優先順位の機械可読な統合。これらは構造の追加であって、この層の延長ではない。
-
+解析結果の永続キャッシュ、複数供給元の品質・優先順位の機械可読な統合。
 
 ## 6. どこまでやるか・何をやらないか（現時点）
 

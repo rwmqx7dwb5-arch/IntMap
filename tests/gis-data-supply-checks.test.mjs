@@ -16,7 +16,6 @@
  * ==========================================================================*/
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeGisDatasets } from '../js/gis-datasets.js';
 import { makeGisSources } from '../js/gis-sources.js';
 import { makeGisRemote } from '../js/gis-remote.js';
 import '../js/safe-html.js';
@@ -57,13 +56,11 @@ function fakeWorld(over) {
 
 function build(over, extra) {
   const w = fakeWorld(over);
-  const data = makeGisDatasets();
-  const sources = makeGisSources();
-  const rem = makeGisRemote(Object.assign({ data, sources, fetch: w.fetch }, extra || {}));
+  const rem = makeGisRemote(Object.assign({ fetch: w.fetch }, extra || {}));
   rem.add({ id: 'stac-x', kind: 'stac', url: 'https://stac.example' });
   rem.add({ id: 'ogc-x', kind: 'ogc-features', url: 'https://ogc.example' });
   rem.add({ id: 'down-x', kind: 'stac', url: 'https://down.example' });
-  return { rem, data, calls: w.calls };
+  return { rem, calls: w.calls };
 }
 const only = (ids) => ({ catalogs: ids });
 
@@ -91,9 +88,10 @@ describe('gis-remote · addresses (⑤)', () => {
   });
   test('a fetch to a private address is refused BEFORE any request', async () => {
     let asked = 0;
-    const r2 = makeGisRemote({ fetch: async () => { asked++; return json({}); }, data: makeGisDatasets() });
-    const r = await r2.cog({ url: 'https://127.0.0.1/a.tif', bbox: [0, 0, 1, 1] });
-    assert.equal(r.why, 'url-not-public'); assert.equal(asked, 0);
+    const r2 = makeGisRemote({ fetch: async () => { asked++; return json({}); } });
+    r2.add({ id: 'p', kind: 'stac', url: 'https://x.example' });
+    assert.equal((await r2.add({ kind: 'stac', url: 'https://127.0.0.1' })).why, 'url-not-public');
+    assert.equal(asked, 0);
   });
 });
 
@@ -160,7 +158,7 @@ describe('gis-remote · discover (②, ④)', () => {
   });
 });
 
-describe('gis-remote · inspect and acquire (①, ③)', () => {
+describe('gis-remote · inspect (③)', () => {
   test('inspect states the evidence; worldCompleteness is ALWAYS unproven, whatever the collection claims', async () => {
     const { rem } = build();
     const r = await rem.inspect('stac-x/dem-global', { bbox: [139, 35, 140, 36] });
@@ -175,172 +173,20 @@ describe('gis-remote · inspect and acquire (①, ③)', () => {
     assert.equal((await rem.inspect('stac-x/missing')).why, 'collection-unknown');
     assert.equal((await rem.inspect('nonsense')).why, 'bad-param');
   });
-  test('acquire: a source that returned everything it holds reads `all`, as ONE dataset the next step can use', async () => {
-    const { rem, data } = build();
-    const r = await rem.acquire('stac-x/dem-global', { bbox: [139, 35, 140, 36], time: '2023' });
-    assert.equal(r.ok, true, JSON.stringify(r));
-    assert.equal(r.coverage.completeness, 'all');
-    assert.equal(r.dataset.count, 3);
-    assert.equal(data.get(r.dataset.id).provenance.kind, 'remote');
-    assert.equal(r.evidence.worldCompleteness, 'unproven', 'a covering `all` is still not the world');
-    const feats = data.get(r.dataset.id).features();
-    assert.equal(feats[0].properties.nested, '{"a":1}', 'a nested value is kept as text, not dropped');
-    assert.equal(feats[0].properties._cog, 'data');
-  });
-  test('the licence travels as stated and is ABSENT (not null) when the collection states none', async () => {
-    const { rem, data } = build();
-    const a = await rem.acquire('stac-x/dem-global', {});
-    assert.equal(data.get(a.dataset.id).provenance.license, 'CC-BY-4.0');
-    const b = await rem.acquire('stac-x/nolic', {});
-    assert.equal('license' in data.get(b.dataset.id).provenance, false);
-    assert.equal(b.rights.license, null);
-  });
-  test('a limit that cut the answer is `partial`/`sample`, never `all` — and the matched count is carried', async () => {
-    const { rem } = build({ many: 100 });
-    const r = await rem.acquire('stac-x/dem-global', { limit: 100 });
-    assert.equal(r.matched, 500);
-    assert.notEqual(r.coverage.completeness, 'all', JSON.stringify(r.coverage));
-  });
-  test('a source that PAGES is read to the end by its own links, and only then is it `all`', async () => {
-    const { rem, calls } = build({ pages: true });
-    const r = await rem.acquire('stac-x/dem-global', { limit: 100 });
-    assert.equal(r.ok, true, JSON.stringify(r));
-    assert.equal(r.pages, 2);
-    assert.equal(r.dataset.count, 5);
-    assert.equal(r.coverage.completeness, 'all');
-    const posts = calls.filter((c) => c.url === 'https://stac.example/search');
-    assert.equal(posts.length, 2); assert.equal(posts[1].body.__page, 2, 'the next body is the link\'s, merged');
-  });
-  test('stopping at the caller\'s limit hands back a cursor, and the cursor is refused when it is not ours', async () => {
-    const { rem } = build({ pages: true });
-    const r = await rem.acquire('stac-x/dem-global', { limit: 2 });
-    assert.ok(r.next, 'the source offered more and the caller said stop — that is stated, not dropped');
-    assert.notEqual(r.coverage.completeness, 'all');
-    assert.equal((await rem.acquire('stac-x/dem-global', { cursor: 'junk' })).why, 'bad-param');
-    const more = await rem.acquire('stac-x/dem-global', { cursor: r.next, limit: 100 });
-    assert.equal(more.ok, true); assert.equal(more.dataset.count, 3);
-  });
-  test('OGC API – Features is read through the same door', async () => {
-    const { rem, calls } = build();
-    const r = await rem.acquire('ogc-x/stations', { bbox: [-80, 43, -78, 44], limit: 50 });
-    assert.equal(r.ok, true); assert.equal(r.dataset.count, 4);
-    const url = calls.find((c) => c.url.includes('/items')).url;
-    assert.match(url, /bbox=-80,43,-78,44/); assert.match(url, /limit=50/);
-  });
-  test('refusals are codes from the declared list', async () => {
+  test('inspect answers with the refs the EXISTING doors read — discovery fetches no data itself', async () => {
     const { rem } = build();
-    const seen = [(await rem.acquire('stac-x/dem-global', { bbox: [1, 2] })).why, (await rem.acquire('stac-x/dem-global', { time: 'x' })).why, (await rem.acquire('stac-x/ghost', {})).why];
-    for (const w of seen) assert.ok(rem.refusals().includes(w), w + ' is not in refusals()');
-  });
-});
-
-describe('gis-remote · cog: only the part that was asked for (①)', () => {
-  /* ⚠ A TILED float32 GeoTIFF built here, not by js/gis-export.js: that writer emits ONE strip, and a
-     file whose pixels are one chunk cannot show that only part of it was read. EPSG:4326, west 10 /
-     north 50 / 0.01°, value = 100 + x + y*1000 so every pixel names its own place. */
-  function tiff(width, height, T) {
-    const tw = T || 64;
-    const across = Math.ceil(width / tw), down = Math.ceil(height / tw);
-    const tiles = [];
-    for (let ty = 0; ty < down; ty++) for (let tx = 0; tx < across; tx++) {
-      const buf = new Float32Array(tw * tw);
-      for (let r = 0; r < tw; r++) for (let c = 0; c < tw; c++) { const x = tx * tw + c, y = ty * tw + r; if (x < width && y < height) buf[r * tw + c] = 100 + x + y * 1000; }
-      tiles.push(new Uint8Array(buf.buffer));
-    }
-    const dataLen = tiles.reduce((n, t) => n + t.length, 0);
-    const T_SIZE = { 3: 2, 4: 4, 12: 8 };
-    const ent = [];
-    const E = (tag, type, values) => ent.push({ tag, type, values });
-    const offs = []; let p = 8; for (const t of tiles) { offs.push(p); p += t.length; }
-    E(256, 3, [width]); E(257, 3, [height]); E(258, 3, [32]); E(259, 3, [1]); E(262, 3, [1]); E(277, 3, [1]); E(284, 3, [1]);
-    E(322, 3, [tw]); E(323, 3, [tw]); E(324, 4, offs); E(325, 4, tiles.map((t) => t.length)); E(339, 3, [3]);
-    E(33550, 12, [0.01, 0.01, 0]); E(33922, 12, [0, 0, 0, 10, 50, 0]);
-    E(34735, 3, [1, 1, 0, 3, 1024, 0, 1, 2, 1025, 0, 1, 1, 2048, 0, 1, 4326]);
-    ent.sort((x, y) => x.tag - y.tag);
-    const ifdAt = 8 + dataLen;
-    let extra = ifdAt + 2 + 12 * ent.length + 4;
-    const out = new Uint8Array(extra + ent.reduce((n, e) => n + T_SIZE[e.type] * e.values.length, 0) + 16);
-    const dv = new DataView(out.buffer);
-    out[0] = 0x49; out[1] = 0x49; dv.setUint16(2, 42, true); dv.setUint32(4, ifdAt, true);
-    let q = 8; for (const t of tiles) { out.set(t, q); q += t.length; }
-    dv.setUint16(ifdAt, ent.length, true);
-    ent.forEach((e, i) => {
-      const at = ifdAt + 2 + 12 * i, sz = T_SIZE[e.type] * e.values.length;
-      dv.setUint16(at, e.tag, true); dv.setUint16(at + 2, e.type, true); dv.setUint32(at + 4, e.values.length, true);
-      let w = at + 8;
-      if (sz > 4) { dv.setUint32(at + 8, extra, true); w = extra; extra += sz; }
-      e.values.forEach((v, k) => { if (e.type === 3) dv.setUint16(w + 2 * k, v, true); else if (e.type === 4) dv.setUint32(w + 4 * k, v, true); else dv.setFloat64(w + 8 * k, v, true); });
-    });
-    dv.setUint32(ifdAt + 2 + 12 * ent.length, 0, true);
-    return out.subarray(0, extra);
-  }
-  function ranged(bytes, opt) {
-    const o = opt || {};
-    const log = [];
-    const f = async (url, init) => {
-      const h = (init && init.headers) || {};
-      const m = /bytes=(\d+)-(\d+)/.exec(h.Range || '');
-      log.push(m ? [+m[1], +m[2]] : 'whole');
-      if (o.ignoreRange || !m) return { ok: true, status: 200, headers: { get: () => null }, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length), body: null };
-      const a = +m[1], b = Math.min(+m[2], bytes.length - 1);
-      const part = bytes.subarray(a, b + 1);
-      return { ok: true, status: 206, headers: { get: (k) => (/content-range/i.test(k) ? 'bytes ' + a + '-' + b + '/' + bytes.length : null) }, arrayBuffer: async () => part.buffer.slice(part.byteOffset, part.byteOffset + part.length) };
-    };
-    return { f, log };
-  }
-  test('a window of a file is read, placed where the file says, with the values the file holds', async () => {
-    const bytes = tiff(400, 300);   /* 480 kB, bigger than one range block so it IS ranged */
-    const { f, log } = ranged(bytes);
-    const data = makeGisDatasets();
-    const rem = makeGisRemote({ data, sources: makeGisSources(), fetch: f });
-    const r = await rem.cog({ url: 'https://h.example/dem.tif', bbox: [10.50, 47.50, 10.60, 47.60], license: 'CC0' });
-    assert.equal(r.ok, true, JSON.stringify(r));
-    assert.equal(r.fileBytes, bytes.length);
-    const ds = data.get(r.dataset.id);
-    assert.equal(ds.kind, 'raster');
-    assert.equal(ds.provenance.license, 'CC0');
-    assert.equal(ds.provenance.kind, 'remote-cog');
-    /* pixel (50..60, 250..260): the value at the north-west pixel is 100 + x + y*1000 */
-    const g = ds.grid;
-    assert.ok(Math.abs(g.west - 10.50) < 0.011 && Math.abs(g.north - 47.60) < 0.011, JSON.stringify(g));
-    const px = ds.raster().read(0);
-    const x0 = Math.round((g.west - 10) / 0.01), y0 = Math.round((50 - g.north) / 0.01);
-    assert.equal(px[0], Math.fround(100 + x0 + y0 * 1000), 'the first pixel is the file\'s pixel at that place');
-    const rangeReads = log.filter((l) => l !== 'whole');
-    const bytesAsked = rangeReads.reduce((s, [a, b]) => s + (b - a + 1), 0);
-    assert.ok(bytesAsked < bytes.length, 'asked for less than the file: ' + bytesAsked + ' of ' + bytes.length);
-    assert.equal(r.coverage.completeness, 'sample', 'a grid is a sample of a field and says so');
-  });
-  test('a server that ignores Range is refused BY NAME, not downloaded whole in silence', async () => {
-    const bytes = tiff(400, 300);
-    const { f } = ranged(bytes, { ignoreRange: true });
-    const rem = makeGisRemote({ data: makeGisDatasets(), sources: makeGisSources(), fetch: f });
-    const r = await rem.cog({ url: 'https://h.example/dem.tif', bbox: [10.5, 47.5, 10.6, 47.6] });
-    assert.equal(r.ok, false); assert.equal(r.why, 'range-unsupported');
-  });
-  test('a window the file does not cover, one that is too large, and a malformed one are three different refusals', async () => {
-    const bytes = tiff(400, 300);
-    const { f } = ranged(bytes);
-    const rem = makeGisRemote({ data: makeGisDatasets(), sources: makeGisSources(), fetch: f });
-    assert.equal((await rem.cog({ url: 'https://h.example/d.tif', bbox: [100, 0, 101, 1] })).why, 'region-out-of-range');
-    assert.equal((await rem.cog({ url: 'https://h.example/d.tif', bbox: [10, 47, 10.4, 47.2], band: 5 })).why, 'band-out-of-range');
-    assert.equal((await rem.cog({ url: 'https://h.example/d.tif', bbox: [5, 5, 1, 1] })).why, 'bad-param');
-  });
-  test('the resolution is the CALLER\'S, and the answer says whether the file had anything as fine', async () => {
-    const bytes = tiff(400, 300);
-    const { f } = ranged(bytes);
-    const rem = makeGisRemote({ data: makeGisDatasets(), sources: makeGisSources(), fetch: f });
-    const fine = await rem.cog({ url: 'https://h.example/d.tif', bbox: [10.5, 47.5, 10.6, 47.6], width: 1000 });
-    assert.equal(fine.ok, true);
-    assert.equal(fine.meetsAsk, false, 'the file has no pixels finer than its own, and the answer says so rather than substituting silently');
-    assert.equal(fine.level, 0);
+    const r = await rem.inspect('stac-x/dem-global', { bbox: [139, 35, 140, 36] });
+    assert.equal(r.refs.features, 'ogc:https://stac.example/collections/dem-global');
+    assert.deepEqual(r.refs.grids, ['url:https://b.s3.amazonaws.com/k0.tif']);
+    assert.equal(typeof rem.acquire, 'undefined', 'a second reader of items would be a second implementation');
+    assert.equal(typeof rem.cog, 'undefined');
   });
 });
 
 describe('gis-remote · declared in one place', () => {
   test('every refusal code the module can return is in refusals()', async () => {
     const rem = makeGisRemote({});
-    const must = ['bad-param', 'url-not-public', 'catalog-unknown', 'catalog-kind-unknown', 'collection-unknown', 'fetch-failed', 'http-status', 'not-json', 'response-too-large', 'region-too-large', 'region-out-of-range', 'crs-unreadable', 'registry-missing', 'add-failed'];
+    const must = ['bad-param', 'url-not-public', 'catalog-unknown', 'catalog-kind-unknown', 'collection-unknown', 'fetch-failed', 'http-status', 'not-json', 'response-too-large'];
     for (const c of must) assert.ok(rem.refusals().includes(c), c);
     assert.ok(rem.kinds().includes('stac') && rem.kinds().includes('ogc-features'));
   });

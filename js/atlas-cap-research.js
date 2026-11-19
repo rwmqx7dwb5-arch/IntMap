@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, num, int, one, list, lat, lng, obj } from './atlas-caps.js';
+import { str, num, int, one, list, lat, lng, obj, bool } from './atlas-caps.js';
 import { scenarioModels, scenarioFrame, scenarioCall, scenarioReport } from './atlas-reasoning.js';   /* (atlas-reasoning) research.scenario: what is decided is in that module, as values */
 import SIM_ENTRIES from './atlas-cap-sim.js';   /* the entries that declare a `scenario` ARE the models — discovered, not listed (same lazy chunk as this file) */
 import { personaPrompt } from './atlas-persona.js';
@@ -29,7 +29,8 @@ const W = worldObjects;   /* the one session index (js/atlas-world-objects.js) *
 import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
-import { makeDelegation, makeWorkerExecutor } from './atlas-delegate.js';   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
+import { makeDelegation, makeWorkerExecutor, CONTRACT_KINDS } from './atlas-delegate.js';
+import { integrate, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
 
 /* ══ (atlas-completion) WHAT A RESEARCH ANSWER RESTS ON, SAID FROM WHAT HAPPENED ═══════════════════════════════
    An answer to a time-sensitive question used to carry ONE fixed caveat whenever `webUsed` was false —
@@ -102,8 +103,9 @@ async function resolveWorldObject(a, K) {
       if (D) {
         await D.index(); const row = D.get(q) || D.resolve(q);
         if (row && row.id) {
-          let hq = null; try { const prof = await D.profile(row.id); hq = prof && prof._hq; } catch (_) { /* no profile → no position, and the object says so */ }
-          const o = W.fromCompany(row, hq); if (o) return { obj: W.register(o)[0], via: 'company' };
+          let prof = null; try { prof = await D.profile(row.id); } catch (_) { /* no profile → no position, and the object says so */ }
+          const { company: o, sites } = W.fromCompanyProfile(row, prof);   /* its sites are written down with it (each tied `operated_by`), so «what does it operate» can be followed */
+          if (o) { const stored = W.register([o].concat(sites)); return { obj: stored[0], via: 'company' }; }
         }
       }
     } catch (_) { /* the company atlas is optional here */ }
@@ -269,7 +271,7 @@ export default [
     row: ['research.object',            'worldObject',    'realWorldObject,whatIsThis',                                     'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
     ui: { none: '2026-11-16' },
     doc: [
-      { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref. TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. Use research.related for «what else belongs with it».\n' },
+      { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref, or an external identifier such as "wikidata:Q123" / "osm:node/123" (the same thing surfaced by two sources is ONE object; the answer lists its identifiers, the refs folded into it and look-alikes that were not merged). TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place, dataset_feature. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. Use research.related for «what else belongs with it».\n' },
     ],
     schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str() }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
@@ -287,15 +289,24 @@ export default [
       h += '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">' + (placed ? esc(o.lat.toFixed(3) + ', ' + o.lng.toFixed(3) + ' — ' + o.provenance) : esc(L('no position known', '位置は不明'))) + (o.bounds ? ' · ' + esc(L('has an extent', '範囲あり')) : '') + '</div>';
       if (o.articleIds.length || o.evidenceIds.length || o.links.length) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(o.articleIds.length + L(' articles', ' 記事') + ' · ' + o.evidenceIds.length + L(' evidence records', ' 証拠記録') + ' · ' + o.links.length + L(' ties', ' 結び付き')) + '</div>';
       if (o.sources.length) h += '<div class="acp-src" style="font-size:10px;color:var(--text-muted);margin-top:4px;">' + esc(L('Sources: ', '出典: ') + o.sources.map((s) => s.name + (s.licence ? ' (' + s.licence + ')' : '')).filter(Boolean).join(' · ')) + '</div>';
-      return R(true, h, { exec: { worldObjects: { subject: o.ref, objects: [W.brief(o)], via: r.via } }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: o.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
+      /* WHO it is: the identifiers other systems gave it, the records folded into it, and look-alikes that were NOT folded (so a reader can see what was and was not asserted) */
+      const idn = W.identity(o);
+      const idBits = Object.keys(idn.ids).map((k) => k + ':' + idn.ids[k]);
+      if (idBits.length || idn.aliases.length) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(idBits.join(' · ') + (idn.aliases.length ? ' · ' + L('also known here as ', 'ここでの別の ref: ') + idn.aliases.join(', ') : '')) + '</div>';
+      if (o.validity) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('in force ', '存続期間 ') + (o.validity.fromMs != null ? new Date(o.validity.fromMs).toISOString().slice(0, 10) : '?') + ' → ' + (o.validity.toMs != null ? new Date(o.validity.toMs).toISOString().slice(0, 10) : L('now / not stated', '現在／記載なし'))) + '</div>';
+      if (idn.candidates.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Not merged (same name, close by, no shared identifier): ', '同一とは扱っていない候補（同名・近接・共通の識別子なし）: ') + idn.candidates.map((c) => c.name + ' [' + c.ref + ']').join(', ')) + '</div>';
+      if (idn.conflicts.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Identifier disagreement left unresolved: ', '識別子の食い違い（未解決）: ') + idn.conflicts.map((c) => (c.rel || c.scheme) + ' ' + (c.ref || (c.kept + ' vs ' + c.dropped))).join(', ')) + '</div>';
+      const cc = W.claimConflicts(o);
+      if (cc.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Sources disagree on: ', '出典間で値が異なる項目: ') + cc.map((c) => c.key + (c.unitMismatch ? ' (' + L('units differ', '単位が異なる') + ')' : '')).join(', ')) + '</div>';
+      return R(true, h, { exec: { worldObjects: { subject: o.ref, objects: [W.brief(o)], via: r.via, identity: idn, claimConflicts: cc.length ? cc : undefined } }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: o.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
   },
   {
     row: ['research.related',           'worldRelated',   'related,relatedObjects,whatIsAround',                                 'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
     ui: { at: ['[data-pd="related"]'] },
     doc: [
-      { in: 'country', at: 63, text: '{"type":"worldRelated","ref"?:str,"name"?:str,"objectType"?:str,"km"?:num,"hours"?:num,"types"?:[TYPE,…]} = 関連オブジェクト・周辺の対象 — WHAT BELONGS WITH ONE REAL-WORLD OBJECT: the earthquakes, news events, articles, facilities, cities, volcanoes and companies tied to it, each with WHY: `linked` (an edge, or an article / evidence id they share), `near` (within km — default 300 — or inside its extent) and `concurrent` (within hours — default 72). Two things are related when linked, or near and concurrent (a facility has no time, so it is judged by place alone); time alone is never a relation. Use it for 「この地震について、近くの施設と関連記事も」「この出来事の周辺」, "what is around that quake", "news about this volcano"; pass the `ref` an earlier answer returned (observed.worldObjects) or the name. It reads the objects this session surfaced plus the loaded news and the USGS week; it reports what it found and how many, and says so when nothing is tied to the object.\n' },
+      { in: 'country', at: 63, text: '{"type":"worldRelated","ref"?:str,"name"?:str,"objectType"?:str,"km"?:num,"hours"?:num,"types"?:[TYPE,…],"rels"?:[str,…],"depth"?:num,"at"?:"YYYY-MM-DD"} = 関連オブジェクト・周辺の対象 — TYPED TIES: pass "rels" (names such as contains, part_of, operated_by, operates, owned_by, mentions — read from the object you start at) and/or "depth" > 1 to FOLLOW named edges across several steps («the terminals of this port, then who operates them»); only stated edges are followed, never proximity. "at" asks as of a date: ties and objects whose stated period excludes it are left out. Without rels/depth: WHAT BELONGS WITH ONE REAL-WORLD OBJECT: the earthquakes, news events, articles, facilities, cities, volcanoes and companies tied to it, each with WHY: `linked` (an edge, or an article / evidence id they share), `near` (within km — default 300 — or inside its extent) and `concurrent` (within hours — default 72). Two things are related when linked, or near and concurrent (a facility has no time, so it is judged by place alone); time alone is never a relation. Use it for 「この地震について、近くの施設と関連記事も」「この出来事の周辺」, "what is around that quake", "news about this volcano"; pass the `ref` an earlier answer returned (observed.worldObjects) or the name. It reads the objects this session surfaced plus the loaded news and the USGS week; it reports what it found and how many, and says so when nothing is tied to the object.\n' },
     ],
-    schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str(), km: num(0), hours: num(0), types: list(str()) }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
+    schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str(), km: num(0), hours: num(0), types: list(str()), rels: list(str()), depth: num(1), at: str() }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, HOST = K.HOST;
       const r = await resolveWorldObject(a, K);
       if (!r.obj) {
@@ -313,15 +324,23 @@ export default [
         if (rq.state === 'unavailable') quakeFeedFailed = true;
         else rq.features.forEach((f) => { const o = W.fromUsgs(f); if (o) extra.push(o); });
       }
-      const res = W.related(r.obj, { km: a.km, hours: a.hours, types, extra });
+      /* typed-edge mode: `rels` (the names of the ties to follow, read from the object being left) and/or `depth` (how many to follow); `at` asks «as of this date» */
+      const rels = Array.isArray(a.rels) ? a.rels.map(String).filter(Boolean) : [];
+      const atMs = a.at != null && a.at !== '' ? (typeof a.at === 'number' ? a.at : Date.parse(String(a.at))) : null;
+      if (atMs != null && !isFinite(atMs)) return R(false, warn(L('«at» must be a date such as 1990-06-01.', '«at» は 1990-06-01 のような日付で指定してください。')), { meta: { code: 'INVALID_INPUT', category: 'input', retryable: false, semanticTarget: String(a.at), produced: [], userGoalSatisfied: false } });
+      const res = W.related(r.obj, { km: a.km, hours: a.hours, types, extra, rels, depth: a.depth, atMs });
       W.register(res.items.map((x) => x.object));   /* what was found can be followed next */
       const rows = W.relatedHtml(res, { L, esc }), byType = rows.byType;
       const km = (a.km != null && isFinite(+a.km)) ? +a.km : W.RELATED_DEFAULTS.km, hrs = (a.hours != null && isFinite(+a.hours)) ? +a.hours : W.RELATED_DEFAULTS.hours;
       let h = '<div style="font-weight:600;margin:2px 0 4px;">' + icon('target') + ' ' + esc(r.obj.name || r.obj.ref) + ' — ' + esc(L('related objects', '関連する対象') + ' (' + res.total + ')') + '</div>';
-      h += '<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">' + esc(L('within ' + km + ' km and ' + hrs + ' h, or linked directly', km + ' km・' + hrs + ' 時間以内、または直接の結び付き')) + '</div>' + rows.html;
+      const graphMode = rels.length > 0 || (a.depth != null && +a.depth > 1);
+      const scope = graphMode
+        ? L('following ' + (rels.length ? rels.join(', ') : 'any tie') + ' up to ' + Math.max(1, Math.floor(+a.depth || 1)) + ' step(s)', (rels.length ? rels.join('、') : 'すべての結び付き') + ' を最大 ' + Math.max(1, Math.floor(+a.depth || 1)) + ' 段たどる')
+        : L('within ' + km + ' km and ' + hrs + ' h, or linked directly', km + ' km・' + hrs + ' 時間以内、または直接の結び付き');
+      h += '<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">' + esc(scope + (atMs != null ? L(' · as of ', ' ・基準日 ') + new Date(atMs).toISOString().slice(0, 10) : '')) + '</div>' + rows.html;
       if (!res.total) h += '<div style="font-size:12px;">' + esc(L('Nothing IntMap holds is tied to this object within that reach.', 'その範囲で、このオブジェクトに結び付く対象は IntMap にありません。')) + '</div>';
       if (quakeFeedFailed) h += warn(L('The USGS feed could not be read — earthquakes are not part of this answer.', 'USGS のフィードを読めなかったため、地震はこの答えに含まれていません。'));
-      const shown = res.items.slice(0, 40).map((x) => Object.assign(W.brief(x.object), { why: x.why, distanceKm: x.distanceKm == null ? undefined : x.distanceKm, gapHours: x.gapHours == null ? undefined : x.gapHours }));
+      const shown = res.items.slice(0, 40).map((x) => Object.assign(W.brief(x.object), { why: x.why, rels: x.rels && x.rels.length ? x.rels : undefined, depth: x.depth, distanceKm: x.distanceKm == null ? undefined : x.distanceKm, gapHours: x.gapHours == null ? undefined : x.gapHours }));
       const totals = {}; Object.keys(byType).forEach((t) => { totals[t] = byType[t].count; });
       return R(true, h, { exec: { worldObjects: { subject: r.obj.ref, objects: [W.brief(r.obj)], related: shown, totals, total: res.total, partial: quakeFeedFailed || undefined } }, meta: { code: res.total ? 'OK' : 'NO_RESULTS', category: res.total ? 'ok' : 'evidence', retryable: false, semanticTarget: r.obj.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
   },
@@ -768,7 +787,7 @@ export default [
             const q3='[out:json][timeout:12];node[place~"^(city|town)$"]["population"]'+bb+';out 200;';
             const j=await overpassRaw(q3).catch(()=>null); if(!j) return null;
             /* a successful reply with ZERO cities is a real answer (open ocean), not a failure */
-            return j.elements.map(e=>({lng:+e.lon,lat:+e.lat,name:(e.tags&&(e.tags['name:'+(HOST.lang==='jp'?'ja':HOST.lang)]||e.tags.name))||'?',pop:+((e.tags&&e.tags.population)||0)})).filter(c2=>isFinite(c2.pop)&&c2.pop>0); });
+            return j.elements.map(e=>({lng:+e.lon,lat:+e.lat,name:(e.tags&&(e.tags['name:'+(HOST.lang==='jp'?'ja':HOST.lang)]||e.tags.name))||'?',pop:+((e.tags&&e.tags.population)||0),osm:e.id!=null?'node/'+e.id:'',wd:(e.tags&&e.tags.wikidata)||''})).filter(c2=>isFinite(c2.pop)&&c2.pop>0); });
           /* (place-card-unify) the app's one reader of the week's feed, filtered to the radius here. `unavailable` (the feed did not
              answer) is said in the report and marked partial — it used to be `.catch(()=>null)`, which drew «no quakes» for both */
           const qkP=readQuakes({ area:{ point:ctr, radiusKm:kmR }, days:7 });
@@ -973,9 +992,9 @@ export default [
     ui: { none: '2026-11-18' },
     phrases: () => ['並行して調べる', '手分けして調査', '分担して調べる', '複数の調査', '同時に調査'].concat(['in parallel', 'split the research', 'research separately', 'several pieces', 'delegate']),
     doc: [
-      { in: 'research.analyze', at: 30, text: 'DELEGATE RESEARCH TO WORKERS (parallel, each in its own context): {"type":"delegate","tasks":[{"id"?:str,"goal":str,"returns"?:str,"inputs"?:[{"from":task id}]}]} — 並行して調べる・手分けして調査 — hands independent pieces of a large request to worker models that run AT THE SAME TIME, search the web, and return structured findings (summary, claims with places/coordinates/dates/source URLs, and what they could not establish). Use it when a request has several pieces that can be researched apart (e.g. crude oil from the Gulf, iron ore and coal from Australia, and LNG routes to Japan) — not for a single lookup, which you answer faster yourself. A task that needs another task\'s result names it in "inputs" and starts when that one ends. The workers do not draw anything: you integrate their findings and draw the map from them. Each task comes back with a state (done / partial / failed / refused / unobservable / cancelled) and its cost; a refused task carries the server\'s reason (e.g. delegation_children = the server admits fewer workers; delegation_off = delegation is switched off).\n' },
+      { in: 'research.analyze', at: 30, text: 'DELEGATE RESEARCH TO WORKERS (parallel, each in its own context): {"type":"delegate","tasks":[{"id"?:str,"goal":str,"returns"?:str,"inputs"?:[{"from":task id}]} | {"id"?:str,"kind":"capability","capability":str (a read capability id),"args"?:{...}}]} — 並行して調べる・手分けして調査 — hands independent pieces of a large request to worker models that run AT THE SAME TIME, search the web, and return structured findings (summary, claims with places/coordinates/dates/source URLs, and what they could not establish). Use it when a request has several pieces that can be researched apart (e.g. crude oil from the Gulf, iron ore and coal from Australia, and LNG routes to Japan) — not for a single lookup, which you answer faster yourself. A task that needs another task\'s result names it in "inputs" and starts when that one ends. A task of kind "capability" runs ONE exact lookup you already know how to ask (a read-only capability id and its arguments) with NO model and NO cost, alongside the others — use it to fan the same lookup out over several places or items (the weather in five cities, a figure for each of ten countries) and to mix exact figures in with the research; its answer comes back as the task\'s summary and "data". A capability that is not read-only (it draws, changes the view, saves or sends anything) is refused with capability_not_read_only — run that yourself. Tasks may be listed in any order: an input may name a task that comes later in the list, and a loop of inputs is ended input_cycle. A capability task\'s argument may be the string "@<task id>:data.<path>" (also "@<task id>:summary") to receive what an input task produced — e.g. a spatial step\'s "inputs":["@acq:data.gis.dataset"] is handed the dataset the "acq" step made (name acq in "inputs" too); a string that must begin with @ is written "@@…". A reference that leads nowhere ends the task input_ref_unresolved without running it. Add "verify":true to a worker task to have a SECOND worker check its claims against sources of its own: the result\'s integrated.verification says per claim supported / contradicted / unsupported / unchecked (a claim the checker did not repeat stays unchecked, never assumed supported). The workers do not draw anything: you integrate their findings and draw the map from them. Besides each task, the result carries "integrated": findings that more than one worker found (duplicateFindings), places where workers\' figures differ (placeOverlaps with numbersDiffer), the deduplicated sources and who cited each, the gaps, the cost, and which tasks did not return and in what state (unreturned) — read it before you write the answer. Each task comes back with a state (done / partial / failed / refused / unobservable / cancelled) and its cost; a refused task carries the server\'s reason (e.g. delegation_children = the server admits fewer workers; delegation_off = delegation is switched off).\n' },
     ],
-    schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', required: ['goal'], properties: { id: str(), goal: str(), returns: str(), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1) } }),
+    schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', properties: { id: str(), kind: one(...CONTRACT_KINDS),   /* the substrate's own list of kinds, not a copy of it */ goal: str(), returns: str(), capability: str(), args: obj(), verify: bool(), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1) } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
       const tasks = Array.isArray(a && a.tasks) ? a.tasks : [];
@@ -993,21 +1012,96 @@ export default [
           { meta: { status: 'failed', code: 'too_many_tasks', maxChildren: pol.maxChildren, given: tasks.length, childMaxCalls: pol.childMaxCalls } });
       }
       const signal = (typeof K.turnSignal === 'function') ? K.turnSignal() : undefined;
-      const D = makeDelegation({ parent, executor: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal }) });
-      const results = await D.run(tasks);
+      /* (atlas-orchestration) ONE EXECUTOR, TWO KINDS OF TASK. A worker task is a model behind ai-proxy; a capability task runs one
+         read-only capability through the same kernel path a call of Atlas's own takes — no model, no cost. The router sends each
+         contract to its kind's lane and REFUSES a kind with no lane (a host that cannot run capabilities says so, it does not run
+         the task as a worker). The retry after a transient failure is on only when the server has said how many requests a child
+         may make (policy.childMaxCalls), so the retry can never ask for more than the server allows. */
+      const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : undefined;
+      const executor = makeRouterExecutor({
+        worker: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal, maxCalls: childMax }),
+        capability: typeof K.runReadCapability === 'function' ? makeCapabilityExecutor({ run: K.runReadCapability, classify: K.classifyCapability }) : null,
+      });
+      const D = makeDelegation({ parent, executor });
+      const stateWord = (st) => ({ done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), unobservable: L('no answer came back', '応答なし'), cancelled: L('cancelled', '取消'), waiting: L('waiting', '待機中'), running: L('running', '実行中'), retrying: L('retrying', '再試行中') })[st] || st;
+      const usd = (n) => '$' + (Number(n) || 0).toFixed(3);
+      /* LIVE PROGRESS — read off the delegation's own event log as it is written (D.subscribe), not kept beside it. dctx.progress is
+         the executor's progress(p) for THIS operation (js/atlas-capabilities.js legacyExecute passes it); js/atlas-progress.js writes
+         p.text into the running row of the work trace. Absent (a host without a trace) → nothing is reported and nothing breaks. */
+      const progress = (dctx && typeof dctx.progress === 'function') ? dctx.progress : null;
+      const live = new Map();
+      const unsub = D.subscribe((e) => {
+        if (!e || !e.task) return;
+        if (e.kind === 'task.created') live.set(e.task, { state: 'waiting' });
+        else if (e.kind === 'task.lease') live.set(e.task, { state: 'running' });
+        else if (e.kind === 'effect.retry') live.set(e.task, { state: 'retrying' });
+        else if (e.kind === 'task.ended') live.set(e.task, { state: String(e.data.state || 'failed') });
+        else if (e.kind !== 'effect.done' && e.kind !== 'effect.failed') return;
+        if (!progress) return;
+        const t = Array.from(live.entries()).map(([id, v]) => ({ id, state: v.state }));
+        const ended = t.filter((x) => x.state !== 'waiting' && x.state !== 'running' && x.state !== 'retrying').length;
+        const spent = D.spendUsd();
+        try { progress({ text: t.map((x) => x.id + ' ' + stateWord(x.state)).join(' · ') + ' — ' + usd(spent), tasks: t, done: ended, total: t.length, costUsd: spent }); } catch (_) { /* a trace that cannot show it is not the work's problem */ }
+      });
+      /* CANCELLATION — the turn's signal stops every running task (a worker's request is aborted, a capability's run is handed
+         the signal); the listener is removed when the run is over, so a later abort of an earlier turn does nothing here */
+      const onAbort = () => D.cancelAll();
+      if (signal && typeof signal.addEventListener === 'function') signal.addEventListener('abort', onAbort, { once: true });
+      let results, verification = null;
+      try {
+        const pending = D.run(tasks);
+        if (signal && signal.aborted) D.cancelAll();
+        results = await pending;
+        /* VERIFICATION, WHEN ASKED (`verify:true` on a worker task). A second worker is handed the first one's findings and asked to
+           check each against sources of its own; its verdicts come back per claim, and a claim it did not repeat or a checker that did not
+           return stays `unchecked` — never assumed supported. It is a child like any other: the server's policy admits it or refuses it,
+           and a refusal is reported as the checker's state. */
+        const toCheck = results.filter((r, i) => tasks[i] && tasks[i].verify === true && (!tasks[i].kind || tasks[i].kind === 'worker') && (r.state === 'done' || r.state === 'partial') && r.findings.length);
+        if (toCheck.length && !(signal && signal.aborted)) {
+          const vres = await D.run(toCheck.map((r) => verifyContract(r.id)));
+          verification = verifyOutcome(toCheck.map((r, k) => ({ of: r, by: vres[k] })));
+          verification.costUsd = vres.reduce((m, r) => m + (Number(r.costUsd) || 0), 0);
+          verification.calls = vres.reduce((m, r) => m + (Number(r.calls) || 0), 0);
+        }
+      } finally {
+        if (signal && typeof signal.removeEventListener === 'function') signal.removeEventListener('abort', onAbort);
+        unsub();
+      }
       const done = results.filter((r) => r.state === 'done' || r.state === 'partial').length;
       const cost = results.reduce((m, r) => m + r.costUsd, 0);
-      const stateWord = (st) => ({ done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), unobservable: L('no answer came back', '応答なし'), cancelled: L('cancelled', '取消') })[st] || st;
-      const rows = results.map((r, i) => '<li style="margin:2px 0;"><b>' + esc(String((tasks[i] && tasks[i].goal) || r.id).slice(0, 120)) + '</b> — ' + esc(stateWord(r.state))
+      /* WHAT THE RESULTS SAY TOGETHER (js/atlas-orchestrate.js integrate) — the card says what a reader should look at; the meta
+         carries the same without repeating the findings and gaps the per-task list already carries (what is not carried is not seen
+         by the model — js/atlas-toolsurface.js mechanical) */
+      const I = integrate(results);
+      const dupes = I.findings.filter((f) => f.alsoFoundBy.length).map((f) => ({ claim: f.claim, tasks: [f.task].concat(f.alsoFoundBy) }));
+      const differ = I.placeOverlaps.filter((p) => p.numbersDiffer);
+      const integrated = {
+        coverage: I.coverage, cost: I.cost, gaps: I.gaps, unreturned: I.unreturned,
+        placeOverlaps: I.placeOverlaps.map((p) => ({ place: p.place, tasks: p.tasks, numbersDiffer: p.numbersDiffer })),
+        duplicateFindings: dupes,
+        sources: I.sources.map((x) => ({ url: x.url, title: x.title, citedBy: x.citedBy })),
+        verification: verification || undefined,
+      };
+      const label = (r, i) => String((tasks[i] && (tasks[i].goal || tasks[i].capability)) || r.id).slice(0, 120);
+      const rows = results.map((r, i) => '<li style="margin:2px 0;"><b>' + esc(label(r, i)) + '</b> — ' + esc(stateWord(r.state))
         + (r.code ? ' (' + esc(r.code) + ')' : '') + (r.sources.length ? ' · ' + esc(L(r.sources.length + ' source(s)', '出典 ' + r.sources.length + ' 件')) : '') + '</li>').join('');
+      const notes = [];
+      if (dupes.length) notes.push(L(dupes.length + ' finding(s) were found by more than one worker', dupes.length + ' 件の所見が複数の子で一致しました'));
+      if (differ.length) notes.push(L('Figures differ between workers at: ', '子どうしで数値が異なる地点: ') + differ.map((p) => p.place).slice(0, 6).join(', '));
+      if (I.unreturned.length) notes.push(L('Did not return: ', '結果が戻らなかった仕事: ') + I.unreturned.map((u) => u.task + ' (' + stateWord(u.state) + (u.code ? ', ' + u.code : '') + ')').slice(0, 8).join(', '));
+      if (verification) { const c = verification.counts; notes.push(L('Checked by a second worker: ' + c.supported + ' supported, ' + c.contradicted + ' contradicted, ' + c.unsupported + ' unsupported, ' + c.unchecked + ' not checked', '別の子による検証: 支持 ' + c.supported + ' / 反証 ' + c.contradicted + ' / 根拠なし ' + c.unsupported + ' / 未検証 ' + c.unchecked)); }
+      const totalUsd = I.cost.usd + (verification ? verification.costUsd : 0), totalCalls = I.cost.calls + (verification ? verification.calls : 0);
+      if (totalUsd > 0) notes.push(L('Worker cost ', '子の費用 ') + usd(totalUsd) + ' · ' + totalCalls + L(' request(s)', ' 回'));
+      const noteHtml = notes.length ? '<div style="margin-top:4px;opacity:.7;">' + notes.map((n) => '<div>' + esc(n) + '</div>').join('') + '</div>' : '';
       const html = '<div class="atl-deleg" style="font-size:12px;line-height:1.5;"><div style="font-weight:600;margin-bottom:2px;">'
-        + esc(L('Researched in parallel', '並行して調査')) + ' — ' + esc(L(done + ' of ' + results.length + ' returned findings', results.length + ' 件中 ' + done + ' 件が結果を返しました')) + '</div><ul style="margin:2px 0 0 16px;padding:0;">' + rows + '</ul></div>';
+        + esc(L('Researched in parallel', '並行して調査')) + ' — ' + esc(L(done + ' of ' + results.length + ' returned findings', results.length + ' 件中 ' + done + ' 件が結果を返しました')) + '</div><ul style="margin:2px 0 0 16px;padding:0;">' + rows + '</ul>' + noteHtml + '</div>';
       return R(done > 0, html, { meta: {
         status: done === results.length ? 'completed' : (done ? 'partial' : 'failed'),
         code: done === results.length ? undefined : (done ? 'some_tasks_ended_otherwise' : (results[0] && results[0].code) || 'no_findings'),
         produced: done ? ['explanation'] : undefined,
-        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
+        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, data: r.data, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
         delegatedCostUsd: cost,
+        integrated,
       } });
     },
   },
