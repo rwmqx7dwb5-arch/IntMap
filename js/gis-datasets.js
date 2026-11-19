@@ -831,6 +831,10 @@ export function makeGisDatasets() {
                                        レコードのレシピが出すもの」 would be a lie. `detail` names the
                                        record and its op so the caller can offer 「編集できる複製を
                                        作る」 — which is an op's job or the panel's, not this file's.
+                                       ⚠ (compute-sandbox) provenance.kind === 'compute' IS THE SAME
+                                       FACT: the record is what its Python code returned, and
+                                       js/gis-project.js re-runs that code when an input upstream is
+                                       recomputed. `detail.kind` says which recipe it is.
          edit-needs-features           kind !== 'vector'. A grid's samples are not attributes, and
                                        this file does not touch samples at all (that is raster()'s door).
          input-stale                   SPELT THE WAY js/gis-ops.js SPELLS IT, and refused for the same
@@ -951,9 +955,9 @@ export function makeGisDatasets() {
       if (!rec) return no('no-such-dataset', { id: id == null ? null : String(id) });
       if (String(rec.kind || 'vector') !== 'vector') return no('edit-needs-features', { kind: String(rec.kind || '') });
       const prov = rec.provenance || {};
-      if (prov.kind === 'op') {
+      if (prov.kind === 'op' || prov.kind === 'compute') {
         return no('edit-would-contradict-recipe', {
-          id: rec.id, op: prov.op == null ? null : String(prov.op),
+          id: rec.id, kind: String(prov.kind), op: prov.op == null ? null : String(prov.op),
           inputs: Array.isArray(prov.inputs) ? prov.inputs.slice() : [],
         });
       }

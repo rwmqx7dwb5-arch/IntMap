@@ -588,8 +588,8 @@
     },
     {
       "host": "cdn.jsdelivr.net",
-      "what": "jsDelivr CDN: open datasets from GitHub (Natural Earth time zones and admin-1, OpenTrafficCamMap, Japanese municipalities, Taiwan towns) and the Open-Meteo weather-map layer fallback",
-      "whatJp": "jsDelivr CDN：GitHub 上の公開データ（時間帯・一次行政区画・交通カメラ・日本の市区町村・台湾の郷鎮）と Open-Meteo 気象図レイヤーの予備",
+      "what": "jsDelivr CDN: open datasets from GitHub (Natural Earth time zones and admin-1, OpenTrafficCamMap, Japanese municipalities, Taiwan towns), the Open-Meteo weather-map layer fallback, and the Pyodide Python runtime and its packages (only when Atlas runs Python; hash-checked files of one pinned version)",
+      "whatJp": "jsDelivr CDN：GitHub 上の公開データ（時間帯・一次行政区画・交通カメラ・日本の市区町村・台湾の郷鎮）、Open-Meteo 気象図レイヤーの予備、Python 実行環境 Pyodide とそのパッケージ（Atlas が Python を実行するときだけ・版を固定しハッシュで検証したファイル）",
       "sends": {
         "code": "nothing",
         "detail": "the request itself"

@@ -301,6 +301,10 @@ sheet を表の decoder（`decodeRows`）が読む。座標の無い表を場所
 - **処理の表**: 一覧は `DECL` 1 つ（表示順は `Object.keys(DECL)`、走らせ手が無ければ `op-not-wired`）。入力の中身は `kinds`（既定 `vector`、格子は `input-kind`）。重い処理は
   `run(step, {signal, onProgress})` で中止でき、刻みは経過時間。`join` は識別子で照合し件数と実例を返す（`join-column-collision`・右側が一意でなければ既定 `refuse`）。`compute` は
   `js/gis-expr.js`（`eval` も `new Function` も無い。関数の一覧は `FUNCS` 1 つ。空欄は伝播し、0 にしたければ `coalesce`、`+` は数だけで繋ぐなら `concat`）。
+  op で書けない解析（回帰・クラスタ分けなど）は Atlas の `compute.run`（綴り `python`）が Python（Pyodide）を**別の Worker で隔離して**走らせ、
+  出力を新しいデータセットにする（`js/compute-sandbox.js`）。その出力の `provenance` は `{kind:'compute', code, codeSha256, inputs, output, runtime}`——
+  **コードがレシピ**で、op の出力と同じく編集は `edit-would-contradict-recipe` で拒み、保存は本体ごと（読み直しで再実行しない）、上流の `setParams` では
+  コードを再実行する。
 - **レシピと payload**: 出力の `provenance` は `{kind:'op', op, inputs, params}`＝再実行できるレシピで、`IntMapGisProject.setParams(id, {radiusKm:10})` が下流まで走らせ直す（結果の features は
   保存しない）。payload は `kind:'vector'` の `features()` と `kind:'raster'` の `read(bandIndex)`（`grid:{west,north,pixelLng,pixelLat}`・北から南・`NaN` は欠損。格子違いは `grid-mismatch`）。
 - **時刻と列**: `time` は `null`／`instant`／`interval`／`track`／`constant` で実データに対して検証する（成り立たなければ `timeRefused`。裸の年はその年 1 年）。列の型は値で決め、先頭ゼロのセルは
