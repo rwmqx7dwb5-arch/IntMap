@@ -354,7 +354,7 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are twenty-two Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are twenty-three Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
 flag that lives in a comment is not configuration. All twenty-one are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
