@@ -136,3 +136,29 @@ export function refreshImagerySources(onChange) {
     .catch(() => { /* the last value seen stays on screen */ });
   return sourcesAsked;
 }
+
+/* ══ WHEN AND HOW SHARP IS THE PICTURE UNDER A POINT ═════════════════════════════════════════════════
+   World Imagery's «Citations» sublayer (id 4 of the MapServer, measured 2026-11-20 on the keyless host; the keyed service
+   lists the same layers) answers a point query with the capture date and ground resolution of each footprint there:
+   Tokyo → {SRC_DATE:20260116, SRC_RES:0.34, NICE_NAME:'Vivid Advanced'} and a 15 m TerraColor row with no date. The sharpest
+   dated row is what the tile shows at high zoom. One answer per 0.01° cell is kept (a footprint is far larger). */
+const captureCache = new Map();
+/** {date:'YYYYMMDD', resolutionM, product} for the sharpest dated footprint at the point, or null when it cannot be read. */
+export function imageryCaptureAt(lng, lat) {
+  if (!readMeta || !isFinite(lng) || !isFinite(lat)) return Promise.resolve(null);
+  const key = Math.round(lng * 100) + ',' + Math.round(lat * 100);
+  if (captureCache.has(key)) return captureCache.get(key);
+  const base = imageryKeyed() ? KEYED_SERVICE : KEYLESS_HOSTS[0] + KEYLESS_PATH;
+  const url = base + '/4/query?f=json&geometry=' + lng.toFixed(5) + ',' + lat.toFixed(5)
+    + '&geometryType=esriGeometryPoint&inSR=4326&outFields=SRC_DATE,SRC_RES,SRC_DESC,NICE_NAME&returnGeometry=false'
+    + (imageryKeyed() ? '&token=' + encodeURIComponent(ESRI_IMAGERY_KEY) : '');
+  const p = Promise.resolve().then(() => readMeta(url)).then((j) => {
+    const rows = ((j && j.features) || []).map((f) => f.attributes || {}).filter((a) => a.SRC_DATE != null && a.SRC_RES != null);
+    if (!rows.length) return null;
+    rows.sort((a, b) => a.SRC_RES - b.SRC_RES);
+    const a = rows[0];
+    return { date: String(a.SRC_DATE), resolutionM: +a.SRC_RES, product: a.NICE_NAME || a.SRC_DESC || '' };
+  }).catch(() => { captureCache.delete(key); return null; });
+  captureCache.set(key, p);
+  return p;
+}
