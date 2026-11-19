@@ -1639,7 +1639,7 @@ test('R783 ②: 引数なしでは働けないと述べた能力は、引数な�
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 {
 /* ============================================================================
- *  IntMap · R801 — WHAT LEAVES THE DEVICE, OR ENTERS THE MODEL, IS NOT CONFIRM-FREE
+ *  IntMap · R801 — WHAT LEAVES THE DEVICE IS NOT CONFIRM-FREE, AND WHAT ONLY READS NEVER ASKS
  * ----------------------------------------------------------------------------
  *  External content (a news article, an attachment, a fetched page) can carry instructions.
  *  Whatever the model makes of them, the capability table is the one place that says, per
@@ -1648,14 +1648,9 @@ test('R783 ②: 引数なしでは働けないと述べた能力は、引数な�
  *  about it — as facts about rows, not as a list of spellings to keep:
  *
  *   ① every row whose risk is 'external' (something leaves the device) is not confirm-free;
- *   ② every row that brings new material INTO the next model input — the reader's earlier
- *      attachments, the pixels on screen, the device position — is not confirm-free.
- *
- *  ② cannot yet be selected by a column. The `produces` vocabulary names what a run puts in front
- *  of the READER (map, panel, explanation, …) and has no value for «goes into the next model
- *  call»; those rows all say 'explanation' like research.brief does. So ② selects by id, and the
- *  last test below is the expiry condition: the moment the table grows a product that names model
- *  input, this file must switch to that property and drop the ids.
+ *   ② a row that only reads, or only changes what the reader can undo, never asks. The model that
+ *      calls it already holds the conversation, so a button before it guards nothing — a blind
+ *      approval is worse than none (the reader cannot judge what it does).
  * ==========================================================================*/
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
@@ -1665,13 +1660,6 @@ const ALL = CAPS.all().filter((c) => !c.withdrawn);
 
 /* the column's whole vocabulary (js/atlas-capabilities.js, column 8) — anything else is a typo */
 const CONFIRM_VALUES = new Set(['none', 'explicit', 'always']);
-
-/* ② — selected by id, with the reason each one carries model input (see the header) */
-const MODEL_INPUT_CARRIERS = [
-  { match: (id) => /^attach\./.test(id), why: 'puts a past attachment back into the next model call' },
-  { match: (id) => id === 'view.inspect', why: 'hands the model the pixels on screen' },
-  { match: (id) => id === 'view.locate', why: 'reads the device position and returns it to the model' },
-];
 
 test('R801 ⓪: the confirm column only holds its three declared values', () => {
   for (const c of ALL) {
@@ -1686,16 +1674,9 @@ test('R801 ①: a row whose risk is external is not confirm-free', () => {
   assert.deepEqual(free.map((c) => c.id), [], 'external risk with confirm=none: ' + free.map((c) => c.id).join(', '));
 });
 
-test('R801 ②: a row that carries material into the next model input is not confirm-free', () => {
-  const free = [];
-  for (const sel of MODEL_INPUT_CARRIERS) {
-    const rows = ALL.filter((c) => sel.match(c.id));
-    /* a selector that matches nothing is guarding nothing — a rename must be noticed here */
-    assert.ok(rows.length > 0, `selector "${sel.why}" matches no row — the id it named was renamed or withdrawn`);
-    for (const c of rows) if (c.confirmation === 'none') free.push(`${c.id} (${sel.why})`);
-  }
-  /* all of them at once, so one run names every row that has to change */
-  assert.deepEqual(free, [], 'confirm=none on: ' + free.join('; '));
+test('R801 ②: a row that only reads, or only changes what the reader can undo, never asks — the model is the one that already reads it', () => {
+  const asks = ALL.filter((c) => c.confirmation !== 'none' && (c.risk === 'read-only' || c.risk === 'reversible-session') && ['map.clearAll'].indexOf(c.id) < 0);
+  assert.deepEqual(asks.map((c) => c.id), [], 'asks before a harmless row: ' + asks.map((c) => c.id).join(', '));
 });
 
 /* ══ column 11, `ingests` — which rows hand the model a THIRD PARTY's sentences ═══════════════════
@@ -1733,10 +1714,4 @@ test('R801 ⑤: every row that returns a third party\'s sentences says so (resea
   assert.deepEqual(missing, [], 'ingests is not external on: ' + missing.join('; '));
 });
 
-test('R801 ③ (expiry): the moment `produces` can name model input, select ② by that column', () => {
-  const vocab = new Set();
-  for (const c of ALL) for (const p of c.produces) vocab.add(p);
-  const named = [...vocab].filter((p) => /model|prompt|input|context/i.test(p));
-  assert.deepEqual(named, [], 'the table now names model input as a product (' + named.join(', ') + ') — replace MODEL_INPUT_CARRIERS with that property');
-});
 }

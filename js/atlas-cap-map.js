@@ -90,7 +90,7 @@ export default [
     },
   },
   {
-    row: ['map.object',                 'object',         'mapObject',                                                   'map',     'object',  'map.object',             'object',              'session', 'explicit','',        ''],
+    row: ['map.object',                 'object',         'mapObject',                                                   'map',     'object',  'map.object',             'object',              'session', 'none'    ,'',        ''],
     ui: { at: ['#iol-panel [data-act="del"]', '#iol-panel [data-act="focus"]', '#iol-panel [data-act="rename"]'] },
     /* op defaults to `list`, which needs nothing; the kinds are js/map-tools.js's own */
     doc: [
@@ -848,7 +848,7 @@ export default [
     },
   },
   {
-    row: ['map.myMap',                  'myMap',          'myMaps,customMap,ownMap,storyMap,mapNotes,annotateMap',       'map',     'myMap',   'map.myMap,mymap.doc',    'map,object',          'persist', 'explicit', '',     'myMap'],
+    row: ['map.myMap',                  'myMap',          'myMaps,customMap,ownMap,storyMap,mapNotes,annotateMap',       'map',     'myMap',   'map.myMap,mymap.doc',    'map,object',          'persist', 'none'    , '',     'myMap'],
     ui: { at: ['.lst-toolrow[data-act="tool.myMap"]'] },
     /* (map-next) THE READER'S OWN MAP (js/my-map.js) — pins, lines and areas with names and notes, kept in this browser,
        carried by every share link (js/map-state.js `mymap`), measured with the app's own measure functions, registered

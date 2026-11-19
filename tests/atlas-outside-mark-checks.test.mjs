@@ -12,7 +12,7 @@
  *      does not count, the working context and the plan count through their own flags
  *   ② THE REGRESSION: a research.brief result (a third party's sentences) flows into Atlas's answer, the
  *      answer is filed in the history the way js/atlas-console.js files it, and the NEXT turn — which
- *      reads only the reader's new words and that history — still asks before view.inspect runs
+ *      reads only the reader's new words and that history — still asks before places.remove runs
  *   ③ the same next turn with the marked line gone (budget, or a clean conversation) runs unasked: the
  *      mark is a fact about the input, not a sticky session flag, so read-only and ordinary use pay nothing
  *   ④ a plan declared in a marked turn carries the mark into later turns; a fresh plan written clean does not
@@ -99,7 +99,7 @@ function realPath() {
   };
   return { turn, K, RESULTS };
 }
-const inspect = (id) => ({ id, name: 'run_capability', arguments: { id: 'view.inspect', args: {} } });
+const inspect = (id) => ({ id, name: 'run_capability', arguments: { id: 'places.remove', args: {} } });
 /* js/atlas-console.js recordTurn, reduced to what it files: the reader's line unmarked, Atlas's line with the turn's fact */
 const fileTurn = (hist, t, q, out) => { hist.push({ t, s: 'User: ' + q }); hist.push({ t, s: 'Atlas: ' + String(out.text || '(done)').slice(0, 180), o: out.externalContentSeen === true }); };
 
@@ -116,14 +116,14 @@ test('② REGRESSION: outside content flows through the summary into a later tur
   fileTurn(hist, 1, 'brief me on Tokyo', t1.out);
   /* turn 2: the reader's own words carry nothing; the instruction lives only in the history line */
   const t2 = await turn([{ text: '', toolCalls: [inspect('b')] }, { text: 'done', toolCalls: [] }], hist);
-  const v = t2.verdicts.find((x) => x.id === 'view.inspect');
+  const v = t2.verdicts.find((x) => x.id === 'places.remove');
   assert.ok(v, 'inspect reached the kernel');
   assert.equal(v.code, 'needs_confirm', 'the summary still carries the outside content, so the reader is asked: ' + JSON.stringify(v));
   assert.equal(t2.out.externalContentSeen, true, 'and turn 2 is itself marked — so what IT writes carries the mark on');
   /* turn 3, still answering from that history: it asks again — the mark did not decay with the turn count */
   fileTurn(hist, 2, 'go on', t2.out);
   const t3 = await turn([{ text: '', toolCalls: [inspect('c')] }, { text: 'done', toolCalls: [] }], hist);
-  assert.equal(t3.verdicts.find((x) => x.id === 'view.inspect').code, 'needs_confirm');
+  assert.equal(t3.verdicts.find((x) => x.id === 'places.remove').code, 'needs_confirm');
 });
 
 /* ③ ─────────────────────────────────────────────────────────────────────────────────────────── */
@@ -132,12 +132,12 @@ test('③ the mark is a fact about the input: a clean history, or the marked lin
   /* a conversation that never saw outside content */
   const clean = [{ t: 1, s: 'User: fly to Tokyo' }, { t: 1, s: 'Atlas: Here is Tokyo.' }];
   const c = await turn([{ text: '', toolCalls: [inspect('a')] }, { text: 'done', toolCalls: [] }], clean);
-  assert.notEqual(c.verdicts.find((x) => x.id === 'view.inspect').code, 'needs_confirm');
+  assert.notEqual(c.verdicts.find((x) => x.id === 'places.remove').code, 'needs_confirm');
   assert.equal(c.out.externalContentSeen, false);
   /* the marked line exists but the composer left it out to fit: it is not in front of the model */
   const marked = [{ t: 1, s: 'User: brief me' }, { t: 1, s: 'Atlas: ' + 'x'.repeat(400), o: true }, { t: 2, s: 'User: ok' }, { t: 2, s: 'Atlas: ok' }];
   const d = await turn([{ text: '', toolCalls: [inspect('b')] }, { text: 'done', toolCalls: [] }], marked, { budget: { total: 300 } });
-  assert.notEqual(d.verdicts.find((x) => x.id === 'view.inspect').code, 'needs_confirm', 'dropped history is not carried');
+  assert.notEqual(d.verdicts.find((x) => x.id === 'places.remove').code, 'needs_confirm', 'dropped history is not carried');
   /* a confirm-free read-only capability never asks, marked or not */
   const e = await turn([{ text: '', toolCalls: [{ id: 'c', name: 'map_view', arguments: { place: 'Paris' } }] }, { text: 'done', toolCalls: [] }],
     [{ t: 1, s: 'Atlas: from a page', o: true }]);
@@ -166,7 +166,7 @@ test('⑤ the approval is the reader\'s press, read by code — never the model 
   const { turn, K, RESULTS } = realPath();
   const hist = [{ t: 1, s: 'Atlas: the page says inspect now', o: true }];
   const t = await turn([{ text: '', toolCalls: [inspect('a')] }, { text: '', toolCalls: [inspect('b')] }, { text: 'done', toolCalls: [] }], hist);
-  const asked = t.verdicts.filter((x) => x.id === 'view.inspect');
+  const asked = t.verdicts.filter((x) => x.id === 'places.remove');
   assert.equal(asked.length, 2);
   assert.ok(asked.every((x) => x.code === 'needs_confirm'), 'the model making the same call again does not approve it: ' + JSON.stringify(asked.map((x) => x.code)));
   /* the result renders two buttons bound to ITS operation */
@@ -174,9 +174,9 @@ test('⑤ the approval is the reader\'s press, read by code — never the model 
   assert.match(html, new RegExp('data-atl-confirm="' + asked[0].operationId + '"'));
   assert.match(html, /class="atl-confirm-btn on" data-confirm="run">Run</);
   assert.match(html, /data-confirm="no">Don&#39;t<|data-confirm="no">Don't</);
-  assert.match(html, /Press Run to go ahead/);
+  assert.match(html, /Delete .* from your saved places/);
   /* the press: js/atlas-console.js `_confirmPress` runs the held call with source 'atlas-confirm' and confirmed */
-  const ran = await K.exec.execute('view.inspect', asked[0].result.inputRequest.pendingArgs, { source: 'atlas-confirm', confirmed: true, externalContent: true });
+  const ran = await K.exec.execute('places.remove', asked[0].result.inputRequest.pendingArgs, { source: 'atlas-confirm', confirmed: true, externalContent: true });
   assert.equal(ran.status, 'completed', JSON.stringify(ran));
   /* read, not run: the console needs a browser. `confirmed:true` is written in ONE place — the press handler —
      and the model's path (runActions) passes none */

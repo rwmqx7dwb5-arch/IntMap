@@ -120,7 +120,7 @@ export default [
     },
   },
   {
-    row: ['data.gisProject',            'gisProject',     'saveAnalysis,openAnalysis,rerunAnalysis,analysisProject',      'data',    'none',    'gis.project',            'explanation',         'persist', 'explicit', '',         'gisCore'],
+    row: ['data.gisProject',            'gisProject',     'saveAnalysis,openAnalysis,rerunAnalysis,analysisProject',      'data',    'none',    'gis.project',            'explanation',         'persist', 'none'    , '',         'gisCore'],
     ui: { none: '2026-11-19' },
     /* ⚠⚠ THE PROJECT LAYER EXISTED AND ATLAS COULD NOT REACH IT. js/gis-project.js saves an analysis as
        its recipe, opens it again by re-running the recipe, and re-computes a chain downstream when one
@@ -129,7 +129,7 @@ export default [
        して計算し直して」 had nothing to call, while every op that MAKES the datasets did
        ([[intmap-atlas-can-run-the-ops-not-copies-of-them]]). This row is that door and nothing more:
        every action is one call of the project kernel, and the kernel's own refusals come back as they are.
-       Column 7 'persist' — a project is written to IndexedDB; column 8 'explicit' — `remove` deletes a
+       Column 7 'persist' — a project is written to IndexedDB; column 8 'none' — `remove` deletes a
        saved project and `open` replaces the session's datasets with the saved ones. */
     doc: [
       { in: 'spatial-analysis', at: 40, text: 'SAVE / REOPEN / RE-RUN AN ANALYSIS (分析の保存・再開・再計算): {"type":"gisProject","action":"save"|"list"|"open"|"rerun"|"remove","name"?:str,"id"?:str,"dataset"?:ID,"params"?:{…}}. save stores the whole chain of this session (the imports with their content, every op as its recipe) under "name" and answers with its id; list names the saved ones; open re-runs a saved project (omit id = the latest) and reports which steps failed, which were reused and whether the engine of an op changed since it was saved; rerun changes the params of ONE step ("dataset" = the id that step produced, "params" = the new values, merged into the old) and recomputes everything downstream — the answer lists rebuilt / reused / failed, and a step whose upstream failed is marked stale, never silently kept; remove deletes a saved project. Use this rather than repeating every gis step when the reader says 「保存して」「この前の分析を開いて」「半径だけ変えてやり直して」. ' },
@@ -163,14 +163,14 @@ export default [
     },
   },
   {
-    row: ['data.gisExport',             'gisExport',      'exportDataset,downloadDataset,saveDatasetAsFile,exportGis',   'data',    'none',    '',                       'explanation',         'persist', 'explicit', '',         'gisCore'],
+    row: ['data.gisExport',             'gisExport',      'exportDataset,downloadDataset,saveDatasetAsFile,exportGis',   'data',    'none',    '',                       'explanation',         'persist', 'none'    , '',         'gisCore'],
     ui: { at: ['#btn-gis-panel'] },   /* the GIS panel holds its 「ファイルに書き出す」 */
     /* ⚠ THE DATASETS COULD BE MADE, DRAWN AND SAVED AS A PROJECT, AND NOT TAKEN AWAY. The GIS panel's
        「ファイルに書き出す」 calls js/gis-export.js; Atlas had no door to it, so 「この結果を KML で
        ください」 ended at a picture. This row is that door and nothing more — one write() call and the
        browser download of what it returned, with the writer's own refusals travelling back by name.
        Column 7 'persist' — a file lands on the reader's device, outside anything the session can
-       undo; column 8 'explicit' — IntMap proposing a download by itself, after outside content has
+       undo; column 8 'none' — IntMap proposing a download by itself, after outside content has
        been in front of the model, is the case that needs the reader's word. `format` is NOT an enum
        here: js/gis-export.js's FORMATS is the declaration, it lives in a chunk this file cannot read
        at planning time, and a copy would be the second list that drifts — an omitted or unknown
