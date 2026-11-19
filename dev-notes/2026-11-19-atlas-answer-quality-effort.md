@@ -24,3 +24,6 @@ newsjp: Atlasの回答で太字が使えるようになり、Atlasの画面上�
 
 ## 3. 検査
 `tests/atlas-effort-checks.test.mjs`（選択の送出・保存の失敗時・サーバー側の適用）。料金体系・利用権の制御はここに無い（足すなら `pick` が出口）。
+
+## 4. perf の天井を上げた理由
+`async chunk "atlas-console"` の天井を +5.2 kB（1040.6 → 1045.8 kB）、`async.gzip` を +24.7 kB 分上げた。買ったもの: 考える強さのメニュー・保存・自動の判定呼び出しとその規則（js/atlas-effort.js）と、final_text の深さの指示 1 文。Atlas パネルを開いたときに初めて読まれる chunk で、起動時の要求数・容量（before ready）には効かない。別 chunk へ遅延読み込みにする手もあるが、メニューは Atlas パネルの描画と同時に要るので今回は見送った。
