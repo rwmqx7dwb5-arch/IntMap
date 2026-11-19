@@ -534,6 +534,8 @@ export function makeGisPanel(HOST) {
       if (code === 'add-failed') return IntMapLang.t(HOST.lang, 'The result could not be registered as a dataset', '結果をデータセットとして登録できませんでした', 'Das Ergebnis konnte nicht als Datensatz registriert werden', 'Результат не удалось зарегистрировать как набор данных', 'No se pudo registrar el resultado como conjunto de datos') + par(txt || d.message);
       if (code === 'ops-unavailable') return IntMapLang.t(HOST.lang, 'The analysis module is not loaded, so the steps cannot be run again', '処理モジュールが読み込まれていないため、手順を再実行できません', 'Das Analysemodul ist nicht geladen, daher lassen sich die Schritte nicht erneut ausführen', 'Модуль анализа не загружен, поэтому шаги нельзя выполнить снова', 'El módulo de análisis no está cargado, así que los pasos no se pueden volver a ejecutar');
       if (code === 'op-failed') return IntMapLang.t(HOST.lang, 'The step stopped part way through', '処理が途中で止まりました', 'Der Schritt ist mittendrin abgebrochen', 'Шаг прервался на середине', 'El paso se detuvo a medio camino') + par(txt || d.message);
+      /* (compute-sandbox) a Python record whose input was recomputed, with the sandbox not loaded */
+      if (code === 'compute-unavailable') return IntMapLang.t(HOST.lang, 'The Python sandbox is not loaded, so this Python step cannot be run again', 'Python の実行環境が読み込まれていないため、この Python の処理を再実行できません');
       if (code === 'upstream-failed') return IntMapLang.t(HOST.lang, 'An earlier step failed, so this one was never run', '前の処理が失敗したため、この処理は実行されていません', 'Ein früherer Schritt ist fehlgeschlagen, daher wurde dieser nie ausgeführt', 'Предыдущий шаг не удался, поэтому этот не выполнялся', 'Un paso anterior falló, así que este no llegó a ejecutarse');
       if (code === 'not-an-op') return IntMapLang.t(HOST.lang, 'This dataset came from a file, not from a step, so it has no settings to change', 'このデータセットは処理の結果ではなく取り込んだものなので、変えられる引数がありません', 'Dieser Datensatz stammt aus einer Datei, nicht aus einem Schritt, und hat keine Einstellungen', 'Этот набор получен из файла, а не из шага, поэтому у него нет настроек', 'Este conjunto viene de un archivo, no de un paso, así que no tiene ajustes que cambiar');
       if (code === 'no-such-dataset') return IntMapLang.t(HOST.lang, 'That dataset is not registered any more', 'そのデータセットはもう登録されていません', 'Dieser Datensatz ist nicht mehr registriert', 'Этот набор данных больше не зарегистрирован', 'Ese conjunto de datos ya no está registrado') + par(d.id);
@@ -635,6 +637,8 @@ export function makeGisPanel(HOST) {
       const p = (ds && ds.provenance) || {};
       if (p.kind === 'op') return IntMapLang.t(HOST.lang, 'Analysis step', '処理', 'Analyseschritt', 'Шаг анализа', 'Paso de análisis') + ': ' + String(p.op || '');
       if (p.kind === 'import') return IntMapLang.t(HOST.lang, 'Imported', '取り込み', 'Importiert', 'Импорт', 'Importado') + (p.file ? ': ' + String(p.file) : '');
+      /* (compute-sandbox) a Python record states its recipe — without this arm it read 「由来が記録されていません」 */
+      if (p.kind === 'compute') return IntMapLang.t(HOST.lang, 'Computed in Python', 'Python で計算') + ' (' + String(p.runtime || '') + ')' + (Array.isArray(p.inputs) && p.inputs.length ? ': ' + p.inputs.join(', ') : '');
       return IntMapLang.t(HOST.lang, 'Origin not stated', '由来が記録されていません', 'Herkunft nicht angegeben', 'Происхождение не указано', 'Origen no indicado');
     }
     /* ⚠ THREE STATES, NOT TWO. `sourceCrs === crs` is 「届いた座標系がそのまま」, a different

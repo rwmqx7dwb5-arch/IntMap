@@ -25,7 +25,7 @@ export default [
     /* a clarification with no question is the defect it exists to prevent */
     /* documented by the ALWAYS-SENT rules text (the PRECISION vs AMBIGUITY paragraph says WHEN to clarify) rather than by a catalogue
        fragment — separating the two would be worse prompt. The value is the literal the audit looks for there. (§14) a FALLBACK: reachable, but not a user-facing feature — kept out of the search's front rank so it cannot crowd out a real capability */
-    policy: { ruleDocumented: '{"type":"ask"', fallback: true },
+    policy: { ruleDocumented: '{"type":"ask"', fallback: true, asksUser: true },   /* (capability-facets) a question put to the reader — not read-only in any sense a child AI may use, though it writes nothing */
     schema: () => ({ type: 'object', properties: { question: str(), options: list(), allowText: bool(), freeText: bool(), text: str(), say: str(), prompt: str() }, required: ['question'] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L;
       {

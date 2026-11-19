@@ -82,8 +82,11 @@ const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalog
      fallback        true — reachable, but not a user-facing feature; kept out of the search's front rank
      forbidden       [ids] — non-equivalent substitutions the planner has actually made and must not make again
      equivalents     [ids] — genuinely interchangeable capabilities, the only substitutions repair may make
-     answer          true — its result is an ANSWER about a topic (#R159): js/atlas-turn-results.js keys it by topic */
-const POLICY_KEYS = ['withdrawn', 'ruleDocumented', 'fallback', 'forbidden', 'equivalents', 'answer'];
+     answer          true — its result is an ANSWER about a topic (#R159): js/atlas-turn-results.js keys it by topic
+     asksUser        true — running it puts a QUESTION in front of the reader (a facet, js/atlas-capabilities.js `facets.asksUser`). Not derivable from
+                     the row: a question writes nothing and touches no state, which is why a single `risk` column called it read-only
+     delegates       true — running it starts other model work (`facets.delegates`); a child AI may not start more of it */
+const POLICY_KEYS = ['withdrawn', 'ruleDocumented', 'fallback', 'forbidden', 'equivalents', 'answer', 'asksUser', 'delegates'];
 
 /** the namespace a capability id belongs to — the file its entry must live in */
 function namespaceOf(id) { return String(id || '').split('.')[0]; }
@@ -182,7 +185,7 @@ export function catalogueBlocks(modules, chunks, c) {
     a capability. */
 export function capabilityPolicy(modules, order) {
   const entries = capabilityEntries(modules), byId = new Map(entries.map(function (e) { return [e.id, e]; })), problems = [];
-  const P = { withdrawn: {}, ruleDocumented: {}, fallbacks: {}, forbidden: {}, equivalents: {}, answers: {} };
+  const P = { withdrawn: {}, ruleDocumented: {}, fallbacks: {}, forbidden: {}, equivalents: {}, answers: {}, asksUser: {}, delegates: {} };
   (order || entries.map(function (e) { return e.id; })).forEach(function (id) {
     const e = byId.get(id), p = e && e.policy;
     if (!p) return;
@@ -193,6 +196,8 @@ export function capabilityPolicy(modules, order) {
     if (p.ruleDocumented) P.ruleDocumented[id] = String(p.ruleDocumented);
     if (p.fallback) P.fallbacks[id] = 1;
     if (p.answer) P.answers[id] = 1;
+    if (p.asksUser) P.asksUser[id] = 1;
+    if (p.delegates) P.delegates[id] = 1;
     ['forbidden', 'equivalents'].forEach(function (k) {
       if (!p[k]) return;
       if (!Array.isArray(p[k])) { problems.push(id + ': policy.' + k + ' is not a list of ids'); return; }
