@@ -200,9 +200,66 @@ window.IntMapStyle=(function(){
      ignored: #R162's lesson is that a silent typeof guard deletes a feature
      without anybody finding out. The engine surfaces this list through
      IntMapGeoEngine.capabilities().styleGaps. */
-  const UNSUPPORTED=new Set(['format','image','number-format','collator','resolved-locale','distance','within','pitch','distance-from-center']);
+  /* ⚠ WHAT IS ON THIS LIST IS A CLAIM THAT THE APP NEVER WRITES IT. tests/cesium-style-parity-checks.test.mjs
+   sweeps every style expression the app can build and fails if one of these appears, so an operator
+   leaves the list by being implemented — it never stays because nobody looked. 'distance' left on
+   2026-11-20: js/hist-cities.js guards every era city name with it, and without it the Cesium globe
+   kept today's names on a 1916 map. */
+const UNSUPPORTED=new Set(['format','image','number-format','collator','resolved-locale','within','pitch','distance-from-center']);
   const seenGaps=new Set();
   function gap(op){ seenGaps.add(op); }
+
+  /* ── distance ─────────────────────────────────────────────────────────────
+     MapLibre's ['distance', geojson]: metres from the FEATURE's geometry to the argument.
+     The app only ever passes a Point (js/hist-cities.js: "is this feature within g metres of the
+     city's recorded position"), so the argument is Point/MultiPoint; any feature geometry is
+     measured. Point–point is haversine; point–segment projects to a local plane around the target,
+     which is exact to well under a metre at the few-kilometre scales the guards use; a point inside
+     a polygon is 0 away. Anything else returns null (an unknown distance fails `<=`), and the
+     caller's gap() records it. */
+  const R_EARTH=6371008.8, RAD=Math.PI/180;
+  function hav(a,b){
+    const dLat=(b[1]-a[1])*RAD, dLon=(b[0]-a[0])*RAD;
+    const h=Math.sin(dLat/2)**2+Math.cos(a[1]*RAD)*Math.cos(b[1]*RAD)*Math.sin(dLon/2)**2;
+    return 2*R_EARTH*Math.asin(Math.min(1,Math.sqrt(h)));
+  }
+  function ptSeg(p,a,b){                       /* metres from p to segment ab, planar about p */
+    const k=Math.cos(p[1]*RAD), m=R_EARTH*RAD;
+    const ax=(a[0]-p[0])*k*m, ay=(a[1]-p[1])*m, bx=(b[0]-p[0])*k*m, by=(b[1]-p[1])*m;
+    const dx=bx-ax, dy=by-ay, L=dx*dx+dy*dy;
+    const t=L?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/L)):0;
+    return Math.hypot(ax+t*dx,ay+t*dy);
+  }
+  function inRing(p,ring){
+    let c=false;
+    for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+      const a=ring[i], b=ring[j];
+      if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0]) c=!c;
+    }
+    return c;
+  }
+  function distToGeom(p,g){
+    if(!g||!g.coordinates) return null;
+    const lineMin=ls=>{ let d=Infinity; for(let i=0;i+1<ls.length;i++) d=Math.min(d,ptSeg(p,ls[i],ls[i+1])); return d; };
+    const polyD=rs=>{ if(!rs.length) return Infinity;
+      if(inRing(p,rs[0])&&!rs.slice(1).some(h=>inRing(p,h))) return 0;
+      return Math.min(...rs.map(lineMin)); };
+    switch(g.type){
+      case 'Point': return hav(p,g.coordinates);
+      case 'MultiPoint': return Math.min(...g.coordinates.map(c=>hav(p,c)));
+      case 'LineString': return lineMin(g.coordinates);
+      case 'MultiLineString': return Math.min(...g.coordinates.map(lineMin));
+      case 'Polygon': return polyD(g.coordinates);
+      case 'MultiPolygon': return Math.min(...g.coordinates.map(polyD));
+    }
+    return null;
+  }
+  function geomDistance(feature,target){
+    const pts=target.type==='Point'?[target.coordinates]:target.type==='MultiPoint'?target.coordinates:null;
+    if(!pts||!pts.length){ gap('distance'); return null; }
+    const d=Math.min(...pts.map(p=>distToGeom(p,feature)));
+    return isFinite(d)?d:null;
+  }
 
   function evaluate(ex,ctx){
     try{ return _ev(ex,ctx||{},Object.create(null)); }catch(_){ return null; }
@@ -230,6 +287,7 @@ window.IntMapStyle=(function(){
          layer type has an input for, supplied through ctx.elevation by the relief
          raster producer rather than by widening every other evaluation context. */
       case 'elevation': return ctx.elevation==null?0:ctx.elevation;
+      case 'distance': { const t=ex[1]; const f=ctx.geometry; if(!t||!f) return null; const d=geomDistance(f,t); return d==null?null:d; }
       case 'line-progress': return ctx.lineProgress==null?0:ctx.lineProgress;
       case 'accumulated': return ctx.accumulated==null?0:ctx.accumulated;
       /* ── lookup ──────────────────────────────────────────────────────── */
@@ -371,7 +429,7 @@ window.IntMapStyle=(function(){
      layer; one that reads `get`/`feature-state` has to be evaluated per feature.
      Telling them apart is the difference between 49 circle layers costing one
      evaluation each and costing one per point. */
-  const FEATURE_OPS=new Set(['get','has','properties','geometry-type','id','feature-state','line-progress','accumulated']);
+  const FEATURE_OPS=new Set(['get','has','properties','geometry-type','id','feature-state','line-progress','accumulated','distance']);
   function dependsOnFeature(ex){
     if(!Array.isArray(ex)) return false;
     if(typeof ex[0]==='string'&&FEATURE_OPS.has(ex[0])) return true;
