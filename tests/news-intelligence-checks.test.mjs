@@ -195,5 +195,5 @@ test('news-intelligence ⑫ one layer, one lazy body, one time declaration, five
   assert.match(read('js/news-intel.js'), /function clockUntil\(\)/);
   const caps = (await import('../js/atlas-cap-news.js')).default.map((e) => e.row[0]);
   for (const id of ['news.pulse', 'news.brief', 'news.outages', 'news.health', 'news.company']) assert.ok(caps.includes(id), id);
-  assert.match(read('js/app-body.js'), /newsPulse\(IM_HOST\)/);
+  assert.match(read('js/app-body.js'), /newsPulse\((?:hostSlice\(IM_HOST, \[[^\]]*\]\)|IM_HOST)\)/);
 });

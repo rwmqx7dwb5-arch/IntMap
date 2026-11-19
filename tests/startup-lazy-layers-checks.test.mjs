@@ -81,7 +81,7 @@ test('startup-lazy-layers ② the eager halves — the rows, the toolkit, the ap
      (module-graph) the owner publishes that toolkit when its FACTORY runs, and js/app-body.js calls the
      factories by name in boot order — so «after» is the order of those two calls, not of import lines. */
   const body = codeOnly(read('js/app-body.js'));
-  const owner = body.indexOf('worldPacks(IM_HOST)'), consumer = body.indexOf('industryWeb(IM_HOST)');
+  const owner = body.indexOf('worldPacks(IM_HOST)'), consumer = body.indexOf('industryWeb(hostSlice(IM_HOST');
   assert.ok(owner > 0 && consumer > 0, 'the two factory calls were not found in js/app-body.js — re-derive this check');
   assert.ok(owner < consumer, 'the toolkit owner is instantiated before its first consumer');
 });
