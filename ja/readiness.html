@@ -54,7 +54,7 @@
   <section class="lp-hero lp-hero-t">
     <div class="lp-hero-text">
       <h1>この端末とネットワークで使えるか、その場で確かめる。</h1>
-      <p class="lp-lede">生徒や職員が使う端末で、同じネットワークにつないだままこのページを開き、診断を実行してください。地図に必要なブラウザの機能を確かめ、IntMap が読み込む外部の接続先 117 件に問い合わせて、使えるもの・遮断されているもの・許可すべきものを示します。</p>
+      <p class="lp-lede">生徒や職員が使う端末で、同じネットワークにつないだままこのページを開き、診断を実行してください。地図に必要なブラウザの機能を確かめ、IntMap が読み込む外部の接続先 118 件に問い合わせて、使えるもの・遮断されているもの・許可すべきものを示します。</p>
       <div class="lp-cta">
         <button class="lp-btn rd-start" id="rd-start" type="button" data-effect="none" hidden>診断を始める</button>
         <a class="lp-btn lp-btn-2" href="#allow">許可が必要な接続先を見る</a>
@@ -123,6 +123,7 @@
         <table>
           <thead><tr><th>アドレス</th><th>用途</th><th>この端末から</th></tr></thead>
           <tbody>
+          <tr data-probe="https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif" data-host="*.s3.amazonaws.com" data-tier="layer"><td><code>*.s3.amazonaws.com</code></td><td>利用者が s3://バケット/キー で指定した AWS S3 上のファイル（js/gis-cog.js が https アドレスを導出）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://de.wikipedia.org/api/rest_v1/page/summary/Tokio" data-host="*.wikipedia.org" data-tier="layer"><td><code>*.wikipedia.org</code></td><td>読者の言語の Wikipedia 要約と検索</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://a.tiles.openrailwaymap.org/standard/4/8/5.png" data-host="a.tiles.openrailwaymap.org" data-tier="layer"><td><code>a.tiles.openrailwaymap.org</code></td><td>OpenRailwayMap のタイル</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://air-quality-api.open-meteo.com/v1/air-quality?latitude=35.681&amp;longitude=139.767&amp;current=us_aqi,pm2_5,pm10,ozone" data-host="air-quality-api.open-meteo.com" data-tier="layer"><td><code>air-quality-api.open-meteo.com</code></td><td>Open-Meteo の地点の大気質</td><td class="rd-state">未確認</td></tr>

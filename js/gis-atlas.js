@@ -702,7 +702,7 @@ export function makeGisAtlas(core) {
          feature slot handed one is refused by name instead of being read as something else. The
          window and the resolution are the planner's to state (acquire.bounds/width/height), as for
          any grid (fromLayer), and only the tiles that window needs are fetched. */
-      if (/^(url:)?https?:\/\//i.test(raw)) {
+      if (/^(url:)?(https?|s3):\/\//i.test(raw)) {
         if (!wantsRaster) return fail('url-needs-a-grid-slot', { slot: slot, ref: raw, why: 'a URL is read as a GeoTIFF, which is a grid' });
         const made = await fromUrl(raw.replace(/^url:/i, ''), action, cache);
         if (!made.ok) return made;
@@ -838,8 +838,8 @@ export function makeGisAtlas(core) {
 
     /* An OGC API – Features collection becomes a registered vector dataset. The window, the count and
        the cursor are the planner's; what the server could not say is `coverage`, and the server's own
-       next link is handed back as `next` (a cursor). ⚠ Conditions, columns and time are refused BY
-       NAME — js/gis-ogcapi.js sends none of them, and a server that ignored one would hand back a
+       next link is handed back as `next` (a cursor). ⚠ Conditions and columns are refused BY
+       NAME — js/gis-ogcapi.js sends neither through here (time goes as `datetime`), and a server that ignored one would hand back a
        complete-looking answer to a different question. */
     async function fromOgc(url, action, cache, search) {
       const a = acquireOpts(action, false);

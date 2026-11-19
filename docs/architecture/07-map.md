@@ -995,6 +995,10 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   `changePrecision()` が `year` の変化は年として書く）、戦争の記録（期間は `js/layer-time-decl.js` の戦争の行から）のその年の作戦（`warRecords`）、索引が運ぶ
   Wikidata の日付つき出来事（精度と何の日かを添える）、Maddison の人口と 1 人当たり GDP（国コード別と述べる）、その瞬間を述べる典拠を持つレイヤーの数。
   押すとその範囲・日付・場所へ。開いている間は時計に追従する。Atlas は `time.yearbook`（`show:true` で開く）。
+  **政体は識別子で結ぶ**: 行は `key`（`polityKey`＝CShapes の `_gw` か Wikidata の `_qid`、無ければ null。名前から作らない）を持ち、`diffPolities` は同じ `key` の行を結ぶ
+  ——改称（British East Africa → Kenya）は消滅＋出現ではなく `renamed`、綴りが同じで `key` が違う行は結ばない。`key` が無い行だけが英語名で結ばれ、その一覧が `matchedByName`。
+  `followPolities(snapshots)` が 1 つの `key` を時代をまたいで追い、名前の列と面積の推移を返す。`key` の無い行は数えるだけで名前では追わない。
+  1914 年のヨーロッパで国境・Maddison 人口・都市・鉄道を GIS 演算で結合した分析は `scripts/hist-join-1914.mjs`（記録 `dev-notes/2026-11-19-spatiotemporal-1914.md`）。
 - **Atlas**: `time.compare` と `time.lapse`（再生・停止・`record:true` で録画）。観測器 `timeView` が実行後にウィンドウと再生器に状態を訊き、一致したときだけ
   完了（既にそうなら `already_there`）。`time` 節にウィンドウの瞬間と再生の様子が載る。
 

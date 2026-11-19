@@ -1309,6 +1309,24 @@
       "link": "passed to carto-basemap.js's a(href, text), which builds an <a href> in the map attribution"
     },
     {
+      "host": "*.s3.amazonaws.com",
+      "what": "A file on an AWS S3 bucket that the user named as s3://bucket/key (js/gis-cog.js derives the https address)",
+      "whatJp": "利用者が s3://バケット/キー で指定した AWS S3 上のファイル（js/gis-cog.js が https アドレスを導出）",
+      "sends": {
+        "code": "identifier",
+        "detail": "the file path and a byte range"
+      },
+      "disclosure": {
+        "en": "bucket-name.s3.amazonaws.com",
+        "jp": "バケット名.s3.amazonaws.com"
+      },
+      "probe": {
+        "url": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif",
+        "expect": [206],
+        "why": "a Range request is answered with 206 by the bucket"
+      }
+    },
+    {
       "host": "openmeteo.s3.amazonaws.com",
       "what": "Open-Meteo model fields on AWS Open Data (wind field, forecast layers)",
       "whatJp": "AWS Open Data 上の Open-Meteo のモデル場（風の場・予報レイヤー）",
