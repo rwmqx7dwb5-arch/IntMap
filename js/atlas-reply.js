@@ -333,13 +333,14 @@ export function makeAtlasReply(HOST, CTX) {
        surface (floating panel, sidebar tab, workspace window): (a) a Copy button on each code block copies the raw
        code + flips its label for ~1.4s; (b) if KaTeX finishes loading AFTER a reply was painted (slow CDN — rare,
        since it is a defer script that runs before DOMContentLoaded), upgrade the escaped-raw fallbacks in place. */
-    function _atlFallbackCopy(txt){ try{ const ta=document.createElement('textarea'); ta.value=String(txt||''); ta.style.cssText='position:fixed;left:-9999px;top:0;'; document.body.appendChild(ta); ta.focus(); ta.select(); try{ document.execCommand('copy'); }catch(_){} ta.remove(); }catch(_){} }
+    function _atlFallbackCopy(txt){ try{ const ta=document.createElement('textarea'); ta.value=String(txt||''); ta.style.cssText='position:fixed;left:-9999px;top:0;'; document.body.appendChild(ta); ta.focus(); ta.select(); let ok=false; try{ ok=!!document.execCommand('copy'); }catch(_){} ta.remove(); return ok; }catch(_){ return false; } }
     try{ if(!window.__atlRenderWired){ window.__atlRenderWired=true;
       try{ wireAtlasAnnotations(); }catch(_){}   /* (#R492) hover / tap on an annotation — document-level, so all three Atlas surfaces get it */
       document.addEventListener('click',e=>{ try{ const b=e.target.closest&&e.target.closest('.atl-codecopy'); if(!b) return;
         const code=document.getElementById(b.getAttribute('data-cid')); const txt=code?(code.textContent||''):'';
-        const done=()=>{ const old=b.textContent; b.textContent=L('Copied','コピー済み','Kopiert','Скопировано','Copiado'); b.classList.add('ok'); setTimeout(()=>{ try{ b.textContent=old; b.classList.remove('ok'); }catch(_){} },1400); };
-        try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(()=>{ _atlFallbackCopy(txt); done(); }); } else { _atlFallbackCopy(txt); done(); } }catch(_){ _atlFallbackCopy(txt); done(); }
+        /* the label says "Copied" only when the clipboard actually took the text; a refused write shows a failed state instead */
+        const done=(ok)=>{ const old=b.getAttribute('data-lbl')||b.textContent; b.setAttribute('data-lbl',old); const cls=ok?'ok':'fail'; b.textContent=ok?L('Copied','コピー済み','Kopiert','Скопировано','Copiado'):L('Copy failed','コピーできません','Kopieren fehlgeschlagen','Не удалось','No se pudo copiar'); b.classList.add(cls); setTimeout(()=>{ try{ b.textContent=old; b.classList.remove(cls); }catch(_){} },ok?1400:2200); };
+        try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(()=>done(true)).catch(()=>done(_atlFallbackCopy(txt))); } else { done(_atlFallbackCopy(txt)); } }catch(_){ done(_atlFallbackCopy(txt)); }
       }catch(_){} });
       /* (#R494) the Wrap toggle. Document-level and per-block, like Copy — a reader who turns wrapping
          on for one JSON payload has not asked for it on the next reply's shell transcript. The state
@@ -351,7 +352,7 @@ export function makeAtlasReply(HOST, CTX) {
       /* (#R494) …and the source row's overflow chip: reveal the cards the six-card row could not hold */
       document.addEventListener('click',e=>{ try{ const b=e.target.closest&&e.target.closest('.atl-lc-more'); if(!b) return;
         const rest=b.parentNode&&b.parentNode.querySelector?b.parentNode.querySelector('.atl-lc-rest'):null;
-        if(rest) rest.hidden=false; b.remove();
+        if(!rest) return; const open=rest.hidden; rest.hidden=!open; const n=b.getAttribute('data-n')||''; const lbl=open?L('Show fewer sources','ソースを折りたたむ','Weniger Quellen','Свернуть источники','Mostrar menos fuentes'):L('Show all sources','すべてのソースを表示','Alle Quellen anzeigen','Показать все источники','Mostrar todas las fuentes'); b.textContent=open?'−':'+'+n; b.title=lbl; b.setAttribute('aria-label',lbl); b.setAttribute('aria-expanded',open?'true':'false');
       }catch(_){} });
       /* KaTeX is requested by _atlKatex when a formula first falls back to raw source (see _atlEnsureKatex). */
       try{ if(window.katex&&window.katex.renderToString) _atlTypesetMath(document); }catch(_){}
@@ -490,7 +491,7 @@ export function makeAtlasReply(HOST, CTX) {
       const more=esc(L('Show all sources','すべてのソースを表示','Alle Quellen anzeigen','Показать все источники','Mostrar todas las fuentes'));
       return '<div class="atl-lc-row">'+shown
         +'<span class="atl-lc-rest" hidden>'+restList.map(card).join('')+'</span>'
-        +'<button class="atl-lc-more" type="button" title="'+more+'" aria-label="'+more+'">+'+restList.length+'</button></div>'; }catch(_){ return ''; } }
+        +'<button class="atl-lc-more" type="button" title="'+more+'" aria-label="'+more+'" aria-expanded="false" data-n="'+restList.length+'">+'+restList.length+'</button></div>'; }catch(_){ return ''; } }
     function listHtml(title,list,metric){ if(!list||!list.length) return note(icon('warning')+' '+L('No matching countries / metric unavailable.','該当国なし／指標が利用できません。','Keine passenden Länder / Kennzahl nicht verfügbar.','Нет данных по показателю.','Sin países coincidentes / métrica no disponible.'));
       const painted=highlight(list.map(r=>r.code)); fitTo(list.map(r=>r.code));
       return '<div style="font-weight:600;margin:2px 0 4px;">'+esc(title)+'</div><ol style="margin:0;padding-left:22px;line-height:1.65;font-size:12px;">'

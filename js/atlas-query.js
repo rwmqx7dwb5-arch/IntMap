@@ -1427,21 +1427,25 @@ export function atlasQuery(HOST) {
        noise. Asked of the COLUMNS the answer is showing, not of the table it came from, because
        that is the thing that decides whether the country is already on screen. */
     const hasCountryCol = cols.some((c) => c.id === 'country');
-    const head = '<th style="text-align:left;padding:4px 8px 4px 0;font-weight:600;white-space:nowrap;">#</th>'
-      + '<th style="text-align:left;padding:4px 8px 4px 0;font-weight:600;white-space:nowrap;">' + esc(L('Name', '名称', 'Name', 'Название', 'Nombre')) + '</th>'
-      + cols.map((c) => '<th title="' + esc(colProvenance(c)) + '" style="text-align:right;padding:4px 0 4px 8px;font-weight:600;white-space:nowrap;">' + esc(colName(c)) + '</th>').join('')
-      + res.joins.map((j) => '<th style="text-align:right;padding:4px 0 4px 8px;font-weight:600;white-space:nowrap;">' + esc(j) + '</th>').join('');
-    const body = res.rows.map((r, i) => '<tr style="border-top:1px solid rgba(128,128,128,0.14);">'
-      + '<td style="padding:4px 8px 4px 0;color:var(--text-muted);">' + (i + 1) + '</td>'
+    /* the same table the Markdown renderer draws (.atl-md-table in js/atlas-styles.js): one set of borders,
+       padding, header ground and row banding for an Atlas answer whichever path produced the rows. A column's
+       provenance rides on the annotation card (tap, hover or focus), not a title a phone cannot show. */
+    const note = (txt, label) => '<span class="atl-an" data-atl-note="' + esc(txt) + '" tabindex="0">' + label + '</span>';
+    const head = '<th style="text-align:left;white-space:nowrap;">#</th>'
+      + '<th style="text-align:left;white-space:nowrap;">' + esc(L('Name', '名称', 'Name', 'Название', 'Nombre')) + '</th>'
+      + cols.map((c) => '<th style="text-align:right;white-space:nowrap;">' + note(colProvenance(c), esc(colName(c))) + '</th>').join('')
+      + res.joins.map((j) => '<th style="text-align:right;white-space:nowrap;">' + esc(j) + '</th>').join('');
+    const body = res.rows.map((r, i) => '<tr>'
+      + '<td style="color:var(--text-muted);">' + (i + 1) + '</td>'
       /* (#R620) …and WHICH RECORD this row is, on the row itself. A population is only checkable
          against the record it came from, and «Wuzhong 7,202,654» is GeoNames' own figure for a
          PPLA2 — a prefecture seat — which is a different thing from a built-up area. Saying which
          record answered is not the same as redefining city population, and it is what lets a
          reader go and look. */
-      + '<td title="' + esc(rowProvenance(r)) + '" style="padding:4px 8px 4px 0;white-space:nowrap;">' + esc(r.name || '') + ((r.iso2 && !hasCountryCol) ? ' <span style="color:var(--text-muted);font-size:10.5px;">' + esc(r.iso2) + '</span>' : '') + '</td>'
-      + cols.map((c) => '<td style="padding:4px 0 4px 8px;text-align:right;white-space:nowrap;">' + fmt(c, r.v[c.id]) + '</td>').join('')
+      + '<td style="white-space:nowrap;">' + note(rowProvenance(r), esc(r.name || '')) + ((r.iso2 && !hasCountryCol) ? ' <span style="color:var(--text-muted);font-size:10.5px;">' + esc(r.iso2) + '</span>' : '') + '</td>'
+      + cols.map((c) => '<td style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">' + fmt(c, r.v[c.id]) + '</td>').join('')
       + res.joins.map((j) => { const jj = r.joins[j];
-        return '<td style="padding:4px 0 4px 8px;text-align:right;white-space:nowrap;">'
+        return '<td style="text-align:right;white-space:nowrap;">'
           + (jj && jj.count ? (jj.count + ' · ' + jj.km + ' km') : '—') + '</td>'; }).join('')
       + '</tr>').join('');
     /* ⚠ (#R740) `width:100%` IS A CEILING, NOT A FLOOR. Six columns inside a 365 px Atlas panel had
@@ -1451,8 +1455,8 @@ export function atlasQuery(HOST) {
        `width:auto;min-width:100%` lets it take the width its content needs and still fill the panel
        when it does not need it; the wrapper is already `overflow-x:auto`, so what was vertical
        shredding becomes a horizontal scroll. */
-    return '<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:12px;width:auto;min-width:100%;">'
-      + '<thead><tr style="color:var(--text-muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.03em;">' + head + '</tr></thead>'
+    return '<div class="atl-tablewrap"><table class="atl-md-table" style="width:auto;min-width:100%;">'
+      + '<thead><tr>' + head + '</tr></thead>'
       + '<tbody>' + body + '</tbody></table></div>';
   }
 

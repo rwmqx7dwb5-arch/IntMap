@@ -45,6 +45,7 @@ import { IntMapLang } from './lang-registry.js';
 export const ATLAS_ANNOTATE_CSS = ''
   /* ⚠ #atlas-panel で囲わない。同じ返答が浮動パネル・サイドバータブ・ワークスペース窓の
      3 面に出るので、コードブロックや表と同じく面に依らない書き方にする。 */
+  + '.atl-an:focus-visible{outline:2px solid var(--primary-color,#0a84ff);outline-offset:2px;border-radius:3px;}'
   + '.atl-an{text-decoration:underline dotted rgba(128,128,128,.34);text-decoration-thickness:1px;text-underline-offset:.2em;cursor:help;}'
   + '.atl-an-a{text-decoration-color:rgba(128,128,128,.62);}'
   + '.atl-an:hover{text-decoration-color:var(--primary-color);}'
@@ -288,7 +289,7 @@ export function makeAtlasAnnotate() {
   /** 注釈1つ分の span。`kind` は q（量）/ t（時刻）/ a（略語）。 */
   function span(kind, text, note, sub) {
     return '<span class="atl-an atl-an-' + kind + '" data-atl-note="' + escAttr(note) + '"'
-      + (sub ? (' data-atl-sub="' + escAttr(sub) + '"') : '') + '>' + text + '</span>';
+      + (sub ? (' data-atl-sub="' + escAttr(sub) + '"') : '') + ' tabindex="0">' + text + '</span>';
   }
 
   /** 走査の設定を1つ作る。`seen` は「略語は最初の1回だけ注釈する」ための記憶。 */
@@ -495,11 +496,12 @@ export function makeAtlasAnnotate() {
         if (tip && tip.isConnected) return tip;
         tip = document.createElement('div');
         tip.className = 'atl-antip';
-        tip.setAttribute('aria-hidden', 'true');
+        tip.setAttribute('role', 'tooltip');
+        tip.id = 'atl-antip';
         document.body.appendChild(tip);
         return tip;
       };
-      const hide = () => { cur = null; if (tip) { tip.classList.remove('on'); tip.classList.remove('below'); } };
+      const hide = () => { if (cur && cur.removeAttribute) cur.removeAttribute('aria-describedby'); cur = null; if (tip) { tip.classList.remove('on'); tip.classList.remove('below'); } };
       const place = (a, t) => {
         t.style.left = '0px'; t.style.top = '0px'; t.classList.remove('below');
         const r = a.getBoundingClientRect(), b = t.getBoundingClientRect();
@@ -518,7 +520,8 @@ export function makeAtlasAnnotate() {
         t.textContent = '';
         const h = document.createElement('div'); h.className = 'atl-antip-t'; h.textContent = note; t.appendChild(h);
         if (sub) { const dd = document.createElement('div'); dd.className = 'atl-antip-d'; dd.textContent = sub; t.appendChild(dd); }
-        cur = a;
+        if (cur && cur !== a && cur.removeAttribute) cur.removeAttribute('aria-describedby');
+        cur = a; a.setAttribute('aria-describedby', 'atl-antip');
         t.classList.add('on');
         place(a, t);
       };
@@ -532,6 +535,9 @@ export function makeAtlasAnnotate() {
            Showing again is idempotent; a tap anywhere else is what dismisses it. */
         try { const a = hit(e); if (a) { e.preventDefault(); show(a); } else hide(); } catch (_) { }
       });
+      /* keyboard and assistive tech: the same card, opened by focus and closed on blur */
+      document.addEventListener('focusin', (e) => { try { const a = hit(e); if (a && a !== cur) show(a); } catch (_) { } });
+      document.addEventListener('focusout', (e) => { try { if (hit(e)) hide(); } catch (_) { } });
       window.addEventListener('scroll', hide, true);
       window.addEventListener('resize', hide);
       document.addEventListener('keydown', (e) => { if (e && e.key === 'Escape') hide(); });
