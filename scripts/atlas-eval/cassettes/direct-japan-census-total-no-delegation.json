@@ -1,0 +1,140 @@
+{
+  "id": "direct-japan-census-total-no-delegation",
+  "text": "東京都・大阪府・北海道の人口（令和2年国勢調査）をそれぞれ別々に調べて、3 つの合計を教えて。",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "representative: the same question answered without delegating"
+  },
+  "question": {
+    "set": "answers",
+    "id": "delegate-japan-three-prefectures-census-total"
+  },
+  "arm": "direct",
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.analyze",
+            "args": {
+              "question": "東京都の人口（令和2年国勢調査）は？",
+              "place": "東京都"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.analyze",
+            "args": {
+              "question": "大阪府の人口（令和2年国勢調査）は？",
+              "place": "大阪府"
+            }
+          }
+        },
+        {
+          "id": "c2",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.analyze",
+            "args": {
+              "question": "北海道の人口（令和2年国勢調査）は？",
+              "place": "北海道"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "令和2年国勢調査の人口は、東京都14,047,594人、大阪府8,837,685人、北海道5,224,614人で、3 つの合計は28,109,893人です。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "question": "東京都の人口（令和2年国勢調査）は？",
+          "place": "東京都",
+          "type": "analyze"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>東京都</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "question": "大阪府の人口（令和2年国勢調査）は？",
+          "place": "大阪府",
+          "type": "analyze"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>大阪府</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "question": "北海道の人口（令和2年国勢調査）は？",
+          "place": "北海道",
+          "type": "analyze"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>北海道</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:research.analyze",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:research.analyze",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:research.analyze",
+        "status": "completed"
+      }
+    ],
+    "text": "令和2年国勢調査の人口は、東京都14,047,594人、大阪府8,837,685人、北海道5,224,614人で、3 つの合計は28,109,893人です。"
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct",
+    "dispatched": 3,
+    "delegation": null
+  }
+}

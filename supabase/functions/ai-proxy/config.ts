@@ -10,7 +10,7 @@
 /* (supporter-funnel) every value that differs by plan is one column of _shared/plans.js */
 import { planColumn } from "../_shared/plans.js";
 import { HEARTBEAT_MS } from "../_shared/ai-stream.js";
-import { FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, spendCeiling, shareCeiling } from "../_shared/ai-provider.js";
+import { FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, spendCeiling, shareCeiling, priceOf } from "../_shared/ai-provider.js";
 import { NEWCOMER } from "../_shared/ai-ledger.js";
 
 export const cors = {
@@ -93,6 +93,23 @@ export function delegationPolicy(env: (k: string) => string) {
     maxChildren: int("ATLAS_DELEGATION_CHILDREN", DELEGATION_DEFAULTS.maxChildren),
     childMaxCalls: Math.max(1, int("ATLAS_DELEGATION_CHILD_CALLS", DELEGATION_DEFAULTS.childMaxCalls)),
   });
+}
+/* (atlas-delegation) THE WORKERS' MODEL TIER — optional. ATLAS_DELEGATION_MODEL names the model a worker's call runs
+   on, instead of the model the parent turn's selection resolves to (a cheaper model for research workers, say).
+   Unset (or "") = unchanged: a worker runs on whatever its parent would have. It is validated like the numbers
+   above, with one more rule: the id must be one whose PRICE is known (_shared/ai-provider.js MODEL_PRICE_USD_PER_MTOK).
+   An unpriced model would be reckoned at the most expensive row by the spend fence (priceOf → known:false) and its
+   cost would be journalled as a guess, so it is IGNORED — and the reason is returned for the caller to log, never
+   silently dropped and never silently run unpriced.
+   No number lives here. The model id is the operator's; the price table is the canonical place for what it costs.
+   Note: the provider stays the server's (AI_PROVIDER) — a model id of another provider is the provider's own 404,
+   which walks FALLBACK_CHAIN like any model the project cannot reach. */
+export function delegationModel(env: (k: string) => string): { model: string; ignored: string } {
+  const raw = String(env("ATLAS_DELEGATION_MODEL") || "").trim();
+  if (!raw) return { model: "", ignored: "" };
+  if (!MODEL_ID_OK.test(raw)) return { model: "", ignored: "not_a_model_id" };
+  if (!priceOf(raw).known) return { model: "", ignored: "unpriced" };
+  return { model: raw, ignored: "" };
 }
 /* ══ (atlas-delegation) WHAT ONE TURN FAMILY MAY SPEND — in money, reserved before and settled after ═════
    A turn family is a reader's turn and every worker it opened. Before each provider request ai-proxy

@@ -17,7 +17,7 @@
          operator picked off disk. It calls js/admin-literal.js's PARSER now, which cannot invoke anything, so the whole
          page no longer needs the capability. A CSP that grants eval to a page with no eval in it is
          a grant nobody is watching. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-CePd/QvEPBLVzhJsX/PwUs9f7r458SpqYXScUjzG6JA='; connect-src 'self' https://vpekfwdpurzejrrmacac.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-tY98o/KXs36wmh9V2tqmFyx/tI595UM2PsJVk4SnViQ='; connect-src 'self' https://vpekfwdpurzejrrmacac.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- (growth-loop) the site's address, for the «Growth» tab's campaign links. NOT written here: the build fills the
      token in every copied page (scripts/site-url.mjs fillSiteToken — the address has one owner,
@@ -144,6 +144,7 @@
       <button class="tab" data-tab="err">Errors</button>
       <button class="tab" data-tab="use">Usage</button>
       <button class="tab" data-tab="growth">Growth</button>
+      <button class="tab" data-tab="deleg">Delegation</button>
     </div>
 
     <!-- GEO PINS -->
@@ -284,6 +285,22 @@
       </div>
     </section>
 
+    <!-- DELEGATION (docs/MONITORING.md §2b3)
+         How Atlas's delegated child calls went: the RPC delegation_overview(p_days) (admin-only, reads the 30-day
+         journal ai_delegation_journal). READ-ONLY; drawn by js/admin-delegation.js. -->
+    <section id="tab-deleg" class="hide">
+      <div class="card">
+        <div class="bar">
+          <h2>Delegation</h2>
+          <label for="deleg-days" class="muted" style="font-size:12px;align-self:center;">Period</label>
+          <select id="deleg-days" class="btn sec sm"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="30">30 days</option></select>
+          <button class="btn sec sm" id="deleg-refresh">Refresh</button>
+        </div>
+        <p class="muted" style="margin:0 0 10px;">Children Atlas delegated, by day (UTC). refused = the policy declined to start one; failed = it started and did not finish; unobserved = no outcome was recorded.</p>
+        <div id="deleg-body"></div>
+      </div>
+    </section>
+
     <!-- GROWTH (growth-loop · docs/MONITORING.md §2b)
          The same anonymous counters as «Usage», read as the questions marketing asks: how many visits, through
          which door, from where, under which campaign, and what readers then did — and a builder for the tagged
@@ -376,6 +393,7 @@
 <!-- (admin-origin) the ONE sign-in path of the three consoles, window.IntMapAdminAuth: the client (this tab's
      sessionStorage), the password, the TOTP step to aal2, the is_admin gate, and the step-up before the import below. -->
 <script src="./js/admin-auth.js"></script>
+<script src="./js/admin-delegation.js"></script>
 <script>
 (function(){
   const $=(id)=>document.getElementById(id);
@@ -453,6 +471,22 @@
         '<td style="white-space:nowrap;">'+esc(r.browser||'—')+'</td>'+
         '<td style="white-space:nowrap;">'+esc(fmtTime(r.first_seen))+'</td></tr>').join('');
     }catch(e){ tb.innerHTML='<tr><td colspan="7" class="muted">'+esc(e.message||String(e))+'</td></tr>'; }
+  }
+
+  /* ---------------- DELEGATION (js/admin-delegation.js · docs/MONITORING.md §2b3) ----------------
+     The tab switch above is not edited; this listener shows or hides only #tab-deleg. */
+  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+    $('tab-deleg').classList.toggle('hide',b.dataset.tab!=='deleg');
+    if(b.dataset.tab==='deleg') loadDeleg();
+  }));
+  $('deleg-refresh').onclick=()=>loadDeleg();
+  $('deleg-days').onchange=()=>loadDeleg();
+  async function loadDeleg(){
+    const box=$('deleg-body');
+    box.innerHTML='<p class="muted">Loading…</p>';
+    /* the panel's markup is escaped value by value (IntMapSafe.html passed in); it is parsed in an inert document and its nodes adopted, not assigned to innerHTML */
+    const markup=await window.IntMapAdminDelegation.load(sb,$('deleg-days').value,(s)=>window.IntMapSafe.html(s));
+    box.replaceChildren(...new DOMParser().parseFromString(markup,'text/html').body.childNodes);
   }
 
   /* ---------------- USAGE (anonymous-usage-counts) ----------------

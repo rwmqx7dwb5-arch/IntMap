@@ -448,6 +448,11 @@ export function makeAtlasProgress(HOST, deps) {
           if (rec) { rec.word = word; tr.byOp[ev.operationId] = rec; setLive(bubble, word); }
         }
         if (st && st !== 'run') { closeRow(rec, st); if (tr.live === rec) tr.live = null; }
+        /* a capability that runs for a while says what it is doing through the executor's progress(p) → `ev.progress.text`, shown on its own row
+           (research.delegate: which worker is running, which has ended, what it has cost so far). Only the row of that operation, only while it runs. */
+        else if (ev.phase === 'progress' && ev.progress && typeof ev.progress.text === 'string' && rec.row) {
+          const d = rec.row.querySelector('.atl-trace-det'); if (d) d.textContent = ev.progress.text.slice(0, 160);
+        }
       } catch (_) { }
     });
   }

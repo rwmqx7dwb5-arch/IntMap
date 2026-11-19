@@ -56,6 +56,8 @@
  *    as recorded, so a change to the embedding side is not seen here.
  * ==========================================================================*/
 
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 const str = (v) => (v == null ? '' : String(v));
 
 /** canon(v) — a stable text of a value: keys sorted, `__` keys (the console's per-turn stamps, never
@@ -145,12 +147,18 @@ export async function replayCassette(cas, P) {
 
   /* the dispatch: each recorded action answers the FIRST action of equal canon not yet used. Calls of
      one reply may run together (js/atlas-agent.js footprints), so order is not the key — identity is. */
-  const pool = (world.dispatch || []).map((d) => ({ key: canon(d.action), out: d.out, used: false }));
+  const pool = (world.dispatch || []).map((d) => ({ key: canon(d.action), out: d.out, ms: Number.isFinite(+d.ms) && d.ms !== null ? +d.ms : null, used: false }));
   const dispatched = [];
+  /* (atlas-delegation-eval) a dispatch entry may carry `ms` — how long the world took to answer it, the way the
+     live harness's tap times a call. Calls of one reply run together, so the reading is handed back to the call
+     that made the action through its own async context, not through a variable the calls would share. */
+  const timing = new AsyncLocalStorage();
   const runAction = async (action) => {
     const key = canon(action);
     const hit = pool.find((p) => !p.used && p.key === key);
     dispatched.push(action);
+    const slot = timing.getStore();
+    if (hit && slot && hit.ms != null) slot.ms = hit.ms;
     if (!hit) {
       diverge('unrecorded_action', 'the surface built an action the world never answered: ' + key.slice(0, 400));
       return { ok: false, html: '', meta: { status: 'failed', code: 'replay_divergence' } };
@@ -181,7 +189,9 @@ export async function replayCassette(cas, P) {
       }
     }
     else {
-      r = await execBase(call, turn);
+      const slot = {};
+      r = await timing.run(slot, () => execBase(call, turn));
+      if (slot.ms != null) rec.ms = slot.ms;
       /* a lexical answer is recomputed — and if the registry now ranks differently than when the turn was
          recorded, that is said even when the next step happens to survive it (#R802: eight
          find_capability calls, each answered with the wrong eight ids, was a RANKING defect) */
@@ -277,6 +287,7 @@ export function validateCassette(cas) {
   if (!cas || !cas.golden || cas.golden.stopped == null) bad.push(id + ': golden.stopped — what the turn ended on');
   if (!cas || !cas.expect || (cas.expect.verdict !== 'pass' && cas.expect.verdict !== 'fail')) bad.push(id + ': expect.verdict is pass or fail');
   if (cas && cas.expect && cas.expect.verdict === 'fail' && !(Array.isArray(cas.expect.failures) && cas.expect.failures.length)) bad.push(id + ': a defect cassette names the failure kinds the judge must find');
+  if (cas && cas.arm != null && cas.arm !== 'delegate' && cas.arm !== 'direct') bad.push(id + ': arm is delegate or direct (the two sides of scripts/atlas-delegation-bench.mjs)');
   if (cas && cas.question && !(cas.question.set === 'answers' || cas.question.set === 'records')) bad.push(id + ': question.set is answers or records');
   /* (atlas-eval-map-state) the map axis's verdict, when the cassette declares one */
   if (cas && cas.expect && cas.expect.map != null && ['match', 'mismatch', 'unobserved'].indexOf(cas.expect.map) < 0) bad.push(id + ': expect.map is match, mismatch or unobserved');
@@ -306,7 +317,8 @@ export async function recordScripted(scn, P) {
     makeAtlasToolSurface: (deps) => surface = P.makeAtlasToolSurface(Object.assign({}, deps, {
       runAction: async (action) => {
         const out = await scn.respond(action);
-        world.dispatch.push({ action: JSON.parse(JSON.stringify(action, (k, v) => (k.startsWith('__') ? undefined : v))), out });
+        const ms = scn.msOf ? scn.msOf(action) : undefined;
+        world.dispatch.push(Object.assign({ action: JSON.parse(JSON.stringify(action, (k, v) => (k.startsWith('__') ? undefined : v))), out }, ms != null ? { ms } : {}));
         return out;
       },
     })),
@@ -317,7 +329,7 @@ export async function recordScripted(scn, P) {
   if (r.divergences.length) throw new Error(scn.id + ': the script does not fit the turn — ' + r.divergences.map((d) => d.kind + ': ' + d.detail).join(' | '));
   for (const c of r.calls) if (c.name === 'find_capability') { try { world.find.push({ query: String(c.args.query || ''), result: compactFind(stable(JSON.parse(c.resultText)), surface) }); } catch (_) { } }
   return {
-    id: scn.id, text: scn.text, lang: scn.lang, origin: scn.origin, question: scn.question || undefined,
+    id: scn.id, text: scn.text, lang: scn.lang, origin: scn.origin, question: scn.question || undefined, arm: scn.arm || undefined,
     limits: scn.limits || undefined, recordedMs: scn.recordedMs, model: scn.model, world,
     golden: goldenOf(r), expect: scn.expect,
   };

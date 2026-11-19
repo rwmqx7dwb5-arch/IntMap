@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, num, int, one, list, lat, lng, obj } from './atlas-caps.js';
+import { str, num, int, one, list, lat, lng, obj, bool } from './atlas-caps.js';
 import { scenarioModels, scenarioFrame, scenarioCall, scenarioReport } from './atlas-reasoning.js';   /* (atlas-reasoning) research.scenario: what is decided is in that module, as values */
 import SIM_ENTRIES from './atlas-cap-sim.js';   /* the entries that declare a `scenario` ARE the models — discovered, not listed (same lazy chunk as this file) */
 import { personaPrompt } from './atlas-persona.js';
@@ -29,7 +29,8 @@ const W = worldObjects;   /* the one session index (js/atlas-world-objects.js) *
 import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
-import { makeDelegation, makeWorkerExecutor } from './atlas-delegate.js';   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
+import { makeDelegation, makeWorkerExecutor, CONTRACT_KINDS } from './atlas-delegate.js';
+import { integrate, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
 
 /* ══ (atlas-completion) WHAT A RESEARCH ANSWER RESTS ON, SAID FROM WHAT HAPPENED ═══════════════════════════════
    An answer to a time-sensitive question used to carry ONE fixed caveat whenever `webUsed` was false —
@@ -991,9 +992,9 @@ export default [
     ui: { none: '2026-11-18' },
     phrases: () => ['並行して調べる', '手分けして調査', '分担して調べる', '複数の調査', '同時に調査'].concat(['in parallel', 'split the research', 'research separately', 'several pieces', 'delegate']),
     doc: [
-      { in: 'research.analyze', at: 30, text: 'DELEGATE RESEARCH TO WORKERS (parallel, each in its own context): {"type":"delegate","tasks":[{"id"?:str,"goal":str,"returns"?:str,"inputs"?:[{"from":task id}]}]} — 並行して調べる・手分けして調査 — hands independent pieces of a large request to worker models that run AT THE SAME TIME, search the web, and return structured findings (summary, claims with places/coordinates/dates/source URLs, and what they could not establish). Use it when a request has several pieces that can be researched apart (e.g. crude oil from the Gulf, iron ore and coal from Australia, and LNG routes to Japan) — not for a single lookup, which you answer faster yourself. A task that needs another task\'s result names it in "inputs" and starts when that one ends. The workers do not draw anything: you integrate their findings and draw the map from them. Each task comes back with a state (done / partial / failed / refused / unobservable / cancelled) and its cost; a refused task carries the server\'s reason (e.g. delegation_children = the server admits fewer workers; delegation_off = delegation is switched off).\n' },
+      { in: 'research.analyze', at: 30, text: 'DELEGATE RESEARCH TO WORKERS (parallel, each in its own context): {"type":"delegate","tasks":[{"id"?:str,"goal":str,"returns"?:str,"inputs"?:[{"from":task id}]} | {"id"?:str,"kind":"capability","capability":str (a read capability id),"args"?:{...}}]} — 並行して調べる・手分けして調査 — hands independent pieces of a large request to worker models that run AT THE SAME TIME, search the web, and return structured findings (summary, claims with places/coordinates/dates/source URLs, and what they could not establish). Use it when a request has several pieces that can be researched apart (e.g. crude oil from the Gulf, iron ore and coal from Australia, and LNG routes to Japan) — not for a single lookup, which you answer faster yourself. A task that needs another task\'s result names it in "inputs" and starts when that one ends. A task of kind "capability" runs ONE exact lookup you already know how to ask (a read-only capability id and its arguments) with NO model and NO cost, alongside the others — use it to fan the same lookup out over several places or items (the weather in five cities, a figure for each of ten countries) and to mix exact figures in with the research; its answer comes back as the task\'s summary and "data". A capability that is not read-only (it draws, changes the view, saves or sends anything) is refused with capability_not_read_only — run that yourself. Tasks may be listed in any order: an input may name a task that comes later in the list, and a loop of inputs is ended input_cycle. A capability task\'s argument may be the string "@<task id>:data.<path>" (also "@<task id>:summary") to receive what an input task produced — e.g. a spatial step\'s "inputs":["@acq:data.gis.dataset"] is handed the dataset the "acq" step made (name acq in "inputs" too); a string that must begin with @ is written "@@…". A reference that leads nowhere ends the task input_ref_unresolved without running it. Add "verify":true to a worker task to have a SECOND worker check its claims against sources of its own: the result\'s integrated.verification says per claim supported / contradicted / unsupported / unchecked (a claim the checker did not repeat stays unchecked, never assumed supported). The workers do not draw anything: you integrate their findings and draw the map from them. Besides each task, the result carries "integrated": findings that more than one worker found (duplicateFindings), places where workers\' figures differ (placeOverlaps with numbersDiffer), the deduplicated sources and who cited each, the gaps, the cost, and which tasks did not return and in what state (unreturned) — read it before you write the answer. Each task comes back with a state (done / partial / failed / refused / unobservable / cancelled) and its cost; a refused task carries the server\'s reason (e.g. delegation_children = the server admits fewer workers; delegation_off = delegation is switched off).\n' },
     ],
-    schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', required: ['goal'], properties: { id: str(), goal: str(), returns: str(), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1) } }),
+    schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', properties: { id: str(), kind: one(...CONTRACT_KINDS),   /* the substrate's own list of kinds, not a copy of it */ goal: str(), returns: str(), capability: str(), args: obj(), verify: bool(), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1) } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
       const tasks = Array.isArray(a && a.tasks) ? a.tasks : [];
@@ -1011,21 +1012,96 @@ export default [
           { meta: { status: 'failed', code: 'too_many_tasks', maxChildren: pol.maxChildren, given: tasks.length, childMaxCalls: pol.childMaxCalls } });
       }
       const signal = (typeof K.turnSignal === 'function') ? K.turnSignal() : undefined;
-      const D = makeDelegation({ parent, executor: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal }) });
-      const results = await D.run(tasks);
+      /* (atlas-orchestration) ONE EXECUTOR, TWO KINDS OF TASK. A worker task is a model behind ai-proxy; a capability task runs one
+         read-only capability through the same kernel path a call of Atlas's own takes — no model, no cost. The router sends each
+         contract to its kind's lane and REFUSES a kind with no lane (a host that cannot run capabilities says so, it does not run
+         the task as a worker). The retry after a transient failure is on only when the server has said how many requests a child
+         may make (policy.childMaxCalls), so the retry can never ask for more than the server allows. */
+      const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : undefined;
+      const executor = makeRouterExecutor({
+        worker: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal, maxCalls: childMax }),
+        capability: typeof K.runReadCapability === 'function' ? makeCapabilityExecutor({ run: K.runReadCapability, classify: K.classifyCapability }) : null,
+      });
+      const D = makeDelegation({ parent, executor });
+      const stateWord = (st) => ({ done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), unobservable: L('no answer came back', '応答なし'), cancelled: L('cancelled', '取消'), waiting: L('waiting', '待機中'), running: L('running', '実行中'), retrying: L('retrying', '再試行中') })[st] || st;
+      const usd = (n) => '$' + (Number(n) || 0).toFixed(3);
+      /* LIVE PROGRESS — read off the delegation's own event log as it is written (D.subscribe), not kept beside it. dctx.progress is
+         the executor's progress(p) for THIS operation (js/atlas-capabilities.js legacyExecute passes it); js/atlas-progress.js writes
+         p.text into the running row of the work trace. Absent (a host without a trace) → nothing is reported and nothing breaks. */
+      const progress = (dctx && typeof dctx.progress === 'function') ? dctx.progress : null;
+      const live = new Map();
+      const unsub = D.subscribe((e) => {
+        if (!e || !e.task) return;
+        if (e.kind === 'task.created') live.set(e.task, { state: 'waiting' });
+        else if (e.kind === 'task.lease') live.set(e.task, { state: 'running' });
+        else if (e.kind === 'effect.retry') live.set(e.task, { state: 'retrying' });
+        else if (e.kind === 'task.ended') live.set(e.task, { state: String(e.data.state || 'failed') });
+        else if (e.kind !== 'effect.done' && e.kind !== 'effect.failed') return;
+        if (!progress) return;
+        const t = Array.from(live.entries()).map(([id, v]) => ({ id, state: v.state }));
+        const ended = t.filter((x) => x.state !== 'waiting' && x.state !== 'running' && x.state !== 'retrying').length;
+        const spent = D.spendUsd();
+        try { progress({ text: t.map((x) => x.id + ' ' + stateWord(x.state)).join(' · ') + ' — ' + usd(spent), tasks: t, done: ended, total: t.length, costUsd: spent }); } catch (_) { /* a trace that cannot show it is not the work's problem */ }
+      });
+      /* CANCELLATION — the turn's signal stops every running task (a worker's request is aborted, a capability's run is handed
+         the signal); the listener is removed when the run is over, so a later abort of an earlier turn does nothing here */
+      const onAbort = () => D.cancelAll();
+      if (signal && typeof signal.addEventListener === 'function') signal.addEventListener('abort', onAbort, { once: true });
+      let results, verification = null;
+      try {
+        const pending = D.run(tasks);
+        if (signal && signal.aborted) D.cancelAll();
+        results = await pending;
+        /* VERIFICATION, WHEN ASKED (`verify:true` on a worker task). A second worker is handed the first one's findings and asked to
+           check each against sources of its own; its verdicts come back per claim, and a claim it did not repeat or a checker that did not
+           return stays `unchecked` — never assumed supported. It is a child like any other: the server's policy admits it or refuses it,
+           and a refusal is reported as the checker's state. */
+        const toCheck = results.filter((r, i) => tasks[i] && tasks[i].verify === true && (!tasks[i].kind || tasks[i].kind === 'worker') && (r.state === 'done' || r.state === 'partial') && r.findings.length);
+        if (toCheck.length && !(signal && signal.aborted)) {
+          const vres = await D.run(toCheck.map((r) => verifyContract(r.id)));
+          verification = verifyOutcome(toCheck.map((r, k) => ({ of: r, by: vres[k] })));
+          verification.costUsd = vres.reduce((m, r) => m + (Number(r.costUsd) || 0), 0);
+          verification.calls = vres.reduce((m, r) => m + (Number(r.calls) || 0), 0);
+        }
+      } finally {
+        if (signal && typeof signal.removeEventListener === 'function') signal.removeEventListener('abort', onAbort);
+        unsub();
+      }
       const done = results.filter((r) => r.state === 'done' || r.state === 'partial').length;
       const cost = results.reduce((m, r) => m + r.costUsd, 0);
-      const stateWord = (st) => ({ done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), unobservable: L('no answer came back', '応答なし'), cancelled: L('cancelled', '取消') })[st] || st;
-      const rows = results.map((r, i) => '<li style="margin:2px 0;"><b>' + esc(String((tasks[i] && tasks[i].goal) || r.id).slice(0, 120)) + '</b> — ' + esc(stateWord(r.state))
+      /* WHAT THE RESULTS SAY TOGETHER (js/atlas-orchestrate.js integrate) — the card says what a reader should look at; the meta
+         carries the same without repeating the findings and gaps the per-task list already carries (what is not carried is not seen
+         by the model — js/atlas-toolsurface.js mechanical) */
+      const I = integrate(results);
+      const dupes = I.findings.filter((f) => f.alsoFoundBy.length).map((f) => ({ claim: f.claim, tasks: [f.task].concat(f.alsoFoundBy) }));
+      const differ = I.placeOverlaps.filter((p) => p.numbersDiffer);
+      const integrated = {
+        coverage: I.coverage, cost: I.cost, gaps: I.gaps, unreturned: I.unreturned,
+        placeOverlaps: I.placeOverlaps.map((p) => ({ place: p.place, tasks: p.tasks, numbersDiffer: p.numbersDiffer })),
+        duplicateFindings: dupes,
+        sources: I.sources.map((x) => ({ url: x.url, title: x.title, citedBy: x.citedBy })),
+        verification: verification || undefined,
+      };
+      const label = (r, i) => String((tasks[i] && (tasks[i].goal || tasks[i].capability)) || r.id).slice(0, 120);
+      const rows = results.map((r, i) => '<li style="margin:2px 0;"><b>' + esc(label(r, i)) + '</b> — ' + esc(stateWord(r.state))
         + (r.code ? ' (' + esc(r.code) + ')' : '') + (r.sources.length ? ' · ' + esc(L(r.sources.length + ' source(s)', '出典 ' + r.sources.length + ' 件')) : '') + '</li>').join('');
+      const notes = [];
+      if (dupes.length) notes.push(L(dupes.length + ' finding(s) were found by more than one worker', dupes.length + ' 件の所見が複数の子で一致しました'));
+      if (differ.length) notes.push(L('Figures differ between workers at: ', '子どうしで数値が異なる地点: ') + differ.map((p) => p.place).slice(0, 6).join(', '));
+      if (I.unreturned.length) notes.push(L('Did not return: ', '結果が戻らなかった仕事: ') + I.unreturned.map((u) => u.task + ' (' + stateWord(u.state) + (u.code ? ', ' + u.code : '') + ')').slice(0, 8).join(', '));
+      if (verification) { const c = verification.counts; notes.push(L('Checked by a second worker: ' + c.supported + ' supported, ' + c.contradicted + ' contradicted, ' + c.unsupported + ' unsupported, ' + c.unchecked + ' not checked', '別の子による検証: 支持 ' + c.supported + ' / 反証 ' + c.contradicted + ' / 根拠なし ' + c.unsupported + ' / 未検証 ' + c.unchecked)); }
+      const totalUsd = I.cost.usd + (verification ? verification.costUsd : 0), totalCalls = I.cost.calls + (verification ? verification.calls : 0);
+      if (totalUsd > 0) notes.push(L('Worker cost ', '子の費用 ') + usd(totalUsd) + ' · ' + totalCalls + L(' request(s)', ' 回'));
+      const noteHtml = notes.length ? '<div style="margin-top:4px;opacity:.7;">' + notes.map((n) => '<div>' + esc(n) + '</div>').join('') + '</div>' : '';
       const html = '<div class="atl-deleg" style="font-size:12px;line-height:1.5;"><div style="font-weight:600;margin-bottom:2px;">'
-        + esc(L('Researched in parallel', '並行して調査')) + ' — ' + esc(L(done + ' of ' + results.length + ' returned findings', results.length + ' 件中 ' + done + ' 件が結果を返しました')) + '</div><ul style="margin:2px 0 0 16px;padding:0;">' + rows + '</ul></div>';
+        + esc(L('Researched in parallel', '並行して調査')) + ' — ' + esc(L(done + ' of ' + results.length + ' returned findings', results.length + ' 件中 ' + done + ' 件が結果を返しました')) + '</div><ul style="margin:2px 0 0 16px;padding:0;">' + rows + '</ul>' + noteHtml + '</div>';
       return R(done > 0, html, { meta: {
         status: done === results.length ? 'completed' : (done ? 'partial' : 'failed'),
         code: done === results.length ? undefined : (done ? 'some_tasks_ended_otherwise' : (results[0] && results[0].code) || 'no_findings'),
         produced: done ? ['explanation'] : undefined,
-        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
+        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, data: r.data, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
         delegatedCostUsd: cost,
+        integrated,
       } });
     },
   },

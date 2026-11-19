@@ -1,0 +1,246 @@
+{
+  "id": "delegate-child-refused-and-regrouped",
+  "text": "東京都・大阪府・北海道の人口（令和2年国勢調査）をそれぞれ別々に調べて、3 つの合計を教えて。",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "delegation-limits — the server admits fewer workers than were asked (ai-proxy refuses the third with delegation_children, measured 2026-11-19 against a two-worker policy); the refusal comes back as the task's state, and Atlas regroups by handing the refused piece in a call of its own"
+  },
+  "question": {
+    "set": "answers",
+    "id": "delegate-japan-three-prefectures-census-total"
+  },
+  "arm": "delegate",
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.delegate",
+            "args": {
+              "tasks": [
+                {
+                  "id": "tokyo",
+                  "goal": "東京都の人口（令和2年国勢調査）を、総務省統計局または都道府県の公表値で調べる。",
+                  "returns": "one figure with its reference date and a source URL"
+                },
+                {
+                  "id": "osaka",
+                  "goal": "大阪府の人口（令和2年国勢調査）を、総務省統計局または都道府県の公表値で調べる。",
+                  "returns": "one figure with its reference date and a source URL"
+                },
+                {
+                  "id": "hokkaido",
+                  "goal": "北海道の人口（令和2年国勢調査）を、総務省統計局または都道府県の公表値で調べる。",
+                  "returns": "one figure with its reference date and a source URL"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.delegate",
+            "args": {
+              "tasks": [
+                {
+                  "id": "hokkaido",
+                  "goal": "北海道の人口（令和2年国勢調査）を、総務省統計局または北海道の公表値で調べる。",
+                  "returns": "one figure with its reference date and a source URL"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "令和2年国勢調査の人口は、東京都14,047,594人、大阪府8,837,685人、北海道5,224,614人で、3 つの合計は28,109,893人です。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "tasks": [
+            {
+              "id": "tokyo",
+              "goal": "東京都の人口（令和2年国勢調査）を、総務省統計局または都道府県の公表値で調べる。",
+              "returns": "one figure with its reference date and a source URL"
+            },
+            {
+              "id": "osaka",
+              "goal": "大阪府の人口（令和2年国勢調査）を、総務省統計局または都道府県の公表値で調べる。",
+              "returns": "one figure with its reference date and a source URL"
+            },
+            {
+              "id": "hokkaido",
+              "goal": "北海道の人口（令和2年国勢調査）を、総務省統計局または都道府県の公表値で調べる。",
+              "returns": "one figure with its reference date and a source URL"
+            }
+          ],
+          "type": "delegate"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div class=\"atl-deleg\">tokyo — done · osaka — done · hokkaido — refused</div>",
+          "meta": {
+            "status": "partial",
+            "code": "some_tasks_ended_otherwise",
+            "produced": [
+              "explanation"
+            ],
+            "delegated": [
+              {
+                "id": "tokyo",
+                "state": "done",
+                "summary": "令和2年国勢調査の東京都の人口は14,047,594人。",
+                "findings": [
+                  {
+                    "claim": "東京都の人口（令和2年国勢調査）: 14,047,594人",
+                    "place": "東京都",
+                    "date": "2020-10-01",
+                    "source": "https://www.spt.metro.tokyo.lg.jp/tosei/hodohappyo/press/2022/01/20/07.html"
+                  }
+                ],
+                "gaps": [],
+                "sources": [
+                  "https://www.spt.metro.tokyo.lg.jp/tosei/hodohappyo/press/2022/01/20/07.html"
+                ],
+                "costUsd": 0.0112,
+                "calls": 1,
+                "ms": 11300
+              },
+              {
+                "id": "osaka",
+                "state": "done",
+                "summary": "令和2年国勢調査の大阪府の人口は8,837,685人。",
+                "findings": [
+                  {
+                    "claim": "大阪府の人口（令和2年国勢調査）: 8,837,685人",
+                    "place": "大阪府",
+                    "date": "2020-10-01"
+                  }
+                ],
+                "gaps": [],
+                "sources": [],
+                "costUsd": 0.0097,
+                "calls": 1,
+                "ms": 9800
+              },
+              {
+                "id": "hokkaido",
+                "state": "refused",
+                "code": "delegation_children",
+                "detail": {
+                  "status": 429
+                },
+                "summary": "この依頼で受け付ける子の仕事の数を超えています。",
+                "findings": [],
+                "gaps": [],
+                "sources": [],
+                "costUsd": 0,
+                "calls": 0,
+                "ms": 310
+              }
+            ],
+            "delegatedCostUsd": 0.020900000000000002
+          }
+        },
+        "ms": 12400
+      },
+      {
+        "action": {
+          "tasks": [
+            {
+              "id": "hokkaido",
+              "goal": "北海道の人口（令和2年国勢調査）を、総務省統計局または北海道の公表値で調べる。",
+              "returns": "one figure with its reference date and a source URL"
+            }
+          ],
+          "type": "delegate"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div class=\"atl-deleg\">hokkaido — done</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "explanation"
+            ],
+            "delegated": [
+              {
+                "id": "hokkaido",
+                "state": "done",
+                "summary": "令和2年国勢調査の北海道の人口は5,224,614人。",
+                "findings": [
+                  {
+                    "claim": "北海道の人口（令和2年国勢調査）: 5,224,614人",
+                    "place": "北海道",
+                    "date": "2020-10-01"
+                  }
+                ],
+                "gaps": [],
+                "sources": [],
+                "costUsd": 0.0089,
+                "calls": 1,
+                "ms": 7900
+              }
+            ],
+            "delegatedCostUsd": 0.0089
+          }
+        },
+        "ms": 8200
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:research.delegate",
+        "status": "partial",
+        "code": "some_tasks_ended_otherwise"
+      },
+      {
+        "name": "run_capability:research.delegate",
+        "status": "completed"
+      }
+    ],
+    "text": "令和2年国勢調査の人口は、東京都14,047,594人、大阪府8,837,685人、北海道5,224,614人で、3 つの合計は28,109,893人です。"
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct",
+    "dispatched": 2,
+    "delegation": {
+      "delegatedCount": 4,
+      "states": {
+        "done": 3,
+        "refused": 1
+      },
+      "refused": [
+        {
+          "id": "hokkaido",
+          "code": "delegation_children"
+        }
+      ],
+      "regrouped": true
+    }
+  }
+}

@@ -1576,7 +1576,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         /* ⚠ (#R551) the execution context travels as dispatch's SECOND argument, so a legacy case
            that needs to know which turn it is serving can ask — and one that does not is unchanged. */
         return runtime.dispatch(a, { turnId: (opts && opts.turnId) || null, source: (opts && opts.source) || '',
-          operationId: (opts && opts.operationId) || '', capabilityId: cap.id });
+          operationId: (opts && opts.operationId) || '', capabilityId: cap.id,
+          /* (atlas-orchestration) the executor's progress(p) for THIS operation, so a case that runs for a while (research.delegate) can say what it is doing in the work trace */
+          progress: (opts && typeof opts.progress === 'function') ? opts.progress : undefined });
       };
     }
 

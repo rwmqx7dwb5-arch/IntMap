@@ -408,6 +408,10 @@ export function makeAtlasToolSurface(deps) {
            and Atlas would have learned nothing from it (one-pass-or-a-reason §2 ②). */
         delegated: (meta.delegated && meta.delegated.length) ? meta.delegated : undefined,
         delegatedCostUsd: meta.delegated ? meta.delegatedCostUsd : undefined,
+        /* (atlas-orchestration) WHAT THE RESULTS SAY TOGETHER — findings more than one worker found, places where their figures differ, who did
+           not return and in what state, the deduplicated sources. Read off the same results as `delegated` and not derivable from one task's
+           entry, so — carried the same way, or the model never sees it. */
+        integrated: (meta.delegated && meta.integrated) ? meta.integrated : undefined,
         /* (delegation-limits) a refusal before any worker ran says the number it was refused by */
         maxChildren: meta.code === 'too_many_tasks' ? meta.maxChildren : undefined,
         given: meta.code === 'too_many_tasks' ? meta.given : undefined,

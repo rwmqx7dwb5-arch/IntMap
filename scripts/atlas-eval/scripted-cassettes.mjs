@@ -56,6 +56,32 @@ const frame = (west, south, east, north) => ({ viewport: { west, south, east, no
 const ATLAS_EMPTY = { highlightCountries: 0, highlight: null, choropleth: null, customScore: null, pins: null, polygons: null, lines: null, measure: null, radius: null, userPins: null, tool: '' };
 const objects = (...kinds) => ({ objects: { n: kinds.length, items: kinds.map((k, i) => ({ id: k + '-' + i, kind: k, name: '' })) } });
 
+/* ── (atlas-delegation-eval) research.delegate, as its result reaches the model ──────────────────────────────────
+   js/atlas-cap-research.js hands back `meta.delegated[]` (one entry per task, in js/atlas-delegate.js's shape) and
+   `meta.delegatedCostUsd`; the surface carries both to the model. A child here is the shape of a real one — a summary,
+   findings with their sources, the gaps — and the numbers a cassette cannot take from anywhere (cost, calls, ms) are the
+   SCRIPT's: a worker with web search is one to two calls and costs about a cent, and runs ten to thirty seconds. They
+   are fixtures that exercise the judge's arithmetic offline, not measurements — the bench online
+   (scripts/atlas-delegation-bench.mjs without --offline) is where they are measured.
+   `msOf` is how long the world took to answer an action (replay.mjs reads it like the live tap does). */
+const kid = (id, state, o = {}) => ({ id, state, code: o.code, detail: o.detail, summary: o.summary || '', findings: o.findings || [], gaps: o.gaps || [], sources: o.sources || [], costUsd: o.costUsd || 0, calls: o.calls == null ? 1 : o.calls, ms: o.ms });
+const delegatedResult = (kids) => {
+  const ok = kids.filter((k) => k.state === 'done' || k.state === 'partial').length;
+  return { ok: ok > 0, html: '<div class="atl-deleg">' + kids.map((k) => k.id + ' — ' + k.state).join(' · ') + '</div>', meta: {
+    status: ok === kids.length ? 'completed' : (ok ? 'partial' : 'failed'),
+    code: ok === kids.length ? undefined : (ok ? 'some_tasks_ended_otherwise' : (kids[0] && kids[0].code) || 'no_findings'),
+    produced: ok ? ['explanation'] : undefined,
+    delegated: kids, delegatedCostUsd: kids.reduce((m, k) => m + k.costUsd, 0) } };
+};
+const piece = (id, goal) => ({ id, goal, returns: 'one figure with its reference date and a source URL' });
+const analyze = (question, extra) => run('research.analyze', Object.assign({ question }, extra || {}));
+const explained = (html) => done('<div>' + html + '</div>', ['explanation']);
+
+/* the pieces of the three delegation questions (scripts/atlas-eval/answer-key.json) */
+const NA = [['us', 'the United States', 'resident population in the 2020 Census (1 April 2020)'], ['ca', 'Canada', 'population in the 2021 Census'], ['au', 'Australia', 'population in the 2021 Census']];
+const JPN = [['tokyo', '東京都', '東京都の人口（令和2年国勢調査）'], ['osaka', '大阪府', '大阪府の人口（令和2年国勢調査）'], ['hokkaido', '北海道', '北海道の人口（令和2年国勢調査）']];
+const ROUTES = [['crude', 'Persian Gulf crude oil to Japan', 'the sea route from the Persian Gulf terminals to Japan'], ['ironore', 'Western Australian iron ore to Japan', 'the sea route from Port Hedland to Japan'], ['lng', 'Qatari LNG to Japan', 'the sea route from Ras Laffan to Japan']];
+
 export const SCENARIOS = [
   {
     id: 'tokaido-route-answered',
@@ -263,6 +289,105 @@ export const SCENARIOS = [
     respond: () => ({ ok: true, html: '<div>1 糸魚川市 · 2 静岡市 — 糸魚川静岡構造線: no shape</div>', meta: { status: 'partial', produced: ['map', 'explanation'] } }),
     snapshot: { atlas: { ...ATLAS_EMPTY } },
     expect: { verdict: 'pass', grade: 'correct', map: 'match' },
+  },
+  /* ── (atlas-delegation-eval) THE PAIRED ARMS the A/B bench replays offline (scripts/atlas-delegation-bench.mjs --offline).
+     Each question has one cassette in which the turn delegated (arm `delegate`) and one in which it did not (arm
+     `direct`). Which one a real turn takes is Atlas's decision; these are the two things it can decide. The delegate
+     arms are the three ways a delegation ends: every child returns, one is refused and the model regroups, one comes
+     back unobservable and the reply must say so. */
+  {
+    id: 'delegate-census-total-all-children-done',
+    ...textOf('answers', 'delegate-north-america-census-total'),
+    arm: 'delegate',
+    origin: { kind: 'scripted', from: 'representative: three independent pieces handed to workers at once, all three return findings, the reply integrates them into the total (fixture costs and times — see the note above)' },
+    model: [
+      step(run('research.delegate', { tasks: NA.map(([id, who, what]) => piece(id, 'Find ' + who + '\'s ' + what + ' as published by its national statistics office.')) })),
+      say('The latest national censuses count 331,449,281 people in the United States (2020), 36,991,981 in Canada (2021) and 25,422,788 in Australia (2021). Together that is 393,864,050 people.'),
+    ],
+    msOf: () => 17100,
+    respond: () => delegatedResult([
+      kid('us', 'done', { summary: 'The 2020 Census counted 331,449,281 residents on 1 April 2020.', findings: [{ claim: 'Resident population of the United States, 1 April 2020: 331,449,281', place: 'United States', date: '2020-04-01', source: 'https://census.gov/newsroom/press-releases/2021/2020-census-apportionment-results.html' }], sources: ['https://census.gov/newsroom/press-releases/2021/2020-census-apportionment-results.html'], costUsd: 0.0118, ms: 13800 }),
+      kid('ca', 'done', { summary: 'The 2021 Census counted 36,991,981 people in Canada (11 May 2021).', findings: [{ claim: 'Population of Canada, 2021 Census: 36,991,981', place: 'Canada', date: '2021-05-11', source: 'https://www12.statcan.gc.ca/census-recensement/stats/statind2021.cfm?Lang=E' }], sources: ['https://www12.statcan.gc.ca/census-recensement/stats/statind2021.cfm?Lang=E'], costUsd: 0.0094, ms: 11200 }),
+      kid('au', 'done', { summary: 'The 2021 Census counted 25,422,788 people in Australia, excluding overseas visitors.', findings: [{ claim: 'Population of Australia, 2021 Census: 25,422,788', place: 'Australia' }], sources: [], costUsd: 0.0103, ms: 16400 }),
+    ]),
+    expect: { verdict: 'pass', grade: 'correct', dispatched: 1, delegation: { delegatedCount: 3, states: { done: 3 }, overlapped: true, regrouped: false } },
+  },
+  {
+    id: 'direct-census-total-no-delegation',
+    ...textOf('answers', 'delegate-north-america-census-total'),
+    arm: 'direct',
+    origin: { kind: 'scripted', from: 'representative: the same question answered without delegating — Atlas researches the three countries itself, three analyses in one reply' },
+    model: [
+      step(...NA.map(([, who, what]) => analyze('What is ' + who + '\'s ' + what + '?', { countries: [who] }))),
+      say('The latest national censuses count 331,449,281 people in the United States (2020), 36,991,981 in Canada (2021) and 25,422,788 in Australia (2021). Together that is 393,864,050 people.'),
+    ],
+    respond: (a) => explained(String(a.question || 'analysis')),
+    expect: { verdict: 'pass', grade: 'correct', dispatched: 3, delegation: null },
+  },
+  {
+    id: 'delegate-child-refused-and-regrouped',
+    ...textOf('answers', 'delegate-japan-three-prefectures-census-total'),
+    arm: 'delegate',
+    origin: { kind: 'scripted', from: 'delegation-limits — the server admits fewer workers than were asked (ai-proxy refuses the third with delegation_children, measured 2026-11-19 against a two-worker policy); the refusal comes back as the task\'s state, and Atlas regroups by handing the refused piece in a call of its own' },
+    model: [
+      step(run('research.delegate', { tasks: JPN.map(([id, , what]) => piece(id, what + 'を、総務省統計局または都道府県の公表値で調べる。')) })),
+      step(run('research.delegate', { tasks: [piece('hokkaido', '北海道の人口（令和2年国勢調査）を、総務省統計局または北海道の公表値で調べる。')] })),
+      say('令和2年国勢調査の人口は、東京都14,047,594人、大阪府8,837,685人、北海道5,224,614人で、3 つの合計は28,109,893人です。'),
+    ],
+    msOf: (a) => (a.tasks.length === 3 ? 12400 : 8200),
+    respond: (a) => (a.tasks.length === 3
+      ? delegatedResult([
+        kid('tokyo', 'done', { summary: '令和2年国勢調査の東京都の人口は14,047,594人。', findings: [{ claim: '東京都の人口（令和2年国勢調査）: 14,047,594人', place: '東京都', date: '2020-10-01', source: 'https://www.spt.metro.tokyo.lg.jp/tosei/hodohappyo/press/2022/01/20/07.html' }], sources: ['https://www.spt.metro.tokyo.lg.jp/tosei/hodohappyo/press/2022/01/20/07.html'], costUsd: 0.0112, ms: 11300 }),
+        kid('osaka', 'done', { summary: '令和2年国勢調査の大阪府の人口は8,837,685人。', findings: [{ claim: '大阪府の人口（令和2年国勢調査）: 8,837,685人', place: '大阪府', date: '2020-10-01' }], sources: [], costUsd: 0.0097, ms: 9800 }),
+        kid('hokkaido', 'refused', { code: 'delegation_children', detail: { status: 429 }, summary: 'この依頼で受け付ける子の仕事の数を超えています。', calls: 0, ms: 310 }),
+      ])
+      : delegatedResult([
+        kid('hokkaido', 'done', { summary: '令和2年国勢調査の北海道の人口は5,224,614人。', findings: [{ claim: '北海道の人口（令和2年国勢調査）: 5,224,614人', place: '北海道', date: '2020-10-01' }], sources: [], costUsd: 0.0089, ms: 7900 }),
+      ])),
+    expect: { verdict: 'pass', grade: 'correct', dispatched: 2, delegation: { delegatedCount: 4, states: { done: 3, refused: 1 }, refused: [{ id: 'hokkaido', code: 'delegation_children' }], regrouped: true } },
+  },
+  {
+    id: 'direct-japan-census-total-no-delegation',
+    ...textOf('answers', 'delegate-japan-three-prefectures-census-total'),
+    arm: 'direct',
+    origin: { kind: 'scripted', from: 'representative: the same question answered without delegating' },
+    model: [
+      step(...JPN.map(([, who, what]) => analyze(what + 'は？', { place: who }))),
+      say('令和2年国勢調査の人口は、東京都14,047,594人、大阪府8,837,685人、北海道5,224,614人で、3 つの合計は28,109,893人です。'),
+    ],
+    respond: (a) => explained(String(a.place || 'analysis')),
+    expect: { verdict: 'pass', grade: 'correct', dispatched: 3, delegation: null },
+  },
+  {
+    id: 'delegate-child-unobservable-said-so',
+    ...textOf('answers', 'delegate-gulf-to-japan-routes-strait-name'),
+    arm: 'delegate',
+    origin: { kind: 'scripted', from: 'atlas-delegation — a worker whose request left and never came back is `unobservable` (not known to have failed, not retried — js/atlas-delegate.js); the call as a whole still returns the two findings, and the reply must tell the reader the third piece is missing rather than write it from memory' },
+    model: [
+      step(run('research.delegate', { tasks: ROUTES.map(([id, , what]) => piece(id, 'Describe ' + what + ': ports, waypoints and the narrow straits it passes.')) })),
+      say('The Gulf crude and the Qatari LNG tankers both leave through the Strait of Hormuz, between Iran and the Musandam Peninsula of Oman, into the Gulf of Oman. I could not describe the Western Australian iron-ore route: that worker\'s request left but no answer came back, so I have not written it from memory.'),
+    ],
+    msOf: () => 30900,
+    respond: () => delegatedResult([
+      kid('crude', 'done', { summary: 'Crude from Gulf terminals leaves the Persian Gulf through the Strait of Hormuz, crosses the Arabian Sea and the Indian Ocean, and passes the Strait of Malacca before reaching Japan.', findings: [{ claim: 'Tankers leaving the Persian Gulf pass the Strait of Hormuz, the waterway between the Persian Gulf and the Gulf of Oman', place: 'Strait of Hormuz', source: 'https://en.wikipedia.org/wiki/Strait_of_Hormuz' }], sources: ['https://en.wikipedia.org/wiki/Strait_of_Hormuz'], costUsd: 0.0131, calls: 2, ms: 18900 }),
+      kid('ironore', 'unobservable', { code: 'network', detail: { status: 0 }, summary: 'Failed to fetch', calls: 1, ms: 30000 }),
+      kid('lng', 'done', { summary: 'LNG from Ras Laffan loads inside the Persian Gulf and leaves through the Strait of Hormuz.', findings: [{ claim: 'Ras Laffan, Qatar, is on the Persian Gulf coast; its LNG carriers leave via the Strait of Hormuz', place: 'Ras Laffan' }], sources: [], costUsd: 0.0108, ms: 14200 }),
+    ]),
+    expect: { verdict: 'pass', grade: 'correct', dispatched: 1,
+      delegation: { delegatedCount: 3, states: { done: 2, unobservable: 1 }, unobservable: ['ironore'], overlapped: true },
+      replyMustMatch: [{ pattern: 'no answer came back|could not (?:describe|get|obtain|confirm)', why: 'a child that came back unobservable is a fact of this world; the reader must be told that piece is missing (never written from memory)' }] },
+  },
+  {
+    id: 'direct-gulf-routes-no-delegation',
+    ...textOf('answers', 'delegate-gulf-to-japan-routes-strait-name'),
+    arm: 'direct',
+    origin: { kind: 'scripted', from: 'representative: the same question answered without delegating' },
+    model: [
+      step(...ROUTES.map(([, , what]) => analyze('Describe ' + what + ' and the narrow straits it passes.'))),
+      say('The Gulf crude and the Qatari LNG tankers both leave through the Strait of Hormuz, between Iran and the Musandam Peninsula of Oman, into the Gulf of Oman. The iron-ore route from Port Hedland does not pass it.'),
+    ],
+    respond: (a) => explained(String(a.question || 'analysis')),
+    expect: { verdict: 'pass', grade: 'correct', dispatched: 3, delegation: null },
   },
 ];
 

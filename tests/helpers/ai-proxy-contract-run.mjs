@@ -47,8 +47,9 @@ const recordBody = (text) => {
   if (s.length <= BODY_KEEP) { try { return JSON.parse(s); } catch (_) { return s; } }
   return { length: s.length, sha256: createHash('sha256').update(s).digest('hex'), head: s.slice(0, 200) };
 };
-/* The one value the function draws from the clock: Gemini's call ids ("g" + Date.now base 36 + "_" + i). */
-const unclock = (s) => s.replace(/"g[0-9a-z]{6,}_(\d+)"/g, '"g<clock>_$1"');
+/* The values the function draws from the clock: Gemini's call ids ("g" + Date.now base 36 + "_" + i), and — (atlas-delegation) —
+   the journal row's wall-clock latency (log_ai_delegation p_latency_ms): a measurement, not a decision. */
+const unclock = (s) => s.replace(/"g[0-9a-z]{6,}_(\d+)"/g, '"g<clock>_$1"').replace(/"p_latency_ms":\d+/g, '"p_latency_ms":0');
 /* The one value a LIBRARY writes about itself: supabase-js stamps its own version on every request it makes
    (x-client-info «supabase-js/2.117.2; runtime=deno»). That is a fact about the dependency, not about what the
    function does, so a patch bump of supabase-js turned the photograph red with nothing in ai-proxy changed

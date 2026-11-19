@@ -41,19 +41,46 @@ export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 
 
 const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 
+/* a JSON text that does not depend on key order — the identity of an arguments object */
+export function stable(v) {
+  if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
+}
+
+/* The two kinds of piece of work. `worker`: a model researches it (the default). `capability`: one read-only IntMap
+   capability is run with these arguments, no model in between — the cheap, exact way to fan a lookup out (the weather
+   in five cities, a figure for each of ten countries). Which capabilities may be named is the executor's call
+   (js/atlas-orchestrate.js makeCapabilityExecutor), not this file's. */
+export const CONTRACT_KINDS = Object.freeze(['worker', 'capability']);
+
+/* The most a capability task's arguments may weigh once written as JSON. Observation 2026-11-19: the arguments Atlas
+   writes for a read capability are a handful of short fields (the largest schema in js/atlas-cap-*.js carries ~10
+   keys); 4000 characters is an order of magnitude over that. Expires if a read capability starts taking a document
+   as an argument — then pass it by reference (an input task) instead of raising this. Canonical: here only. */
+const ARGS_MAX_CHARS = 4000;
+
 /* normaliseContract(c) → { ok, contract } | { ok:false, error } */
 export function normaliseContract(c) {
   if (!c || typeof c !== 'object') return { ok: false, error: 'contract_not_object' };
-  const goal = s(c.goal, 2000);
-  if (!goal) return { ok: false, error: 'goal_missing' };
+  const kind = c.kind === 'capability' ? 'capability' : 'worker';
   const inputs = (Array.isArray(c.inputs) ? c.inputs : [])
     .map((i) => (i && typeof i === 'object' ? s(i.from, 64) : s(i, 64))).filter(Boolean).map((from) => ({ from }));
-  return { ok: true, contract: { id: s(c.id, 64), goal, returns: s(c.returns, 600), inputs } };
+  if (kind === 'capability') {
+    const capability = s(c.capability, 80);
+    if (!capability) return { ok: false, error: 'capability_missing' };
+    const args = (c.args && typeof c.args === 'object' && !Array.isArray(c.args)) ? c.args : {};
+    if (stable(args).length > ARGS_MAX_CHARS) return { ok: false, error: 'args_too_large' };
+    return { ok: true, contract: { id: s(c.id, 64), kind, goal: s(c.goal, 2000) || ('capability ' + capability), returns: s(c.returns, 600), inputs, capability, args } };
+  }
+  const goal = s(c.goal, 2000);
+  if (!goal) return { ok: false, error: 'goal_missing' };
+  return { ok: true, contract: { id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs } };
 }
 
 /* the identity of a piece of work: what it is asked to do and from what — not the id it was given */
-function contractKey(c) {
-  return JSON.stringify([c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort()]);
+export function contractKey(c) {
+  return stable([c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null]);
 }
 
 function makeEventLog(now) {
@@ -75,6 +102,72 @@ function makeEventLog(now) {
   };
 }
 
+/* cycleMembers(contracts) → Set of the INDICES whose inputs lead back to themselves. `contracts` are normalised contracts
+   (null where one did not normalise). Only names that are tasks of the list count as edges; a name that is not one is
+   `input_unknown` at run time, not a cycle. Strongly connected components (Tarjan): a component of two or more tasks, or
+   a task that names itself, is a cycle. */
+function cycleMembers(contracts) {
+  const list = Array.isArray(contracts) ? contracts : [];
+  const at = new Map();
+  list.forEach((c, i) => { if (c && c.id && !at.has(c.id)) at.set(c.id, i); });
+  const edges = list.map((c) => (c ? (c.inputs || []).map((i) => at.get(i.from)).filter((j) => j !== undefined) : []));
+  const out = new Set();
+  let idx = 0;
+  const index = new Array(list.length).fill(-1), low = new Array(list.length).fill(0), on = new Array(list.length).fill(false), stack = [];
+  const visit = (v) => {
+    index[v] = low[v] = idx++; stack.push(v); on[v] = true;
+    edges[v].forEach((w) => {
+      if (index[w] < 0) { visit(w); low[v] = Math.min(low[v], low[w]); } else if (on[w]) low[v] = Math.min(low[v], index[w]);
+    });
+    if (low[v] === index[v]) {
+      const comp = [];
+      let w;
+      do { w = stack.pop(); on[w] = false; comp.push(w); } while (w !== v);
+      if (comp.length > 1 || edges[v].indexOf(v) >= 0) comp.forEach((x) => out.add(x));
+    }
+  };
+  for (let v = 0; v < list.length; v++) if (index[v] < 0) visit(v);
+  return out;
+}
+
+/* resolveArgs(args, inputs) → { ok, args } | { ok:false, why }
+   An argument that is a string of exactly the form  @<task id>:<path>  is replaced by what that task's result holds at
+   <path> (dot-separated keys and array positions; the result's `data` and `summary` are the roots: `@acq:data.gis.dataset`).
+   Only a task named in `inputs` can be referred to — a reference is a dependency, and a dependency is declared. A string
+   beginning `@@` is the literal string without its first `@`. A reference that leads nowhere refuses the whole step. */
+const REF_RE = /^@([A-Za-z0-9._-]{1,64}):([A-Za-z0-9_.\-\[\]]+)$/;
+export function resolveArgs(args, inputs) {
+  const byFrom = new Map((Array.isArray(inputs) ? inputs : []).map((i) => [i.from, i]));
+  let why = '';
+  const walk = (v) => {
+    if (why) return v;
+    if (typeof v === 'string') {
+      if (v.startsWith('@@')) return v.slice(1);
+      const m = REF_RE.exec(v);
+      if (!m) return v;
+      const src = byFrom.get(m[1]);
+      if (!src) { why = 'The argument "' + v + '" refers to task "' + m[1] + '", which is not one of its inputs (name it in "inputs").'; return v; }
+      let cur = { data: src.data, summary: src.summary };
+      for (const k of m[2].split('.').filter(Boolean)) {
+        if (cur == null || typeof cur !== 'object' || !(k in Object(cur))) { why = 'The argument "' + v + '" leads nowhere: task "' + m[1] + '" has no "' + k + '" there.'; return v; }
+        cur = cur[k];
+      }
+      return cur;
+    }
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === 'object') { const o = {}; Object.keys(v).forEach((k) => { o[k] = walk(v[k]); }); return o; }
+    return v;
+  };
+  const out = walk(args == null ? {} : args);
+  return why ? { ok: false, why } : { ok: true, args: out };
+}
+
+/* The result fields that may ride along as raw data (a capability's own answer). Bounded because a result is held in
+   memory, written to the event log's snapshot and handed to the model: observation 2026-11-19 — a read capability's
+   meta is a few hundred bytes to a few kB; 20000 characters is generous. Over it, the data is dropped and the
+   result says so in `gaps` rather than being cut mid-structure. */
+const DATA_MAX_CHARS = 20000;
+
 /* makeDelegation({ executor, log?, now?, parent? }) — one delegation: the tasks one Atlas call hands on.
    → { start(contract) → handle, run(contracts) → Promise<result[]>, cancelAll(), log, workspace, spendUsd() } */
 export function makeDelegation(o) {
@@ -87,71 +180,136 @@ export function makeDelegation(o) {
   const tasks = new Map();      // id → { contract, key, promise, controller, holder }
   const byKey = new Map();      // contractKey → id
   const workspace = new Map();  // id → result (appended once, when the task ends)
+  const subscribers = new Set();
+  /* RESUME — the results a previous run of this delegation already had (snapshot().results). A task whose contract is
+     the same one and that ended `done`/`partial` is not run again: it is answered from the record and says so
+     (`resumed`). Anything else — it failed, it was refused, nothing was recorded — runs. This is what lets a second
+     executor (a reloaded page, a server) pick the same delegation up without redoing, or re-paying for, finished work. */
+  const resumeByKey = new Map();
+  ((opt.resume && Array.isArray(opt.resume.results)) ? opt.resume.results : []).forEach((e) => {
+    if (e && e.key && e.result && (e.result.state === 'done' || e.result.state === 'partial')) resumeByKey.set(String(e.key), e.result);
+  });
+  const keys = new Map();       // id → contractKey, for snapshot()
   let n = 0;
 
+  /* every append goes through here so a watcher sees the event the moment it is written; a watcher that throws is
+     the watcher's problem and never the work's */
+  function note(kind, task, data, rel) {
+    const e = log.append(kind, task, data, rel);
+    subscribers.forEach((fn) => { try { fn(e); } catch (_) { /* a watcher must not break the delegation */ } });
+    return e;
+  }
+
   function finish(id, t0, r) {
+    let data;
+    if (r && r.data !== undefined) {
+      let txt = '';
+      try { txt = stable(r.data); } catch (_) { txt = ''; }
+      if (txt && txt.length <= DATA_MAX_CHARS) { try { data = JSON.parse(txt); } catch (_) { data = undefined; } }
+    }
+    const dropped = !!(r && r.data !== undefined && data === undefined);
     const res = Object.freeze({
       id, state: RESULT_STATES.includes(r && r.state) ? r.state : 'failed',
       code: (r && r.code) || undefined,
       detail: (r && r.detail && typeof r.detail === 'object') ? Object.freeze(Object.fromEntries(Object.entries(r.detail).filter(([, v]) => v !== undefined))) : undefined,
       summary: s(r && r.summary, 4000),
       findings: Array.isArray(r && r.findings) ? r.findings.slice(0, 40) : [],
-      gaps: Array.isArray(r && r.gaps) ? r.gaps.slice(0, 20).map((g) => s(g, 400)).filter(Boolean) : [],
+      gaps: (Array.isArray(r && r.gaps) ? r.gaps.slice(0, 20).map((g) => s(g, 400)).filter(Boolean) : [])
+        .concat(dropped ? ['The raw data of this result was too large to keep and was dropped (the summary above is complete).'] : []),
       sources: Array.isArray(r && r.sources) ? r.sources.slice(0, 40) : [],
+      data,
       costUsd: Math.max(0, Number(r && r.costUsd) || 0),
       calls: Math.max(0, Number(r && r.calls) || 0),
       ms: Math.max(0, clock() - t0),
     });
     workspace.set(id, res);
-    log.append('task.ended', id, { state: res.state, code: res.code || '', costUsd: res.costUsd, calls: res.calls, ms: res.ms });
+    note('task.ended', id, { state: res.state, code: res.code || '', costUsd: res.costUsd, calls: res.calls, ms: res.ms });
     return res;
   }
 
-  function start(raw) {
+  /* FORWARD NAMES — a task may name, as an input, a task that appears LATER in the same list. run() declares every id of
+     its list before any task starts; a name in this map is a task that is about to be started, and waiting on it is
+     waiting on that task's result. start() on its own (a single task, no list) has no forward names, so a name it does
+     not know is `input_unknown`, as it always was. */
+  const forward = new Map();    // declared id → { promise, resolve, settled }
+  const settleForward = (id, promise) => {
+    const f = forward.get(id);
+    if (f && !f.settled) { f.settled = true; promise.then(f.resolve, f.resolve); }
+  };
+
+  function start(raw, force) {
     const nc = normaliseContract(raw);
     if (!nc.ok) {
       const id = 'invalid' + (++n);
       const t0 = clock();
-      log.append('task.created', id, { goal: '', invalid: nc.error }, parent ? [{ kind: 'spawned_by', to: parent }] : []);
+      note('task.created', id, { goal: '', invalid: nc.error }, parent ? [{ kind: 'spawned_by', to: parent }] : []);
       const res = finish(id, t0, { state: 'failed', code: nc.error });
-      return { id, reused: false, promise: Promise.resolve(res), cancel() {} };
+      const p = Promise.resolve(res);
+      if (raw && typeof raw === 'object' && raw.id) settleForward(String(raw.id).slice(0, 64), p);
+      return { id, reused: false, resumed: false, promise: p, cancel() {} };
     }
     const c = nc.contract;
     const key = contractKey(c);
     if (byKey.has(key)) {
       const prior = tasks.get(byKey.get(key));
-      log.append('task.reused', prior.id, {}, [{ kind: 'same_as', to: prior.id }]);
-      return { id: prior.id, reused: true, promise: prior.promise, cancel: () => prior.controller.abort() };
+      note('task.reused', prior.id, {}, [{ kind: 'same_as', to: prior.id }]);
+      if (c.id) settleForward(c.id, prior.promise);   /* a later task that named THIS spelling of the id gets the same answer */
+      return { id: prior.id, reused: true, resumed: false, promise: prior.promise, cancel: () => prior.controller.abort() };
     }
     let id = c.id && !tasks.has(c.id) ? c.id : 'task' + (++n);
     while (tasks.has(id)) id = 'task' + (++n);
     const controller = new AbortController();
     const rel = (parent ? [{ kind: 'spawned_by', to: parent }] : []).concat(c.inputs.map((i) => ({ kind: 'uses_output_of', to: i.from })));
-    log.append('task.created', id, { goal: c.goal, returns: c.returns }, rel);
+    note('task.created', id, { goal: c.goal, returns: c.returns, kind: c.kind, capability: c.capability || undefined }, rel);
     const t0 = clock();
     const entry = { id, contract: c, key, controller, holder: null, promise: null };
     tasks.set(id, entry);
     byKey.set(key, id);
+    keys.set(id, key);
+    if (force && force.code) {
+      /* a task the list itself shows cannot start (its inputs lead back to it): ended with the reason, never run, never left waiting */
+      entry.promise = Promise.resolve(finish(id, t0, { state: 'failed', code: force.code, summary: force.summary }));
+      settleForward(id, entry.promise);
+      return { id, reused: false, resumed: false, promise: entry.promise, cancel() {} };
+    }
+    if (resumeByKey.has(key)) {
+      const prior = resumeByKey.get(key);
+      note('task.resumed', id, { from: prior.id || '', costUsd: Number(prior.costUsd) || 0, calls: Number(prior.calls) || 0 });
+      /* what the first run spent was spent then; this run spent nothing, so the spend read off this log stays true */
+      entry.promise = Promise.resolve(finish(id, t0, Object.assign({}, prior, { costUsd: 0, calls: 0 })));
+      settleForward(id, entry.promise);
+      return { id, reused: false, resumed: true, promise: entry.promise, cancel() {} };
+    }
     entry.promise = (async () => {
       /* DEPENDENCIES: an input is another task's result. A name that is not a task of this delegation, or a
          task that did not end `done`/`partial`, leaves this one without what it was asked to start from. */
       const inputs = [];
       for (const i of c.inputs) {
         const dep = tasks.get(i.from);
-        if (!dep || dep === entry) return finish(id, t0, { state: 'failed', code: 'input_unknown', summary: 'No task named "' + i.from + '" was started in this delegation.' });
-        const r = await dep.promise;
+        const fwd = dep ? null : forward.get(i.from);
+        if (dep === entry || (!dep && !fwd)) return finish(id, t0, { state: 'failed', code: 'input_unknown', summary: 'No task named "' + i.from + '" was started in this delegation.' });
+        const r = await (dep ? dep.promise : fwd.promise);
         if (r.state !== 'done' && r.state !== 'partial') return finish(id, t0, { state: 'failed', code: 'input_unavailable', summary: 'The task it starts from ("' + i.from + '") ended ' + r.state + '.' });
-        inputs.push({ from: i.from, summary: r.summary, findings: r.findings, gaps: r.gaps });
+        inputs.push({ from: i.from, summary: r.summary, findings: r.findings, gaps: r.gaps, data: r.data });
       }
       if (controller.signal.aborted) return finish(id, t0, { state: 'cancelled' });
+      /* A capability task's arguments may name what an input produced (`@task:data.gis.dataset`) — the way one analysis step
+         is handed the dataset the step before it made. Resolved here, from the inputs this task has just been given, and
+         refused BY NAME when the reference leads nowhere: a step run with a guessed argument is not the step asked for. */
+      let runArgs = c.args;
+      if (c.kind === 'capability') {
+        const ra = resolveArgs(c.args, inputs);
+        if (!ra.ok) return finish(id, t0, { state: 'failed', code: 'input_ref_unresolved', summary: ra.why });
+        runArgs = ra.args;
+      }
       /* THE LEASE: who holds the right to run this task. One executor holds every lease here; the event is
          what a second executor (a server, a second tab) would read before running a task someone else holds. */
       entry.holder = String(executor.id || 'executor');
-      log.append('task.lease', id, { holder: entry.holder });
+      note('task.lease', id, { holder: entry.holder });
       try {
-        const r = await executor.run({ id, goal: c.goal, returns: c.returns, inputs }, {
+        const r = await executor.run({ id, kind: c.kind, goal: c.goal, returns: c.returns, inputs, capability: c.capability, args: runArgs }, {
           signal: controller.signal,
-          emit: (kind, data) => log.append(kind, id, data),
+          emit: (kind, data) => note(kind, id, data),
         });
         return finish(id, t0, controller.signal.aborted && !(r && r.state) ? { state: 'cancelled' } : r);
       } catch (e) {
@@ -159,17 +317,45 @@ export function makeDelegation(o) {
         return finish(id, t0, { state: 'failed', code: 'executor_threw', summary: s(e && e.message, 400) });
       }
     })();
-    return { id, reused: false, promise: entry.promise, cancel: () => controller.abort() };
+    settleForward(id, entry.promise);
+    return { id, reused: false, resumed: false, promise: entry.promise, cancel: () => controller.abort() };
   }
 
   return {
     start,
+    /* run(contracts) — start every task of a list and wait for all of them. The list is read WHOLE before anything starts:
+       a task may name an input that comes later in it (it waits for that task), and a set of tasks whose inputs lead back
+       to themselves is ended `input_cycle` at once instead of waiting for each other for ever. */
     async run(contracts) {
-      const handles = (Array.isArray(contracts) ? contracts : []).map(start);
+      const list = Array.isArray(contracts) ? contracts : [];
+      const norm = list.map((raw) => normaliseContract(raw));
+      const declared = new Set();
+      norm.forEach((x) => { if (x.ok && x.contract.id && !tasks.has(x.contract.id)) declared.add(x.contract.id); });
+      declared.forEach((id) => {
+        let resolve; const promise = new Promise((r) => { resolve = r; });
+        forward.set(id, { promise, resolve, settled: false });
+      });
+      const cyc = cycleMembers(norm.map((x) => (x.ok ? x.contract : null)));
+      const handles = list.map((raw, i) => start(raw, cyc.has(i) ? { code: 'input_cycle', summary: 'Its inputs lead back to itself through "' + (norm[i].ok ? norm[i].contract.id : '') + '".' } : undefined));
+      /* a declared name no task took (its id was already in use, so it was given another) must not leave a waiter waiting */
+      forward.forEach((f) => { if (!f.settled) { f.settled = true; f.resolve({ state: 'failed', code: 'input_unknown', summary: 'No task of this list took that name.', findings: [], gaps: [], sources: [] }); } });
       const results = await Promise.all(handles.map((h) => h.promise));
-      return results.map((r, i) => Object.assign({ reused: handles[i].reused }, r));
+      return results.map((r, i) => Object.assign({ reused: handles[i].reused, resumed: handles[i].resumed }, r));
     },
     cancelAll() { tasks.forEach((t) => { try { t.controller.abort(); } catch (_) { /* already ended */ } }); },
+    /* stop ONE task (its dependents then end `failed`/`input_unavailable`, as for any task that did not finish) */
+    cancel(id) { const t = tasks.get(String(id)); if (t) { try { t.controller.abort(); } catch (_) { /* already ended */ } } return !!t; },
+    /* watch the log as it is written: fn(event) for each event from now on → an unsubscribe function. The live view of
+       a delegation (which task is running, which has ended, what it cost so far) is this, read — not a second record. */
+    subscribe(fn) { if (typeof fn !== 'function') return () => {}; subscribers.add(fn); return () => { subscribers.delete(fn); }; },
+    /* everything needed to continue this delegation elsewhere, as plain JSON (feed it back as makeDelegation({resume})) */
+    snapshot() {
+      return JSON.parse(JSON.stringify({
+        v: 1, parent, at: clock(),
+        results: Array.from(workspace.entries()).map(([id, result]) => ({ id, key: keys.get(id) || '', result })),
+        events: log.all(),
+      }));
+    },
     log,
     workspace: { get: (id) => workspace.get(id) || null, all: () => Array.from(workspace.values()) },
     /* THE SPEND, read off the log: what each provider request of this delegation reported it cost */
@@ -188,14 +374,14 @@ const WORKER_SYSTEM = personaPrompt('working here as a research worker: you have
   'Do only the piece you are given. Use the web search tool when it is attached to find and verify current facts; prefer primary and official sources.',
   'Never invent a fact, a figure, a date, a source or a coordinate. Give coordinates only when you know them (a well-known city, port, strait or facility); otherwise leave them out and name the place.',
   'Write in the language the piece is written in.',
-  'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL)}], "gaps": [string] (what you could not establish, and why)}.',
+  'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL), "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "gaps": [string] (what you could not establish, and why)}.',
 ].join('\n');
 
 function workerPrompt(task) {
   let p = 'YOUR PIECE OF THE WORK:\n' + task.goal;
   if (task.returns) p += '\n\nWHAT ATLAS NEEDS BACK:\n' + task.returns;
   (task.inputs || []).forEach((i) => {
-    p += '\n\nWHAT ANOTHER WORKER FOUND (task "' + i.from + '") — build on it, do not repeat it:\n' + JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps }).slice(0, 12000);
+    p += '\n\nWHAT ANOTHER WORKER FOUND (task "' + i.from + '") — build on it, do not repeat it:\n' + JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data }).slice(0, 12000);
   });
   return p + '\n\nToday is ' + new Date().toISOString().slice(0, 10) + '.';
 }
@@ -209,17 +395,50 @@ export function shapeOf(data) {
   const findings = (data.findings || []).filter((f) => f && typeof f === 'object' && typeof f.claim === 'string' && f.claim.trim()).map((f) => {
     const lat = num(f.lat), lon = num(f.lon);
     const ll = lat != null && lon != null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
-    return { claim: s(f.claim, 800), place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined };
+    const verdict = (f.verdict === 'supported' || f.verdict === 'unsupported' || f.verdict === 'contradicted') ? f.verdict : undefined;
+    return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined };
   });
   return { ok: true, out: { summary: s(data.summary, 4000), findings, gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] } };
 }
 
+/* requestKey(prompt, webMode) → a key in ai-proxy's REPLAY_KEY_OK alphabet that is the same for the same request and (to
+   2^-64) different for any other: two independent 32-bit hashes of the text, written in hex. Not a secret and not a
+   signature — the server binds the key to the account and the turn; this only has to tell requests apart. */
+export function requestKey(prompt, webMode) {
+  const text = String(webMode || '') + '\n' + String(prompt || '');
+  let h1 = 0x811c9dc5, h2 = 0x9747b28c;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+    h2 = Math.imul(h2 ^ (c + i), 0x5bd1e995) >>> 0;
+  }
+  return 'w-' + h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0');
+}
+
+/* A failure the server NAMED and that says the attempt itself, not the request, went wrong: the provider was
+   unavailable, a 5xx came back, or the web search ran out its time. Only these are tried again (one-pass-or-a-reason
+   §5: a retry follows an observed failure). A refusal is the server's decision and is never retried; a request that
+   left and never came back (`unobservable`) is not known to have failed, so it is not retried either. */
+export function isTransientFailure(code, detail) {
+  const d = detail || {};
+  return code === 'provider_unavailable' || code === 'timeout' || d.timeout === true || (Number(d.status) >= 500 && Number(d.status) < 600);
+}
+
+/* makeWorkerExecutor({ ask, parentTurn, signal, maxCalls? })
+   maxCalls — how many requests one worker may make (the first, a repair of a wrong shape, a retry after a transient
+   failure). Pass the server's own bound (meta.delegationPolicy.childMaxCalls): the server refuses a call past it with
+   `turn_calls`, so asking for more only buys a refusal. Setting it is also what turns the retry on. Unset → 2 requests
+   (the first and one repair of a wrong shape) and no retry: what this executor did before it could retry. */
 export function makeWorkerExecutor(o) {
   const opt = o || {};
   const ask = opt.ask;
   if (typeof ask !== 'function') throw new Error('makeWorkerExecutor: ask is required');
   const parentTurn = String(opt.parentTurn || '');
   const outerSignal = opt.signal || null;
+  const maxCalls = Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1 ? opt.maxCalls : 2;
+  /* a retry after a transient failure is the caller's opt-in, by saying how many requests the server allows: without
+     it the one spare request stays what it always was, the repair of a wrong shape */
+  const retryTransient = Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1;
   return {
     id: 'worker-model@page',
     async run(task, ctx) {
@@ -231,12 +450,19 @@ export function makeWorkerExecutor(o) {
       let calls = 0, costUsd = 0, why = '';
       const sources = [];
       let prompt = workerPrompt(task);
-      for (let attempt = 0; attempt < 2; attempt++) {
-        const intent = ctx.emit('effect.intent', { attempt, turn: childKey });
+      let webMode = 'auto';
+      let degraded = '';   /* what the final answer was made without, after a retry that changed the request */
+      for (let attempt = 0; attempt < maxCalls; attempt++) {
+        const intent = ctx.emit('effect.intent', { attempt, turn: childKey, webMode });
         let env;
         calls += 1;
         try {
-          env = await ask(prompt, WORKER_SYSTEM, null, { task: 'atlas_delegate', webMode: 'auto', turnId: childKey, parentTurnId: parentTurn, signal: controller.signal });
+          env = await ask(prompt, WORKER_SYSTEM, null, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, signal: controller.signal,
+            /* the key is the REQUEST's identity — what is asked and how (prompt + web mode), under this child's turn key. A duplicate of THIS
+               request (the same delegation resumed by another executor) is answered with the first's answer instead of being run again;
+               a different request — the repair, the retry, or another research.delegate call that reused the id "task1" in the same turn —
+               has a different key and is never handed this one's answer. */
+            replayKey: requestKey(prompt, webMode) });
         } catch (e) {
           if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, sources };
           const code = String((e && e.code) || '');
@@ -248,6 +474,18 @@ export function makeWorkerExecutor(o) {
           if (REFUSAL_CODES.includes(code)) return { state: 'refused', code, detail, summary: s(e && e.message, 400), calls, costUsd, sources };
           /* the request may or may not have reached the provider: nothing came back to say which */
           if (code === 'network' || code === 'stream_broken' || (e && e.status === 0)) return { state: 'unobservable', code: code || 'network', detail, summary: s(e && e.message, 400), calls, costUsd, sources };
+          /* An OBSERVED transient failure, with a request left in the budget: try again, but not the same request. A web
+             search that ran out its time is not asked to search again (it would meet the same wall); it is asked to answer
+             from what the model knows, and the result says it was made without the web. Any other transient failure is
+             asked again for less — fewer, shorter findings — which is a different, cheaper request. */
+          if (retryTransient && isTransientFailure(code, detail) && attempt + 1 < maxCalls) {
+            const change = detail.timeout ? 'web_off' : 'concise';
+            if (change === 'web_off') { webMode = 'off'; degraded = 'The web search timed out, so this was answered without it, from what the model knows: treat every claim as unverified.'; }
+            prompt = workerPrompt(task) + '\n\nA PREVIOUS ATTEMPT AT THIS PIECE FAILED (' + (code || 'error') + '). '
+              + (change === 'web_off' ? 'Web search is NOT available this time: answer only from what you reliably know, say plainly what you could not check, and give no source URL you cannot vouch for.' : 'Be concise: at most 5 findings, each one sentence, and say what you could not establish.');
+            ctx.emit('effect.retry', { intent: intent.id, code, change, attempt: attempt + 1 });
+            continue;
+          }
           return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), calls, costUsd, sources };
         }
         const meta = (env && env.meta) || {};
@@ -258,14 +496,18 @@ export function makeWorkerExecutor(o) {
           if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: s(x.url, 500), title: s(x.title, 200) });
         });
         const sh = shapeOf(env && env.data);
-        if (sh.ok) return Object.assign({ state: 'done', calls, costUsd, sources }, sh.out);
+        if (sh.ok) {
+          const out = Object.assign({ state: 'done', calls, costUsd, sources }, sh.out);
+          if (degraded) { out.state = 'partial'; out.code = 'degraded'; out.gaps = [degraded].concat(out.gaps || []); }
+          return out;
+        }
         why = sh.why;
-        if (attempt === 0) {
+        if (attempt + 1 < maxCalls) {
           prompt = workerPrompt(task) + '\n\nYOUR PREVIOUS ANSWER COULD NOT BE USED: ' + why + '. Return exactly the JSON object described, with a non-empty "summary".';
           continue;
         }
         const raw = s(env && env.text, 4000);
-        return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: ['The worker did not return the requested shape (' + why + ').'], calls, costUsd, sources };
+        return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker did not return the requested shape (' + why + ').']), calls, costUsd, sources };
       }
       return { state: 'failed', code: 'shape', summary: why, calls, costUsd, sources };
     },

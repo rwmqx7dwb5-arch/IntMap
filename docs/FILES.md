@@ -1670,6 +1670,7 @@ admin-auth.js                     運営コンソールの唯一のサインイ�
                                   セッションはそのタブの sessionStorage（キー intmap-admin-auth）、破壊的操作前の stepUp。これを読むページが
                                   コンソールで、scripts/admin-site.mjs がアプリとは別の origin へ組み立てる
 admin-inquiries.js                admin-inquiries.html の動き——管理者の確認、相談の一覧・状態・メモ・削除、支援者の掲載・非表示・削除
+admin-delegation.js               運営コンソール admin.html の Delegation タブ（素の script・window.IntMapAdminDelegation）——RPC delegation_overview を日別の表・棒・コード上位で描く
 admin-pipeline.js                 相談のコンソールの Pipeline タブ（ES module・admin-inquiries.js がタブを開いたとき import()）——会話の段
                                   （lead→talking→trial→adopted|declined）・次にやること・期日。語はページの data-*（inquiry-shape.js が正本）
 weather.js                        気象（export wind / weatherEC / weatherPanel）
@@ -1736,6 +1737,7 @@ overpass.js                       **Overpass の唯一のクライアント** `o
                                   （空の答えとは別）。`race`・`budgetMs`（下げるだけ）・`accept`・`historical`（OHM）・`relay`。
                                   window.IntMapOverpass ＋ ES import の両方（同一の関数）
 atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
+atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
@@ -2063,7 +2065,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（63本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（64本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。

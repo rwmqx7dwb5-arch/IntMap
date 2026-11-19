@@ -560,6 +560,32 @@
        "p_user": "u-1",
        "p_turn": "turn-0001"
       }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "refused",
+       "p_code": "empty_turn",
+       "p_http": 400,
+       "p_model": "",
+       "p_latency_ms": 0,
+       "p_input": 0,
+       "p_output": 0,
+       "p_cost_micros": 0,
+       "p_web": false
+      }
      }
     ],
     "logs": [
@@ -636,6 +662,32 @@
       "body": {
        "p_user": "u-1",
        "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "refused",
+       "p_code": "too_large",
+       "p_http": 413,
+       "p_model": "",
+       "p_latency_ms": 0,
+       "p_input": 0,
+       "p_output": 0,
+       "p_cost_micros": 0,
+       "p_web": false
       }
      }
     ],
@@ -4518,6 +4570,32 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "ok",
+       "p_code": "",
+       "p_http": 200,
+       "p_model": "gpt-5.6-terra",
+       "p_latency_ms": 0,
+       "p_input": 900,
+       "p_output": 40,
+       "p_cost_micros": 2200,
+       "p_web": false
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -4832,6 +4910,32 @@
          "cap": 32
         }
        ]
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "ok",
+       "p_code": "",
+       "p_http": 200,
+       "p_model": "gpt-5.6-terra",
+       "p_latency_ms": 0,
+       "p_input": 120,
+       "p_output": 30,
+       "p_cost_micros": 480,
+       "p_web": true
       }
      },
      {
@@ -7520,6 +7624,32 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "ok",
+       "p_code": "",
+       "p_http": 200,
+       "p_model": "gpt-5.6-terra",
+       "p_latency_ms": 0,
+       "p_input": 5,
+       "p_output": 2,
+       "p_cost_micros": 30,
+       "p_web": false
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -7972,6 +8102,32 @@
          "cap": 32
         }
        ]
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "ok",
+       "p_code": "",
+       "p_http": 200,
+       "p_model": "gpt-5.6-terra",
+       "p_latency_ms": 0,
+       "p_input": 5,
+       "p_output": 2,
+       "p_cost_micros": 30,
+       "p_web": false
       }
      },
      {
@@ -8499,6 +8655,32 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "ok",
+       "p_code": "",
+       "p_http": 200,
+       "p_model": "gpt-5.6-terra",
+       "p_latency_ms": 0,
+       "p_input": 900,
+       "p_output": 40,
+       "p_cost_micros": 2200,
+       "p_web": false
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -8918,6 +9100,32 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "ok",
+       "p_code": "",
+       "p_http": 200,
+       "p_model": "gpt-5.6-terra",
+       "p_latency_ms": 0,
+       "p_input": 900,
+       "p_output": 40,
+       "p_cost_micros": 2200,
+       "p_web": false
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -9239,6 +9447,32 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "ok",
+       "p_code": "",
+       "p_http": 200,
+       "p_model": "gpt-5.6-terra",
+       "p_latency_ms": 0,
+       "p_input": 900,
+       "p_output": 40,
+       "p_cost_micros": 2200,
+       "p_web": false
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -9496,6 +9730,32 @@
          "cap": 32
         }
        ]
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "failed",
+       "p_code": "provider_unavailable",
+       "p_http": 503,
+       "p_model": "",
+       "p_latency_ms": 0,
+       "p_input": 0,
+       "p_output": 0,
+       "p_cost_micros": 0,
+       "p_web": false
       }
      }
     ],
@@ -10734,6 +10994,32 @@
          "cap": 32
         }
        ]
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "ok",
+       "p_code": "",
+       "p_http": 200,
+       "p_model": "claude-x",
+       "p_latency_ms": 0,
+       "p_input": 9,
+       "p_output": 3,
+       "p_cost_micros": 24,
+       "p_web": false
       }
      },
      {
@@ -12807,6 +13093,32 @@
          "cap": 32
         }
        ]
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_root": "turn-0001",
+       "p_child": "",
+       "p_task": "atlas_turn",
+       "p_outcome": "ok",
+       "p_code": "",
+       "p_http": 200,
+       "p_model": "g",
+       "p_latency_ms": 0,
+       "p_input": 0,
+       "p_output": 0,
+       "p_cost_micros": 0,
+       "p_web": false
       }
      },
      {

@@ -216,7 +216,8 @@ test('R447 ⑥: ai-proxy answers 429 in exactly two places, and both carry `used
   /* spelling kept — the server half is Deno TypeScript and SQL migrations; their 429 bodies and the quota function are read, not run */
   const proxy = aiProxySource();
   const src = codeOnly(proxy);
-  const four29 = [...src.matchAll(/return json\(\s*(\{[^}]*\})\s*,\s*429\s*\)/g)].map((m) => m[1]);
+  /* a quota 429 is answered through `json(...)` or through `bail(...)` — the same body and status, written to the journal first (ask.ts `bail`) */
+  const four29 = [...src.matchAll(/return (?:await bail|json)\(\s*(\{[^}]*\})\s*,\s*429\s*\)/g)].map((m) => m[1]);
   assert.equal(four29.length, 3, `ai-proxy returns ${four29.length} 429s — the client tells its own quota from a platform rate limit by the body, so a fourth shape must be declared here`);
   four29.forEach((body) => {
     assert.match(body, /\b(used|glossUsed)\b/, `a 429 without a count is unattributable to the client: ${body}`);

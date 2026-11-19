@@ -88,6 +88,90 @@ export function repeatsOf(calls, callKey) {
   return out;
 }
 
+/* ── (atlas-delegation-eval) WHAT A DELEGATING TURN DID, READ FROM THE RESULT THE MODEL RECEIVED ─────────────
+   research.delegate (js/atlas-cap-research.js) states its children on its result — `delegated[]`, each
+   { id, state, code, detail, summary, findings, gaps, sources, costUsd, calls, ms }, and `delegatedCostUsd` — and
+   js/atlas-toolsurface.js carries both to the model. Nothing here defines a state: the vocabulary is
+   js/atlas-delegate.js RESULT_STATES (done / partial / failed / refused / unobservable / cancelled), counted as
+   the result spells it. A call is a delegate call because its RESULT says so (it names the capability, or it
+   carries `delegated`), never because of how the model spelled the call. */
+const DELEGATE_CAP = 'research.delegate';
+const isDelegateCall = (c) => {
+  const r = resultObj(c);
+  return capOfCall(c) === DELEGATE_CAP || !!(r && (r.capability === DELEGATE_CAP || Array.isArray(r.delegated)));
+};
+const finite = (v) => (v !== null && v !== '' && v !== undefined && Number.isFinite(+v) ? +v : null);
+
+/**
+ * delegationOf(calls, ops) — the delegation facts of one turn, or null when the turn did not delegate.
+ *   calls  the tool calls as the model received them (null when the tap was not installed)
+ *   ops    the page's operation list (names research.delegate even when the tap did not run)
+ * Measured and not measured are kept apart (this file's header): a number the record does not carry is null,
+ * never 0 — a child's `ms` the cassette did not record, a call the tap did not time.
+ *   wall-clock: the children of one call run at the same time (js/atlas-delegate.js), so the call should take
+ *   about as long as its slowest child, not the sum. `overlapped` says whether the call finished in less than
+ *   its children one after another would have (callMs < sumChildMs) — a comparison of two measured numbers,
+ *   no threshold; `slowestShareOfCall` is how much of the call the slowest child accounts for (1 = the call IS
+ *   its slowest child). Both are null when no call was timed with two or more timed children.
+ */
+export function delegationOf(calls, ops) {
+  const opN = (Array.isArray(ops) ? ops : []).filter((o) => str(o && o.capabilityId) === DELEGATE_CAP).length;
+  if (!Array.isArray(calls)) return opN ? { observed: false, calls: opN } : null;
+  const mine = calls.filter(isDelegateCall);
+  if (!mine.length) return opN ? { observed: false, calls: opN } : null;
+  const states = {}, refused = [], unobservable = [], wholeRefusals = [];
+  let count = 0, cost = 0, costSeen = false, withFindings = 0;
+  let callMs = 0, callMsSeen = false, sumChildMs = 0, maxChildMs = null, slowest = null, overlapped = null, share = null;
+  let regrouped = false, trouble = false;
+  const perCall = [];
+  for (const c of mine) {
+    const r = resultObj(c) || {};
+    const kids = Array.isArray(r.delegated) ? r.delegated : [];
+    /* the call's own refusal, before any worker ran (delegation_off, too_many_tasks, no_tasks): no children, a code */
+    const whole = !kids.length && r.ok === false;
+    if (whole) wholeRefusals.push({ code: str(r.code || r.error), maxChildren: finite(r.maxChildren), given: finite(r.given) });
+    if (trouble) regrouped = true;   /* a later delegate call after one that had a refused child, or was refused whole */
+    let callTrouble = whole;
+    let kidMs = 0, kidMsN = 0, kidMax = null, kidSlow = null;
+    for (const k of kids) {
+      count++;
+      const st = str(k && k.state) || 'unknown';
+      states[st] = (states[st] || 0) + 1;
+      if (st === 'refused') { refused.push({ id: str(k.id), code: str(k.code) }); callTrouble = true; }
+      if (st === 'unobservable') { unobservable.push(str(k.id)); callTrouble = true; }
+      if ((st === 'done' || st === 'partial') && ((Array.isArray(k.findings) && k.findings.length) || str(k.summary).trim())) withFindings++;
+      const ms = finite(k && k.ms);
+      if (ms != null) { kidMs += ms; kidMsN++; if (kidMax == null || ms > kidMax) { kidMax = ms; kidSlow = str(k.id); } }
+    }
+    if (callTrouble) trouble = true;
+    const kc = finite(r.delegatedCostUsd);
+    if (kc != null) { cost += kc; costSeen = true; }
+    else if (kids.some((k) => finite(k && k.costUsd) != null)) { cost += kids.reduce((m, k) => m + (finite(k && k.costUsd) || 0), 0); costSeen = true; }
+    const cm = finite(c && c.ms);
+    if (cm != null) { callMs += cm; callMsSeen = true; }
+    sumChildMs += kidMs;
+    if (kidMax != null && (maxChildMs == null || kidMax > maxChildMs)) { maxChildMs = kidMax; slowest = kidSlow; }
+    perCall.push({ ms: cm, sumChildMs: kidMsN ? kidMs : null, maxChildMs: kidMax, timedChildren: kidMsN });
+  }
+  /* the two wall-clock readings are about ONE call at a time (the children of two calls do not overlap each
+     other); a turn reports them over its calls that were timed and had two or more timed children */
+  const timed = perCall.filter((p) => p.ms != null && p.timedChildren >= 2);
+  if (timed.length) {
+    overlapped = timed.every((p) => p.ms < p.sumChildMs);
+    const t = timed.reduce((m, p) => ({ ms: m.ms + p.ms, max: m.max + p.maxChildMs }), { ms: 0, max: 0 });
+    share = t.ms > 0 ? t.max / t.ms : null;
+  }
+  return {
+    observed: true, calls: mine.length, delegatedCount: count, states, withFindings,
+    refused, unobservable, wholeRefusals,
+    costUsd: costSeen ? cost : null,
+    callMs: callMsSeen ? callMs : null,
+    maxChildMs, slowestChild: slowest, sumChildMs: perCall.some((p) => p.sumChildMs != null) ? sumChildMs : null,
+    overlapped, slowestShareOfCall: share,
+    regrouped,
+  };
+}
+
 /** The value at a dotted path (`atlas.pins.n`), or undefined. */
 export function at(obj, path) {
   let v = obj;
@@ -144,13 +228,13 @@ export function judgeTurn(q, obs, ctx) {
   }).length;
 
   const metrics = {
-    ms: Number.isFinite(+obs.ms) ? +obs.ms : null,
+    ms: (obs.ms != null && Number.isFinite(+obs.ms)) ? +obs.ms : null,   /* a replay carries no whole-turn clock: null, not 0 */
     operations: ops.length,
     zeroOps: ops.length === 0,
     stopped,
     cut: ctx.cutStops[stopped] === 1,
     noReply: !reply.trim(),
-    overBudget: Number.isFinite(+obs.ms) && ctx.turnBudgetMs > 0 && +obs.ms > ctx.turnBudgetMs,
+    overBudget: obs.ms != null && Number.isFinite(+obs.ms) && ctx.turnBudgetMs > 0 && +obs.ms > ctx.turnBudgetMs,
     findCapability: calls ? calls.filter((c) => c.name === 'find_capability').length : null,
     secondOfSameOp: repeats ? repeats.length : null,
     repeats,
@@ -158,6 +242,8 @@ export function judgeTurn(q, obs, ctx) {
     maxSameCapability: maxSame ? { capability: maxSame[0], n: maxSame[1] } : null,
     observerContradictions: calls ? contradictions : null,
     answeredAboutCentre: calls ? centre : null,
+    /* (atlas-delegation-eval) null when the turn did not delegate — a turn that did not is reported exactly as before */
+    delegation: delegationOf(calls, ops),
   };
 
   /* ── the expectations the recorded round judged by ────────────────────────────────────────── */
@@ -299,6 +385,31 @@ export function metricsOf(turns, probes) {
     },
     answers: answersOf(m),
     map: mapAxisOf(m),
+    delegation: delegationAxisOf(m),
+  };
+}
+
+/** (atlas-delegation-eval) delegationAxisOf(measuredTurns) — the delegation facts over the turns that delegated.
+ *  A turn whose delegation was not observed (no tap) is counted apart (`unobserved`), never as zero children. */
+export function delegationAxisOf(m) {
+  const d = m.filter((t) => t.metrics && t.metrics.delegation);
+  const seen = d.filter((t) => t.metrics.delegation.observed);
+  const states = {};
+  for (const t of seen) for (const [k, n] of Object.entries(t.metrics.delegation.states)) states[k] = (states[k] || 0) + n;
+  const costs = seen.map((t) => t.metrics.delegation.costUsd).filter((v) => v != null);
+  const mx = seen.map((t) => t.metrics.delegation.maxChildMs).filter((v) => v != null);
+  const timed = seen.filter((t) => t.metrics.delegation.overlapped !== null);
+  return {
+    turns: d.length, unobserved: d.filter((t) => !t.metrics.delegation.observed).map((t) => t.id),
+    calls: seen.reduce((s, t) => s + t.metrics.delegation.calls, 0),
+    children: seen.reduce((s, t) => s + t.metrics.delegation.delegatedCount, 0),
+    states,
+    costUsd: costs.length ? costs.reduce((s, v) => s + v, 0) : null,
+    maxChildMs: mx.length ? Math.max(...mx) : null,
+    refusedTurns: seen.filter((t) => t.metrics.delegation.refused.length || t.metrics.delegation.wholeRefusals.length).map((t) => t.id),
+    unobservableTurns: seen.filter((t) => t.metrics.delegation.unobservable.length).map((t) => t.id),
+    regroupedTurns: seen.filter((t) => t.metrics.delegation.regrouped).map((t) => t.id),
+    overlapped: { overlapped: timed.filter((t) => t.metrics.delegation.overlapped).length, of: timed.length },
   };
 }
 
@@ -386,6 +497,8 @@ export function badnessOf(turns, probes) {
     if (x.rubric && x.rubric.measured) b[id + ':rubric'] = x.rubric.verdict === 'pass' ? 0 : 1;
     /* the map axis: only an observed verdict is a fact that can regress (unobserved produces no key) */
     if (x.map && x.map.verdict !== 'unobserved') b[id + ':map'] = x.map.verdict === 'match' ? 0 : 1;
+    /* (atlas-delegation-eval) children that came back with nothing — only an observed delegating turn has the key */
+    if (x.delegation && x.delegation.observed) b[id + ':delegationUnfinished'] = x.delegation.delegatedCount - ((x.delegation.states.done || 0) + (x.delegation.states.partial || 0));
   }
   for (const p of probes || []) if (p.measured) b['probe:' + p.asked + ':wrong'] = p.failures.length ? 1 : 0;
   return b;
@@ -530,6 +643,18 @@ export function renderMarkdown(r) {
       for (const [k, o] of rows) L.push('| ' + k + ' | ' + pm(o) + ' | ' + o.mismatch + ' | ' + o.unobserved + ' |');
     }
   }
+  const DA = M.delegation;
+  if (DA && DA.turns) {
+    L.push('');
+    L.push('## Delegation — what research.delegate did (children, state, cost, wall-clock)');
+    L.push('');
+    L.push('* turns that delegated: **' + DA.turns + '** (' + DA.calls + ' call(s), ' + DA.children + ' child task(s)) · states: ' + (Object.entries(DA.states).map(([k, n]) => k + ' ×' + n).join(', ') || '—')
+      + ' · cost ' + (DA.costUsd == null ? '—' : '$' + DA.costUsd.toFixed(4)) + ' · slowest child ' + secs(DA.maxChildMs)
+      + ' · call faster than its children in sequence: ' + (DA.overlapped.of ? DA.overlapped.overlapped + ' / ' + DA.overlapped.of : '— (not timed)'));
+    if (DA.refusedTurns.length) L.push('* a child or the call was refused in: ' + DA.refusedTurns.join(', ') + (DA.regroupedTurns.length ? ' · regrouped after it in: ' + DA.regroupedTurns.join(', ') : ''));
+    if (DA.unobservableTurns.length) L.push('* a child came back unobservable in: ' + DA.unobservableTurns.join(', '));
+    if (DA.unobserved.length) L.push('* delegation not observed (no tool-call tap) in: ' + DA.unobserved.join(', '));
+  }
   const un = Object.entries(M.unmeasured);
   if (un.length) {
     L.push('');
@@ -563,6 +688,13 @@ export function renderMarkdown(r) {
       + (x.findCapability != null ? ' · find_capability ×' + x.findCapability : '')
       + (x.secondOfSameOp ? ' · same call again ×' + x.secondOfSameOp : '')
       + (x.reusedByAgent ? ' · answered from the reuse ledger ×' + x.reusedByAgent : ''));
+    if (x.delegation && x.delegation.observed) {
+      const d = x.delegation;
+      L.push('* delegated ' + d.delegatedCount + ' task(s) in ' + d.calls + ' call(s): ' + (Object.entries(d.states).map(([k, n]) => k + ' ×' + n).join(', ') || 'none returned')
+        + (d.costUsd != null ? ' · $' + d.costUsd.toFixed(4) : '') + (d.maxChildMs != null ? ' · slowest child ' + secs(d.maxChildMs) : '')
+        + (d.overlapped === null ? '' : (d.overlapped ? ' · ran at the same time' : ' · ran one after another'))
+        + (d.refused.length ? ' · refused: ' + d.refused.map((r) => r.id + '/' + r.code).join(', ') : '') + (d.regrouped ? ' · regrouped' : ''));
+    }
     if (x.grade) L.push('* answer: ' + x.grade.verdict + ' — expected ' + x.grade.expected + (x.grade.stated.length ? '; stated ' + x.grade.stated.slice(0, 4).join(', ') : ''));
     if (x.map) L.push('* map: ' + x.map.verdict + ' — ' + x.map.criteria.map((c) => c.criterion + ' ' + c.verdict + (c.verdict === 'match' ? '' : ' (' + c.detail + ')')).join(' · '));
     if (x.rubric) L.push('* independent grader: ' + (x.rubric.measured ? x.rubric.verdict + ' (' + Object.entries(x.rubric.scores).map(([k, v]) => k + ' ' + v).join(', ') + (x.rubric.model ? ' · ' + x.rubric.model : '') + ')' : 'not graded — ' + x.rubric.reason));
