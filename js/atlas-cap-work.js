@@ -187,7 +187,7 @@ export default [
         if (act === 'restore') {
           if (p.kind !== 'dataset') return refuse('not_a_dataset', L('Only a dataset product can be put back into the session; read this one with "get".', 'セッションに戻せるのはデータセットだけです。これは "get" で読んでください。'));
           await window.IntMapLazy.need('gisCore');
-          const D = window.IntMapData; if (!D || typeof D.add !== 'function') return refuse('registry_missing', L('The dataset registry could not be loaded.', 'データセットのレジストリを読み込めませんでした。'));
+          const D = window.IntMapData; if (!D || typeof D.add !== 'function') return refuse('registry_missing', L('The dataset registry could not be loaded.', 'データセットの登録先を読み込めませんでした。'));
           const c = p.content, feats = c.format === 'geojson' ? c.features : c.rows.map((r) => ({ type: 'Feature', geometry: null, properties: Object.fromEntries(c.columns.map((n, i) => [n, r[i]])) }));
           const ds = D.add({ title: p.name + (p.version > 1 ? ' (v' + p.version + ')' : ''), features: feats, provenance: { kind: 'work-product', work: w.id, product: p.id, licence: c.licence || undefined } });
           return say('<div><b>' + esc(L('Put back as a new dataset', '新しいデータセットとして戻しました')) + '</b>: <code>' + esc(ds.id) + '</code> · ' + ds.count + ' ' + esc(L('rows', '行')) + '</div>' + note(esc(L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。'))), { id: w.id, product: p.id, dataset: ds.id, count: ds.count });
