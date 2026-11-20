@@ -398,6 +398,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["jobs.amend","jobAmend","amendJob,changeJob,tellJob,addInstruction","research","none","","explanation","session","none","",""],
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
       ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
+      ["jobs.resume","jobResume","resumeJob,retryJob,continueJob,rerunFailed","research","none","","explanation","external","explicit","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -432,7 +433,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var EQUIVALENTS = {"data.countryCard":["data.timeSeries"],"research.mapReport":["research.situationMap"],"research.situationMap":["research.mapReport"]};
     var ANSWERS = {"research.brief":1,"research.mapReport":1,"research.situationMap":1,"research.historicalMap":1,"research.analyze":1};
     var ASKS_USER = {"dialog.ask":1};
-    var DELEGATES = {"research.delegate":1,"jobs.start":1};
+    var DELEGATES = {"research.delegate":1,"jobs.start":1,"jobs.resume":1};
     /* ⚠ GENERATED POLICY — END */
 
     /* ══ OBSERVERS ═══════════════════════════════════════════════════════════════════════════════

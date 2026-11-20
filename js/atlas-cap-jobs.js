@@ -13,7 +13,17 @@
  *  See js/atlas-caps.js for what an entry holds; the columns of `row` are at «THE TABLE» in js/atlas-capabilities.js.
  * ==========================================================================*/
 import { str, int, bool, list, obj, one } from './atlas-caps.js';
-import { pageJobsClient, planDigest, jobText, jobCardShell, mountJobCards } from './atlas-jobs-client.js';
+import { pageJobsClient, planDigest, jobText, jobCardShell, mountJobCards, applyParked, deviceParkedMemory } from './atlas-jobs-client.js';
+
+/* the page's side of a parked operation: the SAME gate a turn and a program go through (K.programBridge → makeExecute), granted only 'state' (map and session, no persist, no external) */
+function parkedApplier(K, dctx) {
+  return async (p) => {
+    if (typeof K.programBridge !== 'function') return { ok: false, why: 'no executor here' };
+    const h = K.programBridge({ turn: dctx || {}, grants: ['state'], forbid: (cap) => (cap && /^jobs[.]/.test(cap.id)) ? 'a job does not start or stop jobs from the page it came back to' : null });
+    try { const r = await h.bridge.handle({ v: 1, seq: 1, kind: 'call', capability: p.capability, args: p.args || {} }); return { ok: !!(r && r.ok && r.observed !== false), why: r && r.ok ? '' : String((r && (r.why || r.refused)) || 'refused') }; }
+    finally { try { h.bridge.cancel('done'); } catch (_) { /* closed */ } try { h.close(); } catch (_) { /* closed */ } }
+  };
+}
 
 /* what the server says when it refuses, in the reader's words (the codes are atlas-jobs/index.ts's); null for a code with no sentence of its own */
 function refusal(L, code) {
@@ -24,6 +34,7 @@ function refusal(L, code) {
     case 'limit': return L("Today's AI allowance is used up, so no job was started.", '今日の AI の利用枠を使い切ったため、仕事は始まりませんでした。');
     case 'quota_unavailable': return L('The usage allowance could not be checked, so no job was started.', '利用枠を確認できなかったため、仕事は始まりませんでした。');
     case 'user_active_limit': return L('Two jobs are already running for this account; wait for one to end or stop one.', 'このアカウントでは既に 2 件の仕事が実行中です。終わるのを待つか、どれかを止めてください。');
+    case 'nothing_to_resume': return L('Nothing to resume.', '再開するものはありません。');
     case 'busy': return L('The server is running its maximum number of jobs; try again shortly.', 'サーバが同時に実行できる仕事の上限に達しています。少し待って再度お試しください。');
     case 'capability_unsupported_on_server': return L('A capability task named something the server cannot run without a page; use a worker task, or run that capability yourself.', '指定された能力はページ無しのサーバでは実行できません。調査の仕事にするか、自分で実行してください。');
     case 'kind_unsupported': return L('That kind of task cannot run on the server.', 'その種類の仕事はサーバでは実行できません。');
@@ -40,7 +51,7 @@ export default [
     ui: { none: '2026-11-20' },
     phrases: () => ['バックグラウンドで調べて', '閉じても続けて', '時間のかかる調査', '後で結果を見る', '裏で調べて'].concat(['in the background', 'keep going after I close', 'long research', 'check back later', 'run it as a job']),
     doc: [
-      { in: 'research.analyze', at: 31, text: 'START A BACKGROUND JOB (it keeps running on the server after this turn AND after the tab is closed; you can look, change it and stop it while it runs): {"type":"jobStart","title"?:str,"tasks":[{"id"?:str,"goal":str,"returns"?:str,"inputs"?:[{"from":task id}]} (a researcher: web search, returns findings with sources) | {"id"?:str,"kind":"capability","capability":ID,"args":{…}} (one READ capability that has a server twin, run with no model at no cost; a capability without one is refused BY NAME and the refusal lists every one that does, with its arguments) | {"id"?:str,"goal":str,"tools":[capability ids with a server twin]} (a researcher that ALSO calls those capabilities itself, as many rounds as it needs inside the cost cap of the job, and builds its answer on what they return)] up to 8,"fresh"?:bool} — for work that is big, slow or can wait: 「時間がかかってもいいので調べて」「閉じても続けて」「裏で調べて」「後で結果を見たい」. It returns AT ONCE with a job card (progress, each piece as it ends, a Stop button and a box to change the instructions); END YOUR TURN there, tell the reader the job runs on its own, and read it later with {"type":"jobStatus"}. Do not wait for it in this turn and do not poll it. A task\'s "inputs" names tasks of the same list whose findings it builds on. A job costs one of the reader\'s daily AI uses and is capped at $1; two may run at a time per reader. Use research.delegate instead when the answer is wanted in THIS turn.' },
+      { in: 'research.analyze', at: 31, text: 'START A BACKGROUND JOB (it keeps running on the server after this turn AND after the tab is closed; you can look, change it and stop it while it runs): {"type":"jobStart","title"?:str,"tasks":[{"id"?:str,"goal":str,"returns"?:str,"inputs"?:[{"from":task id}]} (a researcher: web search, returns findings with sources) | {"id"?:str,"kind":"capability","capability":ID,"args":{…}} (one READ capability that has a server twin, run with no model at no cost; a capability that CHANGES THE MAP OR THE SESSION (a layer, the camera, a panel, the clock) cannot run on a server, so the job SAVES it and the page applies it when the reader next opens IntMap; any other capability is refused BY NAME and the refusal lists every one that runs on the server, with its arguments) | {"id"?:str,"goal":str,"tools":[capability ids with a server twin]} (a researcher that ALSO calls those capabilities itself, as many rounds as it needs inside the cost cap of the job, and builds its answer on what they return)] up to 8,"fresh"?:bool} — for work that is big, slow or can wait: 「時間がかかってもいいので調べて」「閉じても続けて」「裏で調べて」「後で結果を見たい」. It returns AT ONCE with a job card (progress, each piece as it ends, a Stop button and a box to change the instructions); END YOUR TURN there, tell the reader the job runs on its own, and read it later with {"type":"jobStatus"}. Do not wait for it in this turn and do not poll it. A task\'s "inputs" names tasks of the same list whose findings it builds on. A job costs one of the reader\'s daily AI uses and is capped at $1; two may run at a time per reader. Use research.delegate instead when the answer is wanted in THIS turn.' },
     ],
     schema: () => ({ type: 'object', required: ['tasks'], properties: { title: str(), fresh: bool(), tasks: list({ type: 'object', properties: { id: str(), kind: one('worker', 'capability'), goal: str(), returns: str(), capability: str(), args: obj(), tools: list(str()), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1, 8) } }),
     async run(a, dctx, K) {
@@ -55,9 +66,32 @@ export default [
       const r = await client.start({ tasks, title: a.title || '', idem });
       if (!r.ok) return fail(r.code === 'bad_plan' ? 'bad_plan' : r.code, { at: r.at, httpStatus: r.httpStatus, available: r.available });
       let f = null; try { f = await client.get(r.jobId); } catch (_) { f = null; }
-      mountJobCards(() => pageJobsClient(), { L, esc });
+      mountJobCards(() => pageJobsClient(), { L, esc, apply: parkedApplier(K, dctx) });
       const lead = '<div style="font-size:12px;margin-bottom:4px;">' + esc(r.created ? L('Started in the background — it keeps running after you close this tab. Come back and ask for its status any time.', 'バックグラウンドで開始しました。このタブを閉じても続きます。いつでも戻って状況を確認できます。') : L('This request was already started; here is that job.', 'この依頼は既に開始済みです。その仕事を表示します。')) + '</div>';
       return R(true, lead + jobCardShell(r.jobId, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: r.jobId, created: r.created, status: (f && f.status) || r.status, tasks: tasks.length } } });
+    },
+  },
+  {
+    /* spends the project's money on the reader's behalf with nobody watching, exactly as jobs.start does — so it asks first after outside text has been in front of the model (column 8) */
+    policy: { delegates: true },   /* (capability-facets) restarts other model work */
+    row: ['jobs.resume',                'jobResume',      'resumeJob,retryJob,continueJob,rerunFailed',                  'research','none',    '',                       'explanation',         'external','explicit','',         ''],
+    ui: { none: '2026-11-21' },
+    phrases: () => ['続きから再開', '失敗した分だけやり直して', '止めた調査を続けて'].concat(['resume the job', 'retry what failed', 'continue the stopped job']),
+    doc: [
+      { in: 'research.analyze', at: 35, text: 'RESUME A BACKGROUND JOB: {"type":"jobResume","id":job id,"only"?:[task ids]} = a job that was stopped, hit its cost cap or has pieces that failed or were refused: ONLY those pieces run again (the ones that finished are kept and never run or paid for twice; what the job already spent still counts against its cap). 「失敗した分だけやり直して」「止めたところから続けて」.' },
+    ],
+    schema: () => ({ type: 'object', required: ['id'], properties: { id: str(), only: list(str()) } }),
+    async run(a, dctx, K) {
+      const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
+      const client = pageJobsClient();
+      if (!client) return R(false, warn(esc(refusal(L, 'no_session'))), { meta: { status: 'failed', code: 'no_session' } });
+      const id = String((a && a.id) || '');
+      const r = await client.resume(id, a && a.only);
+      const said = { running: L('That job is still running — there is nothing to resume.', 'その仕事はまだ実行中です。再開するものはありません。'), nothing_to_resume: L('Every piece of that job finished — there is nothing to run again.', 'その仕事の分担はすべて終わっています。やり直すものはありません。'), not_found: L('No such job of yours.', 'その仕事は見つかりません。') };
+      if (!r.ok) return R(false, warn(esc(said[r.state] || refusal(L, r.state || r.code) || L('The job could not be resumed (' + (r.state || r.code) + ').', '仕事を再開できませんでした (' + (r.state || r.code) + ')。'))), { meta: { status: 'failed', code: r.state || r.code } });
+      let f = null; try { f = await client.get(id); } catch (_) { f = null; }
+      mountJobCards(() => pageJobsClient(), { L, esc, apply: parkedApplier(K, dctx) });
+      return R(true, '<div style="font-size:12px;margin-bottom:4px;">' + esc(L('Resumed — only the unfinished pieces run again; the finished ones are kept.', '再開しました。終わっていない分だけ実行し、終わった分はそのまま使います。')) + '</div>' + jobCardShell(id, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id, status: (f && f.status) || 'queued', resumed: true } } });
     },
   },
   {
@@ -77,8 +111,11 @@ export default [
         if (a && a.id) {
           const f = await client.get(String(a.id));
           if (!f) return R(false, warn(esc(L('No such job of yours.', 'その仕事は見つかりません。'))), { meta: { status: 'failed', code: 'job_not_found' } });
-          mountJobCards(() => pageJobsClient(), { L, esc });
-          return R(true, '<div style="display:none">' + esc(jobText(f)) + '</div>' + jobCardShell(f.id, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: f.id, status: f.status, running: f.running, tasksEnded: f.tasksEnded, tasksTotal: f.tasksTotal, spentUsd: f.spentUsd }, jobFacts: f } });
+          const apply = parkedApplier(K, dctx);
+          const applied = await applyParked(f, apply, deviceParkedMemory());
+          mountJobCards(() => pageJobsClient(), { L, esc, apply });
+          const appliedLine = applied.length ? ' Applied to the map just now: ' + applied.map((x) => x.capability + (x.ok ? ' ok' : ' refused (' + x.why + ')')).join('; ') : '';
+          return R(true, '<div style="display:none">' + esc(jobText(f) + appliedLine) + '</div>' + jobCardShell(f.id, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: f.id, status: f.status, running: f.running, tasksEnded: f.tasksEnded, tasksTotal: f.tasksTotal, spentUsd: f.spentUsd }, jobFacts: f } });
         }
         const rows = await client.list(a && a.limit);
         const items = rows.map((j) => '<li><code>' + esc(j.id) + '</code> — ' + esc(j.status) + (j.stop_reason ? ' (' + esc(j.stop_reason) + ')' : '') + ' · ' + esc(L(j.tasks_done + ' of ' + j.tasks_total + ' done', j.tasks_total + ' 件中 ' + j.tasks_done + ' 件完了')) + (j.title ? ' · ' + esc(j.title) : '') + '</li>').join('');

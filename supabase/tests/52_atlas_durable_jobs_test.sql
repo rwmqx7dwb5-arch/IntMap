@@ -149,6 +149,18 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000a0001","role":"authenticated"}', true);
 select is(public.atlas_job_cancel((select job_id from _q)), 'cancelled', 'a job nobody has claimed is cancelled at once');
 reset role;
+-- ── resume: only what did not finish runs again (exec-platform) ──
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000a0002","role":"authenticated"}', true);
+select is(public.atlas_job_resume((select job_id from _q)), 'not_found', 'another reader cannot resume it');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000a0001","role":"authenticated"}', true);
+select is(public.atlas_job_resume((select job_id from _q)), 'queued', 'a cancelled job is put back in the queue');
+select is(public.atlas_job_resume((select job_id from _q)), 'running', '… and a second resume finds it queued, changing nothing');
+reset role;
+select is((select status from public.atlas_jobs where id = (select job_id from _q)), 'queued', 'the job is queued again with no stop reason');
+select is((select count(*)::int from public.atlas_job_tasks where job_id = (select job_id from _q) and status = 'queued'), 1, 'its cancelled piece is queued again');
+select is((select count(*)::int from public.atlas_job_events where job_id = (select job_id from _q) and kind = 'resume'), 1, 'and the log says so');
+
 
 -- ── ⑦ the stop switch ───────────────────────────────────────────────────────
 create temp table _k as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0002', 'idem-k', 'k', pg_temp._tasks(1));

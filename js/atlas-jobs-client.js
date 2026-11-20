@@ -68,6 +68,8 @@ export function makeJobsClient(o) {
       return jobFacts(j.data, (t && t.data) || []);
     },
     async cancel(id) { const r = await need().rpc('atlas_job_cancel', { p_job: id }); if (r.error) return { ok: false, code: s(r.error.message, 80) }; return { ok: true, state: r.data }; },
+    /* resume(id, only?) — put back in the queue what did not finish (failed, refused, cancelled); done pieces are never run again (RPC atlas_job_resume) → { ok, state } where state is the RPC's word: queued | running | nothing_to_resume | user_active_limit | busy | disabled | not_found */
+    async resume(id, only) { const r = await need().rpc('atlas_job_resume', { p_job: id, p_only: Array.isArray(only) && only.length ? only.map((x) => s(x, 64)).slice(0, 8) : null }); if (r.error) return { ok: false, code: s(r.error.message, 80) }; return { ok: r.data === 'queued', state: r.data }; },
     async amend(id, note) { const r = await need().rpc('atlas_job_amend', { p_job: id, p_note: s(note, 1000) }); if (r.error) return { ok: false, code: s(r.error.message, 80) }; return { ok: true, state: r.data }; },
   };
 }
@@ -84,6 +86,8 @@ export function jobFacts(job, tasks) {
       summary: s(r.summary, 1500), findings: Array.isArray(r.findings) ? r.findings.length : 0, gaps: Array.isArray(r.gaps) ? r.gaps.map((g) => s(g, 300)) : [],
       sources: Array.isArray(r.sources) ? r.sources.slice(0, 8).map((x) => ({ url: s(x && x.url, 400), title: s(x && x.title, 160) })) : [],
       costUsd: micros(t.cost_micros),
+      /* (server-capability-lane) a map-changing capability the job SAVED for the page — applyParked runs it when the reader is back */
+      parked: r.parked && typeof r.parked.capability === 'string' ? { capability: s(r.parked.capability, 80), args: (r.parked.args && typeof r.parked.args === 'object') ? r.parked.args : {} } : null,
     };
   });
   const ended = list.filter((t) => t.ended).length;
@@ -95,6 +99,36 @@ export function jobFacts(job, tasks) {
     result: job.result && typeof job.result.summary === 'string' ? s(job.result.summary, 6000) : '',
     tasks: list,
   };
+}
+
+/* ══ APPLYING WHAT A JOB SAVED FOR THE PAGE  (server-capability-lane) ═══════════════════════════════════
+   A job that names a capability which changes the map or the session cannot run it on the server (no map there): the task ends `done` with
+   `parked` (js/atlas-server-class.js, supabase/functions/_shared/atlas-job-runner.js). This runs those operations, in task order, through
+   `apply` — the page's own executor (a program bridge granted 'state', so the same gate a turn goes through) — once each. "Once" is held on THIS
+   device in `memory` ({ has(key), add(key) }); a refused operation is recorded as refused and not retried (one-pass-or-a-reason §5).
+   applyParked(facts, apply, memory) → [{ task, capability, ok, why? }] — what it did THIS call; an operation done earlier is not in it. */
+export async function applyParked(f, apply, memory) {
+  const out = [];
+  if (!f || typeof apply !== 'function') return out;
+  for (const t of f.tasks || []) {
+    if (!t.parked || t.state !== 'done') continue;
+    const key = String(f.id) + '/' + t.id;
+    if (memory && memory.has(key)) continue;
+    if (memory) memory.add(key);   /* before running: a run that throws is not run a second time on the next poll */
+    let r;
+    try { r = await apply(t.parked); } catch (e) { r = { ok: false, why: s(e && e.message, 120) || 'threw' }; }
+    out.push({ task: t.id, capability: t.parked.capability, ok: !!(r && r.ok), why: r && r.ok ? '' : s(r && r.why, 160) });
+  }
+  return out;
+}
+
+/* the device memory of what was applied — localStorage, never required (a page without it applies once per page load) */
+export function deviceParkedMemory(w) {
+  const win = w || (typeof window !== 'undefined' ? window : {});
+  const KEY = 'intmap.atlas.jobs.applied';
+  const seen = new Set();
+  try { JSON.parse((win.localStorage && win.localStorage.getItem(KEY)) || '[]').forEach((k) => seen.add(String(k))); } catch (_) { /* start empty */ }
+  return { has: (k) => seen.has(k), add: (k) => { seen.add(k); try { if (win.localStorage) win.localStorage.setItem(KEY, JSON.stringify(Array.from(seen).slice(-500))); } catch (_) { /* the device refused */ } } };
 }
 
 /* jobText(facts) — plain text, the facts first (Atlas reads the top of a card's text) */
@@ -124,11 +158,13 @@ export function renderJobCard(f, h) {
       + (t.gaps.length ? '<div style="opacity:.6;">' + esc(L('Not established: ', '不明だった点: ') + t.gaps.join('; ').slice(0, 300)) + '</div>' : '')
       + (src ? '<div style="opacity:.7;">' + src + '</div>' : '') + '</li>';
   }).join('');
-  const controls = f.running
+  const unfinished = !f.running && f.tasks.some((t) => t.state === 'failed' || t.state === 'refused' || t.state === 'cancelled');
+  const resume = unfinished ? '<div style="margin-top:6px;"><button type="button" data-atl-job-resume>' + esc(L('Run the unfinished pieces again', '終わっていない分だけもう一度実行')) + '</button></div>' : '';
+  const controls = resume + (f.running
     ? '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><button type="button" data-atl-job-cancel>' + esc(L('Stop', '止める')) + '</button>'
       + '<input type="text" data-atl-job-note maxlength="1000" placeholder="' + esc(L('Change the instructions while it runs', '実行中に指示を追加')) + '" style="flex:1;min-width:140px;">'
       + '<button type="button" data-atl-job-send>' + esc(L('Send', '送信')) + '</button></div>'
-    : '';
+    : '');
   const fin = !f.running && f.result ? '<div style="margin-top:6px;"><b>' + esc(L('Combined', '統合した結果')) + '</b><div>' + esc(f.result.slice(0, 2500)) + '</div></div>' : '';
   return '<div style="font-weight:600;">' + esc(f.title || L('Background job', 'バックグラウンドの仕事')) + ' — ' + esc(word(f.status === 'queued' ? 'queued' : f.status)) + '</div>'
     + '<div style="opacity:.7;">' + esc(L(f.tasksEnded + ' of ' + f.tasksTotal + ' pieces ended', f.tasksTotal + ' 件中 ' + f.tasksEnded + ' 件が終了')) + ' · $' + f.spentUsd.toFixed(3) + ' / $' + f.capUsd.toFixed(2)
@@ -159,6 +195,7 @@ export function mountJobCards(getClient, h, o) {
     if (!c) return false;
     let f = null;
     try { f = await c.get(id); } catch (_) { return true; }   /* a failed read is not a finished job: try again next time */
+    if (f && typeof h.apply === 'function') { try { f.appliedNow = await applyParked(f, h.apply, h.memory || deviceParkedMemory()); } catch (_) { /* the card still paints */ } }
     if (!f) { el.textContent = h.L('This job is no longer available.', 'この仕事はもう存在しません。'); return false; }
     const typed = el.querySelector('[data-atl-job-note]'), keep = typed ? typed.value : '', focused = !!typed && typeof document !== 'undefined' && document.activeElement === typed;
     el.innerHTML = renderJobCard(f, h);
@@ -168,13 +205,14 @@ export function mountJobCards(getClient, h, o) {
   };
   const wire = (el) => {
     el.addEventListener('click', async (ev) => {
-      const t = ev.target && ev.target.closest ? ev.target.closest('[data-atl-job-cancel],[data-atl-job-send]') : null;
+      const t = ev.target && ev.target.closest ? ev.target.closest('[data-atl-job-cancel],[data-atl-job-send],[data-atl-job-resume]') : null;
       if (!t) return;
       const c = getClient(); if (!c) return;
       const id = el.getAttribute('data-atl-job');
       t.disabled = true;
       try {
         if (t.hasAttribute('data-atl-job-cancel')) await c.cancel(id);
+        else if (t.hasAttribute('data-atl-job-resume')) await c.resume(id);
         else { const inp = el.querySelector('[data-atl-job-note]'); const note = inp ? String(inp.value || '').trim() : ''; if (note) { await c.amend(id, note); if (inp) inp.value = ''; } }
       } finally { t.disabled = false; }
       await paint(el);

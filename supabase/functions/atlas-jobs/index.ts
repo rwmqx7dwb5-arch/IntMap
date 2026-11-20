@@ -35,6 +35,7 @@ import { personaPrompt } from "../_shared/atlas-persona.js";
 import { workerSystem, planJob } from "../_shared/atlas-job-core.js";
 import { runJob } from "../_shared/atlas-job-runner.js";
 import { makeServerCaps } from "../_shared/atlas-server-caps.js";
+import { capClass } from "../_shared/atlas-cap-classes.js";
 import { accountFor, openTurn, LedgerUnavailable } from "../_shared/ai-ledger.js";
 import {
   OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, priceOf, costMicros, providerFetch, bodyLength, spendCeiling,
@@ -205,7 +206,7 @@ async function create(req: Request, body: Record<string, unknown>): Promise<Resp
   const idem = String(body.idem || "").trim();
   if (!/^[A-Za-z0-9._:-]{1,120}$/.test(idem)) return json({ error: "bad_request", message: "idem is required (1-120 of A-Z a-z 0-9 . _ : -)." }, 400);
   const caps = makeServerCaps();
-  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], capabilityOk: (id: string) => caps.has(id) });
+  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], capabilityOk: (id: string) => caps.has(id), parkable: (id: string) => capClass(id) === "parkable" });
   // a refusal for a capability with no twin says what DOES have one (discovered from the lane, not written here)
   if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at, ...(plan.error === "capability_unsupported_on_server" ? { available: caps.catalogue() } : {}) }, 400);
 

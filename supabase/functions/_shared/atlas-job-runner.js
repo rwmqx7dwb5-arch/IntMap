@@ -20,6 +20,7 @@
 // ============================================================================
 
 import { readyTasks, shapeOf, workerSystem, workerPrompt, stable, s } from "./atlas-job-core.js";
+import { capClass } from "./atlas-cap-classes.js";
 
 /* How many tasks of one job run at the same time. Observation 2026-11-20: research.delegate hands on 2 workers by default
    (DELEGATION_DEFAULTS.maxChildren in ai-proxy config.ts) and a worker request takes 30–90 s (dev-notes/2026-11-19-delegation-limits-stream.md);
@@ -61,6 +62,12 @@ async function runCapabilityTask(ctx, task) {
   if (!cp || cp.ok !== true) return { state: "lost", lost: true };
   if (cp.action !== "go") return fin("cancelled", cp.action, null);
   const lane = ctx.capabilities;
+  /* A capability that changes the map or the session has no server twin and cannot have one — there is no map here. It is SAVED, not run: the task ends
+     `done` with `result.parked` and the page applies it through the same executor a turn uses when the reader returns (js/atlas-jobs-client.js applyParked).
+     Which capabilities may be parked is DERIVED from the registry (atlas-cap-classes.js ← js/atlas-server-class.js), never listed here. */
+  if (!(lane && typeof lane.has === "function" && lane.has(c.capability)) && capClass(c.capability) === "parkable") {
+    return fin("done", "parked", { summary: "Saved for the page: " + s(c.capability, 80) + " " + s(stable(c.args || {}), 300) + " — it changes the map, so it is applied when you next open IntMap.", findings: [], gaps: [], sources: [], parked: { capability: s(c.capability, 80), args: c.args || {} } });
+  }
   if (!lane || typeof lane.run !== "function" || !lane.has(c.capability)) return fin("refused", "capability_unsupported_on_server", { summary: "", findings: [], gaps: ['"' + s(c.capability, 80) + '" has no server twin, so a job cannot run it.'], sources: [] });
   const out = await lane.run(c.capability, c.args || {}, { signal: ctx.signal });
   if (!out || out.ok !== true) {

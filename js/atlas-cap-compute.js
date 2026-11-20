@@ -68,7 +68,7 @@ export default [
       const bsum = r.bridge && r.bridge.summary ? r.bridge.summary : null;
       const bridgeLine = bsum
         ? '<div class="atlas-gis-detail"><b>' + esc(L('Capability calls', '能力の呼び出し')) + '</b> · ' + esc(L('granted ', '許可 ')) + esc((r.bridge.grants || []).join('+'))
-          + ' · ' + bsum.executed + ' ' + esc(L('run', '実行')) + (bsum.repeats ? ' · ' + bsum.repeats + ' ' + esc(L('repeats answered, not re-run', '重複は再実行せず回答')) : '')
+          + ' · ' + bsum.executed + ' ' + esc(L('executed', '実行')) + (bsum.repeats ? ' · ' + bsum.repeats + ' ' + esc(L('repeats answered, not re-run', '重複は再実行せず回答')) : '')
           + (Object.keys(bsum.refused || {}).length ? ' · ' + esc(L('refused', '拒否')) + ' ' + esc(JSON.stringify(bsum.refused)) : '')
           + (bsum.unobserved ? ' · ' + bsum.unobserved + ' ' + esc(L('not observed', '観測できず')) : '')
           + (Object.keys(bsum.byCapability || {}).length ? ' — ' + esc(Object.keys(bsum.byCapability).map((k) => k + '×' + bsum.byCapability[k]).join(', ')) : '')
