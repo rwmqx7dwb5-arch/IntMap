@@ -13,7 +13,7 @@
  *  See js/atlas-caps.js for what an entry holds; the columns of `row` are at «THE TABLE» in js/atlas-capabilities.js.
  * ==========================================================================*/
 import { str, int, bool, list, obj, one } from './atlas-caps.js';
-import { pageJobsClient, planDigest, jobText, jobCardShell, mountJobCards } from './atlas-jobs-client.js';
+import * as JC from './atlas-jobs-client.js';
 
 /* what the server says when it refuses, in the reader's words (the codes are atlas-jobs/index.ts's); null for a code with no sentence of its own */
 function refusal(L, code) {
@@ -48,16 +48,16 @@ export default [
       const fail = (code, extra) => { const m = refusal(L, code); return R(false, warn(esc(m || L('The job could not be started (' + code + ').', '仕事を開始できませんでした (' + code + ')。'))), { meta: Object.assign({ status: 'failed', code }, extra || null) }); };
       const tasks = Array.isArray(a && a.tasks) ? a.tasks : [];
       if (!tasks.length) return fail('no_tasks');
-      const client = pageJobsClient();
+      const client = JC.pageJobsClient();
       if (!client) return fail('no_session');
       /* the key of THIS request: the same list asked twice in one turn is one job (nothing charged or started twice); a later turn is a new job; fresh:true forces one */
-      const idem = 'atl:' + String(K._curTurnKey || 'page').replace(/[^A-Za-z0-9._:-]/g, '').slice(0, 60) + ':' + planDigest(tasks) + (a.fresh === true ? ':' + Date.now().toString(36) : '');
+      const idem = 'atl:' + String(K._curTurnKey || 'page').replace(/[^A-Za-z0-9._:-]/g, '').slice(0, 60) + ':' + JC.planDigest(tasks) + (a.fresh === true ? ':' + Date.now().toString(36) : '');
       const r = await client.start({ tasks, title: a.title || '', idem });
       if (!r.ok) return fail(r.code === 'bad_plan' ? 'bad_plan' : r.code, { at: r.at, httpStatus: r.httpStatus });
       let f = null; try { f = await client.get(r.jobId); } catch (_) { f = null; }
-      mountJobCards(() => pageJobsClient(), { L, esc });
+      JC.mountJobCards(() => JC.pageJobsClient(), { L, esc });
       const lead = '<div style="font-size:12px;margin-bottom:4px;">' + esc(r.created ? L('Started in the background — it keeps running after you close this tab. Come back and ask for its status any time.', 'バックグラウンドで開始しました。このタブを閉じても続きます。いつでも戻って状況を確認できます。') : L('This request was already started; here is that job.', 'この依頼は既に開始済みです。その仕事を表示します。')) + '</div>';
-      return R(true, lead + jobCardShell(r.jobId, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: r.jobId, created: r.created, status: (f && f.status) || r.status, tasks: tasks.length } } });
+      return R(true, lead + JC.jobCardShell(r.jobId, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: r.jobId, created: r.created, status: (f && f.status) || r.status, tasks: tasks.length } } });
     },
   },
   {
@@ -71,14 +71,14 @@ export default [
     schema: () => ({ type: 'object', properties: { id: str(), limit: int(1, 30) } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
-      const client = pageJobsClient();
+      const client = JC.pageJobsClient();
       if (!client) return R(false, warn(esc(refusal(L, 'no_session'))), { meta: { status: 'failed', code: 'no_session' } });
       try {
         if (a && a.id) {
           const f = await client.get(String(a.id));
           if (!f) return R(false, warn(esc(L('No such job of yours.', 'その仕事は見つかりません。'))), { meta: { status: 'failed', code: 'job_not_found' } });
-          mountJobCards(() => pageJobsClient(), { L, esc });
-          return R(true, '<div style="display:none">' + esc(jobText(f)) + '</div>' + jobCardShell(f.id, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: f.id, status: f.status, running: f.running, tasksEnded: f.tasksEnded, tasksTotal: f.tasksTotal, spentUsd: f.spentUsd }, jobFacts: f } });
+          JC.mountJobCards(() => JC.pageJobsClient(), { L, esc });
+          return R(true, '<div style="display:none">' + esc(JC.jobText(f)) + '</div>' + JC.jobCardShell(f.id, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: f.id, status: f.status, running: f.running, tasksEnded: f.tasksEnded, tasksTotal: f.tasksTotal, spentUsd: f.spentUsd }, jobFacts: f } });
         }
         const rows = await client.list(a && a.limit);
         const items = rows.map((j) => '<li><code>' + esc(j.id) + '</code> — ' + esc(j.status) + (j.stop_reason ? ' (' + esc(j.stop_reason) + ')' : '') + ' · ' + esc(L(j.tasks_done + ' of ' + j.tasks_total + ' done', j.tasks_total + ' 件中 ' + j.tasks_done + ' 件完了')) + (j.title ? ' · ' + esc(j.title) : '') + '</li>').join('');
@@ -98,7 +98,7 @@ export default [
     schema: () => ({ type: 'object', required: ['id'], properties: { id: str() } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
-      const client = pageJobsClient();
+      const client = JC.pageJobsClient();
       if (!client) return R(false, warn(esc(refusal(L, 'no_session'))), { meta: { status: 'failed', code: 'no_session' } });
       const r = await client.cancel(String((a && a.id) || ''));
       if (!r.ok) return R(false, warn(esc(L('The job could not be stopped (' + r.code + ').', '仕事を止められませんでした (' + r.code + ')。'))), { meta: { status: 'failed', code: r.code } });
@@ -114,7 +114,7 @@ export default [
     schema: () => ({ type: 'object', required: ['id', 'note'], properties: { id: str(), note: str() } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
-      const client = pageJobsClient();
+      const client = JC.pageJobsClient();
       if (!client) return R(false, warn(esc(refusal(L, 'no_session'))), { meta: { status: 'failed', code: 'no_session' } });
       const note = String((a && a.note) || '').trim();
       if (!note) return R(false, warn(esc(L('An instruction is needed.', '追加する指示が必要です。'))), { meta: { status: 'failed', code: 'note_missing' } });

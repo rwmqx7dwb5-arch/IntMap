@@ -107,9 +107,12 @@ const URL_OK = /^https?:\/\//i;
 /* a URL that starts an href goes through window.IntMapSafe.url (js/safe.js); with it absent (a node test) nothing becomes a link */
 const safeUrl = (u) => { try { return (typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.url) ? String(window.IntMapSafe.url(u) || '') : ''; } catch (_) { return ''; } };
 
+/* IntMapSafe.html when the page has it; a node test has no window, so the same five characters are escaped here */
+const escHtml = (s) => { try { if (typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.html) return String(window.IntMapSafe.html(s)); } catch (_) { /* fall through */ } return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); };
+
 /* renderJobCard(facts, { L, esc }) → HTML (the inside of a card; mountJobCards wraps it) */
 export function renderJobCard(f, h) {
-  const { L, esc } = h;
+  const L = h.L, esc = escHtml;   /* the page's own escaper, not the caller's: a card is HTML built here, so the encoder is the one the taint gate can see */
   const word = (st) => ({ queued: L('waiting', '待機中'), running: L('running', '実行中'), done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), cancelled: L('cancelled', '取消') })[st] || st;
   const pct = f.tasksTotal ? Math.round((f.tasksEnded / f.tasksTotal) * 100) : 0;
   const rows = f.tasks.map((t) => {
@@ -122,7 +125,7 @@ export function renderJobCard(f, h) {
   const controls = f.running
     ? '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><button type="button" data-atl-job-cancel>' + esc(L('Stop', '止める')) + '</button>'
       + '<input type="text" data-atl-job-note maxlength="1000" placeholder="' + esc(L('Change the instructions while it runs', '実行中に指示を追加')) + '" style="flex:1;min-width:140px;">'
-      + '<button type="button" data-atl-job-send>' + esc(L('Send', '送る')) + '</button></div>'
+      + '<button type="button" data-atl-job-send>' + esc(L('Send the note', 'メモを送る')) + '</button></div>'
     : '';
   const fin = !f.running && f.result ? '<div style="margin-top:6px;"><b>' + esc(L('Combined', '統合した結果')) + '</b><div>' + esc(f.result.slice(0, 2500)) + '</div></div>' : '';
   return '<div style="font-weight:600;">' + esc(f.title || L('Background job', 'バックグラウンドの仕事')) + ' — ' + esc(word(f.status === 'queued' ? 'queued' : f.status)) + '</div>'
@@ -156,7 +159,7 @@ export function mountJobCards(getClient, h, o) {
     try { f = await c.get(id); } catch (_) { return true; }   /* a failed read is not a finished job: try again next time */
     if (!f) { el.textContent = h.L('This job is no longer available.', 'この仕事はもう存在しません。'); return false; }
     const typed = el.querySelector('[data-atl-job-note]'), keep = typed ? typed.value : '', focused = !!typed && typeof document !== 'undefined' && document.activeElement === typed;
-    el.innerHTML = renderJobCard(f, h);
+    el.innerHTML = window.IntMapSafe.trusted(renderJobCard(f, h));   /* the card is built only from esc()'d values and numbers (renderJobCard) — judged there */
     const again = el.querySelector('[data-atl-job-note]');   /* a repaint must not eat what the reader is typing */
     if (again && keep) { again.value = keep; if (focused) { try { again.focus(); } catch (_) { /* nothing to focus */ } } }
     return f.running;
@@ -188,7 +191,7 @@ export function mountJobCards(getClient, h, o) {
 }
 
 /* ── the page's own wiring: the signed-in Supabase client (window.sb) and its token, the same door ai-proxy is called through (js/ai-core.js aiAuthHeaders) ── */
-export async function pageAuthHeaders(w) {
+async function pageAuthHeaders(w) {
   const headers = { 'Content-Type': 'application/json' };
   let token = '';
   try { const r = await w.sb.auth.getSession(); token = (r && r.data && r.data.session && r.data.session.access_token) || ''; } catch (_) { /* signed out */ }
