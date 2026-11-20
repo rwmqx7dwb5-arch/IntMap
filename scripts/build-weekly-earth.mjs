@@ -72,6 +72,12 @@ export const GOVERNANCE = {
       expires: 'if the archive\'s unit stops being the ISO week',
       canon: 'scripts/build-weekly-earth.mjs GOVERNANCE',
     },
+    /* (describes.*) what this builder states about the file (header and constants above): the unit, the floors and the
+       global, area-unlimited queries it makes. */
+    extent: 'worldwide: the USGS query carries no area limit, and EONET events are listed with or without a placed position',
+    method: 'a digest per closed ISO week (Monday 00:00 UTC to Monday 00:00 UTC): USGS earthquakes of magnitude 5.5 or more and NASA EONET natural events, each kept with the originating source EONET names',
+    resolution: 'one ISO week; each event with its own USGS or EONET time and position',
+    completeness: 'not every event: earthquakes below magnitude 5.5 and wildfires with a stated burned area below 10,000 ha are left out (wildfires left out are counted per week); an event EONET gives only as a polygon is listed but not placed; a week fetched less than 7 days after it ended is provisional and asked again',
     /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
     autoRefresh: 'two requests (one USGS FDSN query, one NASA EONET query), no key; both answers are checked by scripts/lib/upstream.mjs and validated (USGS\'s own count, EONET\'s event shape) before anything is written, existing weeks are kept, and a failure throws with the file left as it was',
     /* the validator every write passes and `--check` runs: ISO weeks, newest first, every item inside its week and above the floor */

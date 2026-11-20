@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-11-20T08:06:22.823Z",
+    "generatedAt": "2026-11-20T11:44:07.589Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -2717,10 +2717,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -2736,11 +2732,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -2757,10 +2749,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -2780,8 +2768,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -2804,10 +2790,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -2828,10 +2810,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -2851,7 +2829,6 @@
         "describes.period",
         "describes.extent",
         "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -2861,8 +2838,6 @@
       "subject": "scripts/build-border-crossings.mjs → data/border-crossings.json",
       "facets": [
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -2963,12 +2938,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.period"
       ],
       "why": "facet-undeclared"
     },
@@ -2987,9 +2957,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
         "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3047,9 +3015,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -3068,8 +3033,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
         "describes.method",
         "describes.resolution",
         "describes.completeness",
@@ -3093,11 +3056,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.resolution"
       ],
       "why": "facet-undeclared"
     },
@@ -3118,8 +3077,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
         "describes.method",
         "describes.resolution",
         "describes.completeness",
@@ -3138,10 +3095,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3159,12 +3112,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.period"
       ],
       "why": "facet-undeclared"
     },
@@ -3179,12 +3127,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.period"
       ],
       "why": "facet-undeclared"
     },
@@ -3203,10 +3146,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3225,10 +3164,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3250,10 +3185,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3270,11 +3201,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3291,11 +3217,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3312,11 +3233,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3332,11 +3248,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3352,11 +3263,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3372,11 +3278,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3392,10 +3293,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
         "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3419,10 +3317,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3439,8 +3333,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
         "describes.method",
         "describes.resolution",
         "describes.completeness",
@@ -3460,12 +3352,9 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
         "describes.method",
         "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.completeness"
       ],
       "why": "facet-undeclared"
     },
@@ -3501,12 +3390,9 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
         "describes.extent",
-        "describes.method",
         "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.completeness"
       ],
       "why": "facet-undeclared"
     },
@@ -3520,8 +3406,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
         "describes.method",
         "describes.resolution",
         "describes.completeness",
@@ -3540,12 +3424,8 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
         "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.completeness"
       ],
       "why": "facet-undeclared"
     },
@@ -3566,8 +3446,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
         "describes.method",
         "describes.resolution",
         "describes.completeness",
@@ -3586,24 +3464,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
-      ],
-      "why": "facet-undeclared"
-    },
-    {
-      "subject": "scripts/build-hist-urban.mjs → data/hist-urban.json",
-      "facets": [
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.period"
       ],
       "why": "facet-undeclared"
     },
@@ -3619,10 +3480,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3644,10 +3501,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3664,12 +3517,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.period"
       ],
       "why": "facet-undeclared"
     },
@@ -3685,12 +3533,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.period"
       ],
       "why": "facet-undeclared"
     },
@@ -3707,9 +3550,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -3729,9 +3569,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -3770,11 +3607,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3795,9 +3628,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3807,9 +3637,6 @@
       "subject": "scripts/build-ne-countries.mjs → data/ne-countries/index.json",
       "facets": [
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3827,10 +3654,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3847,10 +3670,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3868,10 +3687,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3889,10 +3704,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3909,11 +3720,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -3930,9 +3736,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3950,9 +3753,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -3971,10 +3771,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4013,9 +3810,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4034,10 +3828,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
         "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4075,10 +3866,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4088,9 +3875,6 @@
       "subject": "scripts/build-sanctions.mjs → data/sanctions.json",
       "facets": [
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4107,9 +3891,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4127,10 +3908,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4147,10 +3924,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4168,11 +3941,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.resolution"
       ],
       "why": "facet-undeclared"
     },
@@ -4188,12 +3957,7 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.completeness"
       ],
       "why": "facet-undeclared"
     },
@@ -4213,10 +3977,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4237,10 +3998,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4262,11 +4020,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.completeness"
       ],
       "why": "facet-undeclared"
     },
@@ -4287,11 +4041,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.completeness"
       ],
       "why": "facet-undeclared"
     },
@@ -4312,11 +4062,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "describes.completeness"
       ],
       "why": "facet-undeclared"
     },
@@ -4337,9 +4083,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4362,9 +4105,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4386,8 +4126,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -4410,8 +4148,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -4434,8 +4170,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -4445,10 +4179,6 @@
     {
       "subject": "scripts/build-unga-votes.mjs → data/unga-votes/*.json",
       "facets": [
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4457,10 +4187,6 @@
     {
       "subject": "scripts/build-unga-votes.mjs → data/unga-votes/index.json",
       "facets": [
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4481,10 +4207,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4503,9 +4225,7 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
         "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4524,9 +4244,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -4546,9 +4263,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -4571,10 +4285,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4595,10 +4305,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4619,10 +4325,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4644,7 +4346,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
         "describes.extent",
         "describes.method",
         "describes.resolution",
@@ -4664,10 +4365,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4687,11 +4384,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
         "describes.accuracy"
       ],
       "why": "facet-undeclared"
@@ -4708,13 +4400,7 @@
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
-        "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "integrity.duplicates"
       ],
       "why": "facet-undeclared"
     },
@@ -4730,13 +4416,7 @@
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
-        "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
-        "describes.completeness",
-        "describes.accuracy"
+        "integrity.duplicates"
       ],
       "why": "facet-undeclared"
     },
@@ -4792,10 +4472,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4837,8 +4513,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -4862,7 +4536,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
         "describes.method",
         "describes.resolution",
         "describes.completeness",
@@ -4887,7 +4560,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
         "describes.method",
         "describes.resolution",
         "describes.completeness",
@@ -4911,10 +4583,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4936,10 +4604,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4983,8 +4647,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -5010,7 +4672,6 @@
         "integrity.duplicates",
         "describes.period",
         "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -5034,10 +4695,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -5060,10 +4717,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -5140,8 +4793,6 @@
         "integrity.outOfRange",
         "integrity.duplicates",
         "describes.period",
-        "describes.extent",
-        "describes.method",
         "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
@@ -5163,10 +4814,6 @@
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates",
-        "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -5235,8 +4882,8 @@
   "shardsWithoutIndex": [],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 227,
-    "undeclaredFacets": 3839,
+    "undeclared": 226,
+    "undeclaredFacets": 3492,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 0,
     "unreadableDeclaration": 0

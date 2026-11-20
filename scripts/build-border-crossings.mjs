@@ -82,6 +82,11 @@ export const GOVERNANCE = {
       over: 'OpenStreetMap states every crossing and every tag; the time-zone record only names the zone a crossing lies in, and states nothing about the crossing' },
     ...OPENSTREETMAP,
     /* ⚠ LITERALS THE GATE CAN READ WITHOUT RUNNING THIS FILE; main() refuses to write a bundle that disagrees (scripts/lib/gov-stamp.mjs) */
+    /* describes.* — definition: wiki.openstreetmap.org/wiki/Tag:barrier=border_control (read 2026-11-20): «a control point at an
+       international border between two countries», mapped as node, way or area; the wiki states nothing on completeness or accuracy.
+       extent measured on crossings[] (9582 rows). */
+    extent: 'worldwide: 9582 mapped crossings spanning longitude -171.77 to 179.37 and latitude -54.00 to 80.81 (measured on the bundle)',
+    method: 'OpenStreetMap barrier=border_control elements (nodes, and ways reduced to their centre point): a control point at an international border where ID or customs may be checked, as volunteers map it; the time zone of each is the polygon of timezone-boundary-builder 2026f that contains it',
     retrievedAt: '2026-11-17',
     generatedAt: '2026-11-17',
     asOf: '2026-11-17',

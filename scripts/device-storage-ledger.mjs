@@ -69,6 +69,9 @@ export const GOVERNANCE = {
       expires: 'when a storage write is added, renamed or removed — check:datagov then fails until this file is written again',
       canon: 'scripts/device-storage-words.json',
     },
+    /* (describes.*) what the builder discovers and what the committed file measurably carries (106 names). */
+    extent: 'every name IntMap\'s browser code writes to localStorage, sessionStorage, IndexedDB or Cache Storage (106 in the committed file), found in js/, src/, sw.js and the inline scripts of every tracked page; cookies are not a storage area here',
+    method: 'every localStorage and sessionStorage setItem, indexedDB.open and caches.open call is parsed with acorn and its first argument resolved through the file\'s own bindings (parts no binding fixes become *), then each name is joined to its row in scripts/device-storage-words.json',
     builtBy: 'scripts/device-storage-ledger.mjs',
     schema: 'intmap-device-storage-ledger/1',
   },

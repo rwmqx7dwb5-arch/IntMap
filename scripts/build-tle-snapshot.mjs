@@ -53,6 +53,11 @@ export const GOVERNANCE = {
          REFRESHES AT (.github/workflows/tle-refresh.yml). A schedule we chose is not a period a
          supplier publishes (js/data-governance.js, `cadence`); the median element age at build time
          is, and it is about a day. */
+      /* (describes.*) CelesTrak's GP data page: mean elements fitted to Space Surveillance Network observations (Brouwer mean
+         elements for SGP4); each set carries its own epoch, and the bundle is the CelesTrak `active` group. The element age
+         and object count are run facts, recorded in data/tle/catalogue.json. */
+      method: 'GP mean elements (Brouwer mean elements for the SGP4 propagator, fitted to US Space Surveillance Network observations, as CelesTrak states), 3-line TLE sets each with its own epoch; propagating them with SGP4 loses accuracy as the epoch recedes',
+      extent: 'the CelesTrak `active` group of Earth-orbiting objects, worldwide; the other groups listed in groups.json are membership lists only',
       ...CELESTRAK_GP,
       builtBy: 'scripts/build-tle-snapshot.mjs',
     };

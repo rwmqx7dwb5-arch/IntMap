@@ -76,6 +76,10 @@ const TERMS = {
 export const GOVERNANCE = {
   [OUT]: {
     ...TERMS,
+    /* (describes.*) what this repository's own measurement is, as the header above states it. */
+    extent: 'the hosts the reader\'s browser asks (scripts/outbound-hosts.json) and the services the elections layer is rebuilt from, plus the production Atlas evaluation and reader field-speed',
+    method: 'one nightly probe per host with the verdict alive, refused, dead or unobserved, kept as one character per host per measured night; a half that could not be read is null with the reason, never an older answer',
+    resolution: 'one verdict per host per night',
     /* ⚠ THE CADENCE IS THE MEASUREMENT'S OWN: both jobs are scheduled once a day
        (upstream-liveness.yml cron 04:41 UTC, atlas-eval.yml 05:41 UTC). */
     cadenceBasis: {

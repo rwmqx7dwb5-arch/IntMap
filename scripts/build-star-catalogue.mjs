@@ -84,6 +84,10 @@ export const GOVERNANCE = (() => {
     upstreams: SOURCES.map((s) => ({ publisher: s.name, url: s.url })),
     priority: { rank: ['Hipparcos Catalogue (ESA 1997, CDS I/239)', 'Bright Star Catalogue, 5th Revised Ed. (Hoffleit & Warren 1991)'],
       over: 'SOURCES is tried in order and the first that answers wins the whole run; BSC5 is the fallback (no per-star merge)' },
+    /* (describes.*) what the build writes and what the committed bundle (the Hipparcos run) measurably carries. */
+    extent: 'all-sky; 98,887 stars with V magnitude from -1.44 to 9.5 (measured over the committed bundle, read from Hipparcos)',
+    method: 'right ascension and declination in degrees at J2000.0, V magnitude, B-V colour index and parallax in mas per star; stars with no astrometric solution are dropped, and a parallax of 0 means no usable parallax (non-positive, or below 2 sigma)',
+    completeness: 'stars at or brighter than V 9.5 (the builder\'s magnitude limit for the Hipparcos catalogue); 78,963 carry a usable parallax and 19,924 do not (measured over the committed bundle)',
     cadence: 'static',
     cadenceBasis: {
       kind: 'stated',

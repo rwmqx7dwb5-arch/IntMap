@@ -64,6 +64,10 @@ export const GOVERNANCE = (() => {
     /* 「BY」 is part of the identifier: credit is a condition of these terms. */
     attribution: true,
     paidBy: 'Solar System Scope — planetary surface textures',
+    /* (describes.*) what the build downloads and what the committed manifest measurably carries (9 textures). */
+    extent: '9 bodies: Sun, Mercury, Venus, Moon, Mars, Jupiter, Saturn, Uranus, Neptune; the Earth is not in the set',
+    method: 'one 2k texture per body downloaded and shipped byte for byte, with no re-encoding by this build',
+    resolution: '2048 x 1024 pixels per body, equirectangular, -180..180 by 90..-90',
     cadence: 'static',
     cadenceBasis: {
       kind: 'stated',
@@ -78,6 +82,10 @@ export const GOVERNANCE = (() => {
     url: 'https://planetarynames.wr.usgs.gov/',
     licence: 'public domain',
     attribution: false,
+    /* (describes.*) what the build keeps and what the committed bundle measurably carries (Mercury 599, Venus 700, Moon 700, Mars 700, Pluto 73). */
+    extent: '5 bodies: Mercury (599 features), Venus (700), the Moon (700), Mars (700) and Pluto (73)',
+    method: 'IAU-approved feature names read from the gazetteer results table, each with its centre latitude and longitude, diameter in km and feature type; only the 700 largest features per body (by diameter) are kept',
+    completeness: 'the largest features only, at most 700 per body (the Moon alone has over nine thousand named features)',
     ...USGS_PLANETARY_NAMES,
     builtBy: 'scripts/build-planet-data.mjs',
   };

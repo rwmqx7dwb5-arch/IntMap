@@ -40,6 +40,9 @@ export const GOVERNANCE = {
       expires: 'when the ledger changes — check:datagov then fails until this file is written again',
       canon: 'scripts/outbound-hosts.json',
     },
+    /* (describes.*) what the builder derives and what the committed file measurably carries (191 hosts). */
+    extent: 'the hosts IntMap\'s browser code can contact, one row per host (191 in the committed file), each with what it is sent and the Privacy section 4 words that say so',
+    method: 'derived from scripts/outbound-hosts.json by deriveConnectionLedger, with the protocol each host is contacted over and the socket the code opens there, read from the browser code',
     builtBy: 'scripts/connection-ledger.mjs',
     schema: 'intmap-connection-ledger/1',
   },

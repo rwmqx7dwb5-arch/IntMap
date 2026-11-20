@@ -63,6 +63,11 @@ export const GOVERNANCE = (() => {
      stated anywhere here. */
   const rec = {
     url: BASE,
+    /* (describes.*) the raster's own manifest (data/tectonics.json): 1440 x 720 cells over -180..180 x 90..-90,
+       5,824 PB2002 steps, 14 orogen rings; the method string is the build's own. */
+    extent: 'the whole Earth (1440 x 720 equirectangular cells of 0.25 degree), derived from the global PB2002 plate-boundary model',
+    method: 'each cell carries the great-circle distance to the nearest PB2002 boundary step and the class of that step (OSR, OTF, OCB, CTF, CRB, CCB, SUB), plus an orogen flag from point-in-polygon against the PB2002 orogen polygons',
+    resolution: '0.25 degree (about 28 km at the equator) for the raster; the underlying PB2002 steps are about 30 km apart',
     cadence: 'static',
     cadenceBasis: {
       kind: 'stated',

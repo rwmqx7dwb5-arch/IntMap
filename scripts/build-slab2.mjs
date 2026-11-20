@@ -80,6 +80,13 @@ export const GOVERNANCE = (() => {
     licence: 'Public domain',
     licenceUrl: 'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',
     attribution: false,
+    /* (describes.*) ScienceBase item 5aa1b00ee4b0b1c392e86467 states the coverage ("all active global subduction
+       zones"), the 0.05 degree sampling and the clipping rule; the region and node counts are measured from
+       data/slab2.json (27 regions, 922,485 slab nodes). */
+    extent: 'all active global subduction zones as published by USGS (27 regional models in this bundle)',
+    method: 'three-dimensional slab-surface geometry (depth, strike and dip grids) per subduction zone (Hayes et al. 2018)',
+    resolution: '0.05 degree sampling in longitude and latitude, as published; shipped without decimation',
+    completeness: 'each regional model is valid only inside its clipping-mask polygon; the release states that outside it the models should not be used',
     cadence: 'static',
     cadenceBasis: {
       kind: 'stated',
