@@ -52,6 +52,10 @@ const OUT = val('--json', null);
 const ONLY = (val('--only', '') || '').split(',').filter(Boolean);
 const PROFILES = (() => { const p = val('--profile', 'both'); return p === 'both' ? ['desktop', 'mobile'] : [p]; })();
 const PORT = Number(val('--port', 4790));
+/* `--cpu N` slows the main thread N× AFTER boot (CDP Emulation.setCPUThrottlingRate): the reported case is a desktop already busy with other work */
+const CPU = Number(val('--cpu', 1));
+/* `--cpuprofile` prints the main thread's self time by function (CDP Profiler, original source names) over each gesture's reps */
+const CPUPROF = has('--cpuprofile');
 /* `--setup "<js>|||<js>"` runs one expression per arm in the page after boot — the A/B of a SWITCH inside
    one build (`--dist d,d --setup "…(false)|||…(true)"`), the way #R203 asked levers to be compared */
 const SETUPS = (val('--setup', '') || '').split('|||');
@@ -139,6 +143,7 @@ async function newPage(browser, profile, arm) {
   await sleep(2500);
   if (arm.setup) console.log(`  ${arm.name} setup → ${JSON.stringify(await page.evaluate(arm.setup))}`);
   const cdp = await ctx.newCDPSession(page);
+  if (CPU > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU });
   return { ctx, page, cdp };
 }
 
@@ -170,6 +175,20 @@ const line = (c) => `moving ${c.movingFrames} frames/${c.movingMs} ms · frame p
   ` · labels placements ${c.labels.placements} flips ${c.labels.flips} blinks ${c.labels.blinks} placement ${c.labels.placementMs} ms paint ${c.labels.paintMs} ms` +
   ` · seen blank ${c.seen.blankWhileMoving} blurry ${c.seen.blurryWhileMoving} (moving) noBlank+${c.seen.noBlankAfterStopMs} sharp+${c.seen.sharpAfterStopMs} ms · blank·ms ${c.seen.blankMs} unsharp·ms ${c.seen.unsharpMs}` +
   ` · tiles waiting ${c.tiles.waitingShare} settle ${c.tiles.settleMs} ms idle+${c.tiles.idleAfterInputMs} ms · body/html writes ${c.pageWrites} · js app ${c.jsAppMs} / all ${c.jsTotalMs} ms`;
+function printProfile(pr, name) {
+  const dt = pr.timeDeltas, self = new Map(), byId = new Map(pr.nodes.map((n) => [n.id, n]));
+  pr.samples.forEach((id, i) => self.set(id, (self.get(id) || 0) + (dt[i] || 0)));
+  const agg = new Map(); let total = 0;
+  for (const [id, us] of self) { const cf = byId.get(id).callFrame; total += us; let key = cf.functionName || '(anon)'; if (cf.url) { const c = consumerFor(cf.url); const o = c && c.originalPositionFor({ line: cf.lineNumber + 1, column: cf.columnNumber }); key += ' ' + (o && o.source ? o.source.replace(/^(\.\.\/)+/, '') + ':' + o.line : new URL(cf.url).pathname + ':' + cf.lineNumber); } agg.set(key, (agg.get(key) || 0) + us); }
+  /* who CALLED the heavy leaves: the nearest ancestor frames that have a url, original names */
+  const parent = new Map(); pr.nodes.forEach((n) => (n.children || []).forEach((c) => parent.set(c, n.id)));
+  const nm = (cf) => { const c = cf.url && consumerFor(cf.url); const o = c && c.originalPositionFor({ line: cf.lineNumber + 1, column: cf.columnNumber }); return (cf.functionName || '(anon)') + ' ' + (o && o.source ? o.source.replace(/^(\.\.\/)+/, '') + ':' + o.line : cf.url ? new URL(cf.url).pathname.split('/').pop() + ':' + cf.lineNumber : ''); };
+  const callers = new Map();
+  for (const [id, us] of self) { const leaf = byId.get(id).callFrame; if (!/^(measureText|decode|createImageBitmap|drawImage|getImageData|replaceState)$/.test(leaf.functionName)) continue; const chain = []; let p = parent.get(id); while (p && chain.length < 4) { const cf = byId.get(p).callFrame; if (cf.url) chain.push(nm(cf)); p = parent.get(p); } const k = leaf.functionName + ' <- ' + chain.join(' <- '); callers.set(k, (callers.get(k) || 0) + us); }
+  console.log('  callers:'); [...callers].sort((a, b) => b[1] - a[1]).slice(0, 12).forEach(([k, us]) => console.log('     ' + String((us / 1000).toFixed(0)).padStart(6) + ' ms  ' + k));
+  console.log('  cpu self time ' + name + ' (total ' + (total / 1000).toFixed(0) + ' ms):');
+  [...agg].sort((a, b) => b[1] - a[1]).slice(0, 25).forEach(([k, us]) => console.log('     ' + String((us / 1000).toFixed(0)).padStart(6) + ' ms  ' + k));
+}
 try {
   for (const profile of PROFILES) {
     const opened = [];
@@ -181,11 +200,13 @@ try {
       if (ONLY.length && !ONLY.includes(name)) continue;
       const runs = ARMS.map(() => []);
       const c0 = cpuTimes();
+      if (CPUPROF) { await opened[0].cdp.send('Profiler.enable'); await opened[0].cdp.send('Profiler.setSamplingInterval', { interval: 200 }); await opened[0].cdp.send('Profiler.start'); }
       for (let r = 0; r < REPS; r++) {
         const order = ARMS.map((_, i) => i); if (r % 2) order.reverse();   /* ABBA */
         for (const i of order) runs[i].push(analyse(await measure(opened[i].page, opened[i].cdp, g, r), g.kind, { owner, charToSource, trace: TRACE, top: TOP }));
       }
       const busy = busyShare(c0, cpuTimes());
+      if (CPUPROF) { const { profile: pr } = await opened[0].cdp.send('Profiler.stop'); printProfile(pr, name); }
       report.profiles[profile].gestures[name] = {};
       ARMS.forEach((arm, i) => {
         const c = combine(runs[i]); c.machineBusyPct = busy;
