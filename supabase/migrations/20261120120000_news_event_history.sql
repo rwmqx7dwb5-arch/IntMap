@@ -76,7 +76,7 @@ create policy news_event_history_read on public.news_event_history for select to
 -- ----------------------------------------------------------------------------
 create or replace function public.news_history_upsert(p jsonb)
 returns integer
-language plpgsql security definer set search_path = public, pg_temp
+language plpgsql security definer set search_path = ''
 as $$
 declare n integer := 0; r jsonb; old public.news_event_history%rowtype; log jsonb;
 begin
@@ -136,7 +136,7 @@ grant execute on function public.news_history_upsert(jsonb) to service_role;
 -- ----------------------------------------------------------------------------
 create or replace function public.news_history_trim(p_max integer)
 returns integer
-language plpgsql security definer set search_path = public, pg_temp
+language plpgsql security definer set search_path = ''
 as $$
 declare over_by integer; gone integer := 0;
 begin
@@ -169,7 +169,7 @@ create or replace function public.news_history_search(
   p_world_ref text default null, p_company text default null, p_thread text default null,
   p_limit integer default 100)
 returns jsonb
-language sql stable security invoker set search_path = public, pg_temp
+language sql stable security invoker set search_path = ''
 as $$
   with terms as (
     select lower(t) as t from regexp_split_to_table(coalesce(trim(p_q), ''), '\s+') t where length(t) > 0
