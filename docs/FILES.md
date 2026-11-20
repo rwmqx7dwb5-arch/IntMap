@@ -200,7 +200,7 @@ cesium-engine.js                  第2エンジン——同じ契約の裏で動
 cesium-style.js                   style 言語の解釈器（式・フィルタ・色）。純粋なので Node から検証できる
 cesium-layers.js                  Cesium のプロバイダとレイヤー描画
 cesium-vector-tiles.js            第2エンジンのベクタタイル
-plateau-cities.js                 PLATEAU 3D 都市モデル（東京23区の 3D Tiles）の一覧と URL。エンジンの tiles3d 能力が読む
+plateau-cities.js                 PLATEAU 3D 都市モデルの登録（data/plateau-cities.json）の読み込み・視界近傍の選択・URL と都市別ジオイド補正。エンジンの tiles3d 能力が読む
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
 i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
 i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
