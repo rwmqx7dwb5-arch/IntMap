@@ -347,6 +347,7 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
                                   ⚠ **欠損は NaN**（`GDAL_NODATA` を含む。0 で埋めない）。
                                   `read(i)` は扉で、開いただけでは画素を展開しない
 gis-ogcapi.js                     **URL の地物コレクション（OGC API – Features）を読む** `window.IntMapGisOgcApi`（`gis-atlas.js` が動的 import）—
+gis-fetch.js                       **GIS 読み手の共通 fetch** — まず直接読み、`no-cors` の探りで「ホストは応答するが CORS が無い」と**証明された**ときだけ Edge Function `gis-fetch` 経由（1 MiB チャンク・メモリ→Cache API（1 日）で再利用。⚠ CDN の共有コピーは無い＝実測 `CF-Cache-Status: DYNAMIC`）、401/403/409 なら署名者（`gis-remote.js signHref`）で署名して 1 回だけ読み直す。中継の拒否は中継のものとして名指す。`gis-geotiff.js`・`gis-ogcapi.js`・`gis-remote.js` が静的 import
 gis-http.js                        **遠隔読み込みが失敗した理由を、応答から読んで名指す**（CORS 不許可・サーバ自身の言葉・ログイン画面への転送）。`gis-geotiff.js` と `gis-ogcapi.js` が静的 import。
                                   `…/items?bbox&limit` を叩き（STAC の `…/search` も同じ形で、`datetime` を取り、各 asset を `asset:<key>` 列にする）、サーバ自身の `rel=next` をたどる。上限は発明しない（limit を述べなければ 1 ページ・
                                   続きは `next`）。`all` はサーバの「次が無い」という述べ方だけ。カーソルは同一オリジンの https だけ
@@ -2123,7 +2124,7 @@ supabase/
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
-                                  fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
+                                  fetch-relay-policy.js / gis-fetch-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
                                   correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /

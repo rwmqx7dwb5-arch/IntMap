@@ -311,6 +311,7 @@ export const KERNELS = {
    not — and an absence is what let four answer-bearing kernels sit outside the ledger for a whole
    round. ⚠ 「まだ版を付けていない」 is not a reason. If it can change an answer it declares a version. */
 export const NOT_A_KERNEL = {
+  'js/gis-fetch.js': 'chooses WHICH road a request takes (direct, the data relay, a signed address) and keeps the bytes it was given; it reads no value, so it cannot change a number — the same bytes arrive by every road, and a saved recipe replays by its recorded provenance',
   'js/gis-http.js': 'names why a remote read failed from the response (CORS, the words the server sent, a sign-in page); it reads no value and produces no answer a saved recipe replays',
   'js/gis-packed.js': 'a lossless codec (unpack(pack(g)) is g, number for number — tests/gis-scale-checks.test.mjs) and a store that keeps results in input order; it decides nothing about a shape and a saved recipe never replays through it',
   'js/gis-core.js': 'mounts the modules and draws a dataset on the map; computes nothing',

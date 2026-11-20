@@ -24,6 +24,9 @@ const clip = (s, n) => String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').t
 
 /* the reason string for a request that threw; `doFetch` is the caller's fetch (tests hand a fake) */
 export async function explainFetchFailure(url, doFetch, err) {
+  /* an error that already says WHY (js/gis-fetch.js: the data relay refused, the budget is spent, the stop switch is on) is not
+     re-diagnosed: a no-cors probe would find the host reachable and call a refused relay «the host sends no CORS headers» */
+  if (err && err.explained && typeof err.explained === 'object') return err.explained;
   const base = String((err && err.message) || err);
   if (typeof doFetch !== 'function') return { reason: base };
   try {
@@ -44,6 +47,8 @@ export async function describeResponse(url, res) {
       if (to.origin !== new URL(url).origin) out.redirectedTo = to.origin + to.pathname;
     }
   } catch (_) { }
+  /* the data relay (js/gis-fetch.js) says where a request ended up in a header, because a synthetic response has no `url` */
+  try { const via = res.headers && typeof res.headers.get === 'function' ? res.headers.get('x-gis-redirected-to') : null; if (via) out.redirectedTo = String(via); } catch (_) { }
   try {
     if (res.status >= 400 && typeof res.text === 'function') {
       const t = clip(await res.text(), 200);
