@@ -14,4 +14,4 @@ internal: 既定オフで利用者には見えない（Atlas が使う能力。�
 
 ## 天井を上げた理由
 
-`async chunk "atlas-cap-runs"` の天井を 884.2 kB から 891.9 kB に上げた。増えた 7.7 kB は新しい能力 4 本（knowledge.remember / recall / forget / setting）の実装と説明文で、`atlas-cap-knowledge.js` がこのチャンクに入る。利用者が得るものは Atlas が出典つきの知識を端末に残し、後の質問で引ける能力。ほかの行は動いていない。
+`async chunk "atlas-cap-runs"` の天井を 896.4 kB から 901.4 kB に上げた（`async.raw` は 14136.4 → 14231.4 kB）。増えた分は新しい能力 4 本（knowledge.remember / recall / forget / setting）の実装と説明文で、`atlas-cap-knowledge.js` がこのチャンクに入る。利用者が得るものは Atlas が出典つきの知識を端末に残し、後の質問で引ける能力。ほかの行は動いていない。
