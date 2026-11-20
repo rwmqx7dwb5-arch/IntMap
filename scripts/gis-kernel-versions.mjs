@@ -148,7 +148,8 @@ export const KERNELS = {
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
   /* (spatiotemporal-join) ops-13 -> ops-14: the period a join / spatialJoin / nearestJoin / timeJoin / aggregate result states is now derived from BOTH inputs (it was the first input's), a row-wise input gives the output two derived period columns, and the record carries `warnings` and `geoBasis`. No existing geometry or cell changes; what the record states about WHEN does. */
-  'js/gis-ops.js': { version: 'ops-14', sha256: 'aedc795b51f5f8967f0fe53476adc3ad90000b008e0088c5bd7b7711027b1692' },
+  /* (gis-worker-columnar) ops-14 HASH ONLY (over the time kit): a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
+  'js/gis-ops.js': { version: 'ops-14', sha256: 'dfcb6ca4bfdcd824e042e0ba26c7cb20604419b3f6330bad728246bf11f29e6c' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -182,7 +183,8 @@ export const KERNELS = {
      share only an edge now intersect; a boundary position is never within); every written edge is at most a
      quarter-turn of longitude. pointInGeometry is unchanged except at a pole. bbox / centroid / pointOnSurface /
      convexHull / simplify are new doors. Measured in tests/gis-foundation-refine-geometry-checks.test.mjs. */
-  'js/gis-geometry.js': { version: 'geom-4', sha256: '0bdd5c2ff3e6d5e6e2139761d2724f53d57aef568c440887cab957f7268fcbc4' },
+  /* (gis-worker-columnar) geom-4 HASH ONLY: `relateBlock` asks a block of pairs through the predicates that already exist; no predicate, tolerance or refusal changed. */
+  'js/gis-geometry.js': { version: 'geom-4', sha256: '0265c6dd81523e62c5328a887bb91739da7d5797e800d6cc78be93c894c468e0' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project
@@ -328,6 +330,7 @@ export const NOT_A_KERNEL = {
   'js/gis-remote.js': 'where data is acquired FROM (catalogues of the world, a remote COG); same reason as js/gis-sources.js — the coverage verdict is js/gis-sources.js coverageOf() and travels with the dataset, and it computes nothing a saved recipe replays',
   'js/gis-shapefile.js': 'a reader of bytes — what it decoded is the dataset, and a re-import is a new import, not a replay',
   'js/gis-geopackage.js': 'a reader of bytes; same reason as js/gis-shapefile.js',
+  'js/gis-pmtiles.js': 'a reader of bytes and ranges; same reason as js/gis-shapefile.js',
   'js/gis-ogcapi.js': 'a reader of a feature service at a URL: the features are the server own, and what it could not say travels in `coverage`; the dataset it feeds replays by its recorded provenance, not a recipe',
   'js/gis-cog.js': 'a window of a file at a URL: the values are js/gis-geotiff.js and js/gis-warp.js; what it could not answer travels in `coverage`, and the dataset it feeds replays by its recorded provenance, not a recipe',
   'js/gis-geotiff.js': 'a reader of bytes; same reason as js/gis-shapefile.js',

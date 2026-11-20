@@ -246,7 +246,15 @@ GVP 番号による結合、USGS 自身の番号との突き合わせ、現在�
 
 **拒否はコードで返る**（`{ok:false, why:'shapefile'}`）。9 言語の文面は `js/map-ui.js` の `reasonText()` が持ち、
 `tests/file-import-checks.test.mjs` ⑩ が両方を構文解析して「返しうるコード」と「文を持つコード」の集合の一致を測る。
-**PMTiles はまだ読めない**——何のファイルであるかを名指して断る。
+**PMTiles（ベクタ・version 3）は `js/gis-pmtiles.js` が読む**（依存を足していない）。`js/geo-import.js` は先頭 7 バイトで
+`PMTiles` と判定し、**`readBytes` の天井より前に**抜ける——アーカイブは全体を読まず、Blob / URL を **バイト範囲の供給**
+（`js/gis-geotiff.js` の `httpSource` と同じ契約）として、ヘッダ 127 B・ディレクトリ（root → leaf、gzip）・必要なタイルだけを取る
+（URL は `readUrl`・開いたまま窓を読む `open().window({bbox, zoom, maxTiles})`）。タイル ID は仕様の Hilbert 順。タイルは Mapbox Vector Tile を
+自前で復号し（外環と内環は面積の符号で分ける・MultiPoint は点ごとの Point に展開）、プロパティはそのまま、層名は `_layer`。
+ズームは `maxTiles`（既定 256）に収まる最大を選ぶか呼び手が述べ、`stats` が **zoom・tiles・requests・clipped:true** を名乗る
+（低ズームは簡略化された図／縁を跨ぐ地物は片）。拒否は `pmtiles-*` の 11 コード（画像タイル・brotli/zstd・version≠3・切れ・矛盾・窓が大きすぎる等）で、
+文面は `js/map-ui.js`、`tests/gis-pmtiles-checks.test.mjs` ⑦ が両者の集合の一致を測る。**まだ無いもの**: 地図へ PMTiles を直接タイル源として載せる経路
+（描画は取り込んだ地物をレイヤーに載せる形）と Atlas の `url:` 入口——消せる条件は gis-remote が `pmtiles:` を `readUrl` に渡すこと。
 
 **座標が見つからないことは「読めない」ではない。** 見出しを持つ区切りテキストで座標列を特定できなかったものは `format:'table'`——
 **`geometry:null` の行**として返り、考慮した列と断った理由は `stats` に載る（地域コードで境界に `join` する右側の表）。見出しの無い
@@ -970,6 +978,10 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   API の住所が他の js/ に現れると `tests/country-analysis-unify-checks.test.mjs` が落ちる。
 - **自前の時計を持っていた行は時計に従う**: 世界銀行の 61 行（`js/wb-layers.js` `yearFor`。「最新（国ごと）」は現在に戻す）、NASA GIBS の 4 行
   （`js/layer-packs.js` `gxAt`）。自前の日付を残す行（年降水量・人口グリッド・WorldCover・海流・選挙）は `ownDate` で宣言し、範囲の中では carried と述べる。
+- **2 層を同じ時点で比べる判定（`align`）**: `verdict` は 1 層ごとの答えで、組み合わせの答えではない。`js/layer-time.js` の `align(A, B, at)` が
+  `unknown → unjoinable → basis-mismatch → skewed → basis-unverified → coarsened → aligned` のいずれかを返す。宣言は任意に `grain`（典拠が述べた解像度）と
+  `geoBasis`（`fixed`+年／`as-of-period`／`present`。GIS の `provenance.geoBasis` と同じ語彙）を持ち、**述べていない側は述べない**（片方だけが述べる組は
+  `basis-unverified`）。`IntMapLayerTime.align` と Atlas の `time.coverage` の `compare:[層 id…]` が同じ規則を引く。回帰は `tests/temporal-claims-checks.test.mjs`。
 - 計器は `node scripts/world-at-time.mjs --year <年|now>`（全層の判定と理由）・`--years`（主要年）・`--check`（門）。
 
 ### 7.4b 二時点比較とタイムラプス

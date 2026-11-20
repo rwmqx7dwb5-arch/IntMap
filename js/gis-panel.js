@@ -205,6 +205,10 @@ export function makeGisPanel(HOST) {
       if (code === 'endpoint-not-found') return IntMapLang.t(HOST.lang, 'That start or end is neither the name of a node on the network nor a "lng,lat" position — name the node by the column you gave nameFromField / nameToField, or write its position', '始点か終点が、網の上のノード名でも「経度,緯度」の位置でもありません。nameFromField / nameToField で指定した列の名前か、位置で指定してください');
       if (code === 'no-route') return IntMapLang.t(HOST.lang, 'There is no route between those two nodes on this network — they are in separate components, so there is nothing to compare', 'この網では、その 2 つのノードの間に経路がありません。別々の成分にあるため、比べるものがありません');
       if (code === 'no-overlay-polygons') return IntMapLang.t(HOST.lang, "The second input holds no polygon to overlay with", "2つ目の入力に、重ね合わせに使える多角形がありません", "Die zweite Eingabe enthält kein Polygon zum Überlagern", "Во втором входе нет полигона для наложения", "La segunda entrada no tiene ningún polígono con el que superponer");
+      if (code === 'engine-unknown') return IntMapLang.t(HOST.lang, "No engine with that name is registered, so the step was not run", "その名前のエンジンは登録されていないため、処理は実行されていません");
+      if (code === 'engine-op-unsupported') return IntMapLang.t(HOST.lang, "That engine does not run this step, so it was not run — use this GIS or another engine", "そのエンジンはこの処理を実行できないため、実行されていません。この GIS か別のエンジンを使ってください");
+      if (code === 'engine-invalid') return IntMapLang.t(HOST.lang, "That engine description is incomplete (it needs a name, the steps it runs, accepts() and run())", "そのエンジンの記述が不完全です（名前・実行する処理・accepts()・run() が要ります）");
+      if (code === 'engine-op-unknown') return IntMapLang.t(HOST.lang, "That engine names a step this GIS does not have", "そのエンジンが挙げた処理は、この GIS にありません");
       if (code === 'no-features') return IntMapLang.t(HOST.lang, "That input holds nothing this step can work on", "その入力に、この処理が扱える地物がありません", "Diese Eingabe enthält nichts, womit dieser Schritt arbeiten kann", "В этом входе нет объектов, с которыми может работать шаг", "Esa entrada no contiene nada con lo que este paso pueda trabajar");
       if (code === 'grid-too-many-cells') return IntMapLang.t(HOST.lang, 'That many cells would not fit in memory, so none were made — use a larger cell size or a smaller extent', 'その数のセルはメモリに収まらないため、作成していません。セルを大きくするか、範囲を狭めてください') + par([d.cells != null ? nf(d.cells) : null, d.maxCells != null ? '≤ ' + nf(d.maxCells) : null].filter((x) => x != null).join(' / '));
       if (code === 'input-too-large-for-op') return IntMapLang.t(HOST.lang, "This input is a very large result held in pieces, and this step needs all of it at once. Filter or join it first, or export it", "この入力は断片で保持されている非常に大きな結果で、この処理は全体を一度に必要とします。先に絞り込むか結合するか、書き出してください", "Diese Eingabe ist ein sehr großes, stückweise gehaltenes Ergebnis, und dieser Schritt braucht alles auf einmal. Zuerst filtern oder verknüpfen, oder exportieren", "Этот вход — очень большой результат, хранимый по частям, а этому шагу нужен весь он сразу. Сначала отфильтруйте или соедините его, либо экспортируйте", "Esta entrada es un resultado muy grande guardado por partes y este paso lo necesita entero. Fíltrelo o únalo primero, o expórtelo");
@@ -1136,8 +1140,10 @@ export function makeGisPanel(HOST) {
       thead.appendChild(htr); table.appendChild(thead);
       const tbody = el('tbody', '');
       let feats = [];
-      try { feats = ds.features() || []; } catch (_) { feats = []; }
       const LIMIT = 200;
+      try { feats = ds.features() || []; } catch (_) { feats = []; }
+      /* (gis-worker-columnar) A result too large to build as an array still has rows to show: the table asks only for the slice it draws (properties, no geometry), so a million-row result is a table and not an empty box. */
+      if (!feats.length && typeof ds.attributeRows === 'function') { try { feats = ds.attributeRows(0, LIMIT) || []; } catch (_) { feats = []; } }
       const commitCell = () => {
         const e = cellEdit;
         if (!e) return;
@@ -1211,8 +1217,10 @@ export function makeGisPanel(HOST) {
       /* ⚠ BOTH NUMBERS, ALWAYS. 「200」 on its own is read as 「all of it」, and every count a reader
          takes off this screen afterwards would be wrong by however much was cut. */
       const shown = Math.min(LIMIT, feats.length);
+      /* the total is the record's own count: a slice taken from a chunked result is not the result */
+      const total = (typeof ds.count === 'number' && ds.count >= feats.length) ? ds.count : feats.length;
       const note = el('div', CSS_NOTE, IntMapLang.t(HOST.lang, 'Showing', '表示中', 'Angezeigt', 'Показано', 'Mostrando')
-        + ' ' + nf(shown) + ' / ' + nf(feats.length) + ' ' + IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas'));
+        + ' ' + nf(shown) + ' / ' + nf(total) + ' ' + IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas'));
       note.className = 'gis-truncated';
       out.appendChild(note);
       return out;

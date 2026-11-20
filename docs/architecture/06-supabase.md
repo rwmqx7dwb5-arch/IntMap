@@ -55,9 +55,9 @@
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。
 
-### 6.2 Edge Functions — **24本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **25本**（`_shared/` は関数ではない）
 
-> **24本すべてを `supabase/config.toml` に `[functions.*]` として宣言する**（ヘッダコメントの deploy フラグは設定ではない）。
+> **25本すべてを `supabase/config.toml` に `[functions.*]` として宣言する**（ヘッダコメントの deploy フラグは設定ではない）。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`rate-limit.js`・`volcano-parse.js` などを置くライブラリで、
 > import した関数の中に CLI がバンドルする。`[functions._shared]` は書かない。
 
