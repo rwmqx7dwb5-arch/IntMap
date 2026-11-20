@@ -34,6 +34,7 @@ $$;
 
 -- ── ② create ─────────────────────────────────────────────────────────────────
 create temp table _j as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'idem-1', 'first', pg_temp._tasks(2));
+grant select on _j to public;   -- the reader-role checks below read it after set local role
 select is((select created from _j), true, 'a new key creates a job');
 select is((select status from _j), 'queued', '… queued');
 select is((select count(*)::int from public.atlas_job_tasks where job_id = (select job_id from _j)), 2, '… with its two tasks');

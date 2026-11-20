@@ -460,3 +460,28 @@ where s.name = 'atlas_jobs_secret'
   and exists (select 1 from public.atlas_jobs j where j.status in ('queued', 'running') and (j.lease_until is null or j.lease_until < now()));
 $cmd$);
 end $$;
+
+-- ── the account's data inventory states the new tables (supabase/tests/23_account_data_center_test.sql) ──
+insert into public.account_data_catalog (tbl, written_by, label_en, label_jp, purpose_en, purpose_jp, retention_en, retention_jp) values
+  ('atlas_jobs', 'you',
+   'Background research jobs', 'バックグラウンドの調査ジョブ',
+   'One row per research job you asked Atlas to keep running after you close the page: its state, progress, the instructions you changed along the way, and what it has cost so far. It lets the job continue on the server and lets you follow, change or stop it.',
+   'ページを閉じても続けるようAtlasに頼んだ調査ジョブ1件につき1行。状態、進み具合、途中で変えた指示、ここまでにかかった費用を持ちます。ジョブがサーバ側で続き、あなたが状況を見て、変え、止められるようにします。',
+   'Finished jobs are deleted automatically after 30 days, and when you delete your account.',
+   '終わったジョブは30日後に自動で削除されます。アカウントを削除したときも消えます。'),
+  ('atlas_job_tasks', 'intmap',
+   'Pieces of a background research job', 'バックグラウンド調査ジョブの分担',
+   'One row per piece a research job was split into: what that piece was asked, which pieces it waited for, its state, and the answer the AI worker returned with its sources. It lets the job resume without doing a piece twice.',
+   '調査ジョブを分けた1つ1つにつき1行。その分担で何を頼んだか、どの分担を待ったか、状態、子のAIが出典つきで返した答えを持ちます。同じ分担を二度行わずにジョブを再開できるようにします。',
+   'Deleted with its job, 30 days after the job finishes, and when you delete your account.',
+   'ジョブが終わって30日後に、そのジョブと一緒に削除されます。アカウントを削除したときも消えます。'),
+  ('atlas_job_events', 'intmap',
+   'Background research job log', 'バックグラウンド調査ジョブの経過記録',
+   'One row per step a research job took (started, a piece finished, you changed or stopped it, it ended), with the time and a short note. It lets you and IntMap see what happened to a job after the page was closed.',
+   '調査ジョブが進めた1段階ごとに1行（開始、分担の完了、あなたによる変更や中止、終了）。時刻と短い備考を持ちます。ページを閉じたあとにジョブへ何が起きたかを、あなたとIntMapが確かめられるようにします。',
+   'Deleted with its job, 30 days after the job finishes, and when you delete your account.',
+   'ジョブが終わって30日後に、そのジョブと一緒に削除されます。アカウントを削除したときも消えます。')
+on conflict (tbl) do update set
+  written_by = excluded.written_by, label_en = excluded.label_en, label_jp = excluded.label_jp,
+  purpose_en = excluded.purpose_en, purpose_jp = excluded.purpose_jp,
+  retention_en = excluded.retention_en, retention_jp = excluded.retention_jp;
