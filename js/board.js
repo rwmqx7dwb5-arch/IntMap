@@ -26,7 +26,6 @@ import { createBoardState } from './board-state.js';
 import { normalise, columnsOf, rowsToFeatures } from './board-spec.js';
 
 const DB = 'intmap-board', STORE = 'boards';
-const SVGNS = 'http://www.w3.org/2000/svg';
 const ROW_CAP = 200;      /* table rows DRAWN at once; the footer states the real count, so nothing is silently dropped */
 const BAR_CAP = 40;       /* chart marks drawn; likewise stated */
 
@@ -52,7 +51,7 @@ export function board(HOST) {
   let cur = null;     /* {id, spec, state, rows[], datasetId, root, widgets[], off[]} */
 
   const el = (tag, cls, text) => { const e = doc().createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const svg = (tag, attrs) => { const e = doc().createElementNS(SVGNS, tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); return e; };
+  const svg = (tag, attrs) => { const e = doc().createElementNS('http://www.w3.org/2000/svg', tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); return e; };
 
   /* a mark is a real control: it takes focus, announces itself, and toggles the row on click, Enter or Space */
   const act = (node, i, id) => { node.setAttribute('tabindex', '0'); node.setAttribute('role', 'button'); node.setAttribute('aria-label', L('Row ', '行 ') + (i + 1)); const go = () => cur.state.toggle(i, id); node.addEventListener('click', go); node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }); };
