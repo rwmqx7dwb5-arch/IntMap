@@ -140,6 +140,7 @@ export const LAZY_REGISTRY = Object.freeze({
   radiation: { publishes: 'IntMapRadiation', load: () => import('./sims.js'), mount: (IM_HOST, m) => { m.radiation(IM_HOST); } },
   popArea: { publishes: 'IntMapPopArea', load: () => import('./sims.js'), mount: (IM_HOST, m) => { m.popArea(IM_HOST); } },
   sun: { publishes: 'IntMapSun', load: () => import('./sims.js'), mount: (IM_HOST, m) => { m.sun(IM_HOST); } },
+  transitTimetable: { publishes: 'IntMapTransitTimetable', load: () => import('./transit-planner.js'), self: true },   /* the publishers' own timetables: trip planning + reachability (js/transit-feeds.js) */
   transitReach: { publishes: 'IntMapTransitReach', load: () => import('./sims.js'), mount: (IM_HOST, m) => { m.transitReach(IM_HOST); } },
 });
 /* the boot guard's two lists, derived: the factory-backed names, and the one registered by a file
