@@ -39,3 +39,9 @@ newsjp: Atlas が、データセットや解析結果を Excel（.xlsx）とし�
 ## 引き継ぎ
 
 #1314 が merge されたら: `fileOf` の `table` を csv に加えて xlsx でも出せるようにする（`writeXlsx` を直接呼ぶ）、`document` を docx で出す。
+
+## perf 天井を上げた理由
+
+`gis-export` の async chunk は 31.4 kB → 39.2 kB。増えた分は xlsx 書き出し（`js/office-writer.js`・ZIP と SpreadsheetML の書き手）そのもので、
+ライブラリを入れない代わりに自前で持つ約 8 kB。起動（eager）には入らず、書き出しを開いたときだけ読まれる。
+同じ `--update` で `atlas-cap-runs`・`dist.assets`・`async.gzip` の天井も上がったが、これは取り込んだ origin/main 側の増加分で、この変更の寄与ではない（main の CI が次の push で締め直す）。
