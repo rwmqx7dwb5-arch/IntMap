@@ -1862,6 +1862,8 @@ export function atlasConsole(HOST){
       get drawChoro(){ return drawChoro; },
       get setSel(){ return setSel; },
       get HOST(){ return HOST; },
+      /* (cap-bridge) a program's door to the capability table — the SAME executor a model's run_capability goes through (js/atlas-toolsurface.js openProgramBridge) */
+      get programBridge(){ return (opts)=>TOOLS.openProgramBridge(TOOLS.baseTools(), AGENT, opts); },
       get CAPS(){ return CAPS; },   /* (atlas-os) the registry this page booted with — system.diagnose holds it against the capability modules */
       get applyTheme(){ return applyTheme; },
       get applyAccent(){ return applyAccent; },
