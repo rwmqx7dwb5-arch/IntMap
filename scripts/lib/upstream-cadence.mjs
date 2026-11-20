@@ -351,3 +351,12 @@ export const REBA_URBAN = {
     canon: 'scripts/lib/upstream-cadence.mjs REBA_URBAN',
   },
 };
+
+export const PLATEAU_CATALOGUE = {
+  cadence: 'P1Y',
+  cadenceBasis: {
+    observed: 'measured 2026-11-20 on api.plateauview.mlit.go.jp/datacatalog/plateau-datasets: building 3D Tiles editions carry survey years 2020 (111), 2021 (1), 2022 (113), 2023 (196), 2024 (225), 2025 (419) — a new fiscal-year edition each year, and cities are added as they are surveyed',
+    expires: 'if MLIT publishes editions more often than yearly, or stops',
+    canon: 'scripts/lib/upstream-cadence.mjs PLATEAU_CATALOGUE',
+  },
+};

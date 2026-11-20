@@ -483,8 +483,8 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 ### 7.3k 3D Tiles（`tiles3d`）と PLATEAU 3D 都市モデル — `js/cesium-engine.js` / `js/plateau-cities.js`
 
 - **エンジンの能力として持つ。** `capabilities.tiles3d` は Cesium だけが true（MapLibre は false で、`layers.addTileset` 系は「できない」と答える）。階層・LOD・メモリは Cesium の `Cesium3DTileset` が管理するので、スタイルレイヤー（ベクタタイル→Entity）には流さない。面は `layers.addTileset(id,{url,maximumScreenSpaceError?,heightOffset?,cacheBytes?})` / `removeTileset` / `setTilesetVisible` / `hasTileset` / `tilesetInfo`。同じ id は置き換え（二重にしない）。
-- **品質とメモリの既定。** `maximumScreenSpaceError` は PC 16・携帯 24、タイルのメモリ上限は PC 384 MiB・携帯 128 MiB（超過許容は 192／64 MiB）。`heightOffset` は既定 0——PLATEAU は楕円体高で、ジオイド補正を推測で足さない。
-- **レイヤー `beta-dl-plateau3d`**（東京の3D都市モデル）。東京23区（JIS 13101–13123）の `<code>-bldg-lod2-texture-latest` を PLATEAU データカタログ（api.plateauview.mlit.go.jp）から読む。オフにすると全タイルセットを破棄し、通信もメモリも残さない。MapLibre エンジンでは行ごと非表示。出典と利用条件は PLATEAU サイトポリシー（CC BY 4.0 互換）。
+- **品質とメモリの既定。** `maximumScreenSpaceError` は PC 16・携帯 24、タイルのメモリ上限は PC 384 MiB・携帯 128 MiB（超過許容は 192／64 MiB）。`heightOffset` は既定 0（エンジンは補正を発明しない）。複数のタイルセットを同時に開くとき、メモリ予算の合計（PC 384 MiB・携帯 128 MiB）はカメラへの近さで配分し（近いほど多く）、超過時は遠い側ほど速く screenSpaceError を上げる（最大 4 倍）。
+- **レイヤー `beta-dl-plateau3d`**（日本の3D都市モデル）。読む対象は手書きの一覧ではなく `data/plateau-cities.json`（`scripts/build-plateau-cities.mjs` が PLATEAU データカタログの `latest_datasets` から導出。建物 3D Tiles を持つ市区ごとに LOD2 テクスチャ付き > LOD2 > LOD1 の順で 1 つ選び、tileset の root region から範囲、国土地理院のジオイド計算（JGEOID2011）から都市別のジオイド高を持つ）。実行時は zoom 9 以上で、カメラ近傍（画面幅ぶんの地面・12〜60 km）の市区だけを近い順に最大 32 件開き（`plateauUnitsNear`）、各都市に `heightOffset = -ジオイド高`（東京 ≈ 36.8 m、他は都市ごと）を渡す。オフにすると全タイルセットを破棄し、通信もメモリも残さない。MapLibre エンジンでは行ごと非表示。出典と利用条件は PLATEAU サイトポリシー（CC BY 4.0 互換）。
 - **計測。** Cesium アダプタも `render.instrumentFrames`（`scene.render` を 1 回だけ包む。GPU ではなく CPU の提出時間）と `render.sceneStats`（地球儀タイル数と、3D Tiles の件数・三角形数・バイト数を `extra` に）を実装し、`?perf=1` が Cesium でも縮退しない。
 
 ### 7.3l Cesium のスタイル解釈器と MapLibre の差 — `js/cesium-style.js`
@@ -592,7 +592,9 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   うち第1級の区分が描かれている割合（0.25° の陸地格子。母集合は `data/cshapes.js` / `data/hist-borders.js` / `data/hist-eras.js` から）。観測の正本は
   `data/hist-fidelity.json`（紀元前 500 年から 2019 年まで 18 年ぶん・セル数と cos(緯度) 重みの面積）で、1000 年 1.1%・1500 年 4.9%・1800 年 25.4%・
   1900 年 47.5%（面積 43.8%）・2000 年 62.3%・2019 年 66.9%。1900 年に第1級の区分が 1% 未満の政体は 82、一部だけが 29、丸ごとが 39。測り方は
-  `js/hist-knowledge.js` が持ち、地図の斜線と同じ関数。被覆だけを見て上げない（最も安い上げ方が ⑴ そのもの）。規則の正本は
+  `js/hist-knowledge.js` が持ち、地図の斜線と同じ関数。被覆だけを見て上げない（最も安い上げ方が ⑴ そのもの）。次に何を埋めるかは `node scripts/hist-fidelity.mjs --gaps [--from 1700]` が選ぶ——セルの数でなく **km²**（0.25° のセルは赤道で約 770 km²、北緯 75° で約 190 km²）で、現代の国と理由（`holeWhy`。
+台帳と同じ関数）ごとに、測定した年の未被覆の陸地を合計して並べる。2026-11-20 の上位は 中国（日付なし）・ロシア（設立日の床より前）・オーストラリア・カナダ・アルゼンチン。
+オーストラリアの植民地やカナダのルパートランドのように**政体そのものが第 1 級の単位**である所は、同じ名前の区分で埋めると被覆の水増しになるので埋めない。規則の正本は
   `.agents/rules/historical-verification.md`、門が測れないものは `docs/TESTING.md`。⑶b 穴は理由ごと記録される——丸ごと描かれていない政体ごとに
   記録の無い土地の下の現代の国と理由を `data/hist-coverage-holes.json` が持ち、出荷済みの束と一致しなければ落とす。理由は `data/hist-admin-fill.js`
   の `refused`。⑷ 時代の枚の名前が政体の存在しない年に描かれていないか——ページ自身の `nearest()` を評価し、存続期間のある所見
