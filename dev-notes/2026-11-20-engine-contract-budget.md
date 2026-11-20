@@ -17,3 +17,7 @@ newsjp: 3D 地球儀が対応する地図スタイル式が増え、3D 都市モ
 - `js/render-plan.js` と facade の `plan()`: 候補を良い順に並べ、エンジンの能力で選ぶ。PLATEAU の可否判定をこれに載せた（挙動は同じ）。
 - `js/tileset-budget.js`: 端末層（low/mobile/mid/high）。`high`・`mobile` は従来値と同一なので既存端末の挙動は変わらず、メモリ・コアの少ない端末だけ下がる。`_governTilesets` の SSE 上限も層から。
 - 検査: `tests/engine-render-plan-checks.test.mjs`（新）、`cesium-style-parity-checks`（拡張）。
+
+## 2. 性能天井を上げた理由（CI の perf-budget が実測した増加）
+- `eager.modules` 912→913: `js/render-plan.js`（facade の `plan()` が使う純粋関数 1 本）。起動時に読む。
+- async チャンク `cesium-style` 15.3→18.2 kB: Cesium でしか読まれない遅延チャンク。`within`・`collator`・`number-format` の実装分で、MapLibre の起動には影響しない。

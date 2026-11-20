@@ -4,7 +4,7 @@
     "gzip": 1586709,
     "brotli": 1209198,
     "requests": 10,
-    "modules": 912,
+    "modules": 913,
     "cssRaw": 382385,
     "cssGzip": 63308
   },
@@ -47,7 +47,7 @@
       "cesium-engine": 72964,
       "cesium-input": 18254,
       "cesium-layers": 19250,
-      "cesium-style": 15637,
+      "cesium-style": 18700,
       "cesium-vector-tiles": 5681,
       "command-palette": 15644,
       "community-class-door": 701,
