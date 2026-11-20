@@ -1796,6 +1796,7 @@ export function atlasConsole(HOST){
        `K.name`, so it always sees the live value). Built on the first dispatch, after every name here is initialised.
        A new capability that needs an internal this list does not name adds ONE getter here. K is not published. */
     var _capK = null;
+    function programBridge(opts){ return TOOLS.openProgramBridge(TOOLS.baseTools(), AGENT, opts); }
     function capDeps(){ return _capK || (_capK = {
       get GLOSS(){ return GLOSS; },
       get R(){ return R; },
@@ -1862,6 +1863,8 @@ export function atlasConsole(HOST){
       get drawChoro(){ return drawChoro; },
       get setSel(){ return setSel; },
       get HOST(){ return HOST; },
+      /* (cap-bridge) a program's door to the capability table — the SAME executor a model's run_capability goes through (js/atlas-toolsurface.js openProgramBridge) */
+      get programBridge(){ return programBridge; },
       get CAPS(){ return CAPS; },   /* (atlas-os) the registry this page booted with — system.diagnose holds it against the capability modules */
       get applyTheme(){ return applyTheme; },
       get applyAccent(){ return applyAccent; },
