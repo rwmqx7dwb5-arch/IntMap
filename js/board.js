@@ -11,6 +11,9 @@
  *  point all call `state.toggle(row)`; a filter calls `state.setFilter`. Each widget's `update()` reads
  *  the store, so a widget added tomorrow is linked on arrival.
  *
+ *  ⚠ A LONG JOB'S PARTIAL RESULT ARRIVES THROUGH feed(): rows appended to an open inline board, the footer says
+ *  "partial" with the job's fraction until a chunk says `done` (the durable-jobs work calls it).
+ *
  *  ⚠ A PARAMETER RE-RUNS ONLY WHAT DEPENDS ON IT. The `param` widget does not recompute anything: it
  *  hands the new number to window.IntMapGisProject.setParams(dataset, {key}) — which re-runs that op and
  *  everything made from it, upstream first, and leaves a failed chain marked `stale` — and then simply
@@ -23,7 +26,7 @@
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import { createBoardState } from './board-state.js';
-import { normalise, columnsOf, rowsToFeatures, yearOf } from './board-spec.js';
+import { normalise, columnsOf, rowsToFeatures, yearOf, MAX_ROWS } from './board-spec.js';
 import { attachMap, followClock, bboxOf } from './board-link.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapTime } from './chronos.js';
@@ -89,6 +92,10 @@ export function board(HOST) {
       '.bd-panel details.bd-group>summary::after{content:"+";margin-left:auto;font-size:16px}',
       '.bd-panel details.bd-group[open]>summary::after{content:"-"}',
       '.bd-panel details.bd-group[open]>*:not(summary){margin-bottom:8px}',
+      '.bd-panel .bd-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}',
+      '.bd-panel .bd-tile{background:var(--card-bg,rgba(255,255,255,.5));border-radius:12px;padding:8px 10px}',
+      '.bd-panel .bd-tl{font-size:11px;color:var(--text-meta,#888)}',
+      '.bd-panel .bd-tv{font-size:20px;font-weight:650;letter-spacing:-.01em}',
       '.bd-panel .bd-foot{padding:8px 16px 12px;font-size:12px;color:var(--text-meta,#888)}',
       '@media (max-width:640px){.bd-panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:62vh;border-radius:20px 20px 0 0;padding-bottom:var(--safe-bottom,0px)}}',
     ].join('\n');
@@ -280,7 +287,49 @@ export function board(HOST) {
     return { el: card, update() {} };
   }
 
-  const MAKERS = { table: wTable, chart: wChart, filter: wFilter, map: wMap, evidence: wEvidence, param: wParam, time: wTime };
+  const nfmt = () => { try { return new Intl.NumberFormat(IntMapLang.locale(HOST.lang, 'en-GB'), { maximumFractionDigits: 2 }); } catch (_) { return { format: String }; } };
+  function aggregate(rows, idx, m) {
+    if (m.agg === 'count') return idx.length;
+    const ns = idx.map((i) => Number(rows[i].properties[m.field])).filter(Number.isFinite);
+    if (!ns.length) return null;
+    return m.agg === 'sum' ? ns.reduce((a, b) => a + b, 0) : m.agg === 'mean' ? ns.reduce((a, b) => a + b, 0) / ns.length : m.agg === 'min' ? Math.min(...ns) : Math.max(...ns);
+  }
+  /* headline figures computed FROM THE VISIBLE ROWS (or the selected ones), so a filter, a selection or the clock moving updates them */
+  function wMetrics(w, B) {
+    const card = el('div', 'bd-card'), grid = el('div', 'bd-tiles'), meta = el('div', 'bd-meta');
+    card.append(grid, meta);
+    return { el: card, update() {
+      const v = B.vis(), sel = new Set(B.state.get().selection), picked = v.filter((i) => sel.has(i)), idx = picked.length ? picked : v, f = nfmt();
+      grid.textContent = '';
+      w.items.forEach((m) => {
+        const x = aggregate(B.rows, idx, m), t = el('div', 'bd-tile');
+        t.append(el('div', 'bd-tl', m.label), el('div', 'bd-tv', x == null ? '—' : f.format(x) + (m.unit ? ' ' + m.unit : '')));
+        grid.appendChild(t);
+      });
+      const tm = B.state.get().time;
+      meta.textContent = (picked.length ? L('Over the ' + picked.length + ' selected row(s)', '選択した ' + picked.length + ' 行について') : L('Over ' + v.length + ' visible row(s)', '表示中の ' + v.length + ' 行について'))
+        + (tm && B.yearOf ? L(' · as of ' + tm.year, ' · ' + tm.year + ' 年時点') : '');
+    } };
+  }
+
+  /* the real-world objects a session has surfaced, handed in as rows by js/atlas-cap-board.js (this file never imports them): grouped by type, one chip each */
+  function wObjects(w, B) {
+    const card = el('div', 'bd-card'), wrap = el('div', 'bd-scroll'), meta = el('div', 'bd-meta');
+    card.append(wrap, meta);
+    wrap.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('button[data-i]'); if (b) B.state.toggle(Number(b.dataset.i), w.id); });
+    return { el: card, update() {
+      const v = B.vis(), sel = new Set(B.state.get().selection), by = new Map();
+      v.forEach((i) => { const t = String(B.rows[i].properties[w.typeField] || '—'); if (!by.has(t)) by.set(t, []); by.get(t).push(i); });
+      wrap.textContent = '';
+      by.forEach((list, t) => {
+        wrap.appendChild(el('div', 'bd-sec', t + ' · ' + list.length));
+        list.slice(0, ROW_CAP).forEach((i) => { const p = B.rows[i].properties, rel = Number(p.related); const b = el('button', 'bd-chip' + (sel.has(i) ? ' on' : ''), cellText(p[w.nameField]) + (Number.isFinite(rel) && rel > 0 ? ' · ' + rel : '')); b.type = 'button'; b.dataset.i = i; wrap.appendChild(b); });
+      });
+      meta.textContent = v.length + L(' objects', ' 件のオブジェクト') + (B.rows.some((r) => r.properties.related != null) ? L(' · the number is how many others they relate to', ' · 数字は関連する他のオブジェクトの数') : '');
+    } };
+  }
+
+  const MAKERS = { metrics: wMetrics, objects: wObjects, table: wTable, chart: wChart, filter: wFilter, map: wMap, evidence: wEvidence, param: wParam, time: wTime };
 
   /* ── open / close ────────────────────────────────────────────────────── */
   /* MANY BOARDS AT ONCE. On a desktop a reader works several windows side by side (a ranking beside the
@@ -305,7 +354,9 @@ export function board(HOST) {
     if (!B || !boards.has(B.id)) return;
     B.widgets.forEach((w) => { try { w.update(source); } catch (e) { /* one widget failing must not blank the others */ } });
     const st = B.state.get();
-    B.foot.textContent = B.vis().length + '/' + B.rows.length + L(' rows · ', ' 行 · ') + st.selection.length + L(' selected', ' 件選択');
+    B.foot.textContent = B.vis().length + '/' + B.rows.length + L(' rows · ', ' 行 · ') + st.selection.length + L(' selected', ' 件選択')
+      + (B.progress ? L(' · partial result', ' · 途中経過') + (B.progress.fraction != null ? ' ' + Math.round(B.progress.fraction * 100) + '%' : '') : '')
+      + (B.capped ? L(' · capped at ' + MAX_ROWS + ' rows', ' · ' + MAX_ROWS + ' 行で打ち切り') : '');
   }
 
   function dragByHead(root, head) {
@@ -349,7 +400,7 @@ export function board(HOST) {
       attach() { if (B.mapLink) return { attached: true }; const r = attachMap(B, { GE: IntMapGeoEngine }); if (r.attached) { B.mapLink = r; refresh(B); } return r; },
       detach() { if (B.mapLink) { B.mapLink.detach(); B.mapLink = null; refresh(B); } } };
     let lastSec = null, group = body;
-    const secName = (s) => L(s, ({ Map: '地図', Data: 'データ', Analysis: '分析', Time: '時間', Evidence: '根拠', Execution: '実行' })[s] || s);
+    const secName = (s) => L(s, ({ Map: '地図', Data: 'データ', Analysis: '分析', Time: '時間', Objects: 'オブジェクト', Evidence: '根拠', Execution: '実行' })[s] || s);
     /* on a phone the conversation stays the main thing: sections are folded, and only the first (the data) is open; the reader opens the rest as they need them */
     const fold = narrow();
     spec.widgets.forEach((w) => {
@@ -383,14 +434,16 @@ export function board(HOST) {
     root.addEventListener('pointerdown', () => { if (cur !== B) { cur = B; root.style.zIndex = String(2200 + (++zTop)); } }, true);
     doc().body.appendChild(root);
     boards.set(boardId, B); cur = B;
-    if (spec.widgets.some((w) => w.kind === 'map' && w.link)) { const r = B.attach(); if (r.attached && B.onMapLink) B.onMapLink(true); }
+    if (spec.widgets.some((w) => (w.kind === 'map' && w.link) || w.kind === 'objects')) { const r = B.attach(); if (r.attached && B.onMapLink) B.onMapLink(true); }
     refresh(B);
     return { ok: true, id: boardId, title: spec.title, widgets: spec.widgets.map((w) => ({ id: w.id, kind: w.kind, section: w.section })), rows: B.rows.length };
   }
 
   async function saveOne(B) {
     if (!B) return { ok: false, why: 'no-board-open' };
-    const rec = { id: B.id, title: B.spec.title, spec: B.spec, state: B.state.snapshot(), savedAt: Date.now() };
+    /* an inline board saves the rows it HOLDS now (a job's partial rows included), bounded by MAX_ROWS */
+    const spec = B.spec.data.rows ? { ...B.spec, data: { ...B.spec.data, rows: B.rows.slice(0, MAX_ROWS).map((r) => ({ ...r.properties })) } } : B.spec;
+    const rec = { id: B.id, title: B.spec.title, spec, state: B.state.snapshot(), savedAt: Date.now() };
     try { await tx('readwrite', (s) => s.put(rec)); return { ok: true, id: B.id }; } catch (e) { return { ok: false, why: 'storage-unavailable', detail: { message: e && e.message } }; }
   }
   const saveCurrent = () => saveOne(cur);
@@ -404,6 +457,23 @@ export function board(HOST) {
     return key;
   }
   function openStaged(key) { const raw = staged.get(key); return raw ? open(raw, { id: 'bd-' + key }) : { ok: false, why: 'expired' }; }
+  /** feed({rows, done?, progress?, replace?}) — the receiving end of a long job's partial results. Rows are appended to the front INLINE
+   *  board (a dataset-backed board changes through window.IntMapData, which the board already hears); until a chunk says `done` the
+   *  footer reads "partial result" with the job's fraction (0..1). Rows past MAX_ROWS are not kept, and the footer says so. */
+  function feed(chunk, id) {
+    const B = id ? boards.get(id) : cur;
+    if (!B) return { ok: false, why: 'no-board-open' };
+    if (B.spec.data.dataset) return { ok: false, why: 'dataset-board-updates-through-IntMapData' };
+    if (!chunk || !Array.isArray(chunk.rows)) return { ok: false, why: 'rows-required' };
+    const add = rowsToFeatures(chunk.rows.filter((r) => r && typeof r === 'object' && !Array.isArray(r)), B.spec.data.lngField, B.spec.data.latField);
+    let rows = chunk.replace ? add : B.rows.concat(add);
+    B.capped = rows.length > MAX_ROWS; if (B.capped) rows = rows.slice(0, MAX_ROWS);
+    B.rows = rows;
+    const f = Number(chunk.progress);
+    B.progress = chunk.done ? null : { fraction: Number.isFinite(f) ? Math.min(1, Math.max(0, f)) : null };
+    refresh(B, 'feed'); if (B.mapLink) B.mapLink.repaint();
+    return { ok: true, rows: B.rows.length, done: !!chunk.done, capped: !!B.capped };
+  }
   async function list() {
     try { const all = await tx('readonly', (s) => s.getAll()); return { ok: true, boards: (all || []).map((r) => ({ id: r.id, title: r.title, savedAt: r.savedAt })).sort((a, b) => b.savedAt - a.savedAt) }; } catch (e) { return { ok: false, why: 'storage-unavailable' }; }
   }
@@ -419,5 +489,5 @@ export function board(HOST) {
   }
   async function remove(id) { try { await tx('readwrite', (s) => s.delete(id)); return { ok: true }; } catch (e) { return { ok: false, why: 'storage-unavailable' }; } }
 
-  return { open, stage, openStaged, close, save: saveCurrent, list, restore, remove, state: (id) => { const B = id ? boards.get(id) : cur; return B ? B.state : null; }, isOpen: () => boards.size > 0, ids: () => [...boards.keys()] };
+  return { open, feed, rows: (id) => { const B = id ? boards.get(id) : cur; return B ? B.rows : []; }, stage, openStaged, close, save: saveCurrent, list, restore, remove, state: (id) => { const B = id ? boards.get(id) : cur; return B ? B.state : null; }, isOpen: () => boards.size > 0, ids: () => [...boards.keys()] };
 }

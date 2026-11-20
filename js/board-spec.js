@@ -20,8 +20,12 @@
  *  Pure: no DOM, no window.
  * ==========================================================================*/
 
-export const KINDS = ['table', 'chart', 'filter', 'map', 'evidence', 'param', 'time'];
-const SECTION_OF = { map: 'Map', table: 'Data', filter: 'Data', chart: 'Analysis', evidence: 'Evidence', param: 'Execution', time: 'Time' };
+import { textProblems } from './ui-text-rules.js';   /* the url / markup refusals — one copy, shared with js/atlas-ui-spec.js */
+
+export const KINDS = ['table', 'chart', 'filter', 'map', 'evidence', 'param', 'metrics', 'time', 'objects'];
+const SECTION_OF = { map: 'Map', table: 'Data', filter: 'Data', chart: 'Analysis', metrics: 'Analysis', time: 'Time', objects: 'Objects', evidence: 'Evidence', param: 'Execution' };
+export const AGGS = ['count', 'sum', 'mean', 'min', 'max'];
+const MAX_METRICS = 8;
 /* Bounds, not caps on what Atlas may do: a spec is stored and re-sent, so its size has to be a number somebody can state.
    Observed 2026-11-20: a 40-row × 8-column answer is ~6 KB; 2000 rows keeps a record under ~1 MB of IndexedDB. */
 export const MAX_ROWS = 2000;
@@ -75,13 +79,33 @@ export function normalise(raw, columns) {
   if (!Array.isArray(raw.widgets) || !raw.widgets.length) bad('widgets', 'no-widgets');
   const cols = columns || (data.rows ? columnsOf(data.rows.map((r) => ({ properties: r }))) : null);
   const has = (c) => !cols || cols.includes(c);
+  if (data.timeField && !has(data.timeField)) bad('data.timeField', 'unknown-column:' + data.timeField);
   const need = (w, path, key) => { if (!w[key] || !has(w[key])) { bad(path + '.' + key, 'unknown-column:' + s(w[key], 64)); return false; } return true; };
+  /* every string Atlas AUTHORED (not the data's own cells) is judged by the same two rules as a view's — a URL or a tag is refused by name */
+  const scan = (path, v) => { if (typeof v === 'string') textProblems(v, (en) => en).forEach((p) => bad(path, p.code)); };
+  scan('title', raw.title); scan('source', raw.source);
   const widgets = [], used = new Set();
   (Array.isArray(raw.widgets) ? raw.widgets : []).slice(0, MAX_WIDGETS).forEach((w, i) => {
     const path = 'widgets[' + i + ']';
     if (!w || !KINDS.includes(w.kind)) { bad(path + '.kind', 'unknown-kind:' + s(w && w.kind, 40)); return; }
     let wid = id(w.id) || (w.kind + (i + 1)); while (used.has(wid)) wid += '_'; used.add(wid);
     const o = { id: wid, kind: w.kind, section: SECTION_OF[w.kind], title: s(w.title, 80) };
+    scan(path + '.title', w.title);
+    if (w.kind === 'metrics') {
+      /* headline figures computed from the rows that pass the filters and the clock: {label, agg, field?, unit?} */
+      const items = Array.isArray(w.items) ? w.items.slice(0, MAX_METRICS) : [];
+      if (!items.length) { bad(path + '.items', 'metrics-need-items'); return; }
+      o.items = [];
+      items.forEach((m, j) => {
+        const ip = path + '.items[' + j + ']', agg = AGGS.includes(m && m.agg) ? m.agg : '';
+        if (!m || !s(m.label, 60)) { bad(ip + '.label', 'missing'); return; }
+        if (!agg) { bad(ip + '.agg', 'unknown-agg:' + s(m.agg, 20)); return; }
+        if (agg !== 'count' && (!m.field || !has(m.field))) { bad(ip + '.field', 'unknown-column:' + s(m.field, 64)); return; }
+        scan(ip + '.label', m.label); scan(ip + '.unit', m.unit);
+        o.items.push({ label: s(m.label, 60), agg, field: m.field ? s(m.field, 64) : '', unit: s(m.unit, 16) });
+      });
+    }
+    if (w.kind === 'objects') { o.typeField = s(w.typeField, 64) || 'type'; o.nameField = s(w.nameField, 64) || 'name'; if (!has(o.typeField)) { bad(path + '.typeField', 'unknown-column:' + o.typeField); return; } if (!has(o.nameField)) { bad(path + '.nameField', 'unknown-column:' + o.nameField); return; } }
     if (w.kind === 'table') { if (Array.isArray(w.columns)) { o.columns = w.columns.map((c) => s(c, 64)).filter((c) => has(c)).slice(0, 12); } }
     if (w.kind === 'chart') {
       if (!need(w, path, 'x') || !need(w, path, 'y')) return;

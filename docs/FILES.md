@@ -195,6 +195,7 @@ board.js                          **操作できるボード**（遅延・`IntMa
 board-link.js                     ボードと**本物の地図・マスタークロック**の双方向の連動（選択のハイライトと地図クリック・Chronos と時間窓）。エンジンと時計は注入
 board-spec.js                     ボード宣言の検査（列の実在・出典必須・Artifact の節への対応）。純関数
 board-state.js                    ボードの共有状態（選択・フィルタ・パラメータ）。純関数
+ui-text-rules.js                  画面宣言の文字列に課す 2 つの拒否（URL・タグ）の唯一の写し。ui.compose と board.compose の両仕様が共有する。純関数
 bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・
                                   未移行のファイルと理由）と `emit` / `on` / `once`。配信は
                                   `window.dispatchEvent` のままで、宣言に無い名前は開発時に例外・本番は警告
@@ -2717,7 +2718,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 171 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 172 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
