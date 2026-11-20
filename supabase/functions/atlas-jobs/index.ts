@@ -34,6 +34,7 @@ import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js"
 import { personaPrompt } from "../_shared/atlas-persona.js";
 import { workerSystem, planJob } from "../_shared/atlas-job-core.js";
 import { runJob } from "../_shared/atlas-job-runner.js";
+import { makeServerCaps } from "../_shared/atlas-server-caps.js";
 import { accountFor, openTurn, LedgerUnavailable } from "../_shared/ai-ledger.js";
 import {
   OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, priceOf, costMicros, providerFetch, bodyLength, spendCeiling,
@@ -165,7 +166,7 @@ async function runSlice(jobId: string | null): Promise<string> {
   let outcome = "error";
   try {
     const r = await runJob({
-      db, job, holder, callModel, money, now: () => Date.now(), budgetMs: SLICE_MS, leaseSeconds: LEASE_S,
+      db, job, holder, callModel, money, capabilities: makeServerCaps(), now: () => Date.now(), budgetMs: SLICE_MS, leaseSeconds: LEASE_S,
       system: workerSystem(personaPrompt("working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers", { mode: "internal" })),
     });
     outcome = r.outcome;
@@ -203,7 +204,8 @@ async function create(req: Request, body: Record<string, unknown>): Promise<Resp
 
   const idem = String(body.idem || "").trim();
   if (!/^[A-Za-z0-9._:-]{1,120}$/.test(idem)) return json({ error: "bad_request", message: "idem is required (1-120 of A-Z a-z 0-9 . _ : -)." }, 400);
-  const plan = planJob(body.tasks as unknown[]);
+  const caps = makeServerCaps();
+  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], capabilityOk: (id: string) => caps.has(id) });
   if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at }, 400);
 
   const db = adminClient();

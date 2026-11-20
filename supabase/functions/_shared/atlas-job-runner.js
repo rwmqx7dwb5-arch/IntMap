@@ -49,12 +49,35 @@ async function event(db, job, kind, data) {
   try { await db.from("atlas_job_events").insert({ job_id: job.id, user_id: job.user_id, kind, data: data || {} }); } catch (_) { /* a record that fails never fails the work */ }
 }
 
+/* runCapabilityTask — a `capability` task: one read capability's SERVER TWIN (_shared/atlas-server-caps.js), no model, no cost.
+   It is checkpointed like a model request (a cancelled or stopped job does not run it) and runs ONCE — a capability that came back
+   with an observed refusal or failure ends the task `failed`/`refused` with that code; nothing is repeated (one-pass-or-a-reason §5).
+   A twin the host did not hand over is `kind_unsupported`, by name. */
+async function runCapabilityTask(ctx, task) {
+  const { db, job, holder, leaseSeconds } = ctx;
+  const c = task.contract || {};
+  const fin = async (status, code, result) => { await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: result || null, p_cost: 0, p_calls: 0 }); return { state: status }; };
+  const cp = first(await rpc(db, "atlas_job_checkpoint", { p_job: job.id, p_holder: holder, p_lease_seconds: leaseSeconds }));
+  if (!cp || cp.ok !== true) return { state: "lost", lost: true };
+  if (cp.action !== "go") return fin("cancelled", cp.action, null);
+  const lane = ctx.capabilities;
+  if (!lane || typeof lane.run !== "function" || !lane.has(c.capability)) return fin("refused", "capability_unsupported_on_server", { summary: "", findings: [], gaps: ['"' + s(c.capability, 80) + '" has no server twin, so a job cannot run it.'], sources: [] });
+  const out = await lane.run(c.capability, c.args || {}, { signal: ctx.signal });
+  if (!out || out.ok !== true) {
+    const code = s(out && out.code, 60) || "capability_failed";
+    await event(db, job, "task.request_failed", { task: task.task_id, code, capability: s(c.capability, 80) });
+    return fin(/_unsupported_on_server$/.test(code) ? "refused" : "failed", code, { summary: s(out && out.text, 400), findings: [], gaps: [s(out && out.text, 400)].filter(Boolean), sources: [] });
+  }
+  return fin("done", "", { summary: s(out.text, 4000) || "(no text)", findings: [], gaps: [], sources: Array.isArray(out.sources) ? out.sources.slice(0, 20) : [], data: out.data === undefined ? undefined : out.data, capability: s(c.capability, 80) });
+}
+
 /* runTask — one task: start it, ask the model (checkpointed and reserved each time), finish it. → { state, lost? } */
 async function runTask(ctx, task, inputs) {
   const { db, job, holder, callModel, money, leaseSeconds } = ctx;
   const started = await rpc(db, "atlas_job_task_start", { p_job: job.id, p_holder: holder, p_task: task.task_id });
   if (started !== true) return { state: "skipped" };
   const contract = task.contract || {};
+  if (contract.kind === "capability") return runCapabilityTask(ctx, task);
   const taskView = { id: task.task_id, goal: contract.goal, returns: contract.returns, inputs };
   let calls = 0, cost = 0, web = true, why = "", note = "";
   const sources = [];
@@ -127,7 +150,7 @@ export async function runJob(ctx) {
     const byId = new Map(tasks.map((t) => [t.task_id, t]));
     const wave = ready.slice(0, TASK_CONCURRENCY);
     const results = await Promise.all(wave.map((t) => {
-      const inputs = (t.deps || []).map((d) => { const r = (byId.get(d) || {}).result || {}; return { from: d, summary: r.summary, findings: r.findings, gaps: r.gaps }; });
+      const inputs = (t.deps || []).map((d) => { const r = (byId.get(d) || {}).result || {}; return { from: d, summary: r.summary, findings: r.findings, gaps: r.gaps, data: r.data }; });
       return runTask(ctx, t, inputs).catch(() => ({ state: "error" }));
     }));
     if (results.some((r) => r.lost)) return { outcome: "lost" };

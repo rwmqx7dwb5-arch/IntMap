@@ -130,8 +130,9 @@ export function shapeOf(data) {
    The same rules makeDelegation applies at run time, applied once up front so that a job the server accepts is one it can
    finish: every contract normalises, every id is unique, every input names a task of THIS list, the inputs lead nowhere
    in a circle, and nothing is the same work twice (the second start of one contract is the first — `reused`, not run again).
-   `kinds` — what this runner can execute. The server runs `worker` only: a capability task runs a page-side kernel lane
-   that has no server twin yet, so it is refused by name here rather than started and failed there. */
+   `kinds` — what this runner can execute (default `worker` only). `capabilityOk(id)` — for a `capability` task, whether this
+   runner has a twin of that capability (supabase/functions/_shared/atlas-server-caps.js): one it has not is refused by name
+   (`capability_unsupported_on_server`) here, at planning, rather than started and failed there. */
 export const JOB_MAX_TASKS = 8;   /* observation 2026-11-20: research.delegate hands on 2 workers by default (DELEGATION_DEFAULTS.maxChildren); 8 is four times that. Expires if a plan legitimately needs more — raise it here, the one place. */
 export function planJob(contracts, o) {
   const kinds = (o && Array.isArray(o.kinds)) ? o.kinds : ['worker'];
@@ -143,6 +144,7 @@ export function planJob(contracts, o) {
     const nc = normaliseContract(list[i]);
     if (!nc.ok) return { ok: false, error: nc.error, at: i };
     if (!kinds.includes(nc.contract.kind)) return { ok: false, error: 'kind_unsupported', at: i };
+    if (nc.contract.kind === 'capability' && !(o && typeof o.capabilityOk === 'function' && o.capabilityOk(nc.contract.capability))) return { ok: false, error: 'capability_unsupported_on_server', at: i };
     norm.push(nc.contract);
   }
   const ids = new Set();
