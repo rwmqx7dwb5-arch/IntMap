@@ -10,7 +10,7 @@
 
 ### 6.1 テーブル
 
-**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **57 表**（`world_graph_ingest_runs`（フィードごとの取り込みの記録＝鮮度・全員が読め service_role が書く） / `world_graph_nodes`・`world_graph_edges`・`world_graph_claims`（永続の世界グラフ＝実世界オブジェクトと型付き・期間付きの辺と根拠のある値。全員が読め、書くのは service_role だけ・[`05-ai.md`](05-ai.md) の「永続の世界グラフ」） / `ai_delegation_journal`（子の呼び出しと質問ごとの結果・遅延・費用の 30 日の記録・§5） / `ai_turn_spend`（1 つの質問と、それが委譲した子の実費の予約と精算・§5） / `collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
+**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **59 表**（`mcp_api_keys`・`mcp_server_state`（外部 AI 用 MCP サーバの利用者キーのハッシュと停止スイッチ。ブラウザの役割からは閉じていて、本人の発行・失効・一覧だけが SECURITY DEFINER の RPC・[`../MCP-SERVER.md`](../MCP-SERVER.md)） / `world_graph_ingest_runs`（フィードごとの取り込みの記録＝鮮度・全員が読め service_role が書く） / `world_graph_nodes`・`world_graph_edges`・`world_graph_claims`（永続の世界グラフ＝実世界オブジェクトと型付き・期間付きの辺と根拠のある値。全員が読め、書くのは service_role だけ・[`05-ai.md`](05-ai.md) の「永続の世界グラフ」） / `ai_delegation_journal`（子の呼び出しと質問ごとの結果・遅延・費用の 30 日の記録・§5） / `ai_turn_spend`（1 つの質問と、それが委譲した子の実費の予約と精算・§5） / `collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
 `map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の
 調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` / `user_prefs` /
 `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` / `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） / `community_*` 5 表 / `feedback` /
@@ -175,7 +175,7 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 その関数の読者 1 人のページが 1 分に送る最大数（各関数の `READER_PER_MIN`＝推定）×`READERS_PER_ADDRESS`（10）。DB が答えなければ通す。拒否は `429 rate_limit`＋`Retry-After`。
 `<関数名>_PER_IP_PER_MIN` で deploy なしに動かせる。`routing-relay` は自前の fail-closed の全体上限を持つ。
 
-**`_shared/relay-guard.js` を共有するのは20本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` /
+**`_shared/relay-guard.js` を共有するのは21本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` / `mcp-server` /
 `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）。そのうち `ai-proxy`（JWT）・
 `atlas-embed`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り16本は無認証。`ai-proxy`・`client-errors`・
 `reader-reports`・`usage-count` が共有するのは読み手だけ（`readCapped`＝要求本文を上限で切る、`fetchBounded`＝提供者への POST を本文の最後のバイトまで同じ期限と上限で読む）。
