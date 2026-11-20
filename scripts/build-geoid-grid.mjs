@@ -27,6 +27,22 @@ export const OUT_REL = 'data/geoid-egm2008.bin.gz';
 const URL_ZIP = 'https://downloads.sourceforge.net/project/geographiclib/geoids-distrib/egm2008-5.zip';
 export const STRIDE = 6;
 
+/* 出自は値である（check:datagov が読む）。上流が述べていることだけを書く。EGM2008 は米国 NGA の公開データ（パブリックドメイン）。 */
+export const GOVERNANCE = {
+  'data/geoid-egm2008.bin.gz': {
+    publisher: 'US National Geospatial-Intelligence Agency — EGM2008 (distributed in GeographicLib PGM form)',
+    url: 'https://geographiclib.sourceforge.io/C++/doc/geoid.html',
+    licence: 'Public domain (US government work; EGM2008)', licenceUrl: 'https://earth-info.nga.mil/', attribution: false,
+    cadence: 'static',
+    cadenceBasis: {
+      observed: 'EGM2008 is a finished model published in 2008; the 5-arc-minute PGM at downloads.sourceforge.net/project/geographiclib/geoids-distrib/egm2008-5.zip was read on 2026-11-20 and its header states DateTime 2009-08-29. NGA has announced a successor (EGM2020) but not released it',
+      expires: 'if NGA publishes EGM2020 (the grid would be rebuilt from it) or the distribution URL stops serving the 5-minute file',
+      canon: 'this record (the only builder that reads EGM2008)',
+    },
+    builtBy: 'scripts/build-geoid-grid.mjs',
+  },
+};
+
 /** reads the single deflated member of the GeographicLib zip and returns the PGM {W,H,offset,scale,N(row,col)} */
 export function readPgm(/** @type {Buffer} */ zip) {
   const nameLen = zip.readUInt16LE(26), extraLen = zip.readUInt16LE(28), csize = zip.readUInt32LE(18);
@@ -51,7 +67,9 @@ export function buildGrid(/** @type {Buffer} */ zip) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const arg = process.argv[2];
-  const zip = arg ? fs.readFileSync(arg) : Buffer.from(await (await fetch(URL_ZIP)).arrayBuffer());
+  let zip;
+  if (arg) zip = fs.readFileSync(arg);
+  else { const res = await fetch(URL_ZIP); if (!res.ok) throw new Error('egm2008-5.zip: HTTP ' + res.status + ' — nothing written'); zip = Buffer.from(await res.arrayBuffer()); }
   const { w, h, bytes } = buildGrid(zip);
   const gz = zlib.gzipSync(bytes, { level: 9 });
   fs.writeFileSync(path.join(ROOT, OUT_REL), gz);

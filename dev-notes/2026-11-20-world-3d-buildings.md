@@ -35,3 +35,6 @@ Paris 71.5 m = セーヌ河床 ≈27 + N 44.7 ／ Denver 1568 m = 南プラッ�
 
 ## 5. 出典
 `js/reference-data.js`（クレジット 2 行）・`js/locales/pages.{en,ja}.js`（レイヤー説明）・Privacy §4（en/jp）・`scripts/outbound-hosts.json` と接続台帳・`security.html`/`readiness.html` とその日本語版（`org-pages --write`）。レイヤーの表示名は「東京の 3D 都市モデル」から「3D都市モデル（日本・オランダ・世界）」へ。
+
+## 6. 出自の台帳
+`scripts/build-geoid-grid.mjs` の `GOVERNANCE` に出自・ライセンス（パブリックドメイン）・周期 `static`（EGM2008 は 2008 年に完成したモデル。後継 EGM2020 は未公開）を値で宣言した。`integrity.*`（欠損・範囲外・重複）は、全球を覆う固定寸法の Int16 格子（720×361）には「行」も「欠損」も無く、`mountGeoid` が寸法の不一致を読み込み時に拒む（tests/world-3d-sources-checks.test.mjs）ので、別途の計測を足さず台帳（`data/governance-ledger.json`）に 2 件足した。取得は `res.ok` を確かめてから書く。
