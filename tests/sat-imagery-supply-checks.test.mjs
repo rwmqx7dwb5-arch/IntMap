@@ -102,3 +102,44 @@ test('⑤ tables.js builds SAT_PROVIDERS from the registry', () => {
   assert.doesNotMatch(t, /s2cloudless|tiles\.maps\.eox\.at|gibs\.earthdata\.nasa\.gov\/wmts\/epsg3857\/best\/(MODIS|VIIRS)/, 'no second list of the free suppliers');
   assert.doesNotMatch(SRC, /^\s*import .*tables/m);
 });
+
+test('⑥ an undated picture is never the picture of the asked day', () => {
+  const S = (id) => reg.sourceById(id), P = (id, iso) => reg.pickForTime(S(id), iso, TODAY);
+  assert.equal(reg.basisOf(S('gibs-viirs'), P('gibs-viirs', '2022-02-02')), 'day');
+  assert.equal(reg.basisOf(S('pdok-year'), P('pdok-year', '2018-06-01')), 'year');
+  assert.equal(reg.basisOf(S('gsi-1974'), P('gsi-1974', '1976-05-05')), 'range', 'a dated-range frame has an unknown day');
+  assert.equal(reg.basisOf(S('pdok-year'), P('pdok-year', '2014-06-01')), 'nearest-year');
+  assert.equal(reg.basisOf(S('esri'), P('esri', '2026-03-01')), 'current', 'the newest Esri picture is not that day');
+  assert.equal(reg.basisOf(S('esri'), null), null);
+  /* only a day-dated picture is described without a caveat */
+  assert.equal(reg.clockMatchNote(S('gibs-viirs'), P('gibs-viirs', '2022-02-02'), 'en'), '');
+  assert.match(reg.clockMatchNote(S('gsi-1974'), P('gsi-1974', '1976-05-05'), 'en'), /Not dated to that day.*1974–1978|Not dated to that day.*1974/);
+  assert.match(reg.clockMatchNote(S('esri'), P('esri', '2026-03-01'), 'en'), /Not dated to that day/);
+  assert.match(reg.clockMatchNote(S('esri'), P('esri', '2026-03-01'), 'jp'), /その日の画像ではありません/);
+  /* a Chronos day in the present year ranks the day-dated GIBS layer above the sharper undated «latest» Esri picture; «now» keeps sharpest-first */
+  const tokyo = { lng: 139.76, lat: 35.68, zoom: 15, today: TODAY };
+  const past = reg.rankAt({ ...tokyo, time: '2026-03-01' });
+  assert.equal(past[0].basis, 'day');
+  assert.ok(past.findIndex((r) => r.id === 'esri') > past.findIndex((r) => r.basis === 'day'));
+  assert.equal(reg.rankAt({ ...tokyo, time: null })[0].resolutionM, Math.min(...reg.rankAt({ ...tokyo, time: null }).map((r) => r.resolutionM)));
+});
+
+test('⑦ HLS scene lookup: real time and cloud cover, or an honest «no picture here that day»', async () => {
+  const hls = reg.sourceById('gibs-hls-s30');
+  assert.equal(hls.capture.scenes, 'HLSS30_2.0');
+  const E = await import(new URL('js/esri-imagery.js', root).href);
+  let asked = null;
+  E.useImageryMetaReader(async (u) => { asked = u; return { features: [{ properties: { datetime: '2026-10-03T01:37:21.960Z', 'eo:cloud_cover': 80 } }] }; });
+  const hit = await reg.captureAt(hls, { lng: 139.76, lat: 35.68, day: '2026-10-03' });
+  assert.match(asked, /^https:\/\/cmr\.earthdata\.nasa\.gov\/stac\/LPCLOUD\/search\?collections=HLSS30_2\.0&bbox=.*datetime=2026-10-03T00:00:00Z\/2026-10-04T00:00:00Z/);
+  assert.equal(hit.kind, 'scene'); assert.equal(hit.cloudCover, 80);
+  assert.match(reg.captureLine(hls, hit, 'en'), /Scene 2026-10-03 01:37 UTC · cloud 80 % · about 30 m per pixel/);
+  E.useImageryMetaReader(async () => ({ features: [] }));
+  const none = await reg.captureAt(hls, { lng: 10, lat: 10, day: '2026-10-04' });
+  assert.equal(none.kind, 'none');
+  assert.match(reg.captureLine(hls, none, 'en'), /No picture here on 2026-10-04/);
+  assert.doesNotMatch(reg.captureLine(hls, none, 'en'), /about 30 m/);
+  E.useImageryMetaReader(async () => null);   /* unreadable ≠ empty: it falls back to «chosen», never to «none» */
+  assert.equal((await reg.captureAt(hls, { lng: 1, lat: 1, day: '2026-10-05' })).kind, 'chosen');
+  E.useImageryMetaReader(null);
+});

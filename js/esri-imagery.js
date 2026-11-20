@@ -119,6 +119,8 @@ export function imagerySources() { return sourcesLive || IMAGERY_SOURCES_SEEN; }
    eager.requests 9 → 11). */
 let readMeta = null;
 export function useImageryMetaReader(fn) { readMeta = typeof fn === 'function' ? fn : null; }
+/** A JSON read through the same host-handed reader (so it runs under the host's fetch clock); null when none was handed in or it failed. */
+export const readImageryMeta = (url) => (readMeta ? Promise.resolve().then(() => readMeta(url)).catch(() => null) : Promise.resolve(null));
 
 /** Ask the service for its copyrightText once; `onChange` runs if it differs from what is shown. */
 export function refreshImagerySources(onChange) {
