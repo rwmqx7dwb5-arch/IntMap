@@ -23,3 +23,6 @@ newsjp: Atlas の完了判定が、指摘に応じて作業した後に依頼を
 
 ## 3. 検査
 `tests/atlas-goal-ledger-checks.test.mjs`（作業後の再読・同じ記録は二度読まない・met の運搬・previous の提示）。既存の `atlas-goal-verifier-checks` は無変更で通る。
+
+## 4. perf 天井を上げた理由
+`async.raw` の天井を 14136.4 → 14221.3 kB（+84.9 kB）。CI の測定値（14221.3 kB）をローカルでも再現した。増分の大半は #1305（Evidence Graph の永続・統合・ノート連携）と main 側の新しい遅延チャンク（`atlas-orchestrate` 82.3 kB・`gis-packed` 7.9 kB）で、この変更自身は `atlas-agent` / `atlas-goal-verify` の数百バイトのみ。遅延読み込みのチャンクで起動経路には載らない。main の CI が merge 後に測定値へ締める。
