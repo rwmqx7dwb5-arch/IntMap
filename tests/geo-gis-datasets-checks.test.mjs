@@ -257,6 +257,7 @@ describe('§ #R729 · the GIS core (registry, chain, refusals, project, query)',
        than an answer to the reader. A cancellation travels as the caller's own `cancelled`. */
     'js/gis-worker.js': 'its refusals are read by the kernel that offered the work, which falls back to this thread and records them as a note — they are not handed to a reader',
     'js/gis-runtime.js': 'it assembles a runtime for a PROGRAM (and for the worker bootstrap); the browser door throws instead of refusing to this panel. ⚠ js/gis-panel.js words `scope-*`, `dependency-missing` and `kernel-not-reachable` anyway (#R783) — a sentence that is never shown costs a line, a missing one costs the answer',
+    'js/gis-pipeline.js': 'its codes are inspection FINDINGS about bytes that were already read, each carried with its own `say` sentence in the stage ledger and on the acquisition row — they are not refusals of a reader, and no panel runs a read through them',
     'js/gis-index.js': 'a prefilter that answers with candidates; it raises no refusal of its own, and a prefilter that cannot narrow simply returns everything',
   };
 

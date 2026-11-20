@@ -60,14 +60,14 @@ export function resolutionOf(col) {
 }
 
 /* the range of `eo:cloud_cover` the collection states (percent), or null */
-export function cloudCoverOf(col) {
+function cloudCoverOf(col) {
   const c = col && col.summaries && col.summaries['eo:cloud_cover'];
   const v = gsdValues(c);
   return v.length ? { min: Math.min(...v), max: Math.max(...v) } : null;
 }
 
 /* → the facts a reader needs, each `stated` or null — the record's CANDOUR, counted */
-export function statedFacts(rec) {
+function statedFacts(rec) {
   const f = {
     extent: !!(rec.extent && Array.isArray(rec.extent.bbox) && rec.extent.bbox.length),
     period: !!(rec.extent && Array.isArray(rec.extent.time) && rec.extent.time.length),
@@ -144,7 +144,7 @@ export function resolutionRelation(res, ask) {
 }
 
 /* cloud: {maxCloud} percent → 'meets' | 'misses' | 'unstated' | 'not-asked' */
-export function cloudRelation(cc, ask) {
+function cloudRelation(cc, ask) {
   if (ask == null) return 'not-asked';
   if (!cc) return 'unstated';
   return cc.min <= ask ? 'meets' : 'misses';

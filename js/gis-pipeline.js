@@ -37,7 +37,7 @@
 export const STAGES = ['discovered', 'access', 'fetched', 'inspected', 'dataset'];
 /* ok: observed to hold · partial: observed to hold for PART of what was asked · failed: observed NOT to hold ·
    blocked: it exists and is not ours to take · unknown: we could not observe · pending: not attempted */
-export const STATUSES = ['ok', 'partial', 'failed', 'blocked', 'unknown', 'pending'];
+const STATUSES = ['ok', 'partial', 'failed', 'blocked', 'unknown', 'pending'];
 
 export function makeGisPipeline(deps) {
   const D = deps || {};
