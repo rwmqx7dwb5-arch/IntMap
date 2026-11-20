@@ -219,7 +219,7 @@ export function expandShells(cm) {
   return out;
 }
 /* bytes the columns hold (an array of mixed cells counted as pointers) — what the registry and the bench report as the shells' weight */
-export function shellBytes(cm) { let b = 0; for (const c of cm.cols) b += c.kind === 'f64' ? c.vals.byteLength : c.kind === 'arr' ? c.vals.length * 8 : 8; return b; }
+function shellBytes(cm) { let b = 0; for (const c of cm.cols) b += c.kind === 'f64' ? c.vals.byteLength : c.kind === 'arr' ? c.vals.length * 8 : 8; return b; }
 
 /* ══ THE CHUNK STORE ═════════════════════════════════════════════════════════════════════════════
    A result that does not fit the heap as GeoJSON is held as chunks in the order its input arrived. A chunk is
