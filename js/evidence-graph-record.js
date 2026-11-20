@@ -21,6 +21,7 @@
  *  is not there makes no edge (`unresolved`).
  * ==========================================================================*/
 import { makeEvidenceGraph, fingerprint } from './evidence-graph.js';
+import { assessDeliverable, observationLines } from './evidence-graph-deliver.js';
 
 const fieldShape = (rec) => (Array.isArray(rec && rec.fields) ? rec.fields : [])
   .map((f) => (f && typeof f === 'object') ? [f.name, f.type] : [String(f), null]);
@@ -136,9 +137,78 @@ export function recordAnswer(graph, args) {
       inputs: used.map((u) => u.id),
       calc: { op: backed ? 'stated_in_record' : 'model_statement', opVersion: 'answer-contract', params: { claimId: String(c.id || '') } },
       output: { value: m.value, unit: m.unit || '', period: m.period || '', geography: m.geography || '', concept: m.concept || '', seriesId: m.seriesId || '' },
-      meta: { callId: (args && args.callId) || null, model: (args && args.model) || null },
+      meta: { callId: (args && args.callId) || null, turnId: (args && args.turnId) || null, model: (args && args.model) || null,
+        /* which of the cited nodes themselves hold this value — what corroboration is counted from (js/evidence-graph-deliver.js) */
+        statedBy: used.filter((u) => u.values.some((v) => sameValue(v, m.value))).map((u) => u.id) },
     });
     if (r.ok) { out.recorded.push(r.id); if (!backed) out.inference++; }
+  }
+  return out;
+}
+
+/** the evidence nodes recorded for one turn's answers — what a notebook entry of that turn rests on */
+export function evidenceRefsForTurn(graph, turnId) {
+  if (!turnId) return [];
+  return graph.all().filter((n) => n.kind === 'derived' && n.meta && n.meta.turnId === turnId).map((n) => n.id);
+}
+
+/**
+ * recordNews(graph, items) → [source node ids] — news documents as source nodes, so a figure or a note can cite them.
+ * A news item is a web document: its key is its URL, its version the time it was published (or, failing that, nothing —
+ * `unversioned`; a retrieval clock is NOT a publication date). The registry already does this for the documents an
+ * ANSWER cites; this is for the ones a caller holds before any answer exists (the loaded feed, a briefing's sources).
+ */
+export function recordNews(graph, items) {
+  const ids = [];
+  for (const it of (Array.isArray(items) ? items : [])) {
+    const url = it && (it.url || it.link || it.canonicalUrl);
+    if (!url || !/^https?:\/\//i.test(String(url))) continue;
+    const r = graph.putSource({ type: 'web_document', key: String(url), label: it.title || it.headline || url, version: it.publishedAt || it.date || it.seendate || '', versionBasis: 'published_at',
+      meta: { publisher: it.source || it.publisher || it.domain || null, retrievedAt: it.retrievedAt || null } });
+    if (r.ok) ids.push(r.id);
+  }
+  return ids;
+}
+
+/**
+ * recordNote(graph, entry) → {ok, id} | {ok:false, why} — a notebook entry (js/atlas-notebook-store.js) as a derived
+ * `other` node whose inputs are the evidence nodes of that turn (`entry.evidenceRefs`, ids code minted when the turn's
+ * answer was recorded) plus the documents the entry lists as sources. A note that cites nothing the graph holds is not a node.
+ * The note's own text is not part of the lineage — it is the reader's; only what it RESTS ON is.
+ */
+export function recordNote(graph, entry) {
+  if (!entry || !entry.id) return { ok: false, why: 'no-entry' };
+  const inputs = (Array.isArray(entry.evidenceRefs) ? entry.evidenceRefs : []).filter((id) => graph.get(id));
+  for (const sId of recordNews(graph, entry.sources || [])) if (inputs.indexOf(sId) < 0) inputs.push(sId);
+  if (!inputs.length) return { ok: false, why: 'nothing-cited' };
+  return graph.putDerived({ type: 'other', label: String(entry.title || entry.question || entry.id).slice(0, 140), inputs,
+    calc: { op: 'investigation_note', opVersion: 'notebook-v1', params: { entry: entry.id } },
+    output: { entry: entry.id, question: String(entry.question || '').slice(0, 300), answerLength: String(entry.answer || '').length },
+    meta: { notebookEntry: entry.id } });
+}
+
+/**
+ * datasetFacts(data, ids, refOf) → app-fact records for js/atlas-evidence.js `addAppData`, one per dataset,
+ * each carrying the `graphRef` of the dataset's node so an answer figure drawn from it traces through the GIS chain.
+ * The facts are what the dataset MEASURED about itself — row count, and min / max / filled-of-total for each numeric
+ * column — never a statistic computed here. A dataset the graph has no node for is still offered (no graphRef): the
+ * figures are real, the lineage just starts at the answer.
+ */
+export function datasetFacts(data, ids, refOf) {
+  const out = [];
+  for (const id of (Array.isArray(ids) ? ids : [])) {
+    const rec = data && typeof data.get === 'function' ? data.get(id) : null;
+    if (!rec) continue;
+    const facts = [{ seriesId: 'gis.' + rec.id + '.rows', concept: 'rows', value: +rec.count || 0, unit: 'rows', basis: 'reported', geography: '', period: 'latest' }];
+    for (const c of (Array.isArray(rec.fields) ? rec.fields : [])) {
+      if (!c || c.type !== 'number') continue;
+      const mk = (k, v) => ({ seriesId: 'gis.' + rec.id + '.' + c.name + '.' + k, concept: c.name + ' ' + k, value: v, unit: c.unit || '', basis: 'reported', geography: '', period: 'latest' });
+      facts.push(mk('filled', c.filled));
+      if (isFinite(c.min)) facts.push(mk('min', +c.min));
+      if (isFinite(c.max)) facts.push(mk('max', +c.max));
+    }
+    out.push({ title: String(rec.title || rec.id), publisher: 'IntMap', validTime: 'latest', dateType: 'valid_time', label: 'GIS', supportFacts: facts,
+      graphRef: typeof refOf === 'function' ? refOf(rec.id) : null });
   }
   return out;
 }
@@ -157,4 +227,20 @@ export function sharedEvidenceGraph(scope) {
     SHARED.boundTo = data;
   }
   return { graph: SHARED.graph, refOfDataset: (id) => (SHARED.gis ? SHARED.gis.refOf(id) : null) };
+}
+
+/**
+ * makeTurnObserver(since, scope) → () → string[] — the lines js/atlas-goal-verify.js shows its reader beside the record
+ * of operations: what the datasets created since `since` (a turn's start, ms) hold, and what stands behind each figure
+ * recorded since. Facts from the registry and the graph only; empty when the turn made neither.
+ */
+export function makeTurnObserver(since, scope) {
+  return () => {
+    const g = scope || (typeof globalThis !== 'undefined' ? globalThis : {});
+    const eg = sharedEvidenceGraph(g);
+    const data = g.IntMapData;
+    const datasets = data && typeof data.list === 'function' ? data.list().filter((r) => (+r.createdAt || 0) >= since) : [];
+    const answerNodes = eg.graph.all().filter((n) => n.kind === 'derived' && (n.type === 'answer_number' || n.type === 'ai_inference') && (Date.parse(n.createdAt) || 0) >= since).map((n) => n.id);
+    return observationLines(assessDeliverable({ graph: eg.graph, datasets, answerNodes }));
+  };
 }

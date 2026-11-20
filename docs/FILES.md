@@ -1318,6 +1318,8 @@ world-flows.js                    **世界とのつながり**のカードと地
                                   レイヤーを同じ国で開く扉。扉は Tools・地点カードの国の行・`?wf=`・Atlas `data.worldFlows`。遅延チャンク（§7.3j）
 world-flows-core.js               その事実の全部（純粋なモジュール）——国の表と照合・時刻の規則・3 つの読み方・合計と割合・弧（大圏の経度を連続に）
 evidence-graph.js               **数値の出自の長期グラフ**（純粋）— 元の事実（source・版は追記）と IntMap/AI が作った派生（derived・入力の版と計算を固定）を分け、`trace`／`impact`／`staleness`／`wouldStale` で元データ〜回答の数値を遡り、更新の影響先を調べる。
+evidence-graph-deliver.js       成果物が**実際に何を持つか**を事実として出す（純粋）— 各列が何行に値を持つか・数値ごとの独立した出典数（同一ホストは 1）。判断は別モデルの goal verifier（`observe`）。
+evidence-graph-sync.js          Evidence Graph のアカウントの写し — `evidence_graph_nodes` へ pull→push（`pending/ackPending`）。同意はノート同期と同じ。
 evidence-graph-record.js        Evidence Graph の記録係 — GIS データセット（`bindGis`）と Atlas 回答の数値（`recordAnswer`、`graphRef` 経由で GIS 鎖へ）。モデルが書いた URL/id は節を作らない。
 world-graph-store.js            **永続の世界グラフの読み口**（遅延・純粋）— Supabase の `world_graph_*`（対象・型付きの辺・値）を、世界オブジェクトの索引と同じ型
                                   （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `find` / `near`）。結ぶのは識別子（`ids`）で綴りではない。
