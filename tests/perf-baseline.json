@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 14475671,
-    "gzip": 4859500,
+    "gzip": 4888518,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -25,7 +25,7 @@
       "atlas-cap-runs": 905439,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1077036,
+      "atlas-console": 1104126,
       "atlas-delegate": 66486,
       "atlas-executor": 61782,
       "atlas-float": 10113,
@@ -213,7 +213,7 @@
   "dist": {
     "total": 1579471807,
     "data": 1216590073,
-    "assets": 21961000
+    "assets": 22094849
   },
   "phone": {
     "bytes": 342631,

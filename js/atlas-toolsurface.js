@@ -25,6 +25,8 @@
  *  CHECKED, never what an action does.
  * ==========================================================================*/
 
+import { searchSkills, readSkill, parseSkillQuery } from './atlas-skills.js';   /* (atlas-skills) how-to material beside the capabilities; read a section at a time */
+
 export function makeAtlasToolSurface(deps) {
   return (function () {
     deps = deps || {};
@@ -176,10 +178,11 @@ export function makeAtlasToolSurface(deps) {
       t.find_capability = {
         name: 'find_capability',
         description: 'Search everything IntMap can do. Returns matching capabilities with their exact argument schemas. '
-          + 'Use this when no tool above fits and you want to know whether IntMap can do something.',
+          + 'Use this when no tool above fits and you want to know whether IntMap can do something. '
+          + 'Answers may list SKILLS (how-to notes, not procedures): read one with query "skill:<id>".',
         parameters: {
           type: 'object', required: ['query'],
-          properties: { query: { type: 'string', minLength: 2 } },
+          properties: { query: { type: 'string', minLength: 2 }, section: { type: 'string' }, language: { type: 'string', enum: ['en', 'jp'] } },
         },
       };
 
@@ -205,7 +208,22 @@ export function makeAtlasToolSurface(deps) {
        with any capability's English wording reached nothing through the lexical search alone — three
        production questions ended with zero operations (#R802). When meaning could not be consulted
        the note says so, because 「語彙だけで探して無かった」 is not 「無い」. */
-    async function find(query) {
+    /* (atlas-skills) a skill is found by the same door and read by the same door: the answer to a request
+       carries the few skills it shares words with (names and one line each, never their text), and the
+       query "skill:<id>" returns one section. It changes nothing a capability answer says. */
+    async function find(query, args) {
+      var sid = parseSkillQuery(query);
+      if (sid) return readSkill(sid, { section: args && args.section, lang: args && args.language });
+      var out = await findCapabilities(query);
+      var sk = [];
+      try { sk = searchSkills(query, { want: 2 }); } catch (_) { sk = []; }
+      if (sk.length) {
+        out.skills = sk;
+        if (!out.matches.length) out.note = 'No capability matched, but a skill did: read it for how this kind of work is done with IntMap. ' + (out.note || '');
+      }
+      return out;
+    }
+    async function findCapabilities(query) {
       var r = null, q = String(query || '');
       try {
         r = typeof CAPS.searchFused === 'function'
@@ -301,7 +319,7 @@ export function makeAtlasToolSurface(deps) {
         var name = String((call && call.name) || '');
         var args = (call && call.arguments) || {};
 
-        if (name === 'find_capability') return find(args.query);
+        if (name === 'find_capability') return find(args.query, args);
 
         var built = actionFor(name, args, tools);
         if (built.error === 'unknown_capability') {
