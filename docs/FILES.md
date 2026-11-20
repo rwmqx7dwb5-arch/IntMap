@@ -191,6 +191,9 @@ glyph-store.js                    ↳ この端末が自分の書体で描いた
 click-ownership.js                ↳ クリック登録と排他的所有権の台帳。adapter/handlerを弱参照し、
                                   背景fallbackと地物のownerを区別する。レンダラや地名IDには依存しない
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
+board.js                          **操作できるボード**（遅延・`IntMapBoard`）— 宣言（表・グラフ・フィルタ・地図・指標・時間・オブジェクト・根拠・パラメータ）から DOM を組み、1 つの状態で連動。選択は本物の地図のカメラを動かし、Chronos の時計がそのまま表と数値を動かす。長いジョブの途中経過は `feed()` で受ける。保存は IndexedDB `intmap-board`
+board-spec.js                     ボード宣言の検査（列の実在・出典必須・Artifact の節への対応）。純関数
+board-state.js                    ボードの共有状態（選択・フィルタ・パラメータ、および時計の写し `time`）。純関数
 bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・
                                   未移行のファイルと理由）と `emit` / `on` / `once`。配信は
                                   `window.dispatchEvent` のままで、宣言に無い名前は開発時に例外・本番は警告
@@ -1041,7 +1044,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  252 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  255 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1054,6 +1057,7 @@ atlas-caps.js                     **能力ひとつ＝項目ひとつ**の仕組
 atlas-caps-modules.js             ⚠ 生成物（`node scripts/atlas-caps.mjs --write`）— 能力の名前空間ファイルの一覧（js/ から発見・遅延チャンクだけが読む）
 atlas-cap-account.js              Atlas の能力 — 自分のアカウントのデータの目録と書き出し（account.*。account-data-center）
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
+atlas-cap-board.js                Atlas の能力 — 操作できる画面（ボード）の合成と復元（board.compose / board.restore）
 atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart.compose）
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
@@ -1080,7 +1084,8 @@ atlas-cap-sim.js                  Atlas の能力 — シミュレーター（si
 atlas-cap-system.js               Atlas の能力 — 汎用の逃げ道とモジュール操作（system.*）
 atlas-cap-time.js                 Atlas の能力 — 時刻（time.*）
 atlas-reasoning.js                Atlas の 3 つの答えを**構造**にする純関数（シナリオ research.scenario の 4 欄・期間の変化 time.changes の差分と順位・相関 panel.correlate の報告）。DOM も window も持たず、tests/atlas-reasoning-checks.test.mjs が評価する。相関パネルも同じ報告を描く
-atlas-cap-ui.js                   Atlas の能力 — インラインの操作（ui.*）
+atlas-cap-ui.js                   Atlas の能力 — 返答の中の UI（ui.*）：インラインの操作（ui.inlineControls）と宣言的なビュー（ui.compose・綴り `dashboard`）。
+                                  操作の行の描画は 1 か所（controlRows）で、両方が使う
 atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
@@ -1172,7 +1177,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 252 を検索・到達可能 249）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 255 を検索・到達可能 252）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1192,7 +1197,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 252 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 255 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1212,6 +1217,12 @@ atlas-turn-results.js             **1つの操作は、返信の中で1ブロッ
                                   ③**版を持つ成果物は順位づけない**（#R551）— `meta.artifact` を名乗る2件は
                                   `revision` の大きいほうが残る。アプリが保持しているのが最新版なのだから、
                                   点数で古い版を選べば「もう無い印」を説明する返信になる
+ui-text-rules.js                  宣言された画面（ビューとボード）の文字列に課す 2 つの拒否（URL・タグ）の唯一の実装。`atlas-ui-spec.js` と `board-spec.js` が共有。純関数
+atlas-ui-spec.js                  **Atlas が宣言するビュー**（declarative-workspace）— `ui.compose` の仕様（JSON）のブロックの種類・欄・上限の表
+                                  （BLOCKS／LIMITS）と、そこから導く schema（viewSchema）・カタログの形（blockShapes）・検査（checkView）。
+                                  ⚠ 検査は**全部の問題を経路つきで**返し、未知の種類・未知の欄・上限超え・URL・HTML を理由つきで拒む（黙って落とさない）。
+                                  描くのは IntMap の部品だけ——図の値の札・表（返答の Markdown 表へ）・地名のボタン。`chart`／`controls` の
+                                  ブロックは chart.compose／ui.inlineControls の dispatch に渡す（描画器を 2 つ作らない）。DOM なし
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
@@ -2705,7 +2716,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 170 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 172 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
