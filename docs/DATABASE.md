@@ -41,6 +41,8 @@ is the human explanation.
 | `ai_turn_spend` | *(atlas-delegation)* One row per (account, **turn family** — a reader turn and the worker turns it opened) — `(user_id, root_key)`, `reserved_micros`, `spent_micros`, `started_at`. ai-proxy reserves an estimated cost before each provider request and settles it to what was billed; a reservation that is never settled is dropped with the row when it expires (over-counting, never under). | None (RLS on, no policy). | **RPCs only** (`reserve_ai_spend` / `settle_ai_spend`, service_role). |
 | `ai_delegation_journal` | *(atlas-delegation)* One row per **worker call and per Atlas root turn** — `(id, user_id, root_key, child_key, task, outcome ok/failed/refused, code, http_status, model, latency_ms, input_tokens, output_tokens, cost_micros, web, created_at)`. Kept **30 days** (the ledger rows `ai_turns` live about a day and a failed worker's row is released, so without this a failure leaves no record). Feeds the admin Delegation tab. | Own rows (select). | **RPC only** (`log_ai_delegation`, service_role). Purged by `purge_ai_delegation_journal`. |
 | `world_graph_nodes` | *(world-graph)* **永続の世界オブジェクト**——`ref`（`type:id`＝ページの索引と同じ）・type・kind・name・country・`lng`/`lat`・provenance（位置の知り方）・`ids`（外部識別子 jsonb：wikidata・osm・company…。**同一の対象はこれで結ぶ。名前では結ばない**）・`valid_from_ms`/`valid_to_ms`・facts・sources。出典が述べたことだけで、推定は入れない。 **`feed`／`feed_run`**（取り込みフィードの持ち主と最後に確かめた実行。NULL は feed 導入前の seed で、どのフィードも触らない）。| 全員（select。anon も）。 | **service_role のみ**（migration の seed・サーバ側の取り込み）。 |
+| `mcp_api_keys` | *(mcp-server)* 外部 AI 用 MCP サーバの利用者キー——`key_hash`（**sha256 だけ**。生のキーは発行時に 1 度返るのみ）・`owner`・`label`・`daily_limit`・`revoked_at`・`last_used`。 | **誰も直接は読めない**（本人は `mcp_list_keys()`）。 | `mcp_issue_key`（本人・1 人 5 本まで）・`mcp_revoke_key`（本人）。service_role。 |
+| `mcp_server_state` | *(mcp-server)* **停止スイッチ**の 1 行——`enabled=false` で `mcp-server` の全呼び出しが 503。デプロイ不要。 | 誰も直接は読めない（関数が `mcp_authorize` 経由で読む）。 | service_role（運用者の SQL）。 |
 | `world_graph_edges` | *(world-graph)* 型付きの結び付き——`(from_ref, rel, to_ref, from_ms, to_ms, confidence, source, retrieved)`。述べた側に 1 行だけ保存し、逆向きの名前はページが `REL_INVERSE` で読む。期間が NULL は「述べられていない」。同じ関係・相手・期間は 1 行（一意索引）。 `feed`／`feed_run`（同上）。| 全員（select）。 | service_role のみ。 |
 | `world_graph_claims` | *(world-graph)* 根拠のある値——`(ref, key, value, unit, from_ms, to_ms, source, retrieved)`。出典ごとの値は上書きせず並べる。 `feed`／`feed_run`（同上）。フィードの値は `(ref,key,期間,source)` で 1 行（部分一意索引）で、改訂は同じ行の値を更新する。| 全員（select）。 | service_role のみ。 |
 | `world_graph_ingest_runs` | *(world-graph-ingest)* フィードの取り込み 1 回＝1 行：`feed`・`started_at`/`finished_at`・`status`（running／ok／refused／failed）・`upstream`（各上流が自分の更新日として述べたもの）・`counts`（追加・変更・同一・退役）・`note`。**これが回答の脇に出る鮮度の元**。 | 全員（select。anon も）。 | service_role のみ。 |
@@ -381,7 +383,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **57**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **59**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't

@@ -166,6 +166,15 @@ export function makeGisAtlas(core) {
         for (const k of Object.keys(cov)) if (cov[k] != null) c[k] = cov[k];
         if (Object.keys(c).length) row.coverage = c;
       }
+      /* (spatiotemporal-join) WHEN a derived record holds, and what its join could not vouch for, reach the planner too:
+         a result that carries `warnings` (a series on today's borders joined to rows drawn as they were, pairs that never
+         coexisted) must be SAID with its answer, and the planner can only say what this row shows it. Passed as recorded. */
+      const pv = ds.provenance;
+      if (pv && typeof pv === 'object') {
+        if (Array.isArray(pv.warnings) && pv.warnings.length) row.warnings = pv.warnings;
+        if (pv.timeRule && typeof pv.timeRule === 'object') row.timeRule = pv.timeRule;
+        if (pv.geoBasis && typeof pv.geoBasis === 'object') row.geoBasis = pv.geoBasis;
+      }
       return row;
     }
 
