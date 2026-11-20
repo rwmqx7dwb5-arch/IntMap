@@ -80,7 +80,7 @@ const DEFAULT_TIMEOUT_MS = 30000;
 const TOOL_NAME_RE = /^[A-Za-z0-9_.:-]{1,64}$/;
 const SERVER_ID_RE = /^[a-z0-9][a-z0-9-]{0,30}$/;
 
-export class McpError extends Error {
+class McpError extends Error {
   constructor(code, message, extra) { super(message || code); this.name = 'McpError'; this.code = code; if (extra) Object.assign(this, extra); }
 }
 
@@ -157,7 +157,7 @@ export function checkServerUrl(raw) {
   return { url: u.toString() };
 }
 
-export function slug(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 31); }
+function slug(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 31); }
 
 /**
  * createMcpClient(opts)
@@ -538,10 +538,6 @@ export function createMcpClient(opts) {
 
 /* ── the page's one client ───────────────────────────────────────────────────────────────────────────── */
 let _page = null;
-/** Whether any server is registered, without building a client — find_capability asks this on every search. */
-export function hasRegisteredServers() {
-  try { const v = JSON.parse(globalThis.localStorage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(v) && v.length > 0; } catch (_) { return false; }
-}
 /** The client bound to the live page: its fetch and localStorage, the mcp-relay Edge Function, and the reader's session for it. */
 export function pageClient(HOST) {
   if (_page) return _page;
