@@ -1050,7 +1050,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  256 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  257 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1115,6 +1115,7 @@ atlas-geo-object.js               **地点の1つの形**（#R397）— GeoObjec
                                   ⚠ 代表点は `pointLike` ではない＝「その地点」として扱わない。
                                   `worldObject()` は同じ型に **type・ref・bounds・time・articleIds・evidenceIds・sources・links・facts** を足す
 atlas-world-objects.js           **実世界オブジェクトの索引と関係**— 地震・出来事・記事・施設・都市・火山・企業・地点を
+atlas-work-store.js             Atlas — 作業成果物のデータ（成果物の種類・版・版どうしの比較・作業場の選択・Markdown／ファイル・端末の保存は調査ノートの store を再利用）。DOM なし
                                   `worldObject`（`atlas-geo-object.js` の型）へ書き下ろすアダプタ、セッション内の索引
                                   （`register` / `find`）、`relation` / `related`（linked ／ near かつ（concurrent または
                                   時刻なし）。**時刻だけでは関連にしない**）、描画 1 本（`relatedGroups` / `relatedHtml`）。
@@ -1182,7 +1183,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 256 を検索・到達可能 253）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 257 を検索・到達可能 254）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1717,6 +1718,7 @@ admin-corrections.js              admin-corrections.html の動き——管理�
 map-corrections.js                地図の誤り報告の読者側——カード（地点・表示・年を添付）、送信（reader-reports kind correction）、受付番号の保管、
                                   回答の読み取り（受付番号とアカウント）、回答の通知、公開記録。クリックで取得（起動経路に載らない）
 atlas-cap-corrections.js          Atlas の corrections.* —— report（下書きしてカードを開く・送るのは読者）／mine／log
+atlas-cap-work.js                 Atlas の能力 — 作業成果物（work.job・綴り `work`）。成果物の保存・取り出し・比較・書き出し・作業場の選択。既存の書き出し・チャート・添付・データセット登録を呼ぶ扉
 atlas-cap-community.js            Atlas の community.* —— browse（目録）／open（地図で開く）／list（掲載・表示名は訊く）／unlist／mine（届いた数）
 admin-auth.js                     運営コンソールの唯一のサインイン（window.IntMapAdminAuth・素の script）——パスワード→TOTP（初回は登録）で aal2、
                                   セッションはそのタブの sessionStorage（キー intmap-admin-auth）、破壊的操作前の stepUp。これを読むページが
