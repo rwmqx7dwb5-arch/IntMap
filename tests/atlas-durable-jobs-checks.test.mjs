@@ -1,6 +1,6 @@
 /* ============================================================================
  *  atlas-durable-jobs — a job that outlives the tab (js/atlas-job-core.js, supabase/functions/_shared/atlas-job-runner.js,
- *  supabase/functions/atlas-jobs, supabase/migrations/20261120110000_atlas_durable_jobs.sql)
+ *  supabase/functions/atlas-jobs, supabase/migrations/20261120130000_atlas_durable_jobs.sql)
  *
  *  ① the contract the page and the server share: planJob / readyTasks / workerPrompt, and the mirror is byte-identical;
  *  ② the runner against an in-memory twin of the SQL state machine: a dependent pair finishes, the reader's amendment
@@ -209,7 +209,7 @@ test('a slice that is out of time lets go of the job for the next tick instead o
 
 /* ── ③ the SQL and the function carry the fences they claim ── */
 test('the migration: RLS on every table, owner-only read, the runner functions are service_role only, the reader\'s two are not', () => {
-  const sql = read('supabase/migrations/20261120110000_atlas_durable_jobs.sql');
+  const sql = read('supabase/migrations/20261120130000_atlas_durable_jobs.sql');
   for (const t of ['atlas_jobs', 'atlas_job_tasks', 'atlas_job_events', 'atlas_jobs_control']) assert.match(sql, new RegExp('alter table public\\.' + t + '\\s+enable row level security'), t + ' has RLS');
   assert.match(sql, /unique \(user_id, idem_key\)/, 'creation is idempotent on (reader, idem)');
   assert.match(sql, /skip locked/i, 'a claim never waits on, or doubles, another runner');
