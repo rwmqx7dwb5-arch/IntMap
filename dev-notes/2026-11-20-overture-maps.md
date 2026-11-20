@@ -82,3 +82,17 @@ STAC の `href` は**データ**。https・認証情報なし・私的でない�
   なので入れていない。
 - 同じ窓を 2 回読むと 2 回走査する（フッターは覚えているが、走査結果は覚えていない）。
 - パフォーマンスの天井（`tests/perf-baseline.json`）は PR の CI が決める。
+
+## 8. CI が赤かった 2 つと、その直し方
+
+- **`check:surface`**: 能力 `data.gisOverture` の実行コードは兄弟能力（`data.gisRemote` ほか）と同じ書き方で
+  `window.IntMapLazy.need('gisCore')` と `window.IntMapGis.atlas` を読む。読み取りがそれぞれ 1 件増えた
+  （`IntMapGis` 14→15・`IntMapLazy` 186→187）。新しい経路ではなく既存の入口を同じ形で 1 つ足しただけなので、
+  基準（`tests/global-surface-baseline.json`）を `--update` で記録した。
+- **perf の天井**（`tests/perf-baseline.json`）: 非同期の総量が増えた。理由は 2 つ——hyparquet と
+  hyparquet-compressors が遅延チャンクとして増えたこと、能力データ（`atlas-cap-runs`）に 1 能力ぶんの
+  行が増えたこと。eager（起動時）の数は増えていない。上げた値は CI が実測した値
+  （async raw 14360.0 kB・gzip 4865.0 kB・`atlas-cap-runs` 889.2 kB・`dist.assets` 21754.7 kB）。
+  ⚠ このマシンではローカル build が `data/border-detail` のコピーで失敗する（`copyfile UNKNOWN`）ので
+  `perf-budget --update` は build 印が無く拒否される。そのため CI の実測値を手で書いた。次の CI が許す幅を
+  超えれば再び赤になるので、その場合は CI の数に合わせて直す。
