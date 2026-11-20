@@ -25,6 +25,7 @@ import { loadNetwork, plan as raptorPlan, reach as raptorReach, bandCircles, cir
 import { FEEDS, feedById, feedsNear, attributionFor, TRANSITOUS_FALLBACK } from './transit-feeds.js';
 import { featureAt } from './routing-ops.js';
 import { jsonWithin } from './fetch-deadline.js';
+import { knownAt as catalogueKnownAt, sentence as catalogueSentence } from './transit-catalogue.js';
 
 /* a bundle is about 3 MB and the border-post file about 2 MB: a generous deadline, not a short one */
 const BUNDLE_MS = 45000;
@@ -43,6 +44,15 @@ export function motisMode(t) {
   if (t >= 1000 && t < 1100) return 'FERRY';
   return ({ 0: 'TRAM', 1: 'SUBWAY', 2: 'RAIL', 3: 'BUS', 4: 'FERRY', 5: 'CABLE_CAR', 6: 'GONDOLA', 7: 'FUNICULAR', 11: 'BUS', 12: 'RAIL' })[t] || 'BUS';
 }
+
+/* the discovered catalogue (scripts/transit-discover.mjs): fetched only when a point has NO shipped timetable, to say why */
+let CATALOGUE = null;
+function catalogueRows() {
+  if (!CATALOGUE) CATALOGUE = jsonWithin('data/transit-feed-catalogue.json', 30000).then((b) => (b && Array.isArray(b.feeds) ? b.feeds : [])).catch(() => { CATALOGUE = null; return null; });
+  return CATALOGUE;
+}
+/** what the catalogue knows about a point, structured plus its [en, jp] sentence; null when the catalogue cannot be read (never «nothing exists») */
+async function knownAt(p) { const rows = await catalogueRows(); if (!rows) return null; const k = catalogueKnownAt(rows, p); return { ...k, words: catalogueSentence(k) }; }
 
 function netFor(id) {
   let p = NETS.get(id); if (p) return p;
@@ -126,7 +136,7 @@ function toItinerary(net, feed, j, from, to, date, tz) {
  */
 async function plan(q) {
   const ids = candidates(q.from).filter((id) => candidates(q.to).indexOf(id) >= 0);
-  if (!ids.length) return { ok: false, reason: 'no-open-timetable', note: 'no shipped feed covers both ends' };
+  if (!ids.length) return { ok: false, reason: 'no-open-timetable', note: 'no shipped feed covers both ends', known: await knownAt(q.from) };
   const feed = feedById(ids[0]); const net = await netFor(feed.id); if (!net) return { ok: false, reason: 'bundle-unavailable' };
   const when = q.time ? new Date(q.time).getTime() : Date.now(); const tz = net.b.tz || feed.tz || 'UTC';
   const z = zoneParts(when, tz);
@@ -154,7 +164,7 @@ async function unionCircles(circles) {
  * q: { origin:{lng,lat}, minutes?:number|number[] (≤ 120, up to 4 nested), time?:Date|ms|ISO, mode?:'walk'|'bike' }
  */
 async function reach(q) {
-  const ids = candidates(q.origin); if (!ids.length) return { ok: false, reason: 'no-open-timetable' };
+  const ids = candidates(q.origin); if (!ids.length) return { ok: false, reason: 'no-open-timetable', known: await knownAt(q.origin) };
   const feed = feedById(ids[0]); const net = await netFor(feed.id); if (!net) return { ok: false, reason: 'bundle-unavailable' };
   const mins = (Array.isArray(q.minutes) ? q.minutes : [q.minutes || 30]).map((m) => Math.max(5, Math.min(120, +m || 30))).sort((a, b) => a - b).slice(0, 4);
   const when = q.time ? new Date(q.time).getTime() : Date.now(); const tz = net.b.tz || feed.tz || 'UTC'; const z = zoneParts(when, tz);
@@ -177,6 +187,7 @@ const api = {
   plan, reach, coverageOf: async (id, date) => { const n = await netFor(id); return n ? coverage(n, date) : null; },
   feeds: () => FEEDS.map((f) => ({ id: f.id, country: f.country, name: f.name, licence: f.licence.spdx, bbox: f.bbox, realtime: !!f.realtime })),
   covers: (p) => candidates(p).length > 0,
+  knownAt,
   attribution: (ids) => attributionFor(ids),
   basis: planBasis, models: MODELS, motisMode,
   /* read from the registry, so the one declaration decides (js/transit-feeds.js) */

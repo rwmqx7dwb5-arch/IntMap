@@ -457,13 +457,13 @@ export function routing(HOST){
          shipped feed covers both ends the answer comes from there and nothing leaves the browser.
          Transitous is consulted only if js/transit-feeds.js's TRANSITOUS_FALLBACK says so (it does not:
          it is false until Transitous agrees in writing). */
-      _planItins._own=null;
+      _planItins._own=null; _planItins._known=null;
       try{ if(window.IntMapLazy){ await window.IntMapLazy.need('transitTimetable'); const TT=window.IntMapTransitTimetable;
         if(TT&&TT.covers(from)&&TT.covers(to)){ const own=await TT.plan({from:from,to:to,time:opts.time,maxWalkM:opts.maxWalkM});
           if(own&&own.ok){ _planItins._own=own; _planItins._fail=null; return own.itineraries; }
           _planItins._fail=(own&&own.reason==='date-outside-window')?'timetable_window':'no_transit'; _planItins._ownWhy=own||null;
           if(!TT.transitousFallback) return null; }
-        else if(TT&&!TT.transitousFallback){ _planItins._fail='no_open_timetable'; return null; } } }catch(_){}
+        else if(TT&&!TT.transitousFallback){ _planItins._fail='no_open_timetable'; try{ _planItins._known=await TT.knownAt(from); }catch(_){ _planItins._known=null; } return null; } } }catch(_){}
       const when=(opts.time?new Date(opts.time):new Date()); const tISO=isFinite(when.getTime())?when.toISOString():new Date().toISOString();
       /* (#R184) 「フェリー、鉄道、徒歩区間の個別除外」 — MOTIS takes the transit modes it MAY use as an
          allow-list, so excluding one means sending the others. Verified against the live server: a
@@ -609,7 +609,7 @@ export function routing(HOST){
         const fail=_planItins._fail||'no_transit';
         if(fail==='no_transit'||fail==='no_open_timetable'){ try{ const jr=await _jrPlan(from,to,opts); if(jr) return jr; }catch(_){} }
         /* (#R126) §2.5: provider outage/timeout/429 is NOT the same answer as "no transit here" */
-        return {ok:false,reason:'no-transit',status:fail}; }
+        return {ok:false,reason:'no-transit',status:fail,known:fail==='no_open_timetable'?_planItins._known:null}; }
       if(opts._rid&&opts._rid!==_reqSeq) return {ok:false,status:'cancelled'};   /* stale — a newer request superseded us; do not draw */
       const _res=_transitBuild(its,from,to); const _own=_planItins._own;
       if(_res&&_res.ok&&_own){ _res.provider='timetable'; _res.basis=_own.basis; _res.realtime=false; _res.timetable={feed:_own.feed,date:_own.date,tz:_own.tz,attribution:_own.attribution,borders:_own.borders,walkModel:_own.walkModel,stopChainShape:true}; }
