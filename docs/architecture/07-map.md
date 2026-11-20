@@ -246,7 +246,15 @@ GVP 番号による結合、USGS 自身の番号との突き合わせ、現在�
 
 **拒否はコードで返る**（`{ok:false, why:'shapefile'}`）。9 言語の文面は `js/map-ui.js` の `reasonText()` が持ち、
 `tests/file-import-checks.test.mjs` ⑩ が両方を構文解析して「返しうるコード」と「文を持つコード」の集合の一致を測る。
-**PMTiles はまだ読めない**——何のファイルであるかを名指して断る。
+**PMTiles（ベクタ・version 3）は `js/gis-pmtiles.js` が読む**（依存を足していない）。`js/geo-import.js` は先頭 7 バイトで
+`PMTiles` と判定し、**`readBytes` の天井より前に**抜ける——アーカイブは全体を読まず、Blob / URL を **バイト範囲の供給**
+（`js/gis-geotiff.js` の `httpSource` と同じ契約）として、ヘッダ 127 B・ディレクトリ（root → leaf、gzip）・必要なタイルだけを取る
+（URL は `readUrl`・開いたまま窓を読む `open().window({bbox, zoom, maxTiles})`）。タイル ID は仕様の Hilbert 順。タイルは Mapbox Vector Tile を
+自前で復号し（外環と内環は面積の符号で分ける・MultiPoint は点ごとの Point に展開）、プロパティはそのまま、層名は `_layer`。
+ズームは `maxTiles`（既定 256）に収まる最大を選ぶか呼び手が述べ、`stats` が **zoom・tiles・requests・clipped:true** を名乗る
+（低ズームは簡略化された図／縁を跨ぐ地物は片）。拒否は `pmtiles-*` の 11 コード（画像タイル・brotli/zstd・version≠3・切れ・矛盾・窓が大きすぎる等）で、
+文面は `js/map-ui.js`、`tests/gis-pmtiles-checks.test.mjs` ⑦ が両者の集合の一致を測る。**まだ無いもの**: 地図へ PMTiles を直接タイル源として載せる経路
+（描画は取り込んだ地物をレイヤーに載せる形）と Atlas の `url:` 入口——消せる条件は gis-remote が `pmtiles:` を `readUrl` に渡すこと。
 
 **座標が見つからないことは「読めない」ではない。** 見出しを持つ区切りテキストで座標列を特定できなかったものは `format:'table'`——
 **`geometry:null` の行**として返り、考慮した列と断った理由は `stats` に載る（地域コードで境界に `join` する右側の表）。見出しの無い
