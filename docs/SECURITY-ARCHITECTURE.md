@@ -354,15 +354,15 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are twenty-three Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are twenty-four Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
-flag that lives in a comment is not configuration. All twenty-one are declared there now
+flag that lives in a comment is not configuration. All twenty-two are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
 `quotes-relay` #R533, `client-errors` client-error-log, `atlas-embed` atlas-semantic-search,
-`fetch-relay` own-fetch-relay, `reader-reports` anon-write-guard, `usage-count` anonymous-usage-counts).
+`fetch-relay` own-fetch-relay, `gis-fetch` gis-remote-fetch, `reader-reports` anon-write-guard, `usage-count` anonymous-usage-counts).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `supabase-keys.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-entities.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `great-circle.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules; the one great-circle distance is the first of the last two, which the second imports as well) that the CLI bundles into the functions that import it.
+`news-entities.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `gis-fetch-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `great-circle.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules; the one great-circle distance is the first of the last two, which the second imports as well) that the CLI bundles into the functions that import it.
 
 **The project's two keys are read in one place**, `_shared/supabase-keys.js` (`secretKey`,
 `publishableKey`, `serviceHeaders` — the `apikey` + `Bearer` pair every server-side request carries).
@@ -393,6 +393,7 @@ key. The functions' supabase-js is the browser's version (`package.json`'s exact
 | `volcano-feed` | false | none — keyless; relays the two volcano feeds that send no CORS headers (Smithsonian/USGS weekly report, volcanic-ash SIGMETs) parsed server-side | — | — |
 | `radiation-feed` | false | none — keyless; merges six national ambient-gamma networks into one array (the registry is `_shared/radiation-sources.js`). A series' `from` / `to` are parsed once at the door into instants (`seriesWindow`) and only their canonical ISO spelling, encoded, reaches an upstream URL | — | — |
 | `fetch-relay` | false | none — keyless public relay of the upstreams in `_shared/fetch-relay-policy.js` (the ones that send no ACAO and have no relay of their own) | — | — |
+| `gis-fetch` | false | none — keyless; reads PUBLIC GEODATA a page cannot (a bucket that answers Range and sends no ACAO). A principle, not a list (`_shared/gis-fetch-policy.js`): https on the default port, a name that resolves **only to public addresses** (every redirect hop asked again), a byte-bounded read of data (never a page), nothing forwarded from the caller but the URL and a byte range. **A project-wide byte budget (`relay_take`, `gis-fetch:project-bytes`, key `'*'`) that fails CLOSED**, a per-caller byte bucket (hashed key), and the stop switch `GIS_FETCH_DISABLED` | the two `relay_take` buckets | — |
 | `aviation-feed` | false | none for readers — keyless; serves live ADS-B to signed-out readers. **`?refresh=1` (the sweep) draws from one project-wide allowance** (`relay_take`, key `'*'`: one sweep run per cron interval); beyond it, or with the database silent, the cached answer and no upstream read | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
 | `ais-feed` | false | none for readers — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL. **`?refresh=1` draws from one project-wide allowance** (one per `WORLD_TTL_MS`); beyond it, the cached answer and no upstream read | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
 | `client-errors` | false | none — a reader who is not signed in hits errors too. POST only, a body ceiling, an **Origin allow-list** (production + local preview), two shared token buckets and a row ceiling on the table | `record_client_error` RPC + the two `relay_take` buckets | — |
