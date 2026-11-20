@@ -27,3 +27,6 @@ newsjp: 上流データが更新されたとき、それから作られた分析
 
 ## 4. 天井を上げた理由（perf）
 `js/data-impact.js`（約 8 kB）を `evidence-graph-record.js` 経由で Atlas の塊に入れたため、`atlas-console` が 1061.2 → 約 1068 kB、`async.raw` も同じだけ増えた。入口から届かない module は検査が落とすので、共有グラフ（`sharedEvidenceGraph().refresh`）に結んだ。この増分が買ったもの: 上流更新からの再計算候補と再実行（Atlas が同じグラフに訊ける）。
+
+## 5. 天井を上げ直した理由（main 取り込み後の再測定）
+origin/main（#1334 ほか）を取り込んだ状態で CI が `check:perf` 赤になり、4 行を実測まで上げた: `async.gzip` 4771.5→4806.5 kB、`atlas-cap-runs` 896.4→903.4 kB、`atlas-console` 1066.9→1073.3 kB、`dist.assets` 21559.0→21681.7 kB。この PR 自身が足したのは data-impact.js（約 8 kB）の分で、`atlas-cap-runs` と `dist.assets` の増分の一部は main 側の同時期の変更との合算。内訳は分けて測っていない（失効条件: 次に main 側で天井が下がれば、この上げ幅は再測定する）。
