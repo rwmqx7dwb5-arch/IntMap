@@ -1870,6 +1870,38 @@
       }
     },
     {
+      "host": "data.3dbag.nl",
+      "what": "3D BAG 3D Tiles — LoD2.2 building models of the Netherlands (TU Delft 3D geoinformation and 3DGI; CC BY 4.0). Requested only while a city of the Netherlands is in view and the 3D city models layer is on",
+      "whatJp": "3D BAG 3D Tiles — オランダの LoD2.2 建物モデル（TU Delft と 3DGI。CC BY 4.0）。オランダの都市が視界にあり、3D都市モデルのレイヤーがオンのときだけ要求する",
+      "sends": {
+        "code": "area",
+        "detail": "which tiles of the 3D model are in view (the part of the Netherlands on screen), and only after the 3D city models layer is switched on"
+      },
+      "disclosure": {
+        "en": "3D BAG",
+        "jp": "3D BAG"
+      },
+      "probe": {
+        "url": "https://data.3dbag.nl/v20250903/cesium3dtiles/lod22/tileset.json"
+      }
+    },
+    {
+      "host": "buildings.reearth.land",
+      "what": "Re:Earth Buildings 3D Tiles — worldwide building extrusions built from Overture Maps and OpenStreetMap (Eukarya Inc.; ODbL 1.0). Requested only while the view is zoomed in on a city and the 3D city models layer is on",
+      "whatJp": "Re:Earth Buildings 3D Tiles — Overture Maps と OpenStreetMap から作られた世界の建物の押し出し（Eukarya Inc.。ODbL 1.0）。都市を拡大していて、3D都市モデルのレイヤーがオンのときだけ要求する",
+      "sends": {
+        "code": "area",
+        "detail": "which tiles of the 3D model are in view (the part of the world on screen), and only after the 3D city models layer is switched on"
+      },
+      "disclosure": {
+        "en": "Re:Earth Buildings",
+        "jp": "Re:Earth Buildings"
+      },
+      "probe": {
+        "url": "https://buildings.reearth.land/tileset.json"
+      }
+    },
+    {
       "host": "tiles.openseamap.org",
       "what": "OpenSeaMap seamark tiles",
       "whatJp": "OpenSeaMap の航路標識タイル",
