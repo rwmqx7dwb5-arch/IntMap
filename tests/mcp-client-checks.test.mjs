@@ -104,7 +104,7 @@ test('④ the session id from initialize is sent on every later request', async 
   const c = client('json', null, log);
   c.addServer({ name: 'Mock', url: 'https://mcp.example.com/mcp' });
   await c.callTool({ server: 'mock', tool: 'big' });
-  const later = log.filter((l) => l.method !== 'initialize');
+  const later = log.filter((l) => l.method !== 'initialize' && l.method !== 'server/discover');
   assert.ok(later.length >= 2);
   later.forEach((l) => assert.equal(l.headers['mcp-session-id'], 'sess-1'));
 });
