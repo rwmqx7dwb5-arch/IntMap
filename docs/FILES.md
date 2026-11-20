@@ -200,7 +200,7 @@ cesium-engine.js                  第2エンジン——同じ契約の裏で動
 cesium-style.js                   style 言語の解釈器（式・フィルタ・色）。純粋なので Node から検証できる
 cesium-layers.js                  Cesium のプロバイダとレイヤー描画
 cesium-vector-tiles.js            第2エンジンのベクタタイル
-plateau-cities.js                 PLATEAU 3D 都市モデル（東京23区の 3D Tiles）の一覧と URL。エンジンの tiles3d 能力が読む
+plateau-cities.js                 PLATEAU 3D 都市モデルの登録（data/plateau-cities.json）の読み込み・視界近傍の選択・URL と都市別ジオイド補正。エンジンの tiles3d 能力が読む
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
 i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
 i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
@@ -1326,6 +1326,8 @@ world-flows.js                    **世界とのつながり**のカードと地
                                   航空路（OpenFlights 2014）でどの国とつながるかを、時計の瞬間以前に成り立つ最も新しい記録で（値が述べる時点と比べる）。「モノ」は貿易フロー
                                   レイヤーを同じ国で開く扉。扉は Tools・地点カードの国の行・`?wf=`・Atlas `data.worldFlows`。遅延チャンク（§7.3j）
 world-flows-core.js               その事実の全部（純粋なモジュール）——国の表と照合・時刻の規則・3 つの読み方・合計と割合・弧（大圏の経度を連続に）
+evidence-graph.js               **数値の出自の長期グラフ**（純粋）— 元の事実（source・版は追記）と IntMap/AI が作った派生（derived・入力の版と計算を固定）を分け、`trace`／`impact`／`staleness`／`wouldStale` で元データ〜回答の数値を遡り、更新の影響先を調べる。
+evidence-graph-record.js        Evidence Graph の記録係 — GIS データセット（`bindGis`）と Atlas 回答の数値（`recordAnswer`、`graphRef` 経由で GIS 鎖へ）。モデルが書いた URL/id は節を作らない。
 world-graph-store.js            **永続の世界グラフの読み口**（遅延・純粋）— Supabase の `world_graph_*`（対象・型付きの辺・値）を、世界オブジェクトの索引と同じ型
                                   （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `find` / `near`）。結ぶのは識別子（`ids`）で綴りではない。
                                   データベースが答えなかったことは `unavailable` / `failed` で返し、空のグラフとは区別する。能力 `research.object` / `research.related` が読む
@@ -1777,6 +1779,7 @@ overpass.js                       **Overpass の唯一のクライアント** `o
                                   window.IntMapOverpass ＋ ES import の両方（同一の関数）
 atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（許可された読み取り能力を呼び、能力表を語で引く）・委譲を端末に残して再開する保存口（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
+atlas-fact-merge.js              Atlas — 複数の子が構造化事実（`facts`: 対象・属性・値・単位・時点・出典・Evidence id）で述べたことを、**実世界オブジェクト**と属性で突き合わせ、一致／矛盾／単独／欠落に分ける `mergeFacts`。名前→対象の解決は注入された `resolve`（セッションの世界オブジェクト索引と永続グラフ）で、名前一覧は持たない。
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
@@ -2104,7 +2107,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全23本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（67本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（68本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（23本。一覧と各本の役割は Architecture.md §6.2。
