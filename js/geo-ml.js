@@ -49,7 +49,7 @@ export function toYear(d) {
 
 /* 観測として数えてよい日付の根拠。ここに無い basis（unknown・file-name・upload・background-tile・stated …）は撮影日ではない。
    'acquired' = センサーが撮った日（STAC の datetime 等）。'composite' = 期間の合成で、期間の中央を日付とする（期間を持つこと）。 */
-export const OBSERVATION_BASES = Object.freeze(['acquired', 'composite']);
+const OBSERVATION_BASES = Object.freeze(['acquired', 'composite']);
 
 /* obs: [{id?, date, endDate?, dateBasis, ...}]。系列に入れてよいものと、入れないものと理由を返す。 */
 export function admitObservations(obs) {
@@ -97,7 +97,7 @@ function bestStep(y, minSeg) {
   return best;
 }
 const NULL_CACHE = new Map();
-export function stepCritical(n, alpha) {
+function stepCritical(n, alpha) {
   const key = n + ':' + alpha; if (NULL_CACHE.has(key)) return NULL_CACHE.get(key);
   const rng = mulberry32(1234567 + n), gains = [], sims = 1500;
   for (let s = 0; s < sims; s++) { const y = new Array(n); for (let i = 0; i < n; i++) y[i] = normal(rng); gains.push(bestStep(y, 2).gain); }
@@ -143,7 +143,7 @@ export function seriesStats(ts, ys, opt) {
 }
 
 const PATTERN_CODE = { insufficient: 0, stable: 1, gradual: 2, abrupt: 3 };
-export const PATTERNS = Object.freeze(Object.keys(PATTERN_CODE));
+const PATTERNS = Object.freeze(Object.keys(PATTERN_CODE));
 
 /* 同じ格子の N 枚のラスターから、画素ごとの変化を測る。
    layers: [{id, date, endDate?, dateBasis, data}]（data は row-major の数値配列。nodata は opt.nodata か NaN）。
@@ -207,7 +207,7 @@ export function sameSeason(obs, centerMonthDay, windowDays) {
 /* 原型 = 各クラスを特徴づける OSM 特徴と土地被覆の重み。事前知識（タグの意味）であって、較正した水準ではない。
    観測: 2026-11-20 の geo.similar の特徴の定義（js/geo-similar.js FEATURES の id）に対応。
    失効条件: FEATURES の id が変わる／土地被覆の語彙が変わる。 */
-export const CLASS_PROTOTYPES = Object.freeze({
+const CLASS_PROTOTYPES = Object.freeze({
   port:        { label: 'port / harbour', labelJa: '港湾', w: { port: 3, port_land: 3, cranes: 3, industrial: 1, water: 1 } },
   industrial:  { label: 'industrial / logistics', labelJa: '工業・物流', w: { industrial: 3, roads_major: 1, rail: 1, cranes: 0.5 } },
   commercial:  { label: 'commercial / central', labelJa: '商業・業務', w: { commercial: 2, offices: 3, shops: 2, food: 1.5, stations: 1, tourism: 1 } },
@@ -377,7 +377,7 @@ function columnStats(X) { const p = X[0].length, med = [], mu = [], sd = []; for
 
 function solve(A, b) { const n = b.length, M = A.map((r, i) => r.concat([b[i]])); for (let i = 0; i < n; i++) { let p = i; for (let r = i + 1; r < n; r++) if (Math.abs(M[r][i]) > Math.abs(M[p][i])) p = r; [M[i], M[p]] = [M[p], M[i]]; const d = M[i][i] || 1e-12; for (let r = i + 1; r < n; r++) { const f = M[r][i] / d; for (let c = i; c <= n; c++) M[r][c] -= f * M[i][c]; } } const x = new Array(n).fill(0); for (let i = n - 1; i >= 0; i--) { let s = M[i][n]; for (let c = i + 1; c < n; c++) s -= M[i][c] * x[c]; x[i] = s / (M[i][i] || 1e-12); } return x; }
 
-export function fitRidge(X, y, lambda) {
+function fitRidge(X, y, lambda) {
   const cs = columnStats(X), Z = impute(X, cs.med).map((r) => r.map((v, j) => (v - cs.mu[j]) / cs.sd[j])), p = Z[0].length, ym = mean(y);
   const A = Array.from({ length: p }, () => new Array(p).fill(0)), b = new Array(p).fill(0);
   for (let i = 0; i < Z.length; i++) for (let a = 0; a < p; a++) { b[a] += Z[i][a] * (y[i] - ym); for (let c = 0; c < p; c++) A[a][c] += Z[i][a] * Z[i][c]; }
@@ -409,7 +409,7 @@ function growTree(X, y, idx, depth, o, rng) {
 const walk = (t, x) => { while (t.j != null) t = x[t.j] <= t.thr ? t.l : t.r; return t.v; };
 
 /* 木の集まり。既定は Breiman の慣行: mtry = ⌊p/3⌋（回帰）・葉の最小 3・深さ 8・木 100 本（本数は分散を下げるだけで、増やして悪くならない）。 */
-export function fitForest(X, y, opt) {
+function fitForest(X, y, opt) {
   opt = opt || {}; const cs = columnStats(X), Xi = impute(X, cs.med), p = Xi[0].length, rng = mulberry32(opt.seed != null ? opt.seed : 7);
   const o = { maxDepth: opt.maxDepth || 8, minLeaf: opt.minLeaf || 3, mtry: opt.mtry || Math.max(1, Math.floor(p / 3)) }, T = opt.trees || 100, trees = [];
   for (let b = 0; b < T; b++) { const idx = Array.from({ length: Xi.length }, () => Math.floor(rng() * Xi.length)); trees.push(growTree(Xi, y, idx, 0, o, rng)); }
@@ -424,7 +424,7 @@ const dist2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 
 /* 空間ブロック分割。格子の 1 ブロックは全部同じ fold に入る（近い点が学習と評価に割れない）。
    blockKm 既定 = 範囲の長辺の 1/4（少なくとも 16 ブロック程度に割れる）。bufferKm > 0 なら、評価の点から bufferKm 以内の点を学習から外す。 */
-export function spatialFolds(rows, opt) {
+function spatialFolds(rows, opt) {
   opt = opt || {}; const k = opt.folds || 5, xy = toKm(rows);
   const ext = Math.max(Math.max(...xy.map((p) => p[0])) - Math.min(...xy.map((p) => p[0])), Math.max(...xy.map((p) => p[1])) - Math.min(...xy.map((p) => p[1])));
   const blockKm = opt.blockKm > 0 ? +opt.blockKm : Math.max(ext / 4, 1e-6), x0 = Math.min(...xy.map((p) => p[0])), y0 = Math.min(...xy.map((p) => p[1]));
@@ -436,7 +436,7 @@ export function spatialFolds(rows, opt) {
   folds.forEach((f) => { const ts = new Set(f.test); for (let i = 0; i < rows.length; i++) { if (ts.has(i)) continue; if (buf > 0 && f.test.some((j) => dist2(xy[i], xy[j]) <= buf)) continue; f.train.push(i); } });
   return { ok: true, folds: folds.filter((f) => f.test.length && f.train.length >= 3), blockKm, blocks: blocks.size, bufferKm: buf };
 }
-export function randomFolds(rows, opt) { const k = (opt && opt.folds) || 5, rng = mulberry32((opt && opt.seed) || 13), idx = rows.map((_, i) => i); for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; } const f = Array.from({ length: k }, () => ({ test: [], train: [] })); idx.forEach((i, n) => f[n % k].test.push(i)); f.forEach((g) => { const ts = new Set(g.test); g.train = idx.filter((i) => !ts.has(i)); }); return f; }
+function randomFolds(rows, opt) { const k = (opt && opt.folds) || 5, rng = mulberry32((opt && opt.seed) || 13), idx = rows.map((_, i) => i); for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; } const f = Array.from({ length: k }, () => ({ test: [], train: [] })); idx.forEach((i, n) => f[n % k].test.push(i)); f.forEach((g) => { const ts = new Set(g.test); g.train = idx.filter((i) => !ts.has(i)); }); return f; }
 export function temporalSplit(rows, cutoff) {
   const ts = Array.from(new Set(rows.map((r) => r.t).filter(isNum))).sort((a, b) => a - b); if (ts.length < 2) return { ok: false, code: 'NO_TIME_AXIS' };
   const cut = cutoff != null ? +cutoff : ts[Math.max(1, Math.floor(ts.length * 0.75))];
@@ -486,7 +486,7 @@ export function crossValidate(table, opt) {
 }
 
 /* 分割共形の区間: 空間 CV の残差の絶対値から、(n+1)(1−α) 番目の分位。coverage は「他の fold の分位を当てた fold の実測」。 */
-export function conformal(y, oofPred, folds, alpha) {
+function conformal(y, oofPred, folds, alpha) {
   const a = alpha != null ? +alpha : 0.1, res = y.map((v, i) => Math.abs(v - oofPred[i]));
   const q = (idxs) => { const s = idxs.map((i) => res[i]).filter(isNum).sort((p, r) => p - r), n = s.length; if (!n) return NaN; const k = Math.ceil((n + 1) * (1 - a)); return k > n ? Infinity : s[k - 1]; };
   const all = y.map((_, i) => i).filter((i) => isNum(oofPred[i])), half = q(all);
