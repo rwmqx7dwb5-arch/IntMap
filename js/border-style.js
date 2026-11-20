@@ -18,8 +18,8 @@
  *  which adds its layer long after boot and is not an ES module.
  */
 
-/* one step off pure white: on a pale basemap #ffffff IS the basemap (#R212) */
-export const BORDER_COLOR = '#d9dbe0';
+/* (border-whiter, 2026-11-21) 「前は白っぽかったのに今はグレー」: #d9dbe0 read as grey; #f7f8fa is near-white. Pure #ffffff stays avoided (#R212: on a pale basemap it IS the basemap) and the dark casing carries the contrast. A design colour; it lapses if the reader asks for another. */
+export const BORDER_COLOR = '#f7f8fa';
 /* the province line: the same violet family, one step brighter so it reads on a dark basemap */
 export const ADMIN1_COLOR = '#cba6f7';
 /* zoom → width. ~15 % thinner than #R210's, which is what 「少しだけ細く」 asked for. */
