@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { codeOnly } from '../scripts/code-only.mjs';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -199,7 +200,7 @@ test('⑨ refusals are named and a missing job is not invented', async () => {
 test('⑩ the notebook stays hidden and untouched; the capability is one registered row that nothing else duplicates', () => {
   assert.equal(NB.NOTEBOOK_SHOWN, false);
   const src = R('js/atlas-cap-work.js');
-  assert.equal(/NOTEBOOK_SHOWN/.test(src.replace(/\/\*[\s\S]*?\*\//g, '')), false, 'the work door neither reads nor flips the notebook switch');
+  assert.equal(/NOTEBOOK_SHOWN/.test(codeOnly(src)), false, 'the work door neither reads nor flips the notebook switch');
   assert.match(R('js/atlas-capabilities.js'), /\["work\.job","work"/);
   assert.match(R('js/atlas-caps-modules.js'), /"work": caps_work/);
   for (const k of ['gis-export.js', 'atlas-chart', 'ATTACH_LOG', 'IntMapData']) assert.ok(src.includes(k), 'reuses ' + k);

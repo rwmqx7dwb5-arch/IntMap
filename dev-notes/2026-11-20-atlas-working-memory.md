@@ -1,6 +1,8 @@
 ---
 title: Atlas の長時間作業に作業記憶を足した——履歴が落ちても目標・条件・数値・出典・未解決が残り、数値は原本へ戻れる
 date: 2026-11-20
+newsen: Atlas keeps its place in a long piece of work: what you asked, what it found and what is still owed stay available across many steps.
+newsjp: Atlas が長い作業の途中でも、頼まれたこと・見つけたこと・まだ残っていることを見失わなくなりました。
 ---
 
 〈依頼〉総合技術監査 3.4（P0）。会話要約だけでなく、目標・決定済み条件・完成した作業・保存データ・未解決・根拠を別々の構造で持ち、圧縮・復元・再注入・引き継ぎができること。重要な数値・出典は要約文に閉じ込めず原データへ再到達できること。

@@ -1,6 +1,8 @@
 ---
 title: Python が能力を自分で呼ぶ — cap-bridge と compute.run の接続 (Programmatic Tool Calling)
 date: 2026-11-20
+newsen: Python code in Atlas can call IntMap capabilities directly, and the calls it made are shown with the result.
+newsjp: Atlas の Python から IntMap の機能を直接呼べるようになり、呼んだ内容も結果と一緒に表示されます。
 ---
 
 〈依頼〉 総合技術監査 3.1。#1276 の `js/cap-bridge.js`（契約）と #1272 の `compute.run`（Pyodide の隔離実行）は別々に在り、

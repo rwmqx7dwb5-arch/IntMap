@@ -1,6 +1,8 @@
 ---
 title: 仕事 1 件の費用・時間・モデル・ツールを 1 件に集計し、子 AI のモデルを仕事ごとに選べるようにし、同じ分析は前回の結果で答える
 date: 2026-11-20
+newsen: Each piece of work Atlas does now records its cost, time and model, and an analysis you already ran is reused instead of paid for again.
+newsjp: Atlas の仕事ごとに費用・時間・モデルが記録され、すでに行った分析は再実行せずに再利用されます。
 ---
 
 〈依頼〉 費用・キャッシュ・台帳・上限・子 AI のモデル指定・ストリーミングは既にある。足りないのは (1) 完成した仕事ごとの総費用/時間/モデル/ツール、(2) 仕事に応じたモデルの使い分け、(3) 長時間ジョブでの非同期 API の可否、(4) 同一分析の再利用。
