@@ -18,7 +18,7 @@ export function bufferPool(lanes) {
     try { return new Worker(new URL('./gis-buffer-worker.js', import.meta.url), { type: 'module' }); } catch (_) { return null; }
   }
   const n = Math.max(1, Math.floor(lanes) || 1);
-  for (let i = 0; i < n; i++) slots.push({ w: null, busy: false });
+  for (let i = 0; i < n; i++) slots.push({ w: null, busy: false, has: null });
 
   function take() {
     for (const s of slots) if (!s.busy) { s.busy = true; return s; }
@@ -39,7 +39,7 @@ export function bufferPool(lanes) {
       const finish = (r, retire) => {
         if (done) return; done = true;
         if (signal) { try { signal.removeEventListener('abort', onAbort); } catch (_) { } }
-        if (retire) { try { w.terminate(); } catch (_) { } s.w = null; }
+        if (retire) { try { w.terminate(); } catch (_) { } s.w = null; s.has = null; }
         s.busy = false;
         resolve(r);
       };
@@ -56,6 +56,44 @@ export function bufferPool(lanes) {
       catch (e) { finish({ ok: false, why: 'worker-post-failed', message: String((e && e.message) || e) }, true); }
     });
   }
+  /* (gis-worker-columnar) One block of a spatial join's pairs. `job` = { rightsKey, rights (packed; sent only to a lane that
+     does not hold this key), lefts (packed), candOff, candIdx, predicate, maxKm }. The lane keeps the right-hand set, so a
+     join of many blocks sends it once per lane. A lane that answers `rights-missing` (its thread was replaced) is a failed block: the lefts were transferred, so the page computes the block itself with the same kernel. */
+  function relate(job, signal) {
+    if (dead) return Promise.resolve({ ok: false, why: dead });
+    const s = take();
+    if (!s) return Promise.resolve({ ok: false, why: 'no-free-lane' });
+    if (!s.w) { s.w = spawn(); s.has = null; }
+    if (!s.w) { s.busy = false; dead = 'worker-unavailable'; return Promise.resolve({ ok: false, why: dead }); }
+    const w = s.w, id = ++seq;
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = (r, retire) => {
+        if (done) return; done = true;
+        if (signal) { try { signal.removeEventListener('abort', onAbort); } catch (_) { } }
+        if (retire) { try { w.terminate(); } catch (_) { } s.w = null; s.has = null; }
+        s.busy = false;
+        resolve(r);
+      };
+      const onAbort = () => finish({ ok: false, why: 'aborted' }, true);
+      const send = (withRights) => {
+        const q = { rightsKey: job.rightsKey, lefts: job.lefts, candOff: job.candOff, candIdx: job.candIdx, predicate: job.predicate, maxKm: job.maxKm };
+        const tr = [job.lefts.type.buffer, job.lefts.parts.buffer, job.lefts.xy.buffer, job.candOff.buffer, job.candIdx.buffer];
+        if (withRights) q.rights = job.rights;   /* cloned, never transferred: the next lane needs it too */
+        w.postMessage({ id, relate: q }, tr);
+      };
+      w.onmessage = (ev) => {
+        const m = ev.data || {};
+        if (m.id !== id) return;
+        if (m.ok) { s.has = job.rightsKey; finish({ ok: true, relate: m.relate }, false); }
+        else finish({ ok: false, why: m.why || 'worker-answered-nothing', message: m.message || null }, true);
+      };
+      w.onerror = (ev) => { dead = 'worker-died'; finish({ ok: false, why: 'worker-died', message: String((ev && ev.message) || '') }, true); };
+      if (signal) { if (signal.aborted) return onAbort(); try { signal.addEventListener('abort', onAbort, { once: true }); } catch (_) { } }
+      try { send(s.has !== job.rightsKey); }
+      catch (e) { finish({ ok: false, why: 'worker-post-failed', message: String((e && e.message) || e) }, true); }
+    });
+  }
   function close() { for (const s of slots) { if (s.w) { try { s.w.terminate(); } catch (_) { } s.w = null; } } }
-  return { run, close, lanes: n };
+  return { run, relate, close, lanes: n };
 }
