@@ -2,7 +2,7 @@
  *  IntMap · Atlas durable jobs — the page's side of them   (js/atlas-jobs-client.js)
  * ----------------------------------------------------------------------------
  *  The server half is supabase/functions/atlas-jobs (create + the lease loop) and the tables of
- *  supabase/migrations/20261120090000_atlas_durable_jobs.sql. This file is everything the PAGE does with them:
+ *  supabase/migrations/20261120110000_atlas_durable_jobs.sql. This file is everything the PAGE does with them:
  *
  *    makeJobsClient({ sb, endpoint, authHeaders })   start / list / get / cancel / amend — a reader's own rows (RLS) and
  *                                                    the two owner RPCs; nothing here can read another reader's job
@@ -104,6 +104,8 @@ export function jobText(f) {
 }
 
 const URL_OK = /^https?:\/\//i;
+/* a URL that starts an href goes through window.IntMapSafe.url (js/safe.js); with it absent (a node test) nothing becomes a link */
+const safeUrl = (u) => { try { return (typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.url) ? String(window.IntMapSafe.url(u) || '') : ''; } catch (_) { return ''; } };
 
 /* renderJobCard(facts, { L, esc }) → HTML (the inside of a card; mountJobCards wraps it) */
 export function renderJobCard(f, h) {
@@ -111,7 +113,7 @@ export function renderJobCard(f, h) {
   const word = (st) => ({ queued: L('waiting', '待機中'), running: L('running', '実行中'), done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), cancelled: L('cancelled', '取消') })[st] || st;
   const pct = f.tasksTotal ? Math.round((f.tasksEnded / f.tasksTotal) * 100) : 0;
   const rows = f.tasks.map((t) => {
-    const src = t.sources.filter((x) => URL_OK.test(x.url)).map((x) => '<a href="' + esc(x.url) + '" target="_blank" rel="noopener noreferrer">' + esc(x.title || x.url) + '</a>').join(' · ');
+    const src = t.sources.filter((x) => URL_OK.test(x.url)).map((x) => { const u = safeUrl(x.url); return u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + esc(x.title || x.url) + '</a>' : esc(x.title || x.url); }).join(' · ');
     return '<li style="margin:4px 0;"><b>' + esc(t.title || t.id) + '</b> — ' + esc(word(t.state)) + (t.code ? ' (' + esc(t.code) + ')' : '')
       + (t.summary ? '<div style="opacity:.85;">' + esc(t.summary.slice(0, 700)) + '</div>' : '')
       + (t.gaps.length ? '<div style="opacity:.6;">' + esc(L('Not established: ', '不明だった点: ') + t.gaps.join('; ').slice(0, 300)) + '</div>' : '')
