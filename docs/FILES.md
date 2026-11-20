@@ -1193,11 +1193,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-<<<<<<< ours
-atlas-schemas.js                  **引数の schema**（#R406）— 252 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-=======
 atlas-schemas.js                  **引数の schema**（#R406）— 255能力ぶんの型・列挙・範囲と `required`/`anyOf`。
->>>>>>> theirs
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
