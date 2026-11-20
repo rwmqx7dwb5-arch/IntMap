@@ -17,6 +17,7 @@
  *  entry names them.
  * ==========================================================================*/
 import { str, num, int, one, list, obj, lat, lng, loose, bool } from './atlas-caps.js';
+import { toSpec } from './atlas-table.js';   /* data.table — rows → a dataset */
 import { weatherFacts } from './atlas-result-facts.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { jsonWithin } from './fetch-deadline.js';   /* (developer-embed) the open-data catalogue, read under the host's clock */
@@ -652,6 +653,11 @@ export default [
         cc = String(c.code).toUpperCase(); cname = c.name || cc; }
       let box = null; if (a.inView) { try { const b = GE().camera.getBounds(); box = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]; } catch (_) { } }
       const groups = Array.isArray(a.groups) && a.groups.length ? a.groups : null, sectors = Array.isArray(a.sectors) && a.sectors.length ? a.sectors : null;
+      /* A FILTER VALUE THE ATLAS DOES NOT HAVE IS A REFUSAL THAT NAMES WHAT IT DOES HAVE, NOT AN EMPTY ANSWER. Measured in production 2026-11-20 on 「半導体メーカーの工場」: sectors:["semiconductor"] returned «0 companies · 0 sites», the same words as «this world holds none» — the key is `semi`, which holds 24 companies and 134 sites. The vocabulary is read from the rows themselves (nothing is listed here), so a sector added to the atlas is accepted the day it is added. */
+      { let all = null; try { all = await F.rows(); } catch (_) { all = null; } const rs = all && Array.isArray(all.rows) ? all.rows : null;
+        if (rs) { const vocab = (k) => [...new Set(rs.map((r) => r[k]).filter(Boolean))].sort();
+          const bad = [['sectors', 'sec', sectors], ['groups', 'group', groups]].map(([arg, col, want]) => { if (!want) return null; const have = vocab(col); const miss = want.filter((w) => have.indexOf(String(w)) < 0); return miss.length ? { arg, miss, have } : null; }).find(Boolean);
+          if (bad) return R(false, warn(esc(L('Unknown ' + bad.arg + ': ' + bad.miss.join(', ') + '. The company atlas uses: ' + bad.have.join(', ') + '.', '未知の ' + bad.arg + ': ' + bad.miss.join('、') + '。企業アトラスが使う値: ' + bad.have.join('、') + '。'))), { meta: { code: 'INVALID_INPUT', category: 'input', retryable: false, semanticTarget: bad.miss.join(','), produced: [], userGoalSatisfied: false, validValues: { [bad.arg]: bad.have } } }); } }
       let q = null; try { q = await F.query({ cc, groups, sectors, box, limit: lim }); } catch (_) { q = null; }
       if (!q) return R(false, warn(L('The company sites could not be loaded', '企業の拠点を読み込めませんでした')), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } });
       if (act === 'show') { try { await F.open({ groups, sectors }); } catch (_) { } }
@@ -796,6 +802,38 @@ export default [
     phrases: () => ['国境検問所', '越境', '陸路で国境', '国境を越え'].concat(['border crossing', 'border control', 'checkpoint', 'port of entry']),
     schema: () => ({ type: 'object', properties: { lng: lng(), lat: lat(), limit: int(1, 20), show: bool() }, required: ['lng', 'lat'] }),
     async run(a, dctx, K) { const G = await import('./geopolitics-atlas.js'); return G.borderCrossings(a, K); },
+  },
+  {
+    /* column 7 'read': it registers a session dataset exactly as an import or a gis op does, and changes no setting the reader has to undo;
+       column 10 'gisCore': the registry (window.IntMapData) lives in that lazy chunk. */
+    row: ['data.table', 'dataTable', 'rowsToDataset,tableFromRows,registerTable,makeTable', 'data', 'none', '', 'explanation', 'read', 'none', '', 'gisCore'],
+    ui: { none: '2026-11-20' },
+    phrases: () => ['調べた値を表にする', '表をデータセットにする', '集めた値を分析できる形に', '行をデータセットに登録'].concat(['rows to a dataset', 'make a table from findings', 'register these rows', 'table of what I found']),
+    doc: [
+      { in: 'spatial-analysis', at: 50, text: 'ROWS YOU GATHERED → A DATASET (調べた値の表を、分析できるデータセットにする): {"type":"dataTable","title"?:str,"rows":[{col:value,…},…],"lat"?:str,"lng"?:str,"columns"?:{COL:{"unit"?:str,"quantity"?:{…},"from"?:str}},"time"?:str,"source"?:str,"licence"?:str} = the door for values that exist ONLY as your own findings — the fabs a worker found, the figure each source stated for each of them, the unit and the year it stated. It registers the rows as a dataset (the answer holds its id) that is then the input of every gis step: convert (units — declare the unit of a column here and convert reads it instead of you typing a factor), compute (a score from several columns), nearestJoin / spatialJoin / relate (distances to ports, airports, plants, cities), filter, aggregate, and drawing it on the map. Rows with lat/lng (or lon, latitude, longitude; name the columns with "lat"/"lng" otherwise) become points; a row with no position stays a row and is counted, never placed. SAY EACH VALUE\'S OWN UNIT AND YEAR: put the unit of a number column in "columns" and the year in its own column (or "time"), keep one column per quantity, and put the source URL in a "source" column per row so the table carries where each value came from; a value you could not establish is null — never a guess, never the neighbour\'s. Do not write the rows into a compute code string when this carries them: a figure typed into Python has no unit, no source and no check. 表にする・データセットに登録する（調べた値の表をデータセットにする、集めた値を分析できる形にする）。 THIS READS NOTHING FROM THE WORLD: it keeps what you give it. The answer reports how many rows have a position, which column it read for each axis, any declared column that no row has, and columns that hold text although a unit was declared (a value like "12 MW" is text — split it into number and unit).\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { title: str(), rows: list(obj(), 1), lat: str(), lng: str(), columns: obj(), time: str(), source: str(), licence: str() }, required: ['rows'] }),
+    async run(a, dctx, K) {
+      const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      const built = toSpec(a || {});
+      if (!built.ok) return R(false, warn(esc(built.reason)), { meta: { code: built.code, category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
+      await window.IntMapLazy.need('gisCore');
+      const D = window.IntMapData;
+      if (!D || typeof D.add !== 'function') return R(false, warn(L('The dataset registry could not be loaded.', 'データセットの登録先を読み込めませんでした。')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: true, produced: [], userGoalSatisfied: false } });
+      let rec;
+      try { rec = D.add(built.spec); } catch (e) { return R(false, warn(esc(String((e && e.message) || e))), { meta: { code: 'REGISTER_FAILED', category: 'input', retryable: false, produced: [], userGoalSatisfied: false } }); }
+      const s = built.stats;
+      const notes = [];
+      if (s.withoutPosition) notes.push(L(s.withoutPosition + ' row(s) have no usable position and stay as rows (not placed)', '位置を持たない行が ' + s.withoutPosition + ' 件あり、行のまま残しました（地図には置きません）'));
+      if (s.badPosition) notes.push(L(s.badPosition + ' row(s) had a position outside the valid range or not a number', '位置が数でない・範囲外の行が ' + s.badPosition + ' 件あります'));
+      if (s.unknownColumns.length) notes.push(L('declared columns no row has: ' + s.unknownColumns.join(', '), 'どの行にも無い列が宣言されています: ' + s.unknownColumns.join('、')));
+      if (s.textWithUnit.length) notes.push(L('columns that hold text although a unit was declared: ' + s.textWithUnit.join(', '), '単位が宣言されているのに文字が入っている列: ' + s.textWithUnit.join('、')));
+      const html = '<div class="atlas-gis-result"><b>' + esc(rec.title) + '</b> · ' + rec.count + ' ' + esc(L('rows', '行')) + ' · ' + s.withPosition + ' ' + esc(L('with a position', '位置あり')) + ' · <code>' + esc(rec.id) + '</code>'
+        + (notes.length ? '<div class="atlas-gis-detail">' + notes.map(esc).join('<br>') + '</div>' : '') + '</div>';
+      return R(true, html, { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['explanation'], userGoalSatisfied: true,
+        gis: { op: 'table', dataset: rec.id, count: rec.count, drawn: false, record: { id: rec.id, title: rec.title, kind: rec.kind, count: rec.count, withGeometry: rec.withGeometry, geometryType: rec.geometryType, fields: rec.fields } },
+        dataTable: { rows: s.rows, withPosition: s.withPosition, withoutPosition: s.withoutPosition, badPosition: s.badPosition, latColumn: s.latColumn, lngColumn: s.lngColumn, unknownColumns: s.unknownColumns, textWithUnit: s.textWithUnit } } });
+    },
   },
 ];
 

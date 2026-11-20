@@ -146,7 +146,8 @@ export const KERNELS = {
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
   /* (spatiotemporal-join) ops-13 -> ops-14: the period a join / spatialJoin / nearestJoin / timeJoin / aggregate result states is now derived from BOTH inputs (it was the first input's), a row-wise input gives the output two derived period columns, and the record carries `warnings` and `geoBasis`. No existing geometry or cell changes; what the record states about WHEN does. */
-  'js/gis-ops.js': { version: 'ops-14', sha256: '2a59235f1efdaca9c32f73614fd811cb9b7011412e1131f618780ae794e86131' },
+  /* (gis-worker-columnar) ops-14 HASH ONLY (over the time kit): a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
+  'js/gis-ops.js': { version: 'ops-14', sha256: 'dfcb6ca4bfdcd824e042e0ba26c7cb20604419b3f6330bad728246bf11f29e6c' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -180,7 +181,8 @@ export const KERNELS = {
      share only an edge now intersect; a boundary position is never within); every written edge is at most a
      quarter-turn of longitude. pointInGeometry is unchanged except at a pole. bbox / centroid / pointOnSurface /
      convexHull / simplify are new doors. Measured in tests/gis-foundation-refine-geometry-checks.test.mjs. */
-  'js/gis-geometry.js': { version: 'geom-4', sha256: '0bdd5c2ff3e6d5e6e2139761d2724f53d57aef568c440887cab957f7268fcbc4' },
+  /* (gis-worker-columnar) geom-4 HASH ONLY: `relateBlock` asks a block of pairs through the predicates that already exist; no predicate, tolerance or refusal changed. */
+  'js/gis-geometry.js': { version: 'geom-4', sha256: '0265c6dd81523e62c5328a887bb91739da7d5797e800d6cc78be93c894c468e0' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project

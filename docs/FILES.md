@@ -740,6 +740,7 @@ night-side.js                     地球の夜側 window.IntMapNightSide
 night-lights.js                   夜間光がいつの絵かを決める唯一の場所 window.IntMapNightLights
 antimeridian-seam.js             世界ストリップの ±180° 端の黒い帯を測って埋める唯一の場所（夜間光の raster 層と夜側のモザイクが使う）
 world-base.js                     全球衛星ベース window.IntMapWorldBase
+world-floor-tile.js              全球衛星ベースの 1 タイルを切り出す関数（メインと衛星 worker が同じものを使う）
 satellite.js                      衛星画像コントローラ
 sat-proto.js                      衛星タイルの imapsat:// スキーム
 solid3d.js                        地図の上に立つ閉じた立体
@@ -1231,6 +1232,7 @@ atlas-turn-results.js             **1つの操作は、返信の中で1ブロッ
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
+atlas-table.js                    **調べた値の行 → データセット**（`data.table`）。位置の列を読み、単位は呼び出し側が述べたものだけを運び、位置の無い行は行のまま数える（純関数）。
 atlas-state.js                    アプリの状態をデータとして持つ（#R318）。各サブシステムが provider を登録し、
                                   モデル向けの文章はそこから派生する。ターン台帳（目標・計画・結果・objectId）
 atlas-evidence.js                 Atlas — 証拠レジストリ（#R350）。ソースが入ってよい唯一の入口。URL の正規化と
@@ -2118,11 +2120,11 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全24本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（72本）。本番変更は必ずここを通す
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全25本をここに宣言する
+  migrations/*.sql                DB の唯一の設計図（73本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
-  functions/<name>/index.ts       Edge Functions（24本。一覧と各本の役割は Architecture.md §6.2。
+  functions/<name>/index.ts       Edge Functions（25本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /

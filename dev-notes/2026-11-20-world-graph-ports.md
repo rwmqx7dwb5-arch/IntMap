@@ -29,7 +29,7 @@ newsjp: Atlasが港湾について、毎週自動で更新されるデータベ�
   - Eurostat の港コードが LOCODE でないもの（Antwerp-Bruges `BE003`・「その他の港」`BE888`）は落とす。Wikidata に LOCODE で無い Eurostat 港は UN/LOCODE の記録から `facility:locode-XXXXX` の対象にする。
   - 国は Wikidata が alpha-3、UN/LOCODE が alpha-2。Eurostat だけの港の国は、同じ接頭辞を持つ Wikidata の港が**全員一致して述べる alpha-3** だけを使う（国の表は書かない）。
   - 実測（本番に未投入の dry run）: 対象 3,860（港 3,470・企業 386・鉄道線 3・道路 1）・辺 1,469（運営 1,225・所有 220・接続 4・部分 20）・値 30,694・貨物量の時系列を持つ港 1,609。
-- `supabase/migrations/20261120115000_world_graph_ingest.sql`（**加算のみ**）: 3 表に `feed`／`feed_run`（NULL=feed 導入前の seed。どのフィードも触らない）・`world_graph_ingest_runs`・RPC `world_graph_ingest_begin／apply／finish／fail`（service_role のみ）・`world_graph_freshness()`（全員）・`world_graph_find` が `facts.names`（英・日の名前・LOCODE の名）にも完全一致。毎週月曜 03:37 UTC の pg_cron（vault に秘密があるときだけ POST）。
+- `supabase/migrations/20261120120000_world_graph_ingest.sql`（**加算のみ**）: 3 表に `feed`／`feed_run`（NULL=feed 導入前の seed。どのフィードも触らない）・`world_graph_ingest_runs`・RPC `world_graph_ingest_begin／apply／finish／fail`（service_role のみ）・`world_graph_freshness()`（全員）・`world_graph_find` が `facts.names`（英・日の名前・LOCODE の名）にも完全一致。毎週月曜 03:37 UTC の pg_cron（vault に秘密があるときだけ POST）。
 - `supabase/functions/world-graph-ingest`（23 本目）: 3 つの上流を取り、`apply` を 4,000 値ずつ呼び、`finish`。上流のどれかに届かなければ **failed として記録して終わる**（薄い絵を反映しない）。
 - `js/world-graph-store.js` に `freshness()`、`research.object` が答えの末尾へ「最終確認・Eurostat の更新日」（直近が失敗なら失敗と）を出し、長い時系列は**新しい 5 期間＋全期間の幅**で出す（モデルへ渡す `W.brief` は全行のまま）。UN/LOCODE の旗も 1 行目に出る。dispatch の doc（SYS）へ港湾の使い方を足した。
 

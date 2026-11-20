@@ -1,6 +1,6 @@
 -- ============================================================================
 --  pgTAP · 52 — world graph INGEST: a feed keeps its slice current, retires what the upstream withdrew, refuses a thin
---  answer, and says how fresh it is.   supabase/migrations/20261120115000_world_graph_ingest.sql
+--  answer, and says how fresh it is.   supabase/migrations/20261120120000_world_graph_ingest.sql
 --    ① access: only service_role runs the ingest functions; every reader reads the runs and the freshness;
 --    ② apply: a first run adds; the same run again changes nothing (all «same»); a revised figure updates in place; an edge to a
 --       node that is not held is skipped and counted; a node another feed owns is left as it is;
