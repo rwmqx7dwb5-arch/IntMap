@@ -216,7 +216,8 @@ test('⑦ the row, the schema, the catalogue text and the wiring all say the sam
   assert.deepEqual(entry.schema().properties.grants.items.enum, ['read', 'state']);
   const doc = entry.doc[0].text;
   for (const w of ['cap_call', 'cap_call_many', 'cap_describe', 'cap_rows', 'alreadyDone', 'needs_confirm', '"grants"']) assert.ok(doc.includes(w), 'the catalogue text no longer says ' + w);
-  assert.match(R('js/atlas-console.js'), /get programBridge\(\)\{ return \(opts\)=>TOOLS\.openProgramBridge\(TOOLS\.baseTools\(\), AGENT, opts\); \}/);
+  assert.match(R('js/atlas-console.js'), /function programBridge\(opts\)\{ return TOOLS\.openProgramBridge\(TOOLS\.baseTools\(\), AGENT, opts\); \}/);
+  assert.match(R('js/atlas-console.js'), /get programBridge\(\)\{ return programBridge; \}/);
   assert.match(R('js/atlas-toolsurface.js'), /forbid: opts\.forbid, readDataset: opts\.readDataset/);
   assert.match(R('js/atlas-cap-compute.js'), /compute\.run/);
 });

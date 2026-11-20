@@ -81,8 +81,9 @@ export function effectClass(cap) {
   const risk = String(cap.risk || '');
   const writes = (cap.effects && cap.effects.writes) || [];
   if (risk === 'external') return 'external';
-  if (risk === 'persist') return 'persist';
-  if (risk === 'read' && !writes.length) return 'read';
+  /* the registry's own spellings (js/atlas-capabilities.js `risk`: read-only | reversible-session | persistent-setting | external) */
+  if (risk === 'persist' || risk === 'persistent-setting') return 'persist';
+  if ((risk === 'read' || risk === 'read-only') && !writes.length) return 'read';
   return 'state';
 }
 

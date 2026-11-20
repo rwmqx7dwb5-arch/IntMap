@@ -43,3 +43,14 @@ date: 2026-11-20
 grants 無しの実行。CDN に届かない走者では理由つきで skip）。
 
 `tests/durations.json` の `ptc-python-bridge.spec.js: 22` は**推定**（隣の `compute-sandbox.spec.js` と同じ 1 回の Pyodide 起動）。CI で実測が出たら置き換える。
+
+## 4. 予算の天井を上げた理由
+`atlas-console`（約 +9 kB）と `gis-core`（約 +3 kB）の async chunk の天井を `perf-budget.mjs --update` で上げた。増えた中身は、
+前者が `compute.run` の `grants` 経路・履歴の表示・橋の取り出し口、後者が Python 側の `cap_*` 補助と橋のクライアント本文
+（Worker のソースに文字列として載せるため）。能力を削らずに運ぶ最小の形で、ほかに写しは持たない。
+
+## 5. CI 初回で見つかったこと
+- 橋の `effectClass` はレジストリの `risk` を `read`/`persist` の綴りで読んでいたが、実物は `read-only` /
+  `persistent-setting` で、`data.value` を含む全ての読み取りが `not-granted` になっていた。単体検査は合成の行を使い実物を
+  通っていなかった。両方の綴りを受けるようにし、実レジストリの行でも `read` になることを spec が実 Pyodide で確かめる。
+- `K.programBridge` は「同名のカーネル関数を返す getter」の形に合わせた（`atlas-capability-modules` ③）。
