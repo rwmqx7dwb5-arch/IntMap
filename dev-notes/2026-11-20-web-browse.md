@@ -46,3 +46,6 @@ e-Govデータポータルで「人口」を検索 → 先頭のデータセッ�
 
 ## 7. グローバル経由の新しい読み(global-surface)
 `js/web-browse.js` は `window.SUPABASE_URL`・`window.SUPABASE_ANON_KEY`(他の Edge Function 戸口と同じ読み方)と `window.GeoJSONUpload`(落としたファイルの戸口。`js/data-studio.js` と同じ)を読む。`GeoJSONUpload` は `js/map-ui.js` の IIFE が公開する唯一の窓口で、モジュールとして export されていないため、いまは window 経由が唯一の経路。
+
+## perf 天井
+`atlas-cap-runs` の async chunk は web.browse / web.fetchFile の 2 能力(説明文・schema・実行)ぶん増え、895.2 KiB になった。能力そのものの重さで、削れる重複ではない。天井を 916,700 B に上げた(ローカルのビルドがメモリ不足で `--update` が走らなかったため、CI の実測値から手で置いた)。
