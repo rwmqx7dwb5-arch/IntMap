@@ -242,7 +242,7 @@ export function checkView(spec, L) {
     splits (an unescaped `|` only); a column whose every cell is a number is right-aligned. */
 export function tableMarkdown(b, num) {
   const cols = b.columns.map((c) => String(c));
-  const cell = (v) => (typeof v === 'number' ? String(num(v)) : String(v == null ? '' : v)).replace(/\r?\n/g, ' ').replace(/\|/g, '\\|').trim() || '—';
+  const cell = (v) => (typeof v === 'number' ? String(num(v)) : String(v == null ? '' : v)).replace(/\r?\n/g, ' ').replace(/[\\|]/g, '\\$&').trim() || '—';
   const numeric = cols.map((_, x) => b.rows.every((r) => r[x] == null || typeof r[x] === 'number'));
   const line = (cells) => '| ' + cells.join(' | ') + ' |';
   return [line(cols.map(cell)), line(numeric.map((n) => (n ? '---:' : '---'))), ...b.rows.map((r) => line(cols.map((_, x) => cell(r[x]))))].join('\n');
