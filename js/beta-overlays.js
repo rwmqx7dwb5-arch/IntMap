@@ -181,9 +181,12 @@ export function betaOverlays(HOST){
        Real roofs and walls, not footprint prisms. The ENGINE owns the hierarchy, level of detail and
        memory (js/cesium-engine.js addTileset); this only says which datasets exist and when they are
        wanted. Off removes them, so a switched-off layer holds no tile memory and fetches nothing. */
-    const plateauCan=()=>{ try{ return !!(GE().can&&GE().can('tiles3d')&&GE().layers.addTileset); }catch(_){ return false; } };
+    /* the ways to draw a city in 3D, best first: real PLATEAU meshes where the engine has 3D Tiles, else the footprint
+       extrusion layer (bldg3d) — which says nothing about roofs, so the toast names it rather than substituting silently */
+    const PLATEAU_PLAN=[{method:'tiles3d',needs:['tiles3d']},{method:'extrusion',needs:['extrusion3d']}];
+    const plateauCan=()=>{ try{ return GE().plan(PLATEAU_PLAN).method==='tiles3d'&&!!GE().layers.addTileset; }catch(_){ return false; } };
     function plateauToggle(on){ state.plateau=on;
-      if(!plateauCan()){ if(on) imToast(IntMapLang.t(HOST.lang,'PLATEAU 3D city models need the 3D globe engine (Settings ▸ Map engine ▸ Cesium).','PLATEAU の3D都市モデルには3D地球儀エンジン（設定 ▸ 地図エンジン ▸ Cesium）が必要です。')); return; }
+      if(!plateauCan()){ if(on) imToast(IntMapLang.t(HOST.lang,'PLATEAU 3D city models need the 3D globe engine (Settings ▸ Map engine ▸ Cesium). The "3D buildings (cities)" layer works on this engine.','PLATEAU の3D都市モデルには3D地球儀エンジン（設定 ▸ 地図エンジン ▸ Cesium）が必要です。このエンジンでは「3D建物（都市）」レイヤーが使えます。')); return; }
       const L2=GE().layers;
       for(const code of PLATEAU_CITY_CODES){ const id=plateauTilesetId(code);
         if(on){ if(!L2.hasTileset(id)){ const sp=plateauSpecs().find(x=>x.id===id); L2.addTileset(id,sp.spec); } else L2.setTilesetVisible(id,true); }

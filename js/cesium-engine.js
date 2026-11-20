@@ -44,6 +44,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { tilesetBudget } from './tileset-budget.js';
 
 window.IntMapCesiumEngine=(function(){
   'use strict';
@@ -2612,11 +2613,11 @@ window.IntMapCesiumEngine=(function(){
         if(this._tilesets.has(id)) this.removeTileset(id);
         const rec={ ts:null, spec:Object.assign({},spec), visible:true, error:null, gone:false };
         this._tilesets.set(id,rec);
-        const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
+        const bud=tilesetBudget();                    /* js/tileset-budget.js: the device decides, not a phone/desktop switch */
         Cesium.Cesium3DTileset.fromUrl(spec.url,{
-          maximumScreenSpaceError:spec.maximumScreenSpaceError!=null?spec.maximumScreenSpaceError:(mob?24:16),
-          cacheBytes:spec.cacheBytes!=null?spec.cacheBytes:(mob?128:384)*1048576,
-          maximumCacheOverflowBytes:(mob?64:192)*1048576,
+          maximumScreenSpaceError:spec.maximumScreenSpaceError!=null?spec.maximumScreenSpaceError:bud.sse,
+          cacheBytes:spec.cacheBytes!=null?spec.cacheBytes:bud.cacheMiB*1048576,
+          maximumCacheOverflowBytes:bud.overflowMiB*1048576,
           /* a tileset that is not looked at must not keep fetching */
           skipLevelOfDetail:true, dynamicScreenSpaceError:true
         }).then(ts=>{
@@ -2646,11 +2647,11 @@ window.IntMapCesiumEngine=(function(){
        The budget is the per-dataset figure the engine already chose (384 MB desktop / 128 MB phone) applied to the
        SUM. EXPIRES with a measurement that shows a different ceiling. */
     _governTilesets(){
-      const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent), budget=(mob?128:384)*1048576;
+      const bud=tilesetBudget(), budget=bud.totalMiB*1048576;
       let total=0, n=0; for(const r of this._tilesets.values()) if(r.ts){ total+=r.ts.totalMemoryUsageInBytes||0; n++; }
       /* the per-dataset cache is what EVICTS tiles that are no longer selected: shared out, so N datasets keep N x less. */
       if(n){ const share=Math.max(16*1048576,Math.floor(budget/n)); for(const r of this._tilesets.values()) if(r.ts){ r.ts.cacheBytes=share; r.ts.maximumCacheOverflowBytes=share; } }
-      if(total>budget) for(const r of this._tilesets.values()){ if(r.ts&&r.baseSse) r.ts.maximumScreenSpaceError=Math.min(r.baseSse*4,r.ts.maximumScreenSpaceError*1.25); }
+      if(total>budget) for(const r of this._tilesets.values()){ if(r.ts&&r.baseSse) r.ts.maximumScreenSpaceError=Math.min(Math.max(r.baseSse*4,bud.maxSse),r.ts.maximumScreenSpaceError*1.25); }
       else if(total<budget*0.6) for(const r of this._tilesets.values()){ if(r.ts&&r.baseSse&&r.ts.maximumScreenSpaceError>r.baseSse) r.ts.maximumScreenSpaceError=Math.max(r.baseSse,r.ts.maximumScreenSpaceError/1.25); }
     }
     removeTileset(id){
