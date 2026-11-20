@@ -24,7 +24,7 @@ insert into public.connections (id, user_id, service, kind, label)
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
 set local role authenticated;
 insert into public.connections (user_id, service, kind, label) values ('11111111-1111-1111-1111-111111111111', 'slack', 'api', 'second');
-select throws_ok($ insert into public.connections (id, user_id, service, kind) values (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', 'x', 'mcp') $,
+select throws_ok($$ insert into public.connections (id, user_id, service, kind) values (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', 'x', 'mcp') $$,
   '42501', null, 'the owner cannot choose the row id');
 select is((select mode_read || '/' || mode_write || '/' || mode_spend || '/' || mode_destructive || '/' || max_sensitivity from public.connections where label = 'main'),
   'allow/ask/ask/ask/personal', 'defaults: a read never asks, the rest ask');
@@ -32,7 +32,7 @@ select throws_ok($$ insert into public.connections (user_id, service, kind) valu
   '42501', null, 'A cannot create a connection for B');
 select throws_ok($$ insert into public.connections (user_id, service, kind) values ('11111111-1111-1111-1111-111111111111', 'Bad Name', 'mcp') $$,
   '23514', null, 'a service slug is lower-case and bounded');
-select throws_ok($ update public.connections set user_id = '22222222-2222-2222-2222-222222222222' where label = 'main' $,
+select throws_ok($$ update public.connections set user_id = '22222222-2222-2222-2222-222222222222' where label = 'main' $$,
   '42501', null, 'the owner column is not editable');
 update public.connections set mode_write = 'allow' where id = 'aaaaaaaa-0000-0000-0000-000000000001';
 select is((select mode_write from public.connections where label = 'main'), 'allow', 'the owner edits a policy column');
