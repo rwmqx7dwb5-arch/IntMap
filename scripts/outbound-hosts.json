@@ -1855,11 +1855,11 @@
     },
     {
       "host": "api.plateauview.mlit.go.jp",
-      "what": "PLATEAU 3D Tiles catalogue — the tileset index of each Tokyo ward (MLIT Japan). Its tilesets then point the browser at MLIT’s asset store, assets.cms.plateau.reearth.io, for the meshes and textures (named in Privacy §4, not a literal in the code)",
-      "whatJp": "PLATEAU 3D Tiles カタログ — 東京の各区のタイルセット索引（国土交通省）。タイルセットはさらに国土交通省の資産置き場 assets.cms.plateau.reearth.io をブラウザに指し、メッシュとテクスチャを取得する（プライバシー §4 に明記。コードにはリテラルとして現れない）",
+      "what": "PLATEAU 3D Tiles catalogue — the tileset index of each city or ward with a building model (MLIT Japan; only those near the view are requested). Its tilesets then point the browser at MLIT’s asset store, assets.cms.plateau.reearth.io, for the meshes and textures (named in Privacy §4, not a literal in the code)",
+      "whatJp": "PLATEAU 3D Tiles カタログ — 建物モデルを持つ各市区のタイルセット索引（国土交通省。視界の近くのものだけを要求する）。タイルセットはさらに国土交通省の資産置き場 assets.cms.plateau.reearth.io をブラウザに指し、メッシュとテクスチャを取得する（プライバシー §4 に明記。コードにはリテラルとして現れない）",
       "sends": {
         "code": "area",
-        "detail": "which tiles of the 3D model are in view (the part of Tokyo on screen), and only after the PLATEAU layer is switched on"
+        "detail": "which tiles of the 3D model are in view (the part of Japan on screen), and only after the PLATEAU layer is switched on"
       },
       "disclosure": {
         "en": "PLATEAU",
