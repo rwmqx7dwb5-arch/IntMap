@@ -136,6 +136,7 @@ reset role;
 
 -- a queued job nobody has claimed is cancelled at once
 create temp table _q as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'idem-q', 'q', pg_temp._tasks(1));
+grant select on _q to public;   -- read below after set local role authenticated
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000a0001","role":"authenticated"}', true);
 select is(public.atlas_job_cancel((select job_id from _q)), 'cancelled', 'a job nobody has claimed is cancelled at once');
