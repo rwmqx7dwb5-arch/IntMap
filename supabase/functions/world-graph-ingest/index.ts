@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 //  IntMap · world-graph-ingest — keeps the PORT slice of the persistent world graph current
 //  (supabase/migrations/20261120120000_world_graph_ingest.sql · _shared/world-graph-ports.js · dev-notes/2026-11-20-world-graph-ports.md)
 // ----------------------------------------------------------------------------

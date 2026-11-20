@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  *  IntMap · world-graph — run the PORT ingest from a terminal (the same code the Edge Function runs)
  * ----------------------------------------------------------------------------
  *  node scripts/world-graph/ingest-ports.mjs --dry [--out file.json]   fetch the three upstreams, build the rows, print the counts

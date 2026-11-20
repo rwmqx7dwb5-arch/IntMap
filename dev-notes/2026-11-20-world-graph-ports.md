@@ -1,4 +1,4 @@
-﻿---
+---
 title: 世界グラフの 2 つ目の領域=港湾——3 つの独立した典拠を識別子で結び、毎週の差分取り込みと鮮度の記録を持たせた
 date: 2026-11-20
 newsen: Atlas can now answer about ports from a database that refreshes itself every week — operators, owners, UN/LOCODE, the rail and road a port is stated to connect to, and cargo handled per year back to 1997, with the date the data was last confirmed.
