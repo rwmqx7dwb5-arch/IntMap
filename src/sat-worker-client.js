@@ -73,6 +73,14 @@ window.IntMapSatWorker=(function(){
         const q=pend.get(id); if(q){ pend.delete(id); const e=new Error('aborted'); e.name='AbortError'; try{ q.rej(e); }catch(_){} } },{once:true}); }catch(_){} }
       return p;
     },
+    /* the whole-earth floor (js/world-base.js): hand the colour-matched picture over ONCE (it is transferred, so the
+       caller must not use the bitmap afterwards), then ask for Mercator tiles of it. false / null = no worker. */
+    floorSource(bm){ const it=worker(); if(!it) return false;
+      try{ it.postMessage({type:'floor-src', bitmap:bm},[bm]); return true; }catch(_){ return false; } },
+    floor(z,x,y,tile){ const it=worker(); if(!it) return null;
+      const id=++seq; const p=new Promise((res,rej)=>{ pend.set(id,{res,rej}); });
+      try{ it.postMessage({type:'floor', id, z, x, y, tile}); }catch(_){ pend.delete(id); return null; }
+      return p.then(r=>r&&r.data); },
     /* what the worker's fetch queue has done — queued / handed to the browser / withdrawn — for the
        instruments (the fetches themselves happen in the worker, invisible to the page's resource timing) */
     stats(){ const it=worker(); if(!it) return Promise.resolve(null);

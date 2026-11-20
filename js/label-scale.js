@@ -46,6 +46,9 @@ window.IntMapLabelScale=(function(){
      removing a shipped key is a reduction (AGENTS.md §3-1); the check in
      tests/chronos-unnamed-shapes-checks.test.mjs (#R707) is what stops a SECOND unreachable key appearing
      quietly beside it. */
+  /* (place-label-size-up) 「地名ラベルのテキストサイズを全体的に少し大きく」(2026-11-20): every place curve below is the previous one x ~1.09
+     (country 12/17 -> 13/18.5, admin1 9.5/11.5 -> 10.4/12.5, city 9.5..19.5 -> 10.4..21.2, other 9/11 -> 9.8/12), REF follows. The
+     non-place ladder (SUB_REF) is NOT raised: only place names grow. A design number; it lapses if the reader asks for another size. */
   const PLACE={
     /* ⚠ (#R210) country is the ONE class that went back UP, and it is a later instruction rather
        than a drift: 「国名ラベルと地名ラベルで大きさの差が少ないから、国名ラベルを大きくして差を出して
@@ -53,15 +56,15 @@ window.IntMapLabelScale=(function(){
        at z7 — where `ofm-country` stops drawing — 17 against 11.6 (was 13 vs 11.6). Every other
        class still honours #R198's 「全体的に…下げた」, and tests/labels-stack-and-scale-checks.test.mjs #R198 ①c states the exemption
        by name so the next round cannot mistake it for a regression. */
-    country:[[1,12],[4,17]],
-    admin1 :[[4,9.5],[7,11.5]],
+    country:[[1,13],[4,18.5]],
+    admin1 :[[4,10.4],[7,12.5]],
     /* (city-label-grow) 「Google Earth のように、ズームするほど都市名が大きくなる」(2026-11-18). The curve used to stop at z10
        and stay flat for the other twelve zooms, so a street-level city name was the size of a regional one. It now keeps
        growing — z10 13 -> z13 16 -> z17 19.5 (top tier x1.10 = 21.4 px) — and is flat only past z17, where the tiles carry no
        further settlements to tell apart. The three slopes (0.5 / 1.0 / 0.875 px per zoom) are a design choice, not a
        measurement; they lapse if the reader asks for another growth rate. z3..z10 is unchanged byte for byte. */
-    city   :[[3,9.5],[10,13],[13,16],[17,19.5]],
-    other  :[[7,9],[13,11]],
+    city   :[[3,10.4],[10,14.2],[13,17.4],[17,21.2]],
+    other  :[[7,9.8],[13,12]],
     era    :[[1,8.5],[4,12]]
   };
   /* The pointwise MAXIMUM of the curves above — at any zoom, the biggest a place name can be.
@@ -79,7 +82,7 @@ window.IntMapLabelScale=(function(){
      against a CITY at 15 — is gone: no non-place label exceeds 11.4 px at any zoom. */
   /* (city-label-grow) the maximum now follows the tallest place name, which past z10 is the top city step
      (TIER_K[0] x the city curve: 14.3 @z10, 17.6 @z13, 21.45 @z17). Up to z10 it is the country's 17 as before. */
-  const REF=[[1,12],[4,17],[10,17],[13,17.6],[17,21.45],[22,21.45]];
+  const REF=[[1,13],[4,18.5],[10,18.5],[13,19.2],[17,23.4],[22,23.4]];
   /* ⚠ (#R210) SUB IS NO LONGER DERIVED FROM REF, AND THAT IS THE POINT. REF answers "how big can a
      place name get" and had to follow the country class up. SUB answers "how big may a NON-place
      label be", and nothing asked the sea names to grow — deriving one from the other would have made
@@ -140,8 +143,7 @@ window.IntMapLabelScale=(function(){
   const TIER_K=[1.10,1.02,0.94,0.82];
   function placeTierAt(kind,tier,z){ const k=TIER_K[Math.max(0,Math.min(TIER_K.length-1,tier|0))]; return _fl(placeAt(kind,z)*k); }
   /* zoom outermost (#R73), each stop a `step` over the tier expression — the shape both renderers evaluate */
-  /* `mult` (default 1) scales every step — the position dot beside a city name is the name's own size times a
-     fraction (js/place-labels.js `ofm-city-dot`), so the dot and the name grow together and stay in proportion. */
+  /* `mult` (default 1) scales every step — kept for callers that size a companion to a name; the city layer no longer has one. */
   function placeTiered(kind,tierExpr,mult){ const s=PLACE[kind]; if(!s) throw new Error('IntMapLabelScale.placeTiered: unknown kind '+kind);
     const m=(mult==null?1:mult);
     return _expr(s.map(([z,px])=>{ const st=['step',tierExpr,_fl(px*TIER_K[0]*m)]; for(let i=1;i<TIER_K.length;i++) st.push(i,_fl(px*TIER_K[i]*m)); return [z,st]; })); }
