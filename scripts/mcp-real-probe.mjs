@@ -6,8 +6,9 @@
      (it cannot sign in: that needs the reader's own account at the service). Registers a throw-away public client at each service.
    Nothing here is a secret; it writes nothing to disk. Node's fetch has no CORS: the browser side is measured separately (curl with an Origin header). */
 import { createMcpClient } from '../js/atlas-mcp-client.js';
+import { siteUrl } from '../supabase/functions/_shared/site-origin.js';
 
-const REDIRECT = 'https://rwmqx7dwb5-arch.github.io/IntMap/mcp-oauth-callback.html';
+const REDIRECT = siteUrl('mcp-oauth-callback.html');
 const mem = {}; const storage = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); } };
 const c = createMcpClient({ storage, relayUrl: null, redirectUri: REDIRECT, timeoutMs: 45000 });
 const open = [

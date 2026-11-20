@@ -28,20 +28,20 @@ export class OAuthError extends Error {
 }
 
 const clean = (s, n) => String(s == null ? '' : s).replace(/[\u0000-\u001F\u007F-\u009F​-‏‪-‮⁦-⁩]/g, '').slice(0, n || 300);
-export const CLIENT_NAME = 'IntMap Atlas';
+const CLIENT_NAME = 'IntMap Atlas';
 const REFRESH_SKEW_MS = 60 * 1000;      /* refresh a minute early: a token that expires mid-request is a failed request */
 const DEFAULT_TTL_S = 3600;             /* a token response with no expires_in: assume an hour and say so (expiresAssumed) */
 
 function b64url(bytes) {
   let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-  return (typeof btoa === 'function' ? btoa(s) : Buffer.from(s, 'binary').toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 /** PKCE (RFC 7636): a 43-character verifier from 32 random bytes and its S256 challenge. */
-export async function pkcePair(randomBytes, sha256) {
+async function pkcePair(randomBytes, sha256) {
   const verifier = b64url(randomBytes(32));
   return { verifier, challenge: b64url(await sha256(verifier)), method: 'S256' };
 }
-export const randomState = (randomBytes) => b64url(randomBytes(16));
+const randomState = (randomBytes) => b64url(randomBytes(16));
 
 /** The last two labels of a host — the unit «same site» is judged in. (A public-suffix list would be exact; two labels is the strict side for the
  *  hosted MCP services measured, and a mismatch is refused with a reason, never accepted.) */
