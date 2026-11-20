@@ -25,7 +25,7 @@
 4. **Edge Functions を23本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account atlas-embed; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors fetch-relay reader-reports; do
+   for f in refresh-news sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors fetch-relay mcp-relay reader-reports; do
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>
    done
    ```
