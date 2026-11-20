@@ -26,3 +26,7 @@ newsjp: Atlasが、タブを閉じても続く長い仕事を始められるよ�
 ## 2. 検証
 
 `tests/atlas-jobs-atlas-checks.test.mjs`（11 件）: 能力の facets／twin が read の行だけであること／twin の成功・未対応 part・上流失敗／計画での拒否／runner が 1 回・費用 0・data を渡す／twin 無しは走らせず refused／カードの表示と escape／クライアントの冪等キーと RPC。`atlas-durable-jobs-checks` 15 件は無変更で緑。
+
+## 3. main の取り込みで足したこと
+
+main が worker の答えに `facts`（実世界オブジェクト×属性）を足したので、`js/atlas-job-core.js` の worker 指示文を同じにし、`shapeOf(data, normalizeFacts)` は正規化関数を**引数で**受ける（core は import を持てない）。ページの `shapeOf` は `normalizeFacts` を渡す薄い包みで挙動は不変。**サーバの runner は facts を渡さないので、サーバのジョブ結果は facts を持たない**（worker は指示文のとおり facts を返すが捨てられる）——サーバ側の突き合わせは未実装。
