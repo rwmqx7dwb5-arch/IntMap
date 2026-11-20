@@ -92,6 +92,7 @@
   CAP 索引が指すリンクは索引と同じ origin か明示リストだけを `fetchGuarded`（索引 8 MB・CAP 1 MB・並列 6）で読み、落とした本数は `offHost`。`?ma=` は並列 2。MeteoAlarm は要約する
   （`?ma=<国>,…&lang=…` で複数国をまとめ、地域ごとの行——最悪階級・災害名・`<polygon>`——に落とす。上限は1国 400 区域、`areaTotal` が実数）。フィリピンは `?ph=1`（Atom の索引から
   地域ごとの最新1件の CAP を州ごとの行にし、PAR の矩形と `expires` 切れは落とす）。上流の期限は 45 秒、キャッシュは 15 秒。カナダ ECCC は ACAO を返すので通さない。
+- **`gis-fetch`** … ページが読めない公開ジオデータ（Range には答えるが ACAO を送らないバケット：Copernicus DEM・ESA WorldCover）を、`js/gis-fetch.js` が**ホストは応答するが CORS が無いと証明したときだけ**経由して読む中継。`fetch-relay` が許可リストなのに対し**原則**で決める（`_shared/gis-fetch-policy.js`）: https・既定ポート・資格情報なし・**公開アドレスにだけ解決される名前**（転送の各ホップも同じ問い）・バイト数に上限のあるデータの読み（ページは `upstream_is_a_page`）・URL と範囲以外は転送しない。**プロジェクト全体のバイト予算（`relay_take` `gis-fetch:project-bytes`・閉じる側）**と呼び手ごと（ハッシュ鍵・開く側）の予算を、求めたバイト数で上流に触れる前に引く。停止スイッチは秘密 `GIS_FETCH_DISABLED=1`（deploy 不要）。上流の拒否は言葉（200 字・タグ除去・JSON の文字列）で中継する。`--no-verify-jwt`。
 - **`fetch-relay`** … ACAO を返さず専用の relay も持たない上流のための汎用の ACAO 付与中継（`--no-verify-jwt`・秘密なし）。転送するのは
   `supabase/functions/_shared/fetch-relay-policy.js` の規則が認める URL だけで、同じファイルを `js/proxy-fetch.js` も import する。規則は上流ごとにホスト名（完全一致）・パス（錨付き）・
   クエリ鍵の集合と値の形・Content-Type・バイト上限・期限・共有キャッシュの寿命を持つ。規則は 4 本——IMF DataMapper、「511」交通カメラ一覧 13 サイト、GEBCO 2020 水深（opentopodata）、
@@ -174,9 +175,9 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 その関数の読者 1 人のページが 1 分に送る最大数（各関数の `READER_PER_MIN`＝推定）×`READERS_PER_ADDRESS`（10）。DB が答えなければ通す。拒否は `429 rate_limit`＋`Retry-After`。
 `<関数名>_PER_IP_PER_MIN` で deploy なしに動かせる。`routing-relay` は自前の fail-closed の全体上限を持つ。
 
-**`_shared/relay-guard.js` を共有するのは21本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` / `mcp-server` /
+**`_shared/relay-guard.js` を共有するのは22本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` / `mcp-server` / `gis-fetch` /
 `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）。そのうち `ai-proxy`（JWT）・
-`atlas-embed`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り16本は無認証。`ai-proxy`・`client-errors`・
+`atlas-embed`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り17本は無認証。`ai-proxy`・`client-errors`・
 `reader-reports`・`usage-count` が共有するのは読み手だけ（`readCapped`＝要求本文を上限で切る、`fetchBounded`＝提供者への POST を本文の最後のバイトまで同じ期限と上限で読む）。
 リダイレクトは手で辿る（`followRedirects`。各ホップを同じ https オリジンか `allowRedirect(next, from)` で検査し、上限は 3 ホップ `MAX_REDIRECTS`）。共有しているのは URL allowlist・GET 限定・
 期限（`AbortSignal.timeout`）・バイト上限（`content-length` とストリーム読み出しの両方）・Content-Type 判定・外向きエラーはコード1語。公開レイヤーなのでログイン必須にはしない。
