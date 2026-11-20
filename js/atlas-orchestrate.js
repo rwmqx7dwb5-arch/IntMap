@@ -8,6 +8,10 @@
  *                              who found each, the places more than one worker covered (and whether their numbers
  *                              differ), what nobody could establish, who did not return and why, the cost and the
  *                              wall clock. It decides nothing: Atlas reads it and decides what is true.
+ *    mergeFacts(results,{resolve})  what the results STATE as data (`facts`: subject, attribute, value, unit, time, source,
+ *                              evidence id) grouped by real-world OBJECT and attribute — agree / conflict / single / missing,
+ *                              a conflict carrying every observation's source and evidence. Re-exported from
+ *                              js/atlas-fact-merge.js, which says how a name becomes an object (it does not list names).
  *    fanOut(items, template)   contracts from a list — the same piece of work asked of each item
  *    verifyContract(taskId)    a contract for a second worker that checks what the first one claimed (the input is
  *                              the first one's result, so the checker starts from its findings, not from scratch)
@@ -18,6 +22,9 @@
  *  capability (the page's kernel) and the function that says whether one may be run from here; this file knows
  *  neither. tests/atlas-orchestration-checks.test.mjs runs every export.
  * ==========================================================================*/
+
+import * as factMerge from './atlas-fact-merge.js';
+export const mergeFacts = factMerge.mergeFacts, normalizeFacts = factMerge.normalizeFacts, normalizeFact = factMerge.normalizeFact, makeFactResolver = factMerge.makeFactResolver;
 
 const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 const USABLE = (st) => st === 'done' || st === 'partial';
