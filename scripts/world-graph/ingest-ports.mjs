@@ -4,7 +4,7 @@
  *  node scripts/world-graph/ingest-ports.mjs --dry [--out file.json]   fetch the three upstreams, build the rows, print the counts
  *  node scripts/world-graph/ingest-ports.mjs --invoke                 ask the deployed world-graph-ingest function to run now
  *                                                                      (needs WORLD_GRAPH_INGEST_SECRET in the environment)
- *  The weekly run is pg_cron → the Edge Function (supabase/migrations/20261120110000_world_graph_ingest.sql); this is for a
+ *  The weekly run is pg_cron → the Edge Function (supabase/migrations/20261120120000_world_graph_ingest.sql); this is for a
  *  person who wants to see what an upstream change would do before it lands, or to run it now.
  * ==========================================================================*/
 import fs from 'node:fs';
