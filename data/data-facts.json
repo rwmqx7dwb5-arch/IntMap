@@ -596,7 +596,7 @@
     "period": {
      "start": "-122999",
      "end": "1880",
-     "note": "astronomical snapshot years of the 44 sheets this bundle keeps (measured); each sheet is one year, not a span"
+     "note": "astronomical snapshot years of the 54 sheets this bundle keeps (measured); each sheet is one year, not a span"
     },
     "method": "a collection of basemaps collected, adapted and converted from diverse sources (README)",
     "accuracy": "the README calls the project work in progress and asks that the maps be verified against other sources before academic use"
@@ -617,7 +617,7 @@
      "end": "1923",
      "note": "the window this bundle draws (its window field)"
     },
-    "extent": "302 OpenHistoricalMap admin_level=2 relation records (measured)"
+    "extent": "1411 OpenHistoricalMap admin_level=2 relation records (measured)"
    },
    "unstated": [
     "method",
