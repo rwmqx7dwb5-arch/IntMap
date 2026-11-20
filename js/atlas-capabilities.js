@@ -392,10 +392,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["sim.spaceWeather","spaceWeather","solarWind,solarFlare,geomagneticStorm,kpIndex,auroraChance,noaaScales,asteroidFlyby,nearEarthAsteroids","sim","none","","explanation","read","none","",""],
       ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
       ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
-      ["mcp.servers","mcpServers","listMcpServers,mcpTools,refreshMcp","mcp","none","","explanation","external","explicit","","","external"],
-      ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","always","","",""],
-      ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
-      ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","always","","","external"],
+      ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
