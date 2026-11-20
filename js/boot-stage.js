@@ -74,6 +74,7 @@
     { id: 'world-bank', host: 'api.worldbank.org', phone: 'settled', who: 'js/wb-layers.js refreshStatsLatest(), js/app-body.js loadGdpPPP()', why: 'refreshes figures the country table already carries' },
 
     /* ── only when a reader asks ── */
+    { id: 'plateau-cities', path: 'data/plateau-cities.json', phone: 'need', who: 'js/plateau-cities.js loadPlateauRegistry() via js/beta-overlays.js', why: 'the PLATEAU layer switch: which Japanese city models exist and where' },
     { id: 'country-facts', path: 'data/country-facts.json', phone: 'need', who: 'js/countries-ui.js (a country card)', why: 'one card' },
     { id: 'admin1', path: 'data/admin1-world.json.gz', phone: 'need', who: 'js/world-packs.js, js/atlas-admin1.js', why: 'first-level subdivisions, a layer or an Atlas question' },
     { id: 'bathymetry', path: 'data/bathymetry.png', phone: 'need', who: 'js/bathymetry.js', why: 'the tsunami and sea-level tools' },
