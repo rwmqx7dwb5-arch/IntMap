@@ -20,8 +20,8 @@
  *  Pure: no DOM, no window.
  * ==========================================================================*/
 
-export const KINDS = ['table', 'chart', 'filter', 'map', 'evidence', 'param'];
-const SECTION_OF = { map: 'Map', table: 'Data', filter: 'Data', chart: 'Analysis', evidence: 'Evidence', param: 'Execution' };
+export const KINDS = ['table', 'chart', 'filter', 'map', 'evidence', 'param', 'time'];
+const SECTION_OF = { map: 'Map', table: 'Data', filter: 'Data', chart: 'Analysis', evidence: 'Evidence', param: 'Execution', time: 'Time' };
 /* Bounds, not caps on what Atlas may do: a spec is stored and re-sent, so its size has to be a number somebody can state.
    Observed 2026-11-20: a 40-row × 8-column answer is ~6 KB; 2000 rows keeps a record under ~1 MB of IndexedDB. */
 export const MAX_ROWS = 2000;
@@ -35,6 +35,13 @@ export function columnsOf(features) {
   const seen = new Set(), out = [];
   for (const f of features || []) for (const k of Object.keys((f && f.properties) || {})) if (!seen.has(k)) { seen.add(k); out.push(k); }
   return out;
+}
+
+/** The year a row's time value names, or null. A number is a year when it is an integer in ±9999 (a ms epoch is not); a string is read by its leading year (`2011`, `2011-03-11`, `-0322-01-01`). Anything else is NOT a year: null, so the row is counted out of a time window rather than placed in it. Year only: the Chronos clock the board follows is read by year here (IntMapTime.year()). */
+export function yearOf(v) {
+  if (typeof v === 'number') return Number.isInteger(v) && Math.abs(v) <= 9999 ? v : null;
+  const m = typeof v === 'string' ? /^\s*([+-]?\d{1,6})(?:\D|$)/.exec(v) : null;
+  return m ? Number(m[1]) : null;
 }
 
 /** rows → GeoJSON-ish features (properties always; a Point when both coordinate fields are finite numbers). */
@@ -62,7 +69,9 @@ export function normalise(raw, columns) {
     if (!data.rows.length) bad('data.rows', 'no-records');
     if (raw.data.lngField) data.lngField = s(raw.data.lngField, 64);
     if (raw.data.latField) data.latField = s(raw.data.latField, 64);
+    if (raw.data.timeField) data.timeField = s(raw.data.timeField, 64);
   } else bad('data', 'needs-dataset-or-rows');
+  if (raw.data && raw.data.dataset && raw.data.timeField) data.timeField = s(raw.data.timeField, 64);
   if (!Array.isArray(raw.widgets) || !raw.widgets.length) bad('widgets', 'no-widgets');
   const cols = columns || (data.rows ? columnsOf(data.rows.map((r) => ({ properties: r }))) : null);
   const has = (c) => !cols || cols.includes(c);
@@ -82,6 +91,13 @@ export function normalise(raw, columns) {
       if (!need(w, path, 'field')) return;
       o.field = s(w.field, 64); o.control = w.control === 'category' ? 'category' : 'range';
     }
+    if (w.kind === 'time') {
+      /* follows the main Chronos clock over the column `data.timeField` names; without that column there is nothing to follow */
+      if (!data.timeField) { bad(path, 'time-needs-data.timeField'); return; }
+      if (!has(data.timeField)) { bad('data.timeField', 'unknown-column:' + data.timeField); return; }
+      o.mode = w.mode === 'at' ? 'at' : 'upto';
+    }
+    if (w.kind === 'map') o.link = w.link === true;
     if (w.kind === 'param') {
       /* an execution knob: the value of ONE parameter of the op that made `dataset`; js/board.js hands it to IntMapGisProject.setParams */
       const key = s(w.key, 64), ds = s(w.dataset || data.dataset, 80);

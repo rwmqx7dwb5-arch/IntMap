@@ -2338,6 +2338,9 @@ export function atlasConsole(HOST){
           if(ugo.hasAttribute('data-lat')&&ugo.hasAttribute('data-lng')&&isFinite(la)&&isFinite(ln)){ act.lat=la; act.lng=ln; } else if(pl) act.place=pl; else return;
           if(z!=null&&z!==''&&isFinite(+z)) act.zoom=+z;
           runDirect((ugo.textContent||'').trim()||pl,[act]); return; }
+        /* (board-map-link) the card a `board` block of ui.compose draws: the spec was staged with IntMapBoard, the button holds only its key */
+        const bdo=e.target.closest&&e.target.closest('.atl-ui-bdo');
+        if(bdo){ const k=bdo.getAttribute('data-bd')||''; Promise.resolve(window.IntMapLazy&&window.IntMapLazy.need('board')).then(()=>{ const B=window.IntMapBoard; return B&&B.openStaged&&B.openStaged(k); }).catch(()=>{}); return; }
         const bt=e.target.closest&&e.target.closest('.atl-ctl-btn');
         if(bt){ const cmd=decodeURIComponent(bt.getAttribute('data-run')||''); if(cmd) run(cmd); return; }
         const ch=e.target.closest&&e.target.closest('.atl-choice');

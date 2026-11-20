@@ -192,6 +192,7 @@ click-ownership.js                ↳ クリック登録と排他的所有権の
                                   背景fallbackと地物のownerを区別する。レンダラや地名IDには依存しない
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
 board.js                          **操作できるボード**（遅延・`IntMapBoard`）— 宣言（表・グラフ・フィルタ・地図・根拠・パラメータ）から DOM を組み、1 つの状態で連動。保存は IndexedDB `intmap-board`
+board-link.js                     ボードと**本物の地図・マスタークロック**の双方向の連動（選択のハイライトと地図クリック・Chronos と時間窓）。エンジンと時計は注入
 board-spec.js                     ボード宣言の検査（列の実在・出典必須・Artifact の節への対応）。純関数
 board-state.js                    ボードの共有状態（選択・フィルタ・パラメータ）。純関数
 bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・

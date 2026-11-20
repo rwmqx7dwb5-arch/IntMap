@@ -18,6 +18,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+/* the `board` block stages its spec with the lazily loaded board module and draws a card holding only the key */
+globalThis.IntMapLazy = { need: async () => {} }; globalThis.IntMapBoard = { stage: () => 'k1' };
 await import('../js/safe-html.js');
 const esc = (s) => globalThis.IntMapSafe.html(s);
 const L = (en) => en;
@@ -41,6 +43,7 @@ const GOOD = {
     { kind: 'chart', chart: { kind: 'bar', source: 'World Bank WDI 2024', series: [{ points: [{ x: 0, y: 123.3, label: 'Japan' }, { x: 1, y: 51.7, label: 'Korea' }] }] } },
     { kind: 'controls', items: [{ kind: 'layerToggle', layer: 'Population' }, { kind: 'button', label: 'Add China', run: 'add China to the comparison' }] },
     { kind: 'places', items: [{ label: 'Tokyo', place: 'Tokyo' }, { label: 'Seoul', lat: 37.57, lng: 126.98, zoom: 9 }] },
+    { kind: 'board', board: { source: 'World Bank WDI 2024', data: { rows: [{ c: 'Japan', p: 123.3 }, { c: 'Korea', p: 51.7 }] }, widgets: [{ kind: 'table' }, { kind: 'chart', x: 'c', y: 'p' }] } },
     { kind: 'text', md: '**Both** are shrinking; growth < 0 & falling > 0.5%/yr.' },
   ],
 };
@@ -133,6 +136,7 @@ test('④ the run draws only IntMap parts, delegates chart and controls, and ref
   assert.ok(r.html.indexOf('data-place="Tokyo"') >= 0 && r.html.indexOf('data-lat="37.57"') >= 0 && r.html.indexOf('data-zoom="9"') >= 0);
   assert.ok(r.html.indexOf('Korea \\| ROK') >= 0, 'a pipe in a cell is escaped for the table renderer');
   assert.ok(r.html.indexOf('−0.5 M') >= 0, 'a negative change prints its sign');
+  assert.ok(/class="atl-ui-bdo"[^>]*data-bd="k1"/.test(r.html) && !r.html.includes('World Bank WDI 2024"}'), 'the board block is a card holding only the staged key, not the spec');
   assert.deepEqual(r.meta.view.kinds, GOOD.blocks.map((b) => b.kind));
 
   const bad = JSON.parse(JSON.stringify(GOOD));

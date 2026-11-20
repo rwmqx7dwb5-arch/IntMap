@@ -37,6 +37,8 @@
    rows in the same element); 32 768 characters of JSON is what the notebook keeps comfortably per step
    inside its 1 MiB entry (supabase/migrations/20261003170000_atlas_notebook.sql). They expire when the panel
    layout or the notebook's ceiling changes. This table is the one place they are written. */
+import { normalise as normaliseBoard } from './board-spec.js';
+
 export const LIMITS = Object.freeze({
   specChars: 32768, blocks: 12, title: 120, text: 4000, label: 60, short: 40, unit: 16, note: 160, source: 300,
   metrics: 12, columns: 12, rows: 200, cell: 200, places: 12, place: 120, command: 160, controls: 8,
@@ -76,6 +78,10 @@ export const BLOCKS = Object.freeze({
     fields: { items: LIST({ label: T(LIMITS.label, true), place: T(LIMITS.place), lat: N(false, -90, 90), lng: N(false, -180, 180), zoom: N(false, 0, 22) }, LIMITS.places, true) },
     one: { items: [['place'], ['lat', 'lng']] },
     doc: '{"kind":"places","items":[{"label":str,"place":str}|{"label":str,"lat":num,"lng":num,"zoom"?:num}]} (buttons that move the map there when pressed)',
+  },
+  board: {
+    fields: { board: OBJ(true) },
+    doc: '{"kind":"board","board":{…the arguments of `board.compose` without "type": source, data, widgets…}} (a compact card in the answer that opens the full linked workspace — table, chart, filter, time, the real map — when pressed; the SAME declaration as board.compose, so a small view and a full analysis board are one thing at two sizes)',
   },
   text: {
     fields: { md: T(LIMITS.text, true) },
@@ -211,6 +217,8 @@ export function checkView(spec, L) {
     if (def.one) Object.keys(def.one).forEach((k) => (Array.isArray(b[k]) ? b[k].slice(0, LIMITS.places) : []).forEach((it, j) => {
       if (isObj(it) && !def.one[k].some((set) => set.every((n) => it[n] != null && it[n] !== ''))) add(at + '.' + k + '[' + j + ']', 'missing', F(L('needs {a} or {b}', 'には {a} か {b} が必要です'), { a: def.one[k][0].join(' + '), b: def.one[k].slice(1).map((s) => s.join(' + ')).join(' / ') }));
     }));
+    /* a board block is a board declaration (js/board-spec.js): the same gate decides it, so a view cannot carry a board the board would refuse */
+    if (b.kind === 'board' && isObj(b.board)) { const r = normaliseBoard(b.board, null); if (!r.ok) r.issues.forEach((is) => add(at + '.board' + (is.path ? '.' + is.path : ''), 'board', is.why)); }
     /* a table's cells: one per column, each a short text or a number */
     if (b.kind === 'table' && Array.isArray(b.rows) && Array.isArray(b.columns)) {
       const w = b.columns.length;
@@ -264,6 +272,14 @@ export function placesHtml(b, X) {
       + (isNum(p.zoom) ? ' data-zoom="' + esc(String(p.zoom)) + '"' : '');
     return '<button type="button" class="atl-ui-go" data-effect="none"' + at + '>' + X.icon('pin') + '<span>' + esc(p.label) + '</span></button>';
   }).join('') + '</div>';
+}
+
+/** a board block → a compact card. The spec itself is staged with IntMapBoard (js/board.js `stage`), never put in the markup; the button carries only the key it came back with. */
+export function boardHtml(b, key, X) {
+  const esc = X.esc, spec = b.board || {}, ws = Array.isArray(spec.widgets) ? spec.widgets.map((w) => w && w.kind).filter(Boolean) : [];
+  const rows = spec.data && Array.isArray(spec.data.rows) ? spec.data.rows.length : null;
+  return '<div class="atl-ui-bd"><div class="atl-ui-bds">' + esc((rows != null ? rows + X.L(' rows · ', ' 行 · ') : '') + ws.join(' + ')) + '</div>'
+    + '<button type="button" class="atl-ui-bdo" data-effect="none" data-bd="' + esc(key) + '">' + esc(X.L('Open the workspace', 'ワークスペースを開く')) + '</button></div>';
 }
 
 export function sourceHtml(b, X) {

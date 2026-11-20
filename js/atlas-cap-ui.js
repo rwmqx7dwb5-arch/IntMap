@@ -17,7 +17,7 @@
  *  entry names them.
  * ==========================================================================*/
 import { list, obj } from './atlas-caps.js';
-import { checkView, viewSchema, blockShapes, BLOCKS, LIMITS, tableMarkdown, metricsHtml, placesHtml, sourceHtml } from './atlas-ui-spec.js';   /* (declarative-workspace) the view's kinds, schema and check */
+import { checkView, viewSchema, blockShapes, BLOCKS, LIMITS, tableMarkdown, metricsHtml, placesHtml, boardHtml, sourceHtml } from './atlas-ui-spec.js';   /* (declarative-workspace) the view's kinds, schema and check */
 import { plainText, proseMark } from './atlas-turn-results.js';
 import { icon } from './icons.js';
 import { IntMapLang } from './lang-registry.js';
@@ -107,6 +107,13 @@ export default [
         else if (b.kind === 'table') h = '<div class="atl-md">' + mdMini(tableMarkdown(b, X.num)) + '</div>' + (b.caption ? '<div class="atl-ui-cap">' + esc(b.caption) + '</div>' : '') + sourceHtml(b, X);
         else if (b.kind === 'metrics') h = metricsHtml(b, X) + sourceHtml(b, X);
         else if (b.kind === 'places') h = placesHtml(b, X);
+        else if (b.kind === 'board') {
+          /* the card is drawn from the same declaration board.compose takes; the spec is staged with the board module (not put in markup) and the button opens it */
+          try { await window.IntMapLazy.need('board'); } catch (_) { /* reported below */ }
+          const BD = window.IntMapBoard; const key = BD && BD.stage ? BD.stage(own(b.board)) : null;
+          if (!key) { problems.push({ at: at + '.board', code: 'unavailable', why: L('the workspace could not be loaded', 'ワークスペースを読み込めませんでした') }); continue; }
+          h = boardHtml(b, key, X);
+        }
         else if (b.kind === 'controls') { const c = controlRows(b.items, K); c.problems.forEach((p) => problems.push({ at: at + '.items' + p.at, code: p.code, why: p.why })); h = c.html; }
         else if (b.kind === 'chart') {
           const r = await K.dispatch(Object.assign(own(b.chart), { type: via }), dctx);
