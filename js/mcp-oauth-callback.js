@@ -5,6 +5,5 @@
   var msg = { type: 'intmap-mcp-oauth', query: location.search || '' };
   try { if (window.opener) window.opener.postMessage(msg, location.origin); } catch (e) { /* no opener: the channel below carries it */ }
   try { var bc = new BroadcastChannel('intmap-mcp-oauth'); bc.postMessage(msg); bc.close(); } catch (e) { /* no BroadcastChannel */ }
-  try { history.replaceState(null, '', location.pathname); } catch (e) { /* keep the address */ }
   setTimeout(function () { try { window.close(); } catch (e) { /* the browser keeps the window */ } document.getElementById('m').textContent = 'Sign-in finished. You can close this window.'; }, 300);
 })();
