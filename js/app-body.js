@@ -2771,11 +2771,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R101) switching to Satellite no longer force-opens the provider/date panel (satPanelDismissed stays true on
      desktop). The panel is rendered ready; it opens only when the user re-clicks the active Satellite button. */
   IntMapOS.register('view.base.sat', ()=>{ currentMapType='sat'; document.getElementById('btn-view-sat').classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(GE().hasRenderer()) GE().events.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); window.IntMapCartoCredit(); }, {label:'Satellite basemap', btn:'btn-view-sat', group:'view'});
-  document.getElementById('btn-view-map').onclick=()=>IntMapOS.exec('view.base.map',{source:'ui'});
+  document.getElementById('btn-view-map').onclick=()=>IntMapOS.press('view.basemap',{mode:'map'},'view.base.map');
   /* (#R101) already on Satellite → toggle the provider/date panel (desktop). Otherwise switch to Satellite. */
   document.getElementById('btn-view-sat').onclick=()=>{ const _mob=window.IntMapDevice.compact();
     if(!_mob && typeof currentMapType!=='undefined' && currentMapType==='sat'){ const p=document.getElementById('sat-controller'); if(p){ const showing=(p.style.display==='block'); satPanelDismissed=showing; p.style.display=showing?'none':'block'; if(!showing){ try{ satRenderController(); }catch(_){} } } return; }
-    IntMapOS.exec('view.base.sat',{source:'ui'}); };
+    IntMapOS.press('view.basemap',{mode:'satellite'},'view.base.sat'); };
   /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
      re-assert the basemap if it no longer matches the chosen mode. Guarded to a real mismatch → no loop. */
   if(GE().hasRenderer()) GE().events.on('styledata',()=>{ try{ if(!GE().ready()||!GE().layers.has('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(GE().layers.getLayout('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
