@@ -32,15 +32,20 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 /** Remove wiki markup, leaving the sentence a reader would read. */
 export function plainText(s) {
-  return String(s || '')
-    .replace(/<ref[^>]*>[\s\S]*?<\/ref>|<ref[^>]*\/>/g, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\[https?:\/\/[^\s\]]+(?:\s+[^\]]*)?\]/g, '')          /* external links: kept separately as sources */
-    .replace(/\{\{[^{}]*\}\}/g, '')
-    .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1')
-    .replace(/'{2,}/g, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/\s+/g, ' ').replace(/\s+([.,;:])/g, '$1').trim();
+  /* Repeat until nothing changes, then drop every angle bracket: one pass can leave a tag the first removal assembled
+     (CodeQL js/incomplete-multi-character-sanitization). The result is a sentence, never HTML. */
+  let t = String(s || ''), prev;
+  do {
+    prev = t;
+    t = t
+      .replace(/<ref[^>]*>[sS]*?</ref>|<ref[^>]*/>/g, '')
+      .replace(/<!--[sS]*?-->/g, '')
+      .replace(/[https?://[^s]]+(?:s+[^]]*)?]/g, '')          /* external links: kept separately as sources */
+      .replace(/{{[^{}]*}}/g, '')
+      .replace(/[[(?:[^]|]*|)?([^]]*)]]/g, '$1')
+      .replace(/<[^<>]*>/g, '');
+  } while (t !== prev);
+  return t.replace(/[<>]/g, '').replace(/'{2,}/g, '').replace(/s+/g, ' ').replace(/s+([.,;:])/g, '$1').trim();
 }
 
 /** The first article a heading line links to — the running story's canonical title. */
