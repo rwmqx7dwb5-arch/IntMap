@@ -9,7 +9,7 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14475671,
+    "raw": 14566311,
     "gzip": 4886000,
     "chunks": {
       "account-data": 7346,
@@ -78,14 +78,14 @@
       "geopolitics-atlas": 9665,
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
-      "gis-cog": 4676,
-      "gis-core": 637625,
+      "gis-cog": 7532,
+      "gis-core": 641774,
       "gis-export": 30142,
       "gis-geopackage": 26667,
       "gis-geotiff": 24029,
       "gis-http": 848,
       "gis-ogcapi": 5697,
-      "gis-remote": 12800,
+      "gis-remote": 29323,
       "gis-shapefile": 10420,
       "great-circle": 186,
       "hist-courses": 1725,

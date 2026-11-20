@@ -44,3 +44,8 @@ newsjp: Atlas が、発見したデータが「見つかった・読める・取
 - 検索のサーバ側押し下げ（STAC collection-search / free-text 拡張）は使っていない: 実在カタログで対応がまちまちで、結果は常にクライアント側の判定が正本。件数が数千のカタログが出たら別途。
 - OGC API – Records は未対応（Features と STAC のみ）。
 - 全 nodata の格子は、レジストリには**入りうる**（従来の挙動を変えていない）。台帳が `dataset: failed` と述べ、取得行の `acquisition.analysis` が `not-ready` になる。
+
+## 5. 予算を上げた理由と、上げずに直したもの（check:perf）
+
+- **直した（上げていない）**: `eager.requests` 10 → 11。原因は #1286 の `js/gis-fetch.js` が `gis-fetch-policy.js`（→ `relay-guard.js`）を import し、起動時に読まれる `proxy-fetch.js` も `relay-guard.js` を import していたため、bundler が `relay-guard` を共有チャンクに切り出したこと（ビルドレポートの eager チャンク一覧で確認）。ページが要るのは 2 つの数だけなので `_shared/gis-fetch-constants.js` に分け、ページはそちらだけを import する。再ビルドで eager.requests は 10 に戻った。
+- **上げた（新機能の対価）**: `gis-remote` 12.5 → 28.6 kB（`acquire` / `search` / `items` / `probeAsset`＋検索の純関数 `gis-catalog-search`）、`gis-cog` 4.6 → 7.4 kB（#1286 の日付変更線の分割・縫合）、`gis-core` 622.7 → 626.7 kB、`async.raw` 14136 → 14225 kB。新しい非同期チャンク `gis-pipeline`（11.2 kB）は `gis-atlas` から必要になったときだけ読まれ、起動の要求・バイトには入らない。

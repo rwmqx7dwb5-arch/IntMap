@@ -37,7 +37,7 @@
  * ==========================================================================*/
 
 import { explainFetchFailure } from './gis-http.js';
-import { GIS_FETCH_FUNCTION, RANGE_MAX_BYTES } from '../supabase/functions/_shared/gis-fetch-policy.js';
+import { GIS_FETCH_FUNCTION, RANGE_MAX_BYTES } from '../supabase/functions/_shared/gis-fetch-constants.js';
 
 export const CHUNK_BYTES = 1024 * 1024;          /* 16 of the COG reader's 64 KiB blocks per Edge Function call */
 const CHUNKS_RESIDENT_BYTES = 48 * 1024 * 1024;  /* the in-memory chunk LRU. 観測: a 512×512 window of a 10 m tile read ~6 MiB */

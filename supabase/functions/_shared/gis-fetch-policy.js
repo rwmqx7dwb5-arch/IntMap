@@ -44,13 +44,12 @@
 // ============================================================================
 
 import { publicHostname } from "./relay-guard.js";
+import { GIS_FETCH_FUNCTION, RANGE_MAX_BYTES } from "./gis-fetch-constants.js";
 
-export const GIS_FETCH_FUNCTION = "gis-fetch";
+/* the two numbers the page shares live in gis-fetch-constants.js (so the page does not pull relay-guard.js into the boot graph) */
+export { GIS_FETCH_FUNCTION, RANGE_MAX_BYTES };
 
 export const UNIT_BYTES = 64 * 1024;
-/* the most ONE ranged read may ask for. 4 MiB = four of the page's 1 MiB chunks (js/gis-fetch.js CHUNK_BYTES);
-   a COG tile row is ~100 KiB–1 MiB in every file measured, so one call is never the file. */
-export const RANGE_MAX_BYTES = 4 * 1024 * 1024;
 /* an answer fetched whole (a catalogue page, a small JSON, a tiny file). Measured: the largest STAC /collections
    page seen was < 3 MiB (js/gis-remote.js MAX_JSON_BYTES says the same); 8 MiB is a runaway, not a catalogue. */
 export const WHOLE_MAX_BYTES = 8 * 1024 * 1024;
