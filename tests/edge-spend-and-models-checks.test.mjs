@@ -300,9 +300,10 @@ function cronJobs() {
    than guessed, so a new shape of schedule fails here instead of being counted wrong. */
 function runsPerDay(expr) {
   const [mi, h, dom, mon, dow] = expr.trim().split(/\s+/);
-  assert.ok(dom === '*' && mon === '*' && dow === '*', 'a schedule this check cannot count: ' + expr);
+  /* a weekly job is a day-of-week list: its runs a day are (days listed)/7 */
+  assert.ok(dom === '*' && mon === '*' && (dow === '*' || /^[0-7](,[0-7])*$/.test(dow)), 'a schedule this check cannot count: ' + expr);
   const field = (v, n) => v === '*' ? n : /^\*\/(\d+)$/.test(v) ? Math.ceil(n / +v.slice(2)) : /^\d+(,\d+)*$/.test(v) ? v.split(',').length : NaN;
-  const r = field(mi, 60) * field(h, 24);
+  const r = field(mi, 60) * field(h, 24) * (dow === '*' ? 1 : dow.split(',').length / 7);
   assert.ok(Number.isFinite(r), 'a schedule this check cannot count: ' + expr);
   return r;
 }
@@ -335,7 +336,10 @@ test('edge-spend-and-models ④ the schedule count is not vacuous — a job run 
   assert.equal(runsPerDay('13 * * * *'), 24);
   assert.equal(runsPerDay('*/10 * * * *'), 144);
   assert.equal(runsPerDay('* * * * *'), 1440);
-  assert.throws(() => runsPerDay('0 9 * * 1'), /cannot count/);
+  assert.equal(runsPerDay('0 9 * * 1'), 1 / 7);   /* a weekly job: one run in seven days */
+  assert.equal(runsPerDay('0 9 * * 1,4'), 2 / 7);
+  assert.throws(() => runsPerDay('0 9 1 * *'), /cannot count/);   /* a day-of-month schedule is still refused, not guessed */
+  assert.throws(() => runsPerDay('0 9 * * 1-5'), /cannot count/);
 });
 
 /* ai-proxy, run: a signed-in reader with quota left meets an empty project bucket */

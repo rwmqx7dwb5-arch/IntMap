@@ -2647,12 +2647,12 @@ export function labelPopup(HOST){
         +'.plc-pin .pp-body::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:#fff;}'
         +'.plc-pin .pp-name{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:2px;max-width:240px;color:#fff;font-size:13px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 3px rgba(0,0,0,0.9),0 0 3px rgba(0,0,0,0.9),0 1px 4px rgba(0,0,0,0.6);}';
       (document.head||document.documentElement).appendChild(st); }
-    /* The city label and dot under the pin are hidden while it stands (Google Earth: the label turns into the pin).
+    /* The city label under the pin is hidden while it stands (Google Earth: the label turns into the pin).
        Tile labels have no feature id, so the clicked feature is excluded by its OWN name property, read from the
        features actually rendered at the point; the layer's previous filter is kept and put back on close. Only the two
        city layers: they are the ones whose filter nothing else rewrites (ofm-admin1's is written by time-admin1.js). */
     let _hidLbl=null;
-    const _CITY_LBL=['ofm-city','ofm-city-dot'];
+    const _CITY_LBL=['ofm-city'];
     function _restoreLabel(){ const h=_hidLbl; _hidLbl=null; if(!h) return; for(const id of Object.keys(h)){ try{ GE().layers.setFilter(id,h[id]); }catch(_){} } }
     function _hideLabelAt(lngLat){ _restoreLabel();
       try{ const p=GE().coords.project([lngLat.lng,lngLat.lat]); if(!p||!isFinite(p.x)||!isFinite(p.y)) return;
@@ -2996,7 +2996,7 @@ export function labelPopup(HOST){
        EVENT time, and the era layer is created lazily on the first travel. */
     /* (#R564) …and `imta2-lbl`, the deeper era tier, for the same reason `imta-lbl` is here: a name
        that answers a tap at one zoom must not stop answering it at the next. */
-    const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-city-dot','ofm-other'];
+    const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-other'];
     /* ══ (poi-label-click) THE POINT LABELS ARE LABELS TOO ═════════════════════════════════════════════════════════
        「地点・施設ラベルをクリックしても無反応なのは不親切では？」 (2026-10-05, «Places, businesses & facilities»): the
        station, hospital and shop names (`ofm-poi`, and its dot `ofm-poi-dot`) were in none of these lists — no click,
@@ -3020,7 +3020,7 @@ export function labelPopup(HOST){
       };
     }};
     function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
-      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-city-dot',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
+      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
       GEO_LBL.forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
       ALL_LBL.filter(id=>!placeReaders.has(id)).forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
@@ -3505,6 +3505,8 @@ export function geojsonUpload(HOST){
       let msg=(IntMapLang.t(HOST.lang,"Added: ","読み込みました: ","Hinzugefügt: ","Добавлено: ","Añadido: "))+name;
       if(r&&r.format) msg+=' · '+String(r.format).toUpperCase().replace('-',' ')+' · '+num;
       if(r&&r.stats&&r.stats.lat) msg+=' · '+IntMapLang.t(HOST.lang,"columns","列","Spalten","столбцы","columnas")+': '+r.stats.lat+' / '+r.stats.lon;
+      /* a tile archive was read at ONE zoom: say which, because a lower zoom is a generalised drawing, not the source's geometry */
+      if(r&&r.format==='pmtiles'&&r.stats&&r.stats.zoom!=null) msg+=' · z'+r.stats.zoom+' · '+IntMapLang.t(HOST.lang,"tiles","タイル")+' '+r.stats.tiles;
       if(r&&r.stats&&r.stats.dropped>0) msg+=' · '+r.stats.dropped+' '+IntMapLang.t(HOST.lang,"skipped","を除外","übersprungen","пропущено","omitidos");
       toast(msg);
       return {n,sid};
@@ -3602,6 +3604,18 @@ export function geojsonUpload(HOST){
          of their two files was re-exported. */
       if(why==='shapefile-count-mismatch') return IntMapLang.t(HOST.lang,"The shapes and the attribute rows are different in number, so the attributes would be attached to the wrong shapes","図形の数と属性の行数が違うため、属性が別の図形に付いてしまいます")+(detail&&detail.shapes!=null?' ('+detail.shapes+' / '+detail.records+')':'');
       if(why==='shapefile-corrupt') return IntMapLang.t(HOST.lang,"The Shapefile ends earlier than its own header says it should","Shapefile が、自身のヘッダが述べる長さより前で終わっています")+(detail&&detail.at!=null?' ('+detail.at+')':'');
+      /* PMTiles — each code is a measurement js/gis-pmtiles.js made; the number or name in `detail` is the sentence's evidence. */
+      if(why==='pmtiles-not-pmtiles') return IntMapLang.t(HOST.lang,"This is not a PMTiles archive","これは PMTiles のアーカイブではありません");
+      if(why==='pmtiles-version') return IntMapLang.t(HOST.lang,"Only PMTiles version 3 is read; this file states another version","PMTiles は version 3 のみ読めます。このファイルは別の version です")+(detail&&detail.version!=null?' ('+detail.version+')':'');
+      if(why==='pmtiles-truncated') return IntMapLang.t(HOST.lang,"The PMTiles file ends earlier than its own header says it should","PMTiles ファイルが、自身のヘッダが述べる長さより前で終わっています");
+      if(why==='pmtiles-corrupt') return IntMapLang.t(HOST.lang,"The PMTiles index contradicts itself, so the tiles cannot be located","PMTiles の索引が矛盾しており、タイルの場所を特定できません");
+      if(why==='pmtiles-mvt') return IntMapLang.t(HOST.lang,"A vector tile in this archive is broken, so it was not read","このアーカイブのベクタタイルが壊れているため、読み取りませんでした");
+      if(why==='pmtiles-compression') return IntMapLang.t(HOST.lang,"This archive is compressed with a codec the browser cannot unpack here (only gzip or none)","このアーカイブは、ここで展開できない方式（gzip・無圧縮以外）で圧縮されています")+(detail&&detail.codec?' ('+detail.codec+')':'');
+      if(why==='pmtiles-raster') return IntMapLang.t(HOST.lang,"This PMTiles archive holds map pictures (raster), not vector features","この PMTiles アーカイブは、地物ではなく地図の画像（ラスタ）を持っています");
+      if(why==='pmtiles-tile-type') return IntMapLang.t(HOST.lang,"This PMTiles archive states a tile type this reader does not know","この PMTiles アーカイブは、この読み取りが知らないタイル種別を述べています");
+      if(why==='pmtiles-zoom') return IntMapLang.t(HOST.lang,"That zoom level is outside what this archive holds","そのズームレベルは、このアーカイブの範囲外です");
+      if(why==='pmtiles-bbox') return IntMapLang.t(HOST.lang,"The area to read is not a valid box","読み取る範囲が正しい矩形ではありません");
+      if(why==='pmtiles-too-many-tiles') return IntMapLang.t(HOST.lang,"That area needs more tiles than one read allows — choose a smaller area or a lower zoom","その範囲は 1 回で読めるタイル数を超えます。範囲を狭めるかズームを下げてください")+(detail&&detail.tiles!=null?' ('+detail.tiles+' / '+detail.maxTiles+')':'');
       if(why==='gpkg-not-sqlite') return IntMapLang.t(HOST.lang,"This is not a SQLite file, so it is not a GeoPackage","これは SQLite ファイルではないため、GeoPackage ではありません");
       if(why==='gpkg-not-a-geopackage') return IntMapLang.t(HOST.lang,"This is a SQLite database, but it holds no GeoPackage contents table","これは SQLite のデータベースですが、GeoPackage の目録表がありません");
       if(why==='gpkg-truncated'||why==='gpkg-corrupt') return IntMapLang.t(HOST.lang,"The GeoPackage ends or breaks part-way through, so the rest cannot be read","GeoPackage が途中で途切れているため、続きを読めません")+(detail&&detail.at!=null?' ('+detail.at+')':'');
