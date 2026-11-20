@@ -30,7 +30,7 @@ function crc32(b) {
 }
 
 /** files: [{name, bytes}] → Uint8Array of a ZIP (all entries stored). Names are UTF-8 (general-purpose flag bit 11). */
-export function zipStore(files) {
+function zipStore(files) {
   const parts = [], central = [];
   let offset = 0;
   const u16 = (v) => [v & 255, (v >>> 8) & 255], u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];

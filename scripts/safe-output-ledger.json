@@ -5,6 +5,7 @@
       "escaper": 1,
       "why": "This IS window.IntMapSafe.html — the canonical encoder every other file is routed to, one file loaded by the app (src/main.js), sources.html, admin.html and the Node checks alike (docs/SECURITY-ARCHITECTURE.md §4)."
     },
+    "js/office-writer.js": { "escaper": 1, "why": "esc() writes SpreadsheetML (XML grammar) into an .xlsx file for download — a file, never the DOM, and it runs under node where no window exists, so IntMapSafe cannot be assumed." },
     "js/gis-export.js": {
       "escaper": 1,
       "why": "xmlEsc writes GDAL PAM XML metadata into an exported GeoTIFF file — XML grammar, a file on disk, never the DOM, and it runs where no window exists."
