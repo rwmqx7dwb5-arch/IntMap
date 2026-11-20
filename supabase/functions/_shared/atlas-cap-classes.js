@@ -18,6 +18,7 @@ export const READ_CAPS = Object.freeze(new Set([
   "data.openData",
   "data.populationIn",
   "data.radiationNear",
+  "data.table",
   "data.value",
   "dialog.answer",
   "geo.similar",
