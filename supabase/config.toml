@@ -292,3 +292,10 @@ verify_jwt = false
 # up — failing closed for the class doors. It stores nothing.
 [functions.community-class]
 verify_jwt = false
+
+# world-graph-ingest keeps the persistent world graph port slice current from Wikidata, UN/LOCODE and Eurostat.
+# Deployed --no-verify-jwt: pg_cron calls it weekly with the x-world-graph-secret header and the function does its
+# own fail-closed auth, exactly like news-ingest.
+[functions.world-graph-ingest]
+verify_jwt = false
+
