@@ -33,3 +33,9 @@ Wikidata Query Service で P1082 を持つ単位: P300（ISO 3166-2）30,703 記
 
 `window.GeoJSONUpload`（5→6）と `window.IntMapAtlasAdmin1`（1→2）を `js/atlas-cap-geo.js` の geo.regionStat が読む。前者は地図へレイヤーを載せる唯一の入口（js/map-ui.js の中にあり、他の Atlas 能力も同じ経路）、
 後者は同梱境界の索引（1 セッション 1 つ。import で別インスタンスを作ると同じ 7.5 MB から索引を二度組むので、既存の 1 つを読む）。どちらも所有者が export を持つまで台帳で受ける。
+
+## ガバナンス台帳（check:datagov の ledger-shrinks）
+
+`data/admin-stats` と `scripts/build-admin-stats.mjs → data/admin-stats.json.gz` は台帳で undeclared 207→209 に増える。出自（publisher・url・builtBy）と cadence はビルドの GOVERNANCE に値として述べてある。
+残る facet（権利の licence/licenceUrl/attribution・retrievedAt・schema/rows/missing）は、同じ形の既存 bundle（`data/hdi-series.json` など）と同様に生成物の中に述べておらず、台帳の更新で受ける。
+権利は既存の Wikidata（CC0 1.0）の DATA_SOURCES 行に帰属し、新しい出典は足していない。消せる条件: 生成物の冒頭に retrievedAt・licence を述べる形にビルドを直すこと（hdi-series と同時に直す）。

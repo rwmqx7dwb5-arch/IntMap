@@ -31,7 +31,7 @@
 export const KIND_EN = { 'iso3166-2': 'First-level units (ISO 3166-2)', 'nuts': 'EU/EFTA statistical regions (NUTS)', 'us-fips': 'US states and counties (FIPS)', 'jp-jis': 'Japanese prefectures and municipalities (JIS)' };
 export const KIND_JA = { 'iso3166-2': '第1級行政区分（ISO 3166-2）', 'nuts': '欧州統計地域（NUTS）', 'us-fips': '米国の州・郡（FIPS）', 'jp-jis': '日本の都道府県・市区町村（地方公共団体コード）' };
 export const KIND_LABEL = KIND_EN;
-export const DATA_URL = 'data/admin-stats.json.gz';
+const DATA_URL = 'data/admin-stats.json.gz';
 
 const yearOf = (t) => { if (!t) return null; const m = /^(-?\d{1,6})-/.exec(t); return m ? Number(m[1]) : null; };
 
