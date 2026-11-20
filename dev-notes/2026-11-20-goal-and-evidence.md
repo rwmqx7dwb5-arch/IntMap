@@ -18,7 +18,7 @@ newsjp: Atlas の完了判定が、成果物の中身（値が入っている行
 - **完了判定へ** — `makeGoalVerify({observe})`。`observe(ctx)` の行を「WHAT THE OUTPUTS ACTUALLY HOLD」としてプロンプトに足し、規則文に「ok を返した操作は満たした部分ではない」を足した。`makeTurnObserver(since)`（`atlas-console.js` が 1 行で配る）が、そのターンに作られたデータセットと回答の数値を読む。observe が投げたら記録だけで走る（観測できない＝未達ではない）。Atlas のループは変えていない（既存の `goal_unmet` の 1 回の注記のまま）。
 - **独立性の事実の源** — `recordAnswer` が節の `meta.statedBy`（引いた節のうち、その値を自分で述べているもの）と `meta.turnId` を持つ。同一ホストの 2 URL を引いた数値は `citations 2 / independent 1`。
 - **更新の影響の特定** — `putSource` が版の変化を検知した瞬間に `impactReport`（触れた派生・段数・GIS の dataset id・回答の数値とその値・stale の理由）を作り、`onSourceChanged` に配り `updates()` に残す。
-- **永続化** — `supabase/migrations/20261120120000_evidence_graph_nodes.sql`（`(user_id,id)`・本人だけ RLS・50 MiB の名前付き上限・アカウントデータ台帳の 1 文・`on delete cascade`）、pgTAP `52_evidence_graph_test.sql`、構造テスト 2 表。`js/evidence-graph-sync.js` は pull（merge）→ push（`pending()`、**サーバが受けた分だけ** `ackPending`）。同意はノート同期と同じで、`atlas-notebook.js` が自分の同期の後に呼び、アカウントのコピーを消すときに一緒に消す。
+- **永続化** — `supabase/migrations/20261120130000_evidence_graph_nodes.sql`（`(user_id,id)`・本人だけ RLS・50 MiB の名前付き上限・アカウントデータ台帳の 1 文・`on delete cascade`）、pgTAP `52_evidence_graph_test.sql`、構造テスト 2 表。`js/evidence-graph-sync.js` は pull（merge）→ push（`pending()`、**サーバが受けた分だけ** `ackPending`）。同意はノート同期と同じで、`atlas-notebook.js` が自分の同期の後に呼び、アカウントのコピーを消すときに一緒に消す。
 - **統合** — `recordNews`（版は公開日。取得時刻は版にしない）、`recordNote`（ノートは `evidenceRefs`＝そのターンの回答の数値の節＋出典のニュースの上に立つ派生。ノート正規化が `evidenceRefs` を運ぶ）、`datasetFacts`＋`research.analyze` の `datasets` 引数（データセット自身が測った行数・数値列の最小/最大/埋まっている行数を `graphRef` 付きで回答へ）。
 - `graph.merge`（版の和集合・派生は到着順に依らない）、`pending/ackPending`。`atlas-evidence` の `graphRef` の切り詰めを 120→400 に（長い URL 鍵の節 id が黙って壊れていた）。
 
