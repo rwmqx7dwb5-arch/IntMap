@@ -625,11 +625,11 @@
     },
     {
       "host": "cmr.earthdata.nasa.gov",
-      "what": "NASA CMR-STAC (LP DAAC cloud) — dataset search, only when Atlas is asked to find or acquire data",
-      "whatJp": "NASA CMR-STAC（LP DAAC クラウド）— Atlas にデータの検索・取得を頼んだときだけ",
+      "what": "NASA CMR-STAC (LP DAAC cloud) — dataset search when Atlas is asked to find or acquire data, and the scene time and cloud cover under the map centre while an HLS satellite layer is shown",
+      "whatJp": "NASA CMR-STAC（LP DAAC クラウド）— Atlas にデータの検索・取得を頼んだとき、および HLS 衛星画像の表示中に地図中心の撮影時刻と雲量を調べるとき",
       "sends": {
         "code": "area",
-        "detail": "only when the reader asks Atlas to search for datasets: the bounding box and date range of the place and period named (never a name, an account or a position of the reader)"
+        "detail": "the bounding box and date range of the place and period named when the reader asks Atlas to search for datasets, or the map-centre point and the chosen day while an HLS satellite layer is shown (never a name or an account)"
       },
       "disclosure": {
         "en": "NASA CMR-STAC",

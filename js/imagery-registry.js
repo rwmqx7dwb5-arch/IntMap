@@ -15,6 +15,8 @@
  *                                'service-query' — the supplier answers per place (Esri's Citations layer)
  *                                'layer-date'    — the picture IS the date chosen (GIBS: one swath/composite per day)
  *                                'declared'      — the supplier publishes a range, not a per-place date (GSI, USGS, PDOK)
+ *                               `scenes:'<CMR-STAC collection>'` — the scene catalogue is asked for the real acquisition time and cloud
+ *                               cover AT THE POINT (NASA CMR-STAC; HLS only — the one catalogue read here that answers both per place)
  *    license    {name,url,commercial,checked,attribution}   commercial: 'allowed' | 'unconfirmed' | 'restricted'
  *
  *  ⚠ NO SOURCE IS HERE ON A GUESS. Every row names what was READ and WHEN (`license.checked`) and every URL was
@@ -27,7 +29,7 @@
  *  fails if a restricted source is added to SOURCES.
  *  EXPIRY: a row is re-read when its `checked` date is a year old (the test says so), or when its tiles stop answering.
  * ==========================================================================*/
-import { imageryTiles, imagerySources, imageryCaptureAt } from './esri-imagery.js';
+import { imageryTiles, imagerySources, imageryCaptureAt, readImageryMeta } from './esri-imagery.js';
 import { IntMapLang } from './lang-registry.js';
 
 /* every translation tuple is a CALL (IntMapLang.pickArgs) — the same answer the other tables use; it is the same array, indexable [en, jp, …] */
@@ -81,12 +83,12 @@ export const SOURCES = [
     attribution: 'NASA EOSDIS GIBS — VIIRS NOAA-20 true color', license: GIBS_LICENSE },
   { id: 'gibs-hls-s30', short: 'HLS Sentinel-2', scope: 'global', name: LA('NASA GIBS · HLS Sentinel-2 (30 m, daily swaths)', 'NASA GIBS · HLS Sentinel-2（30 m・日ごとの観測帯）'),
     coverage: WORLD, zoom: [0, 12], resolutionM: 30, time: { mode: 'day', from: '2015-11-28' }, partial: true,
-    capture: { kind: 'layer-date' }, tiles: gibs('HLS_S30_Nadir_BRDF_Adjusted_Reflectance', 12, 'png'),
+    capture: { kind: 'layer-date', scenes: 'HLSS30_2.0' }, tiles: gibs('HLS_S30_Nadir_BRDF_Adjusted_Reflectance', 12, 'png'),
     attribution: 'NASA EOSDIS GIBS — Harmonized Landsat Sentinel-2 (S30)', license: GIBS_LICENSE,
     note: LA('One day covers only that day\'s satellite swath (a 2–5-day revisit); the rest is transparent over the Esri picture. Measured 2026-11-20: tiles are 155–935 bytes (empty) on most days.', 'ある日の画像はその日に衛星が通った帯だけ（再訪 2〜5 日）。それ以外は透明で下の Esri 画像が見えます。') },
   { id: 'gibs-hls-l30', short: 'HLS Landsat', scope: 'global', name: LA('NASA GIBS · HLS Landsat (30 m, daily swaths)', 'NASA GIBS · HLS Landsat（30 m・日ごとの観測帯）'),
     coverage: WORLD, zoom: [0, 12], resolutionM: 30, time: { mode: 'day', from: '2013-03-22' }, partial: true,
-    capture: { kind: 'layer-date' }, tiles: gibs('HLS_L30_Nadir_BRDF_Adjusted_Reflectance', 12, 'png'),
+    capture: { kind: 'layer-date', scenes: 'HLSL30_2.0' }, tiles: gibs('HLS_L30_Nadir_BRDF_Adjusted_Reflectance', 12, 'png'),
     attribution: 'NASA EOSDIS GIBS — Harmonized Landsat Sentinel-2 (L30)', license: GIBS_LICENSE },
   /* Landsat WELD annual composites — the only 30 m global pictures before 2013 that GIBS serves. The years are the ones the
      layer's GetCapabilities lists (1983-12-01…1985-12-01, 1988-12-01…1990-12-01, 1998-12-01…2000-12-01), each probed 2026-11-20. */
@@ -183,6 +185,34 @@ export function pickForTime(s, iso, today) {
   return null;
 }
 
+/* ── is the picture's DATE the asked date? ───────────────────────────────────────────────────────────────
+   A source «has a picture for» a Chronos time in five different senses and only the first is that day's picture:
+     'day'          the picture IS that day (GIBS: one swath/composite per day)
+     'year'         a flight of that year; the day inside it is not published
+     'range'        taken sometime in the source's declared range (GSI dated series) — the date of THIS frame is unknown
+     'nearest-year' a different year than asked
+     'current'      the newest picture the supplier has; its date is whatever it is under the point (Esri, GSI latest, USGS, swisstopo)
+   Only 'day' may be shown as «the picture of that day»; the others are offered with what they are (clockMatchNote). */
+/* a dated picture (that day, or a flight of that year) outranks every undated one; between the two the sharper wins */
+const BASIS_RANK = { day: 0, year: 0, 'nearest-year': 1, range: 2, current: 3 };
+export function basisOf(s, pick) {
+  if (!pick) return null;
+  const m = s.time.mode;
+  if (m === 'day') return 'day';
+  if (m === 'year') return pick.exact ? 'year' : 'nearest-year';
+  if (m === 'epoch') return 'range';
+  return 'current';
+}
+/** The sentence that says what a matched picture is NOT, or '' when it is that day's picture. */
+export function clockMatchNote(s, pick, lang) {
+  const T = IntMapLang.pick(() => lang), b = basisOf(s, pick);
+  if (b === 'year') return T('A flight of ' + pick.year + '; the day within the year is not published.', pick.year + ' 年の撮影。年の中の日付は公開されていません。');
+  if (b === 'range') { const r = s.capture.range; return T('Not dated to that day: taken sometime in ' + (r ? r[0] : 'its range') + '.', 'その日の画像ではありません。' + (r ? r[1] : '') + 'のどこかで撮影されたものです。'); }
+  if (b === 'nearest-year') return T('Not that year: the nearest the supplier has is ' + pick.year + '.', 'その年の画像ではありません。最も近いのは ' + pick.year + ' 年です。');
+  if (b === 'current') return T('Not dated to that day: this is the supplier\'s newest picture, whose date differs from place to place.', 'その日の画像ではありません。供給元の最新画像で、撮影日は場所ごとに違います。');
+  return '';
+}
+
 /** Every source that has a picture at (lng,lat) — best first for the asked time. `time` is an ISO date or null (now). */
 export function rankAt({ lng, lat, zoom, time, today }) {
   today = today || TODAY();
@@ -193,10 +223,29 @@ export function rankAt({ lng, lat, zoom, time, today }) {
     const pick = pickForTime(s, iso, today); if (!pick) continue;
     const y = pick.year || +iso.slice(0, 4), res = resAt(s, y);
     const zoomFit = zoom == null ? true : (zoom >= s.zoom[0] - 0.5 && zoom <= s.zoom[1] + 3);
-    rows.push({ id: s.id, source: s, pick, resolutionM: res, zoomFit, scope: s.scope, live });
+    rows.push({ id: s.id, source: s, pick, basis: basisOf(s, pick), resolutionM: res, zoomFit, scope: s.scope, live });
   }
-  rows.sort((a, b) => (b.pick.exact - a.pick.exact) || (b.zoomFit - a.zoomFit) || (a.resolutionM - b.resolutionM) || (a.scope === 'regional' ? -1 : 1) - (b.scope === 'regional' ? -1 : 1));
+  /* for a time that is not today, a picture of THAT date outranks a sharper one of an unknown date; for now the sharpest wins as before */
+  const br = (x) => (time && time !== today ? BASIS_RANK[x.basis] : 0);
+  rows.sort((a, b) => (br(a) - br(b)) || (b.pick.exact - a.pick.exact) || (!!a.source.partial - !!b.source.partial) || (b.zoomFit - a.zoomFit) || (a.resolutionM - b.resolutionM) || (a.scope === 'regional' ? -1 : 1) - (b.scope === 'regional' ? -1 : 1));
   return rows;
+}
+
+/* NASA CMR-STAC: the scenes of one HLS collection at a point on one UTC day — [{time, cloudCover}] ([] = none that day), or null when it could not be read.
+   Measured 2026-11-20: GET .../stac/LPCLOUD/search?collections=HLSS30_2.0&bbox=…&datetime=… answers datetime and eo:cloud_cover per scene, CORS open. */
+const sceneCache = new Map();
+function scenesAt(collection, lng, lat, day) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day)) || !isFinite(lng) || !isFinite(lat)) return Promise.resolve(null);
+  const key = collection + '|' + day + '|' + lng.toFixed(2) + ',' + lat.toFixed(2);
+  if (sceneCache.has(key)) return sceneCache.get(key);
+  const next = new Date(Date.parse(day + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10);
+  const url = 'https://cmr.earthdata.nasa.gov/stac/LPCLOUD/search?collections=' + collection + '&bbox=' + [lng - 0.0005, lat - 0.0005, lng + 0.0005, lat + 0.0005].map((v) => v.toFixed(4)).join(',')
+    + '&datetime=' + day + 'T00:00:00Z/' + next + 'T00:00:00Z&limit=10';
+  const p = readImageryMeta(url).then((j) => (j && Array.isArray(j.features)
+    ? j.features.map((f) => ({ time: f.properties && f.properties.datetime, cloudCover: f.properties && typeof f.properties['eo:cloud_cover'] === 'number' ? f.properties['eo:cloud_cover'] : null }))
+    : null)).then((v) => { if (v == null) sceneCache.delete(key); return v; });
+  sceneCache.set(key, p);
+  return p;
 }
 
 /* ── what the picture under a point is: date, sharpness, product, and whether that is MEASURED or only DECLARED ──────── */
@@ -208,6 +257,13 @@ export async function captureAt(s, { lng, lat, day, year }) {
     return { kind: 'unknown', resolutionM: resAt(s, null) };
   }
   if (k === 'layer-date') {
+    if (s.capture.scenes && day) {
+      const sc = await scenesAt(s.capture.scenes, lng, lat, day);
+      const res = resAt(s, +String(day).slice(0, 4));
+      if (sc) return sc.length
+        ? { kind: 'scene', date: day, time: sc[0].time, cloudCover: sc.map((x) => x.cloudCover).filter((c) => c != null).reduce((m, c) => (m == null || c < m ? c : m), null), scenes: sc.length, resolutionM: res }
+        : { kind: 'none', date: day, resolutionM: res };   /* the catalogue answered and has no scene here that day: the layer is transparent at this point */
+    }
     const y = year || (day ? +String(day).slice(0, 4) : null);
     return { kind: 'chosen', date: s.time.mode === 'year' ? String(year) : day, resolutionM: resAt(s, y), composite: !!s.time.composite, text: s.capture.text || null };
   }
@@ -219,10 +275,13 @@ export function captureLine(s, c, lang) {
   const T = IntMapLang.pick(() => lang), fmtRes = (m) => m == null ? '' : (m < 1 ? Math.round(m * 100) + ' cm' : (m >= 1000 ? (m / 1000) + ' km' : (Math.round(m * 10) / 10) + ' m'));
   const parts = [];
   if (c.kind === 'measured') { parts.push(T('Captured ', '撮影 ') + String(c.date).replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')); if (c.product) parts.push(c.product); }
+  else if (c.kind === 'scene') parts.push(T('Scene ', '撮影 ') + String(c.time).replace('T', ' ').slice(0, 16) + ' UTC' + (c.scenes > 1 ? T(' (+' + (c.scenes - 1) + ' more that day)', '（同日ほか ' + (c.scenes - 1) + ' 件）') : ''));
+  else if (c.kind === 'none') parts.push(T('No picture here on ' + c.date + ' (the satellite did not pass over this point; the layer is transparent)', c.date + ' はこの地点の画像がありません（衛星がこの地点を通っておらず、レイヤーは透明です）'));
   else if (c.kind === 'chosen') parts.push((s.time.mode === 'year' ? T('Year ', '撮影年 ') : T('Date ', '撮影日 ')) + c.date + (c.composite ? T(' (annual composite)', '（年次合成）') : ''));
   else if (c.kind === 'declared') parts.push(T('Taken ', '撮影時期 ') + ((c.range && IntMapLang.t(lang, c.range[0], c.range[1])) || T('unknown', '不明')));
   else parts.push(T('Capture date unknown', '撮影日 不明'));
-  if (c.resolutionM != null) parts.push(T('about ', '解像度 約 ') + fmtRes(c.resolutionM) + T(' per pixel', ''));
+  if (c.cloudCover != null) parts.push(T('cloud ', '雲量 ') + Math.round(c.cloudCover) + ' %');
+  if (c.resolutionM != null && c.kind !== 'none') parts.push(T('about ', '解像度 約 ') + fmtRes(c.resolutionM) + T(' per pixel', ''));
   return parts.join(' · ');
 }
 

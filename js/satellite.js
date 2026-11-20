@@ -10,7 +10,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
-import { captureAt, captureLine, rankAt, planClockMatch, sourceById, SOURCES } from './imagery-registry.js';   /* (sat-imagery-supply) what picture is where, when, how sharp, on what terms */
+import { captureAt, captureLine, rankAt, planClockMatch, sourceById, clockMatchNote, SOURCES } from './imagery-registry.js';   /* (sat-imagery-supply) what picture is where, when, how sharp, on what terms */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function satellite(HOST){
@@ -147,7 +147,7 @@ export function satellite(HOST){
     const det=satEl('details','satc-here'), sum=satEl('summary',null,IntMapLang.t(HOST.lang,'Pictures available here','この場所で使える画像')+' ('+rows.length+')'), ul=satEl('ul'); ul.id='satc-here-list';
     rows.forEach(r=>{
       const li=satEl('li'), b=satEl('button',null,LS().arr(satProviderById(r.id).name)||r.source.short); b.type='button'; b.setAttribute('data-id',r.id); if(r.id===p.id) b.setAttribute('aria-current','true');
-      b.append(satEl('small',null,(r.source.scope==='regional'?IntMapLang.t(HOST.lang,'regional · ','地域別 · '):'')+(r.resolutionM<1?Math.round(r.resolutionM*100)+' cm':r.resolutionM+' m')+(r.pick.exact?'':IntMapLang.t(HOST.lang,' · nearest year ',' · 最も近い年 ')+(r.pick.year||''))));
+      b.append(satEl('small',null,(r.source.scope==='regional'?IntMapLang.t(HOST.lang,'regional · ','地域別 · '):'')+(r.resolutionM<1?Math.round(r.resolutionM*100)+' cm':r.resolutionM+' m')+(r.pick.exact?'':IntMapLang.t(HOST.lang,' · nearest year ',' · 最も近い年 ')+(r.pick.year||''))+(r.basis==='range'?IntMapLang.t(HOST.lang,' · date unknown (range)',' · 撮影日は範囲のみ'):'')));
       li.append(b); ul.append(li);
     });
     det.append(sum,ul); frag.append(det);
@@ -188,7 +188,8 @@ export function satellite(HOST){
     if(plan.pick.year) HOST.satState.year=plan.pick.year;
     if(plan.switched){ HOST.satState.providerId=plan.providerId; HOST.satErrCount=0; HOST.satAutoBackoff=0; }
     satRenderController(); satApply(true); satRefreshReadout();
-    if(!plan.pick.exact) satToast(IntMapLang.t(HOST.lang,'Nearest year available: ','最も近い年: ')+(plan.pick.year||''));
+    const ps=sourceById(plan.providerId), why=ps&&(IntMapTime&&IntMapTime.isLive&&!IntMapTime.isLive())?clockMatchNote(ps,plan.pick,satLang()):'';   /* a picture of an unknown date is never presented as that day's */
+    if(why) satToast(why);
   }
   /* Sat-Controller panel (provider + capture-date + opacity). Rebuilt on change / language. */
   function satRenderController(){
