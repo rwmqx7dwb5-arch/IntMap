@@ -49,3 +49,5 @@ newsjp: Atlas が「この港が止まったら影響を受ける都市と工場
 ## 予算の天井を上げた理由(2026-11-21・main 取り込み後に再測定)
 - `check:perf`: 非同期 gzip 4771.5 → 4804.3 kB、`atlas-cap-runs` 896.4 → 903.1 kB、`atlas-console` 1061.2 → 1069.1 kB、`dist.assets` 21559.0 → 21670.9 kB。増えたのは網の分析（`research.portImpact` と `js/logistics-impact.js`、能力表の行）で、Atlas の新しい能力 1 つ分。main の最新を取り込んだ木で完全な build を作って測り直した（CI が測る木と同じ）。
 - 引き継ぐもの: 起動時の同期 JS は増えていない（増えたのは遅延チャンクだけ）。
+
+- `scripts/gis-kernel-versions.mjs`: `js/gis-ops.js` の版ハッシュを main の最新と合わせて記録し直した（ops-14 のまま。既存の答えは変わらない）。
