@@ -393,10 +393,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
       ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
-      ["knowledge.remember","knowledgeRemember","rememberKnowledge,keepKnowledge,saveFact","research","none","knowledge","explanation","persist","none","",""],
-      ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
-      ["knowledge.forget","knowledgeForget","forgetKnowledge,deleteKnowledge","research","none","knowledge","explanation","persist","explicit","",""],
-      ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
+      ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
