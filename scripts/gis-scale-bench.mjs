@@ -2,6 +2,7 @@
 /* GIS scale bench — how long and how much memory the SHIPPED ops take as the feature count grows.
    Measures; asserts nothing (a number is an observation, dev-notes records it with the date).
    usage: node --expose-gc scripts/gis-scale-bench.mjs [--sizes 10000,100000,1000000] [--ops filter,buffer,spatialJoin] [--worker]
+   --spill writes a chunked result's positions to a temp directory (node has no OPFS; the backend stands in for it) once more than 256 MiB of them are held, and prints how many chunks left and what the process held
    --worker mounts the product's buffer worker (src/gis-buffer-worker.js on node:worker_threads) and prints the longest stretch the main thread was held (lagMs) */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,13 @@ const sizes = arg('sizes', '10000,100000').split(',').map(Number);
 const only = arg('ops', 'filter,buffer,spatialJoin,aggregate').split(',');
 /* bufferJoin = buffer, then spatialJoin over the buffer's own output (the chain the chunked path exists for) */
 
+/* --spill: a file-per-chunk backend, the node stand-in for OPFS (js/gis-packed.js states the same put/get/del door) */
+let spillDir = null;
+if (process.argv.includes('--spill')) {
+  const fs = await import('node:fs/promises'); const os = await import('node:os');
+  spillDir = await fs.mkdtemp(join(os.tmpdir(), 'intmap-spill-'));
+  globalThis.IntMapGisScale = { backend: { name: 'node-fs', put: (k, b) => fs.writeFile(join(spillDir, k), new Uint8Array(b)), get: async (k) => { const u = await fs.readFile(join(spillDir, k)); return u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength); }, del: (k) => fs.rm(join(spillDir, k), { force: true }) } };
+}
 const w = {}; globalThis.window = w;
 new Function('window', readFileSync(join(ROOT, 'js/geodesy.js'), 'utf8'))(w);
 const { makeGisDatasets } = await import('../js/gis-datasets.js');
@@ -52,8 +60,8 @@ for (const n of sizes) {
     peakRss = 0; peakHeap = 0;
     try {
       if (name === 'bufferJoin') {
-        const b = await ops.run(plan.buffer(p.id)); r = b;
-        if (b.ok) { r = await ops.run({ op: 'spatialJoin', inputs: [b.dataset.id, z.id], params: { predicate: 'within', cardinality: 'first' } }); extra = { bufferChunks: b.dataset.chunkedCount || 0, bufferPositions: b.dataset.positions || 0 }; data.remove(b.dataset.id); }
+        const tb = performance.now(); const b = await ops.run(plan.buffer(p.id)); r = b; extra.bufferMs = Math.round(performance.now() - tb); if (b.ok && b.dataset.spilled) extra.bufferSpilled = b.dataset.spilled();
+        if (b.ok) { r = await ops.run({ op: 'spatialJoin', inputs: [b.dataset.id, z.id], params: { predicate: 'within', cardinality: 'first' } }); Object.assign(extra, { bufferChunks: b.dataset.chunkedCount || 0, bufferPositions: b.dataset.positions || 0 }); if (r.ok && r.dataset.spilled) extra.joinSpilled = r.dataset.spilled(); data.remove(b.dataset.id); }
       } else r = await ops.run(plan[name](p.id, z.id));
     } catch (e) { err = String(e && e.message || e); }
     const ms = Math.round(performance.now() - t0);
