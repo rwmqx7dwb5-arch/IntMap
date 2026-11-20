@@ -504,6 +504,19 @@ export function makeGisOps() {
        See the note above spanReader for the measurement that makes this a question and not a
        detail: 廃藩置県 is stated as 1871-08-29 by the unit that ended and by the unit that began. */
     const TIME_ENDS = ['exclusive', 'inclusive'];
+    const TIME_RELATIONS = ['overlaps', 'within', 'contains'];
+    /* (spatiotemporal-join) the one time condition every pairing op can carry, and the two columns a
+       row-wise result's period is written to. The rule that reads them is makeTimeKit. */
+    const PERIOD_COLS = { from: '_validFrom', to: '_validTo' };
+    const TIME_CONDITION_PARAMS = [
+      /* The relation between the two rows' periods. Omitted = no time condition. */
+      { name: 'when', type: 'enum', required: false, values: TIME_RELATIONS },
+      { name: 'at', type: 'text', required: false },
+      { name: 'from', type: 'text', required: false },
+      { name: 'to', type: 'text', required: false },
+      { name: 'ends', type: 'enum', required: false, default: 'exclusive', values: TIME_ENDS },
+    ];
+
 
     /* (#R783) The statistics `aggregate` offers. ⚠ ONE LIST: the `stat` enum and the answer to
        「どの stat が列を要るか」 are both derived from it, so a sixth statistic cannot be offered and
@@ -1046,7 +1059,8 @@ export function makeGisOps() {
              rows is a real answer for a one-to-many join — but choosing either silently makes the row
              count depend on data the reader did not look at. The default refuses and names the key. */
           { name: 'duplicates', type: 'enum', required: false, default: 'refuse', values: ['refuse', 'first'] },
-        ],
+          /* (spatiotemporal-join) 時間も含めた照合。See makeTimeKit. */
+        ].concat(TIME_CONDITION_PARAMS),
       },
       /* ── the joins (#R783) ────────────────────────────────────────────────────────────────────
          ⚠⚠⚠ 「結合」 WAS ONE OP AND IT IS FOUR QUESTIONS. `join` above matches on a key the reader
@@ -1077,7 +1091,7 @@ export function makeGisOps() {
           { name: 'fields', type: 'fields', required: false, input: 1 },
           { name: 'prefix', type: 'text', required: false },
           { name: 'unmatched', type: 'enum', required: false, default: 'keep', values: ['keep', 'drop'] },
-        ],
+        ].concat(TIME_CONDITION_PARAMS),
       },
       nearestJoin: {
         /* 最近傍結合: every row of input 0 gets the NEAREST row of input 1, the distance to it, and
@@ -1099,7 +1113,7 @@ export function makeGisOps() {
           { name: 'fields', type: 'fields', required: false, input: 1 },
           { name: 'prefix', type: 'text', required: false },
           { name: 'unmatched', type: 'enum', required: false, default: 'keep', values: ['keep', 'drop'] },
-        ],
+        ].concat(TIME_CONDITION_PARAMS),
       },
       voronoi: {
         /* 最寄り圏と、いちばん遠い場所 (docs/GIS-CORE.md §2.9): the ground of the window divided by which
@@ -1252,7 +1266,7 @@ export function makeGisOps() {
           /* (gis-foundation-refine) 第何百分位か（0〜100）。`percentile` の読み方であって他の stat の
              ものではないので、別の stat に付けたら weightBy と同じく無視せず拒む。 */
           { name: 'p', type: 'number', required: false, unit: '%', requiredWhen: { stat: ['percentile'] } },
-        ],
+        ].concat(TIME_CONDITION_PARAMS),
       },
       /* ══ (#R819) 集合についての問い ═══════════════════════════════════════════════════════════
          `validate` は「この幾何は幾何か」を、`repair` はその直しを答える。どちらも 1 つの地物に
@@ -1776,7 +1790,7 @@ export function makeGisOps() {
       return s === '' ? null : s;
     }
 
-    async function runJoin(left, right, params, ctx) {
+    async function runJoin(left, right, params, R, ctx) {
       const lf = params.leftField, rf = params.rightField;
       if (lf == null || String(lf) === '') return fail('missing-param', { param: 'leftField' });
       if (rf == null || String(rf) === '') return fail('missing-param', { param: 'rightField' });
@@ -1797,14 +1811,25 @@ export function makeGisOps() {
       if (collide.length) return fail('join-column-collision', { columns: collide.slice(0, 8), prefix: prefix || null });
 
       const dup = params.duplicates === 'first' ? 'first' : 'refuse';
+      /* (spatiotemporal-join) 時間も含めて照合する。A key may then repeat on the right — one row per
+         period of the SAME unit is what a dated series is — and uniqueness is asked of the rows that
+         survive the time condition for ONE left row, not of the whole table. Without a time
+         condition the rule is what it always was. */
+      const kit = makeTimeKit(left, right, params, R, 'attribute');
+      if (!kit.ok) return kit;
       const table = new Map();
       const dupes = [];
       for (const f of right.features()) {
         const p = props(f);
         const k = joinKey(p[rf]);
         if (k == null) continue;
-        if (table.has(k)) { if (dup === 'refuse') { if (dupes.indexOf(k) < 0 && dupes.length < 8) dupes.push(k); continue; } continue; }
-        table.set(k, p);
+        const entry = { p: p, span: kit.watching || kit.when ? kit.spanB(f) : null };
+        if (table.has(k)) {
+          if (kit.when) { table.get(k).push(entry); continue; }
+          if (dup === 'refuse') { if (dupes.indexOf(k) < 0 && dupes.length < 8) dupes.push(k); continue; }
+          continue;
+        }
+        table.set(k, [entry]);
       }
       if (dup === 'refuse' && dupes.length) return fail('join-right-not-unique', { field: String(rf), keys: dupes });
 
@@ -1819,17 +1844,25 @@ export function makeGisOps() {
         const f = rows[li];
         const p = props(f);
         const k = joinKey(p[lf]);
-        const hit = (k == null) ? null : table.get(k);
+        const sa = kit.watching || kit.when ? kit.spanA(f) : null;
+        let cands = (k == null) ? null : (table.get(k) || null);
+        if (cands && kit.when) cands = cands.filter((c) => kit.admits(sa, c.span));
+        if (cands && !cands.length) cands = null;
+        if (cands && kit.when && cands.length > 1 && dup === 'refuse') {
+          return fail('join-right-not-unique', { field: String(rf), keys: [String(k)], detail: 'several-rows-hold-at-that-time', row: li });
+        }
+        const hit = cands ? cands[0] : null;
         if (k == null) noKey++;
         if (hit) {
           matched++;
           const merged = Object.assign({}, p);
-          for (const n of wanted) { const v = hit[n]; if (v !== undefined) merged[prefix + n] = v; }
+          for (const n of wanted) { const v = hit.p[n]; if (v !== undefined) merged[prefix + n] = v; }
+          if (kit.watching) kit.stamp(merged, kit.pair(sa, hit.span));
           out.push({ type: 'Feature', geometry: f.geometry || null, properties: merged });
         } else {
           unmatched++;
           if (k != null && missSample.length < 5) missSample.push(k);
-          if (!drop) out.push(f);
+          if (!drop) out.push(kit.active ? { type: 'Feature', geometry: f.geometry || null, properties: kit.stamp(Object.assign({}, p), kit.own(sa)) } : f);
         }
       }
       /* ⚠ THE COUNTS ARE THE ANSWER, NOT A FOOTNOTE. Two files that write the same municipality code
@@ -1845,10 +1878,24 @@ export function makeGisOps() {
          ⚠ THE COLLISION CHECK ALREADY KNEW: it tests `prefix + n` eleven lines up. Prefixing was
          understood at one end of this function and not at the other. */
       const renamed = prefix ? wanted.reduce((m, n) => { m[prefix + n] = { from: right.id, name: n }; return m; }, {}) : null;
-      return {
+      return withKit({
         ok: true, features: out, renamed: renamed,
         stats: { matched: matched, unmatched: unmatched, noKey: noKey, rightKeys: table.size, columns: wanted.length, unmatchedSample: missSample },
-      };
+      }, kit);
+    }
+
+    /* (spatiotemporal-join) What a pairing runner hands the registration about time: which part each
+       input played (see makeTimeKit), the row-wise axis it wrote if any, what it found worth warning
+       about, and its numbers (which also go into the answer's stats). One function, every op. */
+    function withKit(res, kit, roles) {
+      if (!res || !res.ok || !kit) return res;
+      res.validTime = 'intersection';
+      res.timeRoles = roles || ['shape', 'attribute'];
+      const r = kit.report();
+      if (r.timeRows) res.timeRows = r.timeRows;
+      if (r.timeWarnings.length) res.timeWarnings = r.timeWarnings;
+      if (r.timeStats) res.stats = Object.assign({}, res.stats || {}, { time: r.timeStats });
+      return res;
     }
 
     /* ── the joins (#R783) ──────────────────────────────────────────────────────────────────────
@@ -1894,18 +1941,18 @@ export function makeGisOps() {
     /* Writes the output rows. `matches` is [{ row, props, extra }] and MUST be in input 1's own row
        order — see the note in runSpatialJoin for why the index's visiting order may not decide
        which partner 'first' means. */
-    function joinWriter(plan, mode, drop, countName) {
+    function joinWriter(plan, mode, drop, countName, kit) {
       const out = [];
       let matched = 0, unmatched = 0, pairs = 0, oneToMany = 0, maxPartners = 0;
       return {
         rows: out,
-        take(f, matches) {
+        take(f, matches, sa) {
           if (!matches.length) {
             unmatched++;
             /* ⚠ THE FEATURE TRAVELS UNCHANGED. A row with no partner keeps the properties the
                reader imported, byte for byte — the same thing runJoin does, so an unmatched row is
                recognisable as one rather than as a row with empty new columns. */
-            if (!drop) out.push(f);
+            if (!drop) out.push(kit && kit.active ? { type: 'Feature', geometry: f.geometry || null, properties: kit.stamp(Object.assign({}, props(f)), kit.own(sa)) } : f);
             return;
           }
           matched++;
@@ -1922,6 +1969,8 @@ export function makeGisOps() {
                thing that can tell a reader their forty facilities became one — the count is the
                answer to 「1 対多だった」 and dropping it would make 'first' look like 1-to-1. */
             if (countName) merged[countName] = matches.length;
+            /* (spatiotemporal-join) the period of THIS pair — see makeTimeKit. */
+            if (kit && kit.watching) kit.stamp(merged, kit.pair(sa, m.span || null));
             out.push({ type: 'Feature', geometry: f.geometry || null, properties: merged });
           }
         },
@@ -1949,6 +1998,10 @@ export function makeGisOps() {
       const writes = (predicate === 'nearer-than') ? [JOIN_COUNT, '_distanceKm'] : [JOIN_COUNT];
       const plan = joinPlan(aDs, bDs, params, writes);
       if (!plan.ok) return plan;
+      /* (spatiotemporal-join) 場所も時間も含めて照合する。 */
+      const kit = makeTimeKit(aDs, bDs, params, R, 'attribute');
+      if (!kit.ok) return kit;
+      const timed = kit.watching || !!kit.when;
 
       /* Read once with its box and its properties, so a 50,000-row input is not walked through its
          accessors again for every left feature — the shape runAggregate uses. */
@@ -1956,7 +2009,7 @@ export function makeGisOps() {
       for (const f of bDs.features()) {
         const g = f && f.geometry;
         if (!g) continue;
-        others.push({ row: others.length, geometry: g, bbox: bboxOf(g), props: props(f) });
+        others.push({ row: others.length, geometry: g, bbox: bboxOf(g), props: props(f), span: timed ? kit.spanB(f) : null });
       }
       /* ⚠ 「相手に地物が 1 つも無い」 IS NOT 「一致が 0 件だった」. The second is an answer about the
          reader's data and the first is about their inputs, and `relate` already tells them apart by
@@ -1966,22 +2019,25 @@ export function makeGisOps() {
       const pad = (predicate === 'nearer-than') ? maxKm : 0;
       const cand = candidateSource(others);
       const led = makeGeoLedger();
-      const w = joinWriter(plan, card.mode, params.unmatched === 'drop', JOIN_COUNT);
+      const w = joinWriter(plan, card.mode, params.unmatched === 'drop', JOIN_COUNT, kit);
       const rows = aDs.features();
       for (let li = 0; li < rows.length; li++) {
         if (!(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
         const f = rows[li];
         const g = f && f.geometry;
+        const sa = timed ? kit.spanA(f) : null;
         /* A row that states no place cannot stand in a spatial relation to anything. It has no
            partner — which is a different fact from 「探したが無かった」 and is counted as such. */
-        if (!g) { w.take(f, []); continue; }
+        if (!g) { w.take(f, [], sa); continue; }
         const gb = bboxOf(g);
         const matches = [];
         cand.each(gb, pad, (o) => {
+          /* The time condition first: it is the cheaper question, and a pair that did not hold at the same time is not a partner whatever the geometry says. */
+          if (!kit.admits(sa, o.span)) return true;
           const r = relateOne(GG, g, o.geometry, predicate, maxKm);
           if (!led.ok(r)) return true;
           if (r.d == null) return true;
-          matches.push({ row: o.row, props: o.props, extra: (predicate === 'nearer-than') ? { _distanceKm: r.d } : null });
+          matches.push({ row: o.row, props: o.props, span: o.span, extra: (predicate === 'nearer-than') ? { _distanceKm: r.d } : null });
           /* ⚠ 'first' DOES NOT STOP THE WALK, and 'refuse' cannot either: both need to know HOW
              MANY partners there were, and a walk that stopped at the first would report 1 for every
              row — the silence `cardinality` exists to remove. */
@@ -1997,10 +2053,10 @@ export function makeGisOps() {
         if (card.mode === 'refuse' && matches.length > 1) {
           return fail('join-one-to-many', { input: 0, row: li, partners: matches.length, cardinality: JOIN_CARDINALITY });
         }
-        w.take(f, matches);
+        w.take(f, matches, sa);
       }
-      return withGeoStats({ ok: true, features: w.rows, renamed: plan.renamed }, led,
-        Object.assign(w.stats(), { predicate: predicate, cardinality: card.mode, indexed: cand.indexed }));
+      return withKit(withGeoStats({ ok: true, features: w.rows, renamed: plan.renamed }, led,
+        Object.assign(w.stats(), { predicate: predicate, cardinality: card.mode, indexed: cand.indexed })), kit);
     }
 
     async function runNearestJoin(aDs, bDs, params, R, ctx) {
@@ -2015,12 +2071,19 @@ export function makeGisOps() {
       const writes = ['_nearestKm', '_nearestRow'].concat(idField ? ['_nearestId'] : []);
       const plan = joinPlan(aDs, bDs, params, writes);
       if (!plan.ok) return plan;
+      /* (spatiotemporal-join) 「その時点に有効だったもののうち、最も近いもの」. The condition filters
+         the CANDIDATES, so the nearest is the nearest among those that held — not the nearest overall
+         with a time test applied afterwards (which would hand back no partner whenever the closest
+         thing had ended). */
+      const kit = makeTimeKit(aDs, bDs, params, R, 'attribute');
+      if (!kit.ok) return kit;
+      const timed = kit.watching || !!kit.when;
 
       const targets = [];
       for (const f of bDs.features()) {
         const g = f && f.geometry;
         if (!g) continue;
-        targets.push({ row: targets.length, geometry: g, bbox: bboxOf(g), props: props(f) });
+        targets.push({ row: targets.length, geometry: g, bbox: bboxOf(g), props: props(f), span: timed ? kit.spanB(f) : null });
       }
       if (!targets.length) return fail('no-features', { input: 1 });
 
@@ -2047,14 +2110,15 @@ export function makeGisOps() {
       })();
 
       const led = makeGeoLedger();
-      const w = joinWriter(plan, 'first', params.unmatched === 'drop', null);
+      const w = joinWriter(plan, 'first', params.unmatched === 'drop', null, kit);
       const rows = aDs.features();
       let ties = 0, passes = 0, capped = 0;
       for (let li = 0; li < rows.length; li++) {
         if (!(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
         const f = rows[li];
         const g = f && f.geometry;
-        if (!g) { w.take(f, []); continue; }
+        const sa = timed ? kit.spanA(f) : null;
+        if (!g) { w.take(f, [], sa); continue; }
         const gb = bboxOf(g);
         let radius = seed, best = null, bestItem = null, tie = 0;
         /* ⚠⚠⚠ WHY THE ANSWER IS THE TRUE NEAREST AND NOT THE NEAREST IN A BOX. padBoxKm grows the
@@ -2073,6 +2137,7 @@ export function makeGisOps() {
           passes++;
           best = null; bestItem = null; tie = 0;
           cand.each(gb, radius, (o) => {
+            if (!kit.admits(sa, o.span)) return true;
             const r = GG.attempt.distanceKm(g, o.geometry);
             if (!r.ok) {
               /* An empty geometry is not within any distance of anything — the reading relateOne
@@ -2095,17 +2160,17 @@ export function makeGisOps() {
           if (radius >= cap) { if (best == null) capped++; break; }
           radius = (best != null) ? Math.min(best, cap) : Math.min(radius * 4, cap);
         }
-        if (best == null || bestItem == null) { w.take(f, []); continue; }
+        if (best == null || bestItem == null) { w.take(f, [], sa); continue; }
         if (tie > 1) ties++;
         const extra = { _nearestKm: best, _nearestRow: bestItem.row };
         if (idField) extra._nearestId = bestItem.props[idField];
-        w.take(f, [{ row: bestItem.row, props: bestItem.props, extra: extra }]);
+        w.take(f, [{ row: bestItem.row, props: bestItem.props, span: bestItem.span, extra: extra }], sa);
       }
-      return withGeoStats({ ok: true, features: w.rows, renamed: plan.renamed }, led,
+      return withKit(withGeoStats({ ok: true, features: w.rows, renamed: plan.renamed }, led,
         Object.assign(w.stats(), {
           ties: ties, passes: passes, searchedToLimit: capped,
           indexed: cand.indexed, seedKm: seed, capKm: cap,
-        }));
+        })), kit);
     }
 
     /* Planar area in degree² of an areal geometry AS WRITTEN — outer minus holes. ⚠ NOT AN AREA ON
@@ -2405,6 +2470,170 @@ export function makeGisOps() {
       return a.start < b.endEx && b.start < a.endEx;
     }
 
+    /* ══ ⚠⚠⚠ (spatiotemporal-join) 時間の条件と継承は、1 つの規則——op ごとの表ではない ═════════════════
+       Until this round only `intersect` / `union` derived their result's period from both inputs
+       (vectorOutTime). `join`, `spatialJoin`, `nearestJoin`, `timeJoin` and `aggregate` carried the
+       FIRST input's declaration whatever the second one said, and none of them could ask 「その時点に
+       有効だった行どうしだけ」 — a row-wise period (a reign, a unit's lifetime, a series' year) was
+       invisible to every op that joined by place or by key. Both are the same defect one op over, so
+       they are one piece of code that every pairing op instantiates.
+
+       THE RULE, stated once (the runner says which input plays which part; there is no table of ops):
+         · A 'shape' input defines the rows' existence, so the output holds only where it does.
+         · An 'attribute' input supplies values to those rows, so the output holds only when the
+           values do — EXCEPT that an attribute input which never declared a period narrows nothing
+           and is NAMED (`unstatedAttributes`) rather than dropping the shape's period: a CSV of
+           statistics joined onto 1914 borders must not turn the borders into rows with no time.
+         · Periods of constants combine as vectorOutTime says (overlap / bracket). A ROW-WISE axis
+           (instant / interval) cannot be combined by one declaration, so each OUTPUT ROW carries the
+           period of the pair it was made from in `_validFrom` / `_validTo` (half-open: `_validTo` is
+           the first moment NOT held) and the output declares THOSE columns as its axis — which is
+           re-verified on the way in like every declaration (js/gis-datasets.js declareTime).
+         · A pair that never coexisted has no period and is COUNTED (`pairsNeverCoexisted`); a row
+           whose shape never stated one says nothing, and is counted too.
+       ⚠ THE CONDITION IS THE SAME FOR EVERY OP: `when` = overlaps | within | contains over the left
+         row's period (or the stated `at` / `from` / `to`, which REPLACE it — the rule timeJoin states)
+         and the right row's period, half-open, `ends` deciding how a stated end instant reads. An op
+         not asked for a time condition selects exactly what it selected before.
+
+       ⚠⚠ GEOGRAPHIC DEFINITION IS A SECOND AXIS THAT THE PERIOD CANNOT CARRY. A series built on
+         today's borders (Maddison: 1913 France is today's France) and a polity drawn as it was in
+         1914 share a COUNTRY CODE and not a territory — joining them by code is structurally perfect
+         and states a population nobody counted (dev-notes/2026-11-19-spatiotemporal-1914.md §3
+         measured about 1.9 million of Alsace-Lorraine). A dataset says how its units were drawn in
+         `provenance.geoBasis`: { borders:'fixed', year } (every row uses the borders of that year) or
+         { borders:'as-of-period' } (each row uses the borders of its own period). A pair is
+         consistent when the fixed year lies inside the other side's period; otherwise it is NOT
+         silently allowed — it is counted and the output carries `provenance.warnings`.
+         ⚠ A dataset that states nothing is not 「consistent」: `unverified` is counted separately so
+         silence is visible instead of looking like agreement ([[intmap-data-must-not-claim-an-author-it-lacks]]). */
+    /* How a dataset says its units were drawn. Anything else is "stated nothing", never a guess. */
+    function geoBasisOf(ds) {
+      const b = ds && ds.provenance && ds.provenance.geoBasis;
+      if (!b || typeof b !== 'object') return null;
+      if (b.borders === 'fixed' && typeof b.year === 'number' && isFinite(b.year)) return { borders: 'fixed', year: b.year };
+      if (b.borders === 'as-of-period' || b.borders === 'mixed') return { borders: b.borders };
+      return null;
+    }
+    function basisEquals(x, y) { return !!x && !!y && x.borders === y.borders && x.year === y.year; }
+    function isoOf(ms) { return (typeof ms === 'number' && isFinite(ms)) ? new Date(ms).toISOString() : null; }
+
+    /* Build the time kit of a two-input op, or the refusal. `cond` is the op's own params
+       (join / spatialJoin / nearestJoin / aggregate) or the ones timeJoin translates its own into.
+       `bRole` is what input 1 is to this op: 'attribute' for the joins and aggregate, 'shape' for
+       the overlays. */
+    function makeTimeKit(aDs, bDs, cond, R, bRole) {
+      const txt = (k) => (cond[k] == null || String(cond[k]).trim() === '') ? null : String(cond[k]).trim();
+      const when = txt('when');
+      if (when && TIME_RELATIONS.indexOf(when) < 0) return fail('bad-param', { param: 'when', value: when, values: TIME_RELATIONS.slice() });
+      if (!when && (txt('at') || txt('from') || txt('to'))) return fail('bad-param', { param: 'when', detail: 'a-time-window-needs-a-relation', values: TIME_RELATIONS.slice() });
+      const ends = txt('ends') || 'exclusive';
+      if (TIME_ENDS.indexOf(ends) < 0) return fail('bad-param', { param: 'ends', value: ends, values: TIME_ENDS.slice() });
+      const win = statedWindow(cond, R);
+      if (!win.ok) return win;
+      if (when) {
+        /* ⚠ THE SIDE BEING ASKED WHEN IT HOLDS MUST HAVE SAID SO (timeJoin's rule, unchanged). */
+        if (!bDs.time) return fail('time-not-declared', { input: 1, refused: bDs.timeRefused ? String(bDs.timeRefused.why || '') : null });
+        if (!win.span && !aDs.time) return fail('time-not-declared', { input: 0, refused: aDs.timeRefused ? String(aDs.timeRefused.why || '') : null });
+      }
+      const rowWise = (d) => !!(d && d.time && (d.time.kind === 'instant' || d.time.kind === 'interval'));
+      const track = (d) => !!(d && d.time && d.time.kind === 'track');
+      const active = !track(aDs) && !track(bDs) && (rowWise(aDs) || rowWise(bDs));
+      if (active) {
+        /* The two columns are this rule's own. A left that already holds them as its OWN axis is an
+           earlier run of the rule and they are rewritten; as anything else they are somebody's data
+           and are not overwritten (the refusal `aggregate` makes for its own output). */
+        const t = aDs.time;
+        const own = !!(t && t.kind === 'interval' && t.startField === PERIOD_COLS.from && t.endField === PERIOD_COLS.to);
+        if (!own) for (const n of [PERIOD_COLS.from, PERIOD_COLS.to]) if (hasField(aDs, n)) return fail('output-column-in-use', { name: n });
+      }
+      const bases = [geoBasisOf(aDs), geoBasisOf(bDs)];
+      const watching = active || !!bases[0] || !!bases[1];
+      const aRead = (aDs.time && !win.span) ? spanReader(aDs, R, ends === 'exclusive') : null;
+      const bRead = bDs.time ? spanReader(bDs, R, ends === 'exclusive') : null;
+      const tally = { pairs: 0, span: 0, disjoint: 0, unstated: 0, attributeUnstated: 0, filteredOut: 0, undated: 0,
+        basisMismatch: 0, basisUnverified: 0, sample: [] };
+      const iv = (s) => s ? [isoOf(s.start), isoOf(s.endEx)] : null;
+      const holds = (s, year) => {
+        const m = R.momentOf(String(year));
+        return !!(m && s && s.start < m.end + 1 && m.start < s.endEx);
+      };
+      function basisCheck(sa, sb) {
+        const ba = bases[0], bb = bases[1];
+        if (!ba && !bb) return;
+        const fixedA = !!ba && ba.borders === 'fixed', fixedB = !!bb && bb.borders === 'fixed';
+        if (fixedA && fixedB) {
+          if (ba.year !== bb.year) { tally.basisMismatch++; if (tally.sample.length < 3) tally.sample.push({ kind: 'fixed-years-differ', years: [ba.year, bb.year] }); }
+          return;
+        }
+        const fixedSide = fixedA ? 0 : (fixedB ? 1 : -1);
+        if (fixedSide < 0) { if (!basisEquals(ba, bb)) tally.basisUnverified++; return; }
+        const year = (fixedSide === 0 ? ba : bb).year;
+        const other = fixedSide === 0 ? sb : sa;
+        if (!other) { tally.basisUnverified++; return; }
+        if (holds(other, year)) return;
+        tally.basisMismatch++;
+        if (tally.sample.length < 3) tally.sample.push({ kind: 'fixed-year-outside-period', fixed: (fixedSide === 0 ? aDs : bDs).id, year: year, period: iv(other) });
+      }
+      const spanState = (s) => ({ state: s ? 'span' : 'unstated', start: s ? s.start : null, endEx: s ? s.endEx : null });
+      return {
+        ok: true, when: when, active: active, watching: watching,
+        spanA: (f) => win.span || (aRead ? aRead.read(f) : null),
+        spanB: (f) => (bRead ? bRead.read(f) : null),
+        /* The time condition. A row whose period cannot be read is not a partner of every window —
+           the reading runTimeWindow and timeJoin state — so it is counted and fails the condition. */
+        admits(sa, sb) {
+          if (!when) return true;
+          if (!sa || !sb) { tally.undated++; return false; }
+          if (timeRelates(when, sa, sb)) return true;
+          tally.filteredOut++;
+          return false;
+        },
+        /* The period of the pair, and the check that is about THIS pair. */
+        pair(sa, sb) {
+          tally.pairs++;
+          const bOpt = bRole === 'attribute';
+          let state, s = null;
+          if (!sa && !sb) state = 'unstated';
+          else if (!sa) { if (bOpt) state = 'unstated'; else { state = 'span'; s = sb; } }
+          else if (!sb) { state = 'span'; s = sa; if (bOpt) tally.attributeUnstated++; }
+          else {
+            const st = Math.max(sa.start, sb.start), en = Math.min(sa.endEx, sb.endEx);
+            if (st < en) { s = { start: st, endEx: en }; state = 'span'; } else state = 'disjoint';
+          }
+          if (state === 'span') tally.span++; else if (state === 'disjoint') tally.disjoint++; else tally.unstated++;
+          basisCheck(sa, sb);
+          return { state: state, start: s ? s.start : null, endEx: s ? s.endEx : null };
+        },
+        /* A row that found no partner keeps its own period. */
+        own: spanState,
+        /* Write a period onto an output row's properties (a no-op unless the rule is row-wise). */
+        stamp(p, pr) {
+          if (!active) return p;
+          const on = !!pr && pr.state === 'span';
+          p[PERIOD_COLS.from] = on ? isoOf(pr.start) : null;
+          p[PERIOD_COLS.to] = on ? isoOf(pr.endEx) : null;
+          return p;
+        },
+        /* What the registration reads off the run, and the numbers that also go into the stats. */
+        report() {
+          const w = [], ids = [aDs.id, bDs.id];
+          if (tally.basisMismatch) w.push({ code: 'geo-basis-mismatch', pairs: tally.basisMismatch, of: tally.pairs, inputs: ids, bases: { a: bases[0], b: bases[1] }, sample: tally.sample });
+          if (tally.basisUnverified) w.push({ code: 'geo-basis-unverified', pairs: tally.basisUnverified, of: tally.pairs, inputs: ids, bases: { a: bases[0], b: bases[1] } });
+          if (tally.disjoint) w.push({ code: 'pairs-never-coexisted', pairs: tally.disjoint, of: tally.pairs, inputs: ids });
+          return {
+            timeRows: active ? { startField: PERIOD_COLS.from, endField: PERIOD_COLS.to } : null,
+            timeWarnings: w,
+            timeStats: (watching || when) ? {
+              when: when, rowWise: active, pairsNeverCoexisted: tally.disjoint, periodUnstated: tally.unstated,
+              attributeUnstated: tally.attributeUnstated, timeFilteredOut: tally.filteredOut, timeUndated: tally.undated,
+              geoBasisMismatch: tally.basisMismatch, geoBasisUnverified: tally.basisUnverified,
+            } : null,
+          };
+        },
+      };
+    }
+
     async function runTimeJoin(aDs, bDs, params, R, ctx) {
       const relation = (params.relation == null || String(params.relation) === '') ? 'overlaps' : String(params.relation);
       const relations = paramValues(DECL.timeJoin, 'relation');
@@ -2422,6 +2651,10 @@ export function makeGisOps() {
       if (!win.span && !aDs.time) return fail('time-not-declared', { input: 0, refused: aDs.timeRefused ? String(aDs.timeRefused.why || '') : null });
       const plan = joinPlan(aDs, bDs, params, [JOIN_COUNT]);
       if (!plan.ok) return plan;
+      /* (spatiotemporal-join) this op's relation IS the shared time condition; the kit gives the
+         result its period (and the geographic-basis check) by the same rule as every other pairing op. */
+      const kit = makeTimeKit(aDs, bDs, Object.assign({}, params, { when: relation }), R, 'attribute');
+      if (!kit.ok) return kit;
 
       const rightRead = spanReader(bDs, R, ends === 'exclusive');
       const leftRead = win.span ? null : spanReader(aDs, R, ends === 'exclusive');
@@ -2460,14 +2693,14 @@ export function makeGisOps() {
         return lo;
       };
 
-      const w = joinWriter(plan, card.mode, params.unmatched === 'drop', JOIN_COUNT);
+      const w = joinWriter(plan, card.mode, params.unmatched === 'drop', JOIN_COUNT, kit);
       const rows = aDs.features();
       let undatedLeft = 0, scanned = 0;
       for (let li = 0; li < rows.length; li++) {
         if (!(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
         const f = rows[li];
         const q = win.span || leftRead.read(f);
-        if (!q) { undatedLeft++; w.take(f, []); continue; }
+        if (!q) { undatedLeft++; w.take(f, [], null); continue; }
         const matches = [];
         /* Everything at or after the query's exclusive end begins too late for any of the three
            relations — `overlaps` is necessary for `within` and `contains` alike. */
@@ -2477,16 +2710,16 @@ export function makeGisOps() {
           scanned++;
           const t = targets[i];
           if (!timeRelates(relation, q, t)) continue;
-          matches.push({ row: t.row, props: t.props, extra: null });
+          matches.push({ row: t.row, props: t.props, span: { start: t.start, endEx: t.endEx }, extra: null });
         }
         matches.sort((x, y) => x.row - y.row);
         if (card.mode === 'refuse' && matches.length > 1) {
           return fail('join-one-to-many', { input: 0, row: li, partners: matches.length, cardinality: JOIN_CARDINALITY });
         }
-        w.take(f, matches);
+        w.take(f, matches, q);
       }
       const read = rightRead.stated();
-      return {
+      return withKit({
         ok: true, features: w.rows, renamed: plan.renamed,
         stats: Object.assign(w.stats(), {
           relation: relation, cardinality: card.mode, ends: ends,
@@ -2500,7 +2733,7 @@ export function makeGisOps() {
           undatedLeft: undatedLeft, undatedRight: undatedRight,
           targets: targets.length, scanned: scanned,
         }),
-      };
+      }, kit);
     }
 
     async function runCompute(ds, params, R, ctx) {
@@ -3196,10 +3429,13 @@ export function makeGisOps() {
 
     /* ── the overlays: one runner, because they differ only in which verb is asked ─────────────── */
 
-    async function runOverlay(kind, aDs, bDs, ctx) {
+    async function runOverlay(kind, aDs, bDs, R, ctx) {
       const GG = geometry();
       const bWins = windowsOf(bDs);
       if (!bWins.length) return fail('no-overlay-polygons', { input: 1 });
+      /* (spatiotemporal-join) both inputs are 'shape': the overlap exists only where both do. */
+      const kit = (kind === 'intersect') ? makeTimeKit(aDs, bDs, {}, R, 'shape') : null;
+      if (kit && !kit.ok) return kit;
       const cand = candidateSource(bWins);
       const out = [];
       const led = makeGeoLedger();
@@ -3210,6 +3446,7 @@ export function makeGisOps() {
         if (!g || !polygonsOf(g).length) continue;
         const base = props(f);
         const gb = bboxOf(g);
+        const sa = (kit && kit.watching) ? kit.spanA(f) : null;
 
         if (kind === 'difference') {
           /* Taken against ALL of B at once. Subtracting one window at a time gives the same answer
@@ -3240,9 +3477,11 @@ export function makeGisOps() {
           /* ⚠ BOTH SIDES' COLUMNS SURVIVE, with A winning a collision, and the row says it came from
              a pair (`_overlayId`). Keeping only A would throw away the table the reader brought to
              the overlay; letting B win would rewrite the one they started from. */
+          const row = withProps(withProps(w.props, base), { _overlayId: w.id, _areaKm2: areaKm2(res) });
+          if (kit && kit.watching) kit.stamp(row, kit.pair(sa, kit.spanB({ properties: w.props })));
           out.push({
             type: 'Feature',
-            properties: withProps(withProps(w.props, base), { _overlayId: w.id, _areaKm2: areaKm2(res) }),
+            properties: row,
             geometry: res,
           });
           return true;
@@ -3250,7 +3489,8 @@ export function makeGisOps() {
       }
       /* (time-spatial-base) the runner states how the inputs' periods combine (see vectorOutTime): an intersection exists only where
          both inputs do; a difference is a's shape with b removed, so it keeps a's period (no statement) */
-      return withGeoStats({ ok: true, features: out, validTime: kind === 'intersect' ? 'intersection' : undefined }, led);
+      const ov = withGeoStats({ ok: true, features: out, validTime: kind === 'intersect' ? 'intersection' : undefined }, led);
+      return kit ? withKit(ov, kit, ['shape', 'shape']) : ov;
     }
 
     /* ── union: every part of both inputs, exactly once (#R743) ─────────────────────────────────
@@ -3912,6 +4152,12 @@ export function makeGisOps() {
       /* Writing over a column the polygons already carry would destroy data the reader imported,
          and doing it silently would make the loss invisible until the next op read the wrong column. */
       if (hasField(polyDs, outName)) return fail('output-column-in-use', { name: outName });
+      /* (spatiotemporal-join) 区域ごとの集計は、その区域が有効だった間に有効だった member だけで。
+         The zone is the 'shape' and the members are the 'attribute': the answer holds over the span in
+         which the members it was made from are stated, inside the zone's own. */
+      const kit = makeTimeKit(polyDs, memberDs, params, R, 'attribute');
+      if (!kit.ok) return kit;
+      const timed = kit.watching || !!kit.when;
 
       /* ⚠ ONE ROW PER MEMBER FEATURE, not per position (#R729 flattened a MultiPoint into its
          points, which counted a single record as several). A feature is one thing the reader
@@ -3931,7 +4177,7 @@ export function makeGisOps() {
         members.push({
           /* `row` is input 1's own order — the tie rule of `majority` reads it, never the order the
              index happened to visit in. */
-          row: row,
+          row: row, span: timed ? kit.spanB(f) : null,
           geometry: g, bbox: bboxOf(g), raw: (field ? props(f)[field] : null),
           areaKm2: (stat === 'areaWeightedMean' && weightBy === 'memberArea') ? areaKm2(g) : null,
         });
@@ -3950,6 +4196,8 @@ export function makeGisOps() {
         if (!g || !polygonsOf(g).length) continue;
         const gb = bboxOf(g);
         let n = 0, skipped = 0, sum = 0, min = null, max = null;
+        const zoneSpan = timed ? kit.spanA(f) : null;
+        let bLo = null, bHi = null;
         /* (#R783) Σ(value·km²) と Σkm²，`areaWeightedMean` のときだけ動く。 */
         let wsum = 0, wtot = 0, noWeight = 0;
         /* (gis-foundation-refine) the values themselves for the order statistics and the spread, and
@@ -3957,6 +4205,7 @@ export function makeGisOps() {
         const vals = keepsValues ? [] : null;
         const tally = (stat === 'majority') ? new Map() : null;
         cand.each(gb, 0, (m) => {
+          if (!kit.admits(zoneSpan, m.span)) return true;
           /* ⚠ 「この面に重なるもの」, asked of the one predicate. #R729 asked point-in-polygon, which
              is the same answer for a point and no answer at all for the roads and parcels a reader
              brings to a 区域別集計. A line that crosses the boundary counts for this polygon AND for
@@ -3980,6 +4229,7 @@ export function makeGisOps() {
             if (!ix.geometry) return true;
           }
           n++;
+          if (m.span) { if (bLo == null || m.span.start < bLo) bLo = m.span.start; if (bHi == null || m.span.endEx > bHi) bHi = m.span.endEx; }
           if (stat === 'count') return true;
           /* ⚠ THE MODE COUNTS VALUES BY IDENTITY, NOT AS NUMBERS: a land-cover code or a municipality
              code is the ordinary column it is asked of, and asNumber would make "01100" and "1100" one
@@ -4057,6 +4307,7 @@ export function makeGisOps() {
           extra._majorityTies = ties;
         }
         extra[outName] = value;
+        if (kit.watching) kit.stamp(extra, kit.pair(zoneSpan, bLo == null ? null : { start: bLo, endEx: bHi }));
         if (stat !== 'count') extra._statSkipped = skipped;
         if (stat === 'areaWeightedMean') {
           /* ⚠ 使った重みは行に載る。The row is what gets joined, exported and compared months later
@@ -4076,7 +4327,7 @@ export function makeGisOps() {
       const rule = aggregationRecord(agg, qs.spec, weight, qs.from, (stat === 'areaWeightedMean') ? weightBy : null);
       const res = withGeoStats({ ok: true, features: out }, led, rule ? { aggregation: rule } : null);
       if (res.ok && rule && (qs.spec != null || agg.verdict !== 'undeclared')) res.resolved = { aggregation: rule };
-      return res;
+      return withKit(res, kit);
     }
 
     /* ── the grid runners (#R735) ───────────────────────────────────────────────────────────────
@@ -6288,30 +6539,47 @@ export function makeGisOps() {
        ⚠ A ROW-WISE AXIS (instant / interval fields) CANNOT BE COMBINED BY ONE DECLARATION — each row
          has its own pair of ends. The first input's axis is kept, as before, and the record says the
          rule was NOT applied (`result:'row-wise'`) rather than looking as if it had been. */
-    function vectorOutTime(ds, R, rule, decl) {
+    function vectorOutTime(ds, R, rule, decl, roles, rowAxis) {
       if (rule !== 'intersection' && rule !== 'union') return { time: outTime(ds[0], decl), stated: [], rule: null };
       const stated = ds.map((d) => ({ id: d && d.id, time: (d && d.time) || null }));
       const info = (result, extra) => Object.assign({ rule: rule, result: result }, extra || {});
-      if (stated.some((x) => !x.time)) return { time: null, stated: stated, rule: info('unknown') };
-      if (stated.some((x) => x.time.kind !== 'constant')) return { time: outTime(ds[0], decl), stated: stated, rule: info('row-wise') };
+      /* (spatiotemporal-join) THE RUNNER WROTE A PERIOD PER OUTPUT ROW (makeTimeKit): the output's
+         axis is those two columns, derived from each pair, and nothing is combined here. */
+      if (rowAxis) return { time: { kind: 'interval', startField: rowAxis.startField, endField: rowAxis.endField }, stated: stated, rule: info('row-derived', { fields: [rowAxis.startField, rowAxis.endField] }) };
+      /* ⚠ WHAT AN INPUT IS TO THE OP IS THE RUNNER'S STATEMENT, not a table kept here. A 'shape' input
+         that never declared a period leaves the output's existence unstated, so none is declared. An
+         'attribute' input that never declared one supplies values and narrows nothing — it is NAMED
+         (`unstatedAttributes`) so the silence is visible, and the shape's period survives. */
+      const roleOf = (i) => (roles && roles[i]) || 'shape';
+      const unstatedAttr = [];
+      const voters = [];
+      for (let i = 0; i < stated.length; i++) {
+        if (stated[i].time) { voters.push(i); continue; }
+        if (roleOf(i) === 'attribute') { unstatedAttr.push(stated[i].id); continue; }
+        return { time: null, stated: stated, rule: info('unknown') };
+      }
+      if (!voters.length) return { time: null, stated: stated, rule: info('unknown') };
+      const tag = (r) => { if (unstatedAttr.length) r.rule.unstatedAttributes = unstatedAttr; return r; };
+      if (voters.some((i) => stated[i].time.kind !== 'constant')) return tag({ time: outTime(ds[0], decl), stated: stated, rule: info('row-wise') });
+      const vs = voters.map((i) => stated[i]);
       const ms = (v, which) => {
         if (v == null) return which === 'start' ? -Infinity : Infinity;
         if (typeof v === 'number' && isFinite(v)) return v;
         const m = R.momentOf(v);
         return m ? (which === 'end' ? m.end : m.start) : NaN;
       };
-      const iv = stated.map((x) => ({ s: ms(x.time.start, 'start'), e: ms(x.time.end, 'end') }));
+      const iv = vs.map((x) => ({ s: ms(x.time.start, 'start'), e: ms(x.time.end, 'end') }));
       if (iv.some((x) => x.s !== x.s || x.e !== x.e)) return { time: null, stated: stated, rule: info('unknown') };
       const out = (s, e) => ({ kind: 'constant', start: isFinite(s) ? s : null, end: isFinite(e) ? e : null });
       if (rule === 'intersection') {
         const s = Math.max.apply(null, iv.map((x) => x.s)), e = Math.min.apply(null, iv.map((x) => x.e));
-        if (s > e) return { time: null, stated: stated, rule: info('disjoint') };
-        return { time: out(s, e), stated: stated, rule: info('span') };
+        if (s > e) return tag({ time: null, stated: stated, rule: info('disjoint') });
+        return tag({ time: out(s, e), stated: stated, rule: info('span') });
       }
       const sorted = iv.slice().sort((a, b) => a.s - b.s);
       let reach = sorted[0].e, contiguous = true;
       for (let i = 1; i < sorted.length; i++) { if (sorted[i].s > reach) contiguous = false; if (sorted[i].e > reach) reach = sorted[i].e; }
-      return { time: out(Math.min.apply(null, iv.map((x) => x.s)), Math.max.apply(null, iv.map((x) => x.e))), stated: stated, rule: info('span', { contiguous: contiguous }) };
+      return tag({ time: out(Math.min.apply(null, iv.map((x) => x.s)), Math.max.apply(null, iv.map((x) => x.e))), stated: stated, rule: info('span', { contiguous: contiguous }) });
     }
 
     /* ══ ⚠⚠⚠ (#R759) 答えは、その答えを作った入力より完全にはなれない ════════════════════════════
@@ -6704,8 +6972,8 @@ export function makeGisOps() {
         filter: () => runFilter(ds[0], params, R, ctx),
         buffer: () => runBuffer(ds[0], params, R, ctx),
         clip: () => runClip(ds[0], ds[1], ctx),
-        intersect: () => runOverlay('intersect', ds[0], ds[1], ctx),
-        difference: () => runOverlay('difference', ds[0], ds[1], ctx),
+        intersect: () => runOverlay('intersect', ds[0], ds[1], R, ctx),
+        difference: () => runOverlay('difference', ds[0], ds[1], R, ctx),
         union: () => runUnion(ds[0], ds[1], ctx),
         dissolve: () => runDissolve(ds[0], params, R, ctx),
         centroid: () => runPointOf('centroid', ds[0], ctx),
@@ -6732,7 +7000,7 @@ export function makeGisOps() {
         validate: () => runValidate(ds[0], params, ctx),
         repair: () => runRepair(ds[0], params, ctx),
         timeWindow: () => runTimeWindow(ds[0], params, R, ctx),
-        join: () => runJoin(ds[0], ds[1], params, ctx),
+        join: () => runJoin(ds[0], ds[1], params, R, ctx),
         /* (#R783) the three joins the outside review's §9 named, in the order it put them: where a
            row is, what is nearest to it, when it holds. */
         spatialJoin: () => runSpatialJoin(ds[0], ds[1], params, R, ctx),
@@ -6829,8 +7097,20 @@ export function makeGisOps() {
       if (terms.length) prov.upstreams = terms;
       const grid = rasterOutTime(ds, R, res.shapeOnly);
       /* (time-spatial-base) VALID time of a vector output, and — separately — when it was recorded. */
-      const vt = res.raster ? null : vectorOutTime(ds, R, res.validTime, decl);
+      const vt = res.raster ? null : vectorOutTime(ds, R, res.validTime, decl, res.timeRoles, res.timeRows);
       if (vt && vt.rule) { prov.inputTimes = vt.stated; prov.timeRule = vt.rule; }
+      /* (spatiotemporal-join) 警告は来歴に残る——結合を黙って許さず、許したなら許したと言う。Two
+         kinds: what the pairs showed (makeTimeKit: a series on one geography joined to rows on
+         another, pairs that never coexisted) and what the inputs' own periods showed. */
+      const warns = Array.isArray(res.timeWarnings) ? res.timeWarnings.slice() : [];
+      if (vt && vt.rule && vt.rule.result === 'disjoint') warns.push({ code: 'inputs-never-coexisted', inputs: vt.stated.map((x) => x.id) });
+      if (warns.length) prov.warnings = warns;
+      /* How the output's units were drawn: kept when every input that said agrees, and 'mixed' when
+         they do not — a later join then asks 'unverified' rather than inheriting a claim nobody made. */
+      if (!res.raster && ds.length > 1) {
+        const bs = ds.map(geoBasisOf).filter(Boolean);
+        if (bs.length) prov.geoBasis = bs.every((b) => basisEquals(b, bs[0])) ? bs[0] : { borders: 'mixed', of: bs };
+      }
       prov.recordedAt = new Date().toISOString();
       /* The inputs' own epochs, recorded whenever more than one grid contributed samples — including
          (especially) when they could not be combined into a span. */
@@ -6940,7 +7220,8 @@ export function makeGisOps() {
        inputs that each declare a constant period used to register the FIRST input's period; they now register
        the overlap / the bracket (or none, when unstated or disjoint). Geometry and columns are unchanged. */
     /* (gov-gis-terms) ops-12 -> ops-13: a replayed step registers a record that says more (`provenance.upstreams`, inheritTerms); no cell or geometry changes. */
-    const KERNEL_VERSION = 'ops-13';
+    /* (spatiotemporal-join) ops-13 -> ops-14: every pairing op (join / spatialJoin / nearestJoin / timeJoin / aggregate / intersect) derives its result's period from BOTH inputs by one rule (makeTimeKit) and accepts the same time condition `when`; a row-wise result carries `_validFrom` / `_validTo` per row and declares them as its axis; `provenance.warnings` and `provenance.geoBasis` are recorded. Geometry and the cells an existing call produced are unchanged; the period a record states, and two columns on row-wise inputs, are not. */
+    const KERNEL_VERSION = 'ops-14';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,
