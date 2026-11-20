@@ -32,6 +32,7 @@
  *  resuming (it reads `indexedDB` once, and is absent where there is none).
  * ==========================================================================*/
 
+import { normalizeFacts } from './atlas-fact-merge.js';   /* (fact-merge) a result's `facts` are held to one shape */
 import { personaPrompt } from './atlas-persona.js';   /* the one identity — a worker is Atlas at work, not a second character (R285) */
 import { idbBackend, memoryBackend } from './atlas-notebook-store.js';   /* (delegate-child-loop) the device store's two backends — a delegation is kept in its OWN database beside the notebook's */
 
@@ -41,8 +42,10 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-import { s, stable, CONTRACT_KINDS, normaliseContract, contractKey, cycleMembers, shapeOf, workerSystem, workerPrompt } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
-export { stable, CONTRACT_KINDS, normaliseContract, contractKey, shapeOf };
+import { s, stable, CONTRACT_KINDS, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+export { stable, CONTRACT_KINDS, normaliseContract, contractKey };
+/* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
+export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
 
 
 
@@ -150,6 +153,7 @@ export function makeDelegation(o) {
       detail: (r && r.detail && typeof r.detail === 'object') ? Object.freeze(Object.fromEntries(Object.entries(r.detail).filter(([, v]) => v !== undefined))) : undefined,
       summary: s(r && r.summary, 4000),
       findings: Array.isArray(r && r.findings) ? r.findings.slice(0, 40) : [],
+      facts: normalizeFacts(r && r.facts).slice(0, 200),   /* (fact-merge) claims as data: js/atlas-fact-merge.js */
       gaps: (Array.isArray(r && r.gaps) ? r.gaps.slice(0, 20).map((g) => s(g, 400)).filter(Boolean) : [])
         .concat(dropped ? ['The raw data of this result was too large to keep and was dropped (the summary above is complete).'] : []),
       sources: Array.isArray(r && r.sources) ? r.sources.slice(0, 40) : [],

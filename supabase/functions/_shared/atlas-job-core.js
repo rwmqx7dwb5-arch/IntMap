@@ -98,7 +98,7 @@ export function workerSystem(persona) {
   'Do only the piece you are given. Use the web search tool when it is attached to find and verify current facts; prefer primary and official sources.',
   'Never invent a fact, a figure, a date, a source or a coordinate. Give coordinates only when you know them (a well-known city, port, strait or facility); otherwise leave them out and name the place.',
   'Write in the language the piece is written in.',
-  'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL), "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "gaps": [string] (what you could not establish, and why)}.',
+  'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL), "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "gaps": [string] (what you could not establish, and why), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does)}.',
 ].join('\n');
 }
 
@@ -113,8 +113,10 @@ export function workerPrompt(task, extra) {
   return p + '\n\nToday is ' + new Date().toISOString().slice(0, 10) + '.';
 }
 
-/* shapeOf(data) → { ok, out } | { ok:false, why } — the worker's answer held to the shape it was asked for */
-export function shapeOf(data) {
+/* shapeOf(data, normalizeFacts?) → { ok, out } | { ok:false, why } — the worker's answer held to the shape it was asked for.
+   `normalizeFacts` is the host's reader of the `facts` list (the page passes js/atlas-fact-merge.js; it needs the geo-object module, which has no
+   server twin yet). Without one, `facts` is [] — a server job carries findings, not matched facts. */
+export function shapeOf(data, normalizeFacts) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return { ok: false, why: 'the answer was not a JSON object' };
   if (typeof data.summary !== 'string' || !data.summary.trim()) return { ok: false, why: '"summary" was missing or empty' };
   if (data.findings != null && !Array.isArray(data.findings)) return { ok: false, why: '"findings" was not an array' };
@@ -125,7 +127,7 @@ export function shapeOf(data) {
     const verdict = (f.verdict === 'supported' || f.verdict === 'unsupported' || f.verdict === 'contradicted') ? f.verdict : undefined;
     return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined };
   });
-  return { ok: true, out: { summary: s(data.summary, 4000), findings, gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] } };
+  return { ok: true, out: { summary: s(data.summary, 4000), findings, facts: typeof normalizeFacts === 'function' ? normalizeFacts(data.facts) : [], gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] } };
 }
 
 /* ══ PLANNING A LIST OF CONTRACTS INTO A JOB  (atlas-durable-jobs) ═══════════════════════════════════
