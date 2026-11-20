@@ -56,12 +56,12 @@ export function distanceToBoxKm(lng, lat, /** @type {number[]} */ bbox) {
 }
 
 /** below this zoom a building is sub-pixel: nothing is streamed (measured by eye 2026-11-20: roofs read from ~z11, blocks from ~z9) */
-export const PLATEAU_MIN_ZOOM = 9;
+const PLATEAU_MIN_ZOOM = 9;
 /** the most tilesets open at once (23 wards were open at once before and the engine held 503 MB: js/cesium-engine.js _governTilesets) */
-export const PLATEAU_MAX_OPEN = 32;
+const PLATEAU_MAX_OPEN = 32;
 
 /** the km around the camera whose units are wanted: about one screen's width of ground, floored and capped */
-export function plateauRadiusKm(zoom, lat) {
+function plateauRadiusKm(zoom, lat) {
   const screenKm = 40075 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
   return Math.max(12, Math.min(60, screenKm));
 }
