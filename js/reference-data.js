@@ -481,6 +481,8 @@ export const IntMapRefData = (function(){
     {n:'Google News',u:'https://news.google.com/'},
     {n:'OpenFreeMap / OpenMapTiles',u:'https://openfreemap.org/'},
     {n:'PLATEAU 3D city models (MLIT Japan)',u:'https://www.mlit.go.jp/plateau/',lic:'PLATEAU site policy (compatible with CC BY 4.0)',licUrl:'https://www.mlit.go.jp/plateau/site-policy/',credit:true},
+    {n:'3D BAG (Netherlands 3D buildings)',u:'https://3dbag.nl/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'Re:Earth Buildings (worldwide 3D buildings)',u:'https://buildings.reearth.land/',lic:'ODbL 1.0 (OpenStreetMap contributors, Overture Maps Foundation)',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'Google Fonts (Noto Sans JP / SC / TC)',u:'https://fonts.google.com/noto'},
     {n:'Inter / Pretendard (bundled, SIL OFL 1.1)',u:'https://rsms.me/inter/',lic:'SIL OFL 1.1',credit:true},
     {n:'ESA WorldCover',u:'https://esa-worldcover.org/'},
