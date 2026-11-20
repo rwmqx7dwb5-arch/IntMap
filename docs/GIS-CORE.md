@@ -184,8 +184,9 @@ overviews は数だけ報告する**）。
   粗いなら `partial` と理由。外側は **NaN**（0 で埋めない）。
 - **断るもの**: http（CSP も https のみ）・URL に資格情報・CRS を述べない（`crs-not-stated`）・Range 非対応（`range-unsupported`）・HTTP エラー。
   ⚠ **投影座標系の COG も読める**（UTM・Web メルカトル等。窓の周を歩いてファイルの CRS へ運び、そこで読み、
-  `gis-warp.js` の `to4326` で戻す。窓の対辺が弯曲する分を 4 隅でなく周で測る）。⚠ **日付変更線をまたぐ窓は未対応**
-  （消せる条件: 窓を ±180 で割って両側を読む）。
+  `gis-warp.js` の `to4326` で戻す。窓の対辺が弯曲する分を 4 隅でなく周で測る）。⚠ **日付変更線をまたぐ窓は ±180 で割って両側を読み、1 枚に縫う**
+  （窓は `[170,-20,-170,-10]`（west > east）でも `[170,-20,190,-10]` でもよい。答えの格子は呼び手の west から始まる連続経度で、180 を越えて続く。
+  ファイルがその片側を持たない（UTM ゾーンのファイルは線で終わる）半分は **NaN で、`window-extends-past-the-file` と言う**。`coverage.acrossAntimeridian` が継ぎ目と各半分の `read`/`absent` を述べる）。
 - 出来たものは**登録された格子のデータセット**なので、`rasterMask`・`zonal`・`sample`・書き出し・
   `map.drawDataset` がそのまま効く。`provenance.kind = 'url-raster'`。
 
@@ -193,8 +194,7 @@ overviews は数だけ報告する**）。
 `fetch-failed` は「ホストは応答するが CORS ヘッダが無く、ページから読めない」を `corsBlocked`（`no-cors` の HEAD が opaque で返ることで観測）、
 `http-status` はサーバ自身の言葉（`serverSaid`）と別オリジンへの転送（`redirectedTo`）を運ぶ。ログイン画面が 200 で返るものは
 「Range 非対応」ではなく `http-status`（200・画面）。`s3://bucket/key`（STAC の資産が使う）は https の virtual-host 形（ドット付きは path 形）へ
-**導出**して読み、`source.derivedFrom` に元の綴りを残す。署名付き URL が要る供給元（Planetary Computer など）は署名を作らず、
-サーバの言葉で断る。計器は `node scripts/gis-live-probe.mjs`（ネットワーク要・CI では走らない）。
+**導出**して読み、`source.derivedFrom` に元の綴りを残す。署名付き URL が要る供給元は、**カタログが述べていること**から署名する（`gis-remote.js` の `signHref`: コレクションの `storage:schemes` がそのアドレスの置き場を述べ、カタログ登録（データ）の `sign:{kind,token}` が署名の取り方を述べる。供給元の名前はコードに無い）。述べていなければ `no-signer` で、ホスト自身の言葉が残る。**CORS を送らないホスト**（Copernicus DEM・ESA WorldCover の S3 バケット）は、`js/gis-fetch.js`（3 つの読み手が共有する fetch）が、`no-cors` の探りで「ホストは応答するが CORS が無い」と**証明されたときだけ** Edge Function `gis-fetch`（`supabase/functions/gis-fetch`・**許可リストではなく原則**: https・既定ポート・資格情報なし・**公開アドレスにだけ解決される名前**（転送の各ホップも同じ問い）・バイト数に上限のあるデータの読み（ページは断る）・URL と範囲以外は何も転送しない・**プロジェクト全体のバイト予算（閉じる側に倒れる）**と呼び手ごとの予算・停止スイッチ `GIS_FETCH_DISABLED`）経由で読む。1 MiB チャンクで取り、メモリ→Cache API（1 日）で再利用し、失敗は保持しない（⚠ Supabase の CDN は Range 応答を共有しない——実測 `CF-Cache-Status: DYNAMIC`。再利用はブラウザごと）。中継の拒否（`disabled`／`budget_exhausted`／`rate_limit`／…）は**中継のものとして**名指し、CORS とは言わない。ログイン画面（ERS など）は `upstream_is_a_page` と転送先で述べる。計器は `node scripts/gis-live-probe.mjs`（ネットワーク要・CI では走らない）。
 
 ### 1.4d URL の地物コレクションを読む — `js/gis-ogcapi.js` と `data.gis` の `ogc:` 入力
 
