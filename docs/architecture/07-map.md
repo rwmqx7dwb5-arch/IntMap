@@ -488,6 +488,13 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - **レイヤー `beta-dl-plateau3d`**（東京の3D都市モデル）。東京23区（JIS 13101–13123）の `<code>-bldg-lod2-texture-latest` を PLATEAU データカタログ（api.plateauview.mlit.go.jp）から読む。オフにすると全タイルセットを破棄し、通信もメモリも残さない。MapLibre エンジンでは行ごと非表示。出典と利用条件は PLATEAU サイトポリシー（CC BY 4.0 互換）。
 - **計測。** Cesium アダプタも `render.instrumentFrames`（`scene.render` を 1 回だけ包む。GPU ではなく CPU の提出時間）と `render.sceneStats`（地球儀タイル数と、3D Tiles の件数・三角形数・バイト数を `extra` に）を実装し、`?perf=1` が Cesium でも縮退しない。
 
+### 7.3l Cesium のスタイル解釈器と MapLibre の差 — `js/cesium-style.js`
+
+- **Cesium は MapLibre のスタイル式を自前で評価する**（`window.IntMapStyle`。純粋で Node から検証できる）。式の評価に渡す文脈は `{properties, geometryType, geometry, id, zoom, state}`——地物の幾何を渡すのは `js/cesium-layers.js` の `ctxFor`。
+- **実装していない演算子は `UNSUPPORTED` に名指す。** いま: `format`・`image`・`number-format`・`collator`・`resolved-locale`・`within`・`pitch`・`distance-from-center`。これは「アプリはこれを書かない」という主張で、`tests/cesium-style-parity-checks.test.mjs` が `js/` 全体を掃いて、書かれていれば落とす（書かれたら実装して一覧から外す）。
+- **`distance` は実装済み**（メートル。点は大圏、線・面は局所平面への射影、面の内側は 0）。理由: `js/hist-cities.js` が各時代の都市名の枝をすべてこれで守っており、無いと Cesium の地球では現代の名前が年に関係なく残った。引数が Point／MultiPoint 以外なら `null`（その比較は偽）で、`gaps()` に載る。
+- `format` は `concat`＋改行で代用しているので到達しない。`image` はアイコンを `icon-image` で名指す。
+
 ### 7.4 Chronos（統一時間）と「年」
 
 #### 歴史の束の読み込み
@@ -586,7 +593,9 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   うち第1級の区分が描かれている割合（0.25° の陸地格子。母集合は `data/cshapes.js` / `data/hist-borders.js` / `data/hist-eras.js` から）。観測の正本は
   `data/hist-fidelity.json`（紀元前 500 年から 2019 年まで 18 年ぶん・セル数と cos(緯度) 重みの面積）で、1000 年 1.1%・1500 年 4.9%・1800 年 25.4%・
   1900 年 47.5%（面積 43.8%）・2000 年 62.3%・2019 年 66.9%。1900 年に第1級の区分が 1% 未満の政体は 82、一部だけが 29、丸ごとが 39。測り方は
-  `js/hist-knowledge.js` が持ち、地図の斜線と同じ関数。被覆だけを見て上げない（最も安い上げ方が ⑴ そのもの）。規則の正本は
+  `js/hist-knowledge.js` が持ち、地図の斜線と同じ関数。被覆だけを見て上げない（最も安い上げ方が ⑴ そのもの）。次に何を埋めるかは `node scripts/hist-fidelity.mjs --gaps [--from 1700]` が選ぶ——セルの数でなく **km²**（0.25° のセルは赤道で約 770 km²、北緯 75° で約 190 km²）で、現代の国と理由（`holeWhy`。
+台帳と同じ関数）ごとに、測定した年の未被覆の陸地を合計して並べる。2026-11-20 の上位は 中国（日付なし）・ロシア（設立日の床より前）・オーストラリア・カナダ・アルゼンチン。
+オーストラリアの植民地やカナダのルパートランドのように**政体そのものが第 1 級の単位**である所は、同じ名前の区分で埋めると被覆の水増しになるので埋めない。規則の正本は
   `.agents/rules/historical-verification.md`、門が測れないものは `docs/TESTING.md`。⑶b 穴は理由ごと記録される——丸ごと描かれていない政体ごとに
   記録の無い土地の下の現代の国と理由を `data/hist-coverage-holes.json` が持ち、出荷済みの束と一致しなければ落とす。理由は `data/hist-admin-fill.js`
   の `refused`。⑷ 時代の枚の名前が政体の存在しない年に描かれていないか——ページ自身の `nearest()` を評価し、存続期間のある所見
