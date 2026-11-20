@@ -480,8 +480,8 @@ describe('§ #R749 · the GeoTIFF reader', () => {
     const jpeg = await refuse(buildTiff({ ...base, tagOverrides: { 259: [7] } }), 'jpeg-in-tiff-unsupported');
     assert.equal(jpeg.detail.name, 'jpeg');
 
-    const zstd = await refuse(buildTiff({ ...base, tagOverrides: { 259: [50000] } }), 'compression-unsupported');
-    assert.deepEqual(zstd.detail, { compression: 50000, name: 'zstd' });
+    const zstd = await refuse(buildTiff({ ...base, tagOverrides: { 259: [50001] } }), 'compression-unsupported');   /* zstd (50000) is READ now — tests/imagery-change-checks.test.mjs; webp stays refused */
+    assert.deepEqual(zstd.detail, { compression: 50001, name: 'webp' });
 
     const mystery = await refuse(buildTiff({ ...base, tagOverrides: { 259: [64999] } }), 'compression-unsupported');
     assert.equal(mystery.detail.name, null, 'a number nobody registered comes back as a number');
