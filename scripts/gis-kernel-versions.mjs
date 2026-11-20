@@ -322,6 +322,7 @@ export const NOT_A_KERNEL = {
   'js/gis-remote.js': 'where data is acquired FROM (catalogues of the world, a remote COG); same reason as js/gis-sources.js — the coverage verdict is js/gis-sources.js coverageOf() and travels with the dataset, and it computes nothing a saved recipe replays',
   'js/gis-shapefile.js': 'a reader of bytes — what it decoded is the dataset, and a re-import is a new import, not a replay',
   'js/gis-geopackage.js': 'a reader of bytes; same reason as js/gis-shapefile.js',
+  'js/gis-pmtiles.js': 'a reader of bytes and ranges; same reason as js/gis-shapefile.js',
   'js/gis-ogcapi.js': 'a reader of a feature service at a URL: the features are the server own, and what it could not say travels in `coverage`; the dataset it feeds replays by its recorded provenance, not a recipe',
   'js/gis-cog.js': 'a window of a file at a URL: the values are js/gis-geotiff.js and js/gis-warp.js; what it could not answer travels in `coverage`, and the dataset it feeds replays by its recorded provenance, not a recipe',
   'js/gis-geotiff.js': 'a reader of bytes; same reason as js/gis-shapefile.js',
