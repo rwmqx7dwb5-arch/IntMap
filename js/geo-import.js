@@ -894,7 +894,7 @@ export const GEO_IMPORT = (function () {
     }
     if (!pm && size > GEO_IMPORT_LIMITS.readBytes) return { ok: false, why: 'too-big', detail: { size: size, limit: GEO_IMPORT_LIMITS.readBytes } };
     const name = String((file && file.name) || 'data');
-    let bytes = null;
+    let bytes = new Uint8Array(0);   /* a PMTiles archive is never held whole: `pm` already carries what was read */
     if (!pm) {
       try { bytes = new Uint8Array(await file.arrayBuffer()); } catch (_) { return { ok: false, why: 'unreadable' }; }
       if (!bytes.length) return { ok: false, why: 'empty' };
@@ -925,7 +925,7 @@ export const GEO_IMPORT = (function () {
       }
     }
 
-    const sig = pm ? null : ATL_FILE.sniff(bytes.subarray(0, ATL_FILE.LIMITS.sniff));
+    const sig = ATL_FILE.sniff(bytes.subarray(0, ATL_FILE.LIMITS.sniff));
     let r;
     if (pm) r = { ok: true, fc: pm.fc, format: 'pmtiles', stats: pm.stats };
     else if (sig === 'zip') r = await fromZip(bytes);
