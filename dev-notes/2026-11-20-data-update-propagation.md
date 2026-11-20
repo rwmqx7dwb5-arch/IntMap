@@ -24,3 +24,6 @@ newsjp: 上流データが更新されたとき、それから作られた分析
 - Atlas の能力表への登録: `js/atlas-cap-data.js` / `js/gis-atlas.js` は #1319・#1308 が同時に変更中で、衝突と二重の能力を避けるため、両者が入ってから 1 本で足す。runner を注入する形にしてあるので、能力側は薄い。
 - 上流の指紋（#1319）から `observed` を作る配線も同じ理由で後続。
 - 永続化（Supabase）は Evidence Graph 自体が未実装のため触っていない。
+
+## 4. 天井を上げた理由（perf）
+`js/data-impact.js`（約 8 kB）を `evidence-graph-record.js` 経由で Atlas の塊に入れたため、`atlas-console` が 1061.2 → 約 1068 kB、`async.raw` も同じだけ増えた。入口から届かない module は検査が落とすので、共有グラフ（`sharedEvidenceGraph().refresh`）に結んだ。この増分が買ったもの: 上流更新からの再計算候補と再実行（Atlas が同じグラフに訊ける）。
