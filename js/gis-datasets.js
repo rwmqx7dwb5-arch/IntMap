@@ -1164,6 +1164,37 @@ export function makeGisDatasets() {
       return null;
     }
 
+    /* ══ (spatiotemporal-join) 単位がどの国境・区域で引かれているか ═══════════════════════════════
+       A period says WHEN a row holds. It cannot say WHICH TERRITORY its unit means, and that is a
+       separate fact: Maddison's 1913 "France" is today's France, a polity drawn as it was in 1914 is
+       not, and the two share a code. The reader (or the loader that knows) states it here, and
+       js/gis-ops.js checks every pair of a join against it instead of letting the code decide.
+         { borders:'fixed', year }   every row uses the borders in force in that year (a series
+                                     rebuilt on today's borders is { fixed, 2020 }-like)
+         { borders:'as-of-period' }  each row uses the borders of its own period
+       ⚠ A STATEMENT, NOT A VERIFICATION — nothing in the data can bear it out, so it is stored AS
+         SAID and carries who said it and when. An op's output is a recipe and refuses (openFor); its
+         own basis is derived by the op from its inputs. Refusals reuse the existing codes: a spec that
+         is no basis at all is `nothing-declared`. */
+    function declareGeoBasis(id, spec) {
+      const g = openFor(id);
+      if (!g.ok) return g;
+      const want = (spec && typeof spec === 'object' && !Array.isArray(spec)) ? spec : null;
+      let basis = null;
+      if (want && want.borders === 'fixed' && typeof want.year === 'number' && isFinite(want.year) && Math.floor(want.year) === want.year) {
+        basis = { borders: 'fixed', year: want.year };
+      } else if (want && want.borders === 'as-of-period') {
+        basis = { borders: 'as-of-period' };
+      }
+      if (!basis) return no('nothing-declared', { geoBasis: want ? String(want.borders == null ? '' : want.borders) : null });
+      basis.statedBy = want.statedBy == null ? 'reader' : String(want.statedBy);
+      basis.statedAt = Date.now();
+      const rec = g.rec;
+      if (!rec.provenance || typeof rec.provenance !== 'object') rec.provenance = { kind: 'unknown' };
+      rec.provenance.geoBasis = basis;
+      return { ok: true, geoBasis: basis };
+    }
+
     function declareField(id, name, spec) {
       const g = openFor(id);
       if (!g.ok) return g;
@@ -1484,7 +1515,7 @@ export function makeGisDatasets() {
          and so that the reason (an op's output, a grid, a stale record) is the same sentence in both
          places. */
       editable: (id) => { const g = openFor(id); return g.ok ? { ok: true } : g; },
-      declareField, editValues, addField, removeField, renameField, history,
+      declareField, declareGeoBasis, editValues, addField, removeField, renameField, history,
       /* (#R749) 宣言は取り消し履歴と寿命が違う。js/gis-project.js writes declarations() into the save
          and hands it back to restoreDeclarations() on load; the history is not saved at all. */
       declarations, restoreDeclarations,
