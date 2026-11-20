@@ -238,7 +238,16 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
 embed-client.js                   **埋め込み API のホストの側**と約束事（`PROTOCOL`・`mount`）。他サイトが URL で import するので
                                   何も import せず、vite が dist/ にそのまま写す。embed-mode.js が PROTOCOL を import する
 geo-similar.js                    **地域の特徴ベクトルによる類似検索**（Spatial Embeddings 第 1 スライス）。OSM の建物・道路・施設・水辺の種類別の密度を
-                                  比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる
+                                  比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる。
+                                  `signal:'embedding'` は同じ区画の取り方（`planCells`）で AlphaEarth の埋め込みの cosine で並べる（`findSimilarEmbedding`）
+imagery-change.js                 **画像から分かる変化の純粋な核** — 2 時点を同じ格子で比べる（光学の指数・SAR の dB・土地被覆の遷移・
+                                  AlphaEarth 埋め込みの距離）。閾値は差の分布（中央値 ± k·σ）から決め、使えない画素（SCL の雲・影）は差に入れず、
+                                  `evidenceOf` が根拠（画像 id・撮影日・出典・手順・使えた画素・制約）を 1 つの形で返す。ネットワークも DOM も持たない
+imagery-change-io.js              **画像の探索と読み出し**（Sentinel-2：Earth Search／Sentinel-1 RTC・年次土地被覆：Planetary Computer の匿名 SAS／
+                                  AlphaEarth：Source Cooperative の COG と、約 800 MB の索引をバイト範囲の二分探索で読む `aefLocate`）。
+                                  js/gis-cog.js の `readWindow` を注入して同じ格子に読む。夜間光は匿名の数値の供給元が確認できず含めない
+imagery-change-atlas.js           Atlas の `geo.imageChange` と `geo.similar` の埋め込み版の本体（Atlas の chunk に遅延）。場所の解決・回答の組み立て・
+                                  結果のラスタをデータセットとして登録する
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
                                   コード）は `js/atlas-attach.js` の `ATL_FILE` に訊き（写さず共有）、文法は
@@ -1068,7 +1077,7 @@ atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
-atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar。js/geo-similar.js の扉と引数の束縛）
+atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar。js/geo-similar.js の扉と引数の束縛）・2 時点の画像の変化（geo.imageChange。本体は js/imagery-change-atlas.js）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
