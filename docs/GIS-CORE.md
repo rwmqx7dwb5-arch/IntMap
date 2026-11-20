@@ -1935,8 +1935,20 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
 - **通信の開示**: `scripts/outbound-hosts.json` とプライバシー §4（en/jp）に検索先ホストを載せた。送るのは頼んだときだけ。
 
 ### Atlas
-能力 `data.gisRemote`（`discover`・`inspect`・`catalogs`・`add`・`sources`）。`sources` は**このアプリ自身**の供給元が述べる取得能力を 1 回で全部返す
+能力 `data.gisRemote`（`discover`・`search`・`inspect`・`items`・`acquire`・`status`・`catalogs`・`add`・`sources`）。`sources` は**このアプリ自身**の供給元が述べる取得能力を 1 回で全部返す
 （`IntMapGisSources.capabilityTable()`。何も訊かない。述べていない＝`null` と「できない」＝`false` を数え分ける）。
+
+### 発見・取得・検査・投入を状態で持つ — `js/gis-pipeline.js`
+「見つかった」は 1 語で 5 つの事実を覆っていた（カタログが在ると述べた／取ってよい／バイトが来た／中身が本物／データセットになった）。
+台帳は段ごとに `ok` / `partial` / `failed` / `blocked` / `unknown` / `pending` を持ち、**`analysis` は書けない**（段から導出: 全部 ok＝`ready`、partial を含む＝`ready-partial`＋欠けた所、それ以外＝`not-ready`＋止まった段）。
+- **観測できなかった（unknown）と、観測して無かった（failed）と、取る立場にない（blocked）を分ける。** タイムアウト・到達不能・中継の予算切れ・5xx は再試行できる `unknown`。ログイン画面への転送・401/403・署名の取り方が述べられていない 409 は `blocked`（**迂回しない**。IntMap は誰の資格情報も預からない）。404 は `failed`。
+- **中身を見る**（`inspectRaster` / `inspectFeatures`）: 空・全 nodata・一部 nodata・述べられた値域の外・窓の外・幾何が無い。空の答えは「この窓では空」であって「世界に無い」ではない。全 nodata の格子はレジストリには入りうるが、台帳は `dataset: failed`（分析してはならない）と言う。
+- **日付変更線**: 窓を ±180 で割り、**各側をカタログが持つ、その側を自分の bbox が覆うアイテム**から読む（サーバは縁に触れるだけの隣のタイルも返す＝実測）。2 ファイルは 2 データセット（モザイクにしない）。片側が無ければ親は `ready-partial` で**どちらの側か**を言う。
+- **応答しないカタログ**: `discover`/`search` は `kind_of_silence`（unresponsive・unreachable…）と所要 ms を返し、台帳がカタログごとの回数を数える。
+- Atlas: `data.gisRemote` の `acquire`（1 つの ref を全段に通して**状態**を返す）・`status`（このセッションが触れたものの状態）。**`ready` / `ready-partial` でないものを分析の入力にしない。**
+
+### メタデータ検索 — `js/gis-catalog-search.js`
+`search` は `discover` に **解像度**（`maxGsd`/`minGsd`・m。STAC の `summaries.gsd`・`raster:bands`・`item_assets` から。名前や数字入りの題名からは読まない）・**雲量**（`eo:cloud_cover`）・**ライセンスの有無**・**種別**・**出所**（カタログ／このセッションが持つもの）を足し、語の置き場所で重みを付けて並べ、**ファセット件数**と**何が何件落ちたか**を返す。述べていない項目は既定で残して「不明」と注記し、`strict:true` で落とす。`items:true` は上位数件の**シーン**（日時・gsd・雲量・資産）を 1 回の STAC `/search` で添える。`items` は 1 コレクションのシーンを窓・期間で列挙する（1 ページ、`continues` は上流の `next` の有無）。
 
 ### まだやっていないこと
 世界規模のベクタを**メモリに載せず**分割して保存・検索する基盤（GeoParquet・DuckDB / PostGIS）、長時間・大容量解析の非同期ジョブ、
