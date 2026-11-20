@@ -158,6 +158,7 @@
     "@turf/turf": "7.4.0",
     "@turf/union": "7.4.0",
     "cesium": "^1.147.0",
+    "fzstd": "0.1.1",
     "html2canvas": "1.4.1",
     "katex": "0.19.1",
     "maplibre-contour": "0.1.1",
