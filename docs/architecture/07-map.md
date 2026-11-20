@@ -495,6 +495,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - **`distance` は実装済み**（メートル。点は大圏、線・面は局所平面への射影、面の内側は 0）。理由: `js/hist-cities.js` が各時代の都市名の枝をすべてこれで守っており、無いと Cesium の地球では現代の名前が年に関係なく残った。引数が Point／MultiPoint 以外なら `null`（その比較は偽）で、`gaps()` に載る。
 - `format` は `concat`＋改行で代用しているので到達しない。`image` はアイコンを `icon-image` で名指す。
 
+- **日本の外の 3D 建物（`js/world-3d-sources.js`・`js/geoid.js`）。** 同じレイヤー `beta-dl-plateau3d`（表示名は「3D都市モデル（日本・オランダ・世界）」）が、PLATEAU のほかに **3D BAG**（オランダ全土の LoD2.2・CC BY 4.0）と **Re:Earth Buildings**（Overture Maps + OpenStreetMap から作られた世界の建物の 3D Tiles・ODbL 1.0。キー不要・稼働保証なし）を開く。優先は PLATEAU > 3D BAG > Re:Earth（`quality`）で、**より良い方が開いている範囲は下位のタイルセットから抜く**（エンジンの `placeTileset` の `excludeBoxes` ＝ Cesium の ClippingPolygon）ので同じ街路を二重に描かない。拡大の下限は 3D BAG が z10、Re:Earth が z12。どちらも楕円体高なので、**カメラ位置の EGM2008 ジオイド高**（`data/geoid-egm2008.bin.gz`・0.5° 格子・`scripts/build-geoid-grid.mjs` が導出・平均誤差 0.10 m / 最大 3.87 m）だけ下げ、カメラが 0.25 m 以上動かしたら `placeTileset` で付け直す。ジオイド格子が読めなければ開かない（誤った補正は最大 約100 m 浮き沈みするため）。Re:Earth が応答しなければ足跡の押し出し「3D建物（都市）」が代わりに残る。メモリ・LOD は他のタイルセットと同じく端末別予算（`js/tileset-budget.js`）を共有する。出典は `js/reference-data.js`・Privacy §4・`scripts/outbound-hosts.json` に載る。
 - **描画方法の選択。** `IntMapGeoEngine.plan([{method,needs:[能力…]},…])`（`js/render-plan.js`）が、良い順の候補から現在のエンジンが実行できる最初のものを返す。できなければ `method:null` と不足能力を返す。PLATEAU は `tiles3d`（Cesium）→ `extrusion`（足跡押し出し＝「3D建物（都市）」）の順で、MapLibre では行を隠し、トーストが代わりのレイヤーを名指す。
 
 ### 7.4 Chronos（統一時間）と「年」
