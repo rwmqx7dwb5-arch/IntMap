@@ -69,7 +69,7 @@ export function makeRunLedger(opt) {
 
 /* The words the line is made of. English here; the page passes its own (js/atlas-console.js, which owns the language
    machinery) — this file holds no translation so no tuple of two languages lives in it. */
-export const RUN_WORDS = Object.freeze({ sec: ' s', notReported: 'cost not reported', unreported: ' + unreported', workers: 'workers ', unpriced: 'some calls priced at the highest rate' });
+const RUN_WORDS = Object.freeze({ sec: ' s', notReported: 'cost not reported', unreported: ' + unreported', workers: 'workers ', unpriced: 'some calls priced at the highest rate' });
 
 /* one quiet sentence; null when there is nothing worth saying (no provider answer was measured) */
 export function runLine(s, words) {
