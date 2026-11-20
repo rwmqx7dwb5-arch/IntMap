@@ -1027,7 +1027,10 @@ atlas-notebook.js                 Atlas — **調査ノート**（atlas-os）の
                                   再現（runDirect＋restorer で読み返し）・今と比べる・もう一度訊く・書き出し／読み込み・アカウント同期
 atlas-notebook-store.js           Atlas — 調査ノートのデータ（記録の形・行ごとの差分・検索・Markdown／ファイル・IndexedDB・同期の突き合わせ）。DOM なし
 atlas-knowledge-store.js          Atlas — **統合知識層**のデータと規則（主張＝確認済み／推論／矛盾／古い情報・出典の再確認可否・場所/期間/世界ref・supersedes/contradicts・想起の絞り込み）。DOM なし
-atlas-knowledge.js                Atlas — 統合知識層のページ側（既定オフの利用者スイッチ・端末の IndexedDB ストア）
+atlas-knowledge.js                Atlas — 統合知識層のページ側（端末の IndexedDB ストアと、アカウントのコピーを動かす入口）
+atlas-knowledge-prefs.js          Atlas — 統合知識層の 2 つのスイッチ（端末・アカウント）と、設定画面の行「Atlas の知識」。起動時に読む小さな部品（ストアは使うときに読み込む）
+atlas-knowledge-sync.js           Atlas — 統合知識層のアカウントのコピー（atlas_knowledge_claims）。新しい方を採る・別の端末で消えたものは「不在」で消す（墓石なし）・読み込みが失敗したら端末には触れない。DOM なし
+atlas-knowledge-identity.js       Atlas — 世界オブジェクトが何の鍵で呼ばれるか（ref と外部 ID）をセッション索引と永続グラフに訊く。主張に鍵を持たせ、別の綴りの質問から同じ対象の主張へ届かせる。DOM なし
 atlas-briefing.js                 Atlas — **ブリーフィング**（調査をリンクで手渡す）のページ側。作成画面（ノートの回答を選ぶ・並べる・
                                   メモを含めるか・リンクの長さ・コピー／共有／プレビュー／ノートのファイル）と、リンクから開いた人の
                                   読む画面（回答・根拠と時刻・記録時の行を地図に描く・地図を再現・今と比べる・ノートに保存）。
@@ -1782,6 +1785,7 @@ overpass.js                       **Overpass の唯一のクライアント** `o
                                   window.IntMapOverpass ＋ ES import の両方（同一の関数）
 atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（許可された読み取り能力を呼び、能力表を語で引く）・委譲を端末に残して再開する保存口（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
+atlas-fact-comparability.js       Atlas — 複数の子の事実を「並べてよいか」で観測する（単位・範囲・境界・期間・集計の同異、Semantic Layer の comparable()、対象の紐が期間内に変わったか）。判定はせず status も変えない。DOM なし
 atlas-fact-merge.js              Atlas — 複数の子が構造化事実（`facts`: 対象・属性・値・単位・時点・出典・Evidence id）で述べたことを、**実世界オブジェクト**と属性で突き合わせ、一致／矛盾／単独／欠落に分ける `mergeFacts`。名前→対象の解決は注入された `resolve`（セッションの世界オブジェクト索引と永続グラフ）で、名前一覧は持たない。
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`

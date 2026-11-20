@@ -1,6 +1,7 @@
 ---
 title: Atlas に Skills（仕事の進め方の資料）を入れた——能力とは別に、必要なときだけ 1 節ずつ読む
 date: 2026-11-20
+internal: Skills are read by Atlas through find_capability; no reader-facing control or text changes
 ---
 
 依頼: 外部監査(2026-11-20)の指摘。能力検索(`find_capability`)は「何ができるか」しか言えず、複数の能力を組み合わせる仕事のやり方・各結果の言える範囲・答えの止めどころを持たない。

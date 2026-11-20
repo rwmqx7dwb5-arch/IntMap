@@ -22,6 +22,7 @@
  *  pretending (AGENTS.md §3-3).
  *
  *  SHAPE:  { id, title:[en,jp], summary:[en,jp], keywords:[[en…],[jp…]],
+ *            needs?:[ { kind:'layer'|'dataset'|'runtime'|'login', ref, for?: capabilityId, why:[en,jp] } ],  (observed, js/atlas-skills.js)
  *            sections:[ { id, title:[en,jp], body:[en,jp] } ] }   (two-language data is a tuple: slot 0 en, 1 jp)
  *  The first section is the one a bare read returns; keep every section under ~1,600 characters.
  * ==========================================================================*/
@@ -169,6 +170,11 @@ export const ATLAS_SKILLS = [
   /* ───────────────────────────── port logistics risk ───────────────────────────── */
   {
     id: 'port-logistics-risk',
+    /* what the work needs and the page can be asked about (js/atlas-skills.js skillReadiness). Only what a probe CAN observe is declared:
+       a need nobody can check would read as 「unobservable」 on every read and say nothing. */
+    needs: [
+      { kind: 'layer', ref: 'ships', for: 'layers.toggle', why: ['the live ships layer the traffic look in step 6 switches on', '手順6で点ける船舶の実況レイヤー'] },
+    ],
     title: ['Comparing port and logistics risk', '港湾・物流リスクの比較'],
     summary: ['How to compare ports or trade corridors on exposure to hazards, disruption, sanctions and dependence, using only what IntMap holds.', '港や物流回廊を、災害・途絶・制裁・依存度の面から、IntMap が持つ情報だけで比べる進め方。'],
     keywords: [['port', 'logistics', 'supply chain', 'shipping', 'trade route', 'chokepoint', 'disruption', 'risk comparison', 'container', 'corridor'], ['港湾', '物流', 'サプライチェーン', '海運', '貿易ルート', 'チョークポイント', '途絶', 'リスク比較', 'コンテナ', '回廊']],
