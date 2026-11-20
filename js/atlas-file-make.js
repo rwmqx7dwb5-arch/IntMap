@@ -7,7 +7,7 @@
  *  FILE BACK before saying it exists.
  *    document model    js/file-doc.js     the one description every format is written from
  *    writers           js/file-pdf.js · js/file-office.js (docx pptx xlsx) · js/file-text.js (md txt html csv json)
- *    here              the parts that need a DOM — measuring and drawing text on a canvas (the PDF page images),
+ *    here              the parts that need a DOM — measuring and drawing text on a canvas (the PDF's glyph outlines),
  *                      turning a chart's SVG and a captured map frame into pictures, the "no missing glyph" check,
  *                      and the card the reader saves from
  *  ⚠ A file is only reported as made when the read-back finds the right page count and the document's own
@@ -16,11 +16,12 @@
 import { buildDoc, docText, fileName, resolveFormat, readImage, FORMATS, FORMAT_INFO } from './file-doc.js';
 import { TEXT_WRITERS } from './file-text.js';
 import { OFFICE_WRITERS, readZip, checkPackage, packageText } from './file-office.js';
-import { layoutDoc, buildPdf, verifyPdf, PAGE } from './file-pdf.js';
+import { layoutDoc, buildPdf, verifyPdf } from './file-pdf.js';
+import { canvasGlyphOf } from './file-glyph.js';
 
 const FONT = '"Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,"Microsoft YaHei","Apple SD Gothic Neo","Noto Sans CJK JP",system-ui,sans-serif';
 const MONO = 'ui-monospace,Consolas,"MS Gothic","Noto Sans Mono CJK JP",monospace';
-const SCALE = 2;   /* 144 dpi: text stays crisp at a normal zoom and an A4 page stays a few hundred KB */
+const MAX_PIC = 2400;   /* the longest side a picture keeps in the file (px) */
 const MAX_BYTES = 40 * 1024 * 1024;
 
 
@@ -62,27 +63,30 @@ export function atlasFile() {
     finally { host.remove(); }
   }
 
-  async function pageJpeg(page, bitmaps) {
-    const c = canvas(PAGE.w * SCALE, PAGE.h * SCALE), x = c.getContext('2d');
-    x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.scale(SCALE, SCALE); x.textBaseline = 'alphabetic';
-    for (const o of page.ops) {
-      if (o.k === 'r') { x.fillStyle = o.fill; x.fillRect(o.x, o.y, o.w, o.h); }
-      else if (o.k === 'l') { x.strokeStyle = o.c; x.lineWidth = o.w; x.beginPath(); x.moveTo(o.x1, o.y1); x.lineTo(o.x2, o.y2); x.stroke(); }
-      else if (o.k === 't') { x.fillStyle = o.c; x.font = (o.b ? '700 ' : '400 ') + o.sz + 'px ' + (o.mono ? MONO : FONT); x.fillText(o.s, o.x, o.y); }
-      else if (o.k === 'i') { let bm = bitmaps.get(o.img); if (!bm) { bm = await createImageBitmap(new Blob([o.img.bytes], { type: o.img.mime })); bitmaps.set(o.img, bm); } x.drawImage(bm, o.x, o.y, o.w, o.h); }
-    }
-    const blob = await blobOf(c, 'image/jpeg', 0.92); if (!blob) return null;
-    const bytes = await bytesOf(blob); return { jpeg: bytes, w: c.width, h: c.height };
+  /* a picture for the file: drawn on white and encoded as a JPEG (a chart / map frame is opaque; a PNG's transparency is flattened) */
+  async function imageOf(img) {
+    const bm = await createImageBitmap(new Blob([img.bytes], { type: img.mime })), k = Math.min(1, MAX_PIC / Math.max(bm.width, bm.height));
+    const c = canvas(bm.width * k, bm.height * k), x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(bm, 0, 0, c.width, c.height);
+    try { bm.close(); } catch (_) { /* already released */ }
+    const blob = await blobOf(c, 'image/jpeg', 0.94); if (!blob) return null;
+    return { jpeg: await bytesOf(blob), w: c.width, h: c.height };
   }
+  const pipe = async (bytes, stream) => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+  const deflate = typeof CompressionStream === 'function' ? (b) => pipe(b, new CompressionStream('deflate')) : undefined;
+  const inflate = typeof DecompressionStream === 'function' ? (b) => pipe(b, new DecompressionStream('deflate')) : undefined;
+  let glyphOf = null;
 
   async function makePdf(doc) {
     await (document.fonts && document.fonts.ready);
-    const laid = layoutDoc(doc, measure), bitmaps = new Map(), images = [];
-    for (const p of laid.pages) { const im = await pageJpeg(p, bitmaps); if (!im) return { problem: 'raster-failed', detail: 'the page image could not be encoded' }; images.push(im); }
-    bitmaps.forEach((b) => { try { b.close(); } catch (_) { /* already released */ } });
-    const out = buildPdf(doc, laid, images, measure); if (out.problem) return out;
-    const text = docText(doc), v = verifyPdf(out.bytes, text, laid.pages.length), glyphs = missingGlyphs(text);
-    return { bytes: out.bytes, pages: out.pages, problems: v.problems.concat(glyphs.missing.length ? ['missing-glyphs:' + glyphs.missing.slice(0, 12).join('')] : []), verified: { pages: v.pages, glyphsChecked: glyphs.checked, glyphsUnchecked: !!glyphs.unchecked }, stated: [doc.lang === 'ja' ? 'ページの文字は画像として描いています。透明な文字を重ねてあるので、検索・選択・コピーはできます' : 'page text is drawn as an image; an invisible text layer on top keeps search, selection and copy working'] };
+    if (!glyphOf) glyphOf = canvasGlyphOf({ n: FONT, m: MONO });
+    const laid = layoutDoc(doc, measure);
+    const out = await buildPdf(doc, laid, { glyphOf, measure, imageOf, deflate });
+    if (out.problem) return out;
+    const text = docText(doc), nPics = laid.pages.reduce((n, p) => n + p.ops.filter((o) => o.k === 'i').length, 0);
+    const v = await verifyPdf(out.bytes, text, laid.pages.length, inflate, out.images), glyphs = missingGlyphs(text);
+    if (nPics && !out.images) v.problems.push('pictures-lost');
+    return { bytes: out.bytes, pages: out.pages, problems: v.problems.concat(glyphs.missing.length ? ['missing-glyphs:' + glyphs.missing.slice(0, 12).join('')] : []), verified: { pages: v.pages, fonts: v.fonts, glyphs: v.glyphs, images: v.images, glyphsChecked: glyphs.checked, glyphsUnchecked: !!glyphs.unchecked }, stated: [doc.lang === 'ja' ? '文字と図形はベクターで描いています（拡大しても粗くなりません）。文字の形はこの端末のフォントから取っており、検索・選択・コピーもできます。地図やグラフは画像として載せています' : 'text and shapes are vector (sharp at any zoom); letter shapes are taken from this device font, and search, selection and copy work. Maps and charts are placed as pictures'] };
   }
 
   function makeOther(doc, fmt, a) {
