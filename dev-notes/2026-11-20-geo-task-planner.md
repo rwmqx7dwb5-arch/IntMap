@@ -31,3 +31,7 @@ newsjp: Atlas が地理空間分析を、対象地域・時点・必要データ
 - 解像度・時点が実際に合うかまでは見ていない(カタログが述べる範囲は extent と time のみ)。合致の判定は `inspect` 後の `gis` の `coverage` が正本。
 - server/job の実行基盤は存在しない。足すのは別の仕事(監査の他項目)。
 - 検証: `tests/geo-task-planner-checks.test.mjs`(14 件・実ループ経由を含む)、既存 plan 系 3 本は緑。本番での Atlas 実測は夜間評価が停止中(secret 欠落)のため未実施。
+
+## 4. 予算
+
+- `atlas-console` の async chunk の天井を 1061.2 kB → 1072.5 kB に上げた(`tests/perf-baseline.json`)。`js/atlas-geoplan.js` が `js/atlas-plan.js` から静的に読まれ、`plan` 道具の `geo` の説明文もこの chunk に載るため。得たもの: 地理空間分析の構造化と実行前の存在確認。`plan` を使わない会話にも読み込まれるが、遅延 import にすると main から chunk が分かれる前例(lazy-import-splits-main)があるため採らない。
