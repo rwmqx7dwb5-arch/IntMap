@@ -13,6 +13,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import '../js/safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper the page writes through */
 import { planJob, workerPrompt } from '../js/atlas-job-core.js';
 import { runJob } from '../supabase/functions/_shared/atlas-job-runner.js';
 import { SERVER_CAPS, serverCapabilityIds, makeServerCaps } from '../supabase/functions/_shared/atlas-server-caps.js';

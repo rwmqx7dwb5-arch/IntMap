@@ -107,8 +107,8 @@ const URL_OK = /^https?:\/\//i;
 /* a URL that starts an href goes through window.IntMapSafe.url (js/safe.js); with it absent (a node test) nothing becomes a link */
 const safeUrl = (u) => { try { return (typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.url) ? String(window.IntMapSafe.url(u) || '') : ''; } catch (_) { return ''; } };
 
-/* the one encoder (js/safe-html.js IntMapSafe.html); with it absent (a node test) the same five characters are replaced here */
-const escHtml = (v) => { const t = v == null ? '' : String(v); try { if (typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.html) return window.IntMapSafe.html(t); } catch (_) { /* fall through */ } return t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); };
+/* the one encoder is window.IntMapSafe.html (js/safe-html.js); with it absent nothing is rendered rather than rendered unescaped */
+const escHtml = (v) => { try { return String(globalThis.IntMapSafe.html(v == null ? '' : String(v))); } catch (_) { return ''; } };
 
 /* renderJobCard(facts, { L }) → HTML (the inside of a card; mountJobCards wraps it) */
 export function renderJobCard(f, h) {
@@ -126,7 +126,7 @@ export function renderJobCard(f, h) {
   const controls = f.running
     ? '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><button type="button" data-atl-job-cancel>' + esc(L('Stop', '止める')) + '</button>'
       + '<input type="text" data-atl-job-note maxlength="1000" placeholder="' + esc(L('Change the instructions while it runs', '実行中に指示を追加')) + '" style="flex:1;min-width:140px;">'
-      + '<button type="button" data-atl-job-send>' + esc(L('Send', '送る')) + '</button></div>'
+      + '<button type="button" data-atl-job-send>' + esc(L('Send', '送信')) + '</button></div>'
     : '';
   const fin = !f.running && f.result ? '<div style="margin-top:6px;"><b>' + esc(L('Combined', '統合した結果')) + '</b><div>' + esc(f.result.slice(0, 2500)) + '</div></div>' : '';
   return '<div style="font-weight:600;">' + esc(f.title || L('Background job', 'バックグラウンドの仕事')) + ' — ' + esc(word(f.status === 'queued' ? 'queued' : f.status)) + '</div>'
@@ -192,7 +192,7 @@ export function mountJobCards(getClient, h, o) {
 }
 
 /* ── the page's own wiring: the signed-in Supabase client (window.sb) and its token, the same door ai-proxy is called through (js/ai-core.js aiAuthHeaders) ── */
-export async function pageAuthHeaders(w) {
+async function pageAuthHeaders(w) {
   const headers = { 'Content-Type': 'application/json' };
   let token = '';
   try { const r = await w.sb.auth.getSession(); token = (r && r.data && r.data.session && r.data.session.access_token) || ''; } catch (_) { /* signed out */ }
