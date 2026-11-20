@@ -602,8 +602,8 @@ async function coverage(a, K) {
     for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) { const p = await LT.align(ids[i], ids[j], when); if (p) pairs.push(p); }
     if (!pairs.length) return R(false, warn('' + L('None of those layers has a time declaration', '指定したレイヤーに時間の宣言がありません')));
     const lang = (K.HOST && K.HOST.lang) || 'en';
-    const row = (p) => '<li><b>' + esc(p.status) + '</b> — ' + esc(lang === 'jp' ? p.message.jp : p.message.en) + '</li>';
-    return R(true, '<div>' + esc(L('Can these layers be compared at one instant?', 'これらのレイヤーは同じ時点で比較できるか')) + '</div><ul>' + pairs.map(row).join('') + '</ul>', { alignment: pairs.map((p) => ({ ids: p.ids, status: p.status, reasons: p.reasons, skewMs: p.skewMs == null ? null : p.skewMs, grainMs: p.grainMs == null ? null : p.grainMs, why: p.message.en })) });
+    const row = (p) => '<li><b>' + esc(p.status) + '</b> — ' + esc(lang === 'jp' ? p.message[1] : p.message[0]) + '</li>';
+    return R(true, '<div>' + esc(L('Can these layers be compared at one instant?', 'これらのレイヤーは同じ時点で比較できるか')) + '</div><ul>' + pairs.map(row).join('') + '</ul>', { alignment: pairs.map((p) => ({ ids: p.ids, status: p.status, reasons: p.reasons, skewMs: p.skewMs == null ? null : p.skewMs, grainMs: p.grainMs == null ? null : p.grainMs, why: p.message[0] })) });
   }
   const c = await LT.coverage(when, { on: !!a.on });
   if (!c) return R(false, warn('' + L('Give a year or an ISO date', '年か ISO 形式の日付を指定してください')));

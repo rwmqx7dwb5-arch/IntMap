@@ -65,7 +65,7 @@ test('every status the rule returns is in the closed vocabulary; every message i
     const r = align(TIME[a], TIME[b], at('1914-07-01T00:00:00Z'));
     assert.ok(ALIGN_STATUSES.includes(r.status), a + '/' + b + ' → ' + r.status);
     const m = explainAlign(r, 'A', 'B', at('1914-07-01T00:00:00Z'));
-    assert.ok(m.en && m.jp);
+    assert.ok(m[0] && m[1]);
   }
 });
 test('validate refuses a grain or geoBasis nobody authored', () => {

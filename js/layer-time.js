@@ -332,7 +332,7 @@ export const ALIGN_STATUSES = Object.freeze(['unknown', 'unjoinable', 'basis-mis
 const yearOf = (ms) => new Date(ms).getUTCFullYear();
 
 /** the resolution a declaration's statements have, in ms: 0 (an instant), a positive span, or null (not stated) */
-export function grainOf(decl) {
+function grainOf(decl) {
   if (!decl) return null;
   if (decl.grain != null) return periodMs(decl.grain);
   if (decl.kind === 'instant' || decl.kind === 'live') return 0;
@@ -362,7 +362,7 @@ export function align(declA, declB, at, rtA, rtB) {
   const a = side(declA, rtA), b = side(declB, rtB);
   const reasons = [];
   const out = (status, more) => Object.assign({ status, reasons, a, b }, more || {});
-  for (const [k, s] of [['a', a], ['b', b]]) { if (s.status === 'unstated') reasons.push(k + '-unstated'); else if (s.status === 'unknown') reasons.push(k + '-unknown'); }
+  for (const k of ['a', 'b']) { const s = k === 'a' ? a : b; if (s.status === 'unstated') reasons.push(k + '-unstated'); else if (s.status === 'unknown') reasons.push(k + '-unknown'); }
   if (a.status === 'unknown' || b.status === 'unknown') return out('unknown');
   if (a.status === 'unstated' || b.status === 'unstated') return out('unjoinable');
   /* basis — judged at the instant the PAIR is asked about */
@@ -374,9 +374,9 @@ export function align(declA, declB, at, rtA, rtB) {
     const bad = ya != null && yb != null && ya !== yb;
     if (bad) { reasons.push('basis-fixed-year'); return out('basis-mismatch'); }
   }
-  const carried = [['a', a], ['b', b]].filter(([, s]) => s.status === 'carried');
-  if (carried.length) {
-    for (const [k] of carried) reasons.push(k + '-carried');
+  if (a.status === 'carried' || b.status === 'carried') {
+    if (a.status === 'carried') reasons.push('a-carried');
+    if (b.status === 'carried') reasons.push('b-carried');
     const skew = (a.shownAt != null && b.shownAt != null) ? Math.abs(a.shownAt - b.shownAt) : null;
     return out('skewed', skew == null ? {} : { skewMs: skew });
   }
@@ -396,14 +396,14 @@ export function explainAlign(r, na, nb, at) {
   const live = !at || at.live;
   const day = live ? '' : isoDay(toMs(at.when));
   const dEn = live ? 'the present' : day, dJp = live ? '現在' : day;
-  const span = (ms) => { const y = ms / (365.2425 * DAY); return y >= 0.9 ? { en: Math.round(y) + ' y', jp: Math.round(y) + '年' } : { en: Math.round(ms / DAY) + ' d', jp: Math.round(ms / DAY) + '日' }; };
+  const span = (ms) => { const y = ms / (365.2425 * DAY); return y >= 0.9 ? [Math.round(y) + ' y', Math.round(y) + '年'] : [Math.round(ms / DAY) + ' d', Math.round(ms / DAY) + '日']; };
   switch (r.status) {
-    case 'aligned': return { en: na + ' and ' + nb + ' state the same instant (' + dEn + ') at the same resolution', jp: na + ' と ' + nb + ' は同じ時点（' + dJp + '）を同じ粒度で述べています' };
-    case 'coarsened': { const g = r.grainMs ? span(r.grainMs) : { en: 'the coarser source’s resolution', jp: '粗い方の粒度' }; return { en: na + ' and ' + nb + ' state ' + dEn + ' at different resolutions — the pair speaks only to ' + g.en, jp: na + ' と ' + nb + ' は ' + dJp + ' を異なる粒度で述べています——組み合わせが言えるのは ' + g.jp + ' の粒度までです' }; }
-    case 'skewed': return { en: na + ' and ' + nb + ' are not the same date: one shows another date than ' + dEn + (r.skewMs != null ? ' (' + span(r.skewMs).en + ' apart)' : ''), jp: na + ' と ' + nb + ' は同じ日付ではありません：片方は ' + dJp + ' と別の時点を示しています' + (r.skewMs != null ? '（' + span(r.skewMs).jp + 'の差）' : '') };
-    case 'basis-mismatch': return { en: na + ' and ' + nb + ' draw their units differently (one on a fixed year’s borders, the other for the date) — a shared code is not a shared territory', jp: na + ' と ' + nb + ' は単位の引き方が違います（一方は固定年の国境、他方はその日の国境）——同じコードは同じ領域を意味しません' };
-    case 'basis-unverified': return { en: 'One of ' + na + ' / ' + nb + ' does not say how its units were drawn — the pair is not verified as the same territory', jp: na + ' / ' + nb + ' の一方は単位の引き方を述べていません——同じ領域であることは確かめられていません' };
-    case 'unjoinable': return { en: 'Not comparable at ' + dEn + ': ' + (r.reasons.indexOf('a-unstated') >= 0 ? na : nb) + ' states nothing for that date', jp: dJp + ' では比較できません：' + (r.reasons.indexOf('a-unstated') >= 0 ? na : nb) + ' はその日を述べていません' };
-    default: return { en: 'The range of ' + na + ' or ' + nb + ' is read when the layer loads', jp: na + ' または ' + nb + ' の範囲はレイヤーの読み込み時に分かります' };
+    case 'aligned': return LA(na + ' and ' + nb + ' state the same instant (' + dEn + ') at the same resolution', na + ' と ' + nb + ' は同じ時点（' + dJp + '）を同じ粒度で述べています');
+    case 'coarsened': { const g = r.grainMs ? span(r.grainMs) : ['the coarser source’s resolution', '粗い方の粒度']; return LA(na + ' and ' + nb + ' state ' + dEn + ' at different resolutions — the pair speaks only to ' + g[0], na + ' と ' + nb + ' は ' + dJp + ' を異なる粒度で述べています——組み合わせが言えるのは ' + g[1] + ' の粒度までです'); }
+    case 'skewed': return LA(na + ' and ' + nb + ' are not the same date: one shows another date than ' + dEn + (r.skewMs != null ? ' (' + span(r.skewMs)[0] + ' apart)' : ''), na + ' と ' + nb + ' は同じ日付ではありません：片方は ' + dJp + ' と別の時点を示しています' + (r.skewMs != null ? '（' + span(r.skewMs)[1] + 'の差）' : ''));
+    case 'basis-mismatch': return LA(na + ' and ' + nb + ' draw their units differently (one on a fixed year’s borders, the other for the date) — a shared code is not a shared territory', na + ' と ' + nb + ' は単位の引き方が違います（一方は固定年の国境、他方はその日の国境）——同じコードは同じ領域を意味しません');
+    case 'basis-unverified': return LA('One of ' + na + ' / ' + nb + ' does not say how its units were drawn — the pair is not verified as the same territory', na + ' / ' + nb + ' の一方は単位の引き方を述べていません——同じ領域であることは確かめられていません');
+    case 'unjoinable': return LA('Not comparable at ' + dEn + ': ' + (r.reasons.indexOf('a-unstated') >= 0 ? na : nb) + ' states nothing for that date', dJp + ' では比較できません：' + (r.reasons.indexOf('a-unstated') >= 0 ? na : nb) + ' はその日を述べていません');
+    default: return LA('The range of ' + na + ' or ' + nb + ' is read when the layer loads', na + ' または ' + nb + ' の範囲はレイヤーの読み込み時に分かります');
   }
 }
