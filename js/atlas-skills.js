@@ -36,12 +36,13 @@ export var SECTION_MAX_CHARS = 1600;
    then rank by the rarity of the shared word (document frequency) rather than raising this number. */
 var MIN_SCORE = 3;
 
-export function langOf(text) { return JP_RE.test(String(text || '')) ? 'jp' : 'en'; }
+function langOf(text) { return JP_RE.test(String(text || '')) ? 'jp' : 'en'; }
 
-function pick(v, lang) { return (v && (v[lang] || v.en)) || ''; }
+/* a skill's wording is a [en, jp] tuple (the repository's way of holding two languages as data); slot 0 is the fallback */
+function slot(lang) { return lang === 'jp' ? 1 : 0; }
+function pick(v, lang) { return (v && (v[slot(lang)] || v[0])) || ''; }
 
-export function listSkills() { return ATLAS_SKILLS; }
-export function skillById(id) {
+function skillById(id) {
   var k = String(id || '').trim().toLowerCase();
   for (var i = 0; i < ATLAS_SKILLS.length; i++) if (ATLAS_SKILLS[i].id === k) return ATLAS_SKILLS[i];
   return null;
@@ -80,11 +81,11 @@ function words(s) {
 
 function scoreSkill(skill, query) {
   var q = String(query || '').toLowerCase(), score = 0;
-  var kw = ((skill.keywords && skill.keywords.en) || []).concat((skill.keywords && skill.keywords.jp) || []);
+  var kw = ((skill.keywords && skill.keywords[0]) || []).concat((skill.keywords && skill.keywords[1]) || []);
   kw.forEach(function (k) { if (k && q.indexOf(String(k).toLowerCase()) >= 0) score += 4; });
   /* ordinary words shared with the English title / summary / keywords (each distinct word once) */
   var have = Object.create(null);
-  words(pick(skill.title, 'en') + ' ' + pick(skill.summary, 'en') + ' ' + ((skill.keywords && skill.keywords.en) || []).join(' ')).forEach(function (w) { have[w] = 1; });
+  words(pick(skill.title, 'en') + ' ' + pick(skill.summary, 'en') + ' ' + ((skill.keywords && skill.keywords[0]) || []).join(' ')).forEach(function (w) { have[w] = 1; });
   var seen = Object.create(null);
   words(q).forEach(function (w) { if (have[w] && !seen[w]) { seen[w] = 1; score += 1; } });
   /* Japanese has no spaces: shared character pairs with the Japanese title / summary, three or more */
@@ -160,17 +161,17 @@ export function audit(deps) {
     if (ids[s.id]) bad.push(s.id + ': declared twice');
     ids[s.id] = 1;
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s.id)) bad.push(s.id + ': an id is lower-case words joined by hyphens');
-    ['title', 'summary'].forEach(function (f) { ['en', 'jp'].forEach(function (l) { if (!(s[f] && s[f][l])) bad.push(s.id + ': ' + f + ' is missing in ' + l); }); });
-    ['en', 'jp'].forEach(function (l) { if (!((s.keywords && s.keywords[l]) || []).length) bad.push(s.id + ': no keywords in ' + l); });
+    ['title', 'summary'].forEach(function (f) { ['en', 'jp'].forEach(function (l) { if (!(s[f] && s[f][slot(l)])) bad.push(s.id + ': ' + f + ' is missing in ' + l); }); });
+    ['en', 'jp'].forEach(function (l) { if (!((s.keywords && s.keywords[slot(l)]) || []).length) bad.push(s.id + ': no keywords in ' + l); });
     var secIds = Object.create(null);
     (s.sections || []).forEach(function (sec) {
       if (secIds[sec.id]) bad.push(s.id + '/' + sec.id + ': section declared twice');
       secIds[sec.id] = 1;
       ['en', 'jp'].forEach(function (l) {
-        var body = sec.body && sec.body[l];
+        var body = sec.body && sec.body[slot(l)];
         if (!body || !String(body).trim()) { bad.push(s.id + '/' + sec.id + ': no ' + l + ' text'); return; }
         if (body.length > SECTION_MAX_CHARS) bad.push(s.id + '/' + sec.id + ': ' + l + ' is ' + body.length + ' characters; a section is read whole, keep it under ' + SECTION_MAX_CHARS);
-        if (!(sec.title && sec.title[l])) bad.push(s.id + '/' + sec.id + ': no ' + l + ' title');
+        if (!(sec.title && sec.title[slot(l)])) bad.push(s.id + '/' + sec.id + ': no ' + l + ' title');
       });
     });
     if (!s.sections || !s.sections.length) bad.push(s.id + ': no sections');
