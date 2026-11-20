@@ -30,6 +30,8 @@ export const GOVERNANCE = {
       expires: 'if GRDC publishes a revised edition of the Major River Basins',
       canon: 'this record (no script in the repository rebuilds data/basins_mrb.json)',
     },
+    /* (describes.*) measured over the committed bundle */
+    extent: '236 river-basin outlines, each carrying a name only',
   },
   'data/ecoregions_2017.geojson': {
     publisher: 'RESOLVE / WWF Ecoregions 2017',
@@ -41,6 +43,8 @@ export const GOVERNANCE = {
       expires: 'if RESOLVE publishes a successor edition',
       canon: 'this record (no script in the repository rebuilds data/ecoregions_2017.*)',
     },
+    /* (describes.*) measured over the committed bundle */
+    extent: '847 ecoregion polygons, each carrying its ecoregion name, biome name and display colour',
   },
   'data/precip-mm.json': {
     publisher: 'CHELSA V2.1 (WSL)',
@@ -52,11 +56,21 @@ export const GOVERNANCE = {
       expires: 'if the layer is moved to a later normal period (1991-2020) or a CHELSA V3',
       canon: 'this record (no script in the repository rebuilds data/precip-mm.*)',
     },
+    /* (describes.*) stated by the bundle's own manifest (data/precip-mm.json) */
+    period: { start: '1981', end: '2010' },
+    extent: 'global grid, equirectangular, -180..180 by 90..-90',
+    method: 'mean annual precipitation (CHELSA V2.1 bio12), a 1981-2010 climatology, encoded in the PNG as log-scaled millimetres',
+    resolution: '0.1 degree (3600 x 1800 cells)',
   },
   'data/precip-year.json': {
     publisher: 'Deutscher Wetterdienst — GPCC Full Data Monthly',
     url: 'https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/05/',
     ...GPCC_FULL_DATA,
+    /* (describes.*) stated by the bundle's own manifest (data/precip-year.json) */
+    period: { start: '1981', end: '2020' },
+    extent: 'land cells of a global grid (cells with no gauge analysis, sea and the poles, are 0), equirectangular, -180..180 by 90..-90; one band of 360 rows per year',
+    method: 'GPCC Full Data Monthly Product Version 2022 gauge analysis, the twelve monthly totals of each year summed into an annual total per cell',
+    resolution: '0.5 degree (720 x 360 cells), one value per cell per year',
   },
   'data/subcable-overrides.json': {
     /* read by scripts/build-subcables.mjs; every hand-made decision about the cable dataset */

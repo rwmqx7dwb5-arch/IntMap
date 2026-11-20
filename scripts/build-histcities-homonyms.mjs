@@ -69,6 +69,12 @@ export const GOVERNANCE = {
        scripts/build-gazetteer.mjs to reuse them would RUN it, which is why they live in a pure-data module) */
     ...GEONAMES_TERMS,
     ...GEONAMES,
+    /* (describes.*) GeoNames' readme (download.geonames.org/export/dump/readme.txt, read 2026-11-20) for the dump, and the
+       committed index measured for the rest. No period: the dump is a present-day gazetteer and states no date. */
+    extent: '19,345 spellings (the keys scripts/histcities/*.mjs join on), each listing every cities500 settlement that answers to it (measured on the bundle)',
+    method: 'For each spelling the record joins on, every GeoNames cities500 settlement whose name, asciiname or untagged alternatename matches it exactly, with no population sort, no deduplication, no stop-word or length filter; each hit keeps the country, longitude and latitude in decimal degrees (WGS84, as GeoNames states), population and feature code',
+    resolution: 'settlement point (longitude, latitude) per hit',
+    completeness: 'Only settlements in GeoNames cities500, which the readme defines as all cities with a population over 500 or seats of administrative divisions down to PPLA4, and only for the spellings the record uses; a place GeoNames lacks is absent here',
     builtBy: 'scripts/build-histcities-homonyms.mjs',
   },
 };

@@ -68,6 +68,13 @@ export const GOVERNANCE = {
        Earth requires none) */
     asOf: '2024-07-01',
     paidBy: 'UN DESA Population Division — International Migrant Stock 2024 (CC BY 3.0 IGO)',
+    /* (describes.*) DESA's page (https://www.un.org/development/desa/pd/content/international-migrant-stock, read 2026-11-20) states
+       the period 1990 to 2024, 233 countries and areas, and how the 2024 edition was produced; the pair counts are MEASURED on the
+       committed bundle (9,345 destination-origin pairs, 231 destinations, 233 origins, eight years 1990, 1995 ... 2020, 2024). */
+    period: { start: '1990', end: '2024' },
+    extent: 'DESA states 233 countries and areas; the bundle carries 9,345 destination-origin pairs over 231 destinations and 233 origins, at eight dates (1990, 1995, 2000, 2005, 2010, 2015, 2020, 2024)',
+    method: 'UN estimates of the stock of international migrants by destination and origin; in the 2024 edition 60 countries and areas received a full reassessment from new census or register information, and the remaining estimates extrapolate those published in the 2020 edition',
+    resolution: 'country or area of destination x country or area of origin x year',
     /* the shortest cadence among the upstreams whose material the bundle carries: Natural Earth's (P1Y) is shorter than
        DESA's editions, so the bundle is due for a look yearly — when DESA has published nothing new, a rebuild is a no-op */
     cadence: 'P1Y',

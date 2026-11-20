@@ -39,6 +39,11 @@ export const GOVERNANCE = {
     licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
     /* true: CC BY makes the credit a CONDITION of redistribution (the gate reads a boolean here); the sentence that pays it is `credit` in the bundle (CREDIT below) */
     attribution: true,
+    /* (describes.*) the header and the bundle's own survey and conditions state each of these */
+    period: { start: '2011-03-11', end: '2011-03-25', note: 'the 336-hour model window from 2011-03-11T05:46Z; the deposition values are decay-compensated to 2012-06-28 (the paper that uses the file says so, the IRSN file does not)' },
+    extent: 'the area around Fukushima Daiichi, longitude 138.13 to 141.78 and latitude 35.17 to 39.57 (measured on the 1,740 survey cells)',
+    method: 'measured Cs-137 ground deposition (mean of the MEXT/NRA aerial radiation monitoring in each cell, compiled by IRSN) compared with the js/radiation-model.js plume model as shipped (nine members: 3 seeds x 6/10/20 PBq, ERA5 wind); nothing is fitted to the survey',
+    resolution: 'survey cells of 0.05 degree (1,740 cells, 1.72 million aerial measurements); the model deposits on a 0.01 degree grid',
     /* the DATA_SOURCES row (js/reference-data.js) that pays the attribution — matched by exact name */
     paidBy: 'Fukushima Cs-137 deposition survey (MEXT/NRA via IRSN, CC BY 4.0)',
     /* a historical event: the survey is not republished on a schedule */

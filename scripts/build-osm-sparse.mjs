@@ -39,7 +39,7 @@ for (let lon = -180; lon < 180; lon += 60) SLICES.push([-90, lon, 90, lon + 60])
    突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
 export const GOVERNANCE = (() => {
   /* the same words the bundles' own `source` field carries, from this value */
-  const rec = (paidBy) => ({
+  const rec = (paidBy, describes) => ({
     publisher: 'OpenStreetMap contributors',
     url: EPS[0],
     licence: 'ODbL',
@@ -49,12 +49,21 @@ export const GOVERNANCE = (() => {
        pays it is named per bundle because the two bundles are credited separately. */
     attribution: true,
     paidBy,
+    /* (describes.*) the Overpass tag queries the builder runs and what the committed bundles measurably carry (built 2026-08-19). */
+    ...describes,
+    resolution: 'one point per OSM node, way or relation (the coordinate of a node, otherwise the centre Overpass returns)',
     ...OPENSTREETMAP,
     builtBy: 'scripts/build-osm-sparse.mjs',
   });
   return {
-    'data/osm-diplo.json': rec('Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)'),
-    'data/osm-space.json': rec('Spaceports & satellite ground stations — OpenStreetMap (aeroway=spaceport, man_made=launch_pad/satellite_dish, Overpass API)'),
+    'data/osm-diplo.json': rec('Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)', {
+      extent: '17,438 diplomatic features worldwide, 445 distinct country codes (11,339 embassy, 5,355 consulate, 744 other)',
+      method: 'Overpass query of nwr["amenity"="embassy"] and nwr["office"="diplomatic"], run in 60-degree longitude slices because a global union times out',
+    }),
+    'data/osm-space.json': rec('Spaceports & satellite ground stations — OpenStreetMap (aeroway=spaceport, man_made=launch_pad/satellite_dish, Overpass API)', {
+      extent: '14,965 features worldwide (36 spaceport, 200 launch pad, 3,108 radio telescope, 11,621 satellite ground station)',
+      method: 'Overpass query of nwr tags aeroway=spaceport, man_made=launch_pad, military=launchpad, man_made=satellite_dish, man_made=telescope with telescope:type=radio, and communication:satellite, run in 60-degree longitude slices',
+    }),
   };
 })();
 

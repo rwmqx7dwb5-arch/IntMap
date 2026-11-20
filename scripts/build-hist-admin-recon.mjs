@@ -129,6 +129,14 @@ export function gbUpstreams() {
 /* ⚠ 出自は値である（js/data-governance.js の read() と npm run check:datagov が読む）。 */
 export const GOVERNANCE = {
   'data/hist-admin-recon.js': {
+    /* (describes.*) The method in this file's header and docs/HIST-RECONSTRUCTION.md, and the committed bundle measured.
+       ⚠ THIS IS IntMap'S OWN RECONSTRUCTION and the method says so; no accuracy figure is stated because none has been
+       measured across the whole record (the dossiers are checked for internal consistency, not scored against a survey). */
+    period: { start: '1727', end: '2020' },
+    extent: '3,608 first-level unit rows from 134 reconstruction dossiers; the earliest row starts in 1727 and the latest ends in 2020 (measured on the bundle)',
+    method: 'Reconstruction by IntMap, not a surveyed record: a unit on a span is a union of finer atoms (Natural Earth admin-1, RISTAT 1897 uyezds, geoBoundaries, Japanese N03 1920 and e-Stat 2020 areas, Amasyali kazas) whose boundaries are the historical lines, and every membership is a stated fact with a citation in a dossier; nothing is drawn by hand, smoothed or interpolated. A span is drawn only if the ground lay in one polity of the era map on that date, and it yields to OpenHistoricalMap and to every publisher\'s dated record',
+    resolution: 'the precision of each atom set as its publisher released it, simplified to a 0.004 degree tolerance with four decimals for the overview; spans are dated to the day, with exclusive ends',
+    completeness: 'Only units whose membership could be established from cited facts on atoms that carry the historical line; a line no atom carries is not drawn and is listed as unresolved in the dossier, and a span withheld by a test is reported with its reason, so absence here is not a statement that the unit did not exist',
     upstreams: [
       { publisher: 'Natural Earth', url: 'https://www.naturalearthdata.com/', licence: 'Public domain',
         licenceUrl: 'https://www.naturalearthdata.com/about/terms-of-use/', attribution: false, creditRequired: false,

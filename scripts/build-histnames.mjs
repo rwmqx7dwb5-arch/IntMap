@@ -64,6 +64,13 @@ export const GOVERNANCE = {
     /* the historical names are Wikidata labels, harvested through scripts/histeras/harvest.mjs */
     publisher: 'Wikidata',
     ...WIKIDATA,
+    /* (describes.*) This builder's own lanes (header above) and the committed bundle measured. ⚠ No period and no accuracy
+       figure: the names are not dated by this table (the records they attach to carry the dates), and no matching error
+       rate has been measured against a reference. */
+    extent: 'Wikidata labels in nine languages for 1,244 items named by QID, 185 CShapes, 773 era-snapshot and 32 era-base English names, plus 100 translated descriptions (measured on the bundle)',
+    method: 'Three lanes: a polity whose record states a Wikidata QID is asked for that item directly; an English name with no identifier is matched to the Wikidata item carrying that string, scored against where and when the map draws the shape, and a tie is refused so the name is left out; prose descriptions written by the era cartographer (aourednik/historical-basemaps) are translated by IntMap and marked as translations, not as names any source attests. Labels are Wikidata\'s own, never interpolated',
+    resolution: 'one label per language per Wikidata item or English name string',
+    completeness: 'Only names a lane could resolve: a name Wikidata does not carry, or whose match was tied, has no row, so absence is not a statement that no name exists; each row carries a bitmask of the languages a source actually wrote',
     builtBy: 'scripts/build-histnames.mjs',
   },
 };
