@@ -22,3 +22,6 @@ newsjp: Atlas が集めた値を、地図分析に使える表にできるよう
 - `data.companyTies` にも同じ形の未知フィルタの沈黙がある（同じ検査を共有する形に直せる）。
 - 1 体の worker に 36 値を渡す分け方は Atlas の判断で、コードは縛らない（`kind:"capability"` の仕事で `data.query` の cities / precipMm を並べればモデルを挟まず取れる値があるが、それを選ぶのも Atlas）。
 - 本番での再実測は、この PR のデプロイ後に行う。
+
+## 4. perf 上限を上げた理由
+`data.table`（atlas-cap-data → atlas-console チャンクに約 5.7 kB）と、取り込んだ main の差で async.raw が上限を超えた。新しい能力の実コードで、遅延チャンク内のため起動時の転送は増えない。`node scripts/perf-budget.mjs --update` で上げた。
