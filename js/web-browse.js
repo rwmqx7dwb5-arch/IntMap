@@ -52,6 +52,20 @@ export function sayFor(code, L) {
     case 'render_auth': return L('The real-browser service rejected this site\'s credentials (an operator problem, not yours).', '実ブラウザのサービスがこのサイトの認証を拒否しました(運営側の問題です)。');
     case 'render_unreachable': return L('The real-browser service did not answer.', '実ブラウザのサービスが応答しませんでした。');
     case 'render_failed': return L('The real browser could not render that page.', '実ブラウザがそのページを描画できませんでした。');
+    case 'session_unconfigured': return L('The operated-browser tier (Atlas clicking and typing in a real browser for you) is not set up on this site yet.', '操作型ブラウザ層(Atlas があなたの代わりに実ブラウザでクリックや入力をする機能)は、このサイトではまだ用意されていません。');
+    case 'needs_grant': return L('Atlas has not been allowed to operate that site yet. Ask the reader once (web.sessionGrant); after that no further approval is needed on that site.', 'そのサイトの操作はまだ許可されていません。利用者に 1 回だけ確認してください(web.sessionGrant)。以降そのサイトでは承認は要りません。');
+    case 'grant_expired': return L('The permission to operate that site has run out. Ask the reader again (web.sessionGrant).', 'そのサイトを操作する許可の期限が切れました。もう一度利用者に確認してください(web.sessionGrant)。');
+    case 'bad_state': return L('The browser session does not belong to this account or was altered. Start again with open.', 'このブラウザセッションはこのアカウントのものではないか、改変されています。open からやり直してください。');
+    case 'no_session': return L('There is no browser session open. Use open first.', '開いているブラウザセッションがありません。先に open を使ってください。');
+    case 'session_expired': return L('The browser session ended (idle too long, or closed). Use open to start a new one; the reader may need to sign in again.', 'ブラウザセッションが終了しました(放置時間超過か終了済み)。open で新しく始めてください。ログインが必要な場合は再度お願いする必要があります。');
+    case 'session_busy': return L('The real browser is busy right now. Try again in a minute.', '実ブラウザは今混み合っています。1 分ほど待ってからもう一度お試しください。');
+    case 'session_auth': return L('The real-browser service rejected this site\'s credentials (an operator problem, not yours).', '実ブラウザのサービスがこのサイトの認証を拒否しました(運営側の問題です)。');
+    case 'session_unreachable': case 'session_failed': return L('The real-browser session could not be started or reached.', '実ブラウザのセッションを開始または接続できませんでした。');
+    case 'credential_field': return L('That is a password, one-time-code or card field. Atlas never types those: ask the reader to fill it in themselves in the live view.', 'そこはパスワード・ワンタイムコード・カード番号の欄です。Atlas は入力しません。利用者にライブビューでご自身で入力してもらってください。');
+    case 'left_scope': return L('The page moved to a site that is not permitted; the step was not carried further there. Ask the reader to permit it if they want Atlas to work there.', 'ページが許可されていないサイトへ移りました。そこでの操作は行っていません。そのサイトで操作させたい場合は利用者の許可が必要です。');
+    case 'no_target': case 'not_visible': case 'control_disabled': case 'not_editable': case 'no_option': case 'not_select': return L('That control cannot be used as asked (' + code + '). Look at the page again and use a ref from the controls list.', 'その操作は指定どおりにはできません(' + code + ')。ページをもう一度見て、controls の ref を使ってください。');
+    case 'navigation_failed': return L('The browser could not load that address.', 'ブラウザがそのアドレスを読み込めませんでした。');
+    case 'no_history': return L('There is no earlier page to go back to.', '戻れる前のページがありません。');
     case 'no_endpoint': return L('Page browsing is not available in this build.', 'このビルドではページ閲覧を使えません。');
     default: return L('Page browsing failed (' + code + ').', 'ページ閲覧に失敗しました(' + code + ')。');
   }
@@ -146,5 +160,16 @@ function makeWebBrowse(HOST) {
     return { ok: true, label: o.label || label || file.name, format: o.format || null, rows: o.n == null ? null : o.n, datasetId: o.datasetId || null, grid: !!o.grid };
   }
 
-  return { browse, render, download, toDataset, reset() { state = null; }, hasPage() { return !!(state && state.url); }, currentUrl() { return state && state.url || ''; } };
+  /* session({action,...}) → one step of the OPERATED real browser (?tier=session). The state it hands back is a signed token (grant + provider session);
+     it is kept here and sent with the next step, and the server rejects any that is not this account's. 'grant' is the only call that widens what Atlas may do and
+     its capability row is confirm:'always' — the reader says yes once per site. The function refuses every write at the transport, so no step can send or buy. */
+  let sstate = null;
+  async function session(a, signal) {
+    const body = { action: a.action, host: a.host, url: a.url, ref: a.ref, x: a.x, y: a.y, text: a.text, value: a.value, key: a.key, dy: a.dy, ms: a.ms, clear: a.clear, textChars: a.textChars, screenshot: a.screenshot, state: sstate };
+    const r = await call(body, signal, 'session');
+    if (r && r.state) sstate = r.state;
+    return r;
+  }
+
+  return { browse, render, session, download, toDataset, resetSession() { sstate = null; }, reset() { state = null; }, hasPage() { return !!(state && state.url); }, currentUrl() { return state && state.url || ''; } };
 }

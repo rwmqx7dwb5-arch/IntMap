@@ -6,7 +6,9 @@
 //  web-browse.js (HTTP + HTML → a structural snapshot, GET forms, links, one file download); this file
 //  supplies what only the runtime has — DNS, the caller's identity, and the project-wide caps.
 //
-//  NOT A BROWSER: no script runs, no screenshot. A page that is empty until a script runs is answered
+//  THREE TIERS: this light reader; the render tier (?tier=render, one read-only picture); the SESSION tier (?tier=session, an operated
+//  real-browser session — grant, steps, journal — see _shared/web-session.js). Both browser tiers are off until the provider secrets exist.
+//  NOT A BROWSER (this tier): no script runs, no screenshot. A page that is empty until a script runs is answered
 //  `needsBrowser`. The REAL-browser tier is the same function at `?tier=render` (below `renderTier`): read-only, its own
 //  switch/buckets, off until CF_BROWSER_ACCOUNT_ID + CF_BROWSER_API_TOKEN exist (then `render_unconfigured`).
 //
@@ -34,9 +36,11 @@
 // ============================================================================
 
 import { corsFor, readCapped, resolvesPublic, RelayError, relayFail } from "../_shared/relay-guard.js";
-import { callerGate, forceGrant } from "../_shared/rate-limit.js";
+import { callerGate, forceGrant, restRpcClient } from "../_shared/rate-limit.js";
+import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js";
 import { browse } from "../_shared/web-browse.js";
 import { render } from "../_shared/web-render.js";
+import { sessionAction } from "../_shared/web-session.js";
 
 const CORS = { ...corsFor(), "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const env = (k) => Deno.env.get(k) || "";
@@ -87,6 +91,77 @@ async function renderTier(req) {
   }
 }
 
+/* ── the operated-browser SESSION tier (?tier=session) ────────────────────────────────────────────────────
+   A real browser Atlas clicks and types in, one step per call, the browser kept alive at the provider between calls
+   (_shared/web-session.js — read its header for what is and is not allowed, and for what is unverified against a live provider).
+   Order: (1) its own kill switch WEB_SESSION_DISABLED  (2) no provider secret → `session_unconfigured`, answered BEFORE any bucket
+   is touched  (3) the caller's account, asked of the Auth server (a session and a grant belong to an account, so an anonymous or
+   unverifiable caller gets nothing)  (4) its OWN per-caller bucket  (5) its OWN project-wide bucket, fails closed  (6) the engine.
+   Numbers are ESTIMATES with no live measurement (no contract yet): an operated task is 10–40 steps, a step ~2–6 s, so a reader
+   may take 60 a minute and the whole site starts at WEB_SESSION_BURST 30 / WEB_SESSION_PER_MIN 20. They expire with the first
+   `capped` a real reader meets or the first invoice. Secrets: the same CF_BROWSER_ACCOUNT_ID + CF_BROWSER_API_TOKEN as the render tier.
+   The state token is HMAC-signed with a key derived from the project's secret key (no new secret). The journal is public.web_session_journal. */
+const SESSION_READER_PER_MIN = 60;
+async function callerId(req) {
+  const url = env("SUPABASE_URL"), auth = req.headers.get("authorization") || "";
+  if (!url || !/^bearer\s+\S+/i.test(auth)) return null;
+  try {
+    const r = await fetch(url.replace(/\/+$/, "") + "/auth/v1/user", { headers: { apikey: publishableKey(denoEnv), authorization: auth }, signal: AbortSignal.timeout(5000) });
+    if (!r.ok) { try { await r.body?.cancel(); } catch (_) { /* headers were enough */ } return null; }
+    const u = await r.json();
+    return (u && typeof u.id === "string" && /^[0-9a-f-]{36}$/i.test(u.id)) ? u.id.toLowerCase() : null;
+  } catch (_) { return null; }
+}
+let signKey = { secret: "", key: null };
+async function signHex(text) {
+  const secret = "web-session:" + secretKey(denoEnv);
+  if (signKey.secret !== secret) signKey = { secret, key: await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]) };
+  const d = new Uint8Array(await crypto.subtle.sign("HMAC", signKey.key, new TextEncoder().encode(text)));
+  return Array.from(d, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+/* Deno's WebSocket takes request headers as a second argument (the provider authenticates the socket with Authorization: Bearer) */
+function openSocket(url, headers) {
+  return new Promise((resolve, reject) => {
+    let ws;
+    try { ws = new WebSocket(url, { headers }); } catch (e) { return reject(e); }
+    const t = setTimeout(() => { try { ws.close(); } catch (_) { /* never opened */ } reject(new Error("open timeout")); }, 10000);
+    ws.onopen = () => { clearTimeout(t); resolve(ws); };
+    ws.onerror = () => { clearTimeout(t); reject(new Error("open failed")); };
+    ws.onclose = () => { clearTimeout(t); reject(new Error("closed before open")); };
+  });
+}
+async function sessionTier(req) {
+  const off = env("WEB_SESSION_DISABLED").toLowerCase();
+  if (off === "1" || off === "true") return reply({ error: "disabled" }, 503);
+  const cfg = { provider: "cloudflare", accountId: env("CF_BROWSER_ACCOUNT_ID"), token: env("CF_BROWSER_API_TOKEN") };
+  if (!cfg.accountId || !cfg.token) return reply({ ok: false, code: "session_unconfigured", viaBrowser: true }, 200);
+  const uid = await callerId(req);
+  if (!uid) return reply({ error: "signed_out" }, 401);
+  const limited = await callerGate(req, CORS, { scope: "web-session", readerPerMin: SESSION_READER_PER_MIN, env });
+  if (limited) return limited;
+  const grant = await forceGrant("web-session-project", { capacity: positive("WEB_SESSION_BURST", 30), refillPerSec: positive("WEB_SESSION_PER_MIN", 20) / 60, env });
+  if (grant !== "granted") return reply({ error: grant === "capped" ? "capped" : "unavailable" }, 429);
+  let input;
+  try {
+    const raw = await readCapped(req, MAX_BODY_BYTES);
+    input = JSON.parse(new TextDecoder().decode(raw));
+  } catch (e) {
+    if (e instanceof RelayError) return reply({ error: "too_large" }, 413);
+    return reply({ error: "bad_request" }, 400);
+  }
+  if (!input || typeof input !== "object") return reply({ error: "bad_request" }, 400);
+  const db = restRpcClient({ url: env("SUPABASE_URL"), serviceKey: secretKey(denoEnv) });
+  const pending = [];   /* awaited before answering: an isolate may end with the response, and a journal row is the record the reader is owed */
+  const journal = (e) => { pending.push(db.rpc("log_web_session", { p_user: uid, p_action: e.action, p_host: e.host, p_path: e.path, p_ok: e.ok, p_code: e.code, p_ms: e.ms, p_blocked: e.blocked }).catch(() => {})); };
+  try {
+    const out = await sessionAction(input, { cfg, uid, sign: signHex, resolvesPublic, openSocket, journal });
+    await Promise.allSettled(pending);
+    return reply(out, 200);
+  } catch (e) {
+    return relayFail(e, { ...CORS, "cache-control": "no-store" });
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return reply({ error: "method_not_allowed" }, 405);
@@ -97,6 +172,7 @@ Deno.serve(async (req) => {
   /* the REAL-BROWSER tier (?tier=render): costs money per call, so it has its own switch, its own per-caller bucket and its own project-wide bucket,
      and it is asked BEFORE the light tier's caps are touched (a render must not spend the light tier's budget, nor the reverse) */
   if (new URL(req.url).searchParams.get("tier") === "render") return await renderTier(req);
+  if (new URL(req.url).searchParams.get("tier") === "session") return await sessionTier(req);
 
   const limited = await callerGate(req, CORS, { scope: "web-browse", readerPerMin: READER_PER_MIN, env });
   if (limited) return limited;
