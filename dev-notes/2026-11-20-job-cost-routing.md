@@ -35,3 +35,10 @@ date: 2026-11-20
 
 - `tests/job-cost-routing-checks.test.mjs`（12 件）。ターンループを台本のモデルで実際に走らせて `run` を読み、提案モデルの一覧と拒否、契約・鍵、サンドボックスを実際に（ワーカーの代役で）通して再利用が起きる・起きない場合を確かめる。
 - `tests/atlas-agent-loop-checks.test.mjs` の「修正前のエージェントを組み立てる」補助に、`atlas-agent.js` の新しい相対 import 1 本の置換を足した（アサーションは変えていない）。
+
+## 5. 容量の上限を上げた理由（check:perf）
+
+CI の check:perf が 3 行の超過を述べた（`perf-budget --update` が超えた行だけを CI と同じ値まで上げた）。
+- `atlas-console` +7.0 kB（1,061.2 → 1,068.2）: この PR が買ったもの——回答の下の費用の 1 行、モデル一覧の文、`delegationModels` の受け取り、`atlas-run-ledger` / `atlas-result-reuse` の取り込み。
+- `async.raw` +78.9 kB と `gis-core` +4.9 kB: **この PR の差分ではない**。同じ CI の `gis-core` は main の GIS 変更（#1288・#1320 系）で増えたもので、台帳に入っていなかった分が merge ref の測定で出た。上限を引き下げた bot（#1310）が測った時点より後の main の増分。
+- なお手元のビルドは `intmap-history-pages` の closeBundle（データ未取得）で途中で止まったが、`perf-budget` が読む成果物は CI と同じ 3 行を示した。
