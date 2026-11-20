@@ -110,6 +110,14 @@ select is(public.atlas_job_task_finish((select job_id from _j), 'runner-2', 't1'
 select is((select status from public.atlas_job_tasks where job_id = (select job_id from _j) and task_id = 't1'), 'done', '… it stays done');
 select is((select tasks_done from public.atlas_jobs where id = (select job_id from _j)), 1, 'the job counts it');
 
+-- ── ⑤b a tool-using task keeps its loop between slices (atlas-server-capabilities) ──
+select is(public.atlas_job_task_start((select job_id from _j), 'runner-2', 't2'), true, 'a second task starts');
+select is(public.atlas_job_task_progress((select job_id from _j), 'runner-1', 't2', '{"v":1}', false), false, 'a runner that does not hold the lease cannot write progress');
+select is(public.atlas_job_task_progress((select job_id from _j), 'runner-2', 't2', '{"v":1,"calls":2}', true), true, 'the holder yields the task with its progress');
+select is((select status from public.atlas_job_tasks where job_id = (select job_id from _j) and task_id = 't2'), 'queued', '… it is queued again');
+select is((select progress->>'calls' from public.atlas_job_tasks where job_id = (select job_id from _j) and task_id = 't2'), '2', '… and keeps what it had learned');
+select is(public.atlas_job_task_progress((select job_id from _j), 'runner-2', 't2', '{"v":1}', false), false, 'a task that is not running takes no progress');
+
 -- ── ⑥ the reader's controls ──────────────────────────────────────────────────
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000a0001","role":"authenticated"}', true);

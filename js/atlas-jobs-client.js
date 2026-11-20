@@ -48,7 +48,7 @@ export function makeJobsClient(o) {
       try { r = await fetchFn(endpoint, { method: 'POST', headers, body: JSON.stringify({ op: 'create', idem: a.idem, title: a.title || '', tasks: a.tasks }) }); }
       catch (e) { return { ok: false, code: 'unreachable' }; }
       let j = null; try { j = await r.json(); } catch (_) { j = null; }
-      if (!r.ok || !j || !j.jobId) return { ok: false, code: (j && (j.code || j.error)) || ('http_' + r.status), at: j && j.at, httpStatus: r.status };
+      if (!r.ok || !j || !j.jobId) return { ok: false, code: (j && (j.code || j.error)) || ('http_' + r.status), at: j && j.at, httpStatus: r.status, available: j && Array.isArray(j.available) ? j.available : undefined };
       return { ok: true, jobId: j.jobId, created: j.created === true, status: j.status };
     },
     async list(limit) {

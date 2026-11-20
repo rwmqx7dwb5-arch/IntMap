@@ -143,11 +143,14 @@ export function planJob(contracts, o) {
   if (!list.length) return { ok: false, error: 'no_tasks' };
   if (list.length > JOB_MAX_TASKS) return { ok: false, error: 'too_many_tasks' };
   const norm = [];
+  const runnable = (id) => !!(o && typeof o.capabilityOk === 'function' && o.capabilityOk(id));
   for (let i = 0; i < list.length; i++) {
     const nc = normaliseContract(list[i]);
     if (!nc.ok) return { ok: false, error: nc.error, at: i };
     if (!kinds.includes(nc.contract.kind)) return { ok: false, error: 'kind_unsupported', at: i };
-    if (nc.contract.kind === 'capability' && !(o && typeof o.capabilityOk === 'function' && o.capabilityOk(nc.contract.capability))) return { ok: false, error: 'capability_unsupported_on_server', at: i };
+    if (nc.contract.kind === 'capability' && !runnable(nc.contract.capability)) return { ok: false, error: 'capability_unsupported_on_server', at: i };
+    /* a worker's granted tools are run by the same lane: one the runner has no twin of is refused by name here, not found missing in the middle of a model loop */
+    if (nc.contract.kind === 'worker' && (nc.contract.tools || []).some((t) => !runnable(t))) return { ok: false, error: 'capability_unsupported_on_server', at: i };
     norm.push(nc.contract);
   }
   const ids = new Set();
