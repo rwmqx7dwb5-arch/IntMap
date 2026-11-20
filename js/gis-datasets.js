@@ -587,6 +587,10 @@ export function makeGisDatasets() {
         rec.chunks = () => { let k = 0; return { next: () => (k < chunked.chunkCount ? { done: false, value: chunked.chunk(k++) } : { done: true, value: undefined }), [Symbol.iterator]() { return this; } }; };
         rec.chunkedCount = chunked.chunkCount;
         rec.positions = chunked.positions;
+        /* (gis-scale) the same door for a result whose positions were written out (OPFS / IndexedDB): one chunk is read back at a time. A consumer that must work on any chunked record uses this one; chunks() above is the sync door and says 'chunk-spilled' by name for a chunk that left. */
+        rec.chunksAsync = () => { let k = 0; return { next: async () => (k < chunked.chunkCount ? { done: false, value: await chunked.chunkAsync(k++) } : { done: true, value: undefined }) }; };
+        rec.spilled = () => chunked.spilledCount;
+        rec.release = () => chunked.dispose();
       }
       if (chunked) features = null; /* the stubs measured the record and are not kept: a million of them are the heap this path exists to spare */
       applyInherited(rec, spec && spec.fieldStatements);
@@ -763,6 +767,8 @@ export function makeGisDatasets() {
       const rec = DS.get(id);
       if (!rec) return false;
       DS.delete(id);
+      /* (gis-scale) a chunked result's positions may live outside the heap; the record going is the only time they are let go */
+      if (typeof rec.release === 'function') { try { const p = rec.release(); if (p && typeof p.catch === 'function') p.catch(() => { }); } catch (_) { } }
       /* The edit history and the reader's declarations belong to THIS record. They are dropped with
          it — an id is never reissued (claimId), so nothing can inherit them. */
       EDITS.delete(id);
