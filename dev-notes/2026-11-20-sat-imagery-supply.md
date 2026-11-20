@@ -59,3 +59,7 @@ CI の測定（このツリー）: eager raw 4752.1 kB・gzip 1560.4 kB・brotli
 ## 6. window 経由の読みを 1 件だけ残した理由
 `js/imagery-atlas.js` が `window.__sat`（衛星パネルの切り替え口）を 1 回読む。持ち主は `js/app-body.js` で、そこは export を持たない（起動の本体）。
 `IntMapTime` の読みは import に直した。`IntMapSafe.url` は出力検査（safe-output）が href にこれを要求するため Atlas で 1 回読む（持ち主は export しない）。`__sat` は Atlas が「いまの供給元」を読み切り替える唯一の口で、他の持ち主がいないため台帳に載せる。
+
+## perf の天井を上げた理由（2026-11-21）
+
+`async.gzip` 4771.5→4810.8 kB・`atlas-cap-runs` 896.4→905.4 kB・`dist.assets` 21559.0→21716.7 kB。増分は衛星画像の供給網（供給元の台帳・撮影日と解像度・過去画像の能力）と、main 側で入った gis-fetch 経路の合流による。能力は Atlas から到達でき、遅延チャンクとして読まれるので起動費用（初期転送）は増えていない。
