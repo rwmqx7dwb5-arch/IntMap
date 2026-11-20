@@ -91,7 +91,7 @@ export default [
             : L('Uncertainty: no model spread is available here (only the global 0.4° domain covers this point), so no range is given — this is not a claim that the value is exact.', '不確実性: この地点を覆うのは全球 0.4° の領域だけで、モデル間の幅は得られません。幅を示せないのであって、値が正確という意味ではありません。')) + '</div>'
           + '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('US AQI bands: EPA. Pollutant ratios: WHO 2021 guideline levels (PM2.5 15, PM10 45, NO₂ 25, SO₂ 40, O₃ 100 µg/m³). Domain used for the headline: ' + r.domainUsed + '.', 'US AQI の区分は EPA、物質の比は WHO 2021 の指針値（PM2.5 15・PM10 45・NO₂ 25・SO₂ 40・O₃ 100 µg/m³）。見出しの値の領域: ' + r.domainUsed + '。')) + '</div>' + lim;
       }
-      try { addPin(ref.lng, ref.lat, { title, description: desc, source: m.provider, url: m.ref, when: new Date().toISOString().slice(0, 10), confidence: conf }); } catch (_) { /* the answer does not depend on the pin */ }
+      try { addPin(ref.lng, ref.lat, { title, description: desc, source: m.provider + " — " + m.ref, when: new Date().toISOString().slice(0, 10), confidence: conf }); } catch (_) { /* the answer does not depend on the pin */ }
       try { GE().camera.flyTo({ center: [ref.lng, ref.lat], zoom: Math.max(GE().camera.getZoom(), 8) }); } catch (_) { /* nor on the camera */ }
       return R(true, h, { meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: where, produced: ['explanation'], userGoalSatisfied: true, specialistModel: { id: m.id, grade: r.grade || null, aqiMax: r.aqiMax || null, spread: r.spread || (r.ratioRange ? { ratioRange: r.ratioRange, agree: r.gradeAgreement } : null) } } });
     },

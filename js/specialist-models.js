@@ -46,9 +46,9 @@ const r2 = (v) => (v == null ? null : Math.round(v * 100) / 100);
    window), and the answer says so. The 1.5 / 3 ratios are labels, not hazard thresholds:
    observed 2026-11-20 on 7 river points (Rhine at Cologne, Seine at Paris, Tokyo, Nagoya, Patna, Delhi, New Orleans) the peak/median ratio ran 0.31–3.64, with 3.58 and 3.64 on the two rivers that had rain forecast; they are a rough split of "inside the recent range" from "well outside it" and nothing more; they lapse if
    Open-Meteo starts publishing per-cell return-period thresholds — then use those. */
-export const FLOOD_RATIO_ELEVATED = 1.5, FLOOD_RATIO_HIGH = 3;
+const FLOOD_RATIO_ELEVATED = 1.5, FLOOD_RATIO_HIGH = 3;
 
-export const FLOOD_PROBE_STEP = 0.05;   /* the GloFAS grid step in degrees — the API snaps to the nearest river cell, which is often a tributary */
+const FLOOD_PROBE_STEP = 0.05;   /* the GloFAS grid step in degrees — the API snaps to the nearest river cell, which is often a tributary */
 /* INPUT PREPARATION: the 3×3 cells around the point (one request, comma-separated coordinates). The main stem is the
    cell with the largest typical flow, so the run is made on that one and the answer says which cell and how many were probed. */
 export function floodProbePoints(lat, lng) {
@@ -98,12 +98,12 @@ export function analyseFlood(j, req, today) {
    US AQI bands are EPA's published breakpoints (AirNow Technical Assistance Document, 2018); the pollutant
    reference levels are the WHO 2021 24-hour guidelines (PM2.5 15, PM10 45, NO2 25, SO2 40 µg/m³) and the WHO
    peak-season 8-h O3 guideline 100 — used only to say WHICH pollutant is furthest above guidance, never as a health claim. */
-export const US_AQI_BANDS = [{ max: 50, label: T('Good', '良い') }, { max: 100, label: T('Moderate', '普通') }, { max: 150, label: T('Unhealthy for sensitive groups', '敏感な人に有害') }, { max: 200, label: T('Unhealthy', '有害') }, { max: 300, label: T('Very unhealthy', '非常に有害') }, { max: Infinity, label: T('Hazardous', '危険') }];
-export const WHO_2021 = { pm2_5: 15, pm10: 45, nitrogen_dioxide: 25, sulphur_dioxide: 40, ozone: 100 };
-export const AIR_VARS = ['pm2_5', 'pm10', 'nitrogen_dioxide', 'sulphur_dioxide', 'ozone', 'us_aqi'];
+const US_AQI_BANDS = [{ max: 50, label: T('Good', '良い') }, { max: 100, label: T('Moderate', '普通') }, { max: 150, label: T('Unhealthy for sensitive groups', '敏感な人に有害') }, { max: 200, label: T('Unhealthy', '有害') }, { max: 300, label: T('Very unhealthy', '非常に有害') }, { max: Infinity, label: T('Hazardous', '危険') }];
+const WHO_2021 = { pm2_5: 15, pm10: 45, nitrogen_dioxide: 25, sulphur_dioxide: 40, ozone: 100 };
+const AIR_VARS = ['pm2_5', 'pm10', 'nitrogen_dioxide', 'sulphur_dioxide', 'ozone', 'us_aqi'];
 export const aqiBand = (v) => { const b = US_AQI_BANDS.find((x) => v <= x.max); return b ? b.label : null; };
 
-export function airUrl(lat, lng, domain, opts) {
+function airUrl(lat, lng, domain, opts) {
   return AIR_URL + '?latitude=' + (+lat).toFixed(4) + '&longitude=' + (+lng).toFixed(4) + '&hourly=' + AIR_VARS.join(',') + '&domains=' + domain + '&forecast_days=' + ((opts && opts.forecastDays) || 3) + '&timezone=UTC';
 }
 
@@ -143,7 +143,7 @@ export const MODELS = [
     id: 'flood.glofas', domain: 'flood', status: 'integrated', run: 'runFlood',
     name: T('GloFAS river-discharge forecast', 'GloFAS 河川流量予報'),
     provider: 'Copernicus Emergency Management Service / ECMWF, served by Open-Meteo Flood API (CC BY 4.0)',
-    ref: 'https://open-meteo.com/en/docs/flood-api',
+    ref: 'Open-Meteo documentation: Flood API',
     answers: T('How much water the nearest modelled river will carry over the next 16 days compared with its own recent norm, with the ensemble spread.', '最寄りの河川が今後 16 日間に運ぶ水量を、その川自身の直近の水準と比べて、アンサンブルの幅つきで答える。'),
     needs: ['lat/lng (or a place name) near a river'],
     keywords: 'flood river discharge inundation overflow glofas rainfall runoff 洪水 河川 氾濫 流量 増水 浸水',
@@ -155,7 +155,7 @@ export const MODELS = [
     id: 'air.cams', domain: 'air', status: 'integrated', run: 'runAir',
     name: T('CAMS air-quality forecast', 'CAMS 大気質予報'),
     provider: 'Copernicus Atmosphere Monitoring Service / ECMWF, served by Open-Meteo Air Quality API (CC BY 4.0)',
-    ref: 'https://open-meteo.com/en/docs/air-quality-api',
+    ref: 'Open-Meteo documentation: Air Quality API',
     answers: T('PM2.5 / PM10 / NO₂ / SO₂ / O₃ and US AQI hour by hour for the next 72 h, which pollutant is furthest above WHO guidance, and — inside Europe — how far two model resolutions disagree.', '今後 72 時間の PM2.5・PM10・NO₂・SO₂・O₃ と US AQI を時間ごとに、WHO 指針を最も超える物質、欧州内では 2 つの解像度のモデルの食い違いを答える。'),
     needs: ['lat/lng (or a place name)'],
     keywords: 'air quality pollution smog pm2.5 pm10 ozone no2 so2 aqi haze cams 大気 汚染 大気質 微小粒子 オゾン スモッグ',
