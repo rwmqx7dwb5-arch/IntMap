@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · PMTILES — window.IntMapGisPmtiles   (js/gis-pmtiles.js)
+ *  IntMap · PMTILES — js/gis-pmtiles.js
  * ----------------------------------------------------------------------------
  *  A PMTiles v3 archive is ONE file that holds a whole tile pyramid and an index of it, laid out so
  *  that a reader can have any one tile with a handful of HTTP range requests and never the rest
@@ -501,6 +501,5 @@ export function makeGisPmtiles(deps) {
 
   const REFUSALS = ['pmtiles-not-pmtiles', 'pmtiles-version', 'pmtiles-truncated', 'pmtiles-corrupt', 'pmtiles-compression', 'pmtiles-raster', 'pmtiles-tile-type', 'pmtiles-zoom', 'pmtiles-bbox', 'pmtiles-too-many-tiles', 'pmtiles-mvt'];
   const API = { sniff, open, readBytes, readSource, readUrl, zxyToTileId, refusals: () => REFUSALS.slice(), _decodeTile: decodeTile };
-  try { window.IntMapGisPmtiles = API; } catch (_) { }
   return API;
 }

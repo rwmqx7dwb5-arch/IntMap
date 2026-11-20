@@ -256,7 +256,7 @@ gis-shapefile.js                  **Shapefile の読み手** `window.IntMapGisSh
                                   `sourceCrs` は WKT 自身の AUTHORITY だけで、**4326 を推測で名乗らない**。
                                   標高は座標の中ではなく並行配列 `_z` で運ぶ。拒否は文でなくコード。
                                   `js/geo-import.js` が動的 import する
-gis-pmtiles.js                    **PMTiles（v3・ベクタ）の読み手** `window.IntMapGisPmtiles`—
+gis-pmtiles.js                    **PMTiles（v3・ベクタ）の読み手**（モジュール。window には載せない）—
                                   `sniff` / `open` / `readBytes` / `readSource` / `readUrl` / `refusals`。依存なし。
                                   ヘッダ・root/leaf ディレクトリ・Hilbert タイル ID・MVT をバイト範囲の供給の上で読み、
                                   窓に掛かるタイルだけを取る。`js/geo-import.js` が動的 import する
