@@ -27,6 +27,8 @@
  *  Pure data + pure functions, no DOM: imported by the builder (node) and the browser alike.
  * ==========================================================================*/
 
+import { spdxAllowsCommercial } from './transit-licence.js';   /* the licence GRAMMAR (CC versions, national licences): the same rule the discovery catalogue sorts by */
+
 /* Transitous: see the header. One declaration; routing-providers.js reads it. */
 export const TRANSITOUS_FALLBACK = false;
 export const TRANSITOUS_TERMS = {
@@ -66,7 +68,7 @@ export function feedById(id) { return byId[id] || null; }
 function feedList() { return FEEDS.slice(); }
 
 /** the licence rule, as a function the gate and the builder both call */
-export function licenceAllowsCommercial(spdx) { return COMMERCIAL_OK.indexOf(String(spdx || '')) >= 0; }
+export function licenceAllowsCommercial(spdx) { return COMMERCIAL_OK.indexOf(String(spdx || '')) >= 0 || spdxAllowsCommercial(spdx); }
 
 /** the credit a reply that used these feeds MUST print: structured rows, one per feed (the reply words them) */
 export function attributionFor(ids) {

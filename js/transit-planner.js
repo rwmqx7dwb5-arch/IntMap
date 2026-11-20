@@ -25,7 +25,7 @@ import { loadNetwork, plan as raptorPlan, reach as raptorReach, bandCircles, cir
 import { FEEDS, feedById, feedsNear, attributionFor, TRANSITOUS_FALLBACK } from './transit-feeds.js';
 import { featureAt } from './routing-ops.js';
 import { jsonWithin } from './fetch-deadline.js';
-import { knownAt as catalogueKnownAt, sentence as catalogueSentence } from './transit-catalogue.js';
+import * as CAT from './transit-catalogue.js';
 
 /* a bundle is about 3 MB and the border-post file about 2 MB: a generous deadline, not a short one */
 const BUNDLE_MS = 45000;
@@ -52,7 +52,7 @@ function catalogueRows() {
   return CATALOGUE;
 }
 /** what the catalogue knows about a point, structured plus its [en, jp] sentence; null when the catalogue cannot be read (never «nothing exists») */
-async function knownAt(p) { const rows = await catalogueRows(); if (!rows) return null; const k = catalogueKnownAt(rows, p); return { ...k, words: catalogueSentence(k) }; }
+async function knownAt(p) { const rows = await catalogueRows(); if (!rows) return null; const k = CAT.knownAt(rows, p); return { ...k, words: CAT.sentence(k) }; }
 
 function netFor(id) {
   let p = NETS.get(id); if (p) return p;
