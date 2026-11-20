@@ -396,6 +396,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["jobs.status","jobStatus","jobs,myJobs,listJobs,jobProgress,backgroundStatus","research","none","","explanation","read","none","","","external"],
       ["jobs.cancel","jobCancel","cancelJob,stopJob,stopBackground","research","none","","explanation","session","none","",""],
       ["jobs.amend","jobAmend","amendJob,changeJob,tellJob,addInstruction","research","none","","explanation","session","none","",""],
+      ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
