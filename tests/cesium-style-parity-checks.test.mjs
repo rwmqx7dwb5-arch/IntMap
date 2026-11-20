@@ -24,7 +24,7 @@ test('every operator the interpreter declares unsupported is one the app never w
   const hits = [];
   const re = new RegExp('\\[\\s*[\'"`](' + S.UNSUPPORTED.join('|') + ')[\'"`]\\s*[,\\]]', 'g');
   /* the sweep must be able to see something, or it passes on an empty match */
-  assert.ok(re.test("['within', 1]") && (re.lastIndex = 0, true), 'the pattern matches an expression');
+  assert.ok(re.test("['pitch']") && (re.lastIndex = 0, true), 'the pattern matches an expression');
   assert.ok(files.length > 100, 'the sweep reads the app, not an empty list');
   for (const f of files) {
     if (f === 'js/cesium-style.js') continue;
@@ -59,4 +59,25 @@ test('distance: the era-name guard of js/hist-cities.js answers the way MapLibre
 
 test('cesium-layers hands the feature geometry to the evaluator', () => {
   assert.match(read('js/cesium-layers.js'), /state:state\|\|\{\},\s*geometry:f\.geometry/);
+});
+
+test('collator / number-format / resolved-locale / within answer the way MapLibre does', () => {
+  const ev = (e, c) => S.evaluate(e, c);
+  // collator: case/diacritic-insensitive equality and ordering as the third argument
+  const ci = ['collator', { 'case-sensitive': false, 'diacritic-sensitive': false }];
+  assert.equal(ev(['==', 'Café', 'cafe', ci]), true);
+  assert.equal(ev(['==', 'Café', 'cafe']), false);
+  assert.equal(ev(['<', 'apple', 'Banana', ci]), true);
+  assert.equal(typeof ev(['resolved-locale', ['collator', { locale: 'ja' }]]), 'string');
+  // number-format
+  assert.equal(ev(['number-format', 1234.5, { locale: 'en-US', 'min-fraction-digits': 2 }]), '1,234.50');
+  assert.equal(ev(['number-format', 'x', {}]), '');
+  // within: a point feature inside / outside a polygon, and it is feature-dependent
+  const poly = { type: 'Polygon', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]] };
+  const pt = (x, y) => ({ geometry: { type: 'Point', coordinates: [x, y] } });
+  assert.equal(ev(['within', poly], pt(5, 5)), true);
+  assert.equal(ev(['within', poly], pt(15, 5)), false);
+  assert.equal(ev(['within', poly], {}), false);
+  assert.equal(S.dependsOnFeature(['within', poly]), true);
+  for (const op of ['collator', 'number-format', 'resolved-locale', 'within']) assert.ok(!S.UNSUPPORTED.includes(op), op);
 });
