@@ -24,8 +24,8 @@
  *  IntMap (network is always 'external'). `writes` is false ONLY when the READER said so when registering the
  *  server (`readOnly: true`, or a list of tool names). A server's own `annotations.readOnlyHint` is reported
  *  (`hint`) and NOT trusted: it comes from the party that would benefit from being asked less. A tool whose
- *  writes are not known to be false is run only through mcp.act, whose row asks the reader every time
- *  ('always'). js/atlas-cap-mcp.js maps this one object onto the registry's columns — it is the single
+ *  writes are not known to be false is run only through mcp.act, whose row asks the reader
+ *  ('explicit' — asked once outside content is in the turn). js/atlas-cap-mcp.js maps this one object onto the registry's columns — it is the single
  *  seam a capability-effects decomposition (the cap-effects work) needs to attach to.
  *
  *  ── THE NETWORK, AS MEASURED (docs/architecture/05-ai.md «MCP クライアント») ────────────────────────────
