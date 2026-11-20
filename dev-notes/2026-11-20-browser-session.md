@@ -21,11 +21,11 @@ Cloudflare Browser Run(旧 Browser Rendering): CDP の WebSocket `…/browser-re
 ## 3. 作ったもの
 - `supabase/functions/_shared/web-session.js` — エンジン兼アダプタ(純粋・Node で検査)。動詞は閉じた集合(`grant open observe click type select press scroll back wait live close`)。画面は「ページ本文(軽量層と同じパーサ)＋ **controls**(ブラウザ自身の AX ツリーから。ref は DOM の backend node id＝`n<id>` で**表を持ち回らない**)＋ スクリーンショット」。クリックは ref か座標(座標は `DOM.getNodeForLocation` で要素に解決)。
 - `supabase/functions/web-browse/index.ts` — `?tier=session` の殻 `sessionTier`。順序: 専用の停止スイッチ → 未設定は何も出さず `session_unconfigured` → **アカウントを Auth に訊く**(許可もセッションもアカウントのもの) → 専用の呼び出し元 bucket → 専用の全体 bucket(閉じ側失敗)→ 本体。journal は応答前に書き切る(isolate が応答と同時に終わりうる)。
-- `js/web-browse.js` に `session`、`js/atlas-cap-web.js` に **`web.session`**(confirm `none`)と **`web.sessionGrant`**(confirm `always`)。
+- `js/web-browse.js` に `session`、`js/atlas-cap-web.js` に **`web.session`**(confirm `none`)と **`web.sessionGrant`**(risk `external`・confirm `explicit`)。
 - `supabase/migrations/20261120140000_web_session_journal.sql` + `supabase/tests/52_web_session_journal_test.sql` — 操作履歴(委譲ジャーナルと同じ型: service_role だけが書く・所有者が読む・30 日で消える・アカウントのデータ一覧に文を持つ)。
 
 ## 4. 権限と利用条件を「構造」で持たせた(読み取りのたびの承認は無い)
-- **許可は 1 サイトにつき 1 回**(`web.sessionGrant`、confirm `always` ＝ Atlas 自身は与えられない)。HMAC 署名の state(アカウント・許可ホスト・提供元 session・期限 4 時間)に入り、以降そのサイトでの閲覧・操作に承認は要らない。他アカウントの state・改変された state は `bad_state`。許可の無いホストは `needs_grant`(ホスト名つき)、期限切れは `grant_expired`。署名鍵はプロジェクトの秘密鍵から導出(新しい秘密は増やさない)。
+- **許可は 1 サイトにつき 1 回**(`web.sessionGrant`、risk `external`・confirm `explicit` ＝ 既存の確認モデルに従い、外部の内容が今ターンに入った後で Atlas が自分で提案したときに利用者へ確認する（`always` 行は表に 1 つも無い設計で、UI にも別トークンが要るため使わない。最初の CI 赤で判明）)。HMAC 署名の state(アカウント・許可ホスト・提供元 session・期限 4 時間)に入り、以降そのサイトでの閲覧・操作に承認は要らない。他アカウントの state・改変された state は `bad_state`。許可の無いホストは `needs_grant`(ホスト名つき)、期限切れは `grant_expired`。署名鍵はプロジェクトの秘密鍵から導出(新しい秘密は増やさない)。
 - **書き込みは通信路で発行できない**: 接続中は CDP `Fetch` で全リクエストを止め、GET/HEAD/OPTIONS 以外を失敗させ(報告は `blockedWrites`)、許可外ホストへのトップレベル遷移も失敗させる。提供元にも許可ホストを `cf-brapi-guardrails` で渡す(二重の壁)。ボタンの文言の一覧ではなく**通信の性質**で止めるので、「買う」「Submit」以外の綴りのボタン・スクリプトが発行する POST も同じく止まる。⚠ 副作用が GET で起きるサイトは止められない(サイト側の欠陥)。
 - **資格情報は打たない・通さない**: 欄の `type=password` / `autocomplete` が `*-password`・`one-time-code`・`cc-*` なら `type` を拒む。ログイン・CAPTCHA・ボット確認は `handoff` に **Live View のアドレス**を載せ、**利用者がそこでログインし、Atlas は同じセッションで `observe` から続ける**。パスワードは IntMap・モデル・記録のどこも通らず、cookie は提供元のブラウザの中にだけある。
 - **呼び出し元はコードも欄も選べない**: ページ内で評価する関数は定数(`FN_FACTS`・`FN_SELECT`・`document.documentElement.outerHTML`・`location.href`)で、入力文は引数としてだけ届く。提供元のヘッダは固定。

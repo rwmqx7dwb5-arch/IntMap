@@ -13,7 +13,7 @@
 //  This file never counts Atlas's steps. It owns only what can be said as a FACT ABOUT THE REQUEST:
 //
 //   · A SITE IS OPENED UNDER A GRANT, ASKED ONCE. `grant` (the reader confirms once, per site — the capability
-//     row is confirm:'always') adds a host to a signed token for GRANT_MS. After that every look and every
+//     row is risk 'external' / confirm 'explicit') adds a host to a signed token for GRANT_MS. After that every look and every
 //     step on that site needs no further approval: reading is not asked for each time. A host with no grant is
 //     `needs_grant`, with the host named, never an attempt.
 //   · THE SESSION CANNOT EMIT A WRITE. While we are attached, CDP Fetch pauses every request; anything that is

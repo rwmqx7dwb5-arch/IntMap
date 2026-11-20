@@ -95,10 +95,10 @@ export default [
     },
   },
   {
-    row: ['web.sessionGrant',           'sessionGrant',   'allowSiteOperation,permitSite,authorizeBrowserSite',                         'research', 'none',    '',                       'explanation',         'session', 'always', '',         ''],
+    row: ['web.sessionGrant',           'sessionGrant',   'allowSiteOperation,permitSite,authorizeBrowserSite',                         'research', 'none',    '',                       'explanation',         'external', 'explicit', '',         ''],
     ui: { none: '2026-11-20' },
     doc: [
-      { in: 'web.browse', at: 30, text: ' ALLOW A SITE TO BE OPERATED: {"type":"sessionGrant","host":str} (このサイトを操作してよいか確認 · サイトの操作を許可) asks the READER, once, whether you may operate that site in a real browser (web.session). The reader confirms in a dialog; after that every look and step on that site needs NO further approval, for a few hours. Call it only when web.session answered needs_grant / grant_expired, naming the site that task needs. It widens nothing else: it never lets you send, buy, post or type a password (the browser session refuses writes by construction).' },
+      { in: 'web.browse', at: 30, text: ' ALLOW A SITE TO BE OPERATED: {"type":"sessionGrant","host":str} (このサイトを操作してよいか確認 · サイトの操作を許可) has the READER confirm, once, whether you may operate that site in a real browser (web.session). The reader confirms in a dialog; after that every look and step on that site needs NO further approval, for a few hours. Call it only when web.session answered needs_grant / grant_expired, naming the site that task needs. It widens nothing else: it never lets you send, buy, post or type a password (the browser session refuses writes by construction).' },
     ],
     phrases: () => ['サイトの操作を許可', 'このサイトを操作してよい'].concat(['allow operating a site', 'permit browser operation']),
     schema: () => ({ type: 'object', properties: { host: str() }, required: ['host'] }),

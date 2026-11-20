@@ -318,13 +318,14 @@ test('the Edge Function: its own switch, the account asked before any bucket, un
   } finally { globalThis.Deno = saved.Deno; }
 });
 
-test('the capability rows: operating asks nothing per step; widening asks the reader every time', () => {
+test('the capability rows: operating asks nothing per step; widening is the one thing asked', () => {
   const CAPS = makeAtlasCapabilities({}, { publish: false });
   const s = CAPS.resolve('web.session'), g = CAPS.resolve('web.sessionGrant');
   assert.ok(s && g, 'registered (rows are generated: node scripts/atlas-caps.mjs --write)');
   assert.equal(s.confirmation, 'none', 'a look or a step is not asked about — the grant already was');
   assert.equal(s.ingests, 'external', 'what the page says is a third party’s');
-  assert.equal(g.confirmation, 'always', 'the grant is the one approval, and Atlas cannot give it to itself');
+  assert.equal(g.confirmation, 'explicit', 'the grant is the one approval: asked whenever Atlas proposes it after outside content was in front of it');
+  assert.equal(g.risk, 'external', 'it widens what leaves the reader’s session, so it is the row the confirmation policy asks about');
   const web = readFileSync(new URL('../js/atlas-cap-web.js', import.meta.url), 'utf8');
   assert.match(web, /CANNOT SEND ANYTHING/); assert.match(web, /never types a password/); assert.match(web, /NO approval is asked/);
   /* the door sends a fixed set of fields: no script, header, cookie or method can ride a step */

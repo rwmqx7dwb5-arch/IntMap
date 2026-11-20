@@ -162,7 +162,7 @@ function makeWebBrowse(HOST) {
 
   /* session({action,...}) → one step of the OPERATED real browser (?tier=session). The state it hands back is a signed token (grant + provider session);
      it is kept here and sent with the next step, and the server rejects any that is not this account's. 'grant' is the only call that widens what Atlas may do and
-     its capability row is confirm:'always' — the reader says yes once per site. The function refuses every write at the transport, so no step can send or buy. */
+     its capability row is risk 'external' / confirm 'explicit' — the reader is asked once per site, whenever Atlas proposes it after outside content was in front of it. The function refuses every write at the transport, so no step can send or buy. */
   let sstate = null;
   async function session(a, signal) {
     const body = { action: a.action, host: a.host, url: a.url, ref: a.ref, x: a.x, y: a.y, text: a.text, value: a.value, key: a.key, dy: a.dy, ms: a.ms, clear: a.clear, textChars: a.textChars, screenshot: a.screenshot, state: sstate };
