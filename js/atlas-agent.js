@@ -1103,6 +1103,8 @@ export function makeAtlasAgent() {
           /* (atlas-plan-on-map) the plan tool's answer, from the ledger — see `planRec` above */
           if (p.planRec) {
             const prec = Object.assign({ id: call.id, name: call.name }, p.planRec);
+            /* (geo-task-planner) a `geo.check` asks the sources what exists; it blocks nothing and is answered with the plan's record */
+            if (p.planRec.ok && PLAN.geoPending && PLAN.geoPending()) { try { const gr = await PLAN.preflight(); if (gr) prec.geo = gr; } catch (_) { /* the plan's answer stands without it */ } }
             callById[call.id] = prec;
             executedHere++; trace.executed++;
             return prec;

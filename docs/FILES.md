@@ -997,6 +997,10 @@ atlas-plan.js                     Atlas — 計画の台帳と地図の上の計
                                   宣言する）、手順ごとの状態を実行器の判定から導く台帳（`makeAtlasPlan`。DOM なし・
                                   `runTurn` の `opts.plan`）、モデルへ戻す `promptBlock()`、HUD の中の計画カードと
                                   手順が描いたものへの移動（`makePlanView`）。⚠ 手順を決めない・観測できなかったものを完了にしない
+atlas-geoplan.js                  Atlas — 地理空間分析の仕様（`plan` 道具の `geo`）。対象地域・時点・必要データ（出所と完全性と解像度）・演算・実行環境・
+                                  成果物を構造として持ち、書かれていない項目（gaps）を列挙し、`check:true` のとき IntMap の
+                                  レイヤーと世界のカタログ（STAC/OGC）に存在を問う（`preflight`）。DOM なし。
+                                  ⚠ 何も既定値で埋めない・何も拒否しない・カタログは全域被覆を証明できない（`unproven`）
 atlas-highlight.js                Atlas — コードブロックのシンタックスハイライト（#R494）。外部依存なしの
                                   8 文法（js/ts・python・json・html/xml・css・sql・bash・yaml）＋
                                   未知言語のフォールバック。出力は必ず esc 済み。配色は
