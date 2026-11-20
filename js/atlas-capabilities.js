@@ -397,8 +397,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["jobs.cancel","jobCancel","cancelJob,stopJob,stopBackground","research","none","","explanation","session","none","",""],
       ["jobs.amend","jobAmend","amendJob,changeJob,tellJob,addInstruction","research","none","","explanation","session","none","",""],
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
-      ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
-      ["jobs.resume","jobResume","resumeJob,retryJob,continueJob,rerunFailed","research","none","","explanation","external","explicit","",""],
+      ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
     ];
     /* ⚠ GENERATED ROWS — END */
 

@@ -311,3 +311,10 @@ verify_jwt = false
 # (public.mcp_server_state) are in the function.
 [functions.mcp-server]
 verify_jwt = false
+
+# world-graph-ingest keeps the persistent world graph port slice current from Wikidata, UN/LOCODE and Eurostat.
+# Deployed --no-verify-jwt: pg_cron calls it weekly with the x-world-graph-secret header and the function does its
+# own fail-closed auth, exactly like news-ingest.
+[functions.world-graph-ingest]
+verify_jwt = false
+

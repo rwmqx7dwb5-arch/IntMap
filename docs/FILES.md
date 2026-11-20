@@ -749,6 +749,7 @@ night-side.js                     地球の夜側 window.IntMapNightSide
 night-lights.js                   夜間光がいつの絵かを決める唯一の場所 window.IntMapNightLights
 antimeridian-seam.js             世界ストリップの ±180° 端の黒い帯を測って埋める唯一の場所（夜間光の raster 層と夜側のモザイクが使う）
 world-base.js                     全球衛星ベース window.IntMapWorldBase
+world-floor-tile.js              全球衛星ベースの 1 タイルを切り出す関数（メインと衛星 worker が同じものを使う）
 satellite.js                      衛星画像コントローラ
 sat-proto.js                      衛星タイルの imapsat:// スキーム
 solid3d.js                        地図の上に立つ閉じた立体
@@ -1067,7 +1068,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  258 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  259 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1200,7 +1201,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 258 を検索・到達可能 255）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 259 を検索・到達可能 256）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1248,6 +1249,7 @@ atlas-turn-results.js             **1つの操作は、返信の中で1ブロッ
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
+atlas-table.js                    **調べた値の行 → データセット**（`data.table`）。位置の列を読み、単位は呼び出し側が述べたものだけを運び、位置の無い行は行のまま数える（純関数）。
 atlas-run-ledger.js              Atlas — 1 つの仕事（1 ターン）の費用・時間・使ったモデルとツールを 1 件に集計する（観測するだけで、制限はしない）
 atlas-state.js                    アプリの状態をデータとして持つ（#R318）。各サブシステムが provider を登録し、
                                   モデル向けの文章はそこから派生する。ターン台帳（目標・計画・結果・objectId）
@@ -1359,7 +1361,7 @@ world-flows-core.js               その事実の全部（純粋なモジュー�
 evidence-graph.js               **数値の出自の長期グラフ**（純粋）— 元の事実（source・版は追記）と IntMap/AI が作った派生（derived・入力の版と計算を固定）を分け、`trace`／`impact`／`staleness`／`wouldStale` で元データ〜回答の数値を遡り、更新の影響先を調べる。
 evidence-graph-record.js        Evidence Graph の記録係 — GIS データセット（`bindGis`）と Atlas 回答の数値（`recordAnswer`、`graphRef` 経由で GIS 鎖へ）。モデルが書いた URL/id は節を作らない。
 world-graph-store.js            **永続の世界グラフの読み口**（遅延・純粋）— Supabase の `world_graph_*`（対象・型付きの辺・値）を、世界オブジェクトの索引と同じ型
-                                  （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `find` / `near`）。結ぶのは識別子（`ids`）で綴りではない。
+                                  （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `findPersisted` / `nearPersisted` / `freshness`〔フィードの最終確認〕）。結ぶのは識別子（`ids`）で綴りではない。
                                   データベースが答えなかったことは `unavailable` / `failed` で返し、空のグラフとは区別する。能力 `research.object` / `research.related` が読む
 card-clearance.js                 カードが覆わない部分に地図を収める余白（fitBounds の padding）。js/news-story.js と js/quake-history.js も同じ規則を閉包に持つ
 aftershock.js                     **余震の見通し**のカードと地図——M5 以上の地震について、今後 1 日〜1 年に各規模の余震が起きる確率と
@@ -2142,7 +2144,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全25本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（71本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（72本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（25本。一覧と各本の役割は Architecture.md §6.2。
@@ -2161,7 +2163,7 @@ supabase/
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
                                   correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /
                                   place-watch.js〔見守る場所の判定——近さ・強さ・新しさ。今はページだけが読む。将来のサーバー評価が同じ規則を使うためここに置く〕 /
-                                  supabase-keys.js〔project key の唯一の読み手。新しい secret・publishable key を優先し、旧 JWT はフォールバック〕 /
+                                  supabase-keys.js〔project key の唯一の読み手。新しい secret・publishable key を優先し、旧 JWT はフォールバック〕 / world-graph-ports.js〔港湾の面の取り込み＝Wikidata・UN/LOCODE・Eurostat を識別子で結ぶ純粋なモジュール。Edge Function と node の検査が同じものを読む〕 /
                                   great-circle.js〔大円距離 `haversineKm`（地球半径 6,371 km）の唯一の実装。ページと関数が import する〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
