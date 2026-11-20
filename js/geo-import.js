@@ -872,11 +872,33 @@ export const GEO_IMPORT = (function () {
    */
   async function readGeoFile(file) {
     const size = (file && file.size) || 0;
-    if (size > GEO_IMPORT_LIMITS.readBytes) return { ok: false, why: 'too-big', detail: { size: size, limit: GEO_IMPORT_LIMITS.readBytes } };
+    /* ══ A PMTILES ARCHIVE IS NEVER READ WHOLE ═══════════════════════════════════════════
+       It is a pyramid of tiles and an index, built so that a reader takes the tiles it needs and not
+       the rest — so it leaves BEFORE the readBytes ceiling below, which would refuse a 2 GB archive
+       for being big when only a few hundred KB of it is wanted. It is recognised by its seven magic
+       bytes, not by ".pmtiles", like every other format here, and read through the same range
+       machinery as a remote file (a Blob is a byte supply). Which zoom was read, how many tiles, and
+       that a feature crossing a tile edge arrives in pieces all travel in `stats`. */
+    let pm = null;
+    if (file && typeof file.slice === 'function' && size >= 7) {
+      let head = null;
+      try { head = new Uint8Array(await file.slice(0, 7).arrayBuffer()); } catch (_) { head = null; }
+      if (head && head[0] === 0x50 && head[1] === 0x4d && head[2] === 0x54 && head[3] === 0x69 && head[4] === 0x6c && head[5] === 0x65 && head[6] === 0x73) {
+        let PM = null;
+        try { PM = (await import('./gis-pmtiles.js')).makeGisPmtiles(); } catch (_) { PM = null; }
+        if (!PM) return { ok: false, why: 'unreadable' };
+        const supply = { size: size, requests: 0, async read(off, len) { supply.requests++; return new Uint8Array(await file.slice(off, Math.min(size, off + len)).arrayBuffer()); } };
+        pm = await PM.readSource(supply, { maxTiles: 256 });
+        if (!pm.ok) return pm;
+      }
+    }
+    if (!pm && size > GEO_IMPORT_LIMITS.readBytes) return { ok: false, why: 'too-big', detail: { size: size, limit: GEO_IMPORT_LIMITS.readBytes } };
     const name = String((file && file.name) || 'data');
     let bytes = null;
-    try { bytes = new Uint8Array(await file.arrayBuffer()); } catch (_) { return { ok: false, why: 'unreadable' }; }
-    if (!bytes.length) return { ok: false, why: 'empty' };
+    if (!pm) {
+      try { bytes = new Uint8Array(await file.arrayBuffer()); } catch (_) { return { ok: false, why: 'unreadable' }; }
+      if (!bytes.length) return { ok: false, why: 'empty' };
+    }
 
     /* ══ (#R749) A GeoTIFF IS NOT FEATURES, AND IT LEAVES BEFORE THE FEATURE MACHINERY ═════════
        Every path below this point works on r.fc — the coordinate repair, the feature cap, the CRS
@@ -887,7 +909,7 @@ export const GEO_IMPORT = (function () {
        only when such a file actually lands — a session that never drops a raster downloads none of
        it. Its own CRS is carried OUT of here untouched: warping is a choice with a method attached,
        and js/map-ui.js makes it where it can say so to the reader. */
-    {
+    if (!pm) {
       const b0 = bytes[0], b1 = bytes[1];
       if ((b0 === 0x49 && b1 === 0x49) || (b0 === 0x4d && b1 === 0x4d)) {
         let TIF = null;
@@ -903,9 +925,10 @@ export const GEO_IMPORT = (function () {
       }
     }
 
-    const sig = ATL_FILE.sniff(bytes.subarray(0, ATL_FILE.LIMITS.sniff));
+    const sig = pm ? null : ATL_FILE.sniff(bytes.subarray(0, ATL_FILE.LIMITS.sniff));
     let r;
-    if (sig === 'zip') r = await fromZip(bytes);
+    if (pm) r = { ok: true, fc: pm.fc, format: 'pmtiles', stats: pm.stats };
+    else if (sig === 'zip') r = await fromZip(bytes);
     else if (sig === 'gzip') {
       const inner = await ATL_FILE.gunzip(bytes);
       r = inner ? await decodeBytes(inner, name) : { ok: false, why: 'unreadable' };
