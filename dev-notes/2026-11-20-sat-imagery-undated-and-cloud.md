@@ -25,3 +25,7 @@ Chronos を 2026-03-01 にすると撮影日が 2019 年かもしれない Esri 
 
 ## 残り
 MODIS/VIIRS は日次合成で雲量の欄を持たない。Esri 以外の「declared」型は場所別の撮影日を供給元が公開しない（地理院は写真索引が別にある）。
+
+## perf の天井
+async.raw が 14136 → 14220 kB（+84 kB）。内訳は main から入った atlas-orchestrate（82 kB）等の新しい遅延 chunk と、今回の imagery-atlas（3.6 kB）。起動時の読み込みには載らない遅延 chunk の増加で、天井を実測へ上げた。
+生成ページ readiness.html は台帳の説明変更に合わせて `node scripts/org-pages.mjs --write` で再生成した。
