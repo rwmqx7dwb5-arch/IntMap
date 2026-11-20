@@ -24,7 +24,7 @@ import { textProblems } from './ui-text-rules.js';   /* the url / markup refusal
 
 export const KINDS = ['table', 'chart', 'filter', 'map', 'evidence', 'param', 'metrics', 'time', 'objects'];
 const SECTION_OF = { map: 'Map', table: 'Data', filter: 'Data', chart: 'Analysis', metrics: 'Analysis', time: 'Time', objects: 'Objects', evidence: 'Evidence', param: 'Execution' };
-export const AGGS = ['count', 'sum', 'mean', 'min', 'max'];
+const AGGS = ['count', 'sum', 'mean', 'min', 'max'];
 const MAX_METRICS = 8;
 /* Bounds, not caps on what Atlas may do: a spec is stored and re-sent, so its size has to be a number somebody can state.
    Observed 2026-11-20: a 40-row × 8-column answer is ~6 KB; 2000 rows keeps a record under ~1 MB of IndexedDB. */
