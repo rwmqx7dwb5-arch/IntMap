@@ -1,6 +1,6 @@
 // ============================================================================
 //  IntMap · world-graph-ingest — keeps the PORT slice of the persistent world graph current
-//  (supabase/migrations/20261120110000_world_graph_ingest.sql · _shared/world-graph-ports.js · dev-notes/2026-11-20-world-graph-ports.md)
+//  (supabase/migrations/20261120115000_world_graph_ingest.sql · _shared/world-graph-ports.js · dev-notes/2026-11-20-world-graph-ports.md)
 // ----------------------------------------------------------------------------
 //  WHAT: reads Wikidata (ports, operators/owners, throughput, rail/road ties), UN/LOCODE (names, points, function
 //  flags) and Eurostat mar_go_aa (tonnes handled per port and year), joins them by identifier (_shared/world-graph-ports.js),

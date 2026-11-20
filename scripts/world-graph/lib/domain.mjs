@@ -14,7 +14,7 @@
  *  could not be resolved is not drawn. An identifier held by TWO objects resolves to neither.
  *
  *  Every domain's output is applied through world_graph_ingest_begin / _apply / _finish
- *  (supabase/migrations/20261120110000_world_graph_ingest.sql), so a domain inherits ownership by feed,
+ *  (supabase/migrations/20261120115000_world_graph_ingest.sql), so a domain inherits ownership by feed,
  *  guarded retirement, freshness and — through the triggers of 20261120130000 — the change log.
  *  `toSqlRun` renders one such run as migration SQL.
  * ==========================================================================*/

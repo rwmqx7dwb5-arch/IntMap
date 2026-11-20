@@ -140,7 +140,7 @@ test('④ the seed migration is this build, and the identity migration keeps wha
   for (const w of ['uid uuid not null default gen_random_uuid()', 'world_graph_keep_uid', 'world_graph_nodes_log_ins', 'world_graph_edges_log_del', 'world_graph_claims_log_upd',
     'world_graph_resolve', 'world_graph_history', 'world_graph_changes_between', 'world_graph_identifier_periods']) assert.ok(mig.includes(w), w);
   assert.ok(/revoke all on public\.world_graph_changes from public, anon, authenticated/.test(mig) && /grant select on public\.world_graph_changes to anon, authenticated/.test(mig), 'the log is read by all, written by none');
-  assert.ok(!/update public\.world_graph_(nodes|edges|claims)\b/.test(mig.replace(/--.*$/gm, '')), 'the migration writes no graph row');
+  assert.ok(!/update public\.world_graph_(nodes|edges|claims)\b/.test(mig.split(String.fromCharCode(10)).filter((l) => !l.trim().startsWith('--')).join(String.fromCharCode(10))), 'the migration writes no graph row');
 });
 
 test('⑤ the store follows a replaced id and says it did; a silent database is not an empty answer', async () => {
