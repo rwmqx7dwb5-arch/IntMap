@@ -24,6 +24,8 @@
    観測: 2026-11-20 に深圳・東京・ロッテルダムの 2 km 区画で 1 区画 18 件の `out count` が
    Overpass の 1 リクエストで返ることを測った（検証は dev-notes/2026-11-20-geo-similar.md）。
    失効条件: OSM のタグ付けの慣行が変わったとき（例: building=house の廃止）。 */
+import { cosine } from './imagery-change.js';
+
 export const FEATURES = Object.freeze([
   { id: 'buildings',      group: 'built',     label: 'buildings',               ql: 'nwr["building"]' },
   { id: 'residential',    group: 'built',     label: 'residential buildings',       ql: 'nwr["building"~"^(residential|apartments|house|detached|terrace|dormitory|semidetached_house)$"]' },
@@ -171,7 +173,8 @@ export async function measureCells(cells, countFor, opt) {
    opt.within     [w,s,e,n]（格子で探す範囲）／ opt.candidates [{name, lat, lng}]（点のまわりの同じ大きさの区画）
    opt.cellKm     格子の 1 辺（既定 2）／ opt.maxCells 走査する区画の数（既定 48。超えた分は truncated と total で述べる）
    戻り値の coverage が「どこまで見たか」で、類似の主張はその範囲の中のことだけ。 */
-export async function findSimilar(opt, countFor) {
+/* 基準の区画と、比べる区画の一覧を決める（OSM 版と埋め込み版が同じ区画の取り方を使う: 取り方が違えば「似ている」の母集団が違ってしまう）。 */
+export function planCells(opt) {
   const cellKm = +opt.cellKm > 0 ? +opt.cellKm : 2, maxCells = +opt.maxCells > 0 ? +opt.maxCells : 48;
   const q = opt.query || {};
   const qBox = q.bbox || squareAround(q.lat, q.lng, +q.sideKm > 0 ? +q.sideKm : cellKm);
@@ -187,8 +190,12 @@ export async function findSimilar(opt, countFor) {
     const cx = (qBox[0] + qBox[2]) / 2, cy = (qBox[1] + qBox[3]) / 2, half = sideKm / 2 / KM_PER_DEG;
     cells = g.cells.filter((c) => Math.abs(c.lat - cy) > half * 1.2 || Math.abs(c.lng - cx) > half * 1.2).slice(0, maxCells);
     total = g.total; truncated = g.truncated || g.total > cells.length;
-    cells = cells.map((c) => Object.assign({}, c, { bbox: c.bbox }));
   }
+  return { q, qBox, sideKm, cellKm, cells, total, truncated };
+}
+
+export async function findSimilar(opt, countFor) {
+  const { q, qBox, sideKm, cellKm, cells, total, truncated } = planCells(opt);
   /* 基準が読めないなら候補を測っても意味が無い——先に基準だけを問い、読めなければ候補を 1 つも問わない */
   const qm = await measureCells([{ bbox: qBox, lat: (qBox[1] + qBox[3]) / 2, lng: (qBox[0] + qBox[2]) / 2, name: q.name }], countFor, { concurrency: 1, giveUpAfter: 1 });
   if (!qm.rows.length) return { ok: false, code: 'QUERY_UNREAD', failed: qm.failed, coverage: { requested: cells.length, measured: 0, total } };
@@ -202,4 +209,24 @@ export async function findSimilar(opt, countFor) {
     results: ranked.results, droppedFeatures: ranked.dropped,
     failed: cm.failed, notAsked: cm.notAsked, coverage: { requested: cells.length, measured: cm.rows.length, total, truncated, cellKm, sideKm },
   };
+}
+
+/* ── 衛星埋め込み（AlphaEarth Foundations）で比べる ──
+   区画の特徴 = その区画の有効画素の埋め込み（64 次元・長さ 1）の平均を再正規化したもの。類似度 = cosine。
+   OSM 版と違い、次元は人が読める量ではない（「建物が似ている」とは言えない）。根拠として返すのは、
+   どの年の埋め込みか・区画のうち何割の画素が有効だったか・候補全体の中でそのスコアがどの位置か（中央値と最大）。
+   embedMany(boxes) は js/imagery-change-io.js regionEmbeddings の形: 各 box に { embedding:{vector,pixels,coverage} } か { reason }。 */
+export async function findSimilarEmbedding(opt, embedMany) {
+  const plan = planCells(opt);
+  const all = await embedMany([plan.qBox].concat(plan.cells.map((c) => c.bbox)));
+  const qr = all[0];
+  if (!qr || !qr.embedding) return { ok: false, code: 'QUERY_UNREAD', failed: [{ reason: (qr && qr.reason) || 'no answer' }], coverage: { requested: plan.cells.length, measured: 0, total: plan.total } };
+  const rows = [], failed = [];
+  plan.cells.forEach((c, i) => { const r = all[i + 1]; if (r && r.embedding) rows.push({ cell: c, score: cosine(qr.embedding.vector, r.embedding.vector), validCoverage: r.embedding.coverage }); else failed.push({ cell: c, reason: (r && r.reason) || 'no answer' }); });
+  const coverage = { requested: plan.cells.length, measured: rows.length, total: plan.total, truncated: plan.truncated, cellKm: plan.cellKm, sideKm: plan.sideKm };
+  if (rows.length < 3) return { ok: false, code: 'POOL_TOO_SMALL', failed, coverage };
+  const scores = rows.map((r) => r.score).sort((a, b) => a - b), med = scores[Math.floor(scores.length / 2)];
+  rows.sort((a, b) => b.score - a.score);
+  const k = Math.max(1, opt.k | 0 || 8);
+  return { ok: true, code: 'OK', signal: 'embedding', query: { validCoverage: qr.embedding.coverage }, results: rows.slice(0, k), poolMedian: med, poolMin: scores[0], poolMax: scores[scores.length - 1], failed, coverage };
 }

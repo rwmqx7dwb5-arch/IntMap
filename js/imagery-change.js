@@ -165,6 +165,19 @@ export function meanEmbedding(v) {
   if (!(nn > 0)) return null;
   return { vector: Array.from(sum, (x) => x / nn), pixels: k, coverage: k / n, meanLength: nn / k };
 }
+/* 画素の長方形 [x0,x1)×[y0,y1) の埋め込みの平均（meanEmbedding と同じ作り方）。1 回読んだ広い窓を区画に切り分けるのに使う。 */
+export function meanEmbeddingIn(v, width, rect) {
+  const { vec, valid, dims } = v, sum = new Float64Array(dims); let k = 0, total = 0;
+  for (let y = rect.y0; y < rect.y1; y++) for (let x = rect.x0; x < rect.x1; x++) {
+    total++; const i = y * width + x;
+    if (!valid[i]) continue;
+    k++; for (let d = 0; d < dims; d++) sum[d] += vec[i * dims + d];
+  }
+  if (!k) return null;
+  let nn = 0; for (let d = 0; d < dims; d++) nn += sum[d] * sum[d];
+  nn = Math.sqrt(nn);
+  return nn > 0 ? { vector: Array.from(sum, (x) => x / nn), pixels: k, coverage: k / total, meanLength: nn / k } : null;
+}
 export function cosine(a, b) {
   let d = 0, na = 0, nb = 0;
   for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
@@ -183,11 +196,17 @@ export function embeddingChange(a, b, opt) {
     for (let k = 0; k < dims; k++) { const x = a.vec[i * dims + k], y = b.vec[i * dims + k]; d += x * y; na += x * x; nb += y * y; }
     dist[i] = 1 - d / Math.sqrt(na * nb); nValid++;
   }
-  const st = robustStats(dist);
-  if (!(st.n >= 30)) return { ok: false, code: 'TOO_FEW_VALID', valid: nValid, total: n, minimum: 30 };
-  const th = robustThresholds(st, o.k);
+  /* ⚠ 閾値は距離そのものでなく**角度** θ = √(2(1−cos)) の分布で決める。1−cos ≈ θ²/2 なので距離は強く右に歪み、
+     中央値 ± k·σ をそのまま当てると変化していない画素の裾を大量に拾う（合成データで 40 画素の変化に 98 画素が印になった）。
+     θ は小さな摂動の大きさに比例するので、頑健な z 値の慣用が成り立つ。報告する閾値は距離に戻す（θ²/2）。 */
+  const theta = new Float64Array(n);
+  for (let i = 0; i < n; i++) theta[i] = Number.isFinite(dist[i]) ? Math.sqrt(Math.max(0, 2 * dist[i])) : NaN;
+  const st0 = robustStats(theta);
+  if (!(st0.n >= 30)) return { ok: false, code: 'TOO_FEW_VALID', valid: nValid, total: n, minimum: 30 };
+  const th0 = robustThresholds(st0, o.k), th = { k: th0.k, high: (th0.high * th0.high) / 2 };
+  const st = robustStats(dist); st.sigma = st0.sigma;
   const flag = new Int8Array(n); let up = 0;
-  if (st.sigma > 0) for (let i = 0; i < n; i++) if (Number.isFinite(dist[i]) && dist[i] > th.high) { flag[i] = 1; up++; }
+  if (st0.sigma > 0) for (let i = 0; i < n; i++) if (Number.isFinite(theta[i]) && theta[i] > th0.high) { flag[i] = 1; up++; }
   const px = Number.isFinite(o.pixelKm2) ? o.pixelKm2 : null;
   return { ok: true, diff: dist, flag, stats: { total: n, valid: nValid, validFraction: nValid / n, median: st.median, sigma: st.sigma, mad: st.mad, p95: st.p95, k: th.k, thresholdHigh: th.high, increase: up, decrease: 0, changedFraction: up / nValid, degenerate: !(st.sigma > 0), increaseKm2: px === null ? null : up * px, decreaseKm2: null } };
 }

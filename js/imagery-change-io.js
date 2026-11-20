@@ -15,7 +15,7 @@
  *  ⚠ Planetary Computer の COG は、同社の「データ認証 API」が匿名で配る短命の SAS トークンを付けて読む（トークンは作らず、
  *    API が返したものをそのまま使い、失効前に取り直す。URL 以外に利用者の情報は送らない）。
  * ==========================================================================*/
-import { sclUsable, INDICES, reflectanceOf, normalisedDifference, pairedChange, classTransitions, aefVectors, embeddingChange, meanEmbedding, toDecibel, pixelAreaKm2, evidenceOf, AEF_DIMS } from './imagery-change.js';
+import { sclUsable, INDICES, reflectanceOf, normalisedDifference, pairedChange, classTransitions, aefVectors, embeddingChange, meanEmbedding, meanEmbeddingIn, toDecibel, pixelAreaKm2, evidenceOf, AEF_DIMS } from './imagery-change.js';
 
 export const SOURCES = Object.freeze({
   earthSearch: { url: 'https://earth-search.aws.element84.com/v1', host: 'earth-search.aws.element84.com', checked: '2026-11-20' },
@@ -246,13 +246,19 @@ export function makeImageryChange(deps) {
      読んだ塊の行が欲しい (帯, 年) でなければ `index-order-unexpected` と名指しして止まる（黙って別の年の画像を返さない）。 */
   const indexUrl = SOURCES.aef.base + '/aef_index.csv';
   let indexSize = null; const probeCache = new Map(); const blockCache = new Map();
+  /* 公開の配布先は接続を途中で切ることがある（観測: 2026-11-20、undici "terminated"）。実在した失敗なので 1 回だけ同じ範囲を取り直す。 */
   async function rangeText(from, to) {
-    const r = await fetchFn(indexUrl, { headers: { Range: 'bytes=' + from + '-' + to } });
-    if (r.status !== 206 && r.status !== 200) throw new Error('index http ' + r.status);
-    if (r.status === 200 && from > 0) throw new Error('index server ignored the Range header');
-    return r.text();
-  }
-  async function sizeOfIndex() {
+    let last = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await fetchFn(indexUrl, { headers: { Range: 'bytes=' + from + '-' + to } });
+        if (r.status !== 206 && r.status !== 200) throw new Error('index http ' + r.status);
+        if (r.status === 200 && from > 0) throw new Error('index server ignored the Range header');
+        return await r.text();
+      } catch (e) { last = e; }
+    }
+    throw last;
+  }  async function sizeOfIndex() {
     if (indexSize) return indexSize;
     const r = await fetchFn(indexUrl, { method: 'HEAD' });
     const n = +r.headers.get('content-length');
@@ -286,7 +292,9 @@ export function makeImageryChange(deps) {
     const ck = zone + hem + year;
     if (blockCache.has(ck)) return blockCache.get(ck);
     const size = await sizeOfIndex(), target = keyOf(zone, hem, year);
-    const [a, b] = await Promise.all([searchOffset((k) => k >= target, size), searchOffset((k) => k > target, size)]);
+    const [ra, rb] = await Promise.allSettled([searchOffset((k) => k >= target, size), searchOffset((k) => k > target, size)]);
+    if (ra.status === 'rejected') throw ra.reason; if (rb.status === 'rejected') throw rb.reason;
+    const a = ra.value, b = rb.value;
     const text = await rangeText(a.lo, Math.min(size - 1, b.hi + 16383));
     const rows = text.split('\n').map(rowOf).filter((r) => r && r.key === target);
     blockCache.set(ck, rows);
@@ -317,7 +325,7 @@ export function makeImageryChange(deps) {
     const yb = periodOf(a.before), ya = periodOf(a.after);
     if (!yb || !ya || !yb.year || !ya.year) return fail('bad-period', { need: 'a year (YYYY) for both before and after', available: SOURCES.aef.years });
     const lat = latticeFor(a.bounds, a.pixelM || 20, Math.min(a.maxPixels || 40000, 40000));
-    const [wb, wa] = await Promise.all([aefWindow(lat.bounds, yb.year, lat), aefWindow(lat.bounds, ya.year, lat)]);
+    const [wb, wa] = await Promise.all([aefWindow(lat.bounds, yb.year, lat), aefWindow(lat.bounds, ya.year, lat)].map((p) => p.catch((e) => fail('read-threw', { message: String((e && e.message) || e).slice(0, 120) }))));
     if (!wb.ok) return wb; if (!wa.ok) return wa;
     const ch = embeddingChange(wb.vectors, wa.vectors, { pixelKm2: lat.pixelKm2, k: a.k });
     if (!ch.ok) return fail(ch.code, { valid: ch.valid, total: ch.total });
@@ -334,5 +342,35 @@ export function makeImageryChange(deps) {
     return { ok: true, embedding: m, tile: w.tile, coverage: w.coverage, lattice: lat };
   }
 
-  return { optical, sar, landcover, embedding, regionEmbedding, aefLocate, periodOf, latticeFor };
+  /* 複数の区画（box）の埋め込みを一度に。区画が 1 つの広い窓に収まるなら窓を 1 回だけ読んで局所で切り分ける
+     （区画ごとに 64 面 × 数十リクエストを繰り返さない）。収まらない（離れた候補）なら区画ごとに読む（同時 2 本）。
+     戻り値は boxes と同じ順の { embedding } か { reason }。観測（2026-11-20）: 東京 2 km 区画 1 つ・80 m 画素で約 25 s。 */
+  async function regionEmbeddings(boxes, year, o) {
+    const px = (o && o.pixelM) || 80, cap = (o && o.maxPixels) || 160000;
+    const uni = [Math.min(...boxes.map((b) => b[0])), Math.min(...boxes.map((b) => b[1])), Math.max(...boxes.map((b) => b[2])), Math.max(...boxes.map((b) => b[3]))];
+    const lat = latticeFor(uni, px, cap);
+    const out = new Array(boxes.length);
+    if (!lat.enlarged) {
+      const w = await aefWindow(uni, year, lat);
+      if (!w.ok) return boxes.map(() => ({ reason: w.why + (w.detail && w.detail.status ? ' ' + w.detail.status : '') }));
+      const dx = (uni[2] - uni[0]) / lat.width, dy = (uni[3] - uni[1]) / lat.height;
+      boxes.forEach((b, i) => {
+        const rect = { x0: Math.max(0, Math.floor((b[0] - uni[0]) / dx)), x1: Math.min(lat.width, Math.ceil((b[2] - uni[0]) / dx)), y0: Math.max(0, Math.floor((uni[3] - b[3]) / dy)), y1: Math.min(lat.height, Math.ceil((uni[3] - b[1]) / dy)) };
+        const m = rect.x1 > rect.x0 && rect.y1 > rect.y0 ? meanEmbeddingIn(w.vectors, lat.width, rect) : null;
+        out[i] = m && m.coverage >= 0.5 ? { embedding: m, tile: w.tile.url } : { reason: m ? 'only ' + Math.round(m.coverage * 100) + '% of the region has embedding pixels' : 'no embedding pixels' };
+      });
+      return out;
+    }
+    let next = 0;
+    async function lane() {
+      while (next < boxes.length) {
+        const i = next++, r = await regionEmbedding(boxes[i], year, { pixelM: px });
+        out[i] = r.ok ? { embedding: r.embedding, tile: r.tile.url } : { reason: r.why };
+      }
+    }
+    await Promise.all([lane(), lane()]);
+    return out;
+  }
+
+  return { optical, sar, landcover, embedding, regionEmbedding, regionEmbeddings, aefLocate, periodOf, latticeFor };
 }
