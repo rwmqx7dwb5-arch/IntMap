@@ -22,7 +22,7 @@ date: 2026-11-20
 4. **`describes.*` の 6 欄**（`period`・`extent`・`method`・`resolution`・`completeness`・`accuracy`）を `FACETS`／`SPELLINGS`／`read`／`account` に足した。
    供給者の陳述だけで、述べていなければ理由つきの未申告。**書いたのは根拠を builder 自身が持つ 2 束だけ**（Maddison: 1850–2018・168 コード・2011 年国際ドル・
    国×年・±1 の丸め差 15 件／CRUST1.0: 全球・1°×1°・時間に依存しないモデル）。残り 220 の主題は**未申告のまま**で、台帳の `undeclaredFacets` が増えたのはこのため
-   （2445 → 3756。新しい 6 欄 × 222 主題の分から述べた 2 束の分を引いた数）。⚠ 台帳の `undeclared` が 205 → 222 になったのも同じ理由で、「出自を述べていない」が増えたのではない
+   （新しい 6 欄 × 全主題の分から述べた 2 束の分を引いた数。main 取り込み後の実測は主題 227・欄 3839）。⚠ 台帳の `undeclared` が 205 から全主題へ増えたのも同じ理由で、「出自を述べていない」が増えたのではない
    （これまで出自をすべて述べていた 17 主題が、新しい欄で初めて数えられた）。
 5. **Atlas**: `gisRemote` に `action: "facts"`（`data/data-facts.json` を返す。`ref` に複数渡すと時点の突き合わせ）。`data/data-facts.json` は
    builder の宣言から `data-governance.mjs --update` が生成し、規則 `facts-current` が突き合わせる。
@@ -44,3 +44,8 @@ date: 2026-11-20
 
 ## 3. ⚠ 途中で踏んだ穴
 - 単引用符の文字列に `publisher's` と書き、`upstream-cadence.mjs` 全体が構文エラー→静的に読む門が「読めない宣言」を 1 件出した。門は無言で緑にせず `unreadableDeclaration 1` を出したので見つかった。
+
+## 4. 並行した変更との関係
+main 取り込みで `js/gis-ops.js` に別の PR（spatiotemporal-join）の `provenance.warnings`／`timeRule`／`geoBasis` が入った。あちらは「その組が同時に存在したか」を述べ、
+こちらの `provenance.timeMismatch` は「入力の述べた対象時点が重なるか」を述べる——別の問いで、`datasetRow()` は両方を運ぶ。kernel 版は main の ops-14 に揃え、ハッシュだけ更新した。
+`data/upstream-fingerprints.json` 自身にも周期の宣言が要り（門が指摘）、「誰も周期を決めていない」ので `estimate` と書いた。

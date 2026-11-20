@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-11-20T06:10:13.327Z",
+    "generatedAt": "2026-11-20T08:06:22.823Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -440,6 +440,32 @@
     {
       "subject": "data/curriculum-units",
       "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/data-facts",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
         "describes.period",
         "describes.extent",
         "describes.method",
@@ -1830,6 +1856,23 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "data/plateau-cities",
+      "facets": [
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "data/polity-arcs",
       "facets": [
         "origin.retrievedAt",
@@ -2269,6 +2312,33 @@
     {
       "subject": "data/unga-votes/",
       "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/upstream-fingerprints",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "origin.builtBy",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.asOf",
+        "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
         "describes.period",
         "describes.extent",
         "describes.method",
@@ -3952,6 +4022,28 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-plateau-cities.mjs → data/plateau-cities.json",
+      "facets": [
+        "origin.retrievedAt",
+        "rights.licenceUrl",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-polity-arcs.mjs → data/polity-arcs.json",
       "facets": [
         "origin.retrievedAt",
@@ -5106,6 +5198,27 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/upstream-change.mjs → data/upstream-fingerprints.json",
+      "facets": [
+        "origin.url",
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/world-graph/build-lng.mjs → data/world-graph-lng.json",
       "facets": [
         "describes.period",
@@ -5122,8 +5235,8 @@
   "shardsWithoutIndex": [],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 222,
-    "undeclaredFacets": 3756,
+    "undeclared": 227,
+    "undeclaredFacets": 3839,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 0,
     "unreadableDeclaration": 0

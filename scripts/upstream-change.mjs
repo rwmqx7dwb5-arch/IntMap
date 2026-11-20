@@ -45,6 +45,25 @@ import { upstreamRoster, readUpstreamStore } from './data-governance.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const STORE = 'data/upstream-fingerprints.json';
+
+/* the governance record — check:datagov reads it statically, so the key is a literal path (same as STORE). The file states
+   what servers answered to a HEAD request on the day it was written; no supplier's data travels in it. */
+export const GOVERNANCE = {
+  'data/upstream-fingerprints.json': {
+    publisher: 'IntMap (scripts/upstream-change.mjs)',
+    licence: 'IntMap — Personal & Research Use License (LICENSE)',
+    licenceUrl: 'https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/LICENSE',
+    attribution: false,
+    cadence: 'P1M',
+    cadenceBasis: {
+      kind: 'estimate',
+      observed: 'estimate, not measured: nothing schedules a re-recording — a person runs --update after looking at what the nightly or a manual run reported as changed, so how often it happens is a habit, not a period anybody declared',
+      expires: 'when a scheduled job records the fingerprints itself, or a period is agreed for reviewing them',
+      canon: 'scripts/upstream-change.mjs',
+    },
+    builtBy: 'scripts/upstream-change.mjs',
+  },
+};
 const has = (k) => process.argv.includes(k);
 
 /* A URL that is a template or a base cannot be asked as written. */

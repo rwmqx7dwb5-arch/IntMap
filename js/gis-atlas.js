@@ -170,6 +170,15 @@ export function makeGisAtlas(core) {
          結果をそのまま運ぶ（pairs＝重ならない組と差の日数、unstated＝時点を述べていない入力）。要約しない。 */
       const tmm = ds.provenance && ds.provenance.timeMismatch;
       if (tmm && typeof tmm === 'object') row.timeMismatch = tmm;
+      /* (spatiotemporal-join) WHEN a derived record holds, and what its join could not vouch for, reach the planner too:
+         a result that carries `warnings` (a series on today's borders joined to rows drawn as they were, pairs that never
+         coexisted) must be SAID with its answer, and the planner can only say what this row shows it. Passed as recorded. */
+      const pv = ds.provenance;
+      if (pv && typeof pv === 'object') {
+        if (Array.isArray(pv.warnings) && pv.warnings.length) row.warnings = pv.warnings;
+        if (pv.timeRule && typeof pv.timeRule === 'object') row.timeRule = pv.timeRule;
+        if (pv.geoBasis && typeof pv.geoBasis === 'object') row.geoBasis = pv.geoBasis;
+      }
       return row;
     }
 
