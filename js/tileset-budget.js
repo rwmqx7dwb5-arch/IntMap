@@ -39,7 +39,7 @@ export function deviceTier(env) {
 }
 
 /** reads the running browser; every field is optional and an unreadable one is simply absent */
-export function readEnv() {
+function readEnv() {
   try {
     const n = /** @type {any} */ (typeof navigator !== 'undefined' ? navigator : {});
     return { deviceMemory: n.deviceMemory, hardwareConcurrency: n.hardwareConcurrency, userAgent: n.userAgent || '',
