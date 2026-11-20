@@ -66,7 +66,7 @@ export function handoffText(h, L) {
 let _door = null;
 export function webBrowseDoor(HOST) { return _door || (_door = makeWebBrowse(HOST)); }
 
-export function makeWebBrowse(HOST) {
+function makeWebBrowse(HOST) {
   let state = null;
 
   function endpoint() {
