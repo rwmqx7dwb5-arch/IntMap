@@ -5,7 +5,7 @@
 //  provider's own isolate-lived memory, and only callOpenAI reads or writes it.
 // ============================================================================
 
-import { PROVIDER_TIMEOUT_MS, FALLBACK_CHAIN } from "../../_shared/ai-provider.js";
+import { FALLBACK_CHAIN } from "../../_shared/ai-provider.js";
 import { providerStream } from "../../_shared/ai-stream.js";
 import type { Streamed } from "../provider-call.ts";
 import { providerCall, ProviderError, classifyGemini, streamedBody } from "../provider-call.ts";
@@ -100,25 +100,24 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
   };
   /* (atlas-live-stream) each request of the ladder is its own stream; the one whose answer is read is the last */
   let ps = null as Streamed | null;   /* the cast keeps the checker from narrowing to the initial null — it is assigned inside `post` */
-  const post = (body: Record<string, unknown>, ms: number) => {
+  const post = (body: Record<string, unknown>) => {
     ps = (turn && sink) ? providerStream("openai", sink) : null;
     if (ps) body.stream = true;
     return providerCall("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
       body: JSON.stringify(body),
-    }, ms, meter, ps ? ps.onChunk : undefined);
+    }, undefined, meter, ps ? ps.onChunk : undefined);
   };
 
   // (#R116) OUTAGE-PROOFING. The user hit a blanket "AI service temporarily unavailable": any
   // request-shape rejection (400) or a slow hosted web_search run must DEGRADE, never kill the
-  // feature. Timeouts: a search-attached call gets a longer leash (searches legitimately run
-  // long); if it still times out, ONE fast tool-free retry answers from the supplied evidence
+  // feature. Timeouts: a search-attached call may legitimately run long; if it times out, ONE fast tool-free retry answers from the supplied evidence
   // (meta.webUsed stays false, so "latest" claims remain honest). 400s walk a fallback ladder:
   // forced tool_choice → model-choice → drop JSON mode (prompt-only JSON; the client parser
   // strips fences) → drop tools.
-  // 90s + 40s fallback = 130s worst case — safely inside even a 150s wall-clock limit.
-  const WEB_TIMEOUT = 90_000;
+  // No number of ours bounds either call: each takes what the platform leaves the request (providerBudgetMs, shared
+  // across the rungs), so the tool-free retry after a timed-out search gets what is left, never a fresh window.
   let usedTools = web;
   /* (atlas-completion) WHY THE SEARCH WAS TAKEN AWAY, when a rung below took it. The answer that follows
      is still returned — but as an answer WITHOUT the search it was asked to run, and saying so is what
@@ -130,13 +129,13 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
   let usedJson: "schema" | "object" | "off" = wantJson ? (schemaFormat ? "schema" : "object") : "off";
   let r: Response;
   try {
-    r = await post(build(web && forceWeb ? "required" : null, usedJson, web), web ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+    r = await post(build(web && forceWeb ? "required" : null, usedJson, web));
   } catch (e) {
     const timedOut = e instanceof ProviderError && e.meta && (e.meta as Record<string, unknown>).timeout === true;
     if (web && timedOut) {
       usedTools = false;
       webFailure = "timeout";
-      r = await post(build(null, usedJson, false), 40_000);
+      r = await post(build(null, usedJson, false));
     } else {
       throw e;
     }
@@ -145,30 +144,30 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
   if (!r.ok && r.status === 400 && summary) {
     summary = false;
     summaryRefused = true;
-    r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+    r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools));
   }
   /* (atlas-native-tools) the first rung for a turn: the replayed reasoning and the cache key are optimisations,
      and a model that will not take another model's reasoning (the fallback chain) or the key must
      still answer the turn */
   if (!r.ok && r.status === 400 && turn && replay) {
     replay = false;
-    r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+    r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools));
   }
   if (!r.ok && r.status === 400 && usedTools && forceWeb) {
-    r = await post(build(null, usedJson, true), WEB_TIMEOUT);
+    r = await post(build(null, usedJson, true));
   }
   if (!r.ok && r.status === 400 && usedJson === "schema") {
     usedJson = "object";
-    r = await post(build(null, usedJson, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+    r = await post(build(null, usedJson, usedTools));
   }
   if (!r.ok && r.status === 400 && usedJson === "object") {
     usedJson = "off";
-    r = await post(build(null, usedJson, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+    r = await post(build(null, usedJson, usedTools));
   }
   if (!r.ok && r.status === 400 && usedTools) {
     usedTools = false;
     webFailure = "rejected";
-    r = await post(build(null, usedJson, false), PROVIDER_TIMEOUT_MS);
+    r = await post(build(null, usedJson, false));
   }
   if (!r.ok) {
     const t = (await r.text().catch(() => "")).slice(0, 400);

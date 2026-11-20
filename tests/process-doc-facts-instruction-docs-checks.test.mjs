@@ -87,9 +87,12 @@ const GUARD_N = functionsImporting(ROOT, 'relay-guard.js').length;
    緩めた正規表現で、**復元は元のバイト列**で行う（正規化して書き戻すと、テストを走らせた
    副作用として作業ツリーの改行が書き換わる）。 */
 
-function docFacts() {
+/* (ci-queue-pressure) `rule` narrows the run to the one rule the case asserts on (`--rule=`, scripts/doc-facts.mjs): the full run
+   shells out to i18n-pair-audit (about 10 s measured #R407, about 39 s on a cold runner) and a mutation only reads ONE rule's verdict.
+   The `green` preconditions and the end-of-test restore checks still run the whole gate. */
+function docFacts(rule) {
   try {
-    execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check'], { cwd: SCRATCH.root, encoding: 'utf8' });
+    execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', ...(rule ? ['--rule=' + rule] : [])], { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: '' };
   } catch (e) {
     return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
@@ -104,7 +107,7 @@ function docFacts() {
    `npm test` 全体で 12 → 8 件落ち、test 単位で1回だけ取る版は落ちない。
    長い保持が危険だったのは**生存判定が時計だった**からで、それは pid に直したので消えている
    （錠そのものは retire-gate-lock, 2026-10-01 で撤去した）。 */
-async function breaking(file, mutate, fn) {
+async function breaking(file, mutate, fn, rule) {
   {
     const originalBytes = rd(file);
     const original = readLF(join(ROOT, file));
@@ -112,7 +115,7 @@ async function breaking(file, mutate, fn) {
     assert.notEqual(broken, original, `the mutation did not change ${file} — its anchor is gone`);
     try {
       SCRATCH.write(file, broken);
-      fn(docFacts());
+      fn(docFacts(rule));
     } finally {
       SCRATCH.write(file, originalBytes);
     }
@@ -165,7 +168,7 @@ test('R403 ① the instruction documents are inside the sweep', async () => {
         assert.equal(r.code, 1, `check:docs stayed GREEN with ${SKILL} broken — ${c.why}`);
         assert.ok(r.out.includes(c.rule), `check:docs failed but never named ${c.rule} (${c.why}):\n` + r.out);
         assert.ok(r.out.includes('SKILL.md'), `the report never named the file it read (${c.why}):\n` + r.out);
-      });
+      }, c.rule);
     }
   }
 });
@@ -186,7 +189,7 @@ test('R403 ② the defect this round fixed goes RED, and names the deploys that 
       for (const n of ['aviation-feed', 'routing-relay', 'volcano-feed']) {
         assert.ok(r.out.includes(n), `the report never named ${n}, which this list silently drops:\n` + r.out);
       }
-    });
+    }, 'edge-roster');
   }
 });
 
@@ -199,7 +202,7 @@ test('R403 ③ a roster that is missing a name, and a count that is wrong, both 
       assert.equal(r.code, 1, 'check:docs stayed green with a function missing from the roster');
       assert.ok(r.out.includes('edge-roster') && r.out.includes('routing-relay'),
         'the roster rule did not name the dropped function:\n' + r.out);
-    });
+    }, 'edge-roster');
 
     /* 数だけを間違える（名前は12本のまま） */
     const num = anchorRe('**Edge Functions は ' + EDGE_N + ' 本**');
@@ -319,7 +322,7 @@ test('R403 ⑥ every rule this round added goes RED when its fact is made wrong'
       await breaking(c.file, (s) => s.replace(re, () => c.to), (r) => {
         assert.equal(r.code, 1, `check:docs stayed GREEN with ${c.file} broken — ${c.why}`);
         assert.ok(r.out.includes(c.rule), `check:docs failed but never named ${c.rule} (${c.why}):\n` + r.out);
-      });
+      }, c.rule);
     }
   }
 });
