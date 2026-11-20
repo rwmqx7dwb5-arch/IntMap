@@ -29,3 +29,7 @@ newsjp: Atlas の完了判定が、成果物の中身（値が入っている行
 
 ## 3. 検査
 `tests/goal-and-evidence-checks.test.mjs`（①20 行中 8 行の人口・不足の計算 ②同一ホスト 3 回は独立 1・model_only ③verifier へ渡り観測が投げても走る ④更新が GIS 結果・回答の数値・ノートを名指す ⑤送信失敗で失わず pull が置換しない・到着順に依らない合流 ⑥ニュース・ノート・`datasets` 引数）。`tests/evidence-graph-checks.test.mjs`（#1287 の既存 5 本）は無変更で通る。
+
+## 4. 費用の増加（perf）
+- `atlas-notebook` の非同期チャンクが 34.3 kB → 52.8 kB（+18.5 kB）。**理由**: ノートが `evidence-graph-record`（節の記録）・`evidence-graph-sync`（アカウントへの往復）を取り込み、ノートの保存が回答の数値の節へ立つようになったため。ノートを開くまで読まれないチャンクで、起動の経路には載らない。天井を 54200 へ上げた（CI の測定 52.8 kB・帯 2 kB 以内。main の CI が測定値へ締める）。
+- `research.analyze` の `datasets` 引数は `window.IntMapData` を直に読まず、`datasetFactsOnPage`（`evidence-graph-record.js`）が globalThis 経由で読む（`check:surface` の読み取り件数 27→28 を増やさない）。

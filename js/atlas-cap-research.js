@@ -20,7 +20,7 @@ import { str, num, int, one, list, lat, lng, obj, bool } from './atlas-caps.js';
 import { scenarioModels, scenarioFrame, scenarioCall, scenarioReport } from './atlas-reasoning.js';   /* (atlas-reasoning) research.scenario: what is decided is in that module, as values */
 import SIM_ENTRIES from './atlas-cap-sim.js';   /* the entries that declare a `scenario` ARE the models — discovered, not listed (same lazy chunk as this file) */
 import { personaPrompt } from './atlas-persona.js';
-import { sharedEvidenceGraph, datasetFacts } from './evidence-graph-record.js';   /* (evidence-graph) a GIS result put in front of the answer carries its lineage node */
+import { datasetFactsOnPage } from './evidence-graph-record.js';   /* (evidence-graph) a GIS result put in front of the answer carries its lineage node */
 import { settleWithin, lateNote } from './atlas-deadlines.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
@@ -759,7 +759,7 @@ export default [
               requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
               turnId:K._curTurnKey, webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
               webSources:turnPages(K._curTurnKey).slice(),   /* (atlas-completion) pages an earlier call of this turn retrieved — they get ids before this call */
-              appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)).concat((()=>{ try{ const eg=sharedEvidenceGraph(); return datasetFacts(window.IntMapData, Array.isArray(a&&a.datasets)?a.datasets:[], eg.refOfDataset); }catch(_){ return []; } })()), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
+              appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)).concat((()=>{ try{ return datasetFactsOnPage(a&&a.datasets); }catch(_){ return []; } })()), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
               ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
           catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
           const _env=RES.env, _reg=RES.registry;

@@ -229,6 +229,13 @@ export function sharedEvidenceGraph(scope) {
   return { graph: SHARED.graph, refOfDataset: (id) => (SHARED.gis ? SHARED.gis.refOf(id) : null) };
 }
 
+/** datasetFactsOnPage(ids) — datasetFacts over the page's registry, with each figure's graph ref; [] when there is no registry. */
+export function datasetFactsOnPage(ids, scope) {
+  const g = scope || (typeof globalThis !== 'undefined' ? globalThis : {});
+  const eg = sharedEvidenceGraph(g);
+  return datasetFacts(g.IntMapData || null, Array.isArray(ids) ? ids : [], eg.refOfDataset);
+}
+
 /**
  * makeTurnObserver(since, scope) → () → string[] — the lines js/atlas-goal-verify.js shows its reader beside the record
  * of operations: what the datasets created since `since` (a turn's start, ms) hold, and what stands behind each figure
