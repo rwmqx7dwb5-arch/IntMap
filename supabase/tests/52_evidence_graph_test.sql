@@ -5,7 +5,7 @@
 --    ③ another account reads none and changes none; anon sees nothing
 --    ④ the row shape (payload.id / payload.kind equal the columns) and the account bound refuse
 --    ⑤ the table has its catalogue sentence and its rows go with the account (ON DELETE CASCADE)
---  supabase/migrations/20261120120000_evidence_graph_nodes.sql. The client (pull / push / ack) is
+--  supabase/migrations/20261120130000_evidence_graph_nodes.sql. The client (pull / push / ack) is
 --  tests/evidence-graph-checks.test.mjs.
 -- ============================================================================
 begin;

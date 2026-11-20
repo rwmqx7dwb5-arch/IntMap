@@ -297,7 +297,8 @@ export function makeEvidenceGraph(opts) {
       const known = new Set(have.versions.map((v) => v.version));
       let grew = false;
       for (const v of (n.versions || [])) if (!known.has(v.version)) { have.versions.push(v); known.add(v.version); versionsAdded++; grew = true; }
-      if (grew) have.versions.sort((x, y) => (x.at < y.at ? -1 : x.at > y.at ? 1 : 0));
+      /* two versions seen in the SAME millisecond (two devices, or a push and a pull) have no time order — a stable sort kept whichever list came first, so which one was "current" depended on the merge direction (tests/goal-and-evidence-checks ⑤ failed 1 run in 2). Ties break by the version text, numerically aware, which is the same on every device. */
+      if (grew) have.versions.sort((x, y) => (x.at < y.at ? -1 : x.at > y.at ? 1 : String(x.version).localeCompare(String(y.version), 'en', { numeric: true })));
     }
     /* derived nodes may arrive before the derived node they read: take them in rounds until a round adds none */
     let queue = incoming.filter((n) => n.kind === 'derived' && !nodes.has(n.id));
