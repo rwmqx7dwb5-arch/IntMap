@@ -14,6 +14,18 @@ on:
   push:
     branches: [main]
   pull_request:
+    # (ci-queue-pressure) A PR that changes no code CodeQL reads and no lock npm audit reads (documents, dev-notes,
+    # data) has nothing for either job to find; both still run on every push to main and daily. Advisory, not a
+    # required check (see the ruleset), so a path filter cannot leave a required context unreported (db.yml's case).
+    paths:
+      - '**/*.js'
+      - '**/*.mjs'
+      - '**/*.cjs'
+      - '**/*.ts'
+      - '**/*.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/security.yml'
   schedule:
     # (security-watch) DAILY, not weekly: an advisory is published against code that has not changed, so the
     # scheduled run is what finds it — a weekly one let it sit up to six days. 02:47 UTC is clear of db-backup and
