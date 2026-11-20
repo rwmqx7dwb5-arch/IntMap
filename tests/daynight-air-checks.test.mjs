@@ -32,3 +32,12 @@ test('the minute tick re-considers an unbuilt effect instead of only repainting 
   const tick = src.slice(src.indexOf("everyTick('night-side:sun'"));
   assert.match(tick, /if\(built\) refresh\(false\); else consider\(\);/);
 });
+
+test('addLimb says which stage refused (layers.limbWhy), so a refusal is never a bare false', () => {
+  const eng = codeOnly(fs.readFileSync(path.join(ROOT, 'js/geo-engine.js'), 'utf8'));
+  const body = eng.slice(eng.indexOf('addLimb(id,before){'), eng.indexOf('hasLimb(id){'));
+  for (const stage of ['kind-not-provided', 'no-webgl2-on-map-canvas', 'phone-class-device', 'software-rasteriser', 'sky-model-missing', 'threw-before-addLayer', 'layer-dead-on-add', 'added']) {
+    assert.ok(body.includes("_limbWhy='" + stage + "'"), 'stage named: ' + stage);
+  }
+  assert.match(eng, /limbWhy:\(\)=>/, 'the contract exposes it');
+});

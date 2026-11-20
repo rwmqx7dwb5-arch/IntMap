@@ -29,3 +29,10 @@ newsjp: 衛星の地球儀で、起動時に地図の準備が間に合わない
 ## 3. 検証
 - `tests/daynight-air-checks.test.mjs`（読み取り検査・理由は冒頭）。
 - 未検証: 昼側の大気は本件の再現では異常なし（im-limb 有効・blend 約 0.41）。報告の「大気が出ない」が同じ根（起動時の遅れ）かは、修正後に報告者の Edge で要確認。
+
+## 4. 大気が出ない件（続き・実測）
+報告者の Edge（Intel Arc・WebGL ハード・最新の同一ビルド）では、`?limb=1` で強制しても独自の大気（im-limb）が入らなかった。
+`addLimb` は false を返し、`map.addLayer` は一度も呼ばれず、console にも何も出ない。判明した除外: 指の端末ではない
+（coarse=false, touch=0）、WebGL2 は有る、地図の canvas も WebGL2、`IntMapSkyModel.tables()` は正常、読み込まれた版は本番と同じ。
+拒否が bare `false` で理由が読めなかったので、`addLimb` は自分がどの段で返したかを残し、`IntMapGeoEngine.layers.limbWhy()` で読めるようにした
+（例外は console.warn にも出す）。原因の確定は、この版が本番に出たあと報告者の Edge で `limbWhy()` を読んでから。
