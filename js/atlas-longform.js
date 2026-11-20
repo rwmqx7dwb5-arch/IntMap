@@ -52,7 +52,7 @@ export function planOutline(arg) {
 
 /* outlineKey(plan) → the same string for the same outline, a different one for any other (two 32-bit hashes in hex —
    an identity, not a secret) */
-export function outlineKey(plan) {
+function outlineKey(plan) {
   const text = JSON.stringify([plan.title, plan.brief, plan.format, plan.sections.map((s) => [s.id, s.title, s.goal, s.words || 0])]);
   let h1 = 0x811c9dc5, h2 = 0x9747b28c;
   for (let i = 0; i < text.length; i++) {
@@ -63,7 +63,7 @@ export function outlineKey(plan) {
   return 'lf' + h1.toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
 }
 
-export const LONGFORM_SYSTEM = 'You write ONE section of a longer document that is written section by section. '
+const LONGFORM_SYSTEM = 'You write ONE section of a longer document that is written section by section. '
   + 'Write only that section, complete, in the language of the request, as Markdown (or as the code the request asks for). '
   + 'Do not repeat earlier sections, do not summarise the whole document, do not write an introduction to the document unless this section IS the introduction, '
   + 'and do not write later sections. Continue the document\'s voice, terms and numbering. State only what you can support; where you cannot, say so in the text.';

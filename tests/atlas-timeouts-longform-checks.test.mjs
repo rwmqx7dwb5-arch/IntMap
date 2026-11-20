@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { planOutline, outlineKey, runLongform, assemble, storageStore } from '../js/atlas-longform.js';
+import { planOutline, runLongform, assemble, storageStore } from '../js/atlas-longform.js';
 
 const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 const memStore = () => { const m = new Map(); return { m, read: (k) => m.get(k) || null, write: (k, v) => { m.set(k, JSON.parse(JSON.stringify(v))); } }; };
@@ -19,11 +19,12 @@ test('an outline with no sections, or a section with nothing to write, is refuse
   assert.equal(new Set(p.sections.map((s) => s.id)).size, 3);
 });
 
-test('the same outline has the same key, a different one a different key', () => {
-  const a = planOutline(outline), b = planOutline(JSON.parse(JSON.stringify(outline)));
-  assert.equal(outlineKey(a), outlineKey(b));
-  b.sections[1].goal = 'changed';
-  assert.notEqual(outlineKey(a), outlineKey(b));
+test('the same outline has the same key, a different one a different key', async () => {
+  const ask = async () => ({ text: 'x', meta: {} });
+  const keyOf = async (o) => (await runLongform({ plan: planOutline(o), ask })).key;
+  const changed = JSON.parse(JSON.stringify(outline)); changed.sections[1].goal = 'changed';
+  assert.equal(await keyOf(outline), await keyOf(JSON.parse(JSON.stringify(outline))));
+  assert.notEqual(await keyOf(outline), await keyOf(changed));
 });
 
 test('every section is its own request, saved as written, and the joined document has all of them', async () => {
