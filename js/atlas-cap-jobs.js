@@ -13,13 +13,14 @@
  *  See js/atlas-caps.js for what an entry holds; the columns of `row` are at «THE TABLE» in js/atlas-capabilities.js.
  * ==========================================================================*/
 import { str, int, bool, list, obj, one } from './atlas-caps.js';
+import { serverClass } from './atlas-server-class.js';
 import { pageJobsClient, planDigest, jobText, jobCardShell, mountJobCards, applyParked, deviceParkedMemory } from './atlas-jobs-client.js';
 
 /* what an ENDED job leaves: one work in the work store (js/atlas-job-products.js) and the memory told it is no longer owed. The work store is loaded
    when it is needed — a page that never ends a job never loads it. Returns the line Atlas reads, or ''. */
 async function fileEnded(K, f) {
   try { const P = await import('./atlas-job-products.js'); P.noteJobEnded(K.workingMemory, f);
-    const W = await import('./atlas-work-store.js'); const r = await P.saveJobAsWork(f, W.workStore());
+    const W = await import('./atlas-cap-work.js'); const r = await P.saveJobAsWork(f, W.workStore());
     return r.ok ? ' Filed on this device as work ' + r.workId + ' (' + r.saved.length + ' new product(s), ' + r.unchanged + ' unchanged) — open it with work.job.' : '';
   } catch (_) { return ''; }
 }
@@ -77,7 +78,9 @@ export default [
       let f = null; try { f = await client.get(r.jobId); } catch (_) { f = null; }
       mountJobCards(() => pageJobsClient(), { L, esc, apply: parkedApplier(K, dctx), onEnded: (g) => fileEnded(K, g) });
       try { const P = await import('./atlas-job-products.js'); P.noteJobStarted(K.workingMemory, { id: r.jobId, title: a.title || '' }); } catch (_) { /* memory is context */ }
-      const lead = '<div style="font-size:12px;margin-bottom:4px;">' + esc(r.created ? L('Started in the background — it keeps running after you close this tab. Come back and ask for its status any time.', 'バックグラウンドで開始しました。このタブを閉じても続きます。いつでも戻って状況を確認できます。') : L('This request was already started; here is that job.', 'この依頼は既に開始済みです。その仕事を表示します。')) + '</div>';
+      /* what each capability task will DO, said from the registry's own record (js/atlas-server-class.js): run on the server, or saved for the page */
+      const where = tasks.filter((t) => t && t.kind === 'capability' && t.capability).map((t) => { let c = null; try { c = K.CAPS && K.CAPS.resolve(t.capability); } catch (_) { c = null; } const k = c ? serverClass(c) : ''; return k === 'parkable' ? t.capability + ': ' + L('saved, applied when you next open IntMap', '保存し、次に IntMap を開いたとき適用') : (k === 'read' ? t.capability + ': ' + L('runs on the server', 'サーバで実行') : ''); }).filter(Boolean);
+      const lead = '<div style="font-size:12px;margin-bottom:4px;">' + esc(r.created ? L('Started in the background — it keeps running after you close this tab. Come back and ask for its status any time.', 'バックグラウンドで開始しました。このタブを閉じても続きます。いつでも戻って状況を確認できます。') : L('This request was already started; here is that job.', 'この依頼は既に開始済みです。その仕事を表示します。')) + (where.length ? '<div>' + esc(where.join(' · ')) + '</div>' : '') + '</div>';
       return R(true, lead + jobCardShell(r.jobId, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: r.jobId, created: r.created, status: (f && f.status) || r.status, tasks: tasks.length } } });
     },
   },

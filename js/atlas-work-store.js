@@ -58,7 +58,7 @@ const IMAGE_EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp
 const sizeOf = (c) => { try { return JSON.stringify(c).length; } catch (_) { return Infinity; } };
 
 /** the content of a product, cleaned to its kind's shape — or { problem } naming what is wrong */
-export function cleanContent(kind, c) {
+function cleanContent(kind, c) {
   const K = PRODUCT_KINDS[kind]; if (!K) return { problem: 'unknown-kind' };
   const x = obj(c); if (!x) return { problem: 'no-content' };
   let out;
@@ -133,7 +133,7 @@ export function newWorkId(now) {
   let r = ''; try { const a = new Uint8Array(5); globalThis.crypto.getRandomValues(a); r = Array.from(a, (b) => b.toString(16).padStart(2, '0')).join(''); } catch (_) { r = Math.random().toString(16).slice(2, 12); }
   return 'wk-' + t + '-' + r;
 }
-export function normalizeProduct(p) {
+function normalizeProduct(p) {
   const x = obj(p); if (!x || !PRODUCT_KINDS[x.kind]) return null;
   const name = str(x.name, 120).trim(); if (!name) return null;
   const c = cleanContent(x.kind, x.content); if (c.problem) return null;

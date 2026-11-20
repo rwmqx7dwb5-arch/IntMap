@@ -18,8 +18,6 @@ import { PRODUCT_KINDS, productKinds, WORKSPACES, chooseWorkspace, newWorkId, no
 
 
 export function workStore() { return WORK_STATE.store || (WORK_STATE.store = deviceWorkStore(typeof indexedDB !== 'undefined' ? indexedDB : null)); }
-/** tests and the page reset the module's memory of "the job we are on" */
-export function _setStoreForTest(s) { WORK_STATE.store = s; WORK_STATE.current = null; }
 
 async function target(a) {
   const S = workStore();

@@ -20,7 +20,6 @@
  * ==========================================================================*/
 import { effectClass } from './cap-bridge.js';
 
-export const SERVER_CLASSES = Object.freeze(['read', 'parkable', 'page-only']);
 
 export function serverClass(cap) {
   if (!cap || cap.withdrawn) return 'page-only';

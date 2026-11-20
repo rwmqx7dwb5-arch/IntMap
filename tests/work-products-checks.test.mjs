@@ -146,7 +146,7 @@ const cap = (await import('../js/atlas-cap-work.js'));
 const run = async (a, k) => (await cap.default[0].run(a, {}, k || K()));
 
 test('⑧ job → add table / dataset / code / chart → carry on after a "reload" → compare → restore → export', async () => {
-  const p = page(); cap._setStoreForTest(S.makeWorkStore(S.memoryBackend()));
+  const p = page(); S.WORK_STATE.store = S.makeWorkStore(S.memoryBackend()); S.WORK_STATE.current = null;
   let r = await run({ action: 'start', goal: 'Compare 3 PDFs of tariffs', needs: { language: 'python' } });
   assert.ok(r.ok); const id = r.meta.work.id; assert.equal(r.meta.work.workspace, 'pyodide');
   r = await run({ action: 'add', kind: 'table', name: 'tariffs', columns: ['country', 'rate'], rows: [['JP', 1], ['FR', 2]], from: { attachment: 'a.pdf' } });
@@ -166,7 +166,7 @@ test('⑧ job → add table / dataset / code / chart → carry on after a "reloa
   assert.equal(r.ok, false);
 
   /* "tomorrow": the module forgets which job it was on; the store still has it */
-  cap._setStoreForTest(cap.workStore());
+  S.WORK_STATE.store = cap.workStore(); S.WORK_STATE.current = null;
   r = await run({ action: 'list', query: 'tariffs' }); assert.equal(r.meta.work.count, 1);
   r = await run({ action: 'start', id }); assert.equal(r.meta.work.resumed, true); assert.equal(r.meta.work.products, 4);
   r = await run({ action: 'compare', product: 'tariffs' });
@@ -183,7 +183,7 @@ test('⑧ job → add table / dataset / code / chart → carry on after a "reloa
 });
 
 test('⑨ refusals are named and a missing job is not invented', async () => {
-  page(); cap._setStoreForTest(S.makeWorkStore(S.memoryBackend()));
+  page(); S.WORK_STATE.store = S.makeWorkStore(S.memoryBackend()); S.WORK_STATE.current = null;
   let r = await run({ action: 'add', kind: 'answer', name: 'x', text: 'y' });
   assert.equal(r.ok, false); assert.equal(r.meta.work.code, 'needs_input', 'no job yet → say so, do not create one silently');
   r = await run({ action: 'open', id: 'wk-zzzz9999' }); assert.equal(r.meta.work.code, 'not_found');

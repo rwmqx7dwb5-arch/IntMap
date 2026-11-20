@@ -177,3 +177,14 @@ test('⑦ a Python run is filed in the OPEN work: the program, and the history o
   assert.equal((await fileRunToWork(run, a, S, null)).why, 'no-work', 'no open work: nothing is made behind the reader back');
   assert.equal((await fileRunToWork(Object.assign({}, run, { ok: false }), a, S, w.id)).why, 'run-not-ok');
 });
+
+test('⑧ the modules the page imports lazily export what the callers name (an import of a name that is not there fails silently in a try/catch)', async () => {
+  const W = await import('../js/atlas-cap-work.js'); const S = await import('../js/atlas-work-store.js');
+  assert.equal(typeof W.workStore, 'function', 'js/atlas-cap-jobs.js and js/atlas-cap-compute.js call workStore() from the work capability module');
+  assert.equal(typeof S.WORK_STATE, 'object', 'and read the open work from WORK_STATE');
+  const P = await import('../js/atlas-job-products.js');
+  for (const n of ['saveJobAsWork', 'fileRunToWork', 'noteJobStarted', 'noteJobEnded']) assert.equal(typeof P[n], 'function', n);
+  const src = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
+  assert.match(src('js/atlas-cap-jobs.js'), /import\('\.\/atlas-cap-work\.js'\)[\s\S]{0,80}workStore\(\)/);
+  assert.match(src('js/atlas-cap-compute.js'), /import\('\.\/atlas-cap-work\.js'\)/);
+});
