@@ -34,3 +34,5 @@ preview（ローカル）で、表の行クリック → 棒と地図点が選�
 新しい遅延チャンク `board`(利用者がボードを開くまで読まれない)と、`board.compose`/`board.restore` の能力記述が
 `atlas-cap-runs` に約 6.7 kB 足されたため、`async.gzip`・`atlas-cap-runs`・`dist.assets` の天井を `--update` で上げた。
 起動時の経路には載らない(`check:perf` の起動側の行は動いていない)。
+
+`atlas-console` チャンクも約 6 kB 増えた(1061.2 → 1067.2 kB)。能力記述 2 本が dispatch の注記表に入るため。起動時の経路ではなく、Atlas を開いたときに読まれる遅延チャンク。
