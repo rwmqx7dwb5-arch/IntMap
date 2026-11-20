@@ -155,7 +155,7 @@ export function forecastReport(rec) {
   if (r.modelEstimates && r.modelEstimates.noValue > 0) excluded.push(T(r.modelEstimates.noValue + ' location(s) had no value from the provider (for river discharge: no river in that cell): absent, not zero', r.modelEstimates.noValue + ' 地点は提供元が値を返さなかった（河川流量では、そのセルに川が無い等）。0 ではなく欠測'));
   excluded.push(T('Population exposure and impacts are not computed here', '人口への曝露や影響はここでは計算していない'));
   const unc = r.uncertainty || {};
-  const uncertainty = [unc.basis === 'not-stated' ? T('The provider states no spread for this variable (' + ((unc.note && unc.note.en) || '') + ')', '提供元はこの変数の幅を述べていない（' + ((unc.note && unc.note.jp) || '') + '）') : T('Spread stated by the provider: ' + ((unc.note && unc.note.en) || ''), '提供元が述べた幅: ' + ((unc.note && unc.note.jp) || ''))];
+  const uncertainty = [unc.basis === 'not-stated' ? T('The provider states no spread for this variable (' + ((unc.note && unc.note[0]) || '') + ')', '提供元はこの変数の幅を述べていない（' + ((unc.note && unc.note[1]) || '') + '）') : T('Spread stated by the provider: ' + ((unc.note && unc.note[0]) || ''), '提供元が述べた幅: ' + ((unc.note && unc.note[1]) || ''))];
   uncertainty.push(T('A model estimate for a grid cell, not a measurement at the point; the provider snaps each request to its own grid', '格子セルに対するモデル推計で、その地点での測定ではない（提供元が各要求を自らの格子へ寄せる）'));
   const complete = !!(dataUsed.length && excluded.length && uncertainty.length);
   return { kind: 'forecast', model: src.id || null, ran: true, assumptions: conds, observations: obs, modelEstimates: r.modelEstimates || null, uncertaintyData: unc, dataUsed, excluded, uncertainty, complete, fetchedAt: r.fetchedAt || null, region: r.region || null };
