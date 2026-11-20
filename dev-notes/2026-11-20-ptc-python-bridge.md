@@ -41,3 +41,5 @@ date: 2026-11-20
 `tests/ptc-python-bridge-checks.test.mjs`（Node: プロトコル・履歴・Worker への port と client の受け渡し・失敗した実行の履歴・
 `compute.run` の grants の扱い・文面と配線）、`tests/ptc-python-bridge.spec.js`（実 Pyodide: ループ・拒否・重複・読み取り・履歴・
 grants 無しの実行。CDN に届かない走者では理由つきで skip）。
+
+`tests/durations.json` の `ptc-python-bridge.spec.js: 22` は**推定**（隣の `compute-sandbox.spec.js` と同じ 1 回の Pyodide 起動）。CI で実測が出たら置き換える。
