@@ -27,3 +27,8 @@ newsjp: バックグラウンドの仕事が、より多くの読み取り能力
 ## 3. 検証
 
 `tests/server-capability-lane-checks.test.mjs`（12 件）: catalogue が twin の表と同じ・各 twin が registry の read 行・世界グラフ twin の scope と名指しの拒否・計画での tools の拒否・ループ（呼び出し→答えが次の要求に入る→最終）・グラント外の tool・重複呼び出しは実行しない・費用の柵・取消・スライスをまたぐ再開（払い直さない）。既存の `atlas-durable-jobs-checks`／`atlas-jobs-atlas-checks` は無変更で緑。pgTAP `52` に progress の 6 件（保持者だけ・yield で queued に戻り値を保つ・running でなければ書けない）。**本番の実測（ジョブを開始してタブを閉じる）は deploy 後**。
+
+## 4. CI で直したこと（名指し）
+
+- `check:surface`: `js/atlas-jobs-client.js` のジョブカードは escape を `window.IntMapSafe`（`html`・`url`）に通すので、`IntMapSafe` の読み取りが 169→173 に増えた。この読み取りは**意図したもの**（カードは第三者の文を含む worker の結果を描く）で、`IntMapSafe` は export を持たず global が窓口なので、台帳を `--update` で更新した。
+- 台帳・確認文・訳: 読む窓の 3 操作に `data-effect="none"`（質問を Atlas へ渡すだけ）、`jobs.start` の `atlas.confirm.what`、カードの「Send」は他の送信ボタンと同じ「送信」。

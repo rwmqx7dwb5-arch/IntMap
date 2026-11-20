@@ -20,6 +20,7 @@
  *  Everything outside is passed in, so a node test runs it against a fake.   ⚠ no DOM at import time.
  * ==========================================================================*/
 
+import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder every card text and href below goes through */
 import { s, stable } from './atlas-job-core.js';
 
 const TERMINAL = new Set(['done', 'failed', 'cancelled']);
