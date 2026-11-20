@@ -207,6 +207,6 @@ test('geo-task-planner ④ a plan with no geo is unchanged (no geo in the answer
 /* ── ⑤ ───────────────────────────────────────────────────────────────────────────────────────── */
 test('geo-task-planner ⑤ nothing is blocked: the module and its wiring decide no call, step or ceiling', () => {
   const src = readFileSync(join(ROOT, 'js/atlas-geoplan.js'), 'utf8');
-  assert.doesNotMatch(src.replace(/\/\*[\s\S]*?\*\//g, ''), /maxSteps|TURN_MAX_CALLS|throw new Error\('refus/);
+  assert.doesNotMatch(codeOnly(src), /maxSteps|TURN_MAX_CALLS|throw new Error\('refus/);
   assert.match(readFileSync(join(ROOT, 'js/atlas-agent.js'), 'utf8'), /PLAN\.geoPending/);
 });

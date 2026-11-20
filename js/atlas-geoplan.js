@@ -24,10 +24,10 @@
  *  model; no operation is blocked, reordered or limited for it (CONSTITUTION.md §5).
  * ==========================================================================*/
 
-export const SOURCE_KINDS = ['layer', 'dataset', 'stac', 'ogc', 'overture', 'upload', 'none'];
-export const ENVIRONMENTS = ['browser-gis', 'python', 'server', 'job'];
-export const COMPLETENESS = ['all', 'sample', 'any'];
-export const OUTPUT_KINDS = ['map', 'table', 'chart', 'file', 'answer'];
+const SOURCE_KINDS = ['layer', 'dataset', 'stac', 'ogc', 'overture', 'upload', 'none'];
+const ENVIRONMENTS = ['browser-gis', 'python', 'server', 'job'];
+const COMPLETENESS = ['all', 'sample', 'any'];
+const OUTPUT_KINDS = ['map', 'table', 'chart', 'file', 'answer'];
 
 /* The capability each environment runs on. This is the registry's own id (js/atlas-cap-*.js), asked
    through `hasCapability` — so an environment with no capability is reported as having none instead of
@@ -139,7 +139,7 @@ export function gapsOf(spec) {
  *   completeness of the REGION: 'stated-all' | 'stated-partial' | 'unstated' | 'unproven'
  * deps.describe(ref) -> row|null (IntMap's own layers/datasets); deps.discover(req) -> {ok, entries[], catalogs[]}.
  */
-export async function probeNeed(need, spec, deps) {
+async function probeNeed(need, spec, deps) {
   const k = need.source.kind;
   if (!k) return { state: 'unknown', completeness: 'unstated', detail: 'source-not-stated' };
   if (k === 'none') return { state: 'unavailable', completeness: 'unstated', detail: 'the plan states there is no source' };
