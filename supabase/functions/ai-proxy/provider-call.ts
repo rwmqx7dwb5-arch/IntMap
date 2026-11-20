@@ -9,7 +9,7 @@
 /* (atlas-live-stream) The provider's server-sent events, read twice: as previews for the reader while
    they arrive, and folded back into the body the parsers below already read. */
 import { providerStream, previewSink } from "../_shared/ai-stream.js";
-import { PROVIDER_TIMEOUT_MS, providerFetch, ProviderFail } from "../_shared/ai-provider.js";
+import { providerFetch, ProviderFail, providerBudgetMs } from "../_shared/ai-provider.js";
 import { CEILING } from "./config.ts";
 
 /* (#R113b) A hung/slow provider fetch must NOT run the isolate into the Edge-Function wall-clock limit
@@ -19,10 +19,14 @@ import { CEILING } from "./config.ts";
    What remains HERE is only the translation into this file's own failure type, because the callers
    below decide on ProviderError's fields (the OpenAI path retries a web call on meta.timeout, the
    Gemini path retries a 5xx on meta.providerStatus), and the ceiling that every request takes from. */
-export async function providerCall(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS, meter?: Meter, onChunk?: (b: Uint8Array) => void): Promise<Response> {
+export async function providerCall(url: string, init: RequestInit, ms: number | undefined, meter?: Meter, onChunk?: (b: Uint8Array) => void): Promise<Response> {
   try { meter?.attempt?.(); } catch (_) { /* (atlas-turn-observability) counting a request must never stop it */ }
   try {
-    return await providerFetch(url, init, { ceiling: meter?.ceiling || CEILING, timeoutMs: ms, onChunk });
+    /* ⚠ NO NUMBER OF OURS. `ms` is undefined for every call of this function: the request may take what the
+       platform leaves it (providerBudgetMs — the reasoning is there), shared across the rungs of one reader
+       request via meter.startedAt. A caller that really needs shorter passes it; none does. */
+    const budget = (ms && ms > 0) ? ms : providerBudgetMs(typeof onChunk === "function", meter?.startedAt, Date.now());
+    return await providerFetch(url, init, { ceiling: meter?.ceiling || CEILING, timeoutMs: budget, onChunk });
   } catch (e) {
     const code = e instanceof ProviderFail ? e.code : "";
     /* (ai-quota-fairness) The reader's COHORT has spent its share of the project ceiling; the rest of
@@ -133,7 +137,7 @@ export function streamedBody(ps: Streamed, provider: string, meter?: Meter): Rec
    object every provider call site of a request already receives, so the cohort's share travels with
    it rather than through a second parameter at each site; absent (the developer's model list, which
    has no request meter) means the project ceiling alone. */
-export type Meter = { add(provider: string, answer: unknown): unknown; attempt?(): void; fallback?(to: string): void; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
+export type Meter = { add(provider: string, answer: unknown): unknown; startedAt?: number; attempt?(): void; fallback?(to: string): void; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
 
 /* ══ (atlas-completion) WHAT THE ANSWER IS, BESIDES ITS TEXT — did it end, and what did the search do ══
    Two facts each provider used to read and then drop:
