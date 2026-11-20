@@ -153,6 +153,7 @@
  * ==========================================================================*/
 
 import { explainFetchFailure, describeResponse, looksLikeAPage } from './gis-http.js';
+import { reachingFetch } from './gis-fetch.js';
 
 export function makeGisGeotiff() {
   return (function () {
@@ -428,7 +429,7 @@ export function makeGisGeotiff() {
 
     async function httpSource(url, opts) {
       const o = opts || {};
-      const doFetch = (typeof o.fetch === 'function') ? o.fetch : ((typeof fetch === 'function') ? fetch : null);
+      const doFetch = reachingFetch(o.fetch);
       if (!doFetch) return bad('fetch-failed', { url: String(url), reason: 'no-fetch-in-this-runtime' });
       const ask = (from, to) => {
         const init = { headers: { Range: 'bytes=' + from + '-' + to } };
