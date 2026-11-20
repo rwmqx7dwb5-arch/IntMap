@@ -26,6 +26,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const { codeOnly } = await import('../scripts/code-only.mjs');
 const { makeGisPipeline, STAGES } = await import('../js/gis-pipeline.js');
 const { makeGisRemote } = await import('../js/gis-remote.js');
 const { resolutionOf, textScore, resolutionRelation, searchRecords, words } = await import('../js/gis-catalog-search.js');
@@ -418,7 +419,7 @@ test('F1 the Atlas door declares the new actions and the schema accepts them; th
 
 test('F2 the new modules name no supplier in their code (every verdict is read from the response or the values)', () => {
   for (const f of ['js/gis-pipeline.js', 'js/gis-catalog-search.js']) {
-    const code = readFileSync(join(ROOT, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const code = codeOnly(readFileSync(join(ROOT, f), 'utf8'), { lang: 'js' });
     assert.doesNotMatch(code, /https?:\/\/[a-z0-9.-]+\.[a-z]{2,}/i, f + ' holds no address');
     assert.doesNotMatch(code, /copernicus|landsat|usgs|nasa|planetary|sentinel|earth-search|esa\b/i, f + ' names no supplier');
   }
