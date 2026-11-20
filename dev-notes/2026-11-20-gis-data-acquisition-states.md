@@ -49,3 +49,4 @@ newsjp: Atlas が、発見したデータが「見つかった・読める・取
 
 - **起動の要求数は上げていない**: #1286 が最終形で `gis-fetch-policy.js` を何も import しない形にして（`publicHostname` は引数で渡す）、`relay-guard` が共有チャンクに切り出される問題を先に塞いだ。本変更はそれを前提にし、`eager.requests` は 10 のまま。（初版は定数だけの別ファイルで同じ問題を避けていたが、#1286 の形と重複するので #1286 側に寄せて消した。）
 - **上げた（新機能の対価）**: `gis-remote` 12.5 → 28.6 kB（`acquire` / `search` / `items` / `probeAsset`＋検索の純関数 `gis-catalog-search`）、`gis-cog` 4.6 → 7.4 kB（#1286 の日付変更線の分割・縫合）、`gis-core` 622.7 → 626.7 kB、`async.raw` 14136 → 14225 kB。新しい非同期チャンク `gis-pipeline`（11.2 kB）は `gis-atlas` から必要になったときだけ読まれ、起動の要求・バイトには入らない。
+- **#1286 の merge 後に再計測して上げた分**（`node scripts/perf-budget.mjs --update`、上回った 5 行だけ）: `async.raw` 14,562→14,647 kB・`async.gzip` 4,886→4,932 kB・`gis-core` 648→652 kB・`atlas-cap-runs` 918→927 kB・`dist.assets`。対価は `acquire` / `search` / `items` / `probeAsset`・段の台帳・検索の純関数と、それを Atlas の能力表（`atlas-cap-data`）へ載せた説明。いずれも非同期チャンクで、起動の要求・バイト（eager）には入らない。
