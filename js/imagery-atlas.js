@@ -7,7 +7,7 @@
  *  (a range, because the supplier publishes no per-place date) and the answer says which (captureLine).
  *  `apply:true` switches the satellite base to the best picture of that time, through the panel's own switch (window.__sat).
  * ==========================================================================*/
-import { rankAt, captureAt, captureLine, planClockMatch, sourceById } from './imagery-registry.js';
+import { rankAt, captureAt, captureLine, planClockMatch, sourceById, covers, pickForTime } from './imagery-registry.js';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 /** 'YYYY' → that year's mid-year day (a year asks «that year», not a day); 'YYYY-MM-DD' as is; anything else → null */
@@ -38,7 +38,7 @@ export async function imageryInfoRun(a, K) {
     if (!document.querySelector('.map-container.sat-on')) return R(false, warn(L('Switch the map to Satellite first, then ask again.', '先に地図を衛星表示に切り替えてから、もう一度依頼してください。')));
     const iso = time || new Date().toISOString().slice(0, 10);
     let plan;
-    if (a.provider) { const s = sourceById(String(a.provider)); plan = s ? planClockMatch({ providerId: s.id, lng, lat, zoom, iso }) : null; if (plan && plan.providerId !== s.id) plan = null; }
+    if (a.provider) { const s = sourceById(String(a.provider)); plan = s && covers(s, lng, lat) && pickForTime(s, iso) ? planClockMatch({ providerId: s.id, lng, lat, zoom, iso }) : null; if (plan && plan.providerId !== s.id) plan = null; }
     else plan = planClockMatch({ providerId: cur, lng, lat, zoom, iso });
     if (!plan) return R(false, warn(L('No satellite or aerial picture of that time exists at that place' + (a.provider ? ' from ' + esc(String(a.provider)) : '') + '.', 'その場所・その時刻の衛星・航空画像はありません' + (a.provider ? '（' + esc(String(a.provider)) + '）' : '') + '。')));
     if (plan.pick.day) SAT.state.day = plan.pick.day;
