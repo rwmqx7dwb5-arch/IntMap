@@ -129,6 +129,7 @@ export const KERNELS = {
      number or a named refusal — a replayed step produces, and a reader comparing two loads is
      entitled to know that. */
   /* (gis-scale) ops-11 HASH ONLY: a result estimated above 8 M positions is held as chunks and a few ops run over it group by group. Every size that answered before takes the path it took and answers byte for byte (tests/gis-scale-checks.test.mjs compares the two); what is new is a representation and two named refusals for sizes that used to run out of memory. */
+  /* (gis-scale-spill) HASH ONLY, ops and geometry: a chunked result's positions may be written to OPFS / IndexedDB and read back a chunk at a time, and intersects / contains / within decide a pair by the face its box lies in (the shape's box touching no edge of the area, or one position clear of every edge) before asking the sweep line. No answer moves: tests/gis-scale-spill-checks.test.mjs asks >10,000 pairs both ways (IntMapGisNoFace turns the shortcut off) and compares the verdicts, refusals included. */
   /* (voronoi) HASH ONLY: a new op (`voronoi`) that no saved recipe names, and a call-time read of the
      kernel it needs. Every op that existed replays to the same numbers and the same refusals. */
   /* (wave4-refine) ops-9 -> ops-10: `voronoi` checks that the clipped cells cover the window (summed planar area
@@ -146,7 +147,7 @@ export const KERNELS = {
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
   /* (spatiotemporal-join) ops-13 -> ops-14: the period a join / spatialJoin / nearestJoin / timeJoin / aggregate result states is now derived from BOTH inputs (it was the first input's), a row-wise input gives the output two derived period columns, and the record carries `warnings` and `geoBasis`. No existing geometry or cell changes; what the record states about WHEN does. */
   /* (data-facts) ops-14 HASH ONLY: a multi-input op also states `provenance.timeMismatch` (js/data-governance.js temporalMismatch) when its inputs' stated periods do not overlap — a record that states more; no cell, geometry or refusal changes. */
-  'js/gis-ops.js': { version: 'ops-14', sha256: 'd9ebd4e43fe05d423e0428e8f3954126710968edb6fa7c66afbfdb21587554d7' },
+  'js/gis-ops.js': { version: 'ops-14', sha256: 'a53a693890f2081fc5e8683e79e436734233a8702a54abadf2f632a604450920' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -180,7 +181,7 @@ export const KERNELS = {
      share only an edge now intersect; a boundary position is never within); every written edge is at most a
      quarter-turn of longitude. pointInGeometry is unchanged except at a pole. bbox / centroid / pointOnSurface /
      convexHull / simplify are new doors. Measured in tests/gis-foundation-refine-geometry-checks.test.mjs. */
-  'js/gis-geometry.js': { version: 'geom-4', sha256: '8643e6d25e9a910a3cda30f8dfa1445e3ca1e9de78d6d2068ebd404dbacb9b31' },
+  'js/gis-geometry.js': { version: 'geom-4', sha256: '0bdd5c2ff3e6d5e6e2139761d2724f53d57aef568c440887cab957f7268fcbc4' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project

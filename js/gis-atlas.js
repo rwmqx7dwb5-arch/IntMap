@@ -33,6 +33,7 @@
    gate and the reader-visible credits use: a second spelling of 「licence」 here is precisely how the
    three worlds that file's header measures came to disagree. */
 import { FACETS, account, temporalMismatch } from './data-governance.js';
+import { jsonWithin } from './fetch-deadline.js';
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
@@ -1114,7 +1115,7 @@ export function makeGisAtlas(core) {
          「2020 年の人口と 2025 年の行政区画」のような別の時点の世界の結合を、結合する前に警告できる。 */
       if (act === 'facts') {
         let reg = null;
-        try { const r = await fetch('data/data-facts.json'); reg = r.ok ? await r.json() : null; } catch (_) { reg = null; }
+        try { reg = await jsonWithin('data/data-facts.json', 25000); } catch (_) { reg = null; }
         if (!reg || !reg.subjects) return fail('facts-unavailable', { needs: 'data/data-facts.json' });
         const names = Object.keys(reg.subjects);
         const stem = (s) => String(s).replace(/^data\//, '').replace(/\.(json|js|bin)(\.gz)?$/, '');

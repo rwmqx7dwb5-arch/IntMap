@@ -49,3 +49,8 @@ date: 2026-11-20
 main 取り込みで `js/gis-ops.js` に別の PR（spatiotemporal-join）の `provenance.warnings`／`timeRule`／`geoBasis` が入った。あちらは「その組が同時に存在したか」を述べ、
 こちらの `provenance.timeMismatch` は「入力の述べた対象時点が重なるか」を述べる——別の問いで、`datasetRow()` は両方を運ぶ。kernel 版は main の ops-14 に揃え、ハッシュだけ更新した。
 `data/upstream-fingerprints.json` 自身にも周期の宣言が要り（門が指摘）、「誰も周期を決めていない」ので `estimate` と書いた。
+
+## 5. 天井を上げた理由（check:perf）
+遅延チャンク `data-governance` は 9.2 kB → 約 12.2 kB。`describes.*` の 6 欄の語彙・`spanOf`・`temporalMismatch` が同じ部品に入ったため。
+起動時（eager）には載らず、`gisRemote` の facts と GIS の複数入力演算が読み込んだときだけ取られる。`tests/perf-baseline.json` の該当行だけを 12300 にした。
+`facts` の読み取りは `jsonWithin`（期限つき）に直した（`fetch-deadline-layer-checks` ⑤ が、期限の無い fetch を 1 件拾った）。
