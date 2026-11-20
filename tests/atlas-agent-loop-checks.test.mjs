@@ -1309,6 +1309,7 @@ const REVERSIONS = [
 async function preFixAgent() {
   let src = readFileSync(join(ROOT, 'js/atlas-agent.js'), 'utf8').split('\r\n').join('\n');
   src = src.split("from './atlas-turn-results.js'").join("from '" + pathToFileURL(join(ROOT, 'js/atlas-turn-results.js')).href + "'");
+  src = src.split("from './atlas-working-memory.js'").join("from '" + pathToFileURL(join(ROOT, 'js/atlas-working-memory.js')).href + "'");   /* (atlas-working-memory) a lone data: module resolves no relative specifier */
   for (const [from, to] of REVERSIONS) {
     const parts = src.split(from);
     assert.equal(parts.length, 2, 'the reversion matched the shipped source exactly once: ' + from.slice(0, 48));
