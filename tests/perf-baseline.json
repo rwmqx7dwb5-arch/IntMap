@@ -9,7 +9,7 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14761530,
+    "raw": 14562352,
     "gzip": 5002298,
     "chunks": {
       "account-data": 7346,
@@ -78,7 +78,7 @@
       "geopolitics-atlas": 9665,
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
-      "gis-cog": 4676,
+      "gis-cog": 7532,
       "gis-core": 643389,
       "gis-export": 32201,
       "gis-geopackage": 26667,

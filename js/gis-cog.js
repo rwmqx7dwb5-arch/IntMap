@@ -21,8 +21,12 @@
  *  ⚠ A FILE IN ANOTHER CRS (UTM, Web Mercator …) IS READ TOO: the window is carried into the file's CRS,
  *  the file is read there, and js/gis-warp.js to4326 brings the piece back — the one transform rule.
  *  A projection that does not answer is refused by name (`crs-unavailable` / `crs-transform-failed`).
- *  ⚠ A window that crosses the antimeridian is not handled (its perimeter would wrap); 消せる条件:
- *  splitting the window at ±180 and reading both halves.
+ *  ⚠ A WINDOW THAT CROSSES THE ANTIMERIDIAN IS SPLIT AT ±180 and both halves are read (each is an ordinary window; a
+ *  projected file's perimeter never has to wrap). The window may be written either way — west > east
+ *  (170, -170) or past the line (170, 190) — and the answer is ONE raster on a continuous-longitude lattice that
+ *  starts at the caller's west (it runs on past 180, as every frame that crosses the line does). A half the file
+ *  does not hold (a UTM zone's file ends at the line) is NaN and said so (`window-extends-past-the-file`); both
+ *  halves absent is the refusal the flat read gives.
  *  ⚠ A GRID THAT HAS NO STATED CRS IS REFUSED (`crs-not-stated`): where it is has not been said.
  *  ⚠ https ONLY — the page's CSP connect-src allows nothing else, and a URL with a user name in it
  *  is a credential written into a string that will be logged.
@@ -64,8 +68,68 @@ export function makeGisCog(deps) {
   const crsMod = () => D.crs || null;
 
   /* readWindow(url, {bounds:[w,s,e,n], width, height, band?:{index?}, signal?, fetch?})
-       → { ok:true, raster, band, source, coverage } | { ok:false, why, detail } */
+       → { ok:true, raster, band, source, coverage } | { ok:false, why, detail }
+     ⚠ a window across ±180 is split here and each half goes through readFlat — the ONE reader — below. */
   async function readWindow(url, o) {
+    const q = o || {};
+    const b = q.bounds;
+    if (Array.isArray(b) && b.length >= 4 && b.slice(0, 4).every(isNum) && Number.isInteger(q.width) && q.width > 1 && Number.isInteger(q.height) && q.height > 0) {
+      let w = b[0], e = b[2];
+      if (e < w && e >= -180 && w <= 180) e += 360;                  /* written west > east: the long way round */
+      if (e > w && e - w < 360 && (e > 180 || w < -180)) return readAcross(url, q, [w, b[1], e, b[3]]);
+    }
+    return readFlat(url, q);
+  }
+
+  async function readAcross(url, q, win) {
+    const w = win[0], e = win[2];
+    const px = (e - w) / q.width;
+    /* the seam: the pixel EDGE nearest ±180, so every pixel is whole in one half (a pixel belongs to the half its centre is in) */
+    const line = w < -180 ? -180 : 180;
+    const wA = Math.min(q.width - 1, Math.max(1, Math.round((line - w) / px)));
+    const wB = q.width - wA;
+    const cut = w + wA * px;
+    /* the half past the line is read where the files keep it: east of +180 is wrapped down, west of -180 wrapped up */
+    const sA = line === -180 ? 360 : 0, sB = line === 180 ? -360 : 0;
+    const halfA = { bounds: [w + sA, win[1], cut + sA, win[3]], width: wA };
+    const halfB = { bounds: [cut + sB, win[1], e + sB, win[3]], width: wB };
+    const read = (h) => readFlat(url, Object.assign({}, q, { bounds: h.bounds, width: h.width }));
+    const [ra, rb] = await Promise.all([read(halfA), read(halfB)]);
+    const gone = (r) => !r.ok && r.why === 'region-out-of-range';   /* the file does not reach that side */
+    if ((!ra.ok && !gone(ra)) || (!rb.ok && !gone(rb))) return ra.ok ? rb : ra;
+    if (!ra.ok && !rb.ok) return ra;
+    const ref = ra.ok ? ra : rb;
+    const nan = (h) => { const a = new Float32Array(h.width * q.height); a.fill(NaN); return a; };
+    const va = ra.ok ? ra.raster.read(0) : nan(halfA), vb = rb.ok ? rb.raster.read(0) : nan(halfB);
+    const vals = new Float32Array(q.width * q.height);
+    for (let j = 0; j < q.height; j++) {
+      for (let i = 0; i < wA; i++) vals[j * q.width + i] = va[j * wA + i];
+      for (let i = 0; i < wB; i++) vals[j * q.width + wA + i] = vb[j * wB + i];
+    }
+    const raster = Object.assign({}, ref.raster, { width: q.width, height: q.height, grid: Object.assign({}, ref.raster.grid, { west: w, north: win[3], pixelLng: px }), read: () => vals });
+    /* a half is INSIDE the file when no pixel CENTRE of it lies outside: a half-pixel of overhang at the seam is not a gap */
+    const eps = 1e-9, cover = (h, r) => r.ok && r.coverage.served[0] <= h.bounds[0] + px / 2 + eps && r.coverage.served[2] >= h.bounds[2] - px / 2 - eps && r.coverage.served[1] <= h.bounds[1] + eps && r.coverage.served[3] >= h.bounds[3] - eps;
+    const reasons = [];
+    if (!cover(halfA, ra) || !cover(halfB, rb)) reasons.push('window-extends-past-the-file');
+    for (const r of [ra, rb]) if (r.ok && r.coverage.resolution && !r.coverage.resolution.meets && reasons.indexOf('file-coarser-than-asked') < 0) reasons.push('file-coarser-than-asked');
+    const sv = [];
+    if (ra.ok) sv.push(ra.coverage.served.map((v, k) => (k % 2 === 0 ? v - sA : v)));
+    if (rb.ok) sv.push(rb.coverage.served.map((v, k) => (k % 2 === 0 ? v - sB : v)));
+    const served = [Math.min(...sv.map((x) => x[0])), Math.min(...sv.map((x) => x[1])), Math.max(...sv.map((x) => x[2])), Math.max(...sv.map((x) => x[3]))];
+    const rc = ref.coverage;
+    const coverage = Object.assign({}, rc, {
+      completeness: reasons.length ? 'partial' : 'all',
+      reason: reasons.length ? reasons.join(',') : 'window-fully-inside-the-file-at-the-resolution-asked',
+      requested: [w, win[1], e, win[3]], served: served,
+      count: (ra.ok && ra.coverage.count != null ? ra.coverage.count : 0) + (rb.ok && rb.coverage.count != null ? rb.coverage.count : 0),
+      acrossAntimeridian: { seamLongitude: line, halves: [ra.ok ? 'read' : 'absent', rb.ok ? 'read' : 'absent'], pixelsWestOfSeam: wA, pixelsEastOfSeam: wB },
+      resolution: Object.assign({}, rc.resolution, { pixelLng: px, width: q.width, height: q.height }),
+    });
+    const source = Object.assign({}, ref.source, { requests: (ra.ok ? ra.source.requests || 0 : 0) + (rb.ok ? rb.source.requests || 0 : 0), halves: [ra.ok ? ra.source.url : null, rb.ok ? rb.source.url : null] });
+    return { ok: true, raster: raster, band: ref.band, source: source, coverage: coverage };
+  }
+
+  async function readFlat(url, o) {
     const q = o || {};
     const u = checkUrl(url);
     if (!u.ok) return u;
