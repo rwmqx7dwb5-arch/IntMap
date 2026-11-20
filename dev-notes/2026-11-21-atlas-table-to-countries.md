@@ -29,5 +29,5 @@ newsjp: Atlas が「表から読んだ結果を、国ごとにカテゴリ別の
 ## ゲートの天井を上げた理由(CI 赤の対処)
 
 - `tests/perf-baseline.json`: async.gzip 4771.5→4807.2 kB、atlas-cap-runs 896.4→905.1 kB、atlas-console 1066.9→1073.1 kB、dist.assets 21559.0→21683.1 kB。増分は同じ branch の「highlight の『何であるか』と『描く形』を別々に名指す」commit(atlas-console / atlas-country-ids の追加)と、highlight の groups の形を名乗らせた説明文の分。利用者に届く能力(第1級区分の塗り・カテゴリ別一括塗り)を運ぶコードで、死んだ分ではない。
-- `tests/i18n-coverage-floor.json`: positional 7196→7197(同 commit が足した `L()` 1 行・5 言語入り)。
+- `tests/i18n-coverage-floor.json`: 変更なし(同 commit が L() を en+jp の2引数へ直したので下限は main のまま)。
 - R403 ⑨(doc-facts)は CI では 44 秒で落ちたがローカルの `check:docs` は緑。単独再現できなかったので、再実行で確かめる。
