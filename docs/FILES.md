@@ -200,7 +200,7 @@ cesium-engine.js                  第2エンジン——同じ契約の裏で動
 cesium-style.js                   style 言語の解釈器（式・フィルタ・色）。純粋なので Node から検証できる
 cesium-layers.js                  Cesium のプロバイダとレイヤー描画
 cesium-vector-tiles.js            第2エンジンのベクタタイル
-plateau-cities.js                 PLATEAU 3D 都市モデル（東京23区の 3D Tiles）の一覧と URL。エンジンの tiles3d 能力が読む
+plateau-cities.js                 PLATEAU 3D 都市モデルの登録（data/plateau-cities.json）の読み込み・視界近傍の選択・URL と都市別ジオイド補正。エンジンの tiles3d 能力が読む
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
 i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
 i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
@@ -233,6 +233,8 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
                                   して、貼ったリンクと同じ hashchange の経路で適用する。履歴は増やさない）
 embed-client.js                   **埋め込み API のホストの側**と約束事（`PROTOCOL`・`mount`）。他サイトが URL で import するので
                                   何も import せず、vite が dist/ にそのまま写す。embed-mode.js が PROTOCOL を import する
+geo-similar.js                    **地域の特徴ベクトルによる類似検索**（Spatial Embeddings 第 1 スライス）。OSM の建物・道路・施設・水辺の種類別の密度を
+                                  比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
                                   コード）は `js/atlas-attach.js` の `ATL_FILE` に訊き（写さず共有）、文法は
@@ -1017,7 +1019,6 @@ atlas-msg-tools.js                Atlas — メッセージごとの操作バー
 atlas-notebook.js                 Atlas — **調査ノート**（atlas-os）のページ側。終わったターンを綴じる・パネルの帯とシート・
                                   再現（runDirect＋restorer で読み返し）・今と比べる・もう一度訊く・書き出し／読み込み・アカウント同期
 atlas-notebook-store.js           Atlas — 調査ノートのデータ（記録の形・行ごとの差分・検索・Markdown／ファイル・IndexedDB・同期の突き合わせ）。DOM なし
-atlas-work-store.js             Atlas — 作業成果物のデータ（成果物の種類・版・版どうしの比較・作業場の選択・Markdown／ファイル・端末の保存は調査ノートの store を再利用）。DOM なし
 atlas-briefing.js                 Atlas — **ブリーフィング**（調査をリンクで手渡す）のページ側。作成画面（ノートの回答を選ぶ・並べる・
                                   メモを含めるか・リンクの長さ・コピー／共有／プレビュー／ノートのファイル）と、リンクから開いた人の
                                   読む画面（回答・根拠と時刻・記録時の行を地図に描く・地図を再現・今と比べる・ノートに保存）。
@@ -1038,7 +1039,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  252 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  253 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1053,9 +1054,9 @@ atlas-cap-account.js              Atlas の能力 — 自分のアカウント�
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
 atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart.compose）
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
-atlas-cap-work.js                 Atlas の能力 — 作業成果物（work.job・綴り `work`）。成果物の保存・取り出し・比較・書き出し・作業場の選択。既存の書き出し・チャート・添付・データセット登録を呼ぶ扉
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
+atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar。js/geo-similar.js の扉と引数の束縛）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
@@ -1102,6 +1103,7 @@ atlas-geo-object.js               **地点の1つの形**（#R397）— GeoObjec
                                   ⚠ 代表点は `pointLike` ではない＝「その地点」として扱わない。
                                   `worldObject()` は同じ型に **type・ref・bounds・time・articleIds・evidenceIds・sources・links・facts** を足す
 atlas-world-objects.js           **実世界オブジェクトの索引と関係**— 地震・出来事・記事・施設・都市・火山・企業・地点を
+atlas-work-store.js             Atlas — 作業成果物のデータ（成果物の種類・版・版どうしの比較・作業場の選択・Markdown／ファイル・端末の保存は調査ノートの store を再利用）。DOM なし
                                   `worldObject`（`atlas-geo-object.js` の型）へ書き下ろすアダプタ、セッション内の索引
                                   （`register` / `find`）、`relation` / `related`（linked ／ near かつ（concurrent または
                                   時刻なし）。**時刻だけでは関連にしない**）、描画 1 本（`relatedGroups` / `relatedHtml`）。
@@ -1169,7 +1171,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 252 を検索・到達可能 249）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 253 を検索・到達可能 250）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1189,7 +1191,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 252能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 253 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1319,6 +1321,8 @@ world-flows.js                    **世界とのつながり**のカードと地
                                   航空路（OpenFlights 2014）でどの国とつながるかを、時計の瞬間以前に成り立つ最も新しい記録で（値が述べる時点と比べる）。「モノ」は貿易フロー
                                   レイヤーを同じ国で開く扉。扉は Tools・地点カードの国の行・`?wf=`・Atlas `data.worldFlows`。遅延チャンク（§7.3j）
 world-flows-core.js               その事実の全部（純粋なモジュール）——国の表と照合・時刻の規則・3 つの読み方・合計と割合・弧（大圏の経度を連続に）
+evidence-graph.js               **数値の出自の長期グラフ**（純粋）— 元の事実（source・版は追記）と IntMap/AI が作った派生（derived・入力の版と計算を固定）を分け、`trace`／`impact`／`staleness`／`wouldStale` で元データ〜回答の数値を遡り、更新の影響先を調べる。
+evidence-graph-record.js        Evidence Graph の記録係 — GIS データセット（`bindGis`）と Atlas 回答の数値（`recordAnswer`、`graphRef` 経由で GIS 鎖へ）。モデルが書いた URL/id は節を作らない。
 world-graph-store.js            **永続の世界グラフの読み口**（遅延・純粋）— Supabase の `world_graph_*`（対象・型付きの辺・値）を、世界オブジェクトの索引と同じ型
                                   （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `find` / `near`）。結ぶのは識別子（`ids`）で綴りではない。
                                   データベースが答えなかったことは `unavailable` / `failed` で返し、空のグラフとは区別する。能力 `research.object` / `research.related` が読む
@@ -1697,6 +1701,7 @@ admin-corrections.js              admin-corrections.html の動き——管理�
 map-corrections.js                地図の誤り報告の読者側——カード（地点・表示・年を添付）、送信（reader-reports kind correction）、受付番号の保管、
                                   回答の読み取り（受付番号とアカウント）、回答の通知、公開記録。クリックで取得（起動経路に載らない）
 atlas-cap-corrections.js          Atlas の corrections.* —— report（下書きしてカードを開く・送るのは読者）／mine／log
+atlas-cap-work.js                 Atlas の能力 — 作業成果物（work.job・綴り `work`）。成果物の保存・取り出し・比較・書き出し・作業場の選択。既存の書き出し・チャート・添付・データセット登録を呼ぶ扉
 atlas-cap-community.js            Atlas の community.* —— browse（目録）／open（地図で開く）／list（掲載・表示名は訊く）／unlist／mine（届いた数）
 admin-auth.js                     運営コンソールの唯一のサインイン（window.IntMapAdminAuth・素の script）——パスワード→TOTP（初回は登録）で aal2、
                                   セッションはそのタブの sessionStorage（キー intmap-admin-auth）、破壊的操作前の stepUp。これを読むページが
@@ -1770,6 +1775,7 @@ overpass.js                       **Overpass の唯一のクライアント** `o
                                   window.IntMapOverpass ＋ ES import の両方（同一の関数）
 atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（許可された読み取り能力を呼び、能力表を語で引く）・委譲を端末に残して再開する保存口（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
+atlas-fact-merge.js              Atlas — 複数の子が構造化事実（`facts`: 対象・属性・値・単位・時点・出典・Evidence id）で述べたことを、**実世界オブジェクト**と属性で突き合わせ、一致／矛盾／単独／欠落に分ける `mergeFacts`。名前→対象の解決は注入された `resolve`（セッションの世界オブジェクト索引と永続グラフ）で、名前一覧は持たない。
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
@@ -2097,7 +2103,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全23本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（67本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（68本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（23本。一覧と各本の役割は Architecture.md §6.2。

@@ -14,16 +14,16 @@
 import { str, num, list, one, obj } from './atlas-caps.js';
 import { ATTACH_LOG } from './atlas-attach-log.js';
 import { PRODUCT_KINDS, productKinds, WORKSPACES, chooseWorkspace, newWorkId, normalizeWork, withProduct, currentProducts, findProduct,
-  compareProducts, fileOf, workToMarkdown, workToFile, deviceWorkStore } from './atlas-work-store.js';
+  compareProducts, fileOf, workToMarkdown, workToFile, deviceWorkStore, WORK_STATE } from './atlas-work-store.js';
 
-let _store = null, _current = null;
-export function workStore() { return _store || (_store = deviceWorkStore(typeof indexedDB !== 'undefined' ? indexedDB : null)); }
+
+export function workStore() { return WORK_STATE.store || (WORK_STATE.store = deviceWorkStore(typeof indexedDB !== 'undefined' ? indexedDB : null)); }
 /** tests and the page reset the module's memory of "the job we are on" */
-export function _setStoreForTest(s) { _store = s; _current = null; }
+export function _setStoreForTest(s) { WORK_STATE.store = s; WORK_STATE.current = null; }
 
 async function target(a) {
   const S = workStore();
-  const id = String(a.id || a.work || '').trim() || _current;
+  const id = String(a.id || a.work || '').trim() || WORK_STATE.current;
   if (id) { const w = await S.get(id); if (w) return { w }; if (a.id || a.work) return { w: null, why: 'not-found', q: id }; }
   const q = String(a.query || '').trim();
   const hits = await S.list(q);
@@ -116,7 +116,7 @@ export default [
         const r = chooseWorkspace(obj_(a.needs), availability());
         const lines = r.considered.map((c) => '<li><b>' + esc(c.id) + '</b> — ' + (c.ok ? esc(L('satisfies the needs', '要件を満たす')) : esc(L('does not', '満たさない')) + ': <code>' + esc(c.unmet.join(', ')) + '</code>') + '<div style="color:var(--text-muted);font-size:11.5px;">' + esc(c.detail) + '</div></li>').join('');
         let kept = '';
-        if (r.choice && (a.id || _current)) { const t = await target(a); if (t.w) { await S.put(Object.assign({}, t.w, { workspace: { id: r.choice, needs: r.needs, reason: 'chosen from the job\'s declared needs' } })); kept = ' ' + L('(recorded on the job)', '（作業に記録しました）'); } }
+        if (r.choice && (a.id || WORK_STATE.current)) { const t = await target(a); if (t.w) { await S.put(Object.assign({}, t.w, { workspace: { id: r.choice, needs: r.needs, reason: 'chosen from the job\'s declared needs' } })); kept = ' ' + L('(recorded on the job)', '（作業に記録しました）'); } }
         return r.choice ? say('<div><b>' + esc(L('Workspace', '作業場')) + ': ' + esc(r.choice) + '</b>' + esc(kept) + '</div><ul style="margin:3px 0 3px 18px;padding:0;">' + lines + '</ul>', { workspace: r.choice, considered: r.considered.map((c) => ({ id: c.id, ok: c.ok, unmet: c.unmet })) })
           : R(false, warn(esc(L('No workspace in this build satisfies these needs — do not pretend: say what cannot be done.', 'このビルドにはこの要件を満たす作業場がありません。できないことをそのまま述べてください。'))) + '<ul style="margin:3px 0 3px 18px;padding:0;">' + lines + '</ul>',
             { meta: { work: { action: act, code: 'no_workspace', considered: r.considered.map((c) => ({ id: c.id, ok: c.ok, unmet: c.unmet })) } } });
@@ -124,14 +124,14 @@ export default [
 
       if (act === 'start') {
         if (a.id) { const t = await target({ id: a.id }); if (!t.w) return refuse('not_found', L('No job matches', '一致する作業はありません') + ' «' + a.id + '»');
-          _current = t.w.id; return say(note(esc(L('Carrying on:', '続きから:'))) + describe(t.w, esc, L), { id: t.w.id, resumed: true, products: currentProducts(t.w).length }); }
+          WORK_STATE.current = t.w.id; return say(note(esc(L('Carrying on:', '続きから:'))) + describe(t.w, esc, L), { id: t.w.id, resumed: true, products: currentProducts(t.w).length }); }
         const goal = String(a.goal || a.title || '').trim();
         if (!goal) return refuse('needs_input', L('Say what the job is (goal).', '作業の目的（goal）を指定してください。'));
         const now = Date.now(), ws = a.needs ? chooseWorkspace(obj_(a.needs), availability()) : null;
         const w = normalizeWork({ id: newWorkId(now), at: now, updatedAt: now, goal, title: a.title, status: 'open',
           workspace: ws && ws.choice ? { id: ws.choice, needs: ws.needs, reason: 'chosen from the job\'s declared needs' } : null, turns: [], products: [] });
         try { await S.put(w); } catch (e) { return refuse('not_saved', L('The job could not be saved on this device', 'この端末に作業を保存できませんでした') + ': ' + String((e && e.message) || e)); }
-        _current = w.id;
+        WORK_STATE.current = w.id;
         return say('<div><b>' + esc(L('Started', '作業を開始')) + '</b> · <code>' + esc(w.id) + '</code> — ' + esc(w.title) + '</div>' + (w.workspace ? note(esc(L('Workspace', '作業場') + ': ' + w.workspace.id)) : ''), { id: w.id, workspace: w.workspace && w.workspace.id });
       }
 
@@ -144,7 +144,7 @@ export default [
       const t = await needWork(); if (t.refusal) return t.refusal;
       const w = t.w;
 
-      if (act === 'open') { _current = w.id;
+      if (act === 'open') { WORK_STATE.current = w.id;
         return say(describe(w, esc, L) + (w.summary ? '<div style="font-size:12px;margin-top:4px;white-space:pre-wrap;">' + esc(w.summary.slice(0, 1500)) + '</div>' : '') + '<div>' + esc(L('Goal', '目的')) + ': ' + esc(w.goal) + '</div>'
           + note(esc(L('Read a product with action "get"; put a dataset back with "restore".', '成果物は "get"、データセットは "restore" で取り出せます。'))), { id: w.id, products: currentProducts(w).map((p) => ({ id: p.id, name: p.name, kind: p.kind, version: p.version })) }); }
 
@@ -154,7 +154,7 @@ export default [
         const r = withProduct(w, { kind: a.kind, name: a.name || (g.from && (g.from.title || g.from.attachment)) || a.title, content: g.content, note: a.note, from: g.from }, Date.now());
         if (r.problem) return refuse(r.problem, L('The product could not be filed', '成果物を保存できませんでした') + ': ' + r.problem + (r.maxBytes ? ' (' + Math.round(r.maxBytes / 1024) + ' KB)' : ''));
         try { await S.put(r.work); } catch (e) { return refuse('not_saved', L('Not saved on this device', 'この端末に保存できませんでした') + ': ' + String((e && e.message) || e)); }
-        _current = w.id;
+        WORK_STATE.current = w.id;
         const p = r.product;
         return say('<div><b>' + esc(L('Filed', '保存しました')) + '</b>: ' + esc(p.name) + ' · ' + esc(p.kind) + ' v' + p.version + ' · <code>' + esc(p.id) + '</code> → ' + esc(w.title) + ' <code>' + esc(w.id) + '</code></div>'
           + (p.supersedes ? note(esc(L('This is the next version; the earlier one is kept (compare).', '次の版として保存しました。前の版も残っています（compare）。'))) : ''), { id: w.id, product: p.id, name: p.name, kind: p.kind, version: p.version });
@@ -227,7 +227,7 @@ export default [
 
       if (act === 'remove') {
         if (!a.id) return refuse('needs_input', L('Name the job to remove (id).', '削除する作業（id）を指定してください。'));
-        await S.remove(w.id); if (_current === w.id) _current = null;
+        await S.remove(w.id); if (WORK_STATE.current === w.id) WORK_STATE.current = null;
         return say(note(esc(L('Removed the job and its products from this device.', '作業と成果物をこの端末から削除しました。'))), { id: w.id });
       }
       return refuse('unknown_action', L('Unknown action: ', '不明な操作: ') + act);

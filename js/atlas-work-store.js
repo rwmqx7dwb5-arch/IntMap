@@ -305,3 +305,6 @@ export function makeWorkStore(backend) {
 }
 export function deviceWorkStore(idb) { let b = null; try { if (idb) b = idbBackend(idb, 'intmap-atlas-work'); } catch (_) { b = null; } return makeWorkStore(b); }
 export { memoryBackend };
+
+/* The capability module is built twice (kernel copy + real module), so its state lives HERE, in a module both import (scripts/atlas-caps-split.mjs). */
+export const WORK_STATE = { store: null, current: null };

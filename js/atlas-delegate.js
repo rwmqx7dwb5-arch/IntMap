@@ -32,6 +32,7 @@
  *  resuming (it reads `indexedDB` once, and is absent where there is none).
  * ==========================================================================*/
 
+import { normalizeFacts } from './atlas-fact-merge.js';   /* (fact-merge) a result's `facts` are held to one shape */
 import { personaPrompt } from './atlas-persona.js';   /* the one identity — a worker is Atlas at work, not a second character (R285) */
 import { idbBackend, memoryBackend } from './atlas-notebook-store.js';   /* (delegate-child-loop) the device store's two backends — a delegation is kept in its OWN database beside the notebook's */
 
@@ -221,6 +222,7 @@ export function makeDelegation(o) {
       detail: (r && r.detail && typeof r.detail === 'object') ? Object.freeze(Object.fromEntries(Object.entries(r.detail).filter(([, v]) => v !== undefined))) : undefined,
       summary: s(r && r.summary, 4000),
       findings: Array.isArray(r && r.findings) ? r.findings.slice(0, 40) : [],
+      facts: normalizeFacts(r && r.facts).slice(0, 200),   /* (fact-merge) claims as data: js/atlas-fact-merge.js */
       gaps: (Array.isArray(r && r.gaps) ? r.gaps.slice(0, 20).map((g) => s(g, 400)).filter(Boolean) : [])
         .concat(dropped ? ['The raw data of this result was too large to keep and was dropped (the summary above is complete).'] : []),
       sources: Array.isArray(r && r.sources) ? r.sources.slice(0, 40) : [],
@@ -457,7 +459,7 @@ const WORKER_SYSTEM = personaPrompt('working here as a research worker: you have
   'Do only the piece you are given. Use the web search tool when it is attached to find and verify current facts; prefer primary and official sources.',
   'Never invent a fact, a figure, a date, a source or a coordinate. Give coordinates only when you know them (a well-known city, port, strait or facility); otherwise leave them out and name the place.',
   'Write in the language the piece is written in.',
-  'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL), "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "gaps": [string] (what you could not establish, and why)}.',
+  'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL), "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "gaps": [string] (what you could not establish, and why), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does)}.',
 ].join('\n');
 
 function workerPrompt(task) {
@@ -481,7 +483,7 @@ export function shapeOf(data) {
     const verdict = (f.verdict === 'supported' || f.verdict === 'unsupported' || f.verdict === 'contradicted') ? f.verdict : undefined;
     return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined };
   });
-  return { ok: true, out: { summary: s(data.summary, 4000), findings, gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] } };
+  return { ok: true, out: { summary: s(data.summary, 4000), findings, facts: normalizeFacts(data.facts), gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] } };
 }
 
 /* requestKey(prompt, webMode) → a key in ai-proxy's REPLAY_KEY_OK alphabet that is the same for the same request and (to
