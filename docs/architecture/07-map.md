@@ -246,7 +246,15 @@ GVP 番号による結合、USGS 自身の番号との突き合わせ、現在�
 
 **拒否はコードで返る**（`{ok:false, why:'shapefile'}`）。9 言語の文面は `js/map-ui.js` の `reasonText()` が持ち、
 `tests/file-import-checks.test.mjs` ⑩ が両方を構文解析して「返しうるコード」と「文を持つコード」の集合の一致を測る。
-**PMTiles はまだ読めない**——何のファイルであるかを名指して断る。
+**PMTiles（ベクタ・version 3）は `js/gis-pmtiles.js` が読む**（依存を足していない）。`js/geo-import.js` は先頭 7 バイトで
+`PMTiles` と判定し、**`readBytes` の天井より前に**抜ける——アーカイブは全体を読まず、Blob / URL を **バイト範囲の供給**
+（`js/gis-geotiff.js` の `httpSource` と同じ契約）として、ヘッダ 127 B・ディレクトリ（root → leaf、gzip）・必要なタイルだけを取る
+（URL は `readUrl`・開いたまま窓を読む `open().window({bbox, zoom, maxTiles})`）。タイル ID は仕様の Hilbert 順。タイルは Mapbox Vector Tile を
+自前で復号し（外環と内環は面積の符号で分ける・MultiPoint は点ごとの Point に展開）、プロパティはそのまま、層名は `_layer`。
+ズームは `maxTiles`（既定 256）に収まる最大を選ぶか呼び手が述べ、`stats` が **zoom・tiles・requests・clipped:true** を名乗る
+（低ズームは簡略化された図／縁を跨ぐ地物は片）。拒否は `pmtiles-*` の 11 コード（画像タイル・brotli/zstd・version≠3・切れ・矛盾・窓が大きすぎる等）で、
+文面は `js/map-ui.js`、`tests/gis-pmtiles-checks.test.mjs` ⑦ が両者の集合の一致を測る。**まだ無いもの**: 地図へ PMTiles を直接タイル源として載せる経路
+（描画は取り込んだ地物をレイヤーに載せる形）と Atlas の `url:` 入口——消せる条件は gis-remote が `pmtiles:` を `readUrl` に渡すこと。
 
 **座標が見つからないことは「読めない」ではない。** 見出しを持つ区切りテキストで座標列を特定できなかったものは `format:'table'`——
 **`geometry:null` の行**として返り、考慮した列と断った理由は `stats` に載る（地域コードで境界に `join` する右側の表）。見出しの無い
@@ -494,6 +502,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - **`distance` は実装済み**（メートル。点は大圏、線・面は局所平面への射影、面の内側は 0）。理由: `js/hist-cities.js` が各時代の都市名の枝をすべてこれで守っており、無いと Cesium の地球では現代の名前が年に関係なく残った。引数が Point／MultiPoint 以外なら `null`（その比較は偽）で、`gaps()` に載る。
 - `format` は `concat`＋改行で代用しているので到達しない。`image` はアイコンを `icon-image` で名指す。
 
+- **日本の外の 3D 建物（`js/world-3d-sources.js`・`js/geoid.js`）。** 同じレイヤー `beta-dl-plateau3d`（表示名は「3D都市モデル（日本・オランダ・世界）」）が、PLATEAU のほかに **3D BAG**（オランダ全土の LoD2.2・CC BY 4.0）と **Re:Earth Buildings**（Overture Maps + OpenStreetMap から作られた世界の建物の 3D Tiles・ODbL 1.0。キー不要・稼働保証なし）を開く。優先は PLATEAU > 3D BAG > Re:Earth（`quality`）で、**より良い方が開いている範囲は下位のタイルセットから抜く**（エンジンの `placeTileset` の `excludeBoxes` ＝ Cesium の ClippingPolygon）ので同じ街路を二重に描かない。拡大の下限は 3D BAG が z10、Re:Earth が z12。どちらも楕円体高なので、**カメラ位置の EGM2008 ジオイド高**（`data/geoid-egm2008.bin.gz`・0.5° 格子・`scripts/build-geoid-grid.mjs` が導出・平均誤差 0.10 m / 最大 3.87 m）だけ下げ、カメラが 0.25 m 以上動かしたら `placeTileset` で付け直す。ジオイド格子が読めなければ開かない（誤った補正は最大 約100 m 浮き沈みするため）。Re:Earth が応答しなければ足跡の押し出し「3D建物（都市）」が代わりに残る。メモリ・LOD は他のタイルセットと同じく端末別予算（`js/tileset-budget.js`）を共有する。出典は `js/reference-data.js`・Privacy §4・`scripts/outbound-hosts.json` に載る。
 - **描画方法の選択。** `IntMapGeoEngine.plan([{method,needs:[能力…]},…])`（`js/render-plan.js`）が、良い順の候補から現在のエンジンが実行できる最初のものを返す。できなければ `method:null` と不足能力を返す。PLATEAU は `tiles3d`（Cesium）→ `extrusion`（足跡押し出し＝「3D建物（都市）」）の順で、MapLibre では行を隠し、トーストが代わりのレイヤーを名指す。
 
 ### 7.4 Chronos（統一時間）と「年」
@@ -968,6 +977,10 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   API の住所が他の js/ に現れると `tests/country-analysis-unify-checks.test.mjs` が落ちる。
 - **自前の時計を持っていた行は時計に従う**: 世界銀行の 61 行（`js/wb-layers.js` `yearFor`。「最新（国ごと）」は現在に戻す）、NASA GIBS の 4 行
   （`js/layer-packs.js` `gxAt`）。自前の日付を残す行（年降水量・人口グリッド・WorldCover・海流・選挙）は `ownDate` で宣言し、範囲の中では carried と述べる。
+- **2 層を同じ時点で比べる判定（`align`）**: `verdict` は 1 層ごとの答えで、組み合わせの答えではない。`js/layer-time.js` の `align(A, B, at)` が
+  `unknown → unjoinable → basis-mismatch → skewed → basis-unverified → coarsened → aligned` のいずれかを返す。宣言は任意に `grain`（典拠が述べた解像度）と
+  `geoBasis`（`fixed`+年／`as-of-period`／`present`。GIS の `provenance.geoBasis` と同じ語彙）を持ち、**述べていない側は述べない**（片方だけが述べる組は
+  `basis-unverified`）。`IntMapLayerTime.align` と Atlas の `time.coverage` の `compare:[層 id…]` が同じ規則を引く。回帰は `tests/temporal-claims-checks.test.mjs`。
 - 計器は `node scripts/world-at-time.mjs --year <年|now>`（全層の判定と理由）・`--years`（主要年）・`--check`（門）。
 
 ### 7.4b 二時点比較とタイムラプス
