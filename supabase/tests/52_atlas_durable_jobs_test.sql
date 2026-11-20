@@ -81,6 +81,7 @@ reset role;
 
 -- ── ③ claim / lease ──────────────────────────────────────────────────────────
 create temp table _c as select * from public.atlas_job_claim('runner-1', 60, (select job_id from _j));
+grant select on _c to public;
 select is((select count(*)::int from _c), 1, 'a runner claims the job');
 select is((select status from public.atlas_jobs where id = (select job_id from _j)), 'running', '… which is running');
 select is((select count(*)::int from public.atlas_job_claim('runner-2', 60, (select job_id from _j))), 0, 'a second runner gets nothing while the lease is live');
@@ -136,6 +137,7 @@ reset role;
 
 -- a queued job nobody has claimed is cancelled at once
 create temp table _q as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'idem-q', 'q', pg_temp._tasks(1));
+grant select on _q to public;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000a0001","role":"authenticated"}', true);
 select is(public.atlas_job_cancel((select job_id from _q)), 'cancelled', 'a job nobody has claimed is cancelled at once');
@@ -143,7 +145,9 @@ reset role;
 
 -- ── ⑦ the stop switch ───────────────────────────────────────────────────────
 create temp table _k as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0002', 'idem-k', 'k', pg_temp._tasks(1));
+grant select on _k to public;
 create temp table _kc as select * from public.atlas_job_claim('runner-3', 60, (select job_id from _k));
+grant select on _kc to public;
 update public.atlas_jobs_control set enabled = false;
 select is((select action from public.atlas_job_checkpoint((select job_id from _k), 'runner-3', 60)), 'kill_switch', 'a running job is told to stop');
 select is((select reason from public.atlas_job_create('00000000-0000-0000-0000-0000000a0002', 'idem-off', 'x', pg_temp._tasks(1))), 'disabled', 'nothing new is created');
