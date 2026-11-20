@@ -43,3 +43,7 @@ newsjp: Atlasが専門モデルを探し、地点の河川洪水予報（GloFAS�
 - 洪水: 5 km 格子で小河川・都市排水を解かない。堤防・ダムの運用は入っていない。流量は「その川の直近 60 日との比」であって浸水の予言ではない。
 - 大気: 格子セルの平均で、道路沿い・発生源の近くは高い。排出インベントリは数年遅れ。US AQI は米国の指数。
 - 網に依存する検査は CI に置かない（`tests/specialist-models-checks.test.mjs` は注入した fixture。実 API での数字は上の測定として残す）。
+
+## 5. 配信サイズの天井を上げた理由
+
+`atlas-cap-runs` +7.9 kB（`model.discover` / `model.run` の実行本体と、回答に載せる限界・不確実性の文）・`atlas-console` +6.7 kB（登録 2 行とカタログの説明文 2 項目を能力表が運ぶ）・async 合計 gzip +26.5 kB のうち残りは同じ 2 つのチャンクに入る `specialist-models.js`（登録・解析・runner）。能力そのものの増分で、削れるものは無い。`perf-budget.mjs --update` で上がった行だけ上げた。
