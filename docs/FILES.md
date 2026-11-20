@@ -428,6 +428,9 @@ gis-voronoi.js                    **球面の最寄り圏** `window.IntMapGisVor
 gis-network.js                    **つながりとしての網** `window.IntMapGisNetwork` — `network` / `networkDisrupt` op の算術。
                                   線をグラフに読み（端点／頂点・`snapKm`）、媒介・調和近接・最大フロー／最小カット・
                                   k 本の代替経路・障害時の無傷との差を測る。反復は時間で譲る。
+logistics-impact.js             **「この港が止まったら」**（遅延・純粋）— `data/logistics-network.json` を読み、ある港が最寄りの港である
+                                  都市と工場系拠点、各々の次の港と鉄道距離の増分、次の港が無いものを答える（Atlas の `research.portImpact`）。
+                                  鉄道の到達可能性のモデルで、貨物の実流量ではない（ファイルの `model.kind` が毎回述べる）
 gis-packed.js                     **幾何の圧縮表現とチャンクストア**（gis-scale）— 入力の数千倍になる
                                   結果（100 万点の buffer）を、ヒープに載せずに持つための部品。
                                   幾何を Float64Array へ平らに並べ（unpack で 1 バイトも違わず戻る）、

@@ -392,6 +392,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["sim.spaceWeather","spaceWeather","solarWind,solarFlare,geomagneticStorm,kpIndex,auroraChance,noaaScales,asteroidFlyby,nearEarthAsteroids","sim","none","","explanation","read","none","",""],
       ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
       ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
+      ["research.portImpact","portImpact","portClosure,portDisruption,portStops","research","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

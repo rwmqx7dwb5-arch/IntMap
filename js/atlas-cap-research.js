@@ -26,7 +26,9 @@ import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) the one shape a result names the thing it is about by */
 const W = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
+import { makeLogisticsImpact } from './logistics-impact.js';   /* (logistics-network) «this port stops» read from data/logistics-network.json */
 import { makeWorldGraphStore } from './world-graph-store.js';
+const LOGI = makeLogisticsImpact();
 const G = makeWorldGraphStore({ worldObjects: W });   /* (world-graph) the persistent graph (Supabase) read into that same index */
 import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
@@ -333,6 +335,41 @@ export default [
       placeCardStyle();
       const ttl=(rec.place&&rec.place.status==='ok'&&rec.place.name)||pt.name||rec.at.text;
       return R(true, '<div><b>'+icon('target')+' '+esc((pt.from==='device'?L('Here, now','いま、ここ')+' — ':'')+ttl)+'</b>'+profileHtml(rec, HOST, { inert: true })+'</div>', { exec: { hereNow: rec } });
+    },
+  },
+  {
+    /* (logistics-network) «THIS PORT STOPS — WHICH CITIES AND FACTORIES LOSE THEIR NEAREST PORT?» answered from data/logistics-network.json
+       (scripts/logistics/build.mjs): the ports each city / factory reaches BY RAIL, in order, with the kilometres. The arithmetic is
+       js/logistics-impact.js; the model is a reachability model over OpenStreetMap track and the answer says so every time. */
+    row: ['research.portImpact',        'portImpact',     'portClosure,portDisruption,portStops',                           'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { none: '2026-11-20' },
+    doc: [
+      { in: 'country', at: 64, text: '{"type":"portImpact","port":str,"top"?:num} = 港湾が止まったときの影響 — WHAT A PORT STOPPING DOES TO ITS HINTERLAND, read from the rail network: the cities of 100,000+ people and the factory-type sites (company atlas: factories, assembly plants, refineries, smelters, shipyards, breweries, mines, power plants) whose NEAREST port BY RAIL it is, where each falls back to (the next port in its own order, with the extra rail kilometres), which fall-back ports receive the most (with their stated annual cargo — Eurostat or Wikidata — or «not stated»), and how many have NO further port inside the model. "port" is a name, a UN/LOCODE (NLRTM) or a Wikidata id; an ambiguous name is returned as candidates for you to ask about, not chosen. THE MODEL IS REACHABILITY OVER OPENSTREETMAP TRACK, NOT FREIGHT: gauge, electrification, track capacity, operators, road and barge legs are not in it, the ports are those that state cargo, a UN/LOCODE or a rail terminal and lie within 120 km of the ocean, and a city or site with no rail within 25 / 10 km is not in the file (the answer states the coverage) — say that, do not present the list as the observed flow of goods. Use it for 「ロッテルダム港が止まったら影響を受ける工場と都市は」, "which factories and cities depend on the port of Hamburg". For a CABLE or ROUTE network (centrality, max-flow/min-cut, what a zone going down cuts off) use data.gis network / networkDisrupt instead.' },
+    ],
+    schema: () => ({ type: 'object', properties: { port: str(), top: num(1) }, required: ['port'] }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      const q = String(a.port || a.name || '').trim();
+      if (!q) return R(false, warn(L('Which port? Give its name, UN/LOCODE (e.g. NLRTM) or Wikidata id.', 'どの港湾ですか？名前・UN/LOCODE（例 NLRTM）・Wikidata の id を指定してください。')), { meta: { code: 'NEEDS_INPUT', category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
+      const r = await LOGI.impact(q, { top: a.top });
+      if (!r.ok) {
+        const msg = r.code === 'unavailable' ? L('The logistics network file could not be read, so nothing can be said about ports stopping.', '物流網のファイルを読めなかったため、港湾停止の影響は答えられません。')
+          : r.code === 'ambiguous' ? L('Several ports answer to «' + esc(q) + '» — which one? ', '「' + esc(q) + '」に当たる港湾が複数あります。どれですか？ ') + r.candidates.map((c) => esc(c.name + (c.cc ? ' (' + c.cc + ')' : '') + (c.locode ? ' ' + c.locode : ''))).join(' · ')
+          : L('The logistics network holds no port called «' + esc(q) + '» (' + r.listed + ' ocean-facing ports with rail access are listed). Name it another way or give its UN/LOCODE.', '物流網に「' + esc(q) + '」という港湾はありません（鉄道に接続できる外洋港 ' + r.listed + ' 件を収録）。別の呼び方か UN/LOCODE を指定してください。');
+        return R(false, warn(msg), { meta: { code: r.code === 'unavailable' ? 'DATA_UNAVAILABLE' : r.code === 'ambiguous' ? 'AMBIGUOUS' : 'NOT_FOUND', category: r.code === 'unavailable' ? 'transient' : 'input', retryable: r.code === 'unavailable', semanticTarget: q, produced: [], userGoalSatisfied: false } });
+      }
+      const num0 = (n) => Number(n).toLocaleString('en-US');
+      const cap = (p) => (p.capacity ? num0(p.capacity.value) + ' ' + p.capacity.unit + (p.capacity.year ? ' (' + p.capacity.year + ')' : '') : L('cargo not stated', '取扱量の記載なし'));
+      const A = r.affected;
+      let h = '<div><b>' + icon('pin') + ' ' + esc(r.port.name) + '</b> <span style="font-size:10.5px;color:var(--text-muted);">' + esc([r.port.cc, r.port.locode].filter(Boolean).join(' · ')) + '</span></div>';
+      h += '<div style="font-size:12px;margin-top:2px;">' + esc(L('If this port stops, ' + A.cities + ' cities (' + num0(A.population) + ' people) and ' + A.factories + ' factory-type sites of ' + A.companies + ' companies lose their NEAREST port by rail.', 'この港湾が止まると、鉄道で最寄りの港を失うのは都市 ' + A.cities + ' 件（人口 ' + num0(A.population) + '）と、' + A.companies + ' 社の工場系拠点 ' + A.factories + ' 件です。')) + '</div>';
+      h += '<div style="font-size:11.5px;color:var(--text-muted);">' + esc(L('Its own cargo: ', 'この港の取扱量: ') + cap(r.port)) + '</div>';
+      if (r.medianExtraKm != null) h += '<div style="font-size:12px;margin-top:3px;">' + esc(L('Median extra rail distance to the next port: ', '次の港までの鉄道距離の増加（中央値）: ') + r.medianExtraKm + ' km') + (r.stranded.cities + r.stranded.factories ? ' · ' + esc(L(r.stranded.cities + ' cities and ' + r.stranded.factories + ' sites have no further port within the model', 'モデルの範囲に次の港がない: 都市 ' + r.stranded.cities + ' 件・拠点 ' + r.stranded.factories + ' 件')) : '') + '</div>';
+      if (r.rerouted.length) h += '<div style="font-size:11.5px;margin-top:3px;"><b>' + esc(L('Where they fall back', '代わりに向かう港')) + '</b><br>' + r.rerouted.map((x) => esc(x.port.name + ': ' + x.entities + L(' places, median +', ' 件・中央値 +') + x.medianExtraKm + ' km · ' + cap(x.port))).join('<br>') + '</div>';
+      if (r.topCities.length) h += '<div style="font-size:11.5px;margin-top:3px;"><b>' + esc(L('Largest cities affected', '影響を受ける主な都市')) + '</b><br>' + r.topCities.map((c) => esc(L(c.name, c.nameJa || c.name) + (c.cc ? ' (' + c.cc + ')' : '') + ' ' + num0(c.population || 0) + ' — ' + (c.fallback ? L('next: ', '次: ') + c.fallback.port.name + ' +' + c.fallback.extraKm + ' km' : L('no further port in the model', 'モデル内に次の港なし')))).join('<br>') + '</div>';
+      if (r.factories.length) h += '<div style="font-size:11.5px;margin-top:3px;"><b>' + esc(L('Factory-type sites affected', '影響を受ける工場系拠点')) + ' (' + r.factories.length + (r.factoriesTotal > r.factories.length ? ' / ' + r.factoriesTotal : '') + ')</b><br>' + r.factories.map((f) => esc(f.name + ' [' + (f.siteType || '') + (f.company ? ' · ' + f.company : '') + '] ' + (f.fallback ? '→ ' + f.fallback.port.name + ' +' + f.fallback.extraKm + ' km' : L('no further port in the model', 'モデル内に次の港なし')))).join('<br>') + '</div>';
+      const cv = r.coverage;
+      h += '<div class="acp-src" style="font-size:10px;color:var(--text-muted);margin-top:4px;">' + esc(L('Model: ', 'モデル: ') + r.model.kind + '. ' + L('Covered: ', '収録: ') + cv.entities.assigned + L(' of ', ' / ') + (cv.entities.cities + cv.entities.industrialSites) + L(' cities and sites reach a port by rail; ', ' の都市・拠点が鉄道で港に到達；') + cv.portsListed + L(' ports. As of ', ' 港。時点 ') + r.asOf + L('. Sources: ', '。出典: ') + r.sources.map((s) => s.name + ' (' + s.licence + ')').join(' · ')) + '</div>';
+      return R(true, h, { exec: { portImpact: r }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: r.port.name, produced: ['explanation'], userGoalSatisfied: true } });
     },
   },
   {
