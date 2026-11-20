@@ -73,3 +73,13 @@ date: 2026-11-20
 - 登録時の一時ピーク（`stubs()`）と `describeFields` の逐次化、殻の退避は未着手。
 - DuckDB は scratch で測っただけで製品には入っていない。入れるなら: ① 述語の同値性を境界・日付変更線・極で測る ② Spatial 拡張の配信（11 s）と CSP ③ ライセンス表記 ④ 結果の
   provenance。サーバ側 PostGIS は未計測（環境が無い）。
+
+## 5. 起動予算（check:perf）で上げたもの
+
+- **async チャンク `gis-core` の天井を 622.7 → 632.9 kB（+10.2 kB）に上げた**。これだけが天井を超えた行で、
+  `perf-budget.mjs --update` は超えた行しか書かない（他の行は動いていない）。
+- **何を買ったか**: spatialJoin の対を worker へ運ぶ経路（`relateBlock` の共有・運ぶ塊の組み立てと取り消し）、
+  殻を列で持つ codec（`compactShells` / `expandShells` / `attributeRows`）、大規模エンジンへ渡す戸（登録・選択・辞退の記録）。
+  どれも利用者に届く能力（主スレッドの停止の短縮・100 万行の殻 160 MB → 8 MB・表示する行だけの取得・エンジンの切替）の実装で、取り戻せる重複ではない。
+- **失効条件**: packed のまま worker へ渡す案（§4）が入れば再組み立ての経路が減るので、その時に測り直す。
+- 起動時（eager）の増分は band の内。`async.raw` は main を取り込んだ後は band の内（+11.5 kB）で、CI の赤は main の新チャンクが重なった瞬間のものだった。
