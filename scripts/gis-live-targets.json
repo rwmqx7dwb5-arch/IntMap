@@ -1,6 +1,7 @@
 {"_note":"実測の供給元（データ）。2026-11-19 時点で公開。窓は東京近傍。","targets":[
 {"id":"cog-copdem-glo30","kind":"cog","url":"https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif","bounds":[139.2,35.2,139.8,35.8],"size":64},
 {"id":"cog-worldcover","kind":"cog","url":"https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_N33E138_Map.tif","bounds":[139.2,35.2,139.8,35.8],"size":64},
+{"id":"cog-copdem-dateline","kind":"cog","url":"https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_S17_00_E179_00_DEM/Copernicus_DSM_COG_10_S17_00_E179_00_DEM.tif","bounds":[179.5,-16.8,180.5,-16.2],"size":64},
 {"id":"stac-earthsearch","kind":"stac","url":"https://earth-search.aws.element84.com/v1/search?collections=sentinel-2-l2a","bounds":[139.6,35.6,139.8,35.8],"time":"2024-06-01T00:00:00Z/2024-06-30T23:59:59Z","limit":5,"assetKey":"red","size":64},
 {"id":"stac-earthsearch-dem","kind":"stac","url":"https://earth-search.aws.element84.com/v1/search?collections=cop-dem-glo-30","bounds":[139.6,35.6,139.8,35.8],"limit":3,"assetKey":"data","size":64},
 {"id":"stac-pc-s2","kind":"stac","url":"https://planetarycomputer.microsoft.com/api/stac/v1/search?collections=sentinel-2-l2a","bounds":[139.6,35.6,139.8,35.8],"time":"2024-06-01T00:00:00Z/2024-06-30T23:59:59Z","limit":5,"assetKey":"B04","size":64},
