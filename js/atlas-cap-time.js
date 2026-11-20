@@ -87,9 +87,9 @@ export default [
        (js/layer-time-decl.js through js/layer-time-kernel.js), without switching anything on or moving
        the clock. `on` limits it to the ticked layers. No instant → the clock's. */
     doc: [
-      { in: 'time.coverage', text: 'WHAT A MAP AT ONE INSTANT CAN DRAW: {"type":"timeCoverage","year"?:int (astronomical: 0 is 1 BC),"date"?:"YYYY-MM-DD","on"?:bool} = for EVERY layer (or only the ticked ones with on:true), whether its source states that instant — DRAWN (the source states it), DRAWN FROM ANOTHER DATE (a series past its last year, a dated snapshot on a later day — the layer names the date it shows), or NOT DRAWN (nothing states it: a live feed in the past, a modern snapshot before its date, a record outside its years) — with the reason in words. Nothing is switched on and the clock does not move. No year/date = the instant on the clock. Use for 「1914年の地図に何が描ける？」 / 「which layers work in 1600」 / before turning layers on for a past date. When the clock is in the past, a layer that states nothing about it is NOT drawn even with its box ticked, and its row says why — {"type":"timeTravel"} reports those ticked layers in its own result. For the instant ON THE CLOCK it also reports how much of the land inside a polity carries a recorded first-level subdivision (the rest is hatched on the map as «no record», not drawn as if it had none) and the ground two subdivisions claim at once, by kind: seam (a year-precision handover), duplicate (one unit held twice upstream), contested (two different units claim it; not judged).' },
+      { in: 'time.coverage', text: 'WHAT A MAP AT ONE INSTANT CAN DRAW: {"type":"timeCoverage","year"?:int (astronomical: 0 is 1 BC),"date"?:"YYYY-MM-DD","on"?:bool,"compare"?:[layerId,layerId,…]} = for EVERY layer (or only the ticked ones with on:true), whether its source states that instant — DRAWN (the source states it), DRAWN FROM ANOTHER DATE (a series past its last year, a dated snapshot on a later day — the layer names the date it shows), or NOT DRAWN (nothing states it: a live feed in the past, a modern snapshot before its date, a record outside its years) — with the reason in words. Nothing is switched on and the clock does not move. No year/date = the instant on the clock. WHEN COMPARING OR JOINING TWO LAYERS pass compare:[idA,idB,…] (2 to 6 ids) — the answer then judges EVERY PAIR, which a year match cannot: ALIGNED (same instant, same resolution), COARSENED (the sources speak at different resolutions — the pair only says what the coarser says), SKEWED (a side shows another date than the clock’s), BASIS-MISMATCH (one drawn on today’s or a fixed year’s borders, the other as of the date — a shared country code is not a shared territory), BASIS-UNVERIFIED (one side does not say how its units were drawn), or NOT COMPARABLE (a side states nothing for that date). Report the pair’s reason; never present the pair as one simultaneous measurement when it is not ALIGNED. Use for 「1914年の地図に何が描ける？」 / 「which layers work in 1600」 / before turning layers on for a past date. When the clock is in the past, a layer that states nothing about it is NOT drawn even with its box ticked, and its row says why — {"type":"timeTravel"} reports those ticked layers in its own result. For the instant ON THE CLOCK it also reports how much of the land inside a polity carries a recorded first-level subdivision (the rest is hatched on the map as «no record», not drawn as if it had none) and the ground two subdivisions claim at once, by kind: seam (a year-precision handover), duplicate (one unit held twice upstream), contested (two different units claim it; not judged).' },
     ],
-    schema: () => ({ type: 'object', properties: { year: int(), date: str(), on: bool() } }),
+    schema: () => ({ type: 'object', properties: { year: int(), date: str(), on: bool(), compare: list(str(), 2, 6) } }),
     async run(a, dctx, K) { return coverage(a, K); },
   },
   {
@@ -596,6 +596,15 @@ async function coverage(a, K) {
   let when = null;
   if (a.year != null) when = Math.round(+a.year);
   else if (a.date) when = String(a.date);
+  /* (temporal-claims) compare:[ids] — the PAIRS' verdicts, from the same table and the same rule as the per-layer answer */
+  if (Array.isArray(a.compare) && a.compare.length >= 2) {
+    const ids = a.compare.map(String), pairs = [];
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) { const p = await LT.align(ids[i], ids[j], when); if (p) pairs.push(p); }
+    if (!pairs.length) return R(false, warn('' + L('None of those layers has a time declaration', '指定したレイヤーに時間の宣言がありません')));
+    const lang = (K.HOST && K.HOST.lang) || 'en';
+    const row = (p) => '<li><b>' + esc(p.status) + '</b> — ' + esc(lang === 'jp' ? p.message[1] : p.message[0]) + '</li>';
+    return R(true, '<div>' + esc(L('Can these layers be compared at one instant?', 'これらのレイヤーは同じ時点で比較できるか')) + '</div><ul>' + pairs.map(row).join('') + '</ul>', { alignment: pairs.map((p) => ({ ids: p.ids, status: p.status, reasons: p.reasons, skewMs: p.skewMs == null ? null : p.skewMs, grainMs: p.grainMs == null ? null : p.grainMs, why: p.message[0] })) });
+  }
   const c = await LT.coverage(when, { on: !!a.on });
   if (!c) return R(false, warn('' + L('Give a year or an ISO date', '年か ISO 形式の日付を指定してください')));
   const day = c.at.live ? L('now', '現在') : c.at.date.slice(0, 10);
