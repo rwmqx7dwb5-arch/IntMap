@@ -88,7 +88,7 @@ test('① 401 says to sign in; the whole flow signs in and the token is used on 
   assert.match(used.headers.authorization, /^Bearer at-/);
   const reg = JSON.parse(svc.st.log.find((x) => x.url.endsWith('/register')).body);
   assert.equal(reg.token_endpoint_auth_method, 'none'); assert.deepEqual(reg.redirect_uris, [REDIRECT]);
-  assert.ok(storage.raw[STORAGE_KEY].includes('"tokens"'));
+  assert.ok(!storage.raw[STORAGE_KEY].includes('at-') && !storage.raw[STORAGE_KEY].includes('rt-') && !storage.raw[STORAGE_KEY].includes('"tokens"'), 'no token is written to localStorage');
 });
 
 test('② the authorize URL carries PKCE S256, state, the resource indicator and the scope the server asked for', async () => {
@@ -225,4 +225,23 @@ test('⑬ the OAuth module on its own: metadata URL candidates and token expiry'
   assert.deepEqual(OA.authServerMetadataCandidates('https://as.example'), ['https://as.example/.well-known/oauth-authorization-server', 'https://as.example/.well-known/openid-configuration']);
   assert.equal(OA.isExpired({ accessToken: 'a', expiresAt: 1000 + 30000 }, 1000), true, 'inside the skew');
   assert.equal(OA.isExpired({ accessToken: 'a', expiresAt: 1000 + 120000 }, 1000), false);
+});
+
+test('⑭ the tokens live only in the vault: a new page load with the same vault is still signed in; a lost vault means signed out, not broken', async () => {
+  const svc = service();
+  const box = { data: null }; const vault = { read: async () => box.data, write: async (o) => { box.data = o; } };
+  const { c, storage } = mk(svc, { vault });
+  await c.ready;
+  c.addServer({ name: 'Svc', url: 'https://mcp.svc.example/mcp' });
+  await c.authorize('svc', approver(svc));
+  await new Promise((r) => setTimeout(r, 5));
+  assert.ok(box.data && box.data.svc && box.data.svc.tokens.accessToken, 'the vault holds the token');
+  assert.ok(!storage.raw[STORAGE_KEY].includes(box.data.svc.tokens.accessToken) && !storage.raw[STORAGE_KEY].includes(box.data.svc.tokens.refreshToken), 'localStorage holds neither token');
+  const again = createMcpClient({ fetchImpl: svc.fetchImpl, storage, relayUrl: null, redirectUri: REDIRECT, vault, now: () => svc.st.clock });
+  await again.ready;
+  assert.equal(again.servers()[0].status, 'connected');
+  assert.equal((await again.callTool({ server: 'svc', tool: 'list_issues' })).ok, true);
+  const lost = createMcpClient({ fetchImpl: svc.fetchImpl, storage, relayUrl: null, redirectUri: REDIRECT, vault: { read: async () => { throw new Error('wiped'); }, write: async () => {} }, now: () => svc.st.clock });
+  await lost.ready;
+  assert.equal(lost.servers()[0].auth, 'none'); assert.equal(lost.servers()[0].hasAuth, false);
 });

@@ -26,7 +26,7 @@ const PERMANENT = new Set(['blocked_by_csp', 'unsupported_transport', 'relay_ref
 /* the run of mcp.call and mcp.act: the same call, the same untrusted handling; only the read-only demand differs */
 async function invoke(readOnlyOnly, a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn, HOST = K.HOST;
   const M = await import('./atlas-mcp-client.js');
-  const C = M.pageClient(HOST);
+  const C = M.pageClient(HOST); await C.ready;
   if (!a.server || (!a.tool && !a.taskId)) return R(false, warn(esc(L('Name the server and the tool (find_capability returns both).', 'server と tool を指定してください（find_capability が返します）。'))), { meta: { code: 'needs_input' } });
   const r = await C.callTool({ server: String(a.server), tool: a.tool ? String(a.tool) : undefined, arguments: a.arguments, taskId: a.taskId ? String(a.taskId) : undefined, taskAction: a.taskAction, inputResponses: a.inputResponses, requestState: a.requestState }, { mustBeReadOnly: readOnlyOnly, signal: dctx && dctx.signal });
   /* the server needs the READER's words (MRTR elicitation): say what it asked, as the server's data, and stop — the model asks the reader */
@@ -71,7 +71,7 @@ export default [
     schema: () => ({ type: 'object', properties: { action: one('list', 'refresh'), server: str() } }),
     async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn, HOST = K.HOST;
       const M = await import('./atlas-mcp-client.js');
-      const C = M.pageClient(HOST);
+      const C = M.pageClient(HOST); await C.ready;
       const act = String(a.action || 'list');
       const errors = [];
       let detail = [];
@@ -100,7 +100,7 @@ export default [
     schema: () => ({ type: 'object', properties: { action: one('add', 'remove', 'authorize', 'disconnect', 'enable', 'disable'), url: str(), name: str(), authToken: str(), readOnly: bool(), server: str(), scope: str() } }),
     async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn, HOST = K.HOST;
       const M = await import('./atlas-mcp-client.js');
-      const C = M.pageClient(HOST);
+      const C = M.pageClient(HOST); await C.ready;
       const act = String(a.action || '');
       const fail = (code, msg) => R(false, warn(esc(msg)), { meta: { code, permanent: PERMANENT.has(code) ? true : undefined } });
       if (act === 'remove') {

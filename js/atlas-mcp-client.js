@@ -187,8 +187,37 @@ export function createMcpClient(opts) {
   /* live state: per server id → { session, initialised, tools, toolsAt, error } — never persisted (a session id is not ours to keep) */
   const live = {};
 
-  function load() { try { const v = JSON.parse(storage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(v) ? v.filter((s) => s && SERVER_ID_RE.test(String(s.id))) : []; } catch (_) { return []; } }
-  function save(list) { try { storage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (_) { /* storage refused: the registration lasts this page only (memory) */ } }
+  /* (mcp-oauth) THE TOKENS A SERVICE ISSUED ARE NOT WRITTEN TO localStorage. They live in `secrets` (memory) and are persisted only through the vault
+     (idbVault: AES-GCM with a non-extractable key kept in IndexedDB — a copy of the profile's localStorage or a read of it by another script yields no token).
+     The server list in localStorage carries everything else about a connection. A token the reader pasted by hand is unchanged (its own field, as before). */
+  const secrets = {};                                         /* id → { tokens, pending } */
+  const vault = o.vault || null;
+  let vaultWrite = Promise.resolve();
+  const persistSecrets = () => { if (vault) vaultWrite = vaultWrite.then(() => vault.write(JSON.parse(JSON.stringify(secrets)))).catch(() => { /* the sign-in lasts this page only */ }); return vaultWrite; };
+  function rawList() { try { const v = JSON.parse(storage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(v) ? v.filter((s) => s && SERVER_ID_RE.test(String(s.id))) : []; } catch (_) { return []; } }
+  function load() {
+    return rawList().map((r) => { const sc = secrets[r.id]; if (!sc || !r.oauth) return r; const oauth = Object.assign({}, r.oauth); if (sc.tokens) oauth.tokens = sc.tokens; if (sc.pending) oauth.pending = sc.pending; return Object.assign({}, r, { oauth }); });
+  }
+  function save(list) {
+    const keep = {};
+    const stored = list.map((r) => {
+      if (!r.oauth || (!r.oauth.tokens && !r.oauth.pending)) return r;
+      const { tokens, pending, ...rest } = r.oauth;
+      keep[r.id] = { tokens, pending };
+      return Object.assign({}, r, { oauth: rest });
+    });
+    Object.keys(secrets).forEach((k) => { delete secrets[k]; }); Object.assign(secrets, keep);
+    try { storage.setItem(STORAGE_KEY, JSON.stringify(stored)); } catch (_) { /* storage refused: the registration lasts this page only (memory) */ }
+    persistSecrets();
+  }
+  /** Resolves once the vault has been read (tokens from an earlier visit are then in memory). A call that needs a token waits for it. */
+  const ready = (async () => {
+    if (!vault) return;
+    try {
+      const got = await vault.read();
+      if (got && typeof got === 'object') { const ids = new Set(rawList().map((r) => r.id)); Object.keys(got).forEach((k) => { if (ids.has(k) && !secrets[k]) secrets[k] = got[k]; }); }
+    } catch (_) { /* an unreadable vault means signed out, never a crash */ }
+  })();
   const publicServer = (s) => ({ id: s.id, name: s.name, url: s.url, hasAuth: !!s.authToken || !!(s.oauth && s.oauth.tokens), ...connectionOf(s), readOnly: s.readOnly === true ? true : Array.isArray(s.readOnly) ? s.readOnly.slice() : false, via: s.via || 'auto' });   /* the token never leaves */
   const find = (id) => load().find((s) => s.id === String(id || ''));
   /** What the reader sees of a server's credential and state — never a token. auth: oauth | token | none; status: connected | needs_sign_in | disabled | none. */
@@ -233,6 +262,7 @@ export function createMcpClient(opts) {
     const headers = { 'content-type': 'application/json', accept: 'application/json, text/event-stream', 'mcp-protocol-version': stateless ? (st.version || MCP_PROTOCOL_VERSION) : (st.version || MCP_LEGACY_PROTOCOL_VERSION) };
     if (stateless && body.method) { headers['mcp-method'] = body.method; if (body.method === 'tools/call' && body.params && body.params.name) headers['mcp-name'] = String(body.params.name); }
     if (st.session && !stateless) headers['mcp-session-id'] = st.session;
+    await ready;
     const bearer = await bearerFor(server, o2);
     if (bearer) headers.authorization = 'Bearer ' + bearer;
     const ctl = new AbortController();
@@ -716,7 +746,7 @@ export function createMcpClient(opts) {
   }
   function unwatch(id) { const st = live[id]; if (st && st.watch) { try { st.watch.ctl.abort(); } catch (_) { /* gone */ } delete st.watch; } if (st) st.onChange = []; }
 
-  return { servers, addServer, removeServer, refresh, searchTools, callTool, effectsOf, getTool, ensureTools, beginOAuth, finishOAuth, authorize, disconnect, setEnabled, watch, unwatch, _live: live };
+  return { ready, servers, addServer, removeServer, refresh, searchTools, callTool, effectsOf, getTool, ensureTools, beginOAuth, finishOAuth, authorize, disconnect, setEnabled, watch, unwatch, _live: live };
 }
 
 /* ── (mcp-oauth) an external result that is data, offered to the rest of Atlas as a FILE ─────────────────────────────────────
@@ -758,6 +788,7 @@ export function pageClient(HOST) {
   const base = String(globalThis.SUPABASE_URL || '').replace(/\/+$/, '');
   _page = createMcpClient({
     relayUrl: base ? base + '/functions/v1/mcp-relay' : null,
+    vault: typeof indexedDB === 'object' && indexedDB && globalThis.crypto && globalThis.crypto.subtle ? idbVault() : null,
     redirectUri: typeof location === 'object' && location && location.origin ? new URL('mcp-oauth-callback.html', location.href).toString() : null,
     authHeaders: async () => {
       const DB = HOST && HOST.DB;
@@ -768,6 +799,33 @@ export function pageClient(HOST) {
     },
   });
   return _page;
+}
+
+/** (mcp-oauth) The vault the live page uses: one AES-GCM ciphertext in IndexedDB, under a key that was generated non-extractable and never leaves the browser's key store.
+ *  This protects the stored copy (a profile read off the disk, localStorage copied by an extension or a sync tool); it does NOT protect against a script running in the
+ *  page itself, which can ask the same page to use the key — nothing in a browser can. */
+function idbVault(win) {
+  const W = win || globalThis;
+  const open = () => new Promise((res, rej) => { const r = W.indexedDB.open('intmap-mcp-vault', 1); r.onupgradeneeded = () => r.result.createObjectStore('k'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const req = (db, mode, fn) => new Promise((res, rej) => { const t = db.transaction('k', mode); const q = fn(t.objectStore('k')); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); });
+  const keyOf = async (db) => {
+    let k = await req(db, 'readonly', (st) => st.get('aes'));
+    if (!k) { k = await W.crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); await req(db, 'readwrite', (st) => st.put(k, 'aes')); }
+    return k;
+  };
+  return {
+    async read() {
+      const db = await open(); const blob = await req(db, 'readonly', (st) => st.get('blob')); if (!blob) return null;
+      const k = await keyOf(db);
+      return JSON.parse(new TextDecoder().decode(await W.crypto.subtle.decrypt({ name: 'AES-GCM', iv: blob.iv }, k, blob.data)));
+    },
+    async write(obj) {
+      const db = await open(); const k = await keyOf(db);
+      const iv = W.crypto.getRandomValues(new Uint8Array(12));
+      const data = await W.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, new TextEncoder().encode(JSON.stringify(obj)));
+      await req(db, 'readwrite', (st) => st.put({ iv, data }, 'blob'));
+    },
+  };
 }
 
 /** (mcp-oauth) The browser's half of signing in: a pop-up at the service's own sign-in page, and the callback page (mcp-oauth-callback.html, same origin)
