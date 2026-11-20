@@ -56,7 +56,7 @@ export default [
       let h = null;
       if (grants.length) {
         if (typeof K.programBridge !== 'function') return R(false, warn(esc(L('The capability bridge is not available here.', '能力ブリッジはここでは使えません。'))));
-        const readDataset = (id) => { const reg = window.IntMapData; const rec = reg && reg.get ? reg.get(id) : null; return rec && !rec.stale ? C.payloadOf(rec) : null; };
+        const readDataset = (id) => C.readDataset(id);
         h = K.programBridge({ turn: dctx || {}, grants: grants, readDataset: readDataset,
           forbid: (cap) => (cap && cap.id === 'compute.run') ? 'a program does not start another program (one interpreter per run)' : null });
       }

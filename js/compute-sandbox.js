@@ -718,6 +718,9 @@ export function makeComputeSandbox(opts) {
       return Object.assign(base, { bridge: bridgeOut, ok: true, observed: true, datasets: datasets, values: values, packages: raw.packages || [], python: raw.python || null, codeSha256: codeSha256 });
     }
 
+    /* a session dataset as the code sees it, for the capability bridge's `dataset` request: null when there is none or it is stale */
+    function readDataset(id) { const reg = registry(); const rec = reg && reg.get ? reg.get(String(id)) : null; return rec && !rec.stale ? payloadOf(rec) : null; }
+
     /* ── rerun(step) — js/gis-project.js's door, when an input of a compute record was recomputed ──
        The recipe is the record's own provenance; the answer goes back under the record's id. */
     async function rerun(step, runOpts) {
@@ -731,7 +734,7 @@ export function makeComputeSandbox(opts) {
     }
 
     const API = {
-      run, rerun, validate, payloadOf, classify, provenanceFor, workerSource,
+      run, rerun, validate, payloadOf, readDataset, classify, provenanceFor, workerSource,
       runtime: () => ({ name: RUNTIME.name, version: RUNTIME.version, base: RUNTIME.base, files: Object.assign({}, RUNTIME.files) }),
       limits: () => Object.assign({}, LIMITS),
       reasons: () => ({ refusals: REFUSALS.slice(), failures: FAILURES.slice(), unobserved: UNOBSERVED.slice() }),
