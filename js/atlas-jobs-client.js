@@ -107,9 +107,13 @@ const URL_OK = /^https?:\/\//i;
 /* a URL that starts an href goes through window.IntMapSafe.url (js/safe.js); with it absent (a node test) nothing becomes a link */
 const safeUrl = (u) => { try { return (typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.url) ? String(window.IntMapSafe.url(u) || '') : ''; } catch (_) { return ''; } };
 
-/* renderJobCard(facts, { L, esc }) → HTML (the inside of a card; mountJobCards wraps it) */
+/* the one encoder (js/safe-html.js IntMapSafe.html); with it absent (a node test) the same five characters are replaced here */
+const escHtml = (v) => { const t = v == null ? '' : String(v); try { if (typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.html) return window.IntMapSafe.html(t); } catch (_) { /* fall through */ } return t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); };
+
+/* renderJobCard(facts, { L }) → HTML (the inside of a card; mountJobCards wraps it) */
 export function renderJobCard(f, h) {
-  const { L, esc } = h;
+  const L = h.L;
+  const esc = (v) => escHtml(v);   /* the file's own delegate to the one encoder — a card is built from third-party text (a worker's findings), never from the caller's escaper */
   const word = (st) => ({ queued: L('waiting', '待機中'), running: L('running', '実行中'), done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), cancelled: L('cancelled', '取消') })[st] || st;
   const pct = f.tasksTotal ? Math.round((f.tasksEnded / f.tasksTotal) * 100) : 0;
   const rows = f.tasks.map((t) => {
