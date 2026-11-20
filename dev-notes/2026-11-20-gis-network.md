@@ -42,3 +42,4 @@ newsjp: Atlas が網を距離ではなくつながりとして分析できるよ
 ## 予算と台帳（CI が求めたもの）
 - `check:surface`: 大域名 `window.IntMapGisNetwork` を 1 つ足した（`--update`）。他の GIS カーネルと同じく、`gis-ops.js` が呼び出し時に名前で読む唯一の形（`IntMapGisVoronoi` と同じ契約）。読みは 1 本。
 - `check:perf`: `gis-core` チャンクが約 26 kB 増えた（新しい純粋カーネル `gis-network.js` ＋ `atlas-cap-runs` に能力の断片 1 つ）。増えた理由はこの機能そのもので、天井を `perf-budget --update` で上げた。
+- `atlas-console` チャンクの天井も上げた（約 5.6 kB）。Atlas の能力表に `network` / `networkDisrupt` の断片を足したぶん。
