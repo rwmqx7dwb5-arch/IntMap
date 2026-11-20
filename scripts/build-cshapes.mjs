@@ -125,6 +125,7 @@ export const GOVERNANCE = (() => {
        that does not exist. EXPIRES: if ETH Zürich publishes a CShapes 3.0. */
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'CShapes 2.0 (Schvitz et al. 2022) is a published, finished dataset covering 1886-2019; ETH Zurich distributes one release',
       expires: 'if ETH Zurich publishes a CShapes 3.0 or a revised 2.x release',
       canon: 'this record (the only builder that reads CShapes)',

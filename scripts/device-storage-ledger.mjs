@@ -64,6 +64,7 @@ export const GOVERNANCE = {
     attribution: false,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'derived',
       observed: 'derived from the browser code, which changes only when a module starts or stops keeping something in the browser (--check fails until the words say so)',
       expires: 'when a storage write is added, renamed or removed — check:datagov then fails until this file is written again',
       canon: 'scripts/device-storage-words.json',

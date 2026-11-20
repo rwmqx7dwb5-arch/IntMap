@@ -67,6 +67,7 @@ export const GOVERNANCE = {
     paidBy: 'NASA EONET — Earth Observatory Natural Event Tracker',
     cadence: 'P7D',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'the archive\'s unit is a closed ISO week (Monday 00:00 UTC to Monday 00:00 UTC); both upstreams publish continuously, but a new week exists to be added once every seven days, and a provisional week is asked again on the next run',
       expires: 'if the archive\'s unit stops being the ISO week',
       canon: 'scripts/build-weekly-earth.mjs GOVERNANCE',

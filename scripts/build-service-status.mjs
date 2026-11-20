@@ -79,6 +79,7 @@ export const GOVERNANCE = {
     /* ⚠ THE CADENCE IS THE MEASUREMENT'S OWN: both jobs are scheduled once a day
        (upstream-liveness.yml cron 04:41 UTC, atlas-eval.yml 05:41 UTC). */
     cadenceBasis: {
+      kind: 'stated',
       observed: 'the two workflows this bundle reads are each scheduled once a day (their `cron` lines)',
       expires: 'if either schedule changes — then this record states a period the measurement no longer has',
       canon: 'the `on.schedule` of .github/workflows/upstream-liveness.yml and atlas-eval.yml',

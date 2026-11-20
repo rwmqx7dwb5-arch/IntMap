@@ -47,6 +47,7 @@ export const GOVERNANCE = {
     attribution: false,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'a closed set of past sequences — every earthquake the rule AS.TESTED in js/aftershock-core.js names — whose forecast windows have all ended',
       expires: 'if js/aftershock-core.js or data/aftershock-regimes.json.gz changes, or USGS revises the catalogue entries of these sequences',
       canon: 'this record (the only builder that scores the aftershock forecast)',

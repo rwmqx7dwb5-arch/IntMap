@@ -144,7 +144,8 @@ export const KERNELS = {
   /* (gov-gis-terms) ops-12 -> ops-13: a REPLAYED STEP NOW REGISTERS A RECORD THAT SAYS MORE — `provenance.upstreams` carries each
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
-  'js/gis-ops.js': { version: 'ops-13', sha256: '1d5ac5e9ea9ca67aae1ee3f5bbe30c1e0b20148c50350a08da377e023baaeb56' },
+  /* (data-facts) ops-13 HASH ONLY: a multi-input op states `provenance.timeMismatch` (js/data-governance.js temporalMismatch) when its inputs' stated periods do not overlap. A record that states more; no cell, geometry or refusal changes. */
+  'js/gis-ops.js': { version: 'ops-13', sha256: '73b41d797eb52fea280d9b03cdbcb554c0ddb869f4e6623b0407c37980b6c7ef' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /

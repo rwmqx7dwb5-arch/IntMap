@@ -156,7 +156,7 @@ export const GOVERNANCE = {
     priority: { rank: 'per-dossier',
       over: 'IntMap states the dossier facts (membership, dates); the other upstreams are geometry atom sets, one per dossier, and two dossiers on the same land and day are refused (sameLandClaims), so atom sets do not compete; for an optional clipTo edge toward a foreign country the whole-world edge set (Natural Earth) wins, the dossier atoms win interior lines and coast' },
     cadence: 'static',
-    cadenceBasis: { observed: 'on 2026-10-05 every atom set is pinned (Natural Earth commit ca96624, RISTAT version 3, N03 1920, e-Stat 2020); the record changes only when the research in a dossier changes', expires: 'when a dossier is revised or an atom set is re-pinned', canon: 'scripts/histrecon/atoms/*.mjs SET and scripts/histrecon/dossiers/*.json' },
+    cadenceBasis: { kind: 'measured', observed: 'on 2026-10-05 every atom set is pinned (Natural Earth commit ca96624, RISTAT version 3, N03 1920, e-Stat 2020); the record changes only when the research in a dossier changes', expires: 'when a dossier is revised or an atom set is re-pinned', canon: 'scripts/histrecon/atoms/*.mjs SET and scripts/histrecon/dossiers/*.json' },
     builtBy: 'scripts/build-hist-admin-recon.mjs',
   },
 };

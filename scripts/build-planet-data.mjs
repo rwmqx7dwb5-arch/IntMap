@@ -66,6 +66,7 @@ export const GOVERNANCE = (() => {
     paidBy: 'Solar System Scope — planetary surface textures',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'the Solar System Scope texture set is a finished 2k/8k release that the publisher has not revised; the build downloads a fixed file per body',
       expires: 'if solarsystemscope.com/textures publishes a revised set',
       canon: 'this record (the only builder that reads Solar System Scope)',

@@ -40,6 +40,7 @@ export const GOVERNANCE = {
     attribution: false,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'derived',
       observed: 'derived from the `offline` statements of the host ledger, which change only when someone reads a supplier\'s terms and writes what they say',
       expires: 'if a supplier changes its terms — then the row it states is out of date, not this derivation',
       canon: 'the `offline` field of each row in scripts/outbound-hosts.json',

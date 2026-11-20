@@ -25,6 +25,7 @@ export const GOVERNANCE = {
     url: 'https://datacatalog.worldbank.org/search/dataset/0041426',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'the Major River Basins of the World are a published GRDC edition (2nd revised edition, 2020) redistributed by the World Bank data catalogue; the bundle carries only basin names and outlines from it (first committed 2026-07-11)',
       expires: 'if GRDC publishes a revised edition of the Major River Basins',
       canon: 'this record (no script in the repository rebuilds data/basins_mrb.json)',
@@ -35,6 +36,7 @@ export const GOVERNANCE = {
     url: 'https://ecoregions.appspot.com/',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'Ecoregions 2017 (Dinerstein et al. 2017) is a named, finished edition; the .geojson and the .js wrapper beside it are the same features',
       expires: 'if RESOLVE publishes a successor edition',
       canon: 'this record (no script in the repository rebuilds data/ecoregions_2017.*)',
@@ -45,6 +47,7 @@ export const GOVERNANCE = {
     url: 'https://chelsa-climate.org/',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'the bundle is CHELSA V2.1 bio12, the 1981-2010 climatological normal (its own manifest says so) — a fixed period that no later release revises within V2.1',
       expires: 'if the layer is moved to a later normal period (1991-2020) or a CHELSA V3',
       canon: 'this record (no script in the repository rebuilds data/precip-mm.*)',

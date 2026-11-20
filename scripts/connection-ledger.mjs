@@ -35,6 +35,7 @@ export const GOVERNANCE = {
     attribution: false,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'derived',
       observed: 'derived from the host ledger, which changes only when the browser code starts or stops contacting a host (check:datagov fails until the ledger says so)',
       expires: 'when the ledger changes — check:datagov then fails until this file is written again',
       canon: 'scripts/outbound-hosts.json',

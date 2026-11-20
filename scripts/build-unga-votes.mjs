@@ -63,6 +63,7 @@ export const GOVERNANCE = (() => {
   asOf: '2023-09-01',
   cadence: 'P1Y',
   cadenceBasis: {
+    kind: 'measured',
     observed: 'read 2026-11-17 on dataverse.harvard.edu (doi:10.7910/DVN/LEJUQZ): 39 versions 2012–2026, the roll-call CSV last shipped in version 32 (2024-03-21); a new session is added about once a year',
     expires: 'if a newer version ships the roll calls in a format this builder reads again',
     canon: 'scripts/build-unga-votes.mjs GOVERNANCE',

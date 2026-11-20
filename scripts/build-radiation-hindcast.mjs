@@ -44,6 +44,7 @@ export const GOVERNANCE = {
     /* a historical event: the survey is not republished on a schedule */
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'a closed historical event: the 2011 Fukushima Daiichi deposition survey, compiled once by IRSN (Zenodo record 7016491, published 2022), is not republished on a schedule',
       expires: 'if IRSN publishes a new version of the Zenodo record, or the plume model (js/radiation-model.js) changes so the model half of the bundle no longer reproduces',
       canon: 'this record (the only builder that reads the IRSN deposition survey)',

@@ -52,6 +52,7 @@ export const GOVERNANCE = {
     paidBy: 'Fukushima Daiichi release time series (JAEA, Katata et al. 2015, CC BY 3.0)',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'a closed historical event: the 2011 release reconstruction was published once, as the supplement of an ACP paper (2015-01-30)',
       expires: 'if the supplement is re-issued (the pinned md5 then fails the build), or IntMap adopts a later reconstruction (Terada et al. 2020) whose table is published in a redistributable form',
       canon: 'this record (the only builder that reads the JAEA release table)',

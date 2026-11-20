@@ -68,6 +68,7 @@ export const GOVERNANCE = {
     paidBy: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'derived',
       observed: 'derived only from other bundles in this repository (data/cshapes.js, data/hist-borders.js, data/wars.json) and the committed Wikidata snapshot scripts/time-index/wikidata-events.json (written by scripts/fetch-world-events.mjs, retrieved 2026-10-04), never from an upstream at build time; it changes when they are rebuilt, and `--check` says whether it still matches them',
       expires: 'if the builder starts reading an upstream directly, or when scripts/fetch-world-events.mjs is run again',
       canon: 'scripts/build-on-this-day.mjs GOVERNANCE',

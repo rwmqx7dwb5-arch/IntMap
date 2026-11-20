@@ -288,7 +288,7 @@ test('⑥b SIMBAD: the credit row and the builder ask one canonical host first, 
 
 /* ── ⑦ ─────────────────────────────────────────────────────────────────────── */
 test('⑦ a bundle with no cadence, a cadence with no basis, an unparseable cadence and a second declarer are all refused', () => {
-  const basis = { observed: 'measured on a fixture for this test', expires: 'when the fixture changes', canon: 'this test, and nothing else' };
+  const basis = { kind: 'measured', observed: 'measured 2026-09-30 on a fixture for this test', expires: 'when the fixture changes', canon: 'this test, and nothing else' };
   const bundle = (s) => ({ subject: s, kind: 'file', members: [s + '.json'] });
   const builder = (name, decl) => ({ subject: name, paths: Object.keys(decl), declaration: { present: true, value: decl } });
   const subjectsFor = (bs, bd) => [

@@ -61,6 +61,7 @@ export const GOVERNANCE = {
     attribution: false,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'the three parameter files were last changed upstream on 2021-05-15 (GitHub commits API, read 2026-10-13); the bundle is pinned to one commit',
       expires: 'if USGS revises the generic parameters, the completeness rules or the regime table in the OAF repository',
       canon: 'this record (the only builder that reads the OAF parameter files)',

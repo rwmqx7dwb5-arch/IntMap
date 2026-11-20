@@ -86,6 +86,7 @@ export const GOVERNANCE = (() => {
       over: 'SOURCES is tried in order and the first that answers wins the whole run; BSC5 is the fallback (no per-star merge)' },
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'all three upstreams are finished catalogues: Hipparcos (ESA 1997, CDS I/239) and the Bright Star Catalogue 5th revised edition (Hoffleit & Warren 1991) at two mirrors',
       expires: 'if the builder moves to a catalogue that is still revised (Gaia data releases)',
       canon: 'this record (the only builder that reads these catalogues)',

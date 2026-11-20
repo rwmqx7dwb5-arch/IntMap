@@ -104,6 +104,7 @@ export const GOVERNANCE = {
       over: 'no list overrides another: each authority\'s parties are counted under that authority only; Natural Earth supplies the point and names of a country a list names, never a party' },
     cadence: 'P1D',
     cadenceBasis: {
+      kind: 'measured',
       observed: 'read 2026-11-17: the UK list file states «Report Date: 12-Nov-2026», the EU file a fileGenerationDate of the same week, and OFAC publishes recent-actions notices several times a week — any day can change a list',
       expires: 'if the three lists are read from a dated archive instead of their live files',
       canon: 'scripts/build-sanctions.mjs GOVERNANCE',

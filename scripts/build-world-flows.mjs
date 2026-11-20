@@ -72,6 +72,7 @@ export const GOVERNANCE = {
        DESA's editions, so the bundle is due for a look yearly — when DESA has published nothing new, a rebuild is a no-op */
     cadence: 'P1Y',
     cadenceBasis: {
+      kind: 'measured',
       observed: 'read 2026-10-13 on un.org/development/desa/pd/content/international-migrant-stock: editions 2015, 2017, 2019, 2020 and 2024 (one every one to four years); Natural Earth: scripts/lib/upstream-cadence.mjs NATURAL_EARTH (at most one release a year)',
       expires: 'if DESA starts publishing migrant stock more than once a year',
       canon: 'scripts/build-world-flows.mjs GOVERNANCE',

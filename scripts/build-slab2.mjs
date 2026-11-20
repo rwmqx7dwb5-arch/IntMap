@@ -82,6 +82,7 @@ export const GOVERNANCE = (() => {
     attribution: false,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'Slab2 is a published model (Hayes et al. 2018) whose ScienceBase release has not been superseded',
       expires: 'if USGS publishes a Slab3 or a revised Slab2 release on ScienceBase',
       canon: 'this record (the only builder that reads Slab2)',

@@ -65,6 +65,7 @@ export const GOVERNANCE = (() => {
     url: BASE,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'PB2002 is a published plate model (Bird 2003); measured 2026-09-30, the fraxen/tectonicplates mirror has had no commit since 2014-10-06',
       expires: 'if the mirror is revised or the builder moves to a newer plate model',
       canon: 'this record (the only builder that reads PB2002)',
