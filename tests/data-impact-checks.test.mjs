@@ -125,3 +125,12 @@ test('④ real data: company factory sites → grid → aggregate is a candidate
   assert.equal(g.staleness(bind.refOf(newAgg)), null);
   assert.ok(g.staleness(bind.refOf(agg.dataset.id)));
 });
+
+test('⑤ the page-shared graph exposes the refresh API over the one graph', async () => {
+  const { sharedEvidenceGraph } = await import('../js/evidence-graph-record.js');
+  const s = sharedEvidenceGraph({});
+  const src = s.graph.putSource({ type: 'dataset', key: 'shared-probe', version: 'v1' });
+  s.graph.putDerived({ type: 'gis_op', inputs: [src.id], calc: { op: 'buffer' }, output: { count: 1 } });
+  const { updates } = s.refresh.diff([{ type: 'dataset', key: 'shared-probe', version: 'v2' }]);
+  assert.equal(s.refresh.plan(updates).entries.length, 1);
+});
