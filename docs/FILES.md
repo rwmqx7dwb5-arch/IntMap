@@ -902,6 +902,7 @@ outbreaks.js                      感染症アウトブレイク window.IntMapOu
                                   （docs/MAP-LAYERS.md §7.15）
 companies.js                      企業データセットと時価総額のライブ算出 IntMapCompanies
 company-data.js                   企業アトラスの読み口（索引1枚＋1社ぶんのプロフィールを遅延取得・施設語彙の正本） IntMapCompanyData
+relation-evidence.js            世界グラフの関係の状態——確認済み／推定／未確認と、それぞれを支える根拠（出典・規則）。記録のない関係を補完させない純関数
 reference-data.js                 参照データ表
 tables.js                         参照データ表（大きい方）
 gazetteer.js                      ニュース地点解析の内蔵ガゼッティア
