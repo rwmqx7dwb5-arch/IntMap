@@ -35,6 +35,7 @@
  * ==========================================================================*/
 
 import { explainFetchFailure, describeResponse } from './gis-http.js';
+import { reachingFetch } from './gis-fetch.js';
 
 export function makeGisOgcApi() {
   const bad = (why, detail) => (detail === undefined ? { ok: false, why: why } : { ok: false, why: why, detail: detail });
@@ -65,7 +66,7 @@ export function makeGisOgcApi() {
     root.search = '';
     const at = root.pathname.indexOf('/collections/');
     root.pathname = (at >= 0 ? root.pathname.slice(0, at) : root.pathname.replace(/\/[^/]*$/, '')) + '/conformance';
-    const doFetch = (typeof o.fetch === 'function') ? o.fetch : ((typeof fetch === 'function') ? fetch : null);
+    const doFetch = reachingFetch(o.fetch);
     if (!doFetch) return false;
     try {
       const res = await doFetch(root.href, { headers: { Accept: 'application/json' } });
@@ -77,7 +78,7 @@ export function makeGisOgcApi() {
   }
 
   async function getJson(href, o, post) {
-    const doFetch = (typeof o.fetch === 'function') ? o.fetch : ((typeof fetch === 'function') ? fetch : null);
+    const doFetch = reachingFetch(o.fetch);
     if (!doFetch) return bad('fetch-failed', { url: href, reason: 'no-fetch-in-this-runtime' });
     const init = { headers: { Accept: 'application/geo+json, application/json;q=0.9' } };
     if (post) {
