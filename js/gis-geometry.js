@@ -988,10 +988,133 @@ export function makeGisGeometry() {
       return inside ? 'interior' : 'boundary';
     }
 
+    /* ══ (gis-scale) THE FACE A SHAPE'S BOX LIES IN — a decision the sweep line need not be asked ═══════
+       contains / within / intersects of a shape against an AREA are answered by polygon-clipping (a difference
+       or an intersection), which costs about a millisecond per pair however plain the pair is. MEASURED
+       (scripts/gis-scale-bench.mjs bufferJoin, 2026-11-20): 20,000 buffered points joined to 80 cells spent most
+       of the main thread in the sweep, and almost every pair was the plainest one there is — a 65-gon
+       lying wholly inside one cell.
+       THE FACT: when no edge of the area's boundary touches the BOX of g, the box (a connected set) lies in ONE
+       face of the plane cut by those edges, so g — which lies in its box — is entirely interior or entirely
+       exterior, and ONE of its positions says which (the parity rule is exact where no edge is near).
+       ⚠ IT DECIDES ONLY WHERE THAT IS A PROOF, and says null (= ask the sweep, as before) everywhere else:
+         · a box any edge reaches, within MARGIN (≫ SAME_EPS, so no tolerance of the sweep is in play)
+         · a seam: the area or g outside [−180,180]×[−90,90] shrunk by MARGIN, or g a half-turn wide (so
+           unwrapWalk cannot have read it differently from its raw longitudes), or a pole
+         · anything that is not plain positions (a GeometryCollection, a non-number)
+       ⚠ IT IS NOT A SECOND RULE. It never answers 'boundary' and never reads a tolerance; it can only agree with
+       the sweep, and the check tests that (the same pairs asked with it off must give the same verdicts). */
+    const FACE_MARGIN = 1e-7;
+    const FACE = (typeof WeakMap === 'function') ? new WeakMap() : null;
+    function faceInfo(multi) {
+      let f = FACE && FACE.get(multi);
+      if (f !== undefined) return f;
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, n = 0;
+      for (const part of multi) for (const ring of part) for (const v of ring) { n++; if (v[0] < x0) x0 = v[0]; if (v[0] > x1) x1 = v[0]; if (v[1] < y0) y0 = v[1]; if (v[1] > y1) y1 = v[1]; }
+      const ok = n > 0 && x0 >= -180 + FACE_MARGIN && x1 <= 180 - FACE_MARGIN && y0 >= -90 + FACE_MARGIN && y1 <= 90 - FACE_MARGIN;
+      f = ok ? { x0: x0, x1: x1, y0: y0, y1: y1 } : null;
+      if (FACE) FACE.set(multi, f);
+      return f;
+    }
+    /* the box of g's raw positions, or null when g is not plain positions inside the safe range */
+    function plainBox(g) {
+      if (!g || typeof g !== 'object' || !Array.isArray(g.coordinates)) return null;
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, first = null, bad = false;
+      const samples = [];
+      const take = (pos) => {
+        const x = pos[0], y = pos[1];
+        if (typeof x !== 'number' || typeof y !== 'number' || !isFinite(x) || !isFinite(y)) { bad = true; return; }
+        if (!first) first = [x, y];
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      };
+      /* up to 8 positions spread along each run of positions — a ring's first 8 would all sit on one side of it */
+      const walk = (c) => {
+        if (bad) return;
+        if (typeof c[0] === 'number') { take(c); samples.push(c); return; }
+        if (Array.isArray(c[0]) && typeof c[0][0] === 'number') {
+          for (let i = 0; i < c.length; i++) { if (!Array.isArray(c[i])) { bad = true; return; } take(c[i]); }
+          for (let k = 0; k < 8 && k < c.length; k++) samples.push(c[Math.floor(k * c.length / Math.min(8, c.length))]);
+          return;
+        }
+        for (let i = 0; i < c.length; i++) { if (!Array.isArray(c[i])) { bad = true; return; } walk(c[i]); }
+      };
+      walk(g.coordinates);
+      if (bad || !first) return null;
+      if (!(x0 >= -180 + FACE_MARGIN && x1 <= 180 - FACE_MARGIN && y0 >= -90 + FACE_MARGIN && y1 <= 90 - FACE_MARGIN && x1 - x0 < 180)) return null;
+      return { x0: x0, x1: x1, y0: y0, y1: y1, at: first, samples: samples };
+    }
+    /* does segment a→b touch the closed rectangle r (already grown by the margin)? A miss is only claimed when both
+       ends are beyond the same side, or the four corners are all strictly on one side of the line. */
+    function segTouchesBox(ax, ay, bx, by, r) {
+      if ((ax < r.x0 && bx < r.x0) || (ax > r.x1 && bx > r.x1) || (ay < r.y0 && by < r.y0) || (ay > r.y1 && by > r.y1)) return false;
+      const dx = bx - ax, dy = by - ay;
+      const s0 = dx * (r.y0 - ay) - dy * (r.x0 - ax), s1 = dx * (r.y0 - ay) - dy * (r.x1 - ax);
+      const s2 = dx * (r.y1 - ay) - dy * (r.x0 - ax), s3 = dx * (r.y1 - ay) - dy * (r.x1 - ax);
+      if (s0 > 0 && s1 > 0 && s2 > 0 && s3 > 0) return false;
+      if (s0 < 0 && s1 < 0 && s2 < 0 && s3 < 0) return false;
+      return true;
+    }
+    /* 'interior' | 'exterior' of the AREA `area` for the whole of g, or null (ask the sweep) */
+    function faceOf(area, g) {
+      const multi = toMulti(area);
+      if (!multi || !multi.length) return null;
+      const zb = faceInfo(multi); if (!zb) return null;
+      const gb = plainBox(g); if (!gb) return null;
+      const r = { x0: gb.x0 - FACE_MARGIN, x1: gb.x1 + FACE_MARGIN, y0: gb.y0 - FACE_MARGIN, y1: gb.y1 + FACE_MARGIN };
+      if (r.x1 < zb.x0 || r.x0 > zb.x1 || r.y1 < zb.y0 || r.y0 > zb.y1) return 'exterior';
+      for (const part of multi) for (const ring of part) {
+        for (let i = 0, n = ring.length; i < n; i++) {
+          const e1 = ring[i], e2 = ring[(i + 1) % n];
+          if (segTouchesBox(e1[0], e1[1], e2[0], e2[1], r)) return reach(multi, gb);
+        }
+      }
+      return inParts(gb.at[0], gb.at[1], multi) ? 'interior' : 'exterior';
+    }
+    /* A box an edge reaches decides nothing about the whole of g — but ONE position of g that is clear of every edge
+       (by more than the margin) is a fact about that position: it is interior or exterior of the area by the parity
+       rule, exactly. 'some' says which of the two were found, so the caller takes only what its predicate can use:
+       contains(area, g) is false if any point of g is exterior; intersects is true if any point of g is interior.
+       ⚠ A position within the margin of an edge is skipped, never classified. */
+    const REACH_MAX_EDGES = 4096;
+    function reach(multi, gb) {
+      let edges = 0; for (const part of multi) for (const ring of part) edges += ring.length;
+      if (edges > REACH_MAX_EDGES) return null;
+      const m2 = FACE_MARGIN * FACE_MARGIN;
+      let inside = false, outside = false;
+      for (const q of gb.samples) {
+        const px = q[0], py = q[1];
+        let near = false;
+        for (const part of multi) { for (const ring of part) {
+          for (let i = 0, n = ring.length; i < n; i++) {
+            const e1 = ring[i], e2 = ring[(i + 1) % n];
+            const dx = e2[0] - e1[0], dy = e2[1] - e1[1], l2 = dx * dx + dy * dy;
+            let t = l2 > 0 ? ((px - e1[0]) * dx + (py - e1[1]) * dy) / l2 : 0; t = t < 0 ? 0 : (t > 1 ? 1 : t);
+            const ex = e1[0] + t * dx - px, ey = e1[1] + t * dy - py;
+            if (ex * ex + ey * ey <= m2) { near = true; break; }
+          }
+          if (near) break; }
+          if (near) break; }
+        if (near) continue;
+        if (inParts(px, py, multi)) inside = true; else outside = true;
+        if (inside && outside) break;
+      }
+      return { some: true, inside: inside, outside: outside };
+    }
+    /* the switch the check turns off to compare against the sweep; nothing in the product sets it */
+    function faceOn() { try { return !(typeof globalThis !== 'undefined' && globalThis.IntMapGisNoFace); } catch (_) { return true; } }
+
     function intersectsR(a, b) {
       if (!a || !b) return NO('missing-geometry');
       const ra = arealR(a); if (!ra.ok) return ra;
       const rb = arealR(b); if (!rb.ok) return rb;
+      if (faceOn() && available()) {
+        const fa = ra.areal ? faceOf(a, b) : null;
+        if (fa === 'interior' || (fa && fa.inside)) return OKV(true);
+        if (fa === 'exterior') return OKV(false);
+        const fb = rb.areal ? faceOf(b, a) : null;
+        if (fb === 'interior' || (fb && fb.inside)) return OKV(true);
+        if (fb === 'exterior') return OKV(false);
+      }
       const SA = bareStrands(a), SB = bareStrands(b);
       if (SA.length && SB.length && strandsMeet(SA, SB)) return OKV(true);
       /* A point or a line against an area: inside by the assignment rule is inside the closure; what
@@ -1020,6 +1143,12 @@ export function makeGisGeometry() {
       if (!a || !b) return NO('missing-geometry');
       const ra = arealR(a); if (!ra.ok) return ra;
       if (!ra.areal) return OKV(false);
+      /* (gis-scale) before arealR(b): a shape the fast path accepts is a half-turn wide in plain range, which cannot wrap the world, so the refusal arealR(b) would give cannot apply */
+      if (faceOn() && available()) {
+        const fc = faceOf(a, b);
+        if (fc === 'interior') return OKV(true);
+        if (fc === 'exterior' || (fc && fc.outside)) return OKV(false);
+      }
       const rb = arealR(b); if (!rb.ok) return rb;
       let shared = false;
       if (rb.areal) {

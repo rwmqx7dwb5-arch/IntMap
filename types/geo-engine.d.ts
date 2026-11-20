@@ -508,6 +508,8 @@ export interface GeoEngineFacade {
   id(): string;
   capabilities(): GeoEngineCapabilities;
   can(f: string): boolean;
+  /** how to draw something: candidates best-first with the capabilities each needs; `method` is null when none fits (js/render-plan.js) */
+  plan(candidates: { method: string; needs: string[] }[]): { method: string | null; index: number; missing: string[] };
   camera: GeoEngineCamera;
   coords: GeoEngineCoords;
   hasRenderer(): boolean;

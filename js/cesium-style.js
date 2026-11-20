@@ -190,7 +190,8 @@ window.IntMapStyle=(function(){
   /* Ordering comparisons in MapLibre are only defined for two numbers or two
      strings; mixing them is an error there, and here it is simply false — a
      wrong colour beats a dead layer. */
-  function cmp(op,a,b){
+  function cmp(op,a,b,col){
+    if(typeof a==='string'&&typeof b==='string'&&col){ const c=collate(a,b,col); return op==='<'?c<0:op==='<='?c<=0:op==='>'?c>0:c>=0; }
     if(typeof a!==typeof b) { const x=asNum(a), y=asNum(b); if(x==null||y==null) return false; a=x; b=y; }
     switch(op){ case '<': return a<b; case '<=': return a<=b; case '>': return a>b; case '>=': return a>=b; }
     return false;
@@ -205,7 +206,7 @@ window.IntMapStyle=(function(){
    leaves the list by being implemented — it never stays because nobody looked. 'distance' left on
    2026-11-20: js/hist-cities.js guards every era city name with it, and without it the Cesium globe
    kept today's names on a 1916 map. */
-const UNSUPPORTED=new Set(['format','image','number-format','collator','resolved-locale','within','pitch','distance-from-center']);
+const UNSUPPORTED=new Set(['format','image','pitch','distance-from-center']);
   const seenGaps=new Set();
   function gap(op){ seenGaps.add(op); }
 
@@ -261,6 +262,36 @@ const UNSUPPORTED=new Set(['format','image','number-format','collator','resolved
     return isFinite(d)?d:null;
   }
 
+  /* ── collator / number-format / within / resolved-locale ─────────────────
+     Intl does the work MapLibre's own implementation also delegates to Intl for. A collator is the
+     options object MapLibre builds; comparisons take it as their third argument. */
+  const DEF_LOCALE='en';
+  function collate(a,b,col){
+    const o=col||{};
+    const sens=o['case-sensitive']?(o['diacritic-sensitive']?'variant':'case'):(o['diacritic-sensitive']?'accent':'base');
+    try{ return new Intl.Collator(o.locale||undefined,{sensitivity:sens}).compare(a,b); }catch(_){ return a<b?-1:a>b?1:0; }
+  }
+  function numberFormat(n,o){
+    n=asNum(n); if(n==null) return '';
+    o=o||{};
+    const opt={};
+    if(o.currency) { opt.style='currency'; opt.currency=o.currency; }
+    if(o['min-fraction-digits']!=null) opt.minimumFractionDigits=o['min-fraction-digits'];
+    if(o['max-fraction-digits']!=null) opt.maximumFractionDigits=o['max-fraction-digits'];
+    try{ return new Intl.NumberFormat(o.locale||undefined,opt).format(n); }catch(_){ return String(n); }
+  }
+  function withinGeom(g,poly){
+    if(!g||!poly||!poly.coordinates) return false;
+    const polys=poly.type==='Polygon'?[poly.coordinates]:poly.type==='MultiPolygon'?poly.coordinates:null;
+    if(!polys){ gap('within'); return false; }
+    const inP=p=>polys.some(rs=>rs.length&&inRing(p,rs[0])&&!rs.slice(1).some(h=>inRing(p,h)));
+    const pts=g.type==='Point'?[g.coordinates]:g.type==='MultiPoint'?g.coordinates:null;
+    if(pts) return pts.length>0&&pts.every(inP);
+    const lines=g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:null;
+    if(lines) return lines.every(l=>l.every(inP));
+    return false;                              /* polygons: MapLibre's within does not accept them either */
+  }
+
   function evaluate(ex,ctx){
     try{ return _ev(ex,ctx||{},Object.create(null)); }catch(_){ return null; }
   }
@@ -288,6 +319,10 @@ const UNSUPPORTED=new Set(['format','image','number-format','collator','resolved
          raster producer rather than by widening every other evaluation context. */
       case 'elevation': return ctx.elevation==null?0:ctx.elevation;
       case 'distance': { const t=ex[1]; const f=ctx.geometry; if(!t||!f) return null; const d=geomDistance(f,t); return d==null?null:d; }
+      case 'collator': { const o=ex[1]||{}; const r={}; for(const k of Object.keys(o)) r[k]=_ev(o[k],ctx,vars); return r; }
+      case 'resolved-locale': { const c=A(1); try{ return new Intl.Collator((c&&c.locale)||undefined).resolvedOptions().locale; }catch(_){ return DEF_LOCALE; } }
+      case 'number-format': { const o=ex[2]||{}; const r={}; for(const k of Object.keys(o)) r[k]=_ev(o[k],ctx,vars); return numberFormat(A(1),r); }
+      case 'within': { const g=ctx.geometry; return g?withinGeom(g,ex[1]):false; }
       case 'line-progress': return ctx.lineProgress==null?0:ctx.lineProgress;
       case 'accumulated': return ctx.accumulated==null?0:ctx.accumulated;
       /* ── lookup ──────────────────────────────────────────────────────── */
@@ -332,9 +367,9 @@ const UNSUPPORTED=new Set(['format','image','number-format','collator','resolved
         return stops[stops.length-1][1]; }
       /* ── boolean ─────────────────────────────────────────────────────── */
       case '!': return !truthy(A(1));
-      case '==': return deepEq(A(1),A(2));
-      case '!=': return !deepEq(A(1),A(2));
-      case '<': case '<=': case '>': case '>=': return cmp(op,A(1),A(2));
+      case '==': case '!=': { const a=A(1), b=A(2); const col=ex.length>3?A(3):null;
+        const r=(col&&typeof a==='string'&&typeof b==='string')?collate(a,b,col)===0:deepEq(a,b); return op==='=='?r:!r; }
+      case '<': case '<=': case '>': case '>=': return cmp(op,A(1),A(2),ex.length>3?A(3):null);
       case 'all': { for(let i=1;i<ex.length;i++) if(!truthy(_ev(ex[i],ctx,vars))) return false; return true; }
       case 'any': { for(let i=1;i<ex.length;i++) if(truthy(_ev(ex[i],ctx,vars))) return true; return false; }
       /* ── arithmetic ──────────────────────────────────────────────────── */
@@ -429,7 +464,7 @@ const UNSUPPORTED=new Set(['format','image','number-format','collator','resolved
      layer; one that reads `get`/`feature-state` has to be evaluated per feature.
      Telling them apart is the difference between 49 circle layers costing one
      evaluation each and costing one per point. */
-  const FEATURE_OPS=new Set(['get','has','properties','geometry-type','id','feature-state','line-progress','accumulated','distance']);
+  const FEATURE_OPS=new Set(['get','has','properties','geometry-type','id','feature-state','line-progress','accumulated','distance','within']);
   function dependsOnFeature(ex){
     if(!Array.isArray(ex)) return false;
     if(typeof ex[0]==='string'&&FEATURE_OPS.has(ex[0])) return true;
