@@ -42,3 +42,7 @@ CI の check:perf が 3 行の超過を述べた（`perf-budget --update` が超
 - `atlas-console` +7.0 kB（1,061.2 → 1,068.2）: この PR が買ったもの——回答の下の費用の 1 行、モデル一覧の文、`delegationModels` の受け取り、`atlas-run-ledger` / `atlas-result-reuse` の取り込み。
 - `async.raw` +78.9 kB と `gis-core` +4.9 kB: **この PR の差分ではない**。同じ CI の `gis-core` は main の GIS 変更（#1288・#1320 系）で増えたもので、台帳に入っていなかった分が merge ref の測定で出た。上限を引き下げた bot（#1310）が測った時点より後の main の増分。
 - なお手元のビルドは `intmap-history-pages` の closeBundle（データ未取得）で途中で止まったが、`perf-budget` が読む成果物は CI と同じ 3 行を示した。
+
+## 6. 検証で見つかって直したもの（CI の Regression 2/3）
+
+- 費用記録がターンの予算時計 `opts.now` を追加で読んでいた。注入された時計は**読むたびに進む**（`atlas-deadlines` R452 ③は 1 回 100 ms 進む時計で 250 ms の予算を測る）ので、記録のための読み取りがツールの実行前に予算を使い切らせ、「ツールを 1 回も呼べないターン」になった。記録は自分の壁時計（`Date.now()`）を持ち、ターンの予算時計には触れない。記録がターンの挙動を変えない、という記録の約束を、テストが逆に破っていたことで見つけた。

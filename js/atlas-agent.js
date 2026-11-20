@@ -751,7 +751,9 @@ export function makeAtlasAgent() {
       /* (#R452) the turn's clock. `now()` is injected in the node checks, which have no wall time. */
       const now = (typeof opts.now === 'function') ? opts.now : (() => Date.now());
       const startedAt = now();
-      const ledger = makeRunLedger({ now });   /* (job-cost-ledger) */
+      /* (job-cost-ledger) the record has its OWN wall clock: `now` is the turn's budget clock and an injected one advances on every read, so reading it for the record would spend the turn's budget */
+      const wallNow = () => Date.now();
+      const ledger = makeRunLedger({ now: wallNow });
       if (PLAN) { try { PLAN.beginTurn(); } catch (_) { /* a ledger never breaks the turn */ } }
       const endPlan = (how) => { if (PLAN) { try { PLAN.endTurn(how); } catch (_) { /* as above */ } } };
       const outOfTime = () => (lim.turnBudgetMs > 0) && ((now() - startedAt) >= lim.turnBudgetMs);
@@ -801,7 +803,7 @@ export function makeAtlasAgent() {
         if (outOfTime()) { stopped = 'time_budget'; break; }
 
         let reply = null;
-        const modelT0 = now();
+        const modelT0 = wallNow();
         try {
           /* ⚠ A SNAPSHOT, NOT THE LIVE ARRAY. The loop keeps appending to `transcript`; handing the
              adapter the array itself means the request it was given changes underneath it while it
@@ -829,7 +831,7 @@ export function makeAtlasAgent() {
           trace.transportErrorInfo = errorInfo(e);   /* (atlas-completion) the code / status / retryable the message flattened */
           break;
         }
-        if (reply) { const u = reply.usage || {}; ledger.model({ model: u.model, costUsd: u.costUsd, priceKnown: u.priceKnown, ms: now() - modelT0, web: reply.webUsed === true }); }
+        if (reply) { const u = reply.usage || {}; ledger.model({ model: u.model, costUsd: u.costUsd, priceKnown: u.priceKnown, ms: wallNow() - modelT0, web: reply.webUsed === true }); }
         /* (atlas-completion) A REPLY THE PROVIDER ITSELF CALLED INCOMPLETE (OpenAI `status:"incomplete"`,
            ran past its output length, or a content filter cut it) is still read as a step — what it
            holds is real — but it is not silently taken as finished: the trace says which step and why. */
@@ -1161,6 +1163,7 @@ export function makeAtlasAgent() {
           }
           let out = null;
           const t0 = now();
+          const toolW0 = wallNow();
           /* (atlas-plan-on-map) the step this call serves shows it running until its verdict arrives */
           if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed) }); } catch (_) { } }
           try {
@@ -1169,7 +1172,7 @@ export function makeAtlasAgent() {
             out = { ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
           }
           spans.push([t0, now()]);
-          try { ledger.tool({ name: capOfCall(p.routed) || call.name, ms: now() - t0, ok: !(out && out.ok === false), delegatedCostUsd: out && out.delegatedCostUsd, delegatedTasks: out && Array.isArray(out.delegated) ? out.delegated.length : undefined }); } catch (_) { /* a record never breaks the turn */ }
+          try { ledger.tool({ name: capOfCall(p.routed) || call.name, ms: wallNow() - toolW0, ok: !(out && out.ok === false), delegatedCostUsd: out && out.delegatedCostUsd, delegatedTasks: out && Array.isArray(out.delegated) ? out.delegated.length : undefined }); } catch (_) { /* a record never breaks the turn */ }
           if (!out || typeof out !== 'object') out = { ok: false, error: 'no_result', message: 'the tool returned nothing' };
           executedHere++;
           trace.executed++;
