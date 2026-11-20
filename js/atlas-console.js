@@ -1203,7 +1203,15 @@ export function atlasConsole(HOST){
        inspected) the moment Atlas loads rather than only once a question is in flight. */
     let _turnRunAction=null;
     const TOOLS=makeAtlasToolSurface({ capabilities:CAPS, schemas:SCHEMAS,
-      runAction:(action,turn)=>(_turnRunAction?_turnRunAction(action,turn):Promise.resolve({ ok:false, error:'no_turn', message:'no turn is running' })) });
+      runAction:(action,turn)=>(_turnRunAction?_turnRunAction(action,turn):_kernelRun(action)) });
+    /* (exec-platform) NO ATLAS TURN IS OPEN — a background job's saved operation applied when the reader comes back, or a program run from the compute card. The call goes through the kernel
+       itself (IntMapOS.execute: resolve, validate, run, verify, the undo ledger), the same door a turn's own call reaches, with no turn id. It answered 'no_turn' before, so those paths could
+       never run a capability outside a live question (the browser spec of the Python bridge failed on exactly that). A turn-only capability (research.delegate) still says so for itself. */
+    async function _kernelRun(action){ try{ const type=action&&action.type; const args=Object.assign({},action); delete args.type; for(const k of Object.keys(args)) if(k.slice(0,2)==='__') delete args[k];
+      const OS=(typeof window!=='undefined')&&window.IntMapOS; if(!OS||typeof OS.execute!=='function') return { ok:false, error:'no_turn', message:'no turn is running' };
+      const r=await OS.execute(type,args,{ source:'program' }); const st=r&&r.status; const ok=st==='completed'||st==='partial';
+      return { ok:ok, html:(r&&r.html)||'', meta:Object.assign({ status:st, code:r&&r.code, produced:(r&&r.produced)||[] },(r&&r.meta)||(r&&r.rawResult&&r.rawResult.meta)||{}) }; }
+      catch(e){ return { ok:false, error:'execution_failed', message:String((e&&e.message)||e) }; } }
     /* ---- (#R43) CHOROPLETH — genuine "data + map" combined output ("データやレイヤー、地図を組み合わせた複合的な
        処理＆出力"): shade EVERY country by a metric on a YlGnBu ramp (log-scaled for skewed metrics) with a legend,
        reusing the same nlq-src feature-state source the highlights use. ---- */

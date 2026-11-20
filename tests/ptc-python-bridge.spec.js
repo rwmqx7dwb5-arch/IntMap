@@ -22,6 +22,8 @@ test('compute.run with grants: Python calls capabilities in a loop, refusals are
   test.skip(!reach.ok, 'the pinned Pyodide distribution is unreachable from this runner: ' + JSON.stringify(reach));
 
   const r = await page.evaluate(async () => {
+    /* the dispatch the kernel runs capabilities through is installed by the Atlas console, a lazy chunk: a call made before it has loaded is `unavailable` (atlas-kernel-not-loaded) — not a Python fault */
+    await window.IntMapLazy.need('atlasConsole');
     const D = window.IntMapData;
     D.add({ id: 'ptc-spec-csv', title: 'ptc spec csv', features: [1, 2, 3, 4].map((n) => ({ type: 'Feature', geometry: null, properties: { n } })), provenance: { kind: 'import', file: 'ptc.csv' } });
     const code = [
@@ -40,7 +42,7 @@ test('compute.run with grants: Python calls capabilities in a loop, refusals are
     const m = (ex && ex.meta && ex.meta.compute) || {};
     const noGrant = await window.IntMapOS.execute('compute.run', { code: 'result = await cap_call("data.value", {"country": "Japan"})' });
     const ng = (noGrant && noGrant.meta && noGrant.meta.compute) || {};
-    return { ok: m.ok, why: m.why, detail: m.detail, value: m.values && m.values.result && m.values.result.value, bridge: m.bridge, noGrant: { ok: ng.ok, why: ng.why, detail: JSON.stringify(ng.detail || '').slice(0, 300) } };
+    return { ok: m.ok, why: m.why, detail: m.detail, value: m.values && m.values.result && m.values.result.value, bridge: m.bridge, noGrant: { ok: ng.ok, why: ng.why, detail: JSON.stringify(ng.detail || '').slice(-400) } };
   });
 
   expect(r.ok, JSON.stringify(r)).toBe(true);

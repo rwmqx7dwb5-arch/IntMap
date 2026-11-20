@@ -155,7 +155,8 @@ const PRELUDE = [
   '    return list(_im_pick(i).get("features") or [])',
   /* ── the capability bridge (js/cap-bridge.js): `_IM_BRIDGE` is None unless the run was opened with grants ── */
   'async def _im_ask(kind, a=None, b=None):',
-  '    if _IM_BRIDGE is None:',
+  /* a JS null crosses into Pyodide as JsNull, not None (observed in a real browser, 2026-11-21: the run without grants died with "'JsNull' object is not callable" instead of saying there is no bridge) — so the test is "is there a callable port", not "is it None" */
+  '    if _IM_BRIDGE is None or not callable(_IM_BRIDGE):',
   '        raise RuntimeError("no capability bridge in this run: call compute.run with grants (for example [\'read\']) to let the code call capabilities")',
   '    return _im_json.loads(await _IM_BRIDGE(kind, a, None if b is None else _im_json.dumps(b, allow_nan=False)))',
   'async def cap_call(capability, args=None):',

@@ -43,3 +43,14 @@ migration `20261121100000_atlas_job_resume.sql` の `atlas_job_resume(p_job, p_o
 - Python の実行そのものはブラウザの Pyodide。サーバのジョブは `compute.run` を**保存**してページに実行させる（サーバで Python は走らない）。
 - `read` 区分に twin を足したのは今回は 0 件（`SERVER_CAPS` は 3 のまま）。twin が要るのは対象が上流の公開 API を直接読める能力だけで、
   区分が導くのは「持てるか」まで。残りは能力ごとの実装で、手で並べずに足せる土台はできた。
+
+## 6. 実ブラウザで Python ブリッジを動かして見つかった 3 つの欠陥（#1307 の spec はネットワーク無しで skip されていて、一度も走っていなかった）
+1. **Atlas の問いが開いていないと、プログラムは能力を 1 つも呼べなかった**。`makeAtlasToolSurface` の `runAction` は走っている問いの実行器
+   （`_turnRunAction`）だけを見て、無ければ `no_turn` を返していた。`compute.run` を Atlas の外から実行した場合、そして**ジョブが保存した操作を
+   ページが戻って適用する場合**がどちらもこれに当たる。問いが無いときはカーネル（`IntMapOS.execute`＝解決・検証・実行・観測・undo の同じ戸口）で
+   実行する `_kernelRun` を足した。実測: Python から `data.value`（日本の人口）と、`state` を許可した `view.flyTo`（地図がロッテルダムへ動く）が通る。
+2. **許可なしの実行の `cap_call` は「ブリッジが無い」と言わず `'JsNull' object is not callable` で死んでいた**。JS の null は Pyodide で `None` ではなく
+   `JsNull` になる。判定を「呼べるポートがあるか」へ。
+3. 仕様の側: カーネルの dispatch は Atlas コンソール（遅延 chunk）が入れるので、読み込み前の呼び出しは `unavailable` になる（spec が競合していた）。
+   spec は `atlasConsole` を待つようにし、失敗の本文は traceback の末尾で読むようにした。
+`IM_PREBUILT_DIST=1 npx playwright test tests/ptc-python-bridge.spec.js` が緑（11 秒）。
