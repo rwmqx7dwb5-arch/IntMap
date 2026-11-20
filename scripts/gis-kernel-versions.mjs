@@ -145,7 +145,8 @@ export const KERNELS = {
   /* (gov-gis-terms) ops-12 -> ops-13: a REPLAYED STEP NOW REGISTERS A RECORD THAT SAYS MORE — `provenance.upstreams` carries each
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
-  'js/gis-ops.js': { version: 'ops-13', sha256: 'bcbbfab90f56f08f81e4f99e92732fac1910c4c3fc7645bcdb3df95ea44295c4' },
+  /* (spatiotemporal-join) ops-13 -> ops-14: the period a join / spatialJoin / nearestJoin / timeJoin / aggregate result states is now derived from BOTH inputs (it was the first input's), a row-wise input gives the output two derived period columns, and the record carries `warnings` and `geoBasis`. No existing geometry or cell changes; what the record states about WHEN does. */
+  'js/gis-ops.js': { version: 'ops-14', sha256: '2a59235f1efdaca9c32f73614fd811cb9b7011412e1131f618780ae794e86131' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
