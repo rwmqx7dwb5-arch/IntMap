@@ -7,7 +7,8 @@
 //  supplies what only the runtime has — DNS, the caller's identity, and the project-wide caps.
 //
 //  NOT A BROWSER: no script runs, no screenshot. A page that is empty until a script runs is answered
-//  `needsBrowser`. A real browser engine can be put behind the same request/answer shapes later.
+//  `needsBrowser`. The REAL-browser tier is the same function at `?tier=render` (below `renderTier`): read-only, its own
+//  switch/buckets, off until CF_BROWSER_ACCOUNT_ID + CF_BROWSER_API_TOKEN exist (then `render_unconfigured`).
 //
 //  WHO MAY CALL: a signed-in reader (verify_jwt ON). Atlas requires a login already, and this function
 //  makes outbound requests to hosts the reader named, which is not a thing to offer to the open internet.
@@ -35,6 +36,7 @@
 import { corsFor, readCapped, resolvesPublic, RelayError, relayFail } from "../_shared/relay-guard.js";
 import { callerGate, forceGrant } from "../_shared/rate-limit.js";
 import { browse } from "../_shared/web-browse.js";
+import { render } from "../_shared/web-render.js";
 
 const CORS = { ...corsFor(), "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const env = (k) => Deno.env.get(k) || "";
@@ -53,6 +55,37 @@ async function sha256(bytes) {
   const d = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
   return Array.from(d, (b) => b.toString(16).padStart(2, "0")).join("");
 }
+/* ── the real-browser tier ────────────────────────────────────────────────────────────────────────────
+   Order: (1) its own kill switch WEB_RENDER_DISABLED  (2) no provider secret → `render_unconfigured` answered BEFORE any bucket is touched
+   (nothing is spent, nothing leaves)  (3) its OWN per-caller bucket `web-render:ip`  (4) its OWN project-wide bucket, fails closed.
+   Both numbers are ESTIMATES with no live measurement behind them (no provider contract yet): one render is billed, so they start small —
+   capacity WEB_RENDER_BURST (default 10), refill WEB_RENDER_PER_MIN (default 6). They expire the first time a real reader meets `capped`
+   or the first invoice shows the real unit cost. Secrets: CF_BROWSER_ACCOUNT_ID + CF_BROWSER_API_TOKEN (Cloudflare Browser Rendering). */
+const RENDER_READER_PER_MIN = 4;
+async function renderTier(req) {
+  const off = env("WEB_RENDER_DISABLED").toLowerCase();
+  if (off === "1" || off === "true") return reply({ error: "disabled" }, 503);
+  const cfg = { provider: "cloudflare", accountId: env("CF_BROWSER_ACCOUNT_ID"), token: env("CF_BROWSER_API_TOKEN") };
+  if (!cfg.accountId || !cfg.token) return reply({ ok: false, code: "render_unconfigured", viaBrowser: true }, 200);
+  const limited = await callerGate(req, CORS, { scope: "web-render", readerPerMin: RENDER_READER_PER_MIN, env });
+  if (limited) return limited;
+  const grant = await forceGrant("web-render-project", { capacity: positive("WEB_RENDER_BURST", 10), refillPerSec: positive("WEB_RENDER_PER_MIN", 6) / 60, env });
+  if (grant !== "granted") return reply({ error: grant === "capped" ? "capped" : "unavailable" }, 429);
+  let input;
+  try {
+    const raw = await readCapped(req, MAX_BODY_BYTES);
+    input = JSON.parse(new TextDecoder().decode(raw));
+  } catch (e) {
+    if (e instanceof RelayError) return reply({ error: "too_large" }, 413);
+    return reply({ error: "bad_request" }, 400);
+  }
+  if (!input || typeof input !== "object") return reply({ error: "bad_request" }, 400);
+  try {
+    return reply(await render(input, { resolvesPublic, cfg }), 200);
+  } catch (e) {
+    return relayFail(e, { ...CORS, "cache-control": "no-store" });
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -60,6 +93,10 @@ Deno.serve(async (req) => {
 
   const off = env("WEB_BROWSE_DISABLED").toLowerCase();
   if (off === "1" || off === "true") return reply({ error: "disabled" }, 503);
+
+  /* the REAL-BROWSER tier (?tier=render): costs money per call, so it has its own switch, its own per-caller bucket and its own project-wide bucket,
+     and it is asked BEFORE the light tier's caps are touched (a render must not spend the light tier's budget, nor the reverse) */
+  if (new URL(req.url).searchParams.get("tier") === "render") return await renderTier(req);
 
   const limited = await callerGate(req, CORS, { scope: "web-browse", readerPerMin: READER_PER_MIN, env });
   if (limited) return limited;

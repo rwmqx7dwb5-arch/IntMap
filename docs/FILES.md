@@ -2112,7 +2112,7 @@ supabase/
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-entities.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
-                                  rate-limit.js / relay-guard.js / volcano-parse.js / web-browse.js / who-don-extract.js /
+                                  rate-limit.js / relay-guard.js / volcano-parse.js / web-browse.js / web-render.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
                                   fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /

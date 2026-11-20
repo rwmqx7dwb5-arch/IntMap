@@ -394,6 +394,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
       ["web.browse","browse","openPage,webBrowse,operatePortal,browsePortal,navigateSite,portalSearch","research","none","","explanation","read","none","","","external"],
       ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
+      ["web.render","render","realBrowser,renderPage,screenshotPage,seePage,lookAtPage,scriptPage","research","none","","explanation","read","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 

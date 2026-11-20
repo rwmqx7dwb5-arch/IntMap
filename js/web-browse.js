@@ -9,8 +9,9 @@
  *  dropped file takes (window.GeoJSONUpload.handle, js/map-ui.js).
  *
  *  ⚠ WHAT IS NOT HERE, ON PURPOSE
- *   · No engine. The function is replaceable behind the same input and answer shapes (a real browser for a
- *     page that is drawn by script); nothing here names how a page is read.
+ *   · No engine. The light tier is replaceable behind the same shapes; the REAL-browser tier (render, the
+ *     same function's `?tier=render`) is for pages drawn by script and for LOOKING at a page. It is read-only:
+ *     it loads an address and reports — no click, no typing, no form, no credential (supabase/functions/_shared/web-render.js).
  *   · No credentials. A login wall, a CAPTCHA or a bot challenge comes back as `handoff` and the reader does
  *     that step in their own browser (the answer says what to do and gives the address). Atlas never holds a
  *     secret; the function never fills a password field.
@@ -46,6 +47,11 @@ export function sayFor(code, L) {
     case 'rate_limit': return L('Too many page requests from this address. Try again in a minute.', 'このアドレスからのページ取得が多すぎます。1 分ほど待ってください。');
     case 'disabled': return L('Page browsing is switched off right now.', 'ページ閲覧は現在停止されています。');
     case 'signed_out': return L('Sign in to let Atlas open web pages.', 'Atlas にウェブページを開かせるにはログインしてください。');
+    case 'render_unconfigured': return L('The real-browser tier (for pages drawn by script, and for looking at a page as a picture) is not set up on this site yet.', '実ブラウザ層(スクリプトで描かれるページや、ページを画像として見る用途)は、このサイトではまだ用意されていません。');
+    case 'render_busy': return L('The real browser is busy right now. Try again in a minute.', '実ブラウザは今混み合っています。1 分ほど待ってからもう一度お試しください。');
+    case 'render_auth': return L('The real-browser service rejected this site\'s credentials (an operator problem, not yours).', '実ブラウザのサービスがこのサイトの認証を拒否しました(運営側の問題です)。');
+    case 'render_unreachable': return L('The real-browser service did not answer.', '実ブラウザのサービスが応答しませんでした。');
+    case 'render_failed': return L('The real browser could not render that page.', '実ブラウザがそのページを描画できませんでした。');
     case 'no_endpoint': return L('Page browsing is not available in this build.', 'このビルドではページ閲覧を使えません。');
     default: return L('Page browsing failed (' + code + ').', 'ページ閲覧に失敗しました(' + code + ')。');
   }
@@ -69,14 +75,14 @@ export function webBrowseDoor(HOST) { return _door || (_door = makeWebBrowse(HOS
 function makeWebBrowse(HOST) {
   let state = null;
 
-  function endpoint() {
+  function endpoint(tier) {
     let b = '';
     try { b = String((window && window.SUPABASE_URL) || '').replace(/\/+$/, ''); } catch (_) { b = ''; }
-    return b ? b + '/functions/v1/web-browse' : '';
+    return b ? b + '/functions/v1/web-browse' + (tier ? '?tier=' + tier : '') : '';
   }
 
-  async function call(body, signal) {
-    const url = endpoint();
+  async function call(body, signal, tier) {
+    const url = endpoint(tier);
     if (!url) return { ok: false, code: 'no_endpoint' };
     let tok = '';
     try {
@@ -108,6 +114,15 @@ function makeWebBrowse(HOST) {
     return r;
   }
 
+  /* render({url?,wait,viewport,fullPage,screenshot,textChars}) → the REAL-browser tier's answer (same page shape as browse, plus `screenshot`), state kept
+     so a rendered page's links are clickable by the light tier. READ-ONLY by construction: only these fields are ever sent. */
+  async function render(a, signal) {
+    const body = { url: a.url, wait: a.wait, viewport: a.viewport, fullPage: a.fullPage, screenshot: a.screenshot, textChars: a.textChars, state };
+    const r = await call(body, signal, 'render');
+    if (r && r.state) state = r.state;
+    return r;
+  }
+
   /* fetchFile({ref|url}) → { ok, file:File, meta } — the bytes of ONE file, as the page's file door takes them */
   async function download(a, signal) {
     const r = await call({ action: 'download', url: a.url, ref: a.ref, state }, signal);
@@ -131,5 +146,5 @@ function makeWebBrowse(HOST) {
     return { ok: true, label: o.label || label || file.name, format: o.format || null, rows: o.n == null ? null : o.n, datasetId: o.datasetId || null, grid: !!o.grid };
   }
 
-  return { browse, download, toDataset, reset() { state = null; }, hasPage() { return !!(state && state.url); }, currentUrl() { return state && state.url || ''; } };
+  return { browse, render, download, toDataset, reset() { state = null; }, hasPage() { return !!(state && state.url); }, currentUrl() { return state && state.url || ''; } };
 }
