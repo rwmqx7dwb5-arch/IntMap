@@ -13,3 +13,5 @@ date: 2026-11-20
 - 否定した案: Skill を Capability として登録する（能力表・schema・実行器・`atlas-discoverable` の全部に偽の実装を要求する）／検索結果へ本文を載せる（1 万字の問題を再生産する）／固定手順として強制する（`CONSTITUTION.md` §5）。
 
 検査: `tests/atlas-skills-checks.test.mjs`、`npm run check:capabilities`。
+
+perf 予算: `atlas-console`（遅延 chunk）が約 26 kB 増えた（Skill の en+jp 散文 4 本。起動時の読み込みには入らない）。`async.gzip`・`atlas-console`・`dist.assets` の天井をその分だけ引き上げた（`perf-budget.mjs --update`）。二言語の文言は他と同じ `[en, jp]` の組で持つ（`check:i18n` の言語キー付きオブジェクト禁止に従う）。
