@@ -191,6 +191,9 @@ export function validate(id, decl) {
   const s = toMs(lit(decl.from)), e = toEndMs(lit(decl.to));
   if (s != null && e != null && s > e) say('from ' + decl.from + ' is after to ' + decl.to);
   if (decl.kind === 'enduring' && !isPair(decl.why)) say('an enduring subject says why its measurement speaks for the whole clock (`why` en + jp)');
+  if (decl.grain != null && (decl.grain === 'fetch' || periodMs(decl.grain) == null)) say('grain «' + decl.grain + '» is not a cadence (P1D, P1Y …) — it is stated only where the source states its resolution');
+  if (decl.geoBasis != null && !basisOf(decl)) say("geoBasis is { borders:'fixed', year } | { borders:'as-of-period' } | { borders:'present' }");
+  if (decl.geoBasis != null && !decl.by) say('geoBasis has no author — `by` names the file or upstream page that says how its units were drawn');
   if (decl.rangeUnstated != null && !isPair(decl.rangeUnstated)) say('`rangeUnstated` is the sentence saying who has not stated the range, en + jp');
   if (!isPair(decl.says)) say('`says` — what states the range, in en + jp (CONSTITUTION.md §7)');
   return bad;
@@ -306,3 +309,101 @@ export function onMap(decl, drawnBy) {
 export const withholds = (decl, v) => !!decl && v.status === 'unstated' && !decl.self;
 /** a READER'S tick on a layer whose module moves the clock into its record is let through (`entry`) */
 export const entersOnTick = (decl) => !!(decl && decl.entry);
+
+/* ══ ALIGNMENT — TWO LAYERS COMPARED OR JOINED AT ONE INSTANT (temporal-claims) ═══════════════════════════════
+ *  `verdict` answers «does THIS source state THIS instant». Putting two layers side by side — a statistic painted onto
+ *  a border, a company's sites beside a 1914 map — asks a second question that neither verdict answers: do the two
+ *  statements, taken together, say ONE thing about ONE instant? Three ways they do not, none visible in a year match:
+ *    carried   one side shows ANOTHER date than the clock's (a series past its last year) — the pair is not simultaneous
+ *    grain     the two sources speak at different resolutions (a daily border, a yearly series, a present-only list):
+ *              the pair can only say what the COARSER one says
+ *    basis     the units were drawn differently: a series on today's borders shares a country code with a polity drawn
+ *              as it was in 1914, and not a territory. A declaration says so with `geoBasis` — the same vocabulary a GIS
+ *              dataset's provenance uses (js/gis-ops.js geoBasisOf): { borders:'fixed', year } | { borders:'as-of-period' },
+ *              plus `present` (today's borders: its year is the clock's real now, so it cannot be a written number)
+ *  ⚠ SILENCE IS NOT AGREEMENT. A side that declares no `geoBasis` while the other does is `basis-unverified`, counted apart
+ *  from a match. `grain` is declared only where a source states its cadence; an unstated grain is never filled in.
+ *
+ *  align(declA, declB, at, rtA?, rtB?) → { status, reasons[], a, b, grainMs?, skewMs? }
+ *    status (closed, in this precedence):  unknown → unjoinable → basis-mismatch → skewed → basis-unverified → coarsened → aligned
+ *  `reasons` is a closed set the message and the instrument read: a-unstated b-unstated a-unknown b-unknown
+ *    basis-fixed-year a-carried b-carried grain-differs grain-unstated basis-silent                                      */
+export const ALIGN_STATUSES = Object.freeze(['unknown', 'unjoinable', 'basis-mismatch', 'skewed', 'basis-unverified', 'coarsened', 'aligned']);
+const yearOf = (ms) => new Date(ms).getUTCFullYear();
+
+/** the resolution a declaration's statements have, in ms: 0 (an instant), a positive span, or null (not stated) */
+export function grainOf(decl) {
+  if (!decl) return null;
+  if (decl.grain != null) return periodMs(decl.grain);
+  if (decl.kind === 'instant' || decl.kind === 'live') return 0;
+  if (decl.kind === 'snapshot' && decl.period != null) return decl.period === 'fetch' ? 0 : periodMs(decl.period);
+  return null;
+}
+/** how a declaration's units were drawn — the shape js/gis-ops.js geoBasisOf accepts, or null (stated nothing) */
+export function basisOf(decl) {
+  const b = decl && decl.geoBasis;
+  if (!b || typeof b !== 'object') return null;
+  if (b.borders === 'fixed' && typeof b.year === 'number' && isFinite(b.year)) return { borders: 'fixed', year: b.year };
+  if (b.borders === 'as-of-period' || b.borders === 'present') return { borders: b.borders };
+  return null;
+}
+/* the instant a side actually shows: the clock's when it states it, the bound it carries when it carries, else none */
+function shownAt(v, t) {
+  if (v.status === 'stated') return t;
+  if (v.status === 'carried') return v.shows != null ? toEndMs(v.shows) : null;
+  return null;
+}
+export function align(declA, declB, at, rtA, rtB) {
+  const t = at.live ? (at.now != null ? toMs(at.now) : Date.now()) : toMs(at.when);
+  const side = (d, rt) => {
+    const v = verdict(d, at, rt);
+    return { status: v.status, reason: v.reason, shownAt: shownAt(v, t), grainMs: grainOf(d), basis: basisOf(d) };
+  };
+  const a = side(declA, rtA), b = side(declB, rtB);
+  const reasons = [];
+  const out = (status, more) => Object.assign({ status, reasons, a, b }, more || {});
+  for (const [k, s] of [['a', a], ['b', b]]) { if (s.status === 'unstated') reasons.push(k + '-unstated'); else if (s.status === 'unknown') reasons.push(k + '-unknown'); }
+  if (a.status === 'unknown' || b.status === 'unknown') return out('unknown');
+  if (a.status === 'unstated' || b.status === 'unstated') return out('unjoinable');
+  /* basis — judged at the instant the PAIR is asked about */
+  const ba = a.basis, bb = b.basis;
+  if (ba && bb) {
+    /* the year each side's units are drawn for: a fixed year, today's (`present`), or the instant's own (`as-of-period`) */
+    const yr = (x) => (x.borders === 'fixed' ? x.year : x.borders === 'present' ? yearOf(at.now != null ? toMs(at.now) : Date.now()) : (t == null ? null : yearOf(t)));
+    const ya = yr(ba), yb = yr(bb);
+    const bad = ya != null && yb != null && ya !== yb;
+    if (bad) { reasons.push('basis-fixed-year'); return out('basis-mismatch'); }
+  }
+  const carried = [['a', a], ['b', b]].filter(([, s]) => s.status === 'carried');
+  if (carried.length) {
+    for (const [k] of carried) reasons.push(k + '-carried');
+    const skew = (a.shownAt != null && b.shownAt != null) ? Math.abs(a.shownAt - b.shownAt) : null;
+    return out('skewed', skew == null ? {} : { skewMs: skew });
+  }
+  if ((ba && !bb) || (!ba && bb)) { reasons.push('basis-silent'); return out('basis-unverified'); }
+  const ga = a.grainMs, gb = b.grainMs;
+  if (ga == null || gb == null) {
+    /* a grain nobody stated is not «fine»: the pair is only as precise as what is declared; with neither stated, no claim is made */
+    if (ga != null || gb != null) { reasons.push('grain-unstated'); return out('coarsened', { grainMs: ga != null ? ga : gb }); }
+    return out('aligned');
+  }
+  if (ga !== gb) { reasons.push('grain-differs'); return out('coarsened', { grainMs: Math.max(ga, gb) }); }
+  return out('aligned');
+}
+
+/** the sentence for a pair, en + jp; `na` / `nb` are the layers' display names */
+export function explainAlign(r, na, nb, at) {
+  const live = !at || at.live;
+  const day = live ? '' : isoDay(toMs(at.when));
+  const dEn = live ? 'the present' : day, dJp = live ? '現在' : day;
+  const span = (ms) => { const y = ms / (365.2425 * DAY); return y >= 0.9 ? { en: Math.round(y) + ' y', jp: Math.round(y) + '年' } : { en: Math.round(ms / DAY) + ' d', jp: Math.round(ms / DAY) + '日' }; };
+  switch (r.status) {
+    case 'aligned': return { en: na + ' and ' + nb + ' state the same instant (' + dEn + ') at the same resolution', jp: na + ' と ' + nb + ' は同じ時点（' + dJp + '）を同じ粒度で述べています' };
+    case 'coarsened': { const g = r.grainMs ? span(r.grainMs) : { en: 'the coarser source’s resolution', jp: '粗い方の粒度' }; return { en: na + ' and ' + nb + ' state ' + dEn + ' at different resolutions — the pair speaks only to ' + g.en, jp: na + ' と ' + nb + ' は ' + dJp + ' を異なる粒度で述べています——組み合わせが言えるのは ' + g.jp + ' の粒度までです' }; }
+    case 'skewed': return { en: na + ' and ' + nb + ' are not the same date: one shows another date than ' + dEn + (r.skewMs != null ? ' (' + span(r.skewMs).en + ' apart)' : ''), jp: na + ' と ' + nb + ' は同じ日付ではありません：片方は ' + dJp + ' と別の時点を示しています' + (r.skewMs != null ? '（' + span(r.skewMs).jp + 'の差）' : '') };
+    case 'basis-mismatch': return { en: na + ' and ' + nb + ' draw their units differently (one on a fixed year’s borders, the other for the date) — a shared code is not a shared territory', jp: na + ' と ' + nb + ' は単位の引き方が違います（一方は固定年の国境、他方はその日の国境）——同じコードは同じ領域を意味しません' };
+    case 'basis-unverified': return { en: 'One of ' + na + ' / ' + nb + ' does not say how its units were drawn — the pair is not verified as the same territory', jp: na + ' / ' + nb + ' の一方は単位の引き方を述べていません——同じ領域であることは確かめられていません' };
+    case 'unjoinable': return { en: 'Not comparable at ' + dEn + ': ' + (r.reasons.indexOf('a-unstated') >= 0 ? na : nb) + ' states nothing for that date', jp: dJp + ' では比較できません：' + (r.reasons.indexOf('a-unstated') >= 0 ? na : nb) + ' はその日を述べていません' };
+    default: return { en: 'The range of ' + na + ' or ' + nb + ' is read when the layer loads', jp: na + ' または ' + nb + ' の範囲はレイヤーの読み込み時に分かります' };
+  }
+}

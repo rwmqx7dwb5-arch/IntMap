@@ -968,6 +968,10 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   API の住所が他の js/ に現れると `tests/country-analysis-unify-checks.test.mjs` が落ちる。
 - **自前の時計を持っていた行は時計に従う**: 世界銀行の 61 行（`js/wb-layers.js` `yearFor`。「最新（国ごと）」は現在に戻す）、NASA GIBS の 4 行
   （`js/layer-packs.js` `gxAt`）。自前の日付を残す行（年降水量・人口グリッド・WorldCover・海流・選挙）は `ownDate` で宣言し、範囲の中では carried と述べる。
+- **2 層を同じ時点で比べる判定（`align`）**: `verdict` は 1 層ごとの答えで、組み合わせの答えではない。`js/layer-time.js` の `align(A, B, at)` が
+  `unknown → unjoinable → basis-mismatch → skewed → basis-unverified → coarsened → aligned` のいずれかを返す。宣言は任意に `grain`（典拠が述べた解像度）と
+  `geoBasis`（`fixed`+年／`as-of-period`／`present`。GIS の `provenance.geoBasis` と同じ語彙）を持ち、**述べていない側は述べない**（片方だけが述べる組は
+  `basis-unverified`）。`IntMapLayerTime.align` と Atlas の `time.coverage` の `compare:[層 id…]` が同じ規則を引く。回帰は `tests/temporal-claims-checks.test.mjs`。
 - 計器は `node scripts/world-at-time.mjs --year <年|now>`（全層の判定と理由）・`--years`（主要年）・`--check`（門）。
 
 ### 7.4b 二時点比較とタイムラプス
