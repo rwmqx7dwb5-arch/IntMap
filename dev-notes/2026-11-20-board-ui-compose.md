@@ -48,3 +48,6 @@ newsjp: Atlas の操作画面が、行を選ぶと本物の地図が動き、Chr
 - 本物の地図からの選択(上記)。
 - `atlas-chart` への点の識別子の追加(前回の記録のまま。ボードのグラフは自前の SVG)。
 - #1294 の側から `feed` を呼ぶ配線。
+
+## 7. 起動費用の上限を上げた理由(perf-budget)
+遅延チャンクだけが増えた(起動時の経路には載らない)。`async.raw` 14136.4→14267.1 kB、`async.gzip` 4771.5→4803.2 kB、`atlas-cap-runs` 896.4→902.8 kB、`atlas-console` 1061.2→1068.2 kB。内訳は、この PR が取り込んでいる #1293(`board.*`)・#1301(`ui.compose`)の分に、この作業の `board` ブロック・`metrics`/`time`/`objects` の widget・`board.compose` の記述(en+jp)・`objectRows`(`atlas-cap-board.js`)が加わったもの。`js/ui-text-rules.js` は新しい小さな遅延チャンク(約 1 kB)で、ビューとボードの拒否規則の二重実装をやめた代わり。
