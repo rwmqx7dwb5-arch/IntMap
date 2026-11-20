@@ -7,6 +7,7 @@
  *  (a range, because the supplier publishes no per-place date) and the answer says which (captureLine).
  *  `apply:true` switches the satellite base to the best picture of that time, through the panel's own switch (window.__sat).
  * ==========================================================================*/
+import { IntMapTime } from './chronos.js';
 import { rankAt, captureAt, captureLine, planClockMatch, sourceById, covers, pickForTime } from './imagery-registry.js';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -27,7 +28,7 @@ export async function imageryInfoRun(a, K) {
   try { const c = GE().camera.getCenter(); zoom = GE().camera.getZoom(); if (lng == null) { lng = c.lng; lat = c.lat; name = L('map center', '地図中心'); } } catch (_) { /* no renderer */ }
   if (lng == null) return R(false, warn(L('There is no map centre to read.', '読み取る地図の中心がありません。')));
   if (a.time != null && a.time !== '' && !timeOf(a.time)) return R(false, warn(L('Give the time as YYYY or YYYY-MM-DD.', '時刻は YYYY または YYYY-MM-DD で指定してください。')));
-  const T = window.IntMapTime, clockIso = (T && T.iso && T.isLive && !T.isLive()) ? T.iso() : null;
+  const T = IntMapTime, clockIso = (T && T.iso && T.isLive && !T.isLive()) ? T.iso() : null;
   const time = timeOf(a.time) || clockIso;   /* an explicit time wins; else a Chronos clock that is not live; else now */
   const rows = rankAt({ lng, lat, zoom, time });
   const lang = L('en', 'jp');
@@ -53,7 +54,7 @@ export async function imageryInfoRun(a, K) {
     let info = null; try { info = await captureAt(s, { lng, lat, day: r.pick.day || time, year: r.pick.year }); } catch (_) { info = null; }
     const terms = s.license.commercial === 'allowed' ? L('commercial use allowed', '商用可') : L('commercial use NOT confirmed', '商用の可否は未確認');
     const flags = [s.scope === 'regional' ? L('regional', '地域別') : '', r.pick.exact ? '' : L('nearest year ' + (r.pick.year || ''), '最も近い年 ' + (r.pick.year || '')), s.partial ? L('partial swath coverage', '観測帯のみ') : '', r.id === cur ? L('shown now', '表示中') : ''].filter(Boolean);
-    out.push('<b>' + esc(s.name[lang === 'jp' ? 1 : 0]) + '</b> (' + esc(s.id) + ')' + (flags.length ? ' [' + esc(flags.join(', ')) + ']' : '') + '<br>' + esc(info ? captureLine(s, info, lang) : '') + ' · ' + esc(terms) + ' · <a href="' + window.IntMapSafe.url(s.license.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s.license.name) + '</a>');
+    out.push('<b>' + esc(s.name[lang === 'jp' ? 1 : 0]) + '</b> (' + esc(s.id) + ')' + (flags.length ? ' [' + esc(flags.join(', ')) + ']' : '') + '<br>' + esc(info ? captureLine(s, info, lang) : '') + ' · ' + esc(terms) + ' · <a href="' + esc(s.license.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s.license.name) + '</a>');
   }
   const head = '◈ ' + esc(name || (lat.toFixed(3) + ', ' + lng.toFixed(3))) + (time ? ' · ' + esc(time) : '');
   return R(true, note(head) + note(out.join('<br><br>')) + (a.apply ? note(L('Switched the satellite base to the first picture whose time matches.', '衛星画像を、時刻が合う画像に切り替えました。')) : ''));

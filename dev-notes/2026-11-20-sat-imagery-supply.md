@@ -55,3 +55,7 @@ CI の測定（このツリー）: eager raw 4752.1 kB・gzip 1560.4 kB・brotli
 - 増分の中身: 供給元の台帳 `js/imagery-registry.js`（23 件ぶんの名前・範囲・解像度・利用条件の文言）と、衛星パネルに足した撮影日行・一覧・時刻合わせ（`js/satellite.js`）。eager の raw で約 +25 kB・modules +1。
 - ⚠ requests の 10 → 12 は、増分の内訳をこの記録の時点では分けられていない（ローカルのビルドが環境の読み取りエラーで 2 回落ち、基準の main と比べられなかった）。
   台帳そのものは新しいチャンクを作らない（main に同居）。main の CI がマージ後に天井を測り直すので、そこで本当の値が出る。それまで要因を断定しない。
+
+## 6. window 経由の読みを 1 件だけ残した理由
+`js/imagery-atlas.js` が `window.__sat`（衛星パネルの切り替え口）を 1 回読む。持ち主は `js/app-body.js` で、そこは export を持たない（起動の本体）。
+`IntMapTime` と `IntMapSafe` の読みは import／定数検証に直した。`__sat` は Atlas が「いまの供給元」を読み切り替える唯一の口で、他の持ち主がいないため台帳に載せる。

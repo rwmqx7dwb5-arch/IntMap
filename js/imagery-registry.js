@@ -216,7 +216,7 @@ export async function captureAt(s, { lng, lat, day, year }) {
 
 /** One readable line (lang 'jp' or anything else → en). */
 export function captureLine(s, c, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp), fmtRes = (m) => m == null ? '' : (m < 1 ? Math.round(m * 100) + ' cm' : (m >= 1000 ? (m / 1000) + ' km' : (Math.round(m * 10) / 10) + ' m'));
+  const T = IntMapLang.pick(() => lang), fmtRes = (m) => m == null ? '' : (m < 1 ? Math.round(m * 100) + ' cm' : (m >= 1000 ? (m / 1000) + ' km' : (Math.round(m * 10) / 10) + ' m'));
   const parts = [];
   if (c.kind === 'measured') { parts.push(T('Captured ', '撮影 ') + String(c.date).replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')); if (c.product) parts.push(c.product); }
   else if (c.kind === 'chosen') parts.push((s.time.mode === 'year' ? T('Year ', '撮影年 ') : T('Date ', '撮影日 ')) + c.date + (c.composite ? T(' (annual composite)', '（年次合成）') : ''));

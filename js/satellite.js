@@ -9,6 +9,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { IntMapTime } from './chronos.js';
 import { captureAt, captureLine, rankAt, planClockMatch, sourceById, SOURCES } from './imagery-registry.js';   /* (sat-imagery-supply) what picture is where, when, how sharp, on what terms */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
@@ -136,7 +137,7 @@ export function satellite(HOST){
      The three never read alike: a declared range is not shown as if it were a date (js/imagery-registry.js, captureLine). */
   const satLang=()=>HOST.lang==='jp'?'jp':'en';
   function satCenter(){ try{ const c=GE().camera.getCenter(); return { lng:c.lng, lat:c.lat, zoom:GE().camera.getZoom() }; }catch(_){ return null; } }
-  function satClockISO(){ try{ const T=window.IntMapTime; if(T&&T.iso) return T.iso(); }catch(_){} return new Date().toISOString().slice(0,10); }
+  function satClockISO(){ try{ const T=IntMapTime; if(T&&T.iso) return T.iso(); }catch(_){} return new Date().toISOString().slice(0,10); }
   /* the capture block is built as DOM nodes (textContent, hrefs through IntMapSafe.url) — never as an HTML string */
   function satEl(tag,cls,text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
   function satBuildCapture(p){
@@ -152,11 +153,11 @@ export function satellite(HOST){
     det.append(sum,ul); frag.append(det);
     return frag;
   }
-  function satHereRows(){ const c=satCenter(); if(!c) return []; const T=window.IntMapTime; const live=!(T&&T.isLive&&!T.isLive()); return rankAt({ lng:c.lng, lat:c.lat, zoom:c.zoom, time:live?null:satClockISO() }); }
+  function satHereRows(){ const c=satCenter(); if(!c) return []; const T=IntMapTime; const live=!(T&&T.isLive&&!T.isLive()); return rankAt({ lng:c.lng, lat:c.lat, zoom:c.zoom, time:live?null:satClockISO() }); }
   function satBuildLicence(p){
     const s=p&&p.source, out=document.createDocumentFragment(); if(!s||!s.license) return out; const l=s.license;
     out.append(' ');
-    const u=window.IntMapSafe&&window.IntMapSafe.url?window.IntMapSafe.url(l.url):'';
+    const u=/^https:///.test(l.url||'')?l.url:'';
     if(u){ const an=satEl('a',null,IntMapLang.t(HOST.lang,'Terms','利用条件')); an.href=u; an.target='_blank'; an.rel='noopener noreferrer'; out.append(an); out.append(': '); } else out.append(IntMapLang.t(HOST.lang,'Terms','利用条件')+': ');
     out.append(l.name+(l.commercial==='unconfirmed'?IntMapLang.t(HOST.lang,' (commercial use not confirmed)','（商用の可否は未確認）'):''));
     return out;
