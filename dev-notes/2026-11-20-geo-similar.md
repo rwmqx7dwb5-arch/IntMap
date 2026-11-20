@@ -34,3 +34,9 @@ newsjp: Atlasが、指定した地区や港に似た地域を、OpenStreetMapに
 - 走査は既定 48 区画まで（公開 Overpass への礼儀。`maxCells` で上げられ、超えた分は回答が述べる）。都市全体の網羅ではない。
 - 区画は 1 辺 2 km 前後の正方形で、行政区画ではない。
 - 結果は OSM の描き込みの密度に依存する。
+
+## 配信サイズの天井を上げた理由
+
+`check:perf` が 4 行で赤になったので `--update` で上げた(async.gzip 4745.6→4770.6 kB、atlas-cap-runs 884.2→896.4 kB、dist.assets 21446.3→21570.5 kB、atlas-delegate 64.9→71.7 kB)。
+geo.similar が足したのは `js/geo-similar.js`(エンジン)と `js/atlas-cap-geo.js`(能力 1 件)で、能力は atlas-cap-runs の遅延チャンクにだけ入る。起動時(eager)の行は動いていない。
+atlas-delegate の増分は main 側で先に入った変更によるもので、本 PR のコードではない(取り込んだ main を同じ手順で測って上げた)。main の CI が merge 後に天井を測り直して下げる。
