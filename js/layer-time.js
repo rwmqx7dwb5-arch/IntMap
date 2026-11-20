@@ -396,10 +396,10 @@ export function explainAlign(r, na, nb, at) {
   const live = !at || at.live;
   const day = live ? '' : isoDay(toMs(at.when));
   const dEn = live ? 'the present' : day, dJp = live ? '現在' : day;
-  const span = (ms) => { const y = ms / (365.2425 * DAY); return y >= 0.9 ? [Math.round(y) + ' y', Math.round(y) + '年'] : [Math.round(ms / DAY) + ' d', Math.round(ms / DAY) + '日']; };
+  const span = (ms) => { const y = ms / (365.2425 * DAY); return y >= 0.9 ? LA(Math.round(y) + ' y', Math.round(y) + '年') : LA(Math.round(ms / DAY) + ' d', Math.round(ms / DAY) + '日'); };
   switch (r.status) {
     case 'aligned': return LA(na + ' and ' + nb + ' state the same instant (' + dEn + ') at the same resolution', na + ' と ' + nb + ' は同じ時点（' + dJp + '）を同じ粒度で述べています');
-    case 'coarsened': { const g = r.grainMs ? span(r.grainMs) : ['the coarser source’s resolution', '粗い方の粒度']; return LA(na + ' and ' + nb + ' state ' + dEn + ' at different resolutions — the pair speaks only to ' + g[0], na + ' と ' + nb + ' は ' + dJp + ' を異なる粒度で述べています——組み合わせが言えるのは ' + g[1] + ' の粒度までです'); }
+    case 'coarsened': { const g = r.grainMs ? span(r.grainMs) : LA('the coarser source’s resolution', '粗い方の粒度'); return LA(na + ' and ' + nb + ' state ' + dEn + ' at different resolutions — the pair speaks only to ' + g[0], na + ' と ' + nb + ' は ' + dJp + ' を異なる粒度で述べています——組み合わせが言えるのは ' + g[1] + ' の粒度までです'); }
     case 'skewed': return LA(na + ' and ' + nb + ' are not the same date: one shows another date than ' + dEn + (r.skewMs != null ? ' (' + span(r.skewMs)[0] + ' apart)' : ''), na + ' と ' + nb + ' は同じ日付ではありません：片方は ' + dJp + ' と別の時点を示しています' + (r.skewMs != null ? '（' + span(r.skewMs)[1] + 'の差）' : ''));
     case 'basis-mismatch': return LA(na + ' and ' + nb + ' draw their units differently (one on a fixed year’s borders, the other for the date) — a shared code is not a shared territory', na + ' と ' + nb + ' は単位の引き方が違います（一方は固定年の国境、他方はその日の国境）——同じコードは同じ領域を意味しません');
     case 'basis-unverified': return LA('One of ' + na + ' / ' + nb + ' does not say how its units were drawn — the pair is not verified as the same territory', na + ' / ' + nb + ' の一方は単位の引き方を述べていません——同じ領域であることは確かめられていません');
