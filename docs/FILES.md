@@ -441,6 +441,8 @@ cap-bridge.js                     **能力ブリッジ**（Programmatic Tool Cal
                                   （スキーマ・確認・直列化はそのまま）。足すのは、能力の性質（read/state/persist/external）
                                   による許可・同じ呼びの二度目を `alreadyDone` で答える記録・最後の柵（呼び数/期限/取消）・
                                   外部文章の汚染の伝播。接続点と #1272 との関係は `dev-notes/2026-11-20-cap-bridge.md`
+                                  `dataset` kind（読み取り専用）・呼びの履歴 `calls()`・`forbid`。Python との接続は
+                                  `dev-notes/2026-11-20-ptc-python-bridge.md`（`compute.run` の `grants`）
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**

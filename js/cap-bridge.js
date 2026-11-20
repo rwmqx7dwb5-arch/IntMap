@@ -66,14 +66,14 @@
  *     so the two fences agree. EXPIRES IF: that one changes.
  * ==========================================================================*/
 
-export const PROTOCOL = Object.freeze({ version: 1, kinds: Object.freeze(['list', 'describe', 'call']) });
+export const PROTOCOL = Object.freeze({ version: 1, kinds: Object.freeze(['list', 'describe', 'call', 'dataset']) });
 
-export const LIMITS = Object.freeze({ maxCalls: 5000, deadlineMs: 300000 });
+export const LIMITS = Object.freeze({ maxCalls: 5000, deadlineMs: 300000, logMax: 20000 });
 
 export const CLASSES = Object.freeze(['read', 'state', 'persist', 'external']);
 
 export const REFUSALS = Object.freeze(['bad-request', 'unknown-capability', 'not-granted', 'invalid-arguments',
-  'call-limit', 'deadline', 'cancelled']);
+  'call-limit', 'deadline', 'cancelled', 'unknown-dataset']);
 
 /* The one place a capability record becomes a class. `deps.effectsOf` replaces it wholesale. */
 export function effectClass(cap) {
@@ -81,8 +81,9 @@ export function effectClass(cap) {
   const risk = String(cap.risk || '');
   const writes = (cap.effects && cap.effects.writes) || [];
   if (risk === 'external') return 'external';
-  if (risk === 'persist') return 'persist';
-  if (risk === 'read' && !writes.length) return 'read';
+  /* the registry's own spellings (js/atlas-capabilities.js `risk`: read-only | reversible-session | persistent-setting | external) */
+  if (risk === 'persist' || risk === 'persistent-setting') return 'persist';
+  if ((risk === 'read' || risk === 'read-only') && !writes.length) return 'read';
   return 'state';
 }
 
@@ -108,6 +109,8 @@ function jsonSafe(v) {
  *   deps.schemaOf      (capId) -> JSON schema                    (optional; describe() and the argument check)
  *   deps.validate      (schema, args) -> string[] errors         (optional; js/atlas-agent.js validateAgainst)
  *   deps.effectsOf     (cap) -> {class}                          (optional; replaces effectClass)
+ *   deps.readDataset   (id) -> JSON payload|null             (optional; kind 'dataset' — a session dataset, read-only, class 'read')
+ *   deps.forbid        (cap) -> reason|null                      (optional; a capability this host never lets a program call — refused 'not-granted' with the reason)
  *   deps.turn          the turn record handed to execute (its externalContentSeen is read and set)
  *   deps.grants        classes the run may use (default ['read'])
  *   deps.limits        {maxCalls, deadlineMs}
@@ -142,7 +145,31 @@ export function makeCapabilityBridge(deps) {
     return out;
   }
 
+  /* THE RUN'S HISTORY. One entry per request that asked for something to happen or be read ('call', 'dataset'),
+     refusals and repeats included — what the program did is a fact the reader and Atlas can read afterwards, and a
+     refusal is part of that fact. Entries are small on purpose (the arguments are previewed, not kept whole).
+     logMax is the same kind of runaway fence as the other two: past it the entries stop and `logOmitted` COUNTS what
+     was not written, so the history never claims to be complete when it is not. */
+  const log = []; let logOmitted = 0;
+  function record(msg, res, ms) {
+    if (!res || (msg.kind !== 'call' && msg.kind !== 'dataset')) return;
+    if (log.length >= limits.logMax) { logOmitted++; return; }
+    let a = ''; try { a = JSON.stringify(msg.kind === 'call' ? msg.args : { id: msg.id }); } catch (_) { a = ''; }
+    const e = { seq: res.seq, kind: msg.kind, capability: msg.kind === 'call' ? String(res.capability || msg.capability || '') : undefined,
+      ok: !!res.ok, observed: res.observed !== false, ms: ms, args: (a || '').slice(0, 160) };
+    if (res.refused) e.refused = res.refused;
+    if (res.alreadyDone) e.alreadyDone = true;
+    if (res.why) e.why = res.why;
+    log.push(e);
+  }
   async function handle(msg) {
+    const t = now();
+    const res = await handleOne(msg);
+    record(msg || {}, res, now() - t);
+    return res;
+  }
+
+  async function handleOne(msg) {
     const s = msg && typeof msg.seq === 'number' ? msg.seq : ++seq;
     if (!msg || msg.v !== PROTOCOL.version || PROTOCOL.kinds.indexOf(msg.kind) < 0) return refuse(s, 'bad-request', { detail: 'expected {v:1, kind:list|describe|call, seq}' });
     const kind = msg.kind;
@@ -150,6 +177,19 @@ export function makeCapabilityBridge(deps) {
       const q = String(msg.query || '').toLowerCase();
       const caps = (registry && registry.all ? registry.all() : []).filter((c) => c && !c.withdrawn && (!q || String(c.id).toLowerCase().indexOf(q) >= 0));
       return { v: PROTOCOL.version, seq: s, kind, ok: true, capabilities: caps.map((c) => ({ id: c.id, class: classOf(c), granted: grants.has(classOf(c)) })) };
+    }
+    if (kind === 'dataset') {
+      /* the program's way to READ a dataset the session holds (an earlier step's output included): read-only, so the
+         grant it needs is 'read' — a program granted nothing cannot read the session at all */
+      if (!grants.has('read')) return refuse(s, 'not-granted', { kind, class: 'read', granted: Array.from(grants) });
+      if (cancelled) return refuse(s, 'cancelled', { kind, detail: cancelled });
+      if (typeof deps.readDataset !== 'function') return refuse(s, 'unknown-dataset', { kind, id: String(msg.id || ''), detail: 'this run was opened without a dataset reader' });
+      let p = null;
+      try { p = await deps.readDataset(String(msg.id || '')); }
+      catch (e) { stats.unobserved++; return { v: PROTOCOL.version, seq: s, kind, ok: false, observed: false, why: 'read-threw', detail: String((e && e.message) || e), id: String(msg.id || '') }; }
+      if (!p) return refuse(s, 'unknown-dataset', { kind, id: String(msg.id || '') });
+      bump(stats.byCapability, 'dataset.read'); bump(stats.byClass, 'read');
+      return { v: PROTOCOL.version, seq: s, kind, ok: true, observed: true, id: String(msg.id || ''), dataset: jsonSafe(p) };
     }
     const cap = capOf(msg.capability);
     if (!cap) return refuse(s, 'unknown-capability', { kind, capability: String(msg.capability || '') });
@@ -159,6 +199,7 @@ export function makeCapabilityBridge(deps) {
     if (cancelled) return refuse(s, 'cancelled', { kind, capability: cap.id, detail: cancelled });
     if (now() - t0 > limits.deadlineMs) return refuse(s, 'deadline', { kind, capability: cap.id, limitMs: limits.deadlineMs });
     const cls = classOf(cap);
+    if (typeof deps.forbid === 'function') { let why = null; try { why = deps.forbid(cap); } catch (_) { why = null; } if (why) return refuse(s, 'not-granted', { kind, capability: cap.id, class: cls, detail: String(why) }); }
     if (!grants.has(cls)) return refuse(s, 'not-granted', { kind, capability: cap.id, class: cls, granted: Array.from(grants) });
     const args = msg.args === undefined ? {} : msg.args;
     if (args === null || typeof args !== 'object' || Array.isArray(args)) return refuse(s, 'invalid-arguments', { kind, capability: cap.id, errors: ['args must be an object'] });
@@ -193,7 +234,7 @@ export function makeCapabilityBridge(deps) {
   }
 
   return {
-    handle, grants: () => Array.from(grants), limits: () => Object.assign({}, limits),
+    handle, calls: () => log.map((e) => Object.assign({}, e)), logOmitted: () => logOmitted, grants: () => Array.from(grants), limits: () => Object.assign({}, limits),
     /* stop a runaway: later calls are refused 'cancelled'; calls in flight finish in the executor (it cannot be
        aborted from here) and their outcome is reported as not observed — nobody is told they failed */
     cancel(reason) { cancelled = String(reason || 'cancelled'); },
@@ -201,7 +242,7 @@ export function makeCapabilityBridge(deps) {
     summary() {
       return { calls: stats.calls, executed: stats.executed, repeats: stats.repeats, refused: Object.assign({}, stats.refused),
         byCapability: Object.assign({}, stats.byCapability), byClass: Object.assign({}, stats.byClass), unobserved: stats.unobserved,
-        inFlight: inFlight.size, externalContentSeen: !!turn.externalContentSeen, cancelled: cancelled, elapsedMs: now() - t0 };
+        logged: log.length, logOmitted: logOmitted, inFlight: inFlight.size, externalContentSeen: !!turn.externalContentSeen, cancelled: cancelled, elapsedMs: now() - t0 };
     },
   };
 }
@@ -231,6 +272,7 @@ export function makeBridgeClient(port) {
     describe: (capability) => ask({ kind: 'describe', capability }),
     /* resolves with the answer INCLUDING refusals ({ok:false, refused}) — it does not throw, and it does not retry */
     call: (capability, args) => ask({ kind: 'call', capability, args }),
+    dataset: (id) => ask({ kind: 'dataset', id }),
     pending: () => pending.size,
   };
 }
