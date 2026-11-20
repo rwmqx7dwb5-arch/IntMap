@@ -15,6 +15,15 @@
 import { str, int, bool, list, obj, one } from './atlas-caps.js';
 import { pageJobsClient, planDigest, jobText, jobCardShell, mountJobCards, applyParked, deviceParkedMemory } from './atlas-jobs-client.js';
 
+/* what an ENDED job leaves: one work in the work store (js/atlas-job-products.js) and the memory told it is no longer owed. The work store is loaded
+   when it is needed — a page that never ends a job never loads it. Returns the line Atlas reads, or ''. */
+async function fileEnded(K, f) {
+  try { const P = await import('./atlas-job-products.js'); P.noteJobEnded(K.workingMemory, f);
+    const W = await import('./atlas-work-store.js'); const r = await P.saveJobAsWork(f, W.workStore());
+    return r.ok ? ' Filed on this device as work ' + r.workId + ' (' + r.saved.length + ' new product(s), ' + r.unchanged + ' unchanged) — open it with work.job.' : '';
+  } catch (_) { return ''; }
+}
+
 /* the page's side of a parked operation: the SAME gate a turn and a program go through (K.programBridge → makeExecute), granted only 'state' (map and session, no persist, no external) */
 function parkedApplier(K, dctx) {
   return async (p) => {
@@ -66,7 +75,8 @@ export default [
       const r = await client.start({ tasks, title: a.title || '', idem });
       if (!r.ok) return fail(r.code === 'bad_plan' ? 'bad_plan' : r.code, { at: r.at, httpStatus: r.httpStatus, available: r.available });
       let f = null; try { f = await client.get(r.jobId); } catch (_) { f = null; }
-      mountJobCards(() => pageJobsClient(), { L, esc, apply: parkedApplier(K, dctx) });
+      mountJobCards(() => pageJobsClient(), { L, esc, apply: parkedApplier(K, dctx), onEnded: (g) => fileEnded(K, g) });
+      try { const P = await import('./atlas-job-products.js'); P.noteJobStarted(K.workingMemory, { id: r.jobId, title: a.title || '' }); } catch (_) { /* memory is context */ }
       const lead = '<div style="font-size:12px;margin-bottom:4px;">' + esc(r.created ? L('Started in the background — it keeps running after you close this tab. Come back and ask for its status any time.', 'バックグラウンドで開始しました。このタブを閉じても続きます。いつでも戻って状況を確認できます。') : L('This request was already started; here is that job.', 'この依頼は既に開始済みです。その仕事を表示します。')) + '</div>';
       return R(true, lead + jobCardShell(r.jobId, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: r.jobId, created: r.created, status: (f && f.status) || r.status, tasks: tasks.length } } });
     },
@@ -90,7 +100,7 @@ export default [
       const said = { running: L('That job is still running — there is nothing to resume.', 'その仕事はまだ実行中です。再開するものはありません。'), nothing_to_resume: L('Every piece of that job finished — there is nothing to run again.', 'その仕事の分担はすべて終わっています。やり直すものはありません。'), not_found: L('No such job of yours.', 'その仕事は見つかりません。') };
       if (!r.ok) return R(false, warn(esc(said[r.state] || refusal(L, r.state || r.code) || L('The job could not be resumed (' + (r.state || r.code) + ').', '仕事を再開できませんでした (' + (r.state || r.code) + ')。'))), { meta: { status: 'failed', code: r.state || r.code } });
       let f = null; try { f = await client.get(id); } catch (_) { f = null; }
-      mountJobCards(() => pageJobsClient(), { L, esc, apply: parkedApplier(K, dctx) });
+      mountJobCards(() => pageJobsClient(), { L, esc, apply: parkedApplier(K, dctx), onEnded: (g) => fileEnded(K, g) });
       return R(true, '<div style="font-size:12px;margin-bottom:4px;">' + esc(L('Resumed — only the unfinished pieces run again; the finished ones are kept.', '再開しました。終わっていない分だけ実行し、終わった分はそのまま使います。')) + '</div>' + jobCardShell(id, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id, status: (f && f.status) || 'queued', resumed: true } } });
     },
   },
@@ -113,8 +123,9 @@ export default [
           if (!f) return R(false, warn(esc(L('No such job of yours.', 'その仕事は見つかりません。'))), { meta: { status: 'failed', code: 'job_not_found' } });
           const apply = parkedApplier(K, dctx);
           const applied = await applyParked(f, apply, deviceParkedMemory());
-          mountJobCards(() => pageJobsClient(), { L, esc, apply });
-          const appliedLine = applied.length ? ' Applied to the map just now: ' + applied.map((x) => x.capability + (x.ok ? ' ok' : ' refused (' + x.why + ')')).join('; ') : '';
+          mountJobCards(() => pageJobsClient(), { L, esc, apply, onEnded: (g) => fileEnded(K, g) });
+          const filed = !f.running ? await fileEnded(K, f) : '';
+          const appliedLine = filed + (applied.length ? ' Applied to the map just now: ' + applied.map((x) => x.capability + (x.ok ? ' ok' : ' refused (' + x.why + ')')).join('; ') : '');
           return R(true, '<div style="display:none">' + esc(jobText(f) + appliedLine) + '</div>' + jobCardShell(f.id, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: f.id, status: f.status, running: f.running, tasksEnded: f.tasksEnded, tasksTotal: f.tasksTotal, spentUsd: f.spentUsd }, jobFacts: f } });
         }
         const rows = await client.list(a && a.limit);

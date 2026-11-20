@@ -112,7 +112,7 @@ test('the runner runs a capability task once at no cost and hands its data to th
 });
 
 test('a capability task with no twin is refused before anything runs, and a failed twin is failed once, not repeated', async () => {
-  const plan = planJob([{ id: 'x', kind: 'capability', capability: 'view.flyTo', args: {} }], { kinds: ['capability'], capabilityOk: () => true }).tasks;
+  const plan = planJob([{ id: 'x', kind: 'capability', capability: 'jobs.start', args: {} }], { kinds: ['capability'], capabilityOk: () => true }).tasks;
   const db = fakeDb(plan);
   let calls = 0;
   await runJob(ctx(db, { capabilities: { has: () => false, run: async () => { calls++; return { ok: true }; } } }));

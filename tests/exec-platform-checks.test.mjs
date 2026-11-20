@@ -118,3 +118,43 @@ test('⑤ the page applies each saved operation once through its executor, in or
   const throws = await applyParked(f, async () => { throw new Error('boom'); }, { has: () => false, add: () => {} });
   assert.equal(throws[0].ok, false); assert.match(throws[0].why, /boom/);
 });
+
+/* ── ⑥ the finished job as work products, and the working memory ── */
+const { saveJobAsWork, productsOfJob, jobWorkId, noteJobStarted, noteJobEnded, jobOwedText } = await import('../js/atlas-job-products.js');
+const { makeWorkStore, memoryBackend, currentProducts, findProduct } = await import('../js/atlas-work-store.js');
+const { makeAtlasWorkingMemory } = await import('../js/atlas-working-memory.js');
+const ended = (over = {}) => jobFacts({ id: '11111111-2222-3333-4444-555555555555', title: 'Ports', status: 'done', result: { summary: 'Rotterdam leads.' } }, [
+  { task_id: 'a', status: 'done', code: '', contract: { goal: 'ports' }, result: { summary: 'Rotterdam moved 14 Mt', findings: [{ claim: 'x' }], sources: [{ url: 'https://example.org/p', title: 'P' }], gaps: ['Antwerp not stated'] } },
+  { task_id: 'b', status: over.b || 'done', code: '', contract: { goal: 'more' }, result: over.b === 'failed' ? null : { summary: 'Antwerp 12 Mt' } },
+]);
+
+test('⑥ an ended job is filed as ONE work with an answer per piece; filing it again changes nothing; a resumed piece is the next version', async () => {
+  const S = makeWorkStore(memoryBackend());
+  const f1 = ended({ b: 'failed' });
+  const r1 = await saveJobAsWork(f1, S, { now: 1000 });
+  assert.equal(r1.ok, true); assert.equal(r1.workId, jobWorkId(f1.id)); assert.match(r1.workId, /^wk-job-/);
+  let w = await S.get(r1.workId);
+  assert.equal(currentProducts(w).length, 2, 'the piece that ended with something to say, and the combined result');
+  assert.equal(w.status, 'blocked', 'a failed piece leaves the work blocked, not done');
+  assert.equal((await saveJobAsWork(f1, S, { now: 2000 })).saved.length, 0, 'the same facts again file nothing');
+  assert.equal((await S.list()).length, 1, 'and never make a second work');
+  const f2 = ended();   /* the resumed job finished the piece it had failed */
+  const r2 = await saveJobAsWork(f2, S, { now: 3000 });
+  w = await S.get(r1.workId);
+  assert.equal(r2.saved.length >= 1, true);
+  assert.equal(w.status, 'done');
+  assert.ok(findProduct(w, 'b — more'), 'the new piece is a product');
+  assert.equal((await saveJobAsWork(Object.assign({}, f2, { running: true }), S)).why, 'still-running', 'a running job is not filed');
+  assert.ok(productsOfJob(f2).some((p) => p.kind === 'document' && /Rotterdam leads/.test(p.content.text)));
+});
+
+test('⑥ a job that is owed survives the turn that started it and is resolved when it ends', () => {
+  const wm = makeAtlasWorkingMemory({});
+  const f = { id: 'job-1', title: 'Ports' };
+  noteJobStarted(wm, f);
+  wm.beginTurn(1, 'start'); wm.recordTurn({ turnId: 1, question: 'start', reply: 'started' });
+  assert.match(wm.block(), /job-1/, 'still owed after the turn ended');
+  noteJobEnded(wm, f);
+  wm.beginTurn(2, 'status'); wm.recordTurn({ turnId: 2, question: 'status', reply: 'done' });
+  assert.doesNotMatch(wm.block(), new RegExp(jobOwedText(f).slice(0, 40)), 'resolved at its end');
+});

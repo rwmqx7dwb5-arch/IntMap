@@ -182,6 +182,7 @@ export function jobCardShell(id, f, h) {
 /* poll cadence: observation 2026-11-20 — a task takes 30–90 s, so a 5 s poll shows each piece within a few seconds of its end
    without a request per second; it stops with the job. Expires if jobs move to Realtime — then subscribe instead of polling. */
 const POLL_MS = 5000;
+const ENDED_TOLD = new Set();   /* a job that ended is reported to its host once per page, however many cards poll it */
 
 /* mountJobCards(getClient, h, { root?, pollMs? }) → { stop() } — idempotent per page; `getClient()` may return null (not signed in) */
 export function mountJobCards(getClient, h, o) {
@@ -198,6 +199,7 @@ export function mountJobCards(getClient, h, o) {
     if (f && typeof h.apply === 'function') { try { f.appliedNow = await applyParked(f, h.apply, h.memory || deviceParkedMemory()); } catch (_) { /* the card still paints */ } }
     if (!f) { el.textContent = h.L('This job is no longer available.', 'この仕事はもう存在しません。'); return false; }
     const typed = el.querySelector('[data-atl-job-note]'), keep = typed ? typed.value : '', focused = !!typed && typeof document !== 'undefined' && document.activeElement === typed;
+    if (f && !f.running && typeof h.onEnded === 'function' && !ENDED_TOLD.has(f.id + ':' + (f.endedAt || ''))) { ENDED_TOLD.add(f.id + ':' + (f.endedAt || '')); try { await h.onEnded(f); } catch (_) { /* the card still paints */ } }
     el.innerHTML = renderJobCard(f, h);
     const again = el.querySelector('[data-atl-job-note]');   /* a repaint must not eat what the reader is typing */
     if (again && keep) { again.value = keep; if (focused) { try { again.focus(); } catch (_) { /* nothing to focus */ } } }
