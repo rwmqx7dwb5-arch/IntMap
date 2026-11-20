@@ -135,6 +135,11 @@ verify_jwt = true
 [functions.atlas-embed]
 verify_jwt = true
 
+# atlas-jobs (atlas-durable-jobs) runs long Atlas research after the tab is closed. verify_jwt is OFF because the tick is called by pg_cron / by itself
+# with a shared secret (x-atlas-jobs-secret, fail-closed); op "create" verifies the reader with getUser() itself, as ai-proxy does.
+[functions.atlas-jobs]
+verify_jwt = false
+
 # alerts-relay (#R266) relays MeteoAlarm + CMA warning feeds (neither sends CORS headers).
 # Keyless, no user data, GET only, allow-listed hosts and paths — deployed --no-verify-jwt.
 [functions.alerts-relay]
