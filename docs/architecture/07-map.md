@@ -259,6 +259,16 @@ sheet を表の decoder（`decodeRows`）が読む。座標の無い表を場所
 **取り込んだ結果は必ず `window.IntMapGeodesy.sanitizeFeatures` を通る**（`js/geodesy.js`）。そこが `MultiPoint` と
 `GeometryCollection` を落とすので、decoder 側で単一 geometry に展開してから渡す。
 
+### 7.3d2 行政区分の統計 (`js/admin-stats.js`)
+
+`data/admin-stats.json.gz`（Wikidata の P1082 人口・P585 時点・P459 決定方式・単位の P571/P576）。キーは 4 種——iso3166-2（P300）・nuts（P605）・
+us-fips（P882）・jp-jis（P429）——で、**キーは単位を名指すだけで同じ領域だとは保証しない**ので、各単位が自分の存続期間（`inc`/`dis`）を持ち、`valueAt` は
+その外の年を `unit-not-yet-established` / `unit-abolished` で拒否する。年の指定に記載が無ければ `no-statement-for-year`（`toleranceYears` を述べたときだけ最寄りを使い `gapYears` を名乗る）。
+日付の無い記述は年を与えず `undated` に数える。表は方式・年の混在を `mixedMethods` / `mixedYears` で申告する。第 1 級区分だけが同梱の境界
+（`data/admin1-world.json.gz`）に ISO 3166-2 で結ばれ、`GeoJSONUpload.add` ＋ `style(graduated)` で人口の色分けになる。他の 3 種は表で答える（境界を持たない）。
+Atlas の入口は `geo.regionStat`（`js/atlas-cap-geo.js`）。**まだ無いもの**: NUTS・郡・市区町村の境界（描けない）と、歴史境界への結合そのもの
+（`definitionAt` がその番人として在る）。
+
 ### 7.3e データセットと処理の基盤 (The GIS core) — `js/gis-*.js`
 
 **取り込んだデータ・内蔵データ・分析結果を同じ 1 つの形で持ち、処理の出力が次の処理の入力になる層。** 正本は
