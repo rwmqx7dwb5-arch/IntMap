@@ -2021,42 +2021,171 @@ export function makeGisOps() {
       const led = makeGeoLedger();
       const w = joinWriter(plan, card.mode, params.unmatched === 'drop', JOIN_COUNT, kit);
       const rows = aDs.features();
-      for (let li = 0; li < rows.length; li++) {
-        if (!(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
-        const f = rows[li];
-        const g = f && f.geometry;
-        const sa = timed ? kit.spanA(f) : null;
-        /* A row that states no place cannot stand in a spatial relation to anything. It has no
-           partner — which is a different fact from 「探したが無かった」 and is counted as such. */
-        if (!g) { w.take(f, [], sa); continue; }
-        const gb = bboxOf(g);
-        const matches = [];
-        cand.each(gb, pad, (o) => {
-          /* The time condition first: it is the cheaper question, and a pair that did not hold at the same time is not a partner whatever the geometry says. */
-          if (!kit.admits(sa, o.span)) return true;
-          const r = relateOne(GG, g, o.geometry, predicate, maxKm);
-          if (!led.ok(r)) return true;
-          if (r.d == null) return true;
-          matches.push({ row: o.row, props: o.props, span: o.span, extra: (predicate === 'nearer-than') ? { _distanceKm: r.d } : null });
-          /* ⚠ 'first' DOES NOT STOP THE WALK, and 'refuse' cannot either: both need to know HOW
-             MANY partners there were, and a walk that stopped at the first would report 1 for every
-             row — the silence `cardinality` exists to remove. */
-          return true;
-        });
-        /* ⚠⚠⚠ THE ORDER OF THE PARTNERS IS INPUT 1'S, NOT THE INDEX'S. candidateSource hands
-           candidates over in the order its grid happens to hold them, and the unindexed fallback
-           hands them over in row order — so 'first' would have meant two different partners
-           depending on whether js/gis-index.js was mounted, and a saved recipe would replay to a
-           different answer. Sorting by the row the partner came from is what makes 「最初の一致」 a
-           statement about the reader's data instead of about the index. */
-        matches.sort((x, y) => x.row - y.row);
-        if (card.mode === 'refuse' && matches.length > 1) {
-          return fail('join-one-to-many', { input: 0, row: li, partners: matches.length, cardinality: JOIN_CARDINALITY });
-        }
+      const rightGeoms = others.map((o) => o.geometry);
+      /* One row's partners → the output. ⚠ THE ORDER OF THE PARTNERS IS INPUT 1'S, NOT THE INDEX'S: candidateSource
+         hands candidates over in the order its grid happens to hold them, and the unindexed fallback in row order, so
+         'first' would have meant two different partners depending on whether js/gis-index.js was mounted and a saved
+         recipe would replay to a different answer. The candidates are therefore sorted by the row they came from
+         BEFORE they are asked, and the hits come back in that order — that is what makes 「最初の一致」 a statement
+         about the reader's data instead of about the index. */
+      const emit = (li, f, hitRows, dists, sa) => {
+        const matches = new Array(hitRows.length);
+        for (let k = 0; k < hitRows.length; k++) matches[k] = { row: hitRows[k], props: others[hitRows[k]].props, span: others[hitRows[k]].span, extra: dists ? { _distanceKm: dists[k] } : null };
+        /* ⚠ 'first' DOES NOT STOP THE WALK, and 'refuse' cannot either: both need to know HOW MANY partners there were, and a walk that stopped at the first would report 1 for every row — the silence `cardinality` exists to remove. */
+        if (card.mode === 'refuse' && matches.length > 1) return fail('join-one-to-many', { input: 0, row: li, partners: matches.length, cardinality: JOIN_CARDINALITY });
         w.take(f, matches, sa);
+        return null;
+      };
+      const ledgerOf = (res) => { for (let k = 0; k < res.failed; k++) led.ok({ ok: false, why: res.why, detail: res.detail }); };
+      /* The time condition first (the cheaper question): a pair that did not hold at the same time is not a candidate whatever the geometry says. */
+      const candsOf = (g, sa) => { const c = []; cand.each(bboxOf(g), pad, (o) => { if (!kit.admits(sa, o.span)) return true; c.push(o.row); return true; }); c.sort((x, y) => x - y); return c; };
+      const N = rows.length;
+      let li = 0, carriedRows = 0, carriedBlocks = 0, fellBack = 0, note = 'not-used: this thread';
+      const inlineRow = (i) => {
+        const f = rows[i], g = f && f.geometry, sa = timed ? kit.spanA(f) : null;
+        /* A row that states no place cannot stand in a spatial relation to anything. It has no partner — which is a different fact from 「探したが無かった」 and is counted as such. */
+        if (!g) { w.take(f, [], sa); return null; }
+        const r = GG.relateBlock(rightGeoms, [g], [candsOf(g, sa)], predicate, maxKm);
+        ledgerOf(r);
+        return emit(i, f, r.hits[0], r.dist ? r.dist[0] : null, sa);
+      };
+      /* ⚠ MEASURED, NOT GUESSED: the first rows are asked on this thread and timed, and a thread is only started when
+         what is left would take longer than starting it (JOIN_CARRY_FLOOR_MS). A short join never pays for a thread. */
+      const t0 = nowMs();
+      const probe = Math.min(N, JOIN_PROBE_ROWS);
+      for (; li < probe; li++) {
+        if (!(await ctx.tick(1, N))) return fail('cancelled', { done: ctx.done(), total: N });
+        const bad = inlineRow(li); if (bad) return bad;
+      }
+      const probeMs = nowMs() - t0;
+      const projected = probe ? (probeMs / probe) * (N - li) : 0;
+      const W = workerKernel();
+      const floorMs = joinFloorMs();
+      let carry = null;
+      if (li < N && projected >= floorMs) {
+        carry = await joinCarrier(W, ctx, bDs, rightGeoms);
+        if (!carry.ok) note = 'not-used: ' + carry.reason;
+      } else if (li < N) note = 'not-used: this thread (projected ' + Math.round(projected) + ' ms < ' + floorMs + ')';
+      if (li < N && carry && carry.ok) {
+        const pool = carry.pool;
+        const stop = new AbortController();
+        if (ctx && ctx.signal) {
+          if (ctx.signal.aborted) { if (carry.own) pool.close(); return fail('cancelled', { done: ctx.done(), total: N }); }
+          try { ctx.signal.addEventListener('abort', () => stop.abort(), { once: true }); } catch (_) { }
+        }
+        const inflight = [];
+        let cancelled = false, bad = null;
+        /* The oldest block is finished and written FIRST, so the output order is the input's whatever order the lanes answered in. */
+        const settleOldest = async () => {
+          const b = inflight.shift();
+          const res = await b.promise;
+          let got = null;
+          if (res && res.ok && res.relate && Array.isArray(res.relate.hits) && res.relate.hits.length === b.to - b.from) got = res.relate;
+          else if (res && res.why === 'aborted') { cancelled = true; return; }
+          if (!got) { fellBack++; got = GG.relateBlock(rightGeoms, b.gs, b.cands, predicate, maxKm); }   /* the same kernel, on this thread: the answer is the same one */
+          else carriedBlocks++;
+          ledgerOf(got);
+          for (let k = 0; k < b.to - b.from; k++) {
+            const i = b.from + k, f = rows[i];
+            if (!b.gs[k]) { w.take(f, [], b.sas[k]); continue; }
+            const e = emit(i, f, got.hits[k], got.dist ? got.dist[k] : null, b.sas[k]);
+            if (e) { bad = e; return; }
+          }
+        };
+        /* block size: the memory budget js/gis-worker.js states, in positions, with a row ceiling so lanes stay fed */
+        let capPositions = 200000;
+        try {
+          let tot = 0; for (let i = li; i < N; i++) { const g = rows[i] && rows[i].geometry; if (g) tot += positionsIn(g); }
+          const plan2 = W.planBlocks({ units: Math.max(1, tot), bytesPerUnit: VALIDATE_BYTES_PER_POSITION, inFlight: W.maxConcurrency() });
+          if (plan2 && plan2.ok) capPositions = Math.max(1, plan2.plan.unitsPerBlock);
+        } catch (_) { }
+        const lanes = carry.lanes;
+        const startAt = li;
+        while (li < N && !cancelled && !bad) {
+          const from = li, gs = [], cands = [], sas = [];
+          let pos = 0;
+          while (li < N && gs.length < JOIN_BLOCK_MAX_ROWS && (!gs.length || pos < capPositions)) {
+            if (!(await ctx.tick(1, N))) { cancelled = true; break; }
+            const g = rows[li] && rows[li].geometry, sa = timed ? kit.spanA(rows[li]) : null;
+            gs.push(g || null); sas.push(sa); cands.push(g ? candsOf(g, sa) : []);
+            if (g) pos += positionsIn(g);
+            li++;
+          }
+          if (cancelled || !gs.length) break;
+          const job = carry.job(gs, cands, predicate, maxKm);
+          inflight.push({ from: from, to: li, gs: gs, cands: cands, sas: sas, promise: pool.relate(job, stop.signal) });
+          while (inflight.length >= lanes && !cancelled && !bad) await settleOldest();
+        }
+        while (inflight.length && !cancelled && !bad) await settleOldest();
+        stop.abort();   /* nothing is in flight any more; a block still running (cancel, refusal) ends with its thread */
+        if (carry.own) pool.close();
+        if (cancelled) return fail('cancelled', { done: ctx.done(), total: N });
+        if (bad) return bad;
+        carriedRows = li - startAt;
+        note = 'carried: ' + carriedBlocks + ' blocks on ' + lanes + ' lanes' + (fellBack ? ', ' + fellBack + ' blocks computed here' : '');
+      } else {
+        for (; li < N; li++) {
+          if (!(await ctx.tick(1, N))) return fail('cancelled', { done: ctx.done(), total: N });
+          const bad = inlineRow(li); if (bad) return bad;
+        }
       }
       return withKit(withGeoStats({ ok: true, features: w.rows, renamed: plan.renamed }, led,
-        Object.assign(w.stats(), { predicate: predicate, cardinality: card.mode, indexed: cand.indexed })), kit);
+        Object.assign(w.stats(), { predicate: predicate, cardinality: card.mode, indexed: cand.indexed, worker: note, carriedRows: carriedRows })), kit);
+    }
+
+    /* ══ (gis-worker-columnar) THE PAIRS OF A SPATIAL JOIN, ON ANOTHER THREAD ═════════════════════════
+       MEASURED (node 24, scripts/gis-scale-bench.mjs --worker, 2026-11-20): after the box shortcut a 1,000,000-point
+       join still held the thread that draws the map for 97 s, all of it the per-pair predicate (GG.relateBlock — the
+       ONE place that rule is written, js/gis-geometry.js). The candidates stay here (the index and the order of the
+       partners are this side's), the pairs go: each block ships its left geometries packed (js/gis-packed.js,
+       transferred) and the candidate rows as two Int32Arrays, and the right-hand set once per lane.
+       ⚠ THE WORKER IS A RUNNER, NOT AN AUTHORITY. A block that comes back malformed or not at all is asked again on
+       this thread by the same kernel (never dropped), a cancel ends the thread (a loop in it cannot be asked to stop),
+       and the answer is the same whichever thread gave it — tests/gis-worker-columnar-checks.test.mjs holds the two
+       against each other.
+       ⚠ NOT FOUND, NOT FAKED: no worker mounted, no Worker in the loader, or a join too short to repay a thread each
+       leave the loop on this thread, named in `stats.worker`. */
+    /* Observed (node 24, 2026-11-20, scripts/gis-scale-bench.mjs --worker): starting a pooled lane and sending the right-hand set costs about half a second (the buffer note beside BUFFER_CARRY_FLOOR measured 508 ms against 494 ms), so a join projected to take less than twice that stays here. Expires with the way a thread is started. */
+    const JOIN_CARRY_FLOOR_MS = 1000;
+    /* Rows asked on this thread to measure the per-row cost before deciding. Sizing only: it changes where the work runs, never an answer. */
+    const JOIN_PROBE_ROWS = 64;
+    /* Left rows per block at most, so every lane has a block to work on when the first one is large. Sizing only. */
+    const JOIN_BLOCK_MAX_ROWS = 20000;
+    let JOIN_KEY = 0;
+    /* `globalThis.IntMapGisScale.joinCarryFloorMs` is how a check states a smaller world (js/gis-packed.js limits() does the same for its numbers); nothing in the product sets it. */
+    function joinFloorMs() { try { const v = globalThis.IntMapGisScale && globalThis.IntMapGisScale.joinCarryFloorMs; if (typeof v === 'number' && isFinite(v) && v >= 0) return v; } catch (_) { } return JOIN_CARRY_FLOOR_MS; }
+
+    /* → { ok:true, pool, lanes, own, job(gs, cands, predicate, maxKm) } | { ok:false, reason }. The pool belongs to the run when ctx carries a holder (runMapped), so a join of many groups starts its threads once and sends the right-hand set once. */
+    async function joinCarrier(W, ctx, bDs, rightGeoms) {
+      const no = (reason) => ({ ok: false, reason: reason });
+      if (!W) return no('worker-not-mounted');
+      if (typeof W.maxConcurrency !== 'function' || typeof W.planBlocks !== 'function') return no('worker-door-invalid');
+      if (typeof AbortController !== 'function') return no('stop-handle-unavailable');
+      const P = await loadPacked();
+      if (!P || typeof P.pack !== 'function') return no('packed-unavailable');
+      let mod = null;
+      try { mod = await import('../src/gis-buffer-worker-client.js'); } catch (e) { return no('worker-client-unavailable'); }
+      if (!mod || typeof mod.bufferPool !== 'function') return no('worker-client-unavailable');
+      const holder = (ctx && ctx.carry) || null;
+      let h = (holder && holder.pool) ? holder : null;
+      if (!h) {
+        const lanes = Math.max(1, W.maxConcurrency());
+        h = { pool: mod.bufferPool(lanes), lanes: lanes, rightsFor: null, key: null, rights: null };
+        if (holder) { Object.assign(holder, h); h = holder; }
+      }
+      /* the right-hand set is packed once per input and keyed by it, so a lane that already holds it is not sent it again */
+      if (h.rightsFor !== bDs) { h.rightsFor = bDs; h.key = 'r' + (++JOIN_KEY); h.rights = P.pack(rightGeoms); }
+      return {
+        ok: true, pool: h.pool, lanes: h.lanes, own: !holder,
+        job: (gs, cands, predicate, maxKm) => {
+          const n = gs.length, candOff = new Int32Array(n + 1);
+          let tot = 0; for (let i = 0; i < n; i++) { candOff[i] = tot; tot += cands[i].length; }
+          candOff[n] = tot;
+          const candIdx = new Int32Array(tot); let at = 0;
+          for (let i = 0; i < n; i++) { const c = cands[i]; for (let k = 0; k < c.length; k++) candIdx[at++] = c[k]; }
+          return { rightsKey: h.key, rights: h.rights, lefts: P.pack(gs), candOff: candOff, candIdx: candIdx, predicate: predicate, maxKm: maxKm };
+        },
+      };
     }
 
     async function runNearestJoin(aDs, bDs, params, R, ctx) {
@@ -3203,7 +3332,14 @@ export function makeGisOps() {
       return out;
     }
 
+    /* (gis-worker-columnar) A join over many groups starts its threads once: the run owns a holder that joinCarrier fills, and the threads end with the run, whichever way it ends. */
     async function runMapped(id, ds, params, R, ctx) {
+      const carry = {};
+      try { return await runMappedGroups(id, ds, params, R, Object.assign({}, ctx, { carry: carry })); }
+      finally { if (carry.pool && typeof carry.pool.close === 'function') { try { carry.pool.close(); } catch (_) { } } }
+    }
+
+    async function runMappedGroups(id, ds, params, R, ctx) {
       const src = ds[0];
       const per = Math.max(1, Math.floor(PACKED.limits().mapGroupPositions / Math.max(1, (src.positions || 0) / Math.max(1, src.count || 1))));
       const wrapped = Object.assign({}, ctx, { tick: (u) => ctx.tick(u, src.count) });
@@ -6857,6 +6993,48 @@ export function makeGisOps() {
     /* async, and now for a reason rather than in anticipation of one: every op but filter needs
        js/gis-geometry.js, which loads its sweep-line on demand. The await happens ONCE per process —
        ready() memoises — and a reader who only ever filters never waits for it at all. */
+    /* ══ (gis-worker-columnar) WHERE AN OP RUNS: THIS GIS, OR AN ENGINE BUILT FOR A SIZE THIS ONE IS NOT ═══════
+       MEASURED (node 24, 2026-11-20, same 1,000,000 points × 400 zones, within): this GIS's join 17–22 s; DuckDB-Wasm + Spatial
+       6.9 s (plus an 11 s one-time load of the extension); DuckDB native 1.1 s (docs/GIS-CORE.md §6 has the table). An engine
+       like that is a DIFFERENT IMPLEMENTATION of the same question — on a boundary, at the seam, at a pole it may answer differently
+       (this GIS's predicates are DE-9IM on closed sets with the seam and pole rules above) — so it is never the default and never
+       silent. The seam is this door:
+         registerEngine({ name, ops: [op ids], accepts({op, rows, positions, inputs}) → {ok, why?}, run({op, inputs, params, signal, onProgress}) → the result a runner returns })
+       and a caller chooses with `opts.engine`: 'local' (the default — this GIS, on this thread or carried to workers), a registered name, or 'auto'
+       (the first registered engine whose `accepts` says yes for this input's size). The choice is RECORDED, never inferred later: the result's
+       `stats.engine` names the engine, the record's provenance carries `computedBy`, and an engine that declines or fails hands the SAME
+       step back to this GIS with `stats.engineDeclined` saying why — a refusal is never turned into an empty answer.
+       ⚠ NOTHING IS REGISTERED BY DEFAULT, and that is a statement and not a stub: no engine has been shown to answer the way this GIS does on the
+       cases above, and a registered engine that was not would change a saved recipe's numbers (the point of KERNEL_VERSION). */
+    const ENGINES = new Map();
+    function registerEngine(e) {
+      if (!e || typeof e !== 'object' || typeof e.name !== 'string' || !e.name || e.name === 'local' || e.name === 'auto') return { ok: false, why: 'engine-invalid', detail: { need: 'name (not local/auto)' } };
+      if (!Array.isArray(e.ops) || !e.ops.length || typeof e.run !== 'function' || typeof e.accepts !== 'function') return { ok: false, why: 'engine-invalid', detail: { need: 'ops[], accepts(), run()' } };
+      for (const id of e.ops) if (!DECL[id]) return { ok: false, why: 'engine-op-unknown', detail: { op: String(id) } };
+      ENGINES.set(e.name, e);
+      return { ok: true, name: e.name };
+    }
+    function unregisterEngine(name) { return ENGINES.delete(name); }
+    function engineList() { return Array.from(ENGINES.values()).map((e) => ({ name: e.name, ops: e.ops.slice() })); }
+    /* → null (this GIS) | { fail } | { engine } */
+    function engineFor(opId, ds, opts) {
+      const want = opts && opts.engine != null ? String(opts.engine) : 'local';
+      if (want === 'local') return null;
+      const info = { op: opId, inputs: ds.map((d) => ({ id: d.id, rows: d.count, positions: d.positions || null, kind: d.kind })), rows: ds[0] ? ds[0].count : 0, positions: ds[0] ? (ds[0].positions || null) : null };
+      if (want === 'auto') {
+        for (const e of ENGINES.values()) {
+          if (e.ops.indexOf(opId) < 0) continue;
+          let a = null; try { a = e.accepts(info); } catch (_) { a = null; }
+          if (a && a.ok) return { engine: e };
+        }
+        return null;
+      }
+      const e = ENGINES.get(want);
+      if (!e) return { fail: fail('engine-unknown', { engine: want, registered: Array.from(ENGINES.keys()) }) };
+      if (e.ops.indexOf(opId) < 0) return { fail: fail('engine-op-unsupported', { engine: want, op: opId, ops: e.ops.slice() }) };
+      return { engine: e };
+    }
+
     async function run(step, opts) {
       const R = registry();
       if (!R) return fail('registry-missing');
@@ -7030,9 +7208,19 @@ export function makeGisOps() {
          `res.ok` on an unawaited Promise is
          `undefined` — which this function would have reported as a refusal with no reason. */
       /* (gis-scale) an input held as chunks: mapped group by group where the op is per-left-row, else materialised only while it fits */
-      let res;
-      const bigAt = ds.findIndex((d) => d && typeof d.chunks === 'function');
-      if (bigAt < 0) res = await runner();
+      let res = null, usedEngine = null, declined = null;
+      const ext = engineFor(decl.id, ds, opts);
+      if (ext && ext.fail) return ext.fail;
+      if (ext) {
+        let out = null;
+        try { out = await ext.engine.run({ op: decl.id, inputs: ds, params: params, signal: ctx.signal, onProgress: ctx.onProgress }); }
+        catch (e) { out = { ok: false, reason: 'engine-threw' }; }
+        if (out && out.ok) { res = out; usedEngine = ext.engine.name; }
+        else declined = { engine: ext.engine.name, why: (out && (out.why || out.reason)) || 'engine-answered-nothing' };
+      }
+      const bigAt = res ? -1 : ds.findIndex((d) => d && typeof d.chunks === 'function');
+      if (res) { /* an engine answered */ }
+      else if (bigAt < 0) res = await runner();
       else if (!(await loadPacked())) return fail('input-too-large-for-op', { op: decl.id, input: bigAt, rows: ds[bigAt].count, positions: ds[bigAt].positions, max: null });
       else if (bigAt === 0 && MAPPED[decl.id]) res = await runMapped(decl.id, ds, params, R, ctx);
       else {
@@ -7042,6 +7230,8 @@ export function makeGisOps() {
         res = await runner();
       }
       if (!res || !res.ok) return res || fail('op-unknown', { op: decl.id });
+      if (usedEngine) res.stats = Object.assign({}, res.stats || {}, { engine: usedEngine });
+      else if (declined) res.stats = Object.assign({}, res.stats || {}, { engineDeclined: declined.engine + ': ' + declined.why });
 
       /* The title is an identifier, not a sentence: op(input, input). Nothing here composes prose,
          because prose here would be prose in one language. */
@@ -7076,6 +7266,8 @@ export function makeGisOps() {
         } catch (_) { return null; }
       })();
       if (eng) prov.engine = eng;
+      /* which engine computed THIS record, stated at the moment it was computed (see ENGINES above) */
+      if (usedEngine) prov.computedBy = usedEngine;
       /* ══ ⚠⚠⚠ (#R783) レシピは、呼び手が打ったものだけでなく、実行が解決したものも持つ ═════════
          `convert` forced this. A reader converting 人口密度 to /km² states only the TARGET, because
          the source unit is already on the column with its own author — so `params` alone says
@@ -7244,6 +7436,8 @@ export function makeGisOps() {
       }),
       op: (id) => (DECL[id] ? declOut(id) : null),
       run: run,
+      /* (gis-worker-columnar) where an op may run besides this GIS — see ENGINES above. Nothing is registered by default. */
+      registerEngine: registerEngine, unregisterEngine: unregisterEngine, engines: engineList,
       /* exposed because the panel labels a clipped shape with its area and the checks measure the
          same number the ops wrote — one implementation, asked by both */
       areaKm2: areaKm2,
