@@ -29,3 +29,8 @@ preview（ローカル）で、表の行クリック → 棒と地図点が選�
 - グラフは atlas-chart を使っていない（あれは HTML 文字列で個々の点の識別子を持たず、クリックを選択に繋げられない）。board のグラフは 40 本まで・自前の SVG。重複を避けるには atlas-chart に点の識別子を持たせるのが筋で、別の作業。
 - 時間軸 widget（IntMapTime 共有）と Objects は未実装。
 - チャット内の「開き直す」ボタンは無い（`board.restore` を Atlas に頼む）。
+
+## 起動費用の上限を上げた理由(perf-budget)
+新しい遅延チャンク `board`(利用者がボードを開くまで読まれない)と、`board.compose`/`board.restore` の能力記述が
+`atlas-cap-runs` に約 6.7 kB 足されたため、`async.gzip`・`atlas-cap-runs`・`dist.assets` の天井を `--update` で上げた。
+起動時の経路には載らない(`check:perf` の起動側の行は動いていない)。
