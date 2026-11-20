@@ -64,6 +64,7 @@
  *    spoken: reported as `unsupported_transport`.
  * ==========================================================================*/
 
+import { siteUrl } from '../supabase/functions/_shared/site-origin.js';
 import * as OA from './atlas-mcp-oauth.js';   /* (mcp-oauth) the sign-in flow; pure, so this chunk stays one lazy file */
 
 export const MCP_PROTOCOL_VERSION = '2026-07-28';          /* the stateless protocol this client prefers */
@@ -175,7 +176,8 @@ export function createMcpClient(opts) {
   const doFetch = o.fetchImpl || ((u, i) => globalThis.fetch(u, { ...i, signal: i.signal }));   /* every call passes the deadline's signal (post / relay) */
   const relayUrl = o.relayUrl || null;
   const timeoutMs = o.timeoutMs || DEFAULT_TIMEOUT_MS;
-  const redirectUri = o.redirectUri || null;      /* (mcp-oauth) the page's own callback (mcp-oauth-callback.html); null = sign-in is not available here */
+  const redirectUri = o.redirectUri || null;
+  const clientMetadata = o.clientMetadata || null;   /* (mcp-oauth) { url, redirectUri } — IntMap's Client ID Metadata Document, used where the server supports it */      /* (mcp-oauth) the page's own callback (mcp-oauth-callback.html); null = sign-in is not available here */
   const randomBytes = o.randomBytes || ((n) => globalThis.crypto.getRandomValues(new Uint8Array(n)));
   const sha256 = o.sha256 || (async (str) => new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))));
   const now = o.now || (() => Date.now());
@@ -646,7 +648,7 @@ export function createMcpClient(opts) {
     const challenge = (live[server.id] && live[server.id].challenge) || undefined;
     const meta = await OA.discover(doFetch, { serverUrl: server.url, challenge, signal: o2 && o2.signal });
     const prev = server.oauth && server.oauth.clientId && server.oauth.redirectUri === redirectUri && server.oauth.meta && server.oauth.meta.issuer === meta.issuer ? server.oauth.clientId : '';
-    const clientId = prev || (await OA.registerClient(doFetch, meta, { redirectUri, signal: o2 && o2.signal })).clientId;
+    const clientId = prev || (await OA.registerClient(doFetch, meta, { redirectUri, signal: o2 && o2.signal, clientMetadata })).clientId;
     const auth = await OA.buildAuthUrl(meta, { clientId, redirectUri, randomBytes, sha256, scope: a && a.scope != null ? String(a.scope) : undefined });
     patch(server.id, (r) => { r.oauth = Object.assign({}, r.oauth, { meta, clientId, redirectUri, pending: { state: auth.state, verifier: auth.verifier, at: now() } }); return r; });
     return { url: auth.url, state: auth.state, issuer: meta.issuer, scope: meta.scope };
@@ -790,6 +792,7 @@ export function pageClient(HOST) {
     relayUrl: base ? base + '/functions/v1/mcp-relay' : null,
     vault: typeof indexedDB === 'object' && indexedDB && globalThis.crypto && globalThis.crypto.subtle ? idbVault() : null,
     redirectUri: typeof location === 'object' && location && location.origin ? new URL('mcp-oauth-callback.html', location.href).toString() : null,
+    clientMetadata: { url: siteUrl(OA.CLIENT_METADATA_FILE), redirectUri: siteUrl('mcp-oauth-callback.html') },
     authHeaders: async () => {
       const DB = HOST && HOST.DB;
       if (!DB || !DB.auth || typeof DB.auth.getSession !== 'function') return {};

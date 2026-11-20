@@ -6,7 +6,10 @@
  *
  *    ① protected-resource metadata (RFC 9728)   → which authorization server guards the endpoint
  *    ② authorization-server metadata (RFC 8414, or OpenID configuration)   → its endpoints and what it supports
- *    ③ dynamic client registration (RFC 7591)   → a PUBLIC client (no secret) for IntMap's own callback page
+ *    ③ a PUBLIC client (no secret) for IntMap's own callback page, by the first route the server offers:
+ *         · Client ID Metadata Documents (MCP 2026-07-28 preferred route): client_id IS the https address of a JSON document IntMap serves
+ *           (clientMetadataDocument below, emitted at build time) — nothing to register, nothing stored at the service;
+ *         · dynamic client registration (RFC 7591) as the fallback for servers that do not advertise client_id_metadata_document_supported
  *    ④ authorization code + PKCE S256, with `state` and the `resource` indicator (RFC 8707)
  *    ⑤ code → tokens, refresh when they expire, revoke on disconnect
  *
@@ -20,8 +23,10 @@
  *  it was issued for (as `Authorization: Bearer`; through the mcp-relay Edge Function only when that server refuses browser calls, and then only
  *  forwarded to that same server, never stored). OAuth's own endpoints are never relayed: a server that blocks them is reported, not bypassed.
  *  Nothing is sent to a third address a metadata document names: every endpoint this module will call is checked to be an https
- *  address on the SAME registrable site as the issuer, or is refused (`oauth_endpoint_mismatch`).
+ *  address on the SAME registrable domain as the issuer (Public Suffix List — js/public-suffix.js; a.co.jp and b.co.jp are two sites), or is refused (`oauth_endpoint_mismatch`).
  * ==========================================================================*/
+
+import { sameRegistrableDomain } from './public-suffix.js';
 
 export class OAuthError extends Error {
   constructor(code, message, extra) { super(message || code); this.name = 'OAuthError'; this.code = code; if (extra) Object.assign(this, extra); }
@@ -29,6 +34,8 @@ export class OAuthError extends Error {
 
 const clean = (s, n) => String(s == null ? '' : s).replace(/[\u0000-\u001F\u007F-\u009F​-‏‪-‮⁦-⁩]/g, '').slice(0, n || 300);
 const CLIENT_NAME = 'IntMap Atlas';
+/** Where IntMap serves its Client ID Metadata Document, relative to the site root (scripts/site-url.mjs emits it at build time). */
+export const CLIENT_METADATA_FILE = 'mcp-client-metadata.json';
 const REFRESH_SKEW_MS = 60 * 1000;      /* refresh a minute early: a token that expires mid-request is a failed request */
 const DEFAULT_TTL_S = 3600;             /* a token response with no expires_in: assume an hour and say so (expiresAssumed) */
 
@@ -43,9 +50,6 @@ async function pkcePair(randomBytes, sha256) {
 }
 const randomState = (randomBytes) => b64url(randomBytes(16));
 
-/** The last two labels of a host — the unit «same site» is judged in. (A public-suffix list would be exact; two labels is the strict side for the
- *  hosted MCP services measured, and a mismatch is refused with a reason, never accepted.) */
-const siteOf = (host) => { const p = String(host).toLowerCase().split('.'); return p.length <= 2 ? p.join('.') : p.slice(-2).join('.'); };
 function httpsUrl(raw, what) {
   let u; try { u = new URL(String(raw || '')); } catch (_) { throw new OAuthError('oauth_bad_metadata', what + ' is not a URL.'); }
   if (u.protocol !== 'https:' || u.username || u.password) throw new OAuthError('oauth_bad_metadata', what + ' must be an https address without credentials.');
@@ -53,7 +57,7 @@ function httpsUrl(raw, what) {
 }
 function sameSite(url, issuer, what) {
   const u = httpsUrl(url, what), i = httpsUrl(issuer, 'the issuer');
-  if (siteOf(u.hostname) !== siteOf(i.hostname)) throw new OAuthError('oauth_endpoint_mismatch', what + ' (' + clean(u.hostname, 80) + ') is not on the authorization server\'s own site (' + clean(i.hostname, 80) + '); refusing to send anything there.');
+  if (!sameRegistrableDomain(u.hostname, i.hostname)) throw new OAuthError('oauth_endpoint_mismatch', what + ' (' + clean(u.hostname, 80) + ') is not on the authorization server\'s own site (' + clean(i.hostname, 80) + '); refusing to send anything there.');
   return u.toString();
 }
 
@@ -112,14 +116,28 @@ export async function discover(fetchImpl, { serverUrl, challenge, signal }) {
     tokenEndpoint: sameSite(meta.token_endpoint, metaIssuer, 'the token endpoint'),
     registrationEndpoint: meta.registration_endpoint ? sameSite(meta.registration_endpoint, metaIssuer, 'the registration endpoint') : undefined,
     revocationEndpoint: meta.revocation_endpoint ? sameSite(meta.revocation_endpoint, metaIssuer, 'the revocation endpoint') : undefined,
+    clientIdMetadataSupported: meta.client_id_metadata_document_supported === true,
     scopesSupported,
     scope: challenge && challenge.scope ? clean(challenge.scope, 200) : scopesSupported.join(' '),
     authMethods: Array.isArray(meta.token_endpoint_auth_methods_supported) ? meta.token_endpoint_auth_methods_supported.map((s) => clean(s, 40)) : ['client_secret_basic'],
   };
 }
 
-/** RFC 7591 registration of a PUBLIC client for this page's callback. → { clientId } */
-export async function registerClient(fetchImpl, meta, { redirectUri, signal }) {
+/** The document a Client ID Metadata Document client serves at its own client_id address (draft-ietf-oauth-client-id-metadata-document).
+ *  client_id MUST equal the address it is served from; a public client names no secret. */
+export function clientMetadataDocument(documentUrl, redirectUri) {
+  return { client_id: documentUrl, client_name: CLIENT_NAME, redirect_uris: [redirectUri], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], token_endpoint_auth_method: 'none' };
+}
+
+/** The client for this page's callback. → { clientId, via: 'metadata-document' | 'registration' }
+ *  `clientMetadata` = { url, redirectUri } names the document IntMap serves; it applies only when the callback in use is the one the document lists
+ *  (a local or preview origin is not in it, so those fall back to registration — which is also the route for servers without CIMD support). */
+export async function registerClient(fetchImpl, meta, { redirectUri, signal, clientMetadata }) {
+  if (meta.clientIdMetadataSupported && clientMetadata && clientMetadata.url && clientMetadata.redirectUri === redirectUri) {
+    const u = httpsUrl(clientMetadata.url, 'the client metadata address');
+    if (u.pathname === '/' || u.hash) throw new OAuthError('oauth_bad_metadata', 'The client metadata address must have a path and no fragment.');
+    return { clientId: u.toString(), via: 'metadata-document' };
+  }
   if (!meta.registrationEndpoint) throw new OAuthError('oauth_no_registration', 'This authorization server does not allow IntMap to register itself (no dynamic client registration), and IntMap has no pre-registered client for it. Paste an access token instead.');
   let r;
   try {
@@ -128,7 +146,7 @@ export async function registerClient(fetchImpl, meta, { redirectUri, signal }) {
   } catch (_) { throw new OAuthError('oauth_unreachable', 'Could not reach the registration endpoint (the server unreachable or CORS).'); }
   let j = null; try { j = await r.json(); } catch (_) { j = null; }
   if (!r.ok || !j || !j.client_id) throw new OAuthError('oauth_registration_failed', 'Client registration was refused (HTTP ' + r.status + (j && j.error ? ', ' + clean(j.error, 80) : '') + ').');
-  return { clientId: clean(j.client_id, 200) };
+  return { clientId: clean(j.client_id, 200), via: 'registration' };
 }
 
 /** → { url, state, verifier } — the address the reader signs in at. `state` and the verifier are kept by the caller until the callback. */

@@ -971,7 +971,9 @@ atlas-view-subject.js             Atlas — 「いま何を見ているか」の
                                   名前のある水域・タイルが名指す地名と山・戦略拠点・km 単位の縮尺）
 atlas-styles.js                   Atlas パネルのスタイルシート 1 本（atlasPanelCSS）
 mcp-oauth-callback.js            mcp-oauth-callback.html の動き（素のまま配る）——戻り先のクエリを開いた IntMap のページへ渡して閉じるだけ（mcp-oauth）
-atlas-mcp-oauth.js                Atlas — MCP サーバの OAuth（メタデータ発見・動的登録・PKCE・更新・失効。mcp-oauth）
+atlas-mcp-oauth.js                Atlas — MCP サーバの OAuth（メタデータ発見・Client ID Metadata Document／動的登録・PKCE・更新・失効。mcp-oauth）
+public-suffix.js                  Public Suffix List による登録可能ドメイン判定（OAuth の「同じサイトか」。a.co.jp と b.co.jp は別）
+public-suffix-data.js             上の規則データ（scripts/build-public-suffix.mjs が生成・MPL-2.0・2026-11-19 版）
 atlas-mcp-client.js               Atlas — 汎用 MCP クライアント（Streamable HTTP の発見・実行・CSP/CORS の失敗理由・外部出力を信頼できないデータとして囲う。mcp-client）
 atlas-metrics.js                  Atlas — 国の指標の集合 1 つ（METRICS＋XMET）と、その名前を解く解決器 1 つ。
                                   各レコードが自ら名乗るラベル（5 言語＋現在の言語）で引き当て、拒否は有効な全鍵を列挙する
