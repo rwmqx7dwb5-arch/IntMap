@@ -46,3 +46,5 @@ newsjp: Atlas が網を距離ではなくつながりとして分析できるよ
 
 ## 予算の天井を上げた理由(2026-11-21・main 取り込み後に再測定)
 - `check:perf`: 非同期 gzip 合計 4771.5 → 4799.1 kB（+27.6 kB）。`network` / `networkDisrupt` の算術（`js/gis-network.js`）と能力表の行が遅延チャンクに入った分で、起動時に同期で読む JS は増えていない。main の最新を取り込んだ木で完全な build を作って測った（CI が測る木と同じ）。
+
+- `scripts/gis-kernel-versions.mjs`: `js/gis-ops.js` の版ハッシュを main の最新と合わせて記録し直した（ops-14 のまま。既存の答えは変わらない）。
