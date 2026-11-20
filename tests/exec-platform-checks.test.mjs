@@ -158,3 +158,22 @@ test('⑥ a job that is owed survives the turn that started it and is resolved w
   wm.beginTurn(2, 'status'); wm.recordTurn({ turnId: 2, question: 'status', reply: 'done' });
   assert.doesNotMatch(wm.block(), new RegExp(jobOwedText(f).slice(0, 40)), 'resolved at its end');
 });
+
+test('⑦ a Python run is filed in the OPEN work: the program, and the history of the capability calls it made; again changes nothing; no open work files nothing', async () => {
+  const { fileRunToWork } = await import('../js/atlas-job-products.js');
+  const { normalizeWork } = await import('../js/atlas-work-store.js');
+  const S = makeWorkStore(memoryBackend());
+  const w = await S.put(normalizeWork({ id: 'wk-open-1', at: 1, goal: 'ports', status: 'open', products: [] }));
+  const run = { ok: true, codeSha256: 'abcdef0123456789ffff', bridge: { grants: ['read'], summary: { executed: 2, repeats: 1, refused: { 'not-granted': 1 }, unobserved: 0 }, logOmitted: 3, logSha256: 'deadbeef00000000aa',
+    calls: [{ seq: 1, kind: 'call', capability: 'data.value', ok: true, observed: true, args: '{"country":"Japan"}' }, { seq: 2, kind: 'call', capability: 'map.drawDataset', ok: false, observed: true, refused: 'not-granted', args: '{}' }] } };
+  const a = { code: 'result = await cap_call("data.value", {"country":"Japan"})', title: 'ports run' };
+  const r1 = await fileRunToWork(run, a, S, w.id);
+  assert.deepEqual(r1.saved.sort(), ['capability calls: ports run', 'program: ports run']);
+  const stored = await S.get(w.id);
+  const hist = currentProducts(stored).find((p) => p.kind === 'document');
+  assert.match(hist.content.text, /Granted: read/); assert.match(hist.content.text, /3 calls not logged/); assert.match(hist.content.text, /map\.drawDataset \| no \| not-granted/);
+  assert.equal(currentProducts(stored).find((p) => p.kind === 'code').content.language, 'python');
+  assert.deepEqual((await fileRunToWork(run, a, S, w.id)).saved, [], 'the same run again files nothing');
+  assert.equal((await fileRunToWork(run, a, S, null)).why, 'no-work', 'no open work: nothing is made behind the reader back');
+  assert.equal((await fileRunToWork(Object.assign({}, run, { ok: false }), a, S, w.id)).why, 'run-not-ok');
+});

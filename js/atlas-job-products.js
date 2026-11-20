@@ -66,6 +66,41 @@ export async function saveJobAsWork(f, store, o) {
   return { ok: true, workId: id, saved, unchanged, refused };
 }
 
+/* fileRunToWork(run, args, store, workId) → { ok, saved:[names] } | { ok:false, why }
+   A Python run's own record, filed in the work it belongs to (the open one — WORK_STATE.current): the PROGRAM as a `code` product, and — when it was
+   granted the capability bridge — the HISTORY of its calls as a `document` product (grants, the counts, every call with its outcome, and how many were
+   not logged). Both are versioned by name: the same program run again is a new version of the same product, and an identical one is not filed twice.
+   A run with no open work files nothing (there is nowhere to put it, and one is never made behind the reader's back). */
+export async function fileRunToWork(run, a, store, workId) {
+  if (!run || !run.ok) return { ok: false, why: 'run-not-ok' };
+  if (!workId || !store || typeof store.get !== 'function') return { ok: false, why: 'no-work' };
+  let work = await store.get(workId);
+  if (!work) return { ok: false, why: 'no-work' };
+  const title = clip((a && a.title) || 'python run', 60);
+  const list = [];
+  if (a && a.code) list.push({ kind: 'code', name: 'program: ' + title, content: { language: 'python', text: clip(a.code, 900000) }, note: 'compute.run' + (run.codeSha256 ? ' · sha256 ' + run.codeSha256.slice(0, 16) : '') });
+  const b = run.bridge;
+  if (b && b.summary) {
+    const s = b.summary;
+    const lines = ['# Capability calls of the run "' + title + '"', '', 'Granted: ' + (b.grants || []).join(' + ') + ' · ' + s.executed + ' run · ' + (s.repeats || 0) + ' repeats answered, not re-run'
+      + (s.unobserved ? ' · ' + s.unobserved + ' not observed' : '') + (b.logOmitted ? ' · ' + b.logOmitted + ' calls not logged' : '') + (b.logSha256 ? ' · log sha256 ' + String(b.logSha256).slice(0, 16) : ''), ''];
+    if (Object.keys(s.refused || {}).length) lines.push('Refused: ' + JSON.stringify(s.refused), '');
+    lines.push('| # | capability | ok | note | arguments |', '|---|---|---|---|---|');
+    (b.calls || []).slice(0, 2000).forEach((c) => lines.push('| ' + c.seq + ' | ' + (c.capability || c.kind) + ' | ' + (c.ok ? 'yes' : 'no') + ' | ' + [c.refused, c.alreadyDone ? 'already done' : '', c.why, c.observed === false ? 'not observed' : ''].filter(Boolean).join(', ') + ' | ' + String(c.args || '').replace(/\|/g, '/').slice(0, 120) + ' |'));
+    list.push({ kind: 'document', name: 'capability calls: ' + title, content: { format: 'markdown', text: clip(lines.join('\n'), 1500000) }, note: 'cap-bridge history of compute.run' });
+  }
+  const saved = [];
+  for (const p of list) {
+    const cur = currentProducts(work).find((x) => x.kind === p.kind && x.name === p.name);
+    if (cur && same(cur.content, p.content)) continue;
+    const r = withProduct(work, p, Date.now());
+    if (r.problem) continue;
+    work = r.work; saved.push(p.name);
+  }
+  if (saved.length) { try { await store.put(work); } catch (e) { return { ok: false, why: 'not-saved' }; } }
+  return { ok: true, saved };
+}
+
 /* the working memory's side: a job that was started is OWED until it is read at its end (kind 'job' survives the turn that wrote it) */
 export function noteJobStarted(wm, f) {
   if (!wm || typeof wm.open !== 'function' || !f) return;
