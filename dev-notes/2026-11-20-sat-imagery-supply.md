@@ -58,4 +58,4 @@ CI の測定（このツリー）: eager raw 4752.1 kB・gzip 1560.4 kB・brotli
 
 ## 6. window 経由の読みを 1 件だけ残した理由
 `js/imagery-atlas.js` が `window.__sat`（衛星パネルの切り替え口）を 1 回読む。持ち主は `js/app-body.js` で、そこは export を持たない（起動の本体）。
-`IntMapTime` と `IntMapSafe` の読みは import／定数検証に直した。`__sat` は Atlas が「いまの供給元」を読み切り替える唯一の口で、他の持ち主がいないため台帳に載せる。
+`IntMapTime` の読みは import に直した。`IntMapSafe.url` は出力検査（safe-output）が href にこれを要求するため Atlas で 1 回読む（持ち主は export しない）。`__sat` は Atlas が「いまの供給元」を読み切り替える唯一の口で、他の持ち主がいないため台帳に載せる。

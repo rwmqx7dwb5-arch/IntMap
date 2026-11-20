@@ -54,7 +54,7 @@ export async function imageryInfoRun(a, K) {
     let info = null; try { info = await captureAt(s, { lng, lat, day: r.pick.day || time, year: r.pick.year }); } catch (_) { info = null; }
     const terms = s.license.commercial === 'allowed' ? L('commercial use allowed', '商用可') : L('commercial use NOT confirmed', '商用の可否は未確認');
     const flags = [s.scope === 'regional' ? L('regional', '地域別') : '', r.pick.exact ? '' : L('nearest year ' + (r.pick.year || ''), '最も近い年 ' + (r.pick.year || '')), s.partial ? L('partial swath coverage', '観測帯のみ') : '', r.id === cur ? L('shown now', '表示中') : ''].filter(Boolean);
-    out.push('<b>' + esc(s.name[lang === 'jp' ? 1 : 0]) + '</b> (' + esc(s.id) + ')' + (flags.length ? ' [' + esc(flags.join(', ')) + ']' : '') + '<br>' + esc(info ? captureLine(s, info, lang) : '') + ' · ' + esc(terms) + ' · <a href="' + esc(s.license.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s.license.name) + '</a>');
+    out.push('<b>' + esc(s.name[lang === 'jp' ? 1 : 0]) + '</b> (' + esc(s.id) + ')' + (flags.length ? ' [' + esc(flags.join(', ')) + ']' : '') + '<br>' + esc(info ? captureLine(s, info, lang) : '') + ' · ' + esc(terms) + ' · <a href="' + window.IntMapSafe.url(s.license.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s.license.name) + '</a>');
   }
   const head = '◈ ' + esc(name || (lat.toFixed(3) + ', ' + lng.toFixed(3))) + (time ? ' · ' + esc(time) : '');
   return R(true, note(head) + note(out.join('<br><br>')) + (a.apply ? note(L('Switched the satellite base to the first picture whose time matches.', '衛星画像を、時刻が合う画像に切り替えました。')) : ''));
