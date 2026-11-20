@@ -15,3 +15,6 @@ newsjp: Atlas が長い報告書や長いコードを章ごとに書き、書い
 
 引き継いだもの: 「1 回の出力に収まらない」という制約は章分割と続き書きが運ぶ。絶対上限 5,000 は動かしていない。
 未測: 本番での 1 章の所要時間（40〜70 秒と見積もり、`research.longform` の予算 150 秒はその前提）。
+
+## 天井を上げた理由(perf)
+`atlas-cap-runs`（896.4→912.5 kB）・async.gzip・dist.assets の天井を測定値へ上げた。`research.longform` の能力本体（カードの描画・説明文・スキーマ）が research の遅延チャンクに入った分。ほかに device-storage 台帳へ `intmap.longform.*` の 1 行（content）を足し、security.html の content の件数を 18→19 にした。
