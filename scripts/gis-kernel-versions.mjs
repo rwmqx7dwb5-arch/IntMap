@@ -145,7 +145,8 @@ export const KERNELS = {
   /* (gov-gis-terms) ops-12 -> ops-13: a REPLAYED STEP NOW REGISTERS A RECORD THAT SAYS MORE — `provenance.upstreams` carries each
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
-  'js/gis-ops.js': { version: 'ops-13', sha256: 'bcbbfab90f56f08f81e4f99e92732fac1910c4c3fc7645bcdb3df95ea44295c4' },
+  /* (gis-worker-columnar) ops-13 HASH ONLY: a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
+  'js/gis-ops.js': { version: 'ops-13', sha256: 'd7c93df87103f350a80d67718e7441e3aefe1ef5a5f141fea003814a7897b9b0' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -179,7 +180,8 @@ export const KERNELS = {
      share only an edge now intersect; a boundary position is never within); every written edge is at most a
      quarter-turn of longitude. pointInGeometry is unchanged except at a pole. bbox / centroid / pointOnSurface /
      convexHull / simplify are new doors. Measured in tests/gis-foundation-refine-geometry-checks.test.mjs. */
-  'js/gis-geometry.js': { version: 'geom-4', sha256: '0bdd5c2ff3e6d5e6e2139761d2724f53d57aef568c440887cab957f7268fcbc4' },
+  /* (gis-worker-columnar) geom-4 HASH ONLY: `relateBlock` asks a block of pairs through the predicates that already exist; no predicate, tolerance or refusal changed. */
+  'js/gis-geometry.js': { version: 'geom-4', sha256: '0265c6dd81523e62c5328a887bb91739da7d5797e800d6cc78be93c894c468e0' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project

@@ -112,6 +112,115 @@ function bytesOf(packed) { return packed.type.byteLength + packed.parts.byteLeng
 /* the buffers to hand to postMessage's transfer list */
 export function transferables(packed) { return [packed.type.buffer, packed.parts.buffer, packed.xy.buffer]; }
 
+/* ══ SHELLS HELD BY COLUMN ════════════════════════════════════════════════════════════════════════
+   MEASURED (scripts/gis-scale-bench.mjs --worker --spill, node 24, 2026-11-20): with every position spilled, 1,000,000 rows
+   still held +550 MB of heap — the rows themselves, one {type, properties:{…}, geometry:null} object graph per feature
+   (≈550 B each for four properties). The same rows as columns are a Float64Array per numeric property and one pointer per
+   string (the strings are the ones the rows already shared), so a chunk's shells are held that way when they can be.
+   ⚠ IT IS A CODEC, LIKE pack(): expandShells(compactShells(x)) is x — the same keys in the same order, the same values
+   (-0, NaN and Infinity included, which JSON would not keep). A chunk it cannot lay out that way — rows whose keys differ,
+   a property that is an object or an array, a geometry still on the shell — is NOT compacted and is held as rows, exactly as
+   before, so the codec never has a reason to refuse and never a way to change a row. */
+function isPlain(o) { return o !== null && typeof o === 'object' && !Array.isArray(o) && (Object.getPrototypeOf(o) === Object.prototype || Object.getPrototypeOf(o) === null); }
+function isPrim(v) { return v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'; }
+function sameKeys(a, b) { if (a.length !== b.length) return false; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false; return true; }
+export function compactShells(shells) {
+  const n = shells.length;
+  if (!n) return null;
+  const s0 = shells[0];
+  if (!isPlain(s0)) return null;
+  const top = Object.keys(s0);
+  const propsAsColumns = isPlain(s0.properties);
+  /* ⚠ THE PROPERTY KEYS ARE THE UNION OF THE ROWS', in the order they first appear. A join leaves a matched row with the
+     partner's columns and an unmatched one with its own only — the same keys in the same order, some of them absent — and
+     that is the common case, so a column may be ABSENT on a row (a bitmap says so) and an absent key is not written back. A row whose keys
+     are in a different ORDER from the union is the one thing that cannot be laid out this way, and the chunk is held as rows. */
+  const union = [], at = new Map();
+  if (propsAsColumns) {
+    for (let i = 0; i < n; i++) {
+      const sh = shells[i];
+      if (!isPlain(sh) || !isPlain(sh.properties)) return null;
+      for (const q of Object.keys(sh.properties)) if (!at.has(q)) { at.set(q, union.length); union.push(q); }
+    }
+  }
+  const cols = [];
+  for (const k of top) {
+    if (k === 'geometry') { if (s0.geometry !== null) return null; continue; }
+    if (k === 'properties' && propsAsColumns) { for (const q of union) cols.push({ top: k, prop: q, vals: new Array(n), present: null }); continue; }
+    if (!isPrim(s0[k])) return null;
+    cols.push({ top: k, prop: null, vals: new Array(n), present: null });
+  }
+  /* ⚠ A ROW MAY WRITE THE SAME TOP-LEVEL KEYS IN ANOTHER ORDER (a join writes a matched row {type, geometry, properties} and hands an unmatched one on as it came, {type, properties, geometry}). The orders are kept as variants and each row says which it was, so it reads back with its keys where it had them. */
+  const topSet = new Set(top), variants = [top], vkey = new Map([[top.join(' '), 0]]);
+  let vid = null;
+  for (let i = 0; i < n; i++) {
+    const sh = shells[i];
+    if (!isPlain(sh)) return null;
+    const ks = Object.keys(sh), kj = ks.join(' ');
+    let vi = vkey.get(kj);
+    if (vi === undefined) {
+      if (ks.length !== top.length || variants.length >= 255) return null;
+      for (const k of ks) if (!topSet.has(k)) return null;
+      vi = variants.length; variants.push(ks); vkey.set(kj, vi);
+    }
+    if (vi) (vid || (vid = new Uint8Array(n)))[i] = vi;
+    if (sh.geometry !== null && 'geometry' in sh) return null;
+    let c = 0;
+    for (const k of top) {
+      if (k === 'geometry') continue;
+      if (k === 'properties' && propsAsColumns) {
+        const pr = sh.properties, ks = Object.keys(pr);
+        let last = -1;
+        for (const q of ks) { const j = at.get(q); if (j <= last) return null; last = j; }   /* an order the union does not have */
+        const base = c;
+        for (const q of ks) { const v = pr[q]; if (!isPrim(v)) return null; cols[base + at.get(q)].vals[i] = v; }
+        if (ks.length !== union.length) {
+          const here = new Set(ks);
+          for (let j = 0; j < union.length; j++) if (!here.has(union[j])) { const col = cols[base + j]; (col.present || (col.present = new Uint8Array(n).fill(1)))[i] = 0; }
+        }
+        c += union.length;
+        continue;
+      }
+      const v = sh[k]; if (!isPrim(v)) return null; cols[c++].vals[i] = v;
+    }
+  }
+  for (const c of cols) {
+    const v = c.vals, pr = c.present;
+    let same = !pr, nums = true;
+    for (let i = 0; i < n; i++) {
+      if (pr && !pr[i]) continue;
+      if (same && !Object.is(v[i], v[0])) same = false;
+      if (typeof v[i] !== 'number') nums = false;
+      if (!same && !nums) break;
+    }
+    if (same) { c.kind = 'const'; c.value = v[0]; c.vals = null; }
+    else if (nums) { const f = new Float64Array(n); for (let i = 0; i < n; i++) if (!pr || pr[i]) f[i] = v[i]; c.kind = 'f64'; c.vals = f; }
+    else c.kind = 'arr';
+  }
+  return { n: n, top: top, variants: vid ? variants : null, vid: vid, pk: propsAsColumns ? union : null, cols: cols };
+}
+export function expandShells(cm) {
+  const out = new Array(cm.n);
+  for (let i = 0; i < cm.n; i++) {
+    const sh = {}, pr = cm.pk ? {} : null;
+    /* each key's first column, found once: the row's own key order (a variant) is then free to differ from the columns' */
+    const start = cm.start || (cm.start = (() => { const m = new Map(); let c = 0; for (const k of cm.top) { if (k === 'geometry') continue; m.set(k, c); c += (k === 'properties' && cm.pk) ? cm.pk.length : 1; } return m; })());
+    for (const k of (cm.vid ? cm.variants[cm.vid[i]] : cm.top)) {
+      if (k === 'geometry') { sh.geometry = null; continue; }
+      let c = start.get(k);
+      if (k === 'properties' && cm.pk) {
+        for (let q = 0; q < cm.pk.length; q++) { const col = cm.cols[c++]; if (col.present && !col.present[i]) continue; pr[col.prop] = col.kind === 'const' ? col.value : col.vals[i]; }
+        sh.properties = pr; continue;
+      }
+      const col = cm.cols[c]; sh[k] = col.kind === 'const' ? col.value : col.vals[i];
+    }
+    out[i] = sh;
+  }
+  return out;
+}
+/* bytes the columns hold (an array of mixed cells counted as pointers) — what the registry and the bench report as the shells' weight */
+export function shellBytes(cm) { let b = 0; for (const c of cm.cols) b += c.kind === 'f64' ? c.vals.byteLength : c.kind === 'arr' ? c.vals.length * 8 : 8; return b; }
+
 /* ══ THE CHUNK STORE ═════════════════════════════════════════════════════════════════════════════
    A result that does not fit the heap as GeoJSON is held as chunks in the order its input arrived. A chunk is
    the feature SHELLS (everything but the geometry — properties, id, whatever the op wrote) and the geometries
@@ -120,11 +229,13 @@ export function transferables(packed) { return [packed.type.buffer, packed.parts
    single array would have held (the property every comparison against the in-memory path depends on). */
 export function makeChunkStore() {
   const chunks = [];
-  let count = 0, positions = 0, bytes = 0, resident = 0, cursor = 0, spilled = 0, spillError = null, backend = null, backendAsked = false;
+  let count = 0, positions = 0, bytes = 0, resident = 0, cursor = 0, spilled = 0, shellsCompacted = 0, spillError = null, backend = null, backendAsked = false;
   const owner = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   function add(shells, packed) {
     const b = bytesOf(packed);
-    chunks.push({ shells: shells, packed: packed, key: null, bytes: b, n: packed.n, nParts: packed.parts.length, nXy: packed.xy.length });
+    const cm = compactShells(shells);
+    chunks.push({ shells: cm ? null : shells, cshells: cm, nShells: shells.length, packed: packed, key: null, bytes: b, n: packed.n, nParts: packed.parts.length, nXy: packed.xy.length });
+    if (cm) shellsCompacted++;
     count += shells.length; positions += packed.xy.length / 2; bytes += b; resident += b;
     return chunks.length - 1;
   }
@@ -173,7 +284,7 @@ export function makeChunkStore() {
   async function dispose() {
     const be = backend;
     for (const c of chunks) if (c.key && be) { try { await be.del(c.key); } catch (_) { } }
-    for (const c of chunks) { c.shells = []; c.packed = { n: 0, type: new Uint8Array(0), parts: new Uint32Array(0), xy: new Float64Array(0), odd: null }; c.key = null; }
+    for (const c of chunks) { c.shells = []; c.cshells = null; c.nShells = 0; c.packed = { n: 0, type: new Uint8Array(0), parts: new Uint32Array(0), xy: new Float64Array(0), odd: null }; c.key = null; }
     resident = 0; spilled = 0;
   }
   /* features whose geometry is still on them: the geometry leaves the shell and is packed */
@@ -193,31 +304,57 @@ export function makeChunkStore() {
     if (!c.packed.xy) { const e = new Error('chunk-spilled'); e.why = 'chunk-spilled'; e.detail = { chunk: i }; throw e; }
     return build(c, c.packed);
   }
+  /* a chunk's rows, rebuilt from its columns when it was compacted */
+  function shellsOf(c) { return c.cshells ? expandShells(c.cshells) : c.shells; }
   function build(c, packed) {
-    const rd = reader(packed), out = new Array(c.shells.length);
+    const rd = reader(packed), shells = shellsOf(c), out = new Array(shells.length);
     for (let j = 0; j < out.length; j++) {
-      const s = c.shells[j];
+      const s = shells[j];
       if (!s || typeof s !== 'object') { out[j] = s; rd.next(); continue; }
       const g = rd.next();
       out[j] = ('geometry' in s) ? Object.assign({}, s, { geometry: g }) : Object.assign({}, s);
     }
     return out;
   }
-  /* what a registry measures a record by — type and properties, never the coordinates */
-  function stubs() {
+  /* ══ ONLY WHAT IS ON SCREEN ═══════════════════════════════════════════════════════════════════════
+     A table shows rows from..from+count and no coordinates. The rows live in the shells (held by column, never spilled), so
+     the slice is built from the chunks that overlap it — a result of a million rows answers its first two hundred without
+     reading one position back and without building the other 999,800.
+     ⚠ THE ROWS HAVE NO GEOMETRY (`geometry: null` where the shell carried the key): this door says what the attributes are,
+     not where anything is. A reader that needs the shape asks chunk()/chunkAsync(). */
+  function attributeRows(from, n) {
     const out = [];
-    for (const c of chunks) for (let j = 0; j < c.shells.length; j++) {
-      const s = c.shells[j], t = typeOf(c.packed, j);
-      out.push({ properties: (s && s.properties) || {}, geometry: t ? { type: t } : null });
+    let at = 0;
+    const lo = Math.max(0, Math.floor(from) || 0), hi = lo + Math.max(0, Math.floor(n) || 0);
+    for (const c of chunks) {
+      const end = at + c.nShells;
+      if (end > lo && at < hi) {
+        const shells = shellsOf(c);
+        for (let j = Math.max(lo, at) - at; j < shells.length && at + j < hi; j++) out.push(shells[j]);
+      }
+      at = end;
+      if (at >= hi) break;
     }
     return out;
   }
+  /* what a registry measures a record by — type and properties, never the coordinates */
+  function stubs() {
+    const out = [];
+    for (const c of chunks) { const shells = shellsOf(c); for (let j = 0; j < shells.length; j++) {
+      const s = shells[j], t = typeOf(c.packed, j);
+      out.push({ properties: (s && s.properties) || {}, geometry: t ? { type: t } : null });
+    } }
+    return out;
+  }
   return {
-    add, addFeatures, chunk, chunkAsync, stubs, settle, dispose,
+    add, addFeatures, chunk, chunkAsync, stubs, settle, dispose, attributeRows,
     get chunkCount() { return chunks.length; },
     get spilledCount() { return spilled; },
     get residentBytes() { return resident; },
     get spillError() { return spillError; },
+    /* how many chunks hold their rows as columns, and the weight of those columns */
+    get shellsCompacted() { return shellsCompacted; },
+    get shellBytes() { let b = 0; for (const c of chunks) if (c.cshells) b += shellBytes(c.cshells); return b; },
     get spilled() { return spilled > 0; },
     get count() { return count; },
     get positions() { return positions; },

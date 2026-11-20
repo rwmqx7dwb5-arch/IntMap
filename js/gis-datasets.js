@@ -590,6 +590,9 @@ export function makeGisDatasets() {
         /* (gis-scale) the same door for a result whose positions were written out (OPFS / IndexedDB): one chunk is read back at a time. A consumer that must work on any chunked record uses this one; chunks() above is the sync door and says 'chunk-spilled' by name for a chunk that left. */
         rec.chunksAsync = () => { let k = 0; return { next: async () => (k < chunked.chunkCount ? { done: false, value: await chunked.chunkAsync(k++) } : { done: true, value: undefined }) }; };
         rec.spilled = () => chunked.spilledCount;
+        /* (gis-worker-columnar) rows from..from+count with their properties and no geometry: what a table needs, built from the chunks that overlap the slice only */
+        rec.attributeRows = (from, count) => chunked.attributeRows(from, count);
+        rec.shellBytes = () => chunked.shellBytes;   /* what the rows weigh while held by column (0 where they are held as rows) */
         rec.release = () => chunked.dispose();
       }
       if (chunked) features = null; /* the stubs measured the record and are not kept: a million of them are the heap this path exists to spare */
