@@ -55,6 +55,8 @@ const WB = Object.freeze({
   /* the fetch begins at WB_FROM, so no row states a year before it whatever the series holds; the last year
      is the series' own, reported when it arrives */
   kind: 'series', from: 1990, by: 'js/wb-layers.js WB_FROM', to: 'runtime', carry: 'last',
+  /* WDI is an annual series keyed by today's ISO country codes: one value a year, for the country as it is drawn now */
+  grain: 'P1Y', geoBasis: Object.freeze({ borders: 'present' }),
   follows: 'js/wb-layers.js clockYear', reports: 'js/wb-layers.js IntMapLayerTime',
   says: LA('World Bank WDI (the years this layer reads)', '世界銀行 WDI（このレイヤーが読む年）'),
 });
@@ -94,10 +96,10 @@ export const TIME = Object.freeze({
     says: LA('Place names (historical names where a historical record states them)', '地名（歴史記録が述べる地名は当時の名前）') },
   'cb-geolabels': OFM,
   'cb-poi': OFM,
-  'cb-borders': { kind: 'record', self: 'js/time-borders.js IntMapTimeBorders',
+  'cb-borders': { kind: 'record', self: 'js/time-borders.js IntMapTimeBorders', geoBasis: Object.freeze({ borders: 'as-of-period' }), by: 'js/time-borders.js IntMapTimeBorders (each row carries its own span)',
     says: LA('Borders (CShapes 2.0, OpenHistoricalMap, historical-basemaps)', '国境（CShapes 2.0・OpenHistoricalMap・historical-basemaps）') },
   'cb-coast': OFM,
-  'cb-admin1': { kind: 'record', self: 'js/time-admin1.js ohmFilter',
+  'cb-admin1': { kind: 'record', self: 'js/time-admin1.js ohmFilter', geoBasis: Object.freeze({ borders: 'as-of-period' }), by: 'js/time-admin1.js ohmFilter (each row carries its own span)',
     says: LA('Subdivisions (OpenHistoricalMap, dated)', '行政区分（OpenHistoricalMap・日付つき）') },
   'cb-roads': OFM,
   'cb-rail2': OFM,
@@ -106,7 +108,7 @@ export const TIME = Object.freeze({
   'beta-dl-bldg3d': OSM,
   'beta-dl-plateau3d': { kind: 'snapshot', asOf: 'fetch', period: 'P1Y', by: 'js/plateau-cities.js (PLATEAU, MLIT Japan — the latest alias of each ward building model)',
     says: LA('PLATEAU city models (the latest published survey)', 'PLATEAU 都市モデル（最新の公開時点）') },
-  'cb-countries': { kind: 'record', self: 'js/time-countries.js IntMapHistStates',
+  'cb-countries': { kind: 'record', self: 'js/time-countries.js IntMapHistStates', geoBasis: Object.freeze({ borders: 'as-of-period' }), by: 'js/time-countries.js IntMapHistStates (each row carries its own span)',
     says: LA('Countries (the states that existed at the date)', '国（その日に存在した国家）') },
   'dl-contours': LANDFORM,
 
@@ -194,7 +196,7 @@ export const TIME = Object.freeze({
     says: LA('NASA Black Marble night lights (2012, 2016)', 'NASA Black Marble 夜間光（2012・2016 年）') },
   'dl-tfr': { kind: 'series', from: 1960, carry: 'last', by: 'js/time-countries.js WB_FLOOR', follows: 'js/time-countries.js WB_FLOOR',
     says: LA('Total fertility rate (World Bank, from 1960)', '合計特殊出生率（世界銀行、1960 年〜）') },
-  'dl-pop': { kind: 'series', from: 1850, to: 2018, carry: 'last', by: 'data/maddison.json (its smallest and largest year)', follows: 'js/time-countries.js MFLOOR',
+  'dl-pop': { kind: 'series', from: 1850, to: 2018, carry: 'last', grain: 'P1Y', geoBasis: Object.freeze({ borders: 'present' }), by: 'data/maddison.json (its smallest and largest year; units are today’s countries — dev-notes/2026-11-19-spatiotemporal-1914.md §3)', follows: 'js/time-countries.js MFLOOR',
     says: LA('Population (Maddison Project 2020, 1850–2018)', '人口（マディソン・プロジェクト 2020、1850〜2018 年）') },
   'bx-wbpopgrow': WB, 'bx-wbaging': WB, 'bx-wbfert': WB, 'bx-wbadofert': WB, 'bx-wburb': WB, 'bx-wbrural': WB, 'bx-wbdensity': WB, 'bx-wbref': WB,
 
