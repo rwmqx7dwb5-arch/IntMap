@@ -75,6 +75,7 @@
 
     /* ── only when a reader asks ── */
     { id: 'plateau-cities', path: 'data/plateau-cities.json', phone: 'need', who: 'js/plateau-cities.js loadPlateauRegistry() via js/beta-overlays.js', why: 'the PLATEAU layer switch: which Japanese city models exist and where' },
+    { id: 'geoid-egm2008', path: 'data/geoid-egm2008.bin.gz', phone: 'need', who: 'js/geoid.js loadGeoid() via js/beta-overlays.js worldSync()', why: 'the 3D city models layer, once the view is zoomed in on a city: the geoid height that sets a worldwide building tileset on the ground (459 kB, read once)' },
     { id: 'country-facts', path: 'data/country-facts.json', phone: 'need', who: 'js/countries-ui.js (a country card)', why: 'one card' },
     { id: 'admin1', path: 'data/admin1-world.json.gz', phone: 'need', who: 'js/world-packs.js, js/atlas-admin1.js', why: 'first-level subdivisions, a layer or an Atlas question' },
     { id: 'bathymetry', path: 'data/bathymetry.png', phone: 'need', who: 'js/bathymetry.js', why: 'the tsunami and sea-level tools' },
