@@ -38,3 +38,11 @@ newsjp: 全球の衛星下地を地図を描くスレッドの外で作るよう
   どう描くか（レイヤーの統合・空レイヤーの除外）を設計し直す必要があり、見た目の同一性を測りながら行う別作業。
 - CJK 字形の `measureText`（MapLibre が同梱する `@mapbox/tiny-sdf`）。字形を事前に焼く案は見た目が変わらないが、配信量が増える。
 - 主スレッドでのベクタタイル復号（呼び出し元の特定が未了）。
+
+## 3. 共有窓口の読み取りが 1 本増える（`check:surface`）
+
+`js/world-base.js` が `window.IntMapSatWorker`（`src/sat-worker-client.js` の窓口）を読む（1 → 2 本目）。
+`js/sat-proto.js` が同じ窓口から衛星タイルを頼む既存の形と同じで、所有者が window 経由でしか出していないため
+import に置き換えられない。`node scripts/global-surface.mjs --update` で基準を更新した。
+また `js/world-floor-tile.js` は worker・main の双方から**動的 import** で読む（静的だと起動時のモジュールが
+912 → 913 に増え `perf-budget` の eager.modules が赤になる。worker の vm 試験の取り込みも静的 import を評価できない）。

@@ -40,7 +40,6 @@
  *  reach ±90°, underneath everything as a single whole-globe imagery layer.
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
-import { drawFloorTile } from './world-floor-tile.js';
 window.IntMapWorldBase=(function(){
   'use strict';
   const GE=()=>IntMapGeoEngine;
@@ -139,11 +138,13 @@ window.IntMapWorldBase=(function(){
     const v=viaWorker(z,x,y);
     return (v||Promise.resolve(null)).then(bm=>{
       if(bm){ made++; return bm; }
-      return source().then(im=>{
+      /* no worker: the same routine, on this thread. A dynamic import — it is the fallback, and a static one would
+         add a module to every start (scripts/perf-budget.mjs eager.modules). */
+      return Promise.all([source(),import('./world-floor-tile.js')]).then(([im,lib])=>{
         const sw=im.naturalWidth||im.width, sh=im.naturalHeight||im.height;
         const cv=document.createElement('canvas'); cv.width=TILE; cv.height=TILE;
         const g=cv.getContext('2d',{alpha:false});
-        drawFloorTile(g,im,sw,sh,z,x,y,TILE);
+        lib.drawFloorTile(g,im,sw,sh,z,x,y,TILE);
         made++;
         if(typeof createImageBitmap==='function') return createImageBitmap(cv);
         return cv;

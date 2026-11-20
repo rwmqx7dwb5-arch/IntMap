@@ -29,13 +29,15 @@
 /* (sat-arcgis-3d) WHERE the tile comes from is js/esri-imagery.js's — keyed or keyless, one URL builder for
    the whole app. This module worker has its own instance of it, so its own `refused` flag: a key this
    worker saw refused falls back here independently of the page, which is what a refusal needs. */
-import { drawFloorTile } from '../js/world-floor-tile.js';
 import { imageryTileUrl, imageryKeyed, imageryRefused, isImageryReply, isImageryPlaceholder } from '../js/esri-imagery.js';
 
 let RAW_MAX = 1200, DEPTH_MAX = 4000;
 const raw = new Map();            /* z/x/y → {buf, placeholder} — the ANCESTORS are what is worth keeping */
 const depth = new Map();          /* z10 neighbourhood → {have, stop} */
-let floorPic = null;              /* the whole-earth floor picture (ImageBitmap), see 'floor' */
+/* the floor's reprojection is loaded the first time a floor tile is asked for (a dynamic import: most sessions on a
+   phone never need it in the worker, and a static one is not something the worker's vm test harness can evaluate) */
+let floorPic = null, _floorLib = null;   /* floorPic: the whole-earth floor picture (ImageBitmap), see 'floor' */
+const floorLib = () => _floorLib || (_floorLib = import('../js/world-floor-tile.js'));
 const aborts = new Map();         /* request id → AbortController */
 const dirty = new Map();          /* depth entries changed since the last reply, mirrored to the main thread */
 
@@ -378,7 +380,7 @@ self.onmessage = async (ev) => {
     try {
       if (!floorPic || typeof OffscreenCanvas !== 'function') throw new Error('no floor picture');
       const T = m.tile | 0 || 512, cv = new OffscreenCanvas(T, T), g = cv.getContext('2d', { alpha: false });
-      drawFloorTile(g, floorPic, floorPic.width, floorPic.height, m.z, m.x, m.y, T);
+      (await floorLib()).drawFloorTile(g, floorPic, floorPic.width, floorPic.height, m.z, m.x, m.y, T);
       const bitmap = cv.transferToImageBitmap();
       self.postMessage({ id: m.id, ok: true, bitmap, mode: 'floor' }, [bitmap]);
     } catch (e) { self.postMessage({ id: m.id, ok: false, err: String(e && e.message || e) }); }

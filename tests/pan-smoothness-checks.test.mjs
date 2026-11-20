@@ -19,7 +19,8 @@ test('drawFloorTile fills every row once, top to bottom, inside the picture', ()
 test('world-base.js and the satellite worker share js/world-floor-tile.js', () => {
   const wb = readFileSync(new URL('../js/world-base.js', import.meta.url), 'utf8');
   const sw = readFileSync(new URL('../src/sat-worker.js', import.meta.url), 'utf8');
-  assert.match(wb, /from '\.\/world-floor-tile\.js'/);
-  assert.match(sw, /from '\.\.\/js\/world-floor-tile\.js'/);
+  /* both are dynamic imports: a static one adds a module to every start (perf-budget eager.modules), and the worker's vm test harnesses (sat-mobile-speed, sat-arcgis-3d) evaluate it as a script */
+  assert.match(wb, /import\('\.\/world-floor-tile\.js'\)/);
+  assert.match(sw, /import\('\.\.\/js\/world-floor-tile\.js'\)/);
   assert.doesNotMatch(wb, /Math\.sinh/);
 });
