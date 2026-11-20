@@ -49,3 +49,6 @@ e-Govデータポータルで「人口」を検索 → 先頭のデータセッ�
 
 ## perf 天井
 `atlas-cap-runs` の async chunk は web.browse / web.fetchFile の 2 能力(説明文・schema・実行)ぶん増え、895.2 KiB になった。能力そのものの重さで、削れる重複ではない。天井を 916,700 B に上げた(ローカルのビルドがメモリ不足で `--update` が走らなかったため、CI の実測値から手で置いた)。
+
+## 予算の天井を上げた理由（perf-baseline）
+web-browse が `web.browse` / `web.fetchFile` の 2 能力（`atlas-cap-web`・schema・文言）を足したので、遅延 chunk の `atlas-cap-runs` が 896.4→916.1 kB、`atlas-console` が 1066.9→1074.2 kB、async gzip が 4771.5→4811.7 kB、dist.assets が 21559.0→21695.6 kB になった（`node scripts/perf-budget.mjs --update`・2026-11-21 の測定）。起動時に読む chunk は増えていない（どれも能力を呼んだときだけ読む遅延 chunk）。失効条件: 能力の統合・縮小でこれらが下がったら、main の CI が `--tighten` で下げる。
