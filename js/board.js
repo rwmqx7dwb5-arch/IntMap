@@ -314,8 +314,8 @@ export function board(HOST) {
       if (e.target.closest && e.target.closest('button')) return;
       const r = root.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
       const mv = (m) => { root.style.left = Math.max(0, m.clientX - dx) + 'px'; root.style.top = Math.max(0, m.clientY - dy) + 'px'; root.style.right = 'auto'; };
-      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); };
-      addEventListener('pointermove', mv); addEventListener('pointerup', up);
+      const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); };
+      window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
     });
   }
 

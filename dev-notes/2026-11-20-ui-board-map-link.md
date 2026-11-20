@@ -44,3 +44,9 @@ Chronos に実際に繋ぐ。**この作業は両 PR（open）の上に積んだ
 time widget の宣言の拒否・地図の双方向（クリック→選択→強調、別要素での選択→強調とカメラ、フィルタで隠れた行は強調しない、detach で
 源・層・ハンドラが残らない）・時計の双方向と反響なし・`board` ブロックの検査。`tests/declarative-workspace-checks.test.mjs` の
 フィクスチャに `board` ブロックを足し、カードが鍵だけを持つことを確かめる。
+
+## 4. 窓口の台帳
+`tests/global-surface-baseline.json`: `IntMapBoard` 2→4、`IntMapLazy` 189→192。増えた 3 件は ui.compose の `board` ブロック
+（`js/atlas-cap-ui.js`・`js/atlas-console.js`）が遅延チャンク `board` を `need` して `IntMapBoard.stage/openStaged` を呼ぶ読み。
+`board` は遅延で mount されるため import できず、既存の board.compose と同じ窓口を通す。`js/atlas-capabilities.js` は
+`atlas-caps.mjs --write` で再生成（#1301/#1293 の merge で行が増えた分）。

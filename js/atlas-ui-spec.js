@@ -37,7 +37,7 @@
    rows in the same element); 32 768 characters of JSON is what the notebook keeps comfortably per step
    inside its 1 MiB entry (supabase/migrations/20261003170000_atlas_notebook.sql). They expire when the panel
    layout or the notebook's ceiling changes. This table is the one place they are written. */
-import { normalise as normaliseBoard } from './board-spec.js';
+import * as BoardSpec from './board-spec.js';
 
 export const LIMITS = Object.freeze({
   specChars: 32768, blocks: 12, title: 120, text: 4000, label: 60, short: 40, unit: 16, note: 160, source: 300,
@@ -218,7 +218,7 @@ export function checkView(spec, L) {
       if (isObj(it) && !def.one[k].some((set) => set.every((n) => it[n] != null && it[n] !== ''))) add(at + '.' + k + '[' + j + ']', 'missing', F(L('needs {a} or {b}', 'には {a} か {b} が必要です'), { a: def.one[k][0].join(' + '), b: def.one[k].slice(1).map((s) => s.join(' + ')).join(' / ') }));
     }));
     /* a board block is a board declaration (js/board-spec.js): the same gate decides it, so a view cannot carry a board the board would refuse */
-    if (b.kind === 'board' && isObj(b.board)) { const r = normaliseBoard(b.board, null); if (!r.ok) r.issues.forEach((is) => add(at + '.board' + (is.path ? '.' + is.path : ''), 'board', is.why)); }
+    if (b.kind === 'board' && isObj(b.board)) { const r = BoardSpec.normalise(b.board, null); if (!r.ok) r.issues.forEach((is) => add(at + '.board' + (is.path ? '.' + is.path : ''), 'board', is.why)); }
     /* a table's cells: one per column, each a short text or a number */
     if (b.kind === 'table' && Array.isArray(b.rows) && Array.isArray(b.columns)) {
       const w = b.columns.length;
