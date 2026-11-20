@@ -6,15 +6,15 @@
     "border-detail": {
       "path": "data/border-detail",
       "kind": "dir",
-      "sha256": "91b4f8821dacf992ca123eb700ce361c183043c2c971308519c201e980f2f865",
+      "sha256": "89beecc692d3e1cb026e63bdb1605d614b33e44872eb2aae6cd01f604880dccd",
       "builder": "scripts/build-border-detail.mjs",
-      "files": 9117,
-      "bytes": 783938926,
+      "files": 9127,
+      "bytes": 785050143,
       "release": {
-        "tag": "data-border-detail-91b4f8821dac",
-        "asset": "border-detail-91b4f8821dac.tar.gz",
-        "sha256": "6ba0b29fd2607f973245e47ba95ada4d6fd0e0fc1e0f31980c60627b1bd7d765",
-        "bytes": 201860208
+        "tag": "data-border-detail-89beecc692d3",
+        "asset": "border-detail-89beecc692d3.tar.gz",
+        "sha256": "90bdbd0b21f152ab242c4aa5bb0f118267175e5478a375e9429bcd1b4370e980",
+        "bytes": 202202679
       }
     },
     "hist-eras": {
