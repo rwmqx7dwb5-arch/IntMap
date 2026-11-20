@@ -39,3 +39,9 @@ newsjp: Atlas が「この港が止まったら影響を受ける都市と工場
 ## 未了
 - #1289・#1292 が merge されるまでこの PR はそれらの上に積んでいる。
 - 港の取扱量の範囲外（米・日・中・シンガポール）、海運航路、道路は上記のとおり。
+
+## CI で赤になったものと直し方（2026-11-20）
+- `check:perf`: 非同期チャンク合計が 14136.4 kB → 14225.4 kB、`gis-core` が 622.7 → 648.4 kB。増えたのは #1289 の `network` / `networkDisrupt` の算術（`js/gis-network.js` と `js/gis-ops.js` の 112 行）で、この PR はその上に積んでいるため。天井は CI の実測値に引き上げた（`tests/perf-baseline.json`・async.raw 14,567,000 B・gis-core 664,100 B）。港のデータ（0.97 MB）は初回表示に入らず、能力が呼ばれたときだけ `jsonWithin` で読む。
+- `check:static` fetch-deadline: `js/logistics-impact.js` の読み込みを `jsonWithin`（30 秒の無通信で打ち切り）に変更。
+- `check:datagov`: 新しい束の `paidBy` が無かったので `js/reference-data.js` の DATA_SOURCES に行を足し、`GOVERNANCE.paidBy` で結んだ（鉄道の ODbL が条件になる）。
+- R749 ⑨: `js/gis-ops.js` の版ハッシュを main と合わせて記録し直した（版は上げない。応答を変える編集ではない）。

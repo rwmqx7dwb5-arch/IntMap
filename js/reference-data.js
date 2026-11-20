@@ -312,6 +312,7 @@ export const IntMapRefData = (function(){
        Natural Earth is public domain and required no attribution; OpenStreetMap is ODbL 1.0 and does.
        The credit is on the map whenever the layer is on (the source declares it) and here. */
     {n:'World railways — OpenStreetMap (railway=rail/narrow_gauge/light_rail/subway/tram/construction, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:railway',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Port hinterlands — rail reachability from OpenStreetMap rail, ports (Wikidata CC0, Eurostat mar_go_aa CC BY 4.0, UN/LOCODE), cities (GeoNames CC BY 4.0) and company-atlas factory sites',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R254) the data-center layer: OSM's own surveyed buildings (ODbL) plus the operators' published region lists */
     {n:'Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:telecom%3Ddata_center',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R255) the four surveyed-facility layers — js/osm-facilities.js. Same live Overpass path,

@@ -16,15 +16,17 @@
  *  not in it; the ports are those that state cargo, a UN/LOCODE or a rail terminal.
  *  Pure apart from `load` (the page's fetch, or a file read in the node checks).
  * ==========================================================================*/
+import { jsonWithin } from './fetch-deadline.js';
 export function makeLogisticsImpact(deps) {
+  /* the file is ~1 MB; observed 2026-11-20 as one static read. 30 s bounds a stalled connection, not a slow line; expires if the file grows past a few MB. Canon: js/proxy-fetch.js clockFor. */
+  const READ_MS = 30000;
   deps = deps || {};
   let cache = null;
   async function data() {
     if (cache) return cache;
     const load = deps.load || (async () => {
       const url = (typeof document !== 'undefined' && document.baseURI) ? new URL('data/logistics-network.json', document.baseURI).toString() : 'data/logistics-network.json';
-      const r = await fetch(url); if (!r.ok) throw new Error('http ' + r.status);
-      return r.json();
+      return jsonWithin(url, READ_MS);
     });
     cache = await load();
     return cache;

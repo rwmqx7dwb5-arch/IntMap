@@ -84,6 +84,7 @@ export const GOVERNANCE = {
     asOf: '2026-11-20',
     schema: 'scripts/logistics/build.mjs (ports · entities) — read by js/logistics-impact.js (the Atlas capability research.portImpact) and tests/logistics-network-checks.test.mjs',
     quality: { rows: 984, missing: { ref: 0, name: 0, lng: 0, lat: 0 }, outOfRange: { lng: 0, lat: 0 }, duplicates: 0 },
+    paidBy: 'Port hinterlands — rail reachability from OpenStreetMap rail, ports (Wikidata CC0, Eurostat mar_go_aa CC BY 4.0, UN/LOCODE), cities (GeoNames CC BY 4.0) and company-atlas factory sites',
     builtBy: 'scripts/logistics/build.mjs',
   },
 };
