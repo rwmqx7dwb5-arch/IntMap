@@ -9,7 +9,7 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14475671,
+    "raw": 14559315,
     "gzip": 4886000,
     "chunks": {
       "account-data": 7346,
@@ -25,7 +25,7 @@
       "atlas-cap-runs": 917888,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1086675,
+      "atlas-console": 1092169,
       "atlas-delegate": 73391,
       "atlas-executor": 61782,
       "atlas-float": 10113,
