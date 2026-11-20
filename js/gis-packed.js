@@ -429,7 +429,7 @@ async function idbBackend() {
   return be;
 }
 let PICKED = null;
-export function pickBackend() {
+function pickBackend() {
   if (!PICKED) PICKED = (async () => { try { const o = await opfsBackend(); if (o) return o; } catch (_) { } try { return await idbBackend(); } catch (_) { return null; } })();
   return PICKED;
 }

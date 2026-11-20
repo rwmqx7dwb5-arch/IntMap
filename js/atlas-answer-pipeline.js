@@ -54,6 +54,7 @@
 import { makeAtlasEvidence } from './atlas-evidence.js';
 import { makeAtlasAnswerContract } from './atlas-answer-contract.js';
 import { makeAtlasAnswerAudit } from './atlas-answer-audit.js';
+import { recordAnswer, sharedEvidenceGraph } from './evidence-graph-record.js';
 
 export function makeAtlasAnswerPipeline() {
   return (function () {
@@ -191,6 +192,11 @@ export function makeAtlasAnswerPipeline() {
     env.audit = { status: audit.errors.length ? 'findings' : 'passed', errors: audit.errors, warnings: audit.warnings };
     trace.status = env.audit.status;
     trace.evidence = registry.size();
+    /* (evidence-graph) the answer's figures enter the long-lived lineage graph (js/evidence-graph.js); a recorder failing never fails the answer */
+    try {
+      const eg = opts.evidenceGraph || sharedEvidenceGraph();
+      if (eg && eg.graph) trace.graph = recordAnswer(eg.graph, { registry, claims: env.claims, callId, model: opts.model || '' });
+    } catch (_) { trace.graph = null; }
     /* (atlas-completion) every document with an address the registry holds after the call — what was fetched,
        by IntMap or by this call's search, with its id and retrieval time — so the caller can hand it to Atlas
        and to the next call of the turn (opts.webSources) instead of it being forgotten with this registry */

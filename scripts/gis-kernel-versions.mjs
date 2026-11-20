@@ -145,8 +145,9 @@ export const KERNELS = {
   /* (gov-gis-terms) ops-12 -> ops-13: a REPLAYED STEP NOW REGISTERS A RECORD THAT SAYS MORE — `provenance.upstreams` carries each
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
-  /* (gis-worker-columnar) ops-13 HASH ONLY: a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
-  'js/gis-ops.js': { version: 'ops-13', sha256: 'd7c93df87103f350a80d67718e7441e3aefe1ef5a5f141fea003814a7897b9b0' },
+  /* (spatiotemporal-join) ops-13 -> ops-14: the period a join / spatialJoin / nearestJoin / timeJoin / aggregate result states is now derived from BOTH inputs (it was the first input's), a row-wise input gives the output two derived period columns, and the record carries `warnings` and `geoBasis`. No existing geometry or cell changes; what the record states about WHEN does. */
+  /* (gis-worker-columnar) ops-14 HASH ONLY (over the time kit): a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
+  'js/gis-ops.js': { version: 'ops-14', sha256: 'dfcb6ca4bfdcd824e042e0ba26c7cb20604419b3f6330bad728246bf11f29e6c' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
