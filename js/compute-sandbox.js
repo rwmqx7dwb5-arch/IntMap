@@ -474,9 +474,12 @@ function computeWorker(CFG, importModule, makeBridgeClient) {
 }
 
 /* ══ THE HOST ══════════════════════════════════════════════════════════════════════════════════ */
+import { reusableCode, fingerprintRecord, reuseKey, makeResultReuse } from './atlas-result-reuse.js';   /* (result-reuse) the same code on the same data is answered from the earlier run */
+
 export function makeComputeSandbox(opts) {
   return (function () {
     const o = opts || {};
+    const REUSE = makeResultReuse({ max: 24 });
     const scope = o.scope || (typeof window !== 'undefined' ? window : globalThis);
     const WorkerCtor = o.Worker || (typeof Worker !== 'undefined' ? Worker : null);
 
@@ -677,6 +680,15 @@ export function makeComputeSandbox(opts) {
       const ro = runOpts || {};
       const job = validate(a);
       if (!job.ok) return job;
+      /* (result-reuse) THE KEY IS CODE + THE INPUTS' CONTENT + THE CONDITIONS. A rerun (fixedIds / only) restores specific records and is never answered from the cache. A hit is served only while every dataset it made is still in the registry, not stale, and the same size. */
+      let reuseK = null;
+      if (!ro.fixedIds && !ro.only && !ro.bridge && reusableCode(job.code)) {
+        const fps = []; for (const r of job.inputs) fps.push(await fingerprintRecord(r, sha256Hex));
+        reuseK = await reuseKey({ kind: 'compute.run', spec: { code: job.code, outputs: job.outputs, title: job.title || '' }, inputs: fps, conditions: { runtime: RUNTIME.name + '@' + RUNTIME.version } }, sha256Hex);
+        const reg0 = registry();
+        const hit = reg0 && REUSE.get(reuseK, (v) => (v.datasets || []).every((d) => { const r = reg0.get(d.id); return r && !r.stale && r.count === d.count; }));
+        if (hit) return hit;
+      }
       const raw = await execute(job, ro.signal || null, ro.bridge || null);
       const base = { stdout: raw.stdout || '', stderr: raw.stderr || '', stdoutCut: raw.stdoutCut || 0, stderrCut: raw.stderrCut || 0,
         timings: raw.timings || null, elapsedMs: raw.elapsedMs, refusedUrls: raw.refusedUrls || [], runtime: RUNTIME.name + '@' + RUNTIME.version };
@@ -715,7 +727,9 @@ export function makeComputeSandbox(opts) {
         datasets.push({ name: m.name, id: rec.id, title: rec.title, count: rec.count, withGeometry: rec.withGeometry,
           geometryType: rec.geometryType, fields: (rec.fields || []).map((f) => ({ name: f.name, type: f.type })), nonFinite: m.nonFinite });
       }
-      return Object.assign(base, { bridge: bridgeOut, ok: true, observed: true, datasets: datasets, values: values, packages: raw.packages || [], python: raw.python || null, codeSha256: codeSha256 });
+      const result = Object.assign(base, { bridge: bridgeOut, ok: true, observed: true, datasets: datasets, values: values, packages: raw.packages || [], python: raw.python || null, codeSha256: codeSha256 });
+      if (reuseK) REUSE.put(reuseK, result);
+      return result;
     }
 
     /* a session dataset as the code sees it, for the capability bridge's `dataset` request: null when there is none or it is stale */
@@ -734,7 +748,7 @@ export function makeComputeSandbox(opts) {
     }
 
     const API = {
-      run, rerun, validate, payloadOf, readDataset, classify, provenanceFor, workerSource,
+      run, rerun, reuseStats: () => REUSE.stats(), validate, payloadOf, readDataset, classify, provenanceFor, workerSource,
       runtime: () => ({ name: RUNTIME.name, version: RUNTIME.version, base: RUNTIME.base, files: Object.assign({}, RUNTIME.files) }),
       limits: () => Object.assign({}, LIMITS),
       reasons: () => ({ refusals: REFUSALS.slice(), failures: FAILURES.slice(), unobserved: UNOBSERVED.slice() }),
