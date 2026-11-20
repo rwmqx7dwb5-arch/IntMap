@@ -32,3 +32,6 @@ newsjp: Atlasが、工場の立地として日本の都道府県を、卸電力�
 
 - 能力を 1 つ足すと `find_capability` の順位が動き、Atlas の再生カセット `promoted-tool-runs-the-capability`（「measure distance between two places」への find_capability の返り）が 22 本中 1 本ずれた。原本の main では 22/22。意図した変更（弱い一致 4 件が結果から落ち、先頭 `map.measure` は不変）と読んで `scripted-cassettes.mjs --write` で記録し直した。
 - 能力数を文書で 252→253 に直す一括置換が、無関係の「全 252 の国と地域」まで書き換え、置換関数の引数を取りこぼして `undefined` を入れていた。`check:docs` は通っていたが、変異テスト（R500／#R699）が検出した。やり直して正しい箇所だけを直した。
+
+## 天井を上げた理由(perf)
+`atlas-cap-runs`（896.4→910.2 kB）・async.gzip・dist.assets の天井を測定値へ上げた。`siting.compare` の能力と、都道府県の比較表の描画が research/spatial の遅延チャンクに入った分。
