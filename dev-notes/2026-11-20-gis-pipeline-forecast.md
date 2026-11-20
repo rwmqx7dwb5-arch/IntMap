@@ -35,3 +35,10 @@ newsjp: Atlas の分析を、地域を変えて再実行できる手順として
 ## 4. 失敗の形
 
 `complete` を最初「全点に値がある」で定義し、実 API で河川の無いセルが `null` を返して誤って `false` になった。「取得に失敗した」と「値が無かった」は別で、`failed` と `noValue` に分けた。
+
+## 5. 天井と基準を上げた理由
+
+- **perf（遅延チャンクのみ。起動時の通信は増えていない）**: `gis-core` 622.7→638.9 kB（パイプラインと予測データの 2 モジュール）、`atlas-reasoning` 15.0→18.2 kB（`forecastReport`）、`atlas-cap-runs` 884.2→893.1 kB（`research.scenario` の `forecast` 分岐）、async 合計 4745.6→4775.6 kB。買ったもの: 地域を変えた再実行と外部予測データの取り込み。
+- **表面の基準**: `window.IntMapLazy` の読みが 186→187。`research.scenario` が `gisCore` を読み込むための 1 回で、`data.gisProject` など同じ名簿の能力が既にしている方法と同じ。所有者（`js/lazy-modules.js`）からの import へ寄せる整理は別件。
+- **外向き通信の台帳**: `flood-api.open-meteo.com`（座標を送る・既存の Open-Meteo 開示に含まれる）と、規約アドレスの文字列 `open-meteo.com`（取得しない参照）を追加。
+- **refusal の文言検査**: パイプライン・予測は Atlas からしか呼ばれず（GIS パネルに操作が無い）、拒否は model へ code と detail で返る。対象外の理由を検査に書いた。
