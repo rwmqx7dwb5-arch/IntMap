@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { PLATEAU_HEIGHT_OFFSET_M, PLATEAU_CITY_CODES, plateauTilesetUrl, plateauTilesetId, plateauSpecs } from '../js/plateau-cities.js';
+import { plateauTilesetUrl, plateauTilesetId, plateauSpec, plateauUnitsNear, distanceToBoxKm } from '../js/plateau-cities.js';
 
 const R = (f) => fs.readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 const cesium = R('js/cesium-engine.js'), geo = R('js/geo-engine.js'), types = R('types/geo-engine.d.ts');
@@ -34,21 +34,37 @@ test('sceneStats answers null for an unknown tile count, never 0', () => {
   assert.match(body, /let tiles=null,held=null,via='unknown'/);
 });
 
-test('the PLATEAU list is the 23 special wards, one distinct URL and id each, on the host the privacy ledger names', () => {
-  assert.equal(PLATEAU_CITY_CODES.length, 23);
-  assert.equal(PLATEAU_CITY_CODES[0], 13101); assert.equal(PLATEAU_CITY_CODES.at(-1), 13123);
-  assert.equal(new Set(PLATEAU_CITY_CODES.map(plateauTilesetUrl)).size, 23);
-  assert.equal(new Set(PLATEAU_CITY_CODES.map(plateauTilesetId)).size, 23);
-  assert.equal(plateauTilesetUrl(13101), 'https://api.plateauview.mlit.go.jp/datacatalog/3dtiles/13101-bldg-lod2-texture-latest/tileset.json');
-  assert.equal(plateauSpecs().length, 23);
+const REG = JSON.parse(R('data/plateau-cities.json')).units;
+
+test('the PLATEAU registry is derived (hundreds of units, Tokyo included), one distinct id and URL each, on the host the privacy ledger names', () => {
+  assert.ok(REG.length >= 300, 'units: ' + REG.length);
+  assert.equal(new Set(REG.map((u) => plateauTilesetUrl(u))).size, REG.length);
+  assert.equal(new Set(REG.map((u) => plateauTilesetId(u.code))).size, REG.length);
+  const tokyo = REG.filter((u) => /^131(0[1-9]|1[0-9]|2[0-3])$/.test(u.code));
+  assert.equal(tokyo.length, 23);                                        /* the 23 wards are still all there, now by discovery */
+  assert.equal(plateauTilesetUrl(REG.find((u) => u.code === '13101')), 'https://api.plateauview.mlit.go.jp/datacatalog/3dtiles/13101-bldg-lod2-texture-latest/tileset.json');
   const hosts = JSON.parse(R('scripts/outbound-hosts.json')).hosts.map((h) => h.host);
   assert.ok(hosts.includes('api.plateauview.mlit.go.jp'));
+  assert.doesNotMatch(R('js/plateau-cities.js'), /PLATEAU_CITY_CODES|length: 23/);   /* no hand-written list */
 });
 
-test('the geoid offset is one measured constant, not an engine default and not a guess', () => {
-  assert.doesNotMatch(cesium, /geoidOffset|GEOID_/);                         /* the engine invents none: heightOffset defaults to 0 */
-  const src = R('js/plateau-cities.js');
-  assert.match(src, /export const PLATEAU_HEIGHT_OFFSET_M = -\d+(\.\d+)?;/);
-  assert.match(src, /MEASURED 2026-11-19[\s\S]*EXPIRES/);                   /* a number must carry its observation and its expiry */
-  for (const { spec } of plateauSpecs()) assert.equal(spec.heightOffset, PLATEAU_HEIGHT_OFFSET_M);
+test('the geoid height is per city and derived — Tokyo ≈ 36.7 m as measured, other cities different, none invented in the engine', () => {
+  assert.doesNotMatch(cesium, /geoidOffset|GEOID_/);                       /* the engine invents none: heightOffset defaults to 0 */
+  const chiyoda = REG.find((u) => u.code === '13101');
+  assert.ok(Math.abs(chiyoda.geoid - 36.7) < 0.5, 'Chiyoda geoid ' + chiyoda.geoid);   /* the rendered-tile measurement of 2026-11-19 */
+  const g = REG.map((u) => u.geoid); assert.ok(Math.max(...g) - Math.min(...g) > 10, 'one number for all of Japan would be wrong');
+  for (const u of REG) { assert.ok(u.geoid > 0 && u.geoid < 60, u.code); assert.equal(plateauSpec(u).spec.heightOffset, -u.geoid); }
+  assert.match(R('scripts/build-plateau-cities.mjs'), /GSI|vldb.gsi.go.jp/);   /* the derivation names its source */
+});
+
+test('only units near the camera are open, nearest first, capped; nothing below the building zoom', () => {
+  const tokyo = { lng: 139.76, lat: 35.68 };
+  assert.deepEqual(plateauUnitsNear(REG, { ...tokyo, zoom: 6 }), []);
+  const near = plateauUnitsNear(REG, { ...tokyo, zoom: 11 });
+  assert.ok(near.length > 0 && near.length <= 32);
+  assert.ok(near.every((u) => distanceToBoxKm(tokyo.lng, tokyo.lat, u.bbox) <= 60));
+  assert.equal(near[0].code, '13101');                                      /* the ward under the camera comes first */
+  assert.ok(!near.some((u) => u.pref === '大阪府'));
+  const osaka = plateauUnitsNear(REG, { lng: 135.5, lat: 34.69, zoom: 11 });
+  assert.ok(osaka.length > 0 && osaka[0].code.startsWith('27') && osaka.some((u) => u.code === '27127'));
 });
