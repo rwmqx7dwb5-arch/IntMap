@@ -43,3 +43,8 @@ newsjp: Atlas が、ブラウザから読めなかった公開の標高・土地
 - 中継の `Cache-Control` は付けたが CDN は共有しない（上記）。共有が要るなら Storage に置く別設計（費用と保持の判断が要る）。
 - POST の STAC 検索（CORS 不許可のカタログ）は中継しない（GET のみ）。必要になったら別に判断する。
 - PC の署名は初回に `/collections`（約 4 s）を引く。10 分は再利用される。
+
+## 5. 予算の動き（check:perf）
+
+- 非同期チャンク `gis-cog` の天井 4.6 kB → **7.4 kB**: 日付変更線の分割・縫合（`readAcross`・約 2.8 kB）の分。遅延チャンクで、起動の経路には載らない。
+- 起動時リクエスト数は 10 のまま。**最初の実装は 11 に増えた**: `gis-fetch-policy.js` が `relay-guard.js` を import していて、eager の `proxy-fetch.js` も同じファイルを使うため、バンドラが共有チャンクへ巻き上げ初回描画前に取りに行った。policy は何も import せず、必要な述語 `publicHostname` は呼び手（Edge Function）が渡す形にした。

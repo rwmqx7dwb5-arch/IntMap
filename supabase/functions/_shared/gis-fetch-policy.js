@@ -43,7 +43,9 @@
 //  ⚠ NO TYPE ANNOTATIONS and no Deno globals: the browser bundle imports this file too.
 // ============================================================================
 
-import { publicHostname } from "./relay-guard.js";
+/* ⚠ THIS FILE IMPORTS NOTHING. js/gis-fetch.js (lazy) imports it, and js/proxy-fetch.js (eager, main bundle) imports relay-guard.js: if this file
+   imported relay-guard too, the bundler would hoist relay-guard into a chunk both share and the page would fetch it before first paint
+   (measured 2026-11-20: eager requests 10 → 11, check:perf). The one predicate that needs relay-guard (publicHostname) is therefore handed in. */
 
 export const GIS_FETCH_FUNCTION = "gis-fetch";
 
@@ -82,7 +84,7 @@ export function parseRange(raw) {
 }
 
 /* the URL's shape, before any DNS or network. → {ok, url:URL} | {ok:false, why} */
-export function relayableUrl(raw) {
+export function relayableUrl(raw, publicHostname) {
   const s = String(raw == null ? "" : raw);
   if (!s || s.length > MAX_QUERY_URL) return { ok: false, why: "bad_url" };
   let u;
@@ -90,7 +92,7 @@ export function relayableUrl(raw) {
   if (u.protocol !== "https:") return { ok: false, why: "not_https" };
   if (u.username || u.password) return { ok: false, why: "credentials_in_url" };
   if (u.port !== "") return { ok: false, why: "port_not_default" };
-  if (!publicHostname(u.hostname)) return { ok: false, why: "host_not_public" };
+  if (typeof publicHostname !== "function" || !publicHostname(u.hostname)) return { ok: false, why: "host_not_public" };
   u.hash = "";
   return { ok: true, url: u };
 }

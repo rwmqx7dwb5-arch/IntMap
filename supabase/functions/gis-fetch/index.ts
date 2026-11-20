@@ -33,7 +33,7 @@
 //  ⚠ NO TYPE ANNOTATIONS IN THIS FILE — the repo's static gate parses every committed .ts as plain JavaScript.
 // ============================================================================
 
-import { corsFor, followRedirects, methodGate, readCapped, resolvesPublic, RelayError } from "../_shared/relay-guard.js";
+import { corsFor, followRedirects, methodGate, publicHostname, readCapped, resolvesPublic, RelayError } from "../_shared/relay-guard.js";
 import { callerKey, callerKeySecret, makeLimiter, restRpcClient } from "../_shared/rate-limit.js";
 import { secretKey } from "../_shared/supabase-keys.js";
 import {
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
   if (off === "1" || off === "true") return fail("disabled", 503);
 
   const q = new URL(req.url).searchParams;
-  const target = relayableUrl(q.get("u"));
+  const target = relayableUrl(q.get("u"), publicHostname);
   if (!target.ok) return fail(target.why, 400);
   const range = parseRange(q.get("range"));
   if (range && range.bad) return fail("bad_range", 400, range.tooLong ? { max: RANGE_MAX_BYTES } : undefined);
@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
     }, {
       /* ⚠ EVERY HOP IS ASKED WHAT THE FIRST WAS: https, public name, resolves only to public addresses */
       allowRedirect: async (next) => {
-        const s = relayableUrl(next.toString());
+        const s = relayableUrl(next.toString(), publicHostname);
         if (!s.ok || !(await resolvesPublic(s.url.hostname, { signal: budget }))) return false;
         last = s.url;
         return true;
