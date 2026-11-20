@@ -259,7 +259,7 @@ at npipe:…`（実測 2026-08-24）。旗が無いと標準出力が 1 バイ�
 
 ### Edge Function の名簿（**ここが正本**）
 
-**Edge Functions は 23 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` /
+**Edge Functions は 24 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` /
 `client-errors` / `community-class` / `delete-account` / `fetch-relay` / `gdelt-relay` / `mcp-server` / `news-ingest` / `news-relay` / `quotes-relay` /
 `radiation-feed` / `reader-reports` / `refresh-news` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don` / `world-graph-ingest`）。23 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
