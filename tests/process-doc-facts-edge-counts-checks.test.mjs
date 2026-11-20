@@ -78,9 +78,12 @@ const WORDS = ENGLISH_CARDINALS;
    照合は改行を緩めた正規表現で行い、**復元は元のバイト列**で行う（正規化して書き戻すと、
    テストを走らせた副作用として作業ツリーの改行が書き換わる）。 */
 
-function docFacts() {
+/* (ci-queue-pressure) `rule` narrows the run to the one rule the case asserts on (`--rule=`, scripts/doc-facts.mjs): the full run
+   shells out to i18n-pair-audit (about 10 s measured #R407, about 39 s on a cold runner) and a mutation only reads ONE rule's verdict.
+   The `green` preconditions and the end-of-test restore checks still run the whole gate. */
+function docFacts(rule) {
   try {
-    execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check'], { cwd: SCRATCH.root, encoding: 'utf8' });
+    execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', ...(rule ? ['--rule=' + rule] : [])], { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: '' };
   } catch (e) {
     return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
@@ -172,7 +175,7 @@ test('R399 ① every hole this round closed goes RED when its fact is made wrong
       assert.notEqual(broken, original, `the «${c.why}» case did not change ${c.file}`);
       try {
         SCRATCH.write(c.file, broken);
-        const r = docFacts();
+        const r = docFacts(c.rule);
         assert.equal(r.code, 1, `check:docs stayed GREEN with ${c.file} broken — ${c.why}`);
         assert.ok(r.out.includes(c.rule), `check:docs failed but never named ${c.rule} (${c.why}):\n` + r.out);
       } finally {
@@ -216,7 +219,7 @@ test('R399 ② the 正本 going SILENT is a failure, not a pass', async () => {
     assert.ok(silenced.some(([, , changed]) => changed), 'the spec no longer states the count anywhere');
     try {
       for (const [f, s, changed] of silenced) if (changed) SCRATCH.write(f, s);
-      const r = docFacts();
+      const r = docFacts('edge-count');
       assert.equal(r.code, 1, 'check:docs stayed green when the 正本 stopped stating the number');
       assert.match(r.out, /edge-count[^\n]*§6\.2 no longer states/,
         'the report must say the 正本 went silent, not merely that some count is wrong:\n' + r.out);
