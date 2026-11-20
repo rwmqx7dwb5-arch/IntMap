@@ -57,11 +57,14 @@
  *  when it is stale, not each search), `resultType:'task'` (the io.modelcontextprotocol/tasks extension: tasks/get
  *  polled within a budget, else handed back as a pending task the reader's next call continues or cancels),
  *  `resultType:'input_required'` (MRTR: elicitation inputRequests are SURFACED, never answered by this module — the
- *  reader's words only), and the OAuth challenge of a 401 (WWW-Authenticate resource_metadata is reported; the
- *  token itself is still the reader's, there is no OAuth flow here).
+ *  reader's words only), and the OAuth challenge of a 401 (WWW-Authenticate resource_metadata), which js/atlas-mcp-oauth.js answers with the
+ *  authorization-code + PKCE flow (mcp.connect {action:'authorize'}): the token lives in the same device-only server record as a pasted one, is refreshed
+ *  before it expires and once on a 401, and is revoked on disconnect. `subscriptions/listen` (watch) carries tools/list_changed notices.
  *  · Legacy HTTP+SSE servers (a GET that opens an event stream, then POST to an announced endpoint) are NOT
  *    spoken: reported as `unsupported_transport`.
  * ==========================================================================*/
+
+import * as OA from './atlas-mcp-oauth.js';   /* (mcp-oauth) the sign-in flow; pure, so this chunk stays one lazy file */
 
 export const MCP_PROTOCOL_VERSION = '2026-07-28';          /* the stateless protocol this client prefers */
 export const MCP_LEGACY_PROTOCOL_VERSION = '2025-03-26';    /* the initialize-based protocol it falls back to */
@@ -172,6 +175,10 @@ export function createMcpClient(opts) {
   const doFetch = o.fetchImpl || ((u, i) => globalThis.fetch(u, { ...i, signal: i.signal }));   /* every call passes the deadline's signal (post / relay) */
   const relayUrl = o.relayUrl || null;
   const timeoutMs = o.timeoutMs || DEFAULT_TIMEOUT_MS;
+  const redirectUri = o.redirectUri || null;      /* (mcp-oauth) the page's own callback (mcp-oauth-callback.html); null = sign-in is not available here */
+  const randomBytes = o.randomBytes || ((n) => globalThis.crypto.getRandomValues(new Uint8Array(n)));
+  const sha256 = o.sha256 || (async (str) => new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))));
+  const now = o.now || (() => Date.now());
   const mem = {};
   let storage = o.storage;
   if (!storage) {
@@ -182,8 +189,17 @@ export function createMcpClient(opts) {
 
   function load() { try { const v = JSON.parse(storage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(v) ? v.filter((s) => s && SERVER_ID_RE.test(String(s.id))) : []; } catch (_) { return []; } }
   function save(list) { try { storage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (_) { /* storage refused: the registration lasts this page only (memory) */ } }
-  const publicServer = (s) => ({ id: s.id, name: s.name, url: s.url, hasAuth: !!s.authToken, readOnly: s.readOnly === true ? true : Array.isArray(s.readOnly) ? s.readOnly.slice() : false, via: s.via || 'auto' });   /* the token never leaves */
+  const publicServer = (s) => ({ id: s.id, name: s.name, url: s.url, hasAuth: !!s.authToken || !!(s.oauth && s.oauth.tokens), ...connectionOf(s), readOnly: s.readOnly === true ? true : Array.isArray(s.readOnly) ? s.readOnly.slice() : false, via: s.via || 'auto' });   /* the token never leaves */
   const find = (id) => load().find((s) => s.id === String(id || ''));
+  /** What the reader sees of a server's credential and state — never a token. auth: oauth | token | none; status: connected | needs_sign_in | disabled | none. */
+  function connectionOf(s) {
+    const oa = s.oauth && s.oauth.tokens ? s.oauth : null;
+    const auth = oa ? 'oauth' : s.authToken ? 'token' : 'none';
+    const status = s.enabled === false ? 'disabled' : s.oauth && s.oauth.needsSignIn ? 'needs_sign_in' : (oa || s.authToken) ? 'connected' : 'none';
+    return { auth, status, enabled: s.enabled !== false, scopes: oa ? String(oa.tokens.scope || oa.scope || '').split(/\s+/).filter(Boolean) : undefined, issuer: s.oauth && s.oauth.meta ? s.oauth.meta.issuer : undefined,
+      expiresAt: oa && !oa.tokens.expiresAssumed ? new Date(oa.tokens.expiresAt).toISOString() : undefined, canRefresh: oa ? !!oa.tokens.refreshToken : undefined, connectedAt: oa ? oa.connectedAt : undefined, watching: !!(live[s.id] && live[s.id].watch) };
+  }
+  function patch(id, fn) { const list = load(); const i = list.findIndex((x) => x.id === id); if (i < 0) return null; const r = fn(Object.assign({}, list[i])); list[i] = r; save(list); return r; }
 
   /* ── servers ── */
   function servers() { return load().map(publicServer); }
@@ -197,6 +213,9 @@ export function createMcpClient(opts) {
     if (list.some((s) => s.id === id && s.url !== url)) throw new McpError('name_taken', 'A different server is already registered as "' + id + '".');
     if (!list.some((s) => s.id === id) && list.length >= MAX_SERVERS) throw new McpError('too_many_servers', 'At most ' + MAX_SERVERS + ' MCP servers can be registered; remove one first.');
     const rec = { id, name, url, authToken: a.authToken ? String(a.authToken) : '', readOnly: a.readOnly === true ? true : Array.isArray(a.readOnly) ? a.readOnly.map(String).filter((n) => TOOL_NAME_RE.test(n)) : false, via: a.via === 'relay' || a.via === 'direct' ? a.via : 'auto' };
+    const before = list.find((s) => s.id === id);
+    if (before && before.oauth && !a.authToken) rec.oauth = before.oauth;      /* re-registering does not sign the reader out */
+    if (before && before.enabled === false) rec.enabled = false;
     save(list.filter((s) => s.id !== id).concat([rec]));
     delete live[id];
     return publicServer(rec);
@@ -208,13 +227,14 @@ export function createMcpClient(opts) {
   }
 
   /* ── transport ── */
-  async function post(server, body, o2) {
+  async function postOnce(server, body, o2) {
     const st = live[server.id] || (live[server.id] = {});
     const stateless = st.mode !== 'legacy';
     const headers = { 'content-type': 'application/json', accept: 'application/json, text/event-stream', 'mcp-protocol-version': stateless ? (st.version || MCP_PROTOCOL_VERSION) : (st.version || MCP_LEGACY_PROTOCOL_VERSION) };
     if (stateless && body.method) { headers['mcp-method'] = body.method; if (body.method === 'tools/call' && body.params && body.params.name) headers['mcp-name'] = String(body.params.name); }
     if (st.session && !stateless) headers['mcp-session-id'] = st.session;
-    if (server.authToken) headers.authorization = 'Bearer ' + server.authToken;
+    const bearer = await bearerFor(server, o2);
+    if (bearer) headers.authorization = 'Bearer ' + bearer;
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeoutMs);
     const outer = o2 && o2.signal;
@@ -235,6 +255,55 @@ export function createMcpClient(opts) {
       }
       return await readResponse(server, res, body, st);
     } finally { clearTimeout(timer); if (outer) outer.removeEventListener('abort', onAbort); }
+  }
+
+  /* ── (mcp-oauth) a credential is looked up per request, so a refreshed token is used by the very next call ── */
+  const refreshing = {};
+  async function bearerFor(server, o2) {
+    server = find(server.id) || server;                              /* the stored record is the truth: a refresh may have replaced the token since this object was read */
+    const oa = server.oauth;
+    if (oa && oa.tokens && !oa.needsSignIn) {
+      if (OA.isExpired(oa.tokens, now())) { try { await refreshOAuth(server.id, o2); } catch (_) { /* the call goes out with what we have; a 401 will say so */ } }
+      return ((find(server.id) || server).oauth.tokens || {}).accessToken || '';
+    }
+    return server.authToken || '';
+  }
+  /** One refresh at a time per server (single-flight): two parallel calls must not spend a one-time refresh token twice. */
+  function refreshOAuth(id, o2) {
+    if (refreshing[id]) return refreshing[id];
+    const p = (async () => {
+      const server = find(id);
+      const oa = server && server.oauth;
+      if (!oa || !oa.tokens || !oa.meta || !oa.clientId) throw new OA.OAuthError('oauth_not_connected', 'No sign-in to refresh.');
+      try {
+        const t = await OA.refreshTokens(doFetch, oa.meta, { clientId: oa.clientId, tokens: oa.tokens, now: now(), signal: o2 && o2.signal });
+        patch(id, (r) => { r.oauth = Object.assign({}, r.oauth, { tokens: t, needsSignIn: false }); return r; });
+        return t;
+      } catch (e) {
+        /* an invalid refresh token is a verdict (sign in again); a network failure is not — the sign-in stays */
+        if (e && (e.code === 'oauth_invalid_grant' || e.code === 'oauth_no_refresh')) patch(id, (r) => { r.oauth = Object.assign({}, r.oauth, { needsSignIn: true }); return r; });
+        throw e;
+      }
+    })().finally(() => { delete refreshing[id]; });
+    refreshing[id] = p;
+    return p;
+  }
+  async function post(server, body, o2) {
+    const cur = find(server.id) || server;
+    if (cur.enabled === false) throw new McpError('server_disabled', 'This MCP server is switched off by the reader. Turn it on with mcp.connect {action:"enable", server:"' + cur.id + '"}.');
+    try { return await postOnce(cur, body, o2); }
+    catch (e) {
+      /* a 401 on an OAuth connection: the token was revoked or rotated — one refresh, one retry; if that is refused the reader must sign in again */
+      if (e instanceof McpError && e.code === 'auth_required' && cur.oauth && cur.oauth.tokens && !(o2 && o2._retried)) {
+        try { await refreshOAuth(cur.id, o2); return await postOnce(find(cur.id) || cur, body, Object.assign({}, o2, { _retried: true })); }
+        catch (e2) {
+          if (e2 instanceof McpError) { patch(cur.id, (r) => { r.oauth = Object.assign({}, r.oauth, { needsSignIn: true }); return r; }); throw e2; }
+          patch(cur.id, (r) => { r.oauth = Object.assign({}, r.oauth, { needsSignIn: true }); return r; });
+          throw new McpError('auth_required', 'The sign-in to this server is no longer valid. Run mcp.connect {action:"authorize", server:"' + cur.id + '"} to sign in again.', { status: e.status, auth: e.auth });
+        }
+      }
+      throw e;
+    }
   }
 
   async function relay(server, headers, body, ctl, outer) {
@@ -263,8 +332,9 @@ export function createMcpClient(opts) {
     const status = res.status;
     if (status === 401 || status === 403) {
       const auth = parseAuthChallenge(res.headers.get('www-authenticate'));
-      throw new McpError('auth_required', 'The MCP server answered ' + status + ' — it needs (a different) auth token. Re-register the server with its token.'
-        + (auth && auth.resourceMetadata ? ' It announces OAuth protected-resource metadata at ' + auth.resourceMetadata + ' (this client has no OAuth flow: obtain a token there and register it).' : '')
+      st.challenge = auth || st.challenge;
+      throw new McpError('auth_required', 'The MCP server answered ' + status + ' — it needs the reader to sign in.' + (auth && auth.resourceMetadata ? ' It uses OAuth (protected-resource metadata at ' + auth.resourceMetadata + ').' : '')
+        + (redirectUri ? ' Run mcp.connect {action:"authorize", server:"' + server.id + '"} (the reader signs in at the service itself; IntMap never sees the password), or register the server with an access token.' : ' Register the server with an access token.')
         + (auth && auth.error === 'insufficient_scope' ? ' The token lacks a scope' + (auth.scope ? ' (' + auth.scope + ')' : '') + '.' : ''), { status, auth: auth || undefined });
     }
     if (status === 404 && st.session) { delete st.session; st.initialised = false; throw new McpError('session_expired', 'The MCP session expired; try again.', { status }); }
@@ -286,6 +356,7 @@ export function createMcpClient(opts) {
     if (ct.includes('text/event-stream')) msgs = parseSse(text);
     else if (ct.includes('json') || /^\s*[\[{]/.test(text)) { try { const j = JSON.parse(text); msgs = Array.isArray(j) ? j : [j]; } catch (_) { throw new McpError('protocol_error', 'The server answered with invalid JSON.'); } }
     else throw new McpError('protocol_error', 'The server answered with content type "' + cleanUntrusted(ct, 60) + '", not JSON or an event stream.');
+    msgs.forEach((x) => noteNotification(server, x));
     const m = msgs.find((x) => x && x.id === body.id && ('result' in x || 'error' in x));
     if (!m) throw new McpError('protocol_error', 'The server\'s answer did not contain a reply to request ' + body.id + '.');
     if (m.error) throw new McpError('rpc_error', cleanUntrusted((m.error && m.error.message) || 'The server returned an error.', 300), { rpcCode: m.error && m.error.code });
@@ -310,7 +381,7 @@ export function createMcpClient(opts) {
   const serverInfoOf = (r) => { const i = r && ((r._meta && r._meta[META + 'serverInfo']) || r.serverInfo); return i && typeof i === 'object' ? { name: cleanUntrusted(i.name, 60), version: cleanUntrusted(i.version, 30) } : null; };
   /** The result's cache hint (server/utilities/caching): ttlMs, missing → 0 (stale at once), negative → 0. Only a stateless result carries one; a legacy result has none (null = lives with the session, as before). */
   const ttlOf = (r) => (r && (Object.prototype.hasOwnProperty.call(r, 'resultType') || r.ttlMs != null)) ? Math.max(0, Number(r.ttlMs) || 0) : null;
-  const isStale = (st) => !st || !st.tools || (st.toolsTtlMs != null && Date.now() - st.toolsAt >= st.toolsTtlMs);
+  const isStale = (st) => !st || !st.tools || st.stale === true || (st.toolsTtlMs != null && Date.now() - st.toolsAt >= st.toolsTtlMs);
 
   async function ensureInit(server, o2) {
     const st = live[server.id] || (live[server.id] = {});
@@ -367,16 +438,16 @@ export function createMcpClient(opts) {
       const t = ttlOf(r); if (t != null) ttl = ttl == null ? t : Math.min(ttl, t);   /* each page is cached on its own; the list is as fresh as its stalest page */
       cursor = r && r.nextCursor; if (!cursor) break;
     }
-    st.tools = tools; st.toolsAt = Date.now(); st.toolsTtlMs = ttl;
+    st.tools = tools; st.toolsAt = Date.now(); st.toolsTtlMs = ttl; st.stale = false;
     return { server: publicServer(server), serverInfo: st.serverInfo, tools: tools.map((t) => describeTool(t, server)) };
   }
   /** Refresh every server whose tools are not loaded (a failing server is reported, not thrown). */
   async function ensureTools(o2) {
     const errors = [];
-    await Promise.all(load().filter((s) => isStale(live[s.id])).map((s) => refresh(s.id, o2).catch((e) => { errors.push({ server: s.id, code: e.code || 'failed', message: e.message }); })));
+    await Promise.all(load().filter((s) => s.enabled !== false && isStale(live[s.id])).map((s) => refresh(s.id, o2).catch((e) => { errors.push({ server: s.id, code: e.code || 'failed', message: e.message }); })));
     return errors;
   }
-  const knownTools = () => load().flatMap((s) => ((live[s.id] && live[s.id].tools) || []).map((t) => [s, t]));
+  const knownTools = () => load().filter((s) => s.enabled !== false).flatMap((s) => ((live[s.id] && live[s.id].tools) || []).map((t) => [s, t]));
 
   function effectsOf(server, tool) {
     server = typeof server === 'string' ? find(server) : server;
@@ -444,6 +515,7 @@ export function createMcpClient(opts) {
       server: server.id, tool, untrusted: true, notice: UNTRUSTED_NOTICE, effects: fx,
       text: fenceResult(server.name, tool, text) + (cut ? '\n[the server\'s output was cut at ' + MAX_RESULT_CHARS + ' characters]' : ''),
       isError: !!(r && r.isError), provenance: provenanceOf(server, tool, st, extra),
+      raw: cut ? undefined : text,    /* the output WITHOUT the fence — for importableOf only; the capability layer never hands it to the model */
     };
   }
   /** MRTR (SEP-2322): the server needs the READER'S input. It is surfaced, with the requestState to send back; this module never fills it in. */
@@ -533,7 +605,149 @@ export function createMcpClient(opts) {
     }
   }
 
-  return { servers, addServer, removeServer, refresh, searchTools, callTool, effectsOf, getTool, ensureTools, _live: live };
+  /* ── (mcp-oauth) connect, refresh, disconnect, switch on/off ── */
+  const PENDING_MS = 10 * 60 * 1000;
+  /** Step 1 of signing in: find the authorization server, get a public client for this page, and return the address the reader signs in at.
+   *  → { url, state }. The verifier and state are kept (device-only, ten minutes) until finishOAuth. */
+  async function beginOAuth(id, a, o2) {
+    const server = find(id);
+    if (!server) throw new McpError('unknown_server', 'No MCP server is registered as "' + id + '".');
+    if (!redirectUri) throw new McpError('oauth_unavailable', 'Sign-in needs IntMap\'s own page (its callback address); it is not available in this context. Register the server with an access token instead.');
+    const challenge = (live[server.id] && live[server.id].challenge) || undefined;
+    const meta = await OA.discover(doFetch, { serverUrl: server.url, challenge, signal: o2 && o2.signal });
+    const prev = server.oauth && server.oauth.clientId && server.oauth.redirectUri === redirectUri && server.oauth.meta && server.oauth.meta.issuer === meta.issuer ? server.oauth.clientId : '';
+    const clientId = prev || (await OA.registerClient(doFetch, meta, { redirectUri, signal: o2 && o2.signal })).clientId;
+    const auth = await OA.buildAuthUrl(meta, { clientId, redirectUri, randomBytes, sha256, scope: a && a.scope != null ? String(a.scope) : undefined });
+    patch(server.id, (r) => { r.oauth = Object.assign({}, r.oauth, { meta, clientId, redirectUri, pending: { state: auth.state, verifier: auth.verifier, at: now() } }); return r; });
+    return { url: auth.url, state: auth.state, issuer: meta.issuer, scope: meta.scope };
+  }
+  /** Step 2: the callback's query (code, state | error) → tokens, stored. The code is exchanged here, with the verifier only this page knows. */
+  async function finishOAuth(id, params, o2) {
+    const server = find(id); const oa = server && server.oauth;
+    if (!server) throw new McpError('unknown_server', 'No MCP server is registered as "' + id + '".');
+    if (!oa || !oa.pending || now() - oa.pending.at > PENDING_MS) throw new OA.OAuthError('oauth_no_pending', 'No sign-in is in progress for this server (or it timed out); start again.');
+    const pending = oa.pending;
+    const clearPending = () => patch(server.id, (r) => { if (r.oauth) delete r.oauth.pending; return r; });
+    let code;
+    try { code = OA.checkCallback(params, pending.state); } catch (e) { if (e.code !== 'oauth_state_mismatch') clearPending(); throw e; }   /* a foreign callback must not cancel the real attempt */
+    try {
+      const t = await OA.exchangeCode(doFetch, oa.meta, { clientId: oa.clientId, redirectUri: oa.redirectUri, code, verifier: pending.verifier, now: now(), signal: o2 && o2.signal });
+      patch(server.id, (r) => { r.oauth = Object.assign({}, r.oauth, { tokens: t, needsSignIn: false, connectedAt: new Date(now()).toISOString(), scope: t.scope }); delete r.oauth.pending; r.authToken = ''; return r; });
+    } catch (e) { clearPending(); throw e; }
+    delete live[server.id]; /* the server may now show more tools: read them again */
+    return publicServer(find(server.id));
+  }
+  /** The whole sign-in with the page's own door: io.open(url) shows the service's sign-in, io.wait(state) resolves with the callback's query. */
+  async function authorize(id, io, o2) {
+    const b = await beginOAuth(id, o2 && o2.scope != null ? { scope: o2.scope } : null, o2);
+    const waiting = io.wait(b.state, o2 && o2.timeoutMs);
+    const opened = io.open(b.url);
+    if (opened === false) { patch(id, (r) => { if (r.oauth) delete r.oauth.pending; return r; }); throw new McpError('popup_blocked', 'The browser blocked the sign-in window. Allow pop-ups for IntMap and try again.'); }
+    const params = await waiting;
+    return finishOAuth(id, params, o2);
+  }
+  /** Sign out of a service: tell it (RFC 7009, best effort), then forget the tokens here. The registration and the client stay. */
+  async function disconnect(id, o2) {
+    const server = find(id);
+    if (!server) throw new McpError('unknown_server', 'No MCP server is registered as "' + id + '".');
+    const oa = server.oauth; let rv = { revoked: false, why: 'no_oauth_sign_in' };
+    if (oa && oa.tokens) rv = await OA.revokeToken(doFetch, oa.meta, { clientId: oa.clientId, tokens: oa.tokens, signal: o2 && o2.signal });
+    patch(server.id, (r) => { if (r.oauth) { delete r.oauth.tokens; delete r.oauth.pending; r.oauth.needsSignIn = false; } r.authToken = ''; return r; });
+    unwatch(id); delete live[server.id];
+    return { server: publicServer(find(server.id)), revoked: rv.revoked, revokeNote: rv.why };
+  }
+  function setEnabled(id, on) {
+    const r = patch(String(id || ''), (x) => { x.enabled = on !== false; return x; });
+    if (!r) throw new McpError('unknown_server', 'No MCP server is registered as "' + id + '".');
+    if (on === false) unwatch(id);
+    return publicServer(r);
+  }
+
+  /* ── (mcp-oauth) change notices ──
+     2026-07-28: a server tells a client its tool list changed ONLY on a subscriptions/listen stream (a POST whose response stays open). The legacy
+     protocol's GET stream is not spoken (see unsupported_transport). Direct only: the relay buffers a whole response and cannot carry a stream. */
+  function noteNotification(server, m) {
+    if (!m || m.id !== undefined || typeof m.method !== 'string') return;
+    const st = live[server.id] || (live[server.id] = {});
+    if (m.method === 'notifications/tools/list_changed') { st.stale = true; st.changedAt = now(); (st.onChange || []).forEach((f) => { try { f(server.id); } catch (_) { /* a listener must not break the stream */ } }); }
+  }
+  /** Feed text/event-stream chunks into noteNotification, message by message. */
+  function sseFeeder(server) {
+    let buf = '';
+    return (chunk) => { buf += chunk.replace(/\r\n?/g, '\n'); let i; while ((i = buf.indexOf('\n\n')) >= 0) { const block = buf.slice(0, i); buf = buf.slice(i + 2); parseSse(block + '\n\n').forEach((m) => noteNotification(server, m)); } };
+  }
+  /** Start listening for tools/list_changed on a 2026-07-28 server that declares tools.listChanged. Returns { ok } | { ok:false, code, message }. */
+  async function watch(id, onChange) {
+    const server = find(id);
+    if (!server) return { ok: false, code: 'unknown_server', message: 'No MCP server is registered as "' + id + '".' };
+    if (server.enabled === false) return { ok: false, code: 'server_disabled', message: 'The server is switched off.' };
+    if (server.via === 'relay') return { ok: false, code: 'relay_cannot_stream', message: 'A change stream cannot pass through the relay; tools are re-read when their cache expires instead.' };
+    let st;
+    try { st = await ensureInit(server); } catch (e) { return { ok: false, code: e.code || 'failed', message: e.message }; }
+    if (st.mode !== 'stateless') return { ok: false, code: 'listen_unsupported', message: 'This server speaks the older protocol, whose change stream (an HTTP GET) is not spoken here; tools are re-read on refresh.' };
+    const cap = st.discover && st.discover.capabilities && st.discover.capabilities.tools;
+    if (!cap || cap.listChanged !== true) return { ok: false, code: 'listen_unsupported', message: 'The server does not declare tools.listChanged.' };
+    st.onChange = st.onChange || []; if (typeof onChange === 'function') st.onChange.push(onChange);
+    if (st.watch) return { ok: true, already: true };
+    const ctl = new AbortController();
+    st.watch = { ctl, since: now(), retries: 0 };
+    (async () => {
+      for (;;) {
+        if (ctl.signal.aborted) return;
+        try {
+          const bearer = await bearerFor(server, {});
+          const body = { jsonrpc: '2.0', id: nextId++, method: 'subscriptions/listen', params: { _meta: clientMeta(st.version || MCP_PROTOCOL_VERSION), notifications: { toolsListChanged: true } } };
+          const res = await doFetch(server.url, { method: 'POST', credentials: 'omit', redirect: 'error', signal: ctl.signal, body: JSON.stringify(body),
+            headers: Object.assign({ 'content-type': 'application/json', accept: 'application/json, text/event-stream', 'mcp-protocol-version': st.version || MCP_PROTOCOL_VERSION, 'mcp-method': 'subscriptions/listen' }, bearer ? { authorization: 'Bearer ' + bearer } : null) });
+          if (!res.ok || !res.body || !res.body.getReader) { st.watch.error = 'http_' + res.status; if (res.status < 500 && res.status !== 429) { delete st.watch; return; } }
+          else {
+            const feed = sseFeeder(server), rd = res.body.getReader(), dec = new TextDecoder();
+            st.watch.listening = true; st.watch.retries = 0;
+            for (;;) { const { done, value } = await rd.read(); if (done) break; feed(dec.decode(value, { stream: true })); }
+            st.watch.listening = false;
+          }
+        } catch (e) { if (ctl.signal.aborted) return; st.watch.error = 'stream_dropped'; }
+        if (ctl.signal.aborted) return;
+        st.watch.retries++; if (st.watch.retries > 5) { delete st.watch; return; }   /* the spec lets a client re-send; five tries with backoff, then stop and say so (status.watching = false) */
+        await sleep(Math.min(30000, 1000 * 2 ** st.watch.retries), ctl.signal);
+      }
+    })();
+    return { ok: true };
+  }
+  function unwatch(id) { const st = live[id]; if (st && st.watch) { try { st.watch.ctl.abort(); } catch (_) { /* gone */ } delete st.watch; } if (st) st.onChange = []; }
+
+  return { servers, addServer, removeServer, refresh, searchTools, callTool, effectsOf, getTool, ensureTools, beginOAuth, finishOAuth, authorize, disconnect, setEnabled, watch, unwatch, _live: live };
+}
+
+/* ── (mcp-oauth) an external result that is data, offered to the rest of Atlas as a FILE ─────────────────────────────────────
+   Atlas already turns a table or GeoJSON file into a map layer (data.studio: tableToMap) and reads a file back by name (attach.recall). A result of an
+   MCP tool that is GeoJSON, rows of records or CSV is therefore kept in the conversation's attachment ledger under a name — no new door, the same
+   downstream checks. It is marked `external`: it is NEVER placed in the model's next input on its own (js/atlas-attach-log.js carry), because
+   words an external operator wrote must not reach the model dressed as the reader's own file. */
+const CSV_ROW_CAP = 20000;
+const csvCell = (v) => { const t = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+export function importableOf(raw, serverId, toolName) {
+  const text = String(raw == null ? '' : raw).trim();
+  if (!text) return null;
+  const base = (slug(serverId) + '-' + String(toolName || 'result').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')).slice(0, 60).replace(/-+$/, '');
+  let j = null;
+  try { j = JSON.parse(text); } catch (_) { j = null; }
+  if (j && typeof j === 'object') {
+    if (!Array.isArray(j) && (j.type === 'FeatureCollection' || j.type === 'Feature')) return { name: base + '.geojson', text, format: 'geojson', rows: j.type === 'Feature' ? 1 : (Array.isArray(j.features) ? j.features.length : 0) };
+    let rows = Array.isArray(j) ? j : null;
+    if (!rows && !Array.isArray(j)) { const arrays = Object.keys(j).filter((k) => Array.isArray(j[k]) && j[k].length && j[k].every((x) => x && typeof x === 'object' && !Array.isArray(x))); if (arrays.length === 1) rows = j[arrays[0]]; }
+    if (rows && rows.length && rows.every((x) => x && typeof x === 'object' && !Array.isArray(x))) {
+      const cols = []; rows.slice(0, CSV_ROW_CAP).forEach((r) => Object.keys(r).forEach((k) => { if (!cols.includes(k) && cols.length < 60) cols.push(k); }));
+      if (!cols.length) return null;
+      const lines = [cols.map(csvCell).join(',')];
+      rows.slice(0, CSV_ROW_CAP).forEach((r) => lines.push(cols.map((c) => csvCell(r[c])).join(',')));
+      return { name: base + '.csv', text: lines.join('\n'), format: 'csv', rows: Math.min(rows.length, CSV_ROW_CAP), cut: rows.length > CSV_ROW_CAP };
+    }
+    return null;
+  }
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length >= 2) { const n = (lines[0].match(/,/g) || []).length; if (n >= 1 && lines.slice(0, 20).every((l) => (l.match(/,/g) || []).length >= n)) return { name: base + '.csv', text, format: 'csv', rows: lines.length - 1 }; }
+  return null;
 }
 
 /* ── the page's one client ───────────────────────────────────────────────────────────────────────────── */
@@ -544,6 +758,7 @@ export function pageClient(HOST) {
   const base = String(globalThis.SUPABASE_URL || '').replace(/\/+$/, '');
   _page = createMcpClient({
     relayUrl: base ? base + '/functions/v1/mcp-relay' : null,
+    redirectUri: typeof location === 'object' && location && location.origin ? new URL('mcp-oauth-callback.html', location.href).toString() : null,
     authHeaders: async () => {
       const DB = HOST && HOST.DB;
       if (!DB || !DB.auth || typeof DB.auth.getSession !== 'function') return {};
@@ -553,4 +768,22 @@ export function pageClient(HOST) {
     },
   });
   return _page;
+}
+
+/** (mcp-oauth) The browser's half of signing in: a pop-up at the service's own sign-in page, and the callback page (mcp-oauth-callback.html, same origin)
+ *  handing its query back by postMessage (BroadcastChannel as the second road, for a browser that drops window.opener across origins). */
+export function pageSignInIo(win) {
+  const W = win || globalThis;
+  return {
+    open: (url) => { try { return !!W.open(url, 'intmap-mcp-oauth', 'popup=yes,width=520,height=720'); } catch (_) { return false; } },
+    wait: (state, timeoutMs) => new Promise((resolve, reject) => {
+      let bc = null, done = false;
+      const end = (fn, v) => { if (done) return; done = true; clearTimeout(timer); W.removeEventListener('message', onMsg); try { bc && bc.close(); } catch (_) { /* closed */ } fn(v); };
+      const take = (d) => { if (d && d.type === 'intmap-mcp-oauth' && typeof d.query === 'string') { const q = new URLSearchParams(d.query); if (q.get('state') === state || q.get('error')) end(resolve, q); } };
+      const onMsg = (e) => { if (e.origin === W.location.origin) take(e.data); };
+      W.addEventListener('message', onMsg);
+      try { bc = new W.BroadcastChannel('intmap-mcp-oauth'); bc.onmessage = (e) => take(e.data); } catch (_) { bc = null; }
+      const timer = setTimeout(() => end(reject, new McpError('oauth_timeout', 'The sign-in window was not completed within ' + Math.round((timeoutMs || 300000) / 60000) + ' minutes.')), timeoutMs || 300000);
+    }),
+  };
 }
