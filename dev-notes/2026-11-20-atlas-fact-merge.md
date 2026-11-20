@@ -20,3 +20,9 @@ newsjp: 複数の調査担当 AI が報告した事実を、名前の言語が�
 - 言語をまたぐ名前だけ（id なし）は、索引・グラフがその綴りを持たなければ解決しない。Wikidata の多言語ラベル検索を resolver に足すのは、網の呼び出し（費用・遅延）を決めてから。
 - 永続ジョブ化（atlas-jobs）が結果を保存する際に `facts` を運ぶ必要がある（契約を 05-ai.md に記載）。
 - worker が返す `evidenceId` の発行はページ側（evidence-lineage）の仕事で、いまは文字列を運ぶだけ。
+
+## perf-budget の天井(dist.assets)を引き上げた理由
+
+`dist.assets` を 21961000 から 22076000 バイトへ(CI の実測 21557.9 kB に合わせた)。増えた分は新しい遅延モジュール
+`atlas-fact-merge.js` と、`atlas-delegate.js`・`atlas-cap-research.js` の配線。起動時(eager)の経路には載せていない
+(遅延チャンクのみ)ので、起動費用の天井は動かしていない。main の CI が事後に締める。
