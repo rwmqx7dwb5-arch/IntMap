@@ -12,6 +12,11 @@
     "js/routing-export.js": {
       "escaper": 1,
       "why": "xml() writes GPX/KML documents for download — XML grammar ('&apos;'), a file, never the DOM; the module is pure and verified in Node where no window exists."
+    },
+    "js/file-text.js": {
+      "escaper": 1,
+      "rawUrlAttr": 1,
+      "why": "esc() writes the HTML / XML grammar of a FILE the reader downloads (Atlas file.create: an .html document and OOXML parts) — never the live DOM, and the module is pure and verified in Node where no window exists. The one href (a source URL) is a value buildDoc() has already restricted to http(s)."
     }
   },
   "pending": {

@@ -10,6 +10,7 @@ import caps_compute from './atlas-cap-compute.js';
 import caps_corrections from './atlas-cap-corrections.js';
 import caps_data from './atlas-cap-data.js';
 import caps_dialog from './atlas-cap-dialog.js';
+import caps_file from './atlas-cap-file.js';
 import caps_geo from './atlas-cap-geo.js';
 import caps_layers from './atlas-cap-layers.js';
 import caps_learn from './atlas-cap-learn.js';
@@ -40,6 +41,7 @@ export const CAPABILITY_MODULES = {
   "corrections": caps_corrections,
   "data": caps_data,
   "dialog": caps_dialog,
+  "file": caps_file,
   "geo": caps_geo,
   "layers": caps_layers,
   "learn": caps_learn,
