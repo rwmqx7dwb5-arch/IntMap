@@ -38,3 +38,6 @@ Paris 71.5 m = セーヌ河床 ≈27 + N 44.7 ／ Denver 1568 m = 南プラッ�
 
 ## 6. 出自の台帳
 `scripts/build-geoid-grid.mjs` の `GOVERNANCE` に出自・ライセンス（パブリックドメイン）・周期 `static`（EGM2008 は 2008 年に完成したモデル。後継 EGM2020 は未公開）を値で宣言した。`integrity.*`（欠損・範囲外・重複）は、全球を覆う固定寸法の Int16 格子（720×361）には「行」も「欠損」も無く、`mountGeoid` が寸法の不一致を読み込み時に拒む（tests/world-3d-sources-checks.test.mjs）ので、別途の計測を足さず台帳（`data/governance-ledger.json`）に 2 件足した。取得は `res.ok` を確かめてから書く。
+
+## 7. 予算の天井を上げた理由（`tests/perf-baseline.json`）
+`async chunk "cesium-engine"` 71.3→74.1 kB は新メンバー `placeTileset`（高さ補正の付け直しと ClippingPolygon による切り抜き）の分。`async.raw` 14136.4→14212.6 kB（+76 kB）は、PR の rebase 前後の両方で同じだけ増えていた（rebase が足したのは他 PR の 2 本）が、**増分の内訳は chunk ごとに特定していない**——新しい 2 モジュール（world-3d-sources 1.1 kB・geoid）は遅延 chunk にして起動の eager 側には入れていない（eager.modules は元の 913 のまま）。ジオイド格子（459 kB gz）は起動グラフに入らず、世界のタイルセットが開くときだけ読む（`js/boot-stage.js` に行を足した）。
