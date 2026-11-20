@@ -39,3 +39,7 @@ Cloudflare Browser Run(旧 Browser Rendering): CDP の WebSocket `…/browser-re
 
 ## 6. 検査
 `tests/browser-session-checks.test.mjs`(15 件)・`supabase/tests/52_web_session_journal_test.sql`・`supabase/tests/00_structure_test.sql`(表の一覧に追加・plan 132→134)。能力表は `node scripts/atlas-caps.mjs --write` で生成(255→257 行)。
+
+## 7. 起動費用の天井を上げた理由(check:perf)
+CI の `check:perf` が、async の `atlas-cap-runs`(896→922 kB 級)・`atlas-console`(1061→1075 kB 級)・async 合計(raw 14136→14250 kB 級・gzip 4771→4795 kB 級)の超過を報告した。**eager(起動に載る側)は動いていない**——増えたのは Atlas の能力の実行体(`web.session` / `web.sessionGrant` の本体と、#1296・#1312 から積み上がった web 系の本体と確認文)で、いずれも遅延チャンク。起動に載る能力表の行は 2 行(約 1 kB)で eager の天井内。天井は超えた 4 行だけ、CI が測った値(kB は 1024)を切り上げて手で書いた——ローカルはビルドに `data:pull` のデータが要り `--update` が走らない(かつ main に遅れていると拒否される)ため。次に main の CI の bot が測り直して下げる。
+`check:surface` は `window.IntMapSafe` の読みを 1 か所(`safeUrl`)にまとめて 171→170 とし、基準線を更新した(新しい経路は足していない)。
