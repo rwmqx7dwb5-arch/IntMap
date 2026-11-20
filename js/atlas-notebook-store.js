@@ -308,18 +308,20 @@ export function idbBackend(idb, name) {
   };
 }
 
-export function makeNotebookStore(backend) {
+export function makeNotebookStore(backend, norm) {
   const B = backend || memoryBackend();
+  /* (atlas-work-products) `norm` lets another record type reuse this store's cache, events and backends — js/atlas-work-store.js passes its own normalizer; the notebook's is the default */
+  const nrm = typeof norm === 'function' ? norm : normalize;
   let cache = null; const subs = [];
   const emit = () => subs.slice().forEach((f) => { try { f(); } catch (_) { } });
-  const load = async () => { if (cache) return cache; const all = await B.all(); cache = new Map(); (all || []).forEach((e) => { const n = normalize(e); if (n) cache.set(n.id, n); }); return cache; };
+  const load = async () => { if (cache) return cache; const all = await B.all(); cache = new Map(); (all || []).forEach((e) => { const n = nrm(e); if (n) cache.set(n.id, n); }); return cache; };
   const API = {
     async list(q) { const m = await load(); return search(Array.from(m.values()), q); },
     async get(id) { const m = await load(); const e = m.get(String(id)); return e ? JSON.parse(JSON.stringify(e)) : null; },
-    async put(e) { const n = normalize(e); if (!n) throw new Error('invalid-entry'); await B.put(n); (await load()).set(n.id, n); emit(); return n; },
+    async put(e) { const n = nrm(e); if (!n) throw new Error('invalid-entry'); await B.put(n); (await load()).set(n.id, n); emit(); return n; },
     async update(id, patch, o) {
       const m = await load(); const cur = m.get(String(id)); if (!cur) return null;
-      const n = normalize(Object.assign({}, cur, patch, (o && o.keepTime) ? {} : { updatedAt: Date.now() })); await B.put(n); m.set(n.id, n); emit(); return n;
+      const n = nrm(Object.assign({}, cur, patch, (o && o.keepTime) ? {} : { updatedAt: Date.now() })); await B.put(n); m.set(n.id, n); emit(); return n;
     },
     async remove(id) { await B.del(String(id)); (await load()).delete(String(id)); emit(); },
     async clear() { await B.clear(); cache = new Map(); emit(); },
