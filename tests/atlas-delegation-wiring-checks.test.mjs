@@ -205,11 +205,11 @@ function lane(name) {
 }
 const laneSrc = lane('classifyCapability') + '\n' + lane('runReadCapability');
 
-test('⑨ classifyCapability is read off the registry: `read` exactly when the row reads, writes nothing, asks nothing, and is not delegation itself', () => {
+test('⑨ classifyCapability is read off the registry: `read` exactly when its facets say it changes nothing, asks nobody, shows nothing, saves nothing and starts no model work', () => {
   const CAPS = makeAtlasCapabilities({});
   const { classifyCapability } = new Function('CAPS', 'EXEC', '_curTurn', laneSrc + '\nreturn { classifyCapability };')(CAPS, null, 0);
   const all = CAPS.all();
-  const expect = (c) => (c.risk === 'read-only' && !c.effects.writes.length && c.confirmation === 'none' && c.id !== 'research.delegate') ? 'read' : 'other';
+  const expect = (c) => (!c.facets.mutatesState && !c.facets.asksUser && !c.facets.showsUI && !c.facets.savesFile && !c.facets.delegates && c.confirmation === 'none') ? 'read' : 'other';
   all.forEach((c) => assert.equal(classifyCapability(c.id), expect(c), c.id));
   assert.ok(all.filter((c) => classifyCapability(c.id) === 'read').length >= 5, 'a real set of read capabilities exists to fan out');
   assert.ok(all.some((c) => c.effects.writes.length && classifyCapability(c.id) === 'other'), 'writers are other');

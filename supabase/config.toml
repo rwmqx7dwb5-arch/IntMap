@@ -297,3 +297,10 @@ verify_jwt = false
 # up — failing closed for the class doors. It stores nothing.
 [functions.community-class]
 verify_jwt = false
+
+# mcp-server is IntMap's read-only toolset for outside AI over MCP. Its callers present IntMap's OWN key
+# (Bearer imk_…, sha256 in public.mcp_api_keys — not a Supabase JWT), so the platform's JWT gate cannot sit in
+# front of it; the key check, the per-key and project-wide ceilings and the stop switch
+# (public.mcp_server_state) are in the function.
+[functions.mcp-server]
+verify_jwt = false

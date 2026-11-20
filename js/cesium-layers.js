@@ -651,7 +651,7 @@ window.IntMapCesiumLayers=(function(){
       if(gt.startsWith('Multi')) gt=gt.slice(5);
       if(gt==='LinearRing') gt='LineString';
       return { properties:f.properties||{}, geometryType:gt, id:(f.id!=null?f.id:(f.properties&&f.properties.id)),
-               zoom, state:state||{} };
+               zoom, state:state||{}, geometry:f.geometry };
     }
     /* every ring / line / point in a geometry, as flat lng,lat,(alt) arrays */
     function rings(g){

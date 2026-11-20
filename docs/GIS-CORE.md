@@ -340,9 +340,27 @@ IntMap にはまさにそれを壊す経路がある——`js/geodesy.js` の `s
   | `intersection` | `intersect` | 両入力の期間の**重なり**。重ならなければ期間を述べず `timeRule.result:'disjoint'`（空の期間ではなく「述べられない」） |
   | `union` | `union` | 両者を**括る**期間。間に隙間があれば `timeRule.contiguous:false`（誰も述べていない隙間を黙って埋めない） |
   ⚠ **述べていない入力が 1 つでもあれば、期間は述べない**（`timeRule.result:'unknown'`・各入力の期間は `provenance.inputTimes` に残る。「述べられていない」は「述べられていない」のまま）。
-  ⚠ **行ごとの軸（`instant` / `interval`）は 1 つの宣言では合成できない**ので第 1 入力の軸を保ち、`timeRule.result:'row-wise'` で「規則は適用していない」と述べる。
-  `difference` / `clip` / `aggregate` / 各 join は第 1 入力の期間のまま（もう一方は形を選ぶだけで、出力の行はそれが述べたものではない）。
-  `KERNEL_VERSION` は `ops-12`。検査 `tests/time-spatial-base-checks.test.mjs`。
+  ⚠ **行ごとの軸（`instant` / `interval`）は 1 つの宣言では合成できない**。形を出す演算は §1.5.2 の規則で**出力の行ごと**に組の期間を書く。それを書かない演算（`union`）は第 1 入力の軸を保ち、`timeRule.result:'row-wise'` で「規則は適用していない」と述べる。
+  `difference` / `clip` は第 1 入力の期間のまま（もう一方は形を選ぶだけで、出力の行はそれが述べたものではない）。`aggregate` と各 join は §1.5.2。
+  検査 `tests/time-spatial-base-checks.test.mjs`・`tests/spatiotemporal-join-checks.test.mjs`。
+
+#### 1.5.2 ⚠⚠⚠ 複数入力の演算は、時間の条件と継承を 1 つの規則で扱う——`when`・行ごとの期間・地理的定義
+
+`join`・`spatialJoin`・`nearestJoin`・`timeJoin`・`aggregate`・`intersect` は同じ部品 `makeTimeKit`（`js/gis-ops.js`）を使う。op ごとの分岐は無い。
+
+- **入力の役割は走者が述べる**: `shape`（出力の行が存在する根拠）／`attribute`（値を供給するだけ）。出力は、述べた入力の期間の**重なり**だけ有効。
+  期間を述べない `attribute`（統計 CSV など）は期間を**狭めず**、`timeRule.unstatedAttributes` に**名指される**（1914 年の国境に期間の無い表を結んでも国境の期間は消えない）。期間を述べない `shape` なら出力の期間は述べない。
+- **時間も含めて照合する**: 5 つの op に共通の `when`（`overlaps`/`within`/`contains`）・`at`・`from`・`to`・`ends`。左の行の期間（`at`/`from`/`to` を述べれば**それが左の軸の代わり**）と右の行の期間が `when` の関係にある組だけが相手になる（半開・`ends` の読みは `timeJoin` と同じ）。
+  - `join`（キー）: 時間条件があるとき、**同じキーが右に何行あってもよい**（同じ単位の期間ごとの行）。重複の拒否は「**1 つの左の行について、条件を通った行が複数**」のときだけ（`join-right-not-unique`・`detail:'several-rows-hold-at-that-time'`）。条件が無ければ従来どおり。
+  - `nearestJoin`: 条件は**候補を絞る**。「当時有効だったもののうち最も近いもの」で、全体で最も近いものに後から時間を当てるのではない。
+  - `aggregate`: 区域が有効な間に有効だった member だけを集計し、答えの期間は「区域の期間 ∩ 使った member の期間を括る範囲」。
+  - `when` なしで `at`/`from`/`to` だけ述べると `bad-param`（黙って無視しない）。
+- **行ごとの期間**: 行ごとの軸（`instant`/`interval`）を持つ入力があると、出力の各行がその組の期間を `_validFrom` / `_validTo`（**半開**: `_validTo` は成り立たなくなる最初の瞬間）に持ち、出力はそれを `interval` の軸として宣言する（取り込み時に再検証される）。組が一度も共存しなかった行は期間を述べず（両方 `null`）、`stats.time.pairsNeverCoexisted` と `provenance.warnings` に数える。相手が見つからなかった行は自分の期間を持つ。左がすでにこの 2 列を自分の軸にしていれば（前の結合の出力）書き直し、そうでなければ他人のデータなので `output-column-in-use`。
+- **地理的定義は期間では運べない**（実測: `dev-notes/2026-11-19-spatiotemporal-1914.md` §3。Maddison の 1913 年のフランスは**現在の**フランスで、同じコード `FRA` に約 1.9 百万人のアルザス＝ロレーヌが入っている）。データセットは単位がどの国境で引かれているかを `provenance.geoBasis` に述べる（`IntMapData.declareGeoBasis(id, spec)`・取り込みの記録のみ。op の出力は入力から導く）:
+  `{ borders:'fixed', year }`（全行がその年の国境）／`{ borders:'as-of-period' }`（各行が自分の期間の国境）。**組ごとに**検査し、固定年が相手の行の期間に入っていなければ**黙って許さず**数えて `provenance.warnings` に `geo-basis-mismatch`（組の数・全体・入力・基準・例）を残す。**述べていないことは一致ではない**: 片方だけが述べてもう片方の期間が分からなければ `geo-basis-unverified`。入力の基準が揃っていれば出力に引き継ぎ、揃っていなければ `mixed`。
+  ⚠ 警告は結合を**止めない**（歴史家は現在国境の系列を当時の政体に結んで差を見たいことがある）。**止めずに、来歴に残す**。結合の結果を答えとして述べる側（Atlas）は `provenance.warnings` を読んで述べる。
+- **この規則が適用されない演算**（1 つしか形を出さない・時間に意味を持たない）: `filter`・`clip`・`difference`・`buffer` などは第 1 入力の期間のまま。`union` は行ごとの軸のとき規則を適用せず `row-wise` と述べる。ラスターは §3.1。
+- `KERNEL_VERSION` は `ops-14`（`scripts/gis-kernel-versions.mjs`）。
 
 ## 2. 処理 — `js/gis-ops.js` (`window.IntMapGisOps`)
 
@@ -373,13 +391,13 @@ map していて、**`DECL` に足して `ORDER` に足し忘れた op は run()
 | `union` | 2 | `Polygon`／`Polygon` | `Polygon` | 無し |
 | `dissolve` | 1 | `Polygon` | `Polygon` | `by`（列名。省略＝全部で 1 群） |
 | `relate` | 2 | 何でも／何でも | 入力と同じ | `predicate`（`intersects`/`within`/`contains`/`disjoint`/`nearer-than`）・`maxKm` |
-| `aggregate` | 2（面・相手） | `Polygon`／**何でも** | `Polygon` | `stat`（`count`/`sum`/`mean`/`min`/`max`/`areaWeightedMean`/`median`/`percentile`/`stdev`/`majority`）・`field`・`outName`・`quantity`・`weightBy`・`p`（§2.7・§2.10） |
+| `aggregate` | 2（面・相手） | `Polygon`／**何でも** | `Polygon` | `stat`（`count`/`sum`/`mean`/`min`/`max`/`areaWeightedMean`/`median`/`percentile`/`stdev`/`majority`）・`field`・`outName`・`quantity`・`weightBy`・`p`（§2.7・§2.10）・`when`/`at`/`from`/`to`/`ends`（§1.5.2） |
 | `sample` | 2（点・**格子**） | `Point`／— | 入力と同じ | `band`・`method`（`nearest`/`bilinear`）・`outName` |
 | `zonal` | 2（面・**格子**） | `Polygon`／— | `Polygon` | `band`・`stat`（`mean`/`sum`/`min`/`max`/`count`/`classes`）・`outName` |
 | `rasterMask` | 1（**格子**） | — | **格子** | `band`・`op`・`value` |
 | `rasterDiff` | 2（**格子**・**格子**） | — | **格子** | `band` |
 | `timeWindow` | 1 | 何でも | 入力と同じ | `from`・`to`・`mode`（`overlaps`/`within`） |
-| `join` | 2（対象・**表**） | 何でも／何でも | 対象と同じ | `leftField`・`rightField`（必須）・`fields`・`prefix`・`unmatched`・`duplicates` |
+| `join` | 2（対象・**表**） | 何でも／何でも | 対象と同じ | `leftField`・`rightField`（必須）・`fields`・`prefix`・`unmatched`・`duplicates`・`when`/`at`/`from`/`to`/`ends`（§1.5.2） |
 | `compute` | 1 | 何でも | 入力と同じ | `outName`・`expr`（必須）・`replace` |
 | `voronoi` | 2（地点・窓） | `Point`／`Polygon` | `Polygon` | 無し（§2.9） |
 | `centroid` | 1 | 何でも | `Point` | 無し（球面の重心。面積・長さで重み付け。§2.5.6） |
@@ -396,8 +414,8 @@ map していて、**`DECL` に足して `ORDER` に足し忘れた op は run()
 | `measure` | 1 | 何でも | 入力と同じ | `what`（`area`/`length`。必須）・`crs`・`surface`・`unit`・`tolerance`・`outName`（§2.4） |
 | `validate` | 1 | 何でも | 入力と同じ | `prefix`（§5.9） |
 | `repair` | 1 | 何でも | 入力と同じ | `winding`・`prefix`（§5.9） |
-| `spatialJoin` | 2（対象・相手） | 何でも／何でも | 対象と同じ | `predicate`・`cardinality`（必須）・`maxKm`・`fields`・`prefix`・`unmatched` |
-| `nearestJoin` | 2（対象・相手） | 何でも／何でも | 対象と同じ | `maxKm`・`idField`・`fields`・`prefix`・`unmatched` |
+| `spatialJoin` | 2（対象・相手） | 何でも／何でも | 対象と同じ | `predicate`・`cardinality`（必須）・`maxKm`・`fields`・`prefix`・`unmatched`・`when`/`at`/`from`/`to`/`ends`（§1.5.2） |
+| `nearestJoin` | 2（対象・相手） | 何でも／何でも | 対象と同じ | `maxKm`・`idField`・`fields`・`prefix`・`unmatched`・`when`/`at`/`from`/`to`/`ends`（§1.5.2） |
 | `timeJoin` | 2（対象・時間軸を持つ相手） | 何でも／何でも | 対象と同じ | `relation`・`at`・`from`・`to`・`ends`・`cardinality`（必須）・`fields`・`prefix`・`unmatched`（§1.5） |
 | `convert` | 1 | 何でも | 入力と同じ | `field`・`to`（必須）・`from`・`outName`・`replace`・`difference`（§3.2） |
 | `coverage` | 1 | `Polygon` | 入力と同じ | `overlaps`・`gaps`・`edges`・`gapToleranceKm`・`edgeToleranceKm`・`limit`（§5.9.2） |
@@ -429,7 +447,8 @@ geometry で、格子はそれを持たない——この鍵が無ければ、**
 ⚠ 列名がぶつかれば拒む（`prefix` が読者の答え）。上書きは画面に出ているデータを壊し、ここで改名すれば
 **誰も知らない名前**を発明することになる。
 
-⚠ **`compute` の式は解釈されるのであって評価されない（#R738）。** `js/gis-expr.js` は自前の
+⚠ **`compute` の式は解釈されるのであって評価されない（#R738）。** （Python を走らせる `compute.run`〔綴り `python`〕は
+この op とは別物で、別の Worker〔`js/compute-sandbox.js`〕で隔離して実行する——`docs/SECURITY-ARCHITECTURE.md` §6。）`js/gis-expr.js` は自前の
 トークナイザと再帰下降パーサで、**`eval` も `new Function` も使わない**。空は 0 ではなく**伝播**し
 （`coalesce(x,0)` は読者が述べる）、先頭ゼロのセルは算術に入らず（規則は `IntMapData` に訊く。
 §1.1）、0 除算は `null`、`'a' + 1` は連結ではなく `expr-type`。⚠ **式が名指す列はデータセットに

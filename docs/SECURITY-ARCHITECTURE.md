@@ -795,6 +795,38 @@ and sources, in both languages, had none). The chosen posture:
   declaration that no longer matches anything are each an error.
   ⚠ `frame-ancestors` is **ignored** in a `<meta>` policy, so it is deliberately not written
   there rather than written and silently inert.
+- **The Python sandbox (`compute.run`, `js/compute-sandbox.js`) adds no CSP source.** It runs
+  code the model wrote, so where it runs and what that code can reach are the whole of its design:
+  - **Where.** A dedicated classic Worker built from a `blob:` URL (`worker-src 'self' blob:`), one
+    per run, terminated when the run ends — never the page's thread, never a worker that runs
+    anything else (`js/gis-worker.js`'s pool runs only this repository's jobs).
+  - **What arrives.** Pyodide 314.0.7 from `https://cdn.jsdelivr.net/pyodide/v314.0.7/full/`, fetched
+    under `connect-src https:`. **Every file is integrity-checked**: the five core files against SRI
+    hashes in `RUNTIME.files` (computed from the bytes and matching jsDelivr's own data API, 2026-11-19),
+    and every package against the sha256 the already-verified lock file states. The two script files
+    are fetched with `integrity` and executed from `blob:` — `importScripts()` and `import()` take no
+    integrity option, so this is how a hash gets attached at all — which is why **`script-src` gains
+    no host**: it already admits `blob:`, and 17.3's rule 「新しい CDN ホストを CSP に足さない」 holds.
+    A changed byte fails closed (`runtime-unavailable`); no other bytes run.
+  - **What is closed before the code runs.** On the worker's global object *and its prototypes*:
+    `indexedDB`, `caches`, `navigator.storage` (OPFS), `navigator.locks`, `BroadcastChannel`,
+    `XMLHttpRequest`, `WebSocket`, `EventSource`, `WebTransport`, `Worker`, `SharedWorker`,
+    `Notification`, `importScripts`, `FontFace` / `fonts` (they fetch a URL the caller names),
+    `loadPyodide` (it `import()`s `indexURL + 'pyodide.asm.mjs'` when not handed the module, so Python
+    could otherwise import any address `script-src` admits), `eval`, the four `Function` constructors
+    (replaced by stand-ins that throw) and string timers. `fetch` is replaced **before Pyodide loads** by one that
+    answers only the exact files the lock names (no prefix, no query) with credentials omitted and
+    redirects refused. Each door is probed again after the scrub; one that stays open stops the run.
+    Measured 2026-11-19 in Chromium from inside Python (`js.*`, `pyodide.code.run_js`,
+    `js.Object.constructor(...)`): all closed; `fetch` of another host, of this origin and of an
+    invented path under the pinned directory all refused; no CSP violation over a full run.
+  - **What is NOT closed, as a fact.** `postMessage` to the page (the host takes only a result and
+    classifies its reason itself; a forged result is equivalent to the code returning that value),
+    CPU and memory up to the run's time limit (`terminate()` ends it), and the lock file itself (it
+    carries no data). A dedicated worker has no DOM, cookies, `localStorage` or `sessionStorage` to
+    begin with. The defence is a deny-list on the worker's realm: an API a future browser adds to
+    workers that reaches the origin or the network is open until it is named here
+    (`tests/compute-sandbox-checks.test.mjs` holds the list; the spec measures it in a browser).
 - **The admin console's policy is stricter and lost two entries**, each of which had exactly
   one reason to exist: `https://cdn.jsdelivr.net` (the SDK fallback wrote a `<script>` at the
   floating tag `@supabase/supabase-js@2` into the parser — measured, that fallback ran *every*
@@ -1193,6 +1225,12 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
      address checked is not the address the connection uses (DNS rebinding with a short TTL) — closing it needs
      the connection pinned to the checked address (with TLS name checks kept) or egress control on the platform.
    · `delete-account` read any body size; it reads at most 1 KiB within 5 s now, before any deletion.
+26. **The Python sandbox's isolation is a deny-list on a same-origin worker** (§6, compute-sandbox).
+   A `blob:` worker has the page's origin, so isolation comes from removing doors from its realm, not
+   from an opaque origin. A `data:` worker would be opaque (storage throws by itself) but Safari does
+   not start one, and it would need `data:` in `worker-src`. Tracked: re-measure the scrub's probes
+   when the supported browsers change; an opaque-origin host (a sandboxed iframe holding the worker)
+   is the structural alternative if the list ever has to grow.
    **The items above that remain, in order of what to do next** (none was shown exploitable in this review):
    ① item 16 — carry the outside-content mark through the turn history and summaries, and decide the
    confirmation for outward / publishing / destructive actions in code rather than from the model's output;

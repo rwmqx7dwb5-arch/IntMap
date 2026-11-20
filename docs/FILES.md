@@ -480,6 +480,17 @@ gis-expr.js                       **式の解釈器** `window.IntMapGisExpr`（#
                                   `expr.rows` は行の配列でも等長の面の組でも受ける）。⚠ **数値規則は写さずに
                                   渡す**（規則の無い扉はジョブが作られる前に `expr-no-number-rule`）。
                                   ⚠ **運べるかは木を queue する前に訊く**（`portable(ast)`）
+                                  ⚠ Python を走らせる経路は**ここではない**——`compute-sandbox.js`（別 Worker）
+compute-sandbox.js                **Python の隔離実行** `window.IntMapCompute`（compute-sandbox）— Atlas が書いた
+                                  Python を Pyodide で走らせ、結果を新しいデータセットにする。**1 回の実行に
+                                  1 つの Worker**（前の実行の状態を持ち越さない）。Pyodide は同梱せず jsDelivr の
+                                  版固定パスから取り、**全ファイルをハッシュで検証**（核の 5 ファイルは SRI、
+                                  パッケージは検証済みの lock の sha256）してから `blob:` で実行——CSP に新しい
+                                  host を足さない。コードが走る前に Worker の realm から **origin の保存領域・
+                                  ほかのネットワーク・入れ子の Worker・実行時のコード生成**を取り除き、閉じられ
+                                  なければ何も走らせない。失敗は観測された失敗（例外・出力の拒否）と観測できな
+                                  かったこと（`timeout`・`runtime-unavailable`）を分けて返す。出力の
+                                  provenance は `{kind:'compute', code, codeSha256, inputs, output, runtime}`
 gis-atlas.js                      **GIS 層が自分で持つ Atlas の扉** `window.IntMapGis.atlas`
                                   （#R743）— `catalogue()` は `ops.ops()` **そのもの**で、op を
                                   1 本足せばその日のうちに Atlas にも出る（手書きの一覧を作らない）。
@@ -1026,7 +1037,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  250 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  251 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1040,6 +1051,7 @@ atlas-caps-modules.js             ⚠ 生成物（`node scripts/atlas-caps.mjs -
 atlas-cap-account.js              Atlas の能力 — 自分のアカウントのデータの目録と書き出し（account.*。account-data-center）
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
 atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart.compose）
+atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
@@ -1155,7 +1167,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全250を検索・到達可能 247）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 251 を検索・到達可能 248）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1175,7 +1187,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 250能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 251能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -2686,7 +2698,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 169 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 170 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

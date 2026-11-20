@@ -1051,6 +1051,7 @@ export default [
        They read and search; they never touch the map — what is drawn, Atlas draws, from what came back.
        How the workers are paid for and whether they may run at all is the server's (ai-proxy config.ts
        delegationPolicy): a refusal comes back as the task's `refused` state with its code, not as a failure. */
+    policy: { delegates: true },   /* (capability-facets) starts other model work */
     row: ['research.delegate',          'delegate',       'delegateResearch,parallelResearch',                           'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
     ui: { none: '2026-11-18' },
     phrases: () => ['並行して調べる', '手分けして調査', '分担して調べる', '複数の調査', '同時に調査'].concat(['in parallel', 'split the research', 'research separately', 'several pieces', 'delegate']),

@@ -105,6 +105,13 @@
   （MapLibre だけなら違反 0 件。Cesium は同梱の knockout が読み込み時に `(0,eval)("this")` を評価するので `'wasm-unsafe-eval'` では 3-D エンジンが起動しない。
   `tests/backend-edge-hardening-checks.test.mjs` ⑦ が `node_modules/cesium` を測り、要らなくなった日に赤くなる）。`admin.html` はそのどちらも持たない（`tests/security-logic.test.mjs` が毎回検査）。
   新しい CDN ホストを CSP に足さない（実行時依存は npm から取り `src/vendor.js` が再公開する——§1.1）。
+- **Atlas が書いた Python は、ページではなく専用 Worker で走る**（`compute.run`・`js/compute-sandbox.js`）。**能力表で唯一、
+  このリポジトリの外で書かれたコードを実行する行**で、CSP には何も足していない: Pyodide（314.0.7）は jsDelivr の版固定パスから
+  `connect-src https:` で取り、**全ファイルをハッシュで検証**してから `blob:` で実行する（`script-src` は既に `blob:` を持つ）。
+  コードが走る前に Worker の realm（global と prototype）から origin の保存領域・ほかのネットワーク・入れ子の Worker・実行時の
+  コード生成を取り除き、`fetch` は lock が名指す正確なファイルだけに答える。閉じられない扉があれば何も走らせない。
+  閉じていないもの（`postMessage`・CPU とメモリ〔時間の上限で `terminate()`〕）と、拒否リスト方式であることの残存リスクは
+  `docs/SECURITY-ARCHITECTURE.md` §6 と §8 の 26 番。
 - **他 origin から読む `<script>` は、実行時に挿入するものも含めて Subresource Integrity で固定する**（`unpkg.com` の ECMWF タイル SDK——`js/wx-ecmwf.js`、`@openmeteo/weather-map-layer`——は
   `integrity`〔その版の sha384〕と `crossOrigin='anonymous'` を持つ。同梱しないのは GPL-2.0 だから——`docs/SECURITY-ARCHITECTURE.md` §6）。固定できないもの（Street View の JSONP・gtag.js・Clarity）は
   `scripts/runtime-scripts.mjs` の `UNPINNABLE` に理由の文つきで、コードが名指さない CSP ホスト（`www.google-analytics.com` / `ssl.google-analytics.com`）は `CSP_ONLY` に宣言され、
