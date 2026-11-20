@@ -100,10 +100,10 @@ function main() {
   const { plants, portRefs, considered } = link(rows, net.ports);
   const decl = GOVERNANCE['data/power-plants.json'];
   const doc = {
-    publisher: decl.publisher, url: decl.url, licence: decl.licence, licenceUrl: decl.licenceUrl, attribution: decl.attribution,
+    publisher: decl.publisher, url: decl.url, licence: decl.licence, licenceUrl: decl.licenceUrl, attribution: decl.attribution, paidBy: decl.paidBy,
     cadence: decl.cadence, cadenceBasis: decl.cadenceBasis, retrievedAt: decl.retrievedAt, generatedAt: decl.generatedAt, asOf: decl.asOf,
     schema: decl.schema, quality: decl.quality, builtBy: decl.builtBy,
-    sources: [{ role: 'plants', name: 'Global Power Plant Database 1.3.0 (WRI)', licence: 'CC BY 4.0', url: decl.url }, { role: 'ports', name: 'data/logistics-network.json', licence: 'see that file' }],
+    inputs: [{ role: 'plants', name: 'Global Power Plant Database 1.3.0 (WRI)', licence: 'CC BY 4.0', url: decl.url }, { role: 'ports', name: 'data/logistics-network.json', licence: 'see that file' }],
     model: { ...MODEL, kind: "straight-line proximity of a fuel-burning plant to a port — not an observed fuel supply; the operator is the database's current statement, not a history" },
     coverage: { databaseRows: rows.length, ofSeabornFuels: considered, atAPort: plants.length, portsWithPlants: portRefs.length, byFuel: plants.reduce((m, p) => (m[p.f] = (m[p.f] || 0) + 1, m), {}) },
     portRefs, plants,

@@ -52,7 +52,7 @@ export function makeLogisticsImpact(deps) {
     mine.forEach((pl) => { const b = byFuel[pl.f] || (byFuel[pl.f] = { plants: 0, mw: 0 }); b.plants++; if (pl.mw != null) { b.mw += pl.mw; mw += pl.mw; } else unstated++; });
     Object.keys(byFuel).forEach((k) => { byFuel[k].mw = +byFuel[k].mw.toFixed(1); });
     const row = (pl) => ({ id: pl.id, name: pl.n, cc: pl.cc, fuel: pl.f, mw: pl.mw, commissioned: pl.yr, operator: pl.o, kmFromPort: pl.p[0][1], nextPort: pl.p[1] ? { ref: refs[pl.p[1][0]], km: pl.p[1][1] } : null });
-    return { ok: true, plants: mine.length, mw: +mw.toFixed(1), mwUnstated: unstated, byFuel, top: mine.slice().sort((a, b) => (b.mw || 0) - (a.mw || 0)).slice(0, 8).map(row), noNextPort: mine.filter((pl) => !pl.p[1]).length, model: P.model, coverage: P.coverage, asOf: P.asOf, source: { name: P.sources[0].name, licence: P.licence, url: P.url } };
+    return { ok: true, plants: mine.length, mw: +mw.toFixed(1), mwUnstated: unstated, byFuel, top: mine.slice().sort((a, b) => (b.mw || 0) - (a.mw || 0)).slice(0, 8).map(row), noNextPort: mine.filter((pl) => !pl.p[1]).length, model: P.model, coverage: P.coverage, asOf: P.asOf, source: { name: P.inputs[0].name, licence: P.licence, url: P.url } };
   }
   const norm = (s) => String(s == null ? '' : s).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\bport(?:s)? (?:of|de|du|di|of the)\b/g, '').replace(/[^\p{L}\p{N}]+/g, ' ').trim();
 
