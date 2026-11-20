@@ -27,3 +27,8 @@ newsjp: Atlasが、工場の立地として日本の都道府県を、卸電力�
 ## 3. 次
 
 工業用水（e-Stat 経由の工業統計／経済構造実態調査の都道府県表）・物流（港・空港・幹線道路を県の表へ）・研究機関（大学以外）・小売の産業用料金。世界へは `data/siting/<iso2>.json` を同じスキーマで足す。
+
+## 4. CI で見つけた退行（直した）
+
+- 能力を 1 つ足すと `find_capability` の順位が動き、Atlas の再生カセット `promoted-tool-runs-the-capability`（「measure distance between two places」への find_capability の返り）が 22 本中 1 本ずれた。原本の main では 22/22。意図した変更（弱い一致 4 件が結果から落ち、先頭 `map.measure` は不変）と読んで `scripted-cassettes.mjs --write` で記録し直した。
+- 能力数を文書で 252→253 に直す一括置換が、無関係の「全 252 の国と地域」まで書き換え、置換関数の引数を取りこぼして `undefined` を入れていた。`check:docs` は通っていたが、変異テスト（R500／#R699）が検出した。やり直して正しい箇所だけを直した。
