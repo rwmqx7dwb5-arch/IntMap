@@ -1060,7 +1060,8 @@ atlas-cap-file.js                 Atlas の能力 — ファイルを作る（fi
 atlas-file-make.js                  ファイル作成の DOM 側（lazy atlasFile）— 描画・グラフ/地図の画像化・書き出し後の読み戻し・保存カード
 file-doc.js                         ファイルの文書モデルと Markdown の読み取り（全形式の書き出しの元）
 file-pdf.js                         PDF の組版（日本語の行分割・ページ分割・表）と書き出し・読み戻し検証
-file-office.js                      docx・pptx・xlsx と ZIP の書き出し、ZIP の読み戻し検査
+file-office.js                      docx・pptx と xlsx の「文書→シート」の対応、ZIP の読み戻し検査（xlsx の書き手は office-writer.js）
+zip-store.js                        **唯一の ZIP**（stored 方式の書き出しと CRC 付き読み戻し）。docx・pptx・xlsx・検証が共有
 file-text.js                        md・txt・html・csv・json の書き出し
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
@@ -1649,7 +1650,7 @@ map-reader.js                     **地図を言葉で読む**——Alt+R で中
                                   読み上げ、Alt+Shift+R で読み上げモード（地図を動かすたびに、動いた向きと距離のあとに同じ段落）。
                                   地点プロファイル（place-dossier.js の `placeProfile` / `profileSpeech`）を話すだけで、
                                   ライブ領域に書くのは narrator だけ。Settings ▸ キーボード のスイッチと Atlas の settings.mapReading が同じ関数を呼ぶ
-office-writer.js                  **Excel (.xlsx) を依存なしで書く**——stored ZIP + SpreadsheetML。数は数・"01100" は文字・NaN は空で件数を返す・
+office-writer.js                  **唯一の Excel (.xlsx) 書き手（文書の表も、データセットの書き出しもここを通る）**——stored ZIP + SpreadsheetML。数は数・"01100" は文字・NaN は空で件数を返す・
                                   列/行/セル長/シート名は形式の上限で、超えたら黙って切らず名前付きで断る。`gis-export.js` の `xlsx` 形式が呼ぶ。
 offline-plan.js                   **持ち歩ける地図の純粋な部分**——タイル範囲・日付変更線・粗い順・収まる細かさ、
                                   そして「保存してよいか」の判定（`verdict`）。許可は `data/offline-sources.json` が述べたものだけで、

@@ -7,56 +7,16 @@
  *  independently of the code that wrote it: every part's CRC, every relationship's target, every part's
  *  content type, and — where the platform has DOMParser — that each XML part is well-formed.
  *  What a format cannot keep is returned in `stated[]` and printed on the card. Pure; no DOM.
- *  ⚠ #1330 (open, not on main when this was written) adds js/office-writer.js for a DATASET → xlsx. This file's
- *  xlsx is the DOCUMENT's tables; when both are on main the sheet writer should be one — recorded in dev-notes.
+ *  The xlsx here only MAPS the document onto sheets; the sheet writer is js/office-writer.js (also the dataset export's).
  * ==========================================================================*/
 import { cellText } from './file-doc.js';
 import { esc } from './file-text.js';
+import { zip, readZip, crc32 } from './zip-store.js';   /* the one ZIP — re-exported so the callers and the checks keep their import */
+import { writeXlsx as writeSheets, widthOf } from './office-writer.js';
+export { zip, readZip, crc32 };
 
 const enc = (s) => new TextEncoder().encode(s);
 const dec = (b) => new TextDecoder('utf-8').decode(b);
-
-/* ── ZIP ──────────────────────────────────────────────────────────────────── */
-const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
-export function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
-
-/** parts: [{ name, data: string|Uint8Array }] → bytes of a ZIP (method 0). [Content_Types].xml first, as OPC wants. */
-export function zip(parts, when) {
-  const d = when instanceof Date ? when : new Date();
-  const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), dosDate = (((d.getFullYear() - 1980) & 0x7F) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
-  const chunks = [], central = []; let off = 0;
-  const u16 = (v) => [v & 255, (v >> 8) & 255], u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
-  for (const p of parts) {
-    const name = enc(p.name), data = typeof p.data === 'string' ? enc(p.data) : p.data, crc = crc32(data);
-    const lh = new Uint8Array([0x50, 0x4B, 3, 4, ...u16(20), ...u16(0x0800), ...u16(0), ...u16(dosTime), ...u16(dosDate), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(name.length), ...u16(0)]);
-    chunks.push(lh, name, data);
-    central.push(new Uint8Array([0x50, 0x4B, 1, 2, ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(dosTime), ...u16(dosDate), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), name);
-    off += lh.length + name.length + data.length;
-  }
-  const cdSize = central.reduce((s, c) => s + c.length, 0);
-  const eocd = new Uint8Array([0x50, 0x4B, 5, 6, ...u16(0), ...u16(0), ...u16(parts.length), ...u16(parts.length), ...u32(cdSize), ...u32(off), ...u16(0)]);
-  const all = chunks.concat(central, [eocd]), out = new Uint8Array(all.reduce((s, c) => s + c.length, 0));
-  let o = 0; for (const c of all) { out.set(c, o); o += c.length; }
-  return out;
-}
-
-/** open a ZIP written by `zip` (stored method only) → [{ name, data }] | null when it is not one. Checks every CRC. */
-export function readZip(bytes) {
-  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let e = bytes.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054B50) e--;
-  if (e < 0) return null;
-  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const out = [];
-  for (let i = 0; i < n; i++) {
-    if (dv.getUint32(p, true) !== 0x02014B50) return null;
-    const method = dv.getUint16(p + 10, true), crc = dv.getUint32(p + 16, true), size = dv.getUint32(p + 24, true), nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lo = dv.getUint32(p + 42, true);
-    const name = dec(bytes.subarray(p + 46, p + 46 + nl));
-    if (method !== 0 || dv.getUint32(lo, true) !== 0x04034B50) return null;
-    const start = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true), data = bytes.subarray(start, start + size);
-    out.push({ name, data, crcOk: crc32(data) === crc });
-    p += 46 + nl + el + cl;
-  }
-  return out;
-}
 
 /** OPC-level checks on an opened package → problems[] (empty = sound) */
 export function checkPackage(entries, opts) {
@@ -184,10 +144,8 @@ export function writeDocx(doc, opt) {
   return { bytes: zip(parts, when), stated: [], parts: parts.length };
 }
 
-/* ── XLSX ─────────────────────────────────────────────────────────────────── */
-const colName = (i) => { let s = ''; i++; while (i > 0) { const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); } return s; };
-const widthOf = (s) => { let w = 0; for (const ch of String(s)) w += /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹯＀-｠￠-￦]/.test(ch) ? 2 : 1; return w; };
-const sheetName = (s, used) => {
+/* ── XLSX — the sheet engine is js/office-writer.js (the one; a dataset's export uses it too). This maps the DOCUMENT onto sheets. ── */
+const sheetLabel = (s, used) => {
   let n = String(s || 'Sheet').replace(/[\[\]:*?/\\]/g, ' ').replace(/^'+|'+$/g, '').trim().slice(0, 31) || 'Sheet', k = 2; const base = n;
   while (used.has(n.toLowerCase())) { const suf = '(' + k++ + ')'; n = base.slice(0, 31 - suf.length) + suf; }
   used.add(n.toLowerCase()); return n;
@@ -196,24 +154,7 @@ const sheetName = (s, used) => {
 export function writeXlsx(doc, opt) {
   const when = (opt && opt.when) || new Date(), ja = doc.lang === 'ja', stated = [], used = new Set(), sheets = [];
   const tables = doc.blocks.filter((b) => b.t === 'table');
-  const mk = (name, header, rows) => {
-    const widths = header.map((h) => widthOf(h));
-    rows.forEach((r) => header.forEach((_, i) => { widths[i] = Math.max(widths[i], widthOf(cellText(r[i]).split('\n')[0])); }));
-    /* a table written in markdown holds its numbers as text; a plain decimal (no leading zero, so a code like 007 stays text) is a number in the sheet */
-    const cell = (v, r, c, style) => {
-      const ref = colName(c) + r;
-      if (typeof v === 'string' && /^-?(0|[1-9]\d{0,14})(\.\d+)?$/.test(v.trim()) && style !== 1) v = Number(v);
-      if (typeof v === 'number' && isFinite(v)) return '<c r="' + ref + '"' + (style ? ' s="' + style + '"' : '') + '><v>' + v + '</v></c>';
-      if (typeof v === 'boolean') return '<c r="' + ref + '" t="b"><v>' + (v ? 1 : 0) + '</v></c>';
-      const s = cellText(v); if (s === '') return '';
-      return '<c r="' + ref + '" t="inlineStr"' + (style ? ' s="' + style + '"' : '') + '><is><t xml:space="preserve">' + esc(s) + '</t></is></c>';
-    };
-    const xml = XML + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0">' + (header.length ? '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' : '') + '</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>'
-      + '<cols>' + widths.map((w, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + Math.min(60, Math.max(8, w + 2)) + '" customWidth="1"/>').join('') + '</cols><sheetData>'
-      + '<row r="1">' + header.map((h, c) => cell(h, 1, c, 1)).join('') + '</row>'
-      + rows.map((r, ri) => '<row r="' + (ri + 2) + '">' + header.map((_, c) => cell(r[c], ri + 2, c, 0)).join('') + '</row>').join('') + '</sheetData></worksheet>';
-    sheets.push({ name: sheetName(name, used), xml });
-  };
+  const mk = (name, header, rows) => sheets.push({ name: sheetLabel(name, used), columns: header, rows: rows.map((r) => header.map((_, i) => { const v = r[i]; return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? v : (cellText(v) || null); })), numericText: true });
   tables.forEach((t, i) => mk(t.caption || (ja ? '表' : 'Table') + (tables.length > 1 ? ' ' + (i + 1) : ''), t.columns, t.rows));
   if (!tables.length) {
     const lines = []; doc.blocks.forEach((b) => { if (b.t === 'h' || b.t === 'p' || b.t === 'quote' || b.t === 'code') lines.push([b.text]); else if (b.t === 'ul' || b.t === 'ol') b.items.forEach((x) => lines.push([x])); });
@@ -221,18 +162,12 @@ export function writeXlsx(doc, opt) {
     stated.push(ja ? '表が無いため、本文を 1 列のシートに 1 段落 1 行で書きました' : 'no table in the document: the text is one paragraph per row on a single sheet');
   } else if (doc.blocks.some((b) => b.t !== 'table' && b.t !== 'pb')) stated.push(ja ? '本文・見出し・画像はシートに入りません（表だけを書きました）' : 'prose, headings and images are not on the sheets (tables only)');
   if (doc.sources.length) mk(ja ? '出典' : 'Sources', [ja ? '名称' : 'Title', 'URL', ja ? '備考' : 'Note'], doc.sources.map((s) => [s.title, s.url || '', s.note || '']));
-  const SC = 'application/vnd.openxmlformats-officedocument.spreadsheetml.';
-  const styles = XML + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F7"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>';
-  const parts = [
-    { name: '[Content_Types].xml', data: ctypes([['rels', CT_REL], ['xml', 'application/xml']], [['/xl/workbook.xml', SC + 'sheet.main+xml'], ['/xl/styles.xml', SC + 'styles+xml'], CORE_CT].concat(sheets.map((_, i) => ['/xl/worksheets/sheet' + (i + 1) + '.xml', SC + 'worksheet+xml']))) },
-    { name: '_rels/.rels', data: rels([{ id: 'rId1', type: 'officeDocument', target: 'xl/workbook.xml' }, CORE_REL]) },
-    { name: 'docProps/core.xml', data: coreXml(doc, when) },
-    { name: 'xl/workbook.xml', data: XML + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="' + NS_R + '"><sheets>' + sheets.map((s, i) => '<sheet name="' + esc(s.name) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets></workbook>' },
-    { name: 'xl/_rels/workbook.xml.rels', data: rels(sheets.map((_, i) => ({ id: 'rId' + (i + 1), type: 'worksheet', target: 'worksheets/sheet' + (i + 1) + '.xml' })).concat([{ id: 'rIdStyles', type: 'styles', target: 'styles.xml' }])) },
-    { name: 'xl/styles.xml', data: styles },
-  ].concat(sheets.map((s, i) => ({ name: 'xl/worksheets/sheet' + (i + 1) + '.xml', data: s.xml })));
-  return { bytes: zip(parts, when), stated, sheets: sheets.map((s) => s.name) };
+  const made = writeSheets(sheets, { when, core: coreXml(doc, when) });
+  if (!made.ok) return { problem: made.why, detail: made.detail, bytes: new Uint8Array(0), stated };
+  if (made.stated.truncatedCells) stated.push(ja ? made.stated.truncatedCells + ' 個のセルは Excel の上限（32,767 文字）で切りました' : made.stated.truncatedCells + " cell(s) were cut at Excel's 32,767-character limit");
+  return { bytes: made.bytes, stated, sheets: made.stated.sheets.map((x) => x.name) };
 }
+
 
 /* ── PPTX ─────────────────────────────────────────────────────────────────── */
 const SW = 12192000, SH = 6858000, IN = 914400;
