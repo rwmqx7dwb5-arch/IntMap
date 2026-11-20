@@ -1022,12 +1022,21 @@ export function timeAdmin1(HOST) {
         if (img) return true;
         try { if (GE().scene.hasImage(IMG)) return (img = true); } catch (_) {}
         try {
-          const DPR = 2, S = 10 * DPR, c = document.createElement('canvas'); c.width = S; c.height = S;
-          const g = c.getContext('2d',{willReadFrequently:true}); if (!g) return false;
-          g.strokeStyle = ADMIN1_COLOR; g.globalAlpha = 0.5; g.lineWidth = 1.1 * DPR;
-          g.beginPath(); g.moveTo(0, S); g.lineTo(S, 0); g.moveTo(-S / 2, S / 2); g.lineTo(S / 2, -S / 2); g.moveTo(S / 2, S * 1.5); g.lineTo(S * 1.5, S / 2); g.stroke();
-          const im = g.getImageData(0, 0, S, S);
-          return (img = !!GE().scene.addImage(IMG, { width: S, height: S, data: new Uint8Array(im.data.buffer.slice(0)) }, { pixelRatio: DPR }));
+          /* (hist-hatch-no-readback, 2026-11-21) 「崩壊してます」: on the reader's Edge the no-record ground was a near-black opaque
+             block with the stripes faint inside it, while the same page in a clean Chromium drew only the stripes. The old code drew
+             the stripes on a <canvas> and read them back with getImageData — a path browsers and privacy extensions are allowed to
+             perturb (canvas-fingerprint protection), which turns the transparent pixels into noise. The pixels are now computed
+             directly (no canvas, nothing to read back): the same diagonal lines, period S/2 along x+y, 1.1 css px wide, alpha 0.5, in
+             ADMIN1_COLOR. NOT VERIFIED on that browser — the cause is the readback by elimination, not by reproduction. */
+          const DPR = 2, S = 10 * DPR, half = S / 2, w = 1.1 * DPR;
+          const hex = String(ADMIN1_COLOR).replace('#', ''), R = parseInt(hex.slice(0, 2), 16), G = parseInt(hex.slice(2, 4), 16), B = parseInt(hex.slice(4, 6), 16);
+          const data = new Uint8Array(S * S * 4);
+          for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+            const d = (x + y + 1) % half, dist = Math.min(d, half - d) / Math.SQRT2;   /* distance to the nearest line, in px */
+            const cov = Math.max(0, Math.min(1, w / 2 + 0.5 - dist)), i = (y * S + x) * 4;
+            if (cov > 0) { data[i] = R; data[i + 1] = G; data[i + 2] = B; data[i + 3] = Math.round(255 * 0.5 * cov); }
+          }
+          return (img = !!GE().scene.addImage(IMG, { width: S, height: S, data }, { pixelRatio: DPR }));
         } catch (_) { return false; }
       }
       function ensure() {
