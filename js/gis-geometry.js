@@ -3298,11 +3298,54 @@ export function makeGisGeometry() {
       return { ok: true, value: out };
     }
 
+    /* ══ (gis-worker-columnar) A BLOCK OF PAIRS, ASKED AS ONE QUESTION ═════════════════════════════════
+       js/gis-ops.js `spatialJoin` asks one predicate per (left row, candidate) pair. The pair is where the time
+       goes, and a loop of them on the page's thread cannot be stopped or shared, so the whole block is asked here:
+       `relateBlock(rights, lefts, cands, predicate, maxKm)`.
+       ⚠ THIS IS THE ONLY PLACE THE PAIR PREDICATE IS WRITTEN. The page reaches it through the same `API` it reaches
+       everything through, and src/gis-buffer-worker.js reaches it on the kernel built the way the other thread builds
+       one (`geomKernel(deps)`), so a block answers the same on either thread and no second copy of the rule exists.
+       · rights — the right-hand geometries, indexed by row
+       · lefts  — the block's left geometries (null for a row that states no place)
+       · cands  — per left row, the right rows the page's index handed over (in right-row order)
+       → { hits: [[right row, …] per left row], dist: [[km, …] per left row] | null (nearer-than only), failed, why, detail }
+       ⚠ A pair that could not be computed is COUNTED and is never a hit: `failed` and the first `why` are what the
+       caller replays into its ledger, so a lost pair is reported and not read as 「該当なし」.
+       Not in OPS on purpose: OPS is what `call` dispatches by name with a refusal table; this takes arrays of
+       geometries and is asked only by the two callers above. */
+    function relateBlock(rights, lefts, cands, predicate, maxKm) {
+      const near = predicate === 'nearer-than';
+      const hits = new Array(lefts.length), dist = near ? new Array(lefts.length) : null;
+      let failed = 0, why = null, detail = null;
+      for (let i = 0; i < lefts.length; i++) {
+        const g = lefts[i], c = cands[i] || [], h = [], d = near ? [] : null;
+        hits[i] = h; if (near) dist[i] = d;
+        if (!g) continue;
+        for (let k = 0; k < c.length; k++) {
+          const w = rights[c[k]];
+          let r;
+          if (predicate === 'intersects') { r = intersectsR(g, w); if (r.ok) r = { ok: true, d: r.value ? 0 : null }; }
+          else if (predicate === 'within') { r = withinR(g, w); if (r.ok) r = { ok: true, d: r.value ? 0 : null }; }
+          else if (predicate === 'contains') { r = containsR(g, w); if (r.ok) r = { ok: true, d: r.value ? 0 : null }; }
+          else if (near) {
+            r = distanceKmR(g, w);
+            if (!r.ok) { if (r.why === 'no-comparable-parts') r = { ok: true, d: null }; }
+            else r = { ok: true, d: (r.value != null && r.value <= maxKm) ? r.value : null };
+          } else r = { ok: false, why: 'unknown-predicate', detail: { predicate: predicate } };
+          if (!r.ok) { failed++; if (why == null) { why = r.why || 'geometry-failed'; detail = r.detail || null; } continue; }
+          if (r.d == null) continue;
+          h.push(c[k]); if (near) d.push(r.d);
+        }
+      }
+      return { hits: hits, dist: dist, failed: failed, why: why, detail: detail };
+    }
+
     const KERNEL = {
       available,
       union, intersection, difference, dissolve, bufferKm,
       intersects, contains, within, disjoint, distanceKm,
       pointInGeometry,
+      relateBlock,
       /* (gis-foundation-refine) see the block above bboxR — plain names answer the value or null. */
       bbox, centroid, pointOnSurface, convexHull, simplify,
       /* ⚠ VALIDITY IS A FACT ABOUT A GEOMETRY, SO IT LIVES BESIDE THE OPERATIONS AND NOT INSIDE ONE

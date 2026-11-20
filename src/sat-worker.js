@@ -34,6 +34,10 @@ import { imageryTileUrl, imageryKeyed, imageryRefused, isImageryReply, isImagery
 let RAW_MAX = 1200, DEPTH_MAX = 4000;
 const raw = new Map();            /* z/x/y → {buf, placeholder} — the ANCESTORS are what is worth keeping */
 const depth = new Map();          /* z10 neighbourhood → {have, stop} */
+/* the floor's reprojection is loaded the first time a floor tile is asked for (a dynamic import: most sessions on a
+   phone never need it in the worker, and a static one is not something the worker's vm test harness can evaluate) */
+let floorPic = null, _floorLib = null;   /* floorPic: the whole-earth floor picture (ImageBitmap), see 'floor' */
+const floorLib = () => _floorLib || (_floorLib = import('../js/world-floor-tile.js'));
 const aborts = new Map();         /* request id → AbortController */
 const dirty = new Map();          /* depth entries changed since the last reply, mirrored to the main thread */
 
@@ -370,6 +374,18 @@ self.onmessage = async (ev) => {
   if (m.type === 'stats') { self.postMessage({ id: m.id, ok: true, stats: { ...sched, waiting: waiting.length, live: [...lanesLive.values()].reduce((p, c) => p + c, 0), lanes: LANES, specCap: SPEC_CAP, specQueued: specDest.length + specRing.length } }); return; }
   /* speculation: the destination ('dest') and the ring around the view ('ring') — see `specPump` */
   if (m.type === 'spec') { speculate(m.kind, m.tiles, !!m.more); return; }
+  /* the whole-earth floor (js/world-base.js): the colour-matched picture arrives once, then each tile is one message */
+  if (m.type === 'floor-src') { try { if (floorPic && floorPic.close) floorPic.close(); } catch (_) { } floorPic = m.bitmap || null; return; }
+  if (m.type === 'floor') {
+    try {
+      if (!floorPic || typeof OffscreenCanvas !== 'function') throw new Error('no floor picture');
+      const T = m.tile | 0 || 512, cv = new OffscreenCanvas(T, T), g = cv.getContext('2d', { alpha: false });
+      (await floorLib()).drawFloorTile(g, floorPic, floorPic.width, floorPic.height, m.z, m.x, m.y, T);
+      const bitmap = cv.transferToImageBitmap();
+      self.postMessage({ id: m.id, ok: true, bitmap, mode: 'floor' }, [bitmap]);
+    } catch (e) { self.postMessage({ id: m.id, ok: false, err: String(e && e.message || e) }); }
+    return;
+  }
   if (m.type === 'abort') { const a = aborts.get(m.id); if (a) { try { a.ac && a.ac.abort(); } catch (_) { } release(a.owner); aborts.delete(m.id); } return; }
   if (m.type !== 'tile') return;
   const ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
