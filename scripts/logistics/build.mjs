@@ -222,10 +222,10 @@ async function main() {
 
   const decl = GOVERNANCE['data/logistics-network.json'];
   const doc = {
-    publisher: decl.publisher, url: decl.url, licence: decl.licence, licenceUrl: decl.licenceUrl, attribution: decl.attribution,
+    publisher: decl.publisher, url: decl.url, licence: decl.licence, licenceUrl: decl.licenceUrl, attribution: decl.attribution, paidBy: decl.paidBy,
     cadence: decl.cadence, cadenceBasis: decl.cadenceBasis, retrievedAt: decl.retrievedAt, generatedAt: decl.generatedAt, asOf: decl.asOf,
     schema: decl.schema, quality: decl.quality, builtBy: decl.builtBy,
-    sources: [
+    inputs: [
       { role: 'rail', name: 'OpenStreetMap rail (data/railways)', licence: 'ODbL 1.0', url: 'https://www.openstreetmap.org/copyright' },
       { role: 'ports', name: 'Wikidata', licence: 'CC0 1.0', url: 'https://www.wikidata.org/' },
       { role: 'port cargo', name: 'Eurostat mar_go_aa', licence: 'CC BY 4.0', url: 'https://ec.europa.eu/eurostat/databrowser/view/mar_go_aa/' },

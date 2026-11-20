@@ -96,7 +96,7 @@ export function makeLogisticsImpact(deps) {
       topCities: cities.sort((a, b) => (b.e.p || 0) - (a.e.p || 0)).slice(0, top).map(line),
       factories: plants.slice(0, Math.max(top, 12)).map(line),
       factoriesTotal: plants.length,
-      model: D.model, coverage: D.coverage, asOf: D.asOf, sources: D.sources,
+      model: D.model, coverage: D.coverage, asOf: D.asOf, sources: D.inputs,
     };
   }
   return { impact, findPorts, data };

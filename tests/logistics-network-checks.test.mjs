@@ -106,7 +106,7 @@ const FILE = path.join(ROOT, 'data', 'logistics-network.json');
 const D = JSON.parse(fs.readFileSync(FILE, 'utf8'));
 
 test('file: header states provenance and the model; ports are ocean-facing; lists are ordered and valid', () => {
-  for (const k of ['publisher', 'url', 'licence', 'licenceUrl', 'attribution', 'cadence', 'retrievedAt', 'generatedAt', 'asOf', 'schema', 'quality', 'builtBy', 'model', 'coverage', 'sources']) assert.ok(D[k] !== undefined, 'header has ' + k);
+  for (const k of ['publisher', 'url', 'licence', 'licenceUrl', 'attribution', 'cadence', 'retrievedAt', 'generatedAt', 'asOf', 'schema', 'quality', 'builtBy', 'model', 'coverage', 'inputs', 'paidBy']) assert.ok(D[k] !== undefined, 'header has ' + k);
   assert.match(D.model.kind, /not an observed freight flow/);
   assert.equal(D.quality.rows, D.ports.length);
   for (const p of D.ports) {
