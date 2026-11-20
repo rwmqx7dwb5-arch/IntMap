@@ -92,3 +92,41 @@ test('⑤ the capability is declared, and the data has a governance record', () 
   const gov = readFileSync(new URL('../scripts/build-admin-stats.mjs', import.meta.url), 'utf8');
   assert.ok(/export const GOVERNANCE/.test(gov) && /WIKIDATA/.test(gov));
 });
+
+/* ── the extension: NUTS boundaries and the historical join, both by IDENTIFIER ─────────────────────────── */
+const nutsFc = (ids, lv) => ({ type: 'FeatureCollection', features: ids.map((id) => ({ type: 'Feature', properties: { NUTS_ID: id, LEVL_CODE: lv, NAME_LATN: id }, geometry: { type: 'Point', coordinates: [0, 0] } })) });
+
+test('⑥ NUTS: the colouring joins Eurostat\'s boundaries to Wikidata\'s figures by the NUTS code, and counts what does not join', async () => {
+  const codes = Object.keys(REAL.units.nuts).filter((c) => c.length === 4 && /^DE/.test(c));
+  assert.ok(codes.length > 12, 'real file: German NUTS 2 units ' + codes.length);
+  const ids = codes.slice(0, 10).concat(['DEZZ', 'XX99']);          /* two codes Wikidata states nothing for */
+  const b = await real.nutsBoundaries(nutsFc(ids, 2), { prefix: 'DE' });
+  assert.ok(b.ok); assert.equal(b.level, 2);
+  assert.ok(b.matched >= 5 && b.matched <= 10, 'matched ' + b.matched);
+  assert.equal(b.boundariesWithoutFigure, 12 - b.matched, 'a boundary with no figure is counted, not painted');
+  assert.ok(b.figuresWithoutBoundary > 0, 'the German NUTS 2 figures whose code the supplied file lacks are counted, not dropped silently');
+  assert.match(b.classification, /NUTS 2021/);
+  for (const f of b.fc.features) { assert.ok(f.properties.population > 0); assert.ok(f.properties.population_date, 'every painted figure keeps its date'); }
+  assert.equal((await real.nutsBoundaries({ type: 'FeatureCollection', features: [] })).why, 'no-boundaries');
+});
+
+test('⑦ the historical join is by code, only for the years the unit exists, and says the outline is today\'s', async () => {
+  const bundle = { inception: { 'AA-01': 19530101, 'AA-02': 20200101 }, feats: [['Alpha', 4, 2020, 1, 1, 9999, 12, 31, [[1]], {}, 'AA-01', 'AAA'], ['Beta', 4, 2020, 1, 1, 9999, 12, 31, [[2]], {}, 'AA-02', 'AAA']] };
+  const unit = { inc: '1953-01-01', s: [['1990-01-01', 5, null]] };
+  const ok = real.historicalAt(bundle, 'AA-01', 1990, unit);
+  assert.ok(ok.ok); assert.equal(ok.outline, 'present-day'); assert.equal(ok.inceptionYear, 1953); assert.deepEqual(ok.outlines, ['Alpha']);
+  assert.equal(real.historicalAt(bundle, 'AA-01', 1900, unit).why, 'unit-not-yet-established', 'before the unit existed: refused, by the bundle\'s own stated inception');
+  assert.equal(real.historicalAt(bundle, 'AA-02', 1990, null).why, 'unit-not-yet-established');
+  assert.equal(real.historicalAt(bundle, 'ZZ-99', 1990, unit).why, 'no-outline-for-code', 'no outline for a code: nothing is matched by name');
+  assert.equal(real.historicalAt(bundle, 'AA-01', 1990, { inc: '1995-01-01' }).why, 'unit-not-yet-established', 'the statistic\'s own lifespan refuses too');
+});
+
+test('⑧ the real fill bundle: most of its coded units join to a statistics unit by ISO 3166-2, measured', async () => {
+  globalThis.window = globalThis; (0, eval)(readFileSync(new URL('../data/hist-admin-fill.js', import.meta.url), 'utf8'));
+  const b = globalThis.__HISTADMFILL; assert.ok(b && b.feats.length > 1000);
+  const keys = new Set(b.feats.map((f) => f[10]));
+  const joined = [...keys].filter((k) => REAL.units['iso3166-2'][k]).length;
+  assert.ok(joined / keys.size > 0.85, 'only ' + joined + ' of ' + keys.size + ' coded outlines join to a statistic by code');
+  const jp = [...keys].find((k) => /^JP-/.test(k) && REAL.units['iso3166-2'][k]);
+  const r = real.historicalAt(b, jp, 2015, REAL.units['iso3166-2'][jp]); assert.ok(r.ok, jp + ' ' + JSON.stringify(r)); assert.equal(r.outline, 'present-day');
+});

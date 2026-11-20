@@ -157,5 +157,55 @@ export function makeAdminStats(deps) {
     return { ok: true, fc: { type: 'FeatureCollection', features: feats }, matched: feats.length, boundariesWithoutFigure: unmatched, figuresWithoutBoundary: t.rows.length - feats.length, table: t };
   }
 
-  return { load, table, valueAt: async (kind, code, o) => { const data = await load(); const u = data.units[kind] && data.units[kind][code]; return valueAt(data, u, o); }, definitionAt, boundaries, KIND_LABEL, DATA_URL };
+  /* NUTS regions: Eurostat GISCO publishes ONE file per NUTS level (NUTS_RG_20M_2021_4326_LEVL_n.geojson); `fc` is that
+     FeatureCollection (the caller fetches it — this module stays free of the network). The join is by IDENTIFIER: the
+     feature's NUTS_ID against the code Wikidata states (P605), never by name. ⚠ GISCO's file is ONE classification
+     (NUTS 2021) and the NUTS codes were revised in 2013, 2016 and 2021: a Wikidata unit whose code belongs to another
+     version has no boundary here, and a boundary whose code Wikidata does not state has no figure. Both are COUNTED
+     (figuresWithoutBoundary / boundariesWithoutFigure) and named in `classification`, so the colouring never implies a
+     complete cover. The level is read from the feature, not guessed from the code length. */
+  async function nutsBoundaries(fc, o) {
+    const opt = o || {};
+    const t = await table(Object.assign({}, opt, { kind: 'nuts' }));
+    if (!t.ok) return t;
+    const feats0 = (fc && Array.isArray(fc.features)) ? fc.features : [];
+    if (!feats0.length) return bad('no-boundaries');
+    const level = (feats0[0].properties || {}).LEVL_CODE;
+    const byCode = new Map(t.rows.map((r) => [r.code, r]));
+    const feats = []; let unmatched = 0;
+    for (const f of feats0) {
+      const p = f.properties || {}, code = p.NUTS_ID || '';
+      if (!code || !f.geometry) continue;
+      const r = byCode.get(code);
+      if (!r) { unmatched++; continue; }
+      feats.push({ type: 'Feature', geometry: f.geometry, properties: { code: code, name: p.NAME_LATN || p.NUTS_NAME || r.name || code, population: r.value, population_date: r.time, population_method: r.method.en || r.method.id || null, year_gap: r.gapYears, nuts_level: p.LEVL_CODE } });
+    }
+    const here = new Set(feats0.map((f) => (f.properties || {}).NUTS_ID));
+    const sameLevel = t.rows.filter((r) => level != null && r.code.length === level + 2);
+    return { ok: true, fc: { type: 'FeatureCollection', features: feats }, matched: feats.length, level: level == null ? null : level, boundariesWithoutFigure: unmatched,
+      figuresWithoutBoundary: sameLevel.filter((r) => !here.has(r.code)).length, classification: 'NUTS 2021 (Eurostat GISCO); codes of other NUTS versions are not joined', table: t };
+  }
+
+  /* THE HISTORICAL JOIN, BY IDENTIFIER. `bundle` is a historical subdivision bundle in which a row's key (the column after the
+     names — data/hist-admin-fill.js: an ISO 3166-2 code) names the unit it outlines: [ name, level, y0,m0,d0, y1,m1,d1, rings,
+     names, key, country ], with `inception` {code: YYYYMMDD} the unit's own stated beginning. A figure and an outline are the SAME
+     unit only when they state the same CODE — never because the names agree — and only for the years the unit exists
+     (the statistic's lifespan, definitionAt, AND the bundle's stated inception). ⚠ THE OUTLINE IS TODAY'S: a fill bundle
+     draws the present outline of a unit that still exists (js/border-coast.js todayOutline), so its row span is a
+     drawing window, not the unit's life; the answer says `outline:'present-day'` instead of letting a 1990 figure sit
+     on a boundary that did not exist in that shape. */
+  function historicalAt(bundle, code, year, unit) {
+    const feats = (bundle && bundle.feats) || [];
+    const rows = feats.filter((f) => f && f[10] === code);
+    if (!rows.length) return bad('no-outline-for-code', { code: code });
+    const outlines = rows.map((f) => ({ name: f[0], row: f }));
+    const inc = bundle.inception && bundle.inception[code] != null ? Math.floor(bundle.inception[code] / 10000) : null;
+    if (year == null) return { ok: true, code: code, outline: 'present-day', inceptionYear: inc, outlines: outlines.map((o) => o.name) };
+    if (inc != null && year < inc) return bad('unit-not-yet-established', { code: code, year: year, inceptionYear: inc, via: 'bundle-inception' });
+    const guard = unit ? definitionAt(unit, year) : { ok: true, lifespan: 'unstated' };
+    if (!guard.ok) return Object.assign({ code: code }, guard);
+    return { ok: true, code: code, year: year, outline: 'present-day', inceptionYear: inc, unitLifespan: guard.lifespan, outlines: outlines.map((o) => o.name) };
+  }
+
+  return { load, table, valueAt: async (kind, code, o) => { const data = await load(); const u = data.units[kind] && data.units[kind][code]; return valueAt(data, u, o); }, definitionAt, boundaries, nutsBoundaries, historicalAt, KIND_LABEL, DATA_URL };
 }

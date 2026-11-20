@@ -39,3 +39,10 @@ Wikidata Query Service で P1082 を持つ単位: P300（ISO 3166-2）30,703 記
 `data/admin-stats` と `scripts/build-admin-stats.mjs → data/admin-stats.json.gz` は台帳で undeclared 207→209 に増える。出自（publisher・url・builtBy）と cadence はビルドの GOVERNANCE に値として述べてある。
 残る facet（権利の licence/licenceUrl/attribution・retrievedAt・schema/rows/missing）は、同じ形の既存 bundle（`data/hdi-series.json` など）と同様に生成物の中に述べておらず、台帳の更新で受ける。
 権利は既存の Wikidata（CC0 1.0）の DATA_SOURCES 行に帰属し、新しい出典は足していない。消せる条件: 生成物の冒頭に retrievedAt・licence を述べる形にビルドを直すこと（hdi-series と同時に直す）。
+
+## 拡張(2026-11-21)——NUTS を描き、歴史区分へ識別子で結ぶ
+- **NUTS の色分け**: `geo.regionStat` が `kind:"nuts", draw:true, level:1|2|3` で Eurostat GISCO の NUTS 2021 境界（既に `world-packs.js` が使うホスト・`NUTS_RG_20M_2021_4326_LEVL_n.geojson`）を取得し、`AS.nutsBoundaries` が **NUTS_ID と Wikidata の P605 の一致**（名前でなく識別子）で数値に結ぶ。数値の無い境界・境界の無い数値は**数えて返す**（`figuresWithoutBoundary`）、分類は NUTS 2021 一つと明言し、他の版（2013・2016）のコードは「結べなかった」と言う。実測: ドイツの NUTS 2 は Wikidata が人口を述べる単位が 17（NUTS 2021 は 38）。**足りない分を補っていない。**
+- **歴史区分との識別子結合**: `AS.historicalAt(bundle, code, year, unit)`。`data/hist-admin-fill.js` の行は鍵として ISO 3166-2 を持つ（`f[10]`）ので、同じコードを述べる統計の単位と**コードで**結ぶ。実測: 鍵 1,096 のうち 1,011（92%）が統計の単位に結べる（行 1,229 のうち 1,127）。年は、統計の単位の存続期間（`definitionAt`）と束自身の述べる設立（`inception`）の**両方**が通すときだけ。⚠ fill 束の輪郭は**現在の輪郭**（`todayOutline`）なので、答えは `outline:'present-day'` と名乗り、1990 年の数値を当時の形でない線の上に載せない。
+- **まだ結べていないもの（消せる条件つき）**: OHM 由来の `hist-admin1/2/3`（行は OHM 関係 id を持ち、Wikidata id を持たない）・`recon`（`TUR:Kayseri` 等の出典独自の鍵）・`surveys`（`ristat:1897:55`）は ISO 3166-2 を述べないので統計と**結べない**（名前では結ばない）。消せる条件: それらの行が Wikidata QID か ISO 3166-2 を述べること。UI への配線（`regionStat` が過去年で歴史の輪郭を描く）は**未了**——fill 束は 1.7 MB・recon は 18 MB で、遅延読み込みの設計が要る。
+- **米国の郡・日本の市区町村**は境界を同梱しておらず、**境界の出典を新たに足す作業**（利用条件を読む）が要るため表のみのまま。答えは表であることを述べる。
+- 検査: `tests/admin-stats-checks.test.mjs` に ⑥ NUTS の結合と数え上げ ⑦ 歴史の結合（コード・存続期間・現在の輪郭）⑧ 実際の fill 束との結合率 を追加。
