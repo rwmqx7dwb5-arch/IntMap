@@ -450,7 +450,7 @@ export function makeAtlasAgent() {
          a marked turn (`outside`, kept only if the budget kept it), the request block (`requestOutside` — the
          working context) and the tail (`tailOutside` — the plan). The answer rides the reply as
          `contextOutside`, which runTurn reads exactly as it reads `webUsed`. Nothing here reads a word. */
-      const outside = histOutside.slice(trim.droppedHistory).some(Boolean) || o.requestOutside === true || o.tailOutside === true || (memItem && o.memoryOutside === true);
+      const outside = histOutside.slice(trim.droppedHistory).some(Boolean) || o.requestOutside === true || o.tailOutside === true || !!(memItem && o.memoryOutside === true);
       return { input: input, requestIndex: requestIndex, trim: trim, outside: outside,
         cut: !!(trim.truncated.length || trim.squeezed.length),
         recallable: !!memItem };   /* (atlas-working-memory) the input names refs that read_result answers, so the tool is offered */
