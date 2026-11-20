@@ -171,6 +171,7 @@ export interface GeoEngineAdapterCore {
   addTileset(id?: any, spec?: any): any;
   removeTileset(id?: any): any;
   setTilesetVisible(id?: any, on?: any): any;
+  placeTileset(id?: any, o?: any): any;
   hasTileset(id?: any): any;
   tilesetInfo(id?: any): any;
   hasAircraftCloud(id?: any): any;
@@ -393,6 +394,7 @@ export interface GeoEngineLayers {
   addTileset(id?: any, spec?: any): any;
   removeTileset(id?: any): any;
   setTilesetVisible(id?: any, on?: any): any;
+  placeTileset(id?: any, o?: any): any;
   hasTileset(id?: any): any;
   tilesetInfo(id?: any): any;
   hasAircraftCloud(id?: any): any;
