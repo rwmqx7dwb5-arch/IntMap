@@ -79,10 +79,11 @@ export default [
     row: ['knowledge.forget',           'knowledgeForget',   'forgetKnowledge,deleteKnowledge',                              'research','none',    'knowledge',              'explanation',         'persist', 'explicit', '',       ''],
     ui: { none: '2026-11-20' },   /* no reader-facing control yet: the switch is Atlas-only in this slice (docs/architecture/05-ai.md) */
     doc: [
-      { in: 'knowledge', at: 30, text: '{"type":"knowledgeForget","id":str} = DELETE ONE KEPT CLAIM (知識を消す) by the id knowledgeRecall returned. Nothing else is touched; a claim that pointed at it keeps its own record. ' },
+      { in: 'knowledge', at: 30, text: '{"type":"knowledgeForget","id"?:str,"all"?:bool} = DELETE KEPT CLAIMS (知識を消す): one by the id knowledgeRecall returned, or every kept claim with all:true. Nothing else is touched; a claim that pointed at it keeps its own record. ' },
     ],
-    schema: () => ({ type: 'object', properties: { id: str() }, required: ['id'] }),
+    schema: () => ({ type: 'object', properties: { id: str(), all: bool() }, anyOf: [{ required: ['id'] }, { required: ['all'] }] }),
     async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn;
+      if (a.all === true) { const n = await knowledgeStore().count(); await knowledgeStore().clear(); return R(true, note('✓ ' + esc(L('Forgotten', '削除しました') + ': ' + n)), { meta: { code: 'OK', knowledge: { forgotten: n } } }); }
       const id = String(a.id || '').trim();
       if (!id) return R(false, warn(esc(L('Name the claim (its id).', '消す主張の id を指定してください。'))), { meta: { code: 'needs_input' } });
       const gone = await knowledgeStore().forget(id);
@@ -90,15 +91,14 @@ export default [
     },
   },
   {
-    row: ['knowledge.setting',          'knowledgeSetting',  'knowledgeSwitch,rememberSetting',                                'settings','none',    'knowledge',              'explanation',         'persist', 'explicit', '',       ''],
+    row: ['knowledge.setting',          'knowledgeSetting',  'knowledgeSwitch,rememberSetting',                                'settings','none',    'knowledge',              'explanation',         'persist', 'none',   '',       ''],
     ui: { none: '2026-11-20' },   /* no reader-facing control yet: the switch is Atlas-only in this slice (docs/architecture/05-ai.md) */
     doc: [
-      { in: 'knowledge', at: 40, text: '{"type":"knowledgeSetting","on"?:bool,"clear"?:bool} = THE READER\'S SWITCH for kept knowledge (蓄積知識の保存): off until they turn it on; on, claims are stored on THIS device only (nothing is sent anywhere). No "on" = report the state and how many claims are kept. Turn it on only when the reader asks for it. "clear":true deletes every kept claim. ' },
+      { in: 'knowledge', at: 40, text: '{"type":"knowledgeSetting","on"?:bool} = THE READER\'S SWITCH for kept knowledge (蓄積知識の保存): off until they turn it on; on, claims are stored on THIS device only (nothing is sent anywhere). No "on" = report the state and how many claims are kept. Turn it on only when the reader asks for it. "clear":true deletes every kept claim. ' },
     ],
-    schema: () => ({ type: 'object', properties: { on: bool(), clear: bool() } }),
+    schema: () => ({ type: 'object', properties: { on: bool() } }),
     async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn;
       const S = knowledgeStore();
-      if (a.clear === true) await S.clear();
       let on = knowledgeOn();
       if (a.on === true || a.on === false) { on = setKnowledgeOn(a.on); if (on !== a.on) return R(false, warn(esc(L('The setting could not be saved in this browser.', 'このブラウザでは設定を保存できませんでした。'))), { meta: { code: 'unobserved' } }); }
       const n = await S.count();
