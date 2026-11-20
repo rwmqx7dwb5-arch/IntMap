@@ -119,11 +119,6 @@ export function placeLabels(HOST){
      re-added — which is exactly why labels were missing on first load but appeared after toggling
      names off/on ("デフォルト選択なのに地名ラベルが出ない、再チェックで出る"). The per-source / per-layer
      `if(!getLayer)` guards already make repeated calls safe, so we just re-attempt every time. */
-  /* (city-label-dot) the dot's colours: a ring (tier 0) swaps fill and stroke relative to a plain dot. `light` = the text is
-     light (dark map / satellite) — the same flag applyLabelLang uses for the name. The tier-0 test is set by ensurePlaceLabels. */
-  let _cityTier0=['==',['literal',1],0];
-  function _cityDotColors(light){ const ink=light?'#ffffff':'#000000', rim=light?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)';
-    return { fill:['case',_cityTier0,rim,ink], stroke:['case',_cityTier0,ink,rim] }; }
   function ensurePlaceLabels(){
     if(!_imCanDraw()) return;
     /* (#R252) the ONE answer to «which `name:*` field is this label showing?», published before any
@@ -197,23 +192,16 @@ export function placeLabels(HOST){
       const CITY_GATE_OPEN_Z=7;
       const CITY_GATE=(()=>{ const e=['step',['zoom']]; CITY_GATE_STOPS.forEach(([z,r],i)=>{ if(i) e.push(z); e.push(['<=',['coalesce',['get','rank'],6],r]); }); e.push(CITY_GATE_OPEN_Z,true); return e; })();
       const CITY_FILTER=['all',['in',['get','class'],['literal',['city','town']]],CITY_GATE];
-      /* ══ (city-label-dot) THE POSITION MARKER NEXT TO THE NAME — Google Earth draws one ══════════════════
-         A name alone does not say where the city IS; `ofm-city-dot` is the point itself, on the SAME source, source-layer and
-         filter (gate included) as the name so a dot never exists for a city the name layer would not draw. Its radius is the
-         name's own size x CITY_DOT_EM (js/label-scale.js `placeTiered`'s multiplier), so dot and name grow together across
-         the whole z3-z17 curve; a national capital or rank <= 2 city (tier 0) is a RING (light stroke, dark core) and every
-         other settlement is a filled dot. The label sits CITY_LABEL_OFFSET_EM from the dot: dot radius (0.27) + ring stroke
-         (0.17 at the 13 px tier-0 size) + a gap, so the two cannot touch. CITY_DOT_EM and the gap are DESIGN NUMBERS read off
-         the Google Earth look the request names, not measurements; they lapse if the reader asks for another proportion.
-         Known limit: the name can lose a collision test while its dot stays, as it does on Google Earth's own dense views. */
-      const CITY_DOT_EM=0.27, CITY_LABEL_OFFSET_EM=0.72;
-      _cityTier0=['==',CITY_TIER,0];
-      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:CITY_FILTER,layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.placeTiered('city',CITY_TIER),'symbol-sort-key':['+',['*',CITY_TIER,100],CITY_RANK],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':CITY_LABEL_OFFSET_EM,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':LS.halo(1.6)}});   /* (#R210) 発色を濃く */
-      if(!GE().layers.has('ofm-city-dot')) GE().layers.add({id:'ofm-city-dot',type:'circle',source:'ofm','source-layer':'place',minzoom:3,filter:CITY_FILTER,
-        layout:{visibility:'none'},
-        paint:{'circle-radius':LS.placeTiered('city',CITY_TIER,CITY_DOT_EM),'circle-pitch-alignment':'map',
-          'circle-color':_cityDotColors(true).fill,'circle-stroke-color':_cityDotColors(true).stroke,
-          'circle-stroke-width':['case',_cityTier0,2.2,1]}});   /* colours are re-written per basemap by applyLabelLang, like the text */
+      /* ══ (city-label-nodot) A CITY IS ITS NAME, NOT A NAME BESIDE A CIRCLE ══════════════════════════════
+         「都市名の中心に丸や二重丸があるのはおかしい。文字と被るのはおかしい。」 (2026-11-20). Until this change an independent circle
+         layer (a ring for a capital, a dot for the rest, named `ofm-city-dot`) under every city name. The circle is drawn at the
+         tile's point and never moves, while MapLibre's `text-variable-anchor` moves the NAME to whichever side fits — so the
+         two overlapped whenever the name took the 'left' or 'right' slot and, with the label centred, the name was printed
+         through its own marker. The marker layer is gone, and with it the click/hover/stack entries that named it. The name
+         is anchored at the point itself (the same single anchor `ofm-other` uses), so the point it names is under its text
+         and nothing else is drawn on it. Revisit only if the reader asks for a position marker again — and then it has to be
+         part of the SAME symbol (icon + text with one anchor), never a second layer that cannot know where the text went. */
+      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:CITY_FILTER,layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.placeTiered('city',CITY_TIER),'symbol-sort-key':['+',['*',CITY_TIER,100],CITY_RANK],'text-max-width':7,'text-anchor':'center','text-justify':'center','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':LS.halo(1.6)}});   /* (#R210) 発色を濃く */
       /* ══ (#R198) THE NAMES OF THE THINGS BETWEEN A COUNTRY AND A CITY ═══════════════════════════
          「地方行政区分も地名ラベルをつけるように。（例：日本の都道府県、アメリカ・ドイツ・オーストラリア
            の州、中国の省など。）」
@@ -788,14 +776,6 @@ export function placeLabels(HOST){
       GE().layers.setPaint(id,'text-halo-color', (id==='ofm-admin1'||lightText)?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
       GE().layers.setPaint(id,'text-halo-width', LS.halo(id==='ofm-country'?1.7:id==='ofm-city'?1.6:1.45));
     });
-    /* (city-label-dot) the dot follows its name: same switch, same basemap colour rule, same time-machine behaviour (the name
-       layer stays up in the past with the era's spelling, so the point it marks stays too). */
-    if(GE().layers.has('ofm-city-dot')){
-      GE().layers.setLayout('ofm-city-dot','visibility',show?'visible':'none');
-      const _dc=_cityDotColors(sat||isDark);
-      GE().layers.setPaint('ofm-city-dot','circle-color',_dc.fill);
-      GE().layers.setPaint('ofm-city-dot','circle-stroke-color',_dc.stroke);
-    }
     /* == (#R309) THE ERA COUNTRY LABELS ARE COUNTRY LABELS, SO THEY FOLLOW THE SAME BASEMAP RULE ==
        「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 `imtb-lbl` / `imtb-lbl2`
        (js/time-borders.js) were painted ONCE, at layer-creation time, with frozen light-on-dark
