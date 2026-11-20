@@ -1198,6 +1198,11 @@ atlas-schemas.js                  **引数の schema**（#R406）— 252 能力�
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
+atlas-working-memory.js           **長い作業の作業記憶**— 目標・決定済み条件・完成した作業・保存した数値・出典・未解決を
+                                  別々の構造で持つ。ツール結果は原本のまま ref（`t<ターン>.<call>`）で保管し、
+                                  `read_result` が前のターンの ref・`path`（1 値）・`memory`（全記録）に答える。
+                                  ブロックは毎ターン 1 回だけ入力へ再注入（履歴が落ちても残る）。tab 内の引き継ぎ
+                                  （sessionStorage）と handoffText。モデルの判断は縛らない
 atlas-turn-continuity.js          **早く終わったターンが残すもの**（#R419）— ①訊いた質問を会話の記録へ
                                   1行として残す（`actLabel` は `a.question` を読んでいなかったので
                                   `ask ""` と記録され、次のターンからは「一度も訊いていない」に見えた＝
