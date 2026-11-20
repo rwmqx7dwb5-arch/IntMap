@@ -6,5 +6,5 @@ export default {
   key: 'plateau3d',
   rest: true,
   share: true,
-  sources: ['PLATEAU 3D city models (MLIT Japan)'],
+  sources: ['PLATEAU 3D city models (MLIT Japan)', '3D BAG (Netherlands 3D buildings)', 'Re:Earth Buildings (worldwide 3D buildings)'],
 };
