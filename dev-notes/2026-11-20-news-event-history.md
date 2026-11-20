@@ -33,3 +33,4 @@ Viet Nam News は UTF-16 のフィード（parseFeed が UTF-8 前提）。Intel
 ## 起動費用の増加（perf-budget）
 
 能力 `news.history` の定義（schema・説明・句・run）が `atlas-cap-runs` チャンクを約 8.6 kB、`dist.assets` を約 114 kB 押し上げた。新しい能力 1 件の分で、削れる重複は無い。天井を `node scripts/perf-budget.mjs --update` で上げた。読み取り RPC は `{ get: true }` で送る（data-effect の台帳は 0 のまま）。
+- CI の Regression 3/3 で `edge-spend-and-models ①`（モデル ID を関数に直書きしない）が赤: `news-ingest` に `"gemini-embedding-001"` の直書き。`_shared/ai-provider.js` の `GEMINI_EMBEDDING_MODEL`（嗜好であって固定ではない — 一覧に訊いて選ぶ）へ移した。main を取り込み済み（conflict なし）。

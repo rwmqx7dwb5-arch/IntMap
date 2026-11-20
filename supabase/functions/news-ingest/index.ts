@@ -48,7 +48,7 @@ import { secretKey, denoEnv } from "../_shared/supabase-keys.js";
 /* (edge-spend-and-models) モデルの既定表・有料の提供元へ通じる唯一の扉・プロジェクト全体の天井・
    本文ではなく長さだけを運ぶ失敗。どれも他の 4 関数と同じ 1 本。 */
 import {
-  PROVIDER_DEFAULT_MODEL, OPENAI_LAST_RESORT_MODEL, providerFetch, providerFail, bodyLength,
+  PROVIDER_DEFAULT_MODEL, OPENAI_LAST_RESORT_MODEL, GEMINI_EMBEDDING_MODEL, providerFetch, providerFail, bodyLength,
   spendCeiling, scheduleCeiling,
 } from "../_shared/ai-provider.js";
 // 地点解析は既存の決定論エンジン。⚠ 第二の実装を作らない——このファイルは
@@ -478,7 +478,7 @@ async function geminiEmbeddingModel(key) {
     const ms = (Array.isArray(j?.models) ? j.models : []).filter((m) =>
       /embed/i.test(String(m?.name || "")) && Array.isArray(m?.supportedGenerationMethods) && m.supportedGenerationMethods.includes("batchEmbedContents"));
     const names = ms.map((m) => String(m.name).replace(/^models\//, ""));
-    const pick = names.find((n) => n === "gemini-embedding-001") || names.find((n) => /gemini-embedding/.test(n)) || names[0] || null;
+    const pick = names.find((n) => n === GEMINI_EMBEDDING_MODEL) || names.find((n) => /gemini-embedding/.test(n)) || names[0] || null;
     return { model: pick, ids: names };
   } catch (e) { return { error: String((e && e.message) || e) }; }
 }
