@@ -482,6 +482,8 @@ export const IntMapRefData = (function(){
     {n:'Regional minimum wages (Ministry of Health, Labour and Welfare, Japan)',u:'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/',lic:'Government Standard Terms of Use (compatible with CC BY 4.0)',licUrl:'https://www.mhlw.go.jp/chosakuken/index.html',credit:true},
     {n:'SSDSE-B Standardized Statistical Data Set (Statistics Bureau of Japan / NSTAC)',u:'https://www.nstac.go.jp/use/literacy/ssdse/',lic:'Government Standard Terms of Use (compatible with CC BY 4.0)',licUrl:'https://www.nstac.go.jp/use/literacy/ssdse/',credit:true},
     {n:'e-Gov Laws API — Factory Location Act (Digital Agency, Japan)',u:'https://laws.e-gov.go.jp/',lic:'Government Standard Terms of Use (statute text)',licUrl:'https://laws.e-gov.go.jp/terms/',credit:true},
+    {n:'3D BAG (Netherlands 3D buildings)',u:'https://3dbag.nl/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'Re:Earth Buildings (worldwide 3D buildings)',u:'https://buildings.reearth.land/',lic:'ODbL 1.0 (OpenStreetMap contributors, Overture Maps Foundation)',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'Google Fonts (Noto Sans JP / SC / TC)',u:'https://fonts.google.com/noto'},
     {n:'Inter / Pretendard (bundled, SIL OFL 1.1)',u:'https://rsms.me/inter/',lic:'SIL OFL 1.1',credit:true},
     {n:'ESA WorldCover',u:'https://esa-worldcover.org/'},
