@@ -25,3 +25,9 @@ newsjp: Atlas が「表から読んだ結果を、国ごとにカテゴリ別の
 ## 3. 検証・未了
 - `tests/atlas-table-to-countries-checks.test.mjs`(3 本)。
 - 未了: 修正後の本番再実行(デプロイ後に W杯 + 他 3 件で共存確認)。完了判定(`step_budget` で止まった turn の completion が complete と記録された件)は原因の特定まで至らず、PR #1333 の領域として別途。per-group の色指定(金・銀)は未対応で、色は自動パレット。
+
+## ゲートの天井を上げた理由(CI 赤の対処)
+
+- `tests/perf-baseline.json`: async.gzip 4771.5→4807.2 kB、atlas-cap-runs 896.4→905.1 kB、atlas-console 1066.9→1073.1 kB、dist.assets 21559.0→21683.1 kB。増分は同じ branch の「highlight の『何であるか』と『描く形』を別々に名指す」commit(atlas-console / atlas-country-ids の追加)と、highlight の groups の形を名乗らせた説明文の分。利用者に届く能力(第1級区分の塗り・カテゴリ別一括塗り)を運ぶコードで、死んだ分ではない。
+- `tests/i18n-coverage-floor.json`: positional 7196→7197(同 commit が足した `L()` 1 行・5 言語入り)。
+- R403 ⑨(doc-facts)は CI では 44 秒で落ちたがローカルの `check:docs` は緑。単独再現できなかったので、再実行で確かめる。
