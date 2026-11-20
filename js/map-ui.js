@@ -2647,12 +2647,12 @@ export function labelPopup(HOST){
         +'.plc-pin .pp-body::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:#fff;}'
         +'.plc-pin .pp-name{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:2px;max-width:240px;color:#fff;font-size:13px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 3px rgba(0,0,0,0.9),0 0 3px rgba(0,0,0,0.9),0 1px 4px rgba(0,0,0,0.6);}';
       (document.head||document.documentElement).appendChild(st); }
-    /* The city label and dot under the pin are hidden while it stands (Google Earth: the label turns into the pin).
+    /* The city label under the pin is hidden while it stands (Google Earth: the label turns into the pin).
        Tile labels have no feature id, so the clicked feature is excluded by its OWN name property, read from the
        features actually rendered at the point; the layer's previous filter is kept and put back on close. Only the two
        city layers: they are the ones whose filter nothing else rewrites (ofm-admin1's is written by time-admin1.js). */
     let _hidLbl=null;
-    const _CITY_LBL=['ofm-city','ofm-city-dot'];
+    const _CITY_LBL=['ofm-city'];
     function _restoreLabel(){ const h=_hidLbl; _hidLbl=null; if(!h) return; for(const id of Object.keys(h)){ try{ GE().layers.setFilter(id,h[id]); }catch(_){} } }
     function _hideLabelAt(lngLat){ _restoreLabel();
       try{ const p=GE().coords.project([lngLat.lng,lngLat.lat]); if(!p||!isFinite(p.x)||!isFinite(p.y)) return;
@@ -2996,7 +2996,7 @@ export function labelPopup(HOST){
        EVENT time, and the era layer is created lazily on the first travel. */
     /* (#R564) …and `imta2-lbl`, the deeper era tier, for the same reason `imta-lbl` is here: a name
        that answers a tap at one zoom must not stop answering it at the next. */
-    const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-city-dot','ofm-other'];
+    const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-other'];
     /* ══ (poi-label-click) THE POINT LABELS ARE LABELS TOO ═════════════════════════════════════════════════════════
        「地点・施設ラベルをクリックしても無反応なのは不親切では？」 (2026-10-05, «Places, businesses & facilities»): the
        station, hospital and shop names (`ofm-poi`, and its dot `ofm-poi-dot`) were in none of these lists — no click,
@@ -3020,7 +3020,7 @@ export function labelPopup(HOST){
       };
     }};
     function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
-      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-city-dot',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
+      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
       GEO_LBL.forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
       ALL_LBL.filter(id=>!placeReaders.has(id)).forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
