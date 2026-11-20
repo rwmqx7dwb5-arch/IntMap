@@ -1527,8 +1527,8 @@ export function makeGisExport() {
       const pretty = !(opts && opts.pretty === false);
       let blob = new Blob([frame.text.slice(0, at) + (pretty ? '"features": [' : '"features":[')]);
       let first = true, last = Date.now();
-      const it = rec.chunks();
-      for (let n = it.next(); !n.done; n = it.next()) {
+      const it = typeof rec.chunksAsync === 'function' ? rec.chunksAsync() : rec.chunks();
+      for (let n = await it.next(); !n.done; n = await it.next()) {
         const parts = [];
         for (const f0 of n.value) {
           const f = f0 || {};
