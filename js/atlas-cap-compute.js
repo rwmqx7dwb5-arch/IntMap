@@ -54,7 +54,7 @@ export default [
       const pre = (label, text, cut) => text ? '<details class="atlas-gis-detail"><summary>' + esc(label) + (cut ? ' (' + esc(L('first ' + cut + ' characters omitted', '先頭 ' + cut + ' 文字を省略')) + ')' : '') + '</summary><pre>' + esc(text) + '</pre></details>' : '';
       const streams = pre('stdout', r.stdout, r.stdoutCut) + pre('stderr', r.stderr, r.stderrCut);
       const meta = { compute: { ok: r.ok, why: r.why || null, observed: r.observed, detail: r.detail || null, datasets: r.datasets || [], values: r.values || {},
-        packages: r.packages || [], runtime: r.runtime, python: r.python || null, timings: r.timings || null, elapsedMs: r.elapsedMs, codeSha256: r.codeSha256 || null } };
+        packages: r.packages || [], runtime: r.runtime, python: r.python || null, timings: r.timings || null, elapsedMs: r.elapsedMs, codeSha256: r.codeSha256 || null, reused: r.reused === true } };
       if (!r.ok) {
         const detail = r.detail == null ? '' : (typeof r.detail === 'string' ? r.detail : JSON.stringify(r.detail));
         const head = r.observed === false
@@ -79,7 +79,7 @@ export default [
           + (v.nonFinite ? ' · ' + esc(L(v.nonFinite + ' non-finite values became null', v.nonFinite + ' 個の非有限値を null にしました')) : '') + '</div>');
       });
       if (!parts.length) parts.push('<div>' + esc(L('The code ran and bound no `result`.', 'コードは実行されましたが、`result` は作られませんでした。')) + '</div>');
-      const html = '<div class="atlas-gis-result"><b>' + esc(L('Ran Python', 'Python を実行しました')) + '</b> · ' + esc(r.runtime)
+      const html = '<div class="atlas-gis-result"><b>' + esc(r.reused ? L('Same code on the same data — answered from the earlier run (nothing was recomputed)', '同じコードと同じデータのため、前回の結果を返しました（再計算していません）') : L('Ran Python', 'Python を実行しました')) + '</b> · ' + esc(r.runtime)
         + (r.packages && r.packages.length ? ' · ' + esc(r.packages.join(', ')) : '') + parts.join('') + streams
         + ((r.datasets || []).length ? '<div class="atlas-gis-next">' + esc(L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。')) + '</div>' : '') + '</div>';
       return R(true, html, { meta: meta });

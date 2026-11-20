@@ -38,10 +38,12 @@
  *  round is not a second architecture.
  * ==========================================================================*/
 
+import { makeRunLedger, runLine, makeRunHistory } from './atlas-run-ledger.js';   /* (job-cost-ledger) what this turn cost, in one record — observes, never decides */
 import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R489) `callKey` — the identity of one tool call, in the same terms #R441 already uses for one action */
 
 export function makeAtlasAgent() {
   return (function () {
+    const RUN_HISTORY = makeRunHistory(50);   /* (job-cost-ledger) the last turns' cost/time/models/tools, newest last */
 
     /* ── The technical ceilings. They bound the LOOP; they never decide what it should do. ──────
        ⚠ `maxSteps` COUNTS AGAINST A SERVER BUDGET IT DOES NOT OWN. supabase/functions/ai-proxy
@@ -749,6 +751,7 @@ export function makeAtlasAgent() {
       /* (#R452) the turn's clock. `now()` is injected in the node checks, which have no wall time. */
       const now = (typeof opts.now === 'function') ? opts.now : (() => Date.now());
       const startedAt = now();
+      const ledger = makeRunLedger({ now });   /* (job-cost-ledger) */
       if (PLAN) { try { PLAN.beginTurn(); } catch (_) { /* a ledger never breaks the turn */ } }
       const endPlan = (how) => { if (PLAN) { try { PLAN.endTurn(how); } catch (_) { /* as above */ } } };
       const outOfTime = () => (lim.turnBudgetMs > 0) && ((now() - startedAt) >= lim.turnBudgetMs);
@@ -798,6 +801,7 @@ export function makeAtlasAgent() {
         if (outOfTime()) { stopped = 'time_budget'; break; }
 
         let reply = null;
+        const modelT0 = now();
         try {
           /* ⚠ A SNAPSHOT, NOT THE LIVE ARRAY. The loop keeps appending to `transcript`; handing the
              adapter the array itself means the request it was given changes underneath it while it
@@ -825,6 +829,7 @@ export function makeAtlasAgent() {
           trace.transportErrorInfo = errorInfo(e);   /* (atlas-completion) the code / status / retryable the message flattened */
           break;
         }
+        if (reply) { const u = reply.usage || {}; ledger.model({ model: u.model, costUsd: u.costUsd, priceKnown: u.priceKnown, ms: now() - modelT0, web: reply.webUsed === true }); }
         /* (atlas-completion) A REPLY THE PROVIDER ITSELF CALLED INCOMPLETE (OpenAI `status:"incomplete"`,
            ran past its output length, or a content filter cut it) is still read as a step — what it
            holds is real — but it is not silently taken as finished: the trace says which step and why. */
@@ -1164,6 +1169,7 @@ export function makeAtlasAgent() {
             out = { ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
           }
           spans.push([t0, now()]);
+          try { ledger.tool({ name: capOfCall(p.routed) || call.name, ms: now() - t0, ok: !(out && out.ok === false), delegatedCostUsd: out && out.delegatedCostUsd, delegatedTasks: out && Array.isArray(out.delegated) ? out.delegated.length : undefined }); } catch (_) { /* a record never breaks the turn */ }
           if (!out || typeof out !== 'object') out = { ok: false, error: 'no_result', message: 'the tool returned nothing' };
           executedHere++;
           trace.executed++;
@@ -1460,7 +1466,9 @@ export function makeAtlasAgent() {
           if (bus && typeof bus.emit === 'function') bus.emit({ kernel: 'atlas', phase: 'answered', answerMode });
         } catch (_) { /* counting never breaks the turn */ }
       }
-      return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode,
+      trace.run = ledger.summary();   /* (job-cost-ledger) */
+      try { RUN_HISTORY.add(trace.run, opts.label); } catch (_) { /* a record never breaks the turn */ }
+      return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode, run: trace.run,
         produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen,
         unmet, completion, outputIncomplete: !!(trace.incomplete && trace.incomplete.length),
         plan: PLAN ? planSnap : undefined };
@@ -1517,6 +1525,8 @@ export function makeAtlasAgent() {
       return { text: String((d && d.final_text) || (machine ? '' : prose)), toolCalls: calls, callsInText,
         answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '',
         turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '', webUsed,
+        /* (job-cost-ledger) what the proxy said this ONE answer cost and which model served it — undefined when it did not say */
+        usage: meta ? { model: meta.modelServed || meta.model || undefined, costUsd: (typeof meta.costUsd === 'number') ? meta.costUsd : undefined, priceKnown: meta.priceKnown } : undefined,
         items: native && native.length ? native : undefined,
         /* (atlas-native-tools) what the proxy's own fence cut from THIS input, reported rather than done in silence */
         serverTrim: (meta && meta.inputTrimmed) || undefined,
@@ -1531,7 +1541,7 @@ export function makeAtlasAgent() {
     }
 
     const API = { LIMITS, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL, conflicts, keysOverlap,
-      runTurn, reject, readReply, validateAgainst, composeInput, historyItems, resultText };
+      runTurn, runLine, runHistory: RUN_HISTORY, reject, readReply, validateAgainst, composeInput, historyItems, resultText };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

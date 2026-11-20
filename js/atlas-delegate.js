@@ -83,12 +83,14 @@ export function normaliseContract(c) {
   /* (delegation-agency) the read capabilities this worker may call ITSELF, by id — the parent's grant, nothing wider. Absent = the worker
      only researches (the model and its web search), which is what it was before. */
   const tools = Array.from(new Set((Array.isArray(c.tools) ? c.tools : []).map((x) => s(x, 80)).filter(Boolean))).slice(0, TOOLS_MAX);
-  return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null) };
+  /* (model-options) the model THIS piece asks to run on — one of the ids the server offers (policy.models); absent = the server's configured tier. The server decides whether it is offered. */
+  const model = s(c.model, 80);
+  return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null, model ? { model } : null) };
 }
 
 /* the identity of a piece of work: what it is asked to do and from what — not the id it was given */
 export function contractKey(c) {
-  return stable([c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null, (c.tools || []).slice().sort()]);
+  return stable([c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null, (c.tools || []).slice().sort(), c.model || '']);
 }
 
 function makeEventLog(now) {
@@ -489,8 +491,9 @@ export function shapeOf(data) {
 /* requestKey(prompt, webMode) → a key in ai-proxy's REPLAY_KEY_OK alphabet that is the same for the same request and (to
    2^-64) different for any other: two independent 32-bit hashes of the text, written in hex. Not a secret and not a
    signature — the server binds the key to the account and the turn; this only has to tell requests apart. */
-export function requestKey(prompt, webMode) {
-  const text = String(webMode || '') + '\n' + String(prompt || '');
+export function requestKey(prompt, webMode, model) {
+  /* (model-options) the model is part of the request's identity: the same prompt put to a stronger model is a different request, not a duplicate */
+  const text = String(webMode || '') + '\n' + (model ? String(model) + '\n' : '') + String(prompt || '');
   let h1 = 0x811c9dc5, h2 = 0x9747b28c;
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i);
@@ -600,12 +603,12 @@ export function makeWorkerExecutor(o) {
         let env;
         calls += 1;
         try {
-          env = await ask(prompt, WORKER_SYSTEM, null, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, signal: controller.signal,
+          env = await ask(prompt, WORKER_SYSTEM, null, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, modelHint: task.model || undefined, signal: controller.signal,
             /* the key is the REQUEST's identity — what is asked and how (prompt + web mode), under this child's turn key. A duplicate of THIS
                request (the same delegation resumed by another executor) is answered with the first's answer instead of being run again;
                a different request — the repair, the retry, or another research.delegate call that reused the id "task1" in the same turn —
                has a different key and is never handed this one's answer. */
-            replayKey: requestKey(prompt, webMode) });
+            replayKey: requestKey(prompt, webMode, task.model) });
         } catch (e) {
           if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, sources };
           const code = String((e && e.code) || '');
