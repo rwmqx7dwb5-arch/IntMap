@@ -43,13 +43,16 @@
 //  ⚠ NO TYPE ANNOTATIONS and no Deno globals: the browser bundle imports this file too.
 // ============================================================================
 
-import { publicHostname } from "./relay-guard.js";
-import { GIS_FETCH_FUNCTION, RANGE_MAX_BYTES } from "./gis-fetch-constants.js";
+/* ⚠ THIS FILE IMPORTS NOTHING. js/gis-fetch.js (lazy) imports it, and js/proxy-fetch.js (eager, main bundle) imports relay-guard.js: if this file
+   imported relay-guard too, the bundler would hoist relay-guard into a chunk both share and the page would fetch it before first paint
+   (measured 2026-11-20: eager requests 10 → 11, check:perf). The one predicate that needs relay-guard (publicHostname) is therefore handed in. */
 
-/* the two numbers the page shares live in gis-fetch-constants.js (so the page does not pull relay-guard.js into the boot graph) */
-export { GIS_FETCH_FUNCTION, RANGE_MAX_BYTES };
+export const GIS_FETCH_FUNCTION = "gis-fetch";
 
 export const UNIT_BYTES = 64 * 1024;
+/* the most ONE ranged read may ask for. 4 MiB = four of the page's 1 MiB chunks (js/gis-fetch.js CHUNK_BYTES);
+   a COG tile row is ~100 KiB–1 MiB in every file measured, so one call is never the file. */
+export const RANGE_MAX_BYTES = 4 * 1024 * 1024;
 /* an answer fetched whole (a catalogue page, a small JSON, a tiny file). Measured: the largest STAC /collections
    page seen was < 3 MiB (js/gis-remote.js MAX_JSON_BYTES says the same); 8 MiB is a runaway, not a catalogue. */
 export const WHOLE_MAX_BYTES = 8 * 1024 * 1024;
@@ -81,7 +84,7 @@ export function parseRange(raw) {
 }
 
 /* the URL's shape, before any DNS or network. → {ok, url:URL} | {ok:false, why} */
-export function relayableUrl(raw) {
+export function relayableUrl(raw, publicHostname) {
   const s = String(raw == null ? "" : raw);
   if (!s || s.length > MAX_QUERY_URL) return { ok: false, why: "bad_url" };
   let u;
@@ -89,7 +92,7 @@ export function relayableUrl(raw) {
   if (u.protocol !== "https:") return { ok: false, why: "not_https" };
   if (u.username || u.password) return { ok: false, why: "credentials_in_url" };
   if (u.port !== "") return { ok: false, why: "port_not_default" };
-  if (!publicHostname(u.hostname)) return { ok: false, why: "host_not_public" };
+  if (typeof publicHostname !== "function" || !publicHostname(u.hostname)) return { ok: false, why: "host_not_public" };
   u.hash = "";
   return { ok: true, url: u };
 }

@@ -47,5 +47,5 @@ newsjp: Atlas が、発見したデータが「見つかった・読める・取
 
 ## 5. 予算を上げた理由と、上げずに直したもの（check:perf）
 
-- **直した（上げていない）**: `eager.requests` 10 → 11。原因は #1286 の `js/gis-fetch.js` が `gis-fetch-policy.js`（→ `relay-guard.js`）を import し、起動時に読まれる `proxy-fetch.js` も `relay-guard.js` を import していたため、bundler が `relay-guard` を共有チャンクに切り出したこと（ビルドレポートの eager チャンク一覧で確認）。ページが要るのは 2 つの数だけなので `_shared/gis-fetch-constants.js` に分け、ページはそちらだけを import する。再ビルドで eager.requests は 10 に戻った。
+- **起動の要求数は上げていない**: #1286 が最終形で `gis-fetch-policy.js` を何も import しない形にして（`publicHostname` は引数で渡す）、`relay-guard` が共有チャンクに切り出される問題を先に塞いだ。本変更はそれを前提にし、`eager.requests` は 10 のまま。（初版は定数だけの別ファイルで同じ問題を避けていたが、#1286 の形と重複するので #1286 側に寄せて消した。）
 - **上げた（新機能の対価）**: `gis-remote` 12.5 → 28.6 kB（`acquire` / `search` / `items` / `probeAsset`＋検索の純関数 `gis-catalog-search`）、`gis-cog` 4.6 → 7.4 kB（#1286 の日付変更線の分割・縫合）、`gis-core` 622.7 → 626.7 kB、`async.raw` 14136 → 14225 kB。新しい非同期チャンク `gis-pipeline`（11.2 kB）は `gis-atlas` から必要になったときだけ読まれ、起動の要求・バイトには入らない。
