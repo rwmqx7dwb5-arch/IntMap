@@ -29,11 +29,13 @@
 /* (sat-arcgis-3d) WHERE the tile comes from is js/esri-imagery.js's — keyed or keyless, one URL builder for
    the whole app. This module worker has its own instance of it, so its own `refused` flag: a key this
    worker saw refused falls back here independently of the page, which is what a refusal needs. */
+import { drawFloorTile } from '../js/world-floor-tile.js';
 import { imageryTileUrl, imageryKeyed, imageryRefused, isImageryReply, isImageryPlaceholder } from '../js/esri-imagery.js';
 
 let RAW_MAX = 1200, DEPTH_MAX = 4000;
 const raw = new Map();            /* z/x/y → {buf, placeholder} — the ANCESTORS are what is worth keeping */
 const depth = new Map();          /* z10 neighbourhood → {have, stop} */
+let floorPic = null;              /* the whole-earth floor picture (ImageBitmap), see 'floor' */
 const aborts = new Map();         /* request id → AbortController */
 const dirty = new Map();          /* depth entries changed since the last reply, mirrored to the main thread */
 
@@ -370,6 +372,18 @@ self.onmessage = async (ev) => {
   if (m.type === 'stats') { self.postMessage({ id: m.id, ok: true, stats: { ...sched, waiting: waiting.length, live: [...lanesLive.values()].reduce((p, c) => p + c, 0), lanes: LANES, specCap: SPEC_CAP, specQueued: specDest.length + specRing.length } }); return; }
   /* speculation: the destination ('dest') and the ring around the view ('ring') — see `specPump` */
   if (m.type === 'spec') { speculate(m.kind, m.tiles, !!m.more); return; }
+  /* the whole-earth floor (js/world-base.js): the colour-matched picture arrives once, then each tile is one message */
+  if (m.type === 'floor-src') { try { if (floorPic && floorPic.close) floorPic.close(); } catch (_) { } floorPic = m.bitmap || null; return; }
+  if (m.type === 'floor') {
+    try {
+      if (!floorPic || typeof OffscreenCanvas !== 'function') throw new Error('no floor picture');
+      const T = m.tile | 0 || 512, cv = new OffscreenCanvas(T, T), g = cv.getContext('2d', { alpha: false });
+      drawFloorTile(g, floorPic, floorPic.width, floorPic.height, m.z, m.x, m.y, T);
+      const bitmap = cv.transferToImageBitmap();
+      self.postMessage({ id: m.id, ok: true, bitmap, mode: 'floor' }, [bitmap]);
+    } catch (e) { self.postMessage({ id: m.id, ok: false, err: String(e && e.message || e) }); }
+    return;
+  }
   if (m.type === 'abort') { const a = aborts.get(m.id); if (a) { try { a.ac && a.ac.abort(); } catch (_) { } release(a.owner); aborts.delete(m.id); } return; }
   if (m.type !== 'tile') return;
   const ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;

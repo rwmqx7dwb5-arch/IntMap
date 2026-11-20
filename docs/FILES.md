@@ -720,6 +720,7 @@ night-side.js                     地球の夜側 window.IntMapNightSide
 night-lights.js                   夜間光がいつの絵かを決める唯一の場所 window.IntMapNightLights
 antimeridian-seam.js             世界ストリップの ±180° 端の黒い帯を測って埋める唯一の場所（夜間光の raster 層と夜側のモザイクが使う）
 world-base.js                     全球衛星ベース window.IntMapWorldBase
+world-floor-tile.js              全球衛星ベースの 1 タイルを切り出す関数（メインと衛星 worker が同じものを使う）
 satellite.js                      衛星画像コントローラ
 sat-proto.js                      衛星タイルの imapsat:// スキーム
 solid3d.js                        地図の上に立つ閉じた立体
