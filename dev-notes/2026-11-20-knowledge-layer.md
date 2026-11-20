@@ -11,3 +11,7 @@ internal: 既定オフで利用者には見えない（Atlas が使う能力。�
 - 証拠 ID は呼び出し単位で、後のセッションでは意味が無い。そのため `verified` は URL かデータセット名で再確認できるときだけ受け付け、ID は追跡用に残す。
 - 否定した見立て: ターンごとの自動抽出（誤保存が過去の回答を事実にする）。モデルによる矛盾・古さの判定をコードに持たせること（Atlas が supersedes / contradicts で述べる）。
 - 検査: `tests/knowledge-layer-checks.test.mjs`。未了: アカウント同期（第 2 スイッチ付き）、世界グラフへの ref の実在照合、設定画面のスイッチ。
+
+## 天井を上げた理由
+
+`async chunk "atlas-cap-runs"` の天井を 884.2 kB から 891.9 kB に上げた。増えた 7.7 kB は新しい能力 4 本（knowledge.remember / recall / forget / setting）の実装と説明文で、`atlas-cap-knowledge.js` がこのチャンクに入る。利用者が得るものは Atlas が出典つきの知識を端末に残し、後の質問で引ける能力。ほかの行は動いていない。
