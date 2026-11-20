@@ -61,6 +61,10 @@ concurrency:
 jobs:
   codeql:
     name: CodeQL (JavaScript / TypeScript)
+    # (ci-queue-pressure) NOT ON A PULL REQUEST: ~10 runner-minutes per push, advisory (not required), and the queue
+    # was the cost, not the test time. It runs on every push to main and daily (below), so a finding lands within a
+    # day. Put `pull_request` back here if the queue stops being the constraint.
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:

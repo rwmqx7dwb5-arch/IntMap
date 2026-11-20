@@ -16,6 +16,10 @@ internal: CI の起動条件だけで、読者に見える変化は無い
 
 `security.yml` の `pull_request` にコード・ロックファイルの `paths:` を付けた。文書・記録・データだけの PR では CodeQL も npm audit も走らない。main への push と毎日の定期実行は従来どおり。Security は必須チェックではない（ruleset の 4 件に無い）ので、`db.yml` が戒めている「必須文脈が報告されない」事故は起きない。
 
-## 2. 変えなかったもの（理由）
+## 2. 追加: CodeQL を PR から外した（利用者の指示「爆速にしろ」）
 
-CodeQL を PR から外す案は、PR 上で実際に指摘を拾った実績（`tests/atlas-agent-repeat-checks.test.mjs` の注記）があるため能力低下にあたり、確認なしには行わない。runner 枠の増設は料金が発生する。他セッションの赤い PR（11 本）には触れない。
+CodeQL は PR 上で実際に指摘を拾った実績（`tests/atlas-agent-repeat-checks.test.mjs` の注記）があり、外すと PR 上の検出は遅れる。利用者が速度を優先すると繰り返し述べたので `codeql` job を `pull_request` で飛ばした。main への push と日次の定期実行は残るので、指摘は遅くとも翌日に出る。`npm audit` は PR で走り続ける。戻すときは job の `if:` を消す。
+
+## 3. 変えなかったもの
+
+runner 枠の増設は料金が発生する。他セッションの赤い PR（11 本）には触れない。
