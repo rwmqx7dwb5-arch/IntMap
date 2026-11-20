@@ -38,14 +38,14 @@ export function plainText(s) {
   do {
     prev = t;
     t = t
-      .replace(/<ref[^>]*>[sS]*?</ref>|<ref[^>]*/>/g, '')
-      .replace(/<!--[sS]*?-->/g, '')
-      .replace(/[https?://[^s]]+(?:s+[^]]*)?]/g, '')          /* external links: kept separately as sources */
-      .replace(/{{[^{}]*}}/g, '')
-      .replace(/[[(?:[^]|]*|)?([^]]*)]]/g, '$1')
+      .replace(/<ref[^>]*>[\s\S]*?<\/ref>|<ref[^>]*\/>/g, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\[https?:\/\/[^\s\]]+(?:\s+[^\]]*)?\]/g, '')          /* external links: kept separately as sources */
+      .replace(/\{\{[^{}]*\}\}/g, '')
+      .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1')
       .replace(/<[^<>]*>/g, '');
   } while (t !== prev);
-  return t.replace(/[<>]/g, '').replace(/'{2,}/g, '').replace(/s+/g, ' ').replace(/s+([.,;:])/g, '$1').trim();
+  return t.replace(/[<>]/g, '').replace(/'{2,}/g, '').replace(/\s+/g, ' ').replace(/\s+([.,;:])/g, '$1').trim();
 }
 
 /** The first article a heading line links to — the running story's canonical title. */
