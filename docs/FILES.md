@@ -201,6 +201,8 @@ cesium-style.js                   style 言語の解釈器（式・フィルタ�
 cesium-layers.js                  Cesium のプロバイダとレイヤー描画
 cesium-vector-tiles.js            第2エンジンのベクタタイル
 plateau-cities.js                 PLATEAU 3D 都市モデルの登録（data/plateau-cities.json）の読み込み・視界近傍の選択・URL と都市別ジオイド補正。エンジンの tiles3d 能力が読む
+render-plan.js                     描画方法の選択（候補を良い順に並べ、エンジンの能力で最初に実行できるものを選ぶ。純粋）。geo-engine の `plan()` と PLATEAU レイヤーが使う
+tileset-budget.js                  3D Tiles のメモリ・詳細度の予算を端末（メモリ・コア数・省データ・携帯）から決める。cesium-engine の addTileset／_governTilesets が使う
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
 i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
 i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
@@ -233,6 +235,8 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
                                   して、貼ったリンクと同じ hashchange の経路で適用する。履歴は増やさない）
 embed-client.js                   **埋め込み API のホストの側**と約束事（`PROTOCOL`・`mount`）。他サイトが URL で import するので
                                   何も import せず、vite が dist/ にそのまま写す。embed-mode.js が PROTOCOL を import する
+geo-similar.js                    **地域の特徴ベクトルによる類似検索**（Spatial Embeddings 第 1 スライス）。OSM の建物・道路・施設・水辺の種類別の密度を
+                                  比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
                                   コード）は `js/atlas-attach.js` の `ATL_FILE` に訊き（写さず共有）、文法は
@@ -1063,6 +1067,7 @@ atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
+atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar。js/geo-similar.js の扉と引数の束縛）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
@@ -1196,7 +1201,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 252能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 252 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
