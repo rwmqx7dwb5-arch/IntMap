@@ -87,7 +87,7 @@ export default [
     ui: { none: '2026-11-20' },
     doc: [
       { in: 'ui.inlineControls', at: 10, text: () => '{"type":"dashboard","title"?:str,"blocks":[BLOCK,…]} = A VIEW IN YOUR REPLY (ダッシュボード・ビュー — 結果を1つの画面に組む), where BLOCK is one of: ' + blockShapes()
-        + '. Every block may carry "title". Use it when the answer is SEVERAL THINGS the reader will want to look at together and come back to — headline figures with the table behind them, a chart with the switches that change the map under it, the places it is about — 「ダッシュボードにして」「一覧で見せて」「まとめて表示」「比較表とグラフを並べて」, "make a dashboard", "put it in one view". It is drawn into the reply with IntMap\'s own parts and executes nothing; a "chart" block is drawn by `chart` and a "controls" block by `controls`, under their own rules (a chart still needs its source). "source" IS REQUIRED on "metrics" and "table" blocks, as on a chart: name where the numbers came from. NEVER INVENT A VALUE TO FILL A TILE OR A CELL. NO LINKS AND NO HTML anywhere in the spec — a string carrying a URL or a tag is refused (cite sources in your answer). The whole spec is checked before anything is drawn; when it is refused, the result lists EVERY problem with its path (e.g. blocks[2].rows[4]) and the reason — fix them all and send it once. Limits: '
+        + '. Every block may carry "title". Use it when the answer is SEVERAL THINGS the reader will want to look at together and come back to — headline figures with the table behind them, a chart with the switches that change the map under it, the places it is about — 「ダッシュボードにして」「一覧で見せて」「まとめて表示」「比較表とグラフを並べて」, "make a dashboard", "put it in one view". It is drawn into the reply with IntMap\'s own parts and executes nothing; a "chart" block is drawn by `chart`, a "controls" block by `controls` and a "board" block (a LIVE workspace linked to the real map and the clock) by `board`, under their own rules (a chart still needs its source). "source" IS REQUIRED on "metrics" and "table" blocks, as on a chart: name where the numbers came from. NEVER INVENT A VALUE TO FILL A TILE OR A CELL. NO LINKS AND NO HTML anywhere in the spec — a string carrying a URL or a tag is refused (cite sources in your answer). The whole spec is checked before anything is drawn; when it is refused, the result lists EVERY problem with its path (e.g. blocks[2].rows[4]) and the reason — fix them all and send it once. Limits: '
         + LIMITS.blocks + ' blocks, ' + LIMITS.metrics + ' tiles, ' + LIMITS.columns + ' columns, ' + LIMITS.rows + ' rows, ' + LIMITS.places + ' places, ' + LIMITS.specChars + ' characters of JSON.\n' },
     ],
     schema: () => viewSchema(),
@@ -108,6 +108,13 @@ export default [
         else if (b.kind === 'metrics') h = metricsHtml(b, X) + sourceHtml(b, X);
         else if (b.kind === 'places') h = placesHtml(b, X);
         else if (b.kind === 'controls') { const c = controlRows(b.items, K); c.problems.forEach((p) => problems.push({ at: at + '.items' + p.at, code: p.code, why: p.why })); h = c.html; }
+        else if (b.kind === 'board') {
+          /* a live workspace is board.compose's own arguments, run through the same dispatch: ONE screen-composer, whose widgets
+             share the map and the clock (js/board.js). The reply carries its receipt; the panel opens beside it. */
+          const r = await K.dispatch(Object.assign(own(b.board), { type: via }), dctx);
+          if (!r || r.ok === false) { problems.push({ at: at + '.board', code: (r && r.meta && r.meta.code) || 'not_drawn', why: plainText((r && r.html) || '') || L('the workspace was not opened', 'ワークスペースを開けませんでした') }); continue; }
+          h = r.html;
+        }
         else if (b.kind === 'chart') {
           const r = await K.dispatch(Object.assign(own(b.chart), { type: via }), dctx);
           if (!r || r.ok === false) { problems.push({ at: at + '.chart', code: (r && r.meta && r.meta.code) || 'not_drawn', why: plainText((r && r.html) || '') || L('the chart was not drawn', 'グラフを描けませんでした') }); continue; }

@@ -39,6 +39,7 @@ const GOOD = {
     { kind: 'metrics', title: 'Headline', items: [{ label: 'Japan', value: 123.3, unit: 'M', delta: -0.5 }, { label: 'Korea', value: '51.7', unit: 'M' }], source: 'World Bank WDI 2024' },
     { kind: 'table', columns: ['Country', 'Population (M)'], rows: [['Japan', 123.3], ['Korea | ROK', 51.7]], source: 'World Bank WDI 2024', caption: 'Mid-year' },
     { kind: 'chart', chart: { kind: 'bar', source: 'World Bank WDI 2024', series: [{ points: [{ x: 0, y: 123.3, label: 'Japan' }, { x: 1, y: 51.7, label: 'Korea' }] }] } },
+    { kind: 'board', board: { source: 'World Bank WDI 2024', data: { rows: [{ country: 'Japan', pop: 123.3 }] }, widgets: [{ kind: 'table' }] } },
     { kind: 'controls', items: [{ kind: 'layerToggle', layer: 'Population' }, { kind: 'button', label: 'Add China', run: 'add China to the comparison' }] },
     { kind: 'places', items: [{ label: 'Tokyo', place: 'Tokyo' }, { label: 'Seoul', lat: 37.57, lng: 126.98, zoom: 9 }] },
     { kind: 'text', md: '**Both** are shrinking; growth < 0 & falling > 0.5%/yr.' },
@@ -56,7 +57,7 @@ function fakeK(over) {
     CAPS, HOST: { lang: 'en' },
     resolveLayer: (n) => (/^population$/i.test(n) ? layer : null),
     layerOpacityControl: () => ({ value: '0.8' }),
-    dispatch: async (a) => { calls.push(a); if (a.type !== 'chart') return K.R(false, ''); const r = CHART.render(a); return r.ok ? K.R(true, r.html, { meta: { chart: { kind: r.kind, plotted: r.plotted } } }) : K.R(false, K.warn(esc(r.detail)), { meta: { code: r.reason } }); },
+    dispatch: async (a) => { calls.push(a); if (a.type === 'board') return K.R(true, '<div class="atl-note">opened</div>'); if (a.type !== 'chart') return K.R(false, ''); const r = CHART.render(a); return r.ok ? K.R(true, r.html, { meta: { chart: { kind: r.kind, plotted: r.plotted } } }) : K.R(false, K.warn(esc(r.detail)), { meta: { code: r.reason } }); },
   };
   return Object.assign(K, over || {}, { calls });
 }
@@ -128,6 +129,7 @@ test('④ the run draws only IntMap parts, delegates chart and controls, and ref
   assert.ok(r.html.indexOf('growth &lt; 0 &amp; falling &gt; 0.5%') >= 0, 'a comparison sign is prose, escaped by the reply renderer, not refused as markup');
   assert.ok(!/<script|onerror|javascript:/i.test(r.html));
   assert.ok(K.calls.some((a) => a.type === 'chart' && a.kind === 'bar'), 'the chart block ran the chart capability');
+  assert.ok(K.calls.some((a) => a.type === 'board' && a.source === 'World Bank WDI 2024'), 'the board block ran board.compose through the same dispatch');
   assert.equal((r.html.match(/data-mark="1"/g) || []).length, 2, 'the chart renderer drew both bars');
   assert.ok(r.html.indexOf('class="atl-ctl-toggle"') >= 0 && r.html.indexOf('data-cb="lyr-pop"') >= 0, 'the controls block is the control renderer\'s row');
   assert.ok(r.html.indexOf('data-place="Tokyo"') >= 0 && r.html.indexOf('data-lat="37.57"') >= 0 && r.html.indexOf('data-zoom="9"') >= 0);
@@ -137,14 +139,14 @@ test('④ the run draws only IntMap parts, delegates chart and controls, and ref
 
   const bad = JSON.parse(JSON.stringify(GOOD));
   bad.blocks[2].chart.source = '';
-  bad.blocks[3].items[0].layer = 'No such layer';
+  bad.blocks[4].items[0].layer = 'No such layer';
   const K2 = fakeK();
   const r2 = await entry('ui.compose').run(bad, {}, K2);
   assert.equal(r2.ok, false);
   assert.equal(r2.meta.code, 'invalid_view');
-  assert.deepEqual(r2.meta.problems.map((p) => p.at).sort(), ['blocks[2].chart', 'blocks[3].items[0]']);
+  assert.deepEqual(r2.meta.problems.map((p) => p.at).sort(), ['blocks[2].chart', 'blocks[4].items[0]']);
   assert.ok(!/class="atl-ui"/.test(r2.html), 'nothing is drawn when any block is refused');
-  assert.ok(/blocks\[3\]\.items\[0\]/.test(r2.html), 'the reader and the model see the path');
+  assert.ok(/blocks\[4\]\.items\[0\]/.test(r2.html), 'the reader and the model see the path');
 
   const r3 = await entry('ui.compose').run({ blocks: [{ kind: 'text', md: '<b>x</b>' }] }, {}, fakeK());
   assert.equal(r3.ok, false);

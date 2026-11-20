@@ -191,9 +191,9 @@ glyph-store.js                    ↳ この端末が自分の書体で描いた
 click-ownership.js                ↳ クリック登録と排他的所有権の台帳。adapter/handlerを弱参照し、
                                   背景fallbackと地物のownerを区別する。レンダラや地名IDには依存しない
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
-board.js                          **操作できるボード**（遅延・`IntMapBoard`）— 宣言（表・グラフ・フィルタ・地図・根拠・パラメータ）から DOM を組み、1 つの状態で連動。保存は IndexedDB `intmap-board`
+board.js                          **操作できるボード**（遅延・`IntMapBoard`）— 宣言（表・グラフ・フィルタ・地図・指標・時間・オブジェクト・根拠・パラメータ）から DOM を組み、1 つの状態で連動。選択は本物の地図のカメラを動かし、Chronos の時計がそのまま表と数値を動かす。長いジョブの途中経過は `feed()` で受ける。保存は IndexedDB `intmap-board`
 board-spec.js                     ボード宣言の検査（列の実在・出典必須・Artifact の節への対応）。純関数
-board-state.js                    ボードの共有状態（選択・フィルタ・パラメータ）。純関数
+board-state.js                    ボードの共有状態（選択・フィルタ・パラメータ、および時計の写し `time`）。純関数
 bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・
                                   未移行のファイルと理由）と `emit` / `on` / `once`。配信は
                                   `window.dispatchEvent` のままで、宣言に無い名前は開発時に例外・本番は警告
@@ -1212,6 +1212,7 @@ atlas-turn-results.js             **1つの操作は、返信の中で1ブロッ
                                   ③**版を持つ成果物は順位づけない**（#R551）— `meta.artifact` を名乗る2件は
                                   `revision` の大きいほうが残る。アプリが保持しているのが最新版なのだから、
                                   点数で古い版を選べば「もう無い印」を説明する返信になる
+ui-text-rules.js                  宣言された画面（ビューとボード）の文字列に課す 2 つの拒否（URL・タグ）の唯一の実装。`atlas-ui-spec.js` と `board-spec.js` が共有。純関数
 atlas-ui-spec.js                  **Atlas が宣言するビュー**（declarative-workspace）— `ui.compose` の仕様（JSON）のブロックの種類・欄・上限の表
                                   （BLOCKS／LIMITS）と、そこから導く schema（viewSchema）・カタログの形（blockShapes）・検査（checkView）。
                                   ⚠ 検査は**全部の問題を経路つきで**返し、未知の種類・未知の欄・上限超え・URL・HTML を理由つきで拒む（黙って落とさない）。

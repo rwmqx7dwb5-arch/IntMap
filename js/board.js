@@ -11,6 +11,14 @@
  *  point all call `state.toggle(row)`; a filter calls `state.setFilter`. Each widget's `update()` reads
  *  the store, so a widget added tomorrow is linked on arrival.
  *
+ *  ⚠ THE BOARD SHARES THE REAL MAP AND THE REAL CLOCK, NOT COPIES OF THEM. A selection that has a place moves the
+ *  main map (camera.flyTo for one place, fitBounds for several); a board with a map or objects widget draws its
+ *  dataset on the main map once when it opens. The `time` widget moves IntMapTime (js/chronos.js) and the board only
+ *  MIRRORS the clock's broadcast into its store (state.setTime), so the table, chart, metrics and map all answer
+ *  "as of" the same instant the rest of the product shows. The small SVG in the map widget is a locator, not a map.
+ *  ⚠ A LONG JOB'S PARTIAL RESULT ARRIVES THROUGH feed(): rows appended to an open inline board, the footer says
+ *  "partial" with the job's fraction until a chunk says `done` (the durable-jobs work calls it).
+ *
  *  ⚠ A PARAMETER RE-RUNS ONLY WHAT DEPENDS ON IT. The `param` widget does not recompute anything: it
  *  hands the new number to window.IntMapGisProject.setParams(dataset, {key}) — which re-runs that op and
  *  everything made from it, upstream first, and leaves a failed chain marked `stale` — and then simply
@@ -22,8 +30,10 @@
  *  one place. Where the store is unavailable the answer is `{ok:false, why:'storage-unavailable'}`.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import { IntMapTime } from './chronos.js';   /* the master clock and the real map's engine are imported from their owners, not read off window */
+import { IntMapGeoEngine } from './geo-engine.js';
 import { createBoardState } from './board-state.js';
-import { normalise, columnsOf, rowsToFeatures } from './board-spec.js';
+import { normalise, columnsOf, rowsToFeatures, MAX_ROWS } from './board-spec.js';
 
 const DB = 'intmap-board', STORE = 'boards';
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -49,7 +59,10 @@ export function board(HOST) {
   const tx = async (mode, fn) => { const db = await idb(); return new Promise((res, rej) => { const t = db.transaction(STORE, mode); const r = fn(t.objectStore(STORE)); t.oncomplete = () => { db.close(); res(r && r.result); }; t.onerror = t.onabort = () => { db.close(); rej(t.error || new Error('tx-failed')); }; }); };
 
   /* ── the one open board ──────────────────────────────────────────────── */
-  let cur = null;     /* {id, spec, state, rows[], datasetId, root, widgets[], off[]} */
+  let cur = null;     /* {id, spec, state, rows[], datasetId, root, widgets[], off[], timeOf, mapLinked, progress} */
+  const visibleNow = () => cur.state.visible(cur.rows, cur.timeOf);
+  const CLOCK = () => IntMapTime || null;
+  const GEO = () => IntMapGeoEngine || null;
 
   const el = (tag, cls, text) => { const e = doc().createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const svg = (tag, attrs) => { const e = doc().createElementNS(SVGNS, tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); return e; };
@@ -83,6 +96,10 @@ export function board(HOST) {
       '#board-panel .m.sel{opacity:1;stroke:var(--text-main,#111);stroke-width:1.5}',
       '#board-panel .g{fill:none;stroke:var(--text-meta,#888);stroke-width:1}',
       '#board-panel input[type=range]{width:100%;accent-color:var(--primary-color,#0a84ff)}',
+      '#board-panel .bd-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}',
+      '#board-panel .bd-tile{background:var(--card-bg,rgba(255,255,255,.5));border-radius:12px;padding:8px 10px}',
+      '#board-panel .bd-tl{font-size:11px;color:var(--text-meta,#888)}',
+      '#board-panel .bd-tv{font-size:20px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums}',
       '#board-panel .bd-foot{padding:8px 16px 12px;font-size:12px;color:var(--text-meta,#888)}',
       '@media (max-width:640px){#board-panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:78vh;border-radius:20px 20px 0 0;padding-bottom:var(--safe-bottom,0px)}}',
     ].join('\n');
@@ -108,6 +125,34 @@ export function board(HOST) {
     return { ok: true, rows: feats, datasetId };
   }
 
+  function bboxOf(rows, idx) {
+    let x0 = 180, x1 = -180, y0 = 90, y1 = -90, n = 0;
+    const walk = (c) => { if (typeof c[0] === 'number') { if (c[0] < x0) x0 = c[0]; if (c[0] > x1) x1 = c[0]; if (c[1] < y0) y0 = c[1]; if (c[1] > y1) y1 = c[1]; n++; } else c.forEach(walk); };
+    idx.forEach((i) => { const g = rows[i].geometry; if (g && g.coordinates) walk(g.coordinates); });
+    return n ? { x0, x1, y0, y1 } : null;
+  }
+
+
+  /* ── the real map ───────────────────────────────────────────────────── */
+  let flyT = 0;
+  function mapFocus() {
+    clearTimeout(flyT);
+    flyT = setTimeout(() => {
+      if (!cur || !cur.mapLinked) return;
+      const G = GEO(); if (!G || !G.hasRenderer || !G.hasRenderer()) return;
+      const idx = cur.state.get().selection; if (!idx.length) return;
+      const b = bboxOf(cur.rows, idx); if (!b) return;
+      try {
+        if (b.x0 === b.x1 && b.y0 === b.y1) G.camera.flyTo({ center: [b.x0, b.y0], zoom: Math.max(G.camera.getZoom ? G.camera.getZoom() : 2, 6), duration: 900 });
+        else G.camera.fitBounds([[b.x0, b.y0], [b.x1, b.y1]], { padding: 80, maxZoom: 9, duration: 900 });
+      } catch (_) { /* a camera that cannot move leaves the board working */ }
+    }, 120);
+  }
+  async function drawOnMap() {
+    if (!cur || !cur.datasetId) return { ok: false, why: 'no-dataset' };
+    try { await window.IntMapLazy.need('gisCore'); return (window.IntMapGis && window.IntMapGis.draw(cur.datasetId)) || { ok: false, why: 'unavailable' }; } catch (e) { return { ok: false, why: 'unavailable' }; }
+  }
+
   /* ── widgets: each is {el, update(), id} and reads only the store and the rows ── */
   const cellText = (v) => (v == null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v)));
   const numeric = (rows, f) => rows.map((r) => Number(r.properties && r.properties[f])).filter(Number.isFinite);
@@ -119,7 +164,7 @@ export function board(HOST) {
     tbl.addEventListener('click', (e) => { const tr = e.target.closest && e.target.closest('tr[data-i]'); if (tr) cur.state.toggle(Number(tr.dataset.i), w.id); });
     tbl.addEventListener('keydown', (e) => { const tr = e.target.closest && e.target.closest('tr[data-i]'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); cur.state.toggle(Number(tr.dataset.i), w.id); } });
     return { el: card, update() {
-      const vis = cur.state.visible(cur.rows), sel = new Set(cur.state.get().selection), c = cols();
+      const vis = visibleNow(), sel = new Set(cur.state.get().selection), c = cols();
       tbl.textContent = '';
       const hr = el('tr'); c.forEach((k) => hr.appendChild(el('th', null, k))); const th = el('thead'); th.appendChild(hr); tbl.appendChild(th);
       const tb = el('tbody');
@@ -134,7 +179,7 @@ export function board(HOST) {
     card.append(host, meta);
     return { el: card, update() {
       const sel = new Set(cur.state.get().selection);
-      let pts = cur.state.visible(cur.rows).map((i) => ({ i, x: cur.rows[i].properties[w.x], y: Number(cur.rows[i].properties[w.y]) })).filter((p) => Number.isFinite(p.y));
+      let pts = visibleNow().map((i) => ({ i, x: cur.rows[i].properties[w.x], y: Number(cur.rows[i].properties[w.y]) })).filter((p) => Number.isFinite(p.y));
       host.textContent = '';
       if (!pts.length) { meta.textContent = L('No numeric values to plot for ' + w.y + '.', w.y + ' に描ける数値がありません。'); return; }
       const total = pts.length;
@@ -184,22 +229,15 @@ export function board(HOST) {
     } };
   }
 
-  function bboxOf(rows, idx) {
-    let x0 = 180, x1 = -180, y0 = 90, y1 = -90, n = 0;
-    const walk = (c) => { if (typeof c[0] === 'number') { if (c[0] < x0) x0 = c[0]; if (c[0] > x1) x1 = c[0]; if (c[1] < y0) y0 = c[1]; if (c[1] > y1) y1 = c[1]; n++; } else c.forEach(walk); };
-    idx.forEach((i) => { const g = rows[i].geometry; if (g && g.coordinates) walk(g.coordinates); });
-    return n ? { x0, x1, y0, y1 } : null;
-  }
-
   function wMap(w) {
     const card = el('div', 'bd-card'), host = el('div'), bar = el('div'), meta = el('div', 'bd-meta');
     const draw = el('button', 'bd-btn', L('Show these rows on the map', '行を地図に表示')); draw.type = 'button';
     bar.appendChild(draw); card.append(host, bar, meta);
     draw.onclick = async () => {
-      try { await window.IntMapLazy.need('gisCore'); const r = window.IntMapGis && cur.datasetId && window.IntMapGis.draw(cur.datasetId); meta.textContent = (r && r.ok) ? L('Drawn on the main map.', '地図に描きました。') : L('Could not draw on the main map: ', '地図に描けませんでした: ') + ((r && r.why) || 'unavailable'); } catch (e) { meta.textContent = L('Could not draw on the main map.', '地図に描けませんでした。'); }
+      const r = await drawOnMap(); meta.textContent = (r && r.ok) ? L('Drawn on the main map.', '地図に描きました。') : L('Could not draw on the main map: ', '地図に描けませんでした: ') + ((r && r.why) || 'unavailable');
     };
     return { el: card, update() {
-      const vis = cur.state.visible(cur.rows).filter((i) => cur.rows[i].geometry), sel = new Set(cur.state.get().selection);
+      const vis = visibleNow().filter((i) => cur.rows[i].geometry), sel = new Set(cur.state.get().selection);
       host.textContent = '';
       const bb = bboxOf(cur.rows, vis);
       if (!bb) { meta.textContent = L('No row has a location to draw.', '位置を持つ行がありません。'); draw.hidden = true; return; }
@@ -215,7 +253,7 @@ export function board(HOST) {
           rings.forEach((r) => { const q = svg('polyline', { points: r.map((c) => X(c[0]) + ',' + Y(c[1])).join(' '), class: 'g m' + (isSel ? ' sel' : ''), style: 'fill:' + (g.type.includes('Polygon') ? 'var(--primary-color,#0a84ff)' : 'none') + ';fill-opacity:' + (isSel ? .5 : .18) }); act(q, i, w.id); s.appendChild(q); }); }
       });
       host.appendChild(s);
-      meta.textContent = vis.length + L(' located rows (plain outline; use “Show these rows on the map” for the full map)', ' 件を表示(簡易表示。本番の地図は「行を地図に表示」)');
+      meta.textContent = vis.length + L(' located rows (a locator; selecting a row moves the main map)', ' 件を表示(位置の目安。選ぶと本物の地図が動きます)');
     } };
   }
 
@@ -224,7 +262,7 @@ export function board(HOST) {
     card.append(t, meta);
     return { el: card, update() {
       t.textContent = L('Board data source: ', 'ボードのデータの出典: ') + cur.spec.source;
-      const fs = Object.values(cur.state.get().filters), n = cur.state.visible(cur.rows).length;
+      const fs = Object.values(cur.state.get().filters), n = visibleNow().length;
       meta.textContent = (cur.datasetId ? L('Dataset ', 'データセット ') + cur.datasetId + ' · ' : '') + n + '/' + cur.rows.length + L(' rows pass ', ' 行が通過 / 条件 ') + fs.length + L(' filter(s)', ' 件');
     } };
   }
@@ -247,7 +285,63 @@ export function board(HOST) {
     return { el: card, update() {} };
   }
 
-  const MAKERS = { table: wTable, chart: wChart, filter: wFilter, map: wMap, evidence: wEvidence, param: wParam };
+  const nfmt = () => { try { return new Intl.NumberFormat(IntMapLang.locale(HOST.lang, 'en-GB'), { maximumFractionDigits: 2 }); } catch (_) { return { format: String }; } };
+  function aggregate(rows, idx, m) {
+    if (m.agg === 'count') return idx.length;
+    const ns = idx.map((i) => Number(rows[i].properties[m.field])).filter(Number.isFinite);
+    if (!ns.length) return null;
+    return m.agg === 'sum' ? ns.reduce((a, b) => a + b, 0) : m.agg === 'mean' ? ns.reduce((a, b) => a + b, 0) / ns.length : m.agg === 'min' ? Math.min(...ns) : Math.max(...ns);
+  }
+  function wMetrics(w) {
+    const card = el('div', 'bd-card'), grid = el('div', 'bd-tiles'), meta = el('div', 'bd-meta');
+    card.append(grid, meta);
+    return { el: card, update() {
+      const v = visibleNow(), sel = new Set(cur.state.get().selection), picked = v.filter((i) => sel.has(i)), idx = picked.length ? picked : v, f = nfmt();
+      grid.textContent = '';
+      w.items.forEach((m) => {
+        const x = aggregate(cur.rows, idx, m), t = el('div', 'bd-tile');
+        t.append(el('div', 'bd-tl', m.label), el('div', 'bd-tv', x == null ? '—' : f.format(x) + (m.unit ? ' ' + m.unit : '')));
+        grid.appendChild(t);
+      });
+      const t = cur.state.getTime();
+      meta.textContent = (picked.length ? L('Over the ' + picked.length + ' selected row(s)', '選択した ' + picked.length + ' 行について') : L('Over ' + v.length + ' visible row(s)', '表示中の ' + v.length + ' 行について'))
+        + (t != null && cur.timeOf ? L(' · as of ' + new Date(t).toISOString().slice(0, 10), ' · ' + new Date(t).toISOString().slice(0, 10) + ' 時点') : '');
+    } };
+  }
+
+  function wTime(w) {
+    const card = el('div', 'bd-card'), lab = el('div', 'bd-tv'), r = el('input'), bar = el('div'), live = el('button', 'bd-btn', L('Back to now', '現在に戻す')), meta = el('div', 'bd-meta');
+    r.type = 'range'; live.type = 'button'; bar.appendChild(live); card.append(lab, r, bar, meta);
+    const C = CLOCK(), top = new Date().getFullYear();
+    if (!C || !C.setYear) { r.disabled = live.disabled = true; lab.textContent = L('The clock is unavailable here.', 'ここでは時計を操作できません。'); return { el: card, update() {} }; }
+    r.min = C.min != null ? C.min : 1; r.max = top; r.step = 1; r.setAttribute('aria-label', L('Year', '年'));
+    r.oninput = () => { lab.textContent = r.value; };
+    r.onchange = () => C.setYear(Number(r.value), { source: 'board' });   /* the clock broadcasts; this board hears it like every other subscriber */
+    live.onclick = () => C.setNow({ source: 'board' });
+    return { el: card, update() {
+      const live0 = C.isLive && C.isLive();
+      r.value = live0 ? top : C.year(); lab.textContent = live0 ? L('Now', '現在') : C.iso();
+      const n = visibleNow().length; meta.textContent = L(n + ' of ' + cur.rows.length + ' rows exist as of this moment', cur.rows.length + ' 行中 ' + n + ' 行がこの時点で存在');
+    } };
+  }
+
+  function wObjects(w) {
+    const card = el('div', 'bd-card'), wrap = el('div', 'bd-scroll'), meta = el('div', 'bd-meta');
+    card.append(wrap, meta);
+    wrap.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('button[data-i]'); if (b) cur.state.toggle(Number(b.dataset.i), w.id); });
+    return { el: card, update() {
+      const v = visibleNow(), sel = new Set(cur.state.get().selection), by = new Map();
+      v.forEach((i) => { const t = String(cur.rows[i].properties[w.typeField] || '—'); if (!by.has(t)) by.set(t, []); by.get(t).push(i); });
+      wrap.textContent = '';
+      by.forEach((list, t) => {
+        wrap.appendChild(el('div', 'bd-sec', t + ' · ' + list.length));
+        list.slice(0, ROW_CAP).forEach((i) => { const p = cur.rows[i].properties, rel = Number(p.related); const b = el('button', 'bd-chip' + (sel.has(i) ? ' on' : ''), cellText(p[w.nameField]) + (Number.isFinite(rel) && rel > 0 ? ' · ' + rel : '')); b.type = 'button'; b.dataset.i = i; wrap.appendChild(b); });
+      });
+      meta.textContent = v.length + L(' objects', ' 件のオブジェクト') + (cur.rows.some((r) => r.properties.related != null) ? L(' · the number is how many others they relate to', ' · 数字は関連する他のオブジェクトの数') : '');
+    } };
+  }
+
+  const MAKERS = { metrics: wMetrics, time: wTime, objects: wObjects, table: wTable, chart: wChart, filter: wFilter, map: wMap, evidence: wEvidence, param: wParam };
 
   /* ── open / close ────────────────────────────────────────────────────── */
   function close() {
@@ -257,7 +351,7 @@ export function board(HOST) {
     cur = null;
   }
 
-  function refresh(source) { if (!cur) return; cur.widgets.forEach((w) => { try { w.update(source); } catch (e) { /* one widget failing must not blank the others */ } }); cur.foot.textContent = cur.state.visible(cur.rows).length + '/' + cur.rows.length + L(' rows · ', ' 行 · ') + cur.state.get().selection.length + L(' selected', ' 件選択'); }
+  function refresh(source) { if (!cur) return; cur.widgets.forEach((w) => { try { w.update(source); } catch (e) { /* one widget failing must not blank the others */ } }); cur.foot.textContent = visibleNow().length + '/' + cur.rows.length + L(' rows · ', ' 行 · ') + cur.state.get().selection.length + L(' selected', ' 件選択') + (cur.progress ? L(' · partial result', ' · 途中経過') + (cur.progress.fraction != null ? ' ' + Math.round(cur.progress.fraction * 100) + '%' : '') : '') + (cur.capped ? L(' · capped at ' + MAX_ROWS + ' rows', ' · ' + MAX_ROWS + ' 行で打ち切り') : ''); }
 
   /** open(rawSpec, {id, state}) → {ok, id, widgets, issues?}   The spec is checked against the data's real columns first. */
   function open(raw, opts) {
@@ -282,11 +376,18 @@ export function board(HOST) {
     let lastSec = null;
     spec.widgets.forEach((w) => {
       const made = MAKERS[w.kind](w);
-      if (w.section !== lastSec) { body.appendChild(el('div', 'bd-sec', L(w.section, ({ Map: '地図', Data: 'データ', Analysis: '分析', Evidence: '根拠', Execution: '実行' })[w.section] || w.section))); lastSec = w.section; }
+      if (w.section !== lastSec) { body.appendChild(el('div', 'bd-sec', L(w.section, ({ Map: '地図', Data: 'データ', Analysis: '分析', Time: '時間', Objects: 'オブジェクト', Evidence: '根拠', Execution: '実行' })[w.section] || w.section))); lastSec = w.section; }
       if (w.title && w.kind !== 'chart') made.el.insertBefore(el('div', 'bd-meta', w.title), made.el.firstChild);
       body.appendChild(made.el); cur.widgets.push(made);
     });
-    cur.off.push(cur.state.subscribe((e) => refresh(e.source)));
+    const tf = spec.data.timeField;
+    if (tf) {
+      /* the dataset registry's own reader of a moment (a year is a year, a date is its day) when it is loaded; else a plain date parse */
+      cur.timeOf = (r) => { const v = r.properties && r.properties[tf]; if (v == null || v === '') return null; const D0 = DATA(), m = D0 && D0.momentOf && D0.momentOf(v); if (m && Number.isFinite(m.start)) return m.start; const t = Date.parse(String(v)); return Number.isFinite(t) ? t : null; };
+      const C = CLOCK(); if (C && C.on && C.nowMs) { cur.state.setTime(C.nowMs(), 'clock'); cur.off.push(C.on((e) => { if (cur) cur.state.setTime(e && e.when ? e.when.getTime() : C.nowMs(), 'clock'); })); }
+    }
+    cur.mapLinked = spec.widgets.some((w) => w.kind === 'map' || w.kind === 'objects');
+    cur.off.push(cur.state.subscribe((e) => { refresh(e.source); if (e.what === 'selection') mapFocus(); }));
     const D = DATA();
     if (D && D.subscribe && cur.datasetId) cur.off.push(D.subscribe((what, ds) => {
       if (!cur || !ds || ds.id !== cur.datasetId || what === 'remove') return;
@@ -296,12 +397,15 @@ export function board(HOST) {
     save.onclick = async () => { const r = await saveCurrent(); save.textContent = r.ok ? L('Board saved', 'ボードを保存しました') : L('Not saved', '保存できません'); setTimeout(() => { save.textContent = L('Save', '保存'); }, 1800); };
     doc().body.appendChild(root);
     refresh();
+    if (cur.mapLinked && cur.datasetId && !opts.noMap) drawOnMap();   /* a map-linked board shows its rows on the real map; the widget's button redraws */
     return { ok: true, id: boardId, title: spec.title, widgets: spec.widgets.map((w) => ({ id: w.id, kind: w.kind, section: w.section })), rows: cur.rows.length };
   }
 
   async function saveCurrent() {
     if (!cur) return { ok: false, why: 'no-board-open' };
-    const rec = { id: cur.id, title: cur.spec.title, spec: cur.spec, state: cur.state.snapshot(), savedAt: Date.now() };
+    /* an inline board saves the rows it HOLDS now (a job's partial rows included), bounded by MAX_ROWS */
+    const spec = cur.spec.data.rows ? { ...cur.spec, data: { ...cur.spec.data, rows: cur.rows.slice(0, MAX_ROWS).map((r) => ({ ...r.properties })) } } : cur.spec;
+    const rec = { id: cur.id, title: cur.spec.title, spec, state: cur.state.snapshot(), savedAt: Date.now() };
     try { await tx('readwrite', (s) => s.put(rec)); return { ok: true, id: cur.id }; } catch (e) { return { ok: false, why: 'storage-unavailable', detail: { message: e && e.message } }; }
   }
   async function list() {
@@ -317,7 +421,23 @@ export function board(HOST) {
     if (!rec) return { ok: false, why: 'not-found' };
     return open({ title: rec.spec.title, source: rec.spec.source, data: rec.spec.data, widgets: rec.spec.widgets }, { id: rec.id, state: rec.state });
   }
+  /** feed({rows, done?, progress?, replace?}) — the receiving end of a long job's partial results. Rows are appended to an open INLINE
+   *  board (a dataset-backed board changes through window.IntMapData, which the board already hears); until a chunk says `done` the
+   *  footer reads "partial result" with the job's fraction (0..1). Rows past MAX_ROWS are not kept, and the footer says so. */
+  function feed(chunk) {
+    if (!cur) return { ok: false, why: 'no-board-open' };
+    if (cur.spec.data.dataset) return { ok: false, why: 'dataset-board-updates-through-IntMapData' };
+    if (!chunk || !Array.isArray(chunk.rows)) return { ok: false, why: 'rows-required' };
+    const add = rowsToFeatures(chunk.rows.filter((r) => r && typeof r === 'object' && !Array.isArray(r)), cur.spec.data.lngField, cur.spec.data.latField);
+    let rows = chunk.replace ? add : cur.rows.concat(add);
+    cur.capped = rows.length > MAX_ROWS; if (cur.capped) rows = rows.slice(0, MAX_ROWS);
+    cur.rows = rows;
+    const f = Number(chunk.progress);
+    cur.progress = chunk.done ? null : { fraction: Number.isFinite(f) ? Math.min(1, Math.max(0, f)) : null };
+    refresh('feed');
+    return { ok: true, rows: cur.rows.length, done: !!chunk.done, capped: !!cur.capped };
+  }
   async function remove(id) { try { await tx('readwrite', (s) => s.delete(id)); return { ok: true }; } catch (e) { return { ok: false, why: 'storage-unavailable' }; } }
 
-  return { open, close, save: saveCurrent, list, restore, remove, state: () => (cur ? cur.state : null), isOpen: () => !!cur };
+  return { open, close, feed, rows: () => (cur ? cur.rows : []), save: saveCurrent, list, restore, remove, state: () => (cur ? cur.state : null), isOpen: () => !!cur };
 }

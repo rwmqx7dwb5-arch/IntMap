@@ -13,6 +13,10 @@
  *    params     the execution knobs: {[widgetId]: number} — the value the reader set for an op
  *               parameter. The store only holds the number; js/board.js is what hands it to
  *               window.IntMapGisProject.setParams, so «re-run what depends on it» stays the project's job.
+ *    time       the MASTER CLOCK's instant (epoch ms) or null — a MIRROR of window.IntMapTime that js/board.js keeps
+ *               current, never saved (the clock is the session's, js/session-tabs.js) and never set by a widget
+ *               directly: the `time` widget moves the clock and the clock's own broadcast comes back here, so
+ *               there is one time and the board cannot disagree with the map.
  *  The rows themselves are NOT state: they are the dataset's (window.IntMapData) and are read through
  *  `visible(rows)` on every draw, never copied here — a copy would be the second place the data
  *  could be stale.
@@ -36,6 +40,7 @@ export function passes(filter, props) {
 export function createBoardState(initial) {
   const subs = new Set();
   let st = { selection: [], filters: {}, params: {} };
+  let time = null;   /* outside `st`: not part of the snapshot (see above) */
   const clean = (o) => {
     const s = { selection: [], filters: {}, params: {} };
     if (o && Array.isArray(o.selection)) s.selection = [...new Set(o.selection.filter((i) => Number.isInteger(i) && i >= 0))];
@@ -56,8 +61,16 @@ export function createBoardState(initial) {
       st ={ ...st, filters: f }; emit({ what: 'filter', id, source });
     },
     setParam(id, value, source) { const n = Number(value); if (!Number.isFinite(n)) return; st = { ...st, params: { ...st.params, [id]: n } }; emit({ what: 'param', id, source }); },
-    /* the rows that pass every filter, as indexes into `rows` (an array of GeoJSON Features or plain {properties}) */
-    visible(rows) { const fs = Object.values(st.filters); const out = []; for (let i = 0; i < rows.length; i++) { const p = rows[i] && rows[i].properties; if (fs.every((f) => passes(f, p))) out.push(i); } return out; },
+    /* the rows that pass every filter, as indexes into `rows` (an array of GeoJSON Features or plain {properties}).
+       `timeOf(row)` → epoch ms | null, when the board has a time column: with a clock set, a row is visible "as of" it — its
+       moment is at or before the clock. A row with no readable moment is counted OUT, like a missing filter value. */
+    visible(rows, timeOf) { const fs = Object.values(st.filters); const asOf = (time != null && typeof timeOf === 'function'); const out = [];
+      for (let i = 0; i < rows.length; i++) { const p = rows[i] && rows[i].properties; if (!fs.every((f) => passes(f, p))) continue;
+        if (asOf) { const t = timeOf(rows[i]); if (!(Number.isFinite(t) && t <= time)) continue; }
+        out.push(i); }
+      return out; },
+    getTime: () => time,
+    setTime(ms, source) { const n = ms == null ? null : Number(ms); const v = Number.isFinite(n) ? n : null; if (v === time) return; time = v; emit({ what: 'time', source }); },
     snapshot: () => JSON.parse(JSON.stringify(st)),
     restore(saved, source) { st = clean(saved); emit({ what: 'restore', source }); },
     subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },

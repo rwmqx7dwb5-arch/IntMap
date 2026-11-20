@@ -30,6 +30,8 @@
  *  Pure: no DOM, no globals at load. tests/declarative-workspace-checks.test.mjs evaluates it.
  * ==========================================================================*/
 
+import { textProblems } from './ui-text-rules.js';   /* the url / markup refusals — one copy, shared with js/board-spec.js */
+
 /* ── the limits, and why each is the number it is ─────────────────────────────────────────────────────
    Observed 2026-11-20 against the Atlas panel (js/atlas-styles.js: the reply column is ≤ 400 px wide):
    twelve blocks is three screens of a phone; a metric grid of twelve is four rows of three; a table is cut at
@@ -67,6 +69,10 @@ export const BLOCKS = Object.freeze({
   chart: {
     fields: { chart: OBJ(true) }, via: 'chart',
     doc: '{"kind":"chart","chart":{…the arguments of `chart` without "type": kind, source, series/events…}}',
+  },
+  board: {
+    fields: { board: OBJ(true) }, via: 'board',
+    doc: '{"kind":"board","board":{…the arguments of `board` without "type": source, data, widgets — a LIVE workspace (table, chart, filter, map, time, objects, metrics) linked to the real map and the clock; it opens beside the reply}}',
   },
   controls: {
     fields: { items: LIST(null, LIMITS.controls, true) }, via: 'controls',
@@ -122,10 +128,6 @@ export function blockShapes() { return KINDS.map((k) => BLOCKS[k].doc).join(' | 
    `L` is the reader's language picker (two positional strings, en and jp); `why` is written for the reader and
    the model alike. ⚠ A STRING IS JUDGED, NOT CLEANED: a value with a URL or a tag is refused by name — removing
    the offending part would draw something the model did not write. */
-const URL_RE = /\b(?:https?|ftp|javascript|vbscript|data|file|blob):|\bwww\.[a-z0-9-]+\./i;
-/* a tag is a `<` followed AT ONCE by a name (or `</name`, `<!`, `<?`) — or a name followed by an attribute, closed or not;
-   `a < b`, `<5%` and `x > y` are prose and pass */
-const TAG_RE = /<\/?[a-z][a-z0-9-]*(?:[\s/][^<>]*)?>|<[a-z][a-z0-9-]*\s+[a-z-]+\s*=|<[!?]/i;
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const isNum = (v) => typeof v === 'number' && isFinite(v);
 /* a reason with its numbers put in — the sentence is written once per language with {name} holes, so check:i18n reads it whole */
@@ -135,12 +137,7 @@ export function checkView(spec, L) {
   const P = [];
   const add = (at, code, why) => { P.push({ at, code, why }); };
   /* a string's two refusals, shared by every string the spec carries (including the delegated objects) */
-  const scan = (at, s) => {
-    if (URL_RE.test(s)) add(at, 'url', L('contains a link or URL — a view draws no links (a link in an answer would claim IntMap fetched the page); cite sources in your answer instead',
-      'リンクまたは URL が含まれています——ビューはリンクを描きません（回答の中のリンクは IntMap がそのページを取得したと主張してしまうため）。出典は回答の本文で示してください'));
-    if (TAG_RE.test(s)) add(at, 'markup', L('contains HTML markup — a view is drawn only from IntMap\'s own parts; write plain text (Markdown in a "text" block)',
-      'HTML が含まれています——ビューは IntMap 自身の部品だけで描きます。プレーンテキスト（"text" ブロックでは Markdown）で書いてください'));
-  };
+  const scan = (at, s) => { textProblems(s, L).forEach((p) => add(at, p.code, p.why)); };
   const deep = (at, v, depth) => {   /* every string inside a delegated object, the same two refusals */
     if (depth > 8) { add(at, 'too_deep', L('is nested too deeply', '入れ子が深すぎます')); return; }
     if (typeof v === 'string') scan(at, v);
