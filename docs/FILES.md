@@ -349,6 +349,7 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
                                   ⚠ **欠損は NaN**（`GDAL_NODATA` を含む。0 で埋めない）。
                                   `read(i)` は扉で、開いただけでは画素を展開しない
 gis-ogcapi.js                     **URL の地物コレクション（OGC API – Features）を読む** `window.IntMapGisOgcApi`（`gis-atlas.js` が動的 import）—
+gis-fetch.js                       **GIS 読み手の共通 fetch** — まず直接読み、`no-cors` の探りで「ホストは応答するが CORS が無い」と**証明された**ときだけ Edge Function `gis-fetch` 経由（1 MiB チャンク・メモリ→Cache API（1 日）で再利用。⚠ CDN の共有コピーは無い＝実測 `CF-Cache-Status: DYNAMIC`）、401/403/409 なら署名者（`gis-remote.js signHref`）で署名して 1 回だけ読み直す。中継の拒否は中継のものとして名指す。`gis-geotiff.js`・`gis-ogcapi.js`・`gis-remote.js` が静的 import
 gis-http.js                        **遠隔読み込みが失敗した理由を、応答から読んで名指す**（CORS 不許可・サーバ自身の言葉・ログイン画面への転送）。`gis-geotiff.js` と `gis-ogcapi.js` が静的 import。
                                   `…/items?bbox&limit` を叩き（STAC の `…/search` も同じ形で、`datetime` を取り、各 asset を `asset:<key>` 列にする）、サーバ自身の `rel=next` をたどる。上限は発明しない（limit を述べなければ 1 ページ・
                                   続きは `next`）。`all` はサーバの「次が無い」という述べ方だけ。カーソルは同一オリジンの https だけ
@@ -2105,11 +2106,11 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全23本をここに宣言する
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全24本をここに宣言する
   migrations/*.sql                DB の唯一の設計図（68本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
-  functions/<name>/index.ts       Edge Functions（23本。一覧と各本の役割は Architecture.md §6.2。
+  functions/<name>/index.ts       Edge Functions（24本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /
@@ -2120,7 +2121,7 @@ supabase/
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
-                                  fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
+                                  fetch-relay-policy.js / gis-fetch-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
                                   correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /
