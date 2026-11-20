@@ -48,3 +48,10 @@ newsjp: 衛星画像に撮影日と解像度が表示され、見ている場所
 - `tests/i18n-coverage-floor.json` の positional / inline を各言語 1 行ずつ下げた: 外した EOX「Sentinel-2 cloudless (EOX)」の提供元名の行が無くなったため（決定による削除。ほかの訳は 1 行も消していない。Esri・GIBS の 5 言語名は台帳へ移して保った）。
   その名前だけを引く翻訳行 4 件は `i18n-dead-key-codemod` で削除。
 - 通信先台帳: 利用条件ページ 6 宛先をリンクのみで追加（取得はしない）。
+
+## 5. 起動時の予算（perf）を上げた理由
+
+CI の測定（このツリー）: eager raw 4752.1 kB・gzip 1560.4 kB・brotli 1189.8 kB・modules 913・requests 12・dist/assets 21586.3 kB。天井をその値まで上げた（`tests/perf-baseline.json`）。
+- 増分の中身: 供給元の台帳 `js/imagery-registry.js`（23 件ぶんの名前・範囲・解像度・利用条件の文言）と、衛星パネルに足した撮影日行・一覧・時刻合わせ（`js/satellite.js`）。eager の raw で約 +25 kB・modules +1。
+- ⚠ requests の 10 → 12 は、増分の内訳をこの記録の時点では分けられていない（ローカルのビルドが環境の読み取りエラーで 2 回落ち、基準の main と比べられなかった）。
+  台帳そのものは新しいチャンクを作らない（main に同居）。main の CI がマージ後に天井を測り直すので、そこで本当の値が出る。それまで要因を断定しない。
