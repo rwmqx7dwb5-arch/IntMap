@@ -31,7 +31,7 @@
 /* (#R773) 非画像の添付の「中身をどう描くか」は別の主題なので別のファイル。⚠ 全画面の枠は
    このファイルのものが 1 本きりで、あちらは中に置く要素を組むだけ（枠を 2 つ作らない）。 */
 import { ATTACH_STORE, ATTACH_VIEW } from './atlas-file-view.js';
-import { VIDEO, caption as videoCaption } from './atlas-video-frames.js';   /* (atlas-multimodal) a clip becomes one contact-sheet image */
+import { VIDEO, videoCaption } from './atlas-video-frames.js';   /* (atlas-multimodal) a clip becomes one contact-sheet image */
 import './ui-device.js';   /* (atlas-ui-owners) the phone/desktop boundary is window.IntMapDevice.COMPACT (js/ui-device.js), which that file installs on window when one exists and on globalThis otherwise (Node); in the browser they are the same object, and a Node harness may swap window after the import */
 import { IntMapLang } from './lang-registry.js';
 

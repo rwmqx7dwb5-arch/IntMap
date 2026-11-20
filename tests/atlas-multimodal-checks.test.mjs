@@ -3,7 +3,7 @@
  *  the voice loop runs against a fake recogniser that implements start/stop/onend/onerror/onresult. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { frameTimes, sheetLayout, fmtTime, caption, extract, VIDEO } from '../js/atlas-video-frames.js';
+import { frameTimes, sheetLayout, fmtTime, videoCaption, extractVideoFrames, VIDEO } from '../js/atlas-video-frames.js';
 import { makeVoiceLoop, mountVoiceLoop, VOICE } from '../js/atlas-voice.js';
 import { ATL_FILE } from '../js/atlas-attach.js';
 
@@ -41,24 +41,24 @@ test('sheetLayout / fmtTime', () => {
 });
 test('extract: seeks every sample, draws each into its own tile, returns the times that actually arrived', async () => {
   const log = [], v = fakeVideo({ duration: 12 });
-  const r = await extract({}, { doc: fakeDoc(v, log), URLApi: U, n: 6 });
+  const r = await extractVideoFrames({}, { doc: fakeDoc(v, log), URLApi: U, n: 6 });
   assert.deepEqual(v.seeks, [1, 3, 5, 7, 9, 11]);
   assert.deepEqual(log.map(c => [c[1], c[2]]), [[0, 0], [640, 0], [1280, 0], [0, 360], [640, 360], [1280, 360]]);
   assert.equal(r.times.length, 6); assert.equal(r.w, 1920); assert.equal(r.h, 720);
   assert.match(r.dataUrl, /^data:image\/jpeg;base64,/);
 });
 test('extract: a frame that never arrives is not claimed; no frames at all is null, not a black sheet', async () => {
-  const half = await extract({}, { doc: fakeDoc(fakeVideo({ duration: 12, failSeek: t => t === 3 }), []), URLApi: U, n: 6 });
+  const half = await extractVideoFrames({}, { doc: fakeDoc(fakeVideo({ duration: 12, failSeek: t => t === 3 }), []), URLApi: U, n: 6 });
   assert.deepEqual(half.times, [1, 5, 7, 9, 11]);
-  const none = await extract({}, { doc: fakeDoc(fakeVideo({ duration: 12, failSeek: () => true }), []), URLApi: U, n: 2 });
+  const none = await extractVideoFrames({}, { doc: fakeDoc(fakeVideo({ duration: 12, failSeek: () => true }), []), URLApi: U, n: 2 });
   assert.equal(none, null);
 });
 test('extract: an undecodable clip (error / no video track) is null', async () => {
-  assert.equal(await extract({}, { doc: fakeDoc(fakeVideo({ duration: 5, broken: true }), []), URLApi: U }), null);
-  assert.equal(await extract({}, { doc: fakeDoc(fakeVideo({ duration: 5, w: 0, h: 0 }), []), URLApi: U }), null);
+  assert.equal(await extractVideoFrames({}, { doc: fakeDoc(fakeVideo({ duration: 5, broken: true }), []), URLApi: U }), null);
+  assert.equal(await extractVideoFrames({}, { doc: fakeDoc(fakeVideo({ duration: 5, w: 0, h: 0 }), []), URLApi: U }), null);
 });
 test('caption says what the picture is, its order, and that there is no sound', () => {
-  const c = caption('walk.mp4', { duration: 12, times: [1, 3] });
+  const c = videoCaption('walk.mp4', { duration: 12, times: [1, 3] });
   assert.match(c, /walk\.mp4/); assert.match(c, /left to right/); assert.match(c, /NOT provided/); assert.match(c, /0:01\.0, 0:03\.0/);
 });
 

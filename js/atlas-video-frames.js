@@ -17,7 +17,7 @@
  *  the model can say WHEN something appears and order the frames without being told.
  *
  *  WHAT THIS DOES NOT DO — and says so: it does not hear the clip. The sound track is not sent; the
- *  caption the model receives (`caption()`) states that, so an answer never implies it was heard.
+ *  caption the model receives (`videoCaption()`) states that, so an answer never implies it was heard.
  *
  *  THE PURE PARTS (frameTimes / sheetLayout / fmtTime / caption) take numbers and return numbers or
  *  strings. The one part that needs a browser (`extract`) takes its `document` as an argument, so
@@ -54,7 +54,7 @@ export function fmtTime(s) {
 }
 
 /** the sentence the model reads with the sheet — what the picture IS, in what order, and what it lacks */
-export function caption(name, res) {
+export function videoCaption(name, res) {
   return 'Attached video "' + String(name || 'video') + '" (' + fmtTime(res.duration) + ' long) is shown as ONE contact-sheet image of ' + res.times.length
     + ' frames, read left to right then top to bottom, each stamped with its time in the clip: ' + res.times.map(fmtTime).join(', ')
     + '. These are still frames sampled evenly from the clip; the sound track was NOT provided, so nothing may be claimed about what was said or heard, and motion between frames is inferred, not observed.';
@@ -71,11 +71,11 @@ function once(el, ok, bad, ms) {
 }
 
 /**
- * extract(file, {doc, URLApi, n}) -> {dataUrl, times, duration, w, h} | null
+ * extractVideoFrames(file, {doc, URLApi, n}) -> {dataUrl, times, duration, w, h} | null
  * `doc` is the document (createElement), `URLApi` is URL (createObjectURL / revokeObjectURL). null = this browser could not
  * decode the clip (codec) — the caller says so; it never gets a blank sheet.
  */
-export async function extract(file, opts) {
+export async function extractVideoFrames(file, opts) {
   opts = opts || {};
   const doc = opts.doc || (typeof document !== 'undefined' ? document : null), U = opts.URLApi || (typeof URL !== 'undefined' ? URL : null);
   if (!doc || !U || !file) return null;
