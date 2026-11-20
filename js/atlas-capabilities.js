@@ -393,6 +393,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
       ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
+      ["research.longform","longform","writeLongReport,longDocument,writeInChapters","research","none","","explanation","read","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -427,7 +428,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var EQUIVALENTS = {"data.countryCard":["data.timeSeries"],"research.mapReport":["research.situationMap"],"research.situationMap":["research.mapReport"]};
     var ANSWERS = {"research.brief":1,"research.mapReport":1,"research.situationMap":1,"research.historicalMap":1,"research.analyze":1};
     var ASKS_USER = {"dialog.ask":1};
-    var DELEGATES = {"research.delegate":1};
+    var DELEGATES = {"research.delegate":1,"research.longform":1};
     /* ⚠ GENERATED POLICY — END */
 
     /* ══ OBSERVERS ═══════════════════════════════════════════════════════════════════════════════
