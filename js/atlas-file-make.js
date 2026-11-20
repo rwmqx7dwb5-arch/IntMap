@@ -24,6 +24,10 @@ const SCALE = 2;   /* 144 dpi: text stays crisp at a normal zoom and an A4 page 
 const MAX_BYTES = 40 * 1024 * 1024;
 
 
+let once = null;
+/** the one maker the capability uses (its card registry must be one) */
+export const atlasFileOnce = () => once || (once = atlasFile());
+
 export function atlasFile() {
   const registry = new Map();   /* id → { name, mime, bytes, url } — what the card's buttons act on */
   let seq = 0;
