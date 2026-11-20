@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · js/transit-raptor.js — TIMETABLE-BASED TRIP PLANNING AND REACHABILITY (RAPTOR)
  * ----------------------------------------------------------------------------
- *  Plans over the bundles scripts/build-transit-timetables.mjs writes (data/transit/<id>.json): the
+ *  Plans over the bundles scripts/build-transit-timetables.mjs writes (data/transit-<id>.json): the
  *  PUBLISHER'S timetable, exact for every date in the bundle's window. Pure — no DOM, no network —
  *  so tests/transit-timetable-checks.test.mjs runs the same code the browser does.
  *
@@ -24,8 +24,8 @@
  * ==========================================================================*/
 
 const DAY = 86400;
-export const WALK = Object.freeze({ speedMps: 1.25, detour: 1.3, maxAccessM: 1200, maxTransferM: 300, minTransferS: 60 });
-export const BIKE = Object.freeze({ speedMps: 4.2, detour: 1.25, maxAccessM: 4000, maxTransferM: 300, minTransferS: 120 });
+const WALK = Object.freeze({ speedMps: 1.25, detour: 1.3, maxAccessM: 1200, maxTransferM: 300, minTransferS: 60 });
+const BIKE = Object.freeze({ speedMps: 4.2, detour: 1.25, maxAccessM: 4000, maxTransferM: 300, minTransferS: 120 });
 export const MODELS = Object.freeze({ walk: WALK, bike: BIKE });
 const INF = 1e12;
 
@@ -65,7 +65,7 @@ export function loadNetwork(b) {
 }
 
 /** the stops within `maxM` straight-line metres of a point, nearest first */
-export function stopsNear(net, x, y, maxM) {
+function stopsNear(net, x, y, maxM) {
   const out = [], cl = Math.max(0.2, Math.cos(y * Math.PI / 180));
   const dx = Math.ceil(maxM / (111320 * cl) / net.CELL), dy = Math.ceil(maxM / 111320 / net.CELL);
   const cx = Math.floor(x / net.CELL), cy = Math.floor(y / net.CELL);

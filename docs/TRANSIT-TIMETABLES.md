@@ -7,7 +7,7 @@
 IntMap は営利である。Transitous（`api.transitous.org`）の利用規約（<https://transitous.org/api/>、2026-11-20 に読んだ）は
 「商用利用は許されない」「非商用であること」「`/plan`・`/one-to-all` は 1 日 720 回超なら事前相談」と述べる。
 IntMap はどれも満たさないので、**Transitous は既定で使わない**（`TRANSITOUS_FALLBACK = false`・1 行）。代わりに、
-**配布元自身が商用可のライセンスで公開している GTFS** を `data/transit/<id>.json` に取り込み、ブラウザで探索する。
+**配布元自身が商用可のライセンスで公開している GTFS** を `data/transit-<id>.json` に取り込み、ブラウザで探索する。
 経路を尋ねても第三者へは何も送られない。Transitous が書面で許諾すれば、フラグ 1 つで戻せる。
 
 ## 何が正確で、何が見積りか

@@ -12,7 +12,7 @@
  *      coordinated with them. IntMap meets none of those conditions, so Transitous is OFF by default
  *      (TRANSITOUS_FALLBACK below) until Transitous agrees in writing.
  *    · Each feed here is read from its PUBLISHER, under the licence the PUBLISHER states, compiled by
- *      scripts/build-transit-timetables.mjs into data/transit/<id>.json and planned over in the
+ *      scripts/build-transit-timetables.mjs into data/transit-<id>.json and planned over in the
  *      browser by js/transit-raptor.js. Nothing is sent to a third party when a route is asked.
  *
  *  ⚠ A FEED IS ADDED ONLY AFTER ITS PUBLISHER'S LICENCE PAGE WAS READ. `verified` carries the page and
@@ -38,7 +38,7 @@ export const TRANSITOUS_TERMS = {
 
 /* licences that permit commercial use WITH attribution (or without). ODbL / CC-BY-SA are accepted by
    the owner's decision of 2026-10-06 (share-alike is met by offering the compiled bundle under the
-   same terms: data/transit/<id>.json states `offeredUnder`). Non-commercial licences are never here. */
+   same terms: data/transit-<id>.json states `offeredUnder`). Non-commercial licences are never here. */
 export const COMMERCIAL_OK = Object.freeze(['CC0-1.0', 'CC-BY-4.0', 'CC-BY-3.0', 'ODbL-1.0', 'CC-BY-SA-4.0', 'etalab-2.0', 'NLOD-2.0', 'OGL-UK-3.0', 'DL-DE-BY-2.0', 'MIT', 'Apache-2.0']);
 
 /* The feeds that are built and shipped. `bbox` is [w,s,e,n] of the feed's stops (written by the
@@ -63,7 +63,7 @@ const byId = Object.create(null);
 FEEDS.forEach((f) => { byId[f.id] = f; });
 
 export function feedById(id) { return byId[id] || null; }
-export function feedList() { return FEEDS.slice(); }
+function feedList() { return FEEDS.slice(); }
 
 /** the licence rule, as a function the gate and the builder both call */
 export function licenceAllowsCommercial(spdx) { return COMMERCIAL_OK.indexOf(String(spdx || '')) >= 0; }

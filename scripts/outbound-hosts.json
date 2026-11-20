@@ -19,6 +19,26 @@
       }
     },
     {
+      "host": "*.s3.amazonaws.com",
+      "what": "A file on an AWS S3 bucket that the user named as s3://bucket/key (js/gis-cog.js derives the https address)",
+      "whatJp": "利用者が s3://バケット/キー で指定した AWS S3 上のファイル（js/gis-cog.js が https アドレスを導出）",
+      "sends": {
+        "code": "identifier",
+        "detail": "the file path and a byte range"
+      },
+      "disclosure": {
+        "en": "bucket-name.s3.amazonaws.com",
+        "jp": "バケット名.s3.amazonaws.com"
+      },
+      "probe": {
+        "url": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif",
+        "expect": [
+          206
+        ],
+        "why": "a Range request is answered with 206 by the bucket"
+      }
+    },
+    {
       "host": "*.wikipedia.org",
       "what": "Wikipedia REST summaries and search in the reader’s language",
       "whatJp": "読者の言語の Wikipedia 要約と検索",
@@ -302,6 +322,22 @@
       },
       "probe": {
         "url": "https://api.planespotters.net/pub/photos/hex/86d6c3"
+      }
+    },
+    {
+      "host": "api.plateauview.mlit.go.jp",
+      "what": "PLATEAU 3D Tiles catalogue — the tileset index of each city or ward with a building model (MLIT Japan; only those near the view are requested). Its tilesets then point the browser at MLIT’s asset store, assets.cms.plateau.reearth.io, for the meshes and textures (named in Privacy §4, not a literal in the code)",
+      "whatJp": "PLATEAU 3D Tiles カタログ — 建物モデルを持つ各市区のタイルセット索引（国土交通省。視界の近くのものだけを要求する）。タイルセットはさらに国土交通省の資産置き場 assets.cms.plateau.reearth.io をブラウザに指し、メッシュとテクスチャを取得する（プライバシー §4 に明記。コードにはリテラルとして現れない）",
+      "sends": {
+        "code": "area",
+        "detail": "which tiles of the 3D model are in view (the part of Japan on screen), and only after the PLATEAU layer is switched on"
+      },
+      "disclosure": {
+        "en": "PLATEAU",
+        "jp": "PLATEAU"
+      },
+      "probe": {
+        "url": "https://api.plateauview.mlit.go.jp/datacatalog/3dtiles/13101-bldg-lod2-texture-latest/tileset.json"
       }
     },
     {
@@ -640,6 +676,11 @@
       }
     },
     {
+      "host": "creativecommons.org",
+      "what": "licence text link",
+      "link": "the licence of a shipped timetable (js/transit-feeds.js FEEDS[].licence.url), shown as a hyperlink; never fetched"
+    },
+    {
       "host": "cwwp2.dot.ca.gov",
       "what": "Caltrans CCTV status lists",
       "whatJp": "カリフォルニア州交通局の CCTV 状態一覧",
@@ -659,6 +700,11 @@
       "host": "cyrusone.com",
       "what": "data-centre source citation",
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "data.public.lu",
+      "what": "the Luxembourg timetable dataset page",
+      "link": "the publisher page of the Luxembourg timetable (js/transit-feeds.js source); the build script reads its dataset API, the browser never does"
     },
     {
       "host": "data.weather.gov.hk",
@@ -1341,26 +1387,6 @@
       "link": "passed to carto-basemap.js's a(href, text), which builds an <a href> in the map attribution"
     },
     {
-      "host": "*.s3.amazonaws.com",
-      "what": "A file on an AWS S3 bucket that the user named as s3://bucket/key (js/gis-cog.js derives the https address)",
-      "whatJp": "利用者が s3://バケット/キー で指定した AWS S3 上のファイル（js/gis-cog.js が https アドレスを導出）",
-      "sends": {
-        "code": "identifier",
-        "detail": "the file path and a byte range"
-      },
-      "disclosure": {
-        "en": "bucket-name.s3.amazonaws.com",
-        "jp": "バケット名.s3.amazonaws.com"
-      },
-      "probe": {
-        "url": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif",
-        "expect": [
-          206
-        ],
-        "why": "a Range request is answered with 206 by the bucket"
-      }
-    },
-    {
       "host": "openmeteo.s3.amazonaws.com",
       "what": "Open-Meteo model fields on AWS Open Data (wind field, forecast layers)",
       "whatJp": "AWS Open Data 上の Open-Meteo のモデル場（風の場・予報レイヤー）",
@@ -1816,22 +1842,6 @@
       }
     },
     {
-      "host": "api.plateauview.mlit.go.jp",
-      "what": "PLATEAU 3D Tiles catalogue — the tileset index of each city or ward with a building model (MLIT Japan; only those near the view are requested). Its tilesets then point the browser at MLIT’s asset store, assets.cms.plateau.reearth.io, for the meshes and textures (named in Privacy §4, not a literal in the code)",
-      "whatJp": "PLATEAU 3D Tiles カタログ — 建物モデルを持つ各市区のタイルセット索引（国土交通省。視界の近くのものだけを要求する）。タイルセットはさらに国土交通省の資産置き場 assets.cms.plateau.reearth.io をブラウザに指し、メッシュとテクスチャを取得する（プライバシー §4 に明記。コードにはリテラルとして現れない）",
-      "sends": {
-        "code": "area",
-        "detail": "which tiles of the 3D model are in view (the part of Japan on screen), and only after the PLATEAU layer is switched on"
-      },
-      "disclosure": {
-        "en": "PLATEAU",
-        "jp": "PLATEAU"
-      },
-      "probe": {
-        "url": "https://api.plateauview.mlit.go.jp/datacatalog/3dtiles/13101-bldg-lod2-texture-latest/tileset.json"
-      }
-    },
-    {
       "host": "tiles.openseamap.org",
       "what": "OpenSeaMap seamark tiles",
       "whatJp": "OpenSeaMap の航路標識タイル",
@@ -1851,6 +1861,11 @@
       "host": "top500.org",
       "what": "data-centre source citation",
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "transitous.org",
+      "what": "Transitous usage-policy page",
+      "link": "the Transitous usage policy cited by TRANSITOUS_TERMS (js/transit-feeds.js); a reference, never fetched"
     },
     {
       "host": "unpkg.com",

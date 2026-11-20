@@ -2,7 +2,7 @@
  *  IntMap · js/transit-planner.js — window.IntMapTransitTimetable   (lazy: IntMapLazy.need('transitTimetable'))
  * ----------------------------------------------------------------------------
  *  The browser side of the timetable planner: picks the shipped feed(s) that cover a point, loads the
- *  bundle (data/transit/<id>.json, same origin — nothing is sent to a third party), runs
+ *  bundle (data/transit-<id>.json, same origin — nothing is sent to a third party), runs
  *  js/transit-raptor.js, and answers in the two shapes the app already speaks:
  *
  *    · plan()  → itineraries in the MOTIS shape routing.js's `_buildItin` consumes, so the route
@@ -46,7 +46,7 @@ export function motisMode(t) {
 
 function netFor(id) {
   let p = NETS.get(id); if (p) return p;
-  p = jsonWithin('data/transit/' + id + '.json', BUNDLE_MS).then(loadNetwork).catch(() => { NETS.delete(id); return null; });
+  p = jsonWithin('data/transit-' + id + '.json', BUNDLE_MS).then(loadNetwork).catch(() => { NETS.delete(id); return null; });
   NETS.set(id, p); return p;
 }
 
@@ -85,7 +85,7 @@ async function nearestPost(lng, lat, withinM) {
   return best ? { name: best.en || best.n || '', m: Math.round(bd), lng: best.x, lat: best.y, hours: best.oh || null, citizenship: best.cz || null, modes: best.m || null, tz: best.tz || null, osm: best.i } : null;
 }
 /** the country changes along a sequence of [lng, lat] points */
-export async function bordersAlong(pts) {
+async function bordersAlong(pts) {
   const seq = []; let prev = null;
   pts.forEach((p, i) => { const n = countryName(p[0], p[1]); if (n && n !== prev) { seq.push({ name: n, at: i, lng: p[0], lat: p[1] }); prev = n; } });
   const crossings = [];

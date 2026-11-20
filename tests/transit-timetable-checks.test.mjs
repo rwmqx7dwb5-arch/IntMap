@@ -52,7 +52,7 @@ test('Transitous stays off: its own policy forbids commercial use', () => {
 test('every built bundle states its provenance and agrees with the registry', () => {
   const boxes = Object.fromEntries(FEEDS.map((f) => [f.id, f.bbox]));
   for (const f of FEEDS) {
-    const b = JSON.parse(fs.readFileSync('data/transit/' + f.id + '.json', 'utf8'));
+    const b = JSON.parse(fs.readFileSync('data/transit-' + f.id + '.json', 'utf8'));
     assert.equal(b.licenceSpdx, f.licence.spdx);
     assert.deepEqual(b.bbox, f.bbox, f.id + ' registry bbox is the bundle bbox');
     assert.equal(b.tz, f.tz);
@@ -151,7 +151,7 @@ test('GTFS route types map to the mode names the route cards colour by', () => {
 });
 
 test('Luxembourg: a real plan and a real, cross-border reach over the committed bundle', () => {
-  const b = JSON.parse(fs.readFileSync('data/transit/lu.json', 'utf8'));
+  const b = JSON.parse(fs.readFileSync('data/transit-lu.json', 'utf8'));
   const net = loadNetwork(b);
   const date = b.window.start;                       /* the window is part of the bundle, not of the clock */
   const gare = { lng: 6.1342, lat: 49.6004 }, esch = { lng: 5.9814, lat: 49.5006 };

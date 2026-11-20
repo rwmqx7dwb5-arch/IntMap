@@ -453,7 +453,7 @@ export function routing(HOST){
     async function _planItins(from,to,opts){ opts=opts||{};
       /* ══ THE PUBLISHERS' OWN TIMETABLES FIRST (js/transit-planner.js · js/transit-feeds.js) ════════
          IntMap is a commercial service and Transitous' usage policy forbids commercial use, so the
-         planner reads timetables whose OWN licence permits it, compiled into data/transit/. Where a
+         planner reads timetables whose OWN licence permits it, compiled into data/transit-<id>.json. Where a
          shipped feed covers both ends the answer comes from there and nothing leaves the browser.
          Transitous is consulted only if js/transit-feeds.js's TRANSITOUS_FALLBACK says so (it does not:
          it is false until Transitous agrees in writing). */

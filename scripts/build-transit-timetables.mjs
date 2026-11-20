@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
- *  IntMap · scripts/build-transit-timetables.mjs — GTFS TIMETABLES → data/transit/<id>.json
+ *  IntMap · scripts/build-transit-timetables.mjs — GTFS TIMETABLES → data/transit-<id>.json
  * ----------------------------------------------------------------------------
  *  Compiles a publisher's GTFS archive into the compact bundle js/transit-raptor.js plans over, for
  *  the feeds in js/transit-feeds.js (each of whose licence permits commercial use — the registry
@@ -34,11 +34,11 @@ import { FEEDS, feedById, licenceAllowsCommercial } from '../js/transit-feeds.js
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const WINDOW_DAYS = 14;
-const dir = (id) => 'data/transit/' + id + '.json';
+const dir = (id) => 'data/transit-' + id + '.json';
 
 /* ⚠ 出自は値である（check:datagov が実行せずに読む）。上流が述べることだけを書く。 */
 export const GOVERNANCE = {
-  'data/transit/lu.json': {
+  'data/transit-lu.json': {
     upstreams: [
       { publisher: 'Administration des transports publics (Luxembourg)', url: 'https://data.public.lu/fr/datasets/horaires-et-arrets-des-transport-publics-gtfs/',
         licence: 'CC-BY-4.0', licenceUrl: 'https://creativecommons.org/licenses/by/4.0/', attribution: true, creditRequired: true,
