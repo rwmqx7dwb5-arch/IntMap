@@ -44,6 +44,11 @@
  *  js/gis-remote.js), so it imports in Node; the fetcher and the registry are injectable (`deps`).
  * ==========================================================================*/
 
+import { IntMapLang } from './lang-registry.js';
+
+/* the ARRAY form of the language pick (pickArgs in js/lang-registry.js): T(en, jp) -> [en, jp] */
+const T = IntMapLang.pickArgs();
+
 export function makeGisForecast(deps) {
   return (function () {
     const D = deps || {};
@@ -62,8 +67,8 @@ export function makeGisForecast(deps) {
     const SOURCES = {
       'open-meteo-flood': {
         id: 'open-meteo-flood',
-        title: ['River discharge forecast (GloFAS via Open-Meteo)', '河川流量の予測（Open-Meteo 経由の GloFAS）'],   /* [en, jp] */
-        url: 'https://flood-api.open-meteo.com/v1/flood',
+        title: T('River discharge forecast (GloFAS via Open-Meteo)', '河川流量の予測（Open-Meteo 経由の GloFAS）'),
+        endpoint: 'https://flood-api.open-meteo.com/v1/flood',
         model: 'GloFAS v4 (Copernicus Emergency Management Service / ECMWF), ensemble',
         attribution: 'Open-Meteo.com; GloFAS, Copernicus Emergency Management Service',
         terms: TERMS,
@@ -71,21 +76,21 @@ export function makeGisForecast(deps) {
         central: 'river_discharge', unit: 'm³/s',
         spread: { low: 'river_discharge_min', high: 'river_discharge_max', q1: 'river_discharge_p25', q3: 'river_discharge_p75' },
         spreadBasis: 'ensemble-members',
-        spreadNote: ['min–max and 25th–75th percentile across the provider\'s ensemble members', '提供元のアンサンブルメンバー間の最小〜最大と 25〜75 パーセンタイル'],
+        spreadNote: T('min–max and 25th–75th percentile across the provider\'s ensemble members', '提供元のアンサンブルメンバー間の最小〜最大と 25〜75 パーセンタイル'),
         dailyVars: ['river_discharge', 'river_discharge_min', 'river_discharge_max', 'river_discharge_p25', 'river_discharge_p75'],
         maxDays: 16,
       },
       'open-meteo-forecast': {
         id: 'open-meteo-forecast',
-        title: ['Weather forecast (numerical weather prediction via Open-Meteo)', '気象予報（Open-Meteo 経由の数値予報）'],   /* [en, jp] */
-        url: 'https://api.open-meteo.com/v1/forecast',
+        title: T('Weather forecast (numerical weather prediction via Open-Meteo)', '気象予報（Open-Meteo 経由の数値予報）'),
+        endpoint: 'https://api.open-meteo.com/v1/forecast',
         model: 'Open-Meteo best-match deterministic model (a `models` list may pin one)',
         attribution: 'Open-Meteo.com (weather model data from national weather services)',
         terms: TERMS,
         central: 'precipitation_sum', unit: 'mm',
         spread: null,
         spreadBasis: 'not-stated',
-        spreadNote: ['a single deterministic run: the provider states no spread here, so none is shown', '決定論的な 1 回の計算で、ここでは提供元が幅を述べていないため示さない'],
+        spreadNote: T('a single deterministic run: the provider states no spread here, so none is shown', '決定論的な 1 回の計算で、ここでは提供元が幅を述べていないため示さない'),
         dailyVars: ['precipitation_sum'],
         /* the variable is the caller's to choose among these; each carries its own unit */
         variables: { precipitation_sum: 'mm', temperature_2m_max: '°C', temperature_2m_min: '°C', wind_speed_10m_max: 'km/h', wind_gusts_10m_max: 'km/h' },
@@ -98,7 +103,7 @@ export function makeGisForecast(deps) {
     const num = (v) => (typeof v === 'number' && isFinite(v)) ? v : null;
     const fail = (why, detail) => ({ ok: false, why, detail: detail || null });
 
-    function sources() { return Object.keys(SOURCES).map((k) => ({ id: k, title: SOURCES[k].title, url: SOURCES[k].url, model: SOURCES[k].model, terms: SOURCES[k].terms, variables: SOURCES[k].variables ? Object.keys(SOURCES[k].variables) : [SOURCES[k].central] })); }
+    function sources() { return Object.keys(SOURCES).map((k) => ({ id: k, title: SOURCES[k].title, url: SOURCES[k].endpoint, model: SOURCES[k].model, terms: SOURCES[k].terms, variables: SOURCES[k].variables ? Object.keys(SOURCES[k].variables) : [SOURCES[k].central] })); }
 
     /* a regular lattice of cell CENTRES over [w,s,e,n] — the provider snaps each to its own grid, and
        the coordinates it ANSWERS WITH are the ones recorded */
@@ -144,7 +149,7 @@ export function makeGisForecast(deps) {
         const q = 'latitude=' + part.map((p) => p[1].toFixed(4)).join(',') + '&longitude=' + part.map((p) => p[0].toFixed(4)).join(',')
           + '&daily=' + dailyVars.join(',') + '&forecast_days=' + days + '&timezone=GMT'
           + (a.models && S.id === 'open-meteo-forecast' ? '&models=' + encodeURIComponent(String(a.models)) : '');
-        const url = S.url + '?' + q;
+        const url = S.endpoint + '?' + q;
         requested.push(url);
         let j = null;
         try { j = await fetcher(url, a.signal || null); }
@@ -187,7 +192,7 @@ export function makeGisForecast(deps) {
       const record = {
         kind: 'forecast-scenario',
         fetchedAt: new Date(issuedMs == null ? now() : issuedMs).toISOString(),
-        source: { id: S.id, url: S.url, model: S.model, attribution: S.attribution, requests: requested.length },
+        source: { id: S.id, url: S.endpoint, model: S.model, attribution: S.attribution, requests: requested.length },
         terms: S.terms,
         region: { bounds: a.bounds.slice(), grid: { nx, ny }, days, dates },
         variable, unit,

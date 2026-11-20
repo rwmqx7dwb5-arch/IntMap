@@ -1024,7 +1024,7 @@ export default [
         const li0 = (rows) => '<ul style="margin:2px 0 4px 16px;padding:0;">' + rows.map((x) => '<li>' + x + '</li>').join('') + '</ul>';
         const hd0 = (t) => '<div style="font-weight:600;margin-top:6px;">' + esc(t) + '</div>';
         fcHtml = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L('Forecast scenario', '予測シナリオ')) + ' — ' + esc(fr.record.source.id) + '</div>'
-          + '<div>' + esc(L('Model estimate dataset: ', '推計のデータセット: ')) + '<code>' + esc(reg.datasets.modelEstimate) + '</code>' + (reg.datasets.uncertainty ? ' · ' + esc(L('uncertainty: ', '不確実性: ')) + '<code>' + esc(reg.datasets.uncertainty) + '</code>' : '') + ' · ' + esc(String(fr.record.modelEstimates.points)) + ' ' + esc(L('grid points', '格子点')) + '</div>'
+          + '<div>' + esc(L('Model estimate dataset: ', '推計のデータセット: ')) + '<code>' + esc(reg.datasets.modelEstimate) + '</code>' + (reg.datasets.uncertainty ? ' · ' + esc(L('uncertainty: ', '不確実性: ')) + '<code>' + esc(reg.datasets.uncertainty) + '</code>' : '') + ' · ' + esc(String(fr.record.modelEstimates.points)) + ' ' + esc(L('forecast grid points', '予測の格子点')) + '</div>'
           + hd0(L('Assumptions (stated by the reader)', '前提（利用者が述べた条件）')) + li0(rep0.assumptions.length ? rep0.assumptions.map((x) => '<b>' + esc(x.name) + '</b> = ' + esc(JSON.stringify(x.value)) + ' — ' + esc(x.applied ? L('applied as a comparison', '比較として反映') : L('stored, not applied', '記録のみ'))) : [esc(L('none stated', '述べられていない'))])
           + hd0(L('Data used', '使用データ')) + li0(rep0.dataUsed.map((t) => esc(pick0(t))))
           + hd0(L('Not considered', '考慮外')) + li0(rep0.excluded.map((t) => esc(pick0(t))))
