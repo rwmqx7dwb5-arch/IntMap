@@ -34,3 +34,6 @@ Transitous を既定オフにしたので、**ルクセンブルク以外の公�
 
 ## 7. 新しい結合（global-surface の台帳）
 `window.IntMapTransitTimetable`（遅延取得の自己登録・`routing-traffic.js` と同じ形）を 1 つ足し、読み手は `routing.js` の `_planItins` と Atlas の `isochrone` の 2 か所。`IntMapLazy` の読みが 4、`IntMapTransitReach` が 1、`countryGeo` と `turf` が各 1 増える（描画と国の輪郭は既存の共有物）。台帳は `--update` で受けた。
+
+## 8. perf の天井を上げた理由
+`async.raw` +約 94 kB（新しい遅延チャンク `transit-planner` 15.5 kB が 1 つ、残りは経路・Atlas の配線）、`dist.data` と `dist.total` が約 +7 MB（時刻表バンドル `data/transit/lu.json` 2.9 MB と台帳の帯幅）。起動時の取得は増えない（`transitTimetable` は経路を尋ねたときだけ取得する遅延モジュール・バンドルは該当地域でだけ読む）。
