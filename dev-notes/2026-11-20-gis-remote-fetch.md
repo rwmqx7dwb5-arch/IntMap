@@ -48,3 +48,4 @@ newsjp: Atlas が、ブラウザから読めなかった公開の標高・土地
 
 - 非同期チャンク `gis-cog` の天井 4.6 kB → **7.4 kB**: 日付変更線の分割・縫合（`readAcross`・約 2.8 kB）の分。遅延チャンクで、起動の経路には載らない。
 - 起動時リクエスト数は 10 のまま。**最初の実装は 11 に増えた**: `gis-fetch-policy.js` が `relay-guard.js` を import していて、eager の `proxy-fetch.js` も同じファイルを使うため、バンドラが共有チャンクへ巻き上げ初回描画前に取りに行った。policy は何も import せず、必要な述語 `publicHostname` は呼び手（Edge Function）が渡す形にした。
+- 非同期の総量 `async.raw` の天井 14136.4 kB → 14221.0 kB（+84.6 kB）。⚠ このうち本件の分は約 15 kB（新チャンク `gis-fetch` 8.7 kB・`gis-cog` +2.8 kB・`gis-remote` の署名・`gis-geotiff`/`gis-ogcapi` の import）で、残りは先に main へ入った他の変更が積んだ分（main の天井は merge の後に記録される）。どれも遅延チャンクで、起動の経路（eager.requests=10）には載らない。
