@@ -550,7 +550,7 @@ window.IntMapPageI18N.define('ja', {
      js/reference-data.js の `use:{en,jp}` から移設。英語版と同じ場所に置くことで
      scripts/i18n-pages-audit.mjs の測定対象（＝英語文書の全パス）に入る。 */
   sourceUse: {
-    "PLATEAU 3D city models (MLIT Japan)": "東京23区の建物モデル（屋根・壁・テクスチャ。LOD2）。レイヤーがオンの間、国土交通省 Project PLATEAU から 3D Tiles として読み込みます。3D地球儀エンジンでのみ表示されます。",
+    "PLATEAU 3D city models (MLIT Japan)": "PLATEAU カタログが公開する日本の市区（約450。手書きでなくカタログから導出）の建物モデル（屋根・壁・テクスチャ。公開されていれば LOD2、なければ LOD1）。視界の近くのものだけを、その土地のジオイド高（国土地理院）で下げて地面に合わせて表示します。レイヤーがオンの間、国土交通省 Project PLATEAU から 3D Tiles として読み込みます。3D地球儀エンジンでのみ表示されます。",
     "UNESCO World Heritage Centre": "世界遺産一覧そのもの——登録物件 1,273 件と、この層が描く構成資産 6,009 地点——は、ユネスコ世界遺産センターが公表しているデータそのもの。ただし「いま危機遺産か」は同じフィードからは採っていない：センターの danger 列が 2014 年以降更新されていないことを実測したため、その 1 点だけを Wikidata に訊き、両方を出典として表記している。名称はユネスコ自身が一覧を公表している言語（英・仏・西・露・中・日）でそのまま出し、ドイツ語・韓国語・繁体字中国語はユネスコが公表していないので英語名になる。",
     "Smithsonian / USGS Weekly Volcanic Activity Report": "火山の状況の「世界の段」。今週どの火山について観測機関が報告し、何を述べたか。各項目が GVP 火山番号を持つので、名前ではなく番号でカタログに結び付く。volcano.si.edu は CORS ヘッダを返さないため supabase/functions/volcano-feed が中継する。",
     "USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)": "「米国の段」。現在発効している航空カラーコードと火山警戒レベル、および直近1年間のすべての VONA（航空関係者向け火山情報）。この API は Access-Control-Allow-Origin を返すのでブラウザが直接読む。",

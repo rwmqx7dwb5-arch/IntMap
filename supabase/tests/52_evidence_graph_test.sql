@@ -81,13 +81,13 @@ select is((select v from _cap where k='ins'),      'OK',     'the owner writes a
 select is((select v from _cap where k='ups'),      'OK',     'and upserts it with a second version');
 select is((select v from _cap where k='vers'),     '2',      'the upsert replaced the payload (two versions)');
 select is((select v from _cap where k='spoof'),    'DENIED', 'a node under another account is refused by WITH CHECK');
-select like((select v from _cap where k='mismatch'), 'ERR:23514%', 'a payload whose id differs from the column is refused');
-select like((select v from _cap where k='badkind'),  'ERR:23514%', 'a kind outside source / derived is refused');
+select ok((select v from _cap where k='mismatch') like 'ERR:23514%', 'a payload whose id differs from the column is refused');
+select ok((select v from _cap where k='badkind') like 'ERR:23514%', 'a kind outside source / derived is refused');
 select is((select v from _cap where k='other'),    '0',      'another account reads none of them');
 select is((select v from _cap where k='odel'),     'OK',     'another account''s delete is a no-op under RLS');
 select is((select v from _cap where k='anon'),     'DENIED', 'anon cannot read');
 select is((select v from _cap where k='kept'),     '1',      'the node survived the other account''s delete');
-select like((select v from _cap where k='fill'),   'ERR:P0001:evidence-graph-account-full%', 'the account bound refuses past 50 MiB by name');
+select ok((select v from _cap where k='fill') like 'ERR:P0001:evidence-graph-account-full%', 'the account bound refuses past 50 MiB by name');
 
 select * from finish();
 rollback;
