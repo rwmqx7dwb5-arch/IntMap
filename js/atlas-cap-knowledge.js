@@ -136,7 +136,7 @@ export default [
       const sd = standing(c, now);
       const h = '<div style="font-weight:600;margin:2px 0;">' + esc(L('Sources to look at again', '再確認する出典')) + ' · ' + esc(id) + '</div><ul style="margin:2px 0 4px 18px;padding:0;font-size:12px;line-height:1.55;">'
         + sources.map((s) => '<li>' + esc(s.source) + (s.lastCheck ? note(esc(L('last checked', '前回') + ' ' + day(s.lastCheck.at) + ': ' + s.lastCheck.outcome)) : note(esc(L('never re-checked', '再確認したことはありません')))) + (s.observedHere ? note(esc(s.observedHere)) : '') + '</li>').join('') + '</ul>'
-        + note(esc(L('Age', '経過') + ': ' + (sd.ageDays == null ? '?' : sd.ageDays) + ' ' + L('days', '日') + (sd.recheckAfterDays ? ' · ' + L('re-check after', '再確認の目安') + ' ' + sd.recheckAfterDays + ' ' + L('days', '日') : '') + (sd.recheckDue ? ' · ' + L('due', '時期です') : '')));
+        + note(esc(L('Time since kept', '保存からの日数') + ': ' + (sd.ageDays == null ? '?' : sd.ageDays) + ' ' + L('days', '日') + (sd.recheckAfterDays ? ' · ' + L('re-check after', '再確認の目安') + ' ' + sd.recheckAfterDays + ' ' + L('days', '日') : '') + (sd.recheckDue ? ' · ' + L('due', '時期です') : '')));
       return R(true, h, { meta: { code: 'OK', knowledge: { id, kind: c.kind, standing: sd, sources } } });
     },
   },

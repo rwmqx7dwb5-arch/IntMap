@@ -150,7 +150,7 @@ test('R180 ②: a broken expression costs one wrong value, never the layer', () 
   assert.equal(S.evaluate(null, {}), null);
   assert.equal(S.resolveNum(['/', 1, 0], {}, 42), 42, 'and a fallback is used rather than NaN reaching the GPU');
   /* what it knows it cannot do is REPORTED, not hidden (#R162) */
-  assert.ok(Array.isArray(S.UNSUPPORTED) && S.UNSUPPORTED.includes('within'));
+  assert.ok(Array.isArray(S.UNSUPPORTED) && S.UNSUPPORTED.includes('pitch'));
 });
 
 /* ══ #R705 THE BACKGROUND, THE IMAGERY FLOOR AND VECTOR-TILE GEOMETRY UNDER CHRONOS ════════════ */

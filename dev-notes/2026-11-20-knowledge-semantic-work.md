@@ -14,3 +14,7 @@ newsjp: 設定に「Atlas の知識」の行が加わりました。オフ・こ
 - 否定した見立て: 期間で自動失効（時間では何も消さない）。名前の別名表（同一性はグラフが言う）。
 - 未了/注意: pgTAP はローカルで未実行（CI の migrations ジョブで確認）。#1280〜#1283 は未 merge のまま本ブランチに取り込んで積んでいる。
 - 検査: `tests/knowledge-continuation-checks.test.mjs`、`tests/fact-comparability-checks.test.mjs`、`tests/atlas-skills-checks.test.mjs`（readiness）、`supabase/tests/53_atlas_knowledge_test.sql`。
+
+- 全域の結び目（`check:surface`）: `window.IntMapKnowledgeHost`（`js/app-body.js` が IM_HOST を設定画面の配線へ渡す入口。設定画面の行は `IM_HOST.user` を見るだけで、IM_HOST 全体を import できない）、`window.IntMapGisSemantics` / `IntMapGisUnits` の各 1 読み（結果統合が GIS カーネルの意味層・単位を使う。カーネルが window に置く現行の流儀に合わせた）を台帳へ足した。
+- 起動費用（`check:perf`）: 設定画面の配線 `js/atlas-knowledge-prefs.js` を `src/main.js` が import するので eager が 1 モジュール増える。知識層・比較可能性・Skills の利用可否で `atlas-cap-runs` / `atlas-console` / `gis-core` の非同期 chunk が増えた。いずれも利用者が Atlas を開いたとき・GIS を使うときにだけ読まれ、起動時の経路には載らない。
+- 翻訳の組（`check:i18n`）: Skills の本文（en+jp の組 21）と設定画面の 2 行は IntMap 自身が書く文で、憲法 §7 の en+jp。隣接データの上限を 143→166 に上げ、`docs/architecture/10-i18n.md` に名指しした。別の意味の同じ英語キー（`Age` = 月齢）と衝突した表示語は「保存からの日数」に替えた。
