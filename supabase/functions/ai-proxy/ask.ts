@@ -263,6 +263,7 @@ export async function ask(req: Request): Promise<Response> {
   let fellBackTo = "";
   let attempts = 0;   /* (atlas-turn-observability) provider requests this ONE request made — providerCall calls attempt() before each */
   const meter: Meter & ReturnType<typeof usageMeter> = Object.assign(usageMeter(), {
+    startedAt: Date.now(),   /* the clock every provider request of this reader request shares — providerBudgetMs (_shared/ai-provider.js) */
     attempt() { attempts += 1; },
     fallback(to: string) { fellBackTo = to; },
     ceiling: cohortOf(user.created_at, Date.now()) === NEWCOMER ? NEWCOMER_CEILING : CEILING,
