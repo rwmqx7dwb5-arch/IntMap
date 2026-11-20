@@ -360,3 +360,12 @@ export const PLATEAU_CATALOGUE = {
     canon: 'scripts/lib/upstream-cadence.mjs PLATEAU_CATALOGUE',
   },
 };
+
+export const SITING_JP = {
+  cadence: 'P1Y',
+  cadenceBasis: {
+    observed: 'measured 2026-11-20: JEPX publishes one spot-market file per fiscal year (spot_2025.csv holds 2025-04-01 to 2026-03-31, 17,520 half-hour rows); MLIT Land Price Public Announcement editions are yearly (L01-26 ... L01-17); MHLW minimum wages are revised once a year (revision table H14 to R8); SSDSE-B is a yearly edition (2026 edition, data to 2023)',
+    expires: 'if JEPX, MLIT, MHLW or the Statistics Bureau publish their editions more often than yearly, or stop',
+    canon: 'scripts/lib/upstream-cadence.mjs SITING_JP',
+  },
+};
