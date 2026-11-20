@@ -127,6 +127,7 @@ export function makeGisExport() {
       'export-value-out-of-range', 'export-missing-not-representable', 'export-nodata-conflict',
       'export-nodata-not-representable', 'export-crs-unsupported',
       'export-geometry-mixed-dimensions', 'export-serialise-failed', 'export-geometry-not-representable',
+      'export-geometry-too-large-for-cell', 'export-xlsx-too-large',
     ]);
     function bad(why, detail) {
       if (REFUSALS.indexOf(why) < 0) throw new Error('gis-export: undeclared refusal code ' + why);
@@ -470,7 +471,7 @@ export function makeGisExport() {
       }
       const title = String((rec && (rec.title || rec.id)) || 'data');
       const made = writeXlsx([{ name: title, columns: cols.concat(added), rows: rows }]);
-      if (!made.ok) return bad('export-' + made.why, made.detail);
+      if (!made.ok) return bad('export-xlsx-too-large', made.detail);   /* the only refusal writeXlsx can give here: the sheet has features (write() refused an empty one) */
       return { bytes: made.bytes, stated: {
         rows: feats.length, columns: cols.concat(added), rowsWithoutGeometry: without,
         geometry: !anyGeometry ? 'none' : (asPoints ? 'lon-lat-columns' : 'wkt'), geometryColumns: asPoints ? added.slice() : (added.length ? added.slice() : []),
