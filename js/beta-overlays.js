@@ -196,7 +196,8 @@ export function betaOverlays(HOST){
     let worldOpen=new Map();         /* source id → {offset, boxKey} as last applied */
     async function worldSync(L2,c,plateauBoxes,seq){
       /* loaded on first use: a switched-off layer, or a camera that is not zoomed in on a city, pays for neither module nor the geoid grid */
-      const [{ WORLD_3D_SOURCES, worldTilesetId, worldSourcesNear, excludeBoxesFor, PLATEAU_QUALITY }, { loadGeoid }]=await Promise.all([import('./world-3d-sources.js'),import('./geoid.js')]);
+      const { WORLD_3D_SOURCES, worldTilesetId, worldSourcesNear, excludeBoxesFor, PLATEAU_QUALITY }=await import('./world-3d-sources.js');
+      const { loadGeoid }=await import('./geoid.js');
       if(seq!==plateauSeq||!state.plateau) return;
       plateauBoxes=plateauBoxes.map(b=>({quality:PLATEAU_QUALITY,bbox:b.bbox}));
       const want=worldSourcesNear(WORLD_3D_SOURCES,{lng:c.center.lng,lat:c.center.lat,zoom:c.zoom},new Set(worldOpen.keys()));

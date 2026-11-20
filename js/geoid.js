@@ -10,7 +10,8 @@
  * ==========================================================================*/
 import { loadData } from './data-door.js';
 
-export const GEOID_COLS = 720, GEOID_ROWS = 361, GEOID_STEP = 0.5;
+export const GEOID_COLS = 720, GEOID_ROWS = 361;
+const GEOID_STEP = 0.5;
 
 /** @param {ArrayBuffer|ArrayBufferView} buf  the inflated grid: GEOID_ROWS x GEOID_COLS Int16LE centimetres, row 0 = 90N, col 0 = 0E */
 export function mountGeoid(buf) {
