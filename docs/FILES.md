@@ -201,6 +201,8 @@ cesium-style.js                   style 言語の解釈器（式・フィルタ�
 cesium-layers.js                  Cesium のプロバイダとレイヤー描画
 cesium-vector-tiles.js            第2エンジンのベクタタイル
 plateau-cities.js                 PLATEAU 3D 都市モデルの登録（data/plateau-cities.json）の読み込み・視界近傍の選択・URL と都市別ジオイド補正。エンジンの tiles3d 能力が読む
+geoid.js                         EGM2008 ジオイド高 N（楕円体高と海抜の差）を世界のどこでも返す。0.5° 格子（data/geoid-egm2008.bin.gz・scripts/build-geoid-grid.mjs が導出）の双一次補間。日本の外の 3D 建物タイルセットを地面に合わせる
+world-3d-sources.js              日本の PLATEAU 以外の 3D 建物タイルセット（3D BAG・Re:Earth Buildings）の登録・視界近傍の選択・上位データの範囲を下位から抜く箱。ライセンスと信頼性の根拠を行ごとに持つ
 render-plan.js                     描画方法の選択（候補を良い順に並べ、エンジンの能力で最初に実行できるものを選ぶ。純粋）。geo-engine の `plan()` と PLATEAU レイヤーが使う
 tileset-budget.js                  3D Tiles のメモリ・詳細度の予算を端末（メモリ・コア数・省データ・携帯）から決める。cesium-engine の addTileset／_governTilesets が使う
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
