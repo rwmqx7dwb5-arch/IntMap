@@ -1084,7 +1084,8 @@ atlas-cap-sim.js                  Atlas の能力 — シミュレーター（si
 atlas-cap-system.js               Atlas の能力 — 汎用の逃げ道とモジュール操作（system.*）
 atlas-cap-time.js                 Atlas の能力 — 時刻（time.*）
 atlas-reasoning.js                Atlas の 3 つの答えを**構造**にする純関数（シナリオ research.scenario の 4 欄・期間の変化 time.changes の差分と順位・相関 panel.correlate の報告）。DOM も window も持たず、tests/atlas-reasoning-checks.test.mjs が評価する。相関パネルも同じ報告を描く
-atlas-cap-ui.js                   Atlas の能力 — インラインの操作（ui.*）
+atlas-cap-ui.js                   Atlas の能力 — 返答の中の UI（ui.*）：インラインの操作（ui.inlineControls）と宣言的なビュー（ui.compose・綴り `dashboard`）。
+                                  操作の行の描画は 1 か所（controlRows）で、両方が使う
 atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
@@ -1216,6 +1217,11 @@ atlas-turn-results.js             **1つの操作は、返信の中で1ブロッ
                                   ③**版を持つ成果物は順位づけない**（#R551）— `meta.artifact` を名乗る2件は
                                   `revision` の大きいほうが残る。アプリが保持しているのが最新版なのだから、
                                   点数で古い版を選べば「もう無い印」を説明する返信になる
+atlas-ui-spec.js                  **Atlas が宣言するビュー**（declarative-workspace）— `ui.compose` の仕様（JSON）のブロックの種類・欄・上限の表
+                                  （BLOCKS／LIMITS）と、そこから導く schema（viewSchema）・カタログの形（blockShapes）・検査（checkView）。
+                                  ⚠ 検査は**全部の問題を経路つきで**返し、未知の種類・未知の欄・上限超え・URL・HTML を理由つきで拒む（黙って落とさない）。
+                                  描くのは IntMap の部品だけ——図の値の札・表（返答の Markdown 表へ）・地名のボタン。`chart`／`controls` の
+                                  ブロックは chart.compose／ui.inlineControls の dispatch に渡す（描画器を 2 つ作らない）。DOM なし
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
@@ -2709,7 +2715,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 170 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 171 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
