@@ -21,19 +21,16 @@ async function getIO() {
   return ioCache;
 }
 
-const KIND_LABEL = {
-  optical: ['optical (Sentinel-2)', '光学（Sentinel-2）'], sar: ['radar (Sentinel-1)', 'レーダー（Sentinel-1）'],
-  landcover: ['land cover (annual)', '土地被覆（年次）'], embedding: ['satellite embedding (AlphaEarth)', '衛星埋め込み（AlphaEarth）'],
-};
-const WHY = {
-  'no-scene': ['No image of that kind was found for that place and period.', 'その場所・期間に該当する画像が見つかりませんでした。'],
-  'no-usable-scene': ['Every candidate scene was unreadable or fully clouded at that place.', '候補の画像がすべて読めないか、雲に覆われていました。'],
-  'bad-period': ['Give both times as a year (YYYY) or a date (YYYY-MM-DD).', '前後の時期を年（YYYY）か日付（YYYY-MM-DD）で指定してください。'],
-  'year-out-of-range': ['The satellite embedding exists for 2017 to 2025 only.', '衛星埋め込みがあるのは 2017〜2025 年だけです。'],
-  'no-tile': ['The embedding product has no tile at that place (open ocean or ice).', 'その場所に埋め込みのタイルがありません（外洋・氷上など）。'],
-  'TOO_FEW_VALID': ['Too few pixels were usable in both images (cloud, no-data) to say anything.', '両方の画像で使える画素が少なすぎて、何も言えません。'],
-};
-
+/* 種類・拒否理由の文は L(英, 日) の呼び出しで持つ（隣接した対の表にしない: 言語の組が 1 か所の表に溜まると i18n の計器の視野から外れる） */
+const kindLabel = (kind, L) => (kind === 'optical' ? L('optical (Sentinel-2)', '光学（Sentinel-2）') : kind === 'sar' ? L('radar (Sentinel-1)', 'レーダー（Sentinel-1）')
+  : kind === 'landcover' ? L('land cover (annual)', '土地被覆（年次）') : kind === 'embedding' ? L('satellite embedding (AlphaEarth)', '衛星埋め込み（AlphaEarth）') : null);
+const KINDS = ['optical', 'sar', 'landcover', 'embedding'];
+const whyText = (why, L) => (why === 'no-scene' ? L('No image of that kind was found for that place and period.', 'その場所・期間に該当する画像が見つかりませんでした。')
+  : why === 'no-usable-scene' ? L('Every candidate scene was unreadable or fully clouded at that place.', '候補の画像がすべて読めないか、雲に覆われていました。')
+  : why === 'bad-period' ? L('Give both times as a year (YYYY) or a date (YYYY-MM-DD).', '前後の時期を年（YYYY）か日付（YYYY-MM-DD）で指定してください。')
+  : why === 'year-out-of-range' ? L('The satellite embedding exists for 2017 to 2025 only.', '衛星埋め込みがあるのは 2017〜2025 年だけです。')
+  : why === 'no-tile' ? L('The embedding product has no tile at that place (open ocean or ice).', 'その場所に埋め込みのタイルがありません（外洋・氷上など）。')
+  : why === 'TOO_FEW_VALID' ? L('Too few pixels were usable in both images (cloud, no-data) to say anything.', '両方の画像で使える画素が少なすぎて、何も言えません。') : null);
 /* 場所 → 範囲 [w,s,e,n]。bounds が無ければ place か lat/lng のまわりの正方形（sideKm、既定 3 km）。 */
 async function boundsOf(a, K) {
   if (Array.isArray(a.bounds) && a.bounds.length === 4 && a.bounds.every((v) => isFinite(+v))) return { bounds: a.bounds.map(Number), name: a.place || '' };
@@ -63,7 +60,7 @@ const block = (title, body) => '<div style="margin:4px 0;"><b>' + title + '</b><
 export async function imageChangeRun(a, K) {
   const { R, warn, esc, L } = K;
   const fail = (msg, code, retryable) => R(false, warn(esc(msg)), { meta: { code, category: 'data', retryable: !!retryable, produced: [], userGoalSatisfied: false } });
-  const kind = KIND_LABEL[a.kind] ? a.kind : null;
+  const kind = KINDS.indexOf(a.kind) >= 0 ? a.kind : null;
   if (!kind) return fail(L('Choose a kind: optical, sar, landcover or embedding.', '種類を選んでください: optical・sar・landcover・embedding。'), 'INVALID_INPUT');
   if (a.before == null || a.after == null) return fail(L('Give the two times to compare: "before" and "after" (a year or a date).', '比べる 2 つの時期 "before" と "after"（年か日付）を指定してください。'), 'NEEDS_INPUT');
   const w = await boundsOf(a, K);
@@ -74,13 +71,13 @@ export async function imageChangeRun(a, K) {
   let r;
   try { r = await io[kind](args); } catch (e) { r = { ok: false, why: 'threw', detail: { message: String((e && e.message) || e).slice(0, 160) } }; }
   if (!r.ok) {
-    const m = WHY[r.why] ? L(WHY[r.why][0], WHY[r.why][1]) : L('The images could not be read (' + r.why + ').', '画像を読み込めませんでした（' + r.why + '）。');
+    const known = whyText(r.why, L), m = known || L('The images could not be read (' + r.why + ').', '画像を読み込めませんでした（' + r.why + '）。');
     const detail = r.detail ? ' ' + JSON.stringify(r.detail).slice(0, 400) : '';
-    return fail(m + detail, String(r.why), !WHY[r.why]);
+    return fail(m + detail, String(r.why), !known);
   }
   const ev = r.evidence, lat = r.lattice, nameOf = w.name || (w.bounds[1].toFixed(3) + ', ' + w.bounds[0].toFixed(3));
   const lang = L('en', 'jp'), km2 = (v) => (v == null ? '' : (v >= 10 ? v.toFixed(1) : v.toFixed(2)) + ' km²');
-  let h = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L('Change at ', '変化: ') + nameOf + ' · ' + KIND_LABEL[kind][lang === 'jp' ? 1 : 0]) + '</div>';
+  let h = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L('Change at ', '変化: ') + nameOf + ' · ' + kindLabel(kind, L)) + '</div>';
   if (r.change) {
     const s = r.change.stats;
     if (kind === 'embedding') {
@@ -98,7 +95,7 @@ export async function imageChangeRun(a, K) {
     + '<br>' + esc(L('Method: ', '手順: ') + ev.method) + '<br>' + esc(L('Grid: ', '格子: ') + lat.width + '×' + lat.height + ' px at about ' + lat.pixelM + ' m' + (lat.enlarged ? L(' (enlarged from ' + lat.requestedPixelM + ' m to stay within the pixel budget)', '（画素数の上限のため ' + lat.requestedPixelM + ' m から拡大）') : '') + ', nearest-neighbour resampling'));
   const cav = ev.caveats.concat(LIMITS[lang === 'jp' ? 'jp' : 'en']);
   h += '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + cav.map(esc).join('<br>') + '</div>';
-  const title = (lang === 'jp' ? '画像変化 ' : 'Image change ') + KIND_LABEL[kind][lang === 'jp' ? 1 : 0] + ' ' + nameOf;
+  const title = (lang === 'jp' ? '画像変化 ' : 'Image change ') + kindLabel(kind, L) + ' ' + nameOf;
   const ds = registerDataset(r, title, ev);
   if (ds) h += '<div style="font-size:11px;margin-top:4px;">' + esc(L('Saved as a raster dataset — id ', 'ラスタのデータセットとして保存しました — id ')) + '<code>' + esc(ds.id) + '</code></div>';
   return R(true, h, { meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: nameOf, produced: ds ? ['explanation', 'gis.dataset'] : ['explanation'], userGoalSatisfied: true, imageChange: { kind, basis: ev.basis, scenes: ev.scenes.map((s) => ({ role: s.role, id: s.id, datetime: s.datetime })), stats: r.change ? r.change.stats : { usable: r.transitions.usable, changedFraction: r.transitions.changedFraction }, dataset: ds ? ds.id : null } } });

@@ -286,5 +286,5 @@ test('the capability is in the table, documented, and its schema names the argum
   for (const k of ['optical', 'sar', 'landcover', 'embedding']) assert.ok(caps.includes('kind "' + k + '"'), 'the doc teaches kind ' + k);
   assert.match(caps, /Night-time light is NOT available/, 'the doc says what is not covered instead of implying it');
   const run = read('js/imagery-change-atlas.js');
-  for (const k of ['optical', 'sar', 'landcover', 'embedding']) assert.ok(run.includes(k + ':'), 'the answer has a label for ' + k);
+  for (const k of ['optical', 'sar', 'landcover', 'embedding']) assert.ok(run.includes("'" + k + "'"), 'the answer has a label for ' + k);
 });

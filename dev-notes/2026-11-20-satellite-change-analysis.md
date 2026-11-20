@@ -60,3 +60,10 @@ newsjp: Atlas が、2 つの時期の実際の衛星データ（光学・レー�
 ## 5. 消したもの・引き継いだもの
 
 何も消していない。`tests/geo-gis-geotiff-checks.test.mjs` の ⑭ は「zstd は未対応」を例に使っていたので、まだ未対応の webp（50001）へ替えた（zstd は読めるようになった。肯定側の検査は `tests/imagery-change-checks.test.mjs` ③）。
+
+## 6. 門の動かし方（理由つき）
+
+- `tests/global-surface-baseline.json`（`--update`）: 本 PR の `js/imagery-change-atlas.js` が `window.IntMapData`・`IntMapGisCrs`・`IntMapGisWarp`・`IntMapLazy` を 1 回ずつ読む（Atlas の遅延 chunk が GIS 核の部品を受け取る既存の形。gis-atlas.js が核から受け取るのと同じ部品で、第 2 の写しではない）。同じ更新に #1297 側の `IntMapSafe`・`IntMapTime`・`__sat` の読みも入った（#1297 のコードで、本 PR のものではない）。
+- `tests/i18n-coverage-floor.json`（`--update-floor`）: 能力の説明文と回答の文が足した L(en, jp) の行ぶん、各言語のインライン表の行数が 1 増えた（en+jp の方針で、他言語の翻訳は足していない）。
+- `docs` の能力数は 252 → 254（到達可能 249 → 251）。検査が実体と照合する。
+- 隣接した対の表（`[英, 日]`）は `js/imagery-change-atlas.js` で作らず L() の呼び出しにした（i18n の計器の視野の外の穴を増やさないため）。
