@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-11-20T13:32:43.076Z",
+    "generatedAt": "2026-11-20T16:27:21.202Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -1556,9 +1556,6 @@
       "subject": "data/ne-countries/",
       "facets": [
         "describes.period",
-        "describes.extent",
-        "describes.method",
-        "describes.resolution",
         "describes.completeness",
         "describes.accuracy"
       ],
@@ -4883,7 +4880,7 @@
   "unreadableDeclaration": [],
   "counts": {
     "undeclared": 226,
-    "undeclaredFacets": 3492,
+    "undeclaredFacets": 3489,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 0,
     "unreadableDeclaration": 0
