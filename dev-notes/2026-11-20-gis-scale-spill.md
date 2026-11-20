@@ -61,3 +61,8 @@ date: 2026-11-20
 - ⚠ 区域の辺にかかる図形（数 %）は従来の掃引。`nearer-than`・`nearestJoin` は述語が違い未対応。
 - ⚠ 殻（プロパティ）は常駐（100 万行で約 +550 MB）。これも退避する案はあるが `stubs()` が全行のプロパティを要る。
 - spatialJoin の Worker 化。
+
+## 6. 上げた天井と台帳（CI で赤になった 2 点）
+- `perf-baseline`: async chunk `gis-export` 29.4 → 31.4 kB、`dist.assets` 21446.3 → 21561.2 kB。退避（`encodeBody`/`chunksAsync` を使う書き出し）の分で、
+  得たものは「全体を常駐させずに 100 万点を書き出せる」こと。新チャンク `gis-packed` は main の CI が merge 後に天井を記録する。
+- 端末内保存の台帳: IndexedDB `intmap-gis-spill`（作業中だけの断片・レイヤー削除で消える）の行を `device-storage-words.json` に足し、台帳を再生成。
