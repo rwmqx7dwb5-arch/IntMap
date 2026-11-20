@@ -1546,6 +1546,24 @@ Nikkei Asia（項目に日付が無い）、Viet Nam News（フィードが UTF-
 費用の見積り: $0.15/100 万トークン・1 run 最大 600 件（§14 の見込みの桁は変わらない）。
 ⚠ 見出しと要約の先頭が新しい送り先（Google）へ届く——すでに ai-proxy が Gemini へ送っている公開記事のみで、個人情報は含まない。
 
+### 19.7 過去へ遡る — Wikipedia「Portal:Current events」（news-event-history · backfill）
+
+生の収集は収集を始めた日より前を持たない。「過去 10 年の台湾海峡の軍事的緊張の推移」のような問いには、その前の行が要る。
+**出典**: Wikipedia の日別ページ `Portal:Current_events/<年>_<月>_<日>`（2004 年から毎日）。各日、節（Armed conflicts and attacks ほか）ごとに
+出来事の 1 文・**編集者が引いた媒体のリンク**・属する**連載**（`Cross-Strait relations` など）を持つ。本文は CC BY-SA 4.0
+（出典表記は `js/reference-data.js`・`js/legal-text.js`）。IntMap のサーバが**日付だけ**を送って読む（利用者の情報は一切送らない）。
+**実測（2026-11-20）**: 2012-05-20・2016-01-16・2019-03-31・2022-08-04 の 4 日を 1 要求で取り、構文が全年で同じ形で読めた
+（2019-03-31 は `Cross-Strait relations` の下に「台湾が PLAAF 機の中間線通過を非難」、2022-08-04 は「2022 US congressional delegation visit to Taiwan」の下）。
+**規則**（`_shared/news-backfill.js`・純粋）:
+- 媒体の引用が**ある文だけ**を行にする（誰も出典を付けなかった文は残さない）。時刻は**日**の粒度（出典名 `Wikipedia Current events` が先頭の出典で、読者に粒度が見える）。
+- `thread_key = wp:<連載の記事名>`——**編集者の述べた続き物**であって類似度ではない。連載が無ければ world ref、それも無ければ出来事自身。
+- 場所は**足さない**（`lng/lat/place_name` は null）。world ref・企業は生の記録と同じ「名前が文に出てくる」だけ。種別は同じ見出し読み（無ければ `other`）。
+- 出典間の相違: 同じ出来事に複数の媒体が引かれていればすべて `sources` に残す。
+**走らせ方**: `news-ingest` の `prune` 段が `archive` の後に `backfill` を呼ぶ（cron の変更なし）。1 run = 30 日を 1 要求。
+**状態を持たない**: 位置は `wce:` の行がいちばん古い日から導く（冪等）。床は `NEWS_BACKFILL_FLOOR`（既定 2012-01-01）、止めるのは `NEWS_BACKFILL=off`。
+費用 0（AI を呼ばない）。行数の見積り: 1 日 15〜40 件 × 14 年 ≒ 10 万行 ≒ 120 MB（上限 30 万行 `news_history_trim` は不変・この行は世界 ref が無く出典 3 未満なので超過時は最初に落ちる）。
+⚠ 遡及の記録は**一つの編集記録**であって全報道ではない（取りこぼしがある）。Atlas の答えは `coverage_from` と出典を必ず述べる。
+
 ### 19.6 Atlas
 
 | 能力 | 何をするか |

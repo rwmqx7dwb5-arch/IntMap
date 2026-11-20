@@ -69,6 +69,7 @@ import { DEFAULTS, buildIdf } from "../_shared/news-cluster.js";
 import { makeEntityMatcher } from "../_shared/news-entities.js";
 /* (news-event-history) 年単位で残す出来事の行を作る規則。 */
 import { buildArchiveRow, makeWorldMatcher as makeHistoryMatcher, HISTORY } from "../_shared/news-history.js";
+import { BACKFILL, dayRows, pagesFromQuery } from "../_shared/news-backfill.js";
 import { siteUrl } from "../_shared/site-origin.js";
 
 const NEWSGEO = globalThis.IntMapNewsGeo || null;
@@ -1662,7 +1663,65 @@ async function stageArchive(db) {
   return out;
 }
 
-async function stagePrune(db) {
+/* ── (news-event-history · backfill) 過去の出来事を、日付と出典の付いた公開の記録から遡って足す ────────────
+   生の収集は収集を始めた日より前を持たない。Wikipedia の「Portal:Current events」は日ごとに、出来事の 1 文・編集者が
+   引いた媒体のリンク・属する連載（Cross-Strait relations など）を持つ（_shared/news-backfill.js）。1 run で
+   BACKFILL_DAYS 日ぶんを 1 要求で取り、news_history_upsert へ流す。
+   ⚠ 状態を持たない: 位置は「この記録の行がいちばん古い日」から導く（行が無ければ昨日から）＝何度走らせても同じ
+     結果（冪等）で、表も cron も足さない。床の日（NEWS_BACKFILL_FLOOR・既定 2012-01-01）に着いたら何もしない。
+   ⚠ 失敗しても archive・prune を止めない（これは足す仕事で、既存の行を消す仕事ではない）。 */
+const BACKFILL_DAYS = 30;
+const BACKFILL_FLOOR_DEFAULT = "2012-01-01";
+async function stageBackfill(db, budget) {
+  const t0 = Date.now();
+  const out = { ms: 0, off: null, from: null, to: null, days: 0, pages: 0, rows: 0, floor: null, done: false, error: null };
+  try {
+    if ((Deno.env.get("NEWS_BACKFILL") || "").toLowerCase() === "off") { out.off = "NEWS_BACKFILL=off"; return out; }
+    const floor = (Deno.env.get("NEWS_BACKFILL_FLOOR") || BACKFILL_FLOOR_DEFAULT).slice(0, 10);
+    out.floor = floor;
+    const { data: oldest, error: oe } = await db.from("news_event_history").select("occurred_at")
+      .like("event_public_id", "wce:%").order("occurred_at", { ascending: true }).limit(1);
+    if (oe) throw new Error("backfill cursor: " + oe.message);
+    const startDay = oldest && oldest[0] ? new Date(oldest[0].occurred_at) : new Date();
+    let cur = new Date(Date.UTC(startDay.getUTCFullYear(), startDay.getUTCMonth(), startDay.getUTCDate() - 1));
+    const floorD = new Date(floor + "T00:00:00Z");
+    const days = [];
+    while (days.length < BACKFILL_DAYS && cur >= floorD) {
+      days.push([cur.getUTCFullYear(), cur.getUTCMonth() + 1, cur.getUTCDate()]);
+      cur = new Date(cur.getTime() - 86400e3);
+    }
+    out.days = days.length;
+    if (!days.length) { out.done = true; return out; }
+    out.from = days[days.length - 1].join("-"); out.to = days[0].join("-");
+    if (budget.left() < 20000) { out.off = "no time left in this run"; return out; }
+    const titles = days.map((d) => BACKFILL.pageTitle(d[0], d[1], d[2])).join("|");
+    const r = await fetchGuarded("https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&formatversion=2&titles=" + encodeURIComponent(titles), {
+      timeoutMs: 30000, maxBytes: 8 * 1024 * 1024, contentTypeRe: /json/i,
+      headers: { "user-agent": "IntMapBot/1.0 (+https://github.com/rwmqx7dwb5-arch/IntMap; news history)", accept: "application/json" },
+    });
+    if (!r.ok) throw new Error("wikipedia " + r.status);
+    const pages = pagesFromQuery(JSON.parse(r.text()));
+    out.pages = pages.size;
+    const graph = await selectAll(() => db.from("world_graph_nodes"), (q) => q.select("ref,name,type,ids"));
+    const matcher = makeHistoryMatcher(graph);
+    const rows = [];
+    for (const d of days) {
+      const txt = pages.get(BACKFILL.pageTitle(d[0], d[1], d[2]).replace(/ /g, "_"));
+      if (txt) rows.push(...dayRows(d[0], d[1], d[2], txt, matcher));
+    }
+    for (let i = 0; i < rows.length; i += 100) {
+      const { data, error } = await db.rpc("news_history_upsert", { p: rows.slice(i, i + 100) });
+      if (error) throw new Error("backfill upsert: " + error.message);
+      out.rows += Number(data) || 0;
+    }
+  } catch (e) {
+    out.error = String((e && e.message) || e).slice(0, 300);
+  }
+  out.ms = Date.now() - t0;
+  return out;
+}
+
+async function stagePrune(db, budget) {
   const t0 = Date.now();
   const cut = retentionCutoffs(Date.now());
   const out = { ms: 0, pruned_articles: 0, pruned_events: 0, pruned_decisions: 0 };
@@ -1674,6 +1733,7 @@ async function stagePrune(db) {
     out.ms = Date.now() - t0;
     return out;
   }
+  out.backfill = await stageBackfill(db, budget);
 
   /* ⚠ 消した行そのものは要らない——要るのは件数である。`select('id')` にすると
      数千行を Edge Function まで運ぶことになる。 */
@@ -1795,7 +1855,7 @@ Deno.serve(async (req) => {
     if (want.includes("entities")) result.entities = await stageEntities(db, budget);
     if (want.includes("summarise")) result.summarise = await stageSummarise(db, budget);
     if (want.includes("translate")) result.translate = await stageTranslate(db, budget);
-    if (want.includes("prune")) result.prune = await stagePrune(db);
+    if (want.includes("prune")) result.prune = await stagePrune(db, budget);
   } catch (e) {
     ok = false;
     result.error = String((e && e.message) || e).slice(0, 300);
