@@ -44,6 +44,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { tilesetBudget } from './tileset-budget.js';
 
 window.IntMapCesiumEngine=(function(){
   'use strict';
@@ -2600,8 +2601,8 @@ window.IntMapCesiumEngine=(function(){
        spec: { url, maximumScreenSpaceError?, heightOffset?, cacheBytes?, opacity?, onReady?, onError? }
        · maximumScreenSpaceError — the quality/cost knob (Cesium's default is 16; phones get a looser 24
          because the tile count, not the pixel count, is what they run out of).
-       · heightOffset — metres added along the local up axis. 0 by default: PLATEAU states its heights
-         as ellipsoidal, and nothing here may invent a geoid correction that its data did not ask for.
+       · heightOffset — metres added along the local up axis. 0 by default: the engine invents no
+         correction. PLATEAU states ellipsoidal heights; js/plateau-cities.js passes each city's own geoid height (GSI).
        · cacheBytes — the tileset's own tile-memory budget, so a second dataset cannot grow without a
          bound (the terrain/imagery caches above are bounded the same way).
        Returns true when the request was accepted; the tileset arrives asynchronously and `onReady`
@@ -2612,11 +2613,11 @@ window.IntMapCesiumEngine=(function(){
         if(this._tilesets.has(id)) this.removeTileset(id);
         const rec={ ts:null, spec:Object.assign({},spec), visible:true, error:null, gone:false };
         this._tilesets.set(id,rec);
-        const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
+        const bud=tilesetBudget();                    /* js/tileset-budget.js: the device decides, not a phone/desktop switch */
         Cesium.Cesium3DTileset.fromUrl(spec.url,{
-          maximumScreenSpaceError:spec.maximumScreenSpaceError!=null?spec.maximumScreenSpaceError:(mob?24:16),
-          cacheBytes:spec.cacheBytes!=null?spec.cacheBytes:(mob?128:384)*1048576,
-          maximumCacheOverflowBytes:(mob?64:192)*1048576,
+          maximumScreenSpaceError:spec.maximumScreenSpaceError!=null?spec.maximumScreenSpaceError:bud.sse,
+          cacheBytes:spec.cacheBytes!=null?spec.cacheBytes:bud.cacheMiB*1048576,
+          maximumCacheOverflowBytes:bud.overflowMiB*1048576,
           /* a tileset that is not looked at must not keep fetching */
           skipLevelOfDetail:true, dynamicScreenSpaceError:true
         }).then(ts=>{
@@ -2646,11 +2647,20 @@ window.IntMapCesiumEngine=(function(){
        The budget is the per-dataset figure the engine already chose (384 MB desktop / 128 MB phone) applied to the
        SUM. EXPIRES with a measurement that shows a different ceiling. */
     _governTilesets(){
-      const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent), budget=(mob?128:384)*1048576;
+      const bud=tilesetBudget(), budget=bud.totalMiB*1048576;
       let total=0, n=0; for(const r of this._tilesets.values()) if(r.ts){ total+=r.ts.totalMemoryUsageInBytes||0; n++; }
-      /* the per-dataset cache is what EVICTS tiles that are no longer selected: shared out, so N datasets keep N x less. */
-      if(n){ const share=Math.max(16*1048576,Math.floor(budget/n)); for(const r of this._tilesets.values()) if(r.ts){ r.ts.cacheBytes=share; r.ts.maximumCacheOverflowBytes=share; } }
-      if(total>budget) for(const r of this._tilesets.values()){ if(r.ts&&r.baseSse) r.ts.maximumScreenSpaceError=Math.min(r.baseSse*4,r.ts.maximumScreenSpaceError*1.25); }
+      /* the per-dataset cache is what EVICTS tiles that are no longer selected. The budget is shared out by PROXIMITY, not
+         equally: with hundreds of PLATEAU units around the camera, the ones under the eye should keep their tiles and the
+         far ones should hold little (an equal split gave a ward 9 km away as much as the street in front of the camera).
+         weight = 1 / (distance from the camera to the dataset's bounding sphere, floored at 500 m + 2 km). The floor of
+         16 MB per dataset is the floor the engine already used (kept, not re-measured); EXPIRES with a measurement of another. */
+      let cam=null; try{ cam=this._camera.positionWC; }catch(_){}
+      const w=new Map(); let sw=0;
+      for(const [id,r] of this._tilesets) if(r.ts){ let d=2000; try{ const bs=r.ts.boundingSphere; if(cam&&bs) d=2000+Math.max(500,Cesium.Cartesian3.distance(cam,bs.center)-bs.radius); }catch(_){} const x=1/d; w.set(id,x); sw+=x; }
+      if(n){ for(const [id,r] of this._tilesets) if(r.ts){ const share=Math.max(16*1048576,Math.floor(budget*(w.get(id)/sw))); r.ts.cacheBytes=share; r.ts.maximumCacheOverflowBytes=share; } }
+      const median=(()=>{ const v=[...w.values()].sort((p,q)=>p-q); return v.length?v[v.length>>1]:0; })();
+      /* over budget: every dataset goes coarser, the FAR half faster (1.5x per step against 1.25x) — coarser tiles are smaller. */
+      if(total>budget) for(const [id,r] of this._tilesets){ if(r.ts&&r.baseSse){ const step=w.get(id)<median?1.5:1.25; r.ts.maximumScreenSpaceError=Math.min(Math.max(r.baseSse*4,bud.maxSse),r.ts.maximumScreenSpaceError*step); } }
       else if(total<budget*0.6) for(const r of this._tilesets.values()){ if(r.ts&&r.baseSse&&r.ts.maximumScreenSpaceError>r.baseSse) r.ts.maximumScreenSpaceError=Math.max(r.baseSse,r.ts.maximumScreenSpaceError/1.25); }
     }
     removeTileset(id){

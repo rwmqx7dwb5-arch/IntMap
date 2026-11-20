@@ -21,7 +21,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
-import { plateauSpecs, plateauTilesetId, PLATEAU_CITY_CODES } from './plateau-cities.js';   /* the 3D Tiles city models the globe streams (capability `tiles3d`) */
+import { plateauSpec, plateauTilesetId, loadPlateauRegistry, plateauUnitsNear } from './plateau-cities.js';   /* the 3D Tiles city models the globe streams (capability `tiles3d`) */
 
 export function betaOverlays(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
@@ -181,13 +181,30 @@ export function betaOverlays(HOST){
        Real roofs and walls, not footprint prisms. The ENGINE owns the hierarchy, level of detail and
        memory (js/cesium-engine.js addTileset); this only says which datasets exist and when they are
        wanted. Off removes them, so a switched-off layer holds no tile memory and fetches nothing. */
-    const plateauCan=()=>{ try{ return !!(GE().can&&GE().can('tiles3d')&&GE().layers.addTileset); }catch(_){ return false; } };
+    /* the ways to draw a city in 3D, best first: real PLATEAU meshes where the engine has 3D Tiles, else the footprint
+       extrusion layer (bldg3d) — which says nothing about roofs, so the toast names it rather than substituting silently */
+    const PLATEAU_PLAN=[{method:'tiles3d',needs:['tiles3d']},{method:'extrusion',needs:['extrusion3d']}];
+    const plateauCan=()=>{ try{ return GE().plan(PLATEAU_PLAN).method==='tiles3d'&&!!GE().layers.addTileset; }catch(_){ return false; } };
+    /* Which cities are open follows the camera: the registry (data/plateau-cities.json, derived from the PLATEAU catalogue)
+       lists hundreds of city/ward datasets, and only those near the view are streamed (js/plateau-cities.js plateauUnitsNear).
+       Nearest first, so the ground you are looking at arrives before the rest. */
+    let plateauOpen=new Set(), plateauTimer=0, plateauSeq=0;
+    async function plateauSync(){
+      if(!state.plateau||!plateauCan()) return;
+      const seq=++plateauSeq;
+      let units; try{ units=await loadPlateauRegistry(); }catch(_){ return; }
+      if(seq!==plateauSeq||!state.plateau) return;
+      const L2=GE().layers, c=GE().camera.get(); if(!c||!c.center) return;
+      const want=plateauUnitsNear(units,{lng:c.center.lng,lat:c.center.lat,zoom:c.zoom},plateauOpen), codes=new Set(want.map(u=>u.code));
+      for(const code of [...plateauOpen]) if(!codes.has(code)){ L2.removeTileset(plateauTilesetId(code)); plateauOpen.delete(code); }
+      for(const u of want){ if(plateauOpen.has(u.code)) continue; const sp=plateauSpec(u); if(L2.addTileset(sp.id,sp.spec)) plateauOpen.add(u.code); }
+    }
+    const plateauSoon=()=>{ clearTimeout(plateauTimer); plateauTimer=setTimeout(plateauSync,400); };
+    let plateauHooked=false;
     function plateauToggle(on){ state.plateau=on;
-      if(!plateauCan()){ if(on) imToast(IntMapLang.t(HOST.lang,'PLATEAU 3D city models need the 3D globe engine (Settings ▸ Map engine ▸ Cesium).','PLATEAU の3D都市モデルには3D地球儀エンジン（設定 ▸ 地図エンジン ▸ Cesium）が必要です。')); return; }
-      const L2=GE().layers;
-      for(const code of PLATEAU_CITY_CODES){ const id=plateauTilesetId(code);
-        if(on){ if(!L2.hasTileset(id)){ const sp=plateauSpecs().find(x=>x.id===id); L2.addTileset(id,sp.spec); } else L2.setTilesetVisible(id,true); }
-        else L2.removeTileset(id); }
+      if(!plateauCan()){ if(on) imToast(IntMapLang.t(HOST.lang,'PLATEAU 3D city models need the 3D globe engine (Settings ▸ Map engine ▸ Cesium). The "3D buildings (cities)" layer works on this engine.','PLATEAU の3D都市モデルには3D地球儀エンジン（設定 ▸ 地図エンジン ▸ Cesium）が必要です。このエンジンでは「3D建物（都市）」レイヤーが使えます。')); return; }
+      if(on){ if(!plateauHooked){ plateauHooked=true; try{ GE().events.on('moveend',plateauSoon); }catch(_){} } plateauSync(); }
+      else{ plateauSeq++; clearTimeout(plateauTimer); const L2=GE().layers; for(const code of plateauOpen) L2.removeTileset(plateauTilesetId(code)); plateauOpen=new Set(); }
     }
 
     /* ---------- Historical borders (aourednik/historical-basemaps; raw.githubusercontent = CORS*) ---------- */

@@ -483,16 +483,18 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 ### 7.3k 3D Tiles（`tiles3d`）と PLATEAU 3D 都市モデル — `js/cesium-engine.js` / `js/plateau-cities.js`
 
 - **エンジンの能力として持つ。** `capabilities.tiles3d` は Cesium だけが true（MapLibre は false で、`layers.addTileset` 系は「できない」と答える）。階層・LOD・メモリは Cesium の `Cesium3DTileset` が管理するので、スタイルレイヤー（ベクタタイル→Entity）には流さない。面は `layers.addTileset(id,{url,maximumScreenSpaceError?,heightOffset?,cacheBytes?})` / `removeTileset` / `setTilesetVisible` / `hasTileset` / `tilesetInfo`。同じ id は置き換え（二重にしない）。
-- **品質とメモリの既定。** `maximumScreenSpaceError` は PC 16・携帯 24、タイルのメモリ上限は PC 384 MiB・携帯 128 MiB（超過許容は 192／64 MiB）。`heightOffset` は既定 0——PLATEAU は楕円体高で、ジオイド補正を推測で足さない。
-- **レイヤー `beta-dl-plateau3d`**（東京の3D都市モデル）。東京23区（JIS 13101–13123）の `<code>-bldg-lod2-texture-latest` を PLATEAU データカタログ（api.plateauview.mlit.go.jp）から読む。オフにすると全タイルセットを破棄し、通信もメモリも残さない。MapLibre エンジンでは行ごと非表示。出典と利用条件は PLATEAU サイトポリシー（CC BY 4.0 互換）。
+- **品質とメモリの既定。** 数の正本は `js/tileset-budget.js` の `TIERS`。端末の層（`deviceTier`）は報告されたメモリ・コア数・省データ・携帯から決まる: `high`（SSE 16・384 MiB・超過許容 192）／`mid`（16・256・128）／`mobile`（24・128・64）／`low`（32・96・32）。`high` と `mobile` は従来の PC／携帯の値で、`mid`・`low` は比例で置いた値であり、その端末での実測は未了。複数データセットの合計は `_governTilesets` が `totalMiB` で抑え、超えたら SSE を段階的に粗くする（上限は基準の 4 倍と `maxSse` の大きい方）。`heightOffset` は既定 0（エンジンは補正を発明しない）。複数のタイルセットを同時に開くとき、メモリ予算の合計（PC 384 MiB・携帯 128 MiB）はカメラへの近さで配分し（近いほど多く）、超過時は遠い側ほど速く screenSpaceError を上げる（最大 4 倍）。
+- **レイヤー `beta-dl-plateau3d`**（日本の3D都市モデル）。読む対象は手書きの一覧ではなく `data/plateau-cities.json`（`scripts/build-plateau-cities.mjs` が PLATEAU データカタログの `latest_datasets` から導出。建物 3D Tiles を持つ市区ごとに LOD2 テクスチャ付き > LOD2 > LOD1 の順で 1 つ選び、tileset の root region から範囲、国土地理院のジオイド計算（JGEOID2011）から都市別のジオイド高を持つ）。実行時は zoom 9 以上で、カメラ近傍（画面幅ぶんの地面・12〜60 km）の市区だけを近い順に最大 32 件開き（`plateauUnitsNear`）、各都市に `heightOffset = -ジオイド高`（東京 ≈ 36.8 m、他は都市ごと）を渡す。オフにすると全タイルセットを破棄し、通信もメモリも残さない。MapLibre エンジンでは行ごと非表示。出典と利用条件は PLATEAU サイトポリシー（CC BY 4.0 互換）。
 - **計測。** Cesium アダプタも `render.instrumentFrames`（`scene.render` を 1 回だけ包む。GPU ではなく CPU の提出時間）と `render.sceneStats`（地球儀タイル数と、3D Tiles の件数・三角形数・バイト数を `extra` に）を実装し、`?perf=1` が Cesium でも縮退しない。
 
 ### 7.3l Cesium のスタイル解釈器と MapLibre の差 — `js/cesium-style.js`
 
 - **Cesium は MapLibre のスタイル式を自前で評価する**（`window.IntMapStyle`。純粋で Node から検証できる）。式の評価に渡す文脈は `{properties, geometryType, geometry, id, zoom, state}`——地物の幾何を渡すのは `js/cesium-layers.js` の `ctxFor`。
-- **実装していない演算子は `UNSUPPORTED` に名指す。** いま: `format`・`image`・`number-format`・`collator`・`resolved-locale`・`within`・`pitch`・`distance-from-center`。これは「アプリはこれを書かない」という主張で、`tests/cesium-style-parity-checks.test.mjs` が `js/` 全体を掃いて、書かれていれば落とす（書かれたら実装して一覧から外す）。
+- **実装していない演算子は `UNSUPPORTED` に名指す。** いま: `format`・`image`・`pitch`・`distance-from-center`（`format`/`image` は中身に縮退して描く。`pitch`／`distance-from-center` はカメラ値を式の文脈に渡していない）。`collator`・`resolved-locale`・`number-format`・`within` は実装済み（Intl／点・線が多角形の内側か。比較演算子は第 3 引数に collator を取る）。これは「アプリはこれを書かない」という主張で、`tests/cesium-style-parity-checks.test.mjs` が `js/` 全体を掃いて、書かれていれば落とす（書かれたら実装して一覧から外す）。
 - **`distance` は実装済み**（メートル。点は大圏、線・面は局所平面への射影、面の内側は 0）。理由: `js/hist-cities.js` が各時代の都市名の枝をすべてこれで守っており、無いと Cesium の地球では現代の名前が年に関係なく残った。引数が Point／MultiPoint 以外なら `null`（その比較は偽）で、`gaps()` に載る。
 - `format` は `concat`＋改行で代用しているので到達しない。`image` はアイコンを `icon-image` で名指す。
+
+- **描画方法の選択。** `IntMapGeoEngine.plan([{method,needs:[能力…]},…])`（`js/render-plan.js`）が、良い順の候補から現在のエンジンが実行できる最初のものを返す。できなければ `method:null` と不足能力を返す。PLATEAU は `tiles3d`（Cesium）→ `extrusion`（足跡押し出し＝「3D建物（都市）」）の順で、MapLibre では行を隠し、トーストが代わりのレイヤーを名指す。
 
 ### 7.4 Chronos（統一時間）と「年」
 
