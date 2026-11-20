@@ -33,3 +33,10 @@ newsjp: Atlasの調査ジョブが、タブを閉じてもサーバ側で走り�
 ## 3. 検証
 
 （本番での検証結果は下に追記する。）
+
+## 4. 起動予算(check:perf)の天井を上げた理由
+
+PR の CI が `async.raw` を 14209.4 kB と測り、天井 14136.4 kB(幅 70.7 kB)を超えた(`node scripts/perf-budget.mjs --update` で超えた行だけ上げた)。
+- この PR が足した分: `js/atlas-job-core.js`(契約の核・約 14 kB の生ソース。`atlas-delegate` から読まれる非同期側)。
+- 残りは、取り込んだ main の変更による(測定に出た `atlas-orchestrate` 82.6 kB・`gis-packed` 7.9 kB の新しい非同期チャンクなど)。要因別には測っていない。
+- 失効条件: main の CI(`perf-ceiling.yml`)が測定に合わせて天井を下げ直す。
