@@ -735,6 +735,12 @@
       }
     },
     {
+      "host": "docs.overturemaps.org",
+      "what": "Overture Maps terms and attribution page",
+      "whatJp": "Overture Maps の利用条件・帰属表示のページ",
+      "link": "the licence page of an Overture dataset (the licenceUrl of its provenance record, js/gis-overture.js), shown as text and a hyperlink on the sources page and in the dataset's credit; never fetched"
+    },
+    {
       "host": "doi.org",
       "what": "dataset DOI citations (Harvard Dataverse, DataverseNL, heiDATA)",
       "link": "the persistent identifier of a dataset IntMap draws (RISTAT 1897, Transcultural Empire, Nejjar, HGIS de las Indias), shown as text and a hyperlink (<a href>) on the sources page and in the map attribution (js/reference-data.js, the cite/u of that publisher's DATA_SOURCES row); never fetched"
@@ -1457,6 +1463,22 @@
       }
     },
     {
+      "host": "overturemaps-us-west-2.s3.us-west-2.amazonaws.com",
+      "what": "Overture Maps GeoParquet files (AWS Open Data) — byte ranges of the files a window meets, only when Atlas is asked to read Overture data",
+      "whatJp": "Overture Maps の GeoParquet ファイル（AWS Open Data）— 窓に掛かるファイルのバイト範囲。Atlas に Overture のデータの読み取りを頼んだときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to read Overture Maps data: byte-range requests for the parts of the files that meet the window you named — which files and which ranges follow from the place, so the host can infer the area, and sees the connection's address (no account, name or identifier of yours is sent)"
+      },
+      "disclosure": {
+        "en": "overturemaps-us-west-2",
+        "jp": "overturemaps-us-west-2"
+      },
+      "probe": {
+        "url": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/"
+      }
+    },
+    {
       "host": "photon.komoot.io",
       "what": "Photon (Komoot) geocoding",
       "whatJp": "Photon（Komoot）のジオコーディング",
@@ -1702,6 +1724,22 @@
       },
       "probe": {
         "url": "https://ssd-api.jpl.nasa.gov/fireball.api?req-loc=true&limit=1"
+      }
+    },
+    {
+      "host": "stac.overturemaps.org",
+      "what": "Overture Maps STAC catalogue — which release is the latest and which files of it meet a window, only when Atlas is asked to read Overture data",
+      "whatJp": "Overture Maps の STAC カタログ — 最新のリリースと、窓に掛かるファイルの一覧。Atlas に Overture のデータの読み取りを頼んだときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to read Overture Maps data: the request itself (a catalogue page is fetched; the bounding box is NOT sent — which files meet the window is decided in your browser from the extents the catalogue states)"
+      },
+      "disclosure": {
+        "en": "Overture Maps Foundation",
+        "jp": "Overture Maps Foundation"
+      },
+      "probe": {
+        "url": "https://stac.overturemaps.org/catalog.json"
       }
     },
     {

@@ -357,6 +357,15 @@ gis-remote.js                     **アプリの外のデータを探す** `wind
                                   `coverage`）／供給元が覆うと述べている（`evidence`）／世界の全部（`worldCompleteness` は常に
                                   `unproven`）。応答しなかったカタログは「無かった」ではない。ライセンスは述べられたまま、無ければ null。
                                   https 以外・認証情報つき・私的/ループバックの宛先は `url-not-public`
+gis-overture.js                   **Overture Maps を窓で読む** `window.IntMapGisOverture` — 地図全体（places ~9 千万・buildings ~25 億・
+                                  addresses・divisions・transportation・base）の GeoParquet を、**言われた窓のぶんだけ**読む。①STAC が述べる
+                                  ファイルの範囲 ②Parquet フッターの row group 統計（`bbox` の最小・最大）で絞り、③`bbox` と条件の列だけ
+                                  を走査して行番号を得、④当たった row group の残りの列を読む（hyparquet の動的 import＝別チャンク。DuckDB-WASM
+                                  は ~30 MB の WASM と `wasm-unsafe-eval` が要るので採らない）。`release()`／`themes()`／`plan()`／`query()`／
+                                  `acquire()`（結果を `window.IntMapData` のデータセットに＝次の手の入力）。⚠ リリースは**読む**（バケットは 60 日で
+                                  消す）・ホストは Privacy §4 が名指すものだけ（`host-not-disclosed`）・ライセンスは**行が述べる値の集合**で、
+                                  述べていなければ欄ごと無い・GERS ID は振り直されるので `worldNodes()` は元レコード（`sources[].record_id`）と
+                                  リリースを履歴に残す（`world_graph_id_history`）。世界の全部であるとは**述べない**（`worldCompleteness:'unproven'`）
 gis-export.js                     **データを外へ出す口** `window.IntMapGisExport`（#R756）—
                                   ベクタ → GeoJSON / CSV、ラスター → GeoTIFF（無圧縮・float32 と
                                   整数・多バンド）。⚠ **「書き出せた」は「読み直せた」ではない**
@@ -1037,7 +1046,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  251 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  252 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1167,7 +1176,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 251 を検索・到達可能 248）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 252 を検索・到達可能 249）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1187,7 +1196,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 251能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 252能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -2095,7 +2104,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（66本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（67本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
