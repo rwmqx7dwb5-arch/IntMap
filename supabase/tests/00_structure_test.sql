@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(132);  -- (mcp-server) +4: mcp_api_keys and mcp_server_state join both lists    -- (world-graph) +6: world_graph_nodes, world_graph_edges and world_graph_claims join both lists   -- (delegation-journal) +2: ai_delegation_journal joins both lists   -- (atlas-delegation) +2: ai_turn_spend joins both lists   -- (community-maps) +8: collection_copies, community_map_reports, community_map_holds and community_map_subjects join both lists   -- (wave4-education) +4: class_sets and class_set_answers join both lists   -- (watch-account-product) +2: quest_daily_results joins both lists   -- (monitors-retire) −16: the five area-monitor tables leave both lists (−10) and their six key/function assertions go (−6)   -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
+select plan(134);  -- (mcp-server) +4: mcp_api_keys and mcp_server_state join both lists    -- (atlas-knowledge) +2: atlas_knowledge_claims joins both lists   -- (world-graph) +6: world_graph_nodes, world_graph_edges and world_graph_claims join both lists   -- (delegation-journal) +2: ai_delegation_journal joins both lists   -- (atlas-delegation) +2: ai_turn_spend joins both lists   -- (community-maps) +8: collection_copies, community_map_reports, community_map_holds and community_map_subjects join both lists   -- (wave4-education) +4: class_sets and class_set_answers join both lists   -- (watch-account-product) +2: quest_daily_results joins both lists   -- (monitors-retire) −16: the five area-monitor tables leave both lists (−10) and their six key/function assertions go (−6)   -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
                    -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
                    -- (atlas-semantic-search) +2: atlas_capability_vectors joins both lists   -- (client-error-log) +2: client_errors joins both lists
                    -- (#R801) +2 tables in both lists, +2 has_function   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
@@ -78,6 +78,9 @@ from unnest(array[
   -- (atlas-os) the reader's Atlas investigation notebook on their account, written only when they turn sync
   -- on. Owner-only through RLS (supabase/tests/22_…).
   'atlas_notebook_entries',
+  -- (atlas-knowledge) the claims Atlas kept from the reader's investigations, on their account, written only when they
+  -- choose «my account» in Settings. Owner-only through RLS (supabase/tests/53_…).
+  'atlas_knowledge_claims',
   -- (news-intelligence) which company an event names — written by news-ingest's entities stage, read by everybody.
   'news_event_entities',
   -- (account-data-center) one sentence per account-owned table — what it is, why, how long, who wrote it.
@@ -134,6 +137,7 @@ from unnest(array[
   'usage_counts',                                           -- (anonymous-usage-counts) see the note above
   'org_inquiries','supporters',                              -- (sales-channels) see the note above
   'atlas_notebook_entries',                                  -- (atlas-os) see the note above
+  'atlas_knowledge_claims',                                  -- (atlas-knowledge) see the note above
   'news_event_entities',                                     -- (news-intelligence) see the note above
   'account_data_catalog',                                   -- (account-data-center) see the note above
   'saved_places',                                           -- (my-places) see the note above
