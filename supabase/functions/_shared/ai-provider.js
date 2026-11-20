@@ -130,6 +130,35 @@ export function costMicros(model, usage, provider) {
 export const PROVIDER_TIMEOUT_MS = 55000;
 export const PROVIDER_MAX_BYTES = 16 * 1024 * 1024;
 
+/* ══ THE ONLY CLOCK A READER'S REQUEST ANSWERS TO IS THE PLATFORM'S, NOT A NUMBER OF OURS ═══════════
+   MEASURED 2026-11-20 on production: a screenshot attached to «same angle, zoom and place as this»
+   made the vision read run 57 s, and the fixed PROVIDER_TIMEOUT_MS above cut it — 503 provider_unavailable
+   {"The AI provider timed out.", meta.timeout:true, task:"vision_read"}. The model was working; nothing
+   was wrong with it. A cut at a number we chose, with no answer behind it, is a refusal the reader
+   cannot act on, and an agent that thinks for minutes would hit it on every turn.
+   What a request may genuinely run for is the platform's (https://supabase.com/docs/guides/functions/limits,
+   read 2026-11-20):
+     · a response must START within 150 s or the gateway answers 504 — a streamed answer (the page
+       asked to watch: SSE, with a keep-alive comment every 15 s) has started, so it is not bound by this;
+     · the worker lives for 400 s on a paid plan (150 s on the free one). This project is on the Pro plan
+       (docs/SECURITY-ARCHITECTURE.md).
+   Expires if the plan changes or Supabase moves either number — they are one place, here.
+   The margin is what the request still has to do after the provider answers (settle the ledger, write
+   the reply); without it the isolate would be killed mid-settlement, which is an opaque 546 and a
+   charge that is not returned. The budget is shared by every provider request of ONE reader request
+   (a ladder rung, a fallback), so a second attempt gets what is left, never a fresh window. */
+export const EDGE_RESPONSE_START_MS = 150000;
+export const EDGE_WALL_CLOCK_MS = 400000;
+export const EDGE_SETTLE_MARGIN_MS = 30000;
+/* providerBudgetMs(streaming, startedAt, now) → the ms this provider request may still take.
+   `startedAt` is when the reader's request began (absent → the whole window); never below 1 so an
+   exhausted budget fails as a timeout at once instead of waiting on a number that is already spent. */
+export function providerBudgetMs(streaming, startedAt, now) {
+  const window = streaming ? EDGE_WALL_CLOCK_MS : EDGE_RESPONSE_START_MS;
+  const used = (Number(startedAt) > 0 && Number(now) > 0) ? Math.max(0, Number(now) - Number(startedAt)) : 0;
+  return Math.max(1, window - EDGE_SETTLE_MARGIN_MS - used);
+}
+
 /* The hosts a paid key is sent to. The door refuses any other host, so it cannot be used as a
    general fetch; the regression test refuses a bare fetch to any of these outside the door. A new
    provider is added HERE, and the test then holds every function to the door for it too. */
