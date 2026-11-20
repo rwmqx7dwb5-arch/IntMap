@@ -18,3 +18,6 @@ newsjp: Atlas が、W杯のイングランドとスコットランドのよう�
 
 引き継いだもの: 国のみの要求は従来どおり（既存検査は緑）。
 未測: 本番での GB-ENG/GB-SCT の実描画（geoBoundaries の取得に依存。`shapeISO` に GB-ENG が入っているかは本番で確認する）。
+
+## 天井を上げた理由(perf)
+`atlas-console` と `atlas-cap-runs`、async.gzip、dist.assets の天井を測定値へ上げた（atlas-console 1066.9→1073.1 kB）。highlight が groups の形を名乗り（#1354）、第1級区分の輪郭を解く `_hlUnitGeo` と units の読み取りを足した分で、他の PR が同時に載せた分も含む。i18n は L(…) を en+jp の 2 引数にして床を動かしていない。

@@ -336,7 +336,7 @@ export default [
                 const key='codes:'+hitIds.slice().sort().join(','); if(gSeen.has(key)) continue; gSeen.add(key);
                 hitIds.forEach(hc=>{ if(_resolvedIso.indexOf(hc)<0) _resolvedIso.push(hc); });
                 const label=String(grp.label||'').trim();
-                G.push({name:label||('set'+(gi+1)),displayName:label||_FBL,kind:'set',geo:mergedGeo,codes:hitIds.slice(),nCountries:hitIds.length,members:grp.members||[],basisShort:usedUnit?L('borders and first-level units','国境と第1級行政区画','Grenzen und Verwaltungseinheiten','границы и регионы','fronteras y unidades'):L('national borders','国境','Staatsgrenzen','госграницы','fronteras')}); }
+                G.push({name:label||('set'+(gi+1)),displayName:label||_FBL,kind:'set',geo:mergedGeo,codes:hitIds.slice(),nCountries:hitIds.length,members:grp.members||[],basisShort:usedUnit?L('borders and first-level units','国境と第1級行政区画'):L('national borders','国境','Staatsgrenzen','госграницы','fronteras')}); }
               /* (#R158) the MECHANICAL execution result — the structured contract the repair loop feeds back to Terra so it,
                  not IntMap, decides how to recover (correct identifiers / re-search / ask / adopt partial). IntMap only OBSERVES. */
               const _unrSum=arr=>arr.slice(0,14).map(u=>(u.name||u.iso3||'?')+(u.availableIdentifiers&&u.availableIdentifiers.length?(' → '+u.availableIdentifiers.join('/')):'')).join(', ');
