@@ -324,7 +324,7 @@ test('⑦ a bundle with no cadence, a cadence with no basis, an unparseable cade
 });
 
 test('⑦b the repository itself: every bundle has a cadence, and check:datagov says so', () => {
-  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/data-governance.mjs'), '--rule=freshness-stated'], { cwd: ROOT, encoding: 'utf8', timeout: 120000 });
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/data-governance.mjs'), '--rule=freshness-stated'], { cwd: ROOT, encoding: 'utf8', timeout: 300000 }); /* measured 2026-11-20: the gate reads every bundle and builder before any rule runs — 108 s on a developer machine, over the old 120 s on a CI runner (status null). Expires when the model build is cached or made lazy. */
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /every one of \d+ subject\(s\) has a declared cadence/);
   assert.match(r.stdout, /every declared cadence carries its basis/);
@@ -347,7 +347,7 @@ test('⑧ the refresh roster is discovered from declarations, and «due» is the
   assert.equal(due(list[0], { now, dateOf: () => ({ at: null }) })[0].verdict, 'unknown', 'an undatable bundle is rebuilt, not assumed fresh');
 
   /* the real roster: every member is refresh-safe by check:datagov, and none is static */
-  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/data-governance.mjs'), '--rule=refresh-safe'], { cwd: ROOT, encoding: 'utf8', timeout: 120000 });
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/data-governance.mjs'), '--rule=refresh-safe'], { cwd: ROOT, encoding: 'utf8', timeout: 300000 });
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.ok((r.stdout.match(/is on the unattended refresh roster/g) || []).length >= 1, r.stdout);
 });
