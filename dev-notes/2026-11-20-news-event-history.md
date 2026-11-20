@@ -29,3 +29,7 @@ Viet Nam News は UTF-16 のフィード（parseFeed が UTF-8 前提）。Intel
 ## 残っていること（隠さずに）
 - 2010 年への遡及データは無い（記録は本番に流れた日から）。遡及するなら GDELT 等の別の出典が要り、別の判断。
 - 非英語の記事は単独の出来事になりやすく、履歴の採用基準（独立 2 家族）を満たさない限り残らない。
+
+## 起動費用の増加（perf-budget）
+
+能力 `news.history` の定義（schema・説明・句・run）が `atlas-cap-runs` チャンクを約 8.6 kB、`dist.assets` を約 114 kB 押し上げた。新しい能力 1 件の分で、削れる重複は無い。天井を `node scripts/perf-budget.mjs --update` で上げた。読み取り RPC は `{ get: true }` で送る（data-effect の台帳は 0 のまま）。

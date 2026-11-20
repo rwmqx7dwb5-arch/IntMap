@@ -304,7 +304,7 @@ export default [
       let res;
       try {
         res = await HOST.DB.rpc('news_history_search', { p_q: a.q || null, p_from: day(a.from), p_to: day(a.to), p_bbox: Array.isArray(a.bbox) && a.bbox.length === 4 ? a.bbox : null,
-          p_kinds: Array.isArray(a.kinds) && a.kinds.length ? a.kinds : null, p_world_ref: a.worldRef || null, p_company: a.company || null, p_thread: a.thread || null, p_limit: a.limit || 100 });
+          p_kinds: Array.isArray(a.kinds) && a.kinds.length ? a.kinds : null, p_world_ref: a.worldRef || null, p_company: a.company || null, p_thread: a.thread || null, p_limit: a.limit || 100 }, { get: true });
       } catch (_) { res = { error: true }; }
       if (!res || res.error || !res.data) return R(false, warn(L('The event record could not be read — this does not mean nothing happened', '出来事の記録を読めませんでした（何も起きていないという意味ではありません）')), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } });
       const d = res.data, rows = Array.isArray(d.rows) ? d.rows : [], cf = d.coverage_from ? String(d.coverage_from).slice(0, 10) : '';
