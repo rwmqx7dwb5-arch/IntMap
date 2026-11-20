@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 14475671,
-    "gzip": 4859500,
+    "gzip": 4886909,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -79,7 +79,7 @@
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
       "gis-cog": 4676,
-      "gis-core": 637625,
+      "gis-core": 655533,
       "gis-export": 30142,
       "gis-geopackage": 26667,
       "gis-geotiff": 24029,
