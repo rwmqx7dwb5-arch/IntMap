@@ -172,3 +172,56 @@ test('impact: an unknown port is refused, a port by wikidata id resolves, an amb
   const down = makeLogisticsImpact({ load: async () => { throw new Error('offline'); } });
   assert.deepEqual(await down.impact('Hamburg'), { ok: false, code: 'unavailable' });
 });
+
+/* ── power plants at ports (scripts/logistics/power.mjs, data/power-plants.json) ───────────────────────────────────── */
+import { parseCsv, link, hav as havKm, MODEL as POWER_MODEL } from '../scripts/logistics/power.mjs';
+const PW = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'power-plants.json'), 'utf8'));
+
+test('power: the CSV reader keeps quoted commas and quotes, and link() lists only seaborne-fuel plants inside the reach, nearest first', () => {
+  const rows = parseCsv('gppd_idnr,name,country,primary_fuel,capacity_mw,latitude,longitude,commissioning_year,owner\r\nA,"Alpha, Unit ""1""",NLD,Gas,100,52.0,4.0,1999,"X, Y"\r\nB,Beta,NLD,Solar,50,52.0,4.0,,\r\nC,Far,NLD,Coal,80,40.0,4.0,,\r\n');
+  assert.equal(rows.length, 3); assert.equal(rows[0].name, 'Alpha, Unit "1"'); assert.equal(rows[0].owner, 'X, Y');
+  const ports = [{ ref: 'p1', lng: 4.05, lat: 52.0 }, { ref: 'p2', lng: 4.0, lat: 52.1 }, { ref: 'p3', lng: 9, lat: 52 }];
+  const r = link(rows, ports);
+  assert.equal(r.considered, 2, 'solar is not a seaborne-fuel load');
+  assert.equal(r.plants.length, 1, 'the coal plant 1,300 km from any port is not listed');
+  const pl = r.plants[0];
+  assert.equal(pl.yr, 1999); assert.equal(pl.mw, 100);
+  assert.deepEqual(pl.p.map(([i]) => r.portRefs[i]), ['p1', 'p2']);
+  assert.ok(pl.p[0][1] <= pl.p[1][1]); assert.ok(pl.p.every(([, d]) => d <= POWER_MODEL.portReachKm));
+});
+
+test('power: the shipped file agrees with a recomputation, names its model, and only ever lists ports that exist', () => {
+  const ref = new Map(D.ports.map((p) => [p.ref, p]));
+  assert.ok(PW.portRefs.every((r) => ref.has(r)), 'every referenced port is in the logistics port table');
+  assert.match(PW.model.kind, /not an observed fuel supply/);
+  assert.match(PW.licence, /CC BY 4\.0/); assert.equal(PW.attribution, true);
+  const fuels = new Set(PW.model.fuels);
+  let checked = 0;
+  PW.plants.forEach((pl, i) => {
+    assert.ok(fuels.has(pl.f), pl.id + ' fuel');
+    assert.ok(pl.p.length >= 1 && pl.p.length <= PW.model.keep);
+    for (let k = 1; k < pl.p.length; k++) assert.ok(pl.p[k][1] >= pl.p[k - 1][1], pl.id + ' ascending');
+    if (i % 7 === 0) { /* a spot recomputation from the two stated coordinates, not the builder's own loop */
+      pl.p.forEach(([ix, km]) => { const p = ref.get(PW.portRefs[ix]); assert.ok(Math.abs(havKm(pl.x, pl.y, p.lng, p.lat) - km) < 0.15, pl.id + ' distance'); assert.ok(km <= PW.model.portReachKm); });
+      checked++;
+    }
+  });
+  assert.ok(checked > 100);
+  assert.equal(PW.coverage.atAPort, PW.plants.length);
+});
+
+test('power: the answer for a port is the plants whose nearest port it is, and an unreadable file is «not read», never «none»', async () => {
+  const LP = makeLogisticsImpact({ load: async () => D, loadPower: async () => PW });
+  const idx = PW.plants.reduce((m, pl) => (m[pl.p[0][0]] = (m[pl.p[0][0]] || 0) + 1, m), {});
+  const busiest = +Object.keys(idx).sort((a, b) => idx[b] - idx[a])[0];
+  const ref = PW.portRefs[busiest];
+  const r = await LP.impact(ref);
+  assert.ok(r.ok && r.power.ok);
+  const mine = PW.plants.filter((pl) => PW.portRefs[pl.p[0][0]] === ref);
+  assert.equal(r.power.plants, mine.length);
+  assert.equal(r.power.mw, +mine.reduce((s, pl) => s + (pl.mw || 0), 0).toFixed(1));
+  assert.equal(r.power.noNextPort, mine.filter((pl) => pl.p.length < 2).length);
+  assert.ok(r.power.top.every((x) => x.kmFromPort <= PW.model.portReachKm));
+  const down = makeLogisticsImpact({ load: async () => D, loadPower: async () => { throw new Error('offline'); } });
+  assert.deepEqual((await down.impact(ref)).power, { ok: false, code: 'unavailable' });
+});

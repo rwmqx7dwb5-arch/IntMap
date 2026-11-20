@@ -31,6 +31,29 @@ export function makeLogisticsImpact(deps) {
     cache = await load();
     return cache;
   }
+  /* data/power-plants.json (scripts/logistics/power.mjs): fuel-burning plants standing at a port. ~170 kB, a second static read; a failed read is
+     reported as «not read», never as «no plants». */
+  let powerCache = null;
+  async function powerData() {
+    if (powerCache) return powerCache;
+    const load = deps.loadPower || (async () => {
+      const url = (typeof document !== 'undefined' && document.baseURI) ? new URL('data/power-plants.json', document.baseURI).toString() : 'data/power-plants.json';
+      return jsonWithin(url, READ_MS);
+    });
+    powerCache = await load();
+    return powerCache;
+  }
+  /** the plants whose NEAREST port is `ref`, the capacity by fuel, and where each would turn next (its own next port inside reach, or none) */
+  async function powerAt(ref) {
+    let P; try { P = await powerData(); } catch (_) { powerCache = null; return { ok: false, code: 'unavailable' }; }
+    const refs = P.portRefs, mine = [];
+    P.plants.forEach((pl) => { if (refs[pl.p[0][0]] === ref) mine.push(pl); });
+    const byFuel = {}; let mw = 0, unstated = 0;
+    mine.forEach((pl) => { const b = byFuel[pl.f] || (byFuel[pl.f] = { plants: 0, mw: 0 }); b.plants++; if (pl.mw != null) { b.mw += pl.mw; mw += pl.mw; } else unstated++; });
+    Object.keys(byFuel).forEach((k) => { byFuel[k].mw = +byFuel[k].mw.toFixed(1); });
+    const row = (pl) => ({ id: pl.id, name: pl.n, cc: pl.cc, fuel: pl.f, mw: pl.mw, commissioned: pl.yr, operator: pl.o, kmFromPort: pl.p[0][1], nextPort: pl.p[1] ? { ref: refs[pl.p[1][0]], km: pl.p[1][1] } : null });
+    return { ok: true, plants: mine.length, mw: +mw.toFixed(1), mwUnstated: unstated, byFuel, top: mine.slice().sort((a, b) => (b.mw || 0) - (a.mw || 0)).slice(0, 8).map(row), noNextPort: mine.filter((pl) => !pl.p[1]).length, model: P.model, coverage: P.coverage, asOf: P.asOf, source: { name: P.sources[0].name, licence: P.licence, url: P.url } };
+  }
   const norm = (s) => String(s == null ? '' : s).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\bport(?:s)? (?:of|de|du|di|of the)\b/g, '').replace(/[^\p{L}\p{N}]+/g, ' ').trim();
 
   /** the ports a query can mean: UN/LOCODE or Wikidata id exactly, else the name (exact, then contained), best first */
@@ -96,6 +119,7 @@ export function makeLogisticsImpact(deps) {
       topCities: cities.sort((a, b) => (b.e.p || 0) - (a.e.p || 0)).slice(0, top).map(line),
       factories: plants.slice(0, Math.max(top, 12)).map(line),
       factoriesTotal: plants.length,
+      power: await powerAt(p.ref),
       model: D.model, coverage: D.coverage, asOf: D.asOf, sources: D.inputs,
     };
   }
