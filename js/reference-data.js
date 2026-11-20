@@ -476,7 +476,7 @@ export const IntMapRefData = (function(){
     {n:'Google News',u:'https://news.google.com/'},
     {n:'OpenFreeMap / OpenMapTiles',u:'https://openfreemap.org/'},
     {n:'PLATEAU 3D city models (MLIT Japan)',u:'https://www.mlit.go.jp/plateau/',lic:'PLATEAU site policy (compatible with CC BY 4.0)',licUrl:'https://www.mlit.go.jp/plateau/site-policy/',credit:true},
-    /* industrial siting (data/siting/jp.json, scripts/build-siting-jp.mjs): each value keeps its own source and terms */
+    /* industrial siting (data/siting-jp.json, scripts/build-siting-jp.mjs): each value keeps its own source and terms */
     {n:'JEPX spot market area prices (Japan Electric Power Exchange)',u:'https://www.jepx.jp/electricpower/market-data/spot/',lic:'JEPX terms of use (source credit)',licUrl:'https://www.jepx.jp/',credit:true},
     {n:'National Land Numerical Information — Land Price Public Announcement (MLIT Japan)',u:'https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-L01-2026.html',lic:'PDL 1.0 (compatible with CC BY 4.0)',licUrl:'https://nlftp.mlit.go.jp/ksj/other/agreement.html',credit:true},
     {n:'Regional minimum wages (Ministry of Health, Labour and Welfare, Japan)',u:'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/',lic:'Government Standard Terms of Use (compatible with CC BY 4.0)',licUrl:'https://www.mhlw.go.jp/chosakuken/index.html',credit:true},

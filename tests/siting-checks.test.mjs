@@ -1,11 +1,11 @@
-/* data/siting/jp.json and js/siting.js — the bundle is internally consistent, ties to the company footprint, and the engine ranks the way it says. */
+/* data/siting-jp.json and js/siting.js — the bundle is internally consistent, ties to the company footprint, and the engine ranks the way it says. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { compare, resolveAreas, rankMetric, sectorMatches, dimensionsOf } from '../js/siting.js';
 import { prefecturesOf } from '../scripts/build-siting-jp.mjs';
 
-const data = JSON.parse(fs.readFileSync(new URL('../data/siting/jp.json', import.meta.url), 'utf8'));
+const data = JSON.parse(fs.readFileSync(new URL('../data/siting-jp.json', import.meta.url), 'utf8'));
 const fp = JSON.parse(fs.readFileSync(new URL('../data/companies/footprint.json', import.meta.url), 'utf8'));
 const median = (a) => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 

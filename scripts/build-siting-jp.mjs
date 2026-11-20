@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
- *  IntMap · SITING — Japan, by prefecture   (data/siting/jp.json)
+ *  IntMap · SITING — Japan, by prefecture   (data/siting-jp.json)
  * ----------------------------------------------------------------------------
  *  産業立地の比較に要る実データを、公開された出典から 1 本にまとめる。**推定も補間もしない**: 出典が述べた数を
  *  都道府県（ISO 3166-2:JP）ごとに置き、出典が述べなかったところは null のまま残す。
@@ -17,7 +17,7 @@
  *  ⚠ 空白（出典を見つけられず、載せていない次元）は `gaps` に理由つきで残す。工業用水・物流は現時点で載せていない。
  *    ダムデータ（国土数値情報 W01）は非商用に限られるため使っていない。METI 経済構造実態調査の Excel は WAF の確認を求めるので機械では取らない。
  *
- *  USAGE   node scripts/build-siting-jp.mjs              取得して data/siting/jp.json を書く
+ *  USAGE   node scripts/build-siting-jp.mjs              取得して data/siting-jp.json を書く
  *          node scripts/build-siting-jp.mjs --check      取得して、同梱の出典値と一致するか比べる（network）
  *  EXPIRES 出典の URL か列構成が変われば、各 parse が理由つきで落ちる（黙って別の値を書かない）。
  * ==========================================================================*/
@@ -27,28 +27,47 @@ import zlib from 'node:zlib';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import { SITING_JP } from './lib/upstream-cadence.mjs';
+import { agreeOrRefuse } from './lib/gov-stamp.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(ROOT, 'data', 'siting', 'jp.json');
+const OUT = path.join(ROOT, 'data', 'siting-jp.json');
 const UA = 'IntMapDataBuild/1.0 (+https://github.com/rwmqx7dwb5-arch/IntMap)';
 
 /* 出自は値である（check:datagov が読む）。上流が述べていることだけを書く。 */
 export const GOVERNANCE = {
-  'data/siting/jp.json': {
+  'data/siting-jp.json': {
     upstreams: [
       { publisher: 'Japan Electric Power Exchange (JEPX) — spot market results', url: 'https://www.jepx.jp/electricpower/market-data/spot/', licence: 'JEPX terms of use (data published for public reference; source credit required)', attribution: true,
-        paidBy: 'JEPX spot area prices', fields: 'half-hourly area prices (JPY/kWh) for the nine mainland price areas, one fiscal year' },
+        paidBy: 'JEPX spot market area prices (Japan Electric Power Exchange)', fields: 'half-hourly area prices (JPY/kWh) for the nine mainland price areas, one fiscal year' },
       { publisher: 'MLIT Japan — National Land Numerical Information, Land Price Public Announcement (L01)', url: 'https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-L01-2026.html', licence: 'Public Data License 1.0 (PDL1.0, compatible with CC BY 4.0)', attribution: true,
-        paidBy: 'National Land Numerical Information (MLIT Japan)', fields: 'standard-parcel price per square metre, zoning class, current use, coordinates' },
+        paidBy: 'National Land Numerical Information — Land Price Public Announcement (MLIT Japan)', fields: 'standard-parcel price per square metre, zoning class, current use, coordinates' },
       { publisher: 'Ministry of Health, Labour and Welfare Japan — regional minimum wages', url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/', licence: 'Government Standard Terms of Use (compatible with CC BY 4.0)', attribution: true,
+        paidBy: 'Regional minimum wages (Ministry of Health, Labour and Welfare, Japan)',
         fields: 'prefectural minimum wage (JPY/hour) and effective date, by fiscal year' },
       { publisher: 'Statistics Bureau of Japan / NSTAC — SSDSE-B (Standardized Statistical Data Set for Education)', url: 'https://www.nstac.go.jp/use/literacy/ssdse/', licence: 'Government Standard Terms of Use (compatible with CC BY 4.0)', attribution: true,
+        paidBy: 'SSDSE-B Standardized Statistical Data Set (Statistics Bureau of Japan / NSTAC)',
         fields: 'working-age population, active job openings and applicants, university counts, faculty and students, by prefecture' },
       { publisher: 'Digital Agency Japan — e-Gov Laws API', url: 'https://laws.e-gov.go.jp/', licence: 'Government Standard Terms of Use (statute text)', attribution: true,
+        paidBy: 'e-Gov Laws API — Factory Location Act (Digital Agency, Japan)',
         fields: 'article text of the Factory Location Act and its Cabinet Order' },
     ],
-    priority: { disjoint: ['electricity price (JEPX)', 'industrial land price (MLIT L01)', 'minimum wage (MHLW)', 'workforce and universities (SSDSE-B)', 'rules (e-Gov)', 'facility anchors (data/companies/footprint.json)'] },
-    ...SITING_JP, builtBy: 'scripts/build-siting-jp.mjs' },
+    priority: { disjoint: ['electricity price (JEPX)', 'industrial land price (MLIT L01)', 'minimum wage (MHLW)', 'workforce and universities (SSDSE-B)', 'rules (e-Gov)'] },
+    /* the file as a whole: every upstream is credited, and each states its own terms above */
+    publisher: 'JEPX · MLIT Japan · MHLW Japan · Statistics Bureau of Japan (NSTAC) · Digital Agency Japan',
+    url: 'https://www.jepx.jp/electricpower/market-data/spot/',
+    licence: 'Each value keeps its source licence: PDL 1.0, Government Standard Terms of Use, JEPX terms of use',
+    licenceUrl: 'https://www.digital.go.jp/resources/open_data/public_data_license_v1.0',
+    attribution: true,
+    paidBy: 'JEPX spot market area prices (Japan Electric Power Exchange)',
+    ...SITING_JP, builtBy: 'scripts/build-siting-jp.mjs',
+    /* ⚠ LITERALS THE GATE CAN READ WITHOUT RUNNING THIS FILE; build() refuses to write a bundle that disagrees (scripts/lib/gov-stamp.mjs).
+       asOf is the day the upstreams were read; each metric carries its own vintage in metrics[].vintage. */
+    retrievedAt: '2026-11-20',
+    generatedAt: '2026-11-20',
+    asOf: '2026-11-20',
+    /* measured on areas[]: key id (ISO 3166-2:JP); every one has a name */
+    quality: { rows: 47, missing: { id: 0, name: 0, nameLocal: 0 }, outOfRange: {}, duplicates: 0 },
+    schema: 'scripts/build-siting-jp.mjs (areas: id name nameLocal m{metric} ...; sites; anchors) — read by js/siting.js and js/atlas-cap-siting.js; tests/siting-checks.test.mjs' },
 };
 
 /* ── 取得 ───────────────────────────────────────────────────────────────── */
@@ -300,10 +319,10 @@ export async function build() {
     { dimension: 'logistics', reason: 'Not loaded yet for Japan (ports, airports and trunk roads exist as map layers but are not joined to the prefecture table).' },
     { dimension: 'power', reason: 'Okinawa is not a JEPX price area, so it has no price. Retail industrial tariffs (high-voltage contract rates) are not published as open data per prefecture.' },
   ];
+  const g = agreeOrRefuse(GOVERNANCE['data/siting-jp.json'], areas, { fields: { id: {}, name: {}, nameLocal: {} }, key: ['id'] }, new Date().toISOString().slice(0, 10));
   const data = {
-    schema: 1, country: 'JP', iso3: 'JPN', generatedAt: new Date().toISOString().slice(0, 10),
+    ...g, schema: 1, country: 'JP', iso3: 'JPN',
     src: 'JEPX spot area prices; MLIT National Land Numerical Information L01; MHLW minimum wages; Statistics Bureau SSDSE-B; e-Gov statutes; IntMap company footprint',
-    licence: 'Each value keeps its source licence (see sources): PDL1.0 or Government Standard Terms of Use, JEPX terms; attribution required.',
     metrics, sources, gaps, rules: rl,
     areas,
     sites: { cols: ['pref', 'city', 'lon', 'lat', 'jpy_m2', 'zone', 'use', 'name'], rows: ld.sites },

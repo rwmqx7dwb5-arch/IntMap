@@ -9,7 +9,7 @@ newsjp: Atlasが、工場の立地として日本の都道府県を、卸電力�
 
 ## 0. 作ったもの
 
-- `scripts/build-siting-jp.mjs` → `data/siting/jp.json`（47 県。指標 14・標準地 948・企業拠点 266）。`js/siting.js`（純粋なエンジン）と `siting.compare`（`js/atlas-cap-siting.js`）。仕様の正本 `docs/SITING.md`。
+- `scripts/build-siting-jp.mjs` → `data/siting-jp.json`（47 県。指標 14・標準地 948・企業拠点 266）。`js/siting.js`（純粋なエンジン）と `siting.compare`（`js/atlas-cap-siting.js`）。仕様の正本 `docs/SITING.md`。
 - 出典（実測 2026-11-20）: JEPX スポット FY2025（17,520 コマ）／国土数値情報 L01-26（25,565 標準地のうち工業系 948）／厚労省 最低賃金（令和 8 年度の改定は県ごとに発効日が違い、3 県は未発効 → `pending`）／SSDSE-B 2026 年版（2023 年データ）／e-Gov 工場立地法・施行令。
 - 企業拠点: footprint の日本 267 拠点のうち 266 が県に落ちた（1 件は輪郭の外で 0.1° 以内に県が無い）。`sector:"semi"` で半導体企業の拠点が出る（Micron・Panasonic・Bosch・TI・SK hynix ほか。TSMC の日本拠点は企業アトラスにまだ無い）。
 
@@ -26,7 +26,7 @@ newsjp: Atlasが、工場の立地として日本の都道府県を、卸電力�
 
 ## 3. 次
 
-工業用水（e-Stat 経由の工業統計／経済構造実態調査の都道府県表）・物流（港・空港・幹線道路を県の表へ）・研究機関（大学以外）・小売の産業用料金。世界へは `data/siting/<iso2>.json` を同じスキーマで足す。
+工業用水（e-Stat 経由の工業統計／経済構造実態調査の都道府県表）・物流（港・空港・幹線道路を県の表へ）・研究機関（大学以外）・小売の産業用料金。世界へは `data/siting-<iso2>.json` を同じスキーマで足す。
 
 ## 4. CI で見つけた退行（直した）
 

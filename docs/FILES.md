@@ -237,7 +237,7 @@ embed-client.js                   **埋め込み API のホストの側**と約�
                                   何も import せず、vite が dist/ にそのまま写す。embed-mode.js が PROTOCOL を import する
 geo-similar.js                    **地域の特徴ベクトルによる類似検索**（Spatial Embeddings 第 1 スライス）。OSM の建物・道路・施設・水辺の種類別の密度を
                                   比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる
-siting.js                         **産業立地の比較**。data/siting/<国>.json（電力・産業用地・労働力・研究・規制を地域ごとに公開統計の実数で並べ、企業拠点を結ぶ）を読み、
+siting.js                         **産業立地の比較**。data/siting-<国>.json（電力・産業用地・労働力・研究・規制を地域ごとに公開統計の実数で並べ、企業拠点を結ぶ）を読み、
                                   指標ごとの順位（1 = 良い側）・出典・載せていないものを返す。総合点は出さない。純粋で node で評価できる
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字

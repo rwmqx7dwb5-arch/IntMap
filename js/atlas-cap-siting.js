@@ -2,7 +2,7 @@
  *  IntMap · Atlas capabilities — the `siting.*` namespace   (js/atlas-cap-siting.js)
  * ----------------------------------------------------------------------------
  *  `siting.compare` — 「半導体工場を置くなら、どの県が電力・用地・人材・研究・規制の点で有利か」を、公開統計の実数で並べる。
- *  エンジン・データ・手法の説明は js/siting.js と data/siting/jp.json。ここは扉と引数の束縛だけ。
+ *  エンジン・データ・手法の説明は js/siting.js と data/siting-jp.json。ここは扉と引数の束縛だけ。
  *  ⚠ 能力表の書式・生成の仕組みは js/atlas-cap-data.js の冒頭と同じ（`node scripts/atlas-caps.mjs --write`）。
  * ==========================================================================*/
 import { str, int, list } from './atlas-caps.js';

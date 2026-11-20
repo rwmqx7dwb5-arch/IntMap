@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  A plant's location is a bundle of conditions: what power costs, what land costs, who can be hired, which
  *  research institutions are near, what rules apply. IntMap carried each of these in a different place or not at
- *  all. data/siting/<cc>.json puts the ones a public source states side by side per administrative area
+ *  all. data/siting-<cc>.json puts the ones a public source states side by side per administrative area
  *  (scripts/build-siting-jp.mjs builds Japan's, by prefecture), and ties them to the company atlas's own sites
  *  (data/companies/footprint.json, placed in the area by polygon). This module reads that file.
  *
@@ -19,7 +19,7 @@
  *    · fill a null. A prefecture the source does not cover keeps null and the answer says so.
  *  ── WORLD ──
  *    Another country is one more file with the same schema (metric ids, units, `better`, per-metric source and
- *    vintage); `loadSiting(cc)` reads `data/siting/<cc>.json` and nothing else here names a country.
+ *    vintage); `loadSiting(cc)` reads `data/siting-<cc>.json` and nothing else here names a country.
  *  The pure half is exported for node (tests/siting-checks.test.mjs).
  * ==========================================================================*/
 import { jsonWithin } from './fetch-deadline.js';
@@ -29,7 +29,7 @@ const cache = new Map();
 export async function loadSiting(cc = 'JP') {
   const k = String(cc).toLowerCase();
   if (!/^[a-z]{2}$/.test(k)) return null;
-  if (!cache.has(k)) cache.set(k, jsonWithin('data/siting/' + k + '.json', 15000).catch(() => null));
+  if (!cache.has(k)) cache.set(k, jsonWithin('data/siting-' + k + '.json', 15000).catch(() => null));
   return cache.get(k);
 }
 
