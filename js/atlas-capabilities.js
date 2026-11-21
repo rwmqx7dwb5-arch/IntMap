@@ -2001,6 +2001,19 @@ export function makeAtlasCapabilities(HOST, OPTS) {
        `norm()` that #R413 taught to split camelCase — so a capability added to the table is
        sectioned on the next boot and no hand-kept list can go stale
        (.agents/rules/no-ad-hoc-hardcoding.md §2.4). */
+    /* A BARE QUOTED WORD THAT IS PART OF ANOTHER ENTRY'S ARGUMENTS IS NOT A MENTION OF A CAPABILITY.
+       ① A KEY — followed by `:` (wave4-train, below).
+       ② A VALUE — after `:`, or one of an enum's `"a"|"b"` alternatives (merge-train, measured 2026-11-21: once a
+          longer catalogue moved model.discover's own `{"type":"modelDiscover"` into the next piece of its block, the
+          fallback met `"action":"discover"|"search"|…` inside data.gisRemote's entry and took the rest of it, and
+          data.gisRemote scored 0 for every word its entry wrote).
+       Prose names a capability; an argument list names parameters and their values. scripts/atlas-capability-audit.mjs
+       asks THIS function (API.quotedIsArgument), so the search and the audit cannot read the catalogue two ways. */
+    function quotedIsArgument(text, start, end) {
+      var after = text.slice(end, end + 4), before = text.slice(Math.max(0, start - 3), start);
+      return /^\s*\??\s*:/.test(after) || /^\s*\|/.test(after) || /[:|]\s*$/.test(before);
+    }
+    API.quotedIsArgument = quotedIsArgument;
     function docBlocks() {
       if (_docBlk) return _docBlk;
       var all = docNorms(), byText = Object.create(null), list = [];
@@ -2038,7 +2051,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
                    key) was read as places.show's opening and handed it the rest of deviceStorage's entry:
                    「この端末に何が保存されている？」 ranked places.show first, and deviceStorage scored nothing for any
                    word its own entry wrote. A key names a parameter of the entry it sits in; prose names a capability. */
-                if (form && /^\s*\??\s*:/.test(b.text.slice(i + needle.length, i + needle.length + 4))) continue;
+                if (form && quotedIsArgument(b.text, i, i + needle.length)) continue;
                 found.push(i);
               }
             });

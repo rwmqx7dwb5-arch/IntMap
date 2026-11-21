@@ -55,3 +55,15 @@ test('⑤ the regression shards pack by what main last measured: main folds and 
   // and the planner reads that path (the committed ledger is the fallback)
   assert.match(readFileSync(new URL('../scripts/checks-shards.mjs', import.meta.url), 'utf8'), /LEDGER = process\.env\.IM_CHECKS_COST \|\| join\(ROOT, '\.github', 'checks-cost\.json'\)/);
 });
+
+test('⑥ a key or a value of another entry\'s arguments is not a mention of a capability — the search and the audit ask one rule', async () => {
+  const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+  const caps = makeAtlasCapabilities({});
+  const at = (text, word) => { const n = `"${word}"`, i = text.indexOf(n); return caps.quotedIsArgument(text, i, i + n.length); };
+  assert.equal(at('{"type":"gisRemote","action":"discover"|"search"}', 'discover'), true, 'a value after a colon');
+  assert.equal(at('{"type":"gisRemote","action":"search"|"discover"}', 'discover'), true, 'an enum alternative after |');
+  assert.equal(at('{"type":"deviceStorage","show"?:true}', 'show'), true, 'a key (wave4-train)');
+  assert.equal(at('then call "discover" to list them', 'discover'), false, 'prose names a capability');
+  const audit = readFileSync(new URL('../scripts/atlas-capability-audit.mjs', import.meta.url), 'utf8');
+  assert.match(audit, /caps\.quotedIsArgument\(b\.text, i, i \+ needle\.length\)/, 'the audit reads the catalogue by the same rule');
+});

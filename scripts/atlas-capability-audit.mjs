@@ -753,7 +753,12 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
           const found = [];
           spellingsOf(c).forEach((na) => {
             const needle = form ? `"${na}"` : `"type":"${na}"`;
-            for (let i = b.text.indexOf(needle); i >= 0; i = b.text.indexOf(needle, i + 1)) found.push(i);
+            for (let i = b.text.indexOf(needle); i >= 0; i = b.text.indexOf(needle, i + 1)) {
+              /* the registry's own rule (js/atlas-capabilities.js quotedIsArgument): a key or a value of another
+                 entry's arguments is not a mention — one reading of the catalogue, not two */
+              if (form && caps.quotedIsArgument(b.text, i, i + needle.length)) continue;
+              found.push(i);
+            }
           });
           if (found.length) return found;
         }
