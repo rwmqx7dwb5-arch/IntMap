@@ -323,6 +323,7 @@ export const NOT_A_KERNEL = {
   'js/gis-datasets.js': 'the registry and the column-typing contract, not an answer to a step',
   'js/gis-sources.js': 'where data is acquired FROM; what it served is reported in `coverage`, which travels with the answer rather than in the engine record',
   'js/gis-layers.js': 'the bridge to what the renderer holds; same reason as js/gis-sources.js',
+  'js/gis-overture.js': 'where Overture Maps data is read FROM (a window of a GeoParquet release); same reason as js/gis-remote.js — the coverage verdict is js/gis-sources.js coverageOf() and travels with the dataset, and it computes nothing a saved recipe replays (the recipe is the window and conditions, in provenance.recipe)',
   'js/gis-remote.js': 'where data is acquired FROM (catalogues of the world, a remote COG); same reason as js/gis-sources.js — the coverage verdict is js/gis-sources.js coverageOf() and travels with the dataset, and it computes nothing a saved recipe replays',
   'js/gis-shapefile.js': 'a reader of bytes — what it decoded is the dataset, and a re-import is a new import, not a replay',
   'js/gis-geopackage.js': 'a reader of bytes; same reason as js/gis-shapefile.js',
