@@ -35,6 +35,7 @@ import { makeSidebarStyle } from './sidebar-style.js';   /* (#R299) the sidebar'
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 /* (#R203) the opening view: a lit Earth rather than a black one — see the file for the measurement. */
 import { OpeningView } from './opening-view.js';
+import { askInApp } from './ask-dialog.js';   /* the one in-app asker (replaces window.confirm for the engine switch) */
 import { makeI18nLate } from './i18n-late.js';
 import { hostSlice } from './host-slice.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
@@ -3619,9 +3620,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          sources, layers, markers and camera hooks exist. So it is stored and the page reloads — asked first, because
          that reload is the one consequence of this dialog the reader cannot undo by choosing again. */
       case 'setting-engine': { const ES=window.IntMapEngineSelect; if(!ES||v===ES.choice()) return;
-        if(!confirm(IntMapLang.t(currentLang,'Switching the map engine reloads the page. Switch now?','地図エンジンを切り替えるとページを再読み込みします。切り替えますか？'))){ el.value=ES.choice(); return; }
-        ES.set(v); try{ imToast(t('engineSwitching')); }catch(_){}
-        setTimeout(()=>{ try{ location.reload(); }catch(_){} },700); return; }   /* only long enough for the toast to be read */
+        /* ⚠ ASKED IN THE APP, NOT THROUGH window.confirm(): a host that does not open native dialogs (the Claude
+           desktop app's browser pane) answers «no» without showing anything, which left the select snapping back
+           and the engine impossible to change there. js/ask-dialog.js is the one asker. */
+        askInApp({ title:IntMapLang.t(currentLang,'Switch the map engine?','地図エンジンを切り替えますか？'),
+                   body:IntMapLang.t(currentLang,'Switching the map engine reloads the page.','切り替えるとページを再読み込みします。'),
+                   confirmLabel:IntMapLang.t(currentLang,'Switch and reload','切り替えて再読み込み') },()=>currentLang).then(r=>{
+          if(r===null){ el.value=ES.choice(); return; }
+          ES.set(v); try{ imToast(t('engineSwitching')); }catch(_){}
+          setTimeout(()=>{ try{ location.reload(); }catch(_){} },700); });   /* only long enough for the toast to be read */
+        return; }
       case 'setting-sidebar-style': window.imSidebarStyle=v; applySidebarStyle(); return _reflectSettings(false);
       case 'setting-label-lang': window.imLabelLang=v; try{ applyLabelLang(); }catch(_){} return _reflectSettings(true);
       case 'setting-map-color': window.imMapColor=v; try{ applyTheme(); }catch(_){} return _reflectSettings(false);   /* a Map-color change is applyTheme's */
