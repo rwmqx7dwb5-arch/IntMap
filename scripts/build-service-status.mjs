@@ -213,10 +213,24 @@ function offlineOf(repo, run) {
   } catch { return null; } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* temp */ } }
 }
 
+/* A night measured the host list of THAT night. A host the ledger has since dropped (a withdrawn source) is no
+   longer asked by anything this site ships, so the shipped bundle does not list it — shell-experience ⑦ holds the
+   bundle to the ledger's hosts. readerUpstreams itself still carries a host the ledger does not describe (③); the
+   bundle is where the ledger's membership is enforced. The verdict counts are recomputed over what remains. */
+export function ledgerHostsOnly(upstream, ledger) {
+  if (!upstream || !ledger || !Array.isArray(ledger.hosts) || !ledger.hosts.length) return upstream;
+  const known = new Set(ledger.hosts.map((r) => r.host));
+  const hosts = upstream.hosts.filter((h) => known.has(h.host));
+  if (hosts.length === upstream.hosts.length) return upstream;
+  const counts = upstream.counts ? { ...upstream.counts } : null;
+  if (counts) for (const k of ['alive', 'refused', 'dead', 'unobserved']) if (k in counts) counts[k] = hosts.filter((h) => h.verdict === k).length;
+  return { ...upstream, counts, hosts };
+}
+
 /** the bundle, from the two inputs — pure, so a test can build one without a network */
 export function compose({ liveness, ledger, atlasEval, fieldSpeed, unread, now, previousHistory }) {
   const at = (now || new Date()).toISOString();
-  const upstream = readerUpstreams(liveness, ledger);
+  const upstream = ledgerHostsOnly(readerUpstreams(liveness, ledger), ledger);
   /* the in-band record first, so check:datagov's head read finds it (scripts/data-governance.mjs bundleRecord) */
   return {
     ...TERMS,

@@ -11,7 +11,7 @@
  "retrievedAt": "2026-11-21T11:19:55.998Z",
  "asOf": "2026-11-20T14:08:36.250Z",
  "quality": {
-  "rows": 146,
+  "rows": 145,
   "missing": {
    "host": 0,
    "verdict": 0
@@ -26,7 +26,7 @@
   "comparedWith": "2026-11-19T13:52:59.321Z",
   "networkObserved": true,
   "counts": {
-   "alive": 138,
+   "alive": 137,
    "refused": 5,
    "dead": 3,
    "unobserved": 0
@@ -1192,13 +1192,6 @@
     "status": 404,
     "what": "RainViewer radar tiles",
     "whatJp": "RainViewer の雨雲レーダータイル",
-    "lastAlive": "2026-11-20T14:08:36.250Z"
-   },
-   {
-    "host": "tiles.maps.eox.at",
-    "verdict": "alive",
-    "why": "HTTP 200",
-    "status": 200,
     "lastAlive": "2026-11-20T14:08:36.250Z"
    },
    {
