@@ -400,6 +400,8 @@ map していて、**`DECL` に足して `ORDER` に足し忘れた op は run()
 | `join` | 2（対象・**表**） | 何でも／何でも | 対象と同じ | `leftField`・`rightField`（必須）・`fields`・`prefix`・`unmatched`・`duplicates`・`when`/`at`/`from`/`to`/`ends`（§1.5.2） |
 | `compute` | 1 | 何でも | 入力と同じ | `outName`・`expr`（必須）・`replace` |
 | `voronoi` | 2（地点・窓） | `Point`／`Polygon` | `Polygon` | 無し（§2.9） |
+| `network` | 1（線） | `LineString` | `Point`（ノード）／`LineString`（辺・経路） | `analysis`・`weightField`・`capacityField`・`snapKm`・`nodesAt`・`from`／`to`・`k`・`output`・`maxSources`（§2.11） |
+| `networkDisrupt` | 2（網・区域） | `LineString`／`Polygon` | `Point`／`LineString` | `weightField`・`capacityField`・`snapKm`・`from`／`to`・`output`・`maxSources`（§2.11） |
 | `centroid` | 1 | 何でも | `Point` | 無し（球面の重心。面積・長さで重み付け。§2.5.6） |
 | `pointOnSurface` | 1 | 何でも | `Point` | 無し（必ず面の内側・線の上に来る点。§2.5.6） |
 | `convexHull` | 1 | 何でも | `Polygon` | `by`（列名。省略＝全部で 1 群。§2.5.6） |
@@ -1009,6 +1011,49 @@ Douglas–Peucker 3。ほぼ全部が生の度で、±180 を跨ぐ形の箱は�
 辺だけを共有する隣の区画も true になる。`aggregate` は面どうしのときだけ交差の中身を訊き、隣の区画を
 区域の件数に入れない（`geom-3` までの member の規則のまま）。点と線は閉じた集合で、境界をまたぐ線は両側に
 数えられる。⚠ `relate` と `spatialJoin` の `intersects` は読者が選ぶ述語なので OGC のまま——辺で接する区画も結ばれる。
+
+### 2.11 つながりとしての網 — `network` / `networkDisrupt`（`js/gis-network.js` `window.IntMapGisNetwork`）
+
+経路探索は「A から B へ」に答える。港湾・鉄道・道路・電力網・海底ケーブル・航空路線・サプライチェーンに
+訊くのは別の問いで、**「これが止まったら何がつながらなくなるか」**——距離ではなく**つながり**の問いである。
+線のデータセットを**グラフ**として読む: ノードは線が出会う所、辺は線、費用と容量は**読者が名指した列**。
+
+| op | 入力 | 答え |
+|---|---|---|
+| `network` `analysis:'centrality'` | 線 | ノードごとに `_degree`・`_harmonic`（調和近接）・`_betweenness`（Brandes。同じ費用の最短路は等分）・`_component`。`output:'edges'` で辺の媒介（＝どの航路が最も多くを運ぶか） |
+| `network` `analysis:'maxflow'` + `from`/`to` | 線 | 通せる最大量 `stats.maxFlow`・各辺の `_flow`／`_utilisation`・**ボトルネック＝最小カット**（`_inCut`・`stats.cutCapacity`・`stats.bottleneckRows`） |
+| `network` `analysis:'alternatives'` + `from`/`to` + `k` | 線 | 上位 k 本の**ループの無い**経路（Yen）。`_extraPct`（最良に対する増分）・`_sharedWithBest` |
+| `networkDisrupt` | 線 ＋ 区域（面） | 区域が触れる辺と区域内のノードを取り除き、**同じ網の無傷との差**を測る: 成分数・到達できなくなった対 `pairsLostPct`・残った対の迂回 `meanDetourPct`・`nodesIsolated`・（`from`/`to` を与えれば）`flowLossPct`・`topNodesLost`・`topEdgesRemovedByLoad`・**迂回した交通が乗る辺** `topEdgesGainingLoad` |
+
+- **何も推測しない。** 費用は `weightField`、無ければ線の大円長（km）。⚠ **名指した費用が欠けた辺は除外して数える**
+  （`edgesDroppedNoWeight`）——長さで代用すると、時間の列に km が混ざる。容量は `capacityField`、無ければ
+  1 本 1（そのとき `capacityBasis:'unit'`＝流量は**辺を共有しない経路の本数**）。名指した容量が欠けた辺は 0 で
+  数える（`capacityMissing`）。1 つの線が複数の片になるとき（MultiLineString・`nodesAt:'vertices'` での分割）は
+  費用を**長さの比で分ける**（`costSplit`）——時間と長さには正確で、通行料には正確でない。
+- **ノードはどこか。** 既定は線の**端点**。`snapKm` 以内の点は 1 つのノード（3 次元単位ベクトルの格子で探すので
+  日付変更線も極も特別でない）。`nodesAt:'vertices'` は道路・鉄道のように**途中の頂点を共有して交わる**網で、
+  共有された頂点でも切る。`nameFromField`／`nameToField` は線の始点・終点のノード名で、`from`／`to` はその
+  **名前**か `"lng,lat"`（最寄りノード。距離は `fromSnapKm`／`toSnapKm` に出る）。`edgeLabelField` は要約での航路の名前。
+- **標本は述べる。** 媒介と障害の対の数は、各起点から最短路木を 1 本歩く。起点が `maxSources`（既定 512）以下なら
+  **全数**（`exact:true`）、超えると**固定シードの標本**を拡大して使い `exact:false`・`sourcesUsed` が述べる。512 は
+  時間の予算（観測: 海底ケーブル 2,689 ノード・3,317 辺で最短路木 1 本が約 1 ms、障害の全体が約 1 秒）であって
+  網の性質ではなく、パラメータである。全ての反復は**時間で譲る**（`ctx.tick`）ので、大きな網でも画面は固まらず
+  中止ボタンは効く。
+- **区域の判定が決められなかったら「触れていない」としない。** 幾何カーネルが答えられなかった辺は
+  `zoneUndecided` に数え、台帳に載せる（記録は partial になる）。
+- **ノードの答えは行の時間軸を継がない。** 行がノードなので、行ごとの時間軸が指す列は無い（定数の期間は網全体に
+  ついての言明なので残る）。
+
+⚠ **検証は総当たりでやっている**（`tests/gis-network-checks.test.mjs`）: 媒介は全最短路の数え上げ、最大フローは
+**辺の部分集合の列挙**で見つけた最小カットと一致し、返されたカットは両端を本当に切って容量の和が流量に等しく、
+代替経路は全単純路の列挙の上位 k 本、障害の損失は壊れた網を Floyd–Warshall で歩いた値と一致する。
+**実データ**では海底ケーブル（`data/subcables.json`・3,491 本）に台湾海峡の区域を重ねる。この網は
+**ケーブルごとに端点がつながっていない**（端点を共有しない）ので 226〜261 の成分に分かれる——つながりの問いに
+答えるときの上限であり、データの性質として `componentsBefore` が述べる。
+
+**船舶・港湾の問い**（「台湾海峡の海運が止まったらどの港・航路・産業が」）は、航路（線）と港（ノード名）を
+データセットとして与えれば同じ op が答える。海運の航路と港のデータセットは**この層にまだ無い**ため、
+いまは海底ケーブル・鉄道・LNG ターミナル網（`world-graph-store`）が実データで動かせる網である。
 
 ## 3. 由来 — `provenance` は札ではなくレシピ
 

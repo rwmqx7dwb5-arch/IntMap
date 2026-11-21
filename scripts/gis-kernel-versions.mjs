@@ -130,6 +130,8 @@ export const KERNELS = {
      entitled to know that. */
   /* (gis-scale) ops-11 HASH ONLY: a result estimated above 8 M positions is held as chunks and a few ops run over it group by group. Every size that answered before takes the path it took and answers byte for byte (tests/gis-scale-checks.test.mjs compares the two); what is new is a representation and two named refusals for sizes that used to run out of memory. */
   /* (gis-scale-spill) HASH ONLY, ops and geometry: a chunked result's positions may be written to OPFS / IndexedDB and read back a chunk at a time, and intersects / contains / within decide a pair by the face its box lies in (the shape's box touching no edge of the area, or one position clear of every edge) before asking the sweep line. No answer moves: tests/gis-scale-spill-checks.test.mjs asks >10,000 pairs both ways (IntMapGisNoFace turns the shortcut off) and compares the verdicts, refusals included. */
+  /* (gis-network) HASH ONLY: two new ops (`network`, `networkDisrupt`) that no saved recipe names, a call-time read of the kernel they
+     need, and one line in vectorOutTime (rule 'none') that only they reach. Every op that existed replays to the same numbers and refusals. */
   /* (voronoi) HASH ONLY: a new op (`voronoi`) that no saved recipe names, and a call-time read of the
      kernel it needs. Every op that existed replays to the same numbers and the same refusals. */
   /* (wave4-refine) ops-9 -> ops-10: `voronoi` checks that the clipped cells cover the window (summed planar area
@@ -147,7 +149,7 @@ export const KERNELS = {
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
   /* (spatiotemporal-join) ops-13 -> ops-14: the period a join / spatialJoin / nearestJoin / timeJoin / aggregate result states is now derived from BOTH inputs (it was the first input's), a row-wise input gives the output two derived period columns, and the record carries `warnings` and `geoBasis`. No existing geometry or cell changes; what the record states about WHEN does. */
   /* (gis-worker-columnar) ops-14 HASH ONLY (over the time kit): a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
-  'js/gis-ops.js': { version: 'ops-14', sha256: 'dfcb6ca4bfdcd824e042e0ba26c7cb20604419b3f6330bad728246bf11f29e6c' },
+  'js/gis-ops.js': { version: 'ops-14', sha256: '0480bbdca5e337472f7637d3e39c9dc22de721c450dccf23393d04190240dcba' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -298,6 +300,11 @@ export const KERNELS = {
      and the branch-and-bound search for the farthest place. Raise it when a replayed `voronoi` step
      would draw a different border or name a different farthest place. */
   'js/gis-voronoi.js': { version: 'voronoi-1', sha256: '2ca8a32a3066960fd9e2c3a393359db9cc279da71158affc844755e9dee2acc3' },
+  /* (gis-network) network-1: the first version. Graph construction (3-D grid snapping, endpoint or vertex nodes), Brandes
+     betweenness, harmonic closeness, Dinic max flow with the min cut, Yen's k loop-free routes and the intact-versus-damaged
+     comparison of a disruption. Raise it when a replayed `network` / `networkDisrupt` step would name a different node,
+     a different cut, a different route or a different loss. */
+  'js/gis-network.js': { version: 'network-1', sha256: '116dc959977eaca475dbeb31652d5429a9b6d99b9d298dc7154c1327d167946d' },
   'js/gis-crs.js': { version: 'crs-3', sha256: 'f3a8a70462b3eba1449be8f86dc27278fb835af2861593c6bda58dbc87c715cc' },
 };
 
