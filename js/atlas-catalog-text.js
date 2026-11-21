@@ -177,6 +177,8 @@ export const CATALOGUE_CHUNKS = [
       { name: 'map.outbreaks' },
       /* 47 (#R773, #R790) */
       { name: 'attach.recall' },
+      /* (atlas-work-products) what a job leaves, kept together */
+      { name: 'work.job' },
       /* 48 (atlas-observer-undo) */
       { name: 'map.undo' },
       /* 41 (#R493) */
