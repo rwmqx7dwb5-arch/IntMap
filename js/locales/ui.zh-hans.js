@@ -3593,7 +3593,6 @@ IntMapLang.define('zh-hans', {
   "Secondary enrollment %": "中等教育就学率 %",
   "Sentinel Hub (S2 / Landsat)": "Sentinel Hub (S2 / Landsat)",
   "Sentinel Hub instance ID": "Sentinel Hub 执行个体 ID",
-  "Sentinel-2 cloudless (EOX)": "Sentinel-2 无云影像（EOX）",
   "Shona": "绍纳",
   "Smoking prevalence %": "吸烟率 %",
   "Software": "软件",
