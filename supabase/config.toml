@@ -307,6 +307,13 @@ verify_jwt = false
 [functions.mcp-server]
 verify_jwt = false
 
+# web-browse (web-browse) is the light browser Atlas drives to operate a data portal (search → follow → download): HTTP + HTML read
+# server-side, because those portals send no Access-Control-Allow-Origin. It makes outbound requests to hosts the reader named, so it is
+# for a signed-in reader only: verify_jwt ON. Its caps are in the function's header (kill switch WEB_BROWSE_DISABLED, a per-caller bucket,
+# and one project-wide bucket that fails closed). No secret is required.
+[functions.web-browse]
+verify_jwt = true
+
 # world-graph-ingest keeps the persistent world graph port slice current from Wikidata, UN/LOCODE and Eurostat.
 # Deployed --no-verify-jwt: pg_cron calls it weekly with the x-world-graph-secret header and the function does its
 # own fail-closed auth, exactly like news-ingest.
