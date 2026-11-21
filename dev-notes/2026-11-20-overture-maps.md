@@ -86,3 +86,5 @@ STAC の `href` は**データ**。https・認証情報なし・私的でない�
 ## perf 天井を上げた理由
 
 Overture Maps 読み取り(js/gis-overture.js)と、それを呼ぶ Atlas 能力を足したため、非同期チャンクが増えた(async.raw 14136.4→14415.6 kB、async.gzip 4771.5→4885.1 kB、atlas-console 1061.2→1066.8 kB、gis-core 622.7→628.3 kB、dist.assets 21559.0→21814.8 kB)。増えた分は新しい能力の実装そのもので、起動時に読まれる経路(初期チャンク)は増えていない。window.IntMapGis / IntMapLazy の読みが 1 件ずつ増えた(surface ベースライン更新)のも同じ能力による。
+
+- 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
