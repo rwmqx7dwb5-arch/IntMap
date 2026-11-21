@@ -36,3 +36,6 @@ newsjp: 衛星の地球儀で、起動時に地図の準備が間に合わない
 （coarse=false, touch=0）、WebGL2 は有る、地図の canvas も WebGL2、`IntMapSkyModel.tables()` は正常、読み込まれた版は本番と同じ。
 拒否が bare `false` で理由が読めなかったので、`addLimb` は自分がどの段で返したかを残し、`IntMapGeoEngine.layers.limbWhy()` で読めるようにした
 （例外は console.warn にも出す）。原因の確定は、この版が本番に出たあと報告者の Edge で `limbWhy()` を読んでから。
+
+## 5. perf 天井
+`atlas-orchestrate`（async）の天井を 82.4 → 96.1 kB に上げた。この PR の変更ではなく、main に入った他の PR（Atlas 側）の増分で、main を取り込んだ測定で初めて超過した。本 PR は geo-engine.js と night-side.js のみ。
