@@ -250,6 +250,7 @@ export interface MapLibreOnly {
   setLimb(id?: any, o?: any): any;
   removeLimb(id?: any): any;
   hasLimb(id?: any): any;
+  limbWhy(): any;
   _hoverHub(): any;
   setSunDirection(o?: any): any;
 }
@@ -385,6 +386,7 @@ export interface GeoEngineLayers {
   setLimb(id?: any, o?: any): any;
   removeLimb(id?: any): any;
   hasLimb(id?: any): any;
+  limbWhy(): any;
   limbDrawn(id?: any): any;
   removeSolid(id?: any): any;
   addOrbit(id?: any, b?: any): any;
