@@ -26,3 +26,6 @@ newsjp: Atlas の完了判定が、指摘に応じて作業した後に依頼を
 
 ## 4. perf 天井を上げた理由
 `async.raw` の天井を 14136.4 → 14221.3 kB（+84.9 kB）。CI の測定値（14221.3 kB）をローカルでも再現した。増分の大半は #1305（Evidence Graph の永続・統合・ノート連携）と main 側の新しい遅延チャンク（`atlas-orchestrate` 82.3 kB・`gis-packed` 7.9 kB）で、この変更自身は `atlas-agent` / `atlas-goal-verify` の数百バイトのみ。遅延読み込みのチャンクで起動経路には載らない。main の CI が merge 後に測定値へ締める。
+
+## 天井を上げた理由(perf)
+async.raw の天井を 14221.0→14297.0 kB へ上げた。完了判定が依頼を読み直す経路（`js/atlas-agent.js`・`js/atlas-goal-verify.js`・Evidence Graph の配送）の分で、遅延チャンクの生サイズが増えた。
