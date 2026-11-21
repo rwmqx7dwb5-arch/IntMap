@@ -270,7 +270,7 @@ describe('§ forecast · external model output as separate, labelled datasets', 
     assert.equal(rep.assumptions[0].name, 'threshold');
     assert.equal(rep.assumptions[0].applied, true);
     assert.ok(rep.excluded.some((t) => /No observations/.test(t[0])));
-    assert.ok(rep.dataUsed[0][0].includes('Open-Meteo.com') && rep.dataUsed[0][0].includes('2026-11-20'));
+    assert.ok(/Open-Meteo[.]com/.test(rep.dataUsed[0][0]) && /2026-11-20/.test(rep.dataUsed[0][0]));
     const other = forecastReport(Object.assign({}, res.record, { userConditions: { rainScale: 1.2 } }));
     assert.equal(other.assumptions[0].applied, false, 'a stated condition is recorded, not fed to the model');
   });
