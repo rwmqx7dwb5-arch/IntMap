@@ -29,3 +29,17 @@ internal: 開発工程（CI の待ち行列と PR の着地）だけの変更で
 ## 3. 検査
 
 `node --test tests/merge-train-checks.test.mjs`（trailer の往復・候補の事実・順序と上限・main の workflow が trailer で起動すること）。実データで `--build --dry` を 2 回（push も PR もしない）。
+
+## 4. Regression の shard を main の実測で詰める
+
+- 実測: 台帳 `.github/checks-cost.json` は 2026-10-01 の計測のまま（`--update` は手作業で、それ以降誰も走らせていない）。757 ファイルのうち 345 件が中央値 0.5 秒で見積もられ、run 44901155717 では shard 2/3 の合計が 2,694 秒、1/3 は 1,297 秒だった（job の壁時計は 18 分と 9 分）。
+- 直したこと: ブラウザ層が既に持っている経路（main の `timings` job → actions cache → 次の run）を Regression にも通した。main の run が各 shard の計測を台帳へ畳み込んで cache に保存し、各 shard はそれを `$RUNNER_TEMP` に戻して `IM_CHECKS_COST` で指す（checkout の外なので、同じ job の clean-tree 検査に触れない）。cache が無ければ、コミット済みの台帳で今までどおり計画する。
+- 今回の計測で台帳も一度更新した（3 shard とも予測 2,050 秒）。`--update` は今の木に無いファイルの行を捨てるようにした（別 branch の計測に main に無い検査が入っていた）。
+- 総 runner 分は減らない。減るのは 1 run の壁時計（最も遅い shard）。
+
+## 5. 最初の列車（#1372・23 本）で分かったこと
+
+- CI の赤 4 件はどれも「各 PR 単独では緑、合わせると赤」だった。列車はそれを main ではなく列車の上で捕まえた。
+  - **能力目録の位置の取り合い**: #1346 の `model.discover` と #1343 の `geo.ml` が `spatial-analysis` 節の位置 52 を両方とも取り、目録が組み立てられなかった（Regression 3 shard の赤のほとんどがこれ）。列車の上で `geo.ml` を空いている 51 へ移した。
+  - **同じ向きに動いた数は 1 回分しか動かない**: 2 本の PR がそれぞれ Edge Function を 1 本足し、文書を 25→26 と同じに書き換えた。両側の変更が同一なので git は衝突と見なさず、合わせた木は 27 本なのに文書は 26 のまま。migration（71→73）と deep tier の spec 数（171→172）も同じ形。`tokens` の driver は衝突した hunk にしか呼ばれないので届かない。列車の上で実体の数へ直した。
+- ⇒ `--build` は push の前に手元で `check:docs`・`check:catalog`・`check:capabilities` を走らせ（数秒〜数十秒）、赤なら push しない。直して commit したら `--push-only <worktree>` で続ける。CI の 1 時間を待たずに分かる赤は、CI に出さない。

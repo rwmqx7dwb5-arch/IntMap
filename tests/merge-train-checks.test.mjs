@@ -40,3 +40,18 @@ test('④ main runs the closer, and only for a commit that carries the trailer t
   assert.match(y, /node scripts\/merge-train\.mjs --close "\$GITHUB_SHA"/);
   assert.match(y, /pull-requests: write/);
 });
+
+test('⑤ the regression shards pack by what main last measured: main folds and caches it, every run restores it', () => {
+  const y = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const at = (s) => { const i = y.indexOf(s); assert.ok(i > 0, s); return i; };
+  // the record job runs after the regression shards and folds their fragments into a cache
+  assert.match(y, /needs: \[browser, browser-deep, checks\]/);
+  const fold = y.lastIndexOf('node scripts/checks-shards.mjs --update $F');
+  assert.ok(at('pattern: checks-timings-*') < fold);
+  assert.ok(fold < y.lastIndexOf('key: intmap-checks-cost-${{ github.run_id }}'));
+  // the shards restore it and point the planner at it, before they run
+  assert.ok(at('restore-keys: |\n            intmap-checks-cost-') < at('npm run test:checks -- --test-shard'));
+  assert.ok(at('echo "IM_CHECKS_COST=') < at('npm run test:checks -- --test-shard'));
+  // and the planner reads that path (the committed ledger is the fallback)
+  assert.match(readFileSync(new URL('../scripts/checks-shards.mjs', import.meta.url), 'utf8'), /LEDGER = process\.env\.IM_CHECKS_COST \|\| join\(ROOT, '\.github', 'checks-cost\.json'\)/);
+});
