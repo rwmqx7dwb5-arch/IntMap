@@ -241,7 +241,7 @@ test('R801 C③: every row that asks says what it will do; the always rows (js/a
   /* the reader is asked only where something leaves the device or is deleted — NOT before a read or a reversible change
      (a button that guards nothing is a blind approval: .agents/rules/substance-over-form.md). Every row that asks also
      says WHAT it will do (atlas.confirm.what.<id>). */
-  const DELETES = ['map.clearAll', 'places.remove', 'places.unwatch'];
+  const DELETES = ['map.clearAll', 'places.remove', 'places.unwatch', 'knowledge.forget'];
   const mustAsk = CAPS.all().filter((c) => !c.withdrawn && (c.risk === 'external' || DELETES.indexOf(c.id) >= 0)).map((c) => c.id);
   /* an always row is the stricter form of asking (every time, not only when Atlas proposes it): it may cover more than the external/deleting rows (mcp.connect persists a registration) but never fewer */
   assert.deepEqual(explicit.filter((id) => always.indexOf(id) < 0).slice().sort(), mustAsk.filter((id) => always.indexOf(id) < 0).slice().sort(), 'asking rows must be exactly the external and deleting ones');
