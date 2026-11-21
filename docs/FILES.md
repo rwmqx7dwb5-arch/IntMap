@@ -191,6 +191,9 @@ glyph-store.js                    ↳ この端末が自分の書体で描いた
 click-ownership.js                ↳ クリック登録と排他的所有権の台帳。adapter/handlerを弱参照し、
                                   背景fallbackと地物のownerを区別する。レンダラや地名IDには依存しない
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
+board.js                          **操作できるボード**（遅延・`IntMapBoard`）— 宣言（表・グラフ・フィルタ・地図・根拠・パラメータ）から DOM を組み、1 つの状態で連動。保存は IndexedDB `intmap-board`
+board-spec.js                     ボード宣言の検査（列の実在・出典必須・Artifact の節への対応）。純関数
+board-state.js                    ボードの共有状態（選択・フィルタ・パラメータ）。純関数
 bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・
                                   未移行のファイルと理由）と `emit` / `on` / `once`。配信は
                                   `window.dispatchEvent` のままで、宣言に無い名前は開発時に例外・本番は警告
@@ -1072,6 +1075,7 @@ atlas-caps.js                     **能力ひとつ＝項目ひとつ**の仕組
 atlas-caps-modules.js             ⚠ 生成物（`node scripts/atlas-caps.mjs --write`）— 能力の名前空間ファイルの一覧（js/ から発見・遅延チャンクだけが読む）
 atlas-cap-account.js              Atlas の能力 — 自分のアカウントのデータの目録と書き出し（account.*。account-data-center）
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
+atlas-cap-board.js                Atlas の能力 — 操作できる画面（ボード）の合成と復元（board.compose / board.restore）
 atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart.compose）
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
