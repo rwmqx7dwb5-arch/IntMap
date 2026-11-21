@@ -4995,7 +4995,7 @@ export function dataLayers(HOST){
          ensureBordersLayer / ensureRefLayers / applyCountryVisibility), so the heal is a single gentle
          re-fire of the change event (see BASE branch below) — no off→on flicker of the whole label stack. */
       const BASE={
-        'cb-names':['ofm-country','ofm-admin1','ofm-city','ofm-city-dot','ofm-other'],   /* (#R198) admin-1 names are place names — same switch, same audit */
+        'cb-names':['ofm-country','ofm-admin1','ofm-city','ofm-other'],   /* (#R198) admin-1 names are place names — same switch, same audit */
         'cb-geolabels':['ofm-water','ofm-water2','ofm-river','ofm-peak','geo-sea'],
         'cb-poi':['ofm-poi','ofm-poi-dot'],   /* (#R186) shop/facility names — audited like every other label group */
         'cb-borders':['borders-only-line','borders-only-casing'],'cb-countries':['country-fill'],

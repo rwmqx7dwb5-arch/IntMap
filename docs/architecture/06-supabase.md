@@ -10,8 +10,8 @@
 
 ### 6.1 テーブル
 
-**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **58 表**（`mcp_api_keys`・`mcp_server_state`（外部 AI 用 MCP サーバの利用者キーのハッシュと停止スイッチ。ブラウザの役割からは閉じていて、本人の発行・失効・一覧だけが SECURITY DEFINER の RPC・[`../MCP-SERVER.md`](../MCP-SERVER.md)） / `world_graph_nodes`・`world_graph_edges`・`world_graph_claims`（永続の世界グラフ＝実世界オブジェクトと型付き・期間付きの辺と根拠のある値。全員が読め、書くのは service_role だけ・[`05-ai.md`](05-ai.md) の「永続の世界グラフ」） / `ai_delegation_journal`（子の呼び出しと質問ごとの結果・遅延・費用の 30 日の記録・§5） / `ai_turn_spend`（1 つの質問と、それが委譲した子の実費の予約と精算・§5） / `collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
-`map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の
+**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **60 表**（`mcp_api_keys`・`mcp_server_state`（外部 AI 用 MCP サーバの利用者キーのハッシュと停止スイッチ。ブラウザの役割からは閉じていて、本人の発行・失効・一覧だけが SECURITY DEFINER の RPC・[`../MCP-SERVER.md`](../MCP-SERVER.md)） / `world_graph_ingest_runs`（フィードごとの取り込みの記録＝鮮度・全員が読め service_role が書く） / `world_graph_nodes`・`world_graph_edges`・`world_graph_claims`（永続の世界グラフ＝実世界オブジェクトと型付き・期間付きの辺と根拠のある値。全員が読め、書くのは service_role だけ・[`05-ai.md`](05-ai.md) の「永続の世界グラフ」） / `ai_delegation_journal`（子の呼び出しと質問ごとの結果・遅延・費用の 30 日の記録・§5） / `ai_turn_spend`（1 つの質問と、それが委譲した子の実費の予約と精算・§5） / `collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
+`map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `evidence_graph_nodes`（根拠の系譜・本人だけ） / `atlas_notebook_entries`（Atlas の
 調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` / `user_prefs` /
 `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` / `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） / `community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / News Events の 8 表＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` / `news_event_articles` / `news_cluster_decisions` /
@@ -55,9 +55,9 @@
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。
 
-### 6.2 Edge Functions — **23本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **25本**（`_shared/` は関数ではない）
 
-> **23本すべてを `supabase/config.toml` に `[functions.*]` として宣言する**（ヘッダコメントの deploy フラグは設定ではない）。
+> **25本すべてを `supabase/config.toml` に `[functions.*]` として宣言する**（ヘッダコメントの deploy フラグは設定ではない）。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`rate-limit.js`・`volcano-parse.js` などを置くライブラリで、
 > import した関数の中に CLI がバンドルする。`[functions._shared]` は書かない。
 
@@ -71,6 +71,7 @@
   `ATLAS_EMBED_PER_USER_PER_DAY`。403/404 は `model_unavailable`。
 - **`refresh-news`** … ニュース取得＋AI地点解析＋書き込み（§4.1）。`--no-verify-jwt` で公開だが fail-closed（`REFRESH_SECRET` 未設定なら全拒否。秘密は `x-refresh-secret` ヘッダのみ・
   定数時間比較・POST のみ）。
+- **`world-graph-ingest`** … 永続の世界グラフ（§5・`05-ai.md`）の港湾の面を現在に保つ。Wikidata・UN/LOCODE・Eurostat を `_shared/world-graph-ports.js` が識別子で結び、`world_graph_ingest_begin/apply/finish` で反映する（新規・改訂は書き、上流が述べなくなったものは退役、大半を退役させる実行は `refused` で何も消さない。実行は `world_graph_ingest_runs` に残る）。毎週 pg_cron が呼ぶ。fail-closed（`WORLD_GRAPH_INGEST_SECRET`・`x-world-graph-secret` ヘッダのみ・定数時間比較・POST のみ）。
 - **`news-ingest`** … 出来事 (Event) 側の収集（§4.4）。Source Registry の全フィードを取得し、正規化・媒体の帰属・AI 地点解析（決定論エンジンはフォールバック）・Event への増分割り当て・
   日本語訳・計測・保持。fail-closed（`NEWS_INGEST_SECRET`・`x-news-ingest-secret` ヘッダのみ・定数時間比較・POST のみ）。`current_news` と `refresh-news` には触れない。
 - **`delete-account`** … 呼出ユーザ自身のアカウントと全データをハード削除する（`verify_jwt` あり＋関数内でも検証・`confirm:"DELETE"` 必須）。検証済みトークンの `amr` の最新の
@@ -92,6 +93,7 @@
   CAP 索引が指すリンクは索引と同じ origin か明示リストだけを `fetchGuarded`（索引 8 MB・CAP 1 MB・並列 6）で読み、落とした本数は `offHost`。`?ma=` は並列 2。MeteoAlarm は要約する
   （`?ma=<国>,…&lang=…` で複数国をまとめ、地域ごとの行——最悪階級・災害名・`<polygon>`——に落とす。上限は1国 400 区域、`areaTotal` が実数）。フィリピンは `?ph=1`（Atom の索引から
   地域ごとの最新1件の CAP を州ごとの行にし、PAR の矩形と `expires` 切れは落とす）。上流の期限は 45 秒、キャッシュは 15 秒。カナダ ECCC は ACAO を返すので通さない。
+- **`gis-fetch`** … ページが読めない公開ジオデータ（Range には答えるが ACAO を送らないバケット：Copernicus DEM・ESA WorldCover）を、`js/gis-fetch.js` が**ホストは応答するが CORS が無いと証明したときだけ**経由して読む中継。`fetch-relay` が許可リストなのに対し**原則**で決める（`_shared/gis-fetch-policy.js`）: https・既定ポート・資格情報なし・**公開アドレスにだけ解決される名前**（転送の各ホップも同じ問い）・バイト数に上限のあるデータの読み（ページは `upstream_is_a_page`）・URL と範囲以外は転送しない。**プロジェクト全体のバイト予算（`relay_take` `gis-fetch:project-bytes`・閉じる側）**と呼び手ごと（ハッシュ鍵・開く側）の予算を、求めたバイト数で上流に触れる前に引く。停止スイッチは秘密 `GIS_FETCH_DISABLED=1`（deploy 不要）。上流の拒否は言葉（200 字・タグ除去・JSON の文字列）で中継する。`--no-verify-jwt`。
 - **`fetch-relay`** … ACAO を返さず専用の relay も持たない上流のための汎用の ACAO 付与中継（`--no-verify-jwt`・秘密なし）。転送するのは
   `supabase/functions/_shared/fetch-relay-policy.js` の規則が認める URL だけで、同じファイルを `js/proxy-fetch.js` も import する。規則は上流ごとにホスト名（完全一致）・パス（錨付き）・
   クエリ鍵の集合と値の形・Content-Type・バイト上限・期限・共有キャッシュの寿命を持つ。規則は 4 本——IMF DataMapper、「511」交通カメラ一覧 13 サイト、GEBCO 2020 水深（opentopodata）、
@@ -174,9 +176,9 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 その関数の読者 1 人のページが 1 分に送る最大数（各関数の `READER_PER_MIN`＝推定）×`READERS_PER_ADDRESS`（10）。DB が答えなければ通す。拒否は `429 rate_limit`＋`Retry-After`。
 `<関数名>_PER_IP_PER_MIN` で deploy なしに動かせる。`routing-relay` は自前の fail-closed の全体上限を持つ。
 
-**`_shared/relay-guard.js` を共有するのは21本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` / `mcp-server` /
+**`_shared/relay-guard.js` を共有するのは22本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` / `mcp-server` / `gis-fetch` /
 `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）。そのうち `ai-proxy`（JWT）・
-`atlas-embed`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り16本は無認証。`ai-proxy`・`client-errors`・
+`atlas-embed`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り17本は無認証。`ai-proxy`・`client-errors`・
 `reader-reports`・`usage-count` が共有するのは読み手だけ（`readCapped`＝要求本文を上限で切る、`fetchBounded`＝提供者への POST を本文の最後のバイトまで同じ期限と上限で読む）。
 リダイレクトは手で辿る（`followRedirects`。各ホップを同じ https オリジンか `allowRedirect(next, from)` で検査し、上限は 3 ホップ `MAX_REDIRECTS`）。共有しているのは URL allowlist・GET 限定・
 期限（`AbortSignal.timeout`）・バイト上限（`content-length` とストリーム読み出しの両方）・Content-Type 判定・外向きエラーはコード1語。公開レイヤーなのでログイン必須にはしない。

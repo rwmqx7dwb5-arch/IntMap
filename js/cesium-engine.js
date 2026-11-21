@@ -44,6 +44,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { tilesetBudget } from './tileset-budget.js';
 
 window.IntMapCesiumEngine=(function(){
   'use strict';
@@ -2597,7 +2598,7 @@ window.IntMapCesiumEngine=(function(){
        whose level of detail, culling and memory Cesium already manages (Cesium3DTileset). Pushing
        them through the vector-tile → Entity path (cesium-vector-tiles.js) would throw that away, so
        a tileset is its own primitive, added to scene.primitives, and the style layers never see it.
-       spec: { url, maximumScreenSpaceError?, heightOffset?, cacheBytes?, opacity?, onReady?, onError? }
+       spec: { url, maximumScreenSpaceError?, heightOffset?, heightAnchor?:{lng,lat}, excludeBoxes?, cacheBytes?, opacity?, onReady?, onError? }  (placement: see _placeTileset)
        · maximumScreenSpaceError — the quality/cost knob (Cesium's default is 16; phones get a looser 24
          because the tile count, not the pixel count, is what they run out of).
        · heightOffset — metres added along the local up axis. 0 by default: the engine invents no
@@ -2612,19 +2613,17 @@ window.IntMapCesiumEngine=(function(){
         if(this._tilesets.has(id)) this.removeTileset(id);
         const rec={ ts:null, spec:Object.assign({},spec), visible:true, error:null, gone:false };
         this._tilesets.set(id,rec);
-        const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
+        const bud=tilesetBudget();                    /* js/tileset-budget.js: the device decides, not a phone/desktop switch */
         Cesium.Cesium3DTileset.fromUrl(spec.url,{
-          maximumScreenSpaceError:spec.maximumScreenSpaceError!=null?spec.maximumScreenSpaceError:(mob?24:16),
-          cacheBytes:spec.cacheBytes!=null?spec.cacheBytes:(mob?128:384)*1048576,
-          maximumCacheOverflowBytes:(mob?64:192)*1048576,
+          maximumScreenSpaceError:spec.maximumScreenSpaceError!=null?spec.maximumScreenSpaceError:bud.sse,
+          cacheBytes:spec.cacheBytes!=null?spec.cacheBytes:bud.cacheMiB*1048576,
+          maximumCacheOverflowBytes:bud.overflowMiB*1048576,
           /* a tileset that is not looked at must not keep fetching */
           skipLevelOfDetail:true, dynamicScreenSpaceError:true
         }).then(ts=>{
           if(rec.gone||this._tilesets.get(id)!==rec){ try{ ts.destroy(); }catch(_){} return; }
           rec.ts=ts; ts.show=rec.visible;
-          try{ if(spec.heightOffset){ const c=Cesium.Cartographic.fromCartesian(ts.boundingSphere.center);
-            const a=Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height), b=Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height+spec.heightOffset);
-            ts.modelMatrix=Cesium.Matrix4.fromTranslation(Cesium.Cartesian3.subtract(b,a,new Cesium.Cartesian3())); } }catch(_){}
+          this._placeTileset(rec,{ heightOffset:spec.heightOffset, anchor:spec.heightAnchor, excludeBoxes:spec.excludeBoxes });
           this._scene.primitives.add(ts);
           try{ ts.allTilesLoaded.addEventListener(()=>{ try{ this.fire('tilesetidle',{id}); }catch(_){} }); }catch(_){}
           rec.baseSse=ts.maximumScreenSpaceError;
@@ -2646,7 +2645,7 @@ window.IntMapCesiumEngine=(function(){
        The budget is the per-dataset figure the engine already chose (384 MB desktop / 128 MB phone) applied to the
        SUM. EXPIRES with a measurement that shows a different ceiling. */
     _governTilesets(){
-      const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent), budget=(mob?128:384)*1048576;
+      const bud=tilesetBudget(), budget=bud.totalMiB*1048576;
       let total=0, n=0; for(const r of this._tilesets.values()) if(r.ts){ total+=r.ts.totalMemoryUsageInBytes||0; n++; }
       /* the per-dataset cache is what EVICTS tiles that are no longer selected. The budget is shared out by PROXIMITY, not
          equally: with hundreds of PLATEAU units around the camera, the ones under the eye should keep their tiles and the
@@ -2659,9 +2658,43 @@ window.IntMapCesiumEngine=(function(){
       if(n){ for(const [id,r] of this._tilesets) if(r.ts){ const share=Math.max(16*1048576,Math.floor(budget*(w.get(id)/sw))); r.ts.cacheBytes=share; r.ts.maximumCacheOverflowBytes=share; } }
       const median=(()=>{ const v=[...w.values()].sort((p,q)=>p-q); return v.length?v[v.length>>1]:0; })();
       /* over budget: every dataset goes coarser, the FAR half faster (1.5x per step against 1.25x) — coarser tiles are smaller. */
-      if(total>budget) for(const [id,r] of this._tilesets){ if(r.ts&&r.baseSse){ const step=w.get(id)<median?1.5:1.25; r.ts.maximumScreenSpaceError=Math.min(r.baseSse*4,r.ts.maximumScreenSpaceError*step); } }
+      if(total>budget) for(const [id,r] of this._tilesets){ if(r.ts&&r.baseSse){ const step=w.get(id)<median?1.5:1.25; r.ts.maximumScreenSpaceError=Math.min(Math.max(r.baseSse*4,bud.maxSse),r.ts.maximumScreenSpaceError*step); } }
       else if(total<budget*0.6) for(const r of this._tilesets.values()){ if(r.ts&&r.baseSse&&r.ts.maximumScreenSpaceError>r.baseSse) r.ts.maximumScreenSpaceError=Math.max(r.baseSse,r.ts.maximumScreenSpaceError/1.25); }
     }
+    /* WHERE A TILESET SITS: its vertical correction and the ground it must leave to a better dataset. Callable again at any
+       time (the camera moved and the local geoid with it). o: { heightOffset?, anchor?:{lng,lat}, excludeBoxes?:[[w,s,e,n]…] }.
+       · heightOffset — metres along the local up at `anchor` (default: the tileset's own centre). A tileset the size of the
+         globe has no usable centre, so a caller that streams one passes the camera's position: the translation is one rigid
+         vector, and over the tens of kilometres on screen its direction differs from the local up by well under a metre.
+       · excludeBoxes — lng/lat boxes inside which this tileset draws nothing (Cesium clipping polygons), so a worldwide
+         dataset does not paint over a city that has a better one. Needs WebGL2; where unsupported it is ignored and false is
+         returned for it, so the caller can decline to open the worldwide set rather than double-draw. */
+    _placeTileset(rec,o){
+      const ts=rec&&rec.ts; if(!ts) return false; let clipOk=true;
+      try{
+        if(o.heightOffset!=null){
+          let lng,lat,h=0;
+          if(o.anchor&&isFinite(o.anchor.lng)&&isFinite(o.anchor.lat)){ lng=o.anchor.lng*D2R; lat=o.anchor.lat*D2R; }
+          else{ const c=Cesium.Cartographic.fromCartesian(ts.boundingSphere.center); lng=c.longitude; lat=c.latitude; h=c.height; }
+          if(o.heightOffset){ const a=Cesium.Cartesian3.fromRadians(lng,lat,h), b=Cesium.Cartesian3.fromRadians(lng,lat,h+o.heightOffset);
+            ts.modelMatrix=Cesium.Matrix4.fromTranslation(Cesium.Cartesian3.subtract(b,a,new Cesium.Cartesian3())); }
+          else ts.modelMatrix=Cesium.Matrix4.IDENTITY;
+        }
+      }catch(_){}
+      try{
+        if(o.excludeBoxes){
+          if(o.excludeBoxes.length&&!(Cesium.ClippingPolygonCollection&&Cesium.ClippingPolygonCollection.isSupported(this._scene))) clipOk=false;
+          else if(!o.excludeBoxes.length){ if(ts.clippingPolygons) ts.clippingPolygons=undefined; }
+          else{
+            const polys=o.excludeBoxes.map(([w,s,e,n])=>new Cesium.ClippingPolygon({ positions:Cesium.Cartesian3.fromDegreesArray([w,s,e,s,e,n,w,n]) }));
+            ts.clippingPolygons=new Cesium.ClippingPolygonCollection({ polygons:polys });
+          }
+        }
+      }catch(_){ clipOk=false; }
+      try{ this._scene.requestRender(); }catch(_){}
+      return clipOk;
+    }
+    placeTileset(id,o){ const rec=this._tilesets.get(id); return rec&&o?this._placeTileset(rec,o):false; }
     removeTileset(id){
       const rec=this._tilesets.get(id); if(!rec) return false;
       rec.gone=true; this._tilesets.delete(id);
@@ -3088,6 +3121,7 @@ window.IntMapCesiumEngine=(function(){
       addTileset(id,s){ const v=V(); return v&&v.addTileset?v.addTileset(id,s):false; },
       removeTileset(id){ const v=V(); return v&&v.removeTileset?v.removeTileset(id):false; },
       setTilesetVisible(id,on){ const v=V(); return v&&v.setTilesetVisible?v.setTilesetVisible(id,on):false; },
+      placeTileset(id,o){ const v=V(); return v&&v.placeTileset?v.placeTileset(id,o):false; },
       hasTileset(id){ const v=V(); return v&&v.hasTileset?v.hasTileset(id):false; },
       tilesetInfo(id){ const v=V(); return v&&v.tilesetInfo?v.tilesetInfo(id):null; },
       instrumentFrames(cb){ const v=V(); return v&&v.instrumentFrames?v.instrumentFrames(cb):false; },

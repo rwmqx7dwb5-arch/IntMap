@@ -27,6 +27,7 @@
  * ==========================================================================*/
 /* (#R322) the renderer command census — see the note above makeMapLibreAdapter */
 import { makeCameraMath } from './camera-math.js';
+import { pickRenderMethod } from './render-plan.js';
 import { makeCommandCensus } from './geo-command-log.js';
 import { makeClickOwnership } from './click-ownership.js';
 import { readGlyph, keepGlyph } from './glyph-store.js';
@@ -2194,7 +2195,7 @@ function _redrawLocalGlyphs(m,cover){
     removeAircraftCloud(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _aircraft[id]; return true; },
     hasAircraftCloud(id){ const m=_m(); try{ return !!(m&&m.getLayer(id)); }catch(_){ return false; } },
     /* 3D Tiles: capability `tiles3d` is FALSE here — a flat-roofed fill-extrusion is not a streamed mesh, so these answer NO rather than approximating one. */
-    addTileset(){ return false; }, removeTileset(){ return false; }, setTilesetVisible(){ return false; }, hasTileset(){ return false; }, tilesetInfo(){ return null; },
+    addTileset(){ return false; }, removeTileset(){ return false; }, setTilesetVisible(){ return false; }, placeTileset(){ return false; }, hasTileset(){ return false; }, tilesetInfo(){ return null; },
     /* …and the SAME projection, on the CPU, for a whole array at once. `projectAltitude` above is the
        one-point form and builds a model matrix per call, which a hover over eleven thousand objects
        cannot afford. This takes the mercator/altitude triples the layer already holds and multiplies
@@ -2611,6 +2612,8 @@ function _redrawLocalGlyphs(m,cover){
     /* these read the adapter THIS facade is bound to — a sub-view must answer about itself */
     id(){ const a=A(); return a&&a.id; }, capabilities(){ const a=A(); return a&&a.capabilities; },
     can(f){ const a=A(), c=a&&a.capabilities; return !!(c&&c[f]); },
+    /* HOW to draw something this engine can draw: candidates best-first, each with the capabilities it needs (js/render-plan.js) */
+    plan(candidates){ const a=A(); return pickRenderMethod(a&&a.capabilities,candidates); },
     camera:{ flyTo:o=>A().flyTo(_calm(o)), easeTo:o=>A().easeTo(_calm(o)), jumpTo:o=>A().jumpTo(o), fitBounds:(b,o)=>A().fitBounds(b,_calm(o)), setPadding:p=>A().setPadding(p), get:()=>A().getCamera(), setProjection:mo=>A().setProjection(mo),
       /* (#R160) camera getters + zoom controls so call sites read/drive the camera through the engine, not the raw map */
       getZoom:()=>A().getZoom(), getCenter:()=>A().getCenter(), destination:()=>(A().destination?A().destination():null), onDestination:(fn)=>(A().onDestination?A().onDestination(fn):false), getBearing:()=>A().getBearing(), getPitch:()=>A().getPitch(), getBounds:()=>A().getBounds(),
@@ -2728,6 +2731,7 @@ function _redrawLocalGlyphs(m,cover){
       addTileset:(id,s)=>A().addTileset?A().addTileset(id,s):false,
       removeTileset:id=>A().removeTileset?A().removeTileset(id):false,
       setTilesetVisible:(id,on)=>A().setTilesetVisible?A().setTilesetVisible(id,on):false,
+      placeTileset:(id,o)=>A().placeTileset?A().placeTileset(id,o):false,
       hasTileset:id=>A().hasTileset?A().hasTileset(id):false,
       tilesetInfo:id=>A().tilesetInfo?A().tilesetInfo(id):null,
       hasAircraftCloud:id=>A().hasAircraftCloud?A().hasAircraftCloud(id):false,

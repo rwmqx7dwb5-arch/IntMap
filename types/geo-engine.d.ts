@@ -171,6 +171,7 @@ export interface GeoEngineAdapterCore {
   addTileset(id?: any, spec?: any): any;
   removeTileset(id?: any): any;
   setTilesetVisible(id?: any, on?: any): any;
+  placeTileset(id?: any, o?: any): any;
   hasTileset(id?: any): any;
   tilesetInfo(id?: any): any;
   hasAircraftCloud(id?: any): any;
@@ -393,6 +394,7 @@ export interface GeoEngineLayers {
   addTileset(id?: any, spec?: any): any;
   removeTileset(id?: any): any;
   setTilesetVisible(id?: any, on?: any): any;
+  placeTileset(id?: any, o?: any): any;
   hasTileset(id?: any): any;
   tilesetInfo(id?: any): any;
   hasAircraftCloud(id?: any): any;
@@ -508,6 +510,8 @@ export interface GeoEngineFacade {
   id(): string;
   capabilities(): GeoEngineCapabilities;
   can(f: string): boolean;
+  /** how to draw something: candidates best-first with the capabilities each needs; `method` is null when none fits (js/render-plan.js) */
+  plan(candidates: { method: string; needs: string[] }[]): { method: string | null; index: number; missing: string[] };
   camera: GeoEngineCamera;
   coords: GeoEngineCoords;
   hasRenderer(): boolean;

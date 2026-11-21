@@ -387,7 +387,15 @@ test('own-fetch-relay ① discovery sees the page\'s calls into its relays (it i
     && /searchParams\.get\("u"\)|\bq\.get\("u"\)/.test(readFileSync(join(ROOT, 'supabase/functions', d, 'index.ts'), 'utf8')));
   assert.ok(takesU.length >= 6, 'relays that take ?u=: ' + takesU.join(', '));
   const reached = [...PLAN.keys()];
-  const blind = takesU.filter((fn) => !reached.includes(fn));
+  /* ⚠ A RELAY THAT FORWARDS BY PRINCIPLE HAS NO LIST FOR A CALLER TO DRIFT FROM, so «every URL its client sends is one it forwards» is
+     the wrong question for it — its question is «does it forward an address nobody listed, and refuse every one that breaks the
+     principle», which is evaluated by the test file it names. It says so in its own header (`// relay-rule: principle — <test>`), and the
+     test it names has to exist and mention the function; a function that merely omits a caller is still blind. */
+  const principled = takesU.filter((fn) => {
+    const m = /^\/\/\s*relay-rule:\s*principle\s+—\s+(tests\/[\w.-]+)/m.exec(readFileSync(join(ROOT, 'supabase/functions', fn, 'index.ts'), 'utf8'));
+    return !!m && existsSync(join(ROOT, m[1])) && readFileSync(join(ROOT, m[1]), 'utf8').includes('supabase/functions/' + fn + '/index.ts');
+  });
+  const blind = takesU.filter((fn) => !reached.includes(fn) && !principled.includes(fn));
   assert.deepEqual(blind, [], 'no caller of these relays was discovered — the check below would be vacuous for them');
 });
 
