@@ -71,3 +71,7 @@ newsjp: Atlas が、2 つの時期の実際の衛星データ（光学・レー�
 ## perf の天井を上げた理由（2026-11-21）
 
 `async.raw`・`async.gzip`・`atlas-cap-runs`・`atlas-console`・`gis-geotiff`（COG の zstd・下から読む・複数バンド）・`legal-text`（Source Cooperative と AWS Open Data の通信先の開示）・`dist.assets` を実測へ。増分は 2 時点変化検出の経路（`imagery-change*.js`）と、COG 読みの拡張、能力 1 つ分の文書による。いずれも遅延チャンクで、起動時の転送は増えていない。あわせて、どこからも名指しで使われない export（`planCells`・`SCL`・`robustStats`・`robustThresholds`）を内部に戻した。
+
+## perf の天井: atlas-orchestrate
+
+main に取り込んだ #1280（統合知識層）が atlas-orchestrate チャンクを 82.4 kB から 89.4 kB に押し上げた（CI の check:perf が測定。この PR の差分は orchestrate に触れない）。#1280 の基準は atlas-console だけを上げていたので、天井を測定値 89.4 kB（91600 バイト、帯 2.0 kB の内）へ上げた。失効条件: main 側で orchestrate の天井が上がったら取り込んで重複を消す。
