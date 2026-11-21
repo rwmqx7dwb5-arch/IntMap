@@ -2234,7 +2234,7 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   手元に無いので断る。⚠ **b-tree は平衡させずに構築する**——行は rowid 昇順で一度だけ書かれ、挿入経路が
   存在しないので葉を前から詰めて interior を下から積むだけでよい。⚠ **標準が含意する auto-index 4 本を
   実際に建てる**（宣言だけして索引を建てないファイルは `integrity_check` が落ちる壊れた DB である）。
-- **出口は #R756 でできた**（`js/gis-export.js`）。ベクタは GeoJSON・CSV・GeoPackage・**KML 2.2・GPX 1.1**、
+- **出口は #R756 でできた**（`js/gis-export.js`）。ベクタは GeoJSON・CSV・**XLSX（`js/office-writer.js`・列と幾何の規則は CSV と同じで型付きセル）**・GeoPackage・**KML 2.2・GPX 1.1**、
   ラスタは GeoTIFF・COG。⚠ **KML / GPX は WGS 84 だけを述べる**ので他の座標系は断る。**名前は
   `name` → `title` → `label` の最初の非空の値**で、無ければ名前を付けない（行番号や id を代入しない）。
   **時刻はデータセットが宣言したときだけ**（`instant` → `TimeStamp` / `time`、`interval` → KML の `TimeSpan`、
