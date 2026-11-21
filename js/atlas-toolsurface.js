@@ -482,9 +482,15 @@ export function makeAtlasToolSurface(deps) {
          answer is longer, but it is `rendered` and Atlas is told so — its content is not repeated,
          only its opening. Raise the number when a card that Atlas must read whole exceeds it. */
       /* (atlas-turn-engine) …and an UNOBSERVED call ran, so the reader was shown its card too */
-      if ((ok || out.status === 'unobserved') && res && res.html) {
+      if ((ok || out.status === 'unobserved') && res && (res.html || (res.meta && res.meta.record))) {
+        /* (atlas-reader-record) THE RECORD IS THE MODEL'S, THE HTML IS THE READER'S. A result that has facts only the next call needs —
+           an id to hand on, the runtime that produced it, what to do next — carries them as `meta.record` (plain text), never inside
+           the card the reader is shown. They come FIRST: the text is cut at RESULT_TEXT_MAX, and an id lost to the cut is a result the
+           next step cannot use. */
+        var rec = (res.meta && typeof res.meta.record === 'string') ? res.meta.record.replace(/\s+/g, ' ').trim() : '';
         var shown = textOf(res.html);
-        if (shown) out.text = shown.length > RESULT_TEXT_MAX ? (shown.slice(0, RESULT_TEXT_MAX) + ' …') : shown;
+        var both = rec && shown ? (rec + ' ' + shown) : (rec || shown);
+        if (both) out.text = both.length > RESULT_TEXT_MAX ? (both.slice(0, RESULT_TEXT_MAX) + ' …') : both;
       }
       return out;
     }
