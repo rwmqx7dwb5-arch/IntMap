@@ -45,3 +45,8 @@ PR の CI が `async.raw` を 14209.4 kB と測り、天井 14136.4 kB(幅 70.7 
 
 `atlas-orchestrate` が 82.4 kB の天井を 14.0 kB 超えた(CI 実測 96.4 kB)。増分は `js/atlas-job-core.js`(14,003 バイト)とほぼ同じで、この PR の分。能力は減らず、`atlas-delegate.js` から約 100 行を移して共有核にしたため純増はその分。main を取り込んだ最新ツリーで測り直すと `atlas-orchestrate` は main 側で上がった天井(98,382 B)に収まり、`--update` が上げたのは `async.raw`(14376.3→14460.3 kB)と `atlas-cap-runs`(918.5→924.9 kB)の 2 行だけ。後者は取り込んだ main の変更による揺れで、この PR のコードではない。
 - 失効条件: main の `perf-ceiling.yml` が測定に合わせて天井を下げ直す。
+
+### 4.2 追補: 取り込んだ main の変更による 2 行
+
+main(動画入力・ハンズフリー音声・写真と衛星の突き合わせなど)を取り込んで測り直すと、`atlas-console` が 1105.8→1116.7 kB(+10.9 kB)、`dist.assets` が 21796.5→21907.3 kB(+110.8 kB)で天井を超えた。この PR が触るのは `atlas-delegate.js` と `atlas-job-core.js` だけで、どちらもこの 2 行に寄与しない(`atlas-console.js` はこの 2 ファイルを束ねない)。`--update` が上げたのはこの 2 行だけ。要因別の測定はしていない。
+- 失効条件: main の `perf-ceiling.yml` が測定に合わせて天井を下げ直す。

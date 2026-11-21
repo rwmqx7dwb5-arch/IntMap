@@ -25,7 +25,7 @@
       "atlas-cap-runs": 947074,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1132327,
+      "atlas-console": 1143532,
       "atlas-executor": 61782,
       "atlas-float": 10113,
       "atlas-geo-resolve": 49353,
@@ -218,7 +218,7 @@
   "dist": {
     "total": 1587385548,
     "data": 1223209830,
-    "assets": 22319629
+    "assets": 22433035
   },
   "phone": {
     "bytes": 342631,
