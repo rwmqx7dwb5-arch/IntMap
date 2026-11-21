@@ -8,7 +8,7 @@
  *  is read back into later answers, so it is a thing the reader decides to have. While the switch is off,
  *  knowledge.remember and knowledge.recall refuse by name (KNOWLEDGE_OFF); nothing is written and nothing is read.
  *  ON, it is on this DEVICE only. A second switch — «my account» — copies the claims to the reader's IntMap account
- *  (supabase/migrations/20261120130000_atlas_knowledge.sql) so every device they sign in on has them; that second
+ *  (supabase/migrations/20261122090000_atlas_knowledge.sql) so every device they sign in on has them; that second
  *  switch is the only thing that sends anything anywhere, and the Settings row says so.
  * ==========================================================================*/
 import { makeKnowledgeStore, memoryBackend, idbBackend } from './atlas-knowledge-store.js';

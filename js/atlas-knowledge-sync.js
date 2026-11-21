@@ -2,7 +2,7 @@
  *  IntMap · Atlas — THE KNOWLEDGE LAYER ON THE READER'S ACCOUNT   (atlas-knowledge)            js/atlas-knowledge-sync.js
  * ----------------------------------------------------------------------------
  *  The claims live on the device (js/atlas-knowledge-store.js). When the reader chooses «my account» in Settings, the
- *  same claims are copied to `atlas_knowledge_claims` (supabase/migrations/20261120130000_atlas_knowledge.sql, owner-only
+ *  same claims are copied to `atlas_knowledge_claims` (supabase/migrations/20261122090000_atlas_knowledge.sql, owner-only
  *  through RLS) so every device they sign in on has them. The copy mirrors the notebook's (js/atlas-notebook.js
  *  syncNow): one row per claim keyed by (account, claim id), the whole claim in `payload`.
  *

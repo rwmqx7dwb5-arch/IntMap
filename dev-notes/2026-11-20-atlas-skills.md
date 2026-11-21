@@ -16,3 +16,7 @@ internal: Skills are read by Atlas through find_capability; no reader-facing con
 検査: `tests/atlas-skills-checks.test.mjs`、`npm run check:capabilities`。
 
 perf 予算: `atlas-console`（遅延 chunk）が約 26 kB 増えた（Skill の en+jp 散文 4 本。起動時の読み込みには入らない）。`async.gzip`・`atlas-console`・`dist.assets` の天井をその分だけ引き上げた（`perf-budget.mjs --update`）。二言語の文言は他と同じ `[en, jp]` の組で持つ（`check:i18n` の言語キー付きオブジェクト禁止に従う）。
+
+## perf 予算を上げた理由
+
+Skills の散文（二言語・4 本）と検索・読み出し・監査の部品が async の atlas-console に入った（約 +29 kB raw）。起動時に読まれるもの（eager）は増えていない。天井は `node scripts/perf-budget.mjs --update` で実測に合わせた。

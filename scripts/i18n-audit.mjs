@@ -43,7 +43,8 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
+import { availableParallelism } from 'node:os';
 /* ⚠ (#R372) THE PARSE IS NOT THIS FILE'S. #R239's rule — pinned by tests/hazard-other-i18n-shape-audit-checks.test.mjs #R241 ① — is that the one
    gate holds no parser of its own; scripts/i18n-helpers.mjs already parses every file in js/ ONCE
    for this whole family of instruments, and `deadDash` below reads that syntax tree rather than
@@ -67,16 +68,40 @@ const LOCALES = join(ROOT, 'js', 'locales');
    spent guessing. The child's stderr is INHERITED (so it lands in the log where it happened), the
    exit status is reported with the script that produced it, and a parse failure says which file
    returned unreadable JSON and how much of it there was. */
-const run = (f, ...a) => {
-  let out;
-  try {
-    out = execFileSync(process.execPath, [join(ROOT, 'scripts', f), '--json', ...a],
-      { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] });
-  } catch (e) {
+/* (ci-queue-pressure) THE CHILDREN RUN CONCURRENTLY, THE RESULTS ARE READ IN THE SAME ORDER.
+   This was fourteen `execFileSync` calls one after another: MEASURED 2026-11-20, 92 s for the gate, 95 % of it
+   waiting on those children (i18n-report 18 s, positional 10 s, attr 9 s, keyed 2 s, the rest under 1 s each) — and
+   check:docs, three test files and the Gates shard each pay it. They read the tree and write nothing, so nothing
+   orders them. The list of children is NOT written here: it is read off the `= await run('<script>.mjs')` calls below
+   (a call that is not that shape just starts when it is reached, in series, as before), so a fifteenth child
+   cannot be forgotten. At most LIMIT run at once — every child loads the tree, and a runner has a few cores and
+   a few GB — and every verdict, message and exit code is the one the serial version printed. */
+const LIMIT = Math.max(2, Math.min(4, availableParallelism()));
+let active = 0;
+const waiting = [];
+const slot = () => new Promise((go) => { if (active < LIMIT) { active++; go(); } else waiting.push(() => { active++; go(); }); });
+const release = () => { active--; const next = waiting.shift(); if (next) next(); };
+const spawnJson = (f, a) => new Promise((resolve) => {
+  const child = spawn(process.execPath, [join(ROOT, 'scripts', f), '--json', ...a], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const chunks = [];
+  child.stdout.on('data', (c) => chunks.push(c));
+  child.on('error', (e) => resolve({ failed: e.code || e.message }));
+  child.on('close', (status) => resolve(status === 0 ? { out: Buffer.concat(chunks).toString('utf8') } : { failed: status != null ? 'exit ' + status : 'a signal' }));
+});
+const started = new Map();
+const launch = (f, a) => {
+  const key = [f, ...a].join(' ');
+  if (!started.has(key)) started.set(key, (async () => { await slot(); try { return await spawnJson(f, a); } finally { release(); } })());
+  return started.get(key);
+};
+const run = async (f, ...a) => {
+  const r = await launch(f, a);
+  if (r.failed) {
     console.error(`
-✗ scripts/${f} --json ${a.join(' ')} failed: ${e.status != null ? 'exit ' + e.status : e.code || e.message}`);
+✗ scripts/${f} --json ${a.join(' ')} failed: ${r.failed}`);
     process.exit(1);
   }
+  const out = r.out;
   try { return JSON.parse(out); }
   catch (e) {
     console.error(`
@@ -85,19 +110,19 @@ const run = (f, ...a) => {
     process.exit(1);
   }
 };
-
-const app = run('i18n-report.mjs');
-const keyed = run('i18n-keyed-audit.mjs');
-const pages = run('i18n-pages-audit.mjs');
-const pos = run('i18n-positional-audit.mjs');
-const two = run('i18n-two-branch-audit.mjs');
+for (const m of readFileSync(fileURLToPath(import.meta.url), 'utf8').matchAll(/= await run\('([A-Za-z0-9._-]+\.mjs)'\)/g)) launch(m[1], []);
+const app = await run('i18n-report.mjs');
+const keyed = await run('i18n-keyed-audit.mjs');
+const pages = await run('i18n-pages-audit.mjs');
+const pos = await run('i18n-positional-audit.mjs');
+const two = await run('i18n-two-branch-audit.mjs');
 /* ══ ⚠⚠⚠ (#R240) THE SIXTH SURFACE — «is this string in the system at all» ═════════════════════════
    Every instrument above measures HOW MUCH OF THE TABLE a language has. None of them can see a
    string that was never given a key, and 49 of those were shipping: every `title`, `aria-label` and
    `placeholder` in index.html was a bare literal, i.e. English on nine languages while all five
    percentages read 100 %. That is 「まだある」, and it is a different question, so it is a new
    surface HERE rather than a sixth free-standing instrument. */
-const attrs = run('i18n-attr-audit.mjs');
+const attrs = await run('i18n-attr-audit.mjs');
 /* ══ ⚠⚠⚠ (#R241) THE SEVENTH SURFACE — «is this tuple of translations a CALL» ═══════════════════
    #R240 asked whether a string is in the system at all. This asks whether a tuple of translations
    is written in a shape any of the instruments above can READ. Six tables in js/ held theirs as a
@@ -107,7 +132,7 @@ const attrs = run('i18n-attr-audit.mjs');
    a call site, at which point the report and the positional audit pick it up with no edit; this
    surface is what stops the shape coming back. Like the one above it is a NEW QUESTION, so it is a
    line in this gate rather than a seventh free-standing instrument (#R239's rule). */
-const arrays = run('i18n-positional-array-audit.mjs');
+const arrays = await run('i18n-positional-array-audit.mjs');
 /* ⚠⚠⚠ (#R242) THE NINTH SURFACE, AND THE ONLY ONE HERE THAT DOES NOT FAIL THE BUILD.
    `jp() ? '日本語' : 'English'` — #R237's two-branch audit cannot see it because the test is a CALL
    rather than a comparison against a language code. 486 sites, 432 distinct strings, every one of
@@ -115,7 +140,7 @@ const arrays = run('i18n-positional-array-audit.mjs');
    sites in the round that found it, so the number is PRINTED below rather than quietly absent: no
    round after this one can read this report and believe the translation is finished.
    ⚠ When it reaches zero, move it into `problems` and delete this note. */
-const helper = run('i18n-helper-ternary-audit.mjs');
+const helper = await run('i18n-helper-ternary-audit.mjs');
 /* ══ ⚠⚠⚠ (#R244) THE ELEVENTH SHAPE, AND THE ONLY ONE HERE THAT DOES NOT FAIL THE BUILD ═══════════
    `{en:'Tibet', jp:'チベット', de:'Tibet', ru:'Тибет'}` read as `nm[lg] || nm.en` — a tuple of
    translations keyed by LANGUAGE CODE rather than by position. #R241 closed the ARRAY form and left
@@ -131,7 +156,7 @@ const helper = run('i18n-helper-ternary-audit.mjs');
    this line is now a gate below like every other surface, and the OPEN GAP slot it occupied is
    taken by the TWELFTH shape (see next). Its output stays in the report at 0 rather than being
    deleted: a surface that is measured and empty is the only evidence that it is still watched. */
-const langmap = run('i18n-langmap-audit.mjs');
+const langmap = await run('i18n-langmap-audit.mjs');
 /* ══ ⚠⚠⚠ (#R246) THE TWELFTH SHAPE — A TUPLE HELD AS ADJACENT DATA, AND THE NEW OPEN GAP ═════════
    `['North Pacific Ocean','北太平洋','Nordpazifik',…]` inside a row that also carries a longitude,
    `_dc(…,'Ramstein Air Base','ラムシュタイン空軍基地',…)`, `lbl:['Population','人口',…]`. Nothing
@@ -142,7 +167,7 @@ const langmap = run('i18n-langmap-audit.mjs');
    #R242's rule for exactly this situation is that the number goes in the report as an OPEN GAP —
    printed, never counted in a percentage — rather than into a gate that the next round deletes.
    ⚠ When it reaches zero, move it into `problems` below and delete this note. */
-const pairs = run('i18n-pair-audit.mjs');
+const pairs = await run('i18n-pair-audit.mjs');
 /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════════
    Every surface above walks ELEMENTS or the tables behind them. `<title>` and
    `<meta name="description">` are neither, so index.html's browser tab, bookmark and every shared
@@ -152,10 +177,10 @@ const pairs = run('i18n-pair-audit.mjs');
    is added, because unlike the shape audits there is nothing to migrate: three documents, two
    fields each. See scripts/i18n-doc-audit.mjs for what is measured and what is excluded on
    purpose (og:/twitter: cards, admin.html). */
-const docs = run('i18n-doc-audit.mjs');
+const docs = await run('i18n-doc-audit.mjs');
 /* ══ (2026-09-27) A NOTICE HANDED A BARE LITERAL — `imToast('Map not ready')`. Not a tuple of any shape,
    so no surface above can count it. The sinks are discovered by name; see the script's header. */
-const sinks = run('i18n-sink-literal-audit.mjs');
+const sinks = await run('i18n-sink-literal-audit.mjs');
 /* ══ ⚠⚠⚠ (#R370) THE SEVENTEENTH SURFACE — «does this English key mean ONE thing» ═══════════════
    Every surface above asks whether a string HAS a translation. This asks whether the translation
    it has can possibly be right, and it is the first one whose answer can be «no» while the row is
@@ -164,7 +189,7 @@ const sinks = run('i18n-sink-literal-audit.mjs');
    whatever they mean — while the positional five carry their own arguments and cannot collide.
    MEASURED: `'Clear'` was one row over five meanings and ten sites, so the weather widget said
    «erase» for a clear sky in four languages. See scripts/i18n-key-collision-audit.mjs. */
-const collide = run('i18n-key-collision-audit.mjs');
+const collide = await run('i18n-key-collision-audit.mjs');
 /* ══ ⚠⚠⚠ (#R450) THE EIGHTEENTH SURFACE — «CAN ANYTHING ASK FOR THIS ROW?» ═══════════════════════
    Every surface above counts `want ∩ have`, so a row in `have` that is in NO `want` falls out of
    both the numerator and the denominator and is invisible to all seventeen — not short, not
@@ -178,7 +203,7 @@ const collide = run('i18n-key-collision-audit.mjs');
    which is the argument for a gate rather than one deletion: the shape recurs on its own.
    ⚠ It deliberately does NOT reuse this family's `want` set: see the header of the audit for why
    inheriting shapeOf()'s blind spots would turn each of them into a deletion. */
-const dead = run('i18n-dead-key-audit.mjs');
+const dead = await run('i18n-dead-key-audit.mjs');
 const orphanKeys = keyed.undeclared;
 
 /* ══ ⚠⚠⚠ (#R372) THE OPEN GAP IS EXEMPT FOR ONE REASON, AND THIS MEASURES THAT REASON ═══════════
@@ -578,7 +603,7 @@ if (process.argv.includes('--gate')) {
      names and one-line descriptions in de / ru / es as positional LA(…) arguments and in fr / ko /
      zh-Hant / zh-Hans in each locale's `inline` table, so that file is at zero and this line moved
      with it — 275 → 143. */
-  const PAIR_CEILING = 166;
+  const PAIR_CEILING = 143;
   if (pairs.total > PAIR_CEILING) problems.push(`${pairs.total - PAIR_CEILING} NEW translation tuple(s) held as adjacent data (${pairs.total} > ${PAIR_CEILING}) — every one is a fresh English fallback in fr/ko/zh-Hant/zh-Hans that no percentage above can see. Convert with pickArgs(); run scripts/i18n-pair-audit.mjs --list`);
   else if (pairs.total < PAIR_CEILING) problems.push(`the adjacent-data tuples are down to ${pairs.total} but PAIR_CEILING in scripts/i18n-audit.mjs still says ${PAIR_CEILING} — lower it, or the ratchet stops asserting anything`);
   /* ══ ⚠⚠⚠ (#R372) …AND THE RATCHET IS ONLY HONEST WHILE THE EXEMPTION'S REASON HOLDS ═════════════

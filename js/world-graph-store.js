@@ -12,6 +12,7 @@
  *    fetchSubgraph(DB, ref, {rels, depth, atMs})   the ties within `depth` of `ref`, registered
  *    findPersisted(DB, query)                                a ref / «wikidata:Q…» / exact name → the object (and its neighbours)
  *    nearPersisted(DB, lng, lat, km)                         placed persisted objects within km, registered
+ *    freshness(DB)                                           per feed: when the last ingest run ended `ok`, what its upstreams said about their own date, and whether the latest attempt failed
  *
  *  ⚠ NOTHING HERE DECIDES WHETHER AN ANSWER IS EMPTY. Every door returns `{ ok, error? }`: a database that did not
  *  answer is `unavailable` / `failed`, never an empty graph (the page says «could not read», not «nothing is tied»).
@@ -96,5 +97,12 @@ export function makeWorldGraphStore(deps) {
       rel: e.from_ref === ref ? e.rel : geo.inverseRel(e.rel).replace(/^~/, ''), ref: e.from_ref === ref ? e.to_ref : e.from_ref, fromMs: e.from_ms == null ? undefined : e.from_ms, toMs: e.to_ms == null ? undefined : e.to_ms }));
     return { ties, validity: self ? { fromMs: self.valid_from_ms == null ? undefined : self.valid_from_ms, toMs: self.valid_to_ms == null ? undefined : self.valid_to_ms } : null };
   }
-  return { relNames, toObjects, fetchSubgraph, findPersisted, nearPersisted, tiesOf };
+
+  /** [{feed, finishedAt, upstream, counts, latestStatus, latestNote}] — a feed that never ran is simply absent; a database that did not answer is `unavailable`/`failed`, never «fresh» */
+  async function freshness(DB) {
+    const r = await rpcWorldGraph(DB, 'world_graph_freshness', {});
+    return r.ok ? { ok: true, feeds: arr(r.data) } : r;
+  }
+
+  return { relNames, toObjects, fetchSubgraph, findPersisted, nearPersisted, tiesOf, freshness };
 }

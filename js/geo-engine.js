@@ -220,6 +220,7 @@ function _redrawLocalGlyphs(m,cover){
      import: the aircraft layer is lazy, and a static import here would put it in the start-up bundle.
      A kind nobody has provided yet answers false, exactly as the missing registry entry did. */
   const _kinds=Object.create(null);
+  let _limbWhy='not-asked';   /* (daynight-air) the stage addLimb reached last — see layers.limbWhy */
   /* ══ THE RENDERER'S CAMERA — WHICH MAPLIBRE 6 NO LONGER HANGS ON THE MAP ══════════════════════
      v6's Map COMPOSES a Camera instead of extending one (its 6.0.0 changelog, and the v5→v6
      migration guide: «The internal `map.transform` property has been removed»). The transform the painter
@@ -2076,8 +2077,14 @@ function _redrawLocalGlyphs(m,cover){
        band register with the globe under any camera, pitched or not, instead of a screen-space
        circle that would slide off the moment the reader tilts.
        ⚠ A CESIUM-CLASS ENGINE ANSWERS THIS WITH ITS OWN SkyAtmosphere and never calls this. */
-    addLimb(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
-      try{ if(!_kinds.limbLayer) return false;
+    /* (daynight-air) WHY THE LAST addLimb SAID NO. A refusal used to be a bare `false`, so a browser where the app's
+       own atmosphere never appears (measured: Edge on Intel Arc, `?limb=1` forced, `addLimb` false with no
+       `addLayer` call and no console line) could not be told from a deliberate one. Each stage names itself
+       BEFORE its own test, so the value left behind is the stage that returned. Read: `IntMapGeoEngine.layers.limbWhy()`. */
+    limbWhy(){ return _limbWhy; },
+    addLimb(id,before){ _limbWhy='no-map-or-already-in-style'; const m=_m(); if(!m||m.getLayer(id)) return false;
+      try{ _limbWhy='kind-not-provided'; if(!_kinds.limbLayer) return false;
+        _limbWhy='no-webgl2-on-map-canvas';
         const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
         /* ══ ⚠⚠ (#R227) NOT ON A CPU RASTERISER, AND THAT IS A MEASURED REFUSAL ═════════════════════
            The limb is a per-pixel scattering march. On any real GPU it is free — measured, it is
@@ -2126,13 +2133,14 @@ function _redrawLocalGlyphs(m,cover){
              || /iPhone|iPad|iPod|Android|Mobi/i.test(ua)
              || (/Mac/.test(ua) && navigator.maxTouchPoints>1);
         }catch(_){ phone=false; }
-        if(phone) return false;
-        if(!forced) try{
+        _limbWhy='phone-class-device'; if(phone) return false;
+        _limbWhy='software-rasteriser'; if(!forced) try{
           const g=cv.getContext('webgl2'), ext=g&&g.getExtension('WEBGL_debug_renderer_info');
           const name=String((ext&&g.getParameter(ext.UNMASKED_RENDERER_WEBGL))||'');
           if(name&&/swiftshader|llvmpipe|software|microsoft basic|warp/i.test(name)) return false;
         }catch(_){}
-        const S=window.IntMapSkyModel; if(!(S&&S.tables&&S.sunOpticalDepth)) return false;
+        _limbWhy='sky-model-missing'; const S=window.IntMapSkyModel; if(!(S&&S.tables&&S.sunOpticalDepth)) return false;
+        _limbWhy='threw-before-addLayer';
         const model=Object.assign({},S.tables(),{ sunOpticalDepth:S.sunOpticalDepth });
         const L=(_limbs[id]||(_limbs[id]=_kinds.limbLayer().makeLayer(id,()=>_limbUniforms(id),model)));
         m.addLayer(L,(before&&m.getLayer(before))?before:undefined);
@@ -2149,8 +2157,8 @@ function _redrawLocalGlyphs(m,cover){
         if(L.imAlive && !L.imAlive()){
           try{ m.removeLayer(id); }catch(_){}
           delete _limbs[id]; delete _limbOn[id]; delete _limbStrength[id]; delete _limbDisc[id];
-          return false; }
-        return true; }catch(_){ return false; } },
+          _limbWhy='layer-dead-on-add'; return false; }
+        _limbWhy='added'; return true; }catch(e){ try{ console.warn('[IntMap] limb layer refused at',_limbWhy,':',e&&e.message); }catch(_){} return false; } },
     /* (#R236) has the limb painted a frame yet? — the watchdog in js/theme-sky.js asks, so that a
        layer which is alive but never resolves its uniforms still hands the rim back. */
     limbDrawn(id){ try{ const L=_limbs[id]; return (L&&L.imDrawn)?L.imDrawn():0; }catch(_){ return 0; } },
@@ -2195,7 +2203,7 @@ function _redrawLocalGlyphs(m,cover){
     removeAircraftCloud(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _aircraft[id]; return true; },
     hasAircraftCloud(id){ const m=_m(); try{ return !!(m&&m.getLayer(id)); }catch(_){ return false; } },
     /* 3D Tiles: capability `tiles3d` is FALSE here — a flat-roofed fill-extrusion is not a streamed mesh, so these answer NO rather than approximating one. */
-    addTileset(){ return false; }, removeTileset(){ return false; }, setTilesetVisible(){ return false; }, hasTileset(){ return false; }, tilesetInfo(){ return null; },
+    addTileset(){ return false; }, removeTileset(){ return false; }, setTilesetVisible(){ return false; }, placeTileset(){ return false; }, hasTileset(){ return false; }, tilesetInfo(){ return null; },
     /* …and the SAME projection, on the CPU, for a whole array at once. `projectAltitude` above is the
        one-point form and builds a model matrix per call, which a hover over eleven thousand objects
        cannot afford. This takes the mercator/altitude triples the layer already holds and multiplies
@@ -2715,7 +2723,7 @@ function _redrawLocalGlyphs(m,cover){
       addSolid:(id,b)=>A().addSolid?A().addSolid(id,b):false, setSolid:(id,o)=>A().setSolid?A().setSolid(id,o):false,
       /* (#R227) the atmosphere's limb, drawn by this app because the renderer discards the sky block
          on the globe — see the adapter's addLimb */
-      addLimb:(id,b)=>A().addLimb?A().addLimb(id,b):false, setLimb:(id,o)=>A().setLimb?A().setLimb(id,o):false,
+      limbWhy:()=>(A().limbWhy?A().limbWhy():'no-adapter-support'), addLimb:(id,b)=>A().addLimb?A().addLimb(id,b):false, setLimb:(id,o)=>A().setLimb?A().setLimb(id,o):false,
       removeLimb:id=>A().removeLimb?A().removeLimb(id):false, hasLimb:id=>A().hasLimb?A().hasLimb(id):false,
       /* (#R236) frames the limb has actually painted — 0 means "it is there and it is not drawing" */
       limbDrawn:id=>A().limbDrawn?A().limbDrawn(id):0,
@@ -2731,6 +2739,7 @@ function _redrawLocalGlyphs(m,cover){
       addTileset:(id,s)=>A().addTileset?A().addTileset(id,s):false,
       removeTileset:id=>A().removeTileset?A().removeTileset(id):false,
       setTilesetVisible:(id,on)=>A().setTilesetVisible?A().setTilesetVisible(id,on):false,
+      placeTileset:(id,o)=>A().placeTileset?A().placeTileset(id,o):false,
       hasTileset:id=>A().hasTileset?A().hasTileset(id):false,
       tilesetInfo:id=>A().tilesetInfo?A().tilesetInfo(id):null,
       hasAircraftCloud:id=>A().hasAircraftCloud?A().hasAircraftCloud(id):false,

@@ -11,3 +11,11 @@ internal: 既定オフで利用者には見えない（Atlas が使う能力。�
 - 証拠 ID は呼び出し単位で、後のセッションでは意味が無い。そのため `verified` は URL かデータセット名で再確認できるときだけ受け付け、ID は追跡用に残す。
 - 否定した見立て: ターンごとの自動抽出（誤保存が過去の回答を事実にする）。モデルによる矛盾・古さの判定をコードに持たせること（Atlas が supersedes / contradicts で述べる）。
 - 検査: `tests/knowledge-layer-checks.test.mjs`。未了: アカウント同期（第 2 スイッチ付き）、世界グラフへの ref の実在照合、設定画面のスイッチ。
+
+## 天井を上げた理由
+
+`async chunk "atlas-cap-runs"` の天井を 896.4 kB から 901.4 kB に上げた（`async.raw` は 14136.4 → 14231.4 kB）。増えた分は新しい能力 4 本（knowledge.remember / recall / forget / setting）の実装と説明文で、`atlas-cap-knowledge.js` がこのチャンクに入る。利用者が得るものは Atlas が出典つきの知識を端末に残し、後の質問で引ける能力。ほかの行は動いていない。
+
+## perf 予算を上げた理由
+
+知識層の 4 能力と保存・同期・設定の部品（async の atlas-cap-runs 約 11.5 kB 増・async 合計 raw +72.6 kB / gzip +41.7 kB・dist.assets +142 kB）が配られる資産に加わった。起動時に読まれるもの（eager）は増えていない。天井は `node scripts/perf-budget.mjs --update` で CI の実測に合わせた。

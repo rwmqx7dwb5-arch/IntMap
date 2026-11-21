@@ -12,6 +12,10 @@
  *  Settings — off / this device / my account — and Atlas's `knowledge.setting` flips the same stored value.
  * ==========================================================================*/
 
+import { IntMapLang } from './lang-registry.js';
+/* two-language wording as data: the array [en, jp] */
+const T = IntMapLang.pickArgs();
+
 export const PREF_KEY = 'intmap_atlas_knowledge';
 export const SELECT_ID = 'setting-atlas-knowledge';
 const NOTE_ID = 'setting-atlas-knowledge-note';
@@ -32,16 +36,16 @@ export function wireKnowledgeSettings(doc, host) {
   const sel = doc && doc.getElementById ? doc.getElementById(SELECT_ID) : null;
   if (!sel) return null;
   const note = () => doc.getElementById(NOTE_ID);
-  const say = (en, jp) => { const n = note(); if (n) n.textContent = (document.documentElement.lang || '').toLowerCase().startsWith('ja') ? jp : en; };
+  const say = (pair) => { const n = note(); if (n) n.textContent = (document.documentElement.lang || '').toLowerCase().startsWith('ja') ? pair[1] : pair[0]; };
   const paint = async () => {
     const p = readKnowledgePrefs(); sel.value = modeOf(p);
-    if (!p.on) { say('Off. Nothing is kept and nothing is read back.', 'オフです。何も保存せず、何も読み返しません。'); return; }
+    if (!p.on) { say(T('Off. Nothing is kept and nothing is read back.', 'オフです。何も保存せず、何も読み返しません。')); return; }
     let n = null; try { n = await (await import('./atlas-knowledge.js')).knowledgeStore().count(); } catch (_) { }
-    say((p.sync ? 'Kept on this device and in your account' : 'Kept on this device only') + (n == null ? '' : ' · ' + n + ' claim(s)'), (p.sync ? 'この端末とアカウントに保存' : 'この端末にだけ保存') + (n == null ? '' : ' · ' + n + ' 件'));
+    say(T((p.sync ? 'Kept on this device and in your account' : 'Kept on this device only') + (n == null ? '' : ' · ' + n + ' claim(s)'), (p.sync ? 'この端末とアカウントに保存' : 'この端末にだけ保存') + (n == null ? '' : ' · ' + n + ' 件')));
   };
   sel.addEventListener('change', async () => {
     const want = sel.value;
-    if (want === 'account' && !(host && host() && host().user)) { writeKnowledgePrefs({ on: true, sync: false }); await paint(); say('Sign in to keep it in your account — it is kept on this device for now.', 'アカウントに保存するにはログインが必要です。いまはこの端末にだけ保存します。'); return; }
+    if (want === 'account' && !(host && host() && host().user)) { writeKnowledgePrefs({ on: true, sync: false }); await paint(); say(T('Sign in to keep it in your account — it is kept on this device for now.', 'アカウントに保存するにはログインが必要です。いまはこの端末にだけ保存します。')); return; }
     writeKnowledgePrefs({ on: want !== 'off', sync: want === 'account' });
     await paint();
     if (want === 'account') { try { const m = await import('./atlas-knowledge.js'); await m.syncKnowledge(); await paint(); } catch (_) { } }

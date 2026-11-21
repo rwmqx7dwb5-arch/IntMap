@@ -52,7 +52,7 @@ import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /
 
 const VERSION = 1;
 export const KINDS = ['verified', 'inferred', 'stale', 'contested'];
-export const WRITE_KINDS = ['verified', 'inferred'];
+const WRITE_KINDS = ['verified', 'inferred'];
 const { canonicalizeUrl } = makeAtlasEvidence();
 
 const str = (v, n) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, n);
@@ -68,7 +68,7 @@ export function newId(now) {
 }
 
 /** the identity of a statement for "have I already kept this": case, width and spacing folded */
-export function statementKey(s) { return String(s || '').normalize('NFKC').toLowerCase().replace(/[\s　.,;:!?。、]+/g, ' ').trim(); }
+function statementKey(s) { return String(s || '').normalize('NFKC').toLowerCase().replace(/[\s　.,;:!?。、]+/g, ' ').trim(); }
 
 const dateMs = (v) => {
   if (v == null || v === '') return null;
@@ -80,7 +80,7 @@ const dateMs = (v) => {
 const endOf = (v) => { const s = String(v == null ? '' : v).trim(); const ms = dateMs(v); return (/^-?\d{4}$/.test(s) && ms != null) ? Date.UTC(+s + 1, 0, 1) - 1 : ms; };
 
 /** one evidence entry Atlas names → what is stored, or null when it cannot be checked again */
-export function normalizeEvidence(e) {
+function normalizeEvidence(e) {
   if (!e || typeof e !== 'object') return null;
   const out = { evidenceId: str(e.id || e.evidenceId, 12) || undefined, title: str(e.title, 180), publisher: str(e.publisher, 90), date: str(e.date || e.publishedAt, 32) || undefined };
   if (e.url) {
