@@ -35,7 +35,10 @@
 
 import { IntMapLang } from './lang-registry.js';
 
-const SOURCE_KINDS = Object.freeze(['number', 'line', 'map']);
+/* ⚠ (atlas-figure-sources) FOUR KINDS, TWO QUESTIONS. number / line / map answer 「where does this come from」 for DATA and for the BACKGROUND the answer sits on.
+   'figure' answers it for what ATLAS MADE — the zone, the route, the ring it drew. The basemap's credit (Esri, NASA …) is not the basis of a shape Atlas
+   computed on top of it, and a list that only carried the first made every figure look sourced by the imagery under it. */
+const SOURCE_KINDS = Object.freeze(['number', 'line', 'map', 'figure']);
 
 /* ⚠ A NUMBER OF ONE DIGIT IS NOT MATCHED. Observed (2026-11-16, the prose of production Atlas answers read for this
    work): the one-digit numbers in Atlas's sentences are counts and ordinals of its own — 「3つの都市」「第1に」「上位5件」 —
@@ -111,6 +114,13 @@ export function makeAtlasAnswerSources(deps) {
           origin: p.origin || '', values: Array.isArray(p.values) ? p.values.filter((v) => typeof v === 'number' && isFinite(v)) : [],
           date: p.date || '', at: p.at || null });
       });
+      /* a figure the run drew whose tool stated no basis for it: said so, in those words — never given the basemap's credit, never left out.
+         A tool that DOES state one (meta.provenance kind 'figure') has already been added above and covers its own drawing. */
+      const stated = prov.some((p) => p && p.kind === 'figure');
+      if (!stated) (Array.isArray(r.drew) ? r.drew : []).forEach((d) => {
+        if (!d || !d.kind) return;
+        add({ kind: 'figure', what: d.what || d.kind, source: say(LA('Drawn by Atlas — no data source was recorded for this shape', 'Atlas が作図 — この図形のデータの出典は記録されていません')), origin: 'atlas' });
+      });
     });
     const x = extra || {};
     const b = x.borders;
@@ -124,7 +134,7 @@ export function makeAtlasAnswerSources(deps) {
     (x.credits || []).forEach((c) => {
       const s = String(c || '').trim();
       if (!s || lineSources.some((l) => s.indexOf(l) >= 0 || l.indexOf(s) >= 0)) return;
-      add({ kind: 'map', what: LA('Credited on the map', '地図の出典表記'), source: s });
+      add({ kind: 'map', what: LA('Map background credit', '背景地図の出典表記'), source: s });
     });
     return items;
   }
@@ -197,19 +207,27 @@ export function makeAtlasAnswerSources(deps) {
     /* the key to the mark is shown only when the answer actually carries marks (o.linked) — the account of how the list was made is the summary's tooltip */
     if (o.linked) h += '<div class="atl-srcs-note">' + esc(T('[n] marks a number that matches that source.', '[n] は、その出典の値と一致した数字です。')) + '</div>';
     if (items && items.length) {
-      h += '<ol class="atl-srcs-list">';
-      items.forEach((it) => {
-        const x = itemText(it);
-        h += '<li id="' + esc(anchor(o.id, it.n)) + '" data-n="' + it.n + '" data-kind="' + esc(it.kind) + '"><span class="atl-srcs-n">[' + it.n + ']</span> '
-          + '<span class="atl-srcs-what">' + esc(x.what) + '</span> — <span class="atl-srcs-src">' + esc(x.source) + '</span>'
-          + (x.licence ? ' <span class="atl-srcs-lic">· ' + esc(x.licence) + '</span>' : '')
-          + (it.date && it.kind !== 'line' ? ' <span class="atl-srcs-lic">· ' + esc(it.date) + '</span>' : '')
-          + (x.cite ? '<div class="atl-srcs-cite-line">' + esc(T('Cite as: ', '引用: ') + x.cite) + '</div>' : '')
-          + (it.kind === 'line' && it.at ? ' <button type="button" class="atl-srcs-btn" data-atl-line="' + esc(it.at.lng + ',' + it.at.lat) + '">'
-            + esc(T('Where this line comes from', 'この線の根拠')) + '</button>' : '')
-          + '</li>';
+      /* what Atlas made, and what the background and the data are credited to, are two lists: one answers for the figures, the other for everything under them */
+      const groups = [
+        { k: 'figure', head: T('Shapes Atlas drew', 'Atlas が描いた図形'), rows: items.filter((it) => it.kind === 'figure') },
+        { k: 'data', head: T('Data and map background', 'データと背景地図'), rows: items.filter((it) => it.kind !== 'figure') },
+      ].filter((g) => g.rows.length);
+      groups.forEach((g) => {
+        if (groups.length > 1) h += '<div class="atl-srcs-group">' + esc(g.head) + '</div>';
+        h += '<ol class="atl-srcs-list" data-group="' + g.k + '">';
+        g.rows.forEach((it) => {
+          const x = itemText(it);
+          h += '<li id="' + esc(anchor(o.id, it.n)) + '" data-n="' + it.n + '" data-kind="' + esc(it.kind) + '"><span class="atl-srcs-n">[' + it.n + ']</span> '
+            + '<span class="atl-srcs-what">' + esc(x.what) + '</span> — <span class="atl-srcs-src">' + esc(x.source) + '</span>'
+            + (x.licence ? ' <span class="atl-srcs-lic">· ' + esc(x.licence) + '</span>' : '')
+            + (it.date && it.kind !== 'line' ? ' <span class="atl-srcs-lic">· ' + esc(it.date) + '</span>' : '')
+            + (x.cite ? '<div class="atl-srcs-cite-line">' + esc(T('Cite as: ', '引用: ') + x.cite) + '</div>' : '')
+            + (it.kind === 'line' && it.at ? ' <button type="button" class="atl-srcs-btn" data-atl-line="' + esc(it.at.lng + ',' + it.at.lat) + '">'
+              + esc(T('Where this line comes from', 'この線の根拠')) + '</button>' : '')
+            + '</li>';
+        });
+        h += '</ol>';
       });
-      h += '</ol>';
     }
     if (o.credit) h += '<div class="atl-srcs-credit-line">' + esc(T('Credit line: ', '出典表記: ') + o.credit) + '</div>';
     if (o.pending) h += '<div class="atl-srcs-note atl-srcs-wait">' + esc(T('Reading the records of the lines on the map…', '地図の線の記録を読んでいます…')) + '</div>';
@@ -241,6 +259,7 @@ export function makeAtlasAnswerSources(deps) {
 const CSS = '.atl-srcs{margin-top:var(--atl-zone-gap,10px);padding-top:6px;border-top:1px solid rgba(128,128,128,0.18);font-size:12px;line-height:1.5;color:var(--text-muted);}'
   + '.atl-srcs-h{cursor:pointer;font-weight:600;font-size:12px;margin-bottom:2px;list-style-position:inside;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
   + '.atl-srcs[open]>.atl-srcs-h{white-space:normal;}'
+  + '.atl-srcs-group{margin:6px 0 0;font-size:11px;font-weight:650;letter-spacing:.02em;}'
   + '.atl-srcs-note{color:var(--text-muted);font-size:11px;margin:2px 0 4px;}'
   + '.atl-srcs-list{margin:2px 0 4px;padding-left:4px;list-style:none;}'
   + '.atl-srcs-list li{margin:3px 0;border-radius:6px;transition:background .4s;}'
@@ -271,7 +290,7 @@ export function attachSources(ctx) {
   const core = ctx.core;
   let seq = 0;
   const changedMap = (keep) => (keep || []).some((r) => r && r.ok !== false && r.meta && (
-    (Array.isArray(r.meta.produced) && r.meta.produced.indexOf('map') >= 0) || /^time\./.test(String(r.meta.capabilityId || ''))));
+    (Array.isArray(r.meta.produced) && r.meta.produced.indexOf('map') >= 0) || /^time\./.test(String(r.meta.capabilityId || ''))) || (Array.isArray(r.drew) && r.drew.length > 0));
   function viewCentre() { try { const c = ctx.GE().camera.getCenter(); return c ? { lng: +(+c.lng).toFixed(5), lat: +(+c.lat).toFixed(5) } : null; } catch (_) { return null; } }
   function startMap(bubble, question) {
     if (bubble.__atlSrcMap) return bubble.__atlSrcMap;
@@ -339,6 +358,8 @@ export function attachSources(ctx) {
     const root = bubble && bubble.querySelector && bubble.querySelector('.atl-srcs');
     if (!root || root.__atlBound) return;
     root.__atlBound = true;
+    if (!bubble.__atlSrcsClick) bubble.__atlSrcsClick = true;   /* the delegated press below belongs to the bubble, which outlives every repaint of the list */
+    else { bindRoot(); return; }
     bubble.addEventListener('click', (e) => {
       const t = /** @type {HTMLElement} */ (e.target);
       const a = t && t.closest ? t.closest('a[data-atl-srcn]') : null;
@@ -355,9 +376,12 @@ export function attachSources(ctx) {
         if (p.length === 2 && p.every(isFinite)) import('./border-provenance-card.js').then((m) => m.BorderProvenanceCard.openArea({ GE: ctx.GE, HOST: ctx.HOST, lngLat: { lng: p[0], lat: p[1] } })).catch(() => {});
       }
     });
-    root.addEventListener('toggle', (ev) => { if (ev.target === root) bubble.__atlSrcsOpen = root.open; });   /* a repaint (the map's half landing) keeps what the reader opened */
-    const box = root.querySelector('.atl-srcs-citebox');
-    if (box) box.addEventListener('toggle', () => { const body = box.querySelector('.atl-srcs-citebody'); if (box.open && body && !body.childNodes.length) fillCite(bubble, body, question); });
+    bindRoot();
+    function bindRoot() {
+      root.addEventListener('toggle', (ev) => { if (ev.target === root) bubble.__atlSrcsOpen = root.open; });   /* a repaint (the map's half landing) keeps what the reader opened */
+      const box = root.querySelector('.atl-srcs-citebox');
+      if (box) box.addEventListener('toggle', () => { const body = box.querySelector('.atl-srcs-citebody'); if (box.open && body && !body.childNodes.length) fillCite(bubble, body, question); });
+    }
   }
   return { compose, bind, ready };
 }
