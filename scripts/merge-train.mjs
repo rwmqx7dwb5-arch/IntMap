@@ -201,8 +201,17 @@ function build(args) {
 }
 
 function quickGatesGreen(dir) {
-  const quick = ['check:docs', 'check:catalog', 'check:capabilities'];
+  const quick = ['check:docs', 'check:catalog', 'check:capabilities', 'check:testbudget'];
   const red = quick.filter((g) => run(process.execPath, ['--run', g], { cwd: dir, stdio: 'inherit' }).status !== 0);
+  /* …and the start-up budget, which needs a build (minutes, not the CI's hour). The driver keeps MAIN's
+     size for every row both sides moved (intmap-clash=upstream), so N PRs that each raised a ceiling
+     for a reason they wrote down arrive over it together (measured on the first train: six rows). The
+     raise is a decision: `node scripts/perf-budget.mjs --update` in the train's worktree, with the
+     boarded PRs' reasons, then --push-only. */
+  if (!red.length) {
+    const b = run(process.execPath, ['--run', 'build'], { cwd: dir, stdio: 'inherit' });
+    if (b.status !== 0 || run(process.execPath, ['--run', 'check:perf'], { cwd: dir, stdio: 'inherit' }).status !== 0) red.push('build / check:perf');
+  }
   if (!red.length) return true;
   console.log(`\n✗ 手元の門が赤: ${red.join(' ')}。push しない。直して commit し、続きは: node scripts/merge-train.mjs --push-only ${dir}`);
   return false;
