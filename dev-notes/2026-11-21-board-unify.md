@@ -32,3 +32,6 @@ main 側の他 PR の増分と本統合の metrics/objects/feed が重なり、a
 
 ## dist.total の天井（CI の実測に合わせて手で上げた）
 CI の check:perf が dist.total 1550243.8 kB を測り、ローカルの測定（data の取得物が CI と一致しない）より大きかった。--update はローカル値でしか上げないため、CI が報告した値（1550243.8 kB × 1024 バイト）へ天井を直接合わせた。増分の大半は main 側の data 追加で、本統合が data を足したわけではない（足したのは js の metrics/objects/feed のみ）。
+
+## perf 天井（統合知識層の取り込み後）
+atlas-cap-runs が 929.5 kB（天井 918.5 kB）。main の統合知識層 (#1280) の能力 1 本が atlas-cap-runs に加わった分で、本統合の metrics/objects/worldObjects 変換と合わせて天井を上げた。
