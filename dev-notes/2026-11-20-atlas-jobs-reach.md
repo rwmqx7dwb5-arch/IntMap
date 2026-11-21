@@ -55,3 +55,6 @@ main の増分（Atlas の skills・board など、他の PR）と重なって�
 | `async.raw` | 14376.3 → 14483.1 kB | 14483.0 kB |
 | `atlas-console` | 1105.8 → 1114.4 kB | 1114.3 kB |
 | `dist.assets` | 21796.5 → 21919.4 kB | 21919.3 kB |
+
+さらに main の Atlas の追加（マルチモーダル入力）が先に載り、`atlas-console` は CI の実測が 1121.0 kB になった
+（上限 1114.4 → 1121.1 kB）。この PR の分の増分は小さく、残りは他の PR のもの。上限は CI の実測に合わせた。
