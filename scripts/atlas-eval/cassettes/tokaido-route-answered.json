@@ -78,17 +78,21 @@
           "basis": "lexical",
           "matches": [
             {
+              "id": "compute.run",
+              "tool": "compute_run"
+            },
+            {
+              "id": "navigation.start",
+              "tool": "navigation_start",
+              "needsConfirmation": "explicit"
+            },
+            {
               "id": "routing.route",
               "tool": "routing_route"
             },
             {
               "id": "layers.railAxis",
               "tool": "layers_railAxis"
-            },
-            {
-              "id": "navigation.start",
-              "tool": "navigation_start",
-              "needsConfirmation": "explicit"
             }
           ]
         }
