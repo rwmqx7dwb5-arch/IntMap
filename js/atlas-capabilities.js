@@ -399,6 +399,11 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
       ["knowledge.forget","knowledgeForget","forgetKnowledge,deleteKnowledge","research","none","knowledge","explanation","persist","explicit","",""],
       ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
+      ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.edit","boardEdit","editBoard,editTable,editWorkspace,changeCell,setCell","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.delta","boardDelta","boardChanges,whatDidIChange,workspaceDiff","panel","none","","explanation","read","none","","board"],
+      ["ui.compose","dashboard","uiCompose","ui","none","","panel,explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
