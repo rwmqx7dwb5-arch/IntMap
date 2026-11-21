@@ -1220,6 +1220,13 @@ atlas-view-ground.js              **見たものの裏づけ**（#R589）— `lo
                                   （`cover`／`inView` という2つの尺度で順位づけ）。**タグの許可表は持たない**——
                                   タグをそのまま渡し、判断は Atlas に返す。**見つからなかったことは文として書く**
                                   （空欄は「知らされていない」と「そこには無い」を区別できない）。座標の桁数もここが決める
+atlas-video-frames.js            動画を Atlas が読める1枚にする。クリップを等間隔（各区間の中央・0秒と末尾は避ける）の最大9フレームに
+                                  サンプルし、時刻を焼き込んだコンタクトシート**1枚**にする。画像は1リクエスト4枚までで写真と比較する
+                                  枠を残すため。全プロバイダが読める形（Gemini だけが生の動画を受ける）。音声は送らず、その旨を
+                                  `caption()` が述べる。`extract` は document を引数で受け、デコード不能な動画は黒いシートでなく null。
+atlas-voice.js                    ハンズフリー音声。聞き続け、確定した発話を1発話1メッセージで送る。認識器の自然終了は再開し、
+                                  マイク拒否は再試行せず理由を述べて止まり、Atlas の作業中に話した分は保留してターン終了で送る
+                                  （送信は進行中ターンを中止するため）。語句の解釈はしない——意味づけは Atlas。
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/layer-boot-graph-checks.test.mjs #R175 ③ が
                                   「動的 import でしか届かない export は死んだ export」と見るため）。
@@ -2754,7 +2761,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 170 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 171 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
