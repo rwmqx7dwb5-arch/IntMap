@@ -238,7 +238,16 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
 embed-client.js                   **埋め込み API のホストの側**と約束事（`PROTOCOL`・`mount`）。他サイトが URL で import するので
                                   何も import せず、vite が dist/ にそのまま写す。embed-mode.js が PROTOCOL を import する
 geo-similar.js                    **地域の特徴ベクトルによる類似検索**（Spatial Embeddings 第 1 スライス）。OSM の建物・道路・施設・水辺の種類別の密度を
-                                  比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる
+                                  比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる。
+                                  `signal:'embedding'` は同じ区画の取り方（`planCells`）で AlphaEarth の埋め込みの cosine で並べる（`findSimilarEmbedding`）
+imagery-change.js                 **画像から分かる変化の純粋な核** — 2 時点を同じ格子で比べる（光学の指数・SAR の dB・土地被覆の遷移・
+                                  AlphaEarth 埋め込みの距離）。閾値は差の分布（中央値 ± k·σ）から決め、使えない画素（SCL の雲・影）は差に入れず、
+                                  `evidenceOf` が根拠（画像 id・撮影日・出典・手順・使えた画素・制約）を 1 つの形で返す。ネットワークも DOM も持たない
+imagery-change-io.js              **画像の探索と読み出し**（Sentinel-2：Earth Search／Sentinel-1 RTC・年次土地被覆：Planetary Computer の匿名 SAS／
+                                  AlphaEarth：Source Cooperative の COG と、約 800 MB の索引をバイト範囲の二分探索で読む `aefLocate`）。
+                                  js/gis-cog.js の `readWindow` を注入して同じ格子に読む。夜間光は匿名の数値の供給元が確認できず含めない
+imagery-change-atlas.js           Atlas の `geo.imageChange` と `geo.similar` の埋め込み版の本体（Atlas の chunk に遅延）。場所の解決・回答の組み立て・
+                                  結果のラスタをデータセットとして登録する
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
                                   コード）は `js/atlas-attach.js` の `ATL_FILE` に訊き（写さず共有）、文法は
@@ -1057,7 +1066,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  254 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  255 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1074,7 +1083,7 @@ atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
-atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar。js/geo-similar.js の扉と引数の束縛）
+atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar。js/geo-similar.js の扉と引数の束縛）・2 時点の画像の変化（geo.imageChange。本体は js/imagery-change-atlas.js）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
@@ -1188,7 +1197,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 254 を検索・到達可能 251）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 255 を検索・到達可能 252）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1208,7 +1217,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 254 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 255 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝

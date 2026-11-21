@@ -9,8 +9,8 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14647253,
-    "gzip": 4949839,
+    "raw": 14757915,
+    "gzip": 4976817,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -25,7 +25,7 @@
       "atlas-cap-runs": 930842,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1106006,
+      "atlas-console": 1117527,
       "atlas-executor": 61782,
       "atlas-float": 10113,
       "atlas-geo-resolve": 49353,
@@ -84,7 +84,7 @@
       "gis-export": 40134,
       "gis-fetch": 8730,
       "gis-geopackage": 26667,
-      "gis-geotiff": 24029,
+      "gis-geotiff": 26535,
       "gis-ogcapi": 5664,
       "gis-packed": 11355,
       "gis-pmtiles": 11491,
@@ -112,7 +112,7 @@
       "layer-row-label": 402,
       "layer-time": 13553,
       "layer-time-decl": 21678,
-      "legal-text": 93960,
+      "legal-text": 96624,
       "lib": 129709,
       "link-codec": 1344,
       "map-cite": 18254,
@@ -218,7 +218,7 @@
   "dist": {
     "total": 1579471807,
     "data": 1223209830,
-    "assets": 22207353
+    "assets": 22373141
   },
   "phone": {
     "bytes": 342631,
