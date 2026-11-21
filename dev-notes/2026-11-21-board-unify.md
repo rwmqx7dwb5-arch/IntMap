@@ -29,3 +29,6 @@ newsjp: 回答内の画面と操作できるボードの実装が 1 本になり
 
 ## perf 天井（3 回目の main 取り込み後）
 main 側の他 PR の増分と本統合の metrics/objects/feed が重なり、async.raw 14405 kB・atlas-cap-runs 920 kB・dist.assets 21840 kB へ上げた。本統合分は metrics/objects ウィジェットと worldObjects 変換のみで、重複していた時計・地図リンク・カメラ呼び出しは #1338 側へ畳んである。
+
+## dist.total の天井（CI の実測に合わせて手で上げた）
+CI の check:perf が dist.total 1550243.8 kB を測り、ローカルの測定（data の取得物が CI と一致しない）より大きかった。--update はローカル値でしか上げないため、CI が報告した値（1550243.8 kB × 1024 バイト）へ天井を直接合わせた。増分の大半は main 側の data 追加で、本統合が data を足したわけではない（足したのは js の metrics/objects/feed のみ）。
