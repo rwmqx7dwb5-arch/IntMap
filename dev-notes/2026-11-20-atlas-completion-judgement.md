@@ -29,3 +29,6 @@ newsjp: Atlas の完了判定が、指摘に応じて作業した後に依頼を
 
 ## 天井を上げた理由(perf)
 async.raw の天井を 14221.0→14297.0 kB へ上げた。完了判定が依頼を読み直す経路（`js/atlas-agent.js`・`js/atlas-goal-verify.js`・Evidence Graph の配送）の分で、遅延チャンクの生サイズが増えた。
+
+## perf (re-measured after main moved, 2026-11-21)
+The merge of origin/main brought new chunks (atlas-orchestrate grew 82.4 to 96.1 kB, dist.total with it); ceilings were re-measured on the merged build and raised with `perf-budget --update`. Growth here is the completion-judgement re-read this PR adds.
