@@ -2100,8 +2100,17 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   座標・辺が 4,096 を超える区域の頂点判定）。決して境界とは答えず、許容も読まない。`globalThis.IntMapGisNoFace` で切り、同じ
   1 万超のペア（辺・角・穴の縁・切れ込み・余白の内外・日付変更線・極・世界を巡る環・位置でない座標）を両方で訊いて**判定も拒否も
   一致**することを測る（判定を反転しても、余白を 0 にしても落ちることを確かめた）。
-- ⚠ **残る費用**: 区域の辺にかかる図形（数 % ）は従来の掃引（1 件 数 ms）。100 万点の結合の主スレッド占有は 97 s（1 行 約 0.1 ms）で、
-  内訳は箱の計算・展開・詰め直し・GC。Worker 化は未着手（応答は経過時間の譲りで保っている・最長停止 1.7 s）。
+- ⚠ **残る費用**: 区域の辺にかかる図形（数 % ）は従来の掃引（1 件 数 ms）。
+- **`spatialJoin` の対は worker で走れる**（gis-worker-columnar）。対の述語は `GG.relateBlock`（`js/gis-geometry.js`）が**書かれている唯一の場所**で、ページも
+  `src/gis-buffer-worker.js` も同じ関数を呼ぶ。候補（索引・右の行順）はページ側、対は worker。先頭 64 行を本スレッドで測り、残りが 1 s（thread 起動の観測値）を超える射影のときだけ使う。
+  壊れた答え・死んだ thread は同じ kernel で本スレッドが計算し直し、取り消しは thread を終わらせる。`stats.worker` がどちらが走ったかを述べる。実測（25 万点 buffer → join）:
+  join 39.9 s → 15.8 s・主スレッド占有 17.9 → 12.9 s・最長停止 1.27 → 0.82 s。⚠ **占有は 1/10 にならない**——残りは退避した塊の展開・再 pack・出力行の組み立て（未着手の次の一手は
+  packed のまま worker へ渡すこと）。`dev-notes/2026-11-20-gis-worker-columnar.md`。
+- **殻（プロパティ）は列で持つ**（`compactShells`・`js/gis-packed.js`）。100 万行の殻 160 MB → 8 MB（キーの和集合＋存在ビット＋キー順の変種。対応できない塊は行のまま）。
+  `rec.attributeRows(from, count)` は結果が `features()` を拒む大きさでも、**表示する行だけ**（プロパティのみ・位置は読み戻さない）を返し、属性表がそれを描く。
+- **大規模エンジンへ渡す戸**（`IntMapGisOps.registerEngine` / `opts.engine`・既定は何も登録しない）。実測（100 万点 × 400 区域・within）: IntMap 17〜22 s／DuckDB-Wasm+Spatial 6.9 s
+  （拡張の初回読込 11 s）／DuckDB native 1.1 s（`memory_limit=128MB` でも 1.4 s）。**答えが同じとは測っていない**（DuckDB は平面・IntMap は閉集合 DE-9IM と日付変更線・極の規則）ので、
+  既定にせず無言にもしない: 選択は `stats.engine`・`provenance.computedBy` に記録され、辞退・例外は同じ step を既存 GIS へ戻して `stats.engineDeclined` に理由を残す。
 - ⚠ **近傍依存（近傍検索・和集合の縫い直し）は未着手**で、分けたのは
   「出力画素ごとに独立な位置計算」と「1 呼びで完結する幾何演算」だけ。
   ⚠ **出力格子を丸ごと確保するのはやめた**（§1.4b-1 の受け皿）——`to4326` / `resample` の契約は
@@ -2180,7 +2189,7 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   手元に無いので断る。⚠ **b-tree は平衡させずに構築する**——行は rowid 昇順で一度だけ書かれ、挿入経路が
   存在しないので葉を前から詰めて interior を下から積むだけでよい。⚠ **標準が含意する auto-index 4 本を
   実際に建てる**（宣言だけして索引を建てないファイルは `integrity_check` が落ちる壊れた DB である）。
-- **出口は #R756 でできた**（`js/gis-export.js`）。ベクタは GeoJSON・CSV・GeoPackage・**KML 2.2・GPX 1.1**、
+- **出口は #R756 でできた**（`js/gis-export.js`）。ベクタは GeoJSON・CSV・**XLSX（`js/office-writer.js`・列と幾何の規則は CSV と同じで型付きセル）**・GeoPackage・**KML 2.2・GPX 1.1**、
   ラスタは GeoTIFF・COG。⚠ **KML / GPX は WGS 84 だけを述べる**ので他の座標系は断る。**名前は
   `name` → `title` → `label` の最初の非空の値**で、無ければ名前を付けない（行番号や id を代入しない）。
   **時刻はデータセットが宣言したときだけ**（`instant` → `TimeStamp` / `time`、`interval` → KML の `TimeSpan`、
