@@ -49,3 +49,11 @@ newsjp: Atlas が作る PDF の文字と図形がベクターになりました�
 ## 5. 回帰
 `tests/file-deliverables-checks.test.mjs`: PDF の往復（圧縮・非圧縮）・ベクターであること（Type3・`d1`・`f*`・`re f`、ページ画像と `3 Tr` が無い）・255 字超で複数フォント・画像 1 回・
 長文のページ分割/表見出し/巨大行・壊したときの失敗（xref・文字・ページ数・画像数・塗りの欠落・ToUnicode の欠落）・marching squares が輪の 2 輪郭を 1px 未満で返すこと。
+
+## 6. 起動費用の天井を上げた理由（check:perf・2026-11-21）
+`file.create` を main へ載せたことで、**一度も読まれなければ起動に響かない** async 側が増えた。測った増分（build の dist）:
+- 新しい async チャンク `atlas-file-make`（書き手 file-doc / file-pdf / file-glyph / file-office / file-text を含む）**64.8 kB**。能力が呼ばれたときだけ読まれる。
+- `atlas-cap-runs` +14.0 kB（`file.create` の run）、`atlas-console` +22.1 kB（能力表・catalogue の `file.create` の説明）。
+- 合計 async.raw 14376→14552 kB・async.gzip 4865→4911 kB・dist.assets 21797→21989 kB。残りの増分は、天井を記録してから main に入った他の作業の分（`gis-pipeline` 11.2 kB・`imagery-atlas` 3.6 kB ほか。main の CI が merge 後に記録し直す）。
+- 起動時に読まれる経路（main の entry / startup の行）は増えていない（`check:perf` の startup の行は超えていない）。`node scripts/perf-budget.mjs --update` が上げたのは超えた 5 行だけ。
+⚠ この checkout には `data/hist-eras.js` と `data/border-detail/` が無く（git の外・data:pull）、build の最後の `intmap-history-pages` は失敗する。JS のチャンクは出力済みで上の数字はそこから取った。データ由来の 2 行（border-detail・hist-eras が dist に無い）は環境起因で、CI では出ない。
