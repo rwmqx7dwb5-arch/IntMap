@@ -620,6 +620,17 @@ export function atlasConsole(HOST){
         if(u) u=u.replace(/^https:\/\/github\.com\/wmgeolab\/geoBoundaries\/raw\//,'https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/');
         if(u){ const r=await fetch(u); if(r.ok) out=await r.json(); } } }catch(_){}
       _gbCache[iso3]=(out&&out.features)?out:null; return _gbCache[iso3]; }
+    /* (atlas-highlight-units) THE OUTLINE OF ONE FIRST-LEVEL UNIT, BY ITS ISO 3166-2 IDENTIFIER (GB-ENG, JP-13 …). Two sources, in order, and a miss is a
+       miss (the caller reports it as unresolved): ① the first-level file we already ship (js/atlas-admin1.js, local, no request) — its codes are keyed
+       exactly; ② geoBoundaries ADM1 for that country, matched by its own `shapeISO`, and only when the file carries none by the unit's NAME,
+       EXACTLY (no fuzzy rung: a near-spelling is a different unit — Natural Earth's own "Moskva"/"Moskovskaya" is the measured case, js/atlas-admin1.js). */
+    async function _hlUnitGeo(u){ try{ const id=String(u&&u.id||'').toUpperCase(); if(!id) return null;
+      try{ const ix=await ADM1.load(); const hit=ix&&ix.byCode&&ix.byCode[id]; if(hit&&hit.geo) return {geo:hit.geo,name:hit.canonicalName,source:'admin1-index'}; }catch(_){}
+      const iso3=String(u.country||''); if(!/^[A-Z]{3}$/.test(iso3)) return null;
+      const gj=await _gbAdm1(iso3); if(!gj) return null;
+      let f=gj.features.find(x=>String((x.properties||{}).shapeISO||'').toUpperCase()===id);
+      if(!f&&u.name){ const want=_normUnit(u.name); if(want){ const m=gj.features.filter(x=>_normUnit((x.properties||{}).shapeName)===want); if(m.length===1) f=m[0]; } }
+      return (f&&f.geometry)?{geo:f.geometry,name:(f.properties||{}).shapeName||u.name||id,source:'geoboundaries-adm1'}:null; }catch(_){ return null; } }
     const _normUnit=s=>String(s||'').toLowerCase().replace(/\b(oblast|region|krai|kray|governorate|province|district|raion|county|prefecture|voblast|state)\b/g,'').replace(/[^a-zа-яё぀-ヿ一-鿿]/gi,'');
     function _edit2(a,b){ if(Math.abs(a.length-b.length)>2) return false; const dp=[]; for(let i=0;i<=a.length;i++){ dp[i]=[i]; for(let j=1;j<=b.length;j++){ dp[i][j]=(i===0)?j:Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); } } return dp[a.length][b.length]<=2; }
     async function _gbUnitPoly(q){ const parts=String(q||'').split(','); if(parts.length<2) return null;
@@ -1904,6 +1915,7 @@ export function atlasConsole(HOST){
       get setHlColor(){ return setHlColor; },
       get _hlReadGptGroups(){ return _hlReadGptGroups; },
       get _codesGeo(){ return _codesGeo; },
+      get _hlUnitGeo(){ return _hlUnitGeo; },
       get _validGeo(){ return _validGeo; },
       get _hlValidCodeSet(){ return _hlValidCodeSet; },
       get _hlAdd(){ return _hlAdd; },
