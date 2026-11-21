@@ -40,3 +40,7 @@ Transitous を既定オフにしたので、**ルクセンブルク以外の公�
 
 ## 9. governance の台帳（data/transit-lu.json は 12 facet を宣言に持たない）
 `scripts/build-transit-timetables.mjs → data/transit-lu.json` は `autoRefresh`（3 日周期の無人再ビルド）なので、取得日・生成日・件数をリテラルで宣言に書けない（再ビルドのたびに宣言が嘘になり、`agreeOrRefuse` が拒む形になる）。それらはバンドルの**中**に、測った本人（ビルド）が書く（`generatedAt`・`asOf`・`quality`）。宣言が述べる 7 facet（出自・ライセンス・出典・周期・ビルダー）以外は台帳に記録した。同じ形の既存の無人更新ビルダー（`build-who-don.mjs` など）と同じ扱い。
+
+## 性能予算の引き上げ
+
+- dist.assets: 21686.9 kB から 21810.2 kB へ。公共交通の時刻表（ルクセンブルクの GTFS を機械が組み直した束）が増えた分。 main 取り込み後の全体ビルドで測り直し、`perf-budget --update` が上げた行は下の通りで、他は書いていない。起動時に読まれる分ではなく、遅延して読まれる配布物。
