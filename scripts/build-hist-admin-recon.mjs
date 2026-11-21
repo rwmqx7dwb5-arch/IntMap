@@ -737,6 +737,8 @@ function write(rows, file, tol, dec) {
         : { raw: isoOf(r.b), precision: 'day', derived: true, basis: r.span.to == null ? 'the dossier\'s scope ends' : 'the era map or a dated record changes on this day' },
       ...(r.unit.wikidata ? { wikidata: r.unit.wikidata } : {}),
       ...(r.unit.iso ? { iso: r.unit.iso } : {}),
+      /* (hist-coverage-approx-line) the span declared its outline approximate: carried to the reader and to Atlas as data */
+      ...(r.span.line ? { line: { certainty: r.span.line.certainty, note: r.span.line.note } } : {}),
     };
   });
   const data = { v: 1, src: 'IntMap reconstruction: first-level units as unions of finer units — Natural Earth admin-1 (public domain), RISTAT 1897 uyezds (CC0 1.0), geoBoundaries (per dataset: public domain, CC0, CC BY, CC BY IGO, ODbL 1.0, CC BY-SA), Amasyalı kazas (CC BY 4.0), N03 and e-Stat for Japan (CC BY 4.0 compatible) — one cited fact per membership (scripts/histrecon/dossiers); a record derived from a share-alike source is offered under that licence, named in its sources entry (LICENSE §5) · assembled by scripts/build-hist-admin-recon.mjs',
