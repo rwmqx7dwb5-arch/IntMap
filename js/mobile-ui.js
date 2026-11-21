@@ -106,7 +106,7 @@ export function mobileUI(HOST){
        mirrored by the same pass. A selector that still named only the two sheets would have left
        "Globe/Flat/Satellite" in English on a Japanese phone — the #R8 defect this function was written to fix. */
     const PROXY_SEL='#mo-sheet [data-proxy], #tools-sheet [data-proxy], #bm-pop [data-proxy]';
-    function proxy(btn){ const id=btn.getAttribute('data-proxy'); const real=document.getElementById(id); if(!real) return; real.click(); setTimeout(syncControls,0); if(/^btn-tool-/.test(id)) closeSheet(); }
+    function proxy(btn){ const id=btn.getAttribute('data-proxy'); const real=document.getElementById(id); if(!real) return; real.click(); setTimeout(syncControls,0); if(/^btn-(tool-|share$)/.test(id)) closeSheet(); }
     document.querySelectorAll('#mo-sheet [data-proxy], #tools-sheet [data-proxy]').forEach(b=>b.addEventListener('click',()=>proxy(b)));
     /* The words of a real control, without its icon. The old rule dropped the FIRST WORD, which was the emoji
        when icons were emoji; once icons became [data-icon] SVG spans the first word was the label's own

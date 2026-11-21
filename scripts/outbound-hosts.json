@@ -2,6 +2,7 @@
   "note": "Every host the browser code can request (discovered by scripts/outbound-hosts.mjs from string and template literals — never from comments), with what it is asked for, what it is SENT, and the words of Privacy §4 (js/legal-text.js, en AND jp) that say so. A host that is only ever a link carries `link` with the reason instead. `npm run check:datagov` (rule outbound-disclosed) fails on a requested host missing here, on disclosure words absent from either language, and on a row whose host the code no longer requests. This is a statement of fact about the code, not an exemption: adding a row without the policy saying it is impossible. Every row the browser actually requests (disclosure / removedBy) also carries `probe`: one representative request { url, expect?, why? } — a non-2xx `expect` must say why it means the host is answering — which scripts/upstream-liveness.mjs asks nightly and classifies alive / refused / dead / unobserved; link and dormant rows are never fetched and carry none. check:datagov (rule probe-declared) fails on a requested row without one.",
   "sendsCodes": "nothing | coordinates | area | query-text | url | identifier | credential-prefix | content | page-visit (scripts/outbound-hosts.mjs SENDS)",
   "hosts": [
+    {"host":"schemas.openxmlformats.org","what":"OPC relationship-type identifiers written inside an .xlsx package (js/office-writer.js)","link":"a namespace-style identifier a spreadsheet reader matches as text inside the file IntMap writes; the page never requests it"},
     {
       "host": "*.basemaps.cartocdn.com",
       "what": "CARTO basemap raster tiles",
@@ -625,11 +626,11 @@
     },
     {
       "host": "cmr.earthdata.nasa.gov",
-      "what": "NASA CMR-STAC (LP DAAC cloud) — dataset search, only when Atlas is asked to find or acquire data",
-      "whatJp": "NASA CMR-STAC（LP DAAC クラウド）— Atlas にデータの検索・取得を頼んだときだけ",
+      "what": "NASA CMR-STAC (LP DAAC cloud) — dataset search when Atlas is asked to find or acquire data, and the scene time and cloud cover under the map centre while an HLS satellite layer is shown",
+      "whatJp": "NASA CMR-STAC（LP DAAC クラウド）— Atlas にデータの検索・取得を頼んだとき、および HLS 衛星画像の表示中に地図中心の撮影時刻と雲量を調べるとき",
       "sends": {
         "code": "area",
-        "detail": "only when the reader asks Atlas to search for datasets: the bounding box and date range of the place and period named (never a name, an account or a position of the reader)"
+        "detail": "the bounding box and date range of the place and period named when the reader asks Atlas to search for datasets, or the map-centre point and the chosen day while an HLS satellite layer is shown (never a name or an account)"
       },
       "disclosure": {
         "en": "NASA CMR-STAC",
@@ -1019,6 +1020,70 @@
       }
     },
     {
+      "host": "cyberjapandata.gsi.go.jp",
+      "what": "GSI Japan (国土地理院) aerial photo tiles — latest and dated series",
+      "whatJp": "国土地理院の空中写真タイル（最新・年代別）",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "Japan's GSI",
+        "jp": "国土地理院"
+      },
+      "probe": {
+        "url": "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/16/58210/25806.jpg"
+      }
+    },
+    {
+      "host": "basemap.nationalmap.gov",
+      "what": "USGS The National Map orthoimagery tiles",
+      "whatJp": "USGS The National Map のオルソ画像タイル",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "USGS",
+        "jp": "USGS"
+      },
+      "probe": {
+        "url": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/16/25325/10485"
+      }
+    },
+    {
+      "host": "service.pdok.nl",
+      "what": "PDOK Netherlands aerial photo tiles",
+      "whatJp": "PDOK のオランダ航空写真タイル",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y and year"
+      },
+      "disclosure": {
+        "en": "PDOK",
+        "jp": "PDOK"
+      },
+      "probe": {
+        "url": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/16/33660/21537.jpeg"
+      }
+    },
+    {
+      "host": "wmts.geo.admin.ch",
+      "what": "swisstopo SWISSIMAGE aerial photo tiles",
+      "whatJp": "swisstopo の SWISSIMAGE 航空写真タイル",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "swisstopo",
+        "jp": "swisstopo"
+      },
+      "probe": {
+        "url": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/16/34000/22900.jpeg"
+      }
+    },
+    {
       "host": "gisco-services.ec.europa.eu",
       "what": "Eurostat GISCO NUTS boundaries for European warning regions",
       "whatJp": "Eurostat GISCO の NUTS 境界（欧州の警報地域）",
@@ -1064,8 +1129,8 @@
         "detail": "tile z/x/y of the map area drawn, and IntMap's public API key"
       },
       "disclosure": {
-        "en": "Esri, NASA GIBS and EOX",
-        "jp": "Esri・NASA GIBS・EOX"
+        "en": "Esri, NASA GIBS",
+        "jp": "Esri・NASA GIBS"
       },
       "probe": {
         "none": "every request carries IntMap's API key, and the key is empty until the Location Platform account exists (js/esri-imagery.js) — a keyless probe only measures the 200 'Token Required' refusal"
@@ -1608,8 +1673,8 @@
         "detail": "tile z/x/y of the map area drawn"
       },
       "disclosure": {
-        "en": "Esri, NASA GIBS and EOX",
-        "jp": "Esri・NASA GIBS・EOX"
+        "en": "Esri, NASA GIBS",
+        "jp": "Esri・NASA GIBS"
       },
       "probe": {
         "url": "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/4/5/8"
@@ -1640,8 +1705,8 @@
         "detail": "tile z/x/y of the map area drawn"
       },
       "disclosure": {
-        "en": "Esri, NASA GIBS and EOX",
-        "jp": "Esri・NASA GIBS・EOX"
+        "en": "Esri, NASA GIBS",
+        "jp": "Esri・NASA GIBS"
       },
       "probe": {
         "url": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/4/5/8"
@@ -1774,22 +1839,6 @@
           404
         ],
         "why": "every tile path carries a frame timestamp that exists for about two hours (read from api.rainviewer.com's weather-maps.json), so no fixed tile URL stays valid; the root is asked, and its healthy answer is 404 from the tile CDN"
-      }
-    },
-    {
-      "host": "tiles.maps.eox.at",
-      "what": "EOX Sentinel-2 cloudless tiles",
-      "whatJp": "EOX の Sentinel-2 雲なしタイル",
-      "sends": {
-        "code": "area",
-        "detail": "tile z/x/y and year"
-      },
-      "disclosure": {
-        "en": "NASA GIBS and EOX",
-        "jp": "NASA GIBS・EOX"
-      },
-      "probe": {
-        "url": "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/4/5/8.jpg"
       }
     },
     {
@@ -2399,6 +2448,36 @@
       "host": "x.ai",
       "what": "data-centre source citation",
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.earthdata.nasa.gov",
+      "what": "NASA Earthdata terms page",
+      "link": "the licence/terms page of NASA GIBS, shown as a hyperlink (<a href>) in the satellite panel and Atlas's imagery answer (js/imagery-registry.js license.url); never fetched"
+    },
+    {
+      "host": "maps.gsi.go.jp",
+      "what": "GSI Japan tile list and terms",
+      "link": "the licence/terms page of 国土地理院 地理院タイル, shown as a hyperlink (<a href>) in the satellite panel and Atlas's imagery answer (js/imagery-registry.js license.url); never fetched"
+    },
+    {
+      "host": "www.arcgis.com",
+      "what": "Esri World Imagery item page",
+      "link": "the licence/terms page of Esri World Imagery, shown as a hyperlink (<a href>) in the satellite panel and Atlas's imagery answer (js/imagery-registry.js license.url); never fetched"
+    },
+    {
+      "host": "www.usgs.gov",
+      "what": "USGS copyright and credits page",
+      "link": "the licence/terms page of USGS, shown as a hyperlink (<a href>) in the satellite panel and Atlas's imagery answer (js/imagery-registry.js license.url); never fetched"
+    },
+    {
+      "host": "www.geo.admin.ch",
+      "what": "swisstopo/BGDI terms of use",
+      "link": "the licence/terms page of swisstopo, shown as a hyperlink (<a href>) in the satellite panel and Atlas's imagery answer (js/imagery-registry.js license.url); never fetched"
+    },
+    {
+      "host": "www.pdok.nl",
+      "what": "PDOK open aerial-photo dataset page",
+      "link": "the licence/terms page of PDOK, shown as a hyperlink (<a href>) in the satellite panel and Atlas's imagery answer (js/imagery-registry.js license.url); never fetched"
     }
   ],
   "offlineNote": "`offline` (optional, per host row): may IntMap save this host's files for a reader to use with no network, and on whose word. allowed:true needs kind, pathPrefix (the only part of the host that is covered) and basis (the terms page); allowed:false needs basis and why. A row with no `offline` states nothing, and silence is not permission: the offline maps never save from it. data/offline-sources.json is derived from these rows by scripts/offline-sources.mjs; check:datagov (rule offline-declared) fails when they disagree."
