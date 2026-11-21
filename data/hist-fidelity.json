@@ -1,6 +1,6 @@
 {
   "note": "Observations, not targets. scripts/hist-fidelity.mjs re-measures the shipped bundles and fails when they do worse. --update re-records them; a round that lowers a number on purpose says why in DEV-NOTES.md.",
-  "measured": "2026-11-20",
+  "measured": "2026-11-21",
   "res": 0.25,
   "unsourcedSpans": 0,
   "years": [
@@ -156,10 +156,10 @@
     },
     {
       "year": 1975,
-      "pct": 79.51,
-      "pctArea": 75.32,
+      "pct": 81.27,
+      "pctArea": 77.42,
       "polityLand": 91.51,
-      "unitLand": 70.3,
+      "unitLand": 72.22,
       "zero": 81,
       "partial": 48,
       "full": 110
