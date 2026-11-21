@@ -28,7 +28,7 @@ let once = null;
 /** the one maker the capability uses (its card registry must be one) */
 export const atlasFileOnce = () => once || (once = atlasFile());
 
-export function atlasFile() {
+function atlasFile() {
   const registry = new Map();   /* id → { name, mime, bytes, url } — what the card's buttons act on */
   let seq = 0;
 
