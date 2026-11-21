@@ -643,6 +643,8 @@ mem-budget.js                     **この端末が復号済み DEM タイルを
 border-style.js                   国境線を1本にまとめるスタイル層
 carto-basemap.js                  CARTO 基図の API キー・タイル URL 組み立て・地図上の帰属表示
 esri-imagery.js                   Esri World Imagery の取得先（鍵があれば ArcGIS Location Platform、無ければ鍵なしの窓口）・タイル URL・拒否時の戻り・帰属表示の文
+imagery-registry.js               衛星・航空画像の供給元を 1 件 1 オブジェクトで宣言する台帳（範囲・ズーム・時間軸・撮影日の分かり方・解像度・利用条件）。SAT_PROVIDERS・パネルの撮影日行・Chronos の時刻合わせ・Atlas `imageryInfo` が全部ここを読む
+imagery-atlas.js                  Atlas の能力 `data.imageryInfo` の本体（遅延）— その場所・時刻に在る画像、撮影日（実測／選択／宣言の別）、解像度、利用条件、`apply` で切り替え
 coast-line.js                     海岸線・湖岸線——国境線と同じ手法で makeCoastLine()
 coastline.js                      **海までの距離**（#R495）— data/coastline.json.gz（Natural Earth 1:10m、2km 許容で
                                   簡略化）を読み、任意の点から**線分**までの大円距離を返す makeCoastline()。
@@ -1051,7 +1053,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  257 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  258 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1183,7 +1185,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 257 を検索・到達可能 254）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 258 を検索・到達可能 255）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1203,7 +1205,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 257 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 258 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -2001,7 +2003,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは15・全 136,871 リング分／
+                                  **発見された**束すべて・いまは15・全 136,880 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは

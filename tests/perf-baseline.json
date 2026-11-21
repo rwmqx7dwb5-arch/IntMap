@@ -1,10 +1,10 @@
 {
   "eager": {
-    "raw": 4840476,
-    "gzip": 1586709,
-    "brotli": 1209198,
-    "requests": 10,
-    "modules": 913,
+    "raw": 4867000,
+    "gzip": 1598000,
+    "brotli": 1219000,
+    "requests": 12,
+    "modules": 914,
     "cssRaw": 382385,
     "cssGzip": 63308
   },
@@ -25,7 +25,7 @@
       "atlas-cap-runs": 934789,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1092503,
+      "atlas-console": 1098828,
       "atlas-delegate": 73391,
       "atlas-executor": 61782,
       "atlas-float": 10113,
@@ -212,7 +212,7 @@
   },
   "dist": {
     "total": 1579471807,
-    "data": 1216590073,
+    "data": 1223209830,
     "assets": 22207353
   },
   "phone": {
