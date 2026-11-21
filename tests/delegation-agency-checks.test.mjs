@@ -46,5 +46,5 @@ test('verify:true needs a child turn of its own, and is refused up front, with t
 
 test('data.gis puts the dataset record (crs, time, coverage, origin) in meta, not only the id', () => {
   const src = readFileSync(new URL('../js/atlas-cap-data.js', import.meta.url), 'utf8');
-  assert.match(src, /gis:\{op:_gr\.op,dataset:_gr\.dataset\.id,count:_gr\.dataset\.count,drawn:!!_gr\.drawn,record:_gr\.dataset\}/);
+  assert.match(src, /gis:\{op:_gr\.op,dataset:_gr\.dataset\.id,count:_gr\.dataset\.count,drawn:!!_gr\.drawn,record:_gr\.dataset(?:,semantic:[^}]*)?\}/);
 });
