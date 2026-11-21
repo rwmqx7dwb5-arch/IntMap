@@ -33,11 +33,12 @@
  *      node scripts/merge-train.mjs --build [--max N] [--pr a,b] [--exclude a,b]   build, push, open
  *                                        [--dry]       build locally only (no push, no PR, nothing touched)
  *                                        [--with-red]  board PRs whose own CI is red (the train's CI judges)
+ *      node scripts/merge-train.mjs --push-only <worktree>   after fixing a train the quick gates stopped
  *      node scripts/merge-train.mjs --release <train PR>   train went red: give the PRs back
  *      node scripts/merge-train.mjs --close <commit>       (CI, on main) close what a train landed
  * ==========================================================================*/
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -184,11 +185,39 @@ function build(args) {
   run(process.execPath, ['scripts/regen.mjs'], { cwd: dir, stdio: 'inherit' });   // = npm run regen
   git(['add', '-A']);
   if (git(['diff', '--cached', '--quiet']).status !== 0) git(['commit', '-q', '-m', 'train: 生成物と台帳を merge 後の木で作り直す']);
+  /* SECONDS HERE BEFORE AN HOUR THERE. Two PRs that each move a count the SAME way (25 → 26 Edge
+     Functions, twice) merge with no conflict and the count moves once; two that each claim catalogue
+     position 52 merge cleanly and the catalogue cannot be assembled. Measured on the first train
+     (2026-11-21): all four of its red jobs were these, and the gates that name them take seconds
+     locally. A red here stops before the push, with the tree left for a person to fix and rerun. */
+  const state = { dir, branch, stamp, boarded, refused: refused.map((r) => ({ number: r.number, why: r.why })) };
+  writeFileSync(dir + '.json', JSON.stringify(state, null, 2));
+  if (!quickGatesGreen(dir)) return;
   if (args.dry) {
     console.log(`\n--dry: push も PR もしない。載った ${boarded.length} 本・載らなかった ${refused.length} 本。worktree: ${dir}（branch ${branch}）`);
     return;
   }
+  publish(state);
+}
 
+function quickGatesGreen(dir) {
+  const quick = ['check:docs', 'check:catalog', 'check:capabilities'];
+  const red = quick.filter((g) => run(process.execPath, ['--run', g], { cwd: dir, stdio: 'inherit' }).status !== 0);
+  if (!red.length) return true;
+  console.log(`\n✗ 手元の門が赤: ${red.join(' ')}。push しない。直して commit し、続きは: node scripts/merge-train.mjs --push-only ${dir}`);
+  return false;
+}
+
+/** Resume a train whose quick gates were red: the person fixed and committed in its worktree. */
+function pushOnly(dir) {
+  const state = JSON.parse(readFileSync(String(dir).replace(/[\\/]$/, '') + '.json', 'utf8'));
+  if (run('git', ['-C', state.dir, 'status', '--porcelain']).stdout.trim()) throw new Error('未コミットの変更がある: ' + state.dir);
+  if (!quickGatesGreen(state.dir)) return;
+  publish(state);
+}
+
+function publish({ dir, branch, stamp, boarded, refused }) {
+  const git = (a) => run('git', ['-C', dir, ...a]);
   const push = git(['push', '-q', '-u', 'origin', branch]);
   if (push.status !== 0) throw new Error('push に失敗: ' + push.stderr);
   const list = boarded.map((p) => `- #${p.n} ${p.title}`).join('\n');
@@ -265,6 +294,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const a = parseArgs(process.argv.slice(2));
   if (a.plan) printPlan(plan(a));
   else if (a.build) build(a);
+  else if (a['push-only']) pushOnly(a['push-only']);
   else if (a.release) release(a.release);
   else if (a.close) close(a.close === true ? 'HEAD' : a.close);
   else { console.error('usage: --plan | --build | --release <train PR> | --close <commit>'); process.exit(2); }
