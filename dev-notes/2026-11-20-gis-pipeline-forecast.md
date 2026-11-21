@@ -46,3 +46,4 @@ newsjp: Atlas の分析を、地域を変えて再実行できる手順として
 - **perf（2 回目の main 取り込み後）**: `atlas-cap-runs` 909.0→915.2 kB、`async.raw` 14304.0→14381.3 kB。main 側の同時引き上げと本 PR の分（`research.scenario` / `data.gisProject` の入口）が両方動いたため、取り込みで main の値が採られた行を再測定して引き上げた。`dist.total` は main が上限を上げており本 PR は触れない。
 - **perf（`dist.total`）**: 1542452.9→1550199.4 kB。CI と同じ data（`npm run data:pull`）で測り直すと main の時点で既にこの値で、天井は #1101 の古い測定のまま。本 PR の寄与は JS 約 0.5 MB（解析手順・予測データの 2 モジュール）で 7.7 MB の超過の原因ではない。main の直近の run も同じ perf で赤だったため、再現できた超過を本 PR で引き上げた（起動時の通信は増えていない）。
 - **perf（3 回目の main 取り込み後）**: `atlas-cap-runs` 918.5→924.7 kB（本 PR の入口分）、`atlas-orchestrate` 82.4→96.1 kB。後者は本 PR が触らない（`js/atlas-orchestrate` に本 PR の差分は無い）ので main 側の積み上がりが測り直しで見えた分で、CI と同じ data・main 取り込み後の木で再現できたため引き上げた。
+- **perf（4 回目の main 取り込み後）**: `async.gzip` 4833.8→4863.8 kB。本 PR の遅延 2 モジュール（gzip で約 30 kB 弱は main の同時増と合算）。CI と同じ data・取り込み後の木で再現して引き上げた。
