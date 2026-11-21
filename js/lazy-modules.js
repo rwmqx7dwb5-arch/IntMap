@@ -89,6 +89,7 @@ export const LAZY_REGISTRY = Object.freeze({
   atlasConsole: { publishes: 'IntMapConsole', load: () => import('./atlas-console.js'), mount: (IM_HOST, m) => { window.IntMapConsole=m.atlasConsole(IM_HOST); } },
   atlasQuery: { publishes: 'IntMapQuery', load: () => import('./atlas-query.js'), mount: (IM_HOST, m) => { window.IntMapQuery=m.atlasQuery(IM_HOST); } },
   atlasChart: { publishes: 'IntMapAtlasChart', load: () => import('./atlas-chart.js'), mount: (IM_HOST, m) => { window.IntMapAtlasChart=m.atlasChart(IM_HOST); } },
+  board: { publishes: 'IntMapBoard', load: () => import('./board.js'), mount: (IM_HOST, m) => { window.IntMapBoard=m.board(IM_HOST); } },
   atlasAnswerView: { publishes: 'IntMapAnswerView', load: () => import('./atlas-answer-view.js'), mount: (IM_HOST, m) => { window.IntMapAnswerView=m.atlasAnswerView(IM_HOST); } },
   routeUi: { publishes: 'IntMapRouteUI', load: () => import('./routing-ui.js'), mount: (IM_HOST, m) => { window.IntMapRouteUI=m.routeUi(IM_HOST); } },
   gisCore: { publishes: 'IntMapGis', load: () => import('./gis-core.js'), mount: (IM_HOST, m) => { window.IntMapGis=m.gisCore(IM_HOST); } },
