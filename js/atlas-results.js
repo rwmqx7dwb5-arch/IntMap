@@ -124,6 +124,7 @@ export function makeAtlasResults(HOST) {
       'atlas.confirm.what.community.list':    LA('List this map in Community maps, where everyone can see it.', 'この地図をコミュニティマップに載せます。誰でも見られます。'),
       'atlas.confirm.what.navigation.start':  LA('Start navigation to {what} in another app.', '{what} への経路案内を別のアプリで開始します。'),
       'atlas.confirm.what.jobs.start':        LA('Start a job on the server that keeps running after you close this tab. It uses AI and web search on the IntMap account, up to a cost cap for the job, and what you asked goes to the AI provider.', 'タブを閉じても続く仕事をサーバで始めます。IntMap の AI とウェブ検索を、1 件の費用の上限まで使い、依頼の内容は AI の提供元へ送られます。'),
+      'atlas.confirm.what.jobs.resume':       LA('Run again only the parts of a background job that did not finish. It uses AI and web search on the IntMap account, within that job cost cap, and what the job asked goes to the AI provider.', '終わらなかった部分だけ、サーバの仕事をもう一度走らせます。IntMap の AI とウェブ検索を、その仕事の費用の上限まで使い、依頼の内容は AI の提供元へ送られます。'),
       'atlas.confirm.what.research.hereNow':  LA('Read your current position and look up what is happening around it. The position goes to the data services that answer.', '現在地を読み取り、周辺で今起きていることを調べます。現在地は調べる先のデータサービスへ送られます。'),
       'atlas.confirm.what.system.control':    LA('Press {what}. It posts, sends or deletes something that cannot be taken back.', '{what} を押します。投稿・送信・削除など、取り消せない操作です。'),
       'atlas.confirm.run':           LA('Run', '実行'),
