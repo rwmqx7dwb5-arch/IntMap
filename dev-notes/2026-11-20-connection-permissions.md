@@ -42,3 +42,6 @@ await gw.storeCredential(userId, connection, secret, { expiresAt });
 
 ## 検査
 `tests/connection-permissions-checks.test.mjs`（方針・保管庫・gateway を実際に評価、migration の形）／`supabase/tests/52_connection_permissions_test.sql`（pgTAP: 利用者分離・列 grant・秘密の不可視・失効で秘密が消える・台帳が追記専用）。**この端末では Docker が動かず pgTAP をローカルで走らせていない**（CI の `supabase test db` が最初の実行）。
+
+## 予算の天井を上げた理由（perf-baseline・2026-11-21）
+この PR は `js/` を 1 行も足していない（サーバ側と migration だけ）。それでも main を取り込んだ状態の build が天井を超えた（async.gzip 4771.5→4805.4 kB、`atlas-cap-runs` 896.4→903.4 kB、dist.assets 21559.0→21678.2 kB）。増えた分は main に先に入った別の能力の追加で、この PR が足したものではない。天井を使う CI が先に赤にならないよう `node scripts/perf-budget.mjs --update` で測定値まで上げた。失効条件: main の CI が `--tighten` で下げたら不要になる。
