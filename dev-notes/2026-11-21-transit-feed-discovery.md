@@ -24,3 +24,6 @@ newsjp: Atlasが、ある場所の周りにどんな公開時刻表が存在し�
 
 ## 3. 検査
 `tests/transit-discovery-checks.test.mjs`（8 件）: CC 文法（NC/ND/SA/CC0・言語別 deed）、記載なし・未読は「可」でない、各国の許諾は正本 URL のみ、規則と台帳の一致（`COMMERCIAL_OK` と同梱 feed 自身の許諾リンク）、同梱カタログの全判定が許諾リンクから再導出できる、認証情報が保存されていない、CSV の読み（列が動いたら止まる）、地点の返答（リヨン・東京・外洋）。
+
+## ガバナンス台帳
+`data/transit-feed-catalogue` と `scripts/transit-discover.mjs → data/transit-feed-catalogue.json` は台帳で undeclared に加わる（出自・cadence はビルドの GOVERNANCE に値として述べてある。残る facet は同じ形の既存 bundle と同様に台帳で受ける）。
