@@ -54,6 +54,8 @@ export const READ_CAPS = Object.freeze(new Set([
   "view.inspect",
 ]));
 export const PARKABLE_CAPS = Object.freeze(new Set([
+  "board.compose",
+  "board.restore",
   "briefing.open",
   "community.browse",
   "community.open",
