@@ -41,7 +41,7 @@
       "atlas-view-subject": 10331,
       "atlas-where-when": 3756,
       "aviation-live": 33249,
-      "border-provenance-card": 30065,
+      "border-provenance-card": 32213,
       "card-clearance": 1250,
       "cesium": 4919424,
       "cesium-engine": 75831,
@@ -211,7 +211,7 @@
     }
   },
   "dist": {
-    "total": 1579471807,
+    "total": 1588561015,
     "data": 1223209830,
     "assets": 22207353
   },

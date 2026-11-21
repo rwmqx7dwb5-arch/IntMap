@@ -37,3 +37,8 @@ date: 2026-11-20
 
 ## 5. 残る検証
 OHM のタイル側の線（`js/hist-scale.js` の `ohmFilter` / `inForce`）は、アルゼンチンについて今回の束の変更を受けない（recon は束側の読み手）。タイル側が 1900 年のアルゼンチンで何を描くかは、本番の描画で別に確かめる。
+
+## 性能予算の引き上げ
+
+- async チャンク「border-provenance-card」: 29.4 kB から 31.5 kB へ。アルゼンチン 1884〜1955 年の州を足した分、線の根拠の台帳（data/border-provenance-gaps.json の系統）が増えた。
+- dist.total: 1542452.9 kB から 1551329.1 kB へ。復元した行政区分の輪郭（border-detail の hist-admin-recon 集合）と border-coast が増えた分。いずれも利用者が歴史地図で州の境界を見るために必要な実データで、起動時に読まれる分ではない。main 取り込み後の全体ビルドで測り直し、`perf-budget --update` が上げたのはこの 2 行だけ。
