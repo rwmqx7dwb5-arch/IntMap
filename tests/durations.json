@@ -179,5 +179,6 @@
  "tests/admin-origin.spec.js": 8,
  "tests/companies-name-width.spec.js": 25,
  "tests/atlas-screen-reach.spec.js": 8,
- "tests/gis-buffer-worker.spec.js": 5
+ "tests/gis-buffer-worker.spec.js": 5,
+ "tests/globe-polish.spec.js": 12
 }
