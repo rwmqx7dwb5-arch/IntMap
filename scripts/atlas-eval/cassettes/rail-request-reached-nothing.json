@@ -140,16 +140,20 @@
               "tool": "routing_drone"
             },
             {
-              "id": "layers.railAxis",
-              "tool": "layers_railAxis"
-            },
-            {
               "id": "map.compose",
               "tool": "compose_map"
             },
             {
               "id": "layers.aircraftTrack",
               "tool": "layers_aircraftTrack"
+            },
+            {
+              "id": "layers.railAxis",
+              "tool": "layers_railAxis"
+            },
+            {
+              "id": "compute.run",
+              "tool": "compute_run"
             }
           ]
         }
@@ -203,6 +207,10 @@
           "query": "所要時間 距離",
           "basis": "lexical",
           "matches": [
+            {
+              "id": "compute.run",
+              "tool": "compute_run"
+            },
             {
               "id": "time.travel",
               "tool": "set_time"
