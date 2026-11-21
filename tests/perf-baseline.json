@@ -80,7 +80,7 @@
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
       "gis-cog": 7532,
-      "gis-core": 652256,
+      "gis-core": 671115,
       "gis-export": 40134,
       "gis-fetch": 8730,
       "gis-geopackage": 26667,
@@ -216,9 +216,9 @@
     }
   },
   "dist": {
-    "total": 1579471807,
+    "total": 1587391770,
     "data": 1223209830,
-    "assets": 22207353
+    "assets": 22331196
   },
   "phone": {
     "bytes": 342631,

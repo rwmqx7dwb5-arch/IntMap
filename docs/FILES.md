@@ -250,6 +250,15 @@ geo-import.js                     落とされたファイルを FeatureCollecti
                                   できない見出しつきの表**は拒まずに `format:'table'`（`geometry:null` の行）
                                   として返す——地域コードで結合する側の入力になる。
                                   遅延読み込み（起動時のバンドルには入らない）
+gis-semantics.js                  **データの意味の層** `window.IntMapGisSemantics`（gis-semantic-layer）—
+                                  「この列は現実で何を意味し、何と比べてよいか」。facet は scope（行が何の測定か）・
+                                  basis（数えた境界: 現在／当時）・time（observed / target / published / acquired と、
+                                  登録簿の検証済み `valid`）・granularity・aggregation・keys・terms・constraints。
+                                  各 facet は `stated` / `derived` / `unstated` のどれかで、**述べていないことは推測で
+                                  埋めない**。読み取れるもの（buffer の半径・格子の大きさ・系譜を通した basis・
+                                  governance の条件・列型付けの「コードに見える」証拠）は導出し、手書きの一覧は持たない。
+                                  `declare` / `describe` / `check`（実行前の警告）/ `comparable`。⚠ **警告であって拒否
+                                  ではない**ので結果は変わらず kernel ではない（`strict:true` は呼び手の選択）。
 gis-shapefile.js                  **Shapefile の読み手** `window.IntMapGisShapefile`（#R738）—
                                   `.shp` / `.dbf` / `.prj` / `.cpg` を**組で**読む（`read(entries)` /
                                   `group` / `refusals`）。⚠ **復号器であって、登録もしなければ再投影も
