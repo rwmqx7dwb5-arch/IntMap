@@ -48,3 +48,7 @@ Wikidata Query Service で P1082 を持つ単位: P300（ISO 3166-2）30,703 記
 - 検査: `tests/admin-stats-checks.test.mjs` に ⑥ NUTS の結合と数え上げ ⑦ 歴史の結合（コード・存続期間・現在の輪郭）⑧ 実際の fill 束との結合率 を追加。
 
 - 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
+
+## 性能予算の引き上げ
+
+- async.raw 14376.3→14487.7 kB・atlas-cap-runs 918.5→935.4 kB・atlas-console 1105.8→1118.5 kB・atlas-orchestrate 96.1→101.7 kB・dist.assets 21796.5→21924.3 kB: 取り込み後の全体ビルドの実測。大半は main に入った他の PR の遅延チャンクで、この PR が運ぶのは regionStat の実行部分。起動時に読まれる本数（eager.requests）は 12 のまま——fetch-deadline を動的 import にすると起動時の読み込みが 1 本増えた（9→10）ため、atlas-cap-data.js と同じ静的 import にした。
