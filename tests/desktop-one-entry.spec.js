@@ -42,13 +42,23 @@ test.describe('desktop-one-entry', () => {
       const other = [...s.options].map((o) => o.value).find((v) => v !== was);
       s.value = other; s.dispatchEvent(new Event('change', { bubbles: true }));
       return { was, now: s.value, stored: window.IntMapEngineSelect.choice() }; });
-    expect(dialogs.length, 'switching the engine asks before it reloads').toBe(1);
-    expect(eng.now, 'a refusal puts the choice back').toBe(eng.was);
-    expect(eng.stored, '…and stores nothing').toBe(eng.was);
+    /* the question is IntMap's own dialog (js/ask-dialog.js), not window.confirm(): a host that does not open native
+       dialogs answers «no» silently, which made the engine impossible to change there */
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('acct-ask')).display !== 'none');
+    const asked = await page.evaluate(() => ({ title: document.getElementById('acct-ask-h').textContent.trim(),
+      body: document.getElementById('acct-ask-b').textContent.trim() }));
+    expect(asked.title.length, 'switching the engine asks, in the app, before it reloads').toBeGreaterThan(0);
+    expect(asked.body.length, '…and says the page reloads').toBeGreaterThan(0);
+    await page.click('#acct-ask-no');
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('acct-ask')).display === 'none');
+    const refused = await page.evaluate(() => ({ now: document.getElementById('setting-engine').value, stored: window.IntMapEngineSelect.choice() }));
+    expect(dialogs.length, 'no native dialog is opened for it').toBe(0);
+    expect(refused.now, 'a refusal puts the choice back').toBe(eng.was);
+    expect(refused.stored, '…and stores nothing').toBe(eng.was);
 
     await page.click('#settings-close-x');
     await page.waitForFunction(() => getComputedStyle(document.getElementById('settings-modal')).display === 'none');
-    expect(dialogs.length, '× closes without a discard-changes question').toBe(1);
+    expect(dialogs.length, '× closes without a discard-changes question').toBe(0);
 
     /* ── ② ── */
     const doors = await page.evaluate(() => ({
