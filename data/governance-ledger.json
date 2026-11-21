@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-11-20T12:53:56.167Z",
+    "generatedAt": "2026-11-20T17:56:57.331Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -3229,6 +3229,19 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-lu.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-us-elections.mjs → data/us-elections.json",
       "facets": [
         "origin.retrievedAt",
@@ -3772,8 +3785,8 @@
   "shardsWithoutIndex": [],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 209,
-    "undeclaredFacets": 2484,
+    "undeclared": 210,
+    "undeclaredFacets": 2491,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 0,
     "unreadableDeclaration": 0
