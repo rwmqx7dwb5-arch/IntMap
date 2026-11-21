@@ -102,3 +102,4 @@ STAC の `href` は**データ**。https・認証情報なし・私的でない�
 - 能力位置: `data.gisOverture` の `spatial-analysis` 断片を `at: 49` から `at: 55` へ（main 側の `geo.similar` が 49 を使っていたため。断片の順序以外は変わらない）。
 - perf 天井を `perf-budget --update` で上げた（async.raw 14221.0→14482.5 kB・async.gzip 4807.7→4909.9・gis-core 632.9→636.4・legal-text 91.8→94.1・dist.assets 21686.9→21890.2）。gis-core と legal-text は Overture の読み取りと第三者開示の文面が運んだ分。async 合計の増分のうちチャンク個別の天井を越えない残りは、main 側の取り込み分を含む。
 - 能力数 254（到達可能 251）・migration 70 本・表 60 に文書の数を合わせた。
+- 取り込み直し（2回目）: migration 版が main の `20261120120000_world_graph_ingest` と衝突したので id_history を `20261120140000` へ改番。perf 天井を再び上げた（async.raw 14304.0→14542.1 kB・atlas-cap-runs 903.4→911.3・gis-core 637.0→640.4。Overture の能力と読み取りが運んだ分）。能力数 255（到達可能 252）・migration 71・表 61。
