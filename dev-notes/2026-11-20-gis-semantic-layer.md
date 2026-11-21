@@ -28,3 +28,13 @@ newsjp: 列・指標の意味（対象の範囲・数えた境界・日付の意
 `gis-core` の async チャンクが 622.7 kB → 640.2 kB、async gzip が 4745.6 → 4772.4 kB に上がった。増分は意味の層（`js/gis-semantics.js`）と `gis-atlas.js` の警告配線そのもので、`data.gis` の演算前に比較・結合の妥当性を返す能力の対価。起動時の経路（boot）には載らない。`perf-budget --update` が上げた 2 行だけを `tests/perf-baseline.json` に書いた。
 
 `async.raw` の天井も 14136.4 → 14228.9 kB に上げた（意味の層の分と、同時に main へ入った他の変更の合算。超えた 1 行だけ `--update` が書いた）。
+
+## perf 天井の引き上げ (main 取り込み後)
+
+`gis-semantics.js` を `gis-core` チャンクに載せ、`gis-atlas.js` / `atlas-cap-data.js` に意味層の Atlas 能力を足したため、async の 3 行が天井を超えた。`node scripts/perf-budget.mjs --update` で超えた行だけ上げた。
+
+- `gis-core`: 637.0 → 655.4 kB (意味層の本体。起動時は読まれない遅延チャンク)
+- `atlas-cap-runs`: 903.4 → 910.2 kB (意味層の能力定義)
+- `async.gzip` 合計: 4807.7 → 4836.6 kB (上の 2 つの合計)
+
+eager (起動時) の行は動いていない。
