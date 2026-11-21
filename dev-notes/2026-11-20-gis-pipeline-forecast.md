@@ -48,3 +48,4 @@ newsjp: Atlas の分析を、地域を変えて再実行できる手順として
 - **perf（3 回目の main 取り込み後）**: `atlas-cap-runs` 918.5→924.7 kB（本 PR の入口分）、`atlas-orchestrate` 82.4→96.1 kB。後者は本 PR が触らない（`js/atlas-orchestrate` に本 PR の差分は無い）ので main 側の積み上がりが測り直しで見えた分で、CI と同じ data・main 取り込み後の木で再現できたため引き上げた。
 - **perf（4 回目の main 取り込み後）**: `async.gzip` 4833.8→4863.8 kB。本 PR の遅延 2 モジュール（gzip で約 30 kB 弱は main の同時増と合算）。CI と同じ data・取り込み後の木で再現して引き上げた。
 - **perf（gis-network 取り込み後の再測定）**: `gis-core` 663.6→679.8 kB・`atlas-cap-runs` 924.7→931.1 kB・`atlas-console` 1105.8→1112.0 kB・`dist.assets` 21796.5→21923.7 kB。`gis-core` は main の `gis-network`（グラフ解析）と本 PR の 2 モジュールが同じチャンクに載った合算で、両者の追加が重なって初めて見えた。CI と同じ data・取り込み後の木で再現して引き上げた。
+- **perf（DIRTY 解消の取り込み後）**: `async.gzip` 4864.8→4889.7 kB・`atlas-console` 1112.0→1118.7 kB。取り込んだ main 側の増分（本 PR は `atlas-console` に載るファイルを触らない）を、CI と同じ data の木で再現して引き上げた。
