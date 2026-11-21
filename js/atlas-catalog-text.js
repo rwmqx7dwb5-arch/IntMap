@@ -171,6 +171,8 @@ export const CATALOGUE_CHUNKS = [
       { name: 'photo.locate' },
       /* 44 (#R543) */
       { name: 'chart.compose' },
+      /* file.create — a deliverable is a file */
+      { name: 'file.create' },
       /* 45 (#R546) */
       { name: 'map.shakemap' },
       /* 46 (#R650) */
