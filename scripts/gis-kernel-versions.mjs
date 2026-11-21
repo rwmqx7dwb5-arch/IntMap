@@ -311,7 +311,6 @@ export const NOT_A_KERNEL = {
   'js/gis-fetch.js': 'chooses WHICH road a request takes (direct, the data relay, a signed address) and keeps the bytes it was given; it reads no value, so it cannot change a number — the same bytes arrive by every road, and a saved recipe replays by its recorded provenance',
   'js/gis-http.js': 'names why a remote read failed from the response (CORS, the words the server sent, a sign-in page); it reads no value and produces no answer a saved recipe replays',
   'js/gis-packed.js': 'a lossless codec (unpack(pack(g)) is g, number for number — tests/gis-scale-checks.test.mjs) and a store that keeps results in input order; it decides nothing about a shape and a saved recipe never replays through it',
-  'js/gis-engine-domain.js': 'states only WHERE a planar engine may answer (every coordinate strictly inside lon ±180 / lat ±90) and computes no number; an input outside it stays on this GIS, so a saved recipe never changes its answer through it (tests/duckdb-equivalence-checks.test.mjs)',
   'js/gis-core.js': 'mounts the modules and draws a dataset on the map; computes nothing',
   /* (#R783) the assembly, not the arithmetic: it decides what plays the part of the scope and what
      was handed over, mounts through js/gis-core.js, and computes nothing a saved recipe replays. */
