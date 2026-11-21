@@ -152,6 +152,7 @@ export interface GeoEngineAdapterCore {
   getCanvas(): any;
   getRenderScale(): any;
   setRenderScale(r?: any): any;
+  followDevicePixelRatio?(cap?: any): any;
   setFeatureState(f?: any, s?: any): any;
   removeFeatureState(f?: any, k?: any): any;
   styleReady(): any;
@@ -470,6 +471,7 @@ export interface GeoEngineRender {
   setCursor(c?: any): any;
   getRenderScale(): any;
   setRenderScale(r?: any): any;
+  followDevicePixelRatio(cap?: any): any;
   canvasContainer(): any;
   instrumentFrames(cb?: any): any;
   sceneStats(): any;

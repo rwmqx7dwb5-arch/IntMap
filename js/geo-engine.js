@@ -851,6 +851,7 @@ function _redrawLocalGlyphs(m,cover){
      part of it (tests/news-module-split-checks.test.mjs (#R168)); nothing in that module names the renderer, so the
      coupling gate is untouched. See its header for what is measured and what ships switched on. */
   /** @returns {import('../types/geo-engine').MapLibreAdapter} */ function makeMapLibreAdapter(_m){
+    let _dprFollowing=false;   /* (globe-polish) followDevicePixelRatio installs its listeners once per adapter */
   /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
   const _solids={};
   /* (#R322) this view's renderer-command tally and its per-source memory — both PER ADAPTER, for the
@@ -1953,7 +1954,7 @@ function _redrawLocalGlyphs(m,cover){
        stops matching or the window resizes — browser zoom and a drag to another monitor. A ratio someone else set (setRenderScale:
        a quality governor, a capture) is left alone: only a value this function applied last is replaced. */
     followDevicePixelRatio(cap){
-      const m=_m(); if(!m||!m.setPixelRatio||!m.getPixelRatio||this._dprFollowing) return false; this._dprFollowing=true;
+      const m=_m(); if(!m||!m.setPixelRatio||!m.getPixelRatio||_dprFollowing) return false; _dprFollowing=true;
       const want=()=>Math.min(window.devicePixelRatio||1,(typeof cap==='function'?cap():Infinity)||Infinity);
       let applied=m.getPixelRatio(), mq=null;
       const sync=()=>{ try{ const w=want(); if(m.getPixelRatio()===applied&&w!==applied){ applied=w; m.setPixelRatio(w); } }catch(_){} };
