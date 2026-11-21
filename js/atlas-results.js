@@ -119,6 +119,7 @@ export function makeAtlasResults(HOST) {
       'atlas.confirm.what.map.clearAll':      LA('Clear everything drawn on the map: pins, shading, rings and routes.', '地図に描いたピン・塗り・円・ルートをすべて消します。'),
       'atlas.confirm.what.places.remove':     LA('Delete {what} from your saved places. This cannot be undone.', 'マイプレイスから {what} を削除します。元に戻せません。'),
       'atlas.confirm.what.jobs.start':        LA('Start a background job on the server. It keeps running after you close this tab and uses part of the daily AI allowance.', 'サーバー上でバックグラウンドの作業を始めます。このタブを閉じても続き、今日の AI の利用枠の一部を使います。'),
+      'atlas.confirm.what.knowledge.forget':  LA('Delete kept knowledge from this device. This cannot be undone.', '端末に残した蓄積知識を削除します。元に戻せません。'),
       'atlas.confirm.what.places.unwatch':    LA('Stop watching {what}.', '{what} の見守りを止めます。'),
       'atlas.confirm.what.places.publish':    LA('Publish your saved places. Anyone with the link can see them.', '保存した場所を公開します。リンクを知っている人は誰でも見られます。'),
       'atlas.confirm.what.community.list':    LA('List this map in Community maps, where everyone can see it.', 'この地図をコミュニティマップに載せます。誰でも見られます。'),
