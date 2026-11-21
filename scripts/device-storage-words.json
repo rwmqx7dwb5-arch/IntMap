@@ -16,6 +16,7 @@
     { "area": "idb", "name": "intmap-atlas-notebook", "kind": "content", "en": "Your Atlas notebook — the questions you asked and the answers you kept", "jp": "Atlas ノート — 尋ねた質問と残した回答" },
     { "area": "idb", "name": "intmap-atlas-work", "kind": "content", "en": "Your Atlas work — the tables, datasets, code and charts a job produced, with their earlier versions, so a long task can be picked up again", "jp": "Atlas の作業 — 作業が作った表・データセット・コード・グラフと過去の版（長い作業を続きから再開するため）" },
     { "area": "idb", "name": "intmap-atlas-delegation", "kind": "cache", "en": "The results of research Atlas split into parts, kept for 15 minutes so asking the same thing again does not run and pay for it twice", "jp": "Atlas が分担して行った調査の結果（15 分保持し、同じ依頼を繰り返しても再実行・再課金されないため）" },
+    { "area": "idb", "name": "intmap-board", "kind": "content", "en": "Your saved workspaces — the screens Atlas built for you, with their selection and filters", "jp": "保存したワークスペース — Atlas が作った画面と、その選択・フィルタ" },
     { "area": "idb", "name": "intmap-gis", "kind": "content", "en": "Your GIS projects — the layers and data you added", "jp": "GIS プロジェクト — 追加したレイヤーとデータ" },
     { "area": "idb", "name": "intmap-gis-spill", "kind": "cache", "en": "Pieces of a very large GIS result moved out of memory while you work, removed when the layer is deleted", "jp": "非常に大きな GIS の結果を、作業中だけメモリの外へ移した断片（レイヤーを消すと削除）" },
     { "area": "local", "name": "im-photogeo-vision-consent", "kind": "preference", "en": "Whether you agreed to send a photo to Atlas to find where it was taken", "jp": "撮影地の推定のために写真を Atlas に送ることへの同意" },
