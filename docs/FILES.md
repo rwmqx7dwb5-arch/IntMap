@@ -1057,7 +1057,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  254 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  256 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1098,6 +1098,7 @@ atlas-cap-time.js                 Atlas の能力 — 時刻（time.*）
 atlas-reasoning.js                Atlas の 3 つの答えを**構造**にする純関数（シナリオ research.scenario の 4 欄・期間の変化 time.changes の差分と順位・相関 panel.correlate の報告）。DOM も window も持たず、tests/atlas-reasoning-checks.test.mjs が評価する。相関パネルも同じ報告を描く
 atlas-cap-ui.js                   Atlas の能力 — インラインの操作（ui.*）
 atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
+atlas-cap-web.js                  Atlas の能力 — ウェブサイトの操作とファイル取得（web.browse・web.fetchFile）。データポータル等を検索・リンク辿り・フォーム送信し、返ったファイルを GIS データセットにする
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
                                   earthquakes・volcanoes・facilities）と列（pop・precipMm・coastKm・elevM・
@@ -1188,7 +1189,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 254 を検索・到達可能 251）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 256 を検索・到達可能 253）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1208,7 +1209,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 254 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 256能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1733,6 +1734,7 @@ admin-inquiries.js                admin-inquiries.html の動き——管理者�
 admin-delegation.js               運営コンソール admin.html の Delegation タブ（素の script・window.IntMapAdminDelegation）——RPC delegation_overview を日別の表・棒・コード上位で描く
 admin-pipeline.js                 相談のコンソールの Pipeline タブ（ES module・admin-inquiries.js がタブを開いたとき import()）——会話の段
                                   （lead→talking→trial→adopted|declined）・次にやること・期日。語はページの data-*（inquiry-shape.js が正本）
+web-browse.js                     **ウェブ操作の戸口**——Edge Function web-browse を読者のセッションで呼び、閲覧状態（現在の URL・ホスト単位の cookie・直前のページの ref 表）を保ち、答えにインジェクション境界の注意書きを付け、取得したファイルを GeoJSONUpload.handle（落としたファイルと同じ戸口）へ渡す。資格情報・POST・スクリプト実行は持たない。
 weather.js                        気象（export wind / weatherEC / weatherPanel）
 wx-models.js                      予報モデルのレジストリ window.IntMapWxModels——提供モデル・出典・ライセンス。格子／変数／気圧面／予報期間は live metadata から導出（書き写さない）
 wx-source.js                      ガードされた唯一の気象／UV ソース window.IntMapWx
@@ -2125,11 +2127,11 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全25本をここに宣言する
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全26本をここに宣言する
   migrations/*.sql                DB の唯一の設計図（70本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
-  functions/<name>/index.ts       Edge Functions（25本。一覧と各本の役割は Architecture.md §6.2。
+  functions/<name>/index.ts       Edge Functions（26本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /
@@ -2138,7 +2140,7 @@ supabase/
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-entities.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
-                                  rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
+                                  rate-limit.js / relay-guard.js / volcano-parse.js / web-browse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
                                   fetch-relay-policy.js / gis-fetch-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
