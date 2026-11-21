@@ -53,6 +53,10 @@ export const GOVERNANCE = {
     attribution: false,
     /* ⚠ THE COPY IS READ FROM factbook/factbook.json, whose own terms this build does not state;
        SOURCE_STAMP.via records which mirror answered. */
+    /* (describes.*) MEASURED on the committed data/religion.json, not stated by the Factbook: 186 of its 202
+       country records carry an estimate year, and those years run 2005-2024. */
+    period: { start: '2005', end: '2024', note: 'measured: the estimate years the Factbook text gives for the 186 of 202 countries that state one' },
+    extent: 'measured: 202 countries and territories matched to Natural Earth names',
     ...FACTBOOK,
     builtBy: 'scripts/build-culture.mjs',
   },

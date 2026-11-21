@@ -146,6 +146,10 @@ export const GOVERNANCE = (() => {
       over: 'where CShapes (from 1886) or OpenHistoricalMap states ground on a day, that record draws it; this file keeps only the ground they leave, on their own dates' },
     ...CLIOPATRIA,
     builtBy: 'scripts/build-hist-clio.mjs',
+    /* (describes.*) the Cliopatria README (github.com/Seshat-Global-History-Databank/cliopatria, read 2026-11-20) and the span MEASURED on the committed bundle. */
+    period: { start: '-3399', end: '2019', note: 'astronomical years, 3400 BCE to 2019; the publisher covers 3400 BCE to 2024 CE and this bundle stops at the CShapes end year (measured: window [-3399, 2019])' },
+    extent: 'worldwide political entities (README); 12,898 rows in the committed bundle (measured)',
+    accuracy: 'the README says the maps reflect only one version of the territory held by past polities and that border uncertainties are common; it publishes no numeric accuracy',
   },
   'data/hist-eras-rest.js': {
     publisher: SHEETS.publisher,
@@ -155,6 +159,10 @@ export const GOVERNANCE = (() => {
       over: 'each sheet before 1886 keeps only the ground OpenHistoricalMap and Cliopatria leave at the year of that sheet' },
     ...AOUREDNIK_BASEMAPS,
     builtBy: 'scripts/build-hist-clio.mjs',
+    /* (describes.*) the snapshot years MEASURED on the committed bundle (54 sheets); accuracy and method as the repository README (read 2026-11-20) states them. */
+    period: { start: '-122999', end: '1880', note: 'astronomical snapshot years of the 54 sheets this bundle keeps (measured); each sheet is one year, not a span' },
+    method: 'a collection of basemaps collected, adapted and converted from diverse sources (README)',
+    accuracy: 'the README calls the project work in progress and asks that the maps be verified against other sources before academic use',
   },
   /* (hist-colonial-era-borders) OpenHistoricalMap's relations on CShapes' days, less CShapes' ground — see `ohmLate` */
   'data/hist-borders-late.js': {
@@ -164,6 +172,9 @@ export const GOVERNANCE = (() => {
       over: 'from 1886 CShapes states the sovereign states on its own dates; this file is the OpenHistoricalMap relations on the ground CShapes leaves' },
     ...OPENHISTORICALMAP,
     builtBy: 'scripts/build-hist-clio.mjs',
+    /* (describes.*) MEASURED on the committed data/hist-borders-late.js: its window field and 1411 records. */
+    period: { start: '1886', end: '1923', note: 'the window this bundle draws (its window field)' },
+    extent: '1411 OpenHistoricalMap admin_level=2 relation records (measured)',
   },
   /* (coast-snap-gaps) the land between a record's coast and the real coast, under the one polity that bounds it — the ONE
      upstream it asks is the coast; each piece's landward edge is its parent row's line, drawn under that record's terms

@@ -63,11 +63,18 @@ export const GOVERNANCE = {
        .xlsx behind a signed dataverse URL, so the copy read here is Our World in Data's CSV of the
        same release. The figures were verified against the committed bundle cell for cell. */
     url: SRC,
+    /* (describes.*) what the release states, and what the committed bundle measurably carries (1850-2018, 168 codes). */
+    period: { start: '1850', end: '2018' },
+    extent: '168 country and former-state codes (ISO 3 plus SUN, YUG, CSK); no sub-national units',
+    method: 'GDP per capita in 2011 international dollars (purchasing-power adjusted) and population in thousands, per country-year (Bolt & van Zanden 2020)',
+    resolution: 'country x year',
+    accuracy: '15 of 168 codes differ from the OWID mirror by plus or minus 1 in the last digit of a rounded population (the committed values were kept); no uncertainty is published for the series',
     /* ⚠ NO LICENCE IS STATED BY THIS BUILD for either the release or the mirror. */
     /* ⚠ A FINISHED EDITION. MPD2020 will never be revised; its successor (MPD2023) is a different
        release with different numbers, and moving to it is a decision about the data, not a refresh. */
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'the Maddison Project Database 2020 is a closed release (Bolt & van Zanden 2020); the OWID mirror of it is fixed to that release by its path',
       expires: 'when this builder is pointed at a later release (MPD2023 exists) — that is a new edition, not a refresh of this one',
       canon: 'this record (the only builder that reads the Maddison Project Database)',

@@ -8,8 +8,12 @@
   "attribution": false,
   "generatedAt": "2026-10-02",
   "asOf": "2022-06-02",
+  "extent": "the countries of the world as Natural Earth defines them, distinguishing metropolitan portions from independent and semi-independent portions of sovereign states; rows per file, measured: 177 (1:110m), 242 (1:50m), 258 (1:10m)",
+  "method": "de facto boundaries according to who controls the territory (Natural Earth); disputed areas are tagged rather than resolved; shipped losslessly, nothing simplified or re-derived in this build",
+  "resolution": "three Natural Earth scales shipped as separate files: 1:110m, 1:50m and 1:10m",
   "cadence": "P1Y",
   "cadenceBasis": {
+   "kind": "measured",
    "observed": "measured 2026-09-30 on github.com/nvkelso/natural-earth-vector: releases v3.3.0 2016-09, v4.0.0 2017-10, v4.1.0 2018-05, v5.0.0 2021-12, v5.0.1 2022-03, v5.1.0-v5.1.2 2022-05; no commit since 2022-06-02. At most one release a year while the project is active.",
    "expires": "when Natural Earth publishes more than one release in a year, or states a release schedule of its own",
    "canon": "scripts/lib/upstream-cadence.mjs NATURAL_EARTH, spread by every builder that reads Natural Earth"
