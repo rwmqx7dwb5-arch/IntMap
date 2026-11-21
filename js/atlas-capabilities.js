@@ -400,6 +400,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
       ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
       ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
+      ["geo.imageChange","geoImageChange","imageChange,changeDetection,satelliteChange,landCoverChange,embeddingChange,radarChange,beforeAfter","data","none","gis.dataset","explanation","read","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
