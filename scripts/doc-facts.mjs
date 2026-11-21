@@ -2863,6 +2863,34 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
   }
 }
 
+/* ═══ 37. the Atlas loop's two clocks: the documents quote seconds, the code owns them ═══════
+ *  docs/architecture/02-features.md said a tool call is cut at 45 s and a turn at 180 s while
+ *  js/atlas-agent.js had held 240 s and 600 s since #R452 — a reader sizing a long `analyze`
+ *  against the document was told a budget the loop does not enforce (audit 2026-11-21 §10.3).
+ *  The code is the owner: every 「`toolTimeoutMs`（N 秒）」 / 「`turnBudgetMs`（N 秒）」 in a current-state
+ *  document is compared with the literal in the limits table, and a document that names neither
+ *  fails (a needle that read nothing must not report green). */
+{
+  const src = rd('js/atlas-agent.js');
+  const own = {};
+  for (const k of ['toolTimeoutMs', 'turnBudgetMs']) {
+    const m = src.match(new RegExp(k + ':\\s*(\\d+)'));
+    if (m) own[k] = Number(m[1]) / 1000;
+  }
+  if (Object.keys(own).length !== 2) fail('atlas-clocks', 'js/atlas-agent.js no longer holds toolTimeoutMs / turnBudgetMs as numeric literals — this rule needs rewriting');
+  else {
+    let read = 0;
+    for (const f of DOCS) {
+      for (const m of rd(f).matchAll(/`(toolTimeoutMs|turnBudgetMs)`[^（\n]{0,12}（(\d+)\s*秒）/g)) {
+        read++;
+        if (Number(m[2]) !== own[m[1]]) fail('atlas-clocks', `${f} says ${m[1]} is ${m[2]} s; js/atlas-agent.js holds ${own[m[1]]} s`);
+      }
+    }
+    if (!read) fail('atlas-clocks', 'no current-state document quotes toolTimeoutMs / turnBudgetMs in seconds — the claim this rule guards was not found');
+    else ok('atlas-clocks', `${read} quoted clock value(s) agree with js/atlas-agent.js (tool ${own.toolTimeoutMs} s, turn ${own.turnBudgetMs} s)`);
+  }
+}
+
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */
 /* (#R407) `--rule=` narrows what is REPORTED as well as what is run. ⚠ A name that matched no rule
    at all must be an error: a typo would otherwise exit 0 and let a mutation test prove nothing. */
