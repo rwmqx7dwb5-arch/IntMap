@@ -49,3 +49,5 @@ CI の `check:perf` が、async の `atlas-cap-runs`(896→922 kB 級)・`atlas-
 （main の最新を取り込んだ測り直し: async raw 14304.0→14380.6 kB、async gzip 4807.7→4843.5 kB、dist.assets 21686.9→21815.5 kB。理由は上と同じ。）
 
 （2 回目の main 取り込み後、CI の Gates 2/3 で `check:perf` が 3 行で落ちた: `atlas-cap-runs` 918.5→948.3 kB、`atlas-console` 1080.1→1089.5 kB、`atlas-orchestrate` 82.4→96.1 kB。どれも CI の測定値そのままに上げた。`atlas-cap-runs` は web 能力（`atlas-cap-web`）を能力モジュール一覧に足したぶん、`atlas-console` は能力の確認・描画の配線、`atlas-orchestrate` は同じ能力の schema を計画の経路が読むぶん。web 能力を戻せば下がる。）
+
+（3 回目の取り込み後の `check:perf`: async.raw 14376.3→14502.5 kB、async.gzip 4864.8→4890.0 kB、`atlas-cap-runs` 948.3→954.7 kB、`atlas-console` 1105.8→1121.9 kB、dist.assets 21796.5→21939.6 kB。前回上げた時点より後に main へ入った他の変更（Skills・完了判定など）の増分と、web 能力の増分が合わさった CI の測定値で、手で足した数ではない。web 能力の分は上の 2 回の記述のとおり。）
