@@ -29,6 +29,7 @@
     { "area": "local", "name": "intmap_ais_key", "kind": "credential", "en": "Your own aisstream.io key for live ship positions, if you entered one", "jp": "船舶の位置のための aisstream.io のキー（入力した場合）" },
     { "area": "local", "name": "intmap_atlas_knowledge", "kind": "preference", "en": "Whether Atlas may keep sourced knowledge on this device (off until you turn it on)", "jp": "Atlas が出典つきの知識をこの端末に残してよいか（オンにするまでオフ）" },
     { "area": "local", "name": "intmap_atlas_notebook", "kind": "preference", "en": "Whether Atlas keeps a notebook on this device, and whether it syncs to your account", "jp": "Atlas ノートをこの端末に残すか、アカウントと同期するか" },
+    { "area": "local", "name": "intmap.longform.*", "kind": "content", "en": "Chapters of a long document Atlas was writing for you, kept so a long report or piece of code can be continued instead of started again", "jp": "Atlas が書いている長い文書の章（長い報告書やコードを、最初からやり直さず続きから書くため）" },
     { "area": "local", "name": "intmap.atlas.effort", "kind": "preference", "en": "How hard you asked Atlas to think (auto, fast, standard, deep or maximum)", "jp": "Atlas に考えさせる強さの選択（自動・高速・標準・深く考える・最大）" },
     { "area": "local", "name": "intmap_avatar", "kind": "preference", "en": "The avatar you chose for your account", "jp": "アカウントのアバターの選択" },
     { "area": "local", "name": "intmap_avatar_img", "kind": "content", "en": "Your profile picture", "jp": "プロフィール画像" },
