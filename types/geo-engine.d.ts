@@ -152,6 +152,7 @@ export interface GeoEngineAdapterCore {
   getCanvas(): any;
   getRenderScale(): any;
   setRenderScale(r?: any): any;
+  followDevicePixelRatio?(cap?: any): any;
   setFeatureState(f?: any, s?: any): any;
   removeFeatureState(f?: any, k?: any): any;
   styleReady(): any;
@@ -244,11 +245,13 @@ export interface MapLibreOnly {
   commandsReset(): any;
   commandConfig(patch?: any): any;
   sceneStats(): any;
+  limbWhy(): string;
   addLimb(id?: any, before?: any): any;
   limbDrawn(id?: any): any;
   setLimb(id?: any, o?: any): any;
   removeLimb(id?: any): any;
   hasLimb(id?: any): any;
+  limbWhy(): any;
   _hoverHub(): any;
   setSunDirection(o?: any): any;
 }
@@ -379,10 +382,12 @@ export interface GeoEngineLayers {
   setExtrusionRange(id?: any, a?: any, b?: any): any;
   addSolid(id?: any, b?: any): any;
   setSolid(id?: any, o?: any): any;
+  limbWhy(): string;
   addLimb(id?: any, b?: any): any;
   setLimb(id?: any, o?: any): any;
   removeLimb(id?: any): any;
   hasLimb(id?: any): any;
+  limbWhy(): any;
   limbDrawn(id?: any): any;
   removeSolid(id?: any): any;
   addOrbit(id?: any, b?: any): any;
@@ -470,6 +475,7 @@ export interface GeoEngineRender {
   setCursor(c?: any): any;
   getRenderScale(): any;
   setRenderScale(r?: any): any;
+  followDevicePixelRatio(cap?: any): any;
   canvasContainer(): any;
   instrumentFrames(cb?: any): any;
   sceneStats(): any;
