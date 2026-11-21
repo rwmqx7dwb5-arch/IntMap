@@ -16,7 +16,7 @@ newsjp: Atlasが、供給元が識別子を振り直しても同じ対象をた�
 
 ## 1. 作ったもの
 
-- **`supabase/migrations/20261120130000_world_graph_identity.sql`**（追加のみ・書く側は 1 つも変えていない）
+- **`supabase/migrations/20261120135000_world_graph_identity.sql`**（追加のみ・書く側は 1 つも変えていない）
   - `world_graph_nodes.uid`（uuid・挿入時に 1 回・UPDATE で変えようとしても trigger が戻す）。`ref` はページの鍵のまま、`uid` は栞が持てる不変の把手。
   - `world_graph_id_history` に `basis`（stated / source_record / attribute / seed）・`evidence`・`confidence`。名前による一致は基盤の値に無い。
   - **`world_graph_changes`**（追記のみ・公開読み取り）。ノード・辺・主張の added／changed／retired と、変わった欄の before／after、feed と run。**trigger が埋める**ので seed・`ingest_apply`・Overture の SQL のどれが書いても入る（書き手の改修なし）。帳簿だけの更新（`feed_run`・`updated_at`）と同値の書き込みは記録しない（`UPDATE OF 列` ＋差分の有無）。記録は**この migration 以降**（それ以前の書き込みには「前」が無い）。

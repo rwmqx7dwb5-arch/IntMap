@@ -23,7 +23,7 @@ import { makeAtlasWorldObjects } from '../js/atlas-world-objects.js';
 import { makeWorldGraphStore } from '../js/world-graph-store.js';
 
 const read = (p) => fs.readFileSync(new URL('../' + p, import.meta.url), 'utf8');
-const mig = read('supabase/migrations/20261120130000_world_graph_identity.sql');
+const mig = read('supabase/migrations/20261120135000_world_graph_identity.sql');
 const seed = read('supabase/migrations/20261120140000_world_graph_plants_admin_seed.sql');
 
 const P = (ref, o) => ({ ref, type: 'facility', kind: 'plant', country: 'JPN', lng: 130, lat: 33, ids: {}, ...o });

@@ -1,6 +1,6 @@
 -- ============================================================================
 --  pgTAP · 53 — world graph: stable identity, how an id was tied to an object, and the change log.
---  supabase/migrations/20261120130000_world_graph_identity.sql
+--  supabase/migrations/20261120135000_world_graph_identity.sql
 --    ① uid: assigned at insert, unique, and an UPDATE cannot change it;
 --    ② id_history carries basis / evidence / confidence, constrained;
 --    ③ the change log is filled by the triggers from any writer: a node added / changed / retired, a replaced
