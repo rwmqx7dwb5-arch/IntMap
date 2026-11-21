@@ -21,6 +21,7 @@
  *  is not there makes no edge (`unresolved`).
  * ==========================================================================*/
 import { makeEvidenceGraph, fingerprint } from './evidence-graph.js';
+import * as dataImpact from './data-impact.js';
 import { assessDeliverable, observationLines } from './evidence-graph-deliver.js';
 
 const fieldShape = (rec) => (Array.isArray(rec && rec.fields) ? rec.fields : [])
@@ -226,7 +227,15 @@ export function sharedEvidenceGraph(scope) {
     SHARED.gis = bindGis(SHARED.graph, data, { opVersion: () => (ops && typeof ops.version === 'function' ? ops.version() : '') });
     SHARED.boundTo = data;
   }
-  return { graph: SHARED.graph, refOfDataset: (id) => (SHARED.gis ? SHARED.gis.refOf(id) : null) };
+  /* what an upstream update reaches (js/data-impact.js): the same graph, so Atlas asks it and never keeps a second one */
+  const graph = SHARED.graph;
+  const refresh = {
+    diff: (observed) => dataImpact.diffObserved(graph, observed),
+    plan: (updates, o) => dataImpact.planRefresh(graph, updates, o),
+    apply: (updates, o) => dataImpact.applyUpdates(graph, updates, o),
+    execute: dataImpact.executePlan,
+  };
+  return { graph, refOfDataset: (id) => (SHARED.gis ? SHARED.gis.refOf(id) : null), refresh };
 }
 
 /** datasetFactsOnPage(ids) — datasetFacts over the page's registry, with each figure's graph ref; [] when there is no registry. */
