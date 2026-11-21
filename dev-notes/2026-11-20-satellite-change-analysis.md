@@ -77,3 +77,5 @@ newsjp: Atlas が、2 つの時期の実際の衛星データ（光学・レー�
 main に取り込んだ #1280（統合知識層）が atlas-orchestrate チャンクを 82.4 kB から 89.4 kB に押し上げた（CI の check:perf が測定。この PR の差分は orchestrate に触れない）。#1280 の基準は atlas-console だけを上げていたので、天井を測定値 89.4 kB（91600 バイト、帯 2.0 kB の内）へ上げた。失効条件: main 側で orchestrate の天井が上がったら取り込んで重複を消す。
 
 追記(2026-11-22): main の #1293(画面ボード)を取り込んだ後の測定で async.raw が 14461.8 kB、atlas-cap-runs が 926.1 kB になり、ceiling(14376.3 / 918.5 kB)を超えた。増分は main 側の能力追加(ボード)と本 PR の能力説明の合計で、どちらも帯の内。天井を測定値(14809000 / 948400 バイト)へ上げた。
+
+追記2(2026-11-22): main の #1282(Skills)・#1332・#1289 を取り込んだ後の CI 測定で async.gzip 4900.7 kB・atlas-console 1121.2 kB・dist.assets 21956.2 kB が ceiling を超えた。増分の主は main 側(Skills / 接続先の権限基盤 / ネットワーク分析)で、本 PR は能力説明と imagery 系の追加のみ。測定値へ ceiling を上げた(5019000 / 1148300 / 22484000 バイト・帯の内)。
