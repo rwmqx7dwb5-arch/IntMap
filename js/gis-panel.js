@@ -202,6 +202,10 @@ export function makeGisPanel(HOST) {
       if (code === 'unknown-predicate') return IntMapLang.t(HOST.lang, 'That spatial relation is declared but not wired to a test', 'その空間関係は宣言されていますが、判定に配線されていません', 'Diese räumliche Beziehung ist deklariert, aber nicht an einen Test angeschlossen', 'Это пространственное отношение объявлено, но не подключено к проверке', 'Esa relación espacial está declarada pero no conectada a una prueba') + par(d.predicate);
       if (code === 'inward-buffer-needs-area') return IntMapLang.t(HOST.lang, "A negative radius shrinks a shape inwards, and points and lines have no inside to shrink", "半径が負の値だと図形を内側へ縮めますが、点や線には縮める内側がありません", "Ein negativer Radius verkleinert eine Fläche nach innen; Punkte und Linien haben kein Inneres", "Отрицательный радиус сжимает фигуру внутрь, а у точек и линий нет внутренней части", "Un radio negativo encoge la forma hacia dentro, y los puntos y líneas no tienen interior") + par(d.geometryType);
       if (code === 'no-overlay-polygons') return IntMapLang.t(HOST.lang, "The second input holds no polygon to overlay with", "2つ目の入力に、重ね合わせに使える多角形がありません", "Die zweite Eingabe enthält kein Polygon zum Überlagern", "Во втором входе нет полигона для наложения", "La segunda entrada no tiene ningún polígono con el que superponer");
+      if (code === 'engine-unknown') return IntMapLang.t(HOST.lang, "No engine with that name is registered, so the step was not run", "その名前のエンジンは登録されていないため、処理は実行されていません");
+      if (code === 'engine-op-unsupported') return IntMapLang.t(HOST.lang, "That engine does not run this step, so it was not run — use this GIS or another engine", "そのエンジンはこの処理を実行できないため、実行されていません。この GIS か別のエンジンを使ってください");
+      if (code === 'engine-invalid') return IntMapLang.t(HOST.lang, "That engine description is incomplete (it needs a name, the steps it runs, accepts() and run())", "そのエンジンの記述が不完全です（名前・実行する処理・accepts()・run() が要ります）");
+      if (code === 'engine-op-unknown') return IntMapLang.t(HOST.lang, "That engine names a step this GIS does not have", "そのエンジンが挙げた処理は、この GIS にありません");
       if (code === 'no-features') return IntMapLang.t(HOST.lang, "That input holds nothing this step can work on", "その入力に、この処理が扱える地物がありません", "Diese Eingabe enthält nichts, womit dieser Schritt arbeiten kann", "В этом входе нет объектов, с которыми может работать шаг", "Esa entrada no contiene nada con lo que este paso pueda trabajar");
       if (code === 'grid-too-many-cells') return IntMapLang.t(HOST.lang, 'That many cells would not fit in memory, so none were made — use a larger cell size or a smaller extent', 'その数のセルはメモリに収まらないため、作成していません。セルを大きくするか、範囲を狭めてください') + par([d.cells != null ? nf(d.cells) : null, d.maxCells != null ? '≤ ' + nf(d.maxCells) : null].filter((x) => x != null).join(' / '));
       if (code === 'input-too-large-for-op') return IntMapLang.t(HOST.lang, "This input is a very large result held in pieces, and this step needs all of it at once. Filter or join it first, or export it", "この入力は断片で保持されている非常に大きな結果で、この処理は全体を一度に必要とします。先に絞り込むか結合するか、書き出してください", "Diese Eingabe ist ein sehr großes, stückweise gehaltenes Ergebnis, und dieser Schritt braucht alles auf einmal. Zuerst filtern oder verknüpfen, oder exportieren", "Этот вход — очень большой результат, хранимый по частям, а этому шагу нужен весь он сразу. Сначала отфильтруйте или соедините его, либо экспортируйте", "Esta entrada es un resultado muy grande guardado por partes y este paso lo necesita entero. Fíltrelo o únalo primero, o expórtelo");
@@ -582,6 +586,8 @@ export function makeGisPanel(HOST) {
       if (code === 'export-nodata-not-representable') return IntMapLang.t(HOST.lang, 'The no-data value this band states does not fit the sample type chosen', 'このバンドが述べている欠損値は、選ばれた数値の型に収まりません') + par([d.nodata, d.dataType].filter((x) => x != null).join(' · '));
       if (code === 'export-crs-unsupported') return IntMapLang.t(HOST.lang, 'This writer states EPSG:4326 in the file, and this grid is in something else — converting it silently would place it by assertion', 'この書き出しはファイルに EPSG:4326 と記します。この格子は別の座標系なので、黙って変換すると根拠のない場所に置くことになります') + par(d.crs);
       if (code === 'export-geometry-not-representable') return IntMapLang.t(HOST.lang, 'This format has no element for some of these shapes — GPX holds points and lines only, so areas are refused rather than dropped silently; export as KML, GeoJSON or GeoPackage', 'この形式には、一部の図形を表す要素がありません。GPX は点と線だけなので、面を黙って落とさずに断っています。KML・GeoJSON・GeoPackage で書き出してください') + par([d.format, d.count != null ? nf(d.count) : null, d.geometryTypes ? Object.keys(d.geometryTypes).join(' / ') : d.geometryType].filter(Boolean).join(' · '));
+      if (code === 'export-geometry-too-large-for-cell') return IntMapLang.t(HOST.lang, 'One shape is longer than a spreadsheet cell can hold (32,767 characters), and cutting it would damage the shape — export it as GeoJSON or GeoPackage', '1つの図形がスプレッドシートのセルに入る長さ（32,767 文字）を超えており、切ると図形が壊れます。GeoJSON か GeoPackage で書き出してください') + par([d.format, d.hint].filter(Boolean).join(' · '));
+      if (code === 'export-xlsx-too-large') return IntMapLang.t(HOST.lang, 'This table has more rows or columns than an Excel sheet holds (1,048,575 rows, 16,384 columns), so it is not cut — export it as CSV, GeoJSON or GeoPackage', 'この表は Excel のシートに入る行数・列数（1,048,575 行・16,384 列）を超えているため、切らずに断ります。CSV・GeoJSON・GeoPackage で書き出してください') + par(d.rows != null ? d.rows + ' × ' + d.columns : '');
       if (code === 'export-geometry-mixed-dimensions') return IntMapLang.t(HOST.lang, 'One shape mixes 2-D and 3-D positions, and a WKT column states one or the other — export it as GeoJSON, which carries both', '1つの図形の中で2次元と3次元の座標が混ざっています。WKT の列はどちらか一方しか述べられないため、両方を運べる GeoJSON で書き出してください') + par(d.geometryType);
       if (code === 'export-serialise-failed') return IntMapLang.t(HOST.lang, 'A value in this dataset could not be written into a file', 'このデータセットの値のうち、ファイルに書けないものがありました') + par([d.column, d.message].filter((x) => x != null && x !== '').join(' · '));
 
@@ -1133,8 +1139,10 @@ export function makeGisPanel(HOST) {
       thead.appendChild(htr); table.appendChild(thead);
       const tbody = el('tbody', '');
       let feats = [];
-      try { feats = ds.features() || []; } catch (_) { feats = []; }
       const LIMIT = 200;
+      try { feats = ds.features() || []; } catch (_) { feats = []; }
+      /* (gis-worker-columnar) A result too large to build as an array still has rows to show: the table asks only for the slice it draws (properties, no geometry), so a million-row result is a table and not an empty box. */
+      if (!feats.length && typeof ds.attributeRows === 'function') { try { feats = ds.attributeRows(0, LIMIT) || []; } catch (_) { feats = []; } }
       const commitCell = () => {
         const e = cellEdit;
         if (!e) return;
@@ -1208,8 +1216,10 @@ export function makeGisPanel(HOST) {
       /* ⚠ BOTH NUMBERS, ALWAYS. 「200」 on its own is read as 「all of it」, and every count a reader
          takes off this screen afterwards would be wrong by however much was cut. */
       const shown = Math.min(LIMIT, feats.length);
+      /* the total is the record's own count: a slice taken from a chunked result is not the result */
+      const total = (typeof ds.count === 'number' && ds.count >= feats.length) ? ds.count : feats.length;
       const note = el('div', CSS_NOTE, IntMapLang.t(HOST.lang, 'Showing', '表示中', 'Angezeigt', 'Показано', 'Mostrando')
-        + ' ' + nf(shown) + ' / ' + nf(feats.length) + ' ' + IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas'));
+        + ' ' + nf(shown) + ' / ' + nf(total) + ' ' + IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas'));
       note.className = 'gis-truncated';
       out.appendChild(note);
       return out;
