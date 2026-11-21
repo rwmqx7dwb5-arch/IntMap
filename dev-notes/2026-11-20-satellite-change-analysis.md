@@ -67,3 +67,7 @@ newsjp: Atlas が、2 つの時期の実際の衛星データ（光学・レー�
 - `tests/i18n-coverage-floor.json`（`--update-floor`）: 能力の説明文と回答の文が足した L(en, jp) の行ぶん、各言語のインライン表の行数が 1 増えた（en+jp の方針で、他言語の翻訳は足していない）。
 - `docs` の能力数は 252 → 254（到達可能 249 → 251）。検査が実体と照合する。
 - 隣接した対の表（`[英, 日]`）は `js/imagery-change-atlas.js` で作らず L() の呼び出しにした（i18n の計器の視野の外の穴を増やさないため）。
+
+## perf の天井を上げた理由（2026-11-21）
+
+`async.raw`・`async.gzip`・`atlas-cap-runs`・`atlas-console`・`gis-geotiff`（COG の zstd・下から読む・複数バンド）・`legal-text`（Source Cooperative と AWS Open Data の通信先の開示）・`dist.assets` を実測へ。増分は 2 時点変化検出の経路（`imagery-change*.js`）と、COG 読みの拡張、能力 1 つ分の文書による。いずれも遅延チャンクで、起動時の転送は増えていない。あわせて、どこからも名指しで使われない export（`planCells`・`SCL`・`robustStats`・`robustThresholds`）を内部に戻した。
