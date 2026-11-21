@@ -42,3 +42,7 @@ newsjp: Atlas が網を距離ではなくつながりとして分析できるよ
 ## 予算と台帳（CI が求めたもの）
 - `check:surface`: 大域名 `window.IntMapGisNetwork` を 1 つ足した（`--update`）。他の GIS カーネルと同じく、`gis-ops.js` が呼び出し時に名前で読む唯一の形（`IntMapGisVoronoi` と同じ契約）。読みは 1 本。
 - `check:perf`: `gis-core` チャンクが約 26 kB 増えた（新しい純粋カーネル `gis-network.js` ＋ `atlas-cap-runs` に能力の断片 1 つ）。増えた理由はこの機能そのもので、天井を `perf-budget --update` で上げた。
+
+## 性能予算の引き上げ
+
+- async.raw 14304.0→14395.8 kB・atlas-cap-runs 909.0→917.9 kB・gis-core 637.0→663.6 kB・dist.assets 21686.9→21830.5 kB: 港・鉄道・都市・工場の網と「この港が止まったら」の分析（網の分析が読む配線と GIS の核）が増えた分。atlas-orchestrate 82.4→85.5 kB は main 側の増加で、全体ビルドの更新が一緒に上げた行。遅延して読まれる配布物で、起動時の読み込みではない。
