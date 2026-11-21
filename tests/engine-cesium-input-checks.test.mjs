@@ -308,10 +308,7 @@ test('R182 ⑦: the flight is solved by the instant path, and re-asserted on arr
   assert.match(ENGINE, /_aimAt\(target,hpr,bearing,pitch,range,roll\)\{/);
   assert.ok(!/orientation:\{ heading:hpr\.heading/.test(ENGINE),
     'flyTo must not be handed the ORBIT heading/pitch as its orientation');
-  /* the globe flight still flies to direction/up; off the globe the pose helper hands back heading/pitch/roll
-     instead (tests/globe-flat-camera-checks) */
-  assert.match(ENGINE, /orientation:this\._poseOrientation\(dest\)/);
-  assert.match(ENGINE, /\{ direction:p\.dir, up:p\.up \}/);
+  assert.match(ENGINE, /orientation:\{ direction:dest\.dir, up:dest\.up \}/);
   assert.match(ENGINE, /complete:\(\)=>\{ this\._aimAt\(S\.target,S\.hpr/);
   /* one solve, three callers */
   let calls = 0;

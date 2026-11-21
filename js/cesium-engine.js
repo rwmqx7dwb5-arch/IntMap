@@ -706,37 +706,13 @@ window.IntMapCesiumEngine=(function(){
       if(this._poseUnchanged()) this._poseCache.hpr=out; else this._rememberPose(null,out);
       return out;
     }
-    /* ══ THE EYE, IN THE SCENE MODE THE CAMERA IS IN ════════════════════════════════════════
-       Everything below was written against SCENE3D, where `positionWC` is an ECEF point and the east-north-up
-       frame at the look-at point turns it into the orbit (range, pitch, heading). The flat map is COLUMBUS_VIEW,
-       where `positionWC` is the scene's own axes — (height, easting, northing) of the map projection — so that
-       same inversion read the eye as a point in space and answered nonsense. MEASURED on the built app:
-       jumpTo({center:[30,50], zoom:5, bearing:90, pitch:40}) left Cesium's own camera at heading 90°, pitch −50°
-       (= orbit pitch 40°), and getCamera() reported bearing −146°, pitch 106° (an upside-down map), zoom 4.59.
-       The offset lookAt() puts the eye at is, in a plane scene, simply the plane vector from the look-at point to
-       the eye, so that is what is read back — one question asked in the frame the scene is actually in. */
-    _isPlane(){ try{ return this._scene.mode!==Cesium.SceneMode.SCENE3D; }catch(_){ return false; } }
-    _eyeOffsetEnu(c,target,inv){
-      if(this._isPlane()){
-        const pr=this._scene.mapProjection.project(new Cesium.Cartographic(c.longitude,c.latitude,c.height||0));
-        const p=this._camera.position;
-        return new Cesium.Cartesian3(p.x-pr.x,p.y-pr.y,p.z-pr.z);
-      }
-      return Cesium.Matrix4.multiplyByPoint(inv,this._camera.positionWC,new Cesium.Cartesian3());
-    }
-    /* the eye as an ECEF point whatever the scene mode (`positionCartographic` is mode-aware, `positionWC` is not) */
-    _eyeEcef(){
-      if(!this._isPlane()) return Cesium.Cartesian3.clone(this._camera.positionWC,new Cesium.Cartesian3());
-      const c=this._camera.positionCartographic;
-      return Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height);
-    }
     _hprRaw(){
       try{
         const c=this._centreCarto();
         const target=Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height||0);
         const enu=Cesium.Transforms.eastNorthUpToFixedFrame(target);
         const inv=Cesium.Matrix4.inverseTransformation(enu,new Cesium.Matrix4());
-        const off=this._eyeOffsetEnu(c,target,inv);
+        const off=Cesium.Matrix4.multiplyByPoint(inv,this._camera.positionWC,new Cesium.Cartesian3());
         const range=Math.hypot(off.x,off.y,off.z);
         if(!(range>0)) return null;
         const pitch=Math.acos(Math.max(-1,Math.min(1,off.z/range)))/D2R;
@@ -840,36 +816,6 @@ window.IntMapCesiumEngine=(function(){
         }
       };
       const fire=()=>{ this._afterMove(); };
-      if(!(opts&&opts.silent)) this._planeTweenTok=(this._planeTweenTok||0)+1;   /* a newer command ends a running flat-map ease */
-      if(animate&&animate.duration>0&&this._isPlane()){
-        /* ══ THE FLAT MAP'S EASE IS OURS, NOT `flyTo`'s ═══════════════════════════════════════
-           `Camera.flyTo` reads its destination in the world frame of a 3D scene. In COLUMBUS_VIEW the same
-           (ECEF) destination lands somewhere else: measured, easeTo({center:[139.7,35.7], zoom:8, bearing:-30,
-           pitch:20}) from (−70,−20) arrived at (110,−9) with the old bearing — the opposite side of the world.
-           The instant solve is exact in this scene (jumpTo reads back to 1e-9), so the ease is that solve
-           stepped through time: centre by the short way round, bearing by the short way, zoom and pitch
-           linear, the same cubic in-out the globe's flight uses. */
-        const tok=this._planeTweenTok, t0=performance.now(), dur=Math.max(100,animate.duration);
-        const from=now, dLng=wrapLng(c.lng-from.center.lng), dLat=c.lat-from.center.lat;
-        let dB=(((bearing-from.bearing)%360)+540)%360-180;
-        const e=(t)=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
-        this.fire('movestart',{}); this.fire('zoomstart',{});
-        const step=()=>{
-          if(tok!==this._planeTweenTok){ this.fire('moveend',{}); this.fire('zoomend',{}); return; }
-          const k=Math.min(1,(performance.now()-t0)/dur), f=e(k);
-          if(k>=1){
-            this._planeTweenTok++;
-            this.setCamera({ center:{lng:c.lng,lat:c.lat}, zoom, bearing, pitch },null);
-            this.fire('zoomend',{}); return;
-          }
-          this.setCamera({ center:{ lng:wrapLng(from.center.lng+dLng*f), lat:from.center.lat+dLat*f },
-                           zoom:from.zoom+(zoom-from.zoom)*f, bearing:from.bearing+dB*f,
-                           pitch:from.pitch+(pitch-from.pitch)*f },null,{silent:true});
-          requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-        return;
-      }
       if(animate&&animate.duration>0){
         /* ══ (#R182) "SAME ARITHMETIC, TWO CALLERS" WAS THE INTENTION, NOT THE CODE ═══════
            This branch used to hand `flyTo` the ORBIT angles — `orientation:{heading, pitch}`
@@ -902,7 +848,7 @@ window.IntMapCesiumEngine=(function(){
         const dest=this._readPose();
         this._writePose(keep);
         this.fire('movestart',{}); this.fire('zoomstart',{});
-        this._camera.flyTo({ destination:dest.pos, orientation:this._poseOrientation(dest),
+        this._camera.flyTo({ destination:dest.pos, orientation:{ direction:dest.dir, up:dest.up },
           duration:Math.max(0.1,animate.duration/1000),
           easingFunction:Cesium.EasingFunction.CUBIC_IN_OUT,
           /* …AND LAND ON THE SOLVE, NOT ON THE FLIGHT'S OWN LAST FRAME. `flyTo` converts
@@ -945,17 +891,12 @@ window.IntMapCesiumEngine=(function(){
     /* position + attitude as three world vectors — an orientation form that carries no
        angular convention, and therefore cannot be read back as a different question */
     _readPose(){
-      /* a plane scene has no ECEF direction/up to hand back: its attitude is the camera's own heading/pitch/roll,
-         which setView and flyTo read in the same plane scene (see _eyeOffsetEnu) */
-      if(this._isPlane()){ const c=this._camera;
-        return { pos:this._eyeEcef(), hpr:{ heading:c.heading, pitch:c.pitch, roll:c.roll } }; }
       return { pos:Cesium.Cartesian3.clone(this._camera.positionWC,new Cesium.Cartesian3()),
                dir:Cesium.Cartesian3.clone(this._camera.directionWC,new Cesium.Cartesian3()),
                up:Cesium.Cartesian3.clone(this._camera.upWC,new Cesium.Cartesian3()) };
     }
-    _poseOrientation(p){ return p.hpr?{ heading:p.hpr.heading, pitch:p.hpr.pitch, roll:p.hpr.roll }:{ direction:p.dir, up:p.up }; }
     _writePose(p){
-      try{ this._camera.setView({ destination:p.pos, orientation:this._poseOrientation(p) }); }catch(_){}
+      try{ this._camera.setView({ destination:p.pos, orientation:{ direction:p.dir, up:p.up } }); }catch(_){}
     }
 
     /* ══ (#R181) …AND THE ORBIT CANNOT CARRY THE HEADING WHEN IT IS VERTICAL ═══════════════
@@ -985,7 +926,7 @@ window.IntMapCesiumEngine=(function(){
     _faceHeading(bearing,pitch,range){
       if(!(range*Math.abs(Math.sin(pitch*D2R))<=this._enuNoise(range))) return false;
       try{
-        const nrm=this._scene.globe.ellipsoid.geodeticSurfaceNormal(this._eyeEcef(),new Cesium.Cartesian3());
+        const nrm=this._scene.globe.ellipsoid.geodeticSurfaceNormal(this._camera.positionWC,new Cesium.Cartesian3());
         const s=(Cesium.Cartesian3.dot(this._camera.direction,nrm)<0)?1:-1;
         const want=((bearing%360)+360)%360;
         const have=((Cesium.Math.toDegrees(this._camera.heading)%360)+360)%360;
@@ -3058,9 +2999,9 @@ window.IntMapCesiumEngine=(function(){
          before there was an adapter to honour it. */
       eyePosition(){ const v=V(); if(!v) return null;
         try{
-          const c=Cesium.Cartographic.fromCartesian(v._eyeEcef());
+          const c=Cesium.Cartographic.fromCartesian(v._camera.positionWC);
           const t=v._centreCarto();
-          const d=Cesium.Cartesian3.distance(v._eyeEcef(),
+          const d=Cesium.Cartesian3.distance(v._camera.positionWC,
                     Cesium.Cartesian3.fromRadians(t.longitude,t.latitude,t.height||0));
           return { lng:Cesium.Math.toDegrees(c.longitude), lat:Cesium.Math.toDegrees(c.latitude),
                    alt:c.height, distance:d };
