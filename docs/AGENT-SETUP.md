@@ -351,6 +351,13 @@ at npipe:…`（実測 2026-08-24）。旗が無いと標準出力が 1 バイ�
   rebase／cherry-pick の最中かと `main` 上にいるかで判定する。
 - **GitHub 側の merge（DIRTY 判定・Update branch・squash）は driver を使わない。** 解くのは手元の `git rebase origin/main`
   （`.agents/skills/intmap-round/` §5）。CI は merge しないので登録は要らない。
+- **PR が溜まったら列車にする: `node scripts/merge-train.mjs --plan` → `--build`。** auto-merge の付いた open PR を
+  origin/main の上へ driver 込みで順に merge し、生成物を作り直した木を **1 本の PR・1 回の CI** で通す（実測 2026-11-21:
+  open 55 本・待ちジョブ 180 に対し同時実行 19。1 本の CI は約 78 runner 分で、待ちの正体は run の本数）。載った PR は
+  自分の auto-merge と走行中の CI を止め、列車の squash commit の `Merge-Train-Includes: #N@<sha>` を main 上の
+  `.github/workflows/merge-train.yml` が読んで、head が同じものを閉じる（載った後に push されたものは閉じずに言う）。
+  列車が赤なら `--release <列車の PR>` で戻す。自分の CI が赤の PR は既定で載せない——赤が古い main の上で出ただけ
+  （例: 天井の食い違い）と分かっているものは `--with-red` で載せ、列車の CI が今の main の上で判定する。
 - 宣言より前に切った branch の `git merge` では driver は呼ばれない（rebase なら効く）。script の無い checkout では
   `git merge-file` に戻り、普通の衝突マーカーを残す。
 - **同じ宣言を衝突の外でも使う: `npm run regen`**（`scripts/regen.mjs`・使い方は skill §4）。`intmap-tighten=<writer>` の

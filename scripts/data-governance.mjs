@@ -1034,7 +1034,17 @@ async function main() {
   const { checkRepository: checkOutbound, LEDGER: OUTBOUND_LEDGER, readLedger: readOutboundLedger } = await import('./outbound-hosts.mjs');
   const m = measure();
   if (has('--update')) {
-    fs.writeFileSync(path.join(ROOT, LEDGER), JSON.stringify(ledgerFrom(m), null, 2) + '\n');
+    /* (merge-train) IDEMPOTENT: a re-record that finds the same obligations keeps the old
+       `generatedAt`. Rewriting the stamp on every run made every branch that ran `npm run regen`
+       change the same line, so any two of them conflicted on a file whose content agreed
+       (measured 2026-11-21: 4 of the PRs a merge train could not board, on this file alone). */
+    const file = path.join(ROOT, LEDGER);
+    const next = ledgerFrom(m);
+    let prev = null;
+    try { prev = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { /* absent or unreadable: write it */ }
+    const sans = (j) => JSON.stringify({ ...j, gov: { ...(j && j.gov), generatedAt: null } });
+    if (prev && prev.gov && sans(prev) === sans(next)) next.gov.generatedAt = prev.gov.generatedAt;
+    fs.writeFileSync(file, JSON.stringify(next, null, 2) + '\n');
     console.log('wrote ' + LEDGER + ' — undeclared ' + m.undeclared.length
       + ' subject(s) / ' + m.undeclared.reduce((n, u) => n + u.facets.length, 0) + ' facet(s)'
       + ', unchecked-response ' + m.exposed.length + ', shard dirs with no index ' + m.shardsWithoutIndex.length
