@@ -399,6 +399,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
       ["knowledge.forget","knowledgeForget","forgetKnowledge,deleteKnowledge","research","none","knowledge","explanation","persist","explicit","",""],
       ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
+      ["mcp.servers","mcpServers","listMcpServers,mcpTools,refreshMcp","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","always","","",""],
+      ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","always","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
