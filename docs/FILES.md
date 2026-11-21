@@ -471,6 +471,8 @@ gis-packed.js                     **幾何の圧縮表現とチャンクスト�
                                   幾何を Float64Array へ平らに並べ（unpack で 1 バイトも違わず戻る）、
                                   結果を入力の順のチャンクとして持つ。閾値と、その観測は同じ file の末尾
                                   （`docs/GIS-CORE.md` §6「100 万件」）
+gis-engine-domain.js              **平面のエンジンが同じ答えを返す入力の範囲**（日付変更線・極を含まない）。
+                                  DuckDB Spatial との全ペア比較の結果から（`docs/GIS-CORE.md` §6）。
 cap-bridge.js                     **能力ブリッジ**（Programmatic Tool Calling）— AI が書いたプログラムが能力表の能力を
                                   ポート越しに何百回でも直接呼び、途中の結果は実行環境に置いて最後だけ Atlas に返す、
                                   言語に依らない契約（JSON over MessagePort）。呼びは `makeExecute` と同じ道を通る

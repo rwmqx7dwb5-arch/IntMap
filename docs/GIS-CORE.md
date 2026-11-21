@@ -2151,8 +2151,9 @@ worldNodes(result)                  world_graph_nodes（`ids.gers`）と識別�
 - **殻（プロパティ）は列で持つ**（`compactShells`・`js/gis-packed.js`）。100 万行の殻 160 MB → 8 MB（キーの和集合＋存在ビット＋キー順の変種。対応できない塊は行のまま）。
   `rec.attributeRows(from, count)` は結果が `features()` を拒む大きさでも、**表示する行だけ**（プロパティのみ・位置は読み戻さない）を返し、属性表がそれを描く。
 - **大規模エンジンへ渡す戸**（`IntMapGisOps.registerEngine` / `opts.engine`・既定は何も登録しない）。実測（100 万点 × 400 区域・within）: IntMap 17〜22 s／DuckDB-Wasm+Spatial 6.9 s
-  （拡張の初回読込 11 s）／DuckDB native 1.1 s（`memory_limit=128MB` でも 1.4 s）。**答えが同じとは測っていない**（DuckDB は平面・IntMap は閉集合 DE-9IM と日付変更線・極の規則）ので、
-  既定にせず無言にもしない: 選択は `stats.engine`・`provenance.computedBy` に記録され、辞退・例外は同じ step を既存 GIS へ戻して `stats.engineDeclined` に理由を残す。
+  （拡張の初回読込 11 s）／DuckDB native 1.1 s（`memory_limit=128MB` でも 1.4 s）。**同値性は測った**（`scripts/gis-engine-equivalence.mjs`・DuckDB Spatial 対 `relateBlock`・intersects / within / contains）: 内部の点・辺や頂点の上の点・辺を共有する面・穴・線・長い辺は**全ペア同じ行**で、
+  違ったのは日付変更線（180 をまたぐ面・±180 上の座標）と極（緯度 90 の点）だけ。⇒ 平面の世界（経度 ±180・緯度 ±90 を含まない）に入る入力だけを `js/gis-engine-domain.js` の `planarEquivalent` が許し、
+  外れたら既存 GIS に戻って理由を `stats.engineDeclined` に書く。**エンジン本体（DuckDB-Wasm の配信・CSP・ライセンス・結果を runner の形へ戻す写し）は未着手**なので、まだ何も登録していない。無言にもしない: 選択は `stats.engine`・`provenance.computedBy` に記録され、辞退・例外は同じ step を既存 GIS へ戻して `stats.engineDeclined` に理由を残す。
 - ⚠ **近傍依存（近傍検索・和集合の縫い直し）は未着手**で、分けたのは
   「出力画素ごとに独立な位置計算」と「1 呼びで完結する幾何演算」だけ。
   ⚠ **出力格子を丸ごと確保するのはやめた**（§1.4b-1 の受け皿）——`to4326` / `resample` の契約は
