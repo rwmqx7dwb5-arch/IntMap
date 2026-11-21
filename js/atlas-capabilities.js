@@ -399,10 +399,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
       ["knowledge.forget","knowledgeForget","forgetKnowledge,deleteKnowledge","research","none","knowledge","explanation","persist","explicit","",""],
       ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
-      ["jobs.start","jobStart","startJob,backgroundResearch,runInBackground,longTask","research","none","","explanation","external","explicit","",""],
-      ["jobs.status","jobStatus","jobs,myJobs,listJobs,jobProgress,backgroundStatus","research","none","","explanation","read","none","","","external"],
-      ["jobs.cancel","jobCancel","cancelJob,stopJob,stopBackground","research","none","","explanation","session","none","",""],
-      ["jobs.amend","jobAmend","amendJob,changeJob,tellJob,addInstruction","research","none","","explanation","session","none","",""],
+      ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
