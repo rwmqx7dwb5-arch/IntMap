@@ -3,7 +3,6 @@
    (js/atlas-console.js, js/atlas-schemas.js) — the on-demand chunk, never the boot path. */
 import caps_account from './atlas-cap-account.js';
 import caps_attach from './atlas-cap-attach.js';
-import caps_board from './atlas-cap-board.js';
 import caps_briefing from './atlas-cap-briefing.js';
 import caps_chart from './atlas-cap-chart.js';
 import caps_community from './atlas-cap-community.js';
@@ -16,7 +15,7 @@ import caps_knowledge from './atlas-cap-knowledge.js';
 import caps_layers from './atlas-cap-layers.js';
 import caps_learn from './atlas-cap-learn.js';
 import caps_map from './atlas-cap-map.js';
-import caps_mcp from './atlas-cap-mcp.js';
+import caps_model from './atlas-cap-model.js';
 import caps_navigation from './atlas-cap-navigation.js';
 import caps_news from './atlas-cap-news.js';
 import caps_notebook from './atlas-cap-notebook.js';
@@ -32,12 +31,10 @@ import caps_system from './atlas-cap-system.js';
 import caps_time from './atlas-cap-time.js';
 import caps_ui from './atlas-cap-ui.js';
 import caps_view from './atlas-cap-view.js';
-import caps_work from './atlas-cap-work.js';
 
 export const CAPABILITY_MODULES = {
   "account": caps_account,
   "attach": caps_attach,
-  "board": caps_board,
   "briefing": caps_briefing,
   "chart": caps_chart,
   "community": caps_community,
@@ -50,7 +47,7 @@ export const CAPABILITY_MODULES = {
   "layers": caps_layers,
   "learn": caps_learn,
   "map": caps_map,
-  "mcp": caps_mcp,
+  "model": caps_model,
   "navigation": caps_navigation,
   "news": caps_news,
   "notebook": caps_notebook,
@@ -66,5 +63,4 @@ export const CAPABILITY_MODULES = {
   "time": caps_time,
   "ui": caps_ui,
   "view": caps_view,
-  "work": caps_work,
 };

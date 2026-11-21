@@ -898,6 +898,22 @@
       }
     },
     {
+      "host": "flood-api.open-meteo.com",
+      "what": "Open-Meteo GloFAS river-discharge forecast at a point",
+      "whatJp": "Open-Meteo の地点の河川流量予報（GloFAS）",
+      "sends": {
+        "code": "coordinates",
+        "detail": "latitude/longitude of the point asked about (and the eight neighbouring grid cells)"
+      },
+      "disclosure": {
+        "en": "elevation/weather APIs (Open-Meteo",
+        "jp": "標高・気象API（Open-Meteo"
+      },
+      "probe": {
+        "url": "https://flood-api.open-meteo.com/v1/flood?latitude=35.17&longitude=136.9&daily=river_discharge&forecast_days=1"
+      }
+    },
+    {
       "host": "fonts.googleapis.com",
       "what": "Google Fonts stylesheet (Noto Sans JP/SC/TC)",
       "whatJp": "Google Fonts のスタイルシート（Noto Sans JP/SC/TC）",
