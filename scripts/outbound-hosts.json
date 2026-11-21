@@ -2481,6 +2481,46 @@
       "link": "the publisher page of the Luxembourg timetable (js/transit-feeds.js source); the build script reads its dataset API, the browser never does"
     },
     {
+      "host": "www.data.gouv.fr",
+      "what": "the dataset pages of the French timetables",
+      "link": "the publisher page of a shipped French timetable (js/transit-feeds.js source / verified.page); the build script reads its dataset API, the browser never does"
+    },
+    {
+      "host": "www.etalab.gouv.fr",
+      "what": "Licence Ouverte 2.0 text link",
+      "link": "the licence of a shipped timetable (js/transit-feeds.js FEED_ROWS[].licence.url), shown as a hyperlink; never fetched"
+    },
+    {
+      "host": "opendatacommons.org",
+      "what": "ODbL 1.0 text link",
+      "link": "the licence of a shipped timetable (js/transit-feeds.js FEED_ROWS[].licence.url), shown as a hyperlink; never fetched"
+    },
+    {
+      "host": "data.norge.no",
+      "what": "NLOD 2.0 text link",
+      "link": "the licence of a shipped timetable (js/transit-feeds.js FEED_ROWS[].licence.url), shown as a hyperlink; never fetched"
+    },
+    {
+      "host": "developer.entur.org",
+      "what": "the Norwegian timetable page (Entur)",
+      "link": "the publisher page of the Norwegian timetables (js/transit-feeds.js source); the build script re-reads its licence statement, the browser never does"
+    },
+    {
+      "host": "storage.googleapis.com",
+      "what": "the Norwegian timetable archives (Entur)",
+      "link": "the archive URL a build downloads (js/transit-feeds.js FEED_ROWS[].resolve.url); the browser never requests it — it reads the compiled data/transit-<id>.json from IntMap"
+    },
+    {
+      "host": "gtfs-data.jp",
+      "what": "the Japanese timetable page (GTFSデータリポジトリ)",
+      "link": "the publisher page of a shipped Japanese timetable (js/transit-feeds.js source / verified.page); never fetched by the browser"
+    },
+    {
+      "host": "api.gtfs-data.jp",
+      "what": "the Japanese timetable feed API",
+      "link": "the feed API a build reads for the current archive and licence (js/transit-feeds.js FEED_ROWS[].resolve.api); the browser never requests it"
+    },
+    {
       "host": "transitous.org",
       "what": "Transitous usage-policy page",
       "link": "the Transitous usage policy cited by TRANSITOUS_TERMS (js/transit-feeds.js); a reference, never fetched"
