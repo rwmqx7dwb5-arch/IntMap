@@ -21,3 +21,6 @@ newsjp: Atlas が長い報告書や長いコードを章ごとに書き、書い
 
 ## perf (merge of main, 2026-11-21)
 Origin/main moved (new async chunks from other PRs), so atlas-cap-runs and async.gzip ceilings were re-measured on the merged build and raised with `perf-budget --update`; the research.longform capability is the part this PR adds.
+
+## dist.total
+The CI build measured dist.total at 1,587,385,548 bytes, 13 kB above the ceiling main recorded; raised to that measurement (the data bundle and the PR-specific chunks are the growth).
