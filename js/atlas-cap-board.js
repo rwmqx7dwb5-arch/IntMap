@@ -76,6 +76,7 @@ export default [
     async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, esc = K.esc, L = K.L;
       await window.IntMapLazy.need('board');
       const B = window.IntMapBoard, W = B && B.api(a.id); if (!W) return R(false, warn(L('No workspace is open to edit — open one first (board.compose or board.restore).', '編集できるワークスペースが開いていません。先に開いてください。')));
+      await W.prepare();
       const out = (r, what) => (r && r.ok ? R(true, note('✓ ' + esc(what)), { board: { id: W.id, delta: W.delta(), history: W.history() } }) : R(false, warn(esc((r && r.text) || (r && r.why) || 'refused'))));
       if (a.op === 'cells') {
         const edits = [];

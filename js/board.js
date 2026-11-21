@@ -112,6 +112,21 @@ export function board(HOST) {
     d.head.appendChild(s);
   }
 
+  /* inline rows → the registry (so GIS ops, the map and EDITS share them). ⚠ An id left by an earlier open of the same board (a restore) is REPLACED, not reused: the saved rows are the truth, and a registry copy still holding last session's edits would answer an edit at the wrong row. The registry hands its features back as the same array, so the board reads THOSE rows from here on. Without the registry loaded (it is a lazy module) the board is read-only until B.prepare() has loaded it. */
+  function registerInline(spec, feats) {
+    const D = DATA(); let datasetId = null;
+    if (D && D.add) {
+      const want = 'board-' + spec.boardId;
+      try {
+        if (D.has && D.has(want)) D.remove(want);
+        const r = D.add({ id: want, title: spec.title, features: feats, provenance: { kind: 'board', source: spec.source } });
+        datasetId = r && r.id;
+        const ds = datasetId && D.get(datasetId); if (ds) feats = ds.features();
+      } catch (_) { datasetId = null; }
+    }
+    return { datasetId, rows: feats };
+  }
+
   /* ── data ────────────────────────────────────────────────────────────── */
   function loadRows(spec) {
     const D = DATA();
@@ -123,16 +138,7 @@ export function board(HOST) {
     }
     let feats = rowsToFeatures(spec.data.rows, spec.data.lngField, spec.data.latField);
     /* inline rows are registered so GIS ops, the map and EDITS see what the board sees. ⚠ An id left by an earlier open of the same board (a restore) is REPLACED, not reused: the saved rows are the truth, and a registry copy that still held last session's edits would answer an edit at the wrong row. The registry hands its features back as the same array, so the board reads THOSE rows from here on. */
-    let datasetId = null;
-    if (D && D.add) {
-      const want = 'board-' + spec.boardId;
-      try {
-        if (D.has && D.has(want)) D.remove(want);
-        const r = D.add({ id: want, title: spec.title, features: feats, provenance: { kind: 'board', source: spec.source } });
-        datasetId = r && r.id;
-        const ds = datasetId && D.get(datasetId); if (ds) feats = ds.features();
-      } catch (_) { datasetId = null; }
-    }
+    const reg = registerInline(spec, feats), datasetId = reg.datasetId; feats = reg.rows;
     return { ok: true, rows: feats, datasetId };
   }
 
@@ -173,7 +179,7 @@ export function board(HOST) {
         btn('delcol', L('Remove', '削除'), () => say(B.removeColumn(sel.value), L('Removed', '削除しました')), false));
       if (!can.ok) { say(can); }
     };
-    toggle.onclick = () => { B.editing = !B.editing; update(); };
+    toggle.onclick = async () => { B.editing = !B.editing; if (B.editing) await B.prepare(); update(); };
     function update() {
       const vis = B.vis(), sel = new Set(B.state.get().selection), c = cols(), ed = !!B.editing && B.can().ok;
       toggle.setAttribute('aria-pressed', B.editing ? 'true' : 'false'); toggle.classList.toggle('on', !!B.editing);
@@ -455,7 +461,7 @@ export function board(HOST) {
     root.append(head, body, foot);
     const timeField = spec.data.timeField || null;
     const B = { id: boardId, spec, rows: got.rows, datasetId: got.datasetId, state: createBoardState(opts.state), root, foot, widgets: [], off: [], mapLink: null, onMapLink: null,
-      base: Array.isArray(opts.base) ? opts.base : snapshotRows(got.rows), rn: { undo: [], redo: [] }, editMsg: '',
+      base: Array.isArray(opts.base) ? opts.base : snapshotRows(got.rows), rn: { undo: Array.isArray(opts.renames) ? opts.renames.slice() : [], redo: [] }, editMsg: '',
       yearOf: timeField ? (row) => yearOf(row && row.properties ? row.properties[timeField] : undefined) : null,
       vis() { return B.state.visible(B.rows, B.yearOf); },
       /* the link to IntMap's real map (js/board-link.js). Attaching is a reader action (the map widget's button) or the spec's `link:true`; both end here */
@@ -466,6 +472,13 @@ export function board(HOST) {
         const refuse = (why, detail) => ({ ok: false, why, detail, text: editRefusal(why, detail, L) });
     const done = (r) => (r && r.ok ? r : refuse(r && r.why, r && r.detail));
     const dsApi = () => { const D = DATA(); return D && B.datasetId && D.editable ? D : null; };
+    /* the registry is a lazy module: load it, and register this board's inline rows if it was opened before it arrived */
+    B.prepare = async () => {
+      if (dsApi()) return { ok: true };
+      try { await window.IntMapLazy.need('gisCore'); } catch (_) { return refuse('no-dataset'); }
+      if (!B.datasetId && B.spec.data.rows) { const g = registerInline({ ...B.spec, boardId: B.id }, B.rows); if (g.datasetId) { B.datasetId = g.datasetId; B.rows = g.rows; B.subscribeData(); refresh(B); } }
+      return dsApi() ? { ok: true } : refuse('no-dataset');
+    };
     B.can = () => { const D = dsApi(); if (!D) return refuse('no-dataset'); const r = D.editable(B.datasetId); return r.ok ? { ok: true } : refuse(r.why, r.detail); };
     B.label = (i) => { const p = (B.rows[i] && B.rows[i].properties) || {}; const k = ['name', 'title', 'label', 'id', 'country', 'ref'].find((c) => p[c] != null && p[c] !== ''); return k ? String(p[k]) : '#' + (i + 1); };
     B.cellsOf = (field) => B.rows.map((r) => (r.properties || {})[field]);
@@ -518,7 +531,7 @@ export function board(HOST) {
     };
     B.history = () => { const D = DATA(); const h = D && D.history && B.datasetId ? D.history(B.datasetId) : null; return h ? { undo: h.undo, redo: h.redo } : { undo: 0, redo: 0 }; };
     /** what differs from the rows the board was opened with, plus filters/time/selection: the thing Atlas continues from */
-    B.delta = () => diffRows(B.base, B.rows);
+    B.delta = () => diffRows(B.base, B.rows, B.rn.undo);
     B.deltaText = () => deltaText({ delta: B.delta(), state: B.state.get(), title: spec.title, label: B.label, L });
     let lastSec = null, group = body;
     const secName = (s) => L(s, ({ Map: '地図', Data: 'データ', Analysis: '分析', Time: '時間', Objects: 'オブジェクト', Evidence: '根拠', Execution: '実行' })[s] || s);
@@ -547,12 +560,12 @@ export function board(HOST) {
       if (!B.state.get().time) B.state.setTime({ year: IntMapTime.year(), mode: tw.mode }, 'link');
       B.off.push(followClock(B, { Time: IntMapTime }));
     }
-    const D = DATA();
-    if (D && D.subscribe && B.datasetId) B.off.push(D.subscribe((what, ds) => {
+    B.subscribeData = () => { const D = DATA(); if (D && D.subscribe && B.datasetId) B.off.push(D.subscribe((what, ds) => {
       if (!boards.has(B.id) || !ds || ds.id !== B.datasetId || what === 'remove') return;
       try { B.rows = ds.features(); } catch (_) { return; }
       refresh(B); if (B.mapLink) B.mapLink.repaint();
-    }));
+    })); };
+    B.subscribeData();
     x.onclick = () => closeOne(B);
     /* "redo the analysis": what the reader changed here is handed to Atlas as one message, and Atlas continues from it — the loop edit → re-analyse needs no retyping */
     B.reanalyze = async () => {
@@ -590,7 +603,7 @@ export function board(HOST) {
     if (!B) return { ok: false, why: 'no-board-open' };
     /* an inline board saves the rows it HOLDS now (a job's partial rows included), bounded by MAX_ROWS */
     const spec = B.spec.data.rows ? { ...B.spec, data: { ...B.spec.data, rows: B.rows.slice(0, MAX_ROWS).map((r) => ({ ...r.properties })) } } : B.spec;
-    const rec = { id: B.id, title: B.spec.title, spec, state: B.state.snapshot(), base: B.base, savedAt: Date.now() };
+    const rec = { id: B.id, title: B.spec.title, spec, state: B.state.snapshot(), base: B.base, renames: B.rn.undo, savedAt: Date.now() };
     try { await tx('readwrite', (s) => s.put(rec)); return { ok: true, id: B.id }; } catch (e) { return { ok: false, why: 'storage-unavailable', detail: { message: e && e.message } }; }
   }
   const saveCurrent = () => saveOne(cur);
@@ -632,9 +645,9 @@ export function board(HOST) {
     if (!hit) return { ok: false, why: 'not-found', boards: l.boards };
     let rec; try { rec = await tx('readonly', (s) => s.get(hit.id)); } catch (e) { return { ok: false, why: 'storage-unavailable' }; }
     if (!rec) return { ok: false, why: 'not-found' };
-    return open({ title: rec.spec.title, source: rec.spec.source, data: rec.spec.data, widgets: rec.spec.widgets }, { id: rec.id, state: rec.state, base: rec.base });
+    return open({ title: rec.spec.title, source: rec.spec.source, data: rec.spec.data, widgets: rec.spec.widgets }, { id: rec.id, state: rec.state, base: rec.base, renames: rec.renames });
   }
   async function remove(id) { try { await tx('readwrite', (s) => s.delete(id)); return { ok: true }; } catch (e) { return { ok: false, why: 'storage-unavailable' }; } }
 
-  return { open, feed, api: (id) => { const B = id ? boards.get(id) : cur; return B ? { can: B.can, setCells: B.setCells, addColumn: B.addColumn, renameColumn: B.renameColumn, removeColumn: B.removeColumn, undo: B.undo, redo: B.redo, delta: B.delta, deltaText: B.deltaText, reanalyze: B.reanalyze, history: B.history, rows: () => B.rows, setFilter: (wid, f) => B.state.setFilter(wid, f, 'api'), spec: () => B.spec, id: B.id } : null; }, rows: (id) => { const B = id ? boards.get(id) : cur; return B ? B.rows : []; }, stage, openStaged, close, save: saveCurrent, list, restore, remove, state: (id) => { const B = id ? boards.get(id) : cur; return B ? B.state : null; }, isOpen: () => boards.size > 0, ids: () => [...boards.keys()] };
+  return { open, feed, api: (id) => { const B = id ? boards.get(id) : cur; return B ? { prepare: B.prepare, can: B.can, setCells: B.setCells, addColumn: B.addColumn, renameColumn: B.renameColumn, removeColumn: B.removeColumn, undo: B.undo, redo: B.redo, delta: B.delta, deltaText: B.deltaText, reanalyze: B.reanalyze, history: B.history, rows: () => B.rows, setFilter: (wid, f) => B.state.setFilter(wid, f, 'api'), spec: () => B.spec, id: B.id } : null; }, rows: (id) => { const B = id ? boards.get(id) : cur; return B ? B.rows : []; }, stage, openStaged, close, save: saveCurrent, list, restore, remove, state: (id) => { const B = id ? boards.get(id) : cur; return B ? B.state : null; }, isOpen: () => boards.size > 0, ids: () => [...boards.keys()] };
 }

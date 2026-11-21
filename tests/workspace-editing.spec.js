@@ -99,7 +99,7 @@ test('workspace-editing: edit a cell, add/rename/remove a column, undo, filter, 
   expect(r.ok).toBe(true);
   expect(r.cols).toContain('people'); expect(r.cols).toContain('note');
   expect(r.d.cells.length).toBe(2);
-  await expect(page.locator('.bd-panel .bd-tile .bd-tv').first()).toHaveText('130');
+  await expect(page.locator('.bd-panel .bd-tile .bd-tv').first()).toHaveText('125');
   /* the Saved list opens it too */
   await page.locator('.bd-panel [data-act="saved"]').click();
   await expect(page.locator('.bd-panel [data-saved="list"] button', { hasText: 'Edit me' }).first()).toBeVisible();

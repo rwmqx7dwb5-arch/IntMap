@@ -64,17 +64,23 @@ export function snapshotRows(rows) { return (rows || []).map((r) => ({ ...((r &&
 const same = (a, b) => (a == null && b == null) || a === b;
 
 /**
- * diffRows(base, rows) → {cells:[{index, field, from, to}], added:[col], removed:[col], rows:{base, now}}
+ * diffRows(base, rows, renames) → {cells:[{index, field, from, to}], added, removed, renamed:[{from,to}], rows:{base, now}}
  * Rows are matched by position (an edit never reorders; a feed appends, so rows past the snapshot are `rows.now - rows.base`).
+ * `renames` is the applied renames in order ([{from,to}]): a renamed column is compared with the column it was, so an edit made
+ * AFTER the rename is still an edit of that data, and a rename is not reported as one column removed and another added.
  */
-export function diffRows(base, rows) {
-  const now = snapshotRows(rows), cells = [], bcols = new Set(), ncols = new Set();
+export function diffRows(base, rows, renames) {
+  const now = snapshotRows(rows), cells = [], bcols = new Set(), ncols = new Set(), orig = {};
+  for (const r of renames || []) orig[r.to] = orig[r.from] || r.from;
   base.forEach((p) => Object.keys(p).forEach((k) => bcols.add(k)));
   now.forEach((p) => Object.keys(p).forEach((k) => ncols.add(k)));
-  const added = [...ncols].filter((k) => !bcols.has(k)), removed = [...bcols].filter((k) => !ncols.has(k));
+  const was = (k) => (orig[k] && bcols.has(orig[k]) ? orig[k] : k);
+  const renamed = [...ncols].filter((k) => was(k) !== k).map((k) => ({ from: was(k), to: k }));
+  const mapped = new Set([...ncols].map(was));
+  const added = [...ncols].filter((k) => !bcols.has(was(k))), removed = [...bcols].filter((k) => !mapped.has(k));
   const n = Math.min(base.length, now.length);
-  for (let i = 0; i < n; i++) for (const k of ncols) if (bcols.has(k) && !same(base[i][k], now[i][k])) cells.push({ index: i, field: k, from: base[i][k] == null ? null : base[i][k], to: now[i][k] == null ? null : now[i][k] });
-  return { cells, added, removed, rows: { base: base.length, now: now.length } };
+  for (let i = 0; i < n; i++) for (const k of ncols) { const o = was(k); if (bcols.has(o) && !same(base[i][o], now[i][k])) cells.push({ index: i, field: k, from: base[i][o] == null ? null : base[i][o], to: now[i][k] == null ? null : now[i][k] }); }
+  return { cells, added, removed, renamed, rows: { base: base.length, now: now.length } };
 }
 
 const show = (v) => (v == null ? '(empty)' : String(v));
@@ -92,6 +98,7 @@ export function deltaText(o) {
     delta.cells.slice(0, max).forEach((c) => lines.push('- ' + (label ? label(c.index) : '#' + (c.index + 1)) + ' · ' + c.field + ': ' + show(c.from) + ' → ' + show(c.to)));
     if (delta.cells.length > max) lines.push(L('… and ' + (delta.cells.length - max) + ' more', '… ほか ' + (delta.cells.length - max) + ' 件'));
   }
+  if (delta.renamed && delta.renamed.length) lines.push(L('Renamed columns: ', '名前を変えた列: ') + delta.renamed.map((r) => r.from + ' → ' + r.to).join(', '));
   if (delta.added.length) lines.push(L('Added columns: ', '追加した列: ') + delta.added.join(', '));
   if (delta.removed.length) lines.push(L('Removed columns: ', '削除した列: ') + delta.removed.join(', '));
   const fs = Object.values((state && state.filters) || {});
@@ -99,7 +106,7 @@ export function deltaText(o) {
   if (state && state.time) lines.push(L('Time window: up to ' + state.time.year, '時間窓: ' + state.time.year + ' 年まで'));
   const sel = (state && state.selection) || [];
   if (sel.length) lines.push(L('Selected rows: ', '選択中の行: ') + sel.slice(0, 10).map((i) => (label ? label(i) : '#' + (i + 1))).join(', ') + (sel.length > 10 ? ' …' : ''));
-  if (!delta.cells.length && !delta.added.length && !delta.removed.length && !fs.length && !sel.length) lines.push(L('(No edits yet — use the current data as it is.)', '(まだ編集はありません。現在のデータのままで)'));
+  if (!delta.cells.length && !(delta.renamed && delta.renamed.length) && !delta.added.length && !delta.removed.length && !fs.length && !sel.length) lines.push(L('(No edits yet — use the current data as it is.)', '(まだ編集はありません。現在のデータのままで)'));
   return lines.join('\n');
 }
 

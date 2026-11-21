@@ -39,6 +39,15 @@ test('diffRows is computed from the rows: an edited-then-restored value is not i
   assert.deepEqual(diffRows(base, rows([{ n: 'a' }, { n: 'b' }])).removed, ['v']);
 });
 
+test('diffRows follows a rename: an edit after it is still an edit of that column, and the rename is named, not a removal plus an addition', () => {
+  const base = snapshotRows(rows([{ n: 'a', pop: 1 }]));
+  const d = diffRows(base, rows([{ n: 'a', people: 5 }]), [{ from: 'pop', to: 'people' }]);
+  assert.deepEqual(d.cells, [{ index: 0, field: 'people', from: 1, to: 5 }]);
+  assert.deepEqual(d.renamed, [{ from: 'pop', to: 'people' }]); assert.deepEqual(d.added, []); assert.deepEqual(d.removed, []);
+  const chain = diffRows(base, rows([{ n: 'a', z: 1 }]), [{ from: 'pop', to: 'y' }, { from: 'y', to: 'z' }]);
+  assert.equal(chain.cells.length, 0); assert.deepEqual(chain.renamed, [{ from: 'pop', to: 'z' }]);
+});
+
 test('deltaText states edits, filters, selection, and how many it left out', () => {
   const delta = { cells: Array.from({ length: 35 }, (_, i) => ({ index: i, field: 'v', from: i, to: i + 1 })), added: ['w'], removed: [], rows: { base: 35, now: 35 } };
   const t = deltaText({ delta, state: { filters: { a: { field: 'kind', values: ['x'] } }, selection: [0], time: { year: 1990 } }, title: 'T', L });
