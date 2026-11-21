@@ -401,6 +401,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
       ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
       ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["web.browse","browse","openPage,webBrowse,operatePortal,browsePortal,navigateSite,portalSearch","research","none","","explanation","read","none","","","external"],
+      ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
