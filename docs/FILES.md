@@ -356,6 +356,8 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
                                   `read(i)` は扉で、開いただけでは画素を展開しない
 gis-ogcapi.js                     **URL の地物コレクション（OGC API – Features）を読む** `window.IntMapGisOgcApi`（`gis-atlas.js` が動的 import）—
 gis-fetch.js                       **GIS 読み手の共通 fetch** — まず直接読み、`no-cors` の探りで「ホストは応答するが CORS が無い」と**証明された**ときだけ Edge Function `gis-fetch` 経由（1 MiB チャンク・メモリ→Cache API（1 日）で再利用。⚠ CDN の共有コピーは無い＝実測 `CF-Cache-Status: DYNAMIC`）、401/403/409 なら署名者（`gis-remote.js signHref`）で署名して 1 回だけ読み直す。中継の拒否は中継のものとして名指す。`gis-geotiff.js`・`gis-ogcapi.js`・`gis-remote.js` が静的 import
+gis-pipeline.js                    **発見したデータが、どの段まで進んだか**の台帳（`discovered → access → fetched → inspected → dataset`）と、**中身を実際に見る**検査（空・全 nodata・窓の外・形が無い）。`analysis`（分析してよい）は**記録できず**、段から導出する（`ready` / `ready-partial` / `not-ready`）。失敗は理由の種類（login・needs-signing・unresponsive・upstream-error…）に分け、「観測できなかった（再試行可）」と「観測して無かった」と「あるが取る立場にない（迂回しない）」を混ぜない。窓が日付変更線をまたぐなら両側を分ける。`gis-remote.js` が動的 import（window へは出さない）。
+gis-catalog-search.js              **データセットをその性質で探す**（純関数）— 内容（語の置き場所で重み）・場所・期間・**解像度（m）**・雲量・ライセンスを、**記録が述べたこと**だけで判定。述べていない項目は「不明」のまま残し（`strict` で落とす）、「述べている項目の数」（`stated`）は品質ではなく記録の率直さ。このセッションが持つデータセットも同じ一覧に入る。`gis-remote.js` が静的 import。
 gis-http.js                        **遠隔読み込みが失敗した理由を、応答から読んで名指す**（CORS 不許可・サーバ自身の言葉・ログイン画面への転送）。`gis-geotiff.js` と `gis-ogcapi.js` が静的 import。
                                   `…/items?bbox&limit` を叩き（STAC の `…/search` も同じ形で、`datetime` を取り、各 asset を `asset:<key>` 列にする）、サーバ自身の `rel=next` をたどる。上限は発明しない（limit を述べなければ 1 ページ・
                                   続きは `next`）。`all` はサーバの「次が無い」という述べ方だけ。カーソルは同一オリジンの https だけ
@@ -1013,6 +1015,10 @@ atlas-plan.js                     Atlas — 計画の台帳と地図の上の計
                                   宣言する）、手順ごとの状態を実行器の判定から導く台帳（`makeAtlasPlan`。DOM なし・
                                   `runTurn` の `opts.plan`）、モデルへ戻す `promptBlock()`、HUD の中の計画カードと
                                   手順が描いたものへの移動（`makePlanView`）。⚠ 手順を決めない・観測できなかったものを完了にしない
+atlas-geoplan.js                  Atlas — 地理空間分析の仕様（`plan` 道具の `geo`）。対象地域・時点・必要データ（出所と完全性と解像度）・演算・実行環境・
+                                  成果物を構造として持ち、書かれていない項目（gaps）を列挙し、`check:true` のとき IntMap の
+                                  レイヤーと世界のカタログ（STAC/OGC）に存在を問う（`preflight`）。DOM なし。
+                                  ⚠ 何も既定値で埋めない・何も拒否しない・カタログは全域被覆を証明できない（`unproven`）
 atlas-highlight.js                Atlas — コードブロックのシンタックスハイライト（#R494）。外部依存なしの
                                   8 文法（js/ts・python・json・html/xml・css・sql・bash・yaml）＋
                                   未知言語のフォールバック。出力は必ず esc 済み。配色は
@@ -1338,6 +1344,9 @@ world-flows.js                    **世界とのつながり**のカードと地
 world-flows-core.js               その事実の全部（純粋なモジュール）——国の表と照合・時刻の規則・3 つの読み方・合計と割合・弧（大圏の経度を連続に）
 evidence-graph.js               **数値の出自の長期グラフ**（純粋）— 元の事実（source・版は追記）と IntMap/AI が作った派生（derived・入力の版と計算を固定）を分け、`trace`／`impact`／`staleness`／`wouldStale` で元データ〜回答の数値を遡り、更新の影響先を調べる。
 evidence-graph-record.js        Evidence Graph の記録係 — GIS データセット（`bindGis`）と Atlas 回答の数値（`recordAnswer`、`graphRef` 経由で GIS 鎖へ）。モデルが書いた URL/id は節を作らない。
+evidence-graph-deliver.js       成果物が**実際に何を持つか**を事実として出す（純粋）— 各列が何行に値を持つか・数値ごとの独立した出典数（同一ホストは 1）。判断は別モデルの goal verifier（`observe`）。
+evidence-graph-sync.js          Evidence Graph のアカウントの写し — `evidence_graph_nodes` へ pull→push（`pending/ackPending`）。同意はノート同期と同じ。
+data-impact.js                  **上流の更新 → 作り直す分析の特定と再実行**（純粋）— 観測した版を Evidence Graph の現在版と突き合わせ（`diffObserved`）、動かす前に影響先を上流順に出し（`planRefresh`・`rerun` / `review`）、版を進めて `staleness` と過不足を照合（`applyUpdates`）、呼び出し側の runner で 1 回だけ上流順に再実行（`executePlan`・失敗の下流は blocked）。
 world-graph-store.js            **永続の世界グラフの読み口**（遅延・純粋）— Supabase の `world_graph_*`（対象・型付きの辺・値）を、世界オブジェクトの索引と同じ型
                                   （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `findPersisted` / `nearPersisted` / `freshness`〔フィードの最終確認〕）。結ぶのは識別子（`ids`）で綴りではない。
                                   データベースが答えなかったことは `unavailable` / `failed` で返し、空のグラフとは区別する。能力 `research.object` / `research.related` が読む
@@ -1641,6 +1650,7 @@ table-bind.js                     **表の場所の列**（純関数）——各
                                   場所の鍵（ISO alpha-3、無ければ ADM0_A3／GeoNames id）を返す。同名は曖昧として解決しない（同じ行の国の列で絞る）
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
 legal.js                          その本文をアプリ内モーダルに表示する（本文は開いたときに遅延モジュール legalText で読む）
+ask-dialog.js                     アプリ内の確認・入力ダイアログ askInApp()（window.confirm/prompt の代わり。アカウント画面と地図エンジンの切替が使う）
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・
                                   閉じたときのフォーカス復帰、「押せる」の契約（role+tabindex を Enter/Space で押す委譲・makeActionable）、
                                   検索欄の listbox（矢印キー）。数える側は scripts/keyboard-reach.mjs
@@ -2119,7 +2129,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全25本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（69本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（70本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（25本。一覧と各本の役割は Architecture.md §6.2。
