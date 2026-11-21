@@ -30,3 +30,6 @@ newsjp: 上流データが更新されたとき、それから作られた分析
 
 ## 5. 天井を上げ直した理由（main 取り込み後の再測定）
 origin/main（#1334 ほか）を取り込んだ状態で CI が `check:perf` 赤になり、4 行を実測まで上げた: `async.gzip` 4771.5→4806.5 kB、`atlas-cap-runs` 896.4→903.4 kB、`atlas-console` 1066.9→1073.3 kB、`dist.assets` 21559.0→21681.7 kB。この PR 自身が足したのは data-impact.js（約 8 kB）の分で、`atlas-cap-runs` と `dist.assets` の増分の一部は main 側の同時期の変更との合算。内訳は分けて測っていない（失効条件: 次に main 側で天井が下がれば、この上げ幅は再測定する）。
+
+## 6. 天井をもう一度上げた理由（2 回目の main 取り込み後）
+`evidence-graph-deliver.js` などを含む main を取り込んだ状態で測り直し、`atlas-cap-runs` 903.4→909.0 kB、`atlas-notebook` 52.9→57.3 kB を実測まで上げた。この 2 つは data-impact.js を含まない塊で、増分の源は取り込んだ main 側の変更（この PR の変更ではない）。main 同士の合算が天井を越えた分を、取り込む側の PR が引き取っている。
