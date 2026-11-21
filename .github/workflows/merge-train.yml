@@ -1,0 +1,38 @@
+# (merge-train) CLOSE THE PULL REQUESTS A MERGE TRAIN CARRIED ONTO MAIN.
+#
+# scripts/merge-train.mjs --build merges many open pull requests into one `train/<stamp>` branch and
+# opens one pull request for it, so the queue spends ONE CI run on N pull requests instead of N
+# (measured 2026-11-21: 55 open, 180 jobs queued behind a 20-job ceiling — the reason it exists is in
+# the script's header). Its squash commit carries one `Merge-Train-Includes: #N@<head sha>` line per
+# pull request. When that commit reaches main, this closes each pull request whose head is still the
+# sha that boarded — its content is on main — and leaves (with a comment) any its author pushed to
+# afterwards, because those newer commits are not.
+#
+# It changes no code and starts no CI run (a close made with GITHUB_TOKEN triggers nothing).
+name: Merge train
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write                # delete the closed pull requests' branches, as auto-merge's --delete-branch would have
+  pull-requests: write           # close them and comment
+
+jobs:
+  close:
+    name: Close the pull requests a train landed
+    runs-on: ubuntu-latest
+    timeout-minutes: 10   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
+    if: ${{ contains(github.event.head_commit.message, 'Merge-Train-Includes:') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Close what the train carried
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/merge-train.mjs --close "$GITHUB_SHA"
