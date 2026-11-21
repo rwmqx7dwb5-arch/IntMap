@@ -14,6 +14,18 @@ on:
   push:
     branches: [main]
   pull_request:
+    # (ci-queue-pressure) A PR that changes no code CodeQL reads and no lock npm audit reads (documents, dev-notes,
+    # data) has nothing for either job to find; both still run on every push to main and daily. Advisory, not a
+    # required check (see the ruleset), so a path filter cannot leave a required context unreported (db.yml's case).
+    paths:
+      - '**/*.js'
+      - '**/*.mjs'
+      - '**/*.cjs'
+      - '**/*.ts'
+      - '**/*.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/security.yml'
   schedule:
     # (security-watch) DAILY, not weekly: an advisory is published against code that has not changed, so the
     # scheduled run is what finds it — a weekly one let it sit up to six days. 02:47 UTC is clear of db-backup and
@@ -49,6 +61,10 @@ concurrency:
 jobs:
   codeql:
     name: CodeQL (JavaScript / TypeScript)
+    # (ci-queue-pressure) NOT ON A PULL REQUEST: ~10 runner-minutes per push, advisory (not required), and the queue
+    # was the cost, not the test time. It runs on every push to main and daily (below), so a finding lands within a
+    # day. Put `pull_request` back here if the queue stops being the constraint.
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:
