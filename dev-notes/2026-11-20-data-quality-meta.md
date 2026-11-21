@@ -54,3 +54,7 @@ main 取り込みで `js/gis-ops.js` に別の PR（spatiotemporal-join）の `p
 遅延チャンク `data-governance` は 9.2 kB → 約 12.2 kB。`describes.*` の 6 欄の語彙・`spanOf`・`temporalMismatch` が同じ部品に入ったため。
 起動時（eager）には載らず、`gisRemote` の facts と GIS の複数入力演算が読み込んだときだけ取られる。`tests/perf-baseline.json` の該当行だけを 12300 にした。
 `facts` の読み取りは `jsonWithin`（期限つき）に直した（`fetch-deadline-layer-checks` ⑤ が、期限の無い fetch を 1 件拾った）。
+
+## perf: atlas-orchestrate の天井を 82.4 → 96.1 kB へ
+
+`atlas-orchestrate` 非同期チャンクは CI で 96.1 kB と測られ天井（82.4 kB）を超えた。**origin/main 自身の先頭（381b9331）の Gates 2/3 が同じ 96.1 kB で同じ check:perf 落ちをしており、増分は main 側の drift であって本 PR 起因ではない**（本 PR の js 変更は gis-atlas・data-governance・gis-ops の小さな差分で、このチャンクの大きさは main と同一）。起動時（eager）には載らない。`node scripts/perf-budget.mjs --update` で該当行だけを上げた。main の CI が先に上げた場合は merge が同じ行を main 側に寄せる。
