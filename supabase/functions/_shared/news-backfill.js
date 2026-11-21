@@ -40,23 +40,44 @@ function dropComments(s) {
   return out;
 }
 
-/** Remove wiki markup, leaving the sentence a reader would read. */
+/** Delete every `<ref …>…</ref>` and `<ref … />` span by position; an unclosed one runs to the end. */
+function dropRefs(s) {
+  let out = s, i;
+  while ((i = out.indexOf('<ref')) >= 0) {
+    const gt = out.indexOf('>', i);
+    if (gt < 0) return out.slice(0, i);
+    if (out[gt - 1] === '/') { out = out.slice(0, i) + out.slice(gt + 1); continue; }
+    const j = out.indexOf('</ref>', gt);
+    out = out.slice(0, i) + (j < 0 ? '' : out.slice(j + 6));
+  }
+  return out;
+}
+
+/** Remove every `<…>` span, then any stray bracket, by walking the characters — no pattern whose removal could re-assemble a tag. */
+function dropTags(s) {
+  let out = '', inTag = false;
+  for (const c of s) {
+    if (inTag) { if (c === '>') inTag = false; continue; }
+    if (c === '<') { inTag = true; continue; }
+    if (c !== '>') out += c;
+  }
+  return out;
+}
+
+/** Remove wiki markup, leaving the sentence a reader would read. The result is a sentence, never HTML:
+    comments, refs and tags are removed by position (CodeQL js/incomplete-multi-character-sanitization), and the
+    link/template patterns below cannot assemble a tag opener, so one pass is enough — the loop only settles nested
+    templates. */
 export function plainText(s) {
-  /* Repeat until nothing changes, then drop every angle bracket: one pass can leave a tag the first removal assembled
-     (CodeQL js/incomplete-multi-character-sanitization). The result is a sentence, never HTML. */
   let t = String(s || ''), prev;
   do {
     prev = t;
-    t = dropComments(t)
-      .replace(/<ref[^>]*>[\s\S]*?<\/ref>|<ref[^>]*\/>/g, '')
-      .replace(/<!--[\s\S]*?-->/g, '')
+    t = dropRefs(dropComments(t))
       .replace(/\[https?:\/\/[^\s\]]+(?:\s+[^\]]*)?\]/g, '')          /* external links: kept separately as sources */
       .replace(/\{\{[^{}]*\}\}/g, '')
-      .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1')
-      .replace(/<[^<>]*>/g, '')
-      .replace(/[<>]/g, '');   /* last step of every pass: nothing a pass returns can still hold a tag opener */
+      .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1');
   } while (t !== prev);
-  return t.replace(/'{2,}/g, '').replace(/\s+/g, ' ').replace(/\s+([.,;:])/g, '$1').trim();
+  return dropTags(t).replace(/'{2,}/g, '').replace(/\s+/g, ' ').replace(/\s+([.,;:])/g, '$1').trim();
 }
 
 /** The first article a heading line links to — the running story's canonical title. */
