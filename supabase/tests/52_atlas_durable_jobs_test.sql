@@ -1,6 +1,6 @@
 -- ============================================================================
 --  pgTAP · 52 — Atlas durable jobs: a job that outlives the tab, run one lease at a time.
---  supabase/migrations/20261120130000_atlas_durable_jobs.sql
+--  supabase/migrations/20261120140000_atlas_durable_jobs.sql
 --    ① the tables: columns, RLS on, owner-only read, no client write;
 --    ② create: idempotent on (reader, idem), bounded per reader, refused when the stop switch is off;
 --    ③ claim / lease: one runner at a time, a lapsed lease is taken over, a stale reservation counts as spent;
