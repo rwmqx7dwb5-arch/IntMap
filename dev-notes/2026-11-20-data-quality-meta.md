@@ -58,3 +58,7 @@ main 取り込みで `js/gis-ops.js` に別の PR（spatiotemporal-join）の `p
 ## perf: atlas-orchestrate の天井を 82.4 → 96.1 kB へ
 
 `atlas-orchestrate` 非同期チャンクは CI で 96.1 kB と測られ天井（82.4 kB）を超えた。**origin/main 自身の先頭（381b9331）の Gates 2/3 が同じ 96.1 kB で同じ check:perf 落ちをしており、増分は main 側の drift であって本 PR 起因ではない**（本 PR の js 変更は gis-atlas・data-governance・gis-ops の小さな差分で、このチャンクの大きさは main と同一）。起動時（eager）には載らない。`node scripts/perf-budget.mjs --update` で該当行だけを上げた。main の CI が先に上げた場合は merge が同じ行を main 側に寄せる。
+
+## perf: atlas-cap-runs と async.raw の天井を上げた
+
+`atlas-cap-runs` 918.5 → 925.5 kB、`async.raw` 14376.3 → 14465.9 kB（`perf-budget.mjs --update` が上げた 2 行だけ）。`atlas-cap-runs` の +7 kB は本 PR 自身の分が主で、`gisRemote` の `facts`（`js/gis-atlas.js` +3.7 kB・`js/data-governance.js` +6.2 kB の `temporalMismatch`/`account` の `describes.*`・能力文 +0.7 kB）を含む。`async.raw` の +89 kB は他の PR が main に入れた分も含み、本 PR 単独の増分ではない。いずれも起動時（eager）には載らず、Atlas が `facts` / 複数入力の GIS 演算を呼んだときだけ取られる。
