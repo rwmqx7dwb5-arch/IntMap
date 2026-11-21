@@ -22,6 +22,7 @@ export const READ_CAPS = Object.freeze(new Set([
   "data.value",
   "dialog.answer",
   "geo.similar",
+  "knowledge.recall",
   "layers.electionFreshness",
   "navigation.status",
   "news.eventPast",
