@@ -24,7 +24,7 @@ await gw.storeCredential(userId, connection, secret, { expiresAt });
 - 拒否は `authorize` が台帳へ自動で 1 行残す（呼び出し側が覚えている必要がない）。`record` が失敗しても本体の仕事は失敗させない（delegation journal と同じ姿勢）。
 - 判断そのものは純関数 `connection-policy.js` の `decide()`。ページと Edge Function が同じ行から同じ答えを出す。順序は 状態（revoked/paused）→ データ条件 → 日次の支出上限 → 性質ごとの mode。データ条件（`max_sensitivity`・保持・学習への同意）は ask ではなく deny: 毎回訊くと設定が催促に変わるため。公開データは保持される先へ送ってもよい。
 
-## データ（migration `20261120130000_connection_permissions.sql`）
+## データ（migration `20261121120000_connection_permissions.sql`）
 - `connections` — 利用者ごとの接続と方針。RLS は本人のみ。列 grant で本人が編集できるのは方針の列だけ（`user_id` は不可）。50 件まで。`revoked` は戻せず、**失効と同じ文でその秘密が消える**（トリガ）。
 - `connection_credentials` — **AES-256-GCM の暗号文だけ**。鍵は Edge Function の秘密 `CONNECTION_VAULT_KEYS`（`<版>:<base64 32 バイト>` をカンマ区切り・新しい順）で、**DB にもリポジトリにも無い**ので表のダンプでは何も開かない。接続 ID を追加認証データに束ねてあり、別の接続の行へ写した暗号文は開かない。ブラウザの役割には grant も policy も無い。
 - `connection_ledger` — 追記専用。操作名・性質・判断・結果・実行者・コード・**ホストだけ（URL は持たない）**・費用。内容も秘密も持たない。本人が読め、更新も削除も誰にもできない。90 日で pg_cron が消す。

@@ -1,6 +1,6 @@
 // ============================================================================
 //  IntMap · _shared/connection-policy.js — may Atlas do THIS through THAT connection?
-//  (supabase/migrations/20261120130000_connection_permissions.sql · dev-notes/2026-11-20-connection-permissions.md)
+//  (supabase/migrations/20261121120000_connection_permissions.sql · dev-notes/2026-11-20-connection-permissions.md)
 // ----------------------------------------------------------------------------
 //  Pure. No fetch, no clock, no database: the page and every Edge Function call the same function on the same
 //  `connections` row and get the same answer. Its job is to let Atlas use more services, so:

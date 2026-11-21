@@ -1,6 +1,6 @@
 -- ============================================================================
 --  pgTAP · 52 — connection permissions: connections / connection_credentials / connection_ledger
---  supabase/migrations/20261120130000_connection_permissions.sql
+--  supabase/migrations/20261121120000_connection_permissions.sql
 --    ① owner isolation (A cannot see, edit or log against B's connection);
 --    ② column grants: the owner edits policy columns only; defaults match _shared/connection-policy.js;
 --    ③ credentials are invisible to every browser role and reachable only by service_role doors;

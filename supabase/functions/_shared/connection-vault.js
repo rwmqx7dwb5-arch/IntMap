@@ -1,6 +1,6 @@
 // ============================================================================
 //  IntMap · _shared/connection-vault.js — seal and open a connection's secret
-//  (supabase/migrations/20261120130000_connection_permissions.sql · connection_credentials)
+//  (supabase/migrations/20261121120000_connection_permissions.sql · connection_credentials)
 // ----------------------------------------------------------------------------
 //  AES-256-GCM through WebCrypto (Deno and Node 20 both have it). The key is NOT in the database and NOT in the
 //  repository: it is the Edge Function secret CONNECTION_VAULT_KEYS, "<version>:<base64 of 32 bytes>" entries

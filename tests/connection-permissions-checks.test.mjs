@@ -1,6 +1,6 @@
 /* ============================================================================
  *  connection-permissions — the shared policy / vault / gateway under every connected service
- *  supabase/migrations/20261120130000_connection_permissions.sql · supabase/functions/_shared/connection-*.js
+ *  supabase/migrations/20261121120000_connection_permissions.sql · supabase/functions/_shared/connection-*.js
  *  ① reads never ask by default; write/spend/destructive ask; the reader can move any of them
  *  ② data conditions and the spend cap are hard denials with a typed reason
  *  ③ the vault: round trip, bound to its connection, rotation, no key = refusal (never plaintext)
@@ -18,7 +18,7 @@ import { seal, open, parseVaultKeys } from '../supabase/functions/_shared/connec
 import { createGateway } from '../supabase/functions/_shared/connection-gateway.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SQL = readFileSync(join(ROOT, 'supabase/migrations/20261120130000_connection_permissions.sql'), 'utf8');
+const SQL = readFileSync(join(ROOT, 'supabase/migrations/20261121120000_connection_permissions.sql'), 'utf8');
 const conn = (o) => Object.assign({ id: 'c1', user_id: 'u1', service: 'github', status: 'active' }, o);
 const KEY = (n) => Buffer.alloc(32, n).toString('base64');
 
