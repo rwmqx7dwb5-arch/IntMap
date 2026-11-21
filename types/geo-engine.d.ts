@@ -244,6 +244,7 @@ export interface MapLibreOnly {
   commandsReset(): any;
   commandConfig(patch?: any): any;
   sceneStats(): any;
+  limbWhy(): string;
   addLimb(id?: any, before?: any): any;
   limbDrawn(id?: any): any;
   setLimb(id?: any, o?: any): any;
@@ -379,6 +380,7 @@ export interface GeoEngineLayers {
   setExtrusionRange(id?: any, a?: any, b?: any): any;
   addSolid(id?: any, b?: any): any;
   setSolid(id?: any, o?: any): any;
+  limbWhy(): string;
   addLimb(id?: any, b?: any): any;
   setLimb(id?: any, o?: any): any;
   removeLimb(id?: any): any;
