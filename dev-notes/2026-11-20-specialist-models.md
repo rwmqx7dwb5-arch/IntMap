@@ -57,3 +57,5 @@ main を取り込み直した後の再測定（同じ 3 行、同じ理由）: `
 ## 6. 能力の id を `model.discover` から `model.find` へ（`subject-findable` が data.gisRemote を無言と判定した原因）
 
 原因: カタログの 1 つの chunk（`spatial-analysis`）はレジストリ内で改行の継ぎ目で 3 つの断片に分けられ、各断片が chunk 全体の id 一覧を持つ。ある能力の入口 `{"type":"…"}` がその断片に無いとき、レジストリは能力 id の最後の語（`discover`）を引用符つきの裸の語として探す。`data.gisRemote` の引数列挙 `"action":"discover"|…` がそれに当たり、`model.discover` の入口と読まれて gisRemote の本文が 29 文字で打ち切られた（その結果、gisRemote の主題語が全て 0 点＝無言）。能力そのものの欠陥ではなく、id の最後の語が他の能力の引数名と同じだったことの副作用。直し方: id の最後の語を、カタログ内のどこにも引用符つきで現れない語（`find`）にした。呼び名（`modelDiscover` の type・利用者の語）は変えていないので、到達できる能力と回答は同じ。レジストリ側の「断片をまたぐ裸の語の誤認」は別の構造の問題で、この PR では触らない（記録のみ）。
+
+5 度目の再測定（id 改名後・main の最新取り込み後）: async.raw 14489.5 kB・`atlas-cap-runs` 937.3 kB・`atlas-console` 1115.0 kB・`atlas-orchestrate` 108.2 kB・dist.assets 21926.2 kB。いずれも CI が測った超過値（14488.1 / 937.3 / 1113.6 / 108.2 / 21924.1）と一致し、main で並行に増えた能力・資産を含む。この PR 由来は専門モデル 2 能力（上の §5）で、`atlas-orchestrate` のコードには触れていない。`perf-budget.mjs --update` が上げた行だけ。`dist.total` は CI だけが data 込みで測る値のため、ここでは触れていない。
