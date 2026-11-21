@@ -46,3 +46,12 @@ main が worker の答えに `facts`（実世界オブジェクト×属性）を
 
 ⚠ このマシンでは `vite build` が prebuild で止まる（`data/` が checkout に無い）ため、`perf-budget.mjs --update` は使えず、
 CI のログの実測値を手で入れた。main の CI が `--tighten` で測り直して下げる（`perf-ceiling.yml`）。
+
+main の増分（Atlas の skills・board など、他の PR）と重なって、merge 後の CI の実測が次の 3 行でも上限を超えた。
+増えた分の大半は他の PR のもので、この PR の分（`jobs.*`・進捗カード）はその一部。上限は CI の実測値に合わせた。
+
+| 行 | 上限（前 → 後） | CI の実測 |
+|---|---|---|
+| `async.raw` | 14376.3 → 14483.1 kB | 14483.0 kB |
+| `atlas-console` | 1105.8 → 1114.4 kB | 1114.3 kB |
+| `dist.assets` | 21796.5 → 21919.4 kB | 21919.3 kB |
