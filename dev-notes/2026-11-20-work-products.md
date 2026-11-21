@@ -83,3 +83,6 @@ Notebook の公開可否（`NOTEBOOK_SHOWN=false`）は変えない。
 起動(eager)には入らず、作業を開いたときだけ読まれる。`async.gzip`・`dist.total`・`dist.assets` の天井も同じ `--update` で上げた(main 側の増加分を含む)。
 能力は 255 になり、能力数を述べる文書(DECISIONS・PRODUCT・docs/FILES・docs/architecture/02-features)を実測に合わせた。
 `js/atlas-capabilities.js` の行は `node scripts/atlas-caps.mjs --write` が各能力ファイルから導出する(取り込みの merge driver が再生成するため、手で足した行は残らない)。
+
+`atlas-console` の async chunk も上がった(1105.8 → 1113.7 kB)。`work.job` の案内文(`js/atlas-catalog-text.js` が能力の語から導く)が Atlas の本体側に入るため。
+`atlas-cap-runs` は 944.2 kB。どちらも起動(eager)には入らない。main の最新を取り込むたびに天井は main の実測へ動くので、この値は取り込み時点のもの。
