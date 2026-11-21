@@ -85,7 +85,8 @@ export function atlasConsole(HOST){
      ONE name each rather than by `window.` at forty call sites. They exist without Atlas — that is the
      point of §3: a capability is discoverable before its module loads. */
   const CAPS=window.IntMapCapabilities||makeAtlasCapabilities(HOST);
-  const _KERNEL=(function(){ try{ return installAtlasKernel(window.IntMapOS, HOST, { capabilities:CAPS, GE:()=>IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas kernel not installed',e); }catch(_){} return null; } })();
+  let _OSK=null;   /* the kernel object the line below reads once — _kernelRun reuses it, so the page adds no second read of the global */
+  const _KERNEL=(function(){ try{ return installAtlasKernel((_OSK=window.IntMapOS), HOST, { capabilities:CAPS, GE:()=>IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas kernel not installed',e); }catch(_){} return null; } })();
   const RESULTS=_KERNEL&&_KERNEL.results, EXEC=_KERNEL&&_KERNEL.exec, ASTATE=_KERNEL&&_KERNEL.state;
   const NOTEBOOK=makeAtlasNotebook();   /* (atlas-os) mounted with the panel (ensure) — files every finished turn */
   const BRIEFING=makeAtlasBriefing(NOTEBOOK);   /* (atlas-briefing) mounted beside the notebook; a link's briefing opens through openBriefing below */
@@ -1220,7 +1221,7 @@ export function atlasConsole(HOST){
        itself (IntMapOS.execute: resolve, validate, run, verify, the undo ledger), the same door a turn's own call reaches, with no turn id. It answered 'no_turn' before, so those paths could
        never run a capability outside a live question (the browser spec of the Python bridge failed on exactly that). A turn-only capability (research.delegate) still says so for itself. */
     async function _kernelRun(action){ try{ const type=action&&action.type; const args=Object.assign({},action); delete args.type; for(const k of Object.keys(args)) if(k.slice(0,2)==='__') delete args[k];
-      const OS=(typeof window!=='undefined')&&window.IntMapOS; if(!OS||typeof OS.execute!=='function') return { ok:false, error:'no_turn', message:'no turn is running' };
+      const OS=_OSK; if(!OS||typeof OS.execute!=='function') return { ok:false, error:'no_turn', message:'no turn is running' };
       const r=await OS.execute(type,args,{ source:'program' }); const st=r&&r.status; const ok=st==='completed'||st==='partial';
       return { ok:ok, html:(r&&r.html)||'', meta:Object.assign({ status:st, code:r&&r.code, produced:(r&&r.produced)||[] },(r&&r.meta)||(r&&r.rawResult&&r.rawResult.meta)||{}) }; }
       catch(e){ return { ok:false, error:'execution_failed', message:String((e&&e.message)||e) }; } }
