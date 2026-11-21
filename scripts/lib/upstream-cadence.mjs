@@ -83,8 +83,8 @@ export const MLEDOZE_COUNTRIES = {
 export const IANA_TZDB = {
   cadence: 'P3M',
   cadenceBasis: {
-    observed: 'estimate, not measured this round: the IANA time zone database is released several times a year as governments change their rules (release names such as 2024a/2024b/2025a); zone.tab changes with those releases',
-    expires: 'when the release history at data.iana.org/time-zones/releases/ is counted and differs',
+    observed: 'measured 2026-11-21 from the commit dates of the release tags of github.com/eggert/tz (2023d 2023-12-22, 2024a 2024-02-01, 2024b 2024-09-04, 2025a 2025-01-15, 2025b 2025-03-22, 2025c 2025-12-10, 2026a 2026-03-02, 2026b 2026-04-23, 2026c 2026-07-08, 2026d 2026-09-11, 2026e 2026-09-30, 2026f 2026-10-28): 11 gaps of 19, 28, 41, 52, 65, 66, 76, 82, 133, 216 and 263 days — median 66 days, mean 95 days, longest 263 days; 2018-2025 averaged 4.9 releases a year and 2026 has had six so far',
+    expires: 'when a gap longer than the longest one measured (263 days) occurs, or the release rate over a full year leaves 2-6 a year',
     canon: 'scripts/lib/upstream-cadence.mjs IANA_TZDB',
   },
 };
