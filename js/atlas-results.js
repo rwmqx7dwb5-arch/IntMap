@@ -122,6 +122,7 @@ export function makeAtlasResults(HOST) {
       'atlas.confirm.what.mcp.call':          LA('Run the read-only tool {what} on an external MCP server. The request leaves IntMap.', '外部MCPサーバーの読み取り専用ツール {what} を実行します。リクエストは IntMap の外へ出ます。'),
       'atlas.confirm.what.mcp.connect':       LA('Add, sign in to, sign out of, switch on or off, or remove an external MCP server ({what}) in this browser.', '外部MCPサーバー（{what}）をこのブラウザで追加・サインイン・サインアウト・オンオフ・削除します。'),
       'atlas.confirm.what.places.remove':     LA('Delete {what} from your saved places. This cannot be undone.', 'マイプレイスから {what} を削除します。元に戻せません。'),
+      'atlas.confirm.what.knowledge.forget':  LA('Delete kept knowledge from this device. This cannot be undone.', '端末に残した蓄積知識を削除します。元に戻せません。'),
       'atlas.confirm.what.places.unwatch':    LA('Stop watching {what}.', '{what} の見守りを止めます。'),
       'atlas.confirm.what.places.publish':    LA('Publish your saved places. Anyone with the link can see them.', '保存した場所を公開します。リンクを知っている人は誰でも見られます。'),
       'atlas.confirm.what.community.list':    LA('List this map in Community maps, where everyone can see it.', 'この地図をコミュニティマップに載せます。誰でも見られます。'),
