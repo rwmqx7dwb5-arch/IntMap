@@ -44,3 +44,5 @@ Transitous を既定オフにしたので、**ルクセンブルク以外の公�
 ## 性能予算の引き上げ
 
 - async.raw: 14304.0 kB から 14377.6 kB へ。- dist.assets: 21686.9 kB から 21813.3 kB へ。公開時刻表のカタログ（data/transit-feed-catalogue.json、約 2 750 件の判定つき）と交通計画の遅延チャンクが増えた分。 main 取り込み後の全体ビルドで測り直し、`perf-budget --update` が上げた行は下の通りで、他は書いていない。起動時に読まれる分ではなく、遅延して読まれる配布物。
+
+- 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
