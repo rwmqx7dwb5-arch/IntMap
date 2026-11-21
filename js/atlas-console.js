@@ -19,6 +19,7 @@
 /* (#R199) The six subsystems that left this file, plus (#R285) the persona. Real ES imports — not window.IntMapModules, not load
    order: the bundler resolves each binding by name, so a missing or renamed export is a BUILD error rather than a silent undefined at runtime. See DEV-NOTES #R199. */
 import { makeAtlasReply } from './atlas-reply.js';
+import { makeTurnObserver } from './evidence-graph-record.js';   /* (evidence-graph) what the turn's outputs hold — the goal verifier's observed facts */
 import { makeGoalVerify, GOAL_VERIFY_RULES } from './atlas-goal-verify.js';   /* (atlas-goal-verifier) the independent reader of the request — js/atlas-agent.js `verify` */
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy. Every system prompt below opens with personaPrompt('<its task role>') and adds ONLY its task rules. */
 import { extractVideoFrames } from './atlas-video-frames.js';   /* (atlas-multimodal) a clip becomes one contact-sheet image */
@@ -621,6 +622,17 @@ export function atlasConsole(HOST){
         if(u) u=u.replace(/^https:\/\/github\.com\/wmgeolab\/geoBoundaries\/raw\//,'https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/');
         if(u){ const r=await fetch(u); if(r.ok) out=await r.json(); } } }catch(_){}
       _gbCache[iso3]=(out&&out.features)?out:null; return _gbCache[iso3]; }
+    /* (atlas-highlight-units) THE OUTLINE OF ONE FIRST-LEVEL UNIT, BY ITS ISO 3166-2 IDENTIFIER (GB-ENG, JP-13 …). Two sources, in order, and a miss is a
+       miss (the caller reports it as unresolved): ① the first-level file we already ship (js/atlas-admin1.js, local, no request) — its codes are keyed
+       exactly; ② geoBoundaries ADM1 for that country, matched by its own `shapeISO`, and only when the file carries none by the unit's NAME,
+       EXACTLY (no fuzzy rung: a near-spelling is a different unit — Natural Earth's own "Moskva"/"Moskovskaya" is the measured case, js/atlas-admin1.js). */
+    async function _hlUnitGeo(u){ try{ const id=String(u&&u.id||'').toUpperCase(); if(!id) return null;
+      try{ const ix=await ADM1.load(); const hit=ix&&ix.byCode&&ix.byCode[id]; if(hit&&hit.geo) return {geo:hit.geo,name:hit.canonicalName,source:'admin1-index'}; }catch(_){}
+      const iso3=String(u.country||''); if(!/^[A-Z]{3}$/.test(iso3)) return null;
+      const gj=await _gbAdm1(iso3); if(!gj) return null;
+      let f=gj.features.find(x=>String((x.properties||{}).shapeISO||'').toUpperCase()===id);
+      if(!f&&u.name){ const want=_normUnit(u.name); if(want){ const m=gj.features.filter(x=>_normUnit((x.properties||{}).shapeName)===want); if(m.length===1) f=m[0]; } }
+      return (f&&f.geometry)?{geo:f.geometry,name:(f.properties||{}).shapeName||u.name||id,source:'geoboundaries-adm1'}:null; }catch(_){ return null; } }
     const _normUnit=s=>String(s||'').toLowerCase().replace(/\b(oblast|region|krai|kray|governorate|province|district|raion|county|prefecture|voblast|state)\b/g,'').replace(/[^a-zа-яё぀-ヿ一-鿿]/gi,'');
     function _edit2(a,b){ if(Math.abs(a.length-b.length)>2) return false; const dp=[]; for(let i=0;i<=a.length;i++){ dp[i]=[i]; for(let j=1;j<=b.length;j++){ dp[i][j]=(i===0)?j:Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); } } return dp[a.length][b.length]<=2; }
     async function _gbUnitPoly(q){ const parts=String(q||'').split(','); if(parts.length<2) return null;
@@ -1905,6 +1917,7 @@ export function atlasConsole(HOST){
       get setHlColor(){ return setHlColor; },
       get _hlReadGptGroups(){ return _hlReadGptGroups; },
       get _codesGeo(){ return _codesGeo; },
+      get _hlUnitGeo(){ return _hlUnitGeo; },
       get _validGeo(){ return _validGeo; },
       get _hlValidCodeSet(){ return _hlValidCodeSet; },
       get _hlAdd(){ return _hlAdd; },
@@ -2983,7 +2996,7 @@ export function atlasConsole(HOST){
       try{
         const out=await AGENT.runTurn({ model:_model, tools:_tools, execute:TOOLS.makeExecute(_tools,AGENT), footprint:(c)=>TOOLS.footprintOf(c,_tools), promote:TOOLS.promotionsOf,   /* (atlas-turn-engine) which calls of one reply may run together, and what find_capability makes callable by name — js/atlas-agent.js */ externalContent:!!((_atts.files&&_atts.files.length)||(_atts.docs&&_atts.docs.length)),   /* (#R801) an attachment's text or a document is outside content in the FIRST model input — js/atlas-agent.js `turn` starts true */
           system:_sys, messages:[{role:'user',content:q}], signal:(_abortCtl?_abortCtl.signal:undefined), plan:PLAN,
-          verify:makeGoalVerify({ ask:askAIJSONEnvelope, system:personaPrompt('checking a request against what an IntMap turn produced',{mode:'internal'})+GOAL_VERIFY_RULES, turnId:_turnKey, signal:(_abortCtl?_abortCtl.signal:undefined) }),   /* (atlas-goal-verifier) */   /* (atlas-plan-on-map) the `plan` tool and the step each call serves — js/atlas-agent.js */
+          verify:makeGoalVerify({ observe:makeTurnObserver(Date.now()), ask:askAIJSONEnvelope, system:personaPrompt('checking a request against what an IntMap turn produced',{mode:'internal'})+GOAL_VERIFY_RULES, turnId:_turnKey, signal:(_abortCtl?_abortCtl.signal:undefined) }),   /* (atlas-goal-verifier) */   /* (atlas-plan-on-map) the `plan` tool and the step each call serves — js/atlas-agent.js */
           onStep:(s)=>{ try{ LIVE.stepDone(ai,s); }catch(_){} try{ PROG.plan(ai,s); }catch(_){} try{ if(_atlasDbg){ _atlasDbg.steps.push(s); _atlasDbg.toolCalls=_atlasDbg.toolCalls.concat(s.calls||[]); } }catch(_){} } });   /* ⚠ (#R723) THE SECOND CALL IS THE ONE THAT WAS HERE ALONE — the only consumer of the turn's own trace was a developer diagnostics object. The reader's turn is now told to the reader. */
         if(gen!==_runGen){ try{ ASTATE.endTurn(turn,{status:'cancelled'}); }catch(_){} _markCancelled(ai); return; }
         try{ if(_atlasDbg){ _atlasDbg.rejected=(out.trace&&out.trace.rejected)||0; _atlasDbg.stopped=out.stopped; _atlasDbg.answerMode=out.answerMode||''; _atlasDbg.mapDrawn=!!out.mapDrawn; _atlasDbg.produced=(out.produced||[]).join(',')||'-'; _atlasDbg.outputGate=(out.trace&&out.trace.outputGate)||0; _atlasDbg.inputTrims=(out.trace&&out.trace.inputTrims)||[]; } }catch(_){}   /* (atlas-native-tools) inputTrims: what the composer or the proxy's fence gave up on each step — js/atlas-agent.js */   /* (#R511) what Atlas declared vs what the machine drew, and how often the final was handed back */

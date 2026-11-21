@@ -178,7 +178,10 @@ describe('gis-remote · inspect (③)', () => {
     const r = await rem.inspect('stac-x/dem-global', { bbox: [139, 35, 140, 36] });
     assert.equal(r.refs.features, 'ogc:https://stac.example/collections/dem-global');
     assert.deepEqual(r.refs.grids, ['url:https://b.s3.amazonaws.com/k0.tif']);
-    assert.equal(typeof rem.acquire, 'undefined', 'a second reader of items would be a second implementation');
+    /* the guard is against a SECOND READER of values. acquire() (gis-data-acquisition-checks) is not one: it takes the door's readers by injection, and without them it refuses */
+    assert.equal(typeof rem.readItems, 'undefined', 'a second reader of items would be a second implementation');
+    assert.equal(typeof rem.readWindow, 'undefined');
+    assert.equal((await rem.acquire('stac-x/dem-global', { bbox: [139, 35, 140, 36], width: 4, height: 4 })).why, 'bad-param', 'no reader handed in → no reading');
     assert.equal(typeof rem.cog, 'undefined');
   });
 });

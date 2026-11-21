@@ -11,7 +11,7 @@
  "retrievedAt": "2026-11-19T11:43:22.540Z",
  "asOf": "2026-11-18T14:29:22Z",
  "quality": {
-  "rows": 139,
+  "rows": 138,
   "missing": {
    "host": 0,
    "verdict": 0
@@ -26,7 +26,7 @@
   "comparedWith": "2026-11-17T13:50:30.718Z",
   "networkObserved": true,
   "counts": {
-   "alive": 133,
+   "alive": 132,
    "refused": 2,
    "dead": 4,
    "unobserved": 0
@@ -1132,15 +1132,6 @@
     "lastAlive": "2026-11-18T13:25:43.223Z"
    },
    {
-    "host": "tiles.maps.eox.at",
-    "verdict": "alive",
-    "why": "HTTP 200",
-    "status": 200,
-    "what": "EOX Sentinel-2 cloudless tiles",
-    "whatJp": "EOX の Sentinel-2 雲なしタイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
-   },
-   {
     "host": "tiles.openfreemap.org",
     "verdict": "alive",
     "why": "HTTP 200",
@@ -1563,7 +1554,6 @@
    "stream.aisstream.io": ".aaaaaaaaaaaaaaaaaaaaaaa",
    "tie.digitraffic.fi": "aaaaaaaaaaaaaaaaaaaaaaaa",
    "tilecache.rainviewer.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "tiles.maps.eox.at": "aaaaaaaaadaaaaaaaaaaaaaa",
    "tiles.openfreemap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
    "tiles.openseamap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
    "unpkg.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
