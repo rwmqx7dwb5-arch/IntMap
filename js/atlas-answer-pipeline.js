@@ -195,7 +195,7 @@ export function makeAtlasAnswerPipeline() {
     /* (evidence-graph) the answer's figures enter the long-lived lineage graph (js/evidence-graph.js); a recorder failing never fails the answer */
     try {
       const eg = opts.evidenceGraph || sharedEvidenceGraph();
-      if (eg && eg.graph) trace.graph = recordAnswer(eg.graph, { registry, claims: env.claims, callId, model: opts.model || '' });
+      if (eg && eg.graph) trace.graph = recordAnswer(eg.graph, { registry, claims: env.claims, callId, turnId: opts.turnId || '', model: opts.model || '' });
     } catch (_) { trace.graph = null; }
     /* (atlas-completion) every document with an address the registry holds after the call — what was fetched,
        by IntMap or by this call's search, with its id and retrieval time — so the caller can hand it to Atlas

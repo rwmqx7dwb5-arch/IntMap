@@ -10,8 +10,8 @@
 
 ### 6.1 テーブル
 
-**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **62 表**（`mcp_api_keys`・`mcp_server_state`（外部 AI 用 MCP サーバの利用者キーのハッシュと停止スイッチ。ブラウザの役割からは閉じていて、本人の発行・失効・一覧だけが SECURITY DEFINER の RPC・[`../MCP-SERVER.md`](../MCP-SERVER.md)） / `atlas_jobs`・`atlas_job_tasks`・`atlas_job_events`・`atlas_jobs_control`（永続ジョブ。所有者だけが読み、書くのは service_role と取消・変更の 2 関数）、`world_graph_nodes`・`world_graph_edges`・`world_graph_claims`（永続の世界グラフ＝実世界オブジェクトと型付き・期間付きの辺と根拠のある値。全員が読め、書くのは service_role だけ・[`05-ai.md`](05-ai.md) の「永続の世界グラフ」） / `ai_delegation_journal`（子の呼び出しと質問ごとの結果・遅延・費用の 30 日の記録・§5） / `ai_turn_spend`（1 つの質問と、それが委譲した子の実費の予約と精算・§5） / `collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
-`map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の
+**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **64 表**（`mcp_api_keys`・`mcp_server_state`（外部 AI 用 MCP サーバの利用者キーのハッシュと停止スイッチ。ブラウザの役割からは閉じていて、本人の発行・失効・一覧だけが SECURITY DEFINER の RPC・[`../MCP-SERVER.md`](../MCP-SERVER.md)） / `atlas_jobs`・`atlas_job_tasks`・`atlas_job_events`・`atlas_jobs_control`（永続ジョブ。所有者だけが読み、書くのは service_role と取消・変更の 2 関数）、`world_graph_ingest_runs`（フィードごとの取り込みの記録＝鮮度・全員が読め service_role が書く） / `world_graph_nodes`・`world_graph_edges`・`world_graph_claims`（永続の世界グラフ＝実世界オブジェクトと型付き・期間付きの辺と根拠のある値。全員が読め、書くのは service_role だけ・[`05-ai.md`](05-ai.md) の「永続の世界グラフ」） / `ai_delegation_journal`（子の呼び出しと質問ごとの結果・遅延・費用の 30 日の記録・§5） / `ai_turn_spend`（1 つの質問と、それが委譲した子の実費の予約と精算・§5） / `collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
+`map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `evidence_graph_nodes`（根拠の系譜・本人だけ） / `atlas_notebook_entries`（Atlas の
 調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` / `user_prefs` /
 `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` / `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） / `community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / News Events の 8 表＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` / `news_event_articles` / `news_cluster_decisions` /
@@ -71,6 +71,7 @@
   `ATLAS_EMBED_PER_USER_PER_DAY`。403/404 は `model_unavailable`。
 - **`refresh-news`** … ニュース取得＋AI地点解析＋書き込み（§4.1）。`--no-verify-jwt` で公開だが fail-closed（`REFRESH_SECRET` 未設定なら全拒否。秘密は `x-refresh-secret` ヘッダのみ・
   定数時間比較・POST のみ）。
+- **`world-graph-ingest`** … 永続の世界グラフ（§5・`05-ai.md`）の港湾の面を現在に保つ。Wikidata・UN/LOCODE・Eurostat を `_shared/world-graph-ports.js` が識別子で結び、`world_graph_ingest_begin/apply/finish` で反映する（新規・改訂は書き、上流が述べなくなったものは退役、大半を退役させる実行は `refused` で何も消さない。実行は `world_graph_ingest_runs` に残る）。毎週 pg_cron が呼ぶ。fail-closed（`WORLD_GRAPH_INGEST_SECRET`・`x-world-graph-secret` ヘッダのみ・定数時間比較・POST のみ）。
 - **`news-ingest`** … 出来事 (Event) 側の収集（§4.4）。Source Registry の全フィードを取得し、正規化・媒体の帰属・AI 地点解析（決定論エンジンはフォールバック）・Event への増分割り当て・
   日本語訳・計測・保持。fail-closed（`NEWS_INGEST_SECRET`・`x-news-ingest-secret` ヘッダのみ・定数時間比較・POST のみ）。`current_news` と `refresh-news` には触れない。
 - **`delete-account`** … 呼出ユーザ自身のアカウントと全データをハード削除する（`verify_jwt` あり＋関数内でも検証・`confirm:"DELETE"` 必須）。検証済みトークンの `amr` の最新の

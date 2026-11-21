@@ -77,19 +77,15 @@ test('layer-manifest ① the non-Atlas readers take the list from the manifest, 
   assert.ok(!/input\[id\^="gx-"\]/.test(MU), 'the share link no longer names id prefixes');
   const DL = codeOnly(read('js/data-layers.js'));
   assert.ok(!/getElementById\('(eco-dl-|l9-dl-|wp-dl-|fac-dl-|ox-)'\+id\)/.test(DL), 'rowFor no longer keeps a prefix table');
-  /* ⚠ AND THE PREFIX RULE THE MANIFEST REPLACED IS REPRODUCED EXACTLY — `share` is what the old selector
-     matched on the day it was replaced, not a new policy (a row it did not carry is still not carried) */
-  const OLD = /^(dl-|gx-|eco-dl-|l9-dl-|beta-dl-|wp-dl-)|^r7-dl-(disputes|airdef|langs)$/;
-  /* (map-layer-system) …for the rows that EXISTED on that day — the snapshot the descriptor migration took
-     (tests/fixtures/layer-descriptor-before.json). A row added later states `share` in its own declaration, and the old
-     selector has nothing to say about it: `bx-wbind` is carried by the share link on purpose (with `state: 'wbind'`,
-     the indicator it paints), which the prefix rule — no `bx-` row — would have refused. */
-  const THEN = new Set(JSON.parse(read('tests/fixtures/layer-descriptor-before.json')).LAYERS.map((l) => l.id));
-  assert.ok(THEN.size > 100, 'the snapshot of the rows the selector was replaced on is read (' + THEN.size + ')');
-  /* (feature-consolidation) …and a row that took a carried row in (`formerly`) carries what it took in: an old link naming
-     the retired row opens it, so the link has to be able to name it too */
-  const took = (id) => ((M.layerDeclaration(id) || {}).formerly || []).some((o) => OLD.test(o));
-  for (const l of M.LAYERS) if (THEN.has(l.id)) assert.equal(!!l.share, OLD.test(l.id) || took(l.id), l.id + ': `share` is the selector it replaced');
+  /* ⚠ THE LINK CARRIES EVERY DATA LAYER. It used to carry only the rows whose `share` flag reproduced the id-prefix selector
+     it replaced (dl-, gx-, eco-dl-, l9-dl-, beta-dl-, wp-dl-), and that pinned an accident: earthquakes (bx-eq), the World
+     Bank indicators (bx-wb*), OSM facilities (fac-dl-osm*) and ox-* were dropped from a link whose Share panel says it
+     includes every active layer — 75 of 170 layers, measured on production. The fact the link needs is «this row is a
+     layer», which a new layer cannot forget; `share` stays on display items only, where a choice exists. */
+  const layerIds = M.LAYERS.filter((l) => !M.isDisplay(l.id)).map((l) => l.id);
+  assert.deepEqual(M.sharedIds(), layerIds, 'the share link carries every data layer, whichever prefix its id has');
+  for (const id of ['bx-eq', 'bx-wbgini', 'fac-dl-osmport', 'ox-oxrail']) assert.ok(M.sharedIds().includes(id), id + ' is carried by the share link');
+  assert.ok(M.catalog().filter((r) => r.kind === 'layer').every((r) => r.share), 'the catalogue Atlas reads says every layer is carried');
 });
 
 /* ── ② the rows the manifest writes are the rows index.html shipped ───────────────────────── */
