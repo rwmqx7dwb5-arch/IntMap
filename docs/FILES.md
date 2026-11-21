@@ -1086,7 +1086,7 @@ atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（c
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
 atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar。js/geo-similar.js の扉と引数の束縛）
-atlas-cap-model.js                Atlas の能力 — 専門モデルを探す・実行する（model.discover / model.run。js/specialist-models.js の扉）
+atlas-cap-model.js                Atlas の能力 — 専門モデルを探す・実行する（model.find / model.run。js/specialist-models.js の扉）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
