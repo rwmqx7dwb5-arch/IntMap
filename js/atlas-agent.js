@@ -756,7 +756,9 @@ export function makeAtlasAgent() {
       let answerMode = '';       /* (#R511) the latest mode Atlas declared; '' until it says */
       let gateBounces = 0;       /* (#R511→#R543) how many finals came back having declared an output they had not produced */
       trace.outputGate = 0;
-      let goalChecked = false;   /* (atlas-goal-verifier) the independent read of the request happens once per turn */
+      let goalVerifiedAt = -1;   /* (atlas-goal-verifier) results.length when the request was last read independently (-1: not yet). It is read again ONLY when the record has grown since — a re-read of an unchanged record is the same observation twice */
+      let goalPrev = null;       /* …and what that read found ({met, unmet}), shown to the next read so it judges whether the work Atlas did since closed the gap */
+      let goalRounds = 0;
       let goalAt = -1;           /* results.length when the finding was put to Atlas (-1: it was not) */
       let goalUnmet = [];        /* …and what it found, when the bounce was not taken or ran out: carried into `unmet` */
       trace.goalCheck = '';
@@ -945,20 +947,24 @@ export function makeAtlasAgent() {
              request does not need it. ⚠ NOT OBSERVED IS NOT UNMET: null / a throw / a timeout accepts the turn and
              says only that it was not checked (`trace.goalCheck`). Only on a turn the gate above would accept. */
           let goalNote = '';
-          if (!code && !goalChecked && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
-            goalChecked = true;
+          if (!code && (goalVerifiedAt < 0 || results.length > goalVerifiedAt) && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
+            goalVerifiedAt = results.length; goalRounds++;
             let v = null;
             try {
-              v = await opts.verify({ request: lastUserText(opts.messages), text: answerHere, answerMode, produced: results.reduce((a, r) => { producedBy(r).forEach((m) => { if (a.indexOf(m) < 0) a.push(m); }); return a; }, []), results: results.slice(),
+              v = await opts.verify({ request: lastUserText(opts.messages), text: answerHere, answerMode, produced: results.reduce((a, r) => { producedBy(r).forEach((m) => { if (a.indexOf(m) < 0) a.push(m); }); return a; }, []), results: results.slice(), previous: goalPrev, round: goalRounds,
                 plan: PLAN ? (() => { try { return PLAN.snapshot(); } catch (_) { return null; } })() : null });
             } catch (_) { v = null; }
             const list = (v && Array.isArray(v.unmet)) ? v.unmet.filter((u) => u && String(u.need || '').trim()).map((u) => ({ kind: 'goal', need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) })) : null;
+            const metList = (v && Array.isArray(v.met)) ? v.met.filter((m) => m && String(m.need || '').trim()).map((m) => ({ need: String(m.need).slice(0, 300), how: String(m.how || '').slice(0, 300) })) : [];
             trace.goalCheck = list === null ? 'unobserved' : (list.length ? 'unmet' : 'met');
+            /* the ledger of the LAST observed read: what the request asked, what the record covers, what it does not, and how many reads it took (observed-only: an unobserved read leaves the previous ledger) */
+            if (list !== null) { goalPrev = { met: metList, unmet: list.map((u) => ({ need: u.need, why: u.why })) }; trace.goalLedger = { rounds: goalRounds, met: metList, unmet: goalPrev.unmet }; }
+            goalUnmet = list || [];
             if (list && list.length) {
-              goalUnmet = list;
               if ((step + 1) < lim.maxSteps && !outOfTime()) {
                 goalNote = 'An independent reader checked the request against what this turn produced and found these not met: '
                   + list.map((u) => '"' + u.need + '"' + (u.why ? ' (' + u.why + ')' : '')).join('; ')
+                  + (metList.length ? '. Already covered: ' + metList.map((m) => '"' + m.need + '"').join('; ') : '')
                   + '. Do them now with function calls and then answer; or, if the request does not actually need them, '
                   + 'reply again with the answer as it stands and say why.';
               }
