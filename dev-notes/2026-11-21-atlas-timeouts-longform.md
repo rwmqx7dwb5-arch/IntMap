@@ -18,3 +18,6 @@ newsjp: Atlas が長い報告書や長いコードを章ごとに書き、書い
 
 ## 天井を上げた理由(perf)
 `atlas-cap-runs`（896.4→912.5 kB）・async.gzip・dist.assets の天井を測定値へ上げた。`research.longform` の能力本体（カードの描画・説明文・スキーマ）が research の遅延チャンクに入った分。ほかに device-storage 台帳へ `intmap.longform.*` の 1 行（content）を足し、security.html の content の件数を 18→19 にした。
+
+## perf (merge of main, 2026-11-21)
+Origin/main moved (new async chunks from other PRs), so atlas-cap-runs and async.gzip ceilings were re-measured on the merged build and raised with `perf-budget --update`; the research.longform capability is the part this PR adds.
