@@ -47,3 +47,5 @@ newsjp: Atlasが専門モデルを探し、地点の河川洪水予報（GloFAS�
 ## 5. 配信サイズの天井を上げた理由
 
 `atlas-cap-runs` +7.9 kB（`model.discover` / `model.run` の実行本体と、回答に載せる限界・不確実性の文）・`atlas-console` +6.7 kB（登録 2 行とカタログの説明文 2 項目を能力表が運ぶ）・async 合計 gzip +26.5 kB のうち残りは同じ 2 つのチャンクに入る `specialist-models.js`（登録・解析・runner）。能力そのものの増分で、削れるものは無い。`perf-budget.mjs --update` で上がった行だけ上げた。
+
+main を取り込み直した後の再測定（同じ 3 行、同じ理由）: `atlas-cap-runs` 915.8 kB・`atlas-console` 1073.4 kB・async.raw 14308.0 kB。増分の内訳は専門モデル 2 能力（実行本体・登録・限界の文）で、main 側で並行に増えた能力の分と合わせた現在値。`perf-budget.mjs --update` で上がった行だけ上げた。
