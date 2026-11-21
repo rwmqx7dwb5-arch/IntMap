@@ -26,3 +26,9 @@ internal: 既存 9 本の PR を依存順に 1 本へ束ねた統合で、利用
 能力 257・到達可能 254・Edge Function 25・deep 171 を実体に合わせた。global-surface の台帳は
 `IntMapLazy`・`IntMapData`・`IntMapAtlasChart` の読みが増えた分を更新した（作業成果物・パイプラインが遅延モジュールを要求する）。
 端末保存の名簿に `intmap-atlas-work` を足した。
+
+## perf の天井を上げた理由
+
+`async.raw` / `async.gzip` / 各 async チャンク（`atlas-console`・`atlas-cap-runs`・`gis-core`）と `dist.assets` の天井を `node scripts/perf-budget.mjs --update` で上げた。
+増えた分は、この PR にまとめた 9 本（永続ジョブの 3 段・作業記憶・作業成果物・Python ブリッジ・GIS 取得段など）が足した能力の実体と、`atlas-console` に足した 2 つの入口（`workingMemory` と、ターン外でも能力を走らせる `_kernelRun`）による。
+遅延チャンクなので起動時の読み込み（initial）は増えていない。測定はこのブランチの HEAD を build したもの。
