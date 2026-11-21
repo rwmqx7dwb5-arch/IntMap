@@ -3356,7 +3356,6 @@ IntMapLang.define('ko', { ui: {
   "Secondary enrollment %": "중등교육 취학률 %",
   "Sentinel Hub (S2 / Landsat)": "Sentinel Hub (S2 / Landsat)",
   "Sentinel Hub instance ID": "Sentinel Hub 인스턴스 ID",
-  "Sentinel-2 cloudless (EOX)": "Sentinel-2 무운(EOX)",
   "Shona": "쇼나",
   "Smoking prevalence %": "흡연율 %",
   "Software": "소프트웨어",

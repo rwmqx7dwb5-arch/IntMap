@@ -53,7 +53,7 @@ export function makeAtlasToolSurface(deps) {
        arrive with their arguments already typed rather than through a generic envelope. */
     var CORE = [
       { name: 'map_view', cap: 'view.flyTo', desc: 'Move the map to a place or coordinate.' },
-      { name: 'highlight', cap: 'map.highlight', desc: 'Colour named countries or regions on the map.' },
+      { name: 'highlight', cap: 'map.highlight', desc: 'Colour countries or regions on the map. To colour MANY countries by CATEGORY in one call — a result, a rank, a bloc, a table you have read — pass `groups`: [{label, targets:[{name, iso3}, …]}, …], one entry per category, each drawn in its own colour with a legend. Every country you can name needs its ISO 3166-1 alpha-3 code: you read the table and map the names to codes; IntMap validates each code against the real borders and reports the ones it could not place, so a whole table is ONE call, not one per category.' },
       /* ══ ⚠⚠⚠ (#R511) THE MAP AS ONE ACT OF EXPLANATION, IN CORE. Every entry above operates ONE
          thing — a camera, a colour, a layer. Explaining with a map is several at once: the places,
          numbered; what each one is in the answer; the flows between them; the shaded region; one
@@ -482,9 +482,15 @@ export function makeAtlasToolSurface(deps) {
          answer is longer, but it is `rendered` and Atlas is told so — its content is not repeated,
          only its opening. Raise the number when a card that Atlas must read whole exceeds it. */
       /* (atlas-turn-engine) …and an UNOBSERVED call ran, so the reader was shown its card too */
-      if ((ok || out.status === 'unobserved') && res && res.html) {
+      if ((ok || out.status === 'unobserved') && res && (res.html || (res.meta && res.meta.record))) {
+        /* (atlas-reader-record) THE RECORD IS THE MODEL'S, THE HTML IS THE READER'S. A result that has facts only the next call needs —
+           an id to hand on, the runtime that produced it, what to do next — carries them as `meta.record` (plain text), never inside
+           the card the reader is shown. They come FIRST: the text is cut at RESULT_TEXT_MAX, and an id lost to the cut is a result the
+           next step cannot use. */
+        var rec = (res.meta && typeof res.meta.record === 'string') ? res.meta.record.replace(/\s+/g, ' ').trim() : '';
         var shown = textOf(res.html);
-        if (shown) out.text = shown.length > RESULT_TEXT_MAX ? (shown.slice(0, RESULT_TEXT_MAX) + ' …') : shown;
+        var both = rec && shown ? (rec + ' ' + shown) : (rec || shown);
+        if (both) out.text = both.length > RESULT_TEXT_MAX ? (both.slice(0, RESULT_TEXT_MAX) + ' …') : both;
       }
       return out;
     }

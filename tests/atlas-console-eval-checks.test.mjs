@@ -798,19 +798,16 @@ test('R775 ④ the prompt says WHEN a drawing appeared, and says when there is n
 
 /* ── ⑤ THE CHAT SCROLLS TO THE ANSWER ──────────────────────────────────────────────────────── */
 
-test('R775 ⑤ the auto-scroll anchors to the reader\u2019s question, not to a pixel', () => {
-  /* read, not run: the auto-scroll is DOM code in the kernel's chat, which only a browser can drive. */
+test('R775 ⑤ the auto-scroll anchors to the reader\u2019s question, not to a pixel — and only while the reader has not taken the scroll', () => {
+  /* read, not run: DOM code in the kernel's chat. (atlas-chat-scroll-ownership replaced the 150px near-bottom and 3-screens-away tests with an owner: _chatFollow.) */
   const src = (read('js/atlas-console.js') + '\n' + capsSource());
-  const i = src.indexOf('(#R79g) auto-scroll');
-  assert.ok(i > 0, '#R79g\u2019s auto-scroll is gone');
-  const block = src.slice(i, i + 2600);
+  const i = src.indexOf('function _followChat()');
+  assert.ok(i > 0, 'the follow rule is gone');
+  const block = src.slice(i, i + 900);
   assert.ok(/\.atl-b\.u/.test(block), 'the anchor must be the last USER bubble');
   assert.ok(/offsetTop/.test(block), 'anchoring to an element means reading its offset, not the scroll height');
-  /* #R79g's own half is untouched: near the bottom, a short reply still drops fully into view */
-  assert.ok(/scrollHeight-chatEl\.scrollTop-chatEl\.clientHeight<150/.test(block), '#R79g\u2019s near-bottom test was removed');
-  assert.ok(/chatEl\.scrollTop=chatEl\.scrollHeight/.test(block), '#R79g\u2019s short-reply behaviour was removed');
-  /* …and a reader who scrolled away by hand is never yanked back */
-  assert.ok(/clientHeight\*3/.test(block), 'nothing stops the anchor from yanking a reader who scrolled away');
+  assert.ok(/if\(!_chatFollow/.test(block), 'nothing may move the scroll once the reader has taken it');
+  assert.ok(/_chatFollow=false/.test(src), 'a reader gesture must release the follow');
 });
 
 /* ── ⑥ A TURN THAT DIED WITH NOTHING DONE KEEPS THE QUESTION ───────────────────────────────── */

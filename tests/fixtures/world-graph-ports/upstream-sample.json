@@ -1,0 +1,802 @@
+{
+ "capturedAt": "2026-11-20",
+ "note": "a real slice of the three upstreams (Wikidata SPARQL rows, Eurostat mar_go_aa JSON-stat, UN/LOCODE csv lines) — captured by cutting the full answers down to a few ports",
+ "wd": {
+  "nodes": [
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1027807"
+    },
+    "ja": {
+     "xml:lang": "ja",
+     "type": "literal",
+     "value": "ロッテルダム港"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(4.2867 51.885)"
+    },
+    "lo": {
+     "type": "literal",
+     "value": "NLRTM"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Port of Rotterdam"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3964"
+    },
+    "ja": {
+     "xml:lang": "ja",
+     "type": "literal",
+     "value": "ハンブルク港"
+    },
+    "cc": {
+     "type": "literal",
+     "value": "DEU"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(9.98277778 53.54)"
+    },
+    "lo": {
+     "type": "literal",
+     "value": "DEHAM"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Port of Hamburg"
+    },
+    "inc": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1189-05-14T00:00:00Z"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1478785"
+    },
+    "cc": {
+     "type": "literal",
+     "value": "DEU"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(13.58861111 54.48638889)"
+    },
+    "lo": {
+     "type": "literal",
+     "value": "DEMUK"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Port of Sassnitz"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q10351918"
+    },
+    "cc": {
+     "type": "literal",
+     "value": "BRA"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(-39.025972222 -14.780805555)"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Port of Ilhéus"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q10351918"
+    },
+    "cc": {
+     "type": "literal",
+     "value": "BRA"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(-39.033333333 -14.775)"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Port of Ilhéus"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q96200416"
+    },
+    "cc": {
+     "type": "literal",
+     "value": "DEU"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(6.595275 51.580977)"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Rheinhafen Ossenberg"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q96200416"
+    },
+    "cc": {
+     "type": "literal",
+     "value": "DEU"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(6.595275 51.580977)"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Rheinhafen Ossenberg"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q104316724"
+    },
+    "cc": {
+     "type": "literal",
+     "value": "KOR"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(126.602 37.35124)"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Incheon LNG terminal"
+    },
+    "inc": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1996-01-01T00:00:00Z"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q104324039"
+    },
+    "cc": {
+     "type": "literal",
+     "value": "USA"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(-70.616774 42.398986)"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Northeast Gateway Deepwater Port"
+    },
+    "inc": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "2008-01-01T00:00:00Z"
+    }
+   }
+  ],
+  "ops": [
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q10351918"
+    },
+    "c": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q18477492"
+    },
+    "cLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Companhia das Docas do Estado da Bahia"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1478785"
+    },
+    "c": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1152119"
+    },
+    "cLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "DB Station&Service"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q96200416"
+    },
+    "c": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2299423"
+    },
+    "cLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Solvay GmbH"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1027807"
+    },
+    "c": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2187039"
+    },
+    "cLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Port of Rotterdam Authority"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3964"
+    },
+    "c": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1572929"
+    },
+    "cLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Hamburg Port Authority"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q96200416"
+    },
+    "c": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2299423"
+    },
+    "cLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Solvay GmbH"
+    }
+   }
+  ],
+  "owns": [
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q10351918"
+    },
+    "c": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q18477492"
+    },
+    "cLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Companhia das Docas do Estado da Bahia"
+    }
+   }
+  ],
+  "tp": [
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q104316724"
+    },
+    "amt": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#decimal",
+     "type": "literal",
+     "value": "41.7"
+    },
+    "unit": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q104317437"
+    },
+    "unitLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "million tonnes per annum"
+    }
+   },
+   {
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q104324039"
+    },
+    "amt": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#decimal",
+     "type": "literal",
+     "value": "4.5"
+    },
+    "unit": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q104317437"
+    },
+    "unitLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "million tonnes per annum"
+    }
+   }
+  ],
+  "links": [
+   {
+    "cl": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q34442"
+    },
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1478785"
+    },
+    "o": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1007296"
+    },
+    "ps": {
+     "type": "literal",
+     "value": "P2789"
+    },
+    "oLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Bundesstraße 96b"
+    }
+   },
+   {
+    "cl": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q728937"
+    },
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q96200416"
+    },
+    "o": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q20182730"
+    },
+    "ps": {
+     "type": "literal",
+     "value": "P81"
+    },
+    "oLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "transport in Rheinberg"
+    }
+   },
+   {
+    "cl": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q728937"
+    },
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q96200416"
+    },
+    "o": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q20182730"
+    },
+    "ps": {
+     "type": "literal",
+     "value": "P81"
+    },
+    "oLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "transport in Rheinberg"
+    }
+   },
+   {
+    "cl": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q728937"
+    },
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1478785"
+    },
+    "o": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q613693"
+    },
+    "ps": {
+     "type": "literal",
+     "value": "P81"
+    },
+    "oLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Stralsund–Sassnitz railway"
+    }
+   },
+   {
+    "cl": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q34442"
+    },
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1478785"
+    },
+    "o": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1007296"
+    },
+    "ps": {
+     "type": "literal",
+     "value": "P2789"
+    },
+    "oLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Bundesstraße 96b"
+    }
+   }
+  ],
+  "parts": [
+   {
+    "w": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1027807"
+    },
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q122459902"
+    }
+   }
+  ]
+ },
+ "eurostat": {
+  "version": "2.0",
+  "class": "dataset",
+  "label": "Gross weight of goods handled in all ports by direction - annual data",
+  "source": "ESTAT",
+  "updated": "2026-11-11T23:00:00+0100",
+  "id": [
+   "freq",
+   "direct",
+   "unit",
+   "rep_mar",
+   "time"
+  ],
+  "size": [
+   1,
+   1,
+   1,
+   7,
+   29
+  ],
+  "dimension": {
+   "freq": {
+    "label": "Time frequency",
+    "category": {
+     "index": {
+      "A": 0
+     },
+     "label": {
+      "A": "Annual"
+     }
+    }
+   },
+   "direct": {
+    "label": "Direction of flow",
+    "category": {
+     "index": {
+      "TOTAL": 0
+     },
+     "label": {
+      "TOTAL": "Total"
+     }
+    }
+   },
+   "unit": {
+    "label": "Unit of measure",
+    "category": {
+     "index": {
+      "THS_T": 0
+     },
+     "label": {
+      "THS_T": "Thousand tonnes"
+     }
+    }
+   },
+   "rep_mar": {
+    "label": "rep_mar",
+    "category": {
+     "index": {
+      "BE_0BE003": 0,
+      "BE_0BEANR": 1,
+      "BE_0BE888": 2,
+      "DE_1DEHAM": 3,
+      "FR_1FRLEH": 4,
+      "NL_0NLAMS": 5,
+      "NL_0NLRTM": 6
+     },
+     "label": {
+      "BE_0BE003": "Antwerp-Bruges",
+      "BE_0BEANR": "Antwerpen",
+      "BE_0BE888": "Belgium - other ports",
+      "DE_1DEHAM": "Hamburg",
+      "FR_1FRLEH": "Le Havre",
+      "NL_0NLAMS": "Amsterdam",
+      "NL_0NLRTM": "Rotterdam"
+     }
+    }
+   },
+   "time": {
+    "label": "Time",
+    "category": {
+     "index": {
+      "1997": 0,
+      "1998": 1,
+      "1999": 2,
+      "2000": 3,
+      "2001": 4,
+      "2002": 5,
+      "2003": 6,
+      "2004": 7,
+      "2005": 8,
+      "2006": 9,
+      "2007": 10,
+      "2008": 11,
+      "2009": 12,
+      "2010": 13,
+      "2011": 14,
+      "2012": 15,
+      "2013": 16,
+      "2014": 17,
+      "2015": 18,
+      "2016": 19,
+      "2017": 20,
+      "2018": 21,
+      "2019": 22,
+      "2020": 23,
+      "2021": 24,
+      "2022": 25,
+      "2023": 26,
+      "2024": 27,
+      "2025": 28
+     },
+     "label": {
+      "1997": "1997",
+      "1998": "1998",
+      "1999": "1999",
+      "2000": "2000",
+      "2001": "2001",
+      "2002": "2002",
+      "2003": "2003",
+      "2004": "2004",
+      "2005": "2005",
+      "2006": "2006",
+      "2007": "2007",
+      "2008": "2008",
+      "2009": "2009",
+      "2010": "2010",
+      "2011": "2011",
+      "2012": "2012",
+      "2013": "2013",
+      "2014": "2014",
+      "2015": "2015",
+      "2016": "2016",
+      "2017": "2017",
+      "2018": "2018",
+      "2019": "2019",
+      "2020": "2020",
+      "2021": "2021",
+      "2022": "2022",
+      "2023": "2023",
+      "2024": "2024",
+      "2025": "2025"
+     }
+    }
+   }
+  },
+  "value": {
+   "25": 254257,
+   "26": 242243,
+   "27": 244247,
+   "28": 234030,
+   "29": 104592,
+   "30": 111592,
+   "31": 103591,
+   "32": 116003,
+   "33": 114813,
+   "34": 113944,
+   "35": 126128,
+   "36": 135511,
+   "37": 145835,
+   "38": 151705,
+   "39": 165512,
+   "40": 171237,
+   "41": 142116,
+   "42": 160012,
+   "43": 168547,
+   "44": 164547,
+   "45": 171984,
+   "46": 180401,
+   "47": 190107,
+   "48": 198691,
+   "49": 201202,
+   "50": 212010,
+   "51": 214030,
+   "52": 206319,
+   "53": 215852,
+   "58": 573,
+   "59": 750,
+   "60": 857,
+   "61": 801,
+   "62": 699,
+   "63": 853,
+   "64": 761,
+   "65": 567,
+   "66": 815,
+   "67": 810,
+   "68": 839,
+   "87": 69583,
+   "88": 68912,
+   "89": 73358,
+   "90": 76950,
+   "91": 82948,
+   "92": 86724,
+   "93": 93562,
+   "94": 99529,
+   "95": 108253,
+   "96": 115529,
+   "97": 118190,
+   "98": 118915,
+   "99": 94762,
+   "100": 104520,
+   "101": 114368,
+   "102": 113531,
+   "103": 120568,
+   "104": 126004,
+   "105": 120173,
+   "106": 120323,
+   "107": 118761,
+   "108": 117621,
+   "109": 117152,
+   "110": 109175,
+   "111": 111156,
+   "112": 103353,
+   "113": 99603,
+   "114": 96984,
+   "115": 99841,
+   "116": 58207,
+   "117": 64911,
+   "118": 62543,
+   "119": 63885,
+   "120": 65356,
+   "121": 63754,
+   "122": 67382,
+   "123": 71878,
+   "124": 70801,
+   "125": 69973,
+   "126": 73897,
+   "127": 75636,
+   "128": 69228,
+   "129": 65771,
+   "130": 63383,
+   "131": 59246,
+   "132": 64395,
+   "133": 61436,
+   "134": 62946,
+   "135": 60033,
+   "136": 66104,
+   "137": 64902,
+   "138": 60172,
+   "139": 49022,
+   "140": 57089,
+   "145": 54411,
+   "146": 53769,
+   "147": 55082,
+   "148": 61309,
+   "149": 66984,
+   "150": 67885,
+   "151": 59024,
+   "152": 67941,
+   "153": 69304,
+   "154": 77731,
+   "155": 83939,
+   "156": 97675,
+   "157": 85604,
+   "158": 89899,
+   "159": 88421,
+   "160": 91659,
+   "161": 92348,
+   "162": 96289,
+   "163": 99242,
+   "164": 97895,
+   "165": 102946,
+   "166": 102610,
+   "167": 105176,
+   "168": 90200,
+   "169": 88193,
+   "170": 95419,
+   "171": 80760,
+   "172": 78756,
+   "173": 78496,
+   "174": 303427,
+   "175": 306986,
+   "176": 299506,
+   "177": 302545,
+   "178": 296620,
+   "179": 302744,
+   "180": 307353,
+   "181": 330865,
+   "182": 345819,
+   "183": 353576,
+   "184": 374152,
+   "185": 384210,
+   "186": 353871,
+   "187": 395763,
+   "188": 404447,
+   "189": 409785,
+   "190": 411855,
+   "191": 418611,
+   "192": 431404,
+   "193": 424687,
+   "194": 427128,
+   "195": 430463,
+   "196": 431809,
+   "197": 398666,
+   "198": 428937,
+   "199": 427245,
+   "200": 401596,
+   "201": 397322,
+   "202": 390170
+  }
+ },
+ "locode": "Change,Country,Location,Name,NameWoDiacritics,Subdivision,Status,Function,Date,IATA,Coordinates,Remarks\n,BE,ANR,Antwerpen,Antwerpen,VAN,AI,12345---,0307,,5113N 00425E,\n,DE,HAM,Hamburg,Hamburg,HH,AF,12345---,2001,,5331N 00956E,\n|,DE,MUK,Mukran,Mukran,MV,AF,123-----,2610,,5429N 01335E,\n,FR,LEH,Le Havre,Le Havre,76,AF,12345---,1901,,4930N 00006E,\n,NL,AMS,Amsterdam,Amsterdam,,AF,12345---,1907,,5224N 00449E,\n,NL,RTM,Rotterdam,Rotterdam,ZH,AF,12345---,0501,,5155N 00430E,"
+}
