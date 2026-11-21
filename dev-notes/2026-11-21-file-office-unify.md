@@ -41,3 +41,7 @@ core.xml が文書側にだけ付く・上限は名前で拒む・全角幅。�
 ## perf 天井を上げた理由(`atlas-console` 1080.4 → 1091.3 kB)
 `atlas-console` の async chunk は能力モジュールを含み、`file.create` の能力(PDF/Word/PowerPoint/Excel の書き手と検証)が載る。起動(eager)には入らず、Atlas を開いたときだけ読む。
 増えた分は、統合した xlsx の書き手(列幅・ヘッダー・上限の名前拒否・core.xml)と、取り込んだ main 側の能力の増加。ライブラリを入れず自前で持つ代わりの費用で、書き出しを使わない利用者には読まれない。
+
+## perf 天井の再上げ(async.raw 14376.3 → 14533.3 kB ほか)
+取り込んだ main(ボード `board`・知識層・GIS ほか)が先に増えていて、その上にこの変更の `file.create` が載った。この変更の寄与は新しい async chunk 2 本(`atlas-file-make` 52.1 kB・`office-writer` 7.7 kB、合わせて約 60 kB)で、増分 157 kB の残りは main 側。
+`atlas-cap-runs`(918.5 → 931.6)と `atlas-console`(1105.8 → 1122.7)も、能力行の増加に追随した main 側の増分を含む。どれも起動(eager)には入らず、使うときだけ読まれる。
