@@ -7,7 +7,10 @@
  *  question that comes first — 「そういうデータは、世界のどこに在るか」 — and js/gis-geotiff.js's
  *  readUrl() (HTTP range reads of a Cloud-Optimised GeoTIFF) had no caller at all.
  *
- *  ⚠ THIS FILE DISCOVERS; IT DOES NOT READ DATA (it does SIGN an address when a catalogue states how — signHref below). Reading what a collection holds is already a door of
+ *  ⚠ THIS FILE DISCOVERS; IT READS NO VALUES. It signs an address when a catalogue states how (signHref), reads the FIRST KILOBYTE of a
+ *  file to learn whether an anonymous reader may take it (probeAsset), and acquire() chooses what to read and records where it stopped
+ *  in the ledger (js/gis-pipeline.js) — but the reading itself is the door's (D.readGrid / D.readFeatures → js/gis-atlas.js resolveRef).
+ *  search() / items() ask by resolution, cloud, licence and held datasets (js/gis-catalog-search.js is the pure part). Reading what a collection holds is already a door of
  *  its own — `ogc:<…/collections/id>` (js/gis-ogcapi.js; a STAC collection serves the same items
  *  endpoint), `stac:<…/search>` and `url:<a COG>` (js/gis-cog.js) — so inspect() answers with the REF
  *  to use rather than a second reader. What only this file knows is WHICH collection of which
@@ -61,7 +64,8 @@
  * ==========================================================================*/
 
 import { reachingFetch } from './gis-fetch.js';
-import { explainFetchFailure, describeResponse } from './gis-http.js';
+import { explainFetchFailure, describeResponse, looksLikeAPage } from './gis-http.js';
+import { toRecord, localRecord, searchRecords } from './gis-catalog-search.js';
 
 export function makeGisRemote(deps) {
   return (function () {
@@ -69,6 +73,8 @@ export function makeGisRemote(deps) {
     const WIN = () => { try { return (typeof window !== 'undefined' && window) || null; } catch (_) { return null; } };
     const pick = (k, g) => (D[k] !== undefined ? D[k] : (WIN() && WIN()[g]) || null);
     const now = () => (typeof D.now === 'function' ? D.now() : Date.now());
+    /* the ledger of what stage each thing reached (js/gis-pipeline.js) — handed in, so the door and the readers share ONE */
+    const PIPE = () => D.pipeline || null;
 
     /* ── the registry of catalogues ───────────────────────────────────────────────────────────
        観測: each answered `GET <url>` with 200 JSON and a permissive Access-Control-Allow-Origin
@@ -265,6 +271,8 @@ export function makeGisRemote(deps) {
         itemType: c.itemType || null,
         /* STAC storage extension: where this collection's files live. Only the object-shaped schemes; read by signHref */
         storage: storageSchemes(c),
+        /* STAC item_assets: what an item of this collection will carry, stated before any item is read (resolution can live here) */
+        itemAssets: (c && c.item_assets && typeof c.item_assets === 'object') ? c.item_assets : null,
         /* STAC's own statement of what an item carries; absent on a plain OGC collection */
         summaries: (c && c.summaries && typeof c.summaries === 'object') ? c.summaries : null,
       };
@@ -279,10 +287,11 @@ export function makeGisRemote(deps) {
       if (hit && !fresh && now() - hit.at < CACHE_MS) return Object.assign({ cached: true }, hit.res);
       const first = cat.kind === 'stac' ? cat.url + '/collections?limit=100' : cat.url + '/collections?f=json&limit=100';
       let url = first, pages = 0, cols = [], complete = true, why = null;
+      const t0 = now();
       while (url) {
         const r = await fetchJson(url, null, signal);
         if (!r.ok) {
-          if (!pages) return { ok: false, why: r.why, detail: r.detail || null, pages: 0, collections: [] };
+          if (!pages) return { ok: false, why: r.why, detail: r.detail || null, pages: 0, collections: [], ms: now() - t0 };
           complete = false; why = r.why; break;
         }
         pages++;
@@ -294,7 +303,7 @@ export function makeGisRemote(deps) {
         if (pages >= MAX_PAGES) { complete = false; why = 'page-guard'; url = null; break; }
         url = new URL(next.href, url).href;
       }
-      const res = { ok: true, collections: cols, pages: pages, complete: complete, why: why };
+      const res = { ok: true, collections: cols, pages: pages, complete: complete, why: why, ms: now() - t0 };
       cache.set(cat.id, { at: now(), res: res });
       return res;
     }
@@ -328,7 +337,9 @@ export function makeGisRemote(deps) {
       for (const a of answers) {
         const r = a.res;
         const row = { id: a.cat.id, kind: a.cat.kind, label: a.cat.label, answered: !!r.ok, collections: r.collections ? r.collections.length : 0, pages: r.pages || 0, complete: !!r.ok && r.complete !== false };
-        if (!r.ok) { row.why = r.why; row.detail = r.detail || null; }
+        if (isNum(r.ms)) row.ms = r.ms;
+        if (!r.ok) { row.why = r.why; row.detail = r.detail || null; if (PIPE()) row.kind_of_silence = PIPE().classify(r.why, r.detail).kind; }
+        if (PIPE() && !r.cached) PIPE().noteCatalog(a.cat.id, row);
         else if (r.complete === false) row.why = r.why;
         report.push(row);
         if (!r.ok) continue;
@@ -339,13 +350,14 @@ export function makeGisRemote(deps) {
           const spatial = spatialRelation(c.extent.bbox, box);
           const temporal = temporalRelation(c.extent.time, o.time);
           if (spatial === 'outside' || temporal === 'outside') continue;
-          entries.push(Object.assign({}, c, { match: { spatial: spatial, temporal: temporal }, catalogLabel: a.cat.label }));
-        }
+          entries.push(Object.assign({}, c, { match: { spatial: spatial, temporal: temporal }, catalogLabel: a.cat.label }));        }
       }
       /* ordered by how much was STATED: a collection that states a covering extent outranks one that
          states none, because 「不明」 is not a match — it is merely not a refusal */
       const rank = (e) => (e.match.spatial === 'covers' ? 0 : e.match.spatial === 'overlaps' ? 1 : 2) * 3 + (e.match.temporal === 'overlaps' ? 0 : e.match.temporal === 'unstated' ? 1 : 2);
       entries.sort((a, b) => rank(a) - rank(b));
+      /* what a reader is SHOWN was stated by a catalogue — a lead, recorded as exactly that and nothing further */
+      if (PIPE()) for (const e of entries.slice(0, limit)) PIPE().record(e.ref, 'discovered', { status: 'ok', say: 'stated by ' + e.catalog, facts: e.match });
       return {
         ok: true, entries: entries.slice(0, limit), total: entries.length, truncated: entries.length > limit,
         catalogs: report, asked: { q: o.q == null ? null : String(o.q), bbox: box, time: o.time == null || o.time === '' ? null : String(o.time) },
@@ -501,11 +513,212 @@ export function makeGisRemote(deps) {
       return refuse('no-signer', { host: u.host, reason: 'no catalogue states a signed store holding this address' });
     }
 
+    /* ── access: may an anonymous reader take THIS file? ──────────────────────────────────────────────
+       A catalogue's statement that a file exists says nothing about whether it can be read. The one honest test is to read
+       its first kilobyte, through the same road every reader uses (direct → relay → signed), and classify what came back.
+       → {ok:true, status, kind} | {ok:false, why, detail} where `why`/`detail` are the codes js/gis-pipeline.js classify() reads.
+       ⚠ A 200 that is a PAGE (text/html) is a sign-in screen, not the file (observed: USGS landsatlook → ERS login). */
+    async function probeAsset(href, opts) {
+      const o = opts || {};
+      const ok = publicUrl(resolveHref(href).href);
+      if (!ok.ok) return ok;
+      const doFetch = reachingFetch(D.fetch);
+      if (!doFetch) return refuse('fetch-failed', { url: ok.url, reason: 'no-fetch-in-this-runtime' });
+      const ctl = (typeof AbortController === 'function') ? new AbortController() : null;
+      let timedOut = false;
+      const timer = ctl ? setTimeout(() => { timedOut = true; try { ctl.abort(); } catch (_) { } }, D.timeoutMs || CALL_MS) : null;
+      try {
+        let res;
+        try { res = await doFetch(ok.url, { headers: { Range: 'bytes=0-1023' }, signal: ctl ? ctl.signal : undefined }); }
+        catch (e) {
+          if (timedOut) return refuse('timeout', { url: ok.url, ms: D.timeoutMs || CALL_MS });
+          return refuse('fetch-failed', Object.assign({ url: ok.url }, await explainFetchFailure(ok.url, doFetch, e)));
+        }
+        if (!res || !res.ok) return refuse('http-status', Object.assign({ url: ok.url, status: res ? res.status : null }, res ? await describeResponse(ok.url, res) : {}));
+        if (looksLikeAPage(res)) return refuse('http-status', Object.assign({ url: ok.url, status: res.status, reason: 'a page was returned where a file was asked for' }, await describeResponse(ok.url, res)));
+        let bytes = null;
+        try { bytes = typeof res.arrayBuffer === 'function' ? (await res.arrayBuffer()).byteLength : null; } catch (_) { }
+        return { ok: true, status: res.status, partial: res.status === 206, bytes: bytes, url: ok.url };
+      } finally { if (timer) clearTimeout(timer); }
+    }
+
+    /* ── items: which FILES of a STAC collection cover a place and a period ──────────────────────────
+       The collection-level answer says a collection covers a region; the item-level one says which scenes, when, how fine,
+       how cloudy. `POST /search` (STAC API core). ⚠ ONE PAGE, SAID SO: `continues` is whether the server offered a next link,
+       not a guess; a window that matches more than `limit` items is not a window with `limit` items. */
+    async function items(ref, opts) {
+      const p = parseRef(ref);
+      if (!p.ok) return p;
+      if (p.cat.kind !== 'stac') return refuse('bad-param', { param: 'ref', reason: 'item search is a STAC API operation; this catalogue is ' + p.cat.kind });
+      const o = opts || {};
+      const box = (o.bbox == null) ? null : asBox(o.bbox);
+      if (o.bbox != null && !box) return refuse('bad-param', { param: 'bbox', value: o.bbox });
+      if (o.time != null && o.time !== '') { const t = timeSpan(o.time); if (!t || t.bad) return refuse('bad-param', { param: 'time', value: o.time }); }
+      const limit = (isNum(o.limit) && o.limit > 0) ? Math.min(Math.floor(o.limit), 100) : 10;
+      const body = { collections: [p.collection], limit: limit };
+      if (box) {
+        /* a window across ±180 is TWO boxes to a server that wants w<e: STAC's `bbox` allows w>e (spec §bbox) but servers differ, so we ask the standard way
+           and say how many sides were asked */
+        body.bbox = [box.w, box.s, box.e, box.n];
+      }
+      if (o.time != null && o.time !== '') {
+        const t = timeSpan(o.time);
+        const iso = (m) => (m == null ? '..' : new Date(m).toISOString());
+        body.datetime = iso(t.from) + '/' + iso(t.to == null ? null : t.to - 1);
+      }
+      const r = await fetchJson(p.cat.url + '/search', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/geo+json' }, body: JSON.stringify(body) }, o.signal);
+      if (!r.ok) return r;
+      const feats = Array.isArray(r.json && r.json.features) ? r.json.features : [];
+      let rows = feats.map((f) => {
+        const pr = f.properties || {};
+        const assets = Object.keys(f.assets || {}).map((k) => assetRow(k, f.assets[k]));
+        return {
+          id: f.id, datetime: pr.datetime || (pr.start_datetime ? pr.start_datetime + '/' + (pr.end_datetime || '..') : null),
+          gsd: pr.gsd === undefined ? null : pr.gsd, cloud: pr['eo:cloud_cover'] === undefined ? null : pr['eo:cloud_cover'],
+          epsg: pr['proj:epsg'] === undefined ? null : pr['proj:epsg'], bbox: Array.isArray(f.bbox) ? f.bbox.slice(0, 4) : null, assets: assets,
+        };
+      });
+      const beforeCloud = rows.length;
+      if (isNum(o.maxCloud)) rows = rows.filter((x) => x.cloud == null || x.cloud <= o.maxCloud);
+      const droppedByCloud = beforeCloud - rows.length;
+      const next = Array.isArray(r.json.links) ? r.json.links.find((l) => l && l.rel === 'next') : null;
+      return {
+        ok: true, ref: p.cat.id + '/' + p.collection, items: rows, returned: feats.length, droppedByCloud: droppedByCloud,
+        matched: r.json && r.json.numberMatched != null ? r.json.numberMatched : (r.json && r.json.context && r.json.context.matched != null ? r.json.context.matched : null),
+        continues: !!next, asked: { bbox: box, time: o.time == null || o.time === '' ? null : String(o.time), limit: limit, maxCloud: isNum(o.maxCloud) ? o.maxCloud : null },
+      };
+    }
+
+    /* ── search(): one question across the content, place, period, resolution and stated quality of every dataset ──
+       req = {q, bbox, time, maxGsd, minGsd, maxCloud, licensed, kinds, origins, strict, catalogs, limit, local[], items:true}
+       The catalogues are asked as discover() asks them (same cache, same «did not answer» report); the datasets this session
+       HOLDS (`local`, or D.data.list()) join the same list, so «what do I already have and what could I get» is one question. */
+    async function search(req) {
+      const o = req || {};
+      const box = (o.bbox == null) ? null : asBox(o.bbox);
+      if (o.bbox != null && !box) return refuse('bad-param', { param: 'bbox', value: o.bbox });
+      if (o.time != null && o.time !== '') { const t = timeSpan(o.time); if (!t || t.bad) return refuse('bad-param', { param: 'time', value: o.time }); }
+      for (const k of ['maxGsd', 'minGsd', 'maxCloud']) if (o[k] != null && !(isNum(o[k]) && o[k] >= 0)) return refuse('bad-param', { param: k, value: o[k] });
+      if (o.kinds != null && !(Array.isArray(o.kinds) && o.kinds.every((k) => KINDS.indexOf(k) >= 0))) return refuse('bad-param', { param: 'kinds', kinds: KINDS.slice() });
+      let which = catalogs();
+      if (Array.isArray(o.catalogs) && o.catalogs.length) {
+        for (const id of o.catalogs) if (!catalogById(id)) return refuse('catalog-unknown', { id: String(id), catalogs: which.map((c) => c.id) });
+        which = which.filter((c) => o.catalogs.map(String).indexOf(c.id) >= 0);
+      }
+      const askCatalogues = !(Array.isArray(o.origins) && o.origins.length && o.origins.indexOf('catalogue') < 0);
+      const answers = askCatalogues ? await Promise.all(which.map(async (cat) => ({ cat: cat, res: await collectionsOf(cat, o.signal || null, !!o.fresh) }))) : [];
+      if (o.signal && o.signal.aborted) return refuse('cancelled');
+      const recs = [], report = [];
+      for (const a of answers) {
+        const r = a.res;
+        const row = { id: a.cat.id, kind: a.cat.kind, label: a.cat.label, answered: !!r.ok, collections: r.collections ? r.collections.length : 0, pages: r.pages || 0, complete: !!r.ok && r.complete !== false };
+        if (isNum(r.ms)) row.ms = r.ms;
+        if (!r.ok) { row.why = r.why; row.detail = r.detail || null; if (PIPE()) row.kind_of_silence = PIPE().classify(r.why, r.detail).kind; }
+        else if (r.complete === false) row.why = r.why;
+        report.push(row);
+        if (PIPE() && !r.cached) PIPE().noteCatalog(a.cat.id, row);
+        if (r.ok) for (const c of r.collections) recs.push(toRecord(c, a.cat));
+      }
+      let held = [];
+      try { held = Array.isArray(o.local) ? o.local : (D.data && typeof D.data.list === 'function' ? D.data.list() : []); } catch (_) { held = []; }
+      for (const ds of held) { try { if (ds && ds.id != null) recs.push(localRecord(ds)); } catch (_) { } }
+      const res = searchRecords(recs, { q: o.q, bbox: box, time: o.time, maxGsd: o.maxGsd, minGsd: o.minGsd, maxCloud: o.maxCloud, licensed: !!o.licensed, kinds: o.kinds, origins: o.origins, strict: !!o.strict },
+        { spatial: spatialRelation, temporal: temporalRelation });
+      const limit = (isNum(o.limit) && o.limit > 0) ? Math.floor(o.limit) : 25;
+      const shown = res.entries.slice(0, limit);
+      if (PIPE()) for (const e of shown) if (e.origin === 'catalogue') PIPE().record(e.ref, 'discovered', { status: 'ok', say: 'stated by ' + e.catalog, facts: e.match });
+      let itemsOf = null;
+      if (o.items && shown.length) {
+        /* the item-level look at the best few: which scenes, when, how fine — one STAC search each, and each says if it did not answer */
+        const top = shown.filter((e) => e.origin === 'catalogue' && e.kind === 'stac').slice(0, 3);
+        itemsOf = await Promise.all(top.map(async (e) => { const r = await items(e.ref, { bbox: box, time: o.time, maxCloud: o.maxCloud, limit: 5, signal: o.signal || null }); return r.ok ? r : { ok: false, ref: e.ref, why: r.why, detail: r.detail || null }; }));
+      }
+      return {
+        ok: true, entries: shown, total: res.total, truncated: res.total > shown.length, facets: res.facets, dropped: res.dropped,
+        catalogs: report, items: itemsOf,
+        asked: { q: o.q == null ? null : String(o.q), bbox: box, time: o.time == null || o.time === '' ? null : String(o.time), maxGsd: o.maxGsd == null ? null : o.maxGsd, minGsd: o.minGsd == null ? null : o.minGsd, maxCloud: o.maxCloud == null ? null : o.maxCloud, licensed: !!o.licensed, strict: !!o.strict },
+        note: 'Every filter is judged on what the record STATES; a record that states nothing for a filter is kept and marked unstated (strict:true drops it). A catalogue listed as not answering is not «nothing there». `stated` counts the facts a record gives about itself, not the quality of the data.',
+      };
+    }
+
+    /* ── acquire(): one reference, taken through every stage, each stage's outcome in the ledger ───────
+       discovered (the catalogue states it) → access (the first kilobyte of the file is readable anonymously) → fetched
+       (the window came back, all or part) → inspected (the values were looked at) → dataset. Reading is done by the
+       door that already reads (D.readGrid / D.readFeatures → js/gis-atlas.js resolveRef); this function chooses WHAT to read
+       from what the collection states and records WHERE it stopped. A stage that did not hold is returned as the state — not
+       as an error — because «where it stopped» is the answer the planner asked for.
+       ⚠ A WINDOW ACROSS ±180 is read as two windows, each from the item the catalogue holds for that side, each its own dataset
+       (not mosaicked: two files are two datasets); the parent says `partial` for exactly the side that did not come. */
+    async function acquire(ref, opts) {
+      const P = PIPE();
+      if (!P) return refuse('bad-param', { param: 'pipeline', reason: 'no ledger was handed to this module' });
+      const o = opts || {};
+      const p = parseRef(ref);
+      if (!p.ok) return p;
+      const key = p.cat.id + '/' + p.collection;
+      const box = asBox(o.bbox);
+      if (!box) return refuse('bad-param', { param: 'bbox', reason: 'acquire reads a window; state it (bounds:[w,s,e,n])' });
+      const ins = await inspect(ref, { bbox: box, signal: o.signal || null });
+      if (!ins.ok) { P.recordFailure(key, 'discovered', ins.why, ins.detail); return { ok: true, ref: key, state: P.verdict(key), datasets: [], parts: [] }; }
+      P.record(key, 'discovered', { status: 'ok', say: 'the catalogue states this collection (' + p.cat.id + ')' });
+
+      /* features: the collection IS the dataset (OGC API – Features, or a STAC collection read as items) */
+      if (p.cat.kind !== 'stac') {
+        if (typeof D.readFeatures !== 'function') return refuse('bad-param', { param: 'readFeatures', reason: 'no reader was handed to this module' });
+        const url = String(ins.refs.features).replace(/^ogc:/, '');
+        const r = await D.readFeatures(url, { bounds: [box.w, box.s, box.e, box.n], limit: o.limit, time: o.time });
+        const k = 'ogc:' + url;
+        if (!P.verdict(k).known) { if (!r.ok) P.recordFailure(k, 'fetched', r.why, r.detail); }
+        P.combine(key, [{ key: k, label: 'features' }]);
+        return { ok: true, ref: key, state: P.verdict(key), datasets: r.ok && r.id ? [r.id] : [], parts: [{ label: 'features', ref: k }] };
+      }
+
+      if (typeof D.readGrid !== 'function') return refuse('bad-param', { param: 'readGrid', reason: 'no reader was handed to this module' });
+      if (!(isNum(o.width) && isNum(o.height) && o.width >= 1 && o.height >= 1)) return refuse('bad-param', { param: 'width/height', reason: 'a grid is read at a resolution the caller states' });
+      const sides = P.splitAtAntimeridian(box);
+      const windows = sides ? [{ label: 'east of the date line', box: sides[0] }, { label: 'west of the date line', box: sides[1] }] : [{ label: 'window', box: box }];
+      const spanTotal = windows.reduce((t, w) => t + (w.box.e - w.box.w), 0) || 1;
+      const partKeys = [], ids = [], parts = [];
+      for (const w of windows) {
+        const part = { label: w.label, bounds: [w.box.w, w.box.s, w.box.e, w.box.n] };
+        parts.push(part);
+        /* which FILE holds this side: ask the catalogue for an item over THIS box */
+        const it = await items(ref, { bbox: w.box, time: o.time, limit: 5, signal: o.signal || null });
+        const synth = key + '#' + w.label.replace(/\s+/g, '-');
+        if (!it.ok) { P.recordFailure(synth, 'fetched', it.why, it.detail); part.ref = synth; partKeys.push({ key: synth, label: w.label }); continue; }
+        /* ⚠ A SERVER MAY ANSWER A BOX THAT ONLY TOUCHES A TILE'S EDGE (measured 2026-11-20: asking the east side of the date line returned the tile that starts at -180). An item is a candidate for this part only if ITS OWN bbox overlaps the part. */
+        const here = it.items.filter((x) => { const b = x.bbox && asBox(x.bbox); return !b || overlapsBox(b, w.box); });
+        const pick = here.map((x) => ({ item: x, asset: o.asset ? x.assets.find((a) => a.key === o.asset) : x.assets.find((a) => a.cog && /^https:/.test(a.href)) })).find((x) => x.asset);
+        if (!pick) {
+          P.record(synth, 'access', { status: 'ok', say: 'the catalogue answered' });
+          P.record(synth, 'fetched', { status: 'failed', why: here.length ? 'no-readable-asset' : 'no-item-in-window', say: here.length ? 'items exist here but none carries a Cloud-Optimised GeoTIFF asset (' + Array.from(new Set(here.flatMap((x) => x.assets.map((a) => a.type || '?')))).join(', ') + ')' : 'the catalogue holds no item for this part of the window — that is this catalogue, not «nothing exists»' });
+          part.ref = synth; partKeys.push({ key: synth, label: w.label }); continue;
+        }
+        part.item = pick.item.id; part.asset = pick.asset.key;
+        const url = pick.asset.href, uk = 'url:' + url;
+        part.ref = uk; partKeys.push({ key: uk, label: w.label });
+        P.record(uk, 'discovered', { status: 'ok', say: 'an asset of ' + key + ' (item ' + pick.item.id + ')' });
+        /* may an anonymous reader take it? asked of the file itself, in the host's words */
+        const pr = await probeAsset(url, { signal: o.signal || null });
+        if (!pr.ok) {
+          const c = P.classify(pr.why, pr.detail);
+          P.record(uk, 'access', { status: c.status === 'failed' ? 'failed' : c.status, why: pr.why, kind: c.kind, say: c.say, detail: pr.detail || null, facts: { retryable: c.retryable } });
+          continue;
+        }
+        const width = Math.max(1, Math.round(o.width * (w.box.e - w.box.w) / spanTotal));
+        const r = await D.readGrid(url, { bounds: [w.box.w, w.box.s, w.box.e, w.box.n], width: width, height: Math.floor(o.height), band: o.band, signal: o.signal || null });
+        if (r && r.ok && r.id) { ids.push(r.id); part.id = r.id; }
+      }
+      P.combine(key, partKeys);
+      /* a parent that is `partial` because of the date line says exactly which side, and that two files are two datasets */
+      return { ok: true, ref: key, state: P.verdict(key), datasets: ids, parts: parts.map((x) => Object.assign({}, x, { state: x.ref ? P.verdict(x.ref) : null })), acrossAntimeridian: !!sides };
+    }
+
     const API = {
-      catalogs, add, discover, inspect, signHref,
+      catalogs, add, discover, inspect, signHref, search, items, probeAsset, acquire,
       publicUrl, resolveHref, refusals: () => REFUSALS.slice(), kinds: () => KINDS.slice(),
       /* what the Atlas door may ask of this module — one declaration, read by the door */
-      actions: () => ['catalogs', 'add', 'discover', 'inspect'],
+      actions: () => ['catalogs', 'add', 'discover', 'inspect', 'search', 'items', 'acquire'],
       /* the pure parts, published so a check can drive them without a network */
       _spatialRelation: spatialRelation, _temporalRelation: temporalRelation, _timeSpan: timeSpan,
     };
