@@ -442,6 +442,9 @@ gis-voronoi.js                    **球面の最寄り圏** `window.IntMapGisVor
                                   共円の地点は凸包だけをずらした位置で建て、候補に 2 環近傍を足す。
                                   境界の描画と「いちばん遠い場所」の探索の許容は球と WGS-84 の差
                                   （`docs/GIS-CORE.md` §2.4.1 の 0.56 %）で、つまみではない（§2.9）
+gis-network.js                    **つながりとしての網** `window.IntMapGisNetwork` — `network` / `networkDisrupt` op の算術。
+                                  線をグラフに読み（端点／頂点・`snapKm`）、媒介・調和近接・最大フロー／最小カット・
+                                  k 本の代替経路・障害時の無傷との差を測る。反復は時間で譲る。
 gis-packed.js                     **幾何の圧縮表現とチャンクストア**（gis-scale）— 入力の数千倍になる
                                   結果（100 万点の buffer）を、ヒープに載せずに持つための部品。
                                   幾何を Float64Array へ平らに並べ（unpack で 1 バイトも違わず戻る）、
@@ -2140,7 +2143,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全26本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（70本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（71本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（26本。一覧と各本の役割は Architecture.md §6.2。
@@ -2153,7 +2156,7 @@ supabase/
                                   aviation-model.js / news-cluster.js / news-entities.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
-                                  bbox.js / read-budget.js / client-error-shape.js /
+                                  bbox.js / read-budget.js / connection-policy.js / connection-vault.js / connection-gateway.js / client-error-shape.js /
                                   fetch-relay-policy.js / gis-fetch-policy.js / mcp-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
