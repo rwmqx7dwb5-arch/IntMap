@@ -212,6 +212,28 @@ export default [
       return r.ok ? R(true, r.html, { meta: { gisRemote: { action: a.action || 'discover', dataset: r.dataset && r.dataset.id, coverage: r.coverage && r.coverage.completeness } } }) : R(false, warn(r.html));
     },
   },
+  /* ⚠⚠ (overture-maps) THE WORLD'S BUILDINGS, PLACES, ROADS AND BORDERS — read by the window you name. Overture Maps publishes ~90 M
+     places, ~2.5 G buildings, addresses, administrative areas, roads and base-map features as GeoParquet; nobody loads that, so this
+     row reads only the files, row groups and columns a window needs and registers the rows as a dataset (the input of `gis`). ⚠ IT
+     ASSERTS NOTHING ABOUT THE WORLD: 'bbox-intersects' is exact for points and a superset for polygons, the answer's `coverage` is
+     js/gis-sources.js's verdict, `worldCompleteness` is always "unproven", and the licence is the verbatim set the ROWS state (places
+     CDLA-Permissive-2.0, buildings/roads ODbL-1.0, addresses CC BY 4.0 per country — never one guess for "Overture"). Column 7 'read' /
+     8 'none' as for `data.gisRemote`: it fetches from third-party hosts the reader never named, but changes no setting and persists nothing. */
+  {
+    row: ['data.gisOverture',           'gisOverture',    'overtureMaps,worldBuildings,worldPlaces,buildingFootprints,geoparquet', 'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'gisCore'],
+    ui: { at: ['#btn-gis-panel'] },
+    doc: [
+      { in: 'spatial-analysis', at: 55, text: 'READ OVERTURE MAPS BY WINDOW: {"type":"gisOverture","action":"release"|"themes"|"plan"|"query"|"acquire","theme"?:str,"type_"?:str,"bounds"?:[w,s,e,n],"where"?:[{"field":str,"op":">="|">"|"<="|"<"|"=="|"!="|"contains"|"in"|"between","value":…}],"columns"?:[str],"limit"?:int,"release"?:str,"title"?:str}. 世界の建物・場所・道路・住所・境界を Overture Maps（オーバーチュア）から、指定した窓のぶんだけ読む（建物データ・場所データ）。themes lists which themes/types the latest release holds (read from its catalogue — never assume); plan names the FILES a window meets; query reads the rows and states what it read (row groups, MB, seconds) with up to 10 sample rows; acquire registers the rows as a dataset id for the next step (relate nearer-than, aggregate, draw). A condition field is a column or a dotted path (names.primary, taxonomy.primary, class, subtype, height). ALWAYS give bounds: an unbounded read of the planet is refused by being slow, not by a rule. Overture\'s place classes are POI classes — there is no "seaport" or "semiconductor" class; match names or use the base theme (infrastructure: pier, ferry_terminal …). Each row states its licence; "worldCompleteness" is always "unproven".' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('release', 'themes', 'plan', 'query', 'acquire'), theme: str(), type_: str(), bounds: list(num()), where: { type: 'array', items: { type: 'object', properties: { field: str(), op: one('>=', '>', '<=', '<', '==', '!=', 'contains', 'in', 'between') }, required: ['field'] } }, columns: list(str()), limit: int(1, 1000000), release: str(), title: str() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn;
+      await window.IntMapLazy.need('gisCore');
+      const _G = (window.IntMapGis || {}).atlas;
+      if (!_G || typeof _G.overture !== 'function') return R(false, warn(K.L('The GIS engine could not be loaded.', 'GIS エンジンを読み込めませんでした。')));
+      const r = await _G.overture(Object.assign({}, a, { type: a.type_ }));
+      return r.ok ? R(true, r.html, { meta: { gisOverture: { action: a.action || 'plan', dataset: r.dataset && r.dataset.id, count: r.count == null && r.result ? r.result.count : r.count, coverage: r.coverage && r.coverage.completeness } } }) : R(false, warn(r.html));
+    },
+  },
   {
     row: ['data.rank',                  'rank',           '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
     ui: { at: ['#countries-feed .stats-sort-sel'] },
