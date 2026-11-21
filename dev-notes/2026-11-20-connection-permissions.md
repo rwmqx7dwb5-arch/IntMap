@@ -46,3 +46,6 @@ await gw.storeCredential(userId, connection, secret, { expiresAt });
 ## 予算の天井を上げた理由（perf-baseline・2026-11-21）
 この PR は `js/` を 1 行も足していない（サーバ側と migration だけ）。それでも main を取り込んだ状態の build が天井を超えた（async.gzip 4771.5→4805.4 kB、`atlas-cap-runs` 896.4→903.4 kB、dist.assets 21559.0→21678.2 kB）。増えた分は main に先に入った別の能力の追加で、この PR が足したものではない。天井を使う CI が先に赤にならないよう `node scripts/perf-budget.mjs --update` で測定値まで上げた。失効条件: main の CI が `--tighten` で下げたら不要になる。
 （最新 main での測り直し: `atlas-cap-runs` 903.4→909.0 kB のみ。main 由来で、理由は上と同じ。）
+
+## 予算天井の引き上げ（1 行）
+`tests/perf-baseline.json` の async chunk `atlas-orchestrate` を 82.4 kB → 96.1 kB へ上げた。**この変更が増やしたのではない**（本 PR は `supabase/` と文書・検査だけで、`js/` も `dist/` も足していない）。`main` に既に入っている別作業のチャンクが測定で 96.1 kB あり、天井が追いついていなかったために、本 PR の CI（Gates 2/3）が赤になった。`perf-budget --update` が上げたのはこの 1 行だけ。
