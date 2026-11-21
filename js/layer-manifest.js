@@ -395,7 +395,7 @@ const DECLARATIONS = [
   { id: "bx-wbresearch", shelf: "lyrGrpTech", order: 90, key: "wbresearch", rest: true, measures: ["worldbank:SP.POP.SCIE.RD.P6"] },   // bx-wbresearch.js
   { id: "bx-wbpatent", shelf: "lyrGrpTech", order: 100, key: "wbpatent", rest: true, measures: ["worldbank:IP.PAT.RESD"] },   // bx-wbpatent.js
   { id: "fac-dl-osmtelecom", shelf: "lyrGrpTech", order: 110, key: "osmtelecom", rest: true },   // fac-dl-osmtelecom.js
-  { id: "beta-dl-plateau3d", shelf: "lyrGrpTech", order: 900, key: "plateau3d", rest: true, share: true, sources: ["PLATEAU 3D city models (MLIT Japan)"] },   // beta-dl-plateau3d.js
+  { id: "beta-dl-plateau3d", shelf: "lyrGrpTech", order: 900, key: "plateau3d", rest: true, share: true, sources: ["PLATEAU 3D city models (MLIT Japan)", "3D BAG (Netherlands 3D buildings)", "Re:Earth Buildings (worldwide 3D buildings)"] },   // beta-dl-plateau3d.js
   { id: "dl-gdppc", shelf: "lyrGrpEconomy", order: 10, key: "gdppc", label: "lyrGDPpc", share: true, measures: ["countrystats:gdppc"] },   // dl-gdppc.js
   { id: "wp-dl-trade", shelf: "lyrGrpEconomy", order: 20, key: "trade", share: true, lazy: ["worldPacksBody"] },   // wp-dl-trade.js
   { id: "bx-wbgini", shelf: "lyrGrpEconomy", order: 30, key: "wbgini", measures: ["worldbank:SI.POV.GINI"] },   // bx-wbgini.js
@@ -546,8 +546,13 @@ export const hiddenRows = () => LAYERS.filter((l) => l.shelf === HIDDEN).map((l)
 export const defaultLayers = () => LAYERS.filter((l) => l.on && !l.html).map((l) => l.id);
 /** every id ticked for a first-time reader, markup rows first (was window.IntMapDefaultOn) */
 export const defaultOn = () => LAYERS.filter((l) => l.on && l.html).map((l) => l.id).concat(defaultLayers());
-/** the LAYER ids the share link carries (`&l=`) — display items travel in their own field */
-export const sharedIds = () => dataLayers().filter((l) => l.share).map((l) => l.id);
+/** the LAYER ids the share link carries (`&l=`) — display items travel in their own field.
+    ⚠ EVERY data layer, not the rows that happen to say `share`: that flag was the id-prefix selector the link used to
+    carry (dl-, gx-, eco-dl- …), and a layer on another prefix (bx-eq, every bx-wb* indicator, fac-dl-osm*, ox-*) was
+    silently dropped from a link whose panel says it «includes every active layer». Measured on production
+    2026-11-21: earthquakes on, no `l=` in the address bar — 75 of 170 layers. A link is carried by the fact that a row
+    is a layer; a new layer cannot be forgotten. */
+export const sharedIds = () => dataLayers().map((l) => l.id);
 /** (basic-display-not-layers) the display items the share link carries (`&d=`, js/map-state.js `display`) */
 export const sharedDisplayIds = () => displayItems().filter((l) => l.share).map((l) => l.id);
 
@@ -570,5 +575,5 @@ export function rowHTML(l, text) {
     for a row that composes its own name, whatever that row says once it is built. */
 export function catalog() {
   return LAYERS.map((l) => ({ id: l.id, kind: l.kind || 'layer', key: l.key || null, shelf: l.shelf, label: l.label || null,
-    rest: !!l.rest, on: !!l.on, share: !!l.share, lazy: l.lazy ? l.lazy.slice() : [] }));
+    rest: !!l.rest, on: !!l.on, share: l.kind === 'display' ? !!l.share : true, lazy: l.lazy ? l.lazy.slice() : [] }));
 }
