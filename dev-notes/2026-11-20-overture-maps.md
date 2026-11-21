@@ -88,3 +88,7 @@ STAC の `href` は**データ**。https・認証情報なし・私的でない�
 Overture Maps 読み取り(js/gis-overture.js)と、それを呼ぶ Atlas 能力を足したため、非同期チャンクが増えた(async.raw 14136.4→14415.6 kB、async.gzip 4771.5→4885.1 kB、atlas-console 1061.2→1066.8 kB、gis-core 622.7→628.3 kB、dist.assets 21559.0→21814.8 kB)。増えた分は新しい能力の実装そのもので、起動時に読まれる経路(初期チャンク)は増えていない。window.IntMapGis / IntMapLazy の読みが 1 件ずつ増えた(surface ベースライン更新)のも同じ能力による。
 
 - 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
+
+## 性能予算の引き上げ
+
+- async.raw 14376.3→14674.1 kB・async.gzip 4864.8→4982.2 kB・atlas-cap-runs 918.5→928.2 kB・atlas-console 1105.8→1118.6 kB・legal-text 91.8→94.1 kB・dist.assets 21796.5→22111.3 kB: 取り込み後の全体ビルドの実測。この枝が運ぶ Overture 読み取り（js/gis-overture.js）と不変 uid・根拠の変更履歴の遅延チャンク、legal-text の Overture 条文の分と、main に入った他の PR の分。起動時に読まれる本数は 9 のまま。

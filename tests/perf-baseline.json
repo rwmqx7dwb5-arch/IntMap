@@ -9,8 +9,8 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14721306,
-    "gzip": 4981538,
+    "raw": 15026275,
+    "gzip": 5101742,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -22,10 +22,10 @@
       "atlas-admin1": 12138,
       "atlas-answer-view": 2510,
       "atlas-attach": 27593,
-      "atlas-cap-runs": 940553,
+      "atlas-cap-runs": 950438,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1132327,
+      "atlas-console": 1145419,
       "atlas-executor": 61782,
       "atlas-float": 10113,
       "atlas-geo-resolve": 49353,
@@ -112,7 +112,7 @@
       "layer-row-label": 402,
       "layer-time": 13553,
       "layer-time-decl": 21678,
-      "legal-text": 93960,
+      "legal-text": 96408,
       "lib": 129709,
       "link-codec": 1344,
       "map-cite": 18254,
@@ -218,7 +218,7 @@
   "dist": {
     "total": 1587385548,
     "data": 1223209830,
-    "assets": 22319629
+    "assets": 22641931
   },
   "phone": {
     "bytes": 342631,
