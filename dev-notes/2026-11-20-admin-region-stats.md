@@ -46,3 +46,5 @@ Wikidata Query Service で P1082 を持つ単位: P300（ISO 3166-2）30,703 記
 - **まだ結べていないもの（消せる条件つき）**: OHM 由来の `hist-admin1/2/3`（行は OHM 関係 id を持ち、Wikidata id を持たない）・`recon`（`TUR:Kayseri` 等の出典独自の鍵）・`surveys`（`ristat:1897:55`）は ISO 3166-2 を述べないので統計と**結べない**（名前では結ばない）。消せる条件: それらの行が Wikidata QID か ISO 3166-2 を述べること。UI への配線（`regionStat` が過去年で歴史の輪郭を描く）は**未了**——fill 束は 1.7 MB・recon は 18 MB で、遅延読み込みの設計が要る。
 - **米国の郡・日本の市区町村**は境界を同梱しておらず、**境界の出典を新たに足す作業**（利用条件を読む）が要るため表のみのまま。答えは表であることを述べる。
 - 検査: `tests/admin-stats-checks.test.mjs` に ⑥ NUTS の結合と数え上げ ⑦ 歴史の結合（コード・存続期間・現在の輪郭）⑧ 実際の fill 束との結合率 を追加。
+
+- 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
