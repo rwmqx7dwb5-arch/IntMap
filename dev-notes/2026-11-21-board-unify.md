@@ -25,3 +25,4 @@ newsjp: 回答内の画面と操作できるボードの実装が 1 本になり
 
 ## 予算
 \`check:perf\` の天井を \`--update\` で引き上げた(async gzip 4771→4811 kB、atlas-cap-runs / atlas-console チャンク、dist.assets)。理由: metrics・objects・feed・worldObjects の移植(board.js と atlas-cap-board.js、ui-text-rules.js)と、#1338 を取り込んだ時点の main 側の増分。能力は削っていない。
+\`origin/main\` を取り込み直したあとの再測定で天井をもう一度引き上げた(async raw 14221→14345 kB、gzip→4832 kB、atlas-cap-runs 914 kB、atlas-console 1075 kB)。増分のうち board 由来は metrics・objects・feed・worldObjects の移植分、残りは取り込んだ main 側の変更で、能力は削っていない。
