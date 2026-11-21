@@ -196,6 +196,11 @@ export const IntMapRefData = (function(){
     {n:'CesiumJS',u:'https://cesium.com/platform/cesiumjs/'},
     {n:'Twemoji (Twitter Emoji)',u:'https://github.com/jdecked/twemoji'},
     {n:'Esri World Imagery',u:'https://www.esri.com/'},
+    /* (sat-imagery-supply) the regional aerial-photo suppliers of js/imagery-registry.js — each row's terms were read from the supplier's own page on 2026-11-20 */
+    {n:'国土地理院（地理院タイル：全国最新写真・空中写真）',u:'https://maps.gsi.go.jp/development/ichiran.html',lic:'国土地理院コンテンツ利用規約',licUrl:'https://www.gsi.go.jp/kikakuchousei/kikakuchousei40182.html',credit:true},
+    {n:'USGS The National Map (Orthoimagery)',u:'https://www.usgs.gov/core-science-systems/national-geospatial-program/national-map',lic:'US Government work (public domain)',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:true},
+    {n:'PDOK Luchtfoto (Beeldmateriaal Nederland)',u:'https://www.pdok.nl/introductie/-/article/pdok-luchtfoto-rgb-open-',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'swisstopo SWISSIMAGE',u:'https://www.swisstopo.admin.ch/en/orthoimage-swissimage-10',lic:'swisstopo / BGDI terms of use',licUrl:'https://www.geo.admin.ch/de/allgemeine-nutzungsbedingungen-bgdi',credit:true},
     {n:'OpenStreetMap',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'NASA GIBS / Worldview',u:'https://www.earthdata.nasa.gov/'},
     /* (#R186) the two datasets this round bundles WITH the app rather than fetching at run time —
