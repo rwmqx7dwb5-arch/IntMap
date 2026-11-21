@@ -3366,7 +3366,6 @@ IntMapLang.define('fr', { ui: {
   "Secondary enrollment %": "Scolarisation secondaire %",
   "Sentinel Hub (S2 / Landsat)": "Sentinel Hub (S2 / Landsat)",
   "Sentinel Hub instance ID": "Identifiant d'instance Sentinel Hub",
-  "Sentinel-2 cloudless (EOX)": "Sentinel-2 sans nuages (EOX)",
   "Shona": "Shona",
   "Smoking prevalence %": "Prévalence du tabagisme %",
   "Software": "Logiciel",
