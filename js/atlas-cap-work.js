@@ -36,7 +36,7 @@ const when = (ms) => { try { return new Date(ms).toISOString().replace('T', ' ')
 function describe(w, esc, L) {
   const ps = currentProducts(w);
   return '<div><b>' + esc(w.title) + '</b> · <code>' + esc(w.id) + '</code> · ' + esc(w.status) + ' · ' + esc(when(w.updatedAt)) + '</div>'
-    + (w.workspace && w.workspace.id ? '<div>' + esc(L('Workspace', '作業場')) + ': ' + esc(w.workspace.id) + '</div>' : '')
+    + (w.workspace && w.workspace.id ? '<div>' + esc(L('Workspace', 'ワークスペース')) + ': ' + esc(w.workspace.id) + '</div>' : '')
     + (ps.length ? '<ul style="margin:3px 0 3px 18px;padding:0;">' + ps.map((p) => '<li><b>' + esc(p.name) + '</b> · ' + esc(p.kind) + (p.version > 1 ? ' v' + p.version : '') + ' · <code>' + esc(p.id) + '</code>' + (p.note ? ' — ' + esc(p.note.slice(0, 100)) : '') + '</li>').join('') + '</ul>'
       : '<div>' + esc(L('No products yet.', 'まだ成果物はありません。')) + '</div>');
 }
@@ -117,7 +117,7 @@ export default [
         const lines = r.considered.map((c) => '<li><b>' + esc(c.id) + '</b> — ' + (c.ok ? esc(L('satisfies the needs', '要件を満たす')) : esc(L('does not', '満たさない')) + ': <code>' + esc(c.unmet.join(', ')) + '</code>') + '<div style="color:var(--text-muted);font-size:11.5px;">' + esc(c.detail) + '</div></li>').join('');
         let kept = '';
         if (r.choice && (a.id || WORK_STATE.current)) { const t = await target(a); if (t.w) { await S.put(Object.assign({}, t.w, { workspace: { id: r.choice, needs: r.needs, reason: 'chosen from the job\'s declared needs' } })); kept = ' ' + L('(recorded on the job)', '（作業に記録しました）'); } }
-        return r.choice ? say('<div><b>' + esc(L('Workspace', '作業場')) + ': ' + esc(r.choice) + '</b>' + esc(kept) + '</div><ul style="margin:3px 0 3px 18px;padding:0;">' + lines + '</ul>', { workspace: r.choice, considered: r.considered.map((c) => ({ id: c.id, ok: c.ok, unmet: c.unmet })) })
+        return r.choice ? say('<div><b>' + esc(L('Workspace', 'ワークスペース')) + ': ' + esc(r.choice) + '</b>' + esc(kept) + '</div><ul style="margin:3px 0 3px 18px;padding:0;">' + lines + '</ul>', { workspace: r.choice, considered: r.considered.map((c) => ({ id: c.id, ok: c.ok, unmet: c.unmet })) })
           : R(false, warn(esc(L('No workspace in this build satisfies these needs — do not pretend: say what cannot be done.', 'このビルドにはこの要件を満たす作業場がありません。できないことをそのまま述べてください。'))) + '<ul style="margin:3px 0 3px 18px;padding:0;">' + lines + '</ul>',
             { meta: { work: { action: act, code: 'no_workspace', considered: r.considered.map((c) => ({ id: c.id, ok: c.ok, unmet: c.unmet })) } } });
       }
@@ -132,7 +132,7 @@ export default [
           workspace: ws && ws.choice ? { id: ws.choice, needs: ws.needs, reason: 'chosen from the job\'s declared needs' } : null, turns: [], products: [] });
         try { await S.put(w); } catch (e) { return refuse('not_saved', L('The job could not be saved on this device', 'この端末に作業を保存できませんでした') + ': ' + String((e && e.message) || e)); }
         WORK_STATE.current = w.id;
-        return say('<div><b>' + esc(L('Started', '作業を開始')) + '</b> · <code>' + esc(w.id) + '</code> — ' + esc(w.title) + '</div>' + (w.workspace ? note(esc(L('Workspace', '作業場') + ': ' + w.workspace.id)) : ''), { id: w.id, workspace: w.workspace && w.workspace.id });
+        return say('<div><b>' + esc(L('Started', '作業を開始')) + '</b> · <code>' + esc(w.id) + '</code> — ' + esc(w.title) + '</div>' + (w.workspace ? note(esc(L('Workspace', 'ワークスペース') + ': ' + w.workspace.id)) : ''), { id: w.id, workspace: w.workspace && w.workspace.id });
       }
 
       if (act === 'list') {
@@ -170,7 +170,7 @@ export default [
           if (!r.ok) return refuse(r.why, L('Cannot compare', '比較できません') + ': ' + r.why + (r.detail ? ' ' + r.detail : ''));
           let h;
           if (r.by === 'rows') h = '<div><b>' + esc(name) + '</b> v' + r.from + ' → v' + r.to + ' · ' + esc(L('rows matched by', '行の突き合わせキー')) + ' <code>' + esc(r.key) + '</code></div>'
-            + '<div>' + esc(L('added', '追加')) + ' ' + r.added.length + ' · ' + esc(L('removed', '削除')) + ' ' + r.removed.length + ' · ' + esc(L('changed', '変更')) + ' ' + r.changed.length + ' · ' + esc(L('unchanged', '変化なし')) + ' ' + r.unchanged + '</div>'
+            + '<div>' + esc(L('newly added', '追加')) + ' ' + r.added.length + ' · ' + esc(L('removed', '削除')) + ' ' + r.removed.length + ' · ' + esc(L('changed', '変更')) + ' ' + r.changed.length + ' · ' + esc(L('unchanged', '変化なし')) + ' ' + r.unchanged + '</div>'
             + (r.added.length ? '<div>+ ' + esc(r.added.slice(0, 40).join(', ')) + '</div>' : '') + (r.removed.length ? '<div>− ' + esc(r.removed.slice(0, 40).join(', ')) + '</div>' : '')
             + (r.changed.length ? '<ul style="margin:3px 0 3px 18px;padding:0;">' + r.changed.slice(0, 40).map((c) => '<li>' + esc(c.id) + ': ' + esc(c.diffs.map((d) => d.column + ' ' + d.then + ' → ' + d.now).join('; ')) + '</li>').join('') + '</ul>' : '')
             + (r.keyUnique === false ? warn(esc(L('The key column repeats, so rows with the same key were folded together.', 'キー列に重複があり、同じキーの行は 1 行にまとまっています。'))) : '');
@@ -187,7 +187,7 @@ export default [
         if (act === 'restore') {
           if (p.kind !== 'dataset') return refuse('not_a_dataset', L('Only a dataset product can be put back into the session; read this one with "get".', 'セッションに戻せるのはデータセットだけです。これは "get" で読んでください。'));
           await window.IntMapLazy.need('gisCore');
-          const D = window.IntMapData; if (!D || typeof D.add !== 'function') return refuse('registry_missing', L('The dataset registry could not be loaded.', 'データセットのレジストリを読み込めませんでした。'));
+          const D = window.IntMapData; if (!D || typeof D.add !== 'function') return refuse('registry_missing', L('The dataset registry could not be loaded.', 'データセットの登録先を読み込めませんでした。'));
           const c = p.content, feats = c.format === 'geojson' ? c.features : c.rows.map((r) => ({ type: 'Feature', geometry: null, properties: Object.fromEntries(c.columns.map((n, i) => [n, r[i]])) }));
           const ds = D.add({ title: p.name + (p.version > 1 ? ' (v' + p.version + ')' : ''), features: feats, provenance: { kind: 'work-product', work: w.id, product: p.id, licence: c.licence || undefined } });
           return say('<div><b>' + esc(L('Put back as a new dataset', '新しいデータセットとして戻しました')) + '</b>: <code>' + esc(ds.id) + '</code> · ' + ds.count + ' ' + esc(L('rows', '行')) + '</div>' + note(esc(L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。'))), { id: w.id, product: p.id, dataset: ds.id, count: ds.count });
