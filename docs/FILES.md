@@ -443,6 +443,8 @@ gis-packed.js                     **幾何の圧縮表現とチャンクスト�
                                   幾何を Float64Array へ平らに並べ（unpack で 1 バイトも違わず戻る）、
                                   結果を入力の順のチャンクとして持つ。閾値と、その観測は同じ file の末尾
                                   （`docs/GIS-CORE.md` §6「100 万件」）
+gis-engine-domain.js              **平面のエンジンが同じ答えを返す入力の範囲**（日付変更線・極を含まない）。
+                                  DuckDB Spatial との全ペア比較の結果から（`docs/GIS-CORE.md` §6）。
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**
