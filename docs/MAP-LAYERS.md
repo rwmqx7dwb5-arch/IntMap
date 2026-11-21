@@ -1154,6 +1154,13 @@ API ホストを含むか目録を import するファイルの行表（`{id:'<k
   ——z10 近傍ごとに `have`（実画像が見えた最深）と `stop`（次の段が灰色だと**観測された**最深）を
   **別々に**持ち、止めてよいのは `stop` だけ。記録は**訊かれたタイル**に対して行う（祖先に対してではない）。
   観測は `window.IntMapSatProto.depth/wouldStitch/hiDPI`。
+- **衛星・航空画像の供給元は `js/imagery-registry.js` に 1 件 1 オブジェクトで宣言する**（Esri・NASA GIBS の MODIS/VIIRS/HLS/Landsat WELD・国土地理院・USGS・PDOK・swisstopo）。
+  各行は範囲・ズーム・時間軸（最新／日／年／年代）・**撮影日の分かり方**（Esri は場所ごとに**実測**＝World Imagery の Citations レイヤー、GIBS と PDOK は選んだ日が**そのまま撮影日**、
+  国土地理院・USGS・swisstopo は供給元が場所別の日付を公開しないので**範囲の宣言**）・解像度・利用条件（読んだ一次情報の URL と日付）を持つ。三つは別の言い方で表示され、宣言された範囲を撮影日のように見せない。
+  `SAT_PROVIDERS`（tables.js）・衛星パネルの撮影日行／「この場所で使える画像」／「Chronos の時刻に合わせる」・Atlas の `imageryInfo` は全部この台帳から導く。
+  **非商用条件の供給元は台帳に入れない**（`tests/sat-imagery-supply-checks.test.mjs`）：EOX Sentinel-2 cloudless（CC BY-NC-SA・Web サービスは有償ライセンス）は 2026-11-20 に外した。
+  一次情報が読めなかった IGN France は載せていない。Esri の鍵なし配信だけが「商用の可否は未確認」（利用者が 2026-11-20 に現状維持と判断）。
+  NASA の Terra 観測は 2026-12-01 に終了予定（GIBS ページの告知）で、MODIS Aqua を並べている。
 - **衛星画像の取得先は `js/esri-imagery.js` 1 か所**：`ESRI_IMAGERY_KEY` が空なら（いまの既定。鍵付きは計測で遅かった）鍵なしの arcgisonline 2 ホスト
   （HTTP/1.1・計 12 接続）、鍵があれば ArcGIS Location Platform の `ibasemaps-api.arcgis.com`（h2・タイル課金）。
   鍵が拒否された応答（非 2xx か image/* 以外。拒否は HTTP 200 の JSON で来る）はそのページの間だけ鍵なしへ戻し、

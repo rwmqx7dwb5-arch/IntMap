@@ -92,7 +92,6 @@ const TILE_HOSTS = [
      to the browser's own HTTP cache, which obeys those headers by construction (and a browser-cache hit
      is not billed). A refused key also answers HTTP 200 with a JSON body, which must never be stored. */
   'gibs.earthdata.nasa.gov',          // NASA GIBS (MODIS / VIIRS / overlays)
-  'tiles.maps.eox.at',                // Sentinel-2 cloudless
   'api.mapbox.com',                   // Mapbox Satellite (BYOK)
   'services.sentinel-hub.com',        // Sentinel Hub (BYOK)
   'basemaps.cartocdn.com',            // light/dark basemaps (a/b/c/d subdomains)

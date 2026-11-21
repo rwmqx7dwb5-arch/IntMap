@@ -121,12 +121,21 @@ function withoutMerged(text, photoText) {
   out.layerGroups = out.layerGroups.map(([k, keys, n]) => [k, keys, n - rows.filter((l) => l.shelf === k && !l.rest).length]);
   return JSON.stringify(out, null, 1) + '\n';
 }
+/* (share-every-layer, 2026-11-21) THE FOURTH DELIBERATE CHANGE: THE LINK CARRIES EVERY DATA LAYER. `sharedIds()` was the rows whose `share`
+   flag reproduced an id-prefix selector, and so dropped 75 of 170 layers (bx-eq …) from a link that says it carries every one;
+   it is every data layer now, and the catalogue says so. Both fields are taken out of BOTH sides so ① still proves nothing
+   ELSE moved; tests/layer-manifest-checks.test.mjs holds the new fact itself (sharedIds equals the data layers). */
+function withoutShareWidening(text) {
+  const o = JSON.parse(text); delete o.sharedIds;
+  o.catalog = o.catalog.map((c) => { const { share, ...rest } = c; return rest; });
+  return JSON.stringify(o, null, 1) + '\n';
+}
 test('layer-descriptor ① the derived Layers list is byte-for-byte the list the hand-kept manifest handed its readers', () => {
-  const now = withoutMerged(withoutAdded(withoutNewFacts(layerDerivedText(M)), read('tests/fixtures/layer-descriptor-before.json')), read('tests/fixtures/layer-descriptor-before.json'));
+  const now = withoutShareWidening(withoutMerged(withoutAdded(withoutNewFacts(layerDerivedText(M)), read('tests/fixtures/layer-descriptor-before.json')), read('tests/fixtures/layer-descriptor-before.json')));
   const photo = read('tests/fixtures/layer-descriptor-before.json');
   assert.ok(photo.length > 50000, 'the photograph is there');
   assert.equal(JSON.stringify(JSON.parse(photo), null, 1) + '\n', photo, 'the photograph re-serialises to itself (so the amendment below changes only what it says)');
-  const before = withoutMerged(amendPhotograph(photo), photo);
+  const before = withoutShareWidening(withoutMerged(amendPhotograph(photo), photo));
   assert.equal(now, before, 'a reader of js/layer-manifest.js would receive different bytes');
   /* and the file holds no list of its own any more — one source */
   /* …and the manifest writes no row by hand: outside its GENERATED LAYERS region there is none, and the region is

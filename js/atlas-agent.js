@@ -1103,6 +1103,10 @@ export function makeAtlasAgent() {
           /* (atlas-plan-on-map) the plan tool's answer, from the ledger — see `planRec` above */
           if (p.planRec) {
             const prec = Object.assign({ id: call.id, name: call.name }, p.planRec);
+            /* (atlas-table-to-countries) A FACT, NOT A REFUSAL. MEASURED on production 2026-11-21, GPT 6.2 Sol, one request: of the first six model calls, three were replies made of `plan` calls alone (11.4 s, 14.7 s, 8.4 s) before any call that touches the map — each costs a whole model call and one of the turn's steps, and the plan tool's own text already said to make step 1's calls in the same reply. The plan result now says it when it is true of THIS reply; nothing is blocked and no ceiling moves. */
+            if (PLAN && calls.length && calls.every((c) => c && c.name === PLAN.TOOL.name)) {
+              prec.note = String(prec.note || '') + ' This reply contained only plan calls, so nothing has been done yet, and it used one of the turn steps. Make the calls of step ' + String((prec.plan && prec.plan.current) || 1) + ' next; set "current" in the same reply as the calls of a later step.';
+            }
             callById[call.id] = prec;
             executedHere++; trace.executed++;
             return prec;
