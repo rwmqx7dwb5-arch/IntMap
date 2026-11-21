@@ -58,7 +58,8 @@ test('R157 #2 dispatch: GPT-decided-targets path validates ISO3 → real borders
   assert.match(html, /\(#R157\) GPT-DECIDED TARGETS — the model already interpreted the concept/, 'dispatch targets path documented');
   assert.match(html, /const _gGroups=_hlReadGptGroups\(a\);/, 'dispatch reads the model groups');
   assert.match(html, /const cg=_codesGeo\(grp\.codes\);/, 'real borders built from validated codes');
-  assert.match(html, /if\(!cg\.geo\|\|!cg\.hit\.length\) return;/, 'no geometry for a group → skip it');
+  /* (atlas-highlight-units) the group loop gained the unit members, so the skip is now "nothing to draw from countries OR units" */
+  assert.match(html, /if\(!parts\.length\|\|!hitIds\.length\) continue;/, 'no geometry for a group → skip it');
   assert.match(html, /const vg=_validGeo\(cg\.geo,\{trusted:true,autoclose:true\}\);/, 'geometry validated before drawing');
   // (#R158) all-unresolved → honest ok:false with the STRUCTURED execution result fed back to Terra (not a silent skip)
   /* ⚠ (#R489) THE SENTENCE CHANGED AND THE PROPERTY DID NOT. This check is about the BRANCH — an

@@ -103,7 +103,7 @@ import { makeGisLayers } from './gis-layers.js';
 import { makeGisSources } from './gis-sources.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
-import { makeGisPipeline } from './gis-pipeline.js';
+import { makeGisPipeline } from './gis-analysis-pipeline.js';
 import { makeGisForecast } from './gis-forecast.js';
 import { makeComputeSandbox } from './compute-sandbox.js';
 import { makeGisPanel } from './gis-panel.js';

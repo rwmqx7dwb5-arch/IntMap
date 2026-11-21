@@ -306,6 +306,8 @@ export const KERNELS = {
    not — and an absence is what let four answer-bearing kernels sit outside the ledger for a whole
    round. ⚠ 「まだ版を付けていない」 is not a reason. If it can change an answer it declares a version. */
 export const NOT_A_KERNEL = {
+  'js/gis-pipeline.js': 'a ledger of what stage each discovered dataset reached, and inspectors that LOOK at what a reader measured; it computes no value a recipe replays and writes no dataset — a saved recipe never replays through it',
+  'js/gis-catalog-search.js': 'ranks and filters records a catalogue stated; it reads nothing and produces no value a saved recipe replays',
   'js/gis-fetch.js': 'chooses WHICH road a request takes (direct, the data relay, a signed address) and keeps the bytes it was given; it reads no value, so it cannot change a number — the same bytes arrive by every road, and a saved recipe replays by its recorded provenance',
   'js/gis-http.js': 'names why a remote read failed from the response (CORS, the words the server sent, a sign-in page); it reads no value and produces no answer a saved recipe replays',
   'js/gis-packed.js': 'a lossless codec (unpack(pack(g)) is g, number for number — tests/gis-scale-checks.test.mjs) and a store that keeps results in input order; it decides nothing about a shape and a saved recipe never replays through it',
@@ -320,7 +322,7 @@ export const NOT_A_KERNEL = {
   'js/gis-datasets.js': 'the registry and the column-typing contract, not an answer to a step',
   'js/gis-sources.js': 'where data is acquired FROM; what it served is reported in `coverage`, which travels with the answer rather than in the engine record',
   'js/gis-layers.js': 'the bridge to what the renderer holds; same reason as js/gis-sources.js',
-  'js/gis-pipeline.js': 'a recipe of recipes — it holds which gis step uses the region and which feeds which, and runs each step through the `gis` door; every number is an op answer already recorded by its own kernel version, and it does no arithmetic of its own',
+  'js/gis-analysis-pipeline.js': 'a recipe of recipes — it holds which gis step uses the region and which feeds which, and runs each step through the `gis` door; every number is an op answer already recorded by its own kernel version, and it does no arithmetic of its own',
   'js/gis-forecast.js': 'where model output is acquired FROM (Open-Meteo flood and weather forecasts); the datasets it makes are bodies with their own provenance (source, terms, fetchedAt), not an op a saved project replays, and it computes only a peak and a threshold comparison',
   'js/gis-remote.js': 'where data is acquired FROM (catalogues of the world, a remote COG); same reason as js/gis-sources.js — the coverage verdict is js/gis-sources.js coverageOf() and travels with the dataset, and it computes nothing a saved recipe replays',
   'js/gis-shapefile.js': 'a reader of bytes — what it decoded is the dataset, and a re-import is a new import, not a replay',

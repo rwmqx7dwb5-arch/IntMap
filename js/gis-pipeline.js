@@ -1,292 +1,305 @@
 /* ============================================================================
- *  IntMap · AN ANALYSIS AS A RE-RUNNABLE PIPELINE — window.IntMapGisPipeline
+ *  IntMap · WHAT STAGE A DISCOVERED DATASET HAS REACHED — js/gis-pipeline.js
  * ----------------------------------------------------------------------------
- *  Atlas builds an analysis one `gis` step at a time: acquire the roads of a window, buffer them,
- *  clip a flood zone, count the people. js/gis-project.js can save that chain and re-run it when ONE
- *  step's parameter changes (setParams). What it cannot say is 「対象地域を変えたら」: the window is
- *  not a parameter of one step, it is a value SEVERAL steps were built from, and nothing recorded
- *  which. So moving to another prefecture meant asking Atlas to start again.
+ *  A catalogue stating that a collection exists is not data in hand, and data in hand is not data that can
+ *  be analysed. Until now one word («found») covered five different facts, and the Atlas could not tell
+ *  which one it was standing on (the 2026-11-20 audit, items 5.11 / 6.5):
  *
- *  A PIPELINE is the missing record: an ordered list of `{id, action}` where `action` is exactly the
- *  object the `gis` door (js/gis-atlas.js run) already takes — nothing new to learn, nothing a second
- *  implementation of an op. Two placeholders make it a recipe rather than a transcript:
+ *      discovered → access → fetched → inspected → dataset → (analysis)
  *
- *      "$region"        the pipeline's current region, `[west,south,east,north]`. Written wherever
- *                       the window goes (`acquire.bounds`, a clip rectangle …).
- *      "$step:<id>"     the dataset an earlier step made. Written as an input of a later one.
+ *   discovered   a catalogue STATES this thing exists                  (a statement, not a measurement)
+ *   access       we are allowed to read it, as an anonymous client     (open | signed | login | refused | unknown)
+ *   fetched      bytes actually came back                              (ok | partial | failed | unknown)
+ *   inspected    the bytes were LOOKED AT: not empty, not all nodata, where they should be
+ *   dataset      the content is a registry record the next step can take as `inputs`
  *
- *  ⚠ DEPENDENCIES ARE DERIVED FROM THOSE TWO MARKERS, NEVER DECLARED NEXT TO THEM. A second list of
- *  「この段はあの段に依る」 would be the second copy that drifts; the marker in the action IS the
- *  dependency. A step that mentions `$region` depends on the region; one that mentions `$step:a`
- *  depends on `a`; everything reachable from those is affected when they change, and nothing else is.
+ *  ⚠⚠⚠ `analysis` IS NEVER RECORDED. It is derived by verdict(): it can only be `ready` when every stage before it
+ *  is `ok`, and `ready-partial` when one is `partial` — with what is missing stated. Nobody can write «analysable»
+ *  into this ledger, which is the point: a field a supplier may set is a claim, not a proof (the argument
+ *  js/gis-sources.js coverageOf() is written from).
  *
- *  ══ PARTIAL RECOMPUTATION: A STEP'S KEY IS ITS RECIPE, RESOLVED ═══════════════════════════════════
- *  key(step) = a digest of the action with `$region` replaced by the region and every `$step:x`
- *  replaced by the KEY of x. So a changed region changes the key of exactly the steps that use it and
- *  of every step downstream of those; an unrelated branch keeps its key and is `reused` — its dataset
- *  is left alone, not recomputed and not re-fetched. A step whose key is unchanged is reused only if
- *  its dataset is still in the registry (a deleted result is rebuilt, not trusted).
- *  ⚠ THE KEY COVERS THE RECIPE, NOT THE WORLD. An acquisition from a live source answers differently
- *  tomorrow with the same key; `run({refresh:true})` (or `force:[ids]`) re-runs it. Saying a reused
- *  step is 「最新」 would be a claim the key cannot back, so the report says `reused`, not `current`.
- *  ⚠ A FAILED STEP STOPS ITS DEPENDENTS, AND THEY ARE MARKED. Steps downstream of a failure are
- *  `skipped` (`upstream-failed`), their datasets are invalidated through the registry so no later op
- *  consumes the old answer as if it matched the new region, and the failing step's own reason is
- *  carried as the registry gave it. An unrelated branch is still run.
+ *  ⚠⚠⚠ A STAGE WE COULD NOT OBSERVE IS NOT A STAGE THAT FAILED. `unknown` (a catalogue that timed out, a host we
+ *  could not reach) and `failed` (the host said no; the file is empty) are different facts that ask a different
+ *  thing of the reader — «try again later» versus «this is not there» (.agents/rules/one-pass-or-a-reason.md §5).
+ *  `blocked` is a third: it is there, and it is not ours to take (a login, a licence we may not satisfy). It is
+ *  said as blocked and is NEVER worked around — IntMap holds no one's credentials.
  *
- *  ══ WHERE IT IS KEPT ══════════════════════════════════════════════════════════════════════════
- *  The definitions are small recipes. They go into the GIS project record beside the datasets
- *  (IntMapGisProject.save(name, {extras})), and `restore()` puts them back after IntMapGisProject.load
- *  — which re-creates every dataset under its ORIGINAL id, so a restored step still finds its result.
+ *  ⚠ THE LEDGER LIVES IN MEMORY, PER SESSION. It describes what THIS session did; it is not a catalogue of the
+ *  world and it is not persisted. A record carries the time it was written (`at`), so a reader can say how old
+ *  a claim is.
  *
- *  EVERY `why` THIS FILE CAN RETURN
- *    pipeline-unknown   step-id-invalid   step-id-duplicate   action-missing   step-unknown
- *    step-order         region-invalid    region-missing      no-steps          step-not-found
- *    exec-unavailable   upstream-failed   dataset-missing     lineage-unavailable  not-capturable
- *  Anything else is the `gis` door's own refusal, carried verbatim.
+ *  Nothing here knows a service by name: every verdict is read from a refusal code and the words a response
+ *  carried (js/gis-http.js), or from the values the reader measured.
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY; collaborators are injectable (`deps.exec`, `deps.data`).
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY and nothing is published on `window` (no DOM, imports in Node).
  * ==========================================================================*/
 
+export const STAGES = ['discovered', 'access', 'fetched', 'inspected', 'dataset'];
+/* ok: observed to hold · partial: observed to hold for PART of what was asked · failed: observed NOT to hold ·
+   blocked: it exists and is not ours to take · unknown: we could not observe · pending: not attempted */
+const STATUSES = ['ok', 'partial', 'failed', 'blocked', 'unknown', 'pending'];
+
 export function makeGisPipeline(deps) {
-  return (function () {
-    const D = deps || {};
-    const WIN = () => { try { return (typeof window !== 'undefined' && window) || null; } catch (_) { return null; } };
-    const registry = () => D.data || (WIN() && WIN().IntMapData) || null;
-    const exec = () => {
-      if (typeof D.exec === 'function') return D.exec;
-      const W = WIN(); const A = W && W.IntMapGis && W.IntMapGis.atlas;
-      return A && typeof A.run === 'function' ? (a) => A.run(a) : null;
+  const D = deps || {};
+  const now = () => (typeof D.now === 'function' ? D.now() : Date.now());
+  const isNum = (v) => typeof v === 'number' && isFinite(v);
+
+  /* ── why a read did not work, said by KIND ────────────────────────────────────────────────────────
+     Input: a refusal code and its detail (js/gis-remote.js, js/gis-cog.js, js/gis-ogcapi.js, js/gis-http.js).
+     Output: {status, kind, retryable, say}. 観測 2026-11-20: USGS Landsat answered 200 with a sign-in page and
+     `redirectedTo: https://ers.cr.usgs.gov/login`; Planetary Computer answered 409 PublicAccessNotPermitted;
+     NASA CMR-STAC without `collections` took 31 s and answered 500; a Copernicus bucket gave an opaque
+     TypeError in a page. 失効条件: a new refusal code is added to a reader — add its row here (the test walks
+     every code the readers declare and fails on one this table does not know). */
+  function classify(why, detail) {
+    const d = detail || {};
+    const status = Number(d.status);
+    const words = String(d.serverSaid || d.reason || '');
+    const say = (st, kind, retryable, text) => ({ status: st, kind: kind, retryable: retryable, say: text });
+    if (why === 'timeout') return say('unknown', 'unresponsive', true, 'did not answer within our clock — that is «not observed», not «nothing there»');
+    if (why === 'cancelled') return say('unknown', 'cancelled', true, 'cancelled before it answered');
+    if (why === 'fetch-failed') {
+      if (d.corsBlocked || /cors-blocked/.test(words)) return say('blocked', 'cors', false, 'the host answers but a browser page may not read it (no CORS) and the data relay did not take it');
+      if (d.relay || /via-relay/.test(words)) return say('unknown', 'relay-refused', !!d.retryable, 'the data relay refused or could not read it');
+      return say('unknown', 'unreachable', true, 'could not be reached');
+    }
+    if (why === 'http-status' || why === 'upstream_is_a_page' || why === 'upstream_status') {
+      if (d.redirectedTo && /log\s*in|login|signin|sso|auth|oauth|cas\b/i.test(String(d.redirectedTo))) return say('blocked', 'login', false, 'the host sends an anonymous reader to a sign-in page (' + d.redirectedTo + ')');
+      if (d.redirectedTo) return say('blocked', 'redirected-away', false, 'the host redirected to another origin (' + d.redirectedTo + ') that did not give the data');
+      if (status === 401) return say('blocked', 'login', false, 'the host requires authentication (401)');
+      if (status === 403) return say('blocked', 'forbidden', false, 'the host refused an anonymous reader (403)');
+      if (status === 409 && /PublicAccessNotPermitted|signature|SAS|token/i.test(words)) return say('blocked', 'needs-signing', false, 'the store needs a signed address and no catalogue states how to sign it');
+      if (status === 404 || status === 410) return say('failed', 'gone', false, 'not at that address (' + status + ')');
+      if (status === 429) return say('unknown', 'rate-limited', true, 'the host asked us to slow down (429)');
+      if (status >= 500) return say('unknown', 'upstream-error', true, 'the host failed (' + status + (d.serverSaid ? ': ' + d.serverSaid : '') + ')');
+      return say('failed', 'http-error', false, 'HTTP ' + (isNum(status) ? status : '?'));
+    }
+    if (why === 'no-signer' || why === 'sign-failed') return say('blocked', 'needs-signing', false, why === 'no-signer' ? 'no catalogue states how to sign this address' : 'the signing endpoint did not give a token');
+    if (why === 'budget_exhausted' || why === 'rate_limited') return say('unknown', 'budget', true, 'the data relay\'s budget is spent for now');
+    if (why === 'response-too-large') return say('failed', 'too-large', false, 'larger than this reader will take');
+    if (why === 'not-json') return say('failed', 'not-a-catalogue', false, 'did not answer with the JSON a catalogue serves');
+    if (why === 'url-not-public' || why === 'not_https' || why === 'blocked_host') return say('blocked', 'not-public', false, 'not a public https address — this reader will not fetch it');
+    if (why === 'catalog-unknown' || why === 'collection-unknown') return say('failed', 'unknown-reference', false, 'no such catalogue or collection');
+    if (why === 'bad-param') return say('failed', 'bad-request', false, 'the request itself was malformed');
+    return say('failed', 'other', false, 'refused: ' + String(why));
+  }
+
+  /* ── the ledger ───────────────────────────────────────────────────────────────────────────────── */
+
+  const rows = new Map();   /* ref → {ref, parent, stages:{name:{status, at, why?, kind?, say?, detail?, facts?}}} */
+  const health = new Map(); /* catalogue id → {asked, answered, unanswered, lastWhy, lastMs, lastAt} */
+
+  const blank = () => { const s = {}; for (const k of STAGES) s[k] = { status: 'pending' }; return s; };
+  const rowOf = (ref) => {
+    const k = String(ref);
+    if (!rows.has(k)) rows.set(k, { ref: k, parent: null, stages: blank() });
+    return rows.get(k);
+  };
+
+  /* outcome = {status, why?, kind?, say?, detail?, facts?}. ⚠ A stage cannot be recorded `ok` with a reason of
+     failure, nor a failure without one: the two ways to write a lie into a ledger. */
+  function record(ref, stage, outcome) {
+    if (STAGES.indexOf(stage) < 0) return { ok: false, why: 'bad-param', detail: { param: 'stage', stages: STAGES.slice() } };
+    const o = outcome || {};
+    if (STATUSES.indexOf(o.status) < 0 || o.status === 'pending') return { ok: false, why: 'bad-param', detail: { param: 'status', statuses: STATUSES.filter((s) => s !== 'pending') } };
+    if ((o.status === 'failed' || o.status === 'blocked' || o.status === 'unknown') && !o.why && !o.kind) return { ok: false, why: 'bad-param', detail: { param: 'why', reason: 'a stage that did not hold must say why' } };
+    const r = rowOf(ref);
+    const rec = { status: o.status, at: now() };
+    for (const k of ['why', 'kind', 'say', 'detail', 'facts']) if (o[k] !== undefined && o[k] !== null) rec[k] = o[k];
+    r.stages[stage] = rec;
+    /* a stage re-attempted invalidates what was built on it: the later stages described the OLD bytes */
+    let after = false;
+    for (const k of STAGES) { if (after && r.stages[k].status !== 'pending' && stage !== 'discovered') r.stages[k] = { status: 'pending', invalidatedBy: stage }; if (k === stage) after = true; }
+    return { ok: true };
+  }
+  /* a failed read, classified, recorded — the one road every reader's refusal takes */
+  function recordFailure(ref, stage, why, detail) {
+    const c = classify(why, detail);
+    return Object.assign(record(ref, stage, { status: c.status, why: why, kind: c.kind, say: c.say, detail: detail || null, facts: { retryable: c.retryable } }), { classified: c });
+  }
+  function link(ref, parent) { rowOf(ref).parent = String(parent); }
+
+  /* ── the verdict ──────────────────────────────────────────────────────────────────────────────── */
+
+  /* → {ref, analysis:'ready'|'ready-partial'|'not-ready', blockedAt, reached, stages, next, say}.
+     Derived from the stages only. ⚠ A DISCOVERY ALONE IS 'not-ready': what a catalogue states is a lead. */
+  function verdict(ref) {
+    const r = rows.get(String(ref));
+    if (!r) return { ref: String(ref), known: false, analysis: 'not-ready', blockedAt: 'discovered', reached: null, stages: blank(), next: 'discovered', say: 'nothing has been done with this reference in this session' };
+    let reached = null, blockedAt = null, partial = [];
+    for (const k of STAGES) {
+      const s = r.stages[k];
+      if (s.status === 'ok') { reached = k; continue; }
+      if (s.status === 'partial') { reached = k; partial.push(k); continue; }
+      blockedAt = k; break;
+    }
+    /* a stage that was ATTEMPTED and did not hold is where it stopped, even if an earlier stage was never recorded (a reader that
+       fails reports its own failure; it does not have to have recorded the stages before it) */
+    const attempted = STAGES.find((k) => ['failed', 'blocked', 'unknown'].indexOf(r.stages[k].status) >= 0);
+    if (attempted) blockedAt = attempted;
+    const ready = blockedAt == null;
+    const analysis = !ready ? 'not-ready' : (partial.length ? 'ready-partial' : 'ready');
+    const stuck = blockedAt ? r.stages[blockedAt] : null;
+    const say = ready
+      ? (partial.length ? 'usable for what was read; ' + partial.map((k) => k + ': ' + ((r.stages[k].facts && r.stages[k].facts.missing) || (r.stages[k].say) || 'partial')).join('; ') : 'every stage held')
+      : (stuck.status === 'pending' ? 'not yet attempted: ' + blockedAt : blockedAt + ' ' + stuck.status + (stuck.say ? ' — ' + stuck.say : stuck.why ? ' — ' + stuck.why : ''));
+    return {
+      ref: r.ref, known: true, parent: r.parent, analysis: analysis, reached: reached, blockedAt: blockedAt,
+      next: blockedAt && (!stuck || stuck.status === 'pending' || stuck.facts && stuck.facts.retryable) ? blockedAt : null,
+      retryable: !!(stuck && stuck.facts && stuck.facts.retryable),
+      stages: JSON.parse(JSON.stringify(r.stages)), say: say,
     };
-    const PIPES = new Map();
-    let seq = 0;
+  }
+  /* ── the two ends of EVERY read, shared by the door and by anything that reads (js/gis-atlas.js, the live probe) ── */
+  /* a read that did not work: access carries the host's verdict when it said no, and «answered» otherwise */
+  function readFailed(key, why, detail) {
+    const c = classify(why, detail);
+    if (c.status === 'blocked' || c.status === 'unknown') record(key, 'access', { status: c.status, why: why, kind: c.kind, say: c.say, detail: detail || null, facts: { retryable: c.retryable } });
+    else record(key, 'access', { status: 'ok', say: 'the host answered' });
+    return recordFailure(key, 'fetched', why, detail);
+  }
+  /* bytes came back: access held; the source's own coverage says whether ALL of what was asked came; the inspection says what is in it.
+     ⚠ A grid read at the caller's resolution is a sample BY CONSTRUCTION (js/gis-sources.js 'sample') — that is not a shortfall. */
+  function readSucceeded(key, cov, insp, dsId) {
+    record(key, 'access', { status: 'ok', say: 'an anonymous read returned data' });
+    const complete = !cov || cov.completeness === 'all' || cov.completeness === 'sample';
+    record(key, 'fetched', complete
+      ? { status: 'ok', say: cov && cov.completeness === 'sample' ? 'a field read at the stated resolution (a sample by construction)' : 'everything asked for came back', facts: { coverage: cov ? { completeness: cov.completeness, reason: cov.reason } : null } }
+      : { status: 'partial', why: cov.reason || 'partial', say: 'only part of what was asked came back: ' + (cov.reason || 'partial'), facts: { missing: cov.reason || 'part of the window', coverage: { completeness: cov.completeness, reason: cov.reason, acrossAntimeridian: cov.acrossAntimeridian || null } } });
+    record(key, 'inspected', { status: insp.status, why: insp.why, say: insp.say, facts: Object.assign({}, insp.facts || {}, insp.missing ? { missing: insp.missing } : {}) });
+    /* a content that failed inspection is recorded as a dataset that must NOT be analysed (it may still be registered: that is the registry's behaviour, not a verdict) */
+    record(key, 'dataset', insp.status === 'failed'
+      ? { status: 'failed', why: insp.why, say: 'the content failed inspection, so it must not be analysed', facts: { id: dsId } }
+      : { status: insp.status === 'partial' ? 'partial' : 'ok', say: 'registered as ' + dsId, facts: { id: dsId, missing: insp.missing || undefined } });
+  }
 
-    const fail = (why, detail) => ({ ok: false, why, detail: detail || null });
-    const clone = (v) => JSON.parse(JSON.stringify(v));
-    const REGION = '$region';
-    const STEP_RE = /^\$step:([A-Za-z0-9_-]+)$/;
-    const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-    const validBounds = (b) => Array.isArray(b) && b.length === 4 && b.every((x) => typeof x === 'number' && isFinite(x)) && b[0] < b[2] && b[1] < b[3] && b[0] >= -180 && b[2] <= 180 && b[1] >= -90 && b[3] <= 90;
-
-    /* walk every string in an action; `fn(str)` may return a replacement (anything) or undefined */
-    function mapDeep(v, fn) {
-      if (typeof v === 'string') { const r = fn(v); return r === undefined ? v : r; }
-      if (Array.isArray(v)) return v.map((x) => mapDeep(x, fn));
-      if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v)) o[k] = mapDeep(v[k], fn); return o; }
-      return v;
-    }
-    function scan(action) {
-      const refs = new Set(); let usesRegion = false;
-      mapDeep(action, (s) => { if (s === REGION) usesRegion = true; const m = STEP_RE.exec(s); if (m) refs.add(m[1]); return undefined; });
-      return { refs: Array.from(refs), usesRegion };
-    }
-
-    /* a digest for EQUALITY only — never an integrity claim. Two independent 32-bit FNV-1a lanes. */
-    function digest(str) {
-      let h1 = 0x811c9dc5, h2 = 0x01000193 ^ 0xdeadbeef;
-      for (let i = 0; i < str.length; i++) {
-        const c = str.charCodeAt(i);
-        h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
-        h2 = Math.imul(h2 ^ c, 0x85ebca6b) >>> 0; h2 = (h2 ^ (h2 >>> 13)) >>> 0;
+  /* ── one thing read in PARTS (a window across ±180 is two files) ───────────────────────────────────
+     parts = [{key, label}]. Per stage: every part ok → ok; some held and some did not → PARTIAL, naming the parts that did
+     not and why (never «ok» because the larger half came back); none held → the first part's own failure, said as that.
+     ⚠ This is the only place a parent's stage is computed from other records, and it can only be as good as the parts. */
+  function combine(parent, parts) {
+    const P = (parts || []).map((x) => ({ label: x.label, key: String(x.key), row: rows.get(String(x.key)) })).filter((x) => x.row);
+    if (!P.length) return { ok: false, why: 'bad-param', detail: { param: 'parts', reason: 'none of the parts has a record' } };
+    for (const x of P) link(x.key, parent);
+    for (const stage of STAGES) {
+      if (stage === 'discovered') continue;
+      const got = P.map((x) => ({ label: x.label, s: x.row.stages[stage] }));
+      const held = got.filter((g) => g.s.status === 'ok' || g.s.status === 'partial');
+      const lacking = got.filter((g) => g.s.status !== 'ok');
+      if (!held.length) {
+        const first = got.find((g) => g.s.status !== 'pending') || got[0];
+        if (first.s.status === 'pending') { rowOf(parent).stages[stage] = { status: 'pending' }; continue; }
+        const rec = Object.assign({}, first.s, { say: first.label + ': ' + (first.s.say || first.s.why || first.s.status) });
+        rowOf(parent).stages[stage] = rec;
+      } else if (lacking.length) {
+        const missing = lacking.map((g) => g.label + ' (' + g.s.status + (g.s.why ? ': ' + g.s.why : '') + ')').join('; ');
+        rowOf(parent).stages[stage] = { status: 'partial', at: now(), why: 'some-parts-did-not-hold', say: 'held for ' + held.map((g) => g.label).join(', ') + '; not for ' + missing, facts: { missing: missing, parts: got.map((g) => ({ label: g.label, status: g.s.status })) } };
+      } else {
+        rowOf(parent).stages[stage] = { status: 'ok', at: now(), say: 'every part held', facts: { parts: got.map((g) => ({ label: g.label, status: g.s.status })) } };
       }
-      return h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0');
     }
-    function canon(v) {
-      if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
-      if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
-      return JSON.stringify(v);
-    }
+    return { ok: true };
+  }
+  function list() { return Array.from(rows.keys()).map(verdict); }
+  function summary() {
+    const l = list();
+    const by = { ready: 0, 'ready-partial': 0, 'not-ready': 0 };
+    const stuckAt = {};
+    for (const v of l) { by[v.analysis]++; if (v.blockedAt) stuckAt[v.blockedAt] = (stuckAt[v.blockedAt] || 0) + 1; }
+    return { total: l.length, analysis: by, stuckAt: stuckAt };
+  }
+  function forget(ref) { return rows.delete(String(ref)); }
 
-    function define(spec) {
-      const s = spec || {};
-      const steps = Array.isArray(s.steps) ? s.steps : [];
-      if (!steps.length) return fail('no-steps');
-      let region = null;
-      if (s.region != null) { if (!validBounds(s.region)) return fail('region-invalid', { needs: '[west,south,east,north]' }); region = s.region.slice(); }
-      const seen = new Map(); const out = [];
-      for (const st of steps) {
-        const id = st && st.id != null ? String(st.id) : '';
-        if (!ID_RE.test(id)) return fail('step-id-invalid', { id, needs: 'letters, digits, _ or -, up to 40' });
-        if (seen.has(id)) return fail('step-id-duplicate', { id });
-        if (!st.action || typeof st.action !== 'object') return fail('action-missing', { id });
-        const sc = scan(st.action);
-        for (const r of sc.refs) {
-          if (r === id) return fail('step-order', { id, refers: r });
-          if (!seen.has(r)) return fail(steps.some((x) => x && String(x.id) === r) ? 'step-order' : 'step-unknown', { id, refers: r });
-        }
-        if (sc.usesRegion && !region) return fail('region-missing', { id });
-        seen.set(id, sc);
-        out.push({ id, action: clone(st.action), refs: sc.refs, usesRegion: sc.usesRegion, key: null, datasetId: null, status: 'new', why: null });
+  /* ── catalogue health: «did not answer» is counted, and is not «has nothing» ───────────────────── */
+  function noteCatalog(id, row) {
+    const k = String(id);
+    const h = health.get(k) || { id: k, asked: 0, answered: 0, unanswered: 0, lastWhy: null, lastMs: null, lastAt: null };
+    h.asked++;
+    if (row && row.answered) h.answered++; else { h.unanswered++; h.lastWhy = row && row.why ? row.why : 'unknown'; }
+    if (row && isNum(row.ms)) h.lastMs = row.ms;
+    h.lastAt = now();
+    health.set(k, h);
+  }
+  const catalogHealth = () => Array.from(health.values()).map((h) => Object.assign({}, h));
+
+  /* ── content inspection: the bytes are LOOKED AT before anyone calls them a dataset ──────────────────
+     ⚠ These judge what was MEASURED here (counts, finite fractions, positions), never what a catalogue said.
+     An empty answer is `failed`/`empty-answer` for THIS window — it is not «there is no data in the world». */
+  function inspectRaster(cells, o) {
+    const opts = o || {};
+    if (!cells || typeof cells.length !== 'number') return { status: 'failed', why: 'no-cells', say: 'no cells came back' };
+    const n = cells.length;
+    const nodata = opts.nodata;
+    let finite = 0, min = Infinity, max = -Infinity, sum = 0, nd = 0;
+    for (let i = 0; i < n; i++) {
+      const v = cells[i];
+      if (!isNum(v) || (nodata != null && isNum(nodata) && v === nodata)) { nd++; continue; }
+      finite++; if (v < min) min = v; if (v > max) max = v; sum += v;
+    }
+    const facts = { cells: n, finite: finite, finiteFraction: n ? finite / n : 0, noData: nd };
+    if (finite) { facts.min = min; facts.max = max; facts.mean = sum / finite; }
+    if (!n) return { status: 'failed', why: 'empty-answer', say: 'zero cells', facts: facts };
+    if (!finite) return { status: 'failed', why: 'all-nodata', say: 'every cell is nodata or not a number — the window holds no measurement', facts: facts };
+    facts.constant = (min === max);
+    if (opts.expect && (isNum(opts.expect.min) || isNum(opts.expect.max))) {
+      const lo = isNum(opts.expect.min) ? opts.expect.min : -Infinity, hi = isNum(opts.expect.max) ? opts.expect.max : Infinity;
+      let out = 0; for (let i = 0; i < n; i++) { const v = cells[i]; if (isNum(v) && (v < lo || v > hi) && !(nodata != null && v === nodata)) out++; }
+      facts.outsideStatedRange = out;
+      if (out) return { status: 'partial', why: 'values-outside-stated-range', say: out + ' cells lie outside the range the source states (' + lo + '…' + hi + ')', facts: facts };
+    }
+    if (finite < n) return { status: 'partial', why: 'some-nodata', say: Math.round((1 - finite / n) * 1000) / 10 + '% of the cells carry no measurement', facts: facts, missing: (n - finite) + ' of ' + n + ' cells have no value' };
+    return { status: 'ok', facts: facts };
+  }
+
+  function bboxOfGeometry(g, acc) {
+    const a = acc || { w: Infinity, s: Infinity, e: -Infinity, n: -Infinity };
+    const walk = (c) => { if (typeof c[0] === 'number') { if (c[0] < a.w) a.w = c[0]; if (c[0] > a.e) a.e = c[0]; if (c[1] < a.s) a.s = c[1]; if (c[1] > a.n) a.n = c[1]; } else for (const x of c) walk(x); };
+    if (g && g.coordinates) walk(g.coordinates); else if (g && Array.isArray(g.geometries)) for (const x of g.geometries) bboxOfGeometry(x, a);
+    return a;
+  }
+  function inspectFeatures(features, o) {
+    const opts = o || {};
+    const list = Array.isArray(features) ? features : [];
+    const facts = { count: list.length, withGeometry: 0, emptyGeometry: 0, types: {} };
+    if (!list.length) return { status: 'failed', why: 'empty-answer', say: 'no features came back for this window — that is this window, not «nothing exists»', facts: facts };
+    const box = opts.box && isNum(opts.box.w) ? opts.box : (Array.isArray(opts.box) && opts.box.length >= 4 ? { w: opts.box[0], s: opts.box[1], e: opts.box[2], n: opts.box[3] } : null);
+    let outside = 0;
+    for (const f of list) {
+      const g = f && f.geometry;
+      if (!g) { facts.emptyGeometry++; continue; }
+      facts.withGeometry++; facts.types[g.type] = (facts.types[g.type] || 0) + 1;
+      if (box) {
+        const b = bboxOfGeometry(g);
+        const lonOk = box.w <= box.e ? !(b.e < box.w || b.w > box.e) : !(b.e < box.w && b.w > box.e);
+        if (b.n < box.s || b.s > box.n || !lonOk) outside++;
       }
-      const id = s.id != null && s.id !== '' ? String(s.id) : 'pl-' + (++seq);
-      PIPES.set(id, { id, title: String(s.title || id), region, steps: out, source: s.source || 'defined' });
-      return { ok: true, id, steps: out.map((x) => x.id), regionBound: out.filter((x) => x.usesRegion).map((x) => x.id) };
     }
+    if (box) facts.outsideAskedWindow = outside;
+    if (!facts.withGeometry) return { status: 'partial', why: 'no-geometry', say: 'the rows carry no geometry: a table, not a layer a map operation can use', facts: facts };
+    if (outside) return { status: 'partial', why: 'features-outside-window', say: outside + ' of ' + list.length + ' features lie outside the window that was asked', facts: facts, missing: outside + ' features outside the window' };
+    if (facts.emptyGeometry) return { status: 'partial', why: 'some-without-geometry', say: facts.emptyGeometry + ' rows carry no geometry', facts: facts, missing: facts.emptyGeometry + ' rows without geometry' };
+    return { status: 'ok', facts: facts };
+  }
 
-    function resolveKeys(p, regionOverride, patches) {
-      const region = regionOverride || p.region;
-      const keys = new Map();
-      for (const st of p.steps) {
-        const act = patches && patches[st.id] ? applyPatch(st.action, patches[st.id]) : st.action;
-        const resolved = mapDeep(act, (s) => {
-          if (s === REGION) return region;
-          const m = STEP_RE.exec(s); if (m) return { $key: keys.get(m[1]) };
-          return undefined;
-        });
-        keys.set(st.id, digest(canon(resolved)));
-      }
-      return keys;
-    }
-    function applyPatch(action, patch) {
-      const a = clone(action);
-      a.params = Object.assign({}, a.params || {}, patch);
-      return a;
-    }
-    const alive = (id) => { const R = registry(); return !!(id && R && typeof R.has === 'function' && R.has(id)); };
+  /* ── the antimeridian ─────────────────────────────────────────────────────────────────────────────
+     A window across ±180 is two windows on two sides of the line, and a catalogue that tiles the world
+     holds them in DIFFERENT files (measured 2026-11-20: Copernicus DEM E179 and W180 are separate objects).
+     One file read cannot answer both; the honest move is to say which side is missing and to ask the catalogue for
+     the other. → null when the window does not cross, else [{w,s,e,n}, {w,s,e,n}] (east side first). */
+  function splitAtAntimeridian(b) {
+    const w = Array.isArray(b) ? b[0] : b && b.w, s = Array.isArray(b) ? b[1] : b && b.s, e = Array.isArray(b) ? b[2] : b && b.e, n = Array.isArray(b) ? b[3] : b && b.n;
+    if (![w, s, e, n].every(isNum)) return null;
+    if (w > e) return [{ w: w, s: s, e: 180, n: n }, { w: -180, s: s, e: e, n: n }];
+    if (e > 180) return [{ w: w, s: s, e: 180, n: n }, { w: -180, s: s, e: e - 360, n: n }];
+    if (w < -180) return [{ w: w + 360, s: s, e: 180, n: n }, { w: -180, s: s, e: e, n: n }];
+    return null;
+  }
 
-    /* the steps whose key would change, and the ones that would not — nothing is run */
-    function plan(id, change) {
-      const p = PIPES.get(id); if (!p) return fail('pipeline-unknown', { id });
-      const c = change || {};
-      if (c.region != null && !validBounds(c.region)) return fail('region-invalid', { needs: '[west,south,east,north]' });
-      if (c.params) for (const k of Object.keys(c.params)) if (!p.steps.some((x) => x.id === k)) return fail('step-not-found', { id: k });
-      const next = resolveKeys(p, c.region || null, c.params || null);
-      const affected = [], reused = [];
-      for (const st of p.steps) (next.get(st.id) !== st.key || !alive(st.datasetId) ? affected : reused).push(st.id);
-      return { ok: true, affected, reused };
-    }
-
-    async function run(id, opts) {
-      const p = PIPES.get(id); if (!p) return fail('pipeline-unknown', { id });
-      const X = exec(); if (!X) return fail('exec-unavailable');
-      const o = opts || {};
-      const force = new Set(Array.isArray(o.force) ? o.force.map(String) : []);
-      const keys = resolveKeys(p, null, null);
-      const R = registry();
-      const done = new Map(); const report = { ok: true, ran: [], reused: [], failed: [], skipped: [] };
-      for (const st of p.steps) {
-        if (o.signal && o.signal.aborted) { report.ok = false; report.aborted = true; break; }
-        const key = keys.get(st.id);
-        const bad = st.refs.find((r) => !done.get(r));
-        if (bad) {
-          st.status = 'skipped'; st.why = 'upstream-failed';
-          if (R && st.datasetId && alive(st.datasetId) && typeof R.invalidate === 'function') R.invalidate(st.datasetId, 'upstream-failed');
-          report.skipped.push({ id: st.id, why: 'upstream-failed', upstream: bad }); report.ok = false; continue;
-        }
-        const refreshed = !!o.refresh || force.has(st.id);
-        if (key === st.key && alive(st.datasetId) && !refreshed && !(R && R.stale && R.stale(st.datasetId))) {
-          st.status = 'reused'; done.set(st.id, st.datasetId); report.reused.push(st.id); continue;
-        }
-        const action = mapDeep(st.action, (s) => {
-          if (s === REGION) return p.region.slice();
-          const m = STEP_RE.exec(s); if (m) return done.get(m[1]);
-          return undefined;
-        });
-        if (o.signal) action.signal = o.signal;
-        let r = null;
-        try { r = await X(action); } catch (e) { r = { ok: false, why: 'exec-threw', detail: String((e && e.message) || e).slice(0, 200) }; }
-        const made = r && r.ok ? ((r.dataset && r.dataset.id) || (r.acquired && r.acquired[0] && r.acquired[0].id) || null) : null;
-        if (!made) {
-          st.status = 'failed'; st.why = (r && r.why) || 'dataset-missing';
-          if (R && st.datasetId && alive(st.datasetId) && typeof R.invalidate === 'function') R.invalidate(st.datasetId, st.why);
-          report.failed.push({ id: st.id, why: st.why, detail: (r && r.detail) || null }); report.ok = false; continue;
-        }
-        /* the old result leaves only now that the new one exists; a failed rebuild keeps the old, marked */
-        if (R && st.datasetId && st.datasetId !== made && alive(st.datasetId)) R.remove(st.datasetId);
-        st.datasetId = made; st.key = key; st.status = 'ran'; st.why = null;
-        done.set(st.id, made); report.ran.push(st.id);
-      }
-      report.datasets = Object.fromEntries(p.steps.map((x) => [x.id, x.datasetId]));
-      return report;
-    }
-
-    async function setRegion(id, bounds, opts) {
-      const p = PIPES.get(id); if (!p) return fail('pipeline-unknown', { id });
-      if (!validBounds(bounds)) return fail('region-invalid', { needs: '[west,south,east,north]' });
-      if (!p.steps.some((s) => s.usesRegion)) return fail('region-missing', { note: 'no step of this pipeline uses $region, so there is nothing to move' });
-      p.region = bounds.slice();
-      return run(id, opts);
-    }
-    async function setParams(id, stepId, patch, opts) {
-      const p = PIPES.get(id); if (!p) return fail('pipeline-unknown', { id });
-      const st = p.steps.find((x) => x.id === stepId); if (!st) return fail('step-not-found', { id: stepId });
-      st.action = applyPatch(st.action, patch && typeof patch === 'object' ? patch : {});
-      return run(id, opts);
-    }
-
-    /* ── capture: an analysis the session already holds → a pipeline ─────────────────────────────
-       Walks the lineage of `datasetId` (IntMapData.lineage: inputs before outputs). An op record
-       becomes {op, inputs, params}; a record acquired from a layer becomes an acquisition step whose
-       window is `$region` when it equals `region` (given, or the first acquisition's window).
-       ⚠ A record that is neither — an import, a Python record — HAS NO RECIPE THIS FILE CAN WRITE,
-       and is refused by name (`not-capturable`) rather than frozen in as a fixed input that would
-       silently ignore the region. */
-    function capture(datasetId, o) {
-      const R = registry();
-      if (!R || typeof R.lineage !== 'function') return fail('lineage-unavailable');
-      const chain = R.lineage(String(datasetId));
-      if (!chain.length) return fail('dataset-missing', { id: String(datasetId) });
-      const opts = o || {};
-      const sid = new Map();
-      let region = opts.region && validBounds(opts.region) ? opts.region.slice() : null;
-      const steps = [];
-      for (const rec of chain) {
-        const pv = rec.provenance || {};
-        const id = 's' + (steps.length + 1);
-        if (pv.kind === 'op') {
-          const inputs = (pv.inputs || []).map((i) => sid.has(i) ? '$step:' + sid.get(i) : i);
-          steps.push({ id, action: { type: 'gis', op: pv.op, inputs, params: clone(pv.params || {}), title: rec.title } });
-        } else if (pv.kind === 'layer' && pv.layer != null) {
-          const acq = {};
-          if (Array.isArray(pv.bounds) && validBounds(pv.bounds)) {
-            if (!region) region = pv.bounds.slice();
-            acq.bounds = (canon(pv.bounds) === canon(region)) ? REGION : pv.bounds.slice();
-          }
-          if (pv.statedTime) acq.time = pv.statedTime;
-          steps.push({ id, action: { type: 'gis', inputs: ['layer:' + pv.layer], acquire: acq, title: rec.title } });
-        } else return fail('not-capturable', { id: rec.id, kind: pv.kind || 'unknown', note: 'this record has no recipe a pipeline can re-run (an import or a Python record); it would stay fixed while the region moved' });
-        sid.set(rec.id, id);
-      }
-      const r = define({ id: opts.id, title: opts.title || ('captured from ' + datasetId), region, steps, source: 'captured' });
-      if (!r.ok) return r;
-      /* the datasets already exist: bind them, so the first run reuses what is there */
-      const p = PIPES.get(r.id);
-      const keys = resolveKeys(p, null, null);
-      chain.forEach((rec, i) => { p.steps[i].datasetId = rec.id; p.steps[i].key = keys.get(p.steps[i].id); p.steps[i].status = 'bound'; });
-      return Object.assign(r, { region });
-    }
-
-    function describe(id) {
-      const p = PIPES.get(id); if (!p) return fail('pipeline-unknown', { id });
-      return { ok: true, id: p.id, title: p.title, region: p.region ? p.region.slice() : null, source: p.source,
-        steps: p.steps.map((s) => ({ id: s.id, op: s.action.op || null, dependsOn: s.refs.slice(), usesRegion: s.usesRegion, status: s.status, why: s.why, dataset: s.datasetId })) };
-    }
-    const list = () => Array.from(PIPES.values()).map((p) => ({ id: p.id, title: p.title, steps: p.steps.length, region: p.region }));
-    const remove = (id) => PIPES.delete(id);
-
-    /* ── persistence through the project record ──────────────────────────────────────────────── */
-    function snapshot() { return Array.from(PIPES.values()).map((p) => ({ id: p.id, title: p.title, region: p.region, source: p.source, steps: p.steps.map((s) => ({ id: s.id, action: s.action, key: s.key, datasetId: s.datasetId })) })); }
-    async function save(name) {
-      const W = WIN(); const P = D.project || (W && W.IntMapGisProject);
-      if (!P || typeof P.save !== 'function') return fail('project-unavailable');
-      return P.save(name, { extras: { pipelines: snapshot() } });
-    }
-    /* `loaded` is IntMapGisProject.load()'s answer; its datasets are back under their saved ids */
-    function restore(loaded) {
-      const saved = loaded && loaded.extras && Array.isArray(loaded.extras.pipelines) ? loaded.extras.pipelines : [];
-      const restored = [];
-      for (const sp of saved) {
-        const r = define({ id: sp.id, title: sp.title, region: sp.region, source: 'restored', steps: sp.steps.map((s) => ({ id: s.id, action: s.action })) });
-        if (!r.ok) { restored.push({ id: sp.id, ok: false, why: r.why }); continue; }
-        const p = PIPES.get(r.id);
-        sp.steps.forEach((s, i) => { if (alive(s.datasetId)) { p.steps[i].datasetId = s.datasetId; p.steps[i].key = s.key; p.steps[i].status = 'restored'; } });
-        restored.push({ id: sp.id, ok: true });
-      }
-      return { ok: true, restored };
-    }
-
-    const API = { define, plan, run, setRegion, setParams, capture, describe, list, remove, save, restore };
-    try { if (WIN()) WIN().IntMapGisPipeline = API; } catch (_) { }
-    return API;
-  })();
+  return {
+    STAGES: STAGES.slice(), STATUSES: STATUSES.slice(),
+    classify, record, recordFailure, readFailed, readSucceeded, link, combine, verdict, list, summary, forget,
+    noteCatalog, catalogHealth, inspectRaster, inspectFeatures, splitAtAntimeridian,
+    /* the codes classify() answers by name — read by the check that walks every reader's declared refusals */
+    kinds: () => ['unresponsive', 'cancelled', 'cors', 'relay-refused', 'unreachable', 'login', 'redirected-away', 'forbidden', 'needs-signing', 'gone', 'rate-limited', 'upstream-error', 'http-error', 'budget', 'too-large', 'not-a-catalogue', 'not-public', 'unknown-reference', 'bad-request', 'other'],
+  };
 }

@@ -36,7 +36,7 @@ describe('§ pipelines · region-driven partial recomputation', () => {
     const { makeGisGeometry } = await import('../js/gis-geometry.js');
     const { makeGisOps } = await import('../js/gis-ops.js');
     const { makeGisProject } = await import('../js/gis-project.js');
-    const { makeGisPipeline } = await import('../js/gis-pipeline.js');
+    const { makeGisPipeline } = await import('../js/gis-analysis-pipeline.js');
     const data = makeGisDatasets(); const geometry = makeGisGeometry(); const ops = makeGisOps(); const project = makeGisProject();
     w.IntMapData = data; w.IntMapGisGeometry = geometry; w.IntMapGisOps = ops; w.IntMapGisProject = project;
     await geometry.ready();
@@ -156,7 +156,7 @@ describe('§ pipelines · region-driven partial recomputation', () => {
     const loaded = await project.load(s.id);
     assert.ok(loaded.restored >= 1);
     assert.ok(loaded.extras && loaded.extras.pipelines.length === 1, 'the definitions came back in the same record');
-    const { makeGisPipeline } = await import('../js/gis-pipeline.js');
+    const { makeGisPipeline } = await import('../js/gis-analysis-pipeline.js');
     let ran = 0;
     const fresh = makeGisPipeline({ exec: async () => { ran++; return { ok: false, why: 'should-not-run' }; } });
     assert.deepEqual(fresh.restore(loaded).restored, [{ id: d.id, ok: true }]);
