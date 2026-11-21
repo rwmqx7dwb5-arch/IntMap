@@ -5,7 +5,6 @@
 //  is handed in by ask.ts.
 // ============================================================================
 
-import { PROVIDER_TIMEOUT_MS } from "../../_shared/ai-provider.js";
 import { providerStream } from "../../_shared/ai-stream.js";
 import { withPromptCache } from "../../_shared/ai-usage.js";
 import { providerCall, ProviderError, classifyGemini, streamedBody } from "../provider-call.ts";
@@ -98,7 +97,7 @@ export async function callAnthropic(model: string, key: string, prompt: string, 
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(withPromptCache(body)),
-  }, PROVIDER_TIMEOUT_MS, meter);
+  }, undefined, meter);
   if (!r.ok) {
     const t = (await r.text().catch(() => "")).slice(0, 400);
     throw classifyGemini(r.status, t, "", "");   // same status→code mapping applies to Anthropic
@@ -164,7 +163,7 @@ export async function callAnthropicTurn(model: string, key: string, turn: TurnRe
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(withPromptCache(body)),
-  }, PROVIDER_TIMEOUT_MS, meter, ps ? ps.onChunk : undefined);
+  }, undefined, meter, ps ? ps.onChunk : undefined);
   if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 400), "", "");
   // deno-lint-ignore no-explicit-any
   const j: any = ps ? streamedBody(ps, "anthropic", meter) : await r.json();

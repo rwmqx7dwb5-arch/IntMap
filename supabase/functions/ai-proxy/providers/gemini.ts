@@ -4,7 +4,6 @@
 //  (atlas-core-split) Moved out of index.ts unchanged. Wired, dormant while AI_PROVIDER=openai.
 // ============================================================================
 
-import { PROVIDER_TIMEOUT_MS } from "../../_shared/ai-provider.js";
 import { providerStream } from "../../_shared/ai-stream.js";
 import { providerCall, ProviderError, classifyGemini, streamedBody } from "../provider-call.ts";
 import type { Meter, StreamSink } from "../provider-call.ts";
@@ -52,7 +51,7 @@ export async function callGemini(model: string, key: string, prompt: string, sys
   const r = await providerCall(
     "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
     { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
-    PROVIDER_TIMEOUT_MS, opts.meter,
+    undefined, opts.meter,
   );
 
   if (!r.ok) {
@@ -164,7 +163,7 @@ export async function callGeminiTurn(model: string, key: string, turn: TurnReq, 
   const r = await providerCall(
     "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + (ps ? ":streamGenerateContent?alt=sse" : ":generateContent"),
     { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
-    PROVIDER_TIMEOUT_MS, meter, ps ? ps.onChunk : undefined,
+    undefined, meter, ps ? ps.onChunk : undefined,
   );
   if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 1500), "", "");
   // deno-lint-ignore no-explicit-any
