@@ -41,11 +41,11 @@ const arr = (x) => Array.isArray(x) ? x : [];
    Observation: 4 MiB is the notebook's own order of magnitude (a notebook entry is at most 64,000 characters of answer
    plus its rows); expires when a measured quota says otherwise. */
 export const PRODUCT_KINDS = Object.freeze({
-  dataset:  { label: 'Dataset',  shape: ['format', 'features | columns+rows'], file: null, maxBytes: 4 << 20 },
+  dataset:  { label: 'Dataset',  shape: 'format + features | columns+rows', file: null, maxBytes: 4 << 20 },
   table:    { label: 'Table',    shape: ['columns', 'rows'], file: { ext: 'csv', mime: 'text/csv' }, maxBytes: 4 << 20 },
   code:     { label: 'Code',     shape: ['language', 'text'], file: { ext: 'txt', mime: 'text/plain' }, maxBytes: 1 << 20 },
   image:    { label: 'Image',    shape: ['mime', 'dataUrl | svg'], file: { ext: 'png', mime: 'image/png' }, maxBytes: 4 << 20 },
-  document: { label: 'Document', shape: ['format', 'text'], file: { ext: 'md', mime: 'text/markdown' }, maxBytes: 2 << 20 },
+  document: { label: 'Document', shape: 'format + text', file: { ext: 'md', mime: 'text/markdown' }, maxBytes: 2 << 20 },
   chart:    { label: 'Chart',    shape: ['spec', 'svg'], file: { ext: 'svg', mime: 'image/svg+xml' }, maxBytes: 1 << 20 },
   analysis: { label: 'Analysis', shape: ['projectId | recipe'], file: null, maxBytes: 256 << 10 },
   answer:   { label: 'Answer',   shape: ['text'], file: { ext: 'md', mime: 'text/markdown' }, maxBytes: 256 << 10 },
