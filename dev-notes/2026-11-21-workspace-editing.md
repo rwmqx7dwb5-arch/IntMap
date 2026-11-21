@@ -39,3 +39,6 @@ newsjp: ワークスペースの表をその場で編集できます(値・列�
 
 ## グローバル経由の読みの追加(`check:surface`)
 `js/board.js` に `window.IntMapAtlas` 1・`window.IntMapBoard` 2(能力側 `atlas-cap-board.js`)・`window.IntMapLazy` 3 の読みを足した。`board.js` は既存の部品が同じ窓口(`IntMapLazy.need`・`IntMapAtlas.call`)で遅延モジュールと Atlas に届いており、台帳(gisCore)と Atlas は遅延ロードで import できない／してはいけない所有者のため、同じ作法に揃えた。台帳を `--update` で更新。
+
+## 予算(追記)
+`main` が動くたび天井が動くため、取り込み後のツリーで測り直して `--update` した。この PR 自身の増分は `atlas-console` チャンク(`board.edit`/`board.delta` と能力表の行)と `dist.assets`(`board-edit.js` ほか)。能力は削っていない。
