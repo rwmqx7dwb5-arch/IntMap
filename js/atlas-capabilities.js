@@ -399,6 +399,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
       ["knowledge.forget","knowledgeForget","forgetKnowledge,deleteKnowledge","research","none","knowledge","explanation","persist","explicit","",""],
       ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
+      ["siting.compare","siting","compareSites,industrialSiting,siteSelection,locationComparison,compareLocations","data","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
