@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-- 性能予算の引き上げ（取り込み後の全体ビルドの実測）: 上の行のとおり。main 側で他の PR が足した遅延チャンクの分を含み、この PR の増加だけではない。起動時の読み込みではない。
-=======
 ---
 title: 完了判定の指摘が一度きりで、直した後は誰も確かめていなかった——独立した読みを記録が増えたときだけ繰り返し、満たした部分も Atlas に見せる
 date: 2026-11-20
@@ -39,4 +35,3 @@ The merge of origin/main brought new chunks (atlas-orchestrate grew 82.4 to 96.1
 
 ## dist.total
 The CI build measured dist.total at 1,587,385,548 bytes, 13 kB above the ceiling main recorded; raised to that measurement (the data bundle and the PR-specific chunks are the growth).
->>>>>>> origin/main
