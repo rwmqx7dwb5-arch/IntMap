@@ -14,6 +14,7 @@ import caps_geo from './atlas-cap-geo.js';
 import caps_layers from './atlas-cap-layers.js';
 import caps_learn from './atlas-cap-learn.js';
 import caps_map from './atlas-cap-map.js';
+import caps_model from './atlas-cap-model.js';
 import caps_navigation from './atlas-cap-navigation.js';
 import caps_news from './atlas-cap-news.js';
 import caps_notebook from './atlas-cap-notebook.js';
@@ -44,6 +45,7 @@ export const CAPABILITY_MODULES = {
   "layers": caps_layers,
   "learn": caps_learn,
   "map": caps_map,
+  "model": caps_model,
   "navigation": caps_navigation,
   "news": caps_news,
   "notebook": caps_notebook,

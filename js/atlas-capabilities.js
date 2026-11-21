@@ -395,6 +395,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
       ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
       ["data.imageryInfo","imageryInfo","imageryAt,photoDate,satelliteDate,imagerySource","data","none","","explanation","session","none","",""],
+      ["model.discover","modelDiscover","findModel,specialistModels,whichModel,listModels","data","none","","explanation","read","none","","",""],
+      ["model.run","modelRun","runModel,specialistModel,floodForecast,riverForecast,airQualityForecast","data","none","map.object","explanation","session","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
