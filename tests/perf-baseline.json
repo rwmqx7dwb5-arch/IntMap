@@ -9,7 +9,7 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14741317,
+    "raw": 14721306,
     "gzip": 4949839,
     "chunks": {
       "account-data": 7346,
@@ -22,7 +22,7 @@
       "atlas-admin1": 12138,
       "atlas-answer-view": 2510,
       "atlas-attach": 23189,
-      "atlas-cap-runs": 939918,
+      "atlas-cap-runs": 940553,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
       "atlas-console": 1106006,
@@ -216,9 +216,9 @@
     }
   },
   "dist": {
-    "total": 1579471807,
+    "total": 1587372442,
     "data": 1223209830,
-    "assets": 22354412
+    "assets": 22319629
   },
   "phone": {
     "bytes": 342631,
