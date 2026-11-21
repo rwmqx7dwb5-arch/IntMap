@@ -46,3 +46,4 @@ CI の `check:perf` が、async の `atlas-cap-runs`(896→922 kB 級)・`atlas-
 
 ## 予算の天井を上げた理由（perf-baseline・2026-11-21）
 操作型ブラウザ層が `web.session` の能力（`atlas-cap-web`・schema・確認文言・結果の描画）を足したため、遅延 chunk の `atlas-cap-runs` が 903.4→934.8 kB、`atlas-console` が 1073.1→1083.5 kB、async raw が 14221.0→14325.8 kB になった（`node scripts/perf-budget.mjs --update`）。どれも能力を呼んだときだけ読む遅延 chunk で、起動時に読む量は増えていない。失効条件: 能力の統合や縮小で下がったら、main の CI が `--tighten` で下げる。
+（main の最新を取り込んだ測り直し: async raw 14304.0→14380.6 kB、async gzip 4807.7→4843.5 kB、dist.assets 21686.9→21815.5 kB。理由は上と同じ。）
