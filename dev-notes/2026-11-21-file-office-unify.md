@@ -37,3 +37,7 @@ Excel の上限(行 1,048,576・セル 32,767 文字)を超える入力を黙っ
 ## 検査
 `tests/file-office-unify-checks.test.mjs`: ZIP の実装が 1 つ・文書とデータセットで styles/workbook 部品が同一・`007` は文字で `125` は数・
 core.xml が文書側にだけ付く・上限は名前で拒む・全角幅。既存の `file-deliverables-checks` と `work-files-checks` は無変更で通る。
+
+## perf 天井を上げた理由(`atlas-console` 1080.4 → 1091.3 kB)
+`atlas-console` の async chunk は能力モジュールを含み、`file.create` の能力(PDF/Word/PowerPoint/Excel の書き手と検証)が載る。起動(eager)には入らず、Atlas を開いたときだけ読む。
+増えた分は、統合した xlsx の書き手(列幅・ヘッダー・上限の名前拒否・core.xml)と、取り込んだ main 側の能力の増加。ライブラリを入れず自前で持つ代わりの費用で、書き出しを使わない利用者には読まれない。
