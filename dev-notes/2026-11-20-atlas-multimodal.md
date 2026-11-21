@@ -38,3 +38,9 @@ newsjp: Atlas が添付した動画を読めるようになり（時刻つきフ
 ## 4. 検査
 
 `tests/atlas-multimodal-checks.test.mjs`（偽の `<video>` と偽の認識器で実装の契約を走らせる）。実ブラウザでの実クリップ検証は下に記す。
+
+## CI の赤を直した（merge 後）
+
+- `check:perf`: 添付を扱う atlas-attach（22.6→26.9 kB）と atlas-cap-runs、async gzip 合計の天井を `perf-budget.mjs --update` で上げた。増えた分はマルチモーダル添付の実装そのもの（新しい読み込み経路）で、起動時チャンクは増えていない。
+- `check:i18n`: 位置引数 L(…) の行が 7 行増えたので、床を `i18n-audit.mjs --update-floor` で実体に合わせた。
+- `R403 ⑨`（`--gate --todo fr` が緑の木を要求）は上の i18n 床が原因で赤かった。
