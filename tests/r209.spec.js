@@ -179,6 +179,7 @@ const MEMBER = {
      reply's view through apply(). A module that arrived and published half of itself fails here. */
   atlasChart: ['IntMapAtlasChart', 'render'],
   atlasAnswerView: ['IntMapAnswerView', 'apply'],
+  board: ['IntMapBoard', 'open'],
   routeUi: ['IntMapRouteUI', 'open'],
   /* (#R729) the GIS core. Its member is `open` — the door #btn-gis-panel calls. ⚠ The module
      mounts FOUR files (js/gis-core.js), and a partial arrival is exactly what this table
