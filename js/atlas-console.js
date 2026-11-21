@@ -1886,7 +1886,7 @@ export function atlasConsole(HOST){
       get HOST(){ return HOST; },
       /* (cap-bridge) a program's door to the capability table — the SAME executor a model's run_capability goes through (js/atlas-toolsurface.js openProgramBridge) */
       get programBridge(){ return programBridge; },
-      get workingMemory(){ return WM; },   /* (exec-platform) a background job is OWED in the working memory until it ends — js/atlas-job-products.js */
+      get workingMemory(){ const workingMemory = WM; return workingMemory; },   /* (exec-platform) a background job is OWED in the working memory until it ends — js/atlas-job-products.js */
       get CAPS(){ return CAPS; },   /* (atlas-os) the registry this page booted with — system.diagnose holds it against the capability modules */
       get applyTheme(){ return applyTheme; },
       get applyAccent(){ return applyAccent; },
