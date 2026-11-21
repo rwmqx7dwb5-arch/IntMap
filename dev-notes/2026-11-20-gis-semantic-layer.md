@@ -45,4 +45,4 @@ eager (起動時) の行は動いていない。
 
 `async.gzip` を 4833.8 → 4860.4 kB、`atlas-cap-runs` チャンクを 918.5 → 923.7 kB に上げた（意味の層の説明文と、同時に main へ入った変更の合算。超えた 2 行だけ `--update` が書いた）。
 
-追記 (4 回目の取り込み): この branch に別セッションの GIS 作業 (`gis-network` など) が入り、`gis-core` が 663.6 → 681.1 kB、さらに main 側の増分で `atlas-console` が 1105.8 → 1112.6 kB、`async.raw` が 14376.3 → 14481.3 kB、`dist.assets` が 21796.5 → 21917.6 kB となり天井を超えた (CI の Gates 2/3 と、データを取得した手元の build の両方で再現)。超えた行だけ `--update` で上げた。eager の行は動いていない。
+`async.raw` 14376.3 → 14481.3 kB、`atlas-console` 1105.8 → 1112.6 kB、`gis-core` 663.6 → 681.1 kB、`dist.assets` 21796.5 → 21917.6 kB に上げた（意味の層と、並行して main に入った変更の合算。超えた 4 行だけ `--update` が書いた）。
