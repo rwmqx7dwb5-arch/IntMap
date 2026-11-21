@@ -41,3 +41,10 @@ Main gained new async chunks from other PRs; the atlas-cap-runs / async ceilings
 
 ## dist.total
 The CI build measured dist.total at 1,587,385,548 bytes, 13 kB above the ceiling main recorded; raised to that measurement (the data bundle and the PR-specific chunks are the growth).
+
+## perf 天井の引き上げ(産業立地の比較の追加分)
+
+産業立地の比較(siting.compare)の能力と、同時に入った main 側の能力追加により、次の天井を測り直した値へ上げた。
+async.raw 14376.3 -> 14471.6 kB、async チャンク atlas-cap-runs 918.5 -> 931.7 kB(能力表の行が増えた分)、
+atlas-console 1105.8 -> 1111.8 kB、dist.assets 21796.5 -> 21909.3 kB。いずれも新しい能力が運ぶ実コードの増分で、
+他の行は動かしていない。測定は origin/main を取り込んだ tree を build して `perf-budget.mjs --update` で行った。
