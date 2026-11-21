@@ -111,6 +111,7 @@
    `generated`, `lic`) and js/reference-data.js used a third. One vocabulary with several readers is
    the point; two vocabularies is how 「ライセンス」 and 「licence」 become two facts. */
 import { statedValue } from './data-governance.js';
+import { writeXlsx, XLSX_LIMITS } from './office-writer.js';
 
 export function makeGisExport() {
   return (function () {
@@ -126,6 +127,7 @@ export function makeGisExport() {
       'export-value-out-of-range', 'export-missing-not-representable', 'export-nodata-conflict',
       'export-nodata-not-representable', 'export-crs-unsupported',
       'export-geometry-mixed-dimensions', 'export-serialise-failed', 'export-geometry-not-representable',
+      'export-geometry-too-large-for-cell', 'export-xlsx-too-large',
     ]);
     function bad(why, detail) {
       if (REFUSALS.indexOf(why) < 0) throw new Error('gis-export: undeclared refusal code ' + why);
@@ -150,6 +152,16 @@ export function makeGisExport() {
         mediaType: 'text/csv', extension: 'csv',
         carries: Object.freeze(['attributes', 'geometry-as-columns-or-wkt']),
         readBackBy: 'js/geo-import.js', geometryRoundTrip: null,   /* points yes, shapes no — §2 */
+      }),
+      /* (work-files) THE FORMAT A SPREADSHEET USER OPENS. Same columns and the same geometry rule as the CSV (points as
+         longitude/latitude, anything else as WKT), but numbers stay numbers, "01100" stays text and a header row is frozen —
+         a CSV opened in Excel guesses all three. Writer: js/office-writer.js. Read back as a TABLE by js/geo-import.js /
+         js/atlas-attach.js (the lon/lat columns become points again; a WKT column stays text, as for CSV). */
+      Object.freeze({
+        id: 'xlsx', kinds: Object.freeze(['vector']),
+        mediaType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', extension: 'xlsx',
+        carries: Object.freeze(['attributes', 'typed-cells', 'geometry-as-columns-or-wkt']),
+        readBackBy: 'js/geo-import.js', geometryRoundTrip: null,
       }),
       Object.freeze({
         id: 'geotiff', kinds: Object.freeze(['raster']),
@@ -423,6 +435,49 @@ export function makeGisExport() {
     function freeName(want, taken) {
       if (taken.indexOf(want) < 0) return want;
       for (let i = 1; ; i++) { const n = want + '_' + i; if (taken.indexOf(n) < 0) return n; }
+    }
+
+    /* (work-files) the CSV's columns and geometry rule, as typed cells for js/office-writer.js. ⚠ The measurement of the columns
+       is the CSV writer's (first-seen order, 'longitude'/'latitude' for all-points, 'geometry_wkt' otherwise): a dataset must
+       come out with the same columns in either format. */
+    function writeXlsxFormat(rec, feats) {
+      const cols = [];
+      let without = 0, allPoints = true, anyGeometry = false;
+      for (const f of feats) {
+        const p = (f && f.properties) || {};
+        for (const k of Object.keys(p)) if (cols.indexOf(k) < 0) cols.push(k);
+        const g = f && f.geometry;
+        if (!g) { without++; continue; }
+        anyGeometry = true;
+        if (g.type !== 'Point') allPoints = false;
+      }
+      const asPoints = anyGeometry && allPoints, added = [];
+      if (anyGeometry) {
+        if (asPoints) { added.push(freeName('longitude', cols.concat(added))); added.push(freeName('latitude', cols.concat(added))); }
+        else added.push(freeName('geometry_wkt', cols.concat(added)));
+      }
+      const rows = [];
+      for (const f of feats) {
+        const p = (f && f.properties) || {}, g = f && f.geometry;
+        const r = cols.map((k) => (Object.prototype.hasOwnProperty.call(p, k) ? p[k] : null));
+        if (asPoints) { const c = (g && Array.isArray(g.coordinates)) ? g.coordinates : null; r.push(c ? +c[0] : null, c ? +c[1] : null); }
+        else if (added.length) {
+          const w = wktOf(g);
+          if (!w.ok) return bad('export-geometry-mixed-dimensions', { geometryType: (g && g.type) || null });
+          if (w.text.length > XLSX_LIMITS.cell) return bad('export-geometry-too-large-for-cell', { format: 'xlsx', limit: XLSX_LIMITS.cell, hint: 'export it as GeoJSON or GeoPackage' });
+          r.push(w.text);
+        }
+        rows.push(r);
+      }
+      const title = String((rec && (rec.title || rec.id)) || 'data');
+      const made = writeXlsx([{ name: title, columns: cols.concat(added), rows: rows }]);
+      if (!made.ok) return bad('export-xlsx-too-large', made.detail);   /* the only refusal writeXlsx can give here: the sheet has features (write() refused an empty one) */
+      return { bytes: made.bytes, stated: {
+        rows: feats.length, columns: cols.concat(added), rowsWithoutGeometry: without,
+        geometry: !anyGeometry ? 'none' : (asPoints ? 'lon-lat-columns' : 'wkt'), geometryColumns: asPoints ? added.slice() : (added.length ? added.slice() : []),
+        geometryRoundTrip: asPoints, sheet: made.stated.sheets[0].name, sheetRenamed: made.stated.renamed.length > 0,
+        nonFiniteCells: made.stated.nonFinite, complexCells: made.stated.complexCells, truncatedCells: made.stated.truncatedCells,
+        provenanceCarried: false, license: null, attribution: null, source: null, retrievedAt: null } };
     }
 
     function writeCsv(rec, feats, opts) {
@@ -1495,6 +1550,7 @@ export function makeGisExport() {
         if (!Array.isArray(feats) || feats.length === 0) return bad('export-empty', { id: rec.id == null ? null : String(rec.id), count: 0 });
         if (fmt.id === 'geopackage') made = writeGeopackage(rec, feats, o);
         else if (fmt.id === 'kml' || fmt.id === 'gpx') made = writeXmlFormat(fmt.id, rec, feats);
+        else if (fmt.id === 'xlsx') made = writeXlsxFormat(rec, feats);
         else made = fmt.id === 'geojson' ? writeGeoJson(rec, feats, o) : writeCsv(rec, feats, o);
       }
       if (made && made.ok === false) return made;
