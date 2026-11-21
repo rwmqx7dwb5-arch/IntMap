@@ -11,6 +11,12 @@ date: 2026-11-21
 `writeXlsx(sheets)` の既存の呼び出し(gis-export・work.job)は無変更で動く。足したのは任意の `{ when, core }`、シートの `numericText`、
 列幅、ヘッダーの塗りと固定、ZIP の `zip-store.js` への置き換え。`tests/work-files-checks.test.mjs` は無変更。
 
+## perf 天井を上げた理由
+`async.raw`・`async.gzip`・`atlas-cap-runs`・`atlas-console`・`dist.*` の天井を `perf-budget.mjs --update` で上げた。増えた主因は `file.create` 能力
+(文書の書き出し 9 形式の書き手と、能力表・スキーマの行)が `atlas-cap-runs` / `atlas-console` に入ったこと。起動(eager)には入らない。
+取り込んだ origin/main 側の増加分もこの更新に含まれる(main の CI が次の push で締め直す)。同時に、名前で読まれない `atlasFile` の export を外した
+(`layer-boot-graph-checks` の R175 ③)。
+
 ## CodeQL
 - `WIDE`(全角幅の正規表現)が CJK 互換漢字のリテラルで書かれ、U+F900 が正規化で U+8C48 に化けて範囲が重なっていた(js/overly-large-range ×2)。`\u` エスケープに直した。
 - `js/file-text.js` の `mdCell` は `|` を逃がすが、バックスラッシュを逃がしていなかった(js/incomplete-sanitization)。先に `\` を逃がす。
