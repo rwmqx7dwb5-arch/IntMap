@@ -38,3 +38,6 @@ newsjp: Atlasが、工場の立地として日本の都道府県を、卸電力�
 
 ## perf (re-measured after main moved, 2026-11-21)
 Main gained new async chunks from other PRs; the atlas-cap-runs / async ceilings were re-measured on this branch and raised with `perf-budget --update`. The growth is siting.compare, which this PR adds.
+
+## dist.total
+The CI build measured dist.total at 1,587,385,548 bytes, 13 kB above the ceiling main recorded; raised to that measurement (the data bundle and the PR-specific chunks are the growth).
