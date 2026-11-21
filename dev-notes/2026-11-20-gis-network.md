@@ -46,3 +46,5 @@ newsjp: Atlas が網を距離ではなくつながりとして分析できるよ
 ## 性能予算の引き上げ
 
 - async.raw 14304.0→14395.8 kB・atlas-cap-runs 909.0→917.9 kB・gis-core 637.0→663.6 kB・dist.assets 21686.9→21830.5 kB: 港・鉄道・都市・工場の網と「この港が止まったら」の分析（網の分析が読む配線と GIS の核）が増えた分。atlas-orchestrate 82.4→85.5 kB は main 側の増加で、全体ビルドの更新が一緒に上げた行。遅延して読まれる配布物で、起動時の読み込みではない。
+
+- 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
