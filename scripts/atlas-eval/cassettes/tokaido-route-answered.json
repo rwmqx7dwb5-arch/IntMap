@@ -78,8 +78,8 @@
           "basis": "lexical",
           "matches": [
             {
-              "id": "compute.run",
-              "tool": "compute_run"
+              "id": "data.gis",
+              "tool": "data_gis"
             },
             {
               "id": "navigation.start",

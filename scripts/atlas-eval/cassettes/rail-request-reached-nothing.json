@@ -148,12 +148,12 @@
               "tool": "layers_aircraftTrack"
             },
             {
-              "id": "layers.railAxis",
-              "tool": "layers_railAxis"
+              "id": "data.gis",
+              "tool": "data_gis"
             },
             {
-              "id": "compute.run",
-              "tool": "compute_run"
+              "id": "layers.railAxis",
+              "tool": "layers_railAxis"
             }
           ]
         }
@@ -208,8 +208,8 @@
           "basis": "lexical",
           "matches": [
             {
-              "id": "compute.run",
-              "tool": "compute_run"
+              "id": "data.gis",
+              "tool": "data_gis"
             },
             {
               "id": "time.travel",
