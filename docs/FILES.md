@@ -643,6 +643,8 @@ mem-budget.js                     **この端末が復号済み DEM タイルを
 border-style.js                   国境線を1本にまとめるスタイル層
 carto-basemap.js                  CARTO 基図の API キー・タイル URL 組み立て・地図上の帰属表示
 esri-imagery.js                   Esri World Imagery の取得先（鍵があれば ArcGIS Location Platform、無ければ鍵なしの窓口）・タイル URL・拒否時の戻り・帰属表示の文
+imagery-registry.js               衛星・航空画像の供給元を 1 件 1 オブジェクトで宣言する台帳（範囲・ズーム・時間軸・撮影日の分かり方・解像度・利用条件）。SAT_PROVIDERS・パネルの撮影日行・Chronos の時刻合わせ・Atlas `imageryInfo` が全部ここを読む
+imagery-atlas.js                  Atlas の能力 `data.imageryInfo` の本体（遅延）— その場所・時刻に在る画像、撮影日（実測／選択／宣言の別）、解像度、利用条件、`apply` で切り替え
 coast-line.js                     海岸線・湖岸線——国境線と同じ手法で makeCoastLine()
 coastline.js                      **海までの距離**（#R495）— data/coastline.json.gz（Natural Earth 1:10m、2km 許容で
                                   簡略化）を読み、任意の点から**線分**までの大円距離を返す makeCoastline()。
@@ -1999,7 +2001,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは15・全 136,871 リング分／
+                                  **発見された**束すべて・いまは15・全 136,880 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
