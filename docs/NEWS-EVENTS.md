@@ -68,7 +68,7 @@
 最初に投入したのは **18媒体 / 33フィード**（`20260823120100_news_sources_seed.sql`）で、
 **33/33 が 200 を返し `<item>` を持つことを投入前に測ってある**（合計 1,380 件・2026-08-23）。
 その後 Bloomberg を直接 RSS へ移したので（決定 15・`20260824220000_r405_news_feeds.sql`）、
-**いまは 18媒体 / 38フィード（うち有効 36）**。
+**18媒体 / 38フィード（うち有効 36）**になり、その後 §19.4 で地域・公式の媒体を足した（**49媒体 / 69フィード**）。
 
 | collection | 本数 | 使う相手 | 実測 |
 |---|---|---|---|
@@ -556,6 +556,7 @@ climate_weather / politics のフィードは「編集部がそう分類した�
 | `news_events` | **30日** | 保存・共有URL・Atlas 参照・merge redirect が生き残る必要がある |
 | `saved_news_events` | **無期限** | ユーザーが明示的に保存したものを通常の retention で失わない |
 | `news_cluster_decisions` | 30日 | 誤統合の原因を後から説明できる期間 |
+| `news_event_history` | **年単位**（硬い上限 30 万行・超えたら ★でなく graph に結ばれていない最古から） | 長期の検索。§19 |
 
 **★の写し（`saved_news_events.snapshot`）。** 記事が 72 時間で消えると、★の出来事も構成記事を失い、
 説明も出典 URL も時刻も読めなくなっていた（2026-11-17 実測: 過去の出来事 10 件中 10 件）。★を付けた瞬間に
@@ -1478,3 +1479,93 @@ News 一覧は「最後に更新された順に 200 件」で、毎朝の問い�
 - Atlas `news.eventPast`（`event` 省略時は開いている出来事）が同じ記録を返す。回帰は
   `tests/news-with-history-checks.test.mjs`（実データで: パリは 1940 年 6 月〜1944 年に枢軸側、東京の衆院選挙区、
   国単位の出来事に年表が出ないこと）。
+
+## 19. 出来事の履歴 — 年単位で残し、年単位で問う (news-event-history)
+
+`news_events` は 30 日・記事は 72 時間で消える。「2010 年以降の東南アジアの半導体工場の建設・閉鎖・買収」のような
+問いには、それより長く残る行が要る。それが **`news_event_history`**（migration `20261120140000_news_event_history.sql`・
+規則は `supabase/functions/_shared/news-history.js` の 1 本）。
+
+### 19.1 何を、どこに持つか
+
+| 欄 | 意味 |
+|---|---|
+| `event_public_id` | **永続 ID**（`news_events.public_id`）。merge された出来事は `merged_into` が行き先の永続 ID を指す（行は消さない） |
+| `occurred_at` / `last_reported_at` | 初報の時刻 / 最後に報じられた時刻 |
+| `place_name` / `lng` / `lat` | 代表地点（§5.6 の規則が選んだもの） |
+| `world_refs` | **見出し・要約・記事の見出しがその名前を述べている** `world_graph_nodes.ref`、および `news_event_entities` が結んだ企業が指す node。⚠ 近さでは結ばない（グラフ自身の規則「結びは述べられたこと」） |
+| `company_ids` | 企業アトラスの id（`news_event_entities`） |
+| `kind` | 見出しが報じていること: `plan` / `construction_start` / `operational` / `expansion` / `closure` / `acquisition` / `other`。多言語の語彙（en・ja・zh・ko）で**強い順**に読む。当たらなければ `other`——語彙は見出しの読み手であって出来事の判定者ではない |
+| `sources` | `[{name,url,title,at}]` 最大 12。**記事は 72 時間で消えるのでリンクはここに残す**。行が持つ出典は増える一方（URL で重複排除） |
+| `updates` | 更新履歴 `{at, field, from, to}`（title / kind / place / source_count の変更。直近 20 件）。`news_history_upsert` が 1 文の中で書く |
+| `thread_key` | **1 つの施設の系列**（計画→着工→稼働）の鍵 |
+
+### 19.2 同じ施設の一連の変化と、同じ地域の別の出来事を分ける
+
+`thread_key` は**類似度ではなく事実**で決める（`threadKey()`）:
+1. 名前を述べられた施設 node があれば `ref:<その ref>`——計画の記事と稼働の記事は、地域も日付も離れていても同じ系列。
+2. 無ければ `co:<企業 id>@<1 度のセル>`——**同じ企業でも別の地域は別の系列**。
+3. どちらも無ければ `ev:<public_id>`（その出来事 1 件だけの系列）。
+
+同じ地域で `thread_key` が違う行は**別の出来事**であり、Atlas はそれを統合しない（`news.history` の説明が述べる）。
+
+### 19.3 何を残すか／費用の上限（2026-11-20 本番実測）
+
+- 実測: 30 日窓に出来事 **20,669** 件、うち独立 2 家族以上が報じたものは **4,464**（約 150 件/日）。DB 全体は **124 MB**。
+- **残すのは**: 独立 2 家族以上が報じた／world node か企業に結ばれた／★された、のどれか。年約 55,000 行 × 約 1.2 KB ≒
+  **65 MB/年**（索引込み）。プランに含まれる DB 容量の内側で、**追加の費用は 0**。
+- **硬い上限**: `HISTORY.maxRows = 300,000` 行。超えたら `news_history_trim` が、★でなく・world ref も持たず・出典 3 本未満の
+  **最古の行から**消す。★された行と graph に結ばれた行には触れない。
+- 書き込みは `prune` 段の**先頭**（記事が残っているうち）。**書けなかったら prune を止める**（書き写せていない出来事の記事を
+  消すと記録は二度と作れない）。理由は `notes.archive_error` / `notes.prune_error` に残り、`news_ingest_health()` が失敗として返す。
+- ⚠ **記録の始まりは今日である。** 2010 年に遡る遡及データは無い。`news_history_search` は `coverage_from` / `coverage_to` を
+  必ず返し、Atlas は「記録がそこまで遡らない」と「何も起きなかった」を分けて述べる。
+
+### 19.4 収集元の拡張 (2026-11-20 実測)
+
+18 媒体 / 38 フィード → **49 媒体 / 69 フィード**。690 の URL を実測し、200・5 件以上・最新 3 日以内・リンクの 9 割以上が
+自社ホスト、を満たした 31 本を足した（migration `20261120150000_news_sources_regional_official.sql`）。
+東南・東・南アジアの地域媒体（Straits Times・FMT・Bangkok Post・VnExpress・DIGITIMES・The Elec・Antara・CNBC Indonesia・
+Tuoi Tre・Toyo Keizai・ITmedia・Chosun・LTN・SCMP・Hindu BusinessLine）、中東・欧州・中南米（The National・Le Monde・
+Tagesschau・Infobae・g1・Al Jazeera Arabic）、公式・業界（Samsung・NVIDIA・Siemens・Arm・US DOE・EIA・欧州委員会・UN News・
+LNG Prime・World Nuclear News）。
+⚠ **決定 2（収集は英語のみ）を、この範囲で改める。** 英語以外の見出しは `news_articles.language`（媒体の言語）で区別され、
+クラスタリングは CJK/ハングルを文字バイグラムで、ラテン語系を語で比較する（§5）。**言語をまたぐ統合はしない**（決定 2 の理由は残る）。
+⚠ 試して採らなかったもの: TSMC・Intel・Shell・TotalEnergies・ASML・Cheniere・QatarEnergy・METI（403/404・古い・フィードでない）、
+Nikkei Asia（項目に日付が無い）、Viet Nam News（フィードが UTF-16）。測った URL の全体は `dev-notes/2026-11-20-news-event-history.md`。
+
+### 19.5 `embed` 段が止まっていた原因（本番実測 2026-11-20）
+
+観測器の嘘ではなかった。最新 run の `notes`: `embed_error = openai embeddings 403`、
+`embed_available_models = {all:3, ids:[]}`（この鍵は 3 モデルしか見えず埋め込みは 0）、`embed_pending = 3216`、`embedded = 0`。
+`atlas_capability_vectors` も 0 行で、atlas-embed も同じ鍵で一度も動いていない。
+**根本原因は「`OPENAI_API_KEY` が埋め込みモデルに届かない」であり、コードの欠陥ではない。** 直し方: OpenAI の一覧に
+埋め込みモデルが無いとき、**設定済みの `GEMINI_API_KEY`** へ移る（`geminiEmbeddingModel()` が `batchEmbedContents` を持つモデルを
+**一覧で訊いて**選ぶ。既定は `gemini-embedding-001`、`outputDimensionality=1536` に切り詰めて正規化）。
+モデルは混ぜない（一度 gemini に移ったら、既存の `embedding_model` を見て以降も gemini）。止めるのは `NEWS_EMBED_GEMINI=off`。
+費用の見積り: $0.15/100 万トークン・1 run 最大 600 件（§14 の見込みの桁は変わらない）。
+⚠ 見出しと要約の先頭が新しい送り先（Google）へ届く——すでに ai-proxy が Gemini へ送っている公開記事のみで、個人情報は含まない。
+
+### 19.7 過去へ遡る — Wikipedia「Portal:Current events」（news-event-history · backfill）
+
+生の収集は収集を始めた日より前を持たない。「過去 10 年の台湾海峡の軍事的緊張の推移」のような問いには、その前の行が要る。
+**出典**: Wikipedia の日別ページ `Portal:Current_events/<年>_<月>_<日>`（2004 年から毎日）。各日、節（Armed conflicts and attacks ほか）ごとに
+出来事の 1 文・**編集者が引いた媒体のリンク**・属する**連載**（`Cross-Strait relations` など）を持つ。本文は CC BY-SA 4.0
+（出典表記は `js/reference-data.js`・`js/legal-text.js`）。IntMap のサーバが**日付だけ**を送って読む（利用者の情報は一切送らない）。
+**実測（2026-11-20）**: 2012-05-20・2016-01-16・2019-03-31・2022-08-04 の 4 日を 1 要求で取り、構文が全年で同じ形で読めた
+（2019-03-31 は `Cross-Strait relations` の下に「台湾が PLAAF 機の中間線通過を非難」、2022-08-04 は「2022 US congressional delegation visit to Taiwan」の下）。
+**規則**（`_shared/news-backfill.js`・純粋）:
+- 媒体の引用が**ある文だけ**を行にする（誰も出典を付けなかった文は残さない）。時刻は**日**の粒度（出典名 `Wikipedia Current events` が先頭の出典で、読者に粒度が見える）。
+- `thread_key = wp:<連載の記事名>`——**編集者の述べた続き物**であって類似度ではない。連載が無ければ world ref、それも無ければ出来事自身。
+- 場所は**足さない**（`lng/lat/place_name` は null）。world ref・企業は生の記録と同じ「名前が文に出てくる」だけ。種別は同じ見出し読み（無ければ `other`）。
+- 出典間の相違: 同じ出来事に複数の媒体が引かれていればすべて `sources` に残す。
+**走らせ方**: `news-ingest` の `prune` 段が `archive` の後に `backfill` を呼ぶ（cron の変更なし）。1 run = 30 日を 1 要求。
+**状態を持たない**: 位置は `wce:` の行がいちばん古い日から導く（冪等）。床は `NEWS_BACKFILL_FLOOR`（既定 2012-01-01）、止めるのは `NEWS_BACKFILL=off`。
+費用 0（AI を呼ばない）。行数の見積り: 1 日 15〜40 件 × 14 年 ≒ 10 万行 ≒ 120 MB（上限 30 万行 `news_history_trim` は不変・この行は世界 ref が無く出典 3 未満なので超過時は最初に落ちる）。
+⚠ 遡及の記録は**一つの編集記録**であって全報道ではない（取りこぼしがある）。Atlas の答えは `coverage_from` と出典を必ず述べる。
+
+### 19.6 Atlas
+
+| 能力 | 何をするか |
+|---|---|
+| `news.history` | `news_history_search` を引く: 語・期間・bbox（地域は Atlas が箱で指す）・種別・施設/企業・系列。**一致数・記録の範囲（coverage）・出典リンク・更新履歴**を返し、記録が遡らない期間を明言する |

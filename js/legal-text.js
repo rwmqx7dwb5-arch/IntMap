@@ -1,282 +1,2600 @@
 /* ============================================================================
  *  IntMap · Terms of Service & Privacy Policy — THE TEXT
  * ----------------------------------------------------------------------------
- *  ⚠ THIS FILE IS THE ONLY COPY OF THE LEGAL TEXT. Three surfaces read it and none of them
- *  keeps a second copy: the in-app modal (js/legal.js), and the two public pages
- *  privacy.html / terms.html, which exist so the policy has a URL that can be linked to
- *  from outside the app. Edit here and all three change together.
+ *  ⚠ THIS FILE IS THE ONLY COPY OF THE LEGAL TEXT. 
+Three surfaces read it and none of them
+ *  keeps a second copy: the in-app modal (js/legal.js), 
+and the two public pages
+ *  privacy.html / terms.html, 
+which exist so the policy has a URL that can be linked to
+ *  from outside the app. 
+Edit here and all three change together.
  *
- *  ⚠ IT DESCRIBES A DATA FLOW, SO IT IS A FACT ABOUT THE CODE, NOT COPY. When you change
- *  where data is fetched, analysed, stored or sent, §4 of the privacy policy changes in the
- *  SAME commit — see CONSTITUTION.md §5. `npm run check:docs` compares the news paragraph
+ *  ⚠ IT DESCRIBES A DATA FLOW, 
+SO IT IS A FACT ABOUT THE CODE, 
+NOT COPY. 
+When you change
+ *  where data is fetched, 
+analysed, 
+stored or sent, 
+§4 of the privacy policy changes in the
+ *  SAME commit — see CONSTITUTION.md §5. 
+`npm run check:docs` compares the news paragraph
  *  against the switch that actually decides it (`USE_SERVER_NEWS` in js/app-body.js).
  *
- *  ⚠ Japanese and English only. These are legal texts: a machine translation of a liability
- *  clause is not the same document, so the other seven UI languages fall back to English
- *  rather than being given a text nobody has checked. That is a deliberate limit, not a gap
+ *  ⚠ Japanese and English only. 
+These are legal texts: a machine translation of a liability
+ *  clause is not the same document, 
+so the other seven UI languages fall back to English
+ *  rather than being given a text nobody has checked. 
+That is a deliberate limit, 
+not a gap
  *  for the i18n gate to close.
  *
  *  ⚠ No back-ticks inside the templates (CONSTITUTION.md §2).
  * ==========================================================================*/
 
 window.IntMapLegalText = (function () {
-  /* (own-fetch-relay) Privacy §4: THE ARTICLE READER'S SECOND STRATEGY names its recipient. When a publisher sends no CORS header, the article page is fetched by our own fetch-relay (article rule) instead of by a public CORS proxy; the relay receives the article URL and nothing else. Stated in both languages. */
-  /* (own-fetch-relay) Privacy §4: NO PUBLIC CORS RELAY IS USED ANY MORE. The satellite fallback, the Companies tab's share prices and the "511" camera lists named a public CORS relay (corsproxy.io, api.allorigins.win, api.codetabs.com) as a path — a third party that saw which address was requested and could alter the answer. Those paths now go through this project's own Supabase Edge Functions (fetch-relay, quotes-relay), each an allow-list; the recipient named in both languages is the real one. */
-  /* ⚠ WHY THE DATE ABOVE LAST MOVED — the policy's own change log, carried over with the text it
-     annotates. A privacy policy that changes without saying what changed is a policy nobody can
-     audit; this is where each edit is justified. Append to it, never rewrite it. */
-  /* (#R404) Privacy §4: THE PLACE A STORY IS ABOUT IS NOW WORKED OUT BY THE AI, ON THE STORED PATH. Until now this section said, in so many words, that the server-side collection placed its articles with "the same non-AI deterministic engine" and that the ONLY AI call was the Japanese headline translation. Both halves are now false: `news-ingest` has a `locate` stage that sends the already-published headline and the opening of the summary to the AI provider to decide the subject location, with the deterministic engine kept as the fallback. Nothing NEW is collected and nothing about the reader is sent — what changed is that metadata we already stored is now also sent to the AI provider, which is a disclosable fact, so it is disclosed. `scripts/doc-facts.mjs` §15 checks this sentence against the code that performs it. */
-  /* (#R386) Privacy §4: THE EVENT DATABASE IS NOW WHAT THE NEWS TAB SHOWS. #R351 added the server-side collection and said, correctly, that nothing of it was on screen. That sentence is now false, so it is replaced rather than left standing: the News tab reads news_events by default, one card per event, with the outlets that reported it and the figures on which they differ. Nothing new is COLLECTED — the collection, the retention (articles 72 hours, events 30 days, starred events kept) and the single AI call (an event headline, for its Japanese translation) are unchanged. What changed is that the reader can see it, that reading it sends nothing about the reader, and that starring an event stores an event id. The browser path is still there and is still what search, past dates and multi-language news use. */
-  /* (#R356) Privacy §4: the forecast weather layers can now read NOAA GFS and DWD ICON as well as ECMWF IFS — the reader chooses per layer. Same host, same keyless range requests, same CC BY 4.0 redistribution, and still no coordinates and nothing about the user; what changed is WHICH national centre produced the numbers, which is a fact the sources page and the policy both have to state. (#R276) Privacy §4: the animated wind field and the ECMWF weather layers now read ECMWF IFS numerical fields from Open-Meteo's map-tile host (map-tiles.open-meteo.com) with HTTP range requests — a new USE of a service already listed, and one that sends no coordinates and nothing about the user; the Clouds layer's imagery moved from RainViewer (whose free satellite product is retired) to NASA GIBS geostationary clean-infrared, which was already listed. (#R217) Privacy §4: clicking a RIVER name on the map now sends that river's names to Nominatim — and, if Nominatim cannot answer, to Overpass together with the surrounding map area — so the highlight can follow the river past the edge of the screen. Both services were already listed; this is a new USE of them and nothing personal is sent. (#R185) Privacy §4: the live-satellite layer's fallback sources — a public CORS relay and the catalogue bundled with the site (built from CelesTrak, or SatNOGS DB when CelesTrak is unreachable). Still nothing about the user is sent. (#R184) Privacy §4: CelesTrak (orbital element sets for the live-satellite layer — NOTHING about the user is sent; the request names a catalogue group and no coordinates at all), plus the new Overpass and Valhalla USES (drone restricted-area and landing-site checks, historical road/rail networks, and a drawn keep-out area for road routing) — all of which send map coordinates only. (#R122) Privacy §4: OpenAI content-sharing (Designated Content may be used to develop/train OpenAI models) + do-not-submit-sensitive-data caution. (#R114) Terms §6 + sources: AI provider is OpenAI (#R722: the model id is NOT written here — one AI_MODEL secret fixes it and ai-proxy names it once; a copy in the shell outlives the setting) and AI features may run web searches. (#R101) Privacy §4: flight-simulator audio note. (#R351) Privacy §4: OUR SERVER NOW COLLECTS AND STORES NEWS. Until this round the only news path was the browser's (fetch through our relay, place it in the browser, store nothing), and the paragraph said so. A second, background path now exists: the server reads the public RSS feeds of a fixed list of news organisations — and Google News search for the three wires that publish no free feed — and stores each article's headline, link, summary and publication time in our database so that reports of the SAME event can be grouped. No user data is involved in that collection at all; what is sent upstream is the feed URL and nothing else. Retention is stated in the paragraph (articles 72 hours, events 30 days, starred events kept). Placing those stored articles uses the same non-AI engine, server-side; the ONE thing an AI provider sees is the published English headline of an event, sent to produce its Japanese translation. The app still shows the browser path — the event database is not on screen yet — and the paragraph says that too. (#R276) Privacy §4: the animated wind field and the ECMWF weather layers now read ECMWF IFS numerical fields from Open-Meteo's map-tile host (map-tiles.open-meteo.com) with HTTP range requests — a new USE of a service already listed, and one that sends no coordinates and nothing about the user; the Clouds layer's imagery moved from RainViewer (whose free satellite product is retired) to NASA GIBS geostationary clean-infrared, which was already listed. (#R217) Privacy §4: clicking a RIVER name on the map now sends that river's names to Nominatim — and, if Nominatim cannot answer, to Overpass together with the surrounding map area — so the highlight can follow the river past the edge of the screen. Both services were already listed; this is a new USE of them and nothing personal is sent. (#R185) Privacy §4: the live-satellite layer's fallback sources — a public CORS relay and the catalogue bundled with the site (built from CelesTrak, or SatNOGS DB when CelesTrak is unreachable). Still nothing about the user is sent. (#R184) Privacy §4: CelesTrak (orbital element sets for the live-satellite layer — NOTHING about the user is sent; the request names a catalogue group and no coordinates at all), plus the new Overpass and Valhalla USES (drone restricted-area and landing-site checks, historical road/rail networks, and a drawn keep-out area for road routing) — all of which send map coordinates only. (#R122) Privacy §4: OpenAI content-sharing (Designated Content may be used to develop/train OpenAI models) + do-not-submit-sensitive-data caution. (#R114) Terms §6 + sources: AI provider is OpenAI (#R722: the model id is NOT written here — one AI_MODEL secret fixes it and ai-proxy names it once; a copy in the shell outlives the setting) and AI features may run web searches. (#R101) Privacy §4: flight-simulator audio note. */
+  /* (own-fetch-relay) Privacy §4: THE ARTICLE READER'S SECOND STRATEGY names its recipient. 
+When a publisher sends no CORS header, 
+the article page is fetched by our own fetch-relay (article rule) instead of by a public CORS proxy;
+ the relay receives the article URL and nothing else. 
+Stated in both languages. 
+*/
+  /* (own-fetch-relay) Privacy §4: NO PUBLIC CORS RELAY IS USED ANY MORE. 
+The satellite fallback, 
+the Companies tab's share prices and the "511" camera lists named a public CORS relay (corsproxy.io, 
+api.allorigins.win, 
+api.codetabs.com) as a path — a third party that saw which address was requested and could alter the answer. 
+Those paths now go through this project's own Supabase Edge Functions (fetch-relay, 
+quotes-relay), 
+each an allow-list;
+ the recipient named in both languages is the real one. 
+*/
+  /* ⚠ WHY THE DATE ABOVE LAST MOVED — the policy's own change log, 
+carried over with the text it
+     annotates. 
+A privacy policy that changes without saying what changed is a policy nobody can
+     audit;
+ this is where each edit is justified. 
+Append to it, 
+never rewrite it. 
+*/
+  /* (#R404) Privacy §4: THE PLACE A STORY IS ABOUT IS NOW WORKED OUT BY THE AI, 
+ON THE STORED PATH. 
+Until now this section said, 
+in so many words, 
+that the server-side collection placed its articles with "the same non-AI deterministic engine" and that the ONLY AI call was the Japanese headline translation. 
+Both halves are now false: `news-ingest` has a `locate` stage that sends the already-published headline and the opening of the summary to the AI provider to decide the subject location, 
+with the deterministic engine kept as the fallback. 
+Nothing NEW is collected and nothing about the reader is sent — what changed is that metadata we already stored is now also sent to the AI provider, 
+which is a disclosable fact, 
+so it is disclosed. 
+`scripts/doc-facts.mjs` §15 checks this sentence against the code that performs it. 
+*/
+  /* (#R386) Privacy §4: THE EVENT DATABASE IS NOW WHAT THE NEWS TAB SHOWS. 
+#R351 added the server-side collection and said, 
+correctly, 
+that nothing of it was on screen. 
+That sentence is now false, 
+so it is replaced rather than left standing: the News tab reads news_events by default, 
+one card per event, 
+with the outlets that reported it and the figures on which they differ. 
+Nothing new is COLLECTED — the collection, 
+the retention (articles 72 hours, 
+events 30 days, 
+starred events kept) and the single AI call (an event headline, 
+for its Japanese translation) are unchanged. 
+What changed is that the reader can see it, 
+that reading it sends nothing about the reader, 
+and that starring an event stores an event id. 
+The browser path is still there and is still what search, 
+past dates and multi-language news use. 
+*/
+  /* (#R356) Privacy §4: the forecast weather layers can now read NOAA GFS and DWD ICON as well as ECMWF IFS — the reader chooses per layer. 
+Same host, 
+same keyless range requests, 
+same CC BY 4.0 redistribution, 
+and still no coordinates and nothing about the user;
+ what changed is WHICH national centre produced the numbers, 
+which is a fact the sources page and the policy both have to state. 
+(#R276) Privacy §4: the animated wind field and the ECMWF weather layers now read ECMWF IFS numerical fields from Open-Meteo's map-tile host (map-tiles.open-meteo.com) with HTTP range requests — a new USE of a service already listed, 
+and one that sends no coordinates and nothing about the user;
+ the Clouds layer's imagery moved from RainViewer (whose free satellite product is retired) to NASA GIBS geostationary clean-infrared, 
+which was already listed. 
+(#R217) Privacy §4: clicking a RIVER name on the map now sends that river's names to Nominatim — and, 
+if Nominatim cannot answer, 
+to Overpass together with the surrounding map area — so the highlight can follow the river past the edge of the screen. 
+Both services were already listed;
+ this is a new USE of them and nothing personal is sent. 
+(#R185) Privacy §4: the live-satellite layer's fallback sources — a public CORS relay and the catalogue bundled with the site (built from CelesTrak, 
+or SatNOGS DB when CelesTrak is unreachable). 
+Still nothing about the user is sent. 
+(#R184) Privacy §4: CelesTrak (orbital element sets for the live-satellite layer — NOTHING about the user is sent;
+ the request names a catalogue group and no coordinates at all), 
+plus the new Overpass and Valhalla USES (drone restricted-area and landing-site checks, 
+historical road/rail networks, 
+and a drawn keep-out area for road routing) — all of which send map coordinates only. 
+(#R122) Privacy §4: OpenAI content-sharing (Designated Content may be used to develop/train OpenAI models) + do-not-submit-sensitive-data caution. 
+(#R114) Terms §6 + sources: AI provider is OpenAI (#R722: the model id is NOT written here — one AI_MODEL secret fixes it and ai-proxy names it once;
+ a copy in the shell outlives the setting) and AI features may run web searches. 
+(#R101) Privacy §4: flight-simulator audio note. 
+(#R351) Privacy §4: OUR SERVER NOW COLLECTS AND STORES NEWS. 
+Until this round the only news path was the browser's (fetch through our relay, 
+place it in the browser, 
+store nothing), 
+and the paragraph said so. 
+A second, 
+background path now exists: the server reads the public RSS feeds of a fixed list of news organisations — and Google News search for the three wires that publish no free feed — and stores each article's headline, 
+link, 
+summary and publication time in our database so that reports of the SAME event can be grouped. 
+No user data is involved in that collection at all;
+ what is sent upstream is the feed URL and nothing else. 
+Retention is stated in the paragraph (articles 72 hours, 
+events 30 days, 
+starred events kept). 
+Placing those stored articles uses the same non-AI engine, 
+server-side;
+ the ONE thing an AI provider sees is the published English headline of an event, 
+sent to produce its Japanese translation. 
+The app still shows the browser path — the event database is not on screen yet — and the paragraph says that too. 
+(#R276) Privacy §4: the animated wind field and the ECMWF weather layers now read ECMWF IFS numerical fields from Open-Meteo's map-tile host (map-tiles.open-meteo.com) with HTTP range requests — a new USE of a service already listed, 
+and one that sends no coordinates and nothing about the user;
+ the Clouds layer's imagery moved from RainViewer (whose free satellite product is retired) to NASA GIBS geostationary clean-infrared, 
+which was already listed. 
+(#R217) Privacy §4: clicking a RIVER name on the map now sends that river's names to Nominatim — and, 
+if Nominatim cannot answer, 
+to Overpass together with the surrounding map area — so the highlight can follow the river past the edge of the screen. 
+Both services were already listed;
+ this is a new USE of them and nothing personal is sent. 
+(#R185) Privacy §4: the live-satellite layer's fallback sources — a public CORS relay and the catalogue bundled with the site (built from CelesTrak, 
+or SatNOGS DB when CelesTrak is unreachable). 
+Still nothing about the user is sent. 
+(#R184) Privacy §4: CelesTrak (orbital element sets for the live-satellite layer — NOTHING about the user is sent;
+ the request names a catalogue group and no coordinates at all), 
+plus the new Overpass and Valhalla USES (drone restricted-area and landing-site checks, 
+historical road/rail networks, 
+and a drawn keep-out area for road routing) — all of which send map coordinates only. 
+(#R122) Privacy §4: OpenAI content-sharing (Designated Content may be used to develop/train OpenAI models) + do-not-submit-sensitive-data caution. 
+(#R114) Terms §6 + sources: AI provider is OpenAI (#R722: the model id is NOT written here — one AI_MODEL secret fixes it and ai-proxy names it once;
+ a copy in the shell outlives the setting) and AI features may run web searches. 
+(#R101) Privacy §4: flight-simulator audio note. 
+*/
   /* (#R514) Privacy §4: the forecast fields are read from the AWS Open Data bucket Open-Meteo publishes,
      not from Open-Meteo's own CDN any more — that host was retired upstream and its successor refuses
-     every Referer but Open-Meteo's own. Same keyless range requests, same CC BY 4.0, still no
-     coordinates and nothing about the user; what changed is WHO SERVES THE BYTES, and a policy that
-     names the recipient has to name the real one. tests/weather-models-checks.test.mjs (#R514) ties the hostname in
-     both languages to the one js/wx-models.js actually reads from. */
-  /* (#R533) Privacy §4: THE COMPANY-LOGO THIRD PARTY IS GONE, AND WHAT REPLACED IT SENDS LESS.
+     every Referer but Open-Meteo's own. 
+Same keyless range requests, 
+same CC BY 4.0, 
+still no
+     coordinates and nothing about the user;
+ what changed is WHO SERVES THE BYTES, 
+and a policy that
+     names the recipient has to name the real one. 
+tests/weather-models-checks.test.mjs (#R514) ties the hostname in
+     both languages to the one js/wx-models.js actually reads from. 
+*/
+  /* (#R533) Privacy §4: THE COMPANY-LOGO THIRD PARTY IS GONE, 
+AND WHAT REPLACED IT SENDS LESS.
      Clearbit's Logo API shut down 2025-12-08 (logo.clearbit.com resolves on no public resolver;
-     one opening of the Companies tab produced 189 name-resolution failures), so which image is a
-     company's logo is now Wikidata's answer (P154), resolved at BUILD time and shipped with the
-     site, and the bytes come from Wikimedia Commons — the reading session no longer tells ANY
-     third party which company is on screen. Google's favicon service stays as the fallback for the
-     companies Commons has no logo for, and there the domain name is still sent, so it is still
-     named here. The share prices behind the live market caps now go through our own quotes-relay
+
+     one opening of the Companies tab produced 189 name-resolution failures), 
+so which image is a
+     company's logo is now Wikidata's answer (P154), 
+resolved at BUILD time and shipped with the
+     site, 
+and the bytes come from Wikimedia Commons — the reading session no longer tells ANY
+     third party which company is on screen. 
+Google's favicon service stays as the fallback for the
+     companies Commons has no logo for, 
+and there the domain name is still sent, 
+so it is still
+     named here. 
+The share prices behind the live market caps now go through our own quotes-relay
      Edge Function first: a policy that names the recipient has to name the one that actually
-     carries the bytes (#R514 set that rule for the weather fields). */
-  /* (#R540) Privacy §4: WHAT YOU ATTACH TO ATLAS GOES TO THE AI PROVIDER, AND THE PARAGRAPH NOW
-     SAYS SO. Since #R149 an attached picture was already being sent and the policy described only
-     "text you submit" — a gap, because a photograph is not text. This round widened the channel a
-     great deal: a PDF is forwarded to the provider as the document itself, and a Word/Excel/
+     carries the bytes (#R514 set that rule for the weather fields). 
+*/
+  /* (#R540) Privacy §4: WHAT YOU ATTACH TO ATLAS GOES TO THE AI PROVIDER, 
+AND THE PARAGRAPH NOW
+     SAYS SO. 
+Since #R149 an attached picture was already being sent and the policy described only
+     "text you submit" — a gap, 
+because a photograph is not text. 
+This round widened the channel a
+     great deal: a PDF is forwarded to the provider as the document itself, 
+and a Word/Excel/
      PowerPoint/OpenDocument/archive attachment is read in the browser and its TEXT is forwarded.
-     What leaves the browser is therefore no longer only what the reader typed, which is exactly the
-     kind of fact CONSTITUTION.md §6 requires to be disclosed in the same change that creates it. */
+     What leaves the browser is therefore no longer only what the reader typed, 
+which is exactly the
+     kind of fact CONSTITUTION.md §6 requires to be disclosed in the same change that creates it. 
+*/
   /* (#R565) Privacy §4: two new layers read three measurement networks DIRECTLY FROM THE BROWSER —
-     IODA (Georgia Tech), RIPE Atlas and RIPEstat. Named here because §4 is a statement about where
-     the code fetches from, and because RIPE's own terms forbid re-distribution: reading live in the
-     reader's browser and storing nothing is what satisfies that, so the paragraph has to say it. The
+     IODA (Georgia Tech), 
+RIPE Atlas and RIPEstat. 
+Named here because §4 is a statement about where
+     the code fetches from, 
+and because RIPE's own terms forbid re-distribution: reading live in the
+     reader's browser and storing nothing is what satisfies that, 
+so the paragraph has to say it. 
+The
      one thing that leaves the browser on the reader's behalf is the ISO country code of a country
-     they clicked; that is stated too rather than folded into "map coordinates only", because it is
-     neither a coordinate nor nothing. Cloudflare Radar and OONI are NOT named — they are not
-     contacted at all (docs/INTERNET-HEALTH.md says why). */
-  /* (client-error-log) Privacy §1 and §6: IntMap NOW RECORDS THE ERRORS ITS PAGES THROW. The Sentry loader that
-     used to be in index.html never had a DSN and so never sent anything, which is why no policy text
-     named it; it is gone, and an uncaught exception or unhandled rejection is now sent to our own
-     server (the client-errors Edge Function, stored in Supabase — already named in §4, so no new
-     third party). That is a new collection, so §1 says what is kept (the error message and stack
-     with web addresses cut to their path, the page path, the build, the browser's name and major
-     version, and the times it occurred) and what is not (IP address, account, the query string or
-     fragment of any address, anything typed), and §6 states the 30-day retention the database
-     enforces (public.purge_client_errors, scheduled daily). The words mirror the header of
-     supabase/functions/_shared/client-error-shape.js, which is the code that decides it. */
-  /* (atlas-semantic-search) Privacy §4: ATLAS'S CAPABILITY SEARCH NOW ASKS AN EMBEDDING MODEL, AND THAT MODEL IS
-     ALWAYS OPENAI'S. The paragraph above already said that the text you give Atlas goes to the AI
-     provider — but it names the provider as "Anthropic, OpenAI or Google", and the new
+     they clicked;
+ that is stated too rather than folded into "map coordinates only", 
+because it is
+     neither a coordinate nor nothing. 
+Cloudflare Radar and OONI are NOT named — they are not
+     contacted at all (docs/INTERNET-HEALTH.md says why). 
+*/
+  /* (client-error-log) Privacy §1 and §6: IntMap NOW RECORDS THE ERRORS ITS PAGES THROW. 
+The Sentry loader that
+     used to be in index.html never had a DSN and so never sent anything, 
+which is why no policy text
+     named it;
+ it is gone, 
+and an uncaught exception or unhandled rejection is now sent to our own
+     server (the client-errors Edge Function, 
+stored in Supabase — already named in §4, 
+so no new
+     third party). 
+That is a new collection, 
+so §1 says what is kept (the error message and stack
+     with web addresses cut to their path, 
+the page path, 
+the build, 
+the browser's name and major
+     version, 
+and the times it occurred) and what is not (IP address, 
+account, 
+the query string or
+     fragment of any address, 
+anything typed), 
+and §6 states the 30-day retention the database
+     enforces (public.purge_client_errors, 
+scheduled daily). 
+The words mirror the header of
+     supabase/functions/_shared/client-error-shape.js, 
+which is the code that decides it. 
+*/
+  /* (atlas-semantic-search) Privacy §4: ATLAS'S CAPABILITY SEARCH NOW ASKS AN EMBEDDING MODEL, 
+AND THAT MODEL IS
+     ALWAYS OPENAI'S. 
+The paragraph above already said that the text you give Atlas goes to the AI
+     provider — but it names the provider as "Anthropic, 
+OpenAI or Google", 
+and the new
      supabase/functions/atlas-embed sends the search phrase Atlas writes to OpenAI's embeddings
-     endpoint whichever of those is active. Under any setting other than OpenAI that is a recipient
-     the paragraph did not name, so it is named, with what is sent (a phrase Atlas derived from the
-     request, not the conversation), what it is for, and what is kept (IntMap's own catalogue
-     vectors; nothing of the reader's). */
-  /* (outbound-hosts-disclosed) Privacy §4: EVERY HOST THE BROWSER CAN REQUEST IS NOW NAMED, AND A GATE
-     KEEPS IT THAT WAY. This section had never been compared with the code it describes; parsing js/,
-     src/, the served pages and sw.js for the hosts the browser can request found recipients the
-     paragraph did not name. Two carry something of the reader's: the article reader asks Jina AI's
-     reader (r.jina.ai) for the article FIRST — the sentence said the publisher was asked first, which
-     is the second rung — and is sent the article's URL; the password breach check sends the first
+     endpoint whichever of those is active. 
+Under any setting other than OpenAI that is a recipient
+     the paragraph did not name, 
+so it is named, 
+with what is sent (a phrase Atlas derived from the
+     request, 
+not the conversation), 
+what it is for, 
+and what is kept (IntMap's own catalogue
+     vectors;
+ nothing of the reader's). 
+*/
+  /* (outbound-hosts-disclosed) Privacy §4: EVERY HOST THE BROWSER CAN REQUEST IS NOW NAMED, 
+AND A GATE
+     KEEPS IT THAT WAY. 
+This section had never been compared with the code it describes;
+ parsing js/,
+     src/, 
+the served pages and sw.js for the hosts the browser can request found recipients the
+     paragraph did not name. 
+Two carry something of the reader's: the article reader asks Jina AI's
+     reader (r.jina.ai) for the article FIRST — the sentence said the publisher was asked first, 
+which
+     is the second rung — and is sent the article's URL;
+ the password breach check sends the first
      five hex characters of the password's SHA-1 to Pwned Passwords (k-anonymity: the match is made in
-     the browser against the suffixes returned). The rest send nothing of the reader's beyond the
-     request itself (fonts, flags, libraries, weather warnings, volcano and hazard feeds, widgets,
-     public datasets) or a code/point they ask about (flag and holiday country codes, an aircraft's
-     ICAO address, a clicked sea-floor point), and each is named with what it is sent. The base-map
-     and overlay tile hosts are named instead of "and others". scripts/outbound-hosts.json records,
-     per host, what it is sent and the words below that say so, and npm run check:datagov
-     (rule outbound-disclosed) fails when a host the code can request is not in it, when those words
-     are not in BOTH languages here, or when the ledger names a host the code no longer requests. */
-  /* (remove-synthetic-planes) Privacy §4: THE BROWSER NO LONGER ASKS airplanes.live FOR ANYTHING. The
+     the browser against the suffixes returned). 
+The rest send nothing of the reader's beyond the
+     request itself (fonts, 
+flags, 
+libraries, 
+weather warnings, 
+volcano and hazard feeds, 
+widgets,
+     public datasets) or a code/point they ask about (flag and holiday country codes, 
+an aircraft's
+     ICAO address, 
+a clicked sea-floor point), 
+and each is named with what it is sent. 
+The base-map
+     and overlay tile hosts are named instead of "and others". 
+scripts/outbound-hosts.json records,
+     per host, 
+what it is sent and the words below that say so, 
+and npm run check:datagov
+     (rule outbound-disclosed) fails when a host the code can request is not in it, 
+when those words
+     are not in BOTH languages here, 
+or when the ledger names a host the code no longer requests. 
+*/
+  /* (remove-synthetic-planes) Privacy §4: THE BROWSER NO LONGER ASKS airplanes.live FOR ANYTHING. 
+The
      aircraft layer's original path — a per-browser sweep that sent airplanes.live the centres of the
-     circles covering the map in view, reachable only with ?aviation=v1 — is removed together with its
-     provider, which had refused every request since #R341. The clause that named it is removed with
-     it; live aircraft still arrive through IntMap's own server (the Supabase Edge Function
-     aviation-feed, under the Supabase server-side processing this section already lists). */
-  /* (anonymous-usage-counts) Privacy §1, §3 and §6: INTMAP NOW KEEPS ANONYMOUS USAGE COUNTS. The operator decided
-     (2026-10-01) to measure what marketing reaches with IntMap's own aggregate counters only — no cookie, no
-     analytics vendor, no IP, no person. That is a new collection, so §1 lists exactly what is counted (the
-     list is supabase/functions/usage-count/shape.js, the code that decides it) and what is not, the two
-     ways nothing is sent (the browser's Do Not Track / Global Privacy Control, and the Settings switch,
-     which also discards what was not yet sent), §3 says what the counts are used for, and §6 states the
-     400-day retention purge_usage_counts enforces. The recipient is the Supabase project §4 already
-     names (the usage-count Edge Function), so no new third party. */
-  /* (field-speed) Privacy §1 and §3: ONE MORE THING IS COUNTED, SAID HERE BEFORE IT IS. How long the map took to become
-     usable after it was opened — a RANGE (shape.js BOOT_BUCKETS), never the time — how the launch screen lifted, and the
-     release the page was, beside the device type the counter already keeps (shape.js `ready` / `boot_end`). Same
-     recipient, same consent rules, same 400-day retention. §3 says what it is for and that the speed of each release is
-     PUBLISHED — as shares only (public.field_speed, supabase/migrations/20261116130000_field_speed.sql) — on the status page. */
-  /* (growth-loop) Privacy §1: TWO MORE THINGS ARE COUNTED, SAID HERE BEFORE THEY ARE. The kind of each Atlas
-     answer (text / map / chart / mixed — the label Atlas gives it, shape.js `atlas_mode`), and whether the map
-     was opened from one of IntMap's own introduction pages (an example's share page, About, For teachers —
-     shape.js `entry`), in which case the utm values of THAT page's address are read, because those pages do
-     not run the counter and drop their query on the way to the map. Same counters, same consent, same
-     recipient. */
+     circles covering the map in view, 
+reachable only with ?aviation=v1 — is removed together with its
+     provider, 
+which had refused every request since #R341. 
+The clause that named it is removed with
+     it;
+ live aircraft still arrive through IntMap's own server (the Supabase Edge Function
+     aviation-feed, 
+under the Supabase server-side processing this section already lists). 
+*/
+  /* (anonymous-usage-counts) Privacy §1, 
+§3 and §6: INTMAP NOW KEEPS ANONYMOUS USAGE COUNTS. 
+The operator decided
+     (2026-10-01) to measure what marketing reaches with IntMap's own aggregate counters only — no cookie, 
+no
+     analytics vendor, 
+no IP, 
+no person. 
+That is a new collection, 
+so §1 lists exactly what is counted (the
+     list is supabase/functions/usage-count/shape.js, 
+the code that decides it) and what is not, 
+the two
+     ways nothing is sent (the browser's Do Not Track / Global Privacy Control, 
+and the Settings switch,
+     which also discards what was not yet sent), 
+§3 says what the counts are used for, 
+and §6 states the
+     400-day retention purge_usage_counts enforces. 
+The recipient is the Supabase project §4 already
+     names (the usage-count Edge Function), 
+so no new third party. 
+*/
+  /* (field-speed) Privacy §1 and §3: ONE MORE THING IS COUNTED, 
+SAID HERE BEFORE IT IS. 
+How long the map took to become
+     usable after it was opened — a RANGE (shape.js BOOT_BUCKETS), 
+never the time — how the launch screen lifted, 
+and the
+     release the page was, 
+beside the device type the counter already keeps (shape.js `ready` / `boot_end`). 
+Same
+     recipient, 
+same consent rules, 
+same 400-day retention. 
+§3 says what it is for and that the speed of each release is
+     PUBLISHED — as shares only (public.field_speed, 
+supabase/migrations/20261116130000_field_speed.sql) — on the status page. 
+*/
+  /* (growth-loop) Privacy §1: TWO MORE THINGS ARE COUNTED, 
+SAID HERE BEFORE THEY ARE. 
+The kind of each Atlas
+     answer (text / map / chart / mixed — the label Atlas gives it, 
+shape.js `atlas_mode`), 
+and whether the map
+     was opened from one of IntMap's own introduction pages (an example's share page, 
+About, 
+For teachers —
+     shape.js `entry`), 
+in which case the utm values of THAT page's address are read, 
+because those pages do
+     not run the counter and drop their query on the way to the map. 
+Same counters, 
+same consent, 
+same
+     recipient. 
+*/
   /* (weekly-earth) Privacy §1 and §4: «This week on Earth» (weekly/) is named among the introduction pages an arrival is
-     counted from (shape.js SITE_PAGES 'weekly' — the same entry count, utm reading and consent), and §4 says where its
-     content comes from: USGS and NASA EONET, read at BUILD time by scripts/build-weekly-earth.mjs and shipped with the
-     site, so the reader's browser sends neither of them anything. No new recipient. */
+     counted from (shape.js SITE_PAGES 'weekly' — the same entry count, 
+utm reading and consent), 
+and §4 says where its
+     content comes from: USGS and NASA EONET, 
+read at BUILD time by scripts/build-weekly-earth.mjs and shipped with the
+     site, 
+so the reader's browser sends neither of them anything. 
+No new recipient. 
+*/
   /* (marketing-next) Privacy §1: two more of IntMap's own pages are named among the introduction pages an arrival is
-     counted from — the historical-map entry pages (history/) and the «on this day» pages (on-this-day/), shape.js
-     SITE_PAGES. Nothing new is collected: the same entry count, the same utm reading, the same consent. */
-  /* (account-data-center) Terms §4: A READER CAN NOW SEE AND TAKE A COPY OF WHAT THE ACCOUNT HOLDS, SELF-SERVICE.
-     «Account ▸ Your data» lists every kind of data the account has rows in (with what, why and how long) and
-     downloads all of it as one JSON file; the set is the one account deletion removes (the database walks the
-     same foreign keys for both). Nothing new is collected by the export itself. The account's saved places
-     (my-places) are a new kind of account data — named in the same sentence. The privacy policy's §1/§6/§7
-     still describe access as «contact us»; that text is not changed in this edit (another change owns
-     privacy.html in the same window) and is recorded as open in dev-notes/2026-10-03-platform-backend.md. */
-  /* (data-studio) Privacy §1: A LINK THAT CARRIES A TABLE. The data studio (js/data-studio.js) publishes a coloured table as a
-     link whose fragment holds the table itself — each row's place and the coloured value (js/map-state.js `ds`). It is not
-     sent to or stored on any server (a fragment never leaves the browser, RFC 3986 §3.5), and therefore whoever is given
-     the link can read those values. Said in §1 beside the other share links, en + jp. */
-  /* (collection-workspace) Privacy §1/§6: TWO NEW KINDS OF ACCOUNT DATA AND ONE NEW WAY OUT. Saved maps (saved_views — the
-     share link's own form of the map) and published collections (collection_shares) are named in §1; §6 says how long they
-     are kept and what publishing makes visible: the collection's place names, notes, positions and maps, to anyone with the
-     link, only after the reader chose to publish, never the account or e-mail, until they stop (the link dies at once) —
-     and that copies already taken stay with whoever took them. */
-  /* (community-maps) Privacy §1/§6: LISTING, COPY RECEIPTS AND REPORTS. Listing a published collection in Community maps is a
-     second explicit act under a name the reader types (never the e-mail or account name); anyone finds it, with counts of who
-     kept it (never who); the lineage names a listed original only. Copy receipts (collection_copies) and reports
-     (community_map_reports) are named in §1 and §6 with who reads them (the owner sees counts; reports go to administrators)
-     and how long they are kept (receipts: while the collection is published; reports: until the account is deleted, a settled
-     one 730 days; an administrator's decision stays with the collection across unpublishing). en + jp. */
-  /* (map-document-unify) Privacy §1/§6: a saved map may now be a TOUR, a reader's own drawn map or an ATLAS ANSWER — each
-     step's map and its words (the title, what to say, the question; an answer's question and text) are kept in the same
-     row (saved_views.steps) and, when the collection is published, shown to whoever has the link. Same recipient
-     (Supabase), same retention, same deletion; the two sentences name the words so a reader is not surprised to find
-     their notes on a published tour. */
-  /* (atlas-os) Privacy §2: ATLAS NOW KEEPS AN INVESTIGATION NOTEBOOK. Each Atlas turn — the question, the answer,
-     the map state at the answer, the operations Atlas ran, query results and sources — is saved in the reader's
-     browser (IndexedDB, js/atlas-notebook-store.js), with a switch to turn it off and a delete-all. Only if the
+     counted from — the historical-map entry pages (history/) and the «on this day» pages (on-this-day/), 
+shape.js
+     SITE_PAGES. 
+Nothing new is collected: the same entry count, 
+the same utm reading, 
+the same consent. 
+*/
+  /* (account-data-center) Terms §4: A READER CAN NOW SEE AND TAKE A COPY OF WHAT THE ACCOUNT HOLDS, 
+SELF-SERVICE.
+     «Account ▸ Your data» lists every kind of data the account has rows in (with what, 
+why and how long) and
+     downloads all of it as one JSON file;
+ the set is the one account deletion removes (the database walks the
+     same foreign keys for both). 
+Nothing new is collected by the export itself. 
+The account's saved places
+     (my-places) are a new kind of account data — named in the same sentence. 
+The privacy policy's §1/§6/§7
+     still describe access as «contact us»;
+ that text is not changed in this edit (another change owns
+     privacy.html in the same window) and is recorded as open in dev-notes/2026-10-03-platform-backend.md. 
+*/
+  /* (data-studio) Privacy §1: A LINK THAT CARRIES A TABLE. 
+The data studio (js/data-studio.js) publishes a coloured table as a
+     link whose fragment holds the table itself — each row's place and the coloured value (js/map-state.js `ds`). 
+It is not
+     sent to or stored on any server (a fragment never leaves the browser, 
+RFC 3986 §3.5), 
+and therefore whoever is given
+     the link can read those values. 
+Said in §1 beside the other share links, 
+en + jp. 
+*/
+  /* (collection-workspace) Privacy §1/§6: TWO NEW KINDS OF ACCOUNT DATA AND ONE NEW WAY OUT. 
+Saved maps (saved_views — the
+     share link's own form of the map) and published collections (collection_shares) are named in §1;
+ §6 says how long they
+     are kept and what publishing makes visible: the collection's place names, 
+notes, 
+positions and maps, 
+to anyone with the
+     link, 
+only after the reader chose to publish, 
+never the account or e-mail, 
+until they stop (the link dies at once) —
+     and that copies already taken stay with whoever took them. 
+*/
+  /* (community-maps) Privacy §1/§6: LISTING, 
+COPY RECEIPTS AND REPORTS. 
+Listing a published collection in Community maps is a
+     second explicit act under a name the reader types (never the e-mail or account name);
+ anyone finds it, 
+with counts of who
+     kept it (never who);
+ the lineage names a listed original only. 
+Copy receipts (collection_copies) and reports
+     (community_map_reports) are named in §1 and §6 with who reads them (the owner sees counts;
+ reports go to administrators)
+     and how long they are kept (receipts: while the collection is published;
+ reports: until the account is deleted, 
+a settled
+     one 730 days;
+ an administrator's decision stays with the collection across unpublishing). 
+en + jp. 
+*/
+  /* (map-document-unify) Privacy §1/§6: a saved map may now be a TOUR, 
+a reader's own drawn map or an ATLAS ANSWER — each
+     step's map and its words (the title, 
+what to say, 
+the question;
+ an answer's question and text) are kept in the same
+     row (saved_views.steps) and, 
+when the collection is published, 
+shown to whoever has the link. 
+Same recipient
+     (Supabase), 
+same retention, 
+same deletion;
+ the two sentences name the words so a reader is not surprised to find
+     their notes on a published tour. 
+*/
+  /* (atlas-os) Privacy §2: ATLAS NOW KEEPS AN INVESTIGATION NOTEBOOK. 
+Each Atlas turn — the question, 
+the answer,
+     the map state at the answer, 
+the operations Atlas ran, 
+query results and sources — is saved in the reader's
+     browser (IndexedDB, 
+js/atlas-notebook-store.js), 
+with a switch to turn it off and a delete-all. 
+Only if the
      reader signs in and turns on account sync is the same content written to their own rows in Supabase
-     (supabase/migrations/20261003170000_atlas_notebook.sql — owner-only RLS, deleted with the account). The
-     recipient is the Supabase project §4 already names, so no new third party; what is new is what is stored
-     and where, so it is stated in both languages. */
-  /* (sales-channels) Terms §12 and §13: EMBEDDING, ORGANISATIONS' ENQUIRIES AND DONATIONS. IntMap now has pages for
-     newsrooms, schools and research groups, an enquiry form (contact.html → the reader-reports Edge Function →
-     public.org_inquiries) and a support page that can name supporters who ask to be named. §12 states what an embed
-     must keep (the credit line — the embed itself keeps it, js/embed-mode.js) and points at the software licence's
-     commercial clause rather than restating or widening it; §13 says an enquiry creates no contract and that a
-     donation buys nothing, and how a supporter is named. What an enquiry stores and for how long belongs to the
-     Privacy Policy, whose text another change carries. */
-  /* (then-now-card) Privacy §4: THE THEN-AND-NOW CARD NAMES THE PLACE IT SHOWS. Making the card (js/map-recorder.js thenNowCard)
-     asks OpenStreetMap Nominatim — already named in §4 — for the name of the centre of the map the reader is looking at, at
-     the map's scale (js/place-dossier.js viewPlaceName). A point the reader framed, sent as framed, only when the card is
-     made; nothing is stored. No new recipient; a new thing sent to one, so it is stated in both languages. */
-  /* (watch-account-product) Privacy §1 and §6: TODAY'S QUEST. A signed-in reader's result on each day's learn quest (the day,
-     the kind and five scores — js/quest-daily.js, public.quest_daily_results) is kept in the account so the streak is the same
-     on every device; the days the browser played before signing in are added when the reader is signed in. Signed out, the
-     results stay in the browser. A new kind of data the account holds, so it is stated in both languages. */
-  /* (live-news-product) Privacy §4: THE EARTHQUAKE RECORD OF A PLACE ASKS USGS ABOUT A PLACE. Opening «Earthquake record here»
-     (js/quake-history.js) sends USGS's FDSN catalogue query a point — the place rounded to whole degrees, never the exact one
-     (js/quake-history-core.js roundedCentre / SLACK_KM) — and a radius. Until now USGS was only asked for whole feeds. Same
-     recipient; a new thing sent to it, so it is stated in both languages. */
-  /* (sales-pro-audiences) Terms §12: DATA SAVED FROM THE CITE TAB. The share panel's Cite tab saves the borders the map draws
-     on a date as GeoJSON (js/border-extract.js). Each shape carries the licence of the record it came from, and a shape
-     whose terms are non-commercial is not included. §12 says the terms travel with each shape and that IntMap grants
-     nothing over a source's data — the rule §12 already states for embeds and pictures, extended to a file. What is fetched
-     to make it (the catalogue and the provenance indexes) is served by this site itself: no new recipient, no Privacy change. */
-  /* (wave4-science) Privacy §4: THE AFTERSHOCK FORECAST ASKS USGS ABOUT AN EARTHQUAKE. «Aftershock forecast» (js/aftershock.js) sends
+     (supabase/migrations/20261003170000_atlas_notebook.sql — owner-only RLS, 
+deleted with the account). 
+The
+     recipient is the Supabase project §4 already names, 
+so no new third party;
+ what is new is what is stored
+     and where, 
+so it is stated in both languages. 
+*/
+  /* (sales-channels) Terms §12 and §13: EMBEDDING, 
+ORGANISATIONS' ENQUIRIES AND DONATIONS. 
+IntMap now has pages for
+     newsrooms, 
+schools and research groups, 
+an enquiry form (contact.html → the reader-reports Edge Function →
+     public.org_inquiries) and a support page that can name supporters who ask to be named. 
+§12 states what an embed
+     must keep (the credit line — the embed itself keeps it, 
+js/embed-mode.js) and points at the software licence's
+     commercial clause rather than restating or widening it;
+ §13 says an enquiry creates no contract and that a
+     donation buys nothing, 
+and how a supporter is named. 
+What an enquiry stores and for how long belongs to the
+     Privacy Policy, 
+whose text another change carries. 
+*/
+  /* (then-now-card) Privacy §4: THE THEN-AND-NOW CARD NAMES THE PLACE IT SHOWS. 
+Making the card (js/map-recorder.js thenNowCard)
+     asks OpenStreetMap Nominatim — already named in §4 — for the name of the centre of the map the reader is looking at, 
+at
+     the map's scale (js/place-dossier.js viewPlaceName). 
+A point the reader framed, 
+sent as framed, 
+only when the card is
+     made;
+ nothing is stored. 
+No new recipient;
+ a new thing sent to one, 
+so it is stated in both languages. 
+*/
+  /* (watch-account-product) Privacy §1 and §6: TODAY'S QUEST. 
+A signed-in reader's result on each day's learn quest (the day,
+     the kind and five scores — js/quest-daily.js, 
+public.quest_daily_results) is kept in the account so the streak is the same
+     on every device;
+ the days the browser played before signing in are added when the reader is signed in. 
+Signed out, 
+the
+     results stay in the browser. 
+A new kind of data the account holds, 
+so it is stated in both languages. 
+*/
+  /* (live-news-product) Privacy §4: THE EARTHQUAKE RECORD OF A PLACE ASKS USGS ABOUT A PLACE. 
+Opening «Earthquake record here»
+     (js/quake-history.js) sends USGS's FDSN catalogue query a point — the place rounded to whole degrees, 
+never the exact one
+     (js/quake-history-core.js roundedCentre / SLACK_KM) — and a radius. 
+Until now USGS was only asked for whole feeds. 
+Same
+     recipient;
+ a new thing sent to it, 
+so it is stated in both languages. 
+*/
+  /* (sales-pro-audiences) Terms §12: DATA SAVED FROM THE CITE TAB. 
+The share panel's Cite tab saves the borders the map draws
+     on a date as GeoJSON (js/border-extract.js). 
+Each shape carries the licence of the record it came from, 
+and a shape
+     whose terms are non-commercial is not included. 
+§12 says the terms travel with each shape and that IntMap grants
+     nothing over a source's data — the rule §12 already states for embeds and pictures, 
+extended to a file. 
+What is fetched
+     to make it (the catalogue and the provenance indexes) is served by this site itself: no new recipient, 
+no Privacy change. 
+*/
+  /* (wave4-science) Privacy §4: THE AFTERSHOCK FORECAST ASKS USGS ABOUT AN EARTHQUAKE. 
+«Aftershock forecast» (js/aftershock.js) sends
      USGS's FDSN catalogue query the earthquake's own catalogue position and the radius of its aftershock zone — a USGS event's
-     position, not the reader's — and, when a place is named (Atlas «aftershocks near …»), that place rounded to whole degrees
-     (js/aftershock-core.js nearUrl, the rule of the earthquake record). Same recipient; a new thing sent, stated in both languages. */
-  /* (wave4-education) Privacy §1 and §6: CLASS SETS. A signed-in teacher can make a class set of a learn quest (js/quest-class.js,
-     public.class_sets); a student who opens its link and finishes the set sends the name they type and their raw answers
-     (public.class_set_answers — a tapped point to three decimals, a year), shown only to that teacher. No account and nothing
-     else about the student. Deleted 365 days after the set was made (pg_cron class-sets-purge). A new kind of data, and the
-     first that a person WITHOUT an account sends, so it is stated in both languages in both sections. */
-  /* (security-audit) Privacy §6: FEEDBACK AND BUG REPORTS SENT WHILE SIGNED OUT NOW HAVE AN END. They may carry an e-mail
-     address, the browser's User-Agent and diagnostics, and were kept with no limit; a signed-in sender's rows already ended
-     with the account. purge_anonymous_reports(730) runs daily (supabase/migrations/20261023120000_security_audit.sql). A new
-     retention, so it is stated in both languages. */
-  /* (wave4-refine) Privacy §1 and §2. ① The speed readings (`ready` / `boot_end`) count once per caller, release and UTC day
+     position, 
+not the reader's — and, 
+when a place is named (Atlas «aftershocks near …»), 
+that place rounded to whole degrees
+     (js/aftershock-core.js nearUrl, 
+the rule of the earthquake record). 
+Same recipient;
+ a new thing sent, 
+stated in both languages. 
+*/
+  /* (wave4-education) Privacy §1 and §6: CLASS SETS. 
+A signed-in teacher can make a class set of a learn quest (js/quest-class.js,
+     public.class_sets);
+ a student who opens its link and finishes the set sends the name they type and their raw answers
+     (public.class_set_answers — a tapped point to three decimals, 
+a year), 
+shown only to that teacher. 
+No account and nothing
+     else about the student. 
+Deleted 365 days after the set was made (pg_cron class-sets-purge). 
+A new kind of data, 
+and the
+     first that a person WITHOUT an account sends, 
+so it is stated in both languages in both sections. 
+*/
+  /* (security-audit) Privacy §6: FEEDBACK AND BUG REPORTS SENT WHILE SIGNED OUT NOW HAVE AN END. 
+They may carry an e-mail
+     address, 
+the browser's User-Agent and diagnostics, 
+and were kept with no limit;
+ a signed-in sender's rows already ended
+     with the account. 
+purge_anonymous_reports(730) runs daily (supabase/migrations/20261023120000_security_audit.sql). 
+A new
+     retention, 
+so it is stated in both languages. 
+*/
+  /* (wave4-refine) Privacy §1 and §2. 
+① The speed readings (`ready` / `boot_end`) count once per caller, 
+release and UTC day
      (usage-count/shape.js speedOnce): a token under the caller's HMAC key — never the address — kept in relay_rate_buckets
-     until sweep_relay_rate_buckets removes it after 48 idle hours; a new thing kept, so §1 says it. ② A student's class-set
-     name is normalised before it is kept (public.display_name — NFKC, trimmed; control, bidi and invisible format characters
-     refused), so the same name in another width is the same student. ③ «Today on the map» marks what REACHED IntMap's news
-     collection since the last visit (first_seen_at), not what was first reported. ④ Family history's «Save as a GEDCOM
-     file» is built on the device and handed to the browser's download (js/family-history.js exportFile) — nothing is sent. */
-  /* (worldbank-cors-relay) Privacy §4: THE WORLD BANK MAY BE READ THROUGH fetch-relay. When the World Bank's CDN serves a copy the
-     browser cannot read (no Access-Control-Allow-Origin), js/wb-indicators.js asks the same query through our own relay. Same
-     recipient (Supabase), the same codes; a new path, stated in both languages. */
+     until sweep_relay_rate_buckets removes it after 48 idle hours;
+ a new thing kept, 
+so §1 says it. 
+② A student's class-set
+     name is normalised before it is kept (public.display_name — NFKC, 
+trimmed;
+ control, 
+bidi and invisible format characters
+     refused), 
+so the same name in another width is the same student. 
+③ «Today on the map» marks what REACHED IntMap's news
+     collection since the last visit (first_seen_at), 
+not what was first reported. 
+④ Family history's «Save as a GEDCOM
+     file» is built on the device and handed to the browser's download (js/family-history.js exportFile) — nothing is sent. 
+*/
+  /* (worldbank-cors-relay) Privacy §4: THE WORLD BANK MAY BE READ THROUGH fetch-relay. 
+When the World Bank's CDN serves a copy the
+     browser cannot read (no Access-Control-Allow-Origin), 
+js/wb-indicators.js asks the same query through our own relay. 
+Same
+     recipient (Supabase), 
+the same codes;
+ a new path, 
+stated in both languages. 
+*/
   var LEGAL_DATE = '2026-11-18';
 
+
   var TERMS_JA = `
-    <h3 style="margin:0 0 4px;font-size:17px;">利用規約</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
-    <p><b>1. 同意</b> — IntMap（以下「本サービス」）を利用することで、本規約に同意したものとみなされます。同意されない場合は利用しないでください。</p>
-    <p><b>2. サービス内容</b> — 本サービスは第三者のニュース・地図タイル・公開データを集約して表示する地政学情報マップです。情報提供のみを目的とし、現状有姿で提供されます。専門的・法的・金融的・航行上の助言ではありません。</p>
-    <p><b>3. アカウント</b> — 正確な情報を登録し、パスワードとアカウントの管理責任を負うものとします。13歳以上である必要があります。</p>
-    <p><b>4. ユーザー投稿</b> — コミュニティ投稿・コメント・画像の権利は投稿者に帰属しますが、本サービス上での表示に必要な範囲のライセンスを当方に許諾するものとします。違法・権利侵害・差別的・有害な内容を投稿してはなりません。当方は投稿の削除やアカウント停止を行う場合があります。アカウントが保持するデータ（投稿・保存した記事や場所・設定など）は、いつでも一覧で確認し、完全なコピーを1つのファイルとしてダウンロードできます（アカウント ▸ あなたのデータ）。アカウントを削除すると、それらもすべて削除されます。</p>
-    <p><b>5. 禁止事項</b> — スクレイピング、不正利用、リバースエンジニアリング、サービス妨害、第三者APIの濫用を禁じます。</p>
-    <p><b>6. 第三者サービス・AI</b> — ニュース、地図・衛星タイル、AI機能は各第三者の規約に従います。AI機能はサーバー側（Supabase Edge Function）が当方の管理するキーで実行し、無料利用枠（1日あたりの上限）が適用されます。ブラウザにAIキーを入力・保存することはありません。時事的な質問に答えるため、AI機能はWeb検索を実行し、必要なクエリのみをAIプロバイダーに送信する場合があります。Atlas の回答が通信の切断で届かなかったときに作り直さず同じ回答を届け直せるよう、回答 1 回分の本文をお使いのアカウントに紐づけて当方のデータベース（Supabase）に<b>最長約30分</b>（ターンの有効期限15分＋削除の周期15分）保持し、その後自動で削除します。衛星タイルのキー等を任意で入力した場合は、お使いのブラウザ内にのみ保存されます。</p>
-    <p><b>7. 知的財産</b> — 本サービスのコード・デザインは保護されています。第三者データの権利は各権利者に帰属します。</p>
-    <p><b>8. 免責</b> — データは不正確・遅延・利用不可となる場合があり、いかなる保証も行いません。</p>
-    <p><b>9. 責任の制限</b> — 法律で認められる範囲で、本サービス利用に起因する損害について当方は責任を負いません。</p>
-    <p><b>10. 変更・終了</b> — 本規約は変更される場合があり、継続利用をもって同意とみなします。違反時はアカウントを停止・終了することがあります。</p>
-    <p><b>11. 地図表記の中立性</b> — 本サービスで使用する国境線・地名・国／地域の区分や帰属の表示は、第三者の公開データ（地理データ、地図タイル、各種API等）に基づく技術的な表示にすぎず、いかなる国・地域の主権・領有権・政治的立場を主張・支持・否定するものではありません。係争地域の表記は出典データに依存しており、特定の政治的見解を表すものではありません。誤りや不一致がある場合があります。</p>
-    <p><b>12. 埋め込み・組織での利用</b> — 本サービスの地図は、共有メニューの「埋め込み」で得られるコードにより他のウェブページに埋め込むことができ、当方は埋め込みに料金を請求しません。埋め込みや画像として地図を使う場合は、地図に表示される出典の表示（クレジット行）を削除・隠蔽せず、各データの出典が定める条件に従ってください。本サービスのソフトウェアの利用条件は LICENSE に従い、ソフトウェアの商用利用には別途のライセンスが必要です。共有メニューの「引用」タブから保存したデータ（ある日の国境の GeoJSON など）には、形ごとに元の出典のライセンスと出典表示が入っています。利用の際はその条件に従ってください。当方は出典のデータについて権利を許諾するものではなく、出典が非営利の利用に限っている形はそのファイルに含めません。判断に迷う場合はお問い合わせページからご相談ください。</p>
-    <p><b>13. お問い合わせ・寄付・支援者の掲載</b> — お問い合わせページからの相談は、当方との契約を成立させるものではなく、当方は回答の時期や内容を保証しません。寄付は対価のない任意の支援であり、寄付の有無によって利用できる機能は変わりません。支援者ページには、掲載を申し込まれ、当方が寄付を確認した方のお名前のみを掲載し、お申し出によりいつでも削除します。</p>`;
+    <h3 style="margin:0 0 4px;font-size:17px;">
+利用規約</h3>
+<p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">
+最終更新日: ${LEGAL_DATE}</p>
+
+    <p>
+<b>
+1. 
+同意</b>
+ — IntMap（以下「本サービス」）を利用することで、
+本規約に同意したものとみなされます。
+同意されない場合は利用しないでください。
+</p>
+
+    <p>
+<b>
+2. 
+サービス内容</b>
+ — 本サービスは第三者のニュース・地図タイル・公開データを集約して表示する地政学情報マップです。
+情報提供のみを目的とし、
+現状有姿で提供されます。
+専門的・法的・金融的・航行上の助言ではありません。
+</p>
+
+    <p>
+<b>
+3. 
+アカウント</b>
+ — 正確な情報を登録し、
+パスワードとアカウントの管理責任を負うものとします。
+13歳以上である必要があります。
+</p>
+
+    <p>
+<b>
+4. 
+ユーザー投稿</b>
+ — コミュニティ投稿・コメント・画像の権利は投稿者に帰属しますが、
+本サービス上での表示に必要な範囲のライセンスを当方に許諾するものとします。
+違法・権利侵害・差別的・有害な内容を投稿してはなりません。
+当方は投稿の削除やアカウント停止を行う場合があります。
+アカウントが保持するデータ（投稿・保存した記事や場所・設定など）は、
+いつでも一覧で確認し、
+完全なコピーを1つのファイルとしてダウンロードできます（アカウント ▸ あなたのデータ）。
+アカウントを削除すると、
+それらもすべて削除されます。
+</p>
+
+    <p>
+<b>
+5. 
+禁止事項</b>
+ — スクレイピング、
+不正利用、
+リバースエンジニアリング、
+サービス妨害、
+第三者APIの濫用を禁じます。
+</p>
+
+    <p>
+<b>
+6. 
+第三者サービス・AI</b>
+ — ニュース、
+地図・衛星タイル、
+AI機能は各第三者の規約に従います。
+AI機能はサーバー側（Supabase Edge Function）が当方の管理するキーで実行し、
+無料利用枠（1日あたりの上限）が適用されます。
+ブラウザにAIキーを入力・保存することはありません。
+時事的な質問に答えるため、
+AI機能はWeb検索を実行し、
+必要なクエリのみをAIプロバイダーに送信する場合があります。
+Atlas の回答が通信の切断で届かなかったときに作り直さず同じ回答を届け直せるよう、
+回答 1 回分の本文をお使いのアカウントに紐づけて当方のデータベース（Supabase）に<b>
+最長約30分</b>
+（ターンの有効期限15分＋削除の周期15分）保持し、
+その後自動で削除します。
+衛星タイルのキー等を任意で入力した場合は、
+お使いのブラウザ内にのみ保存されます。
+</p>
+
+    <p>
+<b>
+7. 
+知的財産</b>
+ — 本サービスのコード・デザインは保護されています。
+第三者データの権利は各権利者に帰属します。
+</p>
+
+    <p>
+<b>
+8. 
+免責</b>
+ — データは不正確・遅延・利用不可となる場合があり、
+いかなる保証も行いません。
+</p>
+
+    <p>
+<b>
+9. 
+責任の制限</b>
+ — 法律で認められる範囲で、
+本サービス利用に起因する損害について当方は責任を負いません。
+</p>
+
+    <p>
+<b>
+10. 
+変更・終了</b>
+ — 本規約は変更される場合があり、
+継続利用をもって同意とみなします。
+違反時はアカウントを停止・終了することがあります。
+</p>
+
+    <p>
+<b>
+11. 
+地図表記の中立性</b>
+ — 本サービスで使用する国境線・地名・国／地域の区分や帰属の表示は、
+第三者の公開データ（地理データ、
+地図タイル、
+各種API等）に基づく技術的な表示にすぎず、
+いかなる国・地域の主権・領有権・政治的立場を主張・支持・否定するものではありません。
+係争地域の表記は出典データに依存しており、
+特定の政治的見解を表すものではありません。
+誤りや不一致がある場合があります。
+</p>
+
+    <p>
+<b>
+12. 
+埋め込み・組織での利用</b>
+ — 本サービスの地図は、
+共有メニューの「埋め込み」で得られるコードにより他のウェブページに埋め込むことができ、
+当方は埋め込みに料金を請求しません。
+埋め込みや画像として地図を使う場合は、
+地図に表示される出典の表示（クレジット行）を削除・隠蔽せず、
+各データの出典が定める条件に従ってください。
+本サービスのソフトウェアの利用条件は LICENSE に従い、
+ソフトウェアの商用利用には別途のライセンスが必要です。
+共有メニューの「引用」タブから保存したデータ（ある日の国境の GeoJSON など）には、
+形ごとに元の出典のライセンスと出典表示が入っています。
+利用の際はその条件に従ってください。
+当方は出典のデータについて権利を許諾するものではなく、
+出典が非営利の利用に限っている形はそのファイルに含めません。
+判断に迷う場合はお問い合わせページからご相談ください。
+</p>
+
+    <p>
+<b>
+13. 
+お問い合わせ・寄付・支援者の掲載</b>
+ — お問い合わせページからの相談は、
+当方との契約を成立させるものではなく、
+当方は回答の時期や内容を保証しません。
+寄付は対価のない任意の支援であり、
+寄付の有無によって利用できる機能は変わりません。
+支援者ページには、
+掲載を申し込まれ、
+当方が寄付を確認した方のお名前のみを掲載し、
+お申し出によりいつでも削除します。
+</p>
+`;
+
 
   var TERMS_EN = `
-    <h3 style="margin:0 0 4px;font-size:17px;">Terms of Service</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">Last updated: ${LEGAL_DATE}</p>
-    <p><b>1. Acceptance.</b> By using IntMap (the "Service") you agree to these Terms. If you do not agree, do not use the Service.</p>
-    <p><b>2. The Service.</b> IntMap is an informational geopolitical map that aggregates third-party news, map tiles and open data. It is provided for general information on an "as is" and "as available" basis and is not professional, legal, financial or navigational advice.</p>
-    <p><b>3. Accounts.</b> You must provide accurate information, keep your password secure, are responsible for activity on your account, and must be at least 13 years old.</p>
-    <p><b>4. User content.</b> You retain rights to community posts, comments and images you submit, and grant IntMap a license to display them within the Service. You must not post unlawful, infringing, hateful or harmful content. We may remove content and suspend accounts. You can see what your account holds (posts, saved articles and places, settings and the rest) and download a complete copy of it as one file at any time (Account ▸ Your data); deleting your account deletes all of it.</p>
-    <p><b>5. Acceptable use.</b> No scraping, abuse, reverse engineering, disrupting the Service, or misusing third-party APIs.</p>
-    <p><b>6. Third-party services & AI.</b> News, map/satellite tiles and AI features rely on third parties under their own terms. AI features run server-side (a Supabase Edge Function) using our own key, subject to a free daily usage limit — you never enter or store an AI key in your browser. To answer questions about current events, AI features may perform web searches, sharing only the necessary query text with the AI provider. So that an Atlas answer cut off by a dropped connection can be delivered again instead of being regenerated, the text of each answer is kept in our database (Supabase), tied to your account, for <b>at most about 30 minutes</b> (the 15-minute turn lifetime plus the 15-minute cleanup cycle) and is then deleted automatically. Any satellite-tile key you optionally enter is stored only in your browser.</p>
-    <p><b>7. Intellectual property.</b> IntMap's code and design are protected. Third-party data belongs to its respective owners.</p>
-    <p><b>8. Disclaimers.</b> Data may be inaccurate, delayed or unavailable; no warranties are given.</p>
-    <p><b>9. Limitation of liability.</b> To the maximum extent permitted by law, we are not liable for damages arising from your use of the Service.</p>
-    <p><b>10. Changes & termination.</b> We may update these Terms; continued use means acceptance. We may suspend or terminate accounts for violations.</p>
-    <p><b>11. Neutrality of map depictions.</b> The borders, place names, and the way countries and territories are distinguished, attributed or labeled in the Service are technical depictions derived from third-party open data (geographic datasets, map tiles and APIs). They do not assert, endorse or deny any state's or territory's sovereignty, territorial claims or political status. Depictions of disputed areas follow the underlying source data, may contain errors or inconsistencies, and do not represent any political position of IntMap.</p>
-    <p><b>12. Embedding and use by organisations.</b> The map can be embedded in other web pages with the code given by the Share menu's Embed tab, and IntMap charges no fee for embedding. When you embed the map or use it as an image, do not remove or hide the credit line shown on the map, and follow the conditions each data source sets. Use of IntMap's software is governed by its LICENSE; commercial use of the software requires a separate licence. Data saved from the Share menu's Cite tab (such as the borders of a date as GeoJSON) carries, shape by shape, the licence and credit of the source it came from: follow those terms when you use it. IntMap grants no rights over a source's data, and does not include in that file shapes whose source limits them to non-commercial use. If you are unsure, ask us through the contact page.</p>
-    <p><b>13. Enquiries, donations and supporters.</b> An enquiry sent through the contact page does not create a contract, and we do not guarantee when or how we will answer. A donation is a voluntary gift with nothing in return; giving or not giving changes nothing you can use. The supporters page names only people who asked to be named and whose gift we have confirmed, and a name is removed at any time on request.</p>`;
+    <h3 style="margin:0 0 4px;font-size:17px;">
+Terms of Service</h3>
+<p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">
+Last updated: ${LEGAL_DATE}</p>
+
+    <p>
+<b>
+1. 
+Acceptance.</b>
+ By using IntMap (the "Service") you agree to these Terms. 
+If you do not agree, 
+do not use the Service.</p>
+
+    <p>
+<b>
+2. 
+The Service.</b>
+ IntMap is an informational geopolitical map that aggregates third-party news, 
+map tiles and open data. 
+It is provided for general information on an "as is" and "as available" basis and is not professional, 
+legal, 
+financial or navigational advice.</p>
+
+    <p>
+<b>
+3. 
+Accounts.</b>
+ You must provide accurate information, 
+keep your password secure, 
+are responsible for activity on your account, 
+and must be at least 13 years old.</p>
+
+    <p>
+<b>
+4. 
+User content.</b>
+ You retain rights to community posts, 
+comments and images you submit, 
+and grant IntMap a license to display them within the Service. 
+You must not post unlawful, 
+infringing, 
+hateful or harmful content. 
+We may remove content and suspend accounts. 
+You can see what your account holds (posts, 
+saved articles and places, 
+settings and the rest) and download a complete copy of it as one file at any time (Account ▸ Your data);
+ deleting your account deletes all of it.</p>
+
+    <p>
+<b>
+5. 
+Acceptable use.</b>
+ No scraping, 
+abuse, 
+reverse engineering, 
+disrupting the Service, 
+or misusing third-party APIs.</p>
+
+    <p>
+<b>
+6. 
+Third-party services & AI.</b>
+ News, 
+map/satellite tiles and AI features rely on third parties under their own terms. 
+AI features run server-side (a Supabase Edge Function) using our own key, 
+subject to a free daily usage limit — you never enter or store an AI key in your browser. 
+To answer questions about current events, 
+AI features may perform web searches, 
+sharing only the necessary query text with the AI provider. 
+So that an Atlas answer cut off by a dropped connection can be delivered again instead of being regenerated, 
+the text of each answer is kept in our database (Supabase), 
+tied to your account, 
+for <b>
+at most about 30 minutes</b>
+ (the 15-minute turn lifetime plus the 15-minute cleanup cycle) and is then deleted automatically. 
+Any satellite-tile key you optionally enter is stored only in your browser.</p>
+
+    <p>
+<b>
+7. 
+Intellectual property.</b>
+ IntMap's code and design are protected. 
+Third-party data belongs to its respective owners.</p>
+
+    <p>
+<b>
+8. 
+Disclaimers.</b>
+ Data may be inaccurate, 
+delayed or unavailable;
+ no warranties are given.</p>
+
+    <p>
+<b>
+9. 
+Limitation of liability.</b>
+ To the maximum extent permitted by law, 
+we are not liable for damages arising from your use of the Service.</p>
+
+    <p>
+<b>
+10. 
+Changes & termination.</b>
+ We may update these Terms;
+ continued use means acceptance. 
+We may suspend or terminate accounts for violations.</p>
+
+    <p>
+<b>
+11. 
+Neutrality of map depictions.</b>
+ The borders, 
+place names, 
+and the way countries and territories are distinguished, 
+attributed or labeled in the Service are technical depictions derived from third-party open data (geographic datasets, 
+map tiles and APIs). 
+They do not assert, 
+endorse or deny any state's or territory's sovereignty, 
+territorial claims or political status. 
+Depictions of disputed areas follow the underlying source data, 
+may contain errors or inconsistencies, 
+and do not represent any political position of IntMap.</p>
+
+    <p>
+<b>
+12. 
+Embedding and use by organisations.</b>
+ The map can be embedded in other web pages with the code given by the Share menu's Embed tab, 
+and IntMap charges no fee for embedding. 
+When you embed the map or use it as an image, 
+do not remove or hide the credit line shown on the map, 
+and follow the conditions each data source sets. 
+Use of IntMap's software is governed by its LICENSE;
+ commercial use of the software requires a separate licence. 
+Data saved from the Share menu's Cite tab (such as the borders of a date as GeoJSON) carries, 
+shape by shape, 
+the licence and credit of the source it came from: follow those terms when you use it. 
+IntMap grants no rights over a source's data, 
+and does not include in that file shapes whose source limits them to non-commercial use. 
+If you are unsure, 
+ask us through the contact page.</p>
+
+    <p>
+<b>
+13. 
+Enquiries, 
+donations and supporters.</b>
+ An enquiry sent through the contact page does not create a contract, 
+and we do not guarantee when or how we will answer. 
+A donation is a voluntary gift with nothing in return;
+ giving or not giving changes nothing you can use. 
+The supporters page names only people who asked to be named and whose gift we have confirmed, 
+and a name is removed at any time on request.</p>
+`;
+
 
   var PRIVACY_JA = `
-    <h3 style="margin:0 0 4px;font-size:17px;">プライバシーポリシー</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
-    <p><b>1. 取得する情報</b> — アカウント情報（メールアドレス、表示名）、投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、保存した記事、保存した場所（マイプレイス: 名前・メモ・コレクション・位置）と見守りの設定（見守る場所: 範囲・知らせる基準・既に見た出来事の識別子）、今日のクエストの記録（解いた日・クエストの種類・5 問それぞれの得点。ログイン中に解いた分と、ログイン前にこのブラウザで解いた分）、保存した地図（名前・メモ・コレクションと、共有リンクと同じ形の地図の表示。地図として保存したツアー・自分で描いた地図・Atlas の回答では、各段の地図とその文も）、公開したコレクション（どのコレクションか・題・リンク）とみんなの地図に掲載したものの表示名・紹介文・元にしたコレクション、ライブラリに写した公開コレクション（写した先のコレクション名）、みんなの地図で送った報告（理由とメモ）、クラス用に作ったセット（学ぶクエストの種類・付けた題・まだ答えを受け付けるか・コード）と、そこに生徒が提出した名前と答え、及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、端末・ブラウザ情報）。<br><b>クラスのセット（生徒）</b> — 先生から受け取ったクラスのリンクを開いてセットを解き終えると、入力した名前と答え（場所の問題ではタップした地点を約100m単位で、年代の問題では選んだ年）を当方のデータベース（Supabase）に送り、そのセットを作った先生にだけ表示します。名前は保存の前に整えます（前後の空白を除き、全角と半角などの見た目が同じ文字を 1 つの形にそろえるため、全角と半角で書いた同じ名前は同じ生徒として扱います。制御文字や見えない書式文字を含む名前は受け付けません）。アカウント・メールアドレスその他のあなたについての情報は送りません。名前は名字なしの名前か先生が決めた番号にし、フルネームは入力しないでください。クラスのリンクを使わない場合、学ぶクエストの答えが送られることはありません。<br><b>エラー記録</b> — 本サービスのページで処理されなかったエラーが発生した場合、その内容を当方サーバー（Supabase）に送信し、不具合の修正に利用します。記録するのは、エラーのメッセージとスタックトレース（含まれるURLはパスのみ）、発生したページのパス、ビルド番号、ブラウザの名称とメジャーバージョン、発生回数と発生日時のみです。IPアドレス、アカウント、URLのクエリ文字列やフラグメント、入力された文字は記録しません（メールアドレスや長い引用文字列のようにエラーメッセージに紛れ込みうる語は、送信前に伏せ字にします）。<br><b>匿名の利用統計</b> — 本サービスがどのように見つけられ使われているかを知るため、当方サーバー（Supabase）に<b>日ごとの件数だけ</b>を記録します。数えるのは、地図を開いた回数、流入元（直前のページのホスト名のみ、アドレスの utm_source・utm_medium・utm_campaign の値、共有リンクから開いたか・他のページに埋め込まれて開いたか・本サービスの紹介ページ（作例・概要・教員向け・ニュースを地図で読む・記事に地図を埋め込む・年代から探す歴史地図・この日の歴史地図・今週の地球）から開いたか。紹介ページから開いた場合は、そのページのアドレスにある utm の値を読みます）、アプリの言語（英語・日本語・その他）、端末の種類（モバイル・デスクトップ）、オンにしたレイヤー、使われた機能（比較・タイムラプス再生・共有・寄付リンク・インストール）、Atlas への質問の<b>回数</b>、及び Atlas の回答の<b>種類</b>（文章のみ・地図・グラフ・その組み合わせのいずれか。Atlas 自身が回答に付けた区分で、回答の内容は含みません）です。また、地図を開いてから地図が使えるようになるまでの時間（「2〜3 秒」のような区間のみで、正確な時間は記録しません）、起動画面が地図を表示し終えてから消えたかどうか、及び本サービスのどの版だったかを、端末の種類とともに数えます。この 3 つは、同じネットワークからは版ごとに 1 日（UTC）1 回だけ数えます（同じアドレスの後ろにいる複数の読者は 1 回になります）。そのために、ネットワークのアドレスから作った復元できない鍵（HMAC）と版・日付を組にした記録を当方のサーバー（Supabase）に最長約 48 時間保持し、その後自動で削除します。アドレスそのものは保存しません。質問の内容、IPアドレス、アカウント（ログイン中でも）、セッションやCookie、ブラウザのUser-Agent、日より細かい時刻は記録しません。ブラウザの「トラッキング拒否（Do Not Track）」または Global Privacy Control が有効な場合は何も送信しません。設定の「匿名の利用統計」をオフにすると直ちに停止し、まだ送信していない件数は破棄されます（この選択はお使いのブラウザに保存されます）。Atlas に頼んでオフにすることもできます。<br><b>寄付</b> — 「支援する」から寄付のページへ進むと、決済は Stripe のページで行われ、カード等の決済情報を当方が受け取ることはありません。ログイン中に寄付のページへ進むボタンを押した場合に限り、押したという記録（アカウントID、メールアドレス、表示言語、押した場所、日時）を当方のデータベース（Supabase）に保存します。実際に寄付が行われたかどうかは当方には届きません。この記録はアカウントを削除すると削除されます。<br><b>地図の誤り報告</b> — 地図の右クリックメニュー等の「地図の誤りを報告」から送られた報告として、地点の座標、そのときの地図の表示（共有リンクと同じ形のズーム・レイヤー・年）、誤りの種類、選ばれたレイヤー、報告の文章、任意の出典URL、表示言語を当方のデータベース（Supabase）に保存します。メールアドレスは求めません。ログイン中に送った場合はアカウントIDも保存します。回答を受け取るための受付番号はお使いのブラウザ内にのみ保存し、当方はそのハッシュ値だけを保持します。報告は誤りの確認と回答のためにのみ使います。運営者が公開を選んだ訂正は、運営者が書いた要約・地点（約100m単位）・レイヤー・年として公開の訂正記録ページに掲載しますが、報告者や報告の文章は掲載しません。<br><b>データスタジオの公開リンク</b> — データスタジオで作った塗り分け地図のリンクは、表の中身（各行の場所と塗った列の値）をリンクそのもの（アドレスの # 以降）に入れます。当方のサーバには送られず、保存もしません。そのため、リンクを渡した相手はその中身を読めます。</p>
-    <p><b>2. ローカル保存</b> — 設定、衛星タイルの任意APIキー、船舶AIS（aisstream.io）の任意キー、ニュースおよび地図データ（海底ケーブル等）のキャッシュはお使いのブラウザ内にのみ保存され、当方サーバーには送信されません。AIキーをブラウザに保存することはありません（AIはサーバー側で実行）。端末の位置情報は、天気・大気質等のウィジェットや「現在地へ移動」機能の利用時にブラウザの許可を得た上でのみ取得され、端末内での地図表示に使用されます（天気・大気質の取得時のみ座標が気象API（Open-Meteo）に送信されます）。当方サーバーに保存されることはありません。<b>「いま、ここ」</b>では、正確な位置は端末から出ません——地名（OpenStreetMap Nominatim）と天気（Open-Meteo／MET Norway）の取得にだけ 0.1°（約 11 km）に丸めた地点を送り、地震（USGS のフィード）と出来事（IntMap のニュースの出来事）は位置を付けずに読み込んでブラウザ内で絞り込みます。何も保存しません。<b>共有で開く・写真の場所</b>——共有シートや写真ライブラリから IntMap に渡した写真・リンク・文はブラウザ内で読み（写真はカメラが記録した撮影位置と撮影時刻）、どこにも送信しません。共有シートから届いた内容はブラウザのキャッシュに一時的に置き、開いた時点で削除します（開かれなかったものも 1 時間後に削除）。撮影位置の記録が無い写真は、ご自身で「写真の撮影地を探す」を使った場合にのみ下記のとおり扱われます。支援のご案内（Atlas の1日の上限に達したときや、何日か続けてご利用いただいたときに表示する小さなカード）のために、IntMapを開いた日数と、ご案内を閉じた日時をお使いのブラウザ内に保存します。これらは当方サーバーには送信されません。<b>今日の世界</b>を最後に開いた日時は、前回以降に当方のニュースの収集に新しく届いた出来事に印を付けるため、お使いのブラウザ内にのみ保存し、当方サーバーには送信しません（前回以降の件数を数えるときに当方のニュースの収集へ送るのは、その日時だけです）。<b>Atlas の調査ノート</b>——現在は提供しておらず、新しく記録することはありません。以前に保存したもの（Atlas に送った問い・回答・回答時の地図の状態・実行した操作・問い合わせの結果・出典）は、あなたのブラウザ（IndexedDB）に残り、同期をオンにしていた場合に限りあなたの IntMap アカウント（Supabase）にも残っています（あなただけが読み書きできます）。ブラウザのデータを消せば端末の分は消え、アカウントを削除すればアカウント上の分も削除されます。<b>家族史と国境</b>——入力した、または読み込んだ家系図ファイル（GEDCOM）の人物・日付・場所はお使いのブラウザ内にのみ保存し、どこにも送信しません。ファイルはブラウザ内で読み、地名の特定と歴史の記録の照合もこの端末上で行います（歴史の記録は、地図でその場所を見るときと同じく、必要な部分だけを本サービスのサーバーから読み込みます）。「GEDCOM ファイルとして保存」はファイルをこの端末上で作り、お使いのブラウザのダウンロードに渡すだけで、どこにも送信しません。「ここに保存した内容をすべて削除」またはブラウザのデータの消去で削除されます。<b>この端末に保存されているもの</b>——「設定」▸「プライバシー」▸「この端末に保存されているもの」で、お使いのブラウザが IntMap のために保持しているものすべてを、各項目が何か・大きさ（中身は表示しません）とともに確認でき、1 件ずつ、またはまとめて消去できます。IntMap のコードは Cookie を設定しません。</p>
-    <p><b>3. 利用目的</b> — アカウント、コミュニティ、保存機能の提供、及びサービスの運営・保護のために利用します。匿名の利用統計（第1項）は、本サービスがどのように見つけられ使われているかを集計として把握するためにのみ利用します。地図が使えるようになるまでの時間は、本サービスの版が読者にとって遅くなっていないかを確かめるために使い、版ごと・端末の種類ごとの割合（件数ではなく整数の割合です。100 回未満の版は公開しません）を状態ページ「IntMap のいま」で公開します。</p>
-    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースの見出しは<b>お使いのブラウザが</b>当方のCORS中継（Supabase Edge Function <code>news-relay</code>）経由で取得し、<b>どの場所の出来事かの判定もブラウザ内で行います</b>——この経路ではAIを使わず、当方サーバーに記事を保存しません。ニュースの記事を開いたときは、まず<b>お使いのブラウザが</b>Jina AI の読み取りサービス（r.jina.ai）に本文のテキスト版を求め、その際 Jina AI には<b>記事のURL</b>だけが送信されます（利用者の情報は送信しません）。それで本文が得られない場合はその報道機関から本文を直接読み、それもできない場合に限り当方の中継（Supabase Edge Function <code>fetch-relay</code>）がその<b>記事のURLだけ</b>を受け取って記事ページを取得し、お使いのブラウザへ返します（アカウント情報は送らず、当方サーバーに記事を保存しません）。<b>これとは別に、当方のサーバーが定期的に報道機関の公開RSSフィードからニュースを収集し、当方のデータベース（Supabase）に保存しています</b>（同じ出来事を伝える複数の報道をまとめるためのものです。収集先は各報道機関の公開フィードと、無料フィードを持たない通信社についてはGoogle Newsの検索RSSです。保存するのは<b>見出し・リンク・要約・掲載日時・媒体名</b>で、記事本文は保存しません。この収集は利用者の操作と無関係に自動で行われ、<b>利用者の情報は一切送信されません</b>（送信するのはフィードのURLだけです）。保持期間は<b>記事72時間・出来事30日</b>で、それを過ぎたものは削除します（利用者が★を付けた出来事は削除しません）。この経路の地点の判定は、現在<b>AIプロバイダが第一手段</b>です（既に公表されている見出しと要約の冒頭を、当方のキーでサーバー側から送信し、その出来事の場所を判定させます）。AIが場所を答えられない場合は、非AIの決定論エンジンがフォールバックとして働きます。この経路でAIに送るものはもう1つあり、<b>出来事の代表見出しの日本語訳</b>も同じ仕組みで生成して保存します。いずれの場合も当方サーバーから送信されるのは既に公表されている見出しと要約であって、利用者の情報は送信しません。<b>現在、Newsタブは既定でこの出来事データベースを読んでいます</b>（カードは記事1本ではなく出来事1件で、開くとどの媒体がいつ報じたかと、媒体間で食い違っている数量が並びます）。この読み取りで利用者の情報は送信されません（公開の出来事の行を要求するだけです）。出来事に★を付けると、その出来事のIDがアカウントに（未ログインの場合はブラウザ内にのみ）保存されます。出来事データベースに到達できないときは上記のブラウザ経路に戻り、検索・過去の日付・多言語ニュースは常にブラウザ経路を使います。加えてAtlasのライブWeb検索では、対象の地名・トピック名がブラウザから検索語としてGoogle News RSSに送信されます）、地図・衛星タイル（基図の OpenFreeMap〈tiles.openfreemap.org、OpenMapTiles に基づく〉と CARTO、Esri・NASA GIBS・国土地理院・USGS・PDOK・swisstopo、OpenRailwayMap・OpenSeaMap・OpenHistoricalMap、RainViewer の雨雲レーダー、国土交通省 PLATEAU の3D都市モデル〈api.plateauview.mlit.go.jp と、その資産置き場 assets.cms.plateau.reearth.io。このレイヤーをオンにしている間だけ通信し、表示中の日本のどのタイルかと IP アドレスが相手に届きます〉、3D建物タイルの 3D BAG〈data.3dbag.nl。オランダを表示しているときだけ〉と Re:Earth Buildings〈buildings.reearth.land。世界の都市を拡大して見ているときだけ。どちらも同じレイヤー、同じ条件で、表示中のどのタイルかと IP アドレスが相手に届きます〉、Terrascope 経由の ESA WorldCover、Marine Regions／VLIZ の海洋境界、FAO GAEZ の作物適性、および設定でご自身のキーを入力した場合に限り Mapbox または Sentinel Hub〈そのキーが送信されます〉。タイルの要求に含まれるのは描画する地図範囲の位置と縮尺だけで、利用者の情報は含まれません）、利用者が指定した s3:// 形式のデータ（STAC カタログの資産など）は、AWS が定める対応する https アドレス（<code>バケット名.s3.amazonaws.com</code>）へ変換され、ブラウザが必要な範囲だけを範囲指定で読み込みます（送るのはファイルとバイト範囲のみ）、標高・気象API（Open-Meteo。アニメーション風と予報気象レイヤーは Open-Meteo が AWS Open Data 上で公開しているデータバケット openmeteo.s3.amazonaws.com（配信は Amazon Web Services）から数値予報モデルの数値場を範囲指定で読み込みます（読み込むモデルは各レイヤーで選択でき、ECMWF IFS HRES〈欧州中期予報センター〉／NOAA GFS〈米国海洋大気庁〉／DWD ICON〈ドイツ気象庁〉のいずれかです。いずれも Open-Meteo が CC BY 4.0 で再配布しているものです）が、この経路で送信されるのは要求するファイルとバイト範囲だけで、座標も利用者の情報も送信しません。Open-Meteoが利用できない場合は自動的にMET Norwayへフォールバックし、対象地点の座標、または標高スキャン・放射性物質拡散機能では対象地点周辺のグリッド状の座標が送信されます。放射性物質拡散で過去の日時を指定した場合は、その時点の気象を得るためOpen-MeteoのERA5アーカイブ archive-api.open-meteo.com が使用されます）、道路経路案内（OSRM — router.project-osrm.org・routing.openstreetmap.de。Atlasに車/徒歩/自転車の経路を依頼すると、出発地・目的地・経由地の座標がOpenStreetMapの道路データ上での経路算出のため送信されます）、公共交通経路案内（Transitous／MOTIS — api.transitous.org。Atlasに電車・地下鉄・バス等の公共交通経路を依頼すると、出発地・目的地の座標が世界の公開GTFSデータ上での行程算出のため送信されます）、到達圏の算出（Valhalla／FOSSGIS — valhalla1.openstreetmap.de。Atlasで「車で30分」「徒歩15分」等の到達圏を求めると、起点の座標と指定した分数がOpenStreetMapの道路網上での到達範囲（等時線）算出のため送信されます。また経路検索で地図上に「通過禁止範囲」を描いた場合は、その範囲の座標も併せて送信されます）、ストリートビューの埋め込みとカバレッジ（Google — 「ここのストリートビュー」パネルやAtlasのストリートビュー機能を開くと、選択した座標のGoogle製ストリートビュー埋め込みが読み込まれます。またストリートビュー・モードや地点のクリック時には、実際のカバレッジ（撮影済みの道路）を表示・判定するため、選択地点周辺の座標に対応するGoogleのストリートビュー・カバレッジ・タイル（mts.google.com）が読み込まれます。いずれもGoogleのポリシーが適用されます）、流域界の算出（Global Watersheds／mghydro.com — Atlasで河川流域を描画する際、河川端点の座標が実際の流域ポリゴン算出のため送信されます）、範囲内人口の集計（WorldPop — api.worldpop.org。測定ツールやAtlasで囲んだ範囲・円・地域の人口を算出すると、その範囲のポリゴン座標が人口グリッド集計のため送信されます。また、分析で人口の格子〈WorldPop 1 km〉を読むと、WorldPop の画像サービス worldpop.arcgis.com〈Esri の ArcGIS 上で WorldPop が運営〉に、分析する範囲の四隅の経緯度と年が送信されます）、インターネット障害・経路の観測（IODA〈Georgia Tech Research Corporation — api.ioda.inetintel.cc.gatech.edu〉、RIPE Atlas〈atlas.ripe.net〉、RIPEstat〈stat.ripe.net〉。「インターネット障害」または「ネットワーク到達性」レイヤーを開くと、<b>お使いのブラウザが</b>これらの観測網へ直接接続し、世界全体の観測結果を取得します。当方のサーバーは経由せず、当方はこのデータを保存も再配布もしません。この取得で送信されるのは要求そのものだけで、<b>位置情報も利用者の情報も送信しません</b>。例外は1つで、障害の出ている国を地図上でクリックしたときに限り、その国の<b>ISO 2文字コード</b>がRIPEstatへ送信されます — その国で見えている経路数を取得するためです）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（overpass-api.de。応答しない場合は公開ミラーの overpass.kumi.systems・overpass.private.coffee、過去の年については OpenHistoricalMap の overpass-api.openhistoricalmap.org。表示範囲の公開ウェブカメラ地点のライブ取得に加え、Atlasで指定した種類の施設・POI検索 — 検索範囲と施設種別が送信されます）。ドローン航法では経路周辺の飛行制限区域（空港・ヘリポート・軍用地・原子力施設・刑務所・保護区・国立公園）と緊急着陸候補地の照会に、経路検索では指定した年の過去の道路・鉄道路線網の取得に使用します（いずれも送信されるのは解析対象の地図座標のみです。**なお飛行制限区域の判定は OpenStreetMap に基づく目安であって、航空当局による飛行許可ではありません**）、Wikidataクエリサービス（Atlasの施設マッピングの第2ソース — 施設種別と対象国コードまたは検索範囲が送信されます。またAtlasが国家指導者等の現職を回答する際のライブ照会では対象の国コードが送信されます）、ファビコン取得（Google — Atlasの回答に出典リンクカードを表示する際、引用元サイトのドメイン名がサイトアイコン取得のため送信されます）、統計データAPI（世界銀行・IMF DataMapper — 国コード・指標コード、およびタイムマシンでは年のみが送信されます。世界銀行の答えをお使いのブラウザが読めないときは、同じ問い合わせを当方の中継（<code>fetch-relay</code> Supabase Edge Function）が代わりに取得します）、USGS（地震データの取得。場所の「地震の記録」を開いたときは、その場所を整数度に丸めた地点と選んだ半径を USGS のカタログ検索に送り、周辺で記録されたすべての地震を一覧にします。「余震の見通し」はその地震自体のカタログ上の位置と余震域の半径を送り、場所を指定したときはその場所を整数度に丸めた地点を送ります。お客様に関する情報は送りません）、船舶AIS（「船舶トラフィック（リアルタイム）」レイヤーは、当方の Supabase Edge Function <code>ais-feed</code> がサーバー側で Fintraffic／Digitraffic〈フィンランド、CC BY 4.0、キー不要〉と aisstream.io〈全球、当方のキー〉から船舶位置を読み、全利用者に同じスナップショットを配ります。お使いのブラウザから当方のサーバーへ送られるのは**表示中の地図範囲**だけで、各提供元には利用者の情報も座標も一切送られません。任意で aisstream.io のキーをご自身で設定に入れた場合は、お使いのブラウザが aisstream.io（<code>stream.aisstream.io</code>）に WebSocket で直接接続し、<b>そのキーと表示中の地図範囲</b>を aisstream.io に送って購読します。そのキーはお使いのブラウザ内にのみ保存されます）、CelesTrak（celestrak.org — 「人工衛星（リアルタイム）」レイヤーの軌道要素。**送信されるのはカタログの群名のみ**で、座標も利用者の情報も一切送信しません。衛星の位置・可視範囲・地上軌跡・仰角・通過予報はすべてブラウザ内で SGP4/SDP4 により計算します。CelesTrak に到達できない場合は、当方の中継（Supabase Edge Function <code>fetch-relay</code>）経由での取得、または本サイトに同梱した軌道要素カタログ（data/tle/。CelesTrak、到達不能時は SatNOGS DB〈Space-Track／CelesTrak 由来の要素〉から定期的に生成）を使用し、どの出所を使ったかと要素の日付を画面に表示します）、GDELT（Atlasのブリーフ・統合分析で使う世界ニュース横断検索 — 場所名や質問中のキーワードが検索語として送信されます）、Wikipedia/Wikimedia（記事の有無チェック・要約取得 — 対象の地名やトピック名が送信されます）、市場データAPI（ER-API／fxratesapi・gold-api・CoinGecko・alternative.me・Yahoo Finance — ウィジェット・下部ティッカーの価格取得、およびCompanies（企業）タブで米国上場企業の時価総額をライブ算出するための株価取得に使用します。Companies（企業）タブの株価は当方の Supabase Edge Function <code>quotes-relay</code> 経由で取得し、第三者の中継は使いません。上流は Yahoo のキー不要のエンドポイントで、送信されるのは銘柄コードのみです。利用者の情報は送信されません）、企業ロゴ取得（Wikimedia Commons／Google — Companies タブのロゴは、どの画像がその企業のロゴかを Wikidata（プロパティ P154）がビルド時に解決済みで本サイトに同梱しているため、閲覧時に Wikidata へは何も送信されず、<b>どの企業をご覧になっているかが伝わることはありません</b>。画像そのものは Wikimedia Commons（upload.wikimedia.org）から読み込まれます。Commons にロゴが無い企業についてのみ Google のファビコン取得へフォールバックし、その場合に Google へ送信されるのは<b>その企業のドメイン名だけ</b>です。どちらも無い企業は頭文字のモノグラムを描画するため、外部への要求は一切発生しません。ロゴの商標は各社に帰属し、企業を識別する目的で使用しています）、週ごとの自然現象のまとめ（「今週の地球」のページ・フィードと、Atlas が週について答える内容。サイトの<b>構築時に</b>米国地質調査所（USGS）の地震カタログと NASA の EONET から作成して本サイトに同梱しているため、<b>閲覧時に USGS・NASA へは何も送信されず</b>、利用者の情報が伝わることはありません）、地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot。検索した地名・テキスト、または地図上でクリックした地名ラベルが、座標や範囲を取得するため送信されます。「あの頃といま」のカードを作るときは、写っている場所の名前を得るため、見ている地図の中心が Nominatim に送信されます。また地図上で河川名をクリックした場合は、画面外まで含めた河川の実際の流路を描画するため、その河川の名称（OpenStreetMapが記録する各言語の名称）が Nominatim に送信され、Nominatim が応答できない場合はクリック地点周辺の地図範囲とともに Overpass API に送信されます）、行政境界データ（geoBoundaries／GitHub — Atlasの地域ハイライトで構成区画の境界形状を取得します。また気象・災害警報レイヤーでは、他の境界データに存在しない発令区域を描くための最終手段として使用します。いずれも対象の国コードのみが送信されます）、ライブカメラ視聴（「ライブカメラ」レイヤーはOpenStreetMap・Transport for London（TfL JamCams）・Caltrans（カリフォルニア州DOT）・Fintraffic／Digitraffic（フィンランド）・複数の米州DOT（コロラド／インディアナ／アラスカ／アリゾナ、OpenTrafficCamMapオープンデータをjsDelivr CDN経由で利用）、及び米国・カナダの各州/準州DOTの「511」交通カメラ網（フロリダ／ジョージア／ニューヨーク／ペンシルベニア／ノースカロライナ／ネバダ／ウィスコンシン／アイダホ／ルイジアナ／ニューイングランド／オンタリオ／アルバータ／ユーコン。各サイトのカメラ一覧はCORS制限のため当方の中継（Supabase Edge Function <code>fetch-relay</code>）経由で1回ずつ取得し、映像は各カメラの提供元から直接読み込みます）の公開カメラを一覧化します。地形解析（傾斜・斜面方向、電波見通し圏、日照・地形の影、洪水・津波、標高断面、ドローン航法の経路解析）では公開の標高タイル（Mapzen／AWS「terrarium」DEM、AWS Open Data）を解析対象の範囲について取得しブラウザ内で復号します。日照・影と災害シミュレータはOpenStreetMap Overpass APIで建物形状や風も取得します（送信されるのは解析対象の地図座標のみで、個人データは送信しません）。フライトシミュレーターの音（エンジン音・風切り音・失速/GPWS等の警報音）はブラウザ内でWeb Audioにより合成され外部送信はありませんが、GPWSの音声コールアウトはブラウザ内蔵の音声合成（Web Speech API）を使用するため、ブラウザによっては読み上げ用の固定英語句（「pull up」等）が提供元の音声サービスで処理される場合があります。カメラを開くと、その提供元の第三者コンテンツ＝数秒ごとに自動更新される静止画（カメラ/提供元から直接取得）／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／短尺クリップ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、Webフォント（Google Fonts — 各ページは書体を fonts.googleapis.com と fonts.gstatic.com から読み込むため、Google にはその通常の要求〈IPアドレスとブラウザの情報を含みます〉が届きますが、それ以外の利用者の情報は送信しません）、必要時に読み込むオープンソースのプログラム（unpkg CDN — unpkg.com。Open-Meteo の気象マップ層を、それを使うレイヤーを開いたときに取得します。送信されるのは要求そのものだけです）、国旗画像（flagcdn.com — 国名の横に表示する国旗を画像として読み込み、要求にはその国の2文字コードが含まれます）、パスワードの漏えい確認（Have I Been Pwned の Pwned Passwords — api.pwnedpasswords.com。新規登録時や新しいパスワードを設定するとき、お使いのブラウザがパスワードの SHA-1 ハッシュを計算し、<b>そのハッシュの先頭5文字だけ</b>を送信します。パスワードそのものとハッシュの残りの部分はブラウザの外へ出ず、既知の漏えいに含まれるかどうかは返されたハッシュ末尾の一覧とブラウザ内で照合して判定するため、このサービスにはどのパスワードを確認したかが分かりません）、公式の気象警報（気象警報レイヤーは各国の気象機関が公開する警報フィードを直接読みます — 米国立気象局、カナダ環境・気候変動省、オーストラリア気象局、香港天文台、ブラジル INMET、ドイツ DWD、MET Norway、気象庁。中国中央気象台の警報は当方の fetch-relay 経由で読みます。あわせて警報が参照する区域の境界を NOAA・Eurostat GISCO・Alibaba Cloud DataV から取得します。送信されるのは要求そのものだけです）、火山・災害の情報（Smithsonian Global Volcanism Program の週間報告と火山の写真〈volcano.si.edu〉、USGS の火山情報、気象庁の噴火警報、Esri の ArcGIS Online 上で公開されている火山ハザード区域、WHO の Disease Outbreak News〈www.who.int〉、NOAA Space Weather Prediction Center のオーロラ予報・Kp 指数（観測と予報）・太陽風・X 線フレア・NOAA スケール・警報、NASA/JPL Solar System Dynamics の火球の記録と小惑星の地球接近〈ssd-api.jpl.nasa.gov。当方の中継を経由し、中継が同じ要求を送ります〉、The Space Devs の Launch Library 2 による打ち上げの記録〈地図の時刻の前後の日付の範囲だけを送ります〉。送信されるのは要求そのものだけです）、レイヤーやパネルを開いたときに読むその他の公開データ（TeleGeography の海底ケーブル地図、OurAirports の空港一覧、DeepStateMap のウクライナ前線、GitHub〈raw.githubusercontent.com〉上の歴史地図とプレート境界のデータ、Our World in Data と Observatory of Economic Complexity〈OEC〉— 送信されるのはデータセット・国・年のコードだけです —、為替レートの Frankfurter〈api.frankfurter.dev〉。利用者の情報は送信しません）、海底の深さの表示（Open Topo Data — api.opentopodata.org。クリックした地点の座標が送信されます）、航空機の詳細（Planespotters.net — 航空機を開くと、その写真を探すため機体の ICAO 24ビット・トランスポンダ・アドレスが送信されます）、サイドバーのウィジェット（祝日の Nager.Date — 選んだ国のコードが送信されます —、Hacker News、Wikimedia の「今日は何の日」と「今日の記事」のフィード、wheretheiss.at の ISS の位置、The Space Devs のロケット打ち上げ予定、mempool.space のビットコインのネットワーク情報。利用者の情報は送信しません）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI機能（場所のブリーフ、「AIに質問」、Atlas 自然言語コンソール）に入力したテキストや関連する座標は、応答生成のため送信されます。<b>Atlas に添付したファイルも、メッセージと一緒に送信されます</b>——画像は画像として、PDF は文書そのものとして、それ以外の文書（Word・Excel・PowerPoint・OpenDocument・KMZ・アーカイブ等）はブラウザ内で読み取った<b>テキスト</b>として送信され、元のファイルそのものは送信されません。添付ファイルは当方のサーバーに保存されません（その1回のリクエストと共に送られるだけで、保持しません）。<b>また「写真の撮影地点を探す」機能で稜線の検出方式に「AI（視覚モデル）」を選んだ場合、その写真の縮小した写しがAIプロバイダへ送信されます</b>（空と地面の境界を描かせるためです。送信前に一度だけ明示的な許可を求め、許可はお使いのブラウザ内にのみ記録されます。許可はいつでも取り消せます。送信した写真は当方のサーバーに保存しません）。同機能でもう一方の「画像処理」方式を選んだ場合、写真は端末から一切送信されません。いずれの方式でも、撮影地点の照合そのものはブラウザ内で行われ、標高データは座標だけで取得します。またAtlasの統合分析では、回答生成のため関連データ（読み込み済みニュースの見出し、気象・大気質・海水温・標高の数値、地震情報、国別統計）が併せて送信されることがあります。さらにAtlasの統合分析・ブリーフでは、AIプロバイダ側のWeb検索機能が実行されることがあり、質問に関連する検索語がプロバイダ経由で検索エンジンに送信されます）。<b>Atlas が IntMap の操作の中から使えるものを探すときには、あなたの依頼をもとに Atlas が書いた短い検索語が、上記のAIプロバイダの設定にかかわらず OpenAI の埋め込み（embedding）API へ送信されます</b>（Supabase Edge Function <code>atlas-embed</code> 経由・ログイン中のみ。検索語と操作の説明文との意味の近さを計算するためだけに使い、検索語もその数値化した結果も当方のサーバーに保存しません。当方が保存するのは IntMap 自身の操作説明文を数値化したものだけです）。各社のプライバシーポリシーが適用されます。<b>なお、現在有効なAIプロバイダがOpenAIの場合、これらAI機能への入力テキストおよびその出力は、当方が有効化したOpenAIとのコンテンツ共有設定に基づき、OpenAIが独立したデータ管理者としてサービスの開発・改善（モデルの学習・研究・評価・テストを含む）に利用することがあります。この用途は当該入力・出力に対する通常のデータ処理契約（DPA）や監査等の対象外となります。そのため、機微情報・秘密情報・専有情報、HIPAA上の保護対象保健情報、13歳（またはお住まいの地域で定めるデジタル同意年齢）未満の子どもの個人データを、AI機能に入力しないでください。</b> <b>Atlas にデータの検索や、リモートの GeoTIFF の一部の読み込みを頼んだとき</b>、お使いのブラウザは、あなたが指定した場所と期間の範囲（緯度経度の矩形と日付の範囲。あなたを識別する情報は含みません）を、検索先のオープンデータカタログ — Earth Search（Element 84 / AWS Open Data）、Microsoft Planetary Computer、NASA CMR-STAC（LP DAAC）、カナダ環境・気候変動省（MSC GeoMet）、英国地質調査所 — に送り、ファイルを読むときはそれを配信するホストにバイト範囲の要求を送ります（AWS Open Data のファイルは *.s3.amazonaws.com から配信されます。あなたが Atlas に与えたアドレスは、そのホストに要求します）。各運営者のプライバシーポリシーが適用され、そのような検索や読み込みを頼まない限り何も送信されません。 <b>このページが実際にどの接続先と通信したかと、それぞれに何を送るとこの項に記載しているかは、設定 ▸ プライバシー ▸ このページの通信でいつでも確認でき、その記録を JSON ファイルとして保存できます</b>（お使いのブラウザ自身の報告から作るもので、当方には送信しません）。</p>
-    <p><b>5. Cookie・ローカルストレージ</b> — セッション維持と設定の保存に使用します。</p>
-    <p><b>6. 保持期間</b> — アカウントや投稿を削除するまで保持します。エラー記録は、同じエラーが最後に発生してから30日後に削除します。利用統計の件数は400日後に削除します。保存した場所は、場所かアカウントを削除するまで保持します。地図の誤り報告は、公開しなかった回答済みのものを回答から730日後（迷惑なものは30日後）に削除し、公開した訂正はお申し出があるまで公開記録として保持します（アカウントを削除するとすべて削除します）。保存した地図は、地図かアカウントを削除するまで保持します。今日のクエストの記録は、アカウントを削除するまで保持します（ログインしていない間の記録はお使いのブラウザにのみ保存され、当方には送られません）。ログインせずに送られたフィードバックと不具合報告は、受け取ってから730日後に削除します（ログイン中に送ったものはアカウントを削除するまで保持します）。クラスのセットは、提出された名前と答えとともに、セットを作ってから 365 日後に削除します（先生がセットかアカウントを削除した場合はその時点で削除します）。<br><b>公開したコレクション</b> — マイプレイスのコレクションは、あなたが「閲覧専用リンクを作成」を選んだ（または Atlas に頼んだ）ときに限り公開されます。リンクを知っている人は誰でも、そのコレクションの場所の名前・メモ・位置と保存した地図（ツアーや Atlas の回答なら各段の文も）を、その時点の内容で見られ、ログインしていれば自分のアカウントに写せます。アカウント・表示名・メールアドレスは公開されません。公開はいつでもやめられ、やめた時点で（またはアカウントを削除した時点で）リンクは開けなくなります。ただし、すでに写された・保存された内容は相手の手元に残ります。<br><b>みんなの地図</b> — 公開したコレクションは、あなたが「みんなの地図に掲載」を選んだ（または Atlas に頼んだ）ときに限り、あなたがそのために入力した表示名（メールアドレスやアカウント名ではありません）で、みんなの地図に掲載されます。掲載したものは誰でも題・紹介文・表示名で見つけられ、保存した人の数と、それを元にした掲載の数が表示されます（誰かは表示されません）。他の人の掲載を元に作ったコレクションを掲載すると、元の掲載が続いている間はそれを「元にした地図」として示します。掲載はいつでも外せ、公開をやめるまでリンクは使えます。公開コレクションを写すと、どれを写したかと写した先を記録し、持ち主には保存した人の数だけが見えます。掲載に対して送った報告（理由とメモ）は IntMap の管理者だけが読み、持ち主には見えません。管理者は掲載を外すことがあり、その理由を持ち主に示します（公開をやめて出し直しても、この判断はそのコレクションに残ります）。写した記録は、そのコレクションの公開が終わるか、アカウントを削除するまで保持します。報告はアカウントを削除するまで保持し、管理者が対応を終えた報告は送信から 730 日後に削除します。</p>
-    <p><b>7. あなたの権利</b> — 自己の情報へのアクセス・訂正・削除、投稿の削除が可能です。アカウントが保持するデータは「アカウント ▸ あなたのデータ」でいつでも一覧で確認し、完全なコピー（JSON）をダウンロードできます。削除はアカウントの削除から行えます。その他はお問い合わせください。</p>
-    <p><b>8. 子ども</b> — 13歳未満を対象としていません。</p>
-    <p><b>9. セキュリティ</b> — 業界標準の対策を講じますが、完全な安全性は保証できません。どのように守っているかと、セキュリティ上の問題を非公開で報告する窓口は <a href="./security.html">セキュリティと信頼</a> のページにあります。</p>
-    <p><b>10. 変更</b> — 本ポリシーは変更される場合があります。</p>`;
+    <h3 style="margin:0 0 4px;font-size:17px;">
+プライバシーポリシー</h3>
+<p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">
+最終更新日: ${LEGAL_DATE}</p>
+
+    <p>
+<b>
+1. 
+取得する情報</b>
+ — アカウント情報（メールアドレス、
+表示名）、
+投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、
+保存した記事、
+保存した場所（マイプレイス: 名前・メモ・コレクション・位置）と見守りの設定（見守る場所: 範囲・知らせる基準・既に見た出来事の識別子）、
+今日のクエストの記録（解いた日・クエストの種類・5 問それぞれの得点。
+ログイン中に解いた分と、
+ログイン前にこのブラウザで解いた分）、
+保存した地図（名前・メモ・コレクションと、
+共有リンクと同じ形の地図の表示。
+地図として保存したツアー・自分で描いた地図・Atlas の回答では、
+各段の地図とその文も）、
+公開したコレクション（どのコレクションか・題・リンク）とみんなの地図に掲載したものの表示名・紹介文・元にしたコレクション、
+ライブラリに写した公開コレクション（写した先のコレクション名）、
+みんなの地図で送った報告（理由とメモ）、
+クラス用に作ったセット（学ぶクエストの種類・付けた題・まだ答えを受け付けるか・コード）と、
+そこに生徒が提出した名前と答え、
+及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、
+端末・ブラウザ情報）。
+<br>
+<b>
+クラスのセット（生徒）</b>
+ — 先生から受け取ったクラスのリンクを開いてセットを解き終えると、
+入力した名前と答え（場所の問題ではタップした地点を約100m単位で、
+年代の問題では選んだ年）を当方のデータベース（Supabase）に送り、
+そのセットを作った先生にだけ表示します。
+名前は保存の前に整えます（前後の空白を除き、
+全角と半角などの見た目が同じ文字を 1 つの形にそろえるため、
+全角と半角で書いた同じ名前は同じ生徒として扱います。
+制御文字や見えない書式文字を含む名前は受け付けません）。
+アカウント・メールアドレスその他のあなたについての情報は送りません。
+名前は名字なしの名前か先生が決めた番号にし、
+フルネームは入力しないでください。
+クラスのリンクを使わない場合、
+学ぶクエストの答えが送られることはありません。
+<br>
+<b>
+エラー記録</b>
+ — 本サービスのページで処理されなかったエラーが発生した場合、
+その内容を当方サーバー（Supabase）に送信し、
+不具合の修正に利用します。
+記録するのは、
+エラーのメッセージとスタックトレース（含まれるURLはパスのみ）、
+発生したページのパス、
+ビルド番号、
+ブラウザの名称とメジャーバージョン、
+発生回数と発生日時のみです。
+IPアドレス、
+アカウント、
+URLのクエリ文字列やフラグメント、
+入力された文字は記録しません（メールアドレスや長い引用文字列のようにエラーメッセージに紛れ込みうる語は、
+送信前に伏せ字にします）。
+<br>
+<b>
+匿名の利用統計</b>
+ — 本サービスがどのように見つけられ使われているかを知るため、
+当方サーバー（Supabase）に<b>
+日ごとの件数だけ</b>
+を記録します。
+数えるのは、
+地図を開いた回数、
+流入元（直前のページのホスト名のみ、
+アドレスの utm_source・utm_medium・utm_campaign の値、
+共有リンクから開いたか・他のページに埋め込まれて開いたか・本サービスの紹介ページ（作例・概要・教員向け・ニュースを地図で読む・記事に地図を埋め込む・年代から探す歴史地図・この日の歴史地図・今週の地球）から開いたか。
+紹介ページから開いた場合は、
+そのページのアドレスにある utm の値を読みます）、
+アプリの言語（英語・日本語・その他）、
+端末の種類（モバイル・デスクトップ）、
+オンにしたレイヤー、
+使われた機能（比較・タイムラプス再生・共有・寄付リンク・インストール）、
+Atlas への質問の<b>
+回数</b>
+、
+及び Atlas の回答の<b>
+種類</b>
+（文章のみ・地図・グラフ・その組み合わせのいずれか。
+Atlas 自身が回答に付けた区分で、
+回答の内容は含みません）です。
+また、
+地図を開いてから地図が使えるようになるまでの時間（「2〜3 秒」のような区間のみで、
+正確な時間は記録しません）、
+起動画面が地図を表示し終えてから消えたかどうか、
+及び本サービスのどの版だったかを、
+端末の種類とともに数えます。
+この 3 つは、
+同じネットワークからは版ごとに 1 日（UTC）1 回だけ数えます（同じアドレスの後ろにいる複数の読者は 1 回になります）。
+そのために、
+ネットワークのアドレスから作った復元できない鍵（HMAC）と版・日付を組にした記録を当方のサーバー（Supabase）に最長約 48 時間保持し、
+その後自動で削除します。
+アドレスそのものは保存しません。
+質問の内容、
+IPアドレス、
+アカウント（ログイン中でも）、
+セッションやCookie、
+ブラウザのUser-Agent、
+日より細かい時刻は記録しません。
+ブラウザの「トラッキング拒否（Do Not Track）」または Global Privacy Control が有効な場合は何も送信しません。
+設定の「匿名の利用統計」をオフにすると直ちに停止し、
+まだ送信していない件数は破棄されます（この選択はお使いのブラウザに保存されます）。
+Atlas に頼んでオフにすることもできます。
+<br>
+<b>
+寄付</b>
+ — 「支援する」から寄付のページへ進むと、
+決済は Stripe のページで行われ、
+カード等の決済情報を当方が受け取ることはありません。
+ログイン中に寄付のページへ進むボタンを押した場合に限り、
+押したという記録（アカウントID、
+メールアドレス、
+表示言語、
+押した場所、
+日時）を当方のデータベース（Supabase）に保存します。
+実際に寄付が行われたかどうかは当方には届きません。
+この記録はアカウントを削除すると削除されます。
+<br>
+<b>
+地図の誤り報告</b>
+ — 地図の右クリックメニュー等の「地図の誤りを報告」から送られた報告として、
+地点の座標、
+そのときの地図の表示（共有リンクと同じ形のズーム・レイヤー・年）、
+誤りの種類、
+選ばれたレイヤー、
+報告の文章、
+任意の出典URL、
+表示言語を当方のデータベース（Supabase）に保存します。
+メールアドレスは求めません。
+ログイン中に送った場合はアカウントIDも保存します。
+回答を受け取るための受付番号はお使いのブラウザ内にのみ保存し、
+当方はそのハッシュ値だけを保持します。
+報告は誤りの確認と回答のためにのみ使います。
+運営者が公開を選んだ訂正は、
+運営者が書いた要約・地点（約100m単位）・レイヤー・年として公開の訂正記録ページに掲載しますが、
+報告者や報告の文章は掲載しません。
+<br>
+<b>
+データスタジオの公開リンク</b>
+ — データスタジオで作った塗り分け地図のリンクは、
+表の中身（各行の場所と塗った列の値）をリンクそのもの（アドレスの # 以降）に入れます。
+当方のサーバには送られず、
+保存もしません。
+そのため、
+リンクを渡した相手はその中身を読めます。
+</p>
+
+    <p>
+<b>
+2. 
+ローカル保存</b>
+ — 設定、
+衛星タイルの任意APIキー、
+船舶AIS（aisstream.io）の任意キー、
+ニュースおよび地図データ（海底ケーブル等）のキャッシュはお使いのブラウザ内にのみ保存され、
+当方サーバーには送信されません。
+AIキーをブラウザに保存することはありません（AIはサーバー側で実行）。
+端末の位置情報は、
+天気・大気質等のウィジェットや「現在地へ移動」機能の利用時にブラウザの許可を得た上でのみ取得され、
+端末内での地図表示に使用されます（天気・大気質の取得時のみ座標が気象API（Open-Meteo）に送信されます）。
+当方サーバーに保存されることはありません。
+<b>
+「いま、
+ここ」</b>
+では、
+正確な位置は端末から出ません——地名（OpenStreetMap Nominatim）と天気（Open-Meteo／MET Norway）の取得にだけ 0.1°（約 11 km）に丸めた地点を送り、
+地震（USGS のフィード）と出来事（IntMap のニュースの出来事）は位置を付けずに読み込んでブラウザ内で絞り込みます。
+何も保存しません。
+<b>
+共有で開く・写真の場所</b>
+——共有シートや写真ライブラリから IntMap に渡した写真・リンク・文はブラウザ内で読み（写真はカメラが記録した撮影位置と撮影時刻）、
+どこにも送信しません。
+共有シートから届いた内容はブラウザのキャッシュに一時的に置き、
+開いた時点で削除します（開かれなかったものも 1 時間後に削除）。
+撮影位置の記録が無い写真は、
+ご自身で「写真の撮影地を探す」を使った場合にのみ下記のとおり扱われます。
+支援のご案内（Atlas の1日の上限に達したときや、
+何日か続けてご利用いただいたときに表示する小さなカード）のために、
+IntMapを開いた日数と、
+ご案内を閉じた日時をお使いのブラウザ内に保存します。
+これらは当方サーバーには送信されません。
+<b>
+今日の世界</b>
+を最後に開いた日時は、
+前回以降に当方のニュースの収集に新しく届いた出来事に印を付けるため、
+お使いのブラウザ内にのみ保存し、
+当方サーバーには送信しません（前回以降の件数を数えるときに当方のニュースの収集へ送るのは、
+その日時だけです）。
+<b>
+Atlas の調査ノート</b>
+——現在は提供しておらず、
+新しく記録することはありません。
+以前に保存したもの（Atlas に送った問い・回答・回答時の地図の状態・実行した操作・問い合わせの結果・出典）は、
+あなたのブラウザ（IndexedDB）に残り、
+同期をオンにしていた場合に限りあなたの IntMap アカウント（Supabase）にも残っています（あなただけが読み書きできます）。
+ブラウザのデータを消せば端末の分は消え、
+アカウントを削除すればアカウント上の分も削除されます。
+<b>
+家族史と国境</b>
+——入力した、
+または読み込んだ家系図ファイル（GEDCOM）の人物・日付・場所はお使いのブラウザ内にのみ保存し、
+どこにも送信しません。
+ファイルはブラウザ内で読み、
+地名の特定と歴史の記録の照合もこの端末上で行います（歴史の記録は、
+地図でその場所を見るときと同じく、
+必要な部分だけを本サービスのサーバーから読み込みます）。
+「GEDCOM ファイルとして保存」はファイルをこの端末上で作り、
+お使いのブラウザのダウンロードに渡すだけで、
+どこにも送信しません。
+「ここに保存した内容をすべて削除」またはブラウザのデータの消去で削除されます。
+<b>
+この端末に保存されているもの</b>
+——「設定」▸「プライバシー」▸「この端末に保存されているもの」で、
+お使いのブラウザが IntMap のために保持しているものすべてを、
+各項目が何か・大きさ（中身は表示しません）とともに確認でき、
+1 件ずつ、
+またはまとめて消去できます。
+IntMap のコードは Cookie を設定しません。
+</p>
+
+    <p>
+<b>
+3. 
+利用目的</b>
+ — アカウント、
+コミュニティ、
+保存機能の提供、
+及びサービスの運営・保護のために利用します。
+匿名の利用統計（第1項）は、
+本サービスがどのように見つけられ使われているかを集計として把握するためにのみ利用します。
+地図が使えるようになるまでの時間は、
+本サービスの版が読者にとって遅くなっていないかを確かめるために使い、
+版ごと・端末の種類ごとの割合（件数ではなく整数の割合です。
+100 回未満の版は公開しません）を状態ページ「IntMap のいま」で公開します。
+</p>
+
+    <p>
+<b>
+4. 
+第三者</b>
+ — Supabase（DB/認証/ホスティング/サーバー処理）、
+Google/Apple（OAuth利用時）、
+Google News（RSS。
+ニュースの見出しは<b>
+お使いのブラウザが</b>
+当方のCORS中継（Supabase Edge Function <code>
+news-relay</code>
+）経由で取得し、
+<b>
+どの場所の出来事かの判定もブラウザ内で行います</b>
+——この経路ではAIを使わず、
+当方サーバーに記事を保存しません。
+ニュースの記事を開いたときは、
+まず<b>
+お使いのブラウザが</b>
+Jina AI の読み取りサービス（r.jina.ai）に本文のテキスト版を求め、
+その際 Jina AI には<b>
+記事のURL</b>
+だけが送信されます（利用者の情報は送信しません）。
+それで本文が得られない場合はその報道機関から本文を直接読み、
+それもできない場合に限り当方の中継（Supabase Edge Function <code>
+fetch-relay</code>
+）がその<b>
+記事のURLだけ</b>
+を受け取って記事ページを取得し、
+お使いのブラウザへ返します（アカウント情報は送らず、
+当方サーバーに記事を保存しません）。
+<b>
+これとは別に、
+当方のサーバーが定期的に報道機関の公開RSSフィードからニュースを収集し、
+当方のデータベース（Supabase）に保存しています</b>
+（同じ出来事を伝える複数の報道をまとめるためのものです。
+収集先は各報道機関の公開フィードと、
+無料フィードを持たない通信社についてはGoogle Newsの検索RSSです。
+保存するのは<b>
+見出し・リンク・要約・掲載日時・媒体名</b>
+で、
+記事本文は保存しません。
+この収集は利用者の操作と無関係に自動で行われ、
+<b>
+利用者の情報は一切送信されません</b>
+（送信するのはフィードのURLだけです）。
+保持期間は<b>
+記事72時間・出来事30日</b>
+で、
+それを過ぎたものは削除します（利用者が★を付けた出来事は削除しません）。
+ただし、
+2 つ以上の独立した媒体が報じた出来事などは、
+見出し・時刻・場所・出典のリンクだけの簡略な記録として、
+年単位で保持します（記事の本文は保持しません。
+個人に関する情報は含まれません）。
+この経路の地点の判定は、
+現在<b>
+AIプロバイダが第一手段</b>
+です（既に公表されている見出しと要約の冒頭を、
+当方のキーでサーバー側から送信し、
+その出来事の場所を判定させます）。
+AIが場所を答えられない場合は、
+非AIの決定論エンジンがフォールバックとして働きます。
+この経路でAIに送るものはもう1つあり、
+<b>
+出来事の代表見出しの日本語訳</b>
+も同じ仕組みで生成して保存します。
+いずれの場合も当方サーバーから送信されるのは既に公表されている見出しと要約であって、
+利用者の情報は送信しません。
+<b>
+現在、
+Newsタブは既定でこの出来事データベースを読んでいます</b>
+（カードは記事1本ではなく出来事1件で、
+開くとどの媒体がいつ報じたかと、
+媒体間で食い違っている数量が並びます）。
+この読み取りで利用者の情報は送信されません（公開の出来事の行を要求するだけです）。
+出来事に★を付けると、
+その出来事のIDがアカウントに（未ログインの場合はブラウザ内にのみ）保存されます。
+出来事データベースに到達できないときは上記のブラウザ経路に戻り、
+検索・過去の日付・多言語ニュースは常にブラウザ経路を使います。
+加えてAtlasのライブWeb検索では、
+対象の地名・トピック名がブラウザから検索語としてGoogle News RSSに送信されます）、
+地図・衛星タイル（基図の OpenFreeMap〈tiles.openfreemap.org、
+OpenMapTiles に基づく〉と CARTO、
+Esri・NASA GIBS・国土地理院・USGS・PDOK・swisstopo、
+OpenRailwayMap・OpenSeaMap・OpenHistoricalMap、
+RainViewer の雨雲レーダー、
+国土交通省 PLATEAU の3D都市モデル〈api.plateauview.mlit.go.jp と、
+その資産置き場 assets.cms.plateau.reearth.io。
+このレイヤーをオンにしている間だけ通信し、
+表示中の日本のどのタイルかと IP アドレスが相手に届きます〉、
+3D建物タイルの 3D BAG〈data.3dbag.nl。
+オランダを表示しているときだけ〉と Re:Earth Buildings〈buildings.reearth.land。
+世界の都市を拡大して見ているときだけ。
+どちらも同じレイヤー、
+同じ条件で、
+表示中のどのタイルかと IP アドレスが相手に届きます〉、
+Terrascope 経由の ESA WorldCover、
+Marine Regions／VLIZ の海洋境界、
+FAO GAEZ の作物適性、
+および設定でご自身のキーを入力した場合に限り Mapbox または Sentinel Hub〈そのキーが送信されます〉。
+タイルの要求に含まれるのは描画する地図範囲の位置と縮尺だけで、
+利用者の情報は含まれません）、
+利用者が指定した s3:// 形式のデータ（STAC カタログの資産など）は、
+AWS が定める対応する https アドレス（<code>
+バケット名.s3.amazonaws.com</code>
+）へ変換され、
+ブラウザが必要な範囲だけを範囲指定で読み込みます（送るのはファイルとバイト範囲のみ）、
+標高・気象API（Open-Meteo。
+アニメーション風と予報気象レイヤーは Open-Meteo が AWS Open Data 上で公開しているデータバケット openmeteo.s3.amazonaws.com（配信は Amazon Web Services）から数値予報モデルの数値場を範囲指定で読み込みます（読み込むモデルは各レイヤーで選択でき、
+ECMWF IFS HRES〈欧州中期予報センター〉／NOAA GFS〈米国海洋大気庁〉／DWD ICON〈ドイツ気象庁〉のいずれかです。
+いずれも Open-Meteo が CC BY 4.0 で再配布しているものです）が、
+この経路で送信されるのは要求するファイルとバイト範囲だけで、
+座標も利用者の情報も送信しません。
+Open-Meteoが利用できない場合は自動的にMET Norwayへフォールバックし、
+対象地点の座標、
+または標高スキャン・放射性物質拡散機能では対象地点周辺のグリッド状の座標が送信されます。
+放射性物質拡散で過去の日時を指定した場合は、
+その時点の気象を得るためOpen-MeteoのERA5アーカイブ archive-api.open-meteo.com が使用されます）、
+道路経路案内（OSRM — router.project-osrm.org・routing.openstreetmap.de。
+Atlasに車/徒歩/自転車の経路を依頼すると、
+出発地・目的地・経由地の座標がOpenStreetMapの道路データ上での経路算出のため送信されます）、
+公共交通経路案内（Transitous／MOTIS — api.transitous.org。
+Atlasに電車・地下鉄・バス等の公共交通経路を依頼すると、
+出発地・目的地の座標が世界の公開GTFSデータ上での行程算出のため送信されます）、
+到達圏の算出（Valhalla／FOSSGIS — valhalla1.openstreetmap.de。
+Atlasで「車で30分」「徒歩15分」等の到達圏を求めると、
+起点の座標と指定した分数がOpenStreetMapの道路網上での到達範囲（等時線）算出のため送信されます。
+また経路検索で地図上に「通過禁止範囲」を描いた場合は、
+その範囲の座標も併せて送信されます）、
+ストリートビューの埋め込みとカバレッジ（Google — 「ここのストリートビュー」パネルやAtlasのストリートビュー機能を開くと、
+選択した座標のGoogle製ストリートビュー埋め込みが読み込まれます。
+またストリートビュー・モードや地点のクリック時には、
+実際のカバレッジ（撮影済みの道路）を表示・判定するため、
+選択地点周辺の座標に対応するGoogleのストリートビュー・カバレッジ・タイル（mts.google.com）が読み込まれます。
+いずれもGoogleのポリシーが適用されます）、
+流域界の算出（Global Watersheds／mghydro.com — Atlasで河川流域を描画する際、
+河川端点の座標が実際の流域ポリゴン算出のため送信されます）、
+範囲内人口の集計（WorldPop — api.worldpop.org。
+測定ツールやAtlasで囲んだ範囲・円・地域の人口を算出すると、
+その範囲のポリゴン座標が人口グリッド集計のため送信されます。
+また、
+分析で人口の格子〈WorldPop 1 km〉を読むと、
+WorldPop の画像サービス worldpop.arcgis.com〈Esri の ArcGIS 上で WorldPop が運営〉に、
+分析する範囲の四隅の経緯度と年が送信されます）、
+インターネット障害・経路の観測（IODA〈Georgia Tech Research Corporation — api.ioda.inetintel.cc.gatech.edu〉、
+RIPE Atlas〈atlas.ripe.net〉、
+RIPEstat〈stat.ripe.net〉。
+「インターネット障害」または「ネットワーク到達性」レイヤーを開くと、
+<b>
+お使いのブラウザが</b>
+これらの観測網へ直接接続し、
+世界全体の観測結果を取得します。
+当方のサーバーは経由せず、
+当方はこのデータを保存も再配布もしません。
+この取得で送信されるのは要求そのものだけで、
+<b>
+位置情報も利用者の情報も送信しません</b>
+。
+例外は1つで、
+障害の出ている国を地図上でクリックしたときに限り、
+その国の<b>
+ISO 2文字コード</b>
+がRIPEstatへ送信されます — その国で見えている経路数を取得するためです）、
+jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、
+OpenStreetMap Overpass API（overpass-api.de。
+応答しない場合は公開ミラーの overpass.kumi.systems・overpass.private.coffee、
+過去の年については OpenHistoricalMap の overpass-api.openhistoricalmap.org。
+表示範囲の公開ウェブカメラ地点のライブ取得に加え、
+Atlasで指定した種類の施設・POI検索 — 検索範囲と施設種別が送信されます）。
+ドローン航法では経路周辺の飛行制限区域（空港・ヘリポート・軍用地・原子力施設・刑務所・保護区・国立公園）と緊急着陸候補地の照会に、
+経路検索では指定した年の過去の道路・鉄道路線網の取得に使用します（いずれも送信されるのは解析対象の地図座標のみです。
+**なお飛行制限区域の判定は OpenStreetMap に基づく目安であって、
+航空当局による飛行許可ではありません**）、
+Wikidataクエリサービス（Atlasの施設マッピングの第2ソース — 施設種別と対象国コードまたは検索範囲が送信されます。
+またAtlasが国家指導者等の現職を回答する際のライブ照会では対象の国コードが送信されます）、
+ファビコン取得（Google — Atlasの回答に出典リンクカードを表示する際、
+引用元サイトのドメイン名がサイトアイコン取得のため送信されます）、
+統計データAPI（世界銀行・IMF DataMapper — 国コード・指標コード、
+およびタイムマシンでは年のみが送信されます。
+世界銀行の答えをお使いのブラウザが読めないときは、
+同じ問い合わせを当方の中継（<code>
+fetch-relay</code>
+ Supabase Edge Function）が代わりに取得します）、
+USGS（地震データの取得。
+場所の「地震の記録」を開いたときは、
+その場所を整数度に丸めた地点と選んだ半径を USGS のカタログ検索に送り、
+周辺で記録されたすべての地震を一覧にします。
+「余震の見通し」はその地震自体のカタログ上の位置と余震域の半径を送り、
+場所を指定したときはその場所を整数度に丸めた地点を送ります。
+お客様に関する情報は送りません）、
+船舶AIS（「船舶トラフィック（リアルタイム）」レイヤーは、
+当方の Supabase Edge Function <code>
+ais-feed</code>
+ がサーバー側で Fintraffic／Digitraffic〈フィンランド、
+CC BY 4.0、
+キー不要〉と aisstream.io〈全球、
+当方のキー〉から船舶位置を読み、
+全利用者に同じスナップショットを配ります。
+お使いのブラウザから当方のサーバーへ送られるのは**表示中の地図範囲**だけで、
+各提供元には利用者の情報も座標も一切送られません。
+任意で aisstream.io のキーをご自身で設定に入れた場合は、
+お使いのブラウザが aisstream.io（<code>
+stream.aisstream.io</code>
+）に WebSocket で直接接続し、
+<b>
+そのキーと表示中の地図範囲</b>
+を aisstream.io に送って購読します。
+そのキーはお使いのブラウザ内にのみ保存されます）、
+CelesTrak（celestrak.org — 「人工衛星（リアルタイム）」レイヤーの軌道要素。
+**送信されるのはカタログの群名のみ**で、
+座標も利用者の情報も一切送信しません。
+衛星の位置・可視範囲・地上軌跡・仰角・通過予報はすべてブラウザ内で SGP4/SDP4 により計算します。
+CelesTrak に到達できない場合は、
+当方の中継（Supabase Edge Function <code>
+fetch-relay</code>
+）経由での取得、
+または本サイトに同梱した軌道要素カタログ（data/tle/。
+CelesTrak、
+到達不能時は SatNOGS DB〈Space-Track／CelesTrak 由来の要素〉から定期的に生成）を使用し、
+どの出所を使ったかと要素の日付を画面に表示します）、
+GDELT（Atlasのブリーフ・統合分析で使う世界ニュース横断検索 — 場所名や質問中のキーワードが検索語として送信されます）、
+Wikipedia/Wikimedia（記事の有無チェック・要約取得 — 対象の地名やトピック名が送信されます）、
+Wikipedia の「Portal:Current events」（過去のニュースの記録 — IntMap のサーバが日付だけを送って読み、
+あなたの情報は一切送られません。
+本文は CC BY-SA 4.0）、
+市場データAPI（ER-API／fxratesapi・gold-api・CoinGecko・alternative.me・Yahoo Finance — ウィジェット・下部ティッカーの価格取得、
+およびCompanies（企業）タブで米国上場企業の時価総額をライブ算出するための株価取得に使用します。
+Companies（企業）タブの株価は当方の Supabase Edge Function <code>
+quotes-relay</code>
+ 経由で取得し、
+第三者の中継は使いません。
+上流は Yahoo のキー不要のエンドポイントで、
+送信されるのは銘柄コードのみです。
+利用者の情報は送信されません）、
+企業ロゴ取得（Wikimedia Commons／Google — Companies タブのロゴは、
+どの画像がその企業のロゴかを Wikidata（プロパティ P154）がビルド時に解決済みで本サイトに同梱しているため、
+閲覧時に Wikidata へは何も送信されず、
+<b>
+どの企業をご覧になっているかが伝わることはありません</b>
+。
+画像そのものは Wikimedia Commons（upload.wikimedia.org）から読み込まれます。
+Commons にロゴが無い企業についてのみ Google のファビコン取得へフォールバックし、
+その場合に Google へ送信されるのは<b>
+その企業のドメイン名だけ</b>
+です。
+どちらも無い企業は頭文字のモノグラムを描画するため、
+外部への要求は一切発生しません。
+ロゴの商標は各社に帰属し、
+企業を識別する目的で使用しています）、
+週ごとの自然現象のまとめ（「今週の地球」のページ・フィードと、
+Atlas が週について答える内容。
+サイトの<b>
+構築時に</b>
+米国地質調査所（USGS）の地震カタログと NASA の EONET から作成して本サイトに同梱しているため、
+<b>
+閲覧時に USGS・NASA へは何も送信されず</b>
+、
+利用者の情報が伝わることはありません）、
+地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot。
+検索した地名・テキスト、
+または地図上でクリックした地名ラベルが、
+座標や範囲を取得するため送信されます。
+「あの頃といま」のカードを作るときは、
+写っている場所の名前を得るため、
+見ている地図の中心が Nominatim に送信されます。
+また地図上で河川名をクリックした場合は、
+画面外まで含めた河川の実際の流路を描画するため、
+その河川の名称（OpenStreetMapが記録する各言語の名称）が Nominatim に送信され、
+Nominatim が応答できない場合はクリック地点周辺の地図範囲とともに Overpass API に送信されます）、
+行政境界データ（geoBoundaries／GitHub — Atlasの地域ハイライトで構成区画の境界形状を取得します。
+また気象・災害警報レイヤーでは、
+他の境界データに存在しない発令区域を描くための最終手段として使用します。
+いずれも対象の国コードのみが送信されます）、
+ライブカメラ視聴（「ライブカメラ」レイヤーはOpenStreetMap・Transport for London（TfL JamCams）・Caltrans（カリフォルニア州DOT）・Fintraffic／Digitraffic（フィンランド）・複数の米州DOT（コロラド／インディアナ／アラスカ／アリゾナ、
+OpenTrafficCamMapオープンデータをjsDelivr CDN経由で利用）、
+及び米国・カナダの各州/準州DOTの「511」交通カメラ網（フロリダ／ジョージア／ニューヨーク／ペンシルベニア／ノースカロライナ／ネバダ／ウィスコンシン／アイダホ／ルイジアナ／ニューイングランド／オンタリオ／アルバータ／ユーコン。
+各サイトのカメラ一覧はCORS制限のため当方の中継（Supabase Edge Function <code>
+fetch-relay</code>
+）経由で1回ずつ取得し、
+映像は各カメラの提供元から直接読み込みます）の公開カメラを一覧化します。
+地形解析（傾斜・斜面方向、
+電波見通し圏、
+日照・地形の影、
+洪水・津波、
+標高断面、
+ドローン航法の経路解析）では公開の標高タイル（Mapzen／AWS「terrarium」DEM、
+AWS Open Data）を解析対象の範囲について取得しブラウザ内で復号します。
+日照・影と災害シミュレータはOpenStreetMap Overpass APIで建物形状や風も取得します（送信されるのは解析対象の地図座標のみで、
+個人データは送信しません）。
+フライトシミュレーターの音（エンジン音・風切り音・失速/GPWS等の警報音）はブラウザ内でWeb Audioにより合成され外部送信はありませんが、
+GPWSの音声コールアウトはブラウザ内蔵の音声合成（Web Speech API）を使用するため、
+ブラウザによっては読み上げ用の固定英語句（「pull up」等）が提供元の音声サービスで処理される場合があります。
+カメラを開くと、
+その提供元の第三者コンテンツ＝数秒ごとに自動更新される静止画（カメラ/提供元から直接取得）／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／短尺クリップ等が読み込まれ、
+各提供元・プラットフォームのポリシーが適用されます）、
+Webフォント（Google Fonts — 各ページは書体を fonts.googleapis.com と fonts.gstatic.com から読み込むため、
+Google にはその通常の要求〈IPアドレスとブラウザの情報を含みます〉が届きますが、
+それ以外の利用者の情報は送信しません）、
+必要時に読み込むオープンソースのプログラム（unpkg CDN — unpkg.com。
+Open-Meteo の気象マップ層を、
+それを使うレイヤーを開いたときに取得します。
+送信されるのは要求そのものだけです）、
+国旗画像（flagcdn.com — 国名の横に表示する国旗を画像として読み込み、
+要求にはその国の2文字コードが含まれます）、
+パスワードの漏えい確認（Have I Been Pwned の Pwned Passwords — api.pwnedpasswords.com。
+新規登録時や新しいパスワードを設定するとき、
+お使いのブラウザがパスワードの SHA-1 ハッシュを計算し、
+<b>
+そのハッシュの先頭5文字だけ</b>
+を送信します。
+パスワードそのものとハッシュの残りの部分はブラウザの外へ出ず、
+既知の漏えいに含まれるかどうかは返されたハッシュ末尾の一覧とブラウザ内で照合して判定するため、
+このサービスにはどのパスワードを確認したかが分かりません）、
+公式の気象警報（気象警報レイヤーは各国の気象機関が公開する警報フィードを直接読みます — 米国立気象局、
+カナダ環境・気候変動省、
+オーストラリア気象局、
+香港天文台、
+ブラジル INMET、
+ドイツ DWD、
+MET Norway、
+気象庁。
+中国中央気象台の警報は当方の fetch-relay 経由で読みます。
+あわせて警報が参照する区域の境界を NOAA・Eurostat GISCO・Alibaba Cloud DataV から取得します。
+送信されるのは要求そのものだけです）、
+火山・災害の情報（Smithsonian Global Volcanism Program の週間報告と火山の写真〈volcano.si.edu〉、
+USGS の火山情報、
+気象庁の噴火警報、
+Esri の ArcGIS Online 上で公開されている火山ハザード区域、
+WHO の Disease Outbreak News〈www.who.int〉、
+NOAA Space Weather Prediction Center のオーロラ予報・Kp 指数（観測と予報）・太陽風・X 線フレア・NOAA スケール・警報、
+NASA/JPL Solar System Dynamics の火球の記録と小惑星の地球接近〈ssd-api.jpl.nasa.gov。
+当方の中継を経由し、
+中継が同じ要求を送ります〉、
+The Space Devs の Launch Library 2 による打ち上げの記録〈地図の時刻の前後の日付の範囲だけを送ります〉。
+送信されるのは要求そのものだけです）、
+レイヤーやパネルを開いたときに読むその他の公開データ（TeleGeography の海底ケーブル地図、
+OurAirports の空港一覧、
+DeepStateMap のウクライナ前線、
+GitHub〈raw.githubusercontent.com〉上の歴史地図とプレート境界のデータ、
+Our World in Data と Observatory of Economic Complexity〈OEC〉— 送信されるのはデータセット・国・年のコードだけです —、
+為替レートの Frankfurter〈api.frankfurter.dev〉。
+利用者の情報は送信しません）、
+海底の深さの表示（Open Topo Data — api.opentopodata.org。
+クリックした地点の座標が送信されます）、
+航空機の詳細（Planespotters.net — 航空機を開くと、
+その写真を探すため機体の ICAO 24ビット・トランスポンダ・アドレスが送信されます）、
+サイドバーのウィジェット（祝日の Nager.Date — 選んだ国のコードが送信されます —、
+Hacker News、
+Wikimedia の「今日は何の日」と「今日の記事」のフィード、
+wheretheiss.at の ISS の位置、
+The Space Devs のロケット打ち上げ予定、
+mempool.space のビットコインのネットワーク情報。
+利用者の情報は送信しません）、
+及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。
+AI機能（場所のブリーフ、
+「AIに質問」、
+Atlas 自然言語コンソール）に入力したテキストや関連する座標は、
+応答生成のため送信されます。
+<b>
+Atlas に添付したファイルも、
+メッセージと一緒に送信されます</b>
+——画像は画像として、
+PDF は文書そのものとして、
+それ以外の文書（Word・Excel・PowerPoint・OpenDocument・KMZ・アーカイブ等）はブラウザ内で読み取った<b>
+テキスト</b>
+として送信され、
+元のファイルそのものは送信されません。
+添付ファイルは当方のサーバーに保存されません（その1回のリクエストと共に送られるだけで、
+保持しません）。
+<b>
+また「写真の撮影地点を探す」機能で稜線の検出方式に「AI（視覚モデル）」を選んだ場合、
+その写真の縮小した写しがAIプロバイダへ送信されます</b>
+（空と地面の境界を描かせるためです。
+送信前に一度だけ明示的な許可を求め、
+許可はお使いのブラウザ内にのみ記録されます。
+許可はいつでも取り消せます。
+送信した写真は当方のサーバーに保存しません）。
+同機能でもう一方の「画像処理」方式を選んだ場合、
+写真は端末から一切送信されません。
+いずれの方式でも、
+撮影地点の照合そのものはブラウザ内で行われ、
+標高データは座標だけで取得します。
+またAtlasの統合分析では、
+回答生成のため関連データ（読み込み済みニュースの見出し、
+気象・大気質・海水温・標高の数値、
+地震情報、
+国別統計）が併せて送信されることがあります。
+さらにAtlasの統合分析・ブリーフでは、
+AIプロバイダ側のWeb検索機能が実行されることがあり、
+質問に関連する検索語がプロバイダ経由で検索エンジンに送信されます）。
+<b>
+Atlas が IntMap の操作の中から使えるものを探すときには、
+あなたの依頼をもとに Atlas が書いた短い検索語が、
+上記のAIプロバイダの設定にかかわらず OpenAI の埋め込み（embedding）API へ送信されます</b>
+（Supabase Edge Function <code>
+atlas-embed</code>
+ 経由・ログイン中のみ。
+検索語と操作の説明文との意味の近さを計算するためだけに使い、
+検索語もその数値化した結果も当方のサーバーに保存しません。
+当方が保存するのは IntMap 自身の操作説明文を数値化したものだけです）。
+各社のプライバシーポリシーが適用されます。
+<b>
+なお、
+現在有効なAIプロバイダがOpenAIの場合、
+これらAI機能への入力テキストおよびその出力は、
+当方が有効化したOpenAIとのコンテンツ共有設定に基づき、
+OpenAIが独立したデータ管理者としてサービスの開発・改善（モデルの学習・研究・評価・テストを含む）に利用することがあります。
+この用途は当該入力・出力に対する通常のデータ処理契約（DPA）や監査等の対象外となります。
+そのため、
+機微情報・秘密情報・専有情報、
+HIPAA上の保護対象保健情報、
+13歳（またはお住まいの地域で定めるデジタル同意年齢）未満の子どもの個人データを、
+AI機能に入力しないでください。
+</b>
+ <b>
+Atlas にデータの検索や、
+リモートの GeoTIFF の一部の読み込みを頼んだとき</b>
+、
+お使いのブラウザは、
+あなたが指定した場所と期間の範囲（緯度経度の矩形と日付の範囲。
+あなたを識別する情報は含みません）を、
+検索先のオープンデータカタログ — Earth Search（Element 84 / AWS Open Data）、
+Microsoft Planetary Computer、
+NASA CMR-STAC（LP DAAC）、
+カナダ環境・気候変動省（MSC GeoMet）、
+英国地質調査所 — に送り、
+ファイルを読むときはそれを配信するホストにバイト範囲の要求を送ります（AWS Open Data のファイルは *.s3.amazonaws.com から配信されます。
+あなたが Atlas に与えたアドレスは、
+そのホストに要求します）。
+各運営者のプライバシーポリシーが適用され、
+そのような検索や読み込みを頼まない限り何も送信されません。
+ <b>
+このページが実際にどの接続先と通信したかと、
+それぞれに何を送るとこの項に記載しているかは、
+設定 ▸ プライバシー ▸ このページの通信でいつでも確認でき、
+その記録を JSON ファイルとして保存できます</b>
+（お使いのブラウザ自身の報告から作るもので、
+当方には送信しません）。
+</p>
+
+    <p>
+<b>
+5. 
+Cookie・ローカルストレージ</b>
+ — セッション維持と設定の保存に使用します。
+</p>
+
+    <p>
+<b>
+6. 
+保持期間</b>
+ — アカウントや投稿を削除するまで保持します。
+エラー記録は、
+同じエラーが最後に発生してから30日後に削除します。
+利用統計の件数は400日後に削除します。
+保存した場所は、
+場所かアカウントを削除するまで保持します。
+地図の誤り報告は、
+公開しなかった回答済みのものを回答から730日後（迷惑なものは30日後）に削除し、
+公開した訂正はお申し出があるまで公開記録として保持します（アカウントを削除するとすべて削除します）。
+保存した地図は、
+地図かアカウントを削除するまで保持します。
+今日のクエストの記録は、
+アカウントを削除するまで保持します（ログインしていない間の記録はお使いのブラウザにのみ保存され、
+当方には送られません）。
+ログインせずに送られたフィードバックと不具合報告は、
+受け取ってから730日後に削除します（ログイン中に送ったものはアカウントを削除するまで保持します）。
+クラスのセットは、
+提出された名前と答えとともに、
+セットを作ってから 365 日後に削除します（先生がセットかアカウントを削除した場合はその時点で削除します）。
+<br>
+<b>
+公開したコレクション</b>
+ — マイプレイスのコレクションは、
+あなたが「閲覧専用リンクを作成」を選んだ（または Atlas に頼んだ）ときに限り公開されます。
+リンクを知っている人は誰でも、
+そのコレクションの場所の名前・メモ・位置と保存した地図（ツアーや Atlas の回答なら各段の文も）を、
+その時点の内容で見られ、
+ログインしていれば自分のアカウントに写せます。
+アカウント・表示名・メールアドレスは公開されません。
+公開はいつでもやめられ、
+やめた時点で（またはアカウントを削除した時点で）リンクは開けなくなります。
+ただし、
+すでに写された・保存された内容は相手の手元に残ります。
+<br>
+<b>
+みんなの地図</b>
+ — 公開したコレクションは、
+あなたが「みんなの地図に掲載」を選んだ（または Atlas に頼んだ）ときに限り、
+あなたがそのために入力した表示名（メールアドレスやアカウント名ではありません）で、
+みんなの地図に掲載されます。
+掲載したものは誰でも題・紹介文・表示名で見つけられ、
+保存した人の数と、
+それを元にした掲載の数が表示されます（誰かは表示されません）。
+他の人の掲載を元に作ったコレクションを掲載すると、
+元の掲載が続いている間はそれを「元にした地図」として示します。
+掲載はいつでも外せ、
+公開をやめるまでリンクは使えます。
+公開コレクションを写すと、
+どれを写したかと写した先を記録し、
+持ち主には保存した人の数だけが見えます。
+掲載に対して送った報告（理由とメモ）は IntMap の管理者だけが読み、
+持ち主には見えません。
+管理者は掲載を外すことがあり、
+その理由を持ち主に示します（公開をやめて出し直しても、
+この判断はそのコレクションに残ります）。
+写した記録は、
+そのコレクションの公開が終わるか、
+アカウントを削除するまで保持します。
+報告はアカウントを削除するまで保持し、
+管理者が対応を終えた報告は送信から 730 日後に削除します。
+</p>
+
+    <p>
+<b>
+7. 
+あなたの権利</b>
+ — 自己の情報へのアクセス・訂正・削除、
+投稿の削除が可能です。
+アカウントが保持するデータは「アカウント ▸ あなたのデータ」でいつでも一覧で確認し、
+完全なコピー（JSON）をダウンロードできます。
+削除はアカウントの削除から行えます。
+その他はお問い合わせください。
+</p>
+
+    <p>
+<b>
+8. 
+子ども</b>
+ — 13歳未満を対象としていません。
+</p>
+
+    <p>
+<b>
+9. 
+セキュリティ</b>
+ — 業界標準の対策を講じますが、
+完全な安全性は保証できません。
+どのように守っているかと、
+セキュリティ上の問題を非公開で報告する窓口は <a href="./security.html">
+セキュリティと信頼</a>
+ のページにあります。
+</p>
+
+    <p>
+<b>
+10. 
+変更</b>
+ — 本ポリシーは変更される場合があります。
+</p>
+`;
+
 
   var PRIVACY_EN = `
-    <h3 style="margin:0 0 4px;font-size:17px;">Privacy Policy</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">Last updated: ${LEGAL_DATE}</p>
-    <p><b>1. Data we collect.</b> Account info (email, display name); content you post (community posts, comments, votes, reports, optional images); your saved favorites; places you save (My places: name, note, collection, position) and how you watch them (Watched places: the radius, the thresholds that notify you, and the identifiers of events you have already seen); your results on Today's quest (the day, the quest kind and the score of each of its five questions — for the days you play while signed in, and the days this browser played before you signed in); maps you save (name, note, collection and the map view, in the same form as a share link; for a tour, your own drawn map or an Atlas answer saved as a map, each step's map and its words); collections you publish (which collection, its title and its link) and, for those you list in Community maps, the name you chose to show, the summary and the collection it was built on; which published collections you copied into your Library (and where you filed them); the reports you send about a collection in Community maps (the reason and your note); class sets you make for a class (which learn quest, the title you give it, whether it still takes answers, its code) and the names and answers your students hand in to them; and technical data (IP address, device/browser info) processed by our hosting/auth provider (Supabase) and by OAuth providers if you use them.<br><b>Class sets (students).</b> If you open a class link a teacher gave you and finish the set, the name you type and your answers — for a place question the point you tapped (to about 100 m), for a year question the year you chose — are sent to our database (Supabase) and shown only to the teacher who made the set. The name is tidied before it is kept (spaces at either end are removed, and characters that look the same — full-width and half-width forms, for example — are stored in one form, so the same name typed in either width is the same student; a name holding control or invisible formatting characters is refused). No account, e-mail address or other information about you is sent; use a first name or the number your teacher gives you, not your full name. Without a class link, learn-quest answers are never sent.<br><b>Error records.</b> When a page of the Service hits an error it did not handle, the error is sent to our server (Supabase) so the defect can be fixed. What is kept is the error message and stack trace (any web address in them cut to its path), the path of the page, the build number, the browser's name and major version, and how many times and when it occurred. Your IP address, your account, the query string or fragment of any address, and anything you typed are not recorded (words that can slip into an error message, such as e-mail addresses and long quoted strings, are masked before sending).<br><b>Anonymous usage statistics.</b> To learn how the Service is found and used, we record <b>daily counts only</b> on our server (Supabase): how many times the map was opened; where visits came from (the host name of the previous page only, the utm_source / utm_medium / utm_campaign values of the address, and whether the map was opened from a shared link, embedded in another page, or opened from one of the Service's own introduction pages (an example, About, For teachers, Reading the news on a map, Embedding a map, the historical maps by year, On this day, This week on Earth) — in which case the utm values of that page's address are read); the app language (English, Japanese or other); the device type (mobile or desktop); which layers were switched on; which features were used (compare, time-lapse playback, share, the donation link, install); the <b>number</b> of questions asked to Atlas; and the <b>kind</b> of each Atlas answer (text only, map, chart, or a mix — the label Atlas itself gives its answer, not its content). We also count how long the map took to become usable after it was opened (only as a range such as 2 to 3 seconds, never the exact time), whether the loading screen lifted with the map fully drawn, and which release of the Service it was, together with the device type. These three are counted at most once a day (UTC) per release from the same network (several readers behind one address count once); to do so, a record pairing a key derived from the network address that cannot be turned back into it (an HMAC) with the release and the day is kept on our server (Supabase) for at most about 48 hours and then deleted automatically. The address itself is not stored. The text of your questions, your IP address, your account (even when you are signed in), any session or cookie, your browser's User-Agent and any time finer than the day are not recorded. Nothing is sent when your browser has Do Not Track or Global Privacy Control turned on. Switching off "Anonymous usage statistics" in Settings stops it at once and discards the counts not yet sent (that choice is stored in your browser); you can also ask Atlas to turn it off.<br><b>Donations.</b> When you continue from "Support" to the donation page, the payment is made on Stripe's page; we never receive your card or other payment details. Only if you are signed in when you press the button that goes to the donation page, we store a record that you pressed it (account ID, email address, display language, where you pressed it, and when) in our database (Supabase). Whether a donation was actually made does not reach us. This record is deleted when you delete your account.<br><b>Map error reports.</b> When you send a report with "Report a map error", we store in our database (Supabase) the point's coordinates, the map view you saw (zoom, layers and year — the same form as a share link), the kind of error, the layer you chose, your description, any source URL you give, and the display language. No e-mail address is asked for. If you are signed in, your account ID is stored with it. The receipt used to read the answer is kept only in your browser; we keep only its hash. Reports are used only to check the error and answer you. Corrections the operator chooses to publish appear on the public corrections page as the operator's own summary, the point (to about 100 m), the layer and the year — never the reporter or the report's text.<br><b>Data studio links.</b> A link to a coloured map made in the data studio carries the table's contents — each row's place and the value of the coloured column — inside the link itself (the part of the address after #). It is not sent to our servers and nothing is stored; for that reason, anyone you give the link to can read those contents.</p>
-    <p><b>2. Local storage.</b> Your settings, any optional satellite-tile API key, your own aisstream.io key for ship AIS if you enter one, and cached news and map data (such as the submarine-cable geometry) stay in your browser's own storage and are not sent to us. No AI key is ever stored in your browser (AI runs server-side). Your device location is read only when you use the weather/air-quality widgets or the "current location" command, only after the browser asks your permission, and is used on-device to position the map (coordinates are sent only to the weather API, Open-Meteo, to fetch conditions); it is never stored on our servers. <b>«Here, now»</b> keeps your exact position on your device: only a point rounded to 0.1° (about 11 km) is sent, to look up the place name (OpenStreetMap Nominatim) and the weather (Open-Meteo, or MET Norway); the earthquake feed (USGS) and the news events (IntMap's own) are fetched without any position and filtered in your browser, and nothing is stored. <b>Share to IntMap / Photo's place</b> — a photo, link or text you send to IntMap from your phone's share sheet or pick from your photo library is read in your browser (for a photo: the position and time the camera recorded) and sent nowhere. What arrives from the share sheet is held briefly in your browser's cache and deleted when it is opened (or after an hour if it never is). A photo with no recorded position is handled as described below only if you then choose to use "Find where a photo was taken". For the support note (the small card shown when you reach Atlas's daily limit, or after you have used IntMap on several days), the number of days you have opened IntMap and when you last closed the note are kept in your browser's own storage and are not sent to us. <b>Today on the map</b> keeps the time you last opened it in your browser, to mark the news events that reached IntMap's news collection since then; it is not stored on our servers (to count those events, only that time is sent to IntMap's news collection).<b>Atlas investigation notebook</b> — not offered at present, and nothing new is recorded. What was saved earlier (the questions you sent Atlas, its answers, the state of the map when it answered, the operations it ran, the results of its queries and its sources) stays in your browser (IndexedDB) and, only if you had turned account sync on, in your IntMap account (Supabase), where only you can read or write it. Clearing your browser data removes the device copy; deleting your account deletes the account copy. <b>Family history across borders</b> — the people, dates and places you type in or import from a family-tree file (GEDCOM) are kept only in your browser and sent nowhere: the file is read in your browser, and place names are located and compared with the historical records on your device (the records are fetched in the parts those places need from the Service's own servers, as when you look at those places on the map). «Save as a GEDCOM file» builds the file on your device and hands it to your browser's download; nothing is sent. «Delete everything kept here», or clearing your browser data, removes them. <b>Stored on this device</b> — Settings ▸ Privacy ▸ «Stored on this device» lists everything your browser holds for IntMap, what each item is and its size (never its contents), and deletes one item or all of them. IntMap's code sets no cookies.</p>
-    <p><b>3. How we use data.</b> To provide accounts, community, favorites, and to operate and secure the Service. The anonymous usage statistics (§1) are used only to understand, in aggregate, how the Service is found and used. The time the map took to become usable is used to check that a release of the Service has not become slower for readers, and is published on the status page «IntMap, now» as percentages per release and device type (as whole percentages, never counts; a release with fewer than 100 page loads is not shown).</p>
-    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — headlines are fetched <b>by your browser</b> through our own CORS relay (the <code>news-relay</code> Supabase Edge Function), and <b>the place each story is about is worked out in your browser too</b>: that path uses no AI and stores no articles on our servers. When you open a news article, <b>your browser</b> first asks Jina AI's reader service (r.jina.ai) for a plain-text version of it, which sends Jina AI <b>the article's URL</b> and nothing about you; if that does not return the article, your browser reads it from the publisher directly; only when that is not possible either does our own relay (the <code>fetch-relay</code> Supabase Edge Function) receive <b>the article's URL alone</b>, fetch that page and hand it back to your browser — nothing about your account is sent, and the article is not stored on our servers. <b>Separately from that, our server periodically collects news from news organisations' public RSS feeds and stores it in our database (Supabase)</b> so that several reports of the SAME event can be grouped together; the sources are those organisations' own public feeds, plus Google News search for wires that publish no free feed. What is stored is the <b>headline, link, summary, publication time and outlet</b> — never the body of an article. That collection runs on a schedule with no involvement from you: <b>nothing about you is sent</b> (what leaves our server is the feed URL and nothing else). Retention is <b>72 hours for articles and 30 days for events</b>, after which they are deleted (an event you have starred is kept). Placing those stored articles is now done by <b>the AI provider first</b>: the already-published headline and the opening of the summary are sent from our server (with our own key) to work out the place the story is about, and the non-AI deterministic engine stays as the fallback for anything the AI cannot place. The other AI call on this path is the <b>Japanese translation of an event's headline</b>, generated the same way and cached. In both cases what leaves our server is the already-published headline and summary and nothing about you. <b>The News tab now reads this event database by default</b> — each card is one event rather than one article, and opening it lists every outlet that reported it, when each did, and any figures the outlets state differently. Reading it sends no personal data: the request asks for public event rows and nothing about you. Starring an event stores the event id against your account (or, when you are signed out, in your browser only). If the event database cannot be reached, the News tab falls back to the browser path described above, and search, past dates and multi-language news always use that browser path. Additionally, Atlas live web search sends the place/topic name from your browser to Google News RSS as the search term); map & satellite tiles (the base map from OpenFreeMap — tiles.openfreemap.org, built from OpenMapTiles — and CARTO; Esri, NASA GIBS, Japan's GSI, USGS, PDOK and swisstopo; OpenRailwayMap, OpenSeaMap and OpenHistoricalMap; RainViewer's radar; Japan's PLATEAU 3D city models — api.plateauview.mlit.go.jp and the asset store assets.cms.plateau.reearth.io, contacted only while you have switched that layer on, and they see which tiles of Japan you are viewing and your IP address; the 3D building tiles of 3D BAG (data.3dbag.nl, only while you are viewing the Netherlands) and Re:Earth Buildings (buildings.reearth.land, only while you are zoomed in on a city anywhere in the world) — same layer, same condition, and they likewise see which tiles you are viewing and your IP address; ESA WorldCover via Terrascope; maritime boundaries from Marine Regions / VLIZ; FAO GAEZ crop suitability; and, only if you enter your own key in Settings, Mapbox or Sentinel Hub, to which that key is sent. A tile request carries the position and zoom of the map area being drawn and nothing about you); data a user names with an s3:// address (such as an asset of a STAC catalogue) is converted to the matching https address AWS defines (<code>bucket-name.s3.amazonaws.com</code>) and read by your browser as a byte range only (only the file and the byte range are sent); elevation/weather APIs (Open-Meteo — the animated wind field and the forecast weather layers read numerical model fields from the public data bucket Open-Meteo publishes on AWS Open Data — openmeteo.s3.amazonaws.com, served by Amazon Web Services — with HTTP range requests (which model is read is chosen per layer — ECMWF IFS HRES, NOAA GFS or DWD ICON, all redistributed by Open-Meteo under CC BY 4.0), and that path sends only the file and byte range being asked for: no coordinates and nothing about you; and MET Norway as an automatic fallback when Open-Meteo is unavailable — the coordinates of the point, or a grid of points around it for the elevation-scan and radiation-dispersion features, are sent; when a past date is chosen for the radiation-dispersion feature, Open-Meteo's ERA5 archive at archive-api.open-meteo.com is used to obtain the weather for that time); road routing (OSRM — router.project-osrm.org and routing.openstreetmap.de — when you ask Atlas for driving/walking/cycling directions, the origin, destination and any waypoint coordinates are sent to compute the route on OpenStreetMap road data); public-transit routing (Transitous / MOTIS — api.transitous.org — when you ask Atlas for train/subway/bus directions, the origin and destination coordinates are sent to compute the itinerary on worldwide open GTFS feeds); reachable-area / isochrone AND driving directions with avoid options (Valhalla / FOSSGIS — valhalla1.openstreetmap.de — when you ask Atlas or the directions panel for a reachable area such as "30 min by car" or "15 min walk", or for a driving route that avoids tolls / highways / ferries, the origin and destination coordinates — and for isochrones the chosen number of minutes — are sent to compute the route or time-contour area on OpenStreetMap road data, and when you draw an area on the map for the route to keep out of, that area’s coordinates are sent as well); embedded Street View and its coverage overlay (Google — opening the "Street View here" panel or the Atlas street-view action loads Google's keyless street-view embed for the coordinates you chose; and in Street-View mode or when you click a spot, Google's Street-View coverage tiles (mts.google.com) for the area around that point are loaded to display and detect the real coverage — the roads that actually have panoramas — subject to Google's policies); watershed delineation (Global Watersheds / mghydro.com — when Atlas draws a river basin, the coordinates of the river's end points are sent to compute the real watershed polygon); area-population statistics (WorldPop — api.worldpop.org; when you compute the population inside a drawn area, circle or place boundary, the polygon coordinates of that area are sent to sum the population grid; and when an analysis reads the population grid (WorldPop 1 km), the corner coordinates of the window being analysed and the year are sent to WorldPop's image service, worldpop.arcgis.com, which WorldPop runs on Esri's ArcGIS); internet-outage and routing observation (IODA — Internet Outage Detection and Analysis, Georgia Tech Research Corporation, api.ioda.inetintel.cc.gatech.edu; RIPE Atlas, atlas.ripe.net; and RIPEstat, stat.ripe.net — when you switch on the "Internet outages" or "Network reachability" layer, <b>your browser</b> contacts these measurement networks directly for their worldwide readings. Nothing goes through our servers, and we neither store nor redistribute that data. The request itself is all that is sent: <b>no location and nothing about you</b>. There is one exception — clicking a country that is currently affected sends that country's <b>two-letter ISO code</b> to RIPEstat, to fetch how much of its routing is visible); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (overpass-api.de, falling back to the public mirrors overpass.kumi.systems and overpass.private.coffee, and OpenHistoricalMap's own Overpass at overpass-api.openhistoricalmap.org for past years; queried live for the public webcam points in view, and for facility/POI searches you request through Atlas — the search area and facility type are sent); it is also queried by the drone planner for restricted areas near a route (airports, heliports, military land, nuclear plants, prisons, nature reserves and national parks) and for emergency-landing candidates, and by the directions panel for the historical road/rail network of a chosen year — in every case only the map coordinates being analyzed are sent. <b>The restricted-area check is an OpenStreetMap-derived advisory and is not an airspace clearance from an aviation authority</b>; the Wikidata Query Service (the second source for Atlas facility mapping — the facility type and the target country code or search area are sent; also the live incumbent lookup when Atlas answers who currently holds national office — the target country code is sent); favicon fetching (Google — when Atlas replies show source link cards, the domain names of the cited sites are sent to fetch their site icons); statistics APIs (World Bank, IMF DataMapper — only country, indicator and, for the time-machine, year codes are sent; when your browser cannot read the World Bank's answer, our own relay (the <code>fetch-relay</code> Supabase Edge Function) fetches the same query instead); USGS (earthquake feeds — and when you open the earthquake record of a place, that place rounded to whole degrees and the radius you chose are sent to its catalogue query, so that every earthquake recorded nearby can be listed; an aftershock forecast sends the earthquake's own catalogue position and the radius of its aftershock zone, or, when you name a place, that place rounded to whole degrees; nothing about you is sent); ship AIS (the Live-ship-traffic layer is served by our <code>ais-feed</code> Supabase Edge Function, which reads vessel positions server-side from Fintraffic/Digitraffic (Finland, CC BY 4.0, no key) and aisstream.io (worldwide, with our own key) and hands every reader the same snapshot; the only thing your browser sends to our server is <b>the map area currently in view</b>, and nothing about you — not even coordinates — reaches either provider. If you optionally enter your own aisstream.io key in Settings, your browser opens a WebSocket connection directly to aisstream.io (<code>stream.aisstream.io</code>) and sends it <b>that key and the map area in view</b> to subscribe; that key is stored only in your browser);CelesTrak (celestrak.org — the orbital element sets behind the Live-satellites layer; the request names a catalogue group and NOTHING else: no coordinates and nothing about you. Every position, footprint, ground track, look angle and pass prediction is computed in your browser with SGP4/SDP4. If CelesTrak cannot be reached, the elements are fetched through our own relay (the <code>fetch-relay</code> Supabase Edge Function) or read from the catalogue bundled with this site (data/tle/, rebuilt on a schedule from CelesTrak, or from SatNOGS DB — Space-Track / CelesTrak elements — when CelesTrak is unreachable); which source answered, and how old its elements are, is shown on screen); GDELT (the worldwide news search behind Atlas briefs and integrated analysis — place names or keywords from your question are sent as the search terms); Wikipedia/Wikimedia (article checks and summaries — the place or topic name is sent); market-data APIs (ER-API / fxratesapi, gold-api, CoinGecko, alternative.me, Yahoo Finance — price fetches for the widgets and the bottom ticker, and live share prices to compute live market caps for US-listed names in the Companies tab; the Companies tab reads them through our own <code>quotes-relay</code> Supabase Edge Function and no third-party relay; upstream is Yahoo's keyless endpoints, and only ticker symbols are sent, nothing about you); company logos (Wikimedia Commons / Google — which image is a company's logo is resolved from Wikidata (property P154) at BUILD time and shipped with this site, so nothing is sent to Wikidata while you read and <b>nothing tells anyone which company you are looking at</b>; the image itself is loaded from Wikimedia Commons (upload.wikimedia.org). Only for a company Commons has no logo for does it fall back to Google's favicon service, and then <b>the company's domain name — nothing else —</b> is sent to Google. With neither, a monogram of the company's initials is drawn and no external request is made at all. The trademarks belong to the companies they identify and are used here to identify them); the weekly digest of natural events («This week on Earth» — its pages, its feeds and Atlas's answers about a week), which is assembled when the site is BUILT from the U.S. Geological Survey's earthquake catalogue and NASA's EONET and shipped with this site, so <b>nothing is sent to USGS or NASA while you read it</b> and neither learns anything about you; geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot) — a place name or text you search, or a place label you click on the map, is sent to look up its coordinates and boundary; when you make a «Then &amp; now» card, the centre of the map you are looking at is sent to Nominatim to name the place it shows; and when you click a RIVER name on the map, that river's names (in every language OpenStreetMap records for it) are sent to Nominatim, and if it cannot answer, to the Overpass API together with the map area around the point you clicked, so that the river's real course can be drawn beyond the edge of the screen; administrative-boundary data (geoBoundaries via GitHub — fetched for Atlas region highlights to obtain member-unit boundary shapes, and by the weather-warning layer as a last resort for a warning area that is in no other boundary set; only the country code is sent); live-camera viewing — the Live-cameras layer lists public cameras from OpenStreetMap, Transport for London (TfL JamCams), Caltrans (California DOT), Fintraffic/Digitraffic (Finland) several US state DOTs (Colorado/Indiana/Alaska/Arizona, via the OpenTrafficCamMap open dataset on the jsDelivr CDN), and the US-state / Canadian-province DOT "511" camera networks (Florida, Georgia, New York, Pennsylvania, North Carolina, Nevada, Wisconsin, Idaho, Louisiana, New England, Ontario, Alberta and Yukon — each site's camera list is fetched once through our own relay (the <code>fetch-relay</code> Supabase Edge Function) because those endpoints send no CORS header, while the images load directly from each camera's operator); opening one loads that operator's third-party content (a still image auto-refreshed every few seconds directly from the camera/operator, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or a short video clip), subject to that operator's/platform's policies; terrain analysis — the slope/aspect, line-of-sight viewshed, radio coverage, sun &amp; terrain shadow, annual sunlight-hours, terrain-sculpting &amp; water-routing, flood/tsunami, elevation-profile and drone-route tools fetch public elevation tiles (Mapzen/AWS "terrarium" DEM, AWS Open Data) for the area you analyze and decode them in your browser, and the sun-shadow &amp; disaster tools also query the OpenStreetMap Overpass API for building footprints / wind (no personal data is sent — only the map coordinates being analyzed); the seismic-wave simulator computes everything in your browser from a published Earth model and sends nothing, except that asking it to load a real recent earthquake fetches the USGS public feed; the flight simulator (its engine, wind and stall/GPWS warning sounds are synthesized in your browser with Web Audio and not transmitted; its GPWS voice callouts use the browser's built-in speech synthesis (Web Speech API), so depending on the browser the fixed English phrases spoken, such as "pull up", may be processed by the browser vendor's voice service); web fonts (Google Fonts — every page loads its typefaces from fonts.googleapis.com and fonts.gstatic.com, so Google receives the ordinary request for them, which carries your IP address and browser, and nothing else about you); open-source code libraries loaded on demand from the unpkg CDN (unpkg.com — Open-Meteo's weather-map layer, fetched when a layer that needs it is opened; nothing is sent but the request); country flags (flagcdn.com — the flag shown beside a country is loaded as an image, and the request names that country's two-letter code); the password breach check (Have I Been Pwned's Pwned Passwords, api.pwnedpasswords.com — when you choose a password at sign-up or set a new one, your browser computes the SHA-1 hash of the password and sends <b>only the first five characters of that hash</b>; the password itself and the rest of the hash never leave your browser, and whether it appears in a known breach is decided in your browser against the list of hash endings returned, so the service cannot tell which password was checked); official weather warnings (the weather-warning layer reads the public warning feeds of national meteorological services directly — the US National Weather Service, Environment and Climate Change Canada, the Australian Bureau of Meteorology, the Hong Kong Observatory, Brazil's INMET, Germany's DWD, MET Norway and the Japan Meteorological Agency, with China's National Meteorological Centre read through our fetch-relay — together with the boundaries those warnings refer to, from NOAA, Eurostat GISCO and Alibaba Cloud DataV; nothing is sent but the request); volcano and hazard information (the Smithsonian Global Volcanism Program's weekly reports and volcano photographs from volcano.si.edu, USGS volcano notices, the Japan Meteorological Agency's volcanic warnings, volcano hazard zones hosted on Esri's ArcGIS Online, the WHO's Disease Outbreak News from www.who.int, and the NOAA Space Weather Prediction Center's aurora forecast, Kp index (observed and forecast), solar wind, X-ray flares, NOAA scales and alerts, NASA/JPL Solar System Dynamics' fireball records and asteroid close approaches (ssd-api.jpl.nasa.gov, read through our relay, which sends the same request), and launch records from The Space Devs' Launch Library 2 (only a date range around the map's time is sent); nothing is sent but the request); other public datasets read when their layer or panel is opened (TeleGeography's submarine cable map, the OurAirports airport list, DeepStateMap's Ukraine frontline, historical basemaps and tectonic-plate data from GitHub (raw.githubusercontent.com), Our World in Data and the Observatory of Economic Complexity (OEC) — only dataset, country and year codes are sent — and Frankfurter (api.frankfurter.dev) for exchange rates; nothing about you is sent); the sea-floor depth readout (Open Topo Data, api.opentopodata.org — the coordinates of the point you click are sent); aircraft details (Planespotters.net — when you open an aircraft, its 24-bit ICAO transponder address is sent to find a photograph of it); sidebar widgets (Nager.Date for public holidays — the country code you chose is sent —, Hacker News, Wikimedia's on-this-day and featured-article feeds, the ISS position from wheretheiss.at, upcoming launches from The Space Devs, and Bitcoin network data from mempool.space; nothing about you is sent); and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; any text you submit to the AI features — place briefs, the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response; <b>anything you attach to Atlas is sent with your message</b> — a picture as an image, a PDF as the document itself, and any other document (Word, Excel, PowerPoint, OpenDocument, a KMZ or an archive) as the text your browser reads out of it, which is what is sent rather than the original file. Attachments are not stored on our servers: they travel with that one request and are not kept; <b>and if you choose the vision-model detector in "Find where a photo was taken", a reduced copy of that photograph is sent to the AI provider</b> so it can trace the sky-and-land boundary — you are asked once, explicitly, before the first such send, the permission is recorded only in your browser and can be withdrawn at any time, and the picture is not stored on our servers; choosing the other, image-processing detector sends the photograph nowhere at all, and under either detector the matching itself runs in your browser and elevation data is fetched by coordinate alone; for Atlas integrated analysis, the relevant gathered data — loaded news headlines, weather/air-quality/sea-temperature/elevation readings, earthquake info and country statistics — may also be sent to generate the answer; Atlas integrated analysis and briefs may additionally run the AI provider's own web-search tool, in which case query terms related to your question are sent to a search engine via the provider). <b>When Atlas searches IntMap's own controls for one that fits your request, the short search phrase Atlas writes from your request is sent to OpenAI's embeddings API, whichever AI provider above is active</b> (through our <code>atlas-embed</code> Supabase Edge Function, and only while you are signed in; it is used only to measure how close in meaning that phrase is to the descriptions of the controls, and neither the phrase nor its numeric form is stored on our servers — what we store is the numeric form of IntMap's own control descriptions, nothing of yours). Each has its own privacy policy. <b>When the active AI provider is OpenAI, the text you submit to these AI features and the outputs may be used by OpenAI, as an independent data controller, to develop and improve its services — including training, research, evaluating and testing its models — under a content-sharing arrangement we have enabled; this use falls outside the ordinary data-processing agreement (DPA), auditing and related safeguards for that content. Accordingly, do not enter sensitive, confidential or proprietary information, protected health information (as defined under HIPAA), or the personal data of children under 13 (or the applicable age of digital consent where you live) into the AI features.</b> <b>If you ask Atlas to find datasets or to read part of a remote GeoTIFF</b>, your browser sends the bounding box and date range of the place and period you named (nothing that identifies you) to the open data catalogues it searches — Earth Search (Element 84 / AWS Open Data), Microsoft Planetary Computer, NASA CMR-STAC (LP DAAC), Environment and Climate Change Canada (MSC GeoMet) and the British Geological Survey — and, to read a file, byte-range requests to the host that serves it (AWS Open Data files come from *.s3.amazonaws.com; an address you give Atlas yourself is requested from that host). Each operator's own privacy policy applies, and nothing is sent unless you ask for such a search or read. <b>You can see which of these this page has actually contacted, and what this section says each is sent, at any time in Settings ▸ Privacy ▸ This page's connections, and save that record as a JSON file</b> (it is built from your own browser's reports and is not sent to us).</p>
-    <p><b>5. Cookies & local storage.</b> Used for your session and preferences.</p>
-    <p><b>6. Retention.</b> Account and content data are kept until you delete your account or content. Error records are deleted 30 days after the same error last occurred. Usage counts are deleted after 400 days. Saved places are kept until you delete the place or your account. Map error reports that were answered and not published are deleted 730 days after the answer (spam after 30 days); published corrections are kept in the public record until you ask for removal (all are deleted when you delete your account). Saved maps are kept until you delete the map or your account. Today's quest results are kept until you delete your account (while you are not signed in, they are stored only in your browser and are not sent to us). Feedback and bug reports sent while not signed in are deleted 730 days after we receive them (those sent while signed in are kept until you delete your account). Class sets, with the names and answers handed in to them, are deleted 365 days after the set was made, or sooner when the teacher deletes the set or their account.<br><b>Published collections.</b> A collection in My places is made public only when you choose "Create a read-only link" (or ask Atlas to). Anyone with the link can see the names, notes and positions of its places and its saved maps (with each step's words, for a tour or an Atlas answer) as they are at that time, and, if signed in, copy them into their own account. Your account, display name and email address are not published. You can stop publishing at any time; the link stops working at that moment (or when you delete your account). Copies others have already made or saved stay with them.<br><b>Community maps.</b> A published collection is listed in Community maps only when you choose "List in Community maps" (or ask Atlas to), under a name you type for it — never your email address or account name. Anyone can then find it there by its title, summary and that name, and see how many readers kept a copy and how many listed collections were built on it (never who). If you list a collection you started from someone else's listed collection, it names that one as its origin while that one is listed. You can take it out of Community maps at any time; its link keeps working until you stop publishing. When you copy a published collection, we record which one you copied and where you filed it; its owner sees only the number of readers who kept it. A report you send about a listed collection (the reason and your note) is read only by IntMap's administrators, never by its owner; administrators may take a collection out of Community maps and tell its owner why; that decision stays with the collection even if it is unpublished and published again. Copy records are kept until the collection stops being published or you delete your account. Reports are kept until you delete your account; once an administrator has settled one, it is deleted 730 days after you sent it.</p>
-    <p><b>7. Your rights.</b> You may access, correct or delete your data and delete your posts. You can see what your account holds and download a complete copy (JSON) at any time from Account ▸ Your data, and delete it by deleting your account; contact us for anything else.</p>
-    <p><b>8. Children.</b> The Service is not directed to children under 13.</p>
-    <p><b>9. Security.</b> We use industry-standard measures but cannot guarantee absolute security. How the page protects you, and how to report a security problem privately, are on the <a href="./security.html">Security &amp; trust</a> page.</p>
-    <p><b>10. Changes.</b> We may update this policy from time to time.</p>`;
+    <h3 style="margin:0 0 4px;font-size:17px;">
+Privacy Policy</h3>
+<p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">
+Last updated: ${LEGAL_DATE}</p>
 
-  /* 'jp' is the app's own code for Japanese; anything else reads English. */
-  function isJa(lang) { return lang === 'jp' || lang === 'ja'; }
+    <p>
+<b>
+1. 
+Data we collect.</b>
+ Account info (email, 
+display name);
+ content you post (community posts, 
+comments, 
+votes, 
+reports, 
+optional images);
+ your saved favorites;
+ places you save (My places: name, 
+note, 
+collection, 
+position) and how you watch them (Watched places: the radius, 
+the thresholds that notify you, 
+and the identifiers of events you have already seen);
+ your results on Today's quest (the day, 
+the quest kind and the score of each of its five questions — for the days you play while signed in, 
+and the days this browser played before you signed in);
+ maps you save (name, 
+note, 
+collection and the map view, 
+in the same form as a share link;
+ for a tour, 
+your own drawn map or an Atlas answer saved as a map, 
+each step's map and its words);
+ collections you publish (which collection, 
+its title and its link) and, 
+for those you list in Community maps, 
+the name you chose to show, 
+the summary and the collection it was built on;
+ which published collections you copied into your Library (and where you filed them);
+ the reports you send about a collection in Community maps (the reason and your note);
+ class sets you make for a class (which learn quest, 
+the title you give it, 
+whether it still takes answers, 
+its code) and the names and answers your students hand in to them;
+ and technical data (IP address, 
+device/browser info) processed by our hosting/auth provider (Supabase) and by OAuth providers if you use them.<br>
+<b>
+Class sets (students).</b>
+ If you open a class link a teacher gave you and finish the set, 
+the name you type and your answers — for a place question the point you tapped (to about 100 m), 
+for a year question the year you chose — are sent to our database (Supabase) and shown only to the teacher who made the set. 
+The name is tidied before it is kept (spaces at either end are removed, 
+and characters that look the same — full-width and half-width forms, 
+for example — are stored in one form, 
+so the same name typed in either width is the same student;
+ a name holding control or invisible formatting characters is refused). 
+No account, 
+e-mail address or other information about you is sent;
+ use a first name or the number your teacher gives you, 
+not your full name. 
+Without a class link, 
+learn-quest answers are never sent.<br>
+<b>
+Error records.</b>
+ When a page of the Service hits an error it did not handle, 
+the error is sent to our server (Supabase) so the defect can be fixed. 
+What is kept is the error message and stack trace (any web address in them cut to its path), 
+the path of the page, 
+the build number, 
+the browser's name and major version, 
+and how many times and when it occurred. 
+Your IP address, 
+your account, 
+the query string or fragment of any address, 
+and anything you typed are not recorded (words that can slip into an error message, 
+such as e-mail addresses and long quoted strings, 
+are masked before sending).<br>
+<b>
+Anonymous usage statistics.</b>
+ To learn how the Service is found and used, 
+we record <b>
+daily counts only</b>
+ on our server (Supabase): how many times the map was opened;
+ where visits came from (the host name of the previous page only, 
+the utm_source / utm_medium / utm_campaign values of the address, 
+and whether the map was opened from a shared link, 
+embedded in another page, 
+or opened from one of the Service's own introduction pages (an example, 
+About, 
+For teachers, 
+Reading the news on a map, 
+Embedding a map, 
+the historical maps by year, 
+On this day, 
+This week on Earth) — in which case the utm values of that page's address are read);
+ the app language (English, 
+Japanese or other);
+ the device type (mobile or desktop);
+ which layers were switched on;
+ which features were used (compare, 
+time-lapse playback, 
+share, 
+the donation link, 
+install);
+ the <b>
+number</b>
+ of questions asked to Atlas;
+ and the <b>
+kind</b>
+ of each Atlas answer (text only, 
+map, 
+chart, 
+or a mix — the label Atlas itself gives its answer, 
+not its content). 
+We also count how long the map took to become usable after it was opened (only as a range such as 2 to 3 seconds, 
+never the exact time), 
+whether the loading screen lifted with the map fully drawn, 
+and which release of the Service it was, 
+together with the device type. 
+These three are counted at most once a day (UTC) per release from the same network (several readers behind one address count once);
+ to do so, 
+a record pairing a key derived from the network address that cannot be turned back into it (an HMAC) with the release and the day is kept on our server (Supabase) for at most about 48 hours and then deleted automatically. 
+The address itself is not stored. 
+The text of your questions, 
+your IP address, 
+your account (even when you are signed in), 
+any session or cookie, 
+your browser's User-Agent and any time finer than the day are not recorded. 
+Nothing is sent when your browser has Do Not Track or Global Privacy Control turned on. 
+Switching off "Anonymous usage statistics" in Settings stops it at once and discards the counts not yet sent (that choice is stored in your browser);
+ you can also ask Atlas to turn it off.<br>
+<b>
+Donations.</b>
+ When you continue from "Support" to the donation page, 
+the payment is made on Stripe's page;
+ we never receive your card or other payment details. 
+Only if you are signed in when you press the button that goes to the donation page, 
+we store a record that you pressed it (account ID, 
+email address, 
+display language, 
+where you pressed it, 
+and when) in our database (Supabase). 
+Whether a donation was actually made does not reach us. 
+This record is deleted when you delete your account.<br>
+<b>
+Map error reports.</b>
+ When you send a report with "Report a map error", 
+we store in our database (Supabase) the point's coordinates, 
+the map view you saw (zoom, 
+layers and year — the same form as a share link), 
+the kind of error, 
+the layer you chose, 
+your description, 
+any source URL you give, 
+and the display language. 
+No e-mail address is asked for. 
+If you are signed in, 
+your account ID is stored with it. 
+The receipt used to read the answer is kept only in your browser;
+ we keep only its hash. 
+Reports are used only to check the error and answer you. 
+Corrections the operator chooses to publish appear on the public corrections page as the operator's own summary, 
+the point (to about 100 m), 
+the layer and the year — never the reporter or the report's text.<br>
+<b>
+Data studio links.</b>
+ A link to a coloured map made in the data studio carries the table's contents — each row's place and the value of the coloured column — inside the link itself (the part of the address after #). 
+It is not sent to our servers and nothing is stored;
+ for that reason, 
+anyone you give the link to can read those contents.</p>
+
+    <p>
+<b>
+2. 
+Local storage.</b>
+ Your settings, 
+any optional satellite-tile API key, 
+your own aisstream.io key for ship AIS if you enter one, 
+and cached news and map data (such as the submarine-cable geometry) stay in your browser's own storage and are not sent to us. 
+No AI key is ever stored in your browser (AI runs server-side). 
+Your device location is read only when you use the weather/air-quality widgets or the "current location" command, 
+only after the browser asks your permission, 
+and is used on-device to position the map (coordinates are sent only to the weather API, 
+Open-Meteo, 
+to fetch conditions);
+ it is never stored on our servers. 
+<b>
+«Here, 
+now»</b>
+ keeps your exact position on your device: only a point rounded to 0.1° (about 11 km) is sent, 
+to look up the place name (OpenStreetMap Nominatim) and the weather (Open-Meteo, 
+or MET Norway);
+ the earthquake feed (USGS) and the news events (IntMap's own) are fetched without any position and filtered in your browser, 
+and nothing is stored. 
+<b>
+Share to IntMap / Photo's place</b>
+ — a photo, 
+link or text you send to IntMap from your phone's share sheet or pick from your photo library is read in your browser (for a photo: the position and time the camera recorded) and sent nowhere. 
+What arrives from the share sheet is held briefly in your browser's cache and deleted when it is opened (or after an hour if it never is). 
+A photo with no recorded position is handled as described below only if you then choose to use "Find where a photo was taken". 
+For the support note (the small card shown when you reach Atlas's daily limit, 
+or after you have used IntMap on several days), 
+the number of days you have opened IntMap and when you last closed the note are kept in your browser's own storage and are not sent to us. 
+<b>
+Today on the map</b>
+ keeps the time you last opened it in your browser, 
+to mark the news events that reached IntMap's news collection since then;
+ it is not stored on our servers (to count those events, 
+only that time is sent to IntMap's news collection).<b>
+Atlas investigation notebook</b>
+ — not offered at present, 
+and nothing new is recorded. 
+What was saved earlier (the questions you sent Atlas, 
+its answers, 
+the state of the map when it answered, 
+the operations it ran, 
+the results of its queries and its sources) stays in your browser (IndexedDB) and, 
+only if you had turned account sync on, 
+in your IntMap account (Supabase), 
+where only you can read or write it. 
+Clearing your browser data removes the device copy;
+ deleting your account deletes the account copy. 
+<b>
+Family history across borders</b>
+ — the people, 
+dates and places you type in or import from a family-tree file (GEDCOM) are kept only in your browser and sent nowhere: the file is read in your browser, 
+and place names are located and compared with the historical records on your device (the records are fetched in the parts those places need from the Service's own servers, 
+as when you look at those places on the map). 
+«Save as a GEDCOM file» builds the file on your device and hands it to your browser's download;
+ nothing is sent. 
+«Delete everything kept here», 
+or clearing your browser data, 
+removes them. 
+<b>
+Stored on this device</b>
+ — Settings ▸ Privacy ▸ «Stored on this device» lists everything your browser holds for IntMap, 
+what each item is and its size (never its contents), 
+and deletes one item or all of them. 
+IntMap's code sets no cookies.</p>
+
+    <p>
+<b>
+3. 
+How we use data.</b>
+ To provide accounts, 
+community, 
+favorites, 
+and to operate and secure the Service. 
+The anonymous usage statistics (§1) are used only to understand, 
+in aggregate, 
+how the Service is found and used. 
+The time the map took to become usable is used to check that a release of the Service has not become slower for readers, 
+and is published on the status page «IntMap, 
+now» as percentages per release and device type (as whole percentages, 
+never counts;
+ a release with fewer than 100 page loads is not shown).</p>
+
+    <p>
+<b>
+4. 
+Third parties.</b>
+ Supabase (database/auth/hosting/server-side processing);
+ Google/Apple (if you use OAuth);
+ Google News (RSS — headlines are fetched <b>
+by your browser</b>
+ through our own CORS relay (the <code>
+news-relay</code>
+ Supabase Edge Function), 
+and <b>
+the place each story is about is worked out in your browser too</b>
+: that path uses no AI and stores no articles on our servers. 
+When you open a news article, 
+<b>
+your browser</b>
+ first asks Jina AI's reader service (r.jina.ai) for a plain-text version of it, 
+which sends Jina AI <b>
+the article's URL</b>
+ and nothing about you;
+ if that does not return the article, 
+your browser reads it from the publisher directly;
+ only when that is not possible either does our own relay (the <code>
+fetch-relay</code>
+ Supabase Edge Function) receive <b>
+the article's URL alone</b>
+, 
+fetch that page and hand it back to your browser — nothing about your account is sent, 
+and the article is not stored on our servers. 
+<b>
+Separately from that, 
+our server periodically collects news from news organisations' public RSS feeds and stores it in our database (Supabase)</b>
+ so that several reports of the SAME event can be grouped together;
+ the sources are those organisations' own public feeds, 
+plus Google News search for wires that publish no free feed. 
+What is stored is the <b>
+headline, 
+link, 
+summary, 
+publication time and outlet</b>
+ — never the body of an article. 
+That collection runs on a schedule with no involvement from you: <b>
+nothing about you is sent</b>
+ (what leaves our server is the feed URL and nothing else). 
+Retention is <b>
+72 hours for articles and 30 days for events</b>
+, 
+after which they are deleted (an event you have starred is kept);
+ an event reported by two or more independent outlets, 
+or tied to a known facility or company, 
+is however also kept for years as a compact record — headline, 
+time, 
+place and the links to the sources, 
+never article text (no information about you is in it). 
+Placing those stored articles is now done by <b>
+the AI provider first</b>
+: the already-published headline and the opening of the summary are sent from our server (with our own key) to work out the place the story is about, 
+and the non-AI deterministic engine stays as the fallback for anything the AI cannot place. 
+The other AI call on this path is the <b>
+Japanese translation of an event's headline</b>
+, 
+generated the same way and cached. 
+In both cases what leaves our server is the already-published headline and summary and nothing about you. 
+<b>
+The News tab now reads this event database by default</b>
+ — each card is one event rather than one article, 
+and opening it lists every outlet that reported it, 
+when each did, 
+and any figures the outlets state differently. 
+Reading it sends no personal data: the request asks for public event rows and nothing about you. 
+Starring an event stores the event id against your account (or, 
+when you are signed out, 
+in your browser only). 
+If the event database cannot be reached, 
+the News tab falls back to the browser path described above, 
+and search, 
+past dates and multi-language news always use that browser path. 
+Additionally, 
+Atlas live web search sends the place/topic name from your browser to Google News RSS as the search term);
+ map & satellite tiles (the base map from OpenFreeMap — tiles.openfreemap.org, 
+built from OpenMapTiles — and CARTO;
+ Esri, 
+NASA GIBS, 
+Japan's GSI, 
+USGS, 
+PDOK and swisstopo;
+ OpenRailwayMap, 
+OpenSeaMap and OpenHistoricalMap;
+ RainViewer's radar;
+ Japan's PLATEAU 3D city models — api.plateauview.mlit.go.jp and the asset store assets.cms.plateau.reearth.io, 
+contacted only while you have switched that layer on, 
+and they see which tiles of Japan you are viewing and your IP address;
+ the 3D building tiles of 3D BAG (data.3dbag.nl, 
+only while you are viewing the Netherlands) and Re:Earth Buildings (buildings.reearth.land, 
+only while you are zoomed in on a city anywhere in the world) — same layer, 
+same condition, 
+and they likewise see which tiles you are viewing and your IP address;
+ ESA WorldCover via Terrascope;
+ maritime boundaries from Marine Regions / VLIZ;
+ FAO GAEZ crop suitability;
+ and, 
+only if you enter your own key in Settings, 
+Mapbox or Sentinel Hub, 
+to which that key is sent. 
+A tile request carries the position and zoom of the map area being drawn and nothing about you);
+ data a user names with an s3:// address (such as an asset of a STAC catalogue) is converted to the matching https address AWS defines (<code>
+bucket-name.s3.amazonaws.com</code>
+) and read by your browser as a byte range only (only the file and the byte range are sent);
+ elevation/weather APIs (Open-Meteo — the animated wind field and the forecast weather layers read numerical model fields from the public data bucket Open-Meteo publishes on AWS Open Data — openmeteo.s3.amazonaws.com, 
+served by Amazon Web Services — with HTTP range requests (which model is read is chosen per layer — ECMWF IFS HRES, 
+NOAA GFS or DWD ICON, 
+all redistributed by Open-Meteo under CC BY 4.0), 
+and that path sends only the file and byte range being asked for: no coordinates and nothing about you;
+ and MET Norway as an automatic fallback when Open-Meteo is unavailable — the coordinates of the point, 
+or a grid of points around it for the elevation-scan and radiation-dispersion features, 
+are sent;
+ when a past date is chosen for the radiation-dispersion feature, 
+Open-Meteo's ERA5 archive at archive-api.open-meteo.com is used to obtain the weather for that time);
+ road routing (OSRM — router.project-osrm.org and routing.openstreetmap.de — when you ask Atlas for driving/walking/cycling directions, 
+the origin, 
+destination and any waypoint coordinates are sent to compute the route on OpenStreetMap road data);
+ public-transit routing (Transitous / MOTIS — api.transitous.org — when you ask Atlas for train/subway/bus directions, 
+the origin and destination coordinates are sent to compute the itinerary on worldwide open GTFS feeds);
+ reachable-area / isochrone AND driving directions with avoid options (Valhalla / FOSSGIS — valhalla1.openstreetmap.de — when you ask Atlas or the directions panel for a reachable area such as "30 min by car" or "15 min walk", 
+or for a driving route that avoids tolls / highways / ferries, 
+the origin and destination coordinates — and for isochrones the chosen number of minutes — are sent to compute the route or time-contour area on OpenStreetMap road data, 
+and when you draw an area on the map for the route to keep out of, 
+that area’s coordinates are sent as well);
+ embedded Street View and its coverage overlay (Google — opening the "Street View here" panel or the Atlas street-view action loads Google's keyless street-view embed for the coordinates you chose;
+ and in Street-View mode or when you click a spot, 
+Google's Street-View coverage tiles (mts.google.com) for the area around that point are loaded to display and detect the real coverage — the roads that actually have panoramas — subject to Google's policies);
+ watershed delineation (Global Watersheds / mghydro.com — when Atlas draws a river basin, 
+the coordinates of the river's end points are sent to compute the real watershed polygon);
+ area-population statistics (WorldPop — api.worldpop.org;
+ when you compute the population inside a drawn area, 
+circle or place boundary, 
+the polygon coordinates of that area are sent to sum the population grid;
+ and when an analysis reads the population grid (WorldPop 1 km), 
+the corner coordinates of the window being analysed and the year are sent to WorldPop's image service, 
+worldpop.arcgis.com, 
+which WorldPop runs on Esri's ArcGIS);
+ internet-outage and routing observation (IODA — Internet Outage Detection and Analysis, 
+Georgia Tech Research Corporation, 
+api.ioda.inetintel.cc.gatech.edu;
+ RIPE Atlas, 
+atlas.ripe.net;
+ and RIPEstat, 
+stat.ripe.net — when you switch on the "Internet outages" or "Network reachability" layer, 
+<b>
+your browser</b>
+ contacts these measurement networks directly for their worldwide readings. 
+Nothing goes through our servers, 
+and we neither store nor redistribute that data. 
+The request itself is all that is sent: <b>
+no location and nothing about you</b>
+. 
+There is one exception — clicking a country that is currently affected sends that country's <b>
+two-letter ISO code</b>
+ to RIPEstat, 
+to fetch how much of its routing is visible);
+ the jsDelivr CDN (delivering open datasets such as the time-zone boundaries);
+ the OpenStreetMap Overpass API (overpass-api.de, 
+falling back to the public mirrors overpass.kumi.systems and overpass.private.coffee, 
+and OpenHistoricalMap's own Overpass at overpass-api.openhistoricalmap.org for past years;
+ queried live for the public webcam points in view, 
+and for facility/POI searches you request through Atlas — the search area and facility type are sent);
+ it is also queried by the drone planner for restricted areas near a route (airports, 
+heliports, 
+military land, 
+nuclear plants, 
+prisons, 
+nature reserves and national parks) and for emergency-landing candidates, 
+and by the directions panel for the historical road/rail network of a chosen year — in every case only the map coordinates being analyzed are sent. 
+<b>
+The restricted-area check is an OpenStreetMap-derived advisory and is not an airspace clearance from an aviation authority</b>
+;
+ the Wikidata Query Service (the second source for Atlas facility mapping — the facility type and the target country code or search area are sent;
+ also the live incumbent lookup when Atlas answers who currently holds national office — the target country code is sent);
+ favicon fetching (Google — when Atlas replies show source link cards, 
+the domain names of the cited sites are sent to fetch their site icons);
+ statistics APIs (World Bank, 
+IMF DataMapper — only country, 
+indicator and, 
+for the time-machine, 
+year codes are sent;
+ when your browser cannot read the World Bank's answer, 
+our own relay (the <code>
+fetch-relay</code>
+ Supabase Edge Function) fetches the same query instead);
+ USGS (earthquake feeds — and when you open the earthquake record of a place, 
+that place rounded to whole degrees and the radius you chose are sent to its catalogue query, 
+so that every earthquake recorded nearby can be listed;
+ an aftershock forecast sends the earthquake's own catalogue position and the radius of its aftershock zone, 
+or, 
+when you name a place, 
+that place rounded to whole degrees;
+ nothing about you is sent);
+ ship AIS (the Live-ship-traffic layer is served by our <code>
+ais-feed</code>
+ Supabase Edge Function, 
+which reads vessel positions server-side from Fintraffic/Digitraffic (Finland, 
+CC BY 4.0, 
+no key) and aisstream.io (worldwide, 
+with our own key) and hands every reader the same snapshot;
+ the only thing your browser sends to our server is <b>
+the map area currently in view</b>
+, 
+and nothing about you — not even coordinates — reaches either provider. 
+If you optionally enter your own aisstream.io key in Settings, 
+your browser opens a WebSocket connection directly to aisstream.io (<code>
+stream.aisstream.io</code>
+) and sends it <b>
+that key and the map area in view</b>
+ to subscribe;
+ that key is stored only in your browser);
+CelesTrak (celestrak.org — the orbital element sets behind the Live-satellites layer;
+ the request names a catalogue group and NOTHING else: no coordinates and nothing about you. 
+Every position, 
+footprint, 
+ground track, 
+look angle and pass prediction is computed in your browser with SGP4/SDP4. 
+If CelesTrak cannot be reached, 
+the elements are fetched through our own relay (the <code>
+fetch-relay</code>
+ Supabase Edge Function) or read from the catalogue bundled with this site (data/tle/, 
+rebuilt on a schedule from CelesTrak, 
+or from SatNOGS DB — Space-Track / CelesTrak elements — when CelesTrak is unreachable);
+ which source answered, 
+and how old its elements are, 
+is shown on screen);
+ GDELT (the worldwide news search behind Atlas briefs and integrated analysis — place names or keywords from your question are sent as the search terms);
+ Wikipedia/Wikimedia (article checks and summaries — the place or topic name is sent);
+ Wikipedia «Portal:Current events» (the record of past news events — IntMap's own server asks for dates only and nothing about you is sent;
+ the text is CC BY-SA 4.0);
+ market-data APIs (ER-API / fxratesapi, 
+gold-api, 
+CoinGecko, 
+alternative.me, 
+Yahoo Finance — price fetches for the widgets and the bottom ticker, 
+and live share prices to compute live market caps for US-listed names in the Companies tab;
+ the Companies tab reads them through our own <code>
+quotes-relay</code>
+ Supabase Edge Function and no third-party relay;
+ upstream is Yahoo's keyless endpoints, 
+and only ticker symbols are sent, 
+nothing about you);
+ company logos (Wikimedia Commons / Google — which image is a company's logo is resolved from Wikidata (property P154) at BUILD time and shipped with this site, 
+so nothing is sent to Wikidata while you read and <b>
+nothing tells anyone which company you are looking at</b>
+;
+ the image itself is loaded from Wikimedia Commons (upload.wikimedia.org). 
+Only for a company Commons has no logo for does it fall back to Google's favicon service, 
+and then <b>
+the company's domain name — nothing else —</b>
+ is sent to Google. 
+With neither, 
+a monogram of the company's initials is drawn and no external request is made at all. 
+The trademarks belong to the companies they identify and are used here to identify them);
+ the weekly digest of natural events («This week on Earth» — its pages, 
+its feeds and Atlas's answers about a week), 
+which is assembled when the site is BUILT from the U.S. 
+Geological Survey's earthquake catalogue and NASA's EONET and shipped with this site, 
+so <b>
+nothing is sent to USGS or NASA while you read it</b>
+ and neither learns anything about you;
+ geocoding services (OpenStreetMap Nominatim, 
+Open-Meteo and Photon/Komoot) — a place name or text you search, 
+or a place label you click on the map, 
+is sent to look up its coordinates and boundary;
+ when you make a «Then &amp;
+ now» card, 
+the centre of the map you are looking at is sent to Nominatim to name the place it shows;
+ and when you click a RIVER name on the map, 
+that river's names (in every language OpenStreetMap records for it) are sent to Nominatim, 
+and if it cannot answer, 
+to the Overpass API together with the map area around the point you clicked, 
+so that the river's real course can be drawn beyond the edge of the screen;
+ administrative-boundary data (geoBoundaries via GitHub — fetched for Atlas region highlights to obtain member-unit boundary shapes, 
+and by the weather-warning layer as a last resort for a warning area that is in no other boundary set;
+ only the country code is sent);
+ live-camera viewing — the Live-cameras layer lists public cameras from OpenStreetMap, 
+Transport for London (TfL JamCams), 
+Caltrans (California DOT), 
+Fintraffic/Digitraffic (Finland) several US state DOTs (Colorado/Indiana/Alaska/Arizona, 
+via the OpenTrafficCamMap open dataset on the jsDelivr CDN), 
+and the US-state / Canadian-province DOT "511" camera networks (Florida, 
+Georgia, 
+New York, 
+Pennsylvania, 
+North Carolina, 
+Nevada, 
+Wisconsin, 
+Idaho, 
+Louisiana, 
+New England, 
+Ontario, 
+Alberta and Yukon — each site's camera list is fetched once through our own relay (the <code>
+fetch-relay</code>
+ Supabase Edge Function) because those endpoints send no CORS header, 
+while the images load directly from each camera's operator);
+ opening one loads that operator's third-party content (a still image auto-refreshed every few seconds directly from the camera/operator, 
+an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, 
+or a short video clip), 
+subject to that operator's/platform's policies;
+ terrain analysis — the slope/aspect, 
+line-of-sight viewshed, 
+radio coverage, 
+sun &amp;
+ terrain shadow, 
+annual sunlight-hours, 
+terrain-sculpting &amp;
+ water-routing, 
+flood/tsunami, 
+elevation-profile and drone-route tools fetch public elevation tiles (Mapzen/AWS "terrarium" DEM, 
+AWS Open Data) for the area you analyze and decode them in your browser, 
+and the sun-shadow &amp;
+ disaster tools also query the OpenStreetMap Overpass API for building footprints / wind (no personal data is sent — only the map coordinates being analyzed);
+ the seismic-wave simulator computes everything in your browser from a published Earth model and sends nothing, 
+except that asking it to load a real recent earthquake fetches the USGS public feed;
+ the flight simulator (its engine, 
+wind and stall/GPWS warning sounds are synthesized in your browser with Web Audio and not transmitted;
+ its GPWS voice callouts use the browser's built-in speech synthesis (Web Speech API), 
+so depending on the browser the fixed English phrases spoken, 
+such as "pull up", 
+may be processed by the browser vendor's voice service);
+ web fonts (Google Fonts — every page loads its typefaces from fonts.googleapis.com and fonts.gstatic.com, 
+so Google receives the ordinary request for them, 
+which carries your IP address and browser, 
+and nothing else about you);
+ open-source code libraries loaded on demand from the unpkg CDN (unpkg.com — Open-Meteo's weather-map layer, 
+fetched when a layer that needs it is opened;
+ nothing is sent but the request);
+ country flags (flagcdn.com — the flag shown beside a country is loaded as an image, 
+and the request names that country's two-letter code);
+ the password breach check (Have I Been Pwned's Pwned Passwords, 
+api.pwnedpasswords.com — when you choose a password at sign-up or set a new one, 
+your browser computes the SHA-1 hash of the password and sends <b>
+only the first five characters of that hash</b>
+;
+ the password itself and the rest of the hash never leave your browser, 
+and whether it appears in a known breach is decided in your browser against the list of hash endings returned, 
+so the service cannot tell which password was checked);
+ official weather warnings (the weather-warning layer reads the public warning feeds of national meteorological services directly — the US National Weather Service, 
+Environment and Climate Change Canada, 
+the Australian Bureau of Meteorology, 
+the Hong Kong Observatory, 
+Brazil's INMET, 
+Germany's DWD, 
+MET Norway and the Japan Meteorological Agency, 
+with China's National Meteorological Centre read through our fetch-relay — together with the boundaries those warnings refer to, 
+from NOAA, 
+Eurostat GISCO and Alibaba Cloud DataV;
+ nothing is sent but the request);
+ volcano and hazard information (the Smithsonian Global Volcanism Program's weekly reports and volcano photographs from volcano.si.edu, 
+USGS volcano notices, 
+the Japan Meteorological Agency's volcanic warnings, 
+volcano hazard zones hosted on Esri's ArcGIS Online, 
+the WHO's Disease Outbreak News from www.who.int, 
+and the NOAA Space Weather Prediction Center's aurora forecast, 
+Kp index (observed and forecast), 
+solar wind, 
+X-ray flares, 
+NOAA scales and alerts, 
+NASA/JPL Solar System Dynamics' fireball records and asteroid close approaches (ssd-api.jpl.nasa.gov, 
+read through our relay, 
+which sends the same request), 
+and launch records from The Space Devs' Launch Library 2 (only a date range around the map's time is sent);
+ nothing is sent but the request);
+ other public datasets read when their layer or panel is opened (TeleGeography's submarine cable map, 
+the OurAirports airport list, 
+DeepStateMap's Ukraine frontline, 
+historical basemaps and tectonic-plate data from GitHub (raw.githubusercontent.com), 
+Our World in Data and the Observatory of Economic Complexity (OEC) — only dataset, 
+country and year codes are sent — and Frankfurter (api.frankfurter.dev) for exchange rates;
+ nothing about you is sent);
+ the sea-floor depth readout (Open Topo Data, 
+api.opentopodata.org — the coordinates of the point you click are sent);
+ aircraft details (Planespotters.net — when you open an aircraft, 
+its 24-bit ICAO transponder address is sent to find a photograph of it);
+ sidebar widgets (Nager.Date for public holidays — the country code you chose is sent —, 
+Hacker News, 
+Wikimedia's on-this-day and featured-article feeds, 
+the ISS position from wheretheiss.at, 
+upcoming launches from The Space Devs, 
+and Bitcoin network data from mempool.space;
+ nothing about you is sent);
+ and an AI provider (Anthropic, 
+OpenAI or Google — called by our server-side Edge Function with our own key;
+ any text you submit to the AI features — place briefs, 
+the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response;
+ <b>
+anything you attach to Atlas is sent with your message</b>
+ — a picture as an image, 
+a PDF as the document itself, 
+and any other document (Word, 
+Excel, 
+PowerPoint, 
+OpenDocument, 
+a KMZ or an archive) as the text your browser reads out of it, 
+which is what is sent rather than the original file. 
+Attachments are not stored on our servers: they travel with that one request and are not kept;
+ <b>
+and if you choose the vision-model detector in "Find where a photo was taken", 
+a reduced copy of that photograph is sent to the AI provider</b>
+ so it can trace the sky-and-land boundary — you are asked once, 
+explicitly, 
+before the first such send, 
+the permission is recorded only in your browser and can be withdrawn at any time, 
+and the picture is not stored on our servers;
+ choosing the other, 
+image-processing detector sends the photograph nowhere at all, 
+and under either detector the matching itself runs in your browser and elevation data is fetched by coordinate alone;
+ for Atlas integrated analysis, 
+the relevant gathered data — loaded news headlines, 
+weather/air-quality/sea-temperature/elevation readings, 
+earthquake info and country statistics — may also be sent to generate the answer;
+ Atlas integrated analysis and briefs may additionally run the AI provider's own web-search tool, 
+in which case query terms related to your question are sent to a search engine via the provider). 
+<b>
+When Atlas searches IntMap's own controls for one that fits your request, 
+the short search phrase Atlas writes from your request is sent to OpenAI's embeddings API, 
+whichever AI provider above is active</b>
+ (through our <code>
+atlas-embed</code>
+ Supabase Edge Function, 
+and only while you are signed in;
+ it is used only to measure how close in meaning that phrase is to the descriptions of the controls, 
+and neither the phrase nor its numeric form is stored on our servers — what we store is the numeric form of IntMap's own control descriptions, 
+nothing of yours). 
+Each has its own privacy policy. 
+<b>
+When the active AI provider is OpenAI, 
+the text you submit to these AI features and the outputs may be used by OpenAI, 
+as an independent data controller, 
+to develop and improve its services — including training, 
+research, 
+evaluating and testing its models — under a content-sharing arrangement we have enabled;
+ this use falls outside the ordinary data-processing agreement (DPA), 
+auditing and related safeguards for that content. 
+Accordingly, 
+do not enter sensitive, 
+confidential or proprietary information, 
+protected health information (as defined under HIPAA), 
+or the personal data of children under 13 (or the applicable age of digital consent where you live) into the AI features.</b>
+ <b>
+If you ask Atlas to find datasets or to read part of a remote GeoTIFF</b>
+, 
+your browser sends the bounding box and date range of the place and period you named (nothing that identifies you) to the open data catalogues it searches — Earth Search (Element 84 / AWS Open Data), 
+Microsoft Planetary Computer, 
+NASA CMR-STAC (LP DAAC), 
+Environment and Climate Change Canada (MSC GeoMet) and the British Geological Survey — and, 
+to read a file, 
+byte-range requests to the host that serves it (AWS Open Data files come from *.s3.amazonaws.com;
+ an address you give Atlas yourself is requested from that host). 
+Each operator's own privacy policy applies, 
+and nothing is sent unless you ask for such a search or read. 
+<b>
+You can see which of these this page has actually contacted, 
+and what this section says each is sent, 
+at any time in Settings ▸ Privacy ▸ This page's connections, 
+and save that record as a JSON file</b>
+ (it is built from your own browser's reports and is not sent to us).</p>
+
+    <p>
+<b>
+5. 
+Cookies & local storage.</b>
+ Used for your session and preferences.</p>
+
+    <p>
+<b>
+6. 
+Retention.</b>
+ Account and content data are kept until you delete your account or content. 
+Error records are deleted 30 days after the same error last occurred. 
+Usage counts are deleted after 400 days. 
+Saved places are kept until you delete the place or your account. 
+Map error reports that were answered and not published are deleted 730 days after the answer (spam after 30 days);
+ published corrections are kept in the public record until you ask for removal (all are deleted when you delete your account). 
+Saved maps are kept until you delete the map or your account. 
+Today's quest results are kept until you delete your account (while you are not signed in, 
+they are stored only in your browser and are not sent to us). 
+Feedback and bug reports sent while not signed in are deleted 730 days after we receive them (those sent while signed in are kept until you delete your account). 
+Class sets, 
+with the names and answers handed in to them, 
+are deleted 365 days after the set was made, 
+or sooner when the teacher deletes the set or their account.<br>
+<b>
+Published collections.</b>
+ A collection in My places is made public only when you choose "Create a read-only link" (or ask Atlas to). 
+Anyone with the link can see the names, 
+notes and positions of its places and its saved maps (with each step's words, 
+for a tour or an Atlas answer) as they are at that time, 
+and, 
+if signed in, 
+copy them into their own account. 
+Your account, 
+display name and email address are not published. 
+You can stop publishing at any time;
+ the link stops working at that moment (or when you delete your account). 
+Copies others have already made or saved stay with them.<br>
+<b>
+Community maps.</b>
+ A published collection is listed in Community maps only when you choose "List in Community maps" (or ask Atlas to), 
+under a name you type for it — never your email address or account name. 
+Anyone can then find it there by its title, 
+summary and that name, 
+and see how many readers kept a copy and how many listed collections were built on it (never who). 
+If you list a collection you started from someone else's listed collection, 
+it names that one as its origin while that one is listed. 
+You can take it out of Community maps at any time;
+ its link keeps working until you stop publishing. 
+When you copy a published collection, 
+we record which one you copied and where you filed it;
+ its owner sees only the number of readers who kept it. 
+A report you send about a listed collection (the reason and your note) is read only by IntMap's administrators, 
+never by its owner;
+ administrators may take a collection out of Community maps and tell its owner why;
+ that decision stays with the collection even if it is unpublished and published again. 
+Copy records are kept until the collection stops being published or you delete your account. 
+Reports are kept until you delete your account;
+ once an administrator has settled one, 
+it is deleted 730 days after you sent it.</p>
+
+    <p>
+<b>
+7. 
+Your rights.</b>
+ You may access, 
+correct or delete your data and delete your posts. 
+You can see what your account holds and download a complete copy (JSON) at any time from Account ▸ Your data, 
+and delete it by deleting your account;
+ contact us for anything else.</p>
+
+    <p>
+<b>
+8. 
+Children.</b>
+ The Service is not directed to children under 13.</p>
+
+    <p>
+<b>
+9. 
+Security.</b>
+ We use industry-standard measures but cannot guarantee absolute security. 
+How the page protects you, 
+and how to report a security problem privately, 
+are on the <a href="./security.html">
+Security &amp;
+ trust</a>
+ page.</p>
+
+    <p>
+<b>
+10. 
+Changes.</b>
+ We may update this policy from time to time.</p>
+`;
+
+
+  /* 'jp' is the app's own code for Japanese;
+ anything else reads English. 
+*/
+  function isJa(lang) { return lang === 'jp' || lang === 'ja';
+ }
 
   return {
     date: LEGAL_DATE,
     /* which: 'terms' | 'privacy' — returns the document body as HTML */
-    html: function (which, lang) {
+    html: function (which, 
+lang) {
       if (which === 'privacy') return isJa(lang) ? PRIVACY_JA : PRIVACY_EN;
+
       return isJa(lang) ? TERMS_JA : TERMS_EN;
+
     },
     /* the two languages this text actually exists in */
-    langs: ['ja', 'en'],
+    langs: ['ja', 
+'en'],
     isJa: isJa
   };
+
 })();
+
