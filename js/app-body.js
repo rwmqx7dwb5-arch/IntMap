@@ -1057,34 +1057,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      fire goes through `getPixelRatio()` and gets the old number back. MEASURED in the preview (dpr 1.5, map
      built at 1): getPixelRatio()=1, canvas 1024 px for a 1024 CSS-px box — every label, border line and
      glyph drawn at 1× and stretched by the compositor, which is what a reader sees as blurred place names.
-     The renderer is told the new ratio when the browser's own `(resolution: Ndppx)` query stops matching
+     The engine adapter (js/geo-engine.js followDevicePixelRatio) tells the renderer the new ratio when the browser's own `(resolution: Ndppx)` query stops matching
      (the one signal that fires on both zoom and monitor change); the phone ceiling of 2 is the same rule as
      above. A ratio somebody ELSE set (GE().render.setRenderScale: a quality governor, a capture) is left
      alone — only a value this block applied last is replaced. */
-  (function followDevicePixelRatio(){
-    try{
-      const want=()=>{ const d=window.devicePixelRatio||1; return _imPhoneClass()?Math.min(2,d):d; };
-      let applied=map.getPixelRatio();
-      let mq=null;
-      const sync=()=>{
-        try{
-          const w=want();
-          if(map.getPixelRatio()===applied && w!==applied){ applied=w; map.setPixelRatio(w); }
-        }catch(_){}
-      };
-      const arm=()=>{
-        try{
-          if(mq) mq.removeEventListener('change',onChange);
-          mq=window.matchMedia('(resolution: '+(window.devicePixelRatio||1)+'dppx)');
-          mq.addEventListener('change',onChange);
-        }catch(_){}
-      };
-      const onChange=()=>{ sync(); arm(); };
-      window.addEventListener('resize',sync);
-      arm();
-      sync();   /* the boot itself may have raced a zoom/monitor change */
-    }catch(_){}
-  })();
+  try{ GE().render.followDevicePixelRatio(()=>_imPhoneClass()?2:Infinity); }catch(_){}   /* the renderer-side half lives in js/geo-engine.js (only that file may name the renderer) */
   /* (#R186) LAUNCH-SCREEN MILESTONE 3 of 5: the renderer object exists. The remaining two — the
      style is parsed, and the first idle after the default layers have been switched on — are
      reported from the map's own 'load' handler below. If there is no renderer at all (no WebGL,

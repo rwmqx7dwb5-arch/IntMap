@@ -1948,6 +1948,19 @@ function _redrawLocalGlyphs(m,cover){
        during a gesture and all of them on the frame the gesture lands on. */
     getRenderScale(){ const m=_m(); try{ return (m&&m.getPixelRatio)?m.getPixelRatio():null; }catch(_){ return null; } },
     setRenderScale(r){ const m=_m(); try{ if(m&&m.setPixelRatio&&isFinite(r)&&r>0){ m.setPixelRatio(r); return true; } }catch(_){} return false; },
+    /* (globe-polish) `pixelRatio` is passed explicitly at construction, which makes getPixelRatio() `_override ?? devicePixelRatio`
+       answer the BOOT value forever. Re-apply devicePixelRatio (capped by cap()) when the browser's own `(resolution: Ndppx)` query
+       stops matching or the window resizes — browser zoom and a drag to another monitor. A ratio someone else set (setRenderScale:
+       a quality governor, a capture) is left alone: only a value this function applied last is replaced. */
+    followDevicePixelRatio(cap){
+      const m=_m(); if(!m||!m.setPixelRatio||!m.getPixelRatio||this._dprFollowing) return false; this._dprFollowing=true;
+      const want=()=>Math.min(window.devicePixelRatio||1,(typeof cap==='function'?cap():Infinity)||Infinity);
+      let applied=m.getPixelRatio(), mq=null;
+      const sync=()=>{ try{ const w=want(); if(m.getPixelRatio()===applied&&w!==applied){ applied=w; m.setPixelRatio(w); } }catch(_){} };
+      const onChange=()=>{ sync(); arm(); };
+      const arm=()=>{ try{ if(mq) mq.removeEventListener('change',onChange); mq=window.matchMedia('(resolution: '+(window.devicePixelRatio||1)+'dppx)'); mq.addEventListener('change',onChange); }catch(_){} };
+      window.addEventListener('resize',sync); arm(); sync(); return true;
+    },
     /* ⚠ (#R252) WHICH FACE DRAWS CJK — CHANGEABLE, NOT FROZEN AT CREATE TIME. `localIdeographFontFamily`
        is a CONSTRUCTOR option, so the per-language family was handed over once; js/map-typography.js holds
        the measurement and the reason. `setGlyphs()` with the URL the style already has is THE PUBLIC WAY to
@@ -2836,6 +2849,7 @@ function _redrawLocalGlyphs(m,cover){
       /* (#R202) the render resolution, read and written — see js/render-scale.js */
       getRenderScale:()=>A().getRenderScale?A().getRenderScale():null,
       setRenderScale:r=>A().setRenderScale?A().setRenderScale(r):false,
+      followDevicePixelRatio:cap=>A().followDevicePixelRatio?A().followDevicePixelRatio(cap):false,
       /* (#R178) the element gestures are dispatched on — NOT the canvas: MapLibre stacks markers
          and the attribution over it, and a synthetic pointer event has to land on the same node
          the renderer listens to. */
