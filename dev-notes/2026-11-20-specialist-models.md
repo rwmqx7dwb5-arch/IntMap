@@ -51,3 +51,5 @@ newsjp: Atlasが専門モデルを探し、地点の河川洪水予報（GloFAS�
 main を取り込み直した後の再測定（同じ 3 行、同じ理由）: `atlas-cap-runs` 915.8 kB・`atlas-console` 1073.4 kB・async.raw 14308.0 kB。増分の内訳は専門モデル 2 能力（実行本体・登録・限界の文）で、main 側で並行に増えた能力の分と合わせた現在値。`perf-budget.mjs --update` で上がった行だけ上げた。
 
 3 度目の取り込み後の再測定: `atlas-cap-runs` 921.4 kB・async.gzip 4841.6 kB・dist.assets 21802.1 kB。main で並行に増えた能力・資産の分も入った現在値で、`perf-budget.mjs --update` が上げた行だけ。専門モデル側の増分は上と同じ（登録・実行本体・限界の文）。
+
+4 度目（main の bot が天井を main の実測へ下げた後）の再測定で、上がった行は 3 つ: async.raw 14382.1 kB・`atlas-cap-runs` 921.4 kB・`atlas-orchestrate` 94.6 kB。前 2 つは専門モデル 2 能力の増分と、並行して main に入った能力の分。`atlas-orchestrate` は main の chunk 分割（`atlas-delegate` の新設）に伴って測り直した値で、この PR の差分は 2 つの能力ファイルのみ（`atlas-orchestrate` のコードには触れていない）。`dist.total` は CI だけが data 込みで測る値で、ローカルでは上げていない。
