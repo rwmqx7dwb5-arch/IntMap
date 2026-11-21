@@ -96,3 +96,9 @@ STAC の `href` は**データ**。https・認証情報なし・私的でない�
   ⚠ このマシンではローカル build が `data/border-detail` のコピーで失敗する（`copyfile UNKNOWN`）ので
   `perf-budget --update` は build 印が無く拒否される。そのため CI の実測値を手で書いた。次の CI が許す幅を
   超えれば再び赤になるので、その場合は CI の数に合わせて直す。
+
+## main 取り込み時の追記（PR #1290）
+
+- 能力位置: `data.gisOverture` の `spatial-analysis` 断片を `at: 49` から `at: 55` へ（main 側の `geo.similar` が 49 を使っていたため。断片の順序以外は変わらない）。
+- perf 天井を `perf-budget --update` で上げた（async.raw 14221.0→14482.5 kB・async.gzip 4807.7→4909.9・gis-core 632.9→636.4・legal-text 91.8→94.1・dist.assets 21686.9→21890.2）。gis-core と legal-text は Overture の読み取りと第三者開示の文面が運んだ分。async 合計の増分のうちチャンク個別の天井を越えない残りは、main 側の取り込み分を含む。
+- 能力数 254（到達可能 251）・migration 70 本・表 60 に文書の数を合わせた。
