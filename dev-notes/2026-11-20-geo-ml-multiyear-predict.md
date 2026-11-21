@@ -47,3 +47,9 @@ newsjp: Atlas が、複数年の変化の測定、地域の分類、変化と施
 
 遅延チャンクだけ（起動時の通信は増えていない）。`atlas-cap-runs` 896.4→908.1 kB（`geo.ml` の扉・引数束縛・答えの組み立て）、`atlas-console` 1061.2→1070.0 kB（能力 1 つぶんの表・説明文）、async の gzip 合計と配信資産が連動して増えた。買ったもの: 複数年の変化・分類・解釈・予測モデルの能力。`js/geo-ml.js`・`js/geo-ml-run.js` は `atlas-cap-runs` に同梱される。
 表面の基準: `window.IntMapData` と `window.IntMapLazy` の読みが各 1 増えた（`geo.ml` が `gisCore` を読み込んで登録簿を受け取る。`data.gis` など同じ名簿の能力が既にしている方法と同じ）。
+
+## perf の天井を上げた理由と、検索の見出し（2026-11-21）
+
+`async.raw`・`atlas-cap-runs`・`atlas-console`・`atlas-orchestrate`・`dist.assets` を実測へ。増分は `geo.ml`（`js/geo-ml*.js` と能力の文書）で、遅延チャンクなので起動時の転送は増えていない。
+
+能力の文書の見出しに日本語の括弧書きを置くと、その語がブロック（spatial-analysis は 10 能力）の全能力の得点になる。`geo.ml` の見出しの「予測モデル」で、ISS の問い（R728 ①）が 12 件以内でなく 20 件を返した。見出しの括弧書きを外し、語は本体（`{"type":"geoMl"` 以降）に残した（「予測」「目的変数」は `geo.ml` だけを返す）。見出しの語が全能力へ効く点は検索側の構造で、ここでは直していない。
