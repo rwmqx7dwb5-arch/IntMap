@@ -32,3 +32,9 @@ IntMap の対の述語を書く唯一の場所 `relateBlock` と DuckDB の `ST_
 測れたのは「同じ範囲」までで、**エンジンそのものは製品に入っていない**。残り: ① DuckDB-Wasm と Spatial 拡張の配信（拡張の初回 11 s・CSP）② ライセンス表記 ③ 結果を runner の形（features・stats・provenance）へ戻す写し
 ④ サーバ側 native/PostGIS（環境が無く未計測）。これらが入れば `registerEngine` の `accepts` が `planarEquivalent` を呼ぶだけで、範囲外は自動で既存 GIS に戻る。
 失効条件: DuckDB Spatial の述語の意味が変わる／IntMap の日付変更線・極の規則が変わる（script が両方を 1 回で測り直す）。
+
+## 起動予算（check:perf）で上げたもの
+- **async チャンク `atlas-orchestrate` の天井を 82.4 → 96.1 kB（+13.7 kB）に上げた**。これだけが超えた行で、`perf-budget.mjs --update` は超えた行しか書かない。
+- **何を買ったか**: この PR の変更（`js/gis-engine-domain.js` は入口から読まれず、どの塊にも入らない）ではなく、main に入った Atlas の統合知識層（#1280）が `atlas-orchestrate` に載ったぶん。main の CI は merge 後に天井を記録するが、
+  それまでの間に出た PR が全部 `Gates 2/3` で赤くなるので、先に実測まで上げる。
+- **失効条件**: main の perf-ceiling が同じ行を記録したら、その値が正本（この行はそれに置き換わる）。
