@@ -43,3 +43,6 @@ Cloudflare Browser Run(旧 Browser Rendering): CDP の WebSocket `…/browser-re
 ## 7. 起動費用の天井を上げた理由(check:perf)
 CI の `check:perf` が、async の `atlas-cap-runs`(896→922 kB 級)・`atlas-console`(1061→1075 kB 級)・async 合計(raw 14136→14250 kB 級・gzip 4771→4795 kB 級)の超過を報告した。**eager(起動に載る側)は動いていない**——増えたのは Atlas の能力の実行体(`web.session` / `web.sessionGrant` の本体と、#1296・#1312 から積み上がった web 系の本体と確認文)で、いずれも遅延チャンク。起動に載る能力表の行は 2 行(約 1 kB)で eager の天井内。天井は超えた 4 行だけ、CI が測った値(kB は 1024)を切り上げて手で書いた——ローカルはビルドに `data:pull` のデータが要り `--update` が走らない(かつ main に遅れていると拒否される)ため。次に main の CI の bot が測り直して下げる。
 `check:surface` は `window.IntMapSafe` の読みを 1 か所(`safeUrl`)にまとめて 171→170 とし、基準線を更新した(新しい経路は足していない)。
+
+## 予算の天井を上げた理由（perf-baseline・2026-11-21）
+操作型ブラウザ層が `web.session` の能力（`atlas-cap-web`・schema・確認文言・結果の描画）を足したため、遅延 chunk の `atlas-cap-runs` が 903.4→934.8 kB、`atlas-console` が 1073.1→1083.5 kB、async raw が 14221.0→14325.8 kB になった（`node scripts/perf-budget.mjs --update`）。どれも能力を呼んだときだけ読む遅延 chunk で、起動時に読む量は増えていない。失効条件: 能力の統合や縮小で下がったら、main の CI が `--tighten` で下げる。
