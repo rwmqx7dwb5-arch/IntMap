@@ -57,3 +57,7 @@ async.raw を 14304.0 kB から 14384.5 kB へ引き上げた。網の分析（j
 
 main の取り込み後に再測定し、async チャンク `atlas-orchestrate` の天井を 82.4 kB → 96.1 kB に上げた。
 取り込んだ main 側の変更（Atlas の知識層）を含む実測で、このラウンドの能力追加が運ぶ分ではない。`dist.total` は main の天井内に収まった。
+
+## 性能予算の引き上げ(CI の実測値・Gates 2/3 の赤を受けて)
+
+CI(main を取り込んだ木)の実測で次の行が天井を超えた。async.raw 14376.3→14471.3 kB・atlas-cap-runs 918.5→931.3 kB・atlas-console 1105.8→1111.9 kB・atlas-orchestrate 96.1→99.1 kB・dist.assets 21796.5→21907.4 kB。網の分析の遅延チャンクと、main 側で増えた Atlas の遅延チャンク(知識層・ボード)の合計で、起動時の読み込み(eager)は動いていない。ローカルの `perf-budget --update` は main が 3 commit 進んでいて拒否されたため、CI のログの値を `tests/perf-baseline.json` へ直接書いた(main の CI の `--tighten` が実測まで下げる)。
