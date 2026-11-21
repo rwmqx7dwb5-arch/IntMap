@@ -41,3 +41,6 @@ newsjp: Atlasが、登録した外部MCPサーバーのツールを、自身の�
 `atlas-cap-runs` 903.4→913.3 kB・`atlas-console` 1066.9→1075.4 kB・async.raw 14221.0→14317.9 kB。増えたのは MCP クライアント
 （`js/atlas-cap-mcp.js` の 4 能力と確認文 `atlas.confirm.what.mcp.*`）で、遅延チャンクの中にあり起動時の取得量は増えていない。
 取り込み時に `mcp.servers` / `mcp.call` の確認文が無かったので足した（`atlas-console-boundary` C③）。
+
+追記: main の取り込み直後の再測定で `atlas-cap-runs` 909.0→919.0 kB・`atlas-console` 1080.1→1085.7 kB・async.raw 14304.0→14391.9 kB。
+理由は上と同じ（MCP の 4 能力と確認文。遅延チャンクの中）。`dist.total` / `dist.assets` はローカルの data:pull の差が混じるため上げていない。
