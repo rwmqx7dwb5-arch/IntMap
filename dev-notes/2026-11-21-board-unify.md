@@ -35,3 +35,6 @@ CI の check:perf が dist.total 1550243.8 kB を測り、ローカルの測定�
 
 ## perf 天井（統合知識層の取り込み後）
 atlas-cap-runs が 929.5 kB（天井 918.5 kB）。main の統合知識層 (#1280) の能力 1 本が atlas-cap-runs に加わった分で、本統合の metrics/objects/worldObjects 変換と合わせて天井を上げた。
+
+## #1293 が先に main へ入った件と perf 天井（最終）
+#1293 の auto-merge を外す前に main へ入り、ボード実装が add/add で衝突した。js/board*.js と atlas-cap-board.js は #1338 側（本統合）を正本に解消し、#1293 のテスト（tests/atlas-workspace-ui-checks.test.mjs）は新実装でも 8 件通るので残した。能力表は 261（ui.compose を含む）。async.raw 14498 kB・async.gzip 4890 kB・atlas-console 1112 kB・dist.assets 21935 kB へ天井を上げた。増分は main 側の他 PR（GIS 網分析・統合知識層）と本統合の metrics/objects/worldObjects 変換の合計。
