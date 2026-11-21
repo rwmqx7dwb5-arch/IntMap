@@ -395,6 +395,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
       ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
       ["data.imageryInfo","imageryInfo","imageryAt,photoDate,satelliteDate,imagerySource","data","none","","explanation","session","none","",""],
+      ["geo.ml","geoMl","multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty,複数年の変化,地域の分類,変化の解釈","data","none","gis.dataset","explanation","session","none","","gisCore","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
