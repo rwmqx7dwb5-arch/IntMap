@@ -30,7 +30,9 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 /* XML 1.0 has no notation for most control characters: they are dropped (and counted by the caller through `cleaned`) */
 const BAD_XML = /[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g;
 const PLAIN_DECIMAL = /^-?(0|[1-9]\d{0,14})(\.\d+)?$/;
-const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹯＀-｠￠-￦]/;
+/* East Asian wide / fullwidth blocks, by code point (Hangul Jamo, CJK radicals..Yi, Hangul syllables, CJK compatibility ideographs,
+   vertical/small forms, fullwidth forms). Written as escapes: a literal U+F900 normalises to U+8C48 in an editor and the ranges then overlap. */
+const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹯＀-｠￠-￦]/;
 export const widthOf = (s) => { let n = 0; for (const ch of String(s)) n += WIDE.test(ch) ? 2 : 1; return n; };
 
 function colName(i) { let s = ''; for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s; return s; }

@@ -4,7 +4,16 @@ date: 2026-11-21
 ---
 
 〈依頼〉監査で「file.create の Excel(#1357)とデータセットの Excel 書き出し(#1330)が別々に .xlsx を書いている」と指摘された。
-正本を 1 つに決めて統合する。
+#1330 は先に main へ入ったので、main の `js/office-writer.js`(gis-export の xlsx・work.job の書き出しが呼ぶ)を正本に残し、
+その上に文書側の機能を足して、文書側の二つ目の書き手を消す。#1357 は merge されずに閉じた(file.create の本体は #1358 に含まれる)。
+
+## main の #1330 を取り込んだ後の差分
+`writeXlsx(sheets)` の既存の呼び出し(gis-export・work.job)は無変更で動く。足したのは任意の `{ when, core }`、シートの `numericText`、
+列幅、ヘッダーの塗りと固定、ZIP の `zip-store.js` への置き換え。`tests/work-files-checks.test.mjs` は無変更。
+
+## CodeQL
+- `WIDE`(全角幅の正規表現)が CJK 互換漢字のリテラルで書かれ、U+F900 が正規化で U+8C48 に化けて範囲が重なっていた(js/overly-large-range ×2)。`\u` エスケープに直した。
+- `js/file-text.js` の `mdCell` は `|` を逃がすが、バックスラッシュを逃がしていなかった(js/incomplete-sanitization)。先に `\` を逃がす。
 
 ## 何を消し、何が引き継いだか
 | 消したもの | 引き継いだもの |

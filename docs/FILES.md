@@ -1049,7 +1049,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  253 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  254 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1187,7 +1187,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 253 を検索・到達可能 250）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 254 を検索・到達可能 251）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1207,7 +1207,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 253 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 254 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1658,8 +1658,9 @@ map-reader.js                     **地図を言葉で読む**——Alt+R で中
                                   読み上げ、Alt+Shift+R で読み上げモード（地図を動かすたびに、動いた向きと距離のあとに同じ段落）。
                                   地点プロファイル（place-dossier.js の `placeProfile` / `profileSpeech`）を話すだけで、
                                   ライブ領域に書くのは narrator だけ。Settings ▸ キーボード のスイッチと Atlas の settings.mapReading が同じ関数を呼ぶ
-office-writer.js                  **唯一の Excel (.xlsx) 書き手（文書の表も、データセットの書き出しもここを通る）**——stored ZIP + SpreadsheetML。数は数・"01100" は文字・NaN は空で件数を返す・
+office-writer.js                  **Excel (.xlsx) を依存なしで書く**——stored ZIP + SpreadsheetML。数は数・"01100" は文字・NaN は空で件数を返す・
                                   列/行/セル長/シート名は形式の上限で、超えたら黙って切らず名前付きで断る。`gis-export.js` の `xlsx` 形式が呼ぶ。
+office-writer.js                  **唯一の Excel (.xlsx) 書き手（文書の表も、データセットの書き出しもここを通る）**——stored ZIP + SpreadsheetML。数は数・"01100" は文字・NaN は空で件数を返す・
 offline-plan.js                   **持ち歩ける地図の純粋な部分**——タイル範囲・日付変更線・粗い順・収まる細かさ、
                                   そして「保存してよいか」の判定（`verdict`）。許可は `data/offline-sources.json` が述べたものだけで、
                                   述べられていないホストは `not-stated`＝拒否（沈黙は許可ではない）

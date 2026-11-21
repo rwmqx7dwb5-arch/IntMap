@@ -9,7 +9,7 @@ import { cellText } from './file-doc.js';
 
 const enc = (s) => new TextEncoder().encode(s);
 export const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const mdCell = (v) => cellText(v).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+const mdCell = (v) => cellText(v).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\n/g, ' ');
 
 /** bytes → base64 (chunked: String.fromCharCode.apply overflows the stack on a large array) */
 function bytesToB64(bytes) {
