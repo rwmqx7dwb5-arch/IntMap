@@ -1012,6 +1012,17 @@
     .satc-step:hover{ background:rgba(128,128,128,0.15); }
     .satc-latest{ color:var(--text-main); font-size:12px; font-weight:500; }
     .satc-row input[type=range]{ flex:1; min-width:0; }
+    .satc-capture{ display:block; margin:0 0 8px; padding:7px 9px; border-radius:9px; background:var(--input-bg); color:var(--text-main); font-size:11.5px; line-height:1.45; }
+    .satc-capture small{ display:block; color:var(--text-muted); font-size:10.5px; margin-top:2px; }
+    .satc-match{ flex:1; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:12px; cursor:pointer; }
+    .satc-match:hover{ background:rgba(128,128,128,0.15); }
+    .satc-here{ margin:0 0 8px; font-size:11.5px; color:var(--text-main); }
+    .satc-here summary{ cursor:pointer; color:var(--text-muted); font-size:11px; }
+    .satc-here ul{ list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:3px; max-height:150px; overflow:auto; }
+    .satc-here button{ width:100%; text-align:left; padding:5px 8px; border-radius:7px; border:1px solid transparent; background:transparent; color:var(--text-main); font-size:11.5px; cursor:pointer; }
+    .satc-here button:hover{ background:rgba(128,128,128,0.15); }
+    .satc-here button[aria-current=true]{ border-color:rgba(128,128,128,0.35); }
+    .satc-here button small{ display:block; color:var(--text-muted); font-size:10px; }
     .satc-attr{ color:var(--text-muted); font-size:10px; line-height:1.4; margin-top:6px; border-top:1px solid rgba(128,128,128,0.12); padding-top:6px; }
     .map-container.sat-on .tool-panel{ top:auto!important; bottom:24px; }
     .sat-toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--info-mil); color:#fff; padding:11px 18px; border-radius:11px; font-size:12.5px; font-weight:500; box-shadow:0 6px 24px rgba(0,0,0,0.32); z-index:var(--z-toast); opacity:0; pointer-events:none; transition:opacity 0.3s ease, transform 0.3s ease; max-width:min(420px,80vw); text-align:center; }
