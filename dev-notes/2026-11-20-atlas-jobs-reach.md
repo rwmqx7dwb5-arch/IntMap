@@ -30,3 +30,19 @@ newsjp: Atlasが、タブを閉じても続く長い仕事を始められるよ�
 ## 3. main の取り込みで足したこと
 
 main が worker の答えに `facts`（実世界オブジェクト×属性）を足したので、`js/atlas-job-core.js` の worker 指示文を同じにし、`shapeOf(data, normalizeFacts)` は正規化関数を**引数で**受ける（core は import を持てない）。ページの `shapeOf` は `normalizeFacts` を渡す薄い包みで挙動は不変。**サーバの runner は facts を渡さないので、サーバのジョブ結果は facts を持たない**（worker は指示文のとおり facts を返すが捨てられる）——サーバ側の突き合わせは未実装。
+
+## 4. perf の上限を上げた理由
+
+`check:perf` が、CI の実測（merge 後）で次の 4 行が上限を超えたと報告した。どれも永続ジョブの入口（`jobs.*` の 4 能力・
+`js/atlas-jobs-client.js` の進捗カード・`atlas-server-caps` の twin 表）が Atlas の非同期チャンクへ載ったことによる増分で、
+起動時（eager）の経路は増えていない。上限は CI の実測値に合わせて上げた（`tests/perf-baseline.json`）。
+
+| 行 | 上限（前 → 後） | CI の実測 |
+|---|---|---|
+| `async.gzip` | 4833.6 → 4862.0 kB | 4861.9 kB |
+| `atlas-cap-runs` | 918.5 → 932.6 kB | 932.5 kB |
+| `atlas-console` | 1080.1 → 1086.3 kB | 1086.2 kB |
+| `atlas-orchestrate` | 96.1 → 104.6 kB | 104.5 kB |
+
+⚠ このマシンでは `vite build` が prebuild で止まる（`data/` が checkout に無い）ため、`perf-budget.mjs --update` は使えず、
+CI のログの実測値を手で入れた。main の CI が `--tighten` で測り直して下げる（`perf-ceiling.yml`）。
