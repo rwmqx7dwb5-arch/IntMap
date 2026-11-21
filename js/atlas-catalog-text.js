@@ -175,6 +175,8 @@ export const CATALOGUE_CHUNKS = [
       { name: 'chart.compose' },
       /* file.create — a deliverable is a file */
       { name: 'file.create' },
+      { name: 'board.compose' },
+      { name: 'board.restore' },
       /* 45 (#R546) */
       { name: 'map.shakemap' },
       /* 46 (#R650) */
