@@ -131,15 +131,33 @@ export function makeHighlightTargets(deps) {
       if(typeof t==='string'){ const c=norm3(t); return {iso3:c,name:c?'':t.trim(),via:notationOf(t),asked:!!c||codeShaped(t)}; }
       if(typeof t==='object'){ const raw=t.iso3||t.iso||t.code||t.c||t.id||t.a3; const c=norm3(raw); const n=String(t.name||t.n||t.country||t.label||'').trim(); return (c||n)?{iso3:c,name:n,via:notationOf(raw),asked:!!String(raw==null?'':raw).trim()}:null; }
       return null; };
+    /* ══ (atlas-highlight-units) WHAT THE MEMBER IS, AND WHAT SHAPE IT IS DRAWN AS, ARE TWO THINGS ═══════════
+       A member of a highlighted set is named by what it IS (a team, a league member, a treaty party — `kind`) and
+       drawn as the PLACE it occupies. Until now the second was welded to ISO 3166-1: a member had to be a sovereign
+       country with an alpha-3 code, so England and Scotland — separate entrants of a World Cup, not countries in
+       the border file — could not be painted (audit 2026-11-21 §9.2). The shape is now named by its OWN identifier:
+         · an ISO 3166-1 code (alpha-3, or any notation the country store declares)  → that country's polygon
+         · an ISO 3166-2 code (GB-ENG, GB-SCT …; `subdivision`, or in `iso3`/`code`/`id`)   → that first-level unit
+       Nothing here lists participants or events: any set of teams, members or units reduces to these two notations.
+       The unit's geometry is resolved by the console (js/atlas-console.js `_hlUnitGeo`); this reads only which
+       notation was offered, so an unresolvable unit comes back structured and observed (#R158), never dropped. */
+    const SUBDIV=/^[A-Z]{2}-[A-Z0-9]{1,3}$/;
+    const subdivisionOf=t=>{ const kind=(t&&typeof t==='object')?String(t.kind||t.as||t.type||'').trim().slice(0,40):'';
+      const name=(t&&typeof t==='object')?String(t.name||t.n||t.label||'').trim():'';
+      const cands=(typeof t==='string')?[t]:((t&&typeof t==='object')?[t.subdivision,t.iso_3166_2,t.iso3166_2,t.admin1,t.iso,t.code,t.id,t.iso3,t.c]:[]);
+      for(const v of cands){ const x=String(v==null?'':v).trim().toUpperCase(); if(SUBDIV.test(x)) return {subdivision:x,iso3:'',name:typeof t==='string'?'':name,kind,via:'',asked:true}; }
+      return null; };
+    const readT0=readT;
+    const readTarget=t=>{ const u=subdivisionOf(t); if(u) return u; const r=readT0(t); if(r&&t&&typeof t==='object'){ const kind=String(t.kind||t.as||t.type||'').trim().slice(0,40); if(kind) r.kind=kind; } return r; };
     const rawGroups=[];
     if(Array.isArray(a.groups)&&a.groups.length){   /* several distinctly-coloured concept sets in one command */
-      a.groups.forEach(g=>{ if(!g||typeof g!=='object') return; const src=Array.isArray(g.targets)?g.targets:(Array.isArray(g.iso3)?g.iso3:(Array.isArray(g.codes)?g.codes:(Array.isArray(g.countries)?g.countries:[]))); const ts=src.map(readT).filter(Boolean); if(ts.length) rawGroups.push({label:String(g.label||g.interpretation||g.name||'').trim(),targets:ts}); });
+      a.groups.forEach(g=>{ if(!g||typeof g!=='object') return; const src=Array.isArray(g.targets)?g.targets:(Array.isArray(g.iso3)?g.iso3:(Array.isArray(g.codes)?g.codes:(Array.isArray(g.countries)?g.countries:[]))); const ts=src.map(readTarget).filter(Boolean); if(ts.length) rawGroups.push({label:String(g.label||g.interpretation||g.name||'').trim(),targets:ts}); });
     } else {
       let src=Array.isArray(a.targets)?a.targets:(Array.isArray(a.iso3)?a.iso3:(Array.isArray(a.codes)?a.codes:null));
       /* a bare ISO3 array smuggled into "countries" (every entry a valid 3-letter code) also counts as GPT targets;
          a NAME array or a concept STRING does NOT — those fall through to the legacy concrete-place resolver. */
       if(!src&&Array.isArray(a.countries)&&a.countries.length&&a.countries.every(x=>norm3(x))) src=a.countries;
-      if(src){ const ts=src.map(readT).filter(Boolean); if(ts.length) rawGroups.push({label:String(a.interpretation||'').trim(),targets:ts}); }
+      if(src){ const ts=src.map(readTarget).filter(Boolean); if(ts.length) rawGroups.push({label:String(a.interpretation||'').trim(),targets:ts}); }
     }
     if(!rawGroups.length) return null;
     const valid=_hlValidCodeSet();
@@ -148,12 +166,13 @@ export function makeHighlightTargets(deps) {
        returned to Terra as UNRESOLVED, tagged with a machine reason and (if the name deterministically maps to one) a
        candidate identifier that is REPORTED, never applied. Terra then decides: re-issue with the right code, re-search,
        ask, or adopt the partial. This replaces the old resolveCountrySync auto-correction the work order removed. */
-    const out=rawGroups.map(g=>{ const codes=[],unresolved=[],seen=new Set(),read=[];
+    const out=rawGroups.map(g=>{ const codes=[],units=[],members=[],unresolved=[],seen=new Set(),read=[];
       g.targets.forEach(t=>{ const gi=t.iso3||'';
-        if(gi&&valid.has(gi)){ if(!seen.has(gi)){ seen.add(gi); codes.push(gi); if(t.via) read.push({as:t.via,code:gi}); } return; }   /* Terra's identifier is valid → execute faithfully */
+        if(t.subdivision){ if(!seen.has(t.subdivision)){ seen.add(t.subdivision); const cc=norm3(t.subdivision.split('-')[0]); units.push({id:t.subdivision,name:t.name||'',kind:t.kind||'',country:cc}); members.push({id:t.subdivision,name:t.name||'',kind:t.kind||'',geometry:'subdivision'}); } return; }   /* a first-level unit: resolved against the unit data, not the country border file */
+        if(gi&&valid.has(gi)){ if(!seen.has(gi)){ seen.add(gi); codes.push(gi); members.push({id:gi,name:t.name||'',kind:t.kind||'',geometry:'country'}); if(t.via) read.push({as:t.via,code:gi}); } return; }   /* Terra's identifier is valid → execute faithfully */
         let available=[]; if(t.name){ try{ const c=resolveCountrySync(t.name); if(c&&c.code&&valid.has(String(c.code).toUpperCase())) available=[String(c.code).toUpperCase()]; }catch(_){} }
         unresolved.push({name:t.name||'', iso3:gi, reason:(gi?'iso3_not_in_border_data':(t.name?'no_iso3_provided':'empty_target')), availableIdentifiers:available}); });
-      return {label:g.label,codes,unresolved,read}; });
+      return {label:g.label,codes,units,members,unresolved,read}; });
     /* ⚠⚠⚠ (#R742) THE COMMENT ABOVE ALREADY PROMISED THIS AND THE CODE DID THE OPPOSITE. It states that a NAME
        array "does NOT [count as GPT targets] — those fall through to the legacy concrete-place resolver". But
        `readT` turns a non-code string into {iso3:'',name:'Germany'}, which makes `rawGroups` non-empty, so the
