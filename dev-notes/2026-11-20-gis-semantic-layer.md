@@ -44,3 +44,5 @@ eager (起動時) の行は動いていない。
 追記 (3 回目の取り込み): `atlas-orchestrate` が 82.4 → 96.1 kB で天井を超えた (CI の Gates 2/3 と、データを取得した手元の build の両方で再現)。このチャンクに触る変更は本 PR の差分に無い (本 PR の js/ は gis-semantics・gis-core・gis-atlas・atlas-cap-data のみ) ので、増分は同時に取り込んだ main 側 (atlas-geoplan など) 由来と見ている。main 側の天井更新が bot で追いつくまでの差を、この PR で超えた行だけ上げて通した。
 
 `async.gzip` を 4833.8 → 4860.4 kB、`atlas-cap-runs` チャンクを 918.5 → 923.7 kB に上げた（意味の層の説明文と、同時に main へ入った変更の合算。超えた 2 行だけ `--update` が書いた）。
+
+追記 (4 回目の取り込み): この branch に別セッションの GIS 作業 (`gis-network` など) が入り、`gis-core` が 663.6 → 681.1 kB、さらに main 側の増分で `atlas-console` が 1105.8 → 1112.6 kB、`async.raw` が 14376.3 → 14481.3 kB、`dist.assets` が 21796.5 → 21917.6 kB となり天井を超えた (CI の Gates 2/3 と、データを取得した手元の build の両方で再現)。超えた行だけ `--update` で上げた。eager の行は動いていない。
