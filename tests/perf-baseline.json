@@ -1,15 +1,15 @@
 {
   "eager": {
-    "raw": 4840476,
-    "gzip": 1586709,
-    "brotli": 1209198,
-    "requests": 10,
-    "modules": 913,
+    "raw": 4867000,
+    "gzip": 1598000,
+    "brotli": 1219000,
+    "requests": 12,
+    "modules": 914,
     "cssRaw": 382385,
     "cssGzip": 63308
   },
   "async": {
-    "raw": 14562352,
+    "raw": 14647253,
     "gzip": 4923128,
     "chunks": {
       "account-data": 7346,
@@ -32,7 +32,7 @@
       "atlas-geo-resolve": 49353,
       "atlas-hist-urban": 7737,
       "atlas-metrics": 5959,
-      "atlas-notebook": 35115,
+      "atlas-notebook": 54200,
       "atlas-query": 48520,
       "atlas-reasoning": 15328,
       "atlas-text-map": 6440,
@@ -79,13 +79,13 @@
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
       "gis-cog": 7532,
-      "gis-core": 648107,
+      "gis-core": 652256,
       "gis-export": 40134,
       "gis-geopackage": 26667,
       "gis-geotiff": 24029,
       "gis-http": 848,
       "gis-ogcapi": 5697,
-      "gis-remote": 12800,
+      "gis-remote": 29323,
       "gis-shapefile": 10420,
       "great-circle": 186,
       "hist-courses": 1725,
@@ -212,7 +212,7 @@
   },
   "dist": {
     "total": 1579471807,
-    "data": 1216590073,
+    "data": 1223209830,
     "assets": 22207353
   },
   "phone": {
