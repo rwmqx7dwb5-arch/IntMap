@@ -44,3 +44,4 @@ newsjp: Atlas が添付した動画を読めるようになり（時刻つきフ
 - `check:perf`: 添付を扱う atlas-attach（22.6→26.9 kB）と atlas-cap-runs、async gzip 合計の天井を `perf-budget.mjs --update` で上げた。増えた分はマルチモーダル添付の実装そのもの（新しい読み込み経路）で、起動時チャンクは増えていない。
 - `check:i18n`: 位置引数 L(…) の行が 7 行増えたので、床を `i18n-audit.mjs --update-floor` で実体に合わせた。
 - `R403 ⑨`（`--gate --todo fr` が緑の木を要求）は上の i18n 床が原因で赤かった。
+- `dist.total` / `dist.assets` の天井も上げた（1542452.9→1550179.2 kB / 21686.9→21797.3 kB）。増えた分は添付の読み込み経路の追加と main 側の同時期の増加の合計で、起動時チャンクは増えていない。
