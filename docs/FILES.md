@@ -201,6 +201,8 @@ cesium-style.js                   style 言語の解釈器（式・フィルタ�
 cesium-layers.js                  Cesium のプロバイダとレイヤー描画
 cesium-vector-tiles.js            第2エンジンのベクタタイル
 plateau-cities.js                 PLATEAU 3D 都市モデルの登録（data/plateau-cities.json）の読み込み・視界近傍の選択・URL と都市別ジオイド補正。エンジンの tiles3d 能力が読む
+geoid.js                         EGM2008 ジオイド高 N（楕円体高と海抜の差）を世界のどこでも返す。0.5° 格子（data/geoid-egm2008.bin.gz・scripts/build-geoid-grid.mjs が導出）の双一次補間。日本の外の 3D 建物タイルセットを地面に合わせる
+world-3d-sources.js              日本の PLATEAU 以外の 3D 建物タイルセット（3D BAG・Re:Earth Buildings）の登録・視界近傍の選択・上位データの範囲を下位から抜く箱。ライセンスと信頼性の根拠を行ごとに持つ
 render-plan.js                     描画方法の選択（候補を良い順に並べ、エンジンの能力で最初に実行できるものを選ぶ。純粋）。geo-engine の `plan()` と PLATEAU レイヤーが使う
 tileset-budget.js                  3D Tiles のメモリ・詳細度の予算を端末（メモリ・コア数・省データ・携帯）から決める。cesium-engine の addTileset／_governTilesets が使う
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
@@ -256,6 +258,10 @@ gis-shapefile.js                  **Shapefile の読み手** `window.IntMapGisSh
                                   `sourceCrs` は WKT 自身の AUTHORITY だけで、**4326 を推測で名乗らない**。
                                   標高は座標の中ではなく並行配列 `_z` で運ぶ。拒否は文でなくコード。
                                   `js/geo-import.js` が動的 import する
+gis-pmtiles.js                    **PMTiles（v3・ベクタ）の読み手**（モジュール。window には載せない）—
+                                  `sniff` / `open` / `readBytes` / `readSource` / `readUrl` / `refusals`。依存なし。
+                                  ヘッダ・root/leaf ディレクトリ・Hilbert タイル ID・MVT をバイト範囲の供給の上で読み、
+                                  窓に掛かるタイルだけを取る。`js/geo-import.js` が動的 import する
 gis-geopackage.js                 **GeoPackage の読み手** `window.IntMapGisGeopackage`（#R738）—
                                   `sniff` / `tables` / `read` / `refusals`。⚠ **依存を 1 つも足していない**
                                   ——SQLite の公開されたファイル形式（b-tree・varint・serial type・
@@ -347,6 +353,7 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
                                   ⚠ **欠損は NaN**（`GDAL_NODATA` を含む。0 で埋めない）。
                                   `read(i)` は扉で、開いただけでは画素を展開しない
 gis-ogcapi.js                     **URL の地物コレクション（OGC API – Features）を読む** `window.IntMapGisOgcApi`（`gis-atlas.js` が動的 import）—
+gis-fetch.js                       **GIS 読み手の共通 fetch** — まず直接読み、`no-cors` の探りで「ホストは応答するが CORS が無い」と**証明された**ときだけ Edge Function `gis-fetch` 経由（1 MiB チャンク・メモリ→Cache API（1 日）で再利用。⚠ CDN の共有コピーは無い＝実測 `CF-Cache-Status: DYNAMIC`）、401/403/409 なら署名者（`gis-remote.js signHref`）で署名して 1 回だけ読み直す。中継の拒否は中継のものとして名指す。`gis-geotiff.js`・`gis-ogcapi.js`・`gis-remote.js` が静的 import
 gis-http.js                        **遠隔読み込みが失敗した理由を、応答から読んで名指す**（CORS 不許可・サーバ自身の言葉・ログイン画面への転送）。`gis-geotiff.js` と `gis-ogcapi.js` が静的 import。
                                   `…/items?bbox&limit` を叩き（STAC の `…/search` も同じ形で、`datetime` を取り、各 asset を `asset:<key>` 列にする）、サーバ自身の `rel=next` をたどる。上限は発明しない（limit を述べなければ 1 ページ・
                                   続きは `next`）。`all` はサーバの「次が無い」という述べ方だけ。カーソルは同一オリジンの https だけ
@@ -724,6 +731,7 @@ night-side.js                     地球の夜側 window.IntMapNightSide
 night-lights.js                   夜間光がいつの絵かを決める唯一の場所 window.IntMapNightLights
 antimeridian-seam.js             世界ストリップの ±180° 端の黒い帯を測って埋める唯一の場所（夜間光の raster 層と夜側のモザイクが使う）
 world-base.js                     全球衛星ベース window.IntMapWorldBase
+world-floor-tile.js              全球衛星ベースの 1 タイルを切り出す関数（メインと衛星 worker が同じものを使う）
 satellite.js                      衛星画像コントローラ
 sat-proto.js                      衛星タイルの imapsat:// スキーム
 solid3d.js                        地図の上に立つ閉じた立体
@@ -1215,6 +1223,7 @@ atlas-turn-results.js             **1つの操作は、返信の中で1ブロッ
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
+atlas-table.js                    **調べた値の行 → データセット**（`data.table`）。位置の列を読み、単位は呼び出し側が述べたものだけを運び、位置の無い行は行のまま数える（純関数）。
 atlas-state.js                    アプリの状態をデータとして持つ（#R318）。各サブシステムが provider を登録し、
                                   モデル向けの文章はそこから派生する。ターン台帳（目標・計画・結果・objectId）
 atlas-evidence.js                 Atlas — 証拠レジストリ（#R350）。ソースが入ってよい唯一の入口。URL の正規化と
@@ -1325,7 +1334,7 @@ world-flows-core.js               その事実の全部（純粋なモジュー�
 evidence-graph.js               **数値の出自の長期グラフ**（純粋）— 元の事実（source・版は追記）と IntMap/AI が作った派生（derived・入力の版と計算を固定）を分け、`trace`／`impact`／`staleness`／`wouldStale` で元データ〜回答の数値を遡り、更新の影響先を調べる。
 evidence-graph-record.js        Evidence Graph の記録係 — GIS データセット（`bindGis`）と Atlas 回答の数値（`recordAnswer`、`graphRef` 経由で GIS 鎖へ）。モデルが書いた URL/id は節を作らない。
 world-graph-store.js            **永続の世界グラフの読み口**（遅延・純粋）— Supabase の `world_graph_*`（対象・型付きの辺・値）を、世界オブジェクトの索引と同じ型
-                                  （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `find` / `near`）。結ぶのは識別子（`ids`）で綴りではない。
+                                  （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `findPersisted` / `nearPersisted` / `freshness`〔フィードの最終確認〕）。結ぶのは識別子（`ids`）で綴りではない。
                                   データベースが答えなかったことは `unavailable` / `failed` で返し、空のグラフとは区別する。能力 `research.object` / `research.related` が読む
 card-clearance.js                 カードが覆わない部分に地図を収める余白（fitBounds の padding）。js/news-story.js と js/quake-history.js も同じ規則を閉包に持つ
 aftershock.js                     **余震の見通し**のカードと地図——M5 以上の地震について、今後 1 日〜1 年に各規模の余震が起きる確率と
@@ -2102,11 +2111,11 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全23本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（70本）。本番変更は必ずここを通す
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全25本をここに宣言する
+  migrations/*.sql                DB の唯一の設計図（71本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
-  functions/<name>/index.ts       Edge Functions（23本。一覧と各本の役割は Architecture.md §6.2。
+  functions/<name>/index.ts       Edge Functions（25本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /
@@ -2117,12 +2126,12 @@ supabase/
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
-                                  fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
+                                  fetch-relay-policy.js / gis-fetch-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
                                   correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /
                                   place-watch.js〔見守る場所の判定——近さ・強さ・新しさ。今はページだけが読む。将来のサーバー評価が同じ規則を使うためここに置く〕 /
-                                  supabase-keys.js〔project key の唯一の読み手。新しい secret・publishable key を優先し、旧 JWT はフォールバック〕 /
+                                  supabase-keys.js〔project key の唯一の読み手。新しい secret・publishable key を優先し、旧 JWT はフォールバック〕 / world-graph-ports.js〔港湾の面の取り込み＝Wikidata・UN/LOCODE・Eurostat を識別子で結ぶ純粋なモジュール。Edge Function と node の検査が同じものを読む〕 /
                                   great-circle.js〔大円距離 `haversineKm`（地球半径 6,371 km）の唯一の実装。ページと関数が import する〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
