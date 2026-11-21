@@ -17,10 +17,10 @@
  *  of its own (`now` is passed).
  * ==========================================================================*/
 
-export const TABLE = 'atlas_knowledge_claims';
+const TABLE = 'atlas_knowledge_claims';
 const PAGE = 500, BATCH = 50;
 
-export function rowFromClaim(userId, c) {
+function rowFromClaim(userId, c) {
   const payload = JSON.parse(JSON.stringify(c)); delete payload.syncedAt;
   return {
     user_id: userId, id: c.id,

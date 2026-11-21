@@ -167,7 +167,7 @@ export function readSkill(id, opts) {
    skill whose items are unavailable is still readable — Atlas may use what remains, ask the reader, or say what is missing.
    deps: { capabilities, probes: { layer(ref), dataset(ref), runtime(ref), login(), network() } }  — each probe returns
    { available:boolean|null, reason?, label? } (sync or async); null means it cannot tell. */
-export var NEED_KINDS = ['layer', 'dataset', 'runtime', 'login'];
+var NEED_KINDS = ['layer', 'dataset', 'runtime', 'login'];
 
 export function needsOf(skill) { return (skill && Array.isArray(skill.needs) ? skill.needs : []).map(function (n) { return { kind: n.kind, ref: n.ref || '', for: n.for || '', why: n.why || null }; }); }
 

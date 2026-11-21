@@ -168,7 +168,7 @@ export function standing(c, now) {
 /** every key a claim answers to: its refs, and the keys the graph gave them when it was kept */
 export const claimKeys = (c) => { const out = new Set(arr(c.refs)); Object.keys(c.refKeys || {}).forEach((r) => arr(c.refKeys[r]).forEach((k) => out.add(k))); return out; };
 
-export const OUTCOMES = ['confirmed', 'changed', 'gone', 'unreachable'];
+const OUTCOMES = ['confirmed', 'changed', 'gone', 'unreachable'];
 /** record what was seen when a claim's sources were read again. results: [{ source: url | dataset label, outcome, note? }]
     → { claim, applied[], rejected[] } (a new object; nothing is mutated). confirmed / changed must say what the source says now (note). */
 export function applyRecheck(claim, results, now) {

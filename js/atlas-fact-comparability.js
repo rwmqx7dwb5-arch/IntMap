@@ -59,7 +59,7 @@ export function normalizeMeaning(f, timeMs) {
 export const periodKey = (f, timeMs) => (f.period ? [timeMs(f.period.from), timeMs(f.period.to)].map((x) => (x == null ? '' : x)).join('~') : '');
 
 /** the facets a fact does not state, read from the semantic layer through the column it names → { facet: {value, from} } */
-export function fromSemantics(f, semantics) {
+function fromSemantics(f, semantics) {
   const got = {};
   if (!f.column || !semantics || typeof semantics.describe !== 'function') return got;
   let d = null; try { d = semantics.describe(f.column.dataset); } catch (_) { d = null; }

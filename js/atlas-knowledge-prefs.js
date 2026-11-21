@@ -17,7 +17,7 @@ import { IntMapLang } from './lang-registry.js';
 const T = IntMapLang.pickArgs();
 
 export const PREF_KEY = 'intmap_atlas_knowledge';
-export const SELECT_ID = 'setting-atlas-knowledge';
+const SELECT_ID = 'setting-atlas-knowledge';
 const NOTE_ID = 'setting-atlas-knowledge-note';
 
 export function readKnowledgePrefs() {
@@ -31,7 +31,7 @@ export function writeKnowledgePrefs(next) {
 export const modeOf = (p) => (p.sync ? 'account' : p.on ? 'device' : 'off');
 
 /* the Settings row. `host` is the page's own state (the signed-in user). Wired once the page's DOM is ready (the call below). */
-export function wireKnowledgeSettings(doc, host) {
+function wireKnowledgeSettings(doc, host) {
   host = host || (() => (typeof window !== 'undefined' && typeof window.IntMapKnowledgeHost === 'function' ? window.IntMapKnowledgeHost() : null));
   const sel = doc && doc.getElementById ? doc.getElementById(SELECT_ID) : null;
   if (!sel) return null;
