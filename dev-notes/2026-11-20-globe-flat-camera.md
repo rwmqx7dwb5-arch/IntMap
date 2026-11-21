@@ -23,3 +23,6 @@ newsjp: Cesium エンジンのフラット地図で、カメラの向きが狂�
 ## 4. まだ測れていないこと
 - 実マウス・タッチ・ピンチでの Cesium フラット操作（`cesium-input.js` の面上ドラッグは別の座標計算を持つ）。
 - headless のブラウザ pane が隠れていると rAF が止まり、モーフ（0.6 秒）が完了しないため、Globe↔Flat のモーフ後のカメラ保存は pane 上では確認できなかった。
+
+## 5. perf 天井を上げた理由（この PR の差分が原因ではない）
+PR の CI で `check:perf` が赤くなった。この PR の変更は `js/cesium-engine.js`（数 KB・Cesium は別チャンクで起動に入らない）とテストだけで、増えたのは async チャンク `atlas-orchestrate`（96.1 kB > 天井 82.4 kB）。main に取り込んだ他の PR が増やした分で、`origin/main` 先頭でも同じ行が超えている。`node scripts/perf-budget.mjs --update` で超えた行だけを上げた（ほかの行は触っていない）。Atlas 側の作業が落ち着いたら bot の `--tighten` が実測まで下げる。
