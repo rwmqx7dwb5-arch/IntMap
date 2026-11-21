@@ -20,7 +20,7 @@ newsjp: Atlasの調査ジョブが、タブを閉じてもサーバ側で走り�
 
 | 層 | もの |
 |---|---|
-| DB | `supabase/migrations/20261120130000_atlas_durable_jobs.sql`（`atlas_jobs` / `atlas_job_tasks` / `atlas_job_events` / `atlas_jobs_control`、RLS は所有者の select のみ、runner 用 RPC は service_role 限定、取消・変更の 2 RPC は所有者限定、30 日で削除、pg_cron の毎分 tick と日次の掃除） |
+| DB | `supabase/migrations/20261120140000_atlas_durable_jobs.sql`（`atlas_jobs` / `atlas_job_tasks` / `atlas_job_events` / `atlas_jobs_control`、RLS は所有者の select のみ、runner 用 RPC は service_role 限定、取消・変更の 2 RPC は所有者限定、30 日で削除、pg_cron の毎分 tick と日次の掃除） |
 | サーバ | `supabase/functions/atlas-jobs/index.ts`（`create`／`tick`）、`_shared/atlas-job-runner.js`（リース・checkpoint・予約と決済・波の実行・結論） |
 | 検査 | `tests/atlas-durable-jobs-checks.test.mjs`（15 件）、`supabase/tests/52_atlas_durable_jobs_test.sql`（pgTAP） |
 

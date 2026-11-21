@@ -2,7 +2,7 @@
 //  IntMap · atlas-jobs  —  Supabase Edge Function (Deno)
 // ----------------------------------------------------------------------------
 //  Durable Atlas jobs: long research that keeps running after the tab is closed (atlas-durable-jobs).
-//  docs/architecture/05-ai.md «永続ジョブ». Tables and the state machine: supabase/migrations/20261120130000_atlas_durable_jobs.sql.
+//  docs/architecture/05-ai.md «永続ジョブ». Tables and the state machine: supabase/migrations/20261120140000_atlas_durable_jobs.sql.
 //
 //    op "create"  (a signed-in reader)  { idem, title?, tasks:[contract] } → { jobId, created, status }
 //         plans the contracts (js/atlas-job-core.js planJob, the rules research.delegate applies), creates the job
@@ -26,7 +26,7 @@
 //            ATLAS_JOBS=off               (optional stop switch, beside the table's)
 //            ATLAS_JOBS_GLOBAL_PER_DAY=<n>  (optional — moves the project-wide request ceiling below)
 //            AI_PROVIDER / AI_MODEL / ATLAS_DELEGATION_MODEL / OPENAI_API_KEY  (the same as ai-proxy; only openai is run here)
-//  pg_cron: 20261120130000_atlas_durable_jobs.sql schedules the tick; its secret is vault `atlas_jobs_secret` (= ATLAS_JOBS_SECRET).
+//  pg_cron: 20261120140000_atlas_durable_jobs.sql schedules the tick; its secret is vault `atlas_jobs_secret` (= ATLAS_JOBS_SECRET).
 // ============================================================================
 
 import { createClient } from "@supabase/supabase-js";   // pinned in this function's deno.json
