@@ -394,7 +394,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
       ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
-      ["news.history","newsHistory","pastEvents,eventArchive,facilityTimeline,eventsSince,newsArchive","data","none","","explanation","read","none","","","external"],
+      ["data.imageryInfo","imageryInfo","imageryAt,photoDate,satelliteDate,imagerySource","data","none","","explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
