@@ -103,7 +103,7 @@ import { makeGisLayers } from './gis-layers.js';
 import { makeGisSources } from './gis-sources.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
-import { makeGisPipeline } from './gis-pipeline.js';
+import { makeGisRecipe } from './gis-recipe.js';
 import { makeGisForecast } from './gis-forecast.js';
 import { makeComputeSandbox } from './compute-sandbox.js';
 import { makeGisPanel } from './gis-panel.js';
@@ -197,7 +197,7 @@ function mount(scope, HOST, CONTEXT) {
   const ops = makeGisOps();
   const project = makeGisProject();
   /* (pipeline) an analysis as a re-runnable recipe over a region; (forecast) external model output as datasets. Both read window.* at call time. */
-  const pipeline = makeGisPipeline();
+  const pipeline = makeGisRecipe();
   const forecast = makeGisForecast();
   /* (compute-sandbox) Python on the datasets, in a Worker that holds nothing of the page. Mounted here
      because its inputs and outputs ARE this registry's records, and because js/gis-project.js reads

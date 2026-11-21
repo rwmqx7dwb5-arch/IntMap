@@ -430,7 +430,7 @@ export function makeGisProject() {
         datasets: steps.length,
         steps,
       };
-      /* (pipeline) RECIPES THAT ARE NOT A DATASET — js/gis-pipeline.js's definitions (which step uses the
+      /* (pipeline) RECIPES THAT ARE NOT A DATASET — js/gis-recipe.js's definitions (which step uses the
          region, which feeds which). Plain JSON, opaque here: this file stores and returns it and states
          nothing about what it means. Absent when the caller passed none, so a record written without it
          is exactly what it was. */
@@ -637,7 +637,7 @@ export function makeGisProject() {
              the difference between 「開けた」 and 「開けたものが保存した日と同じ」. */
           engineChanged, engineUnknown, declarationsRefused,
           savedVersion: (typeof rec.version === 'number' && isFinite(rec.version)) ? rec.version : null,
-          /* (pipeline) handed back as saved, for js/gis-pipeline.js restore(); null when none was stored */
+          /* (pipeline) handed back as saved, for js/gis-recipe.js restore(); null when none was stored */
           extras: (rec.extras && typeof rec.extras === 'object') ? rec.extras : null,
         }));
       });

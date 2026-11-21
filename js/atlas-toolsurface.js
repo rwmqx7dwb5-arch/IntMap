@@ -55,7 +55,7 @@ export function makeAtlasToolSurface(deps) {
        arrive with their arguments already typed rather than through a generic envelope. */
     var CORE = [
       { name: 'map_view', cap: 'view.flyTo', desc: 'Move the map to a place or coordinate.' },
-      { name: 'highlight', cap: 'map.highlight', desc: 'Colour named countries or regions on the map.' },
+      { name: 'highlight', cap: 'map.highlight', desc: 'Colour countries or regions on the map. To colour MANY countries by CATEGORY in one call — a result, a rank, a bloc, a table you have read — pass `groups`: [{label, targets:[{name, iso3}, …]}, …], one entry per category, each drawn in its own colour with a legend. Every country you can name needs its ISO 3166-1 alpha-3 code: you read the table and map the names to codes; IntMap validates each code against the real borders and reports the ones it could not place, so a whole table is ONE call, not one per category.' },
       /* ══ ⚠⚠⚠ (#R511) THE MAP AS ONE ACT OF EXPLANATION, IN CORE. Every entry above operates ONE
          thing — a camera, a colour, a layer. Explaining with a map is several at once: the places,
          numbered; what each one is in the answer; the flows between them; the shaded region; one

@@ -64,6 +64,7 @@ export const PARKABLE_CAPS = Object.freeze(new Set([
   "data.compareStats",
   "data.countryCard",
   "data.heritage",
+  "data.imageryInfo",
   "data.query",
   "data.rank",
   "data.ratio",
