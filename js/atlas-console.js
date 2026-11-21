@@ -1214,6 +1214,7 @@ export function atlasConsole(HOST){
        inspected) the moment Atlas loads rather than only once a question is in flight. */
     let _turnRunAction=null;
     const TOOLS=makeAtlasToolSurface({ capabilities:CAPS, schemas:SCHEMAS,
+      external:{ has:()=>{ try{ const v=JSON.parse(localStorage.getItem('intmap.mcp.servers.v1')||'[]'); return Array.isArray(v)&&v.length>0; }catch(_){ return false; } }, search:(q)=>import('./atlas-mcp-client.js').then(m=>m.pageClient(HOST).searchTools(q)) },   /* (mcp-client) the reader's MCP servers — a lazy chunk, loaded only once a server is registered */
       runAction:(action,turn)=>(_turnRunAction?_turnRunAction(action,turn):Promise.resolve({ ok:false, error:'no_turn', message:'no turn is running' })) });
     /* ---- (#R43) CHOROPLETH — genuine "data + map" combined output ("データやレイヤー、地図を組み合わせた複合的な
        処理＆出力"): shade EVERY country by a metric on a YlGnBu ramp (log-scaled for skewed metrics) with a legend,
