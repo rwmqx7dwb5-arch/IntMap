@@ -23,7 +23,7 @@
 /* ── Sentinel-2 L2A のシーン分類（SCL）。ESA Sen2Cor の分類表（0 欠測／1 飽和・欠陥／2 暗部／3 雲の影／4 植生／5 裸地／
    6 水／7 未分類／8 雲（中）／9 雲（高）／10 薄い巻雲／11 雪氷）。画素を落とすのは、地表が見えていない 1・3・8・9・10 と欠測 0。
    2（地形の影）・7・11 は地表が見えているので残す（雪氷は変化の原因として意味があり、回答が雪氷の画素数を別に述べる）。 */
-export const SCL = Object.freeze({ NODATA: 0, SATURATED: 1, DARK: 2, SHADOW: 3, VEG: 4, BARE: 5, WATER: 6, UNCLASSIFIED: 7, CLOUD_MED: 8, CLOUD_HIGH: 9, CIRRUS: 10, SNOW: 11 });
+const SCL = Object.freeze({ NODATA: 0, SATURATED: 1, DARK: 2, SHADOW: 3, VEG: 4, BARE: 5, WATER: 6, UNCLASSIFIED: 7, CLOUD_MED: 8, CLOUD_HIGH: 9, CIRRUS: 10, SNOW: 11 });
 const SCL_BLOCKED = new Set([0, 1, 3, 8, 9, 10]);
 export function sclUsable(v) { return Number.isFinite(v) && !SCL_BLOCKED.has(v); }
 
@@ -62,7 +62,7 @@ function quantile(sorted, q) {
   const p = (sorted.length - 1) * q, lo = Math.floor(p), hi = Math.ceil(p);
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (p - lo);
 }
-export function robustStats(values) {
+function robustStats(values) {
   const v = []; for (let i = 0; i < values.length; i++) if (Number.isFinite(values[i])) v.push(values[i]);
   v.sort((x, y) => x - y);
   const median = quantile(v, 0.5);
@@ -71,7 +71,7 @@ export function robustStats(values) {
   return { n: v.length, median, mad, sigma: 1.4826 * mad, p05: quantile(v, 0.05), p95: quantile(v, 0.95) };
 }
 /* 閾値は分布から: 中央値 ± k·σ（σ = 1.4826·MAD は正規分布での標準偏差に一致する尺度）。 */
-export function robustThresholds(stats, k) {
+function robustThresholds(stats, k) {
   const kk = Number.isFinite(k) && k > 0 ? k : 3;
   return { k: kk, low: stats.median - kk * stats.sigma, high: stats.median + kk * stats.sigma };
 }

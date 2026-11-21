@@ -174,7 +174,7 @@ export async function measureCells(cells, countFor, opt) {
    opt.cellKm     格子の 1 辺（既定 2）／ opt.maxCells 走査する区画の数（既定 48。超えた分は truncated と total で述べる）
    戻り値の coverage が「どこまで見たか」で、類似の主張はその範囲の中のことだけ。 */
 /* 基準の区画と、比べる区画の一覧を決める（OSM 版と埋め込み版が同じ区画の取り方を使う: 取り方が違えば「似ている」の母集団が違ってしまう）。 */
-export function planCells(opt) {
+function planCells(opt) {
   const cellKm = +opt.cellKm > 0 ? +opt.cellKm : 2, maxCells = +opt.maxCells > 0 ? +opt.maxCells : 48;
   const q = opt.query || {};
   const qBox = q.bbox || squareAround(q.lat, q.lng, +q.sideKm > 0 ? +q.sideKm : cellKm);
