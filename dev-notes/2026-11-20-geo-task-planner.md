@@ -35,3 +35,5 @@ newsjp: Atlas が地理空間分析を、対象地域・時点・必要データ
 ## 4. 予算
 
 - `atlas-console` の async chunk の天井を 1061.2 kB → 1072.5 kB に上げた(`tests/perf-baseline.json`)。`js/atlas-geoplan.js` が `js/atlas-plan.js` から静的に読まれ、`plan` 道具の `geo` の説明文もこの chunk に載るため。得たもの: 地理空間分析の構造化と実行前の存在確認。`plan` を使わない会話にも読み込まれるが、遅延 import にすると main から chunk が分かれる前例(lazy-import-splits-main)があるため採らない。
+
+- main 取り込み後の再測定(同じ build で 3 行): `atlas-console` 1073.1 → 1080.1 kB、`atlas-cap-runs` 903.4 → 909.0 kB、`async.gzip` 4807.7 → 4833.8 kB に天井を上げた。`atlas-console` は上の `atlas-geoplan` 分に、main 側の `atlas-table-to-countries` の追加が重なった分。`atlas-cap-runs`・`async.gzip` は main 側の進行(2 つの atlas 変更と world-3d 系)との合算で、この PR 単独の寄与は分けていない。
