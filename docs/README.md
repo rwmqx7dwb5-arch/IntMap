@@ -71,6 +71,7 @@
 | [`NEWS-EVENTS.md`](NEWS-EVENTS.md) | ニュースを触る人 | **出来事 (Event) 単位のニュース基盤** — Source Registry・データモデル・クラスタリング・カテゴリ・翻訳・保持期間・運用者の修正経路（Architecture §4 の Event 側の本体） | 収集元・クラスタリング・カテゴリ・保持・翻訳を変えたとき |
 | [`ELECTIONS.md`](ELECTIONS.md) | 選挙を触る人 | **国政選挙レイヤーの正本** — データの契約（選挙区と結果の結合・議席の算術）、パックの作り方、境界の「版」が選挙と別である理由、出典とライセンス（表記が再配布の条件になっているもの）、採らなかったデータ源と理由。⚠ 米大統領選レイヤー（`dl-uselect`）は別のレイヤー | 選挙・データ源・契約・収録範囲を変えたとき |
 | [`COMPANIES.md`](COMPANIES.md) | 企業を触る人 | **企業アトラス** — 企業プロフィールと世界の実在拠点のデータモデル・出典規約・生成パイプライン・カバレッジ判定（`js/companies.js` の curated 表とライブ時価総額は**そちらが正本**で、ここはその上に載る恒久データ） | 収集元・スキーマ・施設種別の語彙・カバレッジ段位を変えたとき |
+| [`SITING.md`](SITING.md) | 産業立地・企業拠点の比較を触る人 | **産業立地データの正本** — 電力・産業用地・労働力・研究・規制を行政区域ごとに公開統計の実数で並べる `data/siting-<国>.json` と `siting.compare`、載せていないもの（gaps）、世界への広げ方 |
 | [`AVIATION-ARCHITECTURE.md`](AVIATION-ARCHITECTURE.md) | 航空を触る人 | **航空プラットフォームの構造** — 1回だけ上流を読んで全利用者へ配る配信、IMAV/1 ワイヤ形式、Worker と typed-array ストア、GPU 描画、障害時、巻き戻し | 航空の取得・配信・描画の仕組みを変えたとき |
 | [`SHIPS-ARCHITECTURE.md`](SHIPS-ARCHITECTURE.md) | 船舶を触る人 | **船舶プラットフォームの構造** — サーバー側の鍵1本と共有スナップショット、鍵不要の Digitraffic と全球の aisstream、1回の呼び出しの中で開閉する WebSocket、BYOK を残した理由 | 船舶の取得・配信・描画の仕組みを変えたとき |
 | [`AVIATION-DATA-SOURCES.md`](AVIATION-DATA-SOURCES.md) | 同上 | **航空データ源の正本** — どの provider が何を返すか、ライセンスと利用条件、実測した上限、採用しなかった候補と理由、出典表記の義務 | provider を足す・変える・条件が変わったとき |

@@ -25,6 +25,7 @@ import caps_research from './atlas-cap-research.js';
 import caps_routing from './atlas-cap-routing.js';
 import caps_settings from './atlas-cap-settings.js';
 import caps_sim from './atlas-cap-sim.js';
+import caps_siting from './atlas-cap-siting.js';
 import caps_system from './atlas-cap-system.js';
 import caps_time from './atlas-cap-time.js';
 import caps_ui from './atlas-cap-ui.js';
@@ -55,6 +56,7 @@ export const CAPABILITY_MODULES = {
   "routing": caps_routing,
   "settings": caps_settings,
   "sim": caps_sim,
+  "siting": caps_siting,
   "system": caps_system,
   "time": caps_time,
   "ui": caps_ui,
