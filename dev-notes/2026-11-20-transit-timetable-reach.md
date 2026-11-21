@@ -46,3 +46,6 @@ Transitous を既定オフにしたので、**ルクセンブルク以外の公�
 - dist.assets: 21686.9 kB から 21810.2 kB へ。公共交通の時刻表（ルクセンブルクの GTFS を機械が組み直した束）が増えた分。 main 取り込み後の全体ビルドで測り直し、`perf-budget --update` が上げた行は下の通りで、他は書いていない。起動時に読まれる分ではなく、遅延して読まれる配布物。
 
 - 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
+
+## 10. perf の天井（2 回目・main 取り込み後）
+`async.raw` +約 79 kB、`async.gzip` +約 39 kB、`atlas-cap-runs` +約 10 kB。いずれも取り込んだ main 側（Atlas の知識層・盤面など）で増えた分が主で、この PR の分は遅延チャンク `transit-planner`（約 15 kB）と Atlas の経路・到達圏の説明文。起動時に取得するものは増えない。
