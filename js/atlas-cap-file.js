@@ -13,8 +13,8 @@ import { str, int, list, one, obj } from './atlas-caps.js';
 import { FORMATS } from './file-doc.js';
 
 /* the DOM half is its own on-demand chunk, reached by a literal dynamic import (no window global, no lazy-registry entry: nothing else needs it) and built once */
-let maker = null;
-const fileMaker = async () => maker || (maker = (await import('./atlas-file-make.js')).atlasFile());
+const held = {};   /* a const holder, not a top-level let: the kernel's copy of this module (scripts/atlas-caps-split.mjs) must not carry state */
+const fileMaker = async () => held.maker || (held.maker = (await import('./atlas-file-make.js')).atlasFile());
 const kb = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
 
 export default [
