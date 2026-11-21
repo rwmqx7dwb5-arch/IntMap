@@ -30,6 +30,16 @@ export const BACKFILL = Object.freeze({
 });
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+/** Delete every `<!-- … -->` span by position (no pattern that a removal could re-assemble); an unclosed one runs to the end. */
+function dropComments(s) {
+  let out = s, i;
+  while ((i = out.indexOf('<!--')) >= 0) {
+    const j = out.indexOf('-->', i + 4);
+    out = out.slice(0, i) + (j < 0 ? '' : out.slice(j + 3));
+  }
+  return out;
+}
+
 /** Remove wiki markup, leaving the sentence a reader would read. */
 export function plainText(s) {
   /* Repeat until nothing changes, then drop every angle bracket: one pass can leave a tag the first removal assembled
@@ -37,7 +47,7 @@ export function plainText(s) {
   let t = String(s || ''), prev;
   do {
     prev = t;
-    t = t
+    t = dropComments(t)
       .replace(/<ref[^>]*>[\s\S]*?<\/ref>|<ref[^>]*\/>/g, '')
       .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/\[https?:\/\/[^\s\]]+(?:\s+[^\]]*)?\]/g, '')          /* external links: kept separately as sources */
