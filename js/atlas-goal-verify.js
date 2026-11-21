@@ -50,10 +50,16 @@ export function makeGoalVerify(deps) {
     }
     try {
       const rec = recordOf(ctx.results);
+      /* (evidence-graph) WHAT THE ARTEFACTS HOLD, observed by code (js/evidence-graph-deliver.js): rows and how many carry each value,
+         which origins stand behind each figure. Facts only — the reader of them is this verifier, which also sees the request.
+         A throw is «not observed»: the record goes out without the section. */
+      let held = [];
+      if (typeof d.observe === 'function') { try { const o = d.observe(ctx); if (Array.isArray(o)) held = o.map(String).filter(Boolean); } catch (_) { held = []; } }
       const prompt = 'REQUEST (the reader\'s own words):\n' + clip(ctx.request, 1500)
         + '\n\nRECORD OF THIS TURN\nAnswer mode declared: ' + (ctx.answerMode || '(none)')
         + '\nOutputs actually produced on the map or in the reply: ' + ((ctx.produced && ctx.produced.length) ? ctx.produced.join(', ') : 'none')
         + '\nOperations run:\n' + (rec.length ? rec.map((x) => '- ' + x).join('\n') : '- none')
+        + (held.length ? '\n\nWHAT THE OUTPUTS ACTUALLY HOLD (counted by IntMap, not by the model):\n' + held.map((x) => '- ' + x).join('\n') : '')
         + '\n\nANSWER WRITTEN:\n' + clip(ctx.text, 1500);
       const env = await d.ask(prompt, d.system || '', null, { task: 'atlas_verify', webMode: 'off', turnId: d.turnId || undefined, signal: ctl ? ctl.signal : (d.signal || undefined) });
       const data = env && env.data;
@@ -68,4 +74,5 @@ export const GOAL_VERIFY_RULES = 'You are given a REQUEST and the RECORD of what
   + 'record does NOT cover — something the reader asked to be shown, drawn, compared, computed or stated that no produced output, '
   + 'completed operation or written answer provides. Return STRICT JSON ONLY: {"unmet":[{"need":"<the part of the request, in the reader\'s words>","why":"<what the record shows or lacks>"}]}. '
   + 'An answer that is a plain statement of fact to a plain question is complete; do not ask for a drawing the request did not ask for. '
+  + 'An operation that returned ok is not a part met: when WHAT THE OUTPUTS ACTUALLY HOLD shows a table or figure that does not hold what the request asked for (e.g. values present for 8 of the 20 rows asked, a figure no record states, several citations that are one origin), that part is NOT met — say what is missing. '
   + 'A part covered by the written answer itself is met. Return {"unmet":[]} when everything is covered. Judge only the record you are given.';
