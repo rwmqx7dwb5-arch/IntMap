@@ -451,6 +451,19 @@ export function routing(HOST){
        coordinates and mangled polylines). Direct fetch with one backoff retry; requests register in the module abort
        pool so a newer route request cancels them. _planItins._fail carries WHY it failed (§2.5 error taxonomy). */
     async function _planItins(from,to,opts){ opts=opts||{};
+      /* ══ THE PUBLISHERS' OWN TIMETABLES FIRST (js/transit-planner.js · js/transit-feeds.js) ════════
+         IntMap is a commercial service and Transitous' usage policy forbids commercial use, so the
+         planner reads timetables whose OWN licence permits it, compiled into data/transit-<id>.json. Where a
+         shipped feed covers both ends the answer comes from there and nothing leaves the browser.
+         Transitous is consulted only if js/transit-feeds.js's TRANSITOUS_FALLBACK says so (it does not:
+         it is false until Transitous agrees in writing). */
+      _planItins._own=null; _planItins._known=null;
+      try{ if(window.IntMapLazy){ await window.IntMapLazy.need('transitTimetable'); const TT=window.IntMapTransitTimetable;
+        if(TT&&TT.covers(from)&&TT.covers(to)){ const own=await TT.plan({from:from,to:to,time:opts.time,maxWalkM:opts.maxWalkM});
+          if(own&&own.ok){ _planItins._own=own; _planItins._fail=null; return own.itineraries; }
+          _planItins._fail=(own&&own.reason==='date-outside-window')?'timetable_window':'no_transit'; _planItins._ownWhy=own||null;
+          if(!TT.transitousFallback) return null; }
+        else if(TT&&!TT.transitousFallback){ _planItins._fail='no_open_timetable'; try{ _planItins._known=await TT.knownAt(from); }catch(_){ _planItins._known=null; } return null; } } }catch(_){}
       const when=(opts.time?new Date(opts.time):new Date()); const tISO=isFinite(when.getTime())?when.toISOString():new Date().toISOString();
       /* (#R184) 「フェリー、鉄道、徒歩区間の個別除外」 — MOTIS takes the transit modes it MAY use as an
          allow-list, so excluding one means sending the others. Verified against the live server: a
@@ -594,14 +607,18 @@ export function routing(HOST){
            (#R125) but intercity JAPAN gets the curated Shinkansen bridge above — real stations, published-timetable
            estimates — before we give up with an honest "no transit". */
         const fail=_planItins._fail||'no_transit';
-        if(fail==='no_transit'){ try{ const jr=await _jrPlan(from,to,opts); if(jr) return jr; }catch(_){} }
+        if(fail==='no_transit'||fail==='no_open_timetable'){ try{ const jr=await _jrPlan(from,to,opts); if(jr) return jr; }catch(_){} }
         /* (#R126) §2.5: provider outage/timeout/429 is NOT the same answer as "no transit here" */
-        return {ok:false,reason:'no-transit',status:fail}; }
+        return {ok:false,reason:'no-transit',status:fail,known:fail==='no_open_timetable'?_planItins._known:null}; }
       if(opts._rid&&opts._rid!==_reqSeq) return {ok:false,status:'cancelled'};   /* stale — a newer request superseded us; do not draw */
-      return _transitBuild(its,from,to); }
+      const _res=_transitBuild(its,from,to); const _own=_planItins._own;
+      if(_res&&_res.ok&&_own){ _res.provider='timetable'; _res.basis=_own.basis; _res.realtime=false; _res.timetable={feed:_own.feed,date:_own.date,tz:_own.tz,attribution:_own.attribution,borders:_own.borders,walkModel:_own.walkModel,stopChainShape:true}; }
+      _planItins._own=null; return _res; }
     function _buildItin(it){ const P=_P; const legOut=[], lines=[], stops=[];
         (it.legs||[]).forEach(l=>{ const col=_modeColor(l.mode), walk=/WALK|FOOT/i.test(l.mode)?1:0;
           let coords=null; try{ if(l.legGeometry&&l.legGeometry.points) coords=_decodePoly(l.legGeometry.points,l.legGeometry.precision||7); }catch(_){}
+          /* the own timetable has no shape file: its ride legs carry the stop-to-stop sequence the vehicle really serves (`stopTimes`), drawn through those stops */
+          if(!coords&&l.coords&&l.coords.length>1) coords=l.coords;
           /* (#R103) FIX "経路がアメリカ沖の大西洋に描画される": a CORS-proxied MOTIS response can mangle the encoded
              polyline → _decodePoly yields garbage coords (near 0,0 / wrong hemisphere). Validate the decoded geometry
              against the leg's OWN endpoints (which come as plain lat/lon, not encoded) and DISCARD it if any point is
