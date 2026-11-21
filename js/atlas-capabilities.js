@@ -395,6 +395,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
       ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
       ["data.imageryInfo","imageryInfo","imageryAt,photoDate,satelliteDate,imagerySource","data","none","","explanation","session","none","",""],
+      ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["ui.compose","dashboard","uiCompose","ui","none","","panel,explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
