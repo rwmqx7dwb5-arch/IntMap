@@ -64,4 +64,59 @@ export default [
       return R(true, note('✓ ' + esc(r.title) + ' — ' + L('restored', '復元しました')));
     },
   },
+  {
+    row: ['board.edit',                 'boardEdit',      'editBoard,editTable,editWorkspace,changeCell,setCell',        'panel',   'none',    'panel.board',            'panel,explanation',   'session', 'none',   '',         'board'],
+    ui: { none: '2026-11-21' },
+    doc: [
+      { in: 'board.edit', text: 'EDIT THE OPEN WORKSPACE (the same edits the reader makes in its table — one door): {"type":"boardEdit","op":"cells"|"addColumn"|"renameColumn"|"removeColumn"|"filter"|"undo"|"redo","id"?:boardId,"edits"?:[{"index"?:int(0-based row),"where"?:{"field":COL,"equals":value},"field":COL,"value":v}],"name"?:str,"value"?:v,"from"?:COL,"to"?:str,"widget"?:filterWidgetId,"field"?:COL,"values"?:[str],"min"?:num,"max"?:num,"clear"?:bool}. `cells` sets values (a `where` edits EVERY row whose column equals that value; a number column takes a number or the edit is refused); the table, chart, map and metrics redraw at once. `addColumn` adds a column to every row (then fill it with `cells`); `renameColumn` carries the widgets with it; `removeColumn` is refused while a widget is drawn from it. `filter` narrows every widget (a column with no filter widget works too); "clear":true lifts it. All of it is undoable (`undo`/`redo`). A table that is the RESULT of a GIS step is refused by name — change that step\'s parameter instead. Use after the reader says "change this value / add a column / filter to X", or to write your recalculation back into the workspace the reader is looking at. To see what the READER changed, call board.delta.\nいま開いているワークスペースを編集する(表でユーザーが行うのと同じ操作)。値の変更・列の追加/改名/削除・フィルタ・取り消し。表・グラフ・地図が即座に連動する。\n' },
+    ],
+    schema: () => ({ type: 'object', required: ['op'], properties: { op: one('cells', 'addColumn', 'renameColumn', 'removeColumn', 'filter', 'undo', 'redo'), id: str(),
+      edits: list({ type: 'object', required: ['field', 'value'], properties: { index: num(), where: obj(), field: str(), value: {} } }, 1, 500),
+      name: str(), value: {}, from: str(), to: str(), widget: str(), field: str(), values: list(str(), 1, 50), min: num(), max: num(), clear: { type: 'boolean' } } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, esc = K.esc, L = K.L;
+      await window.IntMapLazy.need('board');
+      const B = window.IntMapBoard, W = B && B.api(a.id); if (!W) return R(false, warn(L('No workspace is open to edit — open one first (board.compose or board.restore).', '編集できるワークスペースが開いていません。先に開いてください。')));
+      const out = (r, what) => (r && r.ok ? R(true, note('✓ ' + esc(what)), { board: { id: W.id, delta: W.delta(), history: W.history() } }) : R(false, warn(esc((r && r.text) || (r && r.why) || 'refused'))));
+      if (a.op === 'cells') {
+        const edits = [];
+        for (const e of a.edits || []) {
+          if (Number.isInteger(e.index)) { edits.push({ index: e.index, field: e.field, value: e.value }); continue; }
+          if (e.where && e.where.field) {
+            const hit = W.rows().map((r, i) => [i, (r.properties || {})[e.where.field]]).filter(([, v]) => String(v) === String(e.where.equals)).map(([i]) => i);
+            if (!hit.length) return R(false, warn(L('No row has ', '該当する行がありません: ') + esc(e.where.field) + ' = ' + esc(String(e.where.equals))));
+            hit.forEach((i) => edits.push({ index: i, field: e.field, value: e.value }));
+          } else return R(false, warn(L('Each edit needs an index or a where.', '各編集には index か where が必要です。')));
+        }
+        const r = W.setCells(edits); return out(r, L('Edited ' + edits.length + ' value(s)', edits.length + ' 件の値を編集しました'));
+      }
+      if (a.op === 'addColumn') return out(W.addColumn(a.name, a.value), L('Column added: ', '列を追加: ') + a.name);
+      if (a.op === 'renameColumn') return out(W.renameColumn(a.from, a.to), L('Renamed ', '名前を変更: ') + a.from + ' → ' + a.to);
+      if (a.op === 'removeColumn') return out(W.removeColumn(a.name), L('Removed column ', '列を削除: ') + a.name);
+      if (a.op === 'undo') return out(W.undo(), L('Undone', '元に戻しました'));
+      if (a.op === 'redo') return out(W.redo(), L('Redone', 'やり直しました'));
+      if (a.op === 'filter') {
+        if (!a.field) return R(false, warn(L('A filter needs a column (field).', 'フィルタには列 (field) が必要です。')));
+        const wid = a.widget || ('f_' + a.field);
+        if (a.clear) { W.setFilter(wid, null); return R(true, note('✓ ' + esc(L('Filter cleared: ', 'フィルタを解除: ') + a.field)), { board: { id: W.id, delta: W.delta() } }); }
+        const f = Array.isArray(a.values) && a.values.length ? { field: a.field, values: a.values.map(String) } : { field: a.field, min: a.min, max: a.max };
+        if (!(f.values) && f.min == null && f.max == null) return R(false, warn(L('A filter needs values, or min / max.', 'フィルタには values か min / max が必要です。')));
+        W.setFilter(wid, f); return R(true, note('✓ ' + esc(L('Filtered by ', 'フィルタ: ') + a.field)), { board: { id: W.id, delta: W.delta() } });
+      }
+      return R(false, warn(L('Unknown op.', '不明な op です。')));
+    },
+  },
+  {
+    row: ['board.delta',                'boardDelta',     'boardChanges,whatDidIChange,workspaceDiff',                    'panel',   'none',    '',                       'explanation',         'read',    'none',   '',         'board'],
+    ui: { none: '2026-11-21' },
+    doc: [
+      { in: 'board.delta', text: 'WHAT THE READER CHANGED in the open workspace: {"type":"boardDelta","id"?:boardId}. Returns the edited values (row, column, before → after), added/removed columns, active filters, the time window and the selected rows, measured against the data the workspace was opened with. Call it when the reader says "I edited it — redo / update the analysis", then continue FROM those numbers (recalculate, and write the result back with board.edit or answer with board.compose).\nユーザーがワークスペースで何を変えたか(編集値・追加列・フィルタ・時間窓・選択)を返す。「編集したので再分析して」と言われたらこれを呼び、その数値から続ける。\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { id: str() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, esc = K.esc, L = K.L;
+      await window.IntMapLazy.need('board');
+      const B = window.IntMapBoard, W = B && B.api(a && a.id); if (!W) return R(false, warn(L('No workspace is open.', 'ワークスペースが開いていません。')));
+      const d = W.delta(), text = W.deltaText();
+      return R(true, note('✓ ' + esc(L(d.cells.length + ' edited value(s), ' + d.added.length + ' added and ' + d.removed.length + ' removed column(s)', '編集 ' + d.cells.length + ' 件・列の追加 ' + d.added.length + '・削除 ' + d.removed.length))), { board: { id: W.id, delta: d, text, rows: W.rows().length } });
+    },
+  },
 ];

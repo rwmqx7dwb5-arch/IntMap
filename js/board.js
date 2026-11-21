@@ -30,6 +30,7 @@ import { normalise, columnsOf, rowsToFeatures, yearOf, MAX_ROWS } from './board-
 import { attachMap, followClock, bboxOf } from './board-link.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapTime } from './chronos.js';
+import { parseCell, columnUses, renameInSpec, snapshotRows, diffRows, deltaText, editRefusal } from './board-edit.js';
 
 const DB = 'intmap-board', STORE = 'boards';
 const ROW_CAP = 200;      /* table rows DRAWN at once; the footer states the real count, so nothing is silently dropped */
@@ -97,6 +98,15 @@ export function board(HOST) {
       '.bd-panel .bd-tl{font-size:11px;color:var(--text-meta,#888)}',
       '.bd-panel .bd-tv{font-size:20px;font-weight:650;letter-spacing:-.01em}',
       '.bd-panel .bd-foot{padding:8px 16px 12px;font-size:12px;color:var(--text-meta,#888)}',
+      '.bd-panel .bd-editbar{display:flex;justify-content:flex-end;margin-bottom:6px}',
+      '.bd-panel .bd-edittools{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}',
+      '.bd-panel .bd-in,.bd-panel .bd-cell{min-height:30px;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:8px;background:var(--card-bg,#fff);color:inherit;font:inherit;font-size:13px;padding:0 8px}',
+      '.bd-panel .bd-cell{width:100%;min-width:64px;box-sizing:border-box;border-radius:6px;min-height:26px}',
+      '.bd-panel .bd-cell.bad,.bd-panel .bd-editmsg.bad{color:var(--danger,#d70015)}',
+      '.bd-panel .bd-btn:disabled{opacity:.45;cursor:default}',
+      '.bd-panel .bd-saved{margin:0 12px 6px}',
+      '.bd-panel .bd-savedrow{display:flex;gap:6px;margin:4px 0}',
+      '.bd-panel .bd-savedrow .bd-btn:first-child{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '@media (max-width:640px){.bd-panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:62vh;border-radius:20px 20px 0 0;padding-bottom:var(--safe-bottom,0px)}}',
     ].join('\n');
     d.head.appendChild(s);
@@ -111,12 +121,17 @@ export function board(HOST) {
       let feats; try { feats = ds.features(); } catch (e) { return { ok: false, why: (e && e.why) || 'dataset-unreadable' }; }
       return { ok: true, rows: feats, datasetId: ds.id };
     }
-    const feats = rowsToFeatures(spec.data.rows, spec.data.lngField, spec.data.latField);
-    /* inline rows are registered so GIS ops and the map see what the board sees; an id already taken by an earlier open of the same board is reused, not re-added */
+    let feats = rowsToFeatures(spec.data.rows, spec.data.lngField, spec.data.latField);
+    /* inline rows are registered so GIS ops, the map and EDITS see what the board sees. ⚠ An id left by an earlier open of the same board (a restore) is REPLACED, not reused: the saved rows are the truth, and a registry copy that still held last session's edits would answer an edit at the wrong row. The registry hands its features back as the same array, so the board reads THOSE rows from here on. */
     let datasetId = null;
     if (D && D.add) {
       const want = 'board-' + spec.boardId;
-      try { if (D.has && D.has(want)) datasetId = want; else { const r = D.add({ id: want, title: spec.title, features: feats, provenance: { kind: 'board', source: spec.source } }); datasetId = r && r.id; } } catch (_) { datasetId = null; }
+      try {
+        if (D.has && D.has(want)) D.remove(want);
+        const r = D.add({ id: want, title: spec.title, features: feats, provenance: { kind: 'board', source: spec.source } });
+        datasetId = r && r.id;
+        const ds = datasetId && D.get(datasetId); if (ds) feats = ds.features();
+      } catch (_) { datasetId = null; }
     }
     return { ok: true, rows: feats, datasetId };
   }
@@ -126,20 +141,64 @@ export function board(HOST) {
   const numeric = (rows, f) => rows.map((r) => Number(r.properties && r.properties[f])).filter(Number.isFinite);
 
   function wTable(w, B) {
-    const card = el('div', 'bd-card'), wrap = el('div', 'bd-scroll'), tbl = el('table'), meta = el('div', 'bd-meta');
-    wrap.appendChild(tbl); card.append(wrap, meta);
-    const cols = () => (w.columns && w.columns.length ? w.columns : columnsOf(B.rows).slice(0, 6));
-    tbl.addEventListener('click', (e) => { const tr = e.target.closest && e.target.closest('tr[data-i]'); if (tr) B.state.toggle(Number(tr.dataset.i), w.id); });
-    tbl.addEventListener('keydown', (e) => { const tr = e.target.closest && e.target.closest('tr[data-i]'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); B.state.toggle(Number(tr.dataset.i), w.id); } });
-    return { el: card, update() {
-      const vis = B.vis(), sel = new Set(B.state.get().selection), c = cols();
+    const card = el('div', 'bd-card'), bar = el('div', 'bd-editbar'), wrap = el('div', 'bd-scroll'), tbl = el('table'), tools = el('div', 'bd-edittools'), meta = el('div', 'bd-meta'), msg = el('div', 'bd-meta bd-editmsg');
+    const toggle = el('button', 'bd-btn', L('Edit', '編集')); toggle.type = 'button'; toggle.dataset.act = 'edit'; toggle.setAttribute('aria-pressed', 'false');
+    bar.appendChild(toggle);
+    wrap.appendChild(tbl); card.append(bar, wrap, tools, meta, msg);
+    const cols = () => { const have = new Set(columnsOf(B.rows)); return (w.columns && w.columns.length ? w.columns : columnsOf(B.rows).slice(0, 6)).filter((k) => have.has(k)); };
+    const say = (r, okText) => { msg.textContent = r && r.ok ? (okText || '') : (r && r.text) || ''; msg.classList.toggle('bad', !(r && r.ok)); };
+    tbl.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('input')) return; const tr = e.target.closest && e.target.closest('tr[data-i]'); if (tr) B.state.toggle(Number(tr.dataset.i), w.id); });
+    tbl.addEventListener('keydown', (e) => { if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') { e.target.value = e.target.defaultValue; e.target.blur(); } return; } const tr = e.target.closest && e.target.closest('tr[data-i]'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); B.state.toggle(Number(tr.dataset.i), w.id); } });
+    /* a cell commits when it loses focus (Enter / tab / click away); Escape puts the old value back. The write goes through B.setCells, so the chart, the map, the metrics and Atlas all see the same row */
+    tbl.addEventListener('change', (e) => {
+      const inp = e.target; if (!inp || inp.tagName !== 'INPUT' || !inp.dataset.f) return;
+      const r = B.setCells([{ index: Number(inp.dataset.i), field: inp.dataset.f, value: inp.value }]);
+      if (!r.ok) { inp.value = inp.defaultValue; inp.classList.add('bad'); } setTimeout(update, 0); say(r, L('Saved to the data · ', 'データに反映 · ') + B.label(Number(inp.dataset.i)) + ' / ' + inp.dataset.f);
+    });
+    const buildTools = () => {
+      tools.textContent = '';
+      if (!B.editing) { tools.hidden = true; return; }
+      tools.hidden = false;
+      const can = B.can(), h = B.history();
+      const btn = (act, text, fn, off) => { const b = el('button', 'bd-btn', text); b.type = 'button'; b.dataset.act = act; b.disabled = !!off; b.onclick = fn; return b; };
+      const sel = el('select', 'bd-in'); sel.dataset.act = 'column'; sel.setAttribute('aria-label', L('Column', '列'));
+      columnsOf(B.rows).forEach((k) => { const o = el('option', null, k); o.value = k; sel.appendChild(o); });
+      const nm = el('input', 'bd-in'); nm.placeholder = L('New column name', '新しい列名'); nm.dataset.act = 'colname'; nm.setAttribute('aria-label', L('New column name', '新しい列名'));
+      tools.append(
+        btn('undo', L('Undo', '元に戻す'), () => say(B.undo(), L('Undone', '元に戻しました')), !h.undo),
+        btn('redo', L('Redo', 'やり直す'), () => say(B.redo(), L('Redone', 'やり直しました')), !h.redo),
+        sel, nm,
+        btn('addcol', L('Add column', '列を追加'), () => say(B.addColumn(nm.value), L('Column added', '列を追加しました')), false),
+        btn('rencol', L('Rename', '名前変更'), () => say(B.renameColumn(sel.value, nm.value), L('Renamed', '名前を変えました')), false),
+        btn('delcol', L('Remove', '削除'), () => say(B.removeColumn(sel.value), L('Removed', '削除しました')), false));
+      if (!can.ok) { say(can); }
+    };
+    toggle.onclick = () => { B.editing = !B.editing; update(); };
+    function update() {
+      const vis = B.vis(), sel = new Set(B.state.get().selection), c = cols(), ed = !!B.editing && B.can().ok;
+      toggle.setAttribute('aria-pressed', B.editing ? 'true' : 'false'); toggle.classList.toggle('on', !!B.editing);
+      toggle.textContent = B.editing ? L('Done', '完了') : L('Edit', '編集');
+      /* rebuilt only when it is not being typed in: a repaint under the caret would eat the reader's keystrokes */
+      const typing = card.contains(doc().activeElement) && doc().activeElement.tagName === 'INPUT';
+      if (typing) return;
       tbl.textContent = '';
       const hr = el('tr'); c.forEach((k) => hr.appendChild(el('th', null, k))); const th = el('thead'); th.appendChild(hr); tbl.appendChild(th);
       const tb = el('tbody');
-      vis.slice(0, ROW_CAP).forEach((i) => { const tr = el('tr', sel.has(i) ? 'sel' : ''); tr.dataset.i = i; tr.tabIndex = 0; c.forEach((k) => tr.appendChild(el('td', null, cellText(B.rows[i].properties[k])))); tb.appendChild(tr); });
+      vis.slice(0, ROW_CAP).forEach((i) => {
+        const tr = el('tr', sel.has(i) ? 'sel' : ''); tr.dataset.i = i; tr.tabIndex = 0;
+        c.forEach((k) => {
+          const td = el('td'); const v = B.rows[i].properties[k];
+          if (ed) { const inp = el('input', 'bd-cell'); inp.value = cellText(v); inp.defaultValue = inp.value; inp.dataset.i = i; inp.dataset.f = k; inp.setAttribute('aria-label', B.label(i) + ' / ' + k); td.appendChild(inp); }
+          else td.textContent = cellText(v);
+          tr.appendChild(td);
+        });
+        tb.appendChild(tr);
+      });
       tbl.appendChild(tb);
+      buildTools();
       meta.textContent = vis.length > ROW_CAP ? L('Showing ' + ROW_CAP + ' of ' + vis.length + ' rows', vis.length + ' 行中 ' + ROW_CAP + ' 行を表示') : vis.length + L(' rows', ' 行');
-    } };
+    }
+    return { el: card, update };
   }
 
   function wChart(w, B) {
@@ -388,31 +447,99 @@ export function board(HOST) {
     const spec = res.spec; spec.boardId = boardId;
     const root = el('div', 'bd-panel'); root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', spec.title); root.dataset.boardId = boardId;
     const head = el('div', 'bd-head'), title = el('div', 'bd-title', spec.title), save = el('button', 'bd-btn pri', L('Save', '保存')), x = el('button', 'bd-btn', '×');
-    save.type = x.type = 'button'; x.setAttribute('aria-label', L('Close', '閉じる'));
-    head.append(title, save, x);
+    const redo = el('button', 'bd-btn', L('Ask Atlas to redo', 'Atlas で再分析')), saved = el('button', 'bd-btn', L('Saved workspaces', '保存済み'));
+    save.type = x.type = redo.type = saved.type = 'button'; x.setAttribute('aria-label', L('Close', '閉じる'));
+    redo.dataset.act = 'reanalyze'; saved.dataset.act = 'saved';
+    head.append(title, saved, redo, save, x);
     const body = el('div', 'bd-body'), foot = el('div', 'bd-foot');
     root.append(head, body, foot);
     const timeField = spec.data.timeField || null;
     const B = { id: boardId, spec, rows: got.rows, datasetId: got.datasetId, state: createBoardState(opts.state), root, foot, widgets: [], off: [], mapLink: null, onMapLink: null,
+      base: Array.isArray(opts.base) ? opts.base : snapshotRows(got.rows), rn: { undo: [], redo: [] }, editMsg: '',
       yearOf: timeField ? (row) => yearOf(row && row.properties ? row.properties[timeField] : undefined) : null,
       vis() { return B.state.visible(B.rows, B.yearOf); },
       /* the link to IntMap's real map (js/board-link.js). Attaching is a reader action (the map widget's button) or the spec's `link:true`; both end here */
       attach() { if (B.mapLink) return { attached: true }; const r = attachMap(B, { GE: IntMapGeoEngine }); if (r.attached) { B.mapLink = r; refresh(B); } return r; },
       detach() { if (B.mapLink) { B.mapLink.detach(); B.mapLink = null; refresh(B); } } };
+    /* ── EDITING. The writes are IntMapData's (js/gis-datasets.js: each batch checked whole, each undoable, dependents marked stale);
+       this is the board's side of them. The same methods answer the reader's table and Atlas's `board.edit` capability, so there is one way to edit. ── */
+        const refuse = (why, detail) => ({ ok: false, why, detail, text: editRefusal(why, detail, L) });
+    const done = (r) => (r && r.ok ? r : refuse(r && r.why, r && r.detail));
+    const dsApi = () => { const D = DATA(); return D && B.datasetId && D.editable ? D : null; };
+    B.can = () => { const D = dsApi(); if (!D) return refuse('no-dataset'); const r = D.editable(B.datasetId); return r.ok ? { ok: true } : refuse(r.why, r.detail); };
+    B.label = (i) => { const p = (B.rows[i] && B.rows[i].properties) || {}; const k = ['name', 'title', 'label', 'id', 'country', 'ref'].find((c) => p[c] != null && p[c] !== ''); return k ? String(p[k]) : '#' + (i + 1); };
+    B.cellsOf = (field) => B.rows.map((r) => (r.properties || {})[field]);
+    /** setCells([{index, field, value}]) — a typed string is read by the column's own type (a number column takes a number, or the edit is refused) */
+    B.setCells = (edits) => {
+      const D = dsApi(); if (!D) return refuse('no-dataset');
+      const plan = [];
+      for (const e of edits || []) {
+        const v = typeof e.value === 'string' ? parseCell(e.value, B.cellsOf(e.field)) : { ok: true, value: e.value };
+        if (!v.ok) return refuse(v.why, { value: v.value, field: e.field });
+        plan.push({ index: e.index, field: e.field, value: v.value });
+      }
+      const r = D.editValues(B.datasetId, plan);
+      if (r.ok && plan.some((p) => B.spec.widgets.some((w) => w.kind === 'filter' && w.field === p.field))) B.rebuild();
+      return done(r);
+    };
+    const reflect = (fn) => { const r = fn(); if (r && r.ok) B.rebuild(); return done(r); };
+    B.addColumn = (name, value) => { const D = dsApi(); if (!D) return refuse('no-dataset'); return reflect(() => { const r = D.addField(B.datasetId, String(name || '').trim(), value == null ? null : value); if (r.ok) B.spec.widgets.forEach((w) => { if (w.kind === 'table' && w.columns && w.columns.length && w.columns.length < 12) w.columns.push(r.field && r.field.name || String(name).trim()); }); return r; }); };
+    B.renameColumn = (from, to) => {
+      const D = dsApi(); if (!D) return refuse('no-dataset');
+      to = String(to || '').trim();
+      return reflect(() => {
+        const r = D.renameField(B.datasetId, from, to);
+        if (r.ok) { B.carry(from, to); B.rn.undo.push({ from, to }); B.rn.redo.length = 0; }
+        return r;
+      });
+    };
+    /* a rename carries the widgets and the filters that read the column; undo/redo of a rename carries them back */
+    B.carry = (from, to) => {
+      const ns = renameInSpec(B.spec, from, to);
+      Object.assign(B.spec.data, ns.data); B.spec.widgets.forEach((w, i) => Object.assign(w, ns.widgets[i]));
+      const fs = B.state.get().filters; Object.keys(fs).forEach((k) => { if (fs[k].field === from) B.state.setFilter(k, { ...fs[k], field: to }, 'edit'); });
+    };
+    B.removeColumn = (name) => {
+      const D = dsApi(); if (!D) return refuse('no-dataset');
+      const uses = columnUses(B.spec, name); if (uses.length) return refuse('column-in-use', { field: name, uses });
+      return reflect(() => D.removeField(B.datasetId, name));
+    };
+    B.undo = () => B.step('undo'); B.redo = () => B.step('redo');
+    B.step = (dir) => {
+      const D = dsApi(); if (!D) return refuse('no-dataset');
+      return reflect(() => {
+        const r = D[dir](B.datasetId);
+        if (r.ok && r.applied === 'rename-field') {
+          const from = dir === 'undo' ? B.rn.undo : B.rn.redo, to = dir === 'undo' ? B.rn.redo : B.rn.undo, m = from.pop();
+          if (m) { dir === 'undo' ? B.carry(m.to, m.from) : B.carry(m.from, m.to); to.push(m); }
+        }
+        return r;
+      });
+    };
+    B.history = () => { const D = DATA(); const h = D && D.history && B.datasetId ? D.history(B.datasetId) : null; return h ? { undo: h.undo, redo: h.redo } : { undo: 0, redo: 0 }; };
+    /** what differs from the rows the board was opened with, plus filters/time/selection: the thing Atlas continues from */
+    B.delta = () => diffRows(B.base, B.rows);
+    B.deltaText = () => deltaText({ delta: B.delta(), state: B.state.get(), title: spec.title, label: B.label, L });
     let lastSec = null, group = body;
     const secName = (s) => L(s, ({ Map: '地図', Data: 'データ', Analysis: '分析', Time: '時間', Objects: 'オブジェクト', Evidence: '根拠', Execution: '実行' })[s] || s);
     /* on a phone the conversation stays the main thing: sections are folded, and only the first (the data) is open; the reader opens the rest as they need them */
     const fold = narrow();
-    spec.widgets.forEach((w) => {
-      const made = MAKERS[w.kind](w, B);
-      if (w.section !== lastSec) {
-        lastSec = w.section;
-        if (fold) { group = el('details', 'bd-group'); group.appendChild(el('summary', 'bd-sec', secName(w.section))); if (!body.firstChild) group.open = true; body.appendChild(group); }
-        else { group = body; body.appendChild(el('div', 'bd-sec', secName(w.section))); }
-      }
-      if (w.title && w.kind !== 'chart') made.el.insertBefore(el('div', 'bd-meta', w.title), made.el.firstChild);
-      group.appendChild(made.el); B.widgets.push(made);
-    });
+    function build() {
+      lastSec = null; group = body;
+      spec.widgets.forEach((w) => {
+        const made = MAKERS[w.kind](w, B);
+        if (w.section !== lastSec) {
+          lastSec = w.section;
+          if (fold) { group = el('details', 'bd-group'); group.appendChild(el('summary', 'bd-sec', secName(w.section))); if (!body.firstChild) group.open = true; body.appendChild(group); }
+          else { group = body; body.appendChild(el('div', 'bd-sec', secName(w.section))); }
+        }
+        if (w.title && w.kind !== 'chart') made.el.insertBefore(el('div', 'bd-meta', w.title), made.el.firstChild);
+        group.appendChild(made.el); B.widgets.push(made);
+      });
+    }
+    /* a column was added / renamed: widgets that cache their controls (a filter's chips, a range's bounds) are drawn again from the spec */
+    B.rebuild = () => { body.textContent = ''; B.widgets = []; build(); refresh(B); };
+    build();
     B.off.push(B.state.subscribe((e) => refresh(B, e.source)));
     /* a time widget makes the board follow the master clock and lead it */
     const tw = spec.widgets.find((w) => w.kind === 'time');
@@ -427,6 +554,26 @@ export function board(HOST) {
       refresh(B); if (B.mapLink) B.mapLink.repaint();
     }));
     x.onclick = () => closeOne(B);
+    /* "redo the analysis": what the reader changed here is handed to Atlas as one message, and Atlas continues from it — the loop edit → re-analyse needs no retyping */
+    B.reanalyze = async () => {
+      const text = B.deltaText();
+      try { const A = window.IntMapAtlas; if (!A) return { ok: false, why: 'atlas-unavailable', text }; await A.ensure(); await A.call('open'); A.call('run', text); return { ok: true, text }; }
+      catch (e) { return { ok: false, why: 'atlas-unavailable', text }; }
+    };
+    redo.onclick = async () => { const r = await B.reanalyze(); redo.textContent = r.ok ? L('Sent to Atlas', 'Atlas に送りました') : L('Atlas is not available', 'Atlas を開けません'); setTimeout(() => { redo.textContent = L('Ask Atlas to redo', 'Atlas で再分析'); }, 1800); };
+    saved.onclick = async () => {
+      const old = root.querySelector('.bd-saved'); if (old) { old.remove(); return; }
+      const l = await list(), pop = el('div', 'bd-saved bd-card'); pop.dataset.saved = 'list';
+      if (!l.ok || !l.boards.length) pop.appendChild(el('div', 'bd-meta', l.ok ? L('No saved workspaces yet.', '保存済みのワークスペースはまだありません。') : L('Saved workspaces are unavailable here.', 'ここでは保存済みを読めません。')));
+      else l.boards.forEach((b) => {
+        const row = el('div', 'bd-savedrow'), open1 = el('button', 'bd-btn', b.title), del = el('button', 'bd-btn', L('Delete', '削除'));
+        open1.type = del.type = 'button'; open1.dataset.id = b.id; del.dataset.id = b.id; open1.title = new Date(b.savedAt).toLocaleString(IntMapLang.locale(HOST.lang, 'en-GB'));
+        open1.onclick = async () => { pop.remove(); await restore(b.id); };
+        del.onclick = async () => { await remove(b.id); row.remove(); };
+        row.append(open1, del); pop.appendChild(row);
+      });
+      root.insertBefore(pop, body);
+    };
     save.onclick = async () => { const r = await saveOne(B); save.textContent = r.ok ? L('Board saved', 'ボードを保存しました') : L('Not saved', '保存できません'); setTimeout(() => { save.textContent = L('Save', '保存'); }, 1800); };
     /* a window per board on a desktop: offset so they don't hide each other, raised on press, moved by the title */
     const n = boards.size;
@@ -443,7 +590,7 @@ export function board(HOST) {
     if (!B) return { ok: false, why: 'no-board-open' };
     /* an inline board saves the rows it HOLDS now (a job's partial rows included), bounded by MAX_ROWS */
     const spec = B.spec.data.rows ? { ...B.spec, data: { ...B.spec.data, rows: B.rows.slice(0, MAX_ROWS).map((r) => ({ ...r.properties })) } } : B.spec;
-    const rec = { id: B.id, title: B.spec.title, spec, state: B.state.snapshot(), savedAt: Date.now() };
+    const rec = { id: B.id, title: B.spec.title, spec, state: B.state.snapshot(), base: B.base, savedAt: Date.now() };
     try { await tx('readwrite', (s) => s.put(rec)); return { ok: true, id: B.id }; } catch (e) { return { ok: false, why: 'storage-unavailable', detail: { message: e && e.message } }; }
   }
   const saveCurrent = () => saveOne(cur);
@@ -485,9 +632,9 @@ export function board(HOST) {
     if (!hit) return { ok: false, why: 'not-found', boards: l.boards };
     let rec; try { rec = await tx('readonly', (s) => s.get(hit.id)); } catch (e) { return { ok: false, why: 'storage-unavailable' }; }
     if (!rec) return { ok: false, why: 'not-found' };
-    return open({ title: rec.spec.title, source: rec.spec.source, data: rec.spec.data, widgets: rec.spec.widgets }, { id: rec.id, state: rec.state });
+    return open({ title: rec.spec.title, source: rec.spec.source, data: rec.spec.data, widgets: rec.spec.widgets }, { id: rec.id, state: rec.state, base: rec.base });
   }
   async function remove(id) { try { await tx('readwrite', (s) => s.delete(id)); return { ok: true }; } catch (e) { return { ok: false, why: 'storage-unavailable' }; } }
 
-  return { open, feed, rows: (id) => { const B = id ? boards.get(id) : cur; return B ? B.rows : []; }, stage, openStaged, close, save: saveCurrent, list, restore, remove, state: (id) => { const B = id ? boards.get(id) : cur; return B ? B.state : null; }, isOpen: () => boards.size > 0, ids: () => [...boards.keys()] };
+  return { open, feed, api: (id) => { const B = id ? boards.get(id) : cur; return B ? { can: B.can, setCells: B.setCells, addColumn: B.addColumn, renameColumn: B.renameColumn, removeColumn: B.removeColumn, undo: B.undo, redo: B.redo, delta: B.delta, deltaText: B.deltaText, reanalyze: B.reanalyze, history: B.history, rows: () => B.rows, setFilter: (wid, f) => B.state.setFilter(wid, f, 'api'), spec: () => B.spec, id: B.id } : null; }, rows: (id) => { const B = id ? boards.get(id) : cur; return B ? B.rows : []; }, stage, openStaged, close, save: saveCurrent, list, restore, remove, state: (id) => { const B = id ? boards.get(id) : cur; return B ? B.state : null; }, isOpen: () => boards.size > 0, ids: () => [...boards.keys()] };
 }
