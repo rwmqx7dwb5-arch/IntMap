@@ -53,9 +53,10 @@ export function plainText(s) {
       .replace(/\[https?:\/\/[^\s\]]+(?:\s+[^\]]*)?\]/g, '')          /* external links: kept separately as sources */
       .replace(/\{\{[^{}]*\}\}/g, '')
       .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1')
-      .replace(/<[^<>]*>/g, '');
+      .replace(/<[^<>]*>/g, '')
+      .replace(/[<>]/g, '');   /* last step of every pass: nothing a pass returns can still hold a tag opener */
   } while (t !== prev);
-  return t.replace(/[<>]/g, '').replace(/'{2,}/g, '').replace(/\s+/g, ' ').replace(/\s+([.,;:])/g, '$1').trim();
+  return t.replace(/'{2,}/g, '').replace(/\s+/g, ' ').replace(/\s+([.,;:])/g, '$1').trim();
 }
 
 /** The first article a heading line links to — the running story's canonical title. */
