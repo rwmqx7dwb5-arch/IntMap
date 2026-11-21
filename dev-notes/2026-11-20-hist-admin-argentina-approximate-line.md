@@ -42,3 +42,5 @@ OHM のタイル側の線（`js/hist-scale.js` の `ohmFilter` / `inForce`）は
 
 - async チャンク「border-provenance-card」: 29.4 kB から 31.5 kB へ。アルゼンチン 1884〜1955 年の州を足した分、線の根拠の台帳（data/border-provenance-gaps.json の系統）が増えた。
 - dist.total: 1542452.9 kB から 1551329.1 kB へ。復元した行政区分の輪郭（border-detail の hist-admin-recon 集合）と border-coast が増えた分。いずれも利用者が歴史地図で州の境界を見るために必要な実データで、起動時に読まれる分ではない。main 取り込み後の全体ビルドで測り直し、`perf-budget --update` が上げたのはこの 2 行だけ。
+
+- 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
