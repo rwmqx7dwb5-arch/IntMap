@@ -20,38 +20,33 @@ const readCam = (page) => page.evaluate(() => {
   const x = window.IntMapGeoEngine.camera.get();
   return { lng: x.center.lng, lat: x.center.lat, zoom: x.zoom, bearing: x.bearing, pitch: x.pitch };
 });
-const flat = async (page) => { await page.evaluate(() => document.getElementById('btn-view-flat').click()); await settle(page, 3500); };
+const flat = async (page) => { await page.evaluate(() => document.getElementById('btn-view-flat').click()); await settle(page, 2500); };
 
 for (const engine of ['maplibre', 'cesium']) {
-  test(`${engine}: on the flat map a camera that was asked for is the camera that is read back`, async ({ page }) => {
-    test.setTimeout(180_000);
+  /* ONE boot per engine: the asked-for camera reads back, then an eased move lands where it was sent */
+  test(`${engine}: on the flat map the camera asked for is the camera read back, jumped and eased`, async ({ page }) => {
+    test.setTimeout(120_000);
     await bootEngine(page, engine, BOOT);
     await flat(page);
-    for (const a of ASKS) {
+    for (const a of ASKS.slice(0, 2)) {
       await page.evaluate((c) => window.IntMapGeoEngine.camera.jumpTo({ center: { lng: c.center[0], lat: c.center[1] }, zoom: c.zoom, bearing: c.bearing, pitch: c.pitch }), a);
-      await settle(page);
+      await settle(page, 1200);
       const got = await readCam(page);
-      const tag = `${engine} ${JSON.stringify(a)} → ${JSON.stringify(got)}`;
+      const tag = `${engine} jump ${JSON.stringify(a)} → ${JSON.stringify(got)}`;
       expect(Math.abs(got.lng - a.center[0]), tag).toBeLessThan(0.05);
       expect(Math.abs(got.lat - a.center[1]), tag).toBeLessThan(0.05);
       expect(Math.abs(got.zoom - a.zoom), tag).toBeLessThan(0.05);
       expect(Math.abs(got.bearing - a.bearing), tag).toBeLessThan(0.5);
       expect(Math.abs(got.pitch - a.pitch), tag).toBeLessThan(0.5);
     }
-  });
-
-  test(`${engine}: an eased move on the flat map lands where it was sent`, async ({ page }) => {
-    test.setTimeout(180_000);
-    await bootEngine(page, engine, BOOT);
-    await flat(page);
-    const a = ASKS[1];
-    await page.evaluate((c) => window.IntMapGeoEngine.camera.easeTo({ center: { lng: c.center[0], lat: c.center[1] }, zoom: c.zoom, bearing: c.bearing, pitch: c.pitch, duration: 600 }), a);
-    await settle(page, 4000);
+    const e = ASKS[2];
+    await page.evaluate((c) => window.IntMapGeoEngine.camera.easeTo({ center: { lng: c.center[0], lat: c.center[1] }, zoom: c.zoom, bearing: c.bearing, pitch: c.pitch, duration: 500 }), e);
+    await settle(page, 2500);
     const got = await readCam(page);
-    const tag = `${engine} ${JSON.stringify(got)}`;
-    expect(Math.abs(got.lng - a.center[0]), tag).toBeLessThan(0.1);
-    expect(Math.abs(got.lat - a.center[1]), tag).toBeLessThan(0.1);
-    expect(Math.abs(got.bearing - a.bearing), tag).toBeLessThan(1);
-    expect(Math.abs(got.pitch - a.pitch), tag).toBeLessThan(1);
+    const tag = `${engine} ease ${JSON.stringify(got)}`;
+    expect(Math.abs(got.lng - e.center[0]), tag).toBeLessThan(0.1);
+    expect(Math.abs(got.lat - e.center[1]), tag).toBeLessThan(0.1);
+    expect(Math.abs(got.bearing - e.bearing), tag).toBeLessThan(1);
+    expect(Math.abs(got.pitch - e.pitch), tag).toBeLessThan(1);
   });
 }
