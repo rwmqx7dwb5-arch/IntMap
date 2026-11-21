@@ -74,6 +74,46 @@
             {
               "id": "map.measure",
               "tool": "map_measure"
+            },
+            {
+              "id": "map.compose",
+              "tool": "compose_map"
+            },
+            {
+              "id": "data.gis",
+              "tool": "data_gis"
+            },
+            {
+              "id": "time.territoryChange",
+              "tool": "time_territoryChange"
+            },
+            {
+              "id": "time.textMap",
+              "tool": "time_textMap"
+            },
+            {
+              "id": "map.tool",
+              "tool": "map_tool"
+            },
+            {
+              "id": "map.shakemap",
+              "tool": "map_shakemap"
+            },
+            {
+              "id": "map.clear",
+              "tool": "map_clear"
+            },
+            {
+              "id": "research.analyze",
+              "tool": "research"
+            },
+            {
+              "id": "time.changes",
+              "tool": "time_changes"
+            },
+            {
+              "id": "geo.ml",
+              "tool": "geo_ml"
             }
           ]
         }
