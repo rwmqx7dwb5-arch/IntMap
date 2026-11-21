@@ -342,6 +342,18 @@
     "data/weekly-earth.json"
    ]
   },
+  "https://geographiclib.sourceforge.io/C++/doc/geoid.html": {
+   "state": "observed",
+   "etag": "W/\"82e2-6438f5e22fec0\"",
+   "lastModified": "Fri, 14 Nov 2025 15:08:19 GMT",
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-21T00:44:15.618Z",
+   "subjects": [
+    "data/geoid-egm2008.bin.gz"
+   ]
+  },
   "https://ghoapi.azureedge.net/api/": {
    "state": "unprobeable",
    "why": "server-states-no-validator",

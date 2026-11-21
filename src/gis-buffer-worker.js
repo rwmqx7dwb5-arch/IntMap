@@ -17,13 +17,16 @@ import './gis-buffer-worker-window.js';
 import '../js/geodesy.js';
 import PC from 'polygon-clipping';
 import { makeGisGeometry } from '../js/gis-geometry.js';
-import { pack, transferables } from '../js/gis-packed.js';
+import { pack, unpackAll, transferables } from '../js/gis-packed.js';
 
 const geomKernel = makeGisGeometry().worker.kernelFunction();
 const deps = { clipper: PC, geodesy: self.IntMapGeodesy };
+let kernel = null;
+let heldKey = null, held = null;
 
 self.onmessage = (ev) => {
   const m = ev.data || {};
+  if (m.id && m.relate) { relate(m); return; }
   if (!m.id || !Array.isArray(m.geometries)) return;
   try {
     const results = new Array(m.geometries.length);
@@ -53,3 +56,20 @@ self.onmessage = (ev) => {
     self.postMessage({ id: m.id, ok: false, why: 'worker-threw', message: String((e && e.message) || e) });
   }
 };
+
+/* One block of a spatial join's pairs. The predicate is the page kernel's own relateBlock (js/gis-geometry.js) — this
+   function unpacks, calls it, and hands the hits back; it decides nothing. */
+function relate(m) {
+  try {
+    const q = m.relate;
+    if (q.rights) { held = unpackAll(q.rights); heldKey = q.rightsKey; }
+    if (heldKey == null || q.rightsKey !== heldKey) { self.postMessage({ id: m.id, ok: false, why: 'rights-missing' }); return; }
+    if (!kernel) kernel = geomKernel(deps);
+    const lefts = unpackAll(q.lefts), n = lefts.length, cands = new Array(n);
+    for (let i = 0; i < n; i++) cands[i] = Array.from(q.candIdx.subarray(q.candOff[i], q.candOff[i + 1]));
+    const out = kernel.relateBlock(held, lefts, cands, q.predicate, q.maxKm);
+    self.postMessage({ id: m.id, ok: true, relate: out });
+  } catch (e) {
+    self.postMessage({ id: m.id, ok: false, why: 'worker-threw', message: String((e && e.message) || e) });
+  }
+}

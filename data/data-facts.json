@@ -376,6 +376,20 @@
     "period"
    ]
   },
+  "data/geoid-egm2008.bin.gz": {
+   "cadence": "static",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
   "data/hdi-series.json": {
    "cadence": "P1Y",
    "cadenceBasis": "stated",

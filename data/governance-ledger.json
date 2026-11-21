@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-11-20T16:27:21.202Z",
+    "generatedAt": "2026-11-21T00:44:46.123Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -615,6 +615,34 @@
     },
     {
       "subject": "data/gazetteer-world",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "origin.builtBy",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "record-absent"
+    },
+    {
+      "subject": "data/geoid-egm2008",
       "facets": [
         "origin.publisher",
         "origin.url",
@@ -3129,6 +3157,26 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-geoid-grid.mjs → data/geoid-egm2008.bin.gz",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-hdi.mjs → data/hdi-series.json",
       "facets": [
         "origin.retrievedAt",
@@ -4879,8 +4927,8 @@
   "shardsWithoutIndex": [],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 226,
-    "undeclaredFacets": 3489,
+    "undeclared": 228,
+    "undeclaredFacets": 3525,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 0,
     "unreadableDeclaration": 0

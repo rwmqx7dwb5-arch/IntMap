@@ -2195,7 +2195,7 @@ function _redrawLocalGlyphs(m,cover){
     removeAircraftCloud(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _aircraft[id]; return true; },
     hasAircraftCloud(id){ const m=_m(); try{ return !!(m&&m.getLayer(id)); }catch(_){ return false; } },
     /* 3D Tiles: capability `tiles3d` is FALSE here — a flat-roofed fill-extrusion is not a streamed mesh, so these answer NO rather than approximating one. */
-    addTileset(){ return false; }, removeTileset(){ return false; }, setTilesetVisible(){ return false; }, hasTileset(){ return false; }, tilesetInfo(){ return null; },
+    addTileset(){ return false; }, removeTileset(){ return false; }, setTilesetVisible(){ return false; }, placeTileset(){ return false; }, hasTileset(){ return false; }, tilesetInfo(){ return null; },
     /* …and the SAME projection, on the CPU, for a whole array at once. `projectAltitude` above is the
        one-point form and builds a model matrix per call, which a hover over eleven thousand objects
        cannot afford. This takes the mercator/altitude triples the layer already holds and multiplies
@@ -2731,6 +2731,7 @@ function _redrawLocalGlyphs(m,cover){
       addTileset:(id,s)=>A().addTileset?A().addTileset(id,s):false,
       removeTileset:id=>A().removeTileset?A().removeTileset(id):false,
       setTilesetVisible:(id,on)=>A().setTilesetVisible?A().setTilesetVisible(id,on):false,
+      placeTileset:(id,o)=>A().placeTileset?A().placeTileset(id,o):false,
       hasTileset:id=>A().hasTileset?A().hasTileset(id):false,
       tilesetInfo:id=>A().tilesetInfo?A().tilesetInfo(id):null,
       hasAircraftCloud:id=>A().hasAircraftCloud?A().hasAircraftCloud(id):false,
