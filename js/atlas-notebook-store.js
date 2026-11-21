@@ -165,6 +165,8 @@ export function normalize(e) {
     provenance: arr(e.provenance).filter(obj).filter((p) => str(p.source, 400)).map((p) => ({ n: Math.max(0, Math.floor(+p.n) || 0), kind: str(p.kind, 12), what: str(p.what, 300), source: str(p.source, 400),
       licence: str(p.licence, 160), cite: str(p.cite, 800), url: /^https?:\/\//i.test(String(p.url || '')) ? str(p.url, 2000) : '', date: str(p.date, 32) })),
     credit: str(e.credit, 2000),
+    /* (evidence-graph) the lineage nodes this turn's answers rest on — ids code minted (js/evidence-graph-record.js), never model text */
+    evidenceRefs: arr(e.evidenceRefs).map((x) => str(x, 400)).filter(Boolean),
     note: str(e.note, 8000), followOf: e.followOf ? str(e.followOf, 80) : null, pinned: !!e.pinned,
     syncedAt: +e.syncedAt || 0,
   };
