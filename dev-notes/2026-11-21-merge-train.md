@@ -49,3 +49,9 @@ internal: 開発工程（CI の待ち行列と PR の着地）だけの変更で
 - **検索と監査が目録を 2 通りに読んでいた**: `js/atlas-capabilities.js` の `docBlocks` は、能力の説明の始まりが見つからないとき裸の `"<綴り>"` を探す。#1343 が `spatial-analysis` 節を長くして model.discover の `{"type":"modelDiscover"` が次の断片へ移ると、その予備の規則が data.gisRemote の `"action":"discover"|"search"|…` に当たり、残りの文を model.discover のものと読んだ（data.gisRemote は自分の説明のどの語でも 0 点）。引数の**名前**（`"show"?:`）を言及と読まない規則は 2026-10-13 からあったが、**値**（`:` の後・`|` の選択肢）は無く、監査（`scripts/atlas-capability-audit.mjs` の `marksOf`）には名前の規則すら無かった。⇒ `quotedIsArgument` を 1 つ置き、検索も監査もそれを呼ぶ（`tests/merge-train-checks.test.mjs` ⑥）。
 - **#1368 を降ろした**: 新しい `js/gis-engine-domain.js` が製品のどこからも import されていない（`audit-structure` ①）。#1368 自身の CI も赤。
 - **#1364 を降ろした**: ブラウザ全体の時間の天井 5,250 秒に対し、#1356（55 秒）と #1364（12 秒）が単独ではそれぞれ収まり、合わせると 5,258 秒。天井は上げずに時間を返す方針（`scripts/test-budget.mjs` の履歴）なので、#1364 は 8 秒を返してから次の列車に載せる。
+
+## 7. 3 周目: 起動予算の天井と、2 回数えられた数
+
+- **天井 6 行を merge 後の build で上げた**（`perf-budget.mjs --update`）。merge driver は両側が動かした量の行で main の値を取る（`intmap-clash=upstream`）ので、各 PR が理由を書いて上げた天井は列車の上で消え、合計で超える。上げ幅を、列車に載った PR が自分の branch で上げた幅の合計と突き合わせた: async.raw +676 kB（PR の合計 1,259 kB）・dist.assets +696 kB（1,205）・atlas-cap-runs +86 kB（127）・atlas-console +41 kB（65）は合計の内側。async.gzip +247 kB（220）と gis-core +20 kB（17）は合計を 27 kB と 3 kB 超える——前者は合わせた束の圧縮率、後者は main に先に入った #1289（gis-network）と列車の #1281（gis-semantics）が同じ chunk に同居した分。新しい機能を運ぶ遅延読み込みの chunk だけで、起動時に読むものは増えていない。
+- **同じ PR が main と列車の両方に入ると、`tokens` の driver はその増分を 2 回足す**（#1332・#1355・#1293 などが列車に載った後に元のセッションから単独で merge された）。plan(152) が 158 に、表の数 68 が 71 に、能力の数 270 が 272 になった。全部を実体へ戻した。同じ向きに動いた数が 1 回しか動かない（§5）のと鏡の形で、どちらも push 前の速い門が捕まえる。
+- ⇒ push 前の門に `check:testbudget` と build ＋ `check:perf` を足した（数分。CI は 1 時間）。
