@@ -107,12 +107,9 @@ const URL_OK = /^https?:\/\//i;
 /* a URL that starts an href goes through window.IntMapSafe.url (js/safe.js); with it absent (a node test) nothing becomes a link */
 const safeUrl = (u) => { try { return (typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.url) ? String(window.IntMapSafe.url(u) || '') : ''; } catch (_) { return ''; } };
 
-/* IntMapSafe.html when the page has it; a node test has no window, so the same five characters are escaped here */
-const escHtml = (s) => { try { if (typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.html) return String(window.IntMapSafe.html(s)); } catch (_) { /* fall through */ } return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); };
-
 /* renderJobCard(facts, { L, esc }) → HTML (the inside of a card; mountJobCards wraps it) */
 export function renderJobCard(f, h) {
-  const L = h.L, esc = escHtml;   /* the page's own escaper, not the caller's: a card is HTML built here, so the encoder is the one the taint gate can see */
+  const L = h.L, esc = (s) => globalThis.IntMapSafe.html(s);   /* the one encoder (js/safe-html.js), not the caller's: a card is HTML built here */
   const word = (st) => ({ queued: L('waiting', '待機中'), running: L('running', '実行中'), done: L('done', '完了'), partial: L('partly', '一部'), failed: L('failed', '失敗'), refused: L('refused', '拒否'), cancelled: L('cancelled', '取消') })[st] || st;
   const pct = f.tasksTotal ? Math.round((f.tasksEnded / f.tasksTotal) * 100) : 0;
   const rows = f.tasks.map((t) => {

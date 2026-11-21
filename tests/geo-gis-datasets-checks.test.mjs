@@ -249,6 +249,7 @@ describe('§ #R729 · the GIS core (registry, chain, refusals, project, query)',
     'js/gis-geotiff.js': 'a reader of bytes on the IMPORT path; #R749 ⑪ in tests/shell-gis-upload-raster-checks.test.mjs measures its codes against js/map-ui.js',
     'js/gis-shapefile.js': 'a reader of bytes on the IMPORT path, reached through js/geo-import.js; js/map-ui.js words its codes',
     'js/gis-geopackage.js': 'a reader of bytes on the IMPORT path, reached through js/geo-import.js; js/map-ui.js words its codes',
+    'js/gis-pmtiles.js': 'a reader of bytes on the IMPORT path, reached through js/geo-import.js; js/map-ui.js words its codes (tests/gis-pmtiles-checks.test.mjs ⑦ measures them)',
     'js/gis-remote.js': 'reached only through js/gis-atlas.js (data.gisRemote), whose refusals answer the MODEL in the turn result with the code and its detail; this panel never calls it. ⚠ if a panel control ever asks the catalogues of the world, each code needs a sentence here first',
     'js/gis-atlas.js': 'the Atlas-facing surface — its refusals answer the MODEL in the turn result, not this panel, which never calls it',
     /* ⚠ MEASURED, not assumed (#R819): js/gis-warp.js and js/gis-raster.js treat a refusal from the
@@ -257,6 +258,7 @@ describe('§ #R729 · the GIS core (registry, chain, refusals, project, query)',
        than an answer to the reader. A cancellation travels as the caller's own `cancelled`. */
     'js/gis-worker.js': 'its refusals are read by the kernel that offered the work, which falls back to this thread and records them as a note — they are not handed to a reader',
     'js/gis-runtime.js': 'it assembles a runtime for a PROGRAM (and for the worker bootstrap); the browser door throws instead of refusing to this panel. ⚠ js/gis-panel.js words `scope-*`, `dependency-missing` and `kernel-not-reachable` anyway (#R783) — a sentence that is never shown costs a line, a missing one costs the answer',
+    'js/gis-pipeline.js': 'its codes are inspection FINDINGS about bytes that were already read, each carried with its own `say` sentence in the stage ledger and on the acquisition row — they are not refusals of a reader, and no panel runs a read through them',
     'js/gis-index.js': 'a prefilter that answers with candidates; it raises no refusal of its own, and a prefilter that cannot narrow simply returns everything',
   };
 

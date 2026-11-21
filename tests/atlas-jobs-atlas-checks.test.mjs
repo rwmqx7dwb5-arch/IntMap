@@ -19,6 +19,7 @@ import { SERVER_CAPS, serverCapabilityIds, makeServerCaps } from '../supabase/fu
 import { planDigest, jobFacts, jobText, renderJobCard, makeJobsClient } from '../js/atlas-jobs-client.js';
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+await import('../js/safe-html.js');   /* the page's one encoder (globalThis.IntMapSafe), which renderJobCard calls */
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
 const CAPS = makeAtlasCapabilities({});
 const get = (id) => CAPS.all().find((c) => c.id === id);
