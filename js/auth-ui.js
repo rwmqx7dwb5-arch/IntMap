@@ -12,6 +12,7 @@
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
+import { askInApp } from './ask-dialog.js';   /* the one in-app asker — see _acctAsk below */
 
 export function authUi(HOST){
   /* ---------- DATA: geo_pins -> geoRaw -> rebuildGeoIndex ---------- */
@@ -327,54 +328,11 @@ export function authUi(HOST){
     m.style.display='flex'; }
 
   /* ══ (#R753) ASKING INSIDE THE SHEET, NOT THROUGH THE BROWSER ═════════════════════════════════
-     Every destructive or text-taking action in this panel used to call window.confirm() /
-     window.prompt(): five of them. Those are the one piece of UI IntMap cannot style, cannot
-     translate beyond the string it passes, and cannot show a hint or a danger colour in — and on
-     iOS they arrive as "127.0.0.1 says…", naming the origin instead of the app. This is the
-     replacement: one small dialog, the same type scale as the sheet, resolved as a promise.
-     Returns the typed text on confirm ('' when there is no field) and null on cancel, so a caller
-     reads it exactly the way it read prompt()/confirm().
-     ⚠ It is the ONLY asker in this file, on purpose — a second one would be the shape
-     .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids (the same judgement, written twice). */
-  function _acctAsk(o){
-    o=o||{};
-    return new Promise(resolve=>{
-      let d=document.getElementById('acct-ask');
-      if(!d){ d=document.createElement('div'); d.id='acct-ask';
-        d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:calc(var(--z-toast) + 2400);padding:20px;';
-        d.innerHTML='<div class="acct-ask-box" role="dialog" aria-modal="true" aria-labelledby="acct-ask-h">'
-          +'<h3 class="acct-ask-h" id="acct-ask-h"></h3>'
-          +'<p class="acct-ask-b" id="acct-ask-b"></p>'
-          +'<input id="acct-ask-in" class="acct-ask-in" hidden>'
-          +'<button class="acct-ask-go" id="acct-ask-go"></button>'
-          +'<button class="acct-ask-no" id="acct-ask-no"></button></div>';
-        document.body.appendChild(d);
-      }
-      const box=d.querySelector('.acct-ask-box'), h=document.getElementById('acct-ask-h'), b=document.getElementById('acct-ask-b'),
-            inp=document.getElementById('acct-ask-in'), go=document.getElementById('acct-ask-go'), no=document.getElementById('acct-ask-no');
-      h.textContent=o.title||''; b.textContent=o.body||''; b.hidden=!o.body;
-      inp.hidden=!o.input; inp.value=''; inp.type=(o.input&&o.input.type)||'text';
-      inp.placeholder=(o.input&&o.input.placeholder)||''; inp.autocomplete=(o.input&&o.input.autocomplete)||'off';
-      go.textContent=o.confirmLabel||_authL('Confirm','確認','Bestätigen','Подтвердить','Confirmar');
-      no.textContent=_authL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar');
-      go.classList.toggle('acct-ask-danger',!!o.danger);
-      /* (atlas-outward-effects) the confirm button — and the field whose Enter confirms — declare what they
-         confirm, so a press that did not come from the reader is asked about (js/atlas-controls.js _effectOf) */
-      [go,inp].forEach(x=>{ if(o.effect) x.setAttribute('data-effect',o.effect); else x.removeAttribute('data-effect'); });
-      /* one live listener set per call — replaced wholesale, never accumulated */
-      const done=(v)=>{ d.style.display='none'; document.removeEventListener('keydown',key,true); resolve(v); };
-      /* Escape is the dialog registry's (js/dialog.js) — it closes the topmost dialog, which is this one when it is up */
-      const key=(e)=>{ if(e.key==='Enter'&&(o.input?document.activeElement===inp:true)){ done(inp.hidden?'':inp.value); } };
-      go.onclick=()=>done(inp.hidden?'':inp.value);
-      no.onclick=()=>done(null);
-      d.onclick=(e)=>{ if(e.target===d) done(null); };
-      document.addEventListener('keydown',key,true);
-      d.style.display='flex';
-      window.IntMapDialog.adopt(d,{ panel:box, labelledby:'acct-ask-h', close:()=>done(null), focus:false });
-      try{ (o.input?inp:go).focus(); }catch(_){}
-      try{ box.scrollTop=0; }catch(_){}
-    });
-  }
+     Every destructive or text-taking action in this panel asks through ONE in-app dialog instead of
+     window.confirm() / window.prompt(). The dialog itself lives in js/ask-dialog.js (shared with the
+     rest of the app, so a second asker is never written); this only binds it to this panel's language.
+     Returns the typed text on confirm ('' when there is no field) and null on cancel. */
+  function _acctAsk(o){ return askInApp(o,()=>HOST.lang); }
 
   /* ══ (#R753) THE TWO DAILY AI COUNTERS, WHERE THE READER LOOKS FOR THEM ═══════════════════════
      「アカウントメニューにもAIの残使用回数を書くように」。They existed only in Settings → AI features,
