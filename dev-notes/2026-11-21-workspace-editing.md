@@ -36,3 +36,6 @@ newsjp: ワークスペースの表をその場で編集できます(値・列�
 ## 範囲外(記録)
 
 データセットに支えられたボード(`data.dataset`)の編集は、その台帳の規則(GIS 処理の結果は不可、取り込みデータは可)に従う。保存されるのは台帳側の仕様(`gis-project`)で、インラインのボードのように行を抱えて保存はしない。
+
+## グローバル経由の読みの追加(`check:surface`)
+`js/board.js` に `window.IntMapAtlas` 1・`window.IntMapBoard` 2(能力側 `atlas-cap-board.js`)・`window.IntMapLazy` 3 の読みを足した。`board.js` は既存の部品が同じ窓口(`IntMapLazy.need`・`IntMapAtlas.call`)で遅延モジュールと Atlas に届いており、台帳(gisCore)と Atlas は遅延ロードで import できない／してはいけない所有者のため、同じ作法に揃えた。台帳を `--update` で更新。

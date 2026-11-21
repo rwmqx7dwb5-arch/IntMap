@@ -28,6 +28,8 @@ import {
   rowFromEntry, entryFromRow, mergeCloud, diffResults, replayCalls, NOTEBOOK_SHOWN, IMPORTED,
 } from './atlas-notebook-store.js';
 import { icon } from './icons.js';
+import { sharedEvidenceGraph, evidenceRefsForTurn, recordNote } from './evidence-graph-record.js';   /* (evidence-graph) the lineage a filed turn rests on */
+import { syncEvidenceGraph, deleteEvidenceGraph } from './evidence-graph-sync.js';
 import { IntMapLang } from './lang-registry.js';
 import './safe-html.js';
 import * as bus from './bus.js';   /* (map-document-unify) the Library is asked for through the declared event */
@@ -149,6 +151,14 @@ export function makeAtlasNotebook() {
       lang: D.lang ? D.lang() : '', resolve: D.resolve, now: Date.now(), followOf });
     if (!e) return told(null, t, 'empty');
     if (!prefs.keep) return told(e, t, 'not-kept');
+    /* (evidence-graph) the turn's answer figures are in the lineage graph (js/atlas-answer-pipeline.js); the entry keeps their ids and
+       becomes a node that rests on them, so a source update can be traced to the notebook entries it touches. A graph failure never fails filing. */
+    try {
+      const eg = sharedEvidenceGraph();
+      const refs = evidenceRefsForTurn(eg.graph, t.turnId);
+      if (refs.length) e.evidenceRefs = refs;
+      recordNote(eg.graph, e);
+    } catch (_) { }
     try { await store.put(e); } catch (err) { syncState = { at: Date.now(), ok: false, msg: L('Could not keep this answer on the device', 'この回答を端末に残せませんでした') + ': ' + String((err && err.message) || err) }; refresh(); return told(e, t, 'not-kept'); }
     if (prefs.sync) syncNow().catch(() => { });
     return told(e, t, 'filed');
@@ -184,12 +194,15 @@ export function makeAtlasNotebook() {
       syncState = failed.length
         ? { at: now, ok: false, msg: L('Synced, except', '同期しました。ただし次は送れませんでした') + ': ' + failed.map((f) => '«' + f.e.title.slice(0, 40) + '» (' + f.why + ')').join(', ') }
         : { at: now, ok: true, msg: L('Synced with your account', 'アカウントと同期しました') + ' · ' + (m.toLocal.length + m.toRemote.length + m.deleteLocal.length) + ' ' + L('entries exchanged', '件をやり取り') };
+      /* (evidence-graph) the lineage rides on the same consent as the notebook: pulled and pushed beside it, never on its own */
+      await syncEvidenceGraph({ db, user }).catch(() => null);
     } catch (err) { syncState = { at: Date.now(), ok: false, msg: L('Sync failed', '同期できませんでした') + ': ' + String((err && err.message) || err) }; }
     refresh(); return syncState;
   }
   async function deleteAccountCopy() {
     const { db, user } = account(); if (!db || !user) return false;
     const { error } = await db.from(TABLE).delete().eq('user_id', user.id);
+    if (!error) await deleteEvidenceGraph({ db, user }).catch(() => false);   /* (evidence-graph) the account copy of the lineage goes with the notebook's */
     if (error) { syncState = { at: Date.now(), ok: false, msg: L('Could not delete the account copy', 'アカウントのコピーを削除できませんでした') + ': ' + error.message }; refresh(); return false; }
     const p = readPrefs(); p.sync = false; writePrefs(p);
     for (const e of await store.list()) if (e.syncedAt) await store.update(e.id, { syncedAt: 0 }, { keepTime: true });

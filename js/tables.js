@@ -13,7 +13,7 @@
 /* @i18n-entity-data  sea and ocean NAMES, one row per water body, pinned by [lng,lat]  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
    against the row carrying a coordinate / ISO code / ticker / domain) */
 import { IntMapLang } from './lang-registry.js';
-import { imageryTiles, imagerySources } from './esri-imagery.js';   /* (sat-arcgis-3d) the one place World Imagery's URL is built */
+import { imageryProviders } from './imagery-registry.js';   /* (sat-imagery-supply) every free imagery supplier, declared once */
 export const SEA_LABELS = [
   [-160,32,0.5,'North Pacific Ocean','北太平洋','Nordpazifik','Северная часть Тихого океана','Océano Pacífico Norte'],
   [-125,-30,0.5,'South Pacific Ocean','南太平洋','Südpazifik','Южная часть Тихого океана','Océano Pacífico Sur'],
@@ -155,25 +155,10 @@ export const IntMapTables = (function(){
      itself. ⚠ One radius group read `grp.g[HOST.lang]` with no `||` fallback at all, so the German,
      Russian, Spanish, French, Korean and Chinese optgroup labels rendered the string 「undefined」. */
   const LA=IntMapLang.pickArgs();
+  /* (sat-imagery-supply) the FREE suppliers are declared once in js/imagery-registry.js (date, resolution, coverage, licence);
+     only the keyed (BYOK) rows stay here. */
   const SAT_PROVIDERS=[
-    { id:'esri', tier:'free', short:'Esri', name:LA('Esri World Imagery','Esri 衛星画像','Esri Satellitenbilder','Спутниковые снимки Esri','Imágenes satelitales de Esri'),
-      dated:false, maxzoom:19, get attribution(){ return 'Powered by Esri · Sources: '+imagerySources(); },
-      /* Two host aliases serving the SAME World_Imagery tiles — MapLibre round-robins across them, so
-         the browser's per-host connection cap no longer throttles high-res imagery in 3D (#2,#18). */
-      tiles:()=>imageryTiles() },
-    { id:'gibs-modis', tier:'free', short:'MODIS Terra', name:LA('NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra'),
-      dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — MODIS Terra true color',
-      tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
-    { id:'gibs-viirs', tier:'free', short:'VIIRS SNPP', name:LA('NASA GIBS · VIIRS (SNPP)','NASA GIBS · VIIRS (SNPP)','NASA GIBS · VIIRS (SNPP)','NASA GIBS · VIIRS (SNPP)','NASA GIBS · VIIRS (SNPP)'),
-      dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — VIIRS SNPP true color',
-      tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
-    { id:'gibs-viirs-n20', tier:'free', short:'VIIRS N20', name:LA('NASA GIBS · VIIRS (NOAA-20)','NASA GIBS · VIIRS (NOAA-20)','NASA GIBS · VIIRS (NOAA-20)','NASA GIBS · VIIRS (NOAA-20)','NASA GIBS · VIIRS (NOAA-20)'),
-      dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — VIIRS NOAA-20 true color',
-      tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
-    { id:'s2cloudless', tier:'free', short:'Sentinel-2', name:LA('Sentinel-2 cloudless (EOX)','Sentinel-2 雲なし (EOX)','Sentinel-2 wolkenfrei (EOX)','Sentinel-2 без облаков (EOX)','Sentinel-2 sin nubes (EOX)'),
-      dated:true, dateMode:'year', years:[2024,2023,2022,2021,2020,2019,2018,2017], maxzoom:16,
-      attribution:'Sentinel-2 cloudless — EOX IT Services GmbH (CC BY-NC-SA 4.0)',
-      tiles:(y)=>['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-'+y+'_3857/default/g/{z}/{y}/{x}.jpg'] },
+    ...imageryProviders(),
     /* --- Pro / BYOK: selectable only after the user registers an API key in Settings --- */
     { id:'sentinelhub', tier:'pro', keyName:'sentinelhub', short:'Sentinel Hub', name:LA('Sentinel Hub (S2 / Landsat)','Sentinel Hub (S2 / Landsat)','Sentinel Hub (S2 / Landsat)','Sentinel Hub (S2 / Landsat)','Sentinel Hub (S2 / Landsat)'),
       dated:true, dateMode:'day', maxzoom:16, attribution:'Sentinel Hub by Sinergise',
