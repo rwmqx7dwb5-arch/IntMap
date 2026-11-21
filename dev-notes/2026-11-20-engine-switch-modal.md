@@ -29,3 +29,12 @@ Claude アプリ内ブラウザはネイティブダイアログを出さずに 
 
 `tests/engine-switch-modal-checks.test.mjs`（切替が `askInApp` を使い `confirm` を呼ばない・asker の DOM を作るのは 1 ファイルだけ）、
 `tests/desktop-one-entry.spec.js`（ネイティブダイアログ 0 件・アプリ内ダイアログが出て、キャンセルで元に戻る）。
+
+## CI が赤だった理由と直し
+
+- **`tests/desktop-one-entry.spec.js` の Atlas 手順**: 検索行「Atlas に聞く」はサイドバーを開き、Atlas タブを押し（`panel.tab`、source `ui`、
+  executor チャンクの読み込み待ち）、同じ tick で質問を走らせる。新しい turn の `supersede` が、まだ待っている読者自身の `ui` 操作を
+  `superseded` にして、タブが開かなかった（再現: `PRESSRES status:"superseded"`）。`supersede` は「前の turn が負っている仕事」を置き換えるもので、
+  読者の押下はどの turn のものでもないので対象から外した（`js/atlas-executor.js`）。PR の変更とは独立した競合だった。
+- **`check:perf` の天井を上げた**: `eager.modules` 914→915（共有の質問ダイアログ `js/ask-dialog.js` が 1 モジュール増える。`auth-ui` の写しを引き継いだので
+  実体は重複していない）、async chunk `atlas-cap-runs` 903.4→909.0 kB（main を取り込んだ時点の実測。この PR の変更ではないが、取り込み後の木が超えていた）。
