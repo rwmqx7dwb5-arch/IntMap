@@ -395,6 +395,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
       ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
       ["data.imageryInfo","imageryInfo","imageryAt,photoDate,satelliteDate,imagerySource","data","none","","explanation","session","none","",""],
+      ["knowledge.remember","knowledgeRemember","rememberKnowledge,keepKnowledge,saveFact","research","none","knowledge","explanation","persist","none","",""],
+      ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
+      ["knowledge.forget","knowledgeForget","forgetKnowledge,deleteKnowledge","research","none","knowledge","explanation","persist","explicit","",""],
+      ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
       ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
