@@ -21,6 +21,7 @@
  * ==========================================================================*/
 
 import { s, stable } from './atlas-job-core.js';
+import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder renderJobCard writes through, in Node as in the app */
 
 const TERMINAL = new Set(['done', 'failed', 'cancelled']);
 const TASK_ENDED = new Set(['done', 'partial', 'failed', 'refused', 'cancelled']);
