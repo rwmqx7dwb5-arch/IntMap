@@ -1,6 +1,6 @@
 -- ============================================================================
 --  pgTAP · 52 — world graph: the history of an external identifier (Overture GERS first).
---  supabase/migrations/20261120120000_world_graph_id_history.sql
+--  supabase/migrations/20261120140000_world_graph_id_history.sql
 --    ① the table: columns, RLS on, one statement per (object, scheme, id, release);
 --    ② access: every reader reads, no client role writes, service_role does;
 --    ③ world_graph_resolve_id: the present id first, then the history; an id re-issued to a second object
