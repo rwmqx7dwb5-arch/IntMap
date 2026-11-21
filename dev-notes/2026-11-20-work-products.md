@@ -79,7 +79,7 @@ Notebook の公開可否（`NOTEBOOK_SHOWN=false`）は変えない。
 
 ## main 取り込み後の perf 天井(2026-11-21)
 
-`work.job`(js/atlas-cap-work.js・js/atlas-work-store.js)は能力モジュールで、`atlas-cap-runs` の async chunk に入る(903.4 → 928.4 kB)。
+`work.job`(js/atlas-cap-work.js・js/atlas-work-store.js)は能力モジュールで、`atlas-cap-runs` の async chunk に入る(main の天井 909.0 に対し 928.4 kB。work.job 分)。
 起動(eager)には入らず、作業を開いたときだけ読まれる。`async.gzip`・`dist.total`・`dist.assets` の天井も同じ `--update` で上げた(main 側の増加分を含む)。
 能力は 255 になり、能力数を述べる文書(DECISIONS・PRODUCT・docs/FILES・docs/architecture/02-features)を実測に合わせた。
 `js/atlas-capabilities.js` の行は `node scripts/atlas-caps.mjs --write` が各能力ファイルから導出する(取り込みの merge driver が再生成するため、手で足した行は残らない)。

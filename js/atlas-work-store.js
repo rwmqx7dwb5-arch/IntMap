@@ -41,14 +41,14 @@ const arr = (x) => Array.isArray(x) ? x : [];
    Observation: 4 MiB is the notebook's own order of magnitude (a notebook entry is at most 64,000 characters of answer
    plus its rows); expires when a measured quota says otherwise. */
 export const PRODUCT_KINDS = Object.freeze({
-  dataset:  { label: 'Dataset',  shape: ['format', 'features | columns+rows'], file: null, maxBytes: 4 << 20 },
-  table:    { label: 'Table',    shape: ['columns', 'rows'], file: { ext: 'csv', mime: 'text/csv' }, maxBytes: 4 << 20 },
-  code:     { label: 'Code',     shape: ['language', 'text'], file: { ext: 'txt', mime: 'text/plain' }, maxBytes: 1 << 20 },
-  image:    { label: 'Image',    shape: ['mime', 'dataUrl | svg'], file: { ext: 'png', mime: 'image/png' }, maxBytes: 4 << 20 },
-  document: { label: 'Document', shape: ['format', 'text'], file: { ext: 'md', mime: 'text/markdown' }, maxBytes: 2 << 20 },
-  chart:    { label: 'Chart',    shape: ['spec', 'svg'], file: { ext: 'svg', mime: 'image/svg+xml' }, maxBytes: 1 << 20 },
-  analysis: { label: 'Analysis', shape: ['projectId | recipe'], file: null, maxBytes: 256 << 10 },
-  answer:   { label: 'Answer',   shape: ['text'], file: { ext: 'md', mime: 'text/markdown' }, maxBytes: 256 << 10 },
+  dataset:  { label: 'Dataset',  shape: 'format, features | columns+rows', file: null, maxBytes: 4 << 20 },
+  table:    { label: 'Table',    shape: 'columns, rows', file: { ext: 'csv', mime: 'text/csv' }, maxBytes: 4 << 20 },
+  code:     { label: 'Code',     shape: 'language, text', file: { ext: 'txt', mime: 'text/plain' }, maxBytes: 1 << 20 },
+  image:    { label: 'Image',    shape: 'mime, dataUrl | svg', file: { ext: 'png', mime: 'image/png' }, maxBytes: 4 << 20 },
+  document: { label: 'Document', shape: 'format, text', file: { ext: 'md', mime: 'text/markdown' }, maxBytes: 2 << 20 },
+  chart:    { label: 'Chart',    shape: 'spec, svg', file: { ext: 'svg', mime: 'image/svg+xml' }, maxBytes: 1 << 20 },
+  analysis: { label: 'Analysis', shape: 'projectId | recipe', file: null, maxBytes: 256 << 10 },
+  answer:   { label: 'Answer',   shape: 'text', file: { ext: 'md', mime: 'text/markdown' }, maxBytes: 256 << 10 },
 });
 export const productKinds = () => Object.keys(PRODUCT_KINDS);
 
@@ -58,7 +58,7 @@ const IMAGE_EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp
 const sizeOf = (c) => { try { return JSON.stringify(c).length; } catch (_) { return Infinity; } };
 
 /** the content of a product, cleaned to its kind's shape — or { problem } naming what is wrong */
-export function cleanContent(kind, c) {
+function cleanContent(kind, c) {
   const K = PRODUCT_KINDS[kind]; if (!K) return { problem: 'unknown-kind' };
   const x = obj(c); if (!x) return { problem: 'no-content' };
   let out;
@@ -133,7 +133,7 @@ export function newWorkId(now) {
   let r = ''; try { const a = new Uint8Array(5); globalThis.crypto.getRandomValues(a); r = Array.from(a, (b) => b.toString(16).padStart(2, '0')).join(''); } catch (_) { r = Math.random().toString(16).slice(2, 12); }
   return 'wk-' + t + '-' + r;
 }
-export function normalizeProduct(p) {
+function normalizeProduct(p) {
   const x = obj(p); if (!x || !PRODUCT_KINDS[x.kind]) return null;
   const name = str(x.name, 120).trim(); if (!name) return null;
   const c = cleanContent(x.kind, x.content); if (c.problem) return null;

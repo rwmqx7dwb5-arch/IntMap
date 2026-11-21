@@ -17,9 +17,7 @@ import { PRODUCT_KINDS, productKinds, WORKSPACES, chooseWorkspace, newWorkId, no
   compareProducts, fileOf, workToMarkdown, workToFile, deviceWorkStore, WORK_STATE } from './atlas-work-store.js';
 
 
-export function workStore() { return WORK_STATE.store || (WORK_STATE.store = deviceWorkStore(typeof indexedDB !== 'undefined' ? indexedDB : null)); }
-/** tests and the page reset the module's memory of "the job we are on" */
-export function _setStoreForTest(s) { WORK_STATE.store = s; WORK_STATE.current = null; }
+function workStore() { return WORK_STATE.store || (WORK_STATE.store = deviceWorkStore(typeof indexedDB !== 'undefined' ? indexedDB : null)); }
 
 async function target(a) {
   const S = workStore();
