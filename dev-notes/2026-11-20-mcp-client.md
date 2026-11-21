@@ -35,3 +35,6 @@ newsjp: Atlasが、登録した外部MCPサーバーのツールを、自身の�
 ## 4. 上げた予算の理由（perf）
 
 `async.gzip` 4745.6→4773.7 kB・`atlas-cap-runs` 884.2→894.9 kB・`atlas-console` 1051.8→1057.4 kB・`dist.assets` 21446.3→21579.3 kB。MCP の能力モジュール（`atlas-cap-mcp.js`）が能力の遅延チャンクに入り、`atlas-console` に外部ツール探索の依存 1 行が入った。クライアント本体（`atlas-mcp-client`、約 14 kB）は独立した遅延チャンクで、サーバが 1 つも登録されていない読者には読み込まれない（起動時リクエストは 10 のまま）。
+
+## 予算の天井を上げた理由（perf-baseline・2026-11-21）
+MCP クライアントが 4 能力（`mcp.servers`・`mcp.connect`・`mcp.call`・`mcp.act`）とその schema・確認文言を足したため、遅延 chunk の `atlas-cap-runs` が 903.4→917.0 kB、async gzip が 4807.7→4840.4 kB、dist.assets が 21686.9→21801.9 kB になった（`node scripts/perf-budget.mjs --update`）。クライアント本体は能力を呼んだときだけ動的 import される遅延 chunk で、起動時に読む量は増えていない。失効条件: 能力の統合・縮小で下がったら main の CI が `--tighten` で下げる。
