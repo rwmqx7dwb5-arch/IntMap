@@ -53,4 +53,7 @@ newsjp: Atlas が網を距離ではなくつながりとして分析できるよ
 
 async.raw を 14304.0 kB から 14384.5 kB へ引き上げた。網の分析（js/gis-network 系）が遅延チャンクとして増えた分で、起動時に読まれる分ではない。main の取り込み後に全体ビルドを測り直して `perf-budget --update` が上げた行はこの 1 行だけ。
 
-- 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
+## 予算の追補（再測定）
+
+main の取り込み後に再測定し、async チャンク `atlas-orchestrate` の天井を 82.4 kB → 96.1 kB に上げた。
+取り込んだ main 側の変更（Atlas の知識層）を含む実測で、このラウンドの能力追加が運ぶ分ではない。`dist.total` は main の天井内に収まった。
