@@ -62,6 +62,7 @@ interface IntMapPublished {
   IntMapConsole: any;
   IntMapQuery: any;
   IntMapAtlasChart: any;
+  IntMapBoard: any;
   IntMapAnswerView: any;
   IntMapRouteUI: any;
   IntMapGis: any;
