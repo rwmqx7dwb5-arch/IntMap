@@ -186,7 +186,7 @@ export function makeAtlasEvidence() {
         status: rec.status === 'unreachable' ? 'unreachable' : (origin === 'hosted_web' ? 'verified' : 'provisional'),
         providerCitation: rec.providerCitation || null,
         /* (evidence-graph) the node a GIS/derived result carries in the lineage graph (js/evidence-graph.js) — an id code minted, never model text */
-        graphRef: rec.graphRef ? clampText(rec.graphRef, 120) : null,
+        graphRef: rec.graphRef ? clampText(rec.graphRef, 400) : null,
         callId: rec.callId || callId,
       };
       byId.set(id, out);
