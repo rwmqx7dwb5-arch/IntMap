@@ -414,7 +414,7 @@ export function makeGisProject() {
       return 'prj-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
     }
 
-    function save(name) {
+    function save(name, saveOpts) {
       const reg = registry();
       if (!reg) return Promise.resolve({ ok: false, why: 'registry-missing' });
       if (!available()) return Promise.resolve({ ok: false, why: 'storage-unavailable' });
@@ -430,6 +430,13 @@ export function makeGisProject() {
         datasets: steps.length,
         steps,
       };
+      /* (pipeline) RECIPES THAT ARE NOT A DATASET — js/gis-recipe.js's definitions (which step uses the
+         region, which feeds which). Plain JSON, opaque here: this file stores and returns it and states
+         nothing about what it means. Absent when the caller passed none, so a record written without it
+         is exactly what it was. */
+      if (saveOpts && saveOpts.extras && typeof saveOpts.extras === 'object') {
+        try { rec.extras = JSON.parse(JSON.stringify(saveOpts.extras)); } catch (_) { /* not JSON: not stored; the datasets still are */ }
+      }
       const bytes = recordBytes(rec);
       return withStore('readwrite', (st) => { st.put(rec); }).then((r) => {
         if (!r.ok) return r;
@@ -630,6 +637,8 @@ export function makeGisProject() {
              the difference between 「開けた」 and 「開けたものが保存した日と同じ」. */
           engineChanged, engineUnknown, declarationsRefused,
           savedVersion: (typeof rec.version === 'number' && isFinite(rec.version)) ? rec.version : null,
+          /* (pipeline) handed back as saved, for js/gis-recipe.js restore(); null when none was stored */
+          extras: (rec.extras && typeof rec.extras === 'object') ? rec.extras : null,
         }));
       });
     }

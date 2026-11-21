@@ -133,9 +133,9 @@ export default [
        Column 7 'persist' — a project is written to IndexedDB; column 8 'none' — `remove` deletes a
        saved project and `open` replaces the session's datasets with the saved ones. */
     doc: [
-      { in: 'spatial-analysis', at: 40, text: 'SAVE / REOPEN / RE-RUN AN ANALYSIS (分析の保存・再開・再計算): {"type":"gisProject","action":"save"|"list"|"open"|"rerun"|"remove","name"?:str,"id"?:str,"dataset"?:ID,"params"?:{…}}. save stores the whole chain of this session (the imports with their content, every op as its recipe) under "name" and answers with its id; list names the saved ones; open re-runs a saved project (omit id = the latest) and reports which steps failed, which were reused and whether the engine of an op changed since it was saved; rerun changes the params of ONE step ("dataset" = the id that step produced, "params" = the new values, merged into the old) and recomputes everything downstream — the answer lists rebuilt / reused / failed, and a step whose upstream failed is marked stale, never silently kept; remove deletes a saved project. Use this rather than repeating every gis step when the reader says 「保存して」「この前の分析を開いて」「半径だけ変えてやり直して」. ' },
+      { in: 'spatial-analysis', at: 40, text: 'SAVE / REOPEN / RE-RUN AN ANALYSIS (分析の保存・再開・再計算): {"type":"gisProject","action":"save"|"list"|"open"|"rerun"|"remove"|"capture"|"pipelines"|"plan"|"region"|"runPipeline","name"?:str,"id"?:str,"dataset"?:ID,"params"?:{…},"region"?:[w,s,e,n],"pipeline"?:str,"step"?:str,"refresh"?:bool}. save stores the whole chain of this session (the imports with their content, every op as its recipe) under "name" and answers with its id; list names the saved ones; open re-runs a saved project (omit id = the latest) and reports which steps failed, which were reused and whether the engine of an op changed since it was saved; rerun changes the params of ONE step ("dataset" = the id that step produced, "params" = the new values, merged into the old) and recomputes everything downstream — the answer lists rebuilt / reused / failed, and a step whose upstream failed is marked stale, never silently kept; remove deletes a saved project. PIPELINES — an analysis kept as steps that re-run for ANOTHER REGION: capture ("dataset" = the id of the final result) turns the chain that made it into a pipeline (its acquisitions take the window as "$region", its ops chain by "$step:<id>") and answers with the pipeline id; pipelines lists them, or with "pipeline" describes one; plan ("pipeline", and "region" and/or "step"+"params") says which steps WOULD be recomputed and which reused, running nothing; region ("pipeline", "region":[w,s,e,n]) moves the area and recomputes ONLY the steps that use it and what is made from them — unrelated steps are reused, a failed step marks everything below it skipped; runPipeline re-runs ("refresh":true re-fetches live acquisitions too — a reused step is 「同じ手順」, not 「最新」). An import or Python result cannot be captured (no recipe) and is refused by name. save also stores the pipelines and open restores them. Use this rather than repeating every gis step when the reader says 「保存して」「この前の分析を開いて」「半径だけ変えてやり直して」. ' },
     ],
-    schema: () => ({ type: 'object', properties: { action: one('save', 'list', 'open', 'rerun', 'remove'), name: str(), id: str(), dataset: str(), params: obj() }, required: ['action'] }),
+    schema: () => ({ type: 'object', properties: { action: one('save', 'list', 'open', 'rerun', 'remove', 'capture', 'pipelines', 'plan', 'region', 'runPipeline'), name: str(), id: str(), dataset: str(), params: obj(), region: list(num(-180, 180), 4, 4), pipeline: str(), step: str(), refresh: bool() }, required: ['action'] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
       await window.IntMapLazy.need('gisCore');
       const P = window.IntMapGisProject;
@@ -144,11 +144,13 @@ export default [
       /* the kernel's answer is handed back whole: its fields are the facts (rebuilt / failed / stale …) */
       const say = (ok, text, out) => ok ? R(true, esc(text), { meta: { gisProject: Object.assign({ action: act }, out) } })
         : R(false, warn(esc(text) + ' (' + esc(String((out && out.why) || 'failed')) + ')'), { meta: { gisProject: Object.assign({ action: act }, out) } });
-      if (act === 'save') { const r = await P.save(a.name == null ? '' : String(a.name));
+      if (act === 'save') { const PLs = window.IntMapGisPipeline; const nm = a.name == null ? '' : String(a.name);
+        const r = (PLs && PLs.list().length) ? await PLs.save(nm) : await P.save(nm);   /* (pipeline) with pipelines defined they travel in the same record */
         return say(!!(r && r.ok), L('Saved the analysis' + (r && r.id ? ' as ' + r.id : '') + '.', '分析を保存しました' + (r && r.id ? '（' + r.id + '）' : '') + '。'), r || {}); }
       if (act === 'list') { const ls = await P.list(); const rows = (ls || []).map((p) => ({ id: p.id, name: p.name, savedAt: p.savedAt, datasets: p.datasets }));
         return say(true, L(rows.length + ' saved analyses.', '保存済みの分析は ' + rows.length + ' 件です。'), { projects: rows }); }
       if (act === 'open') { const r = await P.load(a.id == null || a.id === '' ? null : String(a.id));
+        try { if (r && window.IntMapGisPipeline) r.pipelines = window.IntMapGisPipeline.restore(r).restored; } catch (_) { /* the datasets are back; the pipelines are reported absent */ }
         return say(!!(r && r.ok), L('Reopened ' + ((r && r.restored) || 0) + ' datasets' + (r && r.failed && r.failed.length ? ', ' + r.failed.length + ' failed' : '') + '.',
           ((r && r.restored) || 0) + ' 件のデータセットを再開しました' + (r && r.failed && r.failed.length ? '（' + r.failed.length + ' 件は失敗）' : '') + '。'), r || {}); }
       if (act === 'rerun') {
@@ -156,6 +158,20 @@ export default [
         const r = await P.setParams(String(a.dataset), (a.params && typeof a.params === 'object') ? a.params : {});
         return say(!!(r && r.ok), L('Recomputed ' + ((r && r.rebuilt && r.rebuilt.length) || 0) + ' datasets' + (r && r.failed && r.failed.length ? ', ' + r.failed.length + ' failed' : '') + '.',
           ((r && r.rebuilt && r.rebuilt.length) || 0) + ' 件のデータセットを再計算しました' + (r && r.failed && r.failed.length ? '（' + r.failed.length + ' 件は失敗）' : '') + '。'), r || {}); }
+      /* (pipeline) the same door, one kernel: js/gis-recipe.js. Its refusals come back by their own codes. */
+      if (act === 'capture' || act === 'pipelines' || act === 'plan' || act === 'region' || act === 'runPipeline') {
+        const PL = window.IntMapGisPipeline;
+        if (!PL) return R(false, warn(L('The pipeline module could not be loaded.', 'パイプラインを読み込めませんでした。')));
+        const pid = a.pipeline == null || a.pipeline === '' ? '' : String(a.pipeline);
+        const need = (k, v) => (v == null || v === '') ? R(false, warn(esc(L('Missing: ', '不足: ') + k))) : null;
+        let r = null, text = '';
+        if (act === 'capture') { const m = need('dataset', a.dataset); if (m) return m; r = PL.capture(String(a.dataset), { id: pid || undefined, title: a.name, region: a.region }); text = L('Captured as pipeline ' + (r && r.id), 'パイプライン ' + (r && r.id) + ' として保存しました'); }
+        else if (act === 'pipelines') { r = pid ? PL.describe(pid) : { ok: true, pipelines: PL.list() }; text = L('Pipelines', 'パイプライン'); }
+        else if (act === 'plan') { const m = need('pipeline', pid); if (m) return m; r = PL.plan(pid, { region: a.region, params: (a.step && a.params) ? { [String(a.step)]: a.params } : null }); text = L('Plan (nothing was run)', '計画（実行はしていません）'); }
+        else if (act === 'region') { const m = need('pipeline', pid) || need('region', a.region); if (m) return m; r = await PL.setRegion(pid, a.region); text = L('Recomputed for the new region: ' + ((r && r.ran && r.ran.length) || 0) + ' ran, ' + ((r && r.reused && r.reused.length) || 0) + ' reused', '新しい地域で再計算: 実行 ' + ((r && r.ran && r.ran.length) || 0) + '・再利用 ' + ((r && r.reused && r.reused.length) || 0)); }
+        else { const m = need('pipeline', pid); if (m) return m; r = await PL.run(pid, { refresh: !!a.refresh }); text = L('Pipeline run: ' + ((r && r.ran && r.ran.length) || 0) + ' ran, ' + ((r && r.reused && r.reused.length) || 0) + ' reused', 'パイプライン実行: 実行 ' + ((r && r.ran && r.ran.length) || 0) + '・再利用 ' + ((r && r.reused && r.reused.length) || 0)); }
+        return say(!!(r && r.ok), text, r || {});
+      }
       if (act === 'remove') {
         if (a.id == null || a.id === '') return R(false, warn(esc(L('Name the saved analysis to remove (id).', '削除する保存済みの分析（id）を指定してください。'))));
         const r = await P.remove(String(a.id));

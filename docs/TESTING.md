@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**175 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
+**176 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
 by re-measuring two deep entries that stood high — the ledger row `2026-10-08 atlas-product` in `scripts/test-budget.mjs` —
 paid for the four product specs of 2026-10-08: hist-product 8, mobile-product 26, live-news-product 8, sales-pro-audiences 15;
 the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); and
@@ -111,7 +111,7 @@ the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); a
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **170 spec files** — is the whole suite minus core
+**deep** tier — **171 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -1069,7 +1069,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **170 spec files** against core's 5 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **171 spec files** against core's 5 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -3595,7 +3595,7 @@ rule of this shape:
 What it still does not read, written down rather than papered over:
 
 - **A bare English numeral that attaches to nothing.** `docs/SECURITY-ARCHITECTURE.md` §5 opens
-  "There are twenty-five Edge Functions, and this table used to list two." A statement of how many
+  "There are twenty-six Edge Functions, and this table used to list two." A statement of how many
   there are and a sentence of the document's own history sit in **one sentence**, and nothing
   structural separates them. It was tried at section scope and at paragraph scope and measured:
   widening far enough to catch the first turns the second into a failure. The counted Japanese
@@ -5228,3 +5228,11 @@ uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、管�
 ⑨ Atlas の行・設定のボタンとリスナ・`security.html`／`ja/` の種類ごとの数が台帳と一致・Privacy §2 の文（en/jp）。
 ⑩ ログインのセッションの行は supabase-js の式を `src/vendor.js` の URL で評価した IntMap 自身の名前で、他のプロジェクトのセッションに当たらない・
 固定部分が IntMap のものと証明できないワイルドカードは `bulk:false` が無ければ門が拒む（⑦ は一括消去がそれらと他のプロジェクトのセッションを取らないこと）。
+
+### `tests/gis-pipeline-forecast-checks.test.mjs`
+
+パイプラインと外部予測データ。**① 地域を動かすと、地域を使う段とその下流だけが再計算される**（無関係な枝は同じデータセットで再取得もされない）
+**② 失敗した段の下流は `skipped`・`stale` で、旧い地域の答えが残らない** **③ 既存の系譜から `capture`、取り込みは `not-capturable`**
+**④ プロジェクトの保存・再開のあとも段が見つかる** **⑤ 推計・不確実性は別データセット、観測は参照のみ、利用者の条件は比較にだけ**
+**⑥ 失敗した取得は 0 でなく欠測** **⑦ 実在する 2 つの API 以外を名乗らない**。本物の `gis-datasets / gis-ops / gis-project` を使い、
+`gis` の扉と HTTP だけを差し替える。実 API への 1 回の疎通は 2026-11-20 に別途確認（検査は網に出ない）。

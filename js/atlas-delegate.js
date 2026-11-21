@@ -42,54 +42,12 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+import { s, stable, CONTRACT_KINDS, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+export { stable, CONTRACT_KINDS, normaliseContract, contractKey };
+/* the worker's answer held to its shape, with `facts` held to one shape too (js/atlas-fact-merge.js) — the core takes the normaliser as an argument because it has no imports */
+export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
 
-/* a JSON text that does not depend on key order — the identity of an arguments object */
-export function stable(v) {
-  if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
-  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}';
-  return JSON.stringify(v === undefined ? null : v);
-}
 
-/* The two kinds of piece of work. `worker`: a model researches it (the default). `capability`: one read-only IntMap
-   capability is run with these arguments, no model in between — the cheap, exact way to fan a lookup out (the weather
-   in five cities, a figure for each of ten countries). Which capabilities may be named is the executor's call
-   (js/atlas-orchestrate.js makeCapabilityExecutor), not this file's. */
-export const CONTRACT_KINDS = Object.freeze(['worker', 'capability']);
-
-/* The most a capability task's arguments may weigh once written as JSON. Observation 2026-11-19: the arguments Atlas
-   writes for a read capability are a handful of short fields (the largest schema in js/atlas-cap-*.js carries ~10
-   keys); 4000 characters is an order of magnitude over that. Expires if a read capability starts taking a document
-   as an argument — then pass it by reference (an input task) instead of raising this. Canonical: here only. */
-const ARGS_MAX_CHARS = 4000;
-/* How many capabilities one worker may be granted. Observation 2026-11-19: Atlas's own read tools it reaches for in one turn are a handful; 12 is above that. Expires if a worker is asked to choose among more — then it should search (find_capability) rather than be handed a longer list. */
-const TOOLS_MAX = 12;
-
-/* normaliseContract(c) → { ok, contract } | { ok:false, error } */
-export function normaliseContract(c) {
-  if (!c || typeof c !== 'object') return { ok: false, error: 'contract_not_object' };
-  const kind = c.kind === 'capability' ? 'capability' : 'worker';
-  const inputs = (Array.isArray(c.inputs) ? c.inputs : [])
-    .map((i) => (i && typeof i === 'object' ? s(i.from, 64) : s(i, 64))).filter(Boolean).map((from) => ({ from }));
-  if (kind === 'capability') {
-    const capability = s(c.capability, 80);
-    if (!capability) return { ok: false, error: 'capability_missing' };
-    const args = (c.args && typeof c.args === 'object' && !Array.isArray(c.args)) ? c.args : {};
-    if (stable(args).length > ARGS_MAX_CHARS) return { ok: false, error: 'args_too_large' };
-    return { ok: true, contract: { id: s(c.id, 64), kind, goal: s(c.goal, 2000) || ('capability ' + capability), returns: s(c.returns, 600), inputs, capability, args } };
-  }
-  const goal = s(c.goal, 2000);
-  if (!goal) return { ok: false, error: 'goal_missing' };
-  /* (delegation-agency) the read capabilities this worker may call ITSELF, by id — the parent's grant, nothing wider. Absent = the worker
-     only researches (the model and its web search), which is what it was before. */
-  const tools = Array.from(new Set((Array.isArray(c.tools) ? c.tools : []).map((x) => s(x, 80)).filter(Boolean))).slice(0, TOOLS_MAX);
-  return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null) };
-}
-
-/* the identity of a piece of work: what it is asked to do and from what — not the id it was given */
-export function contractKey(c) {
-  return stable([c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null, (c.tools || []).slice().sort()]);
-}
 
 function makeEventLog(now) {
   const clock = typeof now === 'function' ? now : () => Date.now();
@@ -110,33 +68,6 @@ function makeEventLog(now) {
   };
 }
 
-/* cycleMembers(contracts) → Set of the INDICES whose inputs lead back to themselves. `contracts` are normalised contracts
-   (null where one did not normalise). Only names that are tasks of the list count as edges; a name that is not one is
-   `input_unknown` at run time, not a cycle. Strongly connected components (Tarjan): a component of two or more tasks, or
-   a task that names itself, is a cycle. */
-function cycleMembers(contracts) {
-  const list = Array.isArray(contracts) ? contracts : [];
-  const at = new Map();
-  list.forEach((c, i) => { if (c && c.id && !at.has(c.id)) at.set(c.id, i); });
-  const edges = list.map((c) => (c ? (c.inputs || []).map((i) => at.get(i.from)).filter((j) => j !== undefined) : []));
-  const out = new Set();
-  let idx = 0;
-  const index = new Array(list.length).fill(-1), low = new Array(list.length).fill(0), on = new Array(list.length).fill(false), stack = [];
-  const visit = (v) => {
-    index[v] = low[v] = idx++; stack.push(v); on[v] = true;
-    edges[v].forEach((w) => {
-      if (index[w] < 0) { visit(w); low[v] = Math.min(low[v], low[w]); } else if (on[w]) low[v] = Math.min(low[v], index[w]);
-    });
-    if (low[v] === index[v]) {
-      const comp = [];
-      let w;
-      do { w = stack.pop(); on[w] = false; comp.push(w); } while (w !== v);
-      if (comp.length > 1 || edges[v].indexOf(v) >= 0) comp.forEach((x) => out.add(x));
-    }
-  };
-  for (let v = 0; v < list.length; v++) if (index[v] < 0) visit(v);
-  return out;
-}
 
 /* resolveArgs(args, inputs) → { ok, args } | { ok:false, why }
    An argument that is a string of exactly the form  @<task id>:<path>  is replaced by what that task's result holds at
@@ -455,42 +386,16 @@ export function useDelegationStore(store) { _delegationStore = store; return sto
    One request; if what comes back is not the shape asked for, ONE repair request that names what was wrong
    (a retry that does something different — one-pass-or-a-reason §5). The calls a worker may make are the
    server's to bound. */
-const WORKER_SYSTEM = personaPrompt('working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers', { mode: 'internal' }) + [
-  'Do only the piece you are given. Use the web search tool when it is attached to find and verify current facts; prefer primary and official sources.',
-  'Never invent a fact, a figure, a date, a source or a coordinate. Give coordinates only when you know them (a well-known city, port, strait or facility); otherwise leave them out and name the place.',
-  'Write in the language the piece is written in.',
-  'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL), "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "gaps": [string] (what you could not establish, and why), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does)}.',
-].join('\n');
+const WORKER_SYSTEM = workerSystem(personaPrompt('working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers', { mode: 'internal' }));
 
-function workerPrompt(task) {
-  let p = 'YOUR PIECE OF THE WORK:\n' + task.goal;
-  if (task.returns) p += '\n\nWHAT ATLAS NEEDS BACK:\n' + task.returns;
-  (task.inputs || []).forEach((i) => {
-    p += '\n\nWHAT ANOTHER WORKER FOUND (task "' + i.from + '") — build on it, do not repeat it:\n' + JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data }).slice(0, 12000);
-  });
-  return p + '\n\nToday is ' + new Date().toISOString().slice(0, 10) + '.';
-}
 
-/* shapeOf(data) → { ok, out } | { ok:false, why } — the worker's answer held to the shape it was asked for */
-export function shapeOf(data) {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return { ok: false, why: 'the answer was not a JSON object' };
-  if (typeof data.summary !== 'string' || !data.summary.trim()) return { ok: false, why: '"summary" was missing or empty' };
-  if (data.findings != null && !Array.isArray(data.findings)) return { ok: false, why: '"findings" was not an array' };
-  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : undefined);
-  const findings = (data.findings || []).filter((f) => f && typeof f === 'object' && typeof f.claim === 'string' && f.claim.trim()).map((f) => {
-    const lat = num(f.lat), lon = num(f.lon);
-    const ll = lat != null && lon != null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
-    const verdict = (f.verdict === 'supported' || f.verdict === 'unsupported' || f.verdict === 'contradicted') ? f.verdict : undefined;
-    return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined };
-  });
-  return { ok: true, out: { summary: s(data.summary, 4000), findings, facts: normalizeFacts(data.facts), gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] } };
-}
 
 /* requestKey(prompt, webMode) → a key in ai-proxy's REPLAY_KEY_OK alphabet that is the same for the same request and (to
    2^-64) different for any other: two independent 32-bit hashes of the text, written in hex. Not a secret and not a
    signature — the server binds the key to the account and the turn; this only has to tell requests apart. */
-export function requestKey(prompt, webMode) {
-  const text = String(webMode || '') + '\n' + String(prompt || '');
+export function requestKey(prompt, webMode, model) {
+  /* (model-options) the model is part of the request's identity: the same prompt put to a stronger model is a different request, not a duplicate */
+  const text = String(webMode || '') + '\n' + (model ? String(model) + '\n' : '') + String(prompt || '');
   let h1 = 0x811c9dc5, h2 = 0x9747b28c;
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i);
@@ -600,12 +505,12 @@ export function makeWorkerExecutor(o) {
         let env;
         calls += 1;
         try {
-          env = await ask(prompt, WORKER_SYSTEM, null, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, signal: controller.signal,
+          env = await ask(prompt, WORKER_SYSTEM, null, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, modelHint: task.model || undefined, signal: controller.signal,
             /* the key is the REQUEST's identity — what is asked and how (prompt + web mode), under this child's turn key. A duplicate of THIS
                request (the same delegation resumed by another executor) is answered with the first's answer instead of being run again;
                a different request — the repair, the retry, or another research.delegate call that reused the id "task1" in the same turn —
                has a different key and is never handed this one's answer. */
-            replayKey: requestKey(prompt, webMode) });
+            replayKey: requestKey(prompt, webMode, task.model) });
         } catch (e) {
           if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, sources };
           const code = String((e && e.code) || '');
