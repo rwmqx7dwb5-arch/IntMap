@@ -42,3 +42,5 @@ eager (起動時) の行は動いていない。
 追記: origin/main を取り込み直した後、`dist.total` が 1542452.9 → 1550187.3 kB、`dist.assets` が 21686.9 → 21807.8 kB の天井を超えた (CI の Gates 2/3 と、データを取得した手元の build の両方で再現)。意味層の遅延チャンク (`gis-core` ほか) と、同時に取り込んだ main 側の新規モジュール (`atlas-geoplan`・`data-impact` など) の合計。超えた 2 行だけ `--update` で上げた。eager の行は動いていない。
 
 追記 (3 回目の取り込み): `atlas-orchestrate` が 82.4 → 96.1 kB で天井を超えた (CI の Gates 2/3 と、データを取得した手元の build の両方で再現)。このチャンクに触る変更は本 PR の差分に無い (本 PR の js/ は gis-semantics・gis-core・gis-atlas・atlas-cap-data のみ) ので、増分は同時に取り込んだ main 側 (atlas-geoplan など) 由来と見ている。main 側の天井更新が bot で追いつくまでの差を、この PR で超えた行だけ上げて通した。
+
+`async.gzip` を 4833.8 → 4860.4 kB、`atlas-cap-runs` チャンクを 918.5 → 923.7 kB に上げた（意味の層の説明文と、同時に main へ入った変更の合算。超えた 2 行だけ `--update` が書いた）。
