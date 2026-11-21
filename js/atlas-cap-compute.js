@@ -67,10 +67,17 @@ export default [
         meta.code = r.why;
         return R(false, html, { meta: meta });
       }
-      /* THE FACTS FIRST: Atlas reads the card's text through RESULT_TEXT_MAX (js/atlas-toolsurface.js), so
-         the dataset ids and the values come before the streams. */
-      const parts = (r.datasets || []).map((d) => '<div><b>' + esc(d.name) + '</b> → ' + esc(d.title) + ' · ' + d.count + ' ' + esc(L('rows', '行'))
-        + ' · <code>' + esc(d.id) + '</code>' + (d.nonFinite ? ' · ' + esc(L(d.nonFinite + ' non-finite values became null', d.nonFinite + ' 個の非有限値を null にしました')) : '')
+      /* TWO READERS, TWO STRUCTURES (atlas-reader-record). The card is what the READER is shown: what was made, how big, what it
+         holds. The record is what the NEXT CALL needs and the reader does not — the dataset ids, the interpreter, the packages, what to do
+         with the ids — as plain text in `meta.record`, which js/atlas-toolsurface.js hands to the model before the card's text. */
+      const ds = r.datasets || [];
+      const pk = r.packages && r.packages.length ? r.packages.join(', ') : '';
+      const rec = [L('Python run on ' + r.runtime + (pk ? ' with ' + pk : '') + '.', r.runtime + (pk ? '（' + pk + '）' : '') + ' で Python を実行しました。')]
+        .concat(ds.map((d) => L('Dataset "' + d.name + '" has id ' + d.id + '.', 'データセット「' + d.name + '」の id は ' + d.id + ' です。')));
+      if (ds.length) rec.push(L('Use these ids as the inputs of the next step.', 'これらの id を次の処理の入力に使えます。'));
+      meta.record = rec.join(' ');
+      const parts = ds.map((d) => '<div><b>' + esc(d.title) + '</b> · ' + d.count + ' ' + esc(L('rows', '行'))
+        + (d.nonFinite ? ' · ' + esc(L(d.nonFinite + ' non-finite values became null', d.nonFinite + ' 個の非有限値を null にしました')) : '')
         + ' — ' + esc(d.fields.map((f) => f.name + ':' + f.type).join(', ')) + '</div>');
       Object.keys(r.values || {}).forEach((n) => {
         const v = r.values[n];
@@ -79,9 +86,7 @@ export default [
           + (v.nonFinite ? ' · ' + esc(L(v.nonFinite + ' non-finite values became null', v.nonFinite + ' 個の非有限値を null にしました')) : '') + '</div>');
       });
       if (!parts.length) parts.push('<div>' + esc(L('The code ran and bound no `result`.', 'コードは実行されましたが、`result` は作られませんでした。')) + '</div>');
-      const html = '<div class="atlas-gis-result"><b>' + esc(r.reused ? L('Same code on the same data — answered from the earlier run (nothing was recomputed)', '同じコードと同じデータのため、前回の結果を返しました（再計算していません）') : L('Ran Python', 'Python を実行しました')) + '</b> · ' + esc(r.runtime)
-        + (r.packages && r.packages.length ? ' · ' + esc(r.packages.join(', ')) : '') + parts.join('') + streams
-        + ((r.datasets || []).length ? '<div class="atlas-gis-next">' + esc(L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。')) + '</div>' : '') + '</div>';
+      const html = '<div class="atlas-gis-result"><b>' + esc(r.reused ? L('Same code on the same data — answered from the earlier run (nothing was recomputed)', '同じコードと同じデータのため、前回の結果を返しました（再計算していません）') : L('Calculation finished', '計算が完了しました')) + '</b>' + parts.join('') + streams + '</div>';
       return R(true, html, { meta: meta });
     },
   },

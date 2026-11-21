@@ -298,6 +298,15 @@ const API = {
     }
     return out;
   },
+  /** align(idA, idB, when) → the pair's verdict (js/layer-time.js `align`) with its sentence { en, jp } — can these two layers
+      be compared or joined at this instant, or does one show another date, speak at another resolution, or draw its
+      units differently? Needs the table loaded (`await load` is done by `alignAll`). */
+  align: async (idA, idB, when) => {
+    await load();
+    const at = atOf(when); if (!at || !DECL || !DECL[idA] || !DECL[idB]) return null;
+    const r = R.align(DECL[idA], DECL[idB], at, rtOf(idA), rtOf(idB));
+    return Object.assign({ ids: [idA, idB] }, r, { message: R.explainAlign(r, label(idA), label(idB), at) });
+  },
   /** what the ticked layers do at the instant on the clock (Atlas's `time` section) */
   active: () => {
     if (!DECL) return null;
