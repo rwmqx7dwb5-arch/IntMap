@@ -35,3 +35,6 @@ newsjp: Atlasが、工場の立地として日本の都道府県を、卸電力�
 
 ## 天井を上げた理由(perf)
 `atlas-cap-runs`（896.4→910.2 kB）・async.gzip・dist.assets の天井を測定値へ上げた。`siting.compare` の能力と、都道府県の比較表の描画が research/spatial の遅延チャンクに入った分。
+
+## perf (re-measured after main moved, 2026-11-21)
+Main gained new async chunks from other PRs; the atlas-cap-runs / async ceilings were re-measured on this branch and raised with `perf-budget --update`. The growth is siting.compare, which this PR adds.
