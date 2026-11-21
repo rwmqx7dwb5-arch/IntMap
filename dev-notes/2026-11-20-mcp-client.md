@@ -44,3 +44,5 @@ newsjp: Atlasが、登録した外部MCPサーバーのツールを、自身の�
 
 追記: main の取り込み直後の再測定で `atlas-cap-runs` 909.0→919.0 kB・`atlas-console` 1080.1→1085.7 kB・async.raw 14304.0→14391.9 kB。
 理由は上と同じ（MCP の 4 能力と確認文。遅延チャンクの中）。`dist.total` / `dist.assets` はローカルの data:pull の差が混じるため上げていない。
+
+追記: CI の実測（`dist.total` 1550208.7 kB・`dist.assets` 21826.4 kB）がローカルと一致したので、この 2 行も上げた（`dist.total` 1542452.9→1550211.2 kB・`dist.assets` 21686.9→21826.6 kB）。先の「ローカルの差」という見立ては誤りだった。
