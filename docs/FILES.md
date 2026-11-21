@@ -1017,6 +1017,10 @@ atlas-plan.js                     Atlas — 計画の台帳と地図の上の計
                                   宣言する）、手順ごとの状態を実行器の判定から導く台帳（`makeAtlasPlan`。DOM なし・
                                   `runTurn` の `opts.plan`）、モデルへ戻す `promptBlock()`、HUD の中の計画カードと
                                   手順が描いたものへの移動（`makePlanView`）。⚠ 手順を決めない・観測できなかったものを完了にしない
+atlas-geoplan.js                  Atlas — 地理空間分析の仕様（`plan` 道具の `geo`）。対象地域・時点・必要データ（出所と完全性と解像度）・演算・実行環境・
+                                  成果物を構造として持ち、書かれていない項目（gaps）を列挙し、`check:true` のとき IntMap の
+                                  レイヤーと世界のカタログ（STAC/OGC）に存在を問う（`preflight`）。DOM なし。
+                                  ⚠ 何も既定値で埋めない・何も拒否しない・カタログは全域被覆を証明できない（`unproven`）
 atlas-highlight.js                Atlas — コードブロックのシンタックスハイライト（#R494）。外部依存なしの
                                   8 文法（js/ts・python・json・html/xml・css・sql・bash・yaml）＋
                                   未知言語のフォールバック。出力は必ず esc 済み。配色は
@@ -1343,6 +1347,7 @@ evidence-graph.js               **数値の出自の長期グラフ**（純粋�
 evidence-graph-record.js        Evidence Graph の記録係 — GIS データセット（`bindGis`）と Atlas 回答の数値（`recordAnswer`、`graphRef` 経由で GIS 鎖へ）。モデルが書いた URL/id は節を作らない。
 evidence-graph-deliver.js       成果物が**実際に何を持つか**を事実として出す（純粋）— 各列が何行に値を持つか・数値ごとの独立した出典数（同一ホストは 1）。判断は別モデルの goal verifier（`observe`）。
 evidence-graph-sync.js          Evidence Graph のアカウントの写し — `evidence_graph_nodes` へ pull→push（`pending/ackPending`）。同意はノート同期と同じ。
+data-impact.js                  **上流の更新 → 作り直す分析の特定と再実行**（純粋）— 観測した版を Evidence Graph の現在版と突き合わせ（`diffObserved`）、動かす前に影響先を上流順に出し（`planRefresh`・`rerun` / `review`）、版を進めて `staleness` と過不足を照合（`applyUpdates`）、呼び出し側の runner で 1 回だけ上流順に再実行（`executePlan`・失敗の下流は blocked）。
 world-graph-store.js            **永続の世界グラフの読み口**（遅延・純粋）— Supabase の `world_graph_*`（対象・型付きの辺・値）を、世界オブジェクトの索引と同じ型
                                   （`geo.worldObject`）で `atlas-world-objects.js` の索引へ入れる（`fetchSubgraph` / `findPersisted` / `nearPersisted` / `freshness`〔フィードの最終確認〕）。結ぶのは識別子（`ids`）で綴りではない。
                                   データベースが答えなかったことは `unavailable` / `failed` で返し、空のグラフとは区別する。能力 `research.object` / `research.related` が読む
@@ -1646,6 +1651,7 @@ table-bind.js                     **表の場所の列**（純関数）——各
                                   場所の鍵（ISO alpha-3、無ければ ADM0_A3／GeoNames id）を返す。同名は曖昧として解決しない（同じ行の国の列で絞る）
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
 legal.js                          その本文をアプリ内モーダルに表示する（本文は開いたときに遅延モジュール legalText で読む）
+ask-dialog.js                     アプリ内の確認・入力ダイアログ askInApp()（window.confirm/prompt の代わり。アカウント画面と地図エンジンの切替が使う）
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・
                                   閉じたときのフォーカス復帰、「押せる」の契約（role+tabindex を Enter/Space で押す委譲・makeActionable）、
                                   検索欄の listbox（矢印キー）。数える側は scripts/keyboard-reach.mjs
