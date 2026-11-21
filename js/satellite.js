@@ -9,6 +9,8 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { IntMapTime } from './chronos.js';
+import { captureAt, captureLine, rankAt, planClockMatch, sourceById, clockMatchNote, SOURCES } from './imagery-registry.js';   /* (sat-imagery-supply) what picture is where, when, how sharp, on what terms */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function satellite(HOST){
@@ -26,7 +28,7 @@ export function satellite(HOST){
      USE, not at factory level: tests/engine-app-shell-split-checks.test.mjs (#R169) #4 requires a factory body to DECLARE and never to run. */
   let _LS=null; const LS=()=>(_LS||(_LS=IntMapLang.pick(()=>HOST.lang)));
   function satMsg(key,p){ return String(HOST.t(key)||'').replace('{provider}',(p&&(LS().arr(p.name)||p.short))||''); }
-  function satCaptureLabel(p){ if(!p) return ''; if(!p.dated) return HOST.t('satLatest'); if(p.dateMode==='year') return HOST.satState.year+' '+HOST.t('satMosaicSuffix'); return HOST.satState.day; }
+  function satCaptureLabel(p){ if(!p) return ''; if(p.epoch) return p.epoch[0]+'–'+p.epoch[1]; if(!p.dated) return HOST.t('satLatest'); if(p.dateMode==='year') return HOST.satState.year+' '+HOST.t('satMosaicSuffix'); return HOST.satState.day; }
   function satChipHTML(){ const p=satProviderById(HOST.satState.providerId); if(!p) return ''; return `<span class="cr-sat">${icon('antenna')} ${p.short} · ${satCaptureLabel(p)}</span>`; }
   function satRefreshReadout(){ try{ HOST.renderCoordReadout(); }catch(_){} }
   /* (layer-failure-state) delegates to the app's ONE toast and live region, js/notify.js. It used to draw a second
@@ -53,7 +55,7 @@ export function satellite(HOST){
     const target=(HOST.satActive===0)?1:0, srcId='sat-src-'+target, lyrId='sat-fx-'+target;
     try{ if(GE().layers.has(lyrId)) GE().layers.remove(lyrId); if(GE().layers.hasSource(srcId)) GE().layers.removeSource(srcId); }catch(_){}
     try{
-      GE().layers.addSource(srcId,{type:'raster',tiles:tiles,tileSize:256,maxzoom:p.maxzoom||19,attribution:p.attribution||''});
+      GE().layers.addSource(srcId,{type:'raster',tiles:tiles,tileSize:256,minzoom:p.minzoom||0,maxzoom:p.maxzoom||19,attribution:p.attribution||''});
       const before=GE().layers.has('layer-sat-labels')?'layer-sat-labels':undefined;
       GE().layers.add({id:lyrId,type:'raster',source:srcId,layout:{visibility:'visible'},
         paint:{'raster-opacity':animate?0:HOST.satState.opacity,'raster-opacity-transition':{duration:animate?450:0}}},before);
@@ -94,6 +96,9 @@ export function satellite(HOST){
     const p=satProviderById(id); if(!p) return;
     if(!satHasKey(p)){ satToast(HOST.t('satLocked')); satRenderController(); return; }
     HOST.satState.providerId=id; HOST.satErrCount=0; HOST.satAutoBackoff=0;
+    /* (sat-imagery-supply) a supplier's own date range: the year/day carried over from the previous supplier may be outside it */
+    if(p.dateMode==='year'&&p.years&&!p.years.includes(HOST.satState.year)) HOST.satState.year=p.years.slice().sort((x,y)=>Math.abs(x-HOST.satState.year)-Math.abs(y-HOST.satState.year))[0];
+    if(p.dateMode==='day'&&p.source&&p.source.time.from&&HOST.satState.day<p.source.time.from) HOST.satState.day=p.source.time.from;
     satRenderController(); satApply(true); satRefreshReadout();
   }
   function satStepDay(delta,auto){
@@ -115,6 +120,8 @@ export function satellite(HOST){
     if(!e||!e.sourceId||String(e.sourceId).indexOf('sat-src-')!==0) return;
     const p=satProviderById(HOST.satState.providerId); if(!p) return;
     const st=e.error&&e.error.status;
+    /* (sat-imagery-supply) a regional or swath source answers 404 where it has no picture — that is its declared coverage, not a failure */
+    if((st===404||st===400)&&p.source&&(p.source.scope==='regional'||p.source.partial)) return;
     if(st===401||st===403){ satToast(satMsg('satErrAuth',p)); HOST.satErrCount=0; satRevertToFallback(); return; }
     HOST.satErrCount++;
     /* Dated GIBS day-layers: the latest day may not be processed yet → walk back to the freshest
@@ -123,6 +130,66 @@ export function satellite(HOST){
       HOST.satAutoBackoff++; HOST.satErrCount=0; satStepDay(-1,true); return;
     }
     if(HOST.satErrCount>=4){ HOST.satErrCount=0; satToast(satMsg('satErrTiles',p)); satRevertToFallback(); }
+  }
+  /* ══ (sat-imagery-supply) WHAT IS THE PICTURE, AND IS THERE A BETTER ONE HERE ═══════════════════════════
+     The capture line is MEASURED where the supplier answers per place (Esri's Citations layer), CHOSEN where the picture is the date
+     picked (GIBS, PDOK), and DECLARED — said to be a range — where the supplier publishes no per-place date (GSI, USGS, swisstopo).
+     The three never read alike: a declared range is not shown as if it were a date (js/imagery-registry.js, captureLine). */
+  const satLang=()=>HOST.lang==='jp'?'jp':'en';
+  function satCenter(){ try{ const c=GE().camera.getCenter(); return { lng:c.lng, lat:c.lat, zoom:GE().camera.getZoom() }; }catch(_){ return null; } }
+  function satClockISO(){ try{ const T=IntMapTime; if(T&&T.iso) return T.iso(); }catch(_){} return new Date().toISOString().slice(0,10); }
+  /* the capture block is built as DOM nodes (textContent, hrefs through IntMapSafe.url) — never as an HTML string */
+  function satEl(tag,cls,text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+  function satBuildCapture(p){
+    const rows=satHereRows(), frag=document.createDocumentFragment();
+    const cap=satEl('div','satc-capture',IntMapLang.t(HOST.lang,'Reading the picture date…','画像の撮影日を確認中…')); cap.id='satc-capture'; cap.setAttribute('aria-live','polite'); frag.append(cap);
+    const mrow=satEl('div','satc-row'), mb=satEl('button','satc-match',IntMapLang.t(HOST.lang,'Match the Chronos time','Chronos の時刻に合わせる')); mb.type='button'; mb.id='satc-match'; mrow.append(mb); frag.append(mrow);
+    const det=satEl('details','satc-here'), sum=satEl('summary',null,IntMapLang.t(HOST.lang,'Pictures available here','この場所で使える画像')+' ('+rows.length+')'), ul=satEl('ul'); ul.id='satc-here-list';
+    rows.forEach(r=>{
+      const li=satEl('li'), b=satEl('button',null,LS().arr(satProviderById(r.id).name)||r.source.short); b.type='button'; b.setAttribute('data-id',r.id); if(r.id===p.id) b.setAttribute('aria-current','true');
+      b.append(satEl('small',null,(r.source.scope==='regional'?IntMapLang.t(HOST.lang,'regional · ','地域別 · '):'')+(r.resolutionM<1?Math.round(r.resolutionM*100)+' cm':r.resolutionM+' m')+(r.pick.exact?'':IntMapLang.t(HOST.lang,' · nearest year ',' · 最も近い年 ')+(r.pick.year||''))+(r.basis==='range'?IntMapLang.t(HOST.lang,' · date unknown (range)',' · 撮影日は範囲のみ'):'')));
+      li.append(b); ul.append(li);
+    });
+    det.append(sum,ul); frag.append(det);
+    return frag;
+  }
+  function satHereRows(){ const c=satCenter(); if(!c) return []; const T=IntMapTime; const live=!(T&&T.isLive&&!T.isLive()); return rankAt({ lng:c.lng, lat:c.lat, zoom:c.zoom, time:live?null:satClockISO() }); }
+  function satBuildLicence(p){
+    const s=p&&p.source, out=document.createDocumentFragment(); if(!s||!s.license) return out; const l=s.license;
+    out.append(' ');
+    const u=/^https:///.test(l.url||'')?l.url:'';
+    if(u){ const an=satEl('a',null,IntMapLang.t(HOST.lang,'Terms','利用条件')); an.href=u; an.target='_blank'; an.rel='noopener noreferrer'; out.append(an); out.append(': '); } else out.append(IntMapLang.t(HOST.lang,'Terms','利用条件')+': ');
+    out.append(l.name+(l.commercial==='unconfirmed'?IntMapLang.t(HOST.lang,' (commercial use not confirmed)','（商用の可否は未確認）'):''));
+    return out;
+  }
+  let _satCapSeq=0;
+  async function satUpdateCapture(){
+    const el=document.getElementById('satc-capture'); if(!el) return;
+    const p=satProviderById(HOST.satState.providerId), s=p&&p.source, c=satCenter(); if(!s||!c) { el.textContent=''; return; }
+    const seq=++_satCapSeq;
+    let info=null; try{ info=await captureAt(s,{ lng:c.lng, lat:c.lat, day:HOST.satState.day, year:HOST.satState.year }); }catch(_){ info=null; }
+    if(seq!==_satCapSeq||!info) return;
+    const el2=document.getElementById('satc-capture'); if(!el2) return;
+    const note=(info.text&&info.text[satLang()==='jp'?1:0])||(s.note&&s.note[satLang()==='jp'?1:0])||'';
+    el2.textContent=''; el2.append(captureLine(s,info,satLang())); if(note){ const sm=document.createElement('small'); sm.textContent=note; el2.append(sm); }
+  }
+  function satWireCapture(panel,p){
+    const m=panel.querySelector('#satc-match'); if(m) m.onclick=satMatchClock;
+    panel.querySelectorAll('#satc-here-list button').forEach(b=>{ b.onclick=()=>{ const id=b.getAttribute('data-id'); if(id&&id!==HOST.satState.providerId) satSelectProvider(id); }; });
+    satUpdateCapture();
+    if(!satWireCapture._moved){ satWireCapture._moved=true; let t=0; try{ GE().events.on('moveend',()=>{ clearTimeout(t); t=setTimeout(()=>{ if(HOST.mapType==='sat') satUpdateCapture(); },700); }); }catch(_){} }
+  }
+  /** Chronos → the picture of that time: this supplier's date for it, or the best supplier that has that time here. */
+  function satMatchClock(){
+    const c=satCenter(); if(!c) return;
+    const plan=planClockMatch({ providerId:HOST.satState.providerId, lng:c.lng, lat:c.lat, zoom:c.zoom, iso:satClockISO() });
+    if(!plan){ satToast(IntMapLang.t(HOST.lang,'No satellite or aerial picture of that time is available here.','その時刻のこの場所の衛星・航空画像はありません。')); return; }
+    if(plan.pick.day) HOST.satState.day=plan.pick.day;
+    if(plan.pick.year) HOST.satState.year=plan.pick.year;
+    if(plan.switched){ HOST.satState.providerId=plan.providerId; HOST.satErrCount=0; HOST.satAutoBackoff=0; }
+    satRenderController(); satApply(true); satRefreshReadout();
+    const ps=sourceById(plan.providerId), why=ps&&(IntMapTime&&IntMapTime.isLive&&!IntMapTime.isLive())?clockMatchNote(ps,plan.pick,satLang()):'';   /* a picture of an unknown date is never presented as that day's */
+    if(why) satToast(why);
   }
   /* Sat-Controller panel (provider + capture-date + opacity). Rebuilt on change / language. */
   function satRenderController(){
@@ -141,14 +208,17 @@ export function satellite(HOST){
       const yo=p.years.map(y=>`<option value="${y}"${y===HOST.satState.year?' selected':''}>${y}</option>`).join('');
       dateCtrl=`<div class="satc-row"><label for="satc-year">${HOST.t('satDate')}</label><select id="satc-year">${yo}</select></div>`;
     } else {
-      dateCtrl=`<div class="satc-row"><label>${HOST.t('satDate')}</label><span class="satc-latest">${HOST.t('satLatest')}</span></div>`;
+      dateCtrl=`<div class="satc-row"><label>${HOST.t('satDate')}</label><span class="satc-latest">${p.epoch?p.epoch[0]+'–'+p.epoch[1]:HOST.t('satLatest')}</span></div>`;
     }
     panel.innerHTML=`<div class="satc-head">${icon('antenna')} <span>${HOST.t('satCtrlTitle')}</span><button id="satc-close" title="${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" aria-label="${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" style="margin-left:auto;background:transparent;border:none;color:var(--text-muted);width:26px;height:26px;font-size:22px;font-weight:300;line-height:1;cursor:pointer;">×</button></div>`+
       `<div class="satc-row"><label for="satc-provider">${HOST.t('satProvider')}</label><select id="satc-provider">${opts}</select></div>`+
       dateCtrl+
+      '<div id="satc-extra"></div>'+
       `<div class="satc-row"><label for="satc-op">${HOST.t('opacity')}</label><input type="range" id="satc-op" min="0.2" max="1" step="0.05" value="${HOST.satState.opacity}"></div>`+
       aiSatChangeBlockHTML(p)+
-      `<div class="satc-attr">${p.attribution||''}</div>`;
+      `<div class="satc-attr"><span>${p.attribution||''}</span><span id="satc-terms"></span></div>`;
+    { const ex=panel.querySelector('#satc-extra'); if(ex) ex.replaceWith(satBuildCapture(p)); const tm=panel.querySelector('#satc-terms'); if(tm) tm.append(satBuildLicence(p)); }
+    satWireCapture(panel,p);
     const sp=panel.querySelector('#satc-provider'); if(sp) sp.onchange=ev=>satSelectProvider(ev.target.value);
     const dd=panel.querySelector('#satc-day'); if(dd) dd.onchange=ev=>{ HOST.satState.day=ev.target.value||HOST.satState.day; satApply(true); satRefreshReadout(); };
     const yy=panel.querySelector('#satc-year'); if(yy) yy.onchange=ev=>{ HOST.satState.year=parseInt(ev.target.value,10)||HOST.satState.year; satApply(true); satRefreshReadout(); };
