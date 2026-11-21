@@ -9,6 +9,7 @@ import { str, num, int, list, obj } from './atlas-caps.js';
 import { overpassQuery } from './overpass.js';
 import { FEATURES, findSimilar, overpassCounts } from './geo-similar.js';
 import { makeAdminStats, KIND_LABEL, KIND_EN, KIND_JA } from './admin-stats.js';
+import { jsonWithin } from './fetch-deadline.js';
 
 /* 特徴の和名。language-keyed な object ではなく 特徴 id → 和名 の表（英名は FEATURES.label）。表示のたびに L(英名, 和名) で解く */
 const FEATURE_JP = {"buildings":"建物","residential":"住居系の建物","commercial":"商業・事務所系の建物","industrial":"工場・倉庫の建物","roads_major":"幹線道路","roads_local":"生活道路・サービス道路","paths":"歩道・小径","rail":"鉄道・地下鉄・路面電車","stations":"駅・停留所","food":"飲食店","shops":"店舗","offices":"事務所","education":"学校・大学","health":"医療施設","tourism":"観光・宿泊","green":"公園・運動場","water":"水面・海岸線","port":"桟橋・岸壁・ドック","port_land":"港湾・埠頭の用地","cranes":"クレーン・コンテナヤード"};
@@ -115,7 +116,7 @@ export default [
         if (kind === 'nuts' && ![1, 2, 3].includes(Number(a.level))) return fail(L('To colour NUTS regions, give "level": 1, 2 or 3 (each level is a different set of regions).', 'NUTS を塗るには "level" を 1・2・3 で指定してください（レベルごとに別の地域の集合です）。'), 'LEVEL_NEEDED');
         const GU = window.GeoJSONUpload;
         let adm = null, nutsFc = null;
-        if (kind === 'nuts') { try { nutsFc = await (await import('./fetch-deadline.js')).jsonWithin('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_' + Number(a.level) + '.geojson', 60000); } catch (_) { nutsFc = null; } }
+        if (kind === 'nuts') { try { nutsFc = await jsonWithin('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_' + Number(a.level) + '.geojson', 60000); } catch (_) { nutsFc = null; } }
         else { try { adm = await admin1(); } catch (_) { adm = null; } }
         if ((kind === 'nuts' ? !nutsFc : !adm) || !GU || typeof GU.add !== 'function') return dataFail(L('The map could not take the layer (boundaries or the layer door are unavailable).', '地図にレイヤーを載せられませんでした（境界かレイヤーの入口が使えません）。'), 'MAP_UNAVAILABLE', true);
         const b = kind === 'nuts' ? await AS.nutsBoundaries(nutsFc, { prefix, year: a.year, toleranceYears: a.toleranceYears }) : await AS.boundaries(adm, { prefix, year: a.year, toleranceYears: a.toleranceYears });
