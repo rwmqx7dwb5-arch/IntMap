@@ -43,3 +43,9 @@ internal: 開発工程（CI の待ち行列と PR の着地）だけの変更で
   - **能力目録の位置の取り合い**: #1346 の `model.discover` と #1343 の `geo.ml` が `spatial-analysis` 節の位置 52 を両方とも取り、目録が組み立てられなかった（Regression 3 shard の赤のほとんどがこれ）。列車の上で `geo.ml` を空いている 51 へ移した。
   - **同じ向きに動いた数は 1 回分しか動かない**: 2 本の PR がそれぞれ Edge Function を 1 本足し、文書を 25→26 と同じに書き換えた。両側の変更が同一なので git は衝突と見なさず、合わせた木は 27 本なのに文書は 26 のまま。migration（71→73）と deep tier の spec 数（171→172）も同じ形。`tokens` の driver は衝突した hunk にしか呼ばれないので届かない。列車の上で実体の数へ直した。
 - ⇒ `--build` は push の前に手元で `check:docs`・`check:catalog`・`check:capabilities` を走らせ（数秒〜数十秒）、赤なら push しない。直して commit したら `--push-only <worktree>` で続ける。CI の 1 時間を待たずに分かる赤は、CI に出さない。
+
+## 6. 最初の列車の 2 周目で直したもの・降ろしたもの
+
+- **検索と監査が目録を 2 通りに読んでいた**: `js/atlas-capabilities.js` の `docBlocks` は、能力の説明の始まりが見つからないとき裸の `"<綴り>"` を探す。#1343 が `spatial-analysis` 節を長くして model.discover の `{"type":"modelDiscover"` が次の断片へ移ると、その予備の規則が data.gisRemote の `"action":"discover"|"search"|…` に当たり、残りの文を model.discover のものと読んだ（data.gisRemote は自分の説明のどの語でも 0 点）。引数の**名前**（`"show"?:`）を言及と読まない規則は 2026-10-13 からあったが、**値**（`:` の後・`|` の選択肢）は無く、監査（`scripts/atlas-capability-audit.mjs` の `marksOf`）には名前の規則すら無かった。⇒ `quotedIsArgument` を 1 つ置き、検索も監査もそれを呼ぶ（`tests/merge-train-checks.test.mjs` ⑥）。
+- **#1368 を降ろした**: 新しい `js/gis-engine-domain.js` が製品のどこからも import されていない（`audit-structure` ①）。#1368 自身の CI も赤。
+- **#1364 を降ろした**: ブラウザ全体の時間の天井 5,250 秒に対し、#1356（55 秒）と #1364（12 秒）が単独ではそれぞれ収まり、合わせると 5,258 秒。天井は上げずに時間を返す方針（`scripts/test-budget.mjs` の履歴）なので、#1364 は 8 秒を返してから次の列車に載せる。
