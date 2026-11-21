@@ -11,6 +11,14 @@ import { defineTask } from "./spec.ts";
 export const ATLAS_VERIFY_SCHEMA = {
   type: "OBJECT",
   properties: {
+    met: {   // the parts of the request the record does cover, so Atlas sees where it stands (optional)
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: { need: { type: "STRING" }, how: { type: "STRING" } },
+        required: ["need"],
+      },
+    },
     unmet: {
       type: "ARRAY",
       items: {
@@ -28,7 +36,7 @@ export const ATLAS_VERIFY_SCHEMA = {
 
 export default defineTask({
   name: "atlas_verify",
-  maxOutput: 500,   // a short list of unmet needs, usually empty
+  maxOutput: 900,   // the covered parts and the unmet needs, a line each
   reasoning: "low",   // comparing a request with a record it is GIVEN is reading, not research
   json: true,
   schema: ATLAS_VERIFY_SCHEMA,
