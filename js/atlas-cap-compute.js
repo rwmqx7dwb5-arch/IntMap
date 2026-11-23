@@ -108,7 +108,7 @@ export default [
           + (v.nonFinite ? ' · ' + esc(L(v.nonFinite + ' non-finite values became null', v.nonFinite + ' 個の非有限値を null にしました')) : '') + '</div>');
       });
       if (!parts.length) parts.push('<div>' + esc(L('The code ran and bound no `result`.', 'コードは実行されましたが、`result` は作られませんでした。')) + '</div>');
-      const html = '<div class="atlas-gis-result"><b>' + esc(L('Calculation finished', '計算が完了しました')) + '</b>' + parts.join('') + streams + '</div>';
+      const html = '<div class="atlas-gis-result"><b>' + esc(r.reused ? L('Same code on the same data — answered from the earlier run (nothing was recomputed)', '同じコードと同じデータのため、前回の結果を返しました（再計算していません）') : L('Calculation finished', '計算が完了しました')) + '</b>' + parts.join('') + streams + '</div>';
       /* (exec-platform) the run's program and the history of its capability calls are filed in the OPEN work, if there is one (js/atlas-job-products.js) */
       let filed = [];
       try { const WS = await import('./atlas-work-store.js'); if (WS.WORK_STATE.current) { const W = await import('./atlas-cap-work.js'); const P = await import('./atlas-job-products.js'); const fr = await P.fileRunToWork(r, a, W.workStore(), WS.WORK_STATE.current); filed = fr.ok ? fr.saved : []; } } catch (_) { filed = []; }

@@ -26,7 +26,7 @@ Edge Function 側の写し `_shared/atlas-cap-classes.js` は `scripts/sync-atla
 **カードも status も開かれない起動直後には適用されない**。起動時に未適用の保存操作を探す経路は未実装。
 
 ## 3. 失敗した分だけ再開
-migration `20261121140000_atlas_job_resume.sql` の `atlas_job_resume(p_job, p_only)`。失敗・拒否・取消の分担だけを `queued` に戻し、
+migration `20261123150000_atlas_job_resume.sql` の `atlas_job_resume(p_job, p_only)`。失敗・拒否・取消の分担だけを `queued` に戻し、
 `done`／`partial` はそのまま（二度実行・二度課金されない）。使った費用は上限に数え続ける（再開は新しい予算ではない）。
 `paused` という状態は足さない（止める＝`atlas_job_cancel`、続ける＝これ）。能力 `jobs.resume`（`jobs.start` と同じく外部・要確認）とカードの
 「終わっていない分だけもう一度実行」ボタン。途中の指示変更は既存の `jobs.amend`。
