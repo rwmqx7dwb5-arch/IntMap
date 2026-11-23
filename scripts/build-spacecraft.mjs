@@ -56,6 +56,12 @@ export const GOVERNANCE = {
     ...JPL_HORIZONS,
     /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
     autoRefresh: 'about twenty Horizons requests paced 0.7 s apart, no key; every answer is checked (scripts/lib/upstream.mjs) and the file is written only when every spacecraft in FLEET came back',
+    /* (describes.*) what this build asks Horizons for, and what the committed bundle measurably carries (17 spacecraft). */
+    period: { start: '2000-01-01', end: '2045-01-01' },
+    extent: '17 spacecraft (Voyager 1 and 2, Pioneer 10 and 11, New Horizons, Parker Solar Probe, Solar Orbiter, Juno, JUICE, Europa Clipper, Lucy, Psyche, BepiColombo, Hayabusa2, OSIRIS-APEx, JWST, Gaia), each over its own span within 2000-01-01 to 2045-01-01 (measured over the committed bundle)',
+    method: 'heliocentric J2000-ecliptic position (AU) and velocity (AU/day) per sample, Julian Date TDB, from Horizons; the sampling step is per spacecraft (3 to 120 days) and the client interpolates between samples with a cubic Hermite',
+    resolution: 'a sample every 3 to 120 days per spacecraft, set by how fast the body turns in the heliocentric frame',
+    accuracy: 'trajectories, not telemetry: for spacecraft with no contact (Pioneer 10 and 11) the position is propagated from the last fix, and the bundle marks each craft active, lost or ended',
     builtBy: 'scripts/build-spacecraft.mjs',
   },
 };
