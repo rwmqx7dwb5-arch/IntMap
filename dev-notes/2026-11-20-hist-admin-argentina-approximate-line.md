@@ -46,3 +46,5 @@ OHM のタイル側の線（`js/hist-scale.js` の `ohmFilter` / `inForce`）は
 - 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
 
 - 性能予算 async.raw 14376.3→14460.6 kB・atlas-cap-runs 918.5→924.9 kB: main 側で他の PR が足した能力（遅延チャンク）の分で、この PR の歴史データの増加ではない。取り込み後の全体ビルドで測った値。
+
+- 性能予算 atlas-cap-runs を 941.6 kB（964217 B）へ: main に入った他の PR の遅延チャンクの増加で、台帳が古いまま残っていた分。全体ビルドで測った同じ値を、同じ主題の他の PR と揃えて書いた。
