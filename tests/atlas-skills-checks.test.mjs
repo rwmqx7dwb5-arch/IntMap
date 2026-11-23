@@ -106,3 +106,60 @@ test('the tool surface: the same find_capability door finds and reads skills, an
   assert.match(read.text, /確率/);
   assert.equal(TS.footprintOf({ name: 'find_capability', arguments: { query: 'skill:x' } }, tools).pure, true);
 });
+
+/* ── readiness: what can actually be used, observed (skillReadiness) ───────────────────────────────────────────── */
+const stub = (needs, text) => ({ id: 'probe-skill', title: ['t', 't'], summary: ['s', 's'], keywords: [['k'], ['k']], needs,
+  sections: [{ id: 'a', title: ['a', 'a'], body: [text, text] }] });
+
+test('readiness: each capability and each declared need is available / unavailable / unobservable — three states, and silence is not "unavailable"', async () => {
+  const sk = stub([{ kind: 'layer', ref: 'ships', why: ['w', 'w'] }, { kind: 'runtime', ref: 'python', why: ['w', 'w'] }, { kind: 'dataset', ref: 'pop', why: ['w', 'w'] }, { kind: 'login', why: ['w', 'w'] }],
+    'use `layers.toggle` and `data.weather{place}` and `no.suchThing`');
+  const probes = { layer: (r) => ({ available: r === 'ships', label: 'Ships' }), runtime: () => ({ available: false, reason: 'worker-unavailable' }), dataset: () => ({ available: null }), login: () => { throw new Error('boom'); } };
+  const live = { resolve: (id) => (id === 'no.suchThing' ? null : { id, availability: () => ({ available: true }), facets: {} }) };   /* the real registry answers `atlas-kernel-not-loaded` until the page boots the kernel */
+  const r = await skills.skillReadiness(sk, { capabilities: live, probes });
+  const need = (k) => r.needs.find((n) => n.kind === k);
+  assert.equal(need('layer').state, 'available');
+  assert.equal(need('runtime').state, 'unavailable');
+  assert.equal(need('runtime').reason, 'worker-unavailable');
+  assert.equal(need('dataset').state, 'unobservable', 'a probe that cannot tell is not "missing"');
+  assert.equal(need('login').state, 'unobservable', 'a probe that throws is not "missing" either');
+  assert.equal(r.capabilities.find((c) => c.id === 'layers.toggle').state, 'available');
+  assert.equal(r.capabilities.find((c) => c.id === 'no.suchThing').state, 'unavailable');
+  assert.equal(r.counts.available + r.counts.unavailable + r.counts.unobservable, r.capabilities.length + r.needs.length);
+  const bare = await skills.skillReadiness(sk, { capabilities: live });
+  assert.ok(bare.needs.every((n) => n.state === 'unobservable' && n.reason === 'no-probe'), 'no probes handed in: nothing is claimed either way');
+});
+
+test('readiness: a withdrawn capability is unavailable with its reason; a network capability is unavailable only while offline', async () => {
+  const sk = stub([], 'use `data.weather{place}` and `layers.toggle`');
+  const fake = { resolve: (id) => ({ id, availability: () => (id === 'layers.toggle' ? { available: false, reason: 'withdrawn' } : { available: true }), facets: { network: id === 'data.weather' } }) };
+  const online = await skills.skillReadiness(sk, { capabilities: fake, probes: { network: () => ({ available: null }) } });
+  assert.equal(online.capabilities.find((c) => c.id === 'layers.toggle').reason, 'withdrawn');
+  const w = online.capabilities.find((c) => c.id === 'data.weather');
+  assert.equal(w.state, 'available'); assert.equal(w.needsNetwork, true, 'the dependency is stated even when it cannot be probed');
+  const off = await skills.skillReadiness(sk, { capabilities: fake, probes: { network: () => ({ available: false }) } });
+  assert.equal(off.capabilities.find((c) => c.id === 'data.weather').reason, 'offline');
+});
+
+test('the shipped skills declare needs the audit accepts, and a malformed need fails it', () => {
+  const port = ATLAS_SKILLS.find((s) => s.id === 'port-logistics-risk');
+  assert.ok(skills.needsOf(port).length >= 1);
+  const bad = JSON.parse(JSON.stringify(port)); bad.needs = [{ kind: 'warehouse', ref: 'x', why: ['a', 'b'] }, { kind: 'layer', ref: '', why: ['a'] }, { kind: 'layer', ref: 'x', for: 'data.nothing', why: ['a', 'b'] }];
+  ATLAS_SKILLS.push(bad); bad.id = 'bad-needs';
+  try {
+    const out = skills.audit({ capabilities: caps, schemas });
+    for (const re of [/kind "warehouse"/, /names nothing to look for/, /no reason in en \+ jp/, /which the text does not name/]) assert.ok(out.some((m) => re.test(m)), String(re));
+  } finally { ATLAS_SKILLS.pop(); }
+});
+
+test('the tool surface reads a skill with its readiness beside the text, and reading refuses nothing', async () => {
+  const { makeAtlasToolSurface } = await import('../js/atlas-toolsurface.js');
+  const calls = [];
+  const T = makeAtlasToolSurface({ capabilities: caps, schemas, runAction: async () => ({ ok: true }), probes: { layer: (r) => { calls.push(r); return { available: false, reason: 'no-such-layer' }; } } });
+  const res = await T.makeExecute(T.baseTools(), {})({ name: 'find_capability', arguments: { query: 'skill:port-logistics-risk', section: 'limits' } });
+  assert.equal(res.ok, true);
+  assert.match(res.text, /probability of disruption/);
+  assert.deepEqual(calls, ['ships']);
+  assert.equal(res.readiness.needs[0].state, 'unavailable');
+  assert.match(res.readiness.note, /Nothing is refused/);
+});
