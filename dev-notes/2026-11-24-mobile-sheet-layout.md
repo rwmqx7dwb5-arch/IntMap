@@ -57,7 +57,7 @@ newsjp: スマホで地図が広く使えるようになりました。地名検
 - 共有窓口の台帳（`check:surface`）: `window.IntMapLazy` の読みが 1 件増えた（191 → 192）。起動 2.5 秒後の既定の Atlas が、kernel の遅延 chunk を `IntMapLazy.need('atlasConsole')` で待つため。指の pointerdown が頼むのと同じ温め方で、`js/mobile-ui.js` は遅延 chunk の所有者ではないので import できない。
 
 
-- `eager.cssRaw` 373.4 → 383.3 kB、`eager.cssGzip` 61.8 → 64.8 kB: メニューのカード（タイルと行のアイコン）、地図内の検索の丸、入力欄の 44px 化の CSS。引き継ぎ: スマホの旧ヘッダーの規則（`#m-search-slot` など）を消したが、新しい面のほうが大きい。
+- `eager.cssRaw` 373.4 → 385.4 kB（その後の追加: 入力欄 4 ボタンの 44px 化、ピル、touch-action）、旧 373.4 → 383.3 kB、`eager.cssGzip` 61.8 → 64.8 kB: メニューのカード（タイルと行のアイコン）、地図内の検索の丸、入力欄の 44px 化の CSS。引き継ぎ: スマホの旧ヘッダーの規則（`#m-search-slot` など）を消したが、新しい面のほうが大きい。
 - `gis-core` 697.3 → 701.2 kB: この変更の持ち物ではなく、取り込んだ `origin/main` 側の増加。
 
 ## 4. 未確認
