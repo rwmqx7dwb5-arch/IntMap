@@ -408,6 +408,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.sessionGrant","sessionGrant","allowSiteOperation,permitSite,authorizeBrowserSite","research","none","","explanation","external","explicit","",""],
       ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
       ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
+      ["geo.imageChange","geoImageChange","imageChange,changeDetection,satelliteChange,landCoverChange,embeddingChange,radarChange,beforeAfter","data","none","gis.dataset","explanation","read","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
