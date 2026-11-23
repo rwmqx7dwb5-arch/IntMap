@@ -9,8 +9,8 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 15054644,
-    "gzip": 5112832,
+    "raw": 15199540,
+    "gzip": 5167104,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -81,7 +81,7 @@
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
       "gis-cog": 7532,
-      "gis-core": 714073,
+      "gis-core": 721716,
       "gis-export": 40134,
       "gis-fetch": 8730,
       "gis-geopackage": 26667,
@@ -221,7 +221,7 @@
   "dist": {
     "total": 1587385548,
     "data": 1223209830,
-    "assets": 22598283
+    "assets": 22818509
   },
   "phone": {
     "bytes": 342631,
