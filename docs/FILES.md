@@ -207,6 +207,9 @@ cesium-vector-tiles.js            第2エンジンのベクタタイル
 plateau-cities.js                 PLATEAU 3D 都市モデルの登録（data/plateau-cities.json）の読み込み・視界近傍の選択・URL と都市別ジオイド補正。エンジンの tiles3d 能力が読む
 geoid.js                         EGM2008 ジオイド高 N（楕円体高と海抜の差）を世界のどこでも返す。0.5° 格子（data/geoid-egm2008.bin.gz・scripts/build-geoid-grid.mjs が導出）の双一次補間。日本の外の 3D 建物タイルセットを地面に合わせる
 world-3d-sources.js              日本の PLATEAU 以外の 3D 建物タイルセット（3D BAG・Re:Earth Buildings）の登録・視界近傍の選択・上位データの範囲を下位から抜く箱。ライセンスと信頼性の根拠を行ごとに持つ
+building-attrs.js                選んだ 3D 建物の属性を、PLATEAU・3D BAG・Re:Earth Buildings それぞれの実タイルで確かめた名前から、高さ・用途・建築年・階数・住所・出典の一覧にする（データが述べない欄は行を作らず、全属性はそのまま残す）。
+building-info.js                 建物を選んだとき開くカード（DOM テキストのみ・スマホは上から下がるカード・Esc で閉じて着色を戻す）。3D 都市モデルのレイヤーを入れたとき遅延で読む。
+render-witness.js                「描いた」が画面に届いたかの観測器（render.witness）。描画エンジンが持つ面について、不透明度 0・ズーム範囲外・画面外・描画エラー・別レイヤーの被覆を、層を消した 1 フレームと出した 1 フレームの画素比較まで含めて答える。分からないことは失敗にしない。
 render-plan.js                     描画方法の選択（候補を良い順に並べ、エンジンの能力で最初に実行できるものを選ぶ。純粋）。geo-engine の `plan()` と PLATEAU レイヤーが使う
 tileset-budget.js                  3D Tiles のメモリ・詳細度の予算を端末（メモリ・コア数・省データ・携帯）から決める。cesium-engine の addTileset／_governTilesets が使う
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
@@ -1116,7 +1119,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  271 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  276 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1169,6 +1172,7 @@ atlas-cap-time.js                 Atlas の能力 — 時刻（time.*）
 atlas-reasoning.js                Atlas の 3 つの答えを**構造**にする純関数（シナリオ research.scenario の 4 欄・期間の変化 time.changes の差分と順位・相関 panel.correlate の報告）。DOM も window も持たず、tests/atlas-reasoning-checks.test.mjs が評価する。相関パネルも同じ報告を描く
 atlas-cap-ui.js                   Atlas の能力 — インラインの操作（ui.*）
 atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
+atlas-cap-web.js                  Atlas の能力 — ウェブサイトの操作とファイル取得（web.browse・web.fetchFile）。データポータル等を検索・リンク辿り・フォーム送信し、返ったファイルを GIS データセットにする
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
                                   earthquakes・volcanoes・facilities）と列（pop・precipMm・coastKm・elevM・
@@ -1262,7 +1266,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
 atlas-skills.js                   **Skill**（手順書）の発見・段階読み・門 — `searchSkills`（find_capability の答えに名前と1行だけ添える）／`readSkill`（1節ずつ）／`audit`（本文が名指す能力・引数が実在するか。`npm run check:capabilities`）
 atlas-skills-data.js              Skill の宣言データ（en+jp の散文だけ。使う能力は本文から導出する）。初期: 歴史的国境の比較・衛星画像の変化検出・産業立地の一次分析・港湾物流リスクの比較
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 271 を検索・到達可能 268）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 276 を検索・到達可能 273）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1289,7 +1293,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 271 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 276 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1817,6 +1821,7 @@ admin-inquiries.js                admin-inquiries.html の動き——管理者�
 admin-delegation.js               運営コンソール admin.html の Delegation タブ（素の script・window.IntMapAdminDelegation）——RPC delegation_overview を日別の表・棒・コード上位で描く
 admin-pipeline.js                 相談のコンソールの Pipeline タブ（ES module・admin-inquiries.js がタブを開いたとき import()）——会話の段
                                   （lead→talking→trial→adopted|declined）・次にやること・期日。語はページの data-*（inquiry-shape.js が正本）
+web-browse.js                     **ウェブ操作の戸口**——Edge Function web-browse を読者のセッションで呼び、閲覧状態（現在の URL・ホスト単位の cookie・直前のページの ref 表）を保ち、答えにインジェクション境界の注意書きを付け、取得したファイルを GeoJSONUpload.handle（落としたファイルと同じ戸口）へ渡す。資格情報・POST・スクリプト実行は持たない。
 weather.js                        気象（export wind / weatherEC / weatherPanel）
 wx-models.js                      予報モデルのレジストリ window.IntMapWxModels——提供モデル・出典・ライセンス。格子／変数／気圧面／予報期間は live metadata から導出（書き写さない）
 wx-source.js                      ガードされた唯一の気象／UV ソース window.IntMapWx
@@ -2097,7 +2102,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは15・全 136,880 リング分／
+                                  **発見された**束すべて・いまは15・全 136,884 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -2225,7 +2230,7 @@ supabase/
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / atlas-job-core.js / atlas-job-runner.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-entities.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
-                                  rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
+                                  rate-limit.js / relay-guard.js / volcano-parse.js / web-browse.js / web-render.js / web-session.js / who-don-extract.js /
                                   bbox.js / read-budget.js / connection-policy.js / connection-vault.js / connection-gateway.js / client-error-shape.js /
                                   fetch-relay-policy.js / gis-fetch-policy.js / mcp-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
