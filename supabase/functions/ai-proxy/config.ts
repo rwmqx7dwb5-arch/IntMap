@@ -10,7 +10,7 @@
 /* (supporter-funnel) every value that differs by plan is one column of _shared/plans.js */
 import { planColumn } from "../_shared/plans.js";
 import { HEARTBEAT_MS } from "../_shared/ai-stream.js";
-import { FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, spendCeiling, shareCeiling, priceOf } from "../_shared/ai-provider.js";
+import { FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, MODEL_PRICE_USD_PER_MTOK, spendCeiling, shareCeiling, priceOf } from "../_shared/ai-provider.js";
 import { NEWCOMER } from "../_shared/ai-ledger.js";
 
 export const cors = {
@@ -18,7 +18,7 @@ export const cors = {
   /* (#R318) x-intmap-turn — the turn key. It is a HEADER because the quota is consumed before the
      body is read (see the consumption step), and a preflight that does not name it makes the whole
      request fail in the browser rather than merely dropping the field. */
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   /* (speed-overhaul) THE PREFLIGHT IS CACHED. The Authorization and x-intmap-* headers make every call a
      non-simple request, and without a max-age Chrome keeps a preflight for 5 s — shorter than one Atlas
@@ -95,6 +95,37 @@ export function delegationPolicy(env: (k: string) => string) {
     childMaxCalls: Math.max(1, int("ATLAS_DELEGATION_CHILD_CALLS", DELEGATION_DEFAULTS.childMaxCalls)),
   });
 }
+/* (model-options) THE MODELS A WORKER MAY BE GIVEN, OFFERED TO ATLAS WITH THEIR PRICES — Atlas chooses, the server only checks.
+   Until now one environment variable (ATLAS_DELEGATION_MODEL) named the one model every worker ran on, so «a cheap model
+   for extraction, the strong one for synthesis» could not be said per piece of work. Atlas is the one that knows what a piece
+   of work needs, so the choice is a task's own optional `model` (the id of one OFFERED model); no class of work is coded here.
+   WHAT IS OFFERED: ATLAS_MODEL_OPTIONS (comma-separated ids) when set, else the models this provider is known to answer with
+   — its default and, for OpenAI, the FALLBACK_CHAIN (the models this project has held access to) — in every case only ids
+   whose PRICE is known (the spend fence would reckon an unpriced one at the dearest row). The list and its prices travel in
+   the turn's delegationPolicy meta, so the page and the model read the same table the invoice is computed from.
+   An id outside the list is IGNORED with a reason (the worker runs on the configured tier), never run: the list is the
+   cost fence's input, not an allow-list of capabilities. Expires when the price table (_shared/ai-provider.js) names a model
+   that should be offered or withdrawn — it is the one place that changes. */
+export type ModelOption = { id: string; usdPerMTok: { input: number; cached: number; output: number } };
+export function delegationModelOptions(env: (k: string) => string, provider: string): ModelOption[] {
+  const raw = String(env("ATLAS_MODEL_OPTIONS") || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const base = raw.length ? raw : [PROVIDER_DEFAULT_MODEL[provider as keyof typeof PROVIDER_DEFAULT_MODEL], ...(provider === "openai" ? FALLBACK_CHAIN : [])];
+  const seen = new Set<string>(); const out: ModelOption[] = [];
+  for (const id of base) {
+    if (!id || seen.has(id) || !MODEL_ID_OK.test(id) || !priceOf(id).known) continue;
+    seen.add(id);
+    const p = MODEL_PRICE_USD_PER_MTOK[id as keyof typeof MODEL_PRICE_USD_PER_MTOK];
+    out.push({ id, usdPerMTok: { input: p.input, cached: p.cached, output: p.output } });
+  }
+  return out;
+}
+/* the model a worker call ASKED for (header x-intmap-model), when it is one of the offered ones */
+export function delegationModelHint(raw: string, options: ModelOption[]): { model: string; ignored: string } {
+  const id = String(raw || "").trim();
+  if (!id) return { model: "", ignored: "" };
+  return options.some((o) => o.id === id) ? { model: id, ignored: "" } : { model: "", ignored: "not_offered" };
+}
+
 /* (atlas-delegation) THE WORKERS' MODEL TIER — optional. ATLAS_DELEGATION_MODEL names the model a worker's call runs
    on, instead of the model the parent turn's selection resolves to (a cheaper model for research workers, say).
    Unset (or "") = unchanged: a worker runs on whatever its parent would have. It is validated like the numbers

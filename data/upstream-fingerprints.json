@@ -1,0 +1,1053 @@
+{
+ "note": "The last fingerprint of each upstream URL the builders declare (scripts/upstream-change.mjs). Validators are what the SERVER stated; nothing here is a hash of a body or an inferred value. `unobserved` means no run has yet been able to look. A recorded row is the answer of the last time somebody looked, not a claim about today.",
+ "generatedAt": "2026-11-20T08:05:55.438Z",
+ "declaredBy": "scripts/upstream-change.mjs",
+ "upstreams": {
+  "http://tdc-www.harvard.edu/catalogs/bsc5.dat.gz": {
+   "state": "observed",
+   "etag": "\"b375a48b-90194-40e5a8fe779c0\"",
+   "lastModified": "Mon, 06 Mar 2006 21:53:51 GMT",
+   "contentLength": 590228,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/stars.bin",
+    "data/stars.json"
+   ]
+  },
+  "https://api.github.com/repos/aourednik/historical-basemaps/contents/geojson": {
+   "state": "observed",
+   "etag": "\"e5956a18500ddd7ed35a7b47776f6a40d468ee8e\"",
+   "lastModified": "Fri, 20 Nov 2026 02:35:21 GMT",
+   "contentLength": 52529,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-eras.js"
+   ]
+  },
+  "https://api.plateauview.mlit.go.jp/datacatalog/plateau-datasets": {
+   "state": "observed",
+   "etag": "W/\"524a17f890b6a225a233545715ee6b6e\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "get-range",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/plateau-cities.json"
+   ]
+  },
+  "https://api.worldbank.org/v2/country/all/indicator/": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 00:40:44 GMT",
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/health.json",
+    "data/mobility.json"
+   ]
+  },
+  "https://cdn.jsdelivr.net/gh/mledoze/countries@master/countries.json": {
+   "state": "observed",
+   "etag": "W/\"1555ca-d086013f144b79b2\"",
+   "lastModified": null,
+   "contentLength": 151327,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/airports.json",
+    "data/mobility.json"
+   ]
+  },
+  "https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_coastline.geojson": {
+   "state": "observed",
+   "etag": "W/\"9a470f-dccee9060ed5aec4\"",
+   "lastModified": null,
+   "contentLength": 3309246,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/coastline.json.gz"
+   ]
+  },
+  "https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_land.geojson": {
+   "state": "observed",
+   "etag": "W/\"18f746-22af892332627b99\"",
+   "lastModified": null,
+   "contentLength": 522105,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/land-mask.json",
+    "data/land-mask.png"
+   ]
+  },
+  "https://cdsarc.cds.unistra.fr/ftp/I/239/hip_main.dat": {
+   "state": "unobserved",
+   "why": "no-answer",
+   "observedAt": null,
+   "subjects": [
+    "data/stars.bin",
+    "data/stars.json"
+   ]
+  },
+  "https://cdsarc.cds.unistra.fr/ftp/V/50/catalog.gz": {
+   "state": "unobserved",
+   "why": "no-answer",
+   "observedAt": null,
+   "subjects": [
+    "data/stars.bin",
+    "data/stars.json"
+   ]
+  },
+  "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle": {
+   "state": "unobserved",
+   "why": "no-answer",
+   "observedAt": null,
+   "subjects": [
+    "data/tle/catalogue.json",
+    "data/tle/catalogue.tle",
+    "data/tle/groups.json"
+   ]
+  },
+  "https://chelsa-climate.org/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/precip-mm.json"
+   ]
+  },
+  "https://coastwatch.pfeg.noaa.gov/erddap/griddap/ncdcOisst21Agg": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 01:23:23 GMT",
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T01:23:48.483Z",
+   "subjects": [
+    "data/ocean-currents-field.bin.gz",
+    "data/ocean-currents-months.bin.gz",
+    "data/ocean-currents.json"
+   ]
+  },
+  "https://data.europa.eu/data/datasets/consolidated-list-of-persons-groups-and-entities-subject-to-eu-financial-sanctions": {
+   "state": "observed",
+   "etag": "W/\"6ab64aea-63f\"",
+   "lastModified": "Fri, 25 Sep 2026 10:20:26 GMT",
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/sanctions.json"
+   ]
+  },
+  "https://datacatalog.worldbank.org/search/dataset/0041426": {
+   "state": "observed",
+   "etag": "W/\"b185z4ze08178g\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "get-range",
+   "status": 200,
+   "observedAt": "2026-11-20T01:23:48.483Z",
+   "subjects": [
+    "data/basins_mrb.json"
+   ]
+  },
+  "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/LEJUQZ": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 0,
+   "via": "head",
+   "status": 202,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/unga-votes/*.json",
+    "data/unga-votes/index.json"
+   ]
+  },
+  "https://davidmegginson.github.io/ourairports-data/airports.csv": {
+   "state": "observed",
+   "etag": "W/\"6affb643-c2bd03\"",
+   "lastModified": "Fri, 20 Nov 2026 02:53:55 GMT",
+   "contentLength": 3900993,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/airports.json",
+    "data/mobility.json"
+   ]
+  },
+  "https://db.satnogs.org/api/tle/?format=json": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 550935,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/tle/catalogue.json",
+    "data/tle/catalogue.tle",
+    "data/tle/groups.json"
+   ]
+  },
+  "https://doi.org/10.1038/sdata.2016.34": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 3038,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-urban.json"
+   ]
+  },
+  "https://doi.org/10.34894/NQOASN": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-recon.js",
+    "data/hist-admin-surveys.js"
+   ]
+  },
+  "https://doi.org/10.5194/acp-15-1029-2015": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 38262,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/fukushima-release.json"
+   ]
+  },
+  "https://doi.org/10.5281/zenodo.7016491": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/radiation-hindcast.json"
+   ]
+  },
+  "https://doi.org/10.7910/DVN/9JI06R": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 0,
+   "via": "head",
+   "status": 202,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-surveys-nc.js"
+   ]
+  },
+  "https://doi.org/10.7910/DVN/YOHIFN": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 0,
+   "via": "head",
+   "status": 202,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-surveys.js"
+   ]
+  },
+  "https://doi.org/10.7910/DVN/YPEU5E": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 0,
+   "via": "head",
+   "status": 202,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-surveys-nc.js"
+   ]
+  },
+  "https://download.geonames.org/export/dump/cities1000.zip": {
+   "state": "observed",
+   "etag": "\"a96555-660ac6409c204\"",
+   "lastModified": "Fri, 20 Nov 2026 02:56:29 GMT",
+   "contentLength": 11101525,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/gazetteer-world.json.gz"
+   ]
+  },
+  "https://download.geonames.org/export/dump/cities500.zip": {
+   "state": "observed",
+   "etag": "\"d4a304-660ac6409be1c\"",
+   "lastModified": "Fri, 20 Nov 2026 02:56:29 GMT",
+   "contentLength": 13935364,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/histcities-homonyms.json.gz"
+   ]
+  },
+  "https://earthquake.usgs.gov/fdsnws/event/1/": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 08:04:12 GMT",
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/aftershock-hindcast.json"
+   ]
+  },
+  "https://ecoregions.appspot.com/": {
+   "state": "observed",
+   "etag": "\"XdOXrA\"",
+   "lastModified": null,
+   "contentLength": 94922,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/ecoregions_2017.geojson"
+   ]
+  },
+  "https://eonet.gsfc.nasa.gov/api/v3/events": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/weekly-earth.json"
+   ]
+  },
+  "https://geographiclib.sourceforge.io/C++/doc/geoid.html": {
+   "state": "observed",
+   "etag": "W/\"82e2-6438f5e22fec0\"",
+   "lastModified": "Fri, 14 Nov 2025 15:08:19 GMT",
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-21T00:44:15.618Z",
+   "subjects": [
+    "data/geoid-egm2008.bin.gz"
+   ]
+  },
+  "https://ghoapi.azureedge.net/api/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/health.json"
+   ]
+  },
+  "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 56,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/world-basemap.jpg",
+    "data/world-basemap.json"
+   ]
+  },
+  "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/gibs-range.json"
+   ]
+  },
+  "https://github.com/Seshat-Global-History-Databank/cliopatria": {
+   "state": "observed",
+   "etag": "W/\"aca1732026fce87fb96fb3139f5149ad\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/border-provenance-clio.json",
+    "data/hist-clio.js",
+    "data/hist-eras-rest.js",
+    "data/polity-arcs.json"
+   ]
+  },
+  "https://github.com/aourednik/historical-basemaps": {
+   "state": "observed",
+   "etag": "W/\"c6315cdce1eac2505fea2781388a947a\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-eras-rest.js",
+    "data/polity-arcs.json"
+   ]
+  },
+  "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis": {
+   "state": "observed",
+   "etag": "W/\"87123dcd4190f157583f0dbf36c4b504\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-recon.js"
+   ]
+  },
+  "https://github.com/evansiroky/timezone-boundary-builder/releases/tag/2026f": {
+   "state": "observed",
+   "etag": "W/\"e29dd5907c0d724730f602239df57b60\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/border-crossings.json"
+   ]
+  },
+  "https://github.com/mledoze/countries": {
+   "state": "observed",
+   "etag": "W/\"72df3810020d280621067ceb103896b6\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/country-facts.json"
+   ]
+  },
+  "https://github.com/nvkelso/natural-earth-vector/tree/ca96624a56bd078437bca8184e78163e5039ad19/geojson": {
+   "state": "observed",
+   "etag": "W/\"4c255319e23c6c992080d0c5ab1d8602\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/ne-countries/index.json"
+   ]
+  },
+  "https://github.com/opensha/opensha-oaf": {
+   "state": "observed",
+   "etag": "W/\"ce2f95f3b3dedd604721640acda5e8a7\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/aftershock-regimes.json.gz"
+   ]
+  },
+  "https://github.com/pelagios/magis-pleiades-regions": {
+   "state": "observed",
+   "etag": "W/\"036ddf9d00cf655c73370d3447091e79\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-surveys.js"
+   ]
+  },
+  "https://github.com/rwmqx7dwb5-arch/IntMap": {
+   "state": "observed",
+   "etag": "W/\"e75e487eee328f8dc2704a20a5c5c219\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/border-provenance-gaps.json"
+   ]
+  },
+  "https://github.com/rwmqx7dwb5-arch/IntMap/actions": {
+   "state": "observed",
+   "etag": "W/\"8a8ac2ac0190eea80c69fcaeabe08ada\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/service-status.json"
+   ]
+  },
+  "https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/scripts/device-storage-words.json": {
+   "state": "observed",
+   "etag": "W/\"c685aae2439d732464b8c1a63664a76c\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/device-storage-ledger.json"
+   ]
+  },
+  "https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/scripts/outbound-hosts.json": {
+   "state": "observed",
+   "etag": "W/\"6f0c0d4fd742aa86d05c17850606985a\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/connection-ledger.json",
+    "data/offline-sources.json"
+   ]
+  },
+  "https://github.com/rwmqx7dwb5-arch/IntMap/tree/main/scripts/histrecon": {
+   "state": "observed",
+   "etag": "W/\"bb354d255a8f075be7d772cbe3d8c30c\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-recon.js"
+   ]
+  },
+  "https://github.com/tonmcg/US_County_Level_Election_Results_08-24": {
+   "state": "observed",
+   "etag": "W/\"bdf94f4b381551d7a59b7fa7559df3da\"",
+   "lastModified": null,
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/us-elections.json"
+   ]
+  },
+  "https://glottolog.org/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/language-tree.json",
+    "data/language.json"
+   ]
+  },
+  "https://hdr.undp.org/sites/default/files/2023-24_HDR/HDR23-24_Composite_indices_complete_time_series.csv": {
+   "state": "observed",
+   "etag": "\"65f1c462-1d490b\"",
+   "lastModified": "Wed, 13 Mar 2024 15:21:06 GMT",
+   "contentLength": 1919243,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hdi-series.json"
+   ]
+  },
+  "https://icr.ethz.ch/data/cshapes/": {
+   "state": "observed",
+   "etag": "\"68d6-65ed1da83588d-gzip\"",
+   "lastModified": "Tue, 27 Oct 2026 12:47:47 GMT",
+   "contentLength": 6378,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/cshapes.js",
+    "data/hist-borders-late.js",
+    "data/hist-clio.js",
+    "data/on-this-day.json",
+    "data/polity-arcs.json"
+   ]
+  },
+  "https://igppweb.ucsd.edu/~gabi/crust1/crust1.0.tar.gz": {
+   "state": "observed",
+   "etag": "\"11a140-4e4f88fe4c700\"",
+   "lastModified": "Wed, 28 Aug 2013 02:15:24 GMT",
+   "contentLength": 1155392,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/crust1.bin.gz",
+    "data/crust1.json"
+   ]
+  },
+  "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2015.html": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-recon.js"
+   ]
+  },
+  "https://ofac.treasury.gov/specially-designated-nationals-and-blocked-persons-list-sdn-human-readable-lists": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 278,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/sanctions.json"
+   ]
+  },
+  "https://open.canada.ca/data/en/dataset/e88ce995-b69a-4595-a752-bb06b061b5a3": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 73148,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-surveys.js"
+   ]
+  },
+  "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/05/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/precip-year.json"
+   ]
+  },
+  "https://overpass-api.de/api/interpreter": {
+   "state": "unobserved",
+   "why": "status-502",
+   "observedAt": null,
+   "subjects": [
+    "data/border-crossings.json",
+    "data/osm-diplo.json",
+    "data/osm-space.json"
+   ]
+  },
+  "https://overpass-api.openhistoricalmap.org/api/interpreter": {
+   "state": "unobserved",
+   "why": "status-400",
+   "observedAt": null,
+   "subjects": [
+    "data/hist-admin1.js",
+    "data/hist-admin2.js",
+    "data/hist-admin3.js"
+   ]
+  },
+  "https://planetarynames.wr.usgs.gov/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/planet-names.json",
+    "data/planets.json"
+   ]
+  },
+  "https://pleiades.stoa.org/": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 18839,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-places.json"
+   ]
+  },
+  "https://polarwatch.noaa.gov/erddap/griddap/noaacwBLENDEDNRTcurrentsDaily": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 08:05:17 GMT",
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/ocean-currents-field.bin.gz",
+    "data/ocean-currents-months.bin.gz",
+    "data/ocean-currents.json"
+   ]
+  },
+  "https://polarwatch.noaa.gov/erddap/griddap/noaacwBlendedWindStressMonthly": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 08:05:17 GMT",
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/ocean-currents-field.bin.gz",
+    "data/ocean-currents-months.bin.gz",
+    "data/ocean-currents.json"
+   ]
+  },
+  "https://query.wikidata.org/sparql": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T01:23:48.483Z",
+   "subjects": [
+    "data/hist-admin-fill.js",
+    "data/npp.json",
+    "data/whc-detail.{locale}.json.gz",
+    "data/whc-sites.json",
+    "data/world-graph-lng.json"
+   ]
+  },
+  "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/": {
+   "state": "unobserved",
+   "why": "status-404",
+   "observedAt": null,
+   "subjects": [
+    "data/tectonics.bin.gz",
+    "data/tectonics.json"
+   ]
+  },
+  "https://raw.githubusercontent.com/glottolog/glottolog-cldf/master/cldf/": {
+   "state": "unobserved",
+   "why": "status-404",
+   "observedAt": null,
+   "subjects": [
+    "data/language-aliases.json"
+   ]
+  },
+  "https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat": {
+   "state": "observed",
+   "etag": "W/\"c6f5aee4e36fb8b8f857eaa10f9715f93639eb3ab2f81c8ec2c74b970b6107e0\"",
+   "lastModified": null,
+   "contentLength": 381148,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/mobility.json"
+   ]
+  },
+  "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson": {
+   "state": "observed",
+   "etag": "W/\"4d0cf2dfb79c96db33115e66c94882127233cab530f6cbf920ff72d7f59deecb\"",
+   "lastModified": null,
+   "contentLength": 12246909,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/admin1-world.json.gz"
+   ]
+  },
+  "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_1_states_provinces.geojson": {
+   "state": "observed",
+   "etag": "W/\"e44a7b7081d6ea226fde3e1b46442801886485964daae9ad864138f773d54928\"",
+   "lastModified": null,
+   "contentLength": 37881,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/us-states.json"
+   ]
+  },
+  "https://raw.githubusercontent.com/owid/owid-datasets/master/datasets/Maddison%20Project%20Database%202020%20(Bolt%20and%20van%20Zanden%20(2020))/Maddison%20Project%20Database%202020%20(Bolt%20and%20van%20Zanden%20(2020)).csv": {
+   "state": "observed",
+   "etag": "W/\"479c46be9b962b234d27b46a04d26dec5c252ff1dee1c79ff7417d28a0f48a38\"",
+   "lastModified": null,
+   "contentLength": 300128,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/maddison.json"
+   ]
+  },
+  "https://raw.githubusercontent.com/zonination/election-history/master/elec.csv": {
+   "state": "observed",
+   "etag": "W/\"b283fb7f261c5b8ff143a36d9ddd00b3ba2d6225741847d36ba5e5e7d42e3ffe\"",
+   "lastModified": null,
+   "contentLength": 51401,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/us-elections.json"
+   ]
+  },
+  "https://simbad.cds.unistra.fr/simbad/sim-tap/sync": {
+   "state": "unobserved",
+   "why": "status-404",
+   "observedAt": null,
+   "subjects": [
+    "data/deep-sky.json"
+   ]
+  },
+  "https://ssd-api.jpl.nasa.gov/sbdb_query.api": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/small-bodies.json"
+   ]
+  },
+  "https://ssd.jpl.nasa.gov/api/horizons.api": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/spacecraft.json"
+   ]
+  },
+  "https://ssd.jpl.nasa.gov/sats/elem/": {
+   "state": "observed",
+   "etag": "\"6aff9448-8e50c\"",
+   "lastModified": "Fri, 20 Nov 2026 00:28:56 GMT",
+   "contentLength": 582924,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/moons.json"
+   ]
+  },
+  "https://vldb.gsi.go.jp/sokuchi/surveycalc/geoid/calcgh/calc_f.html": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/plateau-cities.json"
+   ]
+  },
+  "https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/volcano-detail.json.gz",
+    "data/volcanoes_gvp.json"
+   ]
+  },
+  "https://whc.unesco.org/en/list/xml/": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 07:33:07 GMT",
+   "contentLength": null,
+   "via": "get-range",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/whc-detail.{locale}.json.gz",
+    "data/whc-sites.json"
+   ]
+  },
+  "https://www.cia.gov/the-world-factbook/": {
+   "state": "observed",
+   "etag": "\"25f0dc717ed20b304895002d676bc191:1795119918.538822\"",
+   "lastModified": "Thu, 19 Nov 2026 20:23:45 GMT",
+   "contentLength": 95196,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/language-tree.json",
+    "data/language.json",
+    "data/religion.json"
+   ]
+  },
+  "https://www.e-stat.go.jp/gis": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-recon.js"
+   ]
+  },
+  "https://www.geoboundaries.org/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-recon.js"
+   ]
+  },
+  "https://www.gov.uk/government/publications/the-uk-sanctions-list": {
+   "state": "observed",
+   "etag": "W/\"6087d371d345b01405499cc97abf00a9\"",
+   "lastModified": null,
+   "contentLength": 25086,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/sanctions.json"
+   ]
+  },
+  "https://www.iana.org/time-zones": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 07:47:17 GMT",
+   "contentLength": 1838,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/country-facts.json"
+   ]
+  },
+  "https://www.naturalearthdata.com/": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 07:53:12 GMT",
+   "contentLength": 10524,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/border-coast.js",
+    "data/country-facts.json",
+    "data/hist-admin-recon.js",
+    "data/hist-coast-snap.js",
+    "data/sanctions.json",
+    "data/world-flows.json"
+   ]
+  },
+  "https://www.openhistoricalmap.org/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/border-provenance-ohm.json",
+    "data/cshapes.js",
+    "data/hist-borders-late.js",
+    "data/hist-borders.js",
+    "data/hist-clio.js",
+    "data/hist-eras-rest.js",
+    "data/polity-arcs.json"
+   ]
+  },
+  "https://www.openstreetmap.org/copyright": {
+   "state": "observed",
+   "etag": "W/\"523d1da90dbde7ae1bb6b9735ac483e4-br\"",
+   "lastModified": null,
+   "contentLength": 6476,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/border-crossings.json",
+    "data/hist-coast-snap.js",
+    "data/hist-courses.js"
+   ]
+  },
+  "https://www.sciencebase.gov/catalog/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/slab2.bin.gz",
+    "data/slab2.json"
+   ]
+  },
+  "https://www.solarsystemscope.com/textures/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/planets.json",
+    "data/planets/"
+   ]
+  },
+  "https://www.un.org/development/desa/pd/sites/www.un.org.development.desa.pd/files/undesa_pd_2024_ims_stock_by_sex_destination_and_origin.xlsx": {
+   "state": "observed",
+   "etag": "\"5ba227-62cb3e6cb01c0\"",
+   "lastModified": "Mon, 27 Jan 2025 18:04:03 GMT",
+   "contentLength": 6005287,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/world-flows.json"
+   ]
+  },
+  "https://www.virtualshanghai.net/Maps/Base?ID=2210": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 08:05:23 GMT",
+   "contentLength": null,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-surveys.js"
+   ]
+  },
+  "https://www.who.int/api/news/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/who-don.json.gz"
+   ]
+  },
+  "https://www.wikidata.org/": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": "Fri, 20 Nov 2026 06:30:13 GMT",
+   "contentLength": 42683,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-20T08:05:55.438Z",
+   "subjects": [
+    "data/hist-admin-edges.json",
+    "data/hist-era-spans.json"
+   ]
+  }
+ }
+}
