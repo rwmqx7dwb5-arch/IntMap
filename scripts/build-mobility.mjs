@@ -114,6 +114,14 @@ export const GOVERNANCE = (() => {
   ];
   return { 'data/mobility.json': { upstreams,
     priority: { disjoint: ['route counts per country pair', 'airport code to ISO3 country', 'international arrivals volume', 'the cca2 to cca3 country-code key map only'] },
+    /* describes.* — route counts: openflights.org/data.php (read 2026-11-20): «67663 routes between 3321 airports on 548 airlines»,
+       third-party updates «ceased ... in June 2014», «historical value only», routes directional, imported from Airline Route Mapper;
+       volumes: World Bank ST.INT.ARVL definition (sourceNote via api.worldbank.org/v2/indicator/ST.INT.ARVL, source UN Tourism);
+       extent / period of the volume column MEASURED on data/mobility.json (vol: 241 entries, arrY 2019 x219, 2012-2018 x22). */
+    period: { start: '2014-06', end: '2014-06', note: 'route counts: the OpenFlights snapshot of June 2014 (the supplier says its route source stopped updating then); volumes: per-country World Bank arrivals, the latest year at or before 2019 (measured: 219 of 241 are 2019, the rest 2012-2018)' },
+    extent: 'route counts: 230 origin countries with routes and 4565 country pairs (measured on pairs); arrivals volume: 241 countries and territories (measured on vol)',
+    method: 'route counts: distinct airline routes between airports (existence only, no frequency, seats or passengers; the supplier states routes are directional and a carrier appears once per route even if codeshare), resolved to country pairs; volumes: ST.INT.ARVL, international inbound tourists (overnight visitors), total visitors where tourist counts are unavailable, each trip counted as a new arrival, collection methods varying by country (World Bank indicator note, source UN Tourism)',
+    completeness: 'route counts: 67663 rows in the supplier table, 66290 resolved to a country and 29 airport codes unresolved (measured, data/mobility.json routeRows, routesResolved, unresolvedAirportCodes); the supplier gives no coverage statement beyond its own totals',
     ...OURAIRPORTS, builtBy: 'scripts/build-mobility.mjs' } };
 })();
 
