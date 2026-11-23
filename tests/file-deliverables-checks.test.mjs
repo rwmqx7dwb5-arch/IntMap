@@ -6,14 +6,21 @@ import assert from 'node:assert/strict';
 import { buildDoc, docText, resolveFormat, fileName, FORMATS, markdownToBlocks } from '../js/file-doc.js';
 import { layoutDoc, buildPdf, verifyPdf, wrapText, PAGE } from '../js/file-pdf.js';
 import { writeDocx, writePptx, writeXlsx, readZip, checkPackage, packageText, zip } from '../js/file-office.js';
+import { marchingSquares, traceGlyph } from '../js/file-glyph.js';
+import zlib from 'node:zlib';
 import { writeCsv, writeHtml, writeMd, writeTxt, writeJson } from '../js/file-text.js';
 
 const MD = '# 東欧情勢\n\n## 概要\n\nウクライナ戦線では補給路をめぐる攻防が続く。「停戦」の見通しは立っていない（2026年11月時点）。English words wrap at spaces, and a very long token stays whole.\n\n- 前線の動き\n- **外交**の動き\n\n1. 項目A\n2. 項目B\n\n## 数字\n\n| 国 | 支援額 | 備考 |\n|---|---|---|\n| ポーランド | 40 | 最大の受け入れ国 |\n| ドイツ | 120 | |\n\n> 引用です。\n\n```\ncode line\n```\n';
 const SOURCES = [{ title: 'Reuters', url: 'https://example.com/a?b=(1)' }, '朝日新聞'];
 const doc = () => { const r = buildDoc({ markdown: MD, title: '東欧情勢レポート', sources: SOURCES }); assert.ok(r.doc, JSON.stringify(r)); return r.doc; };
 const measure = (s, st) => { let w = 0; for (const ch of s) w += (/[　-鿿＀-￯]/.test(ch) ? 1 : 0.55) * st.sz; return w; };
-const blank = (laid) => laid.pages.map(() => ({ rgb: new Uint8Array(8 * 8 * 3).fill(255), w: 8, h: 8 }));
-const pdfOf = (d) => { const laid = layoutDoc(d, measure), out = buildPdf(d, laid, blank(laid), measure); return { laid, out }; };
+/* a deterministic glyph: a box with a hole (outer + inner contour), 1000 units per em — the real one is traced off the reader's font */
+const glyphOf = (ch) => { const adv = /[　-鿿＀-￯]/.test(ch) ? 1000 : 550; return { adv, path: /\s/.test(ch) ? [] : [[[60, 0], [adv - 60, 0], [adv - 60, 700], [60, 700]], [[200, 150], [200, 550], [adv - 200, 550], [adv - 200, 150]]] }; };
+const picture = { bytes: Uint8Array.from([0xFF, 0xD8, 0xFF, 0xC0, 0, 11, 8, 0, 3, 0, 4, 1, 1, 0x11, 0, 0xFF, 0xDA, 0, 8, 1, 1, 0, 0, 0x3F, 0, 0xFF, 0xD9]), mime: 'image/jpeg', w: 4, h: 3 };
+const imageOf = async () => ({ jpeg: picture.bytes, w: 4, h: 3 });
+const deflate = async (b) => new Uint8Array(zlib.deflateSync(b)), inflate = async (b) => new Uint8Array(zlib.inflateSync(b));
+const pdfOf = async (d, z = true) => { const laid = layoutDoc(d, measure), out = await buildPdf(d, laid, { glyphOf, measure, imageOf, deflate: z ? deflate : undefined }); return { laid, out }; };
+const check = (b, want, n, im) => verifyPdf(b, want, n, inflate, im);
 
 test('the document model refuses an empty document and names a bad format', () => {
   assert.equal(buildDoc({ title: 'x' }).problem, 'no-content');
@@ -42,44 +49,83 @@ test('line breaking: kinsoku — no line starts with 。」 and none ends with �
   assert.equal(word.join(''), 'a'.repeat(50)); assert.ok(word.every((l) => l.length <= 10));
 });
 
-test('PDF: written, then read back — structure, page count, and every character of the text', () => {
-  const d = doc(), { laid, out } = pdfOf(d);
-  assert.ok(!out.problem); assert.equal(out.pages, laid.pages.length);
-  const v = verifyPdf(out.bytes, docText(d), laid.pages.length);
-  assert.deepEqual(v.problems, []); assert.ok(v.ok); assert.ok(v.text.includes('ポーランド') && v.text.includes('停戦'));
-  assert.match(String.fromCharCode(...out.bytes.subarray(0, 8)), /^%PDF-1\.4/);
+test('PDF: written, then read back — structure, page count, glyph procedures and every character of the text', async () => {
+  const d = doc();
+  for (const z of [true, false]) {                                      /* compressed and plain streams both read back */
+    const { laid, out } = await pdfOf(d, z);
+    assert.ok(!out.problem); assert.equal(out.pages, laid.pages.length);
+    const v = await check(out.bytes, docText(d), laid.pages.length);
+    assert.deepEqual(v.problems, []); assert.ok(v.ok); assert.ok(v.text.includes('ポーランド') && v.text.includes('停戦'));
+    assert.equal(v.glyphs, out.glyphs, 'every glyph the file draws has a procedure'); assert.ok(v.fonts >= 2 && v.fonts === out.fonts);
+    assert.match(String.fromCharCode(...out.bytes.subarray(0, 8)), /^%PDF-1\.4/);
+  }
 });
 
-test('PDF: a long document pages, repeats the table header, slices a row taller than a page, and loses nothing', () => {
+test('PDF: the page is vector — glyph paths, fills and rules in the stream; no page-sized image, no invisible text', async () => {
+  const d = doc(), { out } = await pdfOf(d, false), s = Buffer.from(out.bytes).toString('latin1');
+  assert.ok(/\/Subtype \/Type3/.test(s) && /\/CharProcs/.test(s) && / d1\n/.test(s) && /f\*\n/.test(s), 'Type3 glyph procedures that fill an outline');
+  assert.ok(/ re f\n/.test(s) && / RG [\d.]+ w /.test(s), 'rules and fills are path operators');
+  assert.ok(!/\/Subtype \/Image/.test(s) && !/\b3 Tr\b/.test(s), 'no picture of the page, no invisible layer');
+  assert.ok(/\/Artifact BMC/.test(s) && out.artifacts > 0, 'bullets, numbers and footers are furniture');
+  assert.ok(/\/ToUnicode/.test(s) && /\/Outlines/.test(s) && /\/Subtype \/Link/.test(s) && /\/Lang \(ja-JP\)/.test(s));
+  assert.ok(/\/URI \(https:\/\/example\.com\/a\?b=\\\(1\\\)\)/.test(s) || /\/URI \(https:\/\/example\.com\/a\?b=%28/.test(s), 'a source URL is a link');
+});
+
+test('PDF: more than 255 distinct characters split into several Type3 fonts, each with its own ToUnicode', async () => {
+  const many = Array.from({ length: 700 }, (_, i) => String.fromCharCode(0x4E00 + i)).join('');
+  const d = buildDoc({ markdown: '# 漢字\n\n' + many.replace(/(.{40})/g, '$1\n\n') }).doc, { out } = await pdfOf(d);
+  assert.ok(out.fonts >= 3, 'fonts ' + out.fonts);
+  const v = await check(out.bytes, docText(d)); assert.deepEqual(v.problems, []); assert.ok(v.text.includes(many.slice(0, 40)));
+});
+
+test('PDF: a picture is an image XObject placed once; everything else stays vector', async () => {
+  const d = buildDoc({ markdown: '# 図\n\n本文', blocks: [{ t: 'img', image: picture, caption: '図1' }, { t: 'img', image: picture }] }).doc;
+  const { out } = await pdfOf(d); assert.equal(out.images, 1, 'one object for the same picture');
+  const v = await check(out.bytes, docText(d), undefined, 1); assert.deepEqual(v.problems, []); assert.equal(v.images, 1);
+  assert.ok(Buffer.from(out.bytes).toString('latin1').includes('/Filter /DCTDecode'));
+});
+
+test('PDF: a long document pages, repeats the table header, slices a row taller than a page, and loses nothing', async () => {
   const rows = Array.from({ length: 70 }, (_, i) => ['行' + i, i * 1.5, '備考 '.repeat(5) + i]);
   rows.push(['巨大な行', 1, '長い説明。'.repeat(400)]);
   const body = Array.from({ length: 40 }, (_, i) => '段落' + i + '：' + 'これは本文の一部で、折り返しとページ分割を確かめるための文章です。'.repeat(3)).join('\n\n');
   const d = buildDoc({ markdown: '# 長文\n\n' + body, tables: [{ columns: ['名前', '数', '備考'], rows, caption: '一覧表' }], sources: SOURCES }).doc;
-  const { laid, out } = pdfOf(d);
+  const { laid, out } = await pdfOf(d);
   assert.ok(laid.pages.length >= 6, 'pages ' + laid.pages.length);
-  const v = verifyPdf(out.bytes, docText(d), laid.pages.length);
+  const v = await check(out.bytes, docText(d), laid.pages.length);
   assert.deepEqual(v.problems, []);
   const heads = laid.pages.filter((p) => p.ops.some((o) => o.k === 't' && o.b && o.sz === 9.5)).length;
   assert.ok(heads >= 3, 'the header row repeats on each table page: ' + heads);
   for (const p of laid.pages) for (const o of p.ops) if (o.k === 't') assert.ok(o.y < PAGE.h && o.x >= PAGE.mx - 1, 'text stays on the page');
-  assert.ok(out.bytes.length > 0);
   assert.equal(laid.outline.filter((o) => o.level === 1).length >= 1, true);
 });
 
-test('PDF verification fails when the file is damaged — by name', () => {
-  const d = doc(), { laid, out } = pdfOf(d), want = docText(d);
+test('PDF verification fails when the file is damaged — by name', async () => {
+  const d = doc(), { laid, out } = await pdfOf(d, false), want = docText(d);
   const bad = out.bytes.slice(); const s = Buffer.from(bad).toString('latin1');
   const i = s.indexOf('xref\n'); bad[i + 33] = bad[i + 33] === 48 ? 49 : 48;
-  assert.ok(verifyPdf(bad, want, laid.pages.length).problems.some((p) => /xref-offset-wrong/.test(p) || /no-page-tree/.test(p)));
-  assert.ok(verifyPdf(out.bytes, want + '漢', laid.pages.length).problems.some((p) => /^text-differs/.test(p)));
-  assert.ok(verifyPdf(out.bytes, want, laid.pages.length + 1).problems.some((p) => /expected-/.test(p)));
-  assert.ok(verifyPdf(out.bytes.subarray(0, out.bytes.length - 20), want).problems.length > 0);
+  assert.ok((await check(bad, want, laid.pages.length)).problems.some((p) => /xref-offset-wrong/.test(p) || /no-page-tree/.test(p)));
+  assert.ok((await check(out.bytes, want + '漢', laid.pages.length)).problems.some((p) => /^text-differs/.test(p)));
+  assert.ok((await check(out.bytes, want, laid.pages.length + 1)).problems.some((p) => /expected-/.test(p)));
+  assert.ok((await check(out.bytes, want, laid.pages.length, inflate, 3)).problems.some((p) => /-images-found-/.test(p)));
+  assert.ok((await check(out.bytes.subarray(0, out.bytes.length - 20), want)).problems.length > 0);
+  /* a glyph procedure without its fill, and a ToUnicode that lost a code, are named */
+  const noFill = new Uint8Array(Buffer.from(s.replace('f*\n', '\n'), 'latin1'));
+  assert.ok((await check(noFill, want)).problems.length > 0);
+  const noMap = new Uint8Array(Buffer.from(s.replace(/<01> <[0-9A-F]+>\n/, ''), 'latin1'));
+  assert.ok((await check(noMap, want)).problems.length > 0);
 });
 
-test('PDF: the text layer is invisible text with a ToUnicode map, bookmarks and a link per source', () => {
-  const { out } = pdfOf(doc()), s = Buffer.from(out.bytes).toString('latin1');
-  assert.ok(/3 Tr/.test(s) && /\/ToUnicode/.test(s) && /\/Outlines/.test(s) && /\/Subtype \/Link/.test(s) && /\/URI \(https:\/\/example\.com\/a\?b=%28/.test(s) === false || /\/URI \(https:\/\/example\.com\/a\?b=\\\(1\\\)\)/.test(s) || /\/URI/.test(s));
-  assert.ok(/\/Lang \(ja-JP\)/.test(s));
+test('glyph tracing: marching squares reads a ring back as two closed, smooth contours of the right size', () => {
+  const N = 96, R = 30, a = new Uint8Array(N * N);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const d = Math.hypot(x - 47.5, y - 47.5); a[y * N + x] = d < 12 ? 0 : Math.round(255 * Math.max(0, Math.min(1, R - d + 0.5))); }   /* a ring: outer radius 30, hole radius 12 */
+  const loops = marchingSquares(a, N, N); assert.equal(loops.length, 2, 'outer edge and hole');
+  const radius = (l) => l.reduce((s, [x, y]) => s + Math.hypot(x - 47.5, y - 47.5), 0) / l.length;
+  assert.deepEqual(loops.map(radius).sort((p, q) => p - q).map(Math.round), [12, 30]);
+  for (const l of loops) { const r = radius(l); for (const [x, y] of l) assert.ok(Math.abs(Math.hypot(x - 47.5, y - 47.5) - r) < 0.75, 'round to under a pixel'); }
+  const g = traceGlyph(a, N, N, 48, 48), pts = g.reduce((s, c) => s + c.length, 0);
+  assert.ok(g.length === 2 && pts < loops.reduce((s, l) => s + l.length, 0), 'simplified'); assert.ok(g.flat().every(([x, y]) => Number.isInteger(x) && Number.isInteger(y)));
+  const xs = g.flat().map(([x]) => x); assert.ok(Math.max(...xs) > 140 && Math.max(...xs) < 170, 'units: 30 px of a 192 px em = 156 of 1000');
 });
 
 test('Word / PowerPoint / Excel: the package is sound and holds the text', () => {
