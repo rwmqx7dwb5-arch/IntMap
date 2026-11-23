@@ -389,7 +389,7 @@ describe('gis-overture · the world graph (⑤)', () => {
     assert.ok(!/world_graph_nodes[^;]*\(select/i.test(sql.replace(/world_graph_adopt_id/g, '')), 'a node is written without a subselect');
   });
   test('the migration holds what the SQL above calls', () => {
-    const mig = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261120140000_world_graph_id_history.sql'), 'utf8');
+    const mig = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261125010000_world_graph_id_history.sql'), 'utf8');
     for (const s of ['create table if not exists public.world_graph_id_history', 'function public.world_graph_resolve_id', 'function public.world_graph_adopt_id', 'enable row level security', 'grant all on public.world_graph_id_history to service_role', 'world_graph_id_history_uq']) assert.ok(mig.includes(s), 'migration lacks: ' + s);
     assert.ok(/revoke execute on function public\.world_graph_adopt_id[^;]*from public, anon, authenticated/.test(mig), 'the ingest helper must not be callable by a reader');
     assert.ok(!/grant (insert|update|delete|all)[^;]*world_graph_id_history[^;]*(anon|authenticated)/i.test(mig), 'a client role was given write on the history');
