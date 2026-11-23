@@ -65,3 +65,6 @@ main の増分（Atlas の skills・board など、他の PR）と重なって�
 （`check:surface`）。`js/safe-html.js` は export を持たず、全ページがこの 1 つのグローバルを通して読む作りなので、他の Atlas のファイル
 （`js/atlas-reading.js` など）と同じ読み方をそろえた。import に替えるには `safe-html.js` に export を足す別の変更が要る。
 台帳は `node scripts/global-surface.mjs --update` で 175 にした。
+
+`atlas-cap-runs` も、他の PR の能力の追加が先に載って CI の実測が 941.9 kB になった（上限 931.1 → 942.0 kB）。
+上限は CI の実測に合わせた。
