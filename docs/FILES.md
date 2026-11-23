@@ -206,6 +206,9 @@ cesium-vector-tiles.js            第2エンジンのベクタタイル
 plateau-cities.js                 PLATEAU 3D 都市モデルの登録（data/plateau-cities.json）の読み込み・視界近傍の選択・URL と都市別ジオイド補正。エンジンの tiles3d 能力が読む
 geoid.js                         EGM2008 ジオイド高 N（楕円体高と海抜の差）を世界のどこでも返す。0.5° 格子（data/geoid-egm2008.bin.gz・scripts/build-geoid-grid.mjs が導出）の双一次補間。日本の外の 3D 建物タイルセットを地面に合わせる
 world-3d-sources.js              日本の PLATEAU 以外の 3D 建物タイルセット（3D BAG・Re:Earth Buildings）の登録・視界近傍の選択・上位データの範囲を下位から抜く箱。ライセンスと信頼性の根拠を行ごとに持つ
+building-attrs.js                選んだ 3D 建物の属性を、PLATEAU・3D BAG・Re:Earth Buildings それぞれの実タイルで確かめた名前から、高さ・用途・建築年・階数・住所・出典の一覧にする（データが述べない欄は行を作らず、全属性はそのまま残す）。
+building-info.js                 建物を選んだとき開くカード（DOM テキストのみ・スマホは上から下がるカード・Esc で閉じて着色を戻す）。3D 都市モデルのレイヤーを入れたとき遅延で読む。
+render-witness.js                「描いた」が画面に届いたかの観測器（render.witness）。描画エンジンが持つ面について、不透明度 0・ズーム範囲外・画面外・描画エラー・別レイヤーの被覆を、層を消した 1 フレームと出した 1 フレームの画素比較まで含めて答える。分からないことは失敗にしない。
 render-plan.js                     描画方法の選択（候補を良い順に並べ、エンジンの能力で最初に実行できるものを選ぶ。純粋）。geo-engine の `plan()` と PLATEAU レイヤーが使う
 tileset-budget.js                  3D Tiles のメモリ・詳細度の予算を端末（メモリ・コア数・省データ・携帯）から決める。cesium-engine の addTileset／_governTilesets が使う
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
@@ -2069,7 +2072,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは15・全 136,880 リング分／
+                                  **発見された**束すべて・いまは15・全 136,884 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
