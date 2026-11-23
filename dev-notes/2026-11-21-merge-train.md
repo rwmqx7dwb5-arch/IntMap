@@ -70,3 +70,10 @@ CI 緑のあとに main が #1294・#1358・#1376 で動き DIRTY になった�
 残る欠陥: 乗車後も車両のセッションが head を動かし続け、auto-merge を付け直す。`--build` が publish 直前に head の移動を検出して取り込み直すこと、および車両側のセッションに「乗車済み」を伝える経路が要る。
 
 追記（同日）: 手で解消した main の取り込みで、衝突を解く**前に** `regen` を走らせたため、衝突マーカー入りで解析できなかった `js/atlas-console.js`・`js/atlas-toolsurface.js` の行が output-taint の台帳から消え、CI の Regression で落ちた。台帳を解消後の木から書き直した。`--build` は衝突した車両を載せないので、この順序の誤りは手作業の取り込みだけで起きる——生成器は衝突を解いて commit した後にだけ走らせる。
+
+### 再取り込み（2026-11-24 夜）
+
+- **#1324 が main へ単独で着地**したので、列車内の 2 つの車両 merge（初回と最新 head の取り込み）を `git revert -m 1` で取り消してから main を取り込んだ（増分の二重計上を防ぐ。#1294 と同じ形）。trailer からも外した。
+- main の #1337（web-browse）との衝突 2 件は両方の内容を合わせて解消した。`relay-guard` を使う関数は実数で数えて 24 本（認証あり 6・任意 1・無認証 17）。
+- 数を実数に合わせた: Edge Function 28・migration 75・表 70・`00_structure_test.sql` の `plan(156)`（70 表 × 2 ＋ 単発 16）。`06-supabase.md` の表一覧で `connections` の行が 2 回出ていたので、片方を消して `web_session_journal` を足した。
+- 起動予算: main 側で天井が実測まで下がっていたので、列車の build で 4 行を上げ直した（async.raw 15231.7 / gzip 5178.0 / atlas-cap-runs 1051.5 / atlas-console 1180.0 kB）。上げた分は列車に載った車両のコードで、新しい費用ではない。
