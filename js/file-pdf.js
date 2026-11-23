@@ -8,19 +8,22 @@
  *           「（ never end one — keeps a heading with the lines after it, does not strand one line of a paragraph,
  *           repeats a table's header row on the next page, and slices a row taller than a page rather than
  *           losing it. `measure(text, style)` is the only thing it asks of the platform (points).
- *   WRITE   buildPdf(pages, …) → bytes. Each page is the page IMAGE (rasterised by the caller from the same
- *           operations) with the page's text laid over it INVISIBLY (render mode 3) in a Type0 font whose
- *           ToUnicode map is the document's own alphabet — so the file looks identical on every machine
- *           (no font has to be embedded or exist on the reader's) and its text can still be searched, selected
- *           and copied, in Japanese. Bookmarks come from the headings; each source URL is a link.
+ *   WRITE   buildPdf(doc, laid, opts) → bytes. VECTOR: every character is a Type3 glyph whose procedure fills an outline
+ *           (opts.glyphOf — in the browser js/file-glyph.js reads it off the reader's own font; there is no CJK font in
+ *           the repository and none is shipped), rules and fills are path operators in the page's content stream, and only
+ *           a picture (chart, map frame) is an image. Each font carries a ToUnicode map, so the text is searched, selected
+ *           and copied in Japanese; furniture (bullets, numbers, footers) is marked /Artifact. Bookmarks come from the
+ *           headings; each source URL is a link. The file looks the same on every machine and stays sharp at any zoom.
  *   VERIFY  verifyPdf(bytes, expected) reads the file BACK with its own small parser — header, cross-reference
- *           table (every offset must land on «n 0 obj»), page tree and page count, every image stream's length
- *           and JPEG markers, and the text layer decoded through the ToUnicode map — and compares the
- *           characters it finds with the characters the document holds. A mismatch is a defect, said by name.
+ *           table (every offset must land on «n 0 obj»), page tree and page count, every Type3 font's glyph procedures,
+ *           widths and ToUnicode, every image stream's length and JPEG markers, and the text each page draws, decoded
+ *           through the font it names — and compares the characters it finds with the characters the document holds.
+ *           A mismatch is a defect, said by name.
  *
- *  ⚠ What this is not: the text on the page is a picture, not vector glyphs (the only way to put Japanese on
- *  a page in the browser without shipping a CJK font — there is none in the repository). The card says so.
- *  Pure apart from the `measure` / `rasterize` hooks, so tests/file-deliverables-checks.test.mjs runs it in node.
+ *  ⚠ A glyph is the outline of the reader's font as their device drew it (traced at 192 px, ~1/1000 em precision),
+ *  not a font file. A character the device has no font for is caught by the caller (missingGlyphs), never drawn blank.
+ *  Pure apart from the measure / glyphOf / imageOf / deflate hooks, so tests/file-deliverables-checks.test.mjs
+ *  runs it in node with a deterministic glyph.
  * ==========================================================================*/
 import { cellText } from './file-doc.js';
 
@@ -243,39 +246,70 @@ export function layoutDoc(doc, measureRaw) {
 /* ── writing ──────────────────────────────────────────────────────────────── */
 const enc = new TextEncoder();
 const hex4 = (n) => n.toString(16).toUpperCase().padStart(4, '0');
+const hex2 = (n) => n.toString(16).toUpperCase().padStart(2, '0');
 const utf16hex = (s) => { let h = ''; for (let i = 0; i < s.length; i++) h += hex4(s.charCodeAt(i)); return h; };
 const pdfStr = (s) => '<FEFF' + utf16hex(s) + '>';
 const num = (v) => (Math.round(v * 100) / 100).toString();
 const urlStr = (u) => '(' + encodeURI(u).replace(/[()\\]/g, (c) => '\\' + c) + ')';
 const pdfDate = (d) => 'D:' + d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, '0') + String(d.getUTCDate()).padStart(2, '0') + String(d.getUTCHours()).padStart(2, '0') + String(d.getUTCMinutes()).padStart(2, '0') + String(d.getUTCSeconds()).padStart(2, '0') + 'Z';
+const rgb = (hex) => { const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || ''); const k = m ? [m[1], m[2], m[3]].map((h) => parseInt(h, 16) / 255) : [0, 0, 0]; return k.map((v) => num(v)).join(' '); };
+const styleOf = (o) => (o.mono ? 'm' : o.b ? 'b' : 'n');
+const PER_FONT = 255;                 /* a Type3 font addresses its glyphs with one byte: codes 1..255 */
 
 /**
- * pages: from layoutDoc; `images[i]` is page i's raster — { jpeg: Uint8Array, w, h } or { rgb: Uint8Array, w, h };
- * `measure` is the same one layout used (it sets each text run's horizontal scaling so a selection box matches the picture).
+ * The file. Text and figures are VECTORS in the page's own content stream: each character is a Type3 glyph whose
+ * procedure fills the outline `glyphOf(ch, style)` returned (even-odd, 1000 units per em, d1 so the fill colour is
+ * the page's), rules and rectangles are re / m l S, and only a picture (a chart, a map frame) is an image XObject.
+ * Every font has a ToUnicode map so the text is searched, selected and copied; page furniture (bullet, number,
+ * footer, a repeated table header) is marked /Artifact — readers that honour it leave it out of extraction, and verifyPdf compares only the rest (pdf.js, checked 2026-11-21, extracts it anyway: a bullet or «1 / 1» can appear in a copy, as in any word-processor PDF).
+ *
+ *  doc, laid     — from layoutDoc
+ *  opts.glyphOf  — (ch, style 'n'|'b'|'m') → { adv (units/em), path:[[ [x,y],… ],…] }   (required)
+ *  opts.measure  — the measure layout used: each run is set with the horizontal scaling that makes its width equal it
+ *  opts.imageOf  — async (img) → { jpeg:Uint8Array, w, h } | { rgb:Uint8Array, w, h }; absent → pictures are refused
+ *  opts.deflate  — async (Uint8Array) → zlib bytes (FlateDecode); absent → streams are written plain
+ *  opts.when     — Date for the info dictionary
  */
-export function buildPdf(doc, laid, images, measure, when) {
-  when = when instanceof Date ? when : new Date();
+export async function buildPdf(doc, laid, opts) {
+  const { glyphOf, measure, imageOf, deflate } = opts, when = opts.when instanceof Date ? opts.when : new Date();
   const chunks = [], offsets = []; let size = 0;
   const put = (b) => { const u = typeof b === 'string' ? enc.encode(b) : b; chunks.push(u); size += u.length; };
-  let nobj = 0; const ids = [];
-  const reserve = () => { ids.push(++nobj); return nobj; };
+  let nobj = 0;
+  const reserve = () => ++nobj;
   const obj = (id, body, stream) => {
     offsets[id] = size;
     put(id + ' 0 obj\n' + body);
     if (stream) { put('\nstream\n'); put(stream); put('\nendstream'); }
     put('\nendobj\n');
   };
+  const flate = async (bytes) => { if (!deflate || bytes.length < 64) return { data: bytes, f: '' }; const z = await deflate(bytes); return z && z.length < bytes.length ? { data: z, f: ' /Filter /FlateDecode' } : { data: bytes, f: '' }; };
+  const sobj = async (id, dict, bytes) => { const z = await flate(bytes); obj(id, '<< ' + dict + z.f + ' /Length ' + z.data.length + ' >>', z.data); };
 
-  /* the alphabet: every character of the searchable text gets a 16-bit code, and the ToUnicode map says what it is */
-  const cid = new Map(), chars = [];
-  const code = (ch) => { let c = cid.get(ch); if (!c) { c = cid.size + 1; cid.set(ch, c); chars.push(ch); } return c; };
-  const textOps = laid.pages.map((p) => p.ops.filter((o) => o.k === 't' && !o.deco && o.s.trim() !== ''));
-  textOps.forEach((os) => os.forEach((o) => { for (const ch of o.s) code(ch); }));
-  if (cid.size > 65000) return { problem: 'alphabet-too-large' };
+  /* the alphabet: per style, every character drawn gets (font, code); 255 per font */
+  const fonts = [], where = { n: new Map(), b: new Map(), m: new Map() };
+  const slot = (st, ch) => {
+    let w = where[st].get(ch); if (w) return w;
+    let f = fonts.filter((x) => x.style === st).pop();
+    if (!f || f.chars.length >= PER_FONT) { f = { style: st, chars: [] }; fonts.push(f); }
+    f.chars.push(ch); w = { f, code: f.chars.length }; where[st].set(ch, w); return w;
+  };
+  const glyphs = new Map();
+  const glyph = (st, ch) => { const k = st + ch; let g = glyphs.get(k); if (!g) { g = glyphOf(ch, st) || { adv: 1000, path: [] }; glyphs.set(k, g); } return g; };
+  laid.pages.forEach((p) => p.ops.forEach((o) => { if (o.k === 't') for (const ch of o.s) slot(styleOf(o), ch); }));
+  if (fonts.length > 200) return { problem: 'alphabet-too-large' };
 
-  const catalog = reserve(), pagesId = reserve(), infoId = reserve(), fontId = reserve(), cidFont = reserve(), descId = reserve(), tuId = reserve();
-  const pageIds = laid.pages.map(() => reserve());
-  const contentIds = laid.pages.map(() => reserve()), imageIds = laid.pages.map(() => reserve());
+  /* pictures, once each */
+  const picIds = new Map(), picOrder = [];
+  for (const p of laid.pages) for (const o of p.ops) if (o.k === 'i' && !picIds.has(o.img.bytes)) {
+    if (!imageOf) return { problem: 'no-image-encoder' };
+    const im = await imageOf(o.img); if (!im || !(im.jpeg || im.rgb)) return { problem: 'image-failed' };
+    picIds.set(o.img.bytes, { im, id: 0, name: 'Im' + (picOrder.length + 1) }); picOrder.push(o.img.bytes);
+  }
+
+  const catalog = reserve(), pagesId = reserve(), infoId = reserve();
+  fonts.forEach((f, n) => { f.id = reserve(); f.tu = reserve(); f.enc = reserve(); f.procs = f.chars.map(() => reserve()); f.name = 'F' + (n + 1); });
+  picOrder.forEach((k) => { picIds.get(k).id = reserve(); });
+  const pageIds = laid.pages.map(() => reserve()), contentIds = laid.pages.map(() => reserve());
   const annots = laid.pages.map((p) => p.ops.filter((o) => o.k === 'a').map((o) => ({ id: reserve(), o })));
   const outlineItems = laid.outline.map((o) => ({ o, id: reserve() })), outlineRoot = outlineItems.length ? reserve() : 0;
 
@@ -283,32 +317,60 @@ export function buildPdf(doc, laid, images, measure, when) {
   obj(catalog, '<< /Type /Catalog /Pages ' + pagesId + ' 0 R /Lang (' + (doc.lang === 'ja' ? 'ja-JP' : 'en-US') + ') /ViewerPreferences << /DisplayDocTitle true >>' + (outlineRoot ? ' /Outlines ' + outlineRoot + ' 0 R /PageMode /UseOutlines' : '') + ' >>');
   obj(pagesId, '<< /Type /Pages /Count ' + pageIds.length + ' /Kids [' + pageIds.map((i) => i + ' 0 R').join(' ') + '] >>');
   obj(infoId, '<< /Title ' + pdfStr(doc.title) + (doc.author ? ' /Author ' + pdfStr(doc.author) : '') + ' /Producer ' + pdfStr('IntMap Atlas') + ' /Creator ' + pdfStr('IntMap Atlas') + ' /CreationDate (' + pdfDate(when) + ') >>');
-  obj(fontId, '<< /Type /Font /Subtype /Type0 /BaseFont /IntMapText /Encoding /Identity-H /DescendantFonts [' + cidFont + ' 0 R] /ToUnicode ' + tuId + ' 0 R >>');
-  obj(cidFont, '<< /Type /Font /Subtype /CIDFontType2 /BaseFont /IntMapText /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor ' + descId + ' 0 R /DW 1000 /CIDToGIDMap /Identity >>');
-  obj(descId, '<< /Type /FontDescriptor /FontName /IntMapText /Flags 4 /FontBBox [0 -200 1000 900] /ItalicAngle 0 /Ascent 880 /Descent -120 /CapHeight 700 /StemV 80 >>');
-  let cm = '/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n';
-  for (let i = 0; i < chars.length; i += 100) {
-    const part = chars.slice(i, i + 100);
-    cm += part.length + ' beginbfchar\n' + part.map((ch, k) => '<' + hex4(i + k + 1) + '> <' + utf16hex(ch) + '>').join('\n') + '\nendbfchar\n';
-  }
-  cm += 'endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend';
-  const cmBytes = enc.encode(cm); obj(tuId, '<< /Length ' + cmBytes.length + ' >>', cmBytes);
 
-  laid.pages.forEach((p, i) => {
-    const img = images[i], X = (v) => num(v), Y = (v) => num(PAGE.h - v);
-    let c = 'q ' + num(PAGE.w) + ' 0 0 ' + num(PAGE.h) + ' 0 0 cm /Im0 Do Q\n';
-    textOps[i].forEach((o) => {
-      const n = [...o.s].length, nat = n * o.sz, wdt = measure(o.s, { sz: o.sz, b: !!o.b, mono: !!o.mono });
-      const tz = Math.max(10, Math.min(400, wdt / nat * 100));
-      c += 'BT 3 Tr /F1 ' + num(o.sz) + ' Tf ' + num(tz) + ' Tz ' + X(o.x) + ' ' + Y(o.y) + ' Td <' + [...o.s].map((ch) => hex4(cid.get(ch))).join('') + '> Tj ET\n';
-    });
-    const cb = enc.encode(c);
-    obj(contentIds[i], '<< /Length ' + cb.length + ' >>', cb);
-    const data = img.jpeg || img.rgb;
-    obj(imageIds[i], '<< /Type /XObject /Subtype /Image /Width ' + img.w + ' /Height ' + img.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8' + (img.jpeg ? ' /Filter /DCTDecode' : '') + ' /Length ' + data.length + ' >>', data);
+  for (const f of fonts) {
+    const glyphList = f.chars.map((ch) => glyph(f.style, ch));
+    const names = f.chars.map((_, i) => '/g' + (i + 1));
+    let bx0 = 0, by0 = -250, bx1 = 1000, by1 = 950;   /* the box every glyph fits in: only a hint to the reader */
+    for (const g of glyphList) for (const c of g.path) for (const [x, y] of c) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
+    obj(f.id, '<< /Type /Font /Subtype /Type3 /Name /' + f.name + ' /FontBBox [' + [bx0, by0, bx1, by1].join(' ') + '] /FontMatrix [0.001 0 0 0.001 0 0] /CharProcs << ' + names.map((n, i) => n + ' ' + f.procs[i] + ' 0 R').join(' ') + ' >> /Encoding ' + f.enc + ' 0 R /FirstChar 1 /LastChar ' + f.chars.length + ' /Widths [' + glyphList.map((g) => num(g.adv)).join(' ') + '] /ToUnicode ' + f.tu + ' 0 R >>');
+    obj(f.enc, '<< /Type /Encoding /Differences [1 ' + names.join(' ') + '] >>');
+    let cm = '/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<00> <FF>\nendcodespacerange\n';
+    for (let i = 0; i < f.chars.length; i += 100) {
+      const part = f.chars.slice(i, i + 100);
+      cm += part.length + ' beginbfchar\n' + part.map((ch, k) => '<' + hex2(i + k + 1) + '> <' + utf16hex(ch) + '>').join('\n') + '\nendbfchar\n';
+    }
+    cm += 'endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend';
+    await sobj(f.tu, '', enc.encode(cm));
+    for (let i = 0; i < f.chars.length; i++) {
+      const g = glyphList[i]; let ink = [1e9, 1e9, -1e9, -1e9], d = '';
+      for (const c of g.path) {
+        c.forEach(([x, y], k) => { d += x + ' ' + y + (k ? ' l\n' : ' m\n'); if (x < ink[0]) ink[0] = x; if (y < ink[1]) ink[1] = y; if (x > ink[2]) ink[2] = x; if (y > ink[3]) ink[3] = y; });
+        d += 'h\n';
+      }
+      if (!g.path.length) ink = [0, 0, 0, 0];
+      await sobj(f.procs[i], '', enc.encode(num(g.adv) + ' 0 ' + ink.join(' ') + ' d1\n' + (d ? d + 'f*\n' : '')));
+    }
+  }
+  for (const k of picOrder) {
+    const { im, id } = picIds.get(k), data = im.jpeg || im.rgb;
+    if (im.jpeg) obj(id, '<< /Type /XObject /Subtype /Image /Width ' + im.w + ' /Height ' + im.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + data.length + ' >>', data);
+    else await sobj(id, '/Type /XObject /Subtype /Image /Width ' + im.w + ' /Height ' + im.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8', data);
+  }
+
+  let runs = 0, artifacts = 0;
+  for (let i = 0; i < laid.pages.length; i++) {
+    const p = laid.pages[i], X = (v) => num(v), Y = (v) => num(PAGE.h - v), used = new Set(), usedPics = new Set();
+    let c = '';
+    for (const o of p.ops) {
+      if (o.k === 'r') c += rgb(o.fill) + ' rg ' + X(o.x) + ' ' + Y(o.y + o.h) + ' ' + num(o.w) + ' ' + num(o.h) + ' re f\n';
+      else if (o.k === 'l') c += rgb(o.c) + ' RG ' + num(o.w) + ' w ' + X(o.x1) + ' ' + Y(o.y1) + ' m ' + X(o.x2) + ' ' + Y(o.y2) + ' l S\n';
+      else if (o.k === 'i') { const pc = picIds.get(o.img.bytes); usedPics.add(pc); c += 'q ' + num(o.w) + ' 0 0 ' + num(o.h) + ' ' + X(o.x) + ' ' + Y(o.y + o.h) + ' cm /' + pc.name + ' Do Q\n'; }
+      else if (o.k === 't' && o.s !== '') {
+        const st = styleOf(o), chs = [...o.s], nat = chs.reduce((s, ch) => s + glyph(st, ch).adv, 0) * o.sz / 1000, wdt = measure(o.s, { sz: o.sz, b: !!o.b, mono: !!o.mono });
+        const tz = nat > 0 ? Math.max(50, Math.min(200, wdt / nat * 100)) : 100;
+        const segs = []; let cur = null;
+        for (const ch of chs) { const w = slot(st, ch); if (!cur || cur.f !== w.f) { cur = { f: w.f, codes: '' }; segs.push(cur); } cur.codes += hex2(w.code); }
+        if (o.deco) { c += '/Artifact BMC\n'; artifacts++; } else runs++;
+        c += rgb(o.c) + ' rg BT ' + num(tz) + ' Tz ' + X(o.x) + ' ' + Y(o.y) + ' Td ' + segs.map((s) => { used.add(s.f); return '/' + s.f.name + ' ' + num(o.sz) + ' Tf <' + s.codes + '> Tj'; }).join(' ') + ' ET\n';
+        if (o.deco) c += 'EMC\n';
+      }
+    }
+    await sobj(contentIds[i], '', enc.encode(c));
     annots[i].forEach(({ id, o }) => obj(id, '<< /Type /Annot /Subtype /Link /Rect [' + [X(o.x), Y(o.y + o.h), X(o.x + o.w), Y(o.y)].join(' ') + '] /Border [0 0 0] /A << /S /URI /URI ' + urlStr(o.url) + ' >> >>'));
-    obj(pageIds[i], '<< /Type /Page /Parent ' + pagesId + ' 0 R /MediaBox [0 0 ' + PAGE.w + ' ' + PAGE.h + '] /Resources << /XObject << /Im0 ' + imageIds[i] + ' 0 R >> /Font << /F1 ' + fontId + ' 0 R >> >> /Contents ' + contentIds[i] + ' 0 R' + (annots[i].length ? ' /Annots [' + annots[i].map((a) => a.id + ' 0 R').join(' ') + ']' : '') + ' >>');
-  });
+    const res = '<< ' + (used.size ? '/Font << ' + [...used].map((f) => '/' + f.name + ' ' + f.id + ' 0 R').join(' ') + ' >> ' : '') + (usedPics.size ? '/XObject << ' + [...usedPics].map((pc) => '/' + pc.name + ' ' + pc.id + ' 0 R').join(' ') + ' >> ' : '') + '>>';
+    obj(pageIds[i], '<< /Type /Page /Parent ' + pagesId + ' 0 R /MediaBox [0 0 ' + PAGE.w + ' ' + PAGE.h + '] /Resources ' + res + ' /Contents ' + contentIds[i] + ' 0 R' + (annots[i].length ? ' /Annots [' + annots[i].map((a) => a.id + ' 0 R').join(' ') + ']' : '') + ' >>');
+  }
   if (outlineRoot) {
     /* level-1 entries are the top; deeper ones hang under the latest level-1 (a two-level tree is what a reader's sidebar shows well) */
     const tops = [];
@@ -327,61 +389,112 @@ export function buildPdf(doc, laid, images, measure, when) {
   for (let i = 1; i <= nobj; i++) put(String(offsets[i]).padStart(10, '0') + ' 00000 n \n');
   put('trailer\n<< /Size ' + (nobj + 1) + ' /Root ' + catalog + ' 0 R /Info ' + infoId + ' 0 R >>\nstartxref\n' + xref + '\n%%EOF\n');
   const out = new Uint8Array(size); let o = 0; for (const ch of chunks) { out.set(ch, o); o += ch.length; }
-  return { bytes: out, pages: pageIds.length, chars: cid.size };
+  return { bytes: out, pages: pageIds.length, fonts: fonts.length, glyphs: glyphs.size, runs, artifacts, images: picOrder.length };
 }
 
 /* ── reading it back ─────────────────────────────────────────────────────── */
 const latin = (b, s, e) => { let r = ''; for (let i = s; i < e; i++) r += String.fromCharCode(b[i]); return r; };
 
 /**
- * Open a PDF this module wrote and report what is really in it. → { ok, pages, text, problems[] }.
- * `expectedText` (the document's own words) is compared character-for-character, whitespace aside;
- * `expectedPages` when the caller knows it.
+ * Open a PDF this module wrote and report what is really in it. → { ok, pages, text, fonts, glyphs, images, problems[] }.
+ * Async only because content streams may be Flate-compressed: `inflate` (async bytes → bytes) is the reader's own.
+ * `expectedText` (the document's own words) is compared character-for-character, whitespace aside — page furniture
+ * (/Artifact) is not part of it; `expectedPages` / `expectedImages` when the caller knows them.
+ * Checked from the file alone: header, EOF, every xref offset lands on «n 0 obj», stream lengths, the page tree, and for
+ * every Type3 font its CharProcs (one per code, each a d1 procedure whose paths close and end in a fill), Widths and
+ * ToUnicode; every image's markers; and the text each page draws, decoded through the font it names.
  */
-export function verifyPdf(bytes, expectedText, expectedPages) {
+export async function verifyPdf(bytes, expectedText, expectedPages, inflate, expectedImages) {
   const problems = [], s = latin(bytes, 0, bytes.length);
+  const fail = (extra) => ({ ok: false, pages: 0, text: '', fonts: 0, glyphs: 0, images: 0, problems: problems.concat(extra) });
   if (!s.startsWith('%PDF-')) problems.push('no-pdf-header');
   if (!/%%EOF\s*$/.test(s)) problems.push('no-eof-marker');
   const sx = /startxref\s+(\d+)\s+%%EOF\s*$/.exec(s);
-  if (!sx) return { ok: false, pages: 0, text: '', problems: problems.concat('no-startxref') };
+  if (!sx) return fail('no-startxref');
   const xo = +sx[1];
-  if (s.slice(xo, xo + 4) !== 'xref') return { ok: false, pages: 0, text: '', problems: problems.concat('startxref-not-at-xref') };
+  if (s.slice(xo, xo + 4) !== 'xref') return fail('startxref-not-at-xref');
   const head = /xref\s+0\s+(\d+)\s+/.exec(s.slice(xo, xo + 40)); const total = head ? +head[1] : 0;
   const entries = []; let p = xo + head[0].length;
   for (let i = 0; i < total; i++, p += 20) entries.push({ off: +s.slice(p, p + 10), kind: s[p + 17] });
-  const objAt = (n) => {
+  const cache = new Map();
+  const objAt = async (n) => {
+    if (cache.has(n)) return cache.get(n);
     const e = entries[n]; if (!e || e.kind !== 'n') return null;
-    if (s.slice(e.off, e.off + String(n).length + 7) !== n + ' 0 obj\n') { problems.push('xref-offset-wrong:' + n); return null; }
-    const end = s.indexOf('endobj', e.off);
-    const body = s.slice(e.off + String(n).length + 7, end), st = body.indexOf('\nstream\n');
+    const hd = n + ' 0 obj\n';
+    if (s.slice(e.off, e.off + hd.length) !== hd) { problems.push('xref-offset-wrong:' + n); return null; }
+    const end = s.indexOf('endobj', e.off), body = s.slice(e.off + hd.length, end), st = body.indexOf('\nstream\n');
     let stream = null, dict = body;
-    if (st >= 0) { dict = body.slice(0, st); const len = +(/\/Length (\d+)/.exec(dict) || [])[1], a = e.off + String(n).length + 7 + st + 8; stream = bytes.subarray(a, a + len); if (latin(bytes, a + len, a + len + 10).indexOf('endstream') < 0) problems.push('stream-length-wrong:' + n); }
-    return { dict, stream };
+    if (st >= 0) {
+      dict = body.slice(0, st); const len = +(/\/Length (\d+)/.exec(dict) || [])[1], a = e.off + hd.length + st + 8;
+      stream = bytes.subarray(a, a + len);
+      if (latin(bytes, a + len, a + len + 10).indexOf('endstream') < 0) problems.push('stream-length-wrong:' + n);
+      if (/\/FlateDecode/.test(dict)) {
+        if (!inflate) { stream = null; problems.push('cannot-inflate:' + n); } else { try { stream = await inflate(stream); } catch (_) { stream = null; problems.push('inflate-failed:' + n); } }
+      }
+    }
+    const r = { dict, stream }; cache.set(n, r); return r;
   };
-  for (let i = 1; i < total; i++) objAt(i);
-  const root = /\/Root (\d+) 0 R/.exec(s.slice(xo)); const cat = root && objAt(+root[1]);
-  const pagesRef = cat && /\/Pages (\d+) 0 R/.exec(cat.dict); const pagesObj = pagesRef && objAt(+pagesRef[1]);
-  if (!pagesObj) return { ok: false, pages: 0, text: '', problems: problems.concat('no-page-tree') };
+  for (let i = 1; i < total; i++) await objAt(i);
+  const root = /\/Root (\d+) 0 R/.exec(s.slice(xo)); const cat = root && await objAt(+root[1]);
+  const pagesRef = cat && /\/Pages (\d+) 0 R/.exec(cat.dict); const pagesObj = pagesRef && await objAt(+pagesRef[1]);
+  if (!pagesObj) return fail('no-page-tree');
   const count = +(/\/Count (\d+)/.exec(pagesObj.dict) || [])[1], kids = [...pagesObj.dict.matchAll(/(\d+) 0 R/g)].map((m) => +m[1]);
   if (count !== kids.length) problems.push('page-count-mismatch');
   if (expectedPages != null && expectedPages !== count) problems.push('expected-' + expectedPages + '-pages-found-' + count);
-  /* ToUnicode: cid → text */
-  const tu = (() => { const f = [...s.matchAll(/\/ToUnicode (\d+) 0 R/g)][0]; const o = f && objAt(+f[1]); if (!o || !o.stream) return null; const t = latin(o.stream, 0, o.stream.length), map = new Map();
-    for (const blk of t.matchAll(/beginbfchar\n([\s\S]*?)endbfchar/g)) for (const m of blk[1].matchAll(/<([0-9A-F]{4})> <([0-9A-F]+)>/g)) { let str = ''; for (let i = 0; i < m[2].length; i += 4) str += String.fromCharCode(parseInt(m[2].slice(i, i + 4), 16)); map.set(parseInt(m[1], 16), str); }
-    return map; })();
-  if (!tu) problems.push('no-tounicode');
-  let text = '';
-  kids.forEach((pid, i) => {
-    const pg = objAt(pid); if (!pg) return;
-    const ci = /\/Contents (\d+) 0 R/.exec(pg.dict), ii = /\/Im0 (\d+) 0 R/.exec(pg.dict);
-    const c = ci && objAt(+ci[1]), im = ii && objAt(+ii[1]);
-    if (!c || !c.stream) { problems.push('page-' + (i + 1) + '-no-contents'); return; }
-    if (!im || !im.stream) problems.push('page-' + (i + 1) + '-no-image');
-    else if (/\/DCTDecode/.test(im.dict) && !(im.stream[0] === 0xFF && im.stream[1] === 0xD8 && im.stream[im.stream.length - 2] === 0xFF && im.stream[im.stream.length - 1] === 0xD9)) problems.push('page-' + (i + 1) + '-jpeg-markers');
+
+  /* a Type3 font: ToUnicode (code → text), and the soundness of its glyph procedures */
+  const fontCache = new Map(); let glyphTotal = 0, fontTotal = 0;
+  const readFont = async (id) => {
+    if (fontCache.has(id)) return fontCache.get(id);
+    const f = await objAt(id), res = { map: new Map() }; fontCache.set(id, res);
+    if (!f || !/\/Subtype \/Type3/.test(f.dict)) { problems.push('font-' + id + '-not-type3'); return res; }
+    fontTotal++;
+    const tuRef = /\/ToUnicode (\d+) 0 R/.exec(f.dict), tu = tuRef && await objAt(+tuRef[1]);
+    if (!tu || !tu.stream) problems.push('font-' + id + '-no-tounicode');
+    else {
+      const t = latin(tu.stream, 0, tu.stream.length);
+      for (const blk of t.matchAll(/beginbfchar\n([\s\S]*?)endbfchar/g)) for (const m of blk[1].matchAll(/<([0-9A-F]{2})> <([0-9A-F]+)>/g)) { let str = ''; for (let i = 0; i < m[2].length; i += 4) str += String.fromCharCode(parseInt(m[2].slice(i, i + 4), 16)); res.map.set(parseInt(m[1], 16), str); }
+    }
+    const procs = [...(/\/CharProcs << ([^>]*) >>/.exec(f.dict) || [, ''])[1].matchAll(/\/(g\d+) (\d+) 0 R/g)];
+    const last = +(/\/LastChar (\d+)/.exec(f.dict) || [])[1], widths = (/\/Widths \[([^\]]*)\]/.exec(f.dict) || [, ''])[1].trim().split(/\s+/).filter(Boolean);
+    if (procs.length !== last || widths.length !== last || res.map.size !== last) problems.push('font-' + id + '-counts:' + procs.length + '/' + widths.length + '/' + res.map.size + '/' + last);
+    for (const [, name, pid] of procs) {
+      const pr = await objAt(+pid); if (!pr || !pr.stream) { problems.push('charproc-missing:' + name); continue; }
+      glyphTotal++;
+      const t = latin(pr.stream, 0, pr.stream.length);
+      if (!/^-?[\d.]+ 0 (-?[\d.]+ ){3}-?[\d.]+ d1\n/.test(t)) problems.push('charproc-no-d1:' + name);
+      else if (/ m\n/.test(t) && (!/f\*\n$/.test(t) || (t.match(/ m\n/g) || []).length !== (t.match(/\nh\n/g) || []).length)) problems.push('charproc-open-path:' + name);
+    }
+    return res;
+  };
+
+  let text = '', images = 0;
+  for (let i = 0; i < kids.length; i++) {
+    const pg = await objAt(kids[i]); if (!pg) continue;
+    const ci = /\/Contents (\d+) 0 R/.exec(pg.dict), c = ci && await objAt(+ci[1]);
+    if (!c || !c.stream) { problems.push('page-' + (i + 1) + '-no-contents'); continue; }
+    const fonts = new Map([...pg.dict.matchAll(/\/(F\d+) (\d+) 0 R/g)].map((m) => [m[1], +m[2]]));
+    for (const m of pg.dict.matchAll(/\/(Im\d+) (\d+) 0 R/g)) {
+      const im = await objAt(+m[2]); images++;
+      if (!im || !im.stream) problems.push('page-' + (i + 1) + '-no-image');
+      else if (/\/DCTDecode/.test(im.dict) && !(im.stream[0] === 0xFF && im.stream[1] === 0xD8 && im.stream[im.stream.length - 2] === 0xFF && im.stream[im.stream.length - 1] === 0xD9)) problems.push('page-' + (i + 1) + '-jpeg-markers');
+    }
     const cs = latin(c.stream, 0, c.stream.length);
-    for (const m of cs.matchAll(/<([0-9A-F]+)> Tj/g)) { for (let k = 0; k < m[1].length; k += 4) text += (tu && tu.get(parseInt(m[1].slice(k, k + 4), 16))) || '�'; text += '\n'; }
-  });
+    /* walk the stream: /Artifact BMC … EMC spans are furniture; each «/Fn sz Tf <hex> Tj» is decoded through the font it names */
+    let inArt = false, line = '';
+    for (const m of cs.matchAll(/\/Artifact BMC|\bEMC\b|\/(F\d+) [\d.]+ Tf <([0-9A-F]*)> Tj|ET\n/g)) {
+      if (m[0] === '/Artifact BMC') inArt = true;
+      else if (m[0] === 'EMC') inArt = false;
+      else if (m[1]) {
+        const fid = fonts.get(m[1]); if (!fid) { problems.push('page-' + (i + 1) + '-unknown-font:' + m[1]); continue; }
+        const f = await readFont(fid);
+        if (inArt) continue;
+        for (let k = 0; k < m[2].length; k += 2) line += f.map.get(parseInt(m[2].slice(k, k + 2), 16)) || '�';
+      } else if (m[0] === 'ET\n' && line !== '') { text += line + '\n'; line = ''; }
+    }
+  }
   if (text.indexOf('�') >= 0) problems.push('undecodable-text');
+  if (expectedImages != null && expectedImages !== images) problems.push('expected-' + expectedImages + '-images-found-' + images);
   if (expectedText != null) {
     const norm = (x) => [...String(x).replace(/\s+/g, '')].sort().join('');
     if (norm(text) !== norm(expectedText)) {
@@ -391,5 +504,5 @@ export function verifyPdf(bytes, expectedText, expectedPages) {
       problems.push('text-differs:' + diff);
     }
   }
-  return { ok: problems.length === 0, pages: count, text, problems };
+  return { ok: problems.length === 0, pages: count, text, fonts: fontTotal, glyphs: glyphTotal, images, problems };
 }
