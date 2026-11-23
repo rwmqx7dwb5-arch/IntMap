@@ -100,6 +100,8 @@
   ".nvg → 1402",
   "@media (max-width:768px){ .nvg → 1802",
   ".co-popup → 2210",
-  ".pg-panel → 2200"
+  ".pg-panel → 2200",
+  ".bldg-card → 2000",
+  "@media (max-width:640px){ .bldg-card → 1200"
  ]
 }
