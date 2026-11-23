@@ -131,6 +131,8 @@
 [`.agents/rules/one-pass-or-a-reason.md`](../../.agents/rules/one-pass-or-a-reason.md)、門は `npm run check:atlasrepeat`。`camera` 観測器は AFTER の標本をカメラが到着して
 から取る（`GE().isAnimating()` が偽で 100 ms 隔てた 2 標本が一致するまで・上限 `CAMERA_SETTLE_MS`＝2.5 s）。
 
+**「描いた」は画面に届いたものにだけ言う（`render.witness`・`js/render-witness.js`）。** `render.drawn` は「描画エンジンが持ち、レイヤーが非表示でない」までしか言わない。`witness` は同じ面について、不透明度が 0・いまのズームがレイヤーの範囲外・特徴が画面の外・描画エンジンがその面かレイヤーにエラーを出した（`claim` の時点から聞いている）・別のレイヤーが覆っている、を観測し、`q.pixels !== false` なら同じタスクの中で「そのレイヤーを消した 1 フレーム」と「出した 1 フレーム」を描いて特徴の位置の画素を比べる（提示されるのは出した側だけ）。判定は `seen` / `not_seen`（理由つき）/ `unconfirmed`（フレームが来ない・隠れたタブ・式で書かれた不透明度・redraw を持たないエンジン）で、**`unconfirmed` は失敗として報告しない**（`one-pass-or-a-reason.md` §5）。Atlas は能力の実行ごとに `_drewSince` が見つけた面へこれを訊き、見えていない面があれば結果に「描きましたが、画面には見えていません: 理由」の行と `meta.seen` を付ける。両エンジンが共に実装するメンバー（`getPaint`・`sourceData`・`getBounds`・`project`・`queryRenderedFeatures`・`redraw`・`setVisible`）だけを読むので MapLibre と Cesium が同じ答えを返す。
+
 **`find_capability` の採点。** 別名（完全一致 100・部分 40）・id・category hint に加えて、要求の各語（Latin は 3 文字以上の語、CJK はブロックと共有する連続部分文字列の
 窓と、`Intl.Segmenter` が連続の中に見つける 2 文字以上の語）がその能力のカタログ文にあれば上がる（1 語 6 点・天井 30）。Latin は隣り合う 2〜3 語の句も同じ規則で数える。
 語の重みはそれを持つブロックの少なさで割る（`min(1, 2/df)`）。df はブロックを数える（カタログは 265 能力を 62 ブロックで説明する）。ブロック内の語は項目の開始から次の
