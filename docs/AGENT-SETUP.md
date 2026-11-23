@@ -261,7 +261,7 @@ at npipe:…`（実測 2026-08-24）。旗が無いと標準出力が 1 バイ�
 
 **Edge Functions は 26 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `atlas-jobs` / `aviation-feed` / `cable-geo` /
 `client-errors` / `community-class` / `delete-account` / `fetch-relay` / `gdelt-relay` / `mcp-server` / `gis-fetch` / `news-ingest` / `news-relay` / `quotes-relay` /
-`radiation-feed` / `reader-reports` / `refresh-news` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don` / `world-graph-ingest`）。24 本すべてが
+`radiation-feed` / `reader-reports` / `refresh-news` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don` / `world-graph-ingest`）。26 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`ai-provider.js`・`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
 `atlas-persona.js`・`atlas-job-core.js`・`atlas-job-runner.js`・`atlas-server-caps.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-entities.js`・`news-geo-prompt.js`・
