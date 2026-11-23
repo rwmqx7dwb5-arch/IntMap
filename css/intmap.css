@@ -2548,14 +2548,22 @@
       .map-frame-top > .map-search:is(.has-text:not(.ms-shut),:has(:focus:not(#ms-btn))) input{ order:1; font-size:16px; height:38px; }   /* 16 px stops iOS focus-zoom */
       .map-frame-top > .map-search:is(.has-text:not(.ms-shut),:has(:focus:not(#ms-btn))) #ms-btn{ order:2; }
       .map-frame-top > .map-search .map-search-results{ top:calc(100% + 8px); max-height:min(52vh,420px); overflow-y:auto; }
+      /* the open field and its list stand over a place card an earlier search left on the map (the card is z-dropdown + 200): a second search must be tappable */
+      .map-frame-top > .map-search:is(.has-text:not(.ms-shut),:has(:focus:not(#ms-btn))){ z-index:calc(var(--z-dropdown) + 300); }
       /* the composer fits its one line: the send button is smaller (it was 44 px beside a 34 px clock and microphone), the gaps are tighter */
-      html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{ gap:5px; padding:8px 10px 6px; }
-      html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar .atl-go{ width:34px; height:34px; }
+      html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{ gap:0; padding:4px 6px 2px 10px; }
+      /* the four buttons are each a 44 px target (a finger's size) that DRAWS a 34 px round: the 5 px ring is padding the background does not reach */
+      html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar :is(.atl-go,.atl-attach,.atl-mic),
+      html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar .m-clock{ flex:0 0 auto; box-sizing:border-box; width:44px; height:44px; padding:5px; background-clip:content-box; background-origin:content-box; }
+      html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar .atl-in{ margin-right:2px; }
       html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar .atl-in{ padding:12px 13px; white-space:nowrap; text-overflow:ellipsis; }
       /* Chronos in the composer, left of the microphone */
-      .atl-inbar .m-clock{ flex:0 0 auto; width:34px; height:34px; border-radius:50%; background:transparent; color:var(--text-muted); }
-      .atl-inbar .m-clock.on{ background:var(--primary-fill); color:#fff; }
+      .atl-inbar .m-clock{ border-radius:50%; background-color:transparent; color:var(--text-muted); }
+      .atl-inbar .m-clock.on{ background-color:var(--primary-fill); color:#fff; }
       .atl-inbar .m-clock svg{ width:20px; height:20px; }
+      /* with a year to say (a past time) the round button grows into a pill, so the year is read whole */
+      html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar .m-clock.has-y{ width:auto; max-width:40vw; padding:5px 9px; gap:4px; border-radius:22px; }
+      .atl-inbar .m-clock.has-y .m-clock-y{ padding:0 9px; font-size:14px; }
       .sidebar > .header-area h2{ font-size:19px; }
       .sidebar > .header-area .btn-settings{ min-height:34px; padding:4px 12px; font-size:13px; }
       .sidebar #btn-account:has(.acct-av){ width:30px; height:30px; min-height:30px; }

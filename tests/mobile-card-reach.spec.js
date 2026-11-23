@@ -87,7 +87,7 @@ test.describe('mobile-card-reach: 375 × 812, touch', () => {
   test('B Atlas at half: the composer is wholly on the screen and answers a finger; no sample chips or card are drawn', async ({ page }) => {
     test.setTimeout(120_000);
     await boot(page);
-    await page.evaluate(() => document.getElementById('btn-community').click());   /* 電話ではタブはメニューの中（display:none） */
+    await page.evaluate(() => { const b = document.getElementById('btn-community'); if (!b.classList.contains('active')) b.click(); });   /* 電話ではタブはメニューの中（display:none）。既定の Atlas が先に開いていれば押さない（タブは押し直すと閉じる） */
     await page.evaluate(() => window.__setDetent('half', false));
     await page.waitForFunction(() => !!document.querySelector('#atlas-panel .atl-inbar'), null, { timeout: 30_000 });
     await page.waitForTimeout(1200);

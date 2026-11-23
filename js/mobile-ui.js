@@ -475,9 +475,14 @@ export function mobileUI(HOST){
     document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(syncClock,120)));
     /* (mobile-sheet-layout) the sheet's default content is Atlas's chat: the tabs live in the menu now, so a reader who has chosen none gets the
        one the composer belongs to. Once, after the app is usable, and the sheet stays where it is resting (opening a tab raises it). */
-    setTimeout(()=>{ try{ if(!mq.matches||embedded()||document.querySelector('.control-panel .mode-btn.active')) return;
-      const b=document.querySelector('.control-panel .mode-btn.mode-atlas'); if(!b) return; const was=currentDetent; b.click();
-      setTimeout(()=>{ if(RANK[currentDetent]>RANK[was]) setDetent(was); },400); }catch(_){} },2500);
+    /* ⚠ the Atlas tab is a kernel command (`panel.tab`), and the kernel is a lazy chunk: pressed before it has loaded the press is answered
+       `atlas-kernel-not-loaded` and nothing opens (measured: the click at 2.5 s changed nothing). So the default waits for the chunk itself —
+       `IntMapLazy.need('atlasConsole')`, the same warm-up a finger's pointerdown asks for — and clicks once it is there. */
+    const openDefaultTab=()=>{ try{ if(!mq.matches||embedded()||document.querySelector('.control-panel .mode-btn.active')) return;
+      const b=document.querySelector('.control-panel .mode-btn.mode-atlas'); if(!b) return;
+      const was=currentDetent; b.click();
+      setTimeout(()=>{ if(RANK[currentDetent]>RANK[was]) setDetent(was); },400); }catch(_){} };
+    setTimeout(()=>{ try{ window.IntMapLazy.need('atlasConsole').then(openDefaultTab,()=>{}); }catch(_){} },2500);
     const si=document.getElementById('search-input'); if(si) si.addEventListener('focus',()=>{ if(mq.matches) go('type'); });
 
 
@@ -510,7 +515,11 @@ export function mobileUI(HOST){
       const num=(name,dflt)=>{ const v=parseFloat(mapContainer&&mapContainer.style.getPropertyValue(name)); return isFinite(v)?v:dflt; };
       const floats=makeFloatFit({ hosts:[document.body,mapContainer,colEl], sheet:sidebar, credit:document.getElementById('map-credit'),
         active:()=>mq.matches, cover:()=>num('--sheet-cover',0), creditH:()=>num('--m-credit-h',23), frame,
-        floor:()=>{ try{ return parseFloat(getComputedStyle(sidebar).getPropertyValue('--m-legend-top'))||0; }catch(_){ return 0; } } });
+        /* the floor is the legend row's top AND the lower edge of the map's own button column (#m-fab-stack, drawn at every stop but `full`):
+           the resting stop is now taller (it holds the Atlas composer), so a tall panel reaches up far enough to cover the buttons' lower half. */
+        floor:()=>{ try{ const lg=parseFloat(getComputedStyle(sidebar).getPropertyValue('--m-legend-top'))||0;
+          const fs=document.getElementById('m-fab-stack'); const fb=(fs && !document.body.classList.contains('sheet-full') && getComputedStyle(fs).display!=='none')? fs.getBoundingClientRect().bottom+8 : 0;
+          return Math.max(lg,fb); }catch(_){ return 0; } } });
       floatsAsk=floats.ask;
       const rescan=()=>floats.scan();
       window.addEventListener('resize',rescan); try{ mq.addEventListener('change',rescan); }catch(_){} }catch(_){}

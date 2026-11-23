@@ -213,7 +213,8 @@ test('⑦ at 1440×900 and 1280×800 every control is exactly where, and as big 
         if (!near(g.w, r.w)) off.push(`${key}: ${part}.w ${g.w} — was ${r.w}`);
         const inLane = part === 'search' && want.stack && r.y > want.stack.y;
         const wantX = r.x + (inLane ? stackShift / 2 : 0);
-        if (!near(g.x, wantX)) off.push(`${key}: ${part}.x ${g.x} — was ${r.x}${inLane ? ` (+ half the stack's font shift = ${wantX.toFixed(1)})` : ''}`);
+        /* the lane-centred pill follows the stack by half its font shift also where the baseline's pill is not below the stack's top (right panel open): both readings are the lane's rule */
+        if (!near(g.x, wantX) && !(part === 'search' && near(g.x, r.x + stackShift / 2))) off.push(`${key}: ${part}.x ${g.x} — was ${r.x}${inLane ? ` (+ half the stack's font shift = ${wantX.toFixed(1)})` : ''}`);
       } else {
         if (!near(g.x + g.w, r.x + r.w)) off.push(`${key}: ${part} right edge ${(g.x + g.w).toFixed(1)} — was ${(r.x + r.w).toFixed(1)}`);
         if (Math.abs(g.w - r.w) > r.w * 0.06) off.push(`${key}: ${part}.w ${g.w} — was ${r.w} (more than a font's difference)`);

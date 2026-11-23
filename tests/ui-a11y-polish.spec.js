@@ -306,7 +306,7 @@ test.describe('③b phone shell — the flow', () => {
 
     /* ── an app flight with the sheet at full (an Atlas fit) brings it to half, and the flight is not cut short;
        a finger panning the strip of map at full is the reader's own move and changes nothing ── */
-    await page.evaluate(() => document.getElementById('btn-community').click());   /* 電話ではメニューを開くまで display:none */
+    await page.evaluate(() => { const b = document.getElementById('btn-community'); if (!b.classList.contains('active')) b.click(); });   /* 電話ではメニューを開くまで display:none。既定の Atlas が先に開いていれば押さない（タブは押し直すと閉じる） */
     await page.waitForTimeout(400);
     await page.evaluate(() => window.__setDetent('full', false));
     await page.waitForTimeout(400);

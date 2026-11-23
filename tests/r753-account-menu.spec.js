@@ -97,6 +97,7 @@ test('R753 ① the account button carries no icon on a wide screen, and still is
   await page.waitForTimeout(300);
   await page.evaluate(() => { if (!document.body.classList.contains('m-menu-open')) document.getElementById('m-menu-btn').click(); });
   await page.waitForFunction(() => document.body.classList.contains('m-menu-open') && document.getElementById('btn-account').getBoundingClientRect().height > 0);
+  await page.waitForFunction(() => document.getElementById('btn-account').querySelector('.acct-av').getBoundingClientRect().width > 0, null, { timeout: 5000 });   /* the round icon is laid out once the card is open */
   const phone = await page.evaluate(() => {
     const b = document.getElementById('btn-account'), av = b.querySelector('.acct-av');
     const nm = b.querySelector('.acct-name');
