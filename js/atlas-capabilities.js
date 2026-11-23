@@ -393,6 +393,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
       ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
+      ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
+      ["file.create","makeFile","createFile,makePdf,createPdf,exportPdf,saveAsPdf,makeDocument,createDocument,makeDocx,makeSlides,makeSpreadsheet,saveAsFile","research","none","","explanation","persist","none","",""],
       ["data.imageryInfo","imageryInfo","imageryAt,photoDate,satelliteDate,imagerySource","data","none","","explanation","session","none","",""],
       ["knowledge.remember","knowledgeRemember","rememberKnowledge,keepKnowledge,saveFact","research","none","knowledge","explanation","persist","none","",""],
       ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
