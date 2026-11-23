@@ -47,3 +47,9 @@ main を取り込むと、main の bot が下げた天井が先に上げた値�
 増分は main が先に入れた GIS 側の追加で、本 PR の変更ではない。`atlas-cap-runs` は能力表の
 行数（263 行）に比例する。いずれも利用者が得る能力そのもので、縮める根拠が無い。
 main の bot が merge 後に再び下げる。
+
+## perf (3 回目: main の能力追加後)
+
+main が能力を足し、能力表は 268 行になった。`atlas-cap-runs` 981.3→990.3 kB（`atlas-console`
+も CI で 1145.6 kB まで増えた）。能力表の行数に比例する増分で、利用者が得る能力そのもの。
+`perf-budget --update` で実測まで上げた。main の bot が merge 後に再び下げる。
