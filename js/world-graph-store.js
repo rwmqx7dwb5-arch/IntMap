@@ -86,11 +86,23 @@ export function makeWorldGraphStore(deps) {
     return { ok: true, objects: W.register(toObjects({ nodes: rows.map((x) => x.node) })), count: rows.length };
   }
 
+  /** the ties of ONE object with the periods they held, and its own validity — read straight off the rows, NOT registered:
+      js/atlas-fact-comparability.js asks «did this object change inside the span the compared values cover».
+      A database that did not answer THROWS (the caller reports «could not read», never «nothing changed»). */
+  async function tiesOf(DB, ref) {
+    const r = await rpcWorldGraph(DB, 'world_graph_subgraph', { p_ref: String(ref || ''), p_rels: null, p_depth: 1, p_at_ms: null });
+    if (!r.ok) throw new Error(r.error || 'failed');
+    const p = r.data || {}, self = arr(p.nodes).find((n) => n.ref === ref);
+    const ties = arr(p.edges).filter((e) => e.from_ref === ref || e.to_ref === ref).map((e) => ({
+      rel: e.from_ref === ref ? e.rel : geo.inverseRel(e.rel).replace(/^~/, ''), ref: e.from_ref === ref ? e.to_ref : e.from_ref, fromMs: e.from_ms == null ? undefined : e.from_ms, toMs: e.to_ms == null ? undefined : e.to_ms }));
+    return { ties, validity: self ? { fromMs: self.valid_from_ms == null ? undefined : self.valid_from_ms, toMs: self.valid_to_ms == null ? undefined : self.valid_to_ms } : null };
+  }
+
   /** [{feed, finishedAt, upstream, counts, latestStatus, latestNote}] — a feed that never ran is simply absent; a database that did not answer is `unavailable`/`failed`, never «fresh» */
   async function freshness(DB) {
     const r = await rpcWorldGraph(DB, 'world_graph_freshness', {});
     return r.ok ? { ok: true, feeds: arr(r.data) } : r;
   }
 
-  return { relNames, toObjects, fetchSubgraph, findPersisted, nearPersisted, freshness };
+  return { relNames, toObjects, fetchSubgraph, findPersisted, nearPersisted, tiesOf, freshness };
 }
