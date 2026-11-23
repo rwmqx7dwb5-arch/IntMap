@@ -90,6 +90,11 @@ export const GOVERNANCE = (() => {
   ];
   return { 'data/health.json': { upstreams,
     priority: { disjoint: ['uhc (UHC service coverage index), spar (IHR SPAR)', 'dtp3, mcv1 (immunisation coverage)'] },
+    /* (describes.*) MEASURED on the committed bundle: reading years 2021-2024 (UHC 2023; SPAR 2023 bar one 2021; DTP3 and MCV1 2024 bar one 2023), 239 codes (countries and some aggregates). */
+    period: { start: '2021', end: '2024' },
+    extent: '239 codes (countries plus some regional aggregates, measured on the committed bundle): UHC index for 195, IHR SPAR C07 for 194, DTP3 and MCV1 for 236',
+    method: 'Latest reading per country within a 6-year window of four indicators: WHO UHC service coverage index (SDG 3.8.1, 0-100), WHO IHR SPAR capacity 7 health emergency management (0-100), DTP3 and MCV1 immunisation coverage (% of one-year-olds, WHO/UNICEF estimates via World Bank WDI)',
+    resolution: 'country, latest available year',
     ...WORLD_BANK_WDI, builtBy: 'scripts/build-health.mjs' } };
 })();
 
