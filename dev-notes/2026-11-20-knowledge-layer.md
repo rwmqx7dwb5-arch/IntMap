@@ -19,3 +19,7 @@ internal: 既定オフで利用者には見えない（Atlas が使う能力。�
 ## perf 予算を上げた理由
 
 知識層の 4 能力と保存・同期・設定の部品（async の atlas-cap-runs 約 11.5 kB 増・async 合計 raw +72.6 kB / gzip +41.7 kB・dist.assets +142 kB）が配られる資産に加わった。起動時に読まれるもの（eager）は増えていない。天井は `node scripts/perf-budget.mjs --update` で CI の実測に合わせた。
+
+## perf 予算の追記(main 取り込み後の実測)
+
+起動時のモジュールが 915→916（設定の行 `js/atlas-knowledge-prefs.js` が起動時に配線されるため。保存の本体は使われるときに遅延で読む）、async の atlas-cap-runs / atlas-console と dist.assets は知識層・Skills の能力と散文の分。`node scripts/perf-budget.mjs --update` で実測に合わせた。
