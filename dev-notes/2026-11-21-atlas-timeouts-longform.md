@@ -24,3 +24,9 @@ Origin/main moved (new async chunks from other PRs), so atlas-cap-runs and async
 
 ## dist.total
 The CI build measured dist.total at 1,587,385,548 bytes, 13 kB above the ceiling main recorded; raised to that measurement (the data bundle and the PR-specific chunks are the growth).
+
+## perf (merged build, 2026-11-22)
+Ceilings re-measured on the build of this branch merged with the latest origin/main (new capabilities from other PRs, atlas-orchestrate 82.4 to 96.1 kB, atlas-console, dist.assets) and raised with `perf-budget --update`; the research.longform capability is this PR's part of atlas-cap-runs.
+
+## perf (CI measurement, 2026-11-23)
+CI measured the async chunk atlas-cap-runs at 941.0 KiB against main's 931.1 KiB; the ceiling was raised to that measurement. The growth is research.longform (this PR) on top of the capabilities main gained.
