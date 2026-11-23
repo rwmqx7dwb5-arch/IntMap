@@ -893,18 +893,18 @@
     },
     {
       "host": "flood-api.open-meteo.com",
-      "what": "Open-Meteo GloFAS river-discharge forecast at a point",
-      "whatJp": "Open-Meteo の地点の河川流量予報（GloFAS）",
+      "what": "Open-Meteo river-discharge (GloFAS) forecast at a point and at the points of a grid over the area asked about",
+      "whatJp": "Open-Meteo の河川流量（GloFAS）予測。尋ねた地点と、尋ねた範囲の格子の各地点",
       "sends": {
         "code": "coordinates",
-        "detail": "latitude/longitude of the point asked about (and the eight neighbouring grid cells)"
+        "detail": "latitude/longitude of the point asked about (with its eight neighbouring grid cells) or of the grid points over the area asked about"
       },
       "disclosure": {
         "en": "elevation/weather APIs (Open-Meteo",
         "jp": "標高・気象API（Open-Meteo"
       },
       "probe": {
-        "url": "https://flood-api.open-meteo.com/v1/flood?latitude=35.17&longitude=136.9&daily=river_discharge&forecast_days=1"
+        "url": "https://flood-api.open-meteo.com/v1/flood?latitude=35.68&longitude=139.76&daily=river_discharge&forecast_days=1"
       }
     },
     {
@@ -1389,6 +1389,11 @@
       "probe": {
         "url": "https://ogcapi.bgs.ac.uk/?f=json"
       }
+    },
+    {
+      "host": "open-meteo.com",
+      "what": "the terms-of-use address recorded with a forecast dataset (js/gis-forecast.js TERMS.url)",
+      "link": "a citation of Open-Meteo's terms page, shown as text in a forecast scenario report; never fetched by the page"
     },
     {
       "host": "open.er-api.com",
