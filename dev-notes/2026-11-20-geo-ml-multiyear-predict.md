@@ -53,3 +53,9 @@ newsjp: Atlas が、複数年の変化の測定、地域の分類、変化と施
 `async.raw`・`atlas-cap-runs`・`atlas-console`・`atlas-orchestrate`・`dist.assets` を実測へ。増分は `geo.ml`（`js/geo-ml*.js` と能力の文書）で、遅延チャンクなので起動時の転送は増えていない。
 
 能力の文書の見出しに日本語の括弧書きを置くと、その語がブロック（spatial-analysis は 10 能力）の全能力の得点になる。`geo.ml` の見出しの「予測モデル」で、ISS の問い（R728 ①）が 12 件以内でなく 20 件を返した。見出しの括弧書きを外し、語は本体（`{"type":"geoMl"` 以降）に残した（「予測」「目的変数」は `geo.ml` だけを返す）。見出しの語が全能力へ効く点は検索側の構造で、ここでは直していない。
+
+追記（main 取り込み後の再測定）: `atlas-cap-runs` 918.5→934.9 kB、async gzip 合計 4833.8→4863.8 kB。`atlas-orchestrate` 115.9→129.5 kB は main 側（別の PR）の増加で、取り込んだ main の木が既にこの天井を超えていたため、同じ更新で記録した。本 PR 由来は `atlas-cap-runs`（`geo.ml`）。
+
+追記 2（main に追随）: main の他の PR が天井を動かし続けるため、取り込みのたびに再測定した。最終: `atlas-cap-runs` 934.9→941.2 kB、`atlas-console` 1105.8→1117.2 kB（`geo.ml` と、取り込んだ他の能力ぶん）、`atlas-orchestrate` 96.1→129.5 kB（main 側の増加で、取り込んだ木が既に超えていた）、async 合計と配信資産が連動。
+
+追記 3: main 追随の最終測定。`atlas-cap-runs` 931.1→948.2 kB、`atlas-console` 1118.7→1124.5 kB（`geo.ml` と、取り込んだ他の能力のぶん）。
