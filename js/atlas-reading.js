@@ -81,13 +81,13 @@ export const makeAtlasReading = (HOST, D) => {
   /* ⚠ the encoder here is IntMapSafe.html itself (the one encoder, js/safe-html.js), not the kernel's `esc` delegate: `offer()`
      writes this into a sink of its own, and scripts/output-taint.mjs can judge the one encoder where it cannot follow a handed-in name */
   function offerHtml(qs) {
-    const chips = (qs || []).filter(Boolean).map((e) => '<button class="atl-here-q" style="display:block;width:100%;text-align:left;margin:3px 0;padding:7px 10px;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);cursor:pointer;">' + globalThis.IntMapSafe.html(e) + '</button>').join('');
+    const chips = (qs || []).filter(Boolean).map((e) => '<button class="atl-here-q" data-effect="private" style="display:block;width:100%;text-align:left;margin:3px 0;padding:7px 10px;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);cursor:pointer;">' + globalThis.IntMapSafe.html(e) + '</button>').join('');
     /* ⚠ the send glyph is the composer's own up-arrow (#R149: 「白背景黒文字に。plain textの→はやめて」),
        and `Send` is the string the composer's button already carries in all nine languages. */
     const askRow = '<div class="atl-arrive-ask" style="display:flex;gap:6px;margin-top:6px;">'
-      + '<input class="atl-arrive-in" type="text" placeholder="' + globalThis.IntMapSafe.html(L('or ask in your own words…', 'または自分の言葉で聞く…', 'oder in eigenen Worten fragen…', 'или спросите своими словами…', 'o pregunta con tus propias palabras…'))
+      + '<input class="atl-arrive-in" data-effect="private" type="text" placeholder="' + globalThis.IntMapSafe.html(L('or ask in your own words…', 'または自分の言葉で聞く…', 'oder in eigenen Worten fragen…', 'или спросите своими словами…', 'o pregunta con tus propias palabras…'))
       + '" style="flex:1 1 auto;min-width:0;height:32px;padding:0 11px;box-sizing:border-box;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);outline:none;">'
-      + '<button class="atl-arrive-send" type="button" title="' + globalThis.IntMapSafe.html(L('Send', '送信', 'Senden', 'Отправить', 'Enviar'))
+      + '<button class="atl-arrive-send" data-effect="private" type="button" title="' + globalThis.IntMapSafe.html(L('Send', '送信', 'Senden', 'Отправить', 'Enviar'))
       + '" style="flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:1px solid rgba(0,0,0,0.08);background:#fff;color:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>';
     return '<div class="atl-arrive-qs">' + chips + askRow + '</div>';
   }

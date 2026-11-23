@@ -53,6 +53,12 @@ export const GOVERNANCE = {
     /* 「public domain」 itself states that credit is not a CONDITION of redistribution; this file's
        header says so in the same words. Natural Earth is attributed anyway in js/reference-data.js. */
     attribution: false,
+    /* (describes.*) the Natural Earth admin-1 page (naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/, read 2026-11-20)
+       and counts measured on this committed file. */
+    extent: 'first-level administrative units of all countries but a few tiny ones (Natural Earth states Antarctica, some disputed areas and microstates such as Monaco, Andorra, Liechtenstein and San Marino have none); measured here: 4515 units in 247 countries',
+    method: 'internal first-order administrative polygons, drawn as de facto boundaries according to who controls the territory (Natural Earth); simplified here once with Douglas-Peucker at 0.01 degrees and coordinates rounded to four decimals',
+    resolution: 'Natural Earth 1:10m scale, further simplified to a 0.01 degree tolerance (about 1.1 km) in this build',
+    completeness: 'Natural Earth calls it the toughest dataset to keep current as countries rearrange their units, states the statistical codes (FIPS, ISO, HASC) are incomplete, and labels the theme still in beta',
     ...NATURAL_EARTH,
     builtBy: 'scripts/build-admin1.mjs',
   },

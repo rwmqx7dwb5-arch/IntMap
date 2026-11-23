@@ -52,6 +52,7 @@ export const GOVERNANCE = (() => {
     attribution: false,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'Blue Marble: Shaded Relief and Bathymetry is a single composite (NASA Visible Earth, 2004) served by GIBS without a time dimension; there is no later image of it',
       expires: 'if the builder moves to a GIBS layer that has a time dimension',
       canon: 'this record (the only builder that reads this layer)',
