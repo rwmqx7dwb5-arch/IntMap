@@ -408,6 +408,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.sessionGrant","sessionGrant","allowSiteOperation,permitSite,authorizeBrowserSite","research","none","","explanation","external","explicit","",""],
       ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
       ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
+      ["data.gisOverture","gisOverture","overtureMaps,worldBuildings,worldPlaces,buildingFootprints,geoparquet","data","none","","explanation","read","none","","gisCore"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
