@@ -14,7 +14,7 @@ newsjp: Atlasが、タブを閉じても続く長い仕事を始められるよ�
 - **サーバの能力 twin**（`supabase/functions/_shared/atlas-server-caps.js`）: ページの能力はページ（DOM・地図・同梱データ）が要るので、サーバが走らせるのは**twin を持つ能力だけ**。twin は read-only の行にしか作れず、テストが registry の facets で固定する。twin の無い能力は計画の段で `capability_unsupported_on_server` と名指しで断る（走らせて失敗させない）。最初の twin は `sim.spaceWeather` の `part:"kp"` のみ（上流が素の JSON で、ページと同じ行抽出）。**他の part は黙って小さい答えにせず `part_unsupported_on_server`。**
 - **runner**: `capability` 型のタスクを 1 回だけ・費用 0 で走らせ、`text` と `data` を依存先の worker に渡す。チェックポイントは worker と同じ（取消・停止スイッチの後は走らない）。失敗は観測されたコードのまま 1 度だけ報告し、再試行しない。
 - **画面**: 結果カード（`js/atlas-jobs-client.js`）が 5 秒ごとに自分の行を読み、**終わった piece から順に**要約・不明点・出典を出す。Stop と指示欄は実行中だけ。入力中の文字は再描画で消さない。出典 URL は `IntMapSafe.url` を通す。戻ってきたとき（タブを閉じたあと）は `jobs.status` が自分の最近のジョブ一覧と、途中成果つきの個別カードを返す。
-- **migration の時刻**: #1294 の `20261120090000` は main の最新（`20261120100000`）より前で migration-order 検査に落ちるため `20261120130000` へ改名した（本 PR が #1294 の内容を取り込んでいる）。
+- **migration の時刻**: #1294 は main に着地し、migration の版は main 側で `20261123130000` に付け替えられた。この PR は基盤の migration に触れない（参照だけ合わせた）。
 
 ## 1. 残したもの
 
