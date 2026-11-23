@@ -1,6 +1,6 @@
 /* workspace-editing — the rules of editing a board's table (js/board-edit.js), pure, plus that the two
    capabilities are declared with the schema the dispatch reads. The page-level behaviour is
-   tests/workspace-editing.spec.js. */
+   tests/board-compose.spec.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCell, columnUses, renameInSpec, snapshotRows, diffRows, deltaText, editRefusal } from '../js/board-edit.js';

@@ -42,3 +42,6 @@ newsjp: ワークスペースの表をその場で編集できます(値・列�
 
 ## 予算(追記)
 `main` が動くたび天井が動くため、取り込み後のツリーで測り直して `--update` した。この PR 自身の増分は `atlas-console` チャンク(`board.edit`/`board.delta` と能力表の行)と `dist.assets`(`board-edit.js` ほか)。能力は削っていない。
+
+## 試験の直列時間(追記)
+CI の `R204 ①b`(試験の総直列時間の天井 5,250 s)が 5,259 s で赤になった。この PR が足した 3 本(`board-compose` 12 s・`declarative-workspace` 5 s・`workspace-editing` 11 s、計 28 s)は、どれも同じ起動(app 1 回と Atlas コンソール)を別々に払っていた。主張は 1 つも減らさず、**1 本の `tests/board-compose.spec.js` に畳んで起動を 1 回にした**(`describe.serial`・共有の 1 ページ。編集の spec は最後に置く: ページをリロードするため)。`declarative-workspace.spec.js` と `workspace-editing.spec.js` は、その 3 つ目と 2 つ目のテストとして同じ内容で残っている。実測は 1 worker・3 回で 17.0 / 18.1 / 16.3 s(畳む前の 3 本合計は 30.0〜32.0 s)、遅いほうを取って `tests/durations.json` に 19 s。天井は動かしていない(5,259 → 5,250)。
