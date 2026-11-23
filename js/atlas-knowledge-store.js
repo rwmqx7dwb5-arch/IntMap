@@ -28,6 +28,20 @@
  *  decision, expressed as supersedes / contradicts; this module only records it and refuses what has no
  *  basis (.agents/rules/no-ad-hoc-hardcoding.md: the rule sits on the fact, not on a list of cases).
  *
+ *  THREE THINGS THAT MAKE IT WORK IN LATER ANALYSIS (not only be stored):
+ *    · SAME OBJECT, NOT SAME SPELLING. A claim is tied to world objects by ref, and the ids the world graph gave
+ *      those refs at the time are kept with it (`refKeys`: `wikidata:Q1`, `osm:node/5` ...). A later question that names
+ *      the object by ANOTHER of its keys reaches the claim: `recall` is handed the keys of the question's refs and
+ *      says `matchedVia: 'same-object'` when that, and not the literal ref, is what matched. Which keys an object has is
+ *      the graph's to say (js/atlas-knowledge-identity.js); no alias table lives here.
+ *    · TIME. `expired` (the period it was stated for has ended) was only the half stated at write time. A claim may
+ *      also say how long it should be trusted without looking again (`recheckAfterDays`, Atlas's declaration; no
+ *      default is invented), and `standing()` reports its age, whether a re-check is due, and whether a re-check found
+ *      the source changed. Nothing is deleted by time: it is shown, and the question decides.
+ *    · RE-CHECKING THE SOURCE. `applyRecheck` records what was observed when a claim's sources were read again:
+ *      confirmed / changed / gone / unreachable, with what the page said now. Only `confirmed` on every web source
+ *      renews the claim; `gone` on every source takes `verified` away (nothing is left to check again: the same rule
+ *      that gate-keeps writing); `unreachable` changes nothing, because failing to look is not finding.
  *  No DOM, no network, no clock of its own (`now` is passed). js/atlas-knowledge.js is the page side
  *  (the reader's switch, the one store); js/atlas-cap-knowledge.js is what Atlas can do with it.
  * ==========================================================================*/
@@ -81,7 +95,7 @@ function normalizeEvidence(e) {
 }
 
 /** Atlas's statement → { claim } or { error: {code, why} }. `now` and `existing` (for relations) are the caller's. */
-export function claimFromInput(a, now, existing) {
+export function claimFromInput(a, now, existing, ctx) {
   const statement = str(a && a.statement, 1000);
   if (statement.length < 3) return { error: { code: 'needs_statement', why: 'a claim needs its statement' } };
   const kind = String((a && a.kind) || 'inferred').toLowerCase();
@@ -102,12 +116,17 @@ export function claimFromInput(a, now, existing) {
     const missing = contradicts.concat(supersedes).filter((i) => !existing.has(i));
     if (missing.length) return { error: { code: 'unknown_claim', why: 'no kept claim with id ' + missing.join(', ') } };
   }
+  const days = +a.recheckAfterDays;
+  if (a.recheckAfterDays != null && !(days >= 1 && days <= 3650)) return { error: { code: 'recheck_period_invalid', why: 'recheckAfterDays is a number of days between 1 and 3650 (or leave it out: no default is invented)' } };
+  /* the keys the world graph gave each ref when it was kept: the caller resolves them (async); this only holds what it was handed, for refs it kept */
+  const refKeys = {};
+  if (ctx && ctx.refKeys && typeof ctx.refKeys === 'object') refs.forEach((r) => { const ks = arr(ctx.refKeys[r]).map((k) => String(k)).filter((k) => /^[a-z_]+:.{1,200}$/i.test(k)); if (ks.length) refKeys[r] = Array.from(new Set(ks)).slice(0, 24); });
   return { claim: {
     v: VERSION, kind, statement, basis: basis || undefined,
     sources: good.map((x) => Object.assign({}, x)),
     place: (place && (place.name || placed)) ? { name: place.name || undefined, lng: placed ? place.lng : undefined, lat: placed ? place.lat : undefined } : undefined,
     validFromMs: fromMs, validToMs: toMs,
-    refs, contradicts, supersedes,
+    refs, refKeys: Object.keys(refKeys).length ? refKeys : undefined, recheckAfterMs: days >= 1 ? Math.round(days * 864e5) : undefined, contradicts, supersedes,
     topic: str(a.topic, 80) || undefined,
     lang: str(a.lang, 12) || undefined,
     rejectedEvidence: bad.length ? bad.map((x) => x.url) : undefined,
@@ -129,17 +148,73 @@ export function normalize(e) {
 /** has the period this claim was stated for ended? (derived at read time — nothing is rewritten) */
 export const expired = (c, now) => c.validToMs != null && +now > c.validToMs;
 
+const DAY = 864e5;
+/** how a kept claim stands against time and against its sources, at `now`: derived at read time, nothing is rewritten */
+export function standing(c, now) {
+  const base = c.verifiedAt || c.at || 0;
+  const ageDays = base ? Math.max(0, Math.floor((+now - base) / DAY)) : null;
+  const web = (c.sources || []).filter((s) => s.url);
+  return {
+    ageDays,
+    periodEnded: expired(c, now),
+    recheckDue: c.recheckAfterMs != null && base > 0 && (+now - base) > c.recheckAfterMs,
+    recheckAfterDays: c.recheckAfterMs != null ? Math.round(c.recheckAfterMs / DAY) : undefined,
+    sourceChanged: !!c.sourceChanged,
+    lastCheckedAt: c.lastCheckedAt || undefined,
+    neverChecked: web.length > 0 && !web.some((s) => s.lastCheck),
+  };
+}
+
+/** every key a claim answers to: its refs, and the keys the graph gave them when it was kept */
+const claimKeys = (c) => { const out = new Set(arr(c.refs)); Object.keys(c.refKeys || {}).forEach((r) => arr(c.refKeys[r]).forEach((k) => out.add(k))); return out; };
+
+const OUTCOMES = ['confirmed', 'changed', 'gone', 'unreachable'];
+/** record what was seen when a claim's sources were read again. results: [{ source: url | dataset label, outcome, note? }]
+    → { claim, applied[], rejected[] } (a new object; nothing is mutated). confirmed / changed must say what the source says now (note). */
+export function applyRecheck(claim, results, now) {
+  const applied = [], rejected = [];
+  const sources = arr(claim.sources).map((s) => Object.assign({}, s));
+  arr(results).forEach((r) => {
+    const outcome = String((r && r.outcome) || '').toLowerCase();
+    const raw = String((r && r.source) || '').trim();
+    if (OUTCOMES.indexOf(outcome) < 0) { rejected.push({ source: raw, code: 'outcome_unknown', why: 'outcome is one of ' + OUTCOMES.join(', ') }); return; }
+    let key = raw; if (/^https?:/i.test(raw)) { const c = canonicalizeUrl(raw); key = c.ok ? c.key : raw; }
+    const s = sources.find((x) => (x.canonicalUrl && x.canonicalUrl === key) || (x.label && x.label === raw) || (x.url && x.url === raw));
+    if (!s) { rejected.push({ source: raw, code: 'not_a_source_of_this_claim', why: "the claim's sources are: " + sources.map((x) => x.url || x.label).join(', ') }); return; }
+    const note = str(r.note, 300);
+    if ((outcome === 'confirmed' || outcome === 'changed') && note.length < 3) { rejected.push({ source: raw, code: 'needs_note', why: outcome + ' must say what the source says now (note): a re-check nobody can read back is not one' }); return; }
+    s.lastCheck = { at: +now, outcome, note: note || undefined };
+    applied.push({ source: s.url || s.label, outcome });
+  });
+  const out = Object.assign({}, claim, { sources, updatedAt: +now });
+  if (applied.length) {
+    out.lastCheckedAt = +now;
+    const web = sources.filter((s) => s.url);
+    const last = (s) => (s.lastCheck ? s.lastCheck.outcome : null);
+    if (web.length && web.every((s) => last(s) === 'confirmed')) { out.verifiedAt = +now; out.sourceChanged = false; }
+    if (web.some((s) => last(s) === 'changed')) out.sourceChanged = true;
+    /* nothing left to check again: no longer verified (the write rule, applied to what the world did since) */
+    if (sources.length && sources.every((s) => s.lastCheck && s.lastCheck.outcome === 'gone') && out.kind === 'verified') {
+      out.wasKind = out.wasKind || 'verified'; out.kind = 'inferred';
+      out.basis = out.basis || ('Was verified from ' + sources.map((s) => s.url || s.label).join(', ') + '; none of those was found when read again.');
+    }
+  }
+  return { claim: out, applied, rejected };
+}
+
 const terms = (q) => String(q || '').normalize('NFKC').toLowerCase().split(/[\s　]+/).filter(Boolean);
 
 /** Rank what a question needs. ⚠ A query is a FILTER ON WHAT IT NAMES: terms (any may match, ranked by how many),
     a place + radius, a world ref, a date the claim's period must contain. Verified outranks inferred, which outranks
     contested; stale is left out unless asked for (and counted). */
-export function recall(claims, q, now) {
+export function recall(claims, q, now, opts) {
   q = q || {};
   const T = terms(q.query || q.text), want = Array.isArray(q.kinds) && q.kinds.length ? q.kinds : null;
   const refs = arr(q.refs).concat(q.ref ? [q.ref] : []).map(String);
   const at = q.at != null ? dateMs(q.at) : null;
   const near = q.near && isFinite(+q.near.lng) && isFinite(+q.near.lat) ? { lng: +q.near.lng, lat: +q.near.lat, km: +q.near.km > 0 ? +q.near.km : 300 } : null;
+  const keysOf = (opts && opts.keysOf) || null;   /* ref -> the keys the world graph gives it (the caller resolved them); absent: literal refs only */
+  const wantKeys = new Set(); refs.forEach((r) => { wantKeys.add(r); arr(keysOf && keysOf[r]).forEach((k) => wantKeys.add(k)); });
   let omittedStale = 0;
   const rows = [];
   (claims || []).forEach((c) => {
@@ -150,17 +225,24 @@ export function recall(claims, q, now) {
       const hay = [c.statement, c.topic, c.place && c.place.name, c.basis, ...(c.sources || []).map((s) => s.title)].join('\n').normalize('NFKC').toLowerCase();
       const hit = T.filter((t) => hay.indexOf(t) >= 0).length; if (!hit) return; score += hit / T.length;
     }
-    if (refs.length) { if (!refs.some((r) => (c.refs || []).indexOf(r) >= 0)) return; score += 1; }
+    let via = null;
+    if (refs.length) {
+      if (refs.some((r) => (c.refs || []).indexOf(r) >= 0)) { score += 1; via = 'ref'; }
+      else if (Array.from(claimKeys(c)).some((k) => wantKeys.has(k))) { score += 0.9; via = 'same-object'; }
+      else return;
+    }
+    const st = standing(c, now);
+    if (q.due && !(st.recheckDue || st.periodEnded || st.sourceChanged)) return;
     if (near) {
       if (!(c.place && isFinite(c.place.lng) && isFinite(c.place.lat))) return;
       const d = haversineKm(near.lng, near.lat, c.place.lng, c.place.lat); if (d > near.km) return; score += 1 - d / (near.km * 2);
     }
     if (at != null) { if ((c.validFromMs != null && at < c.validFromMs) || (c.validToMs != null && at > c.validToMs)) return; score += 0.5; }
     const tier = c.kind === 'verified' ? 2 : c.kind === 'inferred' ? 1 : 0;
-    rows.push({ c, score, tier });
+    rows.push({ c, score, tier, via, st });
   });
   rows.sort((x, y) => (y.score - x.score) || (y.tier - x.tier) || (y.c.updatedAt - x.c.updatedAt));
-  const out = rows.map((r) => Object.assign({}, r.c, { expired: expired(r.c, now) }));
+  const out = rows.map((r) => Object.assign({}, r.c, { expired: r.st.periodEnded, standing: r.st }, r.via === 'same-object' ? { matchedVia: 'same-object' } : {}));
   return { claims: out, omittedStale };
 }
 
@@ -211,6 +293,18 @@ export function makeKnowledgeStore(backend) {
       await B.put(n); m.set(n.id, n); emit();
       return { claim: JSON.parse(JSON.stringify(n)), merged: !!twin, marked };
     },
+    /** apply what a re-read of the sources observed -> { claim, applied, rejected } | null when no such claim */
+    async recheck(id, results, now) {
+      const m = await load(); const cur = m.get(String(id)); if (!cur) return null;
+      const r = applyRecheck(cur, results, +now || Date.now());
+      if (!r.applied.length) return { claim: JSON.parse(JSON.stringify(cur)), applied: [], rejected: r.rejected };
+      const n = normalize(r.claim); await B.put(n); m.set(n.id, n); emit();
+      return { claim: JSON.parse(JSON.stringify(n)), applied: r.applied, rejected: r.rejected };
+    },
+    /** the account copy's way in: a claim exactly as it is (its id, times and marks already decided); the newer of two is kept */
+    async adopt(e) { const n = normalize(e); if (!n) return false; const m = await load(); const cur = m.get(n.id); if (cur && cur.updatedAt >= n.updatedAt) return false; await B.put(n); m.set(n.id, n); emit(); return true; },
+    /** note (or clear, with 0) which claims the account copy holds, WITHOUT touching updatedAt and without telling listeners (a sync mark is not a change of knowledge) */
+    async markSynced(ids, at) { const m = await load(); for (const id of ids) { const cur = m.get(String(id)); if (!cur) continue; const n = Object.assign({}, cur, { syncedAt: +at || undefined }); await B.put(n); m.set(n.id, n); } },
     async forget(id) { const m = await load(); if (!m.has(String(id))) return false; await B.del(String(id)); m.delete(String(id)); emit(); return true; },
     async clear() { await B.clear(); cache = new Map(); emit(); },
     on(fn) { if (typeof fn === 'function') subs.push(fn); return () => { const i = subs.indexOf(fn); if (i >= 0) subs.splice(i, 1); }; },
