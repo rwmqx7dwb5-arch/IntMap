@@ -201,7 +201,11 @@ function build(args) {
 }
 
 function quickGatesGreen(dir) {
-  const quick = ['check:docs', 'check:catalog', 'check:capabilities', 'check:testbudget'];
+  /* check:datagov is here because a derived ledger (data/device-storage-ledger.json) went stale in a
+     train with no conflict on the ledger itself: main changed the code it is derived from, so
+     `--finish` had nothing to regenerate and the CI's Regression shard was the first to notice
+     (measured 2026-11-24, #1372). */
+  const quick = ['check:docs', 'check:catalog', 'check:capabilities', 'check:testbudget', 'check:datagov'];
   const red = quick.filter((g) => run(process.execPath, ['--run', g], { cwd: dir, stdio: 'inherit' }).status !== 0);
   /* …and the start-up budget, which needs a build (minutes, not the CI's hour). The driver keeps MAIN's
      size for every row both sides moved (intmap-clash=upstream), so N PRs that each raised a ceiling
