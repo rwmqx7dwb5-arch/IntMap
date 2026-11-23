@@ -2281,7 +2281,7 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   ⚠ **同期版と中断版の 2 実装は作っていない**——同じ 1 本のループが、`ctx` の有無で
   **いつスレッドを手放すかだけ**を変える。⚠ 刻みは**時間**（1 フレーム）であって件数ではない。
 
-## 5.12 分析を再実行できる手順にする・外部の予測データを戻す — `js/gis-recipe.js` ・ `js/gis-forecast.js`
+## 5.12 分析を再実行できる手順にする・外部の予測データを戻す — `js/gis-analysis-pipeline.js` ・ `js/gis-forecast.js`
 
 **パイプライン（`window.IntMapGisPipeline`）。** Atlas が 1 段ずつ作った分析は、保存して 1 つの段の
 パラメータを変えて再計算できた（`IntMapGisProject.setParams`）。「対象地域を変える」はできなかった——

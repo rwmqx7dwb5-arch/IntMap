@@ -569,7 +569,7 @@ gis-project.js                    **プロジェクトの保存** `window.IntMap
                                   版を述べない部分があれば**鍵を作らない**。⚠ **引いた記録は信じずに突き合わせる**
                                   ——記述が 1 つでも違えば捨てて op を走らせる。予算はバイトで溢れは LRU。
                                   使い回した段は `reused` として名指す（計算し直したとは報告しない）
-gis-recipe.js                     **分析を、地域を変えて再実行できる手順として持つ** `window.IntMapGisPipeline`。
+gis-analysis-pipeline.js               **分析を、地域を変えて再実行できる手順として持つ** `window.IntMapGisPipeline`。
                                   段は Atlas の `gis` の action そのもの。`"$region"` と `"$step:<id>"` の 2 つの印が
                                   依存を**決める**（別に宣言しない）。`setRegion` は地域を使う段とその下流だけを再計算し、
                                   無関係な段は同じデータセットのまま `reused`。失敗した段の下流は `skipped` で `stale`。

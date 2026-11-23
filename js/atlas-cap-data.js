@@ -160,7 +160,7 @@ export default [
         const r = await P.setParams(String(a.dataset), (a.params && typeof a.params === 'object') ? a.params : {});
         return say(!!(r && r.ok), L('Recomputed ' + ((r && r.rebuilt && r.rebuilt.length) || 0) + ' datasets' + (r && r.failed && r.failed.length ? ', ' + r.failed.length + ' failed' : '') + '.',
           ((r && r.rebuilt && r.rebuilt.length) || 0) + ' 件のデータセットを再計算しました' + (r && r.failed && r.failed.length ? '（' + r.failed.length + ' 件は失敗）' : '') + '。'), r || {}); }
-      /* (pipeline) the same door, one kernel: js/gis-recipe.js. Its refusals come back by their own codes. */
+      /* (pipeline) the same door, one kernel: js/gis-analysis-pipeline.js. Its refusals come back by their own codes. */
       if (act === 'capture' || act === 'pipelines' || act === 'plan' || act === 'region' || act === 'runPipeline') {
         const PL = window.IntMapGisPipeline;
         if (!PL) return R(false, warn(L('The pipeline module could not be loaded.', 'パイプラインを読み込めませんでした。')));

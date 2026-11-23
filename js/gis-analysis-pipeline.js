@@ -48,7 +48,7 @@
  *  ⚠ EVERYTHING IS INSIDE THE FACTORY; collaborators are injectable (`deps.exec`, `deps.data`).
  * ==========================================================================*/
 
-export function makeGisRecipe(deps) {
+export function makeGisPipeline(deps) {
   return (function () {
     const D = deps || {};
     const WIN = () => { try { return (typeof window !== 'undefined' && window) || null; } catch (_) { return null; } };
