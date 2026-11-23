@@ -220,6 +220,7 @@ function _redrawLocalGlyphs(m,cover){
      import: the aircraft layer is lazy, and a static import here would put it in the start-up bundle.
      A kind nobody has provided yet answers false, exactly as the missing registry entry did. */
   const _kinds=Object.create(null);
+  let _limbWhy='not-asked';   /* (daynight-air) the stage addLimb reached last — see layers.limbWhy */
   /* ══ THE RENDERER'S CAMERA — WHICH MAPLIBRE 6 NO LONGER HANGS ON THE MAP ══════════════════════
      v6's Map COMPOSES a Camera instead of extending one (its 6.0.0 changelog, and the v5→v6
      migration guide: «The internal `map.transform` property has been removed»). The transform the painter
@@ -851,6 +852,7 @@ function _redrawLocalGlyphs(m,cover){
      part of it (tests/news-module-split-checks.test.mjs (#R168)); nothing in that module names the renderer, so the
      coupling gate is untouched. See its header for what is measured and what ships switched on. */
   /** @returns {import('../types/geo-engine').MapLibreAdapter} */ function makeMapLibreAdapter(_m){
+    let _dprFollowing=false;   /* (globe-polish) followDevicePixelRatio installs its listeners once per adapter */
   /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
   const _solids={};
   /* (#R322) this view's renderer-command tally and its per-source memory — both PER ADAPTER, for the
@@ -1948,6 +1950,19 @@ function _redrawLocalGlyphs(m,cover){
        during a gesture and all of them on the frame the gesture lands on. */
     getRenderScale(){ const m=_m(); try{ return (m&&m.getPixelRatio)?m.getPixelRatio():null; }catch(_){ return null; } },
     setRenderScale(r){ const m=_m(); try{ if(m&&m.setPixelRatio&&isFinite(r)&&r>0){ m.setPixelRatio(r); return true; } }catch(_){} return false; },
+    /* (globe-polish) `pixelRatio` is passed explicitly at construction, which makes getPixelRatio() `_override ?? devicePixelRatio`
+       answer the BOOT value forever. Re-apply devicePixelRatio (capped by cap()) when the browser's own `(resolution: Ndppx)` query
+       stops matching or the window resizes — browser zoom and a drag to another monitor. A ratio someone else set (setRenderScale:
+       a quality governor, a capture) is left alone: only a value this function applied last is replaced. */
+    followDevicePixelRatio(cap){
+      const m=_m(); if(!m||!m.setPixelRatio||!m.getPixelRatio||_dprFollowing) return false; _dprFollowing=true;
+      const want=()=>Math.min(window.devicePixelRatio||1,(typeof cap==='function'?cap():Infinity)||Infinity);
+      let applied=m.getPixelRatio(), mq=null;
+      const sync=()=>{ try{ const w=want(); if(m.getPixelRatio()===applied&&w!==applied){ applied=w; m.setPixelRatio(w); } }catch(_){} };
+      const onChange=()=>{ sync(); arm(); };
+      const arm=()=>{ try{ if(mq) mq.removeEventListener('change',onChange); mq=window.matchMedia('(resolution: '+(window.devicePixelRatio||1)+'dppx)'); mq.addEventListener('change',onChange); }catch(_){} };
+      window.addEventListener('resize',sync); arm(); sync(); return true;
+    },
     /* ⚠ (#R252) WHICH FACE DRAWS CJK — CHANGEABLE, NOT FROZEN AT CREATE TIME. `localIdeographFontFamily`
        is a CONSTRUCTOR option, so the per-language family was handed over once; js/map-typography.js holds
        the measurement and the reason. `setGlyphs()` with the URL the style already has is THE PUBLIC WAY to
@@ -2076,8 +2091,14 @@ function _redrawLocalGlyphs(m,cover){
        band register with the globe under any camera, pitched or not, instead of a screen-space
        circle that would slide off the moment the reader tilts.
        ⚠ A CESIUM-CLASS ENGINE ANSWERS THIS WITH ITS OWN SkyAtmosphere and never calls this. */
-    addLimb(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
-      try{ if(!_kinds.limbLayer) return false;
+    /* (daynight-air) WHY THE LAST addLimb SAID NO. A refusal used to be a bare `false`, so a browser where the app's
+       own atmosphere never appears (measured: Edge on Intel Arc, `?limb=1` forced, `addLimb` false with no
+       `addLayer` call and no console line) could not be told from a deliberate one. Each stage names itself
+       BEFORE its own test, so the value left behind is the stage that returned. Read: `IntMapGeoEngine.layers.limbWhy()`. */
+    limbWhy(){ return _limbWhy; },
+    addLimb(id,before){ _limbWhy='no-map-or-already-in-style'; const m=_m(); if(!m||m.getLayer(id)) return false;
+      try{ _limbWhy='kind-not-provided'; if(!_kinds.limbLayer) return false;
+        _limbWhy='no-webgl2-on-map-canvas';
         const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
         /* ══ ⚠⚠ (#R227) NOT ON A CPU RASTERISER, AND THAT IS A MEASURED REFUSAL ═════════════════════
            The limb is a per-pixel scattering march. On any real GPU it is free — measured, it is
@@ -2126,13 +2147,14 @@ function _redrawLocalGlyphs(m,cover){
              || /iPhone|iPad|iPod|Android|Mobi/i.test(ua)
              || (/Mac/.test(ua) && navigator.maxTouchPoints>1);
         }catch(_){ phone=false; }
-        if(phone) return false;
-        if(!forced) try{
+        _limbWhy='phone-class-device'; if(phone) return false;
+        _limbWhy='software-rasteriser'; if(!forced) try{
           const g=cv.getContext('webgl2'), ext=g&&g.getExtension('WEBGL_debug_renderer_info');
           const name=String((ext&&g.getParameter(ext.UNMASKED_RENDERER_WEBGL))||'');
           if(name&&/swiftshader|llvmpipe|software|microsoft basic|warp/i.test(name)) return false;
         }catch(_){}
-        const S=window.IntMapSkyModel; if(!(S&&S.tables&&S.sunOpticalDepth)) return false;
+        _limbWhy='sky-model-missing'; const S=window.IntMapSkyModel; if(!(S&&S.tables&&S.sunOpticalDepth)) return false;
+        _limbWhy='threw-before-addLayer';
         const model=Object.assign({},S.tables(),{ sunOpticalDepth:S.sunOpticalDepth });
         const L=(_limbs[id]||(_limbs[id]=_kinds.limbLayer().makeLayer(id,()=>_limbUniforms(id),model)));
         m.addLayer(L,(before&&m.getLayer(before))?before:undefined);
@@ -2149,8 +2171,8 @@ function _redrawLocalGlyphs(m,cover){
         if(L.imAlive && !L.imAlive()){
           try{ m.removeLayer(id); }catch(_){}
           delete _limbs[id]; delete _limbOn[id]; delete _limbStrength[id]; delete _limbDisc[id];
-          return false; }
-        return true; }catch(_){ return false; } },
+          _limbWhy='layer-dead-on-add'; return false; }
+        _limbWhy='added'; return true; }catch(e){ try{ console.warn('[IntMap] limb layer refused at',_limbWhy,':',e&&e.message); }catch(_){} return false; } },
     /* (#R236) has the limb painted a frame yet? — the watchdog in js/theme-sky.js asks, so that a
        layer which is alive but never resolves its uniforms still hands the rim back. */
     limbDrawn(id){ try{ const L=_limbs[id]; return (L&&L.imDrawn)?L.imDrawn():0; }catch(_){ return 0; } },
@@ -2715,7 +2737,7 @@ function _redrawLocalGlyphs(m,cover){
       addSolid:(id,b)=>A().addSolid?A().addSolid(id,b):false, setSolid:(id,o)=>A().setSolid?A().setSolid(id,o):false,
       /* (#R227) the atmosphere's limb, drawn by this app because the renderer discards the sky block
          on the globe — see the adapter's addLimb */
-      addLimb:(id,b)=>A().addLimb?A().addLimb(id,b):false, setLimb:(id,o)=>A().setLimb?A().setLimb(id,o):false,
+      limbWhy:()=>(A().limbWhy?A().limbWhy():'no-adapter-support'), addLimb:(id,b)=>A().addLimb?A().addLimb(id,b):false, setLimb:(id,o)=>A().setLimb?A().setLimb(id,o):false,
       removeLimb:id=>A().removeLimb?A().removeLimb(id):false, hasLimb:id=>A().hasLimb?A().hasLimb(id):false,
       /* (#R236) frames the limb has actually painted — 0 means "it is there and it is not drawing" */
       limbDrawn:id=>A().limbDrawn?A().limbDrawn(id):0,
@@ -2836,6 +2858,7 @@ function _redrawLocalGlyphs(m,cover){
       /* (#R202) the render resolution, read and written — see js/render-scale.js */
       getRenderScale:()=>A().getRenderScale?A().getRenderScale():null,
       setRenderScale:r=>A().setRenderScale?A().setRenderScale(r):false,
+      followDevicePixelRatio:cap=>A().followDevicePixelRatio?A().followDevicePixelRatio(cap):false,
       /* (#R178) the element gestures are dispatched on — NOT the canvas: MapLibre stacks markers
          and the attribution over it, and a synthetic pointer event has to land on the same node
          the renderer listens to. */

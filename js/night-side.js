@@ -592,7 +592,17 @@ window.IntMapNightSide=(function(){
     if(_pend) return; _pend=1;
     const go=()=>{ _pend=0;
       if(!enabled||!satelliteUp()||zoomNow()>ZMAX+0.4) return;   /* the camera or the basemap moved on while we waited */
-      if(build()) refresh(true); };
+      if(build()){ refresh(true); return; }
+      /* (daynight-air) A BUILD THAT COULD NOT START IS NOT A VERDICT, SO IT IS ASKED AGAIN WHEN THE
+         RENDERER CAN DRAW. `consider()` only ever ran on `moveend` and `styledata`; if the one idle it
+         got landed before the style was drawable, `build()` returned false at its first guard and
+         NOTHING woke it again — a still camera on a slow load left the whole day/night effect unbuilt
+         (measured: Edge on production, z1.59 over Asia at 00:46 JST, `state().built` false, a fully
+         lit globe at local midnight). The wait is the engine's own (`whenCanDraw`, one listener set
+         however many callers) and answers only when it is true, so this is one retry per
+         unreadiness, not a poll. A build that fails with the renderer ready is retried by the
+         minute tick below, never in a loop here. */
+      try{ if(!GE().canDraw()) GE().whenCanDraw().then(()=>{ try{ consider(); }catch(_){} }); }catch(_){} };
     try{ if(window.requestIdleCallback) requestIdleCallback(go,{timeout:2500}); else setTimeout(go,700); }
     catch(_){ setTimeout(go,700); }
   }
@@ -615,7 +625,7 @@ window.IntMapNightSide=(function(){
     /* the sub-solar point moves 15° an hour — the same cadence app-body re-aims the light on */
     /* (#R408) …and the hidden tab is the WHEEL's answer now, not a second copy of it here:
        js/runtime.js skips a task whose document is hidden and runs it ONCE on the way back. */
-    everyTick('night-side:sun',60000,()=>{ try{ refresh(false); }catch(_){} });
+    everyTick('night-side:sun',60000,()=>{ try{ if(built) refresh(false); else consider(); }catch(_){} });   /* (daynight-air) an unbuilt effect is re-considered on the minute too */
   }
 
   function apply(){ wire(); consider(); return built; }
