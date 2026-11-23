@@ -3596,7 +3596,7 @@ rule of this shape:
 What it still does not read, written down rather than papered over:
 
 - **A bare English numeral that attaches to nothing.** `docs/SECURITY-ARCHITECTURE.md` §5 opens
-  "There are twenty-five Edge Functions, and this table used to list two." A statement of how many
+  "There are twenty-six Edge Functions, and this table used to list two." A statement of how many
   there are and a sentence of the document's own history sit in **one sentence**, and nothing
   structural separates them. It was tried at section scope and at paragraph scope and measured:
   widening far enough to catch the first turns the second into a failure. The counted Japanese
@@ -4954,7 +4954,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 
 ### `tests/atlas-turn-engine-checks.test.mjs` (atlas-turn-engine)
 
-25 本。**ターン機構の構造**。出荷している `runTurn()` を、本物のレジストリ・schema・道具の面と、
+26 本。**ターン機構の構造**。出荷している `runTurn()` を、本物のレジストリ・schema・道具の面と、
 **決定的な台本**（1 手に 1 つの返答）を返す偽のモデルで**実際に評価する**。プロバイダには何も訊かない。
 
 - ① **`unobserved` は status の 1 つで、完了ではない**（`ok` は false）。出荷しているカメラの検証器が、
