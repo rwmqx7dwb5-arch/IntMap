@@ -109,3 +109,4 @@ STAC の `href` は**データ**。https・認証情報なし・私的でない�
 - 取り込み直し（6回目）: perf 天井を上げた（async.gzip 4864.8→4977.8 kB・atlas-console 1105.8→1111.9）。Overture の能力・読み取りと main 側の GIS／Atlas 追加が運んだ分。main は取り込みのたびに動くので、実測は取り込み直後の build で取った。
 - 取り込み直し（7回目）: CI が測った超過行だけ天井を上げた（async.raw 14487.4→14700.8 kB・async.gzip 4889.7→4992.0・dist.assets 21923.7→22138.0。CI の実測値に 1 kB 足した）。Overture の能力・読み取りと main 側の追加が運んだ分。
 - 取り込み直し（8回目）: CI が測った超過行だけ天井を上げた（async.raw 14701.8→14842.3 kB・async.gzip 4993.0→5045.0・gis-core 697.3→703.8・dist.assets 22068.6→22282.7。CI の実測値に 1 kB 足した）。
+- 取り込み直し（9回目）: main の取り込みで perf 天井が main 側の値に戻っていたので、CI が測った超過行を再び上げた（async.raw 14857.8 kB・async.gzip 5051.3・atlas-console 1145.5・gis-core 703.8・dist.assets 22282.7。いずれも CI の実測値に 1 kB 足した）。
