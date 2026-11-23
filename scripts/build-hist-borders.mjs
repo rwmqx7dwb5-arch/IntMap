@@ -129,6 +129,11 @@ export const GOVERNANCE = {
     attribution: false,
     ...OPENHISTORICALMAP,
     builtBy: 'scripts/build-hist-borders.mjs',
+    /* (describes.*) MEASURED on the committed data/hist-borders.js: its declared window and precision fields. OpenHistoricalMap itself states no period
+       (its page says only a map of the world throughout history), so none is claimed for the source. */
+    period: { start: '1689', end: '1885', note: 'the window this bundle draws (its window field); individual relations carry their own dates' },
+    extent: '1,411 OpenHistoricalMap relation records in 3,607 rings (measured)',
+    resolution: 'rings simplified to a 0.004 degree tolerance and stored to 4 decimals (the bundle precision field); 3 records keep an older precision',
   },
 };
 

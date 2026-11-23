@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**176 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
+**177 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
 by re-measuring two deep entries that stood high — the ledger row `2026-10-08 atlas-product` in `scripts/test-budget.mjs` —
 paid for the four product specs of 2026-10-08: hist-product 8, mobile-product 26, live-news-product 8, sales-pro-audiences 15;
 the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); and
@@ -111,7 +111,7 @@ the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); a
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **171 spec files** — is the whole suite minus core
+**deep** tier — **172 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -1069,7 +1069,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **171 spec files** against core's 5 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **172 spec files** against core's 5 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -2983,6 +2983,7 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 | `gis-cache-checks` | 7 | 条件が 1 つも動いていない問いが**二度計算されない**こと／**5 つの条件を 1 つずつ動かす**と別の答えになること（⚠ 対照つき——同じ鎖 2 本は**同じ鍵**になるので「常に違う」では通らない）／切れば #R783 の経路と答えに戻ること／**引いた記録が食い違えば捨てて op が走る**こと |
 | `gis-voronoi-checks` | 8 | 最寄り圏が**窓を隙間なく分ける**こと（面積の和と窓の相対差 < 10⁻⁹——境界を両側が別々に描くと隙間が出る）／無作為な点が**総当たりで求めた最寄りの地点**の圏にあること（許すのは §2.9 の描画許容の帯だけ）／いちばん遠い場所が **0.05° の格子の総当たりより遠く**、その点の最寄り距離そのものであり、上界が述べた許容に収まること／全球・極・日付変更線・地点 1〜4・赤道上の 30 地点・**共円だらけの経緯度格子**に別の枝が要らないこと／同じ位置の 2 行・MultiPoint・拒否・同じ入力で同じバイト・版の台帳と組み込み・Atlas の案内文／**結合に失敗した行・作れなかった圏があれば上界を null にし記録を partial にする**こと（直す前のファイルで赤）。⚠ 参照は検査の中の総当たりで、カーネルの近傍集合に訊かない |
 | `gis-network-checks` | 13 | **つながりの答えを総当たりと突き合わせる**——媒介は全最短路の数え上げ／最大フローは辺の部分集合の列挙で見つけた最小カット（返したカットは両端を切り容量の和が流量）／代替経路は全単純路の列挙／障害の損失は壊れた網の Floyd–Warshall。費用が欠けた辺は長さで代用せず除外して数える。標本は述べて再現する。中止は効く。実データは海底ケーブル網×台湾海峡 |
+| `gis-semantic-layer-checks` | 9 | 述べていない facet が `unstated` のまま（推測で埋めない）／buffer の半径・系譜を通した basis が**導出**されること／**現在の国境で数えた列を過去の期間の形へ結ぶ**と警告／別種の結合キーと重ならない期間／量が禁じる集計と宣言された規則との矛盾／形の悪い宣言は名前つきで拒否／警告は op の結果を変えない／Atlas の扉（`semantics:true` の記述・確認のみ・`strict` の拒否・実行結果に載る警告） |
 | `logistics-network-checks` | 7 | **「港が止まったら」の答えを、鉄道グラフの再計算と突き合わせる**——簡略化で落ちた分岐点を 200 m 内の端点で結び（交差は結ばない）／最寄り k 港の探索を総当たり Dijkstra と照合／実在の 5° セルで「最寄りの港を塞いだ再計算＝第 2 ラベル」／同梱ファイルは外洋港・昇順・有効な添字・ヘッダにモデルを述べる／答え＝最寄りが当該港の拠点で、増分は 2 つの述べられた距離の差 |
 | `gis-runtime-checks` | 12 | 同じ id を使う 2 つのジョブが互いの数を答えないこと——⚠ **2 つの本物の realm**（worker thread）で測る。プロセス内の「別 runtime のつもり」は、この検査自身の帳簿を測ることになる／片方を終えてももう片方が動くこと／解放時に飛んでいた呼びが**必ず決着する**こと／単一 runtime の経路が #R783 のままであること／**`scope-conflict` が守っているものを守り続ける**こと |
 

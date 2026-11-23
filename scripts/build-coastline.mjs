@@ -68,6 +68,13 @@ export const GOVERNANCE = {
     /* the manifest this build writes says the same words, from this value */
     licence: 'public domain',
     attribution: false,
+    /* (describes.*) Natural Earth's 1:10m coastline page (naturalearthdata.com/downloads/10m-physical-vectors/10m-coastline/,
+       read 2026-11-20) and this build's own header. The page states no reference date, so no period is declared. */
+    extent: 'the whole Earth including Antarctica; the world ocean edge plus the Caspian Sea as a separately labelled enclosed list',
+    method: 'Natural Earth 1:10m physical coastline (the ocean coastline with major islands, from World Data Bank 2), simplified here by Douglas-Peucker to a 2 km tolerance and stored as 1e-3 degree deltas',
+    resolution: 'source scale 1:10,000,000; stored at 1e-3 degree (about 110 m) with 2 km simplification tolerance',
+    completeness: 'major islands are included; rank 6, 7 and 8 coastlines of the Natural Earth minor-islands layer are not',
+    accuracy: 'Natural Earth states its World Data Bank 2 base has questionable accuracy in northern Russia and southern Chile; this build adds at most 2 km of simplification error',
     ...NATURAL_EARTH,
     builtBy: 'scripts/build-coastline.mjs',
   },
