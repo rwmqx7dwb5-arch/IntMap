@@ -402,16 +402,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
       ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
       ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
-      ["data.gisOverture","gisOverture","overtureMaps,worldBuildings,worldPlaces,buildingFootprints,geoparquet","data","none","","explanation","read","none","","gisCore"],
-      ["geo.ml","geoMl","multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty","data","none","gis.dataset","explanation","session","none","","gisCore","external"],
       ["mcp.servers","mcpServers","listMcpServers,mcpTools,refreshMcp","mcp","none","","explanation","external","explicit","","","external"],
       ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","always","","",""],
       ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
       ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","always","","","external"],
-      ["model.discover","modelDiscover","findModel,specialistModels,whichModel,listModels","data","none","","explanation","read","none","","",""],
-      ["model.run","modelRun","runModel,specialistModel,floodForecast,riverForecast,airQualityForecast","data","none","map.object","explanation","session","none","place?","","external"],
-      ["research.longform","longform","writeLongReport,longDocument,writeInChapters","research","none","","explanation","read","none","","","external"],
-      ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
