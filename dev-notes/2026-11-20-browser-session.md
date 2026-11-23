@@ -55,3 +55,5 @@ CI の `check:perf` が、async の `atlas-cap-runs`(896→922 kB 級)・`atlas-
 （4 回目: 2026-11-23 の main 取り込み後、CI の Gates 2/3 で `atlas-cap-runs` 931.1→961.7 kB、`atlas-console` 1118.7→1129.1 kB が天井を超えた。CI の測定値に合わせて上げた（953,399→984,800 B、1,145,576→1,156,300 B）。理由は上と同じで、web 能力と main 側の増分が合わさったもの。）
 
 （2026-11-24 の main 取り込み後、CI の Gates 2/3 で check:perf が天井を超えた: atlas-cap-runs 938.6 kB 超（991,800 B へ）、atlas-console 1129.9 kB 超（1,167,700 B へ）、dist.assets 21923.7 kB 超（22,577,200 B へ）。CI の測定値に合わせて上げた。web.session の能力の追加ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
+
+（2026-11-24 の続き: main に #1313 などが入ったあとの CI の Gates 2/3 で、async.raw 14569.8→14680.8 kB（15,033,200 B へ）、async.gzip 4918.1→4956.6 kB（5,075,600 B へ）、atlas-cap-runs 952.1→981.2 kB（1,004,800 B へ）、atlas-console 1139.2→1152.3 kB（1,180,100 B へ）、gis-core 697.3→701.2 kB（718,100 B へ）が天井を超えた。CI の測定値に合わせて上げた。gis-core は main 側の増分、他は web.session の能力ぶんと main 側の増分の合計で、能力を戻せば下がる。）
