@@ -34,6 +34,7 @@
  *  Pure: no DOM, no network, no globals. `resolve` is the only door to the outside and may be async.
  * ==========================================================================*/
 import { makeAtlasGeoObject } from './atlas-geo-object.js';
+import { normalizeMeaning, periodKey, assessRow, boundaryChanges } from './atlas-fact-comparability.js';
 
 const geo = makeAtlasGeoObject();
 const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
@@ -56,7 +57,7 @@ export function normalizeFact(f) {
   const v = f.value;
   const value = typeof v === 'number' ? (isFinite(v) ? v : undefined) : (typeof v === 'boolean' ? v : (typeof v === 'string' && v.trim() ? s(v, 300) : undefined));
   if (value === undefined) return null;
-  const out = { subject, attribute, value };
+  const out = Object.assign({ subject, attribute, value }, normalizeMeaning(f, geo.timeMs));   /* scope / basis / period / aggregation / column: only what was stated (js/atlas-fact-comparability.js) */
   const unit = s(f.unit, 40); if (unit) out.unit = unit;
   const at = geo.timeMs(f.at); if (at != null) out.at = typeof f.at === 'number' ? new Date(at).toISOString() : s(f.at, 40);
   const source = s(f.source, 500); if (source) out.source = source;
@@ -74,6 +75,10 @@ const valueKey = (f) => (typeof f.value === 'number' ? 'n:' + String(f.value) : 
 /* mergeFacts(results, opts?) → { objects, counts, unresolved }
      results          makeDelegation().run() output; only usable results are read
      opts.resolve     (subject) → { ref, name? } | null, sync or async — «which object does this name / these ids denote»
+     opts.semantics   js/gis-semantics.js (describe / comparable): facets of a fact that names the dataset column it came from
+     opts.units       js/gis-units.js (compare): whether two unit spellings are the same measurement
+     opts.ties        (ref) → { ties, validity }: the object's ties with the periods they held (js/world-graph-store.js tiesOf)
+     (all three optional; each only adds observations: js/atlas-fact-comparability.js)
    Never throws on a resolver that throws: that subject is `resolved:false, resolveFailed:true` (observed, not guessed). */
 export async function mergeFacts(results, opts) {
   const o = opts || {};
@@ -112,7 +117,7 @@ export async function mergeFacts(results, opts) {
 
   const objects = [];
   const counts = { agree: 0, conflict: 0, single: 0, missing: 0 };
-  const unresolved = [];
+  const unresolved = [], spans = [];
   groups.forEach((idx, root) => {
     const fs = idx.map((i) => obs[i]);
     const refs = Array.from(new Set(idx.map((i) => obs[i].subject.ref || resolved[i].ref).filter(Boolean)));
@@ -126,8 +131,8 @@ export async function mergeFacts(results, opts) {
     /* attribute × time rows. A fact with no `at` is its own row: «no time stated» is not assumed to equal a stated one. */
     const rows = new Map();
     fs.forEach((f) => {
-      const k = fold(f.attribute) + '|' + (f.at ? String(geo.timeMs(f.at)) : '');
-      if (!rows.has(k)) rows.set(k, { attribute: f.attribute, at: f.at, facts: [] });
+      const k = fold(f.attribute) + '|' + (f.at ? String(geo.timeMs(f.at)) : '') + '|' + periodKey(f, geo.timeMs);
+      if (!rows.has(k)) rows.set(k, { attribute: f.attribute, at: f.at, period: f.period, facts: [] });
       rows.get(k).facts.push(f);
     });
     const attrTasks = new Map();   // attribute (folded) → tasks that stated it at any time
@@ -148,6 +153,9 @@ export async function mergeFacts(results, opts) {
       const units = new Set(values.map((v) => fold(v.unit)));
       let status = values.length > 1 ? 'conflict' : (tasks.length >= 2 ? 'agree' : 'single');
       const entry = { attribute: row.attribute, at: row.at, status, values, tasks };
+      if (row.period) entry.period = row.period;
+      /* two workers stated this row: whether what they measured can be set side by side: an observation beside the status, never a change to it */
+      if (tasks.length >= 2) entry.comparability = assessRow(row.facts, { semantics: o.semantics, units: o.units });
       if (status === 'conflict') {
         if (units.size > 1) entry.unitMismatch = true;   /* 300 000 TEU and 3 Mt are not a disagreement, they are not comparable yet */
         const nums = values.filter((v) => typeof v.value === 'number');
@@ -163,7 +171,15 @@ export async function mergeFacts(results, opts) {
       attributes.push(entry);
     });
     objects.push({ ref: refs[0], refs: refs.length > 1 ? refs : undefined, resolved: isResolved, names, ids: Object.keys(ids).length ? ids : undefined, tasks: covered, attributes });
+    /* the span of time the compared values cover (a moment, or a period's two ends): what the object's own ties are held against below */
+    const ms = [];
+    fs.forEach((f) => { [f.at, f.period && f.period.from, f.period && f.period.to].forEach((x) => { const t = x == null ? null : geo.timeMs(x); if (t != null) ms.push(t); }); });
+    spans.push(ms.length ? { fromMs: Math.min.apply(null, ms), toMs: Math.max.apply(null, ms) } : null);
   });
+  /* did the object itself change inside that span? (the persistent graph's ties with their periods; an unreadable graph is `checked:false`, not 'no change') */
+  if (typeof o.ties === 'function') {
+    await Promise.all(objects.map(async (ob, i) => { if (ob.ref && spans[i] && spans[i].fromMs < spans[i].toMs) ob.boundary = await boundaryChanges(ob.ref, spans[i], o.ties); }));
+  }
   return { objects, counts, unresolved };
 }
 

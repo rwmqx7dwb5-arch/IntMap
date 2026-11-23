@@ -135,6 +135,12 @@ export const GOVERNANCE = {
     publisher: 'Wikidata',
     url: WDQS,
     ...WIKIDATA,
+    /* (describes.*) The five tests in the header above and the committed bundle measured (1,229 rows). ⚠ THIS IS A
+       RECONSTRUCTION AND THE METHOD SAYS SO: the outlines are today's, not surveyed for the years they are drawn under. */
+    extent: '1,229 first-level unit rows covering 1,096 ISO 3166-2 units in 51 countries; the earliest row starts in 1927 and open-ended rows run to the present (measured on the bundle)',
+    method: 'Reconstruction, not a survey: today\'s Natural Earth 10m admin-1 outline of a unit that still stands, drawn only over the span on which three records agree it may be (Wikidata states when the unit began and, if it did, ended; the country\'s own stated inception is a floor; the ground lay inside one polity of the era record; no OpenHistoricalMap-derived unit already speaks for that ground), and only for a country whose every unit may be drawn on those dates. Dates and names are Wikidata\'s, joined by ISO 3166-2 code, never by spelling; an undated unit is not carried back',
+    resolution: 'unit outline simplified once at 0.01 degrees with four decimals; spans exact between the dates on which a test can change, to the day',
+    completeness: 'A unit absent here is not a statement that it did not exist: units that fail any test are withheld for that span, and a country is drawn only where all its units pass, so countries are either whole or silent (the bundle lists the units it deferred and refused)',
     builtBy: 'scripts/build-hist-admin-fill.mjs',
   },
 };

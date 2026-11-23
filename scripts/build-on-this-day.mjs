@@ -66,8 +66,15 @@ export const GOVERNANCE = {
     licenceUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
     attribution: true,
     paidBy: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
+    /* (describes.*) what the builder derives and what the committed bundle measurably carries (940 dated entries on 315 calendar days; 101 Wikidata events). */
+    period: { start: '1346', end: '2024' },
+    extent: 'world: polities drawn by CShapes 2.0 and the war record, with 101 dated Wikidata events; 940 day-precision entries on 315 calendar days (1886-12-30 to 2014-03-18) and events dated 1346 to 2024 (measured over the committed bundle)',
+    method: 'a border day is read off the map\'s own records: a polity in force on the day but not the day before appears, the reverse ends, and one in both whose drawn area differs by at least 1 km2 is redrawn; the OpenHistoricalMap record, record seams, names the record does not date and the sheets before 1689 are left out and counted in `skipped`',
+    resolution: 'day',
+    completeness: 'states only what a record states on the day the record states it: 1 January CShapes rows are kept but marked maybeYearOnly, and the omissions are counted in `skipped` (1 seam, 881 not a day record, 21 undated name, 97 unchanged)',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'derived',
       observed: 'derived only from other bundles in this repository (data/cshapes.js, data/hist-borders.js, data/wars.json) and the committed Wikidata snapshot scripts/time-index/wikidata-events.json (written by scripts/fetch-world-events.mjs, retrieved 2026-10-04), never from an upstream at build time; it changes when they are rebuilt, and `--check` says whether it still matches them',
       expires: 'if the builder starts reading an upstream directly, or when scripts/fetch-world-events.mjs is run again',
       canon: 'scripts/build-on-this-day.mjs GOVERNANCE',
