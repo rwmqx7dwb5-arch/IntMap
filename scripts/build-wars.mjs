@@ -59,6 +59,8 @@ export const GOVERNANCE = {
     /* the record is scripts/wars/, written and reviewed in this repository */
     ...AUTHORED_HERE,
     builtBy: 'scripts/build-wars.mjs',
+    /* (describes.*) MEASURED on the committed data/wars.json: the from and to dates of its 6 wars. */
+    period: { start: '1914-07-28', end: '2001-08-13', note: 'measured: earliest start and latest end over the 6 wars in the bundle' },
   },
 };
 
