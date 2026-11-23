@@ -105,3 +105,5 @@ STAC の `href` は**データ**。https・認証情報なし・私的でない�
 - 取り込み直し（2回目）: migration 版が main の `20261120120000_world_graph_ingest` と衝突したので id_history を `20261120140000` へ改番。perf 天井を再び上げた（async.raw 14304.0→14542.1 kB・atlas-cap-runs 903.4→911.3・gis-core 637.0→640.4。Overture の能力と読み取りが運んだ分）。能力数 255（到達可能 252）・migration 71・表 61。
 - 取り込み直し（3回目）: perf の async.gzip 天井を 4833.8→4936.9 kB へ（Overture の能力・読み取りが運んだ分）。00_structure_test の plan を id_history の 2 件ぶん 136→138。
 - 取り込み直し（4回目）: CI が測った dist.total は 1550379.8 kB（ローカルのビルドは 1548618.6 kB で、データの置き場の差 約 1.8 MB はローカルでは再現しない）。CI の実測に合わせて天井を 1579471807→1587590000 バイトへ手で上げた。本 PR が足したのは約 1 MB の js・文書で、data/ には何も足していない。残りは main 側の取り込み分。
+- 取り込み直し（5回目）: perf 天井を再び上げた（async.raw 14376.3→14606.3 kB・atlas-cap-runs 918.5→924.8・dist.assets 21796.5→22042.3）。Overture の能力・読み取りと、main 側の Atlas 追加（統合知識層・ボード）が運んだ分。main 取り込みで生成物 js/atlas-capabilities.js から data.gisOverture の行が落ちるので、`node scripts/atlas-caps.mjs --write` で戻した。
+- 取り込み直し（6回目）: perf 天井を上げた（async.gzip 4864.8→4977.8 kB・atlas-console 1105.8→1111.9）。Overture の能力・読み取りと main 側の GIS／Atlas 追加が運んだ分。main は取り込みのたびに動くので、実測は取り込み直後の build で取った。
