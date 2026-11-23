@@ -54,3 +54,5 @@ e-Govデータポータルで「人口」を検索 → 先頭のデータセッ�
 web-browse が `web.browse` / `web.fetchFile` の 2 能力（`atlas-cap-web`・schema・文言）を足したので、遅延 chunk の `atlas-cap-runs` が 896.4→916.1 kB、`atlas-console` が 1066.9→1074.2 kB、async gzip が 4771.5→4811.7 kB、dist.assets が 21559.0→21695.6 kB になった（`node scripts/perf-budget.mjs --update`・2026-11-21 の測定）。起動時に読む chunk は増えていない（どれも能力を呼んだときだけ読む遅延 chunk）。失効条件: 能力の統合・縮小でこれらが下がったら、main の CI が `--tighten` で下げる。
 （最新 main での測り直し: async gzip 4807.7→4836.2 kB、`atlas-cap-runs` 903.4→921.8 kB。理由は上と同じ。）
 （2026-11-21 の main 取り込み後: `atlas-cap-runs` 909.0→921.8 kB、dist.assets 21686.9→21805.6 kB。理由は上と同じで、main 側の能力追加ぶんを含む。）
+
+（2026-11-24 の main 取り込み後、CI の Gates 2/3 で `atlas-cap-runs` が 938.6→951.4 kB になり天井を超えた。CI の測定値（974,300 B）に上げた。web.browse / web.fetchFile の能力ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
