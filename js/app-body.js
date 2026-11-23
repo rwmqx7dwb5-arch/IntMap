@@ -1626,17 +1626,31 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      DEM reads per camera move, issued while the satellite tiles were still loading. The same 7×7 points
      taken on the screen (sky excluded — `onSurface`) are the same warm-up flat, and pitched they follow
      where the ground actually is on screen. */
+  /* (map-smooth) THE WARM-UP RUNS IN IDLE TIME, ONE ROW OF THE GRID AT A TIME, AND STOPS WHEN THE MAP MOVES AGAIN.
+     MEASURED (scripts/map-motion.mjs, desktop, --cpu 4): this function was a 98 ms task on the frame after a
+     gesture ended — 49 demElevAt calls in one go, which is exactly when the next wheel notch or drag arrives. The
+     reads are a warm-up for a hover that has not happened yet, so they yield: one row (7 points) per idle slice,
+     and a new movestart drops what is left (the next moveend asks again from where the map is then). */
   function prefetchDEMViewport(){
     if(!GE().hasRenderer()||_imPhoneClass()) return;   /* (#R498) 49 DEM reads on every settle is a phone cost in either orientation */
-    try{ const z=demZoomForMap(); const sz=GE().render.size(), W=sz.width, H=sz.height, STEP=6; if(!(W>0&&H>0)) return;
-      for(let i=0;i<=STEP;i++) for(let j=0;j<=STEP;j++){ const pt=[W*i/STEP, H*j/STEP];
-        if(GE().coords.onSurface(pt)===false) continue;
-        const ll=GE().coords.unproject(pt); if(ll&&isFinite(ll.lng)&&isFinite(ll.lat)) demElevAt(ll.lng, ll.lat, null, z); }
-    }catch(_){}
+    const run=(prefetchDEMViewport.run=(prefetchDEMViewport.run||0)+1), STEP=6;
+    const idle=(fn)=>{ try{ if(typeof requestIdleCallback==='function') return requestIdleCallback(fn,{timeout:500}); }catch(_){} return setTimeout(fn,16); };
+    let i=0;
+    const row=()=>{
+      if(run!==prefetchDEMViewport.run) return;
+      try{ const z=demZoomForMap(); const sz=GE().render.size(), W=sz.width, H=sz.height; if(!(W>0&&H>0)) return;
+        for(let j=0;j<=STEP;j++){ const pt=[W*i/STEP, H*j/STEP];
+          if(GE().coords.onSurface(pt)===false) continue;
+          const ll=GE().coords.unproject(pt); if(ll&&isFinite(ll.lng)&&isFinite(ll.lat)) demElevAt(ll.lng, ll.lat, null, z); }
+      }catch(_){ return; }
+      if(++i<=STEP) idle(row);
+    };
+    idle(row);
   }
   let _demPrefetchT=null;
   if(GE().hasRenderer()){ GE().events.on('moveend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,200); });
-           GE().events.on('zoomend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,120); }); }
+           GE().events.on('zoomend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,120); });
+           GE().events.on('movestart',()=>{ prefetchDEMViewport.run=(prefetchDEMViewport.run||0)+1; clearTimeout(_demPrefetchT); }); }
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
 
   /* ===== (#R119) IntMapLayers — the COMMON LAYER DATA CONTRACT ("Atlasが表示中レイヤーの実値を読める仕組み").
