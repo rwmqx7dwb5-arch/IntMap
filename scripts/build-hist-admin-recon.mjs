@@ -129,6 +129,14 @@ export function gbUpstreams() {
 /* ⚠ 出自は値である（js/data-governance.js の read() と npm run check:datagov が読む）。 */
 export const GOVERNANCE = {
   'data/hist-admin-recon.js': {
+    /* (describes.*) The method in this file's header and docs/HIST-RECONSTRUCTION.md, and the committed bundle measured.
+       ⚠ THIS IS IntMap'S OWN RECONSTRUCTION and the method says so; no accuracy figure is stated because none has been
+       measured across the whole record (the dossiers are checked for internal consistency, not scored against a survey). */
+    period: { start: '1727', end: '2020' },
+    extent: '3,608 first-level unit rows from 134 reconstruction dossiers; the earliest row starts in 1727 and the latest ends in 2020 (measured on the bundle)',
+    method: 'Reconstruction by IntMap, not a surveyed record: a unit on a span is a union of finer atoms (Natural Earth admin-1, RISTAT 1897 uyezds, geoBoundaries, Japanese N03 1920 and e-Stat 2020 areas, Amasyali kazas) whose boundaries are the historical lines, and every membership is a stated fact with a citation in a dossier; nothing is drawn by hand, smoothed or interpolated. A span is drawn only if the ground lay in one polity of the era map on that date, and it yields to OpenHistoricalMap and to every publisher\'s dated record',
+    resolution: 'the precision of each atom set as its publisher released it, simplified to a 0.004 degree tolerance with four decimals for the overview; spans are dated to the day, with exclusive ends',
+    completeness: 'Only units whose membership could be established from cited facts on atoms that carry the historical line; a line no atom carries is not drawn and is listed as unresolved in the dossier, and a span withheld by a test is reported with its reason, so absence here is not a statement that the unit did not exist',
     upstreams: [
       { publisher: 'Natural Earth', url: 'https://www.naturalearthdata.com/', licence: 'Public domain',
         licenceUrl: 'https://www.naturalearthdata.com/about/terms-of-use/', attribution: false, creditRequired: false,
@@ -156,7 +164,7 @@ export const GOVERNANCE = {
     priority: { rank: 'per-dossier',
       over: 'IntMap states the dossier facts (membership, dates); the other upstreams are geometry atom sets, one per dossier, and two dossiers on the same land and day are refused (sameLandClaims), so atom sets do not compete; for an optional clipTo edge toward a foreign country the whole-world edge set (Natural Earth) wins, the dossier atoms win interior lines and coast' },
     cadence: 'static',
-    cadenceBasis: { observed: 'on 2026-10-05 every atom set is pinned (Natural Earth commit ca96624, RISTAT version 3, N03 1920, e-Stat 2020); the record changes only when the research in a dossier changes', expires: 'when a dossier is revised or an atom set is re-pinned', canon: 'scripts/histrecon/atoms/*.mjs SET and scripts/histrecon/dossiers/*.json' },
+    cadenceBasis: { kind: 'measured', observed: 'on 2026-10-05 every atom set is pinned (Natural Earth commit ca96624, RISTAT version 3, N03 1920, e-Stat 2020); the record changes only when the research in a dossier changes', expires: 'when a dossier is revised or an atom set is re-pinned', canon: 'scripts/histrecon/atoms/*.mjs SET and scripts/histrecon/dossiers/*.json' },
     builtBy: 'scripts/build-hist-admin-recon.mjs',
   },
 };
