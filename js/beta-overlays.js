@@ -226,7 +226,11 @@ export function betaOverlays(HOST){
     }
     const plateauSoon=()=>{ clearTimeout(plateauTimer); plateauTimer=setTimeout(plateauSync,400); };
     let plateauHooked=false;
+    /* the card a picked building opens (js/building-info.js) — fetched when the layer is switched on, dropped when it is off */
+    let bldgCard=null, bldgCardSeq=0;
     function plateauToggle(on){ state.plateau=on;
+      if(on){ const mySeq=++bldgCardSeq; import('./building-info.js').then(m=>{ if(mySeq!==bldgCardSeq||!state.plateau) return; if(bldgCard) bldgCard.destroy(); bldgCard=m.mountBuildingInfo({ GE, lang:()=>HOST.lang }); }).catch(()=>{}); }
+      else{ bldgCardSeq++; if(bldgCard){ bldgCard.destroy(); bldgCard=null; } }
       if(!plateauCan()){ if(on) imToast(IntMapLang.t(HOST.lang,'PLATEAU 3D city models need the 3D globe engine (Settings ▸ Map engine ▸ Cesium). The "3D buildings (cities)" layer works on this engine.','PLATEAU の3D都市モデルには3D地球儀エンジン（設定 ▸ 地図エンジン ▸ Cesium）が必要です。このエンジンでは「3D建物（都市）」レイヤーが使えます。')); return; }
       if(on){ if(!plateauHooked){ plateauHooked=true; try{ GE().events.on('moveend',plateauSoon); }catch(_){} } plateauSync(); }
       else{ plateauSeq++; clearTimeout(plateauTimer); const L2=GE().layers; for(const code of plateauOpen) L2.removeTileset(plateauTilesetId(code)); plateauOpen=new Set(); for(const w of worldOpen.values()) L2.removeTileset(w.tid); worldOpen=new Map(); }

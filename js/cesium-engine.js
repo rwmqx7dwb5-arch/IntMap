@@ -1744,6 +1744,7 @@ window.IntMapCesiumEngine=(function(){
       const dispatch=(name,pos)=>{
         const ev=mk(pos);
         this.fire(name,ev);
+        if(name==='click') this._pickBuilding(pos,ev);
         const wanted=this._layerHandlers.filter(h=>h.type===name);
         if(!wanted.length) return;
         const hits=this.queryRenderedFeatures([pos.x,pos.y]);
@@ -2607,7 +2608,8 @@ window.IntMapCesiumEngine=(function(){
     triggerRepaint(){ try{ this._scene.requestRender(); }catch(_){} }
     getCanvas(){ return this._widget.canvas; }
     /* (layer-click-polish) maplibre's `redraw()`: one SYNCHRONOUS frame, for a page whose rAF is stopped (a hidden tab) — postRender fires 'render' inside it */
-    redraw(){ try{ this._scene.render(); }catch(_){} return this; }
+    /* draw NOW, from the document as it is: style changes made this task (setPaint, setLayout) are applied on the next animation frame, so a synchronous draw without this flush would show the previous document — the frame comparison in js/render-witness.js read an unchanged picture for a surface it had just made transparent */
+    redraw(){ try{ if(this._dirty&&this._dirty.size) this._flush(); this._scene.render(); }catch(_){} return this; }
     /* ══ THE FRAME'S OWN COST — the Cesium half of `render.instrumentFrames` / `sceneStats` ═══════
        MapLibre answered these from #R225; this adapter answered nothing, so `?perf=1` on the globe
        fell back to the frame interval (which a throttled tab makes a liar) and said "n/a" for the
@@ -2754,6 +2756,32 @@ window.IntMapCesiumEngine=(function(){
       return clipOk;
     }
     placeTileset(id,o){ const rec=this._tilesets.get(id); return rec&&o?this._placeTileset(rec,o):false; }
+    /* ══ A CLICK ON A BUILDING OF AN OPEN 3D TILESET → 'buildingpick' {tilesetId, properties, lngLat, point} ═══════════
+       Cesium's own pick answers with a Cesium3DTileFeature for tiles that carry per-feature metadata (3D Tiles 1.1
+       EXT_structural_metadata, or a b3dm batch table) — which all three datasets do (js/building-attrs.js lists the names, read
+       off real tiles). The properties are handed over as a plain object so the card (js/building-info.js) never touches Cesium;
+       a click on anything else fires 'buildingpickclear'. The picked building is tinted until the next pick, then put back. */
+    _pickBuilding(pos,ev){
+      let hit=null;
+      try{
+        /* drillPick, not pick: the topmost thing under the finger is often a place marker or a label, and the building is behind it */
+        const pks=this._scene.drillPick(new Cesium.Cartesian2(pos.x,pos.y),12)||[];
+        const pk=pks.find(x=>x&&typeof x.getProperty==='function'&&x.tileset&&typeof x.getPropertyIds==='function');
+        if(pk){
+          let tid=null; for(const [id,r] of this._tilesets){ if(r.ts===pk.tileset){ tid=id; break; } }
+          if(tid){ const props={}; const ids=pk.getPropertyIds()||[];
+            for(let i=0;i<ids.length&&i<300;i++){ try{ const v=pk.getProperty(ids[i]); if(v!==undefined&&typeof v!=='function') props[ids[i]]=v; }catch(_){} }
+            hit={ tilesetId:tid, properties:props, lngLat:ev.lngLat, point:ev.point, feature:pk }; }
+        }
+      }catch(_){}
+      this._unpaintBuilding();
+      if(!hit){ try{ this.fire('buildingpickclear',{}); }catch(_){} return; }
+      try{ const f=hit.feature; this._bldgSel={ feature:f, color:Cesium.Color.clone(f.color) }; f.color=Cesium.Color.fromCssColorString('#ffd60a').withAlpha(0.9); this._scene.requestRender(); }catch(_){}
+      const out={ tilesetId:hit.tilesetId, properties:hit.properties, lngLat:hit.lngLat, point:hit.point };
+      try{ this.fire('buildingpick',out); }catch(_){}
+    }
+    _unpaintBuilding(){ const s=this._bldgSel; this._bldgSel=null; if(!s) return; try{ s.feature.color=s.color; this._scene.requestRender(); }catch(_){} }
+    clearBuildingPick(){ this._unpaintBuilding(); }
     removeTileset(id){
       const rec=this._tilesets.get(id); if(!rec) return false;
       rec.gone=true; this._tilesets.delete(id);
@@ -3181,6 +3209,7 @@ window.IntMapCesiumEngine=(function(){
       removeTileset(id){ const v=V(); return v&&v.removeTileset?v.removeTileset(id):false; },
       setTilesetVisible(id,on){ const v=V(); return v&&v.setTilesetVisible?v.setTilesetVisible(id,on):false; },
       placeTileset(id,o){ const v=V(); return v&&v.placeTileset?v.placeTileset(id,o):false; },
+      clearBuildingPick(){ const v=V(); return v&&v.clearBuildingPick?v.clearBuildingPick():false; },
       hasTileset(id){ const v=V(); return v&&v.hasTileset?v.hasTileset(id):false; },
       tilesetInfo(id){ const v=V(); return v&&v.tilesetInfo?v.tilesetInfo(id):null; },
       instrumentFrames(cb){ const v=V(); return v&&v.instrumentFrames?v.instrumentFrames(cb):false; },
