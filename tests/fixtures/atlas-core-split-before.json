@@ -6,7 +6,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -19,7 +19,7 @@
    {
     "status": 405,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -34,7 +34,7 @@
    {
     "status": 401,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -62,7 +62,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -136,7 +136,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -210,7 +210,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -278,7 +278,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -352,7 +352,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -425,7 +425,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -493,7 +493,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -595,7 +595,7 @@
    {
     "status": 413,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -698,7 +698,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -756,7 +756,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -815,7 +815,7 @@
    {
     "status": 500,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -872,7 +872,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -927,7 +927,7 @@
    {
     "status": 404,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -983,7 +983,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1057,7 +1057,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1132,7 +1132,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1364,7 +1364,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1596,7 +1596,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1887,7 +1887,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2359,7 +2359,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2859,7 +2859,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3116,7 +3116,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3347,7 +3347,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3588,7 +3588,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3800,7 +3800,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4035,7 +4035,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4261,7 +4261,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4303,7 +4303,25 @@
        "mode": "independent",
        "maxChildren": 2,
        "childMaxCalls": 8
-      }
+      },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ]
      },
      "output": [
       {
@@ -4618,7 +4636,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4660,7 +4678,25 @@
        "mode": "independent",
        "maxChildren": 2,
        "childMaxCalls": 8
-      }
+      },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ]
      },
      "output": [
       {
@@ -4962,7 +4998,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5195,7 +5231,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5377,7 +5413,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5556,7 +5592,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5735,7 +5771,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6012,7 +6048,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6309,7 +6345,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6587,7 +6623,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6857,7 +6893,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7056,7 +7092,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7207,7 +7243,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7360,7 +7396,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7368,7 +7404,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":8}},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":8},\"delegationModels\":[{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -7717,7 +7753,25 @@
           "mode": "independent",
           "maxChildren": 2,
           "childMaxCalls": 8
-         }
+         },
+         "delegationModels": [
+          {
+           "id": "gpt-6.1-terra",
+           "usdPerMTok": {
+            "input": 1,
+            "cached": 1,
+            "output": 5
+           }
+          },
+          {
+           "id": "gpt-6-luna",
+           "usdPerMTok": {
+            "input": 0.1,
+            "cached": 0.1,
+            "output": 0.5
+           }
+          }
+         ]
         },
         "output": [
          {
@@ -7739,7 +7793,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7747,7 +7801,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":8}},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":8},\"delegationModels\":[{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -8154,7 +8208,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8216,7 +8270,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8317,7 +8371,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8360,6 +8414,24 @@
        "maxChildren": 2,
        "childMaxCalls": 8
       },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ],
       "replay": {
        "kind": "rerun",
        "after": "failed",
@@ -8747,7 +8819,25 @@
           "mode": "independent",
           "maxChildren": 2,
           "childMaxCalls": 8
-         }
+         },
+         "delegationModels": [
+          {
+           "id": "gpt-6.1-terra",
+           "usdPerMTok": {
+            "input": 1,
+            "cached": 1,
+            "output": 5
+           }
+          },
+          {
+           "id": "gpt-6-luna",
+           "usdPerMTok": {
+            "input": 0.1,
+            "cached": 0.1,
+            "output": 0.5
+           }
+          }
+         ]
         },
         "output": [
          {
@@ -8780,7 +8870,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8823,6 +8913,24 @@
        "maxChildren": 2,
        "childMaxCalls": 8
       },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ],
       "replay": {
        "kind": "unheld"
       }
@@ -9148,7 +9256,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9190,7 +9298,25 @@
        "mode": "independent",
        "maxChildren": 2,
        "childMaxCalls": 8
-      }
+      },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ]
      },
      "output": [
       {
@@ -9495,7 +9621,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9770,7 +9896,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9913,7 +10039,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10039,7 +10165,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10200,7 +10326,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10422,7 +10548,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10682,7 +10808,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10724,7 +10850,17 @@
        "mode": "independent",
        "maxChildren": 2,
        "childMaxCalls": 8
-      }
+      },
+      "delegationModels": [
+       {
+        "id": "claude-haiku-4-5-20251001",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 0.1,
+         "output": 5
+        }
+       }
+      ]
      },
      "output": [
       {
@@ -11046,7 +11182,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11242,7 +11378,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11318,7 +11454,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11602,7 +11738,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11875,7 +12011,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12146,7 +12282,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12407,7 +12543,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12587,7 +12723,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12786,7 +12922,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12828,7 +12964,8 @@
        "mode": "independent",
        "maxChildren": 2,
        "childMaxCalls": 8
-      }
+      },
+      "delegationModels": []
      },
      "output": [
       {
@@ -13147,7 +13284,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -13276,7 +13413,7 @@
    {
     "status": 500,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",

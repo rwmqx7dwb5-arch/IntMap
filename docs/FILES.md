@@ -1050,6 +1050,7 @@ atlas-highlight.js                Atlas — コードブロックのシンタッ
                                   `HIGHLIGHT_CSS`（light / dark の 2 組）
 atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示
 atlas-result-facts.js             Atlas — 道具の結果に、その道具のパネルが示す事実（衛星の直下点と次回通過・天気の数値・旅程）を文として載せる
+atlas-result-reuse.js             Atlas — 同じコードを同じデータに当てた分析を、前回の結果で答える（鍵は内容の指紋・出力が生きている間だけ）
 atlas-era-highlight.js            Atlas — 過去年を表示中の国ハイライトを、その年の政体の面（所有者 gloss 込み）で描く／その面の外接矩形（カメラの枠取り）／**Atlas が塗ったものの申告**（`_imAtlasPaint`）
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
@@ -1104,7 +1105,8 @@ atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart
 atlas-cap-file.js                 Atlas の能力 — ファイルを作る（file.create。PDF・Word・PowerPoint・Excel・HTML・Markdown・テキスト・CSV・JSON）
 atlas-file-make.js                  ファイル作成の DOM 側（lazy atlasFile）— 描画・グラフ/地図の画像化・書き出し後の読み戻し・保存カード
 file-doc.js                         ファイルの文書モデルと Markdown の読み取り（全形式の書き出しの元）
-file-pdf.js                         PDF の組版（日本語の行分割・ページ分割・表）と書き出し・読み戻し検証
+file-pdf.js                         PDF の組版（日本語の行分割・ページ分割・表）と、ベクター（Type3 字形）での書き出し・読み戻し検証
+file-glyph.js                       PDF の字形 — 端末のフォントで描いた文字の輪郭を marching squares で取り、1000 単位の閉パスにする
 file-office.js                      docx・pptx と xlsx の「文書→シート」の対応、ZIP の読み戻し検査（xlsx の書き手は office-writer.js）
 zip-store.js                        **唯一の ZIP**（stored 方式の書き出しと CRC 付き読み戻し）。docx・pptx・xlsx・検証が共有
 file-text.js                        md・txt・html・csv・json の書き出し
@@ -1285,6 +1287,7 @@ atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
 atlas-table.js                    **調べた値の行 → データセット**（`data.table`）。位置の列を読み、単位は呼び出し側が述べたものだけを運び、位置の無い行は行のまま数える（純関数）。
+atlas-run-ledger.js              Atlas — 1 つの仕事（1 ターン）の費用・時間・使ったモデルとツールを 1 件に集計する（観測するだけで、制限はしない）
 atlas-state.js                    アプリの状態をデータとして持つ（#R318）。各サブシステムが provider を登録し、
                                   モデル向けの文章はそこから派生する。ターン台帳（目標・計画・結果・objectId）
 atlas-evidence.js                 Atlas — 証拠レジストリ（#R350）。ソースが入ってよい唯一の入口。URL の正規化と
