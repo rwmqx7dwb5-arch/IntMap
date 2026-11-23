@@ -56,6 +56,8 @@ import '../js/client-error-report.js';
 /* (anonymous-usage-counts) …and the anonymous usage counter, early enough to read the arrival (referrer,
    utm tags, a link's map view) before js/map-ui.js rewrites the address with this session's own view. */
 import '../js/usage-counts.js';
+/* (atlas-knowledge) the Settings row «Atlas knowledge»: only the two switches and the row — the store, the evidence rules and the sync are imported when the row is used */
+import '../js/atlas-knowledge-prefs.js';
 /* (security-next) …and the witness of what this page contacts (Settings ▸ Privacy ▸ This page's connections): Resource Timing
    is read `buffered`, so what came before this line is not lost, but the WebSocket constructor is wrapped here and every
    later module's sockets go through it — js/connection-watch.js. */
