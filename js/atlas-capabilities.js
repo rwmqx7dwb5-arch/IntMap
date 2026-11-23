@@ -402,7 +402,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
       ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
       ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
-      ["data.gisOverture","gisOverture","overtureMaps,worldBuildings,worldPlaces,buildingFootprints,geoparquet","data","none","","explanation","read","none","","gisCore"],
+      ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
