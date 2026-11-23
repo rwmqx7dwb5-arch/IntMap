@@ -63,3 +63,5 @@ main を取り込み直した後の再測定（同じ 3 行、同じ理由）: `
 6 度目（main の取り込み後）: `atlas-cap-runs` 944.3 kB のみ超過（main の増分を含む現在値）。`perf-budget.mjs --update` が上げた 1 行だけ。専門モデル側の増分は §5 のとおり。あわせて `flood-api.open-meteo.com` の出口台帳は、別 PR の格子取得（広い範囲）と本 PR の点＋近傍 8 セルの 2 用途を 1 行に統合した。
 
 7 度目（main の再取り込み後）: `async.gzip` 4918.1→4944.4 kB・`atlas-cap-runs` 938.6→953.4 kB・`atlas-console` 1129.9→1139.2 kB・`gis-core` 697.3→701.2 kB・dist.assets 21923.7→22075.9 kB を `perf-budget.mjs --update` が上げた。`gis-core` と `atlas-console` は本 PR が触っておらず、main が足した増分を取り込んだ現在値。専門モデル側の増分は §5 のとおり。
+
+8 度目（main の再取り込み後・CI が測った超過）: `async.raw` 14569.8→14667.9 kB・`atlas-cap-runs` 952.1→963.8 kB・`atlas-console` 1139.2→1145.5 kB を `perf-budget.mjs --update` が上げた（ローカル再測定が CI の値と一致）。増分の大半は main が足した能力と画面で、専門モデル側は §5 のとおり。
