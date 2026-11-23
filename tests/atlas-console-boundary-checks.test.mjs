@@ -240,7 +240,7 @@ test('R801 C③: the shipped table has no always row — so a UI button never se
   /* the reader is asked only where something leaves the device or is deleted — NOT before a read or a reversible change
      (a button that guards nothing is a blind approval: .agents/rules/substance-over-form.md). Every row that asks also
      says WHAT it will do (atlas.confirm.what.<id>). */
-  const DELETES = ['map.clearAll', 'places.remove', 'places.unwatch', 'knowledge.forget'];
+  const DELETES = ['map.clearAll', 'places.remove', 'places.unwatch', 'knowledge.forget', 'knowledge.setting' /* carries clear / deleteAccountCopy */];
   const mustAsk = CAPS.all().filter((c) => !c.withdrawn && (c.risk === 'external' || DELETES.indexOf(c.id) >= 0)).map((c) => c.id);
   assert.deepEqual(explicit.slice().sort(), mustAsk.slice().sort(), 'asking rows must be exactly the external and deleting ones');
   const R = makeAtlasResults({});
