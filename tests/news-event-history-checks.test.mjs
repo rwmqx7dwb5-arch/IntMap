@@ -64,7 +64,7 @@ test('archive row: kept for 2+ families, a stated tie, or a star; dropped otherw
 });
 
 test('migration: public read, service-role-only write, no FK to news_events or auth.users, the cap is a function', () => {
-  const sql = fs.readFileSync(new URL('../supabase/migrations/20261123100000_news_event_history.sql', import.meta.url), 'utf8');
+  const sql = fs.readFileSync(new URL('../supabase/migrations/20261124100000_news_event_history.sql', import.meta.url), 'utf8');
   assert.match(sql, /enable row level security/);
   assert.match(sql, /grant select on public\.news_event_history to anon, authenticated/);
   assert.match(sql, /revoke all on function public\.news_history_upsert\(jsonb\) from public, anon, authenticated/);
