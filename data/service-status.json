@@ -7,11 +7,11 @@
  "cadence": "P1D",
  "builtBy": "scripts/build-service-status.mjs",
  "schema": "intmap-service-status/1",
- "generatedAt": "2026-11-19T11:43:22.540Z",
- "retrievedAt": "2026-11-19T11:43:22.540Z",
- "asOf": "2026-11-18T14:29:22Z",
+ "generatedAt": "2026-11-22T11:28:31.695Z",
+ "retrievedAt": "2026-11-22T11:28:31.695Z",
+ "asOf": "2026-11-21T13:23:55.209Z",
  "quality": {
-  "rows": 138,
+  "rows": 151,
   "missing": {
    "host": 0,
    "verdict": 0
@@ -20,14 +20,14 @@
   "duplicates": 0
  },
  "v": 1,
- "builtAt": "2026-11-19T11:43:22.540Z",
+ "builtAt": "2026-11-22T11:28:31.695Z",
  "upstream": {
-  "measuredAt": "2026-11-18T13:25:43.223Z",
-  "comparedWith": "2026-11-17T13:50:30.718Z",
+  "measuredAt": "2026-11-21T13:23:55.209Z",
+  "comparedWith": "2026-11-20T14:08:36.250Z",
   "networkObserved": true,
   "counts": {
-   "alive": 132,
-   "refused": 2,
+   "alive": 143,
+   "refused": 4,
    "dead": 4,
    "unobserved": 0
   },
@@ -39,7 +39,18 @@
     "status": 200,
     "what": "CARTO basemap raster tiles",
     "whatJp": "CARTO の基図ラスタタイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "*.s3.amazonaws.com",
+    "verdict": "refused",
+    "why": "HTTP 200 (declared 206)",
+    "status": 200,
+    "what": "A file on an AWS S3 bucket that the user named as s3://bucket/key (js/gis-cog.js derives the https address)",
+    "whatJp": "利用者が s3://バケット/キー で指定した AWS S3 上のファイル（js/gis-cog.js が https アドレスを導出）",
+    "lastAlive": null,
+    "downSince": "2026-11-19T13:52:59.321Z",
+    "runs": 3
    },
    {
     "host": "*.wikipedia.org",
@@ -48,7 +59,7 @@
     "status": 200,
     "what": "Wikipedia REST summaries and search in the reader’s language",
     "whatJp": "読者の言語の Wikipedia 要約と検索",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "a.basemaps.cartocdn.com",
@@ -57,7 +68,7 @@
     "status": 200,
     "what": "CARTO basemap tiles (preconnect hint in index.html)",
     "whatJp": "CARTO の基図タイル（index.html の事前接続）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "a.tiles.openrailwaymap.org",
@@ -66,7 +77,7 @@
     "status": 200,
     "what": "OpenRailwayMap tiles",
     "whatJp": "OpenRailwayMap のタイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "air-quality-api.open-meteo.com",
@@ -75,7 +86,7 @@
     "status": 200,
     "what": "Open-Meteo air quality at a point",
     "whatJp": "Open-Meteo の地点の大気質",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api-v2.oec.world",
@@ -84,7 +95,7 @@
     "status": 200,
     "what": "OEC trade data (Tesseract)",
     "whatJp": "OEC の貿易データ（Tesseract）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.alternative.me",
@@ -93,7 +104,7 @@
     "status": 200,
     "what": "alternative.me Fear & Greed index",
     "whatJp": "alternative.me の Fear & Greed 指数",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.coingecko.com",
@@ -102,7 +113,7 @@
     "status": 200,
     "what": "CoinGecko crypto prices",
     "whatJp": "CoinGecko の暗号資産価格",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.frankfurter.dev",
@@ -111,7 +122,7 @@
     "status": 200,
     "what": "Frankfurter (ECB) exchange rates for the industry web",
     "whatJp": "Frankfurter（ECB）の為替レート（産業の網）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.fxratesapi.com",
@@ -120,7 +131,7 @@
     "status": 200,
     "what": "fxratesapi exchange rates (fallback)",
     "whatJp": "fxratesapi の為替レート（予備）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.gdeltproject.org",
@@ -131,7 +142,7 @@
     "whatJp": "GDELT DOC のニュース検索",
     "lastAlive": "2026-11-16T13:08:12.766Z",
     "downSince": "2026-11-17T13:50:30.718Z",
-    "runs": 2
+    "runs": 5
    },
    {
     "host": "api.gold-api.com",
@@ -140,7 +151,7 @@
     "status": 200,
     "what": "gold-api metal prices",
     "whatJp": "gold-api の金属価格",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.ioda.inetintel.cc.gatech.edu",
@@ -149,7 +160,7 @@
     "status": 200,
     "what": "IODA internet-outage signals",
     "whatJp": "IODA のインターネット障害の信号",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.mapbox.com",
@@ -158,7 +169,7 @@
     "status": 401,
     "what": "Mapbox satellite tiles — only with the reader's own key",
     "whatJp": "Mapbox の衛星タイル（読者自身の鍵があるときだけ）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.met.no",
@@ -167,7 +178,7 @@
     "status": 200,
     "what": "MET Norway locationforecast (fallback) and MetAlerts warnings",
     "whatJp": "MET Norway の地点予報（予備）と MetAlerts の警報",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.open-meteo.com",
@@ -176,7 +187,7 @@
     "status": 200,
     "what": "Open-Meteo forecast and elevation at a point",
     "whatJp": "Open-Meteo の地点の予報と標高",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.opentopodata.org",
@@ -185,7 +196,7 @@
     "status": 200,
     "what": "Open Topo Data GEBCO depth at a clicked point",
     "whatJp": "Open Topo Data のクリック地点の GEBCO 水深",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.planespotters.net",
@@ -194,7 +205,16 @@
     "status": 200,
     "what": "Planespotters.net aircraft photo lookup",
     "whatJp": "Planespotters.net の機体写真の検索",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "api.plateauview.mlit.go.jp",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "PLATEAU 3D Tiles catalogue — the tileset index of each city or ward with a building model (MLIT Japan; only those near the view are requested). Its tilesets then point the browser at MLIT’s asset store, assets.cms.plateau.reearth.io, for the meshes and textures (named in Privacy §4, not a literal in the code)",
+    "whatJp": "PLATEAU 3D Tiles カタログ — 建物モデルを持つ各市区のタイルセット索引（国土交通省。視界の近くのものだけを要求する）。タイルセットはさらに国土交通省の資産置き場 assets.cms.plateau.reearth.io をブラウザに指し、メッシュとテクスチャを取得する（プライバシー §4 に明記。コードにはリテラルとして現れない）",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.pwnedpasswords.com",
@@ -203,7 +223,7 @@
     "status": 200,
     "what": "Have I Been Pwned — Pwned Passwords range API (breach check of a new password)",
     "whatJp": "Have I Been Pwned のパスワード漏洩照合（新しいパスワードの確認）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.rainviewer.com",
@@ -212,7 +232,7 @@
     "status": 200,
     "what": "RainViewer radar frame index",
     "whatJp": "RainViewer の雨雲レーダーのフレーム一覧",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.tfl.gov.uk",
@@ -221,7 +241,7 @@
     "status": 200,
     "what": "Transport for London JamCam list",
     "whatJp": "ロンドン交通局の JamCam 一覧",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.transitous.org",
@@ -230,7 +250,7 @@
     "status": 200,
     "what": "Transitous / MOTIS public-transit itineraries",
     "whatJp": "Transitous / MOTIS の公共交通の経路",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.weather.bom.gov.au",
@@ -239,7 +259,7 @@
     "status": 200,
     "what": "Australian Bureau of Meteorology warnings",
     "whatJp": "オーストラリア気象局の警報",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.weather.gc.ca",
@@ -248,7 +268,7 @@
     "status": 200,
     "what": "Environment and Climate Change Canada alerts",
     "whatJp": "カナダ環境・気候変動省の警報",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.weather.gov",
@@ -257,7 +277,7 @@
     "status": 200,
     "what": "US NWS active alerts",
     "whatJp": "米国気象局（NWS）の発表中の警報",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.wheretheiss.at",
@@ -266,7 +286,7 @@
     "status": 200,
     "what": "ISS position widget",
     "whatJp": "ISS の位置（ウィジェット）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.wikimedia.org",
@@ -275,7 +295,7 @@
     "status": 200,
     "what": "Wikimedia feed (on this day / today's featured article) for the sidebar widget",
     "whatJp": "Wikimedia のフィード（今日は何の日・今日の記事。ウィジェット）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.worldbank.org",
@@ -284,7 +304,7 @@
     "status": 200,
     "what": "World Bank indicators",
     "whatJp": "世界銀行の指標",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "api.worldpop.org",
@@ -293,7 +313,7 @@
     "status": 200,
     "what": "WorldPop zonal population statistics",
     "whatJp": "WorldPop の範囲内人口統計",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "apiprevmet3.inmet.gov.br",
@@ -302,7 +322,7 @@
     "status": 200,
     "what": "Brazil INMET active warnings",
     "whatJp": "ブラジル INMET の発表中の警報",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "archive-api.open-meteo.com",
@@ -311,7 +331,7 @@
     "status": 200,
     "what": "ERA5 reanalysis weather for a past date (radiation dispersion)",
     "whatJp": "過去の日付の ERA5 再解析気象（放射性物質の拡散）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "atlas.ripe.net",
@@ -320,7 +340,7 @@
     "status": 200,
     "what": "RIPE Atlas probe list",
     "whatJp": "RIPE Atlas のプローブ一覧",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "b.basemaps.cartocdn.com",
@@ -329,7 +349,7 @@
     "status": 200,
     "what": "CARTO basemap tiles (preconnect hint in index.html)",
     "whatJp": "CARTO の基図タイル（index.html の事前接続）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "b.tiles.openrailwaymap.org",
@@ -338,7 +358,25 @@
     "status": 200,
     "what": "OpenRailwayMap tiles",
     "whatJp": "OpenRailwayMap のタイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "basemap.nationalmap.gov",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "USGS The National Map orthoimagery tiles",
+    "whatJp": "USGS The National Map のオルソ画像タイル",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "buildings.reearth.land",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "Re:Earth Buildings 3D Tiles — worldwide building extrusions built from Overture Maps and OpenStreetMap (Eukarya Inc.; ODbL 1.0). Requested only while the view is zoomed in on a city and the 3D city models layer is on",
+    "whatJp": "Re:Earth Buildings 3D Tiles — Overture Maps と OpenStreetMap から作られた世界の建物の押し出し（Eukarya Inc.。ODbL 1.0）。都市を拡大していて、3D都市モデルのレイヤーがオンのときだけ要求する",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "c.tiles.openrailwaymap.org",
@@ -347,16 +385,16 @@
     "status": 200,
     "what": "OpenRailwayMap tiles",
     "whatJp": "OpenRailwayMap のタイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "cdn.jsdelivr.net",
     "verdict": "alive",
     "why": "HTTP 200",
     "status": 200,
-    "what": "jsDelivr CDN: open datasets from GitHub (Natural Earth time zones and admin-1, OpenTrafficCamMap, Japanese municipalities, Taiwan towns) and the Open-Meteo weather-map layer fallback",
-    "whatJp": "jsDelivr CDN：GitHub 上の公開データ（時間帯・一次行政区画・交通カメラ・日本の市区町村・台湾の郷鎮）と Open-Meteo 気象図レイヤーの予備",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "what": "jsDelivr CDN: open datasets from GitHub (Natural Earth time zones and admin-1, OpenTrafficCamMap, Japanese municipalities, Taiwan towns), the Open-Meteo weather-map layer fallback, and the Pyodide Python runtime and its packages (only when Atlas runs Python; hash-checked files of one pinned version)",
+    "whatJp": "jsDelivr CDN：GitHub 上の公開データ（時間帯・一次行政区画・交通カメラ・日本の市区町村・台湾の郷鎮）、Open-Meteo 気象図レイヤーの予備、Python 実行環境 Pyodide とそのパッケージ（Atlas が Python を実行するときだけ・版を固定しハッシュで検証したファイル）",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "celestrak.org",
@@ -365,7 +403,16 @@
     "status": 200,
     "what": "CelesTrak orbital elements",
     "whatJp": "CelesTrak の軌道要素",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "cmr.earthdata.nasa.gov",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "NASA CMR-STAC (LP DAAC cloud) — dataset search when Atlas is asked to find or acquire data, and the scene time and cloud cover under the map centre while an HLS satellite layer is shown",
+    "whatJp": "NASA CMR-STAC（LP DAAC クラウド）— Atlas にデータの検索・取得を頼んだとき、および HLS 衛星画像の表示中に地図中心の撮影時刻と雲量を調べるとき",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "cwwp2.dot.ca.gov",
@@ -374,7 +421,25 @@
     "status": 200,
     "what": "Caltrans CCTV status lists",
     "whatJp": "カリフォルニア州交通局の CCTV 状態一覧",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "cyberjapandata.gsi.go.jp",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "GSI Japan (国土地理院) aerial photo tiles — latest and dated series",
+    "whatJp": "国土地理院の空中写真タイル（最新・年代別）",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "data.3dbag.nl",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "3D BAG 3D Tiles — LoD2.2 building models of the Netherlands (TU Delft 3D geoinformation and 3DGI; CC BY 4.0). Requested only while a city of the Netherlands is in view and the 3D city models layer is on",
+    "whatJp": "3D BAG 3D Tiles — オランダの LoD2.2 建物モデル（TU Delft と 3DGI。CC BY 4.0）。オランダの都市が視界にあり、3D都市モデルのレイヤーがオンのときだけ要求する",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "data.weather.gov.hk",
@@ -383,7 +448,7 @@
     "status": 200,
     "what": "Hong Kong Observatory warning summary",
     "whatJp": "香港天文台の警報の概要",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "date.nager.at",
@@ -392,7 +457,7 @@
     "status": 200,
     "what": "Nager.Date public holidays widget",
     "whatJp": "Nager.Date の祝日（ウィジェット）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "davidmegginson.github.io",
@@ -401,7 +466,7 @@
     "status": 200,
     "what": "OurAirports CSV (airports layer)",
     "whatJp": "OurAirports の CSV（空港レイヤー）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "deepstatemap.live",
@@ -410,7 +475,16 @@
     "status": 200,
     "what": "DeepStateMap Ukraine frontline",
     "whatJp": "DeepStateMap のウクライナ前線",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "earth-search.aws.element84.com",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "Earth Search STAC catalogue (Element 84 / AWS Open Data) — dataset search and item footprints, only when Atlas is asked to find or acquire data",
+    "whatJp": "Earth Search STAC カタログ（Element 84 / AWS Open Data）— Atlas にデータの検索・取得を頼んだときだけ",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "earthquake.usgs.gov",
@@ -419,7 +493,7 @@
     "status": 200,
     "what": "USGS earthquake feeds, ShakeMap and the catalogue queries behind a place's earthquake record and an aftershock forecast",
     "whatJp": "USGS の地震フィード・ShakeMap・場所の地震の記録と余震の見通しのカタログ検索",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/au: geo.abs.gov.au",
@@ -429,7 +503,7 @@
     "what": "National elections layer source — Australian Electoral Commission · Australian Bureau of Statistics (the division boundaries)",
     "whatJp": "国政選挙レイヤーの元データ — Australian Electoral Commission · Australian Bureau of Statistics",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/au: results.aec.gov.au",
@@ -439,7 +513,7 @@
     "what": "National elections layer source — Australian Electoral Commission · Australian Bureau of Statistics (the results)",
     "whatJp": "国政選挙レイヤーの元データ — Australian Electoral Commission · Australian Bureau of Statistics",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/ca: ftp.maps.canada.ca",
@@ -449,7 +523,7 @@
     "what": "National elections layer source — Elections Canada (open.canada.ca, OGL) · Statistics Canada (the 2023 representation order)",
     "whatJp": "国政選挙レイヤーの元データ — Elections Canada (open.canada.ca, OGL) · Statistics Canada",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/ca: open.canada.ca",
@@ -459,7 +533,7 @@
     "what": "National elections layer source — Elections Canada (open.canada.ca, OGL) · Statistics Canada (which general elections have an openly licensed return)",
     "whatJp": "国政選挙レイヤーの元データ — Elections Canada (open.canada.ca, OGL) · Statistics Canada",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/ca: www12.statcan.gc.ca",
@@ -471,7 +545,7 @@
     "group": "build",
     "lastAlive": null,
     "downSince": "2026-10-03T10:03:40.857Z",
-    "runs": 47
+    "runs": 50
    },
    {
     "host": "elections/de: dataverse.harvard.edu",
@@ -481,7 +555,7 @@
     "what": "National elections layer source — Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM) (the 1980-2021 constituency boundaries)",
     "whatJp": "国政選挙レイヤーの元データ — Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/de: www.bundeswahlleiterin.de",
@@ -491,7 +565,7 @@
     "what": "National elections layer source — Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM) (the results)",
     "whatJp": "国政選挙レイヤーの元データ — Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/eu: gisco-services.ec.europa.eu",
@@ -501,7 +575,7 @@
     "what": "National elections layer source — European Parliament results service · Eurostat GISCO (the country outlines)",
     "whatJp": "国政選挙レイヤーの元データ — European Parliament results service · Eurostat GISCO",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/eu: results.elections.europa.eu",
@@ -511,7 +585,7 @@
     "what": "National elections layer source — European Parliament results service · Eurostat GISCO (the results of the current term (the pack walks the terms until one is not served))",
     "whatJp": "国政選挙レイヤーの元データ — European Parliament results service · Eurostat GISCO",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/fr: www.data.gouv.fr",
@@ -521,7 +595,7 @@
     "what": "National elections layer source — data.gouv.fr (ministère de l'Intérieur) (the dataset API every round is read through)",
     "whatJp": "国政選挙レイヤーの元データ — data.gouv.fr (ministère de l'Intérieur)",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/hk: portal.csdi.gov.hk",
@@ -531,7 +605,7 @@
     "what": "National elections layer source — Registration and Electoral Office · CSDI Portal (the geographical constituencies)",
     "whatJp": "国政選挙レイヤーの元データ — Registration and Electoral Office · CSDI Portal",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/hk: www.elections.gov.hk",
@@ -541,7 +615,7 @@
     "what": "National elections layer source — Registration and Electoral Office · CSDI Portal (the results)",
     "whatJp": "国政選挙レイヤーの元データ — Registration and Electoral Office · CSDI Portal",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/jp: gtfs-gis.jp",
@@ -551,7 +625,7 @@
     "what": "National elections layer source — 総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp (the constituency polygons)",
     "whatJp": "国政選挙レイヤーの元データ — 総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/jp: www.soumu.go.jp",
@@ -561,7 +635,7 @@
     "what": "National elections layer source — 総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp (the results tables)",
     "whatJp": "国政選挙レイヤーの元データ — 総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/kr: data.nec.go.kr",
@@ -571,7 +645,7 @@
     "what": "National elections layer source — National Election Commission (data.nec.go.kr) · OhmyNews constituency maps (the results)",
     "whatJp": "国政選挙レイヤーの元データ — National Election Commission (data.nec.go.kr) · OhmyNews constituency maps",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/kr: raw.githubusercontent.com",
@@ -581,7 +655,7 @@
     "what": "National elections layer source — National Election Commission (data.nec.go.kr) · OhmyNews constituency maps (the 2024 constituencies)",
     "whatJp": "国政選挙レイヤーの元データ — National Election Commission (data.nec.go.kr) · OhmyNews constituency maps",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/ru: api.github.com",
@@ -591,7 +665,7 @@
     "what": "National elections layer source — GIS-Lab / NextGIS (districts) · Shpilkin & Kobak (results) (which precinct files exist)",
     "whatJp": "国政選挙レイヤーの元データ — GIS-Lab / NextGIS (districts) · Shpilkin & Kobak (results)",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/ru: duma2016.nextgis.com",
@@ -601,7 +675,7 @@
     "what": "National elections layer source — GIS-Lab / NextGIS (districts) · Shpilkin & Kobak (results) (the single-mandate district schemes)",
     "whatJp": "国政選挙レイヤーの元データ — GIS-Lab / NextGIS (districts) · Shpilkin & Kobak (results)",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/ru: www.cikrf.ru",
@@ -613,7 +687,7 @@
     "group": "build",
     "lastAlive": null,
     "downSince": "2026-10-03T10:03:40.857Z",
-    "runs": 47
+    "runs": 50
    },
    {
     "host": "elections/tw: data.gov.tw",
@@ -623,7 +697,7 @@
     "what": "National elections layer source — Central Election Commission · Ministry of the Interior (data.gov.tw) (the election database)",
     "whatJp": "国政選挙レイヤーの元データ — Central Election Commission · Ministry of the Interior (data.gov.tw)",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/uk: raw.githubusercontent.com",
@@ -633,7 +707,7 @@
     "what": "National elections layer source — House of Commons Library (psephology) · Office for National Statistics (the results)",
     "whatJp": "国政選挙レイヤーの元データ — House of Commons Library (psephology) · Office for National Statistics",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/uk: services1.arcgis.com",
@@ -643,7 +717,7 @@
     "what": "National elections layer source — House of Commons Library (psephology) · Office for National Statistics (the constituency boundaries)",
     "whatJp": "国政選挙レイヤーの元データ — House of Commons Library (psephology) · Office for National Statistics",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/us: cdn.jsdelivr.net",
@@ -653,7 +727,7 @@
     "what": "National elections layer source — MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas (the state outlines)",
     "whatJp": "国政選挙レイヤーの元データ — MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/us: dataverse.harvard.edu",
@@ -663,7 +737,7 @@
     "what": "National elections layer source — MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas (the Senate returns)",
     "whatJp": "国政選挙レイヤーの元データ — MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elections/us: raw.githubusercontent.com",
@@ -673,7 +747,7 @@
     "what": "National elections layer source — MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas (the House returns 1976-2018)",
     "whatJp": "国政選挙レイヤーの元データ — MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
     "group": "build",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elevation-tiles-prod.s3.amazonaws.com",
@@ -682,7 +756,7 @@
     "status": 200,
     "what": "AWS Terrain Tiles (Mapzen terrarium DEM)",
     "whatJp": "AWS Terrain Tiles（Mapzen terrarium の標高）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com",
@@ -691,7 +765,7 @@
     "status": 200,
     "what": "AWS Terrain Tiles (Mapzen terrarium DEM), dual-stack endpoint",
     "whatJp": "AWS Terrain Tiles（Mapzen terrarium の標高）、デュアルスタックの窓口",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "elevation-tiles-prod.s3.us-east-1.amazonaws.com",
@@ -700,7 +774,7 @@
     "status": 200,
     "what": "AWS Terrain Tiles (Mapzen terrarium DEM), regional endpoint",
     "whatJp": "AWS Terrain Tiles（Mapzen terrarium の標高）、地域の窓口",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "en.wikipedia.org",
@@ -709,7 +783,7 @@
     "status": 200,
     "what": "English Wikipedia summaries and language links",
     "whatJp": "英語版 Wikipedia の要約と言語間リンク",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "flagcdn.com",
@@ -718,7 +792,7 @@
     "status": 200,
     "what": "flag images",
     "whatJp": "国旗の画像",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "fonts.googleapis.com",
@@ -727,7 +801,7 @@
     "status": 200,
     "what": "Google Fonts stylesheet (Noto Sans JP/SC/TC)",
     "whatJp": "Google Fonts のスタイルシート（Noto Sans JP/SC/TC）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "fonts.gstatic.com",
@@ -736,7 +810,7 @@
     "status": 200,
     "what": "Google Fonts font files",
     "whatJp": "Google Fonts のフォントファイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "fonts.openmaptiles.org",
@@ -745,7 +819,7 @@
     "status": 200,
     "what": "OpenMapTiles glyphs for the comparison map",
     "whatJp": "比較地図の OpenMapTiles 字形",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "gaez-services.fao.org",
@@ -754,7 +828,7 @@
     "status": 200,
     "what": "FAO GAEZ crop-suitability ImageServer",
     "whatJp": "FAO GAEZ の作物適地 ImageServer",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "geo.datav.aliyun.com",
@@ -763,7 +837,7 @@
     "status": 200,
     "what": "Alibaba Cloud DataV China boundaries (via relay when available, else direct)",
     "whatJp": "Alibaba Cloud DataV の中国の境界（中継が使えるときは中継経由）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "geo.vliz.be",
@@ -772,7 +846,7 @@
     "status": 200,
     "what": "Marine Regions (VLIZ) EEZ boundaries WMS",
     "whatJp": "Marine Regions（VLIZ）の EEZ 境界 WMS",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "geocoding-api.open-meteo.com",
@@ -781,7 +855,7 @@
     "status": 200,
     "what": "Open-Meteo geocoding (place-name search)",
     "whatJp": "Open-Meteo のジオコーディング（地名検索）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "gibs.earthdata.nasa.gov",
@@ -790,7 +864,7 @@
     "status": 200,
     "what": "NASA GIBS imagery tiles and WMS",
     "whatJp": "NASA GIBS の画像タイルと WMS",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "gisco-services.ec.europa.eu",
@@ -799,7 +873,7 @@
     "status": 200,
     "what": "Eurostat GISCO NUTS boundaries for European warning regions",
     "whatJp": "Eurostat GISCO の NUTS 境界（欧州の警報地域）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "hacker-news.firebaseio.com",
@@ -808,7 +882,7 @@
     "status": 200,
     "what": "Hacker News top stories widget",
     "whatJp": "Hacker News の上位記事（ウィジェット）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "ll.thespacedevs.com",
@@ -817,7 +891,7 @@
     "status": 200,
     "what": "The Space Devs Launch Library 2 — the rocket-launch layer and the next-launch widget",
     "whatJp": "The Space Devs の Launch Library 2（ロケット打ち上げレイヤーと次の打ち上げウィジェット）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "maps.dwd.de",
@@ -826,7 +900,7 @@
     "status": 200,
     "what": "DWD warnings (WFS)",
     "whatJp": "ドイツ気象局（DWD）の警報（WFS）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "maps.google.com",
@@ -835,7 +909,7 @@
     "status": 200,
     "what": "Google Street View embed (iframe)",
     "whatJp": "Google ストリートビューの埋め込み（iframe）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "maps.googleapis.com",
@@ -844,7 +918,7 @@
     "status": 200,
     "what": "Google GeoPhotoService single-image search (Street View coverage at a point)",
     "whatJp": "Google GeoPhotoService の画像検索（地点のストリートビュー有無）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "mapservices.weather.noaa.gov",
@@ -853,7 +927,7 @@
     "status": 200,
     "what": "NOAA NWS reference map boundaries (zones/counties) for warning areas",
     "whatJp": "NOAA NWS の参照境界（警報区域の郡・ゾーン）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "marine-api.open-meteo.com",
@@ -862,7 +936,7 @@
     "status": 200,
     "what": "Open-Meteo sea-surface temperature and waves at a point",
     "whatJp": "Open-Meteo の地点の海面水温と波",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "media.githubusercontent.com",
@@ -871,7 +945,7 @@
     "status": 200,
     "what": "geoBoundaries files served by GitHub LFS",
     "whatJp": "GitHub LFS が配る geoBoundaries のファイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "mempool.space",
@@ -880,7 +954,7 @@
     "status": 200,
     "what": "mempool.space Bitcoin block height and fees widget",
     "whatJp": "mempool.space のビットコインのブロック高と手数料（ウィジェット）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "mghydro.com",
@@ -889,7 +963,7 @@
     "status": 200,
     "what": "Global Watersheds delineation",
     "whatJp": "Global Watersheds の流域の切り出し",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "mts*.google.com",
@@ -898,7 +972,7 @@
     "status": 200,
     "what": "Google Street View coverage tiles (mts0-mts3)",
     "whatJp": "Google ストリートビューの範囲タイル（mts0〜mts3）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "news.google.com",
@@ -907,7 +981,7 @@
     "status": 200,
     "what": "Google News RSS: headlines by topic and search",
     "whatJp": "Google ニュース RSS：話題別と検索の見出し",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "nominatim.openstreetmap.org",
@@ -916,7 +990,16 @@
     "status": 200,
     "what": "OpenStreetMap Nominatim geocoding",
     "whatJp": "OpenStreetMap Nominatim のジオコーディング",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "ogcapi.bgs.ac.uk",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "British Geological Survey OGC API – Features — dataset search and features, only when Atlas is asked to find or acquire data",
+    "whatJp": "英国地質調査所（BGS）の OGC API – Features — Atlas にデータの検索・取得を頼んだときだけ",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "open.er-api.com",
@@ -925,7 +1008,7 @@
     "status": 200,
     "what": "ER-API exchange rates",
     "whatJp": "ER-API の為替レート",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "openmeteo.s3.amazonaws.com",
@@ -934,7 +1017,7 @@
     "status": 200,
     "what": "Open-Meteo model fields on AWS Open Data (wind field, forecast layers)",
     "whatJp": "AWS Open Data 上の Open-Meteo のモデル場（風の場・予報レイヤー）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "ourworldindata.org",
@@ -943,18 +1026,18 @@
     "status": 200,
     "what": "Our World in Data grapher CSV",
     "whatJp": "Our World in Data のグラフ CSV",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "overpass-api.de",
     "verdict": "dead",
-    "why": "HTTP 502",
-    "status": 502,
+    "why": "ETIMEDOUT",
+    "status": null,
     "what": "OpenStreetMap Overpass API",
     "whatJp": "OpenStreetMap の Overpass API",
-    "lastAlive": "2026-11-15T12:15:46.396Z",
-    "downSince": "2026-11-16T13:08:12.766Z",
-    "runs": 3
+    "lastAlive": "2026-11-20T14:08:36.250Z",
+    "downSince": "2026-11-21T13:23:55.209Z",
+    "runs": 1
    },
    {
     "host": "overpass-api.openhistoricalmap.org",
@@ -963,7 +1046,7 @@
     "status": 200,
     "what": "OpenHistoricalMap's Overpass for a past year's road/rail network",
     "whatJp": "OpenHistoricalMap の Overpass（過去の年の道路・鉄道網）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "overpass.kumi.systems",
@@ -974,7 +1057,7 @@
     "whatJp": "Overpass API の公開ミラー（予備）",
     "lastAlive": "2026-10-19T10:16:56.621Z",
     "downSince": "2026-10-20T09:38:51.863Z",
-    "runs": 30
+    "runs": 33
    },
    {
     "host": "overpass.private.coffee",
@@ -985,7 +1068,7 @@
     "whatJp": "Overpass API の公開ミラー（予備）",
     "lastAlive": "2026-10-15T09:25:09.358Z",
     "downSince": "2026-10-16T09:17:37.373Z",
-    "runs": 34
+    "runs": 37
    },
    {
     "host": "photon.komoot.io",
@@ -994,7 +1077,16 @@
     "status": 200,
     "what": "Photon (Komoot) geocoding",
     "whatJp": "Photon（Komoot）のジオコーディング",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "planetarycomputer.microsoft.com",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "Microsoft Planetary Computer STAC catalogue — dataset search, only when Atlas is asked to find or acquire data",
+    "whatJp": "Microsoft Planetary Computer の STAC カタログ — Atlas にデータの検索・取得を頼んだときだけ",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "query.wikidata.org",
@@ -1003,7 +1095,7 @@
     "status": 200,
     "what": "Wikidata Query Service (facility mapping, incumbents, industry web)",
     "whatJp": "Wikidata Query Service（施設の対応付け・現職者・産業の網）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "query1.finance.yahoo.com",
@@ -1012,7 +1104,7 @@
     "status": 200,
     "what": "Yahoo Finance chart/spark (share prices)",
     "whatJp": "Yahoo Finance のチャート（株価）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "r.jina.ai",
@@ -1021,7 +1113,7 @@
     "status": 200,
     "what": "Jina AI Reader: plain-text version of a news article (first rung of the article reader)",
     "whatJp": "Jina AI Reader：ニュース記事の本文（記事リーダーの最初の段）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "raw.githubusercontent.com",
@@ -1030,7 +1122,7 @@
     "status": 200,
     "what": "GitHub raw files: aourednik historical basemaps, fraxen tectonic plates",
     "whatJp": "GitHub の生ファイル：aourednik の歴史基図・fraxen のプレート境界",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "s3.amazonaws.com",
@@ -1039,7 +1131,7 @@
     "status": 200,
     "what": "AWS Terrain Tiles (Mapzen terrarium DEM), path-style",
     "whatJp": "AWS Terrain Tiles（Mapzen terrarium の標高）、パス形式の窓口",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "s3.dualstack.us-east-1.amazonaws.com",
@@ -1048,7 +1140,7 @@
     "status": 200,
     "what": "AWS Terrain Tiles (Mapzen terrarium DEM), dual-stack endpoint",
     "whatJp": "AWS Terrain Tiles（Mapzen terrarium の標高）、デュアルスタックの窓口",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "server.arcgisonline.com",
@@ -1057,7 +1149,16 @@
     "status": 200,
     "what": "Esri World Imagery / reference / hillshade tiles",
     "whatJp": "Esri World Imagery・参照・陰影のタイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "service.pdok.nl",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "PDOK Netherlands aerial photo tiles",
+    "whatJp": "PDOK のオランダ航空写真タイル",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "services.arcgis.com",
@@ -1066,7 +1167,7 @@
     "status": 200,
     "what": "USGS volcano hazard zones on Esri ArcGIS Online (FeatureServer query)",
     "whatJp": "Esri ArcGIS Online 上の USGS 火山ハザード区域（FeatureServer）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "services.arcgisonline.com",
@@ -1075,7 +1176,7 @@
     "status": 200,
     "what": "Esri World Imagery / reference / hillshade tiles (second host)",
     "whatJp": "Esri World Imagery・参照・陰影のタイル（第 2 の窓口）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "services.sentinel-hub.com",
@@ -1084,7 +1185,7 @@
     "status": 400,
     "what": "Sentinel Hub WMTS — only with the reader's own instance id",
     "whatJp": "Sentinel Hub WMTS（読者自身のインスタンス ID があるときだけ）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "services.swpc.noaa.gov",
@@ -1093,7 +1194,16 @@
     "status": 200,
     "what": "NOAA SWPC space weather: aurora (OVATION), Kp observed and forecast, solar wind, GOES X-rays, flare probabilities, NOAA scales and alerts",
     "whatJp": "NOAA 宇宙天気予報センター：オーロラ（OVATION）・Kp の観測と予報・太陽風・GOES X 線・フレア確率・NOAA スケール・警報",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "ssd-api.jpl.nasa.gov",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "NASA/JPL SSD APIs — CNEOS fireballs and asteroid close approaches (read through IntMap’s own relay, which sends the same request)",
+    "whatJp": "NASA/JPL SSD API — CNEOS の火球と小惑星の地球接近（IntMap 自身の中継を通して読む。中継が同じ要求を送る）",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "stat.ripe.net",
@@ -1102,7 +1212,7 @@
     "status": 200,
     "what": "RIPEstat country routing statistics",
     "whatJp": "RIPEstat の国別経路統計",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "stream.aisstream.io",
@@ -1111,7 +1221,7 @@
     "status": 400,
     "what": "aisstream.io live AIS WebSocket (wss://) — only with the reader's own aisstream.io key; without one the ships layer is served by the ais-feed Edge Function and the browser never connects here",
     "whatJp": "aisstream.io の AIS ライブ接続（読者自身の鍵があるときだけ。無ければ ais-feed が配り、ブラウザはここへ接続しない）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "tie.digitraffic.fi",
@@ -1120,7 +1230,7 @@
     "status": 200,
     "what": "Digitraffic weather-camera stations",
     "whatJp": "Digitraffic の道路気象カメラ地点",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "tilecache.rainviewer.com",
@@ -1129,7 +1239,7 @@
     "status": 404,
     "what": "RainViewer radar tiles",
     "whatJp": "RainViewer の雨雲レーダータイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "tiles.openfreemap.org",
@@ -1138,7 +1248,7 @@
     "status": 200,
     "what": "OpenFreeMap vector tiles and glyphs (the base map)",
     "whatJp": "OpenFreeMap のベクタタイルと字形（基図）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "tiles.openseamap.org",
@@ -1147,7 +1257,7 @@
     "status": 200,
     "what": "OpenSeaMap seamark tiles",
     "whatJp": "OpenSeaMap の航路標識タイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "unpkg.com",
@@ -1156,7 +1266,7 @@
     "status": 200,
     "what": "unpkg CDN: PMTiles reader and the Open-Meteo weather-map layer",
     "whatJp": "unpkg CDN：PMTiles の読み手と Open-Meteo 気象図レイヤー",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "upload.wikimedia.org",
@@ -1165,7 +1275,7 @@
     "status": 200,
     "what": "Wikimedia Commons images (company logos, Köppen fallback map)",
     "whatJp": "Wikimedia Commons の画像（企業ロゴ・ケッペンの予備図）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "valhalla1.openstreetmap.de",
@@ -1174,7 +1284,7 @@
     "status": 200,
     "what": "Valhalla routing and isochrones",
     "whatJp": "Valhalla の経路と到達圏",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "volcano.si.edu",
@@ -1183,7 +1293,7 @@
     "status": 200,
     "what": "Smithsonian GVP weekly report link and volcano photographs",
     "whatJp": "スミソニアン GVP の週報へのリンクと火山の写真",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "volcanoes.usgs.gov",
@@ -1192,7 +1302,7 @@
     "status": 200,
     "what": "USGS HANS volcano notices",
     "whatJp": "USGS HANS の火山情報",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "vpekfwdpurzejrrmacac.supabase.co",
@@ -1201,7 +1311,7 @@
     "status": 401,
     "what": "IntMap's own backend: auth, database (REST/RPC), storage and every Edge Function (news-relay, fetch-relay, quotes-relay, ais-feed, aviation-feed, ai-proxy, atlas-embed, client-errors, usage-count …)",
     "whatJp": "IntMap 自身の基盤：認証・データベース・ストレージ・全 Edge Function",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "vtiles.openhistoricalmap.org",
@@ -1210,7 +1320,7 @@
     "status": 200,
     "what": "OpenHistoricalMap vector tiles (historical boundaries)",
     "whatJp": "OpenHistoricalMap のベクタタイル（歴史的な境界）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "weathercam.digitraffic.fi",
@@ -1219,7 +1329,16 @@
     "status": 200,
     "what": "Digitraffic weather-camera images",
     "whatJp": "Digitraffic の道路気象カメラ画像",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
+   },
+   {
+    "host": "wmts.geo.admin.ch",
+    "verdict": "alive",
+    "why": "HTTP 200",
+    "status": 200,
+    "what": "swisstopo SWISSIMAGE aerial photo tiles",
+    "whatJp": "swisstopo の SWISSIMAGE 航空写真タイル",
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "wmts.terrascope.be",
@@ -1228,7 +1347,7 @@
     "status": 200,
     "what": "ESA WorldCover tiles via Terrascope WMTS",
     "whatJp": "Terrascope WMTS 経由の ESA WorldCover タイル",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "worldpop.arcgis.com",
@@ -1237,7 +1356,7 @@
     "status": 200,
     "what": "WorldPop 1 km population grid (image service)",
     "whatJp": "WorldPop 1 km 人口格子（画像サービス）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "www.geoboundaries.org",
@@ -1246,7 +1365,7 @@
     "status": 200,
     "what": "geoBoundaries API (metadata)",
     "whatJp": "geoBoundaries API（メタデータ）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "www.google.com",
@@ -1255,16 +1374,18 @@
     "status": 200,
     "what": "Google favicon service (s2/favicons)",
     "whatJp": "Google のファビコン取得（s2/favicons）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "www.imf.org",
-    "verdict": "alive",
-    "why": "HTTP 200",
-    "status": 200,
+    "verdict": "refused",
+    "why": "HTTP 404",
+    "status": 404,
     "what": "IMF DataMapper indicators",
     "whatJp": "IMF DataMapper の指標",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-19T13:52:59.321Z",
+    "downSince": "2026-11-20T14:08:36.250Z",
+    "runs": 2
    },
    {
     "host": "www.jma.go.jp",
@@ -1273,7 +1394,7 @@
     "status": 200,
     "what": "JMA volcanic warnings, weather-warning areas and forecast-area boundaries",
     "whatJp": "気象庁の噴火警報・気象警報区域・予報区の境界",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "www.nmc.cn",
@@ -1282,7 +1403,7 @@
     "status": 200,
     "what": "China NMC warnings — read through IntMap's fetch-relay (the relay receives the URL)",
     "whatJp": "中国中央気象台の警報（IntMap の fetch-relay 経由。中継が URL を受け取る）",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "www.submarinecablemap.com",
@@ -1291,7 +1412,7 @@
     "status": 200,
     "what": "TeleGeography submarine cables and landing points",
     "whatJp": "TeleGeography の海底ケーブルと陸揚げ地点",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "www.who.int",
@@ -1300,7 +1421,7 @@
     "status": 200,
     "what": "WHO Disease Outbreak News API",
     "whatJp": "WHO の疾病発生ニュース API",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    },
    {
     "host": "www.youtube-nocookie.com",
@@ -1309,7 +1430,7 @@
     "status": 200,
     "what": "YouTube privacy-enhanced embed for a live camera",
     "whatJp": "ライブカメラの YouTube プライバシー強化埋め込み",
-    "lastAlive": "2026-11-18T13:25:43.223Z"
+    "lastAlive": "2026-11-21T13:23:55.209Z"
    }
   ]
  },
@@ -1352,7 +1473,7 @@
   }
  },
  "fieldSpeed": {
-  "measuredAt": "2026-11-19T11:43:22.539Z",
+  "measuredAt": "2026-11-22T11:28:31.694Z",
   "days": 14,
   "edgesMs": [
    1000,
@@ -1433,147 +1554,161 @@
    "2026-10-21T09:38:04.374Z",
    "2026-11-16T13:08:12.766Z",
    "2026-11-17T13:50:30.718Z",
-   "2026-11-18T13:25:43.223Z"
+   "2026-11-18T13:25:43.223Z",
+   "2026-11-21T13:23:55.209Z"
   ],
   "hosts": {
-   "*.basemaps.cartocdn.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "*.wikipedia.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "a.basemaps.cartocdn.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "a.tiles.openrailwaymap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "air-quality-api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api-v2.oec.world": "rrrrrrrrrrrrrrrrrrrrraaa",
-   "api.alternative.me": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.coingecko.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.frankfurter.dev": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.fxratesapi.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.gdeltproject.org": "drdadddrdrdddrarrrarrarr",
-   "api.gold-api.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.ioda.inetintel.cc.gatech.edu": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.mapbox.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.met.no": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.opentopodata.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.planespotters.net": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.pwnedpasswords.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.rainviewer.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.tfl.gov.uk": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.transitous.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.weather.bom.gov.au": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.weather.gc.ca": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.weather.gov": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.wheretheiss.at": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.wikimedia.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.worldbank.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "api.worldpop.org": "aaaaaaaaaaaaaaaaaaaaarra",
-   "apiprevmet3.inmet.gov.br": "aaaaaaaaaaaaaaaaaaaaaada",
-   "archive-api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "atlas.ripe.net": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "b.basemaps.cartocdn.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "b.tiles.openrailwaymap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "c.tiles.openrailwaymap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "cdn.jsdelivr.net": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "celestrak.org": "adaaaaaaaaaaadaaaaadaaaa",
-   "cwwp2.dot.ca.gov": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "data.weather.gov.hk": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "date.nager.at": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "davidmegginson.github.io": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "deepstatemap.live": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "earthquake.usgs.gov": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "elections/au: geo.abs.gov.au": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/au: results.aec.gov.au": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/ca: ftp.maps.canada.ca": "..aaaaaaaaaaaaaaadaaaaaa",
-   "elections/ca: open.canada.ca": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/ca: www12.statcan.gc.ca": "..rrrrrrrrrrrrrrrrrrrrrr",
-   "elections/de: dataverse.harvard.edu": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/de: www.bundeswahlleiterin.de": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/eu: gisco-services.ec.europa.eu": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/eu: results.elections.europa.eu": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/fr: www.data.gouv.fr": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/hk: portal.csdi.gov.hk": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/hk: www.elections.gov.hk": "..aaaaadaaaaaaaaaaaaaaaa",
-   "elections/jp: gtfs-gis.jp": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/jp: www.soumu.go.jp": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/kr: data.nec.go.kr": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/kr: raw.githubusercontent.com": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/ru: api.github.com": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/ru: duma2016.nextgis.com": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/ru: www.cikrf.ru": "..dddddddddddddddddddddd",
-   "elections/tw: data.gov.tw": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/uk: raw.githubusercontent.com": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/uk: services1.arcgis.com": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/us: cdn.jsdelivr.net": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/us: dataverse.harvard.edu": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elections/us: raw.githubusercontent.com": "..aaaaaaaaaaaaaaaaaaaaaa",
-   "elevation-tiles-prod.s3.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "elevation-tiles-prod.s3.us-east-1.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "en.wikipedia.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "flagcdn.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "fonts.googleapis.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "fonts.gstatic.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "fonts.openmaptiles.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "gaez-services.fao.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "geo.datav.aliyun.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "geo.vliz.be": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "geocoding-api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "gibs.earthdata.nasa.gov": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "gisco-services.ec.europa.eu": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "hacker-news.firebaseio.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "ll.thespacedevs.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "maps.dwd.de": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "maps.google.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "maps.googleapis.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "mapservices.weather.noaa.gov": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "marine-api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "media.githubusercontent.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "mempool.space": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "mghydro.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "mts*.google.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "news.google.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "nominatim.openstreetmap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "open.er-api.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "openmeteo.s3.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "ourworldindata.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "overpass-api.de": "addadaaadaddaadadadddddd",
-   "overpass-api.openhistoricalmap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "overpass.kumi.systems": "ddddddddddaddddaadaddddd",
-   "overpass.private.coffee": "dddddddaddddddaddddddddd",
-   "photon.komoot.io": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "query.wikidata.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "query1.finance.yahoo.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "r.jina.ai": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "raw.githubusercontent.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "s3.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "s3.dualstack.us-east-1.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "server.arcgisonline.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "services.arcgis.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "services.arcgisonline.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "services.sentinel-hub.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "services.swpc.noaa.gov": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "stat.ripe.net": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "stream.aisstream.io": ".aaaaaaaaaaaaaaaaaaaaaaa",
-   "tie.digitraffic.fi": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "tilecache.rainviewer.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "tiles.openfreemap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "tiles.openseamap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "unpkg.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "upload.wikimedia.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "valhalla1.openstreetmap.de": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "volcano.si.edu": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "volcanoes.usgs.gov": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "vpekfwdpurzejrrmacac.supabase.co": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "vtiles.openhistoricalmap.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "weathercam.digitraffic.fi": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "wmts.terrascope.be": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "worldpop.arcgis.com": ".....................aaa",
-   "www.geoboundaries.org": "aaaadaaaaaaaaaaaaaadaaaa",
-   "www.google.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "www.imf.org": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "www.jma.go.jp": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "www.nmc.cn": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "www.submarinecablemap.com": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "www.who.int": "aaaaaaaaaaaaaaaaaaaaaaaa",
-   "www.youtube-nocookie.com": "aaaaaaaaaaaaaaaaaaaaaaaa"
+   "*.basemaps.cartocdn.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "*.s3.amazonaws.com": "........................r",
+   "*.wikipedia.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "a.basemaps.cartocdn.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "a.tiles.openrailwaymap.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "air-quality-api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api-v2.oec.world": "rrrrrrrrrrrrrrrrrrrrraaaa",
+   "api.alternative.me": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.coingecko.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.frankfurter.dev": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.fxratesapi.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.gdeltproject.org": "drdadddrdrdddrarrrarrarrr",
+   "api.gold-api.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.ioda.inetintel.cc.gatech.edu": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.mapbox.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.met.no": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.opentopodata.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.planespotters.net": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.plateauview.mlit.go.jp": "........................a",
+   "api.pwnedpasswords.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.rainviewer.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.tfl.gov.uk": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.transitous.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.weather.bom.gov.au": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.weather.gc.ca": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.weather.gov": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.wheretheiss.at": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.wikimedia.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.worldbank.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "api.worldpop.org": "aaaaaaaaaaaaaaaaaaaaarraa",
+   "apiprevmet3.inmet.gov.br": "aaaaaaaaaaaaaaaaaaaaaadaa",
+   "archive-api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "atlas.ripe.net": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "b.basemaps.cartocdn.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "b.tiles.openrailwaymap.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "basemap.nationalmap.gov": "........................a",
+   "buildings.reearth.land": "........................a",
+   "c.tiles.openrailwaymap.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "cdn.jsdelivr.net": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "celestrak.org": "adaaaaaaaaaaadaaaaadaaaaa",
+   "cmr.earthdata.nasa.gov": "........................a",
+   "cwwp2.dot.ca.gov": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "cyberjapandata.gsi.go.jp": "........................a",
+   "data.3dbag.nl": "........................a",
+   "data.weather.gov.hk": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "date.nager.at": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "davidmegginson.github.io": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "deepstatemap.live": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "earth-search.aws.element84.com": "........................a",
+   "earthquake.usgs.gov": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/au: geo.abs.gov.au": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/au: results.aec.gov.au": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/ca: ftp.maps.canada.ca": "..aaaaaaaaaaaaaaadaaaaaaa",
+   "elections/ca: open.canada.ca": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/ca: www12.statcan.gc.ca": "..rrrrrrrrrrrrrrrrrrrrrrr",
+   "elections/de: dataverse.harvard.edu": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/de: www.bundeswahlleiterin.de": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/eu: gisco-services.ec.europa.eu": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/eu: results.elections.europa.eu": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/fr: www.data.gouv.fr": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/hk: portal.csdi.gov.hk": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/hk: www.elections.gov.hk": "..aaaaadaaaaaaaaaaaaaaaaa",
+   "elections/jp: gtfs-gis.jp": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/jp: www.soumu.go.jp": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/kr: data.nec.go.kr": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/kr: raw.githubusercontent.com": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/ru: api.github.com": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/ru: duma2016.nextgis.com": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/ru: www.cikrf.ru": "..ddddddddddddddddddddddd",
+   "elections/tw: data.gov.tw": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/uk: raw.githubusercontent.com": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/uk: services1.arcgis.com": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/us: cdn.jsdelivr.net": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/us: dataverse.harvard.edu": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elections/us: raw.githubusercontent.com": "..aaaaaaaaaaaaaaaaaaaaaaa",
+   "elevation-tiles-prod.s3.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "elevation-tiles-prod.s3.us-east-1.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "en.wikipedia.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "flagcdn.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "fonts.googleapis.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "fonts.gstatic.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "fonts.openmaptiles.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "gaez-services.fao.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "geo.datav.aliyun.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "geo.vliz.be": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "geocoding-api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "gibs.earthdata.nasa.gov": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "gisco-services.ec.europa.eu": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "hacker-news.firebaseio.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "ll.thespacedevs.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "maps.dwd.de": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "maps.google.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "maps.googleapis.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "mapservices.weather.noaa.gov": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "marine-api.open-meteo.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "media.githubusercontent.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "mempool.space": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "mghydro.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "mts*.google.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "news.google.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "nominatim.openstreetmap.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "ogcapi.bgs.ac.uk": "........................a",
+   "open.er-api.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "openmeteo.s3.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "ourworldindata.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "overpass-api.de": "addadaaadaddaadadaddddddd",
+   "overpass-api.openhistoricalmap.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "overpass.kumi.systems": "ddddddddddaddddaadadddddd",
+   "overpass.private.coffee": "dddddddaddddddadddddddddd",
+   "photon.komoot.io": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "planetarycomputer.microsoft.com": "........................a",
+   "query.wikidata.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "query1.finance.yahoo.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "r.jina.ai": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "raw.githubusercontent.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "s3.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "s3.dualstack.us-east-1.amazonaws.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "server.arcgisonline.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "service.pdok.nl": "........................a",
+   "services.arcgis.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "services.arcgisonline.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "services.sentinel-hub.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "services.swpc.noaa.gov": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "ssd-api.jpl.nasa.gov": "........................a",
+   "stat.ripe.net": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "stream.aisstream.io": ".aaaaaaaaaaaaaaaaaaaaaaaa",
+   "tie.digitraffic.fi": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "tilecache.rainviewer.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "tiles.openfreemap.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "tiles.openseamap.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "unpkg.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "upload.wikimedia.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "valhalla1.openstreetmap.de": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "volcano.si.edu": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "volcanoes.usgs.gov": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "vpekfwdpurzejrrmacac.supabase.co": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "vtiles.openhistoricalmap.org": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "weathercam.digitraffic.fi": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "wmts.geo.admin.ch": "........................a",
+   "wmts.terrascope.be": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "worldpop.arcgis.com": ".....................aaaa",
+   "www.geoboundaries.org": "aaaadaaaaaaaaaaaaaadaaaaa",
+   "www.google.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "www.imf.org": "aaaaaaaaaaaaaaaaaaaaaaaar",
+   "www.jma.go.jp": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "www.nmc.cn": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "www.submarinecablemap.com": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "www.who.int": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+   "www.youtube-nocookie.com": "aaaaaaaaaaaaaaaaaaaaaaaaa"
   }
  }
 }

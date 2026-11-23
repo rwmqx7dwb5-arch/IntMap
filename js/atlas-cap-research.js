@@ -17,7 +17,7 @@
  *  entry names them.
  * ==========================================================================*/
 import { str, num, int, one, list, lat, lng, obj, bool } from './atlas-caps.js';
-import { scenarioModels, scenarioFrame, scenarioCall, scenarioReport } from './atlas-reasoning.js';   /* (atlas-reasoning) research.scenario: what is decided is in that module, as values */
+import { scenarioModels, scenarioFrame, scenarioCall, scenarioReport, forecastReport } from './atlas-reasoning.js';   /* (atlas-reasoning) research.scenario: what is decided is in that module, as values */
 import SIM_ENTRIES from './atlas-cap-sim.js';   /* the entries that declare a `scenario` ARE the models — discovered, not listed (same lazy chunk as this file) */
 import { personaPrompt } from './atlas-persona.js';
 import { datasetFactsOnPage } from './evidence-graph-record.js';   /* (evidence-graph) a GIS result put in front of the answer carries its lineage node */
@@ -1026,11 +1026,43 @@ export default [
        uncertain it is. js/atlas-reasoning.js decides what each says; this draws it. A call with an empty field is refused,
        naming every empty field at once. */
     doc: [
-      { in: 'research.impact', at: 10, text: 'WHAT-IF SCENARIO シナリオ・もしもの想定 (assumptions → result, in four fixed fields): {"type":"scenario","model":"ashPlume"|"radiation"|"tsunami"|"pandemicRun","place"?:str or "lng"+"lat","baseline":ISO date/time|"now","assumptions":[{"name":the model\'s own argument (e.g. "hKm","bq","magnitude","days"),"value":…,"basis"?:why}],"impact"?:true|{"km"?:num,"focus"?:[…]}} = run that simulator on exactly the stated assumptions (and, with impact, research.impact around the same point) and answer with FOUR FIELDS that are always present — 前提 (the assumptions, each marked applied or not), 使用データ, 考慮外 (what the model does not represent: an assumption it has no input for, a baseline it cannot take, a failed exposure analysis), 不確実性 (the model\'s own stated limits and, for the pandemic, whether a band or a single draw). It REFUSES, naming every field at once, when the model, the assumptions, the subject or the baseline is empty. A bare year is never turned into a day: give an ISO date for ash and radiation, or it is reported as not applied. Use for 「もし桜島が噴火したら」「もし福島で放出があったら」「M9の地震なら津波はどうなる」「ここで感染が始まったら」 — NOT for a plain simulator run with no stated assumptions (use the simulator itself). ' },
+      { in: 'research.impact', at: 10, text: 'WHAT-IF SCENARIO シナリオ・もしもの想定 (assumptions → result, in four fixed fields): {"type":"scenario","model":"ashPlume"|"radiation"|"tsunami"|"pandemicRun","place"?:str or "lng"+"lat","baseline":ISO date/time|"now","assumptions":[{"name":the model\'s own argument (e.g. "hKm","bq","magnitude","days"),"value":…,"basis"?:why}],"impact"?:true|{"km"?:num,"focus"?:[…]}} = run that simulator on exactly the stated assumptions (and, with impact, research.impact around the same point) and answer with FOUR FIELDS that are always present — 前提 (the assumptions, each marked applied or not), 使用データ, 考慮外 (what the model does not represent: an assumption it has no input for, a baseline it cannot take, a failed exposure analysis), 不確実性 (the model\'s own stated limits and, for the pandemic, whether a band or a single draw). It REFUSES, naming every field at once, when the model, the assumptions, the subject or the baseline is empty. A bare year is never turned into a day: give an ISO date for ash and radiation, or it is reported as not applied. Use for 「もし桜島が噴火したら」「もし福島で放出があったら」「M9の地震なら津波はどうなる」「ここで感染が始まったら」 — NOT for a plain simulator run with no stated assumptions (use the simulator itself). EXTERNAL FORECAST (外部の予測データ): add "forecast":{"source":"open-meteo-flood" (GloFAS river discharge, with the provider\'s ensemble spread) | "open-meteo-forecast" (weather; "variable":precipitation_sum|temperature_2m_max|temperature_2m_min|wind_speed_10m_max|wind_gusts_10m_max),"bounds":[w,s,e,n] or lng+lat+halfWidthKm,"days"?:1-16,"nx"?,"ny"?:grid ≤10×10,"conditions"?:{"threshold":number},"observations"?:[dataset ids]} — with no "model" it is the whole scenario: real model output is fetched and put into the GIS as SEPARATE datasets (model estimate, uncertainty; observations are only referenced, this source publishes none), each feature marked dataClass, drawn and coloured by it. The reader\'s threshold is only compared (exceeds), never fed to the model. A request that failed is missing, not zero. Free API is non-commercial, CC BY 4.0 data. ' },
     ],
     chips: 'map.poi',
-    schema: () => ({ type: 'object', properties: { model: str(), place: str(), lng: lng(), lat: lat(), baseline: str(), assumptions: list(obj()), impact: obj() } }),
+    schema: () => ({ type: 'object', properties: { model: str(), place: str(), lng: lng(), lat: lat(), baseline: str(), assumptions: list(obj()), impact: obj(), forecast: obj() } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc, dispatch = K.dispatch, CAPS = K.CAPS;
+      /* (forecast) EXTERNAL FORECAST DATA BROUGHT INTO THE GIS — js/gis-forecast.js. With `forecast` and no `model`, this is the whole scenario;
+         with both, the simulator's scenario runs as before and the forecast is appended after it. */
+      let fcHtml = '', fcMeta = null;
+      if (a.forecast && typeof a.forecast === 'object') {
+        await window.IntMapLazy.need('gisCore');
+        const FC = window.IntMapGisForecast, f = a.forecast;
+        if (!FC) return R(false, warn(L('The forecast module could not be loaded.', '予測データのモジュールを読み込めませんでした。')));
+        let bounds = f.bounds;
+        const flo = f.lng != null ? f.lng : a.lng, fla = f.lat != null ? f.lat : a.lat;
+        if (!bounds && flo != null && fla != null && isFinite(+flo) && isFinite(+fla)) {
+          const km = Math.max(1, Math.min(500, +f.halfWidthKm || 25));
+          const dLat = km / 111.32, dLng = km / (111.32 * Math.max(0.05, Math.cos(+fla * Math.PI / 180)));
+          bounds = [+flo - dLng, +fla - dLat, +flo + dLng, +fla + dLat];
+        }
+        const fr = await FC.fetchForecast({ source: f.source, bounds, nx: f.nx, ny: f.ny, days: f.days, variable: f.variable, models: f.models, conditions: f.conditions, observations: f.observations });
+        if (!fr.ok) return R(false, warn(L('The forecast could not be brought in: ', '予測データを取り込めませんでした: ') + esc(fr.why) + (fr.detail ? ' ' + esc(JSON.stringify(fr.detail).slice(0, 300)) : '')),
+          { meta: { code: 'forecast-' + fr.why, category: 'upstream', retryable: false, forecast: { why: fr.why, detail: fr.detail }, produced: [], userGoalSatisfied: false } });
+        const reg = FC.register(fr);
+        const drawn = f.draw === false ? null : await FC.draw(reg);
+        const rep0 = forecastReport(fr.record);
+        const pick0 = (t) => L(t[0], t[1]);
+        const li0 = (rows) => '<ul style="margin:2px 0 4px 16px;padding:0;">' + rows.map((x) => '<li>' + x + '</li>').join('') + '</ul>';
+        const hd0 = (t) => '<div style="font-weight:600;margin-top:6px;">' + esc(t) + '</div>';
+        fcHtml = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L('Forecast scenario', '予測シナリオ')) + ' — ' + esc(fr.record.source.id) + '</div>'
+          + '<div>' + esc(L('Model estimate dataset: ', '推計のデータセット: ')) + '<code>' + esc(reg.datasets.modelEstimate) + '</code>' + (reg.datasets.uncertainty ? ' · ' + esc(L('uncertainty: ', '不確実性: ')) + '<code>' + esc(reg.datasets.uncertainty) + '</code>' : '') + ' · ' + esc(String(fr.record.modelEstimates.points)) + ' ' + esc(L('forecast grid points', '予測の格子点')) + '</div>'
+          + hd0(L('Assumptions (stated by the reader)', '前提（利用者が述べた条件）')) + li0(rep0.assumptions.length ? rep0.assumptions.map((x) => '<b>' + esc(x.name) + '</b> = ' + esc(JSON.stringify(x.value)) + ' — ' + esc(x.applied ? L('applied as a comparison', '比較として反映') : L('stored, not applied', '記録のみ'))) : [esc(L('none stated', '述べられていない'))])
+          + hd0(L('Data used', '使用データ')) + li0(rep0.dataUsed.map((t) => esc(pick0(t))))
+          + hd0(L('Not considered', '考慮外')) + li0(rep0.excluded.map((t) => esc(pick0(t))))
+          + hd0(L('Uncertainty', '不確実性')) + li0(rep0.uncertainty.map((t) => esc(pick0(t))));
+        fcMeta = Object.assign({}, rep0, { datasets: reg.datasets, drawn: drawn && drawn.drawn });
+        if (!a.model) return R(true, fcHtml, { meta: { forecast: fcMeta, scenario: rep0, produced: ['explanation'], userGoalSatisfied: true } });
+      }
       const MODELS = scenarioModels(SIM_ENTRIES);
       const frame = scenarioFrame(a, (s) => CAPS.ofSpelling(s), MODELS);
       const pick = (t) => L(t[0], t[1]);
@@ -1071,8 +1103,8 @@ export default [
       if (!run || !run.ok) {
         return R(false, title + (run && run.html ? run.html : warn(L('The model did not run.', 'モデルが実行されませんでした。'))) + fields, { meta: Object.assign({}, run && run.meta, { code: (run && run.meta && run.meta.code) || 'scenario-model-failed', scenario: rep, userGoalSatisfied: false, produced: [] }) });
       }
-      return R(true, title + run.html + (exHtml ? '<div style="margin-top:6px;">' + exHtml + '</div>' : '') + fields,
-        { meta: Object.assign({}, run.meta, { scenario: rep, produced: ['explanation'], userGoalSatisfied: true }) });
+      return R(true, title + run.html + (exHtml ? '<div style="margin-top:6px;">' + exHtml + '</div>' : '') + fields + fcHtml,
+        { meta: Object.assign({}, run.meta, { scenario: rep, forecast: fcMeta, produced: ['explanation'], userGoalSatisfied: true }) });
     },
   },
   {
