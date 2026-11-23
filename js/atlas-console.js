@@ -2499,9 +2499,20 @@ export function atlasConsole(HOST){
        it switches, visible whether it is on now. `chips` stays as a second witness (a kind whose painter claims nothing); the record is the first. */
     function _surfaceMark(){ try{ const r=GE().render.drawn({}); if(!r||!r.observable) return null; const m=Object.create(null);
       Object.keys(r.surfaces||{}).forEach(id=>{ const x=r.surfaces[id]; m[id]={ owners:(x.owners||[]).slice(), fp:x.state==='drawn'?(x.features!=null?+x.features:'drawn'):x.state }; }); return m; }catch(_){ return null; } }
-    function _drewSince(before){ try{ const after=_surfaceMark(); if(!before||!after) return []; const kinds=[];
-      Object.keys(after).forEach(id=>{ const a=after[id]; if(typeof a.fp==='string'&&a.fp!=='drawn') return; const b=before[id]; if(b&&b.fp===a.fp) return; a.owners.forEach(k=>{ if(k&&kinds.indexOf(k)<0) kinds.push(k); }); });
-      return kinds.map(k=>({ kind:k, layerIds:_ovlIds(k), visible:_ovlVisible(k) })).filter(d=>d.layerIds.length); }catch(_){ return []; } }
+    function _drewSince(before){ try{ const after=_surfaceMark(); if(!before||!after) return []; const kinds=[], ids={};
+      Object.keys(after).forEach(id=>{ const a=after[id]; if(typeof a.fp==='string'&&a.fp!=='drawn') return; const b=before[id]; if(b&&b.fp===a.fp) return; a.owners.forEach(k=>{ if(k&&kinds.indexOf(k)<0) kinds.push(k); if(k) (ids[k]||(ids[k]=[])).push(id); }); });
+      return kinds.map(k=>({ kind:k, layerIds:_ovlIds(k), visible:_ovlVisible(k), surfaces:(ids[k]||[]).slice() })).filter(d=>d.layerIds.length); }catch(_){ return []; } }
+    /* ⚠⚠ (atlas-render-witness) 「描きました」 IS SAID ONLY OF WHAT REACHED THE SCREEN. `_drewSince` knows a surface is in the renderer and its layer is not
+       hidden; it cannot know the layer is at opacity 0, outside its zoom range, off the viewport, covered, or erroring — and Atlas then reported a map that
+       was not there. `render.witness()` asks the renderer about each (js/render-witness.js). It may only WEAKEN the claim with something it observed:
+       `unconfirmed` (no frame, hidden tab, expression opacity) says nothing, so a success is never turned into a failure on a guess (one-pass-or-a-reason §5).
+       The finding rides the result — the line the reader sees AND `meta.seen`, which the next step reads. */
+    const _whyText=code=>{ switch(code){ case 'opacity_0': return L('its opacity is 0','不透明度が 0 です'); case 'zoom_range': return L('the map is outside the zoom range of this layer','いまの縮尺はこのレイヤーの表示範囲の外です'); case 'viewport': return L('it lies outside the area on screen','画面に映っている範囲の外にあります');
+      case 'error': return L('the renderer reported an error for it','描画エンジンがエラーを報告しています'); case 'covered': return L('another layer covers it','別のレイヤーに隠れています'); case 'no_pixels': return L('nothing was painted where it should be','あるはずの場所に何も描かれていません'); default: return code; } };
+    async function _witnessDrew(drew){ try{ const ids=[]; drew.forEach(d=>(d.surfaces||[]).forEach(i=>{ if(ids.indexOf(i)<0) ids.push(i); })); if(!ids.length||typeof GE().render.witness!=='function') return null;
+      const w=await GE().render.witness({sources:ids}); if(!w||!w.observable) return null;
+      const bad=ids.filter(i=>w.surfaces[i]&&w.surfaces[i].verdict==='not_seen'&&w.surfaces[i].state==='drawn'); const good=ids.filter(i=>w.surfaces[i]&&w.surfaces[i].verdict==='seen');
+      return { bad:bad.map(i=>({ id:i, reason:w.surfaces[i].reason, errors:w.surfaces[i].errors, owners:w.surfaces[i].owners })), seen:good.length, total:ids.length }; }catch(_){ return null; } }
     function _ovlVisible(kind){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); return !!(cv&&cv.parentNode&&cv.style.display!=='none'); } const ids=_ovlIds(kind); for(const id of ids){ try{ if(GE().layers.has(id)&&GE().layers.getLayout(id,'visibility')!=='none') return true; }catch(_){} } return false; }
     /* (#R122) PER-MESSAGE overlay OWNERSHIP — the shared nlq-* canvas can only paint one message's snapshot of a
        given kind at a time, so each kind has ONE current owner (the reply bubble whose snapshot is on the map). A
@@ -2782,6 +2793,10 @@ export function atlasConsole(HOST){
         if(_ar&&_ar.status==='needs_input'&&_ar.inputRequest){ if(_ar.code==='needs_confirm') _confirmWait.set(_ar.operationId,{ id:_ar.capabilityId, args:_ar.inputRequest.pendingArgs||{}, at:Date.now(), label:actLabel(a)||_ar.capabilityId }); else _pendingInput={ result:_ar, bubble:ai, at:Date.now() }; }   /* (atlas-outside-mark) a confirmation waits for the reader's press on ITS buttons (`_confirmPress`); every other needs_input waits in the resume slot as before */
         if(r.ok===false&&!(_ar&&(_ar.status==='needs_input'||_ar.status==='running'))) fails.push(a);
         const _drew=(r.ok!==false)?_drewSince(_mark0):[];
+        if(_drew.length){ const _sn=await _witnessDrew(_drew);
+          if(_sn){ r.meta=Object.assign({},r.meta||{},{ seen:_sn });
+            if(_sn.bad.length){ const _rs=[]; _sn.bad.forEach(b=>{ const t=_whyText(b.reason); if(_rs.indexOf(t)<0) _rs.push(t); });
+              r.html=(r.html||'')+warn(L('Drawn, but not visible on screen: ','描きましたが、画面には見えていません: ')+esc(_rs.join(' / '))+(_sn.bad.some(b=>b.errors&&b.errors.length)?' ('+esc(_sn.bad.map(b=>(b.errors||[])[0]).filter(Boolean)[0]||'')+')':'')); } } }
         results.push({act:a, ok:r.ok!==false, html:r.html||'', meta:(r&&r.meta)||null, drew:_drew.map(d=>Object.assign({what:actLabel(a)},d))});   /* (#R159) per-action result → _atlCompose de-dupes by goal so repair REPLACES a failure instead of appending */
         try{ if(r&&r.meta) a.__meta=r.meta; if(r&&r.exec) a.__exec=r.exec;   /* (#R158) mechanical execution result → fed back to Terra by the repair loop */
           if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
