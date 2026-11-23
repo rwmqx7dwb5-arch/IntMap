@@ -950,6 +950,32 @@ export function makeGisAtlas(core) {
 
     /* ── running one step ───────────────────────────────────────────────────────────────────── */
 
+    /* ── (gis-semantic-layer) 「この比較・結合は意味として妥当か」 ───────────────────────────────────
+       js/gis-semantics.js answers it from facts the records already carry (time, quantity, the recipe's
+       lineage, the governance vocabulary) and from what a supplier DECLARED. ⚠ IT WARNS, IT DOES NOT
+       REFUSE: the step still runs and every result is what it was, so no saved recipe replays differently.
+       `strict:true` is the caller's own decision to be refused on a caution, made knowingly.
+       ⚠ NOT A SECOND CAPABILITY — `semantics:true` on the same data.gis door asks for the description (no
+       op) or the check (with an op) WITHOUT running anything. */
+    function semanticsOf() { return core.semantics || null; }
+    function warningsHtml(ws) {
+      if (!ws || !ws.length) return '';
+      return '<div class="atlas-gis-semantic"><b>' + esc(L('Check before you rely on this', 'この結果を使う前の確認')) + '</b><br>'
+        + ws.map((w) => esc((w.severity === 'caution' ? '! ' : '') + L(w.message.en, w.message.jp))).join('<br>') + '</div>';
+    }
+    function describeHtml(descs) {
+      return '<div class="atlas-gis-semantic"><b>' + esc(L('What the data means', 'データの意味')) + '</b><br>'
+        + descs.map((d) => esc(d.title) + ' — ' + esc(L('not stated: ', '未記述: ') + (d.unstated.join(', ') || '-'))).join('<br>') + '</div>';
+    }
+    function semanticDescribe(ids) {
+      const S = semanticsOf();
+      if (!S) return fail('semantics-unavailable', null);
+      const descs = ids.map((id) => S.describe(id));
+      const bad = descs.find((d) => !d.ok);
+      if (bad) return fail(bad.why, bad.detail);
+      return { ok: true, semantics: descs, inputs: ids, dataset: datasetRow(data.get(ids[0])), html: '<div class="atlas-gis-result">' + describeHtml(descs) + '</div>' };
+    }
+
     async function run(action) {
       const a = action || {};
       const op = (a.op == null) ? '' : String(a.op);
@@ -962,6 +988,12 @@ export function makeGisAtlas(core) {
          changes is that `op` is absent, which is a fact the caller states rather than a mode it
          selects. js/atlas-console.js therefore needed no new line, and js/atlas-capabilities.js no new
          row — a row per shape is the hand-written list this file exists not to grow. */
+      if (op === '' && a.semantics === true) {
+        const cacheS = makeCache(), idsS = [];
+        for (const g of (Array.isArray(a.inputs) ? a.inputs : (a.inputs == null ? [] : [a.inputs]))) { const r = await resolveRef(g, idsS.length, {}, cacheS, a); if (!r.ok) return r; idsS.push(r.id); }
+        if (!idsS.length) return fail('input-count', { op: '', needs: 1, got: 0 });
+        return semanticDescribe(idsS);
+      }
       if (op === '') return acquireOnly(a);
       const decl = ops.op(op);
       /* Refused WITH the vocabulary, for the reason the resolver above gives. */
@@ -980,6 +1012,15 @@ export function makeGisAtlas(core) {
       }
 
       const step = { op: op, inputs: ids, params: (a.params && typeof a.params === 'object') ? a.params : {} };
+      /* (gis-semantic-layer) the check comes BEFORE the run, so a planner asking only for it pays for nothing. */
+      const S = semanticsOf();
+      const sem = S ? S.check(step) : null;
+      const semWarn = (sem && sem.ok) ? sem.warnings : [];
+      if (a.semantics === true) {
+        return { ok: true, op: op, inputs: ids, dryRun: true, semantic: { warnings: semWarn, caution: sem && sem.ok ? sem.caution : 0, inputs: ids.map((id) => S && S.describe(id)) },
+          dataset: datasetRow(data.get(ids[0])), html: '<div class="atlas-gis-result"><b>' + esc(op) + '</b> — ' + esc(L('checked, not run', '確認のみ（実行していません）')) + (semWarn.length ? warningsHtml(semWarn) : '<br>' + esc(L('No semantic warning from what is stated.', '述べられている範囲では意味上の警告はありません。'))) + '</div>' };
+      }
+      if (a.strict === true && sem && sem.ok && sem.caution > 0) return fail('semantic-mismatch', { op: op, warnings: semWarn.filter((w) => w.severity === 'caution') });
       if (a.title != null && String(a.title).trim() !== '') step.title = String(a.title);
       const res = await ops.run(step, { signal: a.signal || null, onProgress: a.onProgress || null });
       /* ⚠ THE DECLARATION RIDES ON A REFUSED STEP. Every refusal js/gis-ops.js makes about a
@@ -993,6 +1034,7 @@ export function makeGisAtlas(core) {
 
       const row = datasetRow(res.dataset);
       const out = { ok: true, op: op, inputs: ids, dataset: row, stats: res.stats || null };
+      if (semWarn.length) out.semantic = { warnings: semWarn, caution: sem.caution };
       /* (#R759) 何をどこから取ったか、そしてまだ続きがあるか。See fromLayer. */
       if (cache.acquired && cache.acquired.length) out.acquired = cache.acquired.slice();
       const st = statsText(res.stats);
@@ -1000,7 +1042,7 @@ export function makeGisAtlas(core) {
         + ' · ' + row.count + ' ' + esc(row.kind === 'raster' ? L('pixels', '画素') : L('rows', '行'))
         + ' · <code>' + esc(row.id) + '</code>'
         + (st ? ' — ' + esc(st) : '')
-        + '<div class="atlas-gis-next">' + esc(L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。')) + '</div></div>';
+        + '<div class="atlas-gis-next">' + esc(L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。')) + '</div>' + warningsHtml(semWarn) + '</div>';
 
       return out;
     }
