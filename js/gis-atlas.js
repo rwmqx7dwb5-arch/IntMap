@@ -32,7 +32,8 @@
    in the same lazily-loaded chunk (js/gis-core.js), and because the facets must be the SAME LIST the
    gate and the reader-visible credits use: a second spelling of 「licence」 here is precisely how the
    three worlds that file's header measures came to disagree. */
-import { FACETS, account } from './data-governance.js';
+import { FACETS, account, temporalMismatch } from './data-governance.js';
+import { jsonWithin } from './fetch-deadline.js';
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
@@ -166,6 +167,10 @@ export function makeGisAtlas(core) {
         for (const k of Object.keys(cov)) if (cov[k] != null) c[k] = cov[k];
         if (Object.keys(c).length) row.coverage = c;
       }
+      /* (data-facts) 入力の対象時点が重ならない結合は、planner に届く。js/data-governance.js temporalMismatch の
+         結果をそのまま運ぶ（pairs＝重ならない組と差の日数、unstated＝時点を述べていない入力）。要約しない。 */
+      const tmm = ds.provenance && ds.provenance.timeMismatch;
+      if (tmm && typeof tmm === 'object') row.timeMismatch = tmm;
       /* (spatiotemporal-join) WHEN a derived record holds, and what its join could not vouch for, reach the planner too:
          a result that carries `warnings` (a series on today's borders joined to rows drawn as they were, pairs that never
          coexisted) must be SAID with its answer, and the planner can only say what this row shows it. Passed as recorded. */
@@ -1166,7 +1171,7 @@ export function makeGisAtlas(core) {
       if (!M) return fail('map-unavailable', { needs: 'IntMapGisRemote' });
       const act = (a.action == null || a.action === '') ? 'discover' : String(a.action);
       /* the actions are the module's own declaration (plus the one this door answers itself) */
-      const ACTS = M.actions().concat('sources', 'status');
+      const ACTS = M.actions().concat('sources', 'status', 'facts');
       if (ACTS.indexOf(act) < 0) return fail('bad-param', { param: 'action', actions: ACTS });
       const win = (a.bounds != null) ? a.bounds : a.bbox;
       const give = (r) => (r && r.ok === false) ? fail(r.why, r.detail || null) : r;
@@ -1178,6 +1183,33 @@ export function makeGisAtlas(core) {
         const u = t.summary.unstated;
         return Object.assign({}, t, { html: '<div class="atlas-gis-result"><b>' + esc(L('What the sources of this app state they can supply', 'このアプリの供給元が述べている取得能力')) + '</b> — ' + t.summary.total
           + '<div class="atlas-gis-detail">' + esc(L('stated nothing about: ', '何も述べていない項目: ')) + esc('extent ' + u.extent + ' · time ' + u.time + ' · end ' + u.boundedEnd + ' · offscreen ' + u.offscreen) + '</div></div>' });
+      }
+      /* (data-facts) 分析の前に、同梱データが述べていること——対象時点・範囲・測り方・細かさ・完全性・精度・更新周期——を
+         機械可読に渡す。値は data/data-facts.json（各 builder の GOVERNANCE 宣言から scripts/data-governance.mjs が
+         生成し、check:datagov が突き合わせる）だけから来る。述べていない欄は `unstated` に挙がり、補わない。
+         `ref` に複数（カンマ区切り）を渡すと、対象時点が重ならない組を temporalMismatch が述べる——
+         「2020 年の人口と 2025 年の行政区画」のような別の時点の世界の結合を、結合する前に警告できる。 */
+      if (act === 'facts') {
+        let reg = null;
+        try { reg = await jsonWithin('data/data-facts.json', 25000); } catch (_) { reg = null; }
+        if (!reg || !reg.subjects) return fail('facts-unavailable', { needs: 'data/data-facts.json' });
+        const names = Object.keys(reg.subjects);
+        const stem = (s) => String(s).replace(/^data\//, '').replace(/\.(json|js|bin)(\.gz)?$/, '');
+        const asked = (a.ref == null || a.ref === '') ? [] : String(a.ref).split(',').map((x) => x.trim()).filter(Boolean);
+        if (!asked.length) {
+          return { ok: true, subjects: names.map((n) => ({ subject: n, period: reg.subjects[n].describes.period != null, cadence: reg.subjects[n].cadence })), html: '<div class="atlas-gis-result"><b>' + esc(L('Datasets with a declared description', '説明が宣言されているデータ')) + '</b> — ' + names.length + '<br>' + esc(L('pass ref to read one', 'ref を渡すと 1 件ずつ読めます')) + '</div>' };
+        }
+        const found = [], missing = [];
+        for (const q of asked) {
+          const hit = names.find((n) => n === q) || names.find((n) => stem(n) === stem(q));
+          if (hit) found.push(Object.assign({ subject: hit }, reg.subjects[hit])); else missing.push(q);
+        }
+        const mm = found.length > 1 ? temporalMismatch(found.map((f) => ({ id: f.subject, period: f.describes.period, asOf: f.asOf }))) : null;
+        return { ok: true, facts: found, notDeclared: missing, timeMismatch: mm,
+          html: '<div class="atlas-gis-result"><b>' + esc(L('What these datasets state about themselves', 'データ自身が述べていること')) + '</b><br>'
+            + found.map((f) => '<code>' + esc(f.subject) + '</code> · ' + esc(Object.keys(f.describes).join(', ') || L('no description stated', '説明の宣言なし')) + ' · ' + esc(L('cadence', '更新周期')) + ' ' + esc(f.cadence == null ? L('not stated', '未申告') : f.cadence + ' (' + (f.cadenceBasis || '?') + ')')).join('<br>')
+            + (missing.length ? '<div class="atlas-gis-detail">' + esc(L('not in the registry: ', '台帳に無い: ')) + esc(missing.join(', ')) + '</div>' : '')
+            + (mm && mm.pairs.length ? '<div class="atlas-gis-detail">' + esc(L('PERIODS DO NOT OVERLAP: ', '対象時点が重なりません: ')) + esc(mm.pairs.map((p) => p.a + ' / ' + p.b + ' (' + p.gapYears + ' y)').join('; ')) + '</div>' : '') + '</div>' };
       }
       /* what stage each thing reached, for one reference or for all of them (js/gis-pipeline.js) */
       if (act === 'status') {
