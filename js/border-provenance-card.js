@@ -213,6 +213,8 @@ export const BorderProvenanceCard = (function () {
     if (side.sheet != null) row(T('Dates', '日付'), T('none — this shape belongs to the sheet for ' + w.year(side.sheet) + '; the map shows the sheet nearest to the date', 'なし — この形は ' + w.year(side.sheet) + ' の年代図のもので、地図はその日付に最も近い年代図を示している'));
     else if (side.start) { row(T('From', 'から'), edgeText(side, 'start', ixr, w)); row(T('Until', 'まで'), edgeText(side, 'end', ixr, w)); }
     const geo = geometryLines(side, set, w); if (geo.length) row(T('Geometry', '幾何'), br(geo));
+    /* (hist-coverage-approx-line) a span whose dossier says the unit is stated but its LINE is today's carried back */
+    if (side.dates && side.dates.line && side.dates.line.certainty === 'approximate') row(T('Outline', '輪郭'), br([T('approximate — the unit and its dates are stated; the line is today\'s outline carried back and is not established as it ran then', '近似 — 単位と日付は述べられているが、線は今日の輪郭を遡らせたもので、当時の線としては確定していない'), side.dates.line.note]));
     /* (coast-snap-gaps) the press fell on the land between this row's copy of the coast and the real coastline */
     /* (coast-snap-detail) whose coast, as the bundle states it for the parent's record */
     if (side.coastSnap) row(T('Coast', '海岸'), T('matched to the real coastline (' + (side.coastSnap.coast === 'osm' ? '© OpenStreetMap contributors, ODbL' : 'Natural Earth 1:10m') + ') — ' + side.coastSnap.file + ' row ' + side.coastSnap.i + (side.coastSnap.start ? ', ' + w.day(side.coastSnap.start) + ' – ' + w.day(side.coastSnap.end) + ' (exclusive)' : ''),
