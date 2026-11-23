@@ -90,6 +90,11 @@ export const GOVERNANCE = {
     paidBy: 'historical-basemaps (aourednik) — GPL-3.0',
     ...AOUREDNIK_BASEMAPS,
     builtBy: 'scripts/build-hist-eras.mjs',
+    /* (describes.*) the repository README (github.com/aourednik/historical-basemaps, read 2026-11-20) and the file names of its geojson directory (listed 2026-11-20 with the GitHub API). */
+    period: { start: '-122999', end: '2010', note: 'snapshot years of the upstream geojson files, astronomical years: world_bc123000 to world_2010; each file is one year, not a span' },
+    method: 'a collection of basemaps collected, adapted and converted from diverse sources, stored as GeoJSON in WGS 84 (README)',
+    resolution: 'polygon precision adapted for world and continent scale mapping (README)',
+    accuracy: 'the README calls the project work in progress and asks that the maps be verified against other sources before academic use',
   },
 };
 const RAW = 'https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/';
