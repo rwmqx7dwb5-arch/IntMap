@@ -49,9 +49,15 @@ export const GOVERNANCE = {
     licenceUrl: 'https://creativecommons.org/licenses/by/3.0/',
     /* true: CC BY makes the credit a condition of redistribution; the sentence that pays it is `credit` in the bundle */
     attribution: true,
+    /* (describes.*) the header and the bundle's own segments state each of these */
+    period: { start: '2011-03-11T20:00Z', end: '2011-04-30T15:00Z', note: 'measured: the first start and last end of the 71 intervals of the release table' },
+    extent: 'the atmospheric release of Cs-137 from Fukushima Daiichi, a point or (for the two explosions) a volume source; 14.4 PBq summed over the table (the paper states 14.5 PBq)',
+    method: 'release rates inferred by comparing a dispersion model (WSPEEDI-II) with measured air concentrations and dose rates, with an improved deposition scheme and an oceanic dispersion model (Katata et al. 2015); not an independent measurement',
+    resolution: '71 intervals of unequal length, each with a release rate (Bq/h) and a release height range',
     paidBy: 'Fukushima Daiichi release time series (JAEA, Katata et al. 2015, CC BY 3.0)',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'a closed historical event: the 2011 release reconstruction was published once, as the supplement of an ACP paper (2015-01-30)',
       expires: 'if the supplement is re-issued (the pinned md5 then fails the build), or IntMap adopts a later reconstruction (Terada et al. 2020) whose table is published in a redistributable form',
       canon: 'this record (the only builder that reads the JAEA release table)',

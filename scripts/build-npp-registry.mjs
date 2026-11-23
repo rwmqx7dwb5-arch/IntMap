@@ -77,6 +77,11 @@ export const GOVERNANCE = {
     licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
     /* CC0 waives the conditions, so no DATA_SOURCES row is owed for this bundle. */
     attribution: false,
+    /* (describes.*) what the builder states and what the committed bundle measurably carries (638 records, 58 country codes, 2026-09-09). */
+    extent: '638 nuclear facilities in 58 countries (ISO 3166-1 alpha-2); the Wikidata class nuclear facility (Q1739545) and its subclasses, which include power plants, reactors and reprocessing or production complexes',
+    method: 'Wikidata SPARQL query over P31/P279* of Q1739545; one record per facility with status, units and net MW where the item states them (IAEA PRIS is not read: no machine-readable route)',
+    resolution: 'one point per facility (Wikidata P625 coordinate)',
+    completeness: 'the class held 930 items when measured on 2026-09-09; records with no label or no usable P625 coordinate are dropped, so 638 are shipped',
     ...WIKIDATA,
     builtBy: 'scripts/build-npp-registry.mjs',
   },
