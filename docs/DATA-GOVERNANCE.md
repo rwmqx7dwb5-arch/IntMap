@@ -80,7 +80,7 @@ ODbL 1.0 は帰属表示が**再配布の条件**である。それが名前と�
 |---|---|
 | `SPELLINGS` | 1 つの事実の**綴りの群**。⚠ **`licence` と `license` が 1 つの事実であると述べる、リポジトリで唯一の場所**。`js/gis-export.js` の `INTEROP` がここへ昇った |
 | `statedValue(obj, group)` | その群のうち obj が**実際に持っている**最初の値、または `null`。⚠ **空文字と空配列は主張ではない**——誰かが空にした licence 欄が licence の主張になってはならない |
-| `FACETS` / `SUBJECTS` | governance の**宣言された欄**（19 個・5 主題）。`SUBJECTS` は `FACETS` の接頭辞から**導出**する（書き写した一覧は、欄が増えたときに主題を落とす） |
+| `FACETS` / `SUBJECTS` | governance の**宣言された欄**（25 個・6 主題。`describes.*` の 6 つは §8）。`SUBJECTS` は `FACETS` の接頭辞から**導出**する（書き写した一覧は、欄が増えたときに主題を落とす） |
 | `REASONS` | **なぜその欄が沈黙しているか**の語彙。⚠ 全部が**観測**であって既定値ではない——理由の無い欄は「述べられた」欄である |
 | `FRESHNESS` | `fresh` / `aging` / `stale` / `unknown` |
 | `read(x)` | 束のバイト・builder の定数・レイヤー登録・GIS 記録の `provenance` の**どれから来ても 1 つの読み方**。⚠ `raw` で全体を verbatim に運ぶ（欄の写しにしない） |
@@ -393,11 +393,10 @@ builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-dipl
 - **台帳に載っている束の出自は、まだ誰も述べていない。** ⚠ **推測で埋めてはならない**
   （memory `intmap-data-must-not-claim-an-author-it-lacks`——9 言語の欄を英語綴りの写しで埋めて
   67,622 行が偽の著者を名乗った実例がある）。埋めるのは**上流に訊いてから**。
-- **上流の中身の変化を見るのは 1 本だけ**（`build-hist-eras.mjs --check-upstream`）。残りの builder の
-  上流が黙って変わっても誰も気づかない（memory `intmap-discovered-list-is-a-photograph` と同じ形）。
+- **上流の中身の変化は `scripts/upstream-change.mjs` が見る（§8）。** builder の宣言から発見した上流 URL ごとに、サーバが自分で述べる検証子（ETag・Last-Modified・Content-Length）の指紋を `data/upstream-fingerprints.json` に持つ。検証子を 1 つも述べない API は `unprobeable` と記録し、「見ている」とは言わない。builder の上流（SIMBAD・SBDB・Horizons など）の死活は引き続き、その builder が走るときの確認だけである。
   §4.5 の死活は**ブラウザが話すホスト**だけを訊き、**builder の上流**（SIMBAD・SBDB・Horizons など）の
   死活は、名簿に載った builder が走るときに builder 自身が確かめるだけである。
-- **周期の多くは推定である。** `scripts/lib/upstream-cadence.mjs` の `observed` が「estimate」と
+- **周期の根拠は種別で述べる（`cadenceBasis.kind`: measured / stated / derived / estimate）。** 2026-11-20 に tzdb・OpenHistoricalMap・Pleiades・World Bank WDI を実測へ置き換えた。残る推定（Wikidata・JPL SBDB/Horizons/衛星・SIMBAD・Smithsonian GVP・USGS 惑星地名）は `estimate` と名乗り、門が毎回件数を印字する。推定を測定として申告できない（`basisProblem` が「estimate で始まる文が measured」と「日付のない measured」を拒む）。
   述べている値は、測れば置き換える。**測って置き換え済み**: IANA tzdata（2023d〜2026f の 12 リリースのタグ日付から 11 区間・中央値 66 日・平均 95 日・最長 263 日 → `P3M` は観測の範囲内）。
   残りの推定（Wikidata・OpenHistoricalMap・JPL・SIMBAD ほか）は連続編集型で「この上流が新しい版を出した日」を外から測れないので、
   上流の指紋（取得時刻と中身の変化）を builder の実行ごとに溜める台帳ができてから、観測した更新間隔・取得成功率・遅延で置き換える。
@@ -424,3 +423,18 @@ builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-dipl
 - **通信先の規則は「要求しうる」を測り、「到達しうる」は測らない。** 到達できないコードの中の
   ホストも台帳に載る（実測で r.jina.ai を呼ぶ記事リーダーは入口が無い——`js/article-reader.js`
   の冒頭）。§4 はそれを述べ、到達するかどうかは述べない。
+
+---
+
+## 8. 分析の前に読む記述 — `describes.*`・周期の根拠・上流の指紋・時点の食い違い
+
+**欄**（`js/data-governance.js` の `FACETS`）: `describes.period`（**値が何についてのものか**。`asOf` の 1 点ではなく範囲）・`extent`・`method`・`resolution`・`completeness`・`accuracy`。
+⚠ **供給者（builder が上流の文書から書き写したもの）の陳述だけ**で、バイトからの推測も隣の束の写しも入れない。述べていなければ `undeclared`（理由つき）で、`data/data-facts.json` では `unstated` に挙がる——ゼロでも「該当なし」でもない。2026-11-20 時点で述べているのは Maddison と CRUST1.0 だけで、**残りは未申告のまま**（台帳 `undeclaredFacets` がその数を持つ）。
+
+**Atlas の読み口**: `gisRemote` の `action: "facts"`（`js/gis-atlas.js`）が `data/data-facts.json`（各 builder の `GOVERNANCE` から `node scripts/data-governance.mjs --update` が生成し、規則 `facts-current` が突き合わせる）を返す。`ref` にカンマ区切りで複数渡すと `temporalMismatch` の結果が付く。
+
+**時点の食い違い**（`temporalMismatch`）: 入力の `period`／`asOf` から期間を読み（裸の年はその 1 年、「2015-2020」は両端を含む）、**重ならない組**と差の日数・年数を述べる。⚠ **閾値は無い**——重ならないことは事実で、1 年の差が問いに効くかは読む側が判断する。述べていない入力・日付でない文（「直近 24 h」）は `unstated` に残し、合っているとは言わない。GIS の複数入力の演算は結果の `provenance.timeMismatch` に載せ、`datasetRow()` が planner へ運ぶ。**拒否も補正もしない。**
+
+**周期の根拠の種別**: 規則 `freshness-stated` は `cadenceBasis.kind` を要求し、本文と食い違う種別を拒む。規則 `cadence-estimates` は推定の件数を毎回印字する。
+
+**上流の指紋**（規則 `upstream-watched`）: 発見した上流 URL ごとに行があること。`node scripts/upstream-change.mjs`（ネットワーク）が現在と記録を比べ、`changed` を挙げる。**変化は「見に行け」の合図であって判定ではない**。`--fail-on-change` は夜間用。

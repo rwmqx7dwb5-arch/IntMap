@@ -141,6 +141,13 @@ export const GOVERNANCE = {
        Its rows are harvested from OpenHistoricalMap, Pleiades and Wikidata, all three edited daily;
        OpenHistoricalMap's cadence is spread because it is the one the file is built around. */
     ...OPENHISTORICALMAP,
+    /* (describes.*) What this builder does (above) and what the committed bundle measurably carries. ⚠ No period: the
+       spans run from a Pleiades period boundary millions of years back to 2026 and 2 405 of the 9 241 are open at the
+       start, which is not a range a reader can join on; the bundle states each span's own precision instead. */
+    extent: '6,474 settlements in 125 country codes with 9,241 dated name spans; by source 611 handwritten, 2,809 Wikidata, 808 Pleiades, 2,246 OpenHistoricalMap (measured on the bundle)',
+    method: 'A date-bounded name is attached to a settlement by name and place together, never by spelling alone: a tile label is renamed only if its own spelling is one of the row\'s and it lies within the row\'s guard radius, which is half the distance to the nearest other settlement answering to one of the row\'s spellings (GeoNames cities500 evidence), capped and floored. Spans and names are those of the upstreams (OpenHistoricalMap, Pleiades, Wikidata) and of the handwritten record; nothing is interpolated',
+    resolution: 'one point per settlement; each name span has signed YYYYMMDD endpoints with a per-endpoint precision (day, month, year, a period boundary from a vocabulary, or open)',
+    completeness: 'Outside every span the modern tile label stands, so absence of a row or span is not a statement that the name did not exist; 2,405 of the 9,241 spans have an open start, which the file marks rather than dates; rows for settlements the label layer draws only as villages are shipped though they may never be drawn (measured on the bundle)',
     builtBy: 'scripts/build-hist-cities.mjs',
   },
 };

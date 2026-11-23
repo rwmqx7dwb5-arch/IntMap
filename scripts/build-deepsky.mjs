@@ -69,6 +69,11 @@ export const GOVERNANCE = {
     ...SIMBAD,
     /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
     autoRefresh: 'four SIMBAD TAP queries, no key, all from one endpoint — CDS first, then the mirrors CDS names; every answer is checked (status, JSON, the data array) and the 80-object floor is asked before the write',
+    /* (describes.*) what this build does and what the committed bundle measurably carries (150 objects, 131 with a distance, built 2026-11-19). */
+    extent: 'sky-wide list of 150 objects (110 Messier objects and 40 named extras looked up in SIMBAD by identifier); the 131 with a distance span 1.3 pc to 71,600,000 pc (measured over the committed bundle)',
+    method: 'distance is the median of every distance measurement SIMBAD carries for the object (table mesDistance), converted to parsecs, with the count of measurements (dn) and the quartiles (q1, q3); positions are ICRS J2000 degrees from the SIMBAD basic table',
+    completeness: 'a selection, not a census: 131 of the 150 objects carry a published distance and 19 have none (distance null, placed on the celestial sphere without depth); no object is invented and none is interpolated',
+    accuracy: 'no error bar is published; the quartiles q1 and q3 carry the disagreement between published methods, which this bundle states can be tens of per cent',
     builtBy: 'scripts/build-deepsky.mjs',
   },
 };
