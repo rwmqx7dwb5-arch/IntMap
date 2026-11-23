@@ -22,3 +22,29 @@ newsjp: 列・指標の意味（対象の範囲・数えた境界・日付の意
 - 宣言は side store（セッション内）。`gis-project` への保存・再開は未対応（`provenance.semantics` で述べたものは記録とともに残る）。
 
 テスト: `tests/gis-semantic-layer-checks.test.mjs`（9 本）。`check:static`・`check:docs`・`check:archfiles`・`check:surface`・`check:datagov`・`check:capabilities`・`check:catalog`・`check:agents`・`check:i18n`、`geo-gis-datasets`・`atlas-gis`・`layer-boot-graph`・`shell-gis-upload-raster`・`time-spatial-base` の各テストを通した。
+
+## perf の天井
+
+`gis-core` の async チャンクが 622.7 kB → 640.2 kB、async gzip が 4745.6 → 4772.4 kB に上がった。増分は意味の層（`js/gis-semantics.js`）と `gis-atlas.js` の警告配線そのもので、`data.gis` の演算前に比較・結合の妥当性を返す能力の対価。起動時の経路（boot）には載らない。`perf-budget --update` が上げた 2 行だけを `tests/perf-baseline.json` に書いた。
+
+`async.raw` の天井も 14136.4 → 14228.9 kB に上げた（意味の層の分と、同時に main へ入った他の変更の合算。超えた 1 行だけ `--update` が書いた）。
+
+## perf 天井の引き上げ (main 取り込み後)
+
+`gis-semantics.js` を `gis-core` チャンクに載せ、`gis-atlas.js` / `atlas-cap-data.js` に意味層の Atlas 能力を足したため、async の 3 行が天井を超えた。`node scripts/perf-budget.mjs --update` で超えた行だけ上げた。
+
+- `gis-core`: 637.0 → 655.4 kB (意味層の本体。起動時は読まれない遅延チャンク)
+- `atlas-cap-runs`: 903.4 → 910.2 kB (意味層の能力定義)
+- `async.gzip` 合計: 4807.7 → 4836.6 kB (上の 2 つの合計)
+
+eager (起動時) の行は動いていない。
+
+追記: origin/main を取り込み直した後、`dist.total` が 1542452.9 → 1550187.3 kB、`dist.assets` が 21686.9 → 21807.8 kB の天井を超えた (CI の Gates 2/3 と、データを取得した手元の build の両方で再現)。意味層の遅延チャンク (`gis-core` ほか) と、同時に取り込んだ main 側の新規モジュール (`atlas-geoplan`・`data-impact` など) の合計。超えた 2 行だけ `--update` で上げた。eager の行は動いていない。
+
+追記 (3 回目の取り込み): `atlas-orchestrate` が 82.4 → 96.1 kB で天井を超えた (CI の Gates 2/3 と、データを取得した手元の build の両方で再現)。このチャンクに触る変更は本 PR の差分に無い (本 PR の js/ は gis-semantics・gis-core・gis-atlas・atlas-cap-data のみ) ので、増分は同時に取り込んだ main 側 (atlas-geoplan など) 由来と見ている。main 側の天井更新が bot で追いつくまでの差を、この PR で超えた行だけ上げて通した。
+
+`async.gzip` を 4833.8 → 4860.4 kB、`atlas-cap-runs` チャンクを 918.5 → 923.7 kB に上げた（意味の層の説明文と、同時に main へ入った変更の合算。超えた 2 行だけ `--update` が書いた）。
+
+`async.raw` 14376.3 → 14481.3 kB、`atlas-console` 1105.8 → 1112.6 kB、`gis-core` 663.6 → 681.1 kB、`dist.assets` 21796.5 → 21917.6 kB に上げた（意味の層と、並行して main に入った変更の合算。超えた 4 行だけ `--update` が書いた）。
+
+追記 (CI の実測で上げた 1 行): この branch に入った GIS の追加 (`gis-pipeline-forecast` など) で `gis-core` が 679.8 → 697.3 kB になり、Gates 2/3 の check:perf が赤になった (CI の実測と手元の build が一致)。その 1 行だけ `--update` で上げた。eager の行は動いていない。

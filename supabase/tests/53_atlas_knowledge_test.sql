@@ -8,7 +8,7 @@
 --       (`knowledge-account-full`) refuse by name;
 --    ⑤ the rows go with the account (ON DELETE CASCADE — delete_account_data finds the table itself),
 --       and the data catalogue says what the rows are.
---  supabase/migrations/20261122090000_atlas_knowledge.sql. The client side (merge, removal elsewhere, a failed read) is
+--  supabase/migrations/20261125000000_atlas_knowledge.sql. The client side (merge, removal elsewhere, a failed read) is
 --  tests/knowledge-continuation-checks.test.mjs. The same shape as 22_atlas_notebook_test.sql, on purpose.
 -- ============================================================================
 begin;

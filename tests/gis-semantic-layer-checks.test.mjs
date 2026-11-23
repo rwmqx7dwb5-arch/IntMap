@@ -153,9 +153,9 @@ test('⑦ comparable(): same quantity vs different basis; warnings never change 
 
 test('⑧ the module has no table of sources and is wired once (core mounts it, the kernel ledger excuses it)', async () => {
   const fs = await import('node:fs');
-  const src = fs.readFileSync(new URL('../js/gis-semantics.js', import.meta.url), 'utf8');
   const { codeOnly } = await import('../scripts/code-only.mjs');
-  assert.ok(!/maddison|cshapes|worldpop|openstreetmap/i.test(codeOnly(src, { lang: 'js' })), 'a named source in code');
+  const src = fs.readFileSync(new URL('../js/gis-semantics.js', import.meta.url), 'utf8');
+  assert.ok(!/maddison|cshapes|worldpop|openstreetmap/i.test(codeOnly(src)), 'a named source in code');
   const core = fs.readFileSync(new URL('../js/gis-core.js', import.meta.url), 'utf8');
   assert.ok(/makeGisSemantics\(\)/.test(core) && /\['IntMapGisSemantics', semantics\]/.test(core));
   const { NOT_A_KERNEL } = await import('../scripts/gis-kernel-versions.mjs');
