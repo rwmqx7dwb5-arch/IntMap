@@ -4,7 +4,7 @@
  *  Specialist models that already exist outside IntMap — found by Atlas, fed from a place, run, and answered with
  *  their assumptions, where they apply and how uncertain they are. The engine, the registry and the two integrated
  *  models (GloFAS flood, CAMS air quality) are in js/specialist-models.js; this file is the doors and the binding.
- *    model.discover — which specialist model fits this question, and which are NOT runnable yet (with the reason)
+ *    model.find — which specialist model fits this question, and which are NOT runnable yet (with the reason)
  *    model.run      — run one: place → input → model → pin on the map + result with limits and spread
  *  ⚠ Table format / generation: js/atlas-cap-data.js header (`node scripts/atlas-caps.mjs --write`).
  * ==========================================================================*/
@@ -18,7 +18,7 @@ const GRADE = { normal: T('within its recent range', '直近の水準の範囲�
 
 export default [
   {
-    row: ['model.discover', 'modelDiscover', 'findModel,specialistModels,whichModel,listModels', 'data', 'none', '', 'explanation', 'read', 'none', '', '', ''],
+    row: ['model.find', 'modelDiscover', 'findModel,specialistModels,whichModel,listModels', 'data', 'none', '', 'explanation', 'read', 'none', '', '', ''],
     ui: { none: '2026-11-20' },
     doc: [
       { in: 'spatial-analysis', at: 52, text: 'FIND A SPECIALIST MODEL (専門モデルを探す): {"type":"modelDiscover","text"?:str,"domain"?:"flood"|"air"|"heat"|"power"|"agriculture"|"earthquake"} = lists the specialist models IntMap knows for a question — what each ANSWERS, what INPUT it needs, where it applies, its LIMITS, how its uncertainty is shown — and whether Atlas can RUN it now ("integrated") or not and WHY NOT ("not-integrated"). Integrated today: flood.glofas (GloFAS river-discharge forecast) and air.cams (CAMS air-quality forecast); run them with "modelRun". Use for 「洪水の予測モデルは」「この地域の大気汚染を予測できる？」「都市の熱を計算するモデルは」, "is there a model for X". A domain listed as not-integrated is SAID to be unavailable with its reason — never answer it with a made-up number. For earthquake shaking, tsunami, ash, radiation, wildfire smoke and pandemic spread use the sim capabilities (those run in IntMap itself). ' },

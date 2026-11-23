@@ -10,7 +10,7 @@ newsjp: Atlasが専門モデルを探し、地点の河川洪水予報（GloFAS�
 ## 0. 構成
 
 - `js/specialist-models.js`（純粋・ネットは注入）: 登録 `MODELS`（実行できるものは `run`、できないものは `status:'not-integrated'` と**理由**）、`discover`、入力準備、解析、`runFlood` / `runAir`。
-- `js/atlas-cap-model.js`: 扉 2 つ。`model.discover`（どのモデルが合うか・実行できるか・限界）と `model.run`（地点 → 入力 → 実行 → ピンと、前提・適用範囲・不確実性つきの回答）。能力表（`GENERATED ROWS`）とカタログの文（`spatial-analysis` ブロック）は同じ項目から導出。
+- `js/atlas-cap-model.js`: 扉 2 つ。`model.find`（どのモデルが合うか・実行できるか・限界）と `model.run`（地点 → 入力 → 実行 → ピンと、前提・適用範囲・不確実性つきの回答）。能力表（`GENERATED ROWS`）とカタログの文（`spatial-analysis` ブロック）は同じ項目から導出。
 - 一覧は登録 1 か所。モデルを足すと探索の語・扉の enum・テストが同時に動く（enum は登録から導かれることをテストが固定）。
 
 ## 1. 2 領域
@@ -34,7 +34,7 @@ newsjp: Atlasが専門モデルを探し、地点の河川洪水予報（GloFAS�
 
 ## 3. 引き継いだもの・しなかったもの
 
-- 未接続の領域（都市熱・電力網・農業収量・地震被害）は**登録に理由つきで載せ**、`model.discover` が「実行できない・なぜか」を返す。実行できると偽らず、数字を作らない。地震の揺れ・津波・降灰・放射性・煙・感染は IntMap 自身の `sim.*` が実行する。
+- 未接続の領域（都市熱・電力網・農業収量・地震被害）は**登録に理由つきで載せ**、`model.find` が「実行できない・なぜか」を返す。実行できると偽らず、数字を作らない。地震の揺れ・津波・降灰・放射性・煙・感染は IntMap 自身の `sim.*` が実行する。
 - 新しいホスト `flood-api.open-meteo.com` を `scripts/outbound-hosts.json` に登録（送るのは座標のみ）。
 - 洪水・大気質の分類語は登録の `keywords` から導く（語の表を別に持たない）。
 
@@ -46,10 +46,18 @@ newsjp: Atlasが専門モデルを探し、地点の河川洪水予報（GloFAS�
 
 ## 5. 配信サイズの天井を上げた理由
 
-`atlas-cap-runs` +7.9 kB（`model.discover` / `model.run` の実行本体と、回答に載せる限界・不確実性の文）・`atlas-console` +6.7 kB（登録 2 行とカタログの説明文 2 項目を能力表が運ぶ）・async 合計 gzip +26.5 kB のうち残りは同じ 2 つのチャンクに入る `specialist-models.js`（登録・解析・runner）。能力そのものの増分で、削れるものは無い。`perf-budget.mjs --update` で上がった行だけ上げた。
+`atlas-cap-runs` +7.9 kB（`model.find` / `model.run` の実行本体と、回答に載せる限界・不確実性の文）・`atlas-console` +6.7 kB（登録 2 行とカタログの説明文 2 項目を能力表が運ぶ）・async 合計 gzip +26.5 kB のうち残りは同じ 2 つのチャンクに入る `specialist-models.js`（登録・解析・runner）。能力そのものの増分で、削れるものは無い。`perf-budget.mjs --update` で上がった行だけ上げた。
 
 main を取り込み直した後の再測定（同じ 3 行、同じ理由）: `atlas-cap-runs` 915.8 kB・`atlas-console` 1073.4 kB・async.raw 14308.0 kB。増分の内訳は専門モデル 2 能力（実行本体・登録・限界の文）で、main 側で並行に増えた能力の分と合わせた現在値。`perf-budget.mjs --update` で上がった行だけ上げた。
 
 3 度目の取り込み後の再測定: `atlas-cap-runs` 921.4 kB・async.gzip 4841.6 kB・dist.assets 21802.1 kB。main で並行に増えた能力・資産の分も入った現在値で、`perf-budget.mjs --update` が上げた行だけ。専門モデル側の増分は上と同じ（登録・実行本体・限界の文）。
 
 4 度目（main の bot が天井を main の実測へ下げた後）の再測定で、上がった行は 3 つ: async.raw 14382.1 kB・`atlas-cap-runs` 921.4 kB・`atlas-orchestrate` 94.6 kB。前 2 つは専門モデル 2 能力の増分と、並行して main に入った能力の分。`atlas-orchestrate` は main の chunk 分割（`atlas-delegate` の新設）に伴って測り直した値で、この PR の差分は 2 つの能力ファイルのみ（`atlas-orchestrate` のコードには触れていない）。`dist.total` は CI だけが data 込みで測る値で、ローカルでは上げていない。
+
+## 6. 能力の id を `model.discover` から `model.find` へ（`subject-findable` が data.gisRemote を無言と判定した原因）
+
+原因: カタログの 1 つの chunk（`spatial-analysis`）はレジストリ内で改行の継ぎ目で 3 つの断片に分けられ、各断片が chunk 全体の id 一覧を持つ。ある能力の入口 `{"type":"…"}` がその断片に無いとき、レジストリは能力 id の最後の語（`discover`）を引用符つきの裸の語として探す。`data.gisRemote` の引数列挙 `"action":"discover"|…` がそれに当たり、`model.discover` の入口と読まれて gisRemote の本文が 29 文字で打ち切られた（その結果、gisRemote の主題語が全て 0 点＝無言）。能力そのものの欠陥ではなく、id の最後の語が他の能力の引数名と同じだったことの副作用。直し方: id の最後の語を、カタログ内のどこにも引用符つきで現れない語（`find`）にした。呼び名（`modelDiscover` の type・利用者の語）は変えていないので、到達できる能力と回答は同じ。レジストリ側の「断片をまたぐ裸の語の誤認」は別の構造の問題で、この PR では触らない（記録のみ）。
+
+5 度目の再測定（id 改名後・main の最新取り込み後）: async.raw 14489.5 kB・`atlas-cap-runs` 937.3 kB・`atlas-console` 1115.0 kB・`atlas-orchestrate` 108.2 kB・dist.assets 21926.2 kB。いずれも CI が測った超過値（14488.1 / 937.3 / 1113.6 / 108.2 / 21924.1）と一致し、main で並行に増えた能力・資産を含む。この PR 由来は専門モデル 2 能力（上の §5）で、`atlas-orchestrate` のコードには触れていない。`perf-budget.mjs --update` が上げた行だけ。`dist.total` は CI だけが data 込みで測る値のため、ここでは触れていない。
+
+6 度目（main の取り込み後）: `atlas-cap-runs` 944.3 kB のみ超過（main の増分を含む現在値）。`perf-budget.mjs --update` が上げた 1 行だけ。専門モデル側の増分は §5 のとおり。あわせて `flood-api.open-meteo.com` の出口台帳は、別 PR の格子取得（広い範囲）と本 PR の点＋近傍 8 セルの 2 用途を 1 行に統合した。

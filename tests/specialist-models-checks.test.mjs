@@ -100,7 +100,7 @@ test('discovery: integrated models are found by the question, the unrunnable one
 });
 
 test('the doors: every integrated model is runnable through model.run and the schema offers exactly the integrated ids', () => {
-  const run = caps.find((c) => c.row[0] === 'model.run'), disc = caps.find((c) => c.row[0] === 'model.discover');
+  const run = caps.find((c) => c.row[0] === 'model.run'), disc = caps.find((c) => c.row[0] === 'model.find');
   assert.ok(run && disc);
   const ids = run.schema().properties.model.enum;
   assert.deepEqual([...ids].sort(), MODELS.filter((m) => m.status === 'integrated').map((m) => m.id).sort());
