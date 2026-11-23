@@ -157,12 +157,15 @@ test('③ the Natural Earth files are this site\'s, pinned, and decode losslessl
   const { check, GOVERNANCE } = await import('../scripts/build-ne-countries.mjs');
   const lines = await check(null);
   assert.equal(lines.length, NE.NE_SCALES.length + 1, lines.join('\n'));
-  /* the provenance is stated in full — by the builder and by the bundle a reader holds — so this
-     subject never enters data/governance-ledger.json (check:datagov's ledger-shrinks) */
+  /* the provenance (origin, rights, freshness, integrity) is stated in full — by the builder and by the bundle a reader holds.
+     The describes.* facets are the SUPPLIER's own statements and Natural Earth states no reference period, completeness
+     or accuracy for this file, so those three are left undeclared on purpose (nothing is inferred from the bytes) and sit
+     in data/governance-ledger.json as obligations; any OTHER undeclared facet is still a defect here. */
   const { account } = await import('../js/data-governance.js');
   const index = JSON.parse(read('data/ne-countries/index.json'));
   for (const [who, rec] of [['builder', GOVERNANCE['data/ne-countries/index.json']], ['data/ne-countries/index.json', index]]) {
-    assert.deepEqual(account(rec, { hasBuilder: true }).undeclared, [], who + ' leaves a facet unstated');
+    const open = account(rec, { hasBuilder: true }).undeclared.filter((u) => !/^describes.(period|completeness|accuracy)$/.test(u.facet));
+    assert.deepEqual(open, [], who + ' leaves a facet unstated');
   }
   /* …and nothing in the browser reads the CDN's copy any more */
   for (const f of ['js/countries-ui.js', 'js/map-tools.js']) assert.doesNotMatch(codeOnly(read(f)),/natural-earth-vector@master\/geojson\/ne_\d+m_admin_0_countries/, f);

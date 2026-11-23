@@ -59,6 +59,10 @@ export const GOVERNANCE = {
        the table usable — the stated epoch and frame, per satellite — and that is `asOf` per row
        rather than a property of the bundle, so it is not lifted here. */
     ...JPL_SATELLITES,
+    /* (describes.*) what the table states per satellite, and what the committed bundle measurably carries (177 satellites, built 2026-08-09). */
+    extent: '177 planetary satellites of Earth (1), Mars (2), Jupiter (72), Saturn (66), Uranus (22) and Neptune (14), measured over the committed bundle',
+    method: 'mean orbital elements (a, e, argument of periapsis, mean anomaly, inclination, node, period) at an epoch the table states per row, in the J2000 ecliptic or the planet\'s local Laplace plane as each row states, with the mean radius from the physical-parameters table; a row that states no frame is dropped',
+    resolution: 'one row per satellite',
     builtBy: 'scripts/build-moons.mjs',
   },
 };
