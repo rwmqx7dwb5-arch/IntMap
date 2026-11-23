@@ -1451,7 +1451,12 @@ test('R728 ① a search returns only the capabilities a distinctive term reaches
   for (const q of ['ISS（NORAD 25544）のリアルタイム位置と、指定地点からの次回可視通過予測（見え始め・最大仰角・見え終わり、方位、仰角、明るさ、JST）', 'where is the ISS now', 'ISSは今どこ？次に東京の上空を通るのはいつ？']) {
     const r = CAPS.search(q, { want: 3, min: 1 }).ranked;
     assert.equal(r[0].id, 'layers.satellites', q);
-    assert.ok(r.length <= 12, q + ' → ' + r.length + ' rows of ' + total + ' (was 60)');
+    /* THE DEFECT, NOT THE ANSWER IT REACHED: the search handed back a large share of the registry (60 rows).
+       It was written as «≤ 12», the count the fix arrived at — and two later capabilities whose OWN entries
+       carry a word of this request (model.discover «予測», data.gisOverture «指定地点»; measured 2026-11-22 on
+       the merge train, 13 rows of 267) failed it with nothing wrong. A small share of the live registry is
+       the claim; the top row above is the ranking. */
+    assert.ok(r.length <= Math.ceil(total * 0.05), q + ' → ' + r.length + ' rows of ' + total + ' (was 60): more than 5% of the registry');
   }
   assert.match(codeOnly(readLF(join(ROOT, 'js/atlas-capabilities.js'))), /DOC_TERM_MAX_DF = 4/);
 });
