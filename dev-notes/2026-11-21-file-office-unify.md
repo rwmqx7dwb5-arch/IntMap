@@ -45,3 +45,5 @@ core.xml が文書側にだけ付く・上限は名前で拒む・全角幅。�
 ## perf 天井の再上げ(async.raw 14376.3 → 14533.3 kB ほか)
 取り込んだ main(ボード `board`・知識層・GIS ほか)が先に増えていて、その上にこの変更の `file.create` が載った。この変更の寄与は新しい async chunk 2 本(`atlas-file-make` 52.1 kB・`office-writer` 7.7 kB、合わせて約 60 kB)で、増分 157 kB の残りは main 側。
 `atlas-cap-runs`(918.5 → 931.6)と `atlas-console`(1105.8 → 1122.7)も、能力行の増加に追随した main 側の増分を含む。どれも起動(eager)には入らず、使うときだけ読まれる。
+
+main の取り込みのたびに、他の PR の増分(GIS 予報・音声ほか)が同じ 4 つの天井(`async.raw`・`async.gzip`・`atlas-cap-runs`・`atlas-console`)に載る。この変更の寄与は前節の約 60 kB のまま変わらず、取り込みごとの差は main 側。実測に合わせて同じ行だけを上げた(他の行は書いていない)。
