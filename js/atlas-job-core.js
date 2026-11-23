@@ -110,7 +110,9 @@ export function workerPrompt(task, extra) {
   return p + '\n\nToday is ' + new Date().toISOString().slice(0, 10) + '.';
 }
 
-/* shapeOf(data, normalizeFacts?) → { ok, out } | { ok:false, why } — the worker's answer held to the shape it was asked for */
+/* shapeOf(data, normalizeFacts?) → { ok, out } | { ok:false, why } — the worker's answer held to the shape it was asked for.
+   `normalizeFacts` is the host's reader of the `facts` list (the page passes js/atlas-fact-merge.js; it needs the geo-object module, which has no
+   server twin yet). Without one, `facts` is [] — a server job carries findings, not matched facts. */
 export function shapeOf(data, normalizeFacts) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return { ok: false, why: 'the answer was not a JSON object' };
   if (typeof data.summary !== 'string' || !data.summary.trim()) return { ok: false, why: '"summary" was missing or empty' };
@@ -122,11 +124,11 @@ export function shapeOf(data, normalizeFacts) {
     const verdict = (f.verdict === 'supported' || f.verdict === 'unsupported' || f.verdict === 'contradicted') ? f.verdict : undefined;
     return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined };
   });
-  return { ok: true, out: Object.assign({ summary: s(data.summary, 4000), findings }, typeof normalizeFacts === 'function' ? { facts: normalizeFacts(data.facts) } : null, { gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] }) };
+  return { ok: true, out: { summary: s(data.summary, 4000), findings, facts: typeof normalizeFacts === 'function' ? normalizeFacts(data.facts) : [], gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] } };
 }
 
 /* ══ PLANNING A LIST OF CONTRACTS INTO A JOB  (atlas-durable-jobs) ═══════════════════════════════════
-   planJob(contracts, { kinds? }) → { ok, tasks:[{ id, key, contract, deps }] } | { ok:false, error, at? }
+   planJob(contracts, { kinds?, capabilityOk? }) → { ok, tasks:[{ id, key, contract, deps }] } | { ok:false, error, at? }
    The same rules makeDelegation applies at run time, applied once up front so that a job the server accepts is one it can
    finish: every contract normalises, every id is unique, every input names a task of THIS list, the inputs lead nowhere
    in a circle, and nothing is the same work twice (the second start of one contract is the first — `reused`, not run again).
@@ -136,11 +138,11 @@ export function shapeOf(data, normalizeFacts) {
 export const JOB_MAX_TASKS = 8;   /* observation 2026-11-20: research.delegate hands on 2 workers by default (DELEGATION_DEFAULTS.maxChildren); 8 is four times that. Expires if a plan legitimately needs more — raise it here, the one place. */
 export function planJob(contracts, o) {
   const kinds = (o && Array.isArray(o.kinds)) ? o.kinds : ['worker'];
+  const runnable = (id) => !!(o && typeof o.capabilityOk === 'function' && o.capabilityOk(id));
   const list = Array.isArray(contracts) ? contracts : [];
   if (!list.length) return { ok: false, error: 'no_tasks' };
   if (list.length > JOB_MAX_TASKS) return { ok: false, error: 'too_many_tasks' };
   const norm = [];
-  const runnable = (id) => !!(o && typeof o.capabilityOk === 'function' && o.capabilityOk(id));
   for (let i = 0; i < list.length; i++) {
     const nc = normaliseContract(list[i]);
     if (!nc.ok) return { ok: false, error: nc.error, at: i };

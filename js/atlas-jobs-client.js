@@ -2,7 +2,7 @@
  *  IntMap · Atlas durable jobs — the page's side of them   (js/atlas-jobs-client.js)
  * ----------------------------------------------------------------------------
  *  The server half is supabase/functions/atlas-jobs (create + the lease loop) and the tables of
- *  supabase/migrations/20261120131000_atlas_durable_jobs.sql. This file is everything the PAGE does with them:
+ *  supabase/migrations/20261120090000_atlas_durable_jobs.sql. This file is everything the PAGE does with them:
  *
  *    makeJobsClient({ sb, endpoint, authHeaders })   start / list / get / cancel / amend — a reader's own rows (RLS) and
  *                                                    the two owner RPCs; nothing here can read another reader's job

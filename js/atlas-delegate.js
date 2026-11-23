@@ -44,7 +44,7 @@ export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 
 
 import { s, stable, CONTRACT_KINDS, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
 export { stable, CONTRACT_KINDS, normaliseContract, contractKey };
-/* the worker's answer held to its shape, with `facts` held to one shape too (js/atlas-fact-merge.js) — the core takes the normaliser as an argument because it has no imports */
+/* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
 export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
 
 
