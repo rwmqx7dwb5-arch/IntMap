@@ -105,6 +105,8 @@ import { makeGisLayers } from './gis-layers.js';
 import { makeGisSources } from './gis-sources.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
+import { makeGisPipeline } from './gis-analysis-pipeline.js';
+import { makeGisForecast } from './gis-forecast.js';
 import { makeComputeSandbox } from './compute-sandbox.js';
 import { makeGisPanel } from './gis-panel.js';
 /* ⚠ (#R783) THE ASSEMBLER, READ BY NAME AND HANDED STRAIGHT ON. The re-export is what an outside
@@ -204,6 +206,9 @@ function mount(scope, HOST, CONTEXT) {
   const layers = makeGisLayers();
   const ops = makeGisOps();
   const project = makeGisProject();
+  /* (pipeline) an analysis as a re-runnable recipe over a region; (forecast) external model output as datasets. Both read window.* at call time. */
+  const pipeline = makeGisPipeline();
+  const forecast = makeGisForecast();
   /* (compute-sandbox) Python on the datasets, in a Worker that holds nothing of the page. Mounted here
      because its inputs and outputs ARE this registry's records, and because js/gis-project.js reads
      window.IntMapCompute at CALL time to re-run a compute record whose input was recomputed. ⚠ What
@@ -299,7 +304,7 @@ function mount(scope, HOST, CONTEXT) {
     verify: project.verify,
   });
 
-  const API = { data, geometry, crs, raster, warp, index, voronoi, network, expr, units, semantics, worker, sources, layers, ops, project, compute, panel, draw, atlas, flow,
+  const API = { data, geometry, crs, raster, warp, index, voronoi, network, expr, units, semantics, worker, sources, layers, ops, project, pipeline, forecast, compute, panel, draw, atlas, flow,
     context: ctx,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { scope.IntMapGis = API; } catch (_) { }
@@ -343,7 +348,7 @@ function mount(scope, HOST, CONTEXT) {
      still sitting on a scope after release. ⚠ IntMapModules.gisCore is deliberately absent from both:
      it is the door to the ASSEMBLER, not part of this assembly, and it mounts a fresh one when it is
      next called. */
-  const published = verified.concat([['IntMapGisPanel', panel]]);
+  const published = verified.concat([['IntMapGisPanel', panel], ['IntMapGisPipeline', pipeline], ['IntMapGisForecast', forecast]]);
   return { ok: true, gis: API, context: ctx, verified: verified, published: published };
 }
 
