@@ -46,3 +46,5 @@ MCP クライアントが 4 能力（`mcp.servers`・`mcp.connect`・`mcp.call`�
 追補: 同じ再計測で、遅延 chunk `atlas-console`(1105.8→1121.5 kB)と `dist.assets`(21796.5→21935.2 kB)も、MCP クライアントの接続画面と能力の追加ぶんだけ上げた。いずれも能力の実行時にだけ読まれる遅延 chunk で、起動時の費用は増えていない。
 
 （2026-11-24 の main 取り込み後、CI の Gates 2/3 で check:perf が天井を超えた: atlas-cap-runs 938.6 kB 超（970,100 B へ）、dist.assets 21923.7 kB 超（22,569,300 B へ）。CI の測定値に合わせて上げた。MCP の能力（mcp.connect / mcp.act）の追加ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
+
+（2026-11-24 の続き: main に #1313 などが入ったあとの CI の Gates 2/3 で、async.raw 14569.8→14667.6 kB（15,019,700 B へ）、async.gzip 4918.1→4953.6 kB（5,072,500 B へ）、atlas-cap-runs 952.1→959.4 kB（982,500 B へ）、atlas-console 1139.2→1146.7 kB（1,174,300 B へ）、gis-core 697.3→701.2 kB（718,100 B へ）が天井を超えた。CI の測定値に合わせて上げた。gis-core は MCP の変更ではなく main 側の増分で、main の天井が測定より先に上がっていないために、この PR が引き受けた。）
