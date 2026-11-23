@@ -58,3 +58,10 @@ main の増分（Atlas の skills・board など、他の PR）と重なって�
 
 さらに main の Atlas の追加（マルチモーダル入力）が先に載り、`atlas-console` は CI の実測が 1121.0 kB になった
 （上限 1114.4 → 1121.1 kB）。この PR の分の増分は小さく、残りは他の PR のもの。上限は CI の実測に合わせた。
+
+## 5. global surface の台帳
+
+`js/atlas-jobs-client.js` が `IntMapSafe`（`html`・`url`・`trusted`）を読む 5 か所で、`window.IntMapSafe` への読みが 170 → 175 に増えた
+（`check:surface`）。`js/safe-html.js` は export を持たず、全ページがこの 1 つのグローバルを通して読む作りなので、他の Atlas のファイル
+（`js/atlas-reading.js` など）と同じ読み方をそろえた。import に替えるには `safe-html.js` に export を足す別の変更が要る。
+台帳は `node scripts/global-surface.mjs --update` で 175 にした。
