@@ -53,3 +53,5 @@ CI の `check:perf` が、async の `atlas-cap-runs`(896→922 kB 級)・`atlas-
 （3 回目の取り込み後の `check:perf`: async.raw 14376.3→14502.5 kB、async.gzip 4864.8→4890.0 kB、`atlas-cap-runs` 948.3→954.7 kB、`atlas-console` 1105.8→1121.9 kB、dist.assets 21796.5→21939.6 kB。前回上げた時点より後に main へ入った他の変更（Skills・完了判定など）の増分と、web 能力の増分が合わさった CI の測定値で、手で足した数ではない。web 能力の分は上の 2 回の記述のとおり。）
 
 （4 回目: 2026-11-23 の main 取り込み後、CI の Gates 2/3 で `atlas-cap-runs` 931.1→961.7 kB、`atlas-console` 1118.7→1129.1 kB が天井を超えた。CI の測定値に合わせて上げた（953,399→984,800 B、1,145,576→1,156,300 B）。理由は上と同じで、web 能力と main 側の増分が合わさったもの。）
+
+（2026-11-24 の main 取り込み後、CI の Gates 2/3 で check:perf が天井を超えた: atlas-cap-runs 938.6 kB 超（991,800 B へ）、atlas-console 1129.9 kB 超（1,167,700 B へ）、dist.assets 21923.7 kB 超（22,577,200 B へ）。CI の測定値に合わせて上げた。web.session の能力の追加ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
