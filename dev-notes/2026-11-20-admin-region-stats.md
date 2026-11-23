@@ -52,3 +52,5 @@ Wikidata Query Service で P1082 を持つ単位: P300（ISO 3166-2）30,703 記
 ## 性能予算の引き上げ
 
 - async.raw 14376.3→14487.7 kB・atlas-cap-runs 918.5→935.4 kB・atlas-console 1105.8→1118.5 kB・atlas-orchestrate 96.1→101.7 kB・dist.assets 21796.5→21924.3 kB: 取り込み後の全体ビルドの実測。大半は main に入った他の PR の遅延チャンクで、この PR が運ぶのは regionStat の実行部分。起動時に読まれる本数（eager.requests）は 12 のまま——fetch-deadline を動的 import にすると起動時の読み込みが 1 本増えた（9→10）ため、atlas-cap-data.js と同じ静的 import にした。
+
+- 性能予算 atlas-cap-runs 931.1→941.6 kB: 取り込み後の全体ビルドの実測。main に入った他の PR の分を含む。起動時に読まれる本数は 9 のまま。
