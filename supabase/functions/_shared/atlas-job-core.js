@@ -115,7 +115,9 @@ export function workerPrompt(task, extra) {
   return p + '\n\nToday is ' + new Date().toISOString().slice(0, 10) + '.';
 }
 
-/* shapeOf(data, normalizeFacts?) → { ok, out } | { ok:false, why } — the worker's answer held to the shape it was asked for */
+/* shapeOf(data, normalizeFacts?) → { ok, out } | { ok:false, why } — the worker's answer held to the shape it was asked for.
+   `normalizeFacts` is the host's reader of the `facts` list (the page passes js/atlas-fact-merge.js; it needs the geo-object module, which has no
+   server twin yet). Without one, `facts` is [] — a server job carries findings, not matched facts. */
 export function shapeOf(data, normalizeFacts) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return { ok: false, why: 'the answer was not a JSON object' };
   if (typeof data.summary !== 'string' || !data.summary.trim()) return { ok: false, why: '"summary" was missing or empty' };
