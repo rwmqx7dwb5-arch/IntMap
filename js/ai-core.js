@@ -385,6 +385,8 @@ export function aiCore(HOST){
       if(opts.turnId) headers['x-intmap-turn']=String(opts.turnId).slice(0,120);
       /* (atlas-delegation) a worker's call names the reader turn that opened it — js/atlas-delegate.js; ai-proxy decides how it is paid for */
       if(opts.parentTurnId) headers['x-intmap-parent-turn']=String(opts.parentTurnId).slice(0,120);
+      /* (model-options) the model Atlas asked THIS worker to run on; ai-proxy honours it only when it is one of the offered, priced models */
+      if(opts.parentTurnId&&opts.modelHint) headers['x-intmap-model']=String(opts.modelHint).slice(0,80);
       /* …and the key its answer is held under (ai-proxy replayKeyFor): a SECOND executor starting the same worker request — a reloaded page,
          a server resuming the delegation — receives the first one's answer instead of buying another. A worker call only; every other body/header is unchanged. */
       if(opts.parentTurnId&&opts.replayKey) headers['x-intmap-replay']=String(opts.replayKey).slice(0,120);
