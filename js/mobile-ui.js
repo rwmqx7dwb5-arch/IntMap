@@ -290,13 +290,14 @@ export function mobileUI(HOST){
       if(_startMod){ try{ _startMod.refreshStart(); }catch(_){} return; }
       if(_startP) return;
       _startP=import('./start-home.js').then(({ mountStart, refreshStart, unmountStart })=>{ if(!mq.matches){ _startP=null; return; } _startMod={ refreshStart, unmountStart }; mountStart(sidebar); }).catch(()=>{ _startP=null; }); }
+    let _defaultOpening=false;   /* the default Atlas tab is opening: the sheet rises for a moment, and the home (js/start-home.js) is not what it rises to show */
     let detentSeq=0;   /* counts every stop chosen: the default Atlas tab puts the sheet back only if nobody has chosen one since it opened */
     function setDetent(name,animate,v0){
       detentSeq++;
       if(animate===undefined) animate=true;
       name=ALIAS[name]||name; if(!(name in RANK)) name='half';
       const d=recompute(); currentDetent=name;
-      if(RANK[name]>RANK.min) wantStart();
+      if(RANK[name]>RANK.min && !_defaultOpening) wantStart();
       const ty=d.ty(name);
       /* the spring this release rides: the finger's velocity at release is its initial velocity, so a
          hard flick arrives faster than a gentle let-go (the motion UIKit gives a sheet) */
@@ -482,9 +483,9 @@ export function mobileUI(HOST){
        `IntMapLazy.need('atlasConsole')`, the same warm-up a finger's pointerdown asks for — and clicks once it is there. */
     const openDefaultTab=()=>{ try{ if(!mq.matches||embedded()||document.querySelector('.control-panel .mode-btn.active')||document.body.classList.contains('m-menu-open')) return;   /* a reader who opened the menu has already chosen */
       const b=document.querySelector('.control-panel .mode-btn.mode-atlas'); if(!b) return;
-      const was=currentDetent; b.click();
+      const was=currentDetent; _defaultOpening=true; b.click();
       let seen=-1; setTimeout(()=>{ seen=detentSeq; },80);   /* the tab's own raise has happened by now */
-      setTimeout(()=>{ if(seen===detentSeq && RANK[currentDetent]>RANK[was]) setDetent(was); },400); }catch(_){} };
+      setTimeout(()=>{ if(seen===detentSeq && RANK[currentDetent]>RANK[was]) setDetent(was); _defaultOpening=false; },400); }catch(_){ _defaultOpening=false; } };
     setTimeout(()=>{ try{ window.IntMapLazy.need('atlasConsole').then(openDefaultTab,()=>{}); }catch(_){} },2500);
     const si=document.getElementById('search-input'); if(si) si.addEventListener('focus',()=>{ if(mq.matches) go('type'); });
 
