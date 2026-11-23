@@ -1103,7 +1103,8 @@ atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart
 atlas-cap-file.js                 Atlas の能力 — ファイルを作る（file.create。PDF・Word・PowerPoint・Excel・HTML・Markdown・テキスト・CSV・JSON）
 atlas-file-make.js                  ファイル作成の DOM 側（lazy atlasFile）— 描画・グラフ/地図の画像化・書き出し後の読み戻し・保存カード
 file-doc.js                         ファイルの文書モデルと Markdown の読み取り（全形式の書き出しの元）
-file-pdf.js                         PDF の組版（日本語の行分割・ページ分割・表）と書き出し・読み戻し検証
+file-pdf.js                         PDF の組版（日本語の行分割・ページ分割・表）と、ベクター（Type3 字形）での書き出し・読み戻し検証
+file-glyph.js                       PDF の字形 — 端末のフォントで描いた文字の輪郭を marching squares で取り、1000 単位の閉パスにする
 file-office.js                      docx・pptx と xlsx の「文書→シート」の対応、ZIP の読み戻し検査（xlsx の書き手は office-writer.js）
 zip-store.js                        **唯一の ZIP**（stored 方式の書き出しと CRC 付き読み戻し）。docx・pptx・xlsx・検証が共有
 file-text.js                        md・txt・html・csv・json の書き出し
