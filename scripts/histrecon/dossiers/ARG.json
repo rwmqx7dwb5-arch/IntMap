@@ -338,49 +338,6 @@
    "wikidata": "Q44762",
    "spans": [
     {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1979-09-12",
-     "atoms": [
-      "ARG-ADM2-61730980B11552095323688",
-      "ARG-ADM2-61730980B11587085710178",
-      "ARG-ADM2-61730980B14565124860161",
-      "ARG-ADM2-61730980B18675393261940",
-      "ARG-ADM2-61730980B23463184159568",
-      "ARG-ADM2-61730980B26239176559323",
-      "ARG-ADM2-61730980B31839589787630",
-      "ARG-ADM2-61730980B4034945746834",
-      "ARG-ADM2-61730980B45570002459681",
-      "ARG-ADM2-61730980B51981995924731",
-      "ARG-ADM2-61730980B62856380670076",
-      "ARG-ADM2-61730980B64393727529638",
-      "ARG-ADM2-61730980B75281068807854",
-      "ARG-ADM2-61730980B76391862557900",
-      "ARG-ADM2-61730980B78785017489869",
-      "ARG-ADM2-61730980B80741205900311",
-      "ARG-ADM2-61730980B83498212495983"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. The Paraná islands with Santa Fe were reassigned by Ley 22.067 (1979). The Paraná island line between Entre Ríos and Santa Fe was moved to the navigation channel and islands reassigned by Ley 22.067 (B.O. 1979-09-12); before it the island line is not the atoms' line. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
-    {
      "from": "1979-09-12",
      "precision": "day",
      "to": null,
@@ -442,51 +399,6 @@
    },
    "wikidata": "Q44823",
    "spans": [
-    {
-     "from": "1887",
-     "precision": "year",
-     "to": "1979-09-12",
-     "atoms": [
-      "ARG-ADM2-61730980B15935899611470",
-      "ARG-ADM2-61730980B18182396698532",
-      "ARG-ADM2-61730980B23902943966550",
-      "ARG-ADM2-61730980B38020683731034",
-      "ARG-ADM2-61730980B41711157234352",
-      "ARG-ADM2-61730980B46237487976912",
-      "ARG-ADM2-61730980B4652577007654",
-      "ARG-ADM2-61730980B49644503791094",
-      "ARG-ADM2-61730980B50411515207012",
-      "ARG-ADM2-61730980B52273662212744",
-      "ARG-ADM2-61730980B61800814165729",
-      "ARG-ADM2-61730980B62800099035851",
-      "ARG-ADM2-61730980B6439123039884",
-      "ARG-ADM2-61730980B65517483181137",
-      "ARG-ADM2-61730980B672443386534",
-      "ARG-ADM2-61730980B68223475909099",
-      "ARG-ADM2-61730980B70528593712709",
-      "ARG-ADM2-61730980B94012431772813",
-      "ARG-ADM2-61730980B95993881972660"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. The Paraná islands with Entre Ríos were reassigned by Ley 22.067 (1979); the Santiago del Estero line dates only from Ley 1894 (1886). The Paraná island line between Entre Ríos and Santa Fe was moved to the navigation channel and islands reassigned by Ley 22.067 (B.O. 1979-09-12); before it the island line is not the atoms' line. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "From 1887, the year after Ley 1894 moved its northern limit; the outline is approximate — see line."
-    },
     {
      "from": "1979-09-12",
      "precision": "day",
@@ -552,50 +464,6 @@
    "wikidata": "Q44797",
    "spans": [
     {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1980-03-27",
-     "atoms": [
-      "ARG-ADM2-61730980B1211136539314",
-      "ARG-ADM2-61730980B15586340414503",
-      "ARG-ADM2-61730980B18829369395752",
-      "ARG-ADM2-61730980B19531104090182",
-      "ARG-ADM2-61730980B20079308616386",
-      "ARG-ADM2-61730980B24308348826219",
-      "ARG-ADM2-61730980B42121604183922",
-      "ARG-ADM2-61730980B42888218741442",
-      "ARG-ADM2-61730980B45978264735485",
-      "ARG-ADM2-61730980B55098803042234",
-      "ARG-ADM2-61730980B57963533011884",
-      "ARG-ADM2-61730980B64785063825959",
-      "ARG-ADM2-61730980B65696881637259",
-      "ARG-ADM2-61730980B70316540328463",
-      "ARG-ADM2-61730980B71777653725604",
-      "ARG-ADM2-61730980B92952848138392",
-      "ARG-ADM2-61730980B94822321270328",
-      "ARG-ADM2-61730980B95365862986383"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. The Mendoza–San Juan line was fixed by Ley 22.200 (1980) on a 1966 convention; the San Luis line by Ley 18.498 (1970). The Mendoza–San Juan limit was fixed only by Ley 22.200 (B.O. 1980-03-27) on the 1966 convention, one sector as claimed by Mendoza; before it that line is not established. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
-    {
      "from": "1980-03-27",
      "precision": "day",
      "to": null,
@@ -652,103 +520,6 @@
    },
    "wikidata": "Q44803",
    "spans": [
-    {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1943-09-21",
-     "atoms": [
-      "ARG-ADM2-61730980B12479001808037",
-      "ARG-ADM2-61730980B15488687390300",
-      "ARG-ADM2-61730980B17678477966583",
-      "ARG-ADM2-61730980B20324539983987",
-      "ARG-ADM2-61730980B21173322628341",
-      "ARG-ADM2-61730980B22124593999918",
-      "ARG-ADM2-61730980B26191328353907",
-      "ARG-ADM2-61730980B31698660486966",
-      "ARG-ADM2-61730980B38910879035127",
-      "ARG-ADM2-61730980B41964155809664",
-      "ARG-ADM2-61730980B46256753723149",
-      "ARG-ADM2-61730980B48775712926369",
-      "ARG-ADM2-61730980B57744536697119",
-      "ARG-ADM2-61730980B58435423783603",
-      "ARG-ADM2-61730980B62992861219638",
-      "ARG-ADM2-61730980B63550758975873",
-      "ARG-ADM2-61730980B71873263236869",
-      "ARG-ADM2-61730980B73249877879896",
-      "ARG-ADM2-61730980B79245586725774",
-      "ARG-ADM2-61730980B84051306954372",
-      "ARG-ADM2-61730980B8590137946072",
-      "ARG-ADM2-61730980B8942789897843"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Salta's limits with Jujuy (IGM awards to 1953), Catamarca (1970), Chaco (Barilari line 1911) and Santiago del Estero (1980) were settled later; Los Toldos was Bolivian until the 1925 treaty took effect; Pastos Grandes and San Antonio de los Cobres were Los Andes territory 1900–1943. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
-    {
-     "from": "1943-09-21",
-     "precision": "day",
-     "to": "1980-12-09",
-     "atoms": [
-      "ARG-ADM2-61730980B12479001808037",
-      "ARG-ADM2-61730980B15488687390300",
-      "ARG-ADM2-61730980B17678477966583",
-      "ARG-ADM2-61730980B20324539983987",
-      "ARG-ADM2-61730980B21173322628341",
-      "ARG-ADM2-61730980B22124593999918",
-      "ARG-ADM2-61730980B26191328353907",
-      "ARG-ADM2-61730980B31698660486966",
-      "ARG-ADM2-61730980B38910879035127",
-      "ARG-ADM2-61730980B41964155809664",
-      "ARG-ADM2-61730980B46256753723149",
-      "ARG-ADM2-61730980B48775712926369",
-      "ARG-ADM2-61730980B57744536697119",
-      "ARG-ADM2-61730980B58435423783603",
-      "ARG-ADM2-61730980B62992861219638",
-      "ARG-ADM2-61730980B63550758975873",
-      "ARG-ADM2-61730980B71873263236869",
-      "ARG-ADM2-61730980B73249877879896",
-      "ARG-ADM2-61730980B79245586725774",
-      "ARG-ADM2-61730980B84051306954372",
-      "ARG-ADM2-61730980B8590137946072",
-      "ARG-ADM2-61730980B8942789897843",
-      "ARG-ADM2-61730980B96224963686238"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Salta's limits with Jujuy (IGM awards to 1953), Catamarca (1970), Chaco (Barilari line 1911) and Santiago del Estero (1980) were settled later; Los Toldos was Bolivian until the 1925 treaty took effect; Pastos Grandes and San Antonio de los Cobres were Los Andes territory 1900–1943. Salta's limits were fixed only by later acts (see Salta). The Salta–Santiago del Estero limit was fixed only by Ley 22.347 (B.O. 1980-12-09, 1979 convention); the Catamarca line by Ley 18.500 (1970) and still contested. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "From decree 9375 of 21 Sep 1943, which gave the Los Andes department to Salta; the outline is approximate — see line."
-    },
     {
      "from": "1980-12-09",
      "precision": "day",
@@ -830,89 +601,6 @@
    "wikidata": "Q44764",
    "spans": [
     {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1943-09-21",
-     "atoms": [
-      "ARG-ADM2-61730980B17407958230561",
-      "ARG-ADM2-61730980B21987921647817",
-      "ARG-ADM2-61730980B27320368944921",
-      "ARG-ADM2-61730980B37720115941003",
-      "ARG-ADM2-61730980B38086174579280",
-      "ARG-ADM2-61730980B42347447507011",
-      "ARG-ADM2-61730980B57262290665163",
-      "ARG-ADM2-61730980B60516348074924",
-      "ARG-ADM2-61730980B61196907081286",
-      "ARG-ADM2-61730980B75559747618877",
-      "ARG-ADM2-61730980B76568954927707",
-      "ARG-ADM2-61730980B79181726487815",
-      "ARG-ADM2-61730980B80142303912096",
-      "ARG-ADM2-61730980B9597683153912",
-      "ARG-ADM2-61730980B96811087093060"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Four zones of the Salta–Jujuy line were settled only by IGM awards of 1948–1953 (last 12 May 1953). How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
-    {
-     "from": "1943-09-21",
-     "precision": "day",
-     "to": "1953-05-12",
-     "atoms": [
-      "ARG-ADM2-61730980B17407958230561",
-      "ARG-ADM2-61730980B21987921647817",
-      "ARG-ADM2-61730980B27320368944921",
-      "ARG-ADM2-61730980B37720115941003",
-      "ARG-ADM2-61730980B38086174579280",
-      "ARG-ADM2-61730980B42347447507011",
-      "ARG-ADM2-61730980B57262290665163",
-      "ARG-ADM2-61730980B60516348074924",
-      "ARG-ADM2-61730980B61196907081286",
-      "ARG-ADM2-61730980B75559747618877",
-      "ARG-ADM2-61730980B76568954927707",
-      "ARG-ADM2-61730980B79181726487815",
-      "ARG-ADM2-61730980B80142303912096",
-      "ARG-ADM2-61730980B9597683153912",
-      "ARG-ADM2-61730980B96811087093060",
-      "ARG-ADM2-61730980B41665984357705"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Four zones of the Salta–Jujuy line were settled only by IGM awards of 1948–1953 (last 12 May 1953). Jujuy's from decree 9375/1943; the Salta–Jujuy zones were settled only in 1953. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "From decree 9375 of 21 Sep 1943, which gave Susques to Jujuy; the outline is approximate — see line."
-    },
-    {
      "from": "1953-05-12",
      "precision": "day",
      "to": null,
@@ -967,89 +655,6 @@
    },
    "wikidata": "Q44756",
    "spans": [
-    {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1943-09-21",
-     "atoms": [
-      "ARG-ADM2-61730980B13734740101485",
-      "ARG-ADM2-61730980B19433533444932",
-      "ARG-ADM2-61730980B26555197201604",
-      "ARG-ADM2-61730980B28877560844945",
-      "ARG-ADM2-61730980B42057198063965",
-      "ARG-ADM2-61730980B48511689100190",
-      "ARG-ADM2-61730980B62302984984112",
-      "ARG-ADM2-61730980B62858565899892",
-      "ARG-ADM2-61730980B81007798348630",
-      "ARG-ADM2-61730980B86021730445369",
-      "ARG-ADM2-61730980B86901307553736",
-      "ARG-ADM2-61730980B90105410435104",
-      "ARG-ADM2-61730980B92024748366562",
-      "ARG-ADM2-61730980B94999737100466",
-      "ARG-ADM2-61730980B98918352953876"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Catamarca's limits with Salta (Ley 18.500, 1970, still contested), La Rioja (Ley 18.533, 1970) and Santiago del Estero (Ley 22.742, 1983) were fixed only by later acts; until 1943 Antofagasta de la Sierra was Los Andes territory. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
-    {
-     "from": "1943-09-21",
-     "precision": "day",
-     "to": "1983-02-16",
-     "atoms": [
-      "ARG-ADM2-61730980B13734740101485",
-      "ARG-ADM2-61730980B19433533444932",
-      "ARG-ADM2-61730980B26555197201604",
-      "ARG-ADM2-61730980B28877560844945",
-      "ARG-ADM2-61730980B42057198063965",
-      "ARG-ADM2-61730980B48511689100190",
-      "ARG-ADM2-61730980B62302984984112",
-      "ARG-ADM2-61730980B62858565899892",
-      "ARG-ADM2-61730980B81007798348630",
-      "ARG-ADM2-61730980B86021730445369",
-      "ARG-ADM2-61730980B86901307553736",
-      "ARG-ADM2-61730980B90105410435104",
-      "ARG-ADM2-61730980B92024748366562",
-      "ARG-ADM2-61730980B94999737100466",
-      "ARG-ADM2-61730980B98918352953876",
-      "ARG-ADM2-61730980B49626425367328"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Catamarca's limits with Salta (Ley 18.500, 1970, still contested), La Rioja (Ley 18.533, 1970) and Santiago del Estero (Ley 22.742, 1983) were fixed only by later acts; until 1943 Antofagasta de la Sierra was Los Andes territory. Catamarca's limits were fixed only by later acts (see Catamarca). Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "From decree 9375 of 21 Sep 1943, which gave Antofagasta de la Sierra to Catamarca; the outline is approximate — see line."
-    },
     {
      "from": "1983-02-16",
      "precision": "day",
@@ -1111,58 +716,6 @@
    },
    "wikidata": "Q44759",
    "spans": [
-    {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1983-04-25",
-     "atoms": [
-      "ARG-ADM2-61730980B11086319733728",
-      "ARG-ADM2-61730980B13530253245747",
-      "ARG-ADM2-61730980B20468593076410",
-      "ARG-ADM2-61730980B27944530838107",
-      "ARG-ADM2-61730980B31238250662903",
-      "ARG-ADM2-61730980B34793654756209",
-      "ARG-ADM2-61730980B38131446935101",
-      "ARG-ADM2-61730980B3825468035519",
-      "ARG-ADM2-61730980B38611506941533",
-      "ARG-ADM2-61730980B4375422681595",
-      "ARG-ADM2-61730980B46916447207534",
-      "ARG-ADM2-61730980B48132302456703",
-      "ARG-ADM2-61730980B52469297457294",
-      "ARG-ADM2-61730980B55835159827036",
-      "ARG-ADM2-61730980B56418772605079",
-      "ARG-ADM2-61730980B59546711189461",
-      "ARG-ADM2-61730980B65942785311638",
-      "ARG-ADM2-61730980B70788741625134",
-      "ARG-ADM2-61730980B71498262551365",
-      "ARG-ADM2-61730980B72863725650935",
-      "ARG-ADM2-61730980B81524529409154",
-      "ARG-ADM2-61730980B83091517859764",
-      "ARG-ADM2-61730980B85685003882590",
-      "ARG-ADM2-61730980B91207709402211",
-      "ARG-ADM2-61730980B95109119515520",
-      "ARG-ADM2-61730980B98199782535920"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. The Córdoba–Santiago del Estero limit was fixed only by Ley 22.789 (1983); the San Luis, La Rioja and Catamarca lines have no earlier act in the record. Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
     {
      "from": "1983-04-25",
      "precision": "day",
@@ -1229,51 +782,6 @@
    "wikidata": "Q44805",
    "spans": [
     {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1983-04-25",
-     "atoms": [
-      "ARG-ADM2-61730980B18994779185278",
-      "ARG-ADM2-61730980B22681975457322",
-      "ARG-ADM2-61730980B27264787590241",
-      "ARG-ADM2-61730980B2987031825940",
-      "ARG-ADM2-61730980B31889101729395",
-      "ARG-ADM2-61730980B45550942809451",
-      "ARG-ADM2-61730980B46716169011508",
-      "ARG-ADM2-61730980B55193733465089",
-      "ARG-ADM2-61730980B6490927359782",
-      "ARG-ADM2-61730980B72303812021480",
-      "ARG-ADM2-61730980B73949498906302",
-      "ARG-ADM2-61730980B78285538688755",
-      "ARG-ADM2-61730980B78651805295457",
-      "ARG-ADM2-61730980B79956801813082",
-      "ARG-ADM2-61730980B81698180684339",
-      "ARG-ADM2-61730980B84345100673034",
-      "ARG-ADM2-61730980B85841660882492",
-      "ARG-ADM2-61730980B90561116594730",
-      "ARG-ADM2-61730980B94061248290097"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. The San Juan–Mendoza limit was fixed by Ley 22.200 (1980) and the La Rioja line at Vicuña remains disputed. Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
-    {
      "from": "1983-04-25",
      "precision": "day",
      "to": null,
@@ -1326,49 +834,6 @@
    "wikidata": "Q44829",
    "spans": [
     {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1983-04-25",
-     "atoms": [
-      "ARG-ADM2-61730980B10036181744679",
-      "ARG-ADM2-61730980B10668196443859",
-      "ARG-ADM2-61730980B13889034691247",
-      "ARG-ADM2-61730980B16369231979992",
-      "ARG-ADM2-61730980B17356077685479",
-      "ARG-ADM2-61730980B2044576725385",
-      "ARG-ADM2-61730980B2158029988508",
-      "ARG-ADM2-61730980B32203515925344",
-      "ARG-ADM2-61730980B38664240857483",
-      "ARG-ADM2-61730980B55497812442102",
-      "ARG-ADM2-61730980B68338717287929",
-      "ARG-ADM2-61730980B77291084066522",
-      "ARG-ADM2-61730980B79833488690103",
-      "ARG-ADM2-61730980B81092064808968",
-      "ARG-ADM2-61730980B8317426780894",
-      "ARG-ADM2-61730980B91056584985438",
-      "ARG-ADM2-61730980B98032525509739"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Five disputed zones with Santiago del Estero were settled only by Ley 22.312 (1980); no act for the Salta and Catamarca lines is recorded. Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
-    {
      "from": "1983-04-25",
      "precision": "day",
      "to": null,
@@ -1418,50 +883,6 @@
    },
    "wikidata": "Q44796",
    "spans": [
-    {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1980-03-12",
-     "atoms": [
-      "ARG-ADM2-61730980B10920715294308",
-      "ARG-ADM2-61730980B1877190753616",
-      "ARG-ADM2-61730980B21035116848731",
-      "ARG-ADM2-61730980B22460334108875",
-      "ARG-ADM2-61730980B25026306557945",
-      "ARG-ADM2-61730980B31870245826613",
-      "ARG-ADM2-61730980B36020479947957",
-      "ARG-ADM2-61730980B36977394728144",
-      "ARG-ADM2-61730980B43357395590927",
-      "ARG-ADM2-61730980B43723065760012",
-      "ARG-ADM2-61730980B47967614400586",
-      "ARG-ADM2-61730980B53159304456053",
-      "ARG-ADM2-61730980B64076546006472",
-      "ARG-ADM2-61730980B64159378499320",
-      "ARG-ADM2-61730980B75694434489660",
-      "ARG-ADM2-61730980B89547050111737",
-      "ARG-ADM2-61730980B91158656720381",
-      "ARG-ADM2-61730980B97852769949948"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Limits with Catamarca (Ley 18.533, 1970) and San Luis (Ley 22.184, 1980) fixed only later; Vicuña disputed with San Juan. Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
     {
      "from": "1980-03-12",
      "precision": "day",
@@ -1520,41 +941,6 @@
    "wikidata": "Q44818",
    "spans": [
     {
-     "from": "1884-10-16",
-     "precision": "day",
-     "to": "1980-03-12",
-     "atoms": [
-      "ARG-ADM2-61730980B21399673280914",
-      "ARG-ADM2-61730980B37295099370503",
-      "ARG-ADM2-61730980B39092532797168",
-      "ARG-ADM2-61730980B39626183389698",
-      "ARG-ADM2-61730980B56219468048048",
-      "ARG-ADM2-61730980B64718886155143",
-      "ARG-ADM2-61730980B72595291642381",
-      "ARG-ADM2-61730980B87239881423217",
-      "ARG-ADM2-61730980B92635702663446"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Limits with Mendoza (Ley 18.498, 1970) and La Rioja (Ley 22.184, 1980) fixed only later. Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "The unit stood on this ground throughout; the outline is approximate — see line."
-    },
-    {
      "from": "1980-03-12",
      "precision": "day",
      "to": null,
@@ -1602,59 +988,6 @@
    },
    "wikidata": "Q44827",
    "spans": [
-    {
-     "from": "1911",
-     "precision": "year",
-     "to": "1983-04-25",
-     "atoms": [
-      "ARG-ADM2-61730980B13568432968305",
-      "ARG-ADM2-61730980B19837134975286",
-      "ARG-ADM2-61730980B21057051979490",
-      "ARG-ADM2-61730980B28261021809980",
-      "ARG-ADM2-61730980B28367878314015",
-      "ARG-ADM2-61730980B3191379670925",
-      "ARG-ADM2-61730980B33007651807911",
-      "ARG-ADM2-61730980B38115144575329",
-      "ARG-ADM2-61730980B4030066976433",
-      "ARG-ADM2-61730980B41889863901757",
-      "ARG-ADM2-61730980B42398597949751",
-      "ARG-ADM2-61730980B44188734520902",
-      "ARG-ADM2-61730980B47284560228773",
-      "ARG-ADM2-61730980B47702997871145",
-      "ARG-ADM2-61730980B49742365360774",
-      "ARG-ADM2-61730980B49758081905530",
-      "ARG-ADM2-61730980B53242872705838",
-      "ARG-ADM2-61730980B71346119241334",
-      "ARG-ADM2-61730980B71875580954916",
-      "ARG-ADM2-61730980B73101966705720",
-      "ARG-ADM2-61730980B84013532899060",
-      "ARG-ADM2-61730980B85651312060638",
-      "ARG-ADM2-61730980B89830542201766",
-      "ARG-ADM2-61730980B95866867056524",
-      "ARG-ADM2-61730980B98253632785456",
-      "ARG-ADM2-61730980B98686515489678",
-      "ARG-ADM2-61730980B99739045741141"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Its Chaco line changed in 1902/1910; its Tucumán (1980), Salta (1980), Catamarca and Córdoba (1983) lines were fixed only later. Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms. How far the line then differed from today's is not measured."
-     },
-     "dateNote": "From 1911, after the 1902/1910 changes of its Chaco line; the outline is approximate — see line."
-    },
     {
      "from": "1983-04-25",
      "precision": "day",
@@ -1776,48 +1109,6 @@
    "wikidata": "Q44800",
    "spans": [
     {
-     "from": "1955-06-30",
-     "precision": "day",
-     "to": "1970-01-07",
-     "atoms": [
-      "ARG-ADM2-61730980B1496247249680",
-      "ARG-ADM2-61730980B17144703425543",
-      "ARG-ADM2-61730980B32081384015227",
-      "ARG-ADM2-61730980B39164148007065",
-      "ARG-ADM2-61730980B40628819919033",
-      "ARG-ADM2-61730980B43835404707600",
-      "ARG-ADM2-61730980B52691065899930",
-      "ARG-ADM2-61730980B52932124932957",
-      "ARG-ADM2-61730980B74102790629524",
-      "ARG-ADM2-61730980B75660067581001",
-      "ARG-ADM2-61730980B82324044769491",
-      "ARG-ADM2-61730980B83273988840504",
-      "ARG-ADM2-61730980B83392374898421",
-      "ARG-ADM2-61730980B85751419294070",
-      "ARG-ADM2-61730980B88853023630124",
-      "ARG-ADM2-61730980B98633333764723"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms. As for 1955-07-28 – 1970-01-07 (Ley 18.501). How far the line then differed from today's is not measured."
-     },
-     "dateNote": "From the provincialisation (30 Jun 1955); the outline is approximate — see line."
-    },
-    {
      "from": "1970-01-07",
      "precision": "day",
      "to": null,
@@ -1872,45 +1163,6 @@
    },
    "wikidata": "Q44802",
    "spans": [
-    {
-     "from": "1955-06-30",
-     "precision": "day",
-     "to": "1970-01-07",
-     "atoms": [
-      "ARG-ADM2-61730980B10000603471831",
-      "ARG-ADM2-61730980B12252554718289",
-      "ARG-ADM2-61730980B19099504402623",
-      "ARG-ADM2-61730980B23941823928589",
-      "ARG-ADM2-61730980B30095926529222",
-      "ARG-ADM2-61730980B33253419160429",
-      "ARG-ADM2-61730980B38483237983856",
-      "ARG-ADM2-61730980B63808307170695",
-      "ARG-ADM2-61730980B79261334873375",
-      "ARG-ADM2-61730980B80423249669200",
-      "ARG-ADM2-61730980B90515114322880",
-      "ARG-ADM2-61730980B95848117097679",
-      "ARG-ADM2-61730980B95988601788876"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms. As for 1955-07-28 – 1970-01-07 (Ley 18.501). How far the line then differed from today's is not measured."
-     },
-     "dateNote": "From the provincialisation (30 Jun 1955); the outline is approximate — see line."
-    },
     {
      "from": "1970-01-07",
      "precision": "day",
@@ -2599,45 +1851,6 @@
      "dateNote": "Ley 1532 territory: the Argentine part of Isla Grande east of the 1881 treaty meridian, with Isla de los Estados. Ley 14.408 (B.O. 1955-06-30) merged it into the southern province (Patagonia)."
     }
    ]
-  },
-  {
-   "id": "ARG:LosAndes@1900",
-   "names": {
-    "en": "Los Andes National Territory",
-    "ja": "ロス・アンデス国家直轄領",
-    "local": "Territorio Nacional de Los Andes"
-   },
-   "spans": [
-    {
-     "from": "1903",
-     "precision": "year",
-     "to": "1943-09-21",
-     "atoms": [
-      "ARG-ADM2-61730980B41665984357705",
-      "ARG-ADM2-61730980B96224963686238",
-      "ARG-ADM2-61730980B49626425367328"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/uar.html",
-       "title": "Statoids — Provinces of Argentina (change history)",
-       "says": "In 1895 Argentina had 14 provinces, the Capital Federal and the nine territories of Ley 1532; in 1914, 14 provinces, the Capital and ten territories (Los Andes, 1900–1943).",
-       "accessed": "2026-10-06"
-      },
-      {
-       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
-       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
-       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "line": {
-      "certainty": "approximate",
-      "note": "The unit is stated (its existence, name and extent to the order of its boundary zones); its LINE is today's outline carried back, because limits fixed only later are not established as they ran then. The territory (Ley 3906, promulgated 13 Jan 1900; San Antonio de los Cobres ceded by Salta in 1902) is today Susques (Jujuy), Los Andes (Salta) and Antofagasta de la Sierra (Catamarca), but those departments' lines with Cochinoca/Tumbaya, La Poma/Cachi and Belén/Tinogasta are not shown to be the territory's: the atoms total 63,642 km² against the territory's ~62,642 km² (Susques 10,220 vs 9,555). How far the line then differed from today's is not measured. The three departments total 63,642 km² against the territory's ~62,642 km² (1.6% more; Susques 10,220 against 9,555)."
-     },
-     "dateNote": "The territory was created by Ley 3906 (January 1900) and received San Antonio de los Cobres from Salta in 1902; it is drawn from 1903 so that the union is never claimed beyond the ground it held. The outline is approximate — see line."
-    }
-   ]
   }
  ],
  "events": [
@@ -2954,6 +2167,38 @@
  "atomsOutside": [],
  "unresolved": [
   {
+   "what": "Catamarca 1955-07-28 – 1983-02-16",
+   "unit": "ARG:Catamarca@1821",
+   "atoms": [
+    "ARG-ADM2-61730980B13734740101485",
+    "ARG-ADM2-61730980B19433533444932",
+    "ARG-ADM2-61730980B26555197201604",
+    "ARG-ADM2-61730980B28877560844945",
+    "ARG-ADM2-61730980B42057198063965",
+    "ARG-ADM2-61730980B48511689100190",
+    "ARG-ADM2-61730980B49626425367328",
+    "ARG-ADM2-61730980B62302984984112",
+    "ARG-ADM2-61730980B62858565899892",
+    "ARG-ADM2-61730980B81007798348630",
+    "ARG-ADM2-61730980B86021730445369",
+    "ARG-ADM2-61730980B86901307553736",
+    "ARG-ADM2-61730980B90105410435104",
+    "ARG-ADM2-61730980B92024748366562",
+    "ARG-ADM2-61730980B94999737100466",
+    "ARG-ADM2-61730980B98918352953876"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-02-16",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
    "what": "Chubut 1955-07-28 – 1966-12-09",
    "unit": "ARG:Chubut@1955",
    "atoms": [
@@ -2976,6 +2221,427 @@
    "from": "1955-07-28",
    "to": "1966-12-09",
    "why": "The Alto Palena/Encuentro valleys were disputed with Chile (Argentine gendarmerie occupied parts in 1952) until the 1966 award divided them; the atom carries the post-award line.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Cordoba 1955-07-28 – 1983-04-25",
+   "unit": "ARG:Cordoba@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B11086319733728",
+    "ARG-ADM2-61730980B13530253245747",
+    "ARG-ADM2-61730980B20468593076410",
+    "ARG-ADM2-61730980B27944530838107",
+    "ARG-ADM2-61730980B31238250662903",
+    "ARG-ADM2-61730980B34793654756209",
+    "ARG-ADM2-61730980B38131446935101",
+    "ARG-ADM2-61730980B3825468035519",
+    "ARG-ADM2-61730980B38611506941533",
+    "ARG-ADM2-61730980B4375422681595",
+    "ARG-ADM2-61730980B46916447207534",
+    "ARG-ADM2-61730980B48132302456703",
+    "ARG-ADM2-61730980B52469297457294",
+    "ARG-ADM2-61730980B55835159827036",
+    "ARG-ADM2-61730980B56418772605079",
+    "ARG-ADM2-61730980B59546711189461",
+    "ARG-ADM2-61730980B65942785311638",
+    "ARG-ADM2-61730980B70788741625134",
+    "ARG-ADM2-61730980B71498262551365",
+    "ARG-ADM2-61730980B72863725650935",
+    "ARG-ADM2-61730980B81524529409154",
+    "ARG-ADM2-61730980B83091517859764",
+    "ARG-ADM2-61730980B85685003882590",
+    "ARG-ADM2-61730980B91207709402211",
+    "ARG-ADM2-61730980B95109119515520",
+    "ARG-ADM2-61730980B98199782535920"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "EntreRios 1955-07-28 – 1979-09-12",
+   "unit": "ARG:EntreRios@1814",
+   "atoms": [
+    "ARG-ADM2-61730980B11552095323688",
+    "ARG-ADM2-61730980B11587085710178",
+    "ARG-ADM2-61730980B14565124860161",
+    "ARG-ADM2-61730980B18675393261940",
+    "ARG-ADM2-61730980B23463184159568",
+    "ARG-ADM2-61730980B26239176559323",
+    "ARG-ADM2-61730980B31839589787630",
+    "ARG-ADM2-61730980B4034945746834",
+    "ARG-ADM2-61730980B45570002459681",
+    "ARG-ADM2-61730980B51981995924731",
+    "ARG-ADM2-61730980B62856380670076",
+    "ARG-ADM2-61730980B64393727529638",
+    "ARG-ADM2-61730980B75281068807854",
+    "ARG-ADM2-61730980B76391862557900",
+    "ARG-ADM2-61730980B78785017489869",
+    "ARG-ADM2-61730980B80741205900311",
+    "ARG-ADM2-61730980B83498212495983"
+   ],
+   "from": "1955-07-28",
+   "to": "1979-09-12",
+   "why": "The Paraná island line between Entre Ríos and Santa Fe was moved to the navigation channel and islands reassigned by Ley 22.067 (B.O. 1979-09-12); before it the island line is not the atoms' line.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502",
+    "Ley 22.067 text (argentina.gob.ar)",
+    "es.wikipedia Provincia de Santa Fe oldid 175658536"
+   ],
+   "needs": "island-level atoms with the pre-1979 attributions"
+  },
+  {
+   "what": "SantaFe 1955-07-28 – 1979-09-12",
+   "unit": "ARG:SantaFe@1819",
+   "atoms": [
+    "ARG-ADM2-61730980B15935899611470",
+    "ARG-ADM2-61730980B18182396698532",
+    "ARG-ADM2-61730980B23902943966550",
+    "ARG-ADM2-61730980B38020683731034",
+    "ARG-ADM2-61730980B41711157234352",
+    "ARG-ADM2-61730980B46237487976912",
+    "ARG-ADM2-61730980B4652577007654",
+    "ARG-ADM2-61730980B49644503791094",
+    "ARG-ADM2-61730980B50411515207012",
+    "ARG-ADM2-61730980B52273662212744",
+    "ARG-ADM2-61730980B61800814165729",
+    "ARG-ADM2-61730980B62800099035851",
+    "ARG-ADM2-61730980B6439123039884",
+    "ARG-ADM2-61730980B65517483181137",
+    "ARG-ADM2-61730980B672443386534",
+    "ARG-ADM2-61730980B68223475909099",
+    "ARG-ADM2-61730980B70528593712709",
+    "ARG-ADM2-61730980B94012431772813",
+    "ARG-ADM2-61730980B95993881972660"
+   ],
+   "from": "1955-07-28",
+   "to": "1979-09-12",
+   "why": "The Paraná island line between Entre Ríos and Santa Fe was moved to the navigation channel and islands reassigned by Ley 22.067 (B.O. 1979-09-12); before it the island line is not the atoms' line.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502",
+    "Ley 22.067 text (argentina.gob.ar)",
+    "es.wikipedia Provincia de Santa Fe oldid 175658536"
+   ],
+   "needs": "island-level atoms with the pre-1979 attributions"
+  },
+  {
+   "what": "SanJuan 1955-07-28 – 1983-04-25",
+   "unit": "ARG:SanJuan@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B18994779185278",
+    "ARG-ADM2-61730980B22681975457322",
+    "ARG-ADM2-61730980B27264787590241",
+    "ARG-ADM2-61730980B2987031825940",
+    "ARG-ADM2-61730980B31889101729395",
+    "ARG-ADM2-61730980B45550942809451",
+    "ARG-ADM2-61730980B46716169011508",
+    "ARG-ADM2-61730980B55193733465089",
+    "ARG-ADM2-61730980B6490927359782",
+    "ARG-ADM2-61730980B72303812021480",
+    "ARG-ADM2-61730980B73949498906302",
+    "ARG-ADM2-61730980B78285538688755",
+    "ARG-ADM2-61730980B78651805295457",
+    "ARG-ADM2-61730980B79956801813082",
+    "ARG-ADM2-61730980B81698180684339",
+    "ARG-ADM2-61730980B84345100673034",
+    "ARG-ADM2-61730980B85841660882492",
+    "ARG-ADM2-61730980B90561116594730",
+    "ARG-ADM2-61730980B94061248290097"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Tucuman 1955-07-28 – 1983-04-25",
+   "unit": "ARG:Tucuman@1814",
+   "atoms": [
+    "ARG-ADM2-61730980B10036181744679",
+    "ARG-ADM2-61730980B10668196443859",
+    "ARG-ADM2-61730980B13889034691247",
+    "ARG-ADM2-61730980B16369231979992",
+    "ARG-ADM2-61730980B17356077685479",
+    "ARG-ADM2-61730980B2044576725385",
+    "ARG-ADM2-61730980B2158029988508",
+    "ARG-ADM2-61730980B32203515925344",
+    "ARG-ADM2-61730980B38664240857483",
+    "ARG-ADM2-61730980B55497812442102",
+    "ARG-ADM2-61730980B68338717287929",
+    "ARG-ADM2-61730980B77291084066522",
+    "ARG-ADM2-61730980B79833488690103",
+    "ARG-ADM2-61730980B81092064808968",
+    "ARG-ADM2-61730980B8317426780894",
+    "ARG-ADM2-61730980B91056584985438",
+    "ARG-ADM2-61730980B98032525509739"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "LaRioja 1955-07-28 – 1980-03-12",
+   "unit": "ARG:LaRioja@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B10920715294308",
+    "ARG-ADM2-61730980B1877190753616",
+    "ARG-ADM2-61730980B21035116848731",
+    "ARG-ADM2-61730980B22460334108875",
+    "ARG-ADM2-61730980B25026306557945",
+    "ARG-ADM2-61730980B31870245826613",
+    "ARG-ADM2-61730980B36020479947957",
+    "ARG-ADM2-61730980B36977394728144",
+    "ARG-ADM2-61730980B43357395590927",
+    "ARG-ADM2-61730980B43723065760012",
+    "ARG-ADM2-61730980B47967614400586",
+    "ARG-ADM2-61730980B53159304456053",
+    "ARG-ADM2-61730980B64076546006472",
+    "ARG-ADM2-61730980B64159378499320",
+    "ARG-ADM2-61730980B75694434489660",
+    "ARG-ADM2-61730980B89547050111737",
+    "ARG-ADM2-61730980B91158656720381",
+    "ARG-ADM2-61730980B97852769949948"
+   ],
+   "from": "1955-07-28",
+   "to": "1980-03-12",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Mendoza 1955-07-28 – 1980-03-27",
+   "unit": "ARG:Mendoza@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B1211136539314",
+    "ARG-ADM2-61730980B15586340414503",
+    "ARG-ADM2-61730980B18829369395752",
+    "ARG-ADM2-61730980B19531104090182",
+    "ARG-ADM2-61730980B20079308616386",
+    "ARG-ADM2-61730980B24308348826219",
+    "ARG-ADM2-61730980B42121604183922",
+    "ARG-ADM2-61730980B42888218741442",
+    "ARG-ADM2-61730980B45978264735485",
+    "ARG-ADM2-61730980B55098803042234",
+    "ARG-ADM2-61730980B57963533011884",
+    "ARG-ADM2-61730980B64785063825959",
+    "ARG-ADM2-61730980B65696881637259",
+    "ARG-ADM2-61730980B70316540328463",
+    "ARG-ADM2-61730980B71777653725604",
+    "ARG-ADM2-61730980B92952848138392",
+    "ARG-ADM2-61730980B94822321270328",
+    "ARG-ADM2-61730980B95365862986383"
+   ],
+   "from": "1955-07-28",
+   "to": "1980-03-27",
+   "why": "The Mendoza–San Juan limit was fixed only by Ley 22.200 (B.O. 1980-03-27) on the 1966 convention, one sector as claimed by Mendoza; before it that line is not established.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502",
+    "Ley 22.200 text (argentina.gob.ar)"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Neuquen 1955-07-28 – 1970-01-07",
+   "unit": "ARG:Neuquen@1955",
+   "atoms": [
+    "ARG-ADM2-61730980B1496247249680",
+    "ARG-ADM2-61730980B17144703425543",
+    "ARG-ADM2-61730980B32081384015227",
+    "ARG-ADM2-61730980B39164148007065",
+    "ARG-ADM2-61730980B40628819919033",
+    "ARG-ADM2-61730980B43835404707600",
+    "ARG-ADM2-61730980B52691065899930",
+    "ARG-ADM2-61730980B52932124932957",
+    "ARG-ADM2-61730980B74102790629524",
+    "ARG-ADM2-61730980B75660067581001",
+    "ARG-ADM2-61730980B82324044769491",
+    "ARG-ADM2-61730980B83273988840504",
+    "ARG-ADM2-61730980B83392374898421",
+    "ARG-ADM2-61730980B85751419294070",
+    "ARG-ADM2-61730980B88853023630124",
+    "ARG-ADM2-61730980B98633333764723"
+   ],
+   "from": "1955-07-28",
+   "to": "1970-01-07",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "RioNegro 1955-07-28 – 1970-01-07",
+   "unit": "ARG:RioNegro@1955",
+   "atoms": [
+    "ARG-ADM2-61730980B10000603471831",
+    "ARG-ADM2-61730980B12252554718289",
+    "ARG-ADM2-61730980B19099504402623",
+    "ARG-ADM2-61730980B23941823928589",
+    "ARG-ADM2-61730980B30095926529222",
+    "ARG-ADM2-61730980B33253419160429",
+    "ARG-ADM2-61730980B38483237983856",
+    "ARG-ADM2-61730980B63808307170695",
+    "ARG-ADM2-61730980B79261334873375",
+    "ARG-ADM2-61730980B80423249669200",
+    "ARG-ADM2-61730980B90515114322880",
+    "ARG-ADM2-61730980B95848117097679",
+    "ARG-ADM2-61730980B95988601788876"
+   ],
+   "from": "1955-07-28",
+   "to": "1970-01-07",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Salta 1955-07-28 – 1980-12-09",
+   "unit": "ARG:Salta@1814",
+   "atoms": [
+    "ARG-ADM2-61730980B12479001808037",
+    "ARG-ADM2-61730980B15488687390300",
+    "ARG-ADM2-61730980B17678477966583",
+    "ARG-ADM2-61730980B20324539983987",
+    "ARG-ADM2-61730980B21173322628341",
+    "ARG-ADM2-61730980B22124593999918",
+    "ARG-ADM2-61730980B26191328353907",
+    "ARG-ADM2-61730980B31698660486966",
+    "ARG-ADM2-61730980B38910879035127",
+    "ARG-ADM2-61730980B41964155809664",
+    "ARG-ADM2-61730980B46256753723149",
+    "ARG-ADM2-61730980B48775712926369",
+    "ARG-ADM2-61730980B57744536697119",
+    "ARG-ADM2-61730980B58435423783603",
+    "ARG-ADM2-61730980B62992861219638",
+    "ARG-ADM2-61730980B63550758975873",
+    "ARG-ADM2-61730980B71873263236869",
+    "ARG-ADM2-61730980B73249877879896",
+    "ARG-ADM2-61730980B79245586725774",
+    "ARG-ADM2-61730980B84051306954372",
+    "ARG-ADM2-61730980B8590137946072",
+    "ARG-ADM2-61730980B8942789897843",
+    "ARG-ADM2-61730980B96224963686238"
+   ],
+   "from": "1955-07-28",
+   "to": "1980-12-09",
+   "why": "The Salta–Santiago del Estero limit was fixed only by Ley 22.347 (B.O. 1980-12-09, 1979 convention); the Catamarca line by Ley 18.500 (1970) and still contested.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502",
+    "InfoLeg Ley 22.347",
+    "es.wikipedia Provincia de Santiago del Estero oldid 175237984"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "SanLuis 1955-07-28 – 1980-03-12",
+   "unit": "ARG:SanLuis@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B21399673280914",
+    "ARG-ADM2-61730980B37295099370503",
+    "ARG-ADM2-61730980B39092532797168",
+    "ARG-ADM2-61730980B39626183389698",
+    "ARG-ADM2-61730980B56219468048048",
+    "ARG-ADM2-61730980B64718886155143",
+    "ARG-ADM2-61730980B72595291642381",
+    "ARG-ADM2-61730980B87239881423217",
+    "ARG-ADM2-61730980B92635702663446"
+   ],
+   "from": "1955-07-28",
+   "to": "1980-03-12",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "SantiagoDelEstero 1955-07-28 – 1983-04-25",
+   "unit": "ARG:SantiagoDelEstero@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B13568432968305",
+    "ARG-ADM2-61730980B19837134975286",
+    "ARG-ADM2-61730980B21057051979490",
+    "ARG-ADM2-61730980B28261021809980",
+    "ARG-ADM2-61730980B28367878314015",
+    "ARG-ADM2-61730980B3191379670925",
+    "ARG-ADM2-61730980B33007651807911",
+    "ARG-ADM2-61730980B38115144575329",
+    "ARG-ADM2-61730980B4030066976433",
+    "ARG-ADM2-61730980B41889863901757",
+    "ARG-ADM2-61730980B42398597949751",
+    "ARG-ADM2-61730980B44188734520902",
+    "ARG-ADM2-61730980B47284560228773",
+    "ARG-ADM2-61730980B47702997871145",
+    "ARG-ADM2-61730980B49742365360774",
+    "ARG-ADM2-61730980B49758081905530",
+    "ARG-ADM2-61730980B53242872705838",
+    "ARG-ADM2-61730980B71346119241334",
+    "ARG-ADM2-61730980B71875580954916",
+    "ARG-ADM2-61730980B73101966705720",
+    "ARG-ADM2-61730980B84013532899060",
+    "ARG-ADM2-61730980B85651312060638",
+    "ARG-ADM2-61730980B89830542201766",
+    "ARG-ADM2-61730980B95866867056524",
+    "ARG-ADM2-61730980B98253632785456",
+    "ARG-ADM2-61730980B98686515489678",
+    "ARG-ADM2-61730980B99739045741141"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
    "checked": [
     "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
     "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
@@ -3046,7 +2712,197 @@
    "needs": "the text of decree-law 21.178/56 and 2.191/57"
   },
   {
-   "what": "Santiago del Estero 1884-10-16 – 1911",
+   "what": "Catamarca 1884-10-16 – 1955-07-28",
+   "unit": "ARG:Catamarca@1821",
+   "atoms": [
+    "ARG-ADM2-61730980B13734740101485",
+    "ARG-ADM2-61730980B19433533444932",
+    "ARG-ADM2-61730980B26555197201604",
+    "ARG-ADM2-61730980B28877560844945",
+    "ARG-ADM2-61730980B42057198063965",
+    "ARG-ADM2-61730980B48511689100190",
+    "ARG-ADM2-61730980B62302984984112",
+    "ARG-ADM2-61730980B62858565899892",
+    "ARG-ADM2-61730980B81007798348630",
+    "ARG-ADM2-61730980B86021730445369",
+    "ARG-ADM2-61730980B86901307553736",
+    "ARG-ADM2-61730980B90105410435104",
+    "ARG-ADM2-61730980B92024748366562",
+    "ARG-ADM2-61730980B94999737100466",
+    "ARG-ADM2-61730980B98918352953876"
+   ],
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "Catamarca's limits with Salta (Ley 18.500, 1970, still contested), La Rioja (Ley 18.533, 1970) and Santiago del Estero (Ley 22.742, 1983) were fixed only by later acts; until 1943 Antofagasta de la Sierra was Los Andes territory.",
+   "checked": [
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html"
+   ],
+   "needs": "department-level atoms with the pre-act lines"
+  },
+  {
+   "what": "Córdoba 1884-10-16 – 1955-07-28",
+   "unit": "ARG:Cordoba@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B11086319733728",
+    "ARG-ADM2-61730980B13530253245747",
+    "ARG-ADM2-61730980B20468593076410",
+    "ARG-ADM2-61730980B27944530838107",
+    "ARG-ADM2-61730980B31238250662903",
+    "ARG-ADM2-61730980B34793654756209",
+    "ARG-ADM2-61730980B38131446935101",
+    "ARG-ADM2-61730980B3825468035519",
+    "ARG-ADM2-61730980B38611506941533",
+    "ARG-ADM2-61730980B4375422681595",
+    "ARG-ADM2-61730980B46916447207534",
+    "ARG-ADM2-61730980B48132302456703",
+    "ARG-ADM2-61730980B52469297457294",
+    "ARG-ADM2-61730980B55835159827036",
+    "ARG-ADM2-61730980B56418772605079",
+    "ARG-ADM2-61730980B59546711189461",
+    "ARG-ADM2-61730980B65942785311638",
+    "ARG-ADM2-61730980B70788741625134",
+    "ARG-ADM2-61730980B71498262551365",
+    "ARG-ADM2-61730980B72863725650935",
+    "ARG-ADM2-61730980B81524529409154",
+    "ARG-ADM2-61730980B83091517859764",
+    "ARG-ADM2-61730980B85685003882590",
+    "ARG-ADM2-61730980B91207709402211",
+    "ARG-ADM2-61730980B95109119515520",
+    "ARG-ADM2-61730980B98199782535920"
+   ],
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "The Córdoba–Santiago del Estero limit was fixed only by Ley 22.789 (1983); the San Luis, La Rioja and Catamarca lines have no earlier act in the record.",
+   "checked": [
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html"
+   ],
+   "needs": "the pre-1983 administered line with Santiago del Estero"
+  },
+  {
+   "what": "San Juan 1884-10-16 – 1955-07-28",
+   "unit": "ARG:SanJuan@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B18994779185278",
+    "ARG-ADM2-61730980B22681975457322",
+    "ARG-ADM2-61730980B27264787590241",
+    "ARG-ADM2-61730980B2987031825940",
+    "ARG-ADM2-61730980B31889101729395",
+    "ARG-ADM2-61730980B45550942809451",
+    "ARG-ADM2-61730980B46716169011508",
+    "ARG-ADM2-61730980B55193733465089",
+    "ARG-ADM2-61730980B6490927359782",
+    "ARG-ADM2-61730980B72303812021480",
+    "ARG-ADM2-61730980B73949498906302",
+    "ARG-ADM2-61730980B78285538688755",
+    "ARG-ADM2-61730980B78651805295457",
+    "ARG-ADM2-61730980B79956801813082",
+    "ARG-ADM2-61730980B81698180684339",
+    "ARG-ADM2-61730980B84345100673034",
+    "ARG-ADM2-61730980B85841660882492",
+    "ARG-ADM2-61730980B90561116594730",
+    "ARG-ADM2-61730980B94061248290097"
+   ],
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "The San Juan–Mendoza limit was fixed by Ley 22.200 (1980) and the La Rioja line at Vicuña remains disputed.",
+   "checked": [
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html",
+    "Ley 22.200 text (argentina.gob.ar)"
+   ],
+   "needs": "the pre-1980 lines"
+  },
+  {
+   "what": "Tucumán 1884-10-16 – 1955-07-28",
+   "unit": "ARG:Tucuman@1814",
+   "atoms": [
+    "ARG-ADM2-61730980B10036181744679",
+    "ARG-ADM2-61730980B10668196443859",
+    "ARG-ADM2-61730980B13889034691247",
+    "ARG-ADM2-61730980B16369231979992",
+    "ARG-ADM2-61730980B17356077685479",
+    "ARG-ADM2-61730980B2044576725385",
+    "ARG-ADM2-61730980B2158029988508",
+    "ARG-ADM2-61730980B32203515925344",
+    "ARG-ADM2-61730980B38664240857483",
+    "ARG-ADM2-61730980B55497812442102",
+    "ARG-ADM2-61730980B68338717287929",
+    "ARG-ADM2-61730980B77291084066522",
+    "ARG-ADM2-61730980B79833488690103",
+    "ARG-ADM2-61730980B81092064808968",
+    "ARG-ADM2-61730980B8317426780894",
+    "ARG-ADM2-61730980B91056584985438",
+    "ARG-ADM2-61730980B98032525509739"
+   ],
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "Five disputed zones with Santiago del Estero were settled only by Ley 22.312 (1980); no act for the Salta and Catamarca lines is recorded.",
+   "checked": [
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html",
+    "Ley 22.312 text (argentina.gob.ar)"
+   ],
+   "needs": "the pre-1980 lines in the five zones"
+  },
+  {
+   "what": "La Rioja 1884-10-16 – 1955-07-28",
+   "unit": "ARG:LaRioja@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B10920715294308",
+    "ARG-ADM2-61730980B1877190753616",
+    "ARG-ADM2-61730980B21035116848731",
+    "ARG-ADM2-61730980B22460334108875",
+    "ARG-ADM2-61730980B25026306557945",
+    "ARG-ADM2-61730980B31870245826613",
+    "ARG-ADM2-61730980B36020479947957",
+    "ARG-ADM2-61730980B36977394728144",
+    "ARG-ADM2-61730980B43357395590927",
+    "ARG-ADM2-61730980B43723065760012",
+    "ARG-ADM2-61730980B47967614400586",
+    "ARG-ADM2-61730980B53159304456053",
+    "ARG-ADM2-61730980B64076546006472",
+    "ARG-ADM2-61730980B64159378499320",
+    "ARG-ADM2-61730980B75694434489660",
+    "ARG-ADM2-61730980B89547050111737",
+    "ARG-ADM2-61730980B91158656720381",
+    "ARG-ADM2-61730980B97852769949948"
+   ],
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "Limits with Catamarca (Ley 18.533, 1970) and San Luis (Ley 22.184, 1980) fixed only later; Vicuña disputed with San Juan.",
+   "checked": [
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html"
+   ],
+   "needs": "the pre-act lines"
+  },
+  {
+   "what": "San Luis 1884-10-16 – 1955-07-28",
+   "unit": "ARG:SanLuis@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B21399673280914",
+    "ARG-ADM2-61730980B37295099370503",
+    "ARG-ADM2-61730980B39092532797168",
+    "ARG-ADM2-61730980B39626183389698",
+    "ARG-ADM2-61730980B56219468048048",
+    "ARG-ADM2-61730980B64718886155143",
+    "ARG-ADM2-61730980B72595291642381",
+    "ARG-ADM2-61730980B87239881423217",
+    "ARG-ADM2-61730980B92635702663446"
+   ],
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "Limits with Mendoza (Ley 18.498, 1970) and La Rioja (Ley 22.184, 1980) fixed only later.",
+   "checked": [
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html"
+   ],
+   "needs": "the pre-act lines"
+  },
+  {
+   "what": "Santiago del Estero 1884-10-16 – 1955-07-28",
    "unit": "ARG:SantiagoDelEstero@1820",
    "atoms": [
     "ARG-ADM2-61730980B13568432968305",
@@ -3078,17 +2934,120 @@
     "ARG-ADM2-61730980B99739045741141"
    ],
    "from": "1884-10-16",
-   "to": "1911",
-   "why": "Its Chaco line changed in 1902 and 1910 (the days are not established), so the atoms' line is not the line of these years; the window runs to the start of 1911.",
+   "to": "1955-07-28",
+   "why": "Its Chaco line changed in 1902/1910; its Tucumán (1980), Salta (1980), Catamarca and Córdoba (1983) lines were fixed only later.",
    "checked": [
     "UCA repository paper on interprovincial limits (Godio)",
     "statoids uar.html",
     "es.wikipedia Provincia de Santiago del Estero oldid 175237984"
    ],
-   "needs": "the acts of 1902 and 1910 and the pre-act Chaco line"
+   "needs": "the pre-act lines"
   },
   {
-   "what": "Santa Fe 1884-10-16 – 1887",
+   "what": "Mendoza 1884-10-16 – 1955-07-28",
+   "unit": "ARG:Mendoza@1820",
+   "atoms": [
+    "ARG-ADM2-61730980B1211136539314",
+    "ARG-ADM2-61730980B15586340414503",
+    "ARG-ADM2-61730980B18829369395752",
+    "ARG-ADM2-61730980B19531104090182",
+    "ARG-ADM2-61730980B20079308616386",
+    "ARG-ADM2-61730980B24308348826219",
+    "ARG-ADM2-61730980B42121604183922",
+    "ARG-ADM2-61730980B42888218741442",
+    "ARG-ADM2-61730980B45978264735485",
+    "ARG-ADM2-61730980B55098803042234",
+    "ARG-ADM2-61730980B57963533011884",
+    "ARG-ADM2-61730980B64785063825959",
+    "ARG-ADM2-61730980B65696881637259",
+    "ARG-ADM2-61730980B70316540328463",
+    "ARG-ADM2-61730980B71777653725604",
+    "ARG-ADM2-61730980B92952848138392",
+    "ARG-ADM2-61730980B94822321270328",
+    "ARG-ADM2-61730980B95365862986383"
+   ],
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "The Mendoza–San Juan line was fixed by Ley 22.200 (1980) on a 1966 convention; the San Luis line by Ley 18.498 (1970).",
+   "checked": [
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html",
+    "Ley 22.200 text (argentina.gob.ar)"
+   ],
+   "needs": "the pre-act lines"
+  },
+  {
+   "what": "Salta 1884-10-16 – 1955-07-28",
+   "unit": "ARG:Salta@1814",
+   "atoms": [
+    "ARG-ADM2-61730980B12479001808037",
+    "ARG-ADM2-61730980B15488687390300",
+    "ARG-ADM2-61730980B17678477966583",
+    "ARG-ADM2-61730980B20324539983987",
+    "ARG-ADM2-61730980B21173322628341",
+    "ARG-ADM2-61730980B22124593999918",
+    "ARG-ADM2-61730980B26191328353907",
+    "ARG-ADM2-61730980B31698660486966",
+    "ARG-ADM2-61730980B38910879035127",
+    "ARG-ADM2-61730980B41964155809664",
+    "ARG-ADM2-61730980B46256753723149",
+    "ARG-ADM2-61730980B48775712926369",
+    "ARG-ADM2-61730980B57744536697119",
+    "ARG-ADM2-61730980B58435423783603",
+    "ARG-ADM2-61730980B62992861219638",
+    "ARG-ADM2-61730980B63550758975873",
+    "ARG-ADM2-61730980B71873263236869",
+    "ARG-ADM2-61730980B73249877879896",
+    "ARG-ADM2-61730980B79245586725774",
+    "ARG-ADM2-61730980B84051306954372",
+    "ARG-ADM2-61730980B8590137946072",
+    "ARG-ADM2-61730980B8942789897843"
+   ],
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "Salta's limits with Jujuy (IGM awards to 1953), Catamarca (1970), Chaco (Barilari line 1911) and Santiago del Estero (1980) were settled later; Los Toldos was Bolivian until the 1925 treaty took effect; Pastos Grandes and San Antonio de los Cobres were Los Andes territory 1900–1943.",
+   "checked": [
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502",
+    "es.wikipedia Territorio nacional de Los Andes oldid 173729092"
+   ],
+   "needs": "the pre-act lines"
+  },
+  {
+   "what": "Entre Ríos 1884-10-16 – 1955-07-28",
+   "unit": "ARG:EntreRios@1814",
+   "atoms": [
+    "ARG-ADM2-61730980B11552095323688",
+    "ARG-ADM2-61730980B11587085710178",
+    "ARG-ADM2-61730980B14565124860161",
+    "ARG-ADM2-61730980B18675393261940",
+    "ARG-ADM2-61730980B23463184159568",
+    "ARG-ADM2-61730980B26239176559323",
+    "ARG-ADM2-61730980B31839589787630",
+    "ARG-ADM2-61730980B4034945746834",
+    "ARG-ADM2-61730980B45570002459681",
+    "ARG-ADM2-61730980B51981995924731",
+    "ARG-ADM2-61730980B62856380670076",
+    "ARG-ADM2-61730980B64393727529638",
+    "ARG-ADM2-61730980B75281068807854",
+    "ARG-ADM2-61730980B76391862557900",
+    "ARG-ADM2-61730980B78785017489869",
+    "ARG-ADM2-61730980B80741205900311",
+    "ARG-ADM2-61730980B83498212495983"
+   ],
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "The Paraná islands with Santa Fe were reassigned by Ley 22.067 (1979).",
+   "checked": [
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html",
+    "Ley 22.067 text (argentina.gob.ar)"
+   ],
+   "needs": "island-level atoms with the pre-1979 attributions"
+  },
+  {
+   "what": "Santa Fe 1884-10-16 – 1955-07-28",
    "unit": "ARG:SantaFe@1819",
    "atoms": [
     "ARG-ADM2-61730980B15935899611470",
@@ -3112,15 +3071,45 @@
     "ARG-ADM2-61730980B95993881972660"
    ],
    "from": "1884-10-16",
-   "to": "1887",
-   "why": "Before Ley 1894 (1886) moved the Santa Fe–Chaco line to parallel 28°, the northern limit is not the atoms' line; the year of the act is stated, its day is not, so the window runs to the start of 1887.",
+   "to": "1955-07-28",
+   "why": "The Paraná islands with Entre Ríos were reassigned by Ley 22.067 (1979); the Santiago del Estero line dates only from Ley 1894 (1886).",
    "checked": [
     "UCA repository paper on interprovincial limits (Godio)",
     "statoids uar.html",
     "Ley 22.067 text (argentina.gob.ar)",
     "es.wikipedia Provincia de Santa Fe oldid 175658536"
    ],
-   "needs": "the day of Ley 1894 and the pre-1886 northern line"
+   "needs": "island-level atoms with the pre-1979 attributions"
+  },
+  {
+   "what": "Jujuy 1884-10-16 – 1953-05-12",
+   "unit": "ARG:Jujuy@1834",
+   "atoms": [
+    "ARG-ADM2-61730980B17407958230561",
+    "ARG-ADM2-61730980B21987921647817",
+    "ARG-ADM2-61730980B27320368944921",
+    "ARG-ADM2-61730980B37720115941003",
+    "ARG-ADM2-61730980B38086174579280",
+    "ARG-ADM2-61730980B42347447507011",
+    "ARG-ADM2-61730980B57262290665163",
+    "ARG-ADM2-61730980B60516348074924",
+    "ARG-ADM2-61730980B61196907081286",
+    "ARG-ADM2-61730980B75559747618877",
+    "ARG-ADM2-61730980B76568954927707",
+    "ARG-ADM2-61730980B79181726487815",
+    "ARG-ADM2-61730980B80142303912096",
+    "ARG-ADM2-61730980B9597683153912",
+    "ARG-ADM2-61730980B96811087093060"
+   ],
+   "from": "1884-10-16",
+   "to": "1953-05-12",
+   "why": "Four zones of the Salta–Jujuy line were settled only by IGM awards of 1948–1953 (last 12 May 1953).",
+   "checked": [
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502",
+    "UCA repository paper on interprovincial limits (Godio)",
+    "statoids uar.html"
+   ],
+   "needs": "the pre-award lines of the four zones"
   },
   {
    "what": "Puna de Atacama before the Buchanan award",
@@ -3140,7 +3129,7 @@
    "needs": "an atom for San Antonio de los Cobres"
   },
   {
-   "what": "Los Andes territory 1899-03-24 – 1903",
+   "what": "Los Andes territory 1899-03-24 – 1943-09-21",
    "unit": "ARG:LosAndes@1900",
    "atoms": [
     "ARG-ADM2-61730980B41665984357705",
@@ -3148,14 +3137,56 @@
     "ARG-ADM2-61730980B49626425367328"
    ],
    "from": "1899-03-24",
-   "to": "1903",
-   "why": "The Puna was Argentine-administered from the Buchanan award (24 Mar 1899) and Ley 3906 (13 Jan 1900) made it the territory; San Antonio de los Cobres came from Salta in 1902 (the day is not established), so until the start of 1903 the territory's ground is not the atoms' union.",
+   "to": "1943-09-21",
+   "why": "The territory (Ley 3906, promulgated 13 Jan 1900; San Antonio de los Cobres ceded by Salta in 1902) is today Susques (Jujuy), Los Andes (Salta) and Antofagasta de la Sierra (Catamarca), but those departments' lines with Cochinoca/Tumbaya, La Poma/Cachi and Belén/Tinogasta are not shown to be the territory's: the atoms total 63,642 km² against the territory's ~62,642 km² (Susques 10,220 vs 9,555).",
    "checked": [
     "es.wikipedia Territorio nacional de Los Andes oldid 173729092",
     "statoids uar.html",
     "geodesic area of the gb-adm2 atoms (2026-10-06)"
    ],
    "needs": "the text of decree 9375/1943 and the later department limit acts of Jujuy, Salta and Catamarca"
+  },
+  {
+   "what": "Susques 1943-09-21 – 1953-05-12",
+   "unit": "ARG:Jujuy@1834",
+   "atoms": [
+    "ARG-ADM2-61730980B41665984357705"
+   ],
+   "from": "1943-09-21",
+   "to": "1953-05-12",
+   "why": "Jujuy's from decree 9375/1943; the Salta–Jujuy zones were settled only in 1953.",
+   "checked": [
+    "es.wikipedia Territorio nacional de Los Andes oldid 173729092"
+   ],
+   "needs": "the pre-award lines"
+  },
+  {
+   "what": "Los Andes department (Salta) 1943-09-21 – 1955-07-28",
+   "unit": "ARG:Salta@1814",
+   "atoms": [
+    "ARG-ADM2-61730980B96224963686238"
+   ],
+   "from": "1943-09-21",
+   "to": "1955-07-28",
+   "why": "Salta's limits were fixed only by later acts (see Salta).",
+   "checked": [
+    "es.wikipedia Territorio nacional de Los Andes oldid 173729092"
+   ],
+   "needs": "the pre-act lines"
+  },
+  {
+   "what": "Antofagasta de la Sierra 1943-09-21 – 1955-07-28",
+   "unit": "ARG:Catamarca@1821",
+   "atoms": [
+    "ARG-ADM2-61730980B49626425367328"
+   ],
+   "from": "1943-09-21",
+   "to": "1955-07-28",
+   "why": "Catamarca's limits were fixed only by later acts (see Catamarca).",
+   "checked": [
+    "es.wikipedia Territorio nacional de Los Andes oldid 173729092"
+   ],
+   "needs": "the pre-act lines"
   },
   {
    "what": "Misiones territory 1884-10-16 – 1895-02-05",
@@ -3280,6 +3311,61 @@
    "why": "Lake Nahuel Huapi and Isla Victoria were divided with Neuquén only by Ley 18.501 (1970); the Andean line south of Nahuel Huapi was arbitrated in 1902.",
    "checked": [
     "UNQ 2023 article on Río Negro limits",
+    "InfoLeg Ley 18.501"
+   ],
+   "needs": "atoms for Lake Nahuel Huapi/Isla Victoria"
+  },
+  {
+   "what": "Neuquén province 1955-06-30 – 1955-07-28",
+   "unit": "ARG:Neuquen@1955",
+   "atoms": [
+    "ARG-ADM2-61730980B1496247249680",
+    "ARG-ADM2-61730980B17144703425543",
+    "ARG-ADM2-61730980B32081384015227",
+    "ARG-ADM2-61730980B39164148007065",
+    "ARG-ADM2-61730980B40628819919033",
+    "ARG-ADM2-61730980B43835404707600",
+    "ARG-ADM2-61730980B52691065899930",
+    "ARG-ADM2-61730980B52932124932957",
+    "ARG-ADM2-61730980B74102790629524",
+    "ARG-ADM2-61730980B75660067581001",
+    "ARG-ADM2-61730980B82324044769491",
+    "ARG-ADM2-61730980B83273988840504",
+    "ARG-ADM2-61730980B83392374898421",
+    "ARG-ADM2-61730980B85751419294070",
+    "ARG-ADM2-61730980B88853023630124",
+    "ARG-ADM2-61730980B98633333764723"
+   ],
+   "from": "1955-06-30",
+   "to": "1955-07-28",
+   "why": "As for 1955-07-28 – 1970-01-07 (Ley 18.501).",
+   "checked": [
+    "InfoLeg Ley 18.501"
+   ],
+   "needs": "atoms for Lake Nahuel Huapi/Isla Victoria"
+  },
+  {
+   "what": "Río Negro province 1955-06-30 – 1955-07-28",
+   "unit": "ARG:RioNegro@1955",
+   "atoms": [
+    "ARG-ADM2-61730980B10000603471831",
+    "ARG-ADM2-61730980B12252554718289",
+    "ARG-ADM2-61730980B19099504402623",
+    "ARG-ADM2-61730980B23941823928589",
+    "ARG-ADM2-61730980B30095926529222",
+    "ARG-ADM2-61730980B33253419160429",
+    "ARG-ADM2-61730980B38483237983856",
+    "ARG-ADM2-61730980B63808307170695",
+    "ARG-ADM2-61730980B79261334873375",
+    "ARG-ADM2-61730980B80423249669200",
+    "ARG-ADM2-61730980B90515114322880",
+    "ARG-ADM2-61730980B95848117097679",
+    "ARG-ADM2-61730980B95988601788876"
+   ],
+   "from": "1955-06-30",
+   "to": "1955-07-28",
+   "why": "As for 1955-07-28 – 1970-01-07 (Ley 18.501).",
+   "checked": [
     "InfoLeg Ley 18.501"
    ],
    "needs": "atoms for Lake Nahuel Huapi/Isla Victoria"
