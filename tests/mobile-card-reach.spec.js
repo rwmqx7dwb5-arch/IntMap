@@ -87,17 +87,18 @@ test.describe('mobile-card-reach: 375 × 812, touch', () => {
   test('B Atlas at half: the composer is wholly on the screen and answers a finger; no sample chips or card are drawn', async ({ page }) => {
     test.setTimeout(120_000);
     await boot(page);
-    await page.evaluate(() => { const b = document.getElementById('btn-community'); if (!b.classList.contains('active')) b.click(); });   /* 電話ではタブはメニューの中（display:none）。既定の Atlas が先に開いていれば押さない（タブは押し直すと閉じる） */
+    /* Atlas is the sheet's default content: the app opens it itself once the kernel is there (pressing the tab here too would race that and close it) */
+    await page.waitForFunction(() => !!document.querySelector('.control-panel .mode-btn.mode-atlas.active'), null, { timeout: 30_000 });
     await page.evaluate(() => window.__setDetent('half', false));
-    await page.waitForFunction(() => !!document.querySelector('#atlas-panel .atl-inbar'), null, { timeout: 30_000 });
+    await page.waitForFunction(() => { const e = document.querySelector('#atlas-panel .atl-inbar'); return !!e && e.getBoundingClientRect().height > 0; }, null, { timeout: 30_000 });
     await page.waitForTimeout(1200);
     const r = await page.evaluate(() => {
       const el = document.querySelector('#atlas-panel .atl-inbar'), b = el.getBoundingClientRect();
       const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
-      return { bottom: b.bottom, vh: innerHeight, hits: hit === el || el.contains(hit), chips: document.querySelectorAll('#atlas-panel .atl-chip, #atlas-panel .atl-pv').length, detent: (document.body.className.match(/sheet-(full|min|hidden)/) || ['sheet-half'])[0] };
+      return { bottom: b.bottom, vh: innerHeight, hits: hit === el || el.contains(hit), who: hit ? hit.tagName + '.' + String(hit.className).slice(0, 50) + '#' + hit.id : null, at: [Math.round(b.left + b.width / 2), Math.round(b.top + b.height / 2)], chips: document.querySelectorAll('#atlas-panel .atl-chip, #atlas-panel .atl-pv').length, detent: (document.body.className.match(/sheet-(full|min|hidden)/) || ['sheet-half'])[0] };
     });
     expect(r.chips, 'Atlas draws no suggested prompts or sample card').toBe(0);
-    expect(r.hits, 'the composer is what a finger lands on').toBe(true);
+    expect(r.hits, 'the composer is what a finger lands on: ' + JSON.stringify([r.who, r.at])).toBe(true);
     expect(r.bottom, `the composer is on the screen (sheet ${r.detent})`).toBeLessThanOrEqual(r.vh);
   });
 });
