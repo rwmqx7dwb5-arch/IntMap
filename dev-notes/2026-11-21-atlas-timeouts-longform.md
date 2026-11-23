@@ -30,3 +30,12 @@ Ceilings re-measured on the build of this branch merged with the latest origin/m
 
 ## perf (CI measurement, 2026-11-23)
 CI measured the async chunk atlas-cap-runs at 941.0 KiB against main's 931.1 KiB; the ceiling was raised to that measurement. The growth is research.longform (this PR) on top of the capabilities main gained.
+
+## perf (main 取り込み後の再測定 2026-11-24)
+
+main を取り込むと、main の bot が下げた天井が先に上げた値を上書きした。CI の実測は
+`atlas-cap-runs` 949.6 KiB（972,390 B）・`dist.assets` 22045.6 KiB（22,574,694 B）。
+前者は能力表の 262 行（本 PR の `research.longform` ほか main の追加分を含む）と main 側の
+追加が運ぶ分、後者は main が足した配布資産を含む。実測値まで天井を上げた
+（`atlas-cap-runs` 973,000・`dist.assets` 22,580,000）。縮められる根拠が無い——能力表の行は
+利用者が得る能力そのもの。main の bot が merge 後に再び下げる。
