@@ -26,7 +26,6 @@ import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) the one shape a result names the thing it is about by */
-let searchOf = null;   /* research.search's per-turn memory — built on first use, from the page's own fetchers */
 const W = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
 import { makeWorldGraphStore } from './world-graph-store.js';
 const G = makeWorldGraphStore({ worldObjects: W });   /* (world-graph) the persistent graph (Supabase) read into that same index */
@@ -1268,8 +1267,8 @@ export default [
     schema: () => ({ type: 'object', properties: { queries: list({ type: 'object', required: ['q'], properties: { q: str(), lang: str(), country: str(), site: str(), engine: one('both', 'gdelt', 'gnews'), timespan: str() } }, 1), gap: str(), contradiction: str(), changed: str(), budgetMs: num(0) }, required: ['queries'] }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
-      if (!searchOf) searchOf = makeResearchSearch({ gdelt: (...x) => K._gdeltNews(...x), gnews: (...x) => K._gnewsNews(...x) });
-      const out = await searchOf.run(a, K._curTurnKey);
+      if (!K._researchSearch) K._researchSearch = makeResearchSearch({ gdelt: (...x) => K._gdeltNews(...x), gnews: (...x) => K._gnewsNews(...x) });
+      const out = await K._researchSearch.run(a, K._curTurnKey);
       if (!out.ok) return R(false, warn(esc(L(out.message, '検索語を queries:[{q,…}] で指定してください。'))), { meta: { status: 'failed', code: out.code } });
       const got = out.documents.length, st = out.totals.states;
       const html = '<div style="font-size:12px;line-height:1.5;"><div style="font-weight:600;">' + esc(L('Investigation search', '調査の検索')) + ' — ' + esc(L(out.queries.length + ' quer' + (out.queries.length === 1 ? 'y' : 'ies') + ', ' + got + ' new document(s)', out.queries.length + ' 件の検索で新しい記事 ' + got + ' 件')) + '</div>'

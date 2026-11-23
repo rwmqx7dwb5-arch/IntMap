@@ -31,7 +31,7 @@ const REGION_RE = /^[A-Z]{2}$/;
 const SITE_RE = /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/;
 
 /** the display name of a language/region in English, derived from the platform; '' when it has none */
-export function englishName(kind, code) {
+function englishName(kind, code) {
   try { const n = new Intl.DisplayNames(['en'], { type: kind }).of(code); return n && n !== code ? n : ''; } catch (_) { return ''; }
 }
 /** GDELT writes `sourcelang:ukrainian`, `sourcecountry:unitedstates` — the English name, lower-case, no spaces */
