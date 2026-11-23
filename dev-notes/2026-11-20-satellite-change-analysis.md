@@ -79,3 +79,5 @@ main に取り込んだ #1280（統合知識層）が atlas-orchestrate チャ�
 追記(2026-11-22): main の #1293(画面ボード)を取り込んだ後の測定で async.raw が 14461.8 kB、atlas-cap-runs が 926.1 kB になり、ceiling(14376.3 / 918.5 kB)を超えた。増分は main 側の能力追加(ボード)と本 PR の能力説明の合計で、どちらも帯の内。天井を測定値(14809000 / 948400 バイト)へ上げた。
 
 追記2(2026-11-22): main の #1282(Skills)・#1332・#1289 を取り込んだ後の CI 測定で async.gzip 4900.7 kB・atlas-console 1121.2 kB・dist.assets 21956.2 kB が ceiling を超えた。増分の主は main 側(Skills / 接続先の権限基盤 / ネットワーク分析)で、本 PR は能力説明と imagery 系の追加のみ。測定値へ ceiling を上げた(5019000 / 1148300 / 22484000 バイト・帯の内)。
+
+追記3(2026-11-23): main を取り込み後の CI 測定で atlas-console が 1127.9 kB となり ceiling を超えたので 1155000 バイトへ上げた(main 側の追加が主)。connection-ledger は main の衝突を再生成で解消。

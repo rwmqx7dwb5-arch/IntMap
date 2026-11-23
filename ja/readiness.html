@@ -54,12 +54,12 @@
   <section class="lp-hero lp-hero-t">
     <div class="lp-hero-text">
       <h1>この端末とネットワークで使えるか、その場で確かめる。</h1>
-      <p class="lp-lede">生徒や職員が使う端末で、同じネットワークにつないだままこのページを開き、診断を実行してください。地図に必要なブラウザの機能を確かめ、IntMap が読み込む外部の接続先 131 件に問い合わせて、使えるもの・遮断されているもの・許可すべきものを示します。</p>
+      <p class="lp-lede">生徒や職員が使う端末で、同じネットワークにつないだままこのページを開き、診断を実行してください。地図に必要なブラウザの機能を確かめ、IntMap が読み込む外部の接続先 128 件に問い合わせて、使えるもの・遮断されているもの・許可すべきものを示します。</p>
       <div class="lp-cta">
         <button class="lp-btn rd-start" id="rd-start" type="button" data-effect="none" hidden>診断を始める</button>
         <a class="lp-btn lp-btn-2" href="#allow">許可が必要な接続先を見る</a>
       </div>
-      <p class="lp-note">診断はこの端末から下の各接続先へ 1 回ずつ問い合わせます。地図を使うときと同じ問い合わせで、IntMap には何も送りません。数秒で終わり、応答せずに要求を捨てるネットワークでも最長 180 秒です。</p>
+      <p class="lp-note">診断はこの端末から下の各接続先へ 1 回ずつ問い合わせます。地図を使うときと同じ問い合わせで、IntMap には何も送りません。数秒で終わり、応答せずに要求を捨てるネットワークでも最長 160 秒です。</p>
       <noscript><p class="lp-note">診断そのものには JavaScript が必要です。下の「許可が必要な接続先」の一覧は、JavaScript なしでも使えます。</p></noscript>
     </div>
   </section>
@@ -126,7 +126,6 @@
           <tr data-probe="https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif" data-host="*.s3.amazonaws.com" data-tier="layer"><td><code>*.s3.amazonaws.com</code></td><td>利用者が s3://バケット/キー で指定した AWS S3 上のファイル（js/gis-cog.js が https アドレスを導出）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://de.wikipedia.org/api/rest_v1/page/summary/Tokio" data-host="*.wikipedia.org" data-tier="layer"><td><code>*.wikipedia.org</code></td><td>読者の言語の Wikipedia 要約と検索</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://a.tiles.openrailwaymap.org/standard/4/8/5.png" data-host="a.tiles.openrailwaymap.org" data-tier="layer"><td><code>a.tiles.openrailwaymap.org</code></td><td>OpenRailwayMap のタイル</td><td class="rd-state">未確認</td></tr>
-          <tr data-probe="https://ai4edataeuwest.blob.core.windows.net/" data-host="ai4edataeuwest.blob.core.windows.net" data-tier="layer"><td><code>ai4edataeuwest.blob.core.windows.net</code></td><td>Microsoft Planetary Computer のストレージ — Impact Observatory 年次土地被覆 COG（CC BY 4.0）。カタログの認証 API が匿名で出す短命トークンで読む。Atlas の変化測定のときだけ</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://air-quality-api.open-meteo.com/v1/air-quality?latitude=35.681&amp;longitude=139.767&amp;current=us_aqi,pm2_5,pm10,ozone" data-host="air-quality-api.open-meteo.com" data-tier="layer"><td><code>air-quality-api.open-meteo.com</code></td><td>Open-Meteo の地点の大気質</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://api-v2.oec.world/tesseract/cubes" data-host="api-v2.oec.world" data-tier="layer"><td><code>api-v2.oec.world</code></td><td>OEC の貿易データ（Tesseract）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://api.alternative.me/fng/?limit=30" data-host="api.alternative.me" data-tier="layer"><td><code>api.alternative.me</code></td><td>alternative.me の Fear &amp; Greed 指数</td><td class="rd-state">未確認</td></tr>
@@ -166,7 +165,6 @@
           <tr data-probe="https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json" data-host="cwwp2.dot.ca.gov" data-tier="layer"><td><code>cwwp2.dot.ca.gov</code></td><td>カリフォルニア州交通局の CCTV 状態一覧</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/16/58210/25806.jpg" data-host="cyberjapandata.gsi.go.jp" data-tier="layer"><td><code>cyberjapandata.gsi.go.jp</code></td><td>国土地理院の空中写真タイル（最新・年代別）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://data.3dbag.nl/v20250903/cesium3dtiles/lod22/tileset.json" data-host="data.3dbag.nl" data-tier="layer"><td><code>data.3dbag.nl</code></td><td>3D BAG 3D Tiles — オランダの LoD2.2 建物モデル（TU Delft と 3DGI。CC BY 4.0）。オランダの都市が視界にあり、3D都市モデルのレイヤーがオンのときだけ要求する</td><td class="rd-state">未確認</td></tr>
-          <tr data-probe="https://data.source.coop/tge-labs/aef/v1/annual/manifest.txt" data-host="data.source.coop" data-tier="layer"><td><code>data.source.coop</code></td><td>Source Cooperative — Google AlphaEarth Foundations 衛星埋め込み（年次 COG・CC BY 4.0）とその索引。Atlas の変化測定・似た地域の検索のときだけ</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&amp;lang=en" data-host="data.weather.gov.hk" data-tier="layer"><td><code>data.weather.gov.hk</code></td><td>香港天文台の警報の概要</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://date.nager.at/api/v3/NextPublicHolidays/JP" data-host="date.nager.at" data-tier="layer"><td><code>date.nager.at</code></td><td>Nager.Date の祝日（ウィジェット）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://davidmegginson.github.io/ourairports-data/countries.csv" data-host="davidmegginson.github.io" data-tier="layer"><td><code>davidmegginson.github.io</code></td><td>OurAirports の CSV（空港レイヤー）</td><td class="rd-state">未確認</td></tr>
@@ -178,6 +176,7 @@
           <tr data-probe="https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium/4/8/5.png" data-host="elevation-tiles-prod.s3.us-east-1.amazonaws.com" data-tier="layer"><td><code>elevation-tiles-prod.s3.us-east-1.amazonaws.com</code></td><td>AWS Terrain Tiles（Mapzen terrarium の標高）、地域の窓口</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://en.wikipedia.org/api/rest_v1/page/summary/Tokyo" data-host="en.wikipedia.org" data-tier="layer"><td><code>en.wikipedia.org</code></td><td>英語版 Wikipedia の要約と言語間リンク</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://flagcdn.com/h24/jp.png" data-host="flagcdn.com" data-tier="layer"><td><code>flagcdn.com</code></td><td>国旗の画像</td><td class="rd-state">未確認</td></tr>
+          <tr data-probe="https://flood-api.open-meteo.com/v1/flood?latitude=35.68&amp;longitude=139.76&amp;daily=river_discharge&amp;forecast_days=1" data-host="flood-api.open-meteo.com" data-tier="layer"><td><code>flood-api.open-meteo.com</code></td><td>Open-Meteo の河川流量（GloFAS）予測。尋ねた範囲の格子の各地点</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://fonts.openmaptiles.org/Open%20Sans%20Regular/0-255.pbf" data-host="fonts.openmaptiles.org" data-tier="layer"><td><code>fonts.openmaptiles.org</code></td><td>比較地図の OpenMapTiles 字形</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://gaez-services.fao.org/server/rest/services/res06/ImageServer?f=json" data-host="gaez-services.fao.org" data-tier="layer"><td><code>gaez-services.fao.org</code></td><td>FAO GAEZ の作物適地 ImageServer</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://geo.datav.aliyun.com/areas_v3/bound/100000.json" data-host="geo.datav.aliyun.com" data-tier="layer"><td><code>geo.datav.aliyun.com</code></td><td>Alibaba Cloud DataV の中国の境界（中継が使えるときは中継経由）</td><td class="rd-state">未確認</td></tr>
@@ -214,8 +213,6 @@
           <tr data-probe="https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json" data-host="raw.githubusercontent.com" data-tier="layer"><td><code>raw.githubusercontent.com</code></td><td>GitHub の生ファイル：aourednik の歴史基図・fraxen のプレート境界</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://s3.amazonaws.com/elevation-tiles-prod/terrarium/4/8/5.png" data-host="s3.amazonaws.com" data-tier="layer"><td><code>s3.amazonaws.com</code></td><td>AWS Terrain Tiles（Mapzen terrarium の標高）、パス形式の窓口</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://s3.dualstack.us-east-1.amazonaws.com/elevation-tiles-prod/terrarium/4/8/5.png" data-host="s3.dualstack.us-east-1.amazonaws.com" data-tier="layer"><td><code>s3.dualstack.us-east-1.amazonaws.com</code></td><td>AWS Terrain Tiles（Mapzen terrarium の標高）、デュアルスタックの窓口</td><td class="rd-state">未確認</td></tr>
-          <tr data-probe="https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/54/S/UE/2025/6/S2A_54SUE_20250617_0_L2A/SCL.tif" data-host="sentinel-cogs.s3.us-west-2.amazonaws.com" data-tier="layer"><td><code>sentinel-cogs.s3.us-west-2.amazonaws.com</code></td><td>AWS Open Data の sentinel-cogs — Sentinel-2 L2A の COG。Atlas の変化測定のときだけ</td><td class="rd-state">未確認</td></tr>
-          <tr data-probe="https://sentinel1euwestrtc.blob.core.windows.net/" data-host="sentinel1euwestrtc.blob.core.windows.net" data-tier="layer"><td><code>sentinel1euwestrtc.blob.core.windows.net</code></td><td>Microsoft Planetary Computer のストレージ — Sentinel-1 RTC レーダー COG（CC BY 4.0）。カタログの認証 API が匿名で出す短命トークンで読む。Atlas の変化測定のときだけ</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/16/33660/21537.jpeg" data-host="service.pdok.nl" data-tier="layer"><td><code>service.pdok.nl</code></td><td>PDOK のオランダ航空写真タイル</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/Volcano_Hazard_Zones/FeatureServer/0?f=json" data-host="services.arcgis.com" data-tier="layer"><td><code>services.arcgis.com</code></td><td>Esri ArcGIS Online 上の USGS 火山ハザード区域（FeatureServer）</td><td class="rd-state">未確認</td></tr>
           <tr data-probe="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/4/5/8" data-host="services.arcgisonline.com" data-tier="layer"><td><code>services.arcgisonline.com</code></td><td>Esri World Imagery・参照・陰影のタイル（第 2 の窓口）</td><td class="rd-state">未確認</td></tr>
