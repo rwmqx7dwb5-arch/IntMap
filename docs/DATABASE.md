@@ -393,7 +393,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **68**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **69**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
