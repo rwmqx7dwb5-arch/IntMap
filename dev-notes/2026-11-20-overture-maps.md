@@ -92,3 +92,5 @@ Overture Maps 読み取り(js/gis-overture.js)と、それを呼ぶ Atlas 能力
 ## 性能予算の引き上げ
 
 - async.raw 14376.3→14674.1 kB・async.gzip 4864.8→4982.2 kB・atlas-cap-runs 918.5→928.2 kB・atlas-console 1105.8→1118.6 kB・legal-text 91.8→94.1 kB・dist.assets 21796.5→22111.3 kB: 取り込み後の全体ビルドの実測。この枝が運ぶ Overture 読み取り（js/gis-overture.js）と不変 uid・根拠の変更履歴の遅延チャンク、legal-text の Overture 条文の分と、main に入った他の PR の分。起動時に読まれる本数は 9 のまま。
+
+- 性能予算 atlas-cap-runs を 941.6 kB（964217 B）へ: main に入った他の PR の遅延チャンクの増加で、台帳が古いまま残っていた分。全体ビルドで測った同じ値を、同じ主題の他の PR と揃えて書いた。
