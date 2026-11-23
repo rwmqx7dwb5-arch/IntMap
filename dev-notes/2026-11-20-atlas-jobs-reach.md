@@ -70,3 +70,7 @@ main の増分（Atlas の skills・board など、他の PR）と重なって�
 上限は CI の実測に合わせた。
 
 `atlas-cap-runs` は他の PR の能力の追加で、CI の実測がさらに 948.7 kB になった（上限 938.6 → 948.8 kB）。同じく実測に合わせた。
+
+main の他の PR（GIS・知識層・ファイル成果物など）が先に載り、`async.raw`・`async.gzip`・`atlas-cap-runs`・`atlas-console`・`gis-core` の 5 行が
+CI の実測で上限を超えた（実測: 14662.5 kB / 4951.1 kB / 961.5 kB / 1146.1 kB / 701.2 kB）。`gis-core` はこの PR が触らないチャンクで、
+増分はすべて他の PR のもの。上限は CI の実測に合わせた。
