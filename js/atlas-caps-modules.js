@@ -32,7 +32,7 @@ import caps_system from './atlas-cap-system.js';
 import caps_time from './atlas-cap-time.js';
 import caps_ui from './atlas-cap-ui.js';
 import caps_view from './atlas-cap-view.js';
-import caps_work from './atlas-cap-work.js';
+import caps_web from './atlas-cap-web.js';
 
 export const CAPABILITY_MODULES = {
   "account": caps_account,
@@ -66,5 +66,5 @@ export const CAPABILITY_MODULES = {
   "time": caps_time,
   "ui": caps_ui,
   "view": caps_view,
-  "work": caps_work,
+  "web": caps_web,
 };

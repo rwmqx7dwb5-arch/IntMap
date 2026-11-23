@@ -621,10 +621,10 @@ export const ATLAS_PROGRESS_CSS =
      the work itself at 500 — the three are told apart by WEIGHT, not by a darker grey. */
   + '#atlas-panel .atl-trace-row.run{color:var(--text-main);}'
   + '#atlas-panel .atl-trace-row.run .atl-trace-mark{color:var(--primary-color);}'
-  + '#atlas-panel .atl-trace-word{flex:0 1 auto;font-weight:400;}'
+  + '#atlas-panel .atl-trace-word{flex:0 0 auto;white-space:nowrap;font-weight:400;}'
   + '#atlas-panel .atl-trace-det{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);font-weight:500;opacity:.8;}'
   + '#atlas-panel .atl-trace-row.run .atl-trace-det{font-weight:600;opacity:1;}'
-  + '#atlas-panel .atl-trace-lbl{font-weight:400;color:var(--text-muted);}'
+  + '#atlas-panel .atl-trace-lbl{flex:0 0 auto;white-space:nowrap;font-weight:400;color:var(--text-muted);}'
   + '#atlas-panel .atl-trace-t{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:400;opacity:.6;}'
   /* (atlas-progress-one) THE PLAN, INSIDE THE TRACE. Its head (goal and N/M) stays when the trace is
      folded — the one line a finished multi-step turn still has to say; its steps open with the rows and
