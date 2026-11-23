@@ -3,6 +3,7 @@
    (js/atlas-console.js, js/atlas-schemas.js) — the on-demand chunk, never the boot path. */
 import caps_account from './atlas-cap-account.js';
 import caps_attach from './atlas-cap-attach.js';
+import caps_board from './atlas-cap-board.js';
 import caps_briefing from './atlas-cap-briefing.js';
 import caps_chart from './atlas-cap-chart.js';
 import caps_community from './atlas-cap-community.js';
@@ -10,7 +11,9 @@ import caps_compute from './atlas-cap-compute.js';
 import caps_corrections from './atlas-cap-corrections.js';
 import caps_data from './atlas-cap-data.js';
 import caps_dialog from './atlas-cap-dialog.js';
+import caps_file from './atlas-cap-file.js';
 import caps_geo from './atlas-cap-geo.js';
+import caps_knowledge from './atlas-cap-knowledge.js';
 import caps_layers from './atlas-cap-layers.js';
 import caps_learn from './atlas-cap-learn.js';
 import caps_map from './atlas-cap-map.js';
@@ -33,6 +36,7 @@ import caps_view from './atlas-cap-view.js';
 export const CAPABILITY_MODULES = {
   "account": caps_account,
   "attach": caps_attach,
+  "board": caps_board,
   "briefing": caps_briefing,
   "chart": caps_chart,
   "community": caps_community,
@@ -40,7 +44,9 @@ export const CAPABILITY_MODULES = {
   "corrections": caps_corrections,
   "data": caps_data,
   "dialog": caps_dialog,
+  "file": caps_file,
   "geo": caps_geo,
+  "knowledge": caps_knowledge,
   "layers": caps_layers,
   "learn": caps_learn,
   "map": caps_map,

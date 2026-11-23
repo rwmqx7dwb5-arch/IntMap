@@ -116,6 +116,15 @@ export const GOVERNANCE = (() => {
       { publisher: WD_ATTRIB, url: WDQS, licence: 'CC0', attribution: false },
     ],
     priority: { disjoint: ['the World Heritage List itself', 'current in-danger status only'] },
+    /* (describes.*) extent and completeness: UNESCO's List page (https://whc.unesco.org/en/list/, read 2026-11-20) states 1,273 properties
+       (991 cultural, 240 natural, 42 mixed) in 173 States Parties, and the committed bundle MEASURES the same (1,273 sites, 173 countries);
+       period is the span of the bundle's inscription years (1978..2026, measured); resolution is measured (24,036 numbers = 6,009 component points). */
+    period: { start: '1978', end: '2026' },
+    extent: 'global; all 1,273 properties on the World Heritage List (991 cultural, 240 natural, 42 mixed) in 173 States Parties, with 6,009 component-part points',
+    method: 'the List as UNESCO publishes it, one point per component part of a serial or transboundary property; the in-danger flag is taken from Wikidata statements with no end date, not from the unmaintained danger column of the UNESCO feed',
+    resolution: 'one point per component part of a property',
+    completeness: 'the whole List: the bundle holds every one of the 1,273 properties UNESCO states',
+    accuracy: 'the bundle flags 52 sites as in danger (Wikidata, built 2026-09-09) while the UNESCO List page, read 2026-11-20, states 58 properties In Danger; the two counts are not reconciled',
     ...UNESCO_WHC,
     builtBy: 'scripts/build-whs.mjs',
   };

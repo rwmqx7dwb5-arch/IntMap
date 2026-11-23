@@ -354,15 +354,15 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are twenty-five Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are twenty-six Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
 flag that lives in a comment is not configuration. All twenty-two are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
 `quotes-relay` #R533, `client-errors` client-error-log, `atlas-embed` atlas-semantic-search,
 `fetch-relay` own-fetch-relay, `gis-fetch` gis-remote-fetch, `reader-reports` anon-write-guard, `usage-count` anonymous-usage-counts).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
-`relay-guard.js`, `rate-limit.js`, `supabase-keys.js`, `world-graph-ports.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-entities.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `gis-fetch-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `great-circle.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules; the one great-circle distance is the first of the last two, which the second imports as well) that the CLI bundles into the functions that import it.
+`relay-guard.js`, `rate-limit.js`, `supabase-keys.js`, `world-graph-ports.js`, `atlas-persona.js`, `atlas-job-core.js`, `atlas-job-runner.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
+`news-entities.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `connection-policy.js`, `connection-vault.js`, `connection-gateway.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `gis-fetch-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `great-circle.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules; the one great-circle distance is the first of the last two, which the second imports as well) that the CLI bundles into the functions that import it.
 
 **The project's two keys are read in one place**, `_shared/supabase-keys.js` (`secretKey`,
 `publishableKey`, `serviceHeaders` — the `apikey` + `Bearer` pair every server-side request carries).

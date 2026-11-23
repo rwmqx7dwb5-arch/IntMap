@@ -38,10 +38,12 @@
  *  round is not a second architecture.
  * ==========================================================================*/
 
+import { makeRunLedger, runLine, makeRunHistory } from './atlas-run-ledger.js';   /* (job-cost-ledger) what this turn cost, in one record — observes, never decides */
 import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R489) `callKey` — the identity of one tool call, in the same terms #R441 already uses for one action */
 
 export function makeAtlasAgent() {
   return (function () {
+    const RUN_HISTORY = makeRunHistory(50);   /* (job-cost-ledger) the last turns' cost/time/models/tools, newest last */
 
     /* ── The technical ceilings. They bound the LOOP; they never decide what it should do. ──────
        ⚠ `maxSteps` COUNTS AGAINST A SERVER BUDGET IT DOES NOT OWN. supabase/functions/ai-proxy
@@ -741,7 +743,9 @@ export function makeAtlasAgent() {
       let answerMode = '';       /* (#R511) the latest mode Atlas declared; '' until it says */
       let gateBounces = 0;       /* (#R511→#R543) how many finals came back having declared an output they had not produced */
       trace.outputGate = 0;
-      let goalChecked = false;   /* (atlas-goal-verifier) the independent read of the request happens once per turn */
+      let goalVerifiedAt = -1;   /* (atlas-goal-verifier) results.length when the request was last read independently (-1: not yet). It is read again ONLY when the record has grown since — a re-read of an unchanged record is the same observation twice */
+      let goalPrev = null;       /* …and what that read found ({met, unmet}), shown to the next read so it judges whether the work Atlas did since closed the gap */
+      let goalRounds = 0;
       let goalAt = -1;           /* results.length when the finding was put to Atlas (-1: it was not) */
       let goalUnmet = [];        /* …and what it found, when the bounce was not taken or ran out: carried into `unmet` */
       trace.goalCheck = '';
@@ -749,6 +753,9 @@ export function makeAtlasAgent() {
       /* (#R452) the turn's clock. `now()` is injected in the node checks, which have no wall time. */
       const now = (typeof opts.now === 'function') ? opts.now : (() => Date.now());
       const startedAt = now();
+      /* (job-cost-ledger) the record has its OWN wall clock: `now` is the turn's budget clock and an injected one advances on every read, so reading it for the record would spend the turn's budget */
+      const wallNow = () => Date.now();
+      const ledger = makeRunLedger({ now: wallNow });
       if (PLAN) { try { PLAN.beginTurn(); } catch (_) { /* a ledger never breaks the turn */ } }
       const endPlan = (how) => { if (PLAN) { try { PLAN.endTurn(how); } catch (_) { /* as above */ } } };
       const outOfTime = () => (lim.turnBudgetMs > 0) && ((now() - startedAt) >= lim.turnBudgetMs);
@@ -798,6 +805,7 @@ export function makeAtlasAgent() {
         if (outOfTime()) { stopped = 'time_budget'; break; }
 
         let reply = null;
+        const modelT0 = wallNow();
         try {
           /* ⚠ A SNAPSHOT, NOT THE LIVE ARRAY. The loop keeps appending to `transcript`; handing the
              adapter the array itself means the request it was given changes underneath it while it
@@ -825,6 +833,7 @@ export function makeAtlasAgent() {
           trace.transportErrorInfo = errorInfo(e);   /* (atlas-completion) the code / status / retryable the message flattened */
           break;
         }
+        if (reply) { const u = reply.usage || {}; ledger.model({ model: u.model, costUsd: u.costUsd, priceKnown: u.priceKnown, ms: wallNow() - modelT0, web: reply.webUsed === true }); }
         /* (atlas-completion) A REPLY THE PROVIDER ITSELF CALLED INCOMPLETE (OpenAI `status:"incomplete"`,
            ran past its output length, or a content filter cut it) is still read as a step — what it
            holds is real — but it is not silently taken as finished: the trace says which step and why. */
@@ -925,20 +934,24 @@ export function makeAtlasAgent() {
              request does not need it. ⚠ NOT OBSERVED IS NOT UNMET: null / a throw / a timeout accepts the turn and
              says only that it was not checked (`trace.goalCheck`). Only on a turn the gate above would accept. */
           let goalNote = '';
-          if (!code && !goalChecked && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
-            goalChecked = true;
+          if (!code && (goalVerifiedAt < 0 || results.length > goalVerifiedAt) && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
+            goalVerifiedAt = results.length; goalRounds++;
             let v = null;
             try {
-              v = await opts.verify({ request: lastUserText(opts.messages), text: answerHere, answerMode, produced: results.reduce((a, r) => { producedBy(r).forEach((m) => { if (a.indexOf(m) < 0) a.push(m); }); return a; }, []), results: results.slice(),
+              v = await opts.verify({ request: lastUserText(opts.messages), text: answerHere, answerMode, produced: results.reduce((a, r) => { producedBy(r).forEach((m) => { if (a.indexOf(m) < 0) a.push(m); }); return a; }, []), results: results.slice(), previous: goalPrev, round: goalRounds,
                 plan: PLAN ? (() => { try { return PLAN.snapshot(); } catch (_) { return null; } })() : null });
             } catch (_) { v = null; }
             const list = (v && Array.isArray(v.unmet)) ? v.unmet.filter((u) => u && String(u.need || '').trim()).map((u) => ({ kind: 'goal', need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) })) : null;
+            const metList = (v && Array.isArray(v.met)) ? v.met.filter((m) => m && String(m.need || '').trim()).map((m) => ({ need: String(m.need).slice(0, 300), how: String(m.how || '').slice(0, 300) })) : [];
             trace.goalCheck = list === null ? 'unobserved' : (list.length ? 'unmet' : 'met');
+            /* the ledger of the LAST observed read: what the request asked, what the record covers, what it does not, and how many reads it took (observed-only: an unobserved read leaves the previous ledger) */
+            if (list !== null) { goalPrev = { met: metList, unmet: list.map((u) => ({ need: u.need, why: u.why })) }; trace.goalLedger = { rounds: goalRounds, met: metList, unmet: goalPrev.unmet }; }
+            goalUnmet = list || [];
             if (list && list.length) {
-              goalUnmet = list;
               if ((step + 1) < lim.maxSteps && !outOfTime()) {
                 goalNote = 'An independent reader checked the request against what this turn produced and found these not met: '
                   + list.map((u) => '"' + u.need + '"' + (u.why ? ' (' + u.why + ')' : '')).join('; ')
+                  + (metList.length ? '. Already covered: ' + metList.map((m) => '"' + m.need + '"').join('; ') : '')
                   + '. Do them now with function calls and then answer; or, if the request does not actually need them, '
                   + 'reply again with the answer as it stands and say why.';
               }
@@ -1162,6 +1175,7 @@ export function makeAtlasAgent() {
           }
           let out = null;
           const t0 = now();
+          const toolW0 = wallNow();
           /* (atlas-plan-on-map) the step this call serves shows it running until its verdict arrives */
           if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed) }); } catch (_) { } }
           try {
@@ -1170,6 +1184,7 @@ export function makeAtlasAgent() {
             out = { ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
           }
           spans.push([t0, now()]);
+          try { ledger.tool({ name: capOfCall(p.routed) || call.name, ms: wallNow() - toolW0, ok: !(out && out.ok === false), delegatedCostUsd: out && out.delegatedCostUsd, delegatedTasks: out && Array.isArray(out.delegated) ? out.delegated.length : undefined }); } catch (_) { /* a record never breaks the turn */ }
           if (!out || typeof out !== 'object') out = { ok: false, error: 'no_result', message: 'the tool returned nothing' };
           executedHere++;
           trace.executed++;
@@ -1466,7 +1481,9 @@ export function makeAtlasAgent() {
           if (bus && typeof bus.emit === 'function') bus.emit({ kernel: 'atlas', phase: 'answered', answerMode });
         } catch (_) { /* counting never breaks the turn */ }
       }
-      return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode,
+      trace.run = ledger.summary();   /* (job-cost-ledger) */
+      try { RUN_HISTORY.add(trace.run, opts.label); } catch (_) { /* a record never breaks the turn */ }
+      return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode, run: trace.run,
         produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen,
         unmet, completion, outputIncomplete: !!(trace.incomplete && trace.incomplete.length),
         plan: PLAN ? planSnap : undefined };
@@ -1523,6 +1540,8 @@ export function makeAtlasAgent() {
       return { text: String((d && d.final_text) || (machine ? '' : prose)), toolCalls: calls, callsInText,
         answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '',
         turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '', webUsed,
+        /* (job-cost-ledger) what the proxy said this ONE answer cost and which model served it — undefined when it did not say */
+        usage: meta ? { model: meta.modelServed || meta.model || undefined, costUsd: (typeof meta.costUsd === 'number') ? meta.costUsd : undefined, priceKnown: meta.priceKnown } : undefined,
         items: native && native.length ? native : undefined,
         /* (atlas-native-tools) what the proxy's own fence cut from THIS input, reported rather than done in silence */
         serverTrim: (meta && meta.inputTrimmed) || undefined,
@@ -1537,7 +1556,7 @@ export function makeAtlasAgent() {
     }
 
     const API = { LIMITS, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL, conflicts, keysOverlap,
-      runTurn, reject, readReply, validateAgainst, composeInput, historyItems, resultText };
+      runTurn, runLine, runHistory: RUN_HISTORY, reject, readReply, validateAgainst, composeInput, historyItems, resultText };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

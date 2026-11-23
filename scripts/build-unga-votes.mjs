@@ -61,8 +61,14 @@ export const GOVERNANCE = (() => {
   /* CC0 waives every condition; the credit is given anyway, as scholarly practice */
   attribution: false,
   asOf: '2023-09-01',
+  /* (describes.*) measured on the committed index (first/last, sessions[], members[], votes[]) and the file's codes as this builder's header states them */
+  period: { start: '1946-01-01', end: '2023-09-01' },
+  extent: 'every recorded General Assembly roll-call vote of sessions 1-77 (6464 votes) for 198 member codes',
+  method: 'one recorded vote per member per roll call, coded yes, abstain, no, absent (a member that did not vote) or not a member; the USSR seat is carried under the Russian Federation as the source file does',
+  resolution: 'member x recorded vote',
   cadence: 'P1Y',
   cadenceBasis: {
+    kind: 'measured',
     observed: 'read 2026-11-17 on dataverse.harvard.edu (doi:10.7910/DVN/LEJUQZ): 39 versions 2012–2026, the roll-call CSV last shipped in version 32 (2024-03-21); a new session is added about once a year',
     expires: 'if a newer version ships the roll calls in a format this builder reads again',
     canon: 'scripts/build-unga-votes.mjs GOVERNANCE',
