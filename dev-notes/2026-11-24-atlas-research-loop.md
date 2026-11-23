@@ -50,3 +50,9 @@ newsjp: Atlas が原文の言語・国・出典サイトを指定して同時に
 ## 5. 検査
 
 `tests/atlas-research-loop-checks.test.mjs`(12 件): 言語・国・サイトの導出、取得済みの再取得なし、3 状態、台帳と delta の計算、上限なし(40 検索・13 ラウンド)、能力の登録、成果物の present/absent/unobserved・falseCompletion・割合・履歴、スキーマの一度きり送信(実際のエージェントループで)。隣接の `atlas-turn-engine`・`atlas-agent-loop`・`atlas-50-remainder`・`atlas-eval-*` は無変更で通る。
+
+## 6. 天井を上げた理由(check:perf)
+
+- 上げた行は async chunk `atlas-cap-runs` の 1 行だけ: 981.3 kB → **991.0 kB(+9.7 kB)**。CI と同じ木(main を取り込んだ後)をビルドして測った値で、`perf-budget.mjs --update` が他の行を書いていない。
+- 買ったもの: `research.search`(能力の run・schema・説明・結果カード)。検索の本体 `js/atlas-research-search.js` は約 170 行で、能力の run と同じ chunk に入る。これは Atlas が原文の言語・国・出典サイトを指定して調べる唯一の入口で、他の能力を介して代替できない(統合できる既存の検索は無い: `research.analyze` は 1 回集めて 1 回答える形)。
+- 起動(eager)は増やしていない。能力の本体は遅延読み込みで、基本ツール 13 本の定義も変わらない。
