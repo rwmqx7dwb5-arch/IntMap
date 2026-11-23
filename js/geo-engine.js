@@ -2217,7 +2217,7 @@ function _redrawLocalGlyphs(m,cover){
     removeAircraftCloud(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _aircraft[id]; return true; },
     hasAircraftCloud(id){ const m=_m(); try{ return !!(m&&m.getLayer(id)); }catch(_){ return false; } },
     /* 3D Tiles: capability `tiles3d` is FALSE here — a flat-roofed fill-extrusion is not a streamed mesh, so these answer NO rather than approximating one. */
-    addTileset(){ return false; }, removeTileset(){ return false; }, setTilesetVisible(){ return false; }, placeTileset(){ return false; }, hasTileset(){ return false; }, tilesetInfo(){ return null; },
+    addTileset(){ return false; }, removeTileset(){ return false; }, setTilesetVisible(){ return false; }, placeTileset(){ return false; }, clearBuildingPick(){ return false; }, hasTileset(){ return false; }, tilesetInfo(){ return null; },
     /* …and the SAME projection, on the CPU, for a whole array at once. `projectAltitude` above is the
        one-point form and builds a model matrix per call, which a hover over eleven thousand objects
        cannot afford. This takes the mercator/altitude triples the layer already holds and multiplies
@@ -2620,6 +2620,16 @@ function _redrawLocalGlyphs(m,cover){
     return out; }
   /** @param {() => import('../types/geo-engine').GeoEngineAdapter} A @returns {import('../types/geo-engine').GeoEngineFacade} */ function engineFacade(A){
    const _claims=new Map();   /* this view's claimed surfaces — see surfacesDrawn above */
+   /* ══ DID IT REACH THE SCREEN? (render.witness — js/render-witness.js, fetched on first ask) ═══════════════════════
+      `drawn()` says a surface is in the renderer and its layer is not hidden; `witness()` adds what makes it invisible anyway — opacity 0, outside the
+      zoom range or the viewport, a renderer error against its source/layer, a covering layer — and, when asked, compares a frame with its layers off
+      against one with them on (same task, so the page is never presented with them off). Errors are heard from the first claim: a surface that failed to
+      paint has already said so by the time anyone asks. Both adapters fire 'error' with sourceId / layerId. */
+   let _F=null; const _errLog=[]; const _heard=new WeakSet();
+   const _hearErrors=()=>{ try{ const a=A(); if(!a||_heard.has(a)||typeof a.on!=='function') return; _heard.add(a); a.on('error',e=>{ try{ _errLog.push({ source:(e&&e.sourceId)||'', layer:(e&&e.layerId)||'', message:String((e&&e.error&&e.error.message)||(e&&e.message)||'error').slice(0,200) }); if(_errLog.length>60) _errLog.shift(); }catch(_){} }); }catch(_){} };
+   const _witness=async q=>{ _hearErrors(); const d=surfacesDrawn(A,_claims,q); const m=await import('./render-witness.js');
+     const w=m.makeRenderWitness({ makeCanvas:(cw,ch)=>{ const c=document.createElement('canvas'); c.width=cw; c.height=ch; return c; } });
+     return w.look(A(),d,q,ids=>_errLog.filter(x=>ids.indexOf(x.source)>=0||ids.indexOf(x.layer)>=0).map(x=>x.message),fn=>{ try{ _F.render.onNextFrame(1200,fn); }catch(_){ fn(false); } }); };
    const _drawWaiters=[];     /* this view's whenCanDraw() callers still waiting — see whenCanDraw below */
    let _looking=null;         /* the layers.witness() pass running now, told every layer id it asks about — see there */
    const _shownBy=new Set();  /* layers.onVisibility() subscribers — told every write that shows or hides a layer, see there */
@@ -2630,7 +2640,7 @@ function _redrawLocalGlyphs(m,cover){
       except when a caller passes essential:true (search does) — and the Cesium adapter never read it, so the two
       engines disagreed. WHETHER and WHERE the camera goes is untouched (CONSTITUTION §3); only how long it takes. */
    const _calm=(o)=>{ try{ if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches) return Object.assign({},o||{},{duration:0}); }catch(_){} return o; };
-   return {
+   return _F={
     /* these read the adapter THIS facade is bound to — a sub-view must answer about itself */
     id(){ const a=A(); return a&&a.id; }, capabilities(){ const a=A(); return a&&a.capabilities; },
     can(f){ const a=A(), c=a&&a.capabilities; return !!(c&&c[f]); },
@@ -2754,6 +2764,7 @@ function _redrawLocalGlyphs(m,cover){
       removeTileset:id=>A().removeTileset?A().removeTileset(id):false,
       setTilesetVisible:(id,on)=>A().setTilesetVisible?A().setTilesetVisible(id,on):false,
       placeTileset:(id,o)=>A().placeTileset?A().placeTileset(id,o):false,
+      /* a picked 3D building is tinted until the next pick ('buildingpick', js/cesium-engine.js _pickBuilding); this puts it back */ clearBuildingPick:()=>A().clearBuildingPick?A().clearBuildingPick():false,
       hasTileset:id=>A().hasTileset?A().hasTileset(id):false,
       tilesetInfo:id=>A().tilesetInfo?A().tilesetInfo(id):null,
       hasAircraftCloud:id=>A().hasAircraftCloud?A().hasAircraftCloud(id):false,
@@ -2852,7 +2863,7 @@ function _redrawLocalGlyphs(m,cover){
     /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
     render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(), /* (#R768) IS THE RENDERER DRAWING RIGHT NOW? `onNextFrame` runs fn INSIDE the tick (a WebGL drawing buffer is only readable there); `ticking` asks the same thing as a Promise. Both adapters fire 'render'. ⚠ A false answer may only WEAKEN a claim, never make one — .agents/rules/one-pass-or-a-reason.md §5, DEV-NOTES #R768. ⚠ ON ONE LINE BECAUSE THE APP-SHELL BUDGET HAD NO HEADROOM AT ALL (8,049/8,050 at origin/main; the ceiling was retired in #R795) — the prose for this lives in DEV-NOTES and in the two files that read it, not here. */ onNextFrame(ms,fn){ let d=false; const f=v=>{ if(d) return; d=true; try{ fn(!!v); }catch(_){} }; const sync=()=>{ try{ if(!d&&typeof A().redraw==='function') A().redraw(); }catch(_){} }; try{ A().once('render',()=>f(true)); A().triggerRepaint(); }catch(_){ f(false); } /* (layer-click-polish) a HIDDEN page has no rAF, so no tick will come — draw one synchronously (maplibre `redraw()`, Cesium `scene.render()`); 'render' fires inside it and fn reads a real buffer. The timer's last step does the same before giving up. dev-notes 2026-11-18-layer-click-polish */ if(typeof document!=='undefined'&&document.hidden) sync(); setTimeout(()=>{ sync(); f(false); }, Math.max(50,+ms||600)); }, ticking(ms){ return new Promise(r=>{ try{ this.onNextFrame(ms,r); }catch(_){ r(false); } }); },
       /* the one 「is it on the map」 question every verdict asks, and the claims it answers about — see surfacesDrawn above */
-      claim:(ids,owner,o)=>claimSurfaces(_claims,ids,owner,o), drawn:q=>surfacesDrawn(A,_claims,q),
+      claim:(ids,owner,o)=>{ _hearErrors(); return claimSurfaces(_claims,ids,owner,o); }, drawn:q=>surfacesDrawn(A,_claims,q), witness:q=>_witness(q),
       clearSurface:id=>{ const c=_claims.get(String(id)); if(!c||!c.clear) return false; try{ c.clear(); return true; }catch(_){ return false; } },
       container:()=>A().getContainer(), size:()=>A().getSize(), setCursor:c=>A().setCursor(c),
       /* (#R202) the render resolution, read and written — see js/render-scale.js */
