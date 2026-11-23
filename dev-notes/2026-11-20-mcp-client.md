@@ -44,3 +44,5 @@ MCP クライアントが 4 能力（`mcp.servers`・`mcp.connect`・`mcp.call`�
 汎用 MCP クライアントと、main に入った能力(264 行)が遅延 chunk `atlas-cap-runs` に集まり、async.raw / async.gzip / atlas-cap-runs の 3 行が天井を超えた(実測 async.raw 14498 kB・atlas-cap-runs 933.7 kB。CI の前回実測は 14381.8 kB・917.0 kB)。起動時に読む chunk ではなく、能力が呼ばれたときだけ読まれる遅延 chunk の増加なので、`perf-budget.mjs --update` で超過行だけを上げた。失効条件: 能力表が組み替わり atlas-cap-runs が分割されたとき。
 
 追補: 同じ再計測で、遅延 chunk `atlas-console`(1105.8→1121.5 kB)と `dist.assets`(21796.5→21935.2 kB)も、MCP クライアントの接続画面と能力の追加ぶんだけ上げた。いずれも能力の実行時にだけ読まれる遅延 chunk で、起動時の費用は増えていない。
+
+（2026-11-24 の main 取り込み後、CI の Gates 2/3 で check:perf が天井を超えた: atlas-cap-runs 938.6 kB 超（970,100 B へ）、dist.assets 21923.7 kB 超（22,569,300 B へ）。CI の測定値に合わせて上げた。MCP の能力（mcp.connect / mcp.act）の追加ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
