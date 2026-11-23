@@ -1420,6 +1420,12 @@ secrets exist, and uploads `atlas-eval-offline` (JSON + Markdown; the Markdown i
   capability's rank is recorded, or «not reached». ⚠ Lexical only (the meaning search is a network call) and
   the model writes its own queries — so this is **not** a measure of the answers, and every place it is shown
   says so. Measured when it was added (2026-10-03): 34 of 157 needed capabilities, 2 of 74 questions whole.
+* **deliverables** (`scripts/atlas-eval/deliverables.mjs`, series: `scripts/atlas-completion-rate.mjs`) — the share of the
+  things a question asked for (a `mapState`, or `deliverables:[{kind:'result',…}]`) that existed in the finished record,
+  apart from what the turn said (`completion`). Three answers: present / absent / unobserved; the rate is over observed
+  turns, and a turn that said complete with a deliverable absent is listed as `falseCompletion`. One JSON row per run is
+  appended to a history file (`--history`); nothing gates on it. `scripts/atlas-prompt-weight.mjs` is the companion
+  measurement for what each turn sends before the reader speaks (tool definitions, promoted tools, cache share).
 
 `scripts/build-service-status.mjs` reads the newest `atlas-eval-offline` into `atlasEval.offline` (counts only);
 the live report is found by its own name (`atlas-eval-report`), so the offline artifact cannot make a run that
