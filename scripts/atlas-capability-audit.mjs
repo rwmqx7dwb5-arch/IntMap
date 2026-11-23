@@ -234,7 +234,7 @@ export function commandDeclarations(rows, registered, unbridged = {}) {
   return { bad, claimed: claimed.size, unclaimed, declined };
 }
 
-export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, othersWords, uiEntries, pageSrc, uiDeclared, commandRows }) {
+export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger, othersWords, uiEntries, pageSrc, uiDeclared, commandRows, skillsAudit }) {
   const J = caps.toJSON();
   const byId = Object.create(null);
   J.capabilities.forEach((c) => { byId[c.id] = c; });
@@ -322,6 +322,11 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
     add('atlas-discoverable', 'Atlas can reach every capability', bad,
       `${covered.size} of ${J.count} in ${docs.count()} blocks, ${coreTools.size} as core tools`);
   }
+
+  /* ⑤b (atlas-skills) a SKILL is a document about how to use capabilities, so what it names must exist: every capability id in its
+        prose is in the registry and not withdrawn, every argument it names is in that capability's schema, the en and jp texts name the same
+        ones, and a section stays small enough to be read whole. Passed in (js/atlas-skills.js audit) so a fixture can omit it. */
+  if (typeof skillsAudit === 'function') add('skills-consistent', 'every skill names only capabilities and arguments that exist', skillsAudit({ capabilities: caps, schemas }));
 
   /* ⑥ a lazy capability is in the catalogue BEFORE its module loads */
   {
@@ -883,6 +888,7 @@ export async function audit(opts = {}) {
       resultsSrc: read('js/atlas-results.js'),
       toolsSrc: read('js/atlas-toolsurface.js'),
       schemas: await loadSchemas(),
+      skillsAudit: (await import('../js/atlas-skills.js')).audit,
       silentLedger: opts.silentLedger || null,
       othersWords: opts.othersWords || wordsByOthers(),
       uiEntries: capsEntries.filter((e) => e.ui && e.ui.at).map((e) => ({ id: e.id, at: e.ui.at })),
