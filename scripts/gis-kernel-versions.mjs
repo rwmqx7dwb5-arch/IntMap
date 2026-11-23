@@ -327,6 +327,7 @@ export const NOT_A_KERNEL = {
   'js/gis-export.js': 'a writer of bytes — it reads no recipe and produces no answer a saved project replays; a re-export is a new file, not a replay',
   'js/gis-project.js': 'stores and replays recipes — it is the READER of these versions',
   'js/gis-atlas.js': 'the Atlas-facing surface; resolves refs and forwards to the ops',
+  'js/gis-semantics.js': 'states what a dataset and its columns MEAN and warns before a step; it changes no result (check returns warnings, never refuses unless the caller passes strict), so no saved recipe replays differently',
   'js/gis-datasets.js': 'the registry and the column-typing contract, not an answer to a step',
   'js/gis-sources.js': 'where data is acquired FROM; what it served is reported in `coverage`, which travels with the answer rather than in the engine record',
   'js/gis-layers.js': 'the bridge to what the renderer holds; same reason as js/gis-sources.js',
