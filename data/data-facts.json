@@ -1364,6 +1364,20 @@
     "accuracy"
    ]
   },
+  "data/transit-lu.json": {
+   "cadence": "P3D",
+   "cadenceBasis": null,
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
   "data/unga-votes/index.json": {
    "cadence": "P1Y",
    "cadenceBasis": "measured",
