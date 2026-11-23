@@ -14,8 +14,8 @@
  *  still shows a round stroke. It is the reader's font, so what the reader's device could draw is what is kept.
  * ==========================================================================*/
 
-export const EM = 1000;
-export const TRACE_PX = 192;      /* the size a character is drawn at to read its outline: 1 px = 5.2 units */
+const EM = 1000;
+const TRACE_PX = 192;      /* the size a character is drawn at to read its outline: 1 px = 5.2 units */
 const TOL = 1.0;                  /* Douglas-Peucker tolerance in units (1000 per em) = 0.19 trace-px. Measured 2026-11-21 against the font's own raster at a 400 px em (≈ 30× zoom of 10.5 pt text): mean IoU 0.98-0.99; 0.7 added 30 % to the file for no visible gain */
 
 /**
