@@ -61,7 +61,7 @@
  *      { ok:false, why, detail? }
  * ==========================================================================*/
 
-import { read } from './data-governance.js';
+import { read, temporalMismatch } from './data-governance.js';
 
 export function makeGisOps() {
   return (function () {
@@ -7402,6 +7402,13 @@ export function makeGisOps() {
       /* (#gov) 出典・条件・取得時刻・対象時点。See inheritTerms. */
       const terms = inheritTerms(ds);
       if (terms.length) prov.upstreams = terms;
+      /* (data-facts) 入力の対象時点が重ならないなら、それは「別の時点の世界の結合」である。比較して述べるだけで、
+         拒否も補正もしない（差が問題かどうかは問いによる）。述べていない入力は 'unstated' として残し、合っているとは
+         言わない。See js/data-governance.js temporalMismatch. */
+      if (ds.length > 1) {
+        const tm = temporalMismatch(terms.map((x, n) => ({ id: x.input || x.publisher || ('input-' + n), asOf: x.asOf })));
+        if (tm.pairs.length || tm.unstated.length) prov.timeMismatch = tm;
+      }
       const grid = rasterOutTime(ds, R, res.shapeOnly);
       /* (time-spatial-base) VALID time of a vector output, and — separately — when it was recorded. */
       const vt = res.raster ? null : vectorOutTime(ds, R, res.validTime, decl, res.timeRoles, res.timeRows);

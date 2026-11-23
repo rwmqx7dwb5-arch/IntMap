@@ -75,6 +75,8 @@ export const GOVERNANCE = {
        and those are the material that changes. */
     ...OPENHISTORICALMAP,
     builtBy: 'scripts/build-border-coast.mjs',
+    /* (describes.*) the bundle's own fields (authority, sampleKm, inlandKm), measured 2026-11-20 on data/border-coast.js; Natural Earth states the 1:10m scale. */
+    resolution: 'coastline authority is the Natural Earth 1:10m physical coastline simplified to a 2 km tolerance; the distance of each edge to it is sampled every 1 km (bundle fields authority and sampleKm)',
   },
 };
 

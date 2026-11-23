@@ -73,6 +73,16 @@ export const GOVERNANCE = {
     attribution: true,
     paidBy: 'Reba, Reitsma & Seto (2016) — historical urban populations, 3700 BC – AD 2000 (CC BY 4.0)',
     ...REBA_URBAN,
+    /* (describes.*) What Reba, Reitsma & Seto (2016, Sci. Data 3:160034; read 2026-11-20) say of the tables, and what the
+       committed bundle measurably carries. ⚠ THE COUNTED UNIT IS NOT ONE UNIT across the tables, and the paper says so
+       rather than naming one; the method states each as the paper does and no more. The paper states no unit for
+       Modelski's ancient and classical figures, so none is written for them. */
+    period: { start: '-3699', end: '2000' },   /* measured: first and last year any figure is stated for (astronomical years; 3700 BC to AD 2000) */
+    extent: '1,738 cities worldwide, each a single central point; 10,352 dated population figures (measured on the bundle)',
+    method: 'Population of cities as the two books state it, not re-estimated here and not interpolated. Chandler (2250 BC to AD 1975): "an urban area including suburbs lying outside of the municipal area, and omitting farmland lying within the municipality", suburbs outside the municipal area counted as urban population only from after 1962; each figure is a demographic factor for the city, and early ones use the city\'s spatial extent with a common population density. Modelski ancient and classical (3700 BC to AD 1000): archaeological site assessments and population-density factors. Modelski AD 2000: UN 2000 Demographic Yearbook data for "cities proper" governed as one unit, agglomeration figures only where no other data were available. The paper notes that gaps between values in the source tables can be hundreds or thousands of years, and calls the values in them measured or interpolated (this bundle adds no interpolation)',
+    resolution: 'city point (one central latitude and longitude per city) x the table year a figure is stated for; irregular years, not a regular grid',
+    completeness: 'A city is listed only above a size threshold: Chandler over 20,000 inhabitants from AD 800 to 1850 (over 40,000 for Asian cities) and over 40,000 after 1850; Modelski 10,000 or more (3500 to 1000 BC), 100,000 or more (1000 BC to AD 1000), 1,000,000 or more (AD 2000). Absence means not listed, not did not exist. Per the paper, over 600 of the 1,741 original cities have only one population value',
+    accuracy: 'The paper provides no statistical analysis of error and did not correct or validate the population estimates; Modelski marks figures of questionable reliability in his tables. Locations carry the geocoders\' certainty rank: 1 (confirmed by three geocoding sources), 2, or 3 (least accurate); the paper reports 75% of cities at rank 1, 13% at rank 2 and 12% at rank 3',
     builtBy: 'scripts/build-hist-urban.mjs',
     /* ⚠ LITERALS THE GATE CAN READ WITHOUT RUNNING THIS FILE, and compile() REFUSES to write a bundle that disagrees
        with them: the day the upstream was read (the committed record's asOf), the last year any table states, the
