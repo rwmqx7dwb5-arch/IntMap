@@ -2217,11 +2217,11 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全27本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（74本）。本番変更は必ずここを通す
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全28本をここに宣言する
+  migrations/*.sql                DB の唯一の設計図（75本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
-  functions/<name>/index.ts       Edge Functions（27本。一覧と各本の役割は Architecture.md §6.2。
+  functions/<name>/index.ts       Edge Functions（28本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /

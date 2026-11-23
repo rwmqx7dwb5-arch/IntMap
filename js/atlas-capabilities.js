@@ -408,6 +408,15 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.sessionGrant","sessionGrant","allowSiteOperation,permitSite,authorizeBrowserSite","research","none","","explanation","external","explicit","",""],
       ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
       ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
+      ["geo.ml","geoMl","multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty","data","none","gis.dataset","explanation","session","none","","gisCore","external"],
+      ["mcp.servers","mcpServers","listMcpServers,mcpTools,refreshMcp","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","always","","",""],
+      ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","always","","","external"],
+      ["model.find","modelDiscover","findModel,specialistModels,whichModel,listModels","data","none","","explanation","read","none","","",""],
+      ["model.run","modelRun","runModel,specialistModel,floodForecast,riverForecast,airQualityForecast","data","none","map.object","explanation","session","none","place?","","external"],
+      ["research.longform","longform","writeLongReport,longDocument,writeInChapters","research","none","","explanation","read","none","","","external"],
+      ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
