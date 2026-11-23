@@ -47,6 +47,13 @@ export const GOVERNANCE = (() => {
     url: SRC,
     licence: 'public domain',
     attribution: false,
+    /* (describes.*) Natural Earth's 1:50m land page (naturalearthdata.com/downloads/50m-physical-vectors/50m-land/,
+       read 2026-11-20), this build's header, and its committed manifest (measured). No reference date is stated. */
+    extent: 'the whole Earth on an equirectangular grid, -180..180 by 90..-90',
+    method: 'rasterised from Natural Earth 1:50m land polygons by the even-odd rule, three scanlines per row with the majority deciding; 1 = land, 0 = sea',
+    resolution: '2048 x 1024 cells, 0.176 degrees (about 19.5 km at the equator); source scale 1:50,000,000',
+    completeness: 'Natural Earth describes the layer as land polygons including major islands; measured on the committed manifest the land fraction is 33.09%',
+    accuracy: 'Natural Earth states its coastline accuracy is questionable for northern Russia and southern Chile',
     ...NATURAL_EARTH,
     builtBy: 'scripts/build-land-mask.mjs',
   };
