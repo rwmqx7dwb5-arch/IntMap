@@ -402,13 +402,6 @@ try {
 } catch (e) {
   err('persona-mirror', 'could not verify the atlas-persona mirror: ' + (e && e.message));
 }
-// (atlas-durable-jobs) js/atlas-job-core.js is the source of the contract the server runs too; its mirror must not drift.
-try {
-  const { inSync } = await import('./sync-atlas-job-core.mjs');
-  if (!inSync()) err('job-core-mirror', 'supabase/functions/_shared/atlas-job-core.js is out of sync with js/atlas-job-core.js — run: node scripts/sync-atlas-job-core.mjs');
-} catch (e) {
-  err('job-core-mirror', 'could not verify the atlas-job-core mirror: ' + (e && e.message));
-}
 
 // ── 8. (#R162) index.html file-split integrity ───────────────────────────────
 // index.html is being split into css/ + js/ (standing rule 13). Two ways that goes wrong
