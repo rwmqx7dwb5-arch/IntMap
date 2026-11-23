@@ -49,3 +49,5 @@ Transitous を既定オフにしたので、**ルクセンブルク以外の公�
 
 ## 10. perf の天井（2 回目・main 取り込み後）
 `async.raw` +約 79 kB、`async.gzip` +約 39 kB、`atlas-cap-runs` +約 10 kB。いずれも取り込んだ main 側（Atlas の知識層・盤面など）で増えた分が主で、この PR の分は遅延チャンク `transit-planner`（約 15 kB）と Atlas の経路・到達圏の説明文。起動時に取得するものは増えない。
+
+- 性能予算 atlas-cap-runs を 941.6 kB（964217 B）へ: main に入った他の PR の遅延チャンクの増加で、台帳が古いまま残っていた分。全体ビルドで測った同じ値を、同じ主題の他の PR と揃えて書いた。
