@@ -1857,6 +1857,20 @@
     "accuracy"
    ]
   },
+  "data/logistics-network.json": {
+   "cadence": "P1D",
+   "cadenceBasis": "stated",
+   "asOf": "2026-11-20",
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
   "data/offline-sources.json": {
    "cadence": "static",
    "cadenceBasis": "derived",
