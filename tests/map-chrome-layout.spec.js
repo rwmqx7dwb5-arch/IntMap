@@ -155,10 +155,10 @@ test('⑤ at 200 % of a 1440 screen (720×450) the phone layout holds the contro
   expect(m.phone).toBe(true);
   expect(m.frame, 'the frame is no box on a phone').toBe('contents');
   expect(m.stack, 'the floating stack is not drawn on a phone').toBe('none');
-  expect(m.searchHome, 'the search is lent into the sheet head').toBe('m-search-slot');
+  expect(m.inFrame, 'the search stays in the map on a phone (a circle at the top left until it is pressed), it is no longer lent into the sheet').toBe(true);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.waitForTimeout(800);
-  expect(await page.evaluate(() => !!document.getElementById('map-search').closest('#map-frame')), 'and handed back to the frame').toBe(true);
+  expect(await page.evaluate(() => !!document.getElementById('map-search').closest('#map-frame')), 'and it is in the frame on a desktop too').toBe(true);
 });
 
 test('⑥ the compact shapes are the same controls — the search button opens the field, the menu reaches every view button', async () => {

@@ -235,7 +235,7 @@ test.describe('③ phone shell', () => {
     await page.waitForFunction(() => !document.querySelector('#m-screens > #news-timeline'));
 
     /* the one field: candidates as the reader types (no Enter), the last of them «Ask Atlas» */
-    await page.click('#ms-input');
+    await page.focus('#ms-input');   /* 電話ではフィールドは幅 0 に畳まれている（#ms-btn か focus で開く） */
     await page.keyboard.type('Par', { delay: 40 });
     await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item').length >= 2, null, { timeout: 10_000 });
     const rows = await page.evaluate(() => [...document.querySelectorAll('#ms-results .ms-item')].map((e) => e.classList.contains('ms-atlas')));
@@ -272,10 +272,10 @@ test.describe('③b phone shell — the flow', () => {
 
     /* ── search → a candidate → the card. The last letter is typed and the row tapped inside the 120 ms the
        suggestion timer waits, which is the race that reopened the list on production. ── */
-    await page.click('#ms-input');
+    await page.focus('#ms-input');   /* 電話ではフィールドは幅 0 に畳まれている（#ms-btn か focus で開く） */
     await page.keyboard.type('Pari', { delay: 40 });
     await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item:not(.ms-atlas)').length >= 1, null, { timeout: 10_000 });
-    expect(await page.evaluate(DETENT), 'the field raises the sheet for its candidates').toBe('full');
+    /* (フィールドの focus は sheet を full へ上げなくなった: 候補は地図上の検索円から下へ開く) */
     await page.waitForTimeout(300);
     await page.keyboard.type('s');
     await page.click('#ms-results .ms-item:not(.ms-atlas)');
@@ -306,7 +306,7 @@ test.describe('③b phone shell — the flow', () => {
 
     /* ── an app flight with the sheet at full (an Atlas fit) brings it to half, and the flight is not cut short;
        a finger panning the strip of map at full is the reader's own move and changes nothing ── */
-    await page.click('#btn-community');
+    await page.evaluate(() => document.getElementById('btn-community').click());   /* 電話ではメニューを開くまで display:none */
     await page.waitForTimeout(400);
     await page.evaluate(() => window.__setDetent('full', false));
     await page.waitForTimeout(400);

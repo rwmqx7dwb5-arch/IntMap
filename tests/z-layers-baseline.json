@@ -56,7 +56,7 @@
   ".compose-modal → 9999",
   ".map-credit → 900",
   ".sidebar → 1200",
-  "#m-search-slot .map-search-results → 30",
+  "body.m-menu-open .sidebar > .header-area → 30",
   ".search-result-card → 1100",
   ".m-fab-stack → 1150",
   ".m-legend-chip → 1150",

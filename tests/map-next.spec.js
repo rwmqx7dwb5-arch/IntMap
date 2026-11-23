@@ -175,13 +175,15 @@ test('my map on a phone: every control in the panel is reachable by a finger', a
   await page.locator('#ms-input').focus();
   await page.locator('#ms-input').fill('Tokyo');
   await expect(page.locator('#ms-results')).not.toBeEmpty({ timeout: 15_000 });
-  await page.waitForTimeout(500);   /* the sheet's spring to `full` */
+  await page.waitForTimeout(500);   /* the list settles (the sheet no longer springs to `full`: candidates drop down from the map's search circle) */
   const under = await page.evaluate(() => {
-    const bar = document.getElementById('co-compare-fixed'), r = bar.getBoundingClientRect();
-    const y = Math.min(innerHeight - 2, r.top + r.height / 2), hit = document.elementFromPoint(innerWidth / 2, y);
-    return { barHit: !!(hit && bar.contains(hit)), listHit: !!(hit && hit.closest('#ms-results')) };
+    const bar = document.getElementById('co-compare-fixed'), br = bar.getBoundingClientRect();
+    const by = Math.min(innerHeight - 2, br.top + br.height / 2), bh = document.elementFromPoint(innerWidth / 2, by);
+    const item = document.querySelector('#ms-results .ms-item'), ir = item.getBoundingClientRect();
+    const ih = document.elementFromPoint(ir.left + ir.width / 2, ir.top + ir.height / 2);
+    return { barHit: !!(bh && bar.contains(bh)), barOnList: !!(bh && bh.closest('#ms-results')), listHit: !!(ih && ih.closest('#ms-results')) };
   });
   expect(under.barHit, 'the Companies bar is not over the search list').toBe(false);
-  expect(under.listHit, 'the search list is what the finger meets at the foot of the sheet').toBe(true);
+  expect(under.listHit, 'the first candidate is what the finger meets at its own place (the bar does not cover it)').toBe(true);
   await ctx.close();
 });
