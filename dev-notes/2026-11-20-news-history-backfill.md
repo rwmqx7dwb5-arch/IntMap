@@ -18,3 +18,6 @@ newsjp: Atlas が過去の年についても答えられるよう、2012 年ま�
 ## 残っていること
 - 日の粒度・場所なし・英語の記録（日本語の問いは Atlas が英語の語へ直して引く）。
 - 本番での取り込みの実測は deploy 後（結果は PR に追記）。
+
+## perf 天井を上げた理由(2026-11-24)
+`atlas-cap-runs`(946.9 kB)・`atlas-console`(1137.8 kB)は能力 `news.history` と遡及の説明の分、`legal-text`(93.9 kB)は出典・利用規約の追記分(Wikipedia Current events・出来事の履歴)、`dist.assets`(22.06 MB)は同じ追記を含む配布物の増加。`gis-core`(701.2 kB)の増分は main 側の変更の測り直しで、この PR の新規コードではない。
