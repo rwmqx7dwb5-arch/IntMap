@@ -86,3 +86,6 @@ Notebook の公開可否（`NOTEBOOK_SHOWN=false`）は変えない。
 
 `atlas-console` の async chunk も上がった(1105.8 → 1113.7 kB)。`work.job` の案内文(`js/atlas-catalog-text.js` が能力の語から導く)が Atlas の本体側に入るため。
 `atlas-cap-runs` は 944.2 kB。どちらも起動(eager)には入らない。main の最新を取り込むたびに天井は main の実測へ動くので、この値は取り込み時点のもの。
+
+main 取り込み後の CI 実測で `async.raw`・`async.gzip`・`atlas-cap-runs`(970.8 kB)・`atlas-console`(1145.6 kB)・`gis-core`(701.2 kB) の天井を実測へ上げた。
+増えた分は `work.job` と、main 側で同時に入った能力・GIS の async chunk で、起動(eager)には入らない。
