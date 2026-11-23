@@ -1366,7 +1366,7 @@
   },
   "data/transit-lu.json": {
    "cadence": "P3D",
-   "cadenceBasis": null,
+   "cadenceBasis": "measured",
    "asOf": null,
    "describes": {},
    "unstated": [

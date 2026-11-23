@@ -1,6 +1,6 @@
 {
  "note": "The last fingerprint of each upstream URL the builders declare (scripts/upstream-change.mjs). Validators are what the SERVER stated; nothing here is a hash of a body or an inferred value. `unobserved` means no run has yet been able to look. A recorded row is the answer of the last time somebody looked, not a claim about today.",
- "generatedAt": "2026-11-20T08:05:55.438Z",
+ "generatedAt": "2026-11-23T15:30:35.036Z",
  "declaredBy": "scripts/upstream-change.mjs",
  "upstreams": {
   "http://tdc-www.harvard.edu/catalogs/bsc5.dat.gz": {
@@ -1047,6 +1047,15 @@
    "subjects": [
     "data/hist-admin-edges.json",
     "data/hist-era-spans.json"
+   ]
+  },
+  "https://data.public.lu/fr/datasets/horaires-et-arrets-des-transport-publics-gtfs/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T15:30:35.036Z",
+   "subjects": [
+    "data/transit-lu.json"
    ]
   }
  }
