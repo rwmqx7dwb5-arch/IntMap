@@ -52,6 +52,7 @@ export const GOVERNANCE = {
     paidBy: 'Mobility Database — MobilityData (catalogue of open GTFS feeds, CC0 1.0)',
     cadence: 'P7D',
     cadenceBasis: {
+      kind: 'measured',
       observed: 'measured 2026-11-21: the CSV is rewritten by MobilityData daily (object generation changes between fetches); feeds are added and retired weekly at most',
       expires: 'if the catalogue moves from files.mobilitydatabase.org or stops being published as CSV',
       canon: 'scripts/transit-discover.mjs CATALOGUE_URL',

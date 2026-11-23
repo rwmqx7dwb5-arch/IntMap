@@ -1366,7 +1366,7 @@
   },
   "data/transit-lu.json": {
    "cadence": "P3D",
-   "cadenceBasis": null,
+   "cadenceBasis": "measured",
    "asOf": null,
    "describes": {},
    "unstated": [
@@ -1920,7 +1920,7 @@
   },
   "data/transit-feed-catalogue.json": {
    "cadence": "P7D",
-   "cadenceBasis": null,
+   "cadenceBasis": "measured",
    "asOf": null,
    "describes": {},
    "unstated": [

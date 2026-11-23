@@ -51,6 +51,7 @@ export const GOVERNANCE = {
     paidBy: 'Timetables — Administration des transports publics (Luxembourg), CC BY 4.0, data.public.lu',
     cadence: 'P3D',
     cadenceBasis: {
+      kind: 'measured',
       observed: 'measured 2026-11-20 on data.public.lu: resources dated 2026-11-05, 2026-11-12 and 2026-11-20 — a new archive every week, each valid about four weeks ahead. The bundle holds a 14-day window (WINDOW_DAYS), so it is rebuilt every three days: the window never has fewer than 11 days left, and a date beyond it is refused (js/transit-raptor.js coverage)',
       expires: 'if the publisher moves to a different schedule, or WINDOW_DAYS changes',
       canon: 'scripts/build-transit-timetables.mjs WINDOW_DAYS',
