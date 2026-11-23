@@ -38,3 +38,5 @@ atlas-cap-runs が 929.5 kB（天井 918.5 kB）。main の統合知識層 (#128
 
 ## #1293 が先に main へ入った件と perf 天井（最終）
 #1293 の auto-merge を外す前に main へ入り、ボード実装が add/add で衝突した。js/board*.js と atlas-cap-board.js は #1338 側（本統合）を正本に解消し、#1293 のテスト（tests/atlas-workspace-ui-checks.test.mjs）は新実装でも 8 件通るので残した。能力表は 261（ui.compose を含む）。async.raw 14498 kB・async.gzip 4890 kB・atlas-console 1112 kB・dist.assets 21935 kB へ天井を上げた。増分は main 側の他 PR（GIS 網分析・統合知識層）と本統合の metrics/objects/worldObjects 変換の合計。
+
+CI 実測で atlas-cap-runs が 938.9 kB、board チャンクが 29.1 kB（metrics/objects ウィジェット・feed・worldObjects 変換と ui-text-rules の取り込み分。board-spec は別チャンクに分かれた）。天井を 962000 / 29800 バイトへ上げた。能力は削っていない。
