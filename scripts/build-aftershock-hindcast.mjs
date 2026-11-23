@@ -45,8 +45,14 @@ export const GOVERNANCE = {
     licence: 'U.S. public domain (USGS)',
     licenceUrl: 'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',
     attribution: false,
+    /* (describes.*) what the build rule and the bundle state — the header and `set` in the bundle say each of these */
+    period: { start: '2015-01-01', end: '2025-01-01', note: 'the mainshock window (AS.TESTED in js/aftershock-core.js); the forecast windows that follow each mainshock run up to a year past it' },
+    extent: 'every earthquake of M7 or larger that the USGS ComCat lists in the window (137 earthquakes, counted 2026-10-13)',
+    method: 'the forecast of js/aftershock-core.js, unchanged and with nothing fitted, issued 1 day after each mainshock from the aftershocks recorded by then, and compared with what the catalogue holds for the windows that followed; scored by reliability (mean forecast probability against the fraction of sequences with one) and by coverage of the forecast 95 percent range',
+    completeness: 'the set is chosen by a rule, not by hand, and nothing is dropped for having gone badly; only magnitudes at or above the catalogue completeness count in the scores',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'a closed set of past sequences — every earthquake the rule AS.TESTED in js/aftershock-core.js names — whose forecast windows have all ended',
       expires: 'if js/aftershock-core.js or data/aftershock-regimes.json.gz changes, or USGS revises the catalogue entries of these sequences',
       canon: 'this record (the only builder that scores the aftershock forecast)',

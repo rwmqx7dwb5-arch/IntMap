@@ -68,6 +68,9 @@ import { DEG, coverOf, encodeCells } from '../js/election-cover.js';
 export const GOVERNANCE = {
   'data/elections/index.json': {
     /* one pack per polity in scripts/elections/, each naming its own official source */
+    /* (describes.*) MEASURED on the committed data/elections/index.json */
+    period: { start: '1949-08-14', end: '2026-02-08', note: 'measured: the polling dates of the 134 elections in the index' },
+    extent: 'measured: 12 polities (au, ca, de, eu, fr, hk, jp, kr, ru, tw, uk, us), 134 elections',
     ...NATIONAL_ELECTIONS,
     builtBy: 'scripts/build-elections.mjs',
   },

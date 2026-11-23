@@ -78,6 +78,7 @@ export const GOVERNANCE = {
     schema: 'scripts/build-border-provenance.mjs --check (every row keys its shipped row)',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'the keys and source lists are copied from the gap records under data/ when they are rebuilt; nothing upstream is read',
       expires: 'whenever a gap record (HIST_ADMIN_GAPS in js/border-coast.js) is rebuilt — the fingerprints then refuse every changed row until this is re-run',
       canon: 'scripts/build-border-provenance.mjs',

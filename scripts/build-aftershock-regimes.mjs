@@ -59,8 +59,14 @@ export const GOVERNANCE = {
     licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
     /* CC0 asks for nothing; the card and the method page name the source and the papers all the same */
     attribution: false,
+    /* (describes.*) what the header and the bundle's own grid state */
+    extent: 'the whole Earth: a grid of 3601 x 7201 points, latitude -90 to 90 and longitude -180 to 180',
+    method: 'a copy, with nothing re-derived, smoothed or coarsened, of three USGS OpenSHA OAF files read from one pinned commit: generic Reasenberg-Jones parameters per tectonic regime (Page et al. 2016), catalogue completeness rules per network region, and the Garcia et al. (2012) global seismotectonic regionalization (15 regimes)',
+    resolution: '0.05 degree grid (the regime table own grain); every run boundary is kept',
+    completeness: 'every one of the 3601 x 7201 grid points is covered by a regime, and the decoded runs reproduce the upstream count for each of the 15 regimes, or nothing is written',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'the three parameter files were last changed upstream on 2021-05-15 (GitHub commits API, read 2026-10-13); the bundle is pinned to one commit',
       expires: 'if USGS revises the generic parameters, the completeness rules or the regime table in the OAF repository',
       canon: 'this record (the only builder that reads the OAF parameter files)',
