@@ -304,11 +304,7 @@ function mount(scope, HOST, CONTEXT) {
     verify: project.verify,
   });
 
-<<<<<<< HEAD
-  const API = { data, geometry, crs, raster, warp, index, voronoi, network, expr, units, semantics, worker, sources, layers, ops, project, compute, panel, draw, atlas, flow,
-=======
-  const API = { data, geometry, crs, raster, warp, index, voronoi, network, expr, units, worker, sources, layers, ops, project, pipeline, forecast, compute, panel, draw, atlas, flow,
->>>>>>> origin/main
+  const API = { data, geometry, crs, raster, warp, index, voronoi, network, expr, units, semantics, worker, sources, layers, ops, project, pipeline, forecast, compute, panel, draw, atlas, flow,
     context: ctx,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { scope.IntMapGis = API; } catch (_) { }
