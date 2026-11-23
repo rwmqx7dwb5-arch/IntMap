@@ -49,6 +49,10 @@ is the human explanation.
 | `world_graph_edges` | *(world-graph)* 型付きの結び付き——`(from_ref, rel, to_ref, from_ms, to_ms, confidence, source, retrieved)`。述べた側に 1 行だけ保存し、逆向きの名前はページが `REL_INVERSE` で読む。期間が NULL は「述べられていない」。同じ関係・相手・期間は 1 行（一意索引）。 `feed`／`feed_run`（同上）。| 全員（select）。 | service_role のみ。 |
 | `world_graph_claims` | *(world-graph)* 根拠のある値——`(ref, key, value, unit, from_ms, to_ms, source, retrieved)`。出典ごとの値は上書きせず並べる。 `feed`／`feed_run`（同上）。フィードの値は `(ref,key,期間,source)` で 1 行（部分一意索引）で、改訂は同じ行の値を更新する。| 全員（select）。 | service_role のみ。 |
 | `world_graph_ingest_runs` | *(world-graph-ingest)* フィードの取り込み 1 回＝1 行：`feed`・`started_at`/`finished_at`・`status`（running／ok／refused／failed）・`upstream`（各上流が自分の更新日として述べたもの）・`counts`（追加・変更・同一・退役）・`note`。**これが回答の脇に出る鮮度の元**。 | 全員（select。anon も）。 | service_role のみ。 |
+| `atlas_jobs` | *(atlas-durable-jobs)* **永続ジョブ**——タブを閉じても続くサーバ側の長い仕事。`status`（`queued`/`running`/`done`/`failed`/`cancelled`）・`stop_reason`・`cancel_requested`・費用の上限と使った額（`cost_cap_micros`/`spent_micros`/`reserved_micros`）・**リース**（`lease_holder`/`lease_until`）・`result`。`unique (user_id, idem_key)` で作成は冪等。所有者だけが select（RLS）、書くのは service_role と `atlas_job_cancel`/`atlas_job_amend` |
+| `atlas_job_tasks` | *(atlas-durable-jobs)* ジョブの仕事 1 件——`(job_id, task_id)`・`key`（契約の鍵）・`contract`・`deps`・`status`・`result`・`cost_micros`。1 度しか終われない |
+| `atlas_job_events` | *(atlas-durable-jobs)* 追記だけの記録——`created`/`lease`/`task.started`/`task.ended`/`amend`（利用者が走行中に変えた指示）/`cancel`/`ended` |
+| `atlas_jobs_control` | *(atlas-durable-jobs)* 1 行。**停止スイッチ**（`enabled`）と上限（利用者あたり同時 2 件・全体 20 件・1 件 $1）。service_role だけ |
 | `world_graph_ingest_runs` | *(world-graph-ingest)* フィードの取り込み 1 回＝1 行：`feed`・`started_at`/`finished_at`・`status`（running／ok／refused／failed）・`upstream`（各上流が自分の更新日として述べたもの）・`counts`（追加・変更・同一・退役）・`note`。**これが回答の脇に出る鮮度の元**。 | 全員（select。anon も）。 | service_role のみ。 |
 | `world_graph_id_history` | *(overture-maps)* **外部識別子の履歴**——`(ref, scheme, ext_id, release, status, source_records, observed)`。`ids` は 1 つの scheme につき今の 1 値しか持たないが、Overture の GERS は毎月 ~6.5% 振り直される（2026-11-18 リリースの公表値）。「あるリリースで、この対象がどの id で、どの元レコード（`sources[].dataset/record_id`＝Overture が述べたもの）から作られたか」を 1 行ずつ残し、古い id で保存された参照・ブックマークからも同じ対象に着く。後継を位置や名前から推測しない。`world_graph_resolve_id(scheme, id)` が現在の id → 履歴の順に返し、2 つの対象が同じ id を持ったことがあれば両方を返す。  識別の根拠として **`basis`（stated / source_record / attribute / seed）・`evidence`・`confidence`** を持つ（名前による一致は基盤の値に無い）。 | 全員（select）。 | service_role のみ。 |
 | `world_graph_changes` | *(world-graph-identity)* **追記のみの変更履歴**——ノード・辺・主張の added / changed / retired と、変わった欄の before / after、feed・run。**trigger が埋める**ので seed・`world_graph_ingest_apply`・Overture の SQL のどれが書いても入る。帳簿だけの更新と同値の書き込みは記録しない。記録は migration `20261120135000` 以降。同じ migration が `world_graph_nodes.uid`（IntMap の不変の把手・UPDATE で変えられない）と、読みの `world_graph_resolve`（uid・ref・現在／過去の外部 id）・`world_graph_history`・`world_graph_changes_between`・view `world_graph_identifier_periods` を足す。 | 全員（select）。 | trigger 経由のみ（service_role）。 |
@@ -389,7 +393,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **65**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **69**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
