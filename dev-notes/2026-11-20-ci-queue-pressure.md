@@ -31,3 +31,6 @@ main に入った他の変更(Atlas のコンソール・GIS 層の追加)が as
 (1129.9 → 1135.6 kB)・`gis-core`(697.3 → 701.2 kB)と `dist.assets`(21923.7 → 22047.4 kB)を
 天井の幅を超えて太らせたため。CI の実測値と同じ値へ `perf-budget.mjs --update` で上げた(超えた行だけ)。
 この PR 自身の増分は 0。main の CI が次の push で天井を実測へ締め直す。
+
+追記: main に入った Atlas の知識層の追加で `async.gzip` が 4918.1 → 4942.8 kB になり幅(24.6 kB)を超えたため、
+CI 実測値へ上げた。この PR 自身の増分は 0(変更は workflow と記録のみ)。
