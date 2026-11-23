@@ -48,3 +48,6 @@ The CI build measured dist.total at 1,587,385,548 bytes, 13 kB above the ceiling
 async.raw 14376.3 -> 14471.6 kB、async チャンク atlas-cap-runs 918.5 -> 931.7 kB(能力表の行が増えた分)、
 atlas-console 1105.8 -> 1111.8 kB、dist.assets 21796.5 -> 21909.3 kB。いずれも新しい能力が運ぶ実コードの増分で、
 他の行は動かしていない。測定は origin/main を取り込んだ tree を build して `perf-budget.mjs --update` で行った。
+
+## atlas-cap-runs の天井
+CI が merge 後の木で測った atlas-cap-runs は 938.7 kB（天井 931.1 kB を 7.6 kB 超過）。増えた分は main が足した能力と siting.compare の追加で、CI の実測値まで引き上げた（ローカルでは main の進みが速く perf-budget --update の同一木ガードを満たせないため、先行 PR と同じく CI の出力を根拠にした）。
