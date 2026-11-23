@@ -403,6 +403,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
       ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
       ["knowledge.recheck","knowledgeRecheck","recheckKnowledge,verifyKnowledge,reverifyKnowledge","research","none","knowledge","explanation","persist","none","","","external"],
+      ["geo.imageChange","geoImageChange","imageChange,changeDetection,satelliteChange,landCoverChange,embeddingChange,radarChange,beforeAfter","data","none","gis.dataset","explanation","read","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
