@@ -20,7 +20,7 @@ newsjp: Atlasの調査ジョブが、タブを閉じてもサーバ側で走り�
 
 | 層 | もの |
 |---|---|
-| DB | `supabase/migrations/20261120090000_atlas_durable_jobs.sql`（`atlas_jobs` / `atlas_job_tasks` / `atlas_job_events` / `atlas_jobs_control`、RLS は所有者の select のみ、runner 用 RPC は service_role 限定、取消・変更の 2 RPC は所有者限定、30 日で削除、pg_cron の毎分 tick と日次の掃除） |
+| DB | `supabase/migrations/20261123130000_atlas_durable_jobs.sql`（`atlas_jobs` / `atlas_job_tasks` / `atlas_job_events` / `atlas_jobs_control`、RLS は所有者の select のみ、runner 用 RPC は service_role 限定、取消・変更の 2 RPC は所有者限定、30 日で削除、pg_cron の毎分 tick と日次の掃除） |
 | サーバ | `supabase/functions/atlas-jobs/index.ts`（`create`／`tick`）、`_shared/atlas-job-runner.js`（リース・checkpoint・予約と決済・波の実行・結論） |
 | 検査 | `tests/atlas-durable-jobs-checks.test.mjs`（15 件）、`supabase/tests/52_atlas_durable_jobs_test.sql`（pgTAP） |
 
@@ -50,3 +50,8 @@ PR の CI が `async.raw` を 14209.4 kB と測り、天井 14136.4 kB(幅 70.7 
 
 main(動画入力・ハンズフリー音声・写真と衛星の突き合わせなど)を取り込んで測り直すと、`atlas-console` が 1105.8→1116.7 kB(+10.9 kB)、`dist.assets` が 21796.5→21907.3 kB(+110.8 kB)で天井を超えた。この PR が触るのは `atlas-delegate.js` と `atlas-job-core.js` だけで、どちらもこの 2 行に寄与しない(`atlas-console.js` はこの 2 ファイルを束ねない)。`--update` が上げたのはこの 2 行だけ。要因別の測定はしていない。
 - 失効条件: main の `perf-ceiling.yml` が測定に合わせて天井を下げ直す。
+
+### 4.3 追補: migration の版を付け替えた(20261120090000 → 20261123130000)
+
+merge 後の `Supabase deploy` が `supabase db push --dry-run` で拒否された(「ローカルの migration が本番の最新より前に挿入される」)。PR を長く開いている間に、より新しい migration(`20261121120000_connection_permissions` など)が先に本番へ入ったため。**本番には私の migration は未適用**で、中身は変えず、版だけを現在の最新より後の `20261123130000` に付け替えた。参照していた Edge Function・pgTAP・テスト・文書の版も同時に更新した。
+- 教訓: 長く開く PR は、merge 前に `ls supabase/migrations | tail` で自分の版が最新より後であることを確かめる。
