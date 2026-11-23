@@ -40,3 +40,11 @@ newsjp: 列・指標の意味（対象の範囲・数えた境界・日付の意
 eager (起動時) の行は動いていない。
 
 追記: origin/main を取り込み直した後、`dist.total` が 1542452.9 → 1550187.3 kB、`dist.assets` が 21686.9 → 21807.8 kB の天井を超えた (CI の Gates 2/3 と、データを取得した手元の build の両方で再現)。意味層の遅延チャンク (`gis-core` ほか) と、同時に取り込んだ main 側の新規モジュール (`atlas-geoplan`・`data-impact` など) の合計。超えた 2 行だけ `--update` で上げた。eager の行は動いていない。
+
+追記 (3 回目の取り込み): `atlas-orchestrate` が 82.4 → 96.1 kB で天井を超えた (CI の Gates 2/3 と、データを取得した手元の build の両方で再現)。このチャンクに触る変更は本 PR の差分に無い (本 PR の js/ は gis-semantics・gis-core・gis-atlas・atlas-cap-data のみ) ので、増分は同時に取り込んだ main 側 (atlas-geoplan など) 由来と見ている。main 側の天井更新が bot で追いつくまでの差を、この PR で超えた行だけ上げて通した。
+
+`async.gzip` を 4833.8 → 4860.4 kB、`atlas-cap-runs` チャンクを 918.5 → 923.7 kB に上げた（意味の層の説明文と、同時に main へ入った変更の合算。超えた 2 行だけ `--update` が書いた）。
+
+`async.raw` 14376.3 → 14481.3 kB、`atlas-console` 1105.8 → 1112.6 kB、`gis-core` 663.6 → 681.1 kB、`dist.assets` 21796.5 → 21917.6 kB に上げた（意味の層と、並行して main に入った変更の合算。超えた 4 行だけ `--update` が書いた）。
+
+追記 (CI の実測で上げた 1 行): この branch に入った GIS の追加 (`gis-pipeline-forecast` など) で `gis-core` が 679.8 → 697.3 kB になり、Gates 2/3 の check:perf が赤になった (CI の実測と手元の build が一致)。その 1 行だけ `--update` で上げた。eager の行は動いていない。
