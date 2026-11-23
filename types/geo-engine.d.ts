@@ -45,6 +45,15 @@ export interface SurfacesDrawn {
   gone: string[];
 }
 
+/** One surface as `render.witness()` saw it (js/render-witness.js). `unconfirmed` is 「could not tell」, never a failure. */
+export interface SurfaceSeen {
+  owners: string[]; state: SurfaceState['state']; features: number | null;
+  verdict: 'seen' | 'not_seen' | 'unconfirmed' | 'not_drawn';
+  reason: string; opacity: 0 | 1 | null; inZoom: boolean | null; inView: boolean | null;
+  rendered: number | null; pixels: { changed: number; looked: number } | null; errors: string[];
+}
+export interface SurfacesSeen { observable: boolean; surfaces: { [id: string]: SurfaceSeen }; seen: string[]; notSeen: string[]; unconfirmed: string[] }
+
 /** The camera the facade's `camera.get()` answers with. */
 export interface CameraState { center: LngLat; zoom: number; bearing: number; pitch: number }
 
@@ -173,6 +182,7 @@ export interface GeoEngineAdapterCore {
   removeTileset(id?: any): any;
   setTilesetVisible(id?: any, on?: any): any;
   placeTileset(id?: any, o?: any): any;
+  clearBuildingPick(): any;
   hasTileset(id?: any): any;
   tilesetInfo(id?: any): any;
   hasAircraftCloud(id?: any): any;
@@ -400,6 +410,7 @@ export interface GeoEngineLayers {
   removeTileset(id?: any): any;
   setTilesetVisible(id?: any, on?: any): any;
   placeTileset(id?: any, o?: any): any;
+  clearBuildingPick(): any;
   hasTileset(id?: any): any;
   tilesetInfo(id?: any): any;
   hasAircraftCloud(id?: any): any;
@@ -468,6 +479,8 @@ export interface GeoEngineRender {
   claim(ids?: any, owner?: any, o?: any): any;
   /** 「is it on the map」: per-source state of claimed (or named) surfaces, and whether the renderer could be asked */
   drawn(q?: any): SurfacesDrawn;
+  /** 「did it reach the screen」: drawn() plus opacity, zoom range, viewport, renderer errors and (unless q.pixels===false) a frame comparison */
+  witness(q?: any): Promise<SurfacesSeen>;
   /** runs the claimant's own remover for a claimed source; false when none was declared */
   clearSurface(id?: any): any;
   container(): any;
