@@ -75,6 +75,11 @@ export const GOVERNANCE = (() => {
   /* ⚠ ONE BUNDLE, TWO UPSTREAMS: a single licence for the file would be a claim neither made. */
   return { 'data/airports.json': { upstreams,
     priority: { disjoint: ['airport counts per country (type, iso_country, scheduled_service)', 'the cca2 to cca3 country-code key map only'] },
+    /* describes.* — MEASURED on data/airports.json (233 countries, airportsCounted 3269, capTotal 1680.5, mediumWeight 0.25);
+       the formula is this builder's own derivation, stated in the bundle, not a supplier statement. OurAirports' README
+       (github.com/davidmegginson/ourairports-data) makes no accuracy or completeness claim, so none is declared. */
+    extent: '233 countries and territories with a count (measured on the bundle)',
+    method: "IntMap's derivation, not a supplier figure: scheduled-service airports only, capacity index = large_airport + 0.25 x medium_airport (OurAirports type and scheduled_service fields); it is a count of infrastructure, not routes, frequencies or passengers",
     ...OURAIRPORTS, builtBy: 'scripts/build-airports.mjs' } };
 })();
 

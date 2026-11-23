@@ -73,6 +73,13 @@ export const GOVERNANCE = (() => {
   const rec = {
     publisher: 'AWS Terrain Tiles (terrarium)',
     url: HOSTS[0] + '/{z}/{x}/{y}.png',
+    /* (describes.*) what this file's manifest and header state, and what the Tilezen data-sources page
+       (github.com/tilezen/joerd/blob/master/docs/data-sources.md, read 2026-11-20) states of the ocean source.
+       No accuracy figure and no reference date is published for the sea floor, so neither is declared. */
+    extent: 'the whole Earth on an equirectangular grid; rows outside plus or minus 85.0511 degrees (the Web Mercator limit of the source tiles) carry sea fraction 0',
+    method: 'mean depth in metres of the sea samples in each cell, with the cell sea fraction stored separately, from AWS Terrain Tiles read at zoom 5; the tiles take ocean bathymetry from ETOPO1 and land from SRTM/GMTED/NED',
+    resolution: '0.25 degrees (1440 x 720 cells), each the mean of about thirty zoom-5 samples of about 4.9 km at the equator; the ocean source ETOPO1 is 1 arc-minute',
+    completeness: 'measured on the committed manifest: 94.72% of cells lie inside the Mercator limit of the source tiles and 67.13% of cells carry sea',
     ...TERRAIN_TILES,
     builtBy: 'scripts/build-bathymetry.mjs',
   };

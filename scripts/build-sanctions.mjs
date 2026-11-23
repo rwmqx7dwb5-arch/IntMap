@@ -104,6 +104,7 @@ export const GOVERNANCE = {
       over: 'no list overrides another: each authority\'s parties are counted under that authority only; Natural Earth supplies the point and names of a country a list names, never a party' },
     cadence: 'P1D',
     cadenceBasis: {
+      kind: 'measured',
       observed: 'read 2026-11-17: the UK list file states «Report Date: 12-Nov-2026», the EU file a fileGenerationDate of the same week, and OFAC publishes recent-actions notices several times a week — any day can change a list',
       expires: 'if the three lists are read from a dated archive instead of their live files',
       canon: 'scripts/build-sanctions.mjs GOVERNANCE',
@@ -113,6 +114,10 @@ export const GOVERNANCE = {
     retrievedAt: '2026-11-17',
     generatedAt: '2026-11-17',
     asOf: '2026-11-17',
+    /* (describes.*) measured on the committed bundle (links[], authorities[]); the three lists are snapshots, so the period is the single day read */
+    extent: 'parties designated by three authorities (OFAC SDN, UK Sanctions List, EU FSF) linked to 192 countries; 432 authority x country links, 32246 designated parties in all',
+    method: 'count of parties the list of each authority designates, per authority and country, by kind, regime and measure; a country is the address country the list states, else nationality (flag for a ship); a party with addresses in several countries is counted in each',
+    resolution: 'authority x country',
     schema: 'scripts/build-sanctions.mjs (authorities · places · links · unplaced) — read by js/geopolitics-core.js; tests/geopolitics-layers-checks.test.mjs',
     /* measured on links[]: rows = authority × country links; key (a, c); n ≥ 1 */
     quality: { rows: 432, missing: { a: 0, c: 0, n: 0 }, outOfRange: { n: 0 }, duplicates: 0 },
