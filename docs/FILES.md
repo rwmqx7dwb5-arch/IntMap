@@ -561,6 +561,16 @@ gis-project.js                    **プロジェクトの保存** `window.IntMap
                                   版を述べない部分があれば**鍵を作らない**。⚠ **引いた記録は信じずに突き合わせる**
                                   ——記述が 1 つでも違えば捨てて op を走らせる。予算はバイトで溢れは LRU。
                                   使い回した段は `reused` として名指す（計算し直したとは報告しない）
+gis-analysis-pipeline.js               **分析を、地域を変えて再実行できる手順として持つ** `window.IntMapGisPipeline`。
+                                  段は Atlas の `gis` の action そのもの。`"$region"` と `"$step:<id>"` の 2 つの印が
+                                  依存を**決める**（別に宣言しない）。`setRegion` は地域を使う段とその下流だけを再計算し、
+                                  無関係な段は同じデータセットのまま `reused`。失敗した段の下流は `skipped` で `stale`。
+                                  `capture(id)` は既にある系譜から作る（取り込み・Python は手順が無いので名指しで拒否）。
+                                  定義はプロジェクトの保存（`save(name, {extras})`）に同梱され、開き直すと `restore`。
+gis-forecast.js                   **外部の予測データを GIS へ戻す** `window.IntMapGisForecast`。実在する 2 つの公開 API
+                                  （Open-Meteo の洪水＝GloFAS、気象予報）だけ。観測・モデル推計・利用者の条件・不確実性を
+                                  **別々に**持つ（推計と不確実性は別データセット、観測は参照のみ）。取得に失敗した点は 0 でなく欠測。
+                                  無料 API は非商用・データは CC BY 4.0（規約確認日を記録に持つ）。
 gis-panel.js                      その操作卓（一覧・属性表・由来の連鎖・処理の実行・保存と読み込み）
 map-tools.js                      対話ツール（投影ビュー・描画・Isolate・海路・見通し線・オブジェクト一覧・
                                   アウトライン・図形移動・到達圏（車・徒歩・自転車・公共交通）・3-D 弧）
@@ -1209,6 +1219,13 @@ atlas-view-ground.js              **見たものの裏づけ**（#R589）— `lo
                                   （`cover`／`inView` という2つの尺度で順位づけ）。**タグの許可表は持たない**——
                                   タグをそのまま渡し、判断は Atlas に返す。**見つからなかったことは文として書く**
                                   （空欄は「知らされていない」と「そこには無い」を区別できない）。座標の桁数もここが決める
+atlas-video-frames.js            動画を Atlas が読める1枚にする。クリップを等間隔（各区間の中央・0秒と末尾は避ける）の最大9フレームに
+                                  サンプルし、時刻を焼き込んだコンタクトシート**1枚**にする。画像は1リクエスト4枚までで写真と比較する
+                                  枠を残すため。全プロバイダが読める形（Gemini だけが生の動画を受ける）。音声は送らず、その旨を
+                                  `caption()` が述べる。`extract` は document を引数で受け、デコード不能な動画は黒いシートでなく null。
+atlas-voice.js                    ハンズフリー音声。聞き続け、確定した発話を1発話1メッセージで送る。認識器の自然終了は再開し、
+                                  マイク拒否は再試行せず理由を述べて止まり、Atlas の作業中に話した分は保留してターン終了で送る
+                                  （送信は進行中ターンを中止するため）。語句の解釈はしない——意味づけは Atlas。
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/layer-boot-graph-checks.test.mjs #R175 ③ が
                                   「動的 import でしか届かない export は死んだ export」と見るため）。
@@ -1811,6 +1828,7 @@ overpass.js                       **Overpass の唯一のクライアント** `o
                                   （空の答えとは別）。`race`・`budgetMs`（下げるだけ）・`accept`・`historical`（OHM）・`relay`。
                                   window.IntMapOverpass ＋ ES import の両方（同一の関数）
 atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（許可された読み取り能力を呼び、能力表を語で引く）・委譲を端末に残して再開する保存口（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
+atlas-job-core.js                 **契約と計画の核**——仕事の契約（`normaliseContract`）・同じ仕事の鍵（`contractKey`）・循環の検出・worker への指示文と答えの形（`workerSystem`/`workerPrompt`/`shapeOf`）・一覧を永続ジョブに計画する `planJob` と、次に始められる仕事を選ぶ `readyTasks`。import も globals も持たない純モジュールで、`atlas-delegate.js`（ページ）と Edge Function `atlas-jobs`（サーバ。`supabase/functions/_shared/atlas-job-core.js` が**逐語の写し**、`node scripts/sync-atlas-job-core.mjs`）が同じものを使う。docs/architecture/05-ai.md「永続ジョブ」
 atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-fact-merge.js              Atlas — 複数の子が構造化事実（`facts`: 対象・属性・値・単位・時点・出典・Evidence id）で述べたことを、**実世界オブジェクト**と属性で突き合わせ、一致／矛盾／単独／欠落に分ける `mergeFacts`。名前→対象の解決は注入された `resolve`（セッションの世界オブジェクト索引と永続グラフ）で、名前一覧は持たない。
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
@@ -2140,7 +2158,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全26本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（71本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（72本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（26本。一覧と各本の役割は Architecture.md §6.2。
@@ -2149,7 +2167,7 @@ supabase/
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /
                                   schema / media / provider-call / providers/* / models / replay）。
                                   構成の正本は docs/architecture/06-supabase.md §6.2
-  functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /
+  functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / atlas-job-core.js / atlas-job-runner.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-entities.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
