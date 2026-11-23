@@ -17,6 +17,10 @@
  *                               exists and is not withdrawn, every argument it names is in that capability's
  *                               schema, both languages say the same references, every section is small.
  *
+ *    skillReadiness(skill, deps)  what is OBSERVABLY usable right now for the work a skill describes: each capability it
+ *                               names (is it registered, withdrawn, does it need the network) and each thing it declares it
+ *                               `needs` (a layer, a dataset, a runtime, a sign-in) — asked of PROBES the page hands in.
+ *
  *  ⚠ A SKILL IS A DOCUMENT. Nothing here runs a step, forces an order, refuses a call or counts anything:
  *  reading a skill changes no state and a turn that never reads one is exactly as it was
  *  (CONSTITUTION.md §5 — Atlas decides what it does; the harness only hands it material).
@@ -42,7 +46,7 @@ function langOf(text) { return JP_RE.test(String(text || '')) ? 'jp' : 'en'; }
 function slot(lang) { return lang === 'jp' ? 1 : 0; }
 function pick(v, lang) { return (v && (v[slot(lang)] || v[0])) || ''; }
 
-function skillById(id) {
+export function skillById(id) {
   var k = String(id || '').trim().toLowerCase();
   for (var i = 0; i < ATLAS_SKILLS.length; i++) if (ATLAS_SKILLS[i].id === k) return ATLAS_SKILLS[i];
   return null;
@@ -152,6 +156,60 @@ export function readSkill(id, opts) {
   };
 }
 
+/* ── readiness: what can actually be used, observed ──────────────────────────────────────────────────
+   A skill says what a kind of work reaches for. Whether the reader's session can reach it NOW is a separate fact, and a
+   plan built on a layer that does not exist or a runtime that cannot start is found out ten steps in. This returns what
+   is observable, per item, in three states and never a fourth that means 「probably」:
+     available     the probe observed it usable
+     unavailable   the probe observed that it is not (with the reason it gave)
+     unobservable  nothing here can tell (no probe was handed in, the probe threw, or it said so) — NOT 「unavailable」
+   It is an OBSERVATION handed to Atlas with the section it reads, not a gate: nothing is refused or reordered, and a
+   skill whose items are unavailable is still readable — Atlas may use what remains, ask the reader, or say what is missing.
+   deps: { capabilities, probes: { layer(ref), dataset(ref), runtime(ref), login(), network() } }  — each probe returns
+   { available:boolean|null, reason?, label? } (sync or async); null means it cannot tell. */
+var NEED_KINDS = ['layer', 'dataset', 'runtime', 'login'];
+
+export function needsOf(skill) { return (skill && Array.isArray(skill.needs) ? skill.needs : []).map(function (n) { return { kind: n.kind, ref: n.ref || '', for: n.for || '', why: n.why || null }; }); }
+
+function observe(probe, ref) {
+  if (typeof probe !== 'function') return Promise.resolve({ state: 'unobservable', reason: 'no-probe' });
+  return Promise.resolve().then(function () { return probe(ref); }).then(function (r) {
+    if (!r || r.available == null) return { state: 'unobservable', reason: (r && r.reason) || 'probe-could-not-tell' };
+    return r.available ? { state: 'available', label: r.label } : { state: 'unavailable', reason: r.reason || 'not-present' };
+  }, function () { return { state: 'unobservable', reason: 'probe-failed' }; });
+}
+
+export function skillReadiness(skill, deps) {
+  deps = deps || {};
+  var probes = deps.probes || {}, caps = deps.capabilities;
+  var refs = capabilityRefs(skill);
+  var capJobs = refs.map(function (r) {
+    var cap = null;
+    try { cap = caps && caps.resolve ? caps.resolve(r.id) : null; } catch (_) { cap = null; }
+    if (!cap || cap.id !== r.id) return Promise.resolve({ id: r.id, state: 'unavailable', reason: 'not-a-capability' });
+    var av = null;
+    try { av = typeof cap.availability === 'function' ? cap.availability() : null; } catch (_) { av = null; }
+    if (av && av.available === false) return Promise.resolve({ id: r.id, state: 'unavailable', reason: av.reason || 'unavailable' });
+    var net = cap.facets && cap.facets.network;
+    var out = { id: r.id, state: av ? 'available' : 'unobservable', reason: av ? undefined : 'no-availability' };
+    if (!net) return Promise.resolve(out);
+    /* a capability that goes to the network is usable only while there is one; the page can say it has none, never that it has */
+    return observe(probes.network, '').then(function (n) {
+      if (n.state === 'unavailable') return { id: r.id, state: 'unavailable', reason: 'offline', needsNetwork: true };
+      out.needsNetwork = true; return out;
+    });
+  });
+  var needJobs = needsOf(skill).map(function (n) {
+    return observe(probes[n.kind], n.ref).then(function (o) { return Object.assign({ kind: n.kind, ref: n.ref, for: n.for || undefined }, o); });
+  });
+  return Promise.all([Promise.all(capJobs), Promise.all(needJobs)]).then(function (x) {
+    var all = x[0].concat(x[1]), n = { available: 0, unavailable: 0, unobservable: 0 };
+    all.forEach(function (i) { n[i.state]++; });
+    return { capabilities: x[0], needs: x[1], counts: n,
+      note: 'Observed now, not promised: "available" is what a probe saw, "unavailable" is what it saw missing, "unobservable" means nothing here could tell — it does not mean missing. Nothing is refused because of this; use what remains, ask the reader, or name what is absent.' };
+  });
+}
+
 /* ── the gate ───────────────────────────────────────────────────────────────────────────────── */
 /* audit({ capabilities, schemas }) -> [failure strings]; empty means the skills are consistent with what exists */
 export function audit(deps) {
@@ -180,6 +238,13 @@ export function audit(deps) {
     var key = function (r) { return r.id + '{' + r.args.slice().sort().join(',') + '}'; };
     var ek = en.map(key).sort().join(' '), jk = jp.map(key).sort().join(' ');
     if (ek !== jk) bad.push(s.id + ': the English and Japanese texts name different capabilities or arguments (en: ' + ek + ' / jp: ' + jk + ')');
+    (s.needs || []).forEach(function (n, i) {
+      var tag = s.id + ': needs[' + i + ']';
+      if (NEED_KINDS.indexOf(n.kind) < 0) bad.push(tag + ' has kind "' + n.kind + '" (known: ' + NEED_KINDS.join(', ') + ')');
+      if (n.kind !== 'login' && !String(n.ref || '').trim()) bad.push(tag + ' (' + n.kind + ') names nothing to look for');
+      if (!(n.why && n.why[0] && n.why[1])) bad.push(tag + ' has no reason in en + jp (what the work does with it)');
+      if (n.for && !capabilityRefs(s).some(function (r) { return r.id === n.for; })) bad.push(tag + ' is for `' + n.for + '`, which the text does not name');
+    });
     if (!en.length) bad.push(s.id + ': names no capability — a skill with nothing to reach for is not a skill about this product');
     /* every reference is real */
     capabilityRefs(s).forEach(function (r) {
