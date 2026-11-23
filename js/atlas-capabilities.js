@@ -399,11 +399,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["knowledge.remember","knowledgeRemember","rememberKnowledge,keepKnowledge,saveFact","research","none","knowledge","explanation","persist","none","",""],
       ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
       ["knowledge.forget","knowledgeForget","forgetKnowledge,deleteKnowledge","research","none","knowledge","explanation","persist","explicit","",""],
-      ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","none","",""],
+      ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","explicit","",""],
       ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
       ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
-      ["web.browse","browse","openPage,webBrowse,operatePortal,browsePortal,navigateSite,portalSearch","research","none","","explanation","read","none","","","external"],
-      ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
+      ["knowledge.recheck","knowledgeRecheck","recheckKnowledge,verifyKnowledge,reverifyKnowledge","research","none","knowledge","explanation","persist","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
