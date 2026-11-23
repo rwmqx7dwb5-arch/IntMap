@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* ============================================================================
  *  IntMap · world graph — SEED: administrative areas (countries) and nuclear power plants, tied by identifier
- *  node scripts/world-graph/build-plants-admin.mjs --sql    rewrite supabase/migrations/20261120140000_world_graph_plants_admin_seed.sql
+ *  node scripts/world-graph/build-plants-admin.mjs --sql    rewrite supabase/migrations/20261125100000_world_graph_plants_admin_seed.sql
  * ----------------------------------------------------------------------------
  *  TWO NEW DOMAINS and the ties that join them to the LNG slice already in the graph. All of it from data the
  *  repository already holds — no network:
@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { defineDomain, linkByIdentifier, nodeRef, toSqlRun } from './lib/domain.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const MIG = path.join(ROOT, 'supabase', 'migrations', '20261120140000_world_graph_plants_admin_seed.sql');
+const MIG = path.join(ROOT, 'supabase', 'migrations', '20261125100000_world_graph_plants_admin_seed.sql');
 const read = (p) => fs.readFileSync(path.join(ROOT, p));
 
 /* «2014», «1988-08-13», «1971-05» → epoch ms (the start of that year/month/day); anything else → null (never `now`) */
