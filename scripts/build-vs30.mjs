@@ -116,6 +116,12 @@ export const GOVERNANCE = (() => {
   const rec = {
     publisher: 'AWS Terrain Tiles (terrarium)',
     url: HOSTS[0] + '/{z}/{x}/{y}.png',
+    /* (describes.*) this build's header and committed manifest (measured), and the Wald & Allen (2007) proxy the header cites.
+       No reference date and no error figure for the proxy is stated there, so neither is declared. */
+    extent: 'the whole Earth on an equirectangular grid; cells with no land sample (sea, or outside the Web Mercator limit) hold 0',
+    method: 'Wald & Allen (2007) slope-based Vs30 proxy (active-tectonic table), evaluated per zoom-7 terrain pixel and averaged over the land samples of each cell; linear 150..1500 m/s in grey levels 1..255',
+    resolution: '0.05 degrees (7200 x 3600 cells; 3600 x 1800 at 0.1 degrees for phones) from terrain pixels spaced about 1223 m at the equator',
+    completeness: 'measured on the committed manifest: 7,371,340 cells (28.44%) carry a land value',
     ...TERRAIN_TILES,
     builtBy: 'scripts/build-vs30.mjs',
   };

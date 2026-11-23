@@ -35,6 +35,7 @@ export const GOVERNANCE = {
     licence: 'Public domain (US government work; EGM2008)', licenceUrl: 'https://earth-info.nga.mil/', attribution: false,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'measured',
       observed: 'EGM2008 is a finished model published in 2008; the 5-arc-minute PGM at downloads.sourceforge.net/project/geographiclib/geoids-distrib/egm2008-5.zip was read on 2026-11-20 and its header states DateTime 2009-08-29. NGA has announced a successor (EGM2020) but not released it',
       expires: 'if NGA publishes EGM2020 (the grid would be rebuilt from it) or the distribution URL stops serving the 5-minute file',
       canon: 'this record (the only builder that reads EGM2008)',
