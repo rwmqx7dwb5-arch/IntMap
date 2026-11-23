@@ -56,3 +56,5 @@ web-browse が `web.browse` / `web.fetchFile` の 2 能力（`atlas-cap-web`・s
 （2026-11-21 の main 取り込み後: `atlas-cap-runs` 909.0→921.8 kB、dist.assets 21686.9→21805.6 kB。理由は上と同じで、main 側の能力追加ぶんを含む。）
 
 （2026-11-24 の main 取り込み後、CI の Gates 2/3 で `atlas-cap-runs` が 938.6→951.4 kB になり天井を超えた。CI の測定値（974,300 B）に上げた。web.browse / web.fetchFile の能力ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
+
+（2026-11-24 の続き: CI の Gates 2/3 で atlas-console が 1129.9→1136.1 kB（1,163,400 B へ）、dist.assets が 21923.7→22051.8 kB（22,581,100 B へ）になり天井を超えた。CI の測定値に合わせて上げた。web 能力の追加ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
