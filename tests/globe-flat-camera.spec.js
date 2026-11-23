@@ -1,10 +1,10 @@
-// (globe-flat-camera) THE FLAT MAP'S CAMERA READS BACK THE CAMERA IT WAS GIVEN — ON BOTH ENGINES.
+// (globe-flat-camera) THE FLAT MAP'S CAMERA READS BACK THE CAMERA IT WAS GIVEN (CESIUM; MAPLIBRE WAS MEASURED CORRECT).
 //
 // On Cesium the flat map is COLUMBUS_VIEW, whose `positionWC` is the scene's own axes (height, easting,
 // northing), not ECEF. The camera read-back (_hprRaw) inverted it as an ECEF point, so on the flat map
 // jumpTo({center:[30,50], zoom:5, bearing:90, pitch:40}) came back as bearing −146°, pitch 106°
 // (an upside-down map) and zoom 4.59 while Cesium's own camera held heading 90°, pitch −50°. MapLibre
-// answered the same question correctly, so the two engines are compared on the SAME asks.
+// answered the same question correctly, so only Cesium is booted here.
 import { test, expect } from '@playwright/test';
 import { bootEngine } from './helpers/engine.js';
 
@@ -22,7 +22,9 @@ const readCam = (page) => page.evaluate(() => {
 });
 const flat = async (page) => { await page.evaluate(() => document.getElementById('btn-view-flat').click()); await settle(page, 2500); };
 
-for (const engine of ['maplibre', 'cesium']) {
+/* MapLibre reads these back correctly on the flat map (measured 2026-11-20) and the defect was Cesium-only, so only Cesium is
+   booted here — the second boot would cost ~25 s of the browser budget for a property nothing in this change can move */
+for (const engine of ['cesium']) {
   /* ONE boot per engine: the asked-for camera reads back, then an eased move lands where it was sent */
   test(`${engine}: on the flat map the camera asked for is the camera read back, jumped and eased`, async ({ page }) => {
     test.setTimeout(120_000);

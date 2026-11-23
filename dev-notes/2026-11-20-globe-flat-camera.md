@@ -18,7 +18,7 @@ newsjp: Cesium エンジンのフラット地図で、カメラの向きが狂�
 - `_isPlane()` / `_eyeOffsetEnu()` / `_eyeEcef()` を 1 組足し、読み戻しと目の位置はこの 1 組だけを通す（平面では射影した平面ベクトル、globe では従来の ENU 逆変換）。
 - 平面シーンの `easeTo` は `flyTo` をやめ、**厳密な瞬間解（`jumpTo` は 1e-9 で一致）を時間で刻む**補間に置換（中心は経度の近道、方位は近道、ズーム・傾きは線形、イージングは globe の飛行と同じ 3 次 in-out）。新しい命令は走っている補間を終わらせる。
 - globe の経路・MapLibre の経路・投影切替の入口（`js/map-projection.js`）は変えていない。
-- 回帰: `tests/globe-flat-camera-checks.test.mjs`（フラット専用の読み方を通さない退行を静的に拒む）と `tests/globe-flat-camera.spec.js`（両エンジンで、フラットに指示したカメラがそのまま読み戻される・補間が指示先に着く）。
+- 回帰: `tests/globe-flat-camera-checks.test.mjs`（フラット専用の読み方を通さない退行を静的に拒む）と `tests/globe-flat-camera.spec.js`（Cesium で（MapLibre は実測で正常・ブラウザ時間の天井のため起動しない）、フラットに指示したカメラがそのまま読み戻される・補間が指示先に着く）。
 
 ## 4. まだ測れていないこと
 - 実マウス・タッチ・ピンチでの Cesium フラット操作（`cesium-input.js` の面上ドラッグは別の座標計算を持つ）。
