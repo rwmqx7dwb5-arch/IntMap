@@ -58,3 +58,5 @@ web-browse が `web.browse` / `web.fetchFile` の 2 能力（`atlas-cap-web`・s
 （2026-11-24 の main 取り込み後、CI の Gates 2/3 で `atlas-cap-runs` が 938.6→951.4 kB になり天井を超えた。CI の測定値（974,300 B）に上げた。web.browse / web.fetchFile の能力ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
 
 （2026-11-24 の続き: CI の Gates 2/3 で atlas-console が 1129.9→1136.1 kB（1,163,400 B へ）、dist.assets が 21923.7→22051.8 kB（22,581,100 B へ）になり天井を超えた。CI の測定値に合わせて上げた。web 能力の追加ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
+
+（2026-11-24 の続き: main に #1313 などが入ったあとの CI の Gates 2/3 で、async.raw 14569.8→14656.8 kB（15,008,600 B へ）、async.gzip 4918.1→4949.3 kB（5,068,100 B へ）、atlas-cap-runs 952.1→964.1 kB（987,300 B へ）、atlas-console 1139.2→1146.3 kB（1,173,900 B へ）、gis-core 697.3→701.2 kB（718,100 B へ）が天井を超えた。CI の測定値に合わせて上げた。gis-core は web 能力の変更ではなく main 側（知識層・Skills）の増分で、main の天井が測定より先に上がっていないために、この PR が先に通る順番で引き受けた。）
