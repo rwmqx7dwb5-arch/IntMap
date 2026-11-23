@@ -253,6 +253,15 @@ geo-import.js                     落とされたファイルを FeatureCollecti
                                   できない見出しつきの表**は拒まずに `format:'table'`（`geometry:null` の行）
                                   として返す——地域コードで結合する側の入力になる。
                                   遅延読み込み（起動時のバンドルには入らない）
+gis-semantics.js                  **データの意味の層** `window.IntMapGisSemantics`（gis-semantic-layer）—
+                                  「この列は現実で何を意味し、何と比べてよいか」。facet は scope（行が何の測定か）・
+                                  basis（数えた境界: 現在／当時）・time（observed / target / published / acquired と、
+                                  登録簿の検証済み `valid`）・granularity・aggregation・keys・terms・constraints。
+                                  各 facet は `stated` / `derived` / `unstated` のどれかで、**述べていないことは推測で
+                                  埋めない**。読み取れるもの（buffer の半径・格子の大きさ・系譜を通した basis・
+                                  governance の条件・列型付けの「コードに見える」証拠）は導出し、手書きの一覧は持たない。
+                                  `declare` / `describe` / `check`（実行前の警告）/ `comparable`。⚠ **警告であって拒否
+                                  ではない**ので結果は変わらず kernel ではない（`strict:true` は呼び手の選択）。
 gis-shapefile.js                  **Shapefile の読み手** `window.IntMapGisShapefile`（#R738）—
                                   `.shp` / `.dbf` / `.prj` / `.cpg` を**組で**読む（`read(entries)` /
                                   `group` / `refusals`）。⚠ **復号器であって、登録もしなければ再投影も
@@ -1090,6 +1099,13 @@ atlas-cap-account.js              Atlas の能力 — 自分のアカウント�
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
 atlas-cap-board.js                Atlas の能力 — 操作できる画面（ボード）の合成と復元（board.compose / board.restore）
 atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart.compose）
+atlas-cap-file.js                 Atlas の能力 — ファイルを作る（file.create。PDF・Word・PowerPoint・Excel・HTML・Markdown・テキスト・CSV・JSON）
+atlas-file-make.js                  ファイル作成の DOM 側（lazy atlasFile）— 描画・グラフ/地図の画像化・書き出し後の読み戻し・保存カード
+file-doc.js                         ファイルの文書モデルと Markdown の読み取り（全形式の書き出しの元）
+file-pdf.js                         PDF の組版（日本語の行分割・ページ分割・表）と書き出し・読み戻し検証
+file-office.js                      docx・pptx と xlsx の「文書→シート」の対応、ZIP の読み戻し検査（xlsx の書き手は office-writer.js）
+zip-store.js                        **唯一の ZIP**（stored 方式の書き出しと CRC 付き読み戻し）。docx・pptx・xlsx・検証が共有
+file-text.js                        md・txt・html・csv・json の書き出し
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
@@ -1694,6 +1710,7 @@ map-reader.js                     **地図を言葉で読む**——Alt+R で中
                                   ライブ領域に書くのは narrator だけ。Settings ▸ キーボード のスイッチと Atlas の settings.mapReading が同じ関数を呼ぶ
 office-writer.js                  **Excel (.xlsx) を依存なしで書く**——stored ZIP + SpreadsheetML。数は数・"01100" は文字・NaN は空で件数を返す・
                                   列/行/セル長/シート名は形式の上限で、超えたら黙って切らず名前付きで断る。`gis-export.js` の `xlsx` 形式が呼ぶ。
+office-writer.js                  **唯一の Excel (.xlsx) 書き手（文書の表も、データセットの書き出しもここを通る）**——stored ZIP + SpreadsheetML。数は数・"01100" は文字・NaN は空で件数を返す・
 offline-plan.js                   **持ち歩ける地図の純粋な部分**——タイル範囲・日付変更線・粗い順・収まる細かさ、
                                   そして「保存してよいか」の判定（`verdict`）。許可は `data/offline-sources.json` が述べたものだけで、
                                   述べられていないホストは `not-stated`＝拒否（沈黙は許可ではない）
@@ -2759,7 +2776,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 171 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 172 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

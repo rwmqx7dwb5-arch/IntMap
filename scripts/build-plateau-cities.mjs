@@ -41,6 +41,11 @@ export const GOVERNANCE = {
         fields: 'geoid height at each unit centre (build time only)' },
     ],
     priority: { disjoint: ['city list, tileset alias, extent (PLATEAU catalogue)', 'geoid height (GSI calculator)'] },
+    /* (describes.*) every value below is either the catalogue's own field or a count measured on the committed data/plateau-cities.json
+       (2026-11-20); the catalogue states no accuracy or completeness of its own, so neither is declared. */
+    period: { start: '2020', end: '2025', note: "the catalogue's own `year` field of the streamed dataset of each unit (46 / 1 / 52 / 85 / 100 / 157 units for 2020 / 2021 / 2022 / 2023 / 2024 / 2025), measured; it is the year of the dataset, not a survey date" },
+    extent: '441 city or ward units in 45 prefectures of Japan, measured on the committed registry; union of the tileset root regions 127.63E 20.42N to 153.99E 43.19N; a unit appears only if the catalogue lists building 3D Tiles for it',
+    resolution: 'building models at LOD2 (293 units) or LOD1 (148 units), all textured, as the catalogue\'s lod and texture fields state; the best variant at LOD2 or below is chosen per unit',
     ...PLATEAU_CATALOGUE, builtBy: 'scripts/build-plateau-cities.mjs' },
 };
 
