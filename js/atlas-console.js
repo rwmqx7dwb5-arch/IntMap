@@ -1218,7 +1218,15 @@ export function atlasConsole(HOST){
        inspected) the moment Atlas loads rather than only once a question is in flight. */
     let _turnRunAction=null;
     const TOOLS=makeAtlasToolSurface({ capabilities:CAPS, schemas:SCHEMAS,
-      runAction:(action,turn)=>(_turnRunAction?_turnRunAction(action,turn):_kernelRun(action)) });
+      runAction:(action,turn)=>(_turnRunAction?_turnRunAction(action,turn):_kernelRun(action)),
+      /* (atlas-skills) what a skill's work needs, asked of the page: an observation handed to Atlas beside the skill's text, never a gate (js/atlas-skills.js skillReadiness) */
+      probes:{
+        layer:ref=>{ try{ const r=resolveLayer(ref); return r?{ available:true, label:r.label }:{ available:false, reason:'no-such-layer' }; }catch(_){ return { available:null, reason:'layer-register-unreadable' }; } },
+        dataset:ref=>{ const R=window.IntMapData; if(!R||typeof R.get!=='function') return { available:null, reason:'no-registry' }; try{ return R.get(ref)?{ available:true }:{ available:false, reason:'not-in-this-session' }; }catch(_){ return { available:null, reason:'registry-unreadable' }; } },
+        runtime:ref=>{ if(ref!=='python') return { available:null, reason:'no-probe-for-'+ref }; /* the sandbox's own refusal condition (js/compute-sandbox.js worker-unavailable): can the page start a Worker from a Blob; whether the interpreter boots is only seen on a run */ return (typeof Worker!=='undefined'&&typeof Blob!=='undefined'&&typeof URL!=='undefined'&&URL.createObjectURL)?{ available:true, label:'worker-capable' }:{ available:false, reason:'worker-unavailable' }; },
+        login:()=>{ try{ return { available:!!(HOST&&HOST.user) }; }catch(_){ return { available:null, reason:'unreadable' }; } },
+        network:()=>({ available:(typeof navigator!=='undefined'&&navigator.onLine===false)?false:null, reason:'navigator-reports-offline' }),
+      } });
     /* (exec-platform) NO ATLAS TURN IS OPEN — a background job's saved operation applied when the reader comes back, or a program run from the compute card. The call goes through the kernel
        itself (IntMapOS.execute: resolve, validate, run, verify, the undo ledger), the same door a turn's own call reaches, with no turn id. It answered 'no_turn' before, so those paths could
        never run a capability outside a live question (the browser spec of the Python bridge failed on exactly that). A turn-only capability (research.delegate) still says so for itself. */

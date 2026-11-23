@@ -26,7 +26,7 @@
  * ==========================================================================*/
 
 import { makeCapabilityBridge, attachBridge, clientSource } from './cap-bridge.js';   /* (cap-bridge) a program calls capabilities through the SAME makeExecute — see openProgramBridge */
-import { searchSkills, readSkill, parseSkillQuery } from './atlas-skills.js';   /* (atlas-skills) how-to material beside the capabilities; read a section at a time */
+import { searchSkills, readSkill, parseSkillQuery, skillReadiness, skillById } from './atlas-skills.js';   /* (atlas-skills) how-to material beside the capabilities; read a section at a time */
 
 export function makeAtlasToolSurface(deps) {
   return (function () {
@@ -214,7 +214,12 @@ export function makeAtlasToolSurface(deps) {
        query "skill:<id>" returns one section. It changes nothing a capability answer says. */
     async function find(query, args) {
       var sid = parseSkillQuery(query);
-      if (sid) return readSkill(sid, { section: args && args.section, lang: args && args.language });
+      if (sid) {
+        var read = readSkill(sid, { section: args && args.section, lang: args && args.language });
+        /* what the page can observe of the work's capabilities and needs, beside the text — an observation, nothing is refused */
+        if (read.ok) { try { read.readiness = await skillReadiness(skillById(sid), { capabilities: CAPS, probes: deps.probes || {} }); } catch (_) { read.readiness = { error: 'readiness_unobserved' }; } }
+        return read;
+      }
       var out = await findCapabilities(query);
       var sk = [];
       try { sk = searchSkills(query, { want: 2 }); } catch (_) { sk = []; }
