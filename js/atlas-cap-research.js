@@ -35,6 +35,7 @@ import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /
 import { makeResearchSearch } from './atlas-research-search.js';   /* (atlas-research-search) research.search — the tool side of an investigation Atlas steers */
 import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, CONTRACT_KINDS } from './atlas-delegate.js';
 import { integrate, mergeFacts, makeFactResolver, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
+const researchMemory = { search: null };   /* research.search's per-turn memory — built on first use; a const holder (the kernel copy never runs it) */
 
 /* ══ (atlas-completion) WHAT A RESEARCH ANSWER RESTS ON, SAID FROM WHAT HAPPENED ═══════════════════════════════
    An answer to a time-sensitive question used to carry ONE fixed caveat whenever `webUsed` was false —
@@ -1267,8 +1268,8 @@ export default [
     schema: () => ({ type: 'object', properties: { queries: list({ type: 'object', required: ['q'], properties: { q: str(), lang: str(), country: str(), site: str(), engine: one('both', 'gdelt', 'gnews'), timespan: str() } }, 1), gap: str(), contradiction: str(), changed: str(), budgetMs: num(0) }, required: ['queries'] }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
-      if (!K._researchSearch) K._researchSearch = makeResearchSearch({ gdelt: (...x) => K._gdeltNews(...x), gnews: (...x) => K._gnewsNews(...x) });
-      const out = await K._researchSearch.run(a, K._curTurnKey);
+      if (!researchMemory.search) researchMemory.search = makeResearchSearch({ gdelt: (...x) => K._gdeltNews(...x), gnews: (...x) => K._gnewsNews(...x) });
+      const out = await researchMemory.search.run(a, K._curTurnKey);
       if (!out.ok) return R(false, warn(esc(L(out.message, '検索語を queries:[{q,…}] で指定してください。'))), { meta: { status: 'failed', code: out.code } });
       const got = out.documents.length, st = out.totals.states;
       const html = '<div style="font-size:12px;line-height:1.5;"><div style="font-weight:600;">' + esc(L('Investigation search', '調査の検索')) + ' — ' + esc(L(out.queries.length + ' quer' + (out.queries.length === 1 ? 'y' : 'ies') + ', ' + got + ' new document(s)', out.queries.length + ' 件の検索で新しい記事 ' + got + ' 件')) + '</div>'
