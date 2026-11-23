@@ -81,6 +81,14 @@ export const GOVERNANCE = {
     publisher: 'World Health Organization — Disease Outbreak News',
     url: WHO_API,
     /* ⚠ NO LICENCE IS STATED BY THIS BUILD. */
+    /* (describes.*) completeness is WHO's own statement (https://www.who.int/emergencies/disease-outbreak-news, read 2026-11-20);
+       period and extent are MEASURED on the committed corpus (3,205 events, publication dates 1996-01-22 .. 2026-11-13, 160 distinct
+       ISO alpha-3 codes, 180 events with no single country). */
+    period: { start: '1996-01-22', end: '2026-11-13' },
+    extent: 'global; 3,205 Disease Outbreak News items, placed by ISO 3166 alpha-3 country code where WHO names a country (160 codes; 180 items name no single country and carry none); no coordinates',
+    method: 'a Disease Outbreak News item is published by WHO, under Article 11.4 of the International Health Regulations (2005), for an event of unknown cause with potential international concern, a known cause shown able to cause serious harm and spread internationally, or high public concern; the country is joined through the taxonomy of WHO itself',
+    resolution: 'one record per published notice; country level',
+    completeness: 'not exhaustive: WHO states that Disease Outbreak News is not an exhaustive list of the events WHO is responding to globally',
     ...WHO_DON,
     /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
     autoRefresh: 'about thirty-six paged requests to the WHO public API (countries, regions, 3,195 items at 100 a page), no key; every page status is checked and a failure throws before the file is written',

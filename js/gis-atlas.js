@@ -32,7 +32,8 @@
    in the same lazily-loaded chunk (js/gis-core.js), and because the facets must be the SAME LIST the
    gate and the reader-visible credits use: a second spelling of 「licence」 here is precisely how the
    three worlds that file's header measures came to disagree. */
-import { FACETS, account } from './data-governance.js';
+import { FACETS, account, temporalMismatch } from './data-governance.js';
+import { jsonWithin } from './fetch-deadline.js';
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
@@ -166,6 +167,10 @@ export function makeGisAtlas(core) {
         for (const k of Object.keys(cov)) if (cov[k] != null) c[k] = cov[k];
         if (Object.keys(c).length) row.coverage = c;
       }
+      /* (data-facts) 入力の対象時点が重ならない結合は、planner に届く。js/data-governance.js temporalMismatch の
+         結果をそのまま運ぶ（pairs＝重ならない組と差の日数、unstated＝時点を述べていない入力）。要約しない。 */
+      const tmm = ds.provenance && ds.provenance.timeMismatch;
+      if (tmm && typeof tmm === 'object') row.timeMismatch = tmm;
       /* (spatiotemporal-join) WHEN a derived record holds, and what its join could not vouch for, reach the planner too:
          a result that carries `warnings` (a series on today's borders joined to rows drawn as they were, pairs that never
          coexisted) must be SAID with its answer, and the planner can only say what this row shows it. Passed as recorded. */
@@ -945,6 +950,32 @@ export function makeGisAtlas(core) {
 
     /* ── running one step ───────────────────────────────────────────────────────────────────── */
 
+    /* ── (gis-semantic-layer) 「この比較・結合は意味として妥当か」 ───────────────────────────────────
+       js/gis-semantics.js answers it from facts the records already carry (time, quantity, the recipe's
+       lineage, the governance vocabulary) and from what a supplier DECLARED. ⚠ IT WARNS, IT DOES NOT
+       REFUSE: the step still runs and every result is what it was, so no saved recipe replays differently.
+       `strict:true` is the caller's own decision to be refused on a caution, made knowingly.
+       ⚠ NOT A SECOND CAPABILITY — `semantics:true` on the same data.gis door asks for the description (no
+       op) or the check (with an op) WITHOUT running anything. */
+    function semanticsOf() { return core.semantics || null; }
+    function warningsHtml(ws) {
+      if (!ws || !ws.length) return '';
+      return '<div class="atlas-gis-semantic"><b>' + esc(L('Check before you rely on this', 'この結果を使う前の確認')) + '</b><br>'
+        + ws.map((w) => esc((w.severity === 'caution' ? '! ' : '') + L(w.message.en, w.message.jp))).join('<br>') + '</div>';
+    }
+    function describeHtml(descs) {
+      return '<div class="atlas-gis-semantic"><b>' + esc(L('What the data means', 'データの意味')) + '</b><br>'
+        + descs.map((d) => esc(d.title) + ' — ' + esc(L('not stated: ', '未記述: ') + (d.unstated.join(', ') || '-'))).join('<br>') + '</div>';
+    }
+    function semanticDescribe(ids) {
+      const S = semanticsOf();
+      if (!S) return fail('semantics-unavailable', null);
+      const descs = ids.map((id) => S.describe(id));
+      const bad = descs.find((d) => !d.ok);
+      if (bad) return fail(bad.why, bad.detail);
+      return { ok: true, semantics: descs, inputs: ids, dataset: datasetRow(data.get(ids[0])), html: '<div class="atlas-gis-result">' + describeHtml(descs) + '</div>' };
+    }
+
     async function run(action) {
       const a = action || {};
       const op = (a.op == null) ? '' : String(a.op);
@@ -957,6 +988,12 @@ export function makeGisAtlas(core) {
          changes is that `op` is absent, which is a fact the caller states rather than a mode it
          selects. js/atlas-console.js therefore needed no new line, and js/atlas-capabilities.js no new
          row — a row per shape is the hand-written list this file exists not to grow. */
+      if (op === '' && a.semantics === true) {
+        const cacheS = makeCache(), idsS = [];
+        for (const g of (Array.isArray(a.inputs) ? a.inputs : (a.inputs == null ? [] : [a.inputs]))) { const r = await resolveRef(g, idsS.length, {}, cacheS, a); if (!r.ok) return r; idsS.push(r.id); }
+        if (!idsS.length) return fail('input-count', { op: '', needs: 1, got: 0 });
+        return semanticDescribe(idsS);
+      }
       if (op === '') return acquireOnly(a);
       const decl = ops.op(op);
       /* Refused WITH the vocabulary, for the reason the resolver above gives. */
@@ -975,6 +1012,15 @@ export function makeGisAtlas(core) {
       }
 
       const step = { op: op, inputs: ids, params: (a.params && typeof a.params === 'object') ? a.params : {} };
+      /* (gis-semantic-layer) the check comes BEFORE the run, so a planner asking only for it pays for nothing. */
+      const S = semanticsOf();
+      const sem = S ? S.check(step) : null;
+      const semWarn = (sem && sem.ok) ? sem.warnings : [];
+      if (a.semantics === true) {
+        return { ok: true, op: op, inputs: ids, dryRun: true, semantic: { warnings: semWarn, caution: sem && sem.ok ? sem.caution : 0, inputs: ids.map((id) => S && S.describe(id)) },
+          dataset: datasetRow(data.get(ids[0])), html: '<div class="atlas-gis-result"><b>' + esc(op) + '</b> — ' + esc(L('checked, not run', '確認のみ（実行していません）')) + (semWarn.length ? warningsHtml(semWarn) : '<br>' + esc(L('No semantic warning from what is stated.', '述べられている範囲では意味上の警告はありません。'))) + '</div>' };
+      }
+      if (a.strict === true && sem && sem.ok && sem.caution > 0) return fail('semantic-mismatch', { op: op, warnings: semWarn.filter((w) => w.severity === 'caution') });
       if (a.title != null && String(a.title).trim() !== '') step.title = String(a.title);
       const res = await ops.run(step, { signal: a.signal || null, onProgress: a.onProgress || null });
       /* ⚠ THE DECLARATION RIDES ON A REFUSED STEP. Every refusal js/gis-ops.js makes about a
@@ -988,6 +1034,7 @@ export function makeGisAtlas(core) {
 
       const row = datasetRow(res.dataset);
       const out = { ok: true, op: op, inputs: ids, dataset: row, stats: res.stats || null };
+      if (semWarn.length) out.semantic = { warnings: semWarn, caution: sem.caution };
       /* (#R759) 何をどこから取ったか、そしてまだ続きがあるか。See fromLayer. */
       if (cache.acquired && cache.acquired.length) out.acquired = cache.acquired.slice();
       const st = statsText(res.stats);
@@ -995,7 +1042,7 @@ export function makeGisAtlas(core) {
         + ' · ' + row.count + ' ' + esc(row.kind === 'raster' ? L('pixels', '画素') : L('rows', '行'))
         + ' · <code>' + esc(row.id) + '</code>'
         + (st ? ' — ' + esc(st) : '')
-        + '<div class="atlas-gis-next">' + esc(L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。')) + '</div></div>';
+        + '<div class="atlas-gis-next">' + esc(L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。')) + '</div>' + warningsHtml(semWarn) + '</div>';
 
       return out;
     }
@@ -1124,7 +1171,7 @@ export function makeGisAtlas(core) {
       if (!M) return fail('map-unavailable', { needs: 'IntMapGisRemote' });
       const act = (a.action == null || a.action === '') ? 'discover' : String(a.action);
       /* the actions are the module's own declaration (plus the one this door answers itself) */
-      const ACTS = M.actions().concat('sources', 'status');
+      const ACTS = M.actions().concat('sources', 'status', 'facts');
       if (ACTS.indexOf(act) < 0) return fail('bad-param', { param: 'action', actions: ACTS });
       const win = (a.bounds != null) ? a.bounds : a.bbox;
       const give = (r) => (r && r.ok === false) ? fail(r.why, r.detail || null) : r;
@@ -1136,6 +1183,33 @@ export function makeGisAtlas(core) {
         const u = t.summary.unstated;
         return Object.assign({}, t, { html: '<div class="atlas-gis-result"><b>' + esc(L('What the sources of this app state they can supply', 'このアプリの供給元が述べている取得能力')) + '</b> — ' + t.summary.total
           + '<div class="atlas-gis-detail">' + esc(L('stated nothing about: ', '何も述べていない項目: ')) + esc('extent ' + u.extent + ' · time ' + u.time + ' · end ' + u.boundedEnd + ' · offscreen ' + u.offscreen) + '</div></div>' });
+      }
+      /* (data-facts) 分析の前に、同梱データが述べていること——対象時点・範囲・測り方・細かさ・完全性・精度・更新周期——を
+         機械可読に渡す。値は data/data-facts.json（各 builder の GOVERNANCE 宣言から scripts/data-governance.mjs が
+         生成し、check:datagov が突き合わせる）だけから来る。述べていない欄は `unstated` に挙がり、補わない。
+         `ref` に複数（カンマ区切り）を渡すと、対象時点が重ならない組を temporalMismatch が述べる——
+         「2020 年の人口と 2025 年の行政区画」のような別の時点の世界の結合を、結合する前に警告できる。 */
+      if (act === 'facts') {
+        let reg = null;
+        try { reg = await jsonWithin('data/data-facts.json', 25000); } catch (_) { reg = null; }
+        if (!reg || !reg.subjects) return fail('facts-unavailable', { needs: 'data/data-facts.json' });
+        const names = Object.keys(reg.subjects);
+        const stem = (s) => String(s).replace(/^data\//, '').replace(/\.(json|js|bin)(\.gz)?$/, '');
+        const asked = (a.ref == null || a.ref === '') ? [] : String(a.ref).split(',').map((x) => x.trim()).filter(Boolean);
+        if (!asked.length) {
+          return { ok: true, subjects: names.map((n) => ({ subject: n, period: reg.subjects[n].describes.period != null, cadence: reg.subjects[n].cadence })), html: '<div class="atlas-gis-result"><b>' + esc(L('Datasets with a declared description', '説明が宣言されているデータ')) + '</b> — ' + names.length + '<br>' + esc(L('pass ref to read one', 'ref を渡すと 1 件ずつ読めます')) + '</div>' };
+        }
+        const found = [], missing = [];
+        for (const q of asked) {
+          const hit = names.find((n) => n === q) || names.find((n) => stem(n) === stem(q));
+          if (hit) found.push(Object.assign({ subject: hit }, reg.subjects[hit])); else missing.push(q);
+        }
+        const mm = found.length > 1 ? temporalMismatch(found.map((f) => ({ id: f.subject, period: f.describes.period, asOf: f.asOf }))) : null;
+        return { ok: true, facts: found, notDeclared: missing, timeMismatch: mm,
+          html: '<div class="atlas-gis-result"><b>' + esc(L('What these datasets state about themselves', 'データ自身が述べていること')) + '</b><br>'
+            + found.map((f) => '<code>' + esc(f.subject) + '</code> · ' + esc(Object.keys(f.describes).join(', ') || L('no description stated', '説明の宣言なし')) + ' · ' + esc(L('cadence', '更新周期')) + ' ' + esc(f.cadence == null ? L('not stated', '未申告') : f.cadence + ' (' + (f.cadenceBasis || '?') + ')')).join('<br>')
+            + (missing.length ? '<div class="atlas-gis-detail">' + esc(L('not in the registry: ', '台帳に無い: ')) + esc(missing.join(', ')) + '</div>' : '')
+            + (mm && mm.pairs.length ? '<div class="atlas-gis-detail">' + esc(L('PERIODS DO NOT OVERLAP: ', '対象時点が重なりません: ')) + esc(mm.pairs.map((p) => p.a + ' / ' + p.b + ' (' + p.gapYears + ' y)').join('; ')) + '</div>' : '') + '</div>' };
       }
       /* what stage each thing reached, for one reference or for all of them (js/gis-pipeline.js) */
       if (act === 'status') {
