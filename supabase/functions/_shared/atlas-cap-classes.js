@@ -52,6 +52,8 @@ export const READ_CAPS = Object.freeze(new Set([
   "time.coverage",
   "time.placeHistory",
   "view.inspect",
+  "web.browse",
+  "web.render",
 ]));
 export const PARKABLE_CAPS = Object.freeze(new Set([
   "board.compose",
@@ -222,5 +224,7 @@ export const PARKABLE_CAPS = Object.freeze(new Set([
   "view.resetNorth",
   "view.terrain3d",
   "view.zoom",
+  "web.fetchFile",
+  "web.session",
 ]));
 export function capClass(id) { const k = String(id || ''); return PARKABLE_CAPS.has(k) ? 'parkable' : (READ_CAPS.has(k) ? 'read' : 'page-only'); }
