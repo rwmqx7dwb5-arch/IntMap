@@ -5,8 +5,8 @@
     "brotli": 1219000,
     "requests": 12,
     "modules": 916,
-    "cssRaw": 382385,
-    "cssGzip": 63308
+    "cssRaw": 392518,
+    "cssGzip": 66405
   },
   "async": {
     "raw": 14919508,
@@ -81,7 +81,7 @@
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
       "gis-cog": 7532,
-      "gis-core": 714073,
+      "gis-core": 718025,
       "gis-export": 40134,
       "gis-fetch": 8730,
       "gis-geopackage": 26667,

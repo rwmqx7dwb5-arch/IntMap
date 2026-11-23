@@ -2558,7 +2558,8 @@
       html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar .atl-in{ margin-right:2px; }
       html body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar .atl-in{ padding:12px 13px; white-space:nowrap; text-overflow:ellipsis; }
       /* Chronos in the composer, left of the microphone */
-      .atl-inbar .m-clock{ border-radius:50%; background-color:transparent; color:var(--text-muted); }
+      /* a stroke on the clock scrubs time (js/time-thumb.js): the browser must not take it for a pan — the head carried this (`touch-action:none`), the composer does not */
+      .atl-inbar .m-clock{ touch-action:none; border-radius:50%; background-color:transparent; color:var(--text-muted); }
       .atl-inbar .m-clock.on{ background-color:var(--primary-fill); color:#fff; }
       .atl-inbar .m-clock svg{ width:20px; height:20px; }
       /* with a year to say (a past time) the round button grows into a pill, so the year is read whole */

@@ -208,7 +208,9 @@ test.describe('③ phone shell', () => {
     await page.waitForTimeout(900);   /* the sheet's spring and the legend's own layout */
 
     const cover = await page.evaluate(PAINTED);
-    expect(cover, `the chrome paints ${(cover * 100).toFixed(1)} % of the map (production before: 45.2 %)`).toBeLessThan(0.2);
+    /* (mobile-sheet-layout) the resting sheet now carries the Atlas composer (it is the sheet's default content), so it is ~29 % of the screen:
+       the map's share is the 70 % the redesign asks for, not 80 %. The ceiling is the resting sheet plus the one control group and the search circle. */
+    expect(cover, `the chrome paints ${(cover * 100).toFixed(1)} % of the map (production before: 45.2 %)`).toBeLessThan(0.34);
     expect(await page.evaluate(SMALL), 'tap targets under 44 px').toEqual([]);
 
     /* the legend is laid out but not on the map until the chip opens it; and then it is under the chrome's row */

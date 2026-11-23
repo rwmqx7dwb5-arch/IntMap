@@ -478,7 +478,7 @@ export function mobileUI(HOST){
     /* ⚠ the Atlas tab is a kernel command (`panel.tab`), and the kernel is a lazy chunk: pressed before it has loaded the press is answered
        `atlas-kernel-not-loaded` and nothing opens (measured: the click at 2.5 s changed nothing). So the default waits for the chunk itself —
        `IntMapLazy.need('atlasConsole')`, the same warm-up a finger's pointerdown asks for — and clicks once it is there. */
-    const openDefaultTab=()=>{ try{ if(!mq.matches||embedded()||document.querySelector('.control-panel .mode-btn.active')) return;
+    const openDefaultTab=()=>{ try{ if(!mq.matches||embedded()||document.querySelector('.control-panel .mode-btn.active')||document.body.classList.contains('m-menu-open')) return;   /* a reader who opened the menu has already chosen */
       const b=document.querySelector('.control-panel .mode-btn.mode-atlas'); if(!b) return;
       const was=currentDetent; b.click();
       setTimeout(()=>{ if(RANK[currentDetent]>RANK[was]) setDetent(was); },400); }catch(_){} };
