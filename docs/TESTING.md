@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**176 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
+**177 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
 by re-measuring two deep entries that stood high — the ledger row `2026-10-08 atlas-product` in `scripts/test-budget.mjs` —
 paid for the four product specs of 2026-10-08: hist-product 8, mobile-product 26, live-news-product 8, sales-pro-audiences 15;
 the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); and
@@ -111,7 +111,7 @@ the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); a
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **171 spec files** — is the whole suite minus core
+**deep** tier — **172 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -1069,7 +1069,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **171 spec files** against core's 5 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **172 spec files** against core's 5 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -3596,7 +3596,7 @@ rule of this shape:
 What it still does not read, written down rather than papered over:
 
 - **A bare English numeral that attaches to nothing.** `docs/SECURITY-ARCHITECTURE.md` §5 opens
-  "There are twenty-five Edge Functions, and this table used to list two." A statement of how many
+  "There are twenty-six Edge Functions, and this table used to list two." A statement of how many
   there are and a sentence of the document's own history sit in **one sentence**, and nothing
   structural separates them. It was tried at section scope and at paragraph scope and measured:
   widening far enough to catch the first turns the second into a failure. The counted Japanese
@@ -4954,7 +4954,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 
 ### `tests/atlas-turn-engine-checks.test.mjs` (atlas-turn-engine)
 
-25 本。**ターン機構の構造**。出荷している `runTurn()` を、本物のレジストリ・schema・道具の面と、
+26 本。**ターン機構の構造**。出荷している `runTurn()` を、本物のレジストリ・schema・道具の面と、
 **決定的な台本**（1 手に 1 つの返答）を返す偽のモデルで**実際に評価する**。プロバイダには何も訊かない。
 
 - ① **`unobserved` は status の 1 つで、完了ではない**（`ok` は false）。出荷しているカメラの検証器が、

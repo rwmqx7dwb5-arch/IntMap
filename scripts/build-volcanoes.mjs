@@ -87,6 +87,12 @@ export const GOVERNANCE = (() => {
     url: WFS,
     attribution: true,
     paidBy: 'Smithsonian GVP',
+    /* (describes.*) the GVP catalogue is of Holocene volcanoes and their eruptions (Smithsonian VOTW page, read via the
+       Internet Archive because volcano.si.edu answered "temporarily unavailable"); the counts and the year range are
+       measured from data/volcanoes_gvp.json. */
+    extent: 'global: 1,214 Holocene volcanoes from the GVP catalogue, plus 4 more that a USGS observatory publishes an alert level for (1,218 features)',
+    period: 'Holocene volcanoes; the bundled last-eruption years run from 9540 BCE to 2026 (measured)',
+    method: 'a catalogue of Holocene volcanoes and their eruptions compiled by the Smithsonian Global Volcanism Program, revised as eruptions are reported and as the literature is reviewed',
     ...SMITHSONIAN_GVP,
     builtBy: 'scripts/build-volcanoes.mjs',
   };
