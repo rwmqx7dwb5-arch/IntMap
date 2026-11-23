@@ -41,6 +41,12 @@ export const GOVERNANCE = {
     /* ⚠ THE LICENCE IS NOT STATED IN THIS BUILD. The header names the publisher and the table
        (HDR 2023/24 composite indices) and says the attribution already made is the one that
        applies — which is a statement about a credit, not about terms. */
+    /* (describes.*) method: UNDP's HDI page (hdr.undp.org/data-center/human-development-index) states the three
+       dimensions and the geometric mean. period/extent/resolution: MEASURED on the committed bundle (years 1990-2022, 193 ISO3 economies). */
+    period: { start: '1990', end: '2022' },
+    extent: '193 economies keyed by ISO 3166-1 alpha-3 (measured on the committed bundle; aggregate rows are dropped)',
+    method: 'Human Development Index: geometric mean of normalized indices for life expectancy at birth, education (mean and expected years of schooling) and gross national income per capita (logarithm), per UNDP',
+    resolution: 'country x year',
     ...UNDP_HDR,
     builtBy: 'scripts/build-hdi.mjs',
   },

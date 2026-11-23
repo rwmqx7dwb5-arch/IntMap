@@ -59,8 +59,8 @@
    ⚠ WRAPPED WHOLE, NOT REWRITTEN: the body below is what it was, minus the `export` keyword on
    each public name, which the return statement now carries instead. */
 export const {
-  SPELLINGS, FACETS, SUBJECTS, REASONS, FRESHNESS,
-  statedValue, read, freshness, attribution, account, measureQuality, makeDataGovernance,
+  SPELLINGS, FACETS, SUBJECTS, REASONS, FRESHNESS, BASIS_KINDS,
+  statedValue, read, freshness, attribution, account, measureQuality, temporalMismatch, spanOf, makeDataGovernance,
 } = (function () {
 
 
@@ -105,6 +105,19 @@ const SPELLINGS = Object.freeze({
   quality: Object.freeze(['quality', 'qa']),
   /* the schema (or validator) this bundle was checked against */
   schema: Object.freeze(['schema', 'validatedBy', 'validator']),
+  /* ⚠ THE SIX THINGS AN ANALYST ASKS BEFORE JOINING TWO DATASETS (describes.*). Each is a statement
+     the SUPPLIER makes about the data, never one this repository infers from the bytes, and each may be
+     a string or an object — read() carries it verbatim. `period` is what `asOf` is a single label of:
+     the span the VALUES describe ({start,end} or a year / date / «2015-2020» string), so that two
+     datasets can be compared on it (temporalMismatch). */
+  period: Object.freeze(['period', 'referencePeriod', 'validTime']),
+  extent: Object.freeze(['extent', 'spatialExtent', 'coverageArea']),
+  method: Object.freeze(['method', 'measurement', 'methodology']),
+  resolution: Object.freeze(['resolution', 'spatialResolution', 'grain']),
+  completeness: Object.freeze(['completeness']),
+  accuracy: Object.freeze(['accuracy', 'uncertainty', 'precision']),
+  /* the basis of a declared cadence: { kind: measured|stated|derived|estimate, observed, expires, canon } */
+  cadenceBasis: Object.freeze(['cadenceBasis']),
 });
 
 /* ⚠ THE SUBJECTS ARE THE FACETS' OWN PREFIXES, NOT A SECOND LIST — the argument js/gis-atlas.js
@@ -119,6 +132,9 @@ const FACETS = Object.freeze([
   /* 形と中身が測られているか */
   'integrity.schema', 'integrity.rows', 'integrity.missing', 'integrity.outOfRange',
   'integrity.duplicates',
+  /* 何について・どこの・どう測った・どの細かさ・どこまで揃っている・どれだけ正しい（供給者の陳述だけ） */
+  'describes.period', 'describes.extent', 'describes.method', 'describes.resolution',
+  'describes.completeness', 'describes.accuracy',
   /* 同じ問いに上流が 2 つあるとき、どちらを採るか */
   'precedence.rank', 'precedence.over',
 ]);
@@ -154,6 +170,13 @@ const REASONS = Object.freeze([
    reader needs different things from them: a stale bundle is fixed by refetching, an unknown one by
    somebody declaring a cadence. */
 const FRESHNESS = Object.freeze(['fresh', 'aging', 'stale', 'unknown']);
+
+/* ⚠ HOW A DECLARED CADENCE WAS ARRIVED AT — a value that says «P1D» and not whether anyone looked is a
+   threshold wearing a fact's clothes. `measured` = somebody observed the upstream (dated); `stated` = the
+   publisher says so in its own documentation or the edition is finished; `derived` = follows from other
+   things in this repository; `estimate` = nobody measured and the publisher did not say. An estimate is
+   ALLOWED and is never presented as one of the others (Atlas reads this word; check:datagov counts them). */
+const BASIS_KINDS = Object.freeze(['measured', 'stated', 'derived', 'estimate']);
 
 /* `aging` begins at this fraction of the declared cadence.
    OBSERVATION: the one scheduled refresh in this repository (.github/workflows/tle-refresh.yml)
@@ -291,6 +314,13 @@ function read(x) {
     priority: statedValue(rec, 'priority'),
     quality: statedValue(rec, 'quality'),
     schema: statedValue(rec, 'schema'),
+    period: statedValue(rec, 'period'),
+    extent: statedValue(rec, 'extent'),
+    method: statedValue(rec, 'method'),
+    resolution: statedValue(rec, 'resolution'),
+    completeness: statedValue(rec, 'completeness'),
+    accuracy: statedValue(rec, 'accuracy'),
+    cadenceBasis: statedValue(rec, 'cadenceBasis'),
     upstreams: null,
     /* verbatim — the real carrier, for the reason js/gis-export.js keeps `raw` */
     raw: rec && typeof rec === 'object' ? rec : null,
@@ -437,6 +467,11 @@ function account(x, opts) {
   };
   qf('rows', 'rows'); qf('missing', 'missing'); qf('outOfRange', 'outOfRange'); qf('duplicates', 'duplicates');
 
+  /* 何について・どこの・どう測ったか。⚠ 述べられていなければ「未申告」であって、既定値は無い */
+  for (const k of ['period', 'extent', 'method', 'resolution', 'completeness', 'accuracy']) {
+    if (r[k] != null) put('describes.' + k, r[k]); else none('describes.' + k, mute);
+  }
+
   /* 同じ問いに上流が 2 つあるとき */
   const pr = r.priority;
   const nUp = r.upstreams ? r.upstreams.length : 0;
@@ -458,6 +493,58 @@ function account(x, opts) {
     na('precedence.rank', 'single-upstream'); na('precedence.over', 'single-upstream');
   }
   return out;
+}
+
+/* ── comparing two datasets in time ─────────────────────────────────────────────────────────────
+   ⚠ `asOf` / `period` ARE WHAT THE VALUES DESCRIBE, NOT WHEN THEY WERE FETCHED — a 2020 census joined to 2025
+   districts is a join of two different worlds even though both files were written this week
+   (§2.1). The span of each input is read from its own statement; an input that states none is NOT
+   assumed to match (it is reported as `unstated`), and one whose statement is not a date («last 24 h»)
+   is `unstated` too, never a guess. THERE IS NO THRESHOLD HERE: two spans that do not overlap are a
+   fact, and the gap in days is reported so the judge (a reader, Atlas) decides whether 1 year matters
+   for their question. A bare year is that whole year; «2015-2020» is the two years and what lies
+   between. */
+function spanOf(v) {
+  if (v == null) return null;
+  const day = (d) => d.getTime() / 86400000;
+  if (typeof v === 'object' && !Array.isArray(v)) {
+    const lastOf = (raw) => { const e = spanOf(raw); return e ? e.hi : null; };
+    const firstOf = (raw) => { const e = spanOf(raw); return e ? e.lo : null; };
+    const rs = v.start != null ? v.start : (v.from != null ? v.from : null);
+    const re = v.end != null ? v.end : (v.to != null ? v.to : null);
+    const lo = firstOf(rs != null ? rs : re), hi = lastOf(re != null ? re : rs);
+    return (lo == null || hi == null) ? null : { lo: lo, hi: hi };
+  }
+  const s = String(v).trim();
+  let m = /^(-?\d{1,6})\s*[-–/]\s*(-?\d{1,6})$/.exec(s);
+  if (m && Math.abs(+m[1]) > 31 && Math.abs(+m[2]) > 31) {
+    const a = spanOf(m[1]), b = spanOf(m[2]);
+    return a && b ? { lo: a.lo, hi: b.hi } : null;
+  }
+  m = /^-?\d{1,6}$/.exec(s);
+  if (m) { const a = parseInstant(s); return a ? { lo: day(a), hi: day(a) + 364 } : null; }
+  m = /^-?\d{1,6}-\d{2}$/.exec(s);
+  if (m) { const a = parseInstant(s); return a ? { lo: day(a), hi: day(a) + 29 } : null; }
+  m = /^-?\d{1,6}-\d{2}-\d{2}/.exec(s);
+  if (m) { const a = parseInstant(s.slice(0, m[0].length)); return a ? { lo: day(a), hi: day(a) } : null; }
+  return null;
+}
+
+function temporalMismatch(items) {
+  const list = (Array.isArray(items) ? items : []).filter((i) => i && typeof i === 'object');
+  const spans = list.map((i, n) => {
+    const stated = i.period != null ? i.period : (i.asOf != null ? i.asOf : null);
+    return { id: i.id != null ? String(i.id) : 'input-' + n, stated: stated, span: spanOf(stated) };
+  });
+  const unstated = spans.filter((s) => !s.span).map((s) => ({ id: s.id, why: s.stated == null ? 'period-undeclared' : 'period-not-a-date', stated: s.stated == null ? null : (typeof s.stated === 'string' ? s.stated : JSON.stringify(s.stated)) }));
+  const dated = spans.filter((s) => s.span);
+  const pairs = [];
+  for (let i = 0; i < dated.length; i++) for (let j = i + 1; j < dated.length; j++) {
+    const a = dated[i], b = dated[j];
+    const gap = Math.max(a.span.lo - b.span.hi, b.span.lo - a.span.hi);
+    if (gap > 0) pairs.push({ a: a.id, b: b.id, aStated: String(typeof a.stated === 'string' ? a.stated : JSON.stringify(a.stated)), bStated: String(typeof b.stated === 'string' ? b.stated : JSON.stringify(b.stated)), gapDays: Math.round(gap), gapYears: Math.round(gap / 365.2425 * 10) / 10 });
+  }
+  return { state: pairs.length ? 'mismatch' : (unstated.length ? 'unstated' : 'aligned'), pairs: pairs, unstated: unstated };
 }
 
 /* ── the measurement ────────────────────────────────────────────────────────────────────────────
@@ -525,6 +612,7 @@ function makeDataGovernance() {
     attribution,
     account,
     measureQuality,
+    temporalMismatch,
   };
   /* Each kernel is the right owner of its own name (js/gis-core.js's note on why the assembly does
      not name them a second time), and it publishes only where a window exists — this module is
@@ -533,7 +621,7 @@ function makeDataGovernance() {
   return API;
 }
   return {
-    SPELLINGS, FACETS, SUBJECTS, REASONS, FRESHNESS,
-    statedValue, read, freshness, attribution, account, measureQuality, makeDataGovernance,
+    SPELLINGS, FACETS, SUBJECTS, REASONS, FRESHNESS, BASIS_KINDS,
+    statedValue, read, freshness, attribution, account, measureQuality, temporalMismatch, spanOf, makeDataGovernance,
   };
 })();

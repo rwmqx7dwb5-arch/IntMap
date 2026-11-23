@@ -98,7 +98,20 @@ export const GOVERNANCE = (() => {
   /* one builder, three tiers (--levels / --out): the same upstream and the same cadence for each */
   /* CC0, as the header above states for OpenHistoricalMap; no credit is a condition, so no DATA_SOURCES row is owed */
   const rec = { publisher: 'OpenHistoricalMap', url: EP, licence: 'CC0 1.0', licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', attribution: false, ...OPENHISTORICALMAP, builtBy: 'scripts/build-hist-admin1.mjs' };
-  return { 'data/hist-admin1.js': rec, 'data/hist-admin2.js': rec, 'data/hist-admin3.js': rec };
+  /* (describes.*) The header above and each committed tier measured (rows, first start, last end). ⚠ Dates are
+     OpenHistoricalMap's own, to the day where the day is known; the few the build derives are flagged per row in the
+     bundle's `dates`. No accuracy figure is declared: OpenHistoricalMap states none for its outlines. */
+  const method = 'OpenHistoricalMap administrative relations at the stated admin_level, with start_date and end_date as OpenHistoricalMap holds them and their precision kept beside every row (an exact end_date is the first inactive day; year and month ends advance to the next period); geometry simplified at a 0.004 degree tolerance with four decimals; names are the relation\'s own, and an empty language column is filled from the Wikidata label of the item the relation names, never overwriting a name';
+  const resolution = 'unit outline at 0.004 degree tolerance with four decimals; dates to the day where OpenHistoricalMap states a day, otherwise to the month or year';
+  const completeness = 'Only the units OpenHistoricalMap holds: coverage is partial and uneven by country and era, so a unit absent here is not a statement that it did not exist';
+  return {
+    'data/hist-admin1.js': { ...rec, period: { start: '-3700', end: '2026' }, method, resolution, completeness,
+      extent: '4,836 first-level unit rows at admin_level 3 and 4 (measured on the bundle)' },
+    'data/hist-admin2.js': { ...rec, period: { start: '42', end: '2026' }, method, resolution, completeness,
+      extent: '22,691 second-tier unit rows at admin_level 5 and 6 (measured on the bundle)' },
+    'data/hist-admin3.js': { ...rec, period: { start: '500', end: '2025' }, method, resolution, completeness,
+      extent: '2,067 third-tier unit rows at admin_level 7 (measured on the bundle)' },
+  };
 })();
 
 const args = process.argv.slice(2);
