@@ -56,3 +56,5 @@ Wikidata Query Service で P1082 を持つ単位: P300（ISO 3166-2）30,703 記
 - 性能予算 atlas-cap-runs 931.1→941.6 kB: 取り込み後の全体ビルドの実測。main に入った他の PR の分を含む。起動時に読まれる本数は 9 のまま。
 
 - 性能予算（取り込み後の全体ビルドの実測）: atlas-cap-runs 938.6→950.7 kB・atlas-console 1129.9→1137.3 kB・gis-core 697.3→701.2 kB・dist.assets 21923.7→22064.9 kB。regionStat の実行部分と、main に入った他の PR の遅延チャンクの分。起動時に読まれる本数は 9 のまま。
+
+- perf: async.raw 14569.8→14656.9 kB・async.gzip 4918.1→4949.2 kB・atlas-cap-runs 952.1→961.2 kB へ天井を上げた。geo.regionStat の能力と行政統計の読み取りを atlas-cap-runs へ足したため。
