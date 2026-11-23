@@ -39,3 +39,11 @@ main を取り込むと、main の bot が下げた天井が先に上げた値�
 追加が運ぶ分、後者は main が足した配布資産を含む。実測値まで天井を上げた
 （`atlas-cap-runs` 973,000・`dist.assets` 22,580,000）。縮められる根拠が無い——能力表の行は
 利用者が得る能力そのもの。main の bot が merge 後に再び下げる。
+
+## perf (main の先端を取り込んだ再測定)
+
+`async.raw` 14569.8→14650.8 kB・`async.gzip` 4918.1→4947.0 kB・`atlas-cap-runs` 952.1→960.5 kB・
+`gis-core` 697.3→701.2 kB を `perf-budget --update` で実測まで上げた。`gis-core` と合計の
+増分は main が先に入れた GIS 側の追加で、本 PR の変更ではない。`atlas-cap-runs` は能力表の
+行数（263 行）に比例する。いずれも利用者が得る能力そのもので、縮める根拠が無い。
+main の bot が merge 後に再び下げる。
