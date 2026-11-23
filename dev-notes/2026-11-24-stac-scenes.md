@@ -57,3 +57,11 @@ maxCloud で、全 STAC カタログのコレクションを種別で絞り、�
   Planetary Computer が持つが米国のみ。各コレクションは 1 ページ分だけ（`continues`）。
 - #1318・#1343 が merge されたら、`refs.grids` を 2 時点の組へ渡す口（`scenes` の結果から 2 つ選んで変化解析へ）が
   次の一手。いまは Atlas が `refs.grids` を `gis` の `url:` 入力に渡す。
+
+## 5. 起動費用の天井を上げた理由（check:perf）
+
+`scenes()` と種別分類（`modalitiesOf`・`qualityOf`）を足したぶん、遅延チャンクが増えた。起動時に読まれるものではない
+（いずれも Atlas が `gisRemote` を呼ぶときだけ読む async chunk）。CI の計測: gis-remote 28.6→35.3 kB・gis-core 697.3→702.8 kB・
+atlas-console 1129.9→1137.2 kB・dist.assets 21923.7→22059.0 kB。`tests/perf-baseline.json` の 4 行をその計測の直上へ
+上げた（worktree に `data/` が無く build できないため `--update` でなく CI の数値から手で書いた。main 後の `--tighten` が
+実測へ締める）。

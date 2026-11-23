@@ -25,7 +25,7 @@
       "atlas-cap-runs": 961169,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1157047,
+      "atlas-console": 1164593,
       "atlas-executor": 61782,
       "atlas-float": 10113,
       "atlas-geo-resolve": 49353,
@@ -81,7 +81,7 @@
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
       "gis-cog": 7532,
-      "gis-core": 714073,
+      "gis-core": 719768,
       "gis-export": 40134,
       "gis-fetch": 8730,
       "gis-geopackage": 26667,
@@ -90,7 +90,7 @@
       "gis-packed": 11355,
       "gis-pipeline": 11424,
       "gis-pmtiles": 11491,
-      "gis-remote": 29323,
+      "gis-remote": 36248,
       "gis-shapefile": 10420,
       "great-circle": 186,
       "hist-courses": 1725,
@@ -221,7 +221,7 @@
   "dist": {
     "total": 1587385548,
     "data": 1223209830,
-    "assets": 22449901
+    "assets": 22588516
   },
   "phone": {
     "bytes": 342631,
