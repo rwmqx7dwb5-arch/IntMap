@@ -71,16 +71,25 @@ export const GOVERNANCE = {
   'data/hist-fidelity.json': {
     /* the observation ledger of npm run check:histfidelity, measured over the hist-* bundles here */
     ...DERIVED_FROM_THE_REPOSITORY,
+    period: { start: '-500', end: '2019' },
+    extent: 'the 18 sampled years from 500 BC to 2019, on a 0.25 degree grid of the land the historical map draws',
+    resolution: '0.25 degree grid cells',
+    method: 'per sampled year, the share of each polity\'s land carrying a first-level unit, the polity and unit land measured, the polities with none, partial and full coverage, the number of rows drawn from a date no upstream stated, and the first-level double claims by kind (seam, duplicate, contested)',
     builtBy: 'scripts/hist-fidelity.mjs',
   },
   'data/hist-coverage-holes.json': {
     /* (hist-coverage) every hole in the first-level record, per measured year, and why — measured over the bundles here */
     ...DERIVED_FROM_THE_REPOSITORY,
+    period: { start: '-500', end: '2019' },
+    extent: 'the 18 sampled years from 500 BC to 2019, on a 0.25 degree grid of the land the historical map draws',
+    resolution: '0.25 degree grid cells',
+    method: 'per sampled year and polity, the percentage of its land carrying a first-level unit and the cells left uncovered, each uncovered stretch labelled with its present-day country and a reason',
     builtBy: 'scripts/hist-fidelity.mjs',
   },
   'data/hist-claims.json': {
     /* (hist-coverage) the first-level double claims js/time-admin1.js counts at the reader's date — measured over the bundles here */
     ...DERIVED_FROM_THE_REPOSITORY,
+    method: 'pairs of first-level units drawn over the same ground at the same instant, each with its overlap interval and its kind (seam, duplicate, contested; contested pairs are not judged)',
     builtBy: 'scripts/hist-fidelity.mjs',
   },
 };
