@@ -1483,7 +1483,7 @@ News 一覧は「最後に更新された順に 200 件」で、毎朝の問い�
 ## 19. 出来事の履歴 — 年単位で残し、年単位で問う (news-event-history)
 
 `news_events` は 30 日・記事は 72 時間で消える。「2010 年以降の東南アジアの半導体工場の建設・閉鎖・買収」のような
-問いには、それより長く残る行が要る。それが **`news_event_history`**（migration `20261120140000_news_event_history.sql`・
+問いには、それより長く残る行が要る。それが **`news_event_history`**（migration `20261123100000_news_event_history.sql`・
 規則は `supabase/functions/_shared/news-history.js` の 1 本）。
 
 ### 19.1 何を、どこに持つか
@@ -1524,7 +1524,7 @@ News 一覧は「最後に更新された順に 200 件」で、毎朝の問い�
 ### 19.4 収集元の拡張 (2026-11-20 実測)
 
 18 媒体 / 38 フィード → **49 媒体 / 69 フィード**。690 の URL を実測し、200・5 件以上・最新 3 日以内・リンクの 9 割以上が
-自社ホスト、を満たした 31 本を足した（migration `20261120150000_news_sources_regional_official.sql`）。
+自社ホスト、を満たした 31 本を足した（migration `20261123110000_news_sources_regional_official.sql`）。
 東南・東・南アジアの地域媒体（Straits Times・FMT・Bangkok Post・VnExpress・DIGITIMES・The Elec・Antara・CNBC Indonesia・
 Tuoi Tre・Toyo Keizai・ITmedia・Chosun・LTN・SCMP・Hindu BusinessLine）、中東・欧州・中南米（The National・Le Monde・
 Tagesschau・Infobae・g1・Al Jazeera Arabic）、公式・業界（Samsung・NVIDIA・Siemens・Arm・US DOE・EIA・欧州委員会・UN News・
