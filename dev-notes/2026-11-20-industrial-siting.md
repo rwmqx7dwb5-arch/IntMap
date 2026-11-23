@@ -58,3 +58,12 @@ main に入った規則（`describes.*` 6 面・上流の指紋・`data/data-fac
 - `build-siting-jp.mjs` の `GOVERNANCE` に period / extent / method / resolution / completeness / accuracy を実測と出典の言葉で述べた（足りないものは gaps と同じ理由で述べ、推定はしない）。
 - 日付リテラルは UTC 当日（2026-11-23）に合わせて取り直した。`areas` `sites` `anchors` は取り直し前と完全に一致、変わったのは日付を含む vintage の文字だけ。
 - `data/upstream-fingerprints.json` は自分の 5 行だけを足した（`--update` は他の上流の観測時刻まで全部書き換えるので、その分は採らない）。`data/data-facts.json` と台帳は `--update` の出力。台帳は 228 / 3525 のまま（増えていない）。
+
+## perf (main の先端の再測定 2026-11-24)
+
+CI の実測まで 4 行の天井を上げた: `async.raw` 14651.4 kB・`async.gzip` 4947.5 kB・
+`atlas-cap-runs` 958.2 kB・`gis-core` 701.2 kB（いずれも KiB）。`gis-core` と合計の増分は main が
+先に入れた GIS 側の追加で本 PR の変更ではない。`atlas-cap-runs` は能力表の行数（263 行・
+本 PR の `siting.compare` を含む）に比例し、利用者が得る能力そのもので縮める根拠が無い。
+この worktree は data を持たず build できないため `--update` ではなく CI の測定値を直接書いた。
+main の bot が merge 後に再び下げる。
