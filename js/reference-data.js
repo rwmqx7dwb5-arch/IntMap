@@ -578,8 +578,6 @@ export const IntMapRefData = (function(){
     /* (geopolitics-layers) the border-crossing layer (dl-crossings) — data/border-crossings.json, built by scripts/build-border-crossings.mjs:
        OpenStreetMap's border controls, each given the time zone that contains it (timezone-boundary-builder, ODbL) */
     {n:'Border crossings — OpenStreetMap (barrier=border_control, Overpass API)',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
-    /* (transit-timetable-reach) the publishers' own timetables — data/transit-<id>.json, built by scripts/build-transit-timetables.mjs; one row per feed, registry in js/transit-feeds.js */
-    {n:'Timetables — Administration des transports publics (Luxembourg), CC BY 4.0, data.public.lu',u:'https://data.public.lu/fr/datasets/horaires-et-arrets-des-transport-publics-gtfs/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'Time zone boundaries — timezone-boundary-builder (ODbL, built from OpenStreetMap)',u:'https://github.com/evansiroky/timezone-boundary-builder',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
        from OHM — the day-exact borders of 1689-1885 (data/hist-borders.js, widened from 1850 by

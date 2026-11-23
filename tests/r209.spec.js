@@ -282,7 +282,6 @@ const MEMBER = {
   popArea: ['IntMapPopArea', 'estimate'],
   sun: ['IntMapSun', 'open'],
   transitReach: ['IntMapTransitReach', 'open'],
-  transitTimetable: ['IntMapTransitTimetable', 'plan'],   /* the publishers' own timetables: plan() is the door routing.js calls */
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {
