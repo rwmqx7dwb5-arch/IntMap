@@ -35,6 +35,7 @@ import { makeSidebarStyle } from './sidebar-style.js';   /* (#R299) the sidebar'
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 /* (#R203) the opening view: a lit Earth rather than a black one — see the file for the measurement. */
 import { OpeningView } from './opening-view.js';
+import { askInApp } from './ask-dialog.js';   /* the one in-app asker (replaces window.confirm for the engine switch) */
 import { makeI18nLate } from './i18n-late.js';
 import { hostSlice } from './host-slice.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
@@ -1050,6 +1051,18 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      map through window.__imap, so publishing it here (rather than one event later) is what makes
      `GE()` answer for real from the first factory onward instead of quietly no-op'ing until 'load'. */
   try{ window.__imap=map; }catch(_){}
+  /* ══ (globe-polish) THE RENDER RESOLUTION FOLLOWS THE SCREEN, NOT THE SCREEN AT BOOT ═════════════════
+     `pixelRatio` above is an explicit option, and MapLibre's `getPixelRatio()` is `_overridePixelRatio ??
+     devicePixelRatio` — passing it FREEZES the ratio at whatever devicePixelRatio was when the map was built.
+     Nothing re-reads it: the window `resize` that browser zoom (Ctrl +/-) and a drag onto another monitor
+     fire goes through `getPixelRatio()` and gets the old number back. MEASURED in the preview (dpr 1.5, map
+     built at 1): getPixelRatio()=1, canvas 1024 px for a 1024 CSS-px box — every label, border line and
+     glyph drawn at 1× and stretched by the compositor, which is what a reader sees as blurred place names.
+     The engine adapter (js/geo-engine.js followDevicePixelRatio) tells the renderer the new ratio when the browser's own `(resolution: Ndppx)` query stops matching
+     (the one signal that fires on both zoom and monitor change); the phone ceiling of 2 is the same rule as
+     above. A ratio somebody ELSE set (GE().render.setRenderScale: a quality governor, a capture) is left
+     alone — only a value this block applied last is replaced. */
+  try{ GE().render.followDevicePixelRatio(()=>_imPhoneClass()?2:Infinity); }catch(_){}   /* the renderer-side half lives in js/geo-engine.js (only that file may name the renderer) */
   /* (#R186) LAUNCH-SCREEN MILESTONE 3 of 5: the renderer object exists. The remaining two — the
      style is parsed, and the first idle after the default layers have been switched on — are
      reported from the map's own 'load' handler below. If there is no renderer at all (no WebGL,
@@ -3619,9 +3632,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          sources, layers, markers and camera hooks exist. So it is stored and the page reloads — asked first, because
          that reload is the one consequence of this dialog the reader cannot undo by choosing again. */
       case 'setting-engine': { const ES=window.IntMapEngineSelect; if(!ES||v===ES.choice()) return;
-        if(!confirm(IntMapLang.t(currentLang,'Switching the map engine reloads the page. Switch now?','地図エンジンを切り替えるとページを再読み込みします。切り替えますか？'))){ el.value=ES.choice(); return; }
-        ES.set(v); try{ imToast(t('engineSwitching')); }catch(_){}
-        setTimeout(()=>{ try{ location.reload(); }catch(_){} },700); return; }   /* only long enough for the toast to be read */
+        /* ⚠ ASKED IN THE APP, NOT THROUGH window.confirm(): a host that does not open native dialogs (the Claude
+           desktop app's browser pane) answers «no» without showing anything, which left the select snapping back
+           and the engine impossible to change there. js/ask-dialog.js is the one asker. */
+        askInApp({ title:IntMapLang.t(currentLang,'Switch the map engine?','地図エンジンを切り替えますか？'),
+                   body:IntMapLang.t(currentLang,'Switching the map engine reloads the page.','切り替えるとページを再読み込みします。'),
+                   confirmLabel:IntMapLang.t(currentLang,'Switch and reload','切り替えて再読み込み') },()=>currentLang).then(r=>{
+          if(r===null){ el.value=ES.choice(); return; }
+          ES.set(v); try{ imToast(t('engineSwitching')); }catch(_){}
+          setTimeout(()=>{ try{ location.reload(); }catch(_){} },700); });   /* only long enough for the toast to be read */
+        return; }
       case 'setting-sidebar-style': window.imSidebarStyle=v; applySidebarStyle(); return _reflectSettings(false);
       case 'setting-label-lang': window.imLabelLang=v; try{ applyLabelLang(); }catch(_){} return _reflectSettings(true);
       case 'setting-map-color': window.imMapColor=v; try{ applyTheme(); }catch(_){} return _reflectSettings(false);   /* a Map-color change is applyTheme's */

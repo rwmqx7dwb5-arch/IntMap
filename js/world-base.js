@@ -122,32 +122,33 @@ window.IntMapWorldBase=(function(){
     })).catch(()=>url());
   }
 
-  /* Mercator y (0..1 over the whole world) → latitude in degrees. */
-  const latOf=(my)=>Math.atan(Math.sinh(Math.PI*(1-2*my)))*180/Math.PI;
-
-  let made=0;
-  /* Render one Web Mercator tile out of the equirectangular picture.
-     Longitude is LINEAR in Mercator x, so the horizontal mapping is a single constant scale and each
-     output row can be filled by one drawImage of the matching source row. Latitude is not linear, so
-     the row index is recomputed per row — which is exactly the reprojection, done at output
-     resolution rather than by resampling a grid. */
+  /* The reprojection itself lives in js/world-floor-tile.js — the same routine the satellite worker runs.
+     The picture goes to the worker ONCE (an ImageBitmap of the colour-matched canvas, transferred), after
+     which a tile is one message and the 512 drawImage calls are off the thread that draws the map. */
+  let made=0, sent=null;
+  function viaWorker(z,x,y){
+    const W=window.IntMapSatWorker;
+    if(!W||!W.available||!W.available()||typeof createImageBitmap!=='function') return null;
+    if(!sent){
+      sent=source().then(im=>createImageBitmap(im)).then(bm=>W.floorSource(bm)?true:(bm.close&&bm.close(),false)).catch(()=>false);
+    }
+    return sent.then(ok=>ok?W.floor(z,x,y,TILE):null).catch(()=>null);
+  }
   function tile(z,x,y){
-    return source().then(im=>{
-      const n=Math.pow(2,z), sw=im.naturalWidth||im.width, sh=im.naturalHeight||im.height;
-      const cv=document.createElement('canvas'); cv.width=TILE; cv.height=TILE;
-      const g=cv.getContext('2d',{alpha:false});
-      g.imageSmoothingEnabled=true; g.imageSmoothingQuality='low';
-      const sx=(x/n)*sw, sWid=sw/n;
-      for(let j=0;j<TILE;j++){
-        const lat=latOf((y+j/TILE)/n), lat2=latOf((y+(j+1)/TILE)/n);
-        const sy=(90-lat)/180*sh;
-        const sy2=(90-lat2)/180*sh;
-        const hgt=Math.max(0.5,sy2-sy);
-        g.drawImage(im,sx,Math.max(0,Math.min(sh-0.5,sy)),sWid,Math.min(hgt,sh-sy),0,j,TILE,1);
-      }
-      made++;
-      if(typeof createImageBitmap==='function') return createImageBitmap(cv);
-      return cv;
+    const v=viaWorker(z,x,y);
+    return (v||Promise.resolve(null)).then(bm=>{
+      if(bm){ made++; return bm; }
+      /* no worker: the same routine, on this thread. A dynamic import — it is the fallback, and a static one would
+         add a module to every start (scripts/perf-budget.mjs eager.modules). */
+      return Promise.all([source(),import('./world-floor-tile.js')]).then(([im,lib])=>{
+        const sw=im.naturalWidth||im.width, sh=im.naturalHeight||im.height;
+        const cv=document.createElement('canvas'); cv.width=TILE; cv.height=TILE;
+        const g=cv.getContext('2d',{alpha:false});
+        lib.drawFloorTile(g,im,sw,sh,z,x,y,TILE);
+        made++;
+        if(typeof createImageBitmap==='function') return createImageBitmap(cv);
+        return cv;
+      });
     });
   }
 

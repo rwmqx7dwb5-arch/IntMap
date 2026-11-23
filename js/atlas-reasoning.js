@@ -137,6 +137,30 @@ export function scenarioReport(frame, call, run, exposure, models) {
   return { model: frame.modelId, ran: !!(run && run.ok), baseline: call.baseline, assumptions: call.assumptions, dataUsed, excluded, uncertainty, complete };
 }
 
+/** (forecast) THE REPORT OF A SCENARIO THAT BROUGHT EXTERNAL FORECAST DATA BACK INTO THE GIS (js/gis-forecast.js). The four fields research.scenario
+    always reports, plus the four KINDS of content kept apart: observations, model estimates, what the reader stated, and the uncertainty
+    the provider stated. `rec` is the forecast record. Nothing is invented to fill a field: with no observations the report says none were
+    supplied, with a source that states no spread it says so. `complete` is false while any of the four fields is empty. */
+export function forecastReport(rec) {
+  const r = rec || {};
+  const src = r.source || {}, terms = r.terms || {};
+  const obs = r.observations || { status: 'none-supplied' };
+  const conds = r.userConditions && typeof r.userConditions === 'object' ? Object.keys(r.userConditions).map((k) => ({ name: k, value: r.userConditions[k], applied: k === 'threshold', why: k === 'threshold' ? null : T('stored, not applied: a stated condition is never fed back into the model', '記録のみで反映していない: 述べられた条件はモデルへ戻さない') })) : [];
+  const dataUsed = [T('Model output from ' + (src.model || '?') + ' via ' + (src.url || '?') + ', fetched ' + (r.fetchedAt || '?') + '. Attribution: ' + (src.attribution || '?') + '. Data licence ' + (terms.dataLicence || '?') + '; the free API is ' + (terms.freeApi || '?') + ' (terms read ' + (terms.read || '?') + ')',
+    (src.model || '?') + ' のモデル出力（' + (src.url || '?') + '、' + (r.fetchedAt || '?') + ' 取得）。出典表記: ' + (src.attribution || '?') + '。データは ' + (terms.dataLicence || '?') + '、無料 API は非商用に限られる（規約確認日 ' + (terms.read || '?') + '）')];
+  const excluded = [];
+  if (obs.status !== 'referenced') excluded.push(T('No observations were supplied: this source publishes model output, so nothing in the estimate layer is a measurement', '観測値は渡されていない: この提供元はモデル出力を配信しており、推計の層に測定値は含まれない'));
+  else excluded.push(T('Observations are referenced (' + obs.datasets.join(', ') + '), not merged into the estimate: each stays its own dataset', '観測は参照のみ（' + obs.datasets.join('・') + '）で推計とは混ぜず、それぞれ別のデータセットのまま'));
+  if (r.failed && r.failed.length) excluded.push(T(r.failed.length + ' request(s) failed; their locations are absent, not zero', r.failed.length + ' 件の取得に失敗。その地点は 0 ではなく欠測'));
+  if (r.modelEstimates && r.modelEstimates.noValue > 0) excluded.push(T(r.modelEstimates.noValue + ' location(s) had no value from the provider (for river discharge: no river in that cell): absent, not zero', r.modelEstimates.noValue + ' 地点は提供元が値を返さなかった（河川流量では、そのセルに川が無い等）。0 ではなく欠測'));
+  excluded.push(T('Population exposure and impacts are not computed here', '人口への曝露や影響はここでは計算していない'));
+  const unc = r.uncertainty || {};
+  const uncertainty = [unc.basis === 'not-stated' ? T('The provider states no spread for this variable (' + ((unc.note && unc.note[0]) || '') + ')', '提供元はこの変数の幅を述べていない（' + ((unc.note && unc.note[1]) || '') + '）') : T('Spread stated by the provider: ' + ((unc.note && unc.note[0]) || ''), '提供元が述べた幅: ' + ((unc.note && unc.note[1]) || ''))];
+  uncertainty.push(T('A model estimate for a grid cell, not a measurement at the point; the provider snaps each request to its own grid', '格子セルに対するモデル推計で、その地点での測定ではない（提供元が各要求を自らの格子へ寄せる）'));
+  const complete = !!(dataUsed.length && excluded.length && uncertainty.length);
+  return { kind: 'forecast', model: src.id || null, ran: true, assumptions: conds, observations: obs, modelEstimates: r.modelEstimates || null, uncertaintyData: unc, dataUsed, excluded, uncertainty, complete, fetchedAt: r.fetchedAt || null, region: r.region || null };
+}
+
 /* ══ 2 · time.changes ══════════════════════════════════════════════════════════════════════════════ */
 
 /** a period's two ends, from what the call stated. A bare year is the year (never a day IntMap picked): the diff reads the map

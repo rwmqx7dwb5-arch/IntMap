@@ -25,7 +25,11 @@ const MAX_PIC = 2400;   /* the longest side a picture keeps in the file (px) */
 const MAX_BYTES = 40 * 1024 * 1024;
 
 
-export function atlasFile() {
+let once = null;
+/** the one maker the capability uses (its card registry must be one) */
+export const atlasFileOnce = () => once || (once = atlasFile());
+
+function atlasFile() {
   const registry = new Map();   /* id → { name, mime, bytes, url } — what the card's buttons act on */
   let seq = 0;
 
