@@ -93,6 +93,9 @@ export const GOVERNANCE = {
        the names and dates come from Wikidata, which is edited daily — so Wikidata's cadence governs. */
     ...WIKIDATA,
     builtBy: 'scripts/build-hist-kuni.mjs',
+    /* (describes.*) MEASURED on the committed bundle; the raster README states only that the data were created on 2023-06-26, so no period or method is claimed for the source. */
+    period: { start: '701', end: '1871-08-29', note: 'measured: the span of the 16 provinces in the bundle; the spans come from Wikidata, not from the raster' },
+    extent: '16 ritsuryo provinces in the committed bundle (measured)',
   },
 };
 
