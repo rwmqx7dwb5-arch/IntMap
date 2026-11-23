@@ -5,12 +5,12 @@
     "brotli": 1219000,
     "requests": 12,
     "modules": 916,
-    "cssRaw": 382385,
-    "cssGzip": 63308
+    "cssRaw": 386341,
+    "cssGzip": 65461
   },
   "async": {
-    "raw": 15156184,
-    "gzip": 5150391,
+    "raw": 15007002,
+    "gzip": 5068002,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -45,7 +45,7 @@
       "border-provenance-card": 30065,
       "card-clearance": 1250,
       "cesium": 4919424,
-      "cesium-engine": 75831,
+      "cesium-engine": 78661,
       "cesium-input": 18254,
       "cesium-layers": 19250,
       "cesium-style": 18668,
@@ -81,7 +81,7 @@
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
       "gis-cog": 7532,
-      "gis-core": 718716,
+      "gis-core": 718025,
       "gis-export": 40134,
       "gis-fetch": 8730,
       "gis-geopackage": 26667,
