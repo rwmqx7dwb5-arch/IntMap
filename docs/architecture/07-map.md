@@ -507,6 +507,8 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - **レイヤー `beta-dl-plateau3d`**（日本の3D都市モデル）。読む対象は手書きの一覧ではなく `data/plateau-cities.json`（`scripts/build-plateau-cities.mjs` が PLATEAU データカタログの `latest_datasets` から導出。建物 3D Tiles を持つ市区ごとに LOD2 テクスチャ付き > LOD2 > LOD1 の順で 1 つ選び、tileset の root region から範囲、国土地理院のジオイド計算（JGEOID2011）から都市別のジオイド高を持つ）。実行時は zoom 9 以上で、カメラ近傍（画面幅ぶんの地面・12〜60 km）の市区だけを近い順に最大 32 件開き（`plateauUnitsNear`）、各都市に `heightOffset = -ジオイド高`（東京 ≈ 36.8 m、他は都市ごと）を渡す。オフにすると全タイルセットを破棄し、通信もメモリも残さない。MapLibre エンジンでは行ごと非表示。出典と利用条件は PLATEAU サイトポリシー（CC BY 4.0 互換）。
 - **計測。** Cesium アダプタも `render.instrumentFrames`（`scene.render` を 1 回だけ包む。GPU ではなく CPU の提出時間）と `render.sceneStats`（地球儀タイル数と、3D Tiles の件数・三角形数・バイト数を `extra` に）を実装し、`?perf=1` が Cesium でも縮退しない。
 
+
+**建物を選ぶと属性のカードが開く（`js/building-info.js`・`js/building-attrs.js`）。** Cesium の `_pickBuilding` が左クリックで `scene.pick` を問い、3D Tiles の建物（3D Tiles 1.1 の `EXT_structural_metadata` か b3dm のバッチテーブル）なら `buildingpick`（タイルセット ID・全属性）を出す。選んだ建物は黄に着色し、次の選択・Esc・閉じるで戻す（`layers.clearBuildingPick`）。カードは高さを大きく、続けて用途・建築年・階数・住所など**データが述べた欄だけ**、最後に全属性と出典・ライセンス。名前は 3 つのデータセットの実タイルから読んだもの（PLATEAU: `bldg:measuredHeight` ほか／3D BAG: `oorspronkelijkbouwjaar`・`b3_bouwlagen`・`b3_h_nok − b3_h_maaiveld`／Re:Earth: `height` と `height_method`）。Re:Earth の高さは決め方（実測・階数から・分類・足跡の既定）を併記し、既定値を計測値として見せない。MapLibre の「3D 建物（都市）」は足跡の押し出しで建物ごとの属性を持たないので対象外。
 ### 7.3l Cesium のスタイル解釈器と MapLibre の差 — `js/cesium-style.js`
 
 - **Cesium は MapLibre のスタイル式を自前で評価する**（`window.IntMapStyle`。純粋で Node から検証できる）。式の評価に渡す文脈は `{properties, geometryType, geometry, id, zoom, state}`——地物の幾何を渡すのは `js/cesium-layers.js` の `ctxFor`。
