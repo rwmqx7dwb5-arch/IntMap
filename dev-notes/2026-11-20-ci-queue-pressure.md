@@ -23,3 +23,11 @@ CodeQL は PR 上で実際に指摘を拾った実績（`tests/atlas-agent-repea
 ## 3. 変えなかったもの
 
 runner 枠の増設は料金が発生する。他セッションの赤い PR（11 本）には触れない。
+
+## 起動予算の天井の引き上げ(main 起因)
+
+この PR は `security.yml` だけを変え、配信物は変わらない。それでも `check:perf` が赤くなったのは、
+main に入った他の変更(Atlas のコンソール・GIS 層の追加)が async チャンク `atlas-console`
+(1129.9 → 1135.6 kB)・`gis-core`(697.3 → 701.2 kB)と `dist.assets`(21923.7 → 22047.4 kB)を
+天井の幅を超えて太らせたため。CI の実測値と同じ値へ `perf-budget.mjs --update` で上げた(超えた行だけ)。
+この PR 自身の増分は 0。main の CI が次の push で天井を実測へ締め直す。
