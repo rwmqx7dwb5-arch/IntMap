@@ -549,6 +549,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get wireCommList(){ return wireCommList; }
   };
   setHost(IM_HOST);
+  /* (atlas-knowledge) the Settings row «Atlas knowledge» (js/atlas-knowledge-prefs.js) needs to know whether a reader is signed in before it offers the account copy, and runs before Atlas is loaded */
+  window.IntMapKnowledgeHost=()=>IM_HOST;
 
   /* ===== i18n ===== */
   /* (#R162) moved to js/i18n.js — see Architecture.md "File layout". */
