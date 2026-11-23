@@ -51,3 +51,10 @@ atlas-console 1105.8 -> 1111.8 kB、dist.assets 21796.5 -> 21909.3 kB。いず�
 
 ## atlas-cap-runs の天井
 CI が merge 後の木で測った atlas-cap-runs は 938.7 kB（天井 931.1 kB を 7.6 kB 超過）。増えた分は main が足した能力と siting.compare の追加で、CI の実測値まで引き上げた（ローカルでは main の進みが速く perf-budget --update の同一木ガードを満たせないため、先行 PR と同じく CI の出力を根拠にした）。
+
+## main の新しい datagov 規則への合わせ（2026-11-23）
+
+main に入った規則（`describes.*` 6 面・上流の指紋・`data/data-facts.json` の一致）で `check:datagov` が赤くなった（出自の台帳が 228 → 230、指紋 5 行なし、facts 不一致）。
+- `build-siting-jp.mjs` の `GOVERNANCE` に period / extent / method / resolution / completeness / accuracy を実測と出典の言葉で述べた（足りないものは gaps と同じ理由で述べ、推定はしない）。
+- 日付リテラルは UTC 当日（2026-11-23）に合わせて取り直した。`areas` `sites` `anchors` は取り直し前と完全に一致、変わったのは日付を含む vintage の文字だけ。
+- `data/upstream-fingerprints.json` は自分の 5 行だけを足した（`--update` は他の上流の観測時刻まで全部書き換えるので、その分は採らない）。`data/data-facts.json` と台帳は `--update` の出力。台帳は 228 / 3525 のまま（増えていない）。

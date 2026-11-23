@@ -62,9 +62,16 @@ export const GOVERNANCE = {
     ...SITING_JP, builtBy: 'scripts/build-siting-jp.mjs',
     /* ⚠ LITERALS THE GATE CAN READ WITHOUT RUNNING THIS FILE; build() refuses to write a bundle that disagrees (scripts/lib/gov-stamp.mjs).
        asOf is the day the upstreams were read; each metric carries its own vintage in metrics[].vintage. */
-    retrievedAt: '2026-11-20',
-    generatedAt: '2026-11-20',
-    asOf: '2026-11-20',
+    retrievedAt: '2026-11-23',
+    generatedAt: '2026-11-23',
+    asOf: '2026-11-23',
+    /* (describes.*) the five upstream pages named in sources[] (read 2026-11-23) and counts measured on this committed file. */
+    period: { start: '2025-04-01', end: '2026-03-31', note: 'the JEPX prices are fiscal year 2025; the land prices are the 2026 announcement (reference date 1 January 2026); the minimum wages are those in force on 2026-11-20; SSDSE-B is its 2026 edition (statistics of 2023 and earlier)' },
+    extent: 'Japan: all 47 prefectures (ISO 3166-2:JP), 948 industrial land-price parcels of 25,565 announced, and 266 company facilities placed on the map; the JEPX price is per power area, so Okinawa has none',
+    method: 'one table per prefecture holding each metric with its own unit, vintage and source; land prices are the median, minimum and maximum of the industrial-use standard parcels of the prefecture; JEPX prices are the mean of the half-hourly area spot prices; no composite score is computed, and ranks are per metric',
+    resolution: 'prefecture (47 areas) for every metric; the industrial land-price parcels and the company facilities keep their own point coordinates',
+    completeness: 'water and logistics are stated gaps with their reasons (no commercially usable open source was reachable; ports and roads are not yet joined), Okinawa has no JEPX price, and retail industrial electricity tariffs are not open data per prefecture',
+    accuracy: 'the prices and wages are the published settled or legal values, not estimates; the land price is an appraisal of standard parcels and is not a transaction price; the JEPX price is a wholesale price and not the tariff a plant pays',
     /* measured on areas[]: key id (ISO 3166-2:JP); every one has a name */
     quality: { rows: 47, missing: { id: 0, name: 0, nameLocal: 0 }, outOfRange: {}, duplicates: 0 },
     schema: 'scripts/build-siting-jp.mjs (areas: id name nameLocal m{metric} ...; sites; anchors) — read by js/siting.js and js/atlas-cap-siting.js; tests/siting-checks.test.mjs' },
