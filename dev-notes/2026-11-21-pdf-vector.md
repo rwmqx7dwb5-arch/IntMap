@@ -57,3 +57,4 @@ newsjp: Atlas が作る PDF の文字と図形がベクターになりました�
 - 合計 async.raw 14376→14552 kB・async.gzip 4865→4911 kB・dist.assets 21797→21989 kB。残りの増分は、天井を記録してから main に入った他の作業の分（`gis-pipeline` 11.2 kB・`imagery-atlas` 3.6 kB ほか。main の CI が merge 後に記録し直す）。
 - 起動時に読まれる経路（main の entry / startup の行）は増えていない（`check:perf` の startup の行は超えていない）。`node scripts/perf-budget.mjs --update` が上げたのは超えた 5 行だけ。
 ⚠ この checkout には `data/hist-eras.js` と `data/border-detail/` が無く（git の外・data:pull）、build の最後の `intmap-history-pages` は失敗する。JS のチャンクは出力済みで上の数字はそこから取った。データ由来の 2 行（border-detail・hist-eras が dist に無い）は環境起因で、CI では出ない。
+- 2026-11-23 に main を取り込んだあと、main 側が天井を上げ直していたため、同じ内訳（`atlas-file-make` 64.8 kB・`atlas-cap-runs` +7.6 kB・`atlas-console` +11.2 kB が **main の最新の天井に対する超過分**）で 4 行だけ上げ直した（async.raw 14487→14579 kB・async.gzip 4890→4921 kB）。新しい理由は無い。
