@@ -56,8 +56,14 @@ export const GOVERNANCE = (() => {
      licence. Both facets stay silent rather than being guessed at. */
   const rec = {
     url: SRC,
+    /* (describes.*) what the model and this file state about themselves — the header above says each of these. */
+    period: { kind: 'model', note: 'a time-independent model of present crustal structure; the publication states no reference date' },
+    extent: 'the whole Earth (360 x 180 cells of 1 degree)',
+    method: 'a seismic crustal model (Laske, Masters, Ma & Pasyanos 2013): eight layers plus uppermost mantle, each with its own shear velocity, density and boundary depth',
+    resolution: '1 degree x 1 degree (about 111 km); the basin of Kanto or Los Angeles is not resolved as a feature',
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'CRUST1.0 is a finished global model (Laske, Masters, Ma & Pasyanos 2013) distributed as one tarball that has not been revised',
       expires: 'if a CRUST2 or a revised CRUST1.0 is published at the distribution URL',
       canon: 'this record (the only builder that reads CRUST1.0)',

@@ -68,6 +68,9 @@ export const GOVERNANCE = {
     paidBy: 'Historical boundary courses — OpenStreetMap contributors (ODbL 1.0), reviewed by IntMap',
     ...OPENSTREETMAP,
     builtBy: 'scripts/build-hist-courses.mjs',
+    /* (describes.*) MEASURED on the committed bundle: the stated spans of its 21 courses (19 rivers, 2 walls). The shapes are OpenStreetMap's; which boundary followed them, and when, is IntMap's review of the sources each course cites. */
+    period: { start: '16', end: '1919', note: 'measured: earliest and latest span year over the 21 courses; these spans are IntMap review of cited sources, not an OpenStreetMap statement' },
+    extent: '21 courses: 19 rivers and 2 walls (measured)',
   },
 };
 export const SRC = 'River and wall courses © OpenStreetMap contributors (ODbL 1.0, openstreetmap.org/copyright), at their own vertices; which stretch of which historical boundary followed them, and when, is IntMap\'s review of the sources each course cites (scripts/histcourse/courses.json)';
