@@ -17,6 +17,44 @@
  *  entry names them.
  * ==========================================================================*/
 import { list, obj } from './atlas-caps.js';
+import { checkView, viewSchema, blockShapes, BLOCKS, LIMITS, tableMarkdown, metricsHtml, placesHtml, boardHtml, sourceHtml } from './atlas-ui-spec.js';   /* (declarative-workspace) the view's kinds, schema and check */
+import { plainText, proseMark } from './atlas-turn-results.js';
+import { icon } from './icons.js';
+import { IntMapLang } from './lang-registry.js';
+
+/* ══ (declarative-workspace) THE ONE CONTROL RENDERER ════════════════════════════════════════════════════
+   ui.inlineControls drew its rows in its run, and a view's "controls" block draws the same rows — so the rows are
+   drawn HERE, once, and each item that cannot be drawn says why instead of vanishing. ui.inlineControls keeps what
+   it always did with such an item (it leaves it out and draws the rest); ui.compose refuses the view and hands the
+   reasons back (js/atlas-ui-spec.js — nothing in a view is dropped silently). */
+function controlRows(items, K) {
+  const esc = K.esc, L = K.L, resolveLayer = K.resolveLayer, layerOpacityControl = K.layerOpacityControl;
+  let h = ''; const problems = [];
+  (items || []).forEach((it, i) => {
+    const kind = String((it && it.kind) || '').toLowerCase();
+    const no = (code, why) => { problems.push({ at: '[' + i + ']', code, why }); };
+    if (kind === 'layertoggle' || kind === 'layer') {
+      const rl = resolveLayer(String(it.layer || it.name || '')); if (!rl) return no('unknown_layer', L('names no layer this map has', 'この地図にあるレイヤーを指していません'));
+      h += '<div class="atl-ctl-row"><span class="atl-ctl-lbl">' + esc(rl.label) + '</span><button class="atl-ctl-toggle' + (rl.cb.checked ? ' on' : '') + '" data-layer="' + esc(rl.label) + '" data-cb="' + esc(rl.cb.id || '') + '" role="switch" aria-checked="' + (rl.cb.checked ? 'true' : 'false') + '"><span class="atl-ctl-knob"></span></button></div>';
+    } else if (kind === 'opacity' || kind === 'slider') {
+      const rl = resolveLayer(String(it.layer || it.name || '')); if (!rl) return no('unknown_layer', L('names no layer this map has', 'この地図にあるレイヤーを指していません'));
+      const sl = layerOpacityControl(rl.cb); if (!sl) return no('no_opacity', L('this layer has no opacity control', 'このレイヤーには不透明度の調整がありません'));
+      h += '<div class="atl-ctl-row"><span class="atl-ctl-lbl">' + esc(rl.label) + ' · ' + L('opacity', '不透明度', 'Deckkraft', 'непрозрачность', 'opacidad') + '</span><input type="range" class="atl-ctl-op" data-layer="' + esc(rl.label) + '" data-cb="' + esc(rl.cb.id || '') + '" min="0" max="1" step="0.05" value="' + esc(sl.value) + '"></div>';
+    } else if (kind === 'button') {
+      const lbl = String(it.label || '').slice(0, 40); const cmd = String(it.run || it.command || '').slice(0, 160);
+      if (!lbl || !cmd) return no('missing', L('a button needs "label" and "run"', 'ボタンには "label" と "run" が必要です'));
+      h += '<button class="atl-ctl-btn" data-run="' + esc(encodeURIComponent(cmd)) + '">' + esc(lbl) + '</button>';
+    } else no('unknown_control', L('is not a control kind (layerToggle, opacity, button)', 'はコントロールの種類ではありません（layerToggle, opacity, button）'));
+  });
+  return { html: h ? '<div style="display:flex;flex-direction:column;gap:7px;margin:4px 0 2px;">' + h + '</div>' : '', problems };
+}
+
+/* the reasons a view was not drawn, as the reader and the model both read them: one line per problem, its path first */
+function refusal(problems, K) {
+  const esc = K.esc, L = K.L;
+  return K.warn(esc(L('The view was not drawn — fix these and send it again:', 'ビューは描いていません——次を直してもう一度送ってください:')))
+    + proseMark('<ul class="atl-ui-why">' + problems.map((p) => '<li><code>' + esc(p.at || L('(the view)', '（ビュー）')) + '</code> ' + esc(p.why) + '</li>').join('') + '</ul>');
+}
 
 export default [
   {
@@ -29,20 +67,65 @@ export default [
     policy: { fallback: true },
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { items: list(obj(), 1) }, required: ['items'] }), /* `controls` */
-    async run(a, dctx, K) { const R = K.R, warn = K.warn, resolveLayer = K.resolveLayer, esc = K.esc, layerOpacityControl = K.layerOpacityControl, L = K.L;
-      { /* (#R72) interactive UI inside the reply ("Atlasの返答内からもボタンやスライダーを配置") */
+    async run(a, dctx, K) { const R = K.R, warn = K.warn;
+      { /* (#R72) interactive UI inside the reply ("Atlasの返答内からもボタンやスライダーを配置") — the rows are drawn by controlRows above */
           const items=Array.isArray(a.items)?a.items.slice(0,8):[];
           if(!items.length) return R(false, warn(''));
-          let h='<div style="display:flex;flex-direction:column;gap:7px;margin:4px 0 2px;">'; let any=false;
-          for(const it of items){ const kind=String((it&&it.kind)||'').toLowerCase();
-            if(kind==='layertoggle'||kind==='layer'){ const rl=resolveLayer(String(it.layer||it.name||'')); if(!rl) continue; any=true;
-              h+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+esc(rl.label)+'</span><button class="atl-ctl-toggle'+(rl.cb.checked?' on':'')+'" data-layer="'+esc(rl.label)+'" data-cb="'+esc(rl.cb.id||'')+'" role="switch" aria-checked="'+(rl.cb.checked?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>'; }
-            else if(kind==='opacity'||kind==='slider'){ const rl=resolveLayer(String(it.layer||it.name||'')); if(!rl) continue; const sl=layerOpacityControl(rl.cb); if(!sl) continue; any=true;
-              h+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+esc(rl.label)+' · '+L('opacity','不透明度','Deckkraft','непрозрачность','opacidad')+'</span><input type="range" class="atl-ctl-op" data-layer="'+esc(rl.label)+'" data-cb="'+esc(rl.cb.id||'')+'" min="0" max="1" step="0.05" value="'+esc(sl.value)+'"></div>'; }
-            else if(kind==='button'){ const lbl=String(it.label||'').slice(0,40); const cmd=String(it.run||it.command||'').slice(0,160); if(!lbl||!cmd) continue; any=true;
-              h+='<button class="atl-ctl-btn" data-run="'+esc(encodeURIComponent(cmd))+'">'+esc(lbl)+'</button>'; } }
-          h+='</div>';
-          return R(any, any?h:warn('')); }
+          const c=controlRows(items, K);
+          return R(!!c.html, c.html||warn('')); }
+    },
+  },
+  /* ⚠⚠ (declarative-workspace) A VIEW — the third thing an answer may BE, after the map (map.compose) and the chart
+     (chart.compose): Atlas declares a titled arrangement of figures, a table, prose, a chart, controls and places as
+     JSON, and it is drawn ONLY with IntMap's own parts (js/atlas-ui-spec.js says which, checks the whole spec first and
+     names every problem). Nothing is executed and no markup from the spec reaches the page. A "chart" block runs
+     chart.compose and a "controls" block draws ui.inlineControls' rows — one renderer each, not a second copy.
+     `risk` 'session' and `writes` '' as ui.inlineControls: it changes nothing the reader must undo, and a notebook
+     replay draws it again (js/atlas-notebook-store.js replayable). */
+  {
+    row: ['ui.compose',                 'dashboard',      'uiCompose',                                                   'ui',      'none',    '',                       'panel,explanation',   'session', 'none',   '',         ''],
+    ui: { none: '2026-11-20' },
+    doc: [
+      { in: 'ui.inlineControls', at: 10, text: () => '{"type":"dashboard","title"?:str,"blocks":[BLOCK,…]} = A VIEW IN YOUR REPLY (ダッシュボード・ビュー — 結果を1つの画面に組む), where BLOCK is one of: ' + blockShapes()
+        + '. Every block may carry "title". Use it when the answer is SEVERAL THINGS the reader will want to look at together and come back to — headline figures with the table behind them, a chart with the switches that change the map under it, the places it is about — 「ダッシュボードにして」「一覧で見せて」「まとめて表示」「比較表とグラフを並べて」, "make a dashboard", "put it in one view". It is drawn into the reply with IntMap\'s own parts and executes nothing; a "chart" block is drawn by `chart` and a "controls" block by `controls`, under their own rules (a chart still needs its source). "source" IS REQUIRED on "metrics" and "table" blocks, as on a chart: name where the numbers came from. NEVER INVENT A VALUE TO FILL A TILE OR A CELL. NO LINKS AND NO HTML anywhere in the spec — a string carrying a URL or a tag is refused (cite sources in your answer). The whole spec is checked before anything is drawn; when it is refused, the result lists EVERY problem with its path (e.g. blocks[2].rows[4]) and the reason — fix them all and send it once. Limits: '
+        + LIMITS.blocks + ' blocks, ' + LIMITS.metrics + ' tiles, ' + LIMITS.columns + ' columns, ' + LIMITS.rows + ' rows, ' + LIMITS.places + ' places, ' + LIMITS.specChars + ' characters of JSON.\n' },
+    ],
+    schema: () => viewSchema(),
+    async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, mdMini = K.mdMini, CAPS = K.CAPS;
+      const chk = checkView(a, L);
+      if (!chk.ok) return R(false, refusal(chk.problems, K), { meta: { code: 'invalid_view', problems: chk.problems.map((p) => ({ at: p.at, code: p.code })) } });
+      let nf = null; try { nf = new Intl.NumberFormat(IntMapLang.locale(K.HOST && K.HOST.lang, 'en-GB')); } catch (_) { nf = null; }
+      const X = { esc, L, num: (v) => (nf ? nf.format(v) : String(v)), icon: (n) => icon(n, { size: 14 }) };
+      const problems = [], parts = [];
+      /* a delegated block is the capability's own arguments; the executor's `__` stamps are its bookkeeping, never the spec's */
+      const own = (o) => { const c = {}; Object.keys(o || {}).forEach((k) => { if (k.slice(0, 2) !== '__') c[k] = o[k]; }); return c; };
+      for (let i = 0; i < a.blocks.length; i++) {
+        const b = a.blocks[i], at = 'blocks[' + i + ']', via = BLOCKS[b.kind].via;
+        if (via && !(CAPS && CAPS.ofSpelling(via))) { problems.push({ at: at + '.kind', code: 'unavailable', why: L('the capability that draws this block is not in this build', 'このブロックを描く能力がこのビルドにありません') }); continue; }
+        let h = '';
+        if (b.kind === 'text') h = '<div class="atl-md">' + mdMini(b.md) + '</div>';
+        else if (b.kind === 'table') h = '<div class="atl-md">' + mdMini(tableMarkdown(b, X.num)) + '</div>' + (b.caption ? '<div class="atl-ui-cap">' + esc(b.caption) + '</div>' : '') + sourceHtml(b, X);
+        else if (b.kind === 'metrics') h = metricsHtml(b, X) + sourceHtml(b, X);
+        else if (b.kind === 'places') h = placesHtml(b, X);
+        else if (b.kind === 'board') {
+          /* the card is drawn from the same declaration board.compose takes; the spec is staged with the board module (not put in markup) and the button opens it */
+          try { await window.IntMapLazy.need('board'); } catch (_) { /* reported below */ }
+          const BD = window.IntMapBoard; const key = BD && BD.stage ? BD.stage(own(b.board)) : null;
+          if (!key) { problems.push({ at: at + '.board', code: 'unavailable', why: L('the workspace could not be loaded', 'ワークスペースを読み込めませんでした') }); continue; }
+          h = boardHtml(b, key, X);
+        }
+        else if (b.kind === 'controls') { const c = controlRows(b.items, K); c.problems.forEach((p) => problems.push({ at: at + '.items' + p.at, code: p.code, why: p.why })); h = c.html; }
+        else if (b.kind === 'chart') {
+          const r = await K.dispatch(Object.assign(own(b.chart), { type: via }), dctx);
+          if (!r || r.ok === false) { problems.push({ at: at + '.chart', code: (r && r.meta && r.meta.code) || 'not_drawn', why: plainText((r && r.html) || '') || L('the chart was not drawn', 'グラフを描けませんでした') }); continue; }
+          h = r.html;
+        }
+        parts.push('<div class="atl-ui-b" data-kind="' + esc(b.kind) + '">' + (b.title ? '<div class="atl-ui-bt">' + esc(b.title) + '</div>' : '') + h + '</div>');
+      }
+      if (problems.length) return R(false, refusal(problems, K), { meta: { code: 'invalid_view', problems: problems.map((p) => ({ at: p.at, code: p.code })) } });
+      const title = a.title ? String(a.title) : '';
+      return R(true, '<section class="atl-ui"' + (title ? ' aria-label="' + esc(title) + '"' : '') + '>' + (title ? '<div class="atl-ui-t">' + esc(title) + '</div>' : '') + parts.join('') + '</section>',
+        { meta: { view: { blocks: a.blocks.length, kinds: a.blocks.map((b) => b.kind) } } });
     },
   },
 ];
