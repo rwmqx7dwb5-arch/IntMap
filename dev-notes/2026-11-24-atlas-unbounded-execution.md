@@ -67,8 +67,7 @@ newsjp: Atlas は決まった手数で打ち切られなくなりました。進
 `tests/delegate-unbounded-checks.test.mjs`、pgTAP `supabase/tests/54_atlas_unbounded_turns_test.sql`。数を固定していた既存の検査は性質の検査に書き換えた。
 
 
-## 8. 天井（`check:perf`）
+## 8. 起動費用（`check:perf`）
 
-上げた天井: `eager.gzip` 1560.5 → 1568.4 kB、非同期チャンク `atlas-console` 1172.8 → 1186.8 kB。
-同じ手順で `origin/main`（0070cd4b5）を別の作業場でビルドして測ると、main 単体で起動時 gzip 1568.3 kB・`atlas-console` 1183.5 kB（+10.6 kB）・非同期合計 +34.8 kB と既に天井を超えていた（#1385 ほか直近の能力追加）。
+天井は変えていない。作業中、main 自体が起動時 gzip・`atlas-console`・非同期合計で天井を超えていた（`origin/main` を別の作業場でビルドして実測）が、その後 main 側で天井が上げられ、この PR を載せた木でも天井の内に収まる。
 この PR 自身の増分は起動時 raw +0.7 kB・`atlas-console` +3.3 kB・非同期合計 +3.4 kB（打ち切りの注記と「続ける」ボタン、途中の文の表示、子の待ち行列、出力量の申告）。
