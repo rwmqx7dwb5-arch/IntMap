@@ -9,6 +9,20 @@
   "canon": "scripts/data-governance.mjs factsFrom"
  },
  "subjects": {
+  "data/admin-stats.json.gz": {
+   "cadence": "P1D",
+   "cadenceBasis": "estimate",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
   "data/admin1-world.json.gz": {
    "cadence": "P1Y",
    "cadenceBasis": "measured",
