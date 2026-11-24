@@ -1,9 +1,8 @@
 /* ============================================================================
  *  #R337 — the expensive half: the starter chips, and the layer that may move the camera
  * ----------------------------------------------------------------------------
- *    ② the starter chips really change when the map moves to a different country — measured with
- *       the country's own name taken back out, because two mail-merged copies of one sentence are
- *       never the same string and that is exactly the illusion this round is about.
+ *    ② (now) Atlas renders no starter chips at any country, and .atl-sub is one fixed sentence. (It was: the chips
+ *       change when the map moves to a different country — Atlas no longer draws chips.)
  *    ③ switching NATO members on really moves the camera, once, into the treaty area.
  *
  *  ⚠ THIS FILE IS DELIBERATELY NOT `r337.spec.js`. scripts/tiers.mjs puts THE CURRENT ROUND'S
@@ -20,56 +19,33 @@ import { test, expect } from './helpers/app.js';
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(120000);
 
-test('R337 ②: the starter chips change when the map moves to a different country', async ({ app }) => {
+/* (mobile-sheet-layout) 旧②「起動チップが国で変わる」は、Atlas が例示チップ（.atl-chip）を出さなくなったので守る対象が無い（makeAtlasExamples の
+   suggestPrompts 経路は単体テストだけが通る）。同じ「地図が別の国へ動いたあとの Atlas の入口」を、いまの事実で守る:
+   チップは出ず、説明文（.atl-sub）は決まった 1 文、そして地図が動いても戻らない（国の表を読む再描画が走ったあとも）。 */
+test('R337 ②: Atlas draws no starter chips — not at a country, not after the map moves — and says one sentence', async ({ app }) => {
   const page = app.page;
   await page.evaluate(() => window.IntMapLazy.need('atlasConsole'));
   await page.evaluate(() => window.IntMapConsole.open());
   await page.waitForSelector('#atlas-panel .atl-ex', { timeout: 30000 });
-  /* the pool reads the country table, which arrives on its own schedule */
+  /* the country table arrives on its own schedule; the chips used to be drawn from it, so wait for it before measuring that none appear */
   await page.waitForFunction(() => { try { return (window.countryGeo.features || []).length > 100; } catch (_) { return false; } },
     null, { timeout: 60000 });
 
-  const chipsAt = async (lng, lat) => {
+  const seenAt = async (lng, lat) => {
     await page.evaluate(([x, y]) => window.__imap.jumpTo({ center: [x, y], zoom: 5 }), [lng, lat]);
-    /* the redraw is debounced on the camera's own settle — 600 ms, js/atlas-examples.js */
+    /* the redraw was debounced on the camera's own settle — 600 ms, js/atlas-examples.js */
     await page.waitForTimeout(1500);
-    return page.evaluate(() => Array.from(document.querySelectorAll('#atlas-panel .atl-chip')).map((b) => b.textContent));
+    return page.evaluate(() => ({
+      chips: document.querySelectorAll('#atlas-panel .atl-chip').length,
+      sub: (document.querySelector('#atlas-panel .atl-sub') || {}).textContent || null,
+    }));
   };
-  const mn = await chipsAt(103.8, 46.9);      /* Mongolia — the emptiest country on Earth */
-  const bd = await chipsAt(90.4, 23.8);       /* Bangladesh — near the other end of the same tables */
-
-  expect(mn.length, 'Mongolia gets four chips').toBe(4);
-  expect(bd.length, 'Bangladesh gets four chips').toBe(4);
-  for (const c of mn.concat(bd)) expect(c, 'no chip ships an unfilled placeholder: ' + c).not.toMatch(/[{}]/);
-
-  /* ⚠ THE NAME COMES OUT BEFORE COMPARING. With it in, two copies of ONE sentence are two different
-     strings and every pair of countries looks distinct — which is the illusion this round is about.
-     The names are read the way the chips themselves read them (js/app-body.js `cName`). */
-  const names = await page.evaluate(() => {
-    const html = (document.documentElement.lang || 'en').toLowerCase();
-    const lang = html === 'ja' ? 'jp' : html.split('-')[0];
-    const en = (a3) => { try {
-      const f = (window.countryGeo.features || []).find((x) => String(x.id) === a3);
-      const p = (f && f.properties) || {}; return p.NAME_EN || p.ADMIN || p.NAME || '';
-    } catch (_) { return ''; } };
-    const nm = (a3, a2) => {
-      if (lang !== 'en' && window._imCldrRegion) { try { const n = window._imCldrRegion(a2, lang); if (n) return n; } catch (_) {} }
-      return en(a3);
-    };
-    return { lang, mng: nm('MNG', 'MN'), bgd: nm('BGD', 'BD') };
-  });
-  /* if the mask misses, every comparison below passes for the wrong reason — so prove it fired */
-  expect(mn.some((c) => names.mng && c.includes(names.mng)),
-    'the chips really name Mongolia (' + names.mng + ', lang ' + names.lang + ')').toBe(true);
-  expect(bd.some((c) => names.bgd && c.includes(names.bgd)),
-    'and Bangladesh (' + names.bgd + ')').toBe(true);
-
-  const mask = (n, l) => l.map((s) => s.split(n).join('{}'));
-  const a = mask(names.mng, mn), b = new Set(mask(names.bgd, bd));
-  const shared = a.filter((x) => b.has(x));
-  expect(shared.length,
-    'two countries at opposite ends of the same distributions are not asked the same questions: '
-    + JSON.stringify(shared)).toBeLessThanOrEqual(2);
+  const mn = await seenAt(103.8, 46.9);      /* Mongolia */
+  const bd = await seenAt(90.4, 23.8);       /* Bangladesh */
+  for (const [n, r] of [['Mongolia', mn], ['Bangladesh', bd]]) {
+    expect(r.chips, n + ': no starter chip is rendered').toBe(0);
+    expect(r.sub, n + ': the one sentence under the title').toBe('Ask in plain language — Atlas drives the map for you.');
+  }
 
   await page.evaluate(() => { try { window.IntMapConsole.close(); } catch (_) {} });
 });

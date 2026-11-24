@@ -735,6 +735,7 @@ window.IntMapPageI18N.define('ja', {
     "World Bank Open Data": "国別の時系列指標（時系列グラフ・最大5か国比較、そしてタイムマシン——マスター時計で選んだ年の実データを国タブ・ホバー・コロプレスに反映）",
     "IMF World Economic Outlook": "政府債務レイヤーの欠損補完＋国比較の経済指標の切替ソース（DataMapper API）",
     "WorldPop (University of Southampton)": "描画範囲・円・地名境界の内側の人口 — 約100mメッシュの世界人口グリッドをWorldPop統計APIで集計",
+    "Overture Maps Foundation (places, buildings, addresses, divisions, transportation, base — GeoParquet, monthly release)": "Atlas が、指定した窓のぶんだけ世界の場所・建物・道路・住所・境界を読みます（頼んだときだけ）。毎月のリリースのうち、その窓に要る部分だけを読み、地球全体は読みません。ライセンスは行ごとに述べられたもの（places は CDLA-Permissive-2.0、建物・道路・境界・base は ODbL 1.0、住所は国ごとの CC BY 4.0）で、データセットはリリースと行が述べるライセンスをそのまま運びます",
     "Earth Search STAC catalogue (Element 84 / AWS Open Data)": "Atlas のデータ・シーン検索（頼んだときだけ）：場所と期間を覆うと述べている衛星・SAR・標高のオープンなコレクションと、その撮影日・雲量つきのシーンを探し、各コレクションが述べるライセンスをそのまま表示",
     "Microsoft Planetary Computer STAC catalogue": "Atlas のデータ・シーン検索（頼んだときだけ）：オープンな環境・衛星・SAR・LiDAR のコレクションとそのシーン。各コレクションが述べるライセンスをそのまま表示",
     "NASA CMR-STAC — LP DAAC (NASA EOSDIS)": "Atlas のデータ・シーン検索（頼んだときだけ）：NASA LP DAAC の地表コレクションとそのシーン。各コレクションが述べるライセンスをそのまま表示",
