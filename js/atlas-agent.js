@@ -1303,6 +1303,16 @@ export function makeAtlasAgent() {
             });
             if (!added.length && !held.length && !over.length) return;
             rec.promotedTools = added.concat(held);
+            /* (atlas-prompt-weight) A SCHEMA IS SENT ONCE. A match found by find_capability carried its full argument schema in this
+               result AND, from the next call on, the same schema in the tool definition it was just promoted to (or already had, if a core
+               tool) — the same bytes twice, and this result is replayed on every later call of the turn. Measured on a wide query: 7,351 of the
+               result's 9,359 characters were schemas that the 12,987 characters of promoted definitions repeat. A match that IS now a
+               tool keeps its id, tool name and summary and says where its schema is; one that was NOT offered (over the function limit)
+               keeps its schema, because run_capability is the only way to it. Nothing is withheld: the schema is in the definition. */
+            if (Array.isArray(rec.matches)) {
+              const now = new Set(rec.promotedTools);
+              rec.matches = rec.matches.map((m) => (m && m.schema !== undefined && now.has(m.tool)) ? Object.assign({}, m, { schema: undefined, schemaIn: 'the definition of the tool «' + m.tool + '»' }) : m);
+            }
             rec.promotionNote = (added.concat(held).length
               ? 'From your next reply these are tools you call DIRECTLY by name, with the arguments their schema declares: '
                 + added.concat(held).join(', ') + ' (each is the same as run_capability with its id — use whichever).'

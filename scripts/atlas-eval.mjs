@@ -56,6 +56,7 @@ import { goldenOf } from './atlas-eval/replay.mjs';
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { historyOf, renderTrend } from './atlas-eval/lab.mjs';
 import { sectionsRead } from './atlas-eval/map-state.mjs';
+import { deliverablesOfTurn, completionRateOf, deliverableSectionsOf } from './atlas-eval/deliverables.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const PROD_URL = SITE_URL;   // (domain-portable) the address is site-origin.js, written nowhere else
@@ -220,6 +221,7 @@ export function observeTurn(q, raw, askRes) {
   return {
     measured: true, ms: askRes.ms, stopped: String(t.status || raw.stopped || ''), reply: t.reply,
     operations: t.operations, calls, steps: raw.steps, snapshot: raw.snapshot,
+    completion: t.completion || null,   /* (atlas-completion-rate) what the turn's own trace declared — read only to compare with what existed */
     replies: raw.replies || null, dispatches: raw.dispatches || null,
     aiCalls: Number.isFinite(+t.aiCalls) ? +t.aiCalls : null,   /* (atlas-delegation-eval) the model calls of the turn, for the A/B bench */
   };
@@ -351,7 +353,7 @@ async function evaluate() {
       if (stopAll) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'not_reached', detail: stopAll }, rules)); continue; }
       if (deadlineMs && Date.now() - t0run + patienceMs > deadlineMs) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'deadline', detail: 'started ' + Math.round((Date.now() - t0run) / 60000) + ' min into a ' + Math.round(deadlineMs / 60000) + '-min run' }, rules)); continue; }
       /* each question on a fresh page (askOnFreshPage) */
-      const asked = await askOnFreshPage(S, q.text, { patienceMs, sections: sectionsRead(questions) });
+      const asked = await askOnFreshPage(S, q.text, { patienceMs, sections: [...new Set([...sectionsRead(questions), ...deliverableSectionsOf(questions)])] });
       if (asked.unmeasured) { turns.push(judgeTurn(q, asked.unmeasured, rules)); continue; }
       const obs = observeTurn(q, asked.raw, asked.askRes);
       /* (atlas-quality-lab) the independent grade — only for a question with a verified answer, only when
@@ -367,6 +369,7 @@ async function evaluate() {
       const judged = judgeTurn(q, obs, rules);
       if (recordDir) { const c = cassetteOf(q, obs, judged, { url, build, when: new Date().toISOString(), runUrl: arg('--run-url') || '' }); if (c) recorded.push(c); }
       if (obs.measured) judged.record = { operations: obs.operations, calls: obs.calls ? trimCalls(obs.calls) : null, steps: obs.steps, reply: obs.reply, snapshot: obs.snapshot };
+      judged.deliverables = deliverablesOfTurn(q, obs, rules);
       turns.push(judged);
       if (!obs.measured && obs.unmeasured === 'gate_refused') stopAll = 'the page refused ' + q.id + ' before Atlas ran: ' + obs.detail;
       if (has('--screenshots')) { mkdirSync(outDir, { recursive: true }); await page.screenshot({ path: join(outDir, q.id + '.png') }).catch(() => { }); }
@@ -392,6 +395,7 @@ async function evaluate() {
     tool: 'scripts/atlas-eval.mjs', version: set.version, url, build, when: new Date().toISOString(),
     runUrl: arg('--run-url') || null, dryRun, partial, session, fatal: fatal || null, verdict,
     metrics: metricsOf(turns, probes),
+    completionRate: completionRateOf(turns.map((t) => t.deliverables)),   /* (atlas-completion-rate) the requested things that existed, apart from what the turns said */
     previous: previous ? { when: previous.when, runUrl: previous.runUrl || null, verdict: previous.verdict } : null,
     regressions: adv.regressions, improvements: adv.improvements,
     reference: (dryRun || partial) ? ((previous && previous.reference) || {}) : adv.reference,
