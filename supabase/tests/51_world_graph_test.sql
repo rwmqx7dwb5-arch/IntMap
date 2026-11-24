@@ -20,11 +20,11 @@ select has_table('public', 'world_graph_nodes', 'world_graph_nodes exists');
 select has_table('public', 'world_graph_edges', 'world_graph_edges exists');
 select has_table('public', 'world_graph_claims', 'world_graph_claims exists');
 select columns_are('public', 'world_graph_nodes',
-  array['ref', 'type', 'kind', 'name', 'country', 'lng', 'lat', 'provenance', 'ids', 'valid_from_ms', 'valid_to_ms', 'facts', 'sources', 'updated_at'], 'nodes: the columns');
+  array['ref', 'type', 'kind', 'name', 'country', 'lng', 'lat', 'provenance', 'ids', 'valid_from_ms', 'valid_to_ms', 'facts', 'sources', 'updated_at', 'feed', 'feed_run', 'uid'], 'nodes: the columns');
 select columns_are('public', 'world_graph_edges',
-  array['id', 'from_ref', 'rel', 'to_ref', 'from_ms', 'to_ms', 'confidence', 'source', 'retrieved'], 'edges: the columns');
+  array['id', 'from_ref', 'rel', 'to_ref', 'from_ms', 'to_ms', 'confidence', 'source', 'retrieved', 'feed', 'feed_run'], 'edges: the columns');
 select columns_are('public', 'world_graph_claims',
-  array['id', 'ref', 'key', 'value', 'unit', 'from_ms', 'to_ms', 'source', 'retrieved'], 'claims: the columns');
+  array['id', 'ref', 'key', 'value', 'unit', 'from_ms', 'to_ms', 'source', 'retrieved', 'feed', 'feed_run'], 'claims: the columns');
 select ok((select bool_and(relrowsecurity) from pg_class where oid in ('public.world_graph_nodes'::regclass, 'public.world_graph_edges'::regclass, 'public.world_graph_claims'::regclass)), 'RLS is on for all three');
 
 insert into public.world_graph_nodes (ref, type, kind, name, country, lng, lat, provenance, ids, valid_from_ms) values

@@ -40,10 +40,14 @@ export const GOVERNANCE = {
     attribution: false,
     cadence: 'static',
     cadenceBasis: {
+      kind: 'derived',
       observed: 'derived from the `offline` statements of the host ledger, which change only when someone reads a supplier\'s terms and writes what they say',
       expires: 'if a supplier changes its terms — then the row it states is out of date, not this derivation',
       canon: 'the `offline` field of each row in scripts/outbound-hosts.json',
     },
+    /* (describes.*) what the builder derives and what the committed file measurably carries (4 hosts, 3 allowed). */
+    extent: 'the hosts whose row in scripts/outbound-hosts.json carries an offline statement (4 in the committed file, 3 allowing a saved copy and 1 not); a host whose row says nothing is absent',
+    method: 'derived from the offline statement of each host row (allowed, kind, pathPrefix, basis, why) by deriveOfflineSources; no supplier terms are read at build time',
     builtBy: 'scripts/offline-sources.mjs',
     schema: 'intmap-offline-sources/1',
   },

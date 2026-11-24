@@ -30,6 +30,13 @@ export function recordOf(results) {
   return rows;
 }
 
+/** the previous read of THIS turn, shown when the record has grown since: lets the reader judge whether the work done closed what it found (its own earlier finding, not a rule) */
+function prevSection(p) {
+  if (!p || !Array.isArray(p.unmet) || !p.unmet.length) return '';
+  return '\n\nYOUR PREVIOUS READING OF THIS TURN found these not covered (the operations above include what was done since):\n'
+    + p.unmet.map((u) => '- ' + clip(u.need, 200) + (u.why ? ' (' + clip(u.why, 150) + ')' : '')).join('\n');
+}
+
 /**
  * makeGoalVerify({ ask, system, timeoutMs, signal, turnId }) → async (ctx) → { unmet:[{need, why}] } | null
  *   ask(prompt, system, images, opts) → envelope { data }   (js/ai-core.js askAIJSONEnvelope, injected)
@@ -50,15 +57,23 @@ export function makeGoalVerify(deps) {
     }
     try {
       const rec = recordOf(ctx.results);
+      /* (evidence-graph) WHAT THE ARTEFACTS HOLD, observed by code (js/evidence-graph-deliver.js): rows and how many carry each value,
+         which origins stand behind each figure. Facts only — the reader of them is this verifier, which also sees the request.
+         A throw is «not observed»: the record goes out without the section. */
+      let held = [];
+      if (typeof d.observe === 'function') { try { const o = d.observe(ctx); if (Array.isArray(o)) held = o.map(String).filter(Boolean); } catch (_) { held = []; } }
       const prompt = 'REQUEST (the reader\'s own words):\n' + clip(ctx.request, 1500)
         + '\n\nRECORD OF THIS TURN\nAnswer mode declared: ' + (ctx.answerMode || '(none)')
         + '\nOutputs actually produced on the map or in the reply: ' + ((ctx.produced && ctx.produced.length) ? ctx.produced.join(', ') : 'none')
         + '\nOperations run:\n' + (rec.length ? rec.map((x) => '- ' + x).join('\n') : '- none')
+        + (held.length ? '\n\nWHAT THE OUTPUTS ACTUALLY HOLD (counted by IntMap, not by the model):\n' + held.map((x) => '- ' + x).join('\n') : '')
+        + prevSection(ctx.previous)
         + '\n\nANSWER WRITTEN:\n' + clip(ctx.text, 1500);
       const env = await d.ask(prompt, d.system || '', null, { task: 'atlas_verify', webMode: 'off', turnId: d.turnId || undefined, signal: ctl ? ctl.signal : (d.signal || undefined) });
       const data = env && env.data;
       if (!data || !Array.isArray(data.unmet)) return null;
-      return { unmet: data.unmet.filter((u) => u && typeof u === 'object' && String(u.need || '').trim()).map((u) => ({ need: String(u.need), why: String(u.why || '') })) };
+      const met = Array.isArray(data.met) ? data.met.filter((m) => m && typeof m === 'object' && String(m.need || '').trim()).map((m) => ({ need: String(m.need), how: String(m.how || '') })) : [];
+      return { ...(met.length ? { met } : {}), unmet: data.unmet.filter((u) => u && typeof u === 'object' && String(u.need || '').trim()).map((u) => ({ need: String(u.need), why: String(u.why || '') })) };
     } catch (_) { return null; } finally { if (timer) clearTimeout(timer); }
   };
 }
@@ -66,6 +81,8 @@ export function makeGoalVerify(deps) {
 /** the task rules the system prompt adds beside the persona (the persona itself is js/atlas-persona.js's, never written here) */
 export const GOAL_VERIFY_RULES = 'You are given a REQUEST and the RECORD of what a turn did about it. List each part of the request that the '
   + 'record does NOT cover — something the reader asked to be shown, drawn, compared, computed or stated that no produced output, '
-  + 'completed operation or written answer provides. Return STRICT JSON ONLY: {"unmet":[{"need":"<the part of the request, in the reader\'s words>","why":"<what the record shows or lacks>"}]}. '
+  + 'completed operation or written answer provides. Return STRICT JSON ONLY: {"met":[{"need":"<a part of the request the record covers>","how":"<which output, figure or written answer covers it>"}],"unmet":[{"need":"<the part of the request, in the reader\'s words>","why":"<what the record shows or lacks>"}]}. '
+  + 'Read the request for what it fixes — the set of things it covers (every item it names or implies, not a sample), the sources or data it requires, the conditions or period of the analysis, and the form of the deliverable — and compare each with the record: a set asked for in full but covered in part, a source required but not used, a condition not applied, or a deliverable of a different form is NOT met. These are what to look for, not a list to fill: name only what this request actually asks. '
   + 'An answer that is a plain statement of fact to a plain question is complete; do not ask for a drawing the request did not ask for. '
+  + 'An operation that returned ok is not a part met: when WHAT THE OUTPUTS ACTUALLY HOLD shows a table or figure that does not hold what the request asked for (e.g. values present for 8 of the 20 rows asked, a figure no record states, several citations that are one origin), that part is NOT met — say what is missing. '
   + 'A part covered by the written answer itself is met. Return {"unmet":[]} when everything is covered. Judge only the record you are given.';

@@ -15,7 +15,7 @@
 | [`../AGENTS.md`](../AGENTS.md) | 作業する人／AI | **どう働くか** — セッションの始め方、着手前の確認、変更の作法、ワークフロー、報告、**USB バックアップの頻度と手順**。⚠ **32,768 バイトの天井がある**（`npm run check:agents`） | 開発環境・Git 運用・CI/CD・deployment の前提が変わったとき |
 | [`../CLAUDE.md`](../CLAUDE.md) | Claude Code | **`AGENTS.md` を import したうえで、Claude Code でしか意味を持たない作法**（委譲の呼び方・preview ツール・ハーネスの worktree・権限） | Claude Code 側の作法が変わったとき |
 | [`MCP-SERVER.md`](MCP-SERVER.md) | 外部 AI／作業する人 | **IntMap を MCP サーバとして公開する面** — 公開する tool・認証（IntMap 発行のキー）・費用の上限と停止スイッチ・外部入力を命令として扱わない境界 | tool・認証・上限・境界を変えるとき |
-| [`AGENT-SETUP.md`](AGENT-SETUP.md) | 同上／Codex | **2 製品の配線図** — 何が共通で、何が製品固有で、**何が手作業で残るか**。Codex の初期設定。**Edge Function の名簿（23 本の名前と `_shared/` の扱い）と `--use-api` の実測、および USB バックアップのスクリプトが守る不変条件（§10）もここが正本**（`AGENTS.md` は 1 行で指すだけ） | 対応する製品・その設定が変わったとき／Edge Function を足す・消すとき／`scripts/backup-usb.ps1` を書き換えるとき |
+| [`AGENT-SETUP.md`](AGENT-SETUP.md) | 同上／Codex | **2 製品の配線図** — 何が共通で、何が製品固有で、**何が手作業で残るか**。Codex の初期設定。**Edge Function の名簿（28 本の名前と `_shared/` の扱い）と `--use-api` の実測、および USB バックアップのスクリプトが守る不変条件（§10）もここが正本**（`AGENTS.md` は 1 行で指すだけ） | 対応する製品・その設定が変わったとき／Edge Function を足す・消すとき／`scripts/backup-usb.ps1` を書き換えるとき |
 | [`../CONSTITUTION.md`](../CONSTITUTION.md) | 同上 | **何を守るか** — 製品の不文律、壊れやすい罠、地図・モバイルの作法、鍵とニュースの方針、文書の分担 | ユーザーが方針を変えたとき |
 | [`../.agents/rules/execution-strategy.md`](../.agents/rules/execution-strategy.md) | 作業する AI | **どう速く・安全にやるか** — 依頼の分解、並列化と委譲の判断基準、並列編集の隔離、検証の段、context の節約（`AGENTS.md` §5.0 の正本） | 並列化・委譲・検証の方針が変わったとき |
 | [`../.agents/rules/no-ad-hoc-hardcoding.md`](../.agents/rules/no-ad-hoc-hardcoding.md) | 作業する AI | **場当たりのハードコーディングの禁止** — 報告された 1 件のための分岐・特例・埋め込み一覧を足さず、その事例を生んだ構造を直す。着手前の 3 問、定数に必ず書く 3 点、実測された失敗の形（`AGENTS.md` §3 の 9 の正本） | 新しい「場当たりの形」を実測したとき（表に 1 行足す） |
@@ -71,6 +71,7 @@
 | [`NEWS-EVENTS.md`](NEWS-EVENTS.md) | ニュースを触る人 | **出来事 (Event) 単位のニュース基盤** — Source Registry・データモデル・クラスタリング・カテゴリ・翻訳・保持期間・運用者の修正経路（Architecture §4 の Event 側の本体） | 収集元・クラスタリング・カテゴリ・保持・翻訳を変えたとき |
 | [`ELECTIONS.md`](ELECTIONS.md) | 選挙を触る人 | **国政選挙レイヤーの正本** — データの契約（選挙区と結果の結合・議席の算術）、パックの作り方、境界の「版」が選挙と別である理由、出典とライセンス（表記が再配布の条件になっているもの）、採らなかったデータ源と理由。⚠ 米大統領選レイヤー（`dl-uselect`）は別のレイヤー | 選挙・データ源・契約・収録範囲を変えたとき |
 | [`COMPANIES.md`](COMPANIES.md) | 企業を触る人 | **企業アトラス** — 企業プロフィールと世界の実在拠点のデータモデル・出典規約・生成パイプライン・カバレッジ判定（`js/companies.js` の curated 表とライブ時価総額は**そちらが正本**で、ここはその上に載る恒久データ） | 収集元・スキーマ・施設種別の語彙・カバレッジ段位を変えたとき |
+| [`SITING.md`](SITING.md) | 産業立地・企業拠点の比較を触る人 | **産業立地データの正本** — 電力・産業用地・労働力・研究・規制を行政区域ごとに公開統計の実数で並べる `data/siting-<国>.json` と `siting.compare`、載せていないもの（gaps）、世界への広げ方 |
 | [`AVIATION-ARCHITECTURE.md`](AVIATION-ARCHITECTURE.md) | 航空を触る人 | **航空プラットフォームの構造** — 1回だけ上流を読んで全利用者へ配る配信、IMAV/1 ワイヤ形式、Worker と typed-array ストア、GPU 描画、障害時、巻き戻し | 航空の取得・配信・描画の仕組みを変えたとき |
 | [`SHIPS-ARCHITECTURE.md`](SHIPS-ARCHITECTURE.md) | 船舶を触る人 | **船舶プラットフォームの構造** — サーバー側の鍵1本と共有スナップショット、鍵不要の Digitraffic と全球の aisstream、1回の呼び出しの中で開閉する WebSocket、BYOK を残した理由 | 船舶の取得・配信・描画の仕組みを変えたとき |
 | [`AVIATION-DATA-SOURCES.md`](AVIATION-DATA-SOURCES.md) | 同上 | **航空データ源の正本** — どの provider が何を返すか、ライセンスと利用条件、実測した上限、採用しなかった候補と理由、出典表記の義務 | provider を足す・変える・条件が変わったとき |
@@ -87,6 +88,7 @@
 | 文書 | 対象読者 | 役割 | いつ更新するか |
 |---|---|---|---|
 | [`TESTING.md`](TESTING.md) | 全員 | **何をどう試験するか** — 層・tier・テスト予算・`check:*` ゲート・**セキュリティ検査**・**文書の検査** | 試験を足した・消した・組み替えたとき |
+| [`TRANSIT-TIMETABLES.md`](TRANSIT-TIMETABLES.md) | 経路・到達圏を触る人 | **公共交通の時刻表プランナー** — 自前の GTFS 取り込み・商用可ライセンスだけを使う理由（Transitous は既定オフ）・定期運行とリアルタイムの区別・見積りの範囲・国境の扱い・feed 追加の手順 |
 | [`RELEASE.md`](RELEASE.md) | リリースする人 | **公開手順の正本** — CI ゲート付き Pages deploy、着地確認、ロールバック | 公開の仕組みが変わったとき |
 | [`MONITORING.md`](MONITORING.md) | 運用する人 | 稼働監視とアラート | 監視の構成が変わったとき |
 | [`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md) | 障害対応する人 | サイト障害・セキュリティ事案・**DB 事案**の番号つき手順 | 手順が変わったとき |

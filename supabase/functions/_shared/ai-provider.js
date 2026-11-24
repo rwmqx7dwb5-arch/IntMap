@@ -66,6 +66,10 @@ export const FALLBACK_CHAIN = ["gpt-6.1-terra", "gpt-6-luna"];
    2026-09-15). The background jobs take ONE fallback step and it is this one: they are unattended,
    and a single step to the known-good model is the whole of what #R148/#R351 asked of them. */
 export const OPENAI_LAST_RESORT_MODEL = FALLBACK_CHAIN[FALLBACK_CHAIN.length - 1];
+/* (news-event-history) The embedding model news-ingest prefers when the OpenAI key cannot reach an embedding model
+   (measured 2026-11-20: 403, no embedding id in the key's list). It is a PREFERENCE: the stage asks the provider's own
+   model list and falls back to whichever embedding model that list names. One table for every model id (edge-spend-and-models ①). */
+export const GEMINI_EMBEDDING_MODEL = "gemini-embedding-001";
 export const PROVIDER_DEFAULT_MODEL = Object.freeze({
   openai: OPENAI_DEFAULT_MODEL,
   gemini: "gemini-3.5-flash",
@@ -125,6 +129,35 @@ export function costMicros(model, usage, provider) {
    test; they are one number now. */
 export const PROVIDER_TIMEOUT_MS = 55000;
 export const PROVIDER_MAX_BYTES = 16 * 1024 * 1024;
+
+/* ══ THE ONLY CLOCK A READER'S REQUEST ANSWERS TO IS THE PLATFORM'S, NOT A NUMBER OF OURS ═══════════
+   MEASURED 2026-11-20 on production: a screenshot attached to «same angle, zoom and place as this»
+   made the vision read run 57 s, and the fixed PROVIDER_TIMEOUT_MS above cut it — 503 provider_unavailable
+   {"The AI provider timed out.", meta.timeout:true, task:"vision_read"}. The model was working; nothing
+   was wrong with it. A cut at a number we chose, with no answer behind it, is a refusal the reader
+   cannot act on, and an agent that thinks for minutes would hit it on every turn.
+   What a request may genuinely run for is the platform's (https://supabase.com/docs/guides/functions/limits,
+   read 2026-11-20):
+     · a response must START within 150 s or the gateway answers 504 — a streamed answer (the page
+       asked to watch: SSE, with a keep-alive comment every 15 s) has started, so it is not bound by this;
+     · the worker lives for 400 s on a paid plan (150 s on the free one). This project is on the Pro plan
+       (docs/SECURITY-ARCHITECTURE.md).
+   Expires if the plan changes or Supabase moves either number — they are one place, here.
+   The margin is what the request still has to do after the provider answers (settle the ledger, write
+   the reply); without it the isolate would be killed mid-settlement, which is an opaque 546 and a
+   charge that is not returned. The budget is shared by every provider request of ONE reader request
+   (a ladder rung, a fallback), so a second attempt gets what is left, never a fresh window. */
+export const EDGE_RESPONSE_START_MS = 150000;
+export const EDGE_WALL_CLOCK_MS = 400000;
+export const EDGE_SETTLE_MARGIN_MS = 30000;
+/* providerBudgetMs(streaming, startedAt, now) → the ms this provider request may still take.
+   `startedAt` is when the reader's request began (absent → the whole window); never below 1 so an
+   exhausted budget fails as a timeout at once instead of waiting on a number that is already spent. */
+export function providerBudgetMs(streaming, startedAt, now) {
+  const window = streaming ? EDGE_WALL_CLOCK_MS : EDGE_RESPONSE_START_MS;
+  const used = (Number(startedAt) > 0 && Number(now) > 0) ? Math.max(0, Number(now) - Number(startedAt)) : 0;
+  return Math.max(1, window - EDGE_SETTLE_MARGIN_MS - used);
+}
 
 /* The hosts a paid key is sent to. The door refuses any other host, so it cannot be used as a
    general fetch; the regression test refuses a bare fetch to any of these outside the door. A new

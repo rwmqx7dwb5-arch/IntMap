@@ -25,9 +25,11 @@
  * ==========================================================================*/
 import {
   entryFromTurn, makeNotebookStore, idbBackend, memoryBackend, toMarkdown, toFile, fromFile,
-  rowFromEntry, entryFromRow, mergeCloud, diffResults, replayCalls, NOTEBOOK_SHOWN,
+  rowFromEntry, entryFromRow, mergeCloud, diffResults, replayCalls, NOTEBOOK_SHOWN, IMPORTED,
 } from './atlas-notebook-store.js';
 import { icon } from './icons.js';
+import { sharedEvidenceGraph, evidenceRefsForTurn, recordNote } from './evidence-graph-record.js';   /* (evidence-graph) the lineage a filed turn rests on */
+import { syncEvidenceGraph, deleteEvidenceGraph } from './evidence-graph-sync.js';
 import { IntMapLang } from './lang-registry.js';
 import './safe-html.js';
 import * as bus from './bus.js';   /* (map-document-unify) the Library is asked for through the declared event */
@@ -149,6 +151,14 @@ export function makeAtlasNotebook() {
       lang: D.lang ? D.lang() : '', resolve: D.resolve, now: Date.now(), followOf });
     if (!e) return told(null, t, 'empty');
     if (!prefs.keep) return told(e, t, 'not-kept');
+    /* (evidence-graph) the turn's answer figures are in the lineage graph (js/atlas-answer-pipeline.js); the entry keeps their ids and
+       becomes a node that rests on them, so a source update can be traced to the notebook entries it touches. A graph failure never fails filing. */
+    try {
+      const eg = sharedEvidenceGraph();
+      const refs = evidenceRefsForTurn(eg.graph, t.turnId);
+      if (refs.length) e.evidenceRefs = refs;
+      recordNote(eg.graph, e);
+    } catch (_) { }
     try { await store.put(e); } catch (err) { syncState = { at: Date.now(), ok: false, msg: L('Could not keep this answer on the device', 'この回答を端末に残せませんでした') + ': ' + String((err && err.message) || err) }; refresh(); return told(e, t, 'not-kept'); }
     if (prefs.sync) syncNow().catch(() => { });
     return told(e, t, 'filed');
@@ -184,12 +194,15 @@ export function makeAtlasNotebook() {
       syncState = failed.length
         ? { at: now, ok: false, msg: L('Synced, except', '同期しました。ただし次は送れませんでした') + ': ' + failed.map((f) => '«' + f.e.title.slice(0, 40) + '» (' + f.why + ')').join(', ') }
         : { at: now, ok: true, msg: L('Synced with your account', 'アカウントと同期しました') + ' · ' + (m.toLocal.length + m.toRemote.length + m.deleteLocal.length) + ' ' + L('entries exchanged', '件をやり取り') };
+      /* (evidence-graph) the lineage rides on the same consent as the notebook: pulled and pushed beside it, never on its own */
+      await syncEvidenceGraph({ db, user }).catch(() => null);
     } catch (err) { syncState = { at: Date.now(), ok: false, msg: L('Sync failed', '同期できませんでした') + ': ' + String((err && err.message) || err) }; }
     refresh(); return syncState;
   }
   async function deleteAccountCopy() {
     const { db, user } = account(); if (!db || !user) return false;
     const { error } = await db.from(TABLE).delete().eq('user_id', user.id);
+    if (!error) await deleteEvidenceGraph({ db, user }).catch(() => false);   /* (evidence-graph) the account copy of the lineage goes with the notebook's */
     if (error) { syncState = { at: Date.now(), ok: false, msg: L('Could not delete the account copy', 'アカウントのコピーを削除できませんでした') + ': ' + error.message }; refresh(); return false; }
     const p = readPrefs(); p.sync = false; writePrefs(p);
     for (const e of await store.list()) if (e.syncedAt) await store.update(e.id, { syncedAt: 0 }, { keepTime: true });
@@ -268,6 +281,22 @@ export function makeAtlasNotebook() {
     const s = body.querySelector('.atl-nb-search');
     if (s) s.addEventListener('input', () => { query = s.value; const pos = s.selectionStart; renderList(body).then(() => { const s2 = body.querySelector('.atl-nb-search'); if (s2) { s2.focus(); try { s2.setSelectionRange(pos, pos); } catch (_) { } } }); });
   }
+  /* (declarative-workspace) A KEPT VIEW IS DRAWN AGAIN, NOT STORED AS MARKUP. The step holds the spec Atlas wrote; the console's
+     dispatch (D.redraw) runs ui.compose on it once more — the same check, the same parts, today's layer names — so a view kept
+     before a change to the parts is drawn with the parts of now, and one that no longer passes the check says why rather than
+     showing stale markup. Only steps this device recorded: an imported entry's view is the sender's, and reaches the page only
+     through a replay the reader asks for (js/atlas-notebook-store.js replayCalls). */
+  async function drawViews(ans, views) {
+    for (const s of views) {
+      let r = null; try { r = await D.redraw(s); } catch (_) { r = null; }
+      if (!ans.isConnected) return;
+      const box = document.createElement('div'); box.className = 'atl-nb-view';
+      /* r.html is the capability's own markup — every string in it passed IntMapSafe.html or the reply's mdMini inside
+         js/atlas-cap-ui.js — the second leaf of this view check:static's output-taint cannot follow into another module */
+      if (r && r.html) box.innerHTML = r.html; else box.textContent = L('This view could not be drawn again.', 'このビューは再表示できませんでした。');
+      ans.appendChild(box);
+    }
+  }
   async function renderDetail(body, id) {
     const e = await store.get(id); if (!e) { view = 'list'; return renderList(body); }
     const all = await store.list();
@@ -291,6 +320,8 @@ export function makeAtlasNotebook() {
       h += '<div class="atl-nb-chain"><span>' + esc(L('This question in the notebook', 'この問いの記録')) + '</span>'
         + chain.map((x) => '<button type="button" class="atl-nb-cl' + (x.id === e.id ? ' on' : '') + '" data-id="' + esc(x.id) + '">' + esc(fmtWhen(x.at)) + '</button>').join('') + '</div>';
     }
+    /* (declarative-workspace) the views Atlas drew in this turn (ui.compose), drawn again below the answer from the spec the step recorded */
+    const views = (e.steps || []).filter((s) => s.cap === 'ui.compose' && s.status === 'completed' && s.from !== IMPORTED && s.args);
     h += '<div class="atl-nb-ans atl-md">' + (e.answer ? '' : '<span class="atl-nb-meta">' + esc(L('Atlas wrote no text for this turn.', 'このターンで Atlas は文章を書いていません。')) + '</span>') + '</div>';
     (e.results || []).forEach((r) => {
       h += '<div class="atl-nb-res">' + icon('columns', { size: 13 }) + ' ' + esc((r.tableLabel || r.table) + ' — ' + r.matched + ' ' + L('matched', '件が該当')
@@ -307,6 +338,7 @@ export function makeAtlasNotebook() {
        the text it is given) — the one leaf of this view check:static's output-taint cannot follow into another module */
     const ans = body.querySelector('.atl-nb-ans');
     if (ans && e.answer) { if (D.mdMini) ans.innerHTML = D.mdMini(e.answer); else ans.textContent = e.answer; }
+    if (ans && views.length && D.redraw) drawViews(ans, views);
     const note = body.querySelector('.atl-nb-note');
     if (note) note.addEventListener('change', () => { store.update(e.id, { note: note.value }).then(() => { if (readPrefs().sync) syncNow().catch(() => { }); }); });
     body.querySelectorAll('.atl-nb-cl').forEach((b) => b.addEventListener('click', () => { current = b.dataset.id; renderDetail(body, current); }));

@@ -45,7 +45,8 @@ export function mobileUI(HOST){
     const satController=document.getElementById('sat-controller');
     const moMountLayers=document.getElementById('mo-mount-layers');
     /* (mobile-shell) the head of the sheet: the place search and the readout are LENT into it on a phone */
-    const mSearch=document.getElementById('map-search'), mSearchSlot=document.getElementById('m-search-slot');
+    const mSearch=document.getElementById('map-search');   /* (mobile-sheet-layout) the place search stays IN THE MAP (a circle at the top left until pressed) — it is no longer lent into the sheet */
+    const ctrlPanel=sidebar.querySelector('.control-panel'), menuCard=sidebar.querySelector('.header-area');   /* the four tabs are lent into the menu card */
     const mReadout=document.getElementById('coord-readout'), mReadoutSlot=document.getElementById('m-readout-slot');
     const mHead=document.getElementById('m-head');
     /* ⚠ (mobile-shell) WHERE THE SHEET'S COVER IS WRITTEN. `--sheet-cover` was written on #map-container only, and
@@ -106,7 +107,7 @@ export function mobileUI(HOST){
        mirrored by the same pass. A selector that still named only the two sheets would have left
        "Globe/Flat/Satellite" in English on a Japanese phone — the #R8 defect this function was written to fix. */
     const PROXY_SEL='#mo-sheet [data-proxy], #tools-sheet [data-proxy], #bm-pop [data-proxy]';
-    function proxy(btn){ const id=btn.getAttribute('data-proxy'); const real=document.getElementById(id); if(!real) return; real.click(); setTimeout(syncControls,0); if(/^btn-tool-/.test(id)) closeSheet(); }
+    function proxy(btn){ const id=btn.getAttribute('data-proxy'); const real=document.getElementById(id); if(!real) return; real.click(); setTimeout(syncControls,0); if(/^btn-(tool-|share$)/.test(id)) closeSheet(); }
     document.querySelectorAll('#mo-sheet [data-proxy], #tools-sheet [data-proxy]').forEach(b=>b.addEventListener('click',()=>proxy(b)));
     /* The words of a real control, without its icon. The old rule dropped the FIRST WORD, which was the emoji
        when icons were emoji; once icons became [data-icon] SVG spans the first word was the label's own
@@ -228,9 +229,9 @@ export function mobileUI(HOST){
            usable for a while, so the first pull-up finds it ready. */
         document.body.classList.add('m-lyr-tiles'); prebuildGrid();
         /* (mobile-shell) the search field and the readout belong to the sheet's head on a phone */
-        moveTo(mSearch,mSearchSlot); moveTo(mReadout,mReadoutSlot);
+        moveTo(mReadout,mReadoutSlot); moveTo(ctrlPanel,menuCard);
       }
-      else{ restoreHome(layerDropdown); restoreHome(satController); restoreHome(mSearch); restoreHome(mReadout); closeSheet(); document.body.classList.remove('sheet-full','sheet-min','sheet-hidden');
+      else{ restoreHome(layerDropdown); restoreHome(satController); restoreHome(mReadout); restoreHome(ctrlPanel); placeClock(false); closeSheet(); document.body.classList.remove('sheet-full','sheet-min','sheet-hidden');
         /* (wave4-ux-mobile) the sheet's home is a phone's: the widget board goes back to the column */
         if(_startMod){ try{ _startMod.unmountStart(); }catch(_){} _startMod=null; _startP=null; }
         /* ⚠ restoreHome(satController) STAYS: a session that was narrow when #R234 shipped may still
@@ -262,7 +263,11 @@ export function mobileUI(HOST){
     function recompute(){
       /* (#R240) the sheet's height has one owner in the stylesheet (`--sheet-h`); this is the only guess */
       const H=sidebar.offsetHeight||Math.round(window.innerHeight*0.86);
-      const headH=(mHead && mHead.offsetParent!==null)? mHead.offsetTop+mHead.offsetHeight : 64;
+      /* (mobile-sheet-layout) the head no longer holds the search field, so the resting `min` stop would be a grip and a coordinates line —
+         with Atlas as the sheet's content its composer (and its one-line note) is part of what rests on screen */
+      let peek=0; try{ const panel=document.getElementById('atlas-panel'), bar=panel&&panel.querySelector('.atl-inbar');
+        if(bar && bar.offsetParent!==null){ for(const el of panel.children){ if(el.offsetParent===null || el.matches('.atl-chat,.atl-ex,.atl-jump,.atl-head')) continue; peek+=el.offsetHeight; } peek+=16; } }catch(_){}   /* the panel's own fixed rows (its line of help, the composer, its note) — not the chat or the examples, which scroll */
+      const headH=((mHead && mHead.offsetParent!==null)? mHead.offsetTop+mHead.offsetHeight : 64)+peek;
       const h=detentHeights({ H, vh:window.innerHeight, headH, safeBottom:safeBottom() });
       if(mapContainer) mapContainer.style.setProperty('--peek-h',h.min+'px');
       return { H, h, ty:(n)=>Math.max(0,H-h[n]) };
@@ -285,11 +290,14 @@ export function mobileUI(HOST){
       if(_startMod){ try{ _startMod.refreshStart(); }catch(_){} return; }
       if(_startP) return;
       _startP=import('./start-home.js').then(({ mountStart, refreshStart, unmountStart })=>{ if(!mq.matches){ _startP=null; return; } _startMod={ refreshStart, unmountStart }; mountStart(sidebar); }).catch(()=>{ _startP=null; }); }
+    let _defaultOpening=false;   /* the default Atlas tab is opening: the sheet rises for a moment, and the home (js/start-home.js) is not what it rises to show */
+    let detentSeq=0;   /* counts every stop chosen: the default Atlas tab puts the sheet back only if nobody has chosen one since it opened */
     function setDetent(name,animate,v0){
+      detentSeq++;
       if(animate===undefined) animate=true;
       name=ALIAS[name]||name; if(!(name in RANK)) name='half';
       const d=recompute(); currentDetent=name;
-      if(RANK[name]>RANK.min) wantStart();
+      if(RANK[name]>RANK.min && !_defaultOpening) wantStart();
       const ty=d.ty(name);
       /* the spring this release rides: the finger's velocity at release is its initial velocity, so a
          hard flick arrives faster than a gentle let-go (the motion UIKit gives a sheet) */
@@ -443,19 +451,44 @@ export function mobileUI(HOST){
       b.addEventListener('click',()=>{ if(!mq.matches) return; const want=detentFor('tab',{current:currentDetent, before:fieldBefore}); fieldBefore=null;
         setTimeout(()=>{ if(want!==currentDetent) setDetent(want); else setDetent(currentDetent,false); },70); });
     });
+    /* (mobile-sheet-layout) the account / Feedback / Settings row is a menu: one button opens it, and a press inside it, a press anywhere
+       else, or Escape closes it */
+    (function(){ const b=document.getElementById('m-menu-btn'), box=sidebar.querySelector('.header-area'); if(!b||!box) return;
+      const set=(on)=>{ document.body.classList.toggle('m-menu-open',on); b.setAttribute('aria-expanded',String(on)); };
+      b.addEventListener('click',(e)=>{ e.stopPropagation(); const on=!document.body.classList.contains('m-menu-open'); if(on && RANK[currentDetent]<RANK.half) setDetent('half'); set(on); });
+      document.addEventListener('click',(e)=>{ if(!document.body.classList.contains('m-menu-open')) return;
+        const inCard=box.contains(e.target);
+        if(inCard && e.target.closest('button')) setTimeout(()=>set(false),0);   /* a tab or a row was chosen */
+        else if(!inCard && !b.contains(e.target)) set(false); });   /* a press anywhere else */
+      document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') set(false); });
+      mq.addEventListener&&mq.addEventListener('change',()=>set(false)); })();
+    /* ══ (mobile-sheet-layout) CHRONOS STANDS BESIDE THE VOICE BUTTON ═══════════════════════════════════════
+       The clock was a 44 px key of the sheet's head. It is now the composer's: left of the microphone, where the reader is already
+       typing or speaking to Atlas. The composer exists only once Atlas has been opened, and only the Atlas tab shows it — so the clock
+       is placed when it appears, and goes back to the head whenever another tab is the sheet's content (Chronos must stay reachable). */
+    const clockEl=document.getElementById('m-clock');
+    function placeClock(on){ if(!clockEl) return;
+      const bar=document.querySelector('#atlas-panel .atl-inbar'), mic=bar&&bar.querySelector('.atl-mic');
+      if(on&&bar&&mic){ if(clockEl.parentNode!==bar) { rememberHome(clockEl); bar.insertBefore(clockEl,mic); } }
+      else if(clockEl.__home && clockEl.parentNode!==clockEl.__home.parentNode) restoreHome(clockEl); }   /* ⚠ only when it is NOT home: moving a node that is already there still mutates the tree, and the observer below would wake itself up for ever */
+    const atlasTabOn=()=>!!document.querySelector('.control-panel .mode-btn.mode-atlas.active');
+    const syncClock=()=>{ if(!mq.matches){ placeClock(false); return; } const was=clockEl&&clockEl.parentNode; placeClock(atlasTabOn());
+      if(clockEl&&clockEl.parentNode!==was && RANK[currentDetent]<=RANK.min) setDetent(currentDetent,false); };   /* the composer arrived (or left): the resting height follows */
+    try{ new MutationObserver(()=>{ syncClock(); }).observe(sidebar,{ subtree:true, childList:true }); }catch(_){}
+    document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(syncClock,120)));
+    /* (mobile-sheet-layout) the sheet's default content is Atlas's chat: the tabs live in the menu now, so a reader who has chosen none gets the
+       one the composer belongs to. Once, after the app is usable, and the sheet stays where it is resting (opening a tab raises it). */
+    /* ⚠ the Atlas tab is a kernel command (`panel.tab`), and the kernel is a lazy chunk: pressed before it has loaded the press is answered
+       `atlas-kernel-not-loaded` and nothing opens (measured: the click at 2.5 s changed nothing). So the default waits for the chunk itself —
+       `IntMapLazy.need('atlasConsole')`, the same warm-up a finger's pointerdown asks for — and clicks once it is there. */
+    const openDefaultTab=()=>{ try{ if(!mq.matches||embedded()||document.querySelector('.control-panel .mode-btn.active')||document.body.classList.contains('m-menu-open')) return;   /* a reader who opened the menu has already chosen */
+      const b=document.querySelector('.control-panel .mode-btn.mode-atlas'); if(!b) return;
+      const was=currentDetent; _defaultOpening=true; b.click();
+      let seen=-1; setTimeout(()=>{ seen=detentSeq; },80);   /* the tab's own raise has happened by now */
+      setTimeout(()=>{ if(seen===detentSeq && RANK[currentDetent]>RANK[was]) setDetent(was); _defaultOpening=false; },400); }catch(_){ _defaultOpening=false; } };
+    setTimeout(()=>{ try{ window.IntMapLazy.need('atlasConsole').then(openDefaultTab,()=>{}); }catch(_){} },2500);
     const si=document.getElementById('search-input'); if(si) si.addEventListener('focus',()=>{ if(mq.matches) go('type'); });
 
-    /* ══ (mobile-shell) THE ONE FIELD: A PLACE, OR A QUESTION FOR ATLAS ═════════════════════════════════════
-       Focusing it raises the sheet to `full` so the candidates (js/search-geocode.js, which offers «Ask Atlas»
-       as the last row on a phone) have the room; leaving it empty puts the sheet back where it was. */
-    (function(){
-      const input=document.getElementById('ms-input'); if(!input) return;
-      input.addEventListener('focus',()=>{ if(!mq.matches) return; if(currentDetent!=='full' && fieldBefore==null) fieldBefore=currentDetent; go('type'); });
-      input.addEventListener('blur',()=>{ if(!mq.matches) return; setTimeout(()=>{ if(fieldBefore==null || document.activeElement===input) return;
-        const res=document.getElementById('ms-results');
-        const showing=res && res.style.display!=='none' && res.childElementCount>0;
-        if(!input.value.trim() && !showing) go('leave'); },180); });
-    })();
 
     /* ══ (mobile-shell-flow) AN ANSWER ON THE MAP BRINGS THE SHEET DOWN ═══════════════════════════════════════
        ① a module that put a card on the map says so (MAP_ANSWER_EVENT — js/search-geocode.js when a place is
@@ -486,7 +519,11 @@ export function mobileUI(HOST){
       const num=(name,dflt)=>{ const v=parseFloat(mapContainer&&mapContainer.style.getPropertyValue(name)); return isFinite(v)?v:dflt; };
       const floats=makeFloatFit({ hosts:[document.body,mapContainer,colEl], sheet:sidebar, credit:document.getElementById('map-credit'),
         active:()=>mq.matches, cover:()=>num('--sheet-cover',0), creditH:()=>num('--m-credit-h',23), frame,
-        floor:()=>{ try{ return parseFloat(getComputedStyle(sidebar).getPropertyValue('--m-legend-top'))||0; }catch(_){ return 0; } } });
+        /* the floor is the legend row's top AND the lower edge of the map's own button column (#m-fab-stack, drawn at every stop but `full`):
+           the resting stop is now taller (it holds the Atlas composer), so a tall panel reaches up far enough to cover the buttons' lower half. */
+        floor:()=>{ try{ const lg=parseFloat(getComputedStyle(sidebar).getPropertyValue('--m-legend-top'))||0;
+          const fs=document.getElementById('m-fab-stack'); const fb=(fs && !document.body.classList.contains('sheet-full') && getComputedStyle(fs).display!=='none')? fs.getBoundingClientRect().bottom+8 : 0;
+          return Math.max(lg,fb); }catch(_){ return 0; } } });
       floatsAsk=floats.ask;
       const rescan=()=>floats.scan();
       window.addEventListener('resize',rescan); try{ mq.addEventListener('change',rescan); }catch(_){} }catch(_){}

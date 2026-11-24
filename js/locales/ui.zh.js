@@ -536,7 +536,7 @@ IntMapLang.define('zh', {
     /* analysis-panels.js */
     'Ask Atlas': "詢問 Atlas",   /* tool-panel.js */
     'Ask Atlas anything…': "想問 Atlas 什麼都可以…",   /* atlas-console.js */
-    'Ask in plain language — Atlas drives the map for you. Try:': "用日常語言提問 — Atlas 會替你操作地圖。試試看：",   /* atlas-console.js */
+    'Ask in plain language — Atlas drives the map for you.': "用日常語言提問 — Atlas 會替你操作地圖。",   /* atlas-console.js */
     'ask me anything about this spot': "想問這個地點的什麼都可以",   /* atlas-console.js */
     'Ask me anything about this spot — I know exactly where it is.': "想問這個地點的什麼都可以 — 我很清楚它在哪裡。",   /* atlas-console.js */
     'Asteroid': "小行星",   /* space.js */
@@ -3589,7 +3589,6 @@ IntMapLang.define('zh', {
   "Secondary enrollment %": "中等教育就學率 %",
   "Sentinel Hub (S2 / Landsat)": "Sentinel Hub (S2 / Landsat)",
   "Sentinel Hub instance ID": "Sentinel Hub 執行個體 ID",
-  "Sentinel-2 cloudless (EOX)": "Sentinel-2 無雲影像（EOX）",
   "Shona": "紹納",
   "Smoking prevalence %": "吸菸率 %",
   "Software": "軟體",

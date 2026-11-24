@@ -12,6 +12,7 @@
  *    fetchSubgraph(DB, ref, {rels, depth, atMs})   the ties within `depth` of `ref`, registered
  *    findPersisted(DB, query)                                a ref / «wikidata:Q…» / exact name → the object (and its neighbours)
  *    nearPersisted(DB, lng, lat, km)                         placed persisted objects within km, registered
+ *    freshness(DB)                                           per feed: when the last ingest run ended `ok`, what its upstreams said about their own date, and whether the latest attempt failed
  *
  *  ⚠ NOTHING HERE DECIDES WHETHER AN ANSWER IS EMPTY. Every door returns `{ ok, error? }`: a database that did not
  *  answer is `unavailable` / `failed`, never an empty graph (the page says «could not read», not «nothing is tied»).
@@ -85,5 +86,45 @@ export function makeWorldGraphStore(deps) {
     return { ok: true, objects: W.register(toObjects({ nodes: rows.map((x) => x.node) })), count: rows.length };
   }
 
-  return { relNames, toObjects, fetchSubgraph, findPersisted, nearPersisted };
+  /** the ties of ONE object with the periods they held, and its own validity — read straight off the rows, NOT registered:
+      js/atlas-fact-comparability.js asks «did this object change inside the span the compared values cover».
+      A database that did not answer THROWS (the caller reports «could not read», never «nothing changed»). */
+  async function tiesOf(DB, ref) {
+    const r = await rpcWorldGraph(DB, 'world_graph_subgraph', { p_ref: String(ref || ''), p_rels: null, p_depth: 1, p_at_ms: null });
+    if (!r.ok) throw new Error(r.error || 'failed');
+    const p = r.data || {}, self = arr(p.nodes).find((n) => n.ref === ref);
+    const ties = arr(p.edges).filter((e) => e.from_ref === ref || e.to_ref === ref).map((e) => ({
+      rel: e.from_ref === ref ? e.rel : geo.inverseRel(e.rel).replace(/^~/, ''), ref: e.from_ref === ref ? e.to_ref : e.from_ref, fromMs: e.from_ms == null ? undefined : e.from_ms, toMs: e.to_ms == null ? undefined : e.to_ms }));
+    return { ties, validity: self ? { fromMs: self.valid_from_ms == null ? undefined : self.valid_from_ms, toMs: self.valid_to_ms == null ? undefined : self.valid_to_ms } : null };
+  }
+
+  /** [{feed, finishedAt, upstream, counts, latestStatus, latestNote}] — a feed that never ran is simply absent; a database that did not answer is `unavailable`/`failed`, never «fresh» */
+  async function freshness(DB) {
+    const r = await rpcWorldGraph(DB, 'world_graph_freshness', {});
+    return r.ok ? { ok: true, feeds: arr(r.data) } : r;
+  }
+
+  /** a uid, a ref or «scheme:value» (a present OR a replaced external id) → the object, and HOW it was reached (uid | ref | present_id | past_id) */
+  async function resolvePersisted(DB, query) {
+    const q = String(query || '').trim(); if (!q) return { ok: true, object: null, via: null };
+    const r = await rpcWorldGraph(DB, 'world_graph_resolve', { p_q: q });
+    if (!r.ok) return r;
+    const rows = arr(r.data); if (!rows.length) return { ok: true, object: null, via: null };
+    const sub = await fetchSubgraph(DB, rows[0].ref, { depth: 1 });
+    if (!sub.ok) return sub;
+    const refs = Array.from(new Set(rows.map((x) => x.ref)));
+    return { ok: true, object: W.find(rows[0].ref) || null, via: rows[0].via, uid: rows[0].uid,
+      matchedId: rows[0].ext_id ? { scheme: rows[0].scheme, id: rows[0].ext_id, release: rows[0].release || null, basis: rows[0].basis || null } : null,
+      ambiguous: refs.length > 1 ? refs : null };
+  }
+
+  /** what changed about one object (its ties and claims too), and which ids it held in which releases */
+  async function historyPersisted(DB, ref, sinceIso) {
+    const r = await rpcWorldGraph(DB, 'world_graph_history', { p_ref: String(ref || ''), p_since: sinceIso || null });
+    if (!r.ok) return r;
+    const h = r.data || {};
+    return { ok: true, ref: h.ref, uid: h.uid || null, identifiers: arr(h.identifiers), changes: arr(h.changes) };
+  }
+
+  return { relNames, toObjects, fetchSubgraph, findPersisted, nearPersisted, tiesOf, freshness, resolvePersisted, historyPersisted };
 }

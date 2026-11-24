@@ -218,6 +218,11 @@ function makeAtlasExecutor(HOST, CTX) {
       API.live().forEach(function (o) {
         if (o.settled) return;
         if (turnId != null && o.turnId === turnId) return;
+        /* a READER's own press (source 'ui') is not something a previous turn owes: it was never part of any answer, and a
+           question typed straight after it must not cancel it (measured: the search row «Ask Atlas» opens the Atlas tab and
+           runs the question in the same tick — the new turn superseded the tab press while the executor chunk was still
+           loading, so the tab never opened). Only the work a turn started is replaced by the next turn. */
+        if (o.source === 'ui') return;
         o.cancelReason = 'superseded';
         try { o.abort.abort(); } catch (_) { }
         n++;

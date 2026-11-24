@@ -56,7 +56,8 @@
   ".compose-modal → 9999",
   ".map-credit → 900",
   ".sidebar → 1200",
-  "#m-search-slot .map-search-results → 30",
+  "body.m-menu-open .sidebar > .header-area → 30",
+  ".map-frame-top > .map-search:is(.has-text:not(.ms-shut),:has(:focus:not(#ms-btn))) → 1600",
   ".search-result-card → 1100",
   ".m-fab-stack → 1150",
   ".m-legend-chip → 1150",
@@ -100,6 +101,8 @@
   ".nvg → 1402",
   "@media (max-width:768px){ .nvg → 1802",
   ".co-popup → 2210",
-  ".pg-panel → 2200"
+  ".pg-panel → 2200",
+  ".bldg-card → 2000",
+  "@media (max-width:640px){ .bldg-card → 1200"
  ]
 }
