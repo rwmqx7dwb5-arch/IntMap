@@ -60,3 +60,7 @@ main が能力を足し、能力表は 268 行になった。`atlas-cap-runs` 98
 `dist.assets` 22068.6→22217.5 kB を `perf-budget --update` で実測まで上げた。main が能力を足して
 能力表が 272 行になった分で、利用者が得る能力そのもの。縮める根拠は無い。main の bot が
 merge 後に再び下げる。
+
+## perf (main 取り込み・273 能力)
+
+main の取り込みで能力が 273 になり、`atlas-cap-runs` が 1010.1 kB、`atlas-console` が 1165.0 kB に増えた（実測）。増分は main が足した能力の登録行で、この PR の追加ではない。天井は `--update` で実測へ。失効条件: main の perf-ceiling が下げた値が正本。

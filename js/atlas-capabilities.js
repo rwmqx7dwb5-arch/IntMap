@@ -413,6 +413,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
       ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","explicit","","","external"],
       ["news.history","newsHistory","pastEvents,eventArchive,facilityTimeline,eventsSince,newsArchive","data","none","","explanation","read","none","","","external"],
+      ["research.longform","longform","writeLongReport,longDocument,writeInChapters","research","none","","explanation","read","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
