@@ -1364,6 +1364,20 @@
     "accuracy"
    ]
   },
+  "data/transit-lu.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
   "data/unga-votes/index.json": {
    "cadence": "P1Y",
    "cadenceBasis": "measured",
@@ -1893,6 +1907,20 @@
   "data/railways/index.json": {
    "cadence": "P1D",
    "cadenceBasis": "stated",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-feed-catalogue.json": {
+   "cadence": "P7D",
+   "cadenceBasis": "measured",
    "asOf": null,
    "describes": {},
    "unstated": [
