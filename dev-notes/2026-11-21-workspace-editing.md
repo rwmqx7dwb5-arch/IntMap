@@ -45,3 +45,18 @@ newsjp: ワークスペースの表をその場で編集できます(値・列�
 
 ## 試験の直列時間(追記)
 CI の `R204 ①b`(試験の総直列時間の天井 5,250 s)が 5,259 s で赤になった。この PR が足した 3 本(`board-compose` 12 s・`declarative-workspace` 5 s・`workspace-editing` 11 s、計 28 s)は、どれも同じ起動(app 1 回と Atlas コンソール)を別々に払っていた。主張は 1 つも減らさず、**1 本の `tests/board-compose.spec.js` に畳んで起動を 1 回にした**(`describe.serial`・共有の 1 ページ。編集の spec は最後に置く: ページをリロードするため)。`declarative-workspace.spec.js` と `workspace-editing.spec.js` は、その 3 つ目と 2 つ目のテストとして同じ内容で残っている。実測は 1 worker・3 回で 17.0 / 18.1 / 16.3 s(畳む前の 3 本合計は 30.0〜32.0 s)、遅いほうを取って `tests/durations.json` に 19 s。天井は動かしていない(5,259 → 5,250)。
+
+## 本番検証と、公開が止まっていた件(追記 2026-11-24)
+
+**公開が止まった原因は本件ではない。** #1366 merge 後、main の CI は「Supabase deploy が 5 連続で失敗しているので公開を保留」と述べて落ちた(最新 run 45340791289)。`db push --dry-run` が、順序が前後した未適用 migration を理由に拒否していた。`supabase db push --include-all --linked` で 6 本を適用し(いずれも表の drop・truncate・列削除を含まない。update/delete は関数本体の中だけ)、適用後の dry-run が「Remote database is up to date」になったことを確かめて deploy を再実行、成功した。
+適用した 6 本: `20261120125000_world_graph_id_history` / `20261120135000_world_graph_identity` / `20261120140000_web_session_journal` / `20261125100000_world_graph_plants_admin_seed` / `20261126100000_news_event_history` / `20261126110000_news_sources_regional_official`。
+
+**本番(bundle `main-B9bBtEgh`、`BUILD 2026-11-24T08:42:47Z-624ee6c`)の実測。** 未ログインで `IntMapBoard` と `IntMapConsole.runDirect` を直接使った。コンソールエラー 0 件。
+- 開く: 合計 45・棒 Beta 30 / Alpha 10 / Gamma 5。Beta の pop を 100 に編集 → 合計 115・棒 Beta 100。数値列に文字は拒否。undo で 45、redo で 115。
+- 列: 追加・改名(pop→people、合計 115 のまま追従)・描画に使われている列の削除は拒否。undo/redo で往復。
+- Atlas の能力 `boardEdit`: セル編集と filter(kind=a で合計 25、解除で 125)。
+- delta: セル 2 件・追加列 note・改名 pop→people・基準行 3。`deltaText()` は Atlas へ渡す文になり、`Ask Atlas to redo` は質問を 1 件だけ送る。
+- 保存 → 再読込 → `restore`: 合計 125・Beta 100・列 name,kind,lng,lat,note,people、delta は元データ基準のまま。Saved workspaces から開き直しても同じ。
+- 地図: `Link to the main map` 後、地図ソース `bd-<id>` の値が編集に追従(Alpha 5 / Beta 1000)。
+
+**測れていないこと(隠さない)。** Atlas が表を**解析して出す段**と、再解析への Atlas の**回答**。本番は未ログインだと回答生成が 401 で、ログインに Google のパスワード入力が要る。**描画そのもの**はプレビューペインの幅が 0 で未確認(地図は GeoJSON ソースの中身で確かめた)。ボードは `tests/board-compose.spec.js` ③ と同じ固定データ。
