@@ -70,7 +70,7 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname, basename } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DUR = join(ROOT, 'tests', 'durations.json');
@@ -279,4 +279,16 @@ export function tierIgnoreRegExps(tier) {
   const hide = allSpecs().filter((f) => !inTier(f, tier));
   const re = reFor(hide);
   return re ? [re] : [];
+}
+
+/** `node scripts/tiers.mjs --sizes` — how many spec files each tier holds RIGHT NOW. This is the one place a
+ *  session reads the number: it is derived from the directory and tests/durations.json, so it cannot be out of
+ *  date, and no document restates it (a restated count is the same line edited by every PR that adds a spec —
+ *  two of them merging together leave it wrong without a conflict to say so; scripts/doc-facts.mjs, `deep-tier-size`). */
+export function tierSizes() {
+  return { core: tierSpecs('core', { fixed: true }).length, deep: tierSpecs('deep').length, all: tierSpecs('all').length };
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href && process.argv.includes('--sizes')) {
+  const s = tierSizes();
+  console.log('core ' + s.core + ' / deep ' + s.deep + ' / whole ' + s.all + ' spec files (derived by scripts/tiers.mjs; core is the fixed part, a PR adds the specs it changed)');
 }

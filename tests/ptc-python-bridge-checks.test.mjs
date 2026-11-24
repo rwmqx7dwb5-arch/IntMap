@@ -135,6 +135,22 @@ test('③ the host hands the worker the port and the client, and what the progra
   h.close();
 });
 
+test('③b a run that carries a bridge is never answered from the result cache: its capability calls must happen again', async () => {
+  /* the cache (js/atlas-result-reuse.js) is keyed on code + input content, and a program that calls capabilities has effects the key cannot see.
+     Serving the second identical run from the first would skip every call the program makes — and its history would be the old one. */
+  let started = 0;
+  const W = bridgedWorker(async (client) => { started++; const r = await client.call('data.value', { country: 'Japan' }); return { result: JSON.stringify({ v: [{ i: 0, t: r.result.text }], nf: 0 }) }; });
+  const D = makeGisDatasets();
+  const C = makeComputeSandbox({ Worker: W, registry: D, publish: false });
+  const h1 = handle(); const a = await C.run({ code: 'result = 1', title: 'ptc' }, { bridge: h1 });
+  const h2 = handle(); const b = await C.run({ code: 'result = 1', title: 'ptc' }, { bridge: h2 });
+  assert.equal(a.ok, true, JSON.stringify(a)); assert.equal(b.ok, true, JSON.stringify(b));
+  assert.notEqual(b.reused, true, 'an identical bridged run is not served from the cache');
+  assert.equal(started, 2, 'the program ran, and called its capability, both times');
+  assert.equal(b.bridge.summary.executed, 1, 'the second run has its own history');
+  h1.close(); h2.close();
+});
+
 test('④ a failed run still reports what the program had done; no handle means no port and no bridge key', async () => {
   const W = bridgedWorker(async (client) => { await client.call('data.value', { country: 'JP' }); throw new Error('later failure'); });
   const C = makeComputeSandbox({ Worker: W, registry: makeGisDatasets(), publish: false });
