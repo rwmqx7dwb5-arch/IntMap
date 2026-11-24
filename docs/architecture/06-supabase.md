@@ -200,7 +200,7 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 - refresh-news: `REFRESH_SECRET`（**必須**。未設定なら全リクエストを拒否）, `NEWS_AI=off`（任意・AI を止めて辞書だけにする kill-switch）
 - news-ingest: `NEWS_INGEST_SECRET`（**必須**）, `NEWS_GEO_AI=off`（任意・AI 地点解析の kill-switch）, `NEWS_GEO_MODEL`（任意）, `NEWS_TRANSLATE=off` / `NEWS_TRANSLATE_MODEL`,
   `NEWS_EMBED=off` / `NEWS_EMBED_MODEL`
-- atlas-embed: `OPENAI_API_KEY`（ai-proxy と同じ鍵）, `ATLAS_EMBED_MODEL`（任意・既定 `text-embedding-3-small`）, `ATLAS_EMBED_GLOBAL_PER_DAY`（任意）
+- atlas-embed: `GEMINI_API_KEY` と `OPENAI_API_KEY`（どちらか一方でよい。両方あれば各提供元のモデル一覧に訊き、埋め込みモデルが届く方を使う）, `ATLAS_EMBED_MODEL`（任意・一覧に在れば優先）, `ATLAS_EMBED_GLOBAL_PER_DAY`（任意）
 - reader-reports: `READER_REPORTS_GLOBAL_PER_DAY`（任意。既定 500）
 - usage-count: `USAGE_COUNT_GLOBAL_PER_DAY`（任意。既定 100,000）
 - Gemini 経路のみ: `GEMINI_SEARCH_ENABLED`（既定 OFF）

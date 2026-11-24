@@ -2707,6 +2707,56 @@ export function makeAtlasCapabilities(HOST, OPTS) {
        that set over and the index states the truth about it. A copy of the CORE names kept here would
        be the second source of truth .agents/rules/no-ad-hoc-hardcoding.md §2.3 forbids, and the one
        that goes stale the first time CORE changes. */
+    /* ══ (atlas-index-purpose) WHAT EACH ID IS FOR — READ OUT OF ITS OWN DOCUMENTATION ══════════════
+       MEASURED (production, 2026-11-24): this index named `research.delegate`, `jobs.start`, `model.run`,
+       `compute.run` and `siting.compare` and said nothing else about them, so Atlas never looked them
+       up: research.delegate was used 0 times and durable jobs 0 times since they shipped. An id is not a
+       reason to open a door.
+       ⚠ DERIVED, NOT LISTED (.agents/rules/no-ad-hoc-hardcoding.md §2.4). The words come from the
+       capability's own catalogue entry (`docs.text([id])`, the text find_capability returns), found the
+       way docBlocks() finds an entry: it opens `{"type":"<one of its spellings>"`. Two shapes carry the
+       purpose, in this order: ① the label written right before the opening — «DELEGATE RESEARCH TO
+       WORKERS (…): {"type":"delegate"…» — and ② the words after the arguments — «{…} = solves the
+       Keplerian trajectory…». A label that opens a block is that block's HEADING (it is about every
+       capability in it, not the first), so it is skipped. A capability whose entry carries neither stays
+       a bare id: nothing is invented for it.
+       Only the first clause is kept — up to the first sentence end, « (», «: » or « — » — and then cut at a
+       word to PURPOSE_MAX_CHARS. The bound is PROMPT SIZE: this text sits in the cached prefix of every
+       turn, 290 ids long, so each character here is paid 290 times. 60 is an ESTIMATE of what names a
+       purpose in English (measured: the labels' clauses run 20-50, the long tail is arguments); raise it
+       only with a re-measurement of the index (tests/atlas-capability-index-purpose-checks.test.mjs).
+       Byte-stable: the same registry and the same catalogue give the same string — no clock, no random. */
+    var PURPOSE_MAX_CHARS = 60;
+    function purposeOf(c) {
+      if (!runtime.docs) return '';
+      var txt = ''; try { txt = String(runtime.docs.text([c.id]) || ''); } catch (_) { return ''; }
+      var spellings = (c.aliases || []).concat([c.id.split('.').pop()]), at = -1;
+      for (var i = 0; i < spellings.length && at < 0; i++) at = txt.indexOf('{"type":"' + spellings[i] + '"');
+      if (at < 0) return '';
+      var raw = '';
+      var lineStart = txt.lastIndexOf('\n', at - 1) + 1;
+      var before = txt.slice(lineStart, at);
+      if (/: $/.test(before) && lineStart > 0) {   /* ① a label, not a block heading (a heading starts the text) */
+        raw = before.slice(0, -2);
+        var sb = /[.。!?！？](?:\s+|(?=[A-Z]))/g, mm, last = 0;   /* the label is the LAST sentence of the line before the opening */
+        while ((mm = sb.exec(raw))) last = mm.index + mm[0].length;
+        raw = raw.slice(last);
+      } else {                                     /* ② the words after this entry's arguments */
+        var next = txt.indexOf('{"type":"', at + 1), eol = txt.indexOf('\n', at);
+        var end = Math.min(next < 0 ? txt.length : next, eol < 0 ? txt.length : eol);
+        var m = /[}\]]\s*(?:=|—|–)\s+/.exec(txt.slice(at, end));
+        if (m) raw = txt.slice(at + m.index + m[0].length, end);
+      }
+      raw = raw.replace(/\s+/g, ' ').trim();
+      var cut = raw.search(/[.。!?！？](\s|$)|\s\(|\s—\s|: |；|;/);
+      if (cut > 0) raw = raw.slice(0, cut);
+      raw = raw.trim();
+      if (raw.length > PURPOSE_MAX_CHARS) {
+        var w = raw.slice(0, PURPOSE_MAX_CHARS + 1).lastIndexOf(' ');
+        raw = raw.slice(0, w > PURPOSE_MAX_CHARS / 2 ? w : PURPOSE_MAX_CHARS).replace(/[\s,、，]+$/, '') + '…';
+      }
+      return raw;
+    }
     API.index = function (directIds) {
       var direct = {};
       [].concat(directIds || []).forEach(function (id) {
@@ -2719,7 +2769,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         if (!c || c.withdrawn) return;
         if (direct[c.id]) { nDirect++; return; }   /* already in the model's hand — see above */
         var k = c.category || 'other';
-        (byCat[k] || (byCat[k] = [])).push(c.id);
+        var p = purposeOf(c);
+        (byCat[k] || (byCat[k] = [])).push(p ? c.id + ' (' + p + ')' : c.id);
       });
       var cats = Object.keys(byCat).sort();
       if (!cats.length) return '';
@@ -2729,7 +2780,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         + (nDirect ? 'The tools listed under [TOOLS] are ALREADY YOURS: call one by name, and never '
           + 'spend a step searching for it. ' : '')
         + 'Nothing outside this list and those tools exists; everything in them does.\n'
-        + cats.map(function (k) { return k + ': ' + byCat[k].join(', ') + '.'; }).join('\n') + '\n';
+        + cats.map(function (k) { return k + ': ' + byCat[k].join('; ') + '.'; }).join('\n') + '\n';
     };
 
     /* ══ THE MACHINE-READABLE AUDIT (§2) ═════════════════════════════════════════════════════════ */

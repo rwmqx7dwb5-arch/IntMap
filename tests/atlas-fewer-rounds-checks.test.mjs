@@ -4,7 +4,7 @@
  *  Measured on production 2026-11-24 (dev-notes/2026-11-24-atlas-fewer-rounds.md): one 226 s turn spent
  *  ~150 s in steps that ran the hosted web search again (the previous step's search was dropped between
  *  steps), one round re-sending a map whose places were looked up under the wrong spelling only, two rounds
- *  moving and looking at a camera the compose had already framed, and two rounds of plan calls alone.
+ *  moving and looking at a camera the compose had already framed, and two rounds of plan calls alone (that one is answered by js/atlas-agent.js, which notes a plan-only reply).
  *  Every check here RUNS the shipping code (no source greps): the OpenAI provider against a scripted fetch,
  *  the protocol-2 normaliser, js/atlas-map-compose.js over a scripted gazetteer, js/atlas-plan.js.
  * ==========================================================================*/
@@ -124,15 +124,4 @@ test('③ the result states the framing it made, so a look is not needed to lear
   const kept = await C.run({ items: [{ name: 'A', country: 'India' }], camera: 'keep' }, { turnId: 't2' });
   assert.equal(kept.exec.view.framed, 'kept');
   assert.equal(fits.length, 1, '"keep" moves nothing');
-});
-
-/* ── ④ the plan tells Atlas what a plan-only reply costs ──────────────────────────────────── */
-test('④ the plan tool and its record say that a reply of plan calls alone is a round with nothing done', async () => {
-  const { makeAtlasPlan, PLAN_TOOL } = await import('../js/atlas-plan.js');
-  const P = makeAtlasPlan({});
-  P.beginTurn();
-  const rec = P.declare({ goal: 'g', steps: ['a', 'b'], current: 1 });
-  assert.equal(rec.ok, true);
-  assert.match(rec.note, /SAME reply/);
-  assert.match(PLAN_TOOL.description, /ONLY plan calls/);
 });

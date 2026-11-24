@@ -15,6 +15,7 @@
 //  ENDPOINT (POST, JSON, login required):
 //    { op:"search", catalog:<sha256 hex>, q:<query> }
 //        → { state:"ok", model, catalog, sims:{ <capability id>: cosine similarity } }
+//          (`model` is the stored key the comparison was made under — route.js storeKey)
 //        → { state:"catalog_unknown" }   — nothing is stored under that catalogue yet; the page
 //                                          sends it once with op:"seed" (the query is NOT embedded,
 //                                          so an unknown catalogue costs nothing upstream)
@@ -28,13 +29,22 @@
 //  key and is embedded afresh, and a stale one is swept (migration). The QUERY is embedded on every
 //  call and never stored — neither the text nor its vector.
 //
-//  PRIVACY. What reaches OpenAI from here is the find_capability query Atlas writes — a phrase
-//  derived from the reader's request, which ai-proxy already sends to OpenAI whole. No new
-//  recipient; the privacy page says what is sent (privacy.html).
+//  WHICH MODEL. Decided by route.js before anything is looked up, from the provider keys this project
+//  holds and the providers' own model lists — and the ONE route a request decides is used for the
+//  stored-size question, the embedding and the comparison, so vectors of two models are never
+//  compared (the `model` column is part of the key). MEASURED 2026-11-20: the OpenAI key reaches no
+//  embedding model, so with GEMINI_API_KEY set the route is Google's gemini-embedding family.
+//
+//  PRIVACY. What reaches the embedding provider from here is the find_capability query Atlas writes —
+//  a phrase derived from the reader's request — and IntMap's own capability documentation. The
+//  provider is OpenAI or Google, whichever route.js finds can embed (see WHICH MODEL); the privacy
+//  page says what is sent (privacy.html).
 //
 //  Deploy:   supabase functions deploy atlas-embed --project-ref vpekfwdpurzejrrmacac --use-api
-//  Secrets:  OPENAI_API_KEY (the same secret ai-proxy and news-ingest read)
-//            ATLAS_EMBED_MODEL (optional; default text-embedding-3-small)
+//  Secrets:  OPENAI_API_KEY and/or GEMINI_API_KEY (the same secrets ai-proxy and news-ingest read; at
+//            least one). With both, the providers' model lists decide (route.js).
+//            ATLAS_EMBED_MODEL (optional; a PREFERENCE — used where a provider's list names it, or
+//            with a single key, as that key's model)
 //            ATLAS_EMBED_GLOBAL_PER_DAY (optional override of the project-wide ceiling)
 //            ATLAS_EMBED_PER_USER_PER_DAY (optional override of one account's share of it)
 //  (SUPABASE_URL and the project keys are injected by the platform — read through _shared/supabase-keys.js.)
@@ -47,11 +57,11 @@ import { makeLimiter, restRpcClient, callerKey, callerKeySecret, READERS_PER_ADD
 import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js";
 /* (edge-spend-and-models) the project-wide ceiling and the one door to the provider, shared with
    every other function that holds a provider key */
-import { spendCeiling, providerFetch, ProviderFail } from "../_shared/ai-provider.js";
-import { parseSearch, parseSeed, batches, vectorLiteral, EMBED_DIM, MAX_BODY_BYTES } from "./core.js";
+import { spendCeiling, providerFetch } from "../_shared/ai-provider.js";
+import { parseSearch, parseSeed, batches, EMBED_DIM, MAX_BODY_BYTES } from "./core.js";
+import { makeRouter } from "./route.js";
 
 const CORS = { ...corsFor(), "Access-Control-Allow-Methods": "POST, OPTIONS" };
-const MODEL_DEFAULT = "text-embedding-3-small";
 
 /* ══ THE SPEND CEILING (rate-limit.js is the mechanism; these are this function's numbers) ═══════
    no-ad-hoc-hardcoding §4 — observation, expiry, canonical place (THIS FILE):
@@ -59,10 +69,13 @@ const MODEL_DEFAULT = "text-embedding-3-small";
      eight (#R802, the turn that ran nothing), and a turn takes tens of seconds at the least, so 30
      a minute is several such turns at once from one account. Expires if the tool surface starts
      searching more than once per model step.
-   · GLOBAL_PER_DAY = 20000 units, where a search costs 1 and a seed costs one unit per document.
-     Cost observation: text-embedding-3-small is $0.02 per million tokens (OpenAI pricing, read
-     2026-09-25); a search phrase is tens of tokens and a full catalogue is ~60,000 tokens, so the
-     whole day's ceiling is well under one US cent. The ceiling bounds a runaway loop, not the
+   · GLOBAL_PER_DAY = 20000 units, where a search costs 1, a seed costs one unit per document, and a
+     model list (route.js — asked once per isolate, and only when two provider keys are set or the
+     single key's model was refused) costs 1. Cost observation: text-embedding-3-small is $0.02 per
+     million tokens (OpenAI pricing, read 2026-09-25) and gemini-embedding-001 $0.15 (Google pricing,
+     read 2026-11); a search phrase is tens of tokens and a full catalogue ~60,000 tokens, so a whole
+     day's ceiling spent on seeds (≈138 catalogues of 145 documents) is about US$1.2 at Gemini's
+     price, and spent on searches a fraction of a cent. The ceiling bounds a runaway loop, not the
      invoice of honest use. Overridable via ATLAS_EMBED_GLOBAL_PER_DAY without a deploy.
    · SEED_PER_USER_PER_HOUR = 4. A catalogue changes when the page changes (a release, the UI
      language, the module set), not per search; four an hour is every language switch a reader is
@@ -127,44 +140,31 @@ async function callerId(req, url, anon) {
   } catch (_) { return null; }
 }
 
-/* One call to the embeddings endpoint. Returns { vectors } or { state } — a state the page may be
-   told, never the upstream's words. A 403/404 is reported as `model_unavailable` because that is
-   what it has meant here before: Architecture.md records that this project's key could not reach an
-   embedding model when news-ingest first asked (2026-08-24). The fix is an operator's
-   (ATLAS_EMBED_MODEL, or a key that can), and the page must not be told «no match» for it. */
-/* (edge-spend-and-models) Through the shared door, with the RECEIPT the ceiling handed back when the
-   whole operation was charged (a seed is charged for every document before its first batch, so its
-   batches carry that one receipt rather than each asking again). */
-async function embed(key, model, inputs, receipt) {
-  let r;
-  try {
-    r = await providerFetch("https://api.openai.com/v1/embeddings", {
-      method: "POST",
-      headers: { authorization: "Bearer " + key, "content-type": "application/json" },
-      body: JSON.stringify({ model, input: inputs }),
-    }, { receipt, timeoutMs: EMBED_TIMEOUT_MS });
-  } catch (e) {
-    if (e instanceof ProviderFail && e.code === "no_ceiling") return { state: "limiter_unavailable" };
-    return { state: "upstream_unreachable" };
+/* How long a model list may take. The page waits SEMANTIC_TIMEOUT_MS = 8 s for a whole search
+   (js/atlas-capabilities.js), and the lists are asked in parallel before the first lookup of a cold
+   isolate; a list slower than 5 s would make that search late whatever came after it, and the page
+   then answers from spellings and says so. ESTIMATE (a model list is a static answer, normally well
+   under a second); expires with a recorded production timeout. */
+const LIST_TIMEOUT_MS = 5000;
+
+/* The route, per isolate (route.js). Rebuilt only if what it was built from changes (a secret set
+   anew restarts the isolates anyway; this keeps a stale route from outliving a changed key if not). */
+let ROUTER = null, ROUTER_ID = "";
+function routerFor(keys, prefer) {
+  const id = JSON.stringify([keys.openai.length, keys.openai.slice(-6), keys.gemini.length, keys.gemini.slice(-6), prefer]);
+  if (!ROUTER || ROUTER_ID !== id) {
+    ROUTER = makeRouter({
+      keys, prefer,
+      listDoor: (u, init) => providerFetch(u, init, { ceiling: CEILING, timeoutMs: LIST_TIMEOUT_MS }),
+    });
+    ROUTER_ID = id;
   }
-  if (!r.ok) {
-    try { await r.body?.cancel(); } catch (_) { /* */ }
-    if (r.status === 403 || r.status === 404) return { state: "model_unavailable" };
-    if (r.status === 429) return { state: "upstream_rate_limit" };
-    return { state: "upstream_error" };
-  }
-  let j = null;
-  try { j = await r.json(); } catch (_) { return { state: "upstream_error" }; }
-  const data = Array.isArray(j && j.data) ? j.data.slice().sort((a, b) => (a.index || 0) - (b.index || 0)) : [];
-  if (data.length !== inputs.length) return { state: "upstream_error" };
-  const out = [];
-  for (const d of data) {
-    const lit = vectorLiteral(d && d.embedding);
-    if (!lit) return { state: "bad_dimensions" };
-    out.push(lit);
-  }
-  return { vectors: out };
+  return ROUTER;
 }
+/* (edge-spend-and-models) An operation's embeddings go through the shared door with the RECEIPT the
+   ceiling handed back when the whole operation was charged (a seed is charged for every document
+   before its first batch, so its batches carry that one receipt rather than each asking again). */
+const receiptDoor = (receipt) => (u, init) => providerFetch(u, init, { receipt, timeoutMs: EMBED_TIMEOUT_MS });
 
 Deno.serve(async (req) => {
   try {
@@ -181,9 +181,9 @@ Deno.serve(async (req) => {
        callerKey): the account, because the Auth server has just verified it */
     const who = await callerKey(req, { uid, secret: callerKeySecret((k) => Deno.env.get(k) || "") });
 
-    const key = Deno.env.get("OPENAI_API_KEY") || "";
-    if (!key) return fail("unconfigured", 503);
-    const model = Deno.env.get("ATLAS_EMBED_MODEL") || MODEL_DEFAULT;
+    const keys = { openai: Deno.env.get("OPENAI_API_KEY") || "", gemini: Deno.env.get("GEMINI_API_KEY") || "" };
+    if (!keys.openai && !keys.gemini) return fail("unconfigured", 503);
+    const router = routerFor(keys, Deno.env.get("ATLAS_EMBED_MODEL") || "");
 
     let body = null;
     try {
@@ -207,11 +207,36 @@ Deno.serve(async (req) => {
       return day.ok ? { receipt: day.receipt } : { code: day.code };
     };
     const refusal = (code) => fail(code, code === "limiter_unavailable" ? 503 : 429);
-    const stored = async (catalog) => {
+    /* The route this request works under, or the answer to give instead. */
+    const routeOrRefusal = async () => {
+      const r = await router.route();
+      if (r.route) return { route: r.route, alternatives: r.alternatives || [] };
+      const c = r.code;
+      if (c === "unconfigured") return { res: fail(c, 503) };
+      if (c === "model_unavailable") return { res: fail(c, 502) };
+      if (c === "spend_ceiling" || c === "share_ceiling" || c === "limiter_unavailable") return { res: refusal(c) };
+      if (c === "no_ceiling") return { res: refusal("limiter_unavailable") };
+      return { res: fail("upstream_unreachable", 502) };
+    };
+    const stored = async (catalog, model) => {
       const r = await db.rpc("atlas_capability_catalog_size", { p_catalog: catalog, p_model: model });
       if (r.error) return -1;
       const n = Array.isArray(r.data) ? r.data[0] : r.data;
       return Number.isFinite(+n) ? +n : -1;
+    };
+    /* The route the catalogue is stored under: the decided route if it holds the catalogue, else the
+       first alternative that does (another isolate, refused by the decided model, stored it there —
+       a fresh isolate cannot know that model is refused until it embeds, and an unknown catalogue
+       is answered BEFORE anything is embedded). `whole` > 0 asks for a complete catalogue (a seed);
+       otherwise any stored row counts (a search — a catalogue is stored in one statement). Returns
+       { rt, n } with n = -1 when the store did not answer, 0 when no route holds it. */
+    const storedUnder = async (catalog, ro, whole) => {
+      for (const rt of [ro.route, ...ro.alternatives]) {
+        const n = await stored(catalog, rt.key);
+        if (n < 0) return { rt: ro.route, n: -1 };
+        if (whole > 0 ? n === whole : n > 0) return { rt, n };
+      }
+      return { rt: ro.route, n: 0 };
     };
 
     const op = String((body && body.op) || "");
@@ -224,48 +249,81 @@ Deno.serve(async (req) => {
       });
       if (u.source !== "db") return fail("limiter_unavailable", 503);
       if (!u.allowed) return fail("rate_limit", 429);
-      const n = await stored(p.catalog);
-      if (n < 0) return fail("store_unavailable", 503);
-      if (n === 0) return json({ state: "catalog_unknown", model });
-      const c = await ceiling(1);
-      if (c.code) return refusal(c.code);
-      const e = await embed(key, model, [p.q], c.receipt);
-      if (!e.vectors) return fail(e.state, 502);
-      const r = await db.rpc("atlas_capability_similarity", { p_catalog: p.catalog, p_model: model, p_query: e.vectors[0] });
-      if (r.error || !Array.isArray(r.data)) return fail("store_unavailable", 503);
-      const sims = {};
-      for (const row of r.data) {
-        const s = Number(row && row.similarity);
-        if (row && typeof row.capability_id === "string" && Number.isFinite(s)) sims[row.capability_id] = s;
+      /* ⚠ ONE ROUTE FOR THE WHOLE COMPARISON: the size, the query's vector and the similarity are all
+         asked under `rt.key`. A refused model is retried ONCE under the route decided without it —
+         and that route's catalogue is looked up again, never compared with the first one's. */
+      let receipt = null;
+      for (let attempt = 0; ; attempt++) {
+        const ro = await routeOrRefusal();
+        if (ro.res) return ro.res;
+        const { rt, n } = await storedUnder(p.catalog, ro, 0);
+        if (n < 0) return fail("store_unavailable", 503);
+        if (n === 0) return json({ state: "catalog_unknown", model: rt.key });
+        if (!receipt) {
+          const c = await ceiling(1);
+          if (c.code) return refusal(c.code);
+          receipt = c.receipt;
+        }
+        const e = await router.embed(rt, [p.q], "query", receiptDoor(receipt));
+        if (!e.vectors) {
+          if (e.routeFailed) router.failed(rt);
+          if (e.routeFailed && attempt === 0) continue;
+          return fail(e.state, 502);
+        }
+        const r = await db.rpc("atlas_capability_similarity", { p_catalog: p.catalog, p_model: rt.key, p_query: e.vectors[0] });
+        if (r.error || !Array.isArray(r.data)) return fail("store_unavailable", 503);
+        const sims = {};
+        for (const row of r.data) {
+          const s = Number(row && row.similarity);
+          if (row && typeof row.capability_id === "string" && Number.isFinite(s)) sims[row.capability_id] = s;
+        }
+        return json({ state: "ok", model: rt.key, catalog: p.catalog, dim: EMBED_DIM, sims });
       }
-      return json({ state: "ok", model, catalog: p.catalog, dim: EMBED_DIM, sims });
     }
 
     if (op === "seed") {
       const p = await parseSeed(body);
       if (!p.ok) return fail(p.code, 400);
-      const have = await stored(p.catalog);
-      if (have < 0) return fail("store_unavailable", 503);
-      /* ⚠ IDEMPOTENT BEFORE IT IS CHARGED. Two tabs that find the same catalogue unknown both send
-         it; the second must be told «stored», not billed and not refused. */
-      if (have === p.entries.length) return json({ state: "ok", stored: have, already: true, model });
-      const s = await limiter.take("atlas-embed:seed", who, {
-        capacity: SEED_PER_USER_PER_HOUR, refillPerSec: SEED_PER_USER_PER_HOUR / 3600, cost: 1, onUnavailable: "deny",
-      });
-      if (s.source !== "db") return fail("limiter_unavailable", 503);
-      if (!s.allowed) return fail("rate_limit", 429);
-      const c = await ceiling(p.entries.length);
-      if (c.code) return refusal(c.code);
-      const rows = [];
-      for (const chunk of batches(p.entries)) {
-        const e = await embed(key, model, chunk.map((x) => x.text), c.receipt);
-        if (!e.vectors) return fail(e.state, 502);
-        chunk.forEach((x, i) => rows.push({ id: x.id, e: e.vectors[i] }));
+      /* ⚠ EVERY DOCUMENT OF ONE CATALOGUE BY ONE ROUTE, stored under that route's key. A model refused
+         part-way drops every vector already made by it, and the whole catalogue is embedded again
+         under the route decided without it — never a catalogue of mixed models. */
+      let receipt = null;
+      for (let attempt = 0; ; attempt++) {
+        const ro = await routeOrRefusal();
+        if (ro.res) return ro.res;
+        const found = await storedUnder(p.catalog, ro, p.entries.length);
+        if (found.n < 0) return fail("store_unavailable", 503);
+        /* ⚠ IDEMPOTENT BEFORE IT IS CHARGED. Two tabs that find the same catalogue unknown both send
+           it; the second must be told «stored», not billed and not refused. */
+        if (found.n === p.entries.length) return json({ state: "ok", stored: found.n, already: true, model: found.rt.key });
+        const rt = ro.route;
+        if (!receipt) {
+          const s = await limiter.take("atlas-embed:seed", who, {
+            capacity: SEED_PER_USER_PER_HOUR, refillPerSec: SEED_PER_USER_PER_HOUR / 3600, cost: 1, onUnavailable: "deny",
+          });
+          if (s.source !== "db") return fail("limiter_unavailable", 503);
+          if (!s.allowed) return fail("rate_limit", 429);
+          const c = await ceiling(p.entries.length);
+          if (c.code) return refusal(c.code);
+          receipt = c.receipt;
+        }
+        const rows = [];
+        let refused = null;
+        for (const chunk of batches(p.entries, rt.maxInputs)) {
+          const e = await router.embed(rt, chunk.map((x) => x.text), "document", receiptDoor(receipt));
+          if (!e.vectors) { refused = e; break; }
+          chunk.forEach((x, i) => rows.push({ id: x.id, e: e.vectors[i] }));
+        }
+        if (refused) {
+          if (refused.routeFailed) router.failed(rt);
+          if (refused.routeFailed && attempt === 0) continue;
+          return fail(refused.state, 502);
+        }
+        const r = await db.rpc("atlas_capability_seed", { p_catalog: p.catalog, p_model: rt.key, p: rows });
+        const n = Array.isArray(r.data) ? r.data[0] : r.data;
+        if (r.error || !Number.isFinite(+n)) return fail("store_unavailable", 503);
+        return json({ state: "ok", stored: +n, model: rt.key });
       }
-      const r = await db.rpc("atlas_capability_seed", { p_catalog: p.catalog, p_model: model, p: rows });
-      const n = Array.isArray(r.data) ? r.data[0] : r.data;
-      if (r.error || !Number.isFinite(+n)) return fail("store_unavailable", 503);
-      return json({ state: "ok", stored: +n, model });
     }
 
     return fail("bad_op", 400);
