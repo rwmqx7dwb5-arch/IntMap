@@ -417,6 +417,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["board.edit","boardEdit","editBoard,editTable,editWorkspace,changeCell,setCell","panel","none","panel.board","panel,explanation","session","none","","board"],
       ["board.delta","boardDelta","boardChanges,whatDidIChange,workspaceDiff","panel","none","","explanation","read","none","","board"],
       ["ui.compose","dashboard","uiCompose","ui","none","","panel,explanation","session","none","",""],
+      ["model.find","modelDiscover","findModel,specialistModels,whichModel,listModels","data","none","","explanation","read","none","","",""],
+      ["model.run","modelRun","runModel,specialistModel,floodForecast,riverForecast,airQualityForecast","data","none","map.object","explanation","session","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
