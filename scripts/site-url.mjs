@@ -34,6 +34,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { CLIENT_METADATA_FILE, clientMetadataDocument } from '../js/atlas-mcp-oauth.js';
 import {
   ADMIN_URL, CUSTOM_DOMAIN, PAGES_URL, SITE_BASE_PATH, SITE_HOST, SITE_ORIGIN, SITE_URL, siteUrl,
 } from '../supabase/functions/_shared/site-origin.js';
@@ -180,6 +181,9 @@ export function siteUrlPlugin(site = { SITE_URL, CUSTOM_DOMAIN }) {   // the arg
     },
     generateBundle() {
       if (site.CUSTOM_DOMAIN) this.emitFile({ type: 'asset', fileName: 'CNAME', source: site.CUSTOM_DOMAIN + '\n' });
+      /* (mcp-oauth) the Client ID Metadata Document MCP servers read to learn who IntMap is — derived here so the address is written only in site-origin.js */
+      const base = site.SITE_URL.replace(/\/+$/, '') + '/';
+      this.emitFile({ type: 'asset', fileName: CLIENT_METADATA_FILE, source: JSON.stringify(clientMetadataDocument(base + CLIENT_METADATA_FILE, base + 'mcp-oauth-callback.html'), null, 2) + '\n' });
     },
   };
 }
