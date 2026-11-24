@@ -30,8 +30,9 @@ function scripted(replies) {
 test('atlas-completion ①: a "map" declared and never drawn ends output_unmet / partial, with the output listed', async () => {
   const model = scripted([{ text: 'ここに地図で示しました。', toolCalls: [], answerMode: 'map' }]);
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: true }), messages: USER });
-  assert.equal(model.count(), 1 + AGENT.LIMITS.maxOutputGate, 'the bounces are unchanged — the ceiling is not the fix');
-  assert.equal(out.trace.outputGate, AGENT.LIMITS.maxOutputGate);
+  /* (atlas-unbounded-execution) the bounce ends on no progress, not a count: the same reply again is accepted as it stands */
+  assert.equal(model.count(), 2, 'handed back once, then the identical reply is the answer as it stands');
+  assert.equal(out.trace.outputGate, 1);
   assert.equal(out.stopped, 'output_unmet', 'not "answered"');
   assert.equal(out.completion, 'partial');
   assert.deepEqual(out.unmet, [{ kind: 'output', mode: 'map', code: 'map_not_drawn' }]);
@@ -106,12 +107,13 @@ test('atlas-completion ④: readReply keeps how the provider said the reply ende
 test('atlas-completion ⑤: a forced last hand-back that throws is recorded in trace.finalError, not swallowed', async () => {
   /* the tool ran, Atlas wrote nothing, so the loop asks once more — and that call fails */
   const err = Object.assign(new Error('provider refused'), { code: 'provider_blocked', status: 400, retryable: false });
+  /* (atlas-unbounded-execution) the hand-back now follows a turn that FINISHED with nothing written (a stopped turn gets
+     none): a call, then the empty reply twice — the gate bounces once, the identical reply is accepted, and the loop asks */
   const model = scripted([
     { text: '', toolCalls: [{ id: 'a', name: 'zzz', arguments: { x: 'p' } }] },
-    { text: '', toolCalls: [{ id: 'b', name: 'zzz', arguments: { x: 'q' } }] },
-    (req) => { if (req.final) throw err; return { text: '', toolCalls: [{ id: 'c' + Math.random(), name: 'zzz', arguments: { x: String(Math.random()) } }] }; },
+    (req) => { if (req.final) throw err; return { text: '', toolCalls: [] }; },
   ]);
-  const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: true }), messages: USER, limits: { maxSteps: 3 } });
+  const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: true }), messages: USER });
   assert.deepEqual(out.trace.finalError, { code: 'provider_blocked', status: 400, retryable: false, message: 'provider refused' });
   assert.equal(out.completion, 'none', 'nothing was written for the reader');
 });

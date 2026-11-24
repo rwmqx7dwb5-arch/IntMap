@@ -214,15 +214,15 @@ test('atlas-legacy-protocol-removal ③: with function calls beside them, those 
 test('atlas-legacy-protocol-removal ④: a model that keeps writing the old shape leaves the reader an answer, not silence', async () => {
   const { TOOLS, tools, ran } = surface();
   const stuck = protocol2({ turn: 'continuing', final_text: '', tool_calls: [{ name: 'map_view', arguments_json: '{"place":"Rome"}' }] }, []);
-  const model = scripted([stuck, stuck, stuck, (req) => {
+  const model = scripted([stuck, stuck, (req) => {
     assert.equal(req.final, true, 'the last call is the one that writes the answer');
     return protocol2({ turn: 'final', final_text: 'I could not move the map this time.' }, []);
   }]);
   const out = await AGENT.runTurn({ model, tools, execute: TOOLS.makeExecute(tools, AGENT), messages: [{ role: 'user', content: 'q' }] });
   assert.equal(ran.length, 0, 'nothing written into the message ran');
-  assert.equal(out.trace.outputGate, AGENT.LIMITS.maxOutputGate, 'handed back until the gate\'s own budget ran out — no new limit');
+  assert.equal(out.trace.outputGate, 1, 'handed back once; the identical reply again is no progress (atlas-unbounded-execution) — no new limit');
   assert.equal(out.text, 'I could not move the map this time.', 'the reader gets words');
-  assert.equal(out.trace.callsInText.length, AGENT.LIMITS.maxOutputGate + 1, 'every step that wrote calls is on the record');
+  assert.equal(out.trace.callsInText.length, 2, 'every step that wrote calls is on the record');
   /* the raw old shape, unparseable, still never reaches the reader as prose */
   assert.equal(AGENT.readReply(null, '{"turn":"continuing","tool_calls":[{"name":"map_view"', JSON.parse).text, '');
 });
@@ -312,6 +312,6 @@ test('atlas-legacy-protocol-removal ⑥: SYS() has one form, and it tells the mo
      the removal and the same bytes after it (the retired form was 25,262) — recorded, not asserted as a
      number: the persona and the index move for their own reasons, and what this check holds is the shape */
   /* the written schema carries no calls, and its words name function calls, not a field that is gone */
-  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties), ['turn', 'answer_mode', 'final_text']);
+  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties), ['turn', 'answer_mode', 'next_effort', 'next_output_tokens', 'final_text']);
   assert.doesNotMatch(JSON.stringify(AGENT.FINAL_SCHEMA), /tool_calls/);
 });

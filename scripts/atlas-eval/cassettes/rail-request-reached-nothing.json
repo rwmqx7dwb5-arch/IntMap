@@ -116,6 +116,14 @@
       ]
     },
     {
+      "text": "",
+      "toolCalls": []
+    },
+    {
+      "text": "",
+      "toolCalls": []
+    },
+    {
       "final": true,
       "text": "",
       "toolCalls": []
@@ -412,7 +420,7 @@
     }
   },
   "golden": {
-    "stopped": "step_budget",
+    "stopped": "no_answer",
     "calls": [
       {
         "name": "find_capability",

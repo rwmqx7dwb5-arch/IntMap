@@ -4982,8 +4982,8 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   proxy の該当範囲を esbuild で型を外して評価）も変わらない**こと。値は `check` で今までどおり検証される
   こと。昇格は鍵を動かさず、固定の道具の変更は動かすこと。`maxOfferedTools` が proxy の `MAX_FN_TOOLS` と
   等しく、超える分は昇格せず `run_capability` の道が名指されること。
-- ⑤ **ループのモデル呼び出し（`maxSteps` ＋強制の回答 1）が、proxy の `TURN_MAX_CALLS` の下に余白を残す**こと、
-  およびその数をエージェントが書き写していないこと。
+- ⑤ **proxy が 1 ターンの呼び出し回数を数えていない**こと（`openTurn` に `maxCalls: null`。ターンは費用で止まる）、
+  およびエージェントがサーバの数を書き写していないこと。
 
 ### `tests/atlas-legacy-protocol-removal-checks.test.mjs` (atlas-legacy-protocol-removal)
 

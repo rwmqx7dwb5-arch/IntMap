@@ -107,7 +107,7 @@ export function resolveArgs(args, inputs) {
    result says so in `gaps` rather than being cut mid-structure. */
 const DATA_MAX_CHARS = 20000;
 
-/* makeDelegation({ executor, log?, now?, parent? }) — one delegation: the tasks one Atlas call hands on.
+/* makeDelegation({ executor, log?, now?, parent?, maxConcurrent? }) — one delegation: the tasks one Atlas call hands on.
    → { start(contract) → handle, run(contracts) → Promise<result[]>, cancelAll(), log, workspace, spendUsd() } */
 export function makeDelegation(o) {
   const opt = o || {};
@@ -130,6 +130,27 @@ export function makeDelegation(o) {
   });
   const keys = new Map();       // id → contractKey, for snapshot()
   let n = 0;
+  /* THE QUEUE. `maxConcurrent` (a whole number the server states, meta.delegationPolicy.maxConcurrent) is how many WORKERS may be in flight
+     at once; the rest wait their turn, in the order they became ready. It bounds concurrency, never the total: every task still runs.
+     Absent / null → every task starts at once. A capability task runs no model and is not queued. A task waiting for its inputs holds no
+     slot (the slot is taken only when it is about to run), so a dependency can never starve the task it waits for. */
+  const maxConcurrent = Number.isInteger(opt.maxConcurrent) && opt.maxConcurrent >= 1 ? opt.maxConcurrent : null;
+  let inFlight = 0;
+  const waiters = [];
+  const acquire = (signal) => {
+    if (maxConcurrent === null || inFlight < maxConcurrent) { inFlight++; return Promise.resolve(true); }
+    return new Promise((resolve) => {
+      const w = { resolve, off: null };
+      w.off = () => { const i = waiters.indexOf(w); if (i >= 0) waiters.splice(i, 1); resolve(false); };
+      signal.addEventListener('abort', w.off, { once: true });
+      waiters.push(w);
+    });
+  };
+  const release = () => {
+    const w = waiters.shift();
+    if (w) w.resolve(true);   /* the slot passes straight to the next in line; inFlight is unchanged */
+    else inFlight--;
+  };
 
   /* every append goes through here so a watcher sees the event the moment it is written; a watcher that throws is
      the watcher's problem and never the work's */
@@ -242,6 +263,11 @@ export function makeDelegation(o) {
         if (!ra.ok) return finish(id, t0, { state: 'failed', code: 'input_ref_unresolved', summary: ra.why });
         runArgs = ra.args;
       }
+      const queued = c.kind !== 'capability';
+      if (queued) {
+        const got = await acquire(controller.signal);
+        if (!got) return finish(id, t0, { state: 'cancelled' });
+      }
       /* THE LEASE: who holds the right to run this task. One executor holds every lease here; the event is
          what a second executor (a server, a second tab) would read before running a task someone else holds. */
       entry.holder = String(executor.id || 'executor');
@@ -255,6 +281,8 @@ export function makeDelegation(o) {
       } catch (e) {
         if (controller.signal.aborted || (e && e.name === 'AbortError')) return finish(id, t0, { state: 'cancelled' });
         return finish(id, t0, { state: 'failed', code: 'executor_threw', summary: s(e && e.message, 400) });
+      } finally {
+        if (queued) release();
       }
     })();
     settleForward(id, entry.promise);
@@ -432,31 +460,38 @@ export function toolCallOf(data) {
    reported with the reason it may not be called. It is the name Atlas already holds the same search under, and no
    capability id has that spelling, so the grant cannot be confused with a capability. */
 const FIND = 'find_capability';
-function toolSection(allowed, describe, steps, remaining, canFind) {
+function toolSection(allowed, describe, steps, remaining, canFind) {   /* remaining: Infinity = the server states no count */
   let p = '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + (allowed.length ? allowed.join(', ') : '(none yet)') + '.';
   allowed.forEach((id) => { let d = ''; try { d = typeof describe === 'function' ? s(describe(id), 1200) : ''; } catch (_) { d = ''; } if (d) p += '\n  ' + id + ' arguments: ' + d; });
   p += '\nTo call one, return ONLY {"call":{"capability":"<id>","args":{...}}} instead of the findings. Its result comes back in your next request.';
   if (canFind) p += '\nTo look for a capability you do not have, return ONLY {"call":{"capability":"' + FIND + '","args":{"query":"<a few words for what you need>"}}}: IntMap searches its whole registry, and every read-only match becomes one you may call from your next request on (the others are named with the reason you may not call them).';
   if (steps.length) p += '\n\nRESULTS OF YOUR CALLS SO FAR:\n' + steps.map((x, i) => (i + 1) + '. ' + x.capability + ' ' + JSON.stringify(x.args).slice(0, 300) + ' → ' + (x.ok ? '' : 'FAILED: ') + x.text).join('\n');
-  p += remaining <= 1 ? '\n\nTHIS IS YOUR LAST REQUEST: make no more calls; return the findings JSON now from what you have, and say in "gaps" what you could not establish.' : '\n\nYou have ' + remaining + ' request(s) left including the one that returns the findings.';
+  if (remaining === Infinity) p += '\n\nThere is no fixed number of requests: make the calls you need, then return the findings JSON. A call you already made with the same arguments is answered from its first result, not run again.';
+  else p += remaining <= 1 ? '\n\nTHIS IS YOUR LAST REQUEST: make no more calls; return the findings JSON now from what you have, and say in "gaps" what you could not establish.' : '\n\nYou have ' + remaining + ' request(s) left including the one that returns the findings.';
   return p;
 }
 
 /* makeWorkerExecutor({ ask, parentTurn, signal, maxCalls? })
    maxCalls — how many requests one worker may make (the first, a repair of a wrong shape, a retry after a transient
    failure). Pass the server's own bound (meta.delegationPolicy.childMaxCalls): the server refuses a call past it with
-   `turn_calls`, so asking for more only buys a refusal. Setting it is also what turns the retry on. Unset → 2 requests
-   (the first and one repair of a wrong shape) and no retry: what this executor did before it could retry. */
+   `turn_calls`, so asking for more only buys a refusal. Setting it is also what turns the retry on. Unset (undefined) → 2 requests
+   (the first and one repair of a wrong shape) and no retry: what this executor did before it could retry.
+   `null` → THE SERVER STATES NO COUNT: the worker keeps working until it has a well-formed artifact. What stops it is then
+   PROGRESS, never a number (one-pass-or-a-reason): a repair is asked again only while the model's output CHANGES; a transient failure
+   is retried only with a request not yet tried (web off, then shorter) and ends reported when those are used; a capability call
+   already answered is answered from its first result, and two such repeats in a row end the worker. Money, the user's Stop and the
+   kill switch stop it from outside (the signal, the server's fences). */
 export function makeWorkerExecutor(o) {
   const opt = o || {};
   const ask = opt.ask;
   if (typeof ask !== 'function') throw new Error('makeWorkerExecutor: ask is required');
   const parentTurn = String(opt.parentTurn || '');
   const outerSignal = opt.signal || null;
-  const maxCalls = Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1 ? opt.maxCalls : 2;
+  const unbounded = opt.maxCalls === null;
+  const maxCalls = unbounded ? Infinity : (Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1 ? opt.maxCalls : 2);
   /* a retry after a transient failure is the caller's opt-in, by saying how many requests the server allows: without
      it the one spare request stays what it always was, the repair of a wrong shape */
-  const retryTransient = Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1;
+  const retryTransient = unbounded || (Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1);
   const cap = opt.capability && typeof opt.capability.run === 'function' && typeof opt.capability.classify === 'function' ? opt.capability : null;   /* { run, classify, describe?, find? } — the host's kernel lane (find: the registry search a worker granted find_capability uses) */
   return {
     id: 'worker-model@page',
@@ -478,6 +513,10 @@ export function makeWorkerExecutor(o) {
       let prompt = base(0);
       let webMode = 'auto';
       let degraded = '';   /* what the final answer was made without, after a retry that changed the request */
+      const tried = new Set();   /* the retry variants already used ('web_off', 'concise'): a transient failure is retried only with one not yet tried */
+      let lastBad = null;        /* the signature of the last malformed output: the same output again is no progress */
+      const answered = new Map();   /* the call's identity → the step its first call produced: the same call with the same arguments is answered from it, not run again */
+      let repeatRun = 0;            /* consecutive steps made only of such repeats */
       /* one search of the registry, as a step: read-only matches join the grant; the others are named with why they may not be
          called. Throws only when the task was cancelled while it searched. */
       const searchStep = async (args) => {
@@ -526,15 +565,20 @@ export function makeWorkerExecutor(o) {
              search that ran out its time is not asked to search again (it would meet the same wall); it is asked to answer
              from what the model knows, and the result says it was made without the web. Any other transient failure is
              asked again for less — fewer, shorter findings — which is a different, cheaper request. */
-          if (retryTransient && isTransientFailure(code, detail) && attempt + 1 < maxCalls) {
-            const change = detail.timeout ? 'web_off' : 'concise';
-            if (change === 'web_off') { webMode = 'off'; degraded = 'The web search timed out, so this was answered without it, from what the model knows: treat every claim as unverified.'; }
+          const variants = detail.timeout ? ['web_off', 'concise'] : ['concise', 'web_off'];
+          const change = variants.find((v) => !tried.has(v));
+          const retryable = retryTransient && isTransientFailure(code, detail) && attempt + 1 < maxCalls;
+          if (retryable && change) {
+            tried.add(change);
+            if (change === 'web_off') { webMode = 'off'; degraded = 'The web search was not available (it timed out or the provider failed), so this was answered without it, from what the model knows: treat every claim as unverified.'; }
             prompt = base(attempt + 1) + '\n\nA PREVIOUS ATTEMPT AT THIS PIECE FAILED (' + (code || 'error') + '). '
-              + (change === 'web_off' ? 'Web search is NOT available this time: answer only from what you reliably know, say plainly what you could not check, and give no source URL you cannot vouch for.' : 'Be concise: at most 5 findings, each one sentence, and say what you could not establish.');
+              + (tried.has('web_off') ? 'Web search is NOT available this time: answer only from what you reliably know, say plainly what you could not check, and give no source URL you cannot vouch for. ' : '')
+              + (tried.has('concise') ? 'Be concise: at most 5 findings, each one sentence, and say what you could not establish.' : '');
             ctx.emit('effect.retry', { intent: intent.id, code, change, attempt: attempt + 1 });
             continue;
           }
-          return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), calls, costUsd, sources };
+          /* a transient failure with no different request left to make: stopped and said so — the same request again is not progress */
+          return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), gaps: retryable ? ['The request failed (' + (code || 'error') + ') and every different way of asking (without the web, shorter) had already been tried; it was not asked again the same way.'] : undefined, calls, costUsd, sources };
         }
         const meta = (env && env.meta) || {};
         const c = Math.max(0, Number(meta.costUsd) || 0);
@@ -546,6 +590,20 @@ export function makeWorkerExecutor(o) {
         const wanted = (allowed.length || canFind) ? toolCallOf(env && env.data) : null;
         if (wanted && attempt + 1 < maxCalls) {
           let step;
+          const ck = stable([wanted.capability, wanted.args]);
+          const had = answered.get(ck);
+          if (had) {
+            /* the same call, the same arguments: answered from the first result, not run (nor searched) again — and not a step forward */
+            step = { ok: had.ok, text: 'ALREADY ANSWERED (the same call with the same arguments; not run again): ' + had.text };
+            repeatRun += 1;
+            if (repeatRun >= 2) {
+              const raw = s(env && env.text, 4000);
+              return { state: raw ? 'partial' : 'failed', code: 'repeated_calls', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker asked for answers it already had twice in a row and was stopped without findings; it had called: ' + Array.from(new Set(steps.map((x) => x.capability))).join(', ') + '.']), calls, costUsd, sources };
+            }
+            steps.push({ capability: wanted.capability, args: wanted.args, ok: step.ok, text: step.text });
+            prompt = base(attempt + 1);
+            continue;
+          }
           if (canFind && wanted.capability === FIND) {
             try { step = await searchStep(wanted.args); } catch (e) { return { state: 'cancelled', calls, costUsd, sources }; }
           } else if (!allowed.includes(wanted.capability)) {
@@ -567,6 +625,8 @@ export function makeWorkerExecutor(o) {
               step = { ok: false, text: s(e && e.message, 300) };
             }
           }
+          repeatRun = 0;
+          answered.set(ck, step);
           steps.push({ capability: wanted.capability, args: wanted.args, ok: step.ok, text: step.text });
           prompt = base(attempt + 1);
           continue;
@@ -578,12 +638,16 @@ export function makeWorkerExecutor(o) {
           return out;
         }
         why = sh.why;
-        if (attempt + 1 < maxCalls) {
+        /* a repair is asked for only while the model's output CHANGES: the same malformed output twice is the model saying it will not do better */
+        const sig = stable([env && env.data === undefined ? null : env && env.data, s(env && env.text, 4000)]);
+        const same = lastBad === sig;
+        lastBad = sig;
+        if (attempt + 1 < maxCalls && !same) {
           prompt = base(attempt + 1) + '\n\nYOUR PREVIOUS ANSWER COULD NOT BE USED: ' + why + '. Return exactly the JSON object described, with a non-empty "summary".';
           continue;
         }
         const raw = s(env && env.text, 4000);
-        return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker did not return the requested shape (' + why + ').']), calls, costUsd, sources };
+        return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker did not return the requested shape (' + why + ')' + (same ? ', and returned the same output again after being told what was wrong, so it was not asked again.' : '.')]), calls, costUsd, sources };
       }
       return { state: 'failed', code: 'shape', summary: why, calls, costUsd, sources };
     },

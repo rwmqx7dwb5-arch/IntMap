@@ -246,3 +246,33 @@ test('atlas-progress-one ⑤ no module puts operation chips or a plan card on th
   assert.match(live, /PROG\.liveWord\(/);
   assert.doesNotMatch(live, /L\('Thinking'|L\('Researching'|L\('Answered'/, 'the pill wrote its own copy of the trace\'s words');
 });
+
+/* ⑥ (atlas-interim-kept) 「途中の文章が、ターンが終わると消える」 (the user, 2026-11-24): the notes Atlas wrote on the
+   way stood only in the trace, and the trace folds when the turn ends. They are kept, in order, and stand in the
+   finished bubble above the answer — js/atlas-agent.js `interim` first, what LIVE narrated when it is absent. */
+test('atlas-progress-one ⑥ what Atlas wrote on the way is kept, in order, and stands above the answer', async () => {
+  const { LIVE, bubble } = await mount();
+  LIVE.begin(bubble);
+  let h = LIVE.hooks(bubble);
+  h.onEvent('text', { d: '{"turn":"continuing","final_text":"まず人口' });
+  h.onEvent('text', { d: 'を調べます"}' });   /* one row, still streaming — one entry, its last words */
+  LIVE.stepDone(bubble, { calls: [{ name: 'find_capability' }] });
+  h = LIVE.hooks(bubble);
+  h.onEvent('text', { d: '{"turn":"continuing","final_text":"捨てられる試行"}' });
+  h.onEvent('reset', {});   /* that attempt will not answer — its note is not kept */
+  h.onEvent('text', { d: '{"turn":"continuing","final_text":"次に面積を比べます"}' });
+  LIVE.stepDone(bubble, { calls: [{ name: 'find_capability' }] });
+  LIVE.end(bubble, 'answered');
+  assert.deepEqual(LIVE.said(bubble), ['まず人口を調べます', '次に面積を比べます']);
+  /* a line equal to the answer, or to a line already kept, is not repeated */
+  const html = LIVE.saidHtml(['まず人口を調べます', ' まず人口を調べます ', '次に面積を比べます', '答え'], '答え');
+  assert.equal((html.match(/class="atl-said-line"/g) || []).length, 2, html);
+  assert.ok(html.indexOf('まず人口') < html.indexOf('次に面積'), 'in the order they were written');
+  assert.equal(LIVE.saidHtml([], 'x'), '', 'nothing kept → nothing drawn');
+  /* the console: out.interim is the source, LIVE the fallback; the kept notes stand before the answer; a cancelled turn keeps its own behaviour */
+  const con = read('js/atlas-console.js');
+  assert.match(con, /ai\.__atlInterim=Array\.isArray\(out\.interim\)\?out\.interim\.map\(x=>String\(\(x&&x\.text\)\|\|''\)\):LIVE\.said\(ai\);/);
+  assert.match(con, /let head=say\?\(\(\(!ai\.__atlCancelled&&ai\.__atlInterim\)\?LIVE\.saidHtml\(ai\.__atlInterim,say\):''\)\+'<div class="atl-md"/);
+  assert.ok(con.indexOf('ai.__atlInterim=Array.isArray(out.interim)') < con.indexOf("_atlCompose(ai); try{ LIVE.answered(ai)"), 'kept before the bubble is composed');
+  assert.match(read('js/atlas-live.js'), /\.atl-said\{/, 'and styled as quiet secondary text');
+});

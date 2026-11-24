@@ -8,6 +8,7 @@ export default defineTask({
   maxOutput: 2600,   // (#R406) one step: the answer, or the calls. Prose answers arrive HERE now rather than only through a separate analysis call, so it needs more room than atlas_plan's action list did.
   reasoning: "medium",
   effortHint: true,
+  outputHint: true,   /* (atlas-unbounded-turns) Atlas may choose a larger output budget per request (payload.maxOutputHint), up to the model's documented ceiling — spec.ts hintedMaxOutput */
   json: true,   /* (#R406) its envelope is enforced on EVERY provider */
   protocol2: true,   /* (atlas-native-tools) the turn as items and functions — turn.ts */
 });

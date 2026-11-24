@@ -471,7 +471,10 @@ test('R318 ⑧b: the server does not trust the key it is given', () => {
   /* read, not run: the proxy is a Deno edge function node cannot import, and the ledger is SQL that
      needs a database (supabase test db runs it). */
   const proxy = aiProxySource();
-  assert.match(proxy, /const TURN_MAX_CALLS = \d+;/, 'nothing bounds how many calls one key may carry');
+  /* (atlas-unbounded-turns) a key's free continuations are bounded by MONEY, not a count (user decision 2026-11-24):
+     every request reserves against the family's cap and the account's day before the provider is asked */
+  assert.doesNotMatch(proxy, /const TURN_MAX_CALLS = \d+;/, 'no fixed call count per turn (atlas-unbounded-turns)');
+  assert.match(proxy, /reserveSpend\(db, account, \{ root: rootTurn, micros: estimate, capMicros, dayCapMicros,/, 'nothing bounds what one key may spend');
   assert.match(proxy, /const TURN_TTL_S = \d+;/, 'a key that never expires is a permanent free pass');
   assert.match(proxy, /consume_ai_turn/, 'the turn-aware RPC is not called');
   assert.match(proxy, /error: "turn_calls"/, 'the two 429s must be distinguishable');
@@ -1016,18 +1019,16 @@ test('R406 ④b: the registry no longer hands every capability the same schema l
 });
 
 /* ── ⑤ the loop's ceilings are technical, and inside the server's ─────────────────────────── */
-test('R406 ⑤: the turn loop cannot outspend the server budget it is charged against', async () => {
-  /* read, not run: the loop's limit is RUN; the server cap is a constant of the Deno edge function,
-     which node cannot import. */
-  if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-  const { LIMITS } = (await import('../js/atlas-agent.js')).makeAtlasAgent();
+test('R406 ⑤: the turn loop cannot outspend the server budget it is charged against', () => {
+  /* read, not run: the server's turn door is the Deno edge function, which node cannot import.
+     (atlas-unbounded-turns) Re-aimed: this compared the loop's step ceiling with the server's per-turn call cap. The user
+     abolished fixed counts on 2026-11-24, so the server states NO call count — no step of the loop can 429 on count —
+     and what the turn is charged against is money: the family's cap and the account's day, reserved before each call. */
   const proxy = aiProxySource();
-  const m = proxy.match(/TURN_MAX_CALLS\s*=\s*(\d+)/);
-  assert.ok(m, 'the server no longer declares a per-turn call cap — this check must be re-aimed');
-  const cap = +m[1];
-  /* the loop may need one extra call to write the closing sentence (agent.js's forced final) */
-  assert.ok(LIMITS.maxSteps + 1 <= cap,
-    `the loop may make ${LIMITS.maxSteps + 1} calls against a server cap of ${cap}: the reader's LAST step would 429`);
+  assert.doesNotMatch(proxy, /TURN_MAX_CALLS\s*=\s*\d+/, 'a per-turn call cap is back on the server');
+  assert.match(proxy, /openTurn\(db, account, \{ turn: turnId, maxCalls: null,/, 'the reader turn is opened with a call count');
+  assert.match(proxy, /error: "turn_cost"/, 'the family\'s money fence does not answer');
+  assert.match(proxy, /error: "day_cost"/, 'the account\'s day fence does not answer');
 });
 
 test('R406 ⑤b: ai-proxy accepts the turn task, enforces its envelope on every provider, and still accepts the old one', () => {

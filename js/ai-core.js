@@ -287,6 +287,9 @@ export function aiCore(HOST){
       provider_malformed:_pl('The AI response was malformed — please try again.','AIの応答が不正な形式でした。もう一度お試しください。','Die KI-Antwort war fehlerhaft — bitte erneut versuchen.','Ответ ИИ был некорректным — повторите попытку.','La respuesta de la IA fue incorrecta — inténtalo de nuevo.'),
       provider_blocked:_pl('The AI safety filter blocked that. Try rephrasing it as a public-information, broad-area analysis (e.g. an approximate zone or reach rings for defense/preparedness) rather than precise targeting.','AIの安全フィルタによりブロックされました。正確な標的指定ではなく、公開情報に基づく広域の分析（例：おおよそのゾーンや到達圏の表示など、防災・脅威評価目的）として言い換えてお試しください。','Der KI-Sicherheitsfilter hat das blockiert. Formulieren Sie es als öffentlich-informationsbasierte, großräumige Analyse (z. B. eine ungefähre Zone oder Reichweitenringe für Verteidigung/Vorsorge) statt als präzise Zielerfassung.','Фильтр безопасности ИИ заблокировал это. Переформулируйте как анализ по открытым данным для широкой области (например, приблизительная зона или кольца досягаемости для обороны/готовности), а не точное целеуказание.','El filtro de seguridad de la IA lo bloqueó. Reformúlalo como un análisis de información pública y de área amplia (p. ej., una zona aproximada o anillos de alcance para defensa/preparación) en lugar de una localización precisa de objetivos.'),
       provider_unavailable:_pl('The AI service is temporarily unavailable — please try again shortly.','AIサービスが一時的に利用できません。少し後に再試行してください。','Der KI-Dienst ist vorübergehend nicht verfügbar — bitte gleich erneut versuchen.','Сервис ИИ временно недоступен — повторите вскоре.','El servicio de IA no está disponible temporalmente — inténtalo pronto.'),
+      /* (atlas-unbounded-turns) IntMap's own MONEY fences (ai-proxy 409) — not the provider's quota and not the daily question count; sending again will not help */
+      turn_cost:_pl('This request has reached the most one question may spend with the AI provider. Narrow it, or ask in smaller parts.','この依頼は、1つの質問がAI提供元に使える上限に達しました。範囲を絞るか、小分けにして質問してください。'),
+      day_cost:_pl('Your account has reached today’s AI spending limit. It resets tomorrow (UTC).','このアカウントは本日のAI利用額の上限に達しました。明日（UTC）にリセットされます。'),
       invalid_structured_output:_pl('The AI structured output was invalid — please try again.','AIの構造化出力が不正でした。もう一度お試しください。','Die strukturierte KI-Ausgabe war ungültig — bitte erneut versuchen.','Структурированный вывод ИИ был неверным — повторите попытку.','La salida estructurada de la IA no era válida — inténtalo de nuevo.')
     };
     return M[code] || ('AI: '+(message||code||'error'));
@@ -357,6 +360,8 @@ export function aiCore(HOST){
       if(opts.requestedCount!=null && isFinite(+opts.requestedCount)) body.requestedCount=+opts.requestedCount;
       if(opts.schema && typeof opts.schema==='object') body.schema=opts.schema;
       if(opts.effortHint) body.effortHint=String(opts.effortHint);   /* (#R117) complexity hint → planner/analysis may think at "high" server-side */
+      /* (atlas-unbounded-turns) the output budget Atlas chose for THIS request; ai-proxy honours it on the Atlas turn and worker tasks, up to the model's documented ceiling */
+      if(typeof opts.maxOutputHint==='number'&&isFinite(opts.maxOutputHint)&&opts.maxOutputHint>0) body.maxOutputHint=Math.floor(opts.maxOutputHint);
       if(opts.imageDetail) body.imageDetail=String(opts.imageDetail);   /* (#R156) "high" → OpenAI input_image detail:high (small-text/math OCR); server clamps by task */
       /* ══ (#R540) THE TWO ATTACHMENT CHANNELS — DELIBERATELY NOT THE PROMPT ═══════════════════
          Until now an attached file's text was concatenated into `prompt` by js/atlas-console.js, and
@@ -464,8 +469,9 @@ export function aiCore(HOST){
       /* (atlas-completion) the body is read ONCE as text: r.json() consumed it, so the snippet line below always read nothing */
       let raw=''; try{ raw=await r.text(); }catch(_){ raw=''; }
       let ej=null; try{ ej=JSON.parse(raw); }catch(_){ ej=null; }
-      if(ej&&ej.error){ const info={ retryable:(typeof ej.retryable==='boolean')?ej.retryable:undefined, meta:ej.meta };
-        throw aiFail(aiProviderErrMsg(ej.error, ej.message, info), String(ej.error), r.status, info.retryable, ej.meta); }   /* (atlas-native-tools) the proxy's own code travels with the message · (atlas-completion) and its retryable, status and meta */
+      if(ej&&ej.error){ const money=(ej.error==='turn_cost'||ej.error==='day_cost');   /* (atlas-unbounded-turns) a money fence: never retryable, and its figures (ej.spend) travel as meta */
+        const info={ retryable:money?false:((typeof ej.retryable==='boolean')?ej.retryable:undefined), meta:ej.meta||(money?ej.spend:undefined) };
+        throw aiFail(aiProviderErrMsg(ej.error, ej.message, info), String(ej.error), r.status, info.retryable, info.meta); }   /* (atlas-native-tools) the proxy's own code travels with the message · (atlas-completion) and its retryable, status and meta */
       throw aiFail('AI '+r.status+': '+aiErrSnippet(raw), 'http_'+r.status, r.status);
     }
     const j=await r.json().catch(()=>null);

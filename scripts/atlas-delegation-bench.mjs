@@ -45,7 +45,7 @@ import { judgeTurn } from './atlas-eval/judge.mjs';
 import { replayCassette, validateCassette, productModules } from './atlas-eval/replay.mjs';
 import { loadCassettes, loadSets, questionOf, rulesOf } from './atlas-eval/lab.mjs';
 import {
-  askable, observeTurn, openAtlasSession, askOnFreshPage, productRules, PAGE, PROD_URL,
+  askable, observeTurn, openAtlasSession, askOnFreshPage, harnessPatienceMs, productRules, PAGE, PROD_URL,
 } from './atlas-eval.mjs';
 import { sectionsRead } from './atlas-eval/map-state.mjs';
 
@@ -211,7 +211,7 @@ export function benchQuestions(only) {
 async function runOnline({ url, token, only, headed, deadlineMs, rotatedOut }) {
   const rules = await productRules();
   const questions = benchQuestions(only);
-  const patienceMs = rules.turnBudgetMs + 2 * rules.toolTimeoutMs;   /* the nightly's patience (scripts/atlas-eval.mjs) */
+  const patienceMs = harnessPatienceMs(rules, 0);   /* the nightly's patience (scripts/atlas-eval.mjs harnessPatienceMs) */
   const rows = [], harness = [];
   const t0 = Date.now();
   let S = null, rotated = null;

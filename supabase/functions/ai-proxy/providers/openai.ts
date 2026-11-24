@@ -5,7 +5,8 @@
 //  provider's own isolate-lived memory, and only callOpenAI reads or writes it.
 // ============================================================================
 
-import { FALLBACK_CHAIN } from "../../_shared/ai-provider.js";
+import { FALLBACK_CHAIN, outputCeilingOf } from "../../_shared/ai-provider.js";
+import { HARD_MAX_OUTPUT } from "../tasks/spec.ts";
 import { providerStream } from "../../_shared/ai-stream.js";
 import type { Streamed } from "../provider-call.ts";
 import { providerCall, ProviderError, classifyGemini, streamedBody } from "../provider-call.ts";
@@ -80,11 +81,18 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
 
   /* jsonMode: "schema" = the caller's shape, enforced; "object" = bare must-be-JSON (what every
      call did before #R397); "off" = prose, the client parser strips fences. */
+  /* (atlas-unbounded-turns) THE ROOF OVER visible budget + reasoning allowance. 12,000 for every budget inside
+     HARD_MAX_OUTPUT (unchanged). A budget Atlas raised past it (ask.ts hintedMaxOutput) keeps its reasoning allowance
+     and is capped only by THIS model's documented ceiling (_shared/ai-provider.js outputCeilingOf — OpenAI counts
+     reasoning inside max_output_tokens); a model with no documented ceiling keeps 12,000. Per model, so a fallback
+     step is held to the model that actually runs. */
+  const ceiling = outputCeilingOf(model);
+  const outputRoof = maxTokens > HARD_MAX_OUTPUT && ceiling ? ceiling : 12_000;
   const build = (choice: string | null, jsonMode: "schema" | "object" | "off", tools: boolean): Record<string, unknown> => {
     const b: Record<string, unknown> = {
       model,
       input: turn ? turnInput() : [{ role: "user", content }],
-      max_output_tokens: Math.min(12_000, maxTokens + (effort === "xhigh" ? 8_000 : effort === "high" ? 5_000 : effort === "medium" ? 3_500 : 1_500)),
+      max_output_tokens: Math.min(outputRoof, maxTokens + (effort === "xhigh" ? 8_000 : effort === "high" ? 5_000 : effort === "medium" ? 3_500 : 1_500)),
       reasoning: { effort: effort === "xhigh" ? "xhigh" : effort === "high" ? "high" : effort === "medium" ? "medium" : "low", ...(summary ? { summary: "auto" } : {}) },   /* (#R117) pass "high" through (the old mapping silently crushed anything ≠ medium down to low) · (atlas-live-stream) summary — see `summary` above */
       store: !!(turn && carry),   /* (atlas-search-carry) a turn's step is kept so its searches can be referenced by the next; every other call keeps nothing */
     };

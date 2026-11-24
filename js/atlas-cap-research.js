@@ -1203,7 +1203,8 @@ export default [
          contract to its kind's lane and REFUSES a kind with no lane (a host that cannot run capabilities says so, it does not run
          the task as a worker). The retry after a transient failure is on only when the server has said how many requests a child
          may make (policy.childMaxCalls), so the retry can never ask for more than the server allows. */
-      const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : undefined;
+      /* a NUMBER bounds; null (the server states no count) stays null, which runs the worker on progress and not on a count; no policy at all → undefined (the plain two-request worker) */
+      const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : (pol && pol.childMaxCalls === null ? null : undefined);
       const executor = makeRouterExecutor({
         worker: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal, maxCalls: childMax,
           capability: typeof K.runReadCapability === 'function' ? { run: K.runReadCapability, classify: K.classifyCapability, describe: K.describeCapability, find: K.findCapabilities } : null }),   /* (delegation-agency) a worker granted `tools` runs read capabilities itself, through the same lane */
@@ -1218,7 +1219,7 @@ export default [
       const dKey = delegationKey(tasks);
       let prior = null;
       if (store && a.fresh !== true) { try { prior = await store.get(dKey); } catch (_) { prior = null; } }
-      const D = makeDelegation({ parent, executor, resume: prior || undefined });
+      const D = makeDelegation({ parent, executor, resume: prior || undefined, maxConcurrent: (pol && Number.isInteger(pol.maxConcurrent)) ? pol.maxConcurrent : null });
       let saving = Promise.resolve(), saves = 0;
       const save = () => { saving = saving.then(() => store.save(dKey, D.snapshot())).then((ok) => { if (ok) saves++; }, () => {}); };
       const unsave = store ? D.subscribe((e) => { if (e && e.kind === 'task.ended') save(); }) : () => {};
