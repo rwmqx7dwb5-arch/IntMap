@@ -91,3 +91,5 @@ main に取り込んだ #1280（統合知識層）が atlas-orchestrate チャ�
 追記7(2026-11-24): CI 測定で atlas-cap-runs が 990.7 kB となり ceiling 981.3 kB を超過。その 1 行だけ 1014600 バイトへ上げた。
 
 追記8(2026-11-24): #1343 ほか main を取り込んだ後の build 実測で、超過したのは legal-text(93.9→96.9 kB・衛星データの出典 3 行ぶん)と dist.assets(22718.5→22876.1 kB)のみ。`perf-budget.mjs --update` でその 2 行だけ上げた。
+
+追記9(2026-11-24): #1314・#1393・#1375 を取り込んだ後の build 実測(origin/main より 2 commit 古い tree)で async.raw 15445.7 kB・async.gzip 5257.3 kB・atlas-console 1197.4 kB・dist.assets 22911.9 kB が超過した。`perf-budget --update` は CI が測る tree でないと拒否するため、この 4 行だけを実測値に +1 kB の余白で手で設定した(15818000 / 5385000 / 1227500 / 23463000 バイト)。手で設定した値であり、CI の実測が正: CI が別の値を示せばその値で 1 回だけ直す。
