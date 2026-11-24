@@ -40,7 +40,7 @@ export default [
     ui: { none: '2026-11-20' },
     phrases: () => ['バックグラウンドで調べて', '閉じても続けて', '時間のかかる調査', '後で結果を見る', '裏で調べて'].concat(['in the background', 'keep going after I close', 'long research', 'check back later', 'run it as a job']),
     doc: [
-      { in: 'research.analyze', at: 31, text: 'START A BACKGROUND JOB (it keeps running on the server after this turn AND after the tab is closed; you can look, change it and stop it while it runs): {"type":"jobStart","title"?:str,"tasks":[{"id"?:str,"goal":str,"returns"?:str,"inputs"?:[{"from":task id}]} (a researcher: web search, returns findings with sources) | {"id"?:str,"kind":"capability","capability":ID,"args":{…}} (one READ capability that has a server twin, run with no model at no cost; a capability without one is refused BY NAME and the refusal lists every one that does, with its arguments) | {"id"?:str,"goal":str,"tools":[capability ids with a server twin]} (a researcher that ALSO calls those capabilities itself, as many rounds as it needs inside the cost cap of the job, and builds its answer on what they return)] up to 8,"fresh"?:bool} — for work that is big, slow or can wait: 「時間がかかってもいいので調べて」「閉じても続けて」「裏で調べて」「後で結果を見たい」. It returns AT ONCE with a job card (progress, each piece as it ends, a Stop button and a box to change the instructions); END YOUR TURN there, tell the reader the job runs on its own, and read it later with {"type":"jobStatus"}. Do not wait for it in this turn and do not poll it. A task\'s "inputs" names tasks of the same list whose findings it builds on. A job costs one of the reader\'s daily AI uses and is capped at $1; two may run at a time per reader. Use research.delegate instead when the answer is wanted in THIS turn.' },
+      { in: 'research.analyze', at: 32, text: 'START A BACKGROUND JOB (it keeps running on the server after this turn AND after the tab is closed; you can look, change it and stop it while it runs): {"type":"jobStart","title"?:str,"tasks":[{"id"?:str,"goal":str,"returns"?:str,"inputs"?:[{"from":task id}]} (a researcher: web search, returns findings with sources) | {"id"?:str,"kind":"capability","capability":ID,"args":{…}} (one READ capability that has a server twin, run with no model at no cost; a capability without one is refused BY NAME and the refusal lists every one that does, with its arguments) | {"id"?:str,"goal":str,"tools":[capability ids with a server twin]} (a researcher that ALSO calls those capabilities itself, as many rounds as it needs inside the cost cap of the job, and builds its answer on what they return)] up to 8,"fresh"?:bool} — for work that is big, slow or can wait: 「時間がかかってもいいので調べて」「閉じても続けて」「裏で調べて」「後で結果を見たい」. It returns AT ONCE with a job card (progress, each piece as it ends, a Stop button and a box to change the instructions); END YOUR TURN there, tell the reader the job runs on its own, and read it later with {"type":"jobStatus"}. Do not wait for it in this turn and do not poll it. A task\'s "inputs" names tasks of the same list whose findings it builds on. A job costs one of the reader\'s daily AI uses and is capped at $1; two may run at a time per reader. Use research.delegate instead when the answer is wanted in THIS turn.' },
     ],
     schema: () => ({ type: 'object', required: ['tasks'], properties: { title: str(), fresh: bool(), tasks: list({ type: 'object', properties: { id: str(), kind: one('worker', 'capability'), goal: str(), returns: str(), capability: str(), args: obj(), tools: list(str()), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1, 8) } }),
     async run(a, dctx, K) {
@@ -66,7 +66,7 @@ export default [
     ui: { none: '2026-11-20' },
     phrases: () => ['調査の状況', '裏で動いている仕事', '結果はどうなった', '途中経過'].concat(['job status', 'how is the research going', 'what did the background job find', 'my jobs']),
     doc: [
-      { in: 'research.analyze', at: 32, text: 'LOOK AT BACKGROUND JOBS: {"type":"jobStatus","id"?:job id,"limit"?:1-30} = with an id, THAT job: its state, each piece and what it found SO FAR (a job that is still running already carries the pieces that ended), the cost, and the combined result once it is done; without one, the reader\'s recent jobs (newest first). Use it when the reader comes back — 「さっきの調査どうなった」「結果を見せて」 — and when they ask what is running. A running job is not waited for: report what has ended and say the rest is still running.' },
+      { in: 'research.analyze', at: 33, text: 'LOOK AT BACKGROUND JOBS: {"type":"jobStatus","id"?:job id,"limit"?:1-30} = with an id, THAT job: its state, each piece and what it found SO FAR (a job that is still running already carries the pieces that ended), the cost, and the combined result once it is done; without one, the reader\'s recent jobs (newest first). Use it when the reader comes back — 「さっきの調査どうなった」「結果を見せて」 — and when they ask what is running. A running job is not waited for: report what has ended and say the rest is still running.' },
     ],
     schema: () => ({ type: 'object', properties: { id: str(), limit: int(1, 30) } }),
     async run(a, dctx, K) {
@@ -93,7 +93,7 @@ export default [
     row: ['jobs.cancel',                'jobCancel',      'cancelJob,stopJob,stopBackground',                            'research','none',    '',                       'explanation',         'session', 'none',   '',         ''],
     ui: { none: '2026-11-20' },
     doc: [
-      { in: 'research.analyze', at: 33, text: '{"type":"jobCancel","id":job id} = STOP a background job: it ends at its next checkpoint, before its next provider request (what already ended stays readable). Safe to repeat. 「あの調査を止めて」.' },
+      { in: 'research.analyze', at: 34, text: '{"type":"jobCancel","id":job id} = STOP a background job: it ends at its next checkpoint, before its next provider request (what already ended stays readable). Safe to repeat. 「あの調査を止めて」.' },
     ],
     schema: () => ({ type: 'object', required: ['id'], properties: { id: str() } }),
     async run(a, dctx, K) {
@@ -109,7 +109,7 @@ export default [
     row: ['jobs.amend',                 'jobAmend',       'amendJob,changeJob,tellJob,addInstruction',                   'research','none',    '',                       'explanation',         'session', 'none',   '',         ''],
     ui: { none: '2026-11-20' },
     doc: [
-      { in: 'research.analyze', at: 34, text: '{"type":"jobAmend","id":job id,"note":str} = CHANGE A RUNNING JOB: the note is read before the NEXT provider request of every piece still to run and outranks the original goal wherever they differ. 「それは日本の分だけにして」「その結論は出典を厳しめに」. Pieces that already ended are not redone.' },
+      { in: 'research.analyze', at: 35, text: '{"type":"jobAmend","id":job id,"note":str} = CHANGE A RUNNING JOB: the note is read before the NEXT provider request of every piece still to run and outranks the original goal wherever they differ. 「それは日本の分だけにして」「その結論は出典を厳しめに」. Pieces that already ended are not redone.' },
     ],
     schema: () => ({ type: 'object', required: ['id', 'note'], properties: { id: str(), note: str() } }),
     async run(a, dctx, K) {
