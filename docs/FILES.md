@@ -194,6 +194,9 @@ runtime.js                        1つのフレームループ・1つのタイ�
 board.js                          **操作できるボード**（遅延・`IntMapBoard`）— 宣言（表・グラフ・フィルタ・地図・根拠・パラメータ）から DOM を組み、1 つの状態で連動。保存は IndexedDB `intmap-board`
 board-spec.js                     ボード宣言の検査（列の実在・出典必須・Artifact の節への対応）。純関数
 board-state.js                    ボードの共有状態（選択・フィルタ・パラメータ）。純関数
+board-edit.js                     ボードの表の編集の規則（値の型解釈・列を使う部品の特定と改名の伝播・開いた時点との差分・Atlas へ渡す差分文・データ層の拒否理由の言い換え）。純関数
+board-link.js                     ボードと**本物の地図・マスタークロック**の双方向の連動（選択のハイライトと地図クリック・Chronos と時間窓）。エンジンと時計は注入
+ui-text-rules.js                  画面宣言の文字列に課す 2 つの拒否（URL・タグ）の唯一の写し。ui.compose と board.compose の両仕様が共有する。純関数
 bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・
                                   未移行のファイルと理由）と `emit` / `on` / `once`。配信は
                                   `window.dispatchEvent` のままで、宣言に無い名前は開発時に例外・本番は警告
@@ -1104,7 +1107,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  275 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  278 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1155,7 +1158,8 @@ atlas-cap-sim.js                  Atlas の能力 — シミュレーター（si
 atlas-cap-system.js               Atlas の能力 — 汎用の逃げ道とモジュール操作（system.*）
 atlas-cap-time.js                 Atlas の能力 — 時刻（time.*）
 atlas-reasoning.js                Atlas の 3 つの答えを**構造**にする純関数（シナリオ research.scenario の 4 欄・期間の変化 time.changes の差分と順位・相関 panel.correlate の報告）。DOM も window も持たず、tests/atlas-reasoning-checks.test.mjs が評価する。相関パネルも同じ報告を描く
-atlas-cap-ui.js                   Atlas の能力 — インラインの操作（ui.*）
+atlas-cap-ui.js                   Atlas の能力 — 返答の中の UI（ui.*）：インラインの操作（ui.inlineControls）と宣言的なビュー（ui.compose・綴り `dashboard`）。
+                                  操作の行の描画は 1 か所（controlRows）で、両方が使う
 atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
 atlas-cap-web.js                  Atlas の能力 — ウェブサイトの操作とファイル取得（web.browse・web.fetchFile）。データポータル等を検索・リンク辿り・フォーム送信し、返ったファイルを GIS データセットにする
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
@@ -1250,7 +1254,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
 atlas-skills.js                   **Skill**（手順書）の発見・段階読み・門 — `searchSkills`（find_capability の答えに名前と1行だけ添える）／`readSkill`（1節ずつ）／`audit`（本文が名指す能力・引数が実在するか。`npm run check:capabilities`）
 atlas-skills-data.js              Skill の宣言データ（en+jp の散文だけ。使う能力は本文から導出する）。初期: 歴史的国境の比較・衛星画像の変化検出・産業立地の一次分析・港湾物流リスクの比較
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 275 を検索・到達可能 272）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 278 を検索・到達可能 275）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1274,7 +1278,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 275 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 278 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1294,6 +1298,11 @@ atlas-turn-results.js             **1つの操作は、返信の中で1ブロッ
                                   ③**版を持つ成果物は順位づけない**（#R551）— `meta.artifact` を名乗る2件は
                                   `revision` の大きいほうが残る。アプリが保持しているのが最新版なのだから、
                                   点数で古い版を選べば「もう無い印」を説明する返信になる
+atlas-ui-spec.js                  **Atlas が宣言するビュー**（declarative-workspace）— `ui.compose` の仕様（JSON）のブロックの種類・欄・上限の表
+                                  （BLOCKS／LIMITS）と、そこから導く schema（viewSchema）・カタログの形（blockShapes）・検査（checkView）。
+                                  ⚠ 検査は**全部の問題を経路つきで**返し、未知の種類・未知の欄・上限超え・URL・HTML を理由つきで拒む（黙って落とさない）。
+                                  描くのは IntMap の部品だけ——図の値の札・表（返答の Markdown 表へ）・地名のボタン。`chart`／`controls` の
+                                  ブロックは chart.compose／ui.inlineControls の dispatch に渡す（描画器を 2 つ作らない）。DOM なし
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
@@ -2804,7 +2813,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 172 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 173 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
