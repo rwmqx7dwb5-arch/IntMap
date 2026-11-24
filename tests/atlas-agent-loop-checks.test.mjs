@@ -1309,6 +1309,7 @@ const REVERSIONS = [
 async function preFixAgent() {
   let src = readFileSync(join(ROOT, 'js/atlas-agent.js'), 'utf8').split('\r\n').join('\n');
   src = src.split("from './atlas-turn-results.js'").join("from '" + pathToFileURL(join(ROOT, 'js/atlas-turn-results.js')).href + "'");
+  src = src.split("from './atlas-working-memory.js'").join("from '" + pathToFileURL(join(ROOT, 'js/atlas-working-memory.js')).href + "'");   /* (atlas-working-memory) a lone data: module resolves no relative specifier */
   src = src.split("from './atlas-run-ledger.js'").join("from '" + pathToFileURL(join(ROOT, 'js/atlas-run-ledger.js')).href + "'");   /* (job-cost-ledger) the agent's other relative import — a data: URL resolves none */
   for (const [from, to] of REVERSIONS) {
     const parts = src.split(from);

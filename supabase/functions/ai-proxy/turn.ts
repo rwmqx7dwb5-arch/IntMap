@@ -43,6 +43,7 @@ export type TurnItem =
   | { type: "function_call"; call_id: string; name: string; arguments: string; signature?: string }
   | { type: "function_call_output"; call_id: string; output: string }
   | { type: "reasoning"; id: string; encrypted_content: string }
+  | { type: "item_reference"; id: string }   // (atlas-search-carry) a provider item held on the provider's side (a stored web search), replayed by id
   | { type: "attachments"; channels: string[] };
 export interface FnTool { name: string; description: string; parameters: Record<string, unknown>; promoted?: boolean; }   // (atlas-turn-engine) promoted = appended this turn from find_capability (js/atlas-agent.js)
 export interface TurnReq { items: TurnItem[]; tools: FnTool[]; toolChoice: "none" | ""; trim: Record<string, unknown> | null; }
@@ -91,6 +92,11 @@ export function normalizeTurn(payload: Record<string, unknown>): TurnReq | { err
       const enc = str(o.encrypted_content), id = str(o.id);
       if (!enc || !id || enc.length > MAX_ITEM_CHARS || !CALL_ID_OK.test(id)) { bump("droppedReasoning"); continue; }
       items.push({ type: "reasoning", id, encrypted_content: enc });
+    } else if (t === "item_reference") {
+      /* (atlas-search-carry) opaque, the provider's own — the id is all there is, and a malformed one is left out and said */
+      const id = str(o.id);
+      if (!CALL_ID_OK.test(id)) { bump("invalidItems"); continue; }
+      items.push({ type: "item_reference", id });
     } else if (t === "attachments") {
       const ch = (Array.isArray(o.channels) ? o.channels : []).map(String).filter((c) => c === "docs" || c === "files" || c === "images");
       if (ch.length) items.push({ type: "attachments", channels: ch });
