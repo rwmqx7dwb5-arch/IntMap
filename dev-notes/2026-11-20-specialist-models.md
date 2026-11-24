@@ -69,3 +69,7 @@ main を取り込み直した後の再測定（同じ 3 行、同じ理由）: `
 9 度目（main の再取り込み後）: `async.raw` 14680.9→14788.0 kB・`async.gzip` 4956.6→4999.3 kB・`atlas-cap-runs` 989.3→1007.5 kB・dist.assets 22068.6→22234.8 kB を `perf-budget.mjs --update` が上げた。増分の大半は main が足した能力（能力表が 273 行）で、専門モデル側は §5 のとおり。
 
 10 度目（CI が測った超過）: `atlas-cap-runs` 1001.0→1013.4 kB・`atlas-console` 1159.0→1166.7 kB を `perf-budget.mjs --update` が上げた（ローカル再測定が CI の値と一致）。増分は main が足した能力と画面。専門モデル側は §5 のとおり。
+
+## 7. `check:surface` の基準線（本 PR の変更ではない）
+
+CI の Gates 1/3 が `window.IntMapLazy` の読み取り 196→197 で赤だった。原因は本 PR ではなく main 側: 本 PR の変更ファイルに IntMapLazy は無く、`origin/main` を単独で checkout して `global-surface.mjs --check` を走らせても同じ +1 が出る（js/ の「スマホ画面を地図中心に作り直す」変更が基準線を更新せずに入った）。本 PR が緑になるために `--update` で 197 に直した。読み取りは本 PR が足したものではない。
