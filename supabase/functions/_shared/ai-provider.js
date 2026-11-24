@@ -66,6 +66,10 @@ export const FALLBACK_CHAIN = ["gpt-6.1-terra", "gpt-6-luna"];
    2026-09-15). The background jobs take ONE fallback step and it is this one: they are unattended,
    and a single step to the known-good model is the whole of what #R148/#R351 asked of them. */
 export const OPENAI_LAST_RESORT_MODEL = FALLBACK_CHAIN[FALLBACK_CHAIN.length - 1];
+/* (news-event-history) The embedding model news-ingest prefers when the OpenAI key cannot reach an embedding model
+   (measured 2026-11-20: 403, no embedding id in the key's list). It is a PREFERENCE: the stage asks the provider's own
+   model list and falls back to whichever embedding model that list names. One table for every model id (edge-spend-and-models ①). */
+export const GEMINI_EMBEDDING_MODEL = "gemini-embedding-001";
 export const PROVIDER_DEFAULT_MODEL = Object.freeze({
   openai: OPENAI_DEFAULT_MODEL,
   gemini: "gemini-3.5-flash",
