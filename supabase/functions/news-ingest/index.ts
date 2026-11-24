@@ -68,7 +68,7 @@ import { DEFAULTS, buildIdf } from "../_shared/news-cluster.js";
    配っている企業アトラスの索引そのもの——写しを作らない（docs/COMPANIES.md §4.1）。 */
 import { makeEntityMatcher } from "../_shared/news-entities.js";
 /* (news-event-history) 年単位で残す出来事の行を作る規則。 */
-import { buildArchiveRow, makeWorldMatcher as makeHistoryMatcher, HISTORY } from "../_shared/news-history.js";
+import { buildArchiveRow, pendingArchive, makeWorldMatcher as makeHistoryMatcher, HISTORY } from "../_shared/news-history.js";
 import { BACKFILL, dayRows, pagesFromQuery } from "../_shared/news-backfill.js";
 import { siteUrl } from "../_shared/site-origin.js";
 
@@ -1575,15 +1575,35 @@ async function stageSummarise(db, budget) {
    _shared/news-history.js の 1 本（node のテストが同じファイルを評価する）。
    ⚠ 変わった行だけを送る（毎 run 数百行を書き直すと updated_at と更新履歴が意味を失う）。
    ⚠ 書けなかったら **prune を止める**——書き写せていない出来事の記事を消すと、記録が二度と作れない。 */
+/* 観測: 1 run あたり 1,394 件（約 7 秒）は通り、約 6,000 件は WORKER_RESOURCE_LIMIT で落ちた（2026-11-24・本番）。
+   失効: Edge Function の CPU 上限が変わったとき、または buildArchiveRow の 1 件あたりの費用が変わったとき。 */
+const ARCHIVE_PER_RUN = 1000;
 async function stageArchive(db) {
   const t0 = Date.now();
-  const out = { ms: 0, considered: 0, archived: 0, unchanged: 0, merged_marked: 0, trimmed: 0, error: null };
+  const out = { ms: 0, considered: 0, skipped_current: 0, deferred: 0, archived: 0, unchanged: 0, merged_marked: 0, trimmed: 0, error: null };
   try {
     const since = new Date(Date.now() - RETENTION.articleHours * 3600e3).toISOString();
-    const events = await selectAll(() => db.from("news_events"),
+    const all = await selectAll(() => db.from("news_events"),
       (q) => q.select("id,public_id,representative_title,summary,primary_category,rep_lng,rep_lat,rep_place_name_en,first_published_at,first_seen_at,last_article_at,independent_source_count")
               .eq("status", "active").is("merged_into", null).gte("last_article_at", since));
-    out.considered = events.length;
+    out.considered = all.length;
+    if (!all.length) { out.ms = Date.now() - t0; return out; }
+
+    /* ⚠ 毎 run 全部を組み直さない。履歴の行が「その出来事の最後の記事より後に書かれている」なら、
+       その出来事には書き写すものが増えていない——飛ばす。さもないと run の CPU が「直近 72 時間の出来事の数」に
+       比例し、その数が膨らんだ日（取り込みの滞留・出典の追加）に Edge Function が WORKER_RESOURCE_LIMIT で
+       落ち、run の記録も prune も残らない（2026-11-24 実測: 取り込みが 08:40 UTC から記録を残さなかった）。
+       残りは古い（＝記事が先に消える）ものから 1 run に ARCHIVE_PER_RUN 件までで、次の run が続きを引き取る。 */
+    const wrote = new Map();
+    for (let i = 0; i < all.length; i += 200) {
+      const { data, error } = await db.from("news_event_history").select("event_public_id,updated_at")
+        .in("event_public_id", all.slice(i, i + 200).map((e) => e.public_id));
+      if (error) throw new Error("archive existing (cursor): " + error.message);
+      for (const h of data || []) wrote.set(h.event_public_id, Date.parse(h.updated_at));
+    }
+    const { events, skippedCurrent, deferred } = pendingArchive(all, wrote, ARCHIVE_PER_RUN);
+    out.skipped_current = skippedCurrent;
+    out.deferred = deferred;
     if (!events.length) { out.ms = Date.now() - t0; return out; }
 
     const srcRows = await selectAll(() => db.from("news_sources"), (q) => q.select("id,name,source_family"));
@@ -1925,6 +1945,10 @@ Deno.serve(async (req) => {
         archive_considered: (p.archive || {}).considered || 0, archive_written: (p.archive || {}).archived || 0,
         archive_unchanged: (p.archive || {}).unchanged || 0, archive_trimmed: (p.archive || {}).trimmed || 0,
         archive_error: (p.archive || {}).error || null,
+        archive_skipped_current: (p.archive || {}).skipped_current || 0, archive_deferred: (p.archive || {}).deferred || 0,
+        /* 遡り（backfill）の結果。以前は応答にしか出ず、本番で 0 行のとき理由を run の記録から読めなかった。 */
+        backfill_days: ((p.backfill) || {}).days || 0, backfill_rows: ((p.backfill) || {}).rows || 0,
+        backfill_oldest: ((p.backfill) || {}).from || null, backfill_error: ((p.backfill) || {}).error || ((p.backfill) || {}).off || null,
         prune_error: (p.archive || {}).error || null,   /* news_ingest_health() reads `<段>_error` */
         entities_scanned: N.scanned || 0, entities_linked: N.linked || 0, entities_waiting: N.waiting_for_event || 0,
         entities_by_kind: N.by_kind || null, entities_error: N.error || null,

@@ -422,6 +422,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
       ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
       ["siting.compare","siting","compareSites,industrialSiting,siteSelection,locationComparison,compareLocations","data","none","","explanation","read","none","",""],
+      ["model.find","modelDiscover","findModel,specialistModels,whichModel,listModels","data","none","","explanation","read","none","","",""],
+      ["model.run","modelRun","runModel,specialistModel,floodForecast,riverForecast,airQualityForecast","data","none","map.object","explanation","session","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 

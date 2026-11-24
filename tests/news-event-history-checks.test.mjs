@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { classifyKind, makeWorldMatcher, threadKey, buildArchiveRow, HISTORY } from '../supabase/functions/_shared/news-history.js';
+import { classifyKind, makeWorldMatcher, threadKey, buildArchiveRow, HISTORY, pendingArchive } from '../supabase/functions/_shared/news-history.js';
 
 const NODES = [
   { ref: 'facility:wd-Q12493274', name: 'Tangguh LNG terminal', type: 'facility', ids: { wikidata: 'Q12493274' } },
@@ -85,4 +85,15 @@ test('embed: a key with no embedding model falls to Gemini, which is asked what 
   assert.match(src, /geminiEmbeddingModel/);
   assert.match(src, /outputDimensionality: EMBED_DIM/);
   assert.match(src, /provider === "openai" && \(res\.status === 403/);
+});
+
+test('pendingArchive skips events whose record is already current, takes the oldest first, and caps a run', () => {
+  const day = (n) => new Date(Date.UTC(2026, 10, n)).toISOString();
+  const ev = (id, n) => ({ public_id: id, last_article_at: day(n) });
+  const wrote = new Map([['a', Date.parse(day(5))], ['b', Date.parse(day(3))]]);
+  const r = pendingArchive([ev('a', 5), ev('b', 6), ev('c', 4), ev('d', 2)], wrote, 2);
+  assert.deepEqual(r.events.map((e) => e.public_id), ['d', 'c']);
+  assert.equal(r.skippedCurrent, 1);
+  assert.equal(r.deferred, 1);
+  assert.deepEqual(pendingArchive([], new Map(), 5), { events: [], skippedCurrent: 0, deferred: 0 });
 });
