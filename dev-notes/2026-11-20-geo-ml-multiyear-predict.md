@@ -63,3 +63,5 @@ newsjp: Atlas が、複数年の変化の測定、地域の分類、変化と施
 追記 4: main 追随の再測定。`atlas-cap-runs` 938.6→957.3 kB、`atlas-console` 1129.9→1141.3 kB（`geo.ml` と、取り込んだ他の能力のぶん）、`gis-core` 697.3→701.2 kB・async 合計・配信資産は main 側の増加に連動。遅延チャンクのみで起動時の転送は増えていない。
 
 追記 5: CI が測った main 結合後の値へ。`atlas-cap-runs` 952.1→968.1 kB、`atlas-console` 1139.2→1148.0 kB（`geo.ml` と、取り込んだ他の能力のぶん）。遅延チャンクのみで起動時の転送は増えていない。
+
+追記 6: main 追随の再測定（取り込みのたびに他の PR の増加が重なる）。`atlas-cap-runs` 981.3→1003.4 kB、`atlas-console` 1152.4→1161.8 kB、async の raw/gzip 合計と配信資産が連動。`geo.ml` 由来は `atlas-cap-runs` と `atlas-console` の一部で、残りは取り込んだ他の能力。遅延チャンクのみで起動時の転送は増えていない。
