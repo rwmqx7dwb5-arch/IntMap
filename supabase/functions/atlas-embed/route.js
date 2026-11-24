@@ -86,6 +86,7 @@ export function makeRouter(o) {
   const isFailed = (p, m) => failedSet.has(p + "/" + m);
   let pending = null;
   let lastLists = null;
+  let lastRefusal = null;   /* (atlas-embed-diag) the last embeddings call that failed: provider, model, HTTP status — never the provider's words */
 
   async function decide() {
     if (!providers.length) return { code: "unconfigured", keep: true };
@@ -149,6 +150,18 @@ export function makeRouter(o) {
       pending = null;
     },
     lists() { return lastLists; },
+    /* (atlas-embed-diag) WHY THE ROUTE FAILED, in facts that name no account and repeat no provider text: per provider,
+       whether its model list was read (HTTP status when not), how many models it listed and which of them embed; and the
+       last embeddings call that was refused. Measured 2026-11-25: production answered model_unavailable with no way to tell
+       «the list names no embedding model» from «the listed model refused the key» — the two need different fixes. */
+    diag() {
+      return {
+        lists: (lastLists || []).map((L) => ({ provider: L.provider, answered: !!L.answered, code: L.answered ? undefined : L.code, status: L.status || undefined,
+          listed: L.answered ? L.all : undefined, embedding: L.answered ? (L.ids || []).slice(0, 8) : undefined })),
+        refused: lastRefusal || undefined,
+        failed: [...failedSet],
+      };
+    },
 
     /* One embeddings call on `route`. Returns { vectors:[pgvector literal…] } or
        { state, routeFailed } — `state` a code the page may be told, never the provider's words;
@@ -159,6 +172,7 @@ export function makeRouter(o) {
         ? await embedGemini(keys.gemini, route.model, inputs, door, { dim: EMBED_DIM, taskType: GEMINI_TASK[role] })
         : await embedOpenAI(keys.openai, route.model, inputs, door);
       if (!r.ok) {
+        lastRefusal = { provider: route.provider, model: route.model, code: r.code, status: r.status || undefined };
         if (r.code === "no_ceiling") return { state: "limiter_unavailable" };
         if (r.code === "http") {
           /* 403/404: the key does not reach this model (what it has meant here — see the header) */

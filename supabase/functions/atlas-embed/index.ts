@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
       if (r.route) return { route: r.route, alternatives: r.alternatives || [] };
       const c = r.code;
       if (c === "unconfigured") return { res: fail(c, 503) };
-      if (c === "model_unavailable") return { res: fail(c, 502) };
+      if (c === "model_unavailable") return { res: json({ state: c, diag: router.diag() }, 502) };
       if (c === "spend_ceiling" || c === "share_ceiling" || c === "limiter_unavailable") return { res: refusal(c) };
       if (c === "no_ceiling") return { res: refusal("limiter_unavailable") };
       return { res: fail("upstream_unreachable", 502) };
@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
         if (!e.vectors) {
           if (e.routeFailed) router.failed(rt);
           if (e.routeFailed && attempt === 0) continue;
-          return fail(e.state, 502);
+          return json({ state: e.state, diag: router.diag() }, 502);
         }
         const r = await db.rpc("atlas_capability_similarity", { p_catalog: p.catalog, p_model: rt.key, p_query: e.vectors[0] });
         if (r.error || !Array.isArray(r.data)) return fail("store_unavailable", 503);
@@ -317,7 +317,7 @@ Deno.serve(async (req) => {
         if (refused) {
           if (refused.routeFailed) router.failed(rt);
           if (refused.routeFailed && attempt === 0) continue;
-          return fail(refused.state, 502);
+          return json({ state: refused.state, diag: router.diag() }, 502);
         }
         const r = await db.rpc("atlas_capability_seed", { p_catalog: p.catalog, p_model: rt.key, p: rows });
         const n = Array.isArray(r.data) ? r.data[0] : r.data;
