@@ -60,6 +60,7 @@ curriculum.html / school-handout.html
                                 単元対応表（3 つのカリキュラムの単元と、開ける地図・授業ツアー・クエスト・「この単元のツアーを作る」）と
                                 学校向けの A4 1 枚の案内（ja/ が日本語版）。同じく scripts/org-pages.mjs が生成する。Architecture.md §8.6.5
 readiness.html                  導入前の接続診断——許可が必要な接続先の一覧（3 層）と、この端末・ネットワークでの診断（js/readiness-page.js）。
+mcp-oauth-callback.html           外部 MCP サーバへサインインしたあとにサービスが戻す先——クエリを開いた IntMap のページへ渡して閉じるだけ（mcp-oauth）。
                                 ja/ が日本語版。同じく scripts/org-pages.mjs が生成する。Architecture.md §8.6.6
                                 scripts/org-pages.mjs が生成する（手で編集しない。文は scripts/org-pages-text.mjs）。Architecture.md §11
 admin-inquiries.html            相談のコンソール（org_inquiries の閲覧・状態とメモ・削除、supporters の掲載）。英語・noindex。
@@ -480,6 +481,12 @@ gis-packed.js                     **幾何の圧縮表現とチャンクスト�
                                   幾何を Float64Array へ平らに並べ（unpack で 1 バイトも違わず戻る）、
                                   結果を入力の順のチャンクとして持つ。閾値と、その観測は同じ file の末尾
                                   （`docs/GIS-CORE.md` §6「100 万件」）
+cap-bridge.js                     **能力ブリッジ**（Programmatic Tool Calling）— AI が書いたプログラムが能力表の能力を
+                                  ポート越しに何百回でも直接呼び、途中の結果は実行環境に置いて最後だけ Atlas に返す、
+                                  言語に依らない契約（JSON over MessagePort）。呼びは `makeExecute` と同じ道を通る
+                                  （スキーマ・確認・直列化はそのまま）。足すのは、能力の性質（read/state/persist/external）
+                                  による許可・同じ呼びの二度目を `alreadyDone` で答える記録・最後の柵（呼び数/期限/取消）・
+                                  外部文章の汚染の伝播。接続点と #1272 との関係は `dev-notes/2026-11-20-cap-bridge.md`
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**
@@ -1027,6 +1034,10 @@ atlas-examples.js                 Atlas — 例文チップの候補プール（
 atlas-view-subject.js             Atlas — 「いま何を見ているか」の測定（視界に入る国・陸と海の割合・
                                   名前のある水域・タイルが名指す地名と山・戦略拠点・km 単位の縮尺）
 atlas-styles.js                   Atlas パネルのスタイルシート 1 本（atlasPanelCSS）
+mcp-oauth-callback.js            mcp-oauth-callback.html の動き（素のまま配る）——戻り先のクエリを開いた IntMap のページへ渡して閉じるだけ（mcp-oauth）
+atlas-mcp-oauth.js                Atlas — MCP サーバの OAuth（メタデータ発見・Client ID Metadata Document／動的登録・PKCE・更新・失効。mcp-oauth）
+public-suffix.js                  Public Suffix List による登録可能ドメイン判定（OAuth の「同じサイトか」。a.co.jp と b.co.jp は別）
+public-suffix-data.js             上の規則データ（scripts/build-public-suffix.mjs が生成・MPL-2.0・2026-11-19 版）
 atlas-mcp-client.js               Atlas — 汎用 MCP クライアント（Streamable HTTP の発見・実行・CSP/CORS の失敗理由・外部出力を信頼できないデータとして囲う。mcp-client）
 atlas-metrics.js                  Atlas — 国の指標の集合 1 つ（METRICS＋XMET）と、その名前を解く解決器 1 つ。
                                   各レコードが自ら名乗るラベル（5 言語＋現在の言語）で引き当て、拒否は有効な全鍵を列挙する
