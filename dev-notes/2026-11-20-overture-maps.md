@@ -111,3 +111,4 @@ STAC の `href` は**データ**。https・認証情報なし・私的でない�
 - 取り込み直し（8回目）: CI が測った超過行だけ天井を上げた（async.raw 14701.8→14842.3 kB・async.gzip 4993.0→5045.0・gis-core 697.3→703.8・dist.assets 22068.6→22282.7。CI の実測値に 1 kB 足した）。
 - 取り込み直し（9回目）: main の取り込みで perf 天井が main 側の値に戻っていたので、CI が測った超過行を再び上げた（async.raw 14857.8 kB・async.gzip 5051.3・atlas-console 1145.5・gis-core 703.8・dist.assets 22282.7。いずれも CI の実測値に 1 kB 足した）。
 - 取り込み直し（10回目）: main が migration・表を 1 つずつ足したので文書の数を 75 本・70 表へ、00_structure_test の plan を 156（main の 154 + id_history の 2）へ。perf 天井は main の取り込みで main 側の値に戻るので、CI の実測値（async.raw 14857.8 kB・async.gzip 5051.3・atlas-console 1145.5・gis-core 703.8・dist.assets 22282.7）へ上げ直した。
+- 取り込み直し（11回目）: main の最新 migration が 20261125000000 になり migration-order ⑤ が落ちたので、id_history を 20261125120000 へ改番（参照は pgTAP と tests/overture-maps-checks.test.mjs）。
