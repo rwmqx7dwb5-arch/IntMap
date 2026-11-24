@@ -418,8 +418,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","always","","","external"],
       ["news.history","newsHistory","pastEvents,eventArchive,facilityTimeline,eventsSince,newsArchive","data","none","","explanation","read","none","","","external"],
       ["data.gisOverture","gisOverture","overtureMaps,worldBuildings,worldPlaces,buildingFootprints,geoparquet","data","none","","explanation","read","none","","gisCore"],
-      ["jobs.resume","jobResume","resumeJob,retryJob,continueJob,rerunFailed","research","none","","explanation","external","explicit","",""],
-      ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
+      ["board.edit","boardEdit","editBoard,editTable,editWorkspace,changeCell,setCell","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.delta","boardDelta","boardChanges,whatDidIChange,workspaceDiff","panel","none","","explanation","read","none","","board"],
+      ["ui.compose","dashboard","uiCompose","ui","none","","panel,explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
