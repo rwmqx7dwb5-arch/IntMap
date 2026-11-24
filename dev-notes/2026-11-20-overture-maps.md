@@ -83,32 +83,16 @@ STAC の `href` は**データ**。https・認証情報なし・私的でない�
 - 同じ窓を 2 回読むと 2 回走査する（フッターは覚えているが、走査結果は覚えていない）。
 - パフォーマンスの天井（`tests/perf-baseline.json`）は PR の CI が決める。
 
-## 8. CI が赤かった 2 つと、その直し方
+## perf 天井を上げた理由
 
-- **`check:surface`**: 能力 `data.gisOverture` の実行コードは兄弟能力（`data.gisRemote` ほか）と同じ書き方で
-  `window.IntMapLazy.need('gisCore')` と `window.IntMapGis.atlas` を読む。読み取りがそれぞれ 1 件増えた
-  （`IntMapGis` 14→15・`IntMapLazy` 186→187）。新しい経路ではなく既存の入口を同じ形で 1 つ足しただけなので、
-  基準（`tests/global-surface-baseline.json`）を `--update` で記録した。
-- **perf の天井**（`tests/perf-baseline.json`）: 非同期の総量が増えた。理由は 2 つ——hyparquet と
-  hyparquet-compressors が遅延チャンクとして増えたこと、能力データ（`atlas-cap-runs`）に 1 能力ぶんの
-  行が増えたこと。eager（起動時）の数は増えていない。上げた値は CI が実測した値
-  （async raw 14360.0 kB・gzip 4865.0 kB・`atlas-cap-runs` 889.2 kB・`dist.assets` 21754.7 kB）。
-  ⚠ このマシンではローカル build が `data/border-detail` のコピーで失敗する（`copyfile UNKNOWN`）ので
-  `perf-budget --update` は build 印が無く拒否される。そのため CI の実測値を手で書いた。次の CI が許す幅を
-  超えれば再び赤になるので、その場合は CI の数に合わせて直す。
+Overture Maps 読み取り(js/gis-overture.js)と、それを呼ぶ Atlas 能力を足したため、非同期チャンクが増えた(async.raw 14136.4→14415.6 kB、async.gzip 4771.5→4885.1 kB、atlas-console 1061.2→1066.8 kB、gis-core 622.7→628.3 kB、dist.assets 21559.0→21814.8 kB)。増えた分は新しい能力の実装そのもので、起動時に読まれる経路(初期チャンク)は増えていない。window.IntMapGis / IntMapLazy の読みが 1 件ずつ増えた(surface ベースライン更新)のも同じ能力による。
 
-## main 取り込み時の追記（PR #1290）
+- 性能予算 atlas-orchestrate: 82.4 kB から 96.1 kB（ceiling 98382 B）へ。main 側で増えた遅延チャンクで、台帳が古いまま残っていた分。全体ビルドで測った値（`perf-budget --update`）を、他の PR と同じ値で書いた。
 
-- 能力位置: `data.gisOverture` の `spatial-analysis` 断片を `at: 49` から `at: 55` へ（main 側の `geo.similar` が 49 を使っていたため。断片の順序以外は変わらない）。
-- perf 天井を `perf-budget --update` で上げた（async.raw 14221.0→14482.5 kB・async.gzip 4807.7→4909.9・gis-core 632.9→636.4・legal-text 91.8→94.1・dist.assets 21686.9→21890.2）。gis-core と legal-text は Overture の読み取りと第三者開示の文面が運んだ分。async 合計の増分のうちチャンク個別の天井を越えない残りは、main 側の取り込み分を含む。
-- 能力数 254（到達可能 251）・migration 70 本・表 60 に文書の数を合わせた。
-- 取り込み直し（2回目）: migration 版が main の `20261120120000_world_graph_ingest` と衝突したので id_history を `20261120140000` へ改番。perf 天井を再び上げた（async.raw 14304.0→14542.1 kB・atlas-cap-runs 903.4→911.3・gis-core 637.0→640.4。Overture の能力と読み取りが運んだ分）。能力数 255（到達可能 252）・migration 71・表 61。
-- 取り込み直し（3回目）: perf の async.gzip 天井を 4833.8→4936.9 kB へ（Overture の能力・読み取りが運んだ分）。00_structure_test の plan を id_history の 2 件ぶん 136→138。
-- 取り込み直し（4回目）: CI が測った dist.total は 1550379.8 kB（ローカルのビルドは 1548618.6 kB で、データの置き場の差 約 1.8 MB はローカルでは再現しない）。CI の実測に合わせて天井を 1579471807→1587590000 バイトへ手で上げた。本 PR が足したのは約 1 MB の js・文書で、data/ には何も足していない。残りは main 側の取り込み分。
-- 取り込み直し（5回目）: perf 天井を再び上げた（async.raw 14376.3→14606.3 kB・atlas-cap-runs 918.5→924.8・dist.assets 21796.5→22042.3）。Overture の能力・読み取りと、main 側の Atlas 追加（統合知識層・ボード）が運んだ分。main 取り込みで生成物 js/atlas-capabilities.js から data.gisOverture の行が落ちるので、`node scripts/atlas-caps.mjs --write` で戻した。
-- 取り込み直し（6回目）: perf 天井を上げた（async.gzip 4864.8→4977.8 kB・atlas-console 1105.8→1111.9）。Overture の能力・読み取りと main 側の GIS／Atlas 追加が運んだ分。main は取り込みのたびに動くので、実測は取り込み直後の build で取った。
-- 取り込み直し（7回目）: CI が測った超過行だけ天井を上げた（async.raw 14487.4→14700.8 kB・async.gzip 4889.7→4992.0・dist.assets 21923.7→22138.0。CI の実測値に 1 kB 足した）。Overture の能力・読み取りと main 側の追加が運んだ分。
-- 取り込み直し（8回目）: CI が測った超過行だけ天井を上げた（async.raw 14701.8→14842.3 kB・async.gzip 4993.0→5045.0・gis-core 697.3→703.8・dist.assets 22068.6→22282.7。CI の実測値に 1 kB 足した）。
-- 取り込み直し（9回目）: main の取り込みで perf 天井が main 側の値に戻っていたので、CI が測った超過行を再び上げた（async.raw 14857.8 kB・async.gzip 5051.3・atlas-console 1145.5・gis-core 703.8・dist.assets 22282.7。いずれも CI の実測値に 1 kB 足した）。
-- 取り込み直し（10回目）: main が migration・表を 1 つずつ足したので文書の数を 75 本・70 表へ、00_structure_test の plan を 156（main の 154 + id_history の 2）へ。perf 天井は main の取り込みで main 側の値に戻るので、CI の実測値（async.raw 14857.8 kB・async.gzip 5051.3・atlas-console 1145.5・gis-core 703.8・dist.assets 22282.7）へ上げ直した。
-- 取り込み直し（11回目）: main の最新 migration が 20261125000000 になり migration-order ⑤ が落ちたので、id_history を 20261125120000 へ改番（参照は pgTAP と tests/overture-maps-checks.test.mjs）。
+## 性能予算の引き上げ
+
+- async.raw 14376.3→14674.1 kB・async.gzip 4864.8→4982.2 kB・atlas-cap-runs 918.5→928.2 kB・atlas-console 1105.8→1118.6 kB・legal-text 91.8→94.1 kB・dist.assets 21796.5→22111.3 kB: 取り込み後の全体ビルドの実測。この枝が運ぶ Overture 読み取り（js/gis-overture.js）と不変 uid・根拠の変更履歴の遅延チャンク、legal-text の Overture 条文の分と、main に入った他の PR の分。起動時に読まれる本数は 9 のまま。
+
+- 性能予算 atlas-cap-runs を 941.6 kB（964217 B）へ: main に入った他の PR の遅延チャンクの増加で、台帳が古いまま残っていた分。全体ビルドで測った同じ値を、同じ主題の他の PR と揃えて書いた。
+
+- 性能予算の引き上げ（取り込み後の全体ビルドの実測）: async.raw 14569.8→14801.0 kB・async.gzip 4918.1→5029.7 kB・gis-core 697.3→701.9 kB・dist.assets 21923.7→22238.7 kB。この枝が運ぶ Overture 読み取りと不変 uid・根拠の変更履歴の遅延チャンクの分。起動時に読まれる本数は 9 のまま。

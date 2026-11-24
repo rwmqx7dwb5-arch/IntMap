@@ -91,23 +91,28 @@ test('R753 ① the account button carries no icon on a wide screen, and still is
   expect(wide.text.length, 'the button is not empty').toBeGreaterThan(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
+  /* (mobile-sheet-layout) 電話ではヘッダのボタンはメニュー（#m-menu-btn）の中の一覧の行になり、メニューを開くまで display:none。
+     シートを上げてメニューを開いてから、その行を測る。 */
+  await page.evaluate(() => { try { window.__setDetent('full', false); } catch (_) { } });
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { if (!document.body.classList.contains('m-menu-open')) document.getElementById('m-menu-btn').click(); });
+  await page.waitForFunction(() => document.body.classList.contains('m-menu-open') && document.getElementById('btn-account').getBoundingClientRect().height > 0);
+  await page.waitForFunction(() => document.getElementById('btn-account').querySelector('.acct-av').getBoundingClientRect().width > 0, null, { timeout: 5000 });   /* the round icon is laid out once the card is open */
   const phone = await page.evaluate(() => {
     const b = document.getElementById('btn-account'), av = b.querySelector('.acct-av');
     const nm = b.querySelector('.acct-name');
     return { avDisplay: getComputedStyle(av).display, avW: Math.round(av.getBoundingClientRect().width),
-      nameDisplay: getComputedStyle(nm).display, btnW: Math.round(b.getBoundingClientRect().width) };
+      nameDisplay: getComputedStyle(nm).display, btnW: Math.round(b.getBoundingClientRect().width), btnH: Math.round(b.getBoundingClientRect().height) };
   });
-  /* ⚠ unchanged on purpose: on a phone the icon IS the button (#R30 measured the header wrapping
-     when the name was shown there), so the withdrawal is a desktop presentation, not a rewrite. */
+  /* ⚠ the icon stays on a phone (the withdrawal is a desktop presentation), but the button is no longer a 34 px round in the header:
+     it is a 52 px list row of the menu (css/intmap.css `body.m-menu-open … #btn-account`), the 30 px round icon inside it, and the name beside it. */
   expect(phone.avDisplay, 'the icon comes back on a phone').not.toBe('none');
-  expect(phone.avW, 'as the 34 px round button it has been since #R32').toBe(34);
-  expect(phone.nameDisplay, 'and the name stays hidden there').toBe('none');
-  expect(phone.btnW).toBe(34);
+  expect(phone.avW, 'as the 30 px round icon of the menu row').toBe(30);
+  expect(phone.nameDisplay, 'and the row names the account').not.toBe('none');
+  expect(phone.btnH, 'the row is a list row, 52 px').toBeGreaterThanOrEqual(52);
+  expect(phone.btnW, 'and as wide as the menu card').toBeGreaterThan(200);
   /* (wave2-prod-fixes) …and a finger's 44 px still lands on it (#901): the hit area, read through elementFromPoint along
-     both axes from the centre — the visible round and the press target are two boxes, and both are measured. The sheet is
-     raised first: at its resting height the header row is below the screen, where no finger reaches anything. */
-  await page.evaluate(() => { try { window.__setDetent('full', false); } catch (_) { } });
-  await page.waitForTimeout(300);
+     both axes from the centre — the visible round and the press target are two boxes, and both are measured. */
   const hit = await page.evaluate(() => {
     const b = document.getElementById('btn-account'), r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
     const own = (x, y) => { const k = document.elementFromPoint(x, y); return !!(k && (k === b || b.contains(k))); };
@@ -117,6 +122,7 @@ test('R753 ① the account button carries no icon on a wide screen, and still is
     return Math.min(up + dn + 1, lf + rt + 1);
   });
   expect(hit, 'the press target is 44 px across, a finger\'s size').toBeGreaterThanOrEqual(44);
+  await page.evaluate(() => { if (document.body.classList.contains('m-menu-open')) document.getElementById('m-menu-btn').click(); });
   await page.setViewportSize({ width: 1280, height: 900 });
 });
 

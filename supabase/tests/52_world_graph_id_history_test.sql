@@ -1,6 +1,6 @@
 -- ============================================================================
 --  pgTAP · 52 — world graph: the history of an external identifier (Overture GERS first).
---  supabase/migrations/20261125120000_world_graph_id_history.sql
+--  supabase/migrations/20261120125000_world_graph_id_history.sql
 --    ① the table: columns, RLS on, one statement per (object, scheme, id, release);
 --    ② access: every reader reads, no client role writes, service_role does;
 --    ③ world_graph_resolve_id: the present id first, then the history; an id re-issued to a second object
@@ -15,7 +15,7 @@ do $$ begin execute format('grant anon, authenticated, service_role to %I', curr
 
 select has_table('public', 'world_graph_id_history', 'world_graph_id_history exists');
 select columns_are('public', 'world_graph_id_history',
-  array['id', 'ref', 'scheme', 'ext_id', 'release', 'status', 'source_records', 'observed'], 'the columns');
+  array['id', 'ref', 'scheme', 'ext_id', 'release', 'status', 'source_records', 'observed', 'basis', 'evidence', 'confidence'], 'the columns');
 select ok((select relrowsecurity from pg_class where oid = 'public.world_graph_id_history'::regclass), 'RLS is on');
 
 -- one object, whose GERS id changed between two releases (A in October, B in November); a second object re-issued A in November

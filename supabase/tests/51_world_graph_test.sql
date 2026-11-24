@@ -20,7 +20,7 @@ select has_table('public', 'world_graph_nodes', 'world_graph_nodes exists');
 select has_table('public', 'world_graph_edges', 'world_graph_edges exists');
 select has_table('public', 'world_graph_claims', 'world_graph_claims exists');
 select columns_are('public', 'world_graph_nodes',
-  array['ref', 'type', 'kind', 'name', 'country', 'lng', 'lat', 'provenance', 'ids', 'valid_from_ms', 'valid_to_ms', 'facts', 'sources', 'updated_at', 'feed', 'feed_run'], 'nodes: the columns');
+  array['ref', 'type', 'kind', 'name', 'country', 'lng', 'lat', 'provenance', 'ids', 'valid_from_ms', 'valid_to_ms', 'facts', 'sources', 'updated_at', 'feed', 'feed_run', 'uid'], 'nodes: the columns');
 select columns_are('public', 'world_graph_edges',
   array['id', 'from_ref', 'rel', 'to_ref', 'from_ms', 'to_ms', 'confidence', 'source', 'retrieved', 'feed', 'feed_run'], 'edges: the columns');
 select columns_are('public', 'world_graph_claims',

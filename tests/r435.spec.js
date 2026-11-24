@@ -187,9 +187,13 @@ test('R435 the event detail opens as the reading surface, and nothing renders be
   await page.waitForFunction(() => !!document.querySelector('#news-reader-pane .nrp-atlas'), null, { timeout: 15000 });
   const reading = await probe(page, CHROME);
 
-  /* 道が要る理由: タブ列は 1 つ残らず 0×0。Atlas も含まれる。 */
+  /* 道が要る理由: タブ列は 1 つ残らず 0×0。Atlas も含まれる。
+     (mobile-sheet-layout) 電話ではタブ列は常にメニュー（#m-menu-btn）の中で、開くまで display:none——この 0×0 は読む面に限らず構造上いつも成り立つ。
+     読む面が唯一の面であること自体は、下の「Atlas への道が画面の中に在る」と、メニューの入口が見えていることで測る。 */
   expect(reading.tabsH.length, 'the tab row is gone from the markup — this claim can no longer be read').toBeGreaterThan(3);
   expect(reading.tabsH.filter((h) => h > 0), 'the reading surface is no longer the only surface — recheck why the route exists').toEqual([]);
+  const menuBtn = await page.evaluate(() => { const b = document.getElementById('m-menu-btn'); if (!b) return null; const r = b.getBoundingClientRect(); return { w: r.width, h: r.height, vis: b.checkVisibility() }; });
+  expect(menuBtn && menuBtn.vis && menuBtn.w > 0 && menuBtn.h > 0, 'the menu button (the door to the tabs on a phone) is not reachable while reading').toBe(true);
   /* その代わりの道は、画面の中に在り、素の <button> ではない（当たらない CSS は綴りとしては健在・#R435 ①）。 */
   expect(reading.atlasBtn, 'the reading surface has no route to Atlas').not.toBeNull();
   expect(reading.atlasBtn.top).toBeGreaterThanOrEqual(0);
