@@ -215,6 +215,20 @@
     "data/tle/groups.json"
    ]
   },
+  "https://developer.entur.org/stops-and-timetable-data": {
+   "state": "observed",
+   "etag": "\"84f1d654a30cb8fe3e609d9bb121a05020b2697c6267c85200c8eb8eab7150d4-br\"",
+   "lastModified": "Mon, 23 Nov 2026 15:16:16 GMT",
+   "contentLength": 37569,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-no-oslo.json",
+    "data/transit-no-stavanger.json",
+    "data/transit-no-trondheim.json"
+   ]
+  },
   "https://doi.org/10.1038/sdata.2016.34": {
    "state": "observed",
    "etag": null,
@@ -577,6 +591,18 @@
     "data/language.json"
    ]
   },
+  "https://gtfs-data.jp/search?target_feed=chitetsu/chitetsubus": {
+   "state": "observed",
+   "etag": "\"592936b060b17d2d4a7c90d472b154e7\"",
+   "lastModified": "Tue, 03 Nov 2026 02:36:03 GMT",
+   "contentLength": 672,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-jp-toyama-bus.json"
+   ]
+  },
   "https://hdr.undp.org/sites/default/files/2023-24_HDR/HDR23-24_Composite_indices_complete_time_series.csv": {
    "state": "observed",
    "etag": "\"65f1c462-1d490b\"",
@@ -911,6 +937,78 @@
     "data/language-tree.json",
     "data/language.json",
     "data/religion.json"
+   ]
+  },
+  "https://www.data.gouv.fr/datasets/donnees-statiques-et-dynamiques-du-reseau-de-transport-lignes-dazur": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-fr-nice.json"
+   ]
+  },
+  "https://www.data.gouv.fr/datasets/donnees-theoriques-gtfs-et-temps-reel-siri-lite-du-reseau-cts": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-fr-strasbourg.json"
+   ]
+  },
+  "https://www.data.gouv.fr/datasets/gtfs-3": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-mc.json"
+   ]
+  },
+  "https://www.data.gouv.fr/datasets/horaires-theoriques-du-reseau-tag": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-fr-grenoble.json"
+   ]
+  },
+  "https://www.data.gouv.fr/datasets/offre-de-transport-tam-en-temps-reel-gtfs-rt-urbain-et-suburbain": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-fr-montpellier.json"
+   ]
+  },
+  "https://www.data.gouv.fr/datasets/reseau-de-transports-collectifs-naolib": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-fr-nantes.json"
+   ]
+  },
+  "https://www.data.gouv.fr/datasets/tisseo-reseau-transport-urbain-toulousain": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-fr-toulouse.json"
+   ]
+  },
+  "https://www.data.gouv.fr/datasets/versions-des-horaires-theoriques-des-lignes-de-bus-et-de-metro-du-reseau-star-dans-les-formats-gtfs-et-netex-ainsi-que-les-urls-dacces-au-gtfs-rt-1": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:49:59.039Z",
+   "subjects": [
+    "data/transit-fr-rennes.json"
    ]
   },
   "https://www.e-stat.go.jp/gis": {
