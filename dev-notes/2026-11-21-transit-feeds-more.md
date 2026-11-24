@@ -59,3 +59,7 @@ Metlink(条文が JS 描画で読めない)・HSL / Transport for Ireland / ACT(
 ## 5 回目の main 合流後の基準線
 
 `eager.brotli` を 1190.4 kB から 1196.4 kB へ上げた(+6.0 kB)。内訳は 12 路線の時刻表の行と法務文で、起動時に読まれる。main 合流のたびに perf 基準線が main 側の値で上書きされるため、このブランチの増分(`eager` の raw・gzip・brotli)を取り直している。コードの削減はしていない。
+
+## 7 回目の main 合流後の基準線
+
+非同期チャンク `atlas-console` を 1172.8 kB から 1183.5 kB へ上げた(+10.7 kB)。このチャンクは能力表(`js/atlas-capabilities.js`)を含み、main 側が能力を足して 273 行から 279 行になった分が主で、このブランチは能力を足していない。ceiling のみ上げた。
