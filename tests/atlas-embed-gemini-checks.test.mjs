@@ -283,6 +283,11 @@ test('atlas-embed-gemini ④ one key: no list on the way in; a refused model is 
   assert.deepEqual(Object.keys(o.shape), []);
   assert.ok(!JSON.stringify(o.out[0].json).includes('secret'), 'the provider\'s words are not carried');
   assert.ok(kinds(o.out[0].log).includes('openai:list'), 'after the refusal the list was asked for another model');
+  /* (atlas-embed-diag) the 502 says WHY in facts — which list was read and what it named, which model refused with what status */
+  const dg = o.out[0].json.diag;
+  assert.ok(dg && Array.isArray(dg.lists) && dg.lists.some((L) => L.provider === 'openai' && L.answered === true), 'the list that was read is named: ' + JSON.stringify(dg));
+  assert.equal(dg.refused && dg.refused.provider, 'openai');
+  assert.equal(dg.refused && dg.refused.status, 403);
 
   /* no key at all */
   const none = isolate({}, {}, [SEARCH]);
