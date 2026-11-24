@@ -246,6 +246,9 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
                                   して、貼ったリンクと同じ hashchange の経路で適用する。履歴は増やさない）
 embed-client.js                   **埋め込み API のホストの側**と約束事（`PROTOCOL`・`mount`）。他サイトが URL で import するので
                                   何も import せず、vite が dist/ にそのまま写す。embed-mode.js が PROTOCOL を import する
+admin-stats.js                    **行政区分の人口——日付・方式・単位の存続期間つき**。`data/admin-stats.json.gz`（`scripts/build-admin-stats.mjs` が Wikidata から作る）を
+                                  読み、`table`（年の指定・許容年・方式と年の混在の申告）、`valueAt`、`definitionAt`（存続期間の外は拒否＝歴史結合の番人）、
+                                  `boundaries`（第 1 級境界に ISO 3166-2 で結ぶ）。DOM もグローバルも持たない。Atlas `geo.regionStat` の中身
 geo-similar.js                    **地域の特徴ベクトルによる類似検索**（Spatial Embeddings 第 1 スライス）。OSM の建物・道路・施設・水辺の種類別の密度を
                                   比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる
 geo-ml.js                         **地理空間 ML の一連作業**（純粋・node で評価できる）。複数年の変化（撮影日が観測の画像だけから 画素ごとの型・速さ・向き・時期。
@@ -1138,7 +1141,7 @@ file-text.js                        md・txt・html・csv・json の書き出し
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
-atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar）／複数年の変化・地域の分類・変化の解釈・予測モデル（geo.ml。js/geo-ml-run.js の扉と引数の束縛）
+atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar）／複数年の変化・地域の分類・変化の解釈・予測モデル（geo.ml。js/geo-ml-run.js の扉と引数の束縛）・行政区分の人口（geo.regionStat。js/admin-stats.js）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
