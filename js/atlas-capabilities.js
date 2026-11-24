@@ -390,7 +390,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["sim.skyTonight","skyTonight","almanac,tonightSky,whatsUpTonight,moonPhase,moonrise,sunriseSunset,twilight,visiblePlanets,meteorShowers,nextEclipse,eclipseFromHere","sim","panel","panel.skyAlmanac","panel,explanation","session","none","point","skyAlmanac"],
       ["sim.satellitePasses","satellitePasses","issPasses,whenIsIss,satellitesOverhead,satellitePass,passPrediction","sim","none","","explanation","read","none","point","satellitesLive"],
       ["sim.spaceWeather","spaceWeather","solarWind,solarFlare,geomagneticStorm,kpIndex,auroraChance,noaaScales,asteroidFlyby,nearEarthAsteroids","sim","none","","explanation","read","none","",""],
-      ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
+      ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog,findImagery,satelliteScenes,findSatelliteData","data","none","","explanation","read","none","","gisCore"],
       ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
       ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
@@ -408,6 +408,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.sessionGrant","sessionGrant","allowSiteOperation,permitSite,authorizeBrowserSite","research","none","","explanation","external","explicit","",""],
       ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
       ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
+      ["mcp.servers","mcpServers","listMcpServers,mcpTools,refreshMcp","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","none","","",""],
+      ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","explicit","","","external"],
       ["research.longform","longform","writeLongReport,longDocument,writeInChapters","research","none","","explanation","read","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
