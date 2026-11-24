@@ -1200,9 +1200,12 @@ export async function toArticleRow(item, feed, registry, geo) {
   const cmp = normaliseTitle(title);
   const [urlFp, titleFp] = await Promise.all([sha256Hex(norm.url), sha256Hex(cmp)]);
 
+  /* (news-event-history) 記事の言語は**媒体が書く言語**（news_sources.languages の先頭）。以前は 'en' 固定で、
+     英語以外の媒体を足すと日本語の見出しが en として保存された。 */
+  const language = (Array.isArray(att.source.languages) && att.source.languages[0]) || 'en';
   let g = null;
   if (geo) {
-    try { g = geo.analyze(title, { desc: item.description || '', publisher: att.source.name, lang: 'en' }).result; }
+    try { g = geo.analyze(title, { desc: item.description || '', publisher: att.source.name, lang: language === 'ja' ? 'jp' : 'en' }).result; }
     catch (_) { g = null; }
   }
 
@@ -1223,7 +1226,7 @@ export async function toArticleRow(item, feed, registry, geo) {
          1,000 から上げたのは、導入部が段落の途中で切れて要約に使えない件があったため
          （parseFeed 側の 2,000 字はそのまま——ここが最終的な保管の上限である）。 */
       description: (item.description || '').slice(0, 1200) || null,
-      language: 'en',
+      language,
       published_at: published,
       provider_category: feed.category || null,
       /* ⚠ `entities` は #R334 が用意して**誰も書いていなかった**列である。媒体自身が

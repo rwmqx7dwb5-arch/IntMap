@@ -35,12 +35,13 @@ export function passes(filter, props) {
 
 export function createBoardState(initial) {
   const subs = new Set();
-  let st = { selection: [], filters: {}, params: {} };
+  let st = { selection: [], filters: {}, params: {}, time: null };
   const clean = (o) => {
-    const s = { selection: [], filters: {}, params: {} };
+    const s = { selection: [], filters: {}, params: {}, time: null };
     if (o && Array.isArray(o.selection)) s.selection = [...new Set(o.selection.filter((i) => Number.isInteger(i) && i >= 0))];
     if (o && o.filters && typeof o.filters === 'object') for (const k of Object.keys(o.filters)) { const f = o.filters[k]; if (f && typeof f.field === 'string') s.filters[k] = { field: f.field, min: f.min == null ? null : Number(f.min), max: f.max == null ? null : Number(f.max), values: Array.isArray(f.values) ? f.values.map(String) : null }; }
     if (o && o.params && typeof o.params === 'object') for (const k of Object.keys(o.params)) { const n = Number(o.params[k]); if (Number.isFinite(n)) s.params[k] = n; }
+    if (o && o.time && Number.isFinite(Number(o.time.year))) s.time = { year: Math.round(Number(o.time.year)), mode: o.time.mode === 'at' ? 'at' : 'upto' };
     return s;
   };
   st = clean(initial);
@@ -55,9 +56,12 @@ export function createBoardState(initial) {
       /* the selection is left alone: a selected row that a filter hides is simply not drawn, and is drawn again when the filter relaxes */
       st ={ ...st, filters: f }; emit({ what: 'filter', id, source });
     },
+    /* the clock the board follows: rows whose year is <= `year` ('upto') or == `year` ('at'). null releases it. js/board.js mirrors it with window.IntMapTime in BOTH directions; the store only holds the number */
+    setTime(t, source) { st = { ...st, time: t ? clean({ time: t }).time : null }; emit({ what: 'time', source }); },
     setParam(id, value, source) { const n = Number(value); if (!Number.isFinite(n)) return; st = { ...st, params: { ...st.params, [id]: n } }; emit({ what: 'param', id, source }); },
     /* the rows that pass every filter, as indexes into `rows` (an array of GeoJSON Features or plain {properties}) */
-    visible(rows) { const fs = Object.values(st.filters); const out = []; for (let i = 0; i < rows.length; i++) { const p = rows[i] && rows[i].properties; if (fs.every((f) => passes(f, p))) out.push(i); } return out; },
+    /* `yearOf(row)` reads the row's year (js/board-spec.js yearOf over the declared timeField). A row with no year does not pass a time window: unknown is not «inside» (same rule as passes()) */
+    visible(rows, yearOf) { const fs = Object.values(st.filters), t = yearOf ? st.time : null; const out = []; for (let i = 0; i < rows.length; i++) { const p = rows[i] && rows[i].properties; if (!fs.every((f) => passes(f, p))) continue; if (t) { const y = yearOf(rows[i]); if (y == null || (t.mode === 'at' ? y !== t.year : y > t.year)) continue; } out.push(i); } return out; },
     snapshot: () => JSON.parse(JSON.stringify(st)),
     restore(saved, source) { st = clean(saved); emit({ what: 'restore', source }); },
     subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },

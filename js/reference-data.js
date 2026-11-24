@@ -312,6 +312,8 @@ export const IntMapRefData = (function(){
        fallback for the rest, a monogram is the floor, and the browser asks Wikidata nothing. */
     {n:"Company logos — Wikidata (P154) via Wikimedia Commons, Google favicons as fallback",u:'https://commons.wikimedia.org/'},
     {n:'Wikipedia (Wikimedia REST API)',u:'https://www.wikipedia.org/'},
+    /* (news-event-history · backfill) the dated record the news archive is extended back with. Read by IntMap's own server, never by the browser. */
+    {n:'Past news events — Wikipedia «Portal:Current events» (daily pages; sentences and the publishers they cite)',u:'https://en.wikipedia.org/wiki/Portal:Current_events',lic:'CC BY-SA 4.0',licUrl:'https://creativecommons.org/licenses/by-sa/4.0/',credit:true},
     {n:'Live cameras — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R388) the railway atlas. ⚠ THIS REPLACED A NATURAL EARTH LAYER, SO THE TERMS CHANGED WITH IT:
        Natural Earth is public domain and required no attribution; OpenStreetMap is ODbL 1.0 and does.
@@ -709,6 +711,7 @@ export const IntMapRefData = (function(){
     {n:'Microsoft Planetary Computer STAC catalogue',u:'https://planetarycomputer.microsoft.com/'},
     {n:'NASA CMR-STAC — LP DAAC (NASA EOSDIS)',u:'https://cmr.earthdata.nasa.gov/stac'},
     {n:'British Geological Survey — OGC API',u:'https://ogcapi.bgs.ac.uk/'},
+    {n:'Overture Maps Foundation (places, buildings, addresses, divisions, transportation, base — GeoParquet, monthly release)',u:'https://overturemaps.org/',lic:'Stated per record and per theme: CDLA-Permissive-2.0 (places) · ODbL 1.0 (buildings, roads, divisions, base) · CC BY 4.0 (addresses, per country) — read from each row',licUrl:'https://docs.overturemaps.org/attribution/',credit:true},
     {n:'AI provider — OpenAI (Anthropic / Google selectable)',u:'https://openai.com/'}
   ];
   /* ══ ⚠ (#R246) ONE RESOLVER FOR THIS REGISTRY'S DESCRIPTIONS, AND IT LIVES WITH THE REGISTRY ═══
