@@ -40,3 +40,11 @@ date: 2026-11-25
 
 - `ai_delegation_journal` に `atlas_delegate` の行が現れるか、1 返信あたりの呼び出し数が増えモデル往復が減るか。
 - `atlas_capability_vectors` に `gemini-embedding-001@1536/retrieval` の行ができるか。
+
+## 4. 費用が上がったもの
+
+- 遅延チャンク `atlas-console` 1,424,795 → 1,432,218 バイト、`atlas-cap-runs` 1,149,725 → 1,155,840 バイト（`tests/perf-baseline.json`）。
+  能力の用途を導く `purposeOf()` と、指示・委譲の説明の追記の分。値は PR の CI がマージ後の木で測った 1398.6 kB / 1128.7 kB の
+  丸めの上限（手元の build は時間切れで測れなかった）。
+- `tests/atlas-embed-gemini-checks.test.mjs` が CI でだけ落ちた: 子プロセスが大きな JSON を書いた直後に `process.exit()` し、
+  Linux の非同期パイプで 146 kB で切れていた（Windows は同期なので手元では緑）。書き終わってから終了するよう直した。

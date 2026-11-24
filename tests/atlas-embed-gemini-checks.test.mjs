@@ -126,8 +126,9 @@ function isolate(env, world, requests) {
       const vs = Object.values(t);
       shape[k] = { n: vs.length, lens: [...new Set(vs.map((v) => v.length))], norms: vs.map((v) => Math.sqrt(v.reduce((a, x) => a + x * x, 0))) };
     }
-    process.stdout.write(JSON.stringify({ out, db: DB, shape }));
-    process.exit(0);
+    /* ⚠ exit only once the write has drained: on Linux a pipe is asynchronous, and exit() right after write() cut the
+       JSON at 146 kB on CI (Windows pipes are synchronous, so it passed locally) */
+    process.stdout.write(JSON.stringify({ out, db: DB, shape }), () => process.exit(0));
   `;
   const raw = execFileSync(process.execPath, ['--no-warnings', '--input-type=module', '-e', src],
     { cwd: ROOT, encoding: 'utf8', input: JSON.stringify(world), stdio: ['pipe', 'pipe', 'pipe'], timeout: 120000, maxBuffer: 256 * 1024 * 1024 });
