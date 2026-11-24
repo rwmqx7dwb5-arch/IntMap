@@ -86,3 +86,9 @@ CI 実測で `eager.gzip` が 1568.5 kB（天井 1560.5）に増えた。main �
 ## perf (280 能力・main 再取り込み後)
 
 CI 実測で `atlas-cap-runs` 1064.7 kB・`atlas-console` 1185.2 kB・`dist.data` 1200649.3 kB が天井を超えた。増分は main が足した能力と data の行で、この PR の追加ではない(この PR のデータは data/siting-jp.json)。天井を 1100000 / 1220000 / 1240000000 byte へ。失効条件: main の perf-ceiling が下げた値が正本。
+
+## perf 天井の引き上げ(直列化後の再測定)
+
+#1316 が main に入った後の tree(origin/main を取り込み)を build し、`perf-budget.mjs --update` を 1 回だけ走らせた。
+上がったのは async チャンク atlas-cap-runs の 1064.4 -> 1071.2 kB の 1 行のみ。siting.compare の能力定義と、
+その能力表の行が運ぶ実コードの増分で、他の行は動かしていない。
