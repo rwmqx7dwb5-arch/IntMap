@@ -256,6 +256,8 @@ geo-ml.js                         **地理空間 ML の一連作業**（純粋�
                                   Theil–Sen・Mann–Kendall・段差の帰無は simulate）・地域の意味分類（OSM 密度の原型／利用者の正解から学ぶ）・
                                   変化の解釈（場所と時期の一致。原因とは言わない）・予測モデル（特徴量づくり→ ridge と木→ 空間ブロック/時間の評価→ 分割共形の区間）
 geo-ml-run.js                     geo-ml.js を GIS のデータセット（IntMapData）に結ぶ薄い層。読み出し・結果のデータセット登録・根拠（evidence）
+siting.js                         **産業立地の比較**。data/siting-<国>.json（電力・産業用地・労働力・研究・規制を地域ごとに公開統計の実数で並べ、企業拠点を結ぶ）を読み、
+                                  指標ごとの順位（1 = 良い側）・出典・載せていないものを返す。総合点は出さない。純粋で node で評価できる
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
                                   コード）は `js/atlas-attach.js` の `ATL_FILE` に訊き（写さず共有）、文法は
@@ -1154,6 +1156,7 @@ atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（c
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
 atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar）／複数年の変化・地域の分類・変化の解釈・予測モデル（geo.ml。js/geo-ml-run.js の扉と引数の束縛）・行政区分の人口（geo.regionStat。js/admin-stats.js）
+atlas-cap-siting.js               Atlas の能力 — 産業立地の比較（siting.compare。js/siting.js の扉と引数の束縛）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）

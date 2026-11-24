@@ -1165,6 +1165,57 @@
     "data/hist-era-spans.json"
    ]
   },
+  "https://laws.e-gov.go.jp/": {
+   "state": "observed",
+   "etag": "\"513f981a1611414483ae026e1a6dec7f\"",
+   "lastModified": "Fri, 06 Nov 2026 06:57:15 GMT",
+   "contentLength": 800,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-23T16:48:33.861Z",
+   "subjects": [
+    "data/siting-jp.json"
+   ]
+  },
+  "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-L01-2026.html": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:48:33.861Z",
+   "subjects": [
+    "data/siting-jp.json"
+   ]
+  },
+  "https://www.jepx.jp/electricpower/market-data/spot/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:48:33.861Z",
+   "subjects": [
+    "data/siting-jp.json"
+   ]
+  },
+  "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/": {
+   "state": "observed",
+   "etag": null,
+   "lastModified": null,
+   "contentLength": 0,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-23T16:48:33.861Z",
+   "subjects": [
+    "data/siting-jp.json"
+   ]
+  },
+  "https://www.nstac.go.jp/use/literacy/ssdse/": {
+   "state": "unprobeable",
+   "why": "server-states-no-validator",
+   "status": 200,
+   "observedAt": "2026-11-23T16:48:33.861Z",
+   "subjects": [
+    "data/siting-jp.json"
+   ]
+  },
   "https://www.wikidata.org/wiki/Property:P1082": {
    "state": "unprobeable",
    "why": "server-states-no-validator",
