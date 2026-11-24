@@ -95,3 +95,5 @@ main の他の PR が `window.IntMapLazy` の読みを 196 → 197 に増やし�
 main を取り込んだこの PR の `check:surface` が赤になった。台帳を `node scripts/global-surface.mjs --update` で 197 にした。
 
 `atlas-cap-runs` は、main が上限を 1044.4 kB に上げた merge の後でも実測 1044.7 kB で越えた。同じ方針（実測 + 1.5 %）で 1060.4 kB にした。
+
+`atlas-console` も、他の PR が先に載せた分で実測 1178.8 kB が上限 1172.8 kB を越えた。同じ方針（実測 + 1.5 %）で 1196.5 kB にした。
