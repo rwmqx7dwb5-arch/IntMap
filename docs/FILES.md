@@ -1454,6 +1454,11 @@ routing-ops.js                    経路の分析 window.IntMapRoutingOps。線�
 routing-errors.js                 経路の失敗の分類（15コード・再試行可否・fallback可否）window.IntMapRouteErrors
 routing-time.js                   計画の時刻（Chronos）と案内の時刻（壁時計）の区別 window.IntMapRouteClock
 routing-traffic.js                交通情報つき provider のアダプタ（routing-relay 経由）window.IntMapRouteTraffic
+transit-catalogue.js              発見した公開時刻表のカタログ（data/transit-feed-catalogue.json）を地点で引く純関数——ここに何があり、使えないものは何が理由か
+transit-feeds.js                  自前の時刻表の台帳——使ってよい feed とそのライセンス・出典（商用可のものだけ）・Transitous の既定オフ
+transit-licence.js                時刻表の許諾リンクを許諾の文法で分類（CC の BY/SA/NC/ND・CC0・各国の公開許諾）——商用可の手がかり／不可／記載なし／未読
+transit-raptor.js                 時刻表ベースの経路探索と到達圏（RAPTOR）。純関数・定期運行と見積りを分けて返す
+transit-planner.js                上の読込と応答の形（MOTIS 形の旅程・到達圏ポリゴン・国境通過）window.IntMapTransitTimetable（遅延取得）
 navigation.js                     案内の進行役（GPS→照合→進捗→再探索）window.IntMapNavigation
 navigation-store.js               案内の状態機械（10状態・遷移表）window.IntMapNavStore
 navigation-match.js               GPS の受け入れ判定と経路への射影 window.IntMapNavMatch
