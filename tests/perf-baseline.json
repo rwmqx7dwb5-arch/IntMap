@@ -4,7 +4,7 @@
     "gzip": 1606272,
     "brotli": 1225118,
     "requests": 12,
-    "modules": 916,
+    "modules": 927,
     "cssRaw": 394673,
     "cssGzip": 65461
   },
@@ -129,7 +129,7 @@
       "layer-time": 13553,
       "layer-time-decl": 21678,
       "legal-text": 98608,
-      "lib": 129709,
+      "lib": 136860,
       "link-codec": 1344,
       "map-cite": 18254,
       "map-corrections": 19904,
