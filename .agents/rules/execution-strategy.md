@@ -96,3 +96,7 @@
 作業 1 本の**具体的な手順**と**ファイル名**は
 `.agents/skills/intmap-round/`（Claude `/intmap-round` ／ Codex `$intmap-round`）。
 状態・worktree・片付けは `node scripts/worktree.mjs`。
+
+## 7. セッション・PR を増やさない
+
+触る範囲が重なる仕事は **1 セッション・1 PR** に。着手前に `gh pr list` で重なりを探し、あれば乗る。並列化は subagent（§2）で。
