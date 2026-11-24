@@ -324,6 +324,7 @@ export const IntMapRefData = (function(){
        Natural Earth is public domain and required no attribution; OpenStreetMap is ODbL 1.0 and does.
        The credit is on the map whenever the layer is on (the source declares it) and here. */
     {n:'World railways — OpenStreetMap (railway=rail/narrow_gauge/light_rail/subway/tram/construction, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:railway',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Port hinterlands — rail reachability from OpenStreetMap rail, ports (Wikidata CC0, Eurostat mar_go_aa CC BY 4.0, UN/LOCODE), cities (GeoNames CC BY 4.0) and company-atlas factory sites',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R254) the data-center layer: OSM's own surveyed buildings (ODbL) plus the operators' published region lists */
     {n:'Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:telecom%3Ddata_center',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R255) the four surveyed-facility layers — js/osm-facilities.js. Same live Overpass path,
@@ -488,6 +489,12 @@ export const IntMapRefData = (function(){
     {n:'Google News',u:'https://news.google.com/'},
     {n:'OpenFreeMap / OpenMapTiles',u:'https://openfreemap.org/'},
     {n:'PLATEAU 3D city models (MLIT Japan)',u:'https://www.mlit.go.jp/plateau/',lic:'PLATEAU site policy (compatible with CC BY 4.0)',licUrl:'https://www.mlit.go.jp/plateau/site-policy/',credit:true},
+    /* industrial siting (data/siting-jp.json, scripts/build-siting-jp.mjs): each value keeps its own source and terms */
+    {n:'JEPX spot market area prices (Japan Electric Power Exchange)',u:'https://www.jepx.jp/electricpower/market-data/spot/',lic:'JEPX terms of use (source credit)',licUrl:'https://www.jepx.jp/',credit:true},
+    {n:'National Land Numerical Information — Land Price Public Announcement (MLIT Japan)',u:'https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-L01-2026.html',lic:'PDL 1.0 (compatible with CC BY 4.0)',licUrl:'https://nlftp.mlit.go.jp/ksj/other/agreement.html',credit:true},
+    {n:'Regional minimum wages (Ministry of Health, Labour and Welfare, Japan)',u:'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/',lic:'Government Standard Terms of Use (compatible with CC BY 4.0)',licUrl:'https://www.mhlw.go.jp/chosakuken/index.html',credit:true},
+    {n:'SSDSE-B Standardized Statistical Data Set (Statistics Bureau of Japan / NSTAC)',u:'https://www.nstac.go.jp/use/literacy/ssdse/',lic:'Government Standard Terms of Use (compatible with CC BY 4.0)',licUrl:'https://www.nstac.go.jp/use/literacy/ssdse/',credit:true},
+    {n:'e-Gov Laws API — Factory Location Act (Digital Agency, Japan)',u:'https://laws.e-gov.go.jp/',lic:'Government Standard Terms of Use (statute text)',licUrl:'https://laws.e-gov.go.jp/terms/',credit:true},
     {n:'3D BAG (Netherlands 3D buildings)',u:'https://3dbag.nl/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'Re:Earth Buildings (worldwide 3D buildings)',u:'https://buildings.reearth.land/',lic:'ODbL 1.0 (OpenStreetMap contributors, Overture Maps Foundation)',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'Google Fonts (Noto Sans JP / SC / TC)',u:'https://fonts.google.com/noto'},
@@ -588,6 +595,18 @@ export const IntMapRefData = (function(){
     /* (transit-timetable-reach) the publishers' own timetables — data/transit-<id>.json, built by scripts/build-transit-timetables.mjs; one row per feed, registry in js/transit-feeds.js */
     {n:'Timetables — Administration des transports publics (Luxembourg), CC BY 4.0, data.public.lu',u:'https://data.public.lu/fr/datasets/horaires-et-arrets-des-transport-publics-gtfs/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'Mobility Database — MobilityData (catalogue of open GTFS feeds, CC0 1.0)',u:'https://mobilitydatabase.org/',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
+    {n:'Timetables — CTS - Compagnie des Transports Strasbourgeois, Licence Ouverte 2.0, data.gouv.fr',u:'https://www.data.gouv.fr/datasets/donnees-theoriques-gtfs-et-temps-reel-siri-lite-du-reseau-cts',lic:'Licence Ouverte 2.0',licUrl:'https://www.etalab.gouv.fr/licence-ouverte-open-licence',credit:true},
+    {n:'Timetables — STAR (Rennes), ODbL 1.0, data.gouv.fr',u:'https://www.data.gouv.fr/datasets/versions-des-horaires-theoriques-des-lignes-de-bus-et-de-metro-du-reseau-star-dans-les-formats-gtfs-et-netex-ainsi-que-les-urls-dacces-au-gtfs-rt-1',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Timetables — Toulouse métropole (Tisséo), ODbL 1.0, data.gouv.fr',u:'https://www.data.gouv.fr/datasets/tisseo-reseau-transport-urbain-toulousain',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:"Timetables — Métropole Nice Côte d'Azur, Licence Ouverte 2.0, data.gouv.fr",u:'https://www.data.gouv.fr/datasets/donnees-statiques-et-dynamiques-du-reseau-de-transport-lignes-dazur',lic:'Licence Ouverte 2.0',licUrl:'https://www.etalab.gouv.fr/licence-ouverte-open-licence',credit:true},
+    {n:'Timetables — Nantes Métropole (Naolib), Licence Ouverte 2.0, data.gouv.fr',u:'https://www.data.gouv.fr/datasets/reseau-de-transports-collectifs-naolib',lic:'Licence Ouverte 2.0',licUrl:'https://www.etalab.gouv.fr/licence-ouverte-open-licence',credit:true},
+    {n:'Timetables — Montpellier Méditerranée Métropole (TaM), ODbL 1.0, data.gouv.fr',u:'https://www.data.gouv.fr/datasets/offre-de-transport-tam-en-temps-reel-gtfs-rt-urbain-et-suburbain',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:"Timetables — Syndicat Mixte des Mobilités de l'Aire Grenobloise (TAG), ODbL 1.0, data.gouv.fr",u:'https://www.data.gouv.fr/datasets/horaires-theoriques-du-reseau-tag',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Timetables — Compagnie des Autobus de Monaco, Licence Ouverte 2.0, data.gouv.fr',u:'https://www.data.gouv.fr/datasets/gtfs-3',lic:'Licence Ouverte 2.0',licUrl:'https://www.etalab.gouv.fr/licence-ouverte-open-licence',credit:true},
+    {n:'Timetables — Entur AS (Ruter), NLOD, entur.org',u:'https://developer.entur.org/stops-and-timetable-data',lic:'NLOD 2.0',licUrl:'https://data.norge.no/nlod/en/2.0',credit:true},
+    {n:'Timetables — Entur AS (AtB), NLOD, entur.org',u:'https://developer.entur.org/stops-and-timetable-data',lic:'NLOD 2.0',licUrl:'https://data.norge.no/nlod/en/2.0',credit:true},
+    {n:'Timetables — Entur AS (Kolumbus), NLOD, entur.org',u:'https://developer.entur.org/stops-and-timetable-data',lic:'NLOD 2.0',licUrl:'https://data.norge.no/nlod/en/2.0',credit:true},
+    {n:'Timetables — 富山地方鉄道 (Toyama Chiho Railway), CC0 1.0, gtfs-data.jp',u:'https://gtfs-data.jp/search?target_feed=chitetsu/chitetsubus',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/deed.ja',credit:false},
     {n:'Time zone boundaries — timezone-boundary-builder (ODbL, built from OpenStreetMap)',u:'https://github.com/evansiroky/timezone-boundary-builder',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
        from OHM — the day-exact borders of 1689-1885 (data/hist-borders.js, widened from 1850 by
@@ -716,6 +735,7 @@ export const IntMapRefData = (function(){
     {n:'Microsoft Planetary Computer STAC catalogue',u:'https://planetarycomputer.microsoft.com/'},
     {n:'NASA CMR-STAC — LP DAAC (NASA EOSDIS)',u:'https://cmr.earthdata.nasa.gov/stac'},
     {n:'British Geological Survey — OGC API',u:'https://ogcapi.bgs.ac.uk/'},
+    {n:'Overture Maps Foundation (places, buildings, addresses, divisions, transportation, base — GeoParquet, monthly release)',u:'https://overturemaps.org/',lic:'Stated per record and per theme: CDLA-Permissive-2.0 (places) · ODbL 1.0 (buildings, roads, divisions, base) · CC BY 4.0 (addresses, per country) — read from each row',licUrl:'https://docs.overturemaps.org/attribution/',credit:true},
     {n:'AI provider — OpenAI (Anthropic / Google selectable)',u:'https://openai.com/'}
   ];
   /* ══ ⚠ (#R246) ONE RESOLVER FOR THIS REGISTRY'S DESCRIPTIONS, AND IT LIVES WITH THE REGISTRY ═══

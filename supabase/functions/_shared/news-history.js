@@ -132,3 +132,19 @@ export function buildArchiveRow(ev, articles, companyIds, matcher, starred) {
     world_refs: worldRefs, company_ids: cos, source_count: sourceCount, sources, starred: !!starred,
   };
 }
+
+/**
+ * Which events still have something to write into the long record. An event whose history row was written at or
+ * after its last article has nothing new — skipped, so a run's cost follows what CHANGED, not how many events the
+ * last 72 hours hold. The rest go oldest-first (their articles are the first to be pruned), at most `cap` a run;
+ * the next run takes the remainder.
+ * @param {Array<{public_id:string,last_article_at:string}>} events
+ * @param {Map<string,number>} wrote event_public_id -> ms the history row was last written
+ * @param {number} cap
+ */
+export function pendingArchive(events, wrote, cap) {
+  const pending = events.filter((e) => !(wrote.get(e.public_id) >= Date.parse(e.last_article_at)))
+    .sort((x, y) => Date.parse(x.last_article_at) - Date.parse(y.last_article_at));
+  const take = pending.slice(0, Math.max(0, cap));
+  return { events: take, skippedCurrent: events.length - pending.length, deferred: pending.length - take.length };
+}

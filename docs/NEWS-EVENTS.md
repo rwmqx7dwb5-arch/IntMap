@@ -825,7 +825,7 @@ NPR 79 字 / France 24 133 字 = 0.59）。⚠ 母数は薄い（**526 組中 1 
 詳しく・背景・なぜ」がその 1 件へ解決する。
 
 ⚠⚠⚠ **橋が在ることと、渡れることは別である。** 通常のサイドバーでは、読む面へ入ると
-`enterReaderPane()` が `.control-panel` を伏せる＝**Atlas タブも 0×0 になる**。唯一の到達手段
+`enterReaderPane()` が `.control-panel` を伏せる＝**Atlas タブも 0×0 になる**（携帯ではタブ列はメニューのカードに貸されており、それも同じ `.control-panel`）。唯一の到達手段
 （`IntMapConsole.open()`）は `#btn-community` を押す＝`setMode()` を通り、`setMode()` は読む面を
 離れ、`closeReaderPane()` が `window._imReader` を捨てていた。⇒ **Atlas へ行こうとすると必ず
 文脈が消えるので、この橋は workspace mode でしか渡っていなかった**（Atlas が別ウィンドウなので

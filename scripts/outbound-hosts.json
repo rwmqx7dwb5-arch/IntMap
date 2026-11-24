@@ -736,6 +736,12 @@
       }
     },
     {
+      "host": "docs.overturemaps.org",
+      "what": "Overture Maps terms and attribution page",
+      "whatJp": "Overture Maps の利用条件・帰属表示のページ",
+      "link": "the licence page of an Overture dataset (the licenceUrl of its provenance record, js/gis-overture.js), shown as text and a hyperlink on the sources page and in the dataset's credit; never fetched"
+    },
+    {
       "host": "doi.org",
       "what": "dataset DOI citations (Harvard Dataverse, DataverseNL, heiDATA)",
       "link": "the persistent identifier of a dataset IntMap draws (RISTAT 1897, Transcultural Empire, Nejjar, HGIS de las Indias), shown as text and a hyperlink (<a href>) on the sources page and in the map attribution (js/reference-data.js, the cite/u of that publisher's DATA_SOURCES row); never fetched"
@@ -957,11 +963,11 @@
     },
     {
       "host": "flood-api.open-meteo.com",
-      "what": "Open-Meteo river-discharge (GloFAS) forecast at the points of a grid over the area asked about",
-      "whatJp": "Open-Meteo の河川流量（GloFAS）予測。尋ねた範囲の格子の各地点",
+      "what": "Open-Meteo river-discharge (GloFAS) forecast at a point and at the points of a grid over the area asked about",
+      "whatJp": "Open-Meteo の河川流量（GloFAS）予測。尋ねた地点と、尋ねた範囲の格子の各地点",
       "sends": {
         "code": "coordinates",
-        "detail": "latitude/longitude of the grid points over the area asked about"
+        "detail": "latitude/longitude of the point asked about (with its eight neighbouring grid cells) or of the grid points over the area asked about"
       },
       "disclosure": {
         "en": "elevation/weather APIs (Open-Meteo",
@@ -1607,6 +1613,22 @@
       }
     },
     {
+      "host": "overturemaps-us-west-2.s3.us-west-2.amazonaws.com",
+      "what": "Overture Maps GeoParquet files (AWS Open Data) — byte ranges of the files a window meets, only when Atlas is asked to read Overture data",
+      "whatJp": "Overture Maps の GeoParquet ファイル（AWS Open Data）— 窓に掛かるファイルのバイト範囲。Atlas に Overture のデータの読み取りを頼んだときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to read Overture Maps data: byte-range requests for the parts of the files that meet the window you named — which files and which ranges follow from the place, so the host can infer the area, and sees the connection's address (no account, name or identifier of yours is sent)"
+      },
+      "disclosure": {
+        "en": "overturemaps-us-west-2",
+        "jp": "overturemaps-us-west-2"
+      },
+      "probe": {
+        "url": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/"
+      }
+    },
+    {
       "host": "photon.komoot.io",
       "what": "Photon (Komoot) geocoding",
       "whatJp": "Photon（Komoot）のジオコーディング",
@@ -1852,6 +1874,22 @@
       },
       "probe": {
         "url": "https://ssd-api.jpl.nasa.gov/fireball.api?req-loc=true&limit=1"
+      }
+    },
+    {
+      "host": "stac.overturemaps.org",
+      "what": "Overture Maps STAC catalogue — which release is the latest and which files of it meet a window, only when Atlas is asked to read Overture data",
+      "whatJp": "Overture Maps の STAC カタログ — 最新のリリースと、窓に掛かるファイルの一覧。Atlas に Overture のデータの読み取りを頼んだときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to read Overture Maps data: the request itself (a catalogue page is fetched; the bounding box is NOT sent — which files meet the window is decided in your browser from the extents the catalogue states)"
+      },
+      "disclosure": {
+        "en": "Overture Maps Foundation",
+        "jp": "Overture Maps Foundation"
+      },
+      "probe": {
+        "url": "https://stac.overturemaps.org/catalog.json"
       }
     },
     {
@@ -2543,6 +2581,41 @@
       "host": "data.public.lu",
       "what": "the Luxembourg timetable dataset page",
       "link": "the publisher page of the Luxembourg timetable (js/transit-feeds.js source); the build script reads its dataset API, the browser never does"
+    },
+    {
+      "host": "www.data.gouv.fr",
+      "what": "the dataset pages of the French timetables",
+      "link": "the publisher page of a shipped French timetable (js/transit-feeds.js source / verified.page); the build script reads its dataset API, the browser never does"
+    },
+    {
+      "host": "opendatacommons.org",
+      "what": "ODbL 1.0 text link",
+      "link": "the licence of a shipped timetable (js/transit-feeds.js FEED_ROWS[].licence.url), shown as a hyperlink; never fetched"
+    },
+    {
+      "host": "data.norge.no",
+      "what": "NLOD 2.0 text link",
+      "link": "the licence of a shipped timetable (js/transit-feeds.js FEED_ROWS[].licence.url), shown as a hyperlink; never fetched"
+    },
+    {
+      "host": "developer.entur.org",
+      "what": "the Norwegian timetable page (Entur)",
+      "link": "the publisher page of the Norwegian timetables (js/transit-feeds.js source); the build script re-reads its licence statement, the browser never does"
+    },
+    {
+      "host": "storage.googleapis.com",
+      "what": "the Norwegian timetable archives (Entur)",
+      "link": "the archive URL a build downloads (js/transit-feeds.js FEED_ROWS[].resolve.url); the browser never requests it — it reads the compiled data/transit-<id>.json from IntMap"
+    },
+    {
+      "host": "gtfs-data.jp",
+      "what": "the Japanese timetable page (GTFSデータリポジトリ)",
+      "link": "the publisher page of a shipped Japanese timetable (js/transit-feeds.js source / verified.page); never fetched by the browser"
+    },
+    {
+      "host": "api.gtfs-data.jp",
+      "what": "the Japanese timetable feed API",
+      "link": "the feed API a build reads for the current archive and licence (js/transit-feeds.js FEED_ROWS[].resolve.api); the browser never requests it"
     },
     {
       "host": "transitous.org",

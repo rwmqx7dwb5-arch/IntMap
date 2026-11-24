@@ -540,7 +540,7 @@ IntMapLang.define('zh-hans', {
     /* analysis-panels.js */
     'Ask Atlas': "询问 Atlas",   /* tool-panel.js */
     'Ask Atlas anything…': "想问 Atlas 什么都可以…",   /* atlas-console.js */
-    'Ask in plain language — Atlas drives the map for you. Try:': "用日常语言提问 — Atlas 会替你操作地图。试试看：",   /* atlas-console.js */
+    'Ask in plain language — Atlas drives the map for you.': "用日常语言提问 — Atlas 会替你操作地图。",   /* atlas-console.js */
     'ask me anything about this spot': "想问这个地点的什么都可以",   /* atlas-console.js */
     'Ask me anything about this spot — I know exactly where it is.': "想问这个地点的什么都可以 — 我很清楚它在哪里。",   /* atlas-console.js */
     'Asteroid': "小行星",   /* space.js */
