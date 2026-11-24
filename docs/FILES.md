@@ -481,6 +481,12 @@ gis-packed.js                     **幾何の圧縮表現とチャンクスト�
                                   幾何を Float64Array へ平らに並べ（unpack で 1 バイトも違わず戻る）、
                                   結果を入力の順のチャンクとして持つ。閾値と、その観測は同じ file の末尾
                                   （`docs/GIS-CORE.md` §6「100 万件」）
+cap-bridge.js                     **能力ブリッジ**（Programmatic Tool Calling）— AI が書いたプログラムが能力表の能力を
+                                  ポート越しに何百回でも直接呼び、途中の結果は実行環境に置いて最後だけ Atlas に返す、
+                                  言語に依らない契約（JSON over MessagePort）。呼びは `makeExecute` と同じ道を通る
+                                  （スキーマ・確認・直列化はそのまま）。足すのは、能力の性質（read/state/persist/external）
+                                  による許可・同じ呼びの二度目を `alreadyDone` で答える記録・最後の柵（呼び数/期限/取消）・
+                                  外部文章の汚染の伝播。接続点と #1272 との関係は `dev-notes/2026-11-20-cap-bridge.md`
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**
