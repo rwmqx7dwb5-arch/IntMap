@@ -225,7 +225,7 @@ function _redrawLocalGlyphs(m,cover){
      v6's Map COMPOSES a Camera instead of extending one (its 6.0.0 changelog, and the v5→v6
      migration guide: «The internal `map.transform` property has been removed»). The transform the painter
      draws with is the camera's: the painter keeps none of its own (6.18: no `transform` key on it) and the map hands
-     it the camera's as the second argument of every frame, `painter.render(style, this._camera.transform, …)`
+     it the camera's as the second argument of every frame, `painter.render(style, this._camera.transform, …)` — since 6.19 `this._camera.projectedCamera`, see _TrView below
      (tests/maplibre-6-migration.spec.js ① watches one frame do so). Three things this adapter needs
      live only there:
        · the transform's matrices, its far plane and its camera distance — the limb, the sky's frame,
@@ -243,10 +243,88 @@ function _redrawLocalGlyphs(m,cover){
      must fail a test, not quietly turn a feature off (#R162). The transform is re-read on every
      call, never cached: a projection change REPLACES it (Camera.migrateProjection). */
   function _cam(m){ try{ const c=m&&m._camera; return (c&&typeof c==='object')?c:null; }catch(_){ return null; } }
-  /* `proposed`: the transform a gesture handler reads — the running proposal while one exists
-     (`_requestedCameraState`, kept by MapLibre while a camera-update hook is installed), else the
-     applied one. That is the renderer's own TransformProvider.transform (map-motion). */
-  function _tr(m,proposed){ const c=_cam(m); try{ return (c&&((proposed&&c._requestedCameraState)||c.transform))||null; }catch(_){ return null; } }
+  /* ══ (maplibre-619) …AND 6.19 HAS NO TRANSFORM AT ALL ═══════════════════════════════════════════
+     6.19 removed geo/transform.ts and its projections: the camera is an IMMUTABLE CameraViewState that the
+     camera's pure functions project (src/camera/), and every change replaces the state instead of writing
+     into it. `camera.transform` and `_requestedCameraState` are gone, so the old `_tr` answered null and
+     every reader below — the limb, the lifted projection, the horizon reach, the eye geometry, the wheel's
+     spring, the look-up repair — turned itself off WITHOUT AN ERROR (the #R162 shape).
+     _TrView is the one place that knows the new shape. It carries a state and answers the members those
+     readers ask a transform for, from the renderer's OWN functions (src/vendor.js publishes them as
+     window.maplibreglCamera — the very modules the renderer draws with, so nothing here re-derives a
+     matrix). A clone is a new _TrView whose setters REPLACE its state (the probe the look-up repair
+     judges); the live view's near/far setters go through the camera's own applyStateChange. Matrices and
+     planes come from the camera as DRAWN (renderedProjectedCamera: on a globe, the vertical perspective
+     while it renders and mercator once it has turned into it), which is what 6.18's globe transform
+     forwarded to. */
+  function _K(){ try{ const k=(typeof window!=='undefined')&&window.maplibreglCamera; return (k&&typeof k.projectCamera==='function')?k:null; }catch(_){ return null; } }
+  class _TrView{
+    constructor(cam,view,K){ this._c=cam; this.view=view; this._K=K; this._p=null; }
+    get _pc(){ if(!this._p) this._p=this._K.projectCamera(this.view,this._c.context); return this._p; }
+    get _r(){ return this._K.renderedProjectedCamera(this._pc); }
+    get center(){ return this.view.center; }            get zoom(){ return this.view.zoom; }
+    get elevation(){ return this.view.elevation; }      get tileSize(){ return this.view.tileSize; }
+    get width(){ return this.view.width; }              get height(){ return this.view.height; }
+    get fovInRadians(){ return this.view.fovInRadians; } get rollInRadians(){ return this.view.rollInRadians; }
+    get pitch(){ return this._pc.pitch; }               get bearing(){ return this._pc.bearing; }
+    get roll(){ return this._pc.roll; }                 get fov(){ return this._pc.fov; }
+    get worldSize(){ return this._pc.worldSize; }       get cameraToCenterDistance(){ return this._r.cameraToCenterDistance; }
+    get farZ(){ return this._r.farZ; }                  get nearZ(){ return this._r.nearZ; }
+    get modelViewProjectionMatrix(){ return this._r.modelViewProjectionMatrix; }
+    get inverseProjectionMatrix(){ return this._r.inverseProjectionMatrix; }
+    get cameraPosition(){ return this._r.cameraPosition; }
+    get centerOffset(){ return this._K.getCenterOffset(this.view); }
+    get isGlobeRendering(){ return this._K.isGlobeRendering(this._pc); }
+    get autoCalculateNearFarZ(){ return this.view.nearFarZOverride==null; }
+    getProjectionDataForCustomLayer(applyGlobeMatrix){ const p=this._pc; return this._K.getCameraMath(p).getProjectionDataForCustomLayer(p,applyGlobeMatrix); }
+    isPointOnMapSurface(pt,terrain){ const p=this._pc; return this._K.getCameraMath(p).isPointOnMapSurface(p,this._c.context.worldCoordinateHelper,pt,terrain); }
+    applyConstrain(lngLat,zoom){ return this._K.applyConstrain(this.view,this._c.context,lngLat,zoom); }
+    clone(){ return new _TrView(this._c,this.view,this._K); }
+    _set(v){ this.view=v; this._p=null; }
+    setPitch(p){ this._set(this._K.setPitch(this.view,p)); }
+    setZoom(z){ this._set(this._K.setZoom(this.view,this._c.context,z)); }
+    setCenter(ll){ this._set(this._K.setCenter(this.view,this._c.context,ll)); }
+    setElevation(e){ this._set(this._K.setElevation(this.view,this._c.context,e)); }
+    /* the live camera's depth range: a change of its state, applied the way MapLibre applies one */
+    overrideNearFarZ(nearZ,farZ){ const K=this._K; this._c.applyStateChange((v)=>K.setNearFarZOverride(v,{nearZ,farZ})); this._p=null; }
+    clearNearFarZOverride(){ const K=this._K; if(this._c.renderedState.nearFarZOverride==null) return; this._c.applyStateChange((v)=>K.setNearFarZOverride(v,null)); this._p=null; }
+  }
+  /* one view per state object: MapLibre hands back the SAME state while nothing changed, so a reader that
+     caches by identity (_lifted) keeps working */
+  const _views=new WeakMap();
+  function _asTr(cam,view){
+    const K=_K(); if(!(cam&&K&&view&&typeof view==='object')) return null;
+    let w=_views.get(view); if(!w||w._c!==cam){ w=new _TrView(cam,view,K); _views.set(view,w); }
+    return w;
+  }
+  /* `proposed`: the camera a gesture handler reads — the running proposal (what the renderer's own
+     handlers read as `camera.proposedProjectedCamera`, projected from `_viewAsDrawn()`), else the camera
+     as drawn (`renderedState`). */
+  /* ══ (maplibre-619) "BEFORE" IS THE CAMERA DRAWN BEFORE THIS UPDATE — WHICH 6.19 NO LONGER IS THE MAP ══
+     The hook and the look-up repair compare the proposal with the camera the map showed until now («was»).
+     Under 6.18 the map's getters answered with the APPLIED transform, which this update had not touched yet.
+     Under 6.19 they answer with `renderedState`, which is derived lazily from the camera's state — and the
+     state already holds THIS update's proposal when the hook runs. So «was» read the new pitch, every frame
+     looked like no tilt at all, the hook never held the eye, and a real tilt drag moved the viewpoint
+     (measured on 6.19 before this: 358 m at z18, 184 km at z9, 24,000 km at z1.7 — tests/r179.spec.js).
+     Every movement — a gesture frame, an animation frame, a jumpTo, a state change — asks the camera for the
+     state to change through `getStateForUpdate()` first, so that is where the camera as drawn is still the
+     one before the update: it is kept there, and _wasCamera() reads it. Installed and removed with the eye
+     pivot (_installUnderGuard / _removeUnderGuard), like the rest of the repair. */
+  let _drawnBefore=null;
+  function _wasCamera(m){
+    const v=_drawnBefore;
+    if(v&&v.center&&isFinite(v.zoom)) return { lng:v.center.lng, lat:v.center.lat, zoom:v.zoom,
+      pitch:v.pitchInRadians*180/Math.PI, bearing:v.bearingInRadians*180/Math.PI, elevation:+v.elevation||0 };
+    const c=m.getCenter(); if(!c) return null;
+    return { lng:c.lng, lat:c.lat, zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing(),
+             elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
+  }
+  function _tr(m,proposed){ const c=_cam(m); try{
+    if(!c) return null;
+    const v=(proposed&&typeof c._viewAsDrawn==='function')?c._viewAsDrawn():c.renderedState;
+    return _asTr(c,v);
+  }catch(_){ return null; } }
   /* (#R207) every layer id with a registered `click` handler through the contract — see
      `events.onLayer` below. Module scope, not per-view: the answer is about the APP's wiring, and a
      style reload or an engine swap does not change which layers the app makes clickable. */
@@ -1045,11 +1123,9 @@ function _redrawLocalGlyphs(m,cover){
      only what the height of the look-at point is going to be. */
   function _heldElevation(m,t){
     try{
-      const c=m.getCenter(); if(!c) return null;
+      const was=_wasCamera(m); if(!was) return null;
       let tile=512; try{ const v=t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
       const sphere=gSpherical(t), c2c=gC2C(t,_tr(m));
-      const was={ lng:c.lng, lat:c.lat, zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing(),
-                  elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
       const anchor=gEye(was,c2c,tile,sphere,1); if(!anchor) return null;
       const sol=gSolveAt(anchor,t.pitch,t.bearing,c2c,tile,t.zoom,sphere,
                          {lng:t.center.lng,lat:t.center.lat},null);
@@ -1076,11 +1152,9 @@ function _redrawLocalGlyphs(m,cover){
      answer stands, exactly as for the mercator branch. */
   function _heldSphereCamera(m,t){
     try{
-      const c=m.getCenter(); if(!c) return null;
+      const was=_wasCamera(m); if(!was) return null;
       let tile=512; try{ const v=t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
       const c2c=gC2C(t,_tr(m));
-      const was={ lng:c.lng, lat:c.lat, zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing(),
-                  elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
       const anchor=gEye(was,c2c,tile,true,1); if(!anchor) return null;
       return gLimitPitch(anchor,t.pitch,t.bearing,c2c,tile,t.zoom,true,
                          {lng:t.center.lng,lat:t.center.lat},gGuard(t),was.pitch)||null;
@@ -1127,13 +1201,21 @@ function _redrawLocalGlyphs(m,cover){
          it, so the whole camera update dies mid-flight. A refusal is the honest answer for a
          degenerate pair — there is no direction to elevate along — so that is what it becomes:
          the transform handed in, uncorrected. */
-      cam[_UG_NAME]=(t)=>{
+      /* (maplibre-619) NOT RE-ENTERED. Under 6.19 this method runs while the camera computes the camera it draws
+         (renderedState → _correctedForMovement), and the repair below reads the live camera (_tr(m) → renderedState),
+         which computes it again and asks this method again: measured 338,318 calls in one 70-step drag, each nest
+         ending in a stack overflow the try/catch swallowed — right answer, 8× the frame time. A nested ask is the
+         camera computing ITSELF, so it gets MapLibre's own answer, and only the outer ask is repaired. */
+      let busy=false;
+      const repaired=(v)=>{
         const ask=(x)=>{ try{ return orig(x); }catch(_){ return null; } };
-        const first=ask(t);
-        /* the overwhelmingly common case: it is happy (it handed back the same transform), and this
+        const first=ask(v);
+        /* the overwhelmingly common case: it is happy (it handed back the same state), and this
            shim did not exist */
-        if(first===t) return t;
-        const theirs=first||t;
+        if(first===v) return v;
+        const theirs=first||v;
+        /* (maplibre-619) the state, read and cloned through the camera's own functions (_TrView) */
+        const t=_asTr(cam,v);
         if(!_eyePivot) return theirs;
         try{ if(window.__fsCamActive) return theirs; }catch(_){}
         /* (#R179) …and it stands down for a camera the caller DECLARED. The repair's premise is
@@ -1157,22 +1239,33 @@ function _redrawLocalGlyphs(m,cover){
             if(sol.zoom!=null&&isFinite(sol.zoom)) probe.setZoom(sol.zoom);
             if(isFinite(sol.lng)&&isFinite(sol.lat)) probe.setCenter(new maplibregl.LngLat(sol.lng,sol.lat));
             /* only the verdict is borrowed on the sphere: the hook makes that camera itself */
-            return ask(probe)===probe?t:theirs;
+            return ask(probe.view)===probe.view?v:theirs;
           }
           const el=_heldElevation(m,t); if(el==null) return theirs;
           probe.setElevation(el);           /* the transform it judges is the one we will produce */
         }catch(_){ return theirs; }
         /* what 6.12 did with the old answer: the corrected pitch/zoom (if any) applied over the camera
            carrying the elevation this engine applies — the hook then starts from that */
-        return ask(probe)||probe;
+        return ask(probe.view)||probe.view;
+      };
+      cam[_UG_NAME]=(v)=>{
+        if(busy){ try{ return orig(v); }catch(_){ return v; } }
+        busy=true; try{ return repaired(v); } finally{ busy=false; }
       };
     }catch(_){ return false; }
-    _ugShim={ cam, prev, own }; return true;
+    /* (maplibre-619) the camera as drawn, kept at the start of every update — see _wasCamera */
+    const gsOwn=Object.prototype.hasOwnProperty.call(cam,'getStateForUpdate'), gsPrev=cam.getStateForUpdate;
+    if(typeof gsPrev==='function'){
+      cam.getStateForUpdate=function(){ try{ _drawnBefore=this.renderedState; }catch(_){ _drawnBefore=null; } return gsPrev.apply(this,arguments); };
+    }
+    _ugShim={ cam, prev, own, gsOwn, gsPrev }; return true;
   }
   function _removeUnderGuard(){
     const s=_ugShim; _ugShim=null; if(!s) return false;
     try{ if(s.own) s.cam[_UG_NAME]=s.prev;
-         else delete s.cam[_UG_NAME]; }catch(_){ return false; }
+         else delete s.cam[_UG_NAME];
+         if(typeof s.gsPrev==='function'){ if(s.gsOwn) s.cam.getStateForUpdate=s.gsPrev; else delete s.cam.getStateForUpdate; }
+         _drawnBefore=null; }catch(_){ return false; }
     return true;
   }
   /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
@@ -1543,15 +1636,17 @@ function _redrawLocalGlyphs(m,cover){
       let req=null;
       try{
         m.setTransformCameraUpdate((t)=>{
+          /* (maplibre-619) 6.19 hands the hook the corrected camera's METRICS — a state, with no projection
+             of its own and no constrain; _TrView answers both from the renderer's functions */
+          t=_asTr(_cam(m),t)||t;
           let cur, was;
           try{ cur={ lng:t.center.lng, lat:t.center.lat, zoom:t.zoom, bearing:t.bearing, pitch:t.pitch };
                /* "before" is read from the LIVE map, not from a cache of what we returned last time:
                   MapLibre runs its underground correction and its constraints after us, so a cached
                   value slowly diverges from what was actually applied (measured: 392 m of drift over a
                   116° drag, 8 m when read live). */
-               const c=m.getCenter();
-               was={ lng:c.lng, lat:c.lat, zoom:m.getZoom(), bearing:m.getBearing(), pitch:m.getPitch(),
-                     elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
+               /* (maplibre-619) the camera drawn before this update — see _wasCamera */
+               was=_wasCamera(m); if(!was) return {};
           }catch(_){ return {}; }
           const last=req; req=cur;
           if(!isFinite(cur.pitch)) return {};

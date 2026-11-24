@@ -41,6 +41,8 @@ interface IntMapPublished {
   CESIUM_BASE_URL: string;
   mlcontour: any;
   maplibregl: any;
+  /** (maplibre-619) MapLibre 6.19's camera functions (src/vendor.js) — the renderer's own projectCamera, setters and math, which src/index.ts does not export */
+  maplibreglCamera: any;
 
   /* published by files not yet under @ts-check; typed `any` until they are */
   IntMapCesiumEngine: any;

@@ -82,7 +82,7 @@ test('① the adapter reads the transform the painter draws with, and isAnimatin
     const m = window.__imap, E = window.IntMapGeoEngine;
     /* the transform the painter draws a frame with. In 6.18 the painter keeps NO transform of its own (no `transform` key on it,
        and the frame context it builds is internal): the map hands it to every frame as the SECOND argument —
-       `painter.render(style, this._camera.transform, …)`. So the only honest observation is to watch one real frame go through
+       `painter.render(style, this._camera.transform, …)` (6.19: `this._camera.projectedCamera`, which camera-ruler.js reads). So the only honest observation is to watch one real frame go through
        `painter.render` and keep that argument, then compare it with the one the adapter reads. The wrapper is an own property
        on the painter, removed again in `finally`. */
     const painter = m.painter, hadOwn = Object.prototype.hasOwnProperty.call(painter, 'render'), origRender = painter.render;

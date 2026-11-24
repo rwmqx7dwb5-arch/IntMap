@@ -66,7 +66,9 @@ test('② the wheel: the renderer\'s scroll-zoom handler still has the shape _sm
   assert.match(s, /if \(wait !== this\._singleWheelWait && wait !== this\._finishWait\) return;/, 'a timeout whose token the handler no longer holds is ignored');
   assert.match(engine, /res\.timeout&&res\.timeout\.token===this\._finishWait\)\{ delete res\.timeout; delete this\._finishWait; \}/, 'js/geo-engine.js withdraws both');
   assert.match(s, /renderFrame\(\)/, 'renderFrame()');
-  assert.match(s, /zoomDelta: zoom - tr\.zoom/, 'renderFrame returns a zoomDelta the wrapper replaces');
+  /* (maplibre-619) the camera the handler measured against is named `projectedCamera` since 6.19 (it was `tr`);
+     what the wrapper depends on is the expression — a delta from the zoom of the camera the handler read */
+  assert.match(s, /zoomDelta: zoom - [A-Za-z_$][\w$]*\.zoom/, 'renderFrame returns a zoomDelta the wrapper replaces');
   assert.match(s, /this\._lastExpectedZoom = zoom;/, 'the external-change bookkeeping the wrapper overwrites');
   assert.match(s, /\/ 200, 1\)/, 'the stock wheel finishes on its own 200 ms clock — the spring postpones it');
   assert.match(s, /this\._easing = this\._smoothOutEasing\(200\)/, 'the per-notch restart the spring replaces');
@@ -118,7 +120,8 @@ test('④ the release: what _glideRelease reads in the renderer is still there, 
 test('⑤ the destination: the satellite gate asks the renderer\'s tile level the way the renderer picks it', () => {
   /* _satDestLevel is round(zoom + 1): a raster source rounds, and the satellite source is tileSize 256 */
   assert.match(src('source/raster_tile_source.ts'), /this\.roundZoom = true;/);
-  assert.match(src('geo/projection/covering_tiles.ts'), /\(options\.roundZoom \? Math\.round : Math\.floor\)\(\s*transform\.zoom \+ scaleZoom\(transform\.tileSize \/ options\.tileSize\)/);
+  /* (maplibre-619) the camera argument is `projectedCamera` since 6.19 (it was `transform`) — the SAME variable on both sides */
+  assert.match(src('geo/projection/covering_tiles.ts'), /\(options\.roundZoom \? Math\.round : Math\.floor\)\(\s*([A-Za-z_$][\w$]*)\.zoom \+ scaleZoom\(\1\.tileSize \/ options\.tileSize\)/);
   const sat = readFileSync(join(ROOT, 'js', 'sat-proto.js'), 'utf8');
   assert.match(sat, /_satDestLevel=\(d\)=>Math\.max\(0,Math\.min\(19,Math\.round\(d\.zoom\+1\)\)\)/);
   const body = readFileSync(join(ROOT, 'js', 'app-body.js'), 'utf8');

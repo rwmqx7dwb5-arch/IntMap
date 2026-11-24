@@ -229,8 +229,11 @@ test('the underground check is repaired, not suppressed (#R179)', async ({ app }
     const NAME = window.IntMapGeoEngine.camera.eyePivotDiag().underGuardName;
     while (proto && !Object.prototype.hasOwnProperty.call(proto, NAME))
       proto = Object.getPrototypeOf(proto);
-    const lookUp = () => { const t = window.__mlTr().clone(); t.setPitch(150); t.setElevation(0); return t; };
-    const corrects = (t, a) => !!(a && (a.pitch !== t.pitch || a.zoom !== t.zoom));
+    /* (maplibre-619) the method takes and returns an immutable view state: the look-up camera is the drawn state
+       with MapLibre's own setters applied (src/vendor.js publishes them as window.maplibreglCamera) */
+    const K = window.maplibreglCamera;
+    const lookUp = () => { let v = cam.renderedState; v = K.setPitch(v, 150); v = K.setElevation(v, cam.context, 0); return v; };
+    const corrects = (t, a) => !!(a && (a.pitchInRadians !== t.pitchInRadians || a.zoom !== t.zoom));
     const ask = (fn) => { const t = lookUp(); return corrects(t, fn(t)); };
     const raw = proto && proto[NAME];
     const kept = lookUp(); cam[NAME](kept);
@@ -238,7 +241,7 @@ test('the underground check is repaired, not suppressed (#R179)', async ({ app }
       foundProto: typeof raw === 'function',
       rawFires: typeof raw === 'function' ? ask((t) => raw.call(cam, t)) : null,
       repaired: ask((t) => cam[NAME](t)),
-      proposalUntouched: kept.elevation === 0 && kept.pitch === 150,
+      proposalUntouched: kept.elevation === 0 && Math.abs(kept.pitchInRadians * 180 / Math.PI - 150) < 1e-9,
     };
     try { window.__fsCamActive = true; out.whileFlying = ask((t) => cam[NAME](t)); }
     finally { window.__fsCamActive = false; }
