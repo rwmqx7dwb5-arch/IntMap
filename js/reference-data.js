@@ -312,6 +312,8 @@ export const IntMapRefData = (function(){
        fallback for the rest, a monogram is the floor, and the browser asks Wikidata nothing. */
     {n:"Company logos — Wikidata (P154) via Wikimedia Commons, Google favicons as fallback",u:'https://commons.wikimedia.org/'},
     {n:'Wikipedia (Wikimedia REST API)',u:'https://www.wikipedia.org/'},
+    /* (news-event-history · backfill) the dated record the news archive is extended back with. Read by IntMap's own server, never by the browser. */
+    {n:'Past news events — Wikipedia «Portal:Current events» (daily pages; sentences and the publishers they cite)',u:'https://en.wikipedia.org/wiki/Portal:Current_events',lic:'CC BY-SA 4.0',licUrl:'https://creativecommons.org/licenses/by-sa/4.0/',credit:true},
     {n:'Live cameras — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R388) the railway atlas. ⚠ THIS REPLACED A NATURAL EARTH LAYER, SO THE TERMS CHANGED WITH IT:
        Natural Earth is public domain and required no attribution; OpenStreetMap is ODbL 1.0 and does.
@@ -578,6 +580,9 @@ export const IntMapRefData = (function(){
     /* (geopolitics-layers) the border-crossing layer (dl-crossings) — data/border-crossings.json, built by scripts/build-border-crossings.mjs:
        OpenStreetMap's border controls, each given the time zone that contains it (timezone-boundary-builder, ODbL) */
     {n:'Border crossings — OpenStreetMap (barrier=border_control, Overpass API)',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    /* (transit-timetable-reach) the publishers' own timetables — data/transit-<id>.json, built by scripts/build-transit-timetables.mjs; one row per feed, registry in js/transit-feeds.js */
+    {n:'Timetables — Administration des transports publics (Luxembourg), CC BY 4.0, data.public.lu',u:'https://data.public.lu/fr/datasets/horaires-et-arrets-des-transport-publics-gtfs/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'Mobility Database — MobilityData (catalogue of open GTFS feeds, CC0 1.0)',u:'https://mobilitydatabase.org/',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
     {n:'Time zone boundaries — timezone-boundary-builder (ODbL, built from OpenStreetMap)',u:'https://github.com/evansiroky/timezone-boundary-builder',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
        from OHM — the day-exact borders of 1689-1885 (data/hist-borders.js, widened from 1850 by
@@ -706,6 +711,7 @@ export const IntMapRefData = (function(){
     {n:'Microsoft Planetary Computer STAC catalogue',u:'https://planetarycomputer.microsoft.com/'},
     {n:'NASA CMR-STAC — LP DAAC (NASA EOSDIS)',u:'https://cmr.earthdata.nasa.gov/stac'},
     {n:'British Geological Survey — OGC API',u:'https://ogcapi.bgs.ac.uk/'},
+    {n:'Overture Maps Foundation (places, buildings, addresses, divisions, transportation, base — GeoParquet, monthly release)',u:'https://overturemaps.org/',lic:'Stated per record and per theme: CDLA-Permissive-2.0 (places) · ODbL 1.0 (buildings, roads, divisions, base) · CC BY 4.0 (addresses, per country) — read from each row',licUrl:'https://docs.overturemaps.org/attribution/',credit:true},
     {n:'AI provider — OpenAI (Anthropic / Google selectable)',u:'https://openai.com/'}
   ];
   /* ══ ⚠ (#R246) ONE RESOLVER FOR THIS REGISTRY'S DESCRIPTIONS, AND IT LIVES WITH THE REGISTRY ═══

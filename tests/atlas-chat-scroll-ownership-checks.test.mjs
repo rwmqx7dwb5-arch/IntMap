@@ -36,7 +36,7 @@ test('③ the reader’s card carries no runtime, package or dataset id; the mod
 
 test('④ what a run drew is read off the renderer in one shape, and feeds the switch', () => {
   assert.match(con, /function _drewSince\(before\)/);
-  assert.match(con, /kinds\.map\(k=>\(\{ kind:k, layerIds:_ovlIds\(k\), visible:_ovlVisible\(k\) \}\)\)/);
+  assert.match(con, /kinds\.map\(k=>\(\{ kind:k, layerIds:_ovlIds\(k\), visible:_ovlVisible\(k\)(, surfaces:\(ids\[k\]\|\|\[\]\)\.slice\(\))? \}\)\)/);   // the surface ids ride along so the render witness looks at THIS turn's surfaces
   assert.match(con, /results\.forEach\(rr=>\{ \(rr\.drew\|\|\[\]\)/);
 });
 

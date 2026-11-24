@@ -286,6 +286,7 @@ sheet を表の decoder（`decodeRows`）が読む。座標の無い表を場所
 | `js/gis-index.js` | `window.IntMapGisIndex` | **空間索引**——`build` / `query` / `queryEach` / `stats` / `resetMetrics`。偽陰性を出さない。種別は `grid`（既定）と `tiered`、`kind:'auto'` は数えて選ぶ。`stats()` が仕事そのもの（`buildMs` / `queries` / `queryMs` / `candidates` / `delivered` / `scanned` / `candidateRatio` / `scans` / `stopped` / `oversizeRatio` / `retained`）を述べる。厳密な判定は `queryEach(…,{test})` として渡される |
 | `js/gis-expr.js` | `window.IntMapGisExpr` | **式の解釈器**——`parse` / `evaluate` / `compile` / `functions` / `refusals` / `portable` / `nodeKinds`。自己完結した factory（`exprKernel()`）で、数値規則は `numberRuleFactory()` を渡す（無ければ `expr-no-number-rule`）。運べるかは queue の前に `portable(ast)` で訊く |
 | `js/gis-units.js` | `window.IntMapGisUnits` | **量の単位**——`parse` / `compare` / `convert` / `unitOfExpr`。`rasterDiff` / `mosaic` / `compute` / `rasterCalc` が同じ 1 か所に訊く。表は SI の定義値の原子だけで合成単位は解析する。沈黙は不一致ではないが、読めない綴りどうしは `unit-mismatch`。°C・°F は読みの換算と差の換算が別 |
+| `js/gis-semantics.js` | `window.IntMapGisSemantics` | **データの意味の層**——列・指標の scope / basis（現在の境界か当時の境界か）/ 時間の意味 / 集計規則 / 結合キー / 条件を `stated`・`derived`・`unstated` で持ち、`data.gis` の演算前に「比較・結合が意味として妥当か」の警告を返す（`semantics:true` で確認だけ、`strict:true` で拒否）。結果は変えない |
 | `js/data-governance.js` | `window.IntMapDataGovernance` | **出自・権利・鮮度・測定の語彙**——`SPELLINGS`（`licence` と `license` が 1 つの事実だと述べる唯一の場所） / `FACETS`・`SUBJECTS` / `REASONS` / `FRESHNESS` / `read` / `freshness` / `attribution` / `account` / `measureQuality`。値を 1 つも持たない。表示文は値から導出する。`unknown` は弱い `stale` ではない。多上流の束は最も厳しい義務を残し、1 つでも沈黙していれば `null`。`scripts/data-governance.mjs` が Node でそのまま読む。正本は [`docs/DATA-GOVERNANCE.md`](../DATA-GOVERNANCE.md) |
 | `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()`（同期） / `acquireDataset()`（非同期） / `toRaster()` / `supplierFor()`。`load()` を述べた行には非同期の供給元が組み立てられる。供給元になれるかは行自身の宣言が決める。取得条件の語彙 `acquireFields()` の正本（ラスタは `bounds` / `width` / `height` / `where` / `unit` / `time` / `band`） |
 | `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `sample` / `zonal` / `rasterMask` / `rasterDiff` / `resample` / `rasterCalc` / `mosaic` / `rasterize` / `polygonize` / `measure` / `validate` / `repair` / `timeWindow` / `join` / `compute` / `aggregate` / `spatialJoin` / `nearestJoin` / `voronoi` / `timeJoin` / `convert` / `coverage` / `profile` / `compareZones` / `reach`）の宣言と実行。結合は `cardinality` 必須、最近傍は索引の巡回順で答えない、時点の結合は半開区間、換算は単位カーネルに訊き `resolved` に残す、集計は量の意味に照らして判定を記録、量の著者は `quantityStatedBy`（`caller` / `column` / `band`）、`aggregate` の `weightBy`（`memberArea` 既定／`intersectionArea`）。`profile` / `compareZones` / `reach` は比べられる形にするだけ（`asOf` は比較されるだけで書き込まれない。分割・併合の判定は返さない）。引数の語彙は所有するカーネルに訊く（`valuesOf`）。計算した面を `surface`（`sphere` / `degree-plane` / `degree-grid` / `stated-plane`、`surfaces()`）で述べる。中止は `ctx` で下のカーネルまで渡す。出力は入力の意味（最も弱い `coverage`・時点・単位）を引き継ぐ |
@@ -496,6 +497,8 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - **レイヤー `beta-dl-plateau3d`**（日本の3D都市モデル）。読む対象は手書きの一覧ではなく `data/plateau-cities.json`（`scripts/build-plateau-cities.mjs` が PLATEAU データカタログの `latest_datasets` から導出。建物 3D Tiles を持つ市区ごとに LOD2 テクスチャ付き > LOD2 > LOD1 の順で 1 つ選び、tileset の root region から範囲、国土地理院のジオイド計算（JGEOID2011）から都市別のジオイド高を持つ）。実行時は zoom 9 以上で、カメラ近傍（画面幅ぶんの地面・12〜60 km）の市区だけを近い順に最大 32 件開き（`plateauUnitsNear`）、各都市に `heightOffset = -ジオイド高`（東京 ≈ 36.8 m、他は都市ごと）を渡す。オフにすると全タイルセットを破棄し、通信もメモリも残さない。MapLibre エンジンでは行ごと非表示。出典と利用条件は PLATEAU サイトポリシー（CC BY 4.0 互換）。
 - **計測。** Cesium アダプタも `render.instrumentFrames`（`scene.render` を 1 回だけ包む。GPU ではなく CPU の提出時間）と `render.sceneStats`（地球儀タイル数と、3D Tiles の件数・三角形数・バイト数を `extra` に）を実装し、`?perf=1` が Cesium でも縮退しない。
 
+
+**建物を選ぶと属性のカードが開く（`js/building-info.js`・`js/building-attrs.js`）。** Cesium の `_pickBuilding` が左クリックで `scene.pick` を問い、3D Tiles の建物（3D Tiles 1.1 の `EXT_structural_metadata` か b3dm のバッチテーブル）なら `buildingpick`（タイルセット ID・全属性）を出す。選んだ建物は黄に着色し、次の選択・Esc・閉じるで戻す（`layers.clearBuildingPick`）。カードは高さを大きく、続けて用途・建築年・階数・住所など**データが述べた欄だけ**、最後に全属性と出典・ライセンス。名前は 3 つのデータセットの実タイルから読んだもの（PLATEAU: `bldg:measuredHeight` ほか／3D BAG: `oorspronkelijkbouwjaar`・`b3_bouwlagen`・`b3_h_nok − b3_h_maaiveld`／Re:Earth: `height` と `height_method`）。Re:Earth の高さは決め方（実測・階数から・分類・足跡の既定）を併記し、既定値を計測値として見せない。MapLibre の「3D 建物（都市）」は足跡の押し出しで建物ごとの属性を持たないので対象外。
 ### 7.3l Cesium のスタイル解釈器と MapLibre の差 — `js/cesium-style.js`
 
 - **Cesium は MapLibre のスタイル式を自前で評価する**（`window.IntMapStyle`。純粋で Node から検証できる）。式の評価に渡す文脈は `{properties, geometryType, geometry, id, zoom, state}`——地物の幾何を渡すのは `js/cesium-layers.js` の `ctxFor`。
@@ -698,7 +701,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - **描かれる線は多角形の輪郭ではない**（`data/border-coast.js`・`scripts/build-border-coast.mjs`）。同梱の海岸線（`data/coastline.json.gz`＝Natural Earth
   1:10m・2 km 許容）に対して、辺のどこか1点でも `INLAND_KM` より内陸なら境界、そうでなければ海岸線の写しと判定し、15の束（`cshapes` /
   `hist-borders` / `hist-borders-late` / `hist-clio` / `hist-coast-snap` / `hist-eras-rest` / `hist-admin1` / `hist-admin2` / `hist-admin3` / `hist-eras` /
-  `hist-kuni` / `hist-admin-fill` / `hist-admin-surveys` / `hist-admin-surveys-nc` / `hist-admin-recon`）の全リング **136,880 本**について「描く run」を
+  `hist-kuni` / `hist-admin-fill` / `hist-admin-surveys` / `hist-admin-surveys-nc` / `hist-admin-recon`）の全リング **136,884 本**について「描く run」を
   印す。束は `data/` を走査して発見し（`discoverBundles()`）、`--check` は印された束の集合が `data/` の束の集合と厳密に一致することを要求する。各
   エントリは自分のグローバル名（`global`）を持つ。面積 0 のリングは描かない（束からは削らない）。印の**読み手は `js/border-coast.js`** ただ1つで、
   `js/time-borders.js` と `js/time-admin1.js` が呼び、run だけをつないだ MultiLineString を線用の source（`imtb-ln-src` / `imta-ln-src` /
@@ -912,7 +915,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   出るので `tests/news-countries-checks.test.mjs` ①② が両方が鍵であることを、④ が `js/lang-registry.js` と inline 表を実行して 9言語の解決を確かめる。
   首都は地名なので訳さない（`CAPITAL[code]`、歴史の行は `_STINFO`）。
 - **Region 行の subregion** は `js/countries-ui.js` の **`window._imSubregionName(sub, lang)`**（Natural Earth の SUBREGION 24種。`ne_110m` は22種）。
-  空の SUBREGION は無いので `region` / `subregion` のフォールバック行は無い。表は1本で、`js/atlas-examples.js` の starter chip の `{sub}` も同じ表を読む
+  空の SUBREGION は無いので `region` / `subregion` のフォールバック行は無い。表は1本で、`js/atlas-examples.js` の見本の文（`suggestPrompts:true` で描く）の `{sub}` も同じ表を読む
   （`tests/news-countries-checks.test.mjs` ⑩ が24語を宣言するファイルがちょうど1本であることと、script として parse できることを検査する）。`export`
   ではなく `window` で渡すのは、検査ハーネスが `new Function(src)` で素のスクリプトとして実行するため（`window._imCldrRegion` も同じ）。2欄が解決後に
   同じ語になったら1つに畳む。

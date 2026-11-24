@@ -1274,6 +1274,10 @@ export function makeAtlasExamples(HOST, CTX) {
        changes every string without changing the place). Silent while the row is hidden — a
        conversation has started and the chips are gone until the panel is rebuilt. */
     let _exKey=null;
+    /* (mobile-sheet-layout) SUGGESTED PROMPTS ARE OFF. Atlas no longer proposes sentences to send — the panel shows its one line of help and the
+       composer. The whole path is kept (`examples()` chooses them, this draws them, `_preview` explains an answer to a signed-out reader):
+       pass `suggestPrompts:true` in the context (js/atlas-console.js) and they return, unchanged. */
+    const SUGGEST_PROMPTS=!!(CTX && CTX.suggestPrompts);   /* off unless the host says so: `makeAtlasExamples(HOST, { …, suggestPrompts:true })` */
     function renderExamples(force){ try{
       const panel=panelEl(); if(!panel) return; const ew=panel.querySelector('.atl-ex'); if(!ew) return;
       if(ew.style.display==='none') return;
@@ -1289,7 +1293,7 @@ export function makeAtlasExamples(HOST, CTX) {
       _exKey=key;
       ew.innerHTML='';
       if(!_signedIn()) ew.appendChild(_gateNote());
-      examples(f).forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex;
+      (SUGGEST_PROMPTS ? examples(f) : []).forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex;
         /* (atlas-before-login) signed out, a tap shows how Atlas answers — the login sheet comes from
            the card's own button, never from the tap. Signed in, a tap asks, as it always has. */
         b.onclick=()=>{ if(_signedIn()) pick(ex); else _preview(ew,b,ex); }; ew.appendChild(b); });

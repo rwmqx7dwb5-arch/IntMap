@@ -35,3 +35,14 @@ newsjp: Atlasが、登録した外部MCPサーバーのツールを、自身の�
 ## 4. 上げた予算の理由（perf）
 
 `async.gzip` 4745.6→4773.7 kB・`atlas-cap-runs` 884.2→894.9 kB・`atlas-console` 1051.8→1057.4 kB・`dist.assets` 21446.3→21579.3 kB。MCP の能力モジュール（`atlas-cap-mcp.js`）が能力の遅延チャンクに入り、`atlas-console` に外部ツール探索の依存 1 行が入った。クライアント本体（`atlas-mcp-client`、約 14 kB）は独立した遅延チャンクで、サーバが 1 つも登録されていない読者には読み込まれない（起動時リクエストは 10 のまま）。
+
+## perf 天井を上げた理由（origin/main 取り込み時）
+
+`atlas-cap-runs` 903.4→913.3 kB・`atlas-console` 1066.9→1075.4 kB・async.raw 14221.0→14317.9 kB。増えたのは MCP クライアント
+（`js/atlas-cap-mcp.js` の 4 能力と確認文 `atlas.confirm.what.mcp.*`）で、遅延チャンクの中にあり起動時の取得量は増えていない。
+取り込み時に `mcp.servers` / `mcp.call` の確認文が無かったので足した（`atlas-console-boundary` C③）。
+
+追記: main の取り込み直後の再測定で `atlas-cap-runs` 909.0→919.0 kB・`atlas-console` 1080.1→1085.7 kB・async.raw 14304.0→14391.9 kB。
+理由は上と同じ（MCP の 4 能力と確認文。遅延チャンクの中）。`dist.total` / `dist.assets` はローカルの data:pull の差が混じるため上げていない。
+
+追記: CI の実測（`dist.total` 1550208.7 kB・`dist.assets` 21826.4 kB）がローカルと一致したので、この 2 行も上げた（`dist.total` 1542452.9→1550211.2 kB・`dist.assets` 21686.9→21826.6 kB）。先の「ローカルの差」という見立ては誤りだった。

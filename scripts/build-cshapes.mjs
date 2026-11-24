@@ -125,6 +125,7 @@ export const GOVERNANCE = (() => {
        that does not exist. EXPIRES: if ETH Zürich publishes a CShapes 3.0. */
     cadence: 'static',
     cadenceBasis: {
+      kind: 'stated',
       observed: 'CShapes 2.0 (Schvitz et al. 2022) is a published, finished dataset covering 1886-2019; ETH Zurich distributes one release',
       expires: 'if ETH Zurich publishes a CShapes 3.0 or a revised 2.x release',
       canon: 'this record (the only builder that reads CShapes)',
@@ -140,6 +141,11 @@ export const GOVERNANCE = (() => {
     licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', attribution: false, contributes: 'outline' };
   return {
   'data/cshapes.js': { ...own, upstreams: [cshapes, ohm],
+    /* (describes.*) what the publisher's page (icr.ethz.ch/data/cshapes, read 2026-11-20) states, and the span MEASURED on the
+       committed bundle (first start 1886-01-01, last end 2019-12-31). The page gives no positional accuracy, scale or resolution, so none is declared. */
+    period: { start: '1886', end: '2019', note: 'the publisher states 1886 to 2019 (1816 for CShapes-Europe, which this bundle does not carry); measured on the bundle: first start 1886-01-01, last end 2019-12-31' },
+    extent: 'the borders of independent states and dependent territories (publisher statement); 740 records in the committed bundle (measured)',
+    method: 'border changes coded from published sources: the Territorial Change Dataset (Tir et al. 1998), with the boundary encyclopedias of Biger (1995) and Brownlie (1979) named by the publisher',
     /* which record's line stands where both speak: CShapes everywhere, except the regions a reviewed cut names */
     priority: { rank: ['CShapes 2.0', 'OpenHistoricalMap'],
       over: 'CShapes 2.0 draws every outline; OpenHistoricalMap draws only the lines of the regions scripts/cshapes/review.json cuts, for the spans those cuts state' } },

@@ -305,6 +305,10 @@ verify_jwt = false
 [functions.community-class]
 verify_jwt = false
 
+# mcp-relay (mcp-client) is the CORS bridge of Atlas's MCP client (js/atlas-mcp-client.js): it makes ONE JSON-RPC POST to an https MCP server the reader registered, server-side, and returns the answer in an envelope. Not an open proxy: it verifies the caller's JWT itself (verify_jwt stays false, as for fetch-relay, because the publishable keys are not JWTs the platform check accepts) and forwards only public https names that resolve to public addresses, listed methods and five headers (_shared/mcp-relay-policy.js).
+[functions.mcp-relay]
+verify_jwt = false
+
 # mcp-server is IntMap's read-only toolset for outside AI over MCP. Its callers present IntMap's OWN key
 # (Bearer imk_…, sha256 in public.mcp_api_keys — not a Supabase JWT), so the platform's JWT gate cannot sit in
 # front of it; the key check, the per-key and project-wide ceilings and the stop switch
@@ -312,9 +316,12 @@ verify_jwt = false
 [functions.mcp-server]
 verify_jwt = false
 
-# mcp-relay (mcp-client) is the CORS bridge of Atlas's MCP client (js/atlas-mcp-client.js): it makes ONE JSON-RPC POST to an https MCP server the reader registered, server-side, and returns the answer in an envelope. Not an open proxy: it verifies the caller's JWT itself (verify_jwt stays false, as for fetch-relay, because the publishable keys are not JWTs the platform check accepts) and forwards only public https names that resolve to public addresses, listed methods and five headers (_shared/mcp-relay-policy.js).
-[functions.mcp-relay]
-verify_jwt = false
+# web-browse (web-browse) is the light browser Atlas drives to operate a data portal (search → follow → download): HTTP + HTML read
+# server-side, because those portals send no Access-Control-Allow-Origin. It makes outbound requests to hosts the reader named, so it is
+# for a signed-in reader only: verify_jwt ON. Its caps are in the function's header (kill switch WEB_BROWSE_DISABLED, a per-caller bucket,
+# and one project-wide bucket that fails closed). No secret is required.
+[functions.web-browse]
+verify_jwt = true
 
 # world-graph-ingest keeps the persistent world graph port slice current from Wikidata, UN/LOCODE and Eurostat.
 # Deployed --no-verify-jwt: pg_cron calls it weekly with the x-world-graph-secret header and the function does its

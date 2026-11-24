@@ -173,6 +173,8 @@ export const CATALOGUE_CHUNKS = [
       { name: 'photo.locate' },
       /* 44 (#R543) */
       { name: 'chart.compose' },
+      /* file.create — a deliverable is a file */
+      { name: 'file.create' },
       { name: 'board.compose' },
       { name: 'board.restore' },
       /* 45 (#R546) */
@@ -185,6 +187,8 @@ export const CATALOGUE_CHUNKS = [
       { name: 'map.undo' },
       /* 41 (#R493) */
       { name: 'view.inspect' },
+      /* (web-browse) operating a web site and taking its file */
+      { name: 'web.browse' },
       /* 49 (landing-showcase) */
       { name: 'about-and-showcase', head: 'ABOUT INTMAP AND THE EXAMPLE MAPS: ' },
       /* 50 (classroom-tours) */

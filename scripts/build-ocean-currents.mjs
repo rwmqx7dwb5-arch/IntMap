@@ -159,6 +159,12 @@ export const GOVERNANCE = (() => {
     upstreams: [...VEL_SOURCES.map(one), one(WIND_SOURCE), one(SST_SOURCE)],
     /* index-aligned with upstreams: VEL_SOURCES (1), WIND_SOURCE, SST_SOURCE */
     priority: { disjoint: ['geostrophic surface velocity from altimetry', 'wind stress (the Ekman term)', 'sea-surface temperature (warm/cold class)'] },
+    /* (describes.*) read off the upstream ERDDAP metadata (geospatial_*_resolution 0.25, lat/lon bounds of
+       the altimetry grid) and off this build's own manifest (data/ocean-currents.json `method`, `gridDeg`). */
+    period: { start: '2017-03-31', end: '2026-06-23' },
+    extent: 'the global ocean on the upstream 0.25 degree grid (cell centres -89.875 to 89.875 N, -179.875 to 179.875 E); land cells carry no velocity',
+    method: 'a climatological mean of 28 geostrophic-current fields from satellite altimetry spread evenly across the period, plus an Ekman surface current from 24 blended wind-stress fields (Ralph and Niiler 1999); named paths are integrated through the mean field',
+    resolution: '0.25 degree (about 28 km) for the annual field; 0.5 degree for the twelve monthly climatologies',
     ...NOAA_CLIMATOLOGY,
     builtBy: 'scripts/build-ocean-currents.mjs',
   };

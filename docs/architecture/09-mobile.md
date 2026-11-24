@@ -77,36 +77,41 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
 
 ### 9.2 レイアウト——シート 1 枚と操作グループ 1 つ
 
-携帯（`(max-width:768px)`）は**地図が主役**で、地図を覆う常設物は**下のシート**（最小の段では検索欄の 1 行）と**右上の操作グループ**だけ。凡例は左上の**凡例チップ**（有効な
+携帯（`(max-width:768px)`）は**地図が主役**で、地図を覆う常設物は**下のシート**（最小の段では頭と Atlas の固定の行）と**右上の操作グループ**だけ。場所の検索は地図の中の 44 px の丸（左上）。凡例は左上の**凡例チップ**（有効な
 凡例があるときだけ・数を出す）から開く。390×844 の初回訪問で覆う割合は 13.9 %、44 px 未満のタップ目標は 1/9（ライセンス上必須の出典表記のリンク）。
 
-- **シートの段は 4 つ**（`js/mobile-sheet.js`）——`hidden`（グリップだけ）・`min`（検索欄の行・home indicator 込み）・`half`（画面の 45 %）・`full`（`--sheet-h`）。旧名 `peek` /
+- **シートの段は 4 つ**（`js/mobile-sheet.js`）——`hidden`（グリップだけ）・`min`（頭と Atlas パネルの固定の行〔案内の 1 行・入力欄・注記〕・home indicator 込み。`js/mobile-ui.js` の `recompute` が `peek` として測る）・`half`（画面の 45 %）・`full`（`--sheet-h`）。旧名 `peek` /
   `mini` は `window.__setDetent` が別名として受ける。離すと指の速度を初速にしたばねで止まる（`spring()` が同じ曲線を CSS `linear()` と JS easing の両方で返す）。フリックは
   その向きに 1 段だけ、ゆっくり離せば最寄りの段。`prefers-reduced-motion` ではばねを使わない。
 - **シートがどの段に止まるかの規則は 1 か所**（`js/mobile-sheet.js` の `detentFor`。`js/mobile-ui.js` の信号は全部ここに訊く）:
 
   | 読者がしていること | 段 |
   |---|---|
-  | 検索欄にカーソルがある | `full` |
-  | 何も選ばずに欄を離れた | 欄が上げる前の段（今より上げない） |
   | 答えが地図の上のカード（候補から場所を選んだ） | `min`（今より上げない） |
   | 指ではなくアプリが地図を動かした（Atlas の fit、選んだ場所への飛行、フィードの項目） | `half`（今より上げない） |
   | タブを選んだ | `half`。読者自身が上げていればそのまま |
-  | シートの中に最後まで読むカードがある（ログイン前の Atlas の見本カード） | `full` |
+
+  `detentFor` は検索の `type`（`full`）・`leave`（元の段）の行も持つが、携帯で送るものは無い（検索欄は地図の中にあり、フォーカスしてもシートは上がらない）。
 
   答えは段を下げるだけで上げない。カードの持ち主は `MAP_ANSWER_EVENT`（`js/mobile-sheet.js` が持つ名前）で述べるだけ。「アプリが動かした」は movestart で読み、指の動き
   （MapLibre はジェスチャの movestart に `originalEvent` を付ける。3-D エンジンはシートの外の指も数える）とシート自身の padding の動きは答えではない。飛行中は padding を
   動かさない（`easeTo` は飛行を止めるので、カメラの padding は着いてから追う）。候補を選ぶとその検索は終わる（遅れた結果は書かず、欄は場所の名前を持ち、キーボードが閉じる）。
-- **シートの頭全体が取っ手**（グリップ・検索欄の行・タイトル行・タブ行のどこを縦に 7 px 以上動かしても動き、動かさなければタップ。グリップのタップは 1 段上下。中身を一番上
+- **シートの頭全体が取っ手**（グリップと、座標の読み取り・メニューのボタンの行のどこを縦に 7 px 以上動かしても動き、動かさなければタップ。グリップのタップは 1 段上下。中身を一番上
   までスクロールしてさらに引くと下がる）。
 - **シートの中身は画面の下端で終わる**（段に止まるたびに見えない分を `--sheet-hide` として `padding-bottom` に書く。Atlas は `half` でも入力欄が画面内にある）。
 - **画面はシートの中で遷移する**（`makeScreens()`）。Layers（`#mo-sheet`）・Tools（`#tools-sheet`）・地図（`#bm-pop`）・Chronos（`#news-timeline`）・設定（`#settings-modal`）は、
   持ち主が開いていると言っている間だけ既存の要素を `#m-screens` に貸し、閉じたら返す（id・ハンドラ・`[data-proxy]`・ダイアログ登録はそのまま。スクリムは使わない）。
   Chronos はシートの中にいる間、地図の操作で閉じない（`js/news-timeline.js` の autoClose）。画面が出ている間と検索の候補の一覧がある間、ホームの中身（タブ・フィード・比較バー
   `#co-compare-fixed`）は `visibility:hidden`（`tests/map-next.spec.js`）。
-- **入口は 1 つ**（シートの頭の欄が「場所の検索」と「Atlas に訊く」を兼ねる。`localFuzzyPlaces` の候補を `gotoPlace` で、`doGeocode({suggest:true})`・ネットワークなし、最後の行が
-  「Atlas に訊く」。Enter は全検索して先頭の候補へ。古い応答は世代で捨てる。フォーカスで `full`、空で離れると元の段）。
-- **シートのホーム**（`js/start-home.js`。タブを選んでいない状態）——タブの行の下は 1 つのスクロール `.m-home` で、先頭に「はじめる」の 4 節（いまの地球・いまいる場所・この日と作例・ホーム画面）、その下に
+- **場所の検索は地図の中に残る**（`#map-search`。押すまで左上の 44 px の丸で、押すかフォーカスするとツールの列の横へ地図いっぱいに広がる。候補は欄の下に落ち、最後の行が
+  「Atlas に訊く」で、「場所の検索」と「Atlas に訊く」を兼ねる。`localFuzzyPlaces` の候補を `gotoPlace` で、`doGeocode({suggest:true})`・ネットワークなし。Enter は全検索して先頭の候補へ。
+  古い応答は世代で捨てる。シートの頭には無く、フォーカスしてもシートは上がらない）。
+- **シートの頭**（`.m-head`）——グリップと、座標の読み取り（左）・メニューのボタン `#m-menu-btn`（右）の 1 行（`#m-clock` は作曲欄が画面に無い間だけここ）。4 つのタブ（News・Companies・
+  Countries・Atlas）とアカウント・フィードバック・設定はシートに出さず、`#m-menu-btn` が開くカード（`body.m-menu-open`・`.sidebar > .header-area`）に入る——4 つのアイコンタイル（`.control-panel` を
+  `js/mobile-ui.js` の `moveTo` が貸す）と、アカウント（ログイン）・フィードバック・設定の行。選ぶとカードは閉じ、開くとシートは `half` 以上へ上がる。ノード・id・ハンドラは同じ。
+- **シートの既定の中身は Atlas の会話**——起動の約 2.5 秒後にタブが 1 つも選ばれていなければ Atlas タブを 1 度だけ開く（段は動かさない）。Atlas が中身の間、`#m-clock` は
+  Atlas の作曲欄（`#atlas-panel .atl-inbar`）のマイクの左へ移り、別のタブを選ぶと頭の行へ戻る（Chronos へはいつでも届く）。
+- **シートのホーム**（`js/start-home.js`。タブを選んでいない状態）——頭の下は 1 つのスクロール `.m-home` で、先頭に「はじめる」の 4 節（いまの地球・いまいる場所・この日と作例・ホーム画面）、その下に
   ウィジェットボード（`#widget-board` を貸す。持ち主の表示・非表示は `js/widgets.js` のまま、`.m-home` はボードが出ている間だけ出る）。4 節は
   ① **いまの地球**——ライブのレイヤーのスイッチ（読者に何も求めない始まりなので先頭）。一覧は書かず
   `liveStarts` が導く（時間の宣言 `kind:'live'`・パネルで畳まれていない〔`rest` でも beta の棚でもない〕・パネルの行が組まれている、の 3 つ。
@@ -114,13 +119,13 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
   シートは `min` へ。状態は地図の状態ストアの `toggles` で読み直す ② いまいる場所（`js/here-entry.js` `entryRow`）
   ③ この日の歴史地図と作例・ツアー（`showInResults`）
   ④ ホーム画面への追加（設定の入口と同じ保持された prompt。`installState` が `prompt` か `ios` のときだけ）。**起動では読まない**——シートを
-  掴むか `min` より上で止まったときに `js/mobile-ui.js` `wantStart` が読み、`min` のシートは検索欄の行のまま。幅が広がるとボードを列へ返す。
+  掴むか `min` より上で止まったときに `js/mobile-ui.js` `wantStart` が読み、`min` のシートは頭と Atlas の固定の行のまま。幅が広がるとボードを列へ返す。
   門は `tests/wave4-ux-mobile-checks.test.mjs` と `tests/wave4-ux-mobile.spec.js`。
 - **右上の操作グループ**（`.m-ctl-group`）——Layers・地図・Tools・現在地を縦につないだガラス 1 本。「地図」画面はベースマップ（地図／衛星の 2 面の絵——同梱のデータから
   カメラの場所を描く・開いている間だけ）・投影（地球儀／平面／3D）・**基本表示**（`js/data-layers.js` `IntMapBaseDisplay.items()`＝宣言の `kind:'display'` を iOS のスイッチで。
   本物のチェックボックスを `change` で切り替える）・中心点の読み取り。コンパスは回転か傾斜しているときだけグループの下に出る。
-- **座標の読み取りは常設しない**（十字線と読み取りは計測ツールが動いている間と「中心点の読み取り」を入れている間だけ。`body.m-xhair`・設定は `localStorage`。読み取りは検索欄の
-  下の 1 行。出ていない間は DEM の参照もレンダラへの問い合わせもしない）。
+- **座標の読み取りは常設しない**（十字線と読み取りは計測ツールが動いている間と「中心点の読み取り」を入れている間だけ。`body.m-xhair`・設定は `localStorage`。読み取りは地図の中の
+  検索欄の下の 1 行。出ていない間は DEM の参照もレンダラへの問い合わせもしない）。
 - **重なり順は 1 つの表の 4 行**——`css/intmap.css` 先頭の `:root` の `--z-m-legend`（1040）＜ `--z-m-card`（1100）＜ `--z-m-chrome`（1150：操作グループ・凡例チップ・コンパス）＜
   `--z-m-sheet`（1200：検索・Chronos・全画面）。`#map-container` は `position:fixed` なので重なりの文脈で、中のもの（凡例・場所のカード・ポップアップ）は操作グループとシートの
   下に描かれる。ニュースの点のカード（`.m-news-pop-back`）は `--z-popup` でシートの上に出る。
@@ -133,14 +138,13 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
   `data-dragged` を除く——を全数見つける）。下端の限界は `floatBound`（画面高 − `--sheet-cover` − `--m-credit-h` − 20 px）、上の限界は `--m-legend-top`。収まっているパネルには
   何も書かず、はみ出すパネルにだけ `data-m-fit` を付け、`cap`・`dy`・`scroll` を css/intmap.css が読む。シートの段・出典の帯の高さ・パネルの大きさが変われば測り直す。火山灰
   パネル（`#ash-panel`）は操作グループの手前で止まる（`right:var(--m-legend-right)`）。シートが `full` のとき単体の操作部品（`#iol-fab` など）は退く（`out`）。
-- **Atlas の「例の置き場」（`.atl-ex`）はスクロールできる箱**（`min-height:0`＋`overflow-y:auto`。カードが開いている間は `.atl-sub` が退き、窓へ入れるのはカードの操作の行）。
-  ログイン前の見本カード（`.atl-pv`）は `MAP_ANSWER_EVENT` の `kind:'read'` で `read` の行に訊く。未ログインでカードを開いている間はチップの再描画（`renderExamples`）を待つ
-  （`_exKey` を進めない）。
+- **Atlas は見本の文を出さない**（全幅）——`.atl-chip` とログイン前の見本カード（`.atl-pv`）は止めてあり（`makeAtlasExamples(HOST,{ suggestPrompts:true })` で描き直せる）、パネルは
+  1 行の案内と入力欄・注記だけ。携帯の送信ボタンは 34 px。ハンズフリーの音声ボタンは無く、マイクの口述（`.atl-mic`）だけが残る。
 - **場所のカード**（`.search-result-card`）は携帯では左右の端が CSS のもの（画面の端から `--m-legend-right`）で、ピンに合わせて動くのは尾だけ（`--src-x`、`js/search-geocode.js`）。
   × と「座標をコピー」「ピンを刺す」は 44 px。
 - **凡例トレイ**（`makeLegendTray()`）——地図の上に浮く凡例（`#map-container` の直下で class か id が `legend` を含むもの。`js/window-manager.js` の `DOCK_SEL` と同じ事実）は
   `js/data-layers.js` の tiler が並べ、トレイが開くまで `visibility:hidden`（`display` は持ち主のまま）。凡例の – と × は指には 44 px。
-- **全部の当たり判定が 44 px 以上**（タブ・ログイン・設定・グループ・時計・検索の虫眼鏡・凡例の –／×・Chronos のタブと速度・年のスライダー〔指には 44 px の行・目には 6 px の
+- **全部の当たり判定が 44 px 以上**（メニューのボタンとカードのタイル・行・グループ・時計・検索の丸・凡例の –／×・Chronos のタブと速度・年のスライダー〔指には 44 px の行・目には 6 px の
   溝と 28 px のつまみ〕・ウィジェット盤の編集／追加と歯車・レイヤー画面の検索欄〔16 px の文字〕と節の見出し・有効レイヤー行の List と「すべて解除」）。測るのは当たり判定
   （`elementFromPoint`）。スクロール箱が `::after` を切ると当たり判定も切れる。
 - **Chronos はシートの中で、指で動かすものが先**（`half` で開き、値・スライダー・目盛り・再生がタブの直後。時計の選択・日時へ移動・Date／Time の入力欄は後ろ——CSS の `order`）。
@@ -150,7 +154,7 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
 - **compare を開いている間**は操作グループを下に移動する（消さない）。
 - **浮く部品の寸法は1か所**（`css/intmap.css` の携帯ブロックの `:root` が `--m-edge`・`--m-fab`（44 px）・`--m-group-w`・`--m-chrome-top` を持ち、`--m-legend-top`（チップの下＋8 px）と
   `--m-legend-right`（グループの幅＋8 px）はここから導出。計測ツールのパネルも `--m-legend-top` から始まる。`--sheet-cover` は `#map-container` と `.map-column` の両方に書く）。
-  門は `tests/mobile-panels-reach.spec.js`（375×812・見つけた浮くものの全部）・`tests/mobile-card-reach.spec.js`（本物の指で火山カードと Atlas の見本カード）・
+  門は `tests/mobile-panels-reach.spec.js`（375×812・見つけた浮くものの全部）・`tests/mobile-card-reach.spec.js`（本物の指で火山カード）・
   `tests/form-control-names.spec.js` ②（凡例のカードの四隅と中心）・`tests/ui-a11y-polish.spec.js` ③（390×844 で覆う割合・44 px 未満・凡例の重なり順・Chronos・候補）。
 - **Radius パネル**：携帯では左下のコンパクトなカード。**`.m-scrim` は閉じている間 `visibility:hidden`。**
 - **画面配置と端末の持ち主は1つ**——`js/ui-device.js`（`window.IntMapDevice`）。境界 `(max-width:768px)`（反対側は `(min-width:769px)`）を `js/` で書くのはここだけで、
@@ -310,7 +314,7 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
   - **地図のリンク**: Google（`!3d…!4d…` を `@` より先に）・Apple（`ll`）・OSM（`mlat/mlon` を表示範囲より先に）・`geo:`・座標 → その地点。名前しか持たないリンクと文は検索欄へ。
     短縮リンクは行き先を読めないとそう言い、題で検索する。IntMap のリンクはそれ自身として開く。
   - iOS は共有の宛先になれないので、検索欄の「写真の場所」からも開ける（ファイル選択は押した瞬間に開く）。Atlas `view.openShared` が同じ関数で開く。
-- **親指の時計**（`js/time-thumb.js`）——シートの頭の時計（`#m-clock`）は地図が現在以外にあるあいだその年を表示する（`js/mobile-ui.js` が `IntMapTime.on` で書く）。横に `START_PX`
+- **親指の時計**（`js/time-thumb.js`）——時計（`#m-clock`。Atlas が中身の間は作曲欄のマイクの左、そうでなければ頭の行）は地図が現在以外にあるあいだその年を表示する（`js/mobile-ui.js` が `IntMapTime.on` で書く）。横に `START_PX`
   （8 px）以上、縦より大きく動かすとそれ自体がレールになる（位置→年→時計は `js/chronos.js` `writeRailPos`——`writeYearAtPos` もこれを呼ぶ。レール全体は画面幅の `RAIL_SCREENS`
   ＝3 倍。1 フレーム 1 回）。シートの上に吹き出し（時刻・「地図の中心」・中心の点を描く政体と第 1 級区分）と中心の輪。中身は `js/place-history.js` `placeHistory`（中心ごとに
   1 回読む）で、`changesOf` が中心で地図が述べることが変わる時点を並べ、`nowAt` がその時刻の言葉、`changeText` が変化の行を返す。親指はその時点で止まる（1 年が 1 px 以上の
