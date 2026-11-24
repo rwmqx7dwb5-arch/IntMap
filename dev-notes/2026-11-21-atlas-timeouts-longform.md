@@ -64,3 +64,7 @@ merge 後に再び下げる。
 ## perf (main 取り込み・273 能力)
 
 main の取り込みで能力が 273 になり、`atlas-cap-runs` が 1010.1 kB、`atlas-console` が 1165.0 kB に増えた（実測）。増分は main が足した能力の登録行で、この PR の追加ではない。天井は `--update` で実測へ。失効条件: main の perf-ceiling が下げた値が正本。
+
+## global-surface (window.IntMapLazy 196 → 197)
+
+origin/main を取り込んだ木で `check:surface` が 1 読みを新規に検出した（js/ の `IntMapLazy` は main と同数の 200 箇所で、この PR は js/・src/ に `IntMapLazy` を足していない）。main 側が先に足した読みで、台帳が追いついていなかった。`--update` で台帳を実体へ。失効条件: 該当の読みを owner の import へ移した時点で下げる。
