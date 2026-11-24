@@ -46,3 +46,8 @@ CI 実測(取り込み後の main との合成)で atlas-cap-runs が 947.5 kB�
 CI 実測: async.raw 14677.9 kB・async.gzip 4957.0 kB・atlas-cap-runs 958.4 kB・gis-core 701.2 kB。gis-core は main 側の GIS 変更の増分で本統合は触っていない。残りは main 側の他 PR と metrics/objects/worldObjects 変換の合計。天井を 15100000 / 5120000 / 990000 / 725000 バイトへ上げた。能力は削っていない。
 
 CI 実測(main 取り込み後の合成): async.raw 14798.0 kB・async.gzip 5001.7 kB・atlas-cap-runs 1002.1 kB・dist.assets 22244.7 kB。main 側の他 PR(web.session・fetchFile・STAC 等の能力追加)と本統合の合計で、天井を 15250000 / 5200000 / 1040000 / 22950000 バイトへ上げた。能力は削っていない。
+
+## global-surface の更新(window.IntMapLazy の読み 199 → 200)
+
+ボードの遅延読み込み(`atlas-cap-board` の compose 前と、チャットのボード起動ボタン)が `window.IntMapLazy.need('board')` を読む。
+他の遅延チャンクを呼ぶ全ての箇所と同じ入口で、新しい経路ではない。正本は `IntMapLazy` のまま。純増は +1(他の箇所の整理と相殺)。
