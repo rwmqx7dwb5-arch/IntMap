@@ -77,6 +77,7 @@
 | Atlas の dispatch / catalogue | `npm run check:catalog` |
 | Atlas の能力表 | `npm run check:capabilities` |
 | Atlas の観測器の判定 | `npm run check:atlasrepeat` |
+| `supabase/migrations/` に migration を足した・改名した | `npm run check:migrationorder` |
 | 共有窓口 | `npm run check:surface` |
 | 起動費用・配られる資産（**build が要る**） | `npm run check:perf` `npm run check:assets` |
 | spec を足した・組み替えた | `npm run check:testbudget` |
