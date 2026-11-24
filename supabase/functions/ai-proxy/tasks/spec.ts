@@ -52,13 +52,16 @@ export interface TaskSpec {
   grader: boolean;
   /** (atlas-delegation) the worker task: run only under a parent turn (x-intmap-parent-turn), and the only task such a call may carry */
   delegate: boolean;
+  /** (atlas-unbounded-turns) the caller (Atlas) may choose a larger output budget for one request (payload.maxOutputHint),
+   *  up to the model's documented ceiling (_shared/ai-provider.js outputCeilingOf) — never below `maxOutput` */
+  outputHint: boolean;
 }
 
 /** A task's file states only what differs from these. */
 export function defineTask(t: Partial<TaskSpec> & { name: string; maxOutput: number; reasoning: string }): TaskSpec {
   return Object.freeze({
     perRequestedItem: null, effortHint: false, json: false, jsonOn: [], schema: undefined,
-    accept: null, lane: "", protocol2: false, grader: false, delegate: false,
+    accept: null, lane: "", protocol2: false, grader: false, delegate: false, outputHint: false,
     ...t,
   });
 }
@@ -72,4 +75,26 @@ export function maxOutputFor(spec: TaskSpec | undefined, requestedCount?: number
     n = Math.max(n, spec.perRequestedItem.base + Math.round(requestedCount) * spec.perRequestedItem.each);
   }
   return Math.min(HARD_MAX_OUTPUT, n);
+}
+
+/* (atlas-unbounded-turns) THE BUDGET ATLAS ASKED FOR — on a task whose file says `outputHint`, a positive integer hint
+   raises the visible-output budget up to `ceiling` (the model's documented maximum, _shared/ai-provider.js
+   outputCeilingOf; null = none can be cited → HARD_MAX_OUTPUT, i.e. no raise past what every task already may have).
+   It never lowers the task's own budget, and a task without `outputHint` ignores the hint entirely. */
+export function hintedMaxOutput(spec: TaskSpec | undefined, base: number, hint: unknown, ceiling: number | null): number {
+  if (!spec?.outputHint) return base;
+  const h = typeof hint === "number" ? hint : Number(hint);
+  if (!Number.isFinite(h) || h <= 0) return base;
+  return Math.max(base, Math.min(Math.floor(h), ceiling ?? HARD_MAX_OUTPUT));
+}
+
+/* (atlas-unbounded-turns) THE LARGEST BUDGET A REFUSED RESERVATION'S ROOM AFFORDS (ask.ts, after a money fence refused a
+   hinted budget). The reservation is `inputMicros + 2 × tokens × outputPrice` micro-dollars (outputPrice: USD per 1M
+   tokens = micro-dollars per token), so the room buys floor((room − input) / (2 × outputPrice)) tokens. → that budget,
+   capped at what was asked, or null when it is below `floor` (the task's own budget, which is never shrunk). */
+export function fitOutputToRoom(o: { asked: number; floor: number; inputMicros: number; outputPrice: number; roomMicros: number }): number | null {
+  if (!(o.outputPrice > 0) || !Number.isFinite(o.roomMicros)) return null;
+  const n = Math.floor((o.roomMicros - Math.ceil(o.inputMicros)) / (2 * o.outputPrice));
+  if (!Number.isFinite(n) || n < o.floor) return null;
+  return Math.min(o.asked, n);
 }

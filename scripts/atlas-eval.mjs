@@ -259,6 +259,18 @@ export async function openAtlasSession({ url, token, headed, dryRun }) {
   return S;
 }
 
+/** harnessPatienceMs(rules, patienceMin) — how long the HARNESS waits for one turn before it calls the page stuck.
+ *  The harness's patience, not a limit on Atlas. While js/atlas-agent.js had a turn clock (turnBudgetMs), a live turn ended
+ *  inside it plus one tool wait and the closing call, so that plus twice the tool timeout was enough. (atlas-unbounded-execution)
+ *  There is no turn clock now (turnBudgetMs 0): a turn that keeps finishing steps keeps working. The harness still needs to
+ *  tell a working turn from a stuck page, so its patience is its own: --patience-min when given, else
+ *  HARNESS_PATIENCE_MIN. Observation: the longest turn this harness ever measured ran 634 s (tests/atlas-eval-harness-checks);
+ *  60 min is ~5.7× that. Expires the first time a turn that was still finishing steps is abandoned as harness_timeout. */
+export const HARNESS_PATIENCE_MIN = 60;
+export function harnessPatienceMs(rules, patienceMin) {
+  if (patienceMin > 0) return patienceMin * 60000;
+  return (rules && rules.turnBudgetMs > 0) ? rules.turnBudgetMs + 2 * rules.toolTimeoutMs : HARNESS_PATIENCE_MIN * 60000;
+}
 /** askOnFreshPage(S, text, {patienceMs, sections}) → { unmeasured:{measured:false,unmeasured,detail} } | { askRes, raw }
  *  One question on a fresh page: a turn is judged on what IT did, not on what the previous turn — or the place
  *  probes, which set the geocoder's language — left behind. The watchdog is the harness's patience, not a limit on Atlas. */
@@ -324,10 +336,8 @@ async function evaluate() {
   const t0run = Date.now();
   const deadlineMs = (+arg('--deadline-min', '0') || 0) * 60000;
   const probeRows = (set.placeProbes && set.placeProbes.rows) || [];
-  /* The harness's patience, not a limit on Atlas: a tool is abandoned at toolTimeoutMs and the turn budget
-     is checked between steps, so a live turn ends inside turnBudgetMs plus one tool wait and the closing
-     answer call. Twice the tool timeout on top covers both; waiting longer only means the page is stuck. */
-  const patienceMs = rules.turnBudgetMs + 2 * rules.toolTimeoutMs;
+  /* The harness's patience, not a limit on Atlas — see harnessPatienceMs. */
+  const patienceMs = harnessPatienceMs(rules, +arg('--patience-min', '0') || 0);
 
   const turns = [], probes = [];
   let build = null, session = '', rotated = null, fatal = '', S = null;

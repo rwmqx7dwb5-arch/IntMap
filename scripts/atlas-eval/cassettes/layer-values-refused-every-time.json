@@ -236,6 +236,14 @@
       ]
     },
     {
+      "text": "",
+      "toolCalls": []
+    },
+    {
+      "text": "",
+      "toolCalls": []
+    },
+    {
       "final": true,
       "text": "",
       "toolCalls": []
@@ -488,7 +496,7 @@
     "snapshot": {}
   },
   "golden": {
-    "stopped": "step_budget",
+    "stopped": "no_answer",
     "calls": [
       {
         "name": "run_capability:data.layerValues",

@@ -87,13 +87,18 @@ test('embed: a key with no embedding model falls to Gemini, which is asked what 
   assert.match(src, /provider === "openai" && \(res\.status === 403/);
 });
 
-test('pendingArchive skips events whose record is already current, takes the oldest first, and caps a run', () => {
+test('pendingArchive skips current events, takes multi-outlet ones first, and rotates a bounded window over the rest', () => {
   const day = (n) => new Date(Date.UTC(2026, 10, n)).toISOString();
-  const ev = (id, n) => ({ public_id: id, last_article_at: day(n) });
-  const wrote = new Map([['a', Date.parse(day(5))], ['b', Date.parse(day(3))]]);
-  const r = pendingArchive([ev('a', 5), ev('b', 6), ev('c', 4), ev('d', 2)], wrote, 2);
-  assert.deepEqual(r.events.map((e) => e.public_id), ['d', 'c']);
-  assert.equal(r.skippedCurrent, 1);
-  assert.equal(r.deferred, 1);
-  assert.deepEqual(pendingArchive([], new Map(), 5), { events: [], skippedCurrent: 0, deferred: 0 });
+  const ev = (id, n, src) => ({ public_id: id, last_article_at: day(n), independent_source_count: src });
+  const wrote = new Map([['cur', Date.parse(day(9))]]);
+  const evs = [ev('cur', 8, 3), ev('m1', 6, 3), ev('m2', 7, 2), ev('s1', 1, 1), ev('s2', 2, 1), ev('s3', 3, 1), ev('s4', 4, 1)];
+  const a = pendingArchive(evs, wrote, 3, 0);
+  assert.deepEqual(a.events.map((e) => e.public_id), ['m2', 'm1', 's4']);   /* the multi-outlet ones, then one window of the rest */
+  assert.equal(a.skippedCurrent, 1);
+  assert.equal(a.deferred, 3);
+  const seen = new Set();
+  for (let slot = 0; slot < 4; slot++) for (const e of pendingArchive(evs, wrote, 3, slot).events) seen.add(e.public_id);
+  assert.deepEqual([...seen].sort(), ['m1', 'm2', 's1', 's2', 's3', 's4'], 'every pending event is examined within a few runs');
+  assert.ok(pendingArchive(evs, wrote, 3, 5).events.length <= 3, 'a run never takes more than the cap');
+  assert.deepEqual(pendingArchive([], new Map(), 5, 0), { events: [], skippedCurrent: 0, deferred: 0 });
 });

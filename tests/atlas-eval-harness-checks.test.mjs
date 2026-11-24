@@ -122,9 +122,13 @@ test('atlas-eval-harness ⑥ a cut turn whose whole reply was the narration is c
 });
 
 /* ══ ⑦ the Nile turn: 10 m 34 s, past the agent's OWN turn budget ═══════════════════════════════════ */
-test('atlas-eval-harness ⑦ a turn longer than js/atlas-agent.js allows itself is reported over budget', () => {
-  assert.ok(634000 > RULES.turnBudgetMs, 'the measured 10 m 34 s is past today\'s turnBudgetMs — else this check proves nothing');
-  const t = J.judgeTurn(Q('iceland-eez-200nm'), { measured: true, ms: 634000, stopped: 'time_budget', reply: 'x', operations: [{ capabilityId: 'research.analyze', status: 'completed' }], calls: [], steps: [], snapshot: {} }, RULES);
+test('atlas-eval-harness ⑦ a turn longer than a turn clock is reported over budget — and with no clock, nothing is', () => {
+  /* (atlas-unbounded-execution) the product has no turn clock now (turnBudgetMs 0): a long turn that keeps working is not
+     "over budget". The rule itself still reads a clock when one exists — asked here with the clock the Nile turn met. */
+  const obs = { measured: true, ms: 634000, stopped: 'time_budget', reply: 'x', operations: [{ capabilityId: 'research.analyze', status: 'completed' }], calls: [], steps: [], snapshot: {} };
+  assert.equal(J.judgeTurn(Q('iceland-eez-200nm'), obs, RULES).metrics.overBudget, !!(RULES.turnBudgetMs > 0 && 634000 > RULES.turnBudgetMs));
+  const CLOCKED = Object.assign({}, RULES, { turnBudgetMs: 600000 });
+  const t = J.judgeTurn(Q('iceland-eez-200nm'), obs, CLOCKED);
   assert.equal(t.metrics.overBudget, true);
   const M = J.metricsOf([t], []);
   assert.deepEqual(M.overBudgetTurns, ['iceland-eez-200nm']);

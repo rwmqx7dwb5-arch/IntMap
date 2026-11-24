@@ -312,7 +312,7 @@ export function makeAtlasGeoObject() {
       return out;
     }
 
-    /** a link keeps {rel, ref}; when the source states them it also keeps WHEN the tie held, HOW SURE it is and WHAT vouches for it */
+    /** a link keeps {rel, ref}; when the source states them it also keeps WHEN the tie held, HOW SURE it is, WHAT vouches for it, and — for a derived tie — `basis:'inferred'` with its `rule` */
     function cleanLink(l) {
       l = (l && typeof l === 'object') ? l : {};
       var out = { rel: str(l.rel, 40), ref: str(l.ref, 160) };
@@ -322,6 +322,8 @@ export function makeAtlasGeoObject() {
       if (REL_CONFIDENCE.indexOf(l.confidence) >= 0) out.confidence = l.confidence;
       var ev = uniq(l.evidenceIds, 80, 10); if (ev.length) out.evidenceIds = ev;
       var sn = str(l.source, 120); if (sn) out.source = sn;
+      /* js/relation-evidence.js: a tie is STATED by its source unless it says it was DERIVED — and a derived tie keeps the rule that derived it */
+      if (l.basis === 'inferred') { out.basis = 'inferred'; var ru = str(l.rule, 160); if (ru) out.rule = ru; }
       return out;
     }
 

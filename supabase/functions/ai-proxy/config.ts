@@ -50,49 +50,56 @@ export const json = (body: unknown, status = 200) =>
 export const GLOSS_PLAN_LIMITS: Record<string, number> = planColumn("aiGlossPerDay");
 export const GLOSS_LANE = "gloss";
 export const MAX_GLOSS_PROMPT = 8_000;   // the selection + the sentence around it + the question that produced the answer
-/* (#R318) ONE USER TURN = ONE USE. Atlas finishes one request with up to three calls (planner +
-   two bounded repairs, or a vision read + its self-check re-read), and charging three for one
-   question is a bill the user never agreed to. The client stamps a turn key; the FIRST call
-   carrying it pays, the rest are free — bounded HERE, not by the client:
-     · TURN_MAX_CALLS  — how many calls one key may carry. Above it: 429 {error:"turn_calls"}.
-     · TURN_TTL_S      — how long a key stays alive. A replayed old key opens a new, charged turn.
-   Both are constants in this file precisely so a caller cannot raise them. */
-/* (#R413) 6 → 12. One REQUEST still costs the reader one unit of their daily quota — that is what
-   this block is for and it is unchanged. What 6 was additionally doing was capping how many steps
-   Atlas could take inside that one paid turn, and js/atlas-agent.js had shrunk its own ceiling to 4
-   to stay clear of it, so a turn that had to look something up, act on it and then speak had no room
-   left to fix a mistake. Twelve is the same protection against a runaway loop without deciding for
-   Atlas how much thinking one answer is allowed. */
-export const TURN_MAX_CALLS = 12;
+/* (#R318) ONE USER TURN = ONE USE. Atlas finishes one request with several calls (the turn loop's steps,
+   a vision read + its self-check re-read), and charging each of them for one question is a bill the
+   user never agreed to. The client stamps a turn key; the FIRST call carrying it pays, the rest are
+   free. What the key itself is bounded by HERE, not by the client:
+     · TURN_TTL_S      — how long a key stays alive WITHOUT A CALL (an idle timeout: every allowed call
+                         moves public.ai_turns.active_at). A replayed key idle past it opens a new,
+                         charged turn; a turn that keeps working is never cut, nor charged again, by age.
+   ⚠ NO CALL COUNT (atlas-unbounded-turns, user decision 2026-11-24). #R413 had raised the count from 6
+   to 12 so that a turn could look something up, act on it and still fix a mistake; any fixed number
+   decides for Atlas how much work one answer may take, and the user abolished those numbers for every
+   reader. What stops a turn now is money — the family's TURN_COST_CAP_USD and the account's day
+   (aiUsdPerDay, _shared/plans.js) — the page's no-progress detection, the kill switch
+   (ATLAS_DELEGATION=off) and the reader's Stop. openTurn passes maxCalls null; the ledger keeps the
+   parameter (consume_ai_turn), so a numeric bound still refuses with 429 {error:"turn_calls"} if a
+   caller ever states one. */
 /* ══ (atlas-delegation) A TURN THAT HANDS WORK TO WORKERS — the budget policy, as configuration ═════════
    Atlas may delegate pieces of a request to worker models (js/atlas-delegate.js). How the workers are paid
    for is a POLICY, chosen here and moved by the environment without a deploy — the user's instruction of
    2026-11-18: the scheme must stay switchable (shared / independent / a cost cap), because which one is
    right depends on models and prices that will change.
-     · mode "independent" — each worker has its own call allowance (CHILD_MAX_CALLS) under its own turn key,
-       linked to its parent (public.consume_ai_child_turn). The parent's TURN_MAX_CALLS is untouched.
-     · mode "shared"      — a worker's calls are the parent's: they carry the parent's key and count against
-       the parent's TURN_MAX_CALLS (no child row at all).
+     · mode "independent" — each worker has its own turn key, linked to its parent (public.consume_ai_child_turn),
+       with a call allowance only when the operator sets one (childMaxCalls). The parent's own row is untouched.
+     · mode "shared"      — a worker's calls are the parent's: they carry the parent's key and are the parent's
+       continuations (no child row at all).
      · mode "off"         — the KILL SWITCH. Every worker call is refused (`delegation_off`); Atlas reads the
        refusal and answers without workers. Nothing else changes.
    Either way no worker charges the reader's day: the parent's first call paid for the request (#R318).
-   THE NUMBERS (no-ad-hoc-hardcoding §4):
-     · MAX_CHILDREN 2 × CHILD_MAX_CALLS 8 — the first experiment was 2 × 3 (user, 2026-11-18). 3 left a worker one tool
-       step and no room for the answer; the user raised it to 8 on 2026-11-19 for workers that call read capabilities
-       themselves (five or six steps and the answer). The money fence (TURN_COST_CAP_USD) is unchanged and still stops the family. Not measured: they are where the comparison starts. Expire when the single-vs-delegated
-       comparison (dev-notes/2026-11-18-atlas-delegation.md) has been run; ATLAS_DELEGATION_* move them.
-     · Canonical place: these constants; the environment may move them, never define them. */
+   THE NUMBERS — there are none by default (atlas-unbounded-turns, user decision 2026-11-24). The first
+   experiment was 2 workers × 3 calls (2026-11-18), raised to 2 × 8 on 2026-11-19; any fixed count decides for
+   Atlas how much of a request it may hand out, and the user abolished those counts for every reader. The money
+   fence (TURN_COST_CAP_USD, and the account's day — aiUsdPerDay) is what stops a family now.
+     · ATLAS_DELEGATION_CHILDREN / ATLAS_DELEGATION_CHILD_CALLS stay as OPERATOR knobs: an integer set there bounds
+       (the ledger refuses past it — consume_ai_child_turn); unset = null = no count.
+     · ATLAS_DELEGATION_CONCURRENCY — how many workers the page runs AT ONCE (its queue, js/atlas-delegate.js); it
+       bounds nothing about how many run in total. Unset = null = all at once, the behaviour before this knob.
+   null travels as null (meta.delegationPolicy), so the page and the model read «no count», not a number. */
 export type DelegationMode = "independent" | "shared" | "off";
-export const DELEGATION_DEFAULTS = Object.freeze({ mode: "independent" as DelegationMode, maxChildren: 2, childMaxCalls: 8 });
+export const DELEGATION_DEFAULTS = Object.freeze({ mode: "independent" as DelegationMode, maxChildren: null as number | null, childMaxCalls: null as number | null, maxConcurrent: null as number | null });
 export function delegationPolicy(env: (k: string) => string) {
   const m = String(env("ATLAS_DELEGATION") || "").trim().toLowerCase();
   const mode: DelegationMode = m === "off" || m === "shared" || m === "independent" ? m : DELEGATION_DEFAULTS.mode;
-  /* an unset variable is "" and Number("") is 0 — read as «not given», never as zero */
-  const int = (k: string, d: number) => { const raw = String(env(k) || "").trim(); if (!raw) return d; const v = Number(raw); return Number.isInteger(v) && v >= 0 && v <= 64 ? v : d; };
+  /* an unset variable is "" and Number("") is 0 — read as «not given» (the default, null = no count), never as zero.
+     A value that is not an integer in range is not given either: a typo must not become a bound nobody chose. */
+  const int = (k: string, d: number | null) => { const raw = String(env(k) || "").trim(); if (!raw) return d; const v = Number(raw); return Number.isInteger(v) && v >= 0 && v <= 64 ? v : d; };
+  const atLeastOne = (v: number | null) => (v === null ? null : Math.max(1, v));
   return Object.freeze({
     mode,
     maxChildren: int("ATLAS_DELEGATION_CHILDREN", DELEGATION_DEFAULTS.maxChildren),
-    childMaxCalls: Math.max(1, int("ATLAS_DELEGATION_CHILD_CALLS", DELEGATION_DEFAULTS.childMaxCalls)),
+    childMaxCalls: atLeastOne(int("ATLAS_DELEGATION_CHILD_CALLS", DELEGATION_DEFAULTS.childMaxCalls)),
+    maxConcurrent: atLeastOne(int("ATLAS_DELEGATION_CONCURRENCY", DELEGATION_DEFAULTS.maxConcurrent)),
   });
 }
 /* (model-options) THE MODELS A WORKER MAY BE GIVEN, OFFERED TO ATLAS WITH THEIR PRICES — Atlas chooses, the server only checks.
@@ -163,6 +170,22 @@ export function turnCostCapMicros(env: (k: string) => string) {
   const v = raw ? Number(raw) : NaN;
   return Math.round((Number.isFinite(v) && v > 0 ? v : TURN_COST_CAP_USD) * 1_000_000);
 }
+/* ══ (atlas-unbounded-turns) WHAT ONE ACCOUNT MAY SPEND IN A DAY — the fence that replaced the call counts ══════
+   Reserved and settled with the family's spend, in the same transaction (public.reserve_ai_spend → public.ai_spend_day):
+   a request is refused when the family's cap above OR the account's day would be passed — 409 {error:"day_cost"}.
+   The number is the plan's `aiUsdPerDay` column (_shared/plans.js — its derivation is written there, the canonical
+   place), multiplied by AI_DAY_USD_SCALE (a positive number; unset or invalid = 1) so the operator moves every plan's
+   day at once without a deploy. The developer is exempt from the ledger, as from every other row of it. */
+export const DAY_COST_PLAN_USD: Record<string, number> = planColumn("aiUsdPerDay");
+export function dayCostCapMicros(env: (k: string) => string, plan: string) {
+  const raw = String(env("AI_DAY_USD_SCALE") || "").trim();
+  const v = raw ? Number(raw) : NaN;
+  const scale = Number.isFinite(v) && v > 0 ? v : 1;
+  const usd = DAY_COST_PLAN_USD[plan] ?? DAY_COST_PLAN_USD.free;
+  return Math.round(usd * scale * 1_000_000);
+}
+/* (atlas-unbounded-turns) an IDLE timeout: measured from the key's last allowed call (ai_turns.active_at), so a
+   turn that keeps working is never cut by the age of its key — see the #R318 block above. */
 export const TURN_TTL_S = 900;
 export const MAX_TURN_KEY = 120;
 /* ══ (atlas-stream-replay) A BROKEN STREAM IS RECEIVED AGAIN, NOT COMPUTED AGAIN ═══════════════════
@@ -183,21 +206,21 @@ export const MAX_TURN_KEY = 120;
        read a second. Expires if a provider round-trip becomes sub-second.
      · The answer is kept for TURN_TTL_S, the turn key's own lifetime: after it the same turn key opens
        a new turn, so an older answer has no turn to be replayed into.
-   ⚠ NOT A LIMIT (CONSTITUTION.md §5): nothing is refused, TURN_MAX_CALLS is untouched, and a replay
-   that finds a stored answer returns before consume_ai_turn, so it does not use up one of the calls. */
+   ⚠ NOT A LIMIT (CONSTITUTION.md §5): nothing is refused, and a replay that finds a stored answer returns
+   before consume_ai_turn, so it is neither a charge nor a call of the turn. */
 export const ANSWER_LEASE_S = Math.ceil((2 * HEARTBEAT_MS) / 1000);
 export const ANSWER_POLL_MS = 1000;
 export const REPLAY_KEY_OK = /^[A-Za-z0-9._:-]{8,120}$/;
 
 /* ══ (edge-spend-and-models) THE PROJECT-WIDE CEILING — a fence on the invoice, not on Atlas ══════
-   Everything above bounds ONE ACCOUNT: PLAN_LIMITS a day of turns, TURN_MAX_CALLS the calls one turn
-   may carry. Nothing bounded the PROJECT, and an account costs nothing to make
+   Everything above bounds ONE ACCOUNT: PLAN_LIMITS a day of turns, TURN_COST_CAP_USD what one turn family
+   may spend (and, since atlas-unbounded-turns, aiUsdPerDay what one account may spend in a day). Nothing bounded the PROJECT, and an account costs nothing to make
    (config.toml: enable_signup, no confirmation) — so N accounts were N times the bill with no N.
    This is the ceiling on the whole: every request this function sends to a provider takes one unit
    from `ai-proxy:global:day` (_shared/ai-provider.js → public.relay_take) before it is sent —
    fallback steps, retries and the developer's own calls included, because each is a request on the
    same invoice. It FAILS CLOSED: a limiter that cannot be consulted cannot say the invoice is bounded.
-   ⚠ IT IS NOT A LIMIT ON WHAT ATLAS MAY DO (CONSTITUTION.md §5). TURN_MAX_CALLS, the plans and every
+   ⚠ IT IS NOT A LIMIT ON WHAT ATLAS MAY DO (CONSTITUTION.md §5). The plans and every
    capability are unchanged; a reader meets this only on a day the project as a whole has spent many
    times what it has ever spent, and is refunded the use (the provider-failure path refunds).
    THE NUMBER (no-ad-hoc-hardcoding §4):
@@ -206,8 +229,12 @@ export const REPLAY_KEY_OK = /^[A-Za-z0-9._:-]{8,120}$/;
        day did more than two accounts use AI; 56 accounts exist. The developer account is exempt from
        the ledger, so its calls are not in those numbers — the margin below is what covers them (a
        production probe session of the #R742 kind is a few hundred calls).
-     · 3000 is ~26× the busiest recorded day, and the whole plan maximum of ~16 free accounts
-       (10 turns × TURN_MAX_CALLS 12 + the 60 glosses = 180 requests an account a day).
+     · 3000 is ~26× the busiest recorded day. ⚠ IT IS NO LONGER A MULTIPLE OF A PLAN MAXIMUM IN REQUESTS: until
+       2026-11-24 it was also «~16 free accounts at their plan maximum» (10 turns × 12 calls + 60 glosses = 180
+       requests an account a day), and that product needed the per-turn call count the user abolished
+       (atlas-unbounded-turns). A plan's day is bounded by MONEY now — aiUsdPerDay ($10 for free, _shared/plans.js)
+       — and this ceiling counts requests, so the two no longer convert into each other: it stays a fence on the
+       PROJECT's request rate at the value the observation above set.
      · Expires the first time a reader meets `provider_quota` with meta.ceiling = "project_day" on a
        day that was readers — then AI_PROXY_GLOBAL_PER_DAY moves it without a deploy. It is not a
        statement of price (the provider bills by token, and this counts requests).
@@ -216,9 +243,10 @@ export const GLOBAL_PER_DAY = 3000;
 export const CEILING = spendCeiling({ fn: "ai-proxy", perDay: GLOBAL_PER_DAY, env: (k: string) => Deno.env.get(k) || "" });
 
 /* ══ (ai-quota-fairness) …AND WHOSE DAY IT PROTECTS — a newcomer's requests come out of a share ═════
-   The ceiling above is one bucket, and each account is bounded only by its plan (at most 10 turns ×
-   TURN_MAX_CALLS 12 + 60 glosses = 180 requests a day). So about 17 accounts could empty it, and an
-   empty bucket stops EVERY reader's AI — the month-old reader's as much as the account factory's.
+   The ceiling above is one bucket, and each account is bounded only by its plan — in requests until
+   2026-11-24 (10 turns × 12 calls + 60 glosses = 180 a day, so about 17 accounts could empty it), in MONEY
+   since the per-turn call count was abolished (aiUsdPerDay, atlas-unbounded-turns), so a few accounts can now
+   empty it. An empty bucket stops EVERY reader's AI — the month-old reader's as much as the account factory's.
    An account costs one confirmed e-mail address (production auth, read 2026-10-01:
    mailer_autoconfirm false, anonymous sign-in off).
    So an account younger than NEWCOMER_AGE_DAYS (_shared/ai-ledger.js cohortOf — auth.users.created_at,
@@ -226,7 +254,7 @@ export const CEILING = spendCeiling({ fn: "ai-proxy", perDay: GLOBAL_PER_DAY, en
    from the project bucket (_shared/ai-provider.js shareCeiling). Whatever the newcomers do, they
    cannot take more than their share out of the day; the rest is held for accounts that are older.
    ⚠ NOTHING HERE LOWERS ANYONE'S LIMIT (CONSTITUTION.md §5, one-pass-or-a-reason §3). GLOBAL_PER_DAY,
-   PLAN_LIMITS, the gloss lane and TURN_MAX_CALLS are unchanged, an established account takes from the
+   PLAN_LIMITS and the gloss lane are unchanged, an established account takes from the
    project bucket exactly as before, and a newcomer keeps its whole plan — only which part of the
    invoice fence its requests come from is decided here. A refusal is `provider_quota` with
    meta.ceiling "newcomer_day", and the use is refunded like the project ceiling's.
@@ -234,7 +262,10 @@ export const CEILING = spendCeiling({ fn: "ai-proxy", perDay: GLOBAL_PER_DAY, en
      · Observation — production ledger, read 2026-10-01: at most 9 accounts under a week old used AI
        on one day, 16 turns between them; the busiest turn carried 12 requests and the busiest day of
        the whole project 114. A third of 3000 is 1000 requests: 62× that newcomer day even if every
-       one of its turns had used all 12 calls (192), and five fresh accounts at their plan maximum.
+       one of its turns had carried 12 calls (192) — the count a turn was bounded by when this was read.
+       «Five fresh accounts at their plan maximum» was also true then (180 requests each); since the
+       per-turn count was abolished (atlas-unbounded-turns, 2026-11-24) a plan's maximum is in money
+       (aiUsdPerDay), not requests, so the share is measured against the observed newcomer day alone.
      · What it holds back: 2000 a day that no batch of new accounts can reach — 17× the busiest day
        the project has recorded, for accounts a week old or more.
      · A FRACTION, so that AI_PROXY_GLOBAL_PER_DAY moving the whole moves the share and the reserve
