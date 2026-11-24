@@ -25,7 +25,6 @@ import { fileURLToPath } from 'node:url';
 import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
 import { CHECKED, claims, headNoun, opensLine } from '../scripts/doc-claims.mjs';
 import { readLF } from '../scripts/eol.mjs';
-import { tierSpecs } from '../scripts/tiers.mjs';
 import { declaredEdgeFunctions } from './helpers/edge-functions.mjs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
 import { specFiles, specFileFor } from '../scripts/architecture-spec.mjs';
@@ -66,7 +65,8 @@ const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').repl
  *
  *    ① `capability-count` が、文書の数字を動かすと落ちる。
  *    ② `prompt-count` が、総数を動かしても内訳の 1 行を動かしても落ちる。
- *    ③ `deep-tier-size` が、**文書でない 2 か所**（package.json・scripts/worktree.mjs）でも落ちる。
+ *    ③ `deep-tier-size` が、**文書でない 2 か所**（package.json・scripts/worktree.mjs）に層の大きさが書き戻されると落ちる
+ *       （derive-tier-sizes: 規則は「書かれた数が実体と合うか」から「数を書いたら落ちる」へ反転した）。
  *    ④ 三つとも、正本が**黙った**ときに落ちる（#R399 の形——数が消えるのは合格ではない）。
  *    ⑤ `ai-proxy` の散文が `PLAN_LIMITS` と一致する。⚠ これは変異ではなく直接の照合で、
  *       `.ts` は `doc-facts` の走査に入っていないのでここが唯一の門。
@@ -161,14 +161,15 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
        DOWN. It said «95» — so the day a round added one nightly spec and correctly updated both
        files to «96», the rule stayed green and THIS test went red for not finding its own anchor:
        the check that polices four hand-written copies of a derived number was the fifth copy. */
-    const deepNow = (() => { const m = /the deep tier is (\d+) spec files/.exec(readLF(join(ROOT, 'package.json'))); return m ? m[1] : '95'; })();
+    /* (derive-tier-sizes) THE NUMBER IS NO LONGER WRITTEN, SO THE MUTATION WRITES ONE BACK. The pointer
+       («node scripts/tiers.mjs --sizes») in each file is replaced by a literal size; the rule must fail on it. */
     for (const [file, from, to, why] of [
-      ['package.json', 'the deep tier is ' + deepNow + ' spec files', 'the deep tier is ' + String(86) + ' spec files', 'the npm script commentary'],
-      ['scripts/worktree.mjs', 'The deep tier (' + deepNow + ' spec files', 'The deep tier (' + String(82) + ' spec files', 'the banner printed at the start of every session'],
+      ['package.json', 'node scripts/tiers.mjs --sizes and written NOWHERE', 'the deep tier is 86 spec files and written NOWHERE', 'the npm script commentary'],
+      ['scripts/worktree.mjs', 'its size is derived — node scripts/tiers.mjs --sizes —', '82 spec files —', 'the banner printed at the start of every session'],
     ]) {
       await t.test(`③ deep-tier-size catches ${file} — ${why}`, () => {
         const r = withBroken([{ file, why, from, to }], () => docFacts('deep-tier-size'));
-        assert.equal(r.code, 1, `${file} may state the wrong deep-tier size and stay green`);
+        assert.equal(r.code, 1, `${file} may write a deep-tier size and stay green`);
         assert.match(r.out, new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `the report does not name ${file}`);
       });
     }
@@ -502,10 +503,12 @@ const DEFECTS = [
      the defect this row exists to catch stops being watched until somebody retypes it. The numbers
      come from scripts/tiers.mjs, which is where deep-tier-size itself gets them; only the WRONGNESS
      is written down (memory: 「数を持つ変異テストの種は数が動くと全部落ちる」). */
+  /* (derive-tier-sizes) THE SEED IS A SENTENCE, NOT A NUMBER: docs/FILES.md no longer states a size, so the defect to
+     watch is a size being written there again, in Japanese (the shape #R699 found the English-only rule had missed). */
   ['deep-tier-size', 'docs/FILES.md',
-    `core ${tierSpecs('core', { fixed: true }).length} 本 / deep ${tierSpecs('deep').length} 本`,
-    `core ${tierSpecs('core', { fixed: true }).length - 1} 本 / deep ${tierSpecs('deep').length - 46} 本`,
-    'the same fact in Japanese'],
+    '今の core / deep / 全体を導出する',
+    '今の core 5 本 / deep 100 本を導出する',
+    'a size written again, in Japanese'],
   /* ⚠ (#R743) THE THIRD NUMBER IN THE SENTENCE ⑫ MUTATES. 「N のうち撤去済み 1 を除く M」 had its
      withdrawn count and its reachable half compared and its REGISTRY TOTAL read by nothing — so
      raising the registry left DECISIONS.md ×2 saying 「139 のうち撤去済み 1 を除く 140」, which does
