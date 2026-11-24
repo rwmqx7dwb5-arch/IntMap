@@ -57,3 +57,5 @@ newsjp: Atlas が「この港が止まったら影響を受ける都市と工場
 - perf: atlas-cap-runs 1025588→1031599 B・atlas-console 1186800→1192904 B へ天井を上げた。港・鉄道・都市・工場の網の能力を足し、main の他の変更と合わせて測り直したため。
 
 - perf: atlas-cap-runs 1044.4→1050.9 kB へ天井を上げた。港・鉄道・都市・工場の網の能力が main の geo.ml・geo.regionStat と同じチャンクに並ぶため。
+
+- perf: atlas-cap-runs 1054.2→1064.4 kB へ天井を上げた。港・鉄道・都市・工場の網の能力を足し、main の他の能力と合わせて測り直したため。
