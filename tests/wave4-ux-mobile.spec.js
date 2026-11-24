@@ -62,7 +62,18 @@ test('① the first screen is the map and the search row; the home is not fetche
   expect(fetched.filter((p) => /\/start-home[-.]/.test(p)), 'js/start-home.js is not on the start-up path').toEqual([]);
 });
 
+/** 電話の既定の tab は Atlas（起動 ~2.5 s 後に未選択なら .mode-atlas が押される）。この spec の主題は「tab が 1 つも選ばれていない」ホームなので、
+ *  既定が着いたのを待ち、アプリ自身の作法（選択中の tab をもう一度押すと選択が外れる＝setMode）で外して、sheet を最下段へ戻す。 */
+async function openHome() {
+  await page.waitForFunction(() => !!document.querySelector('.control-panel .mode-btn.mode-atlas.active'), null, { timeout: 15_000 });
+  await page.evaluate(() => document.querySelector('.control-panel .mode-btn.mode-atlas').click());
+  await page.waitForFunction(() => !document.querySelector('.control-panel .mode-btn.active'), null, { timeout: 5000 });
+  await page.evaluate(() => window.__setDetent('min', false));
+  await page.waitForTimeout(600);
+}
+
 test('② one pull of the sheet lands on «Live now», named as the tiles name them', async () => {
+  await openHome();
   const head = await page.locator('#m-head').boundingBox();
   const x = Math.round(head.x + head.width / 2), y0 = Math.round(head.y + 12);
   const lift = await drag(x, y0, y0 - 380, 12);
@@ -126,6 +137,7 @@ test('③ a switch turns its layer on and lowers the sheet, tells the truth when
 });
 
 test('④ a tab takes the home away with the board; a wide window gets the board back', async () => {
+  await page.tap('#m-menu-btn');   /* 電話ではタブはメニューの中（開くまで display:none） */
   await page.tap('#btn-news');
   await page.waitForTimeout(600);
   const tab = await page.evaluate(() => ({ home: getComputedStyle(document.querySelector('.m-home')).display, board: document.getElementById('widget-board').style.display }));

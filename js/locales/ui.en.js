@@ -236,7 +236,8 @@ IntMapLang.define('en', { ui: {
       supAtlasTitle:"Atlas",
       supAtlasBody:"Every Atlas answer is written by an AI service that IntMap pays for by the amount of text it reads and writes. That is why each account has a daily allowance — {n} questions and {g} term look-ups on the free plan, which every reader has — and why the whole site has a daily ceiling on AI requests.",
       /* (atlas-before-login) the Atlas row for a reader who has not logged in — js/atlas-examples.js. {n} is the free plan’s aiTurnsPerDay (supabase/functions/_shared/plans.js) */
-      atlasGateNote:"Atlas needs a free IntMap account — {n} questions a day. Tap an example to see how it answers before you log in.",
+      menuBtn:"Menu",
+      atlasGateNote:"Atlas needs a free IntMap account — {n} questions a day.",
       atlasPvTitle:"How Atlas answers this",
       atlasPvStep1:"Reads what you are looking at — the view, the layers that are on, and the year on the clock.",
       atlasPvStep2:"Works on this map with IntMap’s own tools — moves the camera, highlights countries, draws routes and areas, measures, switches layers.",
