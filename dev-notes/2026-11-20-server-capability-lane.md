@@ -40,3 +40,4 @@ newsjp: バックグラウンドの仕事が、より多くの読み取り能力
 - `perf-budget`(同・第 6 回、2026-11-24): **CI の測定**: `async.raw` 14783.6 kB・`async.gzip` 4996.0 kB・`atlas-cap-runs` 1005.6 kB・`atlas-console` 1165.4 kB・`atlas-executor` 62.7 kB・`dist.assets` 22230.5 kB(取り込んだ main の増分を含む合計)。天井を測定値の直上へ(15140000・5117000・1029800・1193500・64300・22765000 バイト)。失効条件は上と同じ(main の `--tighten`)。
 - `perf-budget`(同・第 7 回、2026-11-24): **CI の測定**: `atlas-cap-runs` 1011.5 kB のみ(他は収まった)。天井を測定値の直上へ(1035900 バイト)。失効条件は上と同じ(main の `--tighten`)。
 - `perf-budget`(同・第 8 回、2026-11-24): **CI の測定**: `async.raw` 15063.6 kB・`async.gzip` 5125.2 kB・`atlas-cap-runs` 1028.8 kB・`atlas-console` 1171.6 kB(取り込んだ main の増分を含む合計)。天井を測定値の直上へ(15430000・5250000・1053600・1199800 バイト)。失効条件は上と同じ(main の `--tighten`)。
+- `perf-budget`(同・第 9 回、2026-11-24): **CI の測定**: `atlas-cap-runs` 1045.2 kB のみ(他は収まった)。天井を測定値の直上へ(1070400 バイト)。失効条件は上と同じ(main の `--tighten`)。
