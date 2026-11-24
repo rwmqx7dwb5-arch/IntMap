@@ -71,7 +71,7 @@ export function makeAtlasSources(HOST, CTX) {
       const seen=new Set(); const rows2=[];
       for(const a2 of arts){ const t2=String(a2.title||'').trim(); if(!t2||seen.has(t2)) continue; seen.add(t2);
         let when=''; try{ const s2=String(a2.seendate||''); if(s2.length>=8) when=s2.slice(0,4)+'-'+s2.slice(4,6)+'-'+s2.slice(6,8); }catch(_){}
-        try{ if(sink&&a2.url) sink.push({url:a2.url,title:t2,src:(a2.domain||''),date:when,dateType:'gdelt_seen_date',origin:'gdelt'}); }catch(_){}   /* (#R79) real URL → source card; (#R113) date → evidence record; (#R131) seendate is the GDELT SEEN date, not the event date */
+        try{ if(sink&&a2.url) sink.push({url:a2.url,title:t2,src:(a2.domain||''),date:when,dateType:'gdelt_seen_date',origin:'gdelt',lang:String(a2.language||''),country:String(a2.sourcecountry||'')}); }catch(_){}   /* (#R79) real URL → source card; (#R113) date → evidence record; (#R131) seendate is the GDELT SEEN date, not the event date */
         rows2.push('- '+t2.slice(0,150)+' ['+(a2.domain||'?')+(when?(' · '+when):'')+']'); if(rows2.length>=12) break; }
       return rows2.length?rows2.join('\n'):null; }
     /* (#R64) second live-news engine: Google News RSS search (multi-language, topic-aware). GDELT alone failed
@@ -94,7 +94,7 @@ export function makeAtlasSources(HOST, CTX) {
        reader's edition answers with no matching story ('ok'), the English fallback is then refused,
        and the pair reports 'refused' — 「取得できなかった」 printed over a source that answered.
        One note per ATTEMPT is the same rule js/atlas-console.js applies to the block as a whole. */
-    async function _gnewsNews(q2,sink,mkNote){ const query=String(q2||'').trim(); if(!query) return null;
+    async function _gnewsNews(q2,sink,mkNote,edition){ const query=String(q2||'').trim(); if(!query) return null;
       /* (#R318) NINE EDITIONS, NOT FOUR — a reader of zh / zh-Hans / fr / ko was searching the US
          English edition of Google News for a query in their own language.
          ⚠ THIS TABLE STAYS LITERAL, and the two Chinese rows are the reason: hl is Google's UI
@@ -104,7 +104,8 @@ export function makeAtlasSources(HOST, CTX) {
          'en' is a row here rather than a repeated literal, so the fallback below names it once. */
       const LOCS={en:['en','US','US:en'],jp:['ja','JP','JP:ja'],de:['de','DE','DE:de'],ru:['ru','RU','RU:ru'],es:['es','ES','ES:es'],
                   zh:['zh-TW','TW','TW:zh-Hant'],'zh-hans':['zh-CN','CN','CN:zh-Hans'],fr:['fr','FR','FR:fr'],ko:['ko','KR','KR:ko']};
-      const locs=[LOCS[HOST.lang]||LOCS.en]; if(HOST.lang!=='en'&&LOCS[HOST.lang]) locs.push(LOCS.en);
+      /* (atlas-research-search) `edition` = [hl, gl, ceid] names ONE edition outright — the caller (research.search) chose the language the sources write in; nothing else is tried */
+      const locs=(Array.isArray(edition)&&edition.length===3)?[edition]:[LOCS[HOST.lang]||LOCS.en]; if(!(Array.isArray(edition)&&edition.length===3)&&HOST.lang!=='en'&&LOCS[HOST.lang]) locs.push(LOCS.en);
       for(const loc of locs){ try{
         const xml=await _fetchText('https://news.google.com/rss/search?q='+encodeURIComponent(query)+'&hl='+loc[0]+'&gl='+loc[1]+'&ceid='+encodeURIComponent(loc[2]),(typeof mkNote==='function'?mkNote():undefined));
         if(!xml) continue;
@@ -113,7 +114,7 @@ export function makeAtlasSources(HOST, CTX) {
         for(const it of items){ const t2=(it.querySelector('title')&&it.querySelector('title').textContent||'').trim(); if(!t2||seen.has(t2)) continue; seen.add(t2);
           const src=(it.querySelector('source')&&it.querySelector('source').textContent)||''; let when='';
           try{ const d=it.querySelector('pubDate')&&it.querySelector('pubDate').textContent; if(d) when=new Date(d).toISOString().slice(0,10); }catch(_){}
-          try{ if(sink){ const lk=(it.querySelector('link')&&it.querySelector('link').textContent||'').trim(); if(lk) sink.push({url:lk,title:t2,src:(src||''),date:when,dateType:'publication_date',origin:'gnews'}); } }catch(_){}   /* (#R79) real URL → source card; (#R113) date → evidence record; (#R131) pubDate is the article date, not the event date */
+          try{ if(sink){ const lk=(it.querySelector('link')&&it.querySelector('link').textContent||'').trim(); if(lk) sink.push({url:lk,title:t2,src:(src||''),date:when,dateType:'publication_date',origin:'gnews',lang:String(loc[0]||''),country:String(loc[1]||'')}); } }catch(_){}   /* (#R79) real URL → source card; (#R113) date → evidence record; (#R131) pubDate is the article date, not the event date */
           rows2.push('- '+t2.slice(0,150)+' ['+(src||'?')+(when?(' · '+when):'')+']'); }
         if(rows2.length) return rows2.join('\n'); }catch(_){} }
       return null; }
