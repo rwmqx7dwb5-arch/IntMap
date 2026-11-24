@@ -267,6 +267,16 @@ sheet を表の decoder（`decodeRows`）が読む。座標の無い表を場所
 **取り込んだ結果は必ず `window.IntMapGeodesy.sanitizeFeatures` を通る**（`js/geodesy.js`）。そこが `MultiPoint` と
 `GeometryCollection` を落とすので、decoder 側で単一 geometry に展開してから渡す。
 
+### 7.3d2 行政区分の統計 (`js/admin-stats.js`)
+
+`data/admin-stats.json.gz`（Wikidata の P1082 人口・P585 時点・P459 決定方式・単位の P571/P576）。キーは 4 種——iso3166-2（P300）・nuts（P605）・
+us-fips（P882）・jp-jis（P429）——で、**キーは単位を名指すだけで同じ領域だとは保証しない**ので、各単位が自分の存続期間（`inc`/`dis`）を持ち、`valueAt` は
+その外の年を `unit-not-yet-established` / `unit-abolished` で拒否する。年の指定に記載が無ければ `no-statement-for-year`（`toleranceYears` を述べたときだけ最寄りを使い `gapYears` を名乗る）。
+日付の無い記述は年を与えず `undated` に数える。表は方式・年の混在を `mixedMethods` / `mixedYears` で申告する。第 1 級区分だけが同梱の境界
+（`data/admin1-world.json.gz`）に ISO 3166-2 で結ばれ、`GeoJSONUpload.add` ＋ `style(graduated)` で人口の色分けになる。他の 3 種は表で答える（境界を持たない）。
+Atlas の入口は `geo.regionStat`（`js/atlas-cap-geo.js`）。**まだ無いもの**: NUTS・郡・市区町村の境界（描けない）と、歴史境界への結合そのもの
+（`definitionAt` がその番人として在る）。
+
 ### 7.3e データセットと処理の基盤 (The GIS core) — `js/gis-*.js`
 
 **取り込んだデータ・内蔵データ・分析結果を同じ 1 つの形で持ち、処理の出力が次の処理の入力になる層。** 正本は
@@ -701,7 +711,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - **描かれる線は多角形の輪郭ではない**（`data/border-coast.js`・`scripts/build-border-coast.mjs`）。同梱の海岸線（`data/coastline.json.gz`＝Natural Earth
   1:10m・2 km 許容）に対して、辺のどこか1点でも `INLAND_KM` より内陸なら境界、そうでなければ海岸線の写しと判定し、15の束（`cshapes` /
   `hist-borders` / `hist-borders-late` / `hist-clio` / `hist-coast-snap` / `hist-eras-rest` / `hist-admin1` / `hist-admin2` / `hist-admin3` / `hist-eras` /
-  `hist-kuni` / `hist-admin-fill` / `hist-admin-surveys` / `hist-admin-surveys-nc` / `hist-admin-recon`）の全リング **136,880 本**について「描く run」を
+  `hist-kuni` / `hist-admin-fill` / `hist-admin-surveys` / `hist-admin-surveys-nc` / `hist-admin-recon`）の全リング **136,884 本**について「描く run」を
   印す。束は `data/` を走査して発見し（`discoverBundles()`）、`--check` は印された束の集合が `data/` の束の集合と厳密に一致することを要求する。各
   エントリは自分のグローバル名（`global`）を持つ。面積 0 のリングは描かない（束からは削らない）。印の**読み手は `js/border-coast.js`** ただ1つで、
   `js/time-borders.js` と `js/time-admin1.js` が呼び、run だけをつないだ MultiLineString を線用の source（`imtb-ln-src` / `imta-ln-src` /
@@ -915,7 +925,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   出るので `tests/news-countries-checks.test.mjs` ①② が両方が鍵であることを、④ が `js/lang-registry.js` と inline 表を実行して 9言語の解決を確かめる。
   首都は地名なので訳さない（`CAPITAL[code]`、歴史の行は `_STINFO`）。
 - **Region 行の subregion** は `js/countries-ui.js` の **`window._imSubregionName(sub, lang)`**（Natural Earth の SUBREGION 24種。`ne_110m` は22種）。
-  空の SUBREGION は無いので `region` / `subregion` のフォールバック行は無い。表は1本で、`js/atlas-examples.js` の starter chip の `{sub}` も同じ表を読む
+  空の SUBREGION は無いので `region` / `subregion` のフォールバック行は無い。表は1本で、`js/atlas-examples.js` の見本の文（`suggestPrompts:true` で描く）の `{sub}` も同じ表を読む
   （`tests/news-countries-checks.test.mjs` ⑩ が24語を宣言するファイルがちょうど1本であることと、script として parse できることを検査する）。`export`
   ではなく `window` で渡すのは、検査ハーネスが `new Function(src)` で素のスクリプトとして実行するため（`window._imCldrRegion` も同じ）。2欄が解決後に
   同じ語になったら1つに畳む。

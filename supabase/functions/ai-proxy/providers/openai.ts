@@ -12,7 +12,7 @@ import { providerCall, ProviderError, classifyGemini, streamedBody } from "../pr
 import type { Meter, StreamSink } from "../provider-call.ts";
 import { filesBlock } from "../media.ts";
 import type { ImgPart, FilePart, DocPart, WebCitation } from "../media.ts";
-import { fnParameters, placeAttachments } from "../turn.ts";
+import { fnParameters, placeAttachments, CALL_ID_OK } from "../turn.ts";
 import type { TurnReq, TurnItem } from "../turn.ts";
 
 /* OpenAI refused a reasoning summary on this isolate (see callOpenAI `summary`). OBSERVED: not yet —
@@ -37,10 +37,20 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
   for (const ip of imgs) content.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}`, detail: _detail });
   /* (atlas-native-tools) A PROTOCOL-2 TURN: the items as Responses input items, the attachments where the client's
      markers put them, and the tools as functions beside the hosted web search. `replay` = the
-     provider's own reasoning items from earlier steps, sent back encrypted (store:false keeps nothing
-     on OpenAI's side, so this is how the model keeps its thinking between calls) — dropped by the
+     provider's own reasoning items from earlier steps, sent back encrypted (this is how the model keeps its
+     thinking between calls; the searches ride by reference — `carry` below) — dropped by the
      first 400 rung below, together with the cache key, as the extras a model may not accept. */
   let replay = !!turn;
+  /* ⚠⚠ (atlas-search-carry) WHAT A SEARCH FOUND DID NOT REACH THE NEXT STEP. Measured on production 2026-11-24
+     (public.ai_delegation_journal, one 9-call turn): the 6 calls that ran the hosted search took 8-36 s and carried
+     25k-42k input tokens; the 3 that did not took 2-3 s (the final write 17 s). Over 7 days 215 of 385 atlas_turn
+     calls searched. The cause was here: a step's answer kept its reasoning, its text and its calls, and dropped
+     every `web_search_call` — with store:false the results exist only on OpenAI's side, so the next step had lost
+     what the previous one read and searched again (.agents/rules/one-pass-or-a-reason.md §2, the second cause:
+     a result that is not carried back). A turn's responses are now STORED and each search goes back to the next
+     step as a reference to OpenAI's own item, results included. `carry` falls with `replay` on the same 400 rung:
+     a model that refuses the replayed extras is not handed references either. Retention: privacy policy §4. */
+  let carry = !!turn;
   /* (atlas-live-stream) WHAT THE MODEL IS THINKING, IN ITS OWN SUMMARY. The longest wait in a turn is
      reasoning that produces no visible token; Responses publishes a summary of it as it goes, and that
      summary is the first thing the reader can be shown. Asked for only when someone is watching (a
@@ -62,6 +72,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
       else if (it.type === "function_call") out.push({ type: "function_call", call_id: it.call_id, name: it.name, arguments: it.arguments });
       else if (it.type === "function_call_output") out.push({ type: "function_call_output", call_id: it.call_id, output: it.output });
       else if (it.type === "reasoning" && replay) out.push({ type: "reasoning", id: it.id, encrypted_content: it.encrypted_content, summary: [] });
+      else if (it.type === "item_reference" && carry) out.push({ type: "item_reference", id: it.id });
     }
     return out;
   };
@@ -75,7 +86,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
       input: turn ? turnInput() : [{ role: "user", content }],
       max_output_tokens: Math.min(12_000, maxTokens + (effort === "xhigh" ? 8_000 : effort === "high" ? 5_000 : effort === "medium" ? 3_500 : 1_500)),
       reasoning: { effort: effort === "xhigh" ? "xhigh" : effort === "high" ? "high" : effort === "medium" ? "medium" : "low", ...(summary ? { summary: "auto" } : {}) },   /* (#R117) pass "high" through (the old mapping silently crushed anything ≠ medium down to low) · (atlas-live-stream) summary — see `summary` above */
-      store: false,
+      store: !!(turn && carry),   /* (atlas-search-carry) a turn's step is kept so its searches can be referenced by the next; every other call keeps nothing */
     };
     if (system) b.instructions = system;
     // JSON mode. NOTE: OpenAI's json_object validator wants the word "JSON" in the request; the
@@ -151,6 +162,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
      still answer the turn */
   if (!r.ok && r.status === 400 && turn && replay) {
     replay = false;
+    carry = false;
     r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools));
   }
   if (!r.ok && r.status === 400 && usedTools && forceWeb) {
@@ -262,6 +274,9 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
       } else if (it?.type === "message" && Array.isArray(it.content)) {
         const said = it.content.filter((p: { type?: string; text?: string }) => p?.type === "output_text" && typeof p.text === "string").map((p: { text: string }) => p.text).join("");
         if (said) output.push({ type: "message", role: "assistant", content: said });
+      } else if (carry && typeof it?.type === "string" && it.type.indexOf("web_search") === 0 && typeof it.id === "string" && CALL_ID_OK.test(it.id)) {
+        /* (atlas-search-carry) the search, results and all, as OpenAI holds it — the next step reads it instead of searching again */
+        output.push({ type: "item_reference", id: it.id });
       }
     }
   }

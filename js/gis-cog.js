@@ -193,27 +193,37 @@ export function makeGisCog(deps) {
     const lv = await g.levelAt(pick.level);
     if (!lv.ok) return lv;
     const bandIndex = (q.band && Number.isInteger(q.band.index)) ? q.band.index : 0;
-    const part = await lv.grid.readRegion({ bbox: readBox, band: bandIndex, signal: q.signal });
+    /* q.bands (an array of band indexes) reads them in ONE call — an embedding tile has 64 planes and a change pair needs
+       four or five bands, and each plane's tiles are fetched side by side — and answers `rasters` (one per band, same lattice). */
+    const many = Array.isArray(q.bands) && q.bands.length ? q.bands.filter((v) => Number.isInteger(v) && v >= 0) : null;
+    if (Array.isArray(q.bands) && (!many || many.length !== q.bands.length)) return bad('bad-param', { param: 'bands', value: q.bands });
+    const part = await lv.grid.readRegion(many ? { bbox: readBox, bands: many, signal: q.signal } : { bbox: readBox, band: bandIndex, signal: q.signal });
     if (!part.ok) return part;
     const r = part.region;
     const meta = (lv.grid.bands && lv.grid.bands[bandIndex]) || {};
 
     /* the region is a north-up piece of the file; the caller's lattice is the target */
-    let src = {
-      crs: wgs ? 'EPSG:4326' : String(g.crs), width: r.width, height: r.height,
-      affine: { x0: r.affine.x0, y0: r.affine.y0, dx: r.affine.dx, dy: r.affine.dy, rotated: false },
-      bands: [{ name: meta.name != null ? meta.name : null, unit: meta.unit != null ? meta.unit : null, nodata: meta.nodata != null ? meta.nodata : null }],
-      read: () => r.values,
-    };
-    let regionDeg = null;
-    if (!wgs) {
-      const deg = await W.to4326(src, { method: 'nearest' });
-      if (!deg.ok) return deg;
-      regionDeg = [deg.grid.grid.west, deg.grid.grid.north - deg.grid.grid.pixelLat * deg.grid.height, deg.grid.grid.west + deg.grid.grid.pixelLng * deg.grid.width, deg.grid.grid.north];
-      src = Object.assign({}, deg.grid, { crs: 'EPSG:4326' });
+    const sets = many ? r.valuesByBand : [r.values];
+    let regionDeg = null, out = null; const outs = [];
+    for (let si = 0; si < sets.length; si++) {
+      const vals = sets[si];
+      const bm = (lv.grid.bands && lv.grid.bands[many ? many[si] : bandIndex]) || {};
+      let src = {
+        crs: wgs ? 'EPSG:4326' : String(g.crs), width: r.width, height: r.height,
+        affine: { x0: r.affine.x0, y0: r.affine.y0, dx: r.affine.dx, dy: r.affine.dy, rotated: false },
+        bands: [{ name: bm.name != null ? bm.name : null, unit: bm.unit != null ? bm.unit : null, nodata: bm.nodata != null ? bm.nodata : null }],
+        read: () => vals,
+      };
+      if (!wgs) {
+        const deg = await W.to4326(src, { method: 'nearest' });
+        if (!deg.ok) return deg;
+        if (!regionDeg) regionDeg = [deg.grid.grid.west, deg.grid.grid.north - deg.grid.grid.pixelLat * deg.grid.height, deg.grid.grid.west + deg.grid.grid.pixelLng * deg.grid.width, deg.grid.grid.north];
+        src = Object.assign({}, deg.grid, { crs: 'EPSG:4326' });
+      }
+      const o1 = await W.resample(src, { west: b[0], north: b[3], pixelLng: pixelLng, pixelLat: pixelLat, width: q.width, height: q.height }, { method: 'nearest' });
+      if (!o1.ok) return o1;
+      outs.push(o1); if (!out) out = o1;
     }
-    const out = await W.resample(src, { west: b[0], north: b[3], pixelLng: pixelLng, pixelLat: pixelLat, width: q.width, height: q.height }, { method: 'nearest' });
-    if (!out.ok) return out;
 
     const full = g.affine;
     const fileBox = [full.x0, full.y0 - full.dy * g.height, full.x0 + full.dx * g.width, full.y0];
@@ -239,7 +249,7 @@ export function makeGisCog(deps) {
       resolution: { pixelLng: pixelLng, pixelLat: pixelLat, width: q.width, height: q.height, nativeDx: pick.dx, nativeDy: pick.dy, nativeUnit: wgs ? 'degree' : 'crs-unit', level: pick.level, isOverview: pick.isOverview, meets: pick.meets },
     };
     return {
-      ok: true, raster: out.grid, band: meta, coverage: coverage,
+      ok: true, raster: out.grid, rasters: many ? outs.map((o1) => o1.grid) : undefined, band: meta, coverage: coverage,
       source: { url: u.url, derivedFrom: u.derivedFrom || null, level: pick.level, requests: g.source && typeof g.source.requests === 'function' ? g.source.requests() : null, fileWidth: g.width, fileHeight: g.height, fileBounds: fileBox, fileBoundsCrs: String(g.crs), crs: String(g.crs) },
     };
   }

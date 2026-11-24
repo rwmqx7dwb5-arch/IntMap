@@ -62,7 +62,7 @@ test('wave4-ux-mobile ② the home is not on the start-up path, and leaves when 
   assert.match(want, /import\('\.\/start-home\.js'\)/, 'the fetch is inside wantStart');
   assert.match(want, /embedded\(\)/, 'an embed has no sheet, so no home');
   const setDetent = mui.slice(mui.indexOf('function setDetent('), mui.indexOf('function setDetent(') + 600);
-  assert.match(setDetent, /if\(RANK\[name\]>RANK\.min\) wantStart\(\)/, 'only a rest above min asks for it');
+  assert.match(setDetent, /if\(RANK\[name\]>RANK\.min && !_defaultOpening\) wantStart\(\)/, 'only a rest above min asks for it — not the opening the default tab makes by itself');
   const dragStart = mui.slice(mui.indexOf('function dragStart('), mui.indexOf('function dragStart(') + 400);
   assert.match(dragStart, /wantStart\(\)/, 'the grab asks for it, so it is drawn before the sheet rests');
   const desk = mui.slice(mui.indexOf('function applyLayout('), mui.indexOf('THE BOTTOM SHEET'));

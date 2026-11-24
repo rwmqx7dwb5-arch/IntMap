@@ -177,16 +177,22 @@ export const CATALOGUE_CHUNKS = [
       { name: 'file.create' },
       { name: 'board.compose' },
       { name: 'board.restore' },
+      { name: 'board.edit' },
+      { name: 'board.delta' },
       /* 45 (#R546) */
       { name: 'map.shakemap' },
       /* 46 (#R650) */
       { name: 'map.outbreaks' },
       /* 47 (#R773, #R790) */
       { name: 'attach.recall' },
+      /* (atlas-work-products) what a job leaves, kept together */
+      { name: 'work.job' },
       /* 48 (atlas-observer-undo) */
       { name: 'map.undo' },
       /* 41 (#R493) */
       { name: 'view.inspect' },
+      /* (web-browse) operating a web site and taking its file */
+      { name: 'web.browse' },
       /* 49 (landing-showcase) */
       { name: 'about-and-showcase', head: 'ABOUT INTMAP AND THE EXAMPLE MAPS: ' },
       /* 50 (classroom-tours) */

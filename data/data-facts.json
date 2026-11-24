@@ -9,6 +9,20 @@
   "canon": "scripts/data-governance.mjs factsFrom"
  },
  "subjects": {
+  "data/admin-stats.json.gz": {
+   "cadence": "P1D",
+   "cadenceBasis": "estimate",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
   "data/admin1-world.json.gz": {
    "cadence": "P1Y",
    "cadenceBasis": "measured",
@@ -1151,6 +1165,24 @@
     "accuracy"
    ]
   },
+  "data/siting-jp.json": {
+   "cadence": "P1Y",
+   "cadenceBasis": "measured",
+   "asOf": "2026-11-23",
+   "describes": {
+    "period": {
+     "start": "2025-04-01",
+     "end": "2026-03-31",
+     "note": "the JEPX prices are fiscal year 2025; the land prices are the 2026 announcement (reference date 1 January 2026); the minimum wages are those in force on 2026-11-20; SSDSE-B is its 2026 edition (statistics of 2023 and earlier)"
+    },
+    "extent": "Japan: all 47 prefectures (ISO 3166-2:JP), 948 industrial land-price parcels of 25,565 announced, and 266 company facilities placed on the map; the JEPX price is per power area, so Okinawa has none",
+    "method": "one table per prefecture holding each metric with its own unit, vintage and source; land prices are the median, minimum and maximum of the industrial-use standard parcels of the prefecture; JEPX prices are the mean of the half-hourly area spot prices; no composite score is computed, and ranks are per metric",
+    "resolution": "prefecture (47 areas) for every metric; the industrial land-price parcels and the company facilities keep their own point coordinates",
+    "completeness": "water and logistics are stated gaps with their reasons (no commercially usable open source was reachable; ports and roads are not yet joined), Okinawa has no JEPX price, and retail industrial electricity tariffs are not open data per prefecture",
+    "accuracy": "the prices and wages are the published settled or legal values, not estimates; the land price is an appraisal of standard parcels and is not a transaction price; the JEPX price is a wholesale price and not the tariff a plant pays"
+   },
+   "unstated": []
+  },
   "data/slab2.bin.gz": {
    "cadence": "static",
    "cadenceBasis": "stated",
@@ -1359,6 +1391,188 @@
    },
    "unstated": [
     "period",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-lu.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-strasbourg.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-rennes.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-toulouse.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-nice.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-nantes.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-montpellier.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-grenoble.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-mc.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-no-oslo.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-no-trondheim.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-no-stavanger.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-jp-toyama-bus.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
     "resolution",
     "completeness",
     "accuracy"
@@ -1857,6 +2071,34 @@
     "accuracy"
    ]
   },
+  "data/logistics-network.json": {
+   "cadence": "P1D",
+   "cadenceBasis": "stated",
+   "asOf": "2026-11-20",
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/power-plants.json": {
+   "cadence": "static",
+   "cadenceBasis": "measured",
+   "asOf": "2021-06-02",
+   "describes": {
+    "period": "a snapshot: plants as the database stands at its 1.3.0 release (June 2021); each row carries the commissioning year the database states",
+    "extent": "worldwide, but only the plants of the fuels in MODEL.fuels (coal, oil, gas, petcoke) that stand within MODEL.portReachKm (30 km, straight line) of a port in data/ports.json: 1,028 plants, counted 2026-11-20",
+    "method": "each plant is tied to the nearest MODEL.keep (3) ports within the radius by great-circle distance; the tie is proximity, not a stated fuel supply",
+    "resolution": "one point per plant, at the coordinates the database states; not the plant footprint",
+    "completeness": "a plant of another fuel, or farther than the radius, is absent by the rule and not because it does not exist; the database does not claim to list every plant",
+    "accuracy": "capacity, operator and commissioning year are copied from the database unchanged; IntMap measures none of them"
+   },
+   "unstated": []
+  },
   "data/offline-sources.json": {
    "cadence": "static",
    "cadenceBasis": "derived",
@@ -1893,6 +2135,20 @@
   "data/railways/index.json": {
    "cadence": "P1D",
    "cadenceBasis": "stated",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-feed-catalogue.json": {
+   "cadence": "P7D",
+   "cadenceBasis": "measured",
    "asOf": null,
    "describes": {},
    "unstated": [

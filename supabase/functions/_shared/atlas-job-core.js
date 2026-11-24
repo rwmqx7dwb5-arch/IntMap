@@ -129,7 +129,7 @@ export function shapeOf(data, normalizeFacts) {
     const verdict = (f.verdict === 'supported' || f.verdict === 'unsupported' || f.verdict === 'contradicted') ? f.verdict : undefined;
     return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined };
   });
-  return { ok: true, out: { summary: s(data.summary, 4000), findings, facts: typeof normalizeFacts === 'function' ? normalizeFacts(data.facts) : [], gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] } };
+  return { ok: true, out: Object.assign({ summary: s(data.summary, 4000), findings }, typeof normalizeFacts === 'function' ? { facts: normalizeFacts(data.facts) } : null, { gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] }) };
 }
 
 /* ══ PLANNING A LIST OF CONTRACTS INTO A JOB  (atlas-durable-jobs) ═══════════════════════════════════
@@ -137,8 +137,9 @@ export function shapeOf(data, normalizeFacts) {
    The same rules makeDelegation applies at run time, applied once up front so that a job the server accepts is one it can
    finish: every contract normalises, every id is unique, every input names a task of THIS list, the inputs lead nowhere
    in a circle, and nothing is the same work twice (the second start of one contract is the first — `reused`, not run again).
-   `kinds` — what this runner can execute. The server runs `worker` only: a capability task runs a page-side kernel lane
-   that has no server twin yet, so it is refused by name here rather than started and failed there. */
+   `kinds` — what this runner can execute (default `worker` only). `capabilityOk(id)` — for a `capability` task, whether this
+   runner has a twin of that capability (supabase/functions/_shared/atlas-server-caps.js): one it has not is refused by name
+   (`capability_unsupported_on_server`) here, at planning, rather than started and failed there. */
 export const JOB_MAX_TASKS = 8;   /* observation 2026-11-20: research.delegate hands on 2 workers by default (DELEGATION_DEFAULTS.maxChildren); 8 is four times that. Expires if a plan legitimately needs more — raise it here, the one place. */
 export function planJob(contracts, o) {
   const kinds = (o && Array.isArray(o.kinds)) ? o.kinds : ['worker'];
@@ -146,10 +147,16 @@ export function planJob(contracts, o) {
   if (!list.length) return { ok: false, error: 'no_tasks' };
   if (list.length > JOB_MAX_TASKS) return { ok: false, error: 'too_many_tasks' };
   const norm = [];
+  const runnable = (id) => !!(o && typeof o.capabilityOk === 'function' && o.capabilityOk(id));
+  /* a capability that changes the map or the session is SAVED by the job and applied by the page (js/atlas-server-class.js) — a capability TASK may name one; a worker's own tool may not (the model loop needs the answer now) */
+  const parkable = (id) => !!(o && typeof o.parkable === 'function' && o.parkable(id));
   for (let i = 0; i < list.length; i++) {
     const nc = normaliseContract(list[i]);
     if (!nc.ok) return { ok: false, error: nc.error, at: i };
     if (!kinds.includes(nc.contract.kind)) return { ok: false, error: 'kind_unsupported', at: i };
+    if (nc.contract.kind === 'capability' && !runnable(nc.contract.capability) && !parkable(nc.contract.capability)) return { ok: false, error: 'capability_unsupported_on_server', at: i };
+    /* a worker's granted tools are run by the same lane: one the runner has no twin of is refused by name here, not found missing in the middle of a model loop */
+    if (nc.contract.kind === 'worker' && (nc.contract.tools || []).some((t) => !runnable(t))) return { ok: false, error: 'capability_unsupported_on_server', at: i };
     norm.push(nc.contract);
   }
   const ids = new Set();

@@ -48,7 +48,7 @@ import { secretKey, denoEnv } from "../_shared/supabase-keys.js";
 /* (edge-spend-and-models) モデルの既定表・有料の提供元へ通じる唯一の扉・プロジェクト全体の天井・
    本文ではなく長さだけを運ぶ失敗。どれも他の 4 関数と同じ 1 本。 */
 import {
-  PROVIDER_DEFAULT_MODEL, OPENAI_LAST_RESORT_MODEL, providerFetch, providerFail, bodyLength,
+  PROVIDER_DEFAULT_MODEL, OPENAI_LAST_RESORT_MODEL, GEMINI_EMBEDDING_MODEL, providerFetch, providerFail, bodyLength,
   spendCeiling, scheduleCeiling,
 } from "../_shared/ai-provider.js";
 // 地点解析は既存の決定論エンジン。⚠ 第二の実装を作らない——このファイルは
@@ -67,6 +67,9 @@ import { DEFAULTS, buildIdf } from "../_shared/news-cluster.js";
 /* (news-intelligence) 出来事 × 企業。規則は 1 本（node のテストが同じファイルを評価する）、名簿は公開サイトが
    配っている企業アトラスの索引そのもの——写しを作らない（docs/COMPANIES.md §4.1）。 */
 import { makeEntityMatcher } from "../_shared/news-entities.js";
+/* (news-event-history) 年単位で残す出来事の行を作る規則。 */
+import { buildArchiveRow, pendingArchive, makeWorldMatcher as makeHistoryMatcher, HISTORY } from "../_shared/news-history.js";
+import { BACKFILL, dayRows, pagesFromQuery } from "../_shared/news-backfill.js";
 import { siteUrl } from "../_shared/site-origin.js";
 
 const NEWSGEO = globalThis.IntMapNewsGeo || null;
@@ -83,7 +86,8 @@ const FEED_TIMEOUT_MS = 15000;
 const FEED_MAX_BYTES = 6 * 1024 * 1024;
 const FEED_LANES = 8;
 /* 壁時計の既定。Edge Function の上限より十分手前で切り上げ、残りは次の run に回す。 */
-const DEFAULT_BUDGET_MS = 240000;
+/* 観測 2026-11-24: 本番は無通信 150 秒で IDLE_TIMEOUT（504）になり、run の記録も残らない。予算がそれより長いと、段が「まだ時間がある」と信じたまま殺される。失効: プラットフォームの無通信上限が変わったとき */
+const DEFAULT_BUDGET_MS = 140000;
 /* PostgREST の 1 応答あたりの行数上限（既定 1000）。読み出しは必ずページで回す。 */
 const PAGE = 1000;
 const WRITE_CHUNK = 250;
@@ -277,6 +281,7 @@ async function stageFetch(db, budget, runStartedAt) {
  * ────────────────────────────────────────────────────────────────────── */
 const LOCATE_CAP = 240;      /* 1 run で AI に送る上限（費用の天井。docs/NEWS-EVENTS.md §14） */
 const LOCATE_BATCH = 20;
+const LOCATE_PARALLEL = 4;   /* 同時に投げる batch 数。観測: 1 batch 約 11 秒・12 batch 順次で約 140 秒（2026-11-24）。失効: 提供元の同時実行上限が変わったとき */
 /* ⚠ この段は `assign` より**前**に走るので、予算を使い切ると後ろの段が飢える。
    翻訳（最後から 2 番目）の 30 s より厚く取り置く——1 batch 減るだけで、代わりに
    割り当て・link・保持が必ず自分のぶんを持てる。残りは次の run に回る。 */
@@ -328,18 +333,27 @@ async function stageLocate(db, budget, relocated) {
   const rejected = { bad_coords: 0, null_island: 0, no_name: 0, unknown_id: 0, bad_kind: 0 };
   const updates = [];
 
-  for (let i = 0; i < todo.length; i += LOCATE_BATCH) {
+  /* ⚠ batch を順に待たない。1 batch は約 11 秒で、240 件（12 batch）を順に回すと約 140 秒——1 run の壁時計
+     （プラットフォームの無通信上限 150 秒）を locate だけで使い切り、run の記録も残らず落ちた（2026-11-24 本番）。
+     LOCATE_PARALLEL 本ずつ同時に投げ、結果は元の順に 1 本ずつ畳む（採否の判定・印の押し方は変えない）。 */
+  const step = LOCATE_BATCH * LOCATE_PARALLEL;
+  for (let g = 0; g < todo.length; g += step) {
     if (budget.left() < LOCATE_RESERVE_MS) break;
-    const chunk = todo.slice(i, i + LOCATE_BATCH);
-    batches++;
-    const user = "Headlines:\n" + chunk.map((a) =>
-      a.id + ". " + a.title + (a.description ? " — " + String(a.description).slice(0, 160) : "")).join("\n");
-
-    let out;
-    try {
-      out = await callProvider(cfg, GEO_SYS, user, Math.min(60000, budget.left()));
-    } catch (e) {
-      lastError = String((e && e.message) || e).slice(0, 200);
+    const chunks = [];
+    for (let i = g; i < Math.min(todo.length, g + step); i += LOCATE_BATCH) chunks.push(todo.slice(i, i + LOCATE_BATCH));
+    batches += chunks.length;
+    const settled = await Promise.all(chunks.map(async (chunk) => {
+      const user = "Headlines:\n" + chunk.map((a) =>
+        a.id + ". " + a.title + (a.description ? " — " + String(a.description).slice(0, 160) : "")).join("\n");
+      try {
+        return { chunk, out: await callProvider(cfg, GEO_SYS, user, Math.min(60000, budget.left())) };
+      } catch (e) {
+        return { chunk, err: String((e && e.message) || e).slice(0, 200) };
+      }
+    }));
+    for (const { chunk, out, err } of settled) {
+    if (err) {
+      lastError = err;
       console.warn("[news-ingest] locate:", lastError);
       continue;
     }
@@ -370,6 +384,7 @@ async function stageLocate(db, budget, relocated) {
     for (const id of v.omitted) {
       omitted++;
       updates.push({ id, subject_locator: locator, subject_ai_at: stamp });
+    }
     }
   }
 
@@ -459,6 +474,48 @@ async function embedBatch(key, model, inputs, dims) {
   }
 }
 
+/* ── Gemini の埋め込み（OpenAI の鍵が埋め込みモデルに届かないときの、実在する第 2 経路）─────────────
+   2026-11-20 実測: 本番 `news_ingest_runs` の最新 run は `embed_error = openai embeddings 403`・
+   `embed_available_models = {all:3, ids:[]}`（この鍵は 3 モデルしか見えず、埋め込みは 0）・`embed_pending = 3216`。
+   観測器の嘘ではない——一覧も 403 も上流の答えである。`atlas_capability_vectors` も 0 行で、atlas-embed も同じ鍵で
+   一度も動いていない。⇒ 鍵が届く別の提供元（`GEMINI_API_KEY` は設定済み）へ、**一覧を訊いて**切り替える。
+   ⚠ 列は vector(1536)。Gemini の埋め込みは MRL なので `outputDimensionality=1536` で切り詰め、切り詰めたベクトルは
+     正規化する（公式の要件）。⚠ モデルを混ぜない: 一度 gemini を選んだ run は最後まで gemini で、記事ごとに
+     `embedding_model` が残る。 */
+async function geminiEmbeddingModel(key) {
+  try {
+    const r = await providerFetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
+      { headers: { "x-goog-api-key": key } }, { ceiling: CEILING, timeoutMs: 15000 });
+    if (!r.ok) return { error: providerFail(r.status, await bodyLength(r)).message };
+    const j = await r.json();
+    const ms = (Array.isArray(j?.models) ? j.models : []).filter((m) =>
+      /embed/i.test(String(m?.name || "")) && Array.isArray(m?.supportedGenerationMethods) && m.supportedGenerationMethods.includes("batchEmbedContents"));
+    const names = ms.map((m) => String(m.name).replace(/^models\//, ""));
+    const pick = names.find((n) => n === GEMINI_EMBEDDING_MODEL) || names.find((n) => /gemini-embedding/.test(n)) || names[0] || null;
+    return { model: pick, ids: names };
+  } catch (e) { return { error: String((e && e.message) || e) }; }
+}
+
+async function geminiEmbedBatch(key, model, inputs) {
+  try {
+    const body = { requests: inputs.map((text) => ({ model: "models/" + model, content: { parts: [{ text }] },
+      taskType: "SEMANTIC_SIMILARITY", outputDimensionality: EMBED_DIM })) };
+    const r = await providerFetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":batchEmbedContents", {
+      method: "POST", headers: { "x-goog-api-key": key, "Content-Type": "application/json" }, body: JSON.stringify(body),
+    }, { ceiling: CEILING, timeoutMs: 30000 });
+    if (!r.ok) return { status: r.status, error: providerFail(r.status, await bodyLength(r)).message };
+    const j = await r.json();
+    const data = (Array.isArray(j?.embeddings) ? j.embeddings : []).map((e, index) => {
+      const v = Array.isArray(e?.values) ? e.values : [];
+      const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
+      return { index, embedding: v.map((x) => x / norm) };
+    });
+    /* Gemini は使用量を返さない。見積り（4 字 ≈ 1 トークン）であることを応答に書く。 */
+    const tokens = Math.ceil(inputs.reduce((s, t) => s + t.length, 0) / 4);
+    return { status: 200, json: { data, usage: { total_tokens: tokens } } };
+  } catch (e) { return { status: 0, error: String((e && e.message) || e) }; }
+}
+
 async function stageEmbed(db, budget) {
   const t0 = Date.now();
   const cfg = embedConfig();
@@ -475,21 +532,38 @@ async function stageEmbed(db, budget) {
   let dims = null;              /* null = モデルの既定。1536 に切り詰める必要が分かったら立てる */
   let available = null;         /* 403/404 のときだけ埋まる（応答に出して運用者に渡す） */
   let triedList = false;
+  let provider = "openai", geminiTried = null;
+  const geminiKey = (Deno.env.get("NEWS_EMBED_GEMINI") || "").toLowerCase() === "off" ? null : (Deno.env.get("GEMINI_API_KEY") || null);
+  /* 一度 gemini に移った後の run は最初から gemini（毎 run 403 を 1 回踏まない）。切り替えの印は
+     既存の記事の embedding_model——これが 1 本でも gemini なら、そちらを選び続ける（モデルを混ぜない）。 */
+  if (geminiKey) {
+    const { data: prev } = await db.from("news_articles").select("embedding_model").not("embedding", "is", null).limit(1);
+    if (prev && prev[0] && /gemini/i.test(String(prev[0].embedding_model || ""))) {
+      const g = await geminiEmbeddingModel(geminiKey);
+      if (g.model) { provider = "gemini"; model = g.model; }
+    }
+  }
 
   for (let i = 0; i < batchable.length; i += EMBED_BATCH) {
     if (budget.left() < 20000) break;
     const chunk = batchable.slice(i, i + EMBED_BATCH);
     const inputs = chunk.map(embedText);
 
-    let res = await embedBatch(cfg.key, model, inputs, dims);
+    let res = provider === "gemini" ? await geminiEmbedBatch(geminiKey, model, inputs) : await embedBatch(cfg.key, model, inputs, dims);
 
     /* ⚠ **モデル名で落ちたときだけ**、一覧を訊いて 1 回だけ乗り換える（ai-proxy と同じ
        「403/404 のとき 1 回だけ」の形。再帰しないよう triedList で止める）。 */
-    if ((res.status === 403 || res.status === 404) && !triedList) {
+    if (provider === "openai" && (res.status === 403 || res.status === 404) && !triedList) {
       triedList = true;
       available = await listEmbeddingModels(cfg.key);
       const next = (available.ids || []).find((id) => id !== model);
       if (next) { model = next; res = await embedBatch(cfg.key, model, inputs, dims); }
+      else if (geminiKey) {
+        /* OpenAI の鍵に埋め込みモデルが 1 つも無い（実測）。届く別の提供元へ 1 回だけ移る。 */
+        const g = await geminiEmbeddingModel(geminiKey);
+        geminiTried = g;
+        if (g.model) { provider = "gemini"; model = g.model; res = await geminiEmbedBatch(geminiKey, model, inputs); }
+      }
     }
     if (res.status !== 200) {
       lastError = "openai embeddings " + res.status + " (" + model + "): " + (res.error || "");
@@ -503,7 +577,7 @@ async function stageEmbed(db, budget) {
        （OpenAI の v3 系は `dimensions` を受ける）。それでも合わなければその batch は落とし、
        理由を残す——壊れた長さのベクトルを黙って入れない。 */
     const got = Array.isArray(data[0]?.embedding) ? data[0].embedding.length : 0;
-    if (got && got !== EMBED_DIM && dims == null) {
+    if (got && got !== EMBED_DIM && dims == null && provider === "openai") {
       dims = EMBED_DIM;
       const retry = await embedBatch(cfg.key, model, inputs, dims);
       if (retry.status === 200) {
@@ -535,9 +609,11 @@ async function stageEmbed(db, budget) {
     ms: Date.now() - t0, embedded: wrote, considered: batchable.length,
     pending: Math.max(0, todo.length - wrote),
     model, configured_model: cfg.model, dimensions: dims || "model default",
+    provider, gemini_models: geminiTried ? (geminiTried.error ? { error: geminiTried.error } : { ids: geminiTried.ids }) : null,
     available_embedding_models: available,
     rejected_wrong_dim: badDim, tokens,
-    estimated_cost_usd: Math.round((tokens * EMBED_PRICE_PER_MTOK / 1e6) * 1e6) / 1e6,
+    /* gemini-embedding-001 は $0.15 / 100 万トークン（公式の公開価格・2026-11 時点の見積り。請求が正本）。 */
+    estimated_cost_usd: Math.round((tokens * (provider === "gemini" ? 0.15 : EMBED_PRICE_PER_MTOK) / 1e6) * 1e6) / 1e6,
     error: lastError,
   };
 }
@@ -1506,10 +1582,190 @@ async function stageSummarise(db, budget) {
  *  ⚠ **merge の redirect は消さない。** `status='merged'` の行と、他の行の `merged_into` が
  *    指している行は、古い ID から新しい ID へ辿るための道そのものである。
  * ────────────────────────────────────────────────────────────────────── */
-async function stagePrune(db) {
+/* ── 履歴への書き写し (news-event-history・docs/NEWS-EVENTS.md §19) ─────────────────────────
+   記事は 72 時間で消えるので、**消す前に**、まだ記事を持つ出来事から履歴の行を作る。規則は
+   _shared/news-history.js の 1 本（node のテストが同じファイルを評価する）。
+   ⚠ 変わった行だけを送る（毎 run 数百行を書き直すと updated_at と更新履歴が意味を失う）。
+   ⚠ 書けなかったら **prune を止める**——書き写せていない出来事の記事を消すと、記録が二度と作れない。 */
+/* 観測: 1 run あたり 1,394 件（約 7 秒）は通り、約 6,000 件は WORKER_RESOURCE_LIMIT で落ちた（2026-11-24・本番）。
+   失効: Edge Function の CPU 上限が変わったとき、または buildArchiveRow の 1 件あたりの費用が変わったとき。 */
+const ARCHIVE_PER_RUN = 1000;
+async function stageArchive(db) {
+  const t0 = Date.now();
+  const out = { ms: 0, considered: 0, skipped_current: 0, deferred: 0, archived: 0, unchanged: 0, merged_marked: 0, trimmed: 0, error: null };
+  try {
+    const since = new Date(Date.now() - RETENTION.articleHours * 3600e3).toISOString();
+    const all = await selectAll(() => db.from("news_events"),
+      (q) => q.select("id,public_id,representative_title,summary,primary_category,rep_lng,rep_lat,rep_place_name_en,first_published_at,first_seen_at,last_article_at,independent_source_count")
+              .eq("status", "active").is("merged_into", null).gte("last_article_at", since));
+    out.considered = all.length;
+    if (!all.length) { out.ms = Date.now() - t0; return out; }
+
+    /* ⚠ 毎 run 全部を組み直さない。履歴の行が「その出来事の最後の記事より後に書かれている」なら、
+       その出来事には書き写すものが増えていない——飛ばす。さもないと run の CPU が「直近 72 時間の出来事の数」に
+       比例し、その数が膨らんだ日（取り込みの滞留・出典の追加）に Edge Function が WORKER_RESOURCE_LIMIT で
+       落ち、run の記録も prune も残らない（2026-11-24 実測: 取り込みが 08:40 UTC から記録を残さなかった）。
+       残りは古い（＝記事が先に消える）ものから 1 run に ARCHIVE_PER_RUN 件までで、次の run が続きを引き取る。 */
+    const wrote = new Map();
+    for (let i = 0; i < all.length; i += 200) {
+      const { data, error } = await db.from("news_event_history").select("event_public_id,updated_at")
+        .in("event_public_id", all.slice(i, i + 200).map((e) => e.public_id));
+      if (error) throw new Error("archive existing (cursor): " + error.message);
+      for (const h of data || []) wrote.set(h.event_public_id, Date.parse(h.updated_at));
+    }
+    const { events, skippedCurrent, deferred } = pendingArchive(all, wrote, ARCHIVE_PER_RUN, Math.floor(Date.now() / 1200e3));
+    out.skipped_current = skippedCurrent;
+    out.deferred = deferred;
+    if (!events.length) { out.ms = Date.now() - t0; return out; }
+
+    const srcRows = await selectAll(() => db.from("news_sources"), (q) => q.select("id,name,source_family"));
+    const src = new Map(srcRows.map((s) => [s.id, s]));
+    const graph = await selectAll(() => db.from("world_graph_nodes"), (q) => q.select("ref,name,type,ids"));
+    const matcher = makeHistoryMatcher(graph);
+
+    const rows = [];
+    for (let i = 0; i < events.length; i += 200) {
+      const slice = events.slice(i, i + 200);
+      const ids = slice.map((e) => e.id);
+      const links = await selectAll(() => db.from("news_event_articles"), (q) => q.select("event_id,article_id").in("event_id", ids));
+      const artIds = [...new Set(links.map((l) => l.article_id))];
+      const arts = new Map();
+      for (let j = 0; j < artIds.length; j += 200) {
+        const { data, error } = await db.from("news_articles").select("id,title,canonical_url,published_at,source_id").in("id", artIds.slice(j, j + 200));
+        if (error) throw new Error("archive articles: " + error.message);
+        for (const a of data || []) arts.set(a.id, a);
+      }
+      const ents = await selectAll(() => db.from("news_event_entities"), (q) => q.select("event_id,entity_id").in("event_id", ids));
+      const { data: saved } = await db.from("saved_news_events").select("event_id").in("event_id", ids);
+      const savedSet = new Set((saved || []).map((s) => s.event_id));
+      for (const ev of slice) {
+        const articles = links.filter((l) => l.event_id === ev.id).map((l) => arts.get(l.article_id)).filter(Boolean)
+          .map((a) => ({ ...a, source_name: (src.get(a.source_id) || {}).name, source_family: (src.get(a.source_id) || {}).source_family }));
+        const companyIds = ents.filter((x) => x.event_id === ev.id).map((x) => x.entity_id);
+        const row = buildArchiveRow(ev, articles, companyIds, matcher, savedSet.has(ev.id));
+        if (row) rows.push(row);
+      }
+    }
+
+    const have = new Map();
+    for (let i = 0; i < rows.length; i += 200) {
+      const { data, error } = await db.from("news_event_history").select("event_public_id,title,kind,place_name,source_count,world_refs,thread_key")
+        .in("event_public_id", rows.slice(i, i + 200).map((r) => r.event_public_id));
+      if (error) throw new Error("archive existing: " + error.message);
+      for (const h of data || []) have.set(h.event_public_id, h);
+    }
+    const changed = rows.filter((r) => {
+      const h = have.get(r.event_public_id);
+      return !h || h.title !== r.title || h.kind !== r.kind || (h.place_name || null) !== (r.place_name || null)
+        || h.source_count !== r.source_count || h.thread_key !== r.thread_key
+        || JSON.stringify(h.world_refs || []) !== JSON.stringify(r.world_refs);
+    });
+    out.unchanged = rows.length - changed.length;
+    for (let i = 0; i < changed.length; i += 100) {
+      const { data, error } = await db.rpc("news_history_upsert", { p: changed.slice(i, i + 100) });
+      if (error) throw new Error("archive upsert: " + error.message);
+      out.archived += Number(data) || 0;
+    }
+
+    /* merge された出来事の履歴行は、行き先の永続 ID を指す（行は消さない）。 */
+    const mergedSince = new Date(Date.now() - 24 * 3600e3).toISOString();
+    const merged = await selectAll(() => db.from("news_events"),
+      (q) => q.select("id,public_id,merged_into").eq("status", "merged").not("merged_into", "is", null).gte("updated_at", mergedSince));
+    if (merged.length) {
+      const targets = new Map();
+      const tIds = [...new Set(merged.map((m) => m.merged_into))];
+      for (let i = 0; i < tIds.length; i += 200) {
+        const { data } = await db.from("news_events").select("id,public_id").in("id", tIds.slice(i, i + 200));
+        for (const t of data || []) targets.set(t.id, t.public_id);
+      }
+      for (const m of merged) {
+        const to = targets.get(m.merged_into);
+        if (!to) continue;
+        const r = await db.from("news_event_history").update({ merged_into: to }).eq("event_public_id", m.public_id);
+        if (!r.error) out.merged_marked++;
+      }
+    }
+
+    const { data: trimmed } = await db.rpc("news_history_trim", { p_max: HISTORY.maxRows });
+    out.trimmed = Number(trimmed) || 0;
+  } catch (e) {
+    out.error = String((e && e.message) || e).slice(0, 300);
+  }
+  out.ms = Date.now() - t0;
+  return out;
+}
+
+/* ── (news-event-history · backfill) 過去の出来事を、日付と出典の付いた公開の記録から遡って足す ────────────
+   生の収集は収集を始めた日より前を持たない。Wikipedia の「Portal:Current events」は日ごとに、出来事の 1 文・編集者が
+   引いた媒体のリンク・属する連載（Cross-Strait relations など）を持つ（_shared/news-backfill.js）。1 run で
+   BACKFILL_DAYS 日ぶんを 1 要求で取り、news_history_upsert へ流す。
+   ⚠ 状態を持たない: 位置は「この記録の行がいちばん古い日」から導く（行が無ければ昨日から）＝何度走らせても同じ
+     結果（冪等）で、表も cron も足さない。床の日（NEWS_BACKFILL_FLOOR・既定 2012-01-01）に着いたら何もしない。
+   ⚠ 失敗しても archive・prune を止めない（これは足す仕事で、既存の行を消す仕事ではない）。 */
+const BACKFILL_DAYS = 30;
+const BACKFILL_FLOOR_DEFAULT = "2012-01-01";
+async function stageBackfill(db, budget) {
+  const t0 = Date.now();
+  const out = { ms: 0, off: null, from: null, to: null, days: 0, pages: 0, rows: 0, floor: null, done: false, error: null };
+  try {
+    if ((Deno.env.get("NEWS_BACKFILL") || "").toLowerCase() === "off") { out.off = "NEWS_BACKFILL=off"; return out; }
+    const floor = (Deno.env.get("NEWS_BACKFILL_FLOOR") || BACKFILL_FLOOR_DEFAULT).slice(0, 10);
+    out.floor = floor;
+    const { data: oldest, error: oe } = await db.from("news_event_history").select("occurred_at")
+      .like("event_public_id", "wce:%").order("occurred_at", { ascending: true }).limit(1);
+    if (oe) throw new Error("backfill cursor: " + oe.message);
+    const startDay = oldest && oldest[0] ? new Date(oldest[0].occurred_at) : new Date();
+    let cur = new Date(Date.UTC(startDay.getUTCFullYear(), startDay.getUTCMonth(), startDay.getUTCDate() - 1));
+    const floorD = new Date(floor + "T00:00:00Z");
+    const days = [];
+    while (days.length < BACKFILL_DAYS && cur >= floorD) {
+      days.push([cur.getUTCFullYear(), cur.getUTCMonth() + 1, cur.getUTCDate()]);
+      cur = new Date(cur.getTime() - 86400e3);
+    }
+    out.days = days.length;
+    if (!days.length) { out.done = true; return out; }
+    out.from = days[days.length - 1].join("-"); out.to = days[0].join("-");
+    if (budget.left() < 20000) { out.off = "no time left in this run"; return out; }
+    const titles = days.map((d) => BACKFILL.pageTitle(d[0], d[1], d[2])).join("|");
+    const r = await fetchGuarded("https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&formatversion=2&titles=" + encodeURIComponent(titles), {
+      timeoutMs: 30000, maxBytes: 8 * 1024 * 1024, contentTypeRe: /json/i,
+      headers: { "user-agent": "IntMapBot/1.0 (+https://github.com/rwmqx7dwb5-arch/IntMap; news history)", accept: "application/json" },
+    });
+    if (!r.ok) throw new Error("wikipedia " + r.status);
+    const pages = pagesFromQuery(JSON.parse(r.text()));
+    out.pages = pages.size;
+    const graph = await selectAll(() => db.from("world_graph_nodes"), (q) => q.select("ref,name,type,ids"));
+    const matcher = makeHistoryMatcher(graph);
+    const rows = [];
+    for (const d of days) {
+      const txt = pages.get(BACKFILL.pageTitle(d[0], d[1], d[2]).replace(/ /g, "_"));
+      if (txt) rows.push(...dayRows(d[0], d[1], d[2], txt, matcher));
+    }
+    for (let i = 0; i < rows.length; i += 100) {
+      const { data, error } = await db.rpc("news_history_upsert", { p: rows.slice(i, i + 100) });
+      if (error) throw new Error("backfill upsert: " + error.message);
+      out.rows += Number(data) || 0;
+    }
+  } catch (e) {
+    out.error = String((e && e.message) || e).slice(0, 300);
+  }
+  out.ms = Date.now() - t0;
+  return out;
+}
+
+async function stagePrune(db, budget) {
   const t0 = Date.now();
   const cut = retentionCutoffs(Date.now());
   const out = { ms: 0, pruned_articles: 0, pruned_events: 0, pruned_decisions: 0 };
+
+  /* ⚠ 先に書き写す。失敗したら消さない（記録は消してから作り直せない）。 */
+  out.archive = await stageArchive(db);
+  if (out.archive.error) {
+    console.warn("[news-ingest] archive:", out.archive.error);
+    out.ms = Date.now() - t0;
+    return out;
+  }
+  out.backfill = await stageBackfill(db, budget);
 
   /* ⚠ 消した行そのものは要らない——要るのは件数である。`select('id')` にすると
      数千行を Edge Function まで運ぶことになる。 */
@@ -1631,7 +1887,7 @@ Deno.serve(async (req) => {
     if (want.includes("entities")) result.entities = await stageEntities(db, budget);
     if (want.includes("summarise")) result.summarise = await stageSummarise(db, budget);
     if (want.includes("translate")) result.translate = await stageTranslate(db, budget);
-    if (want.includes("prune")) result.prune = await stagePrune(db);
+    if (want.includes("prune")) result.prune = await stagePrune(db, budget);
   } catch (e) {
     ok = false;
     result.error = String((e && e.message) || e).slice(0, 300);
@@ -1697,6 +1953,15 @@ Deno.serve(async (req) => {
         embed_skipped: E.skipped || null, embed_error: E.error || null,
         embed_model: E.model || null, embed_configured_model: E.configured_model || null,
         embed_available_models: E.available_embedding_models || null, embed_cost_usd: E.estimated_cost_usd || 0,
+        /* (news-event-history) 履歴への書き写し。失敗したときは prune を止めるので、理由はここにしか残らない。 */
+        archive_considered: (p.archive || {}).considered || 0, archive_written: (p.archive || {}).archived || 0,
+        archive_unchanged: (p.archive || {}).unchanged || 0, archive_trimmed: (p.archive || {}).trimmed || 0,
+        archive_error: (p.archive || {}).error || null,
+        archive_skipped_current: (p.archive || {}).skipped_current || 0, archive_deferred: (p.archive || {}).deferred || 0,
+        /* 遡り（backfill）の結果。以前は応答にしか出ず、本番で 0 行のとき理由を run の記録から読めなかった。 */
+        backfill_days: ((p.backfill) || {}).days || 0, backfill_rows: ((p.backfill) || {}).rows || 0,
+        backfill_oldest: ((p.backfill) || {}).from || null, backfill_error: ((p.backfill) || {}).error || ((p.backfill) || {}).off || null,
+        prune_error: (p.archive || {}).error || null,   /* news_ingest_health() reads `<段>_error` */
         entities_scanned: N.scanned || 0, entities_linked: N.linked || 0, entities_waiting: N.waiting_for_event || 0,
         entities_by_kind: N.by_kind || null, entities_error: N.error || null,
         cost_rate_usd_per_mtok: PRICE,

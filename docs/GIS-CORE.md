@@ -1985,6 +1985,8 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
 | `catalogs()` / `add()` | 問い合わせるカタログの登録簿（STAC API・OGC API – Features）。**種別は述べる**（アドレスから推測しない）。`add()` は https の公開宛先だけ |
 | `discover({q,bbox,time,…})` | 各カタログの `/collections` を読み、場所・期間を**覆うと述べている**コレクションを返す。`q` の語は全部が要る |
 | `inspect(ref)` | コレクション自身の述べること、標本アイテムの資産（COG か・バンド・単位）、`evidence`、そして**読むための ref**（`refs.features`＝`ogc:…`、`refs.grids`＝`url:…`） |
+| `items(ref,{bbox,time,maxCloud,limit})` | 1 コレクションのシーン（日時・雲量・解像度・EPSG・プラットフォーム・SAR の mode/偏波/軌道方向・**述べられた欠損率**）。1 ページだけで、`continues` が続きの有無を述べる |
+| `scenes({bbox,time,modality,maxCloud,catalogs,perModality,limit})` | **種別（`optical` / `sar` / `dem` / `lidar`）で、全カタログ横断**に「この場所・この時期のシーン」を探す。種別は STAC の述べる欄（`sar:*` summaries・`eo:bands`・標高／LiDAR の語）から読み、ホスト名では決めない。各シーンに日時・雲量・欠損率・解像度・プラットフォーム・**コレクションのライセンス（原文）と規約リンク**・読むための `refs.grids`（`url:<COG>`）を付ける。**「無い」は 3 種を分けて返す**: `no-collection`（その種別を述べるコレクションが問い合わせ先に無い）／`no-scene`（コレクションは述べるが期間にシーンが無い・`atOtherTimes` に他の時期の在り処・雲量で落とした数）／`not-answered`（応答が無い＝「訊けなかった」）。**DEM は時系列でないので期間を適用しない**（`periodApplied:false`）。**非商用ライセンス（`-NC`）のコレクションは `excluded` に理由つきで挙げ、探さない**。`proprietary` は STAC が「規約はリンク先」を表す語で、開放とも閉鎖とも言わずリンクを示す。1 コレクション 1 ページ・種別ごとの問い合わせ数は `perModality`（既定 6・超えた分は `collectionsNotAsked`）。入力の `refs.grids` は `data.gis` の `url:` 入力に渡せる（変化解析・モデルが読む入口と同じ） |
 
 ### 完全性の 3 つの主張を混ぜない
 1. 供給元が窓の全部を返した — 読む扉の `coverage`（`js/gis-sources.js` の `coverageOf()` の判定）。
@@ -2016,6 +2018,36 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
 ### まだやっていないこと
 世界規模のベクタを**メモリに載せず**分割して保存・検索する基盤（GeoParquet・DuckDB / PostGIS）、長時間・大容量解析の非同期ジョブ、
 解析結果の永続キャッシュ、複数供給元の品質・優先順位の機械可読な統合。
+
+## 5.12 Overture Maps を窓で読む — `js/gis-overture.js` (`window.IntMapGisOverture`)
+
+世界の places（~9 千万）・buildings（~25 億）・addresses・divisions・transportation・base を GeoParquet で配る Overture Maps を、
+**一括で取り込まず**、言われた窓のぶんだけ読む（実測と、DuckDB-WASM を採らなかった理由は
+[`dev-notes/2026-11-20-overture-maps.md`](../dev-notes/2026-11-20-overture-maps.md)）。
+
+```
+release({version?})                 最新のリリース（STAC の `latest`。コードに版を書かない——バケットは 60 日で消す）
+themes({version?})                  そのリリースが持つ theme / type（カタログから）
+plan({theme,type,bbox})             窓に掛かる**ファイル**だけ（行は読まない）
+query({theme,type,bbox,where,columns,limit})   窓の行を GeoJSON で。何を読んだか（row group・MB・秒）を添える
+acquire(…)                          query を `window.IntMapData` のデータセットにする（次の手の入力）
+worldNodes(result)                  world_graph_nodes（`ids.gers`）と識別子の履歴の行
+```
+
+- **読み方**: ①STAC のファイル範囲 ②Parquet フッターの row group 統計 ③`bbox` と条件の列だけ走査 ④当たった row group の残りの列。
+  条件は `where:[{field,op,value}]`＝**`js/gis-ops.js` の `CONDITION_OPS` と同じ語彙**（`field` は列か `names.primary` のような道筋）。
+  連絡先の列（websites・emails・socials・phones）は名指しされたときだけ読む。
+- **3 つの主張を混ぜない**: ①このリリースが窓について持つ行は読んだ（`coverage`＝`coverageOf`。`limit` で切れば `sample`）／
+  ②行の箱が窓に掛かる（`windowTest:'bbox-intersects'`。点は厳密・面は上位集合）／③世界の全部（`worldCompleteness:'unproven'`・常に）。
+- **ライセンスは行が述べる値の集合**（`sources[].license`）。1 行も述べていなければ**欄ごと無い**。統治の語彙
+  （`js/data-governance.js`）で書かれた `provenance` を持つので、`read()`／`account()`／`freshness()`／`attribution()` がそのまま読む。
+- **取るホストは Privacy §4 が名指すものだけ**（`host-not-disclosed`）。カタログの `href` はデータであって命令ではない。
+- **GERS は振り直される**（Overture 公表で月 ~6.5%）。対象の同一性は、行が述べた元レコード（`sources[].record_id`）の一致でのみ
+  決める（`world_graph_adopt_id`）——位置・名前では決めない。履歴は `world_graph_id_history`、古い id からは
+  `world_graph_resolve_id`（[`docs/DATABASE.md`](DATABASE.md)）。
+- **Atlas の扉**は `data.gisOverture`（`js/atlas-cap-data.js`）。**生の実測**は `node scripts/overture-probe.mjs`（ネットワークが要る・CI は走らせない）。
+- **未了**: Worker に載せていない（`sources` 列の復号がメインスレッドを 0.5〜3 s 止める）・changelog の `removed` を履歴へ書く経路が無い・
+  建物の大きな窓は未計測。
 
 ## 6. どこまでやるか・何をやらないか（現時点）
 

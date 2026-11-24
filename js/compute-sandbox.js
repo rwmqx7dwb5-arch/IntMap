@@ -153,6 +153,40 @@ const PRELUDE = [
   'def features(i=0):',
   '    """The GeoJSON features of input i, geometry included."""',
   '    return list(_im_pick(i).get("features") or [])',
+  /* ── the capability bridge (js/cap-bridge.js): `_IM_BRIDGE` is None unless the run was opened with grants ── */
+  'async def _im_ask(kind, a=None, b=None):',
+  /* a JS null crosses into Pyodide as JsNull, not None (observed in a real browser, 2026-11-21: the run without grants died with "'JsNull' object is not callable" instead of saying there is no bridge) — so the test is "is there a callable port", not "is it None" */
+  '    if _IM_BRIDGE is None or not callable(_IM_BRIDGE):',
+  '        raise RuntimeError("no capability bridge in this run: call compute.run with grants (for example [\'read\']) to let the code call capabilities")',
+  '    return _im_json.loads(await _IM_BRIDGE(kind, a, None if b is None else _im_json.dumps(b, allow_nan=False)))',
+  'async def cap_call(capability, args=None):',
+  '    """await cap_call("data.gis", {...}) -> the answer as a dict. A REFUSAL IS AN ANSWER, NOT AN EXCEPTION: read r["ok"] and r.get("refused").',
+  '    r["result"] is what the capability returned (r["result"]["text"] the card the reader sees, r["result"]["status"] its verdict).',
+  '    The same call twice is not run twice: the second answer has alreadyDone True."""',
+  '    return await _im_ask("call", capability, args or {})',
+  'async def cap_call_many(calls, concurrency=4):',
+  '    """Many calls, answers in the order of calls (each item is (capability, args) or {"capability":..., "args":...}).',
+  '    At most concurrency run at once - the capabilities behind it have rate limits of their own."""',
+  '    import asyncio',
+  '    sem = asyncio.Semaphore(max(1, int(concurrency)))',
+  '    async def one(c):',
+  '        cap, args = (c["capability"], c.get("args")) if isinstance(c, dict) else (c[0], c[1] if len(c) > 1 else None)',
+  '        async with sem:',
+  '            return await cap_call(cap, args)',
+  '    return await asyncio.gather(*[one(c) for c in calls])',
+  'async def cap_list(query=""):',
+  '    """The capabilities this run may see: [{"id", "class", "granted"}]."""',
+  '    return (await _im_ask("list", query))["capabilities"]',
+  'async def cap_describe(capability):',
+  '    """One capability: its argument schema, its class and whether this run was granted it."""',
+  '    return await _im_ask("describe", capability)',
+  'async def cap_dataset(dataset_id):',
+  '    """A session dataset by id (a step output included), shaped like INPUTS[i]; needs the read grant."""',
+  '    r = await _im_ask("dataset", dataset_id)',
+  '    if not r.get("ok"): raise KeyError("no readable dataset %r: %s" % (dataset_id, r.get("refused") or r.get("why")))',
+  '    return r["dataset"]',
+  'async def cap_rows(dataset_id):',
+  '    return [dict(f.get("properties") or {}) for f in ((await cap_dataset(dataset_id)).get("features") or [])]',
   'def _im_plain(v, st):',
   '    if v is None or isinstance(v, (str, bool)): return v',
   '    if isinstance(v, int): return v',
@@ -193,7 +227,7 @@ const PRELUDE = [
      4. only then is the job's code run.
    A scrub that cannot remove a door (a non-configurable property in some engine) FAILS CLOSED: the
    worker reports `runtime-unavailable` with the names it could not close, and runs nothing. */
-function computeWorker(CFG, importModule) {
+function computeWorker(CFG, importModule, makeBridgeClient) {
   'use strict';
   var G = self;
   var hasOwn = Object.prototype.hasOwnProperty;
@@ -353,7 +387,7 @@ function computeWorker(CFG, importModule) {
     return s.length > max ? { text: s.slice(s.length - max), cut: s.length - max } : { text: s, cut: 0 };
   }
 
-  function runJob(job) {
+  function runJob(job, port) {
     var out = [], err = [];
     var t0 = Date.now(), tp = 0;
     py.setStdout({ batched: function (s) { out.push(s); } });
@@ -380,6 +414,22 @@ function computeWorker(CFG, importModule) {
       post({ t: 'phase', phase: 'run' });
       var ns = py.toPy({});
       ns.set('_IM_INPUTS', job.inputsJson);
+      /* the capability bridge: ONE MessagePort the host transferred with the job, and the client the HOST wrote into this
+         worker's source (eval is closed, so it cannot arrive as a string). The program reaches the port only through this
+         function — and the port only speaks to a bridge that checks every request (grants, schema, fences) on the page. */
+      var bridgeOn = !!(port && makeBridgeClient);
+      var client = bridgeOn ? makeBridgeClient(port) : null;
+      ns.set('_IM_BRIDGE', bridgeOn ? function (kind, a, argsJson) {
+        var p;
+        try {
+          if (kind === 'list') p = client.list(a);
+          else if (kind === 'describe') p = client.describe(a);
+          else if (kind === 'call') p = client.call(a, argsJson == null ? {} : JSON.parse(argsJson));
+          else if (kind === 'dataset') p = client.dataset(a);
+          else return Promise.reject(new TypeError('unknown bridge request ' + String(kind)));
+        } catch (e) { return Promise.reject(e); }
+        return p.then(function (m) { return JSON.stringify(m); });
+      } : null);
       py.runPython(CFG.prelude, { globals: ns });
       return py.runPythonAsync(job.code, { globals: ns, filename: '<atlas>' }).then(function () {
         var outputs = {}, nonFinite = {};
@@ -420,7 +470,7 @@ function computeWorker(CFG, importModule) {
     var m = ev.data || {};
     if (m.t !== 'run' || started) return;
     started = true;
-    ready.then(function () { if (py) return runJob(m.job); });
+    ready.then(function () { if (py) return runJob(m.job, m.port || (ev.ports && ev.ports[0]) || null); });
   };
 }
 
@@ -444,9 +494,9 @@ export function makeComputeSandbox(opts) {
     }
 
     /* the source a worker is built from — the function above, its configuration, and the one import() */
-    function workerSource() {
+    function workerSource(clientText) {
       const cfg = { base: RUNTIME.base, files: RUNTIME.files, prelude: PRELUDE, limits: LIMITS };
-      return '(' + computeWorker.toString() + ')(' + JSON.stringify(cfg) + ', function (u) { return import(u); });\n';
+      return '(' + computeWorker.toString() + ')(' + JSON.stringify(cfg) + ', function (u) { return import(u); }, ' + (clientText ? clientText : 'null') + ');\n';
     }
 
     /* ── the request ──────────────────────────────────────────────────────────────────────────
@@ -475,6 +525,10 @@ export function makeComputeSandbox(opts) {
       return { ok: true, code: code, outputs: outputs, outputsNamed: named, inputs: inputs, execMs: execMs,
         title: (typeof a.title === 'string' && a.title.trim()) ? a.title.trim() : '' };
     }
+
+    /* a bridge handle is js/atlas-toolsurface.js `openProgramBridge`'s: {port, source, bridge, close}. Without one the
+       worker gets no port and `cap_call` says so. */
+    function bridgeOk(h) { return !!(h && h.port && typeof h.source === 'string' && h.source); }
 
     /* ── a dataset as the code sees it ────────────────────────────────────────────────────────
        A vector record is its GeoJSON features (a table is the same features with geometry null —
@@ -554,8 +608,8 @@ export function makeComputeSandbox(opts) {
        record as a body (its features) WITH this provenance, re-runs it when an input upstream is
        recomputed, and js/gis-datasets.js refuses edits to it for the reason it refuses edits to an
        op's output: the recipe would silently overwrite them. */
-    function provenanceFor(job, raw, name, codeSha256, nonFinite) {
-      return {
+    function provenanceFor(job, raw, name, codeSha256, nonFinite, bridgeInfo) {
+      return Object.assign({
         kind: 'compute', language: 'python',
         code: job.code, codeSha256: codeSha256,
         inputs: job.inputs.map((r) => r.id),
@@ -565,11 +619,11 @@ export function makeComputeSandbox(opts) {
         packages: (raw && Array.isArray(raw.packages)) ? raw.packages.slice() : [],
         nonFinite: nonFinite || 0,
         ranAt: Date.now(),
-      };
+      }, bridgeInfo ? { bridge: bridgeInfo } : {});
     }
 
     /* ── one worker, one run ──────────────────────────────────────────────────────────────────── */
-    function execute(job, signal) {
+    function execute(job, signal, bridge) {
       return new Promise((resolve) => {
         if (!WorkerCtor || typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) { resolve(no('worker-unavailable')); return; }
         let w = null, url = null, timer = null, phase = 'boot', settled = false;
@@ -588,7 +642,7 @@ export function makeComputeSandbox(opts) {
         const onAbort = () => finish(no('cancelled'));
         if (signal) { if (signal.aborted) { resolve(no('cancelled')); return; } signal.addEventListener('abort', onAbort); }
         try {
-          url = URL.createObjectURL(new Blob([workerSource()], { type: 'text/javascript' }));
+          url = URL.createObjectURL(new Blob([workerSource(bridgeOk(bridge) ? bridge.source : null)], { type: 'text/javascript' }));
           w = new WorkerCtor(url);
         } catch (e) { finish(no('worker-unavailable', { message: String((e && e.message) || e) })); return; }
         arm(LIMITS.loadMaxMs, 'runtime-load-timeout');
@@ -614,8 +668,9 @@ export function makeComputeSandbox(opts) {
           finish(no(phase === 'run' ? 'worker-died' : 'runtime-unavailable', { message: String((ev && ev.message) || 'worker error') }));
         };
         w.onmessageerror = () => finish(no('worker-died', { message: 'message-not-cloneable' }));
-        w.postMessage({ t: 'run', job: { code: job.code, outputs: job.outputs, outputsNamed: job.outputsNamed,
-          inputsJson: JSON.stringify(job.inputs.map(payloadOf)) } });
+        const msg = { t: 'run', job: { code: job.code, outputs: job.outputs, outputsNamed: job.outputsNamed,
+          inputsJson: JSON.stringify(job.inputs.map(payloadOf)) } };
+        if (bridgeOk(bridge)) { msg.port = bridge.port; w.postMessage(msg, [bridge.port]); } else w.postMessage(msg);
       });
     }
 
@@ -628,19 +683,30 @@ export function makeComputeSandbox(opts) {
       if (!job.ok) return job;
       /* (result-reuse) THE KEY IS CODE + THE INPUTS' CONTENT + THE CONDITIONS. A rerun (fixedIds / only) restores specific records and is never answered from the cache. A hit is served only while every dataset it made is still in the registry, not stale, and the same size. */
       let reuseK = null;
-      if (!ro.fixedIds && !ro.only && reusableCode(job.code)) {
+      if (!ro.fixedIds && !ro.only && !ro.bridge && reusableCode(job.code)) {
         const fps = []; for (const r of job.inputs) fps.push(await fingerprintRecord(r, sha256Hex));
         reuseK = await reuseKey({ kind: 'compute.run', spec: { code: job.code, outputs: job.outputs, title: job.title || '' }, inputs: fps, conditions: { runtime: RUNTIME.name + '@' + RUNTIME.version } }, sha256Hex);
         const reg0 = registry();
         const hit = reg0 && REUSE.get(reuseK, (v) => (v.datasets || []).every((d) => { const r = reg0.get(d.id); return r && !r.stale && r.count === d.count; }));
         if (hit) return hit;
       }
-      const raw = await execute(job, ro.signal || null);
+      const raw = await execute(job, ro.signal || null, ro.bridge || null);
       const base = { stdout: raw.stdout || '', stderr: raw.stderr || '', stdoutCut: raw.stdoutCut || 0, stderrCut: raw.stderrCut || 0,
         timings: raw.timings || null, elapsedMs: raw.elapsedMs, refusedUrls: raw.refusedUrls || [], runtime: RUNTIME.name + '@' + RUNTIME.version };
-      if (!raw.ok) return Object.assign(base, { ok: false, why: raw.why, observed: raw.observed, detail: raw.detail, phase: raw.phase });
+      if (!raw.ok) return Object.assign(base, { bridge: (ro.bridge && ro.bridge.bridge && bridgeOk(ro.bridge)) ? { grants: ro.bridge.bridge.grants(), summary: ro.bridge.bridge.summary(), calls: ro.bridge.bridge.calls(), logOmitted: ro.bridge.bridge.logOmitted() } : null, ok: false, why: raw.why, observed: raw.observed, detail: raw.detail, phase: raw.phase });
       const reg = registry();
       const codeSha256 = await sha256Hex(job.code);
+      /* THE HISTORY OF WHAT THE CODE DID THROUGH THE BRIDGE: the grants, the counts, and the call log's own hash —
+         recorded on every output beside the code, so a record says not only what ran but what it was allowed to do and did.
+         (The log itself is on the result; a dataset carries the summary, not thousands of lines.) */
+      let bridgeInfo = null, bridgeOut = null;
+      if (ro.bridge && ro.bridge.bridge && bridgeOk(ro.bridge)) {
+        const b = ro.bridge.bridge;
+        const calls = b.calls(), summary = b.summary();
+        const logSha = await sha256Hex(JSON.stringify(calls));
+        bridgeInfo = { grants: b.grants(), summary: summary, logSha256: logSha, logged: calls.length, logOmitted: b.logOmitted() };
+        bridgeOut = { grants: b.grants(), summary: summary, calls: calls, logOmitted: b.logOmitted(), logSha256: logSha };
+      }
       const datasets = [], values = {};
       const made = [];
       for (const name of job.outputs) {
@@ -658,14 +724,17 @@ export function makeComputeSandbox(opts) {
         if (ro.only && ro.only !== m.name) continue;
         const want = ro.fixedIds && ro.fixedIds[m.name];
         const title = job.title ? (job.outputs.length > 1 ? job.title + ' · ' + m.name : job.title) : 'Python · ' + m.name;
-        const rec = reg.add({ id: want || null, title: title, features: m.features, provenance: provenanceFor(job, raw, m.name, codeSha256, m.nonFinite) });
+        const rec = reg.add({ id: want || null, title: title, features: m.features, provenance: provenanceFor(job, raw, m.name, codeSha256, m.nonFinite, bridgeInfo) });
         datasets.push({ name: m.name, id: rec.id, title: rec.title, count: rec.count, withGeometry: rec.withGeometry,
           geometryType: rec.geometryType, fields: (rec.fields || []).map((f) => ({ name: f.name, type: f.type })), nonFinite: m.nonFinite });
       }
-      const result = Object.assign(base, { ok: true, observed: true, datasets: datasets, values: values, packages: raw.packages || [], python: raw.python || null, codeSha256: codeSha256 });
+      const result = Object.assign(base, { bridge: bridgeOut, ok: true, observed: true, datasets: datasets, values: values, packages: raw.packages || [], python: raw.python || null, codeSha256: codeSha256 });
       if (reuseK) REUSE.put(reuseK, result);
       return result;
     }
+
+    /* a session dataset as the code sees it, for the capability bridge's `dataset` request: null when there is none or it is stale */
+    function readDataset(id) { const reg = registry(); const rec = reg && reg.get ? reg.get(String(id)) : null; return rec && !rec.stale ? payloadOf(rec) : null; }
 
     /* ── rerun(step) — js/gis-project.js's door, when an input of a compute record was recomputed ──
        The recipe is the record's own provenance; the answer goes back under the record's id. */
@@ -680,7 +749,7 @@ export function makeComputeSandbox(opts) {
     }
 
     const API = {
-      run, rerun, reuseStats: () => REUSE.stats(), validate, payloadOf, classify, provenanceFor, workerSource,
+      run, rerun, reuseStats: () => REUSE.stats(), validate, payloadOf, readDataset, classify, provenanceFor, workerSource,
       runtime: () => ({ name: RUNTIME.name, version: RUNTIME.version, base: RUNTIME.base, files: Object.assign({}, RUNTIME.files) }),
       limits: () => Object.assign({}, LIMITS),
       reasons: () => ({ refusals: REFUSALS.slice(), failures: FAILURES.slice(), unobserved: UNOBSERVED.slice() }),

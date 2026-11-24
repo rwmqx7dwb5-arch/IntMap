@@ -352,6 +352,7 @@ export function makeGisGeotiff() {
     function makeReader(src, seed) {
       const resident = src.resident || null;
       const blocks = new Map();        /* block index → Uint8Array, least-recently-used first */
+      const pending = new Map();       /* block index → the fetch already in flight for it */
       let held = 0;
 
       function evict() {
@@ -391,12 +392,26 @@ export function makeGisGeotiff() {
         if (len === 0) return new Uint8Array(0);
         if (resident) return resident.subarray(off, off + len);
         const b0 = Math.floor(off / BLOCK_BYTES), b1 = Math.floor((off + len - 1) / BLOCK_BYTES);
+        /* ⚠ SEVERAL CALLS MAY BE IN FLIGHT (fetchChunks asks for chunks side by side). A block that another call is already
+           fetching is AWAITED, not fetched again — without that, two neighbouring chunks that share a block would each
+           download it, and the same bytes would be paid for twice (tests/cog-url-connect-checks.test.mjs ① and ⑤). */
+        const waits = [];
         let run = -1;
+        const flush = (to) => {
+          const from = run, p = pull(from, to);
+          for (let x = from; x <= to; x++) pending.set(x, p);
+          waits.push(p.then(() => { for (let x = from; x <= to; x++) if (pending.get(x) === p) pending.delete(x); }, (e) => { for (let x = from; x <= to; x++) if (pending.get(x) === p) pending.delete(x); throw e; }));
+          run = -1;
+        };
         for (let b = b0; b <= b1; b++) {
-          if (blocks.has(b)) { if (run >= 0) { await pull(run, b - 1); run = -1; } continue; }
+          if (blocks.has(b)) { if (run >= 0) flush(b - 1); continue; }
+          if (pending.has(b)) { if (run >= 0) flush(b - 1); waits.push(pending.get(b)); continue; }
           if (run < 0) run = b;
         }
-        if (run >= 0) await pull(run, b1);
+        if (run >= 0) flush(b1);
+        await Promise.all(waits);
+        /* a block another lane's eviction dropped between its arrival and now is fetched once more, singly */
+        for (let b = b0; b <= b1; b++) if (!blocks.has(b)) await pull(b, b);
         const out = new Uint8Array(len);
         for (let b = b0; b <= b1; b++) {
           const blk = touch(b);
@@ -638,6 +653,10 @@ export function makeGisGeotiff() {
             dx: rotated ? Math.hypot(t[0], t[4]) : Math.abs(t[0]),
             dy: rotated ? Math.hypot(t[1], t[5]) : Math.abs(t[5]),
             rotated: rotated,
+            /* ⚠ A MATRIX WHOSE t[5] IS POSITIVE IS A BOTTOM-UP FILE: row 0 is the SOUTH edge and rows run north.
+               (Observed 2026-11-20: Google's AlphaEarth embedding COGs on source.coop, which say so themselves.)
+               t[7] is then the south edge; buildImage() turns it into the north edge once the height is known. */
+            bottomUp: !rotated && t[5] > 0,
           },
         };
       }
@@ -664,8 +683,10 @@ export function makeGisGeotiff() {
       34677: 'sgi-log24', 34712: 'jpeg2000', 34887: 'lerc', 34925: 'lzma', 50000: 'zstd',
       50001: 'webp', 50002: 'jpegxl',
     };
+    let zstdDecode = null;
+    const FETCH_PARALLEL = 8;
     const DEFLATE = [8, 32946];
-    const SYNC_COMPRESSIONS = [1, 5, 32773];
+    const SYNC_COMPRESSIONS = [1, 5, 32773, 50000];
 
     /* TIFF 6.0 §13, MSB-first, ClearCode 256, EoiCode 257, first free entry 258, early change: the
        code width grows when the next entry would fill the current width. */
@@ -899,6 +920,12 @@ export function makeGisGeotiff() {
          8-bit sRGB, which is a picture rather than the samples this door carries. 消せる条件: a
          decoder that returns component values, written here or offered by the runtime. */
       if (compression === 6 || compression === 7) return bad('jpeg-in-tiff-unsupported', { compression: compression, name: COMPRESSION_NAMES[compression] });
+      /* ZSTD (compression 50000) is what Google's AlphaEarth embedding COGs use (observed 2026-11-20, source.coop).
+         It is decoded by fzstd (MIT, 8 kB, pure JS, synchronous), loaded only when a file asks for it, so the other
+         codecs' cost is unchanged. 消せる条件: the platform's DecompressionStream accepting 'zstd'. */
+      if (compression === 50000 && !zstdDecode) {
+        try { zstdDecode = (await import('fzstd')).decompress; } catch (e) { return bad('compression-unsupported', { compression: compression, name: 'zstd', reason: 'decoder-unavailable' }); }
+      }
       if (DEFLATE.indexOf(compression) < 0 && SYNC_COMPRESSIONS.indexOf(compression) < 0) {
         return bad('compression-unsupported', { compression: compression, name: COMPRESSION_NAMES[compression] || null });
       }
@@ -969,6 +996,10 @@ export function makeGisGeotiff() {
         }
       }
       const A = geo.affine;
+      /* an overview that states no georeference of its own inherits the base image's orientation */
+      let flipY = !!A.bottomUp;
+      if (index > 0 && base && base.flipY && !geo.model.transform && !geo.model.tiepoint) flipY = true;
+      if (A.bottomUp) { A.y0 = A.y0 + A.dy * height; delete A.bottomUp; }
       if (!(A.dx > 0) || !(A.dy > 0) || !isFinite(A.x0) || !isFinite(A.y0)) {
         return bad('grid-degenerate', { x0: A.x0, y0: A.y0, dx: A.dx, dy: A.dy });
       }
@@ -1079,18 +1110,27 @@ export function makeGisGeotiff() {
         store.delete(i);
       }
 
+      /* Up to FETCH_PARALLEL chunks are asked for at once. Observed 2026-11-20: a 64-plane embedding window is 130
+         separate range reads, and asked one after another they took 73 s (0.56 s each) from source.coop. The reads
+         are independent (every chunk is its own byte range), so the only thing parallelism changes is the wait. */
       async function fetchChunks(list) {
-        for (const k of list) {
-          if (store.has(k)) continue;
-          const off = offsets.values[k], n = counts.values[k];
-          const got = await rd.need(off, n);
-          if (!got) return raise('tiff-truncated', { chunk: k, at: off, need: n, have: rd.size });
-          if (isDeflate) {
-            const outBytes = await inflate(got);
-            if (!outBytes) return raise('tiff-corrupt', { chunk: k, codec: 'deflate' });
-            keep(k, outBytes, true);
-          } else keep(k, got, false);
+        const todo = list.filter((k) => !store.has(k));
+        let next = 0, failure = null;
+        async function lane() {
+          while (failure === null && next < todo.length) {
+            const k = todo[next++];
+            const off = offsets.values[k], n = counts.values[k];
+            const got = await rd.need(off, n);
+            if (!got) { failure = { chunk: k, at: off, need: n, have: rd.size }; return; }
+            if (isDeflate) {
+              const outBytes = await inflate(got);
+              if (!outBytes) { failure = { corrupt: k }; return; }
+              keep(k, outBytes, true);
+            } else keep(k, got, false);
+          }
         }
+        await Promise.all(Array.from({ length: Math.min(FETCH_PARALLEL, todo.length) }, lane));
+        if (failure) return failure.corrupt !== undefined ? raise('tiff-corrupt', { chunk: failure.corrupt, codec: 'deflate' }) : raise('tiff-truncated', failure);
       }
 
       /* Fetch, decode, release — in batches, so that a window whose tiles are larger than the
@@ -1118,6 +1158,12 @@ export function makeGisGeotiff() {
           return srcBytes.slice(0, plan.expected);
         }
         if (compression === 5) return lzwDecode(srcBytes, plan.expected);
+        if (compression === 50000) {
+          let out;
+          try { out = zstdDecode(srcBytes, new Uint8Array(plan.expected)); } catch (e) { return raise('tiff-corrupt', { chunk: i, codec: 'zstd', message: String((e && e.message) || e).slice(0, 80) }); }
+          if (out.length < plan.expected) return raise('chunk-short', { chunk: i, got: out.length, expected: plan.expected, codec: 'zstd' });
+          return out;
+        }
         return packBitsDecode(srcBytes, plan.expected);
       }
 
@@ -1138,11 +1184,14 @@ export function makeGisGeotiff() {
       }
 
       function blitInto(out, i, b, R, hasNd, nd) {
+        /* b is one band index, or an ARRAY of them with out an array of the same length: the chunk is decoded ONCE
+           and every wanted band is taken from it (a 64-channel embedding tile would otherwise be decoded 64 times). */
+        const multi = Array.isArray(b);
         const plan = chunkAt(i);
         if (plan.validRows <= 0 || plan.cols <= 0) return;
         /* ⚠ A CHUNK OF ANOTHER PLANE IS NOT THIS BAND'S DATA. Skipped rather than sampled: the
            stride would fit and the numbers would be somebody else's. */
-        if (plan.band !== null && plan.band !== b) return;
+        if (multi) { if (plan.band !== null) return; } else if (plan.band !== null && plan.band !== b) return;
         const y0 = Math.max(plan.y0, R.y), y1 = Math.min(plan.y0 + plan.validRows, R.y + R.h);
         const x0 = Math.max(plan.x0, R.x), x1 = Math.min(plan.x0 + plan.cols, R.x + R.w);
         if (!(y1 > y0) || !(x1 > x0)) return;
@@ -1155,7 +1204,21 @@ export function makeGisGeotiff() {
         const sample = samplerFor(rdv, le, bits, fmt);
         /* which sample of a stored pixel this band is — the band itself when the chunk holds them
            all, and the only one there is when the planes are separate */
-        const within = plan.band === null ? b : 0;
+        const within = multi ? 0 : (plan.band === null ? b : 0);
+        if (multi) {
+          for (let yy = y0; yy < y1; yy++) {
+            const rowBase = (yy - plan.y0) * plan.chunkWidth * chunkSpp;
+            const dstBase = (yy - R.y) * R.w - R.x;
+            for (let xx = x0; xx < x1; xx++) {
+              const pix = rowBase + (xx - plan.x0) * chunkSpp;
+              for (let k = 0; k < b.length; k++) {
+                const v = sample((pix + b[k]) * bytesPer);
+                out[k][dstBase + xx] = (hasNd && v === nd) ? NaN : v;
+              }
+            }
+          }
+          return;
+        }
         for (let yy = y0; yy < y1; yy++) {
           const rowBase = (yy - plan.y0) * plan.chunkWidth * chunkSpp;
           const dstBase = (yy - R.y) * R.w - R.x;
@@ -1182,6 +1245,14 @@ export function makeGisGeotiff() {
            throw the result away. */
         const from = planar === 2 ? b * perPlane : 0;
         for (let i = from; i < from + perPlane; i++) blitInto(out, i, b, R, hasNd, nd);
+        if (flipY) { /* north-up rows, as every caller of read() assumes */
+          const row = new Float64Array(width);
+          for (let r0 = 0, r1 = height - 1; r0 < r1; r0++, r1--) {
+            row.set(out.subarray(r0 * width, (r0 + 1) * width));
+            out.copyWithin(r0 * width, r1 * width, (r1 + 1) * width);
+            out.set(row, r1 * width);
+          }
+        }
         return out;
       }
 
@@ -1189,7 +1260,11 @@ export function makeGisGeotiff() {
          labelled only 「the data」 would let a caller draw an overview believing it was the file. */
       async function readRegion(o) {
         const q = o || {};
-        const b = bandOf(q.band);
+        /* q.bands (an array) reads several bands → region.valuesByBand. Chunky: ONE decode of each chunk serves every band.
+           Separate planes: each band's own chunks, one band after another (nothing is decoded twice either way). */
+        const many = Array.isArray(q.bands) ? q.bands.map(bandOf) : null;
+        if (many) for (const mb of many) if (!(mb >= 0 && mb < spp)) return bad('band-out-of-range', { band: mb, bands: spp });
+        const b = many ? many[0] : bandOf(q.band);
         if (!(b >= 0 && b < spp)) return bad('band-out-of-range', { band: q.band, bands: spp });
         let x = 0, y = 0, rw = width, rh = height;
         if (Array.isArray(q.bbox) && q.bbox.length >= 4) {
@@ -1212,23 +1287,41 @@ export function makeGisGeotiff() {
         if (!(rw > 0) || !(rh > 0) || !(x >= 0) || !(y >= 0) || x + rw > width || y + rh > height) {
           return bad('region-out-of-range', { x: x, y: y, width: rw, height: rh, image: { width: width, height: height } });
         }
-        const R = { x: x, y: y, w: rw, h: rh };
-        const out = new Float64Array(rw * rh);
+        /* a bottom-up file stores its rows south-first: ask for the file's rows, turn them over afterwards */
+        const R = { x: x, y: flipY ? height - (y + rh) : y, w: rw, h: rh };
+        const outs = many ? many.map(() => new Float64Array(rw * rh)) : null;
+        const out = outs ? outs[0] : new Float64Array(rw * rh);
         const nd = nodata;
         const hasNd = nd !== null && !Number.isNaN(nd);
         const c = ctxOf(q);
         const list = chunksFor(R, b);
         try {
-          const done = await sweep(list, c, (k) => blitInto(out, k, b, R, hasNd, nd));
+          let done = true;
+          if (outs && planar === 2) {
+            /* every band's chunks in ONE sweep, so the fetches of different planes overlap */
+            const all = [], bandOfChunk = new Map();
+            many.forEach((mb, m) => { for (const k of chunksFor(R, mb)) { all.push(k); bandOfChunk.set(k, m); } });
+            done = await sweep(all, c, (k) => { const m = bandOfChunk.get(k); blitInto(outs[m], k, many[m], R, hasNd, nd); });
+          } else {
+            done = await sweep(list, c, (k) => (outs ? blitInto(outs, k, many, R, hasNd, nd) : blitInto(out, k, b, R, hasNd, nd)));
+          }
           if (!done) return bad('cancelled', { done: c.done(), total: list.length });
         } catch (e) {
           if (e && typeof e.why === 'string') return bad(e.why, e.detail === null ? undefined : e.detail);
           throw e;
         }
+        if (flipY) for (const arr of (outs || [out])) {
+          const row = new Float64Array(rw);
+          for (let r0 = 0, r1 = rh - 1; r0 < r1; r0++, r1--) {
+            row.set(arr.subarray(r0 * rw, (r0 + 1) * rw));
+            arr.copyWithin(r0 * rw, r1 * rw, (r1 + 1) * rw);
+            arr.set(row, r1 * rw);
+          }
+        }
         return {
           ok: true,
           region: {
-            values: out, band: b, x: x, y: y, width: rw, height: rh,
+            values: out, valuesByBand: outs, bands: many, band: b, x: x, y: y, width: rw, height: rh,
             level: index, isOverview: index > 0, chunks: list.length, chunksTotal: expectedChunks,
             affine: { x0: A.x0 + x * A.dx, y0: A.y0 - y * A.dy, dx: A.dx, dy: A.dy, rotated: A.rotated },
           },
@@ -1269,7 +1362,7 @@ export function makeGisGeotiff() {
           wholeFile: !!src.wholeFile, rangeSupported: src.rangeSupported === undefined ? null : src.rangeSupported,
           requests: () => (src.requests || 0),
         },
-        level: index, isOverview: index > 0,
+        level: index, isOverview: index > 0, flipY: flipY,
         read: readBand, readAll: readAll, readRegion: readRegion,
       };
       return { ok: true, grid: grid };

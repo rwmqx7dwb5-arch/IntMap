@@ -60,6 +60,7 @@ curriculum.html / school-handout.html
                                 単元対応表（3 つのカリキュラムの単元と、開ける地図・授業ツアー・クエスト・「この単元のツアーを作る」）と
                                 学校向けの A4 1 枚の案内（ja/ が日本語版）。同じく scripts/org-pages.mjs が生成する。Architecture.md §8.6.5
 readiness.html                  導入前の接続診断——許可が必要な接続先の一覧（3 層）と、この端末・ネットワークでの診断（js/readiness-page.js）。
+mcp-oauth-callback.html           外部 MCP サーバへサインインしたあとにサービスが戻す先——クエリを開いた IntMap のページへ渡して閉じるだけ（mcp-oauth）。
                                 ja/ が日本語版。同じく scripts/org-pages.mjs が生成する。Architecture.md §8.6.6
                                 scripts/org-pages.mjs が生成する（手で編集しない。文は scripts/org-pages-text.mjs）。Architecture.md §11
 admin-inquiries.html            相談のコンソール（org_inquiries の閲覧・状態とメモ・削除、supporters の掲載）。英語・noindex。
@@ -194,6 +195,9 @@ runtime.js                        1つのフレームループ・1つのタイ�
 board.js                          **操作できるボード**（遅延・`IntMapBoard`）— 宣言（表・グラフ・フィルタ・地図・根拠・パラメータ）から DOM を組み、1 つの状態で連動。保存は IndexedDB `intmap-board`
 board-spec.js                     ボード宣言の検査（列の実在・出典必須・Artifact の節への対応）。純関数
 board-state.js                    ボードの共有状態（選択・フィルタ・パラメータ）。純関数
+board-edit.js                     ボードの表の編集の規則（値の型解釈・列を使う部品の特定と改名の伝播・開いた時点との差分・Atlas へ渡す差分文・データ層の拒否理由の言い換え）。純関数
+board-link.js                     ボードと**本物の地図・マスタークロック**の双方向の連動（選択のハイライトと地図クリック・Chronos と時間窓）。エンジンと時計は注入
+ui-text-rules.js                  画面宣言の文字列に課す 2 つの拒否（URL・タグ）の唯一の写し。ui.compose と board.compose の両仕様が共有する。純関数
 bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・
                                   未移行のファイルと理由）と `emit` / `on` / `once`。配信は
                                   `window.dispatchEvent` のままで、宣言に無い名前は開発時に例外・本番は警告
@@ -243,8 +247,28 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
                                   して、貼ったリンクと同じ hashchange の経路で適用する。履歴は増やさない）
 embed-client.js                   **埋め込み API のホストの側**と約束事（`PROTOCOL`・`mount`）。他サイトが URL で import するので
                                   何も import せず、vite が dist/ にそのまま写す。embed-mode.js が PROTOCOL を import する
+admin-stats.js                    **行政区分の人口——日付・方式・単位の存続期間つき**。`data/admin-stats.json.gz`（`scripts/build-admin-stats.mjs` が Wikidata から作る）を
+                                  読み、`table`（年の指定・許容年・方式と年の混在の申告）、`valueAt`、`definitionAt`（存続期間の外は拒否＝歴史結合の番人）、
+                                  `boundaries`（第 1 級境界に ISO 3166-2 で結ぶ）。DOM もグローバルも持たない。Atlas `geo.regionStat` の中身
 geo-similar.js                    **地域の特徴ベクトルによる類似検索**（Spatial Embeddings 第 1 スライス）。OSM の建物・道路・施設・水辺の種類別の密度を
-                                  比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる
+                                  比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる。
+                                  `signal:'embedding'` は同じ区画の取り方（`planCells`）で AlphaEarth の埋め込みの cosine で並べる（`findSimilarEmbedding`）
+imagery-change.js                 **画像から分かる変化の純粋な核** — 2 時点を同じ格子で比べる（光学の指数・SAR の dB・土地被覆の遷移・
+                                  AlphaEarth 埋め込みの距離）。閾値は差の分布（中央値 ± k·σ）から決め、使えない画素（SCL の雲・影）は差に入れず、
+                                  `evidenceOf` が根拠（画像 id・撮影日・出典・手順・使えた画素・制約）を 1 つの形で返す。ネットワークも DOM も持たない
+imagery-change-io.js              **画像の探索と読み出し**（Sentinel-2：Earth Search／Sentinel-1 RTC・年次土地被覆：Planetary Computer の匿名 SAS／
+                                  AlphaEarth：Source Cooperative の COG と、約 800 MB の索引をバイト範囲の二分探索で読む `aefLocate`）。
+                                  js/gis-cog.js の `readWindow` を注入して同じ格子に読む。夜間光は匿名の数値の供給元が確認できず含めない
+imagery-change-atlas.js           Atlas の `geo.imageChange` と `geo.similar` の埋め込み版の本体（Atlas の chunk に遅延）。場所の解決・回答の組み立て・
+                                  結果のラスタをデータセットとして登録する
+geo-ml.js                         **地理空間 ML の一連作業**（純粋・node で評価できる）。複数年の変化（撮影日が観測の画像だけから 画素ごとの型・速さ・向き・時期。
+                                  Theil–Sen・Mann–Kendall・段差の帰無は simulate）・地域の意味分類（OSM 密度の原型／利用者の正解から学ぶ）・
+                                  変化の解釈（場所と時期の一致。原因とは言わない）・予測モデル（特徴量づくり→ ridge と木→ 空間ブロック/時間の評価→ 分割共形の区間）
+geo-ml-run.js                     geo-ml.js を GIS のデータセット（IntMapData）に結ぶ薄い層。読み出し・結果のデータセット登録・根拠（evidence）
+siting.js                         **産業立地の比較**。data/siting-<国>.json（電力・産業用地・労働力・研究・規制を地域ごとに公開統計の実数で並べ、企業拠点を結ぶ）を読み、
+                                  指標ごとの順位（1 = 良い側）・出典・載せていないものを返す。総合点は出さない。純粋で node で評価できる
+specialist-models.js              **外部の専門モデルを探して・入力を作り・実行し・限界つきで返す**。登録（MODELS）が「何が実行できて何が未接続か」の唯一の一覧。GloFAS 洪水（Open-Meteo Flood API）と
+                                  CAMS 大気質（Open-Meteo Air Quality API）を接続済み。ネットは注入で node で評価できる
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
                                   コード）は `js/atlas-attach.js` の `ATL_FILE` に訊き（写さず共有）、文法は
@@ -385,6 +409,15 @@ gis-remote.js                     **アプリの外のデータを探す** `wind
                                   `coverage`）／供給元が覆うと述べている（`evidence`）／世界の全部（`worldCompleteness` は常に
                                   `unproven`）。応答しなかったカタログは「無かった」ではない。ライセンスは述べられたまま、無ければ null。
                                   https 以外・認証情報つき・私的/ループバックの宛先は `url-not-public`
+gis-overture.js                   **Overture Maps を窓で読む** `window.IntMapGisOverture` — 地図全体（places ~9 千万・buildings ~25 億・
+                                  addresses・divisions・transportation・base）の GeoParquet を、**言われた窓のぶんだけ**読む。①STAC が述べる
+                                  ファイルの範囲 ②Parquet フッターの row group 統計（`bbox` の最小・最大）で絞り、③`bbox` と条件の列だけ
+                                  を走査して行番号を得、④当たった row group の残りの列を読む（hyparquet の動的 import＝別チャンク。DuckDB-WASM
+                                  は ~30 MB の WASM と `wasm-unsafe-eval` が要るので採らない）。`release()`／`themes()`／`plan()`／`query()`／
+                                  `acquire()`（結果を `window.IntMapData` のデータセットに＝次の手の入力）。⚠ リリースは**読む**（バケットは 60 日で
+                                  消す）・ホストは Privacy §4 が名指すものだけ（`host-not-disclosed`）・ライセンスは**行が述べる値の集合**で、
+                                  述べていなければ欄ごと無い・GERS ID は振り直されるので `worldNodes()` は元レコード（`sources[].record_id`）と
+                                  リリースを履歴に残す（`world_graph_id_history`）。世界の全部であるとは**述べない**（`worldCompleteness:'unproven'`）
 gis-export.js                     **データを外へ出す口** `window.IntMapGisExport`（#R756）—
                                   ベクタ → GeoJSON / CSV、ラスター → GeoTIFF（無圧縮・float32 と
                                   整数・多バンド）。⚠ **「書き出せた」は「読み直せた」ではない**
@@ -453,6 +486,9 @@ gis-voronoi.js                    **球面の最寄り圏** `window.IntMapGisVor
                                   共円の地点は凸包だけをずらした位置で建て、候補に 2 環近傍を足す。
                                   境界の描画と「いちばん遠い場所」の探索の許容は球と WGS-84 の差
                                   （`docs/GIS-CORE.md` §2.4.1 の 0.56 %）で、つまみではない（§2.9）
+logistics-impact.js             **「この港が止まったら」**（遅延・純粋）— `data/logistics-network.json` を読み、ある港が最寄りの港である
+                                  都市と工場系拠点、各々の次の港と鉄道距離の増分、次の港が無いものを答える（Atlas の `research.portImpact`）。
+                                  鉄道の到達可能性のモデルで、貨物の実流量ではない（ファイルの `model.kind` が毎回述べる）
 gis-network.js                    **つながりとしての網** `window.IntMapGisNetwork` — `network` / `networkDisrupt` op の算術。
                                   線をグラフに読み（端点／頂点・`snapKm`）、媒介・調和近接・最大フロー／最小カット・
                                   k 本の代替経路・障害時の無傷との差を測る。反復は時間で譲る。
@@ -461,6 +497,14 @@ gis-packed.js                     **幾何の圧縮表現とチャンクスト�
                                   幾何を Float64Array へ平らに並べ（unpack で 1 バイトも違わず戻る）、
                                   結果を入力の順のチャンクとして持つ。閾値と、その観測は同じ file の末尾
                                   （`docs/GIS-CORE.md` §6「100 万件」）
+cap-bridge.js                     **能力ブリッジ**（Programmatic Tool Calling）— AI が書いたプログラムが能力表の能力を
+                                  ポート越しに何百回でも直接呼び、途中の結果は実行環境に置いて最後だけ Atlas に返す、
+                                  言語に依らない契約（JSON over MessagePort）。呼びは `makeExecute` と同じ道を通る
+                                  （スキーマ・確認・直列化はそのまま）。足すのは、能力の性質（read/state/persist/external）
+                                  による許可・同じ呼びの二度目を `alreadyDone` で答える記録・最後の柵（呼び数/期限/取消）・
+                                  外部文章の汚染の伝播。接続点と #1272 との関係は `dev-notes/2026-11-20-cap-bridge.md`
+                                  `dataset` kind（読み取り専用）・呼びの履歴 `calls()`・`forbid`。Python との接続は
+                                  `dev-notes/2026-11-20-ptc-python-bridge.md`（`compute.run` の `grants`）
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**
@@ -925,6 +969,7 @@ outbreaks.js                      感染症アウトブレイク window.IntMapOu
                                   （docs/MAP-LAYERS.md §7.15）
 companies.js                      企業データセットと時価総額のライブ算出 IntMapCompanies
 company-data.js                   企業アトラスの読み口（索引1枚＋1社ぶんのプロフィールを遅延取得・施設語彙の正本） IntMapCompanyData
+relation-evidence.js            世界グラフの関係の状態——確認済み／推定／未確認と、それぞれを支える根拠（出典・規則）。記録のない関係を補完させない純関数
 reference-data.js                 参照データ表
 tables.js                         参照データ表（大きい方）
 gazetteer.js                      ニュース地点解析の内蔵ガゼッティア
@@ -1008,6 +1053,11 @@ atlas-examples.js                 Atlas — 例文チップの候補プール（
 atlas-view-subject.js             Atlas — 「いま何を見ているか」の測定（視界に入る国・陸と海の割合・
                                   名前のある水域・タイルが名指す地名と山・戦略拠点・km 単位の縮尺）
 atlas-styles.js                   Atlas パネルのスタイルシート 1 本（atlasPanelCSS）
+mcp-oauth-callback.js            mcp-oauth-callback.html の動き（素のまま配る）——戻り先のクエリを開いた IntMap のページへ渡して閉じるだけ（mcp-oauth）
+atlas-mcp-oauth.js                Atlas — MCP サーバの OAuth（メタデータ発見・Client ID Metadata Document／動的登録・PKCE・更新・失効。mcp-oauth）
+public-suffix.js                  Public Suffix List による登録可能ドメイン判定（OAuth の「同じサイトか」。a.co.jp と b.co.jp は別）
+public-suffix-data.js             上の規則データ（scripts/build-public-suffix.mjs が生成・MPL-2.0・2026-11-19 版）
+atlas-mcp-client.js               Atlas — 汎用 MCP クライアント（Streamable HTTP の発見・実行・CSP/CORS の失敗理由・外部出力を信頼できないデータとして囲う。mcp-client）
 atlas-metrics.js                  Atlas — 国の指標の集合 1 つ（METRICS＋XMET）と、その名前を解く解決器 1 つ。
                                   各レコードが自ら名乗るラベル（5 言語＋現在の言語）で引き当て、拒否は有効な全鍵を列挙する
 atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラの寄せ方。
@@ -1052,6 +1102,7 @@ atlas-highlight.js                Atlas — コードブロックのシンタッ
 atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示
 atlas-result-facts.js             Atlas — 道具の結果に、その道具のパネルが示す事実（衛星の直下点と次回通過・天気の数値・旅程）を文として載せる
 atlas-result-reuse.js             Atlas — 同じコードを同じデータに当てた分析を、前回の結果で答える（鍵は内容の指紋・出力が生きている間だけ）
+atlas-research-search.js           Atlas — research.search: 複数の検索語を原文の言語・国・出典サイトを指定して同時に検索し、このターンで取得済みのものは再取得せず「実行済み」と答える。不足・矛盾・変えた方法を記録して返す
 atlas-era-highlight.js            Atlas — 過去年を表示中の国ハイライトを、その年の政体の面（所有者 gloss 込み）で描く／その面の外接矩形（カメラの枠取り）／**Atlas が塗ったものの申告**（`_imAtlasPaint`）
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
@@ -1092,7 +1143,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  262 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  290 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1116,12 +1167,16 @@ file-office.js                      docx・pptx と xlsx の「文書→シー�
 zip-store.js                        **唯一の ZIP**（stored 方式の書き出しと CRC 付き読み戻し）。docx・pptx・xlsx・検証が共有
 file-text.js                        md・txt・html・csv・json の書き出し
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
+atlas-cap-jobs.js                 Atlas の能力 — 永続ジョブの入口（`jobs.start` / `jobs.status` / `jobs.cancel` / `jobs.amend`）。ターンを閉じてもサーバ側で続く仕事を始め・見て・止め・指示を足す
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
-atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar。js/geo-similar.js の扉と引数の束縛）
+atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar）／複数年の変化・地域の分類・変化の解釈・予測モデル（geo.ml。js/geo-ml-run.js の扉と引数の束縛）・行政区分の人口（geo.regionStat。js/admin-stats.js）
+atlas-cap-siting.js               Atlas の能力 — 産業立地の比較（siting.compare。js/siting.js の扉と引数の束縛）
+atlas-cap-model.js                Atlas の能力 — 専門モデルを探す・実行する（model.find / model.run。js/specialist-models.js の扉）・2 時点の画像の変化（geo.imageChange。本体は js/imagery-change-atlas.js）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
+atlas-cap-mcp.js                  Atlas の能力 — 外部 MCP サーバ（mcp.servers / connect / call / act。mcp-client）
 atlas-cap-navigation.js           Atlas の能力 — ナビゲーション（navigation.*）
 atlas-cap-news.js                 Atlas の能力 — ニュースの分類（news.category）
 atlas-cap-notebook.js             Atlas の能力 — 調査ノート（notebook.list / open / compare。前に調べたことを探す・地図を戻す・今と比べる）
@@ -1141,8 +1196,10 @@ atlas-cap-sim.js                  Atlas の能力 — シミュレーター（si
 atlas-cap-system.js               Atlas の能力 — 汎用の逃げ道とモジュール操作（system.*）
 atlas-cap-time.js                 Atlas の能力 — 時刻（time.*）
 atlas-reasoning.js                Atlas の 3 つの答えを**構造**にする純関数（シナリオ research.scenario の 4 欄・期間の変化 time.changes の差分と順位・相関 panel.correlate の報告）。DOM も window も持たず、tests/atlas-reasoning-checks.test.mjs が評価する。相関パネルも同じ報告を描く
-atlas-cap-ui.js                   Atlas の能力 — インラインの操作（ui.*）
+atlas-cap-ui.js                   Atlas の能力 — 返答の中の UI（ui.*）：インラインの操作（ui.inlineControls）と宣言的なビュー（ui.compose・綴り `dashboard`）。
+                                  操作の行の描画は 1 か所（controlRows）で、両方が使う
 atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
+atlas-cap-web.js                  Atlas の能力 — ウェブサイトの操作とファイル取得（web.browse・web.fetchFile）。データポータル等を検索・リンク辿り・フォーム送信し、返ったファイルを GIS データセットにする
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
                                   earthquakes・volcanoes・facilities）と列（pop・precipMm・coastKm・elevM・
@@ -1166,6 +1223,7 @@ atlas-geo-object.js               **地点の1つの形**（#R397）— GeoObjec
                                   ⚠ 代表点は `pointLike` ではない＝「その地点」として扱わない。
                                   `worldObject()` は同じ型に **type・ref・bounds・time・articleIds・evidenceIds・sources・links・facts** を足す
 atlas-world-objects.js           **実世界オブジェクトの索引と関係**— 地震・出来事・記事・施設・都市・火山・企業・地点を
+atlas-work-store.js             Atlas — 作業成果物のデータ（成果物の種類・版・版どうしの比較・作業場の選択・Markdown／ファイル・端末の保存は調査ノートの store を再利用）。DOM なし
                                   `worldObject`（`atlas-geo-object.js` の型）へ書き下ろすアダプタ、セッション内の索引
                                   （`register` / `find`）、`relation` / `related`（linked ／ near かつ（concurrent または
                                   時刻なし）。**時刻だけでは関連にしない**）、描画 1 本（`relatedGroups` / `relatedHtml`）。
@@ -1235,7 +1293,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
 atlas-skills.js                   **Skill**（手順書）の発見・段階読み・門 — `searchSkills`（find_capability の答えに名前と1行だけ添える）／`readSkill`（1節ずつ）／`audit`（本文が名指す能力・引数が実在するか。`npm run check:capabilities`）
 atlas-skills-data.js              Skill の宣言データ（en+jp の散文だけ。使う能力は本文から導出する）。初期: 歴史的国境の比較・衛星画像の変化検出・産業立地の一次分析・港湾物流リスクの比較
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 262 を検索・到達可能 259）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 290 を検索・到達可能 287）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1246,9 +1304,6 @@ atlas-video-frames.js            動画を Atlas が読める1枚にする。ク
                                   サンプルし、時刻を焼き込んだコンタクトシート**1枚**にする。画像は1リクエスト4枚までで写真と比較する
                                   枠を残すため。全プロバイダが読める形（Gemini だけが生の動画を受ける）。音声は送らず、その旨を
                                   `caption()` が述べる。`extract` は document を引数で受け、デコード不能な動画は黒いシートでなく null。
-atlas-voice.js                    ハンズフリー音声。聞き続け、確定した発話を1発話1メッセージで送る。認識器の自然終了は再開し、
-                                  マイク拒否は再試行せず理由を述べて止まり、Atlas の作業中に話した分は保留してターン終了で送る
-                                  （送信は進行中ターンを中止するため）。語句の解釈はしない——意味づけは Atlas。
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/layer-boot-graph-checks.test.mjs #R175 ③ が
                                   「動的 import でしか届かない export は死んだ export」と見るため）。
@@ -1262,12 +1317,17 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 262 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 290 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
+atlas-working-memory.js           **長い作業の作業記憶**— 目標・決定済み条件・完成した作業・保存した数値・出典・未解決を
+                                  別々の構造で持つ。ツール結果は原本のまま ref（`t<ターン>.<call>`）で保管し、
+                                  `read_result` が前のターンの ref・`path`（1 値）・`memory`（全記録）に答える。
+                                  ブロックは毎ターン 1 回だけ入力へ再注入（履歴が落ちても残る）。tab 内の引き継ぎ
+                                  （sessionStorage）と handoffText。モデルの判断は縛らない
 atlas-turn-continuity.js          **早く終わったターンが残すもの**（#R419）— ①訊いた質問を会話の記録へ
                                   1行として残す（`actLabel` は `a.question` を読んでいなかったので
                                   `ask ""` と記録され、次のターンからは「一度も訊いていない」に見えた＝
@@ -1282,6 +1342,11 @@ atlas-turn-results.js             **1つの操作は、返信の中で1ブロッ
                                   ③**版を持つ成果物は順位づけない**（#R551）— `meta.artifact` を名乗る2件は
                                   `revision` の大きいほうが残る。アプリが保持しているのが最新版なのだから、
                                   点数で古い版を選べば「もう無い印」を説明する返信になる
+atlas-ui-spec.js                  **Atlas が宣言するビュー**（declarative-workspace）— `ui.compose` の仕様（JSON）のブロックの種類・欄・上限の表
+                                  （BLOCKS／LIMITS）と、そこから導く schema（viewSchema）・カタログの形（blockShapes）・検査（checkView）。
+                                  ⚠ 検査は**全部の問題を経路つきで**返し、未知の種類・未知の欄・上限超え・URL・HTML を理由つきで拒む（黙って落とさない）。
+                                  描くのは IntMap の部品だけ——図の値の札・表（返答の Markdown 表へ）・地名のボタン。`chart`／`controls` の
+                                  ブロックは chart.compose／ui.inlineControls の dispatch に渡す（描画器を 2 つ作らない）。DOM なし
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
@@ -1453,6 +1518,11 @@ routing-ops.js                    経路の分析 window.IntMapRoutingOps。線�
 routing-errors.js                 経路の失敗の分類（15コード・再試行可否・fallback可否）window.IntMapRouteErrors
 routing-time.js                   計画の時刻（Chronos）と案内の時刻（壁時計）の区別 window.IntMapRouteClock
 routing-traffic.js                交通情報つき provider のアダプタ（routing-relay 経由）window.IntMapRouteTraffic
+transit-catalogue.js              発見した公開時刻表のカタログ（data/transit-feed-catalogue.json）を地点で引く純関数——ここに何があり、使えないものは何が理由か
+transit-feeds.js                  自前の時刻表の台帳——使ってよい feed とそのライセンス・出典（商用可のものだけ）・Transitous の既定オフ
+transit-licence.js                時刻表の許諾リンクを許諾の文法で分類（CC の BY/SA/NC/ND・CC0・各国の公開許諾）——商用可の手がかり／不可／記載なし／未読
+transit-raptor.js                 時刻表ベースの経路探索と到達圏（RAPTOR）。純関数・定期運行と見積りを分けて返す
+transit-planner.js                上の読込と応答の形（MOTIS 形の旅程・到達圏ポリゴン・国境通過）window.IntMapTransitTimetable（遅延取得）
 navigation.js                     案内の進行役（GPS→照合→進捗→再探索）window.IntMapNavigation
 navigation-store.js               案内の状態機械（10状態・遷移表）window.IntMapNavStore
 navigation-match.js               GPS の受け入れ判定と経路への射影 window.IntMapNavMatch
@@ -1781,6 +1851,7 @@ admin-corrections.js              admin-corrections.html の動き——管理�
 map-corrections.js                地図の誤り報告の読者側——カード（地点・表示・年を添付）、送信（reader-reports kind correction）、受付番号の保管、
                                   回答の読み取り（受付番号とアカウント）、回答の通知、公開記録。クリックで取得（起動経路に載らない）
 atlas-cap-corrections.js          Atlas の corrections.* —— report（下書きしてカードを開く・送るのは読者）／mine／log
+atlas-cap-work.js                 Atlas の能力 — 作業成果物（work.job・綴り `work`）。成果物の保存・取り出し・比較・書き出し・作業場の選択。既存の書き出し・チャート・添付・データセット登録を呼ぶ扉
 atlas-cap-community.js            Atlas の community.* —— browse（目録）／open（地図で開く）／list（掲載・表示名は訊く）／unlist／mine（届いた数）
 admin-auth.js                     運営コンソールの唯一のサインイン（window.IntMapAdminAuth・素の script）——パスワード→TOTP（初回は登録）で aal2、
                                   セッションはそのタブの sessionStorage（キー intmap-admin-auth）、破壊的操作前の stepUp。これを読むページが
@@ -1789,6 +1860,7 @@ admin-inquiries.js                admin-inquiries.html の動き——管理者�
 admin-delegation.js               運営コンソール admin.html の Delegation タブ（素の script・window.IntMapAdminDelegation）——RPC delegation_overview を日別の表・棒・コード上位で描く
 admin-pipeline.js                 相談のコンソールの Pipeline タブ（ES module・admin-inquiries.js がタブを開いたとき import()）——会話の段
                                   （lead→talking→trial→adopted|declined）・次にやること・期日。語はページの data-*（inquiry-shape.js が正本）
+web-browse.js                     **ウェブ操作の戸口**——Edge Function web-browse を読者のセッションで呼び、閲覧状態（現在の URL・ホスト単位の cookie・直前のページの ref 表）を保ち、答えにインジェクション境界の注意書きを付け、取得したファイルを GeoJSONUpload.handle（落としたファイルと同じ戸口）へ渡す。資格情報・POST・スクリプト実行は持たない。
 weather.js                        気象（export wind / weatherEC / weatherPanel）
 wx-models.js                      予報モデルのレジストリ window.IntMapWxModels——提供モデル・出典・ライセンス。格子／変数／気圧面／予報期間は live metadata から導出（書き写さない）
 wx-source.js                      ガードされた唯一の気象／UV ソース window.IntMapWx
@@ -1854,6 +1926,9 @@ overpass.js                       **Overpass の唯一のクライアント** `o
                                   window.IntMapOverpass ＋ ES import の両方（同一の関数）
 atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（許可された読み取り能力を呼び、能力表を語で引く）・委譲を端末に残して再開する保存口（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-job-core.js                 **契約と計画の核**——仕事の契約（`normaliseContract`）・同じ仕事の鍵（`contractKey`）・循環の検出・worker への指示文と答えの形（`workerSystem`/`workerPrompt`/`shapeOf`）・一覧を永続ジョブに計画する `planJob` と、次に始められる仕事を選ぶ `readyTasks`。import も globals も持たない純モジュールで、`atlas-delegate.js`（ページ）と Edge Function `atlas-jobs`（サーバ。`supabase/functions/_shared/atlas-job-core.js` が**逐語の写し**、`node scripts/sync-atlas-job-core.mjs`）が同じものを使う。docs/architecture/05-ai.md「永続ジョブ」
+atlas-server-class.js             **永続ジョブが能力をどこで動かせるか**——能力の記録から導く 3 つの区分（`read`＝サーバの twin を持てる／`parkable`＝地図やセッションを変えるのでジョブが保存し、ページが戻ったときに適用／`page-only`）。`js/cap-bridge.js` の `effectClass` の上に立ち、手で並べた一覧を持たない。Edge Function 側の写しは `scripts/sync-atlas-cap-classes.mjs` が生成する（検査は tests/exec-platform-checks.test.mjs）
+atlas-job-products.js            **終わった永続ジョブが残すもの**——ジョブ 1 件につき作業 1 件（`wk-job-<uuid>`）を作業ストアへ。分担ごとに `answer`・統合結果を `document` として、内容が変わらなければ足さず、変われば次の版にする。作業記憶へ「ジョブが未了」（kind `job`＝ターンをまたいで残る）と終了を伝える。検査は tests/exec-platform-checks.test.mjs
+atlas-jobs-client.js              永続ジョブのページ側——`makeJobsClient`（start/list/get/cancel/amend・RLS 越しに自分の行だけ）・`jobFacts`/`jobText`・進捗カード `renderJobCard`（終わった piece から順に出す・Stop と指示欄は実行中だけ）・カードを生かす `mountJobCards`
 atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-fact-comparability.js       Atlas — 複数の子の事実を「並べてよいか」で観測する（単位・範囲・境界・期間・集計の同異、Semantic Layer の comparable()、対象の紐が期間内に変わったか）。判定はせず status も変えない。DOM なし
 atlas-fact-merge.js              Atlas — 複数の子が構造化事実（`facts`: 対象・属性・値・単位・時点・出典・Evidence id）で述べたことを、**実世界オブジェクト**と属性で突き合わせ、一致／矛盾／単独／欠落に分ける `mergeFacts`。名前→対象の解決は注入された `resolve`（セッションの世界オブジェクト索引と永続グラフ）で、名前一覧は持たない。
@@ -2068,7 +2143,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは15・全 136,880 リング分／
+                                  **発見された**束すべて・いまは15・全 136,884 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -2183,27 +2258,27 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全26本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（73本）。本番変更は必ずここを通す
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全28本をここに宣言する
+  migrations/*.sql                DB の唯一の設計図（81本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
-  functions/<name>/index.ts       Edge Functions（26本。一覧と各本の役割は Architecture.md §6.2。
+  functions/<name>/index.ts       Edge Functions（28本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /
                                   schema / media / provider-call / providers/* / models / replay）。
                                   構成の正本は docs/architecture/06-supabase.md §6.2
-  functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / atlas-job-core.js / atlas-job-runner.js / aviation-codec.js /
-                                  aviation-model.js / news-cluster.js / news-entities.js / news-geo-prompt.js /
+  functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / atlas-job-core.js / atlas-job-runner.js / atlas-server-caps.js / atlas-cap-classes.js / aviation-codec.js /
+                                  aviation-model.js / news-cluster.js / news-entities.js / news-history.js / news-backfill.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
-                                  rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
+                                  rate-limit.js / relay-guard.js / volcano-parse.js / web-browse.js / web-render.js / web-session.js / who-don-extract.js /
                                   bbox.js / read-budget.js / connection-policy.js / connection-vault.js / connection-gateway.js / client-error-shape.js /
-                                  fetch-relay-policy.js / gis-fetch-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
+                                  fetch-relay-policy.js / gis-fetch-policy.js / mcp-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
                                   correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /
                                   place-watch.js〔見守る場所の判定——近さ・強さ・新しさ。今はページだけが読む。将来のサーバー評価が同じ規則を使うためここに置く〕 /
-                                  supabase-keys.js〔project key の唯一の読み手。新しい secret・publishable key を優先し、旧 JWT はフォールバック〕 / world-graph-ports.js〔港湾の面の取り込み＝Wikidata・UN/LOCODE・Eurostat を識別子で結ぶ純粋なモジュール。Edge Function と node の検査が同じものを読む〕 /
+                                  supabase-keys.js〔project key の唯一の読み手。新しい secret・publishable key を優先し、旧 JWT はフォールバック〕 / world-graph-identity.js〔対象の同一性の判定と更新の差分。純粋〕 / world-graph-ports.js〔港湾の面の取り込み＝Wikidata・UN/LOCODE・Eurostat を識別子で結ぶ純粋なモジュール。Edge Function と node の検査が同じものを読む〕 /
                                   great-circle.js〔大円距離 `haversineKm`（地球半径 6,371 km）の唯一の実装。ページと関数が import する〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
@@ -2786,7 +2861,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 172 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 173 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

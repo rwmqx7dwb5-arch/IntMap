@@ -1,11 +1,39 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-11-21T04:46:17.673Z",
+    "generatedAt": "2026-11-24T14:27:33.603Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
   "undeclared": [
+    {
+      "subject": "data/admin-stats",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "origin.builtBy",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "record-absent"
+    },
     {
       "subject": "data/admin1-world",
       "facets": [
@@ -1499,6 +1527,18 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "data/logistics-network",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "data/maddison",
       "facets": [
         "origin.publisher",
@@ -2335,6 +2375,178 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "data/transit-feed-catalogue",
+      "facets": [
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-fr-grenoble",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-fr-montpellier",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-fr-nantes",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-fr-nice",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-fr-rennes",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-fr-strasbourg",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-fr-toulouse",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-jp-toyama-bus",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-lu",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-mc",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-no-oslo",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-no-stavanger",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-no-trondheim",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "data/unga-votes/",
       "facets": [
         "describes.period",
@@ -2720,6 +2932,30 @@
     {
       "subject": "data/world-graph-lng",
       "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-admin-stats.mjs → data/admin-stats.json.gz",
+      "facets": [
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
         "describes.period",
         "describes.extent",
         "describes.method",
@@ -4222,6 +4458,253 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-fr-grenoble.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-fr-montpellier.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-fr-nantes.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-fr-nice.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-fr-rennes.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-fr-strasbourg.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-fr-toulouse.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-jp-toyama-bus.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-lu.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-mc.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-no-oslo.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-no-stavanger.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-no-trondheim.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-unga-votes.mjs → data/unga-votes/*.json",
       "facets": [
         "describes.completeness",
@@ -4828,6 +5311,18 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/logistics/build.mjs → data/logistics-network.json",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/offline-sources.mjs → data/offline-sources.json",
       "facets": [
         "origin.retrievedAt",
@@ -4890,6 +5385,25 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/transit-discover.mjs → data/transit-feed-catalogue.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/upstream-change.mjs → data/upstream-fingerprints.json",
       "facets": [
         "origin.url",
@@ -4927,8 +5441,8 @@
   "shardsWithoutIndex": [],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 228,
-    "undeclaredFacets": 3525,
+    "undeclared": 260,
+    "undeclaredFacets": 3847,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 0,
     "unreadableDeclaration": 0

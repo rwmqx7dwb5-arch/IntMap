@@ -1259,6 +1259,22 @@ export function makeGisAtlas(core) {
         return r.ok === false ? r : Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(a.ref) + '</b> — ' + r.returned + (r.matched != null ? ' / ' + r.matched : '') + (r.continues ? ' (+)' : '') + '<br>'
           + r.items.map((x) => esc(x.id) + ' · ' + esc(String(x.datetime)) + (x.gsd != null ? ' · ' + esc(String(x.gsd)) + ' m' : '') + (x.cloud != null ? ' · cloud ' + esc(String(x.cloud)) + '%' : '')).join('<br>') + '</div>' });
       }
+      if (act === 'scenes') {
+        const r = give(await M.scenes({ bbox: win, time: a.time, modality: a.modality, maxCloud: a.maxCloud, catalogs: a.catalogs, perModality: a.perModality, limit: a.limit, signal: a.signal || null }));
+        if (r.ok === false) return r;
+        const silent = r.catalogs.filter((c) => !c.answered);
+        const lic = (x) => esc(x.license == null ? L('licence not stated', 'ライセンス記載なし') : x.license);
+        const kinds = Object.keys(r.result).map((k) => {
+          const m = r.result[k];
+          return '<div class="atlas-gis-detail"><b>' + esc(k) + '</b> — ' + m.found + (m.periodApplied ? '' : ' (' + esc(L('period not applied', '期間は適用していません')) + ')') + '<br>'
+            + (m.found ? m.scenes.slice(0, 8).map((x) => '<code>' + esc(x.collection) + '</code> ' + esc(x.id) + ' · ' + esc(String(x.datetime)) + (x.cloud != null ? ' · cloud ' + esc(String(x.cloud)) + '%' : '') + (x.gsd != null ? ' · ' + esc(String(x.gsd)) + ' m' : '') + (x.sar ? ' · ' + esc([x.sar.mode, (x.sar.polarizations || []).join('+')].filter(Boolean).join(' ')) : '') + ' · ' + lic(x)).join('<br>')
+              : esc(L('NONE: ', '無し: ')) + esc(m.none.say)) + '</div>';
+        }).join('');
+        return Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(L('Satellite, SAR, LiDAR and elevation data found', '見つかった衛星・SAR・LiDAR・標高データ')) + '</b>' + kinds
+          + (r.excluded.length ? '<div class="atlas-gis-detail">' + esc(L('NOT OFFERED (non-commercial licence): ', '提供しない（非商用ライセンス）: ')) + esc(r.excluded.map((x) => x.ref + ' (' + x.license + ')').join(', ')) + '</div>' : '')
+          + (silent.length ? '<div class="atlas-gis-detail">' + esc(L('NOT ANSWERED (this is not "nothing there"): ', '応答なし（「無かった」ではありません）: ')) + esc(silent.map((c) => c.id + ' (' + c.why + ')').join(', ')) + '</div>' : '')
+          + '<div class="atlas-gis-next">' + esc(r.note) + '</div></div>' });
+      }
       if (act === 'acquire') {
         const r = give(await M.acquire(a.ref, { bbox: win, time: a.time, width: a.width, height: a.height, limit: a.limit, band: a.band, asset: a.asset, signal: a.signal || null }));
         if (r.ok === false) return r;
@@ -1270,10 +1286,56 @@ export function makeGisAtlas(core) {
       return fail('bad-param', { param: 'action', actions: ACTS });
     }
 
+    /* ══ (overture-maps) THE WORLD'S BUILDINGS, PLACES, ROADS AND BORDERS, READ BY WINDOW ═════════════
+       js/gis-overture.js reads Overture Maps' GeoParquet release by the window the planner names — the files
+       whose stated extent meets it, the row groups whose statistics meet it, the columns the conditions need —
+       and registers the rows as an ordinary dataset (the input of the next step). ⚠ NOTHING IS JUDGED HERE:
+       the module's refusals travel back by name, and the three claims a count cannot tell apart (this release
+       was read for the window / a row's box meets the window / this is everything that exists) stay separate
+       in the answer — the third is always "unproven". A licence is the verbatim set the rows state. */
+    async function overture(action) {
+      const a = action || {};
+      let M = null;
+      try { M = (await import('./gis-overture.js')).makeGisOverture({ data: data, sources: SOURCES() }); } catch (_) { M = null; }
+      if (!M) return fail('map-unavailable', { needs: 'IntMapGisOverture' });
+      const act = (a.action == null || a.action === '') ? 'plan' : String(a.action);
+      const ACTS = M.actions();
+      if (ACTS.indexOf(act) < 0) return fail('bad-param', { param: 'action', actions: ACTS });
+      const win = (a.bounds != null) ? a.bounds : a.bbox;
+      const give = (r) => (r && r.ok === false) ? fail(r.why, r.detail || null) : r;
+      const ask = { theme: a.theme, type: a.type, bbox: win, where: a.where, columns: a.columns, limit: a.limit, version: a.release, signal: a.signal || null };
+      if (act === 'release') {
+        const r = give(await M.release({ version: a.release, signal: a.signal || null }));
+        return r.ok === false ? r : Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>Overture Maps</b> · ' + esc(r.version) + ' (' + esc(r.asOf) + ')<div class="atlas-gis-detail">'
+          + esc(L('releases: ', 'リリース: ')) + esc(r.releases.join(', ')) + '</div></div>' });
+      }
+      if (act === 'themes') {
+        const r = give(await M.themes({ version: a.release, signal: a.signal || null }));
+        return r.ok === false ? r : Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>Overture ' + esc(r.release.version) + '</b><br>'
+          + r.themes.map((t) => esc(t.theme) + ': ' + esc(t.types.map((x) => x.type).join(', '))).join('<br>') + '</div>' });
+      }
+      if (act === 'plan') {
+        const r = give(await M.plan(ask));
+        return r.ok === false ? r : Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(r.theme + '/' + r.type) + '</b> · ' + esc(r.release.version) + ' — '
+          + r.files.length + ' / ' + r.filesTotal + ' ' + esc(L('files meet the window', 'ファイルが窓に掛かります')) + '</div>' });
+      }
+      const r0 = (act === 'acquire') ? give(await M.acquire(Object.assign({}, ask, { title: a.title }))) : give(await M.query(ask));
+      if (r0.ok === false) return r0;
+      const rd = (act === 'acquire') ? r0.result : { count: r0.count, read: r0.read, release: r0.release.version, licences: r0.licences };
+      const head = '<div class="atlas-gis-result"><b>Overture ' + esc(rd.release) + '</b> — ' + rd.count + ' ' + esc(L('rows', '行'));
+      const tail = '<div class="atlas-gis-detail">' + esc(L('read: ', '読み取り: ')) + esc(rd.read.rowGroups.read + '/' + rd.read.rowGroups.total + ' row groups · ' + Math.round(rd.read.bytes / 1e6) + ' MB · ' + Math.round(rd.read.ms / 100) / 10 + ' s')
+        + '<br>' + esc(L('licence stated by the rows: ', '行が述べているライセンス: ')) + esc(rd.licences.length ? rd.licences.join('; ') : L('none stated', '記載なし')) + '</div></div>';
+      if (act === 'acquire') return { ok: true, dataset: r0.dataset ? datasetRow(r0.dataset) : { id: r0.id }, id: r0.id, coverage: r0.coverage, result: rd, html: head + ' → <code>' + esc(r0.id) + '</code>' + tail };
+      return { ok: true, count: r0.count, read: r0.read, licences: r0.licences, worldCompleteness: r0.worldCompleteness, windowTest: r0.windowTest,
+        sample: r0.features.slice(0, 10).map((f) => f.properties), html: head + tail };
+    }
+
     const API = {
       catalogue, run, draw, acquire: acquireOnly,
       /* (data-supply) 世界のカタログの発見・検査（読むのは url: / ogc: / stac: の入力） */
       remote,
+      /* (overture-maps) Overture Maps の窓単位の読み取り（release / themes / plan / query / acquire） */
+      overture,
       /* the file a reader takes away (js/gis-export.js's formats, not a list kept here) */
       export: exportDataset,
       /* (#R819) 供給元の能力——申告は describe() の `query.capabilities`、実測はこの扉。 */

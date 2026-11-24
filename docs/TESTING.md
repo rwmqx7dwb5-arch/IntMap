@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**177 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
+**178 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
 by re-measuring two deep entries that stood high — the ledger row `2026-10-08 atlas-product` in `scripts/test-budget.mjs` —
 paid for the four product specs of 2026-10-08: hist-product 8, mobile-product 26, live-news-product 8, sales-pro-audiences 15;
 the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); and
@@ -111,7 +111,7 @@ the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); a
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **172 spec files** — is the whole suite minus core
+**deep** tier — **173 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -1069,7 +1069,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **172 spec files** against core's 5 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **173 spec files** against core's 5 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -1420,6 +1420,12 @@ secrets exist, and uploads `atlas-eval-offline` (JSON + Markdown; the Markdown i
   capability's rank is recorded, or «not reached». ⚠ Lexical only (the meaning search is a network call) and
   the model writes its own queries — so this is **not** a measure of the answers, and every place it is shown
   says so. Measured when it was added (2026-10-03): 34 of 157 needed capabilities, 2 of 74 questions whole.
+* **deliverables** (`scripts/atlas-eval/deliverables.mjs`, series: `scripts/atlas-completion-rate.mjs`) — the share of the
+  things a question asked for (a `mapState`, or `deliverables:[{kind:'result',…}]`) that existed in the finished record,
+  apart from what the turn said (`completion`). Three answers: present / absent / unobserved; the rate is over observed
+  turns, and a turn that said complete with a deliverable absent is listed as `falseCompletion`. One JSON row per run is
+  appended to a history file (`--history`); nothing gates on it. `scripts/atlas-prompt-weight.mjs` is the companion
+  measurement for what each turn sends before the reader speaks (tool definitions, promoted tools, cache share).
 
 `scripts/build-service-status.mjs` reads the newest `atlas-eval-offline` into `atlasEval.offline` (counts only);
 the live report is found by its own name (`atlas-eval-report`), so the offline artifact cannot make a run that
@@ -2079,9 +2085,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 136,880 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 136,884 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 136,880 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 136,884 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -2984,6 +2990,7 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 | `gis-voronoi-checks` | 8 | 最寄り圏が**窓を隙間なく分ける**こと（面積の和と窓の相対差 < 10⁻⁹——境界を両側が別々に描くと隙間が出る）／無作為な点が**総当たりで求めた最寄りの地点**の圏にあること（許すのは §2.9 の描画許容の帯だけ）／いちばん遠い場所が **0.05° の格子の総当たりより遠く**、その点の最寄り距離そのものであり、上界が述べた許容に収まること／全球・極・日付変更線・地点 1〜4・赤道上の 30 地点・**共円だらけの経緯度格子**に別の枝が要らないこと／同じ位置の 2 行・MultiPoint・拒否・同じ入力で同じバイト・版の台帳と組み込み・Atlas の案内文／**結合に失敗した行・作れなかった圏があれば上界を null にし記録を partial にする**こと（直す前のファイルで赤）。⚠ 参照は検査の中の総当たりで、カーネルの近傍集合に訊かない |
 | `gis-network-checks` | 13 | **つながりの答えを総当たりと突き合わせる**——媒介は全最短路の数え上げ／最大フローは辺の部分集合の列挙で見つけた最小カット（返したカットは両端を切り容量の和が流量）／代替経路は全単純路の列挙／障害の損失は壊れた網の Floyd–Warshall。費用が欠けた辺は長さで代用せず除外して数える。標本は述べて再現する。中止は効く。実データは海底ケーブル網×台湾海峡 |
 | `gis-semantic-layer-checks` | 9 | 述べていない facet が `unstated` のまま（推測で埋めない）／buffer の半径・系譜を通した basis が**導出**されること／**現在の国境で数えた列を過去の期間の形へ結ぶ**と警告／別種の結合キーと重ならない期間／量が禁じる集計と宣言された規則との矛盾／形の悪い宣言は名前つきで拒否／警告は op の結果を変えない／Atlas の扉（`semantics:true` の記述・確認のみ・`strict` の拒否・実行結果に載る警告） |
+| `logistics-network-checks` | 10 | **「港が止まったら」の答えを、鉄道グラフの再計算と突き合わせる**——簡略化で落ちた分岐点を 200 m 内の端点で結び（交差は結ばない）／最寄り k 港の探索を総当たり Dijkstra と照合／実在の 5° セルで「最寄りの港を塞いだ再計算＝第 2 ラベル」／同梱ファイルは外洋港・昇順・有効な添字・ヘッダにモデルを述べる／答え＝最寄りが当該港の拠点で、増分は 2 つの述べられた距離の差 |
 | `gis-runtime-checks` | 12 | 同じ id を使う 2 つのジョブが互いの数を答えないこと——⚠ **2 つの本物の realm**（worker thread）で測る。プロセス内の「別 runtime のつもり」は、この検査自身の帳簿を測ることになる／片方を終えてももう片方が動くこと／解放時に飛んでいた呼びが**必ず決着する**こと／単一 runtime の経路が #R783 のままであること／**`scope-conflict` が守っているものを守り続ける**こと |
 
 ### `tests/drawing-tools-and-objects-checks.test.mjs` (#R782)
@@ -3597,7 +3604,7 @@ rule of this shape:
 What it still does not read, written down rather than papered over:
 
 - **A bare English numeral that attaches to nothing.** `docs/SECURITY-ARCHITECTURE.md` §5 opens
-  "There are twenty-six Edge Functions, and this table used to list two." A statement of how many
+  "There are twenty-eight Edge Functions, and this table used to list two." A statement of how many
   there are and a sentence of the document's own history sit in **one sentence**, and nothing
   structural separates them. It was tried at section scope and at paragraph scope and measured:
   widening far enough to catch the first turns the second into a failure. The counted Japanese
@@ -5067,11 +5074,19 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 
 ### `tests/migration-order-guard-checks.test.mjs` (migration-order-guard)
 
-5 本。**変更が足した migration は base の最新より後に並ぶ**こと（`check:static` の規則 `migration-order`、判定は
+5 本。**変更が足した migration は base の最新より後に並ぶ**こと（門は `npm run check:migrationorder`、判定は
 `scripts/migration-order.mjs` の純関数）。実測した事例（base の最新 20261002100000 に対して 20261002090000 を足す）が
 名指されること、後の時刻と base 自身のファイルは通ること、同じ時刻も拒むこと、このリポジトリの migration が
-全部 14 桁の版を持ち重複しないこと。base は `IM_DIFF_BASE`、PR では `HEAD^1`、手元では `origin/main` で、
-読めなければ測れなかったと警告する（本番の db push が最後の柵として残る）。
+全部 14 桁の版を持ち重複しないこと。
+
+### `npm run check:migrationorder` — 並行 PR が古い時刻の migration を後から入れない（`tests/migration-order-checks.test.mjs`）
+
+PR が `supabase/migrations/` に**新規に足す** migration の版（ファイル名の 14 桁）が、base（`origin/main`）の最新以下なら赤
+（同時刻も赤）。base に既に在る migration の**改名・削除**、同じ版を名乗る 2 本も赤にして述べる。赤のときは付け替え先を
+`git mv <旧> <新>` で出力する（現在時刻と base の最新の遅いほうの後ろ、複数なら順序を保つ）。base は `MIGRATION_BASE_REF`、
+PR では `GITHUB_BASE_REF`、手元では `main`。CI のチェックアウトは深さ 1 なので base の先端をその場で fetch し、
+**取れなければ警告でなく赤**（かつての `check:static` の規則は `HEAD^1` を読めず警告で通っていた）。main への push は
+比べる先が無いので通す。⚠ 残る穴: PR が緑のあとに別の PR が新しい版で先に入る競合は、その PR の CI を再実行するまで見えない。
 
 ### `tests/generated-file-merge-driver-checks.test.mjs` (generated-file-merge-driver)
 
