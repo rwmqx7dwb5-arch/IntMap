@@ -67,3 +67,5 @@ main を取り込み直した後の再測定（同じ 3 行、同じ理由）: `
 8 度目（main の再取り込み後・CI が測った超過）: `async.raw` 14569.8→14667.9 kB・`atlas-cap-runs` 952.1→963.8 kB・`atlas-console` 1139.2→1145.5 kB を `perf-budget.mjs --update` が上げた（ローカル再測定が CI の値と一致）。増分の大半は main が足した能力と画面で、専門モデル側は §5 のとおり。
 
 9 度目（main の再取り込み後）: `async.raw` 14680.9→14788.0 kB・`async.gzip` 4956.6→4999.3 kB・`atlas-cap-runs` 989.3→1007.5 kB・dist.assets 22068.6→22234.8 kB を `perf-budget.mjs --update` が上げた。増分の大半は main が足した能力（能力表が 273 行）で、専門モデル側は §5 のとおり。
+
+10 度目（CI が測った超過）: `atlas-cap-runs` 1001.0→1013.4 kB・`atlas-console` 1159.0→1166.7 kB を `perf-budget.mjs --update` が上げた（ローカル再測定が CI の値と一致）。増分は main が足した能力と画面。専門モデル側は §5 のとおり。
