@@ -44,6 +44,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { tilesetBudget } from './tileset-budget.js';
 
 window.IntMapCesiumEngine=(function(){
   'use strict';
@@ -705,13 +706,37 @@ window.IntMapCesiumEngine=(function(){
       if(this._poseUnchanged()) this._poseCache.hpr=out; else this._rememberPose(null,out);
       return out;
     }
+    /* ══ THE EYE, IN THE SCENE MODE THE CAMERA IS IN ════════════════════════════════════════
+       Everything below was written against SCENE3D, where `positionWC` is an ECEF point and the east-north-up
+       frame at the look-at point turns it into the orbit (range, pitch, heading). The flat map is COLUMBUS_VIEW,
+       where `positionWC` is the scene's own axes — (height, easting, northing) of the map projection — so that
+       same inversion read the eye as a point in space and answered nonsense. MEASURED on the built app:
+       jumpTo({center:[30,50], zoom:5, bearing:90, pitch:40}) left Cesium's own camera at heading 90°, pitch −50°
+       (= orbit pitch 40°), and getCamera() reported bearing −146°, pitch 106° (an upside-down map), zoom 4.59.
+       The offset lookAt() puts the eye at is, in a plane scene, simply the plane vector from the look-at point to
+       the eye, so that is what is read back — one question asked in the frame the scene is actually in. */
+    _isPlane(){ try{ return this._scene.mode!==Cesium.SceneMode.SCENE3D; }catch(_){ return false; } }
+    _eyeOffsetEnu(c,target,inv){
+      if(this._isPlane()){
+        const pr=this._scene.mapProjection.project(new Cesium.Cartographic(c.longitude,c.latitude,c.height||0));
+        const p=this._camera.position;
+        return new Cesium.Cartesian3(p.x-pr.x,p.y-pr.y,p.z-pr.z);
+      }
+      return Cesium.Matrix4.multiplyByPoint(inv,this._camera.positionWC,new Cesium.Cartesian3());
+    }
+    /* the eye as an ECEF point whatever the scene mode (`positionCartographic` is mode-aware, `positionWC` is not) */
+    _eyeEcef(){
+      if(!this._isPlane()) return Cesium.Cartesian3.clone(this._camera.positionWC,new Cesium.Cartesian3());
+      const c=this._camera.positionCartographic;
+      return Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height);
+    }
     _hprRaw(){
       try{
         const c=this._centreCarto();
         const target=Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height||0);
         const enu=Cesium.Transforms.eastNorthUpToFixedFrame(target);
         const inv=Cesium.Matrix4.inverseTransformation(enu,new Cesium.Matrix4());
-        const off=Cesium.Matrix4.multiplyByPoint(inv,this._camera.positionWC,new Cesium.Cartesian3());
+        const off=this._eyeOffsetEnu(c,target,inv);
         const range=Math.hypot(off.x,off.y,off.z);
         if(!(range>0)) return null;
         const pitch=Math.acos(Math.max(-1,Math.min(1,off.z/range)))/D2R;
@@ -815,6 +840,36 @@ window.IntMapCesiumEngine=(function(){
         }
       };
       const fire=()=>{ this._afterMove(); };
+      if(!(opts&&opts.silent)) this._planeTweenTok=(this._planeTweenTok||0)+1;   /* a newer command ends a running flat-map ease */
+      if(animate&&animate.duration>0&&this._isPlane()){
+        /* ══ THE FLAT MAP'S EASE IS OURS, NOT `flyTo`'s ═══════════════════════════════════════
+           `Camera.flyTo` reads its destination in the world frame of a 3D scene. In COLUMBUS_VIEW the same
+           (ECEF) destination lands somewhere else: measured, easeTo({center:[139.7,35.7], zoom:8, bearing:-30,
+           pitch:20}) from (−70,−20) arrived at (110,−9) with the old bearing — the opposite side of the world.
+           The instant solve is exact in this scene (jumpTo reads back to 1e-9), so the ease is that solve
+           stepped through time: centre by the short way round, bearing by the short way, zoom and pitch
+           linear, the same cubic in-out the globe's flight uses. */
+        const tok=this._planeTweenTok, t0=performance.now(), dur=Math.max(100,animate.duration);
+        const from=now, dLng=wrapLng(c.lng-from.center.lng), dLat=c.lat-from.center.lat;
+        let dB=(((bearing-from.bearing)%360)+540)%360-180;
+        const e=(t)=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+        this.fire('movestart',{}); this.fire('zoomstart',{});
+        const step=()=>{
+          if(tok!==this._planeTweenTok){ this.fire('moveend',{}); this.fire('zoomend',{}); return; }
+          const k=Math.min(1,(performance.now()-t0)/dur), f=e(k);
+          if(k>=1){
+            this._planeTweenTok++;
+            this.setCamera({ center:{lng:c.lng,lat:c.lat}, zoom, bearing, pitch },null);
+            this.fire('zoomend',{}); return;
+          }
+          this.setCamera({ center:{ lng:wrapLng(from.center.lng+dLng*f), lat:from.center.lat+dLat*f },
+                           zoom:from.zoom+(zoom-from.zoom)*f, bearing:from.bearing+dB*f,
+                           pitch:from.pitch+(pitch-from.pitch)*f },null,{silent:true});
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+        return;
+      }
       if(animate&&animate.duration>0){
         /* ══ (#R182) "SAME ARITHMETIC, TWO CALLERS" WAS THE INTENTION, NOT THE CODE ═══════
            This branch used to hand `flyTo` the ORBIT angles — `orientation:{heading, pitch}`
@@ -847,7 +902,7 @@ window.IntMapCesiumEngine=(function(){
         const dest=this._readPose();
         this._writePose(keep);
         this.fire('movestart',{}); this.fire('zoomstart',{});
-        this._camera.flyTo({ destination:dest.pos, orientation:{ direction:dest.dir, up:dest.up },
+        this._camera.flyTo({ destination:dest.pos, orientation:this._poseOrientation(dest),
           duration:Math.max(0.1,animate.duration/1000),
           easingFunction:Cesium.EasingFunction.CUBIC_IN_OUT,
           /* …AND LAND ON THE SOLVE, NOT ON THE FLIGHT'S OWN LAST FRAME. `flyTo` converts
@@ -890,12 +945,17 @@ window.IntMapCesiumEngine=(function(){
     /* position + attitude as three world vectors — an orientation form that carries no
        angular convention, and therefore cannot be read back as a different question */
     _readPose(){
+      /* a plane scene has no ECEF direction/up to hand back: its attitude is the camera's own heading/pitch/roll,
+         which setView and flyTo read in the same plane scene (see _eyeOffsetEnu) */
+      if(this._isPlane()){ const c=this._camera;
+        return { pos:this._eyeEcef(), hpr:{ heading:c.heading, pitch:c.pitch, roll:c.roll } }; }
       return { pos:Cesium.Cartesian3.clone(this._camera.positionWC,new Cesium.Cartesian3()),
                dir:Cesium.Cartesian3.clone(this._camera.directionWC,new Cesium.Cartesian3()),
                up:Cesium.Cartesian3.clone(this._camera.upWC,new Cesium.Cartesian3()) };
     }
+    _poseOrientation(p){ return p.hpr?{ heading:p.hpr.heading, pitch:p.hpr.pitch, roll:p.hpr.roll }:{ direction:p.dir, up:p.up }; }
     _writePose(p){
-      try{ this._camera.setView({ destination:p.pos, orientation:{ direction:p.dir, up:p.up } }); }catch(_){}
+      try{ this._camera.setView({ destination:p.pos, orientation:this._poseOrientation(p) }); }catch(_){}
     }
 
     /* ══ (#R181) …AND THE ORBIT CANNOT CARRY THE HEADING WHEN IT IS VERTICAL ═══════════════
@@ -925,7 +985,7 @@ window.IntMapCesiumEngine=(function(){
     _faceHeading(bearing,pitch,range){
       if(!(range*Math.abs(Math.sin(pitch*D2R))<=this._enuNoise(range))) return false;
       try{
-        const nrm=this._scene.globe.ellipsoid.geodeticSurfaceNormal(this._camera.positionWC,new Cesium.Cartesian3());
+        const nrm=this._scene.globe.ellipsoid.geodeticSurfaceNormal(this._eyeEcef(),new Cesium.Cartesian3());
         const s=(Cesium.Cartesian3.dot(this._camera.direction,nrm)<0)?1:-1;
         const want=((bearing%360)+360)%360;
         const have=((Cesium.Math.toDegrees(this._camera.heading)%360)+360)%360;
@@ -1684,6 +1744,7 @@ window.IntMapCesiumEngine=(function(){
       const dispatch=(name,pos)=>{
         const ev=mk(pos);
         this.fire(name,ev);
+        if(name==='click') this._pickBuilding(pos,ev);
         const wanted=this._layerHandlers.filter(h=>h.type===name);
         if(!wanted.length) return;
         const hits=this.queryRenderedFeatures([pos.x,pos.y]);
@@ -2547,7 +2608,8 @@ window.IntMapCesiumEngine=(function(){
     triggerRepaint(){ try{ this._scene.requestRender(); }catch(_){} }
     getCanvas(){ return this._widget.canvas; }
     /* (layer-click-polish) maplibre's `redraw()`: one SYNCHRONOUS frame, for a page whose rAF is stopped (a hidden tab) — postRender fires 'render' inside it */
-    redraw(){ try{ this._scene.render(); }catch(_){} return this; }
+    /* draw NOW, from the document as it is: style changes made this task (setPaint, setLayout) are applied on the next animation frame, so a synchronous draw without this flush would show the previous document — the frame comparison in js/render-witness.js read an unchanged picture for a surface it had just made transparent */
+    redraw(){ try{ if(this._dirty&&this._dirty.size) this._flush(); this._scene.render(); }catch(_){} return this; }
     /* ══ THE FRAME'S OWN COST — the Cesium half of `render.instrumentFrames` / `sceneStats` ═══════
        MapLibre answered these from #R225; this adapter answered nothing, so `?perf=1` on the globe
        fell back to the frame interval (which a throttled tab makes a liar) and said "n/a" for the
@@ -2597,7 +2659,7 @@ window.IntMapCesiumEngine=(function(){
        whose level of detail, culling and memory Cesium already manages (Cesium3DTileset). Pushing
        them through the vector-tile → Entity path (cesium-vector-tiles.js) would throw that away, so
        a tileset is its own primitive, added to scene.primitives, and the style layers never see it.
-       spec: { url, maximumScreenSpaceError?, heightOffset?, cacheBytes?, opacity?, onReady?, onError? }
+       spec: { url, maximumScreenSpaceError?, heightOffset?, heightAnchor?:{lng,lat}, excludeBoxes?, cacheBytes?, opacity?, onReady?, onError? }  (placement: see _placeTileset)
        · maximumScreenSpaceError — the quality/cost knob (Cesium's default is 16; phones get a looser 24
          because the tile count, not the pixel count, is what they run out of).
        · heightOffset — metres added along the local up axis. 0 by default: the engine invents no
@@ -2612,19 +2674,17 @@ window.IntMapCesiumEngine=(function(){
         if(this._tilesets.has(id)) this.removeTileset(id);
         const rec={ ts:null, spec:Object.assign({},spec), visible:true, error:null, gone:false };
         this._tilesets.set(id,rec);
-        const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
+        const bud=tilesetBudget();                    /* js/tileset-budget.js: the device decides, not a phone/desktop switch */
         Cesium.Cesium3DTileset.fromUrl(spec.url,{
-          maximumScreenSpaceError:spec.maximumScreenSpaceError!=null?spec.maximumScreenSpaceError:(mob?24:16),
-          cacheBytes:spec.cacheBytes!=null?spec.cacheBytes:(mob?128:384)*1048576,
-          maximumCacheOverflowBytes:(mob?64:192)*1048576,
+          maximumScreenSpaceError:spec.maximumScreenSpaceError!=null?spec.maximumScreenSpaceError:bud.sse,
+          cacheBytes:spec.cacheBytes!=null?spec.cacheBytes:bud.cacheMiB*1048576,
+          maximumCacheOverflowBytes:bud.overflowMiB*1048576,
           /* a tileset that is not looked at must not keep fetching */
           skipLevelOfDetail:true, dynamicScreenSpaceError:true
         }).then(ts=>{
           if(rec.gone||this._tilesets.get(id)!==rec){ try{ ts.destroy(); }catch(_){} return; }
           rec.ts=ts; ts.show=rec.visible;
-          try{ if(spec.heightOffset){ const c=Cesium.Cartographic.fromCartesian(ts.boundingSphere.center);
-            const a=Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height), b=Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height+spec.heightOffset);
-            ts.modelMatrix=Cesium.Matrix4.fromTranslation(Cesium.Cartesian3.subtract(b,a,new Cesium.Cartesian3())); } }catch(_){}
+          this._placeTileset(rec,{ heightOffset:spec.heightOffset, anchor:spec.heightAnchor, excludeBoxes:spec.excludeBoxes });
           this._scene.primitives.add(ts);
           try{ ts.allTilesLoaded.addEventListener(()=>{ try{ this.fire('tilesetidle',{id}); }catch(_){} }); }catch(_){}
           rec.baseSse=ts.maximumScreenSpaceError;
@@ -2646,7 +2706,7 @@ window.IntMapCesiumEngine=(function(){
        The budget is the per-dataset figure the engine already chose (384 MB desktop / 128 MB phone) applied to the
        SUM. EXPIRES with a measurement that shows a different ceiling. */
     _governTilesets(){
-      const mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent), budget=(mob?128:384)*1048576;
+      const bud=tilesetBudget(), budget=bud.totalMiB*1048576;
       let total=0, n=0; for(const r of this._tilesets.values()) if(r.ts){ total+=r.ts.totalMemoryUsageInBytes||0; n++; }
       /* the per-dataset cache is what EVICTS tiles that are no longer selected. The budget is shared out by PROXIMITY, not
          equally: with hundreds of PLATEAU units around the camera, the ones under the eye should keep their tiles and the
@@ -2659,9 +2719,69 @@ window.IntMapCesiumEngine=(function(){
       if(n){ for(const [id,r] of this._tilesets) if(r.ts){ const share=Math.max(16*1048576,Math.floor(budget*(w.get(id)/sw))); r.ts.cacheBytes=share; r.ts.maximumCacheOverflowBytes=share; } }
       const median=(()=>{ const v=[...w.values()].sort((p,q)=>p-q); return v.length?v[v.length>>1]:0; })();
       /* over budget: every dataset goes coarser, the FAR half faster (1.5x per step against 1.25x) — coarser tiles are smaller. */
-      if(total>budget) for(const [id,r] of this._tilesets){ if(r.ts&&r.baseSse){ const step=w.get(id)<median?1.5:1.25; r.ts.maximumScreenSpaceError=Math.min(r.baseSse*4,r.ts.maximumScreenSpaceError*step); } }
+      if(total>budget) for(const [id,r] of this._tilesets){ if(r.ts&&r.baseSse){ const step=w.get(id)<median?1.5:1.25; r.ts.maximumScreenSpaceError=Math.min(Math.max(r.baseSse*4,bud.maxSse),r.ts.maximumScreenSpaceError*step); } }
       else if(total<budget*0.6) for(const r of this._tilesets.values()){ if(r.ts&&r.baseSse&&r.ts.maximumScreenSpaceError>r.baseSse) r.ts.maximumScreenSpaceError=Math.max(r.baseSse,r.ts.maximumScreenSpaceError/1.25); }
     }
+    /* WHERE A TILESET SITS: its vertical correction and the ground it must leave to a better dataset. Callable again at any
+       time (the camera moved and the local geoid with it). o: { heightOffset?, anchor?:{lng,lat}, excludeBoxes?:[[w,s,e,n]…] }.
+       · heightOffset — metres along the local up at `anchor` (default: the tileset's own centre). A tileset the size of the
+         globe has no usable centre, so a caller that streams one passes the camera's position: the translation is one rigid
+         vector, and over the tens of kilometres on screen its direction differs from the local up by well under a metre.
+       · excludeBoxes — lng/lat boxes inside which this tileset draws nothing (Cesium clipping polygons), so a worldwide
+         dataset does not paint over a city that has a better one. Needs WebGL2; where unsupported it is ignored and false is
+         returned for it, so the caller can decline to open the worldwide set rather than double-draw. */
+    _placeTileset(rec,o){
+      const ts=rec&&rec.ts; if(!ts) return false; let clipOk=true;
+      try{
+        if(o.heightOffset!=null){
+          let lng,lat,h=0;
+          if(o.anchor&&isFinite(o.anchor.lng)&&isFinite(o.anchor.lat)){ lng=o.anchor.lng*D2R; lat=o.anchor.lat*D2R; }
+          else{ const c=Cesium.Cartographic.fromCartesian(ts.boundingSphere.center); lng=c.longitude; lat=c.latitude; h=c.height; }
+          if(o.heightOffset){ const a=Cesium.Cartesian3.fromRadians(lng,lat,h), b=Cesium.Cartesian3.fromRadians(lng,lat,h+o.heightOffset);
+            ts.modelMatrix=Cesium.Matrix4.fromTranslation(Cesium.Cartesian3.subtract(b,a,new Cesium.Cartesian3())); }
+          else ts.modelMatrix=Cesium.Matrix4.IDENTITY;
+        }
+      }catch(_){}
+      try{
+        if(o.excludeBoxes){
+          if(o.excludeBoxes.length&&!(Cesium.ClippingPolygonCollection&&Cesium.ClippingPolygonCollection.isSupported(this._scene))) clipOk=false;
+          else if(!o.excludeBoxes.length){ if(ts.clippingPolygons) ts.clippingPolygons=undefined; }
+          else{
+            const polys=o.excludeBoxes.map(([w,s,e,n])=>new Cesium.ClippingPolygon({ positions:Cesium.Cartesian3.fromDegreesArray([w,s,e,s,e,n,w,n]) }));
+            ts.clippingPolygons=new Cesium.ClippingPolygonCollection({ polygons:polys });
+          }
+        }
+      }catch(_){ clipOk=false; }
+      try{ this._scene.requestRender(); }catch(_){}
+      return clipOk;
+    }
+    placeTileset(id,o){ const rec=this._tilesets.get(id); return rec&&o?this._placeTileset(rec,o):false; }
+    /* ══ A CLICK ON A BUILDING OF AN OPEN 3D TILESET → 'buildingpick' {tilesetId, properties, lngLat, point} ═══════════
+       Cesium's own pick answers with a Cesium3DTileFeature for tiles that carry per-feature metadata (3D Tiles 1.1
+       EXT_structural_metadata, or a b3dm batch table) — which all three datasets do (js/building-attrs.js lists the names, read
+       off real tiles). The properties are handed over as a plain object so the card (js/building-info.js) never touches Cesium;
+       a click on anything else fires 'buildingpickclear'. The picked building is tinted until the next pick, then put back. */
+    _pickBuilding(pos,ev){
+      let hit=null;
+      try{
+        /* drillPick, not pick: the topmost thing under the finger is often a place marker or a label, and the building is behind it */
+        const pks=this._scene.drillPick(new Cesium.Cartesian2(pos.x,pos.y),12)||[];
+        const pk=pks.find(x=>x&&typeof x.getProperty==='function'&&x.tileset&&typeof x.getPropertyIds==='function');
+        if(pk){
+          let tid=null; for(const [id,r] of this._tilesets){ if(r.ts===pk.tileset){ tid=id; break; } }
+          if(tid){ const props={}; const ids=pk.getPropertyIds()||[];
+            for(let i=0;i<ids.length&&i<300;i++){ try{ const v=pk.getProperty(ids[i]); if(v!==undefined&&typeof v!=='function') props[ids[i]]=v; }catch(_){} }
+            hit={ tilesetId:tid, properties:props, lngLat:ev.lngLat, point:ev.point, feature:pk }; }
+        }
+      }catch(_){}
+      this._unpaintBuilding();
+      if(!hit){ try{ this.fire('buildingpickclear',{}); }catch(_){} return; }
+      try{ const f=hit.feature; this._bldgSel={ feature:f, color:Cesium.Color.clone(f.color) }; f.color=Cesium.Color.fromCssColorString('#ffd60a').withAlpha(0.9); this._scene.requestRender(); }catch(_){}
+      const out={ tilesetId:hit.tilesetId, properties:hit.properties, lngLat:hit.lngLat, point:hit.point };
+      try{ this.fire('buildingpick',out); }catch(_){}
+    }
+    _unpaintBuilding(){ const s=this._bldgSel; this._bldgSel=null; if(!s) return; try{ s.feature.color=s.color; this._scene.requestRender(); }catch(_){} }
+    clearBuildingPick(){ this._unpaintBuilding(); }
     removeTileset(id){
       const rec=this._tilesets.get(id); if(!rec) return false;
       rec.gone=true; this._tilesets.delete(id);
@@ -2966,9 +3086,9 @@ window.IntMapCesiumEngine=(function(){
          before there was an adapter to honour it. */
       eyePosition(){ const v=V(); if(!v) return null;
         try{
-          const c=Cesium.Cartographic.fromCartesian(v._camera.positionWC);
+          const c=Cesium.Cartographic.fromCartesian(v._eyeEcef());
           const t=v._centreCarto();
-          const d=Cesium.Cartesian3.distance(v._camera.positionWC,
+          const d=Cesium.Cartesian3.distance(v._eyeEcef(),
                     Cesium.Cartesian3.fromRadians(t.longitude,t.latitude,t.height||0));
           return { lng:Cesium.Math.toDegrees(c.longitude), lat:Cesium.Math.toDegrees(c.latitude),
                    alt:c.height, distance:d };
@@ -3088,6 +3208,8 @@ window.IntMapCesiumEngine=(function(){
       addTileset(id,s){ const v=V(); return v&&v.addTileset?v.addTileset(id,s):false; },
       removeTileset(id){ const v=V(); return v&&v.removeTileset?v.removeTileset(id):false; },
       setTilesetVisible(id,on){ const v=V(); return v&&v.setTilesetVisible?v.setTilesetVisible(id,on):false; },
+      placeTileset(id,o){ const v=V(); return v&&v.placeTileset?v.placeTileset(id,o):false; },
+      clearBuildingPick(){ const v=V(); return v&&v.clearBuildingPick?v.clearBuildingPick():false; },
       hasTileset(id){ const v=V(); return v&&v.hasTileset?v.hasTileset(id):false; },
       tilesetInfo(id){ const v=V(); return v&&v.tilesetInfo?v.tilesetInfo(id):null; },
       instrumentFrames(cb){ const v=V(); return v&&v.instrumentFrames?v.instrumentFrames(cb):false; },

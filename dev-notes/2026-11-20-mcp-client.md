@@ -1,0 +1,52 @@
+---
+title: Atlas は IntMap 独自の能力しか使えなかった——外部 MCP サーバのツールを同じ道で発見・実行できる汎用クライアントを足した
+date: 2026-11-20
+newsen: Atlas can now use tools from external MCP servers you register, discovered and run the same way as its own capabilities. Their output is treated as untrusted data, never as instructions.
+newsjp: Atlasが、登録した外部MCPサーバーのツールを、自身の能力と同じ流れで見つけて実行できるようになりました。外部の出力は命令ではなく、信頼できないデータとして扱われます。
+---
+
+〈依頼〉 外部監査（2026-11-20）の指摘のうち「汎用 MCP クライアントが無い」を直す。要件: 利用者が MCP サーバを登録でき、そのツールを `find_capability` で発見・スキーマ取得・実行し、結果は `read_result` で続きを読める。外部の出力と説明は命令として扱わない。外部通信・書き込みの性質は別属性。CSP/CORS の現実を測り、動かない経路は理由を返す。
+
+## 0. 測った
+
+- 登録簿の列 11 `ingests: 'external'`・列 7 `risk`・列 8 `confirm` と、実行器 4b の確認（`explicit` は外部内容が前にあるときだけ、`always` は毎回）は**既にあった**。MCP はそこに乗せればよく、新しい確認機構は要らない。
+- CSP（`index.html`）は `connect-src 'self' https: wss: data: blob:`。`http://localhost` を含む `http:` はページ自身が遮断する。
+- 既存の `fetch-relay` は GET 専用・ホスト一覧つきで、MCP（POST・利用者が指名するサーバ）には使えない。
+- `find_capability` の結果は `describe()` の 1 か所で作られ、ツール結果は `mechanical()` の 1 か所で作られる。`read_result` は結果の長さで自動的に効くので、MCP 側に切り詰めの仕組みは要らない。
+
+## 1. 直したこと
+
+- `js/atlas-mcp-client.js`（新）: DOM にも Atlas カーネルにも触れない `createMcpClient`。Streamable HTTP（JSON 応答・SSE 応答・`Mcp-Session-Id`）、`tools/list` の巡回、`tools/call`、`inputSchema` の実行前検査、失敗理由（`blocked_by_csp` / `network_or_cors` / `session_header_not_exposed` / `unsupported_transport` / `auth_required` / `relay_*` / `timeout` …）。直接が失敗したら 1 回だけリレーへ。外部の文字列は制御文字・向き上書き文字を除いて長さを抑え、`untrusted` で渡し、結果は囲いで包む。
+- `js/atlas-cap-mcp.js`（新）: `mcp.servers` / `mcp.connect`（always）/ `mcp.call`（読むだけと**利用者が宣言した**ツール・explicit）/ `mcp.act`（その他・always）。いずれも risk `external`、実行系は ingests `external`。効果の属性は `effectsOf` の 1 つのオブジェクト（`network` は常に external、`writes` は利用者の宣言でだけ false）。サーバの `readOnlyHint` は信用しない。
+- `supabase/functions/mcp-relay/` と `_shared/mcp-relay-policy.js`（新）: ログイン必須・https・公開 DNS 名（解決結果も公開のみ）・JSON-RPC 1 件で method は 5 つ・ヘッダ 5 つ・リダイレクトなし・サイズと時間の上限・呼び出し元の上限。開いたプロキシにしないための絞りの正本は policy 1 か所。
+- 既存の編集は最小: `atlas-toolsurface.js`（`find()` が登録サーバのツールを `mcpTools` に足す・`mechanical()` が `external` を運ぶ）、`atlas-console.js`（`external` 依存を 1 行）、`atlas-results.js`（確認文 2 行）、生成物（`atlas-capabilities.js`・`atlas-caps-modules.js`）。
+
+## 2. 検証
+
+- `tests/mcp-client-checks.test.mjs`（11 件）: モック MCP サーバ（JSON・SSE・CORS 拒否・401・旧 transport・セッション）で、発見・効果の宣言・囲い・引数検査・セッション id・失敗理由・リレー経由・登録の上限・リレー方針・登録簿の列を確かめる。⑪ は `find_capability` → `run_capability('mcp.call')` を実際のツール面で通す。
+- ⚠ **本番での実 MCP サーバとの接続は測っていない**（このラウンドは外部サーバの資格情報を持たない）。`mcp-relay` は deploy 後に未ログインで 401 になることまでを確かめる対象で、実サーバ越しの往復は次に実在のサーバを登録した人が最初の観測になる。
+
+## 3. 残したもの
+
+設定画面（登録は Atlas 経由）、OAuth、resources/prompts/sampling、旧 HTTP+SSE、SSE の途中経過の表示、トークンの暗号化保存（いまは `localStorage` に平文）。詳細は `docs/architecture/05-ai.md` の同名の節。
+
+- `globalThis.SUPABASE_URL` を 1 か所（`pageClient`）で読む——リレーの URL を作る既存の呼び手（community-class-door など）と同じ読み方で、global-surface の基準線を 1 増やした。
+
+## 4. 上げた予算の理由（perf）
+
+`async.gzip` 4745.6→4773.7 kB・`atlas-cap-runs` 884.2→894.9 kB・`atlas-console` 1051.8→1057.4 kB・`dist.assets` 21446.3→21579.3 kB。MCP の能力モジュール（`atlas-cap-mcp.js`）が能力の遅延チャンクに入り、`atlas-console` に外部ツール探索の依存 1 行が入った。クライアント本体（`atlas-mcp-client`、約 14 kB）は独立した遅延チャンクで、サーバが 1 つも登録されていない読者には読み込まれない（起動時リクエストは 10 のまま）。
+
+## 予算の天井を上げた理由（perf-baseline・2026-11-21）
+MCP クライアントが 4 能力（`mcp.servers`・`mcp.connect`・`mcp.call`・`mcp.act`）とその schema・確認文言を足したため、遅延 chunk の `atlas-cap-runs` が 903.4→917.0 kB、async gzip が 4807.7→4840.4 kB、dist.assets が 21686.9→21801.9 kB になった（`node scripts/perf-budget.mjs --update`）。クライアント本体は能力を呼んだときだけ動的 import される遅延 chunk で、起動時に読む量は増えていない。失効条件: 能力の統合・縮小で下がったら main の CI が `--tighten` で下げる。
+
+## perf 天井の引き上げ(origin/main 取り込み後の再計測)
+
+汎用 MCP クライアントと、main に入った能力(264 行)が遅延 chunk `atlas-cap-runs` に集まり、async.raw / async.gzip / atlas-cap-runs の 3 行が天井を超えた(実測 async.raw 14498 kB・atlas-cap-runs 933.7 kB。CI の前回実測は 14381.8 kB・917.0 kB)。起動時に読む chunk ではなく、能力が呼ばれたときだけ読まれる遅延 chunk の増加なので、`perf-budget.mjs --update` で超過行だけを上げた。失効条件: 能力表が組み替わり atlas-cap-runs が分割されたとき。
+
+追補: 同じ再計測で、遅延 chunk `atlas-console`(1105.8→1121.5 kB)と `dist.assets`(21796.5→21935.2 kB)も、MCP クライアントの接続画面と能力の追加ぶんだけ上げた。いずれも能力の実行時にだけ読まれる遅延 chunk で、起動時の費用は増えていない。
+
+（2026-11-24 の main 取り込み後、CI の Gates 2/3 で check:perf が天井を超えた: atlas-cap-runs 938.6 kB 超（970,100 B へ）、dist.assets 21923.7 kB 超（22,569,300 B へ）。CI の測定値に合わせて上げた。MCP の能力（mcp.connect / mcp.act）の追加ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
+
+（2026-11-24 の続き: main に #1313 などが入ったあとの CI の Gates 2/3 で、async.raw 14569.8→14667.6 kB（15,019,700 B へ）、async.gzip 4918.1→4953.6 kB（5,072,500 B へ）、atlas-cap-runs 952.1→959.4 kB（982,500 B へ）、atlas-console 1139.2→1146.7 kB（1,174,300 B へ）、gis-core 697.3→701.2 kB（718,100 B へ）が天井を超えた。CI の測定値に合わせて上げた。gis-core は MCP の変更ではなく main 側の増分で、main の天井が測定より先に上がっていないために、この PR が引き受けた。）
+
+（2026-11-24 の続き: main に web.session(#1337)などが入ったあとの CI の Gates 2/3 で、atlas-cap-runs 981.3→989.2 kB（1,013,000 B へ）、atlas-console 1152.4→1158.9 kB（1,186,800 B へ）が天井を超えた。CI の測定値に合わせて上げた。main に入った web.session の能力ぶんと、この PR の MCP の能力ぶんの合計で、能力を戻せば下がる。）

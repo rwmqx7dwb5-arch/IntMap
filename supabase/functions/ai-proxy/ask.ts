@@ -31,7 +31,7 @@ import {
   cors, json, GLOSS_PLAN_LIMITS, GLOSS_LANE, MAX_GLOSS_PROMPT, TURN_MAX_CALLS, TURN_TTL_S, MAX_TURN_KEY, REPLAY_KEY_OK,
   CEILING, NEWCOMER_CEILING, PROVIDERS, MODEL_ID_OK, MAX_PROMPT, MAX_SYSTEM, MAX_IMAGES, MAX_BODY_BYTES, MAX_IMAGES_BYTES,
   MAX_FILES, MAX_FILE_TEXT, MAX_FILES_TEXT, MAX_DOCS, MAX_DOC_BYTES, MAX_DOCS_BYTES, DOC_MIME,
-  delegationPolicy, delegationModel, turnCostCapMicros,
+  delegationPolicy, delegationModel, delegationModelOptions, delegationModelHint, turnCostCapMicros,
 } from "./config.ts";
 import { normalizeTurn, cacheBasis, sha256Hex } from "./turn.ts";
 import type { TurnReq, TurnItem } from "./turn.ts";
@@ -263,6 +263,7 @@ export async function ask(req: Request): Promise<Response> {
   let fellBackTo = "";
   let attempts = 0;   /* (atlas-turn-observability) provider requests this ONE request made — providerCall calls attempt() before each */
   const meter: Meter & ReturnType<typeof usageMeter> = Object.assign(usageMeter(), {
+    startedAt: Date.now(),   /* the clock every provider request of this reader request shares — providerBudgetMs (_shared/ai-provider.js) */
     attempt() { attempts += 1; },
     fallback(to: string) { fellBackTo = to; },
     ceiling: cohortOf(user.created_at, Date.now()) === NEWCOMER ? NEWCOMER_CEILING : CEILING,
@@ -515,7 +516,13 @@ export async function ask(req: Request): Promise<Response> {
      answers every worker call instead of the model the parent's selection resolves to — including a developer's pick,
      which the tier replaces on a worker (the pick tests the parent's model; the tier is what is being measured on the
      workers). One that is set but unusable is logged and ignored, never run unpriced. Unset: nothing changes. */
-  const tier = parentTurn ? delegationModel((k: string) => Deno.env.get(k) || "") : { model: "", ignored: "" };
+  const tierCfg = parentTurn ? delegationModel((k: string) => Deno.env.get(k) || "") : { model: "", ignored: "" };
+  /* (model-options) …unless Atlas named one of the OFFERED models for THIS piece of work (header x-intmap-model, set by the page from the
+     task's own `model`): the piece's choice wins over the configured tier, because the model that wrote the task knows what the task needs. */
+  const modelOptions = delegationModelOptions((k: string) => Deno.env.get(k) || "", provider);
+  const hint = parentTurn ? delegationModelHint(req.headers.get("x-intmap-model") || "", modelOptions) : { model: "", ignored: "" };
+  const tier = hint.model ? { model: hint.model, ignored: "" } : tierCfg;
+  if (hint.ignored) try { console.error("ai-proxy model_hint_ignored", hint.ignored); } catch (_) { /* ignore */ }
   if (tier.ignored) try { console.error("ai-proxy delegation_model_ignored", tier.ignored); } catch (_) { /* ignore */ }
   const model = tier.model || devPick?.model || envModel || PROVIDER_DEFAULT_MODEL[provider] || OPENAI_DEFAULT_MODEL;
   /* /!\ A CHOSEN MODEL DOES NOT FALL BACK. The fallback exists so that a model the PROJECT lost
@@ -682,7 +689,9 @@ export async function ask(req: Request): Promise<Response> {
         /* (delegation-limits) the worker policy this server runs, on every Atlas turn: Atlas plans within it (js/atlas-console.js
            states it in the turn's context) instead of learning it from a refused worker — measured 2026-11-19: it opened three
            workers under a two-worker policy and the third was refused */
-        ...(spec.protocol2 ? { delegationPolicy: { mode: delegation.mode, maxChildren: delegation.maxChildren, childMaxCalls: delegation.childMaxCalls } } : {}) },
+        ...(spec.protocol2 ? { delegationPolicy: { mode: delegation.mode, maxChildren: delegation.maxChildren, childMaxCalls: delegation.childMaxCalls } } : {}),
+          /* (model-options) the models a worker task may name, with prices — beside the policy, whose shape other readers hold exactly */
+          ...(spec.protocol2 && delegation.mode !== "off" ? { delegationModels: modelOptions } : {}) },
       /* (atlas-native-tools) the provider's items — reasoning to replay, what it wrote, the calls with their ids */
       ...(turnReq ? { output: Array.isArray(out.output) ? out.output : [] } : {}),
       // (#R131) Hosted web-search citation URLs (OpenAI url_citation annotations). The client shows

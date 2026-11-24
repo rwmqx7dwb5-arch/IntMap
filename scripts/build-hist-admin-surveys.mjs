@@ -62,6 +62,13 @@ const LEVEL = 4;
    `paidBy` is the js/reference-data.js row naming the same URL. */
 export const GOVERNANCE = {
   'data/hist-admin-surveys.js': {
+    /* (describes.*) The method in this file's header, and the committed bundle measured (127 rows). The claim is each
+       publisher's own; no accuracy figure is declared because each publisher's survey states its own and none is restated here. */
+    period: { start: '117', end: '1950' },
+    extent: '127 first-level unit rows from five publishers (Roman provinces 28, Canada 9, Palestine and Syria-Lebanon 6, Russian Empire 1897 45, Republican China 39); the earliest row starts in 117 and the latest ends in 1950 (measured on the bundle)',
+    method: 'Each publisher\'s own survey of first-level units, with the publisher\'s dates and their stated precision carried beside every row (a year-precision date is never printed as a day); identical consecutive snapshot rows are collapsed into one span; nothing is interpolated; every row yields to OpenHistoricalMap wherever an in-force OpenHistoricalMap unit already covers a quarter of its ground',
+    resolution: 'unit outlines simplified to a 0.004 degree tolerance with four decimals; dates as the publisher gave them, with exclusive ends',
+    completeness: 'Only the regions and eras these five publishers surveyed, and only where OpenHistoricalMap holds no unit; a region absent here is not a statement that it had no first-level units',
     upstreams: [
       {
         "publisher": "Ancient World Mapping Center & Pedar Foss (MAGIS), via Pelagios; dates and Latin names from Pleiades",
@@ -112,10 +119,17 @@ export const GOVERNANCE = {
     priority: { rank: 'computed from the records',
       over: 'harvesters are ordered at build by the share of units with day-precision starts (sharp(), ties by SOURCE.key); a later publisher yields to every row an earlier one placed; every publisher first yields to the OpenHistoricalMap-derived data/hist-admin1.js' },
     cadence: 'static',
-    cadenceBasis: { observed: 'finished historical atlases; on 2026-10-05 the newest revision among them is Virtual Shanghai (2026-06-19), the oldest AHCB (2011)', expires: 'when a publisher announces a new edition', canon: 'scripts/histsurveys/<publisher>.mjs SOURCE' },
+    cadenceBasis: { kind: 'measured', observed: 'finished historical atlases; on 2026-10-05 the newest revision among them is Virtual Shanghai (2026-06-19), the oldest AHCB (2011)', expires: 'when a publisher announces a new edition', canon: 'scripts/histsurveys/<publisher>.mjs SOURCE' },
     builtBy: 'scripts/build-hist-admin-surveys.mjs',
   },
   'data/hist-admin-surveys-nc.js': {
+    /* (describes.*) The same method as data/hist-admin-surveys.js for the two publishers whose terms are non-commercial;
+       the committed bundle measured (444 rows). */
+    period: { start: '1701', end: '1963' },
+    extent: '444 first-level unit rows from two publishers (Spanish America, HGIS de las Indias 138; Sub-Saharan Africa colonial units, Mueller-Crepon 306); the earliest row starts in 1701 and the latest ends in 1963 (measured on the bundle)',
+    method: 'Each publisher\'s own survey of first-level units, with the publisher\'s dates and their stated precision carried beside every row; nothing is interpolated; every row yields to OpenHistoricalMap wherever an in-force OpenHistoricalMap unit already covers a quarter of its ground',
+    resolution: 'unit outlines simplified to a 0.004 degree tolerance with four decimals; dates as the publisher gave them, with exclusive ends',
+    completeness: 'Only the regions and eras these two publishers surveyed, and only where OpenHistoricalMap holds no unit; absence is not a statement that a region had no first-level units',
     upstreams: [
       {
         "publisher": "HGIS de las Indias (Werner Stangl, University of Graz)",
@@ -141,7 +155,7 @@ export const GOVERNANCE = {
     priority: { rank: 'computed from the records',
       over: 'harvesters are ordered at build by the share of units with day-precision starts (sharp(), ties by SOURCE.key); a later publisher yields to every row an earlier one placed; every publisher first yields to the OpenHistoricalMap-derived data/hist-admin1.js' },
     cadence: 'static',
-    cadenceBasis: { observed: 'on 2026-10-05 the HGIS de las Indias gazetteer is at V4 (2023-10-26); on 2026-11-17 the Müller-Crepon replication data is at V1.0', expires: 'when either publisher releases a new version', canon: 'scripts/histsurveys/hgisindias.mjs and scripts/histsurveys/mullercrepon.mjs SOURCE' },
+    cadenceBasis: { kind: 'measured', observed: 'on 2026-10-05 the HGIS de las Indias gazetteer is at V4 (2023-10-26); on 2026-11-17 the Müller-Crepon replication data is at V1.0', expires: 'when either publisher releases a new version', canon: 'scripts/histsurveys/hgisindias.mjs and scripts/histsurveys/mullercrepon.mjs SOURCE' },
     builtBy: 'scripts/build-hist-admin-surveys.mjs',
   },
 };

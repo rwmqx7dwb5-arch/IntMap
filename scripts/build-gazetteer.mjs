@@ -104,6 +104,12 @@ export const GOVERNANCE = {
     /* the licence the header states for all three dumps this build reads — scripts/lib/upstream-cadence.mjs
        GEONAMES_TERMS (「BY」 is part of the identifier: credit is a condition of these terms) */
     ...GEONAMES_TERMS,
+    /* (describes.*) what the GeoNames readme states (download.geonames.org/export/dump/readme.txt) and what the committed bundle measurably carries (148,630 rows, 242 country codes, built 2026-09-09). */
+    extent: '148,630 places in 242 country codes worldwide; the cities1000 file holds places with population above 1000 or seats of administrative divisions down to PPLA3',
+    method: 'GeoNames cities1000 with alternateNamesV2 (names by language) and featureCodes_en (feature-code descriptions); rows sorted by population, descending',
+    resolution: 'one WGS84 point per place',
+    completeness: 'GeoNames states the data is provided as is, without any representation of completeness',
+    accuracy: 'GeoNames states the data is provided as is, without any representation of accuracy or timeliness',
     ...GEONAMES,
     builtBy: 'scripts/build-gazetteer.mjs',
   },

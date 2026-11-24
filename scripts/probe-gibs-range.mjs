@@ -39,6 +39,11 @@ export const GOVERNANCE = {
     ...NASA_GIBS_DAILY,
     /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
     autoRefresh: 'tile requests only (a few dozen per product), no key; only 200 and 404 are answers, and anything else stops the run before the file is written',
+    /* (describes.*) what the probe measures and what the committed bundle measurably carries (4 products, probed 2026-11-19). */
+    period: { start: '2002-06-01', end: '2026-11-18' },
+    extent: '4 GIBS raster products (MODIS Terra NDVI 8-day, GHRSST MUR sea ice concentration, GHRSST MUR SST anomalies, AMSR-U2 soil moisture), each with its own first and last served date (measured over the committed bundle)',
+    method: 'the first and last served date of each product, found by bisection on real tile requests: GIBS answers 404 outside a layer\'s temporal extent and 200 inside it; an 8-day layer is also probed on an off-period day',
+    resolution: 'daily for three products, 8 days for the MODIS NDVI composite (its period start days only)',
     builtBy: 'scripts/probe-gibs-range.mjs',
   },
 };
