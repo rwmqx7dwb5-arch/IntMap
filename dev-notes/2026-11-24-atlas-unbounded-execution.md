@@ -1,6 +1,7 @@
 ---
 title: Atlas の実行から固定回数・時計を外し、進展と費用で止める／止まったターンに回答を無理に書かせない／途中の文を残す
 date: 2026-11-24
+pr: 1390
 newsen: Atlas no longer stops after a fixed number of steps: it keeps working while it makes progress, keeps the sentences it wrote along the way, and when it does stop says why in one line with a Continue button.
 newsjp: Atlas は決まった手数で打ち切られなくなりました。進んでいる間は作業を続け、途中で書いた文は残り、止まったときは理由を 1 行で述べて「続ける」で再開できます。
 ---
