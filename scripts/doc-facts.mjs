@@ -2064,48 +2064,46 @@ const localSteps = (() => {
     const SIZE = { deep: tiers.tierSpecs('deep').length, core: tiers.tierSpecs('core', { fixed: true }).length, all: tiers.tierSpecs('all').length };
     const SOURCES = [...DOCS.map((d) => [d, BODY.get(d)]), ['package.json', rd('package.json')], ['scripts/worktree.mjs', rd('scripts/worktree.mjs')]];
 
-    let checked = 0, skipped = 0;
+    /* ⚠ (derive-tier-sizes) THE RULE USED TO CHECK THAT THE WRITTEN NUMBERS AGREED WITH tiers.mjs. THAT KEPT THE
+       DRIFT OUT AND PUT A RACE IN: every PR that adds a spec edits the same five lines, so two of them merging
+       together leave the count wrong WITHOUT a textual conflict (both wrote 173 → 174), and every other open PR
+       conflicts on those lines the moment one lands. A copy that has to be re-edited by every writer is not a
+       fact, it is a lock. So the numbers are gone from the prose and this rule now holds the opposite line:
+       a tier size is stated NOWHERE — a reader runs `node scripts/tiers.mjs --sizes`, which derives it. */
+    let stated = 0, skipped = 0;
+    const CMD = 'tiers.mjs --sizes';
     for (const [file, body] of SOURCES) {
       for (const m of body.matchAll(/\**(\d+)\**\s*(?:measured\s+)?spec\s+files?/g)) {
         const win = body.slice(Math.max(0, m.index - 60), m.index);
-        /* ⚠ A NUMBER IS A CLAIM ONLY WHEN EXACTLY ONE TIER IS WITHIN REACH OF IT. Both looser
-           readings were tried and both were wrong on the real prose: a fixed precedence read
-           「the **whole** suite is 100 measured spec files」 as a claim about core, and
-           「the nearest word wins」 read 「the **deep** tier is the whole suite minus core —
-           **94 spec files**」 as a claim about core, because 「core」 is the word standing closest
-           to the number. Ambiguity here is a property of the SENTENCE, so the sentence is the
-           thing that gets fixed: an unclassifiable one is counted in the note, not guessed at. */
+        /* A NUMBER IS A TIER CLAIM ONLY WHEN EXACTLY ONE TIER IS WITHIN REACH OF IT (a delta — «moved things by
+           so many spec files» — and an unclassifiable sentence are not claims; the unclassified ones are counted). */
         const found = [...new Set([...win.matchAll(/deep|core|whole|全体/gi)]
           .map((h) => (/deep/i.test(h[0]) ? 'deep' : /core/i.test(h[0]) ? 'core' : 'all')))];
         const tier = found.length === 1 ? found[0] : null;
         if (!tier) { skipped++; continue; }
-        checked++;
-        if (Number(m[1]) !== SIZE[tier]) fail('deep-tier-size', `${file} says «${m[0].trim()}» of the ${tier} tier — it holds ${SIZE[tier]}`);
+        stated++;
+        fail('deep-tier-size', `${file} writes «${m[0].trim()}» as the size of the ${tier} tier — a tier size is derived and written nowhere: say \`node scripts/${CMD}\` instead (it holds ${SIZE[tier]} today)`);
       }
-      /* ⚠ (#R699) …AND THE HALF THAT IS NOT IN ENGLISH. The shape above counts 「spec files」,
-         so a source stating the same fact in Japanese was outside the rule entirely — MEASURED,
-         `docs/FILES.md` said 「実測 core 6 本 / deep 59 本」 against a real core 7 / deep 105, and
-         `check:docs` stayed green. The rule's own comment says three of four places had drifted;
-         this was the fifth, invisible because of the language it was written in rather than
-         because of anything about the claim. No window is needed here: the tier word stands
-         immediately before the quantity, which is the strongest binding Japanese offers. */
+      /* the half that is not in English: the tier word stands immediately before the quantity */
       for (const m of body.matchAll(/(deep|core)[ \t]*\**[ \t]*(\d[\d,]*)[ \t]*本/gi)) {
-        const tier = m[1].toLowerCase();
-        checked++;
-        if (Number(m[2].replace(/,/g, '')) !== SIZE[tier]) fail('deep-tier-size', `${file} says «${m[0].trim()}» — the ${tier} tier holds ${SIZE[tier]}`);
+        stated++;
+        fail('deep-tier-size', `${file} writes «${m[0].trim()}» as the size of the ${m[1].toLowerCase()} tier — derived, written nowhere: \`node scripts/${CMD}\``);
       }
-      /* the other half of the same sentence, which the shape above steps over */
+      /* the other half of «N spec files against core's M» */
       for (const m of body.matchAll(/against (?:the )?core(?: tier)?'s\s*\**(\d+)/g)) {
-        checked++;
-        if (Number(m[1]) !== SIZE.core) fail('deep-tier-size', `${file} says «${m[0].trim()}» — the core tier holds ${SIZE.core}`);
+        stated++;
+        fail('deep-tier-size', `${file} writes «${m[0].trim()}» as the size of the core tier — derived, written nowhere: \`node scripts/${CMD}\``);
       }
     }
-    /* several sources carry it; a rewording that dropped one would otherwise pass in silence */
-    const carriers = SOURCES.filter(([, body]) => /(?:deep|core)[\s\S]{0,140}?\d+\s*(?:measured\s+)?spec\s+files?/i.test(body)
-      || /(?:deep|core)[ \t]*\**[ \t]*\d[\d,]*[ \t]*本/i.test(body)).length;
-    if (carriers < 3) fail('deep-tier-size', `only ${carriers} source(s) still state a tier size — package.json, docs/TESTING.md and scripts/worktree.mjs each tell a session how big the nightly is`);
+    /* the sessions that need the number must be told WHERE it is; a rewording that dropped the pointer would leave them with neither */
+    const POINTERS = ['package.json', 'docs/TESTING.md', 'scripts/worktree.mjs'];
+    for (const p of POINTERS) {
+      const hit = SOURCES.find(([f]) => f === p);
+      if (!hit || !hit[1].includes(CMD)) fail('deep-tier-size', `${p} no longer points at \`node scripts/${CMD}\` — it is where a session reads how big the nightly is`);
+    }
+    const carriers = POINTERS.length;
     if (!problems.some((p) => p.startsWith('deep-tier-size'))) {
-      ok('deep-tier-size', `${checked} stated tier size(s) across ${carriers} source(s) — deep ${SIZE.deep} / core ${SIZE.core} / whole ${SIZE.all} (${skipped} spec-file mention(s) were not tier claims)`);
+      ok('deep-tier-size', `no tier size is written anywhere; ${carriers} sources point at node scripts/${CMD} — deep ${SIZE.deep} / core ${SIZE.core} / whole ${SIZE.all} today (${skipped} spec-file mention(s) were not tier claims)`);
     }
   }
 }
