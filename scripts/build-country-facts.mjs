@@ -118,6 +118,10 @@ export const GOVERNANCE = {
        it did would be a claim none of them made */
     upstreams: UPSTREAMS.map((s) => ({ publisher: s.n, url: s.u, licence: s.licence })),
     priority: { disjoint: ['capital, currency, languages, area, land borders, UN membership, demonym', 'time zones (tz)', 'the key set of countries only'] },
+    /* (describes.*) extent MEASURED on the committed bundle (239 country rows); the upstream's own README (github.com/mledoze/countries)
+       states the list follows ISO 3166-1 and that not every entry is an independent country. */
+    extent: '239 country and territory codes (Natural Earth code set), each carrying capital, currency, languages, area, land borders, UN membership, demonym and time zones where the upstreams give them',
+    resolution: 'country',
     ...IANA_TZDB,
     builtBy: 'scripts/build-country-facts.mjs',
   },

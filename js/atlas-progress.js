@@ -106,6 +106,7 @@ export function makeAtlasProgress(HOST, deps) {
     view: () => L('Moving the view', '視点を移動', 'Ansicht bewegen', 'Перемещаю вид', 'Moviendo la vista'),
     panel: () => L('Opening a panel', 'パネルを開く', 'Panel öffnen', 'Открываю панель', 'Abriendo un panel'),
     data: () => L('Looking up data', 'データを照会', 'Daten abfragen', 'Запрашиваю данные', 'Consultando datos'),
+    mcp: () => L('Asking an external MCP server', '外部MCPサーバーに照会', 'Frage einen externen MCP-Server ab', 'Запрашиваю внешний MCP-сервер', 'Consultando un servidor MCP externo'),
     research: () => L('Researching', '調査中', 'Recherchiere', 'Изучаю', 'Investigando'),
     settings: () => L('Changing a setting', '設定を変更', 'Einstellung ändern', 'Меняю настройку', 'Cambiando un ajuste'),
     sim: () => L('Running a simulation', 'シミュレーションを実行', 'Simulation läuft', 'Запускаю симуляцию', 'Ejecutando una simulación'),
@@ -621,10 +622,10 @@ export const ATLAS_PROGRESS_CSS =
      the work itself at 500 — the three are told apart by WEIGHT, not by a darker grey. */
   + '#atlas-panel .atl-trace-row.run{color:var(--text-main);}'
   + '#atlas-panel .atl-trace-row.run .atl-trace-mark{color:var(--primary-color);}'
-  + '#atlas-panel .atl-trace-word{flex:0 1 auto;font-weight:400;}'
+  + '#atlas-panel .atl-trace-word{flex:0 0 auto;white-space:nowrap;font-weight:400;}'
   + '#atlas-panel .atl-trace-det{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);font-weight:500;opacity:.8;}'
   + '#atlas-panel .atl-trace-row.run .atl-trace-det{font-weight:600;opacity:1;}'
-  + '#atlas-panel .atl-trace-lbl{font-weight:400;color:var(--text-muted);}'
+  + '#atlas-panel .atl-trace-lbl{flex:0 0 auto;white-space:nowrap;font-weight:400;color:var(--text-muted);}'
   + '#atlas-panel .atl-trace-t{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:400;opacity:.6;}'
   /* (atlas-progress-one) THE PLAN, INSIDE THE TRACE. Its head (goal and N/M) stays when the trace is
      folded — the one line a finished multi-step turn still has to say; its steps open with the rows and

@@ -59,7 +59,7 @@ function nativeReply(calls, finalText) {
   const text = finalText != null ? JSON.stringify({ turn: calls.length ? 'continuing' : 'final', final_text: finalText }) : '';
   return AGENT.readReply(text ? JSON.parse(text) : null, text, JSON.parse, { protocol: 2 }, output);
 }
-async function drive({ history, script, results, tail, seen = [] }) {
+async function drive({ history, script, results, tail, seen = [], limits }) {
   const scriptErrors = [];
   const tools = {
     find_capability: { name: 'find_capability', description: 'search', parameters: { type: 'object', required: ['query'], properties: { query: { type: 'string' } } } },
@@ -70,6 +70,7 @@ async function drive({ history, script, results, tail, seen = [] }) {
     tools,
     execute: async (call) => (results[call.id] || { ok: true }),
     messages: [{ role: 'user', content: 'Q' }],
+    limits: Object.assign({ maxSteps: 8 }, limits || {}),   /* (atlas-unbounded-execution) the scripted model repeats its last step forever; the harness bounds it as a caller may */
     model: async (req) => {
       const built = AGENT.composeInput({ history, request: '[MAP STATE WHEN THE REQUEST ARRIVED]\nstate\n\n[REQUEST]\nQ',
         transcript: req.messages, tail: tail ? tail(step) : '', fence: FENCE });
@@ -174,9 +175,10 @@ test('atlas-native-tools ③: what is given up is said — a cut names its size 
   assert.equal(rebuilt.length, full.length, 'the cut part plus read_result is as long as the whole record');
   assert.ok(rebuilt === full, 'the cut part plus read_result is the whole record');
   assert.ok(out.trace.inputTrims && out.trace.inputTrims.length, 'the loop recorded what was cut on each step');
-  /* read_result is offered only on a step that cut something — the tool list is the cached prefix */
+  /* read_result is offered only on a step that cut something — or whose input names refs it answers (the working memory
+     block, js/atlas-working-memory.js): the tool list is the cached prefix, so an ordinary step with neither does not carry it */
   assert.ok(!/read_result/.test(seen[0].tools), 'an ordinary step does not carry read_result');
-  assert.match(rd('js/atlas-console.js'), /concat\(built\.cut\?\[AGENT\.READ_RESULT_TOOL\]:\[\]\)/, 'the console offers it exactly when the composer cut');
+  assert.match(rd('js/atlas-console.js'), /concat\(\(built\.cut\|\|built\.recallable\)\?\[AGENT\.READ_RESULT_TOOL\]:\[\]\)/, 'the console offers it exactly when the composer cut or the input names refs');
 });
 
 test('atlas-native-tools ③b: dropped history is announced by an item, oldest first, and never the request', () => {
@@ -207,10 +209,13 @@ test('atlas-native-tools ③c: under pressure the OLDER results of the turn are 
 });
 
 /* ══ ④ ════════════════════════════════════════════════════════════════════════════════════════ */
-test('atlas-native-tools ④: every call the model made is answered — the ones past maxPerStep as not run, not dropped', async () => {
+test('atlas-native-tools ④: every call the model made is answered — and past a per-reply bound a caller set, as not run, not dropped', async () => {
+  /* (atlas-unbounded-execution) by default every call of a reply runs (LIMITS.maxPerStep is Infinity); the contract this
+     guards — each function_call gets exactly one function_call_output — is asked with a caller's bound of 8 */
+  const PER = 8;
   const calls = [];
-  for (let i = 0; i < AGENT.LIMITS.maxPerStep + 2; i++) calls.push({ id: 'k' + i, name: 'map_view', args: { place: 'P' + i } });
-  const { seen } = await drive({ history: [], results: {}, script: [nativeReply(calls, null), nativeReply([], 'ok')] });
+  for (let i = 0; i < PER + 2; i++) calls.push({ id: 'k' + i, name: 'map_view', args: { place: 'P' + i } });
+  const { seen } = await drive({ history: [], results: {}, script: [nativeReply(calls, null), nativeReply([], 'ok')], limits: { maxPerStep: PER } });
   const input = seen[1].built.input;
   const ids = input.filter((it) => it.type === 'function_call').map((it) => it.call_id);
   const answered = outputs(input).map((it) => it.call_id);
@@ -264,7 +269,7 @@ test('atlas-native-tools ⑥: the reply is the provider\'s items; the written sh
   assert.deepEqual(r.toolCalls[0].arguments, { place: 'Rome' });
   assert.ok(r.items && r.items.length === 2, 'the items are kept for the next step to replay');
   assert.equal(r.turnState, 'continuing');
-  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties), ['turn', 'answer_mode', 'final_text']);
+  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties), ['turn', 'answer_mode', 'next_effort', 'next_output_tokens', 'final_text']);
   assert.deepEqual(AGENT.FINAL_SCHEMA.required, ['final_text']);
   /* (atlas-legacy-protocol-removal) an envelope reply is no longer a way to call: its calls are REPORTED, not run —
      tests/atlas-legacy-protocol-removal-checks.test.mjs drives what the loop then does with them */

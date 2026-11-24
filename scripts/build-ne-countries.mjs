@@ -78,6 +78,11 @@ export const GOVERNANCE = {
     attribution: false,
     generatedAt: PINNED_AT,
     asOf: EDITION_AT,
+    /* (describes.*) the Natural Earth admin-0 page (naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/, read 2026-11-20)
+       and the row counts NE_QUALITY measures. Natural Earth states no accuracy figure, so none is declared. */
+    extent: 'the countries of the world as Natural Earth defines them, distinguishing metropolitan portions from independent and semi-independent portions of sovereign states; rows per file, measured: 177 (1:110m), 242 (1:50m), 258 (1:10m)',
+    method: 'de facto boundaries according to who controls the territory (Natural Earth); disputed areas are tagged rather than resolved; shipped losslessly, nothing simplified or re-derived in this build',
+    resolution: 'three Natural Earth scales shipped as separate files: 1:110m, 1:50m and 1:10m',
     ...NATURAL_EARTH,
     builtBy: 'scripts/build-ne-countries.mjs',
     schema: 'js/ne-countries.js decodeNECountries (format IntMapNECountries) — node scripts/build-ne-countries.mjs --check',

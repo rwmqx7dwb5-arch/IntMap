@@ -24,7 +24,7 @@
 //  and `unlimited` is the developer override (DEV_USER_IDS) and admin rows. A future paid plan is a
 //  row's numbers and `offered` — PRODUCT.md §2.4 holds that design, unapproved.
 //  ⚠ These are ALLOWANCES per account, not limits on what Atlas may do inside a turn
-//  (CONSTITUTION.md §5): TURN_MAX_CALLS and the project-wide ceiling stay in ai-proxy.
+//  (CONSTITUTION.md §5): the per-turn spend fence and the project-wide ceiling stay in ai-proxy.
 //
 //  ⚠ NO TYPE ANNOTATIONS AND NO DENO GLOBALS — node tests and the page (Vite) import this file as
 //  plain JavaScript, the same as _shared/client-error-shape.js.
@@ -33,12 +33,23 @@
 /* The columns. Each one names what it counts, so a reader of a row never has to guess a unit.
      aiTurnsPerDay  — Atlas questions an account may ask a day (one user turn = one use, #R318)
      aiGlossPerDay  — term look-ups inside an answer a day (a separate lane, #R491)
-     offered        — whether a reader can obtain the plan themselves. No plan is sold today. */
+     aiUsdPerDay    — US dollars an account's AI requests may spend with the provider in a day, across every
+                      turn (atlas-unbounded-turns: the fence that replaced the per-turn call count). ai-proxy
+                      reserves against it before each request and settles what was billed (public.ai_spend_day);
+                      past it: 409 {error:"day_cost"}. AI_DAY_USD_SCALE (ai-proxy config.ts) multiplies it.
+     offered        — whether a reader can obtain the plan themselves. No plan is sold today.
+   aiUsdPerDay = aiTurnsPerDay × $1 (no-ad-hoc-hardcoding §4):
+     · Observation — the per-turn fence is $3 (ai-proxy config.ts TURN_COST_CAP_USD); $1 a daily turn is on average a
+       third of it. The costliest metered reader turn ever recorded was $0.61 (production ledger read 2026-11-18, the
+       comment at TURN_COST_CAP_USD), so free's 10 turns → $10 a day holds ~16× that turn.
+     · Expires the first time a reader meets `day_cost` doing work they asked for — then AI_DAY_USD_SCALE moves every
+       plan's day without a deploy, and the row here is re-derived.
+     · Canonical place: THIS column (the turns it is derived from are the same row's). */
 export const PLANS = Object.freeze({
-  free:      Object.freeze({ aiTurnsPerDay: 10,        aiGlossPerDay: 60,        offered: true }),
-  plus:      Object.freeze({ aiTurnsPerDay: 50,        aiGlossPerDay: 300,       offered: false }),
-  pro:       Object.freeze({ aiTurnsPerDay: 200,       aiGlossPerDay: 1_000,     offered: false }),
-  unlimited: Object.freeze({ aiTurnsPerDay: 1_000_000, aiGlossPerDay: 1_000_000, offered: false }),
+  free:      Object.freeze({ aiTurnsPerDay: 10,        aiGlossPerDay: 60,        aiUsdPerDay: 10,        offered: true }),
+  plus:      Object.freeze({ aiTurnsPerDay: 50,        aiGlossPerDay: 300,       aiUsdPerDay: 50,        offered: false }),
+  pro:       Object.freeze({ aiTurnsPerDay: 200,       aiGlossPerDay: 1_000,     aiUsdPerDay: 200,       offered: false }),
+  unlimited: Object.freeze({ aiTurnsPerDay: 1_000_000, aiGlossPerDay: 1_000_000, aiUsdPerDay: 1_000_000, offered: false }),
 });
 
 /* The plan an account has when nothing says otherwise — a missing profiles row, a missing column, a

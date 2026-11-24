@@ -16,8 +16,9 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, num, int, one, list, lat, lng, obj, bool } from './atlas-caps.js';
-import { scenarioModels, scenarioFrame, scenarioCall, scenarioReport } from './atlas-reasoning.js';   /* (atlas-reasoning) research.scenario: what is decided is in that module, as values */
+import { str, num, int, one, list, lat, lng, obj, bool, loose } from './atlas-caps.js';
+import { stateLabel } from './relation-evidence.js';
+import { scenarioModels, scenarioFrame, scenarioCall, scenarioReport, forecastReport } from './atlas-reasoning.js';   /* (atlas-reasoning) research.scenario: what is decided is in that module, as values */
 import SIM_ENTRIES from './atlas-cap-sim.js';   /* the entries that declare a `scenario` ARE the models — discovered, not listed (same lazy chunk as this file) */
 import { personaPrompt } from './atlas-persona.js';
 import { datasetFactsOnPage } from './evidence-graph-record.js';   /* (evidence-graph) a GIS result put in front of the answer carries its lineage node */
@@ -27,13 +28,17 @@ import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) the one shape a result names the thing it is about by */
 const W = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
+import { makeLogisticsImpact } from './logistics-impact.js';   /* (logistics-network) «this port stops» read from data/logistics-network.json */
 import { makeWorldGraphStore } from './world-graph-store.js';
+const LOGI = makeLogisticsImpact();
 const G = makeWorldGraphStore({ worldObjects: W });   /* (world-graph) the persistent graph (Supabase) read into that same index */
 import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
+import { makeResearchSearch } from './atlas-research-search.js';   /* (atlas-research-search) research.search — the tool side of an investigation Atlas steers */
 import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, CONTRACT_KINDS } from './atlas-delegate.js';
 import { integrate, mergeFacts, makeFactResolver, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
+const researchMemory = { search: null };   /* research.search's per-turn memory — built on first use; a const holder (the kernel copy never runs it) */
 
 /* ══ (atlas-completion) WHAT A RESEARCH ANSWER RESTS ON, SAID FROM WHAT HAPPENED ═══════════════════════════════
    An answer to a time-sensitive question used to carry ONE fixed caveat whenever `webUsed` was false —
@@ -99,6 +104,11 @@ async function resolveWorldObject(a, K) {
   const fromGraph = async () => {
     const g = await G.findPersisted(HOST.DB, q);
     if (g.ok && g.object && (!type || g.object.type === type)) return { obj: g.object, via: 'graph' };
+    /* a uid, or an external id the object held in an earlier release (a re-issued `gers:…`): the identity layer follows it to the object it now is */
+    if (g.ok && !g.object) {
+      const p = await G.resolvePersisted(HOST.DB, q);
+      if (p.ok && p.object && !p.ambiguous && (!type || p.object.type === type)) return { obj: p.object, via: 'graph' };
+    }
     return g.ok ? null : { obj: null, code: 'GRAPH_' + String(g.error || 'failed').toUpperCase() };
   };
   let graphErr = null;
@@ -337,15 +347,53 @@ export default [
     },
   },
   {
+    /* (logistics-network) «THIS PORT STOPS — WHICH CITIES AND FACTORIES LOSE THEIR NEAREST PORT?» answered from data/logistics-network.json
+       (scripts/logistics/build.mjs): the ports each city / factory reaches BY RAIL, in order, with the kilometres. The arithmetic is
+       js/logistics-impact.js; the model is a reachability model over OpenStreetMap track and the answer says so every time. */
+    row: ['research.portImpact',        'portImpact',     'portClosure,portDisruption,portStops',                           'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { none: '2026-11-20' },
+    doc: [
+      { in: 'country', at: 64, text: '{"type":"portImpact","port":str,"top"?:num} = 港湾が止まったときの影響 — WHAT A PORT STOPPING DOES TO ITS HINTERLAND, read from the rail network: the cities of 100,000+ people and the factory-type sites (company atlas: factories, assembly plants, refineries, smelters, shipyards, breweries, mines, power plants) whose NEAREST port BY RAIL it is, where each falls back to (the next port in its own order, with the extra rail kilometres), which fall-back ports receive the most (with their stated annual cargo — Eurostat or Wikidata — or «not stated»), and how many have NO further port inside the model; AND the coal / oil / gas / petcoke power plants that stand within 30 km of it (Global Power Plant Database 1.3.0, CC BY 4.0, June 2021: capacity in MW, the current operator it states, commissioning year — proximity, NOT a stated fuel supply). "port" is a name, a UN/LOCODE (NLRTM) or a Wikidata id; an ambiguous name is returned as candidates for you to ask about, not chosen. THE MODEL IS REACHABILITY OVER OPENSTREETMAP TRACK, NOT FREIGHT: gauge, electrification, track capacity, operators, road and barge legs are not in it, the ports are those that state cargo, a UN/LOCODE or a rail terminal and lie within 120 km of the ocean, and a city or site with no rail within 25 / 10 km is not in the file (the answer states the coverage) — say that, do not present the list as the observed flow of goods. Use it for 「ロッテルダム港が止まったら影響を受ける工場と都市は」, "which factories and cities depend on the port of Hamburg". For a CABLE or ROUTE network (centrality, max-flow/min-cut, what a zone going down cuts off) use data.gis network / networkDisrupt instead.' },
+    ],
+    schema: () => ({ type: 'object', properties: { port: str(), top: num(1) }, required: ['port'] }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      const q = String(a.port || a.name || '').trim();
+      if (!q) return R(false, warn(L('Which port? Give its name, UN/LOCODE (e.g. NLRTM) or Wikidata id.', 'どの港湾ですか？名前・UN/LOCODE（例 NLRTM）・Wikidata の id を指定してください。')), { meta: { code: 'NEEDS_INPUT', category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
+      const r = await LOGI.impact(q, { top: a.top });
+      if (!r.ok) {
+        const msg = r.code === 'unavailable' ? L('The logistics network file could not be read, so nothing can be said about ports stopping.', '物流網のファイルを読めなかったため、港湾停止の影響は答えられません。')
+          : r.code === 'ambiguous' ? L('Several ports answer to «' + esc(q) + '» — which one? ', '「' + esc(q) + '」に当たる港湾が複数あります。どれですか？ ') + r.candidates.map((c) => esc(c.name + (c.cc ? ' (' + c.cc + ')' : '') + (c.locode ? ' ' + c.locode : ''))).join(' · ')
+          : L('The logistics network holds no port called «' + esc(q) + '» (' + r.listed + ' ocean-facing ports with rail access are listed). Name it another way or give its UN/LOCODE.', '物流網に「' + esc(q) + '」という港湾はありません（鉄道に接続できる外洋港 ' + r.listed + ' 件を収録）。別の呼び方か UN/LOCODE を指定してください。');
+        return R(false, warn(msg), { meta: { code: r.code === 'unavailable' ? 'DATA_UNAVAILABLE' : r.code === 'ambiguous' ? 'AMBIGUOUS' : 'NOT_FOUND', category: r.code === 'unavailable' ? 'transient' : 'input', retryable: r.code === 'unavailable', semanticTarget: q, produced: [], userGoalSatisfied: false } });
+      }
+      const num0 = (n) => Number(n).toLocaleString('en-US');
+      const cap = (p) => (p.capacity ? num0(p.capacity.value) + ' ' + p.capacity.unit + (p.capacity.year ? ' (' + p.capacity.year + ')' : '') : L('cargo not stated', '取扱量の記載なし'));
+      const A = r.affected;
+      let h = '<div><b>' + icon('pin') + ' ' + esc(r.port.name) + '</b> <span style="font-size:10.5px;color:var(--text-muted);">' + esc([r.port.cc, r.port.locode].filter(Boolean).join(' · ')) + '</span></div>';
+      h += '<div style="font-size:12px;margin-top:2px;">' + esc(L('If this port stops, ' + A.cities + ' cities (' + num0(A.population) + ' people) and ' + A.factories + ' factory-type sites of ' + A.companies + ' companies lose their NEAREST port by rail.', 'この港湾が止まると、鉄道で最寄りの港を失うのは都市 ' + A.cities + ' 件（人口 ' + num0(A.population) + '）と、' + A.companies + ' 社の工場系拠点 ' + A.factories + ' 件です。')) + '</div>';
+      h += '<div style="font-size:11.5px;color:var(--text-muted);">' + esc(L('Its own cargo: ', 'この港の取扱量: ') + cap(r.port)) + '</div>';
+      if (r.medianExtraKm != null) h += '<div style="font-size:12px;margin-top:3px;">' + esc(L('Median extra rail distance to the next port: ', '次の港までの鉄道距離の増加（中央値）: ') + r.medianExtraKm + ' km') + (r.stranded.cities + r.stranded.factories ? ' · ' + esc(L(r.stranded.cities + ' cities and ' + r.stranded.factories + ' sites have no further port within the model', 'モデルの範囲に次の港がない: 都市 ' + r.stranded.cities + ' 件・拠点 ' + r.stranded.factories + ' 件')) : '') + '</div>';
+      if (r.rerouted.length) h += '<div style="font-size:11.5px;margin-top:3px;"><b>' + esc(L('Where they fall back', '代わりに向かう港')) + '</b><br>' + r.rerouted.map((x) => esc(x.port.name + ': ' + x.entities + L(' places, median +', ' 件・中央値 +') + x.medianExtraKm + ' km · ' + cap(x.port))).join('<br>') + '</div>';
+      if (r.topCities.length) h += '<div style="font-size:11.5px;margin-top:3px;"><b>' + esc(L('Largest cities affected', '影響を受ける主な都市')) + '</b><br>' + r.topCities.map((c) => esc(L(c.name, c.nameJa || c.name) + (c.cc ? ' (' + c.cc + ')' : '') + ' ' + num0(c.population || 0) + ' — ' + (c.fallback ? L('next: ', '次: ') + c.fallback.port.name + ' +' + c.fallback.extraKm + ' km' : L('no further port in the model', 'モデル内に次の港なし')))).join('<br>') + '</div>';
+      if (r.factories.length) h += '<div style="font-size:11.5px;margin-top:3px;"><b>' + esc(L('Factory-type sites affected', '影響を受ける工場系拠点')) + ' (' + r.factories.length + (r.factoriesTotal > r.factories.length ? ' / ' + r.factoriesTotal : '') + ')</b><br>' + r.factories.map((f) => esc(f.name + ' [' + (f.siteType || '') + (f.company ? ' · ' + f.company : '') + '] ' + (f.fallback ? '→ ' + f.fallback.port.name + ' +' + f.fallback.extraKm + ' km' : L('no further port in the model', 'モデル内に次の港なし')))).join('<br>') + '</div>';
+      const pw = r.power;
+      if (pw && pw.ok) h += '<div style="font-size:11.5px;margin-top:3px;"><b>' + esc(L('Fuel-burning power plants at this port', 'この港にある燃料火力発電所')) + '</b> ' + esc(pw.plants ? pw.plants + L(' plants, ', ' 基・') + num0(Math.round(pw.mw)) + ' MW (' + Object.keys(pw.byFuel).map((k) => k + ' ' + num0(Math.round(pw.byFuel[k].mw)) + ' MW').join(', ') + ')' + (pw.noNextPort ? L('; ' + pw.noNextPort + ' have no other port within reach', '；うち ' + pw.noNextPort + ' 基は他に近い港なし') : '') : L('none within ' + pw.model.portReachKm + ' km in the database', 'データベース上 ' + pw.model.portReachKm + ' km 以内に無し')) + '<br>' + pw.top.map((x) => esc(x.name + ' [' + x.fuel + (x.mw != null ? ' ' + num0(Math.round(x.mw)) + ' MW' : '') + (x.commissioned ? ' · ' + x.commissioned : '') + (x.operator ? ' · ' + x.operator : '') + ']')).join('<br>') + '<br><span style="color:var(--text-muted);font-size:10px;">' + esc(L('Proximity, not a stated fuel supply: ', '近接であって、燃料供給の記載ではありません: ') + pw.source.name + ' (' + pw.source.licence + '), ' + pw.asOf) + '</span></div>';
+      else if (pw) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('The power-plant file could not be read, so nothing is said about plants at this port.', '発電所のファイルを読めなかったため、この港の発電所については答えられません。')) + '</div>';
+      const cv = r.coverage;
+      h += '<div class="acp-src" style="font-size:10px;color:var(--text-muted);margin-top:4px;">' + esc(L('Model: ', 'モデル: ') + r.model.kind + '. ' + L('Covered: ', '収録: ') + cv.entities.assigned + L(' of ', ' / ') + (cv.entities.cities + cv.entities.industrialSites) + L(' cities and sites reach a port by rail; ', ' の都市・拠点が鉄道で港に到達；') + cv.portsListed + L(' ports. As of ', ' 港。時点 ') + r.asOf + L('. Sources: ', '。出典: ') + r.sources.map((s) => s.name + ' (' + s.licence + ')').join(' · ')) + '</div>';
+      return R(true, h, { exec: { portImpact: r }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: r.port.name, produced: ['explanation'], userGoalSatisfied: true } });
+    },
+  },
+  {
     /* (world-objects) THE REAL-WORLD OBJECT BEHIND A NAME — `research.impact`, `research.events`, `data.volcano`, `news.company`
        and `research.placeProfile` each name the thing they are about by the same `ref` (type:id), and the next two
        capabilities follow it. They draw nothing: the answer is the object and what is tied to it. */
     row: ['research.object',            'worldObject',    'realWorldObject,whatIsThis',                                     'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
     ui: { none: '2026-11-16' },
     doc: [
-      { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref, or an external identifier such as "wikidata:Q123" / "osm:node/123" (the same thing surfaced by two sources is ONE object; the answer lists its identifiers, the refs folded into it and look-alikes that were not merged). TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place, dataset_feature. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. IntMap ALSO keeps a PERSISTENT world graph (database) that outlives the session — today the LNG terminals and PORTS of the world — a port (港湾) with its UN/LOCODE, operator and owner (with the dates each tie held), the railway line or road Wikidata states it connects to, the UN/LOCODE function flags of its location (port / rail terminal / road terminal …) and its cargo handled per year in thousand tonnes (Eurostat mar_go_aa, EU/EFTA/UK/Türkiye ports; a port outside that has no yearly series — say so, do not estimate one); the answer ends with when the feed was last confirmed. Name a port by its English or Japanese name, its UN/LOCODE (\"unlocode:NLRTM\") or its ref; a ref such as \"facility:wd-Q104518607\", an identifier such as \"wikidata:Q104518607\" or an exact name is looked up there, and the answer lists each number with its unit, period and source. Use research.related for «what else belongs with it».\n' },
+      { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — RELATIONS CARRY A STATE: every tie it lists is `confirmed` (a named source states it), `inferred` (derived by a stated rule — never a fact about the world) or `unconfirmed` (no record). Before you state that X is operated_by / owned_by / located_in Y, pass it as "check":[{"rel":…,"ref":…}] and say only what comes back: a relation with no record is "not recorded", NEVER completed from what such ties usually are, and "not recorded" is not "does not exist". — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref, or an external identifier such as "wikidata:Q123" / "osm:node/123" (the same thing surfaced by two sources is ONE object; the answer lists its identifiers, the refs folded into it and look-alikes that were not merged). TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place, dataset_feature. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. IntMap ALSO keeps a PERSISTENT world graph (database) that outlives the session — today the LNG terminals and PORTS of the world — a port (港湾) with its UN/LOCODE, operator and owner (with the dates each tie held), the railway line or road Wikidata states it connects to, the UN/LOCODE function flags of its location (port / rail terminal / road terminal …) and its cargo handled per year in thousand tonnes (Eurostat mar_go_aa, EU/EFTA/UK/Türkiye ports; a port outside that has no yearly series — say so, do not estimate one); the answer ends with when the feed was last confirmed. Name a port by its English or Japanese name, its UN/LOCODE (\"unlocode:NLRTM\") or its ref; a ref such as \"facility:wd-Q104518607\", an identifier such as \"wikidata:Q104518607\" or an exact name is looked up there, and the answer lists each number with its unit, period and source. Use research.related for «what else belongs with it».\n' },
     ],
-    schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str() }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
+    schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str(), check: list(loose()) }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
       const r = await resolveWorldObject(a, K);
       if (!r.obj) {
@@ -372,13 +420,21 @@ export default [
       if (o.claims && o.claims.length) h += '<div style="font-size:11.5px;margin-top:3px;">' + claimLines(o.claims, L).map(esc).join('<br>') + '</div>';
       const cc = W.claimConflicts(o);
       if (cc.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Sources disagree on: ', '出典間で値が異なる項目: ') + cc.map((c) => c.key + (c.unitMismatch ? ' (' + L('units differ', '単位が異なる') + ')' : '')).join(', ')) + '</div>';
+      /* (relation-evidence) THE RELATIONS THE ANSWER IS ABOUT TO STATE, ASKED OF THE GRAPH FIRST: `check` is a list of {rel, ref} — each comes back recorded or not, with its state
+         (confirmed / inferred / unconfirmed) and what backs it. No record is reported as «not recorded», never completed from what such ties usually are. */
+      let relChecks = null;
+      if (Array.isArray(a.check) && a.check.length) {
+        relChecks = W.checkRelations(o, a.check.slice(0, 40).map((q) => ({ rel: String((q && q.rel) || ''), ref: String((q && (q.ref || q.to)) || '') })));
+        h += '<div style="font-size:11.5px;margin-top:5px;"><b>' + esc(L('Are these relations recorded?', 'これらの関係は記録されているか')) + '</b></div>';
+        relChecks.forEach((x) => { h += '<div style="font-size:11.5px;padding-left:8px;color:' + (x.state === 'confirmed' ? 'inherit' : '#ff9f0a') + ';">' + esc(o.name + ' ' + x.rel + ' ' + (x.ref || '?') + ' — ' + stateLabel(x.state, L) + (x.recorded ? (x.evidence && x.evidence.source ? ' · ' + x.evidence.source : '') + (x.rule ? ' · ' + x.rule : '') : ' · ' + L('not recorded in the graph (that is not proof it does not exist)', 'グラフに記録なし（存在しない証拠ではない）'))) + '</div>'; });
+      }
       let fresh = null;
       if (r.via === 'graph') {
         const fr = await G.freshness(K.HOST.DB);
         if (fr.ok) { fresh = fr.feeds; const fl = freshnessLine(fr.feeds, L); if (fl) h += '<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">' + esc(fl) + '</div>'; }
         else h += warn(L('Data freshness could not be read: ', 'データの鮮度を読めませんでした: ') + esc(String(fr.error)));
       }
-      return R(true, h, { exec: { worldObjects: { subject: o.ref, objects: [W.brief(o)], via: r.via, identity: idn, claimConflicts: cc.length ? cc : undefined, freshness: fresh || undefined } }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: o.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
+      return R(true, h, { exec: { worldObjects: { subject: o.ref, objects: [W.brief(o)], via: r.via, identity: idn, claimConflicts: cc.length ? cc : undefined, relationChecks: relChecks || undefined, freshness: fresh || undefined } }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: o.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
   },
   {
     row: ['research.related',           'worldRelated',   'related,relatedObjects,whatIsAround',                                 'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
@@ -1026,11 +1082,43 @@ export default [
        uncertain it is. js/atlas-reasoning.js decides what each says; this draws it. A call with an empty field is refused,
        naming every empty field at once. */
     doc: [
-      { in: 'research.impact', at: 10, text: 'WHAT-IF SCENARIO シナリオ・もしもの想定 (assumptions → result, in four fixed fields): {"type":"scenario","model":"ashPlume"|"radiation"|"tsunami"|"pandemicRun","place"?:str or "lng"+"lat","baseline":ISO date/time|"now","assumptions":[{"name":the model\'s own argument (e.g. "hKm","bq","magnitude","days"),"value":…,"basis"?:why}],"impact"?:true|{"km"?:num,"focus"?:[…]}} = run that simulator on exactly the stated assumptions (and, with impact, research.impact around the same point) and answer with FOUR FIELDS that are always present — 前提 (the assumptions, each marked applied or not), 使用データ, 考慮外 (what the model does not represent: an assumption it has no input for, a baseline it cannot take, a failed exposure analysis), 不確実性 (the model\'s own stated limits and, for the pandemic, whether a band or a single draw). It REFUSES, naming every field at once, when the model, the assumptions, the subject or the baseline is empty. A bare year is never turned into a day: give an ISO date for ash and radiation, or it is reported as not applied. Use for 「もし桜島が噴火したら」「もし福島で放出があったら」「M9の地震なら津波はどうなる」「ここで感染が始まったら」 — NOT for a plain simulator run with no stated assumptions (use the simulator itself). ' },
+      { in: 'research.impact', at: 10, text: 'WHAT-IF SCENARIO シナリオ・もしもの想定 (assumptions → result, in four fixed fields): {"type":"scenario","model":"ashPlume"|"radiation"|"tsunami"|"pandemicRun","place"?:str or "lng"+"lat","baseline":ISO date/time|"now","assumptions":[{"name":the model\'s own argument (e.g. "hKm","bq","magnitude","days"),"value":…,"basis"?:why}],"impact"?:true|{"km"?:num,"focus"?:[…]}} = run that simulator on exactly the stated assumptions (and, with impact, research.impact around the same point) and answer with FOUR FIELDS that are always present — 前提 (the assumptions, each marked applied or not), 使用データ, 考慮外 (what the model does not represent: an assumption it has no input for, a baseline it cannot take, a failed exposure analysis), 不確実性 (the model\'s own stated limits and, for the pandemic, whether a band or a single draw). It REFUSES, naming every field at once, when the model, the assumptions, the subject or the baseline is empty. A bare year is never turned into a day: give an ISO date for ash and radiation, or it is reported as not applied. Use for 「もし桜島が噴火したら」「もし福島で放出があったら」「M9の地震なら津波はどうなる」「ここで感染が始まったら」 — NOT for a plain simulator run with no stated assumptions (use the simulator itself). EXTERNAL FORECAST (外部の予測データ): add "forecast":{"source":"open-meteo-flood" (GloFAS river discharge, with the provider\'s ensemble spread) | "open-meteo-forecast" (weather; "variable":precipitation_sum|temperature_2m_max|temperature_2m_min|wind_speed_10m_max|wind_gusts_10m_max),"bounds":[w,s,e,n] or lng+lat+halfWidthKm,"days"?:1-16,"nx"?,"ny"?:grid ≤10×10,"conditions"?:{"threshold":number},"observations"?:[dataset ids]} — with no "model" it is the whole scenario: real model output is fetched and put into the GIS as SEPARATE datasets (model estimate, uncertainty; observations are only referenced, this source publishes none), each feature marked dataClass, drawn and coloured by it. The reader\'s threshold is only compared (exceeds), never fed to the model. A request that failed is missing, not zero. Free API is non-commercial, CC BY 4.0 data. ' },
     ],
     chips: 'map.poi',
-    schema: () => ({ type: 'object', properties: { model: str(), place: str(), lng: lng(), lat: lat(), baseline: str(), assumptions: list(obj()), impact: obj() } }),
+    schema: () => ({ type: 'object', properties: { model: str(), place: str(), lng: lng(), lat: lat(), baseline: str(), assumptions: list(obj()), impact: obj(), forecast: obj() } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc, dispatch = K.dispatch, CAPS = K.CAPS;
+      /* (forecast) EXTERNAL FORECAST DATA BROUGHT INTO THE GIS — js/gis-forecast.js. With `forecast` and no `model`, this is the whole scenario;
+         with both, the simulator's scenario runs as before and the forecast is appended after it. */
+      let fcHtml = '', fcMeta = null;
+      if (a.forecast && typeof a.forecast === 'object') {
+        await window.IntMapLazy.need('gisCore');
+        const FC = window.IntMapGisForecast, f = a.forecast;
+        if (!FC) return R(false, warn(L('The forecast module could not be loaded.', '予測データのモジュールを読み込めませんでした。')));
+        let bounds = f.bounds;
+        const flo = f.lng != null ? f.lng : a.lng, fla = f.lat != null ? f.lat : a.lat;
+        if (!bounds && flo != null && fla != null && isFinite(+flo) && isFinite(+fla)) {
+          const km = Math.max(1, Math.min(500, +f.halfWidthKm || 25));
+          const dLat = km / 111.32, dLng = km / (111.32 * Math.max(0.05, Math.cos(+fla * Math.PI / 180)));
+          bounds = [+flo - dLng, +fla - dLat, +flo + dLng, +fla + dLat];
+        }
+        const fr = await FC.fetchForecast({ source: f.source, bounds, nx: f.nx, ny: f.ny, days: f.days, variable: f.variable, models: f.models, conditions: f.conditions, observations: f.observations });
+        if (!fr.ok) return R(false, warn(L('The forecast could not be brought in: ', '予測データを取り込めませんでした: ') + esc(fr.why) + (fr.detail ? ' ' + esc(JSON.stringify(fr.detail).slice(0, 300)) : '')),
+          { meta: { code: 'forecast-' + fr.why, category: 'upstream', retryable: false, forecast: { why: fr.why, detail: fr.detail }, produced: [], userGoalSatisfied: false } });
+        const reg = FC.register(fr);
+        const drawn = f.draw === false ? null : await FC.draw(reg);
+        const rep0 = forecastReport(fr.record);
+        const pick0 = (t) => L(t[0], t[1]);
+        const li0 = (rows) => '<ul style="margin:2px 0 4px 16px;padding:0;">' + rows.map((x) => '<li>' + x + '</li>').join('') + '</ul>';
+        const hd0 = (t) => '<div style="font-weight:600;margin-top:6px;">' + esc(t) + '</div>';
+        fcHtml = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L('Forecast scenario', '予測シナリオ')) + ' — ' + esc(fr.record.source.id) + '</div>'
+          + '<div>' + esc(L('Model estimate dataset: ', '推計のデータセット: ')) + '<code>' + esc(reg.datasets.modelEstimate) + '</code>' + (reg.datasets.uncertainty ? ' · ' + esc(L('uncertainty: ', '不確実性: ')) + '<code>' + esc(reg.datasets.uncertainty) + '</code>' : '') + ' · ' + esc(String(fr.record.modelEstimates.points)) + ' ' + esc(L('forecast grid points', '予測の格子点')) + '</div>'
+          + hd0(L('Assumptions (stated by the reader)', '前提（利用者が述べた条件）')) + li0(rep0.assumptions.length ? rep0.assumptions.map((x) => '<b>' + esc(x.name) + '</b> = ' + esc(JSON.stringify(x.value)) + ' — ' + esc(x.applied ? L('applied as a comparison', '比較として反映') : L('stored, not applied', '記録のみ'))) : [esc(L('none stated', '述べられていない'))])
+          + hd0(L('Data used', '使用データ')) + li0(rep0.dataUsed.map((t) => esc(pick0(t))))
+          + hd0(L('Not considered', '考慮外')) + li0(rep0.excluded.map((t) => esc(pick0(t))))
+          + hd0(L('Uncertainty', '不確実性')) + li0(rep0.uncertainty.map((t) => esc(pick0(t))));
+        fcMeta = Object.assign({}, rep0, { datasets: reg.datasets, drawn: drawn && drawn.drawn });
+        if (!a.model) return R(true, fcHtml, { meta: { forecast: fcMeta, scenario: rep0, produced: ['explanation'], userGoalSatisfied: true } });
+      }
       const MODELS = scenarioModels(SIM_ENTRIES);
       const frame = scenarioFrame(a, (s) => CAPS.ofSpelling(s), MODELS);
       const pick = (t) => L(t[0], t[1]);
@@ -1071,8 +1159,8 @@ export default [
       if (!run || !run.ok) {
         return R(false, title + (run && run.html ? run.html : warn(L('The model did not run.', 'モデルが実行されませんでした。'))) + fields, { meta: Object.assign({}, run && run.meta, { code: (run && run.meta && run.meta.code) || 'scenario-model-failed', scenario: rep, userGoalSatisfied: false, produced: [] }) });
       }
-      return R(true, title + run.html + (exHtml ? '<div style="margin-top:6px;">' + exHtml + '</div>' : '') + fields,
-        { meta: Object.assign({}, run.meta, { scenario: rep, produced: ['explanation'], userGoalSatisfied: true }) });
+      return R(true, title + run.html + (exHtml ? '<div style="margin-top:6px;">' + exHtml + '</div>' : '') + fields + fcHtml,
+        { meta: Object.assign({}, run.meta, { scenario: rep, forecast: fcMeta, produced: ['explanation'], userGoalSatisfied: true }) });
     },
   },
   {
@@ -1087,9 +1175,9 @@ export default [
     ui: { none: '2026-11-18' },
     phrases: () => ['並行して調べる', '手分けして調査', '分担して調べる', '複数の調査', '同時に調査'].concat(['in parallel', 'split the research', 'research separately', 'several pieces', 'delegate']),
     doc: [
-      { in: 'research.analyze', at: 30, text: 'DELEGATE RESEARCH TO WORKERS (parallel, each in its own context): {"type":"delegate","tasks":[{"id"?:str,"goal":str,"returns"?:str,"tools"?:[read capability ids this worker may call itself (it then looks, calls, reads the result and calls again, within the per-worker request limit the server states); add "find_capability" to let it search IntMap\'s registry itself — every read-only capability it finds becomes callable by it, anything else is refused with the reason],"inputs"?:[{"from":task id}]} | {"id"?:str,"kind":"capability","capability":str (a read capability id),"args"?:{...}}]} — 並行して調べる・手分けして調査 — hands independent pieces of a large request to worker models that run AT THE SAME TIME, search the web, and return structured findings (summary, claims with places/coordinates/dates/source URLs, and what they could not establish). Use it when a request has several pieces that can be researched apart (e.g. crude oil from the Gulf, iron ore and coal from Australia, and LNG routes to Japan) — not for a single lookup, which you answer faster yourself. A task that needs another task\'s result names it in "inputs" and starts when that one ends. A task of kind "capability" runs ONE exact lookup you already know how to ask (a read-only capability id and its arguments) with NO model and NO cost, alongside the others — use it to fan the same lookup out over several places or items (the weather in five cities, a figure for each of ten countries) and to mix exact figures in with the research; its answer comes back as the task\'s summary and "data". A capability that is not read-only (it draws, changes the view, saves or sends anything) is refused with capability_not_read_only — run that yourself. Tasks may be listed in any order: an input may name a task that comes later in the list, and a loop of inputs is ended input_cycle. A capability task\'s argument may be the string "@<task id>:data.<path>" (also "@<task id>:summary") to receive what an input task produced — e.g. a spatial step\'s "inputs":["@acq:data.gis.dataset"] is handed the dataset the "acq" step made (name acq in "inputs" too); a string that must begin with @ is written "@@…". A reference that leads nowhere ends the task input_ref_unresolved without running it. Add "verify":true to a worker task to have a SECOND worker check its claims against sources of its own: the result\'s integrated.verification says per claim supported / contradicted / unsupported / unchecked (a claim the checker did not repeat stays unchecked, never assumed supported). The workers do not draw anything: you integrate their findings and draw the map from them. Besides each task, the result carries "integrated": findings that more than one worker found (duplicateFindings), places where workers\' figures differ (placeOverlaps with numbersDiffer), the deduplicated sources and who cited each, the gaps, "facts" (what the workers stated as data — object, attribute, value, unit, time, source — matched BY OBJECT across workers even when one wrote «Port of Rotterdam» and another 「ロッテルダム港」: each row is agree / conflict / single with the source of every observation and evidence id, and missingFrom names workers that covered the object but not that attribute; subjects nothing resolved are listed in unresolved), the cost, and which tasks did not return and in what state (unreturned) — read it before you write the answer. Each task comes back with a state (done / partial / failed / refused / unobservable / cancelled) and its cost; a refused task carries the server\'s reason (e.g. delegation_children = the server admits fewer workers; delegation_off = delegation is switched off). The same task list asked again soon after (within the server\'s turn lifetime — e.g. after the page was closed or the turn was cut off) answers its tasks that already ended done/partial from that earlier run — marked "resumed", not run or paid for again; pass "fresh":true to run every task anew.\n' },
+      { in: 'research.analyze', at: 30, text: 'DELEGATE RESEARCH TO WORKERS (parallel, each in its own context): {"type":"delegate","tasks":[{"id"?:str,"goal":str,"returns"?:str,"tools"?:[read capability ids this worker may call itself (it then looks, calls, reads the result and calls again, within the per-worker request limit the server states); add "find_capability" to let it search IntMap\'s registry itself — every read-only capability it finds becomes callable by it, anything else is refused with the reason],"model"?:[the id of one of the models listed under «Delegation» in the context, with prices — pick a cheaper one for a piece that only reads or extracts, the stronger one where the piece needs judgement; omit it to use the server default],"inputs"?:[{"from":task id}]} | {"id"?:str,"kind":"capability","capability":str (a read capability id),"args"?:{...}}]} — 並行して調べる・手分けして調査 — hands independent pieces of a large request to worker models that run AT THE SAME TIME, search the web, and return structured findings (summary, claims with places/coordinates/dates/source URLs, and what they could not establish). Use it when a request has several pieces that can be researched apart (e.g. crude oil from the Gulf, iron ore and coal from Australia, and LNG routes to Japan) — not for a single lookup, which you answer faster yourself. A task that needs another task\'s result names it in "inputs" and starts when that one ends. A task of kind "capability" runs ONE exact lookup you already know how to ask (a read-only capability id and its arguments) with NO model and NO cost, alongside the others — use it to fan the same lookup out over several places or items (the weather in five cities, a figure for each of ten countries) and to mix exact figures in with the research; its answer comes back as the task\'s summary and "data". A capability that is not read-only (it draws, changes the view, saves or sends anything) is refused with capability_not_read_only — run that yourself. Tasks may be listed in any order: an input may name a task that comes later in the list, and a loop of inputs is ended input_cycle. A capability task\'s argument may be the string "@<task id>:data.<path>" (also "@<task id>:summary") to receive what an input task produced — e.g. a spatial step\'s "inputs":["@acq:data.gis.dataset"] is handed the dataset the "acq" step made (name acq in "inputs" too); a string that must begin with @ is written "@@…". A reference that leads nowhere ends the task input_ref_unresolved without running it. Add "verify":true to a worker task to have a SECOND worker check its claims against sources of its own: the result\'s integrated.verification says per claim supported / contradicted / unsupported / unchecked (a claim the checker did not repeat stays unchecked, never assumed supported). The workers do not draw anything: you integrate their findings and draw the map from them. Besides each task, the result carries "integrated": findings that more than one worker found (duplicateFindings), places where workers\' figures differ (placeOverlaps with numbersDiffer), the deduplicated sources and who cited each, the gaps, "facts" (what the workers stated as data — object, attribute, value, unit, time, source — matched BY OBJECT across workers even when one wrote «Port of Rotterdam» and another 「ロッテルダム港」: each row is agree / conflict / single with the source of every observation and evidence id, and missingFrom names workers that covered the object but not that attribute; subjects nothing resolved are listed in unresolved), the cost, and which tasks did not return and in what state (unreturned) — read it before you write the answer. Each task comes back with a state (done / partial / failed / refused / unobservable / cancelled) and its cost; a refused task carries the server\'s reason (e.g. delegation_children = the server admits fewer workers; delegation_off = delegation is switched off). The same task list asked again soon after (within the server\'s turn lifetime — e.g. after the page was closed or the turn was cut off) answers its tasks that already ended done/partial from that earlier run — marked "resumed", not run or paid for again; pass "fresh":true to run every task anew.\n' },
     ],
-    schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', properties: { id: str(), kind: one(...CONTRACT_KINDS),   /* the substrate's own list of kinds, not a copy of it */ goal: str(), returns: str(), capability: str(), args: obj(), verify: bool(), tools: list(str()), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1), fresh: bool() } }),
+    schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', properties: { id: str(), kind: one(...CONTRACT_KINDS),   /* the substrate's own list of kinds, not a copy of it */ goal: str(), returns: str(), model: str(), capability: str(), args: obj(), verify: bool(), tools: list(str()), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1), fresh: bool() } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
       const tasks = Array.isArray(a && a.tasks) ? a.tasks : [];
@@ -1115,7 +1203,8 @@ export default [
          contract to its kind's lane and REFUSES a kind with no lane (a host that cannot run capabilities says so, it does not run
          the task as a worker). The retry after a transient failure is on only when the server has said how many requests a child
          may make (policy.childMaxCalls), so the retry can never ask for more than the server allows. */
-      const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : undefined;
+      /* a NUMBER bounds; null (the server states no count) stays null, which runs the worker on progress and not on a count; no policy at all → undefined (the plain two-request worker) */
+      const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : (pol && pol.childMaxCalls === null ? null : undefined);
       const executor = makeRouterExecutor({
         worker: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal, maxCalls: childMax,
           capability: typeof K.runReadCapability === 'function' ? { run: K.runReadCapability, classify: K.classifyCapability, describe: K.describeCapability, find: K.findCapabilities } : null }),   /* (delegation-agency) a worker granted `tools` runs read capabilities itself, through the same lane */
@@ -1130,7 +1219,7 @@ export default [
       const dKey = delegationKey(tasks);
       let prior = null;
       if (store && a.fresh !== true) { try { prior = await store.get(dKey); } catch (_) { prior = null; } }
-      const D = makeDelegation({ parent, executor, resume: prior || undefined });
+      const D = makeDelegation({ parent, executor, resume: prior || undefined, maxConcurrent: (pol && Number.isInteger(pol.maxConcurrent)) ? pol.maxConcurrent : null });
       let saving = Promise.resolve(), saves = 0;
       const save = () => { saving = saving.then(() => store.save(dKey, D.snapshot())).then((ok) => { if (ok) saves++; }, () => {}); };
       const unsave = store ? D.subscribe((e) => { if (e && e.kind === 'task.ended') save(); }) : () => {};
@@ -1186,7 +1275,7 @@ export default [
          by the model — js/atlas-toolsurface.js mechanical) */
       const I = integrate(results);
       /* (fact-merge) what the workers STATED as data, matched by object and attribute — a name becomes an object through the session index and the persistent graph, never a list here */
-      const F = results.some((r) => r.facts && r.facts.length) ? await mergeFacts(results, { resolve: makeFactResolver({ find: (q) => W.find(q), findPersisted: async (q) => { const g = await G.findPersisted(K.HOST.DB, q); return g && g.ok ? g.object : null; } }) }) : null;
+      const F = results.some((r) => r.facts && r.facts.length) ? await mergeFacts(results, { resolve: makeFactResolver({ find: (q) => W.find(q), findPersisted: async (q) => { const g = await G.findPersisted(K.HOST.DB, q); return g && g.ok ? g.object : null; } }), semantics: window.IntMapGisSemantics || null, units: window.IntMapGisUnits || null, ties: (ref) => G.tiesOf(K.HOST.DB, ref) }) : null;
       const dupes = I.findings.filter((f) => f.alsoFoundBy.length).map((f) => ({ claim: f.claim, tasks: [f.task].concat(f.alsoFoundBy) }));
       const differ = I.placeOverlaps.filter((p) => p.numbersDiffer);
       const integrated = {
@@ -1203,6 +1292,7 @@ export default [
       const notes = [];
       if (dupes.length) notes.push(L(dupes.length + ' finding(s) were found by more than one worker', dupes.length + ' 件の所見が複数の子で一致しました'));
       if (F && F.counts.conflict) notes.push(L(F.counts.conflict + ' stated value(s) conflict between workers (integrated.facts, with the source of each)', '子どうしで述べられた値が ' + F.counts.conflict + ' 件食い違っています（integrated.facts に根拠つき）'));
+      if (F) { const nd = F.objects.reduce((n, o) => n + o.attributes.filter((a) => a.comparability && a.comparability.differing.length).length, 0); if (nd) notes.push(L(nd + ' compared row(s) differ in what they measure (scope, borders, period, unit or aggregation): see comparability before calling it a disagreement', nd + ' 件は測っているものが違います（範囲・境界・期間・単位・集計）。食い違いと呼ぶ前に comparability を確認してください')); }
       if (differ.length) notes.push(L('Figures differ between workers at: ', '子どうしで数値が異なる地点: ') + differ.map((p) => p.place).slice(0, 6).join(', '));
       if (I.unreturned.length) notes.push(L('Did not return: ', '結果が戻らなかった仕事: ') + I.unreturned.map((u) => u.task + ' (' + stateWord(u.state) + (u.code ? ', ' + u.code : '') + ')').slice(0, 8).join(', '));
       if (verification) { const c = verification.counts; notes.push(L('Checked by a second worker: ' + c.supported + ' supported, ' + c.contradicted + ' contradicted, ' + c.unsupported + ' unsupported, ' + c.unchecked + ' not checked', '別の子による検証: 支持 ' + c.supported + ' / 反証 ' + c.contradicted + ' / 根拠なし ' + c.unsupported + ' / 未検証 ' + c.unchecked)); }
@@ -1220,6 +1310,32 @@ export default [
         integrated,
         /* (delegate-child-loop) what was answered from the last run of the same list, and whether this run's record was kept */
         resume: store ? { key: dKey, resumed: results.filter((r) => r.resumed).length, from: prior ? prior.at : undefined, saved: saves > 0 } : undefined,
+      } });
+    },
+  },
+  {
+    row: ['research.search',            'researchSearch', 'investigate,searchNews,searchSources',                                'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
+    ui: { none: '2026-11-24' },
+    phrases: () => ['調べ直す', '別の言葉で検索', '原文で調べる', '一次資料', '裏を取る'].concat(['search again', 'in the original language', 'primary source', 'cross-check', 'investigate']),
+    doc: [
+      { in: 'research.analyze', at: 31, text: 'AN INVESTIGATION THAT YOU STEER: {"type":"researchSearch","queries":[{"q":str,"lang"?:"uk"|"ru"|"pl"|… (the language the SOURCES write in — a BCP-47 tag),"country"?:"UA"|"PL"|… (ISO 3166-1 alpha-2: the country whose press to read),"site"?:"president.gov.ua" (ONE outlet or an official/primary source),"engine"?:"gdelt"|"gnews"|"both","timespan"?:"72h"|"7d"|"3m"}, …],"gap"?:str,"contradiction"?:str,"changed"?:str} — 調べる・検索し直す・原文/一次資料で裏を取る. Searches SEVERAL queries AT THE SAME TIME, each in the language, country and outlet you name, and returns documents (headline, outlet, date, URL) — it does NOT write an answer; you read what came back, decide what is missing or contradicted, and search again DIFFERENTLY: other words, the sources\' OWN language (Ukrainian, Russian, Polish, … for a story from there, not only English), a primary source via "site", another engine. HOW MANY rounds, WHICH languages, WHEN to stop are yours — nothing here counts or caps them. Say what you are doing in "gap" (what is still missing), "contradiction" (what disagrees) and "changed" (what you now search differently); they are kept with the round and returned, and what is NEW in method (words, languages, sites, engines) is computed from your queries. A query already run this turn is answered "alreadyRun" with no new fetch, and a document found twice is listed once — repeat a search only after a real failure. Each query\'s state is ok / empty (a source answered and had none) / unavailable (no source answered — that is NOT proof nothing was published). A result is a headline, never a verified fact: read the primary source, and use research.delegate for pieces that need reading in parallel.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { queries: list({ type: 'object', required: ['q'], properties: { q: str(), lang: str(), country: str(), site: str(), engine: one('both', 'gdelt', 'gnews'), timespan: str() } }, 1), gap: str(), contradiction: str(), changed: str(), budgetMs: num(0) }, required: ['queries'] }),
+    async run(a, dctx, K) {
+      const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
+      if (!researchMemory.search) researchMemory.search = makeResearchSearch({ gdelt: (...x) => K._gdeltNews(...x), gnews: (...x) => K._gnewsNews(...x) });
+      const out = await researchMemory.search.run(a, K._curTurnKey);
+      if (!out.ok) return R(false, warn(esc(L(out.message, '検索語を queries:[{q,…}] で指定してください。'))), { meta: { status: 'failed', code: out.code } });
+      const got = out.documents.length, st = out.totals.states;
+      const html = '<div style="font-size:12px;line-height:1.5;"><div style="font-weight:600;">' + esc(L('Investigation search', '調査の検索')) + ' — ' + esc(L(out.queries.length + ' quer' + (out.queries.length === 1 ? 'y' : 'ies') + ', ' + got + ' new document(s)', out.queries.length + ' 件の検索で新しい記事 ' + got + ' 件')) + '</div>'
+        + '<ul style="margin:2px 0 0 16px;padding:0;">' + out.queries.map((q) => '<li>' + esc(q.q) + (q.lang ? ' [' + esc(q.lang) + (q.country ? '/' + esc(q.country) : '') + ']' : '') + (q.site ? ' @' + esc(q.site) : '') + ' — ' + esc(q.alreadyRun ? L('already run', '実行済み') : q.state === 'rejected' ? q.error : (q.state + ' · ' + q.found)) + '</li>').join('') + '</ul>'
+        + (st.unavailable ? '<div style="opacity:.7;">' + esc(L(st.unavailable + ' search(es) could not reach a source — not proof that nothing was published.', st.unavailable + ' 件は取得先に届きませんでした。報道が無かったという意味ではありません。')) + '</div>' : '') + '</div>';
+      const okAny = out.queries.some((q) => q.state === 'ok' || q.alreadyRun && q.state === 'ok');
+      return R(okAny || out.queries.every((q) => q.state === 'empty' || q.alreadyRun), html, { meta: {
+        status: okAny ? 'completed' : (st.unavailable && !st.empty ? 'failed' : 'partial'),
+        code: okAny ? undefined : (st.unavailable && !st.empty ? 'sources_unavailable' : 'no_documents'),
+        produced: ['explanation'],
+        research: { round: out.round, queries: out.queries, documents: out.documents, alreadySeen: out.alreadySeen, delta: out.delta, investigation: out.investigation, totals: out.totals, reading: out.reading },
       } });
     },
   },

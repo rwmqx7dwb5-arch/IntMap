@@ -208,25 +208,40 @@ test('R733 ② a code-shaped string the store does not know is NOT handed to the
 test('R733 ③ only a LIMIT raises the truncation note — the normal stop never does', () => {
   const line = CONSOLE_SRC.split('\n').find((l) => l.indexOf('ai.__atlCut=') >= 0);
   assert.ok(line, 'the turn records whether it was cut short');
-  const map = new Function('out', 'var ai={};' + line.trim() + 'return ai.__atlCut;');
-  /* the two guards that actually fired in production, plus the rest of the family */
-  ['step_budget', 'call_budget', 'time_budget', 'repeated_calls', 'malformed_limit']
-    .forEach((s) => assert.equal(map({ stopped: s }), true, s + ' ended the turn before Atlas was done'));
-  /* ⚠ THE ONE THAT MUST NOT. 'answered' is js/atlas-agent.js's normal finish; a note on every turn
-     would say something false about every completed answer and teach the reader to ignore it. */
-  ['answered', 'aborted', 'transport', 'awaiting_user', ''].forEach((s) =>
-    assert.equal(map({ stopped: s }), false, s || '(none)' + ' is not a truncation'));
+  const run = new Function('out', 'AGENT', 'var ai={};' + line.trim() + 'return ai.__atlCut;');
+  /* (atlas-unbounded-execution) the set is js/atlas-agent.js's CUT_STOPS, READ — measured against the real one,
+     and against a loop that does not export it (the literal that stands in) */
+  const agentSrc = readFileSync(join(ROOT, 'js/atlas-agent.js'), 'utf8');
+  const cutLine = agentSrc.split(/\r?\n/).find((l) => /CUT_STOPS\s*=/.test(l));
+  const CUT_STOPS = new Function('return ' + cutLine.replace(/^[^=]*=/, '').replace(/;\s*$/, ''))();
+  for (const AG of [{ CUT_STOPS }, {}]) {
+    const map = (out) => run(out, AG);
+    /* the two guards that actually fired in production, plus the rest of the family — and `budget`, the server refusing for money */
+    ['step_budget', 'call_budget', 'time_budget', 'repeated_calls', 'malformed_limit', 'budget']
+      .forEach((s) => assert.equal(map({ stopped: s }), true, s + ' ended the turn before Atlas was done'));
+    /* ⚠ THE ONE THAT MUST NOT. 'answered' is js/atlas-agent.js's normal finish; a note on every turn
+       would say something false about every completed answer and teach the reader to ignore it. */
+    ['answered', 'aborted', 'transport', 'awaiting_user', ''].forEach((s) =>
+      assert.equal(map({ stopped: s }), false, s || '(none)' + ' is not a truncation'));
+  }
 });
 
-test('R733 ③ the note is rendered from that flag, and says what was NOT done', () => {
+test('R733 ③ the note is rendered from that flag, in one line worded by why the turn stopped, with a way on', () => {
   const compose = liftFunction(CONSOLE_SRC, '_atlCompose');
   assert.match(compose, /ai\.__atlCut/, '_atlCompose reads the flag');
-  assert.match(compose, /_cutNote\(\)/, 'and renders the note');
+  assert.match(compose, /_cutNote\(ai\.__atlStopped\)/, 'and renders the note for the stop that fired');
   const note = liftFunction(CONSOLE_SRC, '_cutNote');
-  const text = new Function('L', 'esc', note + '\nreturn _cutNote();')(
-    (en) => en, (s) => String(s));
-  assert.match(text, /incomplete/i, 'the reader is told the answer may be incomplete');
-  assert.match(text, /not done/i, '…and that what is missing was not merely left undescribed');
+  const say = (stop) => new Function('L', 'esc', 'stop', note + '\nreturn _cutNote(stop);')((en) => en, (s) => String(s), stop);
+  /* (atlas-unbounded-execution) what was left undone is the unmet line's to name (.atl-unmet); this line says WHY */
+  assert.match(say('budget'), /spending limit/i, 'a turn the server refused for money says so');
+  for (const s of ['repeated_calls', 'malformed_limit']) assert.match(say(s), /no longer making progress/i, s + ' is Atlas no longer getting anywhere');
+  for (const s of ['step_budget', 'call_budget', 'time_budget']) assert.match(say(s), /working limit[\s\S]*incomplete/i, s + ' is a working limit, and the answer may be incomplete');
+  for (const s of ['budget', 'repeated_calls', 'step_budget']) {
+    assert.match(say(s), /<button type="button" class="atl-cut-go">Continue<\/button>/, s + ': the reader can ask Atlas to go on in one press');
+    assert.equal((say(s).replace(/<button[\s\S]*<\/button>/, '').match(/[.!?](\s|<)/g) || []).length, 1, s + ': one sentence, not a paragraph');
+  }
+  /* the press sends the follow-up through the console's own run(), and removes the button so it cannot be sent twice */
+  assert.match(CONSOLE_SRC, /closest\('\.atl-cut-go'\);[^\n]*\n\s*if\(cgo\)\{ cgo\.remove\(\); run\(L\('Continue from where you stopped\./, 'Continue is wired to run()');
 });
 
 /* ── the clock is the third axis of the map, and it was the one behind a search ───────────── */
@@ -996,17 +1011,17 @@ test('R802 ⑦ emptying the highlight forgets what it was called', () => {
    me which of them are NOT in the top 10 by total GDP» drew both tables and the choropleth, and all the
    prose the reader received was «I'm comparing the two rankings now.» The closing call existed but was
    reachable only when NOTHING had been said, and a first-step narration is something. */
-test('R802 ⑧ a turn that ran out still gets the step that writes the answer', () => {
+test('R802 ⑧ a turn that was cut short is named as one — and (atlas-unbounded-execution) is not forced to write an answer', () => {
   const cutLine = AGENT_SRC.split('\n').find((l) => /CUT_STOPS\s*=/.test(l));
   assert.ok(cutLine, 'the stops that cut a turn short are named in one place');
   const CUT = new Function('return ' + cutLine.replace(/^[^=]*=/, '').replace(/;\s*$/, ''))();
-  for (const s of ['step_budget', 'call_budget', 'time_budget', 'repeated_calls', 'malformed_limit']) {
+  for (const s of ['step_budget', 'call_budget', 'time_budget', 'repeated_calls', 'malformed_limit', 'budget']) {
     assert.equal(CUT[s], 1, s + ' is a turn that was cut short');
   }
   assert.equal(CUT.answered, undefined, 'a turn that answered was not cut short');
   assert.equal(CUT.awaiting_user, undefined, 'a turn that ended by asking the reader was not cut short');
-  const i = AGENT_SRC.indexOf('cutShort');
-  assert.ok(i > 0 && /if\s*\(cutShort\)\s*writeAnswer\s*=\s*true/.test(AGENT_SRC.slice(i, i + 800)),
-    'being cut short is itself a reason to write the answer');
+  /* (atlas-unbounded-execution, the user 2026-11-24) the #R802 closing call is gone: a stopped turn ends with what it has —
+     the behaviour is driven in tests/atlas-unbounded-execution-checks.test.mjs ⑤⑥⑨; here, that no line forces it back */
+  assert.ok(!/if\s*\(cutShort\)\s*writeAnswer\s*=\s*true/.test(AGENT_SRC), 'being cut short is not a reason to force an answer');
 });
 }

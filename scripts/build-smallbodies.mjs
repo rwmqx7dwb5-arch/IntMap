@@ -47,6 +47,11 @@ export const GOVERNANCE = {
     ...JPL_SBDB,
     /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
     autoRefresh: 'about ninety paced SBDB requests, no key; every answer is checked, a sweep that returns no rows is refused, and the 100-body floor is asked before the write',
+    /* (describes.*) what this build selects and what the committed bundle measurably carries (1,150 bodies, built 2026-11-19). */
+    extent: '1,150 bodies: asteroids of 150 km and larger, trans-Neptunian objects brighter than H 5.5, every numbered comet, potentially hazardous asteroids brighter than H 18, plus an editorial list of spacecraft targets and famous bodies',
+    method: 'osculating heliocentric orbital elements (J2000 ecliptic) at the epoch each body states, propagated two-body from that epoch: mean anomaly from the time of perihelion where SBDB gives one, otherwise from ma at epoch, and from q and tp on the hyperbolic branch for e of 1 or more',
+    completeness: 'a selection by size, brightness and editorial pick, not the whole catalogue',
+    accuracy: 'osculating elements drift from the real orbit as planets perturb it (and, for an active comet, non-gravitational jetting): adequate to show where a body is in the solar system, not to point a telescope (the bundle\'s own warning)',
     builtBy: 'scripts/build-smallbodies.mjs',
   },
 };
