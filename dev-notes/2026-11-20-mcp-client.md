@@ -36,17 +36,13 @@ newsjp: Atlasが、登録した外部MCPサーバーのツールを、自身の�
 
 `async.gzip` 4745.6→4773.7 kB・`atlas-cap-runs` 884.2→894.9 kB・`atlas-console` 1051.8→1057.4 kB・`dist.assets` 21446.3→21579.3 kB。MCP の能力モジュール（`atlas-cap-mcp.js`）が能力の遅延チャンクに入り、`atlas-console` に外部ツール探索の依存 1 行が入った。クライアント本体（`atlas-mcp-client`、約 14 kB）は独立した遅延チャンクで、サーバが 1 つも登録されていない読者には読み込まれない（起動時リクエストは 10 のまま）。
 
-## 予算の天井を上げた理由（perf-baseline・2026-11-21）
-MCP クライアントが 4 能力（`mcp.servers`・`mcp.connect`・`mcp.call`・`mcp.act`）とその schema・確認文言を足したため、遅延 chunk の `atlas-cap-runs` が 903.4→917.0 kB、async gzip が 4807.7→4840.4 kB、dist.assets が 21686.9→21801.9 kB になった（`node scripts/perf-budget.mjs --update`）。クライアント本体は能力を呼んだときだけ動的 import される遅延 chunk で、起動時に読む量は増えていない。失効条件: 能力の統合・縮小で下がったら main の CI が `--tighten` で下げる。
+## perf 天井を上げた理由（origin/main 取り込み時）
 
-## perf 天井の引き上げ(origin/main 取り込み後の再計測)
+`atlas-cap-runs` 903.4→913.3 kB・`atlas-console` 1066.9→1075.4 kB・async.raw 14221.0→14317.9 kB。増えたのは MCP クライアント
+（`js/atlas-cap-mcp.js` の 4 能力と確認文 `atlas.confirm.what.mcp.*`）で、遅延チャンクの中にあり起動時の取得量は増えていない。
+取り込み時に `mcp.servers` / `mcp.call` の確認文が無かったので足した（`atlas-console-boundary` C③）。
 
-汎用 MCP クライアントと、main に入った能力(264 行)が遅延 chunk `atlas-cap-runs` に集まり、async.raw / async.gzip / atlas-cap-runs の 3 行が天井を超えた(実測 async.raw 14498 kB・atlas-cap-runs 933.7 kB。CI の前回実測は 14381.8 kB・917.0 kB)。起動時に読む chunk ではなく、能力が呼ばれたときだけ読まれる遅延 chunk の増加なので、`perf-budget.mjs --update` で超過行だけを上げた。失効条件: 能力表が組み替わり atlas-cap-runs が分割されたとき。
+追記: main の取り込み直後の再測定で `atlas-cap-runs` 909.0→919.0 kB・`atlas-console` 1080.1→1085.7 kB・async.raw 14304.0→14391.9 kB。
+理由は上と同じ（MCP の 4 能力と確認文。遅延チャンクの中）。`dist.total` / `dist.assets` はローカルの data:pull の差が混じるため上げていない。
 
-追補: 同じ再計測で、遅延 chunk `atlas-console`(1105.8→1121.5 kB)と `dist.assets`(21796.5→21935.2 kB)も、MCP クライアントの接続画面と能力の追加ぶんだけ上げた。いずれも能力の実行時にだけ読まれる遅延 chunk で、起動時の費用は増えていない。
-
-（2026-11-24 の main 取り込み後、CI の Gates 2/3 で check:perf が天井を超えた: atlas-cap-runs 938.6 kB 超（970,100 B へ）、dist.assets 21923.7 kB 超（22,569,300 B へ）。CI の測定値に合わせて上げた。MCP の能力（mcp.connect / mcp.act）の追加ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
-
-（2026-11-24 の続き: main に #1313 などが入ったあとの CI の Gates 2/3 で、async.raw 14569.8→14667.6 kB（15,019,700 B へ）、async.gzip 4918.1→4953.6 kB（5,072,500 B へ）、atlas-cap-runs 952.1→959.4 kB（982,500 B へ）、atlas-console 1139.2→1146.7 kB（1,174,300 B へ）、gis-core 697.3→701.2 kB（718,100 B へ）が天井を超えた。CI の測定値に合わせて上げた。gis-core は MCP の変更ではなく main 側の増分で、main の天井が測定より先に上がっていないために、この PR が引き受けた。）
-
-（2026-11-24 の続き: main に web.session(#1337)などが入ったあとの CI の Gates 2/3 で、atlas-cap-runs 981.3→989.2 kB（1,013,000 B へ）、atlas-console 1152.4→1158.9 kB（1,186,800 B へ）が天井を超えた。CI の測定値に合わせて上げた。main に入った web.session の能力ぶんと、この PR の MCP の能力ぶんの合計で、能力を戻せば下がる。）
+追記: CI の実測（`dist.total` 1550208.7 kB・`dist.assets` 21826.4 kB）がローカルと一致したので、この 2 行も上げた（`dist.total` 1542452.9→1550211.2 kB・`dist.assets` 21686.9→21826.6 kB）。先の「ローカルの差」という見立ては誤りだった。
