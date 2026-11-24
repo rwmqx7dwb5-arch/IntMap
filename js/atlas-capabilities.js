@@ -412,6 +412,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","none","","",""],
       ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
       ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","explicit","","","external"],
+      ["geo.imageChange","geoImageChange","imageChange,changeDetection,satelliteChange,landCoverChange,embeddingChange,radarChange,beforeAfter","data","none","gis.dataset","explanation","read","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
