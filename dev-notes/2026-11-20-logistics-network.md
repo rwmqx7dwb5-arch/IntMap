@@ -53,3 +53,5 @@ newsjp: Atlas が「この港が止まったら影響を受ける都市と工場
 - `scripts/gis-kernel-versions.mjs`: `js/gis-ops.js` の版ハッシュを main の最新と合わせて記録し直した（ops-14 のまま。既存の答えは変わらない）。
 
 - perf: atlas-cap-runs 987.8→993.5 kB・dist.assets 22068.6→22189.9 kB へ天井を上げた。港・鉄道・都市・工場の網と「この港が止まったら」の能力を足したため。
+
+- perf: atlas-cap-runs 1025588→1031599 B・atlas-console 1186800→1192904 B へ天井を上げた。港・鉄道・都市・工場の網の能力を足し、main の他の変更と合わせて測り直したため。
