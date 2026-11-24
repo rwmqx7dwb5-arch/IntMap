@@ -45,7 +45,10 @@ import { readFileSync, writeFileSync, existsSync, globSync } from 'node:fs';
 import { join, relative, isAbsolute } from 'node:path';
 import { ROOT, medianOf, lpt } from './gate-universe.mjs';
 
-export const LEDGER = join(ROOT, '.github', 'checks-cost.json');
+/* (checks-cost-from-main) CI points this at the ledger main's last run measured (restored from the
+   cache into $RUNNER_TEMP — outside the checkout, which the clean-tree assertions in this same job
+   read). The committed file stays the fallback: a cache miss plans exactly as before. */
+export const LEDGER = process.env.IM_CHECKS_COST || join(ROOT, '.github', 'checks-cost.json');
 
 const posix = (p) => p.split('\\').join('/');
 
@@ -98,6 +101,10 @@ async function cli(argv) {
   if (argv.includes('--update')) {
     const frags = argv.slice(argv.indexOf('--update') + 1).map((f) => JSON.parse(readFileSync(f, 'utf8')));
     const next = foldTimings(readLedger(), frags, `${new Date().toISOString().slice(0, 10)} · ${frags.length} shard`);
+    // Only files this tree has: a fragment measured on another branch names files main does not
+    // (measured 2026-11-21 — a PR's run carried tests/gis-pipeline-forecast-checks.test.mjs), and
+    // `--check` rightly refuses a ledger row for a file that is gone.
+    for (const f of Object.keys(next.seconds || {})) if (!files.includes(f)) delete next.seconds[f];
     writeFileSync(LEDGER, JSON.stringify(next, null, 2) + '\n');
     console.log(`✓ .github/checks-cost.json を更新（${Object.keys(next.seconds).length} ファイル）`);
     return 0;

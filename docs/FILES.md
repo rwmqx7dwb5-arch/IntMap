@@ -2600,6 +2600,10 @@ scripts/
                                   ⚠ driver の実行中、作業ツリーは merge 後の木ではない（実測）——だから生成器は後で走る。
                                   `--install`（冪等。config は全 worktree 共通。`worktree.mjs` と `master-sync.mjs --sync`
                                   が呼ぶ）／`--finish`／`--pending`／`--list`。経緯は docs/AGENT-SETUP.md §12
+  merge-train.mjs                 **溜まった PR を 1 回の CI で通す merge train**。auto-merge の付いた open PR を origin/main
+                                  の上へ merge driver 込みで順に merge し、1 本の PR にする（`--plan`／`--build`／`--dry`／
+                                  `--release`／`--close`）。載せたものは squash commit の `Merge-Train-Includes:` が述べる。
+                                  使い方は docs/AGENT-SETUP.md §12
   deps-fresh.mjs                  **インストール済みの `node_modules` が `package-lock.json` の木か**を版ごとに照合する。
                                   全 worktree は原本の `node_modules` を junction で借りるので、ここが古いと
                                   ローカルの門は全部 CI と違う依存で走る（2026-09-26 実測 14 件）。`--install` は食い違うときだけ
@@ -2863,7 +2867,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 173 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。件数は書かない（PR のたびに全員が書き換える行になる）。`node scripts/tiers.mjs --sizes` が今の core / deep / 全体を導出する（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
@@ -2973,6 +2977,7 @@ tests/
   atlas-eval.yml                  毎晩、本番の Atlas に記録済みの問いと検証済みの答えを持つ問いを送り、答えを独立採点して
                                   評価（Secret 2本が無ければ**赤**。休眠しない）。報告は run のページにも出る
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）。同じ PR に、期限の来た他の束も載せる（`scripts/data-refresh.mjs`・宣言 `autoRefresh`）
+  merge-train.yml                 main への push の commit に `Merge-Train-Includes:` があれば、列車が運んだ PR のうち head が同じものを閉じる（`scripts/merge-train.mjs --close`）
   perf-ceiling.yml                main の CI が完了するたびに、その build の実測で起動予算の天井を下げる（`perf-budget.mjs --tighten`。上げない）。bot の PR を `land-bot-pr` で、測った main の上にまだ乗っているときだけ着地させる
   upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストと選挙のビルドが読む上流の代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
   aviation-sweep.yml              世界の航空機スナップショット（Supabase Storage）を定期的に進める。リポジトリには書かない
