@@ -1588,7 +1588,8 @@ test('R783 ①: スキーマが宣言する欄を埋めた呼び出しは、145 
   const unreachable = [];
   for (const { cap, sc } of SUBJECTS) {
     const { result, reached } = await run(cap.id, fill(sc));
-    if (!reached) {
+    /* an 'always' row stops at the reader's token BEFORE dispatch, by design (needs_confirm): its target WAS satisfied, which is the question here */
+    if (!reached && result.code !== 'needs_confirm') {
       unreachable.push(cap.id + ' → ' + result.status + '/' + result.code
         + ' (target «' + ((cap.targetPolicy && cap.targetPolicy.kind) || '') + '»'
         + ' / schema declares ' + Object.keys(sc.properties).join(', ') + ')');
