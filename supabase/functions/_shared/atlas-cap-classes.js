@@ -13,6 +13,7 @@ export const READ_CAPS = Object.freeze(new Set([
   "data.coverage",
   "data.exploreRelated",
   "data.gis",
+  "data.gisOverture",
   "data.gisRemote",
   "data.layerValues",
   "data.openData",
