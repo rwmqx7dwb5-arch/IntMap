@@ -74,3 +74,7 @@ CI の実測まで 4 行を上げた: `async.raw` 14771.5 kB・`async.gzip` 4992
 `dist.assets` 22219.3 kB（KiB）。main が能力を足して能力表が 272 行になった分で、
 本 PR の `siting.compare` を含め、利用者が得る能力そのもの。縮める根拠は無い。この worktree は
 data を持たず build できないため CI の測定値から換算して書いた。main の bot が merge 後に再び下げる。
+
+## perf (main 取り込み後の再測定)
+
+main の取り込みで能力が 273 になり、`atlas-cap-runs` が 1007.7 kB、`atlas-console` が 1164.9 kB に増えた（CI 実測）。増分は main が足した能力の登録行で、この PR の追加ではない。天井をそれぞれ 1034000 / 1196000 byte へ上げた。失効条件: main の CI（perf-ceiling）が下げた時点で、その値が正本。
