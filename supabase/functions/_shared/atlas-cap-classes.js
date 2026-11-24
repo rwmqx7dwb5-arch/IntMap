@@ -5,6 +5,7 @@ export const READ_CAPS = Object.freeze(new Set([
   "account.data",
   "account.export",
   "attach.recall",
+  "board.delta",
   "briefing.share",
   "chart.compose",
   "community.mine",
@@ -59,6 +60,7 @@ export const READ_CAPS = Object.freeze(new Set([
 ]));
 export const PARKABLE_CAPS = Object.freeze(new Set([
   "board.compose",
+  "board.edit",
   "board.restore",
   "briefing.open",
   "community.browse",
@@ -212,6 +214,7 @@ export const PARKABLE_CAPS = Object.freeze(new Set([
   "time.weeklyEarth",
   "time.whereWhen",
   "time.yearbook",
+  "ui.compose",
   "ui.inlineControls",
   "view.basemap",
   "view.bearing",
