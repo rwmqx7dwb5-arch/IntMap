@@ -899,11 +899,11 @@
     },
     {
       "host": "flood-api.open-meteo.com",
-      "what": "Open-Meteo river-discharge (GloFAS) forecast at the points of a grid over the area asked about",
-      "whatJp": "Open-Meteo の河川流量（GloFAS）予測。尋ねた範囲の格子の各地点",
+      "what": "Open-Meteo river-discharge (GloFAS) forecast at a point and at the points of a grid over the area asked about",
+      "whatJp": "Open-Meteo の河川流量（GloFAS）予測。尋ねた地点と、尋ねた範囲の格子の各地点",
       "sends": {
         "code": "coordinates",
-        "detail": "latitude/longitude of the grid points over the area asked about"
+        "detail": "latitude/longitude of the point asked about (with its eight neighbouring grid cells) or of the grid points over the area asked about"
       },
       "disclosure": {
         "en": "elevation/weather APIs (Open-Meteo",
