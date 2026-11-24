@@ -93,3 +93,5 @@ main 取り込み後の CI 実測で `async.raw`・`async.gzip`・`atlas-cap-run
 main の再取り込み(2026-11-24)後の実測で `atlas-cap-runs` は 1006.4 kB、`atlas-console` は 1159.8 kB、`async.raw`・`async.gzip`・`dist.assets` も上げた。増分は `work.job` と main 側の能力で、どちらも起動(eager)には入らない。
 
 2026-11-24 の再取り込み後の実測で `atlas-cap-runs` を 1014.4 kB へ上げた(`work.job` と main 側の能力の合計。起動には入らない)。
+
+2026-11-24 の再々取り込み後の実測で `atlas-cap-runs` を 1020.3 kB、`atlas-console` を 1166.8 kB へ上げた(`work.job` と main 側の能力。起動には入らない)。能力は 273。
