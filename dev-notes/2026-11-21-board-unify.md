@@ -44,3 +44,5 @@ CI 実測で atlas-cap-runs が 938.9 kB、board チャンクが 29.1 kB（metri
 CI 実測(取り込み後の main との合成)で atlas-cap-runs が 947.5 kB、dist.assets が 22072.8 kB。main 側の他 PR(ファイル成果物・ジョブ費用の経路)と本統合の metrics/objects/worldObjects の合計。天井を 975000 / 22800000 バイトへ上げた。能力は削っていない。
 
 CI 実測: async.raw 14677.9 kB・async.gzip 4957.0 kB・atlas-cap-runs 958.4 kB・gis-core 701.2 kB。gis-core は main 側の GIS 変更の増分で本統合は触っていない。残りは main 側の他 PR と metrics/objects/worldObjects 変換の合計。天井を 15100000 / 5120000 / 990000 / 725000 バイトへ上げた。能力は削っていない。
+
+CI 実測(main 取り込み後の合成): async.raw 14798.0 kB・async.gzip 5001.7 kB・atlas-cap-runs 1002.1 kB・dist.assets 22244.7 kB。main 側の他 PR(web.session・fetchFile・STAC 等の能力追加)と本統合の合計で、天井を 15250000 / 5200000 / 1040000 / 22950000 バイトへ上げた。能力は削っていない。
