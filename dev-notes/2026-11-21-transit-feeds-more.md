@@ -51,3 +51,7 @@ Metlink(条文が JS 描画で読めない)・HSL / Transport for Ireland / ACT(
 ## 3 回目の main 合流後の基準線
 
 `async.raw` を 14972.5 kB から 15053.3 kB、`async.gzip` を 5092.7 kB から 5119.5 kB へ上げた。増えたのは main 側が足した非同期チャンク(atlas-file-make・atlas-knowledge・atlas-mcp-client など。main の CI は合流後に天井を記録するので、天井が追いついていない)で、このブランチの差分ではない。`global-surface` の `IntMapLazy` の読みは 204 から 203 に減ったので基準線を合わせた。コードは変えていない。
+
+## 4 回目の main 合流後の基準線
+
+`eager.raw` を 4752.9 kB から 4776.8 kB へ上げた(+23.9 kB)。内訳は 12 路線の時刻表の行(`js/transit-feeds.js`)と法務文(en・jp)で、起動時に読まれる。コードの削減はしていない。
