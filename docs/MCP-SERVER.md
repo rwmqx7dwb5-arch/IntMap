@@ -47,3 +47,20 @@ GIS は画面・ページが使うものと**同じ** `js/gis-core.js` の `make
 
 - 配備: 通常は CI（`docs/AGENT-SETUP.md` §9 の名簿）。手では `supabase functions deploy mcp-server --no-verify-jwt --use-api --project-ref vpekfwdpurzejrrmacac`。
 - 数の由来と失効条件は `handler.js` 先頭（`MAX_BODY_BYTES`・`MAX_FEATURES`・`CALL_DEADLINE_MS` ほか）。**1 呼び出しの CPU 時間は本番で未測定の見積もり。**
+Claude Code・ChatGPT などの外部 AI が、IntMap の**読み取り専用**の能力を MCP で呼べる。MCP の **Streamable HTTP（ステートレス）**。
+**2026-07-28 仕様（`initialize`・`Mcp-Session-Id` なし、全要求が `_meta` とルーティングヘッダを持つ、`server/discover`）と、それ以前の initialize 方式の両方**を同じ関数が話す（下の「プロトコル」）:
+| `intmap_capabilities` | このサーバ自身の説明: 各 tool の**効果**（writes／network／stores）と、**意図して出していないもの**とその理由。tool の宣言から**導く**（別の一覧を持たない） |
+**対象外**: データカタログ検索・MCP Apps・Tasks・elicitation／sampling・**書き込み系（描画・保存・送信・ジョブ）**・サーバ側の成果物ストア。理由は `intmap_capabilities.not_offered` が答える。
+書き込みを足すのは「tool を 1 つ足す」ことではなく**判断**: 鍵の持ち主を行為者とする同一性・鍵ごとの scope・Atlas の `mcp.act` に相当する人の確認、のどれもこの扉にはまだ無い。
+そのため全 tool に `_meta["io.intmap/effects"]`（`writes:false`・`network`・`stores:false`）を宣言させ、**宣言の無い tool／`writes` が false でない tool を検査が落とす**（`tests/mcp-2026-spec-checks.test.mjs` ⑨）。
+全 tool に `outputSchema`（`{untrusted_data, source, data}`）と `readOnlyHint`・`destructiveHint:false`・`idempotentHint`・`openWorldHint:false` がある。
+## プロトコル（2 つの方言を要求で見分ける）
+| | 2026-07-28 | それ以前（2025-xx） |
+|---|---|---|
+| 判別 | `MCP-Protocol-Version: 2026-07-28` ヘッダ | 上の版が無い／2026 より前の版 |
+| ハンドシェイク | なし。`server/discover`（`supportedVersions`・`capabilities`・`instructions`・`ttlMs`・`cacheScope`） | `initialize`（`ping` も） |
+| 各要求 | `params._meta` に版・capabilities・clientInfo。`Mcp-Method`（tools/call は `Mcp-Name` も） | 無し |
+| 結果 | 全部 `resultType:"complete"`。`tools/list` は `ttlMs`（5 分）＋`cacheScope:"public"` | 従来のまま |
+| 不整合 | 本文とヘッダの不一致は 400 `-32020`、未知の新しい版は 400 `-32022`（対応版つき）、未知のメソッドは 404 `-32601` | 従来のまま |
+どちらでもサーバは `Mcp-Session-Id` を発行せず、送られても無視する。`Mcp-Method` ヘッダが無いことは咎めない（あって食い違うときだけ 400）。
+**認証は OAuth ではなく IntMap の鍵**（`Authorization: Bearer imk_…`。401 の `WWW-Authenticate` は `Bearer realm="intmap"` で `resource_metadata` を持たない）。OAuth 2.1／保護リソースメタデータへの対応は未実装。
