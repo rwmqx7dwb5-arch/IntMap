@@ -54,3 +54,11 @@ grants 無しの実行。CDN に届かない走者では理由つきで skip）�
   `persistent-setting` で、`data.value` を含む全ての読み取りが `not-granted` になっていた。単体検査は合成の行を使い実物を
   通っていなかった。両方の綴りを受けるようにし、実レジストリの行でも `read` になることを spec が実 Pyodide で確かめる。
 - `K.programBridge` は「同名のカーネル関数を返す getter」の形に合わせた（`atlas-capability-modules` ③）。
+
+## main 取り込み時の統合(2026-11-24)
+
+main に先に入っていた `js/cap-bridge.js`(能力ブリッジの契約)と、同時に入った結果の再利用(`result-reuse`)・Atlas 技能(`atlas-skills`)を取り込んだ。
+
+- `js/cap-bridge.js`: 本 PR 側が main 側の厳密な上位(`dataset` 種別・`forbid`・実行履歴・レジストリ自身のリスクの綴り)なので本 PR 側を採用した。
+- **bridge 付きの実行は結果の再利用から外した**(`js/compute-sandbox.js`)。再利用の鍵はコードと入力の内容で、プログラムが能力を呼ぶ副作用は鍵に入らない。同じコードの 2 回目を 1 回目の結果で返すと、プログラムの能力呼び出しが全部飛び、履歴も古いものを返す。`tests/ptc-python-bridge-checks.test.mjs` ③b が固定している(ガードを外すと実行が終わらず落ちる)。
+- 引き継ぎ: `reused` と `bridge` を `compute.run` の出力に両方載せた。
