@@ -397,7 +397,9 @@ builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-dipl
   §4.5 の死活は**ブラウザが話すホスト**だけを訊き、**builder の上流**（SIMBAD・SBDB・Horizons など）の
   死活は、名簿に載った builder が走るときに builder 自身が確かめるだけである。
 - **周期の根拠は種別で述べる（`cadenceBasis.kind`: measured / stated / derived / estimate）。** 2026-11-20 に tzdb・OpenHistoricalMap・Pleiades・World Bank WDI を実測へ置き換えた。残る推定（Wikidata・JPL SBDB/Horizons/衛星・SIMBAD・Smithsonian GVP・USGS 惑星地名）は `estimate` と名乗り、門が毎回件数を印字する。推定を測定として申告できない（`basisProblem` が「estimate で始まる文が measured」と「日付のない measured」を拒む）。
-  述べている値は、測れば置き換える。
+  述べている値は、測れば置き換える。**測って置き換え済み**: IANA tzdata（2023d〜2026f の 12 リリースのタグ日付から 11 区間・中央値 66 日・平均 95 日・最長 263 日 → `P3M` は観測の範囲内）。
+  残りの推定（Wikidata・OpenHistoricalMap・JPL・SIMBAD ほか）は連続編集型で「この上流が新しい版を出した日」を外から測れないので、
+  上流の指紋（取得時刻と中身の変化）を builder の実行ごとに溜める台帳ができてから、観測した更新間隔・取得成功率・遅延で置き換える。
 - **`source priority` は、複数の上流を持つ builder では値になった。** 同じ問いに複数の上流が答えるときは
   `priority: { rank: [...] | '<規則>', over: '<理由>' }`、**上流が別々の問いに答えるだけ**なら
   `priority: { disjoint: ['<上流 0 だけが答える問い>', …] }`（上流と同数・同順）。後者は `precedence.*` を
