@@ -409,6 +409,7 @@ export const SITING_JP = {
 export const WRI_GPPD = {
   cadence: 'static',
   cadenceBasis: {
+    kind: 'measured',
     observed: 'measured 2026-11-20 on datasets.wri.org/datasets/global-power-plant-database: version 1.3.0 (June 2021) is the latest of three (1.1.0 2018-06, 1.2.0 2019-06), and the dataset page states update_frequency not_planned; the page metadata was last touched 2025-10-06 without a new release',
     expires: 'if WRI publishes a version after 1.3.0 (datasets.wri.org resource list) or changes update_frequency from not_planned',
     canon: 'scripts/lib/upstream-cadence.mjs WRI_GPPD',

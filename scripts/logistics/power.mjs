@@ -44,6 +44,13 @@ export const GOVERNANCE = {
     licence: 'CC BY 4.0',
     licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
     attribution: true,
+    /* (describes.*) what the build rule and the database state */
+    period: 'a snapshot: plants as the database stands at its 1.3.0 release (June 2021); each row carries the commissioning year the database states',
+    extent: 'worldwide, but only the plants of the fuels in MODEL.fuels (coal, oil, gas, petcoke) that stand within MODEL.portReachKm (30 km, straight line) of a port in data/ports.json: 1,028 plants, counted 2026-11-20',
+    method: 'each plant is tied to the nearest MODEL.keep (3) ports within the radius by great-circle distance; the tie is proximity, not a stated fuel supply',
+    resolution: 'one point per plant, at the coordinates the database states; not the plant footprint',
+    completeness: 'a plant of another fuel, or farther than the radius, is absent by the rule and not because it does not exist; the database does not claim to list every plant',
+    accuracy: 'capacity, operator and commissioning year are copied from the database unchanged; IntMap measures none of them',
     ...WRI_GPPD,
     retrievedAt: '2026-11-20',
     generatedAt: '2026-11-20',
@@ -101,6 +108,7 @@ function main() {
   const decl = GOVERNANCE['data/power-plants.json'];
   const doc = {
     publisher: decl.publisher, url: decl.url, licence: decl.licence, licenceUrl: decl.licenceUrl, attribution: decl.attribution, paidBy: decl.paidBy,
+    period: decl.period, extent: decl.extent, method: decl.method, resolution: decl.resolution, completeness: decl.completeness, accuracy: decl.accuracy,
     cadence: decl.cadence, cadenceBasis: decl.cadenceBasis, retrievedAt: decl.retrievedAt, generatedAt: decl.generatedAt, asOf: decl.asOf,
     schema: decl.schema, quality: decl.quality, builtBy: decl.builtBy,
     inputs: [{ role: 'plants', name: 'Global Power Plant Database 1.3.0 (WRI)', licence: 'CC BY 4.0', url: decl.url }, { role: 'ports', name: 'data/logistics-network.json', licence: 'see that file' }],
