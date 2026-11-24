@@ -1201,7 +1201,13 @@ function _redrawLocalGlyphs(m,cover){
          it, so the whole camera update dies mid-flight. A refusal is the honest answer for a
          degenerate pair — there is no direction to elevate along — so that is what it becomes:
          the transform handed in, uncorrected. */
-      cam[_UG_NAME]=(v)=>{
+      /* (maplibre-619) NOT RE-ENTERED. Under 6.19 this method runs while the camera computes the camera it draws
+         (renderedState → _correctedForMovement), and the repair below reads the live camera (_tr(m) → renderedState),
+         which computes it again and asks this method again: measured 338,318 calls in one 70-step drag, each nest
+         ending in a stack overflow the try/catch swallowed — right answer, 8× the frame time. A nested ask is the
+         camera computing ITSELF, so it gets MapLibre's own answer, and only the outer ask is repaired. */
+      let busy=false;
+      const repaired=(v)=>{
         const ask=(x)=>{ try{ return orig(x); }catch(_){ return null; } };
         const first=ask(v);
         /* the overwhelmingly common case: it is happy (it handed back the same state), and this
@@ -1241,6 +1247,10 @@ function _redrawLocalGlyphs(m,cover){
         /* what 6.12 did with the old answer: the corrected pitch/zoom (if any) applied over the camera
            carrying the elevation this engine applies — the hook then starts from that */
         return ask(probe.view)||probe.view;
+      };
+      cam[_UG_NAME]=(v)=>{
+        if(busy){ try{ return orig(v); }catch(_){ return v; } }
+        busy=true; try{ return repaired(v); } finally{ busy=false; }
       };
     }catch(_){ return false; }
     /* (maplibre-619) the camera as drawn, kept at the start of every update — see _wasCamera */
@@ -1625,10 +1635,10 @@ function _redrawLocalGlyphs(m,cover){
          applied centre made a tilt drag drift 5.3 km; comparing like with like holds it at 0. */
       let req=null;
       try{
-        m.setTransformCameraUpdate((metrics)=>{
+        m.setTransformCameraUpdate((t)=>{
           /* (maplibre-619) 6.19 hands the hook the corrected camera's METRICS — a state, with no projection
              of its own and no constrain; _TrView answers both from the renderer's functions */
-          const t=_asTr(_cam(m),metrics)||metrics;
+          t=_asTr(_cam(m),t)||t;
           let cur, was;
           try{ cur={ lng:t.center.lng, lat:t.center.lat, zoom:t.zoom, bearing:t.bearing, pitch:t.pitch };
                /* "before" is read from the LIVE map, not from a cache of what we returned last time:
