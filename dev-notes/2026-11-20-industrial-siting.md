@@ -67,3 +67,10 @@ CI の実測まで 4 行の天井を上げた: `async.raw` 14651.4 kB・`async.g
 本 PR の `siting.compare` を含む）に比例し、利用者が得る能力そのもので縮める根拠が無い。
 この worktree は data を持たず build できないため `--update` ではなく CI の測定値を直接書いた。
 main の bot が merge 後に再び下げる。
+
+## perf (能力表 272 行の再測定 2026-11-24)
+
+CI の実測まで 4 行を上げた: `async.raw` 14771.5 kB・`async.gzip` 4992.0 kB・`atlas-cap-runs` 1001.8 kB・
+`dist.assets` 22219.3 kB（KiB）。main が能力を足して能力表が 272 行になった分で、
+本 PR の `siting.compare` を含め、利用者が得る能力そのもの。縮める根拠は無い。この worktree は
+data を持たず build できないため CI の測定値から換算して書いた。main の bot が merge 後に再び下げる。
