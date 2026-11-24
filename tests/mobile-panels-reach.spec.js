@@ -196,31 +196,6 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     await expectReachable(page, cdp, '#iol-fab');
   });
 
-  test('an Atlas sample card, the sheet put back to half: every control still answers a finger', async ({ page }) => {
-    test.setTimeout(120_000);
-    await boot(page);
-    await page.click('#btn-community');
-    await page.evaluate(() => window.__setDetent('half', false));
-    await page.waitForFunction(() => document.querySelectorAll('#atlas-panel .atl-chip').length > 0, null, { timeout: 30_000 });
-    await settle(page, ['#atlas-panel', '#sidebar']);
-    await page.evaluate(() => document.querySelector('#atlas-panel .atl-chip').click());
-    await page.waitForSelector('#atlas-panel .atl-pv-login', { timeout: 10_000 });
-    await settle(page, ['#atlas-panel .atl-ex', '#sidebar']);
-    await page.evaluate(() => window.__setDetent('half', true));
-    await settle(page, ['#atlas-panel .atl-ex', '#sidebar']);
-    const cdp = await page.context().newCDPSession(page);
-    const box = await page.evaluate(() => { const e = document.querySelector('#atlas-panel .atl-ex'), b = e.getBoundingClientRect(); return { h: b.height, scrolls: e.scrollHeight > e.clientHeight + 2, sheetTop: document.getElementById('sidebar').getBoundingClientRect().top, detent: (document.body.className.match(/sheet-(full|min|hidden)/) || ['sheet-half'])[0] }; });
-    expect(box.detent, 'the sheet is at half').toBe('sheet-half');
-    expect(box.scrolls, 'the card is taller than the window it is read through, so the window must scroll').toBe(true);
-    await swipeUpIn(page, cdp, '#atlas-panel .atl-ex', 300);
-    const r = await page.evaluate(() => {
-      const el = document.querySelector('#atlas-panel .atl-pv-login'); el.scrollIntoView({ block: 'nearest' });
-      const b = el.getBoundingClientRect(), hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
-      return { top: b.top, bottom: b.bottom, vh: innerHeight, own: hit === el || el.contains(hit), scrolled: document.querySelector('#atlas-panel .atl-ex').scrollTop };
-    });
-    expect(r.scrolled, 'a finger scrolled the examples area itself').toBeGreaterThan(0);
-    expect(r.own, 'the login button is what a finger lands on').toBe(true);
-    expect(r.bottom, 'the login button is on the screen').toBeLessThanOrEqual(r.vh);
-    expect(r.top, 'the login button is below the top of the sheet').toBeGreaterThan(box.sheetTop);
-  });
+  /* (mobile-sheet-layout) 削除: 「Atlas の見本カード（.atl-pv）の中のログインが指に届く」テスト。Atlas は例示チップも見本カードも出さなくなり、守る対象が無い。
+     half の Atlas の入力欄（.atl-inbar）の到達性は tests/mobile-card-reach.spec.js の B が守る。 */
 });
