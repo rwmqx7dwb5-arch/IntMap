@@ -76,3 +76,28 @@ Notebook の公開可否（`NOTEBOOK_SHOWN=false`）は変えない。
 `tests/work-products-checks.test.mjs`（10 本）: 種類ごとの保存と名前付き拒否 / 版と比較（並べ替え不変・キー重複の明示）/ テキスト比較 /
 作業場の選択（要件・不在の理由・未ロード）/ 永続化の再利用（別 store で再読込）/ ファイル往復 / CSV の RFC 4180 /
 能力の全 action（「翌日」を模した再開を含む）/ 拒否の名前 / ノートが非公開のまま・独自のダウンロード処理を持たないこと。
+
+## main 取り込み後の perf 天井(2026-11-21)
+
+`work.job`(js/atlas-cap-work.js・js/atlas-work-store.js)は能力モジュールで、`atlas-cap-runs` の async chunk に入る(main の天井 909.0 に対し 928.4 kB。work.job 分)。
+起動(eager)には入らず、作業を開いたときだけ読まれる。`async.gzip`・`dist.total`・`dist.assets` の天井も同じ `--update` で上げた(main 側の増加分を含む)。
+能力は 255 になり、能力数を述べる文書(DECISIONS・PRODUCT・docs/FILES・docs/architecture/02-features)を実測に合わせた。
+`js/atlas-capabilities.js` の行は `node scripts/atlas-caps.mjs --write` が各能力ファイルから導出する(取り込みの merge driver が再生成するため、手で足した行は残らない)。
+
+`atlas-console` の async chunk も上がった(1105.8 → 1113.7 kB)。`work.job` の案内文(`js/atlas-catalog-text.js` が能力の語から導く)が Atlas の本体側に入るため。
+`atlas-cap-runs` は 944.2 kB。どちらも起動(eager)には入らない。main の最新を取り込むたびに天井は main の実測へ動くので、この値は取り込み時点のもの。
+
+main 取り込み後の CI 実測で `async.raw`・`async.gzip`・`atlas-cap-runs`(970.8 kB)・`atlas-console`(1145.6 kB)・`gis-core`(701.2 kB) の天井を実測へ上げた。
+増えた分は `work.job` と、main 側で同時に入った能力・GIS の async chunk で、起動(eager)には入らない。
+
+main の再取り込み(2026-11-24)後の実測で `atlas-cap-runs` は 1006.4 kB、`atlas-console` は 1159.8 kB、`async.raw`・`async.gzip`・`dist.assets` も上げた。増分は `work.job` と main 側の能力で、どちらも起動(eager)には入らない。
+
+2026-11-24 の再取り込み後の実測で `atlas-cap-runs` を 1014.4 kB へ上げた(`work.job` と main 側の能力の合計。起動には入らない)。
+
+2026-11-24 の再々取り込み後の実測で `atlas-cap-runs` を 1020.3 kB、`atlas-console` を 1166.8 kB へ上げた(`work.job` と main 側の能力。起動には入らない)。能力は 273。
+
+#1345 が入った後の取り込み(2026-11-24)で、perf 天井を 1 回の `--update` で実測へ上げた: `async.raw` 15366.4 kB・`async.gzip` 5223.8 kB・`atlas-cap-runs` 1090.6 kB・`atlas-console` 1190.6 kB。
+増えた理由は `work.job`(js/atlas-cap-work.js・js/atlas-work-store.js・案内文)と、同じ期間に main へ入った能力(282 能力)。どれも async chunk で、起動(eager)には入らない。
+
+#1346・#1395 まで入った main の取り込み(2026-11-24)で、perf 天井を 1 回の `--update` で `atlas-cap-runs` 1103.0 kB・`dist.assets` 22858.9 kB へ上げた。
+`work.job`(js/atlas-cap-work.js・js/atlas-work-store.js・案内文)と、同期間に main へ入った能力(284 能力)の分で、どちらも async chunk。起動(eager)には入らない。
