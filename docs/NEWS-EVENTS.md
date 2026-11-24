@@ -975,7 +975,7 @@ AI に掛ける）で `assign` より**前**（Event は AI の座標で組ま�
   （secret 未設定なら 503。実測で確認: 未設定 503 / 誤り 401 / GET 405）。
 - 上流の取得は `_shared/relay-guard.js` の `fetchGuarded`（期限 15 s・6 MB・content-type）。
   ⚠ `refresh-news` は `AbortSignal` を 1 つも持っていない。同じ形を新しく作らない。
-- **壁時計の予算**を見て、足りなければその段で止めて次の run に残す（既定 240 s）。
+- **壁時計の予算**を見て、足りなければその段で止めて次の run に残す（既定 140 s。本番は無通信 150 秒で打ち切る——それより長い予算は段に「まだ時間がある」と信じさせたまま殺す）。
 - cron は **2 本**。job の定義は migration `20260925090000_cron_jobs_as_code.sql` にあり、秘密は vault から**ヘッダ**で送り、
   body で段を選ぶ:
 

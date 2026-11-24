@@ -86,7 +86,8 @@ const FEED_TIMEOUT_MS = 15000;
 const FEED_MAX_BYTES = 6 * 1024 * 1024;
 const FEED_LANES = 8;
 /* 壁時計の既定。Edge Function の上限より十分手前で切り上げ、残りは次の run に回す。 */
-const DEFAULT_BUDGET_MS = 240000;
+/* 観測 2026-11-24: 本番は無通信 150 秒で IDLE_TIMEOUT（504）になり、run の記録も残らない。予算がそれより長いと、段が「まだ時間がある」と信じたまま殺される。失効: プラットフォームの無通信上限が変わったとき */
+const DEFAULT_BUDGET_MS = 140000;
 /* PostgREST の 1 応答あたりの行数上限（既定 1000）。読み出しは必ずページで回す。 */
 const PAGE = 1000;
 const WRITE_CHUNK = 250;
@@ -280,6 +281,7 @@ async function stageFetch(db, budget, runStartedAt) {
  * ────────────────────────────────────────────────────────────────────── */
 const LOCATE_CAP = 240;      /* 1 run で AI に送る上限（費用の天井。docs/NEWS-EVENTS.md §14） */
 const LOCATE_BATCH = 20;
+const LOCATE_PARALLEL = 4;   /* 同時に投げる batch 数。観測: 1 batch 約 11 秒・12 batch 順次で約 140 秒（2026-11-24）。失効: 提供元の同時実行上限が変わったとき */
 /* ⚠ この段は `assign` より**前**に走るので、予算を使い切ると後ろの段が飢える。
    翻訳（最後から 2 番目）の 30 s より厚く取り置く——1 batch 減るだけで、代わりに
    割り当て・link・保持が必ず自分のぶんを持てる。残りは次の run に回る。 */
@@ -331,18 +333,27 @@ async function stageLocate(db, budget, relocated) {
   const rejected = { bad_coords: 0, null_island: 0, no_name: 0, unknown_id: 0, bad_kind: 0 };
   const updates = [];
 
-  for (let i = 0; i < todo.length; i += LOCATE_BATCH) {
+  /* ⚠ batch を順に待たない。1 batch は約 11 秒で、240 件（12 batch）を順に回すと約 140 秒——1 run の壁時計
+     （プラットフォームの無通信上限 150 秒）を locate だけで使い切り、run の記録も残らず落ちた（2026-11-24 本番）。
+     LOCATE_PARALLEL 本ずつ同時に投げ、結果は元の順に 1 本ずつ畳む（採否の判定・印の押し方は変えない）。 */
+  const step = LOCATE_BATCH * LOCATE_PARALLEL;
+  for (let g = 0; g < todo.length; g += step) {
     if (budget.left() < LOCATE_RESERVE_MS) break;
-    const chunk = todo.slice(i, i + LOCATE_BATCH);
-    batches++;
-    const user = "Headlines:\n" + chunk.map((a) =>
-      a.id + ". " + a.title + (a.description ? " — " + String(a.description).slice(0, 160) : "")).join("\n");
-
-    let out;
-    try {
-      out = await callProvider(cfg, GEO_SYS, user, Math.min(60000, budget.left()));
-    } catch (e) {
-      lastError = String((e && e.message) || e).slice(0, 200);
+    const chunks = [];
+    for (let i = g; i < Math.min(todo.length, g + step); i += LOCATE_BATCH) chunks.push(todo.slice(i, i + LOCATE_BATCH));
+    batches += chunks.length;
+    const settled = await Promise.all(chunks.map(async (chunk) => {
+      const user = "Headlines:\n" + chunk.map((a) =>
+        a.id + ". " + a.title + (a.description ? " — " + String(a.description).slice(0, 160) : "")).join("\n");
+      try {
+        return { chunk, out: await callProvider(cfg, GEO_SYS, user, Math.min(60000, budget.left())) };
+      } catch (e) {
+        return { chunk, err: String((e && e.message) || e).slice(0, 200) };
+      }
+    }));
+    for (const { chunk, out, err } of settled) {
+    if (err) {
+      lastError = err;
       console.warn("[news-ingest] locate:", lastError);
       continue;
     }
@@ -373,6 +384,7 @@ async function stageLocate(db, budget, relocated) {
     for (const id of v.omitted) {
       omitted++;
       updates.push({ id, subject_locator: locator, subject_ai_at: stamp });
+    }
     }
   }
 
