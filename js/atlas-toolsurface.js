@@ -439,6 +439,8 @@ export function makeAtlasToolSurface(deps) {
         /* ⚠ (atlas-completion) WHAT THE WEB SEARCH DID, WHETHER THE OUTPUT WAS CUT, AND WHAT WAS RETRIEVED — js/atlas-cap-research.js
            states all three on its meta, and this list dropped them, so Atlas saw a research answer and never learned that the search
            had timed out (or found nothing) — the one fact that tells it to try another route (an official page, an operator's site). */
+        /* (atlas-research-search) what research.search returned — the documents, each query's state, what is new in method, the investigation ledger. Dropped here, the search would run and Atlas would read nothing. */
+        research: meta.research || undefined,
         web: meta.web || undefined,
         /* (mcp-client) what an external MCP server answered — carried whole (js/atlas-cap-mcp.js stamps it untrusted), or the model learns nothing from the call and asks again */
         external: meta.external || undefined,
