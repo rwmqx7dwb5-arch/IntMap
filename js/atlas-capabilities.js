@@ -430,6 +430,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["jobs.resume","jobResume","resumeJob,retryJob,continueJob,rerunFailed","research","none","","explanation","external","explicit","",""],
       ["geo.imageChange","geoImageChange","imageChange,changeDetection,satelliteChange,landCoverChange,embeddingChange,radarChange,beforeAfter","data","none","gis.dataset","explanation","read","none","place?","","external"],
       ["research.longform","longform","writeLongReport,longDocument,writeInChapters","research","none","","explanation","read","none","","","external"],
+      ["system.command","command","appCommand,kernelCommand","system","control","ui.any","panel","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
