@@ -66,7 +66,3 @@ newsjp: Atlas は決まった手数で打ち切られなくなりました。進
 `tests/atlas-unbounded-execution-checks.test.mjs`（性質だけを測る: 20 手の作業が切られない・1 返信の全呼び出しが走る・時計が何時間でも終わる・進展なしで止まる・止まったターンに回答を書かせない・費用の拒否で `budget`・差し戻しは返答が動く間だけ・申告が次の呼び出しに届く・呼び出し元の上限は効く・既定は何も縛らない）、
 `tests/delegate-unbounded-checks.test.mjs`、pgTAP `supabase/tests/54_atlas_unbounded_turns_test.sql`。数を固定していた既存の検査は性質の検査に書き換えた。
 
-## 8. 取り込んだ main の赤（`check:surface`）
-
-main（#1382 スマホ画面）が `js/mobile-ui.js` で `window.IntMapLazy.need('atlasConsole')` の読み取りを 1 つ足したまま台帳を更新しておらず、main 自体がこの門で赤だった（196 → 197）。
-所有者 `js/lazy-modules.js` は `IntMapLazy` を export していない（import の辺が無い）ので、既存の 196 か所と同じく global から読むのが現状の唯一の経路。`global-surface.mjs --update` で台帳に記録した。
