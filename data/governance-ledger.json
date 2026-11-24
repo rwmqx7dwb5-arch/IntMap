@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-11-23T22:12:14.094Z",
+    "generatedAt": "2026-11-24T00:48:21.758Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -2335,6 +2335,34 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "data/transit-feed-catalogue",
+      "facets": [
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/transit-lu",
+      "facets": [
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "data/unga-votes/",
       "facets": [
         "describes.period",
@@ -4222,6 +4250,25 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-transit-timetables.mjs → data/transit-lu.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-unga-votes.mjs → data/unga-votes/*.json",
       "facets": [
         "describes.completeness",
@@ -4890,6 +4937,25 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/transit-discover.mjs → data/transit-feed-catalogue.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "describes.period",
+        "describes.extent",
+        "describes.method",
+        "describes.resolution",
+        "describes.completeness",
+        "describes.accuracy"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/upstream-change.mjs → data/upstream-fingerprints.json",
       "facets": [
         "origin.url",
@@ -4927,8 +4993,8 @@
   "shardsWithoutIndex": [],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 228,
-    "undeclaredFacets": 3525,
+    "undeclared": 232,
+    "undeclaredFacets": 3567,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 0,
     "unreadableDeclaration": 0
