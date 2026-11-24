@@ -1219,8 +1219,9 @@ function indexed(text) {
   String(text).split('\n').slice(1).forEach((line) => {
     const colon = line.indexOf(': ');
     if (colon < 0) return;
-    line.slice(colon + 2).replace(/\.$/, '').split(',').forEach((id) => {
-      const t = id.trim();
+    /* entries are `id` or `id (purpose)`, separated by `; ` (atlas-index-purpose) — the id is what precedes the first ` (` */
+    line.slice(colon + 2).split('; ').forEach((id) => {
+      const t = id.replace(/ \(.*$/, '').replace(/\.$/, '').trim();
       if (t) out.add(t);
     });
   });

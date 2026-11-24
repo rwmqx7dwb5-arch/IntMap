@@ -505,6 +505,8 @@ cap-bridge.js                     **能力ブリッジ**（Programmatic Tool Cal
                                   外部文章の汚染の伝播。接続点と #1272 との関係は `dev-notes/2026-11-20-cap-bridge.md`
                                   `dataset` kind（読み取り専用）・呼びの履歴 `calls()`・`forbid`。Python との接続は
                                   `dev-notes/2026-11-20-ptc-python-bridge.md`（`compute.run` の `grants`）
+gis-engine-domain.js              **平面のエンジンが同じ答えを返す入力の範囲**（日付変更線・極を含まない）。
+                                  DuckDB Spatial との全ペア比較の結果から（`docs/GIS-CORE.md` §6）。
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**
@@ -2269,7 +2271,7 @@ supabase/
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /
                                   schema / media / provider-call / providers/* / models / replay）。
                                   構成の正本は docs/architecture/06-supabase.md §6.2
-  functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / atlas-job-core.js / atlas-job-runner.js / atlas-server-caps.js / atlas-cap-classes.js / aviation-codec.js /
+  functions/_shared/              関数ではないライブラリ（ai-provider.js / embedding-provider.js / atlas-persona.js / atlas-job-core.js / atlas-job-runner.js / atlas-server-caps.js / atlas-cap-classes.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-entities.js / news-history.js / news-backfill.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / web-browse.js / web-render.js / web-session.js / who-don-extract.js /

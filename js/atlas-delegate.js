@@ -8,7 +8,9 @@
  *  change, and each is a value passed in, not a structure written here.
  *
  *    the CONTRACT   { id?, goal, returns?, inputs?:[{ from:<task id> }] }  →  a RESULT
- *                   { id, state, code?, summary, findings[], gaps[], sources[], costUsd, calls, ms }
+ *                   { id, state, code?, summary, findings[], gaps[], sources[], notFound[], evidence?, costUsd, calls, ms }
+ *                   a worker returns EVIDENCE, not a verdict: each finding with its source and the excerpt (or raw
+ *                   values) it rests on; `evidence` counts how many do, and a worker with none says so in `gaps`
  *                   state: done | partial | failed | refused | unobservable | cancelled
  *                   ⚠ `failed` and `unobservable` are different answers (.agents/rules/one-pass-or-a-reason.md §5):
  *                   a refusal or an error the server named is observed; a request that left and never came
@@ -178,6 +180,11 @@ export function makeDelegation(o) {
       gaps: (Array.isArray(r && r.gaps) ? r.gaps.slice(0, 20).map((g) => s(g, 400)).filter(Boolean) : [])
         .concat(dropped ? ['The raw data of this result was too large to keep and was dropped (the summary above is complete).'] : []),
       sources: Array.isArray(r && r.sources) ? r.sources.slice(0, 40) : [],
+      /* (atlas-parallel-truth) EVIDENCE, NOT A VERDICT — what the worker looked for and did not find, and how much of what it said
+         rests on a source with its excerpt (js/atlas-job-core.js shapeOf counts it). Carried as the worker gave them; absent for a
+         result that is not a worker's answer (a capability task's evidence is its `data`). */
+      notFound: Array.isArray(r && r.notFound) ? r.notFound.slice(0, 20) : [],
+      evidence: (r && r.evidence && typeof r.evidence === 'object') ? Object.freeze(Object.assign({}, r.evidence)) : undefined,
       data,
       costUsd: Math.max(0, Number(r && r.costUsd) || 0),
       calls: Math.max(0, Number(r && r.calls) || 0),

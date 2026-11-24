@@ -95,7 +95,8 @@ export function workerSystem(persona) {
   'Do only the piece you are given. Use the web search tool when it is attached to find and verify current facts; prefer primary and official sources.',
   'Never invent a fact, a figure, a date, a source or a coordinate. Give coordinates only when you know them (a well-known city, port, strait or facility); otherwise leave them out and name the place.',
   'Write in the language the piece is written in.',
-  'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL), "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "gaps": [string] (what you could not establish, and why), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string, "scope"?: "admin-area"|"metro-area"|"radius"|"grid-cell"|"point"|"facility"|"company"|"global" (what the figure is a measurement OF), "basis"?: "present-day"|"as-of-time" (the borders it was counted in), "period"?: {"from": string, "to": string} (the span a total covers), "aggregation"?: "sum"|"mean"|"median"|"min"|"max"}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does; state scope, basis, period and aggregation ONLY when the source says them: two figures that differ are only a disagreement if they measure the same thing, and a field you leave out is reported as not stated, not as equal)}.',
+  'You return EVIDENCE, not a conclusion: Atlas weighs what you found against what the other workers found and decides; a verdict of yours would decide for it. Quote rather than paraphrase, and report what you looked for and did not find as plainly as what you found.',
+  'Return ONE JSON object and nothing else: {"summary": string (what you did — what you looked for, where, and what came back; NOT an answer to the question), "findings": [{"claim": string (what the source states, as it states it), "source": string (the URL; the outlet or publication when there is no URL; or the id of the IntMap capability you called), "excerpt": string (the source\'s own words, verbatim, or the raw values the capability returned — the part the claim rests on), "date"?: string (the date the source gives), "place"?: string, "lat"?: number, "lon"?: number, "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "notFound": [{"looked": string (what you looked for), "where": string (the searches, sites or capabilities you looked in)}] (what you looked for and did not find), "gaps": [string] (what you could not establish, and why), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string, "scope"?: "admin-area"|"metro-area"|"radius"|"grid-cell"|"point"|"facility"|"company"|"global" (what the figure is a measurement OF), "basis"?: "present-day"|"as-of-time" (the borders it was counted in), "period"?: {"from": string, "to": string} (the span a total covers), "aggregation"?: "sum"|"mean"|"median"|"min"|"max"}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does; state scope, basis, period and aggregation ONLY when the source says them: two figures that differ are only a disagreement if they measure the same thing, and a field you leave out is reported as not stated, not as equal)}. A finding without both "source" and "excerpt" is your own statement, and Atlas is told it carries no evidence.',
 ].join('\n');
 }
 
@@ -122,9 +123,31 @@ export function shapeOf(data, normalizeFacts) {
     const lat = num(f.lat), lon = num(f.lon);
     const ll = lat != null && lon != null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
     const verdict = (f.verdict === 'supported' || f.verdict === 'unsupported' || f.verdict === 'contradicted') ? f.verdict : undefined;
-    return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined };
+    return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined, excerpt: excerptOf(f.excerpt) };
   });
-  return { ok: true, out: Object.assign({ summary: s(data.summary, 4000), findings }, typeof normalizeFacts === 'function' ? { facts: normalizeFacts(data.facts) } : null, { gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] }) };
+  /* (atlas-parallel-truth) EVIDENCE IS COUNTED, NOT ASSUMED. A finding is evidence when it names a source AND carries the excerpt
+     (or raw values) it rests on; anything else is the worker's own statement. A reply with none — a prose verdict, however well
+     written — is still returned (Atlas may read it), but evidence.none is true and a gap says so, so it is never taken as sourced. */
+  const notFound = (Array.isArray(data.notFound) ? data.notFound : [])
+    .map((x) => (typeof x === 'string' ? { looked: s(x, 400) } : (x && typeof x === 'object' ? { looked: s(x.looked, 400), where: x.where ? s(x.where, 400) : undefined } : null)))
+    .filter((x) => x && x.looked);
+  const sourced = findings.filter((f) => f.source && f.excerpt).length;
+  const evidence = { findings: findings.length, sourced, unsourced: findings.length - sourced, notFound: notFound.length, none: sourced === 0 };
+  const gaps = Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [];
+  if (evidence.none) gaps.push(findings.length
+    ? 'None of this worker\'s ' + findings.length + ' finding(s) carries a source together with the excerpt or raw values it rests on: what it says is its own statement, not evidence.'
+    : 'This worker returned no finding with a source and an excerpt: its summary is its own statement, not evidence.');
+  else if (evidence.unsourced) gaps.push(evidence.unsourced + ' of this worker\'s findings carry no source with an excerpt: those are its own statements, not evidence.');
+  return { ok: true, out: Object.assign({ summary: s(data.summary, 4000), findings }, typeof normalizeFacts === 'function' ? { facts: normalizeFacts(data.facts) } : null, { notFound, evidence, gaps }) };
+}
+
+/* an excerpt is the source's words, or the raw values a capability returned: a string is kept as it is, anything else is written as JSON */
+function excerptOf(x) {
+  if (x == null || x === '') return undefined;
+  if (typeof x === 'string') return x.trim() ? s(x, 2000) : undefined;
+  let j = '';
+  try { j = stable(x); } catch (_) { j = ''; }
+  return j ? s(j, 2000) : undefined;
 }
 
 /* ══ PLANNING A LIST OF CONTRACTS INTO A JOB  (atlas-durable-jobs) ═══════════════════════════════════

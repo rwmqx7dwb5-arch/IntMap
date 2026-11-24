@@ -388,3 +388,16 @@ test('atlas-turn-engine ⑤ the loop\'s model calls fit under the server\'s per-
   const src = rd('js/atlas-agent.js');
   assert.ok(!/TURN_MAX_CALLS = \d/.test(src), 'the agent does not write the server\'s number down (it drifts: it said 6 while the server said 12)');
 });
+
+/* (atlas-parallel-truth) ② above is what the loop DOES; this is what Atlas is TOLD. Until 2026-11-24 the REPLY FORMAT said
+   «every call in one reply is run, in order» — the opposite of ② — so Atlas had no reason to put independent calls in one
+   reply, and measured turns on production made one call per reply (4-9 model round trips each). The words are the fact
+   here, so the check reads them. */
+test('atlas-turn-engine ② the instruction Atlas reads says what ② does: one reply\'s independent calls run at the same time', () => {
+  const con = readFileSync(join(ROOT, 'js/atlas-console.js'), 'utf8');
+  const fmt = con.slice(con.indexOf("'REPLY FORMAT:"), con.indexOf("'REPLY FORMAT:") + 1500);
+  assert.ok(fmt.length > 100, 'the REPLY FORMAT is found');
+  assert.ok(!/run, in order/.test(fmt), 'it no longer claims every call runs in order');
+  assert.match(fmt, /RUN AT THE SAME TIME/);
+  assert.match(fmt, /same reply/);
+});

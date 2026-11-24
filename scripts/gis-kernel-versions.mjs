@@ -150,7 +150,8 @@ export const KERNELS = {
   /* (spatiotemporal-join) ops-13 -> ops-14: the period a join / spatialJoin / nearestJoin / timeJoin / aggregate result states is now derived from BOTH inputs (it was the first input's), a row-wise input gives the output two derived period columns, and the record carries `warnings` and `geoBasis`. No existing geometry or cell changes; what the record states about WHEN does. */
   /* (data-facts) ops-14 HASH ONLY: a multi-input op also states `provenance.timeMismatch` (js/data-governance.js temporalMismatch) when its inputs' stated periods do not overlap — a record that states more; no cell, geometry or refusal changes. */
   /* (gis-worker-columnar) ops-14 HASH ONLY (over the time kit): a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
-  'js/gis-ops.js': { version: 'ops-14', sha256: 'ec5e165c71c42dd20d77b75f4318a88983acbec59cfd7b9625872adc1626c5cc' },
+  /* (duckdb-equivalence) ops-14 HASH ONLY: the API also exposes `engineDomain` (js/gis-engine-domain.js) for a registered engine's `accepts` to ask; nothing is registered by default, so every run, row and refusal is unchanged. */
+  'js/gis-ops.js': { version: 'ops-14', sha256: '3e739b0be9e843c42a76dabde94ea424989d4d0c62cd9e28f9dbb94d9b36f26f' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -319,6 +320,7 @@ export const NOT_A_KERNEL = {
   'js/gis-fetch.js': 'chooses WHICH road a request takes (direct, the data relay, a signed address) and keeps the bytes it was given; it reads no value, so it cannot change a number — the same bytes arrive by every road, and a saved recipe replays by its recorded provenance',
   'js/gis-http.js': 'names why a remote read failed from the response (CORS, the words the server sent, a sign-in page); it reads no value and produces no answer a saved recipe replays',
   'js/gis-packed.js': 'a lossless codec (unpack(pack(g)) is g, number for number — tests/gis-scale-checks.test.mjs) and a store that keeps results in input order; it decides nothing about a shape and a saved recipe never replays through it',
+  'js/gis-engine-domain.js': 'states only WHERE a planar engine may answer (every coordinate strictly inside lon ±180 / lat ±90) and computes no number; an input outside it stays on this GIS, so a saved recipe never changes its answer through it (tests/duckdb-equivalence-checks.test.mjs)',
   'js/gis-core.js': 'mounts the modules and draws a dataset on the map; computes nothing',
   /* (#R783) the assembly, not the arithmetic: it decides what plays the part of the scope and what
      was handed over, mounts through js/gis-core.js, and computes nothing a saved recipe replays. */

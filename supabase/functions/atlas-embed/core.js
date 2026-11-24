@@ -1,7 +1,7 @@
 // ============================================================================
 //  IntMap · atlas-embed/core.js — the parts of the semantic capability search that are not I/O
 // ----------------------------------------------------------------------------
-//  index.ts is the Deno handler (auth, rate limit, database, OpenAI). What lives here is what has to
+//  index.ts is the Deno handler (auth, rate limit, database, the provider). What lives here is what has to
 //  be the SAME on both sides of the wire, or has to be evaluated rather than read:
 //
 //    · catalogueHash(entries) — the key the capability vectors are cached under. The browser
@@ -34,7 +34,11 @@
      page, read 2026-09-25); a Japanese character is at most about one token, so 6,000 characters
      cannot overflow in any script the catalogue is written in. The browser cuts each document to
      this length BEFORE hashing, so the cut is part of the key and not a silent loss on one side.
-     Expires with the model.
+     Expires with the model. ⚠ gemini-embedding-001 (the route this project's keys actually reach —
+     route.js) takes 2,048 tokens per input, and Google truncates a longer one rather than refusing
+     it. Today's catalogue is ≈122,000 characters over ~145 documents (≈840 a document —
+     js/atlas-capabilities.js, the seed's own note), so a document near the bound is the exception;
+     nobody has measured the longest one in tokens.
    · MAX_ENTRIES = 400. The registry holds 145 capabilities (144 live). Expires when it approaches
      that — the seed is refused whole rather than partly stored, so the symptom would be loud.
    · BATCH_CHARS = 200000. One embeddings request is limited to 300,000 tokens across its inputs
@@ -104,14 +108,16 @@ export async function parseSeed(body) {
   return { ok: true, catalog, entries: clean };
 }
 
-/* Documents split into requests the embeddings endpoint accepts (BATCH_CHARS above). Order is
-   preserved so the i-th vector answers the i-th entry. */
-export function batches(entries) {
+/* Documents split into requests the embeddings endpoint accepts (BATCH_CHARS above, and at most
+   `maxInputs` documents — the provider's own bound on inputs per call: Gemini's batchEmbedContents takes
+   100, _shared/embedding-provider.js). Order is preserved so the i-th vector answers the i-th entry. */
+export function batches(entries, maxInputs) {
+  const cap = (Number.isFinite(+maxInputs) && +maxInputs >= 1) ? Math.floor(+maxInputs) : Infinity;
   const out = [];
   let cur = [], size = 0;
   for (const e of entries) {
     const n = e.text.length;
-    if (cur.length && size + n > BATCH_CHARS) { out.push(cur); cur = []; size = 0; }
+    if (cur.length && (size + n > BATCH_CHARS || cur.length >= cap)) { out.push(cur); cur = []; size = 0; }
     cur.push(e); size += n;
   }
   if (cur.length) out.push(cur);
