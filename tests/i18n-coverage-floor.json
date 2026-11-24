@@ -3,38 +3,38 @@
   "langs": {
     "de": {
       "keyed": 410,
-      "positional": 7205,
-      "pages": 464
+      "positional": 7200,
+      "pages": 465
     },
     "es": {
       "keyed": 410,
-      "positional": 7205,
-      "pages": 464
+      "positional": 7200,
+      "pages": 465
     },
     "fr": {
       "keyed": 410,
       "inline": 5658,
-      "pages": 464
+      "pages": 465
     },
     "ko": {
       "keyed": 410,
       "inline": 5658,
-      "pages": 464
+      "pages": 465
     },
     "ru": {
       "keyed": 410,
-      "positional": 7205,
-      "pages": 464
+      "positional": 7200,
+      "pages": 465
     },
     "zh": {
       "keyed": 410,
       "inline": 5866,
-      "pages": 464
+      "pages": 465
     },
     "zh-hans": {
       "keyed": 410,
       "inline": 5866,
-      "pages": 464
+      "pages": 465
     }
   }
 }

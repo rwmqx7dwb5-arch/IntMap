@@ -1139,7 +1139,7 @@ IntMapLang.define('ko', { ui: {
   "articles from ": "건 · 출처 ",
   "Ashfall": "화산재 강하",
   "Ask Atlas": "Atlas에게 묻기",
-  "Ask in plain language — Atlas drives the map for you. Try:": "평소 말로 물어보세요 — Atlas가 지도를 대신 조작합니다. 예:",
+  "Ask in plain language — Atlas drives the map for you.": "평소 말로 물어보세요 — Atlas가 지도를 대신 조작합니다.",
   "Ask me anything about this spot — I know exactly where it is.": "이 지점에 대해 무엇이든 물어보세요 — 정확한 위치를 알고 있습니다.",
   "Asteroid": "소행성",
   "Asteroids & comets": "소행성과 혜성",

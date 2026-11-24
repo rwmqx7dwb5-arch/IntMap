@@ -18,6 +18,10 @@ async function boot(page) {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap && window.__imap.isStyleLoaded(), null, { timeout: 60_000 });
   await page.waitForFunction(() => !!document.getElementById('m-clock') && !!window.IntMapHistScale, null, { timeout: 30_000 });
+  /* (mobile-sheet-layout) 電話の既定の tab は Atlas で、起動 ~2.5 s 後に選ばれ、そのとき #m-clock は頭の行から Atlas の入力欄（.atl-inbar）へ移る。
+     時計の座標を読んだ後に動かないよう、既定が着いて置き場所が落ち着くのを待ってから測る。 */
+  await page.waitForFunction(() => !!document.querySelector('.control-panel .mode-btn.mode-atlas.active'), null, { timeout: 20_000 });
+  await page.waitForTimeout(900);
 }
 async function at(page, year) {
   await page.evaluate(([lng, lat, y]) => { window.__imap.jumpTo({ center: [lng, lat], zoom: 5 }); window.IntMapTime.setYear(y, { source: 'test' }); }, [...KYOTO, year]);

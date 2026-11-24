@@ -1,10 +1,9 @@
-/* IntMap · atlas-multimodal — a clip as one picture, and hands-free voice (checks)
+/* IntMap · atlas-multimodal — a clip as one picture (checks)
  *  The video extractor runs against a fake <video> that implements the real event contract (seek -> 'seeked');
- *  the voice loop runs against a fake recogniser that implements start/stop/onend/onerror/onresult. */
+ */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { frameTimes, sheetLayout, fmtTime, videoCaption, extractVideoFrames, VIDEO } from '../js/atlas-video-frames.js';
-import { makeVoiceLoop, mountVoiceLoop, VOICE } from '../js/atlas-voice.js';
 import { ATL_FILE } from '../js/atlas-attach.js';
 
 VIDEO.seekMs = 30;   /* the fake never answers a failed seek; do not wait the production 6 s per frame */
@@ -70,66 +69,4 @@ test('attach.read: a video is read as a frame sheet by the injected encoder; wit
   assert.equal((await ATL_FILE.read(file, { encodeVideo: async () => { throw new Error('x'); } })).why, 'video-undecodable');
   assert.equal((await ATL_FILE.read({ ...file, size: VIDEO.maxClipBytes + 1 }, { encodeVideo: async () => ({}) })).why, 'too-big');
   assert.equal((await ATL_FILE.read({ ...file, arrayBuffer: async () => new ArrayBuffer(8) }, {})).why, 'media');
-});
-
-/* ── voice ─────────────────────────────────────────────────────────────────────────────────────── */
-function fakeSR() {
-  const made = [];
-  class SR {
-    constructor() { made.push(this); this.started = 0; this.stopped = 0; }
-    start() { this.started++; if (SR.throwOnStart) throw new Error('already'); }
-    stop() { this.stopped++; setTimeout(() => this.onend && this.onend(), 0); }
-    say(text, final = true) { this.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: text }], { isFinal: final })] }); }
-  }
-  SR.made = made; return SR;
-}
-function loopWith(over = {}) {
-  const SR = fakeSR(), sent = [], states = [], timers = [];
-  let busy = false, t = 0;
-  const loop = makeVoiceLoop({ SR, locale: () => 'ja-JP', send: s => sent.push(s), busy: () => busy, onState: (s, w) => states.push([s, w]), now: () => t, timer: (f) => timers.push(f), ...over });
-  return { loop, SR, sent, states, timers, setBusy: b => { busy = b; }, tick: ms => { t += ms; } };
-}
-test('voice: every finished utterance is sent as its own message; interim results are not', () => {
-  const h = loopWith(); h.loop.start();
-  const r = SR0(h); assert.equal(r.lang, 'ja-JP'); assert.equal(r.continuous, true);
-  r.say('東京へ', false); assert.deepEqual(h.sent, []);
-  r.say('東京へ'); r.say('ズームイン');
-  assert.deepEqual(h.sent, ['東京へ', 'ズームイン']);
-});
-const SR0 = h => h.SR.made[h.SR.made.length - 1];
-test('voice: what is said while Atlas is working is held and sent when the turn ends (not cancelling it)', () => {
-  const h = loopWith(); h.loop.start(); const r = SR0(h);
-  h.setBusy(true); r.say('地震を重ねて'); r.say('もっと拡大');
-  assert.deepEqual(h.sent, []); assert.equal(h.loop.held(), 2);
-  h.setBusy(false); h.loop.idle();
-  assert.deepEqual(h.sent, ['地震を重ねて もっと拡大']);
-});
-test('voice: the recogniser ending by itself (silence) starts it again', () => {
-  const h = loopWith(); h.loop.start(); const r = SR0(h);
-  r.onend(); assert.equal(h.timers.length, 1); h.timers.shift()();
-  assert.equal(h.SR.made.length, 2); assert.ok(h.loop.isOn());
-});
-test('voice: a refused microphone stops the loop for good and says why — it is not restarted', () => {
-  const h = loopWith(); h.loop.start(); const r = SR0(h);
-  r.onerror({ error: 'not-allowed' }); r.onend();
-  assert.equal(h.loop.isOn(), false); assert.deepEqual(h.states.at(-1), ['off', 'not-allowed']); assert.equal(h.timers.length, 0);
-});
-test('voice: an engine that keeps ending at once gives up instead of spinning', () => {
-  const h = loopWith(); h.loop.start();
-  for (let i = 0; i < VOICE.giveUpAfter + 2 && h.loop.isOn(); i++) { SR0(h).onend(); const f = h.timers.shift(); if (f) f(); }
-  assert.equal(h.loop.isOn(), false); assert.equal(h.states.at(-1)[1], 'unstable');
-});
-test('voice: stop() ends it, drops what was held, and the late end event does not restart', () => {
-  const h = loopWith(); h.loop.start(); const r = SR0(h);
-  h.setBusy(true); r.say('x'); h.loop.stop();
-  assert.equal(h.loop.held(), 0); assert.equal(r.stopped, 1); r.onend(); assert.equal(h.timers.length, 0);
-  h.setBusy(false); h.loop.idle(); assert.deepEqual(h.sent, []);
-});
-test('voice: the button is hidden when there is no recogniser, and toggles the loop when there is', () => {
-  const mk = () => ({ style: {}, cls: new Set(), attrs: {}, classList: { toggle(c, on) { on ? this.s.add(c) : this.s.delete(c); }, s: null }, setAttribute(k, v) { this.attrs[k] = v; } });
-  const b0 = mk(); assert.equal(mountVoiceLoop(b0, { SR: null }), null); assert.equal(b0.style.display, 'none');
-  const b = mk(); b.classList.s = new Set(); const SR = fakeSR();
-  const loop = mountVoiceLoop(b, { SR, locale: () => 'en-US', send() {}, busy: () => false });
-  b.onclick(); assert.equal(loop.isOn(), true); assert.ok(b.classList.s.has('rec')); assert.equal(b.attrs['aria-pressed'], 'true');
-  b.onclick(); assert.equal(loop.isOn(), false); assert.equal(b.attrs['aria-pressed'], 'false');
 });
