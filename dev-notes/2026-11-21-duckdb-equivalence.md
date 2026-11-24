@@ -40,4 +40,4 @@ IntMap の対の述語を書く唯一の場所 `relateBlock` と DuckDB の `ST_
 - **失効条件**: main の perf-ceiling が同じ行を記録したら、その値が正本（この行はそれに置き換わる）。
 
 ## 製品からの到達（main への着地時に追加）
-`js/gis-ops.js` が `engineDomain`（`planarEquivalent` / `outsidePlanarDomain` / `predicates`）を `registerEngine` と並べて公開する。登録するエンジンの `accepts` は日付変更線・極の規則を写さずこれに訊く。入口から読まれないモジュールは `check:static` の split 規則が拒むため。
+`js/gis-ops.js` が `engineDomain()`（`js/gis-engine-domain.js` を必要になったときに読み込む）を `registerEngine` と並べて公開する。`gis-core` に同梱すると起動予算を 4.4 kB 超えたので遅延読み込みにした。カーネルの版は ops-14 のまま（答えは変わらない）でハッシュだけ記録し直した。登録するエンジンの `accepts` は日付変更線・極の規則を写さずこれに訊く。入口から読まれないモジュールは `check:static` の split 規則が拒むため。
