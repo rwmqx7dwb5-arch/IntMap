@@ -354,11 +354,12 @@ test('atlas-stream-replay ⑥ the held answers: RLS on, the owner reads, only se
 
 test('atlas-stream-replay ⑥ CONSTITUTION §5: no limit moved, and the retry header passes the preflight', () => {
   const fn = aiProxySource();
-  assert.match(fn, /const TURN_MAX_CALLS = 12;/);
+  /* (atlas-unbounded-turns) the per-turn call count was abolished (user decision 2026-11-24): there is no count to move */
+  assert.doesNotMatch(fn, /const TURN_MAX_CALLS = \d+;/);
   assert.match(fn, /const TURN_TTL_S = 900;/);
   assert.match(fn, /"Access-Control-Allow-Headers": "[^"]*\bx-intmap-replay\b[^"]*"/, 'the browser would refuse the retry before it is sent');
   /* the replay is answered before the allowance is consulted */
   const serveAt = fn.indexOf('Deno.serve(');
   const body = fn.slice(serveAt);
-  assert.ok(body.indexOf('awaitAnswer(db, user.id, turnId, replayHdr)') < body.indexOf('openTurn(db, account'), 'a replay must not spend one of TURN_MAX_CALLS');
+  assert.ok(body.indexOf('awaitAnswer(db, user.id, turnId, replayHdr)') < body.indexOf('openTurn(db, account'), 'a replay must not reach the turn door (it is neither a charge nor a call of the turn)');
 });

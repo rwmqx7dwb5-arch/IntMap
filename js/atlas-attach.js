@@ -31,6 +31,7 @@
 /* (#R773) 非画像の添付の「中身をどう描くか」は別の主題なので別のファイル。⚠ 全画面の枠は
    このファイルのものが 1 本きりで、あちらは中に置く要素を組むだけ（枠を 2 つ作らない）。 */
 import { ATTACH_STORE, ATTACH_VIEW } from './atlas-file-view.js';
+import { VIDEO, videoCaption } from './atlas-video-frames.js';   /* (atlas-multimodal) a clip becomes one contact-sheet image */
 import './ui-device.js';   /* (atlas-ui-owners) the phone/desktop boundary is window.IntMapDevice.COMPACT (js/ui-device.js), which that file installs on window when one exists and on globalThis otherwise (Node); in the browser they are the same object, and a Node harness may swap window after the import */
 import { IntMapLang } from './lang-registry.js';
 
@@ -668,6 +669,16 @@ export const ATL_FILE = (function () {
     const name = String((file && file.name) || 'file'), size = (file && file.size) || 0;
     const ty = String((file && file.type) || '').toLowerCase();
     let buf = null;
+    /* (atlas-multimodal) A VIDEO IS READ AS FRAMES, BY THE ENCODER THE APP INJECTS (js/atlas-video-frames.js) — never as bytes in this
+       function: its answer is the encoder's, as an image's is, so a codec this browser cannot decode is refused BY REASON ('video-undecodable')
+       instead of vanishing. Without an encoder (Node, a test) it stays what it was: 'media'. The clip's own ceiling is its own (VIDEO.maxClipBytes),
+       because the encoder streams the file through <video> and never holds it in memory. */
+    if (/^video\//.test(ty) && typeof (opts && opts.encodeVideo) === 'function') {
+      if (size > VIDEO.maxClipBytes) return { kind: 'unsupported', name: name, size: size, why: 'too-big', limit: VIDEO.maxClipBytes };
+      let v = null; try { v = await opts.encodeVideo(file); } catch (_) { v = null; }
+      if (v && typeof v.dataUrl === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(v.dataUrl) && v.times && v.times.length) return { kind: 'video', name: name, size: size, dataUrl: v.dataUrl, times: v.times, duration: v.duration, caption: videoCaption(name, v) };
+      return { kind: 'unsupported', name: name, size: size, why: 'video-undecodable' };
+    }
     /* ⚠ ASK THE SIZE BEFORE ASKING FOR THE BYTES. A dropped film is a File like any other. */
     if (size > LIMITS.readBytes) return { kind: 'unsupported', name: name, size: size, why: /^(audio|video)\//.test(ty) ? 'media' : 'too-big', limit: LIMITS.readBytes };
     try { buf = new Uint8Array(await file.arrayBuffer()); } catch (_) { return { kind: 'unsupported', name: name, size: size, why: 'unreadable' }; }

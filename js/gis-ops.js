@@ -61,7 +61,8 @@
  *      { ok:false, why, detail? }
  * ==========================================================================*/
 
-import { read } from './data-governance.js';
+import { read, temporalMismatch } from './data-governance.js';
+import { planarEquivalent, outsidePlanarDomain, EQUIVALENT_PREDICATES } from './gis-engine-domain.js';
 
 export function makeGisOps() {
   return (function () {
@@ -106,6 +107,8 @@ export function makeGisOps() {
     /* (voronoi) The spherical nearest-site diagram, read at call time like every kernel above —
        js/gis-core.js mounts it, so its version reaches provenance.engine with the others. */
     function voronoiKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisVoronoi) || null; } catch (_) { return null; } }
+    /* (gis-network) The graph kernel behind `network` / `networkDisrupt`, read at call time like every kernel above. */
+    function networkKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisNetwork) || null; } catch (_) { return null; } }
     function earthKm() { const g = geodesy(); const R = g && g._R_EARTH_KM; return (typeof R === 'number' && isFinite(R) && R > 0) ? R : null; }
 
     const D2R = Math.PI / 180;
@@ -1130,6 +1133,56 @@ export function makeGisOps() {
         surface: ['sphere', 'degree-plane'], inputs: 2, accepts: ['Point', 'Polygon'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true, needsVoronoi: true,
         params: [],
+      },
+      network: {
+        /* つながりとしての網 (docs/GIS-CORE.md §2.11): lines become a graph — nodes where they meet, edges the lines —
+           and the question is about CONNECTION, not distance: who matters (centrality), what is the bottleneck
+           (max flow / min cut), what are the other routes, how much can pass. js/gis-network.js has the arithmetic.
+           ⚠ `analysis` is required; `from`/`to` are node NAMES (nameFromField/nameToField) or "lng,lat" (the
+           nearest node is used and its distance is reported). ⚠ The cost is `weightField` or the line's length; an
+           edge whose named cost is missing is LEFT OUT and counted, never given its length. */
+        id: 'network',
+        surface: ['sphere'], inputs: 1, accepts: ['LineString'], output: 'Point|LineString',
+        needsGeodesy: true, needsNetwork: true,
+        params: [
+          { name: 'analysis', type: 'enum', required: true, values: ['centrality', 'maxflow', 'alternatives'] },
+          { name: 'weightField', type: 'field', required: false, input: 0 },
+          { name: 'capacityField', type: 'field', required: false, input: 0 },
+          { name: 'snapKm', type: 'number', required: false, unit: 'km' },
+          { name: 'nodesAt', type: 'enum', required: false, default: 'endpoints', values: ['endpoints', 'vertices'] },
+          { name: 'directed', type: 'boolean', required: false, default: false },
+          { name: 'nameFromField', type: 'field', required: false, input: 0 },
+          { name: 'nameToField', type: 'field', required: false, input: 0 },
+          { name: 'edgeLabelField', type: 'field', required: false, input: 0 },
+          { name: 'from', type: 'text', required: false },
+          { name: 'to', type: 'text', required: false },
+          { name: 'k', type: 'number', required: false },
+          { name: 'output', type: 'enum', required: false, values: ['nodes', 'edges'] },
+          { name: 'maxSources', type: 'number', required: false },
+          { name: 'betweenness', type: 'boolean', required: false, default: true },
+        ],
+      },
+      networkDisrupt: {
+        /* 障害時の連結性と影響範囲: input 0 is the network, input 1 the zone that goes down (every edge it touches and every
+           node inside it is removed). What changed is measured against the SAME network intact: components, pairs that
+           can no longer reach each other, the detour of those that still can, where the rerouted traffic lands. */
+        id: 'networkDisrupt',
+        surface: ['sphere'], inputs: 2, accepts: ['LineString', 'Polygon'], output: 'Point|LineString',
+        needsGeodesy: true, needsGeometry: true, needsNetwork: true,
+        params: [
+          { name: 'weightField', type: 'field', required: false, input: 0 },
+          { name: 'capacityField', type: 'field', required: false, input: 0 },
+          { name: 'snapKm', type: 'number', required: false, unit: 'km' },
+          { name: 'nodesAt', type: 'enum', required: false, default: 'endpoints', values: ['endpoints', 'vertices'] },
+          { name: 'directed', type: 'boolean', required: false, default: false },
+          { name: 'nameFromField', type: 'field', required: false, input: 0 },
+          { name: 'nameToField', type: 'field', required: false, input: 0 },
+          { name: 'edgeLabelField', type: 'field', required: false, input: 0 },
+          { name: 'from', type: 'text', required: false },
+          { name: 'to', type: 'text', required: false },
+          { name: 'output', type: 'enum', required: false, values: ['nodes', 'edges'] },
+          { name: 'maxSources', type: 'number', required: false },
+        ],
       },
       grid: {
         /* 格子（正方形・六角形）: cells of equal GROUND size over input 0 — see GRID_SHAPES for the two
@@ -2515,6 +2568,60 @@ export function makeGisOps() {
         sphereRelError: VK.sphereRelError(),
         borderToleranceKm: borderTol,
       });
+    }
+
+    /* ══ (gis-network) つながりとしての網 ═══════════════════════════════════════════════════════
+       The graph arithmetic and the rows it makes are js/gis-network.js's (analyse); this runner supplies what only
+       this file owns — the registry's features, the geodesy's distance, the clock, and, for a disruption, the two
+       geometry questions a zone needs (does an edge touch it, is a node inside it), asked through the SAME
+       geometry kernel and the SAME candidate index every other overlay uses.
+         · ⚠ A zone question the geometry kernel could not answer is NOT 「触れていない」: it is counted
+           (zoneUndecided) and recorded in the ledger, so the run reports partial ground instead of a calm map.
+         · A node-output answer does not inherit a ROW-WISE time axis: its rows are nodes, and the columns the axis
+           names are not there (a constant period is a statement about the whole network and is kept). */
+    /* a disruption's zone: the two shape questions it needs, asked through the geometry kernel (the one op of the pair that has any) */
+    async function runNetworkDisrupt(ds, params, R, ctx) {
+      const GG = geometry();
+      const led = makeGeoLedger();
+      const wins = windowsOf(ds[1]);
+      if (!wins.length) return fail('no-overlay-polygons', { input: 1 });
+      const cand = candidateSource(wins);
+      const zone = {
+        hitsEdge: (coords) => {
+          const line = { type: 'LineString', coordinates: coords };
+          let hit = false, undecided = false;
+          cand.each(bboxOf(line), 0, (w) => {
+            const r = GG.attempt.intersects(line, w.geometry);
+            if (!led.ok(r)) { undecided = true; return true; }
+            if (r.value) { hit = true; return false; }
+            return true;
+          });
+          return hit ? true : (undecided ? null : false);
+        },
+        hasPoint: (pos) => {
+          let inside = false;
+          cand.each([pos[0], pos[1], pos[0], pos[1]], 0, (w) => { if (GG.pointInGeometry(pos, w.geometry)) { inside = true; return false; } return true; });
+          return inside;
+        },
+      };
+      return runNetwork('networkDisrupt', ds, params, R, ctx, { zone: zone, led: led });
+    }
+    async function runNetwork(kind, ds, params, R, ctx, z) {
+      const NK = networkKernel();
+      const led = z ? z.led : makeGeoLedger();
+      const zone = z ? z.zone : null;
+      const geo = geodesy();
+      const res = await NK.analyse(kind, {
+        features: ds[0].features(), hasField: (n) => hasField(ds[0], n), asNumber: (v) => R.asNumber(v),
+        distKm: (a, b) => geo._distKm(a, b), R: earthKm(), tick: (u, t) => ctx.tick(u, t), zone: zone,
+      }, params);
+      if (!res || !res.ok) {
+        if (res && res.why === 'cancelled') return fail('cancelled', { done: ctx.done() });
+        return fail((res && res.why) || 'op-unknown', res && res.detail);
+      }
+      const out = { ok: true, features: res.features };
+      if (res.nodeOutput && ds[0].time && ds[0].time.kind !== 'constant') out.validTime = 'none';
+      return withGeoStats(out, led, res.stats);
     }
 
     /* ══ ⚠⚠⚠ (#R783) 半開で読む — その日はどちらのものか ══════════════════════════════════════
@@ -6679,6 +6786,7 @@ export function makeGisOps() {
          has its own pair of ends. The first input's axis is kept, as before, and the record says the
          rule was NOT applied (`result:'row-wise'`) rather than looking as if it had been. */
     function vectorOutTime(ds, R, rule, decl, roles, rowAxis) {
+      if (rule === 'none') return { time: null, stated: [], rule: null };   /* (gis-network) rows that are not the input's rows carry no row-wise axis */
       if (rule !== 'intersection' && rule !== 'union') return { time: outTime(ds[0], decl), stated: [], rule: null };
       const stated = ds.map((d) => ({ id: d && d.id, time: (d && d.time) || null }));
       const info = (result, extra) => Object.assign({ rule: rule, result: result }, extra || {});
@@ -7056,6 +7164,8 @@ export function makeGisOps() {
       /* (voronoi) A shape engine that did not arrive is the existing 「この処理は実行されていません」,
          not an empty diagram. */
       if (decl.needsVoronoi && !voronoiKernel()) return fail('geometry-unavailable', { kernel: 'voronoi' });
+      /* (gis-network) Same shape: a graph engine that did not arrive is a named refusal, not an empty network. */
+      if (decl.needsNetwork && !networkKernel()) return fail('geometry-unavailable', { kernel: 'network' });
       if (decl.needsGeometry) {
         const GG = geometry();
         if (!GG) return fail('geometry-missing');
@@ -7187,6 +7297,9 @@ export function makeGisOps() {
         spatialJoin: () => runSpatialJoin(ds[0], ds[1], params, R, ctx),
         nearestJoin: () => runNearestJoin(ds[0], ds[1], params, R, ctx),
         voronoi: () => runVoronoi(ds[0], ds[1], ctx),
+        /* (gis-network) the graph ops; the arithmetic and the row assembly are js/gis-network.js's */
+        network: () => runNetwork('network', ds, params, R, ctx, null),
+        networkDisrupt: () => runNetworkDisrupt(ds, params, R, ctx),
         grid: () => runGrid(ds[0], params, R, ctx),
         timeJoin: () => runTimeJoin(ds[0], ds[1], params, R, ctx),
         compute: () => runCompute(ds[0], params, R, ctx),
@@ -7290,6 +7403,13 @@ export function makeGisOps() {
       /* (#gov) 出典・条件・取得時刻・対象時点。See inheritTerms. */
       const terms = inheritTerms(ds);
       if (terms.length) prov.upstreams = terms;
+      /* (data-facts) 入力の対象時点が重ならないなら、それは「別の時点の世界の結合」である。比較して述べるだけで、
+         拒否も補正もしない（差が問題かどうかは問いによる）。述べていない入力は 'unstated' として残し、合っているとは
+         言わない。See js/data-governance.js temporalMismatch. */
+      if (ds.length > 1) {
+        const tm = temporalMismatch(terms.map((x, n) => ({ id: x.input || x.publisher || ('input-' + n), asOf: x.asOf })));
+        if (tm.pairs.length || tm.unstated.length) prov.timeMismatch = tm;
+      }
       const grid = rasterOutTime(ds, R, res.shapeOnly);
       /* (time-spatial-base) VALID time of a vector output, and — separately — when it was recorded. */
       const vt = res.raster ? null : vectorOutTime(ds, R, res.validTime, decl, res.timeRoles, res.timeRows);
@@ -7438,6 +7558,9 @@ export function makeGisOps() {
       run: run,
       /* (gis-worker-columnar) where an op may run besides this GIS — see ENGINES above. Nothing is registered by default. */
       registerEngine: registerEngine, unregisterEngine: unregisterEngine, engines: engineList,
+      /* (duckdb-equivalence) the measured domain where a planar engine answers the same question — an engine's `accepts` asks this
+         instead of carrying its own copy of the seam/pole rule (js/gis-engine-domain.js) */
+      engineDomain: Object.freeze({ planarEquivalent: planarEquivalent, outsidePlanarDomain: outsidePlanarDomain, predicates: EQUIVALENT_PREDICATES }),
       /* exposed because the panel labels a clipped shape with its area and the checks measure the
          same number the ops wrote — one implementation, asked by both */
       areaKm2: areaKm2,

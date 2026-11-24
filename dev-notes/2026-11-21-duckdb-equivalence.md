@@ -38,3 +38,6 @@ IntMap の対の述語を書く唯一の場所 `relateBlock` と DuckDB の `ST_
 - **何を買ったか**: この PR の変更（`js/gis-engine-domain.js` は入口から読まれず、どの塊にも入らない）ではなく、main に入った Atlas の統合知識層（#1280）が `atlas-orchestrate` に載ったぶん。main の CI は merge 後に天井を記録するが、
   それまでの間に出た PR が全部 `Gates 2/3` で赤くなるので、先に実測まで上げる。
 - **失効条件**: main の perf-ceiling が同じ行を記録したら、その値が正本（この行はそれに置き換わる）。
+
+## 製品からの到達（main への着地時に追加）
+`js/gis-ops.js` が `engineDomain`（`planarEquivalent` / `outsidePlanarDomain` / `predicates`）を `registerEngine` と並べて公開する。登録するエンジンの `accepts` は日付変更線・極の規則を写さずこれに訊く。入口から読まれないモジュールは `check:static` の split 規則が拒むため。

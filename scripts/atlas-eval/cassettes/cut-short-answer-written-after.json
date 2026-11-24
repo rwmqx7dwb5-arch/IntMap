@@ -4,7 +4,7 @@
   "lang": "en",
   "origin": {
     "kind": "scripted",
-    "from": "R802 §8 — the turn ran out with 「I'm comparing the two rankings now.」 as its text; the forced final now writes the answer from the transcript"
+    "from": "R802 §8 — the turn ran out with 「I'm comparing the two rankings now.」 as its text. (atlas-unbounded-execution) With no step count the same script reaches its own answer on the ninth reply — no forced final"
   },
   "question": {
     "set": "records",
@@ -156,7 +156,6 @@
       ]
     },
     {
-      "final": true,
       "text": "Of the top 10 by GDP per capita, Luxembourg, Ireland, Switzerland, Norway, Singapore, Iceland, Qatar and Denmark are not in the top 10 by total GDP; the United States is in both lists.",
       "toolCalls": []
     }
@@ -320,7 +319,7 @@
     "snapshot": {}
   },
   "golden": {
-    "stopped": "step_budget",
+    "stopped": "answered",
     "calls": [
       {
         "name": "run_capability:data.rank",

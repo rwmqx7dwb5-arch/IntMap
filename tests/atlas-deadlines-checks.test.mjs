@@ -124,7 +124,7 @@ test('R452 ②: a tool that never settles is reported to Atlas, and the turn goe
 });
 
 /* ── ③ …and neither does a turn that has simply run long ───────────────────────────────────────── */
-test('R452 ③: past the turn budget the loop stops calling tools and writes the answer', async () => {
+test('R452 ③: past a turn clock a caller set, the loop stops calling tools — and does not force an answer', async () => {
   /* an injected clock — the loop reads `opts.now`, so this asserts the real branch with no sleeping */
   let t = 0;
   const now = () => (t += 100);
@@ -140,21 +140,23 @@ test('R452 ③: past the turn budget the loop stops calling tools and writes the
   }), 8000);
   assert.notEqual(out, 'HUNG');
   assert.equal(out.stopped, 'time_budget');
-  assert.ok(out.text, 'a turn that ran out of clock still answers — that is the whole point of the clock');
+  /* (atlas-unbounded-execution) the product sets no turn clock now (LIMITS.turnBudgetMs 0); a caller still may. And a
+     stopped turn is not made to write an answer it could not reach (the user, 2026-11-24) — the caller shows what it has. */
+  assert.equal(out.text, '', 'no answer is forced out of a turn that was stopped');
   assert.ok(out.calls >= 1, 'and it is not a turn that was prevented from doing anything');
 });
 
 test('R452 ③b: the two clocks are LIMITS, and limits are technical — none of them is a smaller world', () => {
-  assert.equal(AGENT.LIMITS.maxSteps, 8, 'no ceiling Atlas already had may be lowered by this round');
-  assert.equal(AGENT.LIMITS.maxToolCalls, 32);
-  assert.equal(AGENT.LIMITS.maxPerStep, 8);
+  /* (atlas-unbounded-execution) no ceiling Atlas had may be LOWERED — and since 2026-11-24 there is none to lower: the
+     counts bound nothing by default (tests/atlas-unbounded-execution-checks.test.mjs ⑩) */
+  for (const k of ['maxSteps', 'maxToolCalls', 'maxPerStep']) assert.equal(AGENT.LIMITS[k], Infinity, k);
   /* ⚠ MEASURED, NOT PICKED. One ordinary turn about an open news article took 191 s on the live
      site (four ai-proxy calls: 8.1 / 51.2 / 48.9 / 17.2 s), the slowest single call was 73.2 s, and
      ONE working `analyze` can cost ~200 s (2 model calls + a 32 s gather + a 20 s pinning pass).
      A deadline under those cuts turns that were about to succeed — the defect, re-introduced as a
      limit, which is exactly what CONSTITUTION.md §5 forbids. */
   assert.ok(AGENT.LIMITS.toolTimeoutMs >= 210000, 'a tool deadline this tight would cut a working analyze');
-  assert.ok(AGENT.LIMITS.turnBudgetMs >= 400000, 'and this one would cut a turn that was about to answer');
+  assert.ok(!(AGENT.LIMITS.turnBudgetMs > 0) || AGENT.LIMITS.turnBudgetMs >= 400000, 'no turn clock — or none that would cut a turn that was about to answer');
 });
 
 /* ── ④ Atlas stopped keeping private copies of the relay ladder ────────────────────────────────── */

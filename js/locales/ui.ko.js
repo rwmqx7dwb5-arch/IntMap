@@ -1139,7 +1139,7 @@ IntMapLang.define('ko', { ui: {
   "articles from ": "건 · 출처 ",
   "Ashfall": "화산재 강하",
   "Ask Atlas": "Atlas에게 묻기",
-  "Ask in plain language — Atlas drives the map for you. Try:": "평소 말로 물어보세요 — Atlas가 지도를 대신 조작합니다. 예:",
+  "Ask in plain language — Atlas drives the map for you.": "평소 말로 물어보세요 — Atlas가 지도를 대신 조작합니다.",
   "Ask me anything about this spot — I know exactly where it is.": "이 지점에 대해 무엇이든 물어보세요 — 정확한 위치를 알고 있습니다.",
   "Asteroid": "소행성",
   "Asteroids & comets": "소행성과 혜성",
@@ -6402,5 +6402,5 @@ IntMapLang.define('ko', { ui: {
   "weather card": "날씨 카드",   /* #R726 */
   "later pass": "이후 통과",   /* #R728 */
   "passes within 48 h": "48시간 이내 통과",   /* #R728 */
-  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas가 도구를 실행했지만 이번에는 답변을 작성하지 못했습니다. 도구가 반환한 내용은 위에 표시되어 있습니다. 다시 질문하거나 질문 범위를 좁혀 주세요.",   /* #R731 */
+  /* #R731 */
 } });

@@ -59,6 +59,9 @@ export const GOVERNANCE = {
     /* the payload this build writes states it in the same words: 1:110m admin-1, public domain */
     licence: 'public domain',
     attribution: false,
+    /* (describes.*) measured on the committed bundle: 51 features (50 states and the District of Columbia); the build states 1:110m */
+    extent: '51 U.S. state-level units (50 states and the District of Columbia)',
+    resolution: '1:110m (Natural Earth admin-1 generalisation)',
     ...NATURAL_EARTH,
     builtBy: 'scripts/build-us-elections.mjs',
   },
@@ -71,6 +74,11 @@ export const GOVERNANCE = {
       { publisher: 'tonmcg/US_County_Level_Election_Results_08-24', url: 'https://github.com/tonmcg/US_County_Level_Election_Results_08-24' },
     ],
     priority: { disjoint: ['state popular vote for years before 2020', 'county results for 2020 and later'] },
+    /* (describes.*) measured on the committed bundle (60 elections, 1789-2024) and stated by this builder's header */
+    period: { start: '1789', end: '2024' },
+    extent: 'all 60 U.S. presidential elections, 1789-2024, each with its state-by-state electoral vote; the national popular-vote share is recorded for 51 of them (none for 1789-1820)',
+    method: 'Electoral College result per state (the candidate who received the electors of each state), with electoral votes per candidate and national popular-vote share where one was recorded; the state fill is by electoral votes because that is the one basis that exists for every election',
+    resolution: 'state x election',
     ...US_PRESIDENTIAL,
     builtBy: 'scripts/build-us-elections.mjs',
   },

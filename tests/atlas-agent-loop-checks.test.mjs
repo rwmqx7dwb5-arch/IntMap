@@ -700,7 +700,7 @@ test('R511 ②: "text" — and an undeclared mode — end the turn on step 0 exa
 });
 
 /* ══ ③ the bounce is bounded — a model that insists still terminates, and its words are kept ══════ */
-test('R511 ③: after maxOutputGate bounces a "mixed" final with nothing drawn is accepted as it stands', async () => {
+test('R511 ③: the same contradiction from the same unchanged reply is handed back once, then accepted as it stands', async () => {
   const model = scripted([{ text: 'The map would show it.', toolCalls: [], answerMode: 'mixed' }]);
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: true }), messages: [{ role: 'user', content: 'x' }] });
   /* (atlas-completion) the words are still accepted as they stand, but the turn no longer reports
@@ -709,8 +709,10 @@ test('R511 ③: after maxOutputGate bounces a "mixed" final with nothing drawn i
   assert.equal(out.stopped, 'output_unmet');
   assert.equal(out.completion, 'partial');
   assert.deepEqual(out.unmet, [{ kind: 'output', mode: 'mixed', code: 'output_not_produced' }]);
-  assert.equal(out.trace.outputGate, AGENT.LIMITS.maxOutputGate);
-  assert.equal(model.count(), AGENT.LIMITS.maxOutputGate + 1);
+  /* (atlas-unbounded-execution) no count bounds the bounce: it ends because the second reply is the first one again, with
+     nothing run in between — the loop KNOWS nothing new is coming */
+  assert.equal(out.trace.outputGate, 1);
+  assert.equal(model.count(), 2);
   assert.equal(out.text, 'The map would show it.', 'the reader still gets the sentence');
   assert.equal(out.answerMode, 'mixed');
   assert.equal(out.mapDrawn, false, '…and the record says the map was NOT drawn, so the caller can see the disagreement');
@@ -1117,7 +1119,7 @@ test('R663 ②: the reply is generated decision-first — what it IS, what it DO
   /* (atlas-legacy-protocol-removal) the calls are not a field any more: they are the provider's function_call items,
      emitted beside the message rather than after the prose inside it */
   assert.equal(keys.indexOf('tool_calls'), -1, 'no call rides in the written JSON');
-  assert.deepEqual(keys, ['turn', 'answer_mode', 'final_text']);
+  assert.deepEqual(keys, ['turn', 'answer_mode', 'next_effort', 'next_output_tokens', 'final_text']);   /* (atlas-unbounded-execution) what the NEXT reply needs is decided before the words too */
   assert.equal(keys[keys.length - 1], 'final_text');
 });
 
@@ -1156,13 +1158,13 @@ test('R663 ④: silence and "final" still end the turn on the first step, having
 });
 
 /* ══ ⑤ IT IS THE SAME GATE — bounded by the same budget, and the reader is never left with nothing ══ */
-test('R663 ⑤: the bounces are bounded by maxOutputGate, and the accepted reply is still the answer', async () => {
+test('R663 ⑤: the bounce ends when nothing moved, and the accepted reply is still the answer', async () => {
   const stuck = { text: '確認します。', toolCalls: [], turnState: 'continuing' };
   const model = scripted([stuck]);
   const ex = ran();
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: ex.execute, messages: [{ role: 'user', content: 'q' }] });
-  assert.equal(out.trace.outputGate, AGENT.LIMITS.maxOutputGate, 'handed back at most twice');
-  assert.equal(model.seen.length, AGENT.LIMITS.maxOutputGate + 1);
+  assert.equal(out.trace.outputGate, 1, 'handed back once; the identical reply again is no progress');
+  assert.equal(model.seen.length, 2);
   /* ⚠ the reader gets the sentence rather than an empty bubble: text held back mid-turn is taken
      back by the branch that accepts the reply as final. */
   assert.equal(out.text, '確認します。');
@@ -1299,16 +1301,17 @@ const notesOn = (req) => (req.messages || []).filter((m) => m.role === 'tool').f
 const REVERSIONS = [
   ['if (calls.length) midText = reply.text; else text = reply.text;', 'text = reply.text;'],
   ["'no_calls_issued'\n              : (!String(answerHere || '').trim() ? 'no_answer_written' : ''));", "'no_calls_issued' : '');"],
-  ["if (!String(text || '').trim() && stopped !== 'aborted'", "if (!String(text || '').trim() && results.length && stopped !== 'aborted'"],
+  ["if (!String(text || '').trim() && !cutShort && stopped !== 'aborted'", "if (!String(text || '').trim() && results.length && stopped !== 'aborted'"],
   /* (#R802) …and the closing call this round gave a CUT turn. #R742's pre-fix module is the agent WITHOUT
      that round's four changes, so this round's one line has to come out with them — otherwise the
      reconstructed pre-fix agent still writes the answer and ⑤ can no longer observe the defect it names. */
-  ['      if (cutShort) writeAnswer = true;   /* (#R802) the turn ran out — see above */\n', ''],
   ["if (!String(text || '').trim() && stopped === 'answered') stopped = 'no_answer';", ''],
 ];
 async function preFixAgent() {
   let src = readFileSync(join(ROOT, 'js/atlas-agent.js'), 'utf8').split('\r\n').join('\n');
   src = src.split("from './atlas-turn-results.js'").join("from '" + pathToFileURL(join(ROOT, 'js/atlas-turn-results.js')).href + "'");
+  src = src.split("from './atlas-working-memory.js'").join("from '" + pathToFileURL(join(ROOT, 'js/atlas-working-memory.js')).href + "'");   /* (atlas-working-memory) a lone data: module resolves no relative specifier */
+  src = src.split("from './atlas-run-ledger.js'").join("from '" + pathToFileURL(join(ROOT, 'js/atlas-run-ledger.js')).href + "'");   /* (job-cost-ledger) the agent's other relative import — a data: URL resolves none */
   for (const [from, to] of REVERSIONS) {
     const parts = src.split(from);
     assert.equal(parts.length, 2, 'the reversion matched the shipped source exactly once: ' + from.slice(0, 48));
@@ -1345,7 +1348,7 @@ test('R742 ②: the bounces are the same bounded budget, and an answerless turn 
   const model = scripted([{ text: '', toolCalls: [] }]);
   const ex = ran();
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: ex.execute, messages: [{ role: 'user', content: 'q' }] });
-  assert.equal(out.trace.outputGate, AGENT.LIMITS.maxOutputGate, 'the same ceiling #R511 set, not a new one');
+  assert.equal(out.trace.outputGate, 1, 'the same no-progress rule #R511 now follows, not a new one');
   assert.equal(out.text, '', 'the loop never writes a sentence on Atlas\'s behalf');
   assert.equal(out.stopped, 'no_answer', 'a turn with no answer in it is not a turn that answered');
   assert.deepEqual(ex.calls, []);
@@ -1367,9 +1370,13 @@ test('R742 ③: a sentence written on a step that issued calls never becomes the
     : { text: PROMISE, toolCalls: [{ id: 'm' + req.step, name: 'measure', arguments: { what: 'lisbon-capetown-' + req.step } }] })]);
   const ex = ran();
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: ex.execute, messages: [{ role: 'user', content: 'distance Lisbon → Cape Town' }], limits: { maxSteps: 2 } });
-  assert.equal(out.stopped, 'step_budget', 'the turn was cut by its working limit, as the measured one was');
+  assert.equal(out.stopped, 'step_budget', 'the turn was cut by a working limit the caller passed');
   assert.ok(!/Measuring/.test(out.text), 'the promise never reaches the reader as the answer');
-  assert.equal(out.text, 'Lisbon to Cape Town is about 8,300 km.', 'the number the turn actually produced does');
+  /* (atlas-unbounded-execution) a stopped turn is not made to write an answer it could not reach (the user, 2026-11-24):
+     no forced call, and the promise stays where it belongs — on the way, kept for the reader */
+  assert.equal(out.text, '', 'no answer is invented for a stopped turn');
+  assert.equal(model.seen.length, 2, 'no closing call was spent');
+  assert.deepEqual(out.interim.map((x) => x.text), [PROMISE], 'the sentence written on the way is kept, once');
   assert.equal(out.results.length, 2);
 });
 

@@ -46,7 +46,7 @@ test('① ATLAS_DELEGATION_MODEL: a priced model id is used; anything else is ig
      CONSTITUTION §0.3); an operator who sets one, and it is priced, has chosen it. What is priced is the only rule. */
   assert.equal(delegationModel(env({ ATLAS_DELEGATION_MODEL: 'gpt-6-astra' })).ignored, priceOf('gpt-6-astra').known ? '' : 'unpriced');
   /* the policy object the page reads is not widened by it */
-  assert.deepEqual(Object.keys(delegationPolicy(env({ ATLAS_DELEGATION_MODEL: priced }))).sort(), ['childMaxCalls', 'maxChildren', 'mode']);
+  assert.deepEqual(Object.keys(delegationPolicy(env({ ATLAS_DELEGATION_MODEL: priced }))).sort(), ['childMaxCalls', 'maxChildren', 'maxConcurrent', 'mode']);   /* (atlas-unbounded-turns) maxConcurrent: the page's worker queue */
   assert.equal(delegationPolicy(env({})).maxChildren, DELEGATION_DEFAULTS.maxChildren);
 });
 

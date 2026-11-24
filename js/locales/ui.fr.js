@@ -1149,7 +1149,7 @@ IntMapLang.define('fr', { ui: {
   "articles from ": "articles de ",
   "Ashfall": "Chutes de cendres",
   "Ask Atlas": "Demander à Atlas",
-  "Ask in plain language — Atlas drives the map for you. Try:": "Demandez en langage courant — Atlas pilote la carte pour vous. Essayez :",
+  "Ask in plain language — Atlas drives the map for you.": "Demandez en langage courant — Atlas pilote la carte pour vous.",
   "Ask me anything about this spot — I know exactly where it is.": "Posez-moi n'importe quelle question sur ce lieu — je sais exactement où il se trouve.",
   "Asteroid": "Astéroïde",
   "Asteroids & comets": "Astéroïdes et comètes",
@@ -6412,5 +6412,5 @@ IntMapLang.define('fr', { ui: {
   "weather card": "fiche météo",   /* #R726 */
   "later pass": "passage ultérieur",   /* #R728 */
   "passes within 48 h": "passages dans les 48 h",   /* #R728 */
-  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas a exécuté ses outils mais n’a pas rédigé de réponse cette fois — ce qu’ils ont renvoyé est affiché ci-dessus ; reposez la question ou précisez-la.",   /* #R731 */
+  /* #R731 */
 } });
