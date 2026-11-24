@@ -68,7 +68,16 @@ export const GOVERNANCE = (() => {
   /* ⚠ THE TERMS OF THE FOUR SOURCES ARE STATED IN scripts/subcables/sources.mjs (LICENCES) and in the
      bundle's own meta; this declaration adds what nothing else said — which bundles, and how often
      the inventory they follow (TeleGeography's) publishes. */
-  const rec = { publisher: 'TeleGeography Submarine Cable Map', ...TELEGEOGRAPHY, builtBy: 'scripts/build-subcables.mjs' };
+  const rec = {
+    publisher: 'TeleGeography Submarine Cable Map',
+    /* (describes.*) what the builder states and what the committed bundles measurably carry (702 cables, 1,922 landing points). */
+    extent: '702 submarine cables and 1,922 landing points worldwide, planned cables included (96 flagged isPlanned)',
+    method: 'cable inventory, metadata, landing points and connection topology from the TeleGeography submarine cable map; route geometry is NOT the TeleGeography schematic line but a surveyed position (NOAA, EMODnet, ACMA) where matched to a cable by name and place, otherwise a least-cost path between real anchors',
+    resolution: 'routes reconstructed over a 1/12 degree sea-floor grid; surveyed pieces simplified to within 40 m',
+    accuracy: 'per-cable quality is measured, not asserted: 22 verified (published surveyed position), 675 reconstructed (least-cost path), 5 estimated (geodesic where the router found no path)',
+    ...TELEGEOGRAPHY,
+    builtBy: 'scripts/build-subcables.mjs',
+  };
   return { 'data/subcables.json': rec, 'data/subcables-lp.json': rec, 'data/subcables-meta.json': rec };
 })();
 

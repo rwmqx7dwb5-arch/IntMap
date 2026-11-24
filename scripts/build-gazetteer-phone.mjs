@@ -53,6 +53,12 @@ export const GOVERNANCE = {
        spelling both builders share, so neither restates them. */
     publisher: 'GeoNames',
     ...GEONAMES_TERMS,
+    /* (describes.*) the slice the bundle states about itself (slice: of gazetteer-world, 12,000 rows, by population desc) and what it measurably carries; the upstream statements are those of scripts/build-gazetteer.mjs. */
+    extent: 'the 12,000 most populous places of data/gazetteer-world.json.gz (188 country codes; smallest population 49,250)',
+    method: 'the head of the GeoNames-derived world gazetteer, cut at the phone row cap read from js/gazetteer.js MOBILE_CAP; rows, names and coordinates are unchanged from the world bundle',
+    resolution: 'one WGS84 point per place',
+    completeness: 'GeoNames states the data is provided as is, without any representation of completeness; this slice keeps 12,000 of 148,630 rows',
+    accuracy: 'GeoNames states the data is provided as is, without any representation of accuracy or timeliness',
     ...GEONAMES,
     builtBy: 'scripts/build-gazetteer-phone.mjs',
   },
