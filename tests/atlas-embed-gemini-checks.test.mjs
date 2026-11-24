@@ -109,6 +109,14 @@ function isolate(env, world, requests) {
         if (E && E.status && E.status !== 200) return reply({ error: "no" }, E.status);
         return reply({ embeddings: reqs.map((r) => ({ values: raw(r.content.parts[0].text, r.outputDimensionality || (E && E.nativeDim) || 3072) })) });
       }
+      const G1P = "https://generativelanguage.googleapis.com/v1beta/models/", G1S = ":embedContent";
+      const g1 = (s.startsWith(G1P) && s.endsWith(G1S)) ? [s, s.slice(G1P.length, s.length - G1S.length)] : null;
+      if (g1) {
+        log.push({ k: "gemini:embed1", model: decodeURIComponent(g1[1]), task: body.taskType, dim: body.outputDimensionality });
+        const E = W.gemini && W.gemini.embed;
+        if (E && E.status && E.status !== 200) return reply({ error: "no" }, E.status);
+        return reply({ embedding: { values: raw(body.content.parts[0].text, body.outputDimensionality || (E && E.nativeDim) || 3072) } });
+      }
       throw new Error("unexpected fetch " + s);
     };
     await import(${JSON.stringify(url)});
@@ -300,4 +308,22 @@ test('atlas-embed-gemini batches: a provider\'s per-call input bound splits the 
   assert.deepEqual(b.map((x) => x.length), [100, 50]);
   assert.deepEqual(b.flat().map((e) => e.id), ENTRIES.map((e) => e.id));
   assert.deepEqual(core.batches(ENTRIES).map((x) => x.length), [150], 'without a bound, characters alone decide (as before)');
+});
+
+/* (gemini-embed-methods) what production's key actually lists, 2026-11-25: 65 models, and the embedding models name
+   embedContent but not batchEmbedContents. The filter used to keep only batch models, so it kept none. */
+test('atlas-embed-gemini ⑤ a model that lists embedContent only is an embedding model, called once per input — never with the batch call it does not list', () => {
+  const LIVE = { openai: PROD.openai, gemini: { pages: [[{ name: 'gemini-3.5-flash', methods: CHAT_METHODS }, { name: G, methods: ['embedContent', 'countTokens', 'asyncBatchEmbedContent'] }]] } };
+  const { out, shape } = isolate(BOTH, LIVE, [SEED, SEARCH]);
+  const [seeded, found] = out;
+  assert.equal(seeded.status, 200, JSON.stringify(seeded.json));
+  assert.equal(seeded.json.state, 'ok');
+  assert.equal(seeded.json.stored, ENTRIES.length);
+  assert.ok(!kinds(seeded.log).includes('gemini:embed'), 'no batchEmbedContents call to a model that does not list it');
+  const ones = seeded.log.filter((x) => x.k === 'gemini:embed1');
+  assert.equal(ones.length, ENTRIES.length, 'one embedContent per document');
+  assert.ok(ones.every((x) => x.model === G && x.dim === 1536 && x.task === 'RETRIEVAL_DOCUMENT'));
+  for (const v of Object.values(shape)) { assert.deepEqual(v.lens, [1536]); assert.ok(v.norms.every(unit)); }
+  assert.equal(found.status, 200, JSON.stringify(found.json));
+  assert.ok(found.log.some((x) => x.k === 'gemini:embed1' && x.task === 'RETRIEVAL_QUERY'), 'the query is embedded the same way, as a query');
 });

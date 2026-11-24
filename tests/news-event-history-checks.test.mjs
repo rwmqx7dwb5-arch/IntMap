@@ -83,7 +83,7 @@ test('news-ingest: the archive runs BEFORE any delete and a failed archive stops
 test('embed: a key with no embedding model falls to Gemini, which is asked what it has', () => {
   const src = fs.readFileSync(new URL('../supabase/functions/news-ingest/index.ts', import.meta.url), 'utf8');
   assert.match(src, /geminiEmbeddingModel/);
-  assert.match(src, /outputDimensionality: EMBED_DIM/);
+  assert.ok(src.includes('embedGemini(key, model, inputs, door, { dim: EMBED_DIM'), 'the 1536 width goes to the shared call (gemini-embed-methods), which sends it as outputDimensionality');
   assert.match(src, /provider === "openai" && \(res\.status === 403/);
 });
 
