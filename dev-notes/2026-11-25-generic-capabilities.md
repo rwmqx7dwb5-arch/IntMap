@@ -1,6 +1,7 @@
 ---
 title: 同梱データを「1 つの問いの答え」から「Atlas が問えるデータ」へ——宣言された表を data.query に、アプリの命令を system.command に。research.portImpact と siting.compare を外す
 date: 2026-11-25
+pr: 1408
 newsen: Atlas can now ask the whole power plant database (34,936 plants), the seaports, rail access to ports and Japan's prefecture indicators as tables, and run any of the app's own commands.
 newsjp: Atlas が発電所データベース全件（34,936 件）・港湾・港への鉄道距離・日本の都道府県指標を表として問い合わせ、アプリの操作命令をどれでも実行できるようになりました。
 ---
