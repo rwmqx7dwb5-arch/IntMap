@@ -2486,11 +2486,6 @@
       "link": "the publisher page of a shipped French timetable (js/transit-feeds.js source / verified.page); the build script reads its dataset API, the browser never does"
     },
     {
-      "host": "www.etalab.gouv.fr",
-      "what": "Licence Ouverte 2.0 text link",
-      "link": "the licence of a shipped timetable (js/transit-feeds.js FEED_ROWS[].licence.url), shown as a hyperlink; never fetched"
-    },
-    {
       "host": "opendatacommons.org",
       "what": "ODbL 1.0 text link",
       "link": "the licence of a shipped timetable (js/transit-feeds.js FEED_ROWS[].licence.url), shown as a hyperlink; never fetched"
