@@ -4,7 +4,7 @@
   "lang": "en",
   "origin": {
     "kind": "scripted",
-    "from": "R802 §8 — the turn ran out on a narration, and the forced final came back empty: the reader got no answer"
+    "from": "R802 §8 — the turn ran out on a narration, and the forced final came back empty: the reader got no answer. (atlas-unbounded-execution) With no step count the turn ends on its own empty final, handed back once and the hand-back empty too: still no answer"
   },
   "question": {
     "set": "records",
@@ -154,6 +154,14 @@
           }
         }
       ]
+    },
+    {
+      "text": "",
+      "toolCalls": []
+    },
+    {
+      "text": "",
+      "toolCalls": []
     },
     {
       "final": true,
@@ -320,7 +328,7 @@
     "snapshot": {}
   },
   "golden": {
-    "stopped": "step_budget",
+    "stopped": "no_answer",
     "calls": [
       {
         "name": "run_capability:data.rank",

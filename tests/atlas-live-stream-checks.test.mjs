@@ -368,8 +368,8 @@ test('atlas-live-stream ④ the thinking headline is the latest title, or the la
 
 test('atlas-live-stream ④ a preview is never the answer: the console replaces the draft and a call makes it a note', () => {
   const con = read('js/atlas-console.js');
-  /* the draft stands only where there is no answer yet */
-  assert.match(con, /let head=say\?\([^\n]*\):LIVE\.draftHtml\(ai\);/);
+  /* the draft stands only where there is no answer yet — (atlas-interim-kept) and once the turn has ended without one, the notes it kept do */
+  assert.match(con, /let head=say\?\([^\n]*\):\(\(!ai\.__atlCancelled&&ai\.__atlInterim\)\?LIVE\.saidHtml\(ai\.__atlInterim,''\):LIVE\.draftHtml\(ai\)\);/);
   /* the answer path ends the live state BEFORE it composes, so `__atlSay` is what is rendered */
   assert.ok(con.indexOf("LIVE.end(ai,'answered')") > 0 && con.indexOf("LIVE.end(ai,'answered')") < con.indexOf('_atlCompose(ai); try{ LIVE.answered(ai)'));
   /* a stopped turn keeps its draft marked unfinished; a failed one does not keep it */

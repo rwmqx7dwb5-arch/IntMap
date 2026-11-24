@@ -1817,7 +1817,10 @@ async function stagePrune(db, budget) {
    実測 2026-09-29: 直近 9 日で最も多い日は 1,188 件を AI が地点づけ（news_ingest_runs.located_ai、
    2026-09-23）＝ 約 60 要求＋要約。暴走（ループ・秘密の漏洩・毎分の cron）だけがこれに当たる。 */
 const SCHEDULE = [
-  { job: "news-ingest-tick", runsPerDay: 72, stages: ["fetch", "locate", "embed", "assign", "link", "entities", "prune"] },
+  { job: "news-ingest-tick", runsPerDay: 72, stages: ["fetch"] },
+  { job: "news-ingest-locate", runsPerDay: 72, stages: ["locate", "embed"] },
+  { job: "news-ingest-assign", runsPerDay: 72, stages: ["assign", "link", "entities"] },
+  { job: "news-ingest-prune", runsPerDay: 72, stages: ["prune"] },
   { job: "news-ingest-summarise", runsPerDay: 24, stages: ["summarise"] },
 ];
 const STAGE_REQUESTS = {
