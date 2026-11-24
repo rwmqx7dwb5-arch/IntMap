@@ -28,4 +28,4 @@ newsjp: Atlas が過去の年についても答えられるよう、2012 年ま�
 
 ## perf 天井(main 合流後・再)
 
-`atlas-cap-runs` を 981.3 kB から 987.1 kB へ上げた。main 側で増えた能力表の行と、本 PR の `news.history` の行による。利用者が到達できる能力の実体。
+`atlas-cap-runs` を 981.3 kB から 993.0 kB、`atlas-console` を 1152.4 kB から 1158.3 kB へ上げた。main 側で増えた能力表の行と、本 PR の `news.history` の行による。利用者が到達できる能力の実体。
