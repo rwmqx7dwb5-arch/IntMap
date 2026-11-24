@@ -8,15 +8,15 @@
 //
 //    · https only, a public DNS name (relay-guard.js publicHostname; the function additionally resolves it and
 //      refuses a name that points at a private address), no credentials in the URL, port 443 or 8443;
-//    · the request is ONE JSON-RPC message whose method is on a short list — the ones a tools-only client sends;
-//    · the headers forwarded are the five an MCP client needs; nothing else the page sends reaches the upstream;
+//    · the request is ONE JSON-RPC message whose method is on a short list — the ones a tools-only client sends (initialize and ping for the 2025 protocol; server/discover and the three tasks/* calls for 2026-07-28);
+//    · the headers forwarded are the seven an MCP client needs (mcp-method and mcp-name are the 2026-07-28 routing headers); nothing else the page sends reaches the upstream;
 //    · the answer must declare a JSON or event-stream content type and is capped in bytes.
 // ============================================================================
 import { publicHostname } from "./relay-guard.js";
 
 export const MCP_RELAY_FUNCTION = "mcp-relay";
-export const MCP_RELAY_METHODS = Object.freeze(["initialize", "notifications/initialized", "tools/list", "tools/call", "ping"]);
-export const MCP_RELAY_HEADERS = Object.freeze(["authorization", "mcp-session-id", "mcp-protocol-version", "content-type", "accept"]);
+export const MCP_RELAY_METHODS = Object.freeze(["initialize", "notifications/initialized", "tools/list", "tools/call", "ping", "server/discover", "tasks/get", "tasks/update", "tasks/cancel"]);
+export const MCP_RELAY_HEADERS = Object.freeze(["authorization", "mcp-session-id", "mcp-protocol-version", "mcp-method", "mcp-name", "content-type", "accept"]);
 export const MCP_RELAY_LIMITS = Object.freeze({
   /* ESTIMATES, not measurements. A tools/call argument set is a few KB; 256 KB leaves room for pasted text and no
      more. A tool result is read whole before it is handed back, so the ceiling is the memory one function instance may
