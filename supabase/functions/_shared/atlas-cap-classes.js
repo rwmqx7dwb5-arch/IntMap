@@ -92,6 +92,7 @@ export const PARKABLE_CAPS = Object.freeze(new Set([
   "data.weather",
   "data.worldFlows",
   "data.wxModel",
+  "geo.imageChange",
   "geo.ml",
   "geo.regionStat",
   "layers.aircraftTrack",
