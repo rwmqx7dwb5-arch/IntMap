@@ -5,12 +5,12 @@
     "brotli": 1219000,
     "requests": 12,
     "modules": 916,
-    "cssRaw": 386341,
+    "cssRaw": 394673,
     "cssGzip": 65461
   },
   "async": {
-    "raw": 15229270,
-    "gzip": 5151452,
+    "raw": 15331792,
+    "gzip": 5214964,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -25,7 +25,7 @@
       "atlas-cap-runs": 1063909,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1319006,
+      "atlas-console": 1192924,
       "atlas-executor": 64612,
       "atlas-float": 10113,
       "atlas-geo-resolve": 49353,
@@ -81,7 +81,7 @@
       "geopolitics-core": 7666,
       "gis-buffer-worker-client": 1428,
       "gis-cog": 7532,
-      "gis-core": 723150,
+      "gis-core": 722270,
       "gis-export": 40134,
       "gis-fetch": 8730,
       "gis-geopackage": 26667,
@@ -221,7 +221,7 @@
   "dist": {
     "total": 1587385548,
     "data": 1223209830,
-    "assets": 22855604
+    "assets": 22958184
   },
   "phone": {
     "bytes": 342631,
