@@ -43,3 +43,7 @@ Metlink(条文が JS 描画で読めない)・HSL / Transport for Ireland / ACT(
 ## perf 天井(2 回目の main 合流後)
 
 `eager.gzip` を 1560.5 kB から 1568.6 kB へ上げた(+8.1 kB)。起動時に読む `js/transit-feeds.js` の 12 路線ぶんの行と、`js/legal-text.js` の時刻表の文(en・jp)の増分。ほかの行は帯の内側だった。ceiling のみ上げ、内容の削減はしていない。
+
+## global-surface の基準線
+
+`window.IntMapLazy` の読みが 196 から 197 へ 1 件増えていて `check:surface` が赤かった。増えたのは main 側の変更によるもので、このブランチの差分に `IntMapLazy` は無い(`git diff origin/main` で 0 件)。基準線だけを更新した。コードは変えていない。
