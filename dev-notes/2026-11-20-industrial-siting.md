@@ -82,3 +82,7 @@ main の取り込みで能力が 273 になり、`atlas-cap-runs` が 1007.7 kB�
 ## perf (eager.gzip・main 再取り込み・278 能力)
 
 CI 実測で `eager.gzip` が 1568.5 kB（天井 1560.5）に増えた。main が足した能力・部品の増分で、この PR が eager に足したものではない。天井を 1612000 byte へ。能力数の記述は登録 278・到達可能 275 に合わせた。失効条件: main の perf-ceiling が下げた値が正本。
+
+## perf (280 能力・main 再取り込み後)
+
+CI 実測で `atlas-cap-runs` 1064.7 kB・`atlas-console` 1185.2 kB・`dist.data` 1200649.3 kB が天井を超えた。増分は main が足した能力と data の行で、この PR の追加ではない(この PR のデータは data/siting-jp.json)。天井を 1100000 / 1220000 / 1240000000 byte へ。失効条件: main の perf-ceiling が下げた値が正本。
