@@ -408,6 +408,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.sessionGrant","sessionGrant","allowSiteOperation,permitSite,authorizeBrowserSite","research","none","","explanation","external","explicit","",""],
       ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
       ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
+      ["mcp.servers","mcpServers","listMcpServers,mcpTools,refreshMcp","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","none","","",""],
+      ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","explicit","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
