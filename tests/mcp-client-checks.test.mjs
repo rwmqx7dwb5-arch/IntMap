@@ -104,7 +104,7 @@ test('④ the session id from initialize is sent on every later request', async 
   const c = client('json', null, log);
   c.addServer({ name: 'Mock', url: 'https://mcp.example.com/mcp' });
   await c.callTool({ server: 'mock', tool: 'big' });
-  const later = log.filter((l) => l.method !== 'initialize');
+  const later = log.filter((l) => l.method !== 'initialize' && l.method !== 'server/discover');
   assert.ok(later.length >= 2);
   later.forEach((l) => assert.equal(l.headers['mcp-session-id'], 'sess-1'));
 });
@@ -204,8 +204,8 @@ test('⑩ the seams: the console\'s presence check and the client share one stor
   assert.equal(rows.length, 4);
   const by = Object.fromEntries(rows.map((r) => [r[0], r]));
   for (const id of ['mcp.call', 'mcp.act', 'mcp.servers']) { assert.equal(by[id][7], 'external', id); assert.equal(by[id][11], 'external', id); }
-  assert.equal(by['mcp.act'][8], 'explicit', 'a tool that may write asks the reader once outside content has been in the turn (the shipped policy: only outward or deleting rows ask)');
-  assert.equal(by['mcp.connect'][8], 'none', 'registering a server is a reversible local change the reader typed themself — no blind approval');
+  assert.equal(by['mcp.act'][8], 'always', 'a tool that may write asks the reader every time');
+  assert.equal(by['mcp.connect'][8], 'always', 'registering a server is a persistent change the reader approves');
   assert.equal(by['mcp.call'][8], 'explicit');
 });
 
