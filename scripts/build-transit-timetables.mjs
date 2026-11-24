@@ -30,38 +30,51 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { records } from './lib/zip-lines.mjs';
 import { fetchChecked, USER_AGENT } from './lib/upstream.mjs';
-import { FEEDS, feedById, licenceAllowsCommercial } from '../js/transit-feeds.js';
+import { FEEDS, FEED_ROWS, feedById, licenceAllowsCommercial } from '../js/transit-feeds.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const WINDOW_DAYS = 14;
 const dir = (id) => 'data/transit-' + id + '.json';
 
-/* ⚠ 出自は値である（check:datagov が実行せずに読む）。上流が述べることだけを書く。 */
-export const GOVERNANCE = {
-  'data/transit-lu.json': {
-    upstreams: [
-      { publisher: 'Administration des transports publics (Luxembourg)', url: 'https://data.public.lu/fr/datasets/horaires-et-arrets-des-transport-publics-gtfs/',
-        licence: 'CC-BY-4.0', licenceUrl: 'https://creativecommons.org/licenses/by/4.0/', attribution: true, creditRequired: true,
-        fields: 'GTFS agency, routes, trips, stop_times, stops, calendar, calendar_dates — compiled to minute-resolution patterns over a 14-day window',
-        paidBy: 'Timetables — Administration des transports publics (Luxembourg), CC BY 4.0, data.public.lu' },
-    ],
-    publisher: 'Administration des transports publics (Luxembourg)',
-    url: 'https://data.public.lu/fr/datasets/horaires-et-arrets-des-transport-publics-gtfs/',
-    licence: 'CC BY 4.0', licenceUrl: 'https://creativecommons.org/licenses/by/4.0/', attribution: true,
-    paidBy: 'Timetables — Administration des transports publics (Luxembourg), CC BY 4.0, data.public.lu',
-    cadence: 'P3D',
-    cadenceBasis: {
-      kind: 'measured',
-      observed: 'measured 2026-11-20 on data.public.lu: resources dated 2026-11-05, 2026-11-12 and 2026-11-20 — a new archive every week, each valid about four weeks ahead. The bundle holds a 14-day window (WINDOW_DAYS), so it is rebuilt every three days: the window never has fewer than 11 days left, and a date beyond it is refused (js/transit-raptor.js coverage)',
-      expires: 'if the publisher moves to a different schedule, or WINDOW_DAYS changes',
-      canon: 'scripts/build-transit-timetables.mjs WINDOW_DAYS',
-    },
-    autoRefresh: 'one dataset-API request and one archive download from data.public.lu, no key; the dataset licence is re-read and the build refuses any change from cc-by, the archive must contain a calendar covering a day from today on, and nothing is written when any of that fails',
-    /* dates and counts are written IN the bundle by the build that measured them (generatedAt, asOf, quality): an unattended rebuild cannot restate a literal */
-    schema: 'scripts/build-transit-timetables.mjs (stops [name, lat*1e5, lon*1e5, group]; patterns {r, s, f, t}) — read by js/transit-raptor.js; tests/transit-timetable-checks.test.mjs',
-    builtBy: 'scripts/build-transit-timetables.mjs',
-  },
-};
+/* ⚠ 出自は値である（check:datagov が実行せずに読む）。上流が述べることだけを書く。
+   One record per feed, DERIVED from the registry row (js/transit-feeds.js FEED_ROWS — pure data, so the
+   gate can bind it without running this file): the publisher, licence, credit and the measured rhythm are
+   stated once, there. `paidBy` is the js/reference-data.js row that carries the credit — its `n` is this
+   same sentence. */
+export const GOVERNANCE = (() => {
+  const out = {};
+  for (const f of FEED_ROWS) {
+    const paidBy = 'Timetables — ' + f.credit.publisher + ', ' + f.credit.licence + ', ' + f.credit.via;
+    const credited = f.licence.spdx !== 'CC0-1.0';
+    const r = f.resolve;
+    const host = (u) => u.replace(/^https?:\/\//, '').split('/')[0];
+    const how = r.kind === 'udata' ? 'one dataset-API request (' + host(r.api) + ') and one archive download, no key; the dataset licence is re-read and the build refuses any change from ' + r.licence
+      : r.kind === 'gtfs-data.jp' ? 'one feed-API request (' + host(r.api) + ') and one archive download, no key; the feed licence is re-read and the build refuses any change from ' + r.licence
+        : 'one read of ' + r.page + ' and one archive download (' + host(r.url) + '), no key; the build refuses to run when the page no longer states «' + r.states + '»';
+    out['data/transit-' + f.id + '.json'] = {   /* spelled here, not via dir(): the gate binds only literal constants */
+      upstreams: [
+        { publisher: f.publisher, url: f.source, licence: f.licence.spdx, licenceUrl: f.licence.url, attribution: credited, creditRequired: credited,
+          fields: 'GTFS agency, routes, trips, stop_times, stops, calendar, calendar_dates — compiled to minute-resolution patterns over a 14-day window',
+          paidBy },
+      ],
+      publisher: f.publisher, url: f.source,
+      licence: f.credit.licence, licenceUrl: f.licence.url, attribution: credited,
+      paidBy,
+      cadence: 'P3D',
+      cadenceBasis: {
+        kind: 'measured',
+        observed: f.published + '. The bundle holds a 14-day window (WINDOW_DAYS), so it is rebuilt every three days: the window never has fewer than 11 days left, and a date beyond it is refused (js/transit-raptor.js coverage)',
+        expires: 'if the publisher moves to a different schedule, or WINDOW_DAYS changes',
+        canon: 'scripts/build-transit-timetables.mjs WINDOW_DAYS',
+      },
+      autoRefresh: how + '; the archive must contain a calendar covering a day from today on, and nothing is written when any of that fails',
+      /* dates and counts are written IN the bundle by the build that measured them (generatedAt, asOf, quality): an unattended rebuild cannot restate a literal */
+      schema: 'scripts/build-transit-timetables.mjs (stops [name, lat*1e5, lon*1e5, group]; patterns {r, s, f, t}) — read by js/transit-raptor.js; tests/transit-timetable-checks.test.mjs',
+      builtBy: 'scripts/build-transit-timetables.mjs',
+    };
+  }
+  return out;
+})();
 
 const pad2 = (n) => String(n).padStart(2, '0');
 const ymd = (d) => d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
@@ -118,12 +131,12 @@ export async function compileGtfs(zip, today) {
   /* 3 · stop_times (streamed — the file can be hundreds of MB) */
   const stopRow = new Map();
   for await (const r of records(zip, 'stops.txt')) stopRow.set(r.stop_id, r);
-  let rows = 0;
+  let stopTimeRows = 0;
   for await (const r of records(zip, 'stop_times.txt')) {
     const t = trips.get(r.trip_id); if (!t) continue;
     const a = secs(r.arrival_time), d = secs(r.departure_time);
     t.st.push([+r.stop_sequence, r.stop_id, Number.isFinite(a) ? a : d, Number.isFinite(d) ? d : a, +(r.pickup_type || 0) === 1 ? 1 : 0, +(r.drop_off_type || 0) === 1 ? 2 : 0]);
-    rows++;
+    stopTimeRows++;
   }
   /* 4 · patterns: one per (route, stop sequence, board/alight flags) */
   const stops = []; const stopOf = new Map(); const groupOf = new Map();
@@ -135,7 +148,7 @@ export async function compileGtfs(zip, today) {
     stops.push([s ? s.stop_name : sid, Math.round(+(s ? s.stop_lat : 0) * 1e5), Math.round(+(s ? s.stop_lon : 0) * 1e5), g]);
     return i;
   };
-  const patterns = new Map(); let skippedFreq = 0, skippedShort = 0, skippedTime = 0;
+  const patterns = new Map(); let skippedFreq = 0, skippedShort = 0, skippedTime = 0, tripsKept = 0;
   const hex = (m) => m.toString(16);
   for (const [tid, t] of trips) {
     if (freq.has(tid)) { skippedFreq++; continue; }
@@ -153,7 +166,23 @@ export async function compileGtfs(zip, today) {
     /* a time that runs backwards would break the engine's FIFO assumption */
     let mono = true; { let q = seqT[0]; for (let i = 1; i < seqT.length; i++) { q += seqT[i]; if (seqT[i] < 0) mono = false; } }
     if (!mono) { skippedTime++; continue; }
-    p.t.push([hex(t.m), ...seqT]);
+    p.t.push([t.m, ...seqT]); tripsKept++;
+  }
+  /* rows of one pattern with the SAME times are one row whose day mask is the union of theirs. Many
+     publishers issue one trip_id per date (measured 2026-11-21: Rennes STAR 64,179 trips in a 14-day
+     window, Nantes Naolib 62,119), so the same 07:12 departure is written fourteen times. The engine
+     reads a row as «this sequence of times runs on the days in its mask» (js/transit-raptor.js
+     activeTrips), so the union states exactly the same timetable: no time, stop or day is dropped. */
+  let rows = 0;
+  for (const p of patterns.values()) {
+    const byTimes = new Map();
+    for (const row of p.t) {
+      const k = row.slice(1).join(',');
+      const had = byTimes.get(k);
+      if (had) had[0] |= row[0]; else byTimes.set(k, row);
+    }
+    p.t = [...byTimes.values()].map((row) => [hex(row[0]), ...row.slice(1)]);
+    rows += p.t.length;
   }
   const pats = [];
   for (const p of patterns.values()) {
@@ -168,17 +197,52 @@ export async function compileGtfs(zip, today) {
   return {
     windowStart: ymd(start), days, feedValid: [feedStart, feedEnd],
     tz, agencies, routes, stops, patterns: pats, bbox: [w, s, e, n].map((v) => Math.round(v * 1e4) / 1e4),
-    stats: { stopTimeRows: rows, tripsKept: [...patterns.values()].reduce((a, p) => a + p.t.length, 0), patterns: pats.length, skipped: { frequencyTrips: skippedFreq, shortTrips: skippedShort, nonMonotonicOrMissingTime: skippedTime, tripsWithoutService: noService } },
+    stats: { stopTimeRows, tripsKept, timetableRows: rows, patterns: pats.length, skipped: { frequencyTrips: skippedFreq, shortTrips: skippedShort, nonMonotonicOrMissingTime: skippedTime, tripsWithoutService: noService } },
   };
 }
 
+/**
+ * The archive to download, from what the publisher's catalogue says NOW — and a refusal when the licence it
+ * states is no longer the one the registry row was verified against (js/transit-feeds.js `resolve`).
+ * Pure: `reply` is the parsed API answer (udata, gtfs-data.jp) or the page's text (page), so the rule is
+ * testable without the network. A licence that is missing is a change too: silence is not the old terms.
+ */
+export function pickArchive(feed, reply) {
+  const r = feed.resolve || {};
+  const changed = (stated) => new Error(feed.id + ': the publisher now states licence «' + stated + '», not «' + r.licence + '» — re-read it before building');
+  if (r.kind === 'udata') {
+    if (!reply || reply.license !== r.licence) throw changed(reply && reply.license);
+    const res = reply.resources || [];
+    if (r.resource) {
+      const hit = res.find((x) => x.id === r.resource);
+      if (!hit || !hit.url) throw new Error(feed.id + ': the dataset no longer lists resource ' + r.resource);
+      return hit.url;
+    }
+    const zips = res.filter((x) => /zip/i.test(x.format || '') || /\.zip($|\?)/i.test(x.url || '')).sort((a, b) => String(b.last_modified || b.created_at).localeCompare(String(a.last_modified || a.created_at)));
+    if (!zips.length) throw new Error(feed.id + ': the dataset lists no zip resource');
+    return zips[0].url;
+  }
+  if (r.kind === 'gtfs-data.jp') {
+    const b = reply && reply.body;
+    if (!b || b.feed_license !== r.licence) throw changed(b && b.feed_license);
+    if (b.is_discontinued) throw new Error(feed.id + ': the operator has discontinued the feed');
+    const cur = (b.gtfs_files || []).find((x) => x.rid === 'current');
+    if (!cur || !cur.gtfs_url) throw new Error(feed.id + ': the feed lists no current file');
+    return cur.gtfs_url;
+  }
+  if (r.kind === 'page') {
+    const text = String(reply || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    if (text.indexOf(r.states) < 0) throw new Error(feed.id + ': ' + r.page + ' no longer states «' + r.states + '» — re-read it before building');
+    return r.url;
+  }
+  throw new Error(feed.id + ': resolve.kind «' + r.kind + '» is not one the builder knows');
+}
+
 async function resolveUrl(feed) {
-  if (!feed.resolve) return feed.url;
-  const ds = await fetchChecked(feed.resolve.api, { headers: { 'user-agent': USER_AGENT, accept: 'application/json' } }, { as: 'json', attempts: 3, timeoutMs: 60000 });
-  const zips = (ds.resources || []).filter((r) => /zip/i.test(r.format || '') || /\.zip($|\?)/i.test(r.url || '')).sort((a, b) => String(b.last_modified || b.created_at).localeCompare(String(a.last_modified || a.created_at)));
-  if (!zips.length) throw new Error(feed.id + ': the dataset lists no zip resource');
-  if (ds.license && ds.license !== 'cc-by') throw new Error(feed.id + ': the publisher now states licence ' + ds.license + ' — re-read it before building');
-  return zips[0].url;
+  const r = feed.resolve || {};
+  const json = r.kind === 'udata' || r.kind === 'gtfs-data.jp';
+  const reply = await fetchChecked(json ? r.api : r.page, { headers: { 'user-agent': USER_AGENT, accept: json ? 'application/json' : 'text/html' } }, { as: json ? 'json' : 'text', attempts: 3, timeoutMs: 60000 });
+  return pickArchive(feed, reply);
 }
 
 async function main() {
