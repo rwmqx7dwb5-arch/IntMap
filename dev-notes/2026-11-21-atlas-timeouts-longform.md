@@ -68,3 +68,7 @@ main の取り込みで能力が 273 になり、`atlas-cap-runs` が 1010.1 kB�
 ## global-surface (window.IntMapLazy 196 → 197)
 
 origin/main を取り込んだ木で `check:surface` が 1 読みを新規に検出した（js/ の `IntMapLazy` は main と同数の 200 箇所で、この PR は js/・src/ に `IntMapLazy` を足していない）。main 側が先に足した読みで、台帳が追いついていなかった。`--update` で台帳を実体へ。失効条件: 該当の読みを owner の import へ移した時点で下げる。
+
+## perf (280 能力・main の research.search 取り込み後)
+
+CI 実測で `atlas-cap-runs` が 1067.0 kB、`atlas-console` が 1185.3 kB に増えた。増分は main が足した能力（research.search ほか）の登録行で、この PR の追加は research.longform 1 本。天井を 1100000 / 1220000 byte へ。失効条件: main の perf-ceiling が下げた値が正本。
