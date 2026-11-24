@@ -45,3 +45,22 @@ cron は `succeeded`(pg_net へ投げただけ)だが、関数は `WORKER_RESOUR
 
 直し: ① `locate` の batch を `LOCATE_PARALLEL = 4` 本ずつ同時に投げる(採否の判定・「AI が見た」の印の押し方は変えない) ② 既定の予算を 240 秒から 140 秒へ。段は `budget.left()` を見て止まるので、予算がプラットフォームの 150 秒より長いと「まだ時間がある」と信じたまま殺される。
 失効条件: 提供元の同時実行上限・プラットフォームの無通信上限が変わったとき。
+
+## 4 つ目: 段を 1 本の body にまとめると 1 つの worker が持たない(同日・続報)
+
+#1401(locate を並列・予算 140 秒)の後、locate は 143 秒から 33 秒になり assign の滞留も消えたが、全段の body は 546 のままだった。本番で段の組み合わせを 1 つずつ測った(同じ `net.http_post`):
+
+| body | 結果 |
+|---|---|
+| fetch / locate / assign / prune 単独 | 200(10 秒 / 33 秒 / 11 秒 / 18 秒) |
+| locate+embed | 200 |
+| embed+assign+link+entities | 200 |
+| link+entities+prune | 200 |
+| fetch+locate | 546 |
+| locate..prune | 546 |
+| embed+assign+link+entities+prune | 546 |
+| 全段 | 546 |
+
+⇒ 1 つの worker は段のあいだにメモリを手放さず、合計で上限に当たる。ticks が 08:40 UTC 以降 `news_ingest_runs` へ何も残さなかった理由もこれ(落ちる run は記録を書く前に死ぬ)。
+直し: job を 4 本に分ける(`20261128100000_news_ingest_stage_split.sql`): tick=`fetch`(:00/:20/:40)・locate=`locate,embed`(:04…)・assign=`assign,link,entities`(:08…)・prune=`prune`(:16…・summarise が :13 を使う)。段の順序と 20 分の周期は同じ。`SCHEDULE`(1 日の要求数の天井)は段の和が同じなので数は変わらず、`edge-spend-and-models` の検査が migration とこの表の一致を見る。
+失効条件: Edge Function のメモリ上限が変わったとき、または各段の保持量が変わったとき(組み合わせを測り直す)。

@@ -981,7 +981,13 @@ AI に掛ける）で `assign` より**前**（Event は AI の座標で組ま�
 
   | job | 間隔 | body |
   |---|---|---|
-  | `news-ingest-tick` | `*/20 * * * *` | `{"stages":["fetch","locate","embed","assign","link","entities","prune"]}` |
+  | `news-ingest-tick` | `0,20,40 * * * *` | `{"stages":["fetch"]}` |
+  | `news-ingest-locate` | `4,24,44 * * * *` | `{"stages":["locate","embed"]}` |
+  | `news-ingest-assign` | `8,28,48 * * * *` | `{"stages":["assign","link","entities"]}` |
+  | `news-ingest-prune` | `16,36,56 * * * *` | `{"stages":["prune"]}` |
+
+  ⚠ 段を 1 本にまとめた body は本番で `WORKER_RESOURCE_LIMIT`（546）になる。1 つの worker が段のあいだにメモリを手放さず、
+  合計で上限に当たる（2026-11-24 実測・`supabase/migrations/20261128100000_news_ingest_stage_split.sql`）。段ごとに別の job にして、起動する分（minute）で順序を保つ。
   | `news-ingest-summarise` | `13 * * * *` | `{"stages":["summarise"]}` |
 
   ⚠⚠ (#R405) **`news-ingest-summarise` は新しい job ではなく、`news-ingest-translate` を
@@ -1271,8 +1277,8 @@ LLM がそれらを 1 つの説明にまとめたもので、後者は**1 文ご
 
 ### 16.6 `embed` 段を cron に入れた
 
-`news-ingest-tick` の段は `fetch, locate, embed, assign, link, entities, prune`（migration
-`20261003160000_news_intelligence.sql`、`SCHEDULE` も同じ）。⚠ **鍵は変えていない。** 2026-08-24 の実測では
+段は `fetch, locate, embed, assign, link, entities, prune`——順序は同じで、job は 4 本に分かれた（上の表・migration
+`20261003160000_news_intelligence.sql` が最初の形、`20261128100000_news_ingest_stage_split.sql` が今の形、`SCHEDULE` も同じ）。⚠ **鍵は変えていない。** 2026-08-24 の実測では
 `OPENAI_API_KEY` が埋め込みモデルに届かず（403 `model_not_found`）、届く鍵が入るまで `embed` は 0 件で
 終わり、その理由（`embed_configured_model`・`embed_available_models`・`embed_error`）が毎 run 記録に残り、
 `news_ingest_health()` がその段を「失敗している」と返す。**埋め込みモデルに届く `OPENAI_API_KEY` を入れるか、
