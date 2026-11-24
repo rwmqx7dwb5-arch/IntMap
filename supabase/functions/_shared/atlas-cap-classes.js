@@ -27,6 +27,7 @@ export const READ_CAPS = Object.freeze(new Set([
   "navigation.status",
   "news.eventPast",
   "news.health",
+  "news.history",
   "news.outages",
   "panel.about",
   "places.list",
