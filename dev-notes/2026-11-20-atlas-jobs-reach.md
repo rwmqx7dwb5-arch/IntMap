@@ -97,3 +97,11 @@ main を取り込んだこの PR の `check:surface` が赤になった。台帳
 `atlas-cap-runs` は、main が上限を 1044.4 kB に上げた merge の後でも実測 1044.7 kB で越えた。同じ方針（実測 + 1.5 %）で 1060.4 kB にした。
 
 `atlas-console` も、他の PR が先に載せた分で実測 1178.8 kB が上限 1172.8 kB を越えた。同じ方針（実測 + 1.5 %）で 1196.5 kB にした。
+
+## 8. 能力の文書の位置の衝突（research.analyze の 31）
+
+main の `research.search` が `research.analyze` の位置 31 を取り、`jobs.start`（同じ 31）とぶつかって `atlas-caps` がカタログを組めなくなった
+（`check:capabilities`・`check:catalog`・多くの spec が同じ原因で赤）。`jobs.*` の 4 つを空いている 35〜38 に付け替えた。位置は文書の並び順だけで、
+能力の動作には効かない。
+
+`atlas-cap-runs` は、他の PR の増分が先に載って実測 1068.0 kB が上限 1054.2 kB を越えた。同じ方針（実測 + 1.5 %）で 1084.0 kB にした。
