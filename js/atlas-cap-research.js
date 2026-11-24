@@ -34,8 +34,10 @@ const G = makeWorldGraphStore({ worldObjects: W });   /* (world-graph) the persi
 import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
+import { makeResearchSearch } from './atlas-research-search.js';   /* (atlas-research-search) research.search — the tool side of an investigation Atlas steers */
 import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, CONTRACT_KINDS } from './atlas-delegate.js';
 import { integrate, mergeFacts, makeFactResolver, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
+const researchMemory = { search: null };   /* research.search's per-turn memory — built on first use; a const holder (the kernel copy never runs it) */
 
 /* ══ (atlas-completion) WHAT A RESEARCH ANSWER RESTS ON, SAID FROM WHAT HAPPENED ═══════════════════════════════
    An answer to a time-sensitive question used to carry ONE fixed caveat whenever `webUsed` was false —
@@ -1295,6 +1297,32 @@ export default [
         integrated,
         /* (delegate-child-loop) what was answered from the last run of the same list, and whether this run's record was kept */
         resume: store ? { key: dKey, resumed: results.filter((r) => r.resumed).length, from: prior ? prior.at : undefined, saved: saves > 0 } : undefined,
+      } });
+    },
+  },
+  {
+    row: ['research.search',            'researchSearch', 'investigate,searchNews,searchSources',                                'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
+    ui: { none: '2026-11-24' },
+    phrases: () => ['調べ直す', '別の言葉で検索', '原文で調べる', '一次資料', '裏を取る'].concat(['search again', 'in the original language', 'primary source', 'cross-check', 'investigate']),
+    doc: [
+      { in: 'research.analyze', at: 31, text: 'AN INVESTIGATION THAT YOU STEER: {"type":"researchSearch","queries":[{"q":str,"lang"?:"uk"|"ru"|"pl"|… (the language the SOURCES write in — a BCP-47 tag),"country"?:"UA"|"PL"|… (ISO 3166-1 alpha-2: the country whose press to read),"site"?:"president.gov.ua" (ONE outlet or an official/primary source),"engine"?:"gdelt"|"gnews"|"both","timespan"?:"72h"|"7d"|"3m"}, …],"gap"?:str,"contradiction"?:str,"changed"?:str} — 調べる・検索し直す・原文/一次資料で裏を取る. Searches SEVERAL queries AT THE SAME TIME, each in the language, country and outlet you name, and returns documents (headline, outlet, date, URL) — it does NOT write an answer; you read what came back, decide what is missing or contradicted, and search again DIFFERENTLY: other words, the sources\' OWN language (Ukrainian, Russian, Polish, … for a story from there, not only English), a primary source via "site", another engine. HOW MANY rounds, WHICH languages, WHEN to stop are yours — nothing here counts or caps them. Say what you are doing in "gap" (what is still missing), "contradiction" (what disagrees) and "changed" (what you now search differently); they are kept with the round and returned, and what is NEW in method (words, languages, sites, engines) is computed from your queries. A query already run this turn is answered "alreadyRun" with no new fetch, and a document found twice is listed once — repeat a search only after a real failure. Each query\'s state is ok / empty (a source answered and had none) / unavailable (no source answered — that is NOT proof nothing was published). A result is a headline, never a verified fact: read the primary source, and use research.delegate for pieces that need reading in parallel.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { queries: list({ type: 'object', required: ['q'], properties: { q: str(), lang: str(), country: str(), site: str(), engine: one('both', 'gdelt', 'gnews'), timespan: str() } }, 1), gap: str(), contradiction: str(), changed: str(), budgetMs: num(0) }, required: ['queries'] }),
+    async run(a, dctx, K) {
+      const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
+      if (!researchMemory.search) researchMemory.search = makeResearchSearch({ gdelt: (...x) => K._gdeltNews(...x), gnews: (...x) => K._gnewsNews(...x) });
+      const out = await researchMemory.search.run(a, K._curTurnKey);
+      if (!out.ok) return R(false, warn(esc(L(out.message, '検索語を queries:[{q,…}] で指定してください。'))), { meta: { status: 'failed', code: out.code } });
+      const got = out.documents.length, st = out.totals.states;
+      const html = '<div style="font-size:12px;line-height:1.5;"><div style="font-weight:600;">' + esc(L('Investigation search', '調査の検索')) + ' — ' + esc(L(out.queries.length + ' quer' + (out.queries.length === 1 ? 'y' : 'ies') + ', ' + got + ' new document(s)', out.queries.length + ' 件の検索で新しい記事 ' + got + ' 件')) + '</div>'
+        + '<ul style="margin:2px 0 0 16px;padding:0;">' + out.queries.map((q) => '<li>' + esc(q.q) + (q.lang ? ' [' + esc(q.lang) + (q.country ? '/' + esc(q.country) : '') + ']' : '') + (q.site ? ' @' + esc(q.site) : '') + ' — ' + esc(q.alreadyRun ? L('already run', '実行済み') : q.state === 'rejected' ? q.error : (q.state + ' · ' + q.found)) + '</li>').join('') + '</ul>'
+        + (st.unavailable ? '<div style="opacity:.7;">' + esc(L(st.unavailable + ' search(es) could not reach a source — not proof that nothing was published.', st.unavailable + ' 件は取得先に届きませんでした。報道が無かったという意味ではありません。')) + '</div>' : '') + '</div>';
+      const okAny = out.queries.some((q) => q.state === 'ok' || q.alreadyRun && q.state === 'ok');
+      return R(okAny || out.queries.every((q) => q.state === 'empty' || q.alreadyRun), html, { meta: {
+        status: okAny ? 'completed' : (st.unavailable && !st.empty ? 'failed' : 'partial'),
+        code: okAny ? undefined : (st.unavailable && !st.empty ? 'sources_unavailable' : 'no_documents'),
+        produced: ['explanation'],
+        research: { round: out.round, queries: out.queries, documents: out.documents, alreadySeen: out.alreadySeen, delta: out.delta, investigation: out.investigation, totals: out.totals, reading: out.reading },
       } });
     },
   },

@@ -1086,6 +1086,7 @@ atlas-highlight.js                Atlas — コードブロックのシンタッ
 atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示
 atlas-result-facts.js             Atlas — 道具の結果に、その道具のパネルが示す事実（衛星の直下点と次回通過・天気の数値・旅程）を文として載せる
 atlas-result-reuse.js             Atlas — 同じコードを同じデータに当てた分析を、前回の結果で答える（鍵は内容の指紋・出力が生きている間だけ）
+atlas-research-search.js           Atlas — research.search: 複数の検索語を原文の言語・国・出典サイトを指定して同時に検索し、このターンで取得済みのものは再取得せず「実行済み」と答える。不足・矛盾・変えた方法を記録して返す
 atlas-era-highlight.js            Atlas — 過去年を表示中の国ハイライトを、その年の政体の面（所有者 gloss 込み）で描く／その面の外接矩形（カメラの枠取り）／**Atlas が塗ったものの申告**（`_imAtlasPaint`）
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
