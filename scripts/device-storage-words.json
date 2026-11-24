@@ -97,6 +97,7 @@
     { "area": "local", "name": "intmap_wx_slp_parts", "kind": "preference", "en": "Which parts of the sea-level pressure layer are shown", "jp": "海面気圧のレイヤーで表示する要素" },
     { "area": "local", "name": "intmap_wx_temp_parts", "kind": "preference", "en": "Which parts of the temperature layer are shown", "jp": "気温のレイヤーで表示する要素" },
     { "area": "local", "name": "intmap-whats-new-seen", "kind": "history", "en": "Which «What's new» items you have already seen", "jp": "既に見た「新着」の項目" },
+    { "area": "local", "name": "intmap.mcp.servers.v1", "kind": "preference", "en": "The external MCP servers you registered for Atlas (address, name, and any access token you gave) — kept on this device only; the token is sent only to that server (or through IntMap's relay to it)", "jp": "Atlas 用に登録した外部MCPサーバー（アドレス・名前・渡したアクセストークン）。この端末にだけ保存され、トークンはそのサーバー（またはIntMapの中継経由でそのサーバー）にだけ送られます" },
     { "area": "local", "name": "intmap.indicator", "kind": "preference", "en": "The indicator you last chose in the indicator browser", "jp": "指標ブラウザで最後に選んだ指標" },
     { "area": "local", "name": "intmap.supporter.v1", "kind": "history", "en": "When IntMap last offered you the support page, and on how many days you have opened IntMap (never sent anywhere)", "jp": "支援のページを最後に案内した日と、IntMap を開いた日数（どこにも送りません）" },
     { "area": "local", "name": "intmap_family_v1", "kind": "content", "en": "Your family history: the people, dates and places you typed in or imported from a family-tree file (GEDCOM)", "jp": "家族史: 入力した、または家系図ファイル（GEDCOM）から読み込んだ人物・日付・場所" },
