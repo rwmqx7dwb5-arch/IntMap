@@ -88,8 +88,8 @@ export const IANA_TZDB = {
   cadence: 'P3M',
   cadenceBasis: {
     kind: 'measured',
-    observed: 'measured 2026-11-20 on github.com/eggert/tz tags: 2023d, 2024a, 2024b, 2025a, 2025b, 2025c, 2026a-2026f — three releases in 2025 and six in the first eleven months of 2026, so a release comes every one to four months',
-    expires: 'when the release history at data.iana.org/time-zones/releases/ is counted and differs',
+    observed: 'measured 2026-11-21 from the commit dates of the release tags of github.com/eggert/tz (2023d 2023-12-22, 2024a 2024-02-01, 2024b 2024-09-04, 2025a 2025-01-15, 2025b 2025-03-22, 2025c 2025-12-10, 2026a 2026-03-02, 2026b 2026-04-23, 2026c 2026-07-08, 2026d 2026-09-11, 2026e 2026-09-30, 2026f 2026-10-28): 11 gaps of 19, 28, 41, 52, 65, 66, 76, 82, 133, 216 and 263 days — median 66 days, mean 95 days, longest 263 days; 2018-2025 averaged 4.9 releases a year and 2026 has had six so far',
+    expires: 'when a gap longer than the longest one measured (263 days) occurs, or the release rate over a full year leaves 2-6 a year',
     canon: 'scripts/lib/upstream-cadence.mjs IANA_TZDB',
   },
 };
@@ -393,5 +393,15 @@ export const PLATEAU_CATALOGUE = {
     observed: 'measured 2026-11-20 on api.plateauview.mlit.go.jp/datacatalog/plateau-datasets: building 3D Tiles editions carry survey years 2020 (111), 2021 (1), 2022 (113), 2023 (196), 2024 (225), 2025 (419) — a new fiscal-year edition each year, and cities are added as they are surveyed',
     expires: 'if MLIT publishes editions more often than yearly, or stops',
     canon: 'scripts/lib/upstream-cadence.mjs PLATEAU_CATALOGUE',
+  },
+};
+
+export const SITING_JP = {
+  cadence: 'P1Y',
+  cadenceBasis: {
+    kind: 'measured',
+    observed: 'measured 2026-11-20: JEPX publishes one spot-market file per fiscal year (spot_2025.csv holds 2025-04-01 to 2026-03-31, 17,520 half-hour rows); MLIT Land Price Public Announcement editions are yearly (L01-26 ... L01-17); MHLW minimum wages are revised once a year (revision table H14 to R8); SSDSE-B is a yearly edition (2026 edition, data to 2023)',
+    expires: 'if JEPX, MLIT, MHLW or the Statistics Bureau publish their editions more often than yearly, or stop',
+    canon: 'scripts/lib/upstream-cadence.mjs SITING_JP',
   },
 };

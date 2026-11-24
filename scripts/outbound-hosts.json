@@ -899,11 +899,11 @@
     },
     {
       "host": "flood-api.open-meteo.com",
-      "what": "Open-Meteo river-discharge (GloFAS) forecast at the points of a grid over the area asked about",
-      "whatJp": "Open-Meteo の河川流量（GloFAS）予測。尋ねた範囲の格子の各地点",
+      "what": "Open-Meteo river-discharge (GloFAS) forecast at a point and at the points of a grid over the area asked about",
+      "whatJp": "Open-Meteo の河川流量（GloFAS）予測。尋ねた地点と、尋ねた範囲の格子の各地点",
       "sends": {
         "code": "coordinates",
-        "detail": "latitude/longitude of the grid points over the area asked about"
+        "detail": "latitude/longitude of the point asked about (with its eight neighbouring grid cells) or of the grid points over the area asked about"
       },
       "disclosure": {
         "en": "elevation/weather APIs (Open-Meteo",
@@ -2517,6 +2517,41 @@
       "host": "data.public.lu",
       "what": "the Luxembourg timetable dataset page",
       "link": "the publisher page of the Luxembourg timetable (js/transit-feeds.js source); the build script reads its dataset API, the browser never does"
+    },
+    {
+      "host": "www.data.gouv.fr",
+      "what": "the dataset pages of the French timetables",
+      "link": "the publisher page of a shipped French timetable (js/transit-feeds.js source / verified.page); the build script reads its dataset API, the browser never does"
+    },
+    {
+      "host": "opendatacommons.org",
+      "what": "ODbL 1.0 text link",
+      "link": "the licence of a shipped timetable (js/transit-feeds.js FEED_ROWS[].licence.url), shown as a hyperlink; never fetched"
+    },
+    {
+      "host": "data.norge.no",
+      "what": "NLOD 2.0 text link",
+      "link": "the licence of a shipped timetable (js/transit-feeds.js FEED_ROWS[].licence.url), shown as a hyperlink; never fetched"
+    },
+    {
+      "host": "developer.entur.org",
+      "what": "the Norwegian timetable page (Entur)",
+      "link": "the publisher page of the Norwegian timetables (js/transit-feeds.js source); the build script re-reads its licence statement, the browser never does"
+    },
+    {
+      "host": "storage.googleapis.com",
+      "what": "the Norwegian timetable archives (Entur)",
+      "link": "the archive URL a build downloads (js/transit-feeds.js FEED_ROWS[].resolve.url); the browser never requests it — it reads the compiled data/transit-<id>.json from IntMap"
+    },
+    {
+      "host": "gtfs-data.jp",
+      "what": "the Japanese timetable page (GTFSデータリポジトリ)",
+      "link": "the publisher page of a shipped Japanese timetable (js/transit-feeds.js source / verified.page); never fetched by the browser"
+    },
+    {
+      "host": "api.gtfs-data.jp",
+      "what": "the Japanese timetable feed API",
+      "link": "the feed API a build reads for the current archive and licence (js/transit-feeds.js FEED_ROWS[].resolve.api); the browser never requests it"
     },
     {
       "host": "transitous.org",

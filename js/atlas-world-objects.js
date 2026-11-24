@@ -41,6 +41,7 @@
  *  global (check:surface).
  * ==========================================================================*/
 import { makeAtlasGeoObject } from './atlas-geo-object.js';
+import { linkState, relatedState, checkClaims, stateLabel } from './relation-evidence.js';   /* confirmed / inferred / unconfirmed, and what backs each */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance (page and server) */
 
 export const RELATED_DEFAULTS = { km: 300, hours: 72 };
@@ -369,6 +370,8 @@ export function makeAtlasWorldObjects(deps) {
       var related = why.indexOf('linked') >= 0 || (near && (concurrent || timeless));
       if (!related) return null;
       var res = { why: why, distanceKm: d == null ? null : Math.round(d * 10) / 10, gapHours: gap == null ? null : Math.round(gap * 10) / 10 };
+      var rs = relatedState(edges, why, { km: km, hours: hours, sharedRecord: !linked && (shareIds(a.articleIds, b.articleIds) || shareIds(a.evidenceIds, b.evidenceIds)) });
+      res.state = rs.state; res.grounds = rs.grounds;
       var names = edges.map(function (e) { return e.rel; }).filter(function (r, i, x) { return x.indexOf(r) === i; });
       if (names.length) res.rels = names;
       return res;
@@ -573,6 +576,13 @@ export function makeAtlasWorldObjects(deps) {
      * Returns { subject, nodes:[{ object|null, ref, depth, path:[{from, rel, to}] }] } — `object` is null for a ref that is named by an edge but
      * not held (still reported: the edge is a fact even when its far end was never surfaced).
      */
+    /* a chain of ties is only as sure as its weakest tie: confirmed › inferred › unconfirmed */
+    function pathState(path) {
+      var rank = { confirmed: 3, inferred: 2, unconfirmed: 1 }, worst = 'confirmed';
+      arr(path).forEach(function (p) { if (rank[p.state] < rank[worst]) worst = p.state; });
+      return worst;
+    }
+
     function traverse(start, opts) {
       opts = opts || {};
       var s = typeof start === 'string' ? find(start) : start;
@@ -586,8 +596,9 @@ export function makeAtlasWorldObjects(deps) {
         arr(held[r].links).forEach(function (l) {
           if (!activeAt(l, at)) return;
           var a = canon(held[r].ref), b = canon(l.ref);
-          (adj[a] = adj[a] || []).push({ rel: l.rel, to: b });
-          (adj[b] = adj[b] || []).push({ rel: geo.inverseRel(l.rel), to: a });
+          var ls = linkState(l).state;
+          (adj[a] = adj[a] || []).push({ rel: l.rel, to: b, state: ls });
+          (adj[b] = adj[b] || []).push({ rel: geo.inverseRel(l.rel), to: a, state: ls });
         });
       });
       var root = canon(s.ref), seen = Object.create(null); seen[root] = 1;
@@ -601,7 +612,7 @@ export function makeAtlasWorldObjects(deps) {
             var o = held[e.to] || byRef[e.to] || null;
             if (o && at != null && !activeAt(o.validity, at)) return;
             seen[e.to] = 1;
-            var path = f.path.concat([{ from: f.ref, rel: e.rel, to: e.to }]);
+            var path = f.path.concat([{ from: f.ref, rel: e.rel, to: e.to, state: e.state }]);
             nodes.push({ object: o, ref: e.to, depth: d, path: path });
             next.push({ ref: e.to, path: path });
           });
@@ -634,7 +645,7 @@ export function makeAtlasWorldObjects(deps) {
         traverse(s, opts).nodes.forEach(function (n) {
           if (!n.object || (types.length && types.indexOf(n.object.type) < 0)) return;
           var d = distanceKm(s, n.object), g = gapHours(s, n.object);
-          items.push({ object: n.object, why: ['linked'], rels: n.path.map(function (p) { return p.rel; }), depth: n.depth,
+          items.push({ object: n.object, why: ['linked'], rels: n.path.map(function (p) { return p.rel; }), depth: n.depth, state: pathState(n.path), grounds: n.path.map(function (p) { return { kind: 'tie', rel: p.rel, state: p.state }; }),
             distanceKm: d == null ? null : Math.round(d * 10) / 10, gapHours: g == null ? null : Math.round(g * 10) / 10 });
         });
         items.sort(function (x, y) { return (x.depth - y.depth) || ((x.distanceKm == null ? big : x.distanceKm) - (y.distanceKm == null ? big : y.distanceKm)); });
@@ -646,7 +657,7 @@ export function makeAtlasWorldObjects(deps) {
           if (c && seen[c]) return; if (c) seen[c] = 1;
           if (types.length && types.indexOf(o.type) < 0) return;
           var r = relation(s, o, opts); if (!r) return;
-          items.push({ object: o, why: r.why, rels: r.rels, distanceKm: r.distanceKm, gapHours: r.gapHours });
+          items.push({ object: o, why: r.why, rels: r.rels, distanceKm: r.distanceKm, gapHours: r.gapHours, state: r.state, grounds: r.grounds });
         });
         items.sort(function (x, y) {
           return ((y.why.indexOf('linked') >= 0) - (x.why.indexOf('linked') >= 0))
@@ -656,6 +667,18 @@ export function makeAtlasWorldObjects(deps) {
       }
       var total = items.length, lim = num(opts.limit);
       return { subject: s, items: (lim != null && lim >= 0) ? items.slice(0, Math.floor(lim)) : items, total: total };
+    }
+
+    /**
+     * checkRelations(subject, claims) — is each {rel, ref} the answer is about to state about `subject` RECORDED? Reads the subject's own links and the
+     * links the other held objects keep to it (read backwards). A claim with no record comes back `unconfirmed` + `recorded:false`; nothing is added.
+     */
+    function checkRelations(subject, claims) {
+      var s = typeof subject === 'string' ? find(subject) : subject;
+      if (!s) return arr(claims).map(function (q) { return { rel: String(q && q.rel || ''), ref: q && q.ref, recorded: false, state: 'unconfirmed', why: 'the object is not held' }; });
+      var me = canon(s.ref), incoming = [];
+      all().forEach(function (o) { arr(o.links).forEach(function (l) { if (canon(l.ref) === me) incoming.push({ from: o.ref, link: l }); }); });
+      return checkClaims(s.ref, arr(s.links), incoming, claims, geo.inverseRel, canon);
     }
 
     /** The candidates the loaded news contributes: events when the feed is in event mode, articles otherwise. */
@@ -678,7 +701,8 @@ export function makeAtlasWorldObjects(deps) {
         return { type: t, count: by[t].length, more: Math.max(0, by[t].length - per), items: by[t].slice(0, per).map(function (x) {
           /* a typed tie says WHICH: «linked (operated_by)», and across several hops «linked (contains › operated_by)» */
           return { name: x.object.name || x.object.ref, ref: x.object.ref, why: x.why.map(function (w) { return (WHY[w] || w) + (w === 'linked' && arr(x.rels).length ? ' (' + x.rels.join(' › ') + ')' : ''); }).join(' + '),
-            distanceKm: x.distanceKm == null ? null : Math.round(x.distanceKm), gapHours: x.gapHours == null ? null : Math.round(x.gapHours) };
+            distanceKm: x.distanceKm == null ? null : Math.round(x.distanceKm), gapHours: x.gapHours == null ? null : Math.round(x.gapHours),
+            state: x.state || 'unconfirmed', grounds: arr(x.grounds) };
         }) };
       });
     }
@@ -691,7 +715,7 @@ export function makeAtlasWorldObjects(deps) {
         h += '<div style="font-size:12px;margin:5px 0 1px;"><b>' + esc(g.type) + '</b>: ' + g.count + '</div>';
         g.items.forEach(function (x) {
           h += '<div style="font-size:11.5px;line-height:1.5;padding-left:8px;">' + esc(x.name) + ' <span style="color:var(--text-muted);">'
-            + esc(x.why + (x.distanceKm != null ? ' · ' + x.distanceKm + ' km' : '') + (x.gapHours != null ? ' · ' + x.gapHours + ' h' : '')) + '</span></div>';
+            + esc(x.why + ' · ' + stateLabel(x.state, o.L || function (en) { return en; }) + (x.distanceKm != null ? ' · ' + x.distanceKm + ' km' : '') + (x.gapHours != null ? ' · ' + x.gapHours + ' h' : '')) + '</span></div>';
         });
         if (g.more) h += '<div style="font-size:10.5px;color:var(--text-muted);padding-left:8px;">… +' + g.more + '</div>';
       });
@@ -706,7 +730,7 @@ export function makeAtlasWorldObjects(deps) {
         lng: o.lng, lat: o.lat, provenance: o.provenance, bounds: o.bounds || undefined,
         at: o.time ? new Date(o.time.atMs).toISOString() : undefined, endAt: (o.time && o.time.endMs !== o.time.atMs) ? new Date(o.time.endMs).toISOString() : undefined,
         articleIds: o.articleIds.length ? o.articleIds : undefined, evidenceIds: o.evidenceIds.length ? o.evidenceIds : undefined,
-        sources: o.sources.length ? o.sources : undefined, links: o.links.length ? o.links : undefined,
+        sources: o.sources.length ? o.sources : undefined, links: o.links.length ? o.links.map(function (l) { var s = linkState(l); return Object.assign({}, l, { state: s.state, stateWhy: s.why }); }) : undefined,
         facts: Object.keys(o.facts || {}).length ? o.facts : undefined,
         ids: Object.keys(o.ids || {}).length ? o.ids : undefined, aliases: arr(o.aliases).length ? o.aliases : undefined,
         validFrom: o.validity && o.validity.fromMs != null ? new Date(o.validity.fromMs).toISOString().slice(0, 10) : undefined,
@@ -718,7 +742,7 @@ export function makeAtlasWorldObjects(deps) {
       canon: canon, claimConflicts: claimConflicts, clear: clear, distanceKm: distanceKm, find: find, identity: identity, traverse: traverse,
       fromCity: fromCity, fromCompany: fromCompany, fromCompanyProfile: fromCompanyProfile, fromDatasetRow: fromDatasetRow, fromFacility: fromFacility, fromLoadedNews: fromLoadedNews, fromNewsArticle: fromNewsArticle,
       fromEventRow: fromEventRow, fromNewsEvent: fromNewsEvent, fromNewsGroup: fromNewsGroup, fromPlace: fromPlace, fromPlaceProfile: fromPlaceProfile, fromUsgs: fromUsgs, fromVolcano: fromVolcano,
-      gapHours: gapHours, register: register, relatedGroups: relatedGroups, relatedHtml: relatedHtml, related: related, relation: relation };
+      gapHours: gapHours, checkRelations: checkRelations, register: register, relatedGroups: relatedGroups, relatedHtml: relatedHtml, related: related, relation: relation };
   })();
 }
 
