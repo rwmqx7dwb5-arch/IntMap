@@ -63,4 +63,4 @@ Claude Code・ChatGPT などの外部 AI が、IntMap の**読み取り専用**�
 | 結果 | 全部 `resultType:"complete"`。`tools/list` は `ttlMs`（5 分）＋`cacheScope:"public"` | 従来のまま |
 | 不整合 | 本文とヘッダの不一致は 400 `-32020`、未知の新しい版は 400 `-32022`（対応版つき）、未知のメソッドは 404 `-32601` | 従来のまま |
 どちらでもサーバは `Mcp-Session-Id` を発行せず、送られても無視する。`Mcp-Method` ヘッダが無いことは咎めない（あって食い違うときだけ 400）。
-**認証は OAuth ではなく IntMap の鍵**（`Authorization: Bearer imk_…`。401 の `WWW-Authenticate` は `Bearer realm="intmap"` で `resource_metadata` を持たない）。OAuth 2.1／保護リソースメタデータへの対応は未実装。
+**認証は OAuth ではなく IntMap の鍵**（`Authorization: Bearer imk_…`。401 の `WWW-Authenticate` は `Bearer realm="intmap"` で `resource_metadata` を持たない）。OAuth 2.1／保護リソースメタデータへの対応は未実装（IntMap が**クライアント**として外部サーバへ OAuth でサインインする側は `docs/architecture/05-ai.md` の外部 MCP サーバの節）。
