@@ -85,3 +85,5 @@ main に取り込んだ #1280（統合知識層）が atlas-orchestrate チャ�
 追記4(2026-11-24): CI 測定で async.gzip 4944.8 kB・atlas-console 1141.8 kB・dist.assets 22073.6 kB が ceiling を超過(main 取り込み分と本 PR の能力説明の合計)。超過した 3 行だけ測定値(5064000 / 1169500 / 22604000 バイト)へ上げた。
 
 追記5(2026-11-24): main(#1313 ほか)取り込み後の CI 測定で async.raw 14697.8 kB・atlas-console 1153.2 kB・gis-core 701.2 kB が超過。超過した 3 行だけ測定値(15051000 / 1181000 / 718100 バイト)へ上げた。
+
+追記6(2026-11-24): CI 測定で async.raw 14755.1 kB・async.gzip 4988.1 kB・atlas-console 1165.3 kB・dist.assets 22202.1 kB が超過(main の取り込み分が主)。超過した 4 行だけ測定値(15110000 / 5108500 / 1193500 / 22735500 バイト)へ上げた。
