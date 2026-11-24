@@ -717,6 +717,7 @@ export const IntMapRefData = (function(){
     {n:'Microsoft Planetary Computer STAC catalogue',u:'https://planetarycomputer.microsoft.com/'},
     {n:'NASA CMR-STAC — LP DAAC (NASA EOSDIS)',u:'https://cmr.earthdata.nasa.gov/stac'},
     {n:'British Geological Survey — OGC API',u:'https://ogcapi.bgs.ac.uk/'},
+    {n:'Overture Maps Foundation (places, buildings, addresses, divisions, transportation, base — GeoParquet, monthly release)',u:'https://overturemaps.org/',lic:'Stated per record and per theme: CDLA-Permissive-2.0 (places) · ODbL 1.0 (buildings, roads, divisions, base) · CC BY 4.0 (addresses, per country) — read from each row',licUrl:'https://docs.overturemaps.org/attribution/',credit:true},
     {n:'AI provider — OpenAI (Anthropic / Google selectable)',u:'https://openai.com/'}
   ];
   /* ══ ⚠ (#R246) ONE RESOLVER FOR THIS REGISTRY'S DESCRIPTIONS, AND IT LIVES WITH THE REGISTRY ═══
