@@ -48,3 +48,5 @@ MCP クライアントが 4 能力（`mcp.servers`・`mcp.connect`・`mcp.call`�
 （2026-11-24 の main 取り込み後、CI の Gates 2/3 で check:perf が天井を超えた: atlas-cap-runs 938.6 kB 超（970,100 B へ）、dist.assets 21923.7 kB 超（22,569,300 B へ）。CI の測定値に合わせて上げた。MCP の能力（mcp.connect / mcp.act）の追加ぶんと main 側の能力追加ぶんが合わさった増分で、能力を戻せば下がる。）
 
 （2026-11-24 の続き: main に #1313 などが入ったあとの CI の Gates 2/3 で、async.raw 14569.8→14667.6 kB（15,019,700 B へ）、async.gzip 4918.1→4953.6 kB（5,072,500 B へ）、atlas-cap-runs 952.1→959.4 kB（982,500 B へ）、atlas-console 1139.2→1146.7 kB（1,174,300 B へ）、gis-core 697.3→701.2 kB（718,100 B へ）が天井を超えた。CI の測定値に合わせて上げた。gis-core は MCP の変更ではなく main 側の増分で、main の天井が測定より先に上がっていないために、この PR が引き受けた。）
+
+（2026-11-24 の続き: main に web.session(#1337)などが入ったあとの CI の Gates 2/3 で、atlas-cap-runs 981.3→989.2 kB（1,013,000 B へ）、atlas-console 1152.4→1158.9 kB（1,186,800 B へ）が天井を超えた。CI の測定値に合わせて上げた。main に入った web.session の能力ぶんと、この PR の MCP の能力ぶんの合計で、能力を戻せば下がる。）
