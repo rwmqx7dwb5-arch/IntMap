@@ -6,10 +6,8 @@
  *       y 0…812 — UNDER the real sheet (its search row at y 734) and under the data credit. «If it erupted
  *       now» and the thermal button were covered by #sidebar; the card did not scroll, because the part of
  *       it that held them was not on the screen.
- *    B. with the sheet at `half`, an Atlas example opens a sample card (`.atl-pv`) whose lower part —
- *       the free-plan line and «Log in to ask this» — sat below the screen, and `scrollIntoView
- *       ({block:'nearest'})` did nothing: the sheet's scroll box extends below the screen, so the card
- *       was already «inside» it.
+ *    B. (history) with the sheet at `half`, an Atlas example opened a sample card (`.atl-pv`) whose lower part
+ *       sat below the screen. That card and its chips are gone; B now measures the Atlas composer instead.
  *  ⚠ THE POPULATION IS EVERY BUTTON OF THE CARD, not the two the report named. A button is reachable when,
  *  after the reader scrolls the card (a real finger, CDP touch), `elementFromPoint` at its centre is the
  *  button itself AND the point is on the map: below the top chrome, above the sheet and above the credit.
@@ -83,22 +81,24 @@ test.describe('mobile-card-reach: 375 × 812, touch', () => {
     expect(await page.evaluate(() => !!document.querySelector('#volc-popup [data-volcp="ashsim"]')), 'the ash what-if is in the card').toBe(true);
   });
 
-  test('B Atlas, signed out, sheet at half: the sample card is wholly on the screen and its login button answers a finger', async ({ page }) => {
+  /* (mobile-sheet-layout) B 旧: 署名前の Atlas が出す見本カード（.atl-pv）の「ログイン」ボタンが指に届くか。Atlas は例示チップも見本カードも出さなくなった
+     （makeAtlasExamples の suggestPrompts 経路は単体テストだけが通る）ので、その到達性は守る対象が無い。同じ「half の Atlas で、画面の下端に隠れて指が
+     届かない部品が無い」という主張は、いま sheet の既定内容になった Atlas の入力欄（.atl-inbar）で守る。 */
+  test('B Atlas at half: the composer is wholly on the screen and answers a finger; no sample chips or card are drawn', async ({ page }) => {
     test.setTimeout(120_000);
     await boot(page);
-    await page.click('#btn-community');
+    /* Atlas is the sheet's default content: the app opens it itself once the kernel is there (pressing the tab here too would race that and close it) */
+    await page.waitForFunction(() => !!document.querySelector('.control-panel .mode-btn.mode-atlas.active'), null, { timeout: 30_000 });
     await page.evaluate(() => window.__setDetent('half', false));
-    await page.waitForFunction(() => document.querySelectorAll('#atlas-panel .atl-chip').length > 0, null, { timeout: 30_000 });
-    await page.waitForTimeout(700);
-    await page.evaluate(() => { const c = document.querySelector('#atlas-panel .atl-chip'); c.click(); });
-    await page.waitForSelector('#atlas-panel .atl-pv-login', { timeout: 10_000 });
+    await page.waitForFunction(() => { const e = document.querySelector('#atlas-panel .atl-inbar'); return !!e && e.getBoundingClientRect().height > 0; }, null, { timeout: 30_000 });
     await page.waitForTimeout(1200);
     const r = await page.evaluate(() => {
-      const el = document.querySelector('#atlas-panel .atl-pv-login'), b = el.getBoundingClientRect();
+      const el = document.querySelector('#atlas-panel .atl-inbar'), b = el.getBoundingClientRect();
       const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
-      return { bottom: b.bottom, vh: innerHeight, hits: hit === el || el.contains(hit), detent: (document.body.className.match(/sheet-(full|min|hidden)/) || ['sheet-half'])[0] };
+      return { bottom: b.bottom, vh: innerHeight, hits: hit === el || el.contains(hit), who: hit ? hit.tagName + '.' + String(hit.className).slice(0, 50) + '#' + hit.id : null, at: [Math.round(b.left + b.width / 2), Math.round(b.top + b.height / 2)], chips: document.querySelectorAll('#atlas-panel .atl-chip, #atlas-panel .atl-pv').length, detent: (document.body.className.match(/sheet-(full|min|hidden)/) || ['sheet-half'])[0] };
     });
-    expect(r.hits, 'the login button is what a finger lands on').toBe(true);
-    expect(r.bottom, `the login button is on the screen (sheet ${r.detent})`).toBeLessThanOrEqual(r.vh);
+    expect(r.chips, 'Atlas draws no suggested prompts or sample card').toBe(0);
+    expect(r.hits, 'the composer is what a finger lands on: ' + JSON.stringify([r.who, r.at])).toBe(true);
+    expect(r.bottom, `the composer is on the screen (sheet ${r.detent})`).toBeLessThanOrEqual(r.vh);
   });
 });

@@ -100,6 +100,11 @@ async function resolveWorldObject(a, K) {
   const fromGraph = async () => {
     const g = await G.findPersisted(HOST.DB, q);
     if (g.ok && g.object && (!type || g.object.type === type)) return { obj: g.object, via: 'graph' };
+    /* a uid, or an external id the object held in an earlier release (a re-issued `gers:…`): the identity layer follows it to the object it now is */
+    if (g.ok && !g.object) {
+      const p = await G.resolvePersisted(HOST.DB, q);
+      if (p.ok && p.object && !p.ambiguous && (!type || p.object.type === type)) return { obj: p.object, via: 'graph' };
+    }
     return g.ok ? null : { obj: null, code: 'GRAPH_' + String(g.error || 'failed').toUpperCase() };
   };
   let graphErr = null;

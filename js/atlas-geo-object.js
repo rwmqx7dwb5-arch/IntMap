@@ -280,6 +280,7 @@ export function makeAtlasGeoObject() {
       site_of: 'has_site', has_site: 'site_of', serves: 'served_by', served_by: 'serves',
       same_as: 'same_as', connected_to: 'connected_to', related_to: 'related_to', candidate_match: 'candidate_match',
       conflicting_identity: 'conflicting_identity',
+      located_in: 'location_of', location_of: 'located_in',
     };
     function inverseRel(rel) { return REL_INVERSE[rel] || ('~' + rel); }
     var REL_CONFIDENCE = ['high', 'medium', 'low'];

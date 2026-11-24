@@ -27,6 +27,11 @@ test.describe('phone', () => {
     const idx = await (await page.request.get('/data/on-this-day.json')).json();
     const md = await page.evaluate(() => { const d = new Date(); return String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); });
     const list = eventsOn(idx, md), top = headline(list);
+    /* (mobile-sheet-layout) この主題は「tab が 1 つも選ばれていない」ホーム。電話の既定は Atlas（起動 ~2.5 s 後に選ばれる）なので、それが着いたのを待ち、
+       アプリ自身の作法（選択中の tab をもう一度押すと選択が外れる＝setMode）で外してホームへ戻す。 */
+    await page.waitForFunction(() => !!document.querySelector('.control-panel .mode-btn.mode-atlas.active'), null, { timeout: 20_000 });
+    await page.evaluate(() => document.querySelector('.control-panel .mode-btn.mode-atlas').click());
+    await page.waitForFunction(() => !document.querySelector('.control-panel .mode-btn.active'), null, { timeout: 5000 });
     await page.evaluate(() => window.__setDetent('half'));
     await expect(page.locator('.m-home .sg-strip')).toBeAttached({ timeout: 15_000 });
     if (!top) {
