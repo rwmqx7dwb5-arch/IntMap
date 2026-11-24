@@ -1985,6 +1985,8 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
 | `catalogs()` / `add()` | 問い合わせるカタログの登録簿（STAC API・OGC API – Features）。**種別は述べる**（アドレスから推測しない）。`add()` は https の公開宛先だけ |
 | `discover({q,bbox,time,…})` | 各カタログの `/collections` を読み、場所・期間を**覆うと述べている**コレクションを返す。`q` の語は全部が要る |
 | `inspect(ref)` | コレクション自身の述べること、標本アイテムの資産（COG か・バンド・単位）、`evidence`、そして**読むための ref**（`refs.features`＝`ogc:…`、`refs.grids`＝`url:…`） |
+| `items(ref,{bbox,time,maxCloud,limit})` | 1 コレクションのシーン（日時・雲量・解像度・EPSG・プラットフォーム・SAR の mode/偏波/軌道方向・**述べられた欠損率**）。1 ページだけで、`continues` が続きの有無を述べる |
+| `scenes({bbox,time,modality,maxCloud,catalogs,perModality,limit})` | **種別（`optical` / `sar` / `dem` / `lidar`）で、全カタログ横断**に「この場所・この時期のシーン」を探す。種別は STAC の述べる欄（`sar:*` summaries・`eo:bands`・標高／LiDAR の語）から読み、ホスト名では決めない。各シーンに日時・雲量・欠損率・解像度・プラットフォーム・**コレクションのライセンス（原文）と規約リンク**・読むための `refs.grids`（`url:<COG>`）を付ける。**「無い」は 3 種を分けて返す**: `no-collection`（その種別を述べるコレクションが問い合わせ先に無い）／`no-scene`（コレクションは述べるが期間にシーンが無い・`atOtherTimes` に他の時期の在り処・雲量で落とした数）／`not-answered`（応答が無い＝「訊けなかった」）。**DEM は時系列でないので期間を適用しない**（`periodApplied:false`）。**非商用ライセンス（`-NC`）のコレクションは `excluded` に理由つきで挙げ、探さない**。`proprietary` は STAC が「規約はリンク先」を表す語で、開放とも閉鎖とも言わずリンクを示す。1 コレクション 1 ページ・種別ごとの問い合わせ数は `perModality`（既定 6・超えた分は `collectionsNotAsked`）。入力の `refs.grids` は `data.gis` の `url:` 入力に渡せる（変化解析・モデルが読む入口と同じ） |
 
 ### 完全性の 3 つの主張を混ぜない
 1. 供給元が窓の全部を返した — 読む扉の `coverage`（`js/gis-sources.js` の `coverageOf()` の判定）。
