@@ -6637,7 +6637,7 @@ IntMapLang.define('zh', {
   "weather card": "天氣卡片",   /* #R726 */
   "later pass": "之後的過境",   /* #R728 */
   "passes within 48 h": "48 小時內的過境",   /* #R728 */
-  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas 已執行工具，但這次沒有寫出回答——工具傳回的內容顯示在上方；請再問一次或縮小問題範圍。",   /* #R731 */
+  /* #R731 */
 
   /* ══ (#R732) spatial operations, coordinate systems and dataset state — js/gis-panel.js,
      js/atlas-query.js, js/map-ui.js. The four short words are COLUMN LABELS in Atlas's result
@@ -6809,7 +6809,6 @@ IntMapLang.define('zh', {
   "This is a SQLite database, but it holds no GeoPackage contents table": "這是一個 SQLite 資料庫，但其中沒有 GeoPackage 的內容資料表",
   "This is not a SQLite file, so it is not a GeoPackage": "這不是 SQLite 檔案，因此它不是 GeoPackage",
   "This layer holds no features to colour": "這個圖層沒有可著色的要素",
-  "This turn reached its working limit, so the answer above may be incomplete — anything asked for that is not described above was not done. Ask again for the missing part on its own.": "這一輪已達到作業上限，因此上方的回答可能並不完整——凡是上方未描述到的要求，都沒有執行。請就缺少的部分單獨再問一次。",
   "Tied values merged classes": "同值過多，分級已合併",
   "Time axis": "時間軸",
   "Unit": "單位",

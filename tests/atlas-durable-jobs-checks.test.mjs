@@ -11,7 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { planJob, readyTasks, workerPrompt, JOB_MAX_TASKS } from '../js/atlas-job-core.js';
+import { planJob, readyTasks, workerPrompt } from '../js/atlas-job-core.js';
 import { runJob, parseJson } from '../supabase/functions/_shared/atlas-job-runner.js';
 import { inSync } from '../scripts/sync-atlas-job-core.mjs';
 
@@ -26,7 +26,7 @@ test('planJob: ids, dependencies, duplicates and what cannot be run', () => {
   assert.deepEqual(ok.tasks.map((t) => t.id), ['a', 'b'], 'the same contract twice is one task');
   assert.deepEqual(ok.tasks[1].deps, ['a']);
   assert.equal(planJob([]).error, 'no_tasks');
-  assert.equal(planJob(Array.from({ length: JOB_MAX_TASKS + 1 }, (_, i) => ({ goal: 'g' + i }))).error, 'too_many_tasks');
+  { const many = planJob(Array.from({ length: 40 }, (_, i) => ({ goal: 'g' + i }))); assert.equal(many.ok, true, 'no count refuses a plan: a job is bounded by its own cost cap'); assert.equal(many.tasks.length, 40); }
   assert.equal(planJob([{ goal: '' }]).error, 'goal_missing');
   assert.equal(planJob([{ kind: 'capability', capability: 'weather.now', args: {} }]).error, 'kind_unsupported', 'a capability task has no server twin yet — refused by name');
   assert.equal(planJob([{ id: 'a', goal: 'x', inputs: [{ from: 'nobody' }] }]).error, 'input_unknown');

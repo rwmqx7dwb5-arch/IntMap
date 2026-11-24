@@ -152,7 +152,7 @@ export async function callAnthropicTurn(model: string, key: string, turn: TurnRe
   if (tools.length) body.tools = tools;
   if (turn.toolChoice === "none" && turn.tools.length) body.tool_choice = { type: "none" };
   /* (ai-one-ledger) THE FIXED PREFIX IS CACHED. The functions and the instructions are the same on every
-     call of one turn (up to TURN_MAX_CALLS of them) and, for the same page, on every turn; Anthropic
+     call of one turn (however many it makes) and, for the same page, on every turn; Anthropic
      re-bills that prefix in full unless the request marks it (no cache_control was sent before this).
      Breakpoints at the end of the tools and of the system prompt — _shared/ai-usage.js withPromptCache
      says why these two and why this changes nothing the model reads. */

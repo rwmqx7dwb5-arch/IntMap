@@ -414,7 +414,7 @@ their values.
 `ais-feed` is the same shape: a channel and a viewport box, never a URL.
 
 ⚠ **Spend ceilings — every function that holds a provider key has a project-wide daily one.**
-Per-account quotas (`PLAN_LIMITS`, `TURN_MAX_CALLS`) bound an account, and an account costs nothing
+Per-account quotas (`PLAN_LIMITS`, and since atlas-unbounded-turns the day's spend `aiUsdPerDay` — a turn's calls are no longer counted) bound an account, and an account costs nothing
 to make; the scheduler secrets bound who may call, not how much a leaked secret or a loop can spend.
 The September 2026 audit found that only `atlas-embed` and `routing-relay` bounded the project at
 all. Now `ai-proxy`, `atlas-embed`, `news-ingest`, `refresh-news` and `who-don`
@@ -448,7 +448,7 @@ all.** An account younger than `NEWCOMER_AGE_DAYS` (7, `_shared/ai-ledger.js` `c
 clamped to the whole), so **2,000 requests a day are out of reach of any number of new accounts**. A
 refused share never touches the project bucket, fails closed like it, and is answered `provider_quota`
 with `meta.ceiling: "newcomer_day"` and a refunded use. An older account draws from the project bucket
-exactly as before, and **nobody's plan, gloss lane or `TURN_MAX_CALLS` changed** — a newcomer keeps its
+exactly as before, and **nobody's plan or gloss lane changed** — a newcomer keeps its
 whole plan; only which part of the invoice fence its requests come from is decided by its age.
 Sizing (production ledger, 2026-10-01): at most 9 accounts under a week old used AI on one day, 16 turns
 between them (≤ 192 requests even at 12 per turn); 14 of the 16 accounts ever charged were first charged

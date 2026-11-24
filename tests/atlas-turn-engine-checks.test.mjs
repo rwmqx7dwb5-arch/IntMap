@@ -381,10 +381,10 @@ test('atlas-turn-engine ④ the ceiling on declared functions is the proxy\'s, a
 /* ── ⑤ THE BUDGET SENTENCE READS THE SERVER'S NUMBER ─────────────────────────────────────────── */
 
 test('atlas-turn-engine ⑤ the loop\'s model calls fit under the server\'s per-turn budget, with room for tools', () => {
-  const m = PROXY.match(/const TURN_MAX_CALLS = (\d+);/);
-  assert.ok(m, 'ai-proxy declares TURN_MAX_CALLS');
-  const server = +m[1];
-  assert.ok(AGENT.LIMITS.maxSteps + 1 < server, 'maxSteps + the forced answer must leave room for a tool that asks the model');
+  /* (atlas-unbounded-turns) the server states NO per-turn call count (user decision 2026-11-24), so no step of the
+     loop, nor a tool that asks the model, can be refused on count; the turn is bounded by money (turn_cost / day_cost) */
+  assert.doesNotMatch(PROXY, /const TURN_MAX_CALLS = \d+;/, 'a per-turn call count is back on the server');
+  assert.match(PROXY, /openTurn\(db, account, \{ turn: turnId, maxCalls: null,/, 'the reader turn is opened with a call count');
   const src = rd('js/atlas-agent.js');
   assert.ok(!/TURN_MAX_CALLS = \d/.test(src), 'the agent does not write the server\'s number down (it drifts: it said 6 while the server said 12)');
 });

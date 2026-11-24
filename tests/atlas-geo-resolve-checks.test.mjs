@@ -312,12 +312,12 @@ test('R413 ⑨: the caps this round removed have not come back', async () => {
   const cut = A.composeInput(turnOf('z'.repeat(A.INPUT_BUDGET.item + 5000))).input.find((it) => it.type === 'function_call_output');
   assert.match(cut.output, /read_result/, 'a result cut to fit says how to read the rest');
 
-  const agent = code(rd('js/atlas-agent.js'));
-  const steps = /maxSteps:\s*(\d+)/.exec(agent);
-  assert.ok(steps && +steps[1] >= 8, `a turn may take at least 8 steps (it is ${steps && steps[1]})`);
+  /* (atlas-unbounded-execution) read off the loop the browser builds, not a spelling: the counts are Infinity now */
+  const steps = [null, A.LIMITS.maxSteps];
+  assert.ok(+steps[1] >= 8, `a turn may take at least 8 steps (it is ${steps[1]})`);
   const proxy = code(aiProxySource());
   /* the caps that were relaxed with maxSteps, so the room is real rather than nominal */
-  assert.ok(+(/maxToolCalls:\s*(\d+)/.exec(agent) || [])[1] >= 4 * +steps[1],
+  assert.ok(+A.LIMITS.maxToolCalls >= 4 * +steps[1],
     'a turn may run at least four tool calls per step — maxPerStep alone allows eight');
   /* ⚠ ONE place bounds the conversation, and it is not the prompt. The first draft asserted a number
      on the PROMPT's slice and stayed green when the number was put back, because the STORE caps it
@@ -329,13 +329,27 @@ test('R413 ⑨: the caps this round removed have not come back', async () => {
   assert.ok(kept && +kept[1] >= 32, `the store keeps at least 32 conversation entries (it keeps ${kept && kept[1]})`);
   assert.ok(!/\.slice\(0, 160\)/.test(surface), 'a capability summary is not clipped');
   assert.ok(!/\.slice\(0, 400\)/.test(surface), 'and neither is the reason a call failed');
+  /* (atlas-unbounded-execution) the server keeps no per-turn call count now (money bounds a turn); if one ever comes back it
+     must still leave room above the client's — the client must not be the stricter of the two, nor the server */
   const calls = /const TURN_MAX_CALLS = (\d+);/.exec(proxy);
-  assert.ok(calls && +calls[1] >= +steps[1] + 2,
+  assert.ok(!calls || +calls[1] >= +steps[1] + 2,
     `the server budget (${calls && calls[1]}) leaves room above the client's ${steps && steps[1]} steps — the client must not be the stricter of the two`);
 
   const law = rd('CONSTITUTION.md');   /* prose on purpose: this one IS the sentence */
   assert.match(law, /制限を増やす方向・例外を増やす方向へ\s*\r?\n?\s*持っていってはならない/,
     'CONSTITUTION.md §5 carries the standing instruction this round was given');
+});
+
+/* (atlas-unbounded-execution) 「回答本体以外の注意書きが多すぎる」 (the user, 2026-11-24): the rule asked for a limitation
+   paragraph on every failure and a three-way labelling of every claim. It now asks for the answer first and a
+   limitation only as a clause that changes what the reader can rely on — and the honesty half is kept. */
+test('the policy puts the answer first and asks for no boilerplate around it', () => {
+  const core = makeAtlasPolicy().core();
+  assert.match(core, /Answer first; add a limitation only as one clause that changes what can be relied on/);
+  assert.match(core, /No disclaimers, process or tool narration, or unneeded offers of help/);
+  assert.match(core, /never present inference as fact/, 'honesty is not what was trimmed');
+  assert.match(core, /never claim success before confirmation/, '…nor the rule that a result is the truth about execution');
+  assert.doesNotMatch(core, /explain the remaining limitation|Distinguish sourced facts, inference, and scenarios/, 'the boilerplate-inviting wording is gone');
 });
 
 test('R413 ⑩: the policy says who is supposed to go and get the missing thing', () => {

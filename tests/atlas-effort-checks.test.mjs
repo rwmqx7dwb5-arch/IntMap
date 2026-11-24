@@ -44,7 +44,9 @@ test('the server applies the pick only to tasks that opt in, and xhigh reaches t
 
 test('the console sends the pick as the turn hint and mounts the menu', () => {
   const c = read('js/atlas-console.js');
-  assert.match(c, /effortHint:_effort/);
+  /* (atlas-unbounded-execution) on «auto» the effort Atlas declared for a call wins; a tier the READER picked is theirs and stands */
+  assert.match(c, /effortHint:\(EFFORT\.get\(\)==='auto'&&req&&req\.effort\)\|\|_effort/, 'on auto, the effort Atlas declared for a call wins; the reader\'s own pick is never overridden');
+  assert.match(c, /maxOutputHint:\(req&&req\.maxOutput\)\|\|undefined/, 'the output Atlas declared a call needs rides with it');
   assert.match(c, /let _effort=EFFORT\.pick\(_cplx\)/);
   assert.match(c, /EFFORT\.mount\(panel\)/);
 });
@@ -83,7 +85,7 @@ test('the sizing task exists on the server with a server-owned schema, and the c
   assert.match(t, /reasoning: "low"/);
   const c = read('js/atlas-console.js');
   assert.match(c, /EFFORT\.decide\(/);
-  assert.ok(c.indexOf('EFFORT.decide(') < c.indexOf('effortHint:_effort'), 'the tier is decided before the step loop uses it');
+  assert.ok(c.indexOf('EFFORT.decide(') < c.indexOf("effortHint:(EFFORT.get()==='auto'&&req&&req.effort)||_effort"), 'the tier is decided before the step loop uses it');
 });
 
 async function withStoreAsync(initial, fn) {

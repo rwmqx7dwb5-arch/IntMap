@@ -47,7 +47,7 @@ export function makeAtlasAgent() {
     const RUN_HISTORY = makeRunHistory(50);   /* (job-cost-ledger) the last turns' cost/time/models/tools, newest last */
 
     /* ── The technical ceilings. They bound the LOOP; they never decide what it should do. ──────
-       ⚠ `maxSteps` COUNTS AGAINST A SERVER BUDGET IT DOES NOT OWN. supabase/functions/ai-proxy
+       [HISTORY — superseded by (atlas-unbounded-execution) below: there is no count now.] `maxSteps` COUNTED AGAINST A SERVER BUDGET IT DID NOT OWN. supabase/functions/ai-proxy
        charges every call carrying one `x-intmap-turn` key against TURN_MAX_CALLS — THAT constant is
        the number, and it is not written here (it was, as 「= 6」, and stayed 6 in this sentence for as
        long as the server said 12: the copy the #R413 note below warns about). What this loop spends
@@ -90,10 +90,28 @@ export function makeAtlasAgent() {
        have fired on turns that were about to succeed, replacing a good answer with a degraded one —
        which is precisely the 「制限を増やす方向」 this round was told not to take. The values below
        clear the measured worst case with room, and nothing else decides them. */
+    /* ══ ⚠⚠⚠ (atlas-unbounded-execution, 2026-11-24, the user's decision) NO FIXED COUNT DECIDES HOW LONG ATLAS WORKS ══
+       Everything above is the history of the numbers that stood here — maxSteps 8, maxToolCalls 32, maxPerStep 8,
+       maxOutputGate 2, turnBudgetMs 600 s — and of each being raised when it was found cutting off a turn that was
+       about to succeed. They were budgets dressed as safety: measured on production 2026-11-21
+       (dev-notes/2026-11-21-atlas-task-completion.md) the semiconductor-siting request spent ~3 minutes on a
+       plan-only step and was then forced to write an answer by the call budget, with nothing fetched and nothing
+       drawn. CONSTITUTION.md §5: 「何手まで考えてよいかを、コード側の定数で先に削らない」.
+       WHAT NOW STOPS A TURN — each a FACT, not a count:
+         · Atlas finishing (`answered`), asking the reader (`awaiting_user`), or the reader's Stop (`aborted`);
+         · NO PROGRESS: the same already-answered call again (`repeated_calls`, maxRepeatSteps) or nothing but
+           rejected calls (`malformed_limit`, maxMalformed). Those two numbers count consecutive steps in which
+           nothing new happened — they say «the loop KNOWS nothing new is coming», never «enough work»;
+         · MONEY: ai-proxy's per-request family fence and per-account day fence refuse a call (`budget`) —
+           supabase/functions/ai-proxy/config.ts TURN_COST_CAP_USD and _shared/plans.js aiUsdPerDay are the
+           canonical numbers, and they are not written here;
+         · one tool call past `toolTimeoutMs` is told it did not finish (Atlas chooses again; the turn goes on).
+       The count/clock keys below are still honoured when a CALLER passes them in `opts.limits` (the node checks
+       drive scripted models with them); by default they are absent — Infinity / 0 — and bound nothing. */
     const LIMITS = {
-      maxSteps: 8,          /* model calls in one turn, the final answer included */
-      maxToolCalls: 32,     /* (#R413) 16 → 32: the step count doubled above, so the same headroom per step */
-      maxPerStep: 8,        /* tool calls accepted from a single model reply */
+      maxSteps: Infinity,      /* model calls in one turn — no count (a caller may pass one) */
+      maxToolCalls: Infinity,  /* tool calls in one turn — no count */
+      maxPerStep: Infinity,    /* tool calls accepted from a single model reply — every call the model made runs */
       maxMalformed: 3,      /* consecutive steps that produced nothing but rejected calls */
       /* consecutive steps in which EVERY call was the identical, already-answered call of this turn.
          Measured on production (2026-09-15, the configured model, 「ISSは今どこ？」): the model was handed the
@@ -103,9 +121,13 @@ export function makeAtlasAgent() {
          loop can KNOW nothing new is coming — the turn then goes straight to the answer. ⚠ This takes
          nothing from Atlas (CONSTITUTION.md §5): a call that asks anything different is not counted. */
       maxRepeatSteps: 2,
-      maxOutputGate: 2,     /* (#R511→#R543) how many times a final that DECLARED an output it has not produced is handed back before it is accepted as it stands. Was `maxMapGate` while the map was the only output an answer could be */
+      /* (#R511→#R543) how many times a final that DECLARED an output it has not produced is handed back. No count:
+         a bounce is repeated only while something changed since the last one (a tool ran, or the reply's own text
+         moved) — the same contradiction handed back to the same unchanged reply is no progress, and is accepted as it
+         stands (see `lastBounce` in runTurn). */
+      maxOutputGate: Infinity,
       toolTimeoutMs: 240000,  /* (#R452) ONE tool call — above the ~200 s a working `analyze` can cost. Past it Atlas is TOLD it did not finish, and chooses again */
-      turnBudgetMs: 600000,   /* (#R452) …and the whole turn — three times the longest turn ever measured, so it only ever fires on one that was not going to end */
+      turnBudgetMs: 0,        /* (atlas-unbounded-execution) no turn clock: a turn that keeps finishing steps keeps working. Each step is bounded on its own — a tool by toolTimeoutMs, a model call by ai-proxy's provider budget (_shared/ai-provider.js providerBudgetMs) — so a turn cannot hang; a caller may still pass one */
       /* (atlas-turn-engine) how many functions one model call may DECLARE — the base tools, the ones
          promoted from find_capability this turn, and read_result on a step whose input was cut.
          OBSERVED: it is not this loop's number. supabase/functions/ai-proxy drops every function past
@@ -160,7 +182,11 @@ export function makeAtlasAgent() {
           to the reader. ⚠ THIS IS THE SET js/atlas-console.js KEEPS ITS OWN COPY OF (`__atlCut`,
           which decides whether the working-limit note goes under the reply): it is exported below so
           that copy can be retired into a read of this one rather than drifting from it. */
-    const CUT_STOPS = { step_budget: 1, call_budget: 1, time_budget: 1, repeated_calls: 1, malformed_limit: 1 };
+    /* (atlas-unbounded-execution) `budget`: the server refused the next call for money — the request family's or the
+       account's day fence (ai-proxy `turn_cost` / `day_cost`) or the project's day ceiling (`provider_quota`). The
+       first three are reachable only when a caller passes the matching key in opts.limits. */
+    const CUT_STOPS = { step_budget: 1, call_budget: 1, time_budget: 1, repeated_calls: 1, malformed_limit: 1, budget: 1 };
+    const BUDGET_CODES = { turn_cost: 1, day_cost: 1, provider_quota: 1, spend_ceiling: 1, turn_calls: 1 };   /* turn_calls: only when an operator set a numeric call bound */
     /* ── WHAT ONE RESULT ACTUALLY PRODUCED. js/atlas-toolsurface.js stamps `producedModes` on a call
           whose capability completed, from its registry `produces` column — so the loop reads a fact,
           never a tool's name. ⚠ `changedMap` is #R511's name for the map member of exactly this set
@@ -235,6 +261,8 @@ export function makeAtlasAgent() {
        ⚠ IT IS NOT REQUIRED (see `required` below, unchanged). A model that never declares it behaves
           exactly as it did before, and no reply Atlas could make is refused — CONSTITUTION.md §5. */
     const TURN_STATES = ['final', 'continuing'];
+    /* the effort words ai-proxy reads in `effortHint` (js/atlas-effort.js MODES without 'auto') */
+    const NEXT_EFFORTS = ['low', 'medium', 'high', 'xhigh'];
     /* ══ ⚠⚠⚠ (atlas-native-tools) THE CALLS LEFT THE ENVELOPE; THE DECLARATIONS DID NOT ════════════════════════
        With native function calling the provider carries the calls as `function_call` items, each with
        its own id. What is left for the message itself is exactly what #R511 / #R663 / #R742 hold a
@@ -255,7 +283,18 @@ export function makeAtlasAgent() {
             + 'empty. A reply that says what you are about to do is "continuing", and the calls that do it belong in '
             + 'this same reply.' },
         answer_mode: { type: 'string', enum: ANSWER_MODES },
-        final_text: { type: 'string' },
+        /* (atlas-unbounded-execution) WHAT ATLAS'S NEXT REPLY NEEDS, DECLARED BY ATLAS. Effort was decided once, before the
+           turn began (js/atlas-effort.js), and the output allowance was a per-task constant — so a turn that turned out to
+           need a long synthesis, or a hard comparison after an easy lookup, had no way to say so. Both are optional; absent
+           = the turn's own effort and the task's standard allowance, exactly as before. The server bounds the allowance by
+           the model's documented maximum and the spend fence (supabase/functions/ai-proxy). */
+        next_effort: { type: 'string', enum: NEXT_EFFORTS,
+          description: 'Optional. How hard your NEXT reply should think: "low" for a mechanical step, "high"/"xhigh" for a hard '
+            + 'synthesis, comparison or calculation. Omit to keep the current effort.' },
+        next_output_tokens: { type: 'integer', minimum: 1,
+          description: 'Optional. How many output tokens your NEXT reply needs, when it will write something long (a report, '
+            + 'a long comparison, a document). Omit for an ordinary reply.' },
+        final_text: { type: 'string' },   /* LAST: the words are written after what the reply is and does is decided (#R663 ②) */
       },
     };
 
@@ -755,6 +794,12 @@ export function makeAtlasAgent() {
       let repeatRun = 0;   /* consecutive steps made only of reused calls — see maxRepeatSteps */
       let answerMode = '';       /* (#R511) the latest mode Atlas declared; '' until it says */
       let gateBounces = 0;       /* (#R511→#R543) how many finals came back having declared an output they had not produced */
+      let lastBounce = null;     /* (atlas-unbounded-execution) the last bounce: {code, results, text} — the same one again with nothing changed is no progress */
+      let nextEffort, nextOutput;   /* (atlas-unbounded-execution) what the last reply declared its NEXT reply needs — FINAL_SCHEMA next_effort / next_output_tokens */
+      /* (atlas-unbounded-execution) EVERY SENTENCE ATLAS WROTE ON THE WAY, KEPT. The reader saw these appear while the turn
+         ran and lost them when it ended (the user, 2026-11-24): a provisional sentence is not the answer (#R663, #R742), but it is
+         not nothing either. They are returned in order for the caller to keep on screen; nothing here decides how. */
+      const interim = [];
       trace.outputGate = 0;
       let goalVerifiedAt = -1;   /* (atlas-goal-verifier) results.length when the request was last read independently (-1: not yet). It is read again ONLY when the record has grown since — a re-read of an unchanged record is the same observation twice */
       let goalPrev = null;       /* …and what that read found ({met, unmet}), shown to the next read so it judges whether the work Atlas did since closed the gap */
@@ -830,6 +875,8 @@ export function makeAtlasAgent() {
             tools: offered(),   /* (atlas-turn-engine) the base tools, then what this turn promoted — see `promoted` */
             step,
             signal: opts.signal,
+            effort: nextEffort,      /* (atlas-unbounded-execution) undefined unless the previous reply declared it */
+            maxOutput: nextOutput,
           });
         } catch (e) {
           /* A transport failure is the ONE thing the loop cannot hand back to Atlas — there is
@@ -841,7 +888,9 @@ export function makeAtlasAgent() {
              than anything going wrong. Only a first step with nothing behind it is fatal. */
           trace.steps.push({ step, error: (e && e.message) || 'model error' });
           if (step === 0) { endPlan('error'); throw e; }
-          stopped = 'transport';
+          /* (atlas-unbounded-execution) a refusal FOR MONEY is the fence doing its job, not the network failing — named apart,
+             so the reader is told the request reached its spending limit rather than that something broke */
+          stopped = (e && BUDGET_CODES[String(e.code || '')] === 1) ? 'budget' : 'transport';
           trace.transportError = (e && e.message) || 'model error';
           trace.transportErrorInfo = errorInfo(e);   /* (atlas-completion) the code / status / retryable the message flattened */
           break;
@@ -892,6 +941,13 @@ export function makeAtlasAgent() {
           /* (#R742) …and where it goes is decided by the reply's own record of what it did */
           if (calls.length) midText = reply.text; else text = reply.text;
         }
+        /* (atlas-unbounded-execution) the provisional sentence of this step — one that issued calls, or that Atlas itself marked
+           "continuing" — kept for the reader (see `interim`) */
+        if (reply && typeof reply.text === 'string' && reply.text.trim() && (calls.length || turnState === 'continuing')) {
+          if (!interim.length || interim[interim.length - 1].text !== reply.text) interim.push({ step, text: reply.text });
+        }
+        nextEffort = (reply && NEXT_EFFORTS.indexOf(reply.nextEffort) >= 0) ? reply.nextEffort : undefined;
+        nextOutput = (reply && Number.isInteger(reply.nextOutput) && reply.nextOutput > 0) ? reply.nextOutput : undefined;
         if (reply && ANSWER_MODES.indexOf(reply.answerMode) >= 0) answerMode = reply.answerMode;
 
         /* ── ZERO TOOL CALLS IS A COMPLETE TURN. This is the branch the old planner had no shape
@@ -977,7 +1033,13 @@ export function makeAtlasAgent() {
             goalAt = results.length;   /* put to Atlas: if it then makes no call, nothing was done about it and the finding stays on the record */
             continue;
           }
-          if (code && gateBounces < lim.maxOutputGate && (step + 1) < lim.maxSteps && !outOfTime()) {
+          /* (atlas-unbounded-execution) bounced again only while something moved since the last bounce — a tool ran, the
+             contradiction is a different one, or the reply's words changed. The identical contradiction from the identical
+             reply is the loop learning nothing new, and the reply is accepted as it stands (the stop below names it). */
+          const moved = !lastBounce || lastBounce.code !== code || lastBounce.results !== results.length
+            || lastBounce.text !== String(answerHere || '');
+          if (code && moved && gateBounces < lim.maxOutputGate && (step + 1) < lim.maxSteps && !outOfTime()) {
+            lastBounce = { code, results: results.length, text: String(answerHere || '') };
             gateBounces++; trace.outputGate++;
             /* (#R543) the note names the outputs the declaration asked for and the call that makes
                each one, so the recovery is the same shape whichever was declared: make it now, or
@@ -1433,27 +1495,27 @@ export function makeAtlasAgent() {
          already records by name. ⚠ NO BUDGET MOVES (CONSTITUTION.md §5, one-pass-or-a-reason §3):
          the same single call, off the same turn key, at the same `lim.maxSteps` index the empty
          case uses — the ceilings above are untouched. */
+      /* ⚠⚠⚠ (atlas-unbounded-execution, 2026-11-24) …AND A TURN THAT WAS STOPPED IS NOT MADE TO PRETEND IT FINISHED.
+         The user: a turn stopped half-way was being forced to write an answer it obviously could not give — wasted work,
+         and a reply that reads as an answer when it is not. With the counts gone, a turn now stops only for a reason the
+         loop KNOWS: no progress (the same call again, or nothing but rejected calls) or money (the server refused the
+         next call — there is no call left to make). In neither case does one more model call produce what the steps
+         before it could not. So a stopped turn ends with what it HAS: the sentences Atlas wrote on the way (`interim`),
+         the results on screen, and `stopped` naming why — the caller says so in one line and offers to continue.
+         The empty-reply hand-back below is untouched: a turn that FINISHED (Atlas decided it was done) with nothing
+         written still gets its one call, because there the answer is possible and simply was not written. */
       const cutShort = CUT_STOPS[stopped] === 1;
       let writeAnswer = false;
-      if (!String(text || '').trim() && stopped !== 'aborted' && stopped !== 'transport'
+      if (!String(text || '').trim() && !cutShort && stopped !== 'aborted' && stopped !== 'transport'
           && stopped !== 'awaiting_user') writeAnswer = true;
-      if (cutShort) writeAnswer = true;   /* (#R802) the turn ran out — see above */
+      const finalStep = trace.steps.length;
       if (writeAnswer) {
         try {
           const last = await model({
             system: opts.system || '',
-            /* (#R802) the third prompt is for the turn that ran out with prose already in `text`;
-               the two below are #R742's and are reached on exactly the turns they were written for.
-               Like them it names what the transcript CONTAINS, so nothing invites a claim about work
-               that did not happen, and it tells Atlas to say which part is left rather than to
-               pretend the question was finished. */
-            messages: transcript.concat([{ role: 'user', content: (cutShort && String(text || '').trim())
-              ? '[WRITE THE ANSWER] This turn has run out of working room and ends with your next reply — there are '
-                + 'no more steps and no more tool calls. Whatever you wrote earlier was written before the results '
-                + 'above, so it is not the answer. Write the reader\'s answer now, in their language, from this '
-                + 'transcript: say what the results above actually establish, and name plainly the part of the '
-                + 'question they do not settle. Claim nothing that is not in this transcript.'
-              : results.length
+            /* (#R742) the two prompts name what the transcript CONTAINS, so nothing invites a claim about work that did not
+               happen. (#R802's third prompt — for a turn that ran out — is gone with the forced answer, see above.) */
+            messages: transcript.concat([{ role: 'user', content: results.length
               ? '[WRITE THE ANSWER] The tool results above are what actually happened. Reply to the reader now, '
                 + 'in their language, with no further tool calls.'
               : '[WRITE THE ANSWER] This turn has ended with nothing written for the reader, and no tool was run. '
@@ -1463,16 +1525,16 @@ export function makeAtlasAgent() {
                (tool_choice "none"): an empty list would change the prefix the provider caches on
                the one call that re-sends the whole turn, and would leave the transcript naming
                functions the request no longer declares */
-            tools: offered(), step: lim.maxSteps, signal: opts.signal, final: true,
+            tools: offered(), step: finalStep, signal: opts.signal, final: true,
           });
           /* ⚠ (#R802) AND A CALL THAT CAME BACK WITH NOTHING DOES NOT ERASE WHAT THE TURN HAD. On the
              empty-`text` path this is the same assignment it always was (「」 over 「」); on the new one
              there is something to lose, and losing it would trade a partial answer for silence. */
           if (last && typeof last.text === 'string' && last.text.trim()) text = last.text;
           if (last && last.finish && last.finish.status === 'incomplete') {
-            (trace.incomplete = trace.incomplete || []).push({ step: lim.maxSteps, reason: last.finish.reason || null });
+            (trace.incomplete = trace.incomplete || []).push({ step: finalStep, reason: last.finish.reason || null });
           }
-          trace.steps.push({ step: lim.maxSteps, final: true, forced: true });
+          trace.steps.push({ step: finalStep, final: true, forced: true });
         } catch (e) {
           /* keep whatever we have; the caller degrades — (atlas-completion) and the failure is RECORDED,
              not swallowed: without it a turn whose last hand-back failed and one that was never asked
@@ -1482,7 +1544,7 @@ export function makeAtlasAgent() {
       }
       /* (#R742) the provisional sentence, taken back when no answer was ever written over it — the
          turn that ended by asking the reader a question is the one this is for. */
-      if (!String(text || '').trim() && String(midText || '').trim()) text = midText;
+      if (!cutShort && !String(text || '').trim() && String(midText || '').trim()) text = midText;   /* (atlas-unbounded-execution) not on a stopped turn: there the provisional sentence stays provisional (`interim`), and is not promoted into the answer's place */
       /* ⚠ (#R742) AND IF IT IS STILL EMPTY, THE TURN SAYS SO RATHER THAN REPORTING SUCCESS. 'answered'
          is Atlas having finished; a turn with no answer in it did not. Only that one value is
          replaced: every other stop already names what happened to it, and js/atlas-console.js reads
@@ -1528,7 +1590,7 @@ export function makeAtlasAgent() {
       }
       trace.run = ledger.summary();   /* (job-cost-ledger) */
       try { RUN_HISTORY.add(trace.run, opts.label); } catch (_) { /* a record never breaks the turn */ }
-      return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode, run: trace.run,
+      return { text: String(text || ''), interim: interim.filter((x) => x.text !== String(text || '')), calls: trace.calls, results, trace, stopped, answerMode, run: trace.run,
         produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen,
         unmet, completion, outputIncomplete: !!(trace.incomplete && trace.incomplete.length),
         plan: PLAN ? planSnap : undefined };
@@ -1585,6 +1647,10 @@ export function makeAtlasAgent() {
       return { text: String((d && d.final_text) || (machine ? '' : prose)), toolCalls: calls, callsInText,
         answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '',
         turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '', webUsed,
+        /* (atlas-unbounded-execution) what this reply declared its NEXT reply needs; a value outside the vocabulary, or null
+           (the strict dialect's «absent»), is no declaration */
+        nextEffort: (d && NEXT_EFFORTS.indexOf(String(d.next_effort || '').toLowerCase()) >= 0) ? String(d.next_effort).toLowerCase() : '',
+        nextOutput: (d && Number.isInteger(d.next_output_tokens) && d.next_output_tokens > 0) ? d.next_output_tokens : 0,
         /* (job-cost-ledger) what the proxy said this ONE answer cost and which model served it — undefined when it did not say */
         usage: meta ? { model: meta.modelServed || meta.model || undefined, costUsd: (typeof meta.costUsd === 'number') ? meta.costUsd : undefined, priceKnown: meta.priceKnown } : undefined,
         items: native && native.length ? native : undefined,

@@ -230,7 +230,12 @@ test('R447 ⑥: ai-proxy answers 429 in exactly two places, and both carry `used
   assert.ok(glossOne, 'the term-gloss lane answers its own 429');
   assert.match(glossOne, /glossUsed, glossLimit/, 'it carries its own two numbers');
   assert.doesNotMatch(glossOne, /\bused\b(?!Gloss)|\blimit:/, 'and never the question counter\'s');
-  assert.match(src, /const TURN_MAX_CALLS = \d+;/, 'the turn ceiling is what makes the second 429 possible');
+  /* (atlas-unbounded-turns) the second 429 exists only when a caller states a count: openTurn passes maxCalls null
+     (no count, user decision 2026-11-24) and the ledger keeps the parameter, refusing only on a number */
+  assert.doesNotMatch(src, /const TURN_MAX_CALLS = \d+;/, 'no fixed call count per turn (atlas-unbounded-turns)');
+  assert.match(src, /openTurn\(db, account, \{ turn: turnId, maxCalls: null,/, 'the reader turn opens with no call count');
+  const unb = read('supabase/migrations/20261127120000_atlas_unbounded_turns.sql');
+  assert.match(unb, /if p_max_calls is not null and v_calls > greatest\(1, p_max_calls\) then/, 'a numeric count still refuses as turn_calls');
 
   /* …and neither of them can happen while the row reads 0, which is what proved the production
      429 came from somewhere else. `limit` needs a row already at the limit; `turn_calls` reads the

@@ -180,8 +180,9 @@ test('atlas-plan-on-map ③ a revision keeps what was observed for the steps it 
 
 test('atlas-plan-on-map ④ the ceilings are not moved, and the loop does not read the server\'s budget', () => {
   const src = rd('js/atlas-agent.js');
-  assert.equal(AGENT.LIMITS.maxSteps, 8);
-  assert.equal(AGENT.LIMITS.maxToolCalls, 32);
+  /* (atlas-unbounded-execution) the ceilings are not moved BY THE PLAN — and there are none to move: no count by default */
+  assert.equal(AGENT.LIMITS.maxSteps, Infinity);
+  assert.equal(AGENT.LIMITS.maxToolCalls, Infinity);
   assert.ok(!/TURN_MAX_CALLS = \d/.test(src));
   assert.ok(!/maxSteps|maxToolCalls|TURN_MAX_CALLS/.test(codeOnly(rd('js/atlas-plan.js'))), 'the plan module reads no ceiling');
 });

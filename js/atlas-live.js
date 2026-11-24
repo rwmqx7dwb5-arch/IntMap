@@ -162,7 +162,7 @@ export function makeAtlasLive(HOST, deps) {
     if (!ai) return null;
     if (current && current !== ai) { try { end(current, 'superseded'); } catch (_) { } }
     current = ai;
-    const st = { t0: now(), lat: { streamed: false, steps: 0 }, reader: null, call: 0, thought: '', narr: null,
+    const st = { t0: now(), lat: { streamed: false, steps: 0 }, reader: null, call: 0, thought: '', narr: null, said: [], sayAt: -1,
       draftShown: false, painted: false, seenOps: Object.create(null), ended: false };
     turns.set(ai, st);
     history.push(st.lat);
@@ -250,6 +250,7 @@ export function makeAtlasLive(HOST, deps) {
             /* the provider is being asked again: what was shown came from an attempt that will not answer */
             st.reader = makeDraftReader(); st.thought = ''; st.callNames = [];
             if (st.narr) { st.narr = null; }
+            if (st.sayAt >= 0) { st.said.splice(st.sayAt, 1); st.sayAt = -1; }   /* that attempt will not answer — its note is not kept either */
             setDraft(ai, '');
             if (PROG) PROG.detail(ai, '');
           }
@@ -266,7 +267,12 @@ export function makeAtlasLive(HOST, deps) {
     try { if (deps.wordForTool) { const w = deps.wordForTool(n); if (w) return w; } } catch (_) { }
     return n;
   }
+  /* (atlas-interim-kept) every note is also kept, in order, as the words it ended with — the fallback
+     for the finished bubble when js/atlas-agent.js returns no `interim` (saidHtml). One entry per row:
+     a row that is still streaming rewrites its own entry. */
   function narrate(ai, st, text) {
+    const t = String(text || '');
+    if (st.sayAt < 0) { st.said.push(t); st.sayAt = st.said.length - 1; } else st.said[st.sayAt] = t;
     if (!PROG) return;
     if (!st.narr) st.narr = PROG.say(ai, '');
     if (st.narr) PROG.sayText(st.narr, text);
@@ -278,7 +284,7 @@ export function makeAtlasLive(HOST, deps) {
     const st = stateOf(ai); if (!st) return;
     const n = (info && Array.isArray(info.calls)) ? info.calls.filter(Boolean).length : 0;
     if (n && ai.__atlDraft) { narrate(ai, st, ai.__atlDraft); setDraft(ai, ''); }
-    st.narr = null;
+    st.narr = null; st.sayAt = -1;
   }
 
   /* end(ai, how) — 'answered' | 'cancelled' | 'error' | 'superseded'. */
@@ -297,6 +303,18 @@ export function makeAtlasLive(HOST, deps) {
     }
     try { if (PROG && PROG.outcome) PROG.outcome(ai, how); } catch (_) { }   /* the trace's head says how the turn ended */
     hudEnd(st, how);
+  }
+  /* said(ai) — the notes this turn wrote on the way, in order (what was narrated; the fallback for js/atlas-agent.js `interim`) */
+  function said(ai) { const st = stateOf(ai); return st ? st.said.slice() : []; }
+  /* saidHtml(lines, final) — (atlas-interim-kept) what Atlas wrote on the way, kept in the finished
+     bubble above its answer as quiet secondary text. The trace collapses when the turn ends, and the
+     notes inside it were the only place they stood — so a reader who watched them arrive saw them
+     disappear with the answer. A line equal to the answer, or to a line already kept, is not repeated. */
+  const norm = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+  function saidHtml(lines, final) {
+    const seen = new Set([norm(final)]); let h = '';
+    (Array.isArray(lines) ? lines : []).forEach((x) => { const t = norm(x); if (!t || seen.has(t)) return; seen.add(t); h += '<div class="atl-said-line">' + md(String(x).trim()) + '</div>'; });
+    return h ? '<div class="atl-said">' + h + '</div>' : '';
   }
   /* the answer is on screen — a moment, not an end (the bubble may still be composing) */
   function answered(ai) { const st = stateOf(ai); if (st) mark(st, 'answer'); }
@@ -439,7 +457,7 @@ export function makeAtlasLive(HOST, deps) {
     });
   }
 
-  return { begin, hooks, stepDone, end, answered, watch, draftHtml,
+  return { begin, hooks, stepDone, end, answered, watch, draftHtml, said, saidHtml,
     latency: () => history.map((r) => Object.assign({}, r)),
     plan: PLANV };
 }
@@ -452,6 +470,15 @@ export const ATLAS_LIVE_CSS =
   + '#atlas-panel .atl-caret{display:inline-block;width:.5em;height:1em;margin-left:2px;vertical-align:-0.12em;'
   + 'border-radius:2px;background:currentColor;opacity:.45;animation:atl-caret 1s steps(2,start) infinite;}'
   + '@keyframes atl-caret{to{visibility:hidden;}}'
+  + '#atlas-panel .atl-said{margin-bottom:8px;color:var(--text-muted);font-size:13px;line-height:1.5;}'
+  + '#atlas-panel .atl-said-line+.atl-said-line{margin-top:4px;}'
+  + '#atlas-panel .atl-said-line p{margin:0;}'
+  /* (atlas-unbounded-execution) the stop line under a reply that ended short, and its «Continue» — a small tinted pill */
+  + '#atlas-panel .atl-cut{margin-top:6px;color:var(--text-muted);font-size:11.5px;line-height:1.6;}'
+  + '#atlas-panel .atl-cut-go{margin-left:6px;padding:2px 10px;border:0;border-radius:999px;cursor:pointer;'
+  + 'background:rgba(10,132,255,0.14);color:#0a84ff;font:600 11.5px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;}'
+  + '#atlas-panel .atl-cut-go:hover{background:rgba(10,132,255,0.22);}'
+  + '#atlas-panel .atl-cut-go:active{transform:scale(0.97);}'
   + '#atlas-panel .atl-draft.stopped{opacity:.72;border-left:2px dashed var(--glass-border,rgba(128,128,128,0.35));padding-left:8px;}'
   /* (ui-feedback-nov17) WHAT ATLAS WROTE ON THE WAY IS BODY TEXT, NOT A CAPTION: upright, at reading size,
      with room above and below it. Its mark is a speech glyph, not a tick, so it does not wear the green. */
