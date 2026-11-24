@@ -98,3 +98,6 @@ main の再取り込み(2026-11-24)後の実測で `atlas-cap-runs` は 1006.4 k
 
 #1345 が入った後の取り込み(2026-11-24)で、perf 天井を 1 回の `--update` で実測へ上げた: `async.raw` 15366.4 kB・`async.gzip` 5223.8 kB・`atlas-cap-runs` 1090.6 kB・`atlas-console` 1190.6 kB。
 増えた理由は `work.job`(js/atlas-cap-work.js・js/atlas-work-store.js・案内文)と、同じ期間に main へ入った能力(282 能力)。どれも async chunk で、起動(eager)には入らない。
+
+#1346・#1395 まで入った main の取り込み(2026-11-24)で、perf 天井を 1 回の `--update` で `atlas-cap-runs` 1103.0 kB・`dist.assets` 22858.9 kB へ上げた。
+`work.job`(js/atlas-cap-work.js・js/atlas-work-store.js・案内文)と、同期間に main へ入った能力(284 能力)の分で、どちらも async chunk。起動(eager)には入らない。
