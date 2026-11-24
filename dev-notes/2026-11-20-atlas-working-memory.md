@@ -38,4 +38,4 @@ sessionStorage（タブを閉じれば消える）にした。localStorage に�
 
 ## perf 天井の引き上げ(2026-11-24)
 
-`atlas-console` の非同期チャンクの天井を 1190.5 kB → 1209.4 kB(+18.9 kB)に上げた。最新の main を取り込んだ状態でビルドして測ると、この PR のぶんだけ超える(取り込み前の測定でも +14.9 kB 超過)。増えた中身は、作業記憶(`js/atlas-working-memory.js`)を Atlas のターンに繋ぐ配線: 回答に載った出典の登録(`WM.addEvidence`)、ツール定義の読み戻し(`READ_RESULT_TOOL` の `recallable` 分岐)、`memory:WM` を `runTurn` へ渡す経路。長時間の調べものでコンテキストが途切れても、読んだ根拠を引き直せることの対価で、別チャンクへ切り出せる大きさのものは見つからなかった(console のクロージャが握る `_hist`・`turn` を直接読むため)。他の行は触っていない。
+`atlas-console` の非同期チャンクの天井を 1190.5 kB → 1209.4 kB(+18.9 kB)に上げた。最新の main を取り込んだ状態でビルドして測ると、この PR のぶんだけ超える(取り込み前の測定でも +14.9 kB 超過)。増えた箇所は、この PR が atlas-console に足した作業記憶の配線(回答の出典の登録 `WM.addEvidence`・`READ_RESULT_TOOL` の `recallable` 分岐・`memory:WM` の `runTurn` への受け渡し)。バイト数をこの 3 つに割り振る測定はしていない(チャンク全体の差だけを測った)ので、別チャンクへ切り出せるかは未検討。天井は測定値に合わせただけで、他の行は触っていない。
