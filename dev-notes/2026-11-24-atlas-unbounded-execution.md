@@ -66,3 +66,7 @@ newsjp: Atlas は決まった手数で打ち切られなくなりました。進
 `tests/atlas-unbounded-execution-checks.test.mjs`（性質だけを測る: 20 手の作業が切られない・1 返信の全呼び出しが走る・時計が何時間でも終わる・進展なしで止まる・止まったターンに回答を書かせない・費用の拒否で `budget`・差し戻しは返答が動く間だけ・申告が次の呼び出しに届く・呼び出し元の上限は効く・既定は何も縛らない）、
 `tests/delegate-unbounded-checks.test.mjs`、pgTAP `supabase/tests/54_atlas_unbounded_turns_test.sql`。数を固定していた既存の検査は性質の検査に書き換えた。
 
+
+## 8. 起動時の天井（`check:perf`）
+
+`eager.gzip` の天井を 1560.5 → 1568.4 kB に上げた。同じ手順で `origin/main`（624ee6cf9）を別の作業場でビルドして測ると起動時は 1568.1 kB（raw 4774.0 kB・天井 4752.9 kB）で、超過のほとんどは main 側にあった（この PR の増分は raw +0.7 kB・gzip +0.3 kB：打ち切りの注記と「続ける」ボタン、途中の文の表示）。
