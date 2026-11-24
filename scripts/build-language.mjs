@@ -55,6 +55,10 @@ export const GOVERNANCE = (() => {
         paidBy: 'Language identity, genealogical classification and endangerment status — Glottolog (CC BY 4.0)' },
     ],
     priority: { disjoint: ['which languages a country lists and their shares', 'language identity, classification, endangerment and localized names'] },
+    /* (describes.*) MEASURED on the committed data/language.json and data/language-tree.json */
+    period: { start: '1994', end: '2023', note: 'measured: the estimate years the Factbook text gives for the 91 of 204 countries that state one' },
+    extent: 'measured: 204 countries and territories in language.json; 12,895 Glottolog languoids (families, languages and dialects) in language-tree.json',
+    method: 'per country, the languages the Factbook names with a share where it publishes one and the role it gives each; a share is not published where the source gives none',
     /* the shorter of the two: the Factbook's shares move monthly, Glottolog releases twice a year */
     ...FACTBOOK,
     builtBy: 'scripts/build-language.mjs',

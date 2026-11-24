@@ -1012,6 +1012,17 @@
     .satc-step:hover{ background:rgba(128,128,128,0.15); }
     .satc-latest{ color:var(--text-main); font-size:12px; font-weight:500; }
     .satc-row input[type=range]{ flex:1; min-width:0; }
+    .satc-capture{ display:block; margin:0 0 8px; padding:7px 9px; border-radius:9px; background:var(--input-bg); color:var(--text-main); font-size:11.5px; line-height:1.45; }
+    .satc-capture small{ display:block; color:var(--text-muted); font-size:10.5px; margin-top:2px; }
+    .satc-match{ flex:1; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:12px; cursor:pointer; }
+    .satc-match:hover{ background:rgba(128,128,128,0.15); }
+    .satc-here{ margin:0 0 8px; font-size:11.5px; color:var(--text-main); }
+    .satc-here summary{ cursor:pointer; color:var(--text-muted); font-size:11px; }
+    .satc-here ul{ list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:3px; max-height:150px; overflow:auto; }
+    .satc-here button{ width:100%; text-align:left; padding:5px 8px; border-radius:7px; border:1px solid transparent; background:transparent; color:var(--text-main); font-size:11.5px; cursor:pointer; }
+    .satc-here button:hover{ background:rgba(128,128,128,0.15); }
+    .satc-here button[aria-current=true]{ border-color:rgba(128,128,128,0.35); }
+    .satc-here button small{ display:block; color:var(--text-muted); font-size:10px; }
     .satc-attr{ color:var(--text-muted); font-size:10px; line-height:1.4; margin-top:6px; border-top:1px solid rgba(128,128,128,0.12); padding-top:6px; }
     .map-container.sat-on .tool-panel{ top:auto!important; bottom:24px; }
     .sat-toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--info-mil); color:#fff; padding:11px 18px; border-radius:11px; font-size:12.5px; font-weight:500; box-shadow:0 6px 24px rgba(0,0,0,0.32); z-index:var(--z-toast); opacity:0; pointer-events:none; transition:opacity 0.3s ease, transform 0.3s ease; max-width:min(420px,80vw); text-align:center; }
@@ -6151,3 +6162,25 @@ button.loc-chip.ev-place:focus-visible, .ev-now-go:focus-visible{ outline:2px so
 .ev-badge.since{ background:var(--primary-tint,rgba(10,132,255,0.12)); color:var(--primary-on-tint,#0a63c9); }
 .news-scope-note{ margin:6px 2px 0; font-size:11.5px; line-height:1.35; color:var(--text-muted); }
 .news-scope-note[hidden]{ display:none; }
+
+/* ── the card a picked 3D building opens (js/building-info.js) ─────────────────────────────────────────────── */
+.bldg-card{ position:fixed; left:calc(12px + var(--safe-left)); top:calc(72px + var(--safe-top)); z-index:var(--z-popup); width:min(320px,calc(100vw - 24px)); max-height:min(70vh,560px); overflow:auto; box-sizing:border-box; padding:14px 16px 12px; border-radius:16px; background:color-mix(in srgb, var(--card-bg) 90%, transparent); border:1px solid rgba(128,128,128,0.18); box-shadow:var(--shadow); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); color:var(--text-main); font-size:var(--fs-body); line-height:1.4; }   /* 90% of the card colour, not the glass tint: over a busy 3D scene the 0.74 glass let the buildings through the text (phone, measured) */
+.bldg-head{ display:flex; align-items:flex-start; gap:10px; }
+.bldg-title{ flex:1 1 auto; min-width:0; font-size:var(--fs-head); font-weight:600; overflow-wrap:anywhere; }
+.bldg-close{ flex:0 0 auto; width:28px; height:28px; border:none; border-radius:50%; background:var(--input-bg); color:var(--text-muted); display:inline-flex; align-items:center; justify-content:center; }
+.bldg-close:hover{ color:var(--text-main); }
+.bldg-hero{ margin:8px 0 2px; display:flex; align-items:baseline; gap:8px; }
+.bldg-hero-v{ font-size:34px; font-weight:700; letter-spacing:-0.5px; font-variant-numeric:tabular-nums; }
+.bldg-hero-l{ font-size:var(--fs-meta); color:var(--text-meta); text-transform:none; }
+.bldg-note{ font-size:var(--fs-meta); color:var(--text-meta); margin:0 0 6px; }
+.bldg-rows{ display:grid; grid-template-columns:minmax(0,38%) minmax(0,1fr); gap:6px 12px; margin:8px 0 0; padding:10px 0 0; border-top:1px solid rgba(128,128,128,0.18); }
+.bldg-rows dt{ color:var(--text-meta); font-size:var(--fs-meta); }
+.bldg-rows dd{ margin:0; overflow-wrap:anywhere; }
+.bldg-raw{ font-size:var(--fs-meta); }
+.bldg-all{ margin-top:10px; }
+.bldg-all summary{ cursor:pointer; color:var(--primary-color); font-size:var(--fs-meta); font-weight:500; }
+.bldg-src{ margin-top:10px; font-size:11px; color:var(--text-meta); }
+.bldg-src a{ color:inherit; text-decoration:underline; }
+/* a phone's bottom edge is the search/sheet dock and its right edge the control stack, so the card hangs from the top between them (the picked building is under the finger, below it) */
+@media (max-width:640px){ .bldg-card{ left:8px; right:64px; top:calc(8px + var(--safe-top)); width:auto; max-height:42vh; border-radius:16px; z-index:var(--z-m-sheet); } }
+@media (prefers-reduced-motion:no-preference){ .bldg-card{ animation:bldg-in 0.18s ease-out; } @keyframes bldg-in{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } } }

@@ -189,22 +189,51 @@ export function betaOverlays(HOST){
        lists hundreds of city/ward datasets, and only those near the view are streamed (js/plateau-cities.js plateauUnitsNear).
        Nearest first, so the ground you are looking at arrives before the rest. */
     let plateauOpen=new Set(), plateauTimer=0, plateauSeq=0;
+    /* The national / worldwide sets (js/world-3d-sources.js) open under the same camera rule. Where a better dataset is open
+       its extent is cut out of the worse one, and each is set down by the geoid undulation at the camera (re-applied when it
+       moves by more than WORLD_GEOID_STEP_M, so a pan across a few hundred km does not leave buildings floating). */
+    const WORLD_GEOID_STEP_M=0.25;   /* below this a building is not visibly off the ground (the grid's own mean error is 0.1 m, js/geoid.js) */
+    let worldOpen=new Map();         /* source id → {offset, boxKey} as last applied */
+    async function worldSync(L2,c,plateauBoxes,seq){
+      /* loaded on first use: a switched-off layer, or a camera that is not zoomed in on a city, pays for neither module nor the geoid grid */
+      const { WORLD_3D_SOURCES, worldTilesetId, worldSourcesNear, excludeBoxesFor, PLATEAU_QUALITY }=await import('./world-3d-sources.js');
+      const { loadGeoid }=await import('./geoid.js');
+      if(seq!==plateauSeq||!state.plateau) return;
+      plateauBoxes=plateauBoxes.map(b=>({quality:PLATEAU_QUALITY,bbox:b.bbox}));
+      const want=worldSourcesNear(WORLD_3D_SOURCES,{lng:c.center.lng,lat:c.center.lat,zoom:c.zoom},new Set(worldOpen.keys()));
+      let geoid=null; if(want.length){ try{ geoid=await loadGeoid(); }catch(_){ geoid=null; } if(seq!==plateauSeq||!state.plateau) return; }
+      const ids=new Set(geoid?want.map(s=>s.id):[]);   /* no geoid, no placement: a guessed offset would float or bury them by up to ~100 m */
+      for(const id of [...worldOpen.keys()]) if(!ids.has(id)){ L2.removeTileset(worldTilesetId(id)); worldOpen.delete(id); }
+      if(!geoid) return;
+      const open=[...plateauBoxes, ...want.map(s=>({quality:s.quality,bbox:s.bbox}))];
+      for(const s of want){
+        const off=-geoid(c.center.lng,c.center.lat), boxes=excludeBoxesFor(s.quality,open), boxKey=JSON.stringify(boxes), prev=worldOpen.get(s.id);
+        const place={heightOffset:off,anchor:{lng:c.center.lng,lat:c.center.lat},excludeBoxes:boxes};
+        if(!prev){ if(L2.addTileset(worldTilesetId(s.id),{url:s.url,heightOffset:off,heightAnchor:place.anchor,excludeBoxes:boxes})) worldOpen.set(s.id,{offset:off,boxKey,tid:worldTilesetId(s.id)}); }
+        else if(Math.abs(prev.offset-off)>WORLD_GEOID_STEP_M||prev.boxKey!==boxKey){ if(L2.placeTileset&&L2.placeTileset(worldTilesetId(s.id),place)){ prev.offset=off; prev.boxKey=boxKey; } }
+      }
+    }
     async function plateauSync(){
       if(!state.plateau||!plateauCan()) return;
       const seq=++plateauSeq;
-      let units; try{ units=await loadPlateauRegistry(); }catch(_){ return; }
+      let units; try{ units=await loadPlateauRegistry(); }catch(_){ units=[]; }
       if(seq!==plateauSeq||!state.plateau) return;
       const L2=GE().layers, c=GE().camera.get(); if(!c||!c.center) return;
       const want=plateauUnitsNear(units,{lng:c.center.lng,lat:c.center.lat,zoom:c.zoom},plateauOpen), codes=new Set(want.map(u=>u.code));
       for(const code of [...plateauOpen]) if(!codes.has(code)){ L2.removeTileset(plateauTilesetId(code)); plateauOpen.delete(code); }
       for(const u of want){ if(plateauOpen.has(u.code)) continue; const sp=plateauSpec(u); if(L2.addTileset(sp.id,sp.spec)) plateauOpen.add(u.code); }
+      await worldSync(L2,c,want.map(u=>({bbox:u.bbox})),seq);
     }
     const plateauSoon=()=>{ clearTimeout(plateauTimer); plateauTimer=setTimeout(plateauSync,400); };
     let plateauHooked=false;
+    /* the card a picked building opens (js/building-info.js) — fetched when the layer is switched on, dropped when it is off */
+    let bldgCard=null, bldgCardSeq=0;
     function plateauToggle(on){ state.plateau=on;
+      if(on){ const mySeq=++bldgCardSeq; import('./building-info.js').then(m=>{ if(mySeq!==bldgCardSeq||!state.plateau) return; if(bldgCard) bldgCard.destroy(); bldgCard=m.mountBuildingInfo({ GE, lang:()=>HOST.lang }); }).catch(()=>{}); }
+      else{ bldgCardSeq++; if(bldgCard){ bldgCard.destroy(); bldgCard=null; } }
       if(!plateauCan()){ if(on) imToast(IntMapLang.t(HOST.lang,'PLATEAU 3D city models need the 3D globe engine (Settings ▸ Map engine ▸ Cesium). The "3D buildings (cities)" layer works on this engine.','PLATEAU の3D都市モデルには3D地球儀エンジン（設定 ▸ 地図エンジン ▸ Cesium）が必要です。このエンジンでは「3D建物（都市）」レイヤーが使えます。')); return; }
       if(on){ if(!plateauHooked){ plateauHooked=true; try{ GE().events.on('moveend',plateauSoon); }catch(_){} } plateauSync(); }
-      else{ plateauSeq++; clearTimeout(plateauTimer); const L2=GE().layers; for(const code of plateauOpen) L2.removeTileset(plateauTilesetId(code)); plateauOpen=new Set(); }
+      else{ plateauSeq++; clearTimeout(plateauTimer); const L2=GE().layers; for(const code of plateauOpen) L2.removeTileset(plateauTilesetId(code)); plateauOpen=new Set(); for(const w of worldOpen.values()) L2.removeTileset(w.tid); worldOpen=new Map(); }
     }
 
     /* ---------- Historical borders (aourednik/historical-basemaps; raw.githubusercontent = CORS*) ---------- */
@@ -1136,7 +1165,7 @@ export function betaOverlays(HOST){
        `jp()?BLBL[k][0]:BLBL[k][1]` — the English string was in slot 1, so even the positional
        languages could not have been added without reversing the row, and the inline table is keyed
        by the English source string, which was not in slot 0. */
-    const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),plateau3d:LA('Tokyo 3D city model (PLATEAU)','東京の3D都市モデル（PLATEAU）'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes — the Smithsonian GVP catalog','火山 — スミソニアンGVPカタログ','Vulkane — der Smithsonian-GVP-Katalog','Вулканы — каталог Смитсоновского GVP','Volcanes — el catálogo del Smithsonian GVP'),
+    const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),plateau3d:LA('3D city models (Japan, Netherlands, worldwide)','3D都市モデル（日本・オランダ・世界）'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes — the Smithsonian GVP catalog','火山 — スミソニアンGVPカタログ','Vulkane — der Smithsonian-GVP-Katalog','Вулканы — каталог Смитсоновского GVP','Volcanes — el catálogo del Smithsonian GVP'),
       volcash:LA('Volcanic ash areas in force (SIGMET)','有効な火山灰域（SIGMET）','Gültige Vulkanasche-Gebiete (SIGMET)','Действующие зоны вулканического пепла (SIGMET)','Zonas de ceniza volcánica vigentes (SIGMET)'),
       volchaz:LA('Volcano hazard zones (USGS)','火山ハザード域（USGS）','Vulkangefahrenzonen (USGS)','Зоны вулканической опасности (USGS)','Zonas de peligro volcánico (USGS)'),
       volcso2:LA('Satellite SO₂ column (OMPS)','衛星 SO₂ 全量（OMPS）','Satelliten-SO₂-Säule (OMPS)','Столб SO₂ со спутника (OMPS)','Columna de SO₂ satelital (OMPS)'),

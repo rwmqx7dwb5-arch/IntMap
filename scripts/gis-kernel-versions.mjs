@@ -130,6 +130,8 @@ export const KERNELS = {
      entitled to know that. */
   /* (gis-scale) ops-11 HASH ONLY: a result estimated above 8 M positions is held as chunks and a few ops run over it group by group. Every size that answered before takes the path it took and answers byte for byte (tests/gis-scale-checks.test.mjs compares the two); what is new is a representation and two named refusals for sizes that used to run out of memory. */
   /* (gis-scale-spill) HASH ONLY, ops and geometry: a chunked result's positions may be written to OPFS / IndexedDB and read back a chunk at a time, and intersects / contains / within decide a pair by the face its box lies in (the shape's box touching no edge of the area, or one position clear of every edge) before asking the sweep line. No answer moves: tests/gis-scale-spill-checks.test.mjs asks >10,000 pairs both ways (IntMapGisNoFace turns the shortcut off) and compares the verdicts, refusals included. */
+  /* (gis-network) HASH ONLY: two new ops (`network`, `networkDisrupt`) that no saved recipe names, a call-time read of the kernel they
+     need, and one line in vectorOutTime (rule 'none') that only they reach. Every op that existed replays to the same numbers and refusals. */
   /* (voronoi) HASH ONLY: a new op (`voronoi`) that no saved recipe names, and a call-time read of the
      kernel it needs. Every op that existed replays to the same numbers and the same refusals. */
   /* (wave4-refine) ops-9 -> ops-10: `voronoi` checks that the clipped cells cover the window (summed planar area
@@ -146,7 +148,9 @@ export const KERNELS = {
      input's publisher, licence, credit, retrieval time and as-of (inheritTerms). No number in any cell or geometry changes (the
      arithmetic is untouched), but what the record states does, the same reason #R759 raised the version for inherited coverage. */
   /* (spatiotemporal-join) ops-13 -> ops-14: the period a join / spatialJoin / nearestJoin / timeJoin / aggregate result states is now derived from BOTH inputs (it was the first input's), a row-wise input gives the output two derived period columns, and the record carries `warnings` and `geoBasis`. No existing geometry or cell changes; what the record states about WHEN does. */
-  'js/gis-ops.js': { version: 'ops-14', sha256: '2a59235f1efdaca9c32f73614fd811cb9b7011412e1131f618780ae794e86131' },
+  /* (data-facts) ops-14 HASH ONLY: a multi-input op also states `provenance.timeMismatch` (js/data-governance.js temporalMismatch) when its inputs' stated periods do not overlap — a record that states more; no cell, geometry or refusal changes. */
+  /* (gis-worker-columnar) ops-14 HASH ONLY (over the time kit): a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
+  'js/gis-ops.js': { version: 'ops-14', sha256: 'ec5e165c71c42dd20d77b75f4318a88983acbec59cfd7b9625872adc1626c5cc' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -180,7 +184,8 @@ export const KERNELS = {
      share only an edge now intersect; a boundary position is never within); every written edge is at most a
      quarter-turn of longitude. pointInGeometry is unchanged except at a pole. bbox / centroid / pointOnSurface /
      convexHull / simplify are new doors. Measured in tests/gis-foundation-refine-geometry-checks.test.mjs. */
-  'js/gis-geometry.js': { version: 'geom-4', sha256: '0bdd5c2ff3e6d5e6e2139761d2724f53d57aef568c440887cab957f7268fcbc4' },
+  /* (gis-worker-columnar) geom-4 HASH ONLY: `relateBlock` asks a block of pairs through the predicates that already exist; no predicate, tolerance or refusal changed. */
+  'js/gis-geometry.js': { version: 'geom-4', sha256: '0265c6dd81523e62c5328a887bb91739da7d5797e800d6cc78be93c894c468e0' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project
@@ -296,6 +301,11 @@ export const KERNELS = {
      and the branch-and-bound search for the farthest place. Raise it when a replayed `voronoi` step
      would draw a different border or name a different farthest place. */
   'js/gis-voronoi.js': { version: 'voronoi-1', sha256: '2ca8a32a3066960fd9e2c3a393359db9cc279da71158affc844755e9dee2acc3' },
+  /* (gis-network) network-1: the first version. Graph construction (3-D grid snapping, endpoint or vertex nodes), Brandes
+     betweenness, harmonic closeness, Dinic max flow with the min cut, Yen's k loop-free routes and the intact-versus-damaged
+     comparison of a disruption. Raise it when a replayed `network` / `networkDisrupt` step would name a different node,
+     a different cut, a different route or a different loss. */
+  'js/gis-network.js': { version: 'network-1', sha256: '116dc959977eaca475dbeb31652d5429a9b6d99b9d298dc7154c1327d167946d' },
   'js/gis-crs.js': { version: 'crs-3', sha256: 'f3a8a70462b3eba1449be8f86dc27278fb835af2861593c6bda58dbc87c715cc' },
 };
 
@@ -304,6 +314,9 @@ export const KERNELS = {
    not — and an absence is what let four answer-bearing kernels sit outside the ledger for a whole
    round. ⚠ 「まだ版を付けていない」 is not a reason. If it can change an answer it declares a version. */
 export const NOT_A_KERNEL = {
+  'js/gis-pipeline.js': 'a ledger of what stage each discovered dataset reached, and inspectors that LOOK at what a reader measured; it computes no value a recipe replays and writes no dataset — a saved recipe never replays through it',
+  'js/gis-catalog-search.js': 'ranks and filters records a catalogue stated; it reads nothing and produces no value a saved recipe replays',
+  'js/gis-fetch.js': 'chooses WHICH road a request takes (direct, the data relay, a signed address) and keeps the bytes it was given; it reads no value, so it cannot change a number — the same bytes arrive by every road, and a saved recipe replays by its recorded provenance',
   'js/gis-http.js': 'names why a remote read failed from the response (CORS, the words the server sent, a sign-in page); it reads no value and produces no answer a saved recipe replays',
   'js/gis-packed.js': 'a lossless codec (unpack(pack(g)) is g, number for number — tests/gis-scale-checks.test.mjs) and a store that keeps results in input order; it decides nothing about a shape and a saved recipe never replays through it',
   'js/gis-core.js': 'mounts the modules and draws a dataset on the map; computes nothing',
@@ -314,12 +327,16 @@ export const NOT_A_KERNEL = {
   'js/gis-export.js': 'a writer of bytes — it reads no recipe and produces no answer a saved project replays; a re-export is a new file, not a replay',
   'js/gis-project.js': 'stores and replays recipes — it is the READER of these versions',
   'js/gis-atlas.js': 'the Atlas-facing surface; resolves refs and forwards to the ops',
+  'js/gis-semantics.js': 'states what a dataset and its columns MEAN and warns before a step; it changes no result (check returns warnings, never refuses unless the caller passes strict), so no saved recipe replays differently',
   'js/gis-datasets.js': 'the registry and the column-typing contract, not an answer to a step',
   'js/gis-sources.js': 'where data is acquired FROM; what it served is reported in `coverage`, which travels with the answer rather than in the engine record',
   'js/gis-layers.js': 'the bridge to what the renderer holds; same reason as js/gis-sources.js',
+  'js/gis-analysis-pipeline.js': 'a recipe of recipes — it holds which gis step uses the region and which feeds which, and runs each step through the `gis` door; every number is an op answer already recorded by its own kernel version, and it does no arithmetic of its own',
+  'js/gis-forecast.js': 'where model output is acquired FROM (Open-Meteo flood and weather forecasts); the datasets it makes are bodies with their own provenance (source, terms, fetchedAt), not an op a saved project replays, and it computes only a peak and a threshold comparison',
   'js/gis-remote.js': 'where data is acquired FROM (catalogues of the world, a remote COG); same reason as js/gis-sources.js — the coverage verdict is js/gis-sources.js coverageOf() and travels with the dataset, and it computes nothing a saved recipe replays',
   'js/gis-shapefile.js': 'a reader of bytes — what it decoded is the dataset, and a re-import is a new import, not a replay',
   'js/gis-geopackage.js': 'a reader of bytes; same reason as js/gis-shapefile.js',
+  'js/gis-pmtiles.js': 'a reader of bytes and ranges; same reason as js/gis-shapefile.js',
   'js/gis-ogcapi.js': 'a reader of a feature service at a URL: the features are the server own, and what it could not say travels in `coverage`; the dataset it feeds replays by its recorded provenance, not a recipe',
   'js/gis-cog.js': 'a window of a file at a URL: the values are js/gis-geotiff.js and js/gis-warp.js; what it could not answer travels in `coverage`, and the dataset it feeds replays by its recorded provenance, not a recipe',
   'js/gis-geotiff.js': 'a reader of bytes; same reason as js/gis-shapefile.js',

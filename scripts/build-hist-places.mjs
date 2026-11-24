@@ -47,6 +47,14 @@ export const GOVERNANCE = {
     attribution: true,
     paidBy: 'Pleiades — a gazetteer of past places (CC BY 3.0)',
     ...PLEIADES,
+    /* (describes.*) Pleiades' own help page (pleiades.stoa.org/help/representative-points, read 2026-11-20) for the point,
+       and the bundle's measured contents (snapshot read 2026-09-11) for the rest. No period is declared: the name
+       assertions' years run from -2600000 to 2100 and a year that long is not a span a reader can join on. */
+    extent: '6,698 Pleiades places with 12,646 dated name assertions (measured on the bundle)',
+    method: 'One representative point per place, as Pleiades computes it: usually a centroid of the geometries of all the place\'s published locations, the same coordinates as the location when there is a single point, and possibly a point that matches no single location when the place has lines, polygons or conflicting locations',
+    resolution: 'one representative point per place; each dated name carries a start and an end year taken from Pleiades (approximate-source-period, as the bundle marks it)',
+    completeness: 'A selection of Pleiades, not the gazetteer: places under CC BY 3.0 (not share-alike) typed settlement, with a representative point and at least one dated name that ends before the snapshot year; places the hist-cities bundle already ships are left out',
+    accuracy: 'Pleiades states no formal accuracy figure for representative points and warns that large Barrington Atlas bounding-box polygons (about 0.5 to 1.0 degrees) can put the point very far from the actual site',
     builtBy: 'scripts/build-hist-places.mjs',
   },
 };

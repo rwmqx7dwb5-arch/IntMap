@@ -77,6 +77,11 @@ export function makeEvidenceGraph(opts) {
   const now = typeof opts.now === 'function' ? opts.now : () => new Date().toISOString();
   const nodes = new Map();       /* id → node */
   const feeds = new Map();       /* input id → Set(derived ids)  — the reverse index impact() walks */
+  const revs = new Map();        /* id → the revision it was last written at — what pending() sends and ackPending() clears */
+  let rev = 0, acked = 0;
+  const touch = (id) => { revs.set(id, ++rev); };
+  const listeners = [];          /* onSourceChanged subscribers */
+  const updates = [];            /* every source update seen, with its reach at that moment — the session's «what did that update touch» */
 
   const refused = (why, detail) => ({ ok: false, why, detail: detail || null });
 
@@ -100,13 +105,20 @@ export function makeEvidenceGraph(opts) {
         id, kind: 'source', type, key, label: clamp(s.label || key, 200),
         versions: [{ version, basis, at: now(), meta: s.meta || null }],
       });
+      touch(id);
       return { ok: true, id, version, changed: false };
     }
     const cur = prev.versions[prev.versions.length - 1];
     if (cur.version === version) return { ok: true, id, version, changed: false };
     prev.versions.push({ version, basis, at: now(), meta: s.meta || null });
     if (s.label) prev.label = clamp(s.label, 200);
-    return { ok: true, id, version, changed: true, previous: cur.version };
+    touch(id);
+    /* an update happened: say, now, WHAT it reaches — the report is computed from the graph as it stands
+       (the derived nodes still pin the old version), and kept, so «which results did that update touch» has an answer later */
+    const report = impactReport(id, { from: cur.version, to: version });
+    updates.push(report);
+    for (const fn of listeners.slice()) { try { fn(report); } catch (_) { /* a subscriber never fails the write */ } }
+    return { ok: true, id, version, changed: true, previous: cur.version, impact: report };
   }
 
   const currentVersion = (n) => n.kind === 'source'
@@ -144,6 +156,7 @@ export function makeEvidenceGraph(opts) {
     if (!output.fingerprint) output.fingerprint = fingerprint(output);
     nodes.set(id, { id, kind: 'derived', type, label: clamp(d.label || calc.op || type, 200), inputs, calc, output, meta: d.meta || null, createdAt: now() });
     for (const i of inputs) { if (!feeds.has(i.id)) feeds.set(i.id, new Set()); feeds.get(i.id).add(id); }
+    touch(id);
     return { ok: true, id, existed: false };
   }
 
@@ -210,20 +223,107 @@ export function makeEvidenceGraph(opts) {
     return { ok: true, id: sourceId, derived: Array.from(all) };
   }
 
+  /**
+   * impactReport(sourceId, {from, to}) → what an update to this source reaches, by name.
+   * Each row: the derived node, how many steps from the source (`hops`), the dataset it IS when it is a GIS
+   * output, the figure and concept when it is a number in an answer, and why it is (or would be) stale.
+   * The rows are read from the graph — nothing here is judged; an answer number that depended on the source is
+   * listed because the graph says it read it, which is the fact a reader needs before trusting it again.
+   */
+  function impactReport(sourceId, change) {
+    const src = nodes.get(sourceId);
+    if (!src) return refused('unknown-node', { id: String(sourceId) });
+    const hops = new Map([[sourceId, 0]]);
+    let frontier = [sourceId];
+    while (frontier.length) {
+      const next = [];
+      for (const f of frontier) for (const d of (feeds.get(f) || [])) if (!hops.has(d)) { hops.set(d, hops.get(f) + 1); next.push(d); }
+      frontier = next;
+    }
+    const rows = [];
+    hops.forEach((h, id) => {
+      if (id === sourceId) return;
+      const n = nodes.get(id);
+      const st = staleness(id);
+      rows.push({ id, type: n.type, label: n.label, hops: h,
+        dataset: (n.meta && n.meta.dataset) || null,
+        value: n.output && n.output.value != null ? n.output.value : null,
+        concept: (n.output && n.output.concept) || null,
+        stale: !!st, cause: st ? st.cause : null });
+    });
+    rows.sort((a, b) => a.hops - b.hops || (a.id < b.id ? -1 : 1));
+    return { ok: true, source: sourceId, label: src.label, from: change && change.from != null ? change.from : null, to: change && change.to != null ? change.to : currentVersion(src),
+      affected: rows, answers: rows.filter((r) => r.type === 'answer_number' || r.type === 'ai_inference'),
+      datasets: rows.filter((r) => r.dataset).map((r) => r.dataset) };
+  }
+  /** onSourceChanged(fn) → unsubscribe. fn gets the impactReport at the moment a source moved to a new version. */
+  function onSourceChanged(fn) {
+    if (typeof fn !== 'function') return () => {};
+    listeners.push(fn);
+    return () => { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); };
+  }
+
   const get = (id) => nodes.get(id) || null;
   const all = () => Array.from(nodes.values());
 
   function snapshot() {
     return { graphVersion: GRAPH_VERSION, nodes: all().map((n) => JSON.parse(JSON.stringify(n))) };
   }
+  /**
+   * pending() → {rev, nodes} — the nodes written since the last ackPending(rev). A persistence layer pushes these and
+   * acknowledges the `rev` it was given; a failed push leaves them pending, so nothing is lost to a network error.
+   */
+  function pending() {
+    const out = [];
+    revs.forEach((r, id) => { if (r > acked) { const n = nodes.get(id); if (n) out.push(JSON.parse(JSON.stringify(n))); } });
+    return { rev, nodes: out };
+  }
+  const ackPending = (upTo) => { if (upTo > acked) acked = Math.min(upTo, rev); };
+
+  /**
+   * merge(snap) → {ok, added, versionsAdded, orphan} — adds what a snapshot holds that this graph lacks, never replacing.
+   * A source's versions are unioned (a version already known is not added twice; order is by the time each was seen);
+   * a derived node is content-addressed, so one already here is the same node. Merged-in nodes are NOT pending —
+   * they came from the store. Refused: another graphVersion; a derived node whose inputs are not nodes is left out and listed.
+   */
+  function merge(snap) {
+    if (!snap || snap.graphVersion !== GRAPH_VERSION || !Array.isArray(snap.nodes)) return refused('bad-snapshot');
+    let added = 0, versionsAdded = 0;
+    const incoming = snap.nodes.filter((n) => n && n.id).map((n) => JSON.parse(JSON.stringify(n)));
+    for (const n of incoming) {
+      if (n.kind !== 'source') continue;
+      const have = nodes.get(n.id);
+      if (!have) { nodes.set(n.id, n); added++; versionsAdded += (n.versions || []).length; continue; }
+      const known = new Set(have.versions.map((v) => v.version));
+      let grew = false;
+      for (const v of (n.versions || [])) if (!known.has(v.version)) { have.versions.push(v); known.add(v.version); versionsAdded++; grew = true; }
+      /* two versions seen in the SAME millisecond (two devices, or a push and a pull) have no time order — a stable sort kept whichever list came first, so which one was "current" depended on the merge direction (tests/goal-and-evidence-checks ⑤ failed 1 run in 2). Ties break by the version text, numerically aware, which is the same on every device. */
+      if (grew) have.versions.sort((x, y) => (x.at < y.at ? -1 : x.at > y.at ? 1 : String(x.version).localeCompare(String(y.version), 'en', { numeric: true })));
+    }
+    /* derived nodes may arrive before the derived node they read: take them in rounds until a round adds none */
+    let queue = incoming.filter((n) => n.kind === 'derived' && !nodes.has(n.id));
+    for (let progress = true; progress && queue.length;) {
+      progress = false; const rest = [];
+      for (const n of queue) {
+        if (!Array.isArray(n.inputs) || n.inputs.some((i) => !nodes.has(i.id))) { rest.push(n); continue; }
+        nodes.set(n.id, n); added++; progress = true;
+        for (const i of n.inputs) { if (!feeds.has(i.id)) feeds.set(i.id, new Set()); feeds.get(i.id).add(n.id); }
+      }
+      queue = rest;
+    }
+    const orphan = queue.map((n) => n.id);
+    return { ok: true, added, versionsAdded, orphan };
+  }
+
   /** restore(snap) → {ok, nodes}  — replaces the content. A snapshot of another graphVersion is refused, never guessed at. */
   function restore(snap) {
     if (!snap || snap.graphVersion !== GRAPH_VERSION || !Array.isArray(snap.nodes)) return refused('bad-snapshot');
     nodes.clear(); feeds.clear();
     for (const n of snap.nodes) if (n && n.id) nodes.set(n.id, JSON.parse(JSON.stringify(n)));
     for (const n of nodes.values()) if (n.kind === 'derived') for (const i of n.inputs) { if (!feeds.has(i.id)) feeds.set(i.id, new Set()); feeds.get(i.id).add(n.id); }
+    revs.clear(); acked = rev;   /* a restored graph is what a store held: nothing in it is pending */
     return { ok: true, nodes: nodes.size };
   }
 
-  return { putSource, putDerived, trace, impact, staleness, wouldStale, get, all, snapshot, restore, size: () => nodes.size, UNVERSIONED };
+  return { putSource, putDerived, trace, impact, impactReport, staleness, wouldStale, onSourceChanged, updates: () => updates.slice(), pending, ackPending, merge, get, all, snapshot, restore, size: () => nodes.size, UNVERSIONED };
 }
