@@ -78,3 +78,7 @@ data を持たず build できないため CI の測定値から換算して書�
 ## perf (main 取り込み後の再測定)
 
 main の取り込みで能力が 273 になり、`atlas-cap-runs` が 1007.7 kB、`atlas-console` が 1164.9 kB に増えた（CI 実測）。増分は main が足した能力の登録行で、この PR の追加ではない。天井をそれぞれ 1034000 / 1196000 byte へ上げた。失効条件: main の CI（perf-ceiling）が下げた時点で、その値が正本。
+
+## perf (eager.gzip・main 再取り込み・278 能力)
+
+CI 実測で `eager.gzip` が 1568.5 kB（天井 1560.5）に増えた。main が足した能力・部品の増分で、この PR が eager に足したものではない。天井を 1612000 byte へ。能力数の記述は登録 278・到達可能 275 に合わせた。失効条件: main の perf-ceiling が下げた値が正本。
