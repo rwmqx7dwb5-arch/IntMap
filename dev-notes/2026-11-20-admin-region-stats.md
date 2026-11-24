@@ -60,3 +60,5 @@ Wikidata Query Service で P1082 を持つ単位: P300（ISO 3166-2）30,703 記
 - perf: async.raw 14569.8→14656.9 kB・async.gzip 4918.1→4949.2 kB・atlas-cap-runs 952.1→961.2 kB へ天井を上げた。geo.regionStat の能力と行政統計の読み取りを atlas-cap-runs へ足したため。
 
 - perf: atlas-cap-runs 1024981→1034969 B・atlas-console 1186800→1192822 B へ天井を上げた。geo.regionStat の能力を足し、main の他の変更と合わせて測り直したため。
+
+- 共有窓口: origin/main の時点で window.IntMapLazy の読みが 196→197 になっており check:surface が赤だった(本 PR の差分に由来しない)。台帳を 197 へ更新した。
