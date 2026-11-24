@@ -18,7 +18,7 @@
  * ==========================================================================*/
 import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) the company and its news events, as real-world objects */
 const WO = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
-import { str, int, bool, one, noArgs, list } from './atlas-caps.js';
+import { str, int, bool, one, noArgs, list, num } from './atlas-caps.js';
 
 /* (news-intelligence) the windows the news pulse counts over — the facade's own (js/news-intel.js WINDOWS); a
    request between two of them takes the next one up and SAYS so, rather than quietly answering another question */
@@ -282,8 +282,44 @@ export default [
       return R(true, html, { meta: { code: n ? 'OK' : 'NO_RESULTS', category: n ? 'ok' : 'evidence', retryable: false, semanticTarget: (r.terms || []).join(','),
         produced: ['panel', 'explanation'], userGoalSatisfied: !!r.terms.length, story: r } }); },
   },
+  /* ══ (news-event-history) THE LONG RECORD — EVENTS KEPT FOR YEARS, ASKED BY TIME, PLACE, FACILITY AND KIND ═══════════
+     docs/NEWS-EVENTS.md §19. public.news_event_history keeps the events worth keeping (reported by 2+ independent source
+     families, or tied to a world-graph object / company, or starred) long after the 30-day events and the 72-hour articles
+     are gone. This reads it through news_history_search; nothing is drawn and the clock does not move.
+     ⚠ THE ARCHIVE HAS A START: the reply carries coverage_from, and an empty answer for an earlier period is «the archive
+     does not reach back that far», never «nothing happened». ⚠ A `thread` is one facility's series (the facility the text
+     names, or the same company in the same 1-degree cell); another event in the same region is another thread. */
   {
-    row: ['news.edition',               'newsEdition',    'todayOnTheMap,dailyEdition,newsDigest,todaysNews,dayInNews',  'data',    'panel',   'panel.newsEdition,camera', 'panel,explanation', 'session', 'none',   '',         'newsEdition', 'external'],
+    row: ['news.history',               'newsHistory',    'pastEvents,eventArchive,facilityTimeline,eventsSince,newsArchive', 'data',    'none',    '',                       'explanation',         'read',    'none',   '',         '',         'external'],
+    ui: { none: '2026-11-20' },
+    doc: [
+      { in: 'events', at: 47, text: 'THE LONG RECORD OF NEWS EVENTS / 過去の出来事の履歴: {"type":"newsHistory","q"?:"words that must all appear","from"?:"YYYY-MM-DD","to"?:"YYYY-MM-DD","bbox"?:[west,south,east,north],"kinds"?:["plan"|"construction_start"|"operational"|"expansion"|"closure"|"acquisition"|"other"],"worldRef"?:"facility:wd-Q…","company"?:companyId,"thread"?:threadKey} — events kept for YEARS (not just the live 30 days), each with a permanent id, time, place, the world-graph objects and companies its text names, its source links and its update log. Filter by time, a bounding box you choose for a region (e.g. Southeast Asia ≈ [92,-11,141,29]), the kind the HEADLINE reports (plan → construction_start → operational / expansion / closure / acquisition), one facility (worldRef) or one company, and words. Rows sharing a "thread" are ONE facility\'s series in time order; rows in the same region with different threads are different events — never merge them. Replies with the matches newest first, the total count, and WHAT THE ARCHIVE COVERS (coverage_from … coverage_to). Use for 「2010年以降の東南アジアの半導体工場の建設・閉鎖・買収」, 「このLNG基地の計画から稼働までの経緯」, "factory closures in Vietnam since 2020", "what happened at this terminal over the years". If the period asked starts before coverage_from, SAY the archive starts then — an empty answer for earlier years means the archive does not reach back, not that nothing happened. The kind comes from the headline wording and may be "other"; do not state more than the headline and the source links say.\n' },
+    ],
+    phrases: () => ['過去の出来事', '出来事の履歴', '建設・閉鎖・買収', '工場の建設', '着工から稼働'].concat(['past events', 'event history', 'since 2010', 'plant closures', 'construction and closure']),
+    schema: () => ({ type: 'object', properties: { q: str(), from: str(), to: str(), bbox: list(num(-180, 180), 4, 4), kinds: list(str(), 1, 7), worldRef: str(), company: str(), thread: str(), limit: int(1, 1000) } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, HOST = K.HOST;
+      const day = (s) => { const t = Date.parse(String(s || '').trim()); return Number.isFinite(t) ? new Date(t).toISOString() : null; };
+      if (a.from && !day(a.from)) return R(false, warn(L('"from" must be a date such as 2010-01-01', '"from" は 2010-01-01 のような日付で指定してください')), { meta: { code: 'BAD_INPUT', category: 'input', retryable: true, produced: [], userGoalSatisfied: false } });
+      if (a.to && !day(a.to)) return R(false, warn(L('"to" must be a date such as 2024-12-31', '"to" は 2024-12-31 のような日付で指定してください')), { meta: { code: 'BAD_INPUT', category: 'input', retryable: true, produced: [], userGoalSatisfied: false } });
+      let res;
+      try {
+        res = await HOST.DB.rpc('news_history_search', { p_q: a.q || null, p_from: day(a.from), p_to: day(a.to), p_bbox: Array.isArray(a.bbox) && a.bbox.length === 4 ? a.bbox : null,
+          p_kinds: Array.isArray(a.kinds) && a.kinds.length ? a.kinds : null, p_world_ref: a.worldRef || null, p_company: a.company || null, p_thread: a.thread || null, p_limit: a.limit || 100 }, { get: true });
+      } catch (_) { res = { error: true }; }
+      if (!res || res.error || !res.data) return R(false, warn(L('The event record could not be read — this does not mean nothing happened', '出来事の記録を読めませんでした（何も起きていないという意味ではありません）')), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } });
+      const d = res.data, rows = Array.isArray(d.rows) ? d.rows : [], cf = d.coverage_from ? String(d.coverage_from).slice(0, 10) : '';
+      const reachesBack = !a.from || !cf || day(a.from) >= Date.parse(d.coverage_from);
+      let html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L('{n} events in the long record', '長期の記録に {n} 件')).replace('{n}', String(d.total || 0)) + '</div>';
+      html += '<div style="font-size:11.5px;color:var(--text-muted);">' + esc(L('The record covers {a} to {b} ({k} events kept)', '記録の範囲: {a} 〜 {b}（保存 {k} 件）').replace('{a}', cf).replace('{b}', d.coverage_to ? String(d.coverage_to).slice(0, 10) : '').replace('{k}', String(d.archived || 0))) + '</div>';
+      if (!reachesBack) html += '<div style="font-size:12px;line-height:1.55;color:var(--warn,#b45309);">' + esc(L('You asked from {f}, but the record starts {a}: earlier years are not in it — that is a limit of the record, not evidence that nothing happened.', '{f} 以降を尋ねられましたが、記録は {a} から始まります。それ以前は記録にありません（何も起きなかったという意味ではありません）。').replace('{f}', String(a.from).slice(0, 10)).replace('{a}', cf)) + '</div>';
+      html += '<ul style="margin:4px 0 6px 18px;padding:0;font-size:12px;line-height:1.5;">' + rows.slice(0, 40).map((e) => '<li>' + esc(String(e.occurred_at).slice(0, 10)) + ' <b>' + esc(e.kind) + '</b> — ' + esc(e.title) + (e.place_name ? ' <span style="color:var(--text-muted)">(' + esc(e.place_name) + ')</span>' : '') + (e.world_refs && e.world_refs.length ? ' <span style="color:var(--text-muted)">[' + esc(e.world_refs.join(', ')) + ']</span>' : '') + '</li>').join('') + '</ul>';
+      if (rows.length > 40) html += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('{n} more are in the result data.', 'あと {n} 件は結果データにあります。').replace('{n}', String(rows.length - 40))) + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);line-height:1.5;">' + esc(L('The kind is read from each headline\'s wording and may be "other"; rows with the same thread are one facility\'s series, rows in the same region with different threads are different events.', '種別は見出しの文言から読み取ったもので "other" のこともあります。thread が同じ行は 1 つの施設の経緯、同じ地域でも thread が違う行は別の出来事です。')) + '</div>';
+      return R(true, html, { meta: { code: d.total ? 'OK' : 'NO_RESULTS', category: d.total ? 'ok' : 'evidence', retryable: false, semanticTarget: a.q || a.thread || a.worldRef || 'all',
+        produced: ['explanation'], userGoalSatisfied: true, history: { total: d.total, coverageFrom: d.coverage_from, coverageTo: d.coverage_to, reachesBack, rows } } }); },
+  },
+  {
+    row: ['news.edition',              'newsEdition',    'todayOnTheMap,dailyEdition,newsDigest,todaysNews,dayInNews',  'data',    'panel',   'panel.newsEdition,camera', 'panel,explanation', 'session', 'none',   '',         'newsEdition', 'external'],
     commands: ['newsedition.open'],
     ui: { at: ['#news-edition-entry'] },
     doc: [

@@ -122,6 +122,7 @@ exists. `current_news` above is untouched and still serves article mode.
 | `saved_news_events` | ★ on an **Event** (`favorites` keeps holding ★ on an article link). | Owner. | Owner. |
 | `news_ingest_runs` *(#R351)* | One row per `news-ingest` run: feeds reached, items fetched, articles new/seen, the **reject breakdown**, events created/updated, evictions, translations, **articles the AI placed (`located_ai`) and considered (`located_considered`) (#R404)**, tokens, an indicative cost, and per-stage timings. ⚠ the three LLM columns are the run's **total** (translation + geolocation); the per-stage split is in `notes`. Per-feed freshness is not copied here — `news_source_feeds` holds it. | **Admin only.** | **service_role only.** |
 | `news_event_entities` *(news-intelligence)* | Which company (an id of `data/companies/index.json`) a news event names, one row per (event, company): `matched_by` (`legal_name` / `ticker` / `name`), `evidence` (the sentence the match rests on), the article it came from (nulled when the article is pruned). Written by `news-ingest`'s `entities` stage. `news_articles.companies_scanned_at` marks the articles already compared. | **Everyone (anon + authenticated).** | **service_role only.** |
+| `news_event_history` *(news-event-history)* | The long-lived compact record of events worth keeping (2+ independent source families, a stated world-graph/company tie, or starred): permanent `event_public_id`, `occurred_at`, place, `world_refs`, `company_ids`, `kind`, `sources`, `updates` (change log), `thread_key` (one facility's series). Hard cap 300,000 rows (`news_history_trim`). docs/NEWS-EVENTS.md §19. | Everyone. | `service_role` only (news-ingest `prune` stage via `news_history_upsert`). |
 | `news_event_admin_actions` *(#R386)* | One row per operator (or machine) Merge / Split / Reassign / metadata override, with the **material needed to reverse it** in `before`. ⚠ `before` holds only what the action changed — restoring a whole-table snapshot would roll back every article ingested since. ⚠ No FK from `actor` / `reverted_by` to `auth.users`: this is an audit record, not an owned row (same reason as `news_events.reviewed_by`). | **Admin only.** | **service_role only** — operators write it through the RPCs below. |
 
 ## Operator RPCs — News Events *(#R386)*
@@ -396,7 +397,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **70**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **71**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
