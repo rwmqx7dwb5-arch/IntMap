@@ -132,18 +132,6 @@
           "basis": "lexical",
           "matches": [
             {
-              "id": "routing.isochrone",
-              "tool": "routing_isochrone"
-            },
-            {
-              "id": "routing.setEndpoints",
-              "tool": "routing_setEndpoints"
-            },
-            {
-              "id": "routing.optimizeStops",
-              "tool": "routing_optimizeStops"
-            },
-            {
               "id": "routing.route",
               "tool": "routing_route"
             },
@@ -152,25 +140,20 @@
               "tool": "routing_drone"
             },
             {
-              "id": "navigation.start",
-              "tool": "navigation_start",
-              "needsConfirmation": "explicit"
+              "id": "map.compose",
+              "tool": "compose_map"
             },
             {
-              "id": "navigation.stop",
-              "tool": "navigation_stop"
+              "id": "layers.aircraftTrack",
+              "tool": "layers_aircraftTrack"
             },
             {
-              "id": "navigation.status",
-              "tool": "navigation_status"
+              "id": "layers.railAxis",
+              "tool": "layers_railAxis"
             },
             {
-              "id": "navigation.camera",
-              "tool": "navigation_camera"
-            },
-            {
-              "id": "navigation.voice",
-              "tool": "navigation_voice"
+              "id": "compute.run",
+              "tool": "compute_run"
             }
           ]
         }
@@ -183,45 +166,13 @@
           "basis": "lexical",
           "matches": [
             {
-              "id": "routing.isochrone",
-              "tool": "routing_isochrone"
-            },
-            {
-              "id": "routing.setEndpoints",
-              "tool": "routing_setEndpoints"
-            },
-            {
-              "id": "routing.optimizeStops",
-              "tool": "routing_optimizeStops"
-            },
-            {
               "id": "routing.route",
               "tool": "routing_route"
-            },
-            {
-              "id": "routing.drone",
-              "tool": "routing_drone"
             },
             {
               "id": "navigation.start",
               "tool": "navigation_start",
               "needsConfirmation": "explicit"
-            },
-            {
-              "id": "navigation.stop",
-              "tool": "navigation_stop"
-            },
-            {
-              "id": "navigation.status",
-              "tool": "navigation_status"
-            },
-            {
-              "id": "navigation.camera",
-              "tool": "navigation_camera"
-            },
-            {
-              "id": "navigation.voice",
-              "tool": "navigation_voice"
             }
           ]
         }
@@ -234,26 +185,6 @@
           "basis": "lexical",
           "matches": [
             {
-              "id": "routing.isochrone",
-              "tool": "routing_isochrone"
-            },
-            {
-              "id": "routing.setEndpoints",
-              "tool": "routing_setEndpoints"
-            },
-            {
-              "id": "routing.optimizeStops",
-              "tool": "routing_optimizeStops"
-            },
-            {
-              "id": "routing.route",
-              "tool": "routing_route"
-            },
-            {
-              "id": "routing.drone",
-              "tool": "routing_drone"
-            },
-            {
               "id": "navigation.start",
               "tool": "navigation_start",
               "needsConfirmation": "explicit"
@@ -261,14 +192,6 @@
             {
               "id": "navigation.stop",
               "tool": "navigation_stop"
-            },
-            {
-              "id": "navigation.status",
-              "tool": "navigation_status"
-            },
-            {
-              "id": "navigation.camera",
-              "tool": "navigation_camera"
             },
             {
               "id": "navigation.voice",
@@ -284,6 +207,10 @@
           "query": "所要時間 距離",
           "basis": "lexical",
           "matches": [
+            {
+              "id": "compute.run",
+              "tool": "compute_run"
+            },
             {
               "id": "time.travel",
               "tool": "set_time"
@@ -408,36 +335,6 @@
             {
               "id": "routing.route",
               "tool": "routing_route"
-            }
-          ]
-        }
-      },
-      {
-        "query": "経路探索",
-        "result": {
-          "ok": true,
-          "query": "経路探索",
-          "basis": "lexical",
-          "matches": [
-            {
-              "id": "routing.isochrone",
-              "tool": "routing_isochrone"
-            },
-            {
-              "id": "routing.setEndpoints",
-              "tool": "routing_setEndpoints"
-            },
-            {
-              "id": "routing.optimizeStops",
-              "tool": "routing_optimizeStops"
-            },
-            {
-              "id": "routing.route",
-              "tool": "routing_route"
-            },
-            {
-              "id": "routing.drone",
-              "tool": "routing_drone"
             },
             {
               "id": "navigation.start",
@@ -459,6 +356,36 @@
             {
               "id": "navigation.voice",
               "tool": "navigation_voice"
+            },
+            {
+              "id": "map.compose",
+              "tool": "compose_map"
+            }
+          ]
+        }
+      },
+      {
+        "query": "経路探索",
+        "result": {
+          "ok": true,
+          "query": "経路探索",
+          "basis": "lexical",
+          "matches": [
+            {
+              "id": "routing.route",
+              "tool": "routing_route"
+            },
+            {
+              "id": "routing.drone",
+              "tool": "routing_drone"
+            },
+            {
+              "id": "map.compose",
+              "tool": "compose_map"
+            },
+            {
+              "id": "layers.aircraftTrack",
+              "tool": "layers_aircraftTrack"
             }
           ]
         }
