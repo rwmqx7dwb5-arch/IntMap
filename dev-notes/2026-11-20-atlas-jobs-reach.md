@@ -93,3 +93,5 @@ CI の実測で上限を超えた（実測: 14662.5 kB / 4951.1 kB / 961.5 kB / 
 
 main の他の PR が `window.IntMapLazy` の読みを 196 → 197 に増やしたまま台帳を更新しておらず（この PR のファイルは IntMapLazy を読まない）、
 main を取り込んだこの PR の `check:surface` が赤になった。台帳を `node scripts/global-surface.mjs --update` で 197 にした。
+
+`atlas-cap-runs` は、main が上限を 1044.4 kB に上げた merge の後でも実測 1044.7 kB で越えた。同じ方針（実測 + 1.5 %）で 1060.4 kB にした。
