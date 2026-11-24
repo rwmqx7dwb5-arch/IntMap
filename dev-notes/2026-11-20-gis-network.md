@@ -79,3 +79,7 @@ main 取り込み後の CI 実測で次の行が天井を超えた。async.raw 1
 ## 共有窓口の台帳(check:surface)
 
 main 取り込み後の CI で `window.IntMapLazy` の読みが 196 → 197 になって `check:surface` が赤になった。このラウンドの変更が足した読みではなく(`js/` と `src/` の `IntMapLazy` の行数は main と同じ)、main 側の取り込み分と台帳の差。`global-surface.mjs --update` で台帳を実体に合わせた。
+
+## 性能予算の引き上げ(5 回目の再測定)
+
+main 取り込み後の CI 実測で async.raw 14972.5→15051.2 kB・async.gzip 5092.7→5120.9 kB・atlas-cap-runs 1016.3→1024.7 kB。網の分析の能力の断片と main 側の遅延チャンクの合計で、起動時の読み込みは動いていない。CI ログの値を `tests/perf-baseline.json` へ書いた(main の `--tighten` が実測まで下げる)。
