@@ -75,3 +75,7 @@ main 取り込み後の CI 実測で async チャンク `atlas-cap-runs` が 981
 ## 性能予算の引き上げ(4 回目の再測定)
 
 main 取り込み後の CI 実測で次の行が天井を超えた。async.raw 14680.9→14771.2 kB・async.gzip 4956.6→4991.7 kB・atlas-cap-runs 993.5→1001.5 kB・dist.data 1194540.8→1200774.3 kB(約 6 MB)。async の 3 行は網の分析の能力の断片と main 側の遅延チャンクの合計。dist.data は配布される data/ の合計で、この PR が足す物流網のデータと main 側のデータ追加の分。起動時の読み込みは動いていない。CI ログの値を `tests/perf-baseline.json` へ書いた(main の `--tighten` が実測まで下げる)。
+
+## 共有窓口の台帳(check:surface)
+
+main 取り込み後の CI で `window.IntMapLazy` の読みが 196 → 197 になって `check:surface` が赤になった。このラウンドの変更が足した読みではなく(`js/` と `src/` の `IntMapLazy` の行数は main と同じ)、main 側の取り込み分と台帳の差。`global-surface.mjs --update` で台帳を実体に合わせた。
