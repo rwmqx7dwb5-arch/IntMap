@@ -505,6 +505,8 @@ cap-bridge.js                     **能力ブリッジ**（Programmatic Tool Cal
                                   外部文章の汚染の伝播。接続点と #1272 との関係は `dev-notes/2026-11-20-cap-bridge.md`
                                   `dataset` kind（読み取り専用）・呼びの履歴 `calls()`・`forbid`。Python との接続は
                                   `dev-notes/2026-11-20-ptc-python-bridge.md`（`compute.run` の `grants`）
+gis-engine-domain.js              **平面のエンジンが同じ答えを返す入力の範囲**（日付変更線・極を含まない）。
+                                  DuckDB Spatial との全ペア比較の結果から（`docs/GIS-CORE.md` §6）。
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**

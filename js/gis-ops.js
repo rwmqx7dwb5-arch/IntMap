@@ -7557,6 +7557,9 @@ export function makeGisOps() {
       run: run,
       /* (gis-worker-columnar) where an op may run besides this GIS — see ENGINES above. Nothing is registered by default. */
       registerEngine: registerEngine, unregisterEngine: unregisterEngine, engines: engineList,
+      /* (duckdb-equivalence) the measured domain where a planar engine answers the same question — an engine's `accepts` asks this
+         instead of carrying its own copy of the seam/pole rule (js/gis-engine-domain.js: planarEquivalent / outsidePlanarDomain / EQUIVALENT_PREDICATES) */
+      engineDomain: () => import('./gis-engine-domain.js'),   /* read only by an engine being registered — not carried in this chunk */
       /* exposed because the panel labels a clipped shape with its area and the checks measure the
          same number the ops wrote — one implementation, asked by both */
       areaKm2: areaKm2,
