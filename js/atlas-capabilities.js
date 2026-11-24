@@ -418,6 +418,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["board.delta","boardDelta","boardChanges,whatDidIChange,workspaceDiff","panel","none","","explanation","read","none","","board"],
       ["ui.compose","dashboard","uiCompose","ui","none","","panel,explanation","session","none","",""],
       ["geo.ml","geoMl","multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty","data","none","gis.dataset","explanation","session","none","","gisCore","external"],
+      ["siting.compare","siting","compareSites,industrialSiting,siteSelection,locationComparison,compareLocations","data","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
