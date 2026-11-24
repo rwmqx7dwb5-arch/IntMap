@@ -175,6 +175,9 @@ gh pr merge --squash --auto --delete-branch   # 緑なら merge される。た�
   `.gitattributes`、仕組みは `docs/AGENT-SETUP.md` §12）。終わったら `node scripts/merge-driver.mjs --finish`（保留した
   生成器を merge 後の木で走らせる。build が要るものは印字だけ）→ 差分を commit → `git push --force-with-lease`。
   **それでも残った衝突は本物**（人が書いたものを両側が変えた）。
+- **CI の待ちが長い（open PR が溜まっている）ときは、自分の PR を列車に載せてよい**: `node scripts/merge-train.mjs --plan`
+  → `--build`。N 本を 1 回の CI で通し、merge されると main 上の workflow が載った PR を閉じる（仕組みと `--release` は
+  `docs/AGENT-SETUP.md` §12）。列車の PR が `MERGED` になり、自分の PR が閉じられた時点がこの回の終わり。
 - **Atlas の能力を足す PR が並行で何本もあるときは、auto-merge を 1 本にだけ掛ける**（2026-10-08〜09 実測、5 本）。
   手書きの能力数（`check:docs` の capability-count）・`async.*` の perf 天井・評価の録画（cassette）は 1 本入るたびに
   残りでずれ、必須チェックが strict でないので古い main の上で緑の PR が続けて入ると main が赤になる。1 本ずつ
