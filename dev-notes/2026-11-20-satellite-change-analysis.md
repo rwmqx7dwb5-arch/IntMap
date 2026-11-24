@@ -89,3 +89,5 @@ main に取り込んだ #1280（統合知識層）が atlas-orchestrate チャ�
 追記6(2026-11-24): CI 測定で async.raw 14755.1 kB・async.gzip 4988.1 kB・atlas-console 1165.3 kB・dist.assets 22202.1 kB が超過(main の取り込み分が主)。超過した 4 行だけ測定値(15110000 / 5108500 / 1193500 / 22735500 バイト)へ上げた。
 
 追記7(2026-11-24): CI 測定で atlas-cap-runs が 990.7 kB となり ceiling 981.3 kB を超過。その 1 行だけ 1014600 バイトへ上げた。
+
+追記8(2026-11-24): #1343 ほか main を取り込んだ後の build 実測で、超過したのは legal-text(93.9→96.9 kB・衛星データの出典 3 行ぶん)と dist.assets(22718.5→22876.1 kB)のみ。`perf-budget.mjs --update` でその 2 行だけ上げた。
