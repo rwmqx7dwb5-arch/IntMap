@@ -418,6 +418,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["board.delta","boardDelta","boardChanges,whatDidIChange,workspaceDiff","panel","none","","explanation","read","none","","board"],
       ["ui.compose","dashboard","uiCompose","ui","none","","panel,explanation","session","none","",""],
       ["geo.ml","geoMl","multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty","data","none","gis.dataset","explanation","session","none","","gisCore","external"],
+      ["jobs.start","jobStart","startJob,backgroundResearch,runInBackground,longTask","research","none","","explanation","external","explicit","",""],
+      ["jobs.status","jobStatus","jobs,myJobs,listJobs,jobProgress,backgroundStatus","research","none","","explanation","read","none","","","external"],
+      ["jobs.cancel","jobCancel","cancelJob,stopJob,stopBackground","research","none","","explanation","session","none","",""],
+      ["jobs.amend","jobAmend","amendJob,changeJob,tellJob,addInstruction","research","none","","explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
