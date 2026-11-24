@@ -199,29 +199,25 @@ grep -o '^\[functions\.[a-z0-9-]*\]' supabase/config.toml
 ```
 
 サイトの本番検証は `intmap-prod-verifier` に渡す。**ローカルで測った数字を本番の数字として報告しない。**
-この回の中では待たない（Pages の公開は merge 後の main の CI が緑になってから・約 10 分以上）。
-**前回までの分を次の作業の着手時（§0）にまとめて検証し**、受領証を残す:
+**この回の中で待つ**（Pages の公開は merge 後の main の CI が緑になってから・約 10 分以上。background 実行・ポーリングしない）。
+本番に届いてから検証し、受領証を残す（`AGENTS.md` §5.1・2026-11-25 改訂）:
 
 ```bash
 node scripts/worktree.mjs verified      # origin/main の HEAD（sha と件名の PR 番号）を「本番検証済み」として記録
 ```
 
-## 7. 終了処理（省略できない。ただし**待たない**）
+## 7. 終了処理（省略できない・**この回の中で完遂する**）
 
-**この回でやるのは、PR が `MERGED` になったことを確認してからの `done` だけ。** 残りは merge が本番へ届いてからでないと意味が無いので、**次の作業の着手時に
-まとめて**走らせる（1 回の `--sync` がその時点で merge 済みの全セッション分を運ぶ）。
-
-```bash
-node scripts/worktree.mjs done          # この回: 自分の worktree と branch を片付ける
-```
+PR が `MERGED` → main の CI 緑・本番公開 → 本番検証（§6）→ 次を**同じ作業の最後に**走らせ、最後に `done`。
+1 回の `--sync` がその時点で merge 済みの全セッション分を運ぶので、並行セッションと重なってよい。
 
 ```bash
-# 次の作業の着手時に、前回までの分をまとめて:
-node scripts/worktree.mjs status        # 何が未了かを PR 番号で述べる（本番検証・原本・deploy）
+node scripts/worktree.mjs status        # 自分の分に未了（本番未到達・検証・deploy）が残っていないか
 node scripts/master-sync.mjs --sync     # 原本 (OneDrive) を origin/main へ早送り
 node scripts/master-sync.mjs --check    # 原本が merge 後の状態か（exit 0 を確認）
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1   # USB へ完全ミラー（毎回）
 node scripts/worktree.mjs verified      # 本番検証を終えたら受領証
+node scripts/worktree.mjs done          # 自分の worktree と branch を片付ける
 ```
 
 `--sync` はロック不要で他セッションと同時に走ってよい。`status --brief`（SessionStart hook）は未了が**あるときだけ**

@@ -110,14 +110,16 @@
 その手動管理をユーザーに要求しない。**速度のために IntMap の品質を落とさない。** 正本
 [`.agents/rules/execution-strategy.md`](.agents/rules/execution-strategy.md)、手順は `.agents/skills/intmap-round/`。
 
-### 5.1 工程 — **待たない鎖**
+### 5.1 工程 — **与えられた仕事は本番検証まで完遂する**（2026-11-25 利用者改訂）
 
-工程は減っていない。やる「時刻」だけが動いた（理由は `.agents/skills/intmap-round/` §5〜§7）。
+**後ろへ倒さない。** 作業は、本番で動いて検証され、原本と USB が最新になるまでが 1 つ。「次の作業の着手時に回す」は
+誰も戻らず未了が溜まった（本番未到達・検証の記録なし）ので廃止した。待ちは background で行い、**去らない**。
 
 ```
-その作業の中で: 調査 → 再現 → 実装 → ドキュメント更新 → 触った段のゲート（execution-strategy.md §4）
-     → dev-notes/ に記録を1本（node scripts/dev-notes.mjs --check） → commit → push → PR（auto-merge）
-次の作業の着手時に前回分を: production verification → 原本 (OneDrive) の最新化 → USB（§11）
+調査 → 再現 → 実装 → ドキュメント更新 → 触った段のゲート（execution-strategy.md §4）
+  → dev-notes/ に記録を1本（node scripts/dev-notes.mjs --check） → commit → push → PR（auto-merge）
+  → MERGED → main の CI 緑・本番公開（deploy / Pages）→ production verification（受領証）
+  → 原本 (OneDrive) の最新化 → USB（§11）→ worktree.mjs done
 ```
 
 - **PR は auto-merge on green にする**（緑なら squash merge され branch も消える。ゲートは
@@ -135,9 +137,13 @@
      **`MERGED` を確認できていない限り「完了」と書かない。**
   4. 安全かつ明確に解決できない場合だけ、**PR 番号・赤いゲート名・試したこと**を添えて確認を求める。
      「CI を待っている」「auto-merge 設定済み」を理由に作業を閉じてはならない。
-- **merge 後に main で走る CI を待たない。** 本番公開はその run が緑のときに同じ run が行う（赤なら公開しない）。
-- 後ろへ倒した工程は `node scripts/worktree.mjs status` が PR 番号で述べる（本番未到達・本番検証の記録なし・
-  原本の遅れ）。検証を終えたら `node scripts/worktree.mjs verified` で受領証を残す——**書かずに次へ行かない**。
+- **merge 後に main で走る CI も待つ**（background 実行・ポーリングしない）。本番公開はその run が緑のときに同じ run が
+  行う（赤なら公開しない）。赤なら落ちた門を直す修正 PR を出し、本番に届くまで続ける。
+- 本番に届いたら `intmap-prod-verifier` で検証し、`node scripts/worktree.mjs verified` で受領証を残す——
+  **書かずに完了と言わない。** deploy・秘密の設定・初回の取り込みなど merge 後にしかできない手順も、この回で行う。
+  ユーザーにしか出来ないもの（§7）だけ、PR 番号と手順を添えて 1 回の依頼にまとめる。
+- `node scripts/worktree.mjs status` は他セッションの未了（本番未到達・検証の記録なし・原本の遅れ）も述べる。
+  自分の作業の分が残っているなら、それを終えるまで完了と書かない。
 
 **変更した Edge Function は本番へ出す。** 通常は merge 後に CI が出す。手での deploy（CI が赤いときなど）:
 
@@ -233,8 +239,8 @@ CI 状態／commit・PR・merge 状態／production deployment の状態／produ
 
 ### 11.2 USB バックアップ — **作業のたびに毎回**
 
-USB は**依頼された作業が完了するたびに毎回**行う（**1 日 1 回の制限は無い**）。時刻は §5.1 のとおり、前回分を
-次の作業の着手時に行う。**手順は実装されている——読んで真似せず、これを実行する:**
+USB は**依頼された作業が完了するたびに毎回**行う（**1 日 1 回の制限は無い**）。時刻は §5.1 のとおり、本番検証の
+後・同じ作業の最後。**手順は実装されている——読んで真似せず、これを実行する:**
 
 ```bash
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1
