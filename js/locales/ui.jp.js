@@ -236,7 +236,8 @@ IntMapLang.define('jp', { ui: {
       supAtlasTitle:"Atlas",
       supAtlasBody:"Atlas の回答はすべて AI サービスが生成しており、その費用は読み書きした文章の量に応じて IntMap が支払っています。そのため、アカウントごとに 1 日の上限（無料プランで質問 {n} 回・用語解説 {g} 回。全員が無料プランです）があり、サイト全体にも 1 日の AI 要求数の上限があります。",
       /* (atlas-before-login) the Atlas row for a reader who has not logged in — js/atlas-examples.js. {n} is the free plan’s aiTurnsPerDay (supabase/functions/_shared/plans.js) */
-      atlasGateNote:"Atlas を使うには無料の IntMap アカウントが必要です（1 日 {n} 回まで）。例を押すと、ログインの前に答え方を確かめられます。",
+      menuBtn:"メニュー",
+      atlasGateNote:"Atlas を使うには無料の IntMap アカウントが必要です（1 日 {n} 回まで）。",
       atlasPvTitle:"Atlas の答え方",
       atlasPvStep1:"いま見ているもの——表示範囲・オンのレイヤー・時計の年——を読み取ります。",
       atlasPvStep2:"IntMap の機能でこの地図を操作します——移動・国の強調・経路や範囲の描画・計測・レイヤーの切り替え。",
