@@ -59,7 +59,10 @@ test('every built bundle states its provenance and agrees with the registry', ()
     assert.equal(b.realtime, f.realtime);
     assert.ok(b.upstreams && b.upstreams[0].licence && b.upstreams[0].paidBy);
     assert.equal(b.timeResolution, 'minute');
-    assert.ok(b.patterns.length > 100 && b.stops.length > 100);
+    /* not a size floor: Monaco's whole network is 97 stops. A bundle is non-empty and holds what its own build counted */
+    assert.ok(b.patterns.length > 0 && b.stops.length > 0, f.id);
+    assert.equal(b.patterns.length, b.stats.patterns, f.id);
+    assert.equal(b.patterns.reduce((n, p) => n + p.t.length, 0), b.stats.timetableRows, f.id);
   }
   assert.deepEqual(feedsNear(6.13, 49.6, boxes), ['lu']);
   assert.deepEqual(feedsNear(139.7, 35.7, boxes), []);

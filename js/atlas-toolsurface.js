@@ -25,6 +25,7 @@
  *  CHECKED, never what an action does.
  * ==========================================================================*/
 
+import { makeCapabilityBridge, attachBridge, clientSource } from './cap-bridge.js';   /* (cap-bridge) a program calls capabilities through the SAME makeExecute — see openProgramBridge */
 import { searchSkills, readSkill, parseSkillQuery, skillReadiness, skillById } from './atlas-skills.js';   /* (atlas-skills) how-to material beside the capabilities; read a section at a time */
 
 export function makeAtlasToolSurface(deps) {
@@ -438,6 +439,8 @@ export function makeAtlasToolSurface(deps) {
         /* ⚠ (atlas-completion) WHAT THE WEB SEARCH DID, WHETHER THE OUTPUT WAS CUT, AND WHAT WAS RETRIEVED — js/atlas-cap-research.js
            states all three on its meta, and this list dropped them, so Atlas saw a research answer and never learned that the search
            had timed out (or found nothing) — the one fact that tells it to try another route (an official page, an operator's site). */
+        /* (atlas-research-search) what research.search returned — the documents, each query's state, what is new in method, the investigation ledger. Dropped here, the search would run and Atlas would read nothing. */
+        research: meta.research || undefined,
         web: meta.web || undefined,
         /* (mcp-client) what an external MCP server answered — carried whole (js/atlas-cap-mcp.js stamps it untrusted), or the model learns nothing from the call and asks again */
         external: meta.external || undefined,
@@ -630,7 +633,21 @@ export function makeAtlasToolSurface(deps) {
       return '[LIVE VALUES] ' + toolName + ' "' + prop + '" is exactly one of: ' + v.join('; ') + '\n\n';
     }
 
-    var API = { CORE, baseTools, find, describe, actionFor, makeExecute, schemaOf, footprintOf, promotionsOf, toolNameOf, liveEnum, RESULT_TEXT_MAX };   /* the length Atlas is handed of a result's text — the console reads it to know what Atlas did NOT see (js/atlas-turn-results.js `forReader`) */
+    /* (cap-bridge) THE ATTACH POINT FOR A PROGRAM THAT CALLS CAPABILITIES (js/cap-bridge.js). One port per run:
+       the caller (the Python sandbox, js/compute-sandbox.js, or any Worker) transfers `port` to its worker and
+       builds the client there from `source`; everything the program calls goes through makeExecute — the
+       model's own gate — with `turn` (its externalContentSeen is read AND set by the bridge). `grants` defaults
+       to read-only: a run that draws or persists says so. */
+    function openProgramBridge(tools, agent, opts) {
+      opts = opts || {};
+      var ch = new MessageChannel();
+      var bridge = makeCapabilityBridge({ registry: CAPS, execute: makeExecute(tools, agent), schemaOf: schemaOf,
+        validate: function (s, a, p, e) { agent.validateAgainst(s, a, p, e); }, turn: opts.turn, grants: opts.grants, limits: opts.limits, effectsOf: opts.effectsOf });
+      attachBridge(ch.port1, bridge);
+      return { port: ch.port2, source: clientSource(), bridge: bridge, close: function () { ch.port1.close(); ch.port2.close(); } };
+    }
+
+    var API = { CORE, baseTools, find, openProgramBridge, describe, actionFor, makeExecute, schemaOf, footprintOf, promotionsOf, toolNameOf, liveEnum, RESULT_TEXT_MAX };   /* the length Atlas is handed of a result's text — the console reads it to know what Atlas did NOT see (js/atlas-turn-results.js `forReader`) */
     try { window.IntMapAtlasTools = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
