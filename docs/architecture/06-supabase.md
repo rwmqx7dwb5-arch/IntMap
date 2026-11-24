@@ -180,9 +180,9 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 その関数の読者 1 人のページが 1 分に送る最大数（各関数の `READER_PER_MIN`＝推定）×`READERS_PER_ADDRESS`（10）。DB が答えなければ通す。拒否は `429 rate_limit`＋`Retry-After`。
 `<関数名>_PER_IP_PER_MIN` で deploy なしに動かせる。`routing-relay` は自前の fail-closed の全体上限を持つ。
 
-**`_shared/relay-guard.js` を共有するのは24本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` / `mcp-relay` / `mcp-server` / `gis-fetch` /
+**`_shared/relay-guard.js` を共有するのは24本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` / `community-class` / `fetch-relay` / `gdelt-relay` / `mcp-relay` / `mcp-relay` / `mcp-server` / `gis-fetch` /
 `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `web-browse` / `who-don`）。そのうち `ai-proxy`（JWT）・
-`atlas-embed`（JWT）・`web-browse`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本に加え `mcp-relay`（JWT）・`mcp-server`（IntMap の鍵）の計 6 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り17本は無認証。`ai-proxy`・`client-errors`・
+`atlas-embed`（JWT）・`web-browse`（JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本に加え `mcp-relay`（JWT）・`mcp-server`（IntMap の鍵）の計 6 本が認証を持ち、`reader-reports` は任意（送られた token だけを検証する）、残り18本は無認証。`ai-proxy`・`client-errors`・
 `reader-reports`・`usage-count` が共有するのは読み手だけ（`readCapped`＝要求本文を上限で切る、`fetchBounded`＝提供者への POST を本文の最後のバイトまで同じ期限と上限で読む）。
 リダイレクトは手で辿る（`followRedirects`。各ホップを同じ https オリジンか `allowRedirect(next, from)` で検査し、上限は 3 ホップ `MAX_REDIRECTS`）。共有しているのは URL allowlist・GET 限定・
 期限（`AbortSignal.timeout`）・バイト上限（`content-length` とストリーム読み出しの両方）・Content-Type 判定・外向きエラーはコード1語。公開レイヤーなのでログイン必須にはしない。

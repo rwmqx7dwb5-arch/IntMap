@@ -1259,6 +1259,22 @@ export function makeGisAtlas(core) {
         return r.ok === false ? r : Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(a.ref) + '</b> — ' + r.returned + (r.matched != null ? ' / ' + r.matched : '') + (r.continues ? ' (+)' : '') + '<br>'
           + r.items.map((x) => esc(x.id) + ' · ' + esc(String(x.datetime)) + (x.gsd != null ? ' · ' + esc(String(x.gsd)) + ' m' : '') + (x.cloud != null ? ' · cloud ' + esc(String(x.cloud)) + '%' : '')).join('<br>') + '</div>' });
       }
+      if (act === 'scenes') {
+        const r = give(await M.scenes({ bbox: win, time: a.time, modality: a.modality, maxCloud: a.maxCloud, catalogs: a.catalogs, perModality: a.perModality, limit: a.limit, signal: a.signal || null }));
+        if (r.ok === false) return r;
+        const silent = r.catalogs.filter((c) => !c.answered);
+        const lic = (x) => esc(x.license == null ? L('licence not stated', 'ライセンス記載なし') : x.license);
+        const kinds = Object.keys(r.result).map((k) => {
+          const m = r.result[k];
+          return '<div class="atlas-gis-detail"><b>' + esc(k) + '</b> — ' + m.found + (m.periodApplied ? '' : ' (' + esc(L('period not applied', '期間は適用していません')) + ')') + '<br>'
+            + (m.found ? m.scenes.slice(0, 8).map((x) => '<code>' + esc(x.collection) + '</code> ' + esc(x.id) + ' · ' + esc(String(x.datetime)) + (x.cloud != null ? ' · cloud ' + esc(String(x.cloud)) + '%' : '') + (x.gsd != null ? ' · ' + esc(String(x.gsd)) + ' m' : '') + (x.sar ? ' · ' + esc([x.sar.mode, (x.sar.polarizations || []).join('+')].filter(Boolean).join(' ')) : '') + ' · ' + lic(x)).join('<br>')
+              : esc(L('NONE: ', '無し: ')) + esc(m.none.say)) + '</div>';
+        }).join('');
+        return Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(L('Satellite, SAR, LiDAR and elevation data found', '見つかった衛星・SAR・LiDAR・標高データ')) + '</b>' + kinds
+          + (r.excluded.length ? '<div class="atlas-gis-detail">' + esc(L('NOT OFFERED (non-commercial licence): ', '提供しない（非商用ライセンス）: ')) + esc(r.excluded.map((x) => x.ref + ' (' + x.license + ')').join(', ')) + '</div>' : '')
+          + (silent.length ? '<div class="atlas-gis-detail">' + esc(L('NOT ANSWERED (this is not "nothing there"): ', '応答なし（「無かった」ではありません）: ')) + esc(silent.map((c) => c.id + ' (' + c.why + ')').join(', ')) + '</div>' : '')
+          + '<div class="atlas-gis-next">' + esc(r.note) + '</div></div>' });
+      }
       if (act === 'acquire') {
         const r = give(await M.acquire(a.ref, { bbox: win, time: a.time, width: a.width, height: a.height, limit: a.limit, band: a.band, asset: a.asset, signal: a.signal || null }));
         if (r.ok === false) return r;
