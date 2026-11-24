@@ -56,7 +56,7 @@ test.afterEach(async ({ app }) => {
 });
 
 async function openCompanies(page) {
-  await page.click('#btn-info');
+  await page.evaluate(() => document.getElementById('btn-info').click());   /* 電話ではタブはメニューを開くまで display:none（Playwright の click は待ち続ける）。幅を問わず同じ経路 */
   await page.waitForFunction(() => document.querySelectorAll('#info-dashboard .co-row').length > 50, null, { timeout: 30000 });
   await liveQuotes(page);
   /* re-render with the stamps in place */
@@ -110,7 +110,7 @@ for (const [label, size, theme] of [
 test('Countries (phone): the same row rule holds for the country list', async ({ app }) => {
   const page = app.page;
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.click('#btn-stats');
+  await page.evaluate(() => document.getElementById('btn-stats').click());   /* 電話: メニュー内のタブ（上と同じ理由） */
   await page.waitForFunction(() => document.querySelectorAll('#countries-feed .stat-row').length > 50, null, { timeout: 30000 });
   const floor = await nameFloor(page);
   const rows = await measureRows(page, '#countries-feed');

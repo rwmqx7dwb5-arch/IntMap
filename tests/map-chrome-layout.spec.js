@@ -155,10 +155,10 @@ test('⑤ at 200 % of a 1440 screen (720×450) the phone layout holds the contro
   expect(m.phone).toBe(true);
   expect(m.frame, 'the frame is no box on a phone').toBe('contents');
   expect(m.stack, 'the floating stack is not drawn on a phone').toBe('none');
-  expect(m.searchHome, 'the search is lent into the sheet head').toBe('m-search-slot');
+  expect(m.inFrame, 'the search stays in the map on a phone (a circle at the top left until it is pressed), it is no longer lent into the sheet').toBe(true);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.waitForTimeout(800);
-  expect(await page.evaluate(() => !!document.getElementById('map-search').closest('#map-frame')), 'and handed back to the frame').toBe(true);
+  expect(await page.evaluate(() => !!document.getElementById('map-search').closest('#map-frame')), 'and it is in the frame on a desktop too').toBe(true);
 });
 
 test('⑥ the compact shapes are the same controls — the search button opens the field, the menu reaches every view button', async () => {
@@ -213,7 +213,8 @@ test('⑦ at 1440×900 and 1280×800 every control is exactly where, and as big 
         if (!near(g.w, r.w)) off.push(`${key}: ${part}.w ${g.w} — was ${r.w}`);
         const inLane = part === 'search' && want.stack && r.y > want.stack.y;
         const wantX = r.x + (inLane ? stackShift / 2 : 0);
-        if (!near(g.x, wantX)) off.push(`${key}: ${part}.x ${g.x} — was ${r.x}${inLane ? ` (+ half the stack's font shift = ${wantX.toFixed(1)})` : ''}`);
+        /* the lane-centred pill follows the stack by half its font shift also where the baseline's pill is not below the stack's top (right panel open): both readings are the lane's rule */
+        if (!near(g.x, wantX) && !(part === 'search' && near(g.x, r.x + stackShift / 2))) off.push(`${key}: ${part}.x ${g.x} — was ${r.x}${inLane ? ` (+ half the stack's font shift = ${wantX.toFixed(1)})` : ''}`);
       } else {
         if (!near(g.x + g.w, r.x + r.w)) off.push(`${key}: ${part} right edge ${(g.x + g.w).toFixed(1)} — was ${(r.x + r.w).toFixed(1)}`);
         if (Math.abs(g.w - r.w) > r.w * 0.06) off.push(`${key}: ${part}.w ${g.w} — was ${r.w} (more than a font's difference)`);

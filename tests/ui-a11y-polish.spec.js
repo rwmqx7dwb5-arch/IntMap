@@ -208,7 +208,9 @@ test.describe('③ phone shell', () => {
     await page.waitForTimeout(900);   /* the sheet's spring and the legend's own layout */
 
     const cover = await page.evaluate(PAINTED);
-    expect(cover, `the chrome paints ${(cover * 100).toFixed(1)} % of the map (production before: 45.2 %)`).toBeLessThan(0.2);
+    /* (mobile-sheet-layout) the resting sheet now carries the Atlas composer (it is the sheet's default content), so it is ~29 % of the screen:
+       the map's share is the 70 % the redesign asks for, not 80 %. The ceiling is the resting sheet plus the one control group and the search circle. */
+    expect(cover, `the chrome paints ${(cover * 100).toFixed(1)} % of the map (production before: 45.2 %)`).toBeLessThan(0.34);
     expect(await page.evaluate(SMALL), 'tap targets under 44 px').toEqual([]);
 
     /* the legend is laid out but not on the map until the chip opens it; and then it is under the chrome's row */
@@ -235,7 +237,7 @@ test.describe('③ phone shell', () => {
     await page.waitForFunction(() => !document.querySelector('#m-screens > #news-timeline'));
 
     /* the one field: candidates as the reader types (no Enter), the last of them «Ask Atlas» */
-    await page.click('#ms-input');
+    await page.focus('#ms-input');   /* 電話ではフィールドは幅 0 に畳まれている（#ms-btn か focus で開く） */
     await page.keyboard.type('Par', { delay: 40 });
     await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item').length >= 2, null, { timeout: 10_000 });
     const rows = await page.evaluate(() => [...document.querySelectorAll('#ms-results .ms-item')].map((e) => e.classList.contains('ms-atlas')));
@@ -272,10 +274,10 @@ test.describe('③b phone shell — the flow', () => {
 
     /* ── search → a candidate → the card. The last letter is typed and the row tapped inside the 120 ms the
        suggestion timer waits, which is the race that reopened the list on production. ── */
-    await page.click('#ms-input');
+    await page.focus('#ms-input');   /* 電話ではフィールドは幅 0 に畳まれている（#ms-btn か focus で開く） */
     await page.keyboard.type('Pari', { delay: 40 });
     await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item:not(.ms-atlas)').length >= 1, null, { timeout: 10_000 });
-    expect(await page.evaluate(DETENT), 'the field raises the sheet for its candidates').toBe('full');
+    /* (フィールドの focus は sheet を full へ上げなくなった: 候補は地図上の検索円から下へ開く) */
     await page.waitForTimeout(300);
     await page.keyboard.type('s');
     await page.click('#ms-results .ms-item:not(.ms-atlas)');
@@ -306,7 +308,7 @@ test.describe('③b phone shell — the flow', () => {
 
     /* ── an app flight with the sheet at full (an Atlas fit) brings it to half, and the flight is not cut short;
        a finger panning the strip of map at full is the reader's own move and changes nothing ── */
-    await page.click('#btn-community');
+    await page.evaluate(() => { const b = document.getElementById('btn-community'); if (!b.classList.contains('active')) b.click(); });   /* 電話ではメニューを開くまで display:none。既定の Atlas が先に開いていれば押さない（タブは押し直すと閉じる） */
     await page.waitForTimeout(400);
     await page.evaluate(() => window.__setDetent('full', false));
     await page.waitForTimeout(400);

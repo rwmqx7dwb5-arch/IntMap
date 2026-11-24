@@ -104,5 +104,27 @@ export function makeWorldGraphStore(deps) {
     return r.ok ? { ok: true, feeds: arr(r.data) } : r;
   }
 
-  return { relNames, toObjects, fetchSubgraph, findPersisted, nearPersisted, tiesOf, freshness };
+  /** a uid, a ref or «scheme:value» (a present OR a replaced external id) → the object, and HOW it was reached (uid | ref | present_id | past_id) */
+  async function resolvePersisted(DB, query) {
+    const q = String(query || '').trim(); if (!q) return { ok: true, object: null, via: null };
+    const r = await rpcWorldGraph(DB, 'world_graph_resolve', { p_q: q });
+    if (!r.ok) return r;
+    const rows = arr(r.data); if (!rows.length) return { ok: true, object: null, via: null };
+    const sub = await fetchSubgraph(DB, rows[0].ref, { depth: 1 });
+    if (!sub.ok) return sub;
+    const refs = Array.from(new Set(rows.map((x) => x.ref)));
+    return { ok: true, object: W.find(rows[0].ref) || null, via: rows[0].via, uid: rows[0].uid,
+      matchedId: rows[0].ext_id ? { scheme: rows[0].scheme, id: rows[0].ext_id, release: rows[0].release || null, basis: rows[0].basis || null } : null,
+      ambiguous: refs.length > 1 ? refs : null };
+  }
+
+  /** what changed about one object (its ties and claims too), and which ids it held in which releases */
+  async function historyPersisted(DB, ref, sinceIso) {
+    const r = await rpcWorldGraph(DB, 'world_graph_history', { p_ref: String(ref || ''), p_since: sinceIso || null });
+    if (!r.ok) return r;
+    const h = r.data || {};
+    return { ok: true, ref: h.ref, uid: h.uid || null, identifiers: arr(h.identifiers), changes: arr(h.changes) };
+  }
+
+  return { relNames, toObjects, fetchSubgraph, findPersisted, nearPersisted, tiesOf, freshness, resolvePersisted, historyPersisted };
 }
