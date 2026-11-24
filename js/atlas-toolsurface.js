@@ -101,6 +101,13 @@ export function makeAtlasToolSurface(deps) {
          ⚠ NOTHING IS TAKEN AWAY (CONSTITUTION.md §5): `research` is untouched and every capability is
          still reachable the same way. One more of them simply arrives already typed. */
       { name: 'query_data', cap: 'data.query', desc: 'FILTER AND JOIN the datasets IntMap ships and answer with the ACTUAL ROWS \u2014 a table, pinned on the map, each column\u2019s source printed under it. The action for any question with several conditions at once ("cities above 3000 m with more than 500,000 people"). Prefer it over `research` whenever the answer is rows: it computes from the data instead of describing what would have to be checked. Tables, columns, the spatial and near forms and worked examples are in the catalogue entry for "query". An empty result is an answer.' },
+      /* ⚠ (delegate-base-tool) ORCHESTRATION, IN CORE — BECAUSE THE RIGHT MOVE WAS THE FARTHEST ONE. Measured on production
+         2026-11-25: «compare flood defences in Japan, the Netherlands and Bangladesh» — three independent pieces — ran as
+         hosted web searches one after another inside Atlas's own replies (38 s, 18 s, 26 s, 46 s), and research.delegate
+         had not been called once since it shipped (ai_delegation_journal: 0 worker rows). The search is on every reply;
+         delegation was two round trips away (find_capability, then run_capability). Like `plan`, this is a tool for
+         organising the work, not one field's capability, so it is at hand. Whether to use it stays Atlas's (CONSTITUTION §5). */
+      { name: 'delegate', cap: 'research.delegate', desc: 'Run independent pieces of work AT THE SAME TIME on worker models — research per country/source/question, data look-ups, read-only capability runs, analyses, drafting a section. Each worker works on its own and returns evidence (sources, excerpts, dates, what it could not find), not a verdict; you combine. The wait is the slowest piece, not the sum (inside one reply, hosted web searches run one after another). One piece, or pieces that each need the previous result, you do yourself.' },
       { name: 'research', cap: 'research.analyze', desc: 'Answer a question from live sources with citations. Use for anything current, contested or beyond your own knowledge \u2014 but when the answer is ROWS from a dataset IntMap ships, use `query_data`. This renders its own sourced answer to the reader.' },
       /* ⚠ (#R413) THE EXISTING CAPABILITY, PROMOTED — NOT A NEW ONE. `view.locate` has read the
          device's real position since #R155. What was missing is that Atlas could not FIND it:
