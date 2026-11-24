@@ -76,25 +76,11 @@
           "ok": true,
           "query": "鉄道 ルート 駅間 距離",
           "basis": "lexical",
-          "matches": [
-            {
-              "id": "compute.run",
-              "tool": "compute_run"
-            },
-            {
-              "id": "navigation.start",
-              "tool": "navigation_start",
-              "needsConfirmation": "explicit"
-            },
-            {
-              "id": "routing.route",
-              "tool": "routing_route"
-            },
-            {
-              "id": "layers.railAxis",
-              "tool": "layers_railAxis"
-            }
-          ]
+          "matches": [],
+          "semantic": {
+            "state": "unavailable",
+            "reason": "replay"
+          }
         }
       }
     ],
