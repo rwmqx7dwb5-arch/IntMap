@@ -57,8 +57,7 @@
 | レンダラ・型に触れるコード | `npm run check:engine` `npm run check:types` |
 | データの出自・権利・鮮度 | `npm run check:datagov` |
 | 利用者に見える文字列 | `npm run check:i18n` |
-| 企業アトラス | `npm run check:companies` |
-| 文書 | `npm run check:docs` |
+| 企業アトラス・文書 | `npm run check:companies` `npm run check:docs` |
 | エージェントの文脈（`AGENTS.md`・`.agents/` と生成物） | `npm run check:agents` |
 | `js/` を足した・消した | `npm run check:archfiles` |
 | 紛争データ | `npm run check:wars` |
@@ -70,13 +69,11 @@
 | 歴史的な政体名 | `npm run check:histnames` |
 | 歴史的な行政区分 | `npm run check:histadmin` `npm run check:kuni` `npm run check:histfill` `npm run check:histsurveys` `npm run check:histrecon` |
 | 歴史地図が述べていること・線の根拠 | `npm run check:histfidelity` `npm run check:borderprov` |
-| 国境のどの辺を描くか | `npm run check:bordercoast` |
-| 拡大時の精密な輪郭 | `npm run check:borderdetail` |
-| 歴史地点（Pleiades） | `npm run check:histplaces` |
-| 歴史上の都市人口 | `npm run check:histurban` |
-| Atlas の dispatch / catalogue | `npm run check:catalog` |
-| Atlas の能力表 | `npm run check:capabilities` |
+| 国境のどの辺を描くか・拡大時の輪郭 | `npm run check:bordercoast` `npm run check:borderdetail` |
+| 歴史地点（Pleiades）・都市人口 | `npm run check:histplaces` `npm run check:histurban` |
+| Atlas の dispatch / catalogue / 能力表 | `npm run check:catalog` `npm run check:capabilities` |
 | Atlas の観測器の判定 | `npm run check:atlasrepeat` |
+| migration を足した・改名した | `npm run check:migrationorder` |
 | 共有窓口 | `npm run check:surface` |
 | 起動費用・配られる資産（**build が要る**） | `npm run check:perf` `npm run check:assets` |
 | spec を足した・組み替えた | `npm run check:testbudget` |
