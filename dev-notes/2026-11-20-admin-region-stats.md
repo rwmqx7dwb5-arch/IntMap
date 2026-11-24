@@ -64,3 +64,5 @@ Wikidata Query Service で P1082 を持つ単位: P300（ISO 3166-2）30,703 記
 - 共有窓口: origin/main の時点で window.IntMapLazy の読みが 196→197 になっており check:surface が赤だった(本 PR の差分に由来しない)。台帳を 197 へ更新した。
 
 - 共有窓口: geo.regionStat は第1級区分の読み込み(atlas-admin1)が持つ単一のキャッシュを共有するため window.IntMapAtlasAdmin1 を読む(net-health-live と同じ経路)。台帳の読みを 1→2 に記録した。
+
+- perf: atlas-cap-runs 1034.6→1044.4 kB へ天井を上げた。main の geo.ml と本 PR の geo.regionStat が同じチャンクに並ぶため。
