@@ -67,3 +67,7 @@ CI(main を取り込んだ木)の実測で次の行が天井を超えた。async
 ## 性能予算の引き上げ(再測定・CI の Gates 2/3 の赤)
 
 main 取り込み後の CI 実測で次の行が天井を超えた。async.raw 14569.8→14651.1 kB・async.gzip 4918.1→4947.0 kB・atlas-cap-runs 952.1→957.9 kB・gis-core 697.3→701.2 kB。網の分析(`gis-network.js` と能力の断片)の遅延チャンクと、main 側で増えた遅延チャンクの合計で、起動時の読み込みは動いていない。ローカルは main が先へ進んでいて `perf-budget --update` が拒否されるため、CI ログの値を `tests/perf-baseline.json` へ直接書いた(main の `--tighten` が実測まで下げる)。
+
+## 性能予算の引き上げ(再々測定)
+
+main 取り込み後の CI 実測で async チャンク `atlas-cap-runs` が 981.3→987.7 kB。網の分析の能力の断片(`atlas-cap-runs` に入る)と main 側の能力追加の合計で、起動時の読み込みは動いていない。CI ログの値を `tests/perf-baseline.json` へ書いた(main の `--tighten` が実測まで下げる)。
