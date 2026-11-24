@@ -68,3 +68,12 @@ IntMap の開発が「Atlas にこの問いを答えさせる」を「この問�
 - 評価: 夜間の Atlas 評価は一度も走っていない（秘密が無い）。問いの集まりは過去の問いで、未知の問いへの対応は測っていない。
 - カーネルの命令は引数の宣言を持たない（`meta` は label / group だけ）。`system.command` から実行はできるが、引数を知るには
   命令ごとの説明が要る。
+
+## 4. 上げた天井（`node scripts/perf-budget.mjs --update`・origin/main に rebase した木で測定）
+
+- `async chunk "atlas-query"` 47.4 → 51.8 kB: 宣言された表を読む `shippedRows`・一覧 `tableListing`・列の解決。表の索引そのもの
+  （ラベルと列 14.5 kB）は `js/data-tables.js` の別チャンクに出し、最初の問い合わせで 1 回だけ import する（同梱すると +19 kB だった）。
+- `dist.data` 1,216,701.6 → 1,225,994.2 kB、`dist.total` 同じ幅: この変更の寄与は `data/power-plants.json` 175,008 → 3,885,478 B
+  （データベース全件）と、`logistics-network.json` +4,474 B・`siting-jp.json` +5,521 B（表の宣言）。ファイルは `data.query` が
+  その表を最初に名指したときだけ読まれ、起動の経路には乗らない。天井との差の残り（約 5.6 MB）はこの変更のファイルではなく、
+  どのファイルかは測っていない（main の CI が merge 後に天井を測り直す）。
