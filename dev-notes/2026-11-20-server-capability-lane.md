@@ -39,4 +39,3 @@ newsjp: バックグラウンドの仕事が、より多くの読み取り能力
 - `perf-budget`(同・第 5 回、2026-11-24): **CI の測定**: `atlas-cap-runs` 991.8 kB・`atlas-console` 1158.6 kB(取り込んだ main の増分を含む合計)。天井を測定値の直上へ(1015700・1186500 バイト)。失効条件は上と同じ(main の `--tighten`)。
 - `perf-budget`(同・第 6 回、2026-11-24): **CI の測定**: `async.raw` 14783.6 kB・`async.gzip` 4996.0 kB・`atlas-cap-runs` 1005.6 kB・`atlas-console` 1165.4 kB・`atlas-executor` 62.7 kB・`dist.assets` 22230.5 kB(取り込んだ main の増分を含む合計)。天井を測定値の直上へ(15140000・5117000・1029800・1193500・64300・22765000 バイト)。失効条件は上と同じ(main の `--tighten`)。
 - `perf-budget`(同・第 7 回、2026-11-24): **CI の測定**: `atlas-cap-runs` 1011.5 kB のみ(他は収まった)。天井を測定値の直上へ(1035900 バイト)。失効条件は上と同じ(main の `--tighten`)。
-- `check:surface`(2026-11-24): 取り込んだ main の時点で `window.IntMapLazy` の読みが 197 本、基準線が 196 本だった。**この PR の差分にその読みは無い**(`git diff origin/main` に `IntMapLazy` の増分なし)。増やしたのは main の「スマホ画面を地図中心に作り直す」(38b38056e)で、基準線が更新されていなかった。実体に合わせて 197 へ(`global-surface.mjs --update`)。
