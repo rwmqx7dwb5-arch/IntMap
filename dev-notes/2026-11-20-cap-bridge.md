@@ -1,6 +1,8 @@
 ---
 title: 能力ブリッジ — AI が書いたプログラムから能力表を直接、何百回でも呼ぶ (Programmatic Tool Calling)
 date: 2026-11-20
+newsen: Atlas can now run a program that calls IntMap capabilities on its own, hundreds of times, and hand back only the final answer.
+newsjp: Atlas が、プログラムから IntMap の機能を自分で何百回も呼び、最後の答えだけを返せるようになりました。
 ---
 
 〈依頼〉 外部監査の指摘。Atlas は 1 手ごとにモデルへ往復する。「500 都市それぞれの最寄り港湾距離」は 500 往復で、

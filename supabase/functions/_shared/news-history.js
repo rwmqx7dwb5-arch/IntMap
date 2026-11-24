@@ -132,3 +132,32 @@ export function buildArchiveRow(ev, articles, companyIds, matcher, starred) {
     world_refs: worldRefs, company_ids: cos, source_count: sourceCount, sources, starred: !!starred,
   };
 }
+
+/**
+ * Which events to look at in this run. An event whose history row was written at or after its last article has
+ * nothing new — skipped, so a run's cost follows what CHANGED, not how many events the last 72 hours hold.
+ * Of the rest, events that qualify on a field already in hand (reported by `HISTORY.minSources` families) go first,
+ * newest first. The others (one outlet: they qualify only if their text names something in the world graph, which
+ * costs a match, and most never will — so they never get a row and can never be marked "current") are looked at
+ * through a window of `cap` that moves one step each run (`slot`), so over a few runs every one is examined and none
+ * keeps the window from the ones after it. At most `cap` events in all.
+ * @param {Array<{public_id:string,last_article_at:string,independent_source_count?:number}>} events
+ * @param {Map<string,number>} wrote event_public_id -> ms the history row was last written
+ * @param {number} cap
+ * @param {number} slot  any integer that changes from run to run (the run's 20-minute slot)
+ */
+export function pendingArchive(events, wrote, cap, slot = 0) {
+  const pending = events.filter((e) => !(wrote.get(e.public_id) >= Date.parse(e.last_article_at)));
+  const newest = (x, y) => Date.parse(y.last_article_at) - Date.parse(x.last_article_at);
+  const firm = pending.filter((e) => (Number(e.independent_source_count) || 0) >= HISTORY.minSources).sort(newest);
+  const rest = pending.filter((e) => !((Number(e.independent_source_count) || 0) >= HISTORY.minSources)).sort(newest);
+  const n = Math.max(0, cap);
+  const take = firm.slice(0, n);
+  const room = n - take.length;
+  if (room > 0 && rest.length) {
+    const windows = Math.ceil(rest.length / room);
+    const at = (((Math.floor(slot) % windows) + windows) % windows) * room;
+    take.push(...rest.slice(at, at + room));
+  }
+  return { events: take, skippedCurrent: events.length - pending.length, deferred: pending.length - take.length };
+}

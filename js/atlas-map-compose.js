@@ -329,8 +329,10 @@ export function makeAtlasMapCompose(deps) {
         if (id) e = ledger.resolve(id, {});
         /* (text-to-era-map) an explicit `as` is Atlas saying which place the label means NOW — the ledger's memory of the
            bare label (measured: 「草加」 filed as a neighbourhood 50 km off) must not answer in its place */
-        const key = str(it.as, 120) || it.name;
-        if (!e) e = ledger.resolve(key, { kind: str(it.kind, 40) || undefined });
+        /* ⚠ ONLY THE FIRST SPELLING asks the ledger. The bare label's memory answering here would stand in front of the
+           gazetteer's answer for `as` — the 「草加」 case above. The label is a later rung of queries(), not of this. */
+        const key = spellings(it)[0];
+        if (!e && key) e = ledger.resolve(key, { kind: str(it.kind, 40) || undefined });
         if (!e && key) e = ledger.resolve(key, {});
       } catch (_) { e = null; }
       return (e && e.lng != null && e.lat != null) ? e : null;
@@ -344,10 +346,22 @@ export function makeAtlasMapCompose(deps) {
        the clock ran out before a single query was sent: a timed-out 「君津製鉄所」 went to the verifier
        as 「君津製鉄所」 with the country stripped off — a DIFFERENT question from the one that failed.
        One function, so the two rungs cannot drift. */
+    /* ⚠ (atlas-fewer-rounds) EVERY SPELLING ATLAS GAVE IS ASKED BEFORE «not_found». `as` used to REPLACE `name`: measured on
+       production 2026-11-24, five items sent as {name:"Nangal", as:"サトレジ川側（ナンガル）"} were looked up ONLY under the
+       `as` text, all five came back not_found, and the turn spent a whole model round re-sending the same map without
+       `as` — where every one of them resolved. `as` still goes first (text-to-era-map: it is the form Atlas says the
+       label means NOW); the label is the next rung, not a spelling thrown away. */
+    function spellings(it) {
+      return [str(it.as, 120), str(it.name, 120)].filter((x, k, arr) => x && arr.indexOf(x) === k);
+    }
     function queries(it) {
-      const name = str(it.as, 120) || str(it.name, 120);   /* (text-to-era-map) `as` is the form to look up when the label is the text's own spelling */
       const country = str(it.country, 90);
-      return (country && norm(name).indexOf(norm(country)) < 0) ? [name + ', ' + country, name] : [name];
+      const out = [];
+      spellings(it).forEach((name) => {
+        if (country && norm(name).indexOf(norm(country)) < 0) out.push(name + ', ' + country);
+        out.push(name);
+      });
+      return out;
     }
 
     async function resolveOne(it, deadline) {
@@ -425,25 +439,31 @@ export function makeAtlasMapCompose(deps) {
     }
 
     /* ── Camera: frame everything that landed. ──────────────────────────────────────────────────── */
+    /* (atlas-fewer-rounds) returns WHAT it framed — {items, bounds:[w,s,e,n]} — or null, so the result can tell Atlas what the
+       camera now shows. It used to return a bare boolean nobody read: measured 2026-11-24, a turn followed a framed
+       compose with map_view → look_at_map → map_view → look_at_map, four model rounds (about a minute) spent learning
+       where the camera had gone. */
     function frame(recs) {
-      if (!GE || !recs.length) return false;
+      if (!GE || !recs.length) return null;
       try {
         const g = GE();
         if (recs.length === 1) {
           const r = recs[0];
-          g.camera.flyTo({ center: [r.lng, r.lat], zoom: Math.min(Math.max(g.camera.getZoom(), isArea(r.kind) ? 4 : 8), isArea(r.kind) ? 6 : 11), duration: 900 });
-          return true;
+          const z = Math.min(Math.max(g.camera.getZoom(), isArea(r.kind) ? 4 : 8), isArea(r.kind) ? 6 : 11);
+          g.camera.flyTo({ center: [r.lng, r.lat], zoom: z, duration: 900 });
+          return { items: 1, center: [r.lng, r.lat], zoom: z };
         }
         let w = 180, s = 90, e = -180, n = -90;
         recs.forEach((r) => {
           const b = r.bbox || [r.lng, r.lat, r.lng, r.lat];
           w = Math.min(w, b[0]); s = Math.min(s, b[1]); e = Math.max(e, b[2]); n = Math.max(n, b[3]);
         });
-        if (!(e >= w && n >= s) || (e - w) > 340) return false;
+        if (!(e >= w && n >= s) || (e - w) > 340) return null;
         const pad = Math.max(0.15, (e - w) * 0.08, (n - s) * 0.08);
-        g.camera.fitBounds([[Math.max(-180, w - pad), Math.max(-85, s - pad)], [Math.min(180, e + pad), Math.min(85, n + pad)]], { padding: 70, maxZoom: 10, duration: 900 });
-        return true;
-      } catch (_) { return false; }
+        const bounds = [Math.max(-180, w - pad), Math.max(-85, s - pad), Math.min(180, e + pad), Math.min(85, n + pad)];
+        g.camera.fitBounds([[bounds[0], bounds[1]], [bounds[2], bounds[3]]], { padding: 70, maxZoom: 10, duration: 900 });
+        return { items: recs.length, bounds: bounds.map((v) => Math.round(v * 100) / 100) };
+      } catch (_) { return null; }
     }
 
     /* (text-to-era-map) where each point of a DATED map came from — the reader is owed the difference between a name the
@@ -743,7 +763,7 @@ export function makeAtlasMapCompose(deps) {
 
       await awaitStyle(Math.min(6000, Math.max(0, deadline - now())));
       const painted = paint();
-      if (a.camera !== 'keep') frame(placed.length ? placed : records);
+      const framed = (a.camera !== 'keep') ? frame(placed.length ? placed : records) : null;
 
       const anyDrawn = painted && (placed.length > 0 || drawn.length > 0 || shapes.length > 0);
       const anyFill = fills.some((f) => f.ok);
@@ -767,6 +787,10 @@ export function makeAtlasMapCompose(deps) {
       const exec = { status: ok ? (partial ? 'partial' : 'ok') : 'failed', compose: composeId,
         artifact: artifactId, revision: revision, counts: counts,
         placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance, ...(era ? { source: r.source, as: r.identifiedAs || undefined, record: r.canonical } : null) })),   /* (#R515) `web_verified` = no gazetteer holds this name and a live web search placed it; say where a point came from if it matters to the answer */
+        /* (atlas-fewer-rounds) what the camera now shows, as IntMap set it — not a request to check it */
+        view: framed ? Object.assign({ framed: framed.items === placed.length ? 'all_placed' : 'all_resolved' }, framed,
+          { note: 'The camera was fitted to these items: every one of them is inside the view now (padded, not cut at the edge). You do not need to move or look at the map to confirm the framing; move it only if you want a DIFFERENT view.' })
+          : (a.camera === 'keep' ? { framed: 'kept' } : undefined),
         unplaced: missing, relationsDrawn: drawn.length, relationsSkipped: skipped, relations: relOut, fills: fills.length ? fills : undefined,
         shapes: shapes.length ? shapes.map(shapePub) : undefined, shapesUnresolved: shapeMiss.length ? shapeMiss : undefined,
         note: missing.length ? ("The places listed under `unplaced` are NOT on the map. Say so to the reader; do not describe them as shown. `reason` says WHY, and the three are different problems: `not_found` = the gazetteer holds no feature under the spellings in `tried`, and IntMap will not stand a stranger in for a name it cannot find (#R515). `timeout` / `not_attempted` = the lookup ran out of clock, NOT evidence the place does not exist. `over_item_limit` = more than 24 items were sent and these did not fit. `webVerified:false` means the live-web check was also asked and could not ground the name.\\nTO FINISH THIS MAP, call compose_map ONE more time with the COMPLETE list of places you want shown — the ones already placed AND new spellings for the ones that failed. Re-listing a place that is already placed is FREE: it is in the ledger, so it costs no lookup and no wait. That call becomes the next REVISION of this same map (artifact `{ART}`), it REPLACES this one on the map and in your reply, and the reader sees ONE finished map instead of a draft followed by a correction. Do NOT send only the failures: a revision states the whole map, so anything you leave out disappears from it.\\nIf a different name means the same place — the municipality or ward it is in, its official or local spelling, the facility rather than the district — you may use it. BUT A TOWN IS NOT A FACTORY: if you place a works by naming the city around it, the point is an APPROXIMATE location, and you must say so in your answer rather than let the reader read it as the site itself.").replace('{ART}', artifactId) : undefined };

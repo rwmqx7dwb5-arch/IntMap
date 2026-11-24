@@ -183,7 +183,7 @@ test('⑥ the worker source: fetch is gated before Pyodide loads, the scrub runs
   const at = (s) => { const i = src.indexOf(s); assert.ok(i >= 0, 'missing: ' + s); return i; };
   assert.ok(at("pin(G, 'fetch', gatedFetch)") < at('G.loadPyodide('), 'fetch must be replaced before any Pyodide byte runs');
   assert.ok(at('var open = scrub();') < at("post({ t: 'ready'"), 'the scrub runs before the worker says it is ready');
-  assert.ok(at('ready.then(function () { if (py) return runJob(m.job); })') > 0, 'a job runs only after ready, and only with an interpreter');
+  assert.ok(at('ready.then(function () { if (py) return runJob(m.job, ') > 0, 'a job runs only after ready, and only with an interpreter');
   /* the deny-list, held to docs/SECURITY-ARCHITECTURE.md §6 so the two cannot drift apart */
   const DOORS = ['indexedDB', 'caches', 'BroadcastChannel', 'Worker', 'SharedWorker', 'XMLHttpRequest', 'WebSocket', 'EventSource',
     'WebTransport', 'Notification', 'importScripts', 'loadPyodide', 'FontFace'];

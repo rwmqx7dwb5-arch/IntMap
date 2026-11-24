@@ -1224,6 +1224,18 @@
    "subjects": [
     "data/admin-stats.json.gz"
    ]
+  },
+  "https://datasets.wri.org/datasets/global-power-plant-database": {
+   "state": "observed",
+   "etag": "\"rvwaivvthr2m34\"",
+   "lastModified": null,
+   "contentLength": 121946,
+   "via": "head",
+   "status": 200,
+   "observedAt": "2026-11-24T14:32:14.011Z",
+   "subjects": [
+    "data/power-plants.json"
+   ]
   }
  }
 }

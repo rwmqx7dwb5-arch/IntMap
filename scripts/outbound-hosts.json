@@ -768,6 +768,70 @@
       }
     },
     {
+      "host": "data.source.coop",
+      "what": "Source Cooperative — Google AlphaEarth Foundations satellite embedding (annual COGs, CC BY 4.0) and its tile index, only for Atlas change measurement and similar-region search",
+      "whatJp": "Source Cooperative — Google AlphaEarth Foundations 衛星埋め込み（年次 COG・CC BY 4.0）とその索引。Atlas の変化測定・似た地域の検索のときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to measure change between two times at a place: byte-range requests for the image tiles of that window (the place is visible to the server only as which file parts are asked for; never a name, an account or the reader's own position)"
+      },
+      "disclosure": {
+        "en": "Source Cooperative (AlphaEarth embeddings)",
+        "jp": "Source Cooperative (AlphaEarth embeddings)"
+      },
+      "probe": {
+        "url": "https://data.source.coop/tge-labs/aef/v1/annual/manifest.txt"
+      }
+    },
+    {
+      "host": "sentinel-cogs.s3.us-west-2.amazonaws.com",
+      "what": "AWS Open Data sentinel-cogs bucket — Sentinel-2 L2A cloud-optimised GeoTIFFs, only for Atlas change measurement",
+      "whatJp": "AWS Open Data の sentinel-cogs — Sentinel-2 L2A の COG。Atlas の変化測定のときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to measure change between two times at a place: byte-range requests for the image tiles of that window (the place is visible to the server only as which file parts are asked for; never a name, an account or the reader's own position)"
+      },
+      "disclosure": {
+        "en": "AWS Open Data (Sentinel-2 COGs)",
+        "jp": "AWS Open Data (Sentinel-2 COGs)"
+      },
+      "probe": {
+        "url": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/54/S/UE/2025/6/S2A_54SUE_20250617_0_L2A/SCL.tif"
+      }
+    },
+    {
+      "host": "sentinel1euwestrtc.blob.core.windows.net",
+      "what": "Microsoft Planetary Computer storage — Sentinel-1 RTC radar COGs (CC BY 4.0), read with the short-lived anonymous token the catalogue's data-authentication API issues, only for Atlas change measurement",
+      "whatJp": "Microsoft Planetary Computer のストレージ — Sentinel-1 RTC レーダー COG（CC BY 4.0）。カタログの認証 API が匿名で出す短命トークンで読む。Atlas の変化測定のときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to measure change between two times at a place: byte-range requests for the image tiles of that window (the place is visible to the server only as which file parts are asked for; never a name, an account or the reader's own position)"
+      },
+      "disclosure": {
+        "en": "Microsoft Planetary Computer storage (Sentinel-1 RTC)",
+        "jp": "Microsoft Planetary Computer storage (Sentinel-1 RTC)"
+      },
+      "probe": {
+        "url": "https://sentinel1euwestrtc.blob.core.windows.net/"
+      }
+    },
+    {
+      "host": "ai4edataeuwest.blob.core.windows.net",
+      "what": "Microsoft Planetary Computer storage — Impact Observatory annual land-cover COGs (CC BY 4.0), read with the short-lived anonymous token the catalogue's data-authentication API issues, only for Atlas change measurement",
+      "whatJp": "Microsoft Planetary Computer のストレージ — Impact Observatory 年次土地被覆 COG（CC BY 4.0）。カタログの認証 API が匿名で出す短命トークンで読む。Atlas の変化測定のときだけ",
+      "sends": {
+        "code": "area",
+        "detail": "only when the reader asks Atlas to measure change between two times at a place: byte-range requests for the image tiles of that window (the place is visible to the server only as which file parts are asked for; never a name, an account or the reader's own position)"
+      },
+      "disclosure": {
+        "en": "Microsoft Planetary Computer storage (land cover)",
+        "jp": "Microsoft Planetary Computer storage (land cover)"
+      },
+      "probe": {
+        "url": "https://ai4edataeuwest.blob.core.windows.net/"
+      }
+    },
+    {
       "host": "earthquake.usgs.gov",
       "what": "USGS earthquake feeds, ShakeMap and the catalogue queries behind a place's earthquake record and an aftershock forecast",
       "whatJp": "USGS の地震フィード・ShakeMap・場所の地震の記録と余震の見通しのカタログ検索",
@@ -899,11 +963,11 @@
     },
     {
       "host": "flood-api.open-meteo.com",
-      "what": "Open-Meteo river-discharge (GloFAS) forecast at the points of a grid over the area asked about",
-      "whatJp": "Open-Meteo の河川流量（GloFAS）予測。尋ねた範囲の格子の各地点",
+      "what": "Open-Meteo river-discharge (GloFAS) forecast at a point and at the points of a grid over the area asked about",
+      "whatJp": "Open-Meteo の河川流量（GloFAS）予測。尋ねた地点と、尋ねた範囲の格子の各地点",
       "sends": {
         "code": "coordinates",
-        "detail": "latitude/longitude of the grid points over the area asked about"
+        "detail": "latitude/longitude of the point asked about (with its eight neighbouring grid cells) or of the grid points over the area asked about"
       },
       "disclosure": {
         "en": "elevation/weather APIs (Open-Meteo",

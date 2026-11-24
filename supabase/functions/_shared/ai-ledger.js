@@ -23,7 +23,7 @@
 //  ledger itself.
 //
 //  ⚠⚠ NOTHING HERE IS A NEW LIMIT (CONSTITUTION.md §5). The plan numbers are ai-proxy's, moved, not
-//  changed; TURN_MAX_CALLS and TURN_TTL_S stay beside the Atlas turn they describe (ai-proxy). What is
+//  changed; TURN_TTL_S and the turn's spend fences stay beside the Atlas turn they describe (ai-proxy). What is
 //  new is that a second path that spends the same allowance is now counted by the same counter.
 //
 //  ⚠ NO TYPE ANNOTATIONS IN THIS FILE — scripts/static-checks.mjs parses it as plain JavaScript, and
@@ -162,8 +162,11 @@ export async function openChildTurn(db, account, o) {
 }
 
 /* (atlas-delegation) reserveSpend — hold an estimated cost against a turn family's cap (public.reserve_ai_spend).
-     → { allowed, reserved, spent }  (micro-dollars). Throws LedgerUnavailable: an invoice fence that cannot be
-   consulted cannot say the request is inside it (the direction every fence here fails in). */
+     → { allowed, reserved, spent, scope, dayReserved, daySpent }  (micro-dollars). Throws LedgerUnavailable: an invoice
+   fence that cannot be consulted cannot say the request is inside it (the direction every fence here fails in).
+   (atlas-unbounded-turns) `dayCapMicros` — the account's day (public.ai_spend_day), reserved in the same transaction;
+   omitted / null = no day fence. `scope` names what refused: 'turn' (the family's cap) or 'day' (the account's day);
+   a refusal from a ledger that names neither is the family's, the only fence such a ledger had. */
 export async function reserveSpend(db, account, o) {
   const opt = o || {};
   if (account && account.isDev) return { allowed: true, reserved: 0, spent: 0 };
@@ -172,12 +175,18 @@ export async function reserveSpend(db, account, o) {
     const { data, error } = await db.rpc("reserve_ai_spend", {
       p_user: account.id, p_root: String(opt.root || ""), p_micros: Math.max(0, Math.ceil(Number(opt.micros) || 0)),
       p_cap_micros: Math.max(0, Math.floor(Number(opt.capMicros) || 0)), p_ttl_seconds: opt.ttlSeconds,
+      ...(opt.dayCapMicros != null && Number.isFinite(Number(opt.dayCapMicros)) ? { p_day_cap_micros: Math.max(0, Math.floor(Number(opt.dayCapMicros))) } : {}),
     });
     if (error) throw error;
     row = firstRow(data);
   } catch (_) { throw new LedgerUnavailable(); }
   if (!row) throw new LedgerUnavailable();
-  return { allowed: !!row.allowed, reserved: Number(row.reserved_micros) || 0, spent: Number(row.spent_micros) || 0 };
+  const allowed = !!row.allowed;
+  return {
+    allowed, reserved: Number(row.reserved_micros) || 0, spent: Number(row.spent_micros) || 0,
+    scope: allowed ? "" : (row.scope === "day" ? "day" : "turn"),
+    dayReserved: Number(row.day_reserved_micros) || 0, daySpent: Number(row.day_spent_micros) || 0,
+  };
 }
 
 /* (atlas-delegation) settleSpend — replace a reservation with what was billed. → 'settled' | 'not_found' | 'error' | 'skipped'.

@@ -103,6 +103,7 @@ export const SCENARIOS = [
     origin: { kind: 'scripted', from: 'R802 §2 — find_capability ×8, zero operations, step_budget (DEV-NOTES.md R802; dev-notes record)' },
     model: [
       ...['鉄道 経路', '電車 ルート', '乗換案内', '所要時間 距離', '新幹線', 'train route', 'rail directions', '経路探索'].map((q) => step(['find_capability', { query: q }])),
+      say(''), say(''),   /* (atlas-unbounded-execution) the empty final, handed back once, and the same again */
       finalSay(''),
     ],
     respond: () => { throw new Error('this turn reaches no dispatch'); },
@@ -119,6 +120,7 @@ export const SCENARIOS = [
       ...[['Tokyo', 'Delhi'], ['Lagos', 'Tokyo, Japan'], ['Delhi, India', 'Lagos, Nigeria'], ['東京', 'デリー'], ['ラゴス', 'Tokyo Metropolis'],
         ['New Delhi', 'Lagos State'], ['Tokyo 23 wards', 'National Capital Territory'], ['Lagos Island', 'Tokyo-to']]
         .map(([a, b]) => step(run('data.layerValues', { place: a, layer: 'population density' }), run('data.layerValues', { place: b, layer: 'population density' }))),
+      say(''), say(''),   /* (atlas-unbounded-execution) the empty final, handed back once, and the same again */
       finalSay(''),
     ],
     respond: () => failed('<div>⚠ No readable data on the active layers here.</div>', 'no_data'),
@@ -140,12 +142,12 @@ export const SCENARIOS = [
   {
     id: 'cut-short-answer-written-after',
     ...textOf('records', 'gdp-per-capita-top10-not-in-total'),
-    origin: { kind: 'scripted', from: 'R802 §8 — the turn ran out with 「I\'m comparing the two rankings now.」 as its text; the forced final now writes the answer from the transcript' },
+    origin: { kind: 'scripted', from: 'R802 §8 — the turn ran out with 「I\'m comparing the two rankings now.」 as its text. (atlas-unbounded-execution) With no step count the same script reaches its own answer on the ninth reply — no forced final' },
     model: [
       step(run('data.rank', { metric: 'gdp_per_capita', order: 'top', n: 10 })),
       { text: 'I\'m comparing the two rankings now.', turnState: 'continuing', toolCalls: [{ id: 'c0', name: 'run_capability', arguments: { id: 'data.rank', args: { metric: 'gdp', order: 'top', n: 10 } } }] },
       ...[12, 15, 20, 25, 30, 35].map((n) => step(run('data.rank', { metric: 'gdp', order: 'top', n }))),
-      finalSay('Of the top 10 by GDP per capita, Luxembourg, Ireland, Switzerland, Norway, Singapore, Iceland, Qatar and Denmark are not in the top 10 by total GDP; the United States is in both lists.'),
+      say('Of the top 10 by GDP per capita, Luxembourg, Ireland, Switzerland, Norway, Singapore, Iceland, Qatar and Denmark are not in the top 10 by total GDP; the United States is in both lists.'),
     ],
     respond: (a) => done('<div>' + (a.metric || 'rank') + ' top ' + (a.n || 10) + '</div>', ['map', 'panel']),
     expect: { verdict: 'pass' },
@@ -153,11 +155,12 @@ export const SCENARIOS = [
   {
     id: 'cut-short-narration-is-the-reply',
     ...textOf('records', 'gdp-per-capita-top10-not-in-total'),
-    origin: { kind: 'scripted', from: 'R802 §8 — the turn ran out on a narration, and the forced final came back empty: the reader got no answer' },
+    origin: { kind: 'scripted', from: 'R802 §8 — the turn ran out on a narration, and the forced final came back empty: the reader got no answer. (atlas-unbounded-execution) With no step count the turn ends on its own empty final, handed back once and the hand-back empty too: still no answer' },
     model: [
       step(run('data.rank', { metric: 'gdp_per_capita', order: 'top', n: 10 })),
       { text: 'I\'m comparing the two rankings now.', turnState: 'continuing', toolCalls: [{ id: 'c0', name: 'run_capability', arguments: { id: 'data.rank', args: { metric: 'gdp', order: 'top', n: 10 } } }] },
       ...[12, 15, 20, 25, 30, 35].map((n) => step(run('data.rank', { metric: 'gdp', order: 'top', n }))),
+      say(''), say(''),   /* (atlas-unbounded-execution) the empty final, handed back once, and the same again */
       finalSay(''),
     ],
     respond: (a) => done('<div>' + (a.metric || 'rank') + ' top ' + (a.n || 10) + '</div>', ['map', 'panel']),

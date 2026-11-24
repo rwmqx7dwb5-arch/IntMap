@@ -160,6 +160,13 @@ test('⑪ the policy is configuration: an unset environment is the defaults, nev
   assert.equal(delegationPolicy(env({ ATLAS_DELEGATION: 'shared' })).mode, 'shared');
   assert.equal(delegationPolicy(env({ ATLAS_DELEGATION: 'nonsense' })).mode, DELEGATION_DEFAULTS.mode);
   assert.equal(delegationPolicy(env({ ATLAS_DELEGATION_CHILDREN: '5', ATLAS_DELEGATION_CHILD_CALLS: '4' })).maxChildren, 5);
+  /* (atlas-unbounded-turns) no count by default — null travels as null; an operator's integer still bounds */
+  assert.deepEqual({ ...DELEGATION_DEFAULTS }, { mode: 'independent', maxChildren: null, childMaxCalls: null, maxConcurrent: null });
+  assert.equal(delegationPolicy(env({ ATLAS_DELEGATION_CHILD_CALLS: '4' })).childMaxCalls, 4);
+  assert.equal(delegationPolicy(env({ ATLAS_DELEGATION_CHILD_CALLS: '0' })).childMaxCalls, 1, 'a call allowance is at least one call');
+  assert.equal(delegationPolicy(env({ ATLAS_DELEGATION_CONCURRENCY: '3' })).maxConcurrent, 3);
+  assert.equal(delegationPolicy(env({ ATLAS_DELEGATION_CONCURRENCY: 'many' })).maxConcurrent, null, 'a value that is not an integer is not given');
+  assert.equal(delegationPolicy(env({ ATLAS_DELEGATION_CHILDREN: '' })).maxChildren, null, 'unset is no count, never zero');
   assert.equal(turnCostCapMicros(env({})), TURN_COST_CAP_USD * 1e6);
   assert.equal(turnCostCapMicros(env({ AI_TURN_COST_CAP_USD: '7.5' })), 7_500_000);
 });
@@ -221,8 +228,84 @@ test('⑮ research.delegate refuses past the server\'s policy before anything is
 
 test('⑯ every Atlas turn answer states the worker policy; the console reads it from there', () => {
   const ask = readFileSync(new URL('../supabase/functions/ai-proxy/ask.ts', import.meta.url), 'utf8');
-  assert.match(ask, /spec\.protocol2 \? \{ delegationPolicy: \{ mode: delegation\.mode, maxChildren: delegation\.maxChildren, childMaxCalls: delegation\.childMaxCalls \} \}/);
+  assert.match(ask, /spec\.protocol2 \? \{ delegationPolicy: \{ mode: delegation\.mode, maxChildren: delegation\.maxChildren, childMaxCalls: delegation\.childMaxCalls, maxConcurrent: delegation\.maxConcurrent \} \}/);
   const con = readFileSync(new URL('../js/atlas-console.js', import.meta.url), 'utf8');
   assert.match(con, /env\.meta\.delegationPolicy/);
   assert.match(con, /get _delegationPolicy\(\)/);
+});
+
+/* ── (atlas-unbounded-turns) the money fences that replaced the counts, and the output budget Atlas chooses ── */
+import { dayCostCapMicros, DAY_COST_PLAN_USD } from '../supabase/functions/ai-proxy/config.ts';
+import { hintedMaxOutput, HARD_MAX_OUTPUT, maxOutputFor } from '../supabase/functions/ai-proxy/tasks/spec.ts';
+import { outputCeilingOf, MODEL_MAX_OUTPUT_TOKENS, PROVIDER_DEFAULT_MODEL, FALLBACK_CHAIN } from '../supabase/functions/_shared/ai-provider.js';
+import { PLANS, planColumn } from '../supabase/functions/_shared/plans.js';
+import { reserveSpend } from '../supabase/functions/_shared/ai-ledger.js';
+
+test('⑰ the day fence is the plan table\'s aiUsdPerDay column, derived from the same row\'s turns, moved by AI_DAY_USD_SCALE', () => {
+  const env = (o) => (k) => o[k] || '';
+  assert.deepEqual({ ...DAY_COST_PLAN_USD }, { ...planColumn('aiUsdPerDay') }, 'ai-proxy reads the plan table, not a copy');
+  for (const [name, row] of Object.entries(PLANS)) assert.equal(row.aiUsdPerDay, row.aiTurnsPerDay * 1, `plan ${name}: aiUsdPerDay = aiTurnsPerDay × $1`);
+  assert.equal(dayCostCapMicros(env({}), 'free'), 10_000_000);
+  assert.equal(dayCostCapMicros(env({ AI_DAY_USD_SCALE: '2.5' }), 'free'), 25_000_000);
+  for (const bad of ['0', '-1', 'x']) assert.equal(dayCostCapMicros(env({ AI_DAY_USD_SCALE: bad }), 'free'), 10_000_000, `scale «${bad}» is not given`);
+  assert.equal(dayCostCapMicros(env({}), 'no-such-plan'), 10_000_000, 'an unknown plan is never more than free');
+});
+
+test('⑱ the output budget Atlas chooses: raised only on the Atlas tasks, never past the documented ceiling, never below the task\'s', () => {
+  const turn = TASKS.get('atlas_turn'), worker = TASKS.get('atlas_delegate'), brief = TASKS.get('brief');
+  assert.equal(turn.outputHint, true); assert.equal(worker.outputHint, true);
+  for (const t of TASKS.values()) if (t.name !== 'atlas_turn' && t.name !== 'atlas_delegate') assert.equal(t.outputHint, false, t.name + ' takes a hint');
+  const base = maxOutputFor(turn);
+  assert.equal(hintedMaxOutput(turn, base, 40_000, 128_000), 40_000);
+  assert.equal(hintedMaxOutput(turn, base, 900_000, 128_000), 128_000, 'capped at the model ceiling');
+  assert.equal(hintedMaxOutput(turn, base, 40_000, null), HARD_MAX_OUTPUT, 'a model with no documented ceiling is not raised past HARD_MAX_OUTPUT');
+  assert.equal(hintedMaxOutput(turn, base, 100, 128_000), base, 'a hint never lowers the task\'s budget');
+  for (const bad of [0, -5, NaN, 'lots', undefined]) assert.equal(hintedMaxOutput(turn, base, bad, 128_000), base);
+  assert.equal(hintedMaxOutput(brief, maxOutputFor(brief), 40_000, 128_000), maxOutputFor(brief), 'a task without outputHint ignores it');
+  /* every model the function answers with by default has a cited ceiling (the comment above the table names the pages) */
+  for (const id of [...Object.values(PROVIDER_DEFAULT_MODEL), ...FALLBACK_CHAIN]) assert.ok(outputCeilingOf(id) > HARD_MAX_OUTPUT, id + ' has no documented output ceiling');
+  assert.equal(outputCeilingOf('gpt-99-imaginary'), null);
+  const src = readFileSync(new URL('../supabase/functions/_shared/ai-provider.js', import.meta.url), 'utf8');
+  const block = src.slice(src.indexOf('①c THE MOST A MODEL CAN WRITE'), src.indexOf('export const MODEL_MAX_OUTPUT_TOKENS'));
+  for (const id of Object.keys(MODEL_MAX_OUTPUT_TOKENS)) assert.ok(block.includes(id), id + ': its ceiling has no source written beside it');
+  assert.ok((block.match(/https:\/\//g) || []).length >= 3, 'each provider\'s page is cited');
+  /* the provider roof does not undo a raised budget, and the turn answer says which budget it ran with */
+  const oa = readFileSync(new URL('../supabase/functions/ai-proxy/providers/openai.ts', import.meta.url), 'utf8');
+  assert.match(oa, /const outputRoof = maxTokens > HARD_MAX_OUTPUT && ceiling \? ceiling : 12_000;/);
+  assert.match(oa, /max_output_tokens: Math\.min\(outputRoof, maxTokens \+/);
+  const ask = readFileSync(new URL('../supabase/functions/ai-proxy/ask.ts', import.meta.url), 'utf8');
+  assert.match(ask, /let maxTokens = hintedMaxOutput\(spec, baseTokens, payload\.maxOutputHint, outputCeilingOf\(model\)\);/);
+  assert.match(ask, /const baseTokens = maxOutputFor\(spec, requestedCount\);/);
+  assert.match(ask, /maxOutput: maxTokens,/);
+  assert.ok(ask.indexOf('let maxTokens = hintedMaxOutput') > ask.indexOf('const model = tier.model'), 'the budget is decided after the model is known');
+  const core = readFileSync(new URL('../js/ai-core.js', import.meta.url), 'utf8');
+  assert.match(core, /if\(typeof opts\.maxOutputHint==='number'&&isFinite\(opts\.maxOutputHint\)&&opts\.maxOutputHint>0\) body\.maxOutputHint=Math\.floor\(opts\.maxOutputHint\);/);
+});
+
+test('⑲ reserveSpend reserves against the day only when given one, and says which fence refused', async () => {
+  const acct = { id: 'u', isDev: false };
+  const seen = [];
+  const db = (row) => ({ rpc: async (name, args) => { seen.push(args); return { data: [row], error: null }; } });
+  await reserveSpend(db({ allowed: true, reserved_micros: 1, spent_micros: 0 }), acct, { root: 'r', micros: 1, capMicros: 3e6, ttlSeconds: 900 });
+  assert.equal('p_day_cap_micros' in seen[0], false, 'no day given → the five-argument call');
+  await reserveSpend(db({ allowed: true, reserved_micros: 1, spent_micros: 0 }), acct, { root: 'r', micros: 1, capMicros: 3e6, dayCapMicros: null, ttlSeconds: 900 });
+  assert.equal('p_day_cap_micros' in seen[1], false, 'null → no day fence');
+  const day = await reserveSpend(db({ allowed: false, reserved_micros: 0, spent_micros: 0, scope: 'day', day_reserved_micros: 9e6, day_spent_micros: 5e5 }), acct, { root: 'r', micros: 1, capMicros: 3e6, dayCapMicros: 1e7, ttlSeconds: 900 });
+  assert.equal(seen[2].p_day_cap_micros, 1e7);
+  assert.deepEqual([day.allowed, day.scope, day.dayReserved, day.daySpent], [false, 'day', 9e6, 5e5]);
+  const old = await reserveSpend(db({ allowed: false, reserved_micros: 0, spent_micros: 3e6 }), acct, { root: 'r', micros: 1, capMicros: 3e6, ttlSeconds: 900 });
+  assert.equal(old.scope, 'turn', 'a refusal that names no scope is the family\'s — the only fence such a ledger had');
+  const ok = await reserveSpend(db({ allowed: true, reserved_micros: 1, spent_micros: 0, scope: '' }), acct, { root: 'r', micros: 1, capMicros: 3e6, ttlSeconds: 900 });
+  assert.equal(ok.scope, '');
+});
+
+test('⑳ a day refusal is its own 409 and a money refusal is never retried by the page', () => {
+  const ask = readFileSync(new URL('../supabase/functions/ai-proxy/ask.ts', import.meta.url), 'utf8');
+  assert.match(ask, /if \(held && !held\.allowed && held\.scope === "day"\) \{\s*await refund\(\);\s*return await bail\(\{ error: "day_cost",[\s\S]*?\}, 409\);/);
+  assert.match(ask, /dayCapMicros = dayCostCapMicros\(\(k: string\) => Deno\.env\.get\(k\) \|\| "", plan\)/);
+  const core = readFileSync(new URL('../js/ai-core.js', import.meta.url), 'utf8');
+  assert.match(core, /const money=\(ej\.error==='turn_cost'\|\|ej\.error==='day_cost'\);/);
+  assert.match(core, /retryable:money\?false:/);
+  assert.match(core, /day_cost:_pl\('[^']+','[^']+'\)/, 'day_cost has its sentence in en and jp');
+  assert.match(core, /turn_cost:_pl\('[^']+','[^']+'\)/, 'turn_cost has its sentence in en and jp');
 });

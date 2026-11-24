@@ -975,13 +975,19 @@ AI に掛ける）で `assign` より**前**（Event は AI の座標で組ま�
   （secret 未設定なら 503。実測で確認: 未設定 503 / 誤り 401 / GET 405）。
 - 上流の取得は `_shared/relay-guard.js` の `fetchGuarded`（期限 15 s・6 MB・content-type）。
   ⚠ `refresh-news` は `AbortSignal` を 1 つも持っていない。同じ形を新しく作らない。
-- **壁時計の予算**を見て、足りなければその段で止めて次の run に残す（既定 240 s）。
+- **壁時計の予算**を見て、足りなければその段で止めて次の run に残す（既定 140 s。本番は無通信 150 秒で打ち切る——それより長い予算は段に「まだ時間がある」と信じさせたまま殺す）。
 - cron は **2 本**。job の定義は migration `20260925090000_cron_jobs_as_code.sql` にあり、秘密は vault から**ヘッダ**で送り、
   body で段を選ぶ:
 
   | job | 間隔 | body |
   |---|---|---|
-  | `news-ingest-tick` | `*/20 * * * *` | `{"stages":["fetch","locate","embed","assign","link","entities","prune"]}` |
+  | `news-ingest-tick` | `0,20,40 * * * *` | `{"stages":["fetch"]}` |
+  | `news-ingest-locate` | `4,24,44 * * * *` | `{"stages":["locate","embed"]}` |
+  | `news-ingest-assign` | `8,28,48 * * * *` | `{"stages":["assign","link","entities"]}` |
+  | `news-ingest-prune` | `16,36,56 * * * *` | `{"stages":["prune"]}` |
+
+  ⚠ 段を 1 本にまとめた body は本番で `WORKER_RESOURCE_LIMIT`（546）になる。1 つの worker が段のあいだにメモリを手放さず、
+  合計で上限に当たる（2026-11-24 実測・`supabase/migrations/20261128100000_news_ingest_stage_split.sql`）。段ごとに別の job にして、起動する分（minute）で順序を保つ。
   | `news-ingest-summarise` | `13 * * * *` | `{"stages":["summarise"]}` |
 
   ⚠⚠ (#R405) **`news-ingest-summarise` は新しい job ではなく、`news-ingest-translate` を
@@ -1271,8 +1277,8 @@ LLM がそれらを 1 つの説明にまとめたもので、後者は**1 文ご
 
 ### 16.6 `embed` 段を cron に入れた
 
-`news-ingest-tick` の段は `fetch, locate, embed, assign, link, entities, prune`（migration
-`20261003160000_news_intelligence.sql`、`SCHEDULE` も同じ）。⚠ **鍵は変えていない。** 2026-08-24 の実測では
+段は `fetch, locate, embed, assign, link, entities, prune`——順序は同じで、job は 4 本に分かれた（上の表・migration
+`20261003160000_news_intelligence.sql` が最初の形、`20261128100000_news_ingest_stage_split.sql` が今の形、`SCHEDULE` も同じ）。⚠ **鍵は変えていない。** 2026-08-24 の実測では
 `OPENAI_API_KEY` が埋め込みモデルに届かず（403 `model_not_found`）、届く鍵が入るまで `embed` は 0 件で
 終わり、その理由（`embed_configured_model`・`embed_available_models`・`embed_error`）が毎 run 記録に残り、
 `news_ingest_health()` がその段を「失敗している」と返す。**埋め込みモデルに届く `OPENAI_API_KEY` を入れるか、

@@ -1,10 +1,8 @@
-/* Atlas · long-form writing (research.longform) and the documented loop clocks.
-   Audit 2026-11-21 §9.6 (a long report or long code is limited by one task's output ceiling) and §10.3 (the document
-   quoted 45 s / 180 s while js/atlas-agent.js holds 240 s / 600 s). */
+/* Atlas · long-form writing (research.longform).
+   Audit 2026-11-21 §9.6 (a long report or long code is limited by one task's output ceiling). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
 import { planOutline, runLongform, assemble, storageStore } from '../js/atlas-longform.js';
 
 const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
@@ -102,9 +100,4 @@ test('the section task exists, is registered, and stays under the one absolute c
   const hard = Number(read('supabase/functions/ai-proxy/tasks/spec.ts').match(/HARD_MAX_OUTPUT\s*=\s*(\d+)/)[1]);
   assert.ok(max <= hard && max >= 4000, 'a chapter has room, and the ceiling was not raised for it');
   assert.doesNotMatch(t, /json:\s*true/, 'a chapter is prose or code, not JSON');
-});
-
-test('the documents quote the loop clocks the code holds (check:docs rule atlas-clocks)', () => {
-  const out = execFileSync(process.execPath, ['scripts/doc-facts.mjs', '--rule=atlas-clocks'], { cwd: new URL('..', import.meta.url), encoding: 'utf8' });
-  assert.match(out, /atlas-clocks: \d+ quoted clock value/);
 });
