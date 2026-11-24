@@ -53,3 +53,10 @@ main の bot が merge 後に再び下げる。
 main が能力を足し、能力表は 268 行になった。`atlas-cap-runs` 981.3→990.3 kB（`atlas-console`
 も CI で 1145.6 kB まで増えた）。能力表の行数に比例する増分で、利用者が得る能力そのもの。
 `perf-budget --update` で実測まで上げた。main の bot が merge 後に再び下げる。
+
+## perf (4 回目: 能力表 272 行)
+
+`async.raw` 14680.9→14770.9 kB・`async.gzip` 4956.6→4991.8 kB・`atlas-cap-runs` 989.3→1004.1 kB・
+`dist.assets` 22068.6→22217.5 kB を `perf-budget --update` で実測まで上げた。main が能力を足して
+能力表が 272 行になった分で、利用者が得る能力そのもの。縮める根拠は無い。main の bot が
+merge 後に再び下げる。
