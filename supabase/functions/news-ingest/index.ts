@@ -71,6 +71,7 @@ import { makeEntityMatcher } from "../_shared/news-entities.js";
 import { buildArchiveRow, pendingArchive, makeWorldMatcher as makeHistoryMatcher, HISTORY } from "../_shared/news-history.js";
 import { BACKFILL, dayRows, pagesFromQuery } from "../_shared/news-backfill.js";
 import { siteUrl } from "../_shared/site-origin.js";
+import { listGeminiEmbeddingModels, embedGemini, pickEmbeddingModel } from "../_shared/embedding-provider.js";   /* (gemini-embed-methods) one list filter and one call, shared with atlas-embed */
 
 const NEWSGEO = globalThis.IntMapNewsGeo || null;
 
@@ -483,37 +484,24 @@ async function embedBatch(key, model, inputs, dims) {
      正規化する（公式の要件）。⚠ モデルを混ぜない: 一度 gemini を選んだ run は最後まで gemini で、記事ごとに
      `embedding_model` が残る。 */
 async function geminiEmbeddingModel(key) {
-  try {
-    const r = await providerFetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
-      { headers: { "x-goog-api-key": key } }, { ceiling: CEILING, timeoutMs: 15000 });
-    if (!r.ok) return { error: providerFail(r.status, await bodyLength(r)).message };
-    const j = await r.json();
-    const ms = (Array.isArray(j?.models) ? j.models : []).filter((m) =>
-      /embed/i.test(String(m?.name || "")) && Array.isArray(m?.supportedGenerationMethods) && m.supportedGenerationMethods.includes("batchEmbedContents"));
-    const names = ms.map((m) => String(m.name).replace(/^models\//, ""));
-    const pick = names.find((n) => n === GEMINI_EMBEDDING_MODEL) || names.find((n) => /gemini-embedding/.test(n)) || names[0] || null;
-    return { model: pick, ids: names };
-  } catch (e) { return { error: String((e && e.message) || e) }; }
+  /* ⚠ (gemini-embed-methods) the list filter lived here as a copy that kept only models listing batchEmbedContents —
+     measured 2026-11-25, NONE of the key's 65 models does, so no article was ever embedded. The shared helper keeps a
+     model that lists either embedding method and remembers which, so embedGemini calls it the way it can be called. */
+  const door = (url, init) => providerFetch(url, init, { ceiling: CEILING, timeoutMs: 15000 });
+  const L = await listGeminiEmbeddingModels(key, door);
+  if (!L.answered) return { error: "gemini models " + (L.status || L.code) };
+  const pick = pickEmbeddingModel("gemini", L.ids, [GEMINI_EMBEDDING_MODEL], () => false);
+  return { model: pick || null, ids: L.ids };
 }
 
 async function geminiEmbedBatch(key, model, inputs) {
-  try {
-    const body = { requests: inputs.map((text) => ({ model: "models/" + model, content: { parts: [{ text }] },
-      taskType: "SEMANTIC_SIMILARITY", outputDimensionality: EMBED_DIM })) };
-    const r = await providerFetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":batchEmbedContents", {
-      method: "POST", headers: { "x-goog-api-key": key, "Content-Type": "application/json" }, body: JSON.stringify(body),
-    }, { ceiling: CEILING, timeoutMs: 30000 });
-    if (!r.ok) return { status: r.status, error: providerFail(r.status, await bodyLength(r)).message };
-    const j = await r.json();
-    const data = (Array.isArray(j?.embeddings) ? j.embeddings : []).map((e, index) => {
-      const v = Array.isArray(e?.values) ? e.values : [];
-      const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
-      return { index, embedding: v.map((x) => x / norm) };
-    });
-    /* Gemini は使用量を返さない。見積り（4 字 ≈ 1 トークン）であることを応答に書く。 */
-    const tokens = Math.ceil(inputs.reduce((s, t) => s + t.length, 0) / 4);
-    return { status: 200, json: { data, usage: { total_tokens: tokens } } };
-  } catch (e) { return { status: 0, error: String((e && e.message) || e) }; }
+  const door = (url, init) => providerFetch(url, init, { ceiling: CEILING, timeoutMs: 30000 });
+  const e = await embedGemini(key, model, inputs, door, { dim: EMBED_DIM, taskType: "SEMANTIC_SIMILARITY" });
+  if (!e.ok) return { status: e.status || 0, error: "gemini embed " + (e.status || e.code) };
+  const data = e.vectors.map((embedding, index) => ({ index, embedding }));
+  /* Gemini は使用量を返さない。見積り（4 字 ≈ 1 トークン）であることを応答に書く。 */
+  const tokens = Math.ceil(inputs.reduce((sum, t) => sum + t.length, 0) / 4);
+  return { status: 200, json: { data, usage: { total_tokens: tokens } } };
 }
 
 async function stageEmbed(db, budget) {
