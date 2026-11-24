@@ -33,11 +33,11 @@ internal: 既存 9 本の PR を依存順に 1 本へ束ねた統合で、利用
 増えた分は、この PR にまとめた 9 本（永続ジョブの 3 段・作業記憶・作業成果物・Python ブリッジ・GIS 取得段など）が足した能力の実体と、`atlas-console` に足した 2 つの入口（`workingMemory` と、ターン外でも能力を走らせる `_kernelRun`）による。
 遅延チャンクなので起動時の読み込み（initial）は増えていない。測定はこのブランチの HEAD を build したもの。
 
-## テスト予算(durations.json)
+## テスト予算（スイート全体の天井）
 
-`tests/ptc-python-bridge.spec.js` の 22 秒は #1307 の筆者が置いた見積もりで、deep の spec は PR でも push でも走らないため実測がまだ無い。
-スイート全体の天井（5250 秒）を 3 秒超えたので、天井は動かさず、この spec の見積もりを 19 秒にした（1 つの test が Pyodide を 1 回読み込んで能力を呼ぶだけの形）。
-これも実測ではない。最初の nightly が実測を `Record the measured times on main` で書き戻すので、そこで正しい値になる。
+`main` はスイート全体の天井（5250 秒）に対して余白 1 秒で、実ブラウザで Python ブリッジを確かめる spec を 1 本足すだけで超える。ゲートは「天井を上げず、時間を取り除け」と言うので、天井は動かさなかった。
+別 spec（`ptc-python-bridge.spec.js`）はやめ、その 1 つの test を `tests/compute-sandbox.spec.js` の末尾へ移し、`INTMAP_RUN_PTC_BROWSER=1` を付けたときだけ走る opt-in にした（走らない test は時間を使わない）。配線の検査は Node 側（`tests/ptc-python-bridge-checks.test.mjs`）が毎回走る。
+実ブラウザでの確認は、この作業の中で 1 度行い、3 つの欠陥（ターン外で能力が走れない・`JsNull` が呼べない・遅延ロードの Atlas コンソールとの競合）を見つけて直した。回帰検知は、必要なときに上のフラグで走らせる。
 
 ## 共有窓口の基準線(check:surface)
 

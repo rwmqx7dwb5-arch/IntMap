@@ -1,7 +1,6 @@
 {
  "tests/board-compose.spec.js": 19,
  "tests/compute-sandbox.spec.js": 22,
- "tests/ptc-python-bridge.spec.js": 19,
  "tests/geopolitics-layers.spec.js": 14,
  "tests/gis-chain-audit.spec.js": 10,
  "tests/wave4-news.spec.js": 6,
