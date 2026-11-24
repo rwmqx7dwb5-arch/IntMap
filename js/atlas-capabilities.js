@@ -421,13 +421,6 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.sessionGrant","sessionGrant","allowSiteOperation,permitSite,authorizeBrowserSite","research","none","","explanation","external","explicit","",""],
       ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
       ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
-      ["board.edit","boardEdit","editBoard,editTable,editWorkspace,changeCell,setCell","panel","none","panel.board","panel,explanation","session","none","","board"],
-      ["board.delta","boardDelta","boardChanges,whatDidIChange,workspaceDiff","panel","none","","explanation","read","none","","board"],
-      ["ui.compose","dashboard","uiCompose","ui","none","","panel,explanation","session","none","",""],
-      ["geo.ml","geoMl","multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty","data","none","gis.dataset","explanation","session","none","","gisCore","external"],
-      ["geo.regionStat","regionStat","regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation","data","none","","explanation","session","none","",""],
-      ["research.search","researchSearch","investigate,searchNews,searchSources","research","none","","explanation","read","none","","","external"],
-      ["research.portImpact","portImpact","portClosure,portDisruption,portStops","research","none","","explanation","read","none","",""],
       ["siting.compare","siting","compareSites,industrialSiting,siteSelection,locationComparison,compareLocations","data","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
