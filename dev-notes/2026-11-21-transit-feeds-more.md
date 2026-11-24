@@ -39,3 +39,7 @@ Metlink(条文が JS 描画で読めない)・HSL / Transport for Ireland / ACT(
 `dist.assets` を 22068.6 kB から 22194.5 kB、`atlas-cap-runs` を 981.3 kB から 987.1 kB へ上げた。前者は 12 路線の時刻表バンドルの出典行と説明文、後者は main 側で増えた能力表の行。いずれも利用者が到達できるものの実体。
 
 追記: main 合流後の再計測で async 合計と `atlas-cap-runs` が増えた分は、main 側の能力表の行による。ceiling のみ上げた。
+
+## perf 天井(2 回目の main 合流後)
+
+`eager.gzip` を 1560.5 kB から 1568.6 kB へ上げた(+8.1 kB)。起動時に読む `js/transit-feeds.js` の 12 路線ぶんの行と、`js/legal-text.js` の時刻表の文(en・jp)の増分。ほかの行は帯の内側だった。ceiling のみ上げ、内容の削減はしていない。
