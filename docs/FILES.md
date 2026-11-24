@@ -246,6 +246,9 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
                                   して、貼ったリンクと同じ hashchange の経路で適用する。履歴は増やさない）
 embed-client.js                   **埋め込み API のホストの側**と約束事（`PROTOCOL`・`mount`）。他サイトが URL で import するので
                                   何も import せず、vite が dist/ にそのまま写す。embed-mode.js が PROTOCOL を import する
+admin-stats.js                    **行政区分の人口——日付・方式・単位の存続期間つき**。`data/admin-stats.json.gz`（`scripts/build-admin-stats.mjs` が Wikidata から作る）を
+                                  読み、`table`（年の指定・許容年・方式と年の混在の申告）、`valueAt`、`definitionAt`（存続期間の外は拒否＝歴史結合の番人）、
+                                  `boundaries`（第 1 級境界に ISO 3166-2 で結ぶ）。DOM もグローバルも持たない。Atlas `geo.regionStat` の中身
 geo-similar.js                    **地域の特徴ベクトルによる類似検索**（Spatial Embeddings 第 1 スライス）。OSM の建物・道路・施設・水辺の種類別の密度を
                                   比べる集合の中で標準化し cosine で並べ、何が効いたか（特徴ごとの寄与）を返す。純粋で node で評価できる
 geo-ml.js                         **地理空間 ML の一連作業**（純粋・node で評価できる）。複数年の変化（撮影日が観測の画像だけから 画素ごとの型・速さ・向き・時期。
@@ -1109,7 +1112,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  277 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  278 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1135,7 +1138,7 @@ file-text.js                        md・txt・html・csv・json の書き出し
 atlas-cap-compute.js              Atlas の能力 — Python の隔離実行（compute.run・綴り `python`。実行は `js/compute-sandbox.js`）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
-atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar）／複数年の変化・地域の分類・変化の解釈・予測モデル（geo.ml。js/geo-ml-run.js の扉と引数の束縛）
+atlas-cap-geo.js                  Atlas の能力 — 似た地域を探す（geo.similar）／複数年の変化・地域の分類・変化の解釈・予測モデル（geo.ml。js/geo-ml-run.js の扉と引数の束縛）・行政区分の人口（geo.regionStat。js/admin-stats.js）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
 atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
@@ -1255,7 +1258,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
 atlas-skills.js                   **Skill**（手順書）の発見・段階読み・門 — `searchSkills`（find_capability の答えに名前と1行だけ添える）／`readSkill`（1節ずつ）／`audit`（本文が名指す能力・引数が実在するか。`npm run check:capabilities`）
 atlas-skills-data.js              Skill の宣言データ（en+jp の散文だけ。使う能力は本文から導出する）。初期: 歴史的国境の比較・衛星画像の変化検出・産業立地の一次分析・港湾物流リスクの比較
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 277 を検索・到達可能 274）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 278 を検索・到達可能 275）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1279,7 +1282,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 277 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 278 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
