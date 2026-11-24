@@ -117,6 +117,10 @@ export function makeAtlasResults(HOST) {
          call names. js/atlas-executor.js picks `atlas.confirm.what.<capability id>`; a check makes every asking row have one. */
       'atlas.input.confirm_press':   LA('Run {what}?', '{what} を実行します。'),
       'atlas.confirm.what.map.clearAll':      LA('Clear everything drawn on the map: pins, shading, rings and routes.', '地図に描いたピン・塗り・円・ルートをすべて消します。'),
+      'atlas.confirm.what.mcp.act':           LA('Run the tool {what} on an external MCP server. It may send data out or change something there.', '外部MCPサーバーのツール {what} を実行します。データを外部へ送る・向こう側を変更する可能性があります。'),
+      'atlas.confirm.what.mcp.call':          LA('Run the read-only tool {what} on an external MCP server. The request leaves this browser.', '外部MCPサーバーの読み取り専用ツール {what} を実行します。要求はこのブラウザの外へ送られます。'),
+      'atlas.confirm.what.mcp.servers':       LA('Ask the registered external MCP servers which tools they offer. The request leaves this browser.', '登録済みの外部MCPサーバーに、使えるツールの一覧を問い合わせます。要求はこのブラウザの外へ送られます。'),
+      'atlas.confirm.what.mcp.connect':       LA('Add or remove an external MCP server ({what}) in this browser.', '外部MCPサーバー（{what}）をこのブラウザで追加または削除します。'),
       'atlas.confirm.what.places.remove':     LA('Delete {what} from your saved places. This cannot be undone.', 'マイプレイスから {what} を削除します。元に戻せません。'),
       'atlas.confirm.what.jobs.start':        LA('Start a background job on the server. It keeps running after you close this tab and uses part of the daily AI allowance.', 'サーバー上でバックグラウンドの作業を始めます。このタブを閉じても続き、今日の AI の利用枠の一部を使います。'),
       'atlas.confirm.what.knowledge.forget':  LA('Delete kept knowledge from this device. This cannot be undone.', '端末に残した蓄積知識を削除します。元に戻せません。'),
