@@ -92,10 +92,6 @@
               "tool": "time_textMap"
             },
             {
-              "id": "time.changes",
-              "tool": "time_changes"
-            },
-            {
               "id": "map.tool",
               "tool": "map_tool"
             },
@@ -110,6 +106,14 @@
             {
               "id": "research.analyze",
               "tool": "research"
+            },
+            {
+              "id": "time.changes",
+              "tool": "time_changes"
+            },
+            {
+              "id": "geo.ml",
+              "tool": "geo_ml"
             }
           ]
         }
