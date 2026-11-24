@@ -26,3 +26,5 @@ newsjp: Atlasが、2つの対象の関係を「出典が述べている（確認
 - `stateLabel` が [en, jp] の組を返していたのを、呼び出し側の `L(en, jp)` で解く形へ変えた(隣り合ったデータ枠に翻訳を置かない・check:docs の i18n-open-gap)。
 - 呼ばれていなかった `stateWords` を消した(消費者がなく、同じ仕事は `stateLabel` が負う)。
 - 「inferred」の和語を既存の `atlas-cap-knowledge` と同じ「推論」に揃えた(1 つの英語キーに 2 つの意味を持たせない)。
+
+- perf: async.raw 15259.8→15336.6 kB・async.gzip 5186.3→5213.0 kB・place-dossier 73.0→77.0 kB へ天井を上げた。関係の状態(relation-evidence)と research.object の check を、関係を読む側の遅延チャンクへ足したため。
