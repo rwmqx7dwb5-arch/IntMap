@@ -196,3 +196,41 @@ export function searchRecords(records, req, dep) {
   }
   return { entries: out, total: out.length, facets: facets, dropped: dropped };
 }
+
+/* ── what KIND of observation a collection holds, and whether its licence lets IntMap offer it ───────────────
+   Asked by gis-remote.js scenes(): 「この場所・時期の、衛星画像／SAR／LiDAR／標高は」. A collection states this in
+   STAC's own members, so the verdict is read from them and never from a host:
+     sar      `sar:*` summaries (the STAC SAR extension) or the word SAR in what the collection calls itself
+     optical  `eo:bands` (STAC EO extension — summaries or item_assets) or imagery/reflectance/aerial words
+     dem      elevation words (DEM, DSM, DTM, elevation, topography, terrain) in title / keywords / id
+     lidar    LiDAR / point-cloud / COPC words in title / keywords / id
+   A collection can be several (a lidar-derived DSM is both). One that matches none is `[]` — scenes() does not offer
+   it and says how many it could not classify; discover()/search() still find it. ⚠ The vocabulary is the one the STAC
+   community writes keywords in; a collection that describes itself in other words is a miss on OUR side.
+   観測: 2026-11-24 over Earth Search (9), Planetary Computer (140), NASA LP DAAC (20): the sentinel-1/2, landsat, HLS,
+   cop-dem, nasadem, alos-dem, naip and 3dep-lidar-* collections are classified. 失効条件: a catalogue that stops
+   stating the extension and the words. */
+export const MODALITIES = ['optical', 'sar', 'dem', 'lidar'];
+export function modalitiesOf(rec) {
+  const sum = (rec && rec.summaries) || {};
+  const ia = (rec && rec.itemAssets) || {};
+  const self = new Set(words([rec && rec.title, ((rec && rec.keywords) || []).join(' '), rec && rec.id].join(' ')));
+  const has = (...ws) => ws.some((w) => self.has(w));
+  const out = [];
+  const sar = Object.keys(sum).some((k) => /^sar:/.test(k)) || has('sar');
+  if (sar) out.push('sar');
+  const eo = !!sum['eo:bands'] || Object.keys(ia).some((k) => ia[k] && ia[k]['eo:bands']);
+  if (!sar && (eo || has('imagery', 'reflectance', 'aerial', 'multispectral'))) out.push('optical');
+  if (has('dem', 'dsm', 'dtm', 'elevation', 'topography', 'terrain')) out.push('dem');
+  if (has('lidar', 'copc') || (self.has('point') && self.has('cloud'))) out.push('lidar');
+  return out;
+}
+
+/* the licence says the data may not be used commercially (SPDX `-NC`, or the words). IntMap offers its data to every
+   visitor, so such a collection is LISTED AS EXCLUDED with this reason — never silently dropped, never offered.
+   ⚠ `proprietary` is NOT this: STAC writes `proprietary` when the terms are at the `license` link (Sentinel's are open
+   to all users). It is shown verbatim with that link, and the reader is told to read the terms. */
+export function isNonCommercial(license) {
+  const s = String(license == null ? '' : license);
+  return /(^|[-_.\s])nc([-_.\s]|$)/i.test(s) || /non[-\s]?commercial/i.test(s);
+}
