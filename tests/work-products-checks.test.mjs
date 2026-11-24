@@ -10,8 +10,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const R = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -166,7 +166,7 @@ test('⑧ job → add table / dataset / code / chart → carry on after a "reloa
   assert.equal(r.ok, false);
 
   /* "tomorrow": the module forgets which job it was on; the store still has it */
-  S.WORK_STATE.current = null;
+  S.WORK_STATE.store = cap.workStore(); S.WORK_STATE.current = null;
   r = await run({ action: 'list', query: 'tariffs' }); assert.equal(r.meta.work.count, 1);
   r = await run({ action: 'start', id }); assert.equal(r.meta.work.resumed, true); assert.equal(r.meta.work.products, 4);
   r = await run({ action: 'compare', product: 'tariffs' });

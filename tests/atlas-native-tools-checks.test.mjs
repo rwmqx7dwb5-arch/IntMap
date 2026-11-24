@@ -174,9 +174,10 @@ test('atlas-native-tools ③: what is given up is said — a cut names its size 
   assert.equal(rebuilt.length, full.length, 'the cut part plus read_result is as long as the whole record');
   assert.ok(rebuilt === full, 'the cut part plus read_result is the whole record');
   assert.ok(out.trace.inputTrims && out.trace.inputTrims.length, 'the loop recorded what was cut on each step');
-  /* read_result is offered only on a step that cut something — the tool list is the cached prefix */
+  /* read_result is offered only on a step that cut something — or whose input names refs it answers (the working memory
+     block, js/atlas-working-memory.js): the tool list is the cached prefix, so an ordinary step with neither does not carry it */
   assert.ok(!/read_result/.test(seen[0].tools), 'an ordinary step does not carry read_result');
-  assert.match(rd('js/atlas-console.js'), /concat\(built\.cut\?\[AGENT\.READ_RESULT_TOOL\]:\[\]\)/, 'the console offers it exactly when the composer cut');
+  assert.match(rd('js/atlas-console.js'), /concat\(\(built\.cut\|\|built\.recallable\)\?\[AGENT\.READ_RESULT_TOOL\]:\[\]\)/, 'the console offers it exactly when the composer cut or the input names refs');
 });
 
 test('atlas-native-tools ③b: dropped history is announced by an item, oldest first, and never the request', () => {
