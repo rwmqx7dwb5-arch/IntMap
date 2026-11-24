@@ -88,7 +88,10 @@ test('#R257 ② AGENTS.md still carries each standing rule', () => {
     ['形式上の削除の許可',    '形式上の削除は自分の判断で行う'],
     ['勝手な変更の禁止',      '要求された範囲を超える変更'],
     ['ハリボテ実装の禁止',    'プレースホルダーの実装は禁止'],
-    ['Atlas/catalog/SYS',     'SYS 定義'],
+    /* (2026-11-25) 「dispatch・catalog・SYS 定義に同時に組み込む」は「データ・操作・計算そのものを Atlas から届かせる」に改めた
+       （機能ごとに能力を足す流れを作っていた一文。CONSTITUTION.md §5 冒頭）。規則が消えたのではなく形が変わったので、
+       needle は今の substance——実装と同時に Atlas から届くこと——を追う。 */
+    ['Atlas から届く',        'Atlas から**同時に**届くようにする'],
     ['出典・規約の同時更新',  '出典表記'],
     /* ⚠ (#R700) THE RULE WAS AMENDED, AND THIS NEEDLE WAS ANCHORED TO THE OLD WORDING.
        §3-5 said 「…現在対応している全言語すべてに反映する」 until CONSTITUTION.md §7 narrowed

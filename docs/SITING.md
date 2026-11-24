@@ -7,10 +7,12 @@
 
 立地は条件の束で、電力の値段・用地の値段・雇える人・近くの研究機関・適用される規則を並べないと比べられない。
 これらは IntMap のどこにも並んでいなかった。`data/siting-<国>.json` が**出典が述べた数だけ**を行政区域ごとに置き、
-`js/siting.js` が読み、Atlas の `siting.compare`（`js/atlas-cap-siting.js`）が答える。
+ファイルは自分の表を宣言し（`rowTables`: 都道府県指標・工業系の公示地価・工場立地法の規定）、Atlas は `data.query` で
+他のどの表とも同じように問い合わせる（`{"type":"query","list":true}` が列と出典を返す）。比較・順位づけ・重みは Atlas が
+その場で問いに合わせて組む——立地比較の専用能力（`siting.compare`）は 2026-11-25 に外した（`dev-notes/2026-11-25-generic-capabilities.md`）。
 
-**総合点は出さない。** 何が効くかは工場で違うので、重みは利用者か Atlas が述べるもので、ここに隠さない。
-順位は指標ごと（1 = その指標の良い側。価格なら安い、件数なら多い）。
+**総合点は持たない。** 何が効くかは工場で違うので、重みは利用者か Atlas がその問いで述べる。
+データは数を述べるだけで、順位や総合点を持たない。
 
 ## 2. データ（日本・都道府県別 — `data/siting-jp.json`、`scripts/build-siting-jp.mjs` が書く）
 
@@ -29,13 +31,13 @@ Excel は bot 確認の裏にあり、これを回避しない）、物流（地
 ## 3. 世界へ広げる設計
 
 国ごとに同じスキーマの 1 ファイル（`data/siting-<iso2>.json`）を足す。指標 id（`power_spot_avg` ほか）・単位・`better`・出典・版は各国のファイルが宣言し、
-`loadSiting(cc)` と `compare()` は国名を一つも知らない。国をまたぐ比較は、同じ指標 id を宣言した国どうしだけで行う（出典が違えば `source` と `vintage` で見える）。
+各ファイルが `rowTables` で自分の表を宣言すれば、その日から `data.query` の表になる（`scripts/data-tables.mjs`。国名を知るコードは無い）。国をまたぐ比較は、同じ指標 id を宣言した国どうしだけで行う（出典が違えば `source` と `vintage` で見える）。
 次の国で最初に要るのは、その国の行政区域の識別子（ISO 3166-2）と、電力・用地・賃金の公開源の特定。
 
 ## 4. 検査
 
 `tests/siting-checks.test.mjs`（`npm test` に入る）— 47 県が 1 つずつあること／全指標が出典と版を持つこと／用地の値が同梱の標準地から再計算できること／
-同じ電力エリアの県が同じ価格であること／拠点が footprint の日本の拠点そのものであること／空白が黙って埋まらないこと／順位の向き・名前解決・失敗コード／条文の文言。
+同じ電力エリアの県が同じ価格であること／拠点が footprint の日本の拠点そのものであること／空白が黙って埋まらないこと／条文の文言。表として問い合わせられることは `tests/generic-capabilities-checks.test.mjs`。
 出典の鮮度は `check:datagov`（`GOVERNANCE`・周期 P1Y の根拠は `scripts/lib/upstream-cadence.mjs` `SITING_JP`）。
 
 ## 5. 再取得
