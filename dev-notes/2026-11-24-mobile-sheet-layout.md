@@ -64,3 +64,7 @@ newsjp: スマホで地図が広く使えるようになりました。地名検
 
 - 実機（iOS Safari）での操作感。ブラウザペイン（390×844）でメニューの開閉・Chronos の位置・1 行の入力欄を確認した。
 - 他のタブ（News など）を選んだときの Chronos の位置の長い操作。
+
+### 3d. perf の天井（main の取り込み後に測り直し）
+
+main の新しい取り込み（atlas-file-make・atlas-knowledge・transit-planner など新しい遅延チャンクと、atlas-cap-runs の増加）で async 合計・atlas-cap-runs・dist.assets の天井を超えたため、main を取り込んだ木でビルドし直して --update した。増えた分は main 側の機能であり、この PR の変更ではない（この PR は ハンズフリー音声の削除で配信物は減る側）。async.raw 14680.9→14756.3 kB・async.gzip 4956.6→4986.1 kB・atlas-cap-runs 989.3→995.0 kB・dist.assets 22068.6→22212.7 kB。
