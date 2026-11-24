@@ -35,6 +35,7 @@ const G = makeWorldGraphStore({ worldObjects: W });   /* (world-graph) the persi
 import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
 import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
+import { planOutline, runLongform, assemble, storageStore } from './atlas-longform.js';   /* (atlas-longform) research.longform: chapter by chapter, kept as it goes */
 import { makeResearchSearch } from './atlas-research-search.js';   /* (atlas-research-search) research.search — the tool side of an investigation Atlas steers */
 import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, CONTRACT_KINDS } from './atlas-delegate.js';
 import { integrate, mergeFacts, makeFactResolver, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
@@ -1310,6 +1311,53 @@ export default [
         integrated,
         /* (delegate-child-loop) what was answered from the last run of the same list, and whether this run's record was kept */
         resume: store ? { key: dKey, resumed: results.filter((r) => r.resumed).length, from: prior ? prior.at : undefined, saved: saves > 0 } : undefined,
+      } });
+    },
+  },
+  {
+    /* ══ (atlas-longform) A LONG DOCUMENT, WRITTEN CHAPTER BY CHAPTER, KEPT AS IT GOES, JOINED AT THE END ══════
+       One answer is bounded (a task's output ceiling) and one tool call is bounded (the loop's tool clock); a long
+       report or a long source file meets both. js/atlas-longform.js writes each section as its own call with the
+       outline and the end of the previous section in front of it, saves each the moment it exists, continues a
+       section the model cut off, and stops writing before the tool clock — `remaining` says how many are left, and
+       asking again with the SAME outline resumes: finished sections are not written again (said, not re-run).
+       The assembled document is SHOWN TO THE READER by this card; Atlas does not write it out again. */
+    policy: { delegates: true },   /* (capability-facets) starts other model work */
+    row: ['research.longform',          'longform',       'writeLongReport,longDocument,writeInChapters',                'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
+    ui: { none: '2026-11-21' },
+    phrases: () => ['長い報告書', '章ごとに書く', '長文のレポート', '詳細な報告書', '長いコード'].concat(['long report', 'write in chapters', 'long document', 'section by section', 'full report']),
+    doc: [
+      { in: 'research.analyze', at: 32, text: 'WRITE A LONG DOCUMENT CHAPTER BY CHAPTER (a report, a chaptered text or a long source file that one answer cannot hold): {"type":"longform","title"?:str,"brief"?:str (what the document is for, who reads it, the facts and sources every chapter must keep to),"format"?:"prose"|"code","sections":[{"id"?:str,"title":str,"goal":str (what this chapter must contain),"words"?:int}]} — 章ごとに書く・長い報告書 — writes each section as its own request with the outline and the end of the previous section in front of it, SAVES each section as it is written, continues a section that was cut off by the length limit, and joins them into one document that is SHOWN TO THE READER by this tool (do not write it out again — say what it covers). It stops before the tool clock: when "remaining" is above 0, call it AGAIN with the SAME outline — finished sections are answered from the saved copy, not written again, and only the rest is written. Plan the outline first (the sections are yours to choose), keep each goal specific, and put sources and figures the chapters must share in "brief". It is a writer, not a researcher: gather facts first (research.delegate / research.analyze), then hand them over in "brief".\n' },
+    ],
+    schema: () => ({ type: 'object', required: ['sections'], properties: { title: str(), brief: str(), format: one('prose', 'code'), sections: list({ type: 'object', required: ['title', 'goal'], properties: { id: str(), title: str(), goal: str(), words: int() } }, 1) } }),
+    async run(a, dctx, K) {
+      const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
+      const plan = planOutline(a);
+      if (!plan.ok) return R(false, warn(L('The outline could not be used: ', 'アウトラインを使えません: ') + esc(plan.why)), { meta: { status: 'failed', code: 'bad_outline' } });
+      if (typeof K.askAIJSONEnvelope !== 'function') return R(false, warn(L('The model is not available here.', 'ここではモデルを使えません。')), { meta: { status: 'failed', code: 'no_model' } });
+      const turn = String(K._curTurnKey || '');
+      const signal = (typeof K.turnSignal === 'function') ? K.turnSignal() : undefined;
+      let ls = null; try { ls = window.localStorage; } catch (_) { ls = null; }
+      /* the time budget is UNDER the loop's tool clock (js/atlas-agent.js toolTimeoutMs = 240 s; one section measured at roughly 40-70 s): 150 s leaves a section in flight room to finish. Expires with: a change to either number */
+      const out = await runLongform({ plan, store: storageStore(ls), signal, budgetMs: 150000,
+        ask: (prompt, system, img, o) => K.askAIJSONEnvelope(prompt, system, img, Object.assign({}, o, turn ? { turnId: turn } : {})) });
+      const doc = assemble(plan, out.chapters);
+      const n = out.chapters.length, written = out.chapters.filter((c) => c.text).length;
+      const cut = out.chapters.filter((c) => c.state === 'cut').map((c) => c.title);
+      const word = (c) => (c.state === 'done' ? (c.resumed ? L('kept from the earlier run, not written again', '前回の分を保存済み・再執筆なし') : L('written', '執筆済み')) + ' · ' + c.chars
+        : c.state === 'cut' ? L('written, still cut by the length limit', '執筆済み・長さの上限でまだ途中')
+        : c.state === 'failed' ? L('failed', '失敗') + (c.code ? ' (' + c.code + ')' : '') : L('not yet written', '未執筆'));
+      const rows = out.chapters.map((c) => '<li style="margin:2px 0;"><b>' + esc(c.title) + '</b> — ' + esc(word(c)) + '</li>').join('');
+      const body = plan.format === 'code' ? '<pre style="white-space:pre-wrap;font-size:12px;">' + esc(doc) + '</pre>' : '<div class="atl-md">' + K.mdMini(doc) + '</div>';
+      const html = '<div class="atl-longform" style="font-size:12px;line-height:1.5;"><div style="font-weight:600;margin-bottom:2px;">' + esc(plan.title || L('Document', '文書')) + ' — '
+        + esc(L(written + ' of ' + n + ' sections written', n + ' 章中 ' + written + ' 章を執筆')) + '</div><ul style="margin:2px 0 6px 16px;padding:0;">' + rows + '</ul>'
+        + (out.remaining ? '<div style="opacity:.8;margin-bottom:6px;">' + esc(L(out.remaining + ' section(s) remain: ask again with the same outline to continue; the finished ones are kept.', '残り ' + out.remaining + ' 章: 同じアウトラインでもう一度呼ぶと続きから書きます（書いた章は保存済み）。')) + '</div>' : '')
+        + (doc ? '<details' + (out.state === 'done' ? ' open' : '') + '><summary>' + esc(L('The document', '本文')) + '</summary>' + body + '</details>' : '') + '</div>';
+      return R(written > 0, html, { meta: {
+        status: out.state === 'done' && !cut.length ? 'completed' : (written ? 'partial' : 'failed'),
+        code: out.state === 'done' ? (cut.length ? 'section_cut' : undefined) : (written ? 'sections_remaining' : (out.code || 'no_sections')),
+        produced: written ? ['explanation'] : undefined,
+        longform: { key: out.key, sections: n, written, remaining: out.remaining, resumed: out.resumed, cut, chars: doc.length, costUsd: out.costUsd, outline: plan.sections.map((s) => s.title) },
       } });
     },
   },
