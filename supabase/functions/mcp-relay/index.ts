@@ -10,7 +10,7 @@
 //  ⚠ IT IS NOT AN OPEN PROXY, and unlike fetch-relay it cannot be an allow-list (the reader names the server).
 //  So: ① a SIGNED-IN reader only (the Authorization JWT is verified); ② the narrowing in
 //  _shared/mcp-relay-policy.js — https, a public DNS name that RESOLVES ONLY to public addresses (relay-guard.js
-//  resolvesPublic), one JSON-RPC message of a listed method, five forwarded headers; ③ no redirects are followed;
+//  resolvesPublic), one JSON-RPC message of a listed method, seven forwarded headers; ③ no redirects are followed;
 //  ④ a byte ceiling and one deadline over the whole exchange; ⑤ the caller's bucket (_shared/rate-limit.js).
 //  What the server answers is returned as DATA in the envelope; this function never interprets it.
 //
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     const typed = MCP_RELAY_TYPE.test(ct);
     /* an HTML error page is not data the client wants — a 2xx of the wrong type is a refusal, a non-2xx is just its status */
     if (r.ok && text && !typed) return json({ error: "upstream_type" }, 502);
-    return json({ status: r.status, contentType: typed ? ct : "", sessionId: r.headers.get("mcp-session-id") || "", body: typed ? text : "" });
+    return json({ status: r.status, contentType: typed ? ct : "", sessionId: r.headers.get("mcp-session-id") || "", wwwAuthenticate: (r.headers.get("www-authenticate") || "").slice(0, 1024), body: typed ? text : "" });
   } catch (e) {
     return relayFail(e, { ...CORS, "cache-control": "no-store" });
   }
