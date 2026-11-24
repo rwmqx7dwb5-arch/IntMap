@@ -83,3 +83,7 @@ main 取り込み後の CI で `window.IntMapLazy` の読みが 196 → 197 に�
 ## 性能予算の引き上げ(5 回目の再測定)
 
 main 取り込み後の CI 実測で async.raw 14972.5→15051.2 kB・async.gzip 5092.7→5120.9 kB・atlas-cap-runs 1016.3→1024.7 kB。網の分析の能力の断片と main 側の遅延チャンクの合計で、起動時の読み込みは動いていない。CI ログの値を `tests/perf-baseline.json` へ書いた(main の `--tighten` が実測まで下げる)。
+
+## 性能予算の引き上げ(6 回目の再測定)
+
+main 取り込み後の CI 実測で async チャンク `atlas-cap-runs` が 1034.6→1041.1 kB。能力の断片(網の分析と main 側の能力追加)の合計で、起動時の読み込みは動いていない。CI ログの値を `tests/perf-baseline.json` へ書いた(main の `--tighten` が実測まで下げる)。
