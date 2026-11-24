@@ -1601,7 +1601,7 @@ async function stageArchive(db) {
       if (error) throw new Error("archive existing (cursor): " + error.message);
       for (const h of data || []) wrote.set(h.event_public_id, Date.parse(h.updated_at));
     }
-    const { events, skippedCurrent, deferred } = pendingArchive(all, wrote, ARCHIVE_PER_RUN);
+    const { events, skippedCurrent, deferred } = pendingArchive(all, wrote, ARCHIVE_PER_RUN, Math.floor(Date.now() / 1200e3));
     out.skipped_current = skippedCurrent;
     out.deferred = deferred;
     if (!events.length) { out.ms = Date.now() - t0; return out; }
