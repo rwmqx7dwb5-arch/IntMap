@@ -36,10 +36,13 @@
  * ==========================================================================*/
 export const installCameraRuler = () => {
   const m = window.__imap, R = 6371008.8, D = Math.PI / 180;
+  /* (maplibre-619) 6.19 has no transform: the painter is handed `camera.projectedCamera` every frame (the camera
+     projected as drawn — matrices, far plane, camera distance), which MapLibre caches per state, so it is the very
+     object a frame was drawn with */
   window.__mlCam = () => { const c = m && m._camera;
-    if (!c || !c.transform) throw new Error('MapLibre no longer keeps its camera at map._camera — the specs cannot see the renderer');
+    if (!c || !c.projectedCamera) throw new Error('MapLibre no longer keeps its camera at map._camera with a projectedCamera — the specs cannot see the renderer');
     return c; };
-  window.__mlTr = () => window.__mlCam().transform;
+  window.__mlTr = () => window.__mlCam().projectedCamera;
   const inv = a => { const o = new Float64Array(16);
     const b00=a[0]*a[5]-a[1]*a[4],b01=a[0]*a[6]-a[2]*a[4],b02=a[0]*a[7]-a[3]*a[4],b03=a[1]*a[6]-a[2]*a[5],
           b04=a[1]*a[7]-a[3]*a[5],b05=a[2]*a[7]-a[3]*a[6],b06=a[8]*a[13]-a[9]*a[12],b07=a[8]*a[14]-a[10]*a[12],

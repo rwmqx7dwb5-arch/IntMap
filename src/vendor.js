@@ -39,6 +39,19 @@
    chunk it shares with the renderer. Same-origin, so the CSP's `worker-src 'self'` already admits it.
    Set once, here, before any Map exists: MapLibre starts its worker pool with the first Map. */
 import * as maplibregl from 'maplibre-gl';
+/* ══ (maplibre-619) THE CAMERA'S OWN FUNCTIONS ══════════════════════════════════════════════════
+   MapLibre 6.19 replaced the mutable transform (geo/transform.ts and its projections) with an immutable
+   CameraViewState and the pure functions that project it (src/camera/). js/geo-engine.js reads and adjusts
+   the renderer's camera — the limb, the lifted projection, the horizon reach, the eye geometry, the
+   look-up repair — and every one of those reads now goes through these functions. They are not on the
+   package's public index, so they are imported from the source this build compiles anyway (vite.config.js
+   aliases maplibre-gl/src/…), which makes them the very module instances the renderer uses. */
+import { projectCamera } from 'maplibre-gl/src/camera/project_camera.ts';
+import { getCameraMath } from 'maplibre-gl/src/camera/camera_math_factory.ts';
+import { isGlobeRendering, renderedProjectedCamera } from 'maplibre-gl/src/camera/projected_camera.ts';
+import { getCenterOffset } from 'maplibre-gl/src/camera/camera_view_state.ts';
+import { applyConstrain } from 'maplibre-gl/src/camera/camera_constrain.ts';
+import { setCenter, setElevation, setNearFarZOverride, setPitch, setZoom } from 'maplibre-gl/src/camera/camera_updates.ts';
 import maplibreWorkerUrl from 'virtual:maplibre-gl-worker-url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import mlcontour from 'maplibre-contour';
@@ -90,6 +103,8 @@ function bbox(geojson, options) { return turfBbox(geojson, Object.assign({}, opt
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 window.maplibregl = maplibregl;
+window.maplibreglCamera = Object.freeze({ projectCamera, getCameraMath, isGlobeRendering, renderedProjectedCamera, getCenterOffset,
+  applyConstrain, setCenter, setElevation, setNearFarZOverride, setPitch, setZoom });
 window.mlcontour = mlcontour;
 window.turf = {
   along, area, bbox, bboxClip, bearing, booleanPointInPolygon, center, centroid, circle,

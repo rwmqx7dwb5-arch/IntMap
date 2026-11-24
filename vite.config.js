@@ -813,6 +813,9 @@ export default defineConfig({
   oxc: { exclude: [/\.js$/, ML_SRC_RE] },
   resolve: {
     alias: [{ find: /^maplibre-gl$/, replacement: ML_RENDERER_SRC },
+      /* (maplibre-619) the camera's own functions, which src/index.ts does not export — the SAME modules the renderer
+         imports, so js/geo-engine.js asks the camera the renderer draws with (src/vendor.js: window.maplibreglCamera) */
+      { find: /^maplibre-gl\/src\/(.*)$/, replacement: slash(resolve(ML_DIR, 'src')) + '/$1' },
       { find: /^#wasm-(single|multi)-thread$/, replacement: resolve(ROOT, 'src/satellite-wasm-stub.js') },
       { find: /^@supabase\/(storage|functions)-js$/, replacement: resolve(ROOT, 'src/supabase-unbundled-stub.js') }],
     /* ══ `module` BEFORE `browser` — WHAT VITE 6 CHOSE, NOW SAID INSTEAD OF SNIFFED ════════════════

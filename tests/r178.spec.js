@@ -136,16 +136,19 @@ test('the renderer can still be asked whether it would move a camera (#R178)', a
     m.setProjection({ type: 'mercator' });
     m.jumpTo({ center: [10, 20], zoom: 1.7, pitch: 0, bearing: 0 });
     await wait(600);
-    const t = window.__mlTr(), before = { lat: m.getCenter().lat, zoom: m.getZoom() };
-    const near = t.applyConstrain(new maplibregl.LngLat(10, 20), 1.7);
-    const far = t.applyConstrain(new maplibregl.LngLat(10, 84), 1.7);
+    /* (maplibre-619) 6.19 has no transform: the constrain is the camera's own pure function of its state and
+       context (src/camera/camera_constrain.ts), published by src/vendor.js */
+    const K = window.maplibreglCamera, cam = window.__mlCam(), before = { lat: m.getCenter().lat, zoom: m.getZoom() };
+    const ask = (ll, z) => K.applyConstrain(cam.renderedState, cam.context, ll, z);
+    const near = ask(new maplibregl.LngLat(10, 20), 1.7);
+    const far = ask(new maplibregl.LngLat(10, 84), 1.7);
     await wait(120);
-    return { has: typeof t.applyConstrain === 'function',
+    return { has: !!K && typeof K.applyConstrain === 'function',
              keptNear: Math.abs(near.center.lat - 20) < 1e-7 && Math.abs(near.zoom - 1.7) < 1e-7,
              movedFar: Math.abs(far.center.lat - 84) > 1e-6,
              pure: Math.abs(m.getCenter().lat - before.lat) < 1e-9 && Math.abs(m.getZoom() - before.zoom) < 1e-9 };
   });
-  expect(r.has, 'transform.applyConstrain must exist').toBe(true);
+  expect(r.has, 'the camera\'s applyConstrain must be reachable').toBe(true);
   expect(r.keptNear, 'a camera it would keep must read as feasible').toBe(true);
   expect(r.movedFar, 'and one it would move must read as infeasible').toBe(true);
   expect(r.pure, 'asking must not move the map').toBe(true);

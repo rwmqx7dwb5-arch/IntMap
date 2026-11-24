@@ -37,8 +37,13 @@ const ML = await (async () => {
   const r = await build({
     stdin: {
       contents: [
-        "export {createGlobeTransform} from './geo/projection/globe_transform.ts';",
-        "export {VerticalPerspectiveCameraHelper} from './geo/projection/vertical_perspective_camera_helper.ts';",
+        /* (maplibre-619) 6.19 has no Transform: an immutable view state, a context, and the camera's functions */
+        "export {createCameraViewState, getBearing} from './camera/camera_view_state.ts';",
+        "export {createCameraContext} from './camera/camera_context.ts';",
+        "export {resize, setZoom, setCenter, setBearing, setPitch} from './camera/camera_updates.ts';",
+        "export {projectCamera} from './camera/project_camera.ts';",
+        "export {getCameraMath} from './camera/camera_math_factory.ts';",
+        "export {getCameraMotions} from './camera/camera_motions_factory.ts';",
         "export {sphereSurfacePointToCoordinates, computeGlobePanCenter, getZoomAdjustment} from './geo/projection/globe_utils.ts';",
         "export {LngLat} from './geo/lng_lat.ts';",
         "export {default as Point} from '@mapbox/point-geometry';",
@@ -67,15 +72,32 @@ function libConst(re) {
 }
 
 const W = 800, H = 600;
+/* (maplibre-619) the camera as MapLibre 6.19 holds it — an immutable view state in a globe context fully turned
+   into a globe (transition 1, what 6.18's setTransitionState(1) set). This holder only REPLACES the state through
+   the library's own setters and asks the library's own functions; it computes nothing itself. */
+const CTX = ML.createCameraContext({ projection: 'globe', projectionTransition: 1 });
+class Tr {
+  constructor(v) { this.v = v; }
+  get pc() { return ML.projectCamera(this.v, CTX); }
+  get center() { return this.v.center; }
+  get zoom() { return this.v.zoom; }
+  get bearing() { return ML.getBearing(this.v); }
+  get cameraPosition() { return this.pc.cameraPosition; }
+  get centerPoint() { return this.pc.centerPoint; }
+  setCenter(ll) { this.v = ML.setCenter(this.v, CTX, ll); }
+  setZoom(z) { this.v = ML.setZoom(this.v, CTX, z); }
+  getRayDirectionFromPixel(p) { const pc = this.pc; return ML.getCameraMath(pc).getRayDirectionFromPixel(pc, p); }
+  locationToScreenPoint(ll) { const pc = this.pc; return ML.getCameraMath(pc).locationToScreenPoint(pc, CTX.worldCoordinateHelper, ll); }
+  screenPointToLocation(p) { const pc = this.pc; return ML.getCameraMath(pc).screenPointToLocation(pc, CTX.worldCoordinateHelper, p); }
+  isPointOnMapSurface(p) { const pc = this.pc; return ML.getCameraMath(pc).isPointOnMapSurface(pc, CTX.worldCoordinateHelper, p); }
+  /* MapLibre's drag frame: the camera panned by the frame's deltas, keeping the location under the grab */
+  pan(deltas, preZoomAroundLoc) { this.v = ML.getCameraMotions(CTX).pan(this.v, CTX, deltas, preZoomAroundLoc); }
+}
 function transform(c) {
-  /* (deps-minor-patch-nov) 6.18 split the globe into a Transform (camera state, size) and its
-     projection part (GlobeTransform); createGlobeTransform is how the library builds the whole */
-  const tr = ML.createGlobeTransform();
-  tr.resize(W, H);
-  tr.setZoom(c.zoom); tr.setCenter(new ML.LngLat(c.lng, c.lat));
-  tr.setBearing(c.bearing || 0); tr.setPitch(c.pitch || 0);
-  tr.setTransitionState(1);
-  return tr;
+  let v = ML.resize(ML.createCameraViewState(), CTX, W, H);
+  v = ML.setZoom(v, CTX, c.zoom); v = ML.setCenter(v, CTX, new ML.LngLat(c.lng, c.lat));
+  v = ML.setBearing(v, c.bearing || 0); v = ML.setPitch(v, c.pitch || 0);
+  return new Tr(v);
 }
 /* the port globeDrag reads, answered by MapLibre's transform */
 const geoOf = (tr) => ({
@@ -113,9 +135,8 @@ test('cesium-globe-drag ①: the constants globeDrag uses are still maplibre-gl\
   assert.equal(C.MAX_VALID_LATITUDE, Number(libConst(/\bexport const MAX_VALID_LATITUDE\s*=\s*([\d.]+)/)));
 });
 
-test('cesium-globe-drag ②: every step of every path lands where MapLibre\'s handleMapControlsPan lands', () => {
+test('cesium-globe-drag ②: every step of every path lands where MapLibre\'s own globe pan lands', () => {
   const { globeDrag } = M._math;
-  const helper = new ML.VerticalPerspectiveCameraHelper();
   let worst = 0;
   for (const P of PATHS) {
     const ml = transform(P.cam), cs = transform(P.cam);
@@ -124,14 +145,14 @@ test('cesium-globe-drag ②: every step of every path lands where MapLibre\'s ha
     for (let i = 0; i < P.n; i++) {
       x += P.step[0]; y += P.step[1];
       const [dx, dy] = P.step;
-      helper.handleMapControlsPan({ panDelta: new ML.Point(dx, dy), around: new ML.Point(x, y) }, ml, ml.center);
+      ml.pan({ panDelta: new ML.Point(dx, dy), around: new ML.Point(x, y) }, ml.center);
       assert.ok(globeDrag(cam, x, y, dx, dy, geoOf(cs)), `${P.name} step ${i + 1}: globeDrag gave no answer`);
       cs.setCenter(new ML.LngLat(cam.lng, cam.lat)); cs.setZoom(cam.zoom);
       const at = `${P.name} step ${i + 1}: MapLibre ${ml.center.lng},${ml.center.lat} z${ml.zoom} vs globeDrag ${cam.lng},${cam.lat} z${cam.zoom}`;
       const e = Math.max(dLng(ml.center.lng, cam.lng), Math.abs(ml.center.lat - cam.lat), Math.abs(ml.zoom - cam.zoom));
       worst = Math.max(worst, e);
       assert.ok(e < 1e-9, at);
-      assert.equal(ml.bearing, P.cam.bearing || 0, `${P.name}: MapLibre held the bearing`);
+      assert.ok(Math.abs(ml.bearing - (P.cam.bearing || 0)) < 1e-9, `${P.name}: MapLibre held the bearing (${ml.bearing})`);
     }
   }
   console.log(`worst centre/zoom disagreement over ${PATHS.length} paths: ${worst.toExponential(2)}`);
@@ -153,12 +174,12 @@ test('cesium-globe-drag ③: the grabbed place slips exactly as much as it does 
     let x = W / 2 + P.press[0], y = H / 2 + P.press[1];
     if (!trN.isPointOnMapSurface(new ML.Point(x, y))) continue;
     const grab = trN.screenPointToLocation(new ML.Point(x, y));
-    const ref = transform(P.cam), helper = new ML.VerticalPerspectiveCameraHelper();
+    const ref = transform(P.cam);
     let last = null;
     for (let i = 0; i < P.n; i++) {
       x += P.step[0]; y += P.step[1];
       const [dx, dy] = P.step, p = new ML.Point(x, y);
-      helper.handleMapControlsPan({ panDelta: new ML.Point(dx, dy), around: p }, ref, ref.center);
+      ref.pan({ panDelta: new ML.Point(dx, dy), around: p }, ref.center);
       globeDrag(camN, x, y, dx, dy, geoOf(trN));
       trN.setCenter(new ML.LngLat(camN.lng, camN.lat)); trN.setZoom(camN.zoom);
       const oldLat = camO.lat, c = panCentre(camO, dx, dy);
