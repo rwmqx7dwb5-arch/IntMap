@@ -74,7 +74,7 @@ export const GOVERNANCE = {
     accuracy: 'the prices and wages are the published settled or legal values, not estimates; the land price is an appraisal of standard parcels and is not a transaction price; the JEPX price is a wholesale price and not the tariff a plant pays',
     /* measured on areas[]: key id (ISO 3166-2:JP); every one has a name */
     quality: { rows: 47, missing: { id: 0, name: 0, nameLocal: 0 }, outOfRange: {}, duplicates: 0 },
-    schema: 'scripts/build-siting-jp.mjs (areas: id name nameLocal m{metric} ...; sites; anchors) — read by js/siting.js and js/atlas-cap-siting.js; tests/siting-checks.test.mjs' },
+    schema: 'scripts/build-siting-jp.mjs (areas: id name nameLocal m{metric} ...; sites; anchors; the `rowTables` declaration names the columns) — read through js/atlas-query.js (data.query) via the index js/data-tables.js; tests/siting-checks.test.mjs' },
 };
 
 /* ── 取得 ───────────────────────────────────────────────────────────────── */
@@ -331,12 +331,46 @@ export async function build() {
     ...g, schema: 1, country: 'JP', iso3: 'JPN',
     src: 'JEPX spot area prices; MLIT National Land Numerical Information L01; MHLW minimum wages; Statistics Bureau SSDSE-B; e-Gov statutes; IntMap company footprint',
     metrics, sources, gaps, rules: rl,
+    rowTables: tablesFor(metrics),
     areas,
     sites: { cols: ['pref', 'city', 'lon', 'lat', 'jpy_m2', 'zone', 'use', 'name'], rows: ld.sites },
     anchors: an.out,
     coverage: { landParcelsTotal: ld.total, landParcelsIndustrial: ld.sites.length, anchorsPlaced: an.placed, anchorsJapan: an.total },
   };
   return data;
+}
+
+/* what the file says about its own rows — scripts/data-tables.mjs indexes it and js/atlas-query.js serves both tables
+   to data.query (and through it to data.gis / compute.run). The prefecture columns are DERIVED from `metrics`, so a
+   metric added there is a queryable column the same day. */
+export function tablesFor(metrics) {
+  return [
+    { id: 'jp-prefecture-indicators', title: { en: 'Japan: prefecture indicators (power price, industrial land, wages, labour, universities)', jp: '日本の都道府県指標（電力価格・工業地価・賃金・労働力・大学）' },
+      rows: 'areas', key: 'id', name: 'name',
+      columns: [
+        { key: 'iso', from: 'id', type: 'text', label: { en: 'ISO 3166-2 code', jp: 'ISO 3166-2 コード' } },
+        { key: 'nameLocal', from: 'nameLocal', type: 'text', label: { en: 'Name in Japanese', jp: '名称' } },
+        { key: 'powerArea', from: 'powerArea', type: 'text', label: { en: 'JEPX price area', jp: 'JEPX のエリア' } },
+        ...Object.keys(metrics).map((k) => ({ key: k, from: 'm.' + k, type: 'number', unit: metrics[k].unit, label: { en: metrics[k].label.en + ' (' + metrics[k].vintage + ')', jp: metrics[k].label.jp + '（' + metrics[k].vintage + '）' } })),
+      ] },
+    { id: 'jp-industrial-land-prices', title: { en: 'Japan: announced land prices of industrial-use parcels (MLIT L01)', jp: '日本の工業系用途の公示地価（国土数値情報 L01）' },
+      rows: 'sites.rows', fields: ['pref', 'city', 'lon', 'lat', 'jpy_m2', 'zone', 'use', 'name'], name: 'name', lng: 'lon', lat: 'lat',
+      columns: [
+        { key: 'pref', from: 'pref', type: 'text', label: { en: 'Prefecture code (JIS)', jp: '都道府県コード（JIS）' } },
+        { key: 'city', from: 'city', type: 'text', label: { en: 'Municipality code (JIS)', jp: '市区町村コード（JIS）' } },
+        { key: 'priceJpyM2', from: 'jpy_m2', type: 'number', unit: 'JPY/m2', label: { en: 'Announced land price', jp: '公示地価' } },
+        { key: 'zone', from: 'zone', type: 'text', label: { en: 'Zoning (as announced)', jp: '用途地域（公示の記載）' } },
+        { key: 'use', from: 'use', type: 'text', label: { en: 'Current use (as announced)', jp: '利用現況（公示の記載）' } },
+      ] },
+    { id: 'jp-factory-location-rules', title: { en: 'Japan: Factory Location Act provisions (e-Gov statute text)', jp: '日本の工場立地法の規定（e-Gov の法令本文）' },
+      rows: 'rules', key: 'id', name: 'ref',
+      columns: [
+        { key: 'text', from: 'text', type: 'text', label: { en: 'Statute text as published', jp: '公表された条文' } },
+        { key: 'summaryEn', from: 'en', type: 'text', label: { en: 'What it requires (English)', jp: '要件（英語）' } },
+        { key: 'lawId', from: 'lawId', type: 'text', label: { en: 'e-Gov law id', jp: 'e-Gov 法令 ID' } },
+        { key: 'revision', from: 'revision', type: 'text', label: { en: 'Revision in force', jp: '施行中の改正' } },
+      ] },
+  ];
 }
 
 const isMain = process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;

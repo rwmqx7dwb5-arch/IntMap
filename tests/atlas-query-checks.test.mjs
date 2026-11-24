@@ -191,7 +191,8 @@ test('R495 ③: data.query is a capability, a schema, a catalogue block, a dispa
   assert.equal(cap.observerKind, 'queryRows', "…observed by the observer that knows an empty result is an answer");
   assert.ok(CAPS.OBSERVERS && CAPS.OBSERVERS.queryRows, 'the observer itself');
   const sc = makeAtlasSchemas().schemaFor('data.query');
-  assert.ok(sc && Array.isArray(sc.required) && sc.required.includes('from'), 'the argument schema');
+  /* `from` names the table; `list:true` asks which tables exist (2026-11-25) — so neither is required alone, and both are in the schema */
+  assert.ok(sc && sc.properties && sc.properties.from && sc.properties.list, 'the argument schema');
   const docs = makeAtlasCatalogText({}, {});
   assert.ok(docs.idsCovered().includes('data.query'), 'the catalogue block the planner is shown');
   assert.match(docs.text(['data.query']), /CROSS-DATASET QUERY/, '…and it says what it is');

@@ -96,6 +96,19 @@
 
 ## 5. AI・ニュース・鍵 (AI, news, keys)
 
+- ⚠ **IntMap の開発とは、Atlas に答え方を教え込むことではなく、Atlas が自ら問題を解決できる環境を
+  進化させることである。** Developing IntMap means evolving the environment in which Atlas solves
+  problems itself — not teaching it answers.
+  問うのは「基盤モデルを次世代に替えたとき、その知能の向上を最大限享受できる作りか」。
+  機能数・規則数・ツール数は評価指標ではない。環境とは、Atlas が**データ**（同梱も上流も）・**操作**
+  （地図とアプリの機能）・**計算**（演算・プログラム・能力の組み合わせ）に届くことと、それが速く・
+  安く・正確であること。専用の道具は、精度・速度・費用を大きく良くするなら作ってよい。
+  作ってはならないのは、**特定の問いへの答えに合わせて設計したもの**——データを問いの形に焼く、
+  1 つの問いのために能力を立てて、その問いでしか届かない場所にデータを閉じ込める
+  （実測 2026-11-25: 発電所 34,936 件を「港から 30km 以内の火力 1,028 件」に削り、港の停止を答える
+  能力からしか読めなくしていた。`dev-notes/2026-11-25-generic-capabilities.md`）。
+  データは作った場所で自分の表を宣言すれば `data.query` から届き（`rowTables` → `js/data-tables.js`）、
+  アプリの操作はカーネルの命令に登録すれば `system.command` から届く。
 - ⚠ **Atlas には全権が委任されている。Atlas を触るとき、制限を増やす方向・例外を増やす方向へ
   持っていってはならない。**
   Atlas holds full authority. **Never** move Atlas in the direction of more limits or more exceptions.

@@ -82,12 +82,52 @@ export const GOVERNANCE = {
     retrievedAt: '2026-11-20',
     generatedAt: '2026-11-20',
     asOf: '2026-11-20',
-    schema: 'scripts/logistics/build.mjs (ports · entities) — read by js/logistics-impact.js (the Atlas capability research.portImpact) and tests/logistics-network-checks.test.mjs',
+    schema: 'scripts/logistics/build.mjs (ports · entities; the `rowTables` declaration names the columns) — read through js/atlas-query.js (data.query) via the index js/data-tables.js, and by tests/logistics-network-checks.test.mjs',
     quality: { rows: 984, missing: { ref: 0, name: 0, lng: 0, lat: 0 }, outOfRange: { lng: 0, lat: 0 }, duplicates: 0 },
     paidBy: 'Port hinterlands — rail reachability from OpenStreetMap rail, ports (Wikidata CC0, Eurostat mar_go_aa CC BY 4.0, UN/LOCODE), cities (GeoNames CC BY 4.0) and company-atlas factory sites',
     builtBy: 'scripts/logistics/build.mjs',
   },
 };
+
+/* what the file says about its own rows — scripts/data-tables.mjs indexes it and js/atlas-query.js serves both
+   tables to data.query (and through it to data.gis / compute.run). The rail order is a MEASUREMENT of the network
+   (shortest rail path, MODEL.keep nearest ports per place), usable by any question about rail access to ports. */
+export const TABLES = [
+  { id: 'ports', title: { en: 'Seaports (rail-attached; Wikidata, UN/LOCODE, Eurostat)', jp: '港湾（鉄道に接続・Wikidata・UN/LOCODE・Eurostat）' },
+    rows: 'ports', key: 'ref', name: 'name', lng: 'lng', lat: 'lat',
+    columns: [
+      { key: 'country', from: 'cc', type: 'text', label: { en: 'Country (ISO 3166-1 alpha-3)', jp: '国（ISO 3166-1 alpha-3）' } },
+      { key: 'locode', from: 'locode', type: 'text', label: { en: 'UN/LOCODE', jp: 'UN/LOCODE' } },
+      { key: 'wikidata', from: 'wikidata', type: 'text', label: { en: 'Wikidata id', jp: 'Wikidata ID' } },
+      { key: 'railTerminal', from: 'railTerminal', type: 'text', label: { en: 'UN/LOCODE states a rail terminal', jp: 'UN/LOCODE が鉄道ターミナルを述べる' } },
+      { key: 'coastKm', from: 'coastKm', type: 'number', unit: 'km', label: { en: 'Distance to the ocean coastline', jp: '外洋の海岸線までの距離' } },
+      { key: 'railAccessKm', from: 'accessKm', type: 'number', unit: 'km', label: { en: 'Distance to the nearest rail line', jp: '最寄りの線路までの距離' } },
+      { key: 'cargo', from: 'capacity.value', type: 'number', label: { en: 'Stated annual cargo (unit in cargoUnit)', jp: '公表された年間貨物量（単位は cargoUnit）' } },
+      { key: 'cargoUnit', from: 'capacity.unit', type: 'text', label: { en: 'Unit of the cargo figure', jp: '貨物量の単位' } },
+      { key: 'cargoYear', from: 'capacity.year', type: 'number', label: { en: 'Year of the cargo figure', jp: '貨物量の年' } },
+      { key: 'cargoSource', from: 'capacity.source', type: 'text', label: { en: 'Source of the cargo figure', jp: '貨物量の出典' } },
+    ] },
+  { id: 'rail-port-access', title: { en: 'Cities (100,000+) and industrial sites with the ports they reach by rail', jp: '都市（10万人以上）と産業拠点が鉄道で届く港' },
+    rows: 'entities', name: 'n', lng: 'x', lat: 'y',
+    columns: [
+      { key: 'kind', from: 'k', type: 'text', label: { en: 'c = city, f = industrial site', jp: 'c＝都市、f＝産業拠点' } },
+      { key: 'nameJa', from: 'ja', type: 'text', label: { en: 'Japanese name (GeoNames)', jp: '日本語名（GeoNames）' } },
+      { key: 'country', from: 'cc', type: 'text', label: { en: 'Country (ISO-2 for cities, ISO-3 for sites, as the inputs state)', jp: '国（都市は ISO-2、拠点は ISO-3。入力の記載どおり）' } },
+      { key: 'population', from: 'p', type: 'number', label: { en: 'Population (GeoNames)', jp: '人口（GeoNames）' } },
+      { key: 'company', from: 'co', type: 'text', label: { en: 'Company (company atlas)', jp: '企業（企業アトラス）' } },
+      { key: 'siteType', from: 'st', type: 'text', label: { en: 'Site type (company atlas)', jp: '拠点の種別（企業アトラス）' } },
+      { key: 'railAccessKm', from: 'a', type: 'number', unit: 'km', label: { en: 'Distance to the nearest rail line', jp: '最寄りの線路までの距離' } },
+    { key: 'port1', from: 'r.0.0', via: { rows: 'ports', field: 'name' }, type: 'text', label: { en: 'Port reached by rail, #1 nearest', jp: '鉄道で届く港（1番目に近い）' } },
+    { key: 'port1Locode', from: 'r.0.0', via: { rows: 'ports', field: 'locode' }, type: 'text', label: { en: 'UN/LOCODE of port #1', jp: '1番目の港の UN/LOCODE' } },
+    { key: 'port1RailKm', from: 'r.0.1', type: 'number', unit: 'km', label: { en: 'Rail distance to port #1 (incl. access)', jp: '1番目の港までの鉄道距離（線路までを含む）' } },
+    { key: 'port2', from: 'r.1.0', via: { rows: 'ports', field: 'name' }, type: 'text', label: { en: 'Port reached by rail, #2 nearest', jp: '鉄道で届く港（2番目に近い）' } },
+    { key: 'port2Locode', from: 'r.1.0', via: { rows: 'ports', field: 'locode' }, type: 'text', label: { en: 'UN/LOCODE of port #2', jp: '2番目の港の UN/LOCODE' } },
+    { key: 'port2RailKm', from: 'r.1.1', type: 'number', unit: 'km', label: { en: 'Rail distance to port #2 (incl. access)', jp: '2番目の港までの鉄道距離（線路までを含む）' } },
+    { key: 'port3', from: 'r.2.0', via: { rows: 'ports', field: 'name' }, type: 'text', label: { en: 'Port reached by rail, #3 nearest', jp: '鉄道で届く港（3番目に近い）' } },
+    { key: 'port3Locode', from: 'r.2.0', via: { rows: 'ports', field: 'locode' }, type: 'text', label: { en: 'UN/LOCODE of port #3', jp: '3番目の港の UN/LOCODE' } },
+    { key: 'port3RailKm', from: 'r.2.1', type: 'number', unit: 'km', label: { en: 'Rail distance to port #3 (incl. access)', jp: '3番目の港までの鉄道距離（線路までを含む）' } },
+    ] },
+];
 
 const QUALITY_OPTS = { fields: { ref: {}, name: {}, lng: { min: -180, max: 180 }, lat: { min: -90, max: 90 } }, key: ['ref'] };
 const readGz = (p) => JSON.parse(zlib.gunzipSync(fs.readFileSync(p)));
@@ -239,6 +279,7 @@ async function main() {
       railChains: chains.length, railChainsExcluded: skipped, railGraph: { nodes: graph.n, edges: graph.edges, components: comp.size.length, junctionsJoined: G0.stats().junctions },
       entities: { cities, industrialSites: entities.length - cities, assigned, withoutRailWithinAccess: noRail, railButNoPortReachable: noPort },
     },
+    rowTables: TABLES,
     ports: portTable,
     entities: out.map((e) => ({ k: e.kind === 'city' ? 'c' : 'f', n: e.name, ja: e.nameJa || undefined, cc: e.cc, x: +e.lng.toFixed(4), y: +e.lat.toFixed(4), p: e.population || undefined, co: e.company || undefined, st: e.siteType || undefined, a: e.accessKm, r: e.ports })),
   };

@@ -363,6 +363,53 @@ export function atlasQuery(HOST) {
       source: 'OpenStreetMap (ODbL) + Wikidata (CC0)' },
   };
 
+  /* ══ THE TABLES THE DATA FILES DECLARE ══════════════════════════════════════════════════════
+     Every file under data/ that holds rows can say so itself (a `rowTables` declaration, indexed into
+     js/data-tables.js by scripts/data-tables.mjs), and each declared table is a table here — asked with
+     the same WHERE / NEAR / SPATIAL / ORDER as the five above, and handed on like any query result.
+     ⚠ WHY (2026-11-25): the shipped power plants, ports, rail access and prefecture indicators were
+     readable only through capabilities built around one question each; Atlas could not ask them
+     anything else. A dataset now becomes askable by being declared where it is built — no capability,
+     no edit here. The file is read through the one data door, when a query first names the table. */
+  const pathAt = (o, p) => String(p).split('.').reduce((v, k) => (v == null ? undefined : v[k]), o);
+  async function shippedRows(t) {
+    const doc = await (D.loadData ? D.loadData(t.file) : loadData(t.file));
+    const list = pathAt(doc, t.rows) || [];
+    const asObj = (r) => (Array.isArray(r) && Array.isArray(t.fields)) ? Object.fromEntries(t.fields.map((k, i) => [k, r[i]])) : r;
+    const vias = Object.create(null);
+    const rows = list.map((raw, i) => {
+      const r = asObj(raw) || {};
+      const p = {};
+      for (const c of t.columns) {
+        let v = pathAt(r, c.from);
+        if (c.via && v != null) { const arr = vias[c.via.rows] || (vias[c.via.rows] = pathAt(doc, c.via.rows) || []); v = arr[v] ? arr[v][c.via.field] : null; }
+        p[c.key] = (v === undefined || v === '') ? null : (typeof v === 'boolean' ? String(v) : v);
+      }
+      const lng = t.lng ? +pathAt(r, t.lng) : NaN, lat = t.lat ? +pathAt(r, t.lat) : NaN;
+      return { id: t.id + ':' + (t.key && pathAt(r, t.key) != null ? pathAt(r, t.key) : i), name: String((t.name && pathAt(r, t.name)) || (t.title[0] + ' ' + (i + 1))),
+        lng: isFinite(lng) ? lng : null, lat: isFinite(lat) ? lat : null, _p: p };
+    });
+    const src = t.source || {};
+    return { rows, source: [src.publisher, src.licence].filter(Boolean).join(' — ') + ' (' + t.file + ')',
+      note: (t.lng && t.lat) ? null : L('These rows have no coordinate of their own, so NEAR and SPATIAL cannot use them.', 'この表の行は座標を持たないため、NEAR と SPATIAL には使えません。', 'These rows have no coordinate of their own, so NEAR and SPATIAL cannot use them.', 'These rows have no coordinate of their own, so NEAR and SPATIAL cannot use them.', 'These rows have no coordinate of their own, so NEAR and SPATIAL cannot use them.') };
+  }
+  /* ⚠ THE INDEX IS IMPORTED ON THE FIRST QUERY (its own chunk): carrying it in this module put every declared table's
+     labels into the engine's chunk (measured 2026-11-25: +19 kB against the async ceiling). One import, then cached. */
+  let _shipped = null;
+  function ensureShipped() {
+    if (!_shipped) _shipped = import('./data-tables.js').then((m) => { foldShipped(m.DATA_TABLES || []); }, (e) => { _shipped = null; throw e; });
+    return _shipped;
+  }
+  function foldShipped(list) {
+  for (const t of list) {
+    if (TABLES[t.id]) continue;   /* a built-in table keeps its name; scripts/data-tables.mjs refuses a duplicate among the files */
+    TABLES[t.id] = { id: t.id, label: t.title, rows: () => shippedRows(t),
+      geo: !!(t.lng && t.lat), shipped: true, decl: t, fields: t.columns.map((c) => ({ name: c.key, type: c.type })),
+      source: [t.source && t.source.publisher, t.source && t.source.licence].filter(Boolean).join(' — ') + ' (' + t.file + ')' };
+  }
+  }
+  const fieldTable = (T) => !!(T && (T.user || T.shipped));
+
   /* ══ (#R729) THE TABLES THE READER BROUGHT ═══════════════════════════════════════════════════
      The five above are what IntMap ships. A file the reader dropped on the map was drawn and then
      could not be ASKED anything: `from` named one of five names, and no code path could make it a
@@ -671,13 +718,20 @@ export function atlasQuery(HOST) {
        ⚠ Before the fixed table, because `name`/`lat`/`lng` are declared there for the five built-in
        tables and would otherwise answer with an `intrinsic` reader that does not know this row. */
     const UT = TABLES[table];
-    if (UT && UT.user) {
+    if (fieldTable(UT)) {
       if (key === 'lat' || key === 'lng' || key === 'name') {
         return col(key, [table], LA(key, key, key, key, key), key === 'name' ? '' : '°', 0,
           intrinsic(key, (r) => r[key]), UT.source, key === 'name' ? 'text' : 'number', 'raw');
       }
       const fld = (UT.fields || []).find((f) => f.name === key);
       if (!fld) return null;
+      /* a declared table names its own columns, units and sources (scripts/data-tables.mjs) */
+      if (UT.shipped) {
+        const dc = UT.decl.columns.find((c) => c.key === key);
+        return col(key, [table], dc.label, dc.unit || '', 0,
+          intrinsic(key, (r) => { const v = (r._p || {})[key]; return v == null ? null : (dc.type === 'number' ? (isFinite(+v) ? +v : null) : String(v)); }),
+          UT.source, dc.type === 'number' ? 'number' : 'text', 'raw');
+      }
       /* ⚠ The dataset said `number`; the row still holds the string the file held, so the read
          converts. Doing it here rather than at import keeps the reader's own bytes intact. */
       const asNum = (typeof window !== 'undefined' && window.IntMapData) ? window.IntMapData.asNumber : (v) => (isFinite(+v) ? +v : null);
@@ -788,7 +842,7 @@ export function atlasQuery(HOST) {
     const T = TABLES[table];
     const out = [];
     const push = (s) => { if (s && out.indexOf(s) < 0) out.push(s); };
-    if (T && T.user) {
+    if (fieldTable(T)) {
       push('name'); push('lat'); push('lng');
       for (const f of (T.fields || [])) push(f.name);
       return out;
@@ -1077,6 +1131,7 @@ export function atlasQuery(HOST) {
   async function run(spec) {
     const notes = [], sources = [], caps = [], unapplied = [];
     const colSrc = Object.create(null);   /* (atlas-cited-answers) column id → the source its values came from — `provenanceOf` below */
+    await ensureShipped();   /* the tables data/ files declare — imported once, on the first query */
     syncUserTables();   /* (#R729) read at the moment of the query — see the header above TABLES */
     const from = String((spec && (spec.from || spec.table)) || 'cities').trim().toLowerCase();
     const T = TABLES[from];
@@ -1253,7 +1308,7 @@ export function atlasQuery(HOST) {
     /* (#R729) a dataset the reader brought has no headline column this module can name in advance,
        so it shows the first four fields the file actually has — an empty table would say the rows
        matched and then show nothing about them. */
-    if (!shown.length && T.user) { for (const f of (T.fields || []).slice(0, 4)) { const c = columnFor(from, f.name); if (c) shown.push(c); } }
+    if (!shown.length && fieldTable(T)) { for (const f of (T.fields || []).slice(0, 4)) { const c = columnFor(from, f.name); if (c) shown.push(c); } }
     if (!shown.length) { const p = columnFor(from, from === 'earthquakes' ? 'mag' : 'pop'); if (p) shown.push(p); }
     /* a shown column that no condition paid for still has to be measured */
     for (const c of shown) {
@@ -1555,8 +1610,29 @@ export function atlasQuery(HOST) {
   }
   function announce(res) { try { window.IntMapOS.emit({ kernel: 'query', phase: 'answered', result: compactResult(res) }); } catch (_) { } }
 
+  /* every table a query can name, with what it holds — what `{"list":true}` answers, so the tables are
+     discovered from the registry at the moment they are asked about, never from a list in the prompt */
+  async function tableListing() {
+    await ensureShipped();
+    syncUserTables();
+    return Object.keys(TABLES).map((id) => {
+      const T = TABLES[id];
+      const cols = tableColumnIds(id).map((k) => { const c = columnFor(id, k); return c ? { id: k, label: colName(c), unit: c.unit || '' } : { id: k }; });
+      const src = (T.decl && T.decl.source) || {};
+      return { id, title: tableName(T), rows: T.decl ? T.decl.count : null, source: T.source || '', geo: T.geo !== false, columns: cols,
+        completeness: src.completeness || null, gaps: src.gaps || null };
+    });
+  }
   async function answer(a, ui) {
     const U = ui || {};
+    if (a && (a.list === true || a.from === '?')) {
+      const ls = await tableListing();
+      const html = ls.map((t) => '<div style="margin:4px 0;"><b>' + esc(t.id) + '</b> — ' + esc(t.title) + (t.rows != null ? ' · ' + t.rows + ' rows' : '')
+        + '<br><span style="color:var(--text-muted);font-size:11px;">' + esc(t.columns.map((c) => c.id + (c.unit ? ' [' + c.unit + ']' : '') + (c.label && c.label !== c.id ? ' = ' + c.label : '')).join(' · ')) + '</span>'
+        + (t.source ? '<br><span style="color:var(--text-muted);font-size:10.5px;">' + esc(t.source) + '</span>' : '')
+        + ((t.gaps && t.gaps.length) || t.completeness ? '<br><span style="color:var(--text-muted);font-size:10.5px;">' + esc(((t.gaps || []).concat(t.completeness ? [t.completeness] : [])).join(' · ')) + '</span>' : '') + '</div>').join('');
+      return { ok: true, html, result: { ok: true, tables: ls } };
+    }
     const res = await run(a);
     if (res.ok) announce(res);
     if (!res.ok) {
@@ -1633,7 +1709,7 @@ export function atlasQuery(HOST) {
     /* (atlas-os) the record `announce` puts on the bus, built for a run the caller made itself (js/atlas-cap-notebook.js compare) */
     compact: (res) => (res && res.ok) ? compactResult(res) : null,
     bind: (deps) => { D = deps || {}; _iso2to3 = null; _nameTo3 = null; return API; },
-    tables: () => { syncUserTables(); return Object.keys(TABLES); }, columnFor, syncUserTables };
+    tables: () => { syncUserTables(); return Object.keys(TABLES); }, tableListing, ensureShipped, columnFor, syncUserTables };
   window.IntMapQuery = API;
   return API;
 }

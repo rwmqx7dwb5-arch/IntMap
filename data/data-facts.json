@@ -2090,12 +2090,12 @@
    "cadenceBasis": "measured",
    "asOf": "2021-06-02",
    "describes": {
-    "period": "a snapshot: plants as the database stands at its 1.3.0 release (June 2021); each row carries the commissioning year the database states",
-    "extent": "worldwide, but only the plants of the fuels in MODEL.fuels (coal, oil, gas, petcoke) that stand within MODEL.portReachKm (30 km, straight line) of a port in data/ports.json: 1,028 plants, counted 2026-11-20",
-    "method": "each plant is tied to the nearest MODEL.keep (3) ports within the radius by great-circle distance; the tie is proximity, not a stated fuel supply",
+    "period": "a snapshot: plants as the database stands at its 1.3.0 release (June 2021); each row carries the commissioning year and the capacity year the database states",
+    "extent": "worldwide: every plant of the database, every fuel — 34,936 plants in 167 countries, counted 2026-11-24",
+    "method": "each row of the database is copied with the fields it states; nothing is joined, filtered or derived",
     "resolution": "one point per plant, at the coordinates the database states; not the plant footprint",
-    "completeness": "a plant of another fuel, or farther than the radius, is absent by the rule and not because it does not exist; the database does not claim to list every plant",
-    "accuracy": "capacity, operator and commissioning year are copied from the database unchanged; IntMap measures none of them"
+    "completeness": "the database does not claim to list every plant; coverage differs by country with the national sources it draws on",
+    "accuracy": "capacity, fuel, owner, commissioning year and generation are copied from the database unchanged; reported and WRI-estimated generation are separate columns; IntMap measures none of them"
    },
    "unstated": []
   },

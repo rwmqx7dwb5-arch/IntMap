@@ -80,6 +80,10 @@
               "tool": "compose_map"
             },
             {
+              "id": "data.gis",
+              "tool": "data_gis"
+            },
+            {
               "id": "time.territoryChange",
               "tool": "time_territoryChange"
             },
@@ -88,8 +92,20 @@
               "tool": "time_textMap"
             },
             {
-              "id": "data.gis",
-              "tool": "data_gis"
+              "id": "map.tool",
+              "tool": "map_tool"
+            },
+            {
+              "id": "map.shakemap",
+              "tool": "map_shakemap"
+            },
+            {
+              "id": "map.clear",
+              "tool": "map_clear"
+            },
+            {
+              "id": "research.analyze",
+              "tool": "research"
             },
             {
               "id": "time.changes",

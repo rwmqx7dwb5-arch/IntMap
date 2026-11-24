@@ -161,10 +161,10 @@ export const ATLAS_SKILLS = [
         id: 'limits',
         title: T('Limits and honesty', '限界と誠実さ'),
         body: T('- The company atlas holds the sites companies have PUBLISHED. An empty result means "none published in the atlas", not "none exist".\n'
-            + '- IntMap has no land prices, zoning, power or water capacity, wages, incentives or permits. Do not infer them; list them as what the user must check before any decision.\n'
+            + '- For Japan, prefecture wholesale power prices, announced industrial land prices, minimum wages, labour and universities are data.query tables (listed by a query with "list":true). Elsewhere IntMap holds none of these, and nowhere water capacity, incentives or permits. What it does not hold is not inferred; it is what the user must check before any decision.\n'
             + '- Population is a count in an area, not a labour market: it says nothing of skills or commuting patterns.\n'
             + '- Ranking candidates needs weights the user must choose. Present each factor with its figure and, if you rank, say which weights you used and that they are yours.', '- 企業アトラスが持つのは企業が公表した拠点。結果が空なのは「アトラスに公表がない」であって「存在しない」ではない。\n'
-            + '- IntMap には地価・用途地域・電力や水の容量・賃金・優遇措置・許認可は無い。推測せず、決定の前に利用者が確かめるべきものとして挙げる。\n'
+            + '- 日本については、都道府県の卸電力価格・工業系の公示地価・最低賃金・労働力・大学が data.query の表にある（"list":true の問い合わせで一覧）。それ以外の国にはどれも無く、水の容量・優遇措置・許認可はどこにも無い。持たないものは推測せず、決定の前に利用者が確かめるべきものとして挙げる。\n'
             + '- 人口は区域の頭数であって労働市場ではない。技能や通勤の実態は述べない。\n'
             + '- 候補の順位づけには利用者が選ぶべき重みが要る。要因ごとに数値を示し、順位をつけるなら使った重みと、それが自分の選択であることを言う。'),
       },

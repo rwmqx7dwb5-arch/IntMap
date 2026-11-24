@@ -1,8 +1,8 @@
-/* data/siting-jp.json and js/siting.js — the bundle is internally consistent, ties to the company footprint, and the engine ranks the way it says. */
+/* data/siting-jp.json — the bundle is internally consistent and ties to the company footprint. Its prefecture and land-price tables are
+   asked through data.query (rowTables → js/data-tables.js; tests/generic-capabilities-checks.test.mjs). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { compare, resolveAreas, rankMetric, sectorMatches, dimensionsOf } from '../js/siting.js';
 import { prefecturesOf } from '../scripts/build-siting-jp.mjs';
 
 const data = JSON.parse(fs.readFileSync(new URL('../data/siting-jp.json', import.meta.url), 'utf8'));
@@ -51,34 +51,8 @@ test('company anchors are exactly the footprint\'s Japanese sites, placed by pol
 });
 
 test('gaps are declared, never silently filled: water has no metric and a stated reason', () => {
-  assert.ok(!dimensionsOf(data).water);
+  assert.ok(!Object.values(data.metrics).some((m) => m.dimension === 'water'));
   assert.ok(data.gaps.some((g) => g.dimension === 'water' && g.reason.length > 40));
-});
-
-test('rank 1 is the better end; ties share a rank; names resolve in three spellings', () => {
-  const r = rankMetric(data, 'power_spot_avg');
-  const cheapest = Math.min(...data.areas.filter((a) => a.m.power_spot_avg != null).map((a) => a.m.power_spot_avg));
-  for (const a of data.areas) if (a.m.power_spot_avg === cheapest) assert.equal(r.rank[a.id], 1);
-  const w = rankMetric(data, 'labor_working_age');
-  assert.equal(w.rank['JP-13'], 1, 'Tokyo has the most working-age people');
-  for (const n of ['Kumamoto', '熊本', '熊本県', 'JP-43']) assert.equal(resolveAreas(data, [n]).areas[0].id, 'JP-43', n);
-  assert.equal(resolveAreas(data, ['Kochi']).areas[0].id, 'JP-39');
-  assert.deepEqual(resolveAreas(data, ['Atlantis']).missing, ['Atlantis']);
-});
-
-test('compare: named areas, sector filter, rankBy and failure codes', () => {
-  const c = compare(data, { areas: ['Kumamoto', 'Miyagi'], dimensions: ['power', 'land'] });
-  assert.equal(c.rows.length, 2);
-  assert.ok(c.metricIds.every((id) => ['power', 'land'].includes(data.metrics[id].dimension)));
-  assert.ok(c.gaps.length > 0, 'an answer always carries what was not measured');
-  const s = compare(data, { sector: 'semiconductor', top: 5 });
-  assert.ok(s.rows.length > 0 && s.rows.every((x) => x.anchors.length > 0 && x.anchors.every((a) => sectorMatches(a.sector, 'semi'))));
-  const k = compare(data, { rankBy: 'land_ind_median', top: 3 });
-  assert.deepEqual(k.rows.map((x) => x.values.land_ind_median.rank), [1, 2, 3]);
-  assert.equal(compare(data, { areas: ['Atlantis'] }).code, 'NO_AREA');
-  assert.equal(compare(data, { rankBy: 'nonsense' }).code, 'BAD_METRIC');
-  assert.equal(compare(null).code, 'NO_DATA');
-  assert.ok(compare(data, { sector: 'bakery' }).noSectorMatch);
 });
 
 test('the statute excerpts the rules quote still contain the figures they report', () => {

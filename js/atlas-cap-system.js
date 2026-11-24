@@ -284,6 +284,37 @@ export default [
     },
   },
   {
+    /* THE APP'S OWN COMMANDS, ALL OF THEM. The buttons, the palette and the layer legends act through commands
+       registered on the kernel (window.IntMapOS.register — a layer's filter, a time step, a panel). Until 2026-11-25
+       Atlas could run one only when a capability had been written around it (map.volcanoFilter around
+       volcano.filter, …), so a command nobody had wrapped was out of its reach while the reader could press it.
+       This reaches every registered command by its id, the same call the button makes; the list is read from the
+       kernel when asked, so a command registered tomorrow is reachable tomorrow. dev-notes/2026-11-25-generic-capabilities.md */
+    row: ['system.command',             'command',        'appCommand,kernelCommand',                                    'system',  'control', 'ui.any',                 'panel',               'session', 'none',   '',         ''],
+    ui: { none: '2026-11-25' },
+    doc: [
+      { in: 'system.control', at: 10, text: 'APP COMMANDS: {"type":"command","id"?:str,"params"?:{…}} (アプリの操作コマンド · 命令の一覧 · ボタン・パレット・レイヤーの凡例が押すのと同じ命令を実行). Without "id": every command registered on the kernel, with its label and group, read at that moment. With "id": runs that command with "params", exactly as the button that owns it does, and returns what the command returned (a count shown, a state, ok:false with its reason). A command the kernel does not hold is answered with that fact. The commands are what the page can do through its own controls; anything they change, the reader can change back the same way.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { id: str(), params: loose() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      const OS = (typeof window !== 'undefined') && window.IntMapOS;
+      if (!OS || typeof OS.list !== 'function') return R(false, warn(L('The command kernel is not available.', '命令の核が使えません。')));
+      const id = a.id != null ? String(a.id).trim() : (a.cmd != null ? String(a.cmd).trim() : '');
+      if (!id) {
+        const all = OS.list().sort().map((c) => { const m = (OS.meta && OS.meta(c)) || {}; return { id: c, label: m.label || '', group: m.group || '' }; });
+        const h = '<div style="font-size:12px;line-height:1.55;">' + all.map((c) => '<b>' + esc(c.id) + '</b>' + (c.label ? ' — ' + esc(c.label) : '')).join('<br>') + '</div>';
+        return R(true, h, { exec: { commands: all } });
+      }
+      if (!OS.has(id)) return R(false, warn(esc(L('No command «' + id + '» is registered. Without an id, this lists the ones that are.', '「' + id + '」という命令は登録されていません。id を省くと登録済みの命令を一覧します。'))));
+      let out;
+      try { out = await OS.exec(id, { source: 'atlas', params: (a.params && typeof a.params === 'object') ? a.params : {} }); }
+      catch (e) { return R(false, warn(esc(id + ': ' + ((e && e.message) || 'error')))); }
+      const ok = !(out && out.ok === false);
+      let shown = ''; try { shown = JSON.stringify(out === undefined ? { ok } : out).slice(0, 1200); } catch (_) { shown = String(ok); }
+      return R(ok, '<div style="font-size:12px;">' + (ok ? '✓ ' : '') + '<b>' + esc(id) + '</b> ' + esc(shown) + '</div>', { exec: { command: { id, result: out === undefined ? null : out } } });
+    },
+  },
+  {
     row: ['system.control',             'control',        '',                                                            'system',  'control', 'ui.any',                 'panel',               'session', 'none',   '',         ''],
     ui: { none: '2026-11-19' },
     doc: [
