@@ -17,7 +17,8 @@
 //       bounded each account (PLAN_LIMITS) — so N accounts meant N times the bill, with no N.
 //
 //  WHAT THIS FILE OWNS, so that each of those is one thing in one place:
-//    · the model table                 (PROVIDER_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN)
+//    · the model table                 (PROVIDER_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN; prices
+//                                       MODEL_PRICE_USD_PER_MTOK; output ceilings MODEL_MAX_OUTPUT_TOKENS)
 //    · the provider-answer ceilings    (PROVIDER_TIMEOUT_MS, PROVIDER_MAX_BYTES)
 //    · what a provider failure carries (ProviderFail / providerFail: a status and a LENGTH, never a body)
 //    · the spend ceiling               (spendCeiling: the project-wide bucket `<fn>:global:day`;
@@ -25,7 +26,7 @@
 //    · the door                        (providerFetch: no ceiling → no request; no receipt → no request)
 //
 //  ⚠⚠ THE CEILING IS A FENCE ON THE INVOICE, NOT ON ATLAS (CONSTITUTION.md §5). It does not decide how
-//  many steps a turn may take or which tools Atlas may call — TURN_MAX_CALLS and the plan limits are
+//  many steps a turn may take or which tools Atlas may call — the turn's spend fences and the plan limits are
 //  untouched. It is the last fence against a runaway: a loop, a leaked scheduler secret, a thousand
 //  fresh accounts. Its numbers are set well above every day this project has measured, and each
 //  function writes beside its number the observation it came from and when it stops being true.
@@ -66,6 +67,10 @@ export const FALLBACK_CHAIN = ["gpt-6.1-terra", "gpt-6-luna"];
    2026-09-15). The background jobs take ONE fallback step and it is this one: they are unattended,
    and a single step to the known-good model is the whole of what #R148/#R351 asked of them. */
 export const OPENAI_LAST_RESORT_MODEL = FALLBACK_CHAIN[FALLBACK_CHAIN.length - 1];
+/* (news-event-history) The embedding model news-ingest prefers when the OpenAI key cannot reach an embedding model
+   (measured 2026-11-20: 403, no embedding id in the key's list). It is a PREFERENCE: the stage asks the provider's own
+   model list and falls back to whichever embedding model that list names. One table for every model id (edge-spend-and-models ①). */
+export const GEMINI_EMBEDDING_MODEL = "gemini-embedding-001";
 export const PROVIDER_DEFAULT_MODEL = Object.freeze({
   openai: OPENAI_DEFAULT_MODEL,
   gemini: "gemini-3.5-flash",
@@ -98,6 +103,31 @@ export const MODEL_PRICE_USD_PER_MTOK = Object.freeze({
 const PRICE_CEILING = Object.freeze(Object.values(MODEL_PRICE_USD_PER_MTOK).reduce((m, p) => ({
   input: Math.max(m.input, p.input), cached: Math.max(m.cached, p.cached), output: Math.max(m.output, p.output),
 }), { input: 0, cached: 0, output: 0 }));
+/* ══ ①c THE MOST A MODEL CAN WRITE IN ONE ANSWER — the provider's own documented ceiling (atlas-unbounded-turns) ══
+   An Atlas turn or worker may ask for a larger output budget than its task's default (ai-proxy ask.ts, payload
+   maxOutputHint on a task whose file says `outputHint`). The budget is raised up to THIS — never past what the
+   provider says the model can produce — and a model with no row here is not raised past HARD_MAX_OUTPUT at all.
+   No number here is ours: each is the provider's documentation, read 2026-11-24.
+     · gpt-6.2-sol / gpt-6.1-sol / gpt-6-sol / gpt-6.1-terra / gpt-6-luna — 128,000 «max output tokens» on each
+       model's page, https://developers.openai.com/api/docs/models/<id> (OpenAI counts reasoning tokens inside it).
+     · claude-haiku-4-5-20251001 — 64K «Max output», https://docs.anthropic.com/en/docs/about-claude/models/overview
+     · gemini-3.5-flash — 65,536 «Output token limit», https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash
+   Expires: whenever a model is added to the offered set (FALLBACK_CHAIN / PROVIDER_DEFAULT_MODEL / the price table)
+   or a provider changes a model's ceiling — add or correct the row here, from the provider's page. */
+export const MODEL_MAX_OUTPUT_TOKENS = Object.freeze({
+  "gpt-6.2-sol": 128_000,
+  "gpt-6.1-sol": 128_000,
+  "gpt-6-sol": 128_000,
+  "gpt-6.1-terra": 128_000,
+  "gpt-6-luna": 128_000,
+  "claude-haiku-4-5-20251001": 64_000,
+  "gemini-3.5-flash": 65_536,
+});
+/* outputCeilingOf(model) → the documented maximum output tokens, or null when this table cannot cite one */
+export function outputCeilingOf(model) {
+  const k = String(model || "");
+  return Object.prototype.hasOwnProperty.call(MODEL_MAX_OUTPUT_TOKENS, k) ? MODEL_MAX_OUTPUT_TOKENS[k] : null;
+}
 /* priceOf(model) → { input, cached, output, known } */
 export function priceOf(model) {
   const p = Object.prototype.hasOwnProperty.call(MODEL_PRICE_USD_PER_MTOK, String(model || "")) ? MODEL_PRICE_USD_PER_MTOK[String(model)] : null;

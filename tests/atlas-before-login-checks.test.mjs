@@ -95,6 +95,7 @@ function row(o) {
     changeAt: () => Promise.resolve(new Date(1914, 7, 3))
   };
   const api = makeAtlasExamples(HOST, {
+    suggestPrompts: true,   /* the path is off in the product; this check drives it as shipped when it is on */
     L: (en, ja) => (HOST.lang === 'jp' && ja ? ja : en),
     GE: () => ({
       camera: { getCenter: () => ({ lng: (box[0] + box[2]) / 2, lat: (box[1] + box[3]) / 2 }), getZoom: () => o.zoom || 5,

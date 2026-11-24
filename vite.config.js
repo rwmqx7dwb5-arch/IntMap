@@ -172,6 +172,8 @@ export const STATIC_ASSETS = [
   'support.html',
   'security.html',                      // (security-next) what the page sends and to whom, and the private way to report a problem
   'readiness.html',                     // (wave4-sales) the network and device check an organisation runs before adopting IntMap
+  'js/mcp-oauth-callback.js',
+  'mcp-oauth-callback.html',            // (mcp-oauth) where a service sends the reader back after signing in to an MCP server; hands the query to the opener and closes
   'js/readiness-page.js',               // (wave4-sales) …the check on that page, a module
   'js/readiness-check.js',              // (wave4-sales) …and the rules it shares with Atlas (system.readiness), which it imports
   'js/org-page.js',

@@ -143,7 +143,7 @@ function wireCards(root) {
 
 /* ══ THE SEARCH FIELD'S EMPTY STATE ══════════════════════════════════════════════════════════════
    Drawn into the search's own result list (#ms-results), which the field already shows and hides, and which
-   on a phone fills the sheet the field has raised (css/intmap.css #m-search-slot). It is drawn only while the
+   on a phone drops down under the field, which stays in the map (css/intmap.css #map-search). It is drawn only while the
    field is EMPTY and focused — js/search-geocode.js asks for it then, and the first letter typed replaces it
    with the place candidates. One row, examples then tours, scrolled sideways; «See all» opens the gallery. */
 /** `onLeave` — what «See all» ends where the strip is drawn. Absent: the search's list closes (as it always did);

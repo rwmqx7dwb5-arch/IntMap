@@ -42,54 +42,12 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+import { s, stable, CONTRACT_KINDS, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+export { stable, CONTRACT_KINDS, normaliseContract, contractKey };
+/* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
+export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
 
-/* a JSON text that does not depend on key order — the identity of an arguments object */
-export function stable(v) {
-  if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
-  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}';
-  return JSON.stringify(v === undefined ? null : v);
-}
 
-/* The two kinds of piece of work. `worker`: a model researches it (the default). `capability`: one read-only IntMap
-   capability is run with these arguments, no model in between — the cheap, exact way to fan a lookup out (the weather
-   in five cities, a figure for each of ten countries). Which capabilities may be named is the executor's call
-   (js/atlas-orchestrate.js makeCapabilityExecutor), not this file's. */
-export const CONTRACT_KINDS = Object.freeze(['worker', 'capability']);
-
-/* The most a capability task's arguments may weigh once written as JSON. Observation 2026-11-19: the arguments Atlas
-   writes for a read capability are a handful of short fields (the largest schema in js/atlas-cap-*.js carries ~10
-   keys); 4000 characters is an order of magnitude over that. Expires if a read capability starts taking a document
-   as an argument — then pass it by reference (an input task) instead of raising this. Canonical: here only. */
-const ARGS_MAX_CHARS = 4000;
-/* How many capabilities one worker may be granted. Observation 2026-11-19: Atlas's own read tools it reaches for in one turn are a handful; 12 is above that. Expires if a worker is asked to choose among more — then it should search (find_capability) rather than be handed a longer list. */
-const TOOLS_MAX = 12;
-
-/* normaliseContract(c) → { ok, contract } | { ok:false, error } */
-export function normaliseContract(c) {
-  if (!c || typeof c !== 'object') return { ok: false, error: 'contract_not_object' };
-  const kind = c.kind === 'capability' ? 'capability' : 'worker';
-  const inputs = (Array.isArray(c.inputs) ? c.inputs : [])
-    .map((i) => (i && typeof i === 'object' ? s(i.from, 64) : s(i, 64))).filter(Boolean).map((from) => ({ from }));
-  if (kind === 'capability') {
-    const capability = s(c.capability, 80);
-    if (!capability) return { ok: false, error: 'capability_missing' };
-    const args = (c.args && typeof c.args === 'object' && !Array.isArray(c.args)) ? c.args : {};
-    if (stable(args).length > ARGS_MAX_CHARS) return { ok: false, error: 'args_too_large' };
-    return { ok: true, contract: { id: s(c.id, 64), kind, goal: s(c.goal, 2000) || ('capability ' + capability), returns: s(c.returns, 600), inputs, capability, args } };
-  }
-  const goal = s(c.goal, 2000);
-  if (!goal) return { ok: false, error: 'goal_missing' };
-  /* (delegation-agency) the read capabilities this worker may call ITSELF, by id — the parent's grant, nothing wider. Absent = the worker
-     only researches (the model and its web search), which is what it was before. */
-  const tools = Array.from(new Set((Array.isArray(c.tools) ? c.tools : []).map((x) => s(x, 80)).filter(Boolean))).slice(0, TOOLS_MAX);
-  return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null) };
-}
-
-/* the identity of a piece of work: what it is asked to do and from what — not the id it was given */
-export function contractKey(c) {
-  return stable([c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null, (c.tools || []).slice().sort()]);
-}
 
 function makeEventLog(now) {
   const clock = typeof now === 'function' ? now : () => Date.now();
@@ -110,33 +68,6 @@ function makeEventLog(now) {
   };
 }
 
-/* cycleMembers(contracts) → Set of the INDICES whose inputs lead back to themselves. `contracts` are normalised contracts
-   (null where one did not normalise). Only names that are tasks of the list count as edges; a name that is not one is
-   `input_unknown` at run time, not a cycle. Strongly connected components (Tarjan): a component of two or more tasks, or
-   a task that names itself, is a cycle. */
-function cycleMembers(contracts) {
-  const list = Array.isArray(contracts) ? contracts : [];
-  const at = new Map();
-  list.forEach((c, i) => { if (c && c.id && !at.has(c.id)) at.set(c.id, i); });
-  const edges = list.map((c) => (c ? (c.inputs || []).map((i) => at.get(i.from)).filter((j) => j !== undefined) : []));
-  const out = new Set();
-  let idx = 0;
-  const index = new Array(list.length).fill(-1), low = new Array(list.length).fill(0), on = new Array(list.length).fill(false), stack = [];
-  const visit = (v) => {
-    index[v] = low[v] = idx++; stack.push(v); on[v] = true;
-    edges[v].forEach((w) => {
-      if (index[w] < 0) { visit(w); low[v] = Math.min(low[v], low[w]); } else if (on[w]) low[v] = Math.min(low[v], index[w]);
-    });
-    if (low[v] === index[v]) {
-      const comp = [];
-      let w;
-      do { w = stack.pop(); on[w] = false; comp.push(w); } while (w !== v);
-      if (comp.length > 1 || edges[v].indexOf(v) >= 0) comp.forEach((x) => out.add(x));
-    }
-  };
-  for (let v = 0; v < list.length; v++) if (index[v] < 0) visit(v);
-  return out;
-}
 
 /* resolveArgs(args, inputs) → { ok, args } | { ok:false, why }
    An argument that is a string of exactly the form  @<task id>:<path>  is replaced by what that task's result holds at
@@ -176,7 +107,7 @@ export function resolveArgs(args, inputs) {
    result says so in `gaps` rather than being cut mid-structure. */
 const DATA_MAX_CHARS = 20000;
 
-/* makeDelegation({ executor, log?, now?, parent? }) — one delegation: the tasks one Atlas call hands on.
+/* makeDelegation({ executor, log?, now?, parent?, maxConcurrent? }) — one delegation: the tasks one Atlas call hands on.
    → { start(contract) → handle, run(contracts) → Promise<result[]>, cancelAll(), log, workspace, spendUsd() } */
 export function makeDelegation(o) {
   const opt = o || {};
@@ -199,6 +130,27 @@ export function makeDelegation(o) {
   });
   const keys = new Map();       // id → contractKey, for snapshot()
   let n = 0;
+  /* THE QUEUE. `maxConcurrent` (a whole number the server states, meta.delegationPolicy.maxConcurrent) is how many WORKERS may be in flight
+     at once; the rest wait their turn, in the order they became ready. It bounds concurrency, never the total: every task still runs.
+     Absent / null → every task starts at once. A capability task runs no model and is not queued. A task waiting for its inputs holds no
+     slot (the slot is taken only when it is about to run), so a dependency can never starve the task it waits for. */
+  const maxConcurrent = Number.isInteger(opt.maxConcurrent) && opt.maxConcurrent >= 1 ? opt.maxConcurrent : null;
+  let inFlight = 0;
+  const waiters = [];
+  const acquire = (signal) => {
+    if (maxConcurrent === null || inFlight < maxConcurrent) { inFlight++; return Promise.resolve(true); }
+    return new Promise((resolve) => {
+      const w = { resolve, off: null };
+      w.off = () => { const i = waiters.indexOf(w); if (i >= 0) waiters.splice(i, 1); resolve(false); };
+      signal.addEventListener('abort', w.off, { once: true });
+      waiters.push(w);
+    });
+  };
+  const release = () => {
+    const w = waiters.shift();
+    if (w) w.resolve(true);   /* the slot passes straight to the next in line; inFlight is unchanged */
+    else inFlight--;
+  };
 
   /* every append goes through here so a watcher sees the event the moment it is written; a watcher that throws is
      the watcher's problem and never the work's */
@@ -311,6 +263,11 @@ export function makeDelegation(o) {
         if (!ra.ok) return finish(id, t0, { state: 'failed', code: 'input_ref_unresolved', summary: ra.why });
         runArgs = ra.args;
       }
+      const queued = c.kind !== 'capability';
+      if (queued) {
+        const got = await acquire(controller.signal);
+        if (!got) return finish(id, t0, { state: 'cancelled' });
+      }
       /* THE LEASE: who holds the right to run this task. One executor holds every lease here; the event is
          what a second executor (a server, a second tab) would read before running a task someone else holds. */
       entry.holder = String(executor.id || 'executor');
@@ -324,6 +281,8 @@ export function makeDelegation(o) {
       } catch (e) {
         if (controller.signal.aborted || (e && e.name === 'AbortError')) return finish(id, t0, { state: 'cancelled' });
         return finish(id, t0, { state: 'failed', code: 'executor_threw', summary: s(e && e.message, 400) });
+      } finally {
+        if (queued) release();
       }
     })();
     settleForward(id, entry.promise);
@@ -455,42 +414,16 @@ export function useDelegationStore(store) { _delegationStore = store; return sto
    One request; if what comes back is not the shape asked for, ONE repair request that names what was wrong
    (a retry that does something different — one-pass-or-a-reason §5). The calls a worker may make are the
    server's to bound. */
-const WORKER_SYSTEM = personaPrompt('working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers', { mode: 'internal' }) + [
-  'Do only the piece you are given. Use the web search tool when it is attached to find and verify current facts; prefer primary and official sources.',
-  'Never invent a fact, a figure, a date, a source or a coordinate. Give coordinates only when you know them (a well-known city, port, strait or facility); otherwise leave them out and name the place.',
-  'Write in the language the piece is written in.',
-  'Return ONE JSON object and nothing else: {"summary": string (what you found, 2-6 sentences), "findings": [{"claim": string, "place"?: string, "lat"?: number, "lon"?: number, "date"?: string, "source"?: string (URL), "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "gaps": [string] (what you could not establish, and why), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does)}.',
-].join('\n');
+const WORKER_SYSTEM = workerSystem(personaPrompt('working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers', { mode: 'internal' }));
 
-function workerPrompt(task) {
-  let p = 'YOUR PIECE OF THE WORK:\n' + task.goal;
-  if (task.returns) p += '\n\nWHAT ATLAS NEEDS BACK:\n' + task.returns;
-  (task.inputs || []).forEach((i) => {
-    p += '\n\nWHAT ANOTHER WORKER FOUND (task "' + i.from + '") — build on it, do not repeat it:\n' + JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data }).slice(0, 12000);
-  });
-  return p + '\n\nToday is ' + new Date().toISOString().slice(0, 10) + '.';
-}
 
-/* shapeOf(data) → { ok, out } | { ok:false, why } — the worker's answer held to the shape it was asked for */
-export function shapeOf(data) {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return { ok: false, why: 'the answer was not a JSON object' };
-  if (typeof data.summary !== 'string' || !data.summary.trim()) return { ok: false, why: '"summary" was missing or empty' };
-  if (data.findings != null && !Array.isArray(data.findings)) return { ok: false, why: '"findings" was not an array' };
-  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : undefined);
-  const findings = (data.findings || []).filter((f) => f && typeof f === 'object' && typeof f.claim === 'string' && f.claim.trim()).map((f) => {
-    const lat = num(f.lat), lon = num(f.lon);
-    const ll = lat != null && lon != null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
-    const verdict = (f.verdict === 'supported' || f.verdict === 'unsupported' || f.verdict === 'contradicted') ? f.verdict : undefined;
-    return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined };
-  });
-  return { ok: true, out: { summary: s(data.summary, 4000), findings, facts: normalizeFacts(data.facts), gaps: Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [] } };
-}
 
 /* requestKey(prompt, webMode) → a key in ai-proxy's REPLAY_KEY_OK alphabet that is the same for the same request and (to
    2^-64) different for any other: two independent 32-bit hashes of the text, written in hex. Not a secret and not a
    signature — the server binds the key to the account and the turn; this only has to tell requests apart. */
-export function requestKey(prompt, webMode) {
-  const text = String(webMode || '') + '\n' + String(prompt || '');
+export function requestKey(prompt, webMode, model) {
+  /* (model-options) the model is part of the request's identity: the same prompt put to a stronger model is a different request, not a duplicate */
+  const text = String(webMode || '') + '\n' + (model ? String(model) + '\n' : '') + String(prompt || '');
   let h1 = 0x811c9dc5, h2 = 0x9747b28c;
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i);
@@ -527,31 +460,38 @@ export function toolCallOf(data) {
    reported with the reason it may not be called. It is the name Atlas already holds the same search under, and no
    capability id has that spelling, so the grant cannot be confused with a capability. */
 const FIND = 'find_capability';
-function toolSection(allowed, describe, steps, remaining, canFind) {
+function toolSection(allowed, describe, steps, remaining, canFind) {   /* remaining: Infinity = the server states no count */
   let p = '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + (allowed.length ? allowed.join(', ') : '(none yet)') + '.';
   allowed.forEach((id) => { let d = ''; try { d = typeof describe === 'function' ? s(describe(id), 1200) : ''; } catch (_) { d = ''; } if (d) p += '\n  ' + id + ' arguments: ' + d; });
   p += '\nTo call one, return ONLY {"call":{"capability":"<id>","args":{...}}} instead of the findings. Its result comes back in your next request.';
   if (canFind) p += '\nTo look for a capability you do not have, return ONLY {"call":{"capability":"' + FIND + '","args":{"query":"<a few words for what you need>"}}}: IntMap searches its whole registry, and every read-only match becomes one you may call from your next request on (the others are named with the reason you may not call them).';
   if (steps.length) p += '\n\nRESULTS OF YOUR CALLS SO FAR:\n' + steps.map((x, i) => (i + 1) + '. ' + x.capability + ' ' + JSON.stringify(x.args).slice(0, 300) + ' → ' + (x.ok ? '' : 'FAILED: ') + x.text).join('\n');
-  p += remaining <= 1 ? '\n\nTHIS IS YOUR LAST REQUEST: make no more calls; return the findings JSON now from what you have, and say in "gaps" what you could not establish.' : '\n\nYou have ' + remaining + ' request(s) left including the one that returns the findings.';
+  if (remaining === Infinity) p += '\n\nThere is no fixed number of requests: make the calls you need, then return the findings JSON. A call you already made with the same arguments is answered from its first result, not run again.';
+  else p += remaining <= 1 ? '\n\nTHIS IS YOUR LAST REQUEST: make no more calls; return the findings JSON now from what you have, and say in "gaps" what you could not establish.' : '\n\nYou have ' + remaining + ' request(s) left including the one that returns the findings.';
   return p;
 }
 
 /* makeWorkerExecutor({ ask, parentTurn, signal, maxCalls? })
    maxCalls — how many requests one worker may make (the first, a repair of a wrong shape, a retry after a transient
    failure). Pass the server's own bound (meta.delegationPolicy.childMaxCalls): the server refuses a call past it with
-   `turn_calls`, so asking for more only buys a refusal. Setting it is also what turns the retry on. Unset → 2 requests
-   (the first and one repair of a wrong shape) and no retry: what this executor did before it could retry. */
+   `turn_calls`, so asking for more only buys a refusal. Setting it is also what turns the retry on. Unset (undefined) → 2 requests
+   (the first and one repair of a wrong shape) and no retry: what this executor did before it could retry.
+   `null` → THE SERVER STATES NO COUNT: the worker keeps working until it has a well-formed artifact. What stops it is then
+   PROGRESS, never a number (one-pass-or-a-reason): a repair is asked again only while the model's output CHANGES; a transient failure
+   is retried only with a request not yet tried (web off, then shorter) and ends reported when those are used; a capability call
+   already answered is answered from its first result, and two such repeats in a row end the worker. Money, the user's Stop and the
+   kill switch stop it from outside (the signal, the server's fences). */
 export function makeWorkerExecutor(o) {
   const opt = o || {};
   const ask = opt.ask;
   if (typeof ask !== 'function') throw new Error('makeWorkerExecutor: ask is required');
   const parentTurn = String(opt.parentTurn || '');
   const outerSignal = opt.signal || null;
-  const maxCalls = Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1 ? opt.maxCalls : 2;
+  const unbounded = opt.maxCalls === null;
+  const maxCalls = unbounded ? Infinity : (Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1 ? opt.maxCalls : 2);
   /* a retry after a transient failure is the caller's opt-in, by saying how many requests the server allows: without
      it the one spare request stays what it always was, the repair of a wrong shape */
-  const retryTransient = Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1;
+  const retryTransient = unbounded || (Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1);
   const cap = opt.capability && typeof opt.capability.run === 'function' && typeof opt.capability.classify === 'function' ? opt.capability : null;   /* { run, classify, describe?, find? } — the host's kernel lane (find: the registry search a worker granted find_capability uses) */
   return {
     id: 'worker-model@page',
@@ -573,6 +513,10 @@ export function makeWorkerExecutor(o) {
       let prompt = base(0);
       let webMode = 'auto';
       let degraded = '';   /* what the final answer was made without, after a retry that changed the request */
+      const tried = new Set();   /* the retry variants already used ('web_off', 'concise'): a transient failure is retried only with one not yet tried */
+      let lastBad = null;        /* the signature of the last malformed output: the same output again is no progress */
+      const answered = new Map();   /* the call's identity → the step its first call produced: the same call with the same arguments is answered from it, not run again */
+      let repeatRun = 0;            /* consecutive steps made only of such repeats */
       /* one search of the registry, as a step: read-only matches join the grant; the others are named with why they may not be
          called. Throws only when the task was cancelled while it searched. */
       const searchStep = async (args) => {
@@ -600,12 +544,12 @@ export function makeWorkerExecutor(o) {
         let env;
         calls += 1;
         try {
-          env = await ask(prompt, WORKER_SYSTEM, null, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, signal: controller.signal,
+          env = await ask(prompt, WORKER_SYSTEM, null, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, modelHint: task.model || undefined, signal: controller.signal,
             /* the key is the REQUEST's identity — what is asked and how (prompt + web mode), under this child's turn key. A duplicate of THIS
                request (the same delegation resumed by another executor) is answered with the first's answer instead of being run again;
                a different request — the repair, the retry, or another research.delegate call that reused the id "task1" in the same turn —
                has a different key and is never handed this one's answer. */
-            replayKey: requestKey(prompt, webMode) });
+            replayKey: requestKey(prompt, webMode, task.model) });
         } catch (e) {
           if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, sources };
           const code = String((e && e.code) || '');
@@ -621,15 +565,20 @@ export function makeWorkerExecutor(o) {
              search that ran out its time is not asked to search again (it would meet the same wall); it is asked to answer
              from what the model knows, and the result says it was made without the web. Any other transient failure is
              asked again for less — fewer, shorter findings — which is a different, cheaper request. */
-          if (retryTransient && isTransientFailure(code, detail) && attempt + 1 < maxCalls) {
-            const change = detail.timeout ? 'web_off' : 'concise';
-            if (change === 'web_off') { webMode = 'off'; degraded = 'The web search timed out, so this was answered without it, from what the model knows: treat every claim as unverified.'; }
+          const variants = detail.timeout ? ['web_off', 'concise'] : ['concise', 'web_off'];
+          const change = variants.find((v) => !tried.has(v));
+          const retryable = retryTransient && isTransientFailure(code, detail) && attempt + 1 < maxCalls;
+          if (retryable && change) {
+            tried.add(change);
+            if (change === 'web_off') { webMode = 'off'; degraded = 'The web search was not available (it timed out or the provider failed), so this was answered without it, from what the model knows: treat every claim as unverified.'; }
             prompt = base(attempt + 1) + '\n\nA PREVIOUS ATTEMPT AT THIS PIECE FAILED (' + (code || 'error') + '). '
-              + (change === 'web_off' ? 'Web search is NOT available this time: answer only from what you reliably know, say plainly what you could not check, and give no source URL you cannot vouch for.' : 'Be concise: at most 5 findings, each one sentence, and say what you could not establish.');
+              + (tried.has('web_off') ? 'Web search is NOT available this time: answer only from what you reliably know, say plainly what you could not check, and give no source URL you cannot vouch for. ' : '')
+              + (tried.has('concise') ? 'Be concise: at most 5 findings, each one sentence, and say what you could not establish.' : '');
             ctx.emit('effect.retry', { intent: intent.id, code, change, attempt: attempt + 1 });
             continue;
           }
-          return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), calls, costUsd, sources };
+          /* a transient failure with no different request left to make: stopped and said so — the same request again is not progress */
+          return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), gaps: retryable ? ['The request failed (' + (code || 'error') + ') and every different way of asking (without the web, shorter) had already been tried; it was not asked again the same way.'] : undefined, calls, costUsd, sources };
         }
         const meta = (env && env.meta) || {};
         const c = Math.max(0, Number(meta.costUsd) || 0);
@@ -641,6 +590,20 @@ export function makeWorkerExecutor(o) {
         const wanted = (allowed.length || canFind) ? toolCallOf(env && env.data) : null;
         if (wanted && attempt + 1 < maxCalls) {
           let step;
+          const ck = stable([wanted.capability, wanted.args]);
+          const had = answered.get(ck);
+          if (had) {
+            /* the same call, the same arguments: answered from the first result, not run (nor searched) again — and not a step forward */
+            step = { ok: had.ok, text: 'ALREADY ANSWERED (the same call with the same arguments; not run again): ' + had.text };
+            repeatRun += 1;
+            if (repeatRun >= 2) {
+              const raw = s(env && env.text, 4000);
+              return { state: raw ? 'partial' : 'failed', code: 'repeated_calls', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker asked for answers it already had twice in a row and was stopped without findings; it had called: ' + Array.from(new Set(steps.map((x) => x.capability))).join(', ') + '.']), calls, costUsd, sources };
+            }
+            steps.push({ capability: wanted.capability, args: wanted.args, ok: step.ok, text: step.text });
+            prompt = base(attempt + 1);
+            continue;
+          }
           if (canFind && wanted.capability === FIND) {
             try { step = await searchStep(wanted.args); } catch (e) { return { state: 'cancelled', calls, costUsd, sources }; }
           } else if (!allowed.includes(wanted.capability)) {
@@ -662,6 +625,8 @@ export function makeWorkerExecutor(o) {
               step = { ok: false, text: s(e && e.message, 300) };
             }
           }
+          repeatRun = 0;
+          answered.set(ck, step);
           steps.push({ capability: wanted.capability, args: wanted.args, ok: step.ok, text: step.text });
           prompt = base(attempt + 1);
           continue;
@@ -673,12 +638,16 @@ export function makeWorkerExecutor(o) {
           return out;
         }
         why = sh.why;
-        if (attempt + 1 < maxCalls) {
+        /* a repair is asked for only while the model's output CHANGES: the same malformed output twice is the model saying it will not do better */
+        const sig = stable([env && env.data === undefined ? null : env && env.data, s(env && env.text, 4000)]);
+        const same = lastBad === sig;
+        lastBad = sig;
+        if (attempt + 1 < maxCalls && !same) {
           prompt = base(attempt + 1) + '\n\nYOUR PREVIOUS ANSWER COULD NOT BE USED: ' + why + '. Return exactly the JSON object described, with a non-empty "summary".';
           continue;
         }
         const raw = s(env && env.text, 4000);
-        return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker did not return the requested shape (' + why + ').']), calls, costUsd, sources };
+        return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker did not return the requested shape (' + why + ')' + (same ? ', and returned the same output again after being told what was wrong, so it was not asked again.' : '.')]), calls, costUsd, sources };
       }
       return { state: 'failed', code: 'shape', summary: why, calls, costUsd, sources };
     },

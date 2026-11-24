@@ -400,6 +400,8 @@ map していて、**`DECL` に足して `ORDER` に足し忘れた op は run()
 | `join` | 2（対象・**表**） | 何でも／何でも | 対象と同じ | `leftField`・`rightField`（必須）・`fields`・`prefix`・`unmatched`・`duplicates`・`when`/`at`/`from`/`to`/`ends`（§1.5.2） |
 | `compute` | 1 | 何でも | 入力と同じ | `outName`・`expr`（必須）・`replace` |
 | `voronoi` | 2（地点・窓） | `Point`／`Polygon` | `Polygon` | 無し（§2.9） |
+| `network` | 1（線） | `LineString` | `Point`（ノード）／`LineString`（辺・経路） | `analysis`・`weightField`・`capacityField`・`snapKm`・`nodesAt`・`from`／`to`・`k`・`output`・`maxSources`（§2.11） |
+| `networkDisrupt` | 2（網・区域） | `LineString`／`Polygon` | `Point`／`LineString` | `weightField`・`capacityField`・`snapKm`・`from`／`to`・`output`・`maxSources`（§2.11） |
 | `centroid` | 1 | 何でも | `Point` | 無し（球面の重心。面積・長さで重み付け。§2.5.6） |
 | `pointOnSurface` | 1 | 何でも | `Point` | 無し（必ず面の内側・線の上に来る点。§2.5.6） |
 | `convexHull` | 1 | 何でも | `Polygon` | `by`（列名。省略＝全部で 1 群。§2.5.6） |
@@ -1009,6 +1011,49 @@ Douglas–Peucker 3。ほぼ全部が生の度で、±180 を跨ぐ形の箱は�
 辺だけを共有する隣の区画も true になる。`aggregate` は面どうしのときだけ交差の中身を訊き、隣の区画を
 区域の件数に入れない（`geom-3` までの member の規則のまま）。点と線は閉じた集合で、境界をまたぐ線は両側に
 数えられる。⚠ `relate` と `spatialJoin` の `intersects` は読者が選ぶ述語なので OGC のまま——辺で接する区画も結ばれる。
+
+### 2.11 つながりとしての網 — `network` / `networkDisrupt`（`js/gis-network.js` `window.IntMapGisNetwork`）
+
+経路探索は「A から B へ」に答える。港湾・鉄道・道路・電力網・海底ケーブル・航空路線・サプライチェーンに
+訊くのは別の問いで、**「これが止まったら何がつながらなくなるか」**——距離ではなく**つながり**の問いである。
+線のデータセットを**グラフ**として読む: ノードは線が出会う所、辺は線、費用と容量は**読者が名指した列**。
+
+| op | 入力 | 答え |
+|---|---|---|
+| `network` `analysis:'centrality'` | 線 | ノードごとに `_degree`・`_harmonic`（調和近接）・`_betweenness`（Brandes。同じ費用の最短路は等分）・`_component`。`output:'edges'` で辺の媒介（＝どの航路が最も多くを運ぶか） |
+| `network` `analysis:'maxflow'` + `from`/`to` | 線 | 通せる最大量 `stats.maxFlow`・各辺の `_flow`／`_utilisation`・**ボトルネック＝最小カット**（`_inCut`・`stats.cutCapacity`・`stats.bottleneckRows`） |
+| `network` `analysis:'alternatives'` + `from`/`to` + `k` | 線 | 上位 k 本の**ループの無い**経路（Yen）。`_extraPct`（最良に対する増分）・`_sharedWithBest` |
+| `networkDisrupt` | 線 ＋ 区域（面） | 区域が触れる辺と区域内のノードを取り除き、**同じ網の無傷との差**を測る: 成分数・到達できなくなった対 `pairsLostPct`・残った対の迂回 `meanDetourPct`・`nodesIsolated`・（`from`/`to` を与えれば）`flowLossPct`・`topNodesLost`・`topEdgesRemovedByLoad`・**迂回した交通が乗る辺** `topEdgesGainingLoad` |
+
+- **何も推測しない。** 費用は `weightField`、無ければ線の大円長（km）。⚠ **名指した費用が欠けた辺は除外して数える**
+  （`edgesDroppedNoWeight`）——長さで代用すると、時間の列に km が混ざる。容量は `capacityField`、無ければ
+  1 本 1（そのとき `capacityBasis:'unit'`＝流量は**辺を共有しない経路の本数**）。名指した容量が欠けた辺は 0 で
+  数える（`capacityMissing`）。1 つの線が複数の片になるとき（MultiLineString・`nodesAt:'vertices'` での分割）は
+  費用を**長さの比で分ける**（`costSplit`）——時間と長さには正確で、通行料には正確でない。
+- **ノードはどこか。** 既定は線の**端点**。`snapKm` 以内の点は 1 つのノード（3 次元単位ベクトルの格子で探すので
+  日付変更線も極も特別でない）。`nodesAt:'vertices'` は道路・鉄道のように**途中の頂点を共有して交わる**網で、
+  共有された頂点でも切る。`nameFromField`／`nameToField` は線の始点・終点のノード名で、`from`／`to` はその
+  **名前**か `"lng,lat"`（最寄りノード。距離は `fromSnapKm`／`toSnapKm` に出る）。`edgeLabelField` は要約での航路の名前。
+- **標本は述べる。** 媒介と障害の対の数は、各起点から最短路木を 1 本歩く。起点が `maxSources`（既定 512）以下なら
+  **全数**（`exact:true`）、超えると**固定シードの標本**を拡大して使い `exact:false`・`sourcesUsed` が述べる。512 は
+  時間の予算（観測: 海底ケーブル 2,689 ノード・3,317 辺で最短路木 1 本が約 1 ms、障害の全体が約 1 秒）であって
+  網の性質ではなく、パラメータである。全ての反復は**時間で譲る**（`ctx.tick`）ので、大きな網でも画面は固まらず
+  中止ボタンは効く。
+- **区域の判定が決められなかったら「触れていない」としない。** 幾何カーネルが答えられなかった辺は
+  `zoneUndecided` に数え、台帳に載せる（記録は partial になる）。
+- **ノードの答えは行の時間軸を継がない。** 行がノードなので、行ごとの時間軸が指す列は無い（定数の期間は網全体に
+  ついての言明なので残る）。
+
+⚠ **検証は総当たりでやっている**（`tests/gis-network-checks.test.mjs`）: 媒介は全最短路の数え上げ、最大フローは
+**辺の部分集合の列挙**で見つけた最小カットと一致し、返されたカットは両端を本当に切って容量の和が流量に等しく、
+代替経路は全単純路の列挙の上位 k 本、障害の損失は壊れた網を Floyd–Warshall で歩いた値と一致する。
+**実データ**では海底ケーブル（`data/subcables.json`・3,491 本）に台湾海峡の区域を重ねる。この網は
+**ケーブルごとに端点がつながっていない**（端点を共有しない）ので 226〜261 の成分に分かれる——つながりの問いに
+答えるときの上限であり、データの性質として `componentsBefore` が述べる。
+
+**船舶・港湾の問い**（「台湾海峡の海運が止まったらどの港・航路・産業が」）は、航路（線）と港（ノード名）を
+データセットとして与えれば同じ op が答える。海運の航路と港のデータセットは**この層にまだ無い**ため、
+いまは海底ケーブル・鉄道・LNG ターミナル網（`world-graph-store`）が実データで動かせる網である。
 
 ## 3. 由来 — `provenance` は札ではなくレシピ
 
@@ -1940,6 +1985,8 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
 | `catalogs()` / `add()` | 問い合わせるカタログの登録簿（STAC API・OGC API – Features）。**種別は述べる**（アドレスから推測しない）。`add()` は https の公開宛先だけ |
 | `discover({q,bbox,time,…})` | 各カタログの `/collections` を読み、場所・期間を**覆うと述べている**コレクションを返す。`q` の語は全部が要る |
 | `inspect(ref)` | コレクション自身の述べること、標本アイテムの資産（COG か・バンド・単位）、`evidence`、そして**読むための ref**（`refs.features`＝`ogc:…`、`refs.grids`＝`url:…`） |
+| `items(ref,{bbox,time,maxCloud,limit})` | 1 コレクションのシーン（日時・雲量・解像度・EPSG・プラットフォーム・SAR の mode/偏波/軌道方向・**述べられた欠損率**）。1 ページだけで、`continues` が続きの有無を述べる |
+| `scenes({bbox,time,modality,maxCloud,catalogs,perModality,limit})` | **種別（`optical` / `sar` / `dem` / `lidar`）で、全カタログ横断**に「この場所・この時期のシーン」を探す。種別は STAC の述べる欄（`sar:*` summaries・`eo:bands`・標高／LiDAR の語）から読み、ホスト名では決めない。各シーンに日時・雲量・欠損率・解像度・プラットフォーム・**コレクションのライセンス（原文）と規約リンク**・読むための `refs.grids`（`url:<COG>`）を付ける。**「無い」は 3 種を分けて返す**: `no-collection`（その種別を述べるコレクションが問い合わせ先に無い）／`no-scene`（コレクションは述べるが期間にシーンが無い・`atOtherTimes` に他の時期の在り処・雲量で落とした数）／`not-answered`（応答が無い＝「訊けなかった」）。**DEM は時系列でないので期間を適用しない**（`periodApplied:false`）。**非商用ライセンス（`-NC`）のコレクションは `excluded` に理由つきで挙げ、探さない**。`proprietary` は STAC が「規約はリンク先」を表す語で、開放とも閉鎖とも言わずリンクを示す。1 コレクション 1 ページ・種別ごとの問い合わせ数は `perModality`（既定 6・超えた分は `collectionsNotAsked`）。入力の `refs.grids` は `data.gis` の `url:` 入力に渡せる（変化解析・モデルが読む入口と同じ） |
 
 ### 完全性の 3 つの主張を混ぜない
 1. 供給元が窓の全部を返した — 読む扉の `coverage`（`js/gis-sources.js` の `coverageOf()` の判定）。
@@ -1971,6 +2018,36 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
 ### まだやっていないこと
 世界規模のベクタを**メモリに載せず**分割して保存・検索する基盤（GeoParquet・DuckDB / PostGIS）、長時間・大容量解析の非同期ジョブ、
 解析結果の永続キャッシュ、複数供給元の品質・優先順位の機械可読な統合。
+
+## 5.12 Overture Maps を窓で読む — `js/gis-overture.js` (`window.IntMapGisOverture`)
+
+世界の places（~9 千万）・buildings（~25 億）・addresses・divisions・transportation・base を GeoParquet で配る Overture Maps を、
+**一括で取り込まず**、言われた窓のぶんだけ読む（実測と、DuckDB-WASM を採らなかった理由は
+[`dev-notes/2026-11-20-overture-maps.md`](../dev-notes/2026-11-20-overture-maps.md)）。
+
+```
+release({version?})                 最新のリリース（STAC の `latest`。コードに版を書かない——バケットは 60 日で消す）
+themes({version?})                  そのリリースが持つ theme / type（カタログから）
+plan({theme,type,bbox})             窓に掛かる**ファイル**だけ（行は読まない）
+query({theme,type,bbox,where,columns,limit})   窓の行を GeoJSON で。何を読んだか（row group・MB・秒）を添える
+acquire(…)                          query を `window.IntMapData` のデータセットにする（次の手の入力）
+worldNodes(result)                  world_graph_nodes（`ids.gers`）と識別子の履歴の行
+```
+
+- **読み方**: ①STAC のファイル範囲 ②Parquet フッターの row group 統計 ③`bbox` と条件の列だけ走査 ④当たった row group の残りの列。
+  条件は `where:[{field,op,value}]`＝**`js/gis-ops.js` の `CONDITION_OPS` と同じ語彙**（`field` は列か `names.primary` のような道筋）。
+  連絡先の列（websites・emails・socials・phones）は名指しされたときだけ読む。
+- **3 つの主張を混ぜない**: ①このリリースが窓について持つ行は読んだ（`coverage`＝`coverageOf`。`limit` で切れば `sample`）／
+  ②行の箱が窓に掛かる（`windowTest:'bbox-intersects'`。点は厳密・面は上位集合）／③世界の全部（`worldCompleteness:'unproven'`・常に）。
+- **ライセンスは行が述べる値の集合**（`sources[].license`）。1 行も述べていなければ**欄ごと無い**。統治の語彙
+  （`js/data-governance.js`）で書かれた `provenance` を持つので、`read()`／`account()`／`freshness()`／`attribution()` がそのまま読む。
+- **取るホストは Privacy §4 が名指すものだけ**（`host-not-disclosed`）。カタログの `href` はデータであって命令ではない。
+- **GERS は振り直される**（Overture 公表で月 ~6.5%）。対象の同一性は、行が述べた元レコード（`sources[].record_id`）の一致でのみ
+  決める（`world_graph_adopt_id`）——位置・名前では決めない。履歴は `world_graph_id_history`、古い id からは
+  `world_graph_resolve_id`（[`docs/DATABASE.md`](DATABASE.md)）。
+- **Atlas の扉**は `data.gisOverture`（`js/atlas-cap-data.js`）。**生の実測**は `node scripts/overture-probe.mjs`（ネットワークが要る・CI は走らせない）。
+- **未了**: Worker に載せていない（`sources` 列の復号がメインスレッドを 0.5〜3 s 止める）・changelog の `removed` を履歴へ書く経路が無い・
+  建物の大きな窓は未計測。
 
 ## 6. どこまでやるか・何をやらないか（現時点）
 
@@ -2235,3 +2312,29 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
   `ctx.tick` は **#R749 以来 1 度も評価されていなかった**（`ctx:` を渡す呼び出しが `js/` に 0 件）。
   ⚠ **同期版と中断版の 2 実装は作っていない**——同じ 1 本のループが、`ctx` の有無で
   **いつスレッドを手放すかだけ**を変える。⚠ 刻みは**時間**（1 フレーム）であって件数ではない。
+
+## 5.12 分析を再実行できる手順にする・外部の予測データを戻す — `js/gis-analysis-pipeline.js` ・ `js/gis-forecast.js`
+
+**パイプライン（`window.IntMapGisPipeline`）。** Atlas が 1 段ずつ作った分析は、保存して 1 つの段の
+パラメータを変えて再計算できた（`IntMapGisProject.setParams`）。「対象地域を変える」はできなかった——
+窓は 1 つの段の引数ではなく複数の段が共有する値で、どの段がそれを使ったかが記録に無かった。
+パイプラインはその記録で、段は `gis` の扉が取る action そのもの。2 つの印が手順にする。
+`"$region"`（現在の地域 `[w,s,e,n]`）と `"$step:<id>"`（先の段が作ったデータセット）。**依存は印から導く**
+——別の一覧は書かない。段の鍵は「地域と上流の鍵を置き換えた action の要約」で、地域を動かすと
+地域を使う段とその下流の鍵だけが変わり、残りは**同じデータセットのまま** `reused`。
+⚠ 鍵が覆うのは**手順であって世界ではない**（ライブの取得は同じ鍵でも明日は違う）。`refresh` / `force` で取り直す。
+⚠ 失敗した段の下流は `skipped`（`upstream-failed`）で、レジストリ上 `stale` になり、後続の演算は旧い答えを入力にしない。
+`capture(datasetId)` は系譜から作る。取り込み・Python 記録は手順が無いので `not-capturable` で名指しに拒否する
+（固定入力として凍らせると、地域が動いても黙って無視される）。定義は `IntMapGisProject.save(name, {extras})` で
+データセットと同じ記録に入り、`load` が `extras` を返し、`restore` が戻す。Atlas の入口は `data.gisProject` の
+`capture / pipelines / plan / region / runPipeline`（能力は増やしていない）。
+
+**予測データ（`window.IntMapGisForecast`）。** `research.scenario` の `forecast` 引数。実在する 2 つの公開 API だけ
+（2026-11-20 に応答を実測）: `open-meteo-flood`（GloFAS の河川流量・提供元のアンサンブルの最小〜最大と 25〜75 パーセンタイル）、
+`open-meteo-forecast`（数値予報。幅は述べられないので出さない）。規約（open-meteo.com/en/terms を 2026-11-20 に確認）:
+データは CC BY 4.0、**無料 API は非商用のみ**（1 日 10,000 回未満）、商用は有償プラン。記録（`terms`）にそのまま持つ。
+**4 つを別々に持つ**: ① 観測 — この 2 つの提供元は測定値を配信しないので取得せず、渡された場合は**参照のみ**
+（なければ `none-supplied`） ② モデル推計 — データセット `[model estimate]`、各地物に `dataClass` ③ 利用者の条件 —
+そのまま保存し、`threshold` は**比較（`exceeds`）にだけ**使う（モデルへ戻さない） ④ 不確実性 — 提供元が述べた幅だけを
+別データセット `[uncertainty]` に。地図は `dataClass` で着色する。取得に失敗した点・値の無い点（川の無いセル）は 0 でなく欠測で、
+`failed` / `noValue` に数える。人口分布の予測は公開 API を確かめていないので**提供しない**。

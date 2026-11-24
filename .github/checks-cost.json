@@ -254,6 +254,7 @@
     "tests/geo-gis-measure-checks.test.mjs": 0.5,
     "tests/geo-gis-ops-checks.test.mjs": 0.6,
     "tests/geo-gis-project-checks.test.mjs": 0.5,
+    "tests/gis-pipeline-forecast-checks.test.mjs": 0.5,
     "tests/geo-gis-raster-checks.test.mjs": 0.3,
     "tests/geo-gis-sources-checks.test.mjs": 0.5,
     "tests/geo-gis-supplier-reach-checks.test.mjs": 0.1,

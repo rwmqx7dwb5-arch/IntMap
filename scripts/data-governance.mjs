@@ -76,7 +76,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { SPELLINGS, FACETS, SUBJECTS, REASONS, read, freshness, account } from '../js/data-governance.js';
+import { SPELLINGS, FACETS, SUBJECTS, REASONS, BASIS_KINDS, read, freshness, account, spanOf } from '../js/data-governance.js';
 import { readManifest, requireData, filesUnder } from './data-assets.mjs';
 /* ⚠ (upstream-liveness) scripts/outbound-hosts.mjs is imported INSIDE main(), not here: it parses the
    browser code with acorn, an npm dependency, and scripts/data-refresh.mjs imports this module to
@@ -97,6 +97,10 @@ const only = (() => { const a = process.argv.find((x) => x.startsWith('--rule=')
    declaration like every other bundle.
    CANON: this constant. */
 const LEDGER = 'data/governance-ledger.json';
+/* what Atlas reads before an analysis: per bundle, the six describes.* dimensions + cadence with its basis kind.
+   ⚠ GENERATED from the builders' declarations and compared with them on every --check; never edited by hand. */
+export const FACTS = 'data/data-facts.json';
+const DIMENSIONS = Object.freeze(['period', 'extent', 'method', 'resolution', 'completeness', 'accuracy']);
 
 /* How much of a text bundle's head is read when looking for an in-band record.
    OBSERVATION: the records that exist today sit in the first object members of the file
@@ -725,11 +729,21 @@ function bundleDates(bs) {
 /* What a cadence declaration must carry beside it (.agents/rules/no-ad-hoc-hardcoding.md §4): a
    cadence is a threshold, and a threshold nobody can date is exactly what that rule forbids. */
 export const CADENCE_BASIS = Object.freeze(['observed', 'expires', 'canon']);
+/* `kind` says how the period was arrived at (js/data-governance.js BASIS_KINDS). It is checked AGAINST the
+   prose beside it, because a word and a sentence that disagree are two claims: an «estimate, …» sentence
+   under `measured` is an estimate passed off as a measurement, and a `measured` basis must carry the date
+   it was measured on. */
 export function basisProblem(rec) {
   const b = rec && rec.cadenceBasis;
   if (!b || typeof b !== 'object') return 'states a cadence with no `cadenceBasis` {' + CADENCE_BASIS.join(', ') + '}';
   const missing = CADENCE_BASIS.filter((k) => typeof b[k] !== 'string' || b[k].trim().length < 12);
-  return missing.length ? '`cadenceBasis` does not say ' + missing.join(', ') : null;
+  if (missing.length) return '`cadenceBasis` does not say ' + missing.join(', ');
+  if (!BASIS_KINDS.includes(b.kind)) return '`cadenceBasis.kind` is ' + (b.kind == null ? 'absent' : '«' + b.kind + '»') + ' — it must be one of ' + BASIS_KINDS.join(' / ');
+  const est = /^\s*estimate\b/i.test(b.observed);
+  if (est && b.kind !== 'estimate') return 'its `observed` begins «estimate» but `kind` is «' + b.kind + '» — an estimate presented as ' + b.kind;
+  if (!est && b.kind === 'estimate') return '`kind` is «estimate» but `observed` does not say so — say what was not measured';
+  if (b.kind === 'measured' && !/\b(?:19|20)\d\d\b/.test(b.observed)) return '`kind` is «measured» but `observed` carries no date it was measured on';
+  return null;
 }
 
 export function freshnessOf(bs, bd, subjects, now) {
@@ -845,6 +859,35 @@ export function rightsTable() {
     that live outside git). */
 export function builderDeclarations() {
   return builders().map((b) => ({ subject: b.subject, paths: b.paths, declaration: b.declaration.value, unreadable: b.declaration.present && !b.declaration.value }));
+}
+
+/* ── upstream roster (scripts/upstream-change.mjs reads it; the rule upstream-watched checks it) ── */
+const upstreamUrlsOf = (rec) => {
+  const out = [];
+  if (!rec || typeof rec !== 'object') return out;
+  const add = (u) => { if (typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://'))) out.push(u); };
+  add(rec.url); add(rec.source); add(rec.href);
+  for (const k of ['upstreams', 'rights', 'sources']) {
+    if (Array.isArray(rec[k])) for (const u of rec[k]) if (u && typeof u === 'object') { add(u.url); add(u.source); add(u.href); }
+  }
+  return out;
+};
+/* url → the subjects that declare it, DISCOVERED from the builders' declarations on every call */
+export function upstreamRoster() {
+  const mp = new Map();
+  for (const b of builderDeclarations()) {
+    const decl = b.declaration;
+    if (!decl || typeof decl !== 'object') continue;
+    for (const [subject, rec] of Object.entries(decl)) {
+      for (const u of upstreamUrlsOf(rec)) { if (!mp.has(u)) mp.set(u, new Set()); mp.get(u).add(subject); }
+    }
+  }
+  return mp;
+}
+export function readUpstreamStore() {
+  const p = path.join(ROOT, 'data/upstream-fingerprints.json');
+  if (!fs.existsSync(p)) return null;
+  try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { return { _broken: String(e.message) }; }
 }
 
 /* ── the ledger ─────────────────────────────────────────────────────────────────────────────── */
@@ -1030,6 +1073,21 @@ function ledgerFrom(m) {
   };
 }
 
+/* ⚠ ONLY WHAT A DECLARATION STATES IS WRITTEN. A dimension nobody stated is listed under `unstated` — an absent
+   key is not «not applicable» and is never filled from the bytes, a default, or the neighbouring bundle. */
+export function factsFrom(m) {
+  const subjects = {};
+  for (const s of m.subjects) {
+    if (s.kind !== 'builder' || !s.record) continue;
+    const r = read(s.record);
+    const row = { cadence: r.cadence == null ? null : String(r.cadence), cadenceBasis: r.cadenceBasis && r.cadenceBasis.kind ? r.cadenceBasis.kind : null, asOf: r.asOf == null ? null : r.asOf, describes: {}, unstated: [] };
+    for (const k of DIMENSIONS) { if (r[k] != null) row.describes[k] = r[k]; else row.unstated.push(k); }
+    subjects[s.declaredFor || s.subject] = row;
+  }
+  return { note: 'Generated by scripts/data-governance.mjs --update from the GOVERNANCE declarations of the builders; read by Atlas before an analysis (js/gis-atlas.js remote action facts). A dimension under `unstated` has no statement by any supplier or builder; it is not zero, not the word none, and not the same as its neighbours.', declaredBy: 'scripts/data-governance.mjs', cadence: 'static', cadenceBasis: { kind: 'derived', observed: 'derived only from the declarations of the builders in this repository; changes when a builder declaration changes', expires: 'never — regenerated by --update and compared by check:datagov (facts-current)', canon: 'scripts/data-governance.mjs factsFrom' }, subjects };
+}
+const factsText = (f) => JSON.stringify(f, null, 1) + '\n';
+
 async function main() {
   const { checkRepository: checkOutbound, LEDGER: OUTBOUND_LEDGER, readLedger: readOutboundLedger } = await import('./outbound-hosts.mjs');
   const m = measure();
@@ -1045,6 +1103,7 @@ async function main() {
     const sans = (j) => JSON.stringify({ ...j, gov: { ...(j && j.gov), generatedAt: null } });
     if (prev && prev.gov && sans(prev) === sans(next)) next.gov.generatedAt = prev.gov.generatedAt;
     fs.writeFileSync(file, JSON.stringify(next, null, 2) + '\n');
+    fs.writeFileSync(path.join(ROOT, FACTS), factsText(factsFrom(m)));
     console.log('wrote ' + LEDGER + ' — undeclared ' + m.undeclared.length
       + ' subject(s) / ' + m.undeclared.reduce((n, u) => n + u.facets.length, 0) + ' facet(s)'
       + ', unchecked-response ' + m.exposed.length + ', shard dirs with no index ' + m.shardsWithoutIndex.length
@@ -1229,6 +1288,69 @@ async function main() {
     say('precedence-declared', bad.length === 0, bad.length === 0
       ? 'every declared source priority matches its upstreams (' + nDisjoint + ' disjoint, ' + nRank + ' ranked)'
       : bad.slice(0, 8).join(' | '));
+  }
+
+  /* ── 6c. describes-stated · cadence-estimates · upstream-watched ──────────────────────────
+     describes-stated: a `describes.period` that is a {start,end} must be a span that can exist, and every
+       `describes.*` a builder states must be a non-empty value (read() already drops blanks, so this
+       catches the object whose parts are all blank). It does NOT judge whether a stated extent is TRUE —
+       that is the supplier's claim, carried with its author — it refuses only the self-contradictory.
+     cadence-estimates: how many declared cadences are `kind: 'estimate'` is printed every run, so an
+       estimate can neither pass as a measurement (basisProblem refuses that) nor sit unnoticed.
+     upstream-watched: every upstream URL the builders declare has a recorded fingerprint row
+       (scripts/upstream-change.mjs), so «we never look again» cannot be the state of any of them. */
+  {
+    const bad = [];
+    let stated = 0;
+    for (const s of m.subjects) {
+      if (s.kind !== 'builder' || !s.record) continue;
+      const r = read(s.record);
+      for (const k of ['period', 'extent', 'method', 'resolution', 'completeness', 'accuracy']) {
+        if (r[k] == null) continue;
+        stated++;
+        if (typeof r[k] === 'object' && !Object.values(r[k]).some((v) => v != null && String(v).trim() !== '')) bad.push(s.subject + ': ' + k + ' is an object with no value in it');
+      }
+      const p = r.period;
+      if (p && typeof p === 'object' && p.start != null && p.end != null) {
+        const lo = spanOf(p.start), hi = spanOf(p.end);
+        if (!lo || !hi) bad.push(s.subject + ': period {' + p.start + ', ' + p.end + '} is not a span of dates');
+        else if (lo.lo > hi.hi) bad.push(s.subject + ': period starts after it ends');
+      }
+    }
+    say('describes-stated', bad.length === 0, bad.length === 0
+      ? stated + ' describes.* statement(s) in builder declarations, each a value and none self-contradictory'
+      : bad.slice(0, 8).join(' | '));
+    const est = [];
+    for (const s of m.subjects) {
+      if (s.kind !== 'builder' || !s.record) continue;
+      const b = read(s.record).cadenceBasis;
+      if (b && b.kind === 'estimate') est.push(s.subject);
+    }
+    say('cadence-estimates', true, est.length + ' declared cadence(s) are estimates, not measurements or statements — ' + est.slice(0, 10).join(', ') + (est.length > 10 ? ' (+' + (est.length - 10) + ')' : ''));
+    const store = readUpstreamStore();
+    const urls = [...upstreamRoster().keys()].filter((u) => /^https?:\/\/[^\s{}<>]+$/.test(u) && !/\$\{|\{[a-z]/i.test(u));
+    if (!store || store._broken) say('upstream-watched', false, 'data/upstream-fingerprints.json ' + (store ? 'is unreadable' : 'does not exist') + ' — run `node scripts/upstream-change.mjs --update`');
+    else {
+      const rows = store.upstreams || {};
+      const missing = urls.filter((u) => !rows[u]);
+      const orphan = Object.keys(rows).filter((u) => !upstreamRoster().has(u));
+      const never = urls.filter((u) => rows[u] && rows[u].state === 'unobserved').length;
+      say('upstream-watched', missing.length === 0 && orphan.length === 0, missing.length === 0 && orphan.length === 0
+        ? urls.length + ' upstream URL(s) discovered from the builders, each with a fingerprint row (' + never + ' not yet observable from any run: say so, never «unchanged»)'
+        : (missing.length ? missing.length + ' declared upstream URL(s) have no fingerprint row: ' + missing.slice(0, 5).join(', ') : '')
+          + (orphan.length ? ' ' + orphan.length + ' fingerprint row(s) for a URL no builder declares: ' + orphan.slice(0, 5).join(', ') : '')
+          + ' — run `node scripts/upstream-change.mjs --update`');
+    }
+  }
+
+  {
+    const p = path.join(ROOT, FACTS);
+    let cur = null;
+    try { cur = fs.readFileSync(p, 'utf8'); } catch (_) { /* absent */ }
+    const want = factsText(factsFrom(m));
+    say('facts-current', cur === want, cur === want
+      ? FACTS + ' matches the builder declarations (' + Object.keys(factsFrom(m).subjects).length + ' subject(s))'
+      : FACTS + (cur == null ? ' does not exist' : ' is not what the builder declarations say') + ' — run `node scripts/data-governance.mjs --update`');
   }
 
   /* ── 7. outbound-disclosed ────────────────────────────────────────────────────────────── */

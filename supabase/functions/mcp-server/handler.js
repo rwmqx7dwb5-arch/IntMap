@@ -7,6 +7,18 @@
 //  PROTOCOL  MCP «Streamable HTTP», the stateless subset: POST one JSON-RPC message → one application/json
 //            answer (or 202 for a notification). No sessions, no SSE, no batching (removed from the spec in
 //            2025-06-18). GET answers 405.
+//            TWO DIALECTS, TOLD APART BY THE REQUEST (spec 2026-07-28, transports/streamable-http + basic/versioning):
+//            · 2026-07-28 — no initialize, no Mcp-Session-Id: every request carries params._meta
+//              {io.modelcontextprotocol/protocolVersion, clientCapabilities, clientInfo} and the MCP-Protocol-Version,
+//              Mcp-Method (and Mcp-Name on tools/call) headers; the server implements server/discover; every result has
+//              resultType; tools/list says ttlMs + cacheScope. A header that disagrees with the body is 400 -32020
+//              (HeaderMismatch); a version we do not speak is 400 -32022 listing what we do (UnsupportedProtocolVersion);
+//              a method that does not exist is 404 -32601. ping is gone in this dialect.
+//            · 2025-xx and older — initialize / ping / tools/list as before (a request with no 2026 version anywhere).
+//            The server issues no session id in either dialect and ignores a Mcp-Session-Id it is sent.
+//            TASKS ARE NOT OFFERED: every tool here finishes inside CALL_DEADLINE_MS, so there is nothing to poll (the
+//            extension would add a store and a poller for a result that already exists). APPS (ui:// resources) are NOT
+//            OFFERED: the spec pages that define their capability and MIME type were not read (dev-notes 2026-11-20-mcp-2026-spec).
 //
 //  TOOLS (slice 1 — all read-only, none has a side effect on anything of anyone's):
 //    intmap_world_find      a world object by ref / «wikidata:Q…» / exact name, with its ties     (world graph)
@@ -34,8 +46,13 @@
 
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
 
-export const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
-export const SERVER_INFO = { name: "intmap", title: "IntMap", version: "0.1.0" };
+export const STATELESS_VERSIONS = ["2026-07-28"];
+export const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];   /* the initialize-based dialect */
+export const SERVER_INFO = { name: "intmap", title: "IntMap", version: "0.2.0" };
+const META = "io.modelcontextprotocol/";
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const ERR_HEADER_MISMATCH = -32020;        /* 2026-07-28 changelog: HeaderMismatch */
+const ERR_UNSUPPORTED_VERSION = -32022;    /* UnsupportedProtocolVersion */
 
 /* THE NUMBERS (no-ad-hoc-hardcoding.md §4: observation · expiry · canonical place)
    · MAX_BODY_BYTES 512 KiB — a request carries at most a few GeoJSON inputs; the cap bounds MEMORY before parse.
@@ -50,6 +67,10 @@ export const MAX_FEATURES = 2000;
 export const MAX_STRING = 500;
 export const CALL_DEADLINE_MS = 20000;
 export const DEFAULT_GLOBAL_PER_DAY = 20000;
+/* LIST_TTL_MS 5 min — the tool list changes only when this function is deployed (the GIS catalogue is read at call time,
+   not listed in tools/list), so a client may keep it; 5 min is the spec's own example and bounds how long a deploy that
+   adds a tool stays unseen. ESTIMATE; expires if a tool list ever varies per key (then cacheScope becomes "private"). */
+export const LIST_TTL_MS = 300000;
 const SCOPE_KEY = "mcp:key";
 const SCOPE_GLOBAL = "mcp:global:day";
 const MAX_NEAR_KM = 500;
@@ -80,6 +101,18 @@ export function clamp(v, depth) {
 const wrap = (source, data) => ({ untrusted_data: true, source, data: clamp(data) });
 
 /* ── tool declarations (JSON Schema, what tools/list returns) ─────────────────────────────────────── */
+/* WHAT EACH TOOL DOES TO THE WORLD, stated as data next to the tool (and reported to the caller in tools/list _meta).
+   writes:false — changes no state of anyone's; network — what it reaches ("database" = IntMap's own world graph through a
+   read RPC, "none" = pure computation on the caller's input); stores:false — keeps nothing of the call.
+   ⚠ tests/mcp-server-checks.test.mjs REFUSES a tool without this block or with writes !== false: a write tool is not a tool
+   to add here but a decision (it needs the key owner's identity as the actor, a per-key scope, and a reader confirmation
+   the way Atlas's mcp.act asks — none exists on this door yet). */
+const FX_DB = { writes: false, network: "database", stores: false };
+const FX_PURE = { writes: false, network: "none", stores: false };
+const ANN = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+/* every result is {untrusted_data:true, source, data} (wrap() below) — declared so a client can validate structuredContent (spec: tools/outputSchema) */
+const OUT = { type: "object", properties: { untrusted_data: { const: true }, source: { type: "string" }, data: {} }, required: ["untrusted_data", "source", "data"] };
+
 const FC = {
   description: "A GeoJSON FeatureCollection (or a bare array of Features), WGS84 lng/lat.",
   type: "object",
@@ -90,36 +123,50 @@ const TOOLS = [
     title: "Find a world object",
     description: "Find a persisted real-world object (terminal, company, place …) by its ref ('type:id'), an external id ('wikidata:Q…') or exact name, and return it with the ties and claims it states, each with its source.",
     inputSchema: { type: "object", properties: { query: { type: "string", minLength: 1, maxLength: 200 } }, required: ["query"], additionalProperties: false },
-    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    annotations: ANN, outputSchema: OUT, _meta: { "io.intmap/effects": FX_DB },
   },
   {
     name: "intmap_world_near",
     title: "World objects near a point",
     description: "Placed world objects within `km` (≤ " + MAX_NEAR_KM + ") of a point.",
     inputSchema: { type: "object", properties: { lng: { type: "number", minimum: -180, maximum: 180 }, lat: { type: "number", minimum: -90, maximum: 90 }, km: { type: "number", exclusiveMinimum: 0, maximum: MAX_NEAR_KM } }, required: ["lng", "lat", "km"], additionalProperties: false },
-    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    annotations: ANN, outputSchema: OUT, _meta: { "io.intmap/effects": FX_DB },
   },
   {
     name: "intmap_world_subgraph",
     title: "Ties around a world object, as of a date",
     description: "The typed ties (operated_by, owned_by, part_of …) within `depth` (≤ " + MAX_DEPTH + ") of `ref`. `as_of` (ISO date, e.g. 2018-06-30) keeps only ties that held then; omit it for all stated periods.",
     inputSchema: { type: "object", properties: { ref: { type: "string", minLength: 3, maxLength: 200 }, rels: { type: "array", items: { type: "string", pattern: "^[a-z_]{2,40}$" }, maxItems: 20 }, depth: { type: "integer", minimum: 1, maximum: MAX_DEPTH }, as_of: { type: "string", maxLength: 32 } }, required: ["ref"], additionalProperties: false },
-    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    annotations: ANN, outputSchema: OUT, _meta: { "io.intmap/effects": FX_DB },
   },
   {
     name: "intmap_gis_ops",
     title: "List spatial operations",
     description: "The spatial operations intmap_gis_run can execute (buffer, intersect, dissolve, spatialJoin, measure, timeWindow …) with their input count and parameters, as the GIS itself declares them.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
-    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    annotations: ANN, outputSchema: OUT, _meta: { "io.intmap/effects": FX_PURE },
   },
   {
     name: "intmap_gis_run",
     title: "Run a spatial operation",
     description: "Run ONE operation from intmap_gis_ops on GeoJSON you supply in `inputs` (in the op's input order). Returns the result as GeoJSON together with the provenance manifest (how it was made, constraints). Nothing is stored. Up to " + MAX_FEATURES + " features in and out.",
     inputSchema: { type: "object", properties: { op: { type: "string", maxLength: 40 }, inputs: { type: "array", minItems: 1, maxItems: 4, items: FC }, params: { type: "object" } }, required: ["op", "inputs"], additionalProperties: false },
-    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    annotations: ANN, outputSchema: OUT, _meta: { "io.intmap/effects": FX_PURE },
   },
+];
+/* intmap_capabilities — the server describing itself: DERIVED from TOOLS (no second list), plus what is deliberately not offered. */
+TOOLS.push({
+  name: "intmap_capabilities",
+  title: "What this IntMap server offers (and does not)",
+  description: "The tools of this server with what each does to the world (writes / network / stores), and what is deliberately NOT offered and why. Use it to decide which tool to call; it changes nothing.",
+  inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  annotations: ANN, outputSchema: OUT, _meta: { "io.intmap/effects": FX_PURE },
+});
+export const NOT_OFFERED = [
+  { what: "tools that write, send or store anything (drawing, saving, publishing, jobs)", why: "a write needs the key owner's identity as the actor, a per-key scope and a reader confirmation; this door has a read-only key and none of those" },
+  { what: "MCP Tasks (io.modelcontextprotocol/tasks)", why: "every tool answers inside " + CALL_DEADLINE_MS / 1000 + " s, so there is no long-running work to hand back" },
+  { what: "MCP Apps (ui:// resources)", why: "not implemented yet" },
+  { what: "elicitation, sampling, roots", why: "the server never asks the client for anything: a tool call is one request, one answer" },
 ];
 export const TOOL_NAMES = TOOLS.map((t) => t.name);
 
@@ -189,6 +236,13 @@ export function makeTools(deps) {
       const sub = await worldRpc(deps.db, "world_graph_subgraph", { p_ref: a.ref, p_rels: arr(a.rels).length ? a.rels : null, p_depth: a.depth || 1, p_at_ms: at.ms });
       return wrap("intmap.world_graph", { ref: a.ref, as_of: a.as_of || null, subgraph: sub });
     },
+    async intmap_capabilities() {
+      return wrap("intmap.mcp", {
+        server: SERVER_INFO,
+        tools: TOOLS.map((t) => ({ name: t.name, title: t.title, effects: t._meta["io.intmap/effects"], annotations: t.annotations })),
+        not_offered: NOT_OFFERED,
+      });
+    },
     async intmap_gis_ops() {
       return gate(async () => wrap("intmap.gis", { ops: (await opsCatalogue()).map((o) => ({ id: o.id, inputs: o.inputs, accepts: o.accepts, output: o.output, params: o.params })) }));
     },
@@ -230,7 +284,7 @@ export function makeTools(deps) {
 
 /* ── JSON-RPC ────────────────────────────────────────────────────────────────────────────────────── */
 const rpcOk = (id, result) => ({ jsonrpc: "2.0", id, result });
-const rpcErr = (id, code, message) => ({ jsonrpc: "2.0", id: id == null ? null : id, error: { code, message } });
+const rpcErr = (id, code, message, data) => ({ jsonrpc: "2.0", id: id == null ? null : id, error: data === undefined ? { code, message } : { code, message, data } });
 
 function checkArgs(tool, args) {
   const schema = TOOLS.find((t) => t.name === tool).inputSchema;
@@ -257,10 +311,36 @@ export async function sha256Hex(s) {
 }
 
 /* the ONE corsFor() call of this function (tests/r333-checks reads the allowed-header table from a single call) */
-const CORS = { ...corsFor("mcp-protocol-version, mcp-session-id"), "Access-Control-Allow-Methods": "POST, OPTIONS" };
+const CORS = { ...corsFor("mcp-protocol-version, mcp-session-id, mcp-method, mcp-name"), "Access-Control-Allow-Methods": "POST, OPTIONS" };
 
 function json(status, body, headers) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, "content-type": "application/json", "cache-control": "no-store", ...(headers || {}) } });
+}
+
+/** Which dialect is this request in, and is it consistent? → { stateless:boolean } | { fail: Response }.
+ *  2026-07-28 is chosen by the MCP-Protocol-Version header; a body _meta version without the header is a mismatch
+ *  (the spec makes the header mandatory), and a header naming a version NEWER than ours that we do not speak is
+ *  UnsupportedProtocolVersion. Anything dated before 2026 — or no version at all — is the initialize-based dialect. */
+export function negotiate(req, msg) {
+  const hv = (req.headers.get("mcp-protocol-version") || "").trim();
+  const meta = isObj(msg.params) && isObj(msg.params._meta) ? msg.params._meta : null;
+  const mv = meta ? meta[META + "protocolVersion"] : undefined;
+  const all = STATELESS_VERSIONS.concat(PROTOCOL_VERSIONS);
+  const unsupported = () => json(400, rpcErr(msg.id, ERR_UNSUPPORTED_VERSION, "unsupported_protocol_version", { supported: all, requested: String(hv || mv).slice(0, 20) }));
+  if (STATELESS_VERSIONS.includes(hv)) {
+    if (mv !== hv) return { fail: json(400, rpcErr(msg.id, ERR_HEADER_MISMATCH, "header_mismatch: _meta protocolVersion must equal the MCP-Protocol-Version header")) };
+    const method = req.headers.get("mcp-method");
+    if (method && method !== msg.method) return { fail: json(400, rpcErr(msg.id, ERR_HEADER_MISMATCH, "header_mismatch: Mcp-Method does not match the method")) };
+    const name = req.headers.get("mcp-name");
+    if (name && msg.method === "tools/call" && !(isObj(msg.params) && msg.params.name === name)) return { fail: json(400, rpcErr(msg.id, ERR_HEADER_MISMATCH, "header_mismatch: Mcp-Name does not match params.name")) };
+    return { stateless: true };
+  }
+  if (!hv && mv !== undefined) {
+    if (typeof mv === "string" && all.includes(mv) && !STATELESS_VERSIONS.includes(mv)) return { stateless: false };
+    return { fail: STATELESS_VERSIONS.includes(mv) ? json(400, rpcErr(msg.id, ERR_HEADER_MISMATCH, "header_mismatch: the MCP-Protocol-Version header is required")) : unsupported() };
+  }
+  if (hv && DATE_RE.test(hv) && !all.includes(hv) && hv > STATELESS_VERSIONS[0]) return { fail: unsupported() };
+  return { stateless: false };
 }
 
 /** deps: { db, limiter, loadGis, now, globalPerDay } → handle(req) */
@@ -304,15 +384,28 @@ export function makeHandler(deps) {
 
     const id = msg.id;
     const isNote = id === undefined;
+    const route = negotiate(req, msg);
+    if (route.fail) return route.fail;
+    const stateless = route.stateless;
     if (isNote) return new Response(null, { status: 202, headers: cors });
 
-    if (msg.method === "initialize") {
-      const want = msg.params && msg.params.protocolVersion;
-      return json(200, rpcOk(id, { protocolVersion: PROTOCOL_VERSIONS.includes(want) ? want : PROTOCOL_VERSIONS[0], capabilities: { tools: { listChanged: false } }, serverInfo: SERVER_INFO, instructions: INSTRUCTIONS }));
+    if (stateless) {
+      /* 2026-07-28: no initialize, no ping; server/discover is mandatory; every result says resultType; lists say how long they may be kept */
+      if (msg.method === "server/discover") {
+        return json(200, rpcOk(id, { resultType: "complete", supportedVersions: STATELESS_VERSIONS.concat(PROTOCOL_VERSIONS), capabilities: { tools: { listChanged: false } }, instructions: INSTRUCTIONS, ttlMs: LIST_TTL_MS, cacheScope: "public", _meta: { [META + "serverInfo"]: SERVER_INFO } }));
+      }
+      if (msg.method === "tools/list") return json(200, rpcOk(id, { resultType: "complete", tools: TOOLS, ttlMs: LIST_TTL_MS, cacheScope: "public" }));
+      if (msg.method !== "tools/call") return json(404, rpcErr(id, -32601, "method_not_found"));
+    } else {
+      if (msg.method === "initialize") {
+        const want = msg.params && msg.params.protocolVersion;
+        return json(200, rpcOk(id, { protocolVersion: PROTOCOL_VERSIONS.includes(want) ? want : PROTOCOL_VERSIONS[0], capabilities: { tools: { listChanged: false } }, serverInfo: SERVER_INFO, instructions: INSTRUCTIONS }));
+      }
+      if (msg.method === "ping") return json(200, rpcOk(id, {}));
+      if (msg.method === "tools/list") return json(200, rpcOk(id, { tools: TOOLS }));
+      if (msg.method !== "tools/call") return json(200, rpcErr(id, -32601, "method_not_found"));
     }
-    if (msg.method === "ping") return json(200, rpcOk(id, {}));
-    if (msg.method === "tools/list") return json(200, rpcOk(id, { tools: TOOLS }));
-    if (msg.method !== "tools/call") return json(200, rpcErr(id, -32601, "method_not_found"));
+    const done = (r) => (stateless ? { resultType: "complete", ...r } : r);
 
     const p = msg.params || {};
     if (!TOOL_NAMES.includes(p.name)) return json(200, rpcErr(id, -32602, "unknown_tool"));
@@ -330,8 +423,8 @@ export function makeHandler(deps) {
       try { result = await Promise.race([tools[p.name](p.arguments || {}), deadline]); } finally { clearTimeout(timer); }
     } catch (e) {
       const code = e instanceof ToolError ? e.code : "tool_failed"; // the cause of an unexpected failure is not relayed
-      return json(200, rpcOk(id, { isError: true, content: [{ type: "text", text: JSON.stringify({ error: code, detail: e instanceof ToolError ? e.detail || null : null }) }] }));
+      return json(200, rpcOk(id, done({ isError: true, content: [{ type: "text", text: JSON.stringify({ error: code, detail: e instanceof ToolError ? e.detail || null : null }) }] })));
     }
-    return json(200, rpcOk(id, { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result }));
+    return json(200, rpcOk(id, done({ content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result })));
   };
 }

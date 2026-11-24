@@ -23,20 +23,21 @@ import { previewSink, sseEncode, HEARTBEAT_MS } from "../_shared/ai-stream.js";
 /* (edge-spend-and-models) The model table, the provider-answer ceilings and the one door to a paid
    provider are shared with every other function that holds a provider key — see that file's header
    for what was found when each of them lived here and in four other places. */
-import { OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, costMicros, priceOf } from "../_shared/ai-provider.js";
+import { OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, costMicros, priceOf, outputCeilingOf } from "../_shared/ai-provider.js";
 /* (atlas-quality-lab) the independent grader's shape, budget and provider rule — shared with
    scripts/atlas-eval/grade.mjs, which reads the grade back against the same criteria */
 import { graderProviderFor } from "../_shared/atlas-grade-schema.js";
 import {
-  cors, json, GLOSS_PLAN_LIMITS, GLOSS_LANE, MAX_GLOSS_PROMPT, TURN_MAX_CALLS, TURN_TTL_S, MAX_TURN_KEY, REPLAY_KEY_OK,
+  cors, json, GLOSS_PLAN_LIMITS, GLOSS_LANE, MAX_GLOSS_PROMPT, TURN_TTL_S, MAX_TURN_KEY, REPLAY_KEY_OK,
   CEILING, NEWCOMER_CEILING, PROVIDERS, MODEL_ID_OK, MAX_PROMPT, MAX_SYSTEM, MAX_IMAGES, MAX_BODY_BYTES, MAX_IMAGES_BYTES,
   MAX_FILES, MAX_FILE_TEXT, MAX_FILES_TEXT, MAX_DOCS, MAX_DOC_BYTES, MAX_DOCS_BYTES, DOC_MIME,
-  delegationPolicy, delegationModel, turnCostCapMicros,
+  delegationPolicy, delegationModel, delegationModelOptions, delegationModelHint, turnCostCapMicros, dayCostCapMicros,
 } from "./config.ts";
 import { normalizeTurn, cacheBasis, sha256Hex } from "./turn.ts";
 import type { TurnReq, TurnItem } from "./turn.ts";
 import { schemaOk, openAiSchemaFormat } from "./schema.ts";
 import { TASKS, maxOutputFor, HARD_MAX_OUTPUT } from "./tasks/index.ts";
+import { hintedMaxOutput, fitOutputToRoom } from "./tasks/spec.ts";
 import { parseDataUrl, b64Bytes } from "./media.ts";
 import type { ImgPart, FilePart, DocPart, WebCitation } from "./media.ts";
 import { ProviderError, webOutcome } from "./provider-call.ts";
@@ -144,7 +145,7 @@ export async function ask(req: Request): Promise<Response> {
     if (!turnId || turnId === parentTurn) return await bail({ error: "delegation_key", message: "A worker call needs its own turn key." }, 400);
   }
   /* "shared": the worker's calls ARE the parent's — they carry the parent's key from here on, so consume_ai_turn
-     counts them against the parent's TURN_MAX_CALLS and the parent's settle/refund closes them. */
+     counts them as the parent's continuations and the parent's settle/refund closes them. */
   if (parentTurn && delegation.mode === "shared") turnId = parentTurn;
   const childTurn = !!parentTurn && delegation.mode === "independent";
   /* (#R491) ...and the LANE, read here for the same reason: the body is not available yet. */
@@ -153,7 +154,7 @@ export async function ask(req: Request): Promise<Response> {
   const glossLimit = GLOSS_PLAN_LIMITS[plan] ?? GLOSS_PLAN_LIMITS.free;
   /* (atlas-stream-replay) …and a RETRY's replay key, read here for the same reason, and acted on
      BEFORE the allowance: a retry whose answer is already held receives it without consume_ai_turn,
-     so it neither charges nor spends one of TURN_MAX_CALLS. A first request still running is waited
+     so it is neither a charge nor a call of the turn. A first request still running is waited
      for (awaitAnswer reads the row; it never runs the request). Anything else — an observed failure,
      a run whose isolate stopped beating, nothing registered — falls through to the ordinary path
      below, which claims the key and runs (claim_ai_answer counts the attempt). */
@@ -196,7 +197,7 @@ export async function ask(req: Request): Promise<Response> {
        page as the reader's quota, and none of these is about the reader's day. */
     const row = childTurn
       ? await openChildTurn(db, account, { parent: parentTurn, turn: turnId, maxChildren: delegation.maxChildren, maxCalls: delegation.childMaxCalls, ttlSeconds: TURN_TTL_S })
-      : await openTurn(db, account, { turn: turnId, maxCalls: TURN_MAX_CALLS, ttlSeconds: TURN_TTL_S });
+      : await openTurn(db, account, { turn: turnId, maxCalls: null, ttlSeconds: TURN_TTL_S });   /* (atlas-unbounded-turns) no call count — config.ts #R318 block */
     if (childTurn && !row.allowed) {
       return await bail({ error: row.reason || "delegation_refused", calls: row.calls, children: row.children, delegation }, 409);
     }
@@ -290,6 +291,8 @@ export async function ask(req: Request): Promise<Response> {
     docs?: { name?: string; mime?: string; b64?: string }[];
     web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown; imageDetail?: string;
     effortHint?: string; turnId?: string;
+    /* (atlas-unbounded-turns) the output budget Atlas chose for THIS request — honoured on a task whose file says outputHint */
+    maxOutputHint?: number;
     /* (#R722) developer-only, ignored for everyone else - see the block after the parse. */
     op?: string; provider?: string; model?: string;
     /* (atlas-native-tools) protocol 2 — see normalizeTurn */
@@ -470,7 +473,6 @@ export async function ask(req: Request): Promise<Response> {
     return await bail({ error: "bad_lane", message: "The gloss lane takes text only." }, 400);
   }
 
-  const maxTokens = maxOutputFor(spec, requestedCount);
   // 4) Provider call with the server-held key. (Provider read BEFORE wantJson — see below.)
   /* ══ (atlas-quality-lab) THE GRADER IS NEVER THE ANSWERER ══════════════════════════════════════
      `atlas_grade` scores an Atlas reply against a verified answer (scripts/atlas-eval/grade.mjs). A model
@@ -516,7 +518,13 @@ export async function ask(req: Request): Promise<Response> {
      answers every worker call instead of the model the parent's selection resolves to — including a developer's pick,
      which the tier replaces on a worker (the pick tests the parent's model; the tier is what is being measured on the
      workers). One that is set but unusable is logged and ignored, never run unpriced. Unset: nothing changes. */
-  const tier = parentTurn ? delegationModel((k: string) => Deno.env.get(k) || "") : { model: "", ignored: "" };
+  const tierCfg = parentTurn ? delegationModel((k: string) => Deno.env.get(k) || "") : { model: "", ignored: "" };
+  /* (model-options) …unless Atlas named one of the OFFERED models for THIS piece of work (header x-intmap-model, set by the page from the
+     task's own `model`): the piece's choice wins over the configured tier, because the model that wrote the task knows what the task needs. */
+  const modelOptions = delegationModelOptions((k: string) => Deno.env.get(k) || "", provider);
+  const hint = parentTurn ? delegationModelHint(req.headers.get("x-intmap-model") || "", modelOptions) : { model: "", ignored: "" };
+  const tier = hint.model ? { model: hint.model, ignored: "" } : tierCfg;
+  if (hint.ignored) try { console.error("ai-proxy model_hint_ignored", hint.ignored); } catch (_) { /* ignore */ }
   if (tier.ignored) try { console.error("ai-proxy delegation_model_ignored", tier.ignored); } catch (_) { /* ignore */ }
   const model = tier.model || devPick?.model || envModel || PROVIDER_DEFAULT_MODEL[provider] || OPENAI_DEFAULT_MODEL;
   /* /!\ A CHOSEN MODEL DOES NOT FALL BACK. The fallback exists so that a model the PROJECT lost
@@ -525,6 +533,15 @@ export async function ask(req: Request): Promise<Response> {
      in particular, substituting another one silently answers a different question than the one being
      tested, and the panel would then report a model that never ran. The 403 is the answer. */
   const noFallbackForPick = !tier.model && !!devPick?.model;
+  /* ══ (atlas-unbounded-turns) THE OUTPUT BUDGET — the task's, or the larger one Atlas chose for this request ══════
+     A task whose file says `outputHint` (atlas_turn, atlas_delegate) takes payload.maxOutputHint: a positive integer
+     raises the budget up to the asked model's DOCUMENTED ceiling (_shared/ai-provider.js outputCeilingOf); a model
+     with no documented ceiling is not raised past HARD_MAX_OUTPUT. Every other task keeps maxOutputFor's budget,
+     HARD_MAX_OUTPUT included. Decided here, after the model is known; the spend reservation below scales with it. */
+  const baseTokens = maxOutputFor(spec, requestedCount);
+  let maxTokens = hintedMaxOutput(spec, baseTokens, payload.maxOutputHint, outputCeilingOf(model));
+  /* set when the money fences could not hold the budget Atlas asked for and a smaller one was reserved instead (below) */
+  let outputFitted: { asked: number; used: number } | null = null;
   /* (atlas-native-tools) THE PROMPT-CACHE KEY: the same instructions and the same functions produce the same key,
      whoever is asking — it is derived from the prefix OpenAI caches, and names no account (nothing
      about the reader leaves in it; the privacy notice is unchanged). Requests that share a prefix are
@@ -549,11 +566,42 @@ export async function ask(req: Request): Promise<Response> {
     const pr = priceOf(model);
     const chars = prompt.length + system.length + files.reduce((n, f) => n + f.text.length, 0)
       + (turnReq ? JSON.stringify(turnReq.input || []).length + JSON.stringify(turnReq.tools || []).length : 0);
-    const estimate = Math.ceil((chars + imgs.length * 1600) * pr.input + 2 * maxTokens * pr.output);
+    const inputMicros = (chars + imgs.length * 1600) * pr.input;
+    let estimate = Math.ceil(inputMicros + 2 * maxTokens * pr.output);
     const capMicros = turnCostCapMicros((k: string) => Deno.env.get(k) || "");
-    let held: { allowed: boolean; reserved: number; spent: number } | null = null;
-    try { held = await reserveSpend(db, account, { root: rootTurn, micros: estimate, capMicros, ttlSeconds: TURN_TTL_S }); }
+    /* (atlas-unbounded-turns) …and the account's day, in the same reservation (config.ts dayCostCapMicros) */
+    const dayCapMicros = dayCostCapMicros((k: string) => Deno.env.get(k) || "", plan);
+    let held: { allowed: boolean; reserved: number; spent: number; scope: string; dayReserved: number; daySpent: number } | null = null;
+    try { held = await reserveSpend(db, account, { root: rootTurn, micros: estimate, capMicros, dayCapMicros, ttlSeconds: TURN_TTL_S }); }
     catch (_) { held = null; spendState = "unavailable"; try { console.error("ai-proxy spend reserve_unavailable"); } catch (_e) { /* ignore */ } }
+    /* ══ (atlas-unbounded-turns) A BUDGET ATLAS RAISED THAT THE FENCES CANNOT HOLD IS FITTED, NOT REFUSED ══════════════
+       The reservation counts the WHOLE output allowance twice, so a large maxOutputHint can be refused by the family's
+       cap or the account's day although what the request would actually spend fits — and the turn would stop on a
+       budget it never used. When the refused budget is one the hint raised (never the task's own), the largest budget
+       the remaining room affords is computed from the refusal's own figures (the tighter of the family's and the day's
+       room; the input estimate unchanged) and reserved ONCE more — an observed refusal followed by a different request
+       (.agents/rules/one-pass-or-a-reason.md §5). Never below the task's budget: if even that does not fit, the 409
+       below is answered exactly as before. A refusal of the second reservation (another request took the room in
+       between) is answered the same way. meta.maxOutputFitted says what was asked and what ran. */
+    if (held && !held.allowed && spec.outputHint && maxTokens > baseTokens) {
+      const room = Math.min(capMicros - held.reserved - held.spent, dayCapMicros - held.dayReserved - held.daySpent);
+      const fit = fitOutputToRoom({ asked: maxTokens, floor: baseTokens, inputMicros, outputPrice: pr.output, roomMicros: room });
+      if (fit !== null) {
+        const fitEstimate = Math.ceil(inputMicros + 2 * fit * pr.output);
+        let again: typeof held | null = null;
+        try { again = await reserveSpend(db, account, { root: rootTurn, micros: fitEstimate, capMicros, dayCapMicros, ttlSeconds: TURN_TTL_S }); }
+        catch (_) { again = null; try { console.error("ai-proxy spend reserve_unavailable"); } catch (_e) { /* ignore */ } }
+        if (again) {
+          held = again; estimate = fitEstimate;
+          if (again.allowed) { outputFitted = { asked: maxTokens, used: fit }; maxTokens = fit; }
+        }
+      }
+    }
+    if (held && !held.allowed && held.scope === "day") {
+      await refund();
+      return await bail({ error: "day_cost", message: "This account has reached the most it may spend with the AI provider today.",
+        spend: { capUsd: dayCapMicros / 1e6, spentUsd: held.daySpent / 1e6, reservedUsd: held.dayReserved / 1e6, estimateUsd: estimate / 1e6, priceKnown: pr.known } }, 409);
+    }
     if (held && !held.allowed) {
       await refund();
       return await bail({ error: "turn_cost", message: "This request has reached the most it may spend with the AI provider.",
@@ -561,6 +609,8 @@ export async function ask(req: Request): Promise<Response> {
     }
     if (held) { spendHold = { micros: estimate, model, provider }; spendState = "reserved"; }
   }
+  /* the empty-answer retry's roof (#R115): HARD_MAX_OUTPUT for a budget inside it, the model's ceiling for one Atlas raised past it */
+  const retryRoof = maxTokens > HARD_MAX_OUTPUT ? (outputCeilingOf(model) ?? HARD_MAX_OUTPUT) : HARD_MAX_OUTPUT;
 
   /* ══ (atlas-live-stream) THE ANSWER, AS A VALUE — sent as JSON, or as the last event of a stream ═══════
      Everything from the provider call to the refund was `try { … return json(…) } catch { … return json(…) }`.
@@ -591,7 +641,7 @@ export async function ask(req: Request): Promise<Response> {
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
         // budget (still capped) instead of surfacing "empty response" to the user.
         if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
-          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat, turnReq, cacheKey, meter, sink || undefined);
+          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.max(maxTokens, Math.min(retryRoof, maxTokens + 1200)), wantJson, webMode === "required", effort, imageDetail, false, oaFormat, turnReq, cacheKey, meter, sink || undefined);
         } else {
           throw e;
         }
@@ -676,6 +726,8 @@ export async function ask(req: Request): Promise<Response> {
            this function's own fence cut from the request — null when nothing was */
         protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined,
         streamed: sink ? true : undefined,   /* (atlas-live-stream) this body is the `done` event of a stream */
+        maxOutput: maxTokens,   /* (atlas-unbounded-turns) the visible-output budget this request ran with — the task's, or the one Atlas chose */
+        ...(outputFitted ? { maxOutputFitted: outputFitted } : {}),   /* …and, when the money fences could not hold the one asked, what was asked and what ran */
         /* (atlas-delegation) what THIS request cost at the asked model's price (_shared/ai-provider.js costMicros) — the
            figure js/atlas-delegate.js records per task — and, for a worker's call, the policy that admitted it */
         costUsd: costMicros(model, meter.total(), provider) / 1e6, priceKnown: priceOf(model).known, spend: spendState || undefined,
@@ -683,7 +735,10 @@ export async function ask(req: Request): Promise<Response> {
         /* (delegation-limits) the worker policy this server runs, on every Atlas turn: Atlas plans within it (js/atlas-console.js
            states it in the turn's context) instead of learning it from a refused worker — measured 2026-11-19: it opened three
            workers under a two-worker policy and the third was refused */
-        ...(spec.protocol2 ? { delegationPolicy: { mode: delegation.mode, maxChildren: delegation.maxChildren, childMaxCalls: delegation.childMaxCalls } } : {}) },
+        /* (atlas-unbounded-turns) null = no count; maxConcurrent = how many workers the page runs at once (null = all) */
+        ...(spec.protocol2 ? { delegationPolicy: { mode: delegation.mode, maxChildren: delegation.maxChildren, childMaxCalls: delegation.childMaxCalls, maxConcurrent: delegation.maxConcurrent } } : {}),
+          /* (model-options) the models a worker task may name, with prices — beside the policy, whose shape other readers hold exactly */
+          ...(spec.protocol2 && delegation.mode !== "off" ? { delegationModels: modelOptions } : {}) },
       /* (atlas-native-tools) the provider's items — reasoning to replay, what it wrote, the calls with their ids */
       ...(turnReq ? { output: Array.isArray(out.output) ? out.output : [] } : {}),
       // (#R131) Hosted web-search citation URLs (OpenAI url_citation annotations). The client shows

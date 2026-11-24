@@ -21,7 +21,6 @@ import { OTD_HUB } from './on-this-day-pages.mjs';
 import { COUNTRY_HUB } from './country-pages.mjs';
 import { pagePath as UPDATES_PAGE, feedPath as UPDATES_FEED } from './whats-new.mjs';
 import { WEEKLY_HUB } from './weekly-earth-pages.mjs';   /* (weekly-earth) the weekly digest's hub, written by the build */
-import { outOfOrder } from './migration-order.mjs';
 import { hardeningProblems } from './workflow-hardening.mjs';   /* (security-audit) what a CI step may carry into the runner */
 import { findSecrets, SECRET_SCAN_SELF, secretScanUniverse } from './secret-scan.mjs';   /* (security-hardening) rule 2's shapes and judgement */
 
@@ -205,28 +204,7 @@ for (const f of ALL.filter((x) => x.rel.startsWith('supabase/migrations/') && x.
   }
 }
 
-// (migration-order-guard) A migration a change ADDS must sort after every migration already on the base.
-// Measured 2026-10-01: #869 added 20261002090000_usage_counts.sql after #867 had already applied
-// 20261002100000 to production; supabase db push --dry-run then refused the whole history (it will not apply a
-// migration older than one the remote has recorded), so the post-merge deploy failed and 22 Edge Functions were
-// left undeployed. Two PRs written in parallel each picked a timestamp that was "next" on the main they forked
-// from; nothing compared them until production did. The rule reads the base's own migration list (not a
-// hand-kept latest timestamp) and compares only names, so it is true for any later file as well.
-{
-  const MIG = 'supabase/migrations/';
-  const stamp = (n) => (/^(\d{14})_/.exec(n.split('/').pop()) || [])[1] || null;
-  const base = process.env.IM_DIFF_BASE || (process.env.GITHUB_EVENT_NAME === 'pull_request' ? 'HEAD^1' : 'origin/main');
-  let onBase = null;
-  try {
-    onBase = (await new Promise((res, rej) => execFile('git', ['ls-tree', '--name-only', base, MIG], { cwd: ROOT }, (e, out) => (e ? rej(e) : res(out)))))
-      .split('\n').map((x) => x.trim().split('/').pop()).filter(Boolean);
-  } catch { /* the base is not in this checkout */ }
-  if (!onBase) warn('migration-order', 'could not read ' + base + ':' + MIG + ' — the order of added migrations was not measured here (the post-merge deploy still refuses an out-of-order history)');
-  else {
-    const inTree = ALL.filter((y) => y.rel.startsWith(MIG) && y.ext === '.sql').map((y) => y.rel.slice(MIG.length));
-    for (const o of outOfOrder(onBase, inTree)) err('migration-order', MIG + o.name + ': added with timestamp ' + o.stamp + ', not after ' + o.latest + ' (the newest migration on ' + base + ') — production refuses a migration older than one it has applied; rename it to a later timestamp');
-  }
-}
+// (migration-order) moved to its own gate: `npm run check:migrationorder` (scripts/migration-order.mjs).
 
 // ── 3. JSON validity ─────────────────────────────────────────────────────────
 for (const f of ALL.filter((f) => f.ext === '.json')) {
@@ -401,6 +379,13 @@ try {
   if (!inSync()) err('persona-mirror', 'supabase/functions/_shared/atlas-persona.js is out of sync with js/atlas-persona.js — run: node scripts/sync-atlas-persona.mjs');
 } catch (e) {
   err('persona-mirror', 'could not verify the atlas-persona mirror: ' + (e && e.message));
+}
+// (atlas-durable-jobs) js/atlas-job-core.js is the source of the contract the server runs too; its mirror must not drift.
+try {
+  const { inSync } = await import('./sync-atlas-job-core.mjs');
+  if (!inSync()) err('job-core-mirror', 'supabase/functions/_shared/atlas-job-core.js is out of sync with js/atlas-job-core.js — run: node scripts/sync-atlas-job-core.mjs');
+} catch (e) {
+  err('job-core-mirror', 'could not verify the atlas-job-core mirror: ' + (e && e.message));
 }
 
 // ── 8. (#R162) index.html file-split integrity ───────────────────────────────

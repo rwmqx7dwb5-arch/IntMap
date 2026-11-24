@@ -141,8 +141,9 @@ function composeAdmin(rows) {
   for (const r of list) {
     const k = (r.id && r.id.relation != null) ? 'r:' + r.id.relation : (r.id && r.id.qid) ? 'q:' + r.id.qid : 'n:' + r.file + ':' + r.name;
     const prev = out.find((x) => x.key === k && x.to.k >= r.s);
-    if (prev) { if (r.e > prev.to.k) prev.to = { k: r.e, edge: r.eEdge, dates: r.dates && r.dates.end }; continue; }
-    out.push({ key: k, name: r.name, label: r.label || r.name, names: r.names, level: r.level, file: r.file, record: r.record, id: r.id,
+    const ln = (r.dates && r.dates.line && r.dates.line.certainty === 'approximate') ? [{ from: r.s, to: r.e, note: r.dates.line.note }] : [];
+    if (prev) { if (r.e > prev.to.k) prev.to = { k: r.e, edge: r.eEdge, dates: r.dates && r.dates.end }; prev.approx.push(...ln); continue; }
+    out.push({ approx: ln, key: k, name: r.name, label: r.label || r.name, names: r.names, level: r.level, file: r.file, record: r.record, id: r.id,
       from: { k: r.s, edge: r.sEdge, dates: r.dates && r.dates.start }, to: { k: r.e, edge: r.eEdge, dates: r.dates && r.dates.end }, jump: { k: r.s } });
   }
   /* the spans no row covers between the first and the last — listed, never closed over */
@@ -290,7 +291,9 @@ export function entryBrief(E) {
 }
 export function adminBrief(E) {
   const side = (x) => Object.assign({ date: isoOf(x.k), edge: x.edge }, x.dates && x.dates.raw ? { recordWrites: x.dates.raw } : {}, x.dates && x.dates.derived ? { derived: x.dates.derived === true ? (x.dates.basis || true) : x.dates.derived } : {});
-  return { name: E.name, label: E.label, level: E.level, record: E.file, id: E.id, kind: E.record && E.record.reconstructed ? 'reconstructed by IntMap' : E.record && E.record.derived ? 'derived by IntMap' : E.record && E.record.gap ? 'surveyed atlas' : 'OpenHistoricalMap', from: side(E.from), to: side(E.to) };
+  /* (hist-coverage-approx-line) the record says the unit is stated but its outline is approximate — Atlas must not state the line as surveyed */
+  const lineOf = (E.approx && E.approx.length) ? { approximateOutline: E.approx.map((x) => ({ from: isoOf(x.from), to: isoOf(x.to), note: x.note })) } : {};
+  return { ...lineOf, name: E.name, label: E.label, level: E.level, record: E.file, id: E.id, kind: E.record && E.record.reconstructed ? 'reconstructed by IntMap' : E.record && E.record.derived ? 'derived by IntMap' : E.record && E.record.gap ? 'surveyed atlas' : 'OpenHistoricalMap', from: side(E.from), to: side(E.to) };
 }
 export function forAtlas(rec) {
   const N = rec.nation || {}, A = rec.admin || {};

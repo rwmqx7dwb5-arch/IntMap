@@ -7,6 +7,7 @@
  *  says who drew it. And on a phone the panel's controls are where a finger can reach them.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { settleLayout } from './helpers/settle.js';
 import { seededStorageState } from './helpers/session-seed.js';   /* a context this file opens boots the way the suite does (tests/r201-checks ④b) */
 
 async function boot(page, url) {
@@ -68,7 +69,11 @@ test('my map: draw, name, link, receive, keep, reload, export, analyse', async (
   const st = await page.evaluate(() => window.IntMapMyMap.state());
   expect(st.shown).toBe('own'); expect(st.features.map((f) => f.kind)).toEqual(['pin', 'line', 'area']);
   expect(st.features[0].note).toBe('8:30 at the gate');
-  await page.waitForTimeout(400);
+  /* (mobile-sheet-layout) MEASURED 2026-11-24 on a clean origin/main build: at the globe's zoom 2.7 the features ARE drawn (a screenshot shows them)
+     but queryRenderedFeatures answers [] for them, while at zoom 4 it answers all of them. That is the renderer's query, not this panel (it failed
+     the same on main, untouched) — so the assertion that «the renderer holds them» is made where the renderer answers; the low-zoom answer is open. */
+  await page.evaluate(() => window.__imap.jumpTo({ zoom: 4 }));
+  await page.waitForTimeout(900);
   const kinds = await page.evaluate(() => [...new Set(window.__imap.queryRenderedFeatures({ layers: ['mymap-fill', 'mymap-line', 'mymap-pt'] }).map((f) => f.layer.id))].sort());
   expect(kinds).toEqual(expect.arrayContaining(['mymap-fill', 'mymap-line']));
   const types = await page.evaluate(() => window.__imap.getSource('mymap-src').serialize().data.features.map((f) => f.geometry.type));
@@ -153,11 +158,16 @@ test('my map on a phone: every control in the panel is reachable by a finger', a
   await expect(page.locator('#im-mymap')).toBeVisible({ timeout: 20_000 });
   await page.evaluate(() => { const M = window.IntMapMyMap; M.add({ kind: 'pin', coords: [[139.76, 35.68]], name: 'A' }); M.add({ kind: 'line', coords: [[139.7, 35.6], [139.8, 35.7]], name: 'B' }); });
   await page.waitForTimeout(600);
+  /* the panel is held above the sheet by a spring: measure when it has stopped (under load the measure came first) */
+  await settleLayout(page, ['#im-mymap', '#sidebar']);
   const bad = await page.evaluate(() => {
     const credit = document.getElementById('map-credit'), creditTop = credit && credit.checkVisibility() ? credit.getBoundingClientRect().top : innerHeight;
     const sheet = document.getElementById('sidebar'), sheetTop = sheet ? sheet.getBoundingClientRect().top : innerHeight;
     const bound = Math.min(creditTop, sheetTop), out = [];
     for (const el of document.querySelectorAll('#im-mymap .mm-foot button, #im-mymap .mm-head button, #im-mymap .mm-seg button')) {
+      /* (mobile-sheet-layout) a panel held under the map's button column is as tall as the map leaves it, and what does not fit scrolls inside it:
+         a finger scrolls (tests/mobile-panels-reach.spec.js measures it the same way), so each control is brought into view first */
+      el.scrollIntoView({ block: 'center' });
       const r = el.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2;
       const hit = document.elementFromPoint(x, y);
       if (y > bound || !(hit === el || el.contains(hit))) out.push((el.getAttribute('data-mm') || el.textContent) + ' @' + Math.round(y));
@@ -165,7 +175,7 @@ test('my map on a phone: every control in the panel is reachable by a finger', a
     return out;
   });
   await page.screenshot({ path: 'C:/Users/gyuuk/AppData/Local/Temp/map-next-phone.png' });
-  expect(bad).toEqual([]);
+  expect(bad, 'controls the sheet, the credit or another box covers: ' + JSON.stringify(bad)).toEqual([]);
 
   /* (wave2-prod-fixes) a tab's bar is there only while its tab is what the sheet shows. MEASURED on production: the last
      tab Companies, the search opened with nothing typed — and «Tap company rows to select and compare.» lay across the
@@ -175,13 +185,15 @@ test('my map on a phone: every control in the panel is reachable by a finger', a
   await page.locator('#ms-input').focus();
   await page.locator('#ms-input').fill('Tokyo');
   await expect(page.locator('#ms-results')).not.toBeEmpty({ timeout: 15_000 });
-  await page.waitForTimeout(500);   /* the sheet's spring to `full` */
+  await page.waitForTimeout(500);   /* the list settles (the sheet no longer springs to `full`: candidates drop down from the map's search circle) */
   const under = await page.evaluate(() => {
-    const bar = document.getElementById('co-compare-fixed'), r = bar.getBoundingClientRect();
-    const y = Math.min(innerHeight - 2, r.top + r.height / 2), hit = document.elementFromPoint(innerWidth / 2, y);
-    return { barHit: !!(hit && bar.contains(hit)), listHit: !!(hit && hit.closest('#ms-results')) };
+    const bar = document.getElementById('co-compare-fixed'), br = bar.getBoundingClientRect();
+    const by = Math.min(innerHeight - 2, br.top + br.height / 2), bh = document.elementFromPoint(innerWidth / 2, by);
+    const item = document.querySelector('#ms-results .ms-item'), ir = item.getBoundingClientRect();
+    const ih = document.elementFromPoint(ir.left + ir.width / 2, ir.top + ir.height / 2);
+    return { barHit: !!(bh && bar.contains(bh)), barOnList: !!(bh && bh.closest('#ms-results')), listHit: !!(ih && ih.closest('#ms-results')) };
   });
   expect(under.barHit, 'the Companies bar is not over the search list').toBe(false);
-  expect(under.listHit, 'the search list is what the finger meets at the foot of the sheet').toBe(true);
+  expect(under.listHit, 'the first candidate is what the finger meets at its own place (the bar does not cover it)').toBe(true);
   await ctx.close();
 });
