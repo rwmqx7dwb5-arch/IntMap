@@ -1410,6 +1410,174 @@
     "accuracy"
    ]
   },
+  "data/transit-fr-strasbourg.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-rennes.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-toulouse.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-nice.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-nantes.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-montpellier.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-fr-grenoble.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-mc.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-no-oslo.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-no-trondheim.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-no-stavanger.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/transit-jp-toyama-bus.json": {
+   "cadence": "P3D",
+   "cadenceBasis": "measured",
+   "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
   "data/unga-votes/index.json": {
    "cadence": "P1Y",
    "cadenceBasis": "measured",
@@ -1893,6 +2061,20 @@
    "cadence": "P6M",
    "cadenceBasis": "measured",
    "asOf": null,
+   "describes": {},
+   "unstated": [
+    "period",
+    "extent",
+    "method",
+    "resolution",
+    "completeness",
+    "accuracy"
+   ]
+  },
+  "data/logistics-network.json": {
+   "cadence": "P1D",
+   "cadenceBasis": "stated",
+   "asOf": "2026-11-20",
    "describes": {},
    "unstated": [
     "period",
