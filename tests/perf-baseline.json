@@ -9,8 +9,8 @@
     "cssGzip": 65461
   },
   "async": {
-    "raw": 15155616,
-    "gzip": 5123748,
+    "raw": 15123392,
+    "gzip": 5110254,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -22,7 +22,7 @@
       "atlas-admin1": 12138,
       "atlas-answer-view": 2510,
       "atlas-attach": 27593,
-      "atlas-cap-runs": 1013000,
+      "atlas-cap-runs": 1024981,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
       "atlas-console": 1186800,
@@ -115,7 +115,7 @@
       "layer-row-label": 402,
       "layer-time": 13553,
       "layer-time-decl": 21678,
-      "legal-text": 93960,
+      "legal-text": 96189,
       "lib": 129709,
       "link-codec": 1344,
       "map-cite": 18254,
@@ -221,7 +221,7 @@
   "dist": {
     "total": 1587385548,
     "data": 1223209830,
-    "assets": 22716226
+    "assets": 22720068
   },
   "phone": {
     "bytes": 342631,
