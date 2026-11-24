@@ -72,3 +72,7 @@ origin/main を取り込んだ木で `check:surface` が 1 読みを新規に検
 ## perf (280 能力・main の research.search 取り込み後)
 
 CI 実測で `atlas-cap-runs` が 1067.0 kB、`atlas-console` が 1185.3 kB に増えた。増分は main が足した能力（research.search ほか）の登録行で、この PR の追加は research.longform 1 本。天井を 1100000 / 1220000 byte へ。失効条件: main の perf-ceiling が下げた値が正本。
+
+## perf (282 能力・main の siting 取り込み後)
+
+CI 実測で `async.raw` 15341.9 kB・`async.gzip` 5215.2 kB・`atlas-cap-runs` 1080.3 kB が天井を超えた。増分は main が merge した能力（siting ほか）の登録行で、この PR の追加ではない。天井を 15800000 / 5400000 / 1125000 byte へ。失効条件: main の perf-ceiling が下げた値が正本。
