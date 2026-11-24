@@ -5074,11 +5074,19 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 
 ### `tests/migration-order-guard-checks.test.mjs` (migration-order-guard)
 
-5 本。**変更が足した migration は base の最新より後に並ぶ**こと（`check:static` の規則 `migration-order`、判定は
+5 本。**変更が足した migration は base の最新より後に並ぶ**こと（門は `npm run check:migrationorder`、判定は
 `scripts/migration-order.mjs` の純関数）。実測した事例（base の最新 20261002100000 に対して 20261002090000 を足す）が
 名指されること、後の時刻と base 自身のファイルは通ること、同じ時刻も拒むこと、このリポジトリの migration が
-全部 14 桁の版を持ち重複しないこと。base は `IM_DIFF_BASE`、PR では `HEAD^1`、手元では `origin/main` で、
-読めなければ測れなかったと警告する（本番の db push が最後の柵として残る）。
+全部 14 桁の版を持ち重複しないこと。
+
+### `npm run check:migrationorder` — 並行 PR が古い時刻の migration を後から入れない（`tests/migration-order-checks.test.mjs`）
+
+PR が `supabase/migrations/` に**新規に足す** migration の版（ファイル名の 14 桁）が、base（`origin/main`）の最新以下なら赤
+（同時刻も赤）。base に既に在る migration の**改名・削除**、同じ版を名乗る 2 本も赤にして述べる。赤のときは付け替え先を
+`git mv <旧> <新>` で出力する（現在時刻と base の最新の遅いほうの後ろ、複数なら順序を保つ）。base は `MIGRATION_BASE_REF`、
+PR では `GITHUB_BASE_REF`、手元では `main`。CI のチェックアウトは深さ 1 なので base の先端をその場で fetch し、
+**取れなければ警告でなく赤**（かつての `check:static` の規則は `HEAD^1` を読めず警告で通っていた）。main への push は
+比べる先が無いので通す。⚠ 残る穴: PR が緑のあとに別の PR が新しい版で先に入る競合は、その PR の CI を再実行するまで見えない。
 
 ### `tests/generated-file-merge-driver-checks.test.mjs` (generated-file-merge-driver)
 

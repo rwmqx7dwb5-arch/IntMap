@@ -18,6 +18,7 @@ import caps_layers from './atlas-cap-layers.js';
 import caps_learn from './atlas-cap-learn.js';
 import caps_map from './atlas-cap-map.js';
 import caps_mcp from './atlas-cap-mcp.js';
+import caps_model from './atlas-cap-model.js';
 import caps_navigation from './atlas-cap-navigation.js';
 import caps_news from './atlas-cap-news.js';
 import caps_notebook from './atlas-cap-notebook.js';
@@ -35,6 +36,7 @@ import caps_time from './atlas-cap-time.js';
 import caps_ui from './atlas-cap-ui.js';
 import caps_view from './atlas-cap-view.js';
 import caps_web from './atlas-cap-web.js';
+import caps_work from './atlas-cap-work.js';
 
 export const CAPABILITY_MODULES = {
   "account": caps_account,
@@ -54,6 +56,7 @@ export const CAPABILITY_MODULES = {
   "learn": caps_learn,
   "map": caps_map,
   "mcp": caps_mcp,
+  "model": caps_model,
   "navigation": caps_navigation,
   "news": caps_news,
   "notebook": caps_notebook,
@@ -71,4 +74,5 @@ export const CAPABILITY_MODULES = {
   "ui": caps_ui,
   "view": caps_view,
   "web": caps_web,
+  "work": caps_work,
 };
