@@ -4473,7 +4473,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -4700,6 +4700,10 @@
      },
      "output": [
       {
+       "type": "item_reference",
+       "id": "ws1"
+      },
+      {
        "type": "message",
        "role": "assistant",
        "content": "done."
@@ -4834,7 +4838,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -7544,7 +7548,7 @@
         "effort": "medium",
         "summary": "auto"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -7923,7 +7927,7 @@
         "effort": "medium",
         "summary": "auto"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -8044,7 +8048,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -8612,7 +8616,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -9093,7 +9097,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -9458,7 +9462,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -9750,7 +9754,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {

@@ -57,3 +57,11 @@ date: 2026-11-24
 
 merge 後、同じ種類の質問で `ai_delegation_journal` の `web` が最初の手以降で立つ回数と、1 手の待ちが下がったかを測る。
 下がらなければ、OpenAI が参照した検索の中身を読んでいない可能性があり、それを次の手として記録する。
+
+## 6. 費用が上がったもの
+
+- 遅延チャンク `legal-text` が 96,189 → 98,608 バイト（`tests/perf-baseline.json` の 1 行）。プライバシーポリシー §4 に
+  「Atlas の途中の手を OpenAI が最長 30 日保持する」を en / jp で足した分で、データの扱いが変わった以上省けない。
+  値はマージ後の木を CI が測ったもの（96.3 kB）とローカル build（98,608 バイト）が一致した数。
+- `tests/fixtures/atlas-core-split-before.json`（ai-proxy の写真）を意図した差分 14 か所だけ撮り直した:
+  ターンの呼び出しの `store:false → true` 13 か所と、検索を含む応答の出力に `item_reference` 1 件。
