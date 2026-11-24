@@ -25,3 +25,7 @@ newsjp: Atlas が過去の年についても答えられるよう、2012 年ま�
 ## perf 天井の再引き上げ(main 合流後)
 
 `atlas-cap-runs` 957.3 kB と `atlas-console` 1145.9 kB が合流後に天井を超えた。増分は main の能力追加(建物情報・描画の目撃者)と、本 PR の `news.history` 能力表の行によるもので、いずれも利用者が到達できる能力の実体。天井だけを `perf-budget.mjs --update` で上げた。
+
+## perf 天井(main 合流後・再)
+
+`atlas-cap-runs` を 981.3 kB から 987.1 kB へ上げた。main 側で増えた能力表の行と、本 PR の `news.history` の行による。利用者が到達できる能力の実体。
