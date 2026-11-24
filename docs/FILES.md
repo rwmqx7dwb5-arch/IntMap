@@ -1219,6 +1219,7 @@ atlas-geo-object.js               **地点の1つの形**（#R397）— GeoObjec
                                   ⚠ 代表点は `pointLike` ではない＝「その地点」として扱わない。
                                   `worldObject()` は同じ型に **type・ref・bounds・time・articleIds・evidenceIds・sources・links・facts** を足す
 atlas-world-objects.js           **実世界オブジェクトの索引と関係**— 地震・出来事・記事・施設・都市・火山・企業・地点を
+atlas-work-store.js             Atlas — 作業成果物のデータ（成果物の種類・版・版どうしの比較・作業場の選択・Markdown／ファイル・端末の保存は調査ノートの store を再利用）。DOM なし
                                   `worldObject`（`atlas-geo-object.js` の型）へ書き下ろすアダプタ、セッション内の索引
                                   （`register` / `find`）、`relation` / `related`（linked ／ near かつ（concurrent または
                                   時刻なし）。**時刻だけでは関連にしない**）、描画 1 本（`relatedGroups` / `relatedHtml`）。
@@ -1841,6 +1842,7 @@ admin-corrections.js              admin-corrections.html の動き——管理�
 map-corrections.js                地図の誤り報告の読者側——カード（地点・表示・年を添付）、送信（reader-reports kind correction）、受付番号の保管、
                                   回答の読み取り（受付番号とアカウント）、回答の通知、公開記録。クリックで取得（起動経路に載らない）
 atlas-cap-corrections.js          Atlas の corrections.* —— report（下書きしてカードを開く・送るのは読者）／mine／log
+atlas-cap-work.js                 Atlas の能力 — 作業成果物（work.job・綴り `work`）。成果物の保存・取り出し・比較・書き出し・作業場の選択。既存の書き出し・チャート・添付・データセット登録を呼ぶ扉
 atlas-cap-community.js            Atlas の community.* —— browse（目録）／open（地図で開く）／list（掲載・表示名は訊く）／unlist／mine（届いた数）
 admin-auth.js                     運営コンソールの唯一のサインイン（window.IntMapAdminAuth・素の script）——パスワード→TOTP（初回は登録）で aal2、
                                   セッションはそのタブの sessionStorage（キー intmap-admin-auth）、破壊的操作前の stepUp。これを読むページが

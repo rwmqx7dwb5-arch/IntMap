@@ -22,7 +22,7 @@
       "atlas-admin1": 12138,
       "atlas-answer-view": 2510,
       "atlas-attach": 27593,
-      "atlas-cap-runs": 1109589,
+      "atlas-cap-runs": 1129480,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
       "atlas-console": 1219097,
@@ -221,7 +221,7 @@
   "dist": {
     "total": 1609684743,
     "data": 1245902450,
-    "assets": 23425155
+    "assets": 23407517
   },
   "phone": {
     "bytes": 342631,
