@@ -420,7 +420,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["geo.ml","geoMl","multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty","data","none","gis.dataset","explanation","session","none","","gisCore","external"],
       ["geo.regionStat","regionStat","regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation","data","none","","explanation","session","none","",""],
       ["research.search","researchSearch","investigate,searchNews,searchSources","research","none","","explanation","read","none","","","external"],
-      ["research.longform","longform","writeLongReport,longDocument,writeInChapters","research","none","","explanation","read","none","","","external"],
+      ["research.portImpact","portImpact","portClosure,portDisruption,portStops","research","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
