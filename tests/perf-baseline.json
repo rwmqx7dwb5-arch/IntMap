@@ -85,7 +85,7 @@
       "gis-export": 40134,
       "gis-fetch": 8730,
       "gis-geopackage": 26667,
-      "gis-geotiff": 24029,
+      "gis-geotiff": 26535,
       "gis-ogcapi": 5664,
       "gis-packed": 11355,
       "gis-pipeline": 11424,
@@ -221,7 +221,7 @@
   "dist": {
     "total": 1609684743,
     "data": 1245902450,
-    "assets": 23407517
+    "assets": 23463000
   },
   "phone": {
     "bytes": 342631,

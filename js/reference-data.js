@@ -201,6 +201,11 @@ export const IntMapRefData = (function(){
     {n:'USGS The National Map (Orthoimagery)',u:'https://www.usgs.gov/core-science-systems/national-geospatial-program/national-map',lic:'US Government work (public domain)',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:true},
     {n:'PDOK Luchtfoto (Beeldmateriaal Nederland)',u:'https://www.pdok.nl/introductie/-/article/pdok-luchtfoto-rgb-open-',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'swisstopo SWISSIMAGE',u:'https://www.swisstopo.admin.ch/en/orthoimage-swissimage-10',lic:'swisstopo / BGDI terms of use',licUrl:'https://www.geo.admin.ch/de/allgemeine-nutzungsbedingungen-bgdi',credit:true},
+    /* (satellite-change-analysis) what Atlas's geo.imageChange / geo.similar(signal:embedding) read, 2026-11-20 — licence from each publisher's own page or STAC collection */
+    {n:'Google AlphaEarth Foundations Satellite Embedding (Google / Google DeepMind, via Source Cooperative)',u:'https://source.coop/tge-labs/aef',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'Copernicus Sentinel-2 L2A (ESA; AWS Open Data via Earth Search)',u:'https://registry.opendata.aws/sentinel-2-l2a-cogs/',lic:'Copernicus Sentinel data — free, full and open',credit:true},
+    {n:'Copernicus Sentinel-1 RTC (ESA; processed by Catalyst, via Microsoft Planetary Computer)',u:'https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'Impact Observatory / Esri 10 m Annual Land Cover (via Microsoft Planetary Computer)',u:'https://planetarycomputer.microsoft.com/dataset/io-lulc-annual-v02',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'OpenStreetMap',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'NASA GIBS / Worldview',u:'https://www.earthdata.nasa.gov/'},
     /* (#R186) the two datasets this round bundles WITH the app rather than fetching at run time —
