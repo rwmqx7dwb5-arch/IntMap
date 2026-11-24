@@ -78,3 +78,7 @@ CI 実測で `atlas-cap-runs` が 1067.0 kB、`atlas-console` が 1185.3 kB に�
 ## perf (282 能力・main の siting 取り込み後)
 
 CI 実測で `async.raw` 15341.9 kB・`async.gzip` 5215.2 kB・`atlas-cap-runs` 1080.3 kB が天井を超えた。増分は main が merge した能力（siting ほか）の登録行で、この PR の追加ではない。天井を 15800000 / 5400000 / 1125000 byte へ。失効条件: main の perf-ceiling が下げた値が正本。
+
+## perf (291 能力・main 再取り込み後)
+
+CI 実測で `async.gzip` 5292.1 kB・`atlas-cap-runs` 1137.2 kB が天井を超えた。増分は main が merge した能力の登録行で、この PR の追加ではない。天井を 5470000 / 1185000 byte へ。失効条件: main の perf-ceiling が下げた値が正本。

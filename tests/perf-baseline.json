@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 15833747,
-    "gzip": 5390338,
+    "gzip": 5470000,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -22,7 +22,7 @@
       "atlas-admin1": 12138,
       "atlas-answer-view": 2510,
       "atlas-attach": 27593,
-      "atlas-cap-runs": 1149725,
+      "atlas-cap-runs": 1185000,
       "atlas-cap-work": 70,
       "atlas-caps": 7364,
       "atlas-caps-modules": 65,
