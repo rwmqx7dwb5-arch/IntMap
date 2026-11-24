@@ -146,12 +146,14 @@ test('domain-portable ④ the build is relative: base, service worker, social ca
   const p = siteUrlPlugin();
   assert.equal(p.transformIndexHtml.handler(`<meta content="${SITE_TOKEN}og-image.jpg">`), `<meta content="${SITE.SITE_URL}og-image.jpg">`);
   const emitted = [];
+  const notMcpDoc = (f) => f.fileName !== 'mcp-client-metadata.json';   /* the MCP client-metadata document is emitted on every build (mcp-oauth-same-site-checks) */
   p.generateBundle.call({ emitFile: (f) => emitted.push(f) });
-  assert.deepEqual(emitted, [], 'no domain of its own → no CNAME');
+  assert.deepEqual(emitted.filter(notMcpDoc), [], 'no domain of its own → no CNAME');
+  emitted.length = 0;
   const S = await siteWith('intmap.example');
   const q = siteUrlPlugin(S);
   q.generateBundle.call({ emitFile: (f) => emitted.push(f) });
-  assert.deepEqual(emitted, [{ type: 'asset', fileName: 'CNAME', source: 'intmap.example\n' }], 'a domain → dist/CNAME holds it');
+  assert.deepEqual(emitted.filter(notMcpDoc), [{ type: 'asset', fileName: 'CNAME', source: 'intmap.example\n' }], 'a domain → dist/CNAME holds it');
   assert.equal(q.transformIndexHtml.handler(`x${SITE_TOKEN}y`), 'xhttps://intmap.example/y');
 });
 

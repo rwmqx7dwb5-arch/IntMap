@@ -9,8 +9,8 @@
     "cssGzip": 65461
   },
   "async": {
-    "raw": 15457779,
-    "gzip": 5260610,
+    "raw": 15626000,
+    "gzip": 5310800,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -221,7 +221,7 @@
   "dist": {
     "total": 1587385548,
     "data": 1229592936,
-    "assets": 23095112
+    "assets": 23263700
   },
   "phone": {
     "bytes": 342631,
