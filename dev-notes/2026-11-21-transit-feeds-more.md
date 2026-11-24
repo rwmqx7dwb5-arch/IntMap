@@ -37,3 +37,5 @@ Metlink(条文が JS 描画で読めない)・HSL / Transport for Ireland / ACT(
 ## perf 天井(main 載せ直し後)
 
 `dist.assets` を 22068.6 kB から 22194.5 kB、`atlas-cap-runs` を 981.3 kB から 987.1 kB へ上げた。前者は 12 路線の時刻表バンドルの出典行と説明文、後者は main 側で増えた能力表の行。いずれも利用者が到達できるものの実体。
+
+追記: main 合流後の再計測で async 合計と `atlas-cap-runs` が増えた分は、main 側の能力表の行による。ceiling のみ上げた。
