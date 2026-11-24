@@ -55,3 +55,7 @@ Metlink(条文が JS 描画で読めない)・HSL / Transport for Ireland / ACT(
 ## 4 回目の main 合流後の基準線
 
 `eager.raw` を 4752.9 kB から 4776.8 kB へ上げた(+23.9 kB)。内訳は 12 路線の時刻表の行(`js/transit-feeds.js`)と法務文(en・jp)で、起動時に読まれる。コードの削減はしていない。
+
+## 5 回目の main 合流後の基準線
+
+`eager.brotli` を 1190.4 kB から 1196.4 kB へ上げた(+6.0 kB)。内訳は 12 路線の時刻表の行と法務文で、起動時に読まれる。main 合流のたびに perf 基準線が main 側の値で上書きされるため、このブランチの増分(`eager` の raw・gzip・brotli)を取り直している。コードの削減はしていない。
