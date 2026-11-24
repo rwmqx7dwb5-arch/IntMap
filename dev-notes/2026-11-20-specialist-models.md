@@ -72,7 +72,7 @@ main を取り込み直した後の再測定（同じ 3 行、同じ理由）: `
 
 ## 7. `check:surface` の基準線（本 PR の変更ではない）
 
-CI の Gates 1/3 が `window.IntMapLazy` の読み取り 196→197 で赤だった。原因は本 PR ではなく main 側: 本 PR の変更ファイルに IntMapLazy は無く、`origin/main` を単独で checkout して `global-surface.mjs --check` を走らせても同じ +1 が出る（js/ の「スマホ画面を地図中心に作り直す」変更が基準線を更新せずに入った）。本 PR が緑になるために `--update` で 197 に直した。読み取りは本 PR が足したものではない。
+CI の Gates 1/3 が `window.IntMapLazy` の読み取り 196→197 で赤だった。原因は本 PR ではなく main 側: 本 PR の変更ファイルに IntMapLazy は無く、`origin/main` を単独で checkout して `global-surface.mjs --check` を走らせても同じ +1 が出る（js/ の「スマホ画面を地図中心に作り直す」変更が基準線を更新せずに入った）。本 PR は一度 `--update` で 197 に直したが、その後 main が同じ基準線を先に更新したので、最終的に main の基準線へ揃えた（本 PR は基準線を変えていない）。読み取りは本 PR が足したものではない。
 
 ## 8. 検索が届く行数（R728 ①）
 
