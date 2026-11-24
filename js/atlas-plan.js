@@ -43,7 +43,8 @@ export const PLAN_TOOL = {
   description: 'Declare your plan for a request that takes several pieces of work, and say which step the calls '
     + 'that follow serve. The reader sees the plan above your work, with each step\'s state as IntMap observes it. '
     + 'First call: {"goal", "steps":[short titles in the reader\'s language], "current":1}, made in the SAME reply '
-    + 'as the calls of step 1. Moving on: {"current":n} in the same reply as that step\'s calls. To replace the plan, '
+    + 'as the calls of step 1. Moving on: {"current":n} in the same reply as that step\'s calls. A reply that holds ONLY plan '
+    + 'calls changes nothing the reader sees and still costs the reader a whole model round trip before any work starts. To replace the plan, '
     + 'send new steps. A request that one or two calls answer needs no plan. The plan stays in the conversation: '
     + 'a later request may name a step ("redo step 2") — set "current" to it and make its calls again. '
     + 'For a GEOSPATIAL ANALYSIS add "geo", the analysis as IntMap can read it: {"question","region":{"name","bounds":[w,s,e,n]},"time":{"at"|"from","to"},'
@@ -189,7 +190,10 @@ export function makeAtlasPlan(opts) {
     emit({ type: 'plan' });
     return Object.assign({ ok: true, plan: forModel(),
       note: 'Plan recorded and shown to the reader above your work. The calls you make from here serve step ' + (plan.current + 1)
-        + ' until you set "current" again. Each step\'s state is what IntMap OBSERVES of those calls, never what you say.' }, geoRec ? { geo: geoRec } : {});
+        + ' until you set "current" again. Each step\'s state is what IntMap OBSERVES of those calls, never what you say.'
+        /* (atlas-fewer-rounds) measured 2026-11-24 on production: a turn's first two rounds were a plan call alone and then
+           {"current":2} alone — 70 s of a 226 s turn in which nothing ran. Said, not enforced (one-pass-or-a-reason §1). */
+        + ' Send plan calls in the SAME reply as the calls they describe: a reply of plan calls alone is one more model round the reader waits through with nothing done.' }, geoRec ? { geo: geoRec } : {});
   }
 
   /* preflight() — the loop awaits it after a `geo.check` declaration (js/atlas-agent.js). It asks the sources; it

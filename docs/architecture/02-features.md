@@ -237,7 +237,7 @@ placeholder は使わない。
 結果には `promotedTools` と `promotionNote`。定義は `promoted:true` を持ち、ai-proxy はそれを鍵から外し、Anthropic 経路では固定の道具の末尾にも `cache_control` を付ける
 （印は計 3 個まで）。1 回が宣言できる関数は ai-proxy の `MAX_FN_TOOLS` までで、ループの `maxOfferedTools` はそれと等しい（検査が照合）。超える分は `run_capability` で届く。
 Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:"ephemeral"}` を付ける（`_shared/ai-usage.js` の `withPromptCache`。印は最大 4 個）。命中は台帳の
-`cached_read_tokens` / `cache_write_tokens`。`store:false`。予算は item 単位で配る（`INPUT_BUDGET`：全体 240,000・1 item 48,000）——超えたら古い会話から丸ごと落とし
+`cached_read_tokens` / `cache_write_tokens`。OpenAI 経路のターンは `store:true` で、手の Web 検索は `item_reference`（`turn.ts` の項目の種類）として次の手に送り返す——検索結果を持ち越し、検索し直さない。ターン以外は `store:false`。予算は item 単位で配る（`INPUT_BUDGET`：全体 240,000・1 item 48,000）——超えたら古い会話から丸ごと落とし
 （1 つの item が述べる）、それでも超えたらこのターンの古い結果だけを短くする（最新の手の結果と依頼は落とさない）。1 件の結果が大きすぎるときはその item の中で切り、大きさと
 続きを読む道具 `read_result` を書く。ai-proxy 側の柵（`MAX_INPUT_CHARS`・`MAX_ITEM_CHARS`）はその 2 倍で、切ったら `meta.inputTrimmed`。各手の切り詰めは `trace.inputTrims`。
 1 手で出された呼び出しには全部に結果が返る（`maxPerStep` を超えた分も `step_call_limit`）。**1 手の中の呼び出しは衝突しない組が同時に走る**——衝突は道具の面の
