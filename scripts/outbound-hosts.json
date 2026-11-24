@@ -2471,6 +2471,21 @@
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
     },
     {
+      "host": "creativecommons.org",
+      "what": "licence text link",
+      "link": "the licence of a shipped timetable (js/transit-feeds.js FEEDS[].licence.url), shown as a hyperlink; never fetched"
+    },
+    {
+      "host": "data.public.lu",
+      "what": "the Luxembourg timetable dataset page",
+      "link": "the publisher page of the Luxembourg timetable (js/transit-feeds.js source); the build script reads its dataset API, the browser never does"
+    },
+    {
+      "host": "transitous.org",
+      "what": "Transitous usage-policy page",
+      "link": "the Transitous usage policy cited by TRANSITOUS_TERMS (js/transit-feeds.js); a reference, never fetched"
+    },
+    {
       "host": "www.earthdata.nasa.gov",
       "what": "NASA Earthdata terms page",
       "link": "the licence/terms page of NASA GIBS, shown as a hyperlink (<a href>) in the satellite panel and Atlas's imagery answer (js/imagery-registry.js license.url); never fetched"
