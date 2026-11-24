@@ -421,6 +421,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["geo.regionStat","regionStat","regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation","data","none","","explanation","session","none","",""],
       ["research.search","researchSearch","investigate,searchNews,searchSources","research","none","","explanation","read","none","","","external"],
       ["research.portImpact","portImpact","portClosure,portDisruption,portStops","research","none","","explanation","read","none","",""],
+      ["siting.compare","siting","compareSites,industrialSiting,siteSelection,locationComparison,compareLocations","data","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
