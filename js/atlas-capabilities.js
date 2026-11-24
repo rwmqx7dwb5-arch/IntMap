@@ -412,6 +412,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","none","","",""],
       ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
       ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","explicit","","","external"],
+      ["geo.regionStat","regionStat","regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation","data","none","","explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
