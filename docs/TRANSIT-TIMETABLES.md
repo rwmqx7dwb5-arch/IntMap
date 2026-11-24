@@ -25,10 +25,20 @@ IntMap はどれも満たさないので、**Transitous は既定で使わない
 時刻表が国境をまたぐなら**線で切らずに**面を延ばし、到達した国の一覧を返す。
 
 ## 取り込み済みの feed
-`node scripts/build-transit-timetables.mjs --list`。**追加の手順**: ① 配布元自身のライセンスページを読む（Transitous や
-mobilitydatabase の一覧は手がかりであって確認ではない）② `js/transit-feeds.js` の `FEEDS` に `verified`（ページと日付）付きで足す
-③ `GOVERNANCE` に同じ内容を足し `js/reference-data.js` の `DATA_SOURCES` に出典行を足す ④ ビルドして
-`tests/transit-timetable-checks.test.mjs` を通す。商用不可（NC 系）は `licenceAllowsCommercial` が拒む。
+一覧は `node scripts/build-transit-timetables.mjs --list`（正本は `js/transit-feeds.js` の `FEED_ROWS`）。**追加の手順**:
+① 配布元自身のライセンスページを読む（Transitous や mobilitydatabase の一覧は手がかりであって確認ではない）
+② `FEED_ROWS` に 1 行足す——`verified`（読んだページ・条文・日付）、`resolve`（下の 3 種）、`published`（配布元の更新の実測）
+③ `js/reference-data.js` の `DATA_SOURCES` に出典行を 1 行足す（`n` は `Timetables — <credit.publisher>, <credit.licence>, <credit.via>`。
+ビルダーの `GOVERNANCE` は行から導出されるので手で書かない）④ `--feed <id>` でビルドし、`tests/transit-*` を通す。
+商用不可（NC 系）は `licenceAllowsCommercial` が拒む。
+
+`resolve` はビルドのたびに**配布元が今述べているライセンスを読み直し**、登録時と違えば何も書かずに止まる:
+`udata`（data.public.lu・data.gouv.fr の dataset API の `license`）／`gtfs-data.jp`（GTFSデータリポジトリの `feed_license`）／
+`page`（版の無い API しか無い配布元のページに、登録時の文言がまだ載っているか）。
+
+バンドルは 14 日の窓で 1 feed あたり 0.1〜4 MB（gzip で数十〜数百 kB）。同じ系統・同じ時刻の行は日別マスクの和
+1 行に畳む（配布元の多くは日付ごとに別の trip_id を振るので、畳まないと同じ便が 14 回書かれる）。時刻・停留所・
+運行日は 1 つも落とさない。
 
 ## 更新
 窓は 14 日なので 3 日周期（`cadence: P3D`・`autoRefresh`）。`.github/workflows/tle-refresh.yml` →
@@ -38,4 +48,6 @@ mobilitydatabase の一覧は手がかりであって確認ではない）② `j
 - 徒歩・自転車は直線推定。道路網での精密な到達は Valhalla の `isochrone`（既存）。
 - `frequencies.txt` の便は展開しない（`stats.skipped.frequencyTrips` に件数）。
 - 線は停留所を結んだ折れ線（形状ファイルを持たない）。
+- 1 回の探索は 1 つの feed の中で行う（両端を含む feed のうち、停留所の箱が出発点に最も近いもの——`feedsNear`。
+  feed をまたぐ乗換は無い）。同じ都市の別事業者は feed が分かれるので、箱が重なる feed は足さない（検査が拒む）。
 - 世界の被覆は取り込んだ feed の範囲。範囲外の公共交通は「利用許諾の得られた時刻表がまだありません」と答え、日本の都市間は既存の新幹線レジストリ（運行会社の公表時刻表からの概算・そう表示）が答える。

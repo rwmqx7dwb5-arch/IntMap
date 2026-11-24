@@ -65,6 +65,7 @@ scripts/safe-output-ledger.json          merge=intmap-generated intmap-merge=jso
 
 # generated from tracked inputs
 js/atlas-capabilities.js                 merge=intmap-generated intmap-merge=regen intmap-regen=scripts/atlas-caps.mjs,--write
+js/public-suffix-data.js                 merge=intmap-generated intmap-merge=regen intmap-regen=scripts/build-public-suffix.mjs
 js/atlas-caps-modules.js                 merge=intmap-generated intmap-merge=regen intmap-regen=scripts/atlas-caps.mjs,--write
 supabase/functions/_shared/atlas-cap-classes.js merge=intmap-generated intmap-merge=regen intmap-regen=scripts/sync-atlas-cap-classes.mjs
 js/layer-manifest.js                     merge=intmap-generated intmap-merge=regen intmap-regen=scripts/layer-descriptors.mjs,--write
