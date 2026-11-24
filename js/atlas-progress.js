@@ -106,6 +106,7 @@ export function makeAtlasProgress(HOST, deps) {
     view: () => L('Moving the view', '視点を移動', 'Ansicht bewegen', 'Перемещаю вид', 'Moviendo la vista'),
     panel: () => L('Opening a panel', 'パネルを開く', 'Panel öffnen', 'Открываю панель', 'Abriendo un panel'),
     data: () => L('Looking up data', 'データを照会', 'Daten abfragen', 'Запрашиваю данные', 'Consultando datos'),
+    mcp: () => L('Asking an external MCP server', '外部MCPサーバーに照会', 'Frage einen externen MCP-Server ab', 'Запрашиваю внешний MCP-сервер', 'Consultando un servidor MCP externo'),
     research: () => L('Researching', '調査中', 'Recherchiere', 'Изучаю', 'Investigando'),
     settings: () => L('Changing a setting', '設定を変更', 'Einstellung ändern', 'Меняю настройку', 'Cambiando un ajuste'),
     sim: () => L('Running a simulation', 'シミュレーションを実行', 'Simulation läuft', 'Запускаю симуляцию', 'Ejecutando una simulación'),
