@@ -38,6 +38,7 @@
  *  round is not a second architecture.
  * ==========================================================================*/
 
+import { atPath } from './atlas-working-memory.js';   /* (atlas-working-memory) one value at an address in an original result */
 import { makeRunLedger, runLine, makeRunHistory } from './atlas-run-ledger.js';   /* (job-cost-ledger) what this turn cost, in one record — observes, never decides */
 import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R489) `callKey` — the identity of one tool call, in the same terms #R441 already uses for one action */
 
@@ -291,9 +292,9 @@ export function makeAtlasAgent() {
        ordinary turn's tool list — the part of the prompt a provider caches — is unchanged by it. */
     const READ_RESULT_TOOL = {
       name: 'read_result',
-      description: 'Read more of a tool result from THIS turn that was cut to fit. Pass the call_id and the offset the cut note gives.',
-      parameters: { type: 'object', required: ['call_id', 'offset'],
-        properties: { call_id: { type: 'string', minLength: 1 }, offset: { type: 'integer', minimum: 0 } } },
+      description: 'Read a tool result back whole: one of THIS turn that was cut to fit (pass the call_id and the offset the cut note gives), or one kept in [ATLAS WORKING MEMORY] from an earlier turn (pass its ref, e.g. t3.call_2). Add path (e.g. rows[2].value) to read ONE value from it; call_id "memory" reads the whole working-memory record.',
+      parameters: { type: 'object', required: ['call_id'],
+        properties: { call_id: { type: 'string', minLength: 1 }, offset: { type: 'integer', minimum: 0 }, path: { type: 'string' } } },
     };
     /* The text one result is represented by — the SAME function the composer cuts and read_result
        reads from, so an offset in a cut note means the same character in both. */
@@ -400,7 +401,12 @@ export function makeAtlasAgent() {
       const reqItem = { type: 'message', role: 'user', content: String(o.request || '') };
       const tailItem = String(o.tail || '').trim() ? { type: 'message', role: 'user', content: String(o.tail) } : null;
       const sum = function (arr) { return arr.reduce(function (a, it) { return a + itemChars(it); }, 0); };
-      const fixed = itemChars(reqItem) + sum(turnItems) + (tailItem ? itemChars(tailItem) : 0);
+      /* (atlas-working-memory) the structured record of this job — goal, decisions, results by ref, figures, sources, what is open.
+         It is NOT history: it is not trimmed with it, so it is counted in `fixed` and sits before the request. Built once per turn
+         (js/atlas-working-memory.js block), so the prefix a provider caches stays the same bytes from step to step. */
+      const memText = String(o.memory || '').trim();
+      const memItem = memText ? { type: 'message', role: 'user', content: memText } : null;
+      const fixed = itemChars(reqItem) + sum(turnItems) + (tailItem ? itemChars(tailItem) : 0) + (memItem ? itemChars(memItem) : 0);
       /* ② the oldest history goes first, whole messages, and ONE item says what went */
       let kept = hist.slice();
       while (kept.length && (fixed + sum(kept)) > B.total) {
@@ -423,9 +429,12 @@ export function makeAtlasAgent() {
       if (trim.droppedHistory) {
         input.push({ type: 'message', role: 'user', content: '[EARLIER CONVERSATION NOT SHOWN — the ' + trim.droppedHistory
           + ' oldest messages of this conversation (' + trim.droppedHistoryChars + ' characters) were left out to fit. '
-          + 'They are not in front of you: if the request depends on them, say so rather than guess.]' });
+          + (memItem ? 'What they settled — the goal, conditions, results, figures, sources and what is open — is in [ATLAS WORKING MEMORY] below, and each result there can be read back whole with read_result. '
+            : '')
+          + 'Their wording is not in front of you: if the request depends on it, say so rather than guess.]' });
       }
       kept.forEach(function (it) { input.push(it); });
+      if (memItem) input.push(memItem);
       /* the reader's attachments sit at a FIXED place: documents and files before the request (the
          question is asked about material already handed over), the step's images at the very end.
          ai-proxy fills each marker with what the request carries, or drops it. */
@@ -443,9 +452,10 @@ export function makeAtlasAgent() {
          a marked turn (`outside`, kept only if the budget kept it), the request block (`requestOutside` — the
          working context) and the tail (`tailOutside` — the plan). The answer rides the reply as
          `contextOutside`, which runTurn reads exactly as it reads `webUsed`. Nothing here reads a word. */
-      const outside = histOutside.slice(trim.droppedHistory).some(Boolean) || o.requestOutside === true || o.tailOutside === true;
+      const outside = histOutside.slice(trim.droppedHistory).some(Boolean) || o.requestOutside === true || o.tailOutside === true || !!(memItem && o.memoryOutside === true);
       return { input: input, requestIndex: requestIndex, trim: trim, outside: outside,
-        cut: !!(trim.truncated.length || trim.squeezed.length) };
+        cut: !!(trim.truncated.length || trim.squeezed.length),
+        recallable: !!memItem };   /* (atlas-working-memory) the input names refs that read_result answers, so the tool is offered */
     }
 
     /* ── The mechanical verdict on ONE proposed call. No meaning, only shape. ──────────────────
@@ -681,6 +691,9 @@ export function makeAtlasAgent() {
          Each promoted definition says `promoted:true`, which ai-proxy leaves out of the prompt-cache
          key, so the key (the routing of the cache) does not move with them either. */
       const promote = (typeof opts.promote === 'function') ? opts.promote : null;
+      /* (atlas-working-memory) the conversation's working memory (js/atlas-working-memory.js), when the caller keeps one */
+      const MEM = (opts.memory && typeof opts.memory.noteResult === 'function') ? opts.memory : null;
+      const MEM_TURN = opts.memoryTurn != null ? opts.memoryTurn : 0;
       const footprint = (typeof opts.footprint === 'function') ? opts.footprint : null;
       const promoted = [];
       /* ══ (atlas-plan-on-map) ATLAS'S OWN PLAN, WHEN THE CALLER KEEPS ONE ════════════════════════════════
@@ -1158,7 +1171,21 @@ export function makeAtlasAgent() {
             const a = call.arguments || {};
             const src = callById[String(a.call_id || '')];
             let rr;
-            if (!src) {
+            /* (atlas-working-memory) not this turn's: a ref the working memory kept from an earlier turn, a path into it, or the whole record */
+            const mem = (!src && opts.memory && typeof opts.memory.recall === 'function' && opts.memory.has(String(a.call_id || ''))) ? opts.memory.recall(String(a.call_id), a.path) : null;
+            if (mem && mem.ok) {
+              const full = String(mem.text), off = Math.max(0, Math.min(full.length, Math.floor(+a.offset || 0)));
+              const piece = full.slice(off, off + INPUT_BUDGET.item - 1000);
+              rr = { ok: true, readResult: true, call_id: String(a.call_id), offset: off, total: full.length, text: piece,
+                next: (off + piece.length < full.length) ? off + piece.length : null };
+            } else if (mem) {
+              rr = { ok: false, error: mem.error, message: mem.message };
+            } else if (src && a.path) {
+              /* a path into a result of THIS turn: the one value, from the original record */
+              const hit = atPath(src, a.path);
+              rr = hit.found ? { ok: true, readResult: true, call_id: String(a.call_id), offset: 0, total: 0, text: String(a.path) + ' = ' + JSON.stringify(hit.value), next: null }
+                : { ok: false, error: 'no_such_path', message: 'No value at "' + String(a.path) + '" in ' + String(a.call_id) + '.' };
+            } else if (!src) {
               rr = { ok: false, error: 'unknown_call_id', message: 'No result of this turn has call_id "' + String(a.call_id || '')
                 + '". The ids are: ' + Object.keys(callById).join(', ') + '.' };
             } else {
@@ -1337,6 +1364,14 @@ export function makeAtlasAgent() {
             message: 'This reply made more than ' + lim.maxPerStep + ' calls; this one was not run. Make it in your next reply if you still need it.' });
         });
         stepResults.forEach(function (r) { if (r && r.id && !callById[r.id]) callById[r.id] = r; });
+        /* (atlas-working-memory) every answered call is kept WHOLE, by ref, before any trimming can touch it — so a number a
+           tool returned is reachable from the original in a later step and a later turn (read_result), never only from a summary.
+           Discovery (find_capability), the plan tool and the loop's own read_result are not app results and are not kept. */
+        if (MEM) stepResults.forEach(function (r) {
+          if (!r || !r.id || r.readResult === true || r.name === 'find_capability' || r.name === 'plan') return;
+          const c = allCalls.find(function (x) { return x && x.id === r.id; });
+          try { MEM.noteResult(MEM_TURN, r.id, r.name, c && c.arguments, r); } catch (_) { /* a memory fault never takes the turn down */ }
+        });
 
         malformedRun = executedHere ? 0 : (malformedRun + 1);
         trace.steps.push({ step, toolCalls: calls.length, executed: executedHere });

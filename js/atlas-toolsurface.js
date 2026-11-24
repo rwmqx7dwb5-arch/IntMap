@@ -642,7 +642,7 @@ export function makeAtlasToolSurface(deps) {
       opts = opts || {};
       var ch = new MessageChannel();
       var bridge = makeCapabilityBridge({ registry: CAPS, execute: makeExecute(tools, agent), schemaOf: schemaOf,
-        validate: function (s, a, p, e) { agent.validateAgainst(s, a, p, e); }, turn: opts.turn, grants: opts.grants, limits: opts.limits, effectsOf: opts.effectsOf });
+        validate: function (s, a, p, e) { agent.validateAgainst(s, a, p, e); }, turn: opts.turn, grants: opts.grants, limits: opts.limits, effectsOf: opts.effectsOf, forbid: opts.forbid, readDataset: opts.readDataset });
       attachBridge(ch.port1, bridge);
       return { port: ch.port2, source: clientSource(), bridge: bridge, close: function () { ch.port1.close(); ch.port2.close(); } };
     }

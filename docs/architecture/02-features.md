@@ -72,7 +72,7 @@
 
 | 部品 | ファイル | 何の正本か |
 |---|---|---|
-| Capability Registry | `js/atlas-capabilities.js`（行は `js/atlas-cap-*.js` の項目の写し＝`GENERATED ROWS`） | **285 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。照合は camelCase を語に割ってから）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・必要な対象・遅延モジュール・観測器・検証器 |
+| Capability Registry | `js/atlas-capabilities.js`（行は `js/atlas-cap-*.js` の項目の写し＝`GENERATED ROWS`） | **290 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。照合は camelCase を語に割ってから）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・必要な対象・遅延モジュール・観測器・検証器 |
 | 能力の索引 | `js/atlas-capabilities.js` の `index()` | 毎ターン system prompt に載る ID だけの一覧（カテゴリ別・撤去済みは除く）。レジストリから導出 |
 | 能力の説明文 | 各項目の `doc` ＋ `js/atlas-catalog-text.js` | 60 ブロック。`find_capability` が要求されたときだけ返す |
 | 能力の項目 | `js/atlas-cap-<名前空間>.js`（19 本）・`js/atlas-caps.js` | 能力ひとつに項目ひとつ。dispatch・登録表・方針の表・カタログ・schema の表・監査の台帳はここから導出 |
@@ -91,7 +91,7 @@
 | 期限の無い `fetch()` の台帳 | `scripts/fetch-deadlines.mjs`（`check:static` の `fetch-deadline` 規則） | `js/`・`src/` の `signal` を持たない `fetch(` を構文木からファイルごとに数え `tests/fetch-deadline-baseline.json` と両方向に照合する。除外は理由の文を持つ `EXEMPT` の行だけ |
 | Overpass への 1 つの入口 | `js/overpass.js` | `overpassQuery(query, opts)`（`window.IntMapOverpass`）。ミラーの一覧はこのファイルだけ。予算は `[timeout:N]` ＋ 5 秒（下げられるが上げられない）。応答の無いミラーは持ち分を過ぎたら次を並走、504・429・JSON でない本文・`remark` の runtime error は即座に次へ。全部だめなら `OverpassUnavailable`（`attempts`）。空の `elements` は正常な答え |
 | 証拠集めの予算 | `js/atlas-deadlines.js` | Atlas の 1 取得 14 秒／gather 全体 32 秒／GDELT の梯子 20 秒。`settleWithin(jobs, ms)` はまだ飛んでいる件数を返し、読み手に見える「取得不可」の1行になる |
-| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 11 ツール**（`my_location`・`look_at_map`・`compose_map`・`set_time` を含む。地図の 3 つの軸——`map_view`・`set_layer`・`set_time`——が揃う）＋`find_capability`（レジストリの全 285 を検索、撤去済み 3 を除く **282** から、打ち切り無し）／`run_capability`＝計 13 本（`query_data`＝`data.query` を含む）。`ask_user` は `endsTurn`（旗は結果にも載る）。結果に `changedMap` を刻むのはその能力が `map` を生成し観測器が completed と言ったときだけ。監査に削られた回答は `status:'degraded'` と削除件数 |
+| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 11 ツール**（`my_location`・`look_at_map`・`compose_map`・`set_time` を含む。地図の 3 つの軸——`map_view`・`set_layer`・`set_time`——が揃う）＋`find_capability`（レジストリの全 290 を検索、撤去済み 3 を除く **287** から、打ち切り無し）／`run_capability`＝計 13 本（`query_data`＝`data.query` を含む）。`ask_user` は `endsTurn`（旗は結果にも載る）。結果に `changedMap` を刻むのはその能力が `map` を生成し観測器が completed と言ったときだけ。監査に削られた回答は `status:'degraded'` と削除件数 |
 | 地図説明の合成 | `js/atlas-map-compose.js` | **`map.compose`（`compose_map`）**——地点（番号順・役割つき）・関係（flow / route は矢印、influence / border は破線。**route は既定で海路エンジンの計算経路**——海上の経路が無い区間は描かずに `sea_path_failed`。他の型と `basis:"schematic"` は大円の弧）・塗り分け（highlight へ委譲）・**項目の実形状**（`shape:"area"|"line"`。`js/atlas-shape-resolve.js` が highlight の梯子と川筋・Nominatim の線から取り、`real`＝上流の形／`derived`＝IntMap が作った形（破線・凡例に「近似」）。矩形・種類違い・同名多数・名指した国の外にしかない形は `shapesUnresolved` で拒み、点や関係線で代用しない。1 つでも取れなければ `partial`／`shape_unresolved`。状態の `atlas.shapes` に `area:real` 等で数える）・全体を収めるカメラ・同じ番号の凡例を 1 回で。地名は台帳 → ジオコーダの順に解決し（`era` があれば台帳の次に歴史都市名と Pleiades。`time.textMap` が使う）（国名付きで無ければ裸の名前で再試行）、役割ごと台帳へ戻す。解決できなかった地名は `unplaced` に名前で残る（理由は `not_found`／`timeout`・`not_attempted`／`over_item_limit`＝上限 24。回復可能な 3 つは Web 検証の 1 回の問い合わせへ）。同じターンの 2 回目は同じ地図の次の版（`meta.artifact`。返信には最新版だけ。版は地図全体を言い直す）。一部だけは `exec.status:'partial'` と `meta.partial`、専用の観測器が「頼まれた数」対「載っている数」で判定する。描画元は `atl-compose-src`。`linkProse()` が回答文の最初の言及に番号バッジを付け hover で双方向に光る |
 | 衛星のカタログ | `js/satellites-live.js` | CelesTrak の 9 カタログ。1 機を名指されたときはその機を持つ最も小さいカタログを選ぶ（`narrow`。小さい順に訊き、いま選ばれているカタログの宣言サイズを超えない範囲で）。返答がカタログの名前と機数を述べる |
 | 数字の図の合成 | `js/atlas-chart.js` | **`chart.compose`（`chart`）**——line / bar / scatter / timeline を HTML 文字列で返す。出所（`source`）の無いグラフは拒む。線と散布は実点 3・棒は名前つき 2・年表は日付つき 2 件を下回ると拒んで理由を返す（`js/widget-render.js` と同じ数）。数でない値は落として件数を caption に書く。目盛りは 1/2/2.5/5×10^k の nice-number（`js/` で唯一の目盛り生成器）、整形は `Intl`、色は `--chart-cat-1..10`。描いた要素に `data-mark` を刻み観測器は実際に入った数を数える。遅延ロード（`atlasChart`） |
@@ -101,6 +101,7 @@
 | 起きた地震の地震動 | `js/shakemap.js` | **`map.shakemap`**——USGS の ShakeMap から等値線（`cont_<指標>.json`）と低解像度の格子（`coverage_<指標>_low_res.covjson`）だけを取る（`grid.xml` は使わない）。指標の一覧・表示名・色・刻み・面を塗ってよいか（`preferredPalette`）は製品が持つ。等値線は `pctg`／`cms`、格子は `ln(g)`／`ln(cm/s)` で、covjson が宣言した記号に従い知らない記号は拒む。画像は Mercator へ再標本化する。`action:"exposure"` は震度の格子を地名辞典の各都市で標本化する（人口ラスタではないと必ず述べる）。描画元 `shk-cont-src`、`state().painted` が「線だけ」と「面もある」を区別する |
 | **Atlas の目** | `js/atlas-view-capture.js` | **`view.inspect`（`look_at_map`）**——読者が見ている画面を撮り、次のモデル呼び出しに画像として添付する。`include:"screen"`（既定。地図＋凡例・スケール・マーカー・ニュース帯・時間バー、操作系は隠す）と `include:"map"`（レンダラのフレームだけ）。撮る処理は screenshot ボタンと同一。画素は transcript に載せず、台帳が持ち transcript には bbox・中心・zoom・bearing・pitch・base・投影・ON のレイヤー・Chronos 時刻だけ。1 呼び出しに直近 3 枚（ai-proxy の `MAX_IMAGES`＝4）で、落とした枚数は明示する。読者にも縮小版を見せる |
 | Atlas の目の裏づけ | `js/atlas-view-ground.js` | 画像と一緒に ①レンダラが実際に描いたラベル（中心に近い順）と ②フレームに重なる OSM の名前付き地物（Overpass。`cover`・`inView`）を渡す。タグ許可表を持たず判断は Atlas に返す。見つからなかったことは文で書く。座標の桁数は添付した絵の 1 画素より細かく |
+| 長い作業の作業記憶 | `js/atlas-working-memory.js` | 会話要約とは別に、①目標（計画の手順つき）②決定済み条件 ③完成した作業（capability・引数・状態・結果の ref）④保存した数値（値＋原本の ref/path、保管した本文に照らして検証）⑤出典 ⑥未解決を**構造として**持つ。全ツール結果は原本のまま ref で保管（本文は上限あり。落とした本文も要約・数値の住所は残り、そう述べる）。`read_result` が前のターンの ref・`path`・`memory` に答える。ブロックはターンに 1 回だけ作って履歴とは別枠で入力へ入れる（履歴が落ちても残る・予算を超える分は件数と読み出し口を名指す）。引き継ぎは `snapshot`/`restore`/`handoffText` と sessionStorage。 |
 | 早く終わったターンが残すもの | `js/atlas-turn-continuity.js` | ①訊いた質問を会話の記録へ 1 行として残す（選択肢付き。`did:` の一覧には入れない）。②中止の印は「考え中の点」だけを置き換える |
 | 返信に載せる結果 | `js/atlas-turn-results.js` | ①回答の族は主題ごとに最良を1つ ②同じ操作の繰り返しは最後のもの（同一性は action の型と引数、または `meta.resultKey`。経路は解決済みの端点と mode）③`callKey(name,args)`（実行前に `js/atlas-agent.js` が引く）。Atlas の呼び出し回数は制限しない |
 | 返信の描画 | `js/atlas-reply.js` | 返答テキスト → HTML。安全な markdown・コード／数式（KaTeX）・GFM 表・出典カード。見出しの無い長い段落は約2文ごとに区切り、繰り返された文と段落は落とす。文分割は URL・markdown リンク・メールアドレス・小数を切らない（散文でありえない範囲を分割の前に取り除いて後で戻す） |
@@ -135,7 +136,7 @@
 
 **`find_capability` の採点。** 別名（完全一致 100・部分 40）・id・category hint に加えて、要求の各語（Latin は 3 文字以上の語、CJK はブロックと共有する連続部分文字列の
 窓と、`Intl.Segmenter` が連続の中に見つける 2 文字以上の語）がその能力のカタログ文にあれば上がる（1 語 6 点・天井 30）。Latin は隣り合う 2〜3 語の句も同じ規則で数える。
-語の重みはそれを持つブロックの少なさで割る（`min(1, 2/df)`）。df はブロックを数える（カタログは 285 能力を 62 ブロックで説明する）。ブロック内の語は項目の開始から次の
+語の重みはそれを持つブロックの少なさで割る（`min(1, 2/df)`）。df はブロックを数える（カタログは 290 能力を 62 ブロックで説明する）。ブロック内の語は項目の開始から次の
 項目の開始までの区間だけがその能力の証拠。カテゴリ hint は順序を決めない（hint しか当たっていない行は名指された行の下に置き、同じカテゴリで誰かが名指されたら降りる）。
 5 ブロック以上が持つ語は数えない（`DOC_TERM_MAX_DF`＝4）。空振りの文は「持っている id で直接 `run_capability` を」と告げる。同点を綴りで決めない（`self` → 得点 →
 証拠の数、それでも等しい行は同じ `rank` の宣言された同点）。
@@ -225,7 +226,7 @@ placeholder は使わない。
 
 **何があるかは常に見せ、何ができるかは訊かれたときに返す。** そのターンに渡すのは中核のツールとその schema と、能力 ID だけの索引（`CAPS.index(direct)`。カテゴリ別・撤去済みを
 除く・約 2.5 千文字）。索引は、そのプロンプトが型付きツールとして既に手渡している能力を載せない（`direct` は道具の面が名乗る `capabilityId` の集合＝`js/atlas-console.js` の
-`_directCaps`）。それ以外は `find_capability(query)` が全 285 を検索し、得点したものを全部 schema 付きで返し（説明文のブロックはまとめて 1 回引いて重複を落とす）、
+`_directCaps`）。それ以外は `find_capability(query)` が全 290 を検索し、得点したものを全部 schema 付きで返し（説明文のブロックはまとめて 1 回引いて重複を落とす）、
 `run_capability(id, args)` が起動する。
 
 **1 手の入力は item の列で、道具はモデル標準の関数である（ai-proxy protocol 2）。** `js/atlas-agent.js` の `composeInput` が組む——会話履歴 → 添付の置き場 → 依頼（依頼時の

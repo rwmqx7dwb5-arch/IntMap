@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, num, list } from './atlas-caps.js';
+import { str, num, list, one } from './atlas-caps.js';
 
 export default [
   /* ⚠⚠ (compute-sandbox) THE ONE ROW THAT RUNS CODE NOBODY IN THIS REPOSITORY WROTE. Its dispatch spelling is
@@ -43,18 +43,40 @@ export default [
     row: ['compute.run',                'python',         'runPython,pythonRun,computePython',                            'data',    'none',    'gis.dataset',            'explanation',         'session', 'none', '',         'gisCore'],
     ui: { none: '2026-11-19' },
     doc: [
-      { in: 'spatial-analysis', at: 60, text: '{"type":"python","code":str,"inputs"?:[ID,…],"outputs"?:[NAME,…],"title"?:str,"timeoutSec"?:num} = Python で計算する（回帰・相関・クラスタ分け・統計の集計・自前の解析）/ RUN PYTHON ON THE DATASETS — 「この CSV で回帰して」「相関を計算して」「クラスタに分けて」「Python で集計して」, "fit a regression", "correlation matrix", "run this in Python". Use it when the analysis is NOT one of the GIS ops — a regression, a correlation matrix, a clustering, a time-series decomposition, a custom index, reshaping a table — and only then: an op that exists is checked against what the numbers mean, Python is not. The code runs in Pyodide (CPython 3.14) inside an isolated worker: NO network, NO page, NO storage, no other datasets than the ones you name. `inputs` are dataset ids or titles; inside the code, `rows(i)` is the rows of input i as a list of dicts, `features(i)` its GeoJSON features, `INPUTS[i]` the whole record (a grid carries width, height, grid and bands[k].values); `i` may be the index, the id or the title. Import numpy, pandas, scipy, statsmodels, scikit-learn, shapely … as usual — a package of the Pyodide distribution is loaded on import; nothing can be pip-installed. RETURN BY ASSIGNING the variable `result` (or every name in `outputs`): a GeoJSON FeatureCollection, a list of Features, a list of dicts or a pandas DataFrame becomes a NEW DATASET whose id comes back (coordinates must be [longitude, latitude] degrees or the output is refused); anything else (a number, a dict of coefficients) comes back as a VALUE. NaN/inf become null and are COUNTED (nonFinite). print() output comes back too. FAILURES ARE FACTS: python-exception carries the traceback — fix the code and run a DIFFERENT version; `timeout` (default 60 s, up to 300 with timeoutSec) and `runtime-unavailable` mean the result was NOT OBSERVED, not that the code was wrong — do not resend the same call. The datasets keep the code as their recipe: a saved project restores them, and when an input upstream is recomputed they are re-run. Make or fetch the inputs first with a GIS step, and hand the new id on — to a GIS step, to gisDraw to draw it, or to a chart with "source":"compute.run → <dataset id>". ' },
+      { in: 'spatial-analysis', at: 60, text: '{"type":"python","code":str,"inputs"?:[ID,…],"outputs"?:[NAME,…],"title"?:str,"timeoutSec"?:num,"grants"?:["read"|"state"]} = Python で計算する（回帰・相関・クラスタ分け・統計の集計・自前の解析）/ RUN PYTHON ON THE DATASETS — 「この CSV で回帰して」「相関を計算して」「クラスタに分けて」「Python で集計して」, "fit a regression", "correlation matrix", "run this in Python". Use it when the analysis is NOT one of the GIS ops — a regression, a correlation matrix, a clustering, a time-series decomposition, a custom index, reshaping a table — and only then: an op that exists is checked against what the numbers mean, Python is not. The code runs in Pyodide (CPython 3.14) inside an isolated worker: NO network, NO page, NO storage, no other datasets than the ones you name. `inputs` are dataset ids or titles; inside the code, `rows(i)` is the rows of input i as a list of dicts, `features(i)` its GeoJSON features, `INPUTS[i]` the whole record (a grid carries width, height, grid and bands[k].values); `i` may be the index, the id or the title. Import numpy, pandas, scipy, statsmodels, scikit-learn, shapely … as usual — a package of the Pyodide distribution is loaded on import; nothing can be pip-installed. RETURN BY ASSIGNING the variable `result` (or every name in `outputs`): a GeoJSON FeatureCollection, a list of Features, a list of dicts or a pandas DataFrame becomes a NEW DATASET whose id comes back (coordinates must be [longitude, latitude] degrees or the output is refused); anything else (a number, a dict of coefficients) comes back as a VALUE. NaN/inf become null and are COUNTED (nonFinite). print() output comes back too. FAILURES ARE FACTS: python-exception carries the traceback — fix the code and run a DIFFERENT version; `timeout` (default 60 s, up to 300 with timeoutSec) and `runtime-unavailable` mean the result was NOT OBSERVED, not that the code was wrong — do not resend the same call. The datasets keep the code as their recipe: a saved project restores them, and when an input upstream is recomputed they are re-run. Make or fetch the inputs first with a GIS step, and hand the new id on — to a GIS step, to gisDraw to draw it, or to a chart with "source":"compute.run → <dataset id>". NOTE: A LOOP OF MANY CAPABILITY CALLS IS ONE python RUN, NOT MANY MODEL STEPS (「500 都市それぞれについて…」「全部の国について…」): pass "grants":["read"] (add "state" only when the program itself must draw or change the session) and the code calls the capabilities of IntMap ITSELF, with top-level await — `r = await cap_call("data.gis", {...})` returns {ok, observed, result:{ok,status,text,…}} (a REFUSAL is an answer, not an exception: read r["ok"] and r.get("refused"): not-granted | invalid-arguments | unknown-capability | call-limit | deadline | cancelled); `await cap_call_many([("data.gis", {...}), …], concurrency=4)` runs a list in order, at most `concurrency` at a time; `await cap_list("data")` lists the capabilities, `await cap_describe("data.gis")` gives the argument schema of one (use it before looping — a wrong argument is refused 500 times, each a recorded refusal); `await cap_rows(dataset_id)` / `await cap_dataset(dataset_id)` read a session dataset, including one a call just made (the id is in r["result"]["text"]). The same capability with the same arguments is NOT run twice (the answer comes back with alreadyDone: true) — make it different. The intermediate answers stay in the program; only `result` and a SUMMARY OF EVERY CALL (counts, refusals, which capabilities) come back to you, and the datasets of the run keep the grants and that summary as part of their recipe. Not callable from the program: python itself. Outside content (the text of a web page) read by a call taints the rest of the run: a capability that then asks the reader to confirm answers needs_confirm and the program must hand that back as its result — it can never confirm for the reader. SHAPE: `rows = await cap_rows(CITIES_ID); out = []; for batch in chunks(rows, 25): rs = await cap_call_many([("data.gis", {"op": "nearest", …}) for c in batch]); …; result = out` and then draw the new dataset with gisDraw. ' },
     ],
-    schema: () => ({ type: 'object', required: ['code'], properties: { code: str(), inputs: list(str()), outputs: list(str()), title: str(), timeoutSec: num(1, 300) } }),
+    schema: () => ({ type: 'object', required: ['code'], properties: { code: str(), inputs: list(str()), outputs: list(str()), title: str(), timeoutSec: num(1, 300), grants: list(one('read', 'state')) } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
       await window.IntMapLazy.need('gisCore');
       const C = window.IntMapCompute;
       if (!C) return R(false, warn(esc(L('The Python sandbox could not be loaded.', 'Python の実行環境を読み込めませんでした。'))));
-      const r = await C.run(a);
+      /* (cap-bridge) a run that was GRANTED something gets a port to the capability table; one that was not gets none and
+         `cap_call` says so. The grant is the reader-visible fact: it is on the card, in the history and on every output. */
+      const grants = Array.isArray(a.grants) ? a.grants.filter((g) => g === 'read' || g === 'state') : [];
+      let h = null;
+      if (grants.length) {
+        if (typeof K.programBridge !== 'function') return R(false, warn(esc(L('The capability bridge is not available here.', '能力ブリッジはここでは使えません。'))));
+        const readDataset = (id) => C.readDataset(id);
+        h = K.programBridge({ turn: dctx || {}, grants: grants, readDataset: readDataset,
+          forbid: (cap) => (cap && cap.id === 'compute.run') ? 'a program does not start another program (one interpreter per run)' : null });
+      }
+      let r;
+      try { r = await C.run(a, { bridge: h }); }
+      finally { if (h) { try { h.bridge.cancel('the run ended'); } catch (_) { } try { h.close(); } catch (_) { } } }
       const pre = (label, text, cut) => text ? '<details class="atlas-gis-detail"><summary>' + esc(label) + (cut ? ' (' + esc(L('first ' + cut + ' characters omitted', '先頭 ' + cut + ' 文字を省略')) + ')' : '') + '</summary><pre>' + esc(text) + '</pre></details>' : '';
-      const streams = pre('stdout', r.stdout, r.stdoutCut) + pre('stderr', r.stderr, r.stderrCut);
+      /* THE HISTORY OF THE RUN'S CALLS, as text the reader and Atlas both read (the program's own answers stayed in the program) */
+      const bsum = r.bridge && r.bridge.summary ? r.bridge.summary : null;
+      const bridgeLine = bsum
+        ? '<div class="atlas-gis-detail"><b>' + esc(L('Capability calls', '能力の呼び出し')) + '</b> · ' + esc(L('granted ', '許可 ')) + esc((r.bridge.grants || []).join('+'))
+          + ' · ' + bsum.executed + ' ' + esc(L('executed', '実行')) + (bsum.repeats ? ' · ' + bsum.repeats + ' ' + esc(L('repeats answered, not re-run', '重複は再実行せず回答')) : '')
+          + (Object.keys(bsum.refused || {}).length ? ' · ' + esc(L('refused', '拒否')) + ' ' + esc(JSON.stringify(bsum.refused)) : '')
+          + (bsum.unobserved ? ' · ' + bsum.unobserved + ' ' + esc(L('not observed', '観測できず')) : '')
+          + (Object.keys(bsum.byCapability || {}).length ? ' — ' + esc(Object.keys(bsum.byCapability).map((k) => k + '×' + bsum.byCapability[k]).join(', ')) : '')
+          + (r.bridge.logOmitted ? ' · ' + esc(L(r.bridge.logOmitted + ' calls not logged', r.bridge.logOmitted + ' 件は履歴に書かれていません')) : '') + '</div>' : '';
+      const streams = bridgeLine + pre('stdout', r.stdout, r.stdoutCut) + pre('stderr', r.stderr, r.stderrCut);
       const meta = { compute: { ok: r.ok, why: r.why || null, observed: r.observed, detail: r.detail || null, datasets: r.datasets || [], values: r.values || {},
-        packages: r.packages || [], runtime: r.runtime, python: r.python || null, timings: r.timings || null, elapsedMs: r.elapsedMs, codeSha256: r.codeSha256 || null, reused: r.reused === true } };
+        packages: r.packages || [], runtime: r.runtime, python: r.python || null, timings: r.timings || null, elapsedMs: r.elapsedMs, codeSha256: r.codeSha256 || null,
+        bridge: r.bridge || null, reused: r.reused === true } };
       if (!r.ok) {
         const detail = r.detail == null ? '' : (typeof r.detail === 'string' ? r.detail : JSON.stringify(r.detail));
         const head = r.observed === false
@@ -87,6 +109,10 @@ export default [
       });
       if (!parts.length) parts.push('<div>' + esc(L('The code ran and bound no `result`.', 'コードは実行されましたが、`result` は作られませんでした。')) + '</div>');
       const html = '<div class="atlas-gis-result"><b>' + esc(r.reused ? L('Same code on the same data — answered from the earlier run (nothing was recomputed)', '同じコードと同じデータのため、前回の結果を返しました（再計算していません）') : L('Calculation finished', '計算が完了しました')) + '</b>' + parts.join('') + streams + '</div>';
+      /* (exec-platform) the run's program and the history of its capability calls are filed in the OPEN work, if there is one (js/atlas-job-products.js) */
+      let filed = [];
+      try { const WS = await import('./atlas-work-store.js'); if (WS.WORK_STATE.current) { const W = await import('./atlas-cap-work.js'); const P = await import('./atlas-job-products.js'); const fr = await P.fileRunToWork(r, a, W.workStore(), WS.WORK_STATE.current); filed = fr.ok ? fr.saved : []; } } catch (_) { filed = []; }
+      if (filed.length) meta.compute.filed = filed;
       return R(true, html, { meta: meta });
     },
   },
