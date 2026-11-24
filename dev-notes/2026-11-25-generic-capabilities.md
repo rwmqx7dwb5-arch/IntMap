@@ -78,3 +78,9 @@ IntMap の開発が「Atlas にこの問いを答えさせる」を「この問�
   （データベース全件）と、`logistics-network.json` +4,474 B・`siting-jp.json` +5,521 B（表の宣言）。ファイルは `data.query` が
   その表を最初に名指したときだけ読まれ、起動の経路には乗らない。天井との差の残り（約 5.6 MB）はこの変更のファイルではなく、
   どのファイルかは測っていない（main の CI が merge 後に天井を測り直す）。
+
+## 5. 共有窓口の基準を 1 つ動かした
+
+`system.command` は命令の核 `window.IntMapOS` を読む（`window.IntMapOS` の読み 74 → 75、`tests/global-surface-baseline.json`）。
+核は `js/app-body.js` が実行時に組み立てて window に置くもので、import できる持ち主のモジュールが無い（他の能力の扉
+`js/atlas-controls.js` も同じく window から読む）。命令をすべて Atlas から届かせるという、この変更の目的そのものの読み。

@@ -391,7 +391,7 @@ export function atlasQuery(HOST) {
     });
     const src = t.source || {};
     return { rows, source: [src.publisher, src.licence].filter(Boolean).join(' — ') + ' (' + t.file + ')',
-      note: (t.lng && t.lat) ? null : L('These rows have no coordinate of their own, so NEAR and SPATIAL cannot use them.', 'この表の行は座標を持たないため、NEAR と SPATIAL には使えません。', 'These rows have no coordinate of their own, so NEAR and SPATIAL cannot use them.', 'These rows have no coordinate of their own, so NEAR and SPATIAL cannot use them.', 'These rows have no coordinate of their own, so NEAR and SPATIAL cannot use them.') };
+      note: (t.lng && t.lat) ? null : L('These rows have no coordinate of their own, so NEAR and SPATIAL cannot use them.', 'この表の行は座標を持たないため、NEAR と SPATIAL には使えません。') };
   }
   /* ⚠ THE INDEX IS IMPORTED ON THE FIRST QUERY (its own chunk): carrying it in this module put every declared table's
      labels into the engine's chunk (measured 2026-11-25: +19 kB against the async ceiling). One import, then cached. */
