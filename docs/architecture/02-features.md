@@ -143,7 +143,7 @@
 
 **意味検索を語彙検索と融合する（`searchFused`）。** `IntMapCapabilities.searchFused(q, opts)` は非同期の扉で、`search` と同じ形（`ranked` / `strong` / `confident`）に
 何で決めたかを足して返し reject しない:
-- 意味の半分は Edge Function **`atlas-embed`**（§6.2）が答える。問い合わせは毎回 OpenAI の埋め込み（既定 `text-embedding-3-small`）にし保存しない。能力側は各能力の
+- 意味の半分は Edge Function **`atlas-embed`**（§6.2）が答える。問い合わせは毎回、鍵が届く埋め込みモデル（提供元のモデル一覧に訊いて選ぶ。本番は Gemini `gemini-embedding-001` を 1536 次元・正規化。OpenAI の鍵は埋め込みモデルに届かない）にし保存しない。能力側と問い合わせは必ず同じモデルで、表の `model` 列が鍵になる。能力側は各能力の
   説明（id・別名・その能力の区間・ブロックの見出し。6,000 字で切る）をカタログ全体の SHA-256 を鍵に `atlas_capability_vectors` へ 1 回だけ埋める（鍵はサーバが本文から
   計算し直す）。類似度は pgvector の `<=>` で全能力ぶん返す。未知のカタログは語彙で答えて `catalog_indexing` と述べている間に裏で 1 回だけ送られる。
 - 候補にするのは頑健 z（中央値と MAD）が z\* = Φ⁻¹(1 − α/n)（α = 0.05・n は答えから数える。n = 144 で約 3.39）を超えたものだけ（正規近似は推定。結果が
