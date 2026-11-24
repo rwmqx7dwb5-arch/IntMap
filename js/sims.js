@@ -1189,6 +1189,16 @@ export function transitReach(HOST){
       feats.push({type:'Feature',geometry:{type:'Point',coordinates:r.origin},properties:{col:'#ff3b30',k:'origin'}});
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
       try{ let a=180,b=90,c=-180,d=-90; r.stations.concat([{ll:r.origin}]).forEach(s=>{ a=Math.min(a,s.ll[0]);b=Math.min(b,s.ll[1]);c=Math.max(c,s.ll[0]);d=Math.max(d,s.ll[1]); }); if(isFinite(a)&&c>a) GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12,duration:900}); }catch(_){} }
+    /* ══ a TIMETABLE reach (js/transit-planner.js): nested bands, then the stops, coloured by the minute they are reached ═══
+       Same source and layers as the rail estimate above, so one chip (map.isochrone) and one close() cover both. */
+    async function drawTimetable(tt){ if(!ensure()) return false;
+      const feats=[]; tt.bands.slice().sort((x,y)=>y.minutes-x.minutes).forEach(b=>{ if(b.feature&&b.feature.geometry) feats.push({type:'Feature',geometry:b.feature.geometry,properties:{min:b.minutes}}); });
+      const top=tt.minutes[tt.minutes.length-1];
+      tt.stops.forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{col:colFor(s.min,top),k:'stn',name:s.name,t:Math.round(s.min)}}));
+      feats.push({type:'Feature',geometry:{type:'Point',coordinates:[tt.origin.lng,tt.origin.lat]},properties:{col:'#ff3b30',k:'origin'}});
+      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){ return false; }
+      try{ let a=180,b=90,c=-180,d=-90; tt.stops.concat([{lng:tt.origin.lng,lat:tt.origin.lat}]).forEach(s=>{ a=Math.min(a,s.lng);b=Math.min(b,s.lat);c=Math.max(c,s.lng);d=Math.max(d,s.lat); }); if(c>a) GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12}); }catch(_){}
+      return true; }
     async function open(from,minutes){ ensure();
       try{ if(window.satToast) satToast(IntMapLang.t(HOST.lang,'Computing rail reach…','鉄道到達圏を計算中…','Bahn-Erreichbarkeit wird berechnet…','Расчёт зоны доступности по железной дороге…','Calculando el alcance ferroviario…')); }catch(_){}
       const r=await run(from,minutes);
@@ -1202,7 +1212,7 @@ export function transitReach(HOST){
        light its row and to switch it back off (js/map-ui.js). */
     const isOpen=()=>{ try{ const d=GE().layers.sourceData(SRC); return !!(d&&d.features&&d.features.length); }catch(_){ return false; } };
     function close(){ if(!isOpen()) return false; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
-    return { run, open, draw, isOpen, close, clear:()=>{ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
+    return { run, open, draw, drawTimetable, isOpen, close, clear:()=>{ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
 }
 
 /* ══ ⚠⚠ (#R296) 「災害シミュレーターは4つのうち、放射性物質拡散シミュレーションを残し全削除」 ═════
