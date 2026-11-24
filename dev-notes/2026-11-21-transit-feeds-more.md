@@ -47,3 +47,7 @@ Metlink(条文が JS 描画で読めない)・HSL / Transport for Ireland / ACT(
 ## global-surface の基準線
 
 `window.IntMapLazy` の読みが 196 から 197 へ 1 件増えていて `check:surface` が赤かった。増えたのは main 側の変更によるもので、このブランチの差分に `IntMapLazy` は無い(`git diff origin/main` で 0 件)。基準線だけを更新した。コードは変えていない。
+
+## 3 回目の main 合流後の基準線
+
+`async.raw` を 14972.5 kB から 15053.3 kB、`async.gzip` を 5092.7 kB から 5119.5 kB へ上げた。増えたのは main 側が足した非同期チャンク(atlas-file-make・atlas-knowledge・atlas-mcp-client など。main の CI は合流後に天井を記録するので、天井が追いついていない)で、このブランチの差分ではない。`global-surface` の `IntMapLazy` の読みは 204 から 203 に減ったので基準線を合わせた。コードは変えていない。
