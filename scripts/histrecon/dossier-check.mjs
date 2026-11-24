@@ -115,6 +115,12 @@ export function checkDossier(D, atomsByCountryIn) {
         seen.add(id);
         occupy.push({ atom: id, a, b, who: tag, kind: 'unit', unit: u.id });
       }
+      /* (hist-coverage-approx-line) a span may declare that its OUTLINE is approximate — the unit and its dates are stated,
+         the line is today's carried back — and then must say what is not established. Only that one certainty exists. */
+      if (s.line != null) {
+        if (s.line.certainty !== 'approximate') E(tag + ': line.certainty must be «approximate»');
+        if (!s.line.note || s.line.note.split(/\s+/).length < 8) E(tag + ': line.note must say what about the line is not established');
+      }
       const src = s.sources || [];
       if (!src.length) E(tag + ': no source');
       for (const x of src) {

@@ -10,11 +10,11 @@ function scripted(answers, seen) { let i = 0; return async (prompt) => { seen.pu
 const lane = (log) => ({ classify: (id) => (id === 'data.gis' || id === 'map.read' ? 'read' : id === 'map.draw' ? 'other' : 'unknown'),
   run: async (id, args) => { log.push([id, args]); return { ok: true, text: 'result of ' + id, meta: { n: 1 } }; }, describe: (id) => '{"type":"object","id":"' + id + '"}' });
 
-test('the contract keeps a bounded, de-duplicated tool grant, and nothing for a worker without one', () => {
+test('the contract keeps a de-duplicated tool grant, never silently truncated, and nothing for a worker without one', () => {
   const a = normaliseContract({ id: 'a', goal: 'g', tools: ['data.gis', 'data.gis', ' map.read '] });
   assert.deepEqual(a.contract.tools, ['data.gis', 'map.read']);
   assert.equal('tools' in normaliseContract({ id: 'b', goal: 'g' }).contract, false);
-  assert.equal(normaliseContract({ id: 'c', goal: 'g', tools: Array.from({ length: 40 }, (_, i) => 't' + i) }).contract.tools.length, 12);
+  assert.equal(normaliseContract({ id: 'c', goal: 'g', tools: Array.from({ length: 40 }, (_, i) => 't' + i) }).contract.tools.length, 40, 'every named capability is granted: no count drops the 13th');
 });
 
 test('toolCallOf reads only a well-formed call', () => {

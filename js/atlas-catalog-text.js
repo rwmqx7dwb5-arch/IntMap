@@ -143,6 +143,8 @@ export const CATALOGUE_CHUNKS = [
       /* (atlas-os) THE READER'S INVESTIGATION NOTEBOOK — what they asked before, kept beyond the session (js/atlas-notebook.js).
          Placed beside the research blocks because it is how an earlier investigation is picked up again. */
       { name: 'notebook', head: 'BRIEFINGS (ブリーフィング — an investigation packed into a link; the investigation notebook behind this section is hidden, NOTEBOOK_SHOWN in js/atlas-notebook-store.js): ' },
+      /* (atlas-knowledge) THE THIRD MEMORY — claims kept from investigations with their basis, status, place, period and world refs (js/atlas-knowledge-store.js). */
+      { name: 'knowledge', head: 'KNOWLEDGE (蓄積知識 — what earlier investigations established, kept with its basis and status; off until the reader turns it on): ' },
       /* 32 */
       { name: 'ui.inlineControls' },
       /* 33 */
@@ -171,16 +173,26 @@ export const CATALOGUE_CHUNKS = [
       { name: 'photo.locate' },
       /* 44 (#R543) */
       { name: 'chart.compose' },
+      /* file.create — a deliverable is a file */
+      { name: 'file.create' },
+      { name: 'board.compose' },
+      { name: 'board.restore' },
+      { name: 'board.edit' },
+      { name: 'board.delta' },
       /* 45 (#R546) */
       { name: 'map.shakemap' },
       /* 46 (#R650) */
       { name: 'map.outbreaks' },
       /* 47 (#R773, #R790) */
       { name: 'attach.recall' },
+      /* (atlas-work-products) what a job leaves, kept together */
+      { name: 'work.job' },
       /* 48 (atlas-observer-undo) */
       { name: 'map.undo' },
       /* 41 (#R493) */
       { name: 'view.inspect' },
+      /* (web-browse) operating a web site and taking its file */
+      { name: 'web.browse' },
       /* 49 (landing-showcase) */
       { name: 'about-and-showcase', head: 'ABOUT INTMAP AND THE EXAMPLE MAPS: ' },
       /* 50 (classroom-tours) */

@@ -56,6 +56,7 @@ import { goldenOf } from './atlas-eval/replay.mjs';
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { historyOf, renderTrend } from './atlas-eval/lab.mjs';
 import { sectionsRead } from './atlas-eval/map-state.mjs';
+import { deliverablesOfTurn, completionRateOf, deliverableSectionsOf } from './atlas-eval/deliverables.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const PROD_URL = SITE_URL;   // (domain-portable) the address is site-origin.js, written nowhere else
@@ -220,6 +221,7 @@ export function observeTurn(q, raw, askRes) {
   return {
     measured: true, ms: askRes.ms, stopped: String(t.status || raw.stopped || ''), reply: t.reply,
     operations: t.operations, calls, steps: raw.steps, snapshot: raw.snapshot,
+    completion: t.completion || null,   /* (atlas-completion-rate) what the turn's own trace declared — read only to compare with what existed */
     replies: raw.replies || null, dispatches: raw.dispatches || null,
     aiCalls: Number.isFinite(+t.aiCalls) ? +t.aiCalls : null,   /* (atlas-delegation-eval) the model calls of the turn, for the A/B bench */
   };
@@ -257,6 +259,18 @@ export async function openAtlasSession({ url, token, headed, dryRun }) {
   return S;
 }
 
+/** harnessPatienceMs(rules, patienceMin) — how long the HARNESS waits for one turn before it calls the page stuck.
+ *  The harness's patience, not a limit on Atlas. While js/atlas-agent.js had a turn clock (turnBudgetMs), a live turn ended
+ *  inside it plus one tool wait and the closing call, so that plus twice the tool timeout was enough. (atlas-unbounded-execution)
+ *  There is no turn clock now (turnBudgetMs 0): a turn that keeps finishing steps keeps working. The harness still needs to
+ *  tell a working turn from a stuck page, so its patience is its own: --patience-min when given, else
+ *  HARNESS_PATIENCE_MIN. Observation: the longest turn this harness ever measured ran 634 s (tests/atlas-eval-harness-checks);
+ *  60 min is ~5.7× that. Expires the first time a turn that was still finishing steps is abandoned as harness_timeout. */
+export const HARNESS_PATIENCE_MIN = 60;
+export function harnessPatienceMs(rules, patienceMin) {
+  if (patienceMin > 0) return patienceMin * 60000;
+  return (rules && rules.turnBudgetMs > 0) ? rules.turnBudgetMs + 2 * rules.toolTimeoutMs : HARNESS_PATIENCE_MIN * 60000;
+}
 /** askOnFreshPage(S, text, {patienceMs, sections}) → { unmeasured:{measured:false,unmeasured,detail} } | { askRes, raw }
  *  One question on a fresh page: a turn is judged on what IT did, not on what the previous turn — or the place
  *  probes, which set the geocoder's language — left behind. The watchdog is the harness's patience, not a limit on Atlas. */
@@ -322,10 +336,8 @@ async function evaluate() {
   const t0run = Date.now();
   const deadlineMs = (+arg('--deadline-min', '0') || 0) * 60000;
   const probeRows = (set.placeProbes && set.placeProbes.rows) || [];
-  /* The harness's patience, not a limit on Atlas: a tool is abandoned at toolTimeoutMs and the turn budget
-     is checked between steps, so a live turn ends inside turnBudgetMs plus one tool wait and the closing
-     answer call. Twice the tool timeout on top covers both; waiting longer only means the page is stuck. */
-  const patienceMs = rules.turnBudgetMs + 2 * rules.toolTimeoutMs;
+  /* The harness's patience, not a limit on Atlas — see harnessPatienceMs. */
+  const patienceMs = harnessPatienceMs(rules, +arg('--patience-min', '0') || 0);
 
   const turns = [], probes = [];
   let build = null, session = '', rotated = null, fatal = '', S = null;
@@ -351,7 +363,7 @@ async function evaluate() {
       if (stopAll) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'not_reached', detail: stopAll }, rules)); continue; }
       if (deadlineMs && Date.now() - t0run + patienceMs > deadlineMs) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'deadline', detail: 'started ' + Math.round((Date.now() - t0run) / 60000) + ' min into a ' + Math.round(deadlineMs / 60000) + '-min run' }, rules)); continue; }
       /* each question on a fresh page (askOnFreshPage) */
-      const asked = await askOnFreshPage(S, q.text, { patienceMs, sections: sectionsRead(questions) });
+      const asked = await askOnFreshPage(S, q.text, { patienceMs, sections: [...new Set([...sectionsRead(questions), ...deliverableSectionsOf(questions)])] });
       if (asked.unmeasured) { turns.push(judgeTurn(q, asked.unmeasured, rules)); continue; }
       const obs = observeTurn(q, asked.raw, asked.askRes);
       /* (atlas-quality-lab) the independent grade — only for a question with a verified answer, only when
@@ -367,6 +379,7 @@ async function evaluate() {
       const judged = judgeTurn(q, obs, rules);
       if (recordDir) { const c = cassetteOf(q, obs, judged, { url, build, when: new Date().toISOString(), runUrl: arg('--run-url') || '' }); if (c) recorded.push(c); }
       if (obs.measured) judged.record = { operations: obs.operations, calls: obs.calls ? trimCalls(obs.calls) : null, steps: obs.steps, reply: obs.reply, snapshot: obs.snapshot };
+      judged.deliverables = deliverablesOfTurn(q, obs, rules);
       turns.push(judged);
       if (!obs.measured && obs.unmeasured === 'gate_refused') stopAll = 'the page refused ' + q.id + ' before Atlas ran: ' + obs.detail;
       if (has('--screenshots')) { mkdirSync(outDir, { recursive: true }); await page.screenshot({ path: join(outDir, q.id + '.png') }).catch(() => { }); }
@@ -392,6 +405,7 @@ async function evaluate() {
     tool: 'scripts/atlas-eval.mjs', version: set.version, url, build, when: new Date().toISOString(),
     runUrl: arg('--run-url') || null, dryRun, partial, session, fatal: fatal || null, verdict,
     metrics: metricsOf(turns, probes),
+    completionRate: completionRateOf(turns.map((t) => t.deliverables)),   /* (atlas-completion-rate) the requested things that existed, apart from what the turns said */
     previous: previous ? { when: previous.when, runUrl: previous.runUrl || null, verdict: previous.verdict } : null,
     regressions: adv.regressions, improvements: adv.improvements,
     reference: (dryRun || partial) ? ((previous && previous.reference) || {}) : adv.reference,

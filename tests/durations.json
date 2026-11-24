@@ -1,4 +1,5 @@
 {
+ "tests/board-compose.spec.js": 19,
  "tests/compute-sandbox.spec.js": 22,
  "tests/geopolitics-layers.spec.js": 14,
  "tests/gis-chain-audit.spec.js": 10,
@@ -176,5 +177,7 @@
  "tests/admin-origin.spec.js": 8,
  "tests/companies-name-width.spec.js": 25,
  "tests/atlas-screen-reach.spec.js": 8,
- "tests/gis-buffer-worker.spec.js": 5
+ "tests/gis-buffer-worker.spec.js": 5,
+ "tests/globe-flat-camera.spec.js": 28,
+ "tests/globe-polish.spec.js": 12
 }

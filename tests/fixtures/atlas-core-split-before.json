@@ -6,7 +6,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -19,7 +19,7 @@
    {
     "status": 405,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -34,7 +34,7 @@
    {
     "status": 401,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -62,7 +62,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -109,7 +109,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -136,7 +136,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -183,7 +183,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -210,7 +210,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -278,7 +278,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -325,7 +325,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -352,7 +352,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -398,7 +398,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -425,7 +425,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -493,7 +493,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -542,7 +542,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -595,7 +595,7 @@
    {
     "status": 413,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -645,7 +645,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -698,7 +698,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -746,7 +746,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      }
@@ -756,7 +756,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -805,7 +805,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      }
@@ -815,7 +815,7 @@
    {
     "status": 500,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -862,7 +862,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      }
@@ -872,7 +872,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -927,7 +927,7 @@
    {
     "status": 404,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -973,7 +973,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      }
@@ -983,7 +983,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1030,7 +1030,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -1057,7 +1057,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1103,7 +1103,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -1132,7 +1132,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1164,6 +1164,7 @@
        "sources": 1
       },
       "protocol": 1,
+      "maxOutput": 1800,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -1214,7 +1215,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -1233,7 +1234,8 @@
        "p_root": "turn-0001",
        "p_micros": 36012,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -1364,7 +1366,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1396,6 +1398,7 @@
        "sources": 1
       },
       "protocol": 1,
+      "maxOutput": 1800,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -1446,7 +1449,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -1465,7 +1468,8 @@
        "p_root": "turn-0001",
        "p_micros": 36012,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -1596,7 +1600,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1628,6 +1632,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 4600,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -1678,7 +1683,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -1697,7 +1702,8 @@
        "p_root": "turn-0001",
        "p_micros": 92012,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -1887,7 +1893,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1940,7 +1946,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -1959,7 +1965,8 @@
        "p_root": "turn-0001",
        "p_micros": 68006,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -2359,7 +2366,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2391,6 +2398,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 3400,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -2441,7 +2449,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -2460,7 +2468,8 @@
        "p_root": "turn-0001",
        "p_micros": 68006,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -2859,7 +2868,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2891,6 +2900,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 1200,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -2941,7 +2951,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -2960,7 +2970,8 @@
        "p_root": "turn-0001",
        "p_micros": 24002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -3116,7 +3127,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3148,6 +3159,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 2600,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -3198,7 +3210,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -3217,7 +3229,8 @@
        "p_root": "turn-0001",
        "p_micros": 52002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -3347,7 +3360,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3379,6 +3392,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 3000,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -3429,7 +3443,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -3448,7 +3462,8 @@
        "p_root": "turn-0001",
        "p_micros": 66408,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -3588,7 +3603,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3620,6 +3635,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 2400,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -3670,7 +3686,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -3689,7 +3705,8 @@
        "p_root": "turn-0001",
        "p_micros": 288034,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -3800,7 +3817,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3833,6 +3850,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 700,
       "costUsd": 0.00048,
       "priceKnown": false
      },
@@ -4035,7 +4053,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4067,6 +4085,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 1800,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -4117,7 +4136,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -4136,7 +4155,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -4261,7 +4281,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4296,14 +4316,34 @@
       "inputTrimmed": {
        "invalidItems": 1
       },
+      "maxOutput": 2600,
       "costUsd": 0.0022,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
        "mode": "independent",
-       "maxChildren": 2,
-       "childMaxCalls": 8
-      }
+       "maxChildren": null,
+       "childMaxCalls": null,
+       "maxConcurrent": null
+      },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ]
      },
      "output": [
       {
@@ -4362,7 +4402,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -4381,7 +4421,8 @@
        "p_root": "turn-0001",
        "p_micros": 56116,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -4455,7 +4496,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -4618,7 +4659,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4653,16 +4694,40 @@
       "inputTrimmed": {
        "invalidItems": 1
       },
+      "maxOutput": 2600,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
        "mode": "independent",
-       "maxChildren": 2,
-       "childMaxCalls": 8
-      }
+       "maxChildren": null,
+       "childMaxCalls": null,
+       "maxConcurrent": null
+      },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ]
      },
      "output": [
+      {
+       "type": "item_reference",
+       "id": "ws1"
+      },
       {
        "type": "message",
        "role": "assistant",
@@ -4715,7 +4780,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -4734,7 +4799,8 @@
        "p_root": "turn-0001",
        "p_micros": 52916,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -4798,7 +4864,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -4962,7 +5028,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4994,6 +5060,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 2200,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -5044,7 +5111,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -5063,7 +5130,8 @@
        "p_root": "turn-0001",
        "p_micros": 44008,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -5195,7 +5263,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5253,7 +5321,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -5272,7 +5340,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -5377,7 +5446,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5432,7 +5501,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -5451,7 +5520,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -5556,7 +5626,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5611,7 +5681,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -5630,7 +5700,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -5735,7 +5806,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5767,6 +5838,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 1800,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -5817,7 +5889,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -5836,7 +5908,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -6012,7 +6085,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6044,6 +6117,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 1200,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -6094,7 +6168,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -6113,7 +6187,8 @@
        "p_root": "turn-0001",
        "p_micros": 24002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -6309,7 +6384,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6364,7 +6439,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -6383,7 +6458,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -6587,7 +6663,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6619,6 +6695,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 1800,
       "costUsd": 0.00048,
       "priceKnown": false,
       "spend": "unavailable"
@@ -6669,7 +6746,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -6688,7 +6765,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -6857,7 +6935,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6911,7 +6989,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -6930,7 +7008,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -7056,7 +7135,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7110,7 +7189,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -7129,7 +7208,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -7207,7 +7287,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7261,7 +7341,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -7280,7 +7360,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -7360,7 +7441,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7368,7 +7449,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":8}},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -7406,7 +7487,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -7425,7 +7506,8 @@
        "p_root": "turn-0001",
        "p_micros": 52916,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -7508,7 +7590,7 @@
         "effort": "medium",
         "summary": "auto"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -7710,14 +7792,34 @@
           "invalidItems": 1
          },
          "streamed": true,
+         "maxOutput": 2600,
          "costUsd": 0.00003,
          "priceKnown": false,
          "spend": "unavailable",
          "delegationPolicy": {
           "mode": "independent",
-          "maxChildren": 2,
-          "childMaxCalls": 8
-         }
+          "maxChildren": null,
+          "childMaxCalls": null,
+          "maxConcurrent": null
+         },
+         "delegationModels": [
+          {
+           "id": "gpt-6.1-terra",
+           "usdPerMTok": {
+            "input": 1,
+            "cached": 1,
+            "output": 5
+           }
+          },
+          {
+           "id": "gpt-6-luna",
+           "usdPerMTok": {
+            "input": 0.1,
+            "cached": 0.1,
+            "output": 0.5
+           }
+          }
+         ]
         },
         "output": [
          {
@@ -7739,7 +7841,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7747,7 +7849,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":2,\"childMaxCalls\":8}},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -7785,7 +7887,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -7804,7 +7906,8 @@
        "p_root": "turn-0001",
        "p_micros": 52916,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -7869,7 +7972,7 @@
         "effort": "medium",
         "summary": "auto"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -7990,7 +8093,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -8154,7 +8257,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8216,7 +8319,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8269,7 +8372,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -8288,7 +8391,8 @@
        "p_root": "turn-0001",
        "p_micros": 52916,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -8317,7 +8421,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8352,14 +8456,34 @@
       "inputTrimmed": {
        "invalidItems": 1
       },
+      "maxOutput": 2600,
       "costUsd": 0.0022,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
        "mode": "independent",
-       "maxChildren": 2,
-       "childMaxCalls": 8
+       "maxChildren": null,
+       "childMaxCalls": null,
+       "maxConcurrent": null
       },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ],
       "replay": {
        "kind": "rerun",
        "after": "failed",
@@ -8439,7 +8563,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -8458,7 +8582,8 @@
        "p_root": "turn-0001",
        "p_micros": 52916,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -8540,7 +8665,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -8740,14 +8865,34 @@
          "inputTrimmed": {
           "invalidItems": 1
          },
+         "maxOutput": 2600,
          "costUsd": 0.0022,
          "priceKnown": false,
          "spend": "unavailable",
          "delegationPolicy": {
           "mode": "independent",
-          "maxChildren": 2,
-          "childMaxCalls": 8
-         }
+          "maxChildren": null,
+          "childMaxCalls": null,
+          "maxConcurrent": null
+         },
+         "delegationModels": [
+          {
+           "id": "gpt-6.1-terra",
+           "usdPerMTok": {
+            "input": 1,
+            "cached": 1,
+            "output": 5
+           }
+          },
+          {
+           "id": "gpt-6-luna",
+           "usdPerMTok": {
+            "input": 0.1,
+            "cached": 0.1,
+            "output": 0.5
+           }
+          }
+         ]
         },
         "output": [
          {
@@ -8780,7 +8925,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8815,14 +8960,34 @@
       "inputTrimmed": {
        "invalidItems": 1
       },
+      "maxOutput": 2600,
       "costUsd": 0.0022,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
        "mode": "independent",
-       "maxChildren": 2,
-       "childMaxCalls": 8
+       "maxChildren": null,
+       "childMaxCalls": null,
+       "maxConcurrent": null
       },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ],
       "replay": {
        "kind": "unheld"
       }
@@ -8884,7 +9049,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -8903,7 +9068,8 @@
        "p_root": "turn-0001",
        "p_micros": 52916,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -8985,7 +9151,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -9148,7 +9314,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9183,14 +9349,34 @@
       "inputTrimmed": {
        "invalidItems": 1
       },
+      "maxOutput": 2600,
       "costUsd": 0.0022,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
        "mode": "independent",
-       "maxChildren": 2,
-       "childMaxCalls": 8
-      }
+       "maxChildren": null,
+       "childMaxCalls": null,
+       "maxConcurrent": null
+      },
+      "delegationModels": [
+       {
+        "id": "gpt-6.1-terra",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 1,
+         "output": 5
+        }
+       },
+       {
+        "id": "gpt-6-luna",
+        "usdPerMTok": {
+         "input": 0.1,
+         "cached": 0.1,
+         "output": 0.5
+        }
+       }
+      ]
      },
      "output": [
       {
@@ -9249,7 +9435,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -9268,7 +9454,8 @@
        "p_root": "turn-0001",
        "p_micros": 52916,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -9332,7 +9519,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -9495,7 +9682,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9541,7 +9728,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -9560,7 +9747,8 @@
        "p_root": "turn-0001",
        "p_micros": 52916,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -9624,7 +9812,7 @@
        "reasoning": {
         "effort": "medium"
        },
-       "store": false,
+       "store": true,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -9770,7 +9958,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9913,7 +10101,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10039,7 +10227,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10071,6 +10259,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 1800,
       "costUsd": 0.000008,
       "priceKnown": true
      },
@@ -10200,7 +10389,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10233,6 +10422,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 700,
       "costUsd": 0,
       "priceKnown": false
      },
@@ -10422,7 +10612,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10454,6 +10644,7 @@
        "sources": 1
       },
       "protocol": 1,
+      "maxOutput": 1800,
       "costUsd": 0.000024,
       "priceKnown": true,
       "spend": "unavailable"
@@ -10502,7 +10693,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -10521,7 +10712,8 @@
        "p_root": "turn-0001",
        "p_micros": 19603,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -10682,7 +10874,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10717,14 +10909,26 @@
       "inputTrimmed": {
        "invalidItems": 1
       },
+      "maxOutput": 2600,
       "costUsd": 0.000024,
       "priceKnown": true,
       "spend": "unavailable",
       "delegationPolicy": {
        "mode": "independent",
-       "maxChildren": 2,
-       "childMaxCalls": 8
-      }
+       "maxChildren": null,
+       "childMaxCalls": null,
+       "maxConcurrent": null
+      },
+      "delegationModels": [
+       {
+        "id": "claude-haiku-4-5-20251001",
+        "usdPerMTok": {
+         "input": 1,
+         "cached": 0.1,
+         "output": 5
+        }
+       }
+      ]
      },
      "output": [
       {
@@ -10778,7 +10982,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -10797,7 +11001,8 @@
        "p_root": "turn-0001",
        "p_micros": 26458,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -11046,7 +11251,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11100,7 +11305,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -11119,7 +11324,8 @@
        "p_root": "turn-0001",
        "p_micros": 18001,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -11242,7 +11448,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11289,7 +11495,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -11318,7 +11524,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11350,6 +11556,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 3200,
       "costUsd": 0,
       "priceKnown": false,
       "spend": "unavailable"
@@ -11393,7 +11600,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -11412,7 +11619,8 @@
        "p_root": "turn-0001",
        "p_micros": 64002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -11602,7 +11810,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11634,6 +11842,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 1800,
       "costUsd": 0,
       "priceKnown": false,
       "spend": "unavailable"
@@ -11677,7 +11886,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -11696,7 +11905,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -11875,7 +12085,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11907,6 +12117,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 1200,
       "costUsd": 0,
       "priceKnown": false,
       "spend": "unavailable"
@@ -11950,7 +12161,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -11969,7 +12180,8 @@
        "p_root": "turn-0001",
        "p_micros": 24002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -12146,7 +12358,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12178,6 +12390,7 @@
        "sources": null
       },
       "protocol": 1,
+      "maxOutput": 1800,
       "costUsd": 0,
       "priceKnown": false,
       "spend": "unavailable"
@@ -12221,7 +12434,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -12240,7 +12453,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -12407,7 +12621,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12464,7 +12678,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -12483,7 +12697,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -12587,7 +12802,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12642,7 +12857,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -12661,7 +12876,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -12786,7 +13002,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12821,14 +13037,17 @@
       "inputTrimmed": {
        "invalidItems": 1
       },
+      "maxOutput": 2600,
       "costUsd": 0,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
        "mode": "independent",
-       "maxChildren": 2,
-       "childMaxCalls": 8
-      }
+       "maxChildren": null,
+       "childMaxCalls": null,
+       "maxConcurrent": null
+      },
+      "delegationModels": []
      },
      "output": [
       {
@@ -12883,7 +13102,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -12902,7 +13121,8 @@
        "p_root": "turn-0001",
        "p_micros": 52916,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -13147,7 +13367,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -13200,7 +13420,7 @@
        "p_user": "u-1",
        "p_limit": 10,
        "p_turn": "turn-0001",
-       "p_max_calls": 12,
+       "p_max_calls": null,
        "p_ttl_seconds": 900
       }
      },
@@ -13219,7 +13439,8 @@
        "p_root": "turn-0001",
        "p_micros": 36002,
        "p_cap_micros": 3000000,
-       "p_ttl_seconds": 900
+       "p_ttl_seconds": 900,
+       "p_day_cap_micros": 10000000
       }
      },
      {
@@ -13276,7 +13497,7 @@
    {
     "status": 500,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",

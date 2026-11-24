@@ -48,6 +48,11 @@ test.describe('mobile-next: 375 × 812, touch', () => {
   test('① «Here, now» from the sheet\'s home: the dot, the card, every section settled, every control reachable', async ({ page }) => {
     test.setTimeout(150_000);
     await boot(page);
+    /* (mobile-sheet-layout) この主題は「tab が 1 つも選ばれていない」ホーム。電話の既定は Atlas（起動 ~2.5 s 後に選ばれる）なので、それが着いたのを待ち、
+       アプリ自身の作法（選択中の tab をもう一度押すと選択が外れる＝setMode）で外してホームへ戻す。 */
+    await page.waitForFunction(() => !!document.querySelector('.control-panel .mode-btn.mode-atlas.active'), null, { timeout: 20_000 });
+    await page.evaluate(() => document.querySelector('.control-panel .mode-btn.mode-atlas').click());
+    await page.waitForFunction(() => !document.querySelector('.control-panel .mode-btn.active'), null, { timeout: 5000 });
     await page.evaluate(() => window.__setDetent('half'));
     await page.waitForSelector('.m-home .hn-entry [data-hn-entry="here"]', { state: 'attached', timeout: 20_000 });
     await page.evaluate(() => document.querySelector('.m-home .hn-entry').scrollIntoView({ block: 'center' }));

@@ -36,20 +36,29 @@
    the steps, a later one only which step the next calls serve. What makes a call meaningless (no plan
    yet, and no steps) is answered by declare() as a typed note — the same way the loop answers any call
    that cannot be carried out. */
+import { mergeGeo, gapsOf, geoReport, preflight, defaultProbe } from './atlas-geoplan.js';   /* (geo-task-planner) the structured spec of a geospatial analysis */
+
 export const PLAN_TOOL = {
   name: 'plan',
   description: 'Declare your plan for a request that takes several pieces of work, and say which step the calls '
     + 'that follow serve. The reader sees the plan above your work, with each step\'s state as IntMap observes it. '
     + 'First call: {"goal", "steps":[short titles in the reader\'s language], "current":1}, made in the SAME reply '
-    + 'as the calls of step 1. Moving on: {"current":n} in the same reply as that step\'s calls. To replace the plan, '
+    + 'as the calls of step 1. Moving on: {"current":n} in the same reply as that step\'s calls. A reply that holds ONLY plan '
+    + 'calls changes nothing the reader sees and still costs the reader a whole model round trip before any work starts. To replace the plan, '
     + 'send new steps. A request that one or two calls answer needs no plan. The plan stays in the conversation: '
-    + 'a later request may name a step ("redo step 2") — set "current" to it and make its calls again.',
+    + 'a later request may name a step ("redo step 2") — set "current" to it and make its calls again. '
+    + 'For a GEOSPATIAL ANALYSIS add "geo", the analysis as IntMap can read it: {"question","region":{"name","bounds":[w,s,e,n]},"time":{"at"|"from","to"},'
+    + '"conditions":[str],"needs":[{"id","what","source":{"kind":"layer|dataset|stac|ogc|overture|upload|none","ref"},"completeness":"all|sample|any",'
+    + '"resolution":{"value","unit":"m|km|deg"}}],"method":{"ops":[str]},"environment":"browser-gis|python|server|job","outputs":["map|table|chart|file|answer"],'
+    + '"check":true}. Every member is optional and a later call states only what changed. The answer lists what the spec does not state (gaps); '
+    + 'with "check":true IntMap also asks its own layers and the open catalogues whether each need exists, and says what they STATE ("unknown" is not "unavailable").',
   parameters: {
     type: 'object',
     properties: {
       goal: { type: 'string' },
       steps: { type: 'array', items: { type: 'string', minLength: 1 } },
       current: { type: 'integer', minimum: 1 },
+      geo: { type: 'object' },
     },
   },
 };
@@ -82,11 +91,13 @@ const normTitle = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().
  * ONE ledger per conversation (js/atlas-console.js), handed to every runTurn as `opts.plan`. It holds
  * the latest plan Atlas declared and, per step, the calls made while that step was current.
  */
-export function makeAtlasPlan() {
+export function makeAtlasPlan(opts) {
+  const geoProbe = (opts && opts.geoProbe) || null;   /* tests inject the doors; the app reads them off window at call time (js/atlas-geoplan.js defaultProbe) */
   let plan = null;            /* {id, goal, steps:[{title, ops:[], touched}], current (0-based), turn} */
   let seq = 0;
   let turnNo = 0;
   let live = false;           /* a turn is running */
+  let geoPending = false;     /* a `geo.check` was declared and has not been run */
   let activeThisTurn = false; /* Atlas said, in THIS turn, which step its calls serve */
   const inflight = Object.create(null);   /* callId → op */
   const subs = [];
@@ -113,6 +124,7 @@ export function makeAtlasPlan() {
   function snapshot() {
     if (!plan) return null;
     return {
+      geo: plan.geo ? { spec: plan.geo.spec, gaps: gapsOf(plan.geo.spec), check: plan.geo.check } : null,
       id: plan.id, goal: plan.goal, current: plan.current + 1, live, turn: plan.turn, thisTurn: plan.turn === turnNo,
       steps: plan.steps.map((st, i) => ({
         n: i + 1, title: st.title, state: stepState(st, i),
@@ -135,13 +147,14 @@ export function makeAtlasPlan() {
   function declare(args, facts) {
     const a = (args && typeof args === 'object') ? args : {};
     const o = !!(facts && facts.outside === true);
+    const hasGeo = a.geo != null && typeof a.geo === 'object';
     const steps = Array.isArray(a.steps) ? a.steps.map((s) => String(s == null ? '' : s).trim()).filter(Boolean) : null;
     if (steps && steps.length) {
       /* a revision keeps what was observed for every step it did not rename — the same piece of work */
       const before = plan;
       const prev = plan ? plan.steps : [];
       let keptOld = false;
-      plan = { id: ++seq, goal: String(a.goal == null ? (plan ? plan.goal : '') : a.goal).trim(), turn: turnNo, current: 0,
+      plan = { geo: before ? before.geo : undefined, id: ++seq, goal: String(a.goal == null ? (plan ? plan.goal : '') : a.goal).trim(), turn: turnNo, current: 0,
         steps: steps.map((t, i) => {
           const old = prev[i] && normTitle(prev[i].title) === normTitle(t) ? prev[i] : null;
           if (old) keptOld = true;
@@ -162,14 +175,39 @@ export function makeAtlasPlan() {
       }
       plan.current = c - 1;
     }
+    let geoRec = null;
+    if (hasGeo) {
+      const m = mergeGeo(plan.geo || null, a.geo);
+      /* a changed spec invalidates an earlier check: it answered another question */
+      plan.geo = { spec: m.spec, unrecognised: m.unrecognised, check: null };
+      geoPending = a.geo.check === true;
+      geoRec = geoReport(m.spec, m.unrecognised, null);
+    }
     plan.turn = turnNo;
     if (o) plan.outside = true;
     plan.steps[plan.current].touched = true;
     activeThisTurn = true;
     emit({ type: 'plan' });
-    return { ok: true, plan: forModel(),
+    return Object.assign({ ok: true, plan: forModel(),
       note: 'Plan recorded and shown to the reader above your work. The calls you make from here serve step ' + (plan.current + 1)
-        + ' until you set "current" again. Each step\'s state is what IntMap OBSERVES of those calls, never what you say.' };
+        + ' until you set "current" again. Each step\'s state is what IntMap OBSERVES of those calls, never what you say.'
+        /* (atlas-fewer-rounds) measured 2026-11-24 on production: a turn's first two rounds were a plan call alone and then
+           {"current":2} alone — 70 s of a 226 s turn in which nothing ran. Said, not enforced (one-pass-or-a-reason §1). */
+        + ' Send plan calls in the SAME reply as the calls they describe: a reply of plan calls alone is one more model round the reader waits through with nothing done.' }, geoRec ? { geo: geoRec } : {});
+  }
+
+  /* preflight() — the loop awaits it after a `geo.check` declaration (js/atlas-agent.js). It asks the sources; it
+     blocks nothing, and what comes back is a statement for the model, kept on the plan for later turns. */
+  function geoPendingNow() { return !!(geoPending && plan && plan.geo); }
+  async function runPreflight() {
+    if (!geoPendingNow()) return null;
+    geoPending = false;
+    const target = plan, spec = plan.geo.spec;
+    let check;
+    try { check = await preflight(spec, geoProbe || defaultProbe()); }
+    catch (e) { check = { needs: [], environment: null, runnable: null, reasons: ['preflight failed: ' + ((e && e.message) || 'unknown')] }; }
+    if (plan === target && plan.geo && plan.geo.spec === spec) { plan.geo.check = check; emit({ type: 'geo' }); }
+    return geoReport(spec, target.geo ? target.geo.unrecognised : [], check);
   }
 
   /* the step the next call is filed under, or -1 — asked by the loop in call order */
@@ -237,9 +275,10 @@ export function makeAtlasPlan() {
   function promptBlock() {
     const m = forModel(); if (!m) return '';
     const lines = m.steps.map((st) => st.n + '. ' + st.title + ' — ' + st.state + (st.operations.length ? ': ' + st.operations.join('; ') : ''));
+    const geoLine = plan.geo ? geoPromptLine(plan.geo) : '';
     return '[YOUR PLAN — declared by you' + (plan.turn === turnNo && live ? ' in this turn' : ' in an earlier turn')
       + '; each state is what IntMap OBSERVED of the calls made under that step]\nGoal: ' + (m.goal || '(none given)') + '\n'
-      + lines.join('\n') + '\nCurrent step: ' + m.current + (activeThisTurn ? '' : ' (not set in this turn — calls are filed under a step only after you call plan with "current")')
+      + lines.join('\n') + geoLine + '\nCurrent step: ' + m.current + (activeThisTurn ? '' : ' (not set in this turn — calls are filed under a step only after you call plan with "current")')
       + '\n"unobserved" means the call ran and its effect could not be seen; "noop" means the step was current and nothing ran under it.\n\n';
   }
 
@@ -249,7 +288,16 @@ export function makeAtlasPlan() {
   function carriesOutside() { return !!(plan && plan.outside === true); }
 
   return { TOOL: PLAN_TOOL, beginTurn, declare, attribute, started, settled, noteDrawing, endTurn,
-    snapshot, forModel, promptBlock, carriesOutside, subscribe };
+    snapshot, forModel, promptBlock, carriesOutside, subscribe, geoPending: geoPendingNow, preflight: runPreflight };
+}
+
+/* the geospatial spec as the model reads it on every later step: what is stated, what is not, what the sources said */
+function geoPromptLine(g) {
+  const gaps = gapsOf(g.spec).map((x) => x.code);
+  const c = g.check;
+  return '\nGeo analysis: ' + (g.spec.question || '(no question stated)') + ' | not stated: ' + (gaps.length ? gaps.join(', ') : 'nothing')
+    + (c ? ' | availability: runnable=' + String(c.runnable) + '; ' + c.needs.map((n) => n.id + '=' + n.state + (n.fullCoverage ? '(coverage ' + n.fullCoverage + ')' : '')).join(', ')
+      + (c.reasons.length ? ' — ' + c.reasons.join('; ') : '') : ' | availability: not checked (send geo.check:true to ask the sources)');
 }
 
 /* ══ WHAT A STEP DREW, AND GOING BACK TO IT ══════════════════════════════════════════════════════

@@ -73,9 +73,11 @@ test('R731 ① a turn that repeats its own answered call stops after two identic
   const { out, ran, seen } = await turn([same, same, same, same, same, same, same, same, { text: '', toolCalls: [], final_text: '' }]);
   assert.equal(out.stopped, 'repeated_calls');
   assert.equal(ran.length, 1, 'the tool ran once; the reuse answered the rest');
+  /* (atlas-unbounded-execution) a stopped turn is not made to write an answer (the user, 2026-11-24): the repeat ends the
+     turn with what it has — no forced final is spent */
   const finals = seen.filter((r) => r && r.final);
-  assert.equal(finals.length, 1, 'one forced final was asked for');
-  assert.ok(seen.length <= 4, 'model calls: ' + seen.length + ' (was 9)');
+  assert.equal(finals.length, 0, 'no forced final is asked for after the turn stopped');
+  assert.ok(seen.length <= 3, 'model calls: ' + seen.length + ' (was 9)');
 });
 
 test('R731 ② a step that asks something different resets the count — nothing is taken from a turn that moves', async () => {
@@ -112,19 +114,23 @@ test('R731 ③ the forced final that says nothing leaves the console one honest 
       else if (c === ';' && !depth) { end = i; break; }
     }
     if (end < 0) continue;
-    try { fns.push(new Function('out', 'L', 'return (' + con.slice(at + HEAD.length, end) + ');')); } catch (_) { /* not an expression on its own */ }
+    try { fns.push(new Function('out', 'L', 'ai', 'return (' + con.slice(at + HEAD.length, end) + ');')); } catch (_) { /* not an expression on its own */ }
   }
   assert.ok(fns.length, 'the console assigns the turn\'s sentence somewhere');
   /* exactly one of those assignments is THE answer — the one that hands back what the model wrote */
   const cands = fns.filter((f) => { try { return f({ text: 'x', results: [{}], stopped: 'answered' }, L) === 'x'; } catch (_) { return false; } });
   assert.equal(cands.length, 1, 'exactly one assignment decides the turn\'s sentence');
-  const say = cands[0];
+  const say = (o, l, ai) => cands[0](o, l, ai || {});   /* `ai` = the bubble: the expression reads whether the turn was cut short (`__atlCut`) */
 
   /* ① the model wrote an answer → that answer, untouched */
   assert.equal(say({ text: 'ここが震源です。', results: [{}], stopped: 'answered' }, L), 'ここが震源です。');
-  /* ② tools ran, the forced final said nothing → ONE sentence of IntMap's own, saying what happened */
-  const forced = say({ text: '', results: [{}, {}], stopped: 'repeated_calls' }, L);
-  assert.match(String(forced), /did not write an answer/, 'a turn that ran tools and wrote nothing says so');
+  /* ② tools ran and the turn finished with nothing written → ONE short clause of IntMap's own, saying what happened */
+  const forced = say({ text: '', results: [{}, {}], stopped: 'answered' }, L);
+  assert.match(String(forced), /No written answer/, 'a turn that ran tools and wrote nothing says so');
+  /* ②b (atlas-unbounded-execution) a turn CUT SHORT is not asked for a forced final any more, and its stop line
+     (_cutNote) already says what happened — a second sentence over it would be the boilerplate the reader asked to lose */
+  assert.equal(say({ text: '', results: [{}, {}], stopped: 'repeated_calls' }, L, { __atlCut: true }), '',
+    'a cut turn gets the stop line, not a second sentence about the missing answer');
   /* ③ nothing ran and nothing was written → nothing is invented */
   assert.equal(say({ text: '', results: [], stopped: 'answered' }, L), '');
   /* ④ (#R740) the turn STOPPED TO ASK THE READER. The question is the turn's text, so the sentence
@@ -506,7 +512,7 @@ test('R760 ⑧ a partial that comes back with a DIFFERENT code is progress and i
   const tools = surface.baseTools();
   const execute = async () => { n++; return { ok: true, status: 'partial', code: 'code-' + n, html: '<div>x</div>' }; };
   const out = await AGENT.runTurn({ model: async () => drawCall(), tools,
-    execute: execute, system: 'sys',
+    execute: execute, system: 'sys', limits: { maxSteps: 8 },   /* (atlas-unbounded-execution) the scripted model never stops; the caller bounds it */
     messages: [{ role: 'user', content: 'draw' }] });
   assert.notEqual(out.stopped, 'repeated_calls', 'a changing verdict is progress');
   assert.ok(n > 4, 'and the turn was allowed to keep working — ran ' + n);
@@ -555,7 +561,7 @@ test('R760 ⓮ a capability that declares nothing keeps every one of its attempt
   const model = async () => ({ text: 'trying.', turnState: 'continuing',
     toolCalls: [{ id: 'a', name: 'run_capability',
       arguments: { id: 'view.flyTo', args: { place: 'place-' + n } } }] });
-  const out = await AGENT.runTurn({ model, tools, execute, system: 'sys',
+  const out = await AGENT.runTurn({ model, tools, execute, system: 'sys', limits: { maxSteps: 8 },   /* (atlas-unbounded-execution) as ⑧ */
     messages: [{ role: 'user', content: 'fly somewhere' }] });
   assert.notEqual(out.stopped, 'repeated_calls', 'an undeclared refusal is still worth another try');
   assert.ok(n > 4, 'and the turn kept working — ran ' + n);

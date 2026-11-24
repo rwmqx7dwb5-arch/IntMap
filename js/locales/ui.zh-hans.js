@@ -540,7 +540,7 @@ IntMapLang.define('zh-hans', {
     /* analysis-panels.js */
     'Ask Atlas': "询问 Atlas",   /* tool-panel.js */
     'Ask Atlas anything…': "想问 Atlas 什么都可以…",   /* atlas-console.js */
-    'Ask in plain language — Atlas drives the map for you. Try:': "用日常语言提问 — Atlas 会替你操作地图。试试看：",   /* atlas-console.js */
+    'Ask in plain language — Atlas drives the map for you.': "用日常语言提问 — Atlas 会替你操作地图。",   /* atlas-console.js */
     'ask me anything about this spot': "想问这个地点的什么都可以",   /* atlas-console.js */
     'Ask me anything about this spot — I know exactly where it is.': "想问这个地点的什么都可以 — 我很清楚它在哪里。",   /* atlas-console.js */
     'Asteroid': "小行星",   /* space.js */
@@ -6641,7 +6641,7 @@ IntMapLang.define('zh-hans', {
   "weather card": "天气卡片",   /* #R726 */
   "later pass": "之后的过境",   /* #R728 */
   "passes within 48 h": "48 小时内的过境",   /* #R728 */
-  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas 已执行工具，但这次没有写出回答——工具传回的内容显示在上方；请再问一次或缩小问题范围。",   /* #R731 */
+  /* #R731 */
 
   /* ══ (#R732) spatial operations, coordinate systems and dataset state — js/gis-panel.js,
      js/atlas-query.js, js/map-ui.js. The four short words are COLUMN LABELS in Atlas's result
@@ -6813,7 +6813,6 @@ IntMapLang.define('zh-hans', {
   "This is a SQLite database, but it holds no GeoPackage contents table": "这是一个 SQLite 数据库，但其中没有 GeoPackage 的内容数据表",
   "This is not a SQLite file, so it is not a GeoPackage": "这不是 SQLite 文件，因此它不是 GeoPackage",
   "This layer holds no features to colour": "这个图层没有可着色的要素",
-  "This turn reached its working limit, so the answer above may be incomplete — anything asked for that is not described above was not done. Ask again for the missing part on its own.": "这一轮已达到作业上限，因此上方的回答可能并不完整——凡是上方未描述到的要求，都没有执行。请就缺少的部分单独再问一次。",
   "Tied values merged classes": "同值过多，分级已合并",
   "Time axis": "时间轴",
   "Unit": "单位",

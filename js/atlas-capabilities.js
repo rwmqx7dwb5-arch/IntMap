@@ -390,11 +390,47 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["sim.skyTonight","skyTonight","almanac,tonightSky,whatsUpTonight,moonPhase,moonrise,sunriseSunset,twilight,visiblePlanets,meteorShowers,nextEclipse,eclipseFromHere","sim","panel","panel.skyAlmanac","panel,explanation","session","none","point","skyAlmanac"],
       ["sim.satellitePasses","satellitePasses","issPasses,whenIsIss,satellitesOverhead,satellitePass,passPrediction","sim","none","","explanation","read","none","point","satellitesLive"],
       ["sim.spaceWeather","spaceWeather","solarWind,solarFlare,geomagneticStorm,kpIndex,auroraChance,noaaScales,asteroidFlyby,nearEarthAsteroids","sim","none","","explanation","read","none","",""],
-      ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog","data","none","","explanation","read","none","","gisCore"],
+      ["data.gisRemote","gisRemote","discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog,findImagery,satelliteScenes,findSatelliteData","data","none","","explanation","read","none","","gisCore"],
       ["compute.run","python","runPython,pythonRun,computePython","data","none","gis.dataset","explanation","session","none","","gisCore"],
+      ["jobs.start","jobStart","startJob,backgroundResearch,runInBackground,longTask","research","none","","explanation","external","explicit","",""],
+      ["jobs.status","jobStatus","jobs,myJobs,listJobs,jobProgress,backgroundStatus","research","none","","explanation","read","none","","","external"],
+      ["jobs.cancel","jobCancel","cancelJob,stopJob,stopBackground","research","none","","explanation","session","none","",""],
+      ["jobs.amend","jobAmend","amendJob,changeJob,tellJob,addInstruction","research","none","","explanation","session","none","",""],
       ["geo.similar","geoSimilar","similarRegions,findSimilarAreas,similarPlaces,regionEmbedding","data","none","","explanation","read","none","place?","","external"],
-      ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
+      ["mcp.servers","mcpServers","listMcpServers,mcpTools,refreshMcp","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","always","","",""],
+      ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
+      ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","always","","","external"],
+      ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["data.gisOverture","gisOverture","overtureMaps,worldBuildings,worldPlaces,buildingFootprints,geoparquet","data","none","","explanation","read","none","","gisCore"],
       ["data.imageryInfo","imageryInfo","imageryAt,photoDate,satelliteDate,imagerySource","data","none","","explanation","session","none","",""],
+      ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
+      ["board.edit","boardEdit","editBoard,editTable,editWorkspace,changeCell,setCell","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.delta","boardDelta","boardChanges,whatDidIChange,workspaceDiff","panel","none","","explanation","read","none","","board"],
+      ["file.create","makeFile","createFile,makePdf,createPdf,exportPdf,saveAsPdf,makeDocument,createDocument,makeDocx,makeSlides,makeSpreadsheet,saveAsFile","research","none","","explanation","persist","none","",""],
+      ["geo.regionStat","regionStat","regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation","data","none","","explanation","session","none","",""],
+      ["geo.ml","geoMl","multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty","data","none","gis.dataset","explanation","session","none","","gisCore","external"],
+      ["knowledge.remember","knowledgeRemember","rememberKnowledge,keepKnowledge,saveFact","research","none","knowledge","explanation","persist","none","",""],
+      ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
+      ["knowledge.recheck","knowledgeRecheck","recheckKnowledge,verifyKnowledge,reverifyKnowledge","research","none","knowledge","explanation","persist","none","","","external"],
+      ["knowledge.forget","knowledgeForget","forgetKnowledge,deleteKnowledge","research","none","knowledge","explanation","persist","explicit","",""],
+      ["knowledge.setting","knowledgeSetting","knowledgeSwitch,rememberSetting","settings","none","knowledge","explanation","persist","explicit","",""],
+      ["news.history","newsHistory","pastEvents,eventArchive,facilityTimeline,eventsSince,newsArchive","data","none","","explanation","read","none","","","external"],
+      ["research.portImpact","portImpact","portClosure,portDisruption,portStops","research","none","","explanation","read","none","",""],
+      ["research.search","researchSearch","investigate,searchNews,searchSources","research","none","","explanation","read","none","","","external"],
+      ["ui.compose","dashboard","uiCompose","ui","none","","panel,explanation","session","none","",""],
+      ["web.browse","browse","openPage,webBrowse,operatePortal,browsePortal,navigateSite,portalSearch","research","none","","explanation","read","none","","","external"],
+      ["web.render","render","realBrowser,renderPage,screenshotPage,seePage,lookAtPage,scriptPage","research","none","","explanation","read","none","","","external"],
+      ["web.sessionGrant","sessionGrant","allowSiteOperation,permitSite,authorizeBrowserSite","research","none","","explanation","external","explicit","",""],
+      ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
+      ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
+      ["siting.compare","siting","compareSites,industrialSiting,siteSelection,locationComparison,compareLocations","data","none","","explanation","read","none","",""],
+      ["model.find","modelDiscover","findModel,specialistModels,whichModel,listModels","data","none","","explanation","read","none","","",""],
+      ["model.run","modelRun","runModel,specialistModel,floodForecast,riverForecast,airQualityForecast","data","none","map.object","explanation","session","none","place?","","external"],
+      ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
+      ["jobs.resume","jobResume","resumeJob,retryJob,continueJob,rerunFailed","research","none","","explanation","external","explicit","",""],
+      ["geo.imageChange","geoImageChange","imageChange,changeDetection,satelliteChange,landCoverChange,embeddingChange,radarChange,beforeAfter","data","none","gis.dataset","explanation","read","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -429,7 +465,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var EQUIVALENTS = {"data.countryCard":["data.timeSeries"],"research.mapReport":["research.situationMap"],"research.situationMap":["research.mapReport"]};
     var ANSWERS = {"research.brief":1,"research.mapReport":1,"research.situationMap":1,"research.historicalMap":1,"research.analyze":1};
     var ASKS_USER = {"dialog.ask":1};
-    var DELEGATES = {"research.delegate":1};
+    var DELEGATES = {"research.delegate":1,"jobs.start":1,"jobs.resume":1};
     /* ⚠ GENERATED POLICY — END */
 
     /* ══ OBSERVERS ═══════════════════════════════════════════════════════════════════════════════
