@@ -93,13 +93,9 @@ export function checkClaims(subjectRef, ownLinks, incoming, claims, inverse, can
   });
 }
 
-/** the reply's wording of a state: [en, jp] */
-export function stateWords(state) {
-  return ({ confirmed: ['confirmed (a source states it)', '確認済み（出典が述べている）'], inferred: ['inferred (derived by a rule, not stated by any source)', '推定（規則から導いたもので、述べた出典はない）'],
-    unconfirmed: ['unconfirmed (no record in the graph — not the same as "no such relation")', '未確認（グラフに記録がない——「関係がない」とは別）'] })[state] || ['unconfirmed', '未確認'];
-}
-
-/** the short label of a state: [en, jp] — what a row says beside the name */
-export function stateLabel(state) {
-  return ({ confirmed: ['confirmed', '確認済み'], inferred: ['inferred', '推定'], unconfirmed: ['unconfirmed', '未確認'] })[state] || ['unconfirmed', '未確認'];
+/** the short label of a state — what a row says beside the name */
+export function stateLabel(state, L) {
+  if (state === 'confirmed') return L('confirmed', '確認済み');
+  if (state === 'inferred') return L('inferred', '推論');
+  return L('unconfirmed', '未確認');
 }

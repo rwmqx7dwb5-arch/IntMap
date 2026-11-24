@@ -21,3 +21,8 @@ newsjp: Atlasが、2つの対象の関係を「出典が述べている（確認
 
 ## 3. 検査
 `tests/relation-evidence-checks.test.mjs`（8 件）: 出典のある結び付きだけが確認済み／規則を言えない推定は推定でない／look-alike は確認済みにならない／`cleanLink` の保持／`related()` の状態と根拠／`checkRelations`（記録あり・なし・逆向き・何も足さない）／`brief()` の link 注釈／語彙。
+
+## 4. 追補(CI で赤になった 3 点を直した)
+- `stateLabel` が [en, jp] の組を返していたのを、呼び出し側の `L(en, jp)` で解く形へ変えた(隣り合ったデータ枠に翻訳を置かない・check:docs の i18n-open-gap)。
+- 呼ばれていなかった `stateWords` を消した(消費者がなく、同じ仕事は `stateLabel` が負う)。
+- 「inferred」の和語を既存の `atlas-cap-knowledge` と同じ「推論」に揃えた(1 つの英語キーに 2 つの意味を持たせない)。

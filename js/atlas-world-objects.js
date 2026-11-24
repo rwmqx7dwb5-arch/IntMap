@@ -715,7 +715,7 @@ export function makeAtlasWorldObjects(deps) {
         h += '<div style="font-size:12px;margin:5px 0 1px;"><b>' + esc(g.type) + '</b>: ' + g.count + '</div>';
         g.items.forEach(function (x) {
           h += '<div style="font-size:11.5px;line-height:1.5;padding-left:8px;">' + esc(x.name) + ' <span style="color:var(--text-muted);">'
-            + esc(x.why + ' · ' + (function (lb) { return (o.L || function (en) { return en; })(lb[0], lb[1]); })(stateLabel(x.state)) + (x.distanceKm != null ? ' · ' + x.distanceKm + ' km' : '') + (x.gapHours != null ? ' · ' + x.gapHours + ' h' : '')) + '</span></div>';
+            + esc(x.why + ' · ' + stateLabel(x.state, o.L || function (en) { return en; }) + (x.distanceKm != null ? ' · ' + x.distanceKm + ' km' : '') + (x.gapHours != null ? ' · ' + x.gapHours + ' h' : '')) + '</span></div>';
         });
         if (g.more) h += '<div style="font-size:10.5px;color:var(--text-muted);padding-left:8px;">… +' + g.more + '</div>';
       });

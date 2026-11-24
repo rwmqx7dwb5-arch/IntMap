@@ -423,7 +423,7 @@ export default [
       if (Array.isArray(a.check) && a.check.length) {
         relChecks = W.checkRelations(o, a.check.slice(0, 40).map((q) => ({ rel: String((q && q.rel) || ''), ref: String((q && (q.ref || q.to)) || '') })));
         h += '<div style="font-size:11.5px;margin-top:5px;"><b>' + esc(L('Are these relations recorded?', 'これらの関係は記録されているか')) + '</b></div>';
-        relChecks.forEach((x) => { const lb = stateLabel(x.state); h += '<div style="font-size:11.5px;padding-left:8px;color:' + (x.state === 'confirmed' ? 'inherit' : '#ff9f0a') + ';">' + esc(o.name + ' ' + x.rel + ' ' + (x.ref || '?') + ' — ' + L(lb[0], lb[1]) + (x.recorded ? (x.evidence && x.evidence.source ? ' · ' + x.evidence.source : '') + (x.rule ? ' · ' + x.rule : '') : ' · ' + L('not recorded in the graph (that is not proof it does not exist)', 'グラフに記録なし（存在しない証拠ではない）'))) + '</div>'; });
+        relChecks.forEach((x) => { h += '<div style="font-size:11.5px;padding-left:8px;color:' + (x.state === 'confirmed' ? 'inherit' : '#ff9f0a') + ';">' + esc(o.name + ' ' + x.rel + ' ' + (x.ref || '?') + ' — ' + stateLabel(x.state, L) + (x.recorded ? (x.evidence && x.evidence.source ? ' · ' + x.evidence.source : '') + (x.rule ? ' · ' + x.rule : '') : ' · ' + L('not recorded in the graph (that is not proof it does not exist)', 'グラフに記録なし（存在しない証拠ではない）'))) + '</div>'; });
       }
       let fresh = null;
       if (r.via === 'graph') {
