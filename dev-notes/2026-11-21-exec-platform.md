@@ -38,3 +38,8 @@ internal: 既存 9 本の PR を依存順に 1 本へ束ねた統合で、利用
 `tests/ptc-python-bridge.spec.js` の 22 秒は #1307 の筆者が置いた見積もりで、deep の spec は PR でも push でも走らないため実測がまだ無い。
 スイート全体の天井（5250 秒）を 3 秒超えたので、天井は動かさず、この spec の見積もりを 19 秒にした（1 つの test が Pyodide を 1 回読み込んで能力を呼ぶだけの形）。
 これも実測ではない。最初の nightly が実測を `Record the measured times on main` で書き戻すので、そこで正しい値になる。
+
+## 共有窓口の基準線(check:surface)
+
+`js/atlas-cap-work.js`（作業成果物の入口）は、遅延チャンク（`gisCore`・`atlasChart`）を要るときに読むため `window.IntMapLazy.need(...)` を呼ぶ。他の Atlas の能力ファイルが同じ窓口を読む形に揃えてあり、所有者からの import に直す対象は別の作業（窓口全体の整理）に残す。
+基準線は `node scripts/global-surface.mjs --update` で、読み取りの実数（IntMapLazy 201）に合わせた。
