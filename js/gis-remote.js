@@ -65,7 +65,7 @@
 
 import { reachingFetch } from './gis-fetch.js';
 import { explainFetchFailure, describeResponse, looksLikeAPage } from './gis-http.js';
-import { toRecord, localRecord, searchRecords } from './gis-catalog-search.js';
+import { toRecord, localRecord, searchRecords, modalitiesOf, isNonCommercial, MODALITIES } from './gis-catalog-search.js';
 
 export function makeGisRemote(deps) {
   return (function () {
@@ -546,6 +546,15 @@ export function makeGisRemote(deps) {
        The collection-level answer says a collection covers a region; the item-level one says which scenes, when, how fine,
        how cloudy. `POST /search` (STAC API core). ⚠ ONE PAGE, SAID SO: `continues` is whether the server offered a next link,
        not a guess; a window that matches more than `limit` items is not a window with `limit` items. */
+    /* the numbers an item states about how much of it is unusable, VERBATIM under the item's own names (cloud is its own field).
+       Read by the property NAME the STAC community uses for a defect share — nodata / degraded / saturated / defective — so a
+       new mission's item is read without a new branch. → {<property name>: number} or null (NOT STATED, which is not «perfect») */
+    function qualityOf(pr) {
+      const q = {};
+      for (const k of Object.keys(pr || {})) if (isNum(pr[k]) && /(nodata|no_data|degraded|saturated|defective)/i.test(k)) q[k] = pr[k];
+      return Object.keys(q).length ? q : null;
+    }
+
     async function items(ref, opts) {
       const p = parseRef(ref);
       if (!p.ok) return p;
@@ -576,6 +585,11 @@ export function makeGisRemote(deps) {
           id: f.id, datetime: pr.datetime || (pr.start_datetime ? pr.start_datetime + '/' + (pr.end_datetime || '..') : null),
           gsd: pr.gsd === undefined ? null : pr.gsd, cloud: pr['eo:cloud_cover'] === undefined ? null : pr['eo:cloud_cover'],
           epsg: pr['proj:epsg'] === undefined ? null : pr['proj:epsg'], bbox: Array.isArray(f.bbox) ? f.bbox.slice(0, 4) : null, assets: assets,
+          platform: pr.platform == null ? null : String(pr.platform), instruments: Array.isArray(pr.instruments) ? pr.instruments.map(String) : null,
+          /* STAC SAR extension: what a radar scene IS (mode, polarisations, orbit direction) — null when the item states none */
+          sar: pr['sar:instrument_mode'] === undefined && pr['sar:polarizations'] === undefined ? null
+            : { mode: pr['sar:instrument_mode'] === undefined ? null : pr['sar:instrument_mode'], polarizations: pr['sar:polarizations'] || null, direction: pr['sat:orbit_state'] || null },
+          quality: qualityOf(pr),
         };
       });
       const beforeCloud = rows.length;
@@ -638,6 +652,119 @@ export function makeGisRemote(deps) {
         catalogs: report, items: itemsOf,
         asked: { q: o.q == null ? null : String(o.q), bbox: box, time: o.time == null || o.time === '' ? null : String(o.time), maxGsd: o.maxGsd == null ? null : o.maxGsd, minGsd: o.minGsd == null ? null : o.minGsd, maxCloud: o.maxCloud == null ? null : o.maxCloud, licensed: !!o.licensed, strict: !!o.strict },
         note: 'Every filter is judged on what the record STATES; a record that states nothing for a filter is kept and marked unstated (strict:true drops it). A catalogue listed as not answering is not «nothing there». `stated` counts the facts a record gives about itself, not the quality of the data.',
+      };
+    }
+
+    /* ── scenes(): 「この場所・この時期に、どんな衛星画像・SAR・LiDAR・標高が在るか」 — ACROSS collections and catalogues ──────────
+       discover() says which COLLECTIONS state they cover a place; items() lists the scenes of ONE collection. A reader asking
+       for imagery has neither question — they ask by KIND of observation. This takes the collections of that kind (read from
+       STAC's own members by js/gis-catalog-search.js modalitiesOf — never from a host) that state they cover the place and
+       period, asks each for its scenes (the same items() call, so the same one-page honesty), and answers per kind with:
+         · each scene's date, cloud, stated unusable shares, resolution, platform / radar mode, and its collection's licence VERBATIM + link;
+         · `refs` to read it — the existing doors (`url:<COG>` → js/gis-cog.js, `ogc:` → js/gis-ogcapi.js), so change analysis
+           and models take a scene without a second reader;
+         · `none`, said outright. THREE DIFFERENT NONES, never one: no collection of this kind states the place / a collection
+           states it but holds no scene in the period (and what it holds at other times) / a catalogue did not answer (= 訊けなかった).
+       ⚠ Every «none» is «none in the catalogues asked» — worldCompleteness is 'unproven', as everywhere in this file.
+       ⚠ A DEM is not a time series: the period is NOT applied to `dem` (an elevation model has one epoch); `periodApplied` says so.
+       ⚠ Collections whose licence states NON-COMMERCIAL use are listed in `excluded` with the reason and are not searched.
+       req = {bbox, time?, modality?: 'optical'|'sar'|'dem'|'lidar' | [..], maxCloud?, catalogs?, perModality?, limit?, signal?} */
+    const PER_MODALITY = 6;      /* 観測 2026-11-24: Planetary Computer holds up to 9 collections of one kind (3dep-lidar-*); each is one POST, so 4 kinds × 6 = 24 requests. Said in `collectionsNotAsked`, never silent. 失効条件: a catalogue that rate-limits below this. */
+    async function scenes(req) {
+      const o = req || {};
+      const box = asBox(o.bbox);
+      if (!box) return refuse('bad-param', { param: 'bbox', reason: 'scenes answers for a place; state it (bounds:[w,s,e,n])' });
+      if (o.time != null && o.time !== '') { const t = timeSpan(o.time); if (!t || t.bad) return refuse('bad-param', { param: 'time', value: o.time }); }
+      if (o.maxCloud != null && !(isNum(o.maxCloud) && o.maxCloud >= 0)) return refuse('bad-param', { param: 'maxCloud', value: o.maxCloud });
+      const asked = o.modality == null || o.modality === '' ? MODALITIES.slice() : [].concat(o.modality).map(String);
+      for (const m of asked) if (MODALITIES.indexOf(m) < 0) return refuse('bad-param', { param: 'modality', value: m, modalities: MODALITIES.slice() });
+      let which = catalogs().filter((c) => c.kind === 'stac');
+      if (Array.isArray(o.catalogs) && o.catalogs.length) {
+        for (const id of o.catalogs) if (!catalogById(id)) return refuse('catalog-unknown', { id: String(id), catalogs: catalogs().map((c) => c.id) });
+        which = which.filter((c) => o.catalogs.map(String).indexOf(c.id) >= 0);
+      }
+      const perMod = (isNum(o.perModality) && o.perModality > 0) ? Math.floor(o.perModality) : PER_MODALITY;
+      const limit = (isNum(o.limit) && o.limit > 0) ? Math.min(Math.floor(o.limit), 50) : 10;
+      const answers = await Promise.all(which.map(async (cat) => ({ cat: cat, res: await collectionsOf(cat, o.signal || null, !!o.fresh) })));
+      if (o.signal && o.signal.aborted) return refuse('cancelled');
+      const report = answers.map((a) => {
+        const r = a.res, row = { id: a.cat.id, answered: !!r.ok, collections: r.collections ? r.collections.length : 0, complete: !!r.ok && r.complete !== false };
+        if (!r.ok) { row.why = r.why; row.detail = r.detail || null; }
+        return row;
+      });
+      const silent = report.filter((r) => !r.answered);
+      const recs = [];
+      for (const a of answers) if (a.res.ok) for (const c of a.res.collections) recs.push(toRecord(c, a.cat));
+      const excluded = [];
+      let unclassified = 0;
+      const byKind = {};
+      for (const m of asked) byKind[m] = [];
+      for (const rec of recs) {
+        const kinds = modalitiesOf(rec);
+        if (!kinds.length) { unclassified++; continue; }
+        const mine = kinds.filter((k) => asked.indexOf(k) >= 0);
+        if (!mine.length) continue;
+        if (isNonCommercial(rec.rights && rec.rights.license)) { excluded.push({ ref: rec.ref, license: rec.rights.license, why: 'non-commercial licence: IntMap offers its data to every visitor' }); continue; }
+        const spatial = spatialRelation(rec.extent && rec.extent.bbox, box);
+        if (spatial === 'outside') continue;
+        for (const k of mine) {
+          const temporal = temporalRelation(rec.extent && rec.extent.time, k === 'dem' ? null : o.time);
+          if (temporal === 'outside') continue;
+          byKind[k].push({ rec: rec, spatial: spatial, temporal: temporal });
+        }
+      }
+      const rank = (e) => (e.spatial === 'covers' ? 0 : e.spatial === 'overlaps' ? 1 : 2) * 3 + (e.temporal === 'overlaps' ? 0 : e.temporal === 'unstated' ? 1 : 2);
+      const out = {};
+      for (const m of asked) {
+        /* finer STATED resolution first (a collection that states none is last, not first): of 800 collections the ones a reader means are the 10–30 m scenes */
+        const fine = (e) => (e.rec.resolution ? e.rec.resolution.min : Infinity);
+        const cands = byKind[m].sort((x, y) => rank(x) - rank(y) || fine(x) - fine(y) || String(x.rec.ref).localeCompare(String(y.rec.ref)));
+        /* round-robin ACROSS catalogues: the same mission is often in three of them, and the first six by resolution would all be one catalogue's copies */
+        const use = [], lanes = new Map();
+        for (const c of cands) { if (!lanes.has(c.rec.catalog)) lanes.set(c.rec.catalog, []); lanes.get(c.rec.catalog).push(c); }
+        for (let i = 0; use.length < perMod && use.length < cands.length; i++) for (const l of lanes.values()) if (i < l.length && use.length < perMod) use.push(l[i]);
+        const periodApplied = m !== 'dem' && o.time != null && o.time !== '';
+        const lookups = await Promise.all(use.map(async (c) => {
+          const r = await items(c.rec.ref, { bbox: box, time: periodApplied ? o.time : null, maxCloud: m === 'optical' ? o.maxCloud : null, limit: limit, signal: o.signal || null });
+          let other = null;
+          if (r.ok && !r.items.length && !r.droppedByCloud && periodApplied) {
+            const w = await items(c.rec.ref, { bbox: box, limit: 3, signal: o.signal || null });
+            other = w.ok ? { scenes: w.items.length, datetimes: w.items.map((x) => x.datetime).filter(Boolean) } : { answered: false, why: w.why };
+          }
+          return { c: c, r: r, other: other };
+        }));
+        const list = [], collections = [];
+        for (const { c, r, other } of lookups) {
+          const ref = c.rec.ref, lic = c.rec.rights || {};
+          const row = { ref: ref, title: c.rec.title, catalog: c.rec.catalog, spatial: c.spatial, license: lic.license == null ? null : lic.license, licenseUrl: lic.licenseUrl || null };
+          if (!r.ok) { row.answered = false; row.why = r.why; row.detail = r.detail || null; collections.push(row); continue; }
+          row.answered = true; row.scenes = r.items.length; row.matched = r.matched; row.continues = r.continues; row.droppedByCloud = r.droppedByCloud;
+          if (other) row.atOtherTimes = other;
+          collections.push(row);
+          for (const it of r.items) {
+            list.push({
+              id: it.id, collection: ref, datetime: it.datetime, cloud: it.cloud, quality: it.quality, gsd: it.gsd == null ? (c.rec.resolution ? c.rec.resolution.min : null) : it.gsd,
+              platform: it.platform, instruments: it.instruments, sar: it.sar, bbox: it.bbox, license: row.license, licenseUrl: row.licenseUrl,
+              refs: { grids: it.assets.filter((x) => x.cog && /^https:/.test(x.href)).map((x) => 'url:' + x.href), collection: 'ogc:' + c.rec.ref },
+              assets: it.assets.map((x) => x.key),
+            });
+          }
+        }
+        const stamp = (x) => { const t = Date.parse(String(x.datetime || '').split('/')[0]); return isNum(t) ? t : -Infinity; };
+        list.sort((x, y) => stamp(y) - stamp(x));
+        const unanswered = collections.filter((c) => c.answered === false);
+        let none = null;
+        if (!list.length) {
+          if (!cands.length) none = { kind: 'no-collection', say: 'No collection in the catalogues asked states that it holds ' + m + ' data for this place' + (periodApplied ? ' and period' : '') + '.' + (silent.length ? ' ' + silent.map((c) => c.id).join(', ') + ' did not answer, which is 「訊けなかった」, not 「無い」.' : ' This is these catalogues, not a statement about the world.') };
+          else if (unanswered.length === collections.length) none = { kind: 'not-answered', say: 'The collections that state this place did not answer (' + unanswered.map((c) => c.ref + ': ' + c.why).join('; ') + '). That is 「訊けなかった」, not 「無い」.' };
+          else none = { kind: 'no-scene', say: 'The collections that state this place hold no scene' + (periodApplied ? ' in the period' : '') + (o.maxCloud != null && m === 'optical' ? ' at or under ' + o.maxCloud + '% cloud' : '') + '. ' + (collections.some((c) => c.droppedByCloud) ? collections.reduce((t, c) => t + (c.droppedByCloud || 0), 0) + ' scene(s) of the first page were cloudier (droppedByCloud). ' : '') + (collections.some((c) => c.atOtherTimes && c.atOtherTimes.scenes) ? 'They hold scenes at other times (atOtherTimes).' : 'The first page showed none at any time.') + ' This is these catalogues, not a statement about the world.' + (unanswered.length ? ' ' + unanswered.map((c) => c.ref).join(', ') + ' did not answer.' : '') };
+        }
+        out[m] = { modality: m, periodApplied: periodApplied, found: list.length, scenes: list, collections: collections, collectionsNotAsked: Math.max(0, cands.length - use.length), none: none };
+      }
+      return {
+        ok: true, asked: { bbox: box, time: o.time == null || o.time === '' ? null : String(o.time), modality: asked, maxCloud: isNum(o.maxCloud) ? o.maxCloud : null, perModality: perMod, limit: limit },
+        result: out, catalogs: report, excluded: excluded, unclassified: unclassified, worldCompleteness: 'unproven',
+        note: 'Dates, cloud and licences are what each catalogue STATES for the scene and collection, verbatim. «proprietary» is STAC for «the terms are at the licence link» — read them. Each collection answered ONE page (`continues`); `none` means none in the catalogues asked.',
       };
     }
 
@@ -715,10 +842,10 @@ export function makeGisRemote(deps) {
     }
 
     const API = {
-      catalogs, add, discover, inspect, signHref, search, items, probeAsset, acquire,
+      catalogs, add, discover, inspect, signHref, search, items, scenes, probeAsset, acquire,
       publicUrl, resolveHref, refusals: () => REFUSALS.slice(), kinds: () => KINDS.slice(),
       /* what the Atlas door may ask of this module — one declaration, read by the door */
-      actions: () => ['catalogs', 'add', 'discover', 'inspect', 'search', 'items', 'acquire'],
+      actions: () => ['catalogs', 'add', 'discover', 'inspect', 'search', 'items', 'scenes', 'acquire'],
       /* the pure parts, published so a check can drive them without a network */
       _spatialRelation: spatialRelation, _temporalRelation: temporalRelation, _timeSpan: timeSpan,
     };
