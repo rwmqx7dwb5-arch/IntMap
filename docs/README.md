@@ -88,6 +88,7 @@
 | 文書 | 対象読者 | 役割 | いつ更新するか |
 |---|---|---|---|
 | [`TESTING.md`](TESTING.md) | 全員 | **何をどう試験するか** — 層・tier・テスト予算・`check:*` ゲート・**セキュリティ検査**・**文書の検査** | 試験を足した・消した・組み替えたとき |
+| [`TRANSIT-TIMETABLES.md`](TRANSIT-TIMETABLES.md) | 経路・到達圏を触る人 | **公共交通の時刻表プランナー** — 自前の GTFS 取り込み・商用可ライセンスだけを使う理由（Transitous は既定オフ）・定期運行とリアルタイムの区別・見積りの範囲・国境の扱い・feed 追加の手順 |
 | [`RELEASE.md`](RELEASE.md) | リリースする人 | **公開手順の正本** — CI ゲート付き Pages deploy、着地確認、ロールバック | 公開の仕組みが変わったとき |
 | [`MONITORING.md`](MONITORING.md) | 運用する人 | 稼働監視とアラート | 監視の構成が変わったとき |
 | [`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md) | 障害対応する人 | サイト障害・セキュリティ事案・**DB 事案**の番号つき手順 | 手順が変わったとき |

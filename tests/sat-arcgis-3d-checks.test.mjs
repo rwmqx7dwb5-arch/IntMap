@@ -159,7 +159,7 @@ function prefetchFn() {
   for (; i < s.length; i++) { if (s[i] === '{') d++; else if (s[i] === '}' && --d === 0) break; }
   return s.slice(a, i + 1);
 }
-test('⑧ the DEM warm-up samples the SCREEN: sky is skipped, and the bounds are not asked', () => {
+test('⑧ the DEM warm-up samples the SCREEN: sky is skipped, and the bounds are not asked', async () => {
   const asked = [];
   const ge = {
     hasRenderer: () => true,
@@ -173,10 +173,14 @@ test('⑧ the DEM warm-up samples the SCREEN: sky is skipped, and the bounds are
   const f = new Function('GE', '_imPhoneClass', 'demZoomForMap', 'demElevAt', prefetchFn() + '; return prefetchDEMViewport;')(
     () => ge, () => false, () => 12, (lng, lat, cb, z) => asked.push([lng, lat, z]));
   f();
+  await new Promise((r) => setTimeout(r, 400));   /* (map-smooth) the grid is read a row per idle slice */
   assert.ok(asked.length > 0, 'the ground is warmed');
   assert.ok(asked.every(([, lat]) => lat >= 2), 'nothing above the horizon');
   assert.ok(asked.every(([, , z]) => z === 12), 'at the zoom the readout reads');
   assert.ok(asked.length <= 49, 'never more than the 7×7 it always was');
+  /* (map-smooth) a new gesture drops the rest: nothing more is asked after the run is superseded */
+  const n = asked.length; f.run++; f(); f.run++; await new Promise((r) => setTimeout(r, 400));
+  assert.equal(asked.length, n, 'a superseded run asks nothing further');
 });
 
 /* ⑨ a refused key never blanks the map — run against the worker's real fetch path, with a key that the
