@@ -925,7 +925,7 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   出るので `tests/news-countries-checks.test.mjs` ①② が両方が鍵であることを、④ が `js/lang-registry.js` と inline 表を実行して 9言語の解決を確かめる。
   首都は地名なので訳さない（`CAPITAL[code]`、歴史の行は `_STINFO`）。
 - **Region 行の subregion** は `js/countries-ui.js` の **`window._imSubregionName(sub, lang)`**（Natural Earth の SUBREGION 24種。`ne_110m` は22種）。
-  空の SUBREGION は無いので `region` / `subregion` のフォールバック行は無い。表は1本で、`js/atlas-examples.js` の starter chip の `{sub}` も同じ表を読む
+  空の SUBREGION は無いので `region` / `subregion` のフォールバック行は無い。表は1本で、`js/atlas-examples.js` の見本の文（`suggestPrompts:true` で描く）の `{sub}` も同じ表を読む
   （`tests/news-countries-checks.test.mjs` ⑩ が24語を宣言するファイルがちょうど1本であることと、script として parse できることを検査する）。`export`
   ではなく `window` で渡すのは、検査ハーネスが `new Function(src)` で素のスクリプトとして実行するため（`window._imCldrRegion` も同じ）。2欄が解決後に
   同じ語になったら1つに畳む。

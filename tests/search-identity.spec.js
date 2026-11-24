@@ -46,7 +46,7 @@ const landed = async (page) => {
   return page.evaluate(() => { const c = window.__imap.getCenter(); return { lat: c.lat, lng: c.lng, field: document.getElementById('ms-input').value }; });
 };
 async function typeTokyo(page) {
-  await page.click('#ms-input');
+  await page.focus('#ms-input');
   await page.fill('#ms-input', '');
   await page.keyboard.type('Tokyo', { delay: 30 });
 }
@@ -80,7 +80,7 @@ test.describe('desktop', () => {
     await page.evaluate(() => { const x = document.querySelector('.src-card-close'); if (x) x.click(); window.__imap.jumpTo({ center: [0, 20], zoom: 2 }); });
     const before = await page.evaluate(() => window.__imap.getCenter());
     /* an IME composition's confirming Enter: the reader is still writing the name, not asking to go */
-    await page.click('#ms-input');
+    await page.focus('#ms-input');
     await page.fill('#ms-input', 'Tokyo');
     await page.evaluate(() => document.getElementById('ms-input').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, keyCode: 229, bubbles: true, cancelable: true })));
     await page.waitForTimeout(1500);
@@ -96,7 +96,7 @@ test.describe('desktop', () => {
     /* (where-when-search) 「1914」: an instant alone is one reading — ONE Enter sets the clock and the map stays */
     await page.evaluate(() => { const x = document.querySelector('.src-card-close'); if (x) x.click(); window.IntMapTime.setNow({ source: 'test' }); });
     const c0 = await page.evaluate(() => window.__imap.getCenter());
-    await page.click('#ms-input'); await page.fill('#ms-input', '1914');
+    await page.focus('#ms-input'); await page.fill('#ms-input', '1914');
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => !window.IntMapTime.isLive(), null, { timeout: 15_000 });
     await page.waitForTimeout(500);
@@ -105,7 +105,7 @@ test.describe('desktop', () => {
     expect(t1914.moving || km(t1914.c, c0) > 1, 'a time-only line moved the map').toBe(false);
     /* 「江戸 1868-01」: one place (only the historical record knows 江戸 — it is Tokyo) — ONE Enter flies and sets the month */
     await page.evaluate(() => { window.IntMapTime.setNow({ source: 'test' }); window.__imap.jumpTo({ center: [0, 20], zoom: 2 }); });
-    await page.click('#ms-input'); await page.fill('#ms-input', '江戸 1868-01');
+    await page.focus('#ms-input'); await page.fill('#ms-input', '江戸 1868-01');
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => !window.IntMapTime.isLive(), null, { timeout: 30_000 });
     const edo = await landed(page);
@@ -114,7 +114,7 @@ test.describe('desktop', () => {
     /* 「Salisbury 1950」: several places answer (Salisbury, England; Salisbury — Harare — in the city record) — Enter keeps
        the card open to choose from, and neither the clock nor the map moves */
     await page.evaluate(() => { const x = document.querySelector('.src-card-close'); if (x) x.click(); window.IntMapTime.setNow({ source: 'test' }); window.__imap.jumpTo({ center: [0, 20], zoom: 2 }); });
-    await page.click('#ms-input'); await page.fill('#ms-input', 'Salisbury 1950');
+    await page.focus('#ms-input'); await page.fill('#ms-input', 'Salisbury 1950');
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item:not(.ms-atlas)').length >= 2 && !document.querySelector('#ms-results .ms-loading'), null, { timeout: 30_000 });
     await page.waitForTimeout(800);
@@ -167,7 +167,7 @@ test.describe('phone', () => {
     /* (where-when-search) the phone's sheet: 「Constantinople 1453」 suggests the city by the name it had; a tap flies to
        Istanbul and sets the clock to 1453 */
     await page.evaluate(() => { window.IntMapTime.setNow({ source: 'test' }); window.__imap.jumpTo({ center: [0, 20], zoom: 2 }); });
-    await page.click('#ms-input'); await page.fill('#ms-input', '');
+    await page.focus('#ms-input'); await page.fill('#ms-input', '');
     await page.keyboard.type('Constantinople 1453', { delay: 10 });
     const row = page.locator('#ms-results .ms-item', { hasText: 'Constantinople · 1453' }).first();
     await row.waitFor({ timeout: 30_000 });
