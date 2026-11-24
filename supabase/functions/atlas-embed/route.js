@@ -157,7 +157,7 @@ export function makeRouter(o) {
     diag() {
       return {
         lists: (lastLists || []).map((L) => ({ provider: L.provider, answered: !!L.answered, code: L.answered ? undefined : L.code, status: L.status || undefined,
-          listed: L.answered ? L.all : undefined, embedding: L.answered ? (L.ids || []).slice(0, 8) : undefined })),
+          listed: L.answered ? L.all : undefined, embedding: L.answered ? (L.ids || []).slice(0, 8) : undefined, named: L.named || undefined })),
         refused: lastRefusal || undefined,
         failed: [...failedSet],
       };

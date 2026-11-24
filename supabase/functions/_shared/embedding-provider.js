@@ -72,10 +72,21 @@ export async function listOpenAIEmbeddingModels(key, door) {
   return { answered: true, ids: all.filter((id) => /embed/i.test(id)).sort(), all: all.length };
 }
 
-/* Google's list is paged. Only the models that accept batchEmbedContents are embedding models this
-   file can call; the name comes back as `models/<id>` and is returned without the prefix. */
+/* Google's list is paged; the name comes back as `models/<id>` and is returned without the prefix.
+   ⚠ (gemini-embed-methods) AN EMBEDDING MODEL IS ONE THAT LISTS EITHER EMBEDDING METHOD. This filtered on
+   `batchEmbedContents` alone. Measured on production 2026-11-25 (atlas-embed's diag): the key lists 65 models and the
+   filter kept NONE, so atlas-embed answered model_unavailable and news-ingest never embedded an article. Which of the
+   two methods a model lists decides how it is called (embedMethodOf). */
+const GEMINI_METHODS = new Map();   /* per isolate: model id → the methods its list entry named */
+export const EMBED_METHODS = ["batchEmbedContents", "embedContent"];
+export function embedMethodOf(model) {
+  const ms = GEMINI_METHODS.get(model);
+  if (!ms) return "batchEmbedContents";   /* not listed in this isolate: the batch call, as before */
+  return ms.includes("batchEmbedContents") ? "batchEmbedContents" : "embedContent";
+}
 export async function listGeminiEmbeddingModels(key, door) {
   const ids = [];
+  const named = [];
   const seen = new Set();
   let token = "";
   let total = 0;
@@ -92,9 +103,10 @@ export async function listGeminiEmbeddingModels(key, door) {
     total += ms.length;
     for (const m of ms) {
       const methods = Array.isArray(m && m.supportedGenerationMethods) ? m.supportedGenerationMethods : [];
-      if (!methods.includes("batchEmbedContents")) continue;
       const id = String((m && m.name) || "").replace(/^models\//, "");
-      if (id) ids.push(id);
+      if (id && /embed/i.test(id)) named.push({ id, methods: methods.slice(0, 8) });   /* (gemini-embed-methods) what a diag shows */
+      if (!EMBED_METHODS.some((x) => methods.includes(x))) continue;
+      if (id) { ids.push(id); GEMINI_METHODS.set(id, methods.slice()); }
     }
     /* a page token the provider repeats would loop for ever; it is the end of what can be read */
     const next = j && typeof j.nextPageToken === "string" ? j.nextPageToken : "";
@@ -102,7 +114,7 @@ export async function listGeminiEmbeddingModels(key, door) {
     seen.add(next);
     token = next;
   }
-  return { answered: true, ids: ids.sort(), all: total };
+  return { answered: true, ids: ids.sort(), all: total, named: named.slice(0, 8) };
 }
 
 /* Which listed model to use: the first preference the list names, else — for Gemini — the family
@@ -163,6 +175,8 @@ export async function embedGemini(key, model, inputs, door, opts) {
     if (o.dim) one.outputDimensionality = o.dim;
     return one;
   });
+  /* (gemini-embed-methods) a model listed with embedContent only is called once per input, all at the same time */
+  if (embedMethodOf(model) === "embedContent") return embedGeminiOneByOne(key, model, requests, door);
   let r;
   try {
     r = await door(GEMINI_BASE + "/models/" + encodeURIComponent(model) + ":batchEmbedContents", {
@@ -177,4 +191,28 @@ export async function embedGemini(key, model, inputs, door, opts) {
   const es = Array.isArray(j && j.embeddings) ? j.embeddings : [];
   if (es.length !== inputs.length) return { ok: false, code: "count_mismatch", status: r.status };
   return { ok: true, vectors: es.map((e) => (e && Array.isArray(e.values)) ? l2normalize(e.values) : null) };
+}
+
+/* (gemini-embed-methods) embedContent: one request per input, all sent together, the same answer shape as the batch
+   call. Any one failure is the call's failure — a partial set of vectors is not a catalogue. */
+async function embedGeminiOneByOne(key, model, requests, door) {
+  const one = async (req) => {
+    let r;
+    try {
+      r = await door(GEMINI_BASE + "/models/" + encodeURIComponent(model) + ":embedContent", {
+        method: "POST",
+        headers: { "x-goog-api-key": key, "content-type": "application/json" },
+        body: JSON.stringify({ content: req.content, ...(req.taskType ? { taskType: req.taskType } : {}), ...(req.outputDimensionality ? { outputDimensionality: req.outputDimensionality } : {}) }),
+      });
+    } catch (e) { return { ok: false, code: thrownCode(e), status: 0, door: DOOR_REFUSALS.has(thrownCode(e)) }; }
+    if (!r.ok) { const f = providerFail(r.status, await bodyLength(r)); return { ok: false, code: "http", status: f.status }; }
+    let j = null;
+    try { j = await r.json(); } catch (_) { return { ok: false, code: "bad_json", status: r.status }; }
+    const v = j && j.embedding && Array.isArray(j.embedding.values) ? j.embedding.values : null;
+    return v ? { ok: true, v: l2normalize(v) } : { ok: false, code: "count_mismatch", status: r.status };
+  };
+  const got = await Promise.all(requests.map(one));
+  const bad = got.find((g) => !g.ok);
+  if (bad) return bad;
+  return { ok: true, vectors: got.map((g) => g.v) };
 }
