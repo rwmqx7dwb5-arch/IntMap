@@ -15,4 +15,4 @@ newsjp: 外部 MCP サーバへのサインインで、「末尾が同じ」だ�
 
 ## main 追従(2026-11-24)
 - #1279・#1304 が main に入ったので、この PR は固有のコミット(OAuth・Public Suffix List・Client ID Metadata Document・コールバック頁)だけを main の上に載せ直した。生成物(台帳・セキュリティ頁・能力表)と文書の件数(能力 273・到達可能 270)は main の実体から作り直した。
-- check:surface の基準 window.IntMapLazy 196→197 は、この PR の変更ではなく main の測定値に合わせたもの(この PR のファイルに IntMapLazy の記述は無い)。
+- check:surface の基準は main のものをそのまま使う(この PR の変更で window の読み取りは増えていない)。
