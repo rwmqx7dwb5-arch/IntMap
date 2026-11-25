@@ -78,14 +78,10 @@ test.describe('desktop-one-entry', () => {
     await page.waitForFunction(() => document.getElementById('sidebar').classList.contains('collapsed'));
     await page.click('#ms-input');
     await page.keyboard.type('Par', { delay: 40 });
-    await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item').length >= 2, null, { timeout: 10_000 });
+    await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item').length >= 1, null, { timeout: 10_000 });
     const rows = await page.evaluate(() => ({ ph: document.getElementById('ms-input').placeholder,
-      atlas: [...document.querySelectorAll('#ms-results .ms-item')].map((e) => e.classList.contains('ms-atlas')) }));
-    expect(rows.atlas[rows.atlas.length - 1], 'the last candidate is «Ask Atlas»').toBe(true);
-    expect(rows.atlas.filter(Boolean).length).toBe(1);
-    expect(rows.ph, 'the field says what it takes').toMatch(/^Search places/);
-    await page.click('#ms-results .ms-atlas');
-    await page.waitForFunction(() => !document.getElementById('sidebar').classList.contains('collapsed')
-      && document.getElementById('btn-community').classList.contains('active'), null, { timeout: 15_000 });
+      atlas: document.querySelectorAll('#ms-results .ms-atlas').length }));
+    expect(rows.atlas, 'the field finds places only: no «Ask Atlas» row').toBe(0);
+    expect(rows.ph, 'the field says what it takes').toBe('Search places');
   });
 });

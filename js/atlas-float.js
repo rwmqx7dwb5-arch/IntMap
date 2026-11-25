@@ -42,7 +42,7 @@ const kt = (key, fb) => { try { return IntMapLang.keyedText(null, key, fb); } ca
 
 /* ⚠ CSS IN QUOTED STRINGS ONLY (CONSTITUTION §2 — a back-tick here would blank the site). */
 const CSS =
-  '#atlas-float{position:absolute;left:16px;top:84px;bottom:48px;width:min(380px,calc(100% - 32px));z-index:calc(var(--z-map-overlay) + 50);'
+  '#atlas-float{position:absolute;left:16px;top:36px;bottom:6px;width:min(380px,calc(100% - 32px));z-index:calc(var(--z-map-overlay) + 50);'
   + 'display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;}'
   /* the sidebar lies OVER the map in the glass styles, so the card stands right of it there */
   + 'body.sidebar-glass #atlas-float{left:calc(var(--sidebar-w) + 16px);width:min(380px,calc(100% - var(--sidebar-w) - 32px));}'
@@ -61,8 +61,7 @@ const CSS =
   /* the bar is a control, so it is a small glass pill: the popup colour at 45%, blurred behind */
   + '#atlas-float .atl-float-bar{'
   + 'background:color-mix(in srgb,var(--popup-bg) 45%,transparent);backdrop-filter:saturate(170%) blur(14px);-webkit-backdrop-filter:saturate(170%) blur(14px);}'
-  + '#atlas-float .atl-float-bar{pointer-events:auto;align-self:flex-start;border-radius:999px;margin-bottom:6px;display:flex;align-items:center;gap:2px;padding:3px 6px 3px 12px;flex:0 0 auto;}'
-  + '#atlas-float .atl-float-name{flex:1 1 auto;font-size:12.5px;font-weight:600;letter-spacing:.01em;color:var(--text-muted);}'
+  + '#atlas-float .atl-float-bar{pointer-events:auto;align-self:flex-start;border-radius:999px;margin-bottom:6px;display:flex;align-items:center;gap:2px;padding:3px 6px;flex:0 0 auto;}'
   + '#atlas-float .atl-float-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:none;border-radius:9px;'
   + 'background:none;color:var(--text-muted);cursor:pointer;transition:background-color .15s ease,color .15s ease,transform .2s ease;}'
   + '#atlas-float .atl-float-btn:hover{background:var(--input-bg);color:var(--text-main);}'
@@ -74,7 +73,11 @@ const CSS =
   + 'transform:none !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;'
   + 'backdrop-filter:none !important;-webkit-backdrop-filter:none !important;resize:none !important;z-index:auto !important;overflow:hidden;}'
   + '#atlas-float #atlas-panel .atl-head,#atlas-float #atlas-panel .atl-sub,#atlas-float #atlas-panel .atl-ex{display:none !important;}'
-  + '#atlas-float #atlas-panel .atl-chat{flex:0 1 auto;min-height:0;padding:4px 4px 8px;gap:8px;overscroll-behavior:contain;pointer-events:none;}'
+  + '#atlas-float #atlas-panel .atl-chat{flex:0 1 auto;min-height:0;padding:56px 4px 30px;gap:8px;overscroll-behavior:contain;pointer-events:none;'
+  /* THE CONVERSATION FADES, IT IS NOT CLIPPED: an answer that scrolls past the top dissolves over its first 56px instead of ending on a
+     hard edge, and one that rises from below appears over its last 30px. The padding is the same length as the fade, so at rest no
+     line of text sits inside a fade and the last line stops 30px above the input (the gap in which the bottom fade works). */
+  + '-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 56px,#000 calc(100% - 30px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 56px,#000 calc(100% - 30px),transparent 100%);}'
   /* THE ANSWER IS TEXT ON THE MAP (2026-11-18, chosen by the reader from three shots: one glass sheet / a feathered shade / text only).
      No piece of an answer paints a surface — no per-line run, no chip, no legend card. What keeps it legible is the halo each glyph
      carries: a tight edge, a soft drop and a wide falloff, in the colour opposite the ink (light ink + dark halo in the dark theme,
@@ -82,7 +85,7 @@ const CSS =
      question keeps its bubble and so needs no halo. */
   + '#atlas-float{--atl-halo:255,255,255;}'
   + '[data-theme="dark"] #atlas-float{--atl-halo:0,0,0;}'
-  + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 1px rgba(var(--atl-halo),.85),0 1px 3px rgba(var(--atl-halo),.75),0 0 14px rgba(var(--atl-halo),.55);}'
+  + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 1px rgba(var(--atl-halo),.95),0 1px 3px rgba(var(--atl-halo),.9),0 0 8px rgba(var(--atl-halo),.85),0 0 18px rgba(var(--atl-halo),.75),0 0 34px rgba(var(--atl-halo),.6);}'
   + '#atlas-float #atlas-panel .atl-chat .atl-b.u{text-shadow:none;}'
   + '#atlas-float #atlas-panel .atl-chat>.atl-b{pointer-events:none;}'
   + '#atlas-float .atl-b.a :is(.atl-md,.atl-md>*,.atl-cmp,.atl-actrow,.atl-srcs,.atl-fold,.atl-interim){background:none;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;}'
@@ -109,7 +112,6 @@ const CSS =
   + '#atlas-float .atl-float-new{animation:none;}#atlas-float .atl-float-fold svg{transition:none;}}';
 
 const SVG_FOLD = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-const SVG_TAB = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>';
 const SVG_X = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 
 function ensureCss() {
@@ -136,10 +138,7 @@ function ensureRoot() {
   root.id = 'atlas-float'; root.setAttribute('aria-label', 'Atlas');
   card = document.createElement('div'); card.className = 'atl-float-card';
   const bar = document.createElement('div'); bar.className = 'atl-float-bar';
-  const name = document.createElement('span'); name.className = 'atl-float-name'; name.textContent = 'Atlas';
-  bar.appendChild(name);
   bar.appendChild(btn('atl-float-fold', SVG_FOLD, 'atlFloatFold', 'Collapse conversation', () => setFolded(!folded)));
-  bar.appendChild(btn('atl-float-tab', SVG_TAB, 'atlFloatToTab', 'Open in the Atlas tab', toTab));
   bar.appendChild(btn('atl-float-x', SVG_X, 'atlFloatHide', 'Hide (press A to bring it back)', () => { gone = true; paint(); }));
   card.appendChild(bar);
   root.appendChild(card);
@@ -266,11 +265,6 @@ function watchChat(p) {
     });
     chatObs.observe(chat, { childList: true, subtree: true, characterData: true });
   } catch (_) { }
-}
-
-function toTab() {
-  try { const b = document.getElementById('btn-community'); if (b) { b.click(); return; } } catch (_) { }
-  try { window.IntMapAtlas.call('mountTab'); } catch (_) { }
 }
 
 /* the panel is the kernel's; the kernel is lazy (js/atlas-loader.js). A float reader needs the input on

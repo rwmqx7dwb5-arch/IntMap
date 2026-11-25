@@ -140,7 +140,7 @@ test('R296 ⑪ a reader’s own message can be copied, by the same button', () =
     'and one implementation of what 「copy」 means');
   /* the kernel reaches the one button the only way it can now: a named import the bundler resolves */
   assert.match(a, /import \{[^}]*\bmakeMsgTools\b[^}]*\} from '\.\/atlas-msg-tools\.js';/, 'the kernel imports the module');
-  assert.match(code(a), /const \{ copyBtn, editBtn, msgTools \} = makeMsgTools\(\{/, 'and takes the builders from it, once');
+  assert.match(code(a), /const \{ copyBtn, editBtn, msgTools, pressMenu \} = makeMsgTools\(\{/, 'and takes the builders from it, once');
   assert.match(a, /if\(who==='u'\)\{[\s\S]{0,200}bar\.appendChild\(copyBtn\(d\)\)/, 'a user bubble gets it');
   assert.match(m, /bar\.appendChild\(copyBtn\(aiEl\)\)/, 'and so does a reply');
   /* Retry stays on the reply only — re-running the reader's own sentence is that same Retry */

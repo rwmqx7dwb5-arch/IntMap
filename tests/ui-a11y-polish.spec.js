@@ -239,10 +239,8 @@ test.describe('③ phone shell', () => {
     /* the one field: candidates as the reader types (no Enter), the last of them «Ask Atlas» */
     await page.focus('#ms-input');   /* 電話ではフィールドは幅 0 に畳まれている（#ms-btn か focus で開く） */
     await page.keyboard.type('Par', { delay: 40 });
-    await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item').length >= 2, null, { timeout: 10_000 });
-    const rows = await page.evaluate(() => [...document.querySelectorAll('#ms-results .ms-item')].map((e) => e.classList.contains('ms-atlas')));
-    expect(rows[rows.length - 1], 'the last candidate is «Ask Atlas»').toBe(true);
-    expect(rows.filter(Boolean).length).toBe(1);
+    await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item').length >= 1, null, { timeout: 10_000 });
+    expect(await page.locator('#ms-results .ms-atlas').count(), 'places only: there is no «Ask Atlas» row').toBe(0);
   });
 });
 

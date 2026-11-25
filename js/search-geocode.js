@@ -281,9 +281,8 @@ export function searchGeocode(HOST){
      `doGeocode({suggest:true})` answers while the reader types — from what is already on the device
      (`localFuzzyPlaces`: the countries, capitals and the gazetteer, the same rows the full search shows first),
      through the SAME row builder and the SAME `gotoPlace`, so a suggestion is a search result one keystroke
-     early and not a second implementation. It asks no network; Enter still does. The last row is «Ask Atlas»,
-     because the field is the one entry for both a place and a question (`_askAtlasRow`). (desktop-one-entry) Both
-     were the phone's alone; a desktop reader typing a question into the same field got place rows or nothing.
+     early and not a second implementation. It asks no network; Enter still does. The field is for places only:
+     it has no «Ask Atlas» row — a question is asked in Atlas's own input (the Atlas tab, the floating card, the A key).
      ⚠ A SEARCH THAT HAS BEEN OVERTAKEN WRITES NOTHING. Each call takes a generation; the three geocoders of an
      earlier Enter can answer after the reader has typed on, and their rows would land under the new letters. */
   let _gcGen=0;
@@ -301,21 +300,6 @@ export function searchGeocode(HOST){
   /* a row was chosen: later answers of the same search write nothing, the field holds a name, and on a phone the
      keyboard goes away (the answer is on the map) */
   function _picked(inp,name){ _gcGen++; inp.value=name; inp._imPicked=name.trim(); try{ if(HOST.isMobile()) inp.blur(); }catch(_){} }
-  function _askAtlasRow(res,q){
-    const d=document.createElement('div'); d.className='ms-item ms-atlas'; d.setAttribute('role','option');
-    const t=document.createElement('b'); t.textContent=IntMapLang.t(HOST.lang,'Ask Atlas','Atlasに聞く');
-    const s=document.createElement('span'); s.className='ms-kind'; s.textContent=q;
-    d.appendChild(t); d.appendChild(s);
-    d.onclick=()=>{ res.style.display='none';
-      try{ const inp=document.getElementById('ms-input'); if(inp){ inp.value=''; inp.blur(); } }catch(_){}
-      /* the Atlas tab opens (the same button the reader would press), then the console — fetched on first use — runs the question.
-         On a desktop whose left sidebar is folded away the tab would open out of sight, so the sidebar opens first — through
-         the one action that does it (ui.sidebar.open, js/app-body.js); the workspace mode has no sidebar and floats Atlas. */
-      try{ const OS=window.IntMapOS; if(OS&&!HOST.isMobile()&&!document.body.classList.contains('ws-mode')) OS.exec('ui.sidebar.open',{source:'ui'}); }catch(_){}
-      try{ const b=document.getElementById('btn-community'); if(b&&HOST.mode!=='atlas') b.click(); }catch(_){}   /* the tab button toggles: pressed on Atlas it would close it */
-      try{ const Z=window.IntMapLazy; (Z?Z.need('atlasConsole'):Promise.resolve()).then(()=>{ const C=window.IntMapConsole; if(C&&C.run) C.run(q); }); }catch(_){} };
-    res.appendChild(d);
-  }
   const _localRaw=(l)=>(l&&l.bbox)?{ boundingbox:[l.bbox[1],l.bbox[3],l.bbox[0],l.bbox[2]], lat:l.lat, lon:l.lng, homeExtent:true }:null;
   /* (ux-next) go to ONE row of localFuzzyPlaces — the same flight a click on that row in the result list makes; the
      command palette (js/command-palette.js) offers the same rows and must not fly a second way */
@@ -434,7 +418,7 @@ export function searchGeocode(HOST){
       const d=document.createElement('div'); d.className='ms-item'; d.setAttribute('role','option'); const row={f,el:d};
       d.onclick=()=>{ const g=row.f; res.style.display='none'; _picked(inp,rowWhen?typed:String(g.label).split(',')[0].split(' · ')[0]); gotoPlace(g.lng,g.lat,g.label,g.raw||null,g.kind||null); if(rowWhen) WW.applyWhen(rowWhen,{source:'search'}); };
       const at=rows.findIndex((r)=>_rankCmp(f.rank,r.f.rank)<0);
-      if(at<0){ rows.push(row); const atl=res.querySelector('.ms-atlas'); if(atl) res.insertBefore(d,atl); else res.appendChild(d); } else { res.insertBefore(d,rows[at].el); rows.splice(at,0,row); }   /* (where-when-search) a row that arrives late (the historical names) still goes above «Ask Atlas» */
+      if(at<0){ rows.push(row); res.appendChild(d); } else { res.insertBefore(d,rows[at].el); rows.splice(at,0,row); }   /* (where-when-search) a row that arrives late (the historical names) still goes above «Ask Atlas» */
       _paint(); };
     /* (#R15e) Show strong LOCAL matches IMMEDIATELY — was awaiting Nominatim with no timeout, so a slow /
        unreachable geocoder left the box frozen on "Loading…" forever ("結果が出てこない"). Now local
@@ -450,7 +434,7 @@ export function searchGeocode(HOST){
       const s2=document.createElement('span'); s2.className='ms-kind'; s2.textContent=IntMapLang.t(HOST.lang,'Time only · the map stays where it is','時刻だけ · 場所はそのまま'); d.appendChild(s2);
       d.onclick=()=>{ res.style.display='none'; _picked(inp,typed); WW.applyWhen(when,{source:'search'}); };
       res.appendChild(d); }
-    if(when&&!q){ _askAtlasRow(res,typed); return; }
+    if(when&&!q){ return; }
     let histP=null;
     if(rowWhen) histP=WW.ensureHist().then(()=>{ if(gen!==_gcGen) return;
       WW.histCandidates(q,rowWhen,HOST.lang).forEach(h=>addItem(h.name,h.lng,h.lat,null,h.kind,{level:h.level,scale:_classScale(h.kind),pop:0},h.note,h.guard));
@@ -462,7 +446,7 @@ export function searchGeocode(HOST){
        the OUTLIER test — a guess about a provider box of unknown provenance, and the wrong question
        to ask of one js/country-extent.js has already trimmed. Without it twenty countries held their
        own measured footprint and were still flown to the flat `country` zoom of 4.4. */
-    if(suggest){ local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l)); _askAtlasRow(res,typed); if(!res.children.length) res.style.display='none'; return; }
+    if(suggest){ local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l)); if(!res.children.length) res.style.display='none'; return; }
     local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l));
     /* (search-identity) Enter with a row on the device whose WHOLE name is the query: that row is the answer and it
        is already in hand — go now, ask no network. Anything less waits for the three geocoders (below). */
@@ -523,7 +507,6 @@ export function searchGeocode(HOST){
     if(go&&rows[0]){ if(!rowWhen){ rows[0].el.click(); return; }
       /* (where-when-search) after the geocoders: one place still goes; several stay on the card to choose from */
       const one=_onePlace(true)||_onePlace(false); if(one){ one.el.click(); return; } }
-    _askAtlasRow(res,typed);
   }
   let searchCardEl=null, searchCardData=null, searchCardOnMove=null;
   function closeSearchCard(){

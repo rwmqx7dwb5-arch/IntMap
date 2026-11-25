@@ -10,7 +10,6 @@
   "inline-actions.js": "company.footprint from an inline chip; the capability data.companySites queries and words the result, the chip only opens the map.",
   "map-projection.js": "The URL-restore of the flat projection at boot (source 'url'): state restoration, not a press. The two projection buttons in the same file press view.projection.",
   "map-ui.js": "The Tools rows open sim/tool panels by command id and wait on the returned promise to repaint (see the #R264 note there); each tool's capability takes different, named arguments (sim.pandemic vs sim.radiation ...), so the row's id is data.",
-  "search-geocode.js": "ui.sidebar.open with source 'auto' after a result: a layout reflex declared unbridged on purpose (atlas-command-unbridged.json).",
   "session-tabs.js": "Boot and session-restore tab selection (sources 'default' and 'restore'): state restoration, not a press. The four tab buttons in the same file press panel.tab.",
   "start-home.js": "layer.on/layer.off by layer ID and the synchronous ok it returns; layers.toggle takes a NAME and resolves it, and the home screen needs the sync result to repaint its switch.",
   "widget-layout.js": "A widget's runCommand(cmdId) is a declared command id in a widget definition (data); it records source 'widget'.",
