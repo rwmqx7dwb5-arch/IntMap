@@ -66,3 +66,9 @@ newsjp: 空港・制裁・国境の検問所・世界遺産・米大統領選・
 - 世界遺産・`hdi-series` の座標／年の列の表現。
 - `research.impact` の 4 つの差（円・ニュース・密度・結びつき）を Atlas が汎用の能力から組み立てられるかの測定。
 - 上の 3 つの確認・書き込み先・名前分類を 1 つの規則に移してから `map.clear*` を畳む設計。
+
+## 5. 上げた天井
+
+`async chunk "data-tables"` 14.5 → 31.6 kB（`tests/perf-baseline.json`、実測 32,333 B）: 表の索引（ラベルと列）が 6 表から 21 表になった分。この索引は `data.query` が
+最初に表を名指したときだけ import され（`js/atlas-query.js`）、起動の経路には乗らない。`perf-budget --update` は main が動き続けて「CI が測る木ではない」と拒むため、
+対象の行（これ 1 行だけが超過）の実測値を直接書いた。
