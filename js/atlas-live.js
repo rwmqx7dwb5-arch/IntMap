@@ -183,7 +183,7 @@ export function makeAtlasLive(HOST, deps) {
     if (!d) return '';
     const st = stateOf(ai);
     const live = !!(st && !st.ended);
-    return '<div class="atl-draft' + (live ? ' live' : '') + (ai.__atlDraftStopped ? ' stopped' : '') + '">' + md(d) + (live ? CARET : '') + '</div>';
+    return '<div class="atl-draft' + (live ? ' live' : '') + (ai.__atlDraftStopped ? ' stopped' : '') + '">' + md(d) + '</div>';
   }
   function paintDraft(ai) {
     const st = stateOf(ai); if (!st || st.painted) return;
@@ -194,14 +194,11 @@ export function makeAtlasLive(HOST, deps) {
         let el = ai.querySelector('.atl-draft');
         if (!ai.__atlDraft) { if (el) el.remove(); return; }
         if (!el) { ai.insertAdjacentHTML('afterbegin', draftHtml(ai)); return; }
-        el.innerHTML = md(ai.__atlDraft) + (st.ended ? '' : CARET);
+        el.innerHTML = md(ai.__atlDraft);
         el.classList.toggle('live', !st.ended);
       } catch (_) { }
     });
   }
-  /* the place the next word will appear — a span after the rendered markdown, not a pseudo-element on
-     its last child (which may be a list or a line break, and would put the caret somewhere else) */
-  const CARET = '<span class="atl-caret" aria-hidden="true"></span>';
   function setDraft(ai, text) {
     ai.__atlDraft = String(text || '');
     paintDraft(ai);
@@ -243,7 +240,15 @@ export function makeAtlasLive(HOST, deps) {
             if (nm) st.callNames.push(nm);
             /* a call in the same reply makes whatever it wrote a note, not the answer */
             if (ai.__atlDraft) { narrate(ai, st, ai.__atlDraft); setDraft(ai, ''); }
-            if (PROG) PROG.detail(ai, st.callNames.map(wordForTool).join(', '), L('Next: ', '次: ', 'Als Nächstes: ', 'Далее: ', 'Siguiente: '));
+            if (PROG) {
+              /* ⚠ ONLY WORDS THAT NAME SOMETHING. A call whose tool has no word of its own (the generic run/find door, whose subject is in
+                 arguments that have not streamed yet) is left out rather than written as a placeholder; the row of the operation that
+                 follows says what it did, with its subject. The same word twice is one word and a count. */
+              const cnt = Object.create(null), order = [];
+              st.callNames.forEach((c) => { const w = wordForTool(c); if (!w) return; if (!(w in cnt)) { cnt[w] = 0; order.push(w); } cnt[w]++; });
+              const said = order.map((w) => (cnt[w] > 1 ? w + ' ×' + cnt[w] : w)).join(', ');
+              if (said) PROG.detail(ai, said, L('Next: ', '次: ', 'Als Nächstes: ', 'Далее: ', 'Siguiente: '));
+            }
           } else if (name === 'search') {
             if (PROG) PROG.detail(ai, L('Searching the web', 'Web を検索中', 'Durchsuche das Web', 'Ищу в интернете', 'Buscando en la web'));
           } else if (name === 'reset') {
@@ -265,7 +270,7 @@ export function makeAtlasLive(HOST, deps) {
     /* (atlas-plan-on-map) the loop's own tool: not a capability, so it has no category to be worded by */
     if (deps.plan && deps.plan.TOOL && n === deps.plan.TOOL.name) return L('Planning', '計画を立てる');
     try { if (deps.wordForTool) { const w = deps.wordForTool(n); if (w) return w; } } catch (_) { }
-    return n;
+    return '';   /* an unnamed tool has no word — never its raw tool name (find_capability) */
   }
   /* (atlas-interim-kept) every note is also kept, in order, as the words it ended with — the fallback
      for the finished bubble when js/atlas-agent.js returns no `interim` (saidHtml). One entry per row:
@@ -296,7 +301,7 @@ export function makeAtlasLive(HOST, deps) {
     if (current === ai) current = null;
     if (how === 'cancelled' || how === 'superseded') {
       /* what was written stays, said to be unfinished — the answer it was going to be never arrived */
-      if (ai.__atlDraft) { ai.__atlDraftStopped = true; try { const el = ai.querySelector('.atl-draft'); if (el) { el.classList.remove('live'); el.classList.add('stopped'); const c = el.querySelector('.atl-caret'); if (c) c.remove(); } } catch (_) { } }
+      if (ai.__atlDraft) { ai.__atlDraftStopped = true; try { const el = ai.querySelector('.atl-draft'); if (el) { el.classList.remove('live'); el.classList.add('stopped'); } } catch (_) { } }
     } else {
       ai.__atlDraft = '';
       try { const el = ai.querySelector('.atl-draft'); if (el) el.remove(); } catch (_) { }
@@ -467,9 +472,6 @@ export function makeAtlasLive(HOST, deps) {
    on the map), so its rules are not scoped to the panel. */
 export const ATLAS_LIVE_CSS =
   '#atlas-panel .atl-draft{margin-bottom:6px;}'
-  + '#atlas-panel .atl-caret{display:inline-block;width:.5em;height:1em;margin-left:2px;vertical-align:-0.12em;'
-  + 'border-radius:2px;background:currentColor;opacity:.45;animation:atl-caret 1s steps(2,start) infinite;}'
-  + '@keyframes atl-caret{to{visibility:hidden;}}'
   + '#atlas-panel .atl-said{margin-bottom:8px;color:var(--text-muted);font-size:13px;line-height:1.5;}'
   + '#atlas-panel .atl-said-line+.atl-said-line{margin-top:4px;}'
   + '#atlas-panel .atl-said-line p{margin:0;}'
@@ -506,7 +508,7 @@ export const ATLAS_LIVE_CSS =
   + '.atl-hud.done .atl-hud-dot{animation:none;background:#30d158;}'
   + '@keyframes atl-hud-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.7);}}'
   + '@media (prefers-reduced-motion:reduce){.atl-hud,.atl-hud.on{transition:none;transform:translate(-50%,0);}'
-  + '.atl-hud-dot,#atlas-panel .atl-caret{animation:none;}}';
+  + '.atl-hud-dot{animation:none;}}';
 /* On a phone the Atlas sheet covers the bottom of the map, so the pill stands under the top bar. Placed
    inside the panel sheet's phone block by js/atlas-styles.js — the boundary is IntMapDevice.COMPACT. */
 export const ATLAS_LIVE_CSS_MOBILE =

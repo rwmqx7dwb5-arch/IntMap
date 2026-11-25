@@ -150,7 +150,7 @@ test('① the card blocks only its own rectangle, and motion yields to prefers-r
 /* ── ④ ────────────────────────────────────────────────────────────────────────────────────── */
 test('④ the label in front of the live row\'s content is its own node, so weight can tell them apart', () => {
   const live = read('js/atlas-live.js');
-  assert.match(live, /PROG\.detail\(ai, st\.callNames\.map\(wordForTool\)\.join\(', '\), L\('Next: '/, 'the 「次:」 label travels as its own argument');
+  assert.match(live, /PROG\.detail\(ai, said, L\('Next: '/, 'the 「次:」 label travels as its own argument');
   const prog = read('js/atlas-progress.js');
   assert.match(prog, /function detail\(bubble, text, label\)/);
   assert.match(prog, /className = 'atl-trace-lbl'/);
