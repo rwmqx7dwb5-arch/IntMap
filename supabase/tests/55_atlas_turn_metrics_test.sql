@@ -1,6 +1,6 @@
 -- ============================================================================
 --  pgTAP · 55 — atlas turn metrics: one row per finished Atlas answer, counts and milliseconds only.
---  supabase/migrations/20261130100000_atlas_turn_metrics.sql
+--  supabase/migrations/20261130110000_atlas_turn_metrics.sql
 --    ① the table: RLS on, the account foreign key, one row per (account, turn);
 --    ② the writer: the caller's own account only, clamped, a replay is a no-op, a signed-out caller writes nothing;
 --    ③ who reads what: the owner their own rows; no client role writes the table directly;

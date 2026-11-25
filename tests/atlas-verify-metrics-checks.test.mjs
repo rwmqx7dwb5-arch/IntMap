@@ -140,7 +140,7 @@ test('the comparison report says which way is better and never invents a missing
 });
 
 test('the metrics migration: one row per turn, no text columns, admin-only read', () => {
-  const sql = fs.readFileSync(new URL('../supabase/migrations/20261130100000_atlas_turn_metrics.sql', import.meta.url), 'utf8');
+  const sql = fs.readFileSync(new URL('../supabase/migrations/20261130110000_atlas_turn_metrics.sql', import.meta.url), 'utf8');
   assert.match(sql, /unique \(user_id, turn_key\)/);
   assert.match(sql, /if not public\.is_admin\(\) then raise exception/);
   assert.match(sql, /revoke all on public\.atlas_turn_metrics from public, anon, authenticated/);

@@ -29,7 +29,7 @@ internal: 子 AI による検証の呼び出しを減らす内部の変更と、
 - 結果には `basis`（`program` / `model`）の内訳が付く。回答の注記は「プログラム検査による反証 n 件、モデルには尋ねていません」を述べる。
 - 変更の範囲: `js/atlas-orchestrate.js`（`verifyContract` / `verifyOutcome`）、`js/atlas-cap-research.js`（`after` で振り分け）。**`atlas-delegate.js` は触っていない**（所見は元々生のまま運ばれ、`id` が残る）。
 
-## 3. 回答ごとの計測（`js/atlas-turn-metrics.js`・migration `20261130100000_atlas_turn_metrics.sql`）
+## 3. 回答ごとの計測（`js/atlas-turn-metrics.js`・migration `20261130110000_atlas_turn_metrics.sql`）
 
 - **1 回答 1 行**: 回答完了までの時間、最初の有用な結果までの時間（plan 以外の操作を頼んだ手の次の手が始まった時点。plan だけの手は数えない）、モデル待ち/操作の内訳、費用（全呼び出しが費用を報告したか込み）、達成（ターン自身の宣言 complete/partial/none）、操作数（頼んだ・実行・**同じ呼び出しの再利用**・拒否・存在しない道具）、返された所見と出典つきの数、プログラム/モデル/未決の検査数、最も時間を食った道具。**質問・回答・場所・URL は載せない**（数とミリ秒だけ）。
 - 書き手は `log_atlas_turn_metrics`（SECURITY DEFINER・呼び出し元自身の口座・全値クランプ・同じ turn_key は 1 回だけ）。保持 90 日（比較に 1 か月以上の窓が要るため。ジャーナルの 30 日では足りない）。`account_data_catalog` に文を足した。
