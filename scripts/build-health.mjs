@@ -65,6 +65,7 @@
  *      SH.IMM.IDPT (DTP3), SH.IMM.MEAS (MCV1) — both WHO/UNICEF WUENIC estimates.
  * ==========================================================================*/
 import fs from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WORLD_BANK_WDI } from './lib/upstream-cadence.mjs';
@@ -207,7 +208,7 @@ const data = {
 
 function comparable(o) { const c = JSON.parse(JSON.stringify(o)); delete c.built; return JSON.stringify(c); }
 
-const text = JSON.stringify(data, null, 1) + '\n';
+const text = JSON.stringify(withRowTables('health', data), null, 1) + '\n';
 if (process.argv.includes('--check')) {
   if (!fs.existsSync(OUT)) { console.error(`✗ ${path.relative(ROOT, OUT)} does not exist — run without --check`); process.exit(1); }
   const have = JSON.parse(fs.readFileSync(OUT, 'utf8'));

@@ -1,4 +1,54 @@
 {
+ "rowTables": [
+  {
+   "id": "airport-capacity-by-country",
+   "title": {
+    "en": "Airports with scheduled service, counted per country (OurAirports)",
+    "jp": "定期便のある空港の国別の数（OurAirports）"
+   },
+   "rows": "countries",
+   "key": "$key",
+   "name": "$key",
+   "columns": [
+    {
+     "key": "iso3",
+     "from": "$key",
+     "type": "text",
+     "label": {
+      "en": "ISO 3166-1 alpha-3 country code",
+      "jp": "ISO 3166-1 alpha-3 の国コード"
+     }
+    },
+    {
+     "key": "large",
+     "from": "lg",
+     "type": "number",
+     "label": {
+      "en": "Large airports with scheduled service",
+      "jp": "定期便のある大型空港の数"
+     }
+    },
+    {
+     "key": "medium",
+     "from": "md",
+     "type": "number",
+     "label": {
+      "en": "Medium airports with scheduled service",
+      "jp": "定期便のある中型空港の数"
+     }
+    },
+    {
+     "key": "capacity",
+     "from": "cap",
+     "type": "number",
+     "label": {
+      "en": "Capacity index: large + 0.25 x medium (airline infrastructure, not passengers or routes)",
+      "jp": "容量指数: 大型 + 0.25 x 中型（旅客数・路線ではなく空港の基盤）"
+     }
+    }
+   ]
+  }
+ ],
  "//": "Built by scripts/build-airports.mjs — do not edit by hand. Scheduled-service airline infrastructure per country. NOT routes, frequencies or passenger numbers; no source in this project has those.",
  "built": "2026-09-09",
  "sources": [

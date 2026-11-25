@@ -11,6 +11,7 @@
  * No second downloader/parser: the existing city harvest owns the JSON-LD scan.
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
@@ -115,7 +116,7 @@ export function main(args = process.argv.slice(2)) {
   /* Identity deduplication only. Coordinates or similar names cannot prove two
      source places are the same settlement. Existing tile renamings keep priority. */
   const cities = JSON.parse(readFileSync(path.join(ROOT, 'data/hist-cities.json'), 'utf8'));
-  const data = compile(record, new Set(cities.cities.map(p => p.id))), text = JSON.stringify(data) + '\n';
+  const data = compile(record, new Set(cities.cities.map(p => p.id))), text = JSON.stringify(withRowTables('hist-places', data)) + '\n';
   if (args.includes('--check')) {
     if (readFileSync(OUTPUT, 'utf8').replace(/\r\n/g, '\n') !== text) throw new Error('hist-places bundle differs from licensed source record');
   } else writeFileSync(OUTPUT, text);

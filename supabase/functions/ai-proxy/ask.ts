@@ -131,9 +131,9 @@ export async function ask(req: Request): Promise<Response> {
   const reqStart = Date.now();
   const workerKey = parentTurn ? turnId : "";
   let journalTask = parentTurn ? "atlas_delegate" : "";
-  const journal = (outcome: string, code: string, http: number, o: { model?: string; latencyMs?: number; total?: unknown; costMicros?: number; web?: boolean } = {}) =>
-    (parentTurn || journalTask === "atlas_turn")
-      ? recordJournal(db, { user: user.id, root: rootTurn, child: workerKey, task: journalTask, outcome, code, http, model: o.model || "", latencyMs: o.latencyMs ?? Date.now() - reqStart, total: o.total, costMicros: o.costMicros, web: o.web })
+  const journal = (outcome: string, code: string, http: number, o: { model?: string; latencyMs?: number; total?: unknown; costMicros?: number; web?: boolean; webSearches?: number } = {}) =>
+    (parentTurn || journalTask === "atlas_turn" || journalTask === "web_search")   /* (atlas-search-evidence-store) a web.search call is a root call of its own: its time and how many searches ran in it are what the journal must show */
+      ? recordJournal(db, { user: user.id, root: rootTurn, child: workerKey, task: journalTask, outcome, code, http, model: o.model || "", latencyMs: o.latencyMs ?? Date.now() - reqStart, total: o.total, costMicros: o.costMicros, web: o.web, webSearches: o.webSearches })
       : Promise.resolve(false);
   /* a refusal / failure answered before the provider is asked: the same JSON the caller always got, and its row */
   const bail = async (body: Record<string, unknown>, status: number) => {
@@ -691,7 +691,7 @@ export async function ask(req: Request): Promise<Response> {
     // 5) Success. (#R801) Settled BEFORE the answer leaves, so the turn cannot be refunded after it.
     await record();   // (ai-one-ledger) what it cost — off the answer's path where the platform allows (EdgeRuntime.waitUntil)
     await observe("ok", { incomplete: out.incompleteReason || "" });   // (atlas-turn-observability)
-    await journal("ok", "", 200, { model: out.served || model, latencyMs: Date.now() - startedAt, total: meter.total(), costMicros: costMicros(model, meter.total(), provider), web: !!out.webUsed });   // (atlas-delegation)
+    await journal("ok", "", 200, { model: out.served || model, latencyMs: Date.now() - startedAt, total: meter.total(), costMicros: costMicros(model, meter.total(), provider), web: !!out.webUsed, webSearches: out.webCount || 0 });   // (atlas-delegation)
     await settle();
     return { status: 200, body: {
       text: out.text,

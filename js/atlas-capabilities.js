@@ -409,7 +409,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["board.edit","boardEdit","editBoard,editTable,editWorkspace,changeCell,setCell","panel","none","panel.board","panel,explanation","session","none","","board"],
       ["board.delta","boardDelta","boardChanges,whatDidIChange,workspaceDiff","panel","none","","explanation","read","none","","board"],
       ["file.create","makeFile","createFile,makePdf,createPdf,exportPdf,saveAsPdf,makeDocument,createDocument,makeDocx,makeSlides,makeSpreadsheet,saveAsFile","research","none","","explanation","persist","none","",""],
-      ["geo.regionStat","regionStat","regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation","data","none","","explanation","session","none","",""],
+      ["geo.regionStat","regionStat","regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation","data","none","gis.dataset,map.object","explanation","session","none","",""],
       ["geo.ml","geoMl","multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty","data","none","gis.dataset","explanation","session","none","","gisCore","external"],
       ["knowledge.remember","knowledgeRemember","rememberKnowledge,keepKnowledge,saveFact","research","none","knowledge","explanation","persist","none","",""],
       ["knowledge.recall","knowledgeRecall","recallKnowledge,whatDoIKnow,priorKnowledge","research","none","","explanation","read","none","","","external"],
@@ -431,6 +431,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["geo.imageChange","geoImageChange","imageChange,changeDetection,satelliteChange,landCoverChange,embeddingChange,radarChange,beforeAfter","data","none","gis.dataset","explanation","read","none","place?","","external"],
       ["research.longform","longform","writeLongReport,longDocument,writeInChapters","research","none","","explanation","read","none","","","external"],
       ["system.command","command","appCommand,kernelCommand","system","control","ui.any","panel","session","none","",""],
+      ["web.search","webSearch","searchTheWeb,parallelSearch,searchSeveral,lookUpOnline,webLookup","research","none","","explanation","read","none","","","external"],
+      ["web.evidence","webEvidence","rereadEvidence,whatDidWeFind,readSavedPage,evidenceById","research","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -466,7 +468,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var ANSWERS = {"research.brief":1,"research.mapReport":1,"research.situationMap":1,"research.historicalMap":1,"research.analyze":1};
     var ASKS_USER = {"dialog.ask":1};
     var DELEGATES = {"research.delegate":1,"jobs.start":1,"jobs.resume":1,"research.longform":1};
-    var HEADLESS = {"data.query":1,"model.run":1};
+    var HEADLESS = {"data.query":1,"geo.regionStat":1,"model.run":1};
     /* ⚠ GENERATED POLICY — END */
 
     /* ══ OBSERVERS ═══════════════════════════════════════════════════════════════════════════════

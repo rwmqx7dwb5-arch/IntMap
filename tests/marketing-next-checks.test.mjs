@@ -17,6 +17,7 @@
  *  ⑨ the build writes the pages and the sitemap index lists them; every footer links the calendar
  * ========================================================================== */
 import { test } from 'node:test';
+import { withRowTables } from '../scripts/lib/row-tables.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname, posix } from 'node:path';
@@ -32,7 +33,7 @@ const enNames = (l) => (l || []).map((p) => p.en);
 test('① data/on-this-day.json is what the records give (the map\'s own code, re-run)', async () => {
   const B = await import('../scripts/build-on-this-day.mjs');
   const fresh = await B.build();
-  assert.deepEqual(JSON.parse(JSON.stringify(fresh)), IDX, 'data/on-this-day.json is stale — run node scripts/build-on-this-day.mjs');
+  assert.deepEqual(JSON.parse(JSON.stringify(withRowTables('on-this-day', fresh))), IDX, 'data/on-this-day.json is stale — run node scripts/build-on-this-day.mjs');
 });
 
 test('② named days say what the border record says on them, and nothing it does not date', () => {

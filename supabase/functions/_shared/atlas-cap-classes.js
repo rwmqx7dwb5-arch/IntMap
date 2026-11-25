@@ -58,7 +58,9 @@ export const READ_CAPS = Object.freeze(new Set([
   "time.placeHistory",
   "view.inspect",
   "web.browse",
+  "web.evidence",
   "web.render",
+  "web.search",
 ]));
 export const PARKABLE_CAPS = Object.freeze(new Set([
   "board.compose",

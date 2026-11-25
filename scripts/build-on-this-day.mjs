@@ -53,6 +53,7 @@
  *    node scripts/build-on-this-day.mjs --check   re-derive and compare with the committed file (exit 1 on a difference)
  * ==========================================================================*/
 import { readFileSync, writeFileSync } from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -223,7 +224,7 @@ export async function build() {
   };
 }
 
-const serialize = (o) => JSON.stringify(o) + '\n';
+const serialize = (o) => JSON.stringify(withRowTables('on-this-day', o)) + '\n';
 
 const isMain = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {

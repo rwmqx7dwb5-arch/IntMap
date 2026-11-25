@@ -28,6 +28,7 @@
  *  Output: data/deep-sky.json
  * ==========================================================================*/
 import fs from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import path from 'node:path';
 import { fetchChecked } from './lib/upstream.mjs';
 import { SIMBAD } from './lib/upstream-cadence.mjs';
@@ -244,7 +245,7 @@ const main = async () => {
       console.warn('\nSIMBAD at ' + host + ' did not answer the build — ' + m);
       continue;
     }
-    fs.writeFileSync(OUT, JSON.stringify(got.out));
+    fs.writeFileSync(OUT, JSON.stringify(withRowTables('deep-sky', got.out)));
     console.log(`\n→ ${OUT}  (${got.rows.length} objects, ${got.withDist} with a published distance, ${(fs.statSync(OUT).size/1024).toFixed(0)} KB, from ${host})`);
     return;
   }

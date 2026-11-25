@@ -26,6 +26,7 @@
  *  Output: data/small-bodies.json
  * ==========================================================================*/
 import fs from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import path from 'node:path';
 import { fetchChecked } from './lib/upstream.mjs';
 import { JPL_SBDB } from './lib/upstream-cadence.mjs';
@@ -244,7 +245,7 @@ const main = async () => {
   };
   /* the floor is asked BEFORE the write (it used to be asked after, leaving the short file behind) */
   if(bodies.length < 100){ console.error(`only ${bodies.length} bodies — refusing to write ${OUT}`); process.exit(1); }
-  fs.writeFileSync(OUT, JSON.stringify(out));
+  fs.writeFileSync(OUT, JSON.stringify(withRowTables('small-bodies', out)));
   console.log(`\n→ ${OUT}  (${bodies.length} bodies, ${(fs.statSync(OUT).size/1024).toFixed(0)} KB)`);
 };
 

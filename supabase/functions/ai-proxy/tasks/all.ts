@@ -18,3 +18,4 @@ export { default as atlas_delegate } from "./atlas_delegate.ts";
 export { default as atlas_verify } from "./atlas_verify.ts";
 export { default as atlas_effort } from "./atlas_effort.ts";
 export { default as atlas_section } from "./atlas_section.ts";
+export { default as web_search } from "./web_search.ts";

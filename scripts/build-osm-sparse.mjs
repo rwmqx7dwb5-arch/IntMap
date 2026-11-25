@@ -19,6 +19,7 @@
  *    node scripts/build-osm-sparse.mjs            → data/osm-diplo.json, data/osm-space.json
  * ==========================================================================*/
 import fs from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OPENSTREETMAP } from './lib/upstream-cadence.mjs';
@@ -140,6 +141,6 @@ for (const [key, SET] of Object.entries(SETS)) {
   const out = { built: new Date().toISOString().slice(0, 10), source: 'OpenStreetMap contributors (ODbL), Overpass API',
     query: SET.q, count: seen.size, features: [...seen.values()] };
   const f = path.join(ROOT, 'data', 'osm-' + key + '.json');
-  fs.writeFileSync(f, JSON.stringify(out));
+  fs.writeFileSync(f, JSON.stringify(withRowTables('osm-' + key, out)));
   console.log('wrote', f, fs.statSync(f).size, 'bytes');
 }

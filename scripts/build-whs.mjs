@@ -65,6 +65,7 @@
  *          --check   rebuild into memory and exit 1 if the committed files differ
  * ==========================================================================*/
 import fs from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import os from 'node:os';
@@ -390,7 +391,7 @@ async function main() {
     sites,
     points,
   };
-  const layerText = JSON.stringify(layer);
+  const layerText = JSON.stringify(withRowTables('whc-sites', layer));
   const perLocale = new Map();
   for (const tag of locales) {
     const sitesOut = {};
