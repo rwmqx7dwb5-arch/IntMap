@@ -1928,6 +1928,7 @@ atlas-job-core.js                 **契約と計画の核**——仕事の契約
 atlas-server-class.js             **永続ジョブが能力をどこで動かせるか**——能力の記録から導く 3 つの区分（`read`＝サーバの twin を持てる／`parkable`＝地図やセッションを変えるのでジョブが保存し、ページが戻ったときに適用／`page-only`）。`js/cap-bridge.js` の `effectClass` の上に立ち、手で並べた一覧を持たない。Edge Function 側の写しは `scripts/sync-atlas-cap-classes.mjs` が生成する（検査は tests/exec-platform-checks.test.mjs）
 atlas-job-products.js            **終わった永続ジョブが残すもの**——ジョブ 1 件につき作業 1 件（`wk-job-<uuid>`）を作業ストアへ。分担ごとに `answer`・統合結果を `document` として、内容が変わらなければ足さず、変われば次の版にする。作業記憶へ「ジョブが未了」（kind `job`＝ターンをまたいで残る）と終了を伝える。検査は tests/exec-platform-checks.test.mjs
 atlas-jobs-client.js              永続ジョブのページ側——`makeJobsClient`（start/list/get/cancel/amend・RLS 越しに自分の行だけ）・`jobFacts`/`jobText`・進捗カード `renderJobCard`（終わった piece から順に出す・Stop と指示欄は実行中だけ）・カードを生かす `mountJobCards`
+atlas-model-prefetch.js           `model.run` の**取得の登録**（`atlas-prefetch.js` へ）——能力モジュールは最上位の文を持てないので別ファイル
 atlas-prefetch.js                 能力の**読み取りの先行開始**——外部から取って地図へ書く能力（`model.run`）の「取得」を、返信を解釈した時点で始める（書き込みの順は変えない）
 atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-fact-comparability.js       Atlas — 複数の子の事実を「並べてよいか」で観測する（単位・範囲・境界・期間・集計の同異、Semantic Layer の comparable()、対象の紐が期間内に変わったか）。判定はせず status も変えない。DOM なし

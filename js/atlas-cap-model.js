@@ -11,21 +11,12 @@
 import { str, num, int, one } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
 import { MODELS, discover, RUNNERS } from './specialist-models.js';
-import { registerPrefetch, takePrefetch } from './atlas-prefetch.js';
+import { takePrefetch } from './atlas-prefetch.js';
+import { readerIO } from './atlas-model-prefetch.js';   /* the reading half of this capability, registered there (a capability module holds no top-level statement) */
 
 const T = IntMapLang.pickArgs();
 const nm = (m, L) => L(m.name[0], m.name[1]);
 const GRADE = { normal: T('within its recent range', '直近の水準の範囲内'), elevated: T('elevated against its recent range', '直近の水準より高い'), high: T('well above its recent range', '直近の水準を大きく上回る') };
-
-/* the reading half of model.run: where, then the external model — no pin, no camera, nothing the reader sees */
-const readerIO = (K) => ({ now: new Date(), getJSON: async (u) => { try { return await K._fetchJSON(u); } catch (_) { return null; } } });
-registerPrefetch('model.run', async (a, K) => {
-  const m = MODELS.find((x) => x.id === a.model);
-  if (!m || m.status !== 'integrated') return null;
-  const ref = (a.lat != null && a.lng != null) ? { lat: +a.lat, lng: +a.lng, name: String(a.place || '') } : (a.place ? await K.geocode(a.place) : null);
-  if (!ref) return null;
-  return { ref, r: await RUNNERS[m.run](ref, readerIO(K)) };
-});
 
 export default [
   {

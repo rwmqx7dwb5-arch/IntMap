@@ -49,3 +49,7 @@ internal: Atlas の内部計測・費用計算・委譲の実行順の修正で�
 ## 5. 固定の写真（tests/fixtures/atlas-core-split-before.json）を更新した理由
 
 意図した差だけ: 既定モデルの単価行（`delegationModels` に gpt-6.2-sol が載る・`costUsd` 0.00048→0.00052・`p_cost_micros`）・ジャーナルの `p_cached`・OpenAI へ送る `prompt_cache_retention`。それ以外の差は無いことを、差分の経路の一覧で確かめてから書き直した。
+
+## 6. 費用が上がったもの
+
+遅延チャンク `atlas-console` が 1,391.3 → 1,399.9 kB（`tests/perf-baseline.json`）。先行取得の登録・ループの呼び出し・検証と強度判定の計時・指示文の追記の分。

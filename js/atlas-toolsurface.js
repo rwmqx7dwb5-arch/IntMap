@@ -26,6 +26,7 @@
  * ==========================================================================*/
 
 import { makeCapabilityBridge, attachBridge, clientSource } from './cap-bridge.js';   /* (cap-bridge) a program calls capabilities through the SAME makeExecute — see openProgramBridge */
+import './atlas-model-prefetch.js';   /* registers model.run's reading */
 import { hasPrefetch, startPrefetch } from './atlas-prefetch.js';   /* (atlas-orchestration-efficiency) a call's reading, started when its reply is parsed */
 import { searchSkills, readSkill, parseSkillQuery, skillReadiness, skillById } from './atlas-skills.js';   /* (atlas-skills) how-to material beside the capabilities; read a section at a time */
 
