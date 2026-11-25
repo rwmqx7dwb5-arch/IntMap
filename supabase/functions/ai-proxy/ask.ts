@@ -827,7 +827,17 @@ export async function ask(req: Request): Promise<Response> {
      and the provider call runs to its end anyway, so the usage is recorded and the turn is settled or
      refunded exactly as it would have been — leaving cannot turn a charged call into a free one, nor
      a failed one into a charged one. EdgeRuntime.waitUntil keeps the isolate for it. */
-  if (!(turnReq && (payload as Record<string, unknown>).stream === true)) {
+  /* ⚠⚠ (atlas-delegation-efficiency) A WORKER MAY ASK TO BE ANSWERED AS A STREAM TOO. Measured on production 2026-11-25 (public.ai_delegation_journal, two
+     real delegations of three pieces each): five of six workers ran out of the 120 s a non-streamed request is left (providerBudgetMs: the gateway
+     wants the response to START within 150 s) — recorded provider_unavailable, 0 tokens — and were then asked again WITHOUT the web, so the piece
+     came back as «answered from memory, treat as unverified»; the one that finished had searched for 110 s (103,276 input tokens). A worker's research
+     is the longest call there is, and the window it was given was the shortest. A streamed answer has already started, so it keeps the isolate's
+     whole wall clock (EDGE_WALL_CLOCK_MS): the meter says so (`longWindow`) and every provider request of this reader request takes its budget from
+     that. Nothing else about a worker moves: the same key, the same ledger, the same answer in `done`. EXPIRES WITH EDGE_RESPONSE_START_MS /
+     EDGE_WALL_CLOCK_MS (_shared/ai-provider.js), the only place the two numbers live. */
+  const streamWanted = (turnReq || spec.delegate) && (payload as Record<string, unknown>).stream === true;
+  if (streamWanted && !turnReq) meter.longWindow = true;
+  if (!streamWanted) {
     const a = await keyedAnswer(null);   /* (atlas-stream-replay) */
     return json(a.body, a.status);
   }
