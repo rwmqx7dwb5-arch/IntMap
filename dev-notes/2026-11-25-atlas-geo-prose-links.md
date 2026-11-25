@@ -33,3 +33,8 @@ Atlas 配置地点はホバー／タップで簡易説明を出す（配置時�
 ## 検査
 
 `tests/atlas-geo-prose-links-checks.test.mjs`（refs の出所・過去の回答・view・linkProse・凡例の端点・クリックが過去の回答から動き marker を増やさない・ラベルが上に戻る）。
+
+## 費用
+
+`atlas-console` チャンクは 1399.9 → 約 1408 kB（+約 8 kB・compose の参照/一時強調/説明/ラベル持ち上げ。新モジュール `atlas-geo-refs.js` も同じチャンクへ）。
+利用者が得るもの（回答文からの移動・強調・説明・ラベルの優先）の対価として ceiling を上げる（`perf-budget.mjs --update`）。

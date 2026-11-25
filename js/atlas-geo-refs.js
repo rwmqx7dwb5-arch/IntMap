@@ -26,9 +26,9 @@
  * ==========================================================================*/
 
 /* kinds whose subject is a REGION, not a spot — the camera frames them, it does not zoom onto a point */
-export const AREA_KINDS = ['country', 'admin1', 'admin2', 'region', 'sea', 'ocean', 'gulf', 'bay', 'basin', 'water', 'desert', 'plateau', 'range', 'continent', 'island', 'lake', 'strait', 'peninsula', 'park'];
+const AREA_KINDS = ['country', 'admin1', 'admin2', 'region', 'sea', 'ocean', 'gulf', 'bay', 'basin', 'water', 'desert', 'plateau', 'range', 'continent', 'island', 'lake', 'strait', 'peninsula', 'park'];
 /* kinds whose subject is a COURSE — a river, a tunnel, a line, a border */
-export const LINE_KINDS = ['river', 'canal', 'tunnel', 'railway', 'route', 'line', 'road', 'border', 'fault', 'pipeline', 'bridge'];
+const LINE_KINDS = ['river', 'canal', 'tunnel', 'railway', 'route', 'line', 'road', 'border', 'fault', 'pipeline', 'bridge'];
 
 export function makeAtlasGeoRefs(deps) {
   deps = deps || {};

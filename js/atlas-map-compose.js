@@ -966,7 +966,7 @@ export function makeAtlasMapCompose(deps) {
         paint: { 'circle-radius': 22, 'circle-color': ['get', 'color'], 'circle-opacity': ['*', 0.2, ['get', 'a']], 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': 3, 'circle-stroke-opacity': ['get', 'a'] } }, before);
     }
     function clearFlash() {
-      try { if (flashTimer) clearTimeout(flashTimer); if (flashBeat) clearInterval(flashBeat); } catch (_) { /* timers */ }
+      try { if (flashTimer) clearTimeout(flashTimer); if (flashBeat) clearTimeout(flashBeat); } catch (_) { /* timers */ }
       flashTimer = flashBeat = null;
       try { if (GE && GE().layers.hasSource(FLASH)) GE().layers.setSourceData(FLASH, { type: 'FeatureCollection', features: [] }); } catch (_) { /* no renderer */ }
     }
@@ -986,8 +986,8 @@ export function makeAtlasMapCompose(deps) {
         const g = GE(); ensureFlash(g);
         let beat = 0;
         const draw = () => { try { g.layers.setSourceData(FLASH, flashFeatures(ref, geom, (beat++ % 2) ? 0.45 : 1)); } catch (_) { /* renderer swapped */ } };
-        draw();
-        flashBeat = setInterval(draw, 420);
+        const tick = () => { draw(); flashBeat = setTimeout(tick, 420); };   /* a chain of timeouts, not an interval: clearFlash() ends it */
+        tick();
         flashTimer = setTimeout(clearFlash, 2600);
       } catch (_) { /* no renderer */ }
     }
@@ -1077,7 +1077,7 @@ export function makeAtlasMapCompose(deps) {
       hideTip();
       const d = document.createElement('div');
       d.className = 'atl-geo-tip'; d.setAttribute('role', 'tooltip');
-      d.style.cssText = 'position:fixed;z-index:2147483000;max-width:min(260px,80vw);pointer-events:none;padding:8px 11px;border-radius:12px;color:#fff;font:12.5px/1.45 -apple-system,system-ui,sans-serif;'
+      d.style.cssText = 'position:fixed;z-index:calc(var(--z-toast) + 1);max-width:min(260px,80vw);pointer-events:none;padding:8px 11px;border-radius:12px;color:#fff;font:12.5px/1.45 -apple-system,system-ui,sans-serif;'
         + 'background:rgba(28,28,30,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 6px 22px rgba(0,0,0,.35);';
       const nm = document.createElement('div'); nm.style.cssText = 'font-weight:600;';
       nm.textContent = r.n + '  ' + r.name; d.appendChild(nm);
