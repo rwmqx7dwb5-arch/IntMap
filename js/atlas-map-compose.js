@@ -47,10 +47,12 @@
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
 import { shapeAnchor } from './atlas-shape-resolve.js';
+import { makeAtlasGeoRefs } from './atlas-geo-refs.js';
 
 export function makeAtlasMapCompose(deps) {
   return (function () {
     deps = deps || {};
+    const refs = makeAtlasGeoRefs({ ledger: deps.ledger || null });   /* ONE kind of reference for the prose, the legend and the map — js/atlas-geo-refs.js */
     const GE = deps.GE;                       /* () => the geo engine (js/geo-engine.js) */
     const L = (typeof deps.L === 'function') ? deps.L : ((a) => a);
     const esc = (typeof deps.esc === 'function') ? deps.esc : ((s) => globalThis.IntMapSafe.html(s));
@@ -217,8 +219,6 @@ export function makeAtlasMapCompose(deps) {
            an annotation like a user pin, and sits where pins sit. */
         const before = ['user-pin-shadow', 'user-pin-dot'].find((id) => { try { return !!g.layers.has(id); } catch (_) { return false; } });
         const font = ['literal', ['Noto Sans Regular']];
-        let sub = 11;
-        try { if (window.IntMapLabelScale && window.IntMapLabelScale.sub) sub = window.IntMapLabelScale.sub(0.9); } catch (_) { sub = 11; }
         /* (atlas-real-shapes) shapes first, so lines and markers sit on them. A DERIVED shape is drawn dashed — the map says
            「approximate」 in the same place the legend does. */
         g.layers.add({ id: 'atl-compose-sf', type: 'fill', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'g'], 'area']],
@@ -246,10 +246,36 @@ export function makeAtlasMapCompose(deps) {
         g.layers.add({ id: 'atl-compose-n', type: 'symbol', source: SRC, filter: ['==', ['get', 't'], 'pt'],
           layout: { 'text-field': ['get', 'n'], 'text-font': font, 'text-size': 11.5, 'text-allow-overlap': true, 'text-ignore-placement': true },
           paint: { 'text-color': '#ffffff' } }, before);
-        g.layers.add({ id: 'atl-compose-t', type: 'symbol', source: SRC, filter: ['==', ['get', 't'], 'pt'], minzoom: 3,
-          layout: { 'text-field': ['get', 'name'], 'text-font': font, 'text-size': sub, 'text-offset': [0, 1.25], 'text-anchor': 'top', 'text-optional': true },
-          paint: { 'text-color': ['get', 'color'], 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.4 } }, before);
+        addNameLayer(g, before);
         bindMap(g);
+        return true;
+      } catch (_) { return false; }
+    }
+
+    /* THE NAME OF A PLACED POINT. ⚠ IT MUST BE PLACED BEFORE EVERY OTHER LABEL. MapLibre resolves label collisions in stack order — the
+       layer listed LAST is placed FIRST — and Atlas's layers sit wherever the style was when they were added: measured on the preview, the
+       name layer at index 37 with eleven basemap symbol layers (city, country, water, river…) above it, so the basemap's «Paris» took
+       the place of Atlas's own «Gare du Nord» and the name vanished. `text-optional` was never the cause. liftLabels() puts the layer
+       back on top of the labels each time the style changes; two Atlas names that collide still resolve as before (no allow-overlap). */
+    function addNameLayer(g, before) {
+      const font = ['literal', ['Noto Sans Regular']];
+      let sub = 11;
+      try { if (window.IntMapLabelScale && window.IntMapLabelScale.sub) sub = window.IntMapLabelScale.sub(0.9); } catch (_) { sub = 11; }
+      g.layers.add({ id: 'atl-compose-t', type: 'symbol', source: SRC, filter: ['==', ['get', 't'], 'pt'], minzoom: 3,
+        layout: { 'text-field': ['get', 'name'], 'text-font': font, 'text-size': sub, 'text-offset': [0, 1.25], 'text-anchor': 'top', 'text-padding': 2 },
+        paint: { 'text-color': ['get', 'color'], 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.4 } }, before);
+    }
+    function liftLabels() {
+      if (!GE) return false;
+      try {
+        const g = GE();
+        if (!g.layers.has('atl-compose-t') || !g.scene || typeof g.scene.getStyle !== 'function') return false;
+        const st = g.scene.getStyle(); const ids = st && st.layers ? st.layers : null;
+        if (!ids) return false;
+        const at = ids.findIndex((l) => l.id === 'atl-compose-t');
+        if (!ids.some((l, i) => i > at && l.type === 'symbol' && String(l.id).indexOf('atl-') !== 0)) return false;   /* already above every other label */
+        g.layers.remove('atl-compose-t');
+        addNameLayer(g, anchorBefore(g));
         return true;
       } catch (_) { return false; }
     }
@@ -274,7 +300,7 @@ export function makeAtlasMapCompose(deps) {
 
     function paint() {
       if (!ensureLayers()) return false;
-      try { GE().layers.setSourceData(SRC, features()); return true; } catch (_) { return false; }
+      try { GE().layers.setSourceData(SRC, features()); liftLabels(); return true; } catch (_) { return false; }
     }
 
     /* ⚠ THE STYLE IS NOT ALWAYS THERE YET. Measured on the preview: a compose dispatched in the first
@@ -300,6 +326,7 @@ export function makeAtlasMapCompose(deps) {
     /** clear() — a new conversation, a reset, or a «clear the map». */
     function clear() {
       records = []; relations = []; shapes = []; hoverId = '';
+      try { clearFlash(); hideTip(); } catch (_) { /* nothing shown */ }
       try { if (GE && GE().layers.hasSource(SRC)) GE().layers.setSourceData(SRC, { type: 'FeatureCollection', features: [] }); } catch (_) { /* no renderer */ }
     }
 
@@ -521,8 +548,8 @@ export function makeAtlasMapCompose(deps) {
           + (dated ? ('<span class="atl-cmp-src">' + esc(sourceText(r)) + '</span>') : '') + '</li>').join('') + '</ol>';
       }
       if (rels.length) {
-        h += '<div class="atl-cmp-rels">' + rels.map((x) => '<span class="atl-cmp-rel"><span class="atl-geo-n" style="background:' + esc(x.color) + '">' + x.fromN + '</span>'
-          + '<span class="atl-cmp-arr">' + (x.arrow ? '→' : '—') + '</span><span class="atl-geo-n" style="background:' + esc(x.color) + '">' + x.toN + '</span>'
+        h += '<div class="atl-cmp-rels">' + rels.map((x) => '<span class="atl-cmp-rel"><span class="atl-geo-n" data-geo="' + esc(x.from) + '" role="button" tabindex="0" style="background:' + esc(x.color) + '">' + x.fromN + '</span>'
+          + '<span class="atl-cmp-arr">' + (x.arrow ? '→' : '—') + '</span><span class="atl-geo-n" data-geo="' + esc(x.to) + '" role="button" tabindex="0" style="background:' + esc(x.color) + '">' + x.toN + '</span>'
           + (x.label ? ('<span class="atl-cmp-rl">' + esc(x.label) + '</span>') : '')
           /* (atlas-completion) what the line IS — and, for a route, whether it stays on water */
           + '<span class="atl-cmp-rl">' + esc(BASIS_TEXT[x.basis]())
@@ -683,7 +710,7 @@ export function makeAtlasMapCompose(deps) {
         if (!res.ok) { unplaced.push({ name: str(it.name, 120), reason: res.reason, ...(res.tried ? { tried: res.tried } : null), ...(res.verified === false ? { webVerified: false } : null), ...(res.candidates ? { candidates: res.candidates } : null) }); continue; }
         const sid = fileInLedger(it, res, role);
         const rec = { id: sid || (composeId + ':' + (placed.length + 1)), n: placed.length + 1, name: str(it.name, 120), canonical: res.canonical,
-          kind: str(it.kind, 40), country: str(it.country, 90), role: role, color: colour, lng: res.lng, lat: res.lat, provenance: res.provenance,
+          kind: str(it.kind, 40), country: str(it.country, 90), role: role, note: str(it.note, 240), color: colour, lng: res.lng, lat: res.lat, provenance: res.provenance,
           bbox: res.bbox, source: res.source, histNote: res.histNote || '', identifiedAs: res.identifiedAs || '', compose: composeId, artifact: artifactId, revision: revision,
           item: i + 1,   /* the 1-based position in THIS call's `items` — what a numeric `from`/`to` refers to (see below) */
           spellings: [str(it.name, 120), res.canonical, str(it.as, 120)].concat(res.altNames || []).filter(Boolean) };
@@ -821,12 +848,12 @@ export function makeAtlasMapCompose(deps) {
     /* (atlas-real-shapes) what the reader asked to SEE of an item: 'area' | 'line' | '' (a point) */
     function shapeOf(it) { const v = str(it && it.shape, 10).toLowerCase(); return (v === 'area' || v === 'line') ? v : ''; }
     /* what the result says about one drawn shape — no geometry (the map holds it; the model does not need the vertices) */
-    function shapePub(x) { return { name: x.name, shape: x.want, basis: x.basis, method: x.method, source: x.source, item: x.item }; }
+    function shapePub(x) { return { name: x.name, shape: x.want, basis: x.basis, method: x.method, source: x.source, item: x.item, bbox: refs.bboxOf(x.geometry) }; }
     /* what the result says about one drawn relation */
-    function relPub(r) { return { from: r.fromName, to: r.toName, fromN: r.fromN, toN: r.toN, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(),
+    function relPub(r) { return { from: r.fromName, to: r.toName, fromId: r.from, toId: r.to, fromN: r.fromN, toN: r.toN, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(),
       km: r.km != null ? Math.round(r.km) : null, sea: Object.assign({}, r.sea) }; }
     /* what the bubble is allowed to keep about a record — no functions, no engine handles */
-    function pub(r) { return { id: r.id, n: r.n, name: r.name, canonical: r.canonical, kind: r.kind, role: r.role, color: r.color, lng: r.lng, lat: r.lat, spellings: r.spellings.slice() }; }
+    function pub(r) { return { id: r.id, n: r.n, name: r.name, canonical: r.canonical, kind: r.kind, country: r.country, item: r.item, bbox: r.bbox || null, note: r.note || '', role: r.role, color: r.color, lng: r.lng, lat: r.lat, spellings: r.spellings.slice() }; }
 
     /**
      * recordsFor(results) — the compose records carried by a set of dispatch results (the bubble's
@@ -857,7 +884,7 @@ export function makeAtlasMapCompose(deps) {
       const SKIP = /^<(a|code|pre|sup|script|style)\b/i, UNSKIP = /^<\/(a|code|pre|sup|script|style)\s*>/i;
       let depth = 0;
       const cands = [];
-      recs.forEach((r) => (r.spellings || [r.name]).forEach((s) => { const e = esc(str(s, 120)); if (e && e.length >= 2) cands.push({ id: r.id, n: r.n, color: r.color, s: e, k: e.toLowerCase() }); }));
+      recs.forEach((r) => (r.spellings || [r.name]).forEach((s) => { const e = esc(str(s, 120)); if (e && e.length >= 2) cands.push({ id: r.id, n: r.n, color: r.color, s: e, k: e.toLowerCase() });   /* `n` is absent for an object Atlas resolved but did not number: it links, it carries no badge */ }));
       cands.sort((x, y) => y.s.length - x.s.length);
       for (let i = 0; i < parts.length; i++) {
         const p = parts[i];
@@ -882,7 +909,7 @@ export function makeAtlasMapCompose(deps) {
             if (/[A-Za-z0-9]/.test(c.s.charAt(c.s.length - 1)) && /[A-Za-z0-9]/.test(after)) continue;
             if (!free(at, at + c.s.length)) continue;
             taken.push([at, at + c.s.length, '<span class="atl-geo-ref" data-geo="' + esc(c.id) + '" role="button" tabindex="0">' + p.slice(at, at + c.s.length)
-              + '<span class="atl-geo-n" style="background:' + esc(c.color) + '">' + c.n + '</span></span>']);
+              + (c.n != null ? ('<span class="atl-geo-n" style="background:' + esc(c.color) + '">' + c.n + '</span>') : '') + '</span>']);
             done[c.id] = 1;
             break;
           }
@@ -896,8 +923,106 @@ export function makeAtlasMapCompose(deps) {
       return parts.join('');
     }
 
-    /* ── The two-way link. Bubble → map: hover a name, the marker gets a ring. Map → bubble: hover
-       a marker, every mention lights; click it, the first mention scrolls into view. ───────────── */
+    /**
+     * refsFor(results, el) -> ref[]
+     *
+     * The geographic objects THIS reply is about (js/atlas-geo-refs.js): what `map.compose` placed, the shapes it drew, and what the
+     * conversation's ledger resolved during the turn. The list is kept on the bubble and only ever grows, so a past reply still
+     * knows its coordinates after later turns have touched the same ledger entries and after `records` has been cleared.
+     */
+    function refsFor(results, el) {
+      const prev = (el && el.__atlGeoRefs) || [];
+      let turn = el ? el.__atlGeoTurn : null;
+      if (turn == null) {
+        try { turn = (ledger && typeof ledger.turn === 'function') ? ledger.turn() : null; } catch (_) { turn = null; }
+        if (el && turn != null) el.__atlGeoTurn = turn;
+      }
+      const list = refs.build(results, { turn, prev });
+      if (el) el.__atlGeoRefs = list;
+      return list;
+    }
+    /* where a click finds an object: the bubble's own refs first (a past reply), then what is drawn now */
+    function refOf(el, id) {
+      const own = el && el.__atlGeoRefs && el.__atlGeoRefs.find((x) => x.id === id);
+      if (own) return own;
+      const r = records.find((x) => x.id === id);
+      return r ? Object.assign({ extent: refs.extentOf(r.kind, ''), placed: true, spellings: r.spellings }, r) : null;
+    }
+
+    /* ── What a click does: the camera goes there and the object is lit for a moment. NO marker is added — the highlight is
+       its own source, removed again, so the map holds what the answer put there and nothing a click left behind. ── */
+    const FLASH = 'atl-geo-flash-src';
+    const geomCache = Object.create(null);
+    let flashTimer = null, flashBeat = null;
+    function anchorBefore(g) { return ['user-pin-shadow', 'user-pin-dot'].find((id) => { try { return !!g.layers.has(id); } catch (_) { return false; } }); }
+    function ensureFlash(g) {
+      if (!g.layers.hasSource(FLASH)) g.layers.addSource(FLASH, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      if (g.layers.has('atl-flash-f')) return;
+      const before = anchorBefore(g);
+      g.layers.add({ id: 'atl-flash-f', type: 'fill', source: FLASH, filter: ['==', ['get', 'g'], 'area'], paint: { 'fill-color': ['get', 'color'], 'fill-opacity': ['*', 0.22, ['get', 'a']] } }, before);
+      g.layers.add({ id: 'atl-flash-l', type: 'line', source: FLASH, filter: ['in', ['get', 'g'], ['literal', ['area', 'line', 'box']]],
+        layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': ['get', 'a'] } }, before);
+      g.layers.add({ id: 'atl-flash-p', type: 'circle', source: FLASH, filter: ['==', ['get', 'g'], 'pt'],
+        paint: { 'circle-radius': 22, 'circle-color': ['get', 'color'], 'circle-opacity': ['*', 0.2, ['get', 'a']], 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': 3, 'circle-stroke-opacity': ['get', 'a'] } }, before);
+    }
+    function clearFlash() {
+      try { if (flashTimer) clearTimeout(flashTimer); if (flashBeat) clearInterval(flashBeat); } catch (_) { /* timers */ }
+      flashTimer = flashBeat = null;
+      try { if (GE && GE().layers.hasSource(FLASH)) GE().layers.setSourceData(FLASH, { type: 'FeatureCollection', features: [] }); } catch (_) { /* no renderer */ }
+    }
+    function flashFeatures(ref, geom, a) {
+      const color = str(ref.color, 40) || '#0a84ff';
+      const out = [];
+      if (geom && geom.type) out.push({ type: 'Feature', geometry: geom, properties: { g: /Polygon/.test(geom.type) ? 'area' : 'line', color, a } });
+      else if (ref.bbox) {
+        const [w, s, e, n] = ref.bbox;
+        out.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[w, s], [e, s], [e, n], [w, n], [w, s]] }, properties: { g: 'box', color, a } });
+      } else out.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [ref.lng, ref.lat] }, properties: { g: 'pt', color, a } });
+      return { type: 'FeatureCollection', features: out };
+    }
+    function showFlash(ref, geom) {
+      clearFlash();
+      try {
+        const g = GE(); ensureFlash(g);
+        let beat = 0;
+        const draw = () => { try { g.layers.setSourceData(FLASH, flashFeatures(ref, geom, (beat++ % 2) ? 0.45 : 1)); } catch (_) { /* renderer swapped */ } };
+        draw();
+        flashBeat = setInterval(draw, 420);
+        flashTimer = setTimeout(clearFlash, 2600);
+      } catch (_) { /* no renderer */ }
+    }
+    /**
+     * reveal(ref) -> Promise<boolean>
+     * Moves the camera to the object and lights it. A spot is centred; a river, a border, a region is FRAMED WHOLE — its geometry
+     * is taken from what is drawn now, else asked for (the same resolver `shape` uses), else its bounding box is used.
+     */
+    async function reveal(ref) {
+      if (!ref) return false;
+      let g = null;
+      try { g = GE(); } catch (_) { return false; }
+      if (!g || !g.camera) return false;
+      const key = ref.id + '|' + ref.extent;
+      let geom = ref.geometry || geomCache[key] || null;
+      if (!geom) { const sh = shapes.find((x) => norm(x.name) === norm(ref.name)); if (sh) geom = sh.geometry; }
+      if (!geom && ref.extent !== 'point' && typeof resolveShape === 'function') {
+        try {
+          const sh = await withTimeout(resolveShape(str(ref.name, 120), ref.extent, { country: str(ref.country, 90) }), 8000);
+          if (sh && sh.ok && sh.geometry) { geom = sh.geometry; geomCache[key] = geom; }
+        } catch (_) { geom = null; }
+      }
+      const bb = geom ? refs.bboxOf(geom) : null;
+      const v = refs.view(bb ? Object.assign({}, ref, { bbox: bb }) : ref, g.camera.getZoom());
+      if (!v) return false;
+      try {
+        if (v.kind === 'bounds') g.camera.fitBounds(v.bounds, { padding: 70, maxZoom: 10, duration: 800 });
+        else g.camera.flyTo({ center: v.center, zoom: v.zoom, duration: 700 });
+      } catch (_) { return false; }
+      showFlash(ref, geom);
+      return true;
+    }
+
+    /* ── The two-way link. Bubble → map: click a name, the camera goes there and the object lights; hover it, a placed
+       marker gets a ring. Map → bubble: hover a marker, every mention lights; click it, the first mention scrolls into view. ── */
     function focus(id) {
       hoverId = str(id, 120);
       if (records.length) paint();
@@ -919,28 +1044,67 @@ export function makeAtlasMapCompose(deps) {
         node.addEventListener('blur', () => focus(''));
         node.addEventListener('keydown', (ev) => { if (ev && (ev.key === 'Enter' || ev.key === ' ')) { try { ev.preventDefault(); } catch (_) { } node.click(); } });
         node.addEventListener('click', (ev) => {
-          const r = records.find((x) => x.id === id);
+          const r = refOf(el, id);
           if (!r) return;
           try { ev.preventDefault(); } catch (_) { /* not an Event */ }
-          try { GE().camera.flyTo({ center: [r.lng, r.lat], zoom: Math.max(GE().camera.getZoom(), isArea(r.kind) ? 4 : 7), duration: 700 }); } catch (_) { /* no renderer */ }
+          reveal(r);
         });
       });
       return n;
+    }
+
+    /* ── The note on a placed marker: its name and why it matters to THIS answer. Both were written by Atlas when it placed the
+       item (`note`, else `role`); nothing is asked of a model on hover. Hover on a pointer, tap on a touch screen — the tap
+       still scrolls the reply to the passage, as before. ── */
+    let tipEl = null, tipTimer = null;
+    function hideTip() {
+      try { if (tipTimer) clearTimeout(tipTimer); } catch (_) { /* timer */ }
+      tipTimer = null;
+      try { if (tipEl && tipEl.parentNode) tipEl.parentNode.removeChild(tipEl); } catch (_) { /* gone */ }
+      tipEl = null;
+    }
+    function showTip(g, e, id, hold) {
+      const r = records.find((x) => x.id === id);
+      if (!r || typeof document === 'undefined') return;
+      const why = str(r.note || r.role, 240);
+      let xy = null;
+      try {
+        const rect = g.render.canvas().getBoundingClientRect();
+        if (e && e.point && isFinite(e.point.x)) xy = { x: rect.left + e.point.x, y: rect.top + e.point.y };
+        else { const oe = (e && e.originalEvent) || {}; const t = (oe.changedTouches && oe.changedTouches[0]) || oe; if (isFinite(t.clientX)) xy = { x: t.clientX, y: t.clientY }; }
+      } catch (_) { xy = null; }
+      if (!xy) return;
+      hideTip();
+      const d = document.createElement('div');
+      d.className = 'atl-geo-tip'; d.setAttribute('role', 'tooltip');
+      d.style.cssText = 'position:fixed;z-index:2147483000;max-width:min(260px,80vw);pointer-events:none;padding:8px 11px;border-radius:12px;color:#fff;font:12.5px/1.45 -apple-system,system-ui,sans-serif;'
+        + 'background:rgba(28,28,30,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 6px 22px rgba(0,0,0,.35);';
+      const nm = document.createElement('div'); nm.style.cssText = 'font-weight:600;';
+      nm.textContent = r.n + '  ' + r.name; d.appendChild(nm);
+      if (why) { const w = document.createElement('div'); w.style.cssText = 'opacity:.85;margin-top:2px;'; w.textContent = why; d.appendChild(w); }
+      document.body.appendChild(d);
+      const bw = d.offsetWidth, bh = d.offsetHeight;
+      const left = Math.max(8, Math.min(window.innerWidth - bw - 8, xy.x - bw / 2));
+      const top = (xy.y - bh - 18 >= 8) ? (xy.y - bh - 18) : Math.min(window.innerHeight - bh - 8, xy.y + 22);
+      d.style.left = left + 'px'; d.style.top = top + 'px';
+      tipEl = d;
+      if (hold) tipTimer = setTimeout(hideTip, 4500);
     }
     function bindMap(g) {
       if (mapBound || !g || !g.events || !g.events.onLayer) return;
       mapBound = true;
       try {
-        g.events.onLayer('mousemove', 'atl-compose-c', (e) => { try { const f = e.features && e.features[0]; if (!f) return; g.render.canvas().style.cursor = 'pointer'; const id = f.properties && f.properties.id; if (id && id !== hoverId) focus(id); } catch (_) { /* cosmetic */ } });
-        g.events.onLayer('mouseleave', 'atl-compose-c', () => { try { g.render.canvas().style.cursor = ''; } catch (_) { /* cosmetic */ } focus(''); });
+        g.events.onLayer('mousemove', 'atl-compose-c', (e) => { try { const f = e.features && e.features[0]; if (!f) return; g.render.canvas().style.cursor = 'pointer'; const id = f.properties && f.properties.id; if (id && id !== hoverId) { focus(id); showTip(g, e, id, false); } } catch (_) { /* cosmetic */ } });
+        g.events.onLayer('mouseleave', 'atl-compose-c', () => { try { g.render.canvas().style.cursor = ''; } catch (_) { /* cosmetic */ } focus(''); hideTip(); });
         g.events.onLayer('click', 'atl-compose-c', (e) => { try { const f = e.features && e.features[0]; const id = f && f.properties && f.properties.id; if (!id) return;
+          showTip(g, e, id, true);
           const target = document.querySelector('.atl-geo-ref[data-geo="' + String(id).replace(/"/g, '') + '"]') || document.querySelector('[data-geo="' + String(id).replace(/"/g, '') + '"]');
           if (target) { target.scrollIntoView({ block: 'center', behavior: 'smooth' }); target.classList.add('atl-geo-flash'); setTimeout(() => { try { target.classList.remove('atl-geo-flash'); } catch (_) { /* gone */ } }, 1400); } } catch (_) { /* cosmetic */ } });
         g.events.on('styledata', () => { if (records.length || relations.length) setTimeout(() => { try { paint(); } catch (_) { /* renderer swapped */ } }, 160); });
       } catch (_) { /* engine without layer events */ }
     }
 
-    const API = { SRC, LAYERS, PALETTE, run, clear, paint, focus, bind, linkProse, recordsFor, setVisible, isVisible,
+    const API = { SRC, LAYERS, PALETTE, run, clear, paint, focus, bind, linkProse, recordsFor, refsFor, reveal, setVisible, isVisible,
       records: () => records.map(pub), relations: () => relations.map((r) => ({ from: r.from, to: r.to, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(), sea: Object.assign({}, r.sea) })),
       gcPoints, splitAntimeridian };
     try { window.IntMapAtlasCompose = API; } catch (_) { /* non-browser (the node checks) */ }

@@ -293,7 +293,7 @@ export function makeAtlasGeoLedger(deps) {
     }
 
     const API = { KINDS, record, recordMany, resolve, all, mappable, contextLines,
-      setWindow, getWindow, beginTurn, clear, size: () => entities.length };
+      setWindow, getWindow, beginTurn, turn: () => turn, clear, size: () => entities.length };
     try { window.IntMapAtlasGeoLedger = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
