@@ -35,7 +35,7 @@ import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
 import { planOutline, runLongform, assemble, storageStore } from './atlas-longform.js';   /* (atlas-longform) research.longform: chapter by chapter, kept as it goes */
 import { makeResearchSearch } from './atlas-research-search.js';   /* (atlas-research-search) research.search — the tool side of an investigation Atlas steers */
-import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, CONTRACT_KINDS } from './atlas-delegate.js';
+import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, imagesShown, CONTRACT_KINDS } from './atlas-delegate.js';
 import { integrate, mergeFacts, makeFactResolver, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
 const researchMemory = { search: null };   /* research.search's per-turn memory — built on first use; a const holder (the kernel copy never runs it) */
 
@@ -1167,18 +1167,19 @@ export default [
          may make (policy.childMaxCalls), so the retry can never ask for more than the server allows. */
       /* a NUMBER bounds; null (the server states no count) stays null, which runs the worker on progress and not on a count; no policy at all → undefined (the plain two-request worker) */
       const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : (pol && pol.childMaxCalls === null ? null : undefined);
+      const executorImages = {
+        attachment: (K.ATTACH_LOG && typeof K.ATTACH_LOG.find === 'function') ? (n) => K.ATTACH_LOG.find(K._curTurn, n) : undefined,
+        attachmentNames: (K.ATTACH_LOG && typeof K.ATTACH_LOG.names === 'function') ? () => K.ATTACH_LOG.names(K._curTurn) : undefined,
+        frames: (K.VFRAMES && typeof K.VFRAMES.urls === 'function') ? () => K.VFRAMES.urls() : undefined,
+        framesText: (K.VFRAMES && typeof K.VFRAMES.promptBlock === 'function') ? () => K.VFRAMES.promptBlock() : undefined,
+      };
       const executor = makeRouterExecutor({
         worker: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal, maxCalls: childMax,
           capability: typeof K.runReadCapability === 'function' ? { run: K.runReadCapability, classify: K.classifyCapability, describe: K.describeCapability, find: K.findCapabilities } : null,   /* (delegation-agency) a worker granted `tools` runs read capabilities itself, through the same lane */
           /* (worker-reach) where a task's `images` are read from: the conversation's attachment ledger (js/atlas-attach-log.js, the one
              attach.recall reads) and the turn's frame ledger (js/atlas-view-capture.js). A host that does not expose one leaves that
              source out, and a task naming it is told so in its gaps (js/atlas-delegate.js resolveTaskImages) */
-          images: {
-            attachment: (K.ATTACH_LOG && typeof K.ATTACH_LOG.find === 'function') ? (n) => K.ATTACH_LOG.find(K._curTurn, n) : undefined,
-            attachmentNames: (K.ATTACH_LOG && typeof K.ATTACH_LOG.names === 'function') ? () => K.ATTACH_LOG.names(K._curTurn) : undefined,
-            frames: (K.VFRAMES && typeof K.VFRAMES.urls === 'function') ? () => K.VFRAMES.urls() : undefined,
-            framesText: (K.VFRAMES && typeof K.VFRAMES.promptBlock === 'function') ? () => K.VFRAMES.promptBlock() : undefined,
-          } }),
+          images: executorImages }),
         capability: typeof K.runReadCapability === 'function' ? makeCapabilityExecutor({ run: K.runReadCapability, classify: K.classifyCapability }) : null,
       });
       /* (delegate-child-loop) RESUMING. The same task list asked again — after the tab was closed, the page reloaded or the turn cut off —
@@ -1187,7 +1188,7 @@ export default [
          The record is written each time a task ends, so an interruption loses only the tasks that had not ended. The list's identity is
          every contract's key (its `tools` grant included) and its `verify` flag (delegationKey). */
       const store = pageDelegationStore();
-      const dKey = delegationKey(tasks);
+      const dKey = delegationKey(tasks, (names) => imagesShown(names, executorImages));   /* what the image names show NOW is part of the list's identity (atlas-delegate.js delegationKey) */
       let prior = null;
       if (store && a.fresh !== true) { try { prior = await store.get(dKey); } catch (_) { prior = null; } }
       const D = makeDelegation({ parent, executor, resume: prior || undefined, maxConcurrent: (pol && Number.isInteger(pol.maxConcurrent)) ? pol.maxConcurrent : null });
@@ -1220,16 +1221,19 @@ export default [
       if (signal && typeof signal.addEventListener === 'function') signal.addEventListener('abort', onAbort, { once: true });
       let results, verification = null;
       try {
-        const pending = D.run(tasks);
+        /* A checker starts when ITS task is done, not when every task is (js/atlas-delegate.js run `after`): it needs only that task's findings. */
+        const eligible = (r, i) => tasks[i] && tasks[i].verify === true && (!tasks[i].kind || tasks[i].kind === 'worker') && (r.state === 'done' || r.state === 'partial') && r.findings && r.findings.length;
+        const pending = D.run(tasks, { after: (r, i) => (eligible(r, i) ? verifyContract(r.id) : null) });
         if (signal && signal.aborted) D.cancelAll();
         results = await pending;
         /* VERIFICATION, WHEN ASKED (`verify:true` on a worker task). A second worker is handed the first one's findings and asked to
            check each against sources of its own; its verdicts come back per claim, and a claim it did not repeat or a checker that did not
            return stays `unchecked` — never assumed supported. It is a child like any other: the server's policy admits it or refuses it,
            and a refusal is reported as the checker's state. */
-        const toCheck = results.filter((r, i) => tasks[i] && tasks[i].verify === true && (!tasks[i].kind || tasks[i].kind === 'worker') && (r.state === 'done' || r.state === 'partial') && r.findings.length);
-        if (toCheck.length && !(signal && signal.aborted)) {
-          const vres = await D.run(toCheck.map((r) => verifyContract(r.id)));
+        const fu = results.followUps || [];
+        const toCheck = results.filter((r, i) => fu[i]);
+        if (toCheck.length) {
+          const vres = results.map((r, i) => fu[i]).filter(Boolean);
           verification = verifyOutcome(toCheck.map((r, k) => ({ of: r, by: vres[k] })));
           verification.costUsd = vres.reduce((m, r) => m + (Number(r.costUsd) || 0), 0);
           verification.calls = vres.reduce((m, r) => m + (Number(r.calls) || 0), 0);
@@ -1240,7 +1244,8 @@ export default [
         await saving;   /* the record of every task that ended is written before the answer leaves */
       }
       const done = results.filter((r) => r.state === 'done' || r.state === 'partial').length;
-      const cost = results.reduce((m, r) => m + r.costUsd, 0);
+      /* a result answered from a task of THIS list (reused) is that task's own result again — its cost is counted once, with the task that ran */
+      const cost = results.filter((r) => !r.reused).reduce((m, r) => m + r.costUsd, 0);
       /* WHAT THE RESULTS SAY TOGETHER (js/atlas-orchestrate.js integrate) — the card says what a reader should look at; the meta
          carries the same without repeating the findings and gaps the per-task list already carries (what is not carried is not seen
          by the model — js/atlas-toolsurface.js mechanical) */
@@ -1277,7 +1282,7 @@ export default [
         code: done === results.length ? undefined : (done ? 'some_tasks_ended_otherwise' : (results[0] && results[0].code) || 'no_findings'),
         produced: done ? ['explanation'] : undefined,
         delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, resumed: r.resumed || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, notFound: r.notFound, evidence: r.evidence, data: r.data, costUsd: r.costUsd, calls: r.calls, ms: r.ms })),
-        delegatedCostUsd: cost,
+        delegatedCostUsd: cost + (verification ? verification.costUsd : 0),   /* the checkers are children too: the ledger the turn reads must hold what the card says */
         integrated,
         /* (delegate-child-loop) what was answered from the last run of the same list, and whether this run's record was kept */
         resume: store ? { key: dKey, resumed: results.filter((r) => r.resumed).length, from: prior ? prior.at : undefined, saved: saves > 0 } : undefined,

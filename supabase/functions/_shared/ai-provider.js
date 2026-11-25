@@ -96,6 +96,8 @@ export const PROVIDER_DEFAULT_MODEL = Object.freeze({
 export const MODEL_PRICE_USD_PER_MTOK = Object.freeze({
   "gpt-6.1-sol": Object.freeze({ input: 2, cached: 0.2, output: 10 }),
   "gpt-6-sol": Object.freeze({ input: 2, cached: 0.2, output: 10 }),
+  /* gpt-6.2-sol (the production default): OpenAI's standard short-context pricing as the owner's review read it 2026-11-25 — $2 / $0.10 cached / $10 (https://developers.openai.com/api/docs/pricing). Expires: when OpenAI reprices or the default moves. Before this row the model was priced at the table's most expensive cell, cached input at $1. */
+  "gpt-6.2-sol": Object.freeze({ input: 2, cached: 0.1, output: 10 }),
   "gpt-6.1-terra": Object.freeze({ input: 1, cached: 1, output: 5 }),
   "gpt-6-luna": Object.freeze({ input: 0.1, cached: 0.1, output: 0.5 }),
   "claude-haiku-4-5-20251001": Object.freeze({ input: 1, cached: 0.1, output: 5 }),
@@ -134,14 +136,16 @@ export function priceOf(model) {
   return p ? { ...p, known: true } : { ...PRICE_CEILING, known: false };
 }
 /* costMicros(model, usage) — micro-dollars for a usageMeter total ({ input, cached_read, cache_write, output }).
-   OpenAI and Gemini report `input` as the WHOLE prompt with the cached part inside it; Anthropic reports the
-   uncached remainder (normalizeUsage's comment) — so for Anthropic the cached part is added, not subtracted. */
+   ⚠ `input` IS ALWAYS THE UNCACHED REMAINDER, for every provider: normalizeUsage (ai-usage.js) already took the cached part
+   out of OpenAI's and Gemini's whole prompt, and Anthropic reports it that way natively. This used to subtract cached_read
+   AGAIN for OpenAI/Gemini, so every cache hit was priced at zero uncached input as well (measured: input 4,000 uncached + 6,000
+   cached read as $0.006 instead of $0.014 at sol prices) — the figure the card, the turn cap and the day cap all read.
+   A caller holding a provider's WHOLE prompt count must subtract the cached part first (atlas-jobs does, at its one reader). */
 export function costMicros(model, usage, provider) {
   const u = usage || {};
   const p = priceOf(model);
   const cached = Math.max(0, Number(u.cached_read) || 0);
-  const whole = Math.max(0, Number(u.input) || 0);
-  const uncached = String(provider || "").toLowerCase() === "anthropic" ? whole + (Number(u.cache_write) || 0) : Math.max(0, whole - cached);
+  const uncached = Math.max(0, Number(u.input) || 0) + (String(provider || "").toLowerCase() === "anthropic" ? Math.max(0, Number(u.cache_write) || 0) : 0);
   const out = Math.max(0, Number(u.output) || 0);
   return Math.ceil(uncached * p.input + cached * p.cached + out * p.output);   /* USD per 1M tokens × tokens = micro-dollars */
 }

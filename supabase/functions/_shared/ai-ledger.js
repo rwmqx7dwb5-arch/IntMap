@@ -358,6 +358,7 @@ export function journalArgs(ev) {
     p_output: jint(t.output),
     p_cost_micros: Math.max(0, Math.floor(Number(e.costMicros) || 0)),
     p_web: e.web === true,
+    p_cached: Math.min(2147483647, jint(t.cached_read)),   /* (atlas-orchestration-efficiency) the cache read of THIS call */
   };
 }
 export function recordJournal(db, ev) {

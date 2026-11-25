@@ -39,8 +39,8 @@ test('① ATLAS_DELEGATION_MODEL: a priced model id is used; anything else is ig
   assert.deepEqual(delegationModel(env({})), { model: '', ignored: '' }, 'unset = behaviour unchanged');
   assert.deepEqual(delegationModel(env({ ATLAS_DELEGATION_MODEL: '   ' })), { model: '', ignored: '' }, 'blank is "not given"');
   assert.deepEqual(delegationModel(env({ ATLAS_DELEGATION_MODEL: ' ' + priced + ' ' })), { model: priced, ignored: '' });
-  assert.equal(priceOf('gpt-6.2-sol').known, false, 'the premise: the default model is unpriced today');
-  assert.deepEqual(delegationModel(env({ ATLAS_DELEGATION_MODEL: 'gpt-6.2-sol' })), { model: '', ignored: 'unpriced' }, 'an unpriced model is never silently run');
+  assert.equal(priceOf('gpt-99-unpriced').known, false, 'the premise: a model with no row is unpriced');
+  assert.deepEqual(delegationModel(env({ ATLAS_DELEGATION_MODEL: 'gpt-99-unpriced' })), { model: '', ignored: 'unpriced' }, 'an unpriced model is never silently run');
   assert.deepEqual(delegationModel(env({ ATLAS_DELEGATION_MODEL: 'not a model;' })), { model: '', ignored: 'not_a_model_id' });
   /* a withdrawn id is NOT refused here: WITHDRAWN_MODELS only filters what the picker OFFERS (a refusal would be a capability boundary,
      CONSTITUTION §0.3); an operator who sets one, and it is priced, has chosen it. What is priced is the only rule. */
@@ -308,7 +308,7 @@ test('⑥ an unpriced or malformed tier is ignored, loudly, and the worker runs 
   W.provider = [{ json: OK_ANSWER() }];
   await post(WORKER, asWorker());
   const unchanged = askedModels()[0];
-  for (const [value, why] of [['gpt-6.2-sol', 'unpriced'], ['bad id!', 'not_a_model_id']]) {
+  for (const [value, why] of [['gpt-99-unpriced', 'unpriced'], ['bad id!', 'not_a_model_id']]) {
     reset();
     ENV.ATLAS_DELEGATION_MODEL = value;
     W.provider = [{ json: OK_ANSWER() }];

@@ -146,7 +146,7 @@ async function callModel(system: string, prompt: string, o: { web: boolean; sign
     const u = j?.usage || {};
     return {
       text, citations, model: chain[i],
-      usage: { input: Number(u.input_tokens) || 0, cached_read: Number(u?.input_tokens_details?.cached_tokens) || 0, output: Number(u.output_tokens) || 0 },
+      usage: (() => { const whole = Number(u.input_tokens) || 0, cached = Math.min(whole, Number(u?.input_tokens_details?.cached_tokens) || 0); return { input: whole - cached, cached_read: cached, output: Number(u.output_tokens) || 0 }; })(),   /* costMicros reads `input` as the uncached remainder */
     };
   }
   throw new ModelError("provider_unavailable", "No model of the chain answered.", 503);

@@ -179,11 +179,11 @@ test('⑫ a price is known or the most expensive row — an unknown model can re
   const rows = Object.values(MODEL_PRICE_USD_PER_MTOK);
   assert.equal(unknown.output, Math.max(...rows.map((r) => r.output)));
   /* the measured most expensive production turn (config.ts TURN_COST_CAP_USD): $0.61 at sol prices */
-  const usd = costMicros('gpt-6.1-sol', { input: 367309, cached_read: 79461, output: 1803 }, 'openai') / 1e6;
+  const usd = costMicros('gpt-6.1-sol', { input: 367309 - 79461, cached_read: 79461, output: 1803 }, 'openai') / 1e6;
   assert.ok(usd > 0.60 && usd < 0.62, String(usd));
   assert.ok(TURN_COST_CAP_USD / usd > 4, 'the cap leaves room for workers at the same scale');
   /* Anthropic reports the uncached remainder: the cached part is added, not subtracted */
-  assert.ok(costMicros('claude-haiku-4-5-20251001', { input: 1000, cached_read: 1000, output: 0 }, 'anthropic') > costMicros('claude-haiku-4-5-20251001', { input: 1000, cached_read: 1000, output: 0 }, 'openai'));
+  assert.ok(costMicros('claude-haiku-4-5-20251001', { input: 1000, cached_read: 1000, cache_write: 500, output: 0 }, 'anthropic') > costMicros('claude-haiku-4-5-20251001', { input: 1000, cached_read: 1000, cache_write: 500, output: 0 }, 'openai'));
 });
 
 test('⑬ the worker task exists, is the only task a worker call may carry, and is only a worker\'s', () => {

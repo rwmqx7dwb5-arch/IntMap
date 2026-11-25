@@ -119,8 +119,8 @@ export function integrate(results) {
     coverage: { tasks: rs.length, usable: usable.length, byState },
     findings, sources, placeOverlaps, gaps, unreturned,
     cost: {
-      usd: rs.reduce((m, r) => m + (Number(r.costUsd) || 0), 0),
-      calls: rs.reduce((m, r) => m + (Number(r.calls) || 0), 0),
+      usd: rs.filter((r) => !r.reused).reduce((m, r) => m + (Number(r.costUsd) || 0), 0),   /* a reused result is another task's result again, not another spend */
+      calls: rs.filter((r) => !r.reused).reduce((m, r) => m + (Number(r.calls) || 0), 0),
       /* the tasks ran at the same time, so the wait was the slowest one; the sum is the work done */
       wallMs: rs.reduce((m, r) => Math.max(m, Number(r.ms) || 0), 0),
       workMs: rs.reduce((m, r) => m + (Number(r.ms) || 0), 0),
