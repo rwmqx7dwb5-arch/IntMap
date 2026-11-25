@@ -45,7 +45,7 @@ test('⑤ the regression shards pack by what main last measured: main folds and 
   const y = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   const at = (s) => { const i = y.indexOf(s); assert.ok(i > 0, s); return i; };
   // the record job runs after the regression shards and folds their fragments into a cache
-  assert.match(y, /needs: \[browser, browser-deep, checks\]/);
+  assert.match(y, /needs: \[browser, browser-deep, checks, reuse\]/);
   const fold = y.lastIndexOf('node scripts/checks-shards.mjs --update $F');
   assert.ok(at('pattern: checks-timings-*') < fold);
   assert.ok(fold < y.lastIndexOf('key: intmap-checks-cost-${{ github.run_id }}'));

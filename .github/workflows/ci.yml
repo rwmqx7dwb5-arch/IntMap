@@ -58,6 +58,46 @@ concurrency:
   cancel-in-progress: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
+  # ══ (ci-reuse-green-tree) A MERGE OF A TREE THAT WAS ALREADY GREEN DOES NOT RUN THE SAME TESTS AGAIN ═════════
+  # MEASURED 2026-11-25 over 36 runs: a push to main re-ran the whole of what the pull request had just run (a
+  # median 16 minutes of three Regression machines, three Gates machines and the browser tier), and with merges
+  # queued behind each other a main run took 17-39 minutes from push to done. The squash commit's TREE is a
+  # property of the bytes, not of the history: when it is byte-for-byte the tree a pull request's run already
+  # passed (`green-receipt` below uploads an artifact named after the tree), every test of this run would
+  # execute on identical input, and re-running them can only reproduce the verdict.
+  # WHAT THIS DOES NOT TRADE: the case the main run exists for - a green PR landing on a main that moved (two
+  # PRs each green alone, red together, #1138/#1139) - changes the tree, so no receipt is found and the whole
+  # run executes as before. The build ALWAYS runs (the bytes published are the bytes built here), the nightly
+  # runs everything on main whatever this says, and the publish still needs the same aggregates to be green:
+  # `static`, `checks-gate` and `browser-gate` accept «skipped» only when this job found the receipt.
+  reuse:
+    name: Was this exact tree already green on its pull request?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5   # ci-job-timeouts: one API call
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      green: ${{ steps.ask.outputs.green }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Ask for the receipt of this tree
+        id: ask
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          green=false
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+            tree=$(git rev-parse 'HEAD^{tree}')
+            n=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=green-tree-$tree&per_page=10" --jq '[.artifacts[] | select(.expired == false)] | length')
+            echo "tree $tree: $n receipt(s)"
+            if [ "${n:-0}" -gt 0 ]; then green=true; fi
+          fi
+          echo "green=$green" >> "$GITHUB_OUTPUT"
+
   # ══ (ci-build-once) THE SITE IS BUILT ONCE PER RUN, HERE ═══════════════════════════════════════
   # Every job that reads the build — the gate shard with check:perf / check:assets, each browser
   # machine, and on main the production publish — takes THIS job's output as an artifact instead of
@@ -187,12 +227,20 @@ jobs:
   # `if: !cancelled()` so a RED BUILD still lets every other gate report (the property the paragraph
   # above exists for): the build shard then fails its build task by name, and «Static checks» reads
   # the build job's own result as well.
+  #
+  # ══ (ci-critical-path) …AND ONLY THE GATES THAT READ THE BUILD WAIT FOR IT ══════════════════════
+  # MEASURED 2026-11-25 over 36 runs: every gate shard sat behind `build` (median 309 s) although only two
+  # gates — check:assets and check:perf, DISCOVERED by gate-universe.mjs needsBuild — read what it made. The
+  # other thirty-five waited five minutes for nothing, and the run's wall clock was build + the slowest shard.
+  # So the pool is split: `gates` (the build-free ones) starts with the run, `gates-build` (the build-reading
+  # task) needs the build. `ci-gates.mjs --check` still asserts the two together are a partition of the declared
+  # set, so a gate added tomorrow lands in exactly one of them.
   gates:
     name: Gates ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
     timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
-    needs: [build]
-    if: ${{ !cancelled() }}
+    needs: [reuse]
+    if: ${{ !cancelled() && needs.reuse.outputs.green != 'true' }}   # (ci-reuse-green-tree)
     strategy:
       fail-fast: false            # one red shard must not hide what the other two found
       matrix:
@@ -210,27 +258,52 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - uses: ./.github/actions/data-assets    # (data-outside-git) the datasets outside git, before anything reads them
+      - name: The declared gates for this shard (the ones that read no build)
+        env:
+          IM_PREBUILT_DIST: '1'
+        run: node scripts/ci-gates.mjs --shard ${{ matrix.shard }}/${{ matrix.of }} --pool free --timings gate-timings.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: gate-timings-${{ matrix.shard }}
+          path: gate-timings.json
+          retention-days: 7
+
+  gates-build:
+    name: Gates (read the build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
+    needs: [build, reuse]
+    if: ${{ !cancelled() && needs.reuse.outputs.green != 'true' }}   # (ci-reuse-green-tree)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: ./.github/actions/data-assets    # (data-outside-git) the datasets outside git, before anything reads them
       # (ci-build-once) asked of the SAME plan --shard executes, so the download and the build task
-      # cannot land on different shards.
-      - name: Does this shard read the build?
+      # cannot land on different jobs.
+      - name: Does this job read the build?
         id: reads
-        run: echo "build=$(node scripts/ci-gates.mjs --needs-build ${{ matrix.shard }}/${{ matrix.of }})" >> "$GITHUB_OUTPUT"
+        run: echo "build=$(node scripts/ci-gates.mjs --needs-build 1/1 --pool build)" >> "$GITHUB_OUTPUT"
       - name: The run's build (dist/ + .perf/build-report.json)
         if: ${{ steps.reads.outputs.build == 'true' && needs.build.result == 'success' }}
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: ${{ needs.build.outputs.site }}
           path: .
-      - name: The declared gates for this shard
+      - name: The declared gates that read the build
         env:
           IM_PREBUILT_DIST: '1'   # build nothing here; a missing artifact fails the build task by name
-        run: node scripts/ci-gates.mjs --shard ${{ matrix.shard }}/${{ matrix.of }} --timings gate-timings.json
-      # The measured seconds go back into .github/gate-cost.json by hand (`--update`), not by a bot:
-      # the ledger decides BALANCE only, so drift costs seconds, never coverage.
+        run: node scripts/ci-gates.mjs --shard 1/1 --pool build --timings gate-timings.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: ${{ !cancelled() }}
         with:
-          name: gate-timings-${{ matrix.shard }}
+          name: gate-timings-build
           path: gate-timings.json
           retention-days: 7
 
@@ -240,14 +313,17 @@ jobs:
     name: Static checks
     runs-on: ubuntu-latest
     timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
-    needs: [build, gates]
+    needs: [build, gates, gates-build, reuse]
     if: ${{ always() }}
     steps:
       - name: The build and every gate shard passed
         run: |
-          echo "build: ${{ needs.build.result }}   gates: ${{ needs.gates.result }}"
+          echo "build: ${{ needs.build.result }}   gates: ${{ needs.gates.result }}   gates-build: ${{ needs.gates-build.result }}   reused: ${{ needs.reuse.outputs.green }}"
           test "${{ needs.build.result }}" = "success"
+          # (ci-reuse-green-tree) skipped is a pass only when `reuse` found this tree's receipt
+          if [ "${{ needs.reuse.outputs.green }}" = "true" ] && [ "${{ needs.gates.result }}" = "skipped" ] && [ "${{ needs.gates-build.result }}" = "skipped" ]; then exit 0; fi
           test "${{ needs.gates.result }}" = "success"
+          test "${{ needs.gates-build.result }}" = "success"
 
   # ⚠⚠⚠ (#R707) IS THE SHIPPED ERA BUNDLE STILL THE WHOLE UPSTREAM SET? The property gate above tests
   # PROPERTIES on purpose, so upstream GROWING never turns a PR red — and that is exactly why upstream
@@ -461,13 +537,22 @@ jobs:
     name: Regression ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
     timeout-minutes: 60   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
+    needs: [reuse]
+    if: ${{ !cancelled() && needs.reuse.outputs.green != 'true' }}   # (ci-reuse-green-tree)
     strategy:
       fail-fast: false            # one slow shard must not hide the results of the others
       matrix:
         include:
-          - { shard: 1, of: 3 }
-          - { shard: 2, of: 3 }
-          - { shard: 3, of: 3 }
+          # (ci-critical-path) FIVE, NOT THREE. MEASURED over 36 runs: the three shards took a median 876 s (max 1,108 s)
+          # and were the run's longest job, with 2,000-2,350 s of measured file-time on each. Runners are free on this public
+          # repository, the planner packs by measured seconds for any n (checks-shards.mjs, a partition for every n), and the
+          # longest single file (~630 s) bounds the floor, so five is where the gain stops paying. Coverage is unchanged: every
+          # file still runs once. «Regression suite» (below) aggregates whatever the matrix is.
+          - { shard: 1, of: 5 }
+          - { shard: 2, of: 5 }
+          - { shard: 3, of: 5 }
+          - { shard: 4, of: 5 }
+          - { shard: 5, of: 5 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -520,12 +605,14 @@ jobs:
     name: Regression suite
     runs-on: ubuntu-latest
     timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
-    needs: [checks]
+    needs: [checks, reuse]
     if: ${{ always() }}
     steps:
       - name: Every regression shard passed
         run: |
-          echo "checks: ${{ needs.checks.result }}"
+          echo "checks: ${{ needs.checks.result }}   reused: ${{ needs.reuse.outputs.green }}"
+          # (ci-reuse-green-tree) skipped is a pass only when `reuse` found this tree's receipt
+          if [ "${{ needs.reuse.outputs.green }}" = "true" ] && [ "${{ needs.checks.result }}" = "skipped" ]; then exit 0; fi
           test "${{ needs.checks.result }}" = "success"
 
   # ══ (#R186) THE BROWSER SUITE RUNS ON TEN MACHINES, NOT TEN WORKERS ════════════════════════════
@@ -593,7 +680,8 @@ jobs:
     name: Browser ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
     timeout-minutes: 45   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
-    needs: [build]            # (ci-build-once) it tests the run's one build; it builds nothing itself
+    needs: [build, reuse]     # (ci-build-once) it tests the run's one build; it builds nothing itself
+    if: ${{ !cancelled() && needs.reuse.outputs.green != 'true' && needs.build.result == 'success' }}   # (ci-reuse-green-tree)
     env:
       IM_TIER: core
       IM_DIFF_BASE: HEAD^1
@@ -696,8 +784,8 @@ jobs:
     name: Record the measured times on main
     runs-on: ubuntu-latest
     timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
-    needs: [browser, browser-deep, checks]
-    if: ${{ github.ref == 'refs/heads/main' && always() }}
+    needs: [browser, browser-deep, checks, reuse]
+    if: ${{ github.ref == 'refs/heads/main' && always() && needs.reuse.outputs.green != 'true' }}   # (ci-reuse-green-tree) nothing was measured on a reused run
     permissions:
       contents: read
     steps:
@@ -761,7 +849,7 @@ jobs:
     name: Browser smoke + internal QA
     runs-on: ubuntu-latest
     timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
-    needs: [browser, browser-deep]
+    needs: [browser, browser-deep, reuse]
     if: ${{ always() }}
     steps:
       # ⚠ (#R203) 'skipped' IS A PASS FOR THE DEEP TIER AND ONLY FOR IT. On a pull request that job
@@ -770,7 +858,11 @@ jobs:
       #   or a cancellation is never a pass in either tier.
       - name: All browser shards passed
         run: |
-          echo "core: ${{ needs.browser.result }}   deep: ${{ needs.browser-deep.result }}"
+          echo "core: ${{ needs.browser.result }}   deep: ${{ needs.browser-deep.result }}   reused: ${{ needs.reuse.outputs.green }}"
+          # (ci-reuse-green-tree) skipped is a pass for the core tier only when `reuse` found this tree's receipt
+          if [ "${{ needs.reuse.outputs.green }}" = "true" ] && [ "${{ needs.browser.result }}" = "skipped" ]; then
+            case "${{ needs.browser-deep.result }}" in success|skipped) exit 0 ;; *) exit 1 ;; esac
+          fi
           test "${{ needs.browser.result }}" = "success"
           case "${{ needs.browser-deep.result }}" in success|skipped) ;; *) exit 1 ;; esac
 
@@ -846,6 +938,30 @@ jobs:
           --reports _deep
           --append _blame.md
           --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # (ci-reuse-green-tree) the other half: a pull request whose run is green leaves a receipt named after the tree it tested.
+  green-receipt:
+    name: Record that this tree is green
+    runs-on: ubuntu-latest
+    timeout-minutes: 5   # ci-job-timeouts: one tiny upload
+    needs: [static, checks-gate, browser-gate]
+    if: ${{ github.event_name == 'pull_request' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: The tree this run tested
+        id: tree
+        run: |
+          tree=$(git rev-parse 'HEAD^{tree}')
+          echo "tree=$tree" >> "$GITHUB_OUTPUT"
+          echo "$tree" > green-tree.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: green-tree-${{ steps.tree.outputs.tree }}
+          path: green-tree.txt
+          retention-days: 7
+          if-no-files-found: error
 
   # ══ (ci-build-once) PRODUCTION IS PUBLISHED FROM HERE, AFTER main's RUN IS GREEN ════════════════
   # deploy.yml used to publish on every push to main, IN PARALLEL with this workflow, from a build of

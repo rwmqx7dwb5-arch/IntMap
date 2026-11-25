@@ -129,18 +129,22 @@ test('② every job that reads the build needs `build` and gets the name from it
     readers++;
     assert.ok([].concat(job.needs || []).includes('build'), `${id} reads the build's artifact name but does not need \`build\``);
   }
-  for (const id of ['gates', 'browser', 'browser-deep']) assert.ok(JSON.stringify(CI.jobs[id]).includes('needs.build.outputs.site'), `${id} does not take the run's build`);
+  for (const id of ['gates-build', 'browser', 'browser-deep']) assert.ok(JSON.stringify(CI.jobs[id]).includes('needs.build.outputs.site'), `${id} does not take the run's build`);
   assert.ok(readers >= 3, `only ${readers} job(s) read the build`);
 
   /* the gate shards download only where the plan puts the build task, asked of ci-gates.mjs itself */
-  const g = CI.jobs.gates.steps;
+  const g = CI.jobs['gates-build'].steps;   /* (ci-critical-path) the build-free gate shards start with the run and download nothing */
+  assert.ok(![].concat(CI.jobs.gates.needs || []).includes('build'), 'the build-free gate shards must not wait for the build');
+  assert.ok(!JSON.stringify(CI.jobs.gates).includes('needs.build.outputs.site'), 'the build-free gate shards must not take the build');
   const ask = g.findIndex((s) => /ci-gates\.mjs --needs-build/.test(s.run || ''));
   const dl = g.findIndex((s) => /^actions\/download-artifact@/.test(s.uses || ''));
   const run = g.findIndex((s) => /ci-gates\.mjs --shard/.test(s.run || ''));
   assert.ok(ask >= 0 && ask < dl && dl < run, 'gates: ask --needs-build, then download, then run the shard');
   assert.match(g[dl].if, /steps\.\w+\.outputs\.build == 'true'/);
   /* a red build must not silence the other gates (the reason the shards exist) */
-  assert.match(String(CI.jobs.gates.if), /!cancelled\(\)/, 'gates must still run when the build job is red');
+  assert.match(String(CI.jobs['gates-build'].if), /!cancelled\(\)/, 'gates must still run when the build job is red');
+  assert.match(String(CI.jobs.gates.if), /!cancelled\(\)/);
+  assert.ok([].concat(CI.jobs.static.needs).includes('gates-build'), '«Static checks» must read the build-reading gates too');
   assert.ok([].concat(CI.jobs.static.needs).includes('build'), '«Static checks» must read the build job’s result');
   assert.match(CI.jobs.static.steps.map((s) => s.run).join('\n'), /needs\.build\.result \}\}" = "success"/);
 
