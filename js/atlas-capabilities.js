@@ -2620,7 +2620,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
        a few; nothing has been recorded for this one yet. Every result carries `semantic.ms`, which
        is the measurement; the expiry is a recorded production distribution. */
     var SEMANTIC_TIMEOUT_MS = 8000;
-    var SEED_TIMEOUT_MS = 60000;   /* see the seed in httpTransport above */
+    /* (gemini-embed-pacing) 60 s was one batch call + the store. The production model embeds one input per request, paced
+       (EMBED_PARALLEL at a time) and waiting out 429s up to EMBED_RETRY_DEADLINE_MS (240 s, _shared/embedding-provider.js);
+       the page must not abandon a seed the server is still allowed to finish. Searches answer from spellings meanwhile. */
+    var SEED_TIMEOUT_MS = 300000;
     API.searchFused = function (q, opts) {
       opts = opts || {};
       var lexical = API.search(q, opts);

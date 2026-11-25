@@ -176,7 +176,7 @@ export async function embedGemini(key, model, inputs, door, opts) {
     return one;
   });
   /* (gemini-embed-methods) a model listed with embedContent only is called once per input, all at the same time */
-  if (embedMethodOf(model) === "embedContent") return embedGeminiOneByOne(key, model, requests, door);
+  if (embedMethodOf(model) === "embedContent") return embedGeminiOneByOne(key, model, requests, door, o);
   let r;
   try {
     r = await door(GEMINI_BASE + "/models/" + encodeURIComponent(model) + ":batchEmbedContents", {
@@ -195,24 +195,60 @@ export async function embedGemini(key, model, inputs, door, opts) {
 
 /* (gemini-embed-methods) embedContent: one request per input, all sent together, the same answer shape as the batch
    call. Any one failure is the call's failure — a partial set of vectors is not a catalogue. */
-async function embedGeminiOneByOne(key, model, requests, door) {
+/* ⚠ (gemini-embed-pacing) HOW MANY AT ONCE, AND WHAT A 429 MEANS. All inputs were sent at the same time; measured on
+   production 2026-11-25, seeding the capability catalogue (150 documents, two calls of 100 + 50) answered
+   upstream_rate_limit — Gemini's per-minute request quota refused the burst, so the catalogue was never stored.
+   Now at most EMBED_PARALLEL requests are in flight, and a 429 is a real, observed refusal that is retried DIFFERENTLY:
+   after the wait the provider names (Retry-After), or a doubling wait when it names none, never past the deadline
+   (.agents/rules/one-pass-or-a-reason.md §5 — the retries are counted in the answer).
+   EMBED_PARALLEL — observation: 150 at once was refused; the quota is per minute and per project tier, so this bounds
+   the burst rather than claiming the quota. Expires when the tier changes; the 429 path is what actually holds.
+   EMBED_RETRY_DEADLINE_MS — the Edge worker's wall clock is 400 s (_shared/ai-provider.js EDGE_WALL_CLOCK_MS); a seed
+   must leave room for the database write after it. */
+export const EMBED_PARALLEL = 8;
+export const EMBED_RETRY_DEADLINE_MS = 240000;
+async function embedGeminiOneByOne(key, model, requests, door, opt) {
+  const sleep = (opt && opt.sleep) || ((ms) => new Promise((res) => setTimeout(res, ms)));
+  const now = (opt && opt.now) || (() => Date.now());
+  const deadline = now() + EMBED_RETRY_DEADLINE_MS;
+  let retries = 0;
   const one = async (req) => {
-    let r;
-    try {
-      r = await door(GEMINI_BASE + "/models/" + encodeURIComponent(model) + ":embedContent", {
-        method: "POST",
-        headers: { "x-goog-api-key": key, "content-type": "application/json" },
-        body: JSON.stringify({ content: req.content, ...(req.taskType ? { taskType: req.taskType } : {}), ...(req.outputDimensionality ? { outputDimensionality: req.outputDimensionality } : {}) }),
-      });
-    } catch (e) { return { ok: false, code: thrownCode(e), status: 0, door: DOOR_REFUSALS.has(thrownCode(e)) }; }
-    if (!r.ok) { const f = providerFail(r.status, await bodyLength(r)); return { ok: false, code: "http", status: f.status }; }
-    let j = null;
-    try { j = await r.json(); } catch (_) { return { ok: false, code: "bad_json", status: r.status }; }
-    const v = j && j.embedding && Array.isArray(j.embedding.values) ? j.embedding.values : null;
-    return v ? { ok: true, v: l2normalize(v) } : { ok: false, code: "count_mismatch", status: r.status };
+    for (let attempt = 0; ; attempt++) {
+      let r;
+      try {
+        r = await door(GEMINI_BASE + "/models/" + encodeURIComponent(model) + ":embedContent", {
+          method: "POST",
+          headers: { "x-goog-api-key": key, "content-type": "application/json" },
+          body: JSON.stringify({ content: req.content, ...(req.taskType ? { taskType: req.taskType } : {}), ...(req.outputDimensionality ? { outputDimensionality: req.outputDimensionality } : {}) }),
+        });
+      } catch (e) { return { ok: false, code: thrownCode(e), status: 0, door: DOOR_REFUSALS.has(thrownCode(e)) }; }
+      if (r.status === 429) {
+        const named = Number((r.headers && r.headers.get && r.headers.get("retry-after")) || "");
+        const wait = Number.isFinite(named) && named > 0 ? named * 1000 : Math.min(30000, 1000 * 2 ** attempt);
+        await bodyLength(r);
+        if (now() + wait > deadline) return { ok: false, code: "http", status: 429 };
+        retries++;
+        await sleep(wait);
+        continue;
+      }
+      if (!r.ok) { const f = providerFail(r.status, await bodyLength(r)); return { ok: false, code: "http", status: f.status }; }
+      let j = null;
+      try { j = await r.json(); } catch (_) { return { ok: false, code: "bad_json", status: r.status }; }
+      const v = j && j.embedding && Array.isArray(j.embedding.values) ? j.embedding.values : null;
+      return v ? { ok: true, v: l2normalize(v) } : { ok: false, code: "count_mismatch", status: r.status };
+    }
   };
-  const got = await Promise.all(requests.map(one));
-  const bad = got.find((g) => !g.ok);
-  if (bad) return bad;
-  return { ok: true, vectors: got.map((g) => g.v) };
+  const got = new Array(requests.length);
+  let next = 0, failed = null;
+  const lane = async () => {
+    while (!failed && next < requests.length) {
+      const i = next++;
+      const g = await one(requests[i]);
+      if (!g.ok) { failed = failed || g; return; }
+      got[i] = g.v;
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(EMBED_PARALLEL, requests.length) }, lane));
+  if (failed) return Object.assign({ retries }, failed);
+  return { ok: true, vectors: got, retries };
 }
