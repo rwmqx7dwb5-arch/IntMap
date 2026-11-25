@@ -14,6 +14,7 @@
  *  eligible identity reaches exactly ONE of the two delivery paths (this record or data/hist-cities.json).
  * ==========================================================================*/
 import test from 'node:test';
+import { withRowTables } from '../scripts/lib/row-tables.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { importModule } from './helpers/import-module.mjs';
@@ -26,7 +27,7 @@ const data = JSON.parse(read('data/hist-places.json'));
 const cityIds = new Set(JSON.parse(read('data/hist-cities.json')).cities.map(p => p.id));
 
 test('#R709 the shipped source places are an exact licensed derivation, with source names and uncertainty intact', () => {
-  assert.deepEqual(compile(record, cityIds), data);
+  assert.deepEqual(withRowTables('hist-places', compile(record, cityIds)), data);
   assert.ok(record.harvest.inputRecords > record.places.length);
   assert.match(record.harvest.inputSha256, /^[a-f\d]{64}$/);
   assert.ok(data.places.length > 5000, 'exercise the omitted source population, not a curated handful');
