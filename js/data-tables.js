@@ -6,6 +6,422 @@ import { IntMapLang } from './lang-registry.js';
 const LA = IntMapLang.pickArgs();
 export const DATA_TABLES = [
  {
+  "id": "airport-capacity-by-country",
+  "file": "data/airports.json",
+  "title": LA("Airports with scheduled service, counted per country (OurAirports)", "定期便のある空港の国別の数（OurAirports）"),
+  "rows": "countries",
+  "fields": null,
+  "key": "$key",
+  "name": "$key",
+  "lng": null,
+  "lat": null,
+  "count": 233,
+  "columns": [
+   {
+    "key": "iso3",
+    "from": "$key",
+    "type": "text",
+    "label": LA("ISO 3166-1 alpha-3 country code", "ISO 3166-1 alpha-3 の国コード")
+   },
+   {
+    "key": "large",
+    "from": "lg",
+    "type": "number",
+    "label": LA("Large airports with scheduled service", "定期便のある大型空港の数")
+   },
+   {
+    "key": "medium",
+    "from": "md",
+    "type": "number",
+    "label": LA("Medium airports with scheduled service", "定期便のある中型空港の数")
+   },
+   {
+    "key": "capacity",
+    "from": "cap",
+    "type": "number",
+    "label": LA("Capacity index: large + 0.25 x medium (airline infrastructure, not passengers or routes)", "容量指数: 大型 + 0.25 x 中型（旅客数・路線ではなく空港の基盤）")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "border-crossings",
+  "file": "data/border-crossings.json",
+  "title": LA("Border crossings (OpenStreetMap barrier=border_control)", "国境の検問所（OpenStreetMap の barrier=border_control）"),
+  "rows": "crossings",
+  "fields": null,
+  "key": "i",
+  "name": "en",
+  "lng": "x",
+  "lat": "y",
+  "count": 9582,
+  "columns": [
+   {
+    "key": "osmId",
+    "from": "i",
+    "type": "text",
+    "label": LA("OpenStreetMap element id", "OpenStreetMap の要素 ID")
+   },
+   {
+    "key": "name",
+    "from": "n",
+    "type": "text",
+    "label": LA("Name as mapped", "地図上の名称")
+   },
+   {
+    "key": "nameEn",
+    "from": "en",
+    "type": "text",
+    "label": LA("English name as mapped", "英語名")
+   },
+   {
+    "key": "timezone",
+    "from": "tz",
+    "type": "text",
+    "label": LA("IANA time zone", "IANA タイムゾーン")
+   },
+   {
+    "key": "openingHours",
+    "from": "oh",
+    "type": "text",
+    "label": LA("Opening hours as mapped", "開放時間（地図の記載）")
+   },
+   {
+    "key": "operator",
+    "from": "op",
+    "type": "text",
+    "label": LA("Operator as mapped", "運営者（地図の記載）")
+   },
+   {
+    "key": "access",
+    "from": "m.access",
+    "type": "text",
+    "label": LA("General access (as mapped)", "通行区分（地図の記載）")
+   },
+   {
+    "key": "foot",
+    "from": "m.foot",
+    "type": "text",
+    "label": LA("On foot (as mapped)", "徒歩（地図の記載）")
+   },
+   {
+    "key": "vehicle",
+    "from": "m.vehicle",
+    "type": "text",
+    "label": LA("Vehicles (as mapped)", "車両（地図の記載）")
+   },
+   {
+    "key": "goods",
+    "from": "m.goods",
+    "type": "text",
+    "label": LA("Goods vehicles (as mapped)", "貨物車（地図の記載）")
+   }
+  ],
+  "source": {
+   "publisher": "OpenStreetMap contributors · Evan Siroky (timezone-boundary-builder)",
+   "licence": "ODbL 1.0",
+   "url": "https://www.openstreetmap.org/copyright",
+   "asOf": "2026-11-17",
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "country-facts",
+  "file": "data/country-facts.json",
+  "title": LA("Country facts: capital, currency, languages, area, UN membership (REST Countries, Natural Earth)", "国の基本事実: 首都・通貨・言語・面積・国連加盟（REST Countries・Natural Earth）"),
+  "rows": "countries",
+  "fields": null,
+  "key": "$key",
+  "name": "$key",
+  "lng": null,
+  "lat": null,
+  "count": 239,
+  "columns": [
+   {
+    "key": "code",
+    "from": "$key",
+    "type": "text",
+    "label": LA("Country code (Natural Earth set)", "国コード（Natural Earth の集合）")
+   },
+   {
+    "key": "capital",
+    "from": "capital",
+    "type": "text",
+    "label": LA("Capital", "首都")
+   },
+   {
+    "key": "currency",
+    "from": "currency",
+    "type": "text",
+    "label": LA("Currency", "通貨")
+   },
+   {
+    "key": "languages",
+    "from": "languages",
+    "type": "text",
+    "label": LA("Languages", "言語")
+   },
+   {
+    "key": "demonym",
+    "from": "dem",
+    "type": "text",
+    "label": LA("Demonym", "住民の呼称")
+   },
+   {
+    "key": "area",
+    "from": "area",
+    "type": "number",
+    "label": LA("Area as the source states it", "面積（出典の記載）"),
+    "unit": "km2"
+   },
+   {
+    "key": "unMember",
+    "from": "un",
+    "type": "text",
+    "label": LA("UN member state", "国連加盟国")
+   },
+   {
+    "key": "independent",
+    "from": "ind",
+    "type": "text",
+    "label": LA("Independent", "独立国")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "deep-sky-objects",
+  "file": "data/deep-sky.json",
+  "title": LA("Deep-sky objects (Messier and bright NGC/IC; SIMBAD positions)", "深宇宙天体（メシエと明るい NGC/IC。SIMBAD の位置）"),
+  "rows": "objects",
+  "fields": null,
+  "key": "main",
+  "name": "main",
+  "lng": null,
+  "lat": null,
+  "count": 150,
+  "columns": [
+   {
+    "key": "type",
+    "from": "otype",
+    "type": "text",
+    "label": LA("Object type (SIMBAD)", "天体の種類（SIMBAD）")
+   },
+   {
+    "key": "class",
+    "from": "cls",
+    "type": "text",
+    "label": LA("Class (galaxy, nebula, cluster...)", "区分（銀河・星雲・星団など）")
+   },
+   {
+    "key": "raDeg",
+    "from": "ra",
+    "type": "number",
+    "label": LA("Right ascension (J2000)", "赤経（J2000）"),
+    "unit": "deg"
+   },
+   {
+    "key": "decDeg",
+    "from": "dec",
+    "type": "number",
+    "label": LA("Declination (J2000)", "赤緯（J2000）"),
+    "unit": "deg"
+   },
+   {
+    "key": "majorAxis",
+    "from": "maj",
+    "type": "number",
+    "label": LA("Major axis", "長径"),
+    "unit": "arcmin"
+   },
+   {
+    "key": "distancePc",
+    "from": "pc",
+    "type": "number",
+    "label": LA("Distance", "距離"),
+    "unit": "pc"
+   },
+   {
+    "key": "catalogue",
+    "from": "from",
+    "type": "text",
+    "label": LA("Catalogue it came from", "採録元のカタログ")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "health-system-capacity",
+  "file": "data/health.json",
+  "title": LA("Country health-system capacity and immunisation coverage (WHO, UNICEF)", "国別の保健システム能力と予防接種率（WHO・UNICEF）"),
+  "rows": "countries",
+  "fields": null,
+  "key": "$key",
+  "name": "$key",
+  "lng": null,
+  "lat": null,
+  "count": 239,
+  "columns": [
+   {
+    "key": "iso3",
+    "from": "$key",
+    "type": "text",
+    "label": LA("Country code (ISO 3166-1 alpha-3 or World Bank aggregate)", "国コード（ISO 3166-1 alpha-3 または世界銀行の集計コード）")
+   },
+   {
+    "key": "uhc",
+    "from": "uhc",
+    "type": "number",
+    "label": LA("WHO UHC service coverage index (SDG 3.8.1)", "WHO の UHC サービス提供範囲指標（SDG 3.8.1）"),
+    "unit": "0-100"
+   },
+   {
+    "key": "uhcYear",
+    "from": "uhcY",
+    "type": "number",
+    "label": LA("Year of the UHC index", "UHC 指標の年")
+   },
+   {
+    "key": "spar",
+    "from": "spar",
+    "type": "number",
+    "label": LA("IHR SPAR capacity 7: health emergency management", "IHR SPAR 能力 7: 保健緊急事態への対応管理"),
+    "unit": "0-100"
+   },
+   {
+    "key": "dtp3",
+    "from": "dtp3",
+    "type": "number",
+    "label": LA("DTP3 immunisation coverage of one-year-olds", "1 歳児の DTP3 接種率"),
+    "unit": "%"
+   },
+   {
+    "key": "dtp3Year",
+    "from": "dtp3Y",
+    "type": "number",
+    "label": LA("Year of DTP3 coverage", "DTP3 接種率の年")
+   },
+   {
+    "key": "mcv1",
+    "from": "mcv1",
+    "type": "number",
+    "label": LA("First-dose measles immunisation coverage of one-year-olds", "1 歳児の麻疹ワクチン 1 回目接種率"),
+    "unit": "%"
+   },
+   {
+    "key": "mcv1Year",
+    "from": "mcv1Y",
+    "type": "number",
+    "label": LA("Year of measles coverage", "麻疹接種率の年")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "historical-city-names",
+  "file": "data/hist-cities.json",
+  "title": LA("Cities whose name changed: the place and the record that carries its names", "名称が変わった都市: 場所と、その名称の記録"),
+  "rows": "cities",
+  "fields": null,
+  "key": "id",
+  "name": "k.0",
+  "lng": "lon",
+  "lat": "lat",
+  "count": 6474,
+  "columns": [
+   {
+    "key": "country",
+    "from": "cc",
+    "type": "text",
+    "label": LA("Country today (ISO 3166-1 alpha-2)", "現在の国（ISO 3166-1 alpha-2）")
+   },
+   {
+    "key": "recordSource",
+    "from": "s",
+    "type": "text",
+    "label": LA("Record source (h handwritten, o OHM, p Pleiades, w Wikidata)", "記録の出所（h 手書き・o OHM・p Pleiades・w Wikidata）")
+   },
+   {
+    "key": "guardM",
+    "from": "g",
+    "type": "number",
+    "label": LA("Guard radius within which the renaming applies", "改名を適用する範囲の半径"),
+    "unit": "m"
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "ancient-places",
+  "file": "data/hist-places.json",
+  "title": LA("Ancient places of the Pleiades gazetteer", "古代の地点（Pleiades 地名辞典）"),
+  "rows": "places",
+  "fields": null,
+  "key": "id",
+  "name": "title",
+  "lng": "lon",
+  "lat": "lat",
+  "count": 6698,
+  "columns": [
+   {
+    "key": "pleiadesId",
+    "from": "id",
+    "type": "text",
+    "label": LA("Pleiades id", "Pleiades の ID")
+   },
+   {
+    "key": "title",
+    "from": "title",
+    "type": "text",
+    "label": LA("Pleiades title", "Pleiades の見出し")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": "2026-09-11",
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
   "id": "ports",
   "file": "data/logistics-network.json",
   "title": LA("Seaports (rail-attached; Wikidata, UN/LOCODE, Eurostat)", "港湾（鉄道に接続・Wikidata・UN/LOCODE・Eurostat）"),
@@ -236,6 +652,215 @@ export const DATA_TABLES = [
   }
  },
  {
+  "id": "nuclear-power-plants",
+  "file": "data/npp.json",
+  "title": LA("Nuclear power plants, including planned, shut down and cancelled (Wikidata and IAEA PRIS)", "原子力発電所（計画・停止・中止を含む。Wikidata と IAEA PRIS）"),
+  "rows": "plants",
+  "fields": null,
+  "key": "id",
+  "name": "name",
+  "lng": "lon",
+  "lat": "lat",
+  "count": 638,
+  "columns": [
+   {
+    "key": "country",
+    "from": "country",
+    "type": "text",
+    "label": LA("Country (ISO 3166-1 alpha-2)", "国（ISO 3166-1 alpha-2）")
+   },
+   {
+    "key": "status",
+    "from": "status",
+    "type": "text",
+    "label": LA("Status (operational, under construction, shut down, cancelled...)", "状態（運転中・建設中・停止・中止など）")
+   },
+   {
+    "key": "units",
+    "from": "units",
+    "type": "number",
+    "label": LA("Reactor units", "原子炉の基数")
+   },
+   {
+    "key": "netMW",
+    "from": "netMW",
+    "type": "number",
+    "label": LA("Net capacity", "正味出力"),
+    "unit": "MW"
+   },
+   {
+    "key": "start",
+    "from": "start",
+    "type": "text",
+    "label": LA("Start of operation (as stated)", "運転開始（記載のまま）")
+   },
+   {
+    "key": "end",
+    "from": "end",
+    "type": "text",
+    "label": LA("End of operation (as stated)", "運転終了（記載のまま）")
+   },
+   {
+    "key": "operator",
+    "from": "operator",
+    "type": "text",
+    "label": LA("Operator", "運転者")
+   },
+   {
+    "key": "source",
+    "from": "src",
+    "type": "text",
+    "label": LA("Where the row came from", "行の出所")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "dated-world-events",
+  "file": "data/on-this-day.json",
+  "title": LA("Dated world events: the curated events of the on-this-day index (Wikidata)", "日付のある世界の出来事: 「この日の歴史」索引の厳選された出来事（Wikidata）"),
+  "rows": "events",
+  "fields": null,
+  "key": "q",
+  "name": "name.en",
+  "lng": "at.0",
+  "lat": "at.1",
+  "count": 101,
+  "columns": [
+   {
+    "key": "date",
+    "from": "d",
+    "type": "text",
+    "label": LA("Date (YYYY, YYYY-MM or YYYY-MM-DD as far as the source states it)", "日付（出典が述べる精度の YYYY・YYYY-MM・YYYY-MM-DD）")
+   },
+   {
+    "key": "precision",
+    "from": "prec",
+    "type": "text",
+    "label": LA("Precision of the date (year, month, day)", "日付の精度（年・月・日）")
+   },
+   {
+    "key": "kind",
+    "from": "kind",
+    "type": "text",
+    "label": LA("Kind (war, disaster, geo, revolution, space, economic, assassination)", "種類（戦争・災害・地理・革命・宇宙・経済・暗殺）")
+   },
+   {
+    "key": "nameJa",
+    "from": "name.jp",
+    "type": "text",
+    "label": LA("Event name in Japanese", "出来事の日本語名")
+   },
+   {
+    "key": "description",
+    "from": "desc.en",
+    "type": "text",
+    "label": LA("Description (Wikidata)", "説明（Wikidata）")
+   },
+   {
+    "key": "qid",
+    "from": "q",
+    "type": "text",
+    "label": LA("Wikidata item", "Wikidata の項目")
+   },
+   {
+    "key": "calendar",
+    "from": "cal",
+    "type": "text",
+    "label": LA("Calendar the date is stated in (Julian before the Gregorian reform where the source says so)", "日付の暦（出典が述べる場合はグレゴリオ改暦前のユリウス暦）")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "embassies-and-consulates",
+  "file": "data/osm-diplo.json",
+  "title": LA("Embassies, consulates and other diplomatic posts (OpenStreetMap)", "大使館・領事館などの外交施設（OpenStreetMap）"),
+  "rows": "features",
+  "fields": null,
+  "key": "i",
+  "name": "n",
+  "lng": "x",
+  "lat": "y",
+  "count": 17438,
+  "columns": [
+   {
+    "key": "kind",
+    "from": "k",
+    "type": "text",
+    "label": LA("Kind (embassy, consulate, other)", "種別（大使館・領事館・その他）")
+   },
+   {
+    "key": "country",
+    "from": "c",
+    "type": "text",
+    "label": LA("Sending country (ISO 3166-1 alpha-2)", "派遣国（ISO 3166-1 alpha-2）")
+   },
+   {
+    "key": "osmId",
+    "from": "i",
+    "type": "text",
+    "label": LA("OpenStreetMap element id", "OpenStreetMap の要素 ID")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "space-infrastructure",
+  "file": "data/osm-space.json",
+  "title": LA("Launch pads, spaceports, ground stations and radio telescopes (OpenStreetMap)", "発射台・宇宙港・地上局・電波望遠鏡（OpenStreetMap）"),
+  "rows": "features",
+  "fields": null,
+  "key": "i",
+  "name": "n",
+  "lng": "x",
+  "lat": "y",
+  "count": 14965,
+  "columns": [
+   {
+    "key": "kind",
+    "from": "k",
+    "type": "text",
+    "label": LA("Kind (pad, spaceport, ground, radio)", "種別（発射台・宇宙港・地上局・電波望遠鏡）")
+   },
+   {
+    "key": "osmId",
+    "from": "i",
+    "type": "text",
+    "label": LA("OpenStreetMap element id", "OpenStreetMap の要素 ID")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
   "id": "power-plants",
   "file": "data/power-plants.json",
   "title": LA("Power plants (Global Power Plant Database 1.3.0)", "発電所（Global Power Plant Database 1.3.0）"),
@@ -325,6 +950,82 @@ export const DATA_TABLES = [
    "url": "https://datasets.wri.org/datasets/global-power-plant-database",
    "asOf": "2021-06-02",
    "completeness": "the database does not claim to list every plant; coverage differs by country with the national sources it draws on",
+   "gaps": null
+  }
+ },
+ {
+  "id": "sanctions-by-authority-and-country",
+  "file": "data/sanctions.json",
+  "title": LA("Sanctions listings: one row per imposing authority and targeted country (OFAC, UK, EU, UN lists as published)", "制裁リスト: 制裁を課した機関と対象国ごとの 1 行（OFAC・英国・EU・国連の公表リスト）"),
+  "rows": "links",
+  "fields": null,
+  "key": null,
+  "name": "c",
+  "lng": null,
+  "lat": null,
+  "count": 432,
+  "columns": [
+   {
+    "key": "authority",
+    "from": "a",
+    "type": "text",
+    "label": LA("Imposing authority (US, UK, EU, UN)", "制裁を課した機関（US・UK・EU・UN）")
+   },
+   {
+    "key": "country",
+    "from": "c",
+    "type": "text",
+    "label": LA("Targeted country (ISO 3166-1 alpha-3)", "対象国（ISO 3166-1 alpha-3）")
+   },
+   {
+    "key": "listings",
+    "from": "n",
+    "type": "number",
+    "label": LA("Listed persons, entities and ships", "掲載された個人・団体・船舶の数")
+   },
+   {
+    "key": "entities",
+    "from": "kinds.entity",
+    "type": "number",
+    "label": LA("Listed entities", "掲載された団体の数")
+   },
+   {
+    "key": "individuals",
+    "from": "kinds.individual",
+    "type": "number",
+    "label": LA("Listed individuals", "掲載された個人の数")
+   },
+   {
+    "key": "ships",
+    "from": "kinds.ship",
+    "type": "number",
+    "label": LA("Listed ships", "掲載された船舶の数")
+   },
+   {
+    "key": "un",
+    "from": "un",
+    "type": "number",
+    "label": LA("Of these, listed by the UN as well", "うち国連も掲載したもの")
+   },
+   {
+    "key": "first",
+    "from": "first",
+    "type": "text",
+    "label": LA("Earliest listing date in the record", "記録で最も古い掲載日")
+   },
+   {
+    "key": "last",
+    "from": "last",
+    "type": "text",
+    "label": LA("Latest listing date in the record", "記録で最も新しい掲載日")
+   }
+  ],
+  "source": {
+   "publisher": "U.S. Treasury OFAC · UK Foreign, Commonwealth & Development Office · European Commission",
+   "licence": "US public domain · OGL v3.0 · Decision 2011/833/EU",
+   "url": "https://www.gov.uk/government/publications/the-uk-sanctions-list",
+   "asOf": "2026-11-17",
+   "completeness": null,
    "gaps": null
   }
  },
@@ -584,6 +1285,239 @@ export const DATA_TABLES = [
     "logistics: Not loaded yet for Japan (ports, airports and trunk roads exist as map layers but are not joined to the prefecture table).",
     "power: Okinawa is not a JEPX price area, so it has no price. Retail industrial tariffs (high-voltage contract rates) are not published as open data per prefecture."
    ]
+  }
+ },
+ {
+  "id": "small-bodies",
+  "file": "data/small-bodies.json",
+  "title": LA("Asteroids, comets and trans-Neptunian objects: osculating orbital elements (JPL SBDB)", "小惑星・彗星・太陽系外縁天体: 接触軌道要素（JPL SBDB）"),
+  "rows": "bodies",
+  "fields": null,
+  "key": "id",
+  "name": "full",
+  "lng": null,
+  "lat": null,
+  "count": 1150,
+  "columns": [
+   {
+    "key": "class",
+    "from": "cls",
+    "type": "text",
+    "label": LA("Orbit class (MBA, NEA, TNO, comet...)", "軌道クラス（主帯小惑星・地球近傍小惑星・TNO・彗星など）")
+   },
+   {
+    "key": "kind",
+    "from": "kind",
+    "type": "text",
+    "label": LA("Kind (asteroid or comet)", "種別（小惑星・彗星）")
+   },
+   {
+    "key": "e",
+    "from": "e",
+    "type": "number",
+    "label": LA("Eccentricity", "離心率")
+   },
+   {
+    "key": "a",
+    "from": "a",
+    "type": "number",
+    "label": LA("Semi-major axis", "軌道長半径"),
+    "unit": "AU"
+   },
+   {
+    "key": "q",
+    "from": "q",
+    "type": "number",
+    "label": LA("Perihelion distance", "近日点距離"),
+    "unit": "AU"
+   },
+   {
+    "key": "i",
+    "from": "i",
+    "type": "number",
+    "label": LA("Inclination", "軌道傾斜角"),
+    "unit": "deg"
+   },
+   {
+    "key": "period",
+    "from": "per",
+    "type": "number",
+    "label": LA("Orbital period", "公転周期"),
+    "unit": "days"
+   },
+   {
+    "key": "H",
+    "from": "H",
+    "type": "number",
+    "label": LA("Absolute magnitude H", "絶対等級 H")
+   },
+   {
+    "key": "diameter",
+    "from": "d",
+    "type": "number",
+    "label": LA("Diameter", "直径"),
+    "unit": "km"
+   },
+   {
+    "key": "albedo",
+    "from": "alb",
+    "type": "number",
+    "label": LA("Albedo", "アルベド")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "us-presidential-elections",
+  "file": "data/us-elections.json",
+  "title": LA("U.S. presidential elections 1789-2024: the Electoral College result", "米国大統領選挙 1789-2024: 選挙人団の結果"),
+  "rows": "elections",
+  "fields": null,
+  "key": "y",
+  "name": "c.[w].n",
+  "lng": null,
+  "lat": null,
+  "count": 60,
+  "columns": [
+   {
+    "key": "year",
+    "from": "y",
+    "type": "number",
+    "label": LA("Election year", "選挙の年")
+   },
+   {
+    "key": "electors",
+    "from": "t",
+    "type": "number",
+    "label": LA("Electors in the college that year", "その年の選挙人総数")
+   },
+   {
+    "key": "winner",
+    "from": "c.[w].n",
+    "type": "text",
+    "label": LA("Winner (the candidate the record marks as elected)", "当選者（記録が当選と記す候補）")
+   },
+   {
+    "key": "winnerParty",
+    "from": "c.[w].p",
+    "type": "text",
+    "label": LA("Winner party code", "当選者の政党コード")
+   },
+   {
+    "key": "winnerElectors",
+    "from": "c.[w].ev",
+    "type": "number",
+    "label": LA("Electoral votes received by the winner", "当選者の獲得選挙人数")
+   },
+   {
+    "key": "winnerPopularPct",
+    "from": "c.[w].pv",
+    "type": "number",
+    "label": LA("Winner national popular vote, % (blank before 1824)", "当選者の全国得票率 %（1824 年より前は空欄）")
+   },
+   {
+    "key": "first",
+    "from": "c.0.n",
+    "type": "text",
+    "label": LA("Candidate listed first (most electoral votes)", "筆頭候補（獲得選挙人数が最多）")
+   },
+   {
+    "key": "second",
+    "from": "c.1.n",
+    "type": "text",
+    "label": LA("Candidate listed second", "2 番手の候補")
+   },
+   {
+    "key": "secondElectors",
+    "from": "c.1.ev",
+    "type": "number",
+    "label": LA("Electoral votes received by the second candidate", "2 番手の候補の獲得選挙人数")
+   },
+   {
+    "key": "note",
+    "from": "note",
+    "type": "text",
+    "label": LA("Note on the election", "選挙についての注")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
+  }
+ },
+ {
+  "id": "world-heritage-sites",
+  "file": "data/whc-sites.json",
+  "title": LA("UNESCO World Heritage properties", "ユネスコ世界遺産（登録物件）"),
+  "rows": "sites",
+  "fields": null,
+  "key": "id",
+  "name": "n.en",
+  "lng": null,
+  "lat": null,
+  "count": 1273,
+  "columns": [
+   {
+    "key": "whcId",
+    "from": "id",
+    "type": "number",
+    "label": LA("UNESCO World Heritage Centre property id", "ユネスコ世界遺産センターの物件 ID")
+   },
+   {
+    "key": "inscribed",
+    "from": "y",
+    "type": "number",
+    "label": LA("Year of inscription", "登録年")
+   },
+   {
+    "key": "country",
+    "from": "c",
+    "via": {
+     "rows": "countries"
+    },
+    "type": "text",
+    "label": LA("Country (ISO 3166-1 alpha-2; the first state party)", "国（ISO 3166-1 alpha-2。筆頭の締約国）")
+   },
+   {
+    "key": "region",
+    "from": "r.0",
+    "via": {
+     "rows": "regions"
+    },
+    "type": "text",
+    "label": LA("UNESCO region (the first listed)", "ユネスコの地域区分（筆頭）")
+   },
+   {
+    "key": "transboundary",
+    "from": "t",
+    "type": "number",
+    "label": LA("Transboundary or serial across states (1 = yes)", "国境をまたぐ・複数国にまたがる物件（1 = はい）")
+   },
+   {
+    "key": "extension",
+    "from": "x",
+    "type": "number",
+    "label": LA("Is an extension of an earlier inscription (1 = yes)", "既存登録の拡大（1 = はい）")
+   }
+  ],
+  "source": {
+   "publisher": null,
+   "licence": null,
+   "url": null,
+   "asOf": null,
+   "completeness": null,
+   "gaps": null
   }
  }
 ];

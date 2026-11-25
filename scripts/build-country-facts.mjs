@@ -89,6 +89,7 @@
  *  tests/r424.spec.js. Three different questions, three different places.
  * ==========================================================================*/
 import fs from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { IANA_TZDB } from './lib/upstream-cadence.mjs';
@@ -300,7 +301,7 @@ async function build() {
   };
 }
 
-const text = (o) => JSON.stringify(o, null, 1) + '\n';
+const text = (o) => JSON.stringify(withRowTables('country-facts', o), null, 1) + '\n';
 
 const check = process.argv.includes('--check');
 const built = await build();

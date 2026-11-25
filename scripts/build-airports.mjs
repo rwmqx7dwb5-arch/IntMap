@@ -49,6 +49,7 @@
  *    · mledoze/countries (ODbL 1.0) — cca2 → cca3 only.
  * ==========================================================================*/
 import fs from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OURAIRPORTS } from './lib/upstream-cadence.mjs';
@@ -166,7 +167,7 @@ const built = {
   unmatchedIso2: [...unmatched.entries()].sort((a, b) => b[1] - a[1]).map(([a, n]) => a + ':' + n),
   countries,
 };
-const out = JSON.stringify(built, null, 1) + '\n';
+const out = JSON.stringify(withRowTables('airports', built), null, 1) + '\n';
 
 if (check) {
   const have = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null;

@@ -78,9 +78,10 @@ export default [
     async run(a, dctx, K) { const M = await import('./imagery-change-atlas.js'); return M.imageChangeRun(a, K); },
   },
   {
-    /* column 7 'session': it draws a layer the reader can remove; 8 'none'. Its numbers are Wikidata's population statements
+    /* column 5 'gis.dataset,map.object': with draw:true it registers the boundary layer it colours (a worker never draws). column 7 'session': it draws a layer the reader can remove; 8 'none'. Its numbers are Wikidata's population statements
        with their dates and methods (scripts/build-admin-stats.mjs) — figures, not sentences a third party wrote. */
-    row: ['geo.regionStat', 'regionStat', 'regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation', 'data', 'none', '', 'explanation', 'session', 'none', '', ''],
+    policy: { headless: true },   /* (worker-reach) as a worker: `draw` is ignored — the table comes back as data and the reader's map is not touched */
+    row: ['geo.regionStat', 'regionStat', 'regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation', 'data', 'none', 'gis.dataset,map.object', 'explanation', 'session', 'none', '', ''],
     ui: { none: '2026-11-20' },
     doc: [
       { in: 'spatial-analysis', at: 54, text: 'POPULATION OF ADMINISTRATIVE UNITS, WITH ITS DATE AND METHOD (都道府県・州・郡・市区町村・NUTS の人口): {"type":"regionStat","kind"?:"iso3166-2"|"nuts"|"us-fips"|"jp-jis","country"?:str,"prefix"?:str,"level"?:"state"|"county"|"prefecture"|"municipality","year"?:int,"toleranceYears"?:int,"draw"?:bool,"top"?:int}. kind iso3166-2 (default) = first-level units worldwide, and with draw:true it COLOURS THOSE BOUNDARIES by population (「都道府県を人口で色分け」); kind nuts with draw:true AND level 1|2|3 colours the NUTS 2021 boundaries of Eurostat GISCO (joined by NUTS code, never by name; units of another NUTS version are counted as unjoined, not dropped silently); us-fips (counties) / jp-jis (municipalities) answer as a table only (no boundary file is shipped for them, and the answer says so). Every row carries the date the figure was stated for and how it was determined (census / estimate …). A year with no statement is REFUSED unless toleranceYears is given, and then the gap is named; an undated statement is never assigned a year; a unit outside its own lifespan (abolished / not yet established) is refused for that year, so a historical join is never made on the year alone. The answer says when figures of mixed methods or mixed years share one ranking.' },
@@ -125,7 +126,9 @@ export default [
       const top = a.top || 15;
       const mx = t.methods, mlist = Object.values(mx).map((m) => m.label + ' ×' + m.rows).join(', ');
       let drawn = null;
-      if (a.draw) {
+      /* (worker-reach) a delegated worker (source 'atlas-worker') is let in for the figures; the layer is the reader's map, which only the turn that delegated may change */
+      const worker = !!dctx && dctx.source === 'atlas-worker';
+      if (a.draw && !worker) {
         if (kind !== 'iso3166-2' && kind !== 'nuts') return fail(L('Only first-level units (iso3166-2) and NUTS regions have boundaries to colour; counties and municipalities answer as a table (no boundary file is shipped for them).', '境界を塗れるのは第1級行政区分（iso3166-2）と NUTS だけです。郡・市区町村は境界を同梱していないため表でのみ答えます。'), 'NO_BOUNDARIES');
         if (kind === 'nuts' && ![1, 2, 3].includes(Number(a.level))) return fail(L('To colour NUTS regions, give "level": 1, 2 or 3 (each level is a different set of regions).', 'NUTS を塗るには "level" を 1・2・3 で指定してください（レベルごとに別の地域の集合です）。'), 'LEVEL_NEEDED');
         const GU = window.GeoJSONUpload;

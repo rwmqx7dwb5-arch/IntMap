@@ -38,6 +38,7 @@
  *  ⚠ NOT IN `npm test` (it needs the network). tests/geopolitics-layers-checks.test.mjs validates the committed file.
  * ==========================================================================*/
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -165,8 +166,9 @@ async function main() {
     tz: { publisher: TZ.publisher, release: TZ.release, url: TZ.url, licence: TZ.licence, licenceUrl: TZ.licenceUrl },
     count: crossings.length, crossings,
   };
-  writeFileSync(join(ROOT, OUT), JSON.stringify(out));
-  console.log('wrote', OUT, JSON.stringify(out).length, 'bytes ·', crossings.length, 'crossings ·', crossings.filter((c) => c.oh).length, 'with opening_hours ·', noZone, 'without a zone');
+  const outT = withRowTables('border-crossings', out);
+  writeFileSync(join(ROOT, OUT), JSON.stringify(outT));
+  console.log('wrote', OUT, JSON.stringify(outT).length, 'bytes ·', crossings.length, 'crossings ·', crossings.filter((c) => c.oh).length, 'with opening_hours ·', noZone, 'without a zone');
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main().catch((e) => { console.error(e); process.exit(1); });
