@@ -1,0 +1,6 @@
+{
+  "//": "IntMap - the GIS the server runs without a screen (_shared/gis-loader.js -> js/gis-core.js) loads its polygon clipper by the bare name js/gis-geometry.js imports; without this map every overlay, buffer-union and nearest operation answers geometry-unavailable (observed in production, atlas-jobs, 2026-11-26). Same exact version as package.json (tests/security-logic checks it).",
+  "imports": {
+    "polygon-clipping": "npm:polygon-clipping@0.15.7"
+  }
+}
