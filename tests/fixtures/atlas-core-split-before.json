@@ -584,7 +584,8 @@
        "p_input": 0,
        "p_output": 0,
        "p_cost_micros": 0,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      }
     ],
@@ -687,7 +688,8 @@
        "p_input": 0,
        "p_output": 0,
        "p_cost_micros": 0,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      }
     ],
@@ -1165,7 +1167,7 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -1399,7 +1401,7 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -1633,7 +1635,7 @@
       },
       "protocol": 1,
       "maxOutput": 4600,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -2399,7 +2401,7 @@
       },
       "protocol": 1,
       "maxOutput": 3400,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -2901,7 +2903,7 @@
       },
       "protocol": 1,
       "maxOutput": 1200,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -3160,7 +3162,7 @@
       },
       "protocol": 1,
       "maxOutput": 2600,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -3393,7 +3395,7 @@
       },
       "protocol": 1,
       "maxOutput": 3000,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -3636,7 +3638,7 @@
       },
       "protocol": 1,
       "maxOutput": 2400,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -3851,7 +3853,7 @@
       },
       "protocol": 1,
       "maxOutput": 700,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false
      },
      "citations": [
@@ -4086,7 +4088,7 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -4328,6 +4330,14 @@
       },
       "delegationModels": [
        {
+        "id": "gpt-6.2-sol",
+        "usdPerMTok": {
+         "input": 2,
+         "cached": 0.1,
+         "output": 10
+        }
+       },
+       {
         "id": "gpt-6.1-terra",
         "usdPerMTok": {
          "input": 1,
@@ -4552,7 +4562,8 @@
        "include": [
         "reasoning.encrypted_content"
        ],
-       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b"
+       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h"
       }
      },
      {
@@ -4632,7 +4643,8 @@
        "p_input": 900,
        "p_output": 40,
        "p_cost_micros": 2200,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      },
      {
@@ -4695,7 +4707,7 @@
        "invalidItems": 1
       },
       "maxOutput": 2600,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
@@ -4705,6 +4717,14 @@
        "maxConcurrent": null
       },
       "delegationModels": [
+       {
+        "id": "gpt-6.2-sol",
+        "usdPerMTok": {
+         "input": 2,
+         "cached": 0.1,
+         "output": 10
+        }
+       },
        {
         "id": "gpt-6.1-terra",
         "usdPerMTok": {
@@ -4921,7 +4941,8 @@
        "include": [
         "reasoning.encrypted_content"
        ],
-       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b"
+       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h"
       }
      },
      {
@@ -5000,8 +5021,9 @@
        "p_latency_ms": 0,
        "p_input": 120,
        "p_output": 30,
-       "p_cost_micros": 480,
-       "p_web": true
+       "p_cost_micros": 520,
+       "p_web": true,
+       "p_cached": 20
       }
      },
      {
@@ -5061,7 +5083,7 @@
       },
       "protocol": 1,
       "maxOutput": 2200,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -5839,7 +5861,7 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -6118,7 +6140,7 @@
       },
       "protocol": 1,
       "maxOutput": 1200,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -6696,7 +6718,7 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00048,
+      "costUsd": 0.00052,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -7449,7 +7471,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.2-sol\",\"usdPerMTok\":{\"input\":2,\"cached\":0.1,\"output\":10}},{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -7647,6 +7669,7 @@
         "reasoning.encrypted_content"
        ],
        "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h",
        "stream": true
       }
      },
@@ -7727,7 +7750,8 @@
        "p_input": 5,
        "p_output": 2,
        "p_cost_micros": 30,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      },
      {
@@ -7804,6 +7828,14 @@
          },
          "delegationModels": [
           {
+           "id": "gpt-6.2-sol",
+           "usdPerMTok": {
+            "input": 2,
+            "cached": 0.1,
+            "output": 10
+           }
+          },
+          {
            "id": "gpt-6.1-terra",
            "usdPerMTok": {
             "input": 1,
@@ -7849,7 +7881,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.2-sol\",\"usdPerMTok\":{\"input\":2,\"cached\":0.1,\"output\":10}},{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -8029,6 +8061,7 @@
         "reasoning.encrypted_content"
        ],
        "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h",
        "stream": true
       }
      },
@@ -8150,6 +8183,7 @@
         "reasoning.encrypted_content"
        ],
        "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h",
        "stream": true
       }
      },
@@ -8230,7 +8264,8 @@
        "p_input": 5,
        "p_output": 2,
        "p_cost_micros": 30,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      },
      {
@@ -8467,6 +8502,14 @@
        "maxConcurrent": null
       },
       "delegationModels": [
+       {
+        "id": "gpt-6.2-sol",
+        "usdPerMTok": {
+         "input": 2,
+         "cached": 0.1,
+         "output": 10
+        }
+       },
        {
         "id": "gpt-6.1-terra",
         "usdPerMTok": {
@@ -8721,7 +8764,8 @@
        "include": [
         "reasoning.encrypted_content"
        ],
-       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b"
+       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h"
       }
      },
      {
@@ -8801,7 +8845,8 @@
        "p_input": 900,
        "p_output": 40,
        "p_cost_micros": 2200,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      },
      {
@@ -8876,6 +8921,14 @@
           "maxConcurrent": null
          },
          "delegationModels": [
+          {
+           "id": "gpt-6.2-sol",
+           "usdPerMTok": {
+            "input": 2,
+            "cached": 0.1,
+            "output": 10
+           }
+          },
           {
            "id": "gpt-6.1-terra",
            "usdPerMTok": {
@@ -8971,6 +9024,14 @@
        "maxConcurrent": null
       },
       "delegationModels": [
+       {
+        "id": "gpt-6.2-sol",
+        "usdPerMTok": {
+         "input": 2,
+         "cached": 0.1,
+         "output": 10
+        }
+       },
        {
         "id": "gpt-6.1-terra",
         "usdPerMTok": {
@@ -9207,7 +9268,8 @@
        "include": [
         "reasoning.encrypted_content"
        ],
-       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b"
+       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h"
       }
      },
      {
@@ -9287,7 +9349,8 @@
        "p_input": 900,
        "p_output": 40,
        "p_cost_micros": 2200,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      },
      {
@@ -9360,6 +9423,14 @@
        "maxConcurrent": null
       },
       "delegationModels": [
+       {
+        "id": "gpt-6.2-sol",
+        "usdPerMTok": {
+         "input": 2,
+         "cached": 0.1,
+         "output": 10
+        }
+       },
        {
         "id": "gpt-6.1-terra",
         "usdPerMTok": {
@@ -9575,7 +9646,8 @@
        "include": [
         "reasoning.encrypted_content"
        ],
-       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b"
+       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h"
       }
      },
      {
@@ -9655,7 +9727,8 @@
        "p_input": 900,
        "p_output": 40,
        "p_cost_micros": 2200,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      },
      {
@@ -9869,6 +9942,7 @@
         "reasoning.encrypted_content"
        ],
        "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h",
        "stream": true
       }
      },
@@ -9943,7 +10017,8 @@
        "p_input": 0,
        "p_output": 0,
        "p_cost_micros": 0,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      }
     ],
@@ -11224,7 +11299,8 @@
        "p_input": 9,
        "p_output": 3,
        "p_cost_micros": 24,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      },
      {
@@ -13338,7 +13414,8 @@
        "p_input": 0,
        "p_output": 0,
        "p_cost_micros": 0,
-       "p_web": false
+       "p_web": false,
+       "p_cached": 0
       }
      },
      {

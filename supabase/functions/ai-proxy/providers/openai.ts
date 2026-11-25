@@ -170,7 +170,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     }
   }
   /* (atlas-orchestration-efficiency) the cache-retention field, refused by a model that does not take it: dropped alone, once per isolate */
-  if (!r.ok && r.status === 400 && retention && turn && replay) {
+  if (!r.ok && r.status === 400 && retention && turn && replay && /cache_retention/i.test(await r.clone().text().catch(() => ""))) {   /* only a 400 that NAMES the field: any other refusal belongs to the rungs below, which a blind retry here would shift by one request */
     retention = false;
     retentionRefused = true;
     r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools));
