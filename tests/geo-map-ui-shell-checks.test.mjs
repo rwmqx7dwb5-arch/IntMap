@@ -55,11 +55,11 @@ describe('§ #R298 · flat projection, the Atlas message tools', () => {
     assert.match(read('js/atlas-styles.js'),
       /import \{[^}]*\bMSG_TOOLS_CSS\b[^}]*\bMSG_TOOLS_CSS_MOBILE\b[^}]*\} from '\.\/atlas-msg-tools\.js';/,
       '…and whoever builds the panel stylesheet takes the rules from that same module — not a copy of them');
-    assert.match(k, /const \{ copyBtn, editBtn, msgTools \} = makeMsgTools\(/);
+    assert.match(k, /const \{ copyBtn, editBtn, msgTools, pressMenu \} = makeMsgTools\(/);
     assert.ok(!/function copyBtn\(/.test(k), 'a second copy button cannot be written in the kernel');
     /* the reader's own bar is hidden until hovered, and only theirs */
     assert.match(m, /\.atl-msgt-u\{align-self:flex-end;margin:-10px 0 0;padding-top:2px;opacity:0;\}/);
-    assert.match(m, /@media\(hover:none\)\{[^}]*\.atl-msgt-u\{opacity:0\.55;\}/,
+    assert.match(m, /@media\(hover:none\)\{[^}]*\.atl-msgt-u\{display:none;\}/,
       'a touch screen has no hover, so there it stays reachable');
     assert.match(m, /\.atl-msgt-u:focus-within\{opacity:1;\}|:focus-within/, 'and a keyboard reaches it');
   });

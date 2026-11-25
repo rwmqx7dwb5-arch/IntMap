@@ -80,7 +80,7 @@ lent to the sheet and handed back to the exact place they came from, and the leg
 stylesheet for the phone's three stacking rows and for the legend set it hides, which must be the set
 `js/window-manager.js` docks. The browser half is `tests/ui-a11y-polish.spec.js` ③ (390 × 844: the painted
 share of the map, every tap target ≥ 44 px, legends invisible until the chip, Chronos as a sheet screen, the
-candidates ending in «Ask Atlas»).
+place field offering places only).
 
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-10-04): the **core** tier that

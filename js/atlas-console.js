@@ -2206,7 +2206,7 @@ export function atlasConsole(HOST){
     /* (#R298) the per-message tool bar and the in-place editor are js/atlas-msg-tools.js — the note at the top of
        that file says why. What cannot travel with them is bound here, LAZILY: `chatEl` is null until the panel is
        built, `run` / `_stopRun` are this closure's own, and only this closure may truncate `_hist`. */
-    const { copyBtn, editBtn, msgTools } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl,
+    const { copyBtn, editBtn, msgTools, pressMenu } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl,
       run:(q,imgs,files)=>run(q,imgs,files), stopRun:()=>{ try{ _stopRun(); }catch(_){} },
       rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); try{ ATTACH_LOG.rewind(t); }catch(_){} try{ WM.dropFrom(t); }catch(_){} } });   /* (#R773) 巻き戻したターンの添付も一緒に落とす——消えた質問の資料だけが会話に居座らないように */   const GLOSS = makeAtlasGloss(HOST, { L:L, esc:esc, R:R, note:note, warn:warn, chat:()=>chatEl, ask:(q)=>{ try{ if(inEl){ inEl.value=q; fire(); } }catch(_){} } });   /* (#R491) the term gloss, built beside the tool bar and on the same terms — it reads its context out of the rendered DOM, so all it needs is the picker, the escaper, the result helpers, the chat element and a way to put a follow-up into the composer (the starter chips' pick). ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom */   const READ = makeAtlasReading(HOST, { L:L, esc:esc, bubble:bubble, run:run, ensure:ensure, focus:()=>{ try{ inEl.focus(); }catch(_){} }, open:()=>{ try{ open(); }catch(_){} }, pin:(lng,lat,nm)=>{ _herePoint={lng,lat,name:nm||''}; try{ _lastPlace={lng,lat,name:nm||''}; }catch(_){} }, reset:()=>{ _lastUserMsg=''; } });   /* (#R776) the arrival bubble both «Ask Atlas» buttons land on. ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b) */
     /* (#R296) 「Atlasはユーザーが送ったメッセージもコピーできるように」 — see `copyBtn`. (#R298) `ed` = what the turn was RUN
@@ -2226,7 +2226,7 @@ export function atlasConsole(HOST){
     function bubble(who,html,ed){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d);
       if(ed&&ed.turn!=null) d.dataset.turn=String(ed.turn);
       if(who==='u'){ try{ const bar=document.createElement('div'); bar.className='atl-msgt atl-msgt-u';
-        bar.appendChild(copyBtn(d)); if(ed&&ed.edit) bar.appendChild(editBtn(d,ed)); d.insertAdjacentElement('afterend',bar); }catch(_){} }
+        bar.appendChild(copyBtn(d)); if(ed&&ed.edit) bar.appendChild(editBtn(d,ed)); d.insertAdjacentElement('afterend',bar); pressMenu(d,bar); }catch(_){} }
       try{ if(who==='u') _chatFollow=true; _followChat(); }catch(_){} return d; }
     /* (#R101) example prompts REWRITTEN to showcase what only Atlas can do — cross-country comparison, analytical
        ranking, a transit-isochrone and a cross-data brief — instead of trivial one-tap actions (dark mode / fly to X
@@ -2277,7 +2277,7 @@ export function atlasConsole(HOST){
       }catch(_){} }); }catch(_){}
       /* (#R118) Enter=send, Shift+Enter=NEWLINE (the input is a textarea now); the box auto-grows to 4-5 lines */
       const go=panel.querySelector('.atl-go'); go.onclick=fire; inEl.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); fire(); } });
-      const _autoGrow=()=>{ try{ inEl.style.height='auto'; inEl.style.height=Math.min(inEl.scrollHeight,132)+'px'; }catch(_){} };
+      const _autoGrow=()=>{ try{ inEl.style.height=''; if(inEl.scrollHeight>inEl.clientHeight+2) inEl.style.height=Math.min(inEl.scrollHeight+(inEl.offsetHeight-inEl.clientHeight),132)+'px'; inEl.style.overflowY=(inEl.scrollHeight>inEl.clientHeight+2)?'auto':'hidden'; }catch(_){} };   /* border-box: the height is the content PLUS the border, or the box is 2px short of its own text and always overflows; the scrollbar exists only while the text really overflows */
       inEl.addEventListener('input',()=>{ try{ if(!go.classList.contains('busy')) go.classList.toggle('idle',!inEl.value.trim()); }catch(_){} _autoGrow(); });   /* (#R142) don't fight the Stop button's busy state */
       inEl.__autoGrow=_autoGrow;
       /* (#R149) VISION — paste / drag-drop / attach an image into the Atlas input, then send it with your message.

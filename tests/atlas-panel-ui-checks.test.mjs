@@ -53,7 +53,7 @@ test('R151 #2 Atlas on/off toggles gain globe + compare switches', () => {
   assert.match(html, /_featTogHtml\('compare'\)/, 'compare case offers the compare toggle');
 });
 test('R156 #6 send/stop button = accent (idle keeps the previous white/black)', () => {
-  assert.match(CSS, /#atlas-panel \.atl-go\{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid transparent;background:var\(--primary-fill\);color:#fff;/, 'base (active) button = accent fill + white icon (the FILL token: white on it is ≥4.5:1 in both themes, tests/ui-a11y-polish-checks ⑥)');
+  assert.match(CSS, /#atlas-panel \.atl-go\{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid transparent;background:var\(--primary-fill\);color:#fff;/, 'base (active) button = accent fill + white icon (the FILL token: white on it is ≥4.5:1 in both themes, tests/ui-a11y-polish-checks ⑥)');
   assert.match(CSS, /#atlas-panel \.atl-go\.idle\{background:#fff;box-shadow:0 1px 4px rgba\(0,0,0,0\.12\);color:#111;/, 'idle (empty input) keeps the previous white bg + black ↑');
   assert.match(CSS, /#atlas-panel \.atl-go\.busy\{background:var\(--primary-fill\);box-shadow:0 2px 8px rgba\(0,0,0,0\.2\);color:#fff;/, 'Stop (busy) button = accent fill + white square');
 });
