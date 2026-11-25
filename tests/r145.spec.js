@@ -105,7 +105,10 @@ test('Atlas grid / 3D / country-info replies carry a working toggle switch', asy
     const ci = await window.IntMapConsole.dispatch({ type: 'countryInfo', on: false });
     // inject the grid reply and confirm the switch flips the real control
     document.getElementById('btn-community').click();
-    const chat = document.querySelector('#atlas-panel .atl-chat');
+    /* the tab is a press of the `panel.tab` capability since the GUI buttons went through execute() (dev-notes/2026-11-20-gui-press-capability.md):
+       the panel mounts when that door answers, not inside the click — so wait for the mount a reader would see, as long as a reader would. */
+    let chat = document.querySelector('#atlas-panel .atl-chat');
+    for (let i = 0; !chat && i < 100; i++) { await new Promise((r) => setTimeout(r, 50)); chat = document.querySelector('#atlas-panel .atl-chat'); }
     const off = await window.IntMapConsole.dispatch({ type: 'grid', on: false });
     const d = document.createElement('div'); d.className = 'atl-b a'; d.innerHTML = off.html; chat.appendChild(d);
     const tog = d.querySelector('.atl-feat-tog');
