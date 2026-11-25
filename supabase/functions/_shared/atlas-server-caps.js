@@ -7,8 +7,9 @@
 //  no page. This file is the closed list of those twins. Nothing else is run: a capability with no twin is refused BY NAME
 //  when the job is planned (`capability_unsupported_on_server`), never started and failed there.
 //
-//  A twin is  { id, args, needs?, run(args, { fetch, signal, db }) → { ok, text, data?, sources?, code? } }  and it
+//  A twin is  { id, args, needs?, run(args, { fetch, signal, db, gis, fetchGeoJson }) → { ok, text, data?, sources?, code? } }  and it
 //    · `args` is one line the planner and a tool-using worker read to know how to call it (the lane's `catalogue()` hands it over);
+//    · `needs:['gis']` says it runs the page's own GIS through the lane's `gis` (_shared/gis-headless.js, the runner the MCP server uses);
 //    · `needs:['db']` says it reads the persisted world graph through the lane's `db` (the same public RPCs js/ and mcp-server read);
 //    · is for a capability whose row is read-only in the page registry (tests/atlas-server-caps-checks pins that: a twin of
 //      a row that writes, asks or shows something would run here with none of the page's guards);
@@ -107,7 +108,57 @@ const worldRelated = {
   },
 };
 
-export const SERVER_CAPS = Object.freeze({ [spaceWeather.id]: spaceWeather, [worldObject.id]: worldObject, [worldRelated.id]: worldRelated });
+/* data.gis — the page's GIS run on GeoJSON it is handed, with no page. The page's capability resolves a REF against the datasets and layers
+   the page holds; the server holds none, so an input here is the data itself: inline GeoJSON, or the https address of a GeoJSON file (read under
+   gis-fetch's rule — _shared/gis-input-fetch.js). A "layer:…" / "ogc:" / "stac:" ref, `acquire`, and a raster op need the page and are
+   `part_unsupported_on_server` by name. The operations are the ones the GIS DECLARES (_shared/gis-headless.js, the same runner the MCP server uses): none is
+   listed here, and `{"describe":true}` (or no `op`) returns them. The work is the program's, not a model's: ONE call answers a whole table.
+   Bounds are the isolate's own (CPU/memory, not a number written here); what is STORED of the answer is bounded in bytes and says so (`truncated`).
+   Observation 2026-11-26: the stored answer is read by a worker/planner that must not receive a table as prose, so `text` is a summary and the rows are `data`.
+   Expires if jobs gain a place for large results (then `data.result` becomes a reference). */
+const GIS_STORED_BYTES = 1500000; /* ESTIMATE: well under an Edge response and a jsonb row; expires when a real job's answer is refused at it */
+const gisJob = {
+  id: 'data.gis',
+  needs: ['gis'],
+  args: '{"op":str,"inputs":[GeoJSON|"https://…geojson"],"params"?:{…}} — a spatial operation (buffer, join, nearest, dissolve, measure…) run on GeoJSON you give or point at; {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
+  async run(args, ctx) {
+    const a = args || {};
+    if (a.acquire || a.kind === 'raster' || a.semantics) return needPage(a.acquire ? 'acquire' : (a.semantics ? 'semantics' : 'raster'));
+    if (a.describe || !a.op) {
+      const ops = await ctx.gis.ops();
+      return { ok: true, text: ops.length + ' operation(s): ' + ops.map((o) => o.id + '(' + o.inputs + ')').join(', ') + '.', data: { ops }, sources: [] };
+    }
+    const inputs = [];
+    for (const x of Array.isArray(a.inputs) ? a.inputs : []) {
+      let v = x;
+      if (typeof x === 'string') {
+        if (!/^https:\/\//i.test(x)) return needPage('ref ' + x.slice(0, 40));
+        if (typeof ctx.fetchGeoJson !== 'function') return { ok: false, code: 'no_file_reader', text: 'This runtime cannot read a file by address.' };
+        const f = await ctx.fetchGeoJson(x, { signal: ctx.signal });
+        if (!f.ok) return { ok: false, code: f.code, text: f.text };
+        v = f.json;
+      }
+      const feats = Array.isArray(v) ? v : (v && v.type === 'FeatureCollection' && Array.isArray(v.features) ? v.features : (v && v.type === 'Feature' ? [v] : null));
+      if (!feats) return { ok: false, code: 'bad_input', text: 'Each input must be a FeatureCollection, a Feature, an array of Features, or the https address of a GeoJSON file.' };
+      inputs.push(feats);
+    }
+    let r;
+    try { r = await ctx.gis.run({ op: String(a.op), inputs, params: a.params }); }
+    catch (e) { return { ok: false, code: String((e && e.code) || 'op_failed'), text: String((e && e.detail) || (e && e.message) || e).slice(0, 300) }; }
+    let bytes = 0, keep = 0;
+    for (const f of r.features) { bytes += JSON.stringify(f).length; if (bytes > GIS_STORED_BYTES) break; keep++; }
+    const truncated = keep < r.features.length;
+    const head = r.features.slice(0, 5).map((f) => (f && f.properties ? f.properties : {}));
+    return {
+      ok: true,
+      text: r.op + ' -> ' + r.features.length + ' feature(s)' + (truncated ? ' (' + keep + ' stored; the rest did not fit the stored answer)' : '') + '. First rows: ' + JSON.stringify(head).slice(0, 600),
+      data: { op: r.op, count: r.features.length, truncated, result: { type: 'FeatureCollection', features: r.features.slice(0, keep) }, manifest: r.manifest },
+      sources: [],
+    };
+  },
+};
+
+export const SERVER_CAPS = Object.freeze({ [spaceWeather.id]: spaceWeather, [worldObject.id]: worldObject, [worldRelated.id]: worldRelated, [gisJob.id]: gisJob });
 
 /* serverCapabilityIds() — what a job may name as a capability task */
 export function serverCapabilityIds() { return Object.keys(SERVER_CAPS); }
@@ -118,17 +169,20 @@ export function serverCapabilityIds() { return Object.keys(SERVER_CAPS); }
 export function makeServerCaps(o) {
   const f = (o && o.fetch) || (typeof fetch === 'function' ? fetch : null);
   const db = (o && o.db) || null;
+  const gis = (o && o.gis) || null;
+  const fetchGeoJson = (o && o.fetchGeoJson) || null;
   return {
     catalogue: () => Object.keys(SERVER_CAPS).map((id) => ({ id, args: SERVER_CAPS[id].args })),
     has: (id) => Object.prototype.hasOwnProperty.call(SERVER_CAPS, String(id || '')),
     async run(id, args, ctx) {
       const t = SERVER_CAPS[String(id || '')];
       if (!t) return { ok: false, code: 'capability_unsupported_on_server', text: '"' + String(id || '').slice(0, 80) + '" has no server twin.' };
+      if ((t.needs || []).includes('gis') && !(gis && typeof gis.run === 'function')) return { ok: false, code: 'no_gis', text: 'This runtime has no GIS for "' + t.id + '".' };
       if (!f) return { ok: false, code: 'no_fetch', text: 'This runtime has no fetch.' };
       if ((t.needs || []).includes('db') && !(db && typeof db.rpc === 'function')) return { ok: false, code: 'no_db', text: 'This runtime has no database lane for "' + t.id + '".' };
       /* a twin never waits on an upstream without a clock: 20 s (observation: NOAA SWPC answers in under 2 s; this only has to stay inside the 150 s lease). Expires with the lease. */
       const signal = (ctx && ctx.signal) || (typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined);
-      try { return await t.run(args || {}, { fetch: f, signal, db }); }
+      try { return await t.run(args || {}, { fetch: f, signal, db, gis, fetchGeoJson }); }
       catch (e) { return { ok: false, code: 'twin_threw', text: String(e && e.message || e).slice(0, 300) }; }
     },
   };

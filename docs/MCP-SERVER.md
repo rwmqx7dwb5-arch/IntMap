@@ -1,6 +1,6 @@
 # IntMap を MCP サーバとして外部 AI に公開する (`mcp-server`)
 
-> 正本: `supabase/functions/mcp-server/`（`handler.js` が全判断・`index.ts` は配線・`gis-loader.js` は画面なしの GIS）、
+> 正本: `supabase/functions/mcp-server/`（`handler.js` が全判断・`index.ts` は配線・`../_shared/gis-loader.js`・`gis-headless.js` は画面なしの GIS（永続ジョブの `data.gis` も同じもの））、
 > `supabase/migrations/20261120100000_mcp_server_keys.sql`、検査 `tests/mcp-server-checks.test.mjs`。
 
 Claude Code・ChatGPT などの外部 AI が、IntMap の**読み取り専用**の能力を MCP で呼べる。MCP の **Streamable HTTP（ステートレス）**:
