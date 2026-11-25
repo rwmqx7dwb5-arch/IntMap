@@ -61,8 +61,14 @@ export function normaliseContract(c) {
      maxOutputHint, which raises the task's budget up to the model's documented ceiling and never below the task's own (tasks/spec.ts
      hintedMaxOutput). Absent = the task's budget (tasks/atlas_delegate.ts). Anything that is not a positive whole number is not a size. */
   const maxOutput = Number.isInteger(c.maxOutput) && c.maxOutput > 0 ? c.maxOutput : 0;
-  return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null, model ? { model } : null, images.length ? { images } : null, maxOutput ? { maxOutput } : null) };
+  /* (delegate-effort) HOW HARD THIS WORKER THINKS, when the parent says: one of the words ai-proxy reads in `effortHint` (low … xhigh),
+     chosen by the model for THIS piece (a lookup needs less than a judgement). Absent = the task's own default. The server decides what it
+     applies (tasks/atlas_delegate.ts effortHint). A word that is not one of them is no effort, not an error. */
+  const effort = EFFORT_WORDS.includes(String(c.effort || '').toLowerCase()) ? String(c.effort).toLowerCase() : '';
+  return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null, model ? { model } : null, images.length ? { images } : null, maxOutput ? { maxOutput } : null, effort ? { effort } : null) };
 }
+
+export const EFFORT_WORDS = ['low', 'medium', 'high', 'xhigh'];   /* the words ai-proxy reads in effortHint (js/atlas-effort.js MODES without 'auto') */
 
 /* (worker-reach) the name a contract's `images` uses for the map frames the parent captured in this turn (view.inspect) */
 export const IMAGE_VIEW = '@view';
@@ -73,6 +79,7 @@ export const IMAGE_VIEW = '@view';
 export function contractKey(c) {
   const k = [c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null, (c.tools || []).slice().sort(), c.model || ''];
   if ((c.images && c.images.length) || c.maxOutput) k.push((c.images || []).slice(), c.maxOutput || 0);
+  if (c.effort) k.push('effort:' + c.effort);   /* the same piece asked to think harder is a different request */
   return stable(k);
 }
 
