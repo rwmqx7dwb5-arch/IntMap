@@ -534,7 +534,7 @@ test('R318 ⑨a: the 58 kB catalogue moved byte-for-byte and is still whole', ()
      ten matches on 「現在地から大阪駅までの経路」 came back as 60,935 bytes of which 19,865 were
      distinct, and the 1,400-character clip on each copy was how that was paid for. `catalogText(ids)`
      asks once for all of them and de-duplicates. The prose still reaches Atlas — whole, now. */
-  assert.match(codeOnly(read('js/atlas-toolsurface.js')), /CAPS\.catalogText\(ids\)/,
+  assert.match(codeOnly(read('js/atlas-toolsurface.js')), /CAPS\.catalogText\(ids(, \{ exact: true \})?\)/,   /* (atlas-context-diet) still ONE call for all the ids; exact = their own fragments, not the neighbours' */
     'find_capability no longer returns the catalogue prose for what it found');
   assert.doesNotMatch(sys, /_DOCS\.text\(/, 'the catalogue is pasted into every prompt again');
   assert.doesNotMatch(sys, /\+'NAVIGATION\/VIEW: \{"type":"flyTo"/, 'the catalogue is inline again');
