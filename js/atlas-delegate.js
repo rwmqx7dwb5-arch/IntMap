@@ -109,6 +109,11 @@ export function resolveArgs(args, inputs) {
    result says so in `gaps` rather than being cut mid-structure. */
 const DATA_MAX_CHARS = 20000;
 
+/* (delegate-reread) what a worker is shown of one capability answer, and how much one re-read returns. Observation 2026-11-26: the cut was
+   3000 characters of text plus 1500 of data, which is what SHOW_CHARS keeps in total; READ_CHARS is one request's worth of reading
+   (about 3-4k tokens) so a re-read cannot itself outgrow the prompt. Expires with: a change to the worker prompt's size or to ai-proxy's input fence. */
+const SHOW_CHARS = 4500, READ_CHARS = 12000, READ_STEP = 'read_step';
+
 /* makeDelegation({ executor, log?, now?, parent?, maxConcurrent? }) — one delegation: the tasks one Atlas call hands on.
    → { start(contract) → handle, run(contracts) → Promise<result[]>, cancelAll(), log, workspace, spendUsd() } */
 export function makeDelegation(o) {
@@ -137,21 +142,41 @@ export function makeDelegation(o) {
      Absent / null → every task starts at once. A capability task runs no model and is not queued. A task waiting for its inputs holds no
      slot (the slot is taken only when it is about to run), so a dependency can never starve the task it waits for. */
   const maxConcurrent = Number.isInteger(opt.maxConcurrent) && opt.maxConcurrent >= 1 ? opt.maxConcurrent : null;
+  /* (delegate-adaptive) THE WIDTH IS NOT FIXED. `ceiling` is how many workers may be in flight NOW. It starts at what the server stated
+     (maxConcurrent, null = all at once) and MOVES with what the provider answers, as AIMD does for a connection: a worker that failed
+     because the provider was throttling, unavailable or timing out (isThrottle — an observed failure, never a guess) halves it
+     (never below one); a worker that came back with findings gives one slot back, up to what the server allowed (or, with no stated
+     width, until it covers every task again). It bounds concurrency, never the total: every task still runs, only later.
+     Observation: none yet in production (2026-11-26) — the rule is the standard one and the signals are the server's own failure codes.
+     Expires with: the server stating a rate limit of its own (then that number is the ceiling and this only follows it). */
+  let ceiling = maxConcurrent;
   let inFlight = 0;
   const waiters = [];
-  const acquire = (signal) => {
-    if (maxConcurrent === null || inFlight < maxConcurrent) { inFlight++; return Promise.resolve(true); }
-    return new Promise((resolve) => {
-      const w = { resolve, off: null };
-      w.off = () => { const i = waiters.indexOf(w); if (i >= 0) waiters.splice(i, 1); resolve(false); };
-      signal.addEventListener('abort', w.off, { once: true });
-      waiters.push(w);
-    });
+  const pump = () => {
+    while (waiters.length && (ceiling === null || inFlight < ceiling)) { inFlight++; waiters.shift().resolve(true); }
   };
-  const release = () => {
-    const w = waiters.shift();
-    if (w) w.resolve(true);   /* the slot passes straight to the next in line; inFlight is unchanged */
-    else inFlight--;
+  const acquire = (signal) => new Promise((resolve) => {
+    const w = { resolve, off: null };
+    w.off = () => { const i = waiters.indexOf(w); if (i >= 0) { waiters.splice(i, 1); resolve(false); } };
+    signal.addEventListener('abort', w.off, { once: true });
+    waiters.push(w);
+    pump();
+  });
+  const release = () => { inFlight--; pump(); };
+  const isThrottle = (r) => !!r && (r.code === 'provider_unavailable' || r.code === 'rate_limited' || r.code === 'timeout'
+    || (r.detail && (r.detail.timeout === true || Number(r.detail.status) === 429 || (Number(r.detail.status) >= 500 && Number(r.detail.status) < 600))));
+  const adapt = (r, queuedWorker) => {
+    if (!queuedWorker) return;
+    if (isThrottle(r)) {
+      const base = ceiling === null ? Math.max(inFlight, 1) : ceiling;
+      const next = Math.max(1, Math.floor(base / 2));
+      if (next !== ceiling) { ceiling = next; note('delegation.width', '', { ceiling, why: r.code || 'throttled' }); }
+    } else if ((r.state === 'done' || r.state === 'partial') && ceiling !== null && (maxConcurrent === null || ceiling < maxConcurrent)) {
+      ceiling += 1;
+      if (maxConcurrent === null && ceiling >= tasks.size) ceiling = null;
+      note('delegation.width', '', { ceiling, why: 'recovered' });
+      pump();
+    }
   };
 
   /* every append goes through here so a watcher sees the event the moment it is written; a watcher that throws is
@@ -280,11 +305,13 @@ export function makeDelegation(o) {
       entry.holder = String(executor.id || 'executor');
       note('task.lease', id, { holder: entry.holder });
       try {
-        const r = await executor.run({ id, kind: c.kind, goal: c.goal, returns: c.returns, inputs, capability: c.capability, args: runArgs, tools: c.tools, model: c.model, images: c.images, maxOutput: c.maxOutput }, {
+        const r = await executor.run({ id, kind: c.kind, goal: c.goal, returns: c.returns, inputs, capability: c.capability, args: runArgs, tools: c.tools, model: c.model, effort: c.effort, images: c.images, maxOutput: c.maxOutput }, {
           signal: controller.signal,
           emit: (kind, data) => note(kind, id, data),
         });
-        return finish(id, t0, controller.signal.aborted && !(r && r.state) ? { state: 'cancelled' } : r);
+        const fin = finish(id, t0, controller.signal.aborted && !(r && r.state) ? { state: 'cancelled' } : r);
+        adapt(fin, queued);
+        return fin;
       } catch (e) {
         if (controller.signal.aborted || (e && e.name === 'AbortError')) return finish(id, t0, { state: 'cancelled' });
         return finish(id, t0, { state: 'failed', code: 'executor_threw', summary: s(e && e.message, 400) });
@@ -296,37 +323,53 @@ export function makeDelegation(o) {
     return { id, reused: false, resumed: false, promise: entry.promise, cancel: () => controller.abort() };
   }
 
-  return {
-    start,
-    /* run(contracts) — start every task of a list and wait for all of them. The list is read WHOLE before anything starts:
-       a task may name an input that comes later in it (it waits for that task), and a set of tasks whose inputs lead back
-       to themselves is ended `input_cycle` at once instead of waiting for each other for ever. */
-    async run(contracts, opts) {
-      const list = Array.isArray(contracts) ? contracts : [];
-      const norm = list.map((raw) => normaliseContract(raw));
-      const declared = new Set();
-      norm.forEach((x) => { if (x.ok && x.contract.id && !tasks.has(x.contract.id)) declared.add(x.contract.id); });
-      declared.forEach((id) => {
-        let resolve; const promise = new Promise((r) => { resolve = r; });
-        forward.set(id, { promise, resolve, settled: false });
-      });
-      const cyc = cycleMembers(norm.map((x) => (x.ok ? x.contract : null)));
-      const handles = list.map((raw, i) => start(raw, cyc.has(i) ? { code: 'input_cycle', summary: 'Its inputs lead back to itself through "' + (norm[i].ok ? norm[i].contract.id : '') + '".' } : undefined));
-      /* a declared name no task took (its id was already in use, so it was given another) must not leave a waiter waiting */
-      forward.forEach((f) => { if (!f.settled) { f.settled = true; f.resolve({ state: 'failed', code: 'input_unknown', summary: 'No task of this list took that name.', findings: [], gaps: [], sources: [] }); } });
-      /* `opts.after(result, index)` → a contract to start THE MOMENT that task ends, or null. A checker is started by this when its task
-         is done — not when the slowest task of the list is — so the time a list takes is its longest chain, not its slowest task plus its
-         slowest checker. The checkers' results come back as `results.followUps`, aligned with the list (null where none was started). */
-      const after = opts && typeof opts.after === 'function' ? opts.after : null;
-      const followed = handles.map((h, i) => (!after ? Promise.resolve(null) : h.promise.then((r) => {
-        let c = null; try { c = after(Object.assign({ reused: h.reused, resumed: h.resumed }, r), i); } catch (_) { c = null; }
-        return c ? start(c).promise : null;
-      })));
+  /* begin(contracts, opts) → { handles, all, firstUsable, settled() } — start every task of a list WITHOUT waiting for them. The list is read
+     WHOLE before anything starts: a task may name an input that comes later in it (it waits for that task), and a set of tasks whose
+     inputs lead back to themselves is ended `input_cycle` at once instead of waiting for each other for ever. A task's result is readable
+     the moment it ends (settled(): the results so far, null where a task is still running); `firstUsable` resolves when one task has ended
+     done/partial (or every task has ended); `all` is what run() returns. A slow task therefore holds nothing back — what a caller does
+     with the early results (answer from them, start dependent work, ask for the rest later) is the caller's. */
+  function begin(contracts, opts) {
+    const list = Array.isArray(contracts) ? contracts : [];
+    const norm = list.map((raw) => normaliseContract(raw));
+    const declared = new Set();
+    norm.forEach((x) => { if (x.ok && x.contract.id && !tasks.has(x.contract.id)) declared.add(x.contract.id); });
+    declared.forEach((id) => {
+      let resolve; const promise = new Promise((r) => { resolve = r; });
+      forward.set(id, { promise, resolve, settled: false });
+    });
+    const cyc = cycleMembers(norm.map((x) => (x.ok ? x.contract : null)));
+    const handles = list.map((raw, i) => start(raw, cyc.has(i) ? { code: 'input_cycle', summary: 'Its inputs lead back to itself through "' + (norm[i].ok ? norm[i].contract.id : '') + '".' } : undefined));
+    /* a declared name no task took (its id was already in use, so it was given another) must not leave a waiter waiting */
+    forward.forEach((f) => { if (!f.settled) { f.settled = true; f.resolve({ state: 'failed', code: 'input_unknown', summary: 'No task of this list took that name.', findings: [], gaps: [], sources: [] }); } });
+    /* `opts.after(result, index)` → a contract to start THE MOMENT that task ends, or null. A checker is started by this when its task
+       is done — not when the slowest task of the list is — so the time a list takes is its longest chain, not its slowest task plus its
+       slowest checker. The checkers' results come back as `results.followUps`, aligned with the list (null where none was started). */
+    const after = opts && typeof opts.after === 'function' ? opts.after : null;
+    const followed = handles.map((h, i) => (!after ? Promise.resolve(null) : h.promise.then((r) => {
+      let c = null; try { c = after(Object.assign({ reused: h.reused, resumed: h.resumed }, r), i); } catch (_) { c = null; }
+      return c ? start(c).promise : null;
+    })));
+    const settled = () => handles.map((h, i) => { const r = workspace.get(h.id); return r ? Object.assign({ reused: h.reused, resumed: h.resumed }, r) : null; });
+    const usable = (r) => r && (r.state === 'done' || r.state === 'partial');
+    const firstUsable = new Promise((resolve) => {
+      let left = handles.length;
+      if (!left) resolve();
+      handles.forEach((h) => h.promise.then((r) => { left--; if (usable(r) || !left) resolve(); }));
+    });
+    const all = (async () => {
       const results = await Promise.all(handles.map((h) => h.promise));
       const out = results.map((r, i) => Object.assign({ reused: handles[i].reused, resumed: handles[i].resumed }, r));
       if (after) { const fu = await Promise.all(followed); Object.defineProperty(out, 'followUps', { value: fu.map((r) => (r ? Object.assign({ reused: false, resumed: false }, r) : null)), enumerable: false }); }
       return out;
-    },
+    })();
+    return { handles, all, firstUsable, settled };
+  }
+
+  return {
+    start,
+    run: async (contracts, opts) => begin(contracts, opts).all,
+    begin,
     cancelAll() { tasks.forEach((t) => { try { t.controller.abort(); } catch (_) { /* already ended */ } }); },
     /* stop ONE task (its dependents then end `failed`/`input_unavailable`, as for any task that did not finish) */
     cancel(id) { const t = tasks.get(String(id)); if (t) { try { t.controller.abort(); } catch (_) { /* already ended */ } } return !!t; },
@@ -444,9 +487,9 @@ const WORKER_SYSTEM = workerSystem(personaPrompt('working here as a research wor
 /* requestKey(prompt, webMode) → a key in ai-proxy's REPLAY_KEY_OK alphabet that is the same for the same request and (to
    2^-64) different for any other: two independent 32-bit hashes of the text, written in hex. Not a secret and not a
    signature — the server binds the key to the account and the turn; this only has to tell requests apart. */
-export function requestKey(prompt, webMode, model) {
+export function requestKey(prompt, webMode, model, effort) {
   /* (model-options) the model is part of the request's identity: the same prompt put to a stronger model is a different request, not a duplicate */
-  const text = String(webMode || '') + '\n' + (model ? String(model) + '\n' : '') + String(prompt || '');
+  const text = String(webMode || '') + '\n' + (model ? String(model) + '\n' : '') + (effort ? 'effort:' + String(effort) + '\n' : '') + String(prompt || '');
   let h1 = 0x811c9dc5, h2 = 0x9747b28c;
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i);
@@ -606,6 +649,7 @@ export function makeWorkerExecutor(o) {
     let degraded = '';   /* what the final answer was made without, after a retry that changed the request */
     const tried = new Set();   /* the retry variants already used ('web_off', 'concise'): a transient failure is retried only with one not yet tried */
     let lastBad = null;        /* the signature of the last malformed output: the same output again is no progress */
+    const full = new Map();       /* (delegate-reread) step ref → the whole answer of a call whose answer was cut for the prompt */
     const answered = new Map();   /* the call's identity → the step its first call produced: the same call with the same arguments is answered from it, not run again */
     let repeatRun = 0;            /* consecutive steps made only of such repeats */
     /* one search of the registry, as a step: read-only matches join the grant; the others are named with why they may not be
@@ -635,14 +679,14 @@ export function makeWorkerExecutor(o) {
       let env;
       calls += 1;
       try {
-        env = await ask(prompt, WORKER_SYSTEM, imgs, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, modelHint: task.model || undefined, signal: controller.signal,
+        env = await ask(prompt, WORKER_SYSTEM, imgs, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, modelHint: task.model || undefined, effortHint: task.effort || undefined, signal: controller.signal,
           maxOutputHint: task.maxOutput || undefined,
           stream: { onEvent() { /* nothing is shown for a worker; the stream is for the window it is answered in (ai-proxy ask.ts streamWanted) */ } },   /* (worker-reach) the size the parent stated; absent → the task's own budget (ai-proxy clamps it to the model's ceiling) */
           /* the key is the REQUEST's identity — what is asked and how (prompt + web mode), under this child's turn key. A duplicate of THIS
              request (the same delegation resumed by another executor) is answered with the first's answer instead of being run again;
              a different request — the repair, the retry, or another research.delegate call that reused the id "task1" in the same turn —
              has a different key and is never handed this one's answer. */
-          replayKey: requestKey(prompt + keyTail, webMode, task.model) });
+          replayKey: requestKey(prompt + keyTail, webMode, task.model, task.effort) });
       } catch (e) {
         if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, sources };
         const code = String((e && e.code) || '');
@@ -688,7 +732,24 @@ export function makeWorkerExecutor(o) {
         const grant = allowed.slice();
         const inRound = new Map();   /* the same call twice in ONE request is run once; the second is answered from the first */
         let fresh = 0, cancelled = false;
-        const one = async (w) => {
+        /* (delegate-reread) the references this request's answers are kept under: the step's own number, as "RESULTS OF YOUR CALLS SO FAR" counts them */
+        const firstStep = steps.length;
+        const shownWithRef = (whole, ref) => {
+          if (whole.length <= SHOW_CHARS) return whole;
+          full.set(ref, whole);
+          return whole.slice(0, SHOW_CHARS) + '\n[characters 0-' + SHOW_CHARS + ' of ' + whole.length + ' shown — nothing was dropped: read the rest with {"capability":"' + READ_STEP + '","args":{"ref":"' + ref + '","offset":' + SHOW_CHARS + '}}]';
+        };
+        const one = async (w, idx) => {
+          const ref = String(firstStep + idx + 1);
+          if (w.capability === READ_STEP) {
+            const a = (w.args && typeof w.args === 'object') ? w.args : {};
+            const whole = full.get(String(a.ref == null ? '' : a.ref));
+            if (whole === undefined) return { ok: false, text: 'no answer of yours is kept under that ref — only answers that were cut are (the ref is named where the cut is shown)' };
+            const off = Math.max(0, Math.floor(Number(a.offset) || 0));
+            const len = Math.max(1, Math.min(READ_CHARS, Math.floor(Number(a.length) || READ_CHARS)));
+            const end = Math.min(whole.length, off + len);
+            return { ok: true, text: 'characters ' + off + '-' + end + ' of ' + whole.length + ':\n' + whole.slice(off, end) + (end < whole.length ? '\n[more:{"capability":"' + READ_STEP + '","args":{"ref":"' + String(a.ref) + '","offset":' + end + '}}]' : '') };
+          }
           if (!w.capability) return { ok: false, text: 'this entry of "calls" is not a call: give {"capability":"<id>","args":{...}}' };
           const ck = stable([w.capability, w.args]);
           const had = answered.get(ck);
@@ -711,9 +772,13 @@ export function makeWorkerExecutor(o) {
             try {
               const out = await cap.run(w.capability, w.args, { signal: controller.signal, turnKey: childKey });   /* (atlas-verify-metrics) the capability's own model call is the child's, journalled under the child's key */
               ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: w.capability });
-              const st = { ok: !(out && out.ok === false), text: s(out && (out.text != null ? out.text : stripTags(out.html)), 3000) || (out && out.code) || '' };
-              if (out && out.meta && st.ok) st.text += (st.text ? '\n' : '') + 'DATA: ' + s(JSON.stringify(out.meta), 1500);
-              return st;
+              /* (delegate-reread) NOTHING IS LOST TO THE CUT. The answer is kept WHOLE under a reference; the worker is shown the first
+                 SHOW characters (what it was shown before: 3000 of the text + 1500 of the data) and is told how to read the rest with
+                 read_step — the same re-read the parent has (read_result), by reference and range. */
+              let whole = String((out && (out.text != null ? out.text : stripTags(out.html))) || (out && out.code) || '');
+              const ok = !(out && out.ok === false);
+              if (out && out.meta && ok) { let j = ''; try { j = JSON.stringify(out.meta); } catch (_) { j = ''; } if (j) whole += (whole ? '\n' : '') + 'DATA: ' + j; }
+              return { ok, text: shownWithRef(whole, ref) };
             } catch (e) {
               if (controller.signal.aborted) { cancelled = true; return { ok: false, text: 'cancelled' }; }
               ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
@@ -725,7 +790,7 @@ export function makeWorkerExecutor(o) {
           answered.set(ck, st);
           return st;
         };
-        const results = await Promise.all(wanted.map(one));
+        const results = await Promise.all(wanted.map((w, i) => one(w, i)));
         if (cancelled || controller.signal.aborted) return { state: 'cancelled', calls, costUsd, sources };
         wanted.forEach((w, i) => steps.push({ capability: w.capability || '(not a call)', args: w.args, ok: results[i].ok, text: results[i].text }));
         if (fresh) repeatRun = 0;

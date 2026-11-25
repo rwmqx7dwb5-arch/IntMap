@@ -178,7 +178,10 @@ export function catalogueBlocks(modules, chunks, c) {
     s.frags.sort(function (a, b) { return a.at - b.at; });
     s.frags.forEach(function (f) { if (ids.indexOf(f.id) < 0) ids.push(f.id); });
     s.mentions.forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
-    return { name: k.name, ids: ids, t: (k.head != null ? val(k.head) : '') + s.frags.map(function (f) { return val(f.text); }).join('') };
+    /* (atlas-context-diet) `head` and `frags` are kept beside `t` so a caller can ask for ONE capability's own fragment without the
+       neighbours that happen to share its block — `t` is still exactly head + every fragment, byte for byte. */
+    const head = k.head != null ? val(k.head) : '', frags = s.frags.map(function (f) { return { id: f.id, t: val(f.text) }; });
+    return { name: k.name, ids: ids, head: head, frags: frags, t: head + frags.map(function (f) { return f.t; }).join('') };
   });
 }
 

@@ -66,9 +66,9 @@ select is((public.atlas_metrics_overview() -> 'turns' ->> 'turns')::int, 2, 'two
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'completion_rate')::numeric, 0.5, 'one of two declared itself complete');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'duplicate_op_rate')::numeric, 0.2, '4 repeats in 20 operations');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'capability_found_rate')::numeric, 0.9, '2 unknown tools in 20 operations');
-select is((public.atlas_metrics_overview() -> 'turns' ->> 'grounded_claim_rate')::numeric, 1, 'every finding carried a source');
+select is((public.atlas_metrics_overview() -> 'turns' ->> 'grounded_claim_rate')::numeric, 1::numeric, 'every finding carried a source');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'program_verified_share')::numeric, 0.25, '1 of 4 checks decided by a program');
-select is((public.atlas_metrics_overview() -> 'turns' ->> 'cost_per_success_micros')::numeric, 40000, 'cost per complete answer');
+select is((public.atlas_metrics_overview() -> 'turns' ->> 'cost_per_success_micros')::numeric, 40000::numeric, 'cost per complete answer');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'first_useful_ms_p50')::int, 2000, 'a turn with no useful result is not counted as 0 ms');
 select is(public.atlas_metrics_overview() -> 'turns' -> 'critical_tools' -> 0 ->> 'tool', 'research.delegate', 'the slowest path first');
 select is(public.atlas_metrics_overview(now() - interval '60 days', now() - interval '50 days') -> 'turns' -> 'completion_rate', 'null'::jsonb,

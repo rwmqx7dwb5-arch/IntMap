@@ -180,9 +180,9 @@ begin
           select jsonb_agg(jsonb_build_object('tool', c.tool, 'ms', c.ms, 'turns', c.n) order by c.ms desc)
             from (select x.critical_tool as tool, sum(x.critical_ms)::bigint as ms, count(*)::int as n
                     from public.atlas_turn_metrics x
-                   where x.created_at >= v_from and x.created_at < v_to and x.critical_tool <> ''
+                   where x.created_at > v_from and x.created_at <= v_to and x.critical_tool <> ''
                    group by 1 order by 2 desc limit 8) c), '[]'::jsonb))
-        from public.atlas_turn_metrics m where m.created_at >= v_from and m.created_at < v_to),
+        from public.atlas_turn_metrics m where m.created_at > v_from and m.created_at <= v_to),
     'calls', (
       select jsonb_build_object(
         'calls', count(*)::int,
@@ -190,7 +190,7 @@ begin
         'root_cache_rate', (sum(j.cached_tokens) filter (where j.child_key is null))::numeric / nullif(sum(j.input_tokens) filter (where j.child_key is null), 0),
         'latency_ms_p50', round(percentile_cont(0.5) within group (order by j.latency_ms))::int,
         'latency_ms_p90', round(percentile_cont(0.9) within group (order by j.latency_ms))::int)
-        from public.ai_delegation_journal j where j.created_at >= v_from and j.created_at < v_to),
+        from public.ai_delegation_journal j where j.created_at > v_from and j.created_at <= v_to),
     'children', coalesce((
       select jsonb_agg(jsonb_build_object('model', c.model, 'calls', c.n, 'ok', c.ok, 'cost_share', c.cost_share, 'wait_share', c.wait_share, 'latency_ms_p50', c.p50) order by c.n desc)
         from (select j.model, count(*)::int as n, (count(*) filter (where j.outcome = 'ok'))::int as ok,
@@ -198,7 +198,7 @@ begin
                      sum(j.latency_ms)::numeric / nullif(sum(sum(j.latency_ms)) over (), 0) as wait_share,
                      round(percentile_cont(0.5) within group (order by j.latency_ms))::int as p50
                 from public.ai_delegation_journal j
-               where j.created_at >= v_from and j.created_at < v_to and j.child_key is not null
+               where j.created_at > v_from and j.created_at <= v_to and j.child_key is not null
                group by j.model) c), '[]'::jsonb),
     'families', (
       select jsonb_build_object(
@@ -208,7 +208,7 @@ begin
         from (select least(1, (max(j.latency_ms) filter (where j.child_key is not null))::numeric
                               / nullif(max(j.latency_ms) filter (where j.child_key is null), 0)) as share
                 from public.ai_delegation_journal j
-               where j.created_at >= v_from and j.created_at < v_to
+               where j.created_at > v_from and j.created_at <= v_to
                group by j.user_id, j.root_key
               having count(*) filter (where j.child_key is not null) > 0 and count(*) filter (where j.child_key is null) > 0) f
        where f.share is not null)

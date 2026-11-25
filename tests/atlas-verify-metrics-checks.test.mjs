@@ -120,14 +120,14 @@ test('the recorder fixes the first useful result when the step after an operatio
 
 test('the sink writes an announced row once for the signed-in account, and a signed-out reader writes nothing', async () => {
   const calls = [];
-  const target = { fn: null, addEventListener(n, f) { assert.equal(n, TURN_METRICS_EVENT); this.fn = f; } };
-  installTurnMetricsSink(target, () => ({ rpc: async (n, a) => { calls.push([n, a]); return { error: null }; } }));
+  const target = { fn: null };
+  installTurnMetricsSink((n, f) => { assert.equal(n, TURN_METRICS_EVENT); target.fn = f; }, () => ({ rpc: async (n, a) => { calls.push([n, a]); return { error: null }; } }));
   target.fn({ detail: { turn: 't9', row: { total_ms: 5 } } });
   target.fn({ detail: { turn: '', row: {} } });
   await Promise.resolve();
   assert.deepEqual(calls, [['log_atlas_turn_metrics', { p_turn: 't9', p_row: { total_ms: 5 } }]]);
-  const off = { fn: null, addEventListener(n, f) { this.fn = f; } };
-  installTurnMetricsSink(off, () => null);
+  const off = { fn: null };
+  installTurnMetricsSink((n, f) => { off.fn = f; }, () => null);
   assert.doesNotThrow(() => off.fn({ detail: { turn: 't1', row: {} } }));
 });
 

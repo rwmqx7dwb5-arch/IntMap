@@ -158,6 +158,11 @@ export const EVENTS = Object.freeze({
     aliases: ['intmap:ai-limit'],
     pending: { 'js/ai-core.js': 'pinned', 'js/supporter.js': 'pinned' },
   },
+  'intmap-atlas-turn-metrics': {
+    means: 'the measurements of a finished Atlas answer (time, cost, repeats, grounded claims; counts only) are ready to be recorded for the reader own account',
+    detail: '{ turn, row } — js/atlas-turn-metrics.js buildTurnMetrics',
+    from: ['js/atlas-turn-metrics.js'],
+  },
   'intmap-open-library': {
     means: 'something asks for the Library (js/my-places.js — places, saved maps, tours, Atlas answers), with a map document (js/map-doc.js) to save into the account if it carries one; js/auth-ui.js opens it with the app host',
     detail: '{ doc }',
