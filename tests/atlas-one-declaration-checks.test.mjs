@@ -249,7 +249,7 @@ function paintEverything(eng) {
   new Function('GE', ...stubs, mount[0])(eng.GE, ...stubs.map(() => nop));
   /* js/atlas-map-compose.js — the real module claims at construction; its painter is lifted */
   const C = makeAtlasMapCompose({ GE: eng.GE });
-  runLifted(codeOnly(read('js/atlas-map-compose.js')), ['ensureLayers'], { GE: eng.GE, window: W, SRC: C.SRC }, 'ensureLayers();');
+  runLifted(codeOnly(read('js/atlas-map-compose.js')), ['ensureLayers', 'addNameLayer'], { GE: eng.GE, window: W, SRC: C.SRC }, 'ensureLayers();');
   /* js/routing.js — the journey, and the drawn keep-out areas */
   const RT = codeOnly(read('js/routing.js'));
   runLifted(RT, ['ensureLayers', '_layersOK'], { GE: eng.GE, _watchStyle: nop, _imCanDraw: yes, _wireLineEvents: nop, ...constsOf(RT, ['SRC', 'LAYERS']) }, 'ensureLayers();');
