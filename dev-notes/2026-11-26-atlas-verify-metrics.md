@@ -54,3 +54,8 @@ internal: 子 AI による検証の呼び出しを減らす内部の変更と、
 - ai-proxy は `x-intmap-parent-turn` つきを子の呼び出しとして扱うので、ジャーナルの `child_key` が子になり、`atlas_metrics_overview.children` の寄与と費用が親と分かれる。**副作用**: その呼び出しは子の呼び出し数の上限・委譲方針（`ATLAS_DELEGATION_CHILD_CALLS` 等）の対象になる（子が行ったことなので筋は通るが、本番で `delegation_*` の拒否コードが増えたら、この変更が原因か見ること）。`atlas-delegate.js` に 1 語（`turnKey: childKey`）だけ足した。
 - 付随: 子の所見の整形（`atlas-job-core.js` `shapeOf`。サーバ側の写し `supabase/functions/_shared/atlas-job-core.js` も同期）が決まった欄しか通さず、検証者の返す `id` が落ちていた。`id` を通す（本番では ai-proxy と atlas-jobs の再配備が要る。CI の配備が行う）。所見に空の `lat`/`lon` 欄があるだけでは「位置を述べた」とは扱わない（自分の欄で値があるときだけ）。
 - 窓口の台帳（`tests/global-surface-baseline.json`）を更新した: `window.IntMapGisGeometry` / `window.IntMapGisUnits` の読みが各 1 増（`atlas-cap-research.js` が検証の検査器を呼び出し時に取る。所有者を import すると第 2 の幾何カーネルを遅延チャンクへ同梱することになるため、既存の読み手 `atlas-query.js` と同じく実行時に 1 つの本物を読む）、`window.sb` が 2 増（`atlas-console.js` の記録呼び出しと `atlas-turn-metrics.js` の書き手。ログイン済みクライアントの唯一の入口が `window.sb` のため）。
+
+## 7. 性能の天井を上げた理由（`tests/perf-baseline.json`）
+
+- `atlas-console` の遅延チャンク 1437.6 → 1445.3 kB（+7.7 kB）、非同期 gzip 合計 5290.5 → 5323.1 kB。増えたのは、このラウンドが足したもの: 検証の検査器（`atlas-claim-check.js`）、回答ごとの計測（`atlas-turn-metrics.js`）、ID 照合と検証の振り分け（`atlas-orchestrate.js`・`atlas-cap-research.js`）。
+- 買ったもの: 子 AI の検証を座標・形・単位で先にプログラムが決めること（モデル呼び出しと待ちの削減）、言い換えに強い ID 照合、回答単位の計測。幾何・単位カーネルは import せず実行時に既存のものを読むので、第 2 の幾何カーネルは同梱していない。取り戻せるか: 検査器を `atlas-cap-research` の外へ出す余地はあるが、遅延チャンクの置き場を変えるだけで総量は変わらない。
