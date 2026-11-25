@@ -47,19 +47,19 @@ date: 2026-11-26
 - 成果物生成（ファイルを作る能力は `savesFile` で page-only のまま）。
 
 ## 6. 本番実測
-2026-11-26、本番（ログイン済みセッション・永続ジョブ・https 入力）。道のり: #1431 配備後は全タスクが （#1435 で直す）→ 幾何演算が （#1437 で直す）。
+2026-11-26、本番（ログイン済みセッション・永続ジョブ・https 入力）。道のり: #1431 配備後は全タスクが `scope-conflict`（#1435 で直す）→ 幾何演算が `geometry-unavailable`（#1437 で直す）。
 Node の検査は、本番 Edge の realm（代入できない window・import map）を再現しておらず両方を通していた。本番で測って初めて見つかった。
 
 | 測定 | 結果 |
 |---|---|
-|  | 演算 31 件 |
+| `describe` | 演算 31 件 |
 | inline 2×2 nearestJoin / buffer / centroid | 全部 done（69 / 160 / 124 ms） |
 | https: NE 50m 都市 1,251 × NE 10m 港 1,081 の nearestJoin | done・count 1,251・truncated=false・未一致 0・保存 909,641 B（上限 1,500,000）・2,945 ms（大半は https 取得） |
 | 同 都市 243（110m）× 港 1,081 | done・869 ms |
-| 同名列 name が衝突する入力 | 拒否 （GIS の規則どおり・prefix で避ける） |
+| 同名列 name が衝突する入力 | 拒否 `op_refused / join-column-collision`（GIS の規則どおり・prefix で避ける） |
 | ブラウザ Python（compute.run）で同じ全表 1 回 | 372 ms（Pyodide 起動 1.8〜2.8 秒は別） |
 | ブラウザ Python: cap_call_many（並列 4）で 500 点データセット 500 回 | 全部 ok・0.65 秒・拒否 0（#1431 前の測定） |
 
 - 「約 500 都市」の公開 GeoJSON は見つからず、1,251 件と 243 件で測った。作成から終了まで 5.26 秒（6 タスク）。1 件ずつ AI が判断する形との差は、モデル呼び出しが 0 回であること。
-- 気づき: 拒否の詳細（どの列が衝突したか）が task 行に残らず  だけ。次の改善候補。
-- 未測定: （MCP キー発行が承認事項）、行ごとに 500 回呼ぶ Python の同条件比較。
+- 気づき: 拒否の詳細（どの列が衝突したか）が task 行に残らず `join-column-collision` だけ。次の改善候補。
+- 未測定: `intmap_gis_ops`（MCP キー発行が承認事項）、行ごとに 500 回呼ぶ Python の同条件比較。
