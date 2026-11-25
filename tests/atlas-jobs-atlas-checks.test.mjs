@@ -42,7 +42,7 @@ test('every server twin is of a registry row that only reads (so it may run with
   for (const id of ids) {
     const c = get(id);
     assert.ok(c, id + ' is a capability of the registry');
-    assert.deepEqual(c.facets, { mutatesState: false, network: c.facets.network, asksUser: false, showsUI: false, savesFile: false, delegates: false }, id + ' must change, ask, show, save and delegate nothing');
+    assert.deepEqual(c.facets, { mutatesState: false, network: c.facets.network, asksUser: false, showsUI: false, savesFile: false, delegates: false, headless: false, changesSeen: false }, id + ' must change, ask, show, save and delegate nothing');
     assert.equal(c.confirmation, 'none', id);
     assert.equal(SERVER_CAPS[id].id, id);
   }

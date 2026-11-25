@@ -1400,16 +1400,25 @@ export function atlasConsole(HOST){
     const _linkSignals = (t, c) => { if (!c) return t; if (!t) return c; try { const l = new AbortController(), f = () => { try { l.abort(); } catch (_) { /* already aborted */ } }; if (t.aborted || c.aborted) f(); else { t.addEventListener('abort', f); c.addEventListener('abort', f); } return l.signal; } catch (_) { return t; } };
     const turnSignal = () => { try{ return _abortCtl?_abortCtl.signal:undefined; }catch(_){ return undefined; } }, _fetchJSON = makeFetchJSON(turnSignal);   /* ⚠ read at CALL time — `run()` installs the controller when a turn starts, so one captured here would belong to no turn */
     /* ══ (atlas-orchestration) THE HOST LANES OF A DELEGATED CAPABILITY TASK (js/atlas-orchestrate.js makeCapabilityExecutor) ══════
-       classifyCapability(id): 'read' ONLY for a capability whose FACETS (js/atlas-capabilities.js facetsOf, capability-facets) say it changes no state, asks the reader
-       nothing, shows nothing, saves nothing and starts no model work, with no confirmation (column 8) — a delegating task is the recursion this lane must not open. 'unknown' when nothing resolves; every other capability is 'other'.
+       classifyCapability(id): 'read' ONLY for a capability whose FACETS (js/atlas-capabilities.js facetsOf, capability-facets) say it changes nothing the READER sees or owns
+       (`changesSeen` — state may change where nothing shows it: a dataset filed in the session's GIS store, which the parent draws if it wants to), asks the reader
+       nothing, shows nothing, saves nothing and starts no other model work, with no confirmation (column 8) — a delegating task is the recursion this lane must not open.
+       'unknown' when nothing resolves; every other capability is 'other'. (worker-reach) The rule used to be «changes no state at all», which refused Python, geo.ml,
+       satellite change and file download although what a worker needs from them is the RESULT AS DATA — 56 of 287 live capabilities were reachable.
        Read off the table at call time: no list of ids is written here, so a capability added tomorrow is classified by what its row says.
+       ⚠ MODEL WORK INSIDE AN ADMITTED CAPABILITY (research.brief / askHere / analyze ask the model themselves): `delegates` is the entry's own declaration and cannot be
+       derived from the row, so such a capability stays admitted and its model call is made under K._curTurnKey — the reader's turn the delegation runs inside, counted
+       and bounded by ai-proxy's per-turn limits. It is NOT the worker's child key (`<parent>~<task>`); carrying that key down needs js/atlas-delegate.js to hand it to
+       run() and the executor to pass it on to the capability, which this lane cannot do alone.
        runReadCapability(id,args,{signal}): the SAME kernel path a call of Atlas's own takes (EXEC.execute — availability, schema,
-       observation, postcondition), source 'atlas-worker' so it is never a call that may ask the reader to confirm. The result is the kernel's
+       observation, postcondition), source 'atlas-worker' so it is never a call that may ask the reader to confirm — and it is the one fact a run reads (`dctx.source`) to
+       leave out a step the reader would see that its row does not declare (compute.run: no 'state' grant, not filed in the reader's open work; web.fetchFile: refuses,
+       because the file door draws). The result is the kernel's
        own: {ok: it reached 'completed', html, meta, code, status}; the lane turns html into text and meta into the task's data. */
     const classifyCapability = (id) => { let c=null; try{ c=CAPS.resolve(String(id||'')); }catch(_){ c=null; }
       if(!c) return 'unknown';
-      const f=c.facets||{};   /* (capability-facets) 'read' = it changes no state, asks nobody, shows nothing, saves nothing, starts no model work, and needs no confirmation — each a fact of its own, not one risk column */
-      return (!f.mutatesState && !f.asksUser && !f.showsUI && !f.savesFile && !f.delegates && String(c.confirmation||'none')==='none') ? 'read' : 'other'; };
+      const f=c.facets||{};   /* (capability-facets) 'read' = it changes nothing the reader sees or owns, asks nobody, shows nothing, saves nothing, starts no other model work, and needs no confirmation — each a fact of its own, not one risk column */
+      return (((f.changesSeen===false && !f.showsUI) || f.headless===true) && !f.asksUser && !f.savesFile && !f.delegates && String(c.confirmation||'none')==='none') ? 'read' : 'other'; };   /* (worker-reach) headless = the capability declares, and a test holds, that run as a worker it draws nothing and returns data */
     const runReadCapability = async (id,args,o) => { const r=await EXEC.execute(id, args||{}, {source:'atlas-worker', turnId:_curTurn, signal:(o&&o.signal)||undefined});
       return { ok:!!r&&r.status==='completed', html:(r&&r.html)||'', meta:(r&&r.meta)||undefined, code:(r&&r.code)||'', status:r&&r.status }; };
     /* (delegation-agency) describeCapability(id): the argument schema of a capability, as JSON text, for a worker that has been granted it — read off the registry row at call time, so a capability added tomorrow describes itself. */
@@ -1972,7 +1981,7 @@ export function atlasConsole(HOST){
       get _curTurn(){ return _curTurn; }, set _curTurn(v){ _curTurn=v; }, get _hist(){ return _hist; },   /* (text-to-era-map) the reader's earlier messages — js/atlas-text-map.js checks what Atlas read against them */
       get _atlRecallImgs(){ return _atlRecallImgs; }, set _atlRecallImgs(v){ _atlRecallImgs=v; },
       get _atlRecallAtts(){ return _atlRecallAtts; }, set _atlRecallAtts(v){ _atlRecallAtts=v; },
-      get VFRAMES(){ return VFRAMES; },
+      get VFRAMES(){ return VFRAMES; }, get ATTACH_LOG(){ return ATTACH_LOG; },   /* (worker-reach) research.delegate names attached images to workers by the ledger's names */
       get _poiColor(){ return _poiColor; }, set _poiColor(v){ _poiColor=v; },
       get aiFacilities(){ return aiFacilities; },
       get _pois(){ return _pois; }, set _pois(v){ _pois=v; },

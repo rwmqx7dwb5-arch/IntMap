@@ -423,7 +423,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.render","render","realBrowser,renderPage,screenshotPage,seePage,lookAtPage,scriptPage","research","none","","explanation","read","none","","","external"],
       ["web.sessionGrant","sessionGrant","allowSiteOperation,permitSite,authorizeBrowserSite","research","none","","explanation","external","explicit","",""],
       ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
-      ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset","explanation","session","none","","","external"],
+      ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset,map.object","explanation","session","none","","","external"],
       ["model.find","modelDiscover","findModel,specialistModels,whichModel,listModels","data","none","","explanation","read","none","","",""],
       ["model.run","modelRun","runModel,specialistModel,floodForecast,riverForecast,airQualityForecast","data","none","map.object","explanation","session","none","place?","","external"],
       ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
@@ -466,6 +466,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var ANSWERS = {"research.brief":1,"research.mapReport":1,"research.situationMap":1,"research.historicalMap":1,"research.analyze":1};
     var ASKS_USER = {"dialog.ask":1};
     var DELEGATES = {"research.delegate":1,"jobs.start":1,"jobs.resume":1,"research.longform":1};
+    var HEADLESS = {"data.query":1,"model.run":1};
     /* ⚠ GENERATED POLICY — END */
 
     /* ══ OBSERVERS ═══════════════════════════════════════════════════════════════════════════════
@@ -1691,17 +1692,59 @@ export function makeAtlasCapabilities(HOST, OPTS) {
                        — as opposed to 'explanation' (text handed back) and 'file'
          savesFile     produces 'file'
          delegates     policy.delegates — starts other model work
+         changesSeen   (worker-reach) it changes something the READER sees or owns. mutatesState says whether anything
+                       changes at all; this says whether the change reaches the reader. They differ for one kind of effect:
+                       a key in PRIVATE_KEYS below (a result filed where nothing shows it until someone draws it). True when
+                       risk is 'persist' or 'external' (the change outlives the session or leaves the page), when any key the
+                       row writes is not private, or when risk is 'session' and the row names NOTHING it writes — a change the
+                       row does not name is a change nobody can say is invisible, so it counts as seen.
        Nothing here is a list of ids. js/atlas-console.js classifyCapability reads these, and
        tests/atlas-capability-facets-checks.test.mjs holds every row to them. */
     var SEEN_PRODUCES = ['map', 'panel', 'chart', 'camera', 'route', 'view', 'object', 'time'];
+    /* ══ (worker-reach) WHICH WRITE KEYS ARE A PRIVATE RESULT, DERIVED FROM THE TABLE — NOT LISTED ═══════════════════
+       A write key (column 5) is PRIVATE when BOTH hold over every row of the table:
+         ① no row that writes ANY key of its namespace (the part before the first '.') produces something the reader
+           sees or keeps — SEEN_PRODUCES, 'setting' or 'file' (column 6). One row of a namespace that shows itself
+           makes the whole namespace a surface: `community.browse` writes `panel.community` and declares only
+           'explanation', and it is still a panel, because forty other `panel.*` rows open one.
+         ② every row that writes the key itself is risk 'read' or 'session' (column 7) — nothing persisted, nothing sent.
+       Measured 2026-11-25 over the 287 live rows: exactly one key passes, `gis.dataset` (compute.run, geo.ml, geo.imageChange,
+       web.fetchFile). That matches what the store is: js/gis-datasets.js holds the session's datasets, and a dataset is put on
+       the map only by js/gis-core.js `draw` — the door `map.drawDataset` opens, which writes `map.object`. data.gis has
+       always added datasets to the same store as risk 'read' with no write named, so the table already treated this as no
+       change to what the reader sees; the GIS console (js/gis-panel.js) lists them only when the reader opens it.
+       Refused by the same derivation, for the record: `gis.project` (persist), `knowledge`, `account.*`, `mcp.*` (persist /
+       external), every `map.*`, `panel.*`, `camera`, `settings.*`, `time*`, `view.*`, `ui.*`, `navigation` (a row of the
+       namespace shows itself).
+       ⚠ EXPIRES when the store starts to show what it holds on its own — a dataset drawn on add, a panel that opens when
+       one arrives. The row that does it must then declare what it shows (column 6), and ① turns the namespace back into a
+       surface without an edit here. What the derivation CANNOT see is a run that does more than its row says: rows are a
+       lower bound, exactly as `network` above. Where a run is known to under-declare, the run itself refuses or skips
+       the undeclared step when js/atlas-console.js runReadCapability is its caller (source 'atlas-worker'). */
+    var PRIVATE_KEYS = null;
+    function privateKeys() {
+      if (PRIVATE_KEYS) return PRIVATE_KEYS;
+      var KEEPS = SEEN_PRODUCES.concat(['setting', 'file']), seenNs = {}, unsafe = {}, keys = {};
+      T.forEach(function (r) {
+        var w = r[5] ? r[5].split(',') : [], p = r[6] ? r[6].split(',') : [];
+        var shows = p.some(function (x) { return KEEPS.indexOf(x) >= 0; });
+        w.forEach(function (k) { keys[k] = 1; if (shows) seenNs[k.split('.')[0]] = 1; if (r[7] !== 'read' && r[7] !== 'session') unsafe[k] = 1; });
+      });
+      PRIVATE_KEYS = {};
+      Object.keys(keys).forEach(function (k) { if (!seenNs[k.split('.')[0]] && !unsafe[k]) PRIVATE_KEYS[k] = 1; });
+      return PRIVATE_KEYS;
+    }
     function facetsOf(id, row, writes, produces, ingests) {
+      var P = privateKeys();
       return {
         mutatesState: row[7] !== 'read' || writes.length > 0,
         network: ingests === 'external' || row[7] === 'external',
         asksUser: !!ASKS_USER[id],
         showsUI: produces.some(function (p) { return SEEN_PRODUCES.indexOf(p) >= 0; }),
         savesFile: produces.indexOf('file') >= 0,
-        delegates: !!DELEGATES[id]
+        delegates: !!DELEGATES[id],
+        headless: !!HEADLESS[id],   /* (worker-reach) a worker may run it: it leaves out what the reader sees and returns data */
+        changesSeen: (row[7] !== 'read' && row[7] !== 'session') || writes.some(function (k) { return !P[k]; }) || (row[7] === 'session' && !writes.length)
       };
     }
 

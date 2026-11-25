@@ -42,6 +42,7 @@ export default [
   },
   {
     /* column 7 'session': it drops one pin that clear-pins removes; it asks only Open-Meteo (coordinates leave the page, as the weather card's do) and changes no setting. */
+    policy: { headless: true },   /* (worker-reach) as a worker: no pin, no camera — meta.specialistModel carries the result */
     row: ['model.run', 'modelRun', 'runModel,specialistModel,floodForecast,riverForecast,airQualityForecast', 'data', 'none', 'map.object', 'explanation', 'session', 'none', 'place?', '', 'external'],
     ui: { none: '2026-11-20' },
     doc: [
@@ -91,9 +92,17 @@ export default [
             : L('Uncertainty: no model spread is available here (only the global 0.4° domain covers this point), so no range is given — this is not a claim that the value is exact.', '不確実性: この地点を覆うのは全球 0.4° の領域だけで、モデル間の幅は得られません。幅を示せないのであって、値が正確という意味ではありません。')) + '</div>'
           + '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('US AQI bands: EPA. Pollutant ratios: WHO 2021 guideline levels (PM2.5 15, PM10 45, NO₂ 25, SO₂ 40, O₃ 100 µg/m³). Domain used for the headline: ' + r.domainUsed + '.', 'US AQI の区分は EPA、物質の比は WHO 2021 の指針値（PM2.5 15・PM10 45・NO₂ 25・SO₂ 40・O₃ 100 µg/m³）。見出しの値の領域: ' + r.domainUsed + '。')) + '</div>' + lim;
       }
-      try { addPin(ref.lng, ref.lat, { title, description: desc, source: m.provider + " — " + m.ref, when: new Date().toISOString().slice(0, 10), confidence: conf }); } catch (_) { /* the answer does not depend on the pin */ }
-      try { GE().camera.flyTo({ center: [ref.lng, ref.lat], zoom: Math.max(GE().camera.getZoom(), 8) }); } catch (_) { /* nor on the camera */ }
-      return R(true, h, { meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: where, produced: ['explanation'], userGoalSatisfied: true, specialistModel: { id: m.id, grade: r.grade || null, aqiMax: r.aqiMax || null, spread: r.spread || (r.ratioRange ? { ratioRange: r.ratioRange, agree: r.gradeAgreement } : null) } } });
+      /* (worker-reach) A DELEGATED WORKER (js/atlas-console.js runReadCapability, source 'atlas-worker') wants the forecast, not the reader's map:
+         no pin, no camera — and the runner's whole result (peak, ensemble, series / AQI, pollutants, both domains) handed back as data, because
+         the worker reads meta, not the card. The pin is the row's 'map.object'; the camera move is not in the row at all. */
+      const worker = !!dctx && dctx.source === 'atlas-worker';
+      if (!worker) {
+        try { addPin(ref.lng, ref.lat, { title, description: desc, source: m.provider + " — " + m.ref, when: new Date().toISOString().slice(0, 10), confidence: conf }); } catch (_) { /* the answer does not depend on the pin */ }
+        try { GE().camera.flyTo({ center: [ref.lng, ref.lat], zoom: Math.max(GE().camera.getZoom(), 8) }); } catch (_) { /* nor on the camera */ }
+      }
+      const sm = { id: m.id, grade: r.grade || null, aqiMax: r.aqiMax || null, spread: r.spread || (r.ratioRange ? { ratioRange: r.ratioRange, agree: r.gradeAgreement } : null) };
+      if (worker) Object.assign(sm, { place: { name: where, lat: ref.lat, lng: ref.lng }, provider: m.provider, limits: m.limits[0], result: r, drawn: false });
+      return R(true, h, { meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: where, produced: ['explanation'], userGoalSatisfied: true, specialistModel: sm } });
     },
   },
 ];

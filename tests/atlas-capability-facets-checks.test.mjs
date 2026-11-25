@@ -39,7 +39,9 @@ test('③ the facets follow the row', () => {
     assert.equal(c.facets.mutatesState, c.risk !== 'read-only' || c.effects.writes.length > 0, c.id);
     assert.equal(c.facets.savesFile, c.produces.includes('file'), c.id);
     assert.equal(c.facets.network, c.ingests === 'external' || c.risk === 'external', c.id);
-    if (c.effects.writes.length) assert.equal(classify(c.id), 'other', c.id + ' writes');
+    /* (worker-reach) the lane is decided by what the READER sees, not by whether anything is written: a private scratch
+       write (gis.dataset) is admitted, and a capability that declares headless runs without drawing */
+    if (c.facets.changesSeen && !c.facets.headless) assert.equal(classify(c.id), 'other', c.id + ' changes what the reader sees');
   });
 });
 
@@ -53,6 +55,7 @@ test('④ an entry that builds the choice picker declares asksUser', () => {
 test('⑤ the child lane admits nothing that asks, shows, saves, delegates or changes state', () => {
   const lane = CAPS.all().filter((c) => classify(c.id) === 'read');
   assert.ok(lane.length >= 5);
-  lane.forEach((c) => ['mutatesState', 'asksUser', 'showsUI', 'savesFile', 'delegates'].forEach((k) => assert.equal(c.facets[k], false, c.id + '.' + k)));
+  lane.forEach((c) => ['asksUser', 'savesFile', 'delegates'].forEach((k) => assert.equal(c.facets[k], false, c.id + '.' + k)));
+  lane.forEach((c) => assert.ok((c.facets.changesSeen === false && !c.facets.showsUI) || c.facets.headless === true, c.id + ' changes or shows something the reader sees and does not run headless'));
   assert.equal(CAPS.resolve('research.delegate').facets.delegates, true);
 });

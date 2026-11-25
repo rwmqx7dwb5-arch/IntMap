@@ -7,7 +7,7 @@
  *  How many workers, which model, where they run, and in what order — those are the parts expected to
  *  change, and each is a value passed in, not a structure written here.
  *
- *    the CONTRACT   { id?, goal, returns?, inputs?:[{ from:<task id> }] }  →  a RESULT
+ *    the CONTRACT   { id?, goal, returns?, inputs?:[{ from:<task id> }], tools?, model?, images?, maxOutput? }  →  a RESULT
  *                   { id, state, code?, summary, findings[], gaps[], sources[], notFound[], evidence?, costUsd, calls, ms }
  *                   a worker returns EVIDENCE, not a verdict: each finding with its source and the excerpt (or raw
  *                   values) it rests on; `evidence` counts how many do, and a worker with none says so in `gaps`
@@ -44,8 +44,8 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-import { s, stable, CONTRACT_KINDS, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
-export { stable, CONTRACT_KINDS, normaliseContract, contractKey };
+import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+export { stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey };
 /* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
 export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
 
@@ -280,7 +280,7 @@ export function makeDelegation(o) {
       entry.holder = String(executor.id || 'executor');
       note('task.lease', id, { holder: entry.holder });
       try {
-        const r = await executor.run({ id, kind: c.kind, goal: c.goal, returns: c.returns, inputs, capability: c.capability, args: runArgs, tools: c.tools }, {
+        const r = await executor.run({ id, kind: c.kind, goal: c.goal, returns: c.returns, inputs, capability: c.capability, args: runArgs, tools: c.tools, images: c.images, maxOutput: c.maxOutput }, {
           signal: controller.signal,
           emit: (kind, data) => note(kind, id, data),
         });
@@ -449,16 +449,74 @@ export function isTransientFailure(code, detail) {
   return code === 'provider_unavailable' || code === 'timeout' || d.timeout === true || (Number(d.status) >= 500 && Number(d.status) < 600);
 }
 
-/* (delegation-agency) A WORKER THAT MAY CALL READ CAPABILITIES. The worker's answer is either the findings object or ONE call
-   {"call":{"capability":id,"args":{...}}}; a call is run by the host's kernel lane (the same one a capability task uses) and its
-   result goes into the next request. Every request is one of the child's server-bounded calls, so the loop cannot outrun the
-   server, and the last request is always asked for the answer. */
+/* (delegation-agency) A WORKER THAT MAY CALL READ CAPABILITIES. The worker's answer is either the findings object or the calls it
+   wants made — {"calls":[{"capability":id,"args":{...}}, …]} (worker-reach), or the single {"call":{…}} it was first given. The calls of
+   one request are run by the host's kernel lane (the same one a capability task uses) AT THE SAME TIME, and their results go into the
+   next request in the order they were asked. Every request is one of the child's server-bounded calls, so the loop cannot outrun the
+   server, and the last request is always asked for the answer. HOW MANY calls one request may carry is not counted here: what a call
+   costs is the lane's to bound (a read capability runs no model). The server's job runner (supabase/functions/_shared/atlas-job-runner.js
+   TOOL_CALLS_PER_ROUND) reads a bounded number per round; that is its number, for its slices of an Edge Function, not this one's. */
 const stripTags = (h) => { let o = '', inTag = false; for (const ch of String(h == null ? '' : h)) { if (ch === '<') inTag = true; else if (ch === '>') { inTag = false; o += ' '; } else if (!inTag) o += ch; } return o.split(' ').filter(Boolean).join(' '); };
-export function toolCallOf(data) {
-  const c = data && typeof data === 'object' && !Array.isArray(data) ? data.call : null;
+const oneCall = (c) => {
   if (!c || typeof c !== 'object' || Array.isArray(c) || typeof c.capability !== 'string' || !c.capability.trim()) return null;
   const args = (c.args && typeof c.args === 'object' && !Array.isArray(c.args)) ? c.args : {};
   return { capability: s(c.capability, 80), args };
+};
+export function toolCallOf(data) {
+  return oneCall(data && typeof data === 'object' && !Array.isArray(data) ? data.call : null);
+}
+/* toolCallsOf(data) → [{ capability, args }, …] in the order asked, or null when the answer asks for no call. `calls` and `call`
+   together are read as one list (`calls` first). An entry that is not a well-formed call is kept as { capability:'', args:{} } so the
+   worker is told which one could not be read, instead of it vanishing. */
+export function toolCallsOf(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  const list = (Array.isArray(data.calls) ? data.calls : []).concat(data.call != null ? [data.call] : []);
+  if (!list.length) return null;
+  const out = list.map((c) => oneCall(c) || { capability: '', args: {} });
+  return out.some((c) => c.capability) ? out : null;
+}
+
+/* (worker-reach) resolveTaskImages(names, source) → { urls, seen:[{ name, as }], notes:[string], frameText }
+   The images a contract names, read from what the host holds — never fetched, never captured anew:
+     source.attachment(name) → the attachment ledger's record ({ kind, name, dataUrl? }) or null (js/atlas-attach-log.js find)
+     source.attachmentNames() → what the ledger holds, to name in a note when a name matches nothing
+     source.frames()         → the map frames the parent captured this turn (js/atlas-view-capture.js urls(): data URLs, or null)
+     source.framesText()     → what IntMap read off the app at each frame's instant (js/atlas-view-capture.js promptBlock()), optional
+   A name that cannot be shown is SAID in `notes` (they go to the worker's prompt and the result's gaps) — a worker that was not
+   shown what it was told to look at must not answer as if it had been. No count: every image named is handed on; the server
+   states what it attaches (ai-proxy MAX_IMAGES / MAX_IMAGES_BYTES). */
+export function resolveTaskImages(names, source) {
+  const list = Array.isArray(names) ? names : [];
+  const out = { urls: [], seen: [], notes: [], frameText: '' };
+  if (!list.length) return out;
+  const src = source && typeof source === 'object' ? source : {};
+  const isImg = (u) => typeof u === 'string' && u.indexOf('data:image/') === 0;
+  for (const name of list) {
+    if (name === IMAGE_VIEW) {
+      if (typeof src.frames !== 'function') { out.notes.push('The map frames ("' + IMAGE_VIEW + '") could not be shown: this host gives workers no access to them.'); continue; }
+      let fr = null;
+      try { fr = src.frames(); } catch (_) { fr = null; }
+      const urls = (Array.isArray(fr) ? fr : []).filter(isImg);
+      if (!urls.length) { out.notes.push('No map frame had been captured in this turn, so "' + IMAGE_VIEW + '" showed nothing (Atlas captures one with view.inspect before delegating).'); continue; }
+      urls.forEach((u, i) => { out.urls.push(u); out.seen.push({ name: IMAGE_VIEW, as: 'map frame ' + (i + 1) + ' of ' + urls.length + ' captured this turn' }); });
+      /* the camera, bounds and layers of each frame, read off the app — its own "image N" counts the map frames only, and says so */
+      if (!out.frameText && typeof src.framesText === 'function') { let ft = ''; try { ft = String(src.framesText() || ''); } catch (_) { ft = ''; } if (ft) out.frameText = 'WHAT INTMAP RECORDED AT EACH MAP FRAME (in this block, "image N" means map frame N):\n' + s(ft, 8000); }
+      continue;
+    }
+    if (typeof src.attachment !== 'function') { out.notes.push('The attachment "' + name + '" could not be shown: this host gives workers no access to the reader\'s attachments.'); continue; }
+    let rec = null;
+    try { rec = src.attachment(name); } catch (_) { rec = null; }
+    if (!rec) {
+      let have = [];
+      try { have = typeof src.attachmentNames === 'function' ? (src.attachmentNames() || []) : []; } catch (_) { have = []; }
+      out.notes.push('No attachment is called "' + name + '"' + (have.length ? ' (this conversation has: ' + have.slice(0, 20).join(', ') + ')' : '') + ', so it was not shown.');
+      continue;
+    }
+    if (rec.kind !== 'image' || !isImg(rec.dataUrl)) { out.notes.push('The attachment "' + (rec.name || name) + '" is ' + (rec.kind === 'text' ? 'a text file' : (rec.mime || rec.kind || 'not an image')) + ', not an image: a worker is shown images only, so it was not shown.'); continue; }
+    out.urls.push(rec.dataUrl);
+    out.seen.push({ name: String(rec.name || name), as: 'the reader\'s attachment' });
+  }
+  return out;
 }
 /* (delegate-child-loop) THE SEARCH A WORKER MAY BE GRANTED. `find_capability` in a contract's `tools` is the parent's grant to
    SEARCH: the worker then calls {"call":{"capability":"find_capability","args":{"query":"<words>"}}}, the host searches the
@@ -470,15 +528,16 @@ const FIND = 'find_capability';
 function toolSection(allowed, describe, steps, remaining, canFind) {   /* remaining: Infinity = the server states no count */
   let p = '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + (allowed.length ? allowed.join(', ') : '(none yet)') + '.';
   allowed.forEach((id) => { let d = ''; try { d = typeof describe === 'function' ? s(describe(id), 1200) : ''; } catch (_) { d = ''; } if (d) p += '\n  ' + id + ' arguments: ' + d; });
-  p += '\nTo call one, return ONLY {"call":{"capability":"<id>","args":{...}}} instead of the findings. Its result comes back in your next request.';
-  if (canFind) p += '\nTo look for a capability you do not have, return ONLY {"call":{"capability":"' + FIND + '","args":{"query":"<a few words for what you need>"}}}: IntMap searches its whole registry, and every read-only match becomes one you may call from your next request on (the others are named with the reason you may not call them).';
+  p += '\nTo call them, return ONLY {"calls":[{"capability":"<id>","args":{...}}, …]} instead of the findings. Every call in the list runs at the same time and each result comes back in your next request, in the order you listed them — so put ALL the calls that do not need another call\'s answer in ONE request, and wait for a result only when a call\'s arguments depend on it.';
+  if (canFind) p += '\nTo look for a capability you do not have, put {"capability":"' + FIND + '","args":{"query":"<a few words for what you need>"}} in "calls": IntMap searches its whole registry, and every read-only match becomes one you may call from your next request on (the others are named with the reason you may not call them).';
   if (steps.length) p += '\n\nRESULTS OF YOUR CALLS SO FAR:\n' + steps.map((x, i) => (i + 1) + '. ' + x.capability + ' ' + JSON.stringify(x.args).slice(0, 300) + ' → ' + (x.ok ? '' : 'FAILED: ') + x.text).join('\n');
   if (remaining === Infinity) p += '\n\nThere is no fixed number of requests: make the calls you need, then return the findings JSON. A call you already made with the same arguments is answered from its first result, not run again.';
   else p += remaining <= 1 ? '\n\nTHIS IS YOUR LAST REQUEST: make no more calls; return the findings JSON now from what you have, and say in "gaps" what you could not establish.' : '\n\nYou have ' + remaining + ' request(s) left including the one that returns the findings.';
   return p;
 }
 
-/* makeWorkerExecutor({ ask, parentTurn, signal, maxCalls? })
+/* makeWorkerExecutor({ ask, parentTurn, signal, maxCalls?, capability?, images? })
+   images — where a contract's `images` are read from (resolveTaskImages). A task's `maxOutput` is handed to ask as maxOutputHint.
    maxCalls — how many requests one worker may make (the first, a repair of a wrong shape, a retry after a transient
    failure). Pass the server's own bound (meta.delegationPolicy.childMaxCalls): the server refuses a call past it with
    `turn_calls`, so asking for more only buys a refusal. Setting it is also what turns the retry on. Unset (undefined) → 2 requests
@@ -500,163 +559,199 @@ export function makeWorkerExecutor(o) {
      it the one spare request stays what it always was, the repair of a wrong shape */
   const retryTransient = unbounded || (Number.isInteger(opt.maxCalls) && opt.maxCalls >= 1);
   const cap = opt.capability && typeof opt.capability.run === 'function' && typeof opt.capability.classify === 'function' ? opt.capability : null;   /* { run, classify, describe?, find? } — the host's kernel lane (find: the registry search a worker granted find_capability uses) */
+  const imageSource = opt.images && typeof opt.images === 'object' ? opt.images : null;   /* (worker-reach) { attachment?, attachmentNames?, frames?, framesText? } — where a task's `images` are read from (resolveTaskImages); absent → a task that names images is told, in its result, that none could be shown */
+  async function runWorker(task, ctx, shown) {
+    const childKey = (parentTurn + '~' + task.id).slice(0, 120);
+    const controller = new AbortController();
+    const abort = () => { try { controller.abort(); } catch (_) { /* ended */ } };
+    if (outerSignal) { if (outerSignal.aborted) abort(); else outerSignal.addEventListener('abort', abort, { once: true }); }
+    if (ctx.signal) { if (ctx.signal.aborted) abort(); else ctx.signal.addEventListener('abort', abort, { once: true }); }
+    let calls = 0, costUsd = 0, why = '';
+    const sources = [];
+    /* the grant: only ids the parent named AND the host classifies as read-only; with no lane, or no grant, the worker researches only */
+    const allowed = cap ? (task.tools || []).filter((id) => cap.classify(id) === 'read') : [];
+    /* (delegate-child-loop) …and the grant to SEARCH, when the parent named it and the host has a search: what it finds is
+       added to `allowed` under the same read-only rule, so the grant never widens past what the host classifies as read */
+    const canFind = !!(cap && typeof cap.find === 'function' && (task.tools || []).includes(FIND));
+    const steps = [];
+    /* (worker-reach) the images, named in the order they are attached, and what was named but could not be shown — the pictures arrive
+       through the vision channel with no labels of their own (the reason js/atlas-view-capture.js promptBlock exists) */
+    const imgs = shown && shown.urls.length ? shown.urls : null;
+    let imgText = '';
+    if (imgs) imgText += '\n\nIMAGES ATTACHED TO EACH OF YOUR REQUESTS, in this order:\n' + shown.seen.map((x, i) => 'image ' + (i + 1) + ' = ' + x.name + ' (' + x.as + ')').join('\n')
+      + (shown.frameText ? '\n' + shown.frameText : '') + '\nRead them for what they show; an image is evidence like any source: name it ("image N", or the attachment\'s name) as the source of a finding drawn from it.';
+    if (shown && shown.notes.length) imgText += '\n\nIMAGES YOU WERE TO SEE BUT ARE NOT SHOWN:\n' + shown.notes.join('\n') + '\nDo not answer as if you had seen them; say in "gaps" what you could not establish without them.';
+    const base = (done) => workerPrompt(task) + imgText + ((allowed.length || canFind) ? toolSection(allowed, cap.describe, steps, maxCalls - done, canFind) : '');
+    /* what tells this request apart from another beyond its prompt and web mode: the images it carries and the output size asked —
+       appended only when present, so a worker without them keeps the key it always had */
+    const keyTail = (imgs || task.maxOutput) ? '\n#' + (task.maxOutput || 0) + ':' + (imgs || []).map((u) => u.length + '.' + u.slice(-48)).join(',') : '';
+    let prompt = base(0);
+    let webMode = 'auto';
+    let degraded = '';   /* what the final answer was made without, after a retry that changed the request */
+    const tried = new Set();   /* the retry variants already used ('web_off', 'concise'): a transient failure is retried only with one not yet tried */
+    let lastBad = null;        /* the signature of the last malformed output: the same output again is no progress */
+    const answered = new Map();   /* the call's identity → the step its first call produced: the same call with the same arguments is answered from it, not run again */
+    let repeatRun = 0;            /* consecutive steps made only of such repeats */
+    /* one search of the registry, as a step: read-only matches join the grant; the others are named with why they may not be
+       called. Throws only when the task was cancelled while it searched. */
+    const searchStep = async (args) => {
+      const query = s(args && args.query, 200);
+      if (!query) return { ok: false, text: 'give the words to search for in args.query' };
+      const ti = ctx.emit('effect.intent', { capability: FIND, by: 'worker', turn: childKey });
+      let ids = [];
+      try { ids = await cap.find(query); } catch (e) {
+        if (controller.signal.aborted) throw e;
+        ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
+        return { ok: false, text: 'the search failed: ' + s(e && e.message, 200) };
+      }
+      if (controller.signal.aborted) throw new Error('cancelled');
+      ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: FIND });
+      const found = Array.from(new Set((Array.isArray(ids) ? ids : []).map((x) => s(x, 80)).filter(Boolean)));
+      if (!found.length) return { ok: true, text: 'nothing in IntMap\'s registry matched these words; try other words, or answer without it' };
+      return { ok: true, text: found.map((id) => {
+        const kind = cap.classify(id);
+        if (kind === 'read') { const had = allowed.includes(id); if (!had) allowed.push(id); return id + ' — ' + (had ? 'already yours' : 'you may call it now (its arguments are listed above)'); }
+        return id + ' — you may NOT call it: ' + (kind === 'other' ? 'it is not read-only (capability_not_read_only); leave it to Atlas' : 'no such capability');
+      }).join('; ') };
+    };
+    for (let attempt = 0; attempt < maxCalls; attempt++) {
+      const intent = ctx.emit('effect.intent', { attempt, turn: childKey, webMode });
+      let env;
+      calls += 1;
+      try {
+        env = await ask(prompt, WORKER_SYSTEM, imgs, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, modelHint: task.model || undefined, signal: controller.signal,
+          maxOutputHint: task.maxOutput || undefined,   /* (worker-reach) the size the parent stated; absent → the task's own budget (ai-proxy clamps it to the model's ceiling) */
+          /* the key is the REQUEST's identity — what is asked and how (prompt + web mode), under this child's turn key. A duplicate of THIS
+             request (the same delegation resumed by another executor) is answered with the first's answer instead of being run again;
+             a different request — the repair, the retry, or another research.delegate call that reused the id "task1" in the same turn —
+             has a different key and is never handed this one's answer. */
+          replayKey: requestKey(prompt + keyTail, webMode, task.model) });
+      } catch (e) {
+        if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, sources };
+        const code = String((e && e.code) || '');
+        /* (delegation-limits) WHY, as the server said it — measured 2026-11-19: a worker failed `provider_unavailable` after 90.7 s and
+           nothing recorded whether its web search had timed out (the failed child's ledger row is released with its refund) */
+        const m = (e && e.meta) || {};
+        const detail = { timeout: m.timeout === true ? true : undefined, tooLarge: m.tooLarge === true ? true : undefined, status: Number(e && e.status) || undefined, model: m.model ? String(m.model).slice(0, 60) : undefined };
+        ctx.emit('effect.failed', { intent: intent.id, code, timeout: !!detail.timeout, status: detail.status || 0 });
+        if (REFUSAL_CODES.includes(code)) return { state: 'refused', code, detail, summary: s(e && e.message, 400), calls, costUsd, sources };
+        /* the request may or may not have reached the provider: nothing came back to say which */
+        if (code === 'network' || code === 'stream_broken' || (e && e.status === 0)) return { state: 'unobservable', code: code || 'network', detail, summary: s(e && e.message, 400), calls, costUsd, sources };
+        /* An OBSERVED transient failure, with a request left in the budget: try again, but not the same request. A web
+           search that ran out its time is not asked to search again (it would meet the same wall); it is asked to answer
+           from what the model knows, and the result says it was made without the web. Any other transient failure is
+           asked again for less — fewer, shorter findings — which is a different, cheaper request. */
+        const variants = detail.timeout ? ['web_off', 'concise'] : ['concise', 'web_off'];
+        const change = variants.find((v) => !tried.has(v));
+        const retryable = retryTransient && isTransientFailure(code, detail) && attempt + 1 < maxCalls;
+        if (retryable && change) {
+          tried.add(change);
+          if (change === 'web_off') { webMode = 'off'; degraded = 'The web search was not available (it timed out or the provider failed), so this was answered without it, from what the model knows: treat every claim as unverified.'; }
+          prompt = base(attempt + 1) + '\n\nA PREVIOUS ATTEMPT AT THIS PIECE FAILED (' + (code || 'error') + '). '
+            + (tried.has('web_off') ? 'Web search is NOT available this time: answer only from what you reliably know, say plainly what you could not check, and give no source URL you cannot vouch for. ' : '')
+            + (tried.has('concise') ? 'Be concise: at most 5 findings, each one sentence, and say what you could not establish.' : '');
+          ctx.emit('effect.retry', { intent: intent.id, code, change, attempt: attempt + 1 });
+          continue;
+        }
+        /* a transient failure with no different request left to make: stopped and said so — the same request again is not progress */
+        return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), gaps: retryable ? ['The request failed (' + (code || 'error') + ') and every different way of asking (without the web, shorter) had already been tried; it was not asked again the same way.'] : undefined, calls, costUsd, sources };
+      }
+      const meta = (env && env.meta) || {};
+      const c = Math.max(0, Number(meta.costUsd) || 0);
+      costUsd += c;
+      ctx.emit('effect.done', { intent: intent.id, costUsd: c, model: String(meta.modelServed || meta.model || ''), web: !!meta.webUsed });
+      (Array.isArray(env && env.citations) ? env.citations : []).forEach((x) => {
+        if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: s(x.url, 500), title: s(x.title, 200) });
+      });
+      const wanted = (allowed.length || canFind) ? toolCallsOf(env && env.data) : null;
+      if (wanted && attempt + 1 < maxCalls) {
+        /* (worker-reach) THE CALLS OF ONE REQUEST RUN AT THE SAME TIME, and their steps are written in the order they were asked. The
+           grant each is held to is the grant as this request found it: a capability a search in the same request finds is callable
+           from the next request on (as the prompt says), not from a sibling that started beside the search. */
+        const grant = allowed.slice();
+        const inRound = new Map();   /* the same call twice in ONE request is run once; the second is answered from the first */
+        let fresh = 0, cancelled = false;
+        const one = async (w) => {
+          if (!w.capability) return { ok: false, text: 'this entry of "calls" is not a call: give {"capability":"<id>","args":{...}}' };
+          const ck = stable([w.capability, w.args]);
+          const had = answered.get(ck);
+          /* the same call, the same arguments: answered from the first result, not run (nor searched) again — and not a step forward */
+          if (had) return { ok: had.ok, text: 'ALREADY ANSWERED (the same call with the same arguments; not run again): ' + had.text };
+          if (inRound.has(ck)) { const first = await inRound.get(ck); return { ok: first.ok, text: 'ALREADY ANSWERED (the same call with the same arguments, earlier in this list; not run again): ' + first.text }; }
+          fresh += 1;
+          const p = (async () => {
+            if (canFind && w.capability === FIND) {
+              try { return await searchStep(w.args); } catch (e) { cancelled = true; return { ok: false, text: 'cancelled' }; }
+            }
+            if (!grant.includes(w.capability)) {
+              /* the reason, not only the refusal: a capability that changes something is no worker's, whatever the grant says */
+              const kind = cap.classify(w.capability);
+              return { ok: false, text: 'not in your grant (' + (grant.join(', ') || 'nothing yet') + ')'
+                + (kind === 'other' ? ' — and it is not read-only (capability_not_read_only): it changes something IntMap shows or keeps, so no worker may run it; leave it to Atlas and say so in "gaps"'
+                  : (kind === 'unknown' ? ' — and no capability has that id' : (canFind ? (allowed.includes(w.capability) ? ' — it was found in this same request, so call it in your next one' : ' — find it with ' + FIND + ' first') : ''))) };
+            }
+            const ti = ctx.emit('effect.intent', { capability: w.capability, by: 'worker', turn: childKey });
+            try {
+              const out = await cap.run(w.capability, w.args, { signal: controller.signal });
+              ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: w.capability });
+              const st = { ok: !(out && out.ok === false), text: s(out && (out.text != null ? out.text : stripTags(out.html)), 3000) || (out && out.code) || '' };
+              if (out && out.meta && st.ok) st.text += (st.text ? '\n' : '') + 'DATA: ' + s(JSON.stringify(out.meta), 1500);
+              return st;
+            } catch (e) {
+              if (controller.signal.aborted) { cancelled = true; return { ok: false, text: 'cancelled' }; }
+              ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
+              return { ok: false, text: s(e && e.message, 300) };
+            }
+          })();
+          inRound.set(ck, p);
+          const st = await p;
+          answered.set(ck, st);
+          return st;
+        };
+        const results = await Promise.all(wanted.map(one));
+        if (cancelled || controller.signal.aborted) return { state: 'cancelled', calls, costUsd, sources };
+        wanted.forEach((w, i) => steps.push({ capability: w.capability || '(not a call)', args: w.args, ok: results[i].ok, text: results[i].text }));
+        if (fresh) repeatRun = 0;
+        else {
+          /* a request made only of calls already answered is no step forward; two such in a row end the worker */
+          repeatRun += 1;
+          if (repeatRun >= 2) {
+            const raw = s(env && env.text, 4000);
+            return { state: raw ? 'partial' : 'failed', code: 'repeated_calls', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker asked for answers it already had twice in a row and was stopped without findings; it had called: ' + Array.from(new Set(steps.map((x) => x.capability))).join(', ') + '.']), calls, costUsd, sources };
+          }
+        }
+        prompt = base(attempt + 1);
+        continue;
+      }
+      const sh = shapeOf(env && env.data);
+      if (sh.ok) {
+        const out = Object.assign({ state: 'done', calls, costUsd, sources }, sh.out);
+        if (degraded) { out.state = 'partial'; out.code = 'degraded'; out.gaps = [degraded].concat(out.gaps || []); }
+        return out;
+      }
+      why = sh.why;
+      /* a repair is asked for only while the model's output CHANGES: the same malformed output twice is the model saying it will not do better */
+      const sig = stable([env && env.data === undefined ? null : env && env.data, s(env && env.text, 4000)]);
+      const same = lastBad === sig;
+      lastBad = sig;
+      if (attempt + 1 < maxCalls && !same) {
+        prompt = base(attempt + 1) + '\n\nYOUR PREVIOUS ANSWER COULD NOT BE USED: ' + why + '. Return exactly the JSON object described, with a non-empty "summary".';
+        continue;
+      }
+      const raw = s(env && env.text, 4000);
+      return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker did not return the requested shape (' + why + ')' + (same ? ', and returned the same output again after being told what was wrong, so it was not asked again.' : '.')]), calls, costUsd, sources };
+    }
+    return { state: 'failed', code: 'shape', summary: why, calls, costUsd, sources };
+  }
   return {
     id: 'worker-model@page',
     async run(task, ctx) {
-      const childKey = (parentTurn + '~' + task.id).slice(0, 120);
-      const controller = new AbortController();
-      const abort = () => { try { controller.abort(); } catch (_) { /* ended */ } };
-      if (outerSignal) { if (outerSignal.aborted) abort(); else outerSignal.addEventListener('abort', abort, { once: true }); }
-      if (ctx.signal) { if (ctx.signal.aborted) abort(); else ctx.signal.addEventListener('abort', abort, { once: true }); }
-      let calls = 0, costUsd = 0, why = '';
-      const sources = [];
-      /* the grant: only ids the parent named AND the host classifies as read-only; with no lane, or no grant, the worker researches only */
-      const allowed = cap ? (task.tools || []).filter((id) => cap.classify(id) === 'read') : [];
-      /* (delegate-child-loop) …and the grant to SEARCH, when the parent named it and the host has a search: what it finds is
-         added to `allowed` under the same read-only rule, so the grant never widens past what the host classifies as read */
-      const canFind = !!(cap && typeof cap.find === 'function' && (task.tools || []).includes(FIND));
-      const steps = [];
-      const base = (done) => workerPrompt(task) + ((allowed.length || canFind) ? toolSection(allowed, cap.describe, steps, maxCalls - done, canFind) : '');
-      let prompt = base(0);
-      let webMode = 'auto';
-      let degraded = '';   /* what the final answer was made without, after a retry that changed the request */
-      const tried = new Set();   /* the retry variants already used ('web_off', 'concise'): a transient failure is retried only with one not yet tried */
-      let lastBad = null;        /* the signature of the last malformed output: the same output again is no progress */
-      const answered = new Map();   /* the call's identity → the step its first call produced: the same call with the same arguments is answered from it, not run again */
-      let repeatRun = 0;            /* consecutive steps made only of such repeats */
-      /* one search of the registry, as a step: read-only matches join the grant; the others are named with why they may not be
-         called. Throws only when the task was cancelled while it searched. */
-      const searchStep = async (args) => {
-        const query = s(args && args.query, 200);
-        if (!query) return { ok: false, text: 'give the words to search for in args.query' };
-        const ti = ctx.emit('effect.intent', { capability: FIND, by: 'worker', turn: childKey });
-        let ids = [];
-        try { ids = await cap.find(query); } catch (e) {
-          if (controller.signal.aborted) throw e;
-          ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
-          return { ok: false, text: 'the search failed: ' + s(e && e.message, 200) };
-        }
-        if (controller.signal.aborted) throw new Error('cancelled');
-        ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: FIND });
-        const found = Array.from(new Set((Array.isArray(ids) ? ids : []).map((x) => s(x, 80)).filter(Boolean)));
-        if (!found.length) return { ok: true, text: 'nothing in IntMap\'s registry matched these words; try other words, or answer without it' };
-        return { ok: true, text: found.map((id) => {
-          const kind = cap.classify(id);
-          if (kind === 'read') { const had = allowed.includes(id); if (!had) allowed.push(id); return id + ' — ' + (had ? 'already yours' : 'you may call it now (its arguments are listed above)'); }
-          return id + ' — you may NOT call it: ' + (kind === 'other' ? 'it is not read-only (capability_not_read_only); leave it to Atlas' : 'no such capability');
-        }).join('; ') };
-      };
-      for (let attempt = 0; attempt < maxCalls; attempt++) {
-        const intent = ctx.emit('effect.intent', { attempt, turn: childKey, webMode });
-        let env;
-        calls += 1;
-        try {
-          env = await ask(prompt, WORKER_SYSTEM, null, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, modelHint: task.model || undefined, signal: controller.signal,
-            /* the key is the REQUEST's identity — what is asked and how (prompt + web mode), under this child's turn key. A duplicate of THIS
-               request (the same delegation resumed by another executor) is answered with the first's answer instead of being run again;
-               a different request — the repair, the retry, or another research.delegate call that reused the id "task1" in the same turn —
-               has a different key and is never handed this one's answer. */
-            replayKey: requestKey(prompt, webMode, task.model) });
-        } catch (e) {
-          if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, sources };
-          const code = String((e && e.code) || '');
-          /* (delegation-limits) WHY, as the server said it — measured 2026-11-19: a worker failed `provider_unavailable` after 90.7 s and
-             nothing recorded whether its web search had timed out (the failed child's ledger row is released with its refund) */
-          const m = (e && e.meta) || {};
-          const detail = { timeout: m.timeout === true ? true : undefined, tooLarge: m.tooLarge === true ? true : undefined, status: Number(e && e.status) || undefined, model: m.model ? String(m.model).slice(0, 60) : undefined };
-          ctx.emit('effect.failed', { intent: intent.id, code, timeout: !!detail.timeout, status: detail.status || 0 });
-          if (REFUSAL_CODES.includes(code)) return { state: 'refused', code, detail, summary: s(e && e.message, 400), calls, costUsd, sources };
-          /* the request may or may not have reached the provider: nothing came back to say which */
-          if (code === 'network' || code === 'stream_broken' || (e && e.status === 0)) return { state: 'unobservable', code: code || 'network', detail, summary: s(e && e.message, 400), calls, costUsd, sources };
-          /* An OBSERVED transient failure, with a request left in the budget: try again, but not the same request. A web
-             search that ran out its time is not asked to search again (it would meet the same wall); it is asked to answer
-             from what the model knows, and the result says it was made without the web. Any other transient failure is
-             asked again for less — fewer, shorter findings — which is a different, cheaper request. */
-          const variants = detail.timeout ? ['web_off', 'concise'] : ['concise', 'web_off'];
-          const change = variants.find((v) => !tried.has(v));
-          const retryable = retryTransient && isTransientFailure(code, detail) && attempt + 1 < maxCalls;
-          if (retryable && change) {
-            tried.add(change);
-            if (change === 'web_off') { webMode = 'off'; degraded = 'The web search was not available (it timed out or the provider failed), so this was answered without it, from what the model knows: treat every claim as unverified.'; }
-            prompt = base(attempt + 1) + '\n\nA PREVIOUS ATTEMPT AT THIS PIECE FAILED (' + (code || 'error') + '). '
-              + (tried.has('web_off') ? 'Web search is NOT available this time: answer only from what you reliably know, say plainly what you could not check, and give no source URL you cannot vouch for. ' : '')
-              + (tried.has('concise') ? 'Be concise: at most 5 findings, each one sentence, and say what you could not establish.' : '');
-            ctx.emit('effect.retry', { intent: intent.id, code, change, attempt: attempt + 1 });
-            continue;
-          }
-          /* a transient failure with no different request left to make: stopped and said so — the same request again is not progress */
-          return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), gaps: retryable ? ['The request failed (' + (code || 'error') + ') and every different way of asking (without the web, shorter) had already been tried; it was not asked again the same way.'] : undefined, calls, costUsd, sources };
-        }
-        const meta = (env && env.meta) || {};
-        const c = Math.max(0, Number(meta.costUsd) || 0);
-        costUsd += c;
-        ctx.emit('effect.done', { intent: intent.id, costUsd: c, model: String(meta.modelServed || meta.model || ''), web: !!meta.webUsed });
-        (Array.isArray(env && env.citations) ? env.citations : []).forEach((x) => {
-          if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: s(x.url, 500), title: s(x.title, 200) });
-        });
-        const wanted = (allowed.length || canFind) ? toolCallOf(env && env.data) : null;
-        if (wanted && attempt + 1 < maxCalls) {
-          let step;
-          const ck = stable([wanted.capability, wanted.args]);
-          const had = answered.get(ck);
-          if (had) {
-            /* the same call, the same arguments: answered from the first result, not run (nor searched) again — and not a step forward */
-            step = { ok: had.ok, text: 'ALREADY ANSWERED (the same call with the same arguments; not run again): ' + had.text };
-            repeatRun += 1;
-            if (repeatRun >= 2) {
-              const raw = s(env && env.text, 4000);
-              return { state: raw ? 'partial' : 'failed', code: 'repeated_calls', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker asked for answers it already had twice in a row and was stopped without findings; it had called: ' + Array.from(new Set(steps.map((x) => x.capability))).join(', ') + '.']), calls, costUsd, sources };
-            }
-            steps.push({ capability: wanted.capability, args: wanted.args, ok: step.ok, text: step.text });
-            prompt = base(attempt + 1);
-            continue;
-          }
-          if (canFind && wanted.capability === FIND) {
-            try { step = await searchStep(wanted.args); } catch (e) { return { state: 'cancelled', calls, costUsd, sources }; }
-          } else if (!allowed.includes(wanted.capability)) {
-            /* the reason, not only the refusal: a capability that changes something is no worker's, whatever the grant says */
-            const kind = cap.classify(wanted.capability);
-            step = { ok: false, text: 'not in your grant (' + (allowed.join(', ') || 'nothing yet') + ')'
-              + (kind === 'other' ? ' — and it is not read-only (capability_not_read_only): it changes something IntMap shows or keeps, so no worker may run it; leave it to Atlas and say so in "gaps"'
-                : (kind === 'unknown' ? ' — and no capability has that id' : (canFind ? ' — find it with ' + FIND + ' first' : ''))) };
-          } else {
-            const ti = ctx.emit('effect.intent', { capability: wanted.capability, by: 'worker', turn: childKey });
-            try {
-              const out = await cap.run(wanted.capability, wanted.args, { signal: controller.signal });
-              ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: wanted.capability });
-              step = { ok: !(out && out.ok === false), text: s(out && (out.text != null ? out.text : stripTags(out.html)), 3000) || (out && out.code) || '' };
-              if (out && out.meta && step.ok) step.text += (step.text ? '\n' : '') + 'DATA: ' + s(JSON.stringify(out.meta), 1500);
-            } catch (e) {
-              if (controller.signal.aborted) return { state: 'cancelled', calls, costUsd, sources };
-              ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
-              step = { ok: false, text: s(e && e.message, 300) };
-            }
-          }
-          repeatRun = 0;
-          answered.set(ck, step);
-          steps.push({ capability: wanted.capability, args: wanted.args, ok: step.ok, text: step.text });
-          prompt = base(attempt + 1);
-          continue;
-        }
-        const sh = shapeOf(env && env.data);
-        if (sh.ok) {
-          const out = Object.assign({ state: 'done', calls, costUsd, sources }, sh.out);
-          if (degraded) { out.state = 'partial'; out.code = 'degraded'; out.gaps = [degraded].concat(out.gaps || []); }
-          return out;
-        }
-        why = sh.why;
-        /* a repair is asked for only while the model's output CHANGES: the same malformed output twice is the model saying it will not do better */
-        const sig = stable([env && env.data === undefined ? null : env && env.data, s(env && env.text, 4000)]);
-        const same = lastBad === sig;
-        lastBad = sig;
-        if (attempt + 1 < maxCalls && !same) {
-          prompt = base(attempt + 1) + '\n\nYOUR PREVIOUS ANSWER COULD NOT BE USED: ' + why + '. Return exactly the JSON object described, with a non-empty "summary".';
-          continue;
-        }
-        const raw = s(env && env.text, 4000);
-        return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker did not return the requested shape (' + why + ')' + (same ? ', and returned the same output again after being told what was wrong, so it was not asked again.' : '.')]), calls, costUsd, sources };
-      }
-      return { state: 'failed', code: 'shape', summary: why, calls, costUsd, sources };
+      /* (worker-reach) what this worker is shown is read once, before its first request, and handed to every request it makes (each is
+         a request of its own, so each carries them); what could not be shown is said in its gaps, whatever way the worker ends */
+      const shown = resolveTaskImages(task.images, imageSource);
+      const r = await runWorker(task, ctx, shown);
+      if (shown.notes.length && r && typeof r === 'object') r.gaps = shown.notes.concat(Array.isArray(r.gaps) ? r.gaps : []);
+      return r;
     },
   };
 }

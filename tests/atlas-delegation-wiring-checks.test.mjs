@@ -209,7 +209,7 @@ test('⑨ classifyCapability is read off the registry: `read` exactly when its f
   const CAPS = makeAtlasCapabilities({});
   const { classifyCapability } = new Function('CAPS', 'EXEC', '_curTurn', laneSrc + '\nreturn { classifyCapability };')(CAPS, null, 0);
   const all = CAPS.all();
-  const expect = (c) => (!c.facets.mutatesState && !c.facets.asksUser && !c.facets.showsUI && !c.facets.savesFile && !c.facets.delegates && c.confirmation === 'none') ? 'read' : 'other';
+  const expect = (c) => (((c.facets.changesSeen === false && !c.facets.showsUI) || c.facets.headless === true) && !c.facets.asksUser && !c.facets.savesFile && !c.facets.delegates && c.confirmation === 'none') ? 'read' : 'other';   /* (worker-reach) the rule as the lane states it */
   all.forEach((c) => assert.equal(classifyCapability(c.id), expect(c), c.id));
   assert.ok(all.filter((c) => classifyCapability(c.id) === 'read').length >= 5, 'a real set of read capabilities exists to fan out');
   assert.ok(all.some((c) => c.effects.writes.length && classifyCapability(c.id) === 'other'), 'writers are other');
