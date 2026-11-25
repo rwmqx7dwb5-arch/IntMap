@@ -80,3 +80,10 @@ test('the proxy source passes no timeout of its own (the model list lookups, a d
   assert.deepEqual(bad, [], 'a fixed number of ours is back in ai-proxy');
   assert.match(readFileSync(join(dir, 'ask.ts'), 'utf8'), /startedAt:\s*Date\.now\(\)/, 'the request clock the rungs share is started');
 });
+
+test('atlas-delegation-efficiency: a request answered as a stream keeps the long window even when the provider call itself is not streamed (a worker)', async () => {
+  const { providerCall } = await imp('ai-proxy/provider-call.ts');
+  const long = await armedTimers(() => providerCall('https://api.openai.com/v1/responses', { method: 'POST' }, undefined,
+    { ceiling, add() {}, startedAt: Date.now(), longWindow: true }));
+  assert.ok(long.some((ms) => ms > 360000 && ms <= 370000), 'longWindow: ~370 s, got ' + JSON.stringify(long));
+});
