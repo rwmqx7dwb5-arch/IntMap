@@ -28,3 +28,4 @@ newsjp: Atlas の回答で、引用元が小さな出典チップ（ホバー／
 ## 予算
 - 非同期チャンク `atlas-knowledge`（出典モジュールを含む）が 43.2 kB → 52.4 kB に増えた。チップ・カード・成果物・メニューの描画と CSS による。`perf-budget --update` で天井を上げた。
 - 見出しを縮めたので、見出しの大きさ・太さを固定していた既存の検査（assistant-panel / atlas-reply-render / process-atlas-source-lines）の値を新しい値に更新した。
+- 本文の出典チップとフッターの href を `IntMapSafe.url` で通すため、`js/atlas-answer-sources.js` が `window.IntMapSafe` を 2 か所読む（175 → 177）。`global-surface --update` でその 2 件を基準に入れた。他の出力は既存の `esc` を使い、新しい窓口は足していない。
