@@ -192,7 +192,8 @@ export function makeAtlasAnswerSources(deps) {
      title and date is the browser half's. A link with descriptive text is a link in a sentence and stays one.
      ⚠ CODE RESHAPES MARKUP THAT IS ALREADY SAFE — every href and label here came out of js/atlas-markdown.js's escaped anchors. */
   const A_HOST = '<a href="([^"]*)" class="atl-a(?: atl-a-url)?" target="_blank" rel="noopener">([^<]*)</a>';
-  const HOSTISH = /^(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/i;
+  /* a host name: dot-separated labels of letters, digits and hyphens, the last at least two letters — read label by label, never by a backtracking pattern */
+  const HOSTISH = { test: (v) => { const p = String(v).toLowerCase().split('.'); return p.length >= 2 && p.every((l) => /^[a-z0-9-]+$/.test(l) && l[0] !== '-') && /^[a-z]{2,}$/.test(p[p.length - 1]); } };
   const hostName = (u) => { try { return new URL(String(u).replace(/&amp;/g, '&')).hostname.replace(/^www\./, ''); } catch (_) { return ''; } };
   function chipHtml(href, label, hidden) {
     const host = hostName(href) || String(label).replace(/^www\./, '');
@@ -304,7 +305,7 @@ export function makeAtlasAnswerSources(deps) {
         if (!d || !d.kind || !Array.isArray(d.surfaces) || !d.surfaces.length) return;
         const k = d.kind + '|' + d.surfaces.join(',');
         if (seen[k]) return; seen[k] = 1;
-        out.push({ i: out.length, kind: d.kind, label: names.length ? names.join(', ') : (subj || (/^[a-z]+(?:.[a-z]+)+$/i.test(d.kind) ? T('Shape ', '図形 ') + (out.length + 1) : d.kind)), surfaces: d.surfaces.slice() });
+        out.push({ i: out.length, kind: d.kind, label: names.length ? names.join(', ') : (subj || (String(d.kind).indexOf('.') > 0 ? T('Shape ', '図形 ') + (out.length + 1) : d.kind)), surfaces: d.surfaces.slice() });
       });
     });
     return out;
