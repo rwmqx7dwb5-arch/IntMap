@@ -24,10 +24,15 @@ import { pathToFileURL } from 'node:url';
 const href = (p) => new URL(p, import.meta.url).href;
 const { makeAtlasCapabilities } = await import(href('../js/atlas-capabilities.js'));
 const { makeAtlasSchemas } = await import(href('../js/atlas-schemas.js'));
+const { makeAtlasCatalogText } = await import(href('../js/atlas-catalog-text.js'));
 const { makeAtlasToolSurface } = await import(href('../js/atlas-toolsurface.js'));
 
 function build() {
-  const caps = makeAtlasCapabilities({});
+  /* (atlas-context-diet) the catalogue is BOUND, as the shipping console binds it — without it `documentation` was always 0 and a find result
+     measured at a tenth of what the model is sent (9 matches: 3,354 unbound, 84,456 bound before the diet) */
+  const docs = makeAtlasCatalogText({}, {});
+  const caps = makeAtlasCapabilities({ docs });
+  caps.bindRuntime({ docs });
   return { caps, surface: makeAtlasToolSurface({ capabilities: caps, schemas: makeAtlasSchemas(), runAction: async () => ({}) }) };
 }
 const wire = (t) => JSON.stringify({ name: t.name, description: t.description, parameters: t.parameters });
