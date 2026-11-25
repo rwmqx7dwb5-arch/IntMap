@@ -25,7 +25,7 @@ export async function providerCall(url: string, init: RequestInit, ms: number | 
     /* ⚠ NO NUMBER OF OURS. `ms` is undefined for every call of this function: the request may take what the
        platform leaves it (providerBudgetMs — the reasoning is there), shared across the rungs of one reader
        request via meter.startedAt. A caller that really needs shorter passes it; none does. */
-    const budget = (ms && ms > 0) ? ms : providerBudgetMs(typeof onChunk === "function", meter?.startedAt, Date.now());
+    const budget = (ms && ms > 0) ? ms : providerBudgetMs(typeof onChunk === "function" || meter?.longWindow === true, meter?.startedAt, Date.now());
     return await providerFetch(url, init, { ceiling: meter?.ceiling || CEILING, timeoutMs: budget, onChunk });
   } catch (e) {
     const code = e instanceof ProviderFail ? e.code : "";
@@ -137,7 +137,7 @@ export function streamedBody(ps: Streamed, provider: string, meter?: Meter): Rec
    object every provider call site of a request already receives, so the cohort's share travels with
    it rather than through a second parameter at each site; absent (the developer's model list, which
    has no request meter) means the project ceiling alone. */
-export type Meter = { add(provider: string, answer: unknown): unknown; startedAt?: number; attempt?(): void; fallback?(to: string): void; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
+export type Meter = { add(provider: string, answer: unknown): unknown; startedAt?: number; longWindow?: boolean; attempt?(): void; fallback?(to: string): void; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
 
 /* ══ (atlas-completion) WHAT THE ANSWER IS, BESIDES ITS TEXT — did it end, and what did the search do ══
    Two facts each provider used to read and then drop:
