@@ -1077,7 +1077,7 @@ export function atlasConsole(HOST){
     const { runStructuredAnswer, auditMeta } = makeAtlasAnswerPipeline();
     const ARENDER = makeAtlasAnswerRender(); const { renderAnswer, answerPlainText, answerCSS, citedRecords } = ARENDER;   /* (#R589) the whole surface too, because _atlCompose needs demoteProseLinks */
     const { makeEvidenceRegistry } = makeAtlasEvidence();
-    const SRCS = attachSources({ core: makeAtlasAnswerSources({ L, esc, lang: _mirrorLang }), GE, HOST, shareLink: () => { try { return shareApi().link(); } catch (_) { return location.href; } }, cites: () => [].concat(_curPlanCites||[], (typeof window!=='undefined'&&window._aiLastCitations)||[]), onReady: (b) => { try { if (b && b.isConnected) _atlCompose(b); } catch (_) { } } });   /* (atlas-cited-answers) js/atlas-answer-sources.js — repaints a reply when the map's half of its sources lands */
+    const SRCS = attachSources({ core: makeAtlasAnswerSources({ L, esc, lang: _mirrorLang }), GE, HOST, shareLink: () => { try { return shareApi().link(); } catch (_) { return location.href; } }, cites: () => (_curPlanCites||[]), onReady: (b) => { try { if (b && b.isConnected) _atlCompose(b); } catch (_) { } } });   /* (atlas-cited-answers) js/atlas-answer-sources.js — repaints a reply when the map's half of its sources lands */
     const { normalizeAnswer } = makeAtlasAnswerContract();
     const GEOBJ = makeAtlasGeoObject();   /* (#R397) geoObject / placed / pointLike / describesUserPoint / mergeKnown */
     const ANOM = makeAtlasAnomalyScore();   /* (#R397) cross-domain hazard ranking with an explainable score */

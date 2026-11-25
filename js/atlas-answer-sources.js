@@ -34,8 +34,6 @@
  * ==========================================================================*/
 
 import { IntMapLang } from './lang-registry.js';
-/* (safe-output-single-module) the ONE output encoder and URL guard — js/safe-html.js publishes globalThis.IntMapSafe */
-import './safe-html.js';
 
 /* ⚠ (atlas-figure-sources) FOUR KINDS, TWO QUESTIONS. number / line / map answer 「where does this come from」 for DATA and for the BACKGROUND the answer sits on.
    'figure' answers it for what ATLAS MADE — the zone, the route, the ring it drew. The basemap's credit (Esri, NASA …) is not the basis of a shape Atlas
@@ -53,6 +51,8 @@ export function makeAtlasAnswerSources(deps) {
   deps = deps || {};
   const lang = () => { try { return String(deps.lang ? deps.lang() : 'en'); } catch (_) { return 'en'; } };
   const T = IntMapLang.pick(lang), LA = IntMapLang.pickArgs();
+  /* a link written here is http(s) or nothing — the same scheme rule as js/safe-html.js `url`, held as a value so this module reads no global */
+  const safeUrl = (u) => (/^https?:\/\//i.test(String(u)) ? String(u) : '#');
   const esc = deps.esc;   /* the one encoder, handed in (window.IntMapSafe.html — js/atlas-console.js `esc`) */
   /* a label held as data: a positional tuple (js/lang-registry.js pickArgs — English first), or a string */
   function say(x) {
@@ -196,7 +196,7 @@ export function makeAtlasAnswerSources(deps) {
   const hostName = (u) => { try { return new URL(String(u).replace(/&amp;/g, '&')).hostname.replace(/^www\./, ''); } catch (_) { return ''; } };
   function chipHtml(href, label, hidden) {
     const host = hostName(href) || String(label).replace(/^www\./, '');
-    return '<a class="atl-sc" href="' + esc(globalThis.IntMapSafe.url(String(href).replace(/&amp;/g, '&'))) + '" target="_blank" rel="noopener" data-host="' + esc(host) + '"' + (hidden ? ' hidden' : '') + '>'
+    return '<a class="atl-sc" href="' + esc(safeUrl(String(href).replace(/&amp;/g, '&'))) + '" target="_blank" rel="noopener" data-host="' + esc(host) + '"' + (hidden ? ' hidden' : '') + '>'
       + '<img class="atl-sc-ico" src="https://www.google.com/s2/favicons?domain=' + esc(encodeURIComponent(host)) + '&amp;sz=32" alt="" width="12" height="12" loading="lazy" data-im-error="hideSelf">'
       + '<span class="atl-sc-name">' + esc(host) + '</span></a>';
   }
@@ -256,7 +256,7 @@ export function makeAtlasAnswerSources(deps) {
     if (o.linked) h += '<div class="atl-srcs-note">' + esc(T('[n] marks a number that matches that source.', '[n] は、その出典の値と一致した数字です。')) + '</div>';
     if (web.length) {
       h += '<ol class="atl-srcs-list" data-group="web">';
-      web.forEach((w) => { h += '<li data-kind="web"><span class="atl-srcs-what">' + esc(w.title || w.host) + '</span> — <a class="atl-srcs-src" href="' + esc(globalThis.IntMapSafe.url(w.url)) + '" target="_blank" rel="noopener">' + esc(w.host) + '</a>'
+      web.forEach((w) => { h += '<li data-kind="web"><span class="atl-srcs-what">' + esc(w.title || w.host) + '</span> — <a class="atl-srcs-src" href="' + esc(safeUrl(w.url)) + '" target="_blank" rel="noopener">' + esc(w.host) + '</a>'
         + (w.date ? ' <span class="atl-srcs-lic">· ' + esc(w.date) + '</span>' : '') + '</li>'; });
       h += '</ol>';
     }
