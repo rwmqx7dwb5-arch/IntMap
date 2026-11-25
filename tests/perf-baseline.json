@@ -27,7 +27,7 @@
       "atlas-caps": 7364,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1433526,
+      "atlas-console": 1444192,
       "atlas-executor": 64612,
       "atlas-file-make": 60133,
       "atlas-float": 10113,
@@ -240,7 +240,7 @@
   "dist": {
     "total": 1620603887,
     "data": 1255418025,
-    "assets": 23463000
+    "assets": 23581546
   },
   "phone": {
     "bytes": 342631,
