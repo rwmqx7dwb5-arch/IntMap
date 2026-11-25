@@ -709,7 +709,7 @@ export function makeWorkerExecutor(o) {
             }
             const ti = ctx.emit('effect.intent', { capability: w.capability, by: 'worker', turn: childKey });
             try {
-              const out = await cap.run(w.capability, w.args, { signal: controller.signal });
+              const out = await cap.run(w.capability, w.args, { signal: controller.signal, turnKey: childKey });   /* (atlas-verify-metrics) the capability's own model call is the child's, journalled under the child's key */
               ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: w.capability });
               const st = { ok: !(out && out.ok === false), text: s(out && (out.text != null ? out.text : stripTags(out.html)), 3000) || (out && out.code) || '' };
               if (out && out.meta && st.ok) st.text += (st.text ? '\n' : '') + 'DATA: ' + s(JSON.stringify(out.meta), 1500);

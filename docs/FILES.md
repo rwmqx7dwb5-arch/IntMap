@@ -1103,6 +1103,7 @@ atlas-research-search.js           Atlas — research.search: 複数の検索語
 atlas-era-highlight.js            Atlas — 過去年を表示中の国ハイライトを、その年の政体の面（所有者 gloss 込み）で描く／その面の外接矩形（カメラの枠取り）／**Atlas が塗ったものの申告**（`_imAtlasPaint`）
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
+atlas-claim-check.js            Atlas — 検証のうちプログラムで決められるもの（座標・形・単位）を判定し、主張に一意の ID を付ける（子 AI には解釈と因果だけを尋ねる）
 atlas-attach.js                   Atlas — 添付ファイルの正体をバイト列に訊く判定器 `ATL_FILE` と全画面ビューア
 atlas-attach-log.js               Atlas — 会話 1 本ぶんの添付の台帳。テキストは毎ターン載せ、画像と PDF は
                                   在ることだけを述べて recall_attachment で取り寄せさせる。編集の巻き戻しに追随
@@ -1354,6 +1355,7 @@ atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
 atlas-table.js                    **調べた値の行 → データセット**（`data.table`）。位置の列を読み、単位は呼び出し側が述べたものだけを運び、位置の無い行は行のまま数える（純関数）。
 atlas-run-ledger.js              Atlas — 1 つの仕事（1 ターン）の費用・時間・使ったモデルとツールを 1 件に集計する（観測するだけで、制限はしない）
+atlas-turn-metrics.js           Atlas — 回答 1 件ごとの所要時間・費用・繰り返し・根拠付き主張の割合を数と時間だけで記録する（判定も制限もしない）
 atlas-state.js                    アプリの状態をデータとして持つ（#R318）。各サブシステムが provider を登録し、
                                   モデル向けの文章はそこから派生する。ターン台帳（目標・計画・結果・objectId）
 atlas-evidence.js                 Atlas — 証拠レジストリ（#R350）。ソースが入ってよい唯一の入口。URL の正規化と
@@ -2264,7 +2266,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全28本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（84本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（85本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（28本。一覧と各本の役割は Architecture.md §6.2。

@@ -36,7 +36,12 @@ import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /
 import { planOutline, runLongform, assemble, storageStore } from './atlas-longform.js';   /* (atlas-longform) research.longform: chapter by chapter, kept as it goes */
 import { makeResearchSearch } from './atlas-research-search.js';   /* (atlas-research-search) research.search — the tool side of an investigation Atlas steers */
 import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, imagesShown, CONTRACT_KINDS } from './atlas-delegate.js';
-import { integrate, mergeFacts, makeFactResolver, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
+import { integrate, mergeFacts, makeFactResolver, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';
+/* (atlas-verify-metrics) WHOSE MODEL CALL THIS IS. A capability run by a delegated worker (dctx.turnKey = the worker's child key) asks the model under that
+   child key with the reader's turn as its parent, so the journal and the ledger attribute the call, its cost and its wait to the child that made it; a
+   capability run by Atlas itself keeps the reader's turn key. One rule for every capability that asks the model. */
+const callKey = (dctx, K) => (dctx && dctx.turnKey ? { turnId: dctx.turnKey, parentTurnId: K._curTurnKey } : { turnId: K._curTurnKey });
+import { decideClaims } from './atlas-claim-check.js';   /* (atlas-claim-check) */   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
 const researchMemory = { search: null };   /* research.search's per-turn memory — built on first use; a const holder (the kernel copy never runs it) */
 
 /* ══ (atlas-completion) WHAT A RESEARCH ANSWER RESTS ON, SAID FROM WHAT HAPPENED ═══════════════════════════════
@@ -251,7 +256,7 @@ export default [
              headlines) and the call is webMode:'required' so the proxy forces the search. */
           const sysB=personaPrompt('working here as IntMap\'s geopolitical and area-studies research desk')/* (#R285) this opened with a DIFFERENT character from the one answering two panels away; the task role stays, the name and the character are Atlas's */+'The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: if a web-search tool is attached to this request, USE it to find and verify the most recent developments, and cite each recent event with its date and a source; if no web-search tool is attached, rely only on the supplied recent-news headlines below and do not claim to have searched. Either way, treat the supplied headlines as leads. GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from your web-search results this turn OR the supplied headlines — never invent a plausible-sounding recent event from memory. If neither surfaces anything recent, say so plainly under "Recent developments" rather than fabricating one or presenting an old event as if it were current. Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
-          let txtB='', _envB=null; try{ _envB=await askAIJSONEnvelope(pB,sysB,null,{task:'brief',webMode:'required',turnId:K._curTurnKey}); txtB=(_envB&&_envB.text)||''; }catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
+          let txtB='', _envB=null; try{ _envB=await askAIJSONEnvelope(pB,sysB,null,Object.assign({task:'brief',webMode:'required'},callKey(dctx,K))); txtB=(_envB&&_envB.text)||''; }catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
           try{ if(_envB&&_envB.meta&&_envB.meta.webUsed) keepTurnPages(K._curTurnKey, (_envB.citations||[]).map(c=>({url:c&&c.url,title:c&&c.title,retrievedAt:new Date().toISOString()}))); }catch(_){}   /* (atlas-completion) what this brief's search retrieved, for the turn's next answer call */
           if(!String(txtB||'').trim()) return R(false, warn(L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
           /* ⚠⚠ (#R232) 「返答の最初に地名だけ」 — re-sent: #R231 fixed the OTHER panel; this branch printed it itself (#R69). */
@@ -804,7 +809,7 @@ export default [
                  sentence, which is the layer this round removed. */
               temporalMode:String((a&&a.temporalMode)||'unspecified'),
               requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
-              turnId:K._curTurnKey, webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
+              ...callKey(dctx,K), webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
               webSources:turnPages(K._curTurnKey).slice(),   /* (atlas-completion) pages an earlier call of this turn retrieved — they get ids before this call */
               appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)).concat((()=>{ try{ return datasetFactsOnPage(a&&a.datasets); }catch(_){ return []; } })()), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
               ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
@@ -1223,7 +1228,14 @@ export default [
       try {
         /* A checker starts when ITS task is done, not when every task is (js/atlas-delegate.js run `after`): it needs only that task's findings. */
         const eligible = (r, i) => tasks[i] && tasks[i].verify === true && (!tasks[i].kind || tasks[i].kind === 'worker') && (r.state === 'done' || r.state === 'partial') && r.findings && r.findings.length;
-        const pending = D.run(tasks, { after: (r, i) => (eligible(r, i) ? verifyContract(r.id) : null) });
+        /* (atlas-claim-check) A PROGRAM DECIDES WHAT IT CAN BEFORE A MODEL IS ASKED. Each claim is named by an id; a check that finds a defect in the value a
+           claim carries (a coordinate out of range, a ring that does not close) contradicts it without a model call, and the checker is handed
+           only the claims nothing decided. A task whose claims are all decided starts no checker. Which claims a model sees is what the checks
+           FOUND, not a list of kinds of claim (js/atlas-claim-check.js). */
+        const kernels = { geometry: (typeof window !== 'undefined' && window.IntMapGisGeometry) || null, units: (typeof window !== 'undefined' && window.IntMapGisUnits) || null };
+        const detOf = new Map();
+        const det = (r) => { if (!detOf.has(r.id)) detOf.set(r.id, decideClaims(r, kernels)); return detOf.get(r.id); };
+        const pending = D.run(tasks, { after: (r, i) => { if (!eligible(r, i)) return null; const d = det(r); return d.needsModel ? verifyContract(r.id, { claims: d.claims.filter((c) => d.undecided.indexOf(c.id) >= 0) }) : null; } });
         if (signal && signal.aborted) D.cancelAll();
         results = await pending;
         /* VERIFICATION, WHEN ASKED (`verify:true` on a worker task). A second worker is handed the first one's findings and asked to
@@ -1231,10 +1243,10 @@ export default [
            return stays `unchecked` — never assumed supported. It is a child like any other: the server's policy admits it or refuses it,
            and a refusal is reported as the checker's state. */
         const fu = results.followUps || [];
-        const toCheck = results.filter((r, i) => fu[i]);
-        if (toCheck.length) {
-          const vres = results.map((r, i) => fu[i]).filter(Boolean);
-          verification = verifyOutcome(toCheck.map((r, k) => ({ of: r, by: vres[k] })));
+        const checkable = results.filter((r, i) => eligible(r, i));
+        const vres = results.map((r, i) => fu[i]).filter(Boolean);
+        if (checkable.length) {
+          verification = verifyOutcome(checkable.map((r) => ({ of: r, by: fu[results.indexOf(r)] || null, det: det(r) })));
           verification.costUsd = vres.reduce((m, r) => m + (Number(r.costUsd) || 0), 0);
           verification.calls = vres.reduce((m, r) => m + (Number(r.calls) || 0), 0);
         }
@@ -1271,7 +1283,7 @@ export default [
       if (F) { const nd = F.objects.reduce((n, o) => n + o.attributes.filter((a) => a.comparability && a.comparability.differing.length).length, 0); if (nd) notes.push(L(nd + ' compared row(s) differ in what they measure (scope, borders, period, unit or aggregation): see comparability before calling it a disagreement', nd + ' 件は測っているものが違います（範囲・境界・期間・単位・集計）。食い違いと呼ぶ前に comparability を確認してください')); }
       if (differ.length) notes.push(L('Figures differ between workers at: ', '子どうしで数値が異なる地点: ') + differ.map((p) => p.place).slice(0, 6).join(', '));
       if (I.unreturned.length) notes.push(L('Did not return: ', '結果が戻らなかった仕事: ') + I.unreturned.map((u) => u.task + ' (' + stateWord(u.state) + (u.code ? ', ' + u.code : '') + ')').slice(0, 8).join(', '));
-      if (verification) { const c = verification.counts; notes.push(L('Checked by a second worker: ' + c.supported + ' supported, ' + c.contradicted + ' contradicted, ' + c.unsupported + ' unsupported, ' + c.unchecked + ' not checked', '別の子による検証: 支持 ' + c.supported + ' / 反証 ' + c.contradicted + ' / 根拠なし ' + c.unsupported + ' / 未検証 ' + c.unchecked)); }
+      if (verification) { const c = verification.counts, pg = (verification.basis && verification.basis.program) || 0; notes.push(L('Checked' + (verification.verifiers.some((v) => v.state !== 'not_started') ? ' by a second worker' : '') + ': ' + c.supported + ' supported, ' + c.contradicted + ' contradicted, ' + c.unsupported + ' unsupported, ' + c.unchecked + ' not checked' + (pg ? ' (' + pg + ' contradicted by a program check of the coordinates or shape, with no model asked)' : ''), '検証: 支持 ' + c.supported + ' / 反証 ' + c.contradicted + ' / 根拠なし ' + c.unsupported + ' / 未検証 ' + c.unchecked + (pg ? '（うち ' + pg + ' 件は座標や形のプログラム検査による反証で、モデルには尋ねていません）' : ''))); }
       const totalUsd = I.cost.usd + (verification ? verification.costUsd : 0), totalCalls = I.cost.calls + (verification ? verification.calls : 0);
       if (totalUsd > 0) notes.push(L('Worker cost ', '子の費用 ') + usd(totalUsd) + ' · ' + totalCalls + L(' request(s)', ' 回'));
       const noteHtml = notes.length ? '<div style="margin-top:4px;opacity:.7;">' + notes.map((n) => '<div>' + esc(n) + '</div>').join('') + '</div>' : '';
