@@ -523,6 +523,59 @@ is printed as its own text and no rows prints an empty state; nothing is filled 
 `ai_delegation_journal` keeps child outcomes and root turns for **30 days**; the panel cannot show further back than that
 (1/7/30 are all inside it). Rows hold counts, codes, latency and cost only: no account id, prompt or answer.
 
+## 2b4. Atlas answer metrics (measured, never judged)
+
+### Why
+The quality of an answer is a person's judgement; production auto-evaluation is frozen. What a machine can measure without an opinion is
+time and money, so that a change to how Atlas works (a lighter context, asynchronous delegation, a search evidence store, server-side
+execution) can be compared on those while a person keeps judging the answers. Nothing here is a gate and nothing reads these figures to
+refuse a request.
+
+### What is recorded
+- **One row per finished answer** — `atlas_turn_metrics` (written by the page through `log_atlas_turn_metrics`, `js/atlas-turn-metrics.js`;
+  counts and milliseconds only, 90 days): time to the whole answer, time to the first operation that produced a result, model calls and
+  how the wait splits between the model and operations, cost (and whether every call reported one), whether the turn declared itself
+  complete, operations asked / executed / **reused** (an identical earlier call answered again — what `check:atlasrepeat` is about) /
+  rejected / asked for a tool that does not exist, findings returned and how many carried a source, checks decided by a program vs a
+  checking worker, and the one tool that took most of the operation time.
+- **One row per model call** — `ai_delegation_journal` (30 days): latency, tokens, `cached_tokens` (the provider cache), cost, outcome. The
+  journal's `root_key` is the answer's `turn_key`, which is how a child's contribution and the slowest path of a delegating turn are read.
+
+### The figures and where they come from
+| Figure | From |
+|---|---|
+| time to the whole answer (p50 / p90) · time to the first useful result | `turns.total_ms_*`, `turns.first_useful_ms_*` |
+| cost per successful (complete) answer · per answer | `turns.cost_per_success_micros`, `turns.cost_per_turn_micros` (only answers whose every call reported a cost) |
+| completion rate | `turns.completion_rate` (the turn's own declaration, not a judgement of the content) |
+| the capability it needed was found | `turns.capability_found_rate` = 1 − unknown-tool asks / operations asked |
+| duplicate operation rate | `turns.duplicate_op_rate` = reused / asked |
+| cache rate | `calls.cache_rate`, `calls.root_cache_rate` |
+| each child's contribution | `children[]`: calls, ok, share of the children's cost and waiting time |
+| what slows the whole turn | `families` (slowest child as a share of the parent's wait) and `turns.critical_tools` |
+| findings that carry a source | `turns.grounded_claim_rate` |
+| checks decided by a program vs a model | `turns.program_verified_share` |
+
+All from ONE admin-only RPC, `atlas_metrics_overview(p_from, p_to)` (window clamped to 90 days; a ratio with nothing to measure is `null`).
+
+### How to compare a change
+1. Note the moment a change reached production (the PR's merge / deploy time).
+2. In the signed-in admin console on the production site, run for the window before and the window after (same length, same weekdays):
+   `copy((await sb.rpc('atlas_metrics_overview', { p_from: '2026-11-18T00:00:00Z', p_to: '2026-11-25T00:00:00Z' })).data)` and save each result as JSON.
+3. `node scripts/atlas-metrics-report.mjs before.json after.json` prints every figure for both windows, the change, and whether it moved in the
+   better direction. It says nothing about whether the answers improved — a person decides that — and it exits 0 whatever the numbers are.
+4. Read the figures together: a faster answer that completes less often, or a cheaper one with fewer sources, is not an improvement.
+   The first_useful figure is the wait the reader feels; total is what the answer costs in time.
+
+### What is decided by a program vs a model (claim verification)
+`js/atlas-claim-check.js` decides, before a checking worker is started, what a program can: a coordinate out of range, a ring that does not close
+or a polygon the geometry kernel calls invalid, one quantity stated in units of different dimensions. A claim whose value fails a check is
+`contradicted` with basis `program` and the checking worker is never asked about it; a value that passes is only noted as well-formed (never
+`supported`). What is left — whether a source says it, why something happened, how far a publisher can be trusted, a multi-step argument — goes to the
+model. There is no list of kinds of claim: which claims reach the model is what the checks found. A task whose claims were all decided starts no checker.
+Every claim is checked under an id (`<task>#<n>`, its position), and the checker returns it; a reworded claim is still matched.
+The map-drawing outcome is already decided by a program (the renderer is asked whether it is compositing — `check:atlasrepeat`), and arithmetic in an
+answer's text by `js/atlas-verify.js`.
+
 ## 2c. How long readers wait, by release (field-speed)
 
 ### Why

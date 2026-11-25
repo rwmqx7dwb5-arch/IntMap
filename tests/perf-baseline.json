@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 15920794,
-    "gzip": 5417477,
+    "gzip": 5450877,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,
@@ -27,7 +27,7 @@
       "atlas-caps": 7364,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1472109,
+      "atlas-console": 1479941,
       "atlas-executor": 64612,
       "atlas-file-make": 60133,
       "atlas-float": 10113,

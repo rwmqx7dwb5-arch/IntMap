@@ -1193,6 +1193,7 @@ export function makeAtlasAgent() {
           }
           if (p.bad) {
             trace.rejected++;
+            if (p.bad.code === 'unknown_tool') trace.unknownTool = (trace.unknownTool || 0) + 1;   /* (atlas-verify-metrics) asked for a tool that does not exist — what «found the capability it needed» is measured from */
             /* ⚠ THE READER NEVER SEES THIS. It is a typed note to Atlas, which corrects it on the
                next step. The old console printed 「何を分析しますか？」 for exactly this case. */
             return { id: call.id, name: call.name, ok: false, error: p.bad.code, message: p.bad.message, schema: p.bad.schema };

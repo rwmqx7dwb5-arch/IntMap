@@ -26,6 +26,8 @@
 import * as factMerge from './atlas-fact-merge.js';
 export const mergeFacts = factMerge.mergeFacts, normalizeFacts = factMerge.normalizeFacts, normalizeFact = factMerge.normalizeFact, makeFactResolver = factMerge.makeFactResolver;
 
+
+import * as verify from './atlas-claim-check.js';   /* (atlas-claim-check) what a program decides about a claim, and the id a claim is checked under */
 const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 const USABLE = (st) => st === 'done' || st === 'partial';
 
@@ -143,42 +145,54 @@ export function fanOut(items, template, opts) {
 
 /* verifyContract(taskId, opts?) → a contract for a second worker that checks the claims a first task returned. It
    names the first as an input, so its prompt carries that task's summary, findings and gaps (atlas-delegate.js
-   workerPrompt), and it starts only when the first has ended usable. */
+   workerPrompt), and it starts only when the first has ended usable.
+   opts.claims — [{ id, claim, passed? }] from js/atlas-claim-check.js claimsOf/decideClaims: the claims a program did NOT already decide,
+   each with its id. The checker is asked to return each verdict under that id (verifyOutcome matches by id, never by wording). */
 export function verifyContract(taskId, opts) {
   const o = opts || {};
+  const claims = Array.isArray(o.claims) ? o.claims : null;
   return {
     id: s(o.id, 64) || ('verify-' + s(taskId, 56)),
-    goal: s(o.goal, 1500) || ('Independently check the claims worker "' + s(taskId, 64) + '" returned, using different sources from the ones it cited where you can. For each claim say whether you found it supported, unsupported or contradicted, and give a source URL for what you found.'),
-    returns: s(o.returns, 500) || 'One finding per checked claim: the claim, "supported" / "unsupported" / "contradicted", and the source. List in "gaps" every claim you could not check.',
+    goal: s(o.goal, 3000) || (claims && claims.length ? verify.checkerGoal(taskId, claims) : ('Independently check the claims worker "' + s(taskId, 64) + '" returned, using different sources from the ones it cited where you can. For each claim say whether you found it supported, unsupported or contradicted, and give a source URL for what you found.')),
+    returns: s(o.returns, 500) || 'One finding per checked claim: "id" (the id of the claim, as given), "claim", "verdict" ("supported" / "unsupported" / "contradicted") and "source". List in "gaps" every claim you could not check.',
     inputs: [{ from: s(taskId, 64) }],
   };
 }
 
-/* verifyOutcome(pairs) — what a checking worker said about the claims of the task it checked.
-     pairs: [{ of: <the checked task's result>, by: <the checker's result> }]
-   A claim is matched to the checker's finding by its text (fold(), exactly equal): the checker is asked to repeat the claim
-   verbatim (atlas-delegate.js WORKER_SYSTEM). A claim the checker did not repeat — or a checker that did not return — is
-   `unchecked`, never guessed to be supported. The outcome is a report for Atlas to read, not a ruling. */
+/* verifyOutcome(pairs) — what checking said about the claims of the task it checked.
+     pairs: [{ of: <the checked task's result>, by: <the checking worker's result, or absent>, det?: <verify.decideClaims(of) > }]
+   Each claim has an ID (js/atlas-claim-check.js claimId: task + position), and the verdict is found by that id — a paraphrase of the
+   claim no longer reads as «not checked». Two sources of verdict, kept apart in `basis`:
+     'program'  a check found a defect in the value the claim carries (a latitude out of range, a ring that does not close …)
+     'model'    the checking worker said so under the claim's id
+   A claim neither decided — or a checker that did not return, or a verdict that is not one of the three words — is `unchecked`,
+   never guessed to be supported. The outcome is a report for Atlas to read, not a ruling. */
 export function verifyOutcome(pairs) {
   const checked = [];
   const counts = { supported: 0, unsupported: 0, contradicted: 0, unchecked: 0 };
   const verifiers = [];
+  const resultDefects = [];
+  const basis = { program: 0, model: 0 };
   (Array.isArray(pairs) ? pairs : []).forEach((p) => {
     const of = p && p.of, by = p && p.by;
     if (!of) return;
     const ok = !!by && USABLE(by.state);
-    verifiers.push({ task: by ? by.id : undefined, of: of.id, state: by ? by.state : 'not_started', code: (by && by.code) || undefined });
+    if (by || !(p.det && !p.det.needsModel)) verifiers.push({ task: by ? by.id : undefined, of: of.id, state: by ? by.state : 'not_started', code: (by && by.code) || undefined });
+    const det = p.det || verify.decideClaims(of, null);
     const said = new Map();
-    if (ok) (by.findings || []).forEach((f) => { if (f && f.claim && f.verdict && !said.has(fold(f.claim))) said.set(fold(f.claim), f); });
-    (of.findings || []).forEach((f) => {
-      if (!f || !f.claim) return;
-      const hit = said.get(fold(f.claim));
-      const verdict = hit ? hit.verdict : 'unchecked';
+    if (ok) (by.findings || []).forEach((f) => { const k = s(f && f.id, 80); if (k && f.verdict && !said.has(k)) said.set(k, f); });
+    det.claims.forEach((c) => {
+      const d = det.byClaim[c.id];
+      if (d && d.verdict) { counts.contradicted += 1; basis.program += 1; checked.push({ id: c.id, task: of.id, claim: c.claim, verdict: 'contradicted', basis: 'program', defects: d.defects.slice(0, 5) }); return; }
+      const hit = said.get(c.id);
+      const verdict = hit && verify.VERDICTS.indexOf(hit.verdict) >= 0 ? hit.verdict : 'unchecked';
       counts[verdict] += 1;
-      checked.push({ task: of.id, claim: f.claim, verdict, source: (hit && hit.source) || undefined });
+      if (verdict !== 'unchecked') basis.model += 1;
+      checked.push({ id: c.id, task: of.id, claim: c.claim, verdict, basis: verdict === 'unchecked' ? undefined : 'model', source: (hit && verdict !== 'unchecked' && hit.source) || undefined, structure: d && d.passed ? 'passed' : undefined });
     });
+    det.resultDefects.forEach((x) => resultDefects.push(Object.assign({ task: of.id }, x)));
   });
-  return { checked, counts, verifiers };
+  return { checked, counts, basis, verifiers, resultDefects };
 }
 
 /* plain text of a capability's HTML card: tags out, the few entities a card writes decoded, space collapsed */

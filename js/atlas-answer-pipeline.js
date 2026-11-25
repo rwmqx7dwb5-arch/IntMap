@@ -81,6 +81,7 @@ export function makeAtlasAnswerPipeline() {
    *   temporalMode      'current' | 'historical' | 'mixed' | 'unspecified'
    *   requestedOutputs  from the request profile
    *   turnId            the #R318 turn key
+   *   parentTurnId      the reader's turn key, when turnId is a delegated worker's child key
    *   webMode           'off' | 'auto' | 'required'
    *   clientSources     the srcSink IntMap gathered  [{url,title,src,date,dateType,origin}]
    *   appFacts          measured values IntMap holds [{title,publisher,validTime,supportFacts:[…]}]
@@ -160,7 +161,7 @@ export function makeAtlasAnswerPipeline() {
     /* ── 2) the one call ─────────────────────────────────────────────────────────────────────── */
     const first = await ask(prompt, system, {
       task: 'analysis_structured', webMode: opts.webMode || 'auto',
-      callId, turnId: opts.turnId || '',
+      callId, turnId: opts.turnId || '', parentTurnId: opts.parentTurnId || undefined,   /* (atlas-verify-metrics) set when a delegated worker's capability makes this call: it is journalled as that child's */
     });
     ctx.webUsed = !!(first && first.meta && first.meta.webUsed);
     registry.addProviderCitations((first && first.citations) || [], { callId: (first && first.callId) || callId, webUsed: ctx.webUsed });

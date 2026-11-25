@@ -261,12 +261,12 @@ test('㉑ research.delegate: forward names, an @ref between capability tasks, an
   assert.deepEqual(res.meta.delegated.find((d) => d.id === 'use').data, { used: ['ds-9'] });
 });
 
-test('㉒ research.delegate verify:true — a second worker checks the first one’s claims and the verdicts reach Atlas; a claim it did not repeat stays unchecked', async () => {
+test('㉒ research.delegate verify:true — a second worker checks the first one’s claims and the verdicts reach Atlas; a claim it did not answer by id stays unchecked', async () => {
   const prompts = [];
   const K = makeK({
     askAIJSONEnvelope: async (prompt) => {
       prompts.push(prompt);
-      if (/Independently check/.test(prompt)) return { data: { summary: 'checked', findings: [{ claim: 'The strait is 33 km wide at its narrowest', verdict: 'supported', source: 'https://ex.org/a' }], gaps: [] }, meta: { costUsd: 0.02 } };
+      if (/Independently check/.test(prompt)) return { data: { summary: 'checked', findings: [{ id: (prompt.match(/\[(a#1)\]/) || [])[1], claim: 'about 33 km across at the narrowest point', verdict: 'supported', source: 'https://ex.org/a' }], gaps: [] }, meta: { costUsd: 0.02 } };   /* the checker answers under the claim's ID, in its own words */
       return { data: { summary: 'found', findings: [{ claim: 'The strait is 33 km wide at its narrowest' }, { claim: 'It carries a fifth of the world’s oil' }], gaps: [] }, meta: { costUsd: 0.03 } };
     },
   });

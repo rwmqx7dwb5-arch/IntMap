@@ -269,7 +269,7 @@ function makeAtlasExecutor(HOST, CTX) {
       var operationId = opts.operationId || Results.newOperationId('op');
       var op = {
         operationId: operationId, capabilityId: String(capabilityId || ''), args: args,
-        source: opts.source || 'api', turnId: opts.turnId || null,
+        source: opts.source || 'api', turnId: opts.turnId || null, turnKey: opts.turnKey || null,
         lifecycle: [], progress: null, settled: false, cancelReason: null,
         before: null, after: null, verification: null, rawResult: null, t0: now()
       };
@@ -427,6 +427,8 @@ function makeAtlasExecutor(HOST, CTX) {
                  destroyed at the kernel boundary. It is not a user argument — it does not belong in
                  a schema and the model must never write it — so it travels here, beside the signal. */
               turnId: op.turnId, source: op.source,
+              /* (atlas-verify-metrics) the KEY the model calls of this run are made under: a delegated worker's own child key, else absent (the capability uses the reader's turn key) */
+              turnKey: op.turnKey,
               signal: signal, operationId: operationId,
               progress: function (p) { op.progress = p; phase(op, 'progress', { progress: p }); }
             });

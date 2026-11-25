@@ -777,7 +777,7 @@ export function makeWorkerExecutor(o) {
             }
             const ti = ctx.emit('effect.intent', { capability: w.capability, by: 'worker', turn: childKey });
             try {
-              const out = await cap.run(w.capability, w.args, { signal: controller.signal });
+              const out = await cap.run(w.capability, w.args, { signal: controller.signal, turnKey: childKey });   /* (atlas-verify-metrics) the capability's own model call is the child's, journalled under the child's key */
               ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: w.capability });
               /* (delegate-reread) NOTHING IS LOST TO THE CUT. The answer is kept WHOLE under a reference; the worker is shown the first
                  SHOW characters (what it was shown before: 3000 of the text + 1500 of the data) and is told how to read the rest with

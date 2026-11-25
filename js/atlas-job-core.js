@@ -146,7 +146,7 @@ export function shapeOf(data, normalizeFacts) {
     const lat = num(f.lat), lon = num(f.lon);
     const ll = lat != null && lon != null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
     const verdict = (f.verdict === 'supported' || f.verdict === 'unsupported' || f.verdict === 'contradicted') ? f.verdict : undefined;
-    return { claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined, excerpt: excerptOf(f.excerpt) };
+    return { id: f.id ? s(f.id, 80) : undefined, claim: s(f.claim, 800), verdict, place: f.place ? s(f.place, 200) : undefined, lat: ll ? lat : undefined, lon: ll ? lon : undefined, date: f.date ? s(f.date, 40) : undefined, source: f.source ? s(f.source, 500) : undefined, excerpt: excerptOf(f.excerpt) };
   });
   /* (atlas-parallel-truth) EVIDENCE IS COUNTED, NOT ASSUMED. A finding is evidence when it names a source AND carries the excerpt
      (or raw values) it rests on; anything else is the worker's own statement. A reply with none — a prose verdict, however well
