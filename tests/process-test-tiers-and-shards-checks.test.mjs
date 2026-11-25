@@ -267,7 +267,7 @@ test('#R586 ③ a required check names the whole suite, not one leg', () => {
      shard count changes. The aggregating job's name does not move. */
   const gate = CI.jobs['checks-gate'];
   assert.ok(gate, 'the aggregating gate is gone — the required check would have to name a matrix leg');
-  assert.deepEqual(gate.needs, ['checks'], 'the gate must wait on the shard matrix');
+  assert.deepEqual(gate.needs, ['checks', 'reuse'], 'the gate must wait on the shard matrix');
   const run = gate.steps.map((s) => s.run || '').join('\n');
   assert.match(run, /needs\.checks\.result.*=.*"success"|test "\$\{\{ needs\.checks\.result \}\}" = "success"/s,
     'the gate must fail unless every shard succeeded — `always()` without that assertion is a gate that passes on failure');

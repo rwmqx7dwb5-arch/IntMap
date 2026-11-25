@@ -144,6 +144,8 @@ newsjp: <同じことを 1 行・日本語>
 - `tests/` の `.mjs` で `node:test` を import するものは必ず `*.test.mjs`（それ以外は runner から見えず永久に緑。
   `check:static` が捕まえる）。
 
+**push の前に `npm run preflight`**（`scripts/preflight.mjs`・`--plan` で何を走らせるか見られる）——差分が到達するテスト・ゲート・build（とそれを読む `check:assets`／`check:perf`）を**ファイルの中身から導いて**並列に走らせ、赤を 1 回で全部出す。1 本の PR が CI 4 回（各 16 分）かかった実測のうち 3 回は、手元で先に分かるものだった。見えないもの（ディレクトリを glob するテスト・pgTAP）は CI の仕事のまま。
+
 **全件はローカルで回さない**（約 10 分・負荷で退行でない赤も出る）。PR の CI が同じ門を 3 台で全部走らせる
 （`AGENTS.md` §4）。CI が赤なら**落ちた門だけを単独で**再現して直す。
 
@@ -170,6 +172,7 @@ gh pr merge --squash --auto --delete-branch   # 緑なら merge される。た�
   なら下の rebase。`gh pr view <番号> --json state` が `MERGED` になるまでターンを閉じず、「CI 待ち」「auto-merge 設定済み」
   で完了と報告しない。ゲートは 3 台・`fail-fast: false` で 1 回の run に落ちたゲートが全部出る
   （計画は `node scripts/ci-gates.mjs --plan`）。
+- **main の CI**: PR で緑だった木と同一なら試験は再実行されない（`reuse`・`green-receipt`。build と公開は常に走る。`docs/TESTING.md` 末尾）。待つ時間は build + 公開で、従来の約 16 分より短い。
 - **PR が DIRTY になったら** `git fetch && git rebase origin/main`。生成物・台帳・件数（perf-baseline・global-surface・
   durations・`TOTAL_BUDGET_S`・`plan(N)`・能力の生成行・cassette・文書の件数…）の衝突は **merge driver が解く**（宣言は
   `.gitattributes`、仕組みは `docs/AGENT-SETUP.md` §12）。終わったら `node scripts/merge-driver.mjs --finish`（保留した
@@ -211,15 +214,14 @@ node scripts/worktree.mjs verified      # origin/main の HEAD（sha と件名�
 
 ## 7. 終了処理（省略できない・**この回の中で完遂する**）
 
-PR が `MERGED` → main の CI 緑・本番公開 → 本番検証（§6）→ 次を**同じ作業の最後に**走らせ、最後に `done`。
+PR が `MERGED` → main の CI 緑・本番公開 → 本番検証と `worktree.mjs verified`（§6。ここでは繰り返さない）→ 次を**同じ作業の最後に**走らせ、最後に `done`。
 1 回の `--sync` がその時点で merge 済みの全セッション分を運ぶので、並行セッションと重なってよい。
 
 ```bash
-node scripts/worktree.mjs status        # 自分の分に未了（本番未到達・検証・deploy）が残っていないか
+node scripts/worktree.mjs status        # 自分の分に未了（本番未到達・検証・deploy）が残っていないか（並列化済み・約 14 秒）
 node scripts/master-sync.mjs --sync     # 原本 (OneDrive) を origin/main へ早送り
 node scripts/master-sync.mjs --check    # 原本が merge 後の状態か（exit 0 を確認）
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1   # USB へ完全ミラー（毎回）
-node scripts/worktree.mjs verified      # 本番検証を終えたら受領証
 node scripts/worktree.mjs done          # 自分の worktree と branch を片付ける
 ```
 

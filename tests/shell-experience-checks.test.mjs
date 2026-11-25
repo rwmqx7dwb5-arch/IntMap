@@ -263,7 +263,11 @@ test('⑩ the bundle reaches the site through the one unattended path, and the o
   assert.match(y, /checks: read/, 'the failing step’s annotation needs it');
   const w = rd('scripts/worktree.mjs');
   assert.match(w, /import \{ fetchAtlasEval, atlasEvalLine \} from '\.\/lib\/nightly-status\.mjs'/);
-  assert.equal((w.match(/atlasEval\(\)/g) || []).length, 3, 'defined once, read by the brief and the full status');
+  /* (ci-critical-path) the probes are prefetched in parallel, so a read is `got('atlasEval', atlasEval)`: defined once, answered
+     by the one probe table, read by the brief and by the full status */
+  assert.equal((w.match(/function atlasEval\(\)/g) || []).length, 1, 'defined once');
+  assert.equal((w.match(/got\('atlasEval', atlasEval\)/g) || []).length, 2, 'read by the brief and the full status');
+  assert.match(w, /atlasEval: \(\) => atlasEval\(\)/, 'and offered to the parallel prefetch');
   assert.match(rd('index.html'), /id="btn-status-page"/);
   assert.match(rd('js/atlas-cap-system.js'), /statusPage\.describe\(\)/, 'Atlas diagnose reads the same page');
 });

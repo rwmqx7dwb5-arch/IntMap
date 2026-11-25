@@ -44,7 +44,7 @@
  *  worktree that is not the one it is being run from, and uses `git branch -d` (not -D) so an
  *  unmerged branch is refused by git itself rather than by a rule written here.
  * ==========================================================================*/
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, lstatSync, unlinkSync, rmdirSync, symlinkSync, mkdirSync, readdirSync, chmodSync, rmSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -476,11 +476,35 @@ function redPRs() {
   } catch { return { known: false, prs: [] }; }
 }
 
+/* ══ (ci-critical-path) THE PROBES RUN AT THE SAME TIME, NOT ONE AFTER ANOTHER ═════════════════════════════════
+   MEASURED 2026-11-25: `status --brief` — what the SessionStart hook runs — took 29 s and the full `status` 37 s, and
+   nearly all of it was twelve `gh` calls and one 7 s history scan made one after another (1.1-2.9 s each; the profile is in
+   dev-notes/2026-11-25-verify-flow-efficiency.md). Each probe is independent of the others and none of them can throw, so
+   each runs as its own process (`node worktree.mjs --probe <name>`, which prints the answer as JSON) and the report waits
+   for the slowest one instead of the sum. NOTHING IS CACHED: every probe still asks its source, now, so «is it in
+   production yet» is as fresh as before. A probe that cannot be answered gives `undefined` here and falls back to
+   running in-process, so the output is what the sequential code printed. */
+const PROBES = {
+  nightly: () => nightly(), atlasEval: () => atlasEval(), fieldSpeed: () => fieldSpeed(), deepHistory: () => deepHistory(),
+  deployState: () => deployState(), redPRs: () => redPRs(), masterState: () => masterState(), verifiedState: () => verifiedState(masterDir()),
+};
+const PRE = {};
+const got = (name, fn) => (name in PRE && PRE[name] !== undefined ? PRE[name] : fn());
+function prefetch(names) {
+  return Promise.all(names.map((name) => new Promise((done) => {
+    const c = spawn(process.execPath, [fileURLToPath(import.meta.url), '--probe', name], { cwd: REPO, stdio: ['ignore', 'pipe', 'ignore'] });
+    let out = '';
+    c.stdout.on('data', (d) => { out += d; });
+    c.on('error', () => done());
+    c.on('close', (code) => { if (code === 0) { try { PRE[name] = JSON.parse(out); } catch { /* answered in-process below */ } } done(); });
+  })));
+}
+
 function pendingWork(master) {
-  const deploy = deployState();
-  const red = redPRs();
-  const verified = verifiedState(master);
-  const copy = masterState();
+  const deploy = got('deployState', deployState);
+  const red = got('redPRs', redPRs);
+  const verified = got('verifiedState', () => verifiedState(master));
+  const copy = got('masterState', masterState);
   const items = [];
   if (deploy.known && deploy.n > 0) items.push(`本番未到達 ${deploy.labels.length ? labelList(deploy.labels) : `${deploy.n} commit`}`);
   if (deploy.broken) items.push(`deploy ${deploy.broken.what} (run ${deploy.broken.id})`);
@@ -515,7 +539,7 @@ const mergeDriverLines = (md) => [
 ];
 
 /* ── STATUS ─────────────────────────────────────────────────────────────────────────────────── */
-function status(brief) {
+async function status(brief) {
   const master = masterDir();
   const here = q(['rev-parse', '--show-toplevel']) || REPO;
   const branch = q(['rev-parse', '--abbrev-ref', 'HEAD']) || '(detached)';
@@ -527,18 +551,20 @@ function status(brief) {
      refuses one that is already held. */
   const mine = (branch.match(/^feat\/(.+)$/) || [])[1] || null;
   const md = mergeDriver(here);
+  /* every network probe this report will read, started together (see PROBES) */
+  await prefetch(['nightly', 'atlasEval', 'fieldSpeed', 'deployState', 'redPRs', 'masterState', 'verifiedState', 'deepHistory']);   // deepHistory is read only when the nightly is red (brief) — started anyway: its seconds hide under the slowest probe
 
   if (brief) {
     console.log(`IntMap · branch ${branch}${isMaster ? ' (原本＝main の置き場)' : ''} · 未コミット ${dirty.length}件`
       + (mine ? ` · このセッション ${mine}` : ''));
     console.log(`原本: ${master}`);
     if (isMaster) console.log('⚠ 原本では作業しない。node scripts/worktree.mjs new <slug> で worktree を作る（AGENTS.md §6）。');
-    const nb = nightly();
+    const nb = got('nightly', nightly);
     if (nb && !nb.ok) {
       console.log(`⚠ deep tier (nightly ${nb.day}${nb.age}): ${nb.what}  → gh run view ${nb.id} --log-failed`);
       /* one more line only when the history says a red is a REGRESSION — a sporadic list printed at
          the top of every session would be the line nobody reads (the #R771 rule for this hook) */
-      const dh = deepHistory();
+      const dh = got('deepHistory', deepHistory);
       if (dh && dh.regressions.length) {
         console.log(`⚠ deep tier で ${dh.regressions.length} 件が連続で落ちている（退行の疑い）: `
           + dh.regressions.map((x) => `${x.id.split(' › ')[0]}（${x.streak} 晩）`).join(' / ') + '  → node scripts/deep-history.mjs');
@@ -546,10 +572,10 @@ function status(brief) {
       }
     }
     /* (shell-experience) the Atlas evaluation, ONLY when it is not green — the same rule as the deep tier above */
-    const ae = atlasEval();
+    const ae = got('atlasEval', atlasEval);
     if (ae && !ae.ok) console.log(`⚠ ${ae.text}${ae.url ? `  → ${ae.url}` : ''}`);
     /* (field-speed) only when a release measurably made readers wait longer — the same rule as above */
-    const fsl = fieldSpeed();
+    const fsl = got('fieldSpeed', fieldSpeed);
     if (fsl && !fsl.ok) console.log(`⚠ ${fsl.text}  → node scripts/field-speed.mjs`);
     /* (#R771) one line, and ONLY when something is actually outstanding. This prints at the top of
        every session, so a line that is always there is a line nobody reads. */
@@ -582,13 +608,13 @@ function status(brief) {
   if (mine) console.log(`  このセッション      ${mine}（branch feat/${mine}。PR を作ったらその番号が識別子）`);
   console.log(`  merge driver        ${md.ok ? '登録済み（生成物・台帳・件数の衝突を解く。scripts/merge-driver.mjs）' : '未登録（' + md.why + '）'}`
     + (md.waiting.length ? ` · 保留 ${md.waiting.length} 件 → node scripts/merge-driver.mjs --finish` : ''));
-  const nf = nightly();
+  const nf = got('nightly', nightly);
   console.log(`  deep tier (nightly) ${nf ? `${nf.what}${nf.ok ? '' : `   → gh run view ${nf.id} --log-failed`}   (${nf.day}${nf.age})` : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
-  const aev = atlasEval();
+  const aev = got('atlasEval', atlasEval);
   console.log(`  Atlas 夜間評価       ${aev ? aev.text.replace(/^Atlas 夜間評価: /, '') + (aev.ok ? '' : `   → ${aev.url || 'gh run list --workflow=atlas-eval.yml'}`) : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
-  const fsl = fieldSpeed();
+  const fsl = got('fieldSpeed', fieldSpeed);
   console.log(`  読者の手元での速さ   ${fsl ? fsl.text.replace(/^読者の手元での速さ: /, '') : '不明（origin/main の data/service-status.json を読めない）'}`);
-  const dh = deepHistory();
+  const dh = got('deepHistory', deepHistory);
   if (!dh) {
     console.log('    直近の晩の分類   不明（gh が無い・未ログイン・オフライン・時間切れ のいずれか）→ node scripts/deep-history.mjs');
   } else {
@@ -969,7 +995,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const argv = process.argv.slice(2);
   const cmd = argv[0] || 'status';
   try {
-    if (cmd === 'status') status(argv.includes('--brief'));
+    if (cmd === '--probe') console.log(JSON.stringify(PROBES[argv[1]]?.() ?? null));
+    else if (cmd === 'status') await status(argv.includes('--brief'));
     else if (cmd === 'new') await makeNew(argv[1]);
     else if (cmd === 'done') done();
     else if (cmd === 'verified') {

@@ -95,15 +95,15 @@ function costTable() {
  * The tasks to pack. Every declared gate appears in exactly one task; the build-dependent gates are
  * one task WITH the build, so no two shards pay for a build.
  */
-function tasks() {
+function tasks(pool = 'all') {
   const { secs, median } = costTable();
   const cost = (g) => (Number.isFinite(secs[g]) ? secs[g] : median);
   const gates = declaredGates();
   const built = gates.filter(needsBuild);
   const plain = gates.filter((g) => !built.includes(g));
 
-  const out = plain.map((g) => ({ gates: [g], build: false, cost: cost(g) }));
-  if (built.length) {
+  const out = pool === 'build' ? [] : plain.map((g) => ({ gates: [g], build: false, cost: cost(g) }));
+  if (built.length && pool !== 'free') {
     out.push({
       gates: built,
       build: true,
@@ -117,8 +117,8 @@ function tasks() {
  * Longest-processing-time-first greedy. Deterministic: costs descending, ties broken by the first
  * gate's name, so the same tree always produces the same plan on every runner.
  */
-function plan(of) {
-  return lpt(tasks(), of, (t) => t.cost, (t) => t.gates[0]).map((b) => ({ tasks: b.items, cost: b.cost }));
+function plan(of, pool = 'all') {
+  return lpt(tasks(pool), of, (t) => t.cost, (t) => t.gates[0]).map((b) => ({ tasks: b.items, cost: b.cost }));
 }
 
 /** The two files the build-reading gates read (READS_BUILD in scripts/gate-universe.mjs names both). */
@@ -148,7 +148,7 @@ function run(cmd, args, env = process.env) {
 /* ── COMMANDS ───────────────────────────────────────────────────────────────────────────────── */
 
 function cmdPlan(of) {
-  const bins = plan(of);
+  const bins = plan(of, POOL);
   const l = ledger();
   console.log(`IntMap · ${declaredGates().length} 個の宣言済みゲートを ${of} 台へ`);
   console.log(`  コストの実測: ${l.measured || '(未記録)'}\n`);
@@ -170,7 +170,7 @@ function cmdPlan(of) {
 function cmdShard(spec, timingsOut) {
   const [i, of] = shardSpec(spec, '--shard');
 
-  const bin = plan(of)[i - 1];
+  const bin = plan(of, POOL)[i - 1];
   const measured = {};
   const failed = [];
   console.log(`── shard ${i}/${of} · ${bin.tasks.reduce((a, t) => a + t.gates.length, 0)} gates ──`);
@@ -238,6 +238,12 @@ function cmdCheck(of) {
   const binsOfBuilt = bins.map((b, i) => (b.tasks.some((t) => t.build) ? i : -1)).filter((i) => i >= 0);
   if (binsOfBuilt.length > 1) problems.push('build が2つ以上の shard に分かれている');
 
+  /* (ci-critical-path) CI runs the two pools as two jobs; together they must be the same set the single plan covers. */
+  const pooled = [...plan(of, 'free').flatMap((b) => b.tasks.flatMap((t) => t.gates)), ...plan(1, 'build').flatMap((b) => b.tasks.flatMap((t) => t.gates))];
+  const lost = declared.filter((g) => !pooled.includes(g)), twice = pooled.filter((g, k) => pooled.indexOf(g) !== k);
+  if (lost.length) problems.push(`free と build の 2 つの pool のどちらにも入らないゲート: ${lost.join(', ')}`);
+  if (twice.length) problems.push(`free と build の両方に入るゲート: ${[...new Set(twice)].join(', ')}`);
+
   const stale = Object.keys(ledger().seconds || {}).filter((k) => k !== BUILD && !declared.includes(k));
   if (stale.length) problems.push(`.github/gate-cost.json に、もう存在しないゲートがある: ${stale.join(', ')}`);
 
@@ -259,11 +265,16 @@ function cmdUpdate(files) {
 const argv = process.argv.slice(2);
 const flag = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : null; };
 const of = +(flag('--of') || 3);
+/* (ci-critical-path) `--pool free|build`: the gates that read nothing the build made start the moment the run does,
+   in jobs of their own; the build-reading ones (check:assets, check:perf — discovered, gate-universe.mjs needsBuild)
+   are one task that needs the build. Unset = both together (a developer's `--plan`, and the partition check). */
+const POOL = flag('--pool') || 'all';
+if (!['all', 'free', 'build'].includes(POOL)) { console.error('usage: --pool free|build'); process.exit(1); }
 
 if (argv.includes('--needs-build')) {
   const [i, of] = shardSpec(flag('--needs-build'), '--needs-build');
-  console.log(String(plan(of)[i - 1].tasks.some((t) => t.build)));
-} else if (argv.includes('--planned')) console.log(JSON.stringify(plan(of).flatMap((b) => b.tasks.flatMap((t) => t.gates))));
+  console.log(String(plan(of, POOL)[i - 1].tasks.some((t) => t.build)));
+} else if (argv.includes('--planned')) console.log(JSON.stringify(plan(of, POOL).flatMap((b) => b.tasks.flatMap((t) => t.gates))));
 else if (argv.includes('--shard')) cmdShard(flag('--shard'), flag('--timings'));
 else if (argv.includes('--check')) cmdCheck(of);
 else if (argv.includes('--update')) cmdUpdate(argv.slice(argv.indexOf('--update') + 1));

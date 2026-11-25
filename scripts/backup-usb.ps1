@@ -196,7 +196,15 @@ function Get-Sha256([string]$path) {
 }
 
 # ── 3. mirror ─────────────────────────────────────────────────────────────────
+# (ci-critical-path) A FILE THE MIRROR PASS HAS JUST COMPARED BY CONTENT AND FOUND IDENTICAL IS NOT READ A SECOND TIME BY THE
+# VERIFY PASS. Both passes hashed both sides of every file, so each unchanged file was read four times per run (twice on the
+# USB, the slow side). Nothing writes between the two passes, so the second comparison could only repeat the first;
+# what verification exists for — «the copy returned, were the bytes written?» — is about the files that WERE copied, and
+# those are all still hashed on both sides. A retry attempt starts with an empty set, and -VerifyOnly never fills it.
+$script:Confirmed = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+
 function Invoke-Mirror($drive, $files) {
+  $script:Confirmed.Clear()
   $root = $drive.Root
   $want = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
   $copied = 0; $skipped = 0; $deleted = 0
@@ -213,7 +221,7 @@ function Invoke-Mirror($drive, $files) {
       $a = Get-Item -LiteralPath $src; $b = Get-Item -LiteralPath $dst
       if ($a.Length -eq $b.Length) { $same = ((Get-Sha256 $src) -eq (Get-Sha256 $dst)) }
     }
-    if ($same) { $skipped++; continue }
+    if ($same) { $skipped++; [void]$script:Confirmed.Add($rel.Replace('/', '\')); continue }
     if ($PSCmdlet.ShouldProcess($dst, 'copy')) { Copy-Item -LiteralPath $src -Destination $dst -Force }
     $copied++
   }
@@ -251,6 +259,7 @@ function Test-Mirror($drive, $files) {
     [void]$want.Add($r)
     $dst = Join-Path $root $r
     if (-not (Test-Path -LiteralPath $dst)) { $problems += "missing on USB: $r"; continue }
+    if ($script:Confirmed.Contains($r)) { continue }   # compared by content moments ago, untouched since (see Confirmed)
     if ((Get-Sha256 $src) -ne (Get-Sha256 $dst)) { $problems += "content differs: $r" }
   }
   foreach ($f in Get-UsbFiles $root) {

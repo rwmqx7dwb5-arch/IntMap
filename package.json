@@ -117,6 +117,7 @@
     "test:deep": "node -e \"process.env.IM_TIER='deep';import('./scripts/run-tests.mjs')\"",
     "test:all": "node -e \"process.env.IM_TIER='all';import('./scripts/run-tests.mjs')\"",
     "regen": "node scripts/regen.mjs",
+    "preflight": "node scripts/preflight.mjs",
     "report": "playwright show-report",
     "check:testbudget": "node scripts/test-budget.mjs",
     "//check:testbudget": "(#R197) the suite has a CEILING and it only ever goes down — see scripts/test-budget.mjs. A round that adds test time must take at least as much out somewhere else; that is what stops the per-round spec files accumulating into 「何重にも」.",

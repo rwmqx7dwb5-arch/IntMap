@@ -309,7 +309,7 @@ const NEW_RULES = [
      what gets blanked. The claim is unchanged — remove what CI uses to reach a gate npm test runs,
      and the rule must go red — and the mutation is now stronger: it cuts every gate at once. */
   { rule: 'ci-gates', file: '.github/workflows/ci.yml', why: 'a gate npm test runs that no CI step reaches',
-    from: '        run: node scripts/ci-gates.mjs --shard', to: '        run: echo skipped --shard' },
+    from: '        run: node scripts/ci-gates.mjs --shard', to: '        run: echo skipped --shard', all: true },   // all: two jobs invoke the planner (gates, gates-build)
 ];
 
 test('R403 ⑥ every rule this round added goes RED when its fact is made wrong', async () => {
@@ -319,7 +319,7 @@ test('R403 ⑥ every rule this round added goes RED when its fact is made wrong'
       /* «Architecture.md» names the spec (architecture-split): the sentence is in whichever chapter carries it */
       const c = { ...c0, file: specFileFor(ROOT, c0.file, re) };
       assert.ok(re.test(readLF(join(ROOT, c.file))), `${c.file} no longer contains the anchor for «${c.why}»`);
-      await breaking(c.file, (s) => s.replace(re, () => c.to), (r) => {
+      await breaking(c.file, (s) => s.replace(c.all ? new RegExp(re.source, 'g') : re, () => c.to), (r) => {
         assert.equal(r.code, 1, `check:docs stayed GREEN with ${c.file} broken — ${c.why}`);
         assert.ok(r.out.includes(c.rule), `check:docs failed but never named ${c.rule} (${c.why}):\n` + r.out);
       }, c.rule);

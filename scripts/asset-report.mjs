@@ -30,6 +30,8 @@
  *    node scripts/asset-report.mjs --check       the gate (used by npm run check:assets)
  *    node scripts/asset-report.mjs --json <p>    the whole classification, per file
  */
+import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
+import { availableParallelism } from 'node:os';
 import { readFileSync, readdirSync, statSync, lstatSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, relative, dirname, extname, basename, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -314,24 +316,44 @@ function classify(distRel, corpus) {
 
 const allow = (list, rel) => list.find((e) => e.match.test(rel));
 
-function main() {
+/* (ci-critical-path) THE CLASSIFICATION IS A PURE FUNCTION OF (file, corpus) AND EACH FILE IS INDEPENDENT, SO IT RUNS ON ALL
+   THE CORES. MEASURED 2026-11-25 on CI run 45572764375: this gate took 522.8 s on a 4-core runner — the longest single task in
+   the run, with nothing else in its job — because it scanned the corpus for each of 8,321 files on one thread. Each worker
+   builds the same corpus (the sources are read, not changed, between the workers) and classifies an interleaved slice, and the
+   rows come back in the order of `files`, so every verdict below is exactly the one the single-threaded loop reached. */
+function rowsOf(files, corpus) {
+  return files.map((rel) => {
+    const abs = join(DIST, rel);
+    const bytes = statSync(abs).size;
+    const sha = createHash('sha256').update(readFileSync(abs)).digest('hex');
+    return { path: rel, bytes, sha, ext: extname(rel).slice(1) || '-', ...classify(rel, corpus) };
+  });
+}
+
+function workerRows(files, workers) {
+  const n = Math.max(1, Math.min(workers, files.length));
+  if (n === 1) return Promise.resolve(rowsOf(files, sourceCorpus()));
+  const slices = Array.from({ length: n }, (_, k) => files.filter((_f, i) => i % n === k));
+  return Promise.all(slices.map((slice) => new Promise((ok, fail) => {
+    const w = new Worker(fileURLToPath(import.meta.url), { workerData: { slice } });
+    w.once('message', ok); w.once('error', fail);
+    w.once('exit', (c) => { if (c) fail(new Error('asset-report worker exited ' + c)); });
+  }))).then((parts) => {
+    const out = new Array(files.length);
+    parts.forEach((rows, k) => rows.forEach((r, j) => { out[k + j * n] = r; }));
+    return out;
+  });
+}
+
+async function main() {
   if (!existsSync(DIST)) {
     console.error('asset-report: no dist/ — run `npm run build` first.');
     process.exit(1);
   }
-  const corpus = sourceCorpus();
   const files = walk(DIST).sort();
-  const rows = [];
+  const rows = await workerRows(files, +(val('--workers', null) || Math.min(availableParallelism(), 8)));
   const byHash = new Map();
-  for (const rel of files) {
-    const abs = join(DIST, rel);
-    const bytes = statSync(abs).size;
-    const buf = readFileSync(abs);
-    const sha = createHash('sha256').update(buf).digest('hex');
-    const c = classify(rel, corpus);
-    rows.push({ path: rel, bytes, sha, ext: extname(rel).slice(1) || '-', ...c });
-    (byHash.get(sha) || byHash.set(sha, []).get(sha)).push(rel);
-  }
+  for (const r of rows) (byHash.get(r.sha) || byHash.set(r.sha, []).get(r.sha)).push(r.path);
 
   const dupes = [...byHash.entries()]
     .filter(([, ps]) => ps.length > 1)
@@ -408,4 +430,5 @@ function main() {
   }
 }
 
-main();
+if (isMainThread) await main();
+else parentPort.postMessage(rowsOf(workerData.slice, sourceCorpus()));
