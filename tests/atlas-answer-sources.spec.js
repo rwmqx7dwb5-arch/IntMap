@@ -36,7 +36,7 @@ async function boot(browser, viewport) {
     if (String(body.task || '') === 'atlas_turn' && body.protocol === 2) {
       turns++;
       text = JSON.stringify({ turn: 'final', final_text: ANSWER });
-      extra = { output: [], meta: { protocol: 2 } };
+      extra = { output: [], meta: { protocol: 2 }, citations: [{ url: 'https://apnews.com/article/a1', title: 'Ceasefire talks continue' }, { url: 'https://www.reuters.com/world/r1', title: 'Strikes reported' }] };
     }
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(Object.assign({ text, used: 1, limit: 100, charged: true }, extra)) });
   });

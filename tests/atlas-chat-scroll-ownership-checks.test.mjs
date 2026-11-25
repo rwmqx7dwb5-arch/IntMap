@@ -46,7 +46,7 @@ test('⑤ a figure Atlas drew is listed apart from the basemap credit, and never
   const fig = items.find((i) => i.kind === 'figure'), map = items.find((i) => i.kind === 'map');
   assert.equal(typeof fig.source, 'string'); assert.notEqual(fig.source, map.source); assert.match(fig.source, /Atlas/);
   const h = c.footerHtml(items, { id: 'a' });
-  assert.match(h, /data-group="figure"/); assert.match(h, /data-group="data"/);
+  assert.match(h, /data-group="figure"/); assert.ok(!/data-group="data"/.test(h), 'the basemap credit is not a source of the answer'); assert.match(h, /atl-srcs-mapcredit/);
   const stated = c.collect([{ ok: true, meta: { provenance: [{ kind: 'figure', what: 'zone', source: 'USGS' }] }, drew: [{ kind: 'map.poi' }] }], {});
   assert.deepEqual(stated.map((i) => i.source), ['USGS']);
 });

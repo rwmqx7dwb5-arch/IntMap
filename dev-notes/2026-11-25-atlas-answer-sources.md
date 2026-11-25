@@ -24,3 +24,7 @@ newsjp: Atlas の回答で、引用元が小さな出典チップ（ホバー／
 - 数字の `[n]` 印、線の根拠ボタン、引用の中身は従来のまま（`tests/atlas-cited-answers-checks.test.mjs` が緑のまま）。
 - 回帰: `tests/atlas-answer-sources-checks.test.mjs`（チップ・クラスタ・重複排除・帰属の分離・成果物・見出し）、`tests/atlas-answer-sources.spec.js`（実ページ・デスクトップとモバイルのタップ）。
 - データソースの表記・利用規約ページへの影響なし（地図上の帰属とプライバシー情報は触っていない）。ファビコンは既存の `www.google.com/s2/favicons` を従来どおり使う。
+
+## 予算
+- 非同期チャンク `atlas-knowledge`（出典モジュールを含む）が 43.2 kB → 52.4 kB に増えた。チップ・カード・成果物・メニューの描画と CSS による。`perf-budget --update` で天井を上げた。
+- 見出しを縮めたので、見出しの大きさ・太さを固定していた既存の検査（assistant-panel / atlas-reply-render / process-atlas-source-lines）の値を新しい値に更新した。

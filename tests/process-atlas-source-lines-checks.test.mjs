@@ -69,7 +69,7 @@ test('R158 #1 → R159 Atlas typography — no bold, no ## divider; body 14px + 
   ok(".atl-b.a .atl-md{font-size:16px !important;}", 'mobile still lifts the (now 15px) body');
   gone('<div style="font-size:14px;line-height:1.68;">', 'the inline-style wrapper it used to be sniffed by is gone');
   // still monochrome — every heading keeps --text-main (R154 "色分け廃止" preserved) — R159 also drops the bold weight
-  ok('.atl-h{font-weight:600;color:var(--text-main);', 'headings are semibold (R159 no bold), still --text-main');
+  ok('.atl-h{font-weight:560;color:var(--text-main);', 'headings are semibold (R159 no bold), still --text-main');
 });
 
 test('R158 #2 Atlas sources — informational answers gather sources (use:[web] forces the search)', () => {

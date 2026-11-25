@@ -311,7 +311,7 @@ export function makeAtlasAnswerSources(deps) {
   }
   function artifactsHtml(list) {
     if (!(list && list.length)) return '';
-    return '<div class="atl-arts"><span class="atl-arts-h">' + esc(T('On the map', '地図上の成果物')) + '</span>'
+    return '<div class="atl-arts"><span class="atl-arts-h">' + esc(T('Drawn by Atlas', '地図上の成果物')) + '</span>'
       + list.map((a) => '<button type="button" class="atl-art" data-atl-art="' + a.i + '" title="' + esc(T('Move the map to this', '地図をここへ移動')) + '">' + esc(a.label) + '</button>').join('') + '</div>';
   }
 
@@ -361,7 +361,7 @@ const CSS = '.atl-srcs{margin-top:var(--atl-zone-gap,10px);padding-top:6px;borde
   + '.atl-sc-ico{width:12px;height:12px;border-radius:3px;flex:none;}'
   + '.atl-sc-name{overflow:hidden;text-overflow:ellipsis;}'
   + '.atl-sc-more{border:1px solid var(--glass-border,rgba(128,128,128,.2));background:var(--input-bg,rgba(128,128,128,.14));color:var(--text-muted);border-radius:.8em;height:1.55em;padding:0 .55em;font-size:.78em;font-weight:600;cursor:pointer;}'
-  + '.atl-scard{position:fixed;z-index:var(--z-popup);padding:10px 12px;border-radius:14px;background:var(--bg-glass-strong,rgba(28,28,32,.96));color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,.3));'
+  + '.atl-scard{box-sizing:border-box;position:fixed;z-index:var(--z-popup);padding:10px 12px;border-radius:14px;background:var(--bg-glass-strong,rgba(28,28,32,.96));color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,.3));'
   + 'box-shadow:0 12px 36px rgba(0,0,0,.35);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:12.5px;line-height:1.5;}'
   + '.atl-scard[hidden]{display:none;}'
   + '.atl-scard-h{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--text-muted);margin-bottom:3px;}'
