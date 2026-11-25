@@ -68,7 +68,7 @@ export function normaliseContract(c) {
   return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null, model ? { model } : null, images.length ? { images } : null, maxOutput ? { maxOutput } : null, effort ? { effort } : null) };
 }
 
-export const EFFORT_WORDS = ['low', 'medium', 'high', 'xhigh'];   /* the words ai-proxy reads in effortHint (js/atlas-effort.js MODES without 'auto') */
+const EFFORT_WORDS = ['low', 'medium', 'high', 'xhigh'];   /* the words ai-proxy reads in effortHint (js/atlas-effort.js MODES without 'auto') */
 
 /* (worker-reach) the name a contract's `images` uses for the map frames the parent captured in this turn (view.inspect) */
 export const IMAGE_VIEW = '@view';
