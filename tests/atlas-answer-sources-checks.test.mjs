@@ -81,3 +81,11 @@ test('⑤ headings are in proportion to the sentence under them', () => {
   assert.ok(size('atl-h1') <= 1.4 && size('atl-h2') <= 1.25 && size('atl-h3') <= 1.15 && size('atl-hb') <= 1.1);
   assert.match(css, /\.atl-a\{color:inherit;/, 'prose links do not shout in the accent colour');
 });
+
+test('⑥ an artifact button never carries a raw capability id; the source card stands above a floating window', () => {
+  const c = core();
+  const arts = c.artifacts([{ ok: true, drew: [{ kind: 'map.compose', surfaces: ['s1'] }, { kind: 'map.compose', surfaces: ['s2'] }] }]);
+  assert.deepEqual(arts.map((a) => a.label), ['Shape 1', 'Shape 2']);
+  const src = readFileSync(new URL('../js/atlas-answer-sources.js', import.meta.url), 'utf8');
+  assert.match(src, /\.atl-scard\{[^}]*z-index:var\(--z-toast\)/, 'above the front window (2650), as a toast is');
+});
