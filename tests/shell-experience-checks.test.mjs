@@ -101,6 +101,12 @@ test('④ the Atlas evaluation: 「測っていない」 is its own answer, apar
   assert.equal(green.lastReportAt, '2026-10-03T11:00:00Z');
   assert.equal(NS.atlasEvalLine(green).ok, true);
   assert.equal(NS.atlasEvalState(null), null, 'nothing read is not «green»');
+  /* a workflow its owner disabled is FROZEN, not failing — decided by GitHub's state, not by the red history */
+  const frozen = NS.atlasEvalLine(NS.atlasEvalState(runs, {}, 'disabled_manually'));
+  assert.equal(frozen.ok, true);
+  assert.match(frozen.text, /凍結中/);
+  assert.match(frozen.text, /gh workflow enable atlas-eval.yml/);
+  assert.equal(NS.atlasEvalLine(NS.atlasEvalState(runs, {}, 'active')).ok, false, 'an active workflow that fails still fails');
 });
 
 /* ── ⑤ ─────────────────────────────────────────────────────────────────────── */
