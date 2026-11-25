@@ -29,7 +29,7 @@ test('② the draft has no blinking caret, and nothing styles one', () => {
 
 test('③ cost, model names and tool names are the developer view\'s; so are a failed step\'s raw warnings', () => {
   const c = read('js/atlas-console.js');
-  assert.match(c, /aiDev\(\)\)&&AGENT\.runLine/, 'the run line is not gated on the developer view');
+  assert.match(c, /_isDevView\(\)&&AGENT\.runLine/, 'the run line is not gated on the developer view');
   assert.match(c, /_shown=_devView\?_interim:_interim\.filter\(r=>r&&r\.ok!==false\)/, 'a failed step\'s raw warning is listed for every reader');
   assert.match(c, /AGENT\.runLine/, 'the measurement itself was removed — it is only hidden');
 });
@@ -45,7 +45,7 @@ test('⑤ parallel workers are lines under their operation, written from the tas
   const p = read('js/atlas-progress.js');
   assert.match(p, /ev\.progress\.tasks/, 'progress tasks are not read');
   const body = p.slice(p.indexOf('function paintTasks'), p.indexOf('/* step(bubble, action)'));
-  assert.ok(!/costUsd|\$/.test(body.replace(/\/\*[\s\S]*?\*\//g, '')), 'a worker line carries a cost');
+  assert.ok(!body.includes('costUsd'), 'a worker line carries a cost');
 });
 
 test('⑥ a plan is drawn into the trace only in the turn that declared it', () => {

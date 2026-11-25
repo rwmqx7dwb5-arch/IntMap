@@ -77,7 +77,7 @@ export function makeAtlasProgress(HOST, deps) {
   const esc = deps.esc || ((s) => String(s == null ? '' : s));
   const capsOf = (typeof deps.capabilities === 'function') ? deps.capabilities : (() => null);
   /* the developer view (js/ai-core.js aiDev: localhost, the owner's account, or intmap_dev=1) — raw failures and cost belong to it, not to a reader */
-  const isDev = (typeof deps.dev === 'function') ? deps.dev : (() => { try { return !!(window.aiDev && window.aiDev()); } catch (_) { return false; } });
+  const isDev = (typeof deps.dev === 'function') ? deps.dev : (() => false);
   const schemasOf = (typeof deps.schemas === 'function') ? deps.schemas : (() => null);
   function schemaOf(capId) {
     const S = schemasOf();
