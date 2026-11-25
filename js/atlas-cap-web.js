@@ -154,7 +154,7 @@ export default [
     },
   },
   {
-    row: ['web.fetchFile',              'fetchFile',      'downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile',        'data',     'none',    'gis.dataset',            'explanation',         'session', 'none',   '',         '', 'external'],
+    row: ['web.fetchFile',              'fetchFile',      'downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile',        'data',     'none',    'gis.dataset,map.object', 'explanation',         'session', 'none',   '',         '', 'external'],
     ui: { none: '2026-11-20' },
     doc: [
       { in: 'web.browse', at: 10, text: ' TAKE THE FILE: {"type":"fetchFile","ref"?:str,"url"?:str,"label"?:str} (ファイルを取得 · ポータルのファイルをデータセットに · データをダウンロードして取り込む) downloads ONE data file — by the ref of a link from the last web.browse result (usually one of its `files`), or by url — and opens it through the same reader a dropped file takes: a CSV / Excel / GeoJSON / KML / zip becomes a dataset (and a layer when it has places; a table with no places opens the Data Studio step that binds its rows to places). It answers the dataset id, the format and the row count — use data.gis / data.studio / chart.compose on it from there. A file over 6 MB, a page that is not a file (`not_a_file` — it shows you the page instead), or a format IntMap cannot read are said, not guessed. A site that needs a login or CAPTCHA before the download is a `handoff`: ask the reader to download it and attach it. Say where the file came from (its address is in the result) and what the portal says about its licence.' },
@@ -162,6 +162,13 @@ export default [
     phrases: () => ['ファイルを取得', 'データをダウンロードして取り込む', 'ポータルのファイルをデータセットに'].concat(['download a data file', 'import a file from the web']),
     schema: () => ({ type: 'object', properties: { ref: str(), url: str(), label: str() }, anyOf: [{ required: ['ref'] }, { required: ['url'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, note = K.note;
+      /* (worker-reach) ⚠ THE ROW SAYS LESS THAN THE RUN DOES. Column 5 names only 'gis.dataset', but toDataset is the dropped-file door
+         (js/map-ui.js handleFiles), which DRAWS a vector file on the reader's map before it registers the dataset. A delegated worker
+         (js/atlas-console.js runReadCapability, source 'atlas-worker') is let in by that row, and must not change the reader's map, so
+         it is refused here — before anything is downloaded — with the reason, rather than drawing. Lifts when the door can register
+         without drawing; the row should then also name the draw it does for everyone else. */
+      if (dctx && dctx.source === 'atlas-worker') return R(false, warn(esc(L('A delegated worker cannot take a file: the file door draws it on the reader’s map. Hand the address back; the turn that delegated can fetch it.', '委譲された作業者はファイルを取得できません（取り込み口が読者の地図に描くため）。アドレスを返してください。委譲したターンが取得できます。'))),
+        { meta: { code: 'draws_on_reader_map', permanent: true } });
       const D = door(K.HOST);
       const web = { untrusted: true, notice: WEB_BROWSE_NOTICE };
       const d = await D.download(a, dctx && dctx.signal);

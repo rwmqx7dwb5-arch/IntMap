@@ -85,8 +85,11 @@ const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalog
      answer          true — its result is an ANSWER about a topic (#R159): js/atlas-turn-results.js keys it by topic
      asksUser        true — running it puts a QUESTION in front of the reader (a facet, js/atlas-capabilities.js `facets.asksUser`). Not derivable from
                      the row: a question writes nothing and touches no state, which is why a single `risk` column called it read-only
-     delegates       true — running it starts other model work (`facets.delegates`); a child AI may not start more of it */
-const POLICY_KEYS = ['withdrawn', 'ruleDocumented', 'fallback', 'forbidden', 'equivalents', 'answer', 'asksUser', 'delegates'];
+     delegates       true — running it starts other model work (`facets.delegates`); a child AI may not start more of it
+     headless        true (worker-reach) — run by a delegated worker (source 'atlas-worker') it leaves out what the reader would
+                     see (no pin, no draw, no camera) and returns its result as DATA (`facets.headless`). Declared by the
+                     capability whose run() honours it; a test runs it as a worker and checks nothing was drawn. */
+const POLICY_KEYS = ['withdrawn', 'ruleDocumented', 'fallback', 'forbidden', 'equivalents', 'answer', 'asksUser', 'delegates', 'headless'];
 
 /** the namespace a capability id belongs to — the file its entry must live in */
 function namespaceOf(id) { return String(id || '').split('.')[0]; }
@@ -185,7 +188,7 @@ export function catalogueBlocks(modules, chunks, c) {
     a capability. */
 export function capabilityPolicy(modules, order) {
   const entries = capabilityEntries(modules), byId = new Map(entries.map(function (e) { return [e.id, e]; })), problems = [];
-  const P = { withdrawn: {}, ruleDocumented: {}, fallbacks: {}, forbidden: {}, equivalents: {}, answers: {}, asksUser: {}, delegates: {} };
+  const P = { withdrawn: {}, ruleDocumented: {}, fallbacks: {}, forbidden: {}, equivalents: {}, answers: {}, asksUser: {}, delegates: {}, headless: {} };
   (order || entries.map(function (e) { return e.id; })).forEach(function (id) {
     const e = byId.get(id), p = e && e.policy;
     if (!p) return;
@@ -198,6 +201,7 @@ export function capabilityPolicy(modules, order) {
     if (p.answer) P.answers[id] = 1;
     if (p.asksUser) P.asksUser[id] = 1;
     if (p.delegates) P.delegates[id] = 1;
+    if (p.headless) P.headless[id] = 1;
     ['forbidden', 'equivalents'].forEach(function (k) {
       if (!p[k]) return;
       if (!Array.isArray(p[k])) { problems.push(id + ': policy.' + k + ' is not a list of ids'); return; }

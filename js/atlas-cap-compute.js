@@ -52,13 +52,20 @@ export default [
       if (!C) return R(false, warn(esc(L('The Python sandbox could not be loaded.', 'Python の実行環境を読み込めませんでした。'))));
       /* (cap-bridge) a run that was GRANTED something gets a port to the capability table; one that was not gets none and
          `cap_call` says so. The grant is the reader-visible fact: it is on the card, in the history and on every output. */
-      const grants = Array.isArray(a.grants) ? a.grants.filter((g) => g === 'read' || g === 'state') : [];
+      const asked = Array.isArray(a.grants) ? a.grants.filter((g) => g === 'read' || g === 'state') : [];
+      /* (worker-reach) A DELEGATED WORKER (js/atlas-console.js runReadCapability, source 'atlas-worker') runs this for its RESULT. The run itself
+         touches only the session's datasets, but 'state' would let the program draw and change the session, and a program's calls are only as
+         private as the lane they came from — so a worker's program keeps 'read' and may call only what the worker itself may (K.classifyCapability:
+         that rule, not a copy). The dropped grant is said in the result. */
+      const worker = !!dctx && dctx.source === 'atlas-worker';
+      const grants = worker ? asked.filter((g) => g === 'read') : asked;
+      const workerForbid = (cap) => (worker && typeof K.classifyCapability === 'function' && K.classifyCapability(cap && cap.id) !== 'read') ? "a worker's program calls only what the worker may run (it changes nothing the reader sees)" : null;
       let h = null;
       if (grants.length) {
         if (typeof K.programBridge !== 'function') return R(false, warn(esc(L('The capability bridge is not available here.', '能力ブリッジはここでは使えません。'))));
         const readDataset = (id) => C.readDataset(id);
         h = K.programBridge({ turn: dctx || {}, grants: grants, readDataset: readDataset,
-          forbid: (cap) => (cap && cap.id === 'compute.run') ? 'a program does not start another program (one interpreter per run)' : null });
+          forbid: (cap) => (cap && cap.id === 'compute.run') ? 'a program does not start another program (one interpreter per run)' : workerForbid(cap) });
       }
       let r;
       try { r = await C.run(a, { bridge: h }); }
@@ -77,6 +84,7 @@ export default [
       const meta = { compute: { ok: r.ok, why: r.why || null, observed: r.observed, detail: r.detail || null, datasets: r.datasets || [], values: r.values || {},
         packages: r.packages || [], runtime: r.runtime, python: r.python || null, timings: r.timings || null, elapsedMs: r.elapsedMs, codeSha256: r.codeSha256 || null,
         bridge: r.bridge || null, reused: r.reused === true } };
+      if (worker && asked.length !== grants.length) meta.compute.grantsDropped = asked.filter((g) => grants.indexOf(g) < 0);
       if (!r.ok) {
         const detail = r.detail == null ? '' : (typeof r.detail === 'string' ? r.detail : JSON.stringify(r.detail));
         const head = r.observed === false
@@ -110,8 +118,9 @@ export default [
       if (!parts.length) parts.push('<div>' + esc(L('The code ran and bound no `result`.', 'コードは実行されましたが、`result` は作られませんでした。')) + '</div>');
       const html = '<div class="atlas-gis-result"><b>' + esc(r.reused ? L('Same code on the same data — answered from the earlier run (nothing was recomputed)', '同じコードと同じデータのため、前回の結果を返しました（再計算していません）') : L('Calculation finished', '計算が完了しました')) + '</b>' + parts.join('') + streams + '</div>';
       /* (exec-platform) the run's program and the history of its capability calls are filed in the OPEN work, if there is one (js/atlas-job-products.js) */
+      /* (worker-reach) not for a worker's run: the open work is the reader's, and what a worker made reaches it through the parent that delegated */
       let filed = [];
-      try { const WS = await import('./atlas-work-store.js'); if (WS.WORK_STATE.current) { const W = await import('./atlas-cap-work.js'); const P = await import('./atlas-job-products.js'); const fr = await P.fileRunToWork(r, a, W.workStore(), WS.WORK_STATE.current); filed = fr.ok ? fr.saved : []; } } catch (_) { filed = []; }
+      if (!worker) try { const WS = await import('./atlas-work-store.js'); if (WS.WORK_STATE.current) { const W = await import('./atlas-cap-work.js'); const P = await import('./atlas-job-products.js'); const fr = await P.fileRunToWork(r, a, W.workStore(), WS.WORK_STATE.current); filed = fr.ok ? fr.saved : []; } } catch (_) { filed = []; }
       if (filed.length) meta.compute.filed = filed;
       return R(true, html, { meta: meta });
     },

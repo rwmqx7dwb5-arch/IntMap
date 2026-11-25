@@ -56,12 +56,27 @@ export function normaliseContract(c) {
   const tools = Array.from(new Set((Array.isArray(c.tools) ? c.tools : []).map((x) => s(x, 80)).filter(Boolean)));   /* no count: a grant is every id the parent named (each is still held to read-only by the executor) */
   /* (model-options) the model THIS piece asks to run on — one of the ids the server offers (policy.models); absent = the server's configured tier. The server decides whether it is offered. */
   const model = s(c.model, 80);
-  return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null, model ? { model } : null) };
+  /* (worker-reach) THE IMAGES THIS WORKER IS TO SEE, by the names the parent already holds them under: an attachment of the reader's
+     (the name the attachment ledger gives it — js/atlas-attach-log.js) or IMAGE_VIEW for the map frames the parent captured this turn.
+     Which names resolve, and to what, is the executor's (js/atlas-delegate.js resolveTaskImages); no count — every name is kept. */
+  const images = Array.from(new Set((Array.isArray(c.images) ? c.images : []).map((x) => s(x, 200)).filter(Boolean)));
+  /* (worker-reach) THE MOST THIS WORKER MAY WRITE IN ONE ANSWER, in output tokens, when the parent states it — handed to ai-proxy as
+     maxOutputHint, which raises the task's budget up to the model's documented ceiling and never below the task's own (tasks/spec.ts
+     hintedMaxOutput). Absent = the task's budget (tasks/atlas_delegate.ts). Anything that is not a positive whole number is not a size. */
+  const maxOutput = Number.isInteger(c.maxOutput) && c.maxOutput > 0 ? c.maxOutput : 0;
+  return { ok: true, contract: Object.assign({ id: s(c.id, 64), kind, goal, returns: s(c.returns, 600), inputs }, tools.length ? { tools } : null, model ? { model } : null, images.length ? { images } : null, maxOutput ? { maxOutput } : null) };
 }
 
-/* the identity of a piece of work: what it is asked to do and from what — not the id it was given */
+/* (worker-reach) the name a contract's `images` uses for the map frames the parent captured in this turn (view.inspect) */
+export const IMAGE_VIEW = '@view';
+
+/* the identity of a piece of work: what it is asked to do and from what — not the id it was given. What it is shown (`images`) and how
+   much it may write (`maxOutput`) are part of it — the same goal asked again with a larger budget after a cut-off answer must run again,
+   not be answered from the cut one — and are appended only when present, so every contract without them keeps the key it always had. */
 export function contractKey(c) {
-  return stable([c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null, (c.tools || []).slice().sort(), c.model || '']);
+  const k = [c.kind || 'worker', c.goal, c.returns, (c.inputs || []).map((i) => i.from).sort(), c.capability || '', c.args || null, (c.tools || []).slice().sort(), c.model || ''];
+  if ((c.images && c.images.length) || c.maxOutput) k.push((c.images || []).slice(), c.maxOutput || 0);
+  return stable(k);
 }
 
 /* cycleMembers(contracts) → Set of the INDICES whose inputs lead back to themselves. `contracts` are normalised contracts
@@ -98,6 +113,7 @@ export function workerSystem(persona) {
   'Do only the piece you are given. Use the web search tool when it is attached to find and verify current facts; prefer primary and official sources.',
   'Never invent a fact, a figure, a date, a source or a coordinate. Give coordinates only when you know them (a well-known city, port, strait or facility); otherwise leave them out and name the place.',
   'Write in the language the piece is written in.',
+  'When you may call IntMap capabilities, put every call that does not need another call\'s answer in the SAME request: they are run together and all their answers come back in your next request. Make a call wait for a later request only when its arguments depend on an answer you do not have yet.',
   'You return EVIDENCE, not a conclusion: Atlas weighs what you found against what the other workers found and decides; a verdict of yours would decide for it. Quote rather than paraphrase, and report what you looked for and did not find as plainly as what you found.',
   'Return ONE JSON object and nothing else: {"summary": string (what you did — what you looked for, where, and what came back; NOT an answer to the question), "findings": [{"claim": string (what the source states, as it states it), "source": string (the URL; the outlet or publication when there is no URL; or the id of the IntMap capability you called), "excerpt": string (the source\'s own words, verbatim, or the raw values the capability returned — the part the claim rests on), "date"?: string (the date the source gives), "place"?: string, "lat"?: number, "lon"?: number, "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "notFound": [{"looked": string (what you looked for), "where": string (the searches, sites or capabilities you looked in)}] (what you looked for and did not find), "gaps": [string] (what you could not establish, and why), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string, "scope"?: "admin-area"|"metro-area"|"radius"|"grid-cell"|"point"|"facility"|"company"|"global" (what the figure is a measurement OF), "basis"?: "present-day"|"as-of-time" (the borders it was counted in), "period"?: {"from": string, "to": string} (the span a total covers), "aggregation"?: "sum"|"mean"|"median"|"min"|"max"}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does; state scope, basis, period and aggregation ONLY when the source says them: two figures that differ are only a disagreement if they measure the same thing, and a field you leave out is reported as not stated, not as equal)}. A finding without both "source" and "excerpt" is your own statement, and Atlas is told it carries no evidence.',
 ].join('\n');
@@ -176,6 +192,10 @@ export function planJob(contracts, o) {
     if (nc.contract.kind === 'capability' && !runnable(nc.contract.capability) && !parkable(nc.contract.capability)) return { ok: false, error: 'capability_unsupported_on_server', at: i };
     /* a worker's granted tools are run by the same lane: one the runner has no twin of is refused by name here, not found missing in the middle of a model loop */
     if (nc.contract.kind === 'worker' && (nc.contract.tools || []).some((t) => !runnable(t))) return { ok: false, error: 'capability_unsupported_on_server', at: i };
+    /* (worker-reach) what a runner does not carry to its model is refused by name, not dropped: the page's attachments and map frames
+       are not on a server, and a runner hands `maxOutput` on only when it says so (`o.images` / `o.maxOutput`) */
+    if (nc.contract.kind === 'worker' && nc.contract.images && !(o && o.images === true)) return { ok: false, error: 'images_unsupported_on_server', at: i };
+    if (nc.contract.kind === 'worker' && nc.contract.maxOutput && !(o && o.maxOutput === true)) return { ok: false, error: 'output_size_unsupported_on_server', at: i };
     norm.push(nc.contract);
   }
   const ids = new Set();
