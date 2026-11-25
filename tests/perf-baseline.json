@@ -9,7 +9,7 @@
     "cssGzip": 65461
   },
   "async": {
-    "raw": 15833747,
+    "raw": 15920794,
     "gzip": 5417477,
     "chunks": {
       "account-data": 7346,
