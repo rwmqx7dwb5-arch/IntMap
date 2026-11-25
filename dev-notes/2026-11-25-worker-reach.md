@@ -38,3 +38,9 @@ Python 計算（`compute.run`）・予測モデル（`model.run`）・データ�
 
 新規 `tests/worker-reach-lane-checks.test.mjs`（7）・`tests/worker-reach-exec-checks.test.mjs`（9）。既存 4 件を新しい判定に合わせた
 （facets ③⑤・delegation-wiring ⑨・jobs-atlas の形）。関連 394 件緑、check:static / capabilities / catalog / types / docs 緑。
+
+## 費用が上がったもの
+
+- 遅延チャンクの合計 `async.raw` 15,833,747 → 15,920,794 バイト（`tests/perf-baseline.json`）。委譲の説明・子の能力の判定と
+  同時呼び出し・画像の受け渡しの分。値は PR の CI がマージ後の木で測った 15,547.6 kB（#1418）の丸めの上限で、#1417 と #1418 に同じ値を置く
+  （後から merge される方が前の方の値に負けないように）。
