@@ -320,6 +320,7 @@ test('R628 the three new document rules actually go red', { timeout: 900_000 }, 
       const r = withBroken([{
         file: '.github/workflows/ci.yml', why: 'the step that runs a shard of the declared gates',
         from: 'run: node scripts/ci-gates.mjs --shard', to: 'run: echo skipped --shard',
+        all: true,   // (ci-critical-path) two jobs invoke the planner now (gates, gates-build): cut every caller
       }], () => only('gate-callers'));
       assert.equal(r.code, 1, 'a gate nobody runs was accepted');
       assert.match(r.out, /check:bordercoast/, 'the report does not name the orphan gate');
