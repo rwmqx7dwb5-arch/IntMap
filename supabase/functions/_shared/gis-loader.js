@@ -1,5 +1,5 @@
 // ============================================================================
-//  IntMap · mcp-server/gis-loader.js — the SAME GIS the page and Atlas use, assembled with no screen
+//  IntMap · _shared/gis-loader.js — the SAME GIS the page and Atlas use, assembled with no screen
 // ----------------------------------------------------------------------------
 //  js/gis-core.js makeGisRuntime() (docs/GIS-CORE.md §5.8) — not a second implementation. js/geodesy.js is a
 //  classic script that writes onto `window`, so `window` is made a plain object FIRST and handed to the runtime

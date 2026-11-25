@@ -260,10 +260,19 @@ export function makeAtlasCatalogText(HOST, CTX) {
     /* text(ids) — null/undefined means EVERY block, in order: the #R311 prompt, unchanged.
        An id set returns only the blocks that document one of them, still in order, so the
        planner never sees the catalogue in a different shape depending on what was asked. */
-    API.text = function (ids) {
+    /* text(ids, {exact:true}) — (atlas-context-diet) the same blocks, but each one reduced to its heading plus the fragments of the ASKED
+       capabilities only. A block documents up to thirty-four capabilities; a search that matched two of them used to hand back all
+       thirty-four's prose (measured: 9 matches → 76,959 characters, 59 matches → 147,626). Nothing the asked capabilities say is left
+       out — a capability documented by its block's heading alone keeps the heading — and the neighbours are named by `siblings(ids)`,
+       so they are one call away, not gone. */
+    API.text = function (ids, opts) {
       if (!ids) return blocks().map(function (b) { return b.t; }).join('');
       var want = Object.create(null);
       (Array.isArray(ids) ? ids : [ids]).forEach(function (i) { want[i] = 1; });
+      if (opts && opts.exact) {
+        return blocks().filter(function (b) { return b.ids.some(function (i) { return want[i]; }); })
+          .map(function (b) { return b.head + b.frags.filter(function (f) { return want[f.id]; }).map(function (f) { return f.t; }).join(''); }).join('');
+      }
       return blocks().filter(function (b) { return b.ids.some(function (i) { return want[i]; }); })
         .map(function (b) { return b.t; }).join('');
     };
@@ -278,6 +287,16 @@ export function makeAtlasCatalogText(HOST, CTX) {
         return (cut > 0 && cut < 80 ? t.slice(0, cut) : t.slice(0, 80)).trim();
       }
       return '';
+    };
+    /* siblings(ids) — the capabilities that share a block with the asked ones and were therefore left out of an exact reading */
+    API.siblings = function (ids) {
+      var want = Object.create(null), out = [];
+      (Array.isArray(ids) ? ids : [ids]).forEach(function (i) { want[i] = 1; });
+      blocks().forEach(function (b) {
+        if (!b.ids.some(function (i) { return want[i]; })) return;
+        b.ids.forEach(function (i) { if (!want[i] && out.indexOf(i) < 0) out.push(i); });
+      });
+      return out;
     };
     API.bytes = function (ids) { return API.text(ids).length; };
     return API;

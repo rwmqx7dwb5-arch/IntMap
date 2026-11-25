@@ -81,3 +81,21 @@ test('⑤ headings are in proportion to the sentence under them', () => {
   assert.ok(size('atl-h1') <= 1.4 && size('atl-h2') <= 1.25 && size('atl-h3') <= 1.15 && size('atl-hb') <= 1.1);
   assert.match(css, /\.atl-a\{color:inherit;/, 'prose links do not shout in the accent colour');
 });
+
+test('⑥ an artifact button never carries a raw capability id; the source card stands above a floating window', () => {
+  const c = core();
+  const arts = c.artifacts([{ ok: true, drew: [{ kind: 'map.compose', surfaces: ['s1'] }, { kind: 'map.compose', surfaces: ['s2'] }] }]);
+  assert.deepEqual(arts.map((a) => a.label), ['Shape 1', 'Shape 2']);
+  const src = readFileSync(new URL('../js/atlas-answer-sources.js', import.meta.url), 'utf8');
+  assert.match(src, /\.atl-scard\{[^}]*z-index:var\(--z-toast\)/, 'above the front window (2650), as a toast is');
+});
+
+test('⑦ a plain kind keeps its name; only a dotted capability id becomes 「Shape N」; host labels are read without a backtracking pattern', () => {
+  const c = core();
+  assert.equal(c.artifacts([{ ok: true, drew: [{ kind: 'route', surfaces: ['s'] }] }])[0].label, 'route');
+  const t0 = Date.now();
+  c.chipSources(md('([' + 'aa.'.repeat(5000) + '!](https://x.com/a))'));
+  assert.ok(Date.now() - t0 < 1000, 'no exponential backtracking');
+  assert.equal(c.chipSources(md('([a.co](https://a.co/x))')).sources.length, 1);
+  assert.equal(c.chipSources(md('([not a host](https://a.co/x))')).sources.length, 0);
+});
