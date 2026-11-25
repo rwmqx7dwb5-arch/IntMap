@@ -34,7 +34,7 @@ import { makeAtlasEvidence } from './atlas-evidence.js';
    ten minutes of one conversation, while a search's answer can (news) and so lives shorter. Expires: when the journal's per-call
    timings (web_searches, latency_ms) show a repeat inside these windows that the reader needed fresh — then the kind that was wrong
    is changed here, the one place. */
-export const TTL = Object.freeze({ page: 10 * 60e3, render: 10 * 60e3, search: 5 * 60e3, cited: 60 * 60e3 });
+const TTL = Object.freeze({ page: 10 * 60e3, render: 10 * 60e3, search: 5 * 60e3, cited: 60 * 60e3 });
 const MAX_ENTRIES = 300;   /* memory only (a record holds one page snapshot, a few KB to ~30 KB); least recently used goes first */
 const MAX_TEXT_CHARS = 24000;   /* what read() may hand back at most — web.browse's own textChars ceiling (js/atlas-cap-web.js) */
 
