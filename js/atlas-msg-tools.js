@@ -188,7 +188,7 @@ export function makeMsgTools(CTX){
         const menu=document.createElement('div'); menu.className='atl-pressmenu'; menu.setAttribute('role','menu');
         menu.setAttribute('aria-label',L('Message actions','メッセージの操作','Nachrichtenaktionen','Действия с сообщением','Acciones del mensaje'));
         btns.forEach((orig,i)=>{ const it=document.createElement('button'); it.type='button'; it.setAttribute('role','menuitem');
-          const lab=orig.querySelector('span'); it.innerHTML=(lab?'<span>'+esc(lab.textContent)+'</span>':'')+(orig.querySelector('svg')?orig.querySelector('svg').outerHTML:'');
+          const lab=orig.querySelector('span'), ic=orig.querySelector('svg'); if(lab){ const sp=document.createElement('span'); sp.textContent=lab.textContent; it.appendChild(sp); } if(ic) it.appendChild(ic.cloneNode(true));
           it.onclick=(e)=>{ e.stopPropagation(); try{ orig.click(); }catch(_){}
             if(i===0&&btns.length>1){ const sp=it.querySelector('span'); if(sp) sp.textContent='✓'; setTimeout(_pmClose,550); } else _pmClose(); };
           menu.appendChild(it); });
