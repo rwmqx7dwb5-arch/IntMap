@@ -2,6 +2,7 @@
 title: Web 検索・取得を「検索と解釈を分けた共有の証拠ストア」に——同じ取得は 1 回・独立した検索は同時・証拠は参照 ID で読み直す
 date: 2026-11-26
 newsen: Atlas now keeps what it has already read or searched on the web for the session, shares it with the AI workers it delegates to, runs several searches at once, and can re-read any of it by reference.
+pr: 1433
 newsjp: Atlas が調べたページ・検索結果をセッション内で覚え、委譲した作業者と共有し、複数の検索を同時に走らせ、取得済みの内容を参照 ID で読み直せるようにしました。
 ---
 
