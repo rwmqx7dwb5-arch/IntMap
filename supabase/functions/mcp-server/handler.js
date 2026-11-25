@@ -45,6 +45,7 @@
 // ============================================================================
 
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
+import { HeadlessError, makeHeadlessGis, toFeatures } from "../_shared/gis-headless.js";
 
 export const STATELESS_VERSIONS = ["2026-07-28"];
 export const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];   /* the initialize-based dialect */
@@ -184,13 +185,6 @@ export function parseAsOf(s) {
   return Number.isFinite(t) ? { ok: true, ms: t } : { ok: false };
 }
 
-function toFeatures(x) {
-  if (Array.isArray(x)) return x;
-  if (isObj(x) && x.type === "FeatureCollection" && Array.isArray(x.features)) return x.features;
-  if (isObj(x) && x.type === "Feature") return [x];
-  return null;
-}
-
 class ToolError extends Error { constructor(code, detail) { super(code); this.code = code; this.detail = detail; } }
 
 /* the world-graph door: rows as the database states them (they carry their own sources) */
@@ -200,24 +194,10 @@ async function worldRpc(db, name, args) {
   return r.data;
 }
 
-/* the GIS is ONE realm per isolate (the kernels resolve each other by global name), so calls take turns and
-   each starts from an empty registry: nothing a caller sends is visible to the next. */
-function makeGate() {
-  let tail = Promise.resolve();
-  return (fn) => { const run = tail.then(fn, fn); tail = run.then(() => {}, () => {}); return run; };
-}
-
 export function makeTools(deps) {
-  const gate = makeGate();
-  let gisP = null;
-  const gis = () => (gisP || (gisP = Promise.resolve().then(deps.loadGis).catch((e) => { gisP = null; throw e; })));
-
-  async function opsCatalogue() {
-    const g = await gis();
-    const cat = g.flow.find();
-    /* declared as working from inline vectors: no raster output, no degree-grid-only surface */
-    return arr(cat.ops).filter((o) => o.output !== "raster" && !(arr(o.surface).length && arr(o.surface).every((s) => s === "degree-grid")));
-  }
+  /* the GIS itself — one runner shared with the durable job's data.gis twin (_shared/gis-headless.js) */
+  const headless = makeHeadlessGis({ loadGis: deps.loadGis, now: deps.now });
+  const gisOf = async (fn) => { try { return await fn(); } catch (e) { if (e instanceof HeadlessError) throw new ToolError(e.code, e.detail); throw e; } };
 
   return {
     async intmap_world_find(a) {
@@ -244,39 +224,21 @@ export function makeTools(deps) {
       });
     },
     async intmap_gis_ops() {
-      return gate(async () => wrap("intmap.gis", { ops: (await opsCatalogue()).map((o) => ({ id: o.id, inputs: o.inputs, accepts: o.accepts, output: o.output, params: o.params })) }));
+      return gisOf(async () => wrap("intmap.gis", { ops: await headless.ops() }));
     },
     async intmap_gis_run(a) {
       const sets = a.inputs.map(toFeatures);
       if (sets.some((s) => !s)) throw new ToolError("bad_input", "each input must be a FeatureCollection, a Feature or an array of Features");
       if (sets.reduce((n, s) => n + s.length, 0) > MAX_FEATURES) throw new ToolError("too_many_features", "at most " + MAX_FEATURES);
-      return gate(async () => {
-        const g = await gis();
-        const op = (await opsCatalogue()).find((o) => o.id === a.op);
-        if (!op) throw new ToolError("unknown_op", "see intmap_gis_ops");
-        if (sets.length !== op.inputs) throw new ToolError("wrong_input_count", op.id + " takes " + op.inputs + " input(s)");
-        g.data.clear();
-        try {
-          const ids = sets.map((features, i) => {
-            const id = "in" + (i + 1);
-            const added = g.data.add({ id, title: id, features, provenance: { kind: "import", file: "mcp-input", format: "geojson", readAt: deps.now() } });
-            if (added && added.ok === false) throw new ToolError("bad_input", String(added.why || "input refused"));
-            return id;
-          });
-          await g.geometry.ready();
-          const r = await g.flow.run({ op: op.id, inputs: ids, params: isObj(a.params) ? a.params : {} });
-          if (!r || !r.ok) throw new ToolError("op_refused", String((r && r.why) || "refused"));
-          const ds = g.data.get(r.dataset.id);
-          const feats = arr(ds && (typeof ds.features === "function" ? ds.features() : ds.features)); /* js/gis-project.js reads the body the same way: rec.features() */
-          const manifest = await g.flow.account(r.dataset.id);
-          return wrap("intmap.gis", {
-            op: op.id,
-            count: feats.length,
-            truncated: feats.length > MAX_FEATURES,
-            result: { type: "FeatureCollection", features: feats.slice(0, MAX_FEATURES) },
-            manifest,
-          });
-        } finally { try { g.data.clear(); } catch (_) { /* the next call clears again */ } }
+      return gisOf(async () => {
+        const r = await headless.run({ op: a.op, inputs: sets, params: a.params });
+        return wrap("intmap.gis", {
+          op: r.op,
+          count: r.features.length,
+          truncated: r.features.length > MAX_FEATURES,
+          result: { type: "FeatureCollection", features: r.features.slice(0, MAX_FEATURES) },
+          manifest: r.manifest,
+        });
       });
     },
   };
