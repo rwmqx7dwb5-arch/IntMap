@@ -945,7 +945,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5   # ci-job-timeouts: one tiny upload
     needs: [static, checks-gate, browser-gate]
-    if: ${{ github.event_name == 'pull_request' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
