@@ -363,3 +363,14 @@ test('atlas-stream-replay ⑥ CONSTITUTION §5: no limit moved, and the retry he
   const body = fn.slice(serveAt);
   assert.ok(body.indexOf('awaitAnswer(db, user.id, turnId, replayHdr)') < body.indexOf('openTurn(db, account'), 'a replay must not reach the turn door (it is neither a charge nor a call of the turn)');
 });
+
+test('atlas-delegation-efficiency ⑤ a worker asks for the stream window and keeps its OWN replay key (the header), minting none', async () => {
+  const { IM, calls } = await core(() => json(ANSWER()));
+  await IM.askAIJSONEnvelope('p', 'sys', [], { task: 'atlas_delegate', webMode: 'auto', turnId: 't1~a', parentTurnId: 't1', replayKey: 'rWORKERKEY12345', stream: { onEvent() {} } });
+  assert.equal(calls[0].body.stream, true, 'a worker is answered as a stream: the window a streamed answer gets');
+  assert.equal(calls[0].body.replayKey, undefined, 'no key is minted over the one the request is identified by');
+  assert.equal(calls[0].headers['x-intmap-replay'], 'rWORKERKEY12345');
+  const plain = await core(() => json(ANSWER()));
+  await plain.IM.askAIJSONEnvelope('p', 'sys', [], { task: 'atlas_delegate', webMode: 'auto', turnId: 't1~a', parentTurnId: 't1' });
+  assert.equal(plain.calls[0].body.stream, undefined, 'a caller that does not ask is answered as before');
+});

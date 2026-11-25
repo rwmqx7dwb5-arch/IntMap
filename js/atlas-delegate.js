@@ -636,7 +636,8 @@ export function makeWorkerExecutor(o) {
       calls += 1;
       try {
         env = await ask(prompt, WORKER_SYSTEM, imgs, { task: 'atlas_delegate', webMode, turnId: childKey, parentTurnId: parentTurn, modelHint: task.model || undefined, signal: controller.signal,
-          maxOutputHint: task.maxOutput || undefined,   /* (worker-reach) the size the parent stated; absent → the task's own budget (ai-proxy clamps it to the model's ceiling) */
+          maxOutputHint: task.maxOutput || undefined,
+          stream: { onEvent() { /* nothing is shown for a worker; the stream is for the window it is answered in (ai-proxy ask.ts streamWanted) */ } },   /* (worker-reach) the size the parent stated; absent → the task's own budget (ai-proxy clamps it to the model's ceiling) */
           /* the key is the REQUEST's identity — what is asked and how (prompt + web mode), under this child's turn key. A duplicate of THIS
              request (the same delegation resumed by another executor) is answered with the first's answer instead of being run again;
              a different request — the repair, the retry, or another research.delegate call that reused the id "task1" in the same turn —

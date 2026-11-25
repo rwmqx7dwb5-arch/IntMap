@@ -379,6 +379,10 @@ export function aiCore(HOST){
         if(opts.stream&&typeof opts.stream.onEvent==='function'){ body.stream=true;
           /* (atlas-stream-replay) …and the key its answer is held under, so a retry after a broken stream receives that answer instead of a new one */
           body.replayKey=aiNewReplayKey(); } }
+      /* (atlas-delegation-efficiency) a WORKER asks to be answered as a stream: not to show anything — to be inside the window a streamed answer gets
+         (ai-proxy ask.ts streamWanted). Its replay key stays the header one js/atlas-delegate.js states (a duplicate of THIS request is answered from the first),
+         so none is minted here. */
+      if(opts.parentTurnId&&opts.stream&&typeof opts.stream.onEvent==='function'&&!body.stream) body.stream=true;
       /* ══ (#R318) THE TURN KEY — ONE USER REQUEST, ONE USE ══════════════════════════════════════
          Atlas finishes one question with up to three calls: the planner, then up to two bounded
          repairs (or, for an image, the read and its self-check re-read). Every one of them used to

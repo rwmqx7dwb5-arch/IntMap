@@ -24,6 +24,21 @@ const door = webBrowseDoor;   /* the one instance lives in js/web-browse.js (a c
 const safeUrl = (u) => window.IntMapSafe.url(u);   /* the one read of the global in this file (one edge, not one per capability) */
 const host = (u) => { try { return new URL(u).host; } catch (_) { return ''; } };
 
+/* (atlas-delegation-efficiency) A FILE THAT DOWNLOADED BUT IS NOT A DATASET IS STILL READ. The door's bytes were in hand and were dropped the moment
+   the dataset reader said no, so Atlas was told 'unreadable' about a file it had in its hands (measured 2026-11-25: a downloaded JSON, then five more
+   addresses tried for what the first already held — one-pass-or-a-reason.md §2, the second cause: a result that is not carried back). The head of a
+   text file now rides with that answer, as untrusted as every other page text here. 6,000 = what a page snapshot carries by default
+   (supabase/functions/_shared/web-browse.js LIMITS.textChars — the same number, so a file is not given more room than a page); it expires with that value.
+   A file with a NUL in its first 2,000 characters is binary and carries nothing. */
+const FILE_EXCERPT_CHARS = 6000;
+async function textExcerpt(file) {
+  try {
+    const s = await file.text();
+    if (s.slice(0, 2000).indexOf(String.fromCharCode(0)) >= 0) return {};
+    return { excerpt: s.slice(0, FILE_EXCERPT_CHARS), excerptOf: s.length };
+  } catch (_) { return {}; }
+}
+
 export default [
   {
     row: ['web.browse',                 'browse',         'openPage,webBrowse,operatePortal,browsePortal,navigateSite,portalSearch', 'research', 'none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
@@ -184,7 +199,7 @@ export default [
       const t = await D.toDataset(d.file, a.label);
       if (!t.ok) {
         return R(false, warn(esc(L('Downloaded ', 'ダウンロードしました: ') + d.meta.name + L(', but IntMap could not read it as data (' + t.code + ').', ' が、データとして読み取れませんでした(' + t.code + ')。'))),
-          { meta: { code: 'file_unreadable' }, exec: { web: Object.assign(web, { file: d.meta, reason: t.code }) } });
+          { meta: { code: 'file_unreadable' }, exec: { web: Object.assign(web, { file: d.meta, reason: t.code }, await textExcerpt(d.file)) } });
       }
       return R(true, note(L('Added the dataset ', 'データセットを追加しました: ') + '<b>' + esc(t.label) + '</b>' + (t.rows != null ? ' — ' + t.rows + L(' rows', ' 行') : '') + ' · ' + esc(host(d.meta.url))),
         { exec: { web: Object.assign(web, { file: d.meta, dataset: { id: t.datasetId, label: t.label, format: t.format, rows: t.rows }, source: d.meta.url }) } });

@@ -114,6 +114,12 @@ export function makeAtlasPlan(opts) {
     if (last.length) {
       let worst = 'completed';
       last.forEach((o) => { if ((RANK[o.state] != null ? RANK[o.state] : 9) < RANK[worst]) worst = o.state; });
+      /* (atlas-delegation-efficiency) A STEP WHERE SOMETHING WORKED IS NOT 「failed」. The state goes back to the model on every step (promptBlock) and to the
+         reader as the checklist; 「failed」 over a step that also holds a completed call says nothing worked, which is false, and was read as «this step is
+         still undone» — the next hops tried more addresses for what an earlier call had already brought (measured 2026-11-25: one step 失敗 while the route
+         it served was drawn). The mix is 「partial」, which this vocabulary already has for exactly that, and the per-capability list beside it still names
+         which call failed. A step whose every call failed stays 「failed」. */
+      if (worst === 'failed' && last.some((o) => o.state === 'completed')) return 'partial';
       return worst;
     }
     if (live && activeThisTurn && plan && plan.current === i) return 'running';
