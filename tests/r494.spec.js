@@ -164,9 +164,21 @@ test('#4 the overflow chip reveals the sources the row could not hold', async ()
   const after = await page.evaluate(() => ({
     visible: [...document.querySelectorAll('#r494-src .atl-lc')].filter((a) => a.getClientRects().length).length,
     chip: !!document.querySelector('#r494-src .atl-lc-more'),
+    label: document.querySelector('#r494-src .atl-lc-more')?.textContent,
+    expanded: document.querySelector('#r494-src .atl-lc-more')?.getAttribute('aria-expanded'),
   }));
   expect(after.visible).toBe(9);
-  expect(after.chip).toBe(false);
+  /* since the overflow chip became a toggle (the Atlas answer polish, 2026-11-19) it stays as the way back: '−', expanded; pressing it folds the row to six again */
+  expect(after.chip).toBe(true);
+  expect(after.label).toBe('−');
+  expect(after.expanded).toBe('true');
+  await page.evaluate(() => document.querySelector('#r494-src .atl-lc-more').click());
+  const folded = await page.evaluate(() => ({
+    visible: [...document.querySelectorAll('#r494-src .atl-lc')].filter((a) => a.getClientRects().length).length,
+    chip: document.querySelector('#r494-src .atl-lc-more')?.textContent,
+  }));
+  expect(folded.visible).toBe(6);
+  expect(folded.chip).toBe('+3');
 });
 
 test('#5 nothing threw', async () => {

@@ -81,6 +81,9 @@ test.afterAll(async () => { try { await page.context().close(); } catch { /* */ 
 
 test('① a value the query returned carries [n]; a number no tool returned does not', async () => {
   expect(echoed, 'the tool result handed to the model carried a value to repeat').toBeTruthy();
+  /* the marks land with the answer's repaint, the border records with another: read after the reader's [n] is on screen, not at the instant the list is (CI's nightly
+     run read the page between the two — its own failure snapshot, taken a moment later, shows the [1] beside 6,879) */
+  await expect.poll(() => page.evaluate(() => document.querySelectorAll('#atlas-panel sup.atl-srcn a').length), { timeout: 30_000 }).toBeGreaterThan(0);
   const got = await page.evaluate(() => {
     const bub = [...document.querySelectorAll('#atlas-panel .atl-srcs')].pop().closest('.atl-b');
     const sups = [...bub.querySelectorAll('sup.atl-srcn a')].map((a) => ({ n: a.getAttribute('data-atl-srcn'), before: a.parentElement.previousSibling ? a.parentElement.previousSibling.textContent.slice(-8) : '' }));
