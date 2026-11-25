@@ -11,7 +11,7 @@
 import { makeLimiter, restRpcClient } from "../_shared/rate-limit.js";
 import { secretKey, denoEnv } from "../_shared/supabase-keys.js";
 import { makeHandler, DEFAULT_GLOBAL_PER_DAY } from "./handler.js";
-import { loadGis } from "./gis-loader.js";
+import { loadGis } from "../_shared/gis-loader.js";
 
 function ceiling(name, fallback) {
   const v = Number(Deno.env.get(name) || "");

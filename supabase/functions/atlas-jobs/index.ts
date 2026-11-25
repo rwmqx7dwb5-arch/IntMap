@@ -35,10 +35,13 @@ import { personaPrompt } from "../_shared/atlas-persona.js";
 import { workerSystem, planJob } from "../_shared/atlas-job-core.js";
 import { runJob } from "../_shared/atlas-job-runner.js";
 import { makeServerCaps } from "../_shared/atlas-server-caps.js";
+import { makeHeadlessGis } from "../_shared/gis-headless.js";
+import { loadGis } from "../_shared/gis-loader.js";
+import { fetchGeoJson } from "../_shared/gis-input-fetch.js";
 import { capClass } from "../_shared/atlas-cap-classes.js";
 import { accountFor, openTurn, LedgerUnavailable } from "../_shared/ai-ledger.js";
 import {
-  OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, priceOf, costMicros, providerFetch, bodyLength, spendCeiling,
+  OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, priceOf, outputCeilingOf, costMicros, providerFetch, bodyLength, spendCeiling,
 } from "../_shared/ai-provider.js";
 
 const cors = {
@@ -69,6 +72,16 @@ const MODEL_ID_OK = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,79}$/;
 /* output allowance of one worker request: atlas_delegate's maxOutput is 3000 (ai-proxy tasks/atlas_delegate.ts); reasoning
    tokens count against max_output_tokens, so the request leaves room for the same again. */
 const MAX_OUTPUT_TOKENS = 6000;
+/* A task's own `maxOutput` (js/atlas-job-core.js) raises the visible budget the way the page's worker does (ai-proxy spec.ts hintedMaxOutput): never below atlas_delegate's 3000,
+   up to the model's documented ceiling (outputCeilingOf; none cited → no raise). The request keeps room for the same again for reasoning, itself capped at that ceiling. */
+function outputTokens(maxOutput: unknown, model: string): number {
+  const ceil = outputCeilingOf(model);
+  const h = Math.floor(Number(maxOutput));
+  if (!Number.isFinite(h) || h <= 0) return MAX_OUTPUT_TOKENS;
+  const visible = ceil ? Math.max(3000, Math.min(h, ceil)) : 3000;
+  const total = Math.max(MAX_OUTPUT_TOKENS, visible * 2);
+  return ceil ? Math.min(total, ceil) : total;
+}
 /* what a hosted web search reads into the prompt, for the ESTIMATE only (the settle uses what the provider billed).
    Observation: ai_turns p99 input of a web turn is 345,819 tokens (config.ts TURN_COST_CAP_USD); a worker's search is a share of that. Expires with that table's numbers. */
 const WEB_READ_TOKENS = 50_000;
@@ -88,10 +101,10 @@ function modelFor(): string {
 }
 
 const money = {
-  estimate(chars: number, web: boolean) {
+  estimate(chars: number, web: boolean, maxOutput?: number) {
     const p = priceOf(modelFor());
     const inTok = Math.ceil(chars / 3) + (web ? WEB_READ_TOKENS : 0);
-    return Math.ceil(inTok * p.input + MAX_OUTPUT_TOKENS * p.output);
+    return Math.ceil(inTok * p.input + outputTokens(maxOutput, modelFor()) * p.output);
   },
   actual(usage: unknown, model: string) { return costMicros(model || modelFor(), usage, "openai"); },
 };
@@ -104,7 +117,7 @@ class ModelError extends Error {
 /* One worker request to the provider. OpenAI Responses only — the provider this project runs (AI_PROVIDER=openai); another
    provider fails the task `provider_unsupported` by name rather than running unmetered. A 403/404 model_not_found walks
    FALLBACK_CHAIN one step each, as ai-proxy does. */
-async function callModel(system: string, prompt: string, o: { web: boolean; signal?: AbortSignal }) {
+async function callModel(system: string, prompt: string, o: { web: boolean; signal?: AbortSignal; maxOutput?: number }) {
   if ((env("AI_PROVIDER") || "openai").toLowerCase() !== "openai") throw new ModelError("provider_unsupported", "Durable jobs run on the OpenAI provider only.");
   const key = env("OPENAI_API_KEY");
   if (!key) throw new ModelError("provider_unavailable", "The AI provider is not configured.", 503);
@@ -118,7 +131,7 @@ async function callModel(system: string, prompt: string, o: { web: boolean; sign
         body: JSON.stringify({
           model: chain[i], instructions: system,
           input: [{ role: "user", content: [{ type: "input_text", text: prompt }] }],
-          max_output_tokens: MAX_OUTPUT_TOKENS, reasoning: { effort: "medium" }, store: false,
+          max_output_tokens: outputTokens(o.maxOutput, chain[i]), reasoning: { effort: "medium" }, store: false,
           ...(o.web ? { tools: [{ type: "web_search" }] } : { text: { format: { type: "json_object" } } }),
         }),
       }, { ceiling: CEILING, timeoutMs: 100_000 });
@@ -167,7 +180,7 @@ async function runSlice(jobId: string | null): Promise<string> {
   let outcome = "error";
   try {
     const r = await runJob({
-      db, job, holder, callModel, money, capabilities: makeServerCaps({ db }), now: () => Date.now(), budgetMs: SLICE_MS, leaseSeconds: LEASE_S,
+      db, job, holder, callModel, money, capabilities: makeServerCaps({ db, gis: makeHeadlessGis({ loadGis, now: () => Date.now() }), fetchGeoJson }), now: () => Date.now(), budgetMs: SLICE_MS, leaseSeconds: LEASE_S,
       system: workerSystem(personaPrompt("working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers", { mode: "internal" })),
     });
     outcome = r.outcome;
@@ -206,7 +219,7 @@ async function create(req: Request, body: Record<string, unknown>): Promise<Resp
   const idem = String(body.idem || "").trim();
   if (!/^[A-Za-z0-9._:-]{1,120}$/.test(idem)) return json({ error: "bad_request", message: "idem is required (1-120 of A-Z a-z 0-9 . _ : -)." }, 400);
   const caps = makeServerCaps();
-  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], capabilityOk: (id: string) => caps.has(id), parkable: (id: string) => capClass(id) === "parkable" });
+  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], maxOutput: true, capabilityOk: (id: string) => caps.has(id), parkable: (id: string) => capClass(id) === "parkable" });
   // a refusal for a capability with no twin says what DOES have one (discovered from the lane, not written here)
   if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at, ...(plan.error === "capability_unsupported_on_server" ? { available: caps.catalogue() } : {}) }, 400);
 
