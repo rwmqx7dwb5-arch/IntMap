@@ -26,6 +26,7 @@
  * ==========================================================================*/
 
 import { makeCapabilityBridge, attachBridge, clientSource } from './cap-bridge.js';   /* (cap-bridge) a program calls capabilities through the SAME makeExecute — see openProgramBridge */
+import { hasPrefetch, startPrefetch } from './atlas-prefetch.js';   /* (atlas-orchestration-efficiency) a call's reading, started when its reply is parsed */
 import { searchSkills, readSkill, parseSkillQuery, skillReadiness, skillById } from './atlas-skills.js';   /* (atlas-skills) how-to material beside the capabilities; read a section at a time */
 
 export function makeAtlasToolSurface(deps) {
@@ -622,6 +623,15 @@ export function makeAtlasToolSurface(deps) {
       return { writes: w, reads: r };
     }
 
+    /* (atlas-orchestration-efficiency) prefetchOf(call, tools, K) — start the READING of a call whose capability registered one (js/atlas-prefetch.js). Decides nothing: it only asks the capability to begin what it would begin first anyway. */
+    function prefetchOf(call, tools, K) {
+      var name = String((call && call.name) || ''), args = (call && call.arguments) || {}, id = '', a = args;
+      if (name === 'run_capability') { id = String(args.id || ''); a = Object.assign({}, args.args || {}); }
+      else { var t = tools && tools[name]; id = (t && t.capabilityId) || ''; }
+      if (!id || !hasPrefetch(id)) return false;
+      return startPrefetch(id, a, K);
+    }
+
     /* ══ ⚠⚠⚠ (atlas-turn-engine) A VALUE THE PAGE DECIDES DOES NOT BELONG IN A DECLARATION THE PROVIDER CACHES ══
        js/atlas-console.js used to write the live layer names into set_layer's `name.enum`, rebuilding the
        tool list every turn «because the layer enum is live app state» — and ai-proxy's prompt-cache key
@@ -654,7 +664,7 @@ export function makeAtlasToolSurface(deps) {
       return { port: ch.port2, source: clientSource(), bridge: bridge, close: function () { ch.port1.close(); ch.port2.close(); } };
     }
 
-    var API = { CORE, baseTools, find, openProgramBridge, describe, actionFor, makeExecute, schemaOf, footprintOf, promotionsOf, toolNameOf, liveEnum, RESULT_TEXT_MAX };   /* the length Atlas is handed of a result's text — the console reads it to know what Atlas did NOT see (js/atlas-turn-results.js `forReader`) */
+    var API = { CORE, baseTools, find, openProgramBridge, describe, actionFor, makeExecute, schemaOf, footprintOf, prefetchOf, promotionsOf, toolNameOf, liveEnum, RESULT_TEXT_MAX };   /* the length Atlas is handed of a result's text — the console reads it to know what Atlas did NOT see (js/atlas-turn-results.js `forReader`) */
     try { window.IntMapAtlasTools = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

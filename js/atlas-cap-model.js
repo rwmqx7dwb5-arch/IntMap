@@ -11,10 +11,21 @@
 import { str, num, int, one } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
 import { MODELS, discover, RUNNERS } from './specialist-models.js';
+import { registerPrefetch, takePrefetch } from './atlas-prefetch.js';
 
 const T = IntMapLang.pickArgs();
 const nm = (m, L) => L(m.name[0], m.name[1]);
 const GRADE = { normal: T('within its recent range', '直近の水準の範囲内'), elevated: T('elevated against its recent range', '直近の水準より高い'), high: T('well above its recent range', '直近の水準を大きく上回る') };
+
+/* the reading half of model.run: where, then the external model — no pin, no camera, nothing the reader sees */
+const readerIO = (K) => ({ now: new Date(), getJSON: async (u) => { try { return await K._fetchJSON(u); } catch (_) { return null; } } });
+registerPrefetch('model.run', async (a, K) => {
+  const m = MODELS.find((x) => x.id === a.model);
+  if (!m || m.status !== 'integrated') return null;
+  const ref = (a.lat != null && a.lng != null) ? { lat: +a.lat, lng: +a.lng, name: String(a.place || '') } : (a.place ? await K.geocode(a.place) : null);
+  if (!ref) return null;
+  return { ref, r: await RUNNERS[m.run](ref, readerIO(K)) };
+});
 
 export default [
   {
@@ -55,11 +66,13 @@ export default [
       const m = MODELS.find((x) => x.id === a.model);
       if (!m) return fail(L('Unknown model «' + a.model + '». Known: ' + MODELS.map((x) => x.id).join(', ') + '. Use modelDiscover.', '「' + a.model + '」というモデルはありません。登録: ' + MODELS.map((x) => x.id).join('、') + '。modelDiscover で探してください。'), 'INVALID_INPUT');
       if (m.status !== 'integrated') return fail(L(m.name[0] + ' is not runnable: ' + m.why[0], m.name[1] + ' はまだ実行できません: ' + m.why[1]), 'NOT_INTEGRATED', 'data');
-      const ref = (a.lat != null && a.lng != null) ? { lat: +a.lat, lng: +a.lng, name: String(a.place || '') } : (a.place ? await geocode(a.place) : null);
+      /* (atlas-orchestration-efficiency) THE READING MAY ALREADY BE UNDER WAY — started when the reply was parsed (js/atlas-prefetch.js), so eight of these in one reply fetch at the same time and only the pin and the camera below take turns */
+      const early = takePrefetch('model.run', Object.fromEntries(Object.entries(a).filter(([k]) => k !== 'type')));   /* the dispatch adds `type` (the legacy name); the call as Atlas wrote it has none */
+      const got = early ? await early.catch(() => null) : null;
+      const ref = got ? got.ref : ((a.lat != null && a.lng != null) ? { lat: +a.lat, lng: +a.lng, name: String(a.place || '') } : (a.place ? await geocode(a.place) : null));
       if (!ref) return fail(L('Where? Give a place name or a latitude and longitude.', 'どこの予測ですか？場所の名前か緯度経度を指定してください。'), 'NEEDS_INPUT');
       /* K._fetchJSON already sends an Open-Meteo URL through the one guarded client (js/atlas-deadlines.js → js/wx-source.js: shared breaker, cache, the turn's deadline) — a second way to read the host would bypass it */
-      const io = { now: new Date(), getJSON: async (u) => { try { return await K._fetchJSON(u); } catch (_) { return null; } } };
-      const r = await RUNNERS[m.run](ref, io);
+      const r = (got && got.r) || await RUNNERS[m.run](ref, readerIO(K));
       const where = ref.name || a.place || (ref.lat.toFixed(3) + ', ' + ref.lng.toFixed(3));
       if (!r.ok) {
         const why = r.code === 'UPSTREAM_UNREAD' ? L(r.why, 'サービスが応答せず、何も言えません（「問題なし」ではありません）。')
