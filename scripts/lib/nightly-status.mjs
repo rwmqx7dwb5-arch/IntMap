@@ -85,7 +85,7 @@ const GENERIC = /^Process completed with exit code \d+\.?$/;
  * @param {{ [id: string]: { report: boolean|null, why: string[], step: string|null } }} details  per run, when asked
  * @returns the state, or null when there was nothing to read
  */
-export function atlasEvalState(list, details) {
+export function atlasEvalState(list, details, workflowState) {
   if (!list || !Array.isArray(list.runs)) return null;
   const done = list.runs.filter((r) => r && r.status === 'completed');
   const d = details || {};
@@ -105,6 +105,10 @@ export function atlasEvalState(list, details) {
     /* (ops-next) the newest run that uploaded the half needing no session — scripts/build-service-status.mjs reads it */
     offlineRun: withOffline ? { id: withOffline.id, at: withOffline.createdAt } : null,
     failingRuns: streak,
+    /* the workflow's own state as GitHub reports it ('active', 'disabled_manually', …) — null = not asked. A disabled
+       workflow is FROZEN by its owner (dev-notes/2026-11-19-atlas-eval-frozen.md): its last red run is history, not a defect. */
+    workflowState: typeof workflowState === 'string' ? workflowState : null,
+    frozen: typeof workflowState === 'string' && /^disabled/.test(workflowState),
     latest: latest ? {
       at: latest.createdAt, conclusion: latest.conclusion, url: latest.url || null, event: latest.event || null,
       /* null = not asked; false = asked, and the run uploaded no report — it measured nothing */
@@ -121,6 +125,8 @@ export function atlasEvalLine(s) {
   const day = (t) => String(t || '').slice(0, 10);
   const last = s.lastSuccessAt ? `最後の成功 ${day(s.lastSuccessAt)}` : `成功 0 回（全 ${s.total} 回${s.windowFrom ? `・${day(s.windowFrom)} 以降` : ''}）`;
   const L = s.latest;
+  /* a workflow its owner disabled is not failing: say it is frozen, and how to resume (it is decided by GitHub's state, not by this text) */
+  if (s.frozen) return { ok: true, text: `Atlas 夜間評価: 凍結中（workflow は ${s.workflowState}・${last}）。再開は gh workflow enable atlas-eval.yml と docs/TESTING.md「Atlas evaluation」の設定`, url: L ? L.url : null };
   if (!L) return { ok: false, text: `Atlas 夜間評価: 走った記録が無い` };
   const ok = L.conclusion === 'success';
   const head = ok ? `最新 ${day(L.at)} 緑` : `最新 ${day(L.at)} ${L.measured === false ? '評価の前に停止（何も測っていない）' : L.conclusion === 'cancelled' ? '中断' : '赤'}`;
@@ -162,7 +168,8 @@ export function fetchAtlasEval(repo, { cwd, timeoutMs = 6000, perPage = 30, deta
   const details = {};
   const done = list.runs.filter((r) => r.status === 'completed');
   for (const r of done.slice(0, detailRuns)) details[r.id] = runDetail(repo, r.id, o);
-  return atlasEvalState(list, details);
+  const wf = ghJSON(['api', `repos/${repo}/actions/workflows/${workflow}`], o);
+  return atlasEvalState(list, details, wf && typeof wf.state === 'string' ? wf.state : null);
 }
 
 function runDetail(repo, id, o) {
