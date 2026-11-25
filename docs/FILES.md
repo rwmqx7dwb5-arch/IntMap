@@ -1928,6 +1928,8 @@ atlas-job-core.js                 **契約と計画の核**——仕事の契約
 atlas-server-class.js             **永続ジョブが能力をどこで動かせるか**——能力の記録から導く 3 つの区分（`read`＝サーバの twin を持てる／`parkable`＝地図やセッションを変えるのでジョブが保存し、ページが戻ったときに適用／`page-only`）。`js/cap-bridge.js` の `effectClass` の上に立ち、手で並べた一覧を持たない。Edge Function 側の写しは `scripts/sync-atlas-cap-classes.mjs` が生成する（検査は tests/exec-platform-checks.test.mjs）
 atlas-job-products.js            **終わった永続ジョブが残すもの**——ジョブ 1 件につき作業 1 件（`wk-job-<uuid>`）を作業ストアへ。分担ごとに `answer`・統合結果を `document` として、内容が変わらなければ足さず、変われば次の版にする。作業記憶へ「ジョブが未了」（kind `job`＝ターンをまたいで残る）と終了を伝える。検査は tests/exec-platform-checks.test.mjs
 atlas-jobs-client.js              永続ジョブのページ側——`makeJobsClient`（start/list/get/cancel/amend・RLS 越しに自分の行だけ）・`jobFacts`/`jobText`・進捗カード `renderJobCard`（終わった piece から順に出す・Stop と指示欄は実行中だけ）・カードを生かす `mountJobCards`
+atlas-model-prefetch.js           `model.run` の**取得の登録**（`atlas-prefetch.js` へ）——能力モジュールは最上位の文を持てないので別ファイル
+atlas-prefetch.js                 能力の**読み取りの先行開始**——外部から取って地図へ書く能力（`model.run`）の「取得」を、返信を解釈した時点で始める（書き込みの順は変えない）
 atlas-orchestrate.js              Atlas の**オーケストレーション部品**（委譲の基盤の上に載る）——複数の結果を 1 つに読む `integrate`（重複排除・複数の子が扱った地点・戻らなかった子の状態）・`fanOut`・`verifyContract`・読み取り専用の能力を直接走らせる実行役・種別で振り分ける実行役（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
 atlas-fact-comparability.js       Atlas — 複数の子の事実を「並べてよいか」で観測する（単位・範囲・境界・期間・集計の同異、Semantic Layer の comparable()、対象の紐が期間内に変わったか）。判定はせず status も変えない。DOM なし
 atlas-fact-merge.js              Atlas — 複数の子が構造化事実（`facts`: 対象・属性・値・単位・時点・出典・Evidence id）で述べたことを、**実世界オブジェクト**と属性で突き合わせ、一致／矛盾／単独／欠落に分ける `mergeFacts`。名前→対象の解決は注入された `resolve`（セッションの世界オブジェクト索引と永続グラフ）で、名前一覧は持たない。
@@ -2258,7 +2260,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全28本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（83本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（84本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（28本。一覧と各本の役割は Architecture.md §6.2。

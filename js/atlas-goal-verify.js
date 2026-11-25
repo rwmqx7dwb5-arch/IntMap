@@ -15,6 +15,8 @@
  *  PURE: the model call is injected (`ask`), so tests drive it with scripted answers.
  * ==========================================================================*/
 
+/* the two ENDS of a long text: a request's last condition and an answer's conclusion sit at the end, which a head-only cut dropped */
+const clipEnds = (s, n) => { const t = String(s == null ? '' : s).replace(/s+/g, ' ').trim(); return t.length > 2 * n ? t.slice(0, n) + ' … [' + (t.length - 2 * n) + ' characters between are not shown] … ' + t.slice(-n) : t; };
 const clip = (s, n) => { const t = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t; };
 
 /** one line per operation the turn ran: what ran, and whether it worked — the record the reader is shown */
@@ -62,13 +64,13 @@ export function makeGoalVerify(deps) {
          A throw is «not observed»: the record goes out without the section. */
       let held = [];
       if (typeof d.observe === 'function') { try { const o = d.observe(ctx); if (Array.isArray(o)) held = o.map(String).filter(Boolean); } catch (_) { held = []; } }
-      const prompt = 'REQUEST (the reader\'s own words):\n' + clip(ctx.request, 1500)
+      const prompt = 'REQUEST (the reader\'s own words):\n' + clipEnds(ctx.request, 1500)
         + '\n\nRECORD OF THIS TURN\nAnswer mode declared: ' + (ctx.answerMode || '(none)')
         + '\nOutputs actually produced on the map or in the reply: ' + ((ctx.produced && ctx.produced.length) ? ctx.produced.join(', ') : 'none')
         + '\nOperations run:\n' + (rec.length ? rec.map((x) => '- ' + x).join('\n') : '- none')
         + (held.length ? '\n\nWHAT THE OUTPUTS ACTUALLY HOLD (counted by IntMap, not by the model):\n' + held.map((x) => '- ' + x).join('\n') : '')
         + prevSection(ctx.previous)
-        + '\n\nANSWER WRITTEN:\n' + clip(ctx.text, 1500);
+        + '\n\nANSWER WRITTEN:\n' + clipEnds(ctx.text, 1500);
       const env = await d.ask(prompt, d.system || '', null, { task: 'atlas_verify', webMode: 'off', turnId: d.turnId || undefined, signal: ctl ? ctl.signal : (d.signal || undefined) });
       const data = env && env.data;
       if (!data || !Array.isArray(data.unmet)) return null;

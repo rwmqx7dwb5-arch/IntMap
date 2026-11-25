@@ -814,6 +814,9 @@ export function makeAtlasAgent() {
       /* (job-cost-ledger) the record has its OWN wall clock: `now` is the turn's budget clock and an injected one advances on every read, so reading it for the record would spend the turn's budget */
       const wallNow = () => Date.now();
       const ledger = makeRunLedger({ now: wallNow });
+      /* (atlas-orchestration-efficiency) THE CALLS MADE AROUND THE LOOP ARE THE TURN'S CALLS. The effort-sizing call before the first step and the independent reader after the answer are model
+         calls the reader waits through; `modelCalls` said 1 for a turn that made 3. The caller passes what it already measured (opts.preCalls: [{ model, ms }]); the verifier is timed below. Cost is not reported by those two asks, so it is counted as unreported, never as zero. */
+      (Array.isArray(opts.preCalls) ? opts.preCalls : []).forEach((c) => { try { ledger.model({ model: c && c.model, ms: c && c.ms }); } catch (_) { /* a ledger that cannot take a row is not the turn's problem */ } });
       if (PLAN) { try { PLAN.beginTurn(); } catch (_) { /* a ledger never breaks the turn */ } }
       const endPlan = (how) => { if (PLAN) { try { PLAN.endTurn(how); } catch (_) { /* as above */ } } };
       const outOfTime = () => (lim.turnBudgetMs > 0) && ((now() - startedAt) >= lim.turnBudgetMs);
@@ -1006,10 +1009,12 @@ export function makeAtlasAgent() {
           if (!code && (goalVerifiedAt < 0 || results.length > goalVerifiedAt) && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
             goalVerifiedAt = results.length; goalRounds++;
             let v = null;
+            const verifyT0 = wallNow();
             try {
               v = await opts.verify({ request: lastUserText(opts.messages), text: answerHere, answerMode, produced: results.reduce((a, r) => { producedBy(r).forEach((m) => { if (a.indexOf(m) < 0) a.push(m); }); return a; }, []), results: results.slice(), previous: goalPrev, round: goalRounds,
                 plan: PLAN ? (() => { try { return PLAN.snapshot(); } catch (_) { return null; } })() : null });
             } catch (_) { v = null; }
+            try { ledger.model({ model: 'atlas_verify', ms: wallNow() - verifyT0 }); } catch (_) { /* see preCalls */ }
             const list = (v && Array.isArray(v.unmet)) ? v.unmet.filter((u) => u && String(u.need || '').trim()).map((u) => ({ kind: 'goal', need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) })) : null;
             const metList = (v && Array.isArray(v.met)) ? v.met.filter((m) => m && String(m.need || '').trim()).map((m) => ({ need: String(m.need).slice(0, 300), how: String(m.how || '').slice(0, 300) })) : [];
             trace.goalCheck = list === null ? 'unobserved' : (list.length ? 'unmet' : 'met');
@@ -1154,6 +1159,10 @@ export function makeAtlasAgent() {
           p.ends = !!((tool && tool.endsTurn) || p.fp.endsTurn);
           return p;
         });
+        /* (atlas-orchestration-efficiency) A CALL'S READING NEEDS NO TURN. A capability that can name what it will read from its arguments alone
+           (js/atlas-prefetch.js) has that reading started NOW for every live call of the reply, so the calls that must take turns to WRITE
+           (the conflict order below is unchanged) find their data already fetched or on its way. Nothing is dropped or reordered. */
+        if (typeof opts.prefetch === 'function') plans.forEach((p) => { if (p.live && p.routed && !p.planRec && !(p.ckey && doneCalls[p.ckey])) { try { opts.prefetch(p.routed); } catch (_) { /* a reading that cannot start is read when its turn comes */ } } });
         const deps = plans.map((b, j) => plans.slice(0, j).filter((a) => conflicts(a, b)).map((a) => a.i));
         const toResults = [];                 /* by call position: the records that join `results` */
         const spans = [];                     /* [start, end] per call that ran — the step's own measurement */

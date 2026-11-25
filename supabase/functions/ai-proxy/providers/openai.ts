@@ -20,6 +20,7 @@ import type { TurnReq, TurnItem } from "../turn.ts";
    whether this project is entitled to summaries is unknown until a stream asks. EXPIRES WITH THE
    ISOLATE, so an entitlement granted later is picked up without a deploy. */
 let summaryRefused = false;
+let retentionRefused = false;   /* (atlas-orchestration-efficiency) a model refused prompt_cache_retention: stop sending it from this isolate */
 
 export async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = "", meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; incompleteReason: string | null; webAttached: boolean; webUsed: boolean; webCount: number; webSources: number | null; webFailure?: string; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
   // GPT-6 models (gpt-6.2-sol / gpt-6.1-terra / gpt-6-luna) work best through the Responses API. `max_output_tokens`
@@ -59,6 +60,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
      organisation verification), so the FIRST 400 rung below drops exactly this and nothing else, and
      the isolate remembers the refusal so the next step does not pay for it again. */
   let summary = !!(turn && sink) && !summaryRefused;
+  let retention = !!turn && !retentionRefused;
   const turnInput = (): unknown[] => {
     const out: unknown[] = [];
     for (const it of placeAttachments<unknown>(turn!.items, (ch) => {
@@ -114,6 +116,14 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     if (turn && replay) {
       b.include = ["reasoning.encrypted_content"];
       if (cacheKey) b.prompt_cache_key = cacheKey;
+      /* (atlas-orchestration-efficiency) THE CACHE MUST OUTLIVE THE GAP BETWEEN TWO TURNS. Measured on production (one week to 2026-11-25): 115
+         turns and 24% of input tokens read from the cache — and 20% even in turns of two calls, where everything but the last message is
+         the same instructions and functions every turn sends. The default cache is kept in memory for minutes; at this traffic the next
+         turn arrives after it has gone. "24h" asks OpenAI to keep the prefix for a day (the Responses API's prompt_cache_retention). A
+         model that does not take it answers 400: the first rung below drops THIS field alone, once per isolate (the other optimisations
+         stay), and the answer is never lost for it. Expires: when the journal's cached_tokens (migration 20261129100000) shows the share
+         did not move — then the cause is elsewhere and this line is removed. */
+      if (retention) b.prompt_cache_retention = "24h";
     }
     return b;
   };
@@ -158,6 +168,12 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     } else {
       throw e;
     }
+  }
+  /* (atlas-orchestration-efficiency) the cache-retention field, refused by a model that does not take it: dropped alone, once per isolate */
+  if (!r.ok && r.status === 400 && retention && turn && replay && /cache_retention/i.test(await r.clone().text().catch(() => ""))) {   /* only a 400 that NAMES the field: any other refusal belongs to the rungs below, which a blind retry here would shift by one request */
+    retention = false;
+    retentionRefused = true;
+    r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools));
   }
   /* (atlas-live-stream) the rung below every other: a summary this project may not request costs one request, once per isolate */
   if (!r.ok && r.status === 400 && summary) {

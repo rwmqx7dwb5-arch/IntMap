@@ -280,7 +280,7 @@ export function makeDelegation(o) {
       entry.holder = String(executor.id || 'executor');
       note('task.lease', id, { holder: entry.holder });
       try {
-        const r = await executor.run({ id, kind: c.kind, goal: c.goal, returns: c.returns, inputs, capability: c.capability, args: runArgs, tools: c.tools, images: c.images, maxOutput: c.maxOutput }, {
+        const r = await executor.run({ id, kind: c.kind, goal: c.goal, returns: c.returns, inputs, capability: c.capability, args: runArgs, tools: c.tools, model: c.model, images: c.images, maxOutput: c.maxOutput }, {
           signal: controller.signal,
           emit: (kind, data) => note(kind, id, data),
         });
@@ -301,7 +301,7 @@ export function makeDelegation(o) {
     /* run(contracts) — start every task of a list and wait for all of them. The list is read WHOLE before anything starts:
        a task may name an input that comes later in it (it waits for that task), and a set of tasks whose inputs lead back
        to themselves is ended `input_cycle` at once instead of waiting for each other for ever. */
-    async run(contracts) {
+    async run(contracts, opts) {
       const list = Array.isArray(contracts) ? contracts : [];
       const norm = list.map((raw) => normaliseContract(raw));
       const declared = new Set();
@@ -314,8 +314,18 @@ export function makeDelegation(o) {
       const handles = list.map((raw, i) => start(raw, cyc.has(i) ? { code: 'input_cycle', summary: 'Its inputs lead back to itself through "' + (norm[i].ok ? norm[i].contract.id : '') + '".' } : undefined));
       /* a declared name no task took (its id was already in use, so it was given another) must not leave a waiter waiting */
       forward.forEach((f) => { if (!f.settled) { f.settled = true; f.resolve({ state: 'failed', code: 'input_unknown', summary: 'No task of this list took that name.', findings: [], gaps: [], sources: [] }); } });
+      /* `opts.after(result, index)` → a contract to start THE MOMENT that task ends, or null. A checker is started by this when its task
+         is done — not when the slowest task of the list is — so the time a list takes is its longest chain, not its slowest task plus its
+         slowest checker. The checkers' results come back as `results.followUps`, aligned with the list (null where none was started). */
+      const after = opts && typeof opts.after === 'function' ? opts.after : null;
+      const followed = handles.map((h, i) => (!after ? Promise.resolve(null) : h.promise.then((r) => {
+        let c = null; try { c = after(Object.assign({ reused: h.reused, resumed: h.resumed }, r), i); } catch (_) { c = null; }
+        return c ? start(c).promise : null;
+      })));
       const results = await Promise.all(handles.map((h) => h.promise));
-      return results.map((r, i) => Object.assign({ reused: handles[i].reused, resumed: handles[i].resumed }, r));
+      const out = results.map((r, i) => Object.assign({ reused: handles[i].reused, resumed: handles[i].resumed }, r));
+      if (after) { const fu = await Promise.all(followed); Object.defineProperty(out, 'followUps', { value: fu.map((r) => (r ? Object.assign({ reused: false, resumed: false }, r) : null)), enumerable: false }); }
+      return out;
     },
     cancelAll() { tasks.forEach((t) => { try { t.controller.abort(); } catch (_) { /* already ended */ } }); },
     /* stop ONE task (its dependents then end `failed`/`input_unavailable`, as for any task that did not finish) */
@@ -344,10 +354,16 @@ export function makeDelegation(o) {
    snapshot the last run wrote, and its tasks that ended done/partial are answered from it (makeDelegation `resume`).
    A different list is a different delegation: a dependent task's key names its input by id, not by what that input
    returned, so only inside the SAME list does a matching key mean the same work from the same inputs. */
-export function delegationKey(contracts) {
+/* `shown(names)` → a string naming WHAT those image names resolve to right now (see imagesShown). A contract's `images` are NAMES — `@view`
+   is "the map frames of this turn", an attachment is a file name — so the same list asked after the reader moved the map or replaced the
+   file is the same text and a different question; without what they show in the identity, the record of the old picture answered the new
+   one (measured 2026-11-25: Osaka's result returned for a Tokyo frame, `resumed:true`, one model call in all). Absent = the names alone. */
+export function delegationKey(contracts, shown) {
   const list = (Array.isArray(contracts) ? contracts : []).map((raw) => {
     const nc = normaliseContract(raw);
-    return [nc.ok ? contractKey(nc.contract) : 'invalid:' + nc.error, !!(raw && raw.verify === true)];
+    const k = nc.ok ? contractKey(nc.contract) : 'invalid:' + nc.error;
+    const seen = (nc.ok && nc.contract.images && nc.contract.images.length && typeof shown === 'function') ? String(shown(nc.contract.images) || '') : '';
+    return seen ? [k, !!(raw && raw.verify === true), seen] : [k, !!(raw && raw.verify === true)];
   });
   return 'd-' + requestKey(stable(list), 'delegation').slice(2);
 }
@@ -754,4 +770,13 @@ export function makeWorkerExecutor(o) {
       return r;
     },
   };
+}
+
+/* imagesShown(names, source) → a fingerprint of the pictures (and attachment text) those names resolve to, for delegationKey. It is the
+   resolved bytes, never a spelling: the same frame hashes the same, a moved map does not. */
+export function imagesShown(names, source) {
+  try {
+    const r = resolveTaskImages(names, source);
+    return requestKey(stable([r.urls, r.seen, r.frameText || '']), 'images').slice(2);
+  } catch (_) { return ''; }
 }
