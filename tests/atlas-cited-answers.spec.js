@@ -53,9 +53,9 @@ test.beforeAll(async ({ browser }) => {
       if (n === 1) r = { turn: 'continuing', final_text: '調べます。', calls: [
         { name: 'query_data', arguments: { from: 'volcanoes', where: [{ col: 'elevM', op: '>=', value: 6000 }], show: ['elevM'], order: { col: 'elevM', dir: 'desc' }, limit: 5 } },
         { name: 'set_time', arguments: { year: 1900 } }] };
-      else { echoed = valueFrom(body); r = { turn: 'final', final_text: '最も高い火山の標高は ' + (echoed || '?') + ' m です。参考までに ' + INVENTED + ' という数もあります。' }; }
+      else { echoed = valueFrom(body); r = { turn: 'final', final_text: '最も高い火山の標高は ' + (echoed || '?') + ' m です。参考までに ' + INVENTED + ' という数もあります。 ([apnews.com](https://apnews.com/article/a1))' }; }
       text = JSON.stringify({ turn: r.turn, final_text: r.final_text });
-      extra = { output: (r.calls || []).map((c, i) => ({ type: 'function_call', call_id: 'c' + n + '_' + i, name: c.name, arguments: JSON.stringify(c.arguments) })), meta: { protocol: 2 } };
+      extra = { citations: [{ url: 'https://apnews.com/article/a1', title: 'Ceasefire talks continue' }], output: (r.calls || []).map((c, i) => ({ type: 'function_call', call_id: 'c' + n + '_' + i, name: c.name, arguments: JSON.stringify(c.arguments) })), meta: { protocol: 2 } };
     }
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(Object.assign({ text, used: 1, limit: 100, charged: true }, extra)) });
   });
@@ -82,7 +82,7 @@ test.afterAll(async () => { try { await page.context().close(); } catch { /* */ 
 test('① a value the query returned carries [n]; a number no tool returned does not', async () => {
   expect(echoed, 'the tool result handed to the model carried a value to repeat').toBeTruthy();
   const got = await page.evaluate(() => {
-    const bub = [...document.querySelectorAll('#atlas-panel .atl-srcs')].pop().closest('[class]').parentElement;
+    const bub = [...document.querySelectorAll('#atlas-panel .atl-srcs')].pop().closest('.atl-b');
     const sups = [...bub.querySelectorAll('sup.atl-srcn a')].map((a) => ({ n: a.getAttribute('data-atl-srcn'), before: a.parentElement.previousSibling ? a.parentElement.previousSibling.textContent.slice(-8) : '' }));
     const items = [...bub.querySelectorAll('.atl-srcs-list li')].map((li) => ({ n: li.getAttribute('data-n'), kind: li.getAttribute('data-kind'), text: li.textContent }));
     return { sups, items, html: bub.innerHTML.length };
@@ -98,7 +98,7 @@ test('② the lines are the border records of 1900, each with its licence, and t
   const lines = await page.evaluate(() => [...document.querySelectorAll('#atlas-panel .atl-srcs-list li[data-kind="line"]')].map((li) => li.textContent));
   expect(lines.length).toBeGreaterThan(0);
   expect(lines.join('\n')).toMatch(/1900/);
-  expect(lines.some((t) => /CC|ODbL|licen|ライセンス|BY/.test(t)), lines.join('\n')).toBe(true);
+  expect(lines.some((t) => /CC|ODbL|GPL|licen|ライセンス|BY/.test(t)), lines.join('\n')).toBe(true);
   await page.locator('#atlas-panel .atl-srcs-btn[data-atl-line]').first().click();
   await page.waitForSelector('.bp-popup', { timeout: 20_000 });
 });
@@ -118,4 +118,25 @@ test('④ the visible credit line and the list are part of what Copy copies', as
   expect(txt).toMatch(/この回答の出典|Sources of this answer/);
   expect(txt).toMatch(/出典表記|Credit line/);
   expect(diag.pageErrors || [], 'no page errors').toEqual([]);
+});
+
+/* (atlas-answer-sources) the page the prose cites is a source chip, the background map's credit is not counted as a source, and on a phone the first press opens the card */
+test('⑤ a cited host is a chip with a card; the basemap credit is not a source; a phone press opens the card', async () => {
+  const got = await page.evaluate(() => {
+    const bub = [...document.querySelectorAll('#atlas-panel .atl-srcs')].pop().closest('.atl-b');
+    return { chips: [...bub.querySelectorAll('a.atl-sc')].map((a) => a.getAttribute('data-host')), blue: bub.querySelectorAll('.atl-md a.atl-a').length,
+      sum: bub.querySelector('details.atl-srcs > summary').textContent, mapRows: bub.querySelectorAll('.atl-srcs-list li[data-kind="map"]').length,
+      h2: (() => { const h = bub.querySelector('h2.atl-h2'); return h ? parseFloat(getComputedStyle(h).fontSize) / parseFloat(getComputedStyle(bub.querySelector('.atl-md')).fontSize) : 0; })() };
+  });
+  expect(got.chips).toContain('apnews.com');
+  expect(got.blue, 'prose carries no blue link for a host').toBe(0);
+  expect(got.mapRows, 'no background credit is a row of the sources list').toBe(0);
+  await page.setViewportSize({ width: 390, height: 780 });
+  await page.locator('#atlas-panel a.atl-sc').first().scrollIntoViewIfNeeded();
+  await page.locator('#atlas-panel a.atl-sc').first().hover();
+  await expect(page.locator('.atl-scard')).toBeVisible();
+  await expect(page.locator('.atl-scard .atl-scard-open')).toHaveAttribute('href', 'https://apnews.com/article/a1');
+  const card = await page.locator('.atl-scard').boundingBox();
+  expect(card.x).toBeGreaterThanOrEqual(0);
+  expect(card.x + card.width).toBeLessThanOrEqual(390);
 });

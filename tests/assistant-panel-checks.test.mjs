@@ -30,8 +30,8 @@ test('R152 #3 Atlas typography — size + spacing hierarchy, NO fabricated headi
   // (#R154) the opening-sentence→bold-lead fabrication was the "テキストを大きくする箇所がおかしい／判定がおかしい" cause — REMOVED
   assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'R154: opening sentence is NOT promoted to a bold lead (no wrong enlargement)');
   // (#R158) hierarchy strengthened (bigger jumps + stronger neutral divider) — still no colour, no fabricated headings
-  assert.match(html, /font-size:1\.9em;letter-spacing:\.012em/, 'h1 (1.9em, R158)');
-  assert.match(html, /font-size:1\.56em;line-height:1\.25;letter-spacing:\.006em/, 'h2 (1.56em, R158)');
+  assert.match(html, /font-size:1\.32em;letter-spacing:\.01em/, 'h1 (1.32em)');
+  assert.match(html, /font-size:1\.2em;line-height:1\.35;letter-spacing:\.006em/, 'h2 (1.2em)');
   /* (#R494) the same 1.5em rhythm, declared once on the paragraph instead of emitted as an empty div */
   assert.match(html, /\.atl-p\{margin:0 0 1\.5em;/, 'generous paragraph gap (1.5em, R158)');
 });
@@ -67,7 +67,7 @@ test('R154 #2 Atlas typography — size/spacing only, no colour, no fabricated h
   assert.ok(!/color:var\(--primary-color\);margin:1\.\d+em 0 [^;]*;font-size:1\.\d/.test(html), 'no heading rule uses --primary-color');
   /* (#R494) the heading style is a CSS rule on real <h1>…<h6> now; weight and colour — what this
      line exists for — are stated once, for every level, instead of three times for three of them */
-  assert.match(html, /\.atl-h\{font-weight:600;color:var\(--text-main\);/, 'h3 heading is text-main (R159 weight 600 — no bold, no colour)');
+  assert.match(html, /\.atl-h\{font-weight:560;color:var\(--text-main\);/, 'h3 heading is text-main (R159 weight 600 — no bold, no colour)');
   assert.ok(!/out\.push\('## '\+label\)/.test(html), 'no "Label:"→## fabrication');
   assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'no opening-sentence→bold-lead fabrication');
   assert.match(html, /NO MORE HEADING FABRICATION/, '_atlStanza documents the removal of guesswork');

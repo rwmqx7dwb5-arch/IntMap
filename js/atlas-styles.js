@@ -185,18 +185,18 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'.atl-p{margin:0 0 1.5em;text-wrap:pretty;}'                                 /* (#R158) the paragraph rhythm, unchanged in value */
       +'.atl-ps{margin-bottom:.82em;}'                                              /* (#R150) sentence-end + single newline = a softer gap */
       +'.atl-p:last-child{margin-bottom:0;}'
-      +'.atl-h{font-weight:600;color:var(--text-main);text-wrap:balance;}'          /* (#R494) balance: a two-line heading no longer leaves one orphan word */
-      +'.atl-h1{font-size:1.9em;letter-spacing:.012em;line-height:1.2;margin:1.1em 0 .4em;}'
-      +'.atl-h2{font-size:1.56em;line-height:1.25;letter-spacing:.006em;margin:1.3em 0 .38em;}'
-      +'.atl-h3{font-size:1.3em;line-height:1.3;letter-spacing:.004em;margin:1.05em 0 .3em;}'
+      +'.atl-h{font-weight:560;color:var(--text-main);text-wrap:balance;}'          /* (#R494) balance: a two-line heading no longer leaves one orphan word */
+      +'.atl-h1{font-size:1.32em;letter-spacing:.01em;line-height:1.3;margin:1.3em 0 .6em;}'
+      +'.atl-h2{font-size:1.2em;line-height:1.35;letter-spacing:.006em;margin:1.35em 0 .6em;}'
+      +'.atl-h3{font-size:1.1em;line-height:1.4;letter-spacing:.004em;margin:1.2em 0 .5em;}'
       /* (#R494) H4–H6 were all 1.3em — the same size as H3 and as each other, so a reply that nested
          three levels deep rendered as one level three times. They are a real ladder now. */
-      +'.atl-h4{font-size:1.14em;line-height:1.35;letter-spacing:.002em;margin:1.0em 0 .28em;}'
+      +'.atl-h4{font-size:1.04em;line-height:1.4;letter-spacing:.002em;margin:1.1em 0 .45em;}'
       +'.atl-h5{font-size:1.02em;line-height:1.4;letter-spacing:.012em;margin:.95em 0 .25em;}'
       +'.atl-h6{font-size:.94em;line-height:1.45;letter-spacing:.04em;margin:.9em 0 .22em;}'
       /* a whole-line **bold run** is an author-written section lead (#R151/#R154) — it is emitted as
          an <h4> and this rule, declared AFTER .atl-h4, gives it back its own size */
-      +'.atl-hb{font-size:1.28em;line-height:1.3;letter-spacing:.004em;margin:1.0em 0 .3em;}'
+      +'.atl-hb{font-size:1.06em;line-height:1.4;letter-spacing:.004em;margin:1.15em 0 .5em;}'
       +'.atl-h:first-child{margin-top:0;}'
       /* (#R494) real lists: the marker is the browser's, so the hanging indent, the nesting and the
          numbering are all free — none of which the `•&nbsp;` + text-indent div could do */
@@ -219,7 +219,8 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'.atl-bq{margin:.75em 0;padding:3px 0 3px 13px;border-left:3px solid rgba(128,128,128,.4);color:var(--text-muted);}'
       +'.atl-bq>*:last-child{margin-bottom:0;}'
       +'.atl-hr{margin:1.15em 0;border:0;border-top:1px solid var(--glass-border,rgba(128,128,128,.28));}'
-      +'.atl-a{color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;}'
+      +'.atl-a{color:inherit;text-decoration:underline;text-decoration-color:rgba(128,128,128,.55);text-decoration-thickness:1px;text-underline-offset:.22em;}'
+      +'.atl-a:hover{color:var(--primary-color);text-decoration-color:currentColor;}'
       +'.atl-a-url{word-break:break-all;}'
       /* (#R494) the source row's overflow chip — `slice(0,6)` used to drop the rest silently */
       +'#atlas-panel .atl-lc-rest:not([hidden]){display:contents;}'

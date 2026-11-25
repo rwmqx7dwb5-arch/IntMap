@@ -153,7 +153,7 @@ test('R494 ⑥ the #R154 / #R159 decisions survive the rewrite', () => {
   assert.ok(h.includes('<b>強調は平文になる</b>') && !/font-weight:(7|8)/.test(h),
     'bold renders as a plain <b> (the #R159 strip was reversed by the reader)');
   assert.ok(h.includes('<i>斜体</i>'), '…but italic still renders');
-  assert.match(CSS, /\.atl-h\{font-weight:600;color:var\(--text-main\);/, '#R154/#R159: monochrome, semibold');
+  assert.match(CSS, /\.atl-h\{font-weight:560;color:var\(--text-main\);/, '#R154/#R159: monochrome, semibold');
   /* the BASE .atl-h rule states the one colour; no per-LEVEL rule may add another */
   assert.ok(!/\.atl-h[1-6]\{[^}]*color:/.test(CSS), '#R154: no level introduces a hue of its own');
 });
@@ -363,9 +363,9 @@ test('R463 ⑥: a bare host or filename is held too — that is what the app act
 test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
   // (#R154) headings differentiate by SIZE + SPACING only — NO colour ("目次を色分けするのはやめる")
   /* (tests-by-topic) the sizes are read from the stylesheet the panel injects (atlasPanelCSS()) */
-  assert.match(CSS, /font-size:1\.9em;letter-spacing:\.012em/, 'h1 ~1.9em (R158)');
-  assert.match(CSS, /font-size:1\.56em;line-height:1\.25;letter-spacing:\.006em/, 'h2 ~1.56em (R158)');
-  assert.match(CSS, /font-size:1\.3em;line-height:1\.3;letter-spacing:\.004em/, 'h3 ~1.3em (R158)');
+  assert.match(CSS, /font-size:1\.32em;letter-spacing:\.01em/, 'h1 ~1.9em (R158)');
+  assert.match(CSS, /font-size:1\.2em;line-height:1\.35;letter-spacing:\.006em/, 'h2 ~1.56em (R158)');
+  assert.match(CSS, /font-size:1\.1em;line-height:1\.4;letter-spacing:\.004em/, 'h3 ~1.3em (R158)');
   /* an absence across the whole app: no rule anywhere may bring the coloured heading back */
   assert.ok(!/color:var\(--primary-color\);margin:1\.\d+em 0 [^;]*;font-size:1\.\d+em/.test(html), 'R154: heading rules no longer use --primary-color (size/spacing only)');
   /* (#R494) the same 1.5em rhythm, declared on the paragraph instead of emitted as an empty div */
@@ -401,7 +401,7 @@ test('R151 #5 Atlas typography: a standalone bold line becomes a real sub-headin
      ⚠ (tests-by-topic) RENDERED, NOT READ: this matched the source text of RE_LEAD itself. */
   assert.match(md('**Key findings**:\n\nText here.'), /<h4 class="atl-h atl-h4 atl-hb">Key findings<\/h4>/, 'standalone **bold line** → heading rule');
   assert.doesNotMatch(md('Some **bold** in a sentence.'), /atl-hb/, '…while bold inside a sentence is not a heading');
-  assert.match(CSS, /\.atl-hb\{font-size:1\.28em;/, '…and it renders one step below a "## " section, as it always did');
+  assert.match(CSS, /\.atl-hb\{font-size:1\.06em;/, '…and it renders one step below a "## " section, as it always did');
   /* (#R494) the same 1.5em rhythm, declared once on the paragraph instead of emitted as an empty div */
   assert.match(CSS, /\.atl-p\{margin:0 0 1\.5em;/, 'generous explicit-paragraph gap (R158 1.5em)');
 });
@@ -466,8 +466,8 @@ test('R156 #2 unified renderer: code blocks, math, tables, inline code — place
      heading was being counted twice. Weight, colour and size are what this line protects. */
   /* (#R494) the heading style is a CSS rule on a real <h2> now, not an inline style on a <div>; the
      three properties this line exists to protect — weight, colour, size — are all still stated. */
-  assert.match(CSS, /\.atl-h\{font-weight:600;color:var\(--text-main\);/, 'R159 heading weight + R154 monochrome');
-  assert.match(CSS, /\.atl-h2\{font-size:1\.56em;/, 'R159 "## " heading size');
+  assert.match(CSS, /\.atl-h\{font-weight:560;color:var\(--text-main\);/, 'R159 heading weight + R154 monochrome');
+  assert.match(CSS, /\.atl-h2\{font-size:1\.2em;/, 'R159 "## " heading size');
   assert.ok(!/border-top:[^;]*;?\s*\}?\s*'?\s*\/\*\s*\(#R155\)/.test(html), 'R159 no "## " divider rule');
   assert.ok(md('plain **bold** text').includes('<b>bold</b>'), 'inline **bold** renders as <b> (the reader reversed the R159 strip)');
   // interactive wiring at document level (works in panel + sidebar tab + workspace) — a document-level listener, a spelling
@@ -490,7 +490,7 @@ test('R159 #1 Atlas replies carry bold and NO divider lines', () => {
      failed while the rule they exist for (weight 600, --text-main, no colour-coding) was untouched.
      The rule is stated once in CSS now, and once here. `atl-h` is on EVERY level, so one assertion
      covers what three could not: a level added later cannot skip it. */
-  assert.match(CSS, /\.atl-h\{font-weight:600;color:var\(--text-main\);/, 'every heading level is semibold, not bold, and monochrome');
+  assert.match(CSS, /\.atl-h\{font-weight:560;color:var\(--text-main\);/, 'every heading level is semibold, not bold, and monochrome');
   for (const lv of [1, 2, 3, 4, 5, 6]) assert.ok(CSS.includes('.atl-h' + lv + '{font-size:'), 'h' + lv + ' has its own size');
   /* absences across the whole app: no rule anywhere may bring these back */
   assert.ok(!/\.atl-h\d?\{[^}]*font-weight:(750|800)/.test(html), 'no heading keeps the heavy 750/800 bold weight');

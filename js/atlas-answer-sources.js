@@ -34,6 +34,8 @@
  * ==========================================================================*/
 
 import { IntMapLang } from './lang-registry.js';
+/* (safe-output-single-module) the ONE URL guard — js/safe-html.js publishes globalThis.IntMapSafe */
+import './safe-html.js';
 
 /* ⚠ (atlas-figure-sources) FOUR KINDS, TWO QUESTIONS. number / line / map answer 「where does this come from」 for DATA and for the BACKGROUND the answer sits on.
    'figure' answers it for what ATLAS MADE — the zone, the route, the ring it drew. The basemap's credit (Esri, NASA …) is not the basis of a shape Atlas
@@ -182,6 +184,46 @@ export function makeAtlasAnswerSources(deps) {
   }
   const anchor = (id, n) => 'atl-src-' + String(id || 'a').replace(/[^a-zA-Z0-9_-]/g, '') + '-' + n;
 
+  /* ── (atlas-answer-sources) 「(apnews.com)」 IN THE PROSE IS A SOURCE, NOT A LINK ───────────────────────────────────────
+     The prose cites a page as a parenthesised host, and the markdown pass makes it a blue underlined anchor — twenty of them down one
+     answer read as noise over the sentences (reported 2026-11-25). A link whose label IS a host (what Atlas writes when it cites a
+     page) becomes a small rounded source chip; a run of them in one pair of brackets becomes one cluster (the first two shown, the
+     rest behind 「+N」). The anchor's own href is kept, so nothing that was reachable became unreachable; the card with the publisher,
+     title and date is the browser half's. A link with descriptive text is a link in a sentence and stays one.
+     ⚠ CODE RESHAPES MARKUP THAT IS ALREADY SAFE — every href and label here came out of js/atlas-markdown.js's escaped anchors. */
+  const A_HOST = '<a href="([^"]*)" class="atl-a(?: atl-a-url)?" target="_blank" rel="noopener">([^<]*)</a>';
+  const HOSTISH = /^(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/i;
+  const hostName = (u) => { try { return new URL(String(u).replace(/&amp;/g, '&')).hostname.replace(/^www\./, ''); } catch (_) { return ''; } };
+  function chipHtml(href, label, hidden) {
+    const host = hostName(href) || String(label).replace(/^www\./, '');
+    return '<a class="atl-sc" href="' + esc(globalThis.IntMapSafe.url(String(href).replace(/&amp;/g, '&'))) + '" target="_blank" rel="noopener" data-host="' + esc(host) + '"' + (hidden ? ' hidden' : '') + '>'
+      + '<img class="atl-sc-ico" src="https://www.google.com/s2/favicons?domain=' + esc(encodeURIComponent(host)) + '&amp;sz=32" alt="" width="12" height="12" loading="lazy" data-im-error="hideSelf">'
+      + '<span class="atl-sc-name">' + esc(host) + '</span></a>';
+  }
+  /** chipSources(html) → { html, sources:[{ url, host }] } — every distinct page the prose cited, once */
+  function chipSources(html) {
+    const sources = [], seen = Object.create(null);
+    const note = (href) => { const u = String(href).replace(/&amp;/g, '&'); if (seen[u]) return; seen[u] = 1; sources.push({ url: u, host: hostName(u) }); };
+    const one = new RegExp(A_HOST, 'g');
+    const cluster = (inner) => {
+      const hits = []; inner.replace(one, (m, href, label) => { if (HOSTISH.test(String(label).trim())) hits.push({ href, label }); return m; });
+      /* the group is rewritten only when it holds nothing but host anchors and their separators */
+      if (!hits.length || inner.replace(one, '').replace(/[\s,、;；·・]+/g, '') !== '') return null;
+      hits.forEach((h) => note(h.href));
+      const shown = hits.slice(0, 2), rest = hits.slice(2);
+      return '<span class="atl-scs">' + shown.map((h) => chipHtml(h.href, h.label, false)).join('')
+        + (rest.length ? rest.map((h) => chipHtml(h.href, h.label, true)).join('') + '<button type="button" class="atl-sc-more" aria-expanded="false">+' + rest.length + '</button>' : '') + '</span>';
+    };
+    const group = new RegExp('[(（]\\s*((?:' + A_HOST + '[\\s,、;；·・]*)+)\\s*[)）]', 'g');
+    let out = String(html == null ? '' : html).replace(group, (m, inner) => cluster(inner) || m);
+    /* a host anchor standing alone, outside brackets and not already a chip */
+    out = out.replace(one, (m, href, label, off, whole) => {
+      if (!HOSTISH.test(String(label).trim())) return m;
+      note(href); return '<span class="atl-scs">' + chipHtml(href, label, false) + '</span>';
+    });
+    return { html: out, sources };
+  }
+
   /* ── the list under the answer ────────────────────────────────────────────────────────────────── */
   function itemText(it) {
     const what = say(it.what) + (it.of ? ' (' + say(it.of) + ')' : '') + (it.unit ? ' [' + it.unit + ']' : '');
@@ -190,12 +232,18 @@ export function makeAtlasAnswerSources(deps) {
   /** footerHtml(items, { id, pending }) — '' when nothing is sourced (an answer without sources shows none) */
   function footerHtml(items, o) {
     o = o || {};
-    if (!(items && items.length) && !o.pending) return '';
+    if (!(items && items.length) && !o.pending && !(o.web && o.web.length)) return '';
     /* ONE COLLAPSED LINE: how many sources and the first two by name; the list, the credit line and Cite open under it. */
+    /* ⚠ (atlas-answer-sources) THE MAP BACKGROUND'S CREDIT IS THE MAP'S, NOT THE ANSWER'S. Esri, NASA, OSM … under a satellite view made 「この回答の出典 · 5」 out of one real source and four tiles.
+       They are listed apart and never counted. A source the answer's tools actually READ is a 'number' or 'line' item and is counted; the legal credit stays on the map and in Cite. */
+    const mapRows = (items || []).filter((it) => it.kind === 'map');
+    const own = (items || []).filter((it) => it.kind !== 'map');
+    const web = Array.isArray(o.web) ? o.web : [];
     const names = [];
-    (items || []).forEach((it) => { const n = String(it.source || '').trim(); if (n && names.indexOf(n) < 0) names.push(n); });
-    const count = (items || []).length;
-    const sum = T('Sources of this answer', 'この回答の出典') + (count ? ' · ' + count : '')
+    own.forEach((it) => { const n = String(it.source || '').trim(); if (n && names.indexOf(n) < 0) names.push(n); });
+    web.forEach((w) => { if (w.host && names.indexOf(w.host) < 0) names.push(w.host); });
+    const count = own.length + web.length;
+    const sum = (count || !mapRows.length ? T('Sources of this answer', 'この回答の出典') : T('Map credits', '地図の帰属')) + (count ? ' · ' + count : '')
       + (names.length ? ' — ' + names.slice(0, 2).join(', ') + (names.length > 2 ? ' …' : '') : '');
     let h = '<details class="atl-srcs" data-atl-srcs="' + esc(o.id || '') + '"' + (o.open ? ' open' : '') + '>';
     h += '<summary class="atl-srcs-h" title="' + esc(T('Read from the tools this answer ran — not written by Atlas. A number marked [n] equals a value that source returned; a number without a mark was not matched to any of them.',
@@ -206,11 +254,17 @@ export function makeAtlasAnswerSources(deps) {
        still here — in the line's tooltip, for whoever asks how the list was made. */
     /* the key to the mark is shown only when the answer actually carries marks (o.linked) — the account of how the list was made is the summary's tooltip */
     if (o.linked) h += '<div class="atl-srcs-note">' + esc(T('[n] marks a number that matches that source.', '[n] は、その出典の値と一致した数字です。')) + '</div>';
-    if (items && items.length) {
+    if (web.length) {
+      h += '<ol class="atl-srcs-list" data-group="web">';
+      web.forEach((w) => { h += '<li data-kind="web"><span class="atl-srcs-what">' + esc(w.title || w.host) + '</span> — <a class="atl-srcs-src" href="' + esc(globalThis.IntMapSafe.url(w.url)) + '" target="_blank" rel="noopener">' + esc(w.host) + '</a>'
+        + (w.date ? ' <span class="atl-srcs-lic">· ' + esc(w.date) + '</span>' : '') + '</li>'; });
+      h += '</ol>';
+    }
+    if (own.length) {
       /* what Atlas made, and what the background and the data are credited to, are two lists: one answers for the figures, the other for everything under them */
       const groups = [
-        { k: 'figure', head: T('Shapes Atlas drew', 'Atlas が描いた図形'), rows: items.filter((it) => it.kind === 'figure') },
-        { k: 'data', head: T('Data and map background', 'データと背景地図'), rows: items.filter((it) => it.kind !== 'figure') },
+        { k: 'figure', head: T('Shapes Atlas drew', 'Atlas が描いた図形'), rows: own.filter((it) => it.kind === 'figure') },
+        { k: 'data', head: T('Data', 'データ'), rows: own.filter((it) => it.kind !== 'figure') },
       ].filter((g) => g.rows.length);
       groups.forEach((g) => {
         if (groups.length > 1) h += '<div class="atl-srcs-group">' + esc(g.head) + '</div>';
@@ -229,10 +283,36 @@ export function makeAtlasAnswerSources(deps) {
         h += '</ol>';
       });
     }
+    if (mapRows.length) h += '<div class="atl-srcs-mapcredit">' + esc(T('Map background credits (not a source of the answer): ', '背景地図の帰属（この回答の出典ではありません）: ') + mapRows.map((it) => it.source).join(' · ')) + '</div>';
     if (o.credit) h += '<div class="atl-srcs-credit-line">' + esc(T('Credit line: ', '出典表記: ') + o.credit) + '</div>';
     if (o.pending) h += '<div class="atl-srcs-note atl-srcs-wait">' + esc(T('Reading the records of the lines on the map…', '地図の線の記録を読んでいます…')) + '</div>';
-    h += '<details class="atl-srcs-citebox"><summary>' + esc(T('Cite this answer', 'この回答を引用する')) + '</summary><div class="atl-srcs-citebody"></div></details>';
+    /* the citation formats (APA · Chicago · BibTeX · RIS) stay whole — behind one small menu instead of a heading of their own */
+    h += '<details class="atl-srcs-citebox atl-menu"><summary>' + esc(T('Cite this answer', 'この回答を引用する')) + '</summary><div class="atl-srcs-citebody"></div></details>';
     return h + '</details>';
+  }
+
+  /* ── (atlas-answer-sources) WHAT ATLAS PUT ON THE MAP, AS THINGS THE READER CAN GO TO ───────────────────────────────────
+     A route or a zone the run drew was filed under 「途中の調査結果と操作のメッセージ」 — a name that says it is leftovers. It is the deliverable. Each
+     drawn thing is one button that moves the map to it; what it names is what the tool said it showed (exec.shown), else its subject, else its kind. */
+  function artifacts(results) {
+    const out = [], seen = Object.create(null);
+    (results || []).forEach((r) => {
+      if (!r || r.ok === false || !Array.isArray(r.drew)) return;
+      const names = r.exec && r.exec.shown && Array.isArray(r.exec.shown.names) ? r.exec.shown.names.filter(Boolean) : [];
+      const subj = r.meta && r.meta.subject ? say(r.meta.subject) : '';
+      r.drew.forEach((d) => {
+        if (!d || !d.kind || !Array.isArray(d.surfaces) || !d.surfaces.length) return;
+        const k = d.kind + '|' + d.surfaces.join(',');
+        if (seen[k]) return; seen[k] = 1;
+        out.push({ i: out.length, kind: d.kind, label: names.length ? names.join(', ') : (subj || d.kind), surfaces: d.surfaces.slice() });
+      });
+    });
+    return out;
+  }
+  function artifactsHtml(list) {
+    if (!(list && list.length)) return '';
+    return '<div class="atl-arts"><span class="atl-arts-h">' + esc(T('Drawn by Atlas', '地図上の成果物')) + '</span>'
+      + list.map((a) => '<button type="button" class="atl-art" data-atl-art="' + a.i + '" title="' + esc(T('Move the map to this', '地図をここへ移動')) + '">' + esc(a.label) + '</button>').join('') + '</div>';
   }
 
   /** plainItems(items) → the list as stored data and as text (the notebook, a briefing, a copy): no values, no markup */
@@ -249,7 +329,7 @@ export function makeAtlasAnswerSources(deps) {
     return out;
   }
 
-  return { numbersIn, collect, linkNumbers, footerHtml, plainItems, creditsOf, anchor, say, T, lang, MIN_DIGITS };
+  return { numbersIn, collect, linkNumbers, chipSources, artifacts, artifactsHtml, footerHtml, plainItems, creditsOf, anchor, say, T, lang, MIN_DIGITS };
 }
 
 /* ══ THE BROWSER HALF ═════════════════════════════════════════════════════════════════════════════════
@@ -271,6 +351,30 @@ const CSS = '.atl-srcs{margin-top:var(--atl-zone-gap,10px);padding-top:6px;borde
   + '.atl-srcs-citebox summary{cursor:pointer;color:var(--accent,#0a84ff);font-weight:600;margin-top:4px;}'
   + '.atl-srcs-citebody textarea{width:100%;box-sizing:border-box;min-height:56px;resize:vertical;border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:8px;background:var(--input-bg);color:var(--text-main);font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;padding:6px 8px;margin-top:4px;}'
   + '.atl-srcs-citebody select{margin-top:6px;height:28px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:11.5px;}'
+  + '.atl-srcs-mapcredit{margin:4px 0 2px;font-size:11px;opacity:.8;}'
+  + '.atl-srcs-src{color:inherit;text-decoration:underline;text-decoration-color:rgba(128,128,128,.5);}'
+  + '.atl-scs{display:inline-flex;flex-wrap:wrap;gap:3px;vertical-align:baseline;margin:0 .15em;}'
+  + '.atl-sc{display:inline-flex;align-items:center;gap:4px;max-width:11.5em;padding:0 .55em 0 .38em;height:1.55em;border-radius:.8em;background:var(--input-bg,rgba(128,128,128,.14));'
+  + 'border:1px solid var(--glass-border,rgba(128,128,128,.2));color:var(--text-muted);font-size:.78em;font-weight:560;line-height:1;text-decoration:none;white-space:nowrap;vertical-align:.08em;}'
+  + '.atl-sc[hidden]{display:none;}'
+  + '.atl-sc:hover{color:var(--text-main);border-color:rgba(128,128,128,.45);}'
+  + '.atl-sc-ico{width:12px;height:12px;border-radius:3px;flex:none;}'
+  + '.atl-sc-name{overflow:hidden;text-overflow:ellipsis;}'
+  + '.atl-sc-more{border:1px solid var(--glass-border,rgba(128,128,128,.2));background:var(--input-bg,rgba(128,128,128,.14));color:var(--text-muted);border-radius:.8em;height:1.55em;padding:0 .55em;font-size:.78em;font-weight:600;cursor:pointer;}'
+  + '.atl-scard{box-sizing:border-box;position:fixed;z-index:var(--z-popup);padding:10px 12px;border-radius:14px;background:var(--bg-glass-strong,rgba(28,28,32,.96));color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,.3));'
+  + 'box-shadow:0 12px 36px rgba(0,0,0,.35);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:12.5px;line-height:1.5;}'
+  + '.atl-scard[hidden]{display:none;}'
+  + '.atl-scard-h{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--text-muted);margin-bottom:3px;}'
+  + '.atl-scard-t{font-weight:600;font-size:13.5px;line-height:1.4;}'
+  + '.atl-scard-d{color:var(--text-muted);font-size:11.5px;margin-top:2px;}'
+  + '.atl-scard-s{margin-top:5px;color:var(--text-main);opacity:.85;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}'
+  + '.atl-scard-open{display:inline-block;margin-top:8px;color:var(--accent,#0a84ff);font-weight:600;text-decoration:none;}'
+  + '.atl-arts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:var(--atl-zone-gap,10px);}'
+  + '.atl-arts-h{font-size:11px;font-weight:650;color:var(--text-muted);letter-spacing:.02em;}'
+  + '.atl-art{border:1px solid var(--glass-border,rgba(128,128,128,.25));background:var(--input-bg);color:var(--text-main);border-radius:999px;font-size:12px;padding:4px 11px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+  + '.atl-art:hover{border-color:var(--accent,#0a84ff);}'
+  + '.atl-menu>summary{display:inline-block;list-style:none;border:1px solid var(--glass-border,rgba(128,128,128,.25));border-radius:999px;padding:3px 11px;font-size:11.5px;color:var(--text-muted);font-weight:600;}'
+  + '.atl-menu>summary::-webkit-details-marker{display:none;}'
   + 'sup.atl-srcn a{color:var(--accent,#0a84ff);text-decoration:none;font-size:0.78em;font-weight:650;margin-left:1px;}';
 let _styled = false;
 function style() {
@@ -308,10 +412,11 @@ export function attachSources(ctx) {
     if (!bubble.__atlSrcId) bubble.__atlSrcId = 's' + (++seq);
     /* the map's lines and credits belong to an answer only when one of its results changed the map */
     const mapped = changedMap(keep);
+    /* the sources list is read after head() ran, so a link the prose cites is counted even when no tool produced a source */
     const items = core.collect(keep, mapped ? (bubble.__atlSrcExtra || {}) : {});
     /* the map's half is fetched once the answer is written: for its lines and credits when it changed the map, and
        for the citation's facts (the link, the date the map shows) whenever there is anything to cite */
-    if (o.final && (mapped || items.length)) startMap(bubble, o.question);
+    if (o.final && (mapped || items.length || (bubble.__atlWeb || []).length)) startMap(bubble, o.question);
     const ex = bubble.__atlSrcExtra;
     const pending = mapped && !!bubble.__atlSrcMap && !ex;
     bubble.__atlSrcItems = items;
@@ -321,10 +426,22 @@ export function attachSources(ctx) {
       try { const cr = ex.refs(Object.assign({}, ex.facts, { title: o.question || ex.facts.title, credits: core.creditsOf(items) })).credit; credit = cr[core.lang() === 'jp' ? 'jp' : 'en']; } catch (_) { credit = ''; }
     }
     bubble.__atlSrcCredit = credit;
+    let web = [];
+    const arts = core.artifacts(keep);
+    bubble.__atlArts = arts;
     return {
-      head: (html) => { const out = core.linkNumbers(html, items, bubble.__atlSrcId); if (out !== html) linked = true; return out; },
+      head: (html) => {
+        let out = core.linkNumbers(html, items, bubble.__atlSrcId); if (out !== html) linked = true;
+        const c = core.chipSources(out); out = c.html;
+        const known = (typeof ctx.cites === 'function' ? (ctx.cites() || []) : []);
+        web = c.sources.map((w) => { const m = known.find((k) => k && k.url === w.url) || known.find((k) => k && String(k.url || '').replace(/^https?:\/\/(www\.)?/, '') === w.url.replace(/^https?:\/\/(www\.)?/, '')) || {};
+          return { url: w.url, host: w.host, title: m.title || '', date: m.date || '', name: m.publisher || m.src || '', summary: m.summary || '' }; });
+        bubble.__atlWeb = web;
+        return out;
+      },
+      artifacts: core.artifactsHtml(arts),
       /* read AFTER head(): whether any number was actually linked decides whether the mark's key is shown */
-      get footer() { return o.final ? core.footerHtml(items, { id: bubble.__atlSrcId, pending, credit, linked, open: !!bubble.__atlSrcsOpen }) : ''; },
+      get footer() { return o.final ? core.footerHtml(items, { id: bubble.__atlSrcId, pending, credit, linked, web, open: !!bubble.__atlSrcsOpen }) : ''; },
       items,
     };
   }
@@ -353,6 +470,49 @@ export function attachSources(ctx) {
     sel.onchange = () => { ref.value = R[sel.value] || ''; };
     box.replaceChildren(node('div', 'atl-srcs-note', core.T('Credit line (the map and every source above), then a reference to this view — the link reopens the map as it is now.', '出典表記（地図と上のすべての出典）と、この表示の参考文献。リンクは地図をいまの状態で開きます。')), credit, sel, ref);
   }
+  /* a source chip's card: who published it, what it is called, when, and the way to the page. Desktop: hover; touch: the first press (a press on the card's own link goes on). */
+  const touchOnly = () => { try { return !!(window.matchMedia && window.matchMedia('(hover: none)').matches); } catch (_) { return false; } };
+  let cardEl = null, cardTimer = 0;
+  function hideCard() { clearTimeout(cardTimer); if (cardEl) cardEl.hidden = true; }
+  function hideCardSoon() { clearTimeout(cardTimer); cardTimer = setTimeout(hideCard, 220); }
+  function showCard(bubble, chip, toggle) {
+    clearTimeout(cardTimer);
+    const url = chip.getAttribute('href') || '', host = chip.getAttribute('data-host') || '';
+    const w = (bubble.__atlWeb || []).find((x) => x.url === url) || { url, host };
+    if (!cardEl) {
+      cardEl = document.createElement('div'); cardEl.className = 'atl-scard'; cardEl.setAttribute('role', 'dialog'); cardEl.hidden = true; document.body.appendChild(cardEl);
+      cardEl.addEventListener('pointerenter', () => clearTimeout(cardTimer)); cardEl.addEventListener('pointerleave', hideCardSoon);
+      document.addEventListener('pointerdown', (e) => { if (cardEl && !cardEl.hidden && !cardEl.contains(e.target) && !(e.target.closest && e.target.closest('a.atl-sc'))) hideCard(); }, true);
+    }
+    if (toggle && !cardEl.hidden && cardEl.__for === chip) { hideCard(); return; }
+    cardEl.__for = chip;
+    const node = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+    const head = node('div', 'atl-scard-h');
+    const ico = document.createElement('img'); ico.width = 16; ico.height = 16; ico.alt = ''; ico.src = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(host) + '&sz=32'; ico.onerror = () => ico.remove();
+    head.append(ico, node('span', 'atl-scard-pub', w.name || host));
+    const kids = [head];
+    if (w.title) kids.push(node('div', 'atl-scard-t', w.title));
+    if (w.date) kids.push(node('div', 'atl-scard-d', w.date));
+    if (w.summary) kids.push(node('div', 'atl-scard-s', w.summary));
+    const open = node('a', 'atl-scard-open', core.T('Open the original article', '元記事を開く') + ' ↗'); open.href = url; open.target = '_blank'; open.rel = 'noopener';
+    kids.push(open);
+    cardEl.replaceChildren(...kids);
+    cardEl.hidden = false;
+    const r = chip.getBoundingClientRect(), cw = Math.min(320, window.innerWidth - 16);
+    cardEl.style.width = cw + 'px';
+    cardEl.style.left = Math.max(8, Math.min(window.innerWidth - cw - 8, r.left)) + 'px';
+    const below = r.bottom + 8, h = cardEl.offsetHeight;
+    cardEl.style.top = (below + h > window.innerHeight - 8 ? Math.max(8, r.top - h - 8) : below) + 'px';
+  }
+  /* an artifact's button: the map moves to the shapes it drew (their extent, read from the sources the renderer holds) */
+  function focusArt(bubble, i) {
+    const a = (bubble.__atlArts || [])[i]; if (!a) return;
+    let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+    const walk = (c) => { if (!Array.isArray(c)) return; if (typeof c[0] === 'number') { if (isFinite(c[0]) && isFinite(c[1])) { w = Math.min(w, c[0]); e = Math.max(e, c[0]); s = Math.min(s, c[1]); n = Math.max(n, c[1]); } } else c.forEach(walk); };
+    try { a.surfaces.forEach((id) => { const d = ctx.GE().layers.sourceData(id); ((d && d.features) || []).forEach((f) => walk(f && f.geometry && f.geometry.coordinates)); }); } catch (_) { /* the surface is gone */ }
+    if (!(isFinite(w) && isFinite(e))) return;
+    try { ctx.GE().camera.fitBounds([[w, s], [e, n]], { padding: 60, maxZoom: 12, duration: 700 }); } catch (_) { /* renderer refused */ }
+  }
   function bind(bubble, question) {
     style();
     const root = bubble && bubble.querySelector && bubble.querySelector('.atl-srcs');
@@ -370,12 +530,20 @@ export function attachSources(ctx) {
         if (li) { try { li.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) { /* old engine */ } li.classList.add('atl-srcs-flash'); setTimeout(() => li.classList.remove('atl-srcs-flash'), 1400); }
         return;
       }
+      const art = t && t.closest ? t.closest('button[data-atl-art]') : null;
+      if (art) { focusArt(bubble, +art.getAttribute('data-atl-art')); return; }
+      const more = t && t.closest ? t.closest('button.atl-sc-more') : null;
+      if (more) { const grp = more.parentNode; Array.prototype.forEach.call(grp.querySelectorAll('.atl-sc[hidden]'), (c) => { c.hidden = false; }); more.remove(); return; }
+      const sc = t && t.closest ? t.closest('a.atl-sc') : null;
+      if (sc && touchOnly()) { e.preventDefault(); showCard(bubble, sc, true); return; }
       const b = t && t.closest ? t.closest('button[data-atl-line]') : null;
       if (b) {
         const p = String(b.getAttribute('data-atl-line') || '').split(',').map(Number);
         if (p.length === 2 && p.every(isFinite)) import('./border-provenance-card.js').then((m) => m.BorderProvenanceCard.openArea({ GE: ctx.GE, HOST: ctx.HOST, lngLat: { lng: p[0], lat: p[1] } })).catch(() => {});
       }
     });
+    bubble.addEventListener('pointerover', (e) => { const sc = e.target && e.target.closest ? e.target.closest('a.atl-sc') : null; if (sc && e.pointerType === 'mouse') showCard(bubble, sc, false); });
+    bubble.addEventListener('pointerout', (e) => { const sc = e.target && e.target.closest ? e.target.closest('a.atl-sc') : null; if (sc && e.pointerType === 'mouse') hideCardSoon(); });
     bindRoot();
     function bindRoot() {
       root.addEventListener('toggle', (ev) => { if (ev.target === root) bubble.__atlSrcsOpen = root.open; });   /* a repaint (the map's half landing) keeps what the reader opened */
