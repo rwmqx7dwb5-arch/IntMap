@@ -443,12 +443,16 @@ export function makePlanView(ledger, deps) {
   let lastSlot = null;
   function render() {
     const slot = deps.slot ? deps.slot() : null;
-    /* ONE PLACE: the plan stands in the latest turn's trace, and leaves the one it stood in before */
-    if (lastSlot && lastSlot !== slot) { try { lastSlot.innerHTML = ''; } catch (_) { } }
+    /* ⚠ A PLAN BELONGS TO THE TURN THAT DECLARED IT. The ledger is one per conversation and keeps the last plan, and this
+       view used to draw that plan into EVERY new turn's trace the moment the turn began (js/atlas-live.js begin) — so the
+       reader who sent an unrelated question saw the previous question's checklist above the new work, before Atlas had said
+       anything about a plan. The record is now drawn into a trace only once THIS turn has declared or revised it
+       (`thisTurn`, which declare() stamps); the trace of an earlier turn keeps the plan it showed — it is the record of
+       that turn — and is no longer emptied when a later turn starts. */
     lastSlot = slot;
     if (!slot) return;
     const s = ledger.snapshot();
-    if (!s) { slot.innerHTML = ''; return; }
+    if (!s || !s.thisTurn) return;   /* nothing is drawn, and nothing already drawn is erased: a slot holds the plan of the turn it belongs to */
     const done = s.steps.filter((x) => x.state === 'completed').length;
     const bad = s.steps.some((x) => x.state === 'failed' || x.state === 'stopped');
     const warn = s.steps.some((x) => x.state === 'partial' || x.state === 'unobserved' || x.state === 'waiting');
