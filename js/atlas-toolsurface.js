@@ -246,7 +246,11 @@ export function makeAtlasToolSurface(deps) {
           ? await CAPS.searchFused(q, { want: 3, min: 1 })
           : CAPS.search(q, { want: 3, min: 1 });
       } catch (_) { r = null; }
-      var res = describe(query, ((r && r.ranked) || []).map(function (x) { return x.id; }), (r && r.basis) || 'lexical', (r && r.semantic) || undefined);
+      /* (atlas-context-diet) the ranker's own confidence decides how much of each match is spelled out: a match it calls STRONG (named by the
+         request, or standing out in meaning) arrives whole; the rest arrive as one line each. With nothing strong there is no basis to tell
+         them apart, so every one arrives whole. */
+      var strongIds = ((r && r.strong) || []).map(function (x) { return x.id; });
+      var res = describe(query, ((r && r.ranked) || []).map(function (x) { return x.id; }), (r && r.basis) || 'lexical', (r && r.semantic) || undefined, strongIds);
       /* (mcp-client) the reader's registered MCP servers are searched with the same words, and their tools come back beside the registry's
          under their own key, with their real inputSchema and the capability that runs them (mcp.call | mcp.act). Every string in them was written
          by a server's operator: the entries say so (untrusted), and the tool's description is data. A server that could not be asked says why. */
@@ -269,7 +273,7 @@ export function makeAtlasToolSurface(deps) {
        recorded turn (scripts/atlas-eval/replay.mjs) can hand back the RECORDED ranking — the meaning search is a
        network call it cannot repeat — described by the CURRENT declarations, instead of carrying 200 kB of
        catalogue prose that goes stale with the next PR that touches a description. */
-    function describe(query, rankedIds, basis, semantic) {
+    function describe(query, rankedIds, basis, semantic, detailIds) {
       var ranked = (rankedIds || []).map(function (id) { return { id: id }; });
       var r = { basis: basis, semantic: semantic };
       var lexicalOnly = !r || r.basis !== 'lexical+semantic';
@@ -285,6 +289,13 @@ export function makeAtlasToolSurface(deps) {
         var cap = null;
         try { cap = CAPS.resolve(ranked[i].id); } catch (_) { cap = null; }
         if (!cap || cap.withdrawn) continue;
+        var whole = !detailIds || !detailIds.length || detailIds.indexOf(cap.id) >= 0;
+        if (!whole) {
+          out.push({ id: cap.id, tool: coreNameOf(cap.id) || toolNameOf(cap.id), summary: summaryOf(cap) || undefined,
+            needsConfirmation: cap.confirmation && cap.confirmation !== 'none' ? cap.confirmation : undefined,
+            detail: 'one line only — find_capability with this id returns its schema and documentation' });
+          continue;
+        }
         ids.push(cap.id);
         out.push({
           id: cap.id,
@@ -303,10 +314,19 @@ export function makeAtlasToolSurface(deps) {
          paying for that, at the price of every description ending mid-sentence. `catalogText(ids)`
          already de-duplicates. Measured: 67,600 → 20,200 bytes for the same ten capabilities, with
          nothing truncated. The saving is the repetition, not the content. */
-      var doc = '';
-      try { doc = String(CAPS.catalogText(ids) || '').trim(); } catch (_) { doc = ''; }
-      return { ok: true, query: query, matches: out, documentation: doc || undefined, basis: (r && r.basis) || 'lexical',
-        note: out.length ? 'Call run_capability with one of these ids and arguments matching its schema.' : undefined };
+      /* (atlas-context-diet) THE DOCUMENTATION OF THE CAPABILITIES THAT MATCHED, NOT OF EVERYTHING THAT SHARES A BLOCK WITH THEM. A block documents
+         up to thirty-four capabilities, so two matches used to bring thirty-four capabilities' prose — measured on this registry with the
+         catalogue bound: 9 matches 76,959 characters, 30 matches 163,746, 59 matches 147,626, of which 2,255–17,899 were the schemas the
+         model needed. The result is replayed on every later call of the turn, so that was paid once per call. The exact reading keeps each
+         asked capability's own fragment and its block's heading; the others are named in `documentedWith`, and `find_capability` with
+         one of their ids returns their own words. Nothing is withheld: it is one call away, not gone. */
+      var doc = '', sib = [];
+      try { doc = String(CAPS.catalogText(ids, { exact: true }) || '').trim(); } catch (_) { doc = ''; }
+      try { if (typeof CAPS.catalogSiblings === 'function') sib = CAPS.catalogSiblings(ids) || []; } catch (_) { sib = []; }
+      return { ok: true, query: query, matches: out, documentation: doc || undefined,
+        documentedWith: sib.length ? sib : undefined, basis: (r && r.basis) || 'lexical',
+        note: out.length ? 'Call run_capability with one of these ids and arguments matching its schema.'
+          + (out.some(function (m) { return m.schema === undefined; }) ? ' Matches marked "one line only" carry no schema or documentation yet: call find_capability with that id to read them.' : '') : undefined };
     }
 
     /* ── Turning a validated tool call into the legacy action the dispatch already speaks ───── */
@@ -585,6 +605,7 @@ export function makeAtlasToolSurface(deps) {
       res.matches.forEach(function (m) {
         var cap = m && m.id ? capOf(m.id) : null;
         if (!cap || cap.withdrawn || coreNameOf(cap.id)) return;
+        if (m.schema === undefined && m.detail) return;   /* (atlas-context-diet) a one-line match is not offered as a typed tool: its schema was not sent, and find_capability with its id returns it */
         out.push(promotedTool(cap));
       });
       return out;

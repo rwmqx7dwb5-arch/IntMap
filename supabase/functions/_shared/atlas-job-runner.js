@@ -3,8 +3,8 @@
 // ----------------------------------------------------------------------------
 //  The loop of supabase/functions/atlas-jobs, with every outside thing PASSED IN so a node test runs it against a fake:
 //    db         { rpc(name, args) → { data, error }, from(table).select().eq() }   (a service-role supabase-js client)
-//    callModel  (system, prompt, { web, signal }) → { text, usage, citations, model }   throws { code, status, timeout }
-//    money      { estimate(promptChars, web) → micros, actual(usage, model) → micros }   (_shared/ai-provider.js prices)
+//    callModel  (system, prompt, { web, signal, maxOutput? }) → { text, usage, citations, model }   throws { code, status, timeout }
+//    money      { estimate(promptChars, web, maxOutput?) → micros, actual(usage, model) → micros }   (_shared/ai-provider.js prices)
 //    now        () → ms
 //
 //  WHAT IT GUARANTEES (the tests hold each one):
@@ -140,14 +140,14 @@ async function runToolWorker(ctx, task, inputs) {
     if (cp.action !== "go") return finish("cancelled", cp.action, null);
     const mustAnswer = st.dup >= 2;
     const prompt = workerPrompt(taskView, Array.isArray(cp.amends) ? cp.amends : []) + toolsSection(catalogue, mustAnswer) + transcriptText(st.entries) + st.note;
-    const est = money.estimate(ctx.system.length + prompt.length, st.web);
+    const est = money.estimate(ctx.system.length + prompt.length, st.web, contract.maxOutput);
     if ((await rpc(db, "atlas_job_reserve", { p_job: job.id, p_holder: holder, p_micros: est })) !== true) {
       return finish("refused", "cost_cap", { summary: "", findings: [], gaps: ["The job's cost cap was reached before this piece could finish."], sources, toolCalls: st.entries.length });
     }
     st.calls += 1;
     let env;
     try {
-      env = await callModel(ctx.system, prompt, { web: st.web, signal: ctx.signal });
+      env = await callModel(ctx.system, prompt, { web: st.web, signal: ctx.signal, maxOutput: contract.maxOutput });
     } catch (e) {
       await rpc(db, "atlas_job_settle", { p_job: job.id, p_holder: holder, p_reserved: est, p_actual: 0 });
       await event(db, job, "task.request_failed", { task: task.task_id, code: s(e && e.code, 40), round: st.calls });
@@ -227,13 +227,13 @@ async function runTask(ctx, task, inputs) {
     const amends = Array.isArray(cp.amends) ? cp.amends : [];
     const prompt = workerPrompt(taskView, amends) + note;
     const system = ctx.system;
-    const est = money.estimate(system.length + prompt.length, web);
+    const est = money.estimate(system.length + prompt.length, web, contract.maxOutput);
     const reserved = await rpc(db, "atlas_job_reserve", { p_job: job.id, p_holder: holder, p_micros: est });
     if (reserved !== true) return finish("refused", "cost_cap", { summary: "", findings: [], gaps: ["The job's cost cap was reached before this piece could run."], sources });
     calls += 1;
     let env;
     try {
-      env = await callModel(system, prompt, { web, signal: ctx.signal });
+      env = await callModel(system, prompt, { web, signal: ctx.signal, maxOutput: contract.maxOutput });
     } catch (e) {
       await rpc(db, "atlas_job_settle", { p_job: job.id, p_holder: holder, p_reserved: est, p_actual: 0 });
       await event(db, job, "task.request_failed", { task: task.task_id, code: s(e && e.code, 40), attempt });

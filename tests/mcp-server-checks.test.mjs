@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------------------
  *  The function is EVALUATED here — index.ts itself, with Deno and fetch replaced and a stateful fake database —
  *  not read as text (a module that throws at load answers 500 to everyone: intmap-edge-function-must-be-evaluated).
- *  The GIS behind intmap_gis_run is the REAL js/gis-core.js through gis-loader.js, so the claim «the same GIS the
+ *  The GIS behind intmap_gis_run is the REAL js/gis-core.js through _shared/gis-loader.js, so the claim «the same GIS the
  *  page uses» is measured, not asserted.
  *
  *    ① evaluates, and the boundary: no key / bad key / revoked key / stop switch → refused BEFORE any work

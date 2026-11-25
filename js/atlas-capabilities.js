@@ -2697,9 +2697,12 @@ export function makeAtlasCapabilities(HOST, OPTS) {
 
     /* catalogText(ids) — the planner's catalogue. `null` means EVERY capability, which reproduces
        the text js/atlas-console.js used to carry inline, byte for byte. */
-    API.catalogText = function (ids) {
+    API.catalogText = function (ids, opts) {
       if (!runtime.docs) return '';
-      return runtime.docs.text(ids);
+      return runtime.docs.text(ids, opts);
+    };
+    API.catalogSiblings = function (ids) {
+      try { return (runtime.docs && typeof runtime.docs.siblings === 'function') ? runtime.docs.siblings(ids) : []; } catch (_) { return []; }
     };
     API.catalogBytes = function (ids) { return API.catalogText(ids).length; };
     /* ══ index() — WHAT INTMAP CAN DO, AT THE MOMENT ATLAS DECIDES  (#R582) ══════════════════════
