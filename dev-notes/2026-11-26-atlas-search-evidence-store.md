@@ -34,8 +34,13 @@ newsjp: Atlas が調べたページ・検索結果をセッション内で覚え
 - `tests/atlas-search-evidence-store-checks.test.mjs`（8 本）: 同時の相乗り・TTL・失敗非保存・URL 別綴り・状態復元・ハンドオフ非保存・`web.search` の同時実行（ピーク 3）・`not_run`・参照 ID での再読・サーバ側の登録とジャーナル。
 - `atlas-core-split` の写真（fixture）は `p_web_searches` を足した分だけ更新（検索を走らせた 1 件は 1）。
 
-## 4. 変更後の本番実測
-（本番公開後に追記する）
+## 4. 変更後の本番実測——**まだ測れていない**（2026-11-26 時点）
+- 本番に届いたこと（事実）: PR #1433 が MERGED、migration `20261130100000` が本番に適用済み（`ai_delegation_journal.web_searches` を確認）、`ai-proxy` は v152（merge 直後の 2026-11-25 18:50 UTC に更新）、ページ側は main の 4c76be6 以降が公開済み（本番のビルド印 `2026-11-25T19:30:42Z-4c76be6`）。公開後のスモークの赤は外部ホスト `cdsarc.cds.unistra.fr` / `simbad.cds.unistra.fr` の DNS 消失で、この変更とは無関係。
+- 測れなかったこと: 本番の Atlas に「日本・ドイツ・ブラジル・インドの人口」を出す検証を試みたが、検証用アカウントが「本日の無料 AI 上限」に達しており、ai-proxy への通信は 0 件だった。上限を迂回する操作（支援導線・別アカウント）は行っていない。公開後のジャーナルにも `outcome='ok'` の行がまだ無い（利用が無い）。`web.search` が実際に使われるか・同時に走るか・2 回目が再利用されるかは、**本番では未観測**。
+- 代わりに確かめたこと: 単体（tests/atlas-search-evidence-store-checks.test.mjs の 8 本）で、同時の相乗り・TTL・状態復元・`web.search` の同時実行（ピーク 3）・`not_run`・ID での再読を観測している。
+- 測る手順（利用枠のあるアカウントで 1 往復すれば足りる）: 独立した複数の検索を要る問いを 1 回、続けて同じ問いの 1 つを出す。ジャーナルで見る:
+  `select task, web, count(*), round(avg(latency_ms)), round(avg(web_searches),2), max(web_searches) from public.ai_delegation_journal where created_at > '2026-11-25T18:50:00Z' and outcome='ok' group by 1,2;`
+  変更前は atlas_turn の検索あり平均 23.8 s・p50 18.5 s（§1）。`task='web_search'` の行数（何問が別呼び出しになったか）と、その行の `web_searches`（1 に近い＝1 呼び出し 1 検索）が効果の指標。
 
 ## 5. 消したもの・引き継いだもの
 何も消していない（加算のみ）。`research.analyze` の `turnPages` は残し、ストアの出典と重複排除して合わせる。
