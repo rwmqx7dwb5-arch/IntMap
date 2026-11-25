@@ -1140,7 +1140,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  290 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  292 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1195,7 +1195,7 @@ atlas-reasoning.js                Atlas の 3 つの答えを**構造**にする
 atlas-cap-ui.js                   Atlas の能力 — 返答の中の UI（ui.*）：インラインの操作（ui.inlineControls）と宣言的なビュー（ui.compose・綴り `dashboard`）。
                                   操作の行の描画は 1 か所（controlRows）で、両方が使う
 atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
-atlas-cap-web.js                  Atlas の能力 — ウェブサイトの操作とファイル取得（web.browse・web.fetchFile）。データポータル等を検索・リンク辿り・フォーム送信し、返ったファイルを GIS データセットにする
+atlas-cap-web.js                  Atlas の能力 — ウェブ検索（web.search：複数の問いを同時に）・取得済み証拠の読み直し（web.evidence）・ウェブサイトの操作とファイル取得（web.browse・web.fetchFile）。データポータル等を検索・リンク辿り・フォーム送信し、返ったファイルを GIS データセットにする
 data-tables.js                    **生成物** — `data/` のファイルが自分で宣言した表（`rowTables`）の索引。`node scripts/data-tables.mjs --write` が書き、
                                   `check:datagov` が照合する。js/atlas-query.js がこれを読み、宣言された表をすべて `data.query` の表にする
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
@@ -1295,7 +1295,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数でなく進展で止まる）
 atlas-skills.js                   **Skill**（手順書）の発見・段階読み・門 — `searchSkills`（find_capability の答えに名前と1行だけ添える）／`readSkill`（1節ずつ）／`audit`（本文が名指す能力・引数が実在するか。`npm run check:capabilities`）
 atlas-skills-data.js              Skill の宣言データ（en+jp の散文だけ。使う能力は本文から導出する）。初期: 歴史的国境の比較・衛星画像の変化検出・産業立地の一次分析・港湾物流リスクの比較
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 290 を検索・到達可能 287）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 292 を検索・到達可能 289）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1319,7 +1319,7 @@ atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体—�
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
 geopolitics-atlas.js              Atlas の data.sanctions・data.unVote・data.borderCrossings の本体。記録を geopolitics-core.js で読み、show のときは
                                   行を利用者と同じ change で入れ、描いた数を地図から読み戻して返す。初回の呼び出しで動的 import
-atlas-schemas.js                  **引数の schema**（#R406）— 290 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 292 能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1359,6 +1359,9 @@ atlas-state.js                    アプリの状態をデータとして持つ�
 atlas-evidence.js                 Atlas — 証拠レジストリ（#R350）。ソースが入ってよい唯一の入口。URL の正規化と
                                   拒否理由、追跡パラメータの無視、重複の統合、捏造ホスト名の検出。1 回の呼び出しに
                                   束縛されるので、同時に走る 2 つの回答が引用を取り違えられない
+atlas-web-evidence.js             Atlas — セッションの Web 証拠ストア。開いたページ・描画したページ・実行した検索・検索が引用した出典を 1 つの
+                                  ストアに持ち、親ターンと委譲の子が共有する。URL は atlas-evidence.js の正規化で同一視、同時の同じ取得は 1 回に
+                                  まとめ、鮮度（TTL）の内は取得済みを返し（拒否ではなく由来と年齢を添える）、参照 ID で読み直せる。出典は落とさない
 atlas-answer-contract.js          Atlas — 回答の契約（#R350）。AnswerEnvelope の schema（ai-proxy と同一）・
                                   主張の意味区分（構成比／成長寄与／供給能力…）・単位クラス・文中の数値の読み取り
 atlas-answer-audit.js             Atlas — 回答の監査（#R350／#R472）。冒頭結論と本文の矛盾、統計系列の混同、%とポイント、
@@ -2264,7 +2267,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全28本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（84本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（85本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し ＋ ★の写しの列 ＋ 管理者の権限は二要素のセッションだけ。37本）
   functions/<name>/index.ts       Edge Functions（28本。一覧と各本の役割は Architecture.md §6.2。

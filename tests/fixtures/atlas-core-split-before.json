@@ -585,7 +585,8 @@
        "p_output": 0,
        "p_cost_micros": 0,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      }
     ],
@@ -689,7 +690,8 @@
        "p_output": 0,
        "p_cost_micros": 0,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      }
     ],
@@ -4644,7 +4646,8 @@
        "p_output": 40,
        "p_cost_micros": 2200,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      },
      {
@@ -5023,7 +5026,8 @@
        "p_output": 30,
        "p_cost_micros": 520,
        "p_web": true,
-       "p_cached": 20
+       "p_cached": 20,
+       "p_web_searches": 1
       }
      },
      {
@@ -7751,7 +7755,8 @@
        "p_output": 2,
        "p_cost_micros": 30,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      },
      {
@@ -8265,7 +8270,8 @@
        "p_output": 2,
        "p_cost_micros": 30,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      },
      {
@@ -8846,7 +8852,8 @@
        "p_output": 40,
        "p_cost_micros": 2200,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      },
      {
@@ -9350,7 +9357,8 @@
        "p_output": 40,
        "p_cost_micros": 2200,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      },
      {
@@ -9728,7 +9736,8 @@
        "p_output": 40,
        "p_cost_micros": 2200,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      },
      {
@@ -10018,7 +10027,8 @@
        "p_output": 0,
        "p_cost_micros": 0,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      }
     ],
@@ -11300,7 +11310,8 @@
        "p_output": 3,
        "p_cost_micros": 24,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      },
      {
@@ -13415,7 +13426,8 @@
        "p_output": 0,
        "p_cost_micros": 0,
        "p_web": false,
-       "p_cached": 0
+       "p_cached": 0,
+       "p_web_searches": 0
       }
      },
      {
