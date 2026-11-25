@@ -23,6 +23,7 @@ import SIM_ENTRIES from './atlas-cap-sim.js';   /* the entries that declare a `s
 import { personaPrompt } from './atlas-persona.js';
 import { datasetFactsOnPage } from './evidence-graph-record.js';   /* (evidence-graph) a GIS result put in front of the answer carries its lineage node */
 import { settleWithin, lateNote } from './atlas-deadlines.js';
+import { webEvidence } from './atlas-web-evidence.js';   /* (atlas-search-evidence-store) the pages and searches this turn's web readers retrieved — one store with the parent and the workers */
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
@@ -806,7 +807,7 @@ export default [
               temporalMode:String((a&&a.temporalMode)||'unspecified'),
               requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
               turnId:K._curTurnKey, webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
-              webSources:turnPages(K._curTurnKey).slice(),   /* (atlas-completion) pages an earlier call of this turn retrieved — they get ids before this call */
+              webSources:turnPages(K._curTurnKey).concat(webEvidence.turnSources(K._curTurnKey)).filter((x,i,all)=>all.findIndex(y=>y.url===x.url)===i),   /* (atlas-completion) pages an earlier call of this turn retrieved — they get ids before this call */
               appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)).concat((()=>{ try{ return datasetFactsOnPage(a&&a.datasets); }catch(_){ return []; } })()), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
               ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
           catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }

@@ -431,6 +431,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["geo.imageChange","geoImageChange","imageChange,changeDetection,satelliteChange,landCoverChange,embeddingChange,radarChange,beforeAfter","data","none","gis.dataset","explanation","read","none","place?","","external"],
       ["research.longform","longform","writeLongReport,longDocument,writeInChapters","research","none","","explanation","read","none","","","external"],
       ["system.command","command","appCommand,kernelCommand","system","control","ui.any","panel","session","none","",""],
+      ["web.search","webSearch","searchTheWeb,parallelSearch,searchSeveral,lookUpOnline,webLookup","research","none","","explanation","read","none","","","external"],
+      ["web.evidence","webEvidence","rereadEvidence,whatDidWeFind,readSavedPage,evidenceById","research","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

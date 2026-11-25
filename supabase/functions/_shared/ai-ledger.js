@@ -358,6 +358,7 @@ export function journalArgs(ev) {
     p_output: jint(t.output),
     p_cost_micros: Math.max(0, Math.floor(Number(e.costMicros) || 0)),
     p_web: e.web === true,
+    p_web_searches: Math.min(2147483647, jint(e.webSearches)),   /* (atlas-search-evidence-store) how many searches the provider ran inside THIS call */
     p_cached: Math.min(2147483647, jint(t.cached_read)),   /* (atlas-orchestration-efficiency) the cache read of THIS call */
   };
 }
