@@ -236,7 +236,8 @@ test('⑪ the progress reaches the row: the executor hands a capability progress
   const caps = readFileSync(new URL('../js/atlas-capabilities.js', import.meta.url), 'utf8');
   assert.match(caps, /progress: \(opts && typeof opts\.progress === 'function'\) \? opts\.progress : undefined/);
   const prog = readFileSync(new URL('../js/atlas-progress.js', import.meta.url), 'utf8');
-  assert.match(prog, /ev\.phase === 'progress' && ev\.progress && typeof ev\.progress\.text === 'string'/);
+  assert.match(prog, /ev\.phase === 'progress' && ev\.progress && rec\.row/);
+  assert.match(prog, /typeof ev\.progress\.text === 'string'/);   /* the row's text; the worker lines (p.tasks) are painted beside it */
 });
 
 /* ── the list is read whole, a step is handed what the step before it made, and a claim can be checked by a second worker ── */

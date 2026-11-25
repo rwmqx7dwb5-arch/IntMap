@@ -366,7 +366,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get userPins(){ return userPins; },
     /* stable helpers (never rebound — getters anyway, see LAZY above) */
     get _aiLangName(){ return _aiLangName; },       get addEdgeResize(){ return addEdgeResize; },
-    get addPin(){ return addPin; },                 get aiGate(){ return aiGate; },
+    get addPin(){ return addPin; },                 get aiGate(){ return aiGate; },   get aiDev(){ return aiDev; },
     get aiLimitMsg(){ return aiLimitMsg; },         get aiLoginMsg(){ return aiLoginMsg; },
     get aiParseJSON(){ return aiParseJSON; },       get aiQuotaBlocked(){ return aiQuotaBlocked; },
     get aiToday(){ return aiToday; },

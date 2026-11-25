@@ -215,13 +215,17 @@ test('atlas-progress-one ③ the plan is inside the trace, its states are the le
   const s2 = slot.querySelectorAll('.atl-plan-step')[1];
   assert.ok(s2.classList.contains('warn') && !s2.classList.contains('ok'), 'an unobserved step was shown as done');
   assert.equal(E.mapWrap.querySelectorAll('.atl-plan').length, 0, 'the plan also stood on the map');
-  /* the next turn's trace takes the plan over — one plan, one place */
+  /* ⚠ A PLAN BELONGS TO THE TURN THAT DECLARED IT (atlas-progress-ux). A later turn that never declares a plan must NOT show the
+     earlier one above its work (an unrelated question used to open with the previous question's checklist); the earlier trace keeps
+     the plan it showed, as the record of that turn. A later turn that declares its own shows its own. */
   PLAN.endTurn('answered'); LIVE.end(bubble, 'answered'); PROG.done(bubble);
   assert.ok(PROG.traceEl(bubble), 'a finished trace holding the plan removed itself');
   const b2 = makeNode('div'); b2.className = 'atl-b a'; E.panel.appendChild(b2);
-  PROG.open(b2); PROG.phase(b2, 'think'); LIVE.begin(b2);
-  assert.equal(E.panel.querySelectorAll('.atl-plan').length, 1, 'the plan stood in two traces');
-  assert.ok(PROG.traceEl(b2).querySelector('.atl-plan'), 'the plan did not move to the latest turn');
+  PROG.open(b2); PROG.phase(b2, 'think'); PLAN.beginTurn(); LIVE.begin(b2);
+  assert.equal(PROG.traceEl(b2).querySelectorAll('.atl-plan').length, 0, 'an earlier turn plan was shown in an unrelated turn');
+  assert.equal(PROG.traceEl(bubble).querySelectorAll('.atl-plan').length, 1, 'the earlier trace lost the plan it showed');
+  PLAN.declare({ goal: 'Show Osaka', steps: ['Find Osaka'], current: 1 });
+  assert.equal(PROG.traceEl(b2).querySelector('.atl-plan-goal').textContent, 'Show Osaka', 'this turn own plan did not appear');
   LIVE.end(b2, 'answered'); PROG.done(b2);
 });
 
