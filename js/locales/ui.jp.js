@@ -291,7 +291,6 @@ IntMapLang.define('jp', { ui: {
       atlasDisplayHint:"浮かべると、会話と入力欄が地図の左側に半透明のカードとして表示され、タブを開かずに質問して回答を読めます。スマートフォン幅の画面では Atlas はシートのままです。",
       atlFloatFold:"会話をたたむ",
       atlFloatUnfold:"会話を表示",
-      atlFloatToTab:"Atlas タブで開く",
       atlFloatHide:"隠す（A キーで再表示）",
       tkItems:"表示する項目",
       tkNews:"ニュース見出し",

@@ -618,36 +618,20 @@ export function layoutReflow(HOST){
     }
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
   })();
-  /* ══ (ui-a11y-polish) …AND THE PLACEHOLDER IS THE ONE THAT FITS THE PILL THIS WATCHER LEFT ══════════
-     MEASURED on production (2026-09-27, 1280 × 800, first visit — the right layer panel opens itself):
-     the watcher above centres the pill in the gap between the two sidebars at 203 px, which leaves the
-     field 105 px, and 「Search any place on Earth...」 is 185 px — it read 「Search any pla」. Widening
-     the pill is the one thing this layout must not do (it would slide under the controls, #R25/#R484)
-     and dropping it to a second row is what #R122 was asked to stop, so the WORDS give way instead:
-     the full sentence while it fits the field's measured room, the short one when it does not, and the
-     stylesheet's `text-overflow:ellipsis` below either.
-     ⚠ A LANGUAGE SWITCH RE-MEASURES: js/i18n.js rewrites the placeholder (`data-i18n-ph="msPh"`) on every
-     switch, and the MutationObserver below takes that as the cue to fit the new language's sentence.
-     (desktop-one-entry) The sentence is «Search places or ask Atlas» on every device now — the field is the
-     one entry for both — and «Search places» where that does not fit.
-     ⚠ MEASURED, NOT ASSUMED: the room is the field's own clientWidth less its padding, and the text is
-     measured in the field's own computed font — a width threshold would be wrong in the other language. */
+  /* ══ THE PLACEHOLDER SAYS WHAT THE FIELD DOES: «Search places» ═══════════════════════════════════════
+     The field finds places and nothing else — a question is asked in Atlas's own input — so the sentence is the short
+     one on every device (it also named Atlas while the field had an «Ask Atlas» row). It is set here
+     rather than left to `data-i18n-ph="msPh"` because i18n.js rewrites the placeholder on every language switch, and the
+     MutationObserver below puts this sentence back after each rewrite. */
   (function(){
     function wire(){
-      const inp=document.getElementById('ms-input'); if(!inp||typeof ResizeObserver!=='function') return;
-      let mine=null, ctx=null;
-      const fits=(txt)=>{ try{ const cs=getComputedStyle(inp); ctx=ctx||document.createElement('canvas').getContext('2d');
-        ctx.font=[cs.fontStyle,cs.fontWeight,cs.fontSize,cs.fontFamily].join(' ');
-        return ctx.measureText(txt).width<=inp.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0); }catch(_){ return true; } };
-      /* (mobile-shell) the field is the ONE entry — a place or a question for Atlas — and says so. (desktop-one-entry) On a
-         desktop too: the «Ask Atlas» row follows the typing there now (js/search-geocode.js _askAtlasRow). Where the pill is
-         too narrow for that sentence it gives way to the short one, as the place-only sentence did. */
-      const fit=()=>{ if(!inp.clientWidth) return;
-        const ask=IntMapLang.t(HOST.lang,'Search places or ask Atlas','場所を検索・Atlas に質問');
-        const want=(HOST.isMobile()||fits(ask))? ask : IntMapLang.t(HOST.lang,'Search places','地名を検索');
+      const inp=document.getElementById('ms-input'); if(!inp) return;
+      let mine=null;
+      const fit=()=>{
+        const want=IntMapLang.t(HOST.lang,'Search places','場所を検索');
         if(inp.placeholder!==want){ mine=want; inp.placeholder=want; } };
       new MutationObserver(()=>{ if(inp.placeholder!==mine) fit(); }).observe(inp,{attributes:true,attributeFilter:['placeholder']});
-      new ResizeObserver(fit).observe(inp); fit(); }
+      fit(); }
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
   })();
 

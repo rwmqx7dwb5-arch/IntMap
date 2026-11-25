@@ -291,7 +291,6 @@ IntMapLang.define('en', { ui: {
       atlasDisplayHint:"Floating shows the conversation and its input as a translucent card on the left of the map, so you can ask and read without opening the tab. On a phone-width screen Atlas stays in its sheet.",
       atlFloatFold:"Collapse conversation",
       atlFloatUnfold:"Show conversation",
-      atlFloatToTab:"Open in the Atlas tab",
       atlFloatHide:"Hide (press A to bring it back)",
       tkItems:"Shown items",
       tkNews:"News headlines",

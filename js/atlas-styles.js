@@ -305,7 +305,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel .atl-pv-row button{font:inherit;font-size:12.5px;border:none;border-radius:10px;padding:8px 14px;min-height:36px;cursor:pointer;}'
       +'#atlas-panel .atl-pv-close{background:rgba(120,120,128,0.14);color:var(--text-main);}'
       +'#atlas-panel .atl-pv-login{background:var(--atlas-grad);color:#fff;font-weight:600;}'
-      +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:6px 9px 4px;border-top:1px solid rgba(128,128,128,0.12);}'   /* (#R103) tighter top/bottom margin around the input+send */
+      +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:6px 9px 2px;border-top:1px solid rgba(128,128,128,0.12);}'   /* (#R103) tighter top/bottom margin around the input+send */
       /* (#R149) image attach button + pasted/attached image thumbnails ("入力欄にペーストすれば画像も送れるように") */
       +'#atlas-panel .atl-attach{flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:none;background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:color .15s ease,background .15s ease;}'
       +'#atlas-panel .atl-attach:hover{color:var(--primary-color);background:var(--input-bg);}'
@@ -326,8 +326,8 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel .atl-thumb-x:hover{background:rgba(220,50,50,0.9);}'
       +'#atlas-panel.atl-drag .atl-chat{outline:2px dashed var(--primary-color);outline-offset:-6px;border-radius:10px;}'
       /* (#R103) ONE small AI disclaimer under the input (instead of appending it to every message) */
-      +'#atlas-panel .atl-ainote{font-size:9.5px;color:var(--text-muted);text-align:center;padding:0 12px 7px;line-height:1.4;opacity:0.8;}'
-      +'#atlas-panel .atl-in{flex:1;min-width:0;height:42px;min-height:42px;max-height:132px;padding:11px 15px;border-radius:21px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-size:13px;line-height:1.45;outline:none;box-sizing:border-box;resize:none;overflow-y:auto;font-family:inherit;display:block;}'   /* (#R118) textarea: Shift+Enter improves to multi-line, auto-grows to ~5 lines */
+      +'#atlas-panel .atl-ainote{font-size:9.5px;color:var(--text-muted);text-align:center;padding:0 12px 3px;line-height:1.3;opacity:0.8;}'   /* the note sits close under the input and the screen's edge (was 7px under, 1.4 line) */
+      +'#atlas-panel .atl-in{flex:1;min-width:0;height:42px;min-height:42px;max-height:132px;padding:11px 15px;border-radius:21px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-size:13px;line-height:1.45;outline:none;box-sizing:border-box;resize:none;overflow-y:hidden;font-family:inherit;display:block;}'   /* (#R118) textarea: Shift+Enter improves to multi-line, auto-grows to ~5 lines */
       /* (ui-compass-atlas-polish) 「入力欄の周りがハイライトされるのもやめて」: focus は枠の色も影も変えない。入力中であることはカーソルが示す。 */
       /* (#R72) send button ("メッセージ送信ボタンがダサい"): clean filled circle + arrow-up SVG (ChatGPT-style),
          disabled-looking when the input is empty. */
@@ -335,7 +335,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
          user has entered something ("文字を入力するまでは今の色"): the base .atl-go is the active state (accent fill,
          white icon); .idle (empty input) keeps the previous white-bg/black-arrow look; .busy (Stop) is also accent.
          Accent = var(--primary-color) with a matching white icon so it reads as a filled primary button. */
-      +'#atlas-panel .atl-go{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid transparent;background:var(--primary-fill);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:transform .08s ease,opacity .15s ease,background .15s ease,filter .15s ease;}'
+      +'#atlas-panel .atl-go{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid transparent;background:var(--primary-fill);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:transform .08s ease,opacity .15s ease,background .15s ease,filter .15s ease;}'
       +'#atlas-panel .atl-go svg{display:block;}'
       +'#atlas-panel .atl-go:hover{filter:brightness(1.07);} #atlas-panel .atl-go:active{transform:scale(0.9);}'
       +'#atlas-panel .atl-go.idle{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.12);color:#111;border-color:rgba(0,0,0,0.08);}'   /* (#R149/#R156) empty input keeps the previous SOLID-BLACK ↑ on white ("文字を入力するまでは今の色") */
