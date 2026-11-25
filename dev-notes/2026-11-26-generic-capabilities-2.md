@@ -72,3 +72,7 @@ newsjp: 空港・制裁・国境の検問所・世界遺産・米大統領選・
 `async chunk "data-tables"` 14.5 → 31.6 kB（`tests/perf-baseline.json`、実測 32,333 B）: 表の索引（ラベルと列）が 6 表から 21 表になった分。この索引は `data.query` が
 最初に表を名指したときだけ import され（`js/atlas-query.js`）、起動の経路には乗らない。`perf-budget --update` は main が動き続けて「CI が測る木ではない」と拒むため、
 対象の行（これ 1 行だけが超過）の実測値を直接書いた。
+
+`async chunk "atlas-console"` 1410.3 → 1418.1 kB（1,444,192 → 1,452,400 B）: CI が「main を取り込んだ木」で測った値。この変更が足したのは `js/atlas-cap-geo.js`（別チャンク）の数行と
+`js/atlas-query.js` の経路の読み方で、console のチャンクを増やす経路は無い。増分は取り込んだ main 側（委譲・能力発見）の変更で、同じ行を他の PR も上げるため、
+値は CI の測定の丸めの上限に置いた（後から merge される側が小さい値で上書きしないように）。
