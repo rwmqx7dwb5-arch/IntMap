@@ -1,4 +1,91 @@
 {
+ "rowTables": [
+  {
+   "id": "country-facts",
+   "title": {
+    "en": "Country facts: capital, currency, languages, area, UN membership (REST Countries, Natural Earth)",
+    "jp": "国の基本事実: 首都・通貨・言語・面積・国連加盟（REST Countries・Natural Earth）"
+   },
+   "rows": "countries",
+   "key": "$key",
+   "name": "$key",
+   "columns": [
+    {
+     "key": "code",
+     "from": "$key",
+     "type": "text",
+     "label": {
+      "en": "Country code (Natural Earth set)",
+      "jp": "国コード（Natural Earth の集合）"
+     }
+    },
+    {
+     "key": "capital",
+     "from": "capital",
+     "type": "text",
+     "label": {
+      "en": "Capital",
+      "jp": "首都"
+     }
+    },
+    {
+     "key": "currency",
+     "from": "currency",
+     "type": "text",
+     "label": {
+      "en": "Currency",
+      "jp": "通貨"
+     }
+    },
+    {
+     "key": "languages",
+     "from": "languages",
+     "type": "text",
+     "label": {
+      "en": "Languages",
+      "jp": "言語"
+     }
+    },
+    {
+     "key": "demonym",
+     "from": "dem",
+     "type": "text",
+     "label": {
+      "en": "Demonym",
+      "jp": "住民の呼称"
+     }
+    },
+    {
+     "key": "area",
+     "from": "area",
+     "type": "number",
+     "label": {
+      "en": "Area as the source states it",
+      "jp": "面積（出典の記載）"
+     },
+     "unit": "km2"
+    },
+    {
+     "key": "unMember",
+     "from": "un",
+     "type": "text",
+     "label": {
+      "en": "UN member state",
+      "jp": "国連加盟国"
+     }
+    },
+    {
+     "key": "independent",
+     "from": "ind",
+     "type": "text",
+     "label": {
+      "en": "Independent",
+      "jp": "独立国"
+     }
+    }
+   ]
+  }
+ ],
  "//": "BUILT FILE — do not edit by hand. Regenerate with `npm run build:countryfacts`. See scripts/build-country-facts.mjs for why these facts are shipped rather than fetched.",
  "built": "2026-08-25",
  "sources": [

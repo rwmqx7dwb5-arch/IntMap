@@ -151,3 +151,12 @@ test('⑦ web.fetchFile refuses a worker before anything is downloaded, with the
   const r = await entry('web.fetchFile').run({ url: 'https://example.org/a.csv' }, await workerCtx(), K);
   assert.equal(r.ok, false); assert.equal(r.meta.code, 'draws_on_reader_map'); assert.equal(fetched, 0);
 });
+
+test('⑧ geo.regionStat names what it writes and is headless: a worker gets the figures, never the reader\'s layer', async () => {
+  const c = CAPS.all().find((x) => x.id === 'geo.regionStat');
+  assert.deepEqual([...c.effects.writes].sort(), ['gis.dataset', 'map.object'], 'with draw:true it registers a boundary layer and colours it — said in the row');
+  assert.equal(c.facets.headless, true);
+  assert.equal(classify('geo.regionStat'), 'read', 'the lane admits it');
+  const src = readFileSync(new URL('../js/atlas-cap-geo.js', import.meta.url), 'utf8');
+  assert.match(src, /const worker = !!dctx && dctx\.source === 'atlas-worker';\s*\n\s*if \(a\.draw && !worker\)/, 'a worker run leaves draw out');
+});

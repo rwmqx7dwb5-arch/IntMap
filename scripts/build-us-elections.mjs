@@ -38,6 +38,7 @@
  *      node scripts/build-us-elections.mjs --check   # verify the committed files match this source
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NATURAL_EARTH, US_PRESIDENTIAL } from './lib/upstream-cadence.mjs';
@@ -508,7 +509,7 @@ const elections = ELECTIONS.map((e) => {
 
 if (problems.length) { console.error('✗ ' + problems.length + ' problem(s):'); problems.slice(0, 40).forEach((p) => console.error('    ' + p)); process.exit(1); }
 
-const payload = {
+const payload = withRowTables('us-elections', {
   _: 'U.S. presidential elections 1789–2024. Electoral College results: National Archives (1789–2020) '
    + 'and the American Presidency Project (UCSB); state-by-state returns (votes and electors) compiled '
    + 'via zonination/election-history for 1789–2016; for 2020 and 2024 the state popular vote is summed '
@@ -517,7 +518,7 @@ const payload = {
    + 'Geometry: Natural Earth 1:110m admin-1 (public domain).',
   parties: PARTIES,
   elections,
-};
+});
 if (CHECK) {
   let bad = 0;
   for (const [p, v] of [[OUT_E, payload], [OUT_G, geo]]) {

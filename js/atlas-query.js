@@ -371,10 +371,14 @@ export function atlasQuery(HOST) {
      readable only through capabilities built around one question each; Atlas could not ask them
      anything else. A dataset now becomes askable by being declared where it is built — no capability,
      no edit here. The file is read through the one data door, when a query first names the table. */
-  const pathAt = (o, p) => String(p).split('.').reduce((v, k) => (v == null ? undefined : v[k]), o);
+  /* a segment `[field]` is the root's own value of `field` (scripts/data-tables.mjs `at` — the same rule) */
+  const pathAt = (o, p) => String(p).split('.').reduce((v, k) => (v == null ? undefined : v[k.charAt(0) === '[' ? o[k.slice(1, -1)] : k]), o);
   async function shippedRows(t) {
     const doc = await (D.loadData ? D.loadData(t.file) : loadData(t.file));
-    const list = pathAt(doc, t.rows) || [];
+    /* an ARRAY is its own rows; a plain OBJECT of objects (a record keyed by country code, id…) is its entries with the key put on
+       as `$key` — the same rule as scripts/data-tables.mjs `rowsOf`, which refused a declaration that does not satisfy it */
+    let list = pathAt(doc, t.rows) || [];
+    if (!Array.isArray(list)) list = Object.entries(list).map(([k, v]) => Object.assign({ $key: k }, v));
     const asObj = (r) => (Array.isArray(r) && Array.isArray(t.fields)) ? Object.fromEntries(t.fields.map((k, i) => [k, r[i]])) : r;
     const vias = Object.create(null);
     const rows = list.map((raw, i) => {
@@ -382,7 +386,7 @@ export function atlasQuery(HOST) {
       const p = {};
       for (const c of t.columns) {
         let v = pathAt(r, c.from);
-        if (c.via && v != null) { const arr = vias[c.via.rows] || (vias[c.via.rows] = pathAt(doc, c.via.rows) || []); v = arr[v] ? arr[v][c.via.field] : null; }
+        if (c.via && v != null) { const arr = vias[c.via.rows] || (vias[c.via.rows] = pathAt(doc, c.via.rows) || []); v = arr[v] != null ? (c.via.field ? arr[v][c.via.field] : arr[v]) : null; }
         p[c.key] = (v === undefined || v === '') ? null : (typeof v === 'boolean' ? String(v) : v);
       }
       const lng = t.lng ? +pathAt(r, t.lng) : NaN, lat = t.lat ? +pathAt(r, t.lat) : NaN;

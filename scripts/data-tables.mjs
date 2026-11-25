@@ -30,7 +30,20 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
 const OUT = path.join(ROOT, 'js', 'data-tables.js');
 
-export const at = (o, p) => String(p).split('.').reduce((v, k) => (v == null ? undefined : v[k]), o);
+/* a path into a document or a row; a segment `[field]` is the ROOT's own value of `field` (a row names the candidate that won by index) */
+export const at = (o, p) => String(p).split('.').reduce((v, k) => (v == null ? undefined : v[k.charAt(0) === '[' ? o[k.slice(1, -1)] : k]), o);
+
+/** the rows a `rows` path names. An ARRAY is its own rows; a plain OBJECT whose values are objects (a record keyed by country
+ *  code, by id…) is its entries, each row being the value with the key put on it as `$key` — so a bundle keyed by ISO code is a
+ *  table the same day, and its key is a column (`from:'$key'`). Anything else is not rows. js/atlas-query.js reads the same rule. */
+export function rowsOf(list) {
+  if (Array.isArray(list)) return list;
+  if (list && typeof list === 'object') {
+    const ents = Object.entries(list);
+    if (ents.length && ents.every(([, v]) => v && typeof v === 'object' && !Array.isArray(v))) return ents.map(([k, v]) => Object.assign({ $key: k }, v));
+  }
+  return null;
+}
 
 function walk(dir, out) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -47,7 +60,7 @@ function declares(p) {
   try {
     const size = fs.fstatSync(fd).size, n = Math.min(size, 1 << 20), buf = Buffer.alloc(n);
     fs.readSync(fd, buf, 0, n, 0);
-    return buf.toString('utf8').indexOf('"rowTables":[{') >= 0;
+    return /"rowTables"\s*:\s*\[\s*\{/.test(buf.toString('utf8'));
   } finally { fs.closeSync(fd); }
 }
 
@@ -65,8 +78,8 @@ export function discover() {
       if (ids.has(t.id)) { bad.push(where + ': id already declared by ' + ids.get(t.id)); continue; }
       ids.set(t.id, rel);
       if (!t.title || !t.title.en || !t.title.jp) bad.push(where + ': title needs en and jp');
-      const rows = at(doc, t.rows);
-      if (!Array.isArray(rows) || !rows.length) { bad.push(where + ': rows "' + t.rows + '" is not a non-empty array'); continue; }
+      const rows = rowsOf(at(doc, t.rows));
+      if (!rows || !rows.length) { bad.push(where + ': rows "' + t.rows + '" is not a non-empty array'); continue; }
       const asObj = (r) => (Array.isArray(r) && Array.isArray(t.fields)) ? Object.fromEntries(t.fields.map((f, i) => [f, r[i]])) : r;
       const sample = rows.map(asObj);
       const present = (p) => sample.some((r) => at(r, p) != null);
@@ -106,8 +119,30 @@ export function render(index) {
       .replace(/"\\u0000LA(\[.*?\])"(?=,?\n)/g, (m, arr) => 'LA(' + JSON.parse(JSON.parse('"' + arr + '"')).map((x) => JSON.stringify(x)).join(', ') + ')') + ';\n';
 }
 
+/** every bundle under data/ that holds rows and declares no table → [{ file, path, shape, count }]. A top-level array of objects
+ *  (or of arrays, when the file names its `fields`) and a record of objects keyed by code are rows; a file already declaring is
+ *  not listed. Nothing is a list of bundles: the walk is the list. Files too large to parse are named, not read. */
+export function undeclared() {
+  const out = [];
+  for (const abs of walk(DATA, [])) {
+    const rel = path.relative(ROOT, abs).split(path.sep).join('/');
+    if (declares(abs)) continue;
+    if (fs.statSync(abs).size > 64 * 1024 * 1024) { out.push({ file: rel, path: '?', shape: 'too large to read', count: null }); continue; }
+    let doc; try { doc = JSON.parse(fs.readFileSync(abs, 'utf8')); } catch (_) { continue; }
+    const hold = (v) => rowsOf(v) && Object.keys(v).length >= 2 && (Array.isArray(v) ? (v[0] && typeof v[0] === 'object') : true);
+    if (Array.isArray(doc)) { if (hold(doc)) out.push({ file: rel, path: '', shape: 'array', count: doc.length }); continue; }
+    if (!doc || typeof doc !== 'object') continue;
+    for (const [k, v] of Object.entries(doc)) if (v && typeof v === 'object' && hold(v)) out.push({ file: rel, path: k, shape: Array.isArray(v) ? 'array' : 'keyed', count: Object.keys(v).length });
+  }
+  return out;
+}
+
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (isMain) {
+if (isMain && process.argv.includes('--undeclared')) {
+  const u = undeclared();
+  console.log(u.map((x) => x.file + '  ' + (x.path || '(root)') + '  ' + x.shape + '  ' + x.count).join('\n'));
+  console.log('\n' + u.length + ' row-shaped collections in ' + new Set(u.map((x) => x.file)).size + ' files declare no table');
+} else if (isMain) {
   let index;
   try { index = discover(); } catch (e) { console.error(e.message); process.exit(1); }
   const text = render(index);

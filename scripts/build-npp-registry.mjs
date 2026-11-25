@@ -51,6 +51,7 @@
  *  exists, and the count cross-check lives in tests/radiation-plume-checks.test.mjs (#R585).
  * ==========================================================================*/
 import fs from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import path from 'node:path';
 import { ROOT, httpJSON, cacheGet, cachePut, chunk, qid, claims, best, dvItem, dvCoord, dvQuantity, wdDate, label } from './companies/wd.mjs';
 import { WIKIDATA } from './lib/upstream-cadence.mjs';
@@ -541,7 +542,7 @@ const out = {
   }],
   plants,
 };
-fs.writeFileSync(OUT, JSON.stringify(out) + '\n');
+fs.writeFileSync(OUT, JSON.stringify(withRowTables('npp', out)) + '\n');
 say('wrote', OUT, fs.statSync(OUT).size, 'bytes');
 const tally = {};
 for (const r of plants) tally[r.status] = (tally[r.status] || 0) + 1;

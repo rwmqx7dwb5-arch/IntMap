@@ -53,6 +53,7 @@
  *  tests/geopolitics-layers-checks.test.mjs validates the committed file offline.
  * ==========================================================================*/
 import { readFileSync, writeFileSync } from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseCSV } from './lib/cldf.mjs';
@@ -342,7 +343,7 @@ async function main() {
   }
   /* the bundle carries its declaration whole (check:datagov reads the same facets from the file as from this script) */
   const g = agreeOrRefuse(GOVERNANCE[OUT], links, { fields: { a: {}, c: {}, n: { min: 1 } }, key: ['a', 'c'] }, today);
-  const out = { v: 1, ...g, authorities, places, links, unplaced };
+  const out = withRowTables('sanctions', { v: 1, ...g, authorities, places, links, unplaced });
   writeFileSync(join(ROOT, OUT), JSON.stringify(out));
   console.log('wrote', OUT, JSON.stringify(out).length, 'bytes ·', links.length, 'links');
 }

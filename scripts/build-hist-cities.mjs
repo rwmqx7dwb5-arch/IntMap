@@ -119,6 +119,7 @@
  *     Expires if `ofm-city`'s filter changes, or if the file has to move into the boot bundle.
  * ==========================================================================*/
 import { readFileSync, writeFileSync } from 'node:fs';
+import { withRowTables } from './lib/row-tables.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
@@ -761,7 +762,7 @@ const out = {
     }),
   })),
 };
-const text = JSON.stringify(out) + '\n';
+const text = JSON.stringify(withRowTables('hist-cities', out)) + '\n';
 
 /* ── the coverage table: what «no established form» actually costs, measured ────────────────── */
 const eraCount = final.reduce((n, r) => n + r.eras.length, 0);

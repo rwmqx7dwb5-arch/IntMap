@@ -1,4 +1,94 @@
 {
+ "rowTables": [
+  {
+   "id": "health-system-capacity",
+   "title": {
+    "en": "Country health-system capacity and immunisation coverage (WHO, UNICEF)",
+    "jp": "国別の保健システム能力と予防接種率（WHO・UNICEF）"
+   },
+   "rows": "countries",
+   "key": "$key",
+   "name": "$key",
+   "columns": [
+    {
+     "key": "iso3",
+     "from": "$key",
+     "type": "text",
+     "label": {
+      "en": "Country code (ISO 3166-1 alpha-3 or World Bank aggregate)",
+      "jp": "国コード（ISO 3166-1 alpha-3 または世界銀行の集計コード）"
+     }
+    },
+    {
+     "key": "uhc",
+     "from": "uhc",
+     "type": "number",
+     "label": {
+      "en": "WHO UHC service coverage index (SDG 3.8.1)",
+      "jp": "WHO の UHC サービス提供範囲指標（SDG 3.8.1）"
+     },
+     "unit": "0-100"
+    },
+    {
+     "key": "uhcYear",
+     "from": "uhcY",
+     "type": "number",
+     "label": {
+      "en": "Year of the UHC index",
+      "jp": "UHC 指標の年"
+     }
+    },
+    {
+     "key": "spar",
+     "from": "spar",
+     "type": "number",
+     "label": {
+      "en": "IHR SPAR capacity 7: health emergency management",
+      "jp": "IHR SPAR 能力 7: 保健緊急事態への対応管理"
+     },
+     "unit": "0-100"
+    },
+    {
+     "key": "dtp3",
+     "from": "dtp3",
+     "type": "number",
+     "label": {
+      "en": "DTP3 immunisation coverage of one-year-olds",
+      "jp": "1 歳児の DTP3 接種率"
+     },
+     "unit": "%"
+    },
+    {
+     "key": "dtp3Year",
+     "from": "dtp3Y",
+     "type": "number",
+     "label": {
+      "en": "Year of DTP3 coverage",
+      "jp": "DTP3 接種率の年"
+     }
+    },
+    {
+     "key": "mcv1",
+     "from": "mcv1",
+     "type": "number",
+     "label": {
+      "en": "First-dose measles immunisation coverage of one-year-olds",
+      "jp": "1 歳児の麻疹ワクチン 1 回目接種率"
+     },
+     "unit": "%"
+    },
+    {
+     "key": "mcv1Year",
+     "from": "mcv1Y",
+     "type": "number",
+     "label": {
+      "en": "Year of measles coverage",
+      "jp": "麻疹接種率の年"
+     }
+    }
+   ]
+  }
+ ],
  "//": "Per-country epidemic capacity for the pandemic simulator. `uhc` is the WHO UHC service coverage index (SDG 3.8.1, 0-100). `spar` is IHR SPAR capacity 7, health emergency management (0-100). `dtp3` and `mcv1` are WHO/UNICEF WUENIC immunisation coverage (percent of one-year-olds). ⚠ `mcv1` is CHILDHOOD coverage used as a whole-population measles immunity, because the model has no age structure — the simulator says so on screen. There is NO per-country observation of COVID-19 immunity and none is invented here. Built by scripts/build-health.mjs. See Architecture.md §8.5.",
  "built": "2026-09-10",
  "sources": [
