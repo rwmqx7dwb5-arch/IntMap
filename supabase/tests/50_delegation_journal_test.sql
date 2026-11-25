@@ -27,7 +27,7 @@ end $$;
 -- ── ① the table ───────────────────────────────────────────────────────────────
 select has_table('public', 'ai_delegation_journal', 'ai_delegation_journal exists');
 select columns_are('public', 'ai_delegation_journal',
-  array['id', 'user_id', 'root_key', 'child_key', 'task', 'outcome', 'code', 'http_status', 'model', 'latency_ms', 'input_tokens', 'output_tokens', 'cost_micros', 'web', 'created_at'],
+  array['id', 'user_id', 'root_key', 'child_key', 'task', 'outcome', 'code', 'http_status', 'model', 'latency_ms', 'input_tokens', 'output_tokens', 'cost_micros', 'web', 'created_at', 'cached_tokens'],
   'the journal has the columns the console and the proxy agree on');
 select ok((select c.relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace
             where n.nspname = 'public' and c.relname = 'ai_delegation_journal'), 'RLS is on');
